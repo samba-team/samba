@@ -211,6 +211,12 @@ BOOL nt_printing_init(void)
 
 	update_c_setprinter(True);
 
+	/* 
+	 * register callback to handle updating printers as new
+  	 * drivers are installed
+	 */
+	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
+
     return True;
 }
 

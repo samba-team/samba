@@ -46,6 +46,7 @@
 #define MSG_FORCE_ELECTION 1001
 
 /* rpc messages */
-#define MSG_PRINTER_NOTIFY 2001
+#define MSG_PRINTER_NOTIFY 	2001
+#define MSG_PRINTER_DRVUPGRADE	2002
 
 #endif

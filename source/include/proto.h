@@ -1444,12 +1444,12 @@ char *lp_template_homedir(void);
 char *lp_template_shell(void);
 char *lp_winbind_separator(void);
 char *lp_codepagedir(void);
+char *lp_printer_admin(void);
 char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
 char *lp_ldap_root(void);
 char *lp_ldap_rootpasswd(void);
-char *lp_printer_admin(void);
 int lp_ssl_version(void);
 char *lp_ssl_hosts(void);
 char *lp_ssl_hosts_resign(void);
@@ -1667,6 +1667,7 @@ int lp_dir_security_mask(int snum);
 int lp_force_dir_security_mode(int snum);
 char *lp_printername(int snum);
 const char *get_called_name(void);
+char *lp_printer_admin(void);
 
 /*The following definitions come from  param/params.c  */
 
@@ -3373,6 +3374,7 @@ BOOL api_spoolss_rpc(pipes_struct *p);
 
 #if OLD_NTDOMAIN
 void init_printer_hnd(void);
+void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
 				 PRINTER_DEFAULT *printer_default,
 				 uint32  user_switch, SPOOL_USER_CTR user_ctr,

@@ -810,6 +810,75 @@ static BOOL srv_spoolss_sendnotify(char* printer_name, uint32 high, uint32 low, 
 }	
 
 /********************************************************************
+ Send a message to ourself about new driver being installed
+ so we can upgrade the information for each printer bound to this
+ driver
+ ********************************************************************/
+ 
+static BOOL srv_spoolss_drv_upgrade_printer(char* drivername)
+{
+	int len = strlen(drivername);
+	
+	if (!len)
+		return False;
+
+	DEBUG(10,("srv_spoolss_drv_upgrade_printer: Sending message about driver upgrade [%s]\n",
+		drivername));
+		
+	message_send_pid(sys_getpid(), MSG_PRINTER_DRVUPGRADE, drivername, len+1, False);
+
+	return True;
+}
+
+/**********************************************************************
+ callback to receive a MSG_PRINTER_DRVUPGRADE message and interate
+ over all printers, upgrading ones as neessary 
+ **********************************************************************/
+ 
+void do_drv_upgrade_printer(int msg_type, pid_t src, void *buf, size_t len)
+{
+	fstring drivername;
+	int snum;
+	int n_services = lp_numservices();
+	
+	len = MIN(len,sizeof(drivername)-1);
+	strncpy(drivername, buf, len);
+	
+	DEBUG(10,("do_drv_upgrade_printer: Got message for new driver [%s]\n", drivername ));
+
+	/* Iterate the printer list */
+	
+	for (snum=0; snum<n_services; snum++)
+	{
+		if (lp_snum_ok(snum) && lp_print_ok(snum) ) 
+		{
+			uint32 result;
+			NT_PRINTER_INFO_LEVEL *printer = NULL;
+			
+			if (get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
+				continue;
+				
+			if (printer && printer->info_2 && !strcmp(drivername, printer->info_2->drivername)) 
+			{
+				DEBUG(6,("Updating printer [%s]\n", printer->info_2->printername));
+				
+				/* all we care about currently is the change_id */
+				
+				result = mod_a_printer(*printer, 2);
+				if (result) {
+					DEBUG(3,("do_drv_upgrade_printer: mod_a_printer() failed with status [%d]\n", 
+						result));
+				}
+			}
+			
+			free_a_printer(&printer, 2);			
+		}
+	}
+	
+	/* all done */	
+}
+
+/********************************************************************
  * spoolss_open_printer
  *
  * called from the spoolss dispatcher
@@ -5871,7 +5940,8 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 	uint32 err = NT_STATUS_NO_PROBLEMO;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
 	struct current_user user;
-	
+	fstring driver_name;
+		
 	ZERO_STRUCT(driver);
 
 	get_current_user(&user, p);	
@@ -5895,22 +5965,36 @@ uint32 _spoolss_addprinterdriver(pipes_struct *p, const UNISTR2 *server_name,
 
 	if ((err=add_a_printer_driver(driver, level)) != NT_STATUS_NO_PROBLEMO)
 		goto done;
-	
+
         /* BEGIN_ADMIN_LOG */
         switch(level)
 	{
 	    case 3:
 		sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s."),
 		driver.info_3->name,drv_ver_to_os[driver.info_3->cversion],uidtoname(user.uid));
+		fstrcpy(driver_name, driver.info_3->name);
 		break;
 	    case 6:   
                	sys_adminlog(LOG_INFO,(char *)gettext("Added printer driver. Print driver name: %s. Print driver OS: %s. Administrator name: %s."),
 		driver.info_6->name,drv_ver_to_os[driver.info_6->version],uidtoname(user.uid));
+		fstrcpy(driver_name, driver.info_6->name);
 		break;
         }
         /* END_ADMIN_LOG */
 
- done:
+	/* 
+	 * I think this is where he DrvUpgradePrinter() hook would be
+	 * be called in a driver's interface DLL on a Windows NT 4.0/2k
+	 * server.  Right now, we just need to send ourselves a message
+	 * to update each printer bound to this driver.   --jerry	
+	 */
+	 
+	if (!srv_spoolss_drv_upgrade_printer(driver_name)) {
+		DEBUG(0,("_spoolss_addprinterdriver: Failed to send message about upgrading driver [%s]!\n",
+			driver_name));
+	}
+
+done:
 	free_a_printer_driver(driver, level);
 	return err;
 }
