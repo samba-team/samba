@@ -2728,8 +2728,8 @@ if test x"$with_ads_support" != x"no"; then
       exit(0);
     exit(1);
   }], 
-  samba_cv_HAVE_MEMORY_KEYTAB=no,
-  samba_cv_HAVE_MEMORY_KEYTAB=yes)])
+  samba_cv_HAVE_MEMORY_KEYTAB=yes,
+  samba_cv_HAVE_MEMORY_KEYTAB=no)])
 
   if test x"$samba_cv_HAVE_MEMORY_KEYTAB" = x"yes"; then
       AC_DEFINE(HAVE_MEMORY_KEYTAB,1,
