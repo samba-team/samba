@@ -1,3 +1,8 @@
+2001-07-12  Assar Westerlund  <assar@sics.se>
+
+	* rxterm.in: add -K (send arguments to kx)
+	* rxtelnet.in: add -K (send arguments to kx)
+	
 2001-06-21  Assar Westerlund  <assar@sics.se>
 
 	* rxterm.in: add -b for pointing to the rsh program.  from
