@@ -13,6 +13,7 @@ BUILT_SOURCES =			\
 	asn1_err.c
 
 gen_files =				\
+	asn1_UNSIGNED.x			\
 	asn1_APOptions.x		\
 	asn1_AP_REP.x			\
 	asn1_AP_REQ.x			\
