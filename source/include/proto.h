@@ -42,6 +42,13 @@ void cmd_help(void);
 
 /*The following definitions come from  clientgen.c  */
 
+BOOL cli_api_pipe(struct cli_state *cli,
+	char *pipe_name, int pipe_name_len,
+	int prcnt,int drcnt, int srcnt,
+	int mprcnt,int mdrcnt,
+	int *rprcnt,int *rdrcnt,
+	char *param, char *data, uint16 *setup,
+	char **rparam,char **rdata);
 BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation);
 BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 		       void (*fn)(char *, uint32, char *));
@@ -630,12 +637,9 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
-BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain, fstring mach_acct,
-				fstring mach_pwd, fstring new_mach_pwd);
-BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
-				char *myhostname,
-				int Client, int cnum);
+BOOL do_nt_login_test(struct in_addr dest_ip, char *dest_host, char *myhostname,
+				char *username, char *workgroup,
+				char *mach_acct, char *new_mach_pwd);
 
 /*The following definitions come from  nterr.c  */
 
@@ -850,51 +854,86 @@ char* lsa_io_r_sam_logon(BOOL io, LSA_R_SAM_LOGON *r_l, char *q, char *base, int
 char* lsa_io_q_sam_logoff(BOOL io, LSA_Q_SAM_LOGOFF *q_l, char *q, char *base, int align, int depth);
 char* lsa_io_r_sam_logoff(BOOL io, LSA_R_SAM_LOGOFF *r_l, char *q, char *base, int align, int depth);
 
+/*The following definitions come from  rpc_pipes/ntclientlogin.c  */
+
+BOOL do_nt_session_open(struct cli_state *cli, uint16 *fnum,
+				struct in_addr dest_ip, char *dest_host, char *myhostname,
+				char *mach_acct,
+				char *username, char *workgroup,
+				uchar sess_key[8], DOM_CRED *clnt_cred);
+BOOL do_nt_srv_pwset(struct cli_state *cli, uint16 fnum,
+				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				char *new_mach_pwd,
+				char *dest_host, char *mach_acct, char *myhostname);
+void make_nt_login_info(DOM_ID_INFO_1 *id1,
+				uchar sess_key[8],
+				char *workgroup, char *myhostname,
+				uint32 smb_userid, char *username);
+BOOL do_nt_login(struct cli_state *cli, uint16 fnum,
+				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname,
+				LSA_USER_INFO *user_info1);
+BOOL do_nt_logoff(struct cli_state *cli, uint16 fnum,
+				uint8 sess_key[8], DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
+				DOM_ID_INFO_1 *id1, char *dest_host, char *myhostname);
+void do_nt_session_close(struct cli_state *cli, uint16 fnum);
+
 /*The following definitions come from  rpc_pipes/ntclientlsa.c  */
 
-BOOL do_lsa_open_policy(uint16 fnum, uint32 call_id,
+BOOL do_lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			char *server_name, LSA_POL_HND *hnd);
-BOOL do_lsa_query_info_pol(uint16 fnum, uint32 call_id,
+BOOL do_lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			LSA_POL_HND *hnd, uint16 info_class,
 			fstring domain_name, pstring domain_sid);
-BOOL do_lsa_close(uint16 fnum, uint32 call_id,
-			LSA_POL_HND *hnd);
+BOOL do_lsa_close(struct cli_state *cli, uint16 fnum, LSA_POL_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
 
-BOOL do_lsa_logon_ctrl2(uint16 fnum, uint32 call_id,
+BOOL do_lsa_logon_ctrl2(struct cli_state *cli, uint16 fnum,
 		char *host_name, uint32 status_level);
-BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
+BOOL do_lsa_auth2(struct cli_state *cli, uint16 fnum,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
-BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
+BOOL do_lsa_req_chal(struct cli_state *cli, uint16 fnum,
 		char *desthost, char *myhostname,
         DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal);
-BOOL do_lsa_srv_pwset(uint16 fnum, uint32 call_id,
+BOOL do_lsa_srv_pwset(struct cli_state *cli, uint16 fnum,
 		uchar sess_key[8], 
 		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
 		char nt_owf_new_mach_pwd[16]);
-BOOL do_lsa_sam_logon(uint16 fnum, uint32 call_id,
+BOOL do_lsa_sam_logon(struct cli_state *cli, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		uint16 logon_level, uint16 switch_value,
+		DOM_ID_INFO_1 *id1, uint16 switch_value2,
 		LSA_USER_INFO *user_info,
 		DOM_CRED *srv_cred);
-BOOL do_lsa_sam_logoff(uint16 fnum, uint32 call_id,
+BOOL do_lsa_sam_logoff(struct cli_state *cli, uint16 fnum,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
         DOM_CRED *clnt_cred, DOM_CRED *rtn_cred,
-		uint16 logon_level, uint16 switch_value, DOM_ID_INFO_1 *id1,
+		uint16 logon_level, uint16 switch_value,
+		DOM_ID_INFO_1 *id1, uint16 switch_value2,
 		DOM_CRED *srv_cred);
 
 /*The following definitions come from  rpc_pipes/ntclientpipe.c  */
 
-uint16 rpc_pipe_open(char *inbuf, char *outbuf, char *rname, int Client, int cnum);
-BOOL rpc_pipe_set_hnd_state(char *pipe_name, uint16 fnum, uint16 device_state);
-BOOL rpc_pipe_bind(char *pipe_name, uint16 fnum, uint32 call_id,
+BOOL rpc_pipe_set_hnd_state(struct cli_state *cli,
+				char *pipe_name, uint16 fnum, uint16 device_state);
+BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum, 
 				RPC_IFACE *abstract, RPC_IFACE *transfer);
+
+/*The following definitions come from  rpc_pipes/ntclientstatus.c  */
+
+BOOL do_nt_status_check(struct in_addr dest_ip, char *dest_host, char *myhostname);
+
+/*The following definitions come from  rpc_pipes/ntclienttrust.c  */
+
+BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
+				char *myhostname, char *domain, fstring mach_acct,
+				fstring mach_pwd, fstring new_mach_pwd);
 
 /*The following definitions come from  rpc_pipes/pipe_hnd.c  */
 
@@ -936,6 +975,7 @@ BOOL api_srvsvcTNP(int cnum,int uid, char *param,char *data,
 
 /*The following definitions come from  rpc_pipes/pipeutil.c  */
 
+uint32 get_rpc_call_id(void);
 void initrpcreply(char *inbuf, char *q);
 void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
@@ -988,7 +1028,7 @@ char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int
 void make_unistr(UNISTR *str, char *buf);
 char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth);
 void make_unistr2(UNISTR2 *str, char *buf, int len);
-char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int depth);
+char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, uint32 buffer, char *q, char *base, int align, int depth);
 void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
 void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
@@ -1026,7 +1066,7 @@ char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align
 void make_sam_info(DOM_SAM_INFO *sam,
 				char *logon_srv, char *comp_name, DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level, uint16 switch_value,
-				DOM_ID_INFO_1 *id1);
+				DOM_ID_INFO_1 *id1, uint16 switch_value2);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
 void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 frag,

@@ -156,17 +156,16 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 		return False;
 	}
 
-	/* if logged in as guest then reject */
-	if ((SVAL(clnt->inbuf,smb_vwv2) & 1) != 0) {
-		DEBUG(1,("server %s gave us guest only\n", clnt->full_dest_host_name));
-		return(False);
+	if (!(BIT_SET(SVAL(clnt->inbuf,smb_vwv2), SESSION_LOGGED_ON_AS_USER)))
+	{
+		DEBUG(1,("server %s gave us guest access only\n", clnt->full_dest_host_name));
 	}
 
 	pwd_ok = False;
 
 	if (!pwd_ok)
 	{
-		pwd_ok = pass != NULL && !cli_send_tconX(clnt, "IPC$", "IPC", pass, passlen);
+		pwd_ok = pass != NULL && cli_send_tconX(clnt, "IPC$", "IPC", pass, passlen);
 	}
 
 	if (!pwd_ok)
@@ -176,13 +175,12 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 
 	if (!pwd_ok)
 	{
-		pwd_ok = ntpass != NULL && !cli_send_tconX(clnt, "IPC$", "IPC", ntpass, ntpasslen);
+		pwd_ok = ntpass != NULL && cli_send_tconX(clnt, "IPC$", "IPC", ntpass, ntpasslen);
 	}
 
 	if (!pwd_ok)
 	{
 		DEBUG(1,("server %s refused IPC$ connect with NT password\n", clnt->full_dest_host_name));
-		return False;
 	}
 
 	if (!pwd_ok)
@@ -196,7 +194,7 @@ BOOL server_validate2(struct cli_state *clnt, char *user, char *domain,
 
 	cli_tdis(clnt);
 
-	return(True);
+	return pwd_ok;
 }
 
 

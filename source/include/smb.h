@@ -53,6 +53,8 @@
 #define BOOLSTR(b) ((b) ? "Yes" : "No")
 #define BITSETB(ptr,bit) ((((char *)ptr)[0] & (1<<(bit)))!=0)
 #define BITSETW(ptr,bit) ((SVAL(ptr,0) & (1<<(bit)))!=0)
+#define BIT_SET(var,bit) (((var)|(bit))==(bit))
+
 #define PTR_DIFF(p1,p2) ((ptrdiff_t)(((char *)(p1)) - (char *)(p2)))
 
 typedef int BOOL;
@@ -117,9 +119,6 @@ extern int syslog_level;
 
 #define DEBUG(level,body) ((DEBUGLEVEL>=(level))? (syslog_level = (level), Debug1 body):0)
 #endif
-
-/* bit checking macro */
-#define BIT_SET(var,bit) (((var)|(bit))==(bit))
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
 #define READ_TIMEOUT 1

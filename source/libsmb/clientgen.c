@@ -47,7 +47,8 @@ static void cli_setup_packet(struct cli_state *cli)
   send a SMB trans or trans2 request
   ****************************************************************************/
 static BOOL cli_send_trans(struct cli_state *cli,
-			   int trans, char *name, int fid, int flags,
+			   int trans, char *name, int pipe_name_len,
+               int fid, int flags,
 			   char *data,char *param,uint16 *setup, int ldata,int lparam,
 			   int lsetup,int mdata,int mparam,int msetup)
 {
@@ -66,7 +67,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
 	cli_setup_packet(cli);
 
-	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? strlen(name)+1 : 3);
+	outparam = smb_buf(cli->outbuf)+(trans==SMBtrans ? (pipe_name_len+1) : 3);
 	outdata = outparam+this_lparam;
 
 	/* primary request */
@@ -86,7 +87,7 @@ static BOOL cli_send_trans(struct cli_state *cli,
 		SSVAL(cli->outbuf,smb_setup+i*SIZEOFWORD,setup[i]);
 	p = smb_buf(cli->outbuf);
 	if (trans==SMBtrans) {
-		strcpy(p,name);			/* name[] */
+		memcpy(p,name, pipe_name_len + 1);			/* name[] */
 	} else {
 		*p++ = 0;  /* put in a null smb_name */
 		*p++ = 'D'; *p++ = ' ';	/* observed in OS/2 */
@@ -232,16 +233,58 @@ static BOOL cli_receive_trans(struct cli_state *cli,
 	return(True);
 }
 
+#ifdef NTDOMAIN
+/****************************************************************************
+call a remote api on an arbitrary pipe.  takes param, data and setup buffers.
+
+parameters:
+
+  char *pipe_name, int pipe_name_len,       pipe name, length
+  int prcnt,int drcnt, int srcnt,           param, data, setup sizes
+  int mprcnt,int mdrcnt,                    max param, data return sizes
+  int *rprcnt,int *rdrcnt,                  actual param, data return sizes
+  char *param, char *data, uint16 *setup,   params, data, setup buffers
+  char **rparam,char **rdata                return params, data buffers
+
+****************************************************************************/
+BOOL cli_api_pipe(struct cli_state *cli,
+	char *pipe_name, int pipe_name_len,
+	int prcnt,int drcnt, int srcnt,
+	int mprcnt,int mdrcnt,
+	int *rprcnt,int *rdrcnt,
+	char *param, char *data, uint16 *setup,
+	char **rparam,char **rdata)
+{
+  if (pipe_name_len == 0) pipe_name_len = strlen(pipe_name);
+
+  cli_send_trans(cli, SMBtrans, pipe_name, pipe_name_len, 0,0,
+		     data, param, setup,
+		     drcnt, prcnt, srcnt,
+		     mdrcnt, mprcnt, 0);
+
+  return (cli_receive_trans(cli,SMBtrans,
+                                 rdrcnt,rprcnt,
+                                 rdata,rparam));
+}
+#endif
 
 /****************************************************************************
-call a remote api
+call a remote api on the LANMAN pipe.  only takes param and data buffers
 ****************************************************************************/
 static BOOL cli_api(struct cli_state *cli,
 		    int prcnt,int drcnt,int mprcnt,int mdrcnt,int *rprcnt,
 		    int *rdrcnt, char *param,char *data, 
 		    char **rparam, char **rdata)
 {
-  cli_send_trans(cli,SMBtrans,"\\PIPE\\LANMAN",0,0,
+#ifdef NTDOMAIN
+	return cli_api_pipe(cli, "\\PIPE\\LANMAN", 0,
+				prcnt, drcnt, 0,
+				mprcnt, mdrcnt,
+				rprcnt, rdrcnt,
+				param, data, NULL,
+				rparam, rdata);
+#else
+  cli_send_trans(cli,SMBtrans,"\\PIPE\\LANMAN",0,0,0,
 		 data,param,NULL,
 		 drcnt,prcnt,0,
 		 mdrcnt,mprcnt,0);
@@ -249,6 +292,7 @@ static BOOL cli_api(struct cli_state *cli,
   return (cli_receive_trans(cli,SMBtrans,
 				     rdrcnt,rprcnt,
 				     rdata,rparam));
+#endif
 }
 
 
@@ -615,6 +659,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 	char *p;
 	unsigned openfn=0;
 	unsigned accessmode=0;
+	uint16 fnum;
 
 	if (flags & O_CREAT)
 		openfn |= (1<<4);
@@ -658,9 +703,13 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		return -1;
 	}
 
-    if (cli_error(cli,NULL, NULL)) return -1;
+    if (cli_error(cli, NULL, NULL)) return -1;
 
-	return SVAL(cli->inbuf,smb_vwv2);
+	fnum = SVAL(cli->inbuf,smb_vwv2);
+
+	DEBUG(5,("cli_open: opening fnum %04x\n", fnum));
+
+	return (int)fnum;
 }
 
 
@@ -987,7 +1036,7 @@ BOOL cli_connect(struct cli_state *cli, char *host, struct in_addr *ip)
 
 	fstrcpy(cli->full_dest_host_name, host);
 	
-	if (!ip)
+	if (!ip || zero_ip(*ip))
 	{
 		/* no ip specified - look up the name */
 		struct hostent *hp;

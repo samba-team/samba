@@ -27,6 +27,7 @@ extern pstring debugf;
 extern pstring sesssetup_user;
 extern pstring local_machine;
 extern fstring myworkgroup;
+extern BOOL sess_trust_acct;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -4598,7 +4599,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	    return(ERROR(ERRSRV,ERRaccess));
 
 	  /* ipc services are limited */
-	  if (IS_IPC(cnum) && (flags & AS_USER) && !(flags & CAN_IPC))
+	  if ((sess_trust_acct || IS_IPC(cnum)) && (flags & AS_USER) && !(flags & CAN_IPC))
 	    return(ERROR(ERRSRV,ERRaccess));	    
 
 	  /* load service specific parameters */

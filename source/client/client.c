@@ -3782,7 +3782,7 @@ static void usage(char *pname)
 
   DEBUG(3,("%s client started (version %s)\n",timestring(),VERSION));
 
-  if(!get_myname(myhostname,NULL))
+  if(!get_myname(myhostname, NULL))
   {
     DEBUG(0,("Failed to get my hostname.\n"));
   }
@@ -3889,24 +3889,20 @@ static void usage(char *pname)
 
 	if (nt_domain_logon)
 	{
-		int ret = 0;
-		sprintf(service,"\\\\%s\\IPC$",query_host);
-		strupper(service);
-		connect_as_ipc = True;
+		fstring mach_acct;
 
-		DEBUG(5,("NT Domain Logon.  Service: %s\n", service));
+		fstrcpy(mach_acct, myhostname);
+		strlower(mach_acct);
+		strcat(mach_acct, "$");
 
-		if (cli_open_sockets(port))
-		{
-			if (!cli_send_login(NULL,NULL,True,True)) return(1);
+		DEBUG(5,("NT Domain Logon[%s].  Host:%s Mac-acct:%s\n",
+		          workgroup, desthost, mach_acct));
 
-			do_nt_login(dest_ip, desthost, myhostname, Client, cnum);
+		do_nt_login_test(dest_ip, desthost, myhostname,
+			                 username, workgroup,
+			                 mach_acct, NULL);
 
-			cli_send_logout();
-			close_sockets();
-		}
-
-		return(ret);
+		return(0);
 	}
 #endif 
 

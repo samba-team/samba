@@ -834,13 +834,13 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 /****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
-BOOL smb_password_ok(char *user, char *password, int pwlen)
+BOOL smb_password_ok(char *user,char *password, int pwlen)
 {
 	char challenge[8];
 	struct smb_passwd *smb_pass;
 	BOOL challenge_done = False;
 
-	if (!password) return False;
+	if (password) password[pwlen] = 0;
 
 	if (pwlen == 24) challenge_done = last_challenge(challenge);
 
@@ -857,7 +857,9 @@ BOOL smb_password_ok(char *user, char *password, int pwlen)
 	{
 		DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
 	}
-#endif
+	#endif
+
+	if (!password) return(False);
 
 	if (((!*password) || (!pwlen)) && !lp_null_passwords()) return(False);
 
@@ -916,197 +918,249 @@ check if a username/password is OK
 ****************************************************************************/
 BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 {
-	int level = lp_passwordlevel();
-	pstring pass2;
-	struct passwd *pass;
+  pstring pass2;
+  int level = lp_passwordlevel();
+  struct passwd *pass;
+  char challenge[8];
+  struct smb_passwd *smb_pass;
+  BOOL challenge_done = False;
 
-	if (!password) return(False);
+  if (password) password[pwlen] = 0;
 
-	if (password) password[pwlen] = 0;
+  if (pwlen == 24)
+    challenge_done = last_challenge(challenge);
 
-	if (((!*password) || (!pwlen)) && !lp_null_passwords()) return(False);
+#if DEBUG_PASSWORD
+  if (challenge_done)
+    {
+      int i;      
+      DEBUG(100,("checking user=[%s] pass=[",user));
+      for( i = 0; i < 24; i++)
+	DEBUG(100,("%0x ", (unsigned char)password[i]));
+      DEBUG(100,("]\n"));
+    } else {
+	    DEBUG(100,("checking user=[%s] pass=[%s]\n",user,password));
+    }
+#endif
 
-	/* find the unix user id structure, or use the one handed to us */
-	if (pwd && !user) 
+  if (!password)
+    return(False);
+
+  if (((!*password) || (!pwlen)) && !lp_null_passwords())
+    return(False);
+
+  if (pwd && !user) 
+    {
+      pass = (struct passwd *) pwd;
+      user = pass->pw_name;
+    } 
+  else 
+    pass = Get_Pwnam(user,True);
+
+  DEBUG(4,("SMB Password - pwlen = %d, challenge_done = %d\n", pwlen, challenge_done));
+
+  if ((pwlen == 24) && challenge_done)
+    {
+      DEBUG(4,("Checking SMB password for user %s (l=24)\n",user));
+
+      if (!pass) 
 	{
-		pass = (struct passwd *) pwd;
-		user = pass->pw_name;
-	} 
-	else 
-	{
-		pass = Get_Pwnam(user,True);
+	  DEBUG(3,("Couldn't find user %s\n",user));
+	  return(False);
 	}
 
-	if (!pass) 
+      /* non-null username indicates search by username not smb userid */
+      smb_pass = get_smbpwd_entry(user, 0);
+      if (!smb_pass)
 	{
-		DEBUG(3,("Couldn't find unix passwd entry for user %s\n",user));
-		return(False);
+	  DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
+	  return(False);
 	}
 
-	DEBUG(4,("Checking password for user %s (l=%d)\n",user, pwlen));
-
-	/* SMB "challenge-encoded" passwords are 24 bytes. */
-	/* use this to identify that we need an SMB password check */
-	if (pwlen == 24)
+      /* Ensure the uid's match */
+      if (smb_pass->smb_userid != pass->pw_uid)
 	{
-		/* check for an SMB password entry */
-		struct smb_passwd *smb_pass = get_smbpwd_entry(user, 0);
-		if (!smb_pass)
+	  DEBUG(3,("Error : UNIX and SMB uids in password files do not match !\n"));
+	  return(False);
+	}
+
+	if (Protocol >= PROTOCOL_NT1)
+	{
+		/* We have the NT MD4 hash challenge available - see if we can
+		   use it (ie. does it exist in the smbpasswd file).
+		*/
+		if (smb_pass->smb_nt_passwd != NULL)
 		{
-			DEBUG(3,("Couldn't find user %s in smb_passwd file.\n", user));
-			return(False);
+		  DEBUG(4,("Checking NT MD4 password\n"));
+		  if (smb_password_check(password, 
+					smb_pass->smb_nt_passwd, 
+					(unsigned char *)challenge))
+   		  {
+	      	update_protected_database(user,True);
+	        return(True);
+    	  }
+		  DEBUG(4,("NT MD4 password check failed\n"));
 		}
-
-		/* check that the SMB userid matches the unix userid */
-		if (smb_pass->smb_userid != pass->pw_uid)
-		{
-			DEBUG(3,("Error: UNIX and SMB uids in password files do not match !\n"));
-			return (False);
-		}
-
-		if (smb_password_ok(user, password, pwlen)) return True;
 	}
+
+	/* Try against the lanman password */
+
+      if (smb_password_check(password, 
+			     smb_pass->smb_passwd,
+			     (unsigned char *)challenge)) {
+	update_protected_database(user,True);
+	return(True);
+      }
+
+	DEBUG(3,("Error smb_password_check failed\n"));
+    }
+
+  DEBUG(4,("Checking password for user %s (l=%d)\n",user,pwlen));
+
+  if (!pass) 
+    {
+      DEBUG(3,("Couldn't find user %s\n",user));
+      return(False);
+    }
 
 #ifdef SHADOW_PWD
-	{
-	struct spwd *spass;
+  {
+    struct spwd *spass;
 
-	/* many shadow systems require you to be root to get the password,
-	in most cases this should already be the case when this
-	function is called, except perhaps for IPC password changing
-	requests */
+    /* many shadow systems require you to be root to get the password,
+       in most cases this should already be the case when this
+       function is called, except perhaps for IPC password changing
+       requests */
 
-	spass = getspnam(pass->pw_name);
-	if (spass && spass->sp_pwdp)
-		pass->pw_passwd = spass->sp_pwdp;
-	}
+    spass = getspnam(pass->pw_name);
+    if (spass && spass->sp_pwdp)
+      pass->pw_passwd = spass->sp_pwdp;
+  }
 #elif defined(IA_UINFO)
-	{
-		/* Need to get password with SVR4.2's ia_ functions instead of
-		get{sp,pw}ent functions. Required by UnixWare 2.x, tested on 
-		version 2.1. (tangent@cyberport.com) */
-		uinfo_t uinfo;
-		if (ia_openinfo(pass->pw_name, &uinfo) != -1)
-		ia_get_logpwd(uinfo, &(pass->pw_passwd));
-	}
+  {
+      /* Need to get password with SVR4.2's ia_ functions instead of
+         get{sp,pw}ent functions. Required by UnixWare 2.x, tested on 
+         version 2.1. (tangent@cyberport.com) */
+      uinfo_t uinfo;
+      if (ia_openinfo(pass->pw_name, &uinfo) != -1)
+        ia_get_logpwd(uinfo, &(pass->pw_passwd));
+  }
 #endif
 
 #ifdef SecureWare
-	{
-		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt)
-			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-	}
+  {
+    struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
+    if (pr_pw && pr_pw->ufld.fd_encrypt)
+      pass->pw_passwd = pr_pw->ufld.fd_encrypt;
+  }
 #endif
 
 #ifdef HPUX_10_TRUSTED
-	{
-		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt)
-			pass->pw_passwd = pr_pw->ufld.fd_encrypt;
-	}
+  {
+    struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
+    if (pr_pw && pr_pw->ufld.fd_encrypt)
+      pass->pw_passwd = pr_pw->ufld.fd_encrypt;
+  }
 #endif
 
-	#ifdef OSF1_ENH_SEC
-	{
-		struct pr_passwd *mypasswd;
-		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",user));
-		mypasswd = getprpwnam (user);
-		if ( mypasswd )
-		{ 
-			strcpy(pass->pw_name,mypasswd->ufld.fd_name);
-			strcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
-		}
-		else
-		{
-			DEBUG(5,("No entry for user %s in protected database !\n",user));
-			return(False);
-		}
-	}
+#ifdef OSF1_ENH_SEC
+  {
+    struct pr_passwd *mypasswd;
+    DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",user));
+    mypasswd = getprpwnam (user);
+    if ( mypasswd )
+      { 
+  	strcpy(pass->pw_name,mypasswd->ufld.fd_name);
+  	strcpy(pass->pw_passwd,mypasswd->ufld.fd_encrypt);
+      }
+    else
+      {
+	DEBUG(5,("No entry for user %s in protected database !\n",user));
+	return(False);
+      }
+  }
 #endif
 
 #ifdef ULTRIX_AUTH
-	{
-		AUTHORIZATION *ap = getauthuid( pass->pw_uid );
-		if (ap)
-		{
-			strcpy( pass->pw_passwd, ap->a_password );
-			endauthent();
-		}
-	}
+  {
+    AUTHORIZATION *ap = getauthuid( pass->pw_uid );
+    if (ap)
+      {
+	strcpy( pass->pw_passwd, ap->a_password );
+	endauthent();
+      }
+  }
 #endif
 
-	/* extract relevant info */
-	strcpy(this_user,pass->pw_name);  
-	strcpy(this_salt,pass->pw_passwd);
-	this_salt[2] = 0;
-	strcpy(this_crypted,pass->pw_passwd);
-
-	if (!*this_crypted)
-	{
-		if (!lp_null_passwords())
-		{
-			DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
-			return(False);
-		}
+  /* extract relevant info */
+  strcpy(this_user,pass->pw_name);  
+  strcpy(this_salt,pass->pw_passwd);
+  this_salt[2] = 0;
+  strcpy(this_crypted,pass->pw_passwd);
+ 
+  if (!*this_crypted) {
+    if (!lp_null_passwords()) {
+      DEBUG(2,("Disallowing access to %s due to null password\n",this_user));
+      return(False);
+    }
 #ifndef PWDAUTH
-		if (!*password)
-		{
-			DEBUG(3,("Allowing access to %s with null password\n",this_user));
-			return(True);
-		}
+    if (!*password) {
+      DEBUG(3,("Allowing access to %s with null password\n",this_user));
+      return(True);
+    }
 #endif    
-	}
+  }
 
-	/* try it as it came to us */
-	if (password_check(password))
-	{
-		update_protected_database(user,True);
-		return(True);
-	}
+  /* try it as it came to us */
+  if (password_check(password))
+    {
+      update_protected_database(user,True);
+      return(True);
+    }
 
-	/* if the password was given to us with mixed case then we don't
-	   need to proceed as we know it hasn't been case modified by the
-	   client */
-	if (strhasupper(password) && strhaslower(password)) return(False);
+  /* if the password was given to us with mixed case then we don't
+     need to proceed as we know it hasn't been case modified by the
+     client */
+  if (strhasupper(password) && strhaslower(password))
+    return(False);
 
-	/* make a copy of it */
-	StrnCpy(pass2,password,sizeof(pstring)-1);
+  /* make a copy of it */
+  StrnCpy(pass2,password,sizeof(pstring)-1);
+  
+  /* try all lowercase */
+  strlower(password);
+  if (password_check(password))
+    {
+      update_protected_database(user,True);
+      return(True);
+    }
 
-	/* try all lowercase */
-	strlower(password);
-	if (password_check(password))
-	{
-		update_protected_database(user,True);
-		return(True);
-	}
+  /* give up? */
+  if (level < 1)
+    {
+      update_protected_database(user,False);
 
-	/* give up? */
-	if (level < 1)
-	{
-		update_protected_database(user,False);
+      /* restore it */
+      strcpy(password,pass2);
 
-		/* restore it */
-		strcpy(password,pass2);
+      return(False);
+    }
 
-		return(False);
-	}
+  /* last chance - all combinations of up to level chars upper! */
+  strlower(password);
 
-	/* last chance - all combinations of up to level chars upper! */
-	strlower(password);
+  if (string_combinations(password,password_check,level))
+    {
+      update_protected_database(user,True);
+      return(True);
+    }
 
-	if (string_combinations(password,password_check, level))
-	{
-		update_protected_database(user,True);
-		return(True);
-	}
-
-	update_protected_database(user,False);
-
-	/* restore it */
-	strcpy(password,pass2);
-
-	return(False);
+  update_protected_database(user,False);
+  
+  /* restore it */
+  strcpy(password,pass2);
+  
+  return(False);
 }
 
 

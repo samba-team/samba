@@ -884,8 +884,8 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
 	if (mod_acb_acct)
 	{
-		sprintf(&(ascii_p16[wr_len-1]), ":%4x", pwd->acct_ctrl);
-		wr_len += 5;
+		sprintf(&(ascii_p16[wr_len-1]), ":%04x", pwd->acct_ctrl);
+		wr_len += 4;
 	}
 
 #ifdef DEBUG_PASSWORD

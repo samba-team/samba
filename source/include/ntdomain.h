@@ -37,6 +37,10 @@ enum RPC_PKT_TYPE
 	RPC_BINDACK  = 0x0C
 };
 
+/* Secure Channel types.  used in NetrServerAuthenticate negotiation */
+#define SEC_CHAN_WKSTA   2
+#define SEC_CHAN_DOMAIN  4
+
 /* Allowable account control bits */
 #define ACB_DISABLED   0x0001  /* 1 = User account disabled */
 #define ACB_HOMDIRREQ  0x0002  /* 1 = Home directory required */
@@ -135,7 +139,7 @@ typedef struct unihdr_info
 {
   uint16 uni_max_len;
   uint16 uni_str_len;
-  uint32 undoc; /* usually has a value of 4 */
+  uint32 buffer; /* usually has a value of 4 */
 
 } UNIHDR;
 
@@ -143,7 +147,7 @@ typedef struct unihdr_info
 typedef struct unihdr2_info
 {
   UNIHDR unihdr;
-  uint32 undoc_buffer; /* undocumented 32 bit buffer pointer */
+  uint32 buffer; /* 32 bit buffer pointer */
 
 } UNIHDR2;
 
@@ -293,6 +297,8 @@ typedef struct sam_info
 
   } auth;
   
+  uint16         switch_value2;
+
 } DOM_SAM_INFO;
 
 /* DOM_GID - group id + user attributes */

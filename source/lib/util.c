@@ -77,6 +77,7 @@ fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
 
+BOOL sess_trust_acct = False;
 pstring sesssetup_user="";
 pstring samlogon_user="";
 

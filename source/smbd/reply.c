@@ -41,6 +41,7 @@ extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
 extern pstring sesssetup_user;
+extern BOOL sess_trust_acct;
 extern fstring myworkgroup;
 extern int Client;
 extern int global_oplock_break;
@@ -399,7 +400,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   struct smb_passwd *smb_trust_acct = NULL; /* check if trust account exists */
 
   /* if the account ends in $ it's a trust account */
-  BOOL sess_trust_acct = False;
+  sess_trust_acct = False;
 
   *smb_lm_passwd = 0;
   *smb_nt_passwd = 0;
