@@ -75,7 +75,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	const struct dcerpc_interface_table *p;
 	const struct dcerpc_interface_call *f;
 	const char *pipe_name, *function, *inout, *filename;
-	char *data;
+	uint8_t *data;
 	size_t size;
 	DATA_BLOB blob;
 	struct ndr_pull *ndr;
@@ -158,7 +158,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 			exit(1);
 		}
 			
-		data = file_load(ctx_filename, &size);
+		data = (uint8_t *)file_load(ctx_filename, &size);
 		if (!data) {
 			perror(ctx_filename);
 			exit(1);
@@ -181,7 +181,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 		}
 	} 
 
-	data = file_load(filename, &size);
+	data = (uint8_t *)file_load(filename, &size);
 	if (!data) {
 		perror(filename);
 		exit(1);
