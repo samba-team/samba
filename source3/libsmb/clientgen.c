@@ -746,6 +746,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 		uchar *key = (uchar *)cli->cryptkey;
 		SMBencrypt  ((uchar *)pass  , key,(uchar *)pword  );
 		SMBNTencrypt((uchar *)ntpass, key,(uchar *)ntpword);
+		passlen = 24;
+		ntpasslen = 24;
 	}
 
 	/* send a session setup command */
