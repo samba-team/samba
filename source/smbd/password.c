@@ -1218,6 +1218,32 @@ use this machine as the password server.\n"));
   return(True);
 }
 
+static char *mutex_server_name;
+
+static BOOL grab_server_mutex(const char *name)
+{
+        mutex_server_name = strdup(name);
+        if (!mutex_server_name) {
+                DEBUG(0,("grab_server_mutex: malloc failed for %s\n", name));
+                return False;
+        }
+        if (!message_named_mutex(name, 20)) {
+                DEBUG(10,("grab_server_mutex: failed for %s\n", name));
+                SAFE_FREE(mutex_server_name);
+                return False;
+        }
+
+        return True;
+}
+
+static void release_server_mutex(void)
+{
+        if (mutex_server_name) {
+                message_named_mutex_release(mutex_server_name);
+                SAFE_FREE(mutex_server_name);
+        }
+}
+
 /***********************************************************************
  Connect to a remote machine for domain security authentication
  given a name or IP address.
@@ -1268,23 +1294,21 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
      two connections where one hasn't completed a negprot yet it will send a 
      TCP reset to the first connection (tridge) */
 
-  if (!message_named_mutex(server, 20)) {
-	  DEBUG(1,("domain mutex failed for %s\n", server));
+  if (!grab_server_mutex(server))
 	  return False;
-  }
 
   if (!cli_connect(pcli, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_domain_password_server: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
   
   if (!attempt_netbios_session_request(pcli, global_myname, remote_machine, &dest_ip)) {
     DEBUG(0,("connect_to_password_server: machine %s rejected the NetBIOS session request.\n", 
       remote_machine));
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
   
@@ -1294,7 +1318,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the negotiate protocol. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
 
@@ -1302,7 +1326,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s didn't negotiate NT protocol.\n",
                    remote_machine));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
 
@@ -1314,7 +1338,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
 
@@ -1322,7 +1346,7 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(1,("connect_to_domain_password_server: machine %s isn't in user level security mode\n",
                remote_machine));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
 
@@ -1330,11 +1354,9 @@ Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     DEBUG(0,("connect_to_domain_password_server: machine %s rejected the tconX on the IPC$ share. \
 Error was : %s.\n", remote_machine, cli_errstr(pcli) ));
     cli_shutdown(pcli);
-    message_named_mutex_release(server);
+    release_server_mutex();
     return False;
   }
-
-  message_named_mutex_release(server);
 
   /*
    * We now have an anonymous connection to IPC$ on the domain password server.
@@ -1355,6 +1377,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
     cli_nt_session_close(pcli);
     cli_ulogoff(pcli);
     cli_shutdown(pcli);
+    release_server_mutex();
     return False;
   }
 
@@ -1364,9 +1387,11 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(pcli)));
     cli_nt_session_close(pcli);
     cli_ulogoff(pcli);
     cli_shutdown(pcli);
+    release_server_mutex();
     return(False);
   }
 
+  /* We exit here with the mutex *locked* */
   return True;
 }
 
@@ -1600,6 +1625,7 @@ BOOL domain_client_validate( char *user, char *domain,
   if (!connected_ok) {
     DEBUG(0,("domain_client_validate: Domain password server not available.\n"));
     cli_shutdown(&cli);
+    release_server_mutex();
     return False;
   }
 
@@ -1623,6 +1649,7 @@ BOOL domain_client_validate( char *user, char *domain,
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
+    release_server_mutex();
 
     if((nt_rpc_err == NT_STATUS_NO_SUCH_USER) && (user_exists != NULL))
       *user_exists = False;
@@ -1646,6 +1673,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
     if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
       DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+      release_server_mutex();
       return False;
     }
  
@@ -1653,6 +1681,7 @@ BOOL domain_client_validate( char *user, char *domain,
       if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
         DEBUG(0, ("domain_client_validate: Out of memory allocating group SIDS\n"));
         free(ptok);
+        release_server_mutex();
         return False;
       }
 
@@ -1666,6 +1695,7 @@ BOOL domain_client_validate( char *user, char *domain,
       if (!secrets_fetch_domain_sid(dos_domain, &domain_sid)) {
         DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
         delete_nt_token(&ptok);
+        release_server_mutex();
         return False;
       }
 
@@ -1688,6 +1718,7 @@ BOOL domain_client_validate( char *user, char *domain,
     cli_nt_session_close(&cli);
     cli_ulogoff(&cli);
     cli_shutdown(&cli);
+    release_server_mutex();
     return False;
   }
 #endif /* 0 */
@@ -1699,6 +1730,7 @@ BOOL domain_client_validate( char *user, char *domain,
   cli_nt_session_close(&cli);
   cli_ulogoff(&cli);
   cli_shutdown(&cli);
+  release_server_mutex();
   return True;
 }
 
