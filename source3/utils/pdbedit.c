@@ -46,7 +46,7 @@ extern int optind;
 static void usage(void)
 {
 	if (getuid() == 0) {
-		printf("tdbedit options\n");
+		printf("pdbedit options\n");
 	} else {
 		printf("You need to be root to use this tool!\n");
 	}
@@ -552,7 +552,7 @@ int main (int argc, char **argv)
 	char *profile_path = NULL;
 	char *smbpasswd = NULL;
 
-	setup_logging("tdbedit", True);
+	setup_logging("pdbedit", True);
 
 	if (argc < 2) {
 		usage();
