@@ -69,6 +69,24 @@ to not inflict pain on others. Do your learning on a test network.
 <title>Features and Benefits</title>
 
 <para>
+<emphasis>What is the key benefit of Microsoft Domain security?</emphasis>
+</para>
+
+<para>
+In a word, <emphasis>Single Sign On</emphasis>, or SSO for short. This to many is the holy
+grail of MS Windows NT and beyond networking. SSO allows users in a well designed network
+to log onto any workstation that is a member of the domain that their user account is in
+(or in a domain that has an appropriate trust relationship with the domain they are visiting)
+and they will be able to log onto the network and access resources (shares, files, and printers)
+as if they are sitting at their home (personal) workstation. This is a feature of the Domain
+security protocols.
+</para>
+
+<para>
+The benefits of Domain security are fully available to those sites that deploy a Samba PDC.
+</para>
+
+<para>
 The following functionalities are new to the Samba-3 release:
 </para>
 

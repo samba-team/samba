@@ -1123,4 +1123,55 @@ In which case, the local cache copy will be deleted on logout.
 </sect2>
 </sect1>
 
+<sect1>
+<title>Common Errors</title>
+
+<para>
+THe following are some typical errors/problems/questions that have been asked.
+</para>
+
+<sect2>
+<title>How does one set up roaming profiles for just one (or a few) user/s or group/s?</title>
+
+<para>
+With samba-2.2.x the choice you have is to enable or disable roaming
+profiles support. It is a global only setting. The default is to have
+roaming profiles and the default path will locate them in the user's home
+directory.
+</para>
+
+<para>
+If disabled globally then no-one will have roaming profile ability.
+If enabled and you want it to apply only to certain machines, then on
+those machines on which roaming profile support is NOT wanted it is then
+necessary to disable roaming profile handling in the registry of each such
+machine.
+</para>
+
+<para>
+With samba-3.0.0 (soon to be released) you can have a global profile
+setting in smb.conf _AND_ you can over-ride this by per-user settings
+using the Domain User Manager (as with MS Windows NT4/ Win 2Kx).
+</para>
+
+<para>
+In any case, you can configure only one profile per user. That profile can
+be either:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	A profile unique to that user
+	</para></listitem>
+	<listitem><para>
+	A mandatory profile (one the user can not change)
+	</para></listitem>
+	<listitem><para>
+	A group profile (really should be mandatory ie:unchangable)
+	</para></listitem>
+</itemizedlist>
+
+</sect2>
+</sect1>
+
 </chapter>
