@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -57,10 +57,11 @@ krb5_mk_rep(krb5_context context,
     body.cusec = auth_context->authenticator->cusec;
     body.subkey = NULL;
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-	krb5_generate_seq_number (context,
-				  auth_context->keyblock,
-				  &auth_context->local_seqnumber);
-	body.seq_number = malloc (sizeof(*body.seq_number));
+	if(auth_context->local_seqnumber == 0) 
+	    krb5_generate_seq_number (context,
+				      auth_context->keyblock,
+				      &auth_context->local_seqnumber);
+	ALLOC(body.seq_number, 1);
 	if (body.seq_number == NULL) {
 	    krb5_set_error_string (context, "malloc: out of memory");
 	    return ENOMEM;
