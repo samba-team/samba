@@ -40,7 +40,8 @@ static BOOL allocate_id(int *id, BOOL isgroup)
 
     /* Get current high water mark */
 
-    if ((hwm = tdb_get_int(idmap_tdb, isgroup ? HWM_GROUP : HWM_USER)) == -1) {
+    if ((hwm = tdb_fetch_int(idmap_tdb, 
+                             isgroup ? HWM_GROUP : HWM_USER)) == -1) {
         return False;
     }
 
@@ -217,14 +218,14 @@ BOOL winbindd_idmap_init(void)
 
      /* Create high water marks for group and user id */
 
-    if (tdb_get_int(idmap_tdb, HWM_USER) == -1) {
+    if (tdb_fetch_int(idmap_tdb, HWM_USER) == -1) {
         if (tdb_store_int(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
             DEBUG(0, ("Unable to initialise user hwm in idmap database\n"));
             return False;
         }
     }
 
-    if (tdb_get_int(idmap_tdb, HWM_GROUP) == -1) {
+    if (tdb_fetch_int(idmap_tdb, HWM_GROUP) == -1) {
         if (tdb_store_int(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
             DEBUG(0, ("Unable to initialise group hwm in idmap database\n"));
             return False;

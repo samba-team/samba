@@ -26,7 +26,7 @@
 
 
 /* fetch a value by a arbitrary blob key, return -1 if not found */
-int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
+int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 {
 	TDB_DATA key, data;
 	int ret;
@@ -42,9 +42,9 @@ int tdb_get_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
 }
 
 /* fetch a value by string key, return -1 if not found */
-int tdb_get_int(TDB_CONTEXT *tdb, char *keystr)
+int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
 {
-	return tdb_get_int_byblob(tdb, keystr, strlen(keystr));
+	return tdb_fetch_int_byblob(tdb, keystr, strlen(keystr) + 1);
 }
 
 /* store a value by an arbitary blob key, return 0 on success, -1 on failure */
@@ -63,7 +63,7 @@ int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
 /* store a value by string key, return 0 on success, -1 on failure */
 int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
 {
-	return tdb_store_int_byblob(tdb, keystr, strlen(keystr), v);
+	return tdb_store_int_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
 /* Store a buffer by a null terminated string key.  Return 0 on success, -1
