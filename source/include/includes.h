@@ -319,14 +319,7 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_GETCWD
 #define USE_SETSID
 #define USE_SYSV_IPC
-
-union semun {
-	int val;
-	struct semid_ds *buf;
-	ushort *array;
-};
-
-
+#define NO_SEMUN
 #ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
@@ -469,6 +462,7 @@ char *mktemp(char *); /* No standard include */
 #define NEED_AUTH_PARAMETERS
 #endif  /* OSF1_ENH_SEC */
 #define USE_SYSV_IPC
+#define NO_SEMUN
 #endif
 
 
@@ -1084,6 +1078,13 @@ struct spwd { /* fake shadow password structure */
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/shm.h>
+#ifdef NO_SEMUN
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short *array;
+};
+#endif
 #endif
 
 #ifdef AFS_AUTH
