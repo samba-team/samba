@@ -237,8 +237,12 @@ api_lsa_open_policy
 static void api_lsa_open_policy( char *param, char *data,
                              char **rdata, int *rdata_len )
 {
-	/* we might actually want to decode the query, but it's not necessary */
-	/* lsa_io_q_open_policy(...); */
+	LSA_Q_OPEN_POL q_o;
+
+	/* grab the server, object attributes and desired access flag...*/
+	lsa_io_q_open_pol(True, &q_o, data + 0x18, data, 4, 0);
+
+	/* lkclXXXX having decoded it, ignore all fields in the open policy! */
 
 	/* return a 20 byte policy handle */
 	*rdata_len = lsa_reply_open_policy(*rdata + 0x18, *rdata);

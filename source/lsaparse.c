@@ -77,6 +77,20 @@ char* lsa_io_r_open_pol(BOOL io, LSA_R_OPEN_POL *r_p, char *q, char *base, int a
 }
 
 /*******************************************************************
+makes an LSA_Q_QUERY_INFO structure.
+********************************************************************/
+void make_q_query(LSA_Q_QUERY_INFO *q_q, LSA_POL_HND *hnd, uint16 info_class)
+{
+	if (q_q == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_q_query\n"));
+
+	memcpy(&(q_q->pol), hnd, sizeof(q_q->pol));
+
+	q_q->info_class = info_class;
+}
+
+/*******************************************************************
 reads or writes an LSA_Q_QUERY_INFO structure.
 ********************************************************************/
 char* lsa_io_q_query(BOOL io, LSA_Q_QUERY_INFO *q_q, char *q, char *base, int align, int depth)
