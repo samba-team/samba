@@ -2250,7 +2250,7 @@ int reply_write_and_X(connection_struct *conn, char *inbuf,char *outbuf,int leng
 
   data = smb_base(inbuf) + smb_doff;
 
-#ifdef LLARGE_SMB_OFF_T
+#ifdef LARGE_SMB_OFF_T
   if(CVAL(inbuf,smb_wct) == 14) {
     /*
      * This is a large offset (64 bit) write.
