@@ -66,6 +66,10 @@
 #define MAP_FILE 0
 #endif
 
+#ifndef MAP_FAILED
+#define MAP_FAILED ((void *)-1)
+#endif
+
 #define BUCKET(hash) ((hash) % tdb->header.hash_size)
 TDB_DATA tdb_null;
 
@@ -89,10 +93,10 @@ static void tdb_mmap(TDB_CONTEXT *tdb)
 				    MAP_SHARED|MAP_FILE, tdb->fd, 0);
 
 		/*
-		 * NB. When mmap fails it returns -1 *NOT* NULL !!!!
+		 * NB. When mmap fails it returns MAP_FAILED *NOT* NULL !!!!
 		 */
 
-		if (tdb->map_ptr == (void *)-1) {
+		if (tdb->map_ptr == MAP_FAILED) {
 			tdb->map_ptr = NULL;
 			TDB_LOG((tdb, 2, "tdb_mmap failed for size %d (%s)\n", 
 				 tdb->map_size, strerror(errno)));
