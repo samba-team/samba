@@ -543,6 +543,88 @@ uint32 _lsa_close(POLICY_HND *hnd)
 }
 
 /***************************************************************************
+ _lsa_set_secret
+ ***************************************************************************/
+uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
+				const STRING2 *val,
+				uint32 unknown)
+{
+	TDB_CONTEXT *tdb = NULL;
+	UNISTR2 secret_name;
+	LSA_SECRET *sec = NULL;
+	uchar user_sess_key[16];
+	NTTIME ntt;
+
+	if (!pol_get_usr_sesskey(get_global_hnd_cache(), hnd_secret,
+	                         user_sess_key))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
+	dump_data_pw("sess_key:", user_sess_key, 16);
+
+	ZERO_STRUCT(sec);
+	ZERO_STRUCT(secret_name);
+
+	if (!get_tdbsecname(get_global_hnd_cache(), hnd_secret, &tdb,
+	                    &secret_name))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (tdb_writelock(tdb) != 0)
+	{
+		DEBUG(10,("_lsa_set_secret: write lock denied\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	
+	if (!tdb_lookup_secret(tdb, &secret_name, &sec))
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	if (sec == NULL)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+		
+	/* store old info */
+	memcpy(&sec->oldinfo, &sec->curinfo, sizeof(sec->oldinfo));
+
+	/* decode and store new value, update time */
+	if (!nt_decrypt_string2(&sec->curinfo.value.enc_secret, val,
+	                        user_sess_key))
+	{
+		safe_free(sec);
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	else
+	{
+		sec->curinfo.ptr_value = 1;
+		make_strhdr2(&sec->curinfo.value.hdr_secret,
+		              sec->curinfo.value.enc_secret.str_max_len,
+		              sec->curinfo.value.enc_secret.str_str_len, 1);
+		sec->curinfo.value.ptr_secret = 1;
+	}
+
+	unix_to_nt_time(&ntt, time(NULL));
+	sec->curinfo.ptr_update = 1;
+	sec->curinfo.last_update = ntt;
+
+	/* store new secret */
+	if (!tdb_store_secret(tdb, &secret_name, sec))
+	{
+		safe_free(sec);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	tdb_writeunlock(tdb);
+	
+	safe_free(sec);
+	return NT_STATUS_NOPROBLEMO;
+}
+
+/***************************************************************************
  _lsa_query_secret
  ***************************************************************************/
 uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,

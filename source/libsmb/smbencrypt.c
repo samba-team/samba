@@ -491,8 +491,7 @@ BOOL nt_encrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 
 BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 {
-	uchar bufhdr[8];
-	int datalen;
+	int datalen = in->str_str_len;
 
 	const uchar *keyptr = key;
 	const uchar *keyend = key + 16;
@@ -501,36 +500,40 @@ BOOL nt_decrypt_string2(STRING2 *out, const STRING2 *in, const uchar *key)
 	const uchar *inbuf = (const uchar *)in->buffer;
 	const uchar *inbufend;
 
-	smbhash(bufhdr, inbuf, keyptr, 0);
-	datalen = IVAL(bufhdr, 0);
-
-	if ((datalen > in->str_str_len) || (datalen > MAX_STRINGLEN))
+	if (in->str_str_len > MAX_STRINGLEN)
 	{
 		DEBUG(0, ("nt_decrypt_string2: failed\n"));
 		return False;
 	}
 
-	out->str_max_len = out->str_str_len = datalen;
-	inbuf += 8;
+	out->str_max_len = in->str_max_len;
+	out->str_str_len = in->str_str_len;
+	out->undoc = in->undoc;
+
 	inbufend = inbuf + datalen;
 
 	while (inbuf < inbufend)
 	{
+		smbhash(outbuf, inbuf, keyptr, 0);
 		keyptr += 7;
 		if (keyptr + 7 > keyend)
 		{
 			keyptr = (keyend - keyptr) + key;
 		}
 
-		smbhash(outbuf, inbuf, keyptr, 0);
-
 		inbuf += 8;
 		outbuf += 8;
 	}
 
-	dump_data_pw("nt_decrypt_string2\n", bufhdr, 8);
+	datalen = IVAL(out->buffer, 0);
+
 	dump_data_pw("nt_decrypt_string2\n", out->buffer, datalen);
 
+	if (datalen != in->str_str_len - 8)
+	{
+		DEBUG(2,("nt_decrypt_string2: length-match failed\n"));
+		return False;
+	}
 	return True;
 }
 

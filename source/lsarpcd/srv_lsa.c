@@ -472,6 +472,27 @@ static void api_lsa_create_secret( rpcsrv_struct *p, prs_struct *data,
 }
 
 /***************************************************************************
+ api_lsa_set_secret.  AGH!  HACK! :)
+ ***************************************************************************/
+static void api_lsa_set_secret( rpcsrv_struct *p, prs_struct *data,
+                                  prs_struct *rdata)
+{
+	LSA_Q_SET_SECRET q_o;
+	LSA_R_SET_SECRET r_o;
+	STRING2 *val = NULL;
+
+	ZERO_STRUCT(r_o);
+	ZERO_STRUCT(q_o);
+
+	lsa_io_q_set_secret("", &q_o, data, 0);
+	if (q_o.value.ptr_secret) val = &q_o.value.enc_secret;
+
+	r_o.status = _lsa_set_secret(&q_o.pol, val, q_o.unknown);
+
+	lsa_io_r_set_secret("", &r_o, rdata, 0);
+}
+
+/***************************************************************************
  api_lsa_query_secret.  AGH!  HACK! :)
  ***************************************************************************/
 static void api_lsa_query_secret( rpcsrv_struct *p, prs_struct *data,
@@ -550,6 +571,7 @@ static const struct api_struct api_lsa_cmds[] =
 	{ "LSA_OPENSECRET"     , LSA_OPENSECRET     , api_lsa_open_secret    },
 	{ "LSA_CREATESECRET"   , LSA_CREATESECRET   , api_lsa_create_secret  },
 	{ "LSA_QUERYSECRET"    , LSA_QUERYSECRET    , api_lsa_query_secret   },
+	{ "LSA_SETSECRET"      , LSA_SETSECRET      , api_lsa_set_secret     },
 	{ "LSA_LOOKUPSIDS"     , LSA_LOOKUPSIDS     , api_lsa_lookup_sids    },
 	{ "LSA_LOOKUPNAMES"    , LSA_LOOKUPNAMES    , api_lsa_lookup_names   },
 	{ NULL                 , 0                  , NULL                   }

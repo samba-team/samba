@@ -1154,9 +1154,9 @@ uint32 _lsa_lookup_sids(const POLICY_HND *hnd,
 uint32 _lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 			   fstring domain_name, DOM_SID *domain_sid);
 uint32 _lsa_close(POLICY_HND *hnd);
-uint32 _lsa_create_secret(const POLICY_HND *hnd,
-			const UNISTR2 *secret_name, uint32 des_access,
-			POLICY_HND *hnd_secret);
+uint32 _lsa_set_secret(const POLICY_HND *hnd_secret,
+				const STRING2 *val,
+				uint32 unknown);
 uint32 _lsa_query_secret(const POLICY_HND *hnd_secret,
 				STRING2 *curval, NTTIME *curtime,
 				STRING2 *oldval, NTTIME *oldtime);
