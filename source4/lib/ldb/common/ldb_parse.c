@@ -138,7 +138,7 @@ static struct ldb_parse_tree *ldb_parse_simple(TALLOC_CTX *ctx, const char *s)
 	char *eq, *val, *l;
 	struct ldb_parse_tree *ret;
 
-	ret = talloc_p(ctx, struct ldb_parse_tree);
+	ret = talloc(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -188,7 +188,7 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *ctx,
 {
 	struct ldb_parse_tree *ret, *next;
 
-	ret = talloc_p(ctx, struct ldb_parse_tree);
+	ret = talloc(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -196,7 +196,7 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *ctx,
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = talloc_p(ret, struct ldb_parse_tree *);
+	ret->u.list.elements = talloc(ret, struct ldb_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
 		talloc_free(ret);
@@ -213,7 +213,7 @@ static struct ldb_parse_tree *ldb_parse_filterlist(TALLOC_CTX *ctx,
 
 	while (*s && (next = ldb_parse_filter(ret->u.list.elements, &s))) {
 		struct ldb_parse_tree **e;
-		e = talloc_realloc_p(ret, ret->u.list.elements, 
+		e = talloc_realloc(ret, ret->u.list.elements, 
 				     struct ldb_parse_tree *, 
 				     ret->u.list.num_elements+1);
 		if (!e) {
@@ -238,7 +238,7 @@ static struct ldb_parse_tree *ldb_parse_not(TALLOC_CTX *ctx, const char *s)
 {
 	struct ldb_parse_tree *ret;
 
-	ret = talloc_p(ctx, struct ldb_parse_tree);
+	ret = talloc(ctx, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;

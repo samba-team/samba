@@ -74,11 +74,11 @@ static int add_time_element(struct ldb_module *module, struct ldb_message *msg,
 		}
 	}
 
-	msg->elements = talloc_realloc_p(msg, msg->elements, 
+	msg->elements = talloc_realloc(msg, msg->elements, 
 					 struct ldb_message_element, msg->num_elements + 1);
 	name = talloc_strdup(msg->elements, attr_name);
 	timestr = talloc_strdup(msg->elements, time_string);
-	values = talloc_p(msg->elements, struct ldb_val);
+	values = talloc(msg->elements, struct ldb_val);
 	if (!msg->elements || !name || !timestr || !values) {
 		return -1;
 	}
@@ -113,7 +113,7 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 			return -1;
 		}
 
-		msg2 = talloc_p(module, struct ldb_message);
+		msg2 = talloc(module, struct ldb_message);
 		if (!msg2) {
 			return -1;
 		}
@@ -130,7 +130,7 @@ static int timestamps_add_record(struct ldb_module *module, const struct ldb_mes
 		msg2->dn = msg->dn;
 		msg2->num_elements = msg->num_elements;
 		msg2->private_data = msg->private_data;
-		msg2->elements = talloc_array_p(msg2, struct ldb_message_element, msg2->num_elements);
+		msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
 		for (i = 0; i < msg2->num_elements; i++) {
 			msg2->elements[i] = msg->elements[i];
 		}
@@ -169,7 +169,7 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 			return -1;
 		}
 
-		msg2 = talloc_p(module, struct ldb_message);
+		msg2 = talloc(module, struct ldb_message);
 		if (!msg2) {
 			return -1;
 		}
@@ -187,7 +187,7 @@ static int timestamps_modify_record(struct ldb_module *module, const struct ldb_
 		msg2->dn = msg->dn;
 		msg2->num_elements = msg->num_elements;
 		msg2->private_data = msg->private_data;
-		msg2->elements = talloc_array_p(msg2, struct ldb_message_element, msg2->num_elements);
+		msg2->elements = talloc_array(msg2, struct ldb_message_element, msg2->num_elements);
 		for (i = 0; i < msg2->num_elements; i++) {
 			msg2->elements[i] = msg->elements[i];
 		}
@@ -272,11 +272,11 @@ struct ldb_module *timestamps_module_init(struct ldb_context *ldb, const char *o
 	struct ldb_module *ctx;
 	struct private_data *data;
 
-	ctx = talloc_p(ldb, struct ldb_module);
+	ctx = talloc(ldb, struct ldb_module);
 	if (!ctx)
 		return NULL;
 
-	data = talloc_p(ctx, struct private_data);
+	data = talloc(ctx, struct private_data);
 	if (!data) {
 		talloc_free(ctx);
 		return NULL;
