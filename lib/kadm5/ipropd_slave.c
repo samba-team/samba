@@ -69,7 +69,9 @@ get_creds(krb5_context context, krb5_ccache *cache, const char *host)
     krb5_principal client;
     krb5_error_code ret;
     krb5_get_init_creds_opt init_opts;
+#if 0
     krb5_preauthtype preauth = KRB5_PADATA_ENC_TIMESTAMP;
+#endif
     krb5_creds creds;
     char my_hostname[128];
     char *server;
