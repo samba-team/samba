@@ -4340,13 +4340,15 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 
 	if(!prs_uint32("version", ps, depth, &il->version))
 		return False;
-#if 0
-	/*
-	 * Older build versions of W2K seem to need this. JRA.
-	 */
-	if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
-		return False;
-#endif
+	if (il->version != 0) {
+		/*
+		 * If version != 0 then there are an extra 4 bytes.
+		 * JohnR and I have verified this at Roseville... JRA.
+		 */
+		if(!prs_uint32("dummy4", ps, depth, &il->dummy4))
+			return False;
+	}
+
 	if(!prs_uint32("name_ptr", ps, depth, &il->name_ptr))
 		return False;
 	if(!prs_uint32("environment_ptr", ps, depth, &il->environment_ptr))
