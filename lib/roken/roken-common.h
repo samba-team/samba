@@ -264,6 +264,9 @@ int ROKEN_LIB_FUNCTION simple_execlp(const char*, ...);
 int ROKEN_LIB_FUNCTION simple_execle(const char*, ...);
 int ROKEN_LIB_FUNCTION simple_execl(const char *file, ...);
 
+int ROKEN_LIB_FUNCTION wait_for_process(pid_t);
+int ROKEN_LIB_FUNCTION pipe_execv(FILE**, FILE**, FILE**, const char*, ...);
+
 void ROKEN_LIB_FUNCTION print_version(const char *);
 
 ssize_t ROKEN_LIB_FUNCTION eread (int fd, void *buf, size_t nbytes);
