@@ -165,7 +165,7 @@ static krb5_error_code rrc_rotate(void *data,
 	tmp = buf;
     } else {
 	tmp = malloc(rrc);
-	if (tmp == NULL) {
+	if (tmp == NULL) 
 	    return ENOMEM;
     }
  
@@ -181,7 +181,6 @@ static krb5_error_code rrc_rotate(void *data,
 
     if (rrc > sizeof(buf)) 
 	free(tmp);
-    }
 
     return 0;
 }
