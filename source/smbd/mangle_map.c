@@ -127,8 +127,8 @@ static char *map_filename( char *s,         /* This is null terminated */
  */
 static void mangled_map(char *s, const char *MangledMap)
 {
-	char *start=(char*)MangledMap; /* Use this to search for mappings. */
-	char *end;                    /* Used to find the end of strings. */
+	const char *start=MangledMap; /* Use this to search for mappings. */
+	const char *end;                    /* Used to find the end of strings. */
 	char *match_string;
 	pstring new_string;           /* Make up the result here. */
 	char *np;                     /* Points into new_string. */
