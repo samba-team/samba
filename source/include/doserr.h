@@ -1,5 +1,6 @@
 /* 
-   Unix SMB/CIFS implementation.
+   Unix SMB/Netbios implementation.
+   Version 1.9.
    DOS error code constants
    Copyright (C) Andrew Tridgell              1992-2000
    Copyright (C) John H Terpstra              1996-2000
@@ -154,10 +155,10 @@
 #define WERR_BADFUNC W_ERROR(1)
 #define WERR_INSUFFICIENT_BUFFER W_ERROR(122)
 #define WERR_NO_SUCH_SHARE W_ERROR(67)
+#define WERR_ALREADY_EXISTS W_ERROR(80)
 #define WERR_INVALID_PARAM W_ERROR(87)
 #define WERR_NOT_SUPPORTED W_ERROR(50)
 #define WERR_BAD_PASSWORD W_ERROR(86)
-#define WERR_FILE_EXISTS W_ERROR(80)
 #define WERR_NOMEM W_ERROR(8)
 #define WERR_INVALID_NAME W_ERROR(123)
 #define WERR_UNKNOWN_LEVEL W_ERROR(124)
