@@ -116,11 +116,18 @@ static struct grent_mem_list *sort_groupmem_list(struct grent_mem_list *list,
 static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                                     uint32 group_rid, 
                                     enum SID_NAME_USE group_name_type, 
-                                    struct winbindd_gr *gr)
+                                    struct winbindd_response *response)
 {
     struct grent_mem_group *done_groups = NULL, *todo_groups = NULL;
     struct grent_mem_group *temp_group;
     struct grent_mem_list *groupmem_list = NULL;
+    struct winbindd_gr *gr;
+
+    if (response) {
+        gr = &response->data.gr;
+    } else {
+        return False;
+    }
     
     /* Initialise group membership information */
 
@@ -273,7 +280,6 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
                         DLIST_ADD(groupmem_list, entry);
                         gr->num_gr_mem++;
-
                     }
 
                 } else {
@@ -343,36 +349,68 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
     /* Remove duplicates from group member list. */
 
-    fstrcpy(gr->gr_mem, "");
-
     if (gr->num_gr_mem > 0) {
         struct grent_mem_list *sorted_groupmem_list, *temp;
+        int extra_data_len = 0;
         fstring prev_name;
-        int num_uniq_gr_mem;
+        char *head;
 
         /* Sort list */
 
         sorted_groupmem_list = sort_groupmem_list(groupmem_list, 
                                                   gr->num_gr_mem);
-        
         /* Remove duplicates by iteration */
 
-        num_uniq_gr_mem = 0;
         fstrcpy(prev_name, "");
 
         for(temp = sorted_groupmem_list; temp; temp = temp->next) {
-            if (!strequal(temp->name, prev_name)) {
+            if (strequal(temp->name, prev_name)) {
 
-                /* Got a unique name - add to list */
+                /* Got a duplicate name - delete it.  Don't panic as we're
+                   only adjusting the prev and next pointers so memory
+                   allocation is not messed up. */
 
-                pstrcat(gr->gr_mem, temp->name);
-                pstrcat(gr->gr_mem, ",");
-                fstrcpy(prev_name, temp->name);
-                num_uniq_gr_mem++;
+                DLIST_REMOVE(sorted_groupmem_list, temp);
+                gr->num_gr_mem--;
+
+            } else {
+
+                /* Got a unique name - count how long it is */
+
+                extra_data_len += strlen(temp->name) + 1;
             }
         }
 
-        gr->num_gr_mem = num_uniq_gr_mem;
+        extra_data_len++;       /* Don't forget null a terminator */
+
+        /* Convert sorted list into extra data field to send back to ntdom
+           client.  Add one to extra_data_len for null termination */
+
+        if ((response->extra_data = malloc(extra_data_len))) {
+
+            /* Initialise extra data */
+
+            memset(response->extra_data, 0, extra_data_len);
+
+            head = response->extra_data;
+
+            /* Fill in extra data */
+
+            for(temp = sorted_groupmem_list; temp; temp = temp->next) {
+                int len = strlen(temp->name) + 1;
+                
+                strncpy(head, temp->name, len);
+                head[len - 1] = ',';
+                head += len;
+            }
+            
+            *head = '\0';
+
+            /* Update response length */
+
+            response->length = sizeof(struct winbindd_response) +
+                extra_data_len;
+        }
 
         /* Free memory for sorted_groupmem_list.  It was allocated as an
            array in sort_groupmem_list() so can be freed in one go. */
@@ -458,7 +496,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
     sid_split_rid(&domain_group_sid, &group_rid);
         
     if (!winbindd_fill_grent_mem(domain, group_rid, name_type,
-                                 &state->response.data.gr)) {
+                                 &state->response)) {
         return WINBINDD_ERROR;
     }
 
@@ -524,7 +562,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
     sid_split_rid(&domain_group_sid, &group_rid);
         
     if (!winbindd_fill_grent_mem(domain, group_rid, name_type,
-                                 &state->response.data.gr)) {
+                                 &state->response)) {
         return WINBINDD_ERROR;
     }
 
