@@ -226,25 +226,14 @@ static NTSTATUS dcerpc_schannel_update(struct gensec_security *gensec_security, 
 
 NTSTATUS dcerpc_schannel_session_info(struct gensec_security *gensec_security,
 				      struct auth_session_info **session_info)
-{ 
-	struct dcerpc_schannel_state *dce_schan_state = gensec_security->private_data;
-
+{
 	(*session_info) = talloc_p(gensec_security, struct auth_session_info);
-	if (*session_info == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(*session_info);
 
 	ZERO_STRUCTP(*session_info);
-	(*session_info)->refcount = 1;
-	
-	(*session_info)->workstation = talloc_strdup(*session_info, dce_schan_state->account_name);
-	if ((*session_info)->workstation == NULL) {
-		talloc_free(*session_info);
-		return NT_STATUS_NO_MEMORY;
-	}
+
 	return NT_STATUS_OK;
 }
-		
 
 /**
  * Return the struct creds_CredentialState.

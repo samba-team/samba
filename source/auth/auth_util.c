@@ -5,6 +5,7 @@
    Copyright (C) Andrew Bartlett 2001
    Copyright (C) Jeremy Allison 2000-2001
    Copyright (C) Rafal Szczesniak 2002
+   Copyright (C) Stefan Metzmacher 2005
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -27,106 +28,101 @@
 #include "libcli/security/security.h"
 #include "auth/auth.h"
 
-#undef DBGC_CLASS
-#define DBGC_CLASS DBGC_AUTH
+/* this default function can be used by mostly all backends
+ * which don't want to set a challlenge
+ */
+NTSTATUS auth_get_challenge_not_implemented(struct auth_method_context *ctx, TALLOC_CTX *mem_ctx, DATA_BLOB *challenge)
+{
+	/* we don't want to set a challenge */
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
 
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 static NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
-			       struct auth_usersupplied_info **user_info, 
-                               const char *smb_name, 
-                               const char *internal_username,
-                               const char *client_domain, 
-                               const char *domain,
-                               const char *wksta_name, 
+                               const char *c_account_name,
+                               const char *account_name,
+                               const char *c_domain_name, 
+                               const char *domain_name,
+                               const char *workstation_name, 
                                DATA_BLOB *lm_password, DATA_BLOB *nt_password,
                                DATA_BLOB *lm_interactive_password, DATA_BLOB *nt_interactive_password,
-                               DATA_BLOB *plaintext, 
-                               BOOL encrypted)
+                               DATA_BLOB *plaintext_password, BOOL encrypted,
+			       struct auth_usersupplied_info **_user_info)
 {
+	struct auth_usersupplied_info *user_info;
+	DATA_BLOB blob;
 
-	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
+	DEBUG(5,("attempting to make a user_info for %s (%s)\n", account_name, c_account_name));
 
-	*user_info = talloc_p(mem_ctx, struct auth_usersupplied_info);
-	if (!user_info) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	user_info = talloc(mem_ctx, struct auth_usersupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(user_info);
 
-	ZERO_STRUCTP(*user_info);
+	DEBUG(5,("making strings for %s's user_info struct\n", account_name));
 
-	DEBUG(5,("making strings for %s's user_info struct\n", internal_username));
+	user_info->client.account_name = talloc_strdup(user_info, c_account_name);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->client.account_name);
 
-	(*user_info)->smb_name.str = talloc_strdup(*user_info, smb_name);
-	if ((*user_info)->smb_name.str) { 
-		(*user_info)->smb_name.len = strlen(smb_name);
+	user_info->account_name = talloc_strdup(user_info, account_name);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->account_name);
+
+	user_info->client.domain_name = talloc_strdup(user_info, c_domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->client.domain_name);
+
+	user_info->domain_name = talloc_strdup(user_info, domain_name);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->domain_name);
+
+	user_info->workstation_name = talloc_strdup(user_info, workstation_name);
+	NT_STATUS_HAVE_NO_MEMORY(user_info->workstation_name);
+
+	DEBUG(5,("making blobs for %s's user_info struct\n", account_name));
+
+	if (lm_password) {
+		blob = data_blob_dup_talloc(user_info, lm_password);
+		NT_STATUS_HAVE_NO_MEMORY(blob.data);
 	} else {
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
+		blob = data_blob(NULL, 0);
 	}
-	
-	(*user_info)->internal_username.str = talloc_strdup(*user_info, internal_username);
-	if ((*user_info)->internal_username.str) { 
-		(*user_info)->internal_username.len = strlen(internal_username);
+	user_info->lm_resp = blob;
+
+	if (nt_password) {
+		blob = data_blob_dup_talloc(user_info, nt_password);
+		NT_STATUS_HAVE_NO_MEMORY(blob.data);
 	} else {
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
+		blob = data_blob(NULL, 0);
 	}
+	user_info->nt_resp = blob;
 
-	(*user_info)->domain.str = talloc_strdup(*user_info, domain);
-	if ((*user_info)->domain.str) { 
-		(*user_info)->domain.len = strlen(domain);
+	if (lm_interactive_password) {
+		blob = data_blob_dup_talloc(user_info, lm_interactive_password);
+		NT_STATUS_HAVE_NO_MEMORY(blob.data);
 	} else {
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
+		blob = data_blob(NULL, 0);
 	}
+	user_info->lm_interactive_password = blob;
 
-	(*user_info)->client_domain.str = talloc_strdup(*user_info, client_domain);
-	if ((*user_info)->client_domain.str) { 
-		(*user_info)->client_domain.len = strlen(client_domain);
+	if (nt_interactive_password) {
+		blob = data_blob_dup_talloc(user_info, nt_interactive_password);
+		NT_STATUS_HAVE_NO_MEMORY(blob.data);
 	} else {
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
+		blob = data_blob(NULL, 0);
 	}
+	user_info->nt_interactive_password = blob;
 
-	(*user_info)->wksta_name.str = talloc_strdup(*user_info, wksta_name);
-	if ((*user_info)->wksta_name.str) { 
-		(*user_info)->wksta_name.len = strlen(wksta_name);
+	if (plaintext_password) {
+		blob = data_blob_dup_talloc(user_info, plaintext_password);
+		NT_STATUS_HAVE_NO_MEMORY(blob.data);
 	} else {
-		free_user_info(user_info);
-		return NT_STATUS_NO_MEMORY;
+		blob = data_blob(NULL, 0);
 	}
+	user_info->plaintext_password = blob;
 
-	DEBUG(5,("making blobs for %s's user_info struct\n", internal_username));
+	user_info->encrypted = encrypted;
 
-	if (lm_password)
-		(*user_info)->lm_resp = data_blob_talloc(*user_info, 
-							 lm_password->data, 
-							 lm_password->length);
-	if (nt_password)
-		(*user_info)->nt_resp = data_blob_talloc(*user_info,
-							 nt_password->data, 
-							 nt_password->length);
-	if (lm_interactive_password)
-		(*user_info)->lm_interactive_password = 
-			data_blob_talloc(*user_info,
-					 lm_interactive_password->data, 
-					 lm_interactive_password->length);
-	if (nt_interactive_password)
-		(*user_info)->nt_interactive_password = 
-			data_blob_talloc(*user_info, 
-					 nt_interactive_password->data, 
-					 nt_interactive_password->length);
+	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , account_name, c_account_name));
 
-	if (plaintext)
-		(*user_info)->plaintext_password = 
-			data_blob_talloc(*user_info, 
-					 plaintext->data, 
-					 plaintext->length);
-
-	(*user_info)->encrypted = encrypted;
-
-	DEBUG(10,("made an %sencrypted user_info for %s (%s)\n", encrypted ? "":"un" , internal_username, smb_name));
+	*_user_info = user_info;
 
 	return NT_STATUS_OK;
 }
@@ -136,84 +132,75 @@ static NTSTATUS make_user_info(TALLOC_CTX *mem_ctx,
 ****************************************************************************/
 
 NTSTATUS make_user_info_map(TALLOC_CTX *mem_ctx,
-			    struct auth_usersupplied_info **user_info, 
-			    const char *smb_name, 
-			    const char *client_domain, 
-			    const char *wksta_name, 
+			    const char *c_account_name,
+			    const char *c_domain_name,
+			    const char *workstation_name,
  			    DATA_BLOB *lm_password, DATA_BLOB *nt_password,
  			    DATA_BLOB *lm_interactive_password, DATA_BLOB *nt_interactive_password,
-			    DATA_BLOB *plaintext, 
-			    BOOL encrypted)
+			    DATA_BLOB *plaintext, BOOL encrypted,
+			    struct auth_usersupplied_info **user_info)
 {
 	const char *domain;
-	
-	DEBUG(5, ("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
-	      client_domain, smb_name, wksta_name));
-	
+
+	DEBUG(5,("make_user_info_map: Mapping user [%s]\\[%s] from workstation [%s]\n",
+		c_domain_name, c_account_name, workstation_name));
+
 	/* don't allow "" as a domain, fixes a Win9X bug 
 	   where it doens't supply a domain for logon script
 	   'net use' commands.                                 */
-
-	if ( *client_domain )
-		domain = client_domain;
-	else
+	if (*c_domain_name) {
+		domain = c_domain_name;
+	} else {
 		domain = lp_workgroup();
+	}
 
-	/* we know that it is a trusted domain (and we are allowing
-	   them) or it is our domain */
-	
-	return make_user_info(mem_ctx, 
-			      user_info, smb_name, smb_name, 
-			      client_domain, domain, wksta_name, 
+	return make_user_info(mem_ctx,
+			      c_account_name, c_account_name, 
+			      c_domain_name, domain,
+			      workstation_name,
 			      lm_password, nt_password,
 			      lm_interactive_password, nt_interactive_password,
-			      plaintext, encrypted);
+			      plaintext, encrypted,
+			      user_info);
 }
 
 /****************************************************************************
  Create an auth_usersupplied_data, making the DATA_BLOBs here. 
  Decrypt and encrypt the passwords.
 ****************************************************************************/
-
 NTSTATUS make_user_info_netlogon_network(TALLOC_CTX *mem_ctx,
-					 struct auth_usersupplied_info **user_info, 
-					 const char *smb_name, 
-					 const char *client_domain, 
-					 const char *wksta_name, 
+					 const char *c_account_name,
+					 const char *c_domain_name,
+					 const char *workstation_name,
 					 const uint8_t *lm_network_password, int lm_password_len,
-					 const uint8_t *nt_network_password, int nt_password_len)
+					 const uint8_t *nt_network_password, int nt_password_len,
+					 struct auth_usersupplied_info **user_info)
 {
-	NTSTATUS nt_status;
-	DATA_BLOB lm_blob = data_blob(lm_network_password, lm_password_len);
-	DATA_BLOB nt_blob = data_blob(nt_network_password, nt_password_len);
+	DATA_BLOB lm_blob = data_blob_const(lm_network_password, lm_password_len);
+	DATA_BLOB nt_blob = data_blob_const(nt_network_password, nt_password_len);
 
-	nt_status = make_user_info_map(mem_ctx,
-				       user_info,
-				       smb_name, client_domain, 
-				       wksta_name, 
-				       lm_password_len ? &lm_blob : NULL, 
-				       nt_password_len ? &nt_blob : NULL,
-				       NULL, NULL, NULL,
-				       True);
-	
-	data_blob_free(&lm_blob);
-	data_blob_free(&nt_blob);
-	return nt_status;
+	return make_user_info_map(mem_ctx,
+				  c_account_name,
+				  c_domain_name, 
+				  workstation_name, 
+				  lm_password_len ? &lm_blob : NULL, 
+				  nt_password_len ? &nt_blob : NULL,
+				  NULL, NULL, NULL, True,
+				  user_info);
 }
 
 /****************************************************************************
  Create an auth_usersupplied_data, making the DATA_BLOBs here. 
  Decrypt and encrypt the passwords.
 ****************************************************************************/
-
 NTSTATUS make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
-					     struct auth_usersupplied_info **user_info, 
-					     const char *smb_name, 
-					     const char *client_domain, 
-					     const char *wksta_name, 
-					     const uint8_t chal[8], 
-					     const struct samr_Password *lm_interactive_password, 
-					     const struct samr_Password *nt_interactive_password)
+					     const char *c_account_name,
+					     const char *c_domain_name,
+					     const char *workstation_name,
+					     const uint8_t chal[8],
+					     const struct samr_Password *lm_interactive_password,
+					     const struct samr_Password *nt_interactive_password,
+					     struct auth_usersupplied_info **user_info)
 {
 	NTSTATUS nt_status;
 	DATA_BLOB local_lm_blob;
@@ -223,111 +210,77 @@ NTSTATUS make_user_info_netlogon_interactive(TALLOC_CTX *mem_ctx,
 	DATA_BLOB nt_interactive_blob;
 	uint8_t local_lm_response[24];
 	uint8_t local_nt_response[24];
-	
+
 	SMBOWFencrypt(lm_interactive_password->hash, chal, local_lm_response);
 	SMBOWFencrypt(nt_interactive_password->hash, chal, local_nt_response);
-	
-	local_lm_blob = data_blob(local_lm_response, 
-				  sizeof(local_lm_response));
-	lm_interactive_blob = data_blob(lm_interactive_password->hash, 
-					sizeof(lm_interactive_password->hash));
-	
-	local_nt_blob = data_blob(local_nt_response, 
-				  sizeof(local_nt_response));
-	nt_interactive_blob = data_blob(nt_interactive_password->hash, 
-					sizeof(nt_interactive_password->hash));
+
+	local_lm_blob = data_blob_const(local_lm_response, sizeof(local_lm_response));
+	lm_interactive_blob = data_blob_const(lm_interactive_password->hash, 
+					      sizeof(lm_interactive_password->hash));
+
+	local_nt_blob = data_blob_const(local_nt_response, sizeof(local_nt_response));
+	nt_interactive_blob = data_blob_const(nt_interactive_password->hash, 
+					      sizeof(nt_interactive_password->hash));
 	
 	nt_status = make_user_info_map(mem_ctx,
-				       user_info, 
-				       smb_name, client_domain, 
-				       wksta_name, 
+				       c_account_name,
+				       c_domain_name, 
+				       workstation_name,
 				       &local_lm_blob,
 				       &local_nt_blob,
 				       &lm_interactive_blob,
 				       &nt_interactive_blob,
-				       NULL,
-				       True);
-	
-	data_blob_free(&local_lm_blob);
-	data_blob_free(&local_nt_blob);
-	data_blob_free(&lm_interactive_blob);
-	data_blob_free(&nt_interactive_blob);
+				       NULL, True,
+				       user_info);
 	return nt_status;
 }
+
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
-
 NTSTATUS make_user_info_for_reply_enc(TALLOC_CTX *mem_ctx,
-				      struct auth_usersupplied_info **user_info, 
-                                      const char *smb_name,
-                                      const char *client_domain, 
-				      const char *remote_machine,
-                                      DATA_BLOB lm_resp, DATA_BLOB nt_resp)
+				      const char *c_account_name,
+				      const char *c_domain_name,
+				      const char *workstation_name,
+                                      DATA_BLOB lm_resp, DATA_BLOB nt_resp,
+				      struct auth_usersupplied_info **user_info)
 {
 	return make_user_info_map(mem_ctx,
-				  user_info, smb_name, 
-				  client_domain, 
-				  remote_machine,
-				  lm_resp.data ? &lm_resp : NULL, 
-				  nt_resp.data ? &nt_resp : NULL, 
-				  NULL, NULL, NULL,
-				  True);
+				  c_account_name,
+				  c_domain_name,
+				  workstation_name,
+				  lm_resp.data ? &lm_resp : NULL,
+				  nt_resp.data ? &nt_resp : NULL,
+				  NULL, NULL, NULL, True,
+				  user_info);
 }
 
 /****************************************************************************
- Create a guest user_info blob, for anonymous authenticaion.
+ Create a anonymous user_info blob, for anonymous authenticaion.
 ****************************************************************************/
-
-BOOL make_user_info_guest(TALLOC_CTX *mem_ctx,
-			  struct auth_usersupplied_info **user_info) 
+NTSTATUS make_user_info_anonymous(TALLOC_CTX *mem_ctx, struct auth_usersupplied_info **user_info) 
 {
-	NTSTATUS nt_status;
-
-	nt_status = make_user_info(mem_ctx,
-				   user_info, 
-				   "","", 
-				   "","", 
-				   "", 
-				   NULL, NULL, 
-				   NULL, NULL, 
-				   NULL,
-				   True);
-			      
-	return NT_STATUS_IS_OK(nt_status) ? True : False;
+	return make_user_info(mem_ctx,
+			      "", "", "", "", "", 
+			      NULL, NULL, NULL, NULL, 
+			      NULL, True,
+			      user_info);
 }
 
-
-
-/***************************************************************************
- Make a user_info struct
-***************************************************************************/
-
-NTSTATUS make_server_info(const TALLOC_CTX *mem_ctx,
-			  struct auth_serversupplied_info **server_info, 
-			  const char *username)
-{
-	*server_info = talloc_p(mem_ctx, struct auth_serversupplied_info);
-	if (!*server_info) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	ZERO_STRUCTP(*server_info);
-	
-	return NT_STATUS_OK;
-}
 
 /***************************************************************************
  Make a server_info struct from the info3 returned by a domain logon 
 ***************************************************************************/
-
-NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx, 
-					      const char *internal_username,
-					      struct auth_serversupplied_info **server_info, 
-					      uint16 validation_level, 
-					      union netr_Validation *validation) 
+NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
+					      const char *account_name,
+					      uint16 validation_level,
+					      union netr_Validation *validation,
+					      struct auth_serversupplied_info **_server_info)
 {
-	NTSTATUS nt_status;
+	struct auth_serversupplied_info *server_info;
 	struct netr_SamBaseInfo *base = NULL;
+	int i;
+
 	switch (validation_level) {
 	case 2:
 		if (!validation || !validation->sam2) {
@@ -351,42 +304,32 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
-	nt_status = make_server_info(mem_ctx, server_info, internal_username);
+	server_info = talloc(mem_ctx, struct auth_serversupplied_info);
+	NT_STATUS_HAVE_NO_MEMORY(server_info);
 
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return nt_status;
-	}
-	
-	(*server_info)->guest = False;
-
-	/* 
+	/*
 	   Here is where we should check the list of
 	   trusted domains, and verify that the SID 
 	   matches.
 	*/
+	server_info->account_sid = dom_sid_add_rid(server_info, base->domain_sid, base->rid);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->account_sid);
 
-	(*server_info)->user_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, base->domain_sid), base->rid);
-	(*server_info)->primary_group_sid = dom_sid_add_rid(*server_info, dom_sid_dup(*server_info, base->domain_sid), base->primary_gid);
 
-	(*server_info)->domain_groups = talloc_array_p((*server_info), struct dom_sid*, base->group_count);
-	if (!(*server_info)->domain_groups) {
-		return NT_STATUS_NO_MEMORY;
+	server_info->primary_group_sid = dom_sid_add_rid(server_info, base->domain_sid, base->primary_gid);
+	NT_STATUS_HAVE_NO_MEMORY(server_info->primary_group_sid);
+
+	server_info->n_domain_groups = base->group_count;
+	if (base->group_count) {
+		server_info->domain_groups = talloc_array(server_info, struct dom_sid*, base->group_count);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups);
+	} else {
+		server_info->domain_groups = NULL;
 	}
-	
-	for ((*server_info)->n_domain_groups = 0;
-	     (*server_info)->n_domain_groups < base->group_count; 
-	     (*server_info)->n_domain_groups++) {
-		struct dom_sid *sid;
-		sid = dom_sid_dup((*server_info)->domain_groups, base->domain_sid);
-		if (!sid) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		(*server_info)->domain_groups[(*server_info)->n_domain_groups]
-			= dom_sid_add_rid(*server_info, sid, 
-					  base->groupids[(*server_info)->n_domain_groups].rid);
-		if (!(*server_info)->domain_groups[(*server_info)->n_domain_groups]) {
-			return NT_STATUS_NO_MEMORY;
-		}
+
+	for (i = 0; i < base->group_count; i++) {
+		server_info->domain_groups[i] = dom_sid_add_rid(server_info, base->domain_sid, base->groupids[i].rid);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->domain_groups[i]);
 	}
 
 	/* Copy 'other' sids.  We need to do sid filtering here to
@@ -396,156 +339,95 @@ NTSTATUS make_server_info_netlogon_validation(TALLOC_CTX *mem_ctx,
          */
 
 	if (validation_level == 3) {
-		int i;
-		(*server_info)->domain_groups
-			= talloc_realloc_p((*server_info), 
-					   (*server_info)->domain_groups, 
-					   struct dom_sid*, 
-					   base->group_count + validation->sam3->sidcount);
-		
-		if (!(*server_info)->domain_groups) {
-			return NT_STATUS_NO_MEMORY;
-		}
-	
+		struct dom_sid **dgrps = server_info->domain_groups;
+		size_t sidcount = server_info->n_domain_groups + validation->sam3->sidcount;
+		size_t n_dgrps = server_info->n_domain_groups;
+
+		dgrps = talloc_realloc(server_info, dgrps, struct dom_sid*, sidcount);
+		NT_STATUS_HAVE_NO_MEMORY(dgrps);
+
 		for (i = 0; i < validation->sam3->sidcount; i++) {
-			(*server_info)->domain_groups[(*server_info)->n_domain_groups + i] = 
-				dom_sid_dup((*server_info)->domain_groups, 
-					    validation->sam3->sids[i].sid);
+			dgrps[n_dgrps + i] = talloc_reference(dgrps, validation->sam3->sids[i].sid);
 		}
+
+		server_info->n_domain_groups = sidcount;
+		server_info->domain_groups = dgrps;
 
 		/* Where are the 'global' sids?... */
 	}
 
 	if (base->account_name.string) {
-		(*server_info)->account_name = talloc_reference(*server_info, base->account_name.string);
+		server_info->account_name = talloc_reference(server_info, base->account_name.string);
 	} else {
-		(*server_info)->account_name = talloc_strdup(*server_info, internal_username);
+		server_info->account_name = talloc_strdup(server_info, account_name);
+		NT_STATUS_HAVE_NO_MEMORY(server_info->account_name);
 	}
-	
-	(*server_info)->domain = talloc_reference(*server_info, base->domain.string);
-	(*server_info)->full_name = talloc_reference(*server_info, base->full_name.string);
-	(*server_info)->logon_script = talloc_reference(*server_info, base->logon_script.string);
-	(*server_info)->profile_path = talloc_reference(*server_info, base->profile_path.string);
-	(*server_info)->home_directory = talloc_reference(*server_info, base->home_directory.string);
-	(*server_info)->home_drive = talloc_reference(*server_info, base->home_drive.string);
-	(*server_info)->last_logon = base->last_logon;
-	(*server_info)->last_logoff = base->last_logoff;
-	(*server_info)->acct_expiry = base->acct_expiry;
-	(*server_info)->last_password_change = base->last_password_change;
-	(*server_info)->allow_password_change = base->allow_password_change;
-	(*server_info)->force_password_change = base->force_password_change;
 
-	(*server_info)->logon_count = base->logon_count;
-	(*server_info)->bad_password_count = base->bad_password_count;
+	server_info->domain_name = talloc_reference(server_info, base->domain.string);
+	server_info->full_name = talloc_reference(server_info, base->full_name.string);
+	server_info->logon_script = talloc_reference(server_info, base->logon_script.string);
+	server_info->profile_path = talloc_reference(server_info, base->profile_path.string);
+	server_info->home_directory = talloc_reference(server_info, base->home_directory.string);
+	server_info->home_drive = talloc_reference(server_info, base->home_drive.string);
+	server_info->last_logon = base->last_logon;
+	server_info->last_logoff = base->last_logoff;
+	server_info->acct_expiry = base->acct_expiry;
+	server_info->last_password_change = base->last_password_change;
+	server_info->allow_password_change = base->allow_password_change;
+	server_info->force_password_change = base->force_password_change;
+	server_info->logon_count = base->logon_count;
+	server_info->bad_password_count = base->bad_password_count;
+	server_info->acct_flags = base->acct_flags;
 
-	(*server_info)->acct_flags = base->acct_flags;
+	server_info->authenticated = True;
 
 	/* ensure we are never given NULL session keys */
-	
+
 	if (all_zero(base->key.key, sizeof(base->key.key))) {
-		(*server_info)->user_session_key = data_blob(NULL, 0);
+		server_info->user_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->user_session_key = data_blob_talloc((*server_info), base->key.key, sizeof(base->key.key));
+		server_info->user_session_key = data_blob_talloc(server_info, base->key.key, sizeof(base->key.key));
+		NT_STATUS_HAVE_NO_MEMORY(server_info->user_session_key.data);
 	}
 
 	if (all_zero(base->LMSessKey.key, sizeof(base->LMSessKey.key))) {
-		(*server_info)->lm_session_key = data_blob(NULL, 0);
+		server_info->lm_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->lm_session_key = data_blob_talloc((*server_info), base->LMSessKey.key, sizeof(base->LMSessKey.key));
+		server_info->lm_session_key = data_blob_talloc(server_info, base->LMSessKey.key, sizeof(base->LMSessKey.key));
+		NT_STATUS_HAVE_NO_MEMORY(server_info->lm_session_key.data);
 	}
+
+	*_server_info = server_info;
 	return NT_STATUS_OK;
 }
 
-/***************************************************************************
- Free a user_info struct
-***************************************************************************/
-
-void free_user_info(struct auth_usersupplied_info **user_info)
+NTSTATUS auth_generate_session_info(TALLOC_CTX *mem_ctx, 
+				    struct auth_serversupplied_info *server_info, 
+				    struct auth_session_info **_session_info) 
 {
-	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
-	if (*user_info) {
-		data_blob_clear(&(*user_info)->plaintext_password);
-	}
-
-	talloc_free(*user_info);
-	*user_info = NULL;
-}
-
-/***************************************************************************
- Clear out a server_info struct that has been allocated
-***************************************************************************/
-
-void free_server_info(struct auth_serversupplied_info **server_info)
-{
-	DEBUG(5,("attempting to free a server_info structure\n"));
-	talloc_free(*server_info);
-	*server_info = NULL;
-}
-
-/***************************************************************************
- Make an auth_methods struct
-***************************************************************************/
-
-BOOL make_auth_methods(struct auth_context *auth_context, struct auth_methods **auth_method) 
-{
-	if (!auth_context) {
-		smb_panic("no auth_context supplied to make_auth_methods()!\n");
-	}
-
-	if (!auth_method) {
-		smb_panic("make_auth_methods: pointer to auth_method pointer is NULL!\n");
-	}
-
-	*auth_method = talloc_p(auth_context, struct auth_methods);
-	if (!*auth_method) {
-		return False;
-	}
-	ZERO_STRUCTP(*auth_method);
-	
-	return True;
-}
-
-NTSTATUS make_session_info(TALLOC_CTX *mem_ctx, 
-			   struct auth_serversupplied_info *server_info, 
-			   struct auth_session_info **session_info) 
-{
+	struct auth_session_info *session_info;
 	NTSTATUS nt_status;
 
-	*session_info = talloc_p(mem_ctx, struct auth_session_info);
-	if (!*session_info) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
-	(*session_info)->server_info = server_info;
-	talloc_reference(*session_info, (*session_info)->server_info);
+	session_info = talloc(mem_ctx, struct auth_session_info);
+	NT_STATUS_HAVE_NO_MEMORY(session_info);
+
+	session_info->server_info = talloc_reference(session_info, server_info);
 
 	/* unless set otherwise, the session key is the user session
-	 * key from the auth subsystem */
- 
-	(*session_info)->session_key = server_info->user_session_key;
+	 * key from the auth subsystem */ 
+	session_info->session_key = server_info->user_session_key;
 
-	/* we should search for local groups here */
-	
-	nt_status = security_token_create((*session_info), 
-					  server_info->user_sid, 
-					  server_info->primary_group_sid, 
-					  server_info->n_domain_groups, 
+	nt_status = security_token_create(session_info,
+					  server_info->account_sid,
+					  server_info->primary_group_sid,
+					  server_info->n_domain_groups,
 					  server_info->domain_groups,
-					  False, 
-					  &(*session_info)->security_token);
-	
-	return nt_status;
-}
+					  server_info->authenticated,
+					  &session_info->security_token);
+	NT_STATUS_NOT_OK_RETURN(nt_status);
 
-/***************************************************************************
- Clear out a server_info struct that has been allocated
-***************************************************************************/
-
-void free_session_info(struct auth_session_info **session_info)
-{
-	DEBUG(5,("attempting to free a session_info structure\n"));
-	talloc_free((*session_info));
-	*session_info = NULL;
+	*_session_info = session_info;
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -572,22 +454,15 @@ void auth_session_info_debug(int dbg_lev,
  * @param nt_status NTSTATUS input for squashing.
  * @return the 'squashed' nt_status
  **/
-
-NTSTATUS nt_status_squash(NTSTATUS nt_status)
+NTSTATUS auth_nt_status_squash(NTSTATUS nt_status)
 {
-	if NT_STATUS_IS_OK(nt_status) {
-		return nt_status;		
-	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
+	if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
 		/* Match WinXP and don't give the game away */
 		return NT_STATUS_LOGON_FAILURE;
-		
 	} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {
 		/* Match WinXP and don't give the game away */
 		return NT_STATUS_LOGON_FAILURE;
-	} else {
-		return nt_status;
-	}  
+	}
+
+	return nt_status;
 }
-
-
-

@@ -47,43 +47,40 @@ static NTSTATUS sesssetup_old(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
-
-	TALLOC_CTX *mem_ctx = talloc_named(req, 0, "NT1 session setup");
 	char *remote_machine;
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_named(req, 0, "OLD session setup");
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
+
 	if (!req->smb_conn->negotiate.done_sesssetup) {
 		req->smb_conn->negotiate.max_send = sess->old.in.bufsize;
 	}
 	
 	remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-	status = make_user_info_for_reply_enc(req->smb_conn,
-					      &user_info, 
+	status = make_user_info_for_reply_enc(req->smb_conn, 
 					      sess->old.in.user, sess->old.in.domain,
 					      remote_machine,
 					      sess->old.in.password,
-					      data_blob(NULL, 0));
+					      data_blob(NULL, 0),
+					      &user_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	status = req->smb_conn->negotiate.auth_context->check_ntlm_password(req->smb_conn->negotiate.auth_context, 
-									    user_info, 
-									    mem_ctx, 
-									    &server_info);
+	status = auth_check_password(req->smb_conn->negotiate.auth_context,
+				     mem_ctx, user_info, &server_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return nt_status_squash(status);
+		return auth_nt_status_squash(status);
 	}
 
 	/* This references server_info into session_info */
-	status = make_session_info(req, server_info, &session_info);
+	status = auth_generate_session_info(req, server_info, &session_info);
 	talloc_free(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
-		return nt_status_squash(status);
+		return auth_nt_status_squash(status);
 	}
 
 	sess->old.out.action = 0;
@@ -111,11 +108,10 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 	struct auth_usersupplied_info *user_info = NULL;
 	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info;
-	TALLOC_CTX *mem_ctx = talloc_named(req, 0, "NT1 session setup");
+	TALLOC_CTX *mem_ctx;
 	
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	mem_ctx = talloc_named(req, 0, "NT1 session setup");
+	NT_STATUS_HAVE_NO_MEMORY(mem_ctx);
 
 	if (!req->smb_conn->negotiate.done_sesssetup) {
 		req->smb_conn->negotiate.max_send = sess->nt1.in.bufsize;
@@ -127,53 +123,53 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 
 		if (sess->nt1.in.user && *sess->nt1.in.user) {
 			return NT_STATUS_ACCESS_DENIED;
-		} else {
-			make_user_info_guest(req->smb_conn, &user_info);
 		}
-		
-		status = make_auth_context_subsystem(req->smb_conn, &auth_context);
 
+		status = make_user_info_anonymous(req->smb_conn, &user_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return status;
 		}
-		
-		status = auth_context->check_ntlm_password(auth_context, 
-							   user_info, 
-							   mem_ctx,
-							   &server_info);
+
+		/* TODO: should we use just "anonymous" here? */
+		status = auth_context_create(req->smb_conn, lp_auth_methods(), &auth_context);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
+			return status;
+		}
+
+		status = auth_check_password(auth_context, mem_ctx,
+					     user_info, &server_info);
 	} else {
 		char *remote_machine;
+
 		remote_machine = socket_get_peer_addr(req->smb_conn->connection->socket, mem_ctx);
-		status = make_user_info_for_reply_enc(req->smb_conn,
-						      &user_info, 
+
+		status = make_user_info_for_reply_enc(req->smb_conn, 
 						      sess->nt1.in.user, sess->nt1.in.domain,
 						      remote_machine,
 						      sess->nt1.in.password1,
-						      sess->nt1.in.password2);
+						      sess->nt1.in.password2,
+						      &user_info);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(mem_ctx);
 			return NT_STATUS_ACCESS_DENIED;
 		}
 		
-		status = req->smb_conn->negotiate
-			.auth_context->check_ntlm_password(req->smb_conn->negotiate
-							   .auth_context, 
-							   user_info, 
-							   req,
-							   &server_info);
+		status = auth_check_password(req->smb_conn->negotiate.auth_context, 
+					     req, user_info, &server_info);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return nt_status_squash(status);
+		return auth_nt_status_squash(status);
 	}
 
 	/* This references server_info into session_info */
-	status = make_session_info(mem_ctx, server_info, &session_info);
+	status = auth_generate_session_info(mem_ctx, server_info, &session_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return nt_status_squash(status);
+		return auth_nt_status_squash(status);
 	}
 
 	sess->nt1.out.action = 0;
@@ -188,14 +184,15 @@ static NTSTATUS sesssetup_nt1(struct smbsrv_request *req, union smb_sesssetup *s
 				 &sess->nt1.out.domain);
 	
 	req->session = smbsrv_session_find(req->smb_conn, sess->nt1.out.vuid);
-	if (session_info->server_info->guest) {
+	if (!session_info->server_info->authenticated) {
 		return NT_STATUS_OK;
 	}
+
 	if (!srv_setup_signing(req->smb_conn, &session_info->session_key, &sess->nt1.in.password2)) {
 		/* Already signing, or disabled */
 		return NT_STATUS_OK;
 	}
-		
+
 	/* Force check of the request packet, now we know the session key */
 	req_signing_check_incoming(req);
 
@@ -275,7 +272,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 		status = gensec_session_key(smb_sess->gensec_ctx, 
 					    &session_key);
 		if (NT_STATUS_IS_OK(status) 
-		    && !smb_sess->session_info->server_info->guest
+		    && smb_sess->session_info->server_info->authenticated
 		    && srv_setup_signing(req->smb_conn, &session_key, NULL)) {
 			/* Force check of the request packet, now we know the session key */
 			req_signing_check_incoming(req);
@@ -284,7 +281,7 @@ static NTSTATUS sesssetup_spnego(struct smbsrv_request *req, union smb_sesssetup
 
 		}
 	} else {
-		status = nt_status_squash(status);
+		status = auth_nt_status_squash(status);
 		if (smb_sess->gensec_ctx && 
 		    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			talloc_free(smb_sess->gensec_ctx);
