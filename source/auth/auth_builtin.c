@@ -198,7 +198,7 @@ NTSTATUS auth_init_plugin(struct auth_context *auth_context, const char *param, 
 		return NT_STATUS_UNSUCCESSFUL;
 	}
     
-	plugin_init = sys_dlsym(dl_handle, "auth_init");
+	plugin_init = (auth_init_function)sys_dlsym(dl_handle, "auth_init");
 	if (!plugin_init){
 		DEBUG(0, ("Failed to find function 'auth_init' using sys_dlsym in sam plugin %s (%s)\n",
 					plugin_name, sys_dlerror()));	    
