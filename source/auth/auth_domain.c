@@ -262,103 +262,23 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
  We have been asked to dynamically determine the IP addresses of
  the PDC and BDC's for DOMAIN, and query them in turn.
 ************************************************************************/
-static NTSTATUS find_connect_pdc(struct cli_state **cli, 
+static NTSTATUS find_connect_dc(struct cli_state **cli, 
 				 const char *domain,
 				 const char *setup_creds_as,
 				 uint16 sec_chan,
 				 unsigned char *trust_passwd, 
 				 time_t last_change_time)
 {
-	struct in_addr *ip_list = NULL;
-	int count = 0;
-	int i;
-	NTSTATUS nt_status = NT_STATUS_NO_LOGON_SERVERS;
-	time_t time_now = time(NULL);
-	BOOL use_pdc_only = False;
-	BOOL list_ordered;
+	struct in_addr dc_ip;
+	fstring srv_name;
 
-	/*
-	 * If the time the machine password has changed
-	 * was less than an hour ago then we need to contact
-	 * the PDC only, as we cannot be sure domain replication
-	 * has yet taken place. Bug found by Gerald (way to go
-	 * Gerald !). JRA.
-	 */
-
-	if (time_now - last_change_time < 3600)
-		use_pdc_only = True;
-
-	if (use_pdc_only) {
-		struct in_addr pdc_ip;
-
-		if (!get_pdc_ip(domain, &pdc_ip))
-			return NT_STATUS_NO_LOGON_SERVERS;
-
-		if ((ip_list = (struct in_addr *)
-		     malloc(sizeof(struct in_addr))) == NULL) 
-			return NT_STATUS_NO_MEMORY;
-
-		ip_list[0] = pdc_ip;
-		count = 1;
-
-	} else {
-		if (!get_dc_list(domain, &ip_list, &count, &list_ordered))
+	if ( !rpc_find_dc(lp_workgroup(), srv_name, &dc_ip) ) {
+		DEBUG(0,("find_connect_dc: Failed to find an DCs for %s\n", lp_workgroup()));
 			return NT_STATUS_NO_LOGON_SERVERS;
 	}
 
-	/*
-	 * Firstly try and contact a PDC/BDC who has the same
-	 * network address as any of our interfaces.
-	 */
-	for(i = 0; i < count; i++) {
-		if( !list_ordered && !is_local_net(ip_list[i]) )
-			continue;
-
-		if(NT_STATUS_IS_OK(nt_status = 
-				   attempt_connect_to_dc(cli, domain, 
-							 &ip_list[i], setup_creds_as, 
-							 sec_chan, trust_passwd))) 
-			break;
-		
-		zero_ip(&ip_list[i]); /* Tried and failed. */
-	}
-
-	/*
-	 * Secondly try and contact a random PDC/BDC.
-	 */
-	if(!NT_STATUS_IS_OK(nt_status)) {
-		i = (sys_random() % count);
-
-		if (!is_zero_ip(ip_list[i])) {
-			if (!NT_STATUS_IS_OK(nt_status = 
-					     attempt_connect_to_dc(cli, domain, 
-								   &ip_list[i], setup_creds_as, 
-								   sec_chan, trust_passwd)))
-				zero_ip(&ip_list[i]); /* Tried and failed. */
-		}
-	}
-
-	/*
-	 * Finally go through the IP list in turn, ignoring any addresses
-	 * we have already tried.
-	 */
-	if(!NT_STATUS_IS_OK(nt_status)) {
-		/*
-		 * Try and connect to any of the other IP addresses in the PDC/BDC list.
-		 * Note that from a WINS server the #1 IP address is the PDC.
-		 */
-		for(i = 0; i < count; i++) {
-			if (is_zero_ip(ip_list[i]))
-				continue;
-
-			if (NT_STATUS_IS_OK(nt_status = attempt_connect_to_dc(cli, domain, 
-						  &ip_list[i], setup_creds_as, sec_chan, trust_passwd)))
-				break;
-		}
-	}
-
-	SAFE_FREE(ip_list);
-	return nt_status;
+	return attempt_connect_to_dc( cli, domain, &dc_ip, setup_creds_as, 
+			sec_chan, trust_passwd );
 }
 
 /***********************************************************************
@@ -393,7 +313,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	while (!NT_STATUS_IS_OK(nt_status) &&
 	       next_token(&server,remote_machine,LIST_SEP,sizeof(remote_machine))) {
 		if(lp_security() != SEC_ADS && strequal(remote_machine, "*")) {
-			nt_status = find_connect_pdc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
+			nt_status = find_connect_dc(&cli, domain, setup_creds_as, sec_chan, trust_passwd, last_change_time);
 		} else {
 			int i;
 			BOOL retry = True;
