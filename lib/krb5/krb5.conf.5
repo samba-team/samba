@@ -148,8 +148,7 @@ specifies the realm that will be stored in this database.
 use this keytab file for the master key of this database.
 If not specified
 .Va DATABASENAME .
-mkey
-will be used.
+mkey will be used.
 .El
 .It Li }
 .It max-request = Va SIZE
@@ -189,7 +188,38 @@ password is about to expire.
 .It logging = Va Logging
 What type of logging the kdc should use, see also [logging]/kdc.
 .El
-.It Li }
+.It Li [kadmin]
+.Bl -tag -width "xxx" -offset indent
+.It require-preauth = Va BOOL
+If pre-authentication is required to talk to the kadmin server.
+.It default_keys = Va keytypes...
+for each entry in
+.Va default_keys
+try to parse it as a sequence of
+.Va etype:salttype:salt
+syntax of this if something like:
+.Pp
+[(des|des3|etype):](pw-salt|afs3-salt)[:string]
+.Pp
+if
+.Ar etype
+is omitted it means everything, and if string is omitted is means the default string (for that principal). Additional special values of keyttypes are:
+.Bl -tag -width "xxx" -offset indent
+.It v5 
+The kerberos 5 salt
+.Va pw-salt
+.It v4
+The kerberos 4 type
+.Va des:pw-salt:
+.El
+.It use_v4_salt = Va BOOL
+When true, this is the same as
+.Pp
+.Va default_keys = Va des3:pw-salt Va v4
+.Pp
+and is only left for backwards compatability.
+.El
+.El
 .Sh ENVIRONMENT
 .Ev KRB5_CONFIG
 points to the configuration file to read.
