@@ -1,3 +1,8 @@
+1999-10-14  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (proto): be more careful and don't print errno when read()
+ 	returns 0
+
 1999-09-20  Assar Westerlund  <assar@sics.se>
 
 	* rshd.c (recv_krb4_auth): set `iv'
