@@ -97,18 +97,7 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	struct fd_event fde;
 	int i;
 
-	if (*port == 0) {
-		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
-			status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
-			if (NT_STATUS_IS_OK(status)) {
-				*port = i;
-				break;
-			}
-		}
-	} else {
-		status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
-	}
-
+	status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
 			sock_addr, *port, nt_errstr(status)));
@@ -135,7 +124,18 @@ struct server_socket *service_setup_socket(struct server_service *service,
 
 	/* TODO: set socket ACL's here when they're implemented */
 
-	status = socket_listen(socket_ctx, sock_addr, *port, SERVER_LISTEN_BACKLOG, 0);
+	if (*port == 0) {
+		for (i=SERVER_TCP_LOW_PORT;i<= SERVER_TCP_HIGH_PORT;i++) {
+			status = socket_listen(socket_ctx, sock_addr, i, SERVER_LISTEN_BACKLOG, 0);
+			if (NT_STATUS_IS_OK(status)) {
+				*port = i;
+				break;
+			}
+		}
+	} else {
+		status = socket_listen(socket_ctx, sock_addr, *port, SERVER_LISTEN_BACKLOG, 0);
+	}
+
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to listen on %s:%u - %s\n",
 			sock_addr, *port, nt_errstr(status)));
