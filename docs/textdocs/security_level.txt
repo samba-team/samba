@@ -1,5 +1,5 @@
 !==
-!== security_level.txt for Samba release TNG-prealpha 07 Apr 2000
+!== security_level.txt for Samba release TNG-prealpha 09 Apr 2000
 !==
 Contributor:	Andrew Tridgell
 Updated:	June 27, 1997
