@@ -32,6 +32,8 @@ AC_CHECK_HEADERS(sys/select.h paths.h bsd/bsd.h sys/mman.h)
 AC_FIND_FUNC(socket, socket)
 AC_FIND_FUNC(gethostbyname, nsl)
 
-AC_CHECK_FUNCS(setproctitle mmap)
+AC_FUNC_MMAP
+
+AC_CHECK_FUNCS(setproctitle)
 
 AC_OUTPUT(Makefile common/Makefile ftp/Makefile ftpd/Makefile)
