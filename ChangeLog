@@ -2,6 +2,10 @@ Tue Feb 23 20:35:12 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* configure.in: use AC_BROKEN_GLOB
 
+Mon Feb 22 15:12:44 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* configure.in: check for glob
+
 Mon Feb 22 11:32:42 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* Release 0.1b
