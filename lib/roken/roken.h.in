@@ -91,6 +91,30 @@ void unsetenv(const char *name);
 char *getusershell(void);
 #endif
 
+#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+#ifndef HAVE_SNPRINTF
+int snprintf (char *str, size_t sz, const char *format, ...)
+     __attribute__ ((format (printf, 3, 4)));
+#endif
+
+#ifndef HAVE_VSNPRINTF
+int vsnprintf (char *str, size_t sz, const char *format, va_list ap)
+     __attribute__((format (printf, 3, 0)));
+#endif
+
+#ifndef HAVE_ASPRINTF
+int asprintf (char **ret, const char *format, ...)
+     __attribute__ ((format (printf, 2, 3)));
+#endif
+
+#ifndef HAVE_VSNPRINTF
+int vasprintf (char **ret, const char *format, va_list ap)
+     __attribute__((format (printf, 2, 0)));
+#endif
+
 #ifndef HAVE_STRDUP
 char * strdup(const char *old);
 #endif
