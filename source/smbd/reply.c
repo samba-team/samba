@@ -65,7 +65,7 @@ static void overflow_attack(int len)
 /****************************************************************************
   reply to an special message 
 ****************************************************************************/
-int reply_special(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_special(char *inbuf,char *outbuf)
 {
 	int outsize = 4;
 	int msg_type = CVAL(inbuf,0);
@@ -335,7 +335,7 @@ int reply_tcon_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 /****************************************************************************
   reply to an unknown type
 ****************************************************************************/
-int reply_unknown(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+int reply_unknown(char *inbuf,char *outbuf)
 {
   int cnum;
   int type;

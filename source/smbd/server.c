@@ -4803,7 +4803,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   if (match == num_smb_messages)
     {
       DEBUG(0,("Unknown message type %d!\n",type));
-      outsize = reply_unknown(inbuf,outbuf,size,bufsize);
+      outsize = reply_unknown(inbuf,outbuf);
     }
   else
     {
@@ -4870,7 +4870,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
 	}
       else
 	{
-	  outsize = reply_unknown(inbuf,outbuf,size,bufsize);
+	  outsize = reply_unknown(inbuf,outbuf);
 	}
     }
 
@@ -5014,7 +5014,7 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   bzero(outbuf,smb_size);
 
   if (msg_type != 0)
-    return(reply_special(inbuf,outbuf,size,bufsize));  
+    return(reply_special(inbuf,outbuf));  
 
   CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);
   set_message(outbuf,0,0,True);
