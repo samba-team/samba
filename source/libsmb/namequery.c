@@ -184,7 +184,7 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 
 	pull_ascii(name, status[i].name, 15, 0, STR_TERMINATE);
 
-	free(status);
+	SAFE_FREE(status);
 	return True;
 }
 
@@ -273,7 +273,7 @@ BOOL name_register(int fd, const char *name, int name_type,
 
   if ((p2 = receive_nmb_packet(fd, 10, nmb->header.name_trn_id))) {
     debug_nmb_packet(p2);
-    free(p2);  /* No memory leaks ... */
+    SAFE_FREE(p2);  /* No memory leaks ... */
   }
 
   return True;
@@ -405,8 +405,7 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
  
           if (!tmp_ip_list) {
               DEBUG(0,("name_query: Realloc failed.\n"));
-              if (ip_list)
-                  free(ip_list);
+              SAFE_FREE(ip_list);
           }
  
           ip_list = tmp_ip_list;
@@ -871,7 +870,7 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   }
 
   if((*return_iplist) != NULL) {
-    free((char *)(*return_iplist));
+    SAFE_FREE(*return_iplist);
     *return_iplist = NULL;
   }
   return False;
@@ -891,11 +890,10 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 
 	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
 		*return_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
-	if(ip_list != NULL)
-		free((char *)ip_list);
+	SAFE_FREE(ip_list);
 	return False;
 }
 
@@ -956,17 +954,16 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		free((char *)ip_list);
+		SAFE_FREE((ip_list);
 		return True;
 	}
 
-	if(ip_list != NULL)
-		free((char *)ip_list);
+	SAFE_FREE(ip_list);
 	return False;
 }
 

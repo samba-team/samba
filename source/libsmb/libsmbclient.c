@@ -393,9 +393,9 @@ struct smbc_server *smbc_server(char *server, char *share,
   cli_shutdown(&c);
   if (!srv) return NULL;
   
-  if (srv->server_name) free(srv->server_name);
-  if (srv->share_name) free(srv->share_name);
-  free(srv);
+  SAFE_FREE(srv->server_name);
+  SAFE_FREE(srv->share_name);
+  SAFE_FREE(srv);
   return NULL;
 }
 
@@ -602,8 +602,7 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
       /* Handle the error ... */
 
-      free(smbc_file_table[slot]);
-      smbc_file_table[slot] = NULL;
+      SAFE_FREE(smbc_file_table[slot]);
       errno = smbc_errno(&srv->cli);
       return -1;
 
@@ -816,8 +815,8 @@ int smbc_close(int fd)
 
   }
 
-  if (fe->fname) free(fe->fname);
-  free(fe);
+  SAFE_FREE(fe->fname);
+  SAFE_FREE(fe);
   smbc_file_table[fd - smbc_start_fd] = NULL;
 
   return 0;
@@ -1313,8 +1312,8 @@ static void smbc_remove_dir(struct smbc_file *dir)
 
     f = d; d = d->next;
 
-    if (f->dirent) free(f->dirent);
-    free(f);
+    SAFE_FREE(f->dirent);
+    SAFE_FREE(f);
 
   }
 
@@ -1350,7 +1349,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
     dir->dir_list = malloc(sizeof(struct smbc_dir_list));
     if (!dir->dir_list) {
 
-      free(dirent);
+      SAFE_FREE(dirent);
       dir->dir_error = ENOMEM;
       return -1;
 
@@ -1365,7 +1364,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 
     if (!dir->dir_end) {
 
-      free(dirent);
+      SAFE_FREE(dirent);
       dir->dir_error = ENOMEM;
       return -1;
 
@@ -1519,10 +1518,9 @@ int smbc_opendir(const char *fname)
     
       errno = EINVAL;
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
       return -1;
 
     }
@@ -1559,10 +1557,9 @@ int smbc_opendir(const char *fname)
     if (!srv) {
 
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
       return -1;
 
     }
@@ -1575,10 +1572,9 @@ int smbc_opendir(const char *fname)
 			   (void *)smbc_file_table[slot])) {
 
       if (smbc_file_table[slot]) {
-	if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	free(smbc_file_table[slot]);
+	SAFE_FREE(smbc_file_table[slot]->fname);
+	SAFE_FREE(smbc_file_table[slot]);
       }
-      smbc_file_table[slot] = NULL;
       errno = cli_errno(&srv->cli);
       return -1;
 
@@ -1592,10 +1588,9 @@ int smbc_opendir(const char *fname)
 
 	errno = EINVAL;
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	return -1;
 	
       }
@@ -1630,10 +1625,9 @@ int smbc_opendir(const char *fname)
 	if (!srv) {
 
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;  /* FIXME: Memory leaks ... */
 	  return -1;
 
 	}
@@ -1646,10 +1640,9 @@ int smbc_opendir(const char *fname)
 			       (void *)smbc_file_table[slot])) {
 
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;
 	  errno = cli_errno(&srv->cli);
 	  return -1;
 
@@ -1669,10 +1662,9 @@ int smbc_opendir(const char *fname)
 	  if (!srv) {
 
 	    if (smbc_file_table[slot]) {
-	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	      free(smbc_file_table[slot]);
+	      SAFE_FREE(smbc_file_table[slot]->fname);
+	      SAFE_FREE(smbc_file_table[slot]);
 	    }
-	    smbc_file_table[slot] = NULL;
 	    return -1;
 
 	  }
@@ -1686,10 +1678,9 @@ int smbc_opendir(const char *fname)
 
 	    errno = cli_errno(&srv->cli);
 	    if (smbc_file_table[slot]) {
-	      if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	      free(smbc_file_table[slot]);
+	      SAFE_FREE(smbc_file_table[slot]->fname);
+	      SAFE_FREE(smbc_file_table[slot]);
 	    }
-	    smbc_file_table[slot] = NULL;
 	    return -1;
 
 	  }
@@ -1699,10 +1690,9 @@ int smbc_opendir(const char *fname)
 
 	  errno = ENODEV;   /* Neither the workgroup nor server exists */
 	  if (smbc_file_table[slot]) {
-	    if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	    free(smbc_file_table[slot]);
+	    SAFE_FREE(smbc_file_table[slot]->fname);
+	    SAFE_FREE(smbc_file_table[slot]);
 	  }
-	  smbc_file_table[slot] = NULL;
 	  return -1;
 
 	}
@@ -1721,10 +1711,9 @@ int smbc_opendir(const char *fname)
       if (!srv) {
 
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	return -1;
 
       }
@@ -1739,10 +1728,9 @@ int smbc_opendir(const char *fname)
 		   (void *)smbc_file_table[slot]) < 0) {
 
 	if (smbc_file_table[slot]) {
-	  if (smbc_file_table[slot]->fname) free(smbc_file_table[slot]->fname);
-	  free(smbc_file_table[slot]);
+	  SAFE_FREE(smbc_file_table[slot]->fname);
+	  SAFE_FREE(smbc_file_table[slot]);
 	}
-	smbc_file_table[slot] = NULL;
 	errno = smbc_errno(&srv->cli);
 	return -1;
 
@@ -1790,8 +1778,8 @@ int smbc_closedir(int fd)
 
   if (fe) {
 
-    if (fe->fname) free(fe->fname);
-    free(fe);    /* Free the space too */
+    SAFE_FREE(fe->fname);
+    SAFE_FREE(fe);    /* Free the space too */
 
   }
 

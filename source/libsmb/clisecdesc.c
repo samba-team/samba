@@ -65,8 +65,8 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 
  cleanup:
 
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	prs_mem_free(&pd);
 	return psd;
@@ -122,8 +122,8 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 
   cleanup:
 
-	safe_free(rparam);
-	safe_free(rdata);
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	talloc_destroy(mem_ctx);
 

@@ -201,8 +201,8 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 		return False;
 	}
 
-	if (rdata) free(rdata);
-	if (rparam) free(rparam);
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
 
 	return True;
 }
