@@ -1,5 +1,6 @@
 2001-07-31  Johan Danielsson  <joda@pdc.kth.se>
 
+	* rshd.8: add an EXAMPLE
 	* rshd.8: manual page
 	* rshd.c: add some compat flags
 	* rsh.1: manual page
