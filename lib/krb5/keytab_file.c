@@ -532,7 +532,7 @@ fkt_remove_entry(krb5_context context,
     return 0;
 }
 
-krb5_kt_ops krb5_fkt_ops = {
+const krb5_kt_ops krb5_fkt_ops = {
     "FILE",
     fkt_resolve,
     fkt_get_name,
