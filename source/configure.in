@@ -2224,6 +2224,11 @@ AC_ARG_WITH(acl-support,
 			AC_MSG_RESULT(Using AIX ACLs)
 			AC_DEFINE(HAVE_AIX_ACLS)
 			;;
+		*osf*)
+			AC_MSG_RESULT(Using Draft 13 Posix ACLs)
+			AC_DEFINE(HAVE_DRAFT13_POSIX_ACLS)
+			LIBS="$LIBS -lpacl"
+			;;
 		*)
 		    AC_CHECK_LIB(acl,acl_get_file)
 			AC_CACHE_CHECK([for ACL support],samba_cv_HAVE_POSIX_ACLS,[
