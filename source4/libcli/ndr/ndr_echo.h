@@ -35,6 +35,18 @@ struct rpcecho_addone {
 	} out;
 };
 
+/* EchoData interface */
+struct rpcecho_echodata {
+	struct {
+		int len;
+		const char *data;
+	} in;
+	struct {
+		int len;
+		char *data;
+	} out;
+};
+
 /* define the command codes */
 enum {
 	RPCECHO_CALL_ADDONE=0,

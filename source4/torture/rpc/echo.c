@@ -45,6 +45,44 @@ static BOOL test_addone(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+/*
+  test the EchoData interface
+*/
+static BOOL test_echodata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	int i;
+	NTSTATUS status;
+	char *data_in, *data_out;
+	int len = 10;
+	int len_out;
+
+	printf("\nTesting EchoData\n");
+
+	data_in = talloc(mem_ctx, len);
+	for (i=0;i<len;i++) {
+		data_in[i] = i+1;
+	}
+
+	status = dcerpc_rpcecho_echodata(p, mem_ctx,
+					 len,
+					 data_in,
+					 &len_out,
+					 &data_out);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("EchoData(%d) failed\n", len);
+		return False;
+	}
+	printf("EchoData(%d) returned %d bytes\n", len, len_out);
+
+	if (memcmp(data_in, data_out, len) != 0) {
+		printf("Bad data returned!\n");
+		return False;
+	}
+
+
+	return True;
+}
+
 BOOL torture_rpc_echo(int dummy)
 {
         NTSTATUS status;
@@ -60,6 +98,10 @@ BOOL torture_rpc_echo(int dummy)
 	}
 
 	if (!test_addone(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_echodata(p, mem_ctx)) {
 		ret = False;
 	}
 

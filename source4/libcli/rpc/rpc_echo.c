@@ -52,3 +52,34 @@ NTSTATUS dcerpc_rpcecho_addone(struct dcerpc_pipe *p,
 	talloc_destroy(mem_ctx);
 	return status;
 }
+
+
+/*
+  echodata interface
+*/
+NTSTATUS dcerpc_rpcecho_echodata(struct dcerpc_pipe *p,
+				 TALLOC_CTX *mem_ctx,
+				 int len,
+				 const char *in_data, 
+				 int *out_len,
+				 char **out_data)
+{
+	struct rpcecho_echodata r;
+	NTSTATUS status;
+
+	/* fill the .in side of the call */
+	r.in.len  = len;
+	r.in.data = in_data;
+
+	/* make the call */
+	status = dcerpc_ndr_request(p, RPCECHO_CALL_ECHODATA, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_rpcecho_echodata,
+				    (ndr_pull_fn_t) ndr_pull_rpcecho_echodata,
+				    &r);
+
+	/* and extract the .out parameters */
+	*out_len = r.out.len;
+	*out_data = r.out.data;
+
+	return status;
+}

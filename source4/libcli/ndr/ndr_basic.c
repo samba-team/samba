@@ -91,7 +91,19 @@ NTSTATUS ndr_pull_u32(struct ndr_pull *ndr, uint32 *v)
 	} else {
 		*v = IVAL(ndr->data, ndr->offset);
 	}
-	ndr->offset += 2;
+	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  parse a set of bytes
+*/
+NTSTATUS ndr_pull_bytes(struct ndr_pull *ndr, char **data, uint32 n)
+{
+	NDR_PULL_NEED_BYTES(ndr, n);
+	NDR_ALLOC_N(ndr, *data, n);
+	memcpy(*data, ndr->data + ndr->offset, n);
+	ndr->offset += n;
 	return NT_STATUS_OK;
 }
 
@@ -136,5 +148,16 @@ NTSTATUS ndr_push_u32(struct ndr_push *ndr, uint32 v)
 	NDR_PUSH_NEED_BYTES(ndr, 4);
 	SIVAL(ndr->data, ndr->offset, v);
 	ndr->offset += 4;
+	return NT_STATUS_OK;
+}
+
+/*
+  push some bytes
+*/
+NTSTATUS ndr_push_bytes(struct ndr_push *ndr, const char *data, uint32 n)
+{
+	NDR_PUSH_NEED_BYTES(ndr, n);
+	memcpy(ndr->data + ndr->offset, data, n);
+	ndr->offset += n;
 	return NT_STATUS_OK;
 }
