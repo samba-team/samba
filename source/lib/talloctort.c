@@ -35,8 +35,8 @@ int main(void)
 	for (i = 0; i < NCTX; i++) {
 		int j;
 		for (j = 0; j < NOBJ; j++) {
-			void *p;
-			size_t size = 1<<(i+j);
+			char *p;
+			size_t size = 1<<(i/3+j);
 
 			p = talloc(ctx[i], size);
 			if (!p) {
@@ -45,13 +45,15 @@ int main(void)
 					(double) size);
 				exit(1);
 			}
+
+			memset(p, 'A' + j, size);
 		}
 	}
 
 	for (i = 0; i < NCTX; i++) {
-		printf("talloc@%p %-40s %db\n", ctx[i],
+		printf("talloc@%p %-40s %dkB\n", ctx[i],
 		       talloc_pool_name(ctx[i]),
-		       talloc_pool_size(ctx[i]));
+		       talloc_pool_size(ctx[i]) >> 10);
 	}
 
 	for (i = NCTX - 1; i >= 0; i--)
