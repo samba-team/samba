@@ -117,6 +117,7 @@ extern struct winbindd_domain *domain_list;  /* List of domains we know */
 
 #define WINBINDD_ESTABLISH_LOOP 30
 #define DOM_SEQUENCE_NONE ((uint32)-1)
+#define WINBINDD_MAX_CACHE_SIZE (50*1024*1024) /* 50 Mb max cache size */
 
 /* SETENV */
 #if HAVE_SETENV

@@ -41,11 +41,40 @@ void winbindd_cache_init(void)
 {
 	/* Open tdb cache */
 
-	if (!(cache_tdb = tdb_open(lock_path("winbindd_cache.tdb"), 0, 
+	if (!(cache_tdb = tdb_open(lock_path("winbindd_cache.tdb"), 133403, 
 				   TDB_NOLOCK|TDB_NOMMAP, O_RDWR | O_CREAT | O_TRUNC, 
 				   0600))) {
 		DEBUG(0, ("Unable to open tdb cache - user and group caching "
 			  "disabled\n"));
+	}
+}
+
+void winbindd_check_cache_size(time_t t)
+{
+	static last_check_time;
+	struct stat st;
+
+	if (last_check_time == (time_t)0)
+		last_check_time = t;
+
+	if (t - last_check_time < 60 && t - last_check_time > 0)
+		return;
+
+	if (cache_tdb == NULL) {
+		DEBUG(0, ("Unable to check size of tdb cache - cache not open !\n"));
+		return;
+	}
+
+	if (fstat(cache_tdb->fd, &st) == -1) {
+		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
+		return;
+	}
+
+	if (st.st_size > WINBINDD_MAX_CACHE_SIZE) {
+		DEBUG(10,("flushing cache due to size (%lu) > (%lu)\n",
+					(unsigned long)st.st_size,
+					(unsigned long)WINBINDD_MAX_CACHE_SIZE));
+		winbindd_flush_cache();
 	}
 }
 

@@ -580,6 +580,9 @@ static void process_loop(int accept_sock)
 			state = state->next;
 		}
 
+		/* Check cache size */
+		winbindd_check_cache_size(time(NULL));
+
 		/* Check signal handling things */
 
 		if (do_sigterm)
