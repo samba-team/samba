@@ -914,11 +914,11 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	/* remember the binding string for possible secondary connections */
 	p->conn->binding_string = dcerpc_binding_string(p, binding);
 
-	if (cli_credentials_is_anonymous(credentials) &&
+	if (!cli_credentials_is_anonymous(credentials) &&
 		(binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
 						   credentials);
-	} else if (cli_credentials_is_anonymous(credentials)) {
+	} else if (!cli_credentials_is_anonymous(credentials)) {
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
@@ -984,15 +984,13 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"ipc$", NULL, 
-						"", "", NULL);
+						NULL);
 	} else {
 		status = smbcli_full_connection(p->conn, &cli, 
 						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"ipc$", NULL,
-						cli_credentials_get_username(credentials), 
-						cli_credentials_get_domain(credentials),
-						cli_credentials_get_password(credentials));
+						credentials);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));

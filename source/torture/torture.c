@@ -80,16 +80,12 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 				   const char *sharename)
 {
 	NTSTATUS status;
-	const char *username = cli_credentials_get_username(cmdline_credentials);
-	const char *userdomain = cli_credentials_get_domain(cmdline_credentials);
-	const char *password = cli_credentials_get_password(cmdline_credentials);
 
 	status = smbcli_full_connection(NULL,
 					c, lp_netbios_name(),
 					hostname, 
 					sharename, NULL,
-					username, username[0]?userdomain:"",
-					password);
+					cmdline_credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
@@ -726,16 +722,12 @@ static BOOL run_tcon_devtype_test(void)
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
 	const char *share = lp_parm_string(-1, "torture", "share");
-	const char *username = cli_credentials_get_username(cmdline_credentials);
-	const char *userdomain = cli_credentials_get_domain(cmdline_credentials);
-	const char *password = cli_credentials_get_password(cmdline_credentials);
 	
 	status = smbcli_full_connection(NULL,
 					&cli1, lp_netbios_name(),
 					host, 
 					share, NULL,
-					username, userdomain,
-					password);
+					cmdline_credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");

@@ -25,8 +25,7 @@
 #include "libcli/raw/libcliraw.h"
 #include "system/time.h"
 
-static fstring password;
-static fstring username;
+static struct cli_credentials credentials;
 static BOOL showall = False;
 static BOOL old_list = False;
 static const char *maskchars = "<>\"?*abc.";
@@ -81,8 +80,7 @@ static struct smbcli_state *connect_one(char *share)
 	status = smbcli_full_connection(NULL, &c, "masktest",
 					server, 
 					share, NULL,
-					username, lp_workgroup(), 
-					password);
+					&credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -274,7 +272,6 @@ static void usage(void)
 	char *share;
 	struct smbcli_state *cli;	
 	int opt;
-	char *p;
 	int seed;
 
 	setlinebuf(stdout);
@@ -300,9 +297,8 @@ static void usage(void)
 	lp_load(dyn_CONFIGFILE,True,False,False);
 	load_interfaces();
 
-	if (getenv("USER")) {
-		fstrcpy(username,getenv("USER"));
-	}
+	ZERO_STRUCT(credentials);
+	cli_credentials_guess(&credentials);
 
 	seed = time(NULL);
 
@@ -326,12 +322,7 @@ static void usage(void)
 			lp_set_cmdline("max protocol", optarg);
 			break;
 		case 'U':
-			fstrcpy(username,optarg);
-			p = strchr_m(username,'%');
-			if (p) {
-				*p = 0;
-				fstrcpy(password, p+1);
-			}
+			cli_credentials_parse_string(&credentials, optarg, CRED_SPECIFIED);
 			break;
 		case 's':
 			seed = atoi(optarg);

@@ -167,8 +167,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 				     const char *my_name, 
 				     const char *dest_host, int port,
 				     const char *service, const char *service_type,
-				     const char *user, const char *domain, 
-				     const char *password)
+					 struct cli_credentials *credentials)
 {
 	struct smb_composite_connect io;
 	NTSTATUS status;
@@ -179,10 +178,10 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 	io.in.calling_name = strupper_talloc(parent_ctx, my_name);
 	io.in.service = service;
 	io.in.service_type = service_type;
-	io.in.domain = domain;
-	io.in.user = user;
-	if (user && user[0]) {
-		io.in.password = password;
+	io.in.domain = cli_credentials_get_domain(credentials);
+	io.in.user = cli_credentials_get_username(credentials);
+	if (!cli_credentials_is_anonymous(credentials)) {
+		io.in.password = cli_credentials_get_password(credentials);
 	} else {
 		io.in.password = NULL;
 	}

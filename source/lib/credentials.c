@@ -298,8 +298,7 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	if (getenv("USER")) {
 		cli_credentials_parse_string(cred, getenv("USER"), CRED_GUESSED);
 		if ((p = strchr_m(getenv("USER"),'%'))) {
-			*p = 0;
-			memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(cred->password));
+			memset(p,0,strlen(cred->password));
 		}
 	}
 
@@ -318,4 +317,14 @@ void cli_credentials_guess(struct cli_credentials *cred)
 	if (getenv("PASSWD_FILE")) {
 		cli_credentials_parse_password_file(cred, getenv("PASSWD_FILE"), CRED_GUESSED);
 	}
+}
+
+BOOL cli_credentials_is_anonymous(struct cli_credentials *credentials)
+{
+	const char *username = cli_credentials_get_username(credentials);
+
+	if (!username || !username[0]) 
+		return True;
+
+	return False;
 }

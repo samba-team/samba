@@ -47,10 +47,7 @@ static BOOL zero_zero;
 
 #define NASTY_POSIX_LOCK_HACK 0
 
-static struct {
-	char *username;
-	char *password;
-} servers[NSERVERS];
+static struct cli_credentials servers[NSERVERS];
 
 enum lock_op {OP_LOCK, OP_UNLOCK, OP_REOPEN};
 
@@ -124,8 +121,7 @@ static struct smbcli_state *connect_one(char *share, int snum)
 		status = smbcli_full_connection(NULL, &c, myname,
 						server, 
 						share, NULL,
-						servers[snum].username, lp_workgroup(), 
-						servers[snum].password);
+						&servers[snum]);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}
@@ -487,12 +483,8 @@ static void usage(void)
 		switch (opt) {
 		case 'U':
 			i = servers[0].username?1:0;
-			if (!split_username(optarg, 
-					    &servers[i].username, 
-					    &servers[i].password)) {
-				printf("Must supply USER%%PASS\n");
-				return -1;
-			}
+			cli_credentials_parse_string(&servers[0], optarg, CRED_SPECIFIED);
+
 			break;
 		case 'R':
 			lock_range = strtol(optarg, NULL, 0);
