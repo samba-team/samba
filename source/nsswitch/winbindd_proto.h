@@ -87,4 +87,5 @@ struct winbindd_domain *find_domain_from_name(char *domain_name);
 void free_getent_state(struct getent_state *state);
 BOOL winbindd_param_init(void);
 char *winbindd_cmd_to_string(enum winbindd_cmd cmd);
+void parse_domain_user(char *domuser, fstring domain, fstring user);
 #endif /* _WINBINDD_PROTO_H_ */

@@ -422,9 +422,9 @@ BOOL surs_unixid_to_sam_sid(const SURS_POSIX_ID *id, SURS_SID_ID *sid, BOOL crea
 
 /*The following definitions come from  lib/sursalgdomonly.c  */
 
-BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, POSIX_ID *id,
+BOOL surs_algdomonly_sam_sid_to_unixid(DOM_SID *sid, SURS_POSIX_ID *id,
 				BOOL create);
-BOOL surs_algdomonly_unixid_to_sam_sid(POSIX_ID *id, DOM_SID *sid,
+BOOL surs_algdomonly_unixid_to_sam_sid(SURS_POSIX_ID *id, DOM_SID *sid,
 				BOOL create);
 
 /*The following definitions come from  lib/sursalgnt5ldap.c  */
