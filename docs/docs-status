@@ -66,6 +66,7 @@ profile acls             // protocol
 client lanman auth       // security
 client NTLMv2 auth       // security
 idmap backend            // security
+sam backend		 // security
 kernel change notify     // tuning
 lpq cache time           // tuning
--valid					 // misc
+-valid			 // misc
