@@ -117,15 +117,16 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 # This allows us to get away without duplicating code that 
 #  sombody else can maintain for us.  
 cd source
-make BASEDIR=$RPM_BUILD_ROOT/usr \
-	CONFIGDIR=$RPM_BUILD_ROOT/etc/samba \
-	LIBDIR=$RPM_BUILD_ROOT%{prefix}/lib/samba \
-	VARDIR=$RPM_BUILD_ROOT/var \
-	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
-	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
-	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
-	SWATDIR=$RPM_BUILD_ROOT%{prefix}/share/swat \
-	SAMBABOOK=$RPM_BUILD_ROOT%{prefix}/share/swat/using_samba \
+make DESTDIR=$RPM_BUILD_ROOT \
+	BASEDIR=/usr \
+	CONFIGDIR=/etc/samba \
+	LIBDIR=%{prefix}/lib/samba \
+	VARDIR=/var \
+	SBINDIR=%{prefix}/sbin \
+	BINDIR=$%{prefix}/bin \
+	MANDIR=MANDIR_MACRO \
+	SWATDIR=%{prefix}/share/swat \
+	SAMBABOOK=%{prefix}/share/swat/using_samba \
 	installman installswat installdat installmodules
 cd ..
 
@@ -402,7 +403,7 @@ fi
 %{prefix}/bin/smbtree
 %attr(755,root,root) /lib/libnss_wins.s*
 %attr(755,root,root) %{prefix}/lib/samba/vfs/*.so
-%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
+#%attr(755,root,root) %{prefix}/lib/samba/pdb/*.so
 %attr(755,root,root) %{prefix}/lib/samba/*.dat
 %{prefix}/include/libsmbclient.h
 %{prefix}/lib/libsmbclient.a
