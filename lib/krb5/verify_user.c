@@ -55,7 +55,7 @@ verify_common (krb5_context context,
 	return ret;
 
     krb5_verify_init_creds_opt_init(&vopt);
-    krb5_verify_init_creds_opt_set_ap_req_nofail(&vopt, secure);
+    krb5_verify_init_creds_opt_set_ap_req_nofail(&vopt, !secure);
 
     ret = krb5_verify_init_creds(context,
 				 &cred,
