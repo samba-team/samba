@@ -50,9 +50,11 @@ static u_long table[256];
 void
 crc_init_table(void)
 {
+    static int flag = 0;
     unsigned long crc, poly;
     int     i, j;
     
+    if(flag) return;
     poly = CRC_GEN;
     for (i = 0; i < 256; i++) {
 	crc = i;
@@ -65,6 +67,7 @@ crc_init_table(void)
 	}
 	table[i] = crc;
     }
+    flag = 1;
 }
 
 u_int32_t
