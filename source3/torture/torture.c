@@ -3162,7 +3162,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 	printf("%d clients started\n", nprocs);
 
 	for (i=0;i<nprocs;i++) {
-		waitpid(0, &status, 0);
+		while (waitpid(0, &status, 0) == -1 && errno == EINTR) /* noop */ ;
 	}
 
 	printf("\n");
