@@ -83,4 +83,12 @@ kx: $(OBJECTS_KX)
 kxd: $(OBJECTS_KXD)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) $(KLIB) $(LIBS)
 
+rxterm: rxterm.in
+	sed -e "s!%bindir%!$(bindir)!" $< > $@
+	chmod +x $@
+
+rxtelnet: rxtelnet.in
+	sed -e "s!%bindir%!$(bindir)!" $< > $@
+	chmod +x $@
+
 $(OBJECTS): ../../config.h
