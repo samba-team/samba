@@ -3091,8 +3091,30 @@ BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2)
   }
   }
 
-  matched = do_match(sbase,ebase,case_sig) && 
-    (trans2 || do_match(sext,eext,case_sig));
+  if(trans2) {
+    /*
+     * Match each component of the path, split up by '.'
+     * characters.
+     */
+    char *fp, *rp, *cp2, *cp1;
+    matched = False;
+    for( cp1 = ebase, cp2 = sbase; cp1;) {
+      fp = strchr(cp2, '.');
+      if(fp)
+        *fp = '\0';
+      rp = strchr(cp1, '.');
+      if(rp)
+        *rp = '\0';
+      if(!do_match(cp2, cp1, case_sig))
+        break;
+      cp2 = fp ? fp + 1 : "";
+      cp1 = rp ? rp + 1 : NULL;
+    } 
+    if(cp1 == NULL)
+      matched = True;
+  } else {
+    matched = do_match(sbase,ebase,case_sig) && do_match(sext,eext,case_sig);
+  }
 
   DEBUG(8,("mask_match returning %d\n", matched));
 
