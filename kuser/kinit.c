@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -53,7 +53,7 @@ struct getargs args[] = {
       "get renewable tickets", NULL },
     { "lifetime",		'l', arg_string, &lifetime,
       "lifetime of tickets", "seconds"},
-    { "server", 		's', arg_string, &server,
+    { "server", 		'S', arg_string, &server,
       "server to get ticket for", "principal" },
     { "version", 		0,   arg_flag, &version_flag, 
       NULL, NULL },
