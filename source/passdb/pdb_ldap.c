@@ -115,7 +115,9 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
 	int version;
+#ifdef HAVE_LDAP_START_TLS_S
 	int tls, rc;
+#endif
 	uid_t uid = geteuid();
 	struct passwd* pass;
 	
@@ -265,20 +267,17 @@ static int rebindproc (LDAP *ldap_struct, char **whop, char **credp,
                        int *method, int freeit )
 # endif
 {
-    register char   *to_clear = *credp;
-
 
 	if (freeit) {
                 SAFE_FREE(*whop);
                 memset(*credp, '\0', strlen(*credp));
                 SAFE_FREE(*credp);
 	} else {
-                *whop = strdup(ldap_state->bind_dn);
+                *whop = strdup(lp_ldap_admin_dn());
                 if (!*whop) {
                         return LDAP_NO_MEMORY;
                 }
-                DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n",
-                          whop));
+                DEBUG(5,("ldap_connect_system: Rebinding as \"%s\"\n", *whop));
 
                 *credp = strdup(ldap_secret);
                 if (!*credp) {
