@@ -641,6 +641,15 @@
 		uint8  unknown4;
 	} samr_UserInfo21;
 
+	typedef [flag(NDR_PAHEX)] struct {
+		uint8 data[516];
+	} samr_CryptPassword;
+
+	typedef struct {
+		samr_CryptPassword password;
+		uint16 pw_len;
+	} samr_UserInfo24;
+
 	typedef union {
 		[case(1)] samr_UserInfo1 info1;
 		[case(2)] samr_UserInfo2 info2;
@@ -660,6 +669,7 @@
 		[case(17)] samr_UserInfo17 info17;
 		[case(20)] samr_UserInfo20 info20;
 		[case(21)] samr_UserInfo21 info21;
+		[case(24)] samr_UserInfo24 info24;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(
@@ -962,10 +972,6 @@
 	/************************/
 	/* Function    0x36     */
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[516];
-	} samr_CryptPassword;
-
 	NTSTATUS samr_OemChangePasswordUser2(
 		[in]              samr_AsciiName *server,
 		[in,ref]          samr_AsciiName *account,
@@ -1044,7 +1050,11 @@
 
 	/************************/
 	/* Function    0x41     */
-	NTSTATUS samr_RID_TO_SID();
+	NTSTATUS samr_RidToSid(
+		[in,ref]    policy_handle *handle,
+		[in]        uint32        rid,
+		[out]       dom_sid2      *sid
+		);
 
 	/************************/
 	/* Function    0x42     */

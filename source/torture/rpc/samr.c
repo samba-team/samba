@@ -27,6 +27,9 @@
 #define TEST_GROUPNAME "samrtorturetestgroup"
 #define TEST_MACHINENAME "samrtorturetestmach$"
 #define TEST_DOMAINNAME "samrtorturetestdom$"
+#define TEST_PASSWORD "Caamei2n"
+#define TEST_PASSWORD2 "ipei8Thi"
+#define TEST_PASSWORD3 "Vohxoim1"
 
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
@@ -241,6 +244,44 @@ static BOOL test_SetUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return ret;
 }
 
+
+static BOOL test_SetUserPass(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct samr_SetUserInfo s;
+	union samr_UserInfo u;
+	BOOL ret = True;
+	uint8 session_key[16];
+
+	s.in.handle = handle;
+	s.in.info = &u;
+	s.in.level = 24;
+
+	encode_pw_buffer(u.info24.password.data, TEST_PASSWORD, STR_UNICODE);
+	u.info24.pw_len = 24;
+
+	status = dcerpc_fetch_session_key(p, session_key);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u - no session key - %s\n",
+		       s.in.level, nt_errstr(status));
+		return False;
+	}
+
+	SamOEMhash(u.info24.password.data, session_key, 516);
+
+	printf("Testing SetUserInfo level 24 (set password)\n");
+
+	status = dcerpc_samr_SetUserInfo(p, mem_ctx, &s);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("SetUserInfo level %u failed - %s\n",
+		       s.in.level, nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_SetAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			       struct policy_handle *handle)
 {
@@ -427,22 +468,29 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	NTSTATUS status;
 	struct samr_OemChangePasswordUser2 r;
 	BOOL ret = True;
-	struct samr_Hash hash;
-	struct samr_CryptPassword pass;
+	struct samr_Hash lm_verifier;
+	struct samr_CryptPassword lm_pass;
 	struct samr_AsciiName server, account;
+	const char *oldpass = TEST_PASSWORD2;
+	const char *newpass = TEST_PASSWORD3;
+	uint8 old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing OemChangePasswordUser2\n");
-
-	ZERO_STRUCT(hash);
-	ZERO_STRUCT(pass);
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	account.name = TEST_USERNAME;
 
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	encode_pw_buffer(lm_pass.data, newpass, 516);
+	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
 	r.in.server = &server;
 	r.in.account = &account;
-	r.in.password = &pass;
-	r.in.hash = &hash;
+	r.in.password = &lm_pass;
+	r.in.hash = &lm_verifier;
 
 	status = dcerpc_samr_OemChangePasswordUser2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -462,17 +510,30 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Name server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Hash nt_verifier, lm_verifier;
+	const char *oldpass = TEST_PASSWORD;
+	const char *newpass = TEST_PASSWORD2;
+	uint8 old_nt_hash[16], new_nt_hash[16];
+	uint8 old_lm_hash[16], new_lm_hash[16];
 
 	printf("Testing ChangePasswordUser2\n");
 
 	server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	init_samr_Name(&account, TEST_USERNAME);
 
-	ZERO_STRUCT(nt_pass);
-	ZERO_STRUCT(lm_pass);
-	ZERO_STRUCT(nt_verifier);
-	ZERO_STRUCT(lm_verifier);
-	
+	E_md4hash(oldpass, old_nt_hash);
+	E_md4hash(newpass, new_nt_hash);
+
+	E_deshash(oldpass, old_lm_hash);
+	E_deshash(newpass, new_lm_hash);
+
+	encode_pw_buffer(lm_pass.data, newpass, 516);
+	SamOEMhash(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
+	encode_pw_buffer(nt_pass.data, newpass, STR_UNICODE);
+	SamOEMhash(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
 	r.in.server = &server;
 	r.in.account = &account;
 	r.in.nt_password = &nt_pass;
@@ -644,6 +705,10 @@ static BOOL test_user_ops(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_SetUserInfo(p, mem_ctx, handle)) {
+		ret = False;
+	}	
+
+	if (!test_SetUserPass(p, mem_ctx, handle)) {
 		ret = False;
 	}	
 
@@ -926,11 +991,11 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle)) {
+	if (!test_user_ops(p, mem_ctx, user_handle)) {
 		ret = False;
 	}
 
-	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle)) {
+	if (!test_ChangePasswordUser(p, mem_ctx, domain_handle)) {
 		ret = False;
 	}
 
@@ -938,7 +1003,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		ret = False;
 	}
 
-	if (!test_user_ops(p, mem_ctx, user_handle)) {
+	if (!test_OemChangePasswordUser2(p, mem_ctx, domain_handle)) {
 		ret = False;
 	}
 
@@ -1876,6 +1941,27 @@ static BOOL test_TestPrivateFunctionsDomain(struct dcerpc_pipe *p, TALLOC_CTX *m
 	return ret;
 }
 
+static BOOL test_RidToSid(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *domain_handle)
+{
+    	struct samr_RidToSid r;
+	NTSTATUS status;
+	BOOL ret = True;
+
+	printf("Testing RidToSid\n");
+
+	r.in.handle = domain_handle;
+	r.in.rid = 512;
+
+	status = dcerpc_samr_RidToSid(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("RidToSid failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_AddGroupMember(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 				struct policy_handle *domain_handle,
 				struct policy_handle *group_handle)
@@ -2104,6 +2190,10 @@ static BOOL test_OpenDomain(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_TestPrivateFunctionsDomain(p, mem_ctx, &domain_handle)) {
+		ret = False;
+	}
+
+	if (!test_RidToSid(p, mem_ctx, &domain_handle)) {
 		ret = False;
 	}
 
