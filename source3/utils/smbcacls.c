@@ -28,6 +28,48 @@ static fstring username;
 static int got_pass;
 
 
+/* print a ascii version of a security descriptor on a FILE handle */
+static void sec_desc_print(FILE *f, SEC_DESC *sd)
+{
+	fstring sidstr;
+	int i;
+
+	/* Print owner and group sid */
+
+	if (sd->owner_sid) {
+		sid_to_string(sidstr, sd->owner_sid);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	printf("%s\n", sidstr);
+
+	if (sd->grp_sid) {
+		sid_to_string(sidstr, sd->grp_sid);
+	} else {
+		fstrcpy(sidstr, "");
+	}
+
+	fprintf(f, "%s\n", sidstr);
+
+	/* Print aces */
+
+	if (!sd->dacl) {
+		return;
+	}
+
+	for (i = 0; i < sd->dacl->num_aces; i++) {
+		SEC_ACE *ace = &sd->dacl->ace[i];
+		fstring sidstr;
+
+		sid_to_string(sidstr, &ace->sid);
+
+		fprintf(f, "%d %d 0x%08x %s\n", ace->type, ace->flags,
+			ace->info.mask, sidstr);
+	}
+}
+
+
 
 
 /***************************************************** 
@@ -36,6 +78,7 @@ dump the acls for a file
 static void cacl_dump(struct cli_state *cli, char *filename)
 {
 	int fnum;
+	SEC_DESC *sd;
 
 	fnum = cli_open(cli, filename, O_RDONLY, 0);
 	if (fnum == -1) {
@@ -43,9 +86,16 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 		return;
 	}
 
-	cli_query_secdesc(cli, fnum);
+	sd = cli_query_secdesc(cli, fnum);
 
-	sleep(1);
+	if (!sd) {
+		printf("ERROR: secdesc query failed\n");
+		return;
+	}
+
+	sec_desc_print(stdout, sd);
+
+	free_sec_desc(&sd);
 
 	cli_close(cli, fnum);
 }
@@ -127,10 +177,6 @@ struct cli_state *connect_one(char *share)
 	 * QUESTION ? Do we want to have a 'client compatibility
 	 * mode to turn these on/off ? JRA.
 	 */
-
-	if (*c->server_domain || *c->server_os || *c->server_type)
-		DEBUG(1,("Domain=[%s] OS=[%s] Server=[%s]\n",
-			c->server_domain,c->server_os,c->server_type));
 	
 	DEBUG(4,(" session setup ok\n"));
 
