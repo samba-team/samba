@@ -43,27 +43,34 @@ RCSID("$Id$");
 
 #include "otp_locl.h"
 
+#define RETRIES 5
+
 void *
 otp_db_open (void)
 {
   int lock;
+  int i;
+  void *ret;
 
-  do {
+  for(i = 0; i < RETRIES; ++i) {
     struct stat statbuf;
+
     lock = open (OTP_DB_LOCK, O_WRONLY | O_CREAT | O_EXCL, 0666);
     if (lock >= 0) {
       close(lock);
       break;
     }
-    if (stat (OTP_DB_LOCK, &statbuf) < 0)
-      if (errno == ENOENT)
-	continue;
-      else
-	return NULL;
     if (time(NULL) - statbuf.st_mtime > OTP_DB_TIMEOUT)
       unlink (OTP_DB_LOCK);
-  } while(1);
-  return dbm_open (OTP_DB, O_RDWR | O_CREAT, 0600);
+    else
+      sleep (1);
+  }
+  if (i == RETRIES)
+    return NULL;
+  ret = dbm_open (OTP_DB, O_RDWR | O_CREAT, 0600);
+  if (ret == NULL)
+    unlink (OTP_DB_LOCK);
+  return ret;
 }
 
 void
