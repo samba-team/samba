@@ -1008,7 +1008,7 @@ krb5_error_code KRB5_LIB_FUNCTION
 krb5_free_address(krb5_context context,
 		  krb5_address *address)
 {
-    struct addr_operations *a = find_af (address->addr_type);
+    struct addr_operations *a = find_atype (address->addr_type);
     if(a != NULL && a->free_addr != NULL)
 	return (*a->free_addr)(context, address);
     krb5_data_free (&address->address);
@@ -1147,7 +1147,7 @@ krb5_address_prefixlen_boundary(krb5_context context,
 				krb5_address *low,
 				krb5_address *high)
 {
-    struct addr_operations *a = find_af (inaddr->addr_type);
+    struct addr_operations *a = find_atype (inaddr->addr_type);
     if(a != NULL && a->mask_boundary != NULL)
 	return (*a->mask_boundary)(context, inaddr, prefixlen, low, high);
     krb5_set_error_string(context, "Address family %d doesn't support "
