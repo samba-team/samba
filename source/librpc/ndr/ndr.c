@@ -47,7 +47,7 @@ struct ndr_pull *ndr_pull_init_blob(const DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr;
 
-	ndr = talloc(mem_ctx, sizeof(*ndr));
+	ndr = talloc_p(mem_ctx, struct ndr_pull);
 	if (!ndr) return NULL;
 
 	ndr->flags = 0;
