@@ -1,3 +1,7 @@
+2000-08-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* su.c: set KRBTKFILE
+
 2000-07-10  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: actually install su
