@@ -8113,8 +8113,10 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 
 		/* keep track of the size of the array in bytes */
 		
-		needed += spoolss_size_printer_enum_values(&enum_values[num_entries]);
+		needed += spoolss_size_printer_enum_values(&enum_values[i]);
 	}
+	
+	/* housekeeping information in the reply */
 	
 	r_u->needed 	= needed;
 	r_u->returned 	= num_entries;
