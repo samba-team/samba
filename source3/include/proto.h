@@ -768,6 +768,16 @@ uint32 cli_spoolss_getprinterdriverdir (
 	char* 			env,
 	DRIVER_DIRECTORY_CTR  	*ctr
 );
+uint32 cli_spoolss_addprinterdriver (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_DRIVER_CTR  	*ctr
+);
+uint32 cli_spoolss_addprinterex (
+	struct cli_state 	*cli, 
+	uint32 			level,
+	PRINTER_INFO_CTR  	*ctr
+);
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
@@ -3163,11 +3173,17 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		uint32 access_required,
 		const fstring clientname,
 		const fstring user_name);
-BOOL make_spoolss_q_addprinterex(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTEREX *q_u, const char *srv_name,
-				 const char* clientname, const char* user_name,
-				 uint32 level, PRINTER_INFO_2 *info);
-BOOL make_spool_printer_info_2(TALLOC_CTX *ctx, SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
-			       PRINTER_INFO_2 *info);
+BOOL make_spoolss_q_addprinterex(
+	SPOOL_Q_ADDPRINTEREX *q_u, 
+	const char *srv_name,
+	const char* clientname, 
+	const char* user_name,
+	uint32 level, 
+	PRINTER_INFO_CTR *ctr);
+BOOL make_spool_printer_info_2(
+	SPOOL_PRINTER_INFO_LEVEL_2 **spool_info2, 
+	PRINTER_INFO_2 *info
+);
 BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth);
 BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
@@ -3302,12 +3318,16 @@ BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_
                                           prs_struct *ps, int depth);
 BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth);
 BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth);
-BOOL make_spoolss_q_addprinterdriver(TALLOC_CTX *ctx, SPOOL_Q_ADDPRINTERDRIVER *q_u, 
-				     const char* srv_name, uint32 level, 
-				     PRINTER_DRIVER_CTR *info);
-BOOL make_spool_driver_info_3(TALLOC_CTX *ctx, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
-			      DRIVER_INFO_3 *info3);
-BOOL make_spool_buffer5(TALLOC_CTX *ctx, BUFFER5 *buf5, uint32 len, uint16 *src);
+BOOL make_spoolss_q_addprinterdriver(
+	SPOOL_Q_ADDPRINTERDRIVER *q_u, 
+	const char* srv_name, 
+	uint32 level, 
+	PRINTER_DRIVER_CTR *info);
+BOOL make_spool_driver_info_3(
+	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *spool_drv_info,
+	DRIVER_INFO_3 *info3
+);
+BOOL make_spool_buffer5(BUFFER5 *buf5, uint32 len, uint16 *src);
 BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth);
 BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
@@ -3680,12 +3700,14 @@ uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO 
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
+BOOL get_short_archi(char *short_archi, char *long_archi);
+void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch);
 
 /*The following definitions come from  rpcclient/rpcclient.c  */
 
 void fetch_domain_sid(struct cli_state *cli);
 void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
-			  char* workgroup, char* password);
+			  char* domain, char* password);
 void add_command_set(struct cmd_set *cmd_set);
 struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
 				   struct ntuser_creds *creds);
