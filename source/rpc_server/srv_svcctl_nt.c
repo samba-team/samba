@@ -92,5 +92,10 @@ WERROR _svcctl_get_display_name(pipes_struct *p, SVCCTL_Q_GET_DISPLAY_NAME *q_u,
 
 WERROR _svcctl_query_status(pipes_struct *p, SVCCTL_Q_QUERY_STATUS *q_u, SVCCTL_R_QUERY_STATUS *r_u)
 {
+
+	r_u->svc_status.type = 0x0110;
+	r_u->svc_status.state = 0x0004;
+	r_u->svc_status.controls_accepted = 0x0005;
+
 	return WERR_OK;
 }

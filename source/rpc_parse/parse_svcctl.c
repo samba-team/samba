@@ -270,6 +270,10 @@ BOOL svcctl_io_q_query_status(const char *desc, SVCCTL_Q_QUERY_STATUS *q_u, prs_
 
 static BOOL svcctl_io_service_status( const char *desc, SERVICE_STATUS *status, prs_struct *ps, int depth )
 {
+
+	prs_debug(ps, depth, desc, "svcctl_io_r_query_status");
+	depth++;
+
 	if(!prs_uint32("type", ps, depth, &status->type))
 		return False;
 
