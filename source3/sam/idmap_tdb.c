@@ -48,6 +48,7 @@ static struct idmap_state {
 /* Allocate either a user or group id from the pool */
 static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 {
+	BOOL ret;
 	int hwm;
 
 	if (!id) return NT_STATUS_INVALID_PARAMETER;
@@ -59,30 +60,55 @@ static NTSTATUS db_allocate_id(unid_t *id, int id_type)
 				return NT_STATUS_INTERNAL_DB_ERROR;
 			}
 
+			/* check it is in the range */
 			if (hwm > idmap_state.uid_high) {
 				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
-			(*id).uid = hwm++;
+			/* fetch a new id and increment it */
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+			if (!ret) {
+				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
 
-			/* Store new high water mark */
-			tdb_store_int32(idmap_tdb, HWM_USER, hwm);
+			/* recheck it is in the range */
+			if (hwm > idmap_state.uid_high) {
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+			
+			(*id).uid = hwm;
+
 			break;
 		case ID_GROUPID:
 			if ((hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP)) == -1) {
 				return NT_STATUS_INTERNAL_DB_ERROR;
 			}
 
+			/* check it is in the range */
 			if (hwm > idmap_state.gid_high) {
 				DEBUG(0, ("idmap Fatal Error: GID range full!! (max: %u)\n", idmap_state.gid_high));
 				return NT_STATUS_UNSUCCESSFUL;
 			}
 
-			(*id).gid = hwm++;
+			/* fetch a new id and increment it */
+			ret = tdb_change_uint32_atomic(idmap_tdb, HWM_USER, &hwm, 1);
+
+			if (!ret) {
+				DEBUG(0, ("idmap_tdb: Fatal error while fetching a new id\n!"));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
+
+			/* recheck it is in the range */
+			if (hwm > idmap_state.uid_high) {
+				DEBUG(0, ("idmap Fatal Error: UID range full!! (max: %u)\n", idmap_state.uid_high));
+				return NT_STATUS_UNSUCCESSFUL;
+			}
 			
-			/* Store new high water mark */
-			tdb_store_int32(idmap_tdb, HWM_GROUP, hwm);
+			(*id).gid = hwm;
+			
 			break;
 		default:
 			return NT_STATUS_INVALID_PARAMETER;
