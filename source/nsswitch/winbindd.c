@@ -692,6 +692,7 @@ int main(int argc, char **argv)
 	ZERO_STRUCT(server_state);
 
 	/* Winbind daemon initialisation */
+
 	if (!winbindd_param_init()) {
 		return 1;
 	}
@@ -701,6 +702,15 @@ int main(int argc, char **argv)
 	}
 
 	winbindd_cache_init();
+
+	/* Unblock all signals we are interested in as they may have been
+	   blocked by the parent process. */
+
+	BlockSignals(False, SIGINT);
+	BlockSignals(False, SIGQUIT);
+	BlockSignals(False, SIGTERM);
+	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGHUP);
 
 	/* Setup signal handlers */
 	
