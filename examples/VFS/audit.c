@@ -2,7 +2,7 @@
  * Auditing VFS module for samba.  Log selected file operations to syslog
  * facility.
  *
- * Copyright (C) Tim Potter, 1999-2000
+ * Copyright (C) Tim Potter, 1999-2001
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
