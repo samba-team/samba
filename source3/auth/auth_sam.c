@@ -261,7 +261,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return nt_status;
 	}
 
-	(*server_info)->nt_session_key = user_sess_key;
+	(*server_info)->user_session_key = user_sess_key;
 	(*server_info)->lm_session_key = lm_sess_key;
 
 	return nt_status;

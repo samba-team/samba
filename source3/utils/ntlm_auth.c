@@ -297,11 +297,11 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 		memcpy(lm_key, response.data.auth.first_8_lm_hash, 
 			sizeof(response.data.auth.first_8_lm_hash));
 	}
-	if ((flags & WBFLAG_PAM_NTKEY) && nt_key
-		    && (memcmp(zeros, response.data.auth.nt_session_key, 
-			       sizeof(response.data.auth.nt_session_key)) != 0)) {
-		memcpy(nt_key, response.data.auth.nt_session_key, 
-			sizeof(response.data.auth.nt_session_key));
+	if ((flags & WBFLAG_PAM_USER_SESSION_KEY) && nt_key
+		    && (memcmp(zeros, response.data.auth.user_session_key, 
+			       sizeof(response.data.auth.user_session_key)) != 0)) {
+		memcpy(nt_key, response.data.auth.user_session_key, 
+			sizeof(response.data.auth.user_session_key));
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
@@ -313,7 +313,7 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 	return nt_status;
 }
 				   
-static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	static const char zeros[16];
 	NTSTATUS nt_status;
@@ -327,7 +327,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 					      &ntlmssp_state->chal,
 					      &ntlmssp_state->lm_resp,
 					      &ntlmssp_state->nt_resp, 
-					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_NTKEY | WBFLAG_PAM_UNIX_NAME,
+					      WBFLAG_PAM_LMKEY | WBFLAG_PAM_USER_SESSION_KEY | WBFLAG_PAM_UNIX_NAME,
 					      lm_key, nt_key, 
 					      &error_string, &unix_name);
 
@@ -339,7 +339,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 		}
 		
 		if (memcmp(nt_key, zeros, 16) != 0) {
-			*nt_session_key = data_blob(nt_key, 16);
+			*user_session_key = data_blob(nt_key, 16);
 		}
 		ntlmssp_state->auth_context = talloc_strdup(ntlmssp_state->mem_ctx, unix_name);
 		SAFE_FREE(unix_name);
@@ -352,7 +352,7 @@ static NTSTATUS winbind_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB 
 	return nt_status;
 }
 
-static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *nt_session_key, DATA_BLOB *lm_session_key) 
+static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *user_session_key, DATA_BLOB *lm_session_key) 
 {
 	static const char zeros[16];
 	NTSTATUS nt_status;
@@ -370,7 +370,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *n
 					ntlmssp_state->user, 
 					ntlmssp_state->user, 
 					ntlmssp_state->domain,
-					lm_pw, nt_pw, nt_session_key, lm_session_key);
+					lm_pw, nt_pw, user_session_key, lm_session_key);
 	
 	if (NT_STATUS_IS_OK(nt_status)) {
 		if (memcmp(lm_key, zeros, 8) != 0) {
@@ -380,7 +380,7 @@ static NTSTATUS local_pw_check(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *n
 		}
 		
 		if (memcmp(nt_key, zeros, 16) != 0) {
-			*nt_session_key = data_blob(nt_key, 16);
+			*user_session_key = data_blob(nt_key, 16);
 		}
 		ntlmssp_state->auth_context = talloc_asprintf(ntlmssp_state->mem_ctx, "%s%c%s", ntlmssp_state->domain, *lp_winbind_separator(), ntlmssp_state->user);
 	} else {
@@ -1379,7 +1379,7 @@ static BOOL check_auth_crap(void)
 		flags |= WBFLAG_PAM_LMKEY;
 
 	if (request_nt_key) 
-		flags |= WBFLAG_PAM_NTKEY;
+		flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
 					      opt_workstation,
@@ -1462,7 +1462,7 @@ static BOOL test_lm_ntlm_broken(enum ntlm_break break_which)
 	ZERO_STRUCT(nt_key);
 
 	flags |= WBFLAG_PAM_LMKEY;
-	flags |= WBFLAG_PAM_NTKEY;
+	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBencrypt(opt_password,chall.data,lm_response.data);
 	E_deshash(opt_password, lm_hash); 
@@ -1582,7 +1582,7 @@ static BOOL test_ntlm_in_lm(void)
 	ZERO_STRUCT(nt_key);
 
 	flags |= WBFLAG_PAM_LMKEY;
-	flags |= WBFLAG_PAM_NTKEY;
+	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 
@@ -1651,7 +1651,7 @@ static BOOL test_ntlm_in_both(void)
 	ZERO_STRUCT(nt_key);
 
 	flags |= WBFLAG_PAM_LMKEY;
-	flags |= WBFLAG_PAM_NTKEY;
+	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
 	E_md4hash(opt_password, (unsigned char *)nt_hash);
@@ -1713,7 +1713,7 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 	uint32 flags = 0;
 	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
 	DATA_BLOB lmv2_response = data_blob(NULL, 0);
-	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB user_session_key = data_blob(NULL, 0);
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(get_winbind_netbios_name(), get_winbind_domain());
 
 	uchar nt_key[16];
@@ -1722,12 +1722,12 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WBFLAG_PAM_NTKEY;
+	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, &chall,
 			      &names_blob,
 			      &lmv2_response, &ntlmv2_response, 
-			      &nt_session_key)) {
+			      &user_session_key)) {
 		data_blob_free(&names_blob);
 		return False;
 	}
@@ -1771,13 +1771,13 @@ static BOOL test_lmv2_ntlmv2_broken(enum ntlm_break break_which)
 		return break_which == BREAK_NT;
 	}
 
-	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(nt_session_key.data, nt_key, 
+	if (break_which != NO_NT && break_which != BREAK_NT && memcmp(user_session_key.data, nt_key, 
 		   sizeof(nt_key)) != 0) {
-		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+		DEBUG(1, ("USER Session Key does not match expectations!\n"));
  		DEBUG(1, ("nt_key:\n"));
 		dump_data(1, (const char *)nt_key, 16);
  		DEBUG(1, ("expected:\n"));
-		dump_data(1, (const char *)nt_session_key.data, nt_session_key.length);
+		dump_data(1, (const char *)user_session_key.data, user_session_key.length);
 		pass = False;
 	}
         return pass;
@@ -1851,8 +1851,8 @@ static BOOL test_plaintext(enum ntlm_break break_which)
 
 	ZERO_STRUCT(nt_key);
 	
-	flags |= WBFLAG_PAM_NTKEY;
 	flags |= WBFLAG_PAM_LMKEY;
+	flags |= WBFLAG_PAM_USER_SESSION_KEY;
 
 	if ((push_ucs2_allocate((smb_ucs2_t **)&nt_response.data, opt_password)) == -1) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
