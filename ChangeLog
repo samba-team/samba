@@ -1,3 +1,7 @@
+2001-02-05  Assar Westerlund  <assar@assaris.sics.se>
+
+	* Release 0.3e
+
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hprop.c (v4_get_masterkey): check kdb_verify_master_key
