@@ -250,6 +250,33 @@ static int ldapsam_search_suffix_by_sid (struct ldapsam_privates *ldap_state,
 	return rc;
 }
 
+
+/**
+ * Search for trust password entry in LDAP tree. Filter is constructed from
+ * domain name, and trust password object name.
+ *
+ * @param ldap_state current state of LDAP connection
+ * @param name domain name of the trust password
+ * @param res result of LDAP search
+ * @param attr trust password object attributes
+ * @return return code of LDAP call
+ */
+
+static int ldapsam_search_trustpw_by_name(struct ldapsam_privates *ldap_state,
+                                          const char *name, LDAPMessage **res,
+                                          char **attr)
+{
+	pstring filter;
+	int rc;
+	
+	pstr_sprintf(filter, "(&(%s=%s)(objectclass=%s))",
+	             get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN), name,
+	             LDAP_OBJ_TRUST_PASSWORD);
+
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, attr, res);
+	return rc;	             
+}
+
 /*******************************************************************
  Delete complete object or objectclass and attrs from
  object found in search_result depending on lp_ldap_delete_dn
@@ -1269,7 +1296,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 }	
 
 /********************************************************************
- Do the actual modification - also change a plaintext passord if 
+ Do the actual modification - also change a plaintext password if 
  it it set.
 **********************************************************************/
 
@@ -1384,6 +1411,68 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		}
 		ber_bvfree(bv);
 	}
+	return NT_STATUS_OK;
+}
+
+
+/**
+ * Performs LDAP operation to modify the entry
+ *
+ * @param methods pdb methods structure of current backend
+ * @param trustpw trust password structure pointer
+ * @param dn distinguished name (DN) of the object being modified
+ * @param mod LDAP modification structure
+ * @param ldap_op LDAP opcode
+ * @return nt status code of operation
+ */
+
+static NTSTATUS ldapsam_modify_trustpw(struct pdb_methods *methods,
+                                       SAM_TRUST_PASSWD *trustpw, char *dn,
+                                       LDAPMod **mod, int ldap_op)
+{
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
+	int rc;
+
+	if (!methods || !trustpw || !dn) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (!mod) {
+		DEBUG(5, ("ldapsam_modify_trustpw: mod is empty: nothing to modify\n"));
+		return NT_STATUS_OK;
+	}
+
+	/* Do modify or add a new trust password object */
+	switch(ldap_op) {
+	case LDAP_MOD_ADD:
+		smbldap_set_mod(&mod, LDAP_MOD_ADD, "objectclass",
+		                LDAP_OBJ_TRUST_PASSWORD);
+		rc = smbldap_add(ldap_state->smbldap_state, dn, mod);
+			break;
+
+	case LDAP_MOD_REPLACE:
+		rc = smbldap_modify(ldap_state->smbldap_state, dn, mod);
+		break;
+
+	default:
+		DEBUG(0, ("ldapsam_modify_trustpwd: Wrong LDAP operation type: %d!\n",
+		          ldap_op));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* Have it succeeded ? */
+	if (rc != LDAP_SUCCESS) {
+		char *ldap_err = NULL;
+		ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
+		                &ldap_err);
+		DEBUG(1, ("ldapsam_modify_trustpw: Failed to %s trustpw dn= %s with: %s\n\t%s\n",
+		          ldap_op == LDAP_MOD_ADD ? "add" : "modify",
+		          dn, ldap_err2string(rc),
+		          ldap_err ? ldap_err : "unknown"));
+		SAFE_FREE(ldap_err);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
 	return NT_STATUS_OK;
 }
 
@@ -3090,24 +3179,124 @@ done:
 }
 
 
+static BOOL init_ldap_from_trustpw(struct ldapsam_privates *ldap_state, LDAPMessage *entry,
+                                   LDAPMod ***mod, SAM_TRUST_PASSWD *trustpw)
+{
+	fstring sidstr, mtime_str, flags_str;
+	const DOM_SID *sid;
+	char hexpwd[16];
+
+	if (!ldap_state || !mod || !trustpw) {
+		DEBUG(0, ("init_ldap_from_trustpw: NULL pointer(s) passed!\n"));
+		return False;
+	}
+
+	/* Domain name of the trust */
+	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+	                 get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
+	                 pdb_get_tp_domain_name_c(trustpw));
+
+	/* Trust password itself */
+	pdb_sethexpwd(hexpwd, pdb_get_tp_pass(trustpw), 0);
+	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+	                 get_attr_key2string(trustpw_attr_list, LDAP_ATTR_NTPW),
+	                 hexpwd);
+
+	/* SID of the trust password */
+	sid = pdb_get_tp_domain_sid(trustpw);
+	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+	                 get_attr_key2string(trustpw_attr_list, LDAP_ATTR_SID),
+	                 sid_to_string(sidstr, sid));
+
+	/* Last change time */
+	slprintf(mtime_str, sizeof(mtime_str) - 1, "%li", pdb_get_tp_mod_time(trustpw));
+	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+	                 get_attr_key2string(trustpw_attr_list, LDAP_ATTR_PWD_LAST_SET),
+	                 mtime_str);
+	
+	/* Trust type flags */ 
+	slprintf(flags_str, sizeof(flags_str) - 1, "%i", pdb_get_tp_flags(trustpw));
+	smbldap_make_mod(ldap_state->smbldap_state->ldap_struct, entry, mod,
+	                 get_attr_key2string(trustpw_attr_list, LDAP_ATTR_TRUST_PASSWD_FLAGS),
+	                 flags_str);
+
+	return True;
+}
+
+
+static BOOL init_trustpw_from_ldap(struct ldapsam_privates* ldap_state, SAM_TRUST_PASSWD *trust,
+                                   LDAPMessage *entry)
+{
+	if (!ldap_state || !trust || !entry) {
+		DEBUG(0, ("init_trustpw_from_ldap: NULL pointer passed!\n"));
+		return False;
+	}
+
+	if (!ldap_state->smbldap_state->ldap_struct) {
+		DEBUG(0, ("init_trustpw_from_ldap: ldap_state->smbldap_state->ldap_struct is NULL!\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
 static NTSTATUS ldapsam_settrustpwent(struct pdb_methods *methods)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	return nt_status;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
+	int rc;
+	pstring filter;
+	char **attr_list;
+
+	pstr_sprintf(filter, "(&(sambaDomainName=*)(objectclass=%s))",
+	             LDAP_OBJ_TRUST_PASSWORD);
+	attr_list = get_attr_list(trustpw_attr_list);
+	rc = smbldap_search_suffix(ldap_state->smbldap_state, filter, attr_list,
+	                           &ldap_state->result);
+	free_attr_list(attr_list);
+
+	if (rc != LDAP_SUCCESS) {
+		ldap_msgfree(ldap_state->result);
+		ldap_state->result = NULL;
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_state->entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
+	                                     ldap_state->result);
+	ldap_state->index = 0;
+
+	return NT_STATUS_OK;
+}
+
+
+static void ldapsam_endtrustpwent(struct pdb_methods *methods)
+{
 }
 
 
 static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	return nt_status;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates*)methods->private_data;
+	BOOL ret = False;
+
+	while (!ret) {
+		if (!ldap_state->entry)
+			return NT_STATUS_UNSUCCESSFUL;
+
+		ldap_state->index++;
+		ret = init_trustpw_from_ldap(ldap_state, trust, ldap_state->entry);
+
+		ldap_state->entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
+		                                    ldap_state->entry);
+	}
+
+	return NT_STATUS_OK;
 }
 
 
 static NTSTATUS ldapsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const char *name)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	return nt_status;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
@@ -3118,10 +3307,83 @@ static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PAS
 }
 
 
-static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, SAM_TRUST_PASSWD *trust)
+static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, const SAM_TRUST_PASSWD *trust)
 {
-	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
-	return nt_status;
+	struct ldapsam_privates *ldap_state = (struct ldapsam_privates *)methods->private_data;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD trustpw;
+	char **attr_list;
+	LDAPMessage *res = NULL, *trustpw_entry = NULL;
+	LDAPMod **mod = NULL;
+	pstring dn;
+	int ldap_op;
+	int rc;
+	const char *dom_name;
+
+	if (!trust) {
+		DEBUG(0, ("ldapsam_add_trust_passwd: SAM_TRUST_PASSWD is NULL!\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	memcpy(&trustpw, trust, sizeof(trustpw));
+	attr_list = get_attr_list(trustpw_attr_list);
+
+	dom_name = pdb_get_tp_domain_name_c(&trustpw);
+	if (!dom_name) {
+		DEBUG(0, ("ldapsam_add_trust_passwd: Couldn't get char-converted domain name\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	/* Checking if such trust password already exists in the directory */
+	rc = ldapsam_search_trustpw_by_name(ldap_state, dom_name, &res, attr_list);
+	
+	if (rc != LDAP_SUCCESS) {
+		free_attr_list(attr_list);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+	
+	if (ldap_count_entries(ldap_state->smbldap_state->ldap_struct, res) != 0) {
+		DEBUG(0, ("ldapsam_add_trust_passwd: Trust password (%s) already exists in the directory\n",
+		          dom_name));
+		ldap_msgfree(res);
+		free_attr_list(attr_list);
+		return NT_STATUS_USER_EXISTS;
+	}
+
+	ldap_op = LDAP_MOD_ADD;
+
+	/* DN of the object being added */
+	slprintf(dn, sizeof(dn) - 1, "%s=%s,%s=%s,%s", get_attr_key2string(trustpw_attr_list, LDAP_ATTR_DOMAIN),
+	         dom_name, get_attr_key2string(dominfo_attr_list, LDAP_ATTR_DOMAIN), lp_workgroup(),
+	         lp_ldap_suffix());
+
+	/* Init LDAP entry from trust password structure */
+	if (!init_ldap_from_trustpw(ldap_state, trustpw_entry, &mod, &trustpw)) {
+		DEBUG(0, ("ldapsam_add_trustpw_passwd: init_ldap_from_trustpw failed!\n"));
+		ldap_msgfree(res);
+		if (mod != NULL) ldap_mods_free(mod, True);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ldap_msgfree(res);
+
+	if (mod == NULL) {
+		DEBUG(0, ("ldapsam_add_trust_passwd: mod is empty - nothing to modify in trust: %s\n", dom_name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	nt_status = ldapsam_modify_trustpw(methods, &trustpw, dn, mod, ldap_op);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(0, ("ldapsam_add_trust_passwd: failed to modify/add trustpw with sambaDomainName = %s (dn = %s)\n",
+		          dom_name, dn));
+		ldap_mods_free(mod, True);
+		return nt_status;
+	}
+
+	DEBUG(2, ("ldapsam_add_trust_passwd: added: sambaDomainName == %s in the LDAP database\n", dom_name));
+	ldap_mods_free(mod, True);
+
+	return NT_STATUS_OK;
 }
 
 
@@ -3201,6 +3463,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 
 	(*pdb_method)->settrustpwent = ldapsam_settrustpwent;
 	(*pdb_method)->gettrustpwent = ldapsam_gettrustpwent;
+	(*pdb_method)->endtrustpwent = ldapsam_endtrustpwent;
 	(*pdb_method)->gettrustpwnam = ldapsam_gettrustpwnam;
 	(*pdb_method)->gettrustpwsid = ldapsam_gettrustpwsid;
 	(*pdb_method)->add_trust_passwd = ldapsam_add_trust_passwd;
