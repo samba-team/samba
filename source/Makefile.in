@@ -691,7 +691,7 @@ TDBBACKUP_OBJ = tdb/tdbbackup.o tdb/tdbback.o $(SNPRINTF_OBJ) $(TDBBASE_OBJ)
 
 TDBDUMP_OBJ = tdb/tdbdump.o $(TDBBASE_OBJ)
 
-NTLM_AUTH_OBJ = utils/ntlm_auth.o $(POPT_LIB_OBJ) \
+NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBSAMBA_OBJ) $(POPT_LIB_OBJ) \
 		libsmb/asn1.o libsmb/spnego.o libsmb/clikrb5.o libads/kerberos.o \
 		libads/kerberos_verify.o $(SECRETS_OBJ) $(SERVER_MUTEX_OBJ) \
 		libads/authdata.o $(RPC_PARSE_OBJ0) \
