@@ -115,7 +115,7 @@ union echo_Info {
 
 struct TestCall2 {
 	struct {
-		uint32 level;
+		uint16 level;
 	} in;
 
 	struct {
