@@ -31,31 +31,7 @@
  * SUCH DAMAGE.
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-RCSID("$Id$");
-#endif
-
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/time.h>
-
-#include <ctype.h>
-#include <dirent.h>
-#include <err.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <pwd.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "pathnames.h"
-#include "extern.h"
+#include "rcp_locl.h"
 
 #define RSH_PROGRAM "rsh"
 #define	OPTIONS "5dfKpP:rtxz"

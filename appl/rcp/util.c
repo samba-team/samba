@@ -41,26 +41,9 @@ static const char rcsid[] =
 #endif /* not lint */
 #endif
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
+#include "rcp_locl.h"
+
 RCSID("$Id$");
-#endif
-
-#include <sys/param.h>
-#include <sys/stat.h>
-#include <sys/wait.h>
-
-#include <ctype.h>
-#include <err.h>
-#include <errno.h>
-#include <paths.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#include "extern.h"
 
 char *
 colon(cp)
