@@ -600,6 +600,7 @@ main (int argc, char **argv)
 #endif
     } else 
 	krb5_cc_close (context, ccache);
+    krb5_free_principal(context, principal);
     krb5_free_context (context);
     return 0;
 }
