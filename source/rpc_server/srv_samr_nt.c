@@ -2135,9 +2135,9 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 		return nt_status;
 	}
 
-	if (!acb_info) { 
+	if (!(acb_info == ACB_NORMAL || acb_info == ACB_DOMTRUST || acb_info == ACB_WSTRUST || acb_info == ACB_SVRTRUST)) { 
 		/* Match Win2k, and return NT_STATUS_INVALID_PARAMETER if 
-		   this parameter is zero (ie, no user type specified) */
+		   this parameter is not an account type */
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
