@@ -9,6 +9,7 @@ This software is freely distributable under the GNU public license, a
 copy of which you should have received with this software (in a file
 called COPYING). 
 
+
 WHAT IS SMB?
 ============
 
@@ -25,8 +26,9 @@ Netware, NFS, Appletalk, Banyan Vines, Decnet etc; many of these have
 advantages but none are both public specifications and widely
 implemented in desktop machines by default.
 
-The Common Internet Filesystem is what the new SMB initiative is
-called. For details watch http://samba.anu.edu.au/cifs.
+The Common Internet Filesystem (CIFS) is what the new SMB initiative
+is called. For details watch http://samba.anu.edu.au/cifs.
+
 
 WHY DO PEOPLE WANT TO USE SMB?
 ==============================
@@ -52,13 +54,16 @@ replacement for Windows NT, Warp, NFS or Netware servers."
 - a SMB server, to provide Windows NT and LAN Manager-style file and print 
   services to SMB clients such as Windows 95, Warp Server, smbfs and others.
 
-- a Netbios (rfc1001/1002) nameserver, which among other things gives 
+- a NetBIOS (rfc1001/1002) nameserver, which amongst other things gives 
   browsing support. Samba can be the master browser on your LAN if you wish.
 
 - a ftp-like SMB client so you can access PC resources (disks and
 printers) from unix, Netware and other operating systems
 
 - a tar extension to the client for backing up PCs
+
+- limited command-line tool that supports some of the NT administrative
+  functionality, which can be used on Samba, NT workstation and NT server.
 
 For a much better overview have a look at the web site at
 http://samba.anu.edu.au/samba, and browse the user survey.
@@ -75,6 +80,7 @@ networking problems over netbeui and tcp/ip.
 - smblib, a library of smb functions which are designed to make it
 easy to smb-ise any particular application. See
 ftp://samba.anu.edu.au/pub/samba/smblib.
+
 
 CONTRIBUTIONS
 =============
@@ -112,6 +118,7 @@ Macgregor, A.C.T.
 Samba Team
 Email: samba-bugs@samba.anu.edu.au
 
+
 MORE INFO
 =========
 
@@ -131,11 +138,13 @@ If you would like to help with the documentation (and we _need_ help!)
 then have a look at the mailing list samba-docs, archived at
 http://samba.anu.edu.au/listproc/samba-docs.
 
+
 FTP SITE
 --------
 
 Please use a mirror site! The list of mirrors is in docs/MIRRORS.txt.
 The master ftp site is samba.anu.edu.au in the directory pub/samba.
+
 
 MAILING LIST
 ------------
@@ -150,6 +159,9 @@ There is also an announcement mailing list where new versions are
 announced.  To subscribe send mail to listproc@samba.anu.edu.au with a
 body of "subscribe samba-announce Your Name". All announcements also
 go to the samba list.
+
+For details of other Samba mailing lists and for access to archives, see
+http://samba.anu.edu.au/listproc.
 
 
 NEWS GROUP
@@ -175,5 +187,5 @@ archives of the mailing list and a user survey that shows who else is using
 this package. Have you registered with the survey yet? :-)
 
 It is maintained by Paul Blackman (thanks Paul!). You can contact him
-at ictinus@samba.anu.edu.au.
+as ictinus@samba.anu.edu.au.
 
