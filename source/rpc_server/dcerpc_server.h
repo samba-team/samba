@@ -86,6 +86,7 @@ struct dcesrv_handle {
 	struct policy_handle wire_handle;
 	TALLOC_CTX *mem_ctx;
 	void *data;
+	void (*destroy)(struct dcesrv_connection *, struct dcesrv_handle *);
 };
 
 /* hold the authentication state information */
