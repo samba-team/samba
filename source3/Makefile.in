@@ -299,6 +299,7 @@ VFS_EXTD_AUDIT_OBJ = modules/vfs_extd_audit.o
 VFS_FAKE_PERMS_OBJ = modules/vfs_fake_perms.o
 VFS_RECYCLE_OBJ = modules/vfs_recycle.o
 VFS_NETATALK_OBJ = modules/vfs_netatalk.o
+VFS_DEFAULT_QUOTA_OBJ = modules/vfs_default_quota.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
@@ -1056,6 +1057,11 @@ bin/netatalk.@SHLIBEXT@: $(VFS_NETATALK_OBJ:.o=.po)
 bin/fake_perms.@SHLIBEXT@: $(VFS_FAKE_PERMS_OBJ:.o=.po)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_FAKE_PERMS_OBJ:.o=.po) \
+		@SONAMEFLAG@`basename $@`
+
+bin/default_quota.@SHLIBEXT@: $(VFS_DEFAULT_QUOTA_OBJ:.o=.po)
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ $(VFS_DEFAULT_QUOTA_OBJ:.o=.po) \
 		@SONAMEFLAG@`basename $@`
 
 bin/wbinfo@EXEEXT@: $(WBINFO_OBJ) @BUILD_POPT@ bin/.dummy
