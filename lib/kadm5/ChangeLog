@@ -1,5 +1,6 @@
 2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* send_recv.c: check return values from krb5_data_alloc
 	* log.c: check return values from krb5_data_alloc
 	
 2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
