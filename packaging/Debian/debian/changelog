@@ -1,8 +1,39 @@
-samba (3.0.0-1) unstable; urgency=low
+samba (3.0.2-0.1) unstable; urgency=low
 
-  * Local build.
+  * New upstream release.
 
- -- Debian User <somebody@somewhere.com>  Tue, 23 Sep 2003 21:50:26 -0400
+ -- Debian User <debian-user@somewhere.net>  Wed,  4 Feb 2004 23:15:46 -0500
+
+samba (3.0.1-2) unstable; urgency=low
+
+  * Include ntlm_auth's man page.
+  * Don't create directories outside of the source directory during
+    package build time. (closes: #227221, #227238, #225862)
+  * Don't include the "Using Samba" book in the swat package, just a
+    symlink that points to the book included in the samba-doc package.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 13 Jan 2004 13:48:13 -0500
+
+samba (3.0.1-1) unstable; urgency=low
+
+  * New upstream version (closes: #225565)
+  * Add support in the dhcp hook for netbios scope, and handle better
+    the case of multiple DHCP-using interfaces (closes: #224109).
+  * Use "tail -n 1 ..." instead of "tail -1 ..." so POSIX-compliant
+    tail works. Thanks to Paul Eggert <eggert@twinsun.com>.
+  * Include /usr/bin/ntlm_auth in the winbind package.
+  * Run configure with "--with-piddir=/var/run/samba" since the
+    default got changed to /var/run in this new upstream version.
+
+ -- Eloy A. Paris <peloy@debian.org>  Tue, 30 Dec 2003 16:21:31 -0500
+
+samba (3.0.0final-1) unstable; urgency=low
+
+  * It's here, it's here, it's here, Samba 3.0.0 is here!
+  * Incorporate Japanese debconf translations; thanks to Kenshi Muto
+    <kmuto@debian.org>. (closes: #209291)
+
+ -- Eloy A. Paris <peloy@debian.org>  Thu, 25 Sep 2003 13:39:28 -0400
 
 samba (3.0.0beta2+3.0.0rc4-1) unstable; urgency=low
 
@@ -24,8 +55,6 @@ samba (3.0.0beta2+3.0.0rc3-1) unstable; urgency=low
 samba (3.0.0beta2+3.0.0rc2-1) unstable; urgency=low
 
   * New upstream release.
-  * Incorporate Dutch debconf translations; thanks to Bart Cornelis
-    <cobaco@linux.be>. (closes: #207824)
   * Link against libgnutls7 instead of libgnutls5. (closes: #208151)
 
  -- Eloy A. Paris <peloy@debian.org>  Tue,  2 Sep 2003 21:37:13 -0400
