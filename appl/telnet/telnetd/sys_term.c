@@ -52,13 +52,13 @@ static char sccsid[] = "@(#)sys_term.c	8.4 (Berkeley) 5/30/95";
 #include <initreq.h>
 int	utmp_len = MAXHOSTNAMELEN;	/* sizeof(init_request.host) */
 #else	/* NEWINIT*/
-# ifdef	UTMPX
+# ifdef	HAVE_UTMPX_H
 # include <utmpx.h>
 struct	utmpx wtmp;
 # else
 # include <utmp.h>
 struct	utmp wtmp;
-# endif /* UTMPX */
+# endif /* HAVE_UTMPX_H */
 
 int	utmp_len = sizeof(wtmp.ut_host);
 # ifndef PARENT_DOES_UTMP
@@ -1563,7 +1563,7 @@ start_login(host, autologin, name)
 	register char *cp;
 	struct arg_val argv;
 	extern char *getenv();
-#ifdef	UTMPX
+#ifdef	HAVE_UTMPX_H
 	register int pid = getpid();
 	struct utmpx utmpx;
 #endif
@@ -1572,7 +1572,7 @@ start_login(host, autologin, name)
 	char termbuf[64];
 #endif
 
-#ifdef	UTMPX
+#ifdef	HAVE_UTMPX_H
 	/*
 	 * Create utmp entry for child
 	 */
@@ -2209,7 +2209,7 @@ cleantmpdir(jid, tpath, user)
  * remove the utmp entry for this person.
  */
 
-#ifdef	UTMPX
+#ifdef	HAVE_UTMPX_H
 	void
 rmut()
 {
@@ -2239,7 +2239,7 @@ rmut()
 }  /* end of rmut */
 #endif
 
-#if	!defined(UTMPX) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
+#if !defined(HAVE_UTMPX_H) && !(defined(CRAY) || defined(__hpux)) && BSD <= 43
 	void
 rmut()
 {
