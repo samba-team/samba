@@ -408,10 +408,9 @@ static BOOL check_auth_crap(void)
 	char *hex_lm_key;
 	char *hex_nt_key;
 	char *error_string;
-	
-	x_setbuf(x_stdout, NULL);
-
 	static uint8 zeros[16];
+
+	x_setbuf(x_stdout, NULL);
 
 	if (request_lm_key) 
 		flags |= WINBIND_PAM_LMKEY;
