@@ -1,3 +1,15 @@
+2000-01-18  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/misc.h (RemoteHostName, LocalHostName): const-ify
+	* libtelnet/misc.c (auth_encrypt_init, RemoteHostName,
+	LocalHostName): const-ify
+	* libtelnet/misc-proto.h (auth_encrypt_init, auth_encrypt_user):
+	const-ify
+	* libtelnet/encrypt.c (encrypt_init, Name): const-ify
+	* libtelnet/enc-proto.h (encrypt_init): const-ify
+	* libtelnet/auth.c (auth_init, Name): const-ify
+	* libtelnet/auth-proto.h (auth_init): const-ify
+
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): handle ai_canonname being set in any of
