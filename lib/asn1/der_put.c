@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,8 +47,8 @@ RCSID("$Id$");
  * indicating how many actually got written, or <0 in case of errors.
  */
 
-int
-der_put_int (unsigned char *p, size_t len, unsigned val, size_t *size)
+static int
+der_put_unsigned (unsigned char *p, size_t len, unsigned val, size_t *size)
 {
     unsigned char *base = p;
 
@@ -58,7 +58,7 @@ der_put_int (unsigned char *p, size_t len, unsigned val, size_t *size)
 	    val /= 256;
 	    --len;
 	}
-	if (val)
+	if (val != 0)
 	    return ASN1_OVERFLOW;
 	else {
 	    *size = base - p;
@@ -67,7 +67,44 @@ der_put_int (unsigned char *p, size_t len, unsigned val, size_t *size)
     } else if (len < 1)
 	return ASN1_OVERFLOW;
     else {
-	*p = 0;
+	*p    = 0;
+	*size = 1;
+	return 0;
+    }
+}
+
+int
+der_put_int (unsigned char *p, size_t len, int val, size_t *size)
+{
+    unsigned char *base = p;
+
+    if (val) {
+	while (len > 0 && abs(val) > 255) {
+	    *p-- = val % 256;
+	    val /= 256;
+	    --len;
+	}
+	if (len > 0 && abs(val) > 0) {
+	    *p-- = val;
+	    --len;
+	    if ((signed char)val != val) {
+		if (len < 1)
+		    return ASN1_OVERFLOW;
+		*p-- = (val < 0) ? 0xff: 0;
+		--len;
+	    }
+	    val /= 256;
+	}
+	if (val != 0)
+	    return ASN1_OVERFLOW;
+	else {
+	    *size = base - p;
+	    return 0;
+	}
+    } else if (len < 1)
+	return ASN1_OVERFLOW;
+    else {
+	*p    = 0;
 	*size = 1;
 	return 0;
     }
@@ -88,7 +125,7 @@ der_put_length (unsigned char *p, size_t len, size_t val, size_t *size)
 	size_t l;
 	int e;
 
-	e = der_put_int (p, len - 1, val, &l);
+	e = der_put_unsigned (p, len - 1, val, &l);
 	if (e)
 	    return e;
 	p -= l;
@@ -173,9 +210,9 @@ der_put_length_and_tag (unsigned char *p, size_t len, size_t len_val,
 }
 
 int
-encode_integer (unsigned char *p, size_t len, unsigned *data, size_t *size)
+encode_integer (unsigned char *p, size_t len, int *data, size_t *size)
 {
-    unsigned num = *data;
+    int num = *data;
     size_t ret = 0;
     size_t l;
     int e;
