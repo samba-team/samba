@@ -186,7 +186,7 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
     unixmode |= tmp;
   }
 
-  return(conn->vfs_ops.chmod(fname,unixmode));
+  return(conn->vfs_ops.chmod(dos_to_unix(fname,False),unixmode));
 }
 
 

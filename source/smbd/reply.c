@@ -1662,7 +1662,7 @@ static BOOL can_delete(char *fname,connection_struct *conn, int dirtype)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
   fmode = dos_mode(conn,fname,&sbuf);
   if (fmode & aDIR) return(False);
   if (!lp_delete_readonly(SNUM(conn))) {
@@ -1723,7 +1723,8 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   if (!has_wild) {
     pstrcat(directory,"/");
     pstrcat(directory,mask);
-    if (can_delete(directory,conn,dirtype) && !conn->vfs_ops.unlink(directory))
+    if (can_delete(directory,conn,dirtype) && 
+        !conn->vfs_ops.unlink(dos_to_unix(directory,False)))
       count++;
     if (!count)
       exists = vfs_file_exist(conn,dos_to_unix(directory,False),NULL);    
@@ -1756,7 +1757,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	    error = ERRnoaccess;
 	    slprintf(fname,sizeof(fname)-1, "%s/%s",directory,dname);
 	    if (!can_delete(fname,conn,dirtype)) continue;
-	    if (!conn->vfs_ops.unlink(fname)) count++;
+	    if (!conn->vfs_ops.unlink(dos_to_unix(fname,False))) count++;
 	    DEBUG(3,("reply_unlink : doing unlink on %s\n",fname));
 	  }
 	CloseDir(dirptr);
@@ -2929,7 +2930,7 @@ static BOOL recursive_rmdir(connection_struct *conn, char *directory)
     pstrcat(fullname, "/");
     pstrcat(fullname, dname);
 
-    if(conn->vfs_ops.lstat(fullname, &st) != 0)
+    if(conn->vfs_ops.lstat(dos_to_unix(fullname,False), &st) != 0)
     {
       ret = True;
       break;
@@ -3024,7 +3025,8 @@ int reply_rmdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
                       pstrcat(fullname, "/");
                       pstrcat(fullname, dname);
                       
-                      if(conn->vfs_ops.lstat(fullname, &st) != 0)
+                      if(conn->vfs_ops.lstat(dos_to_unix(fullname,False), 
+                                             &st) != 0)
                         break;
                       if(st.st_mode & S_IFDIR)
                       {
@@ -3147,7 +3149,7 @@ static BOOL can_rename(char *fname,connection_struct *conn)
 
   if (!CAN_WRITE(conn)) return(False);
 
-  if (conn->vfs_ops.lstat(fname,&sbuf) != 0) return(False);
+  if (conn->vfs_ops.lstat(dos_to_unix(fname,False),&sbuf) != 0) return(False);
   if (!check_file_sharing(conn,fname,True)) return(False);
 
   return(True);

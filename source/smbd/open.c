@@ -33,14 +33,14 @@ fd support routines - attempt to do a dos_open
 static int fd_attempt_open(struct connection_struct *conn, char *fname, 
 			   int flags, mode_t mode)
 {
-  int fd = conn->vfs_ops.open(fname,flags,mode);
+  int fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
 
   /* Fix for files ending in '.' */
   if((fd == -1) && (errno == ENOENT) &&
      (strchr(fname,'.')==NULL))
     {
       pstrcat(fname,".");
-      fd = conn->vfs_ops.open(fname,flags,mode);
+      fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode);
     }
 
 #if (defined(ENAMETOOLONG) && defined(HAVE_PATHCONF))
@@ -71,7 +71,8 @@ static int fd_attempt_open(struct connection_struct *conn, char *fname,
           char tmp = p[max_len];
 
           p[max_len] = '\0';
-          if ((fd = conn->vfs_ops.open(fname,flags,mode)) == -1)
+          if ((fd = conn->vfs_ops.open(dos_to_unix(fname,False),flags,mode))
+              == -1)
             p[max_len] = tmp;
         }
     }
@@ -458,10 +459,10 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     pstrcpy(dname,fname);
     p = strrchr(dname,'/');
     if (p) *p = 0;
-    if (conn->vfs_ops.disk_free(dname,&dum1,&dum2,&dum3) < 
+    if (conn->vfs_ops.disk_free(dos_to_unix(dname,False),&dum1,&dum2,&dum3) < 
 	(SMB_BIG_UINT)lp_minprintspace(SNUM(conn))) {
       if(fd_attempt_close(fsp) == 0)
-        conn->vfs_ops.unlink(fname);
+        conn->vfs_ops.unlink(dos_to_unix(fname,False));
       fsp->fd_ptr = 0;
       errno = ENOSPC;
       return;

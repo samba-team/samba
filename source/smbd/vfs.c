@@ -226,7 +226,7 @@ BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
   SMB_STRUCT_STAT st;
   if (!sbuf) sbuf = &st;
   
-  if (conn->vfs_ops.stat(fname,sbuf) != 0) 
+  if (conn->vfs_ops.stat(dos_to_unix(fname,False),sbuf) != 0) 
     return(False);
 
   return(S_ISREG(sbuf->st_mode));
