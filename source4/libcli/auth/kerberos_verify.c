@@ -26,6 +26,8 @@
 #include "system/kerberos.h"
 #include "libcli/auth/kerberos.h"
 #include "asn_1.h"
+#include "lib/ldb/include/ldb.h"
+#include "secrets.h"
 
 #ifdef HAVE_KRB5
 
@@ -179,26 +181,46 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
 						 krb5_keyblock *keyblock)
 {
 	krb5_error_code ret = 0;
-	char *password_s = NULL;
 	krb5_data password;
 	krb5_enctype *enctypes = NULL;
 	int i;
-
+	const struct ldb_val *password_v;
+	struct ldb_wrap *ldb;
+	int ldb_ret;
+	struct ldb_message **msgs;
+	const char *base_dn = SECRETS_PRIMARY_DOMAIN_DN;
+	const char *attrs[] = {
+		"secret",
+		NULL
+	};
+	
 	ZERO_STRUCTP(keyblock);
 
-	if (!secrets_init()) {
-		DEBUG(1,("ads_secrets_verify_ticket: secrets_init failed\n"));
-		return KRB5_KT_END;
+	/* Local secrets are stored in secrets.ldb */
+	ldb = secrets_db_connect(mem_ctx);
+	if (!ldb) {
+		return ENOENT;
 	}
 
-	password_s = secrets_fetch_machine_password(lp_workgroup());
-	if (!password_s) {
-		DEBUG(1,("ads_secrets_verify_ticket: failed to fetch machine password\n"));
-		return KRB5_KT_END;
+	/* search for the secret record */
+	ldb_ret = samdb_search(ldb,
+			       mem_ctx, base_dn, &msgs, attrs,
+			       "(&(realm=%s)(objectclass=primaryDomain))", 
+			       lp_realm());
+	if (ldb_ret == 0) {
+		DEBUG(1, ("Could not find domain join record for %s\n",
+			  lp_realm()));
+		return ENOENT;
+	} else if (ldb_ret != 1) {
+		DEBUG(1, ("Found %d records matching cn=%s under DN %s\n", ldb_ret, 
+			  lp_realm(), base_dn));
+		return ENOENT;
 	}
 
-	password.data = password_s;
-	password.length = strlen(password_s);
+	password_v = ldb_msg_find_ldb_val(msgs[0], "secret");
+
+	password.data = password_v->data;
+	password.length = password_v->length;
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
@@ -247,7 +269,6 @@ static krb5_error_code ads_secrets_verify_ticket(TALLOC_CTX *mem_ctx, krb5_conte
  out:
 
 	free_kerberos_etypes(context, enctypes);
-	SAFE_FREE(password_s);
 
 	return ret;
 }
