@@ -1,3 +1,8 @@
+Fri Mar  6 00:21:53 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* roken_gethostby.c: Another miracle of the 20th century:
+ 	gethostby* over HTTP.
+
 Sat Feb 21 15:18:36 1998  assar westerlund  <assar@sics.se>
 
 	* parse_time.c (unparse_time_approx): new function that calls
