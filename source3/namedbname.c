@@ -529,13 +529,6 @@ struct name_record *search_for_name(struct subnet_record **d,
   
   if (*d == NULL) return NULL;
 
-  if (!n && (search & FIND_SELF)) {
-    DEBUG(3,("FIND_SELF set - failing lookup\n"));
-    return NULL;
-  }
-
-  DEBUG(4,("subnet %s ", inet_ntoa((*d)->bcast_ip)));
-
   /* now try DNS lookup. */
   if (!n)
     {
