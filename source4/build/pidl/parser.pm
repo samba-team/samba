@@ -60,6 +60,18 @@ sub find_size_var($$)
 
 
 #####################################################################
+# work out is a parse function should be declared static or not
+sub fn_prefix($)
+{
+	my $e = shift;
+	if (util::has_property($e, "public")) {
+		return "static ";
+	}
+	return "";
+}
+
+
+#####################################################################
 # work out the correct alignment for a structure
 sub struct_alignment($)
 {
@@ -235,8 +247,15 @@ sub ParseElementPullSwitch($$$$)
 
 	my $cprefix = util::c_pull_prefix($e);
 
-	$res .= "\t{ uint16 _level;\n";
-	$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
+	$res .= "\t{ uint16 _level = $switch_var;\n";
+
+	if (util::has_property($e, "subcontext")) {
+		$res .= "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+	} else {
+		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
+	}
+
+
 	$res .= "\tif ((($ndr_flags) & NDR_SCALARS) && (_level != $switch_var)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
 	$res .= "\t}\n";
 }
@@ -252,7 +271,11 @@ sub ParseElementPushSwitch($$$$)
 	my $switch_var = find_size_var($e, $switch);
 	my $cprefix = util::c_push_prefix($e);
 
-	$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
+	if (util::has_property($e, "subcontext")) {
+		$res .= "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+	} else {
+		$res .= "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
+	}
 }
 
 #####################################################################
@@ -659,6 +682,7 @@ sub ParseTypePull($)
 sub ParseTypedefPush($)
 {
 	my($e) = shift;
+	my $static = fn_prefix($e);
 
 	if (! $needed{"push_$e->{NAME}"}) {
 #		print "push_$e->{NAME} not needed\n";
@@ -666,7 +690,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		$res .= "static NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		$res .= "$static" . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $e->{NAME} *r)";
 		$res .= "\n{\n";
 		ParseTypePush($e->{DATA});
 		$res .= "\treturn NT_STATUS_OK;\n";
@@ -674,7 +698,7 @@ sub ParseTypedefPush($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		$res .= "static NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
+		$res .= "$static" . "NTSTATUS ndr_push_$e->{NAME}(struct ndr_push *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
 		$res .= "\n{\n";
 		ParseTypePush($e->{DATA});
 		$res .= "\treturn NT_STATUS_OK;\n";
@@ -688,6 +712,7 @@ sub ParseTypedefPush($)
 sub ParseTypedefPull($)
 {
 	my($e) = shift;
+	my $static = fn_prefix($e);
 
 	if (! $needed{"pull_$e->{NAME}"}) {
 #		print "pull_$e->{NAME} not needed\n";
@@ -695,7 +720,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "STRUCT") {
-		$res .= "static NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
+		$res .= "$static" . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $e->{NAME} *r)";
 		$res .= "\n{\n";
 		ParseTypePull($e->{DATA});
 		$res .= "\treturn NT_STATUS_OK;\n";
@@ -703,7 +728,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		$res .= "static NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union $e->{NAME} *r)";
+		$res .= "$static" . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union $e->{NAME} *r)";
 		$res .= "\n{\n";
 		ParseTypePull($e->{DATA});
 		$res .= "\treturn NT_STATUS_OK;\n";
@@ -749,6 +774,9 @@ sub ParseFunctionPush($)
 		if (util::has_property($e, "in")) {
 			$e->{PARENT} = $function;
 			if (util::array_size($e)) {
+				if (util::need_wire_pointer($e)) {
+					$res .= "\tNDR_CHECK(ndr_push_ptr(ndr, r->in.$e->{NAME}));\n";
+				}
 				$res .= "\tif (r->in.$e->{NAME}) {\n";
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
@@ -789,7 +817,12 @@ sub ParseFunctionPull($)
 		if (util::has_property($e, "out")) {
 			$e->{PARENT} = $fn;
 			if (util::array_size($e)) {
-				$res .= "\tif (r->out.$e->{NAME}) {\n";
+				if (util::need_wire_pointer($e)) {
+					$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, _ptr_$e->{NAME}));\n";
+					$res .= "\tif (_ptr_$e->{NAME}) {\n";
+				} else {
+					$res .= "\tif (r->out.$e->{NAME}) {\n";
+				}
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
 				}
@@ -854,6 +887,10 @@ sub NeededFunction($)
 sub NeededTypedef($)
 {
 	my $t = shift;
+	if (util::has_property($t->{DATA}, "public")) {
+		$needed{"pull_$t->{NAME}"} = 1;
+		$needed{"push_$t->{NAME}"} = 1;		
+	}
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 				if ($needed{"pull_$t->{NAME}"}) {

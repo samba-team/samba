@@ -329,6 +329,9 @@ sub c_pull_prefix($)
 	if ($e->{TYPE} =~ "unistr.*") {
 		return "&";
 	}
+	if ($e->{TYPE} =~ "relstr.*") {
+		return "&";
+	}
 
 	return "";
 }
