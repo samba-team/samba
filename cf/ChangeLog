@@ -1,3 +1,7 @@
+2003-08-27  Johan Danielsson  <joda@pdc.kth.se>
+
+	* roken-frag.m4: test for poll and poll.h
+
 2003-08-16  Love  <lha@stacken.kth.se>
 
 	* Makefile.am.common: don't try doing local checks if CHECK_LOCAL
