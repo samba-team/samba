@@ -500,9 +500,15 @@ interface drsuapi
 	typedef struct {
 		uint32 decompressed_length;
 		uint32 compressed_length;
-		[subcontext(4),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
-		/*[subcontext(4),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;*/
+		[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+		/*[subcontext(4),subcontext_size(r->compressed_length),compression(NDR_COMPRESSION_ZLIB,compressed_length,decompressed_length)] drsuapi_DsGetNCChangesCtr1 *ctr1;*/
 	} drsuapi_DsGetNCChangesCompressedInfo;
+
+	typedef struct {
+		uint32 decompressed_length;
+		uint32 compressed_length;
+		[subcontext(4),subcontext_size(r->compressed_length),flag(NDR_REMAINING)] DATA_BLOB *decompressed;
+	} drsuapi_DsGetNCChangesCompressedInfo_Test;
 
 	typedef struct {
 		drsuapi_DsGetNCChangesCompressedInfo info;
@@ -531,7 +537,7 @@ interface drsuapi
 	typedef struct {
 		uint32 unknown1;
 		uint16 unknown2; /* enum */
-		drsuapi_DsGetNCChangesCompressedInfo info;
+		drsuapi_DsGetNCChangesCompressedInfo_Test info;
 	} drsuapi_DsGetNCChangesCtr7;
 
 	typedef [switch_type(int32)] union {
