@@ -344,7 +344,7 @@ void cmd_reg_create_val(struct client_info *info)
 	uint32 unk_1;
 	/* query it */
 	res1 = res1 ? do_reg_query_info(smb_cli, &val_pol,
-	                        type, &unk_0, &unk_1) : False;
+	                        val_name, *val_type) : False;
 #endif
 
 	DEBUG(5, ("cmd_reg_create_val: smb_cli->fd:%d\n", smb_cli->fd));

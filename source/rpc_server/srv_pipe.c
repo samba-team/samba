@@ -474,6 +474,9 @@ static struct api_cmd api_fd_commands[] =
     { "NETLOGON", "lsass",   api_netlog_rpc },
     { "winreg",   "winreg",  api_reg_rpc },
     { "spoolss",  "spoolss", api_spoolss_rpc },
+#ifdef MS_DFS
+    { "netdfs",   "netdfs" , api_netdfs_rpc },
+#endif
     { NULL,       NULL,      NULL }
 };
 
