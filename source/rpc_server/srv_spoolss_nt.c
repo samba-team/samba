@@ -2507,34 +2507,43 @@ done:
  Connect to the client machine.
 **********************************************************/
 
-static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *remote_machine)
+static BOOL spoolss_connect_to_client(struct cli_state *the_cli, 
+			struct in_addr *client_ip, const char *remote_machine)
 {
 	ZERO_STRUCTP(the_cli);
+	
 	if(cli_initialise(the_cli) == NULL) {
-		DEBUG(0,("connect_to_client: unable to initialize client connection.\n"));
+		DEBUG(0,("spoolss_connect_to_client: unable to initialize client connection.\n"));
 		return False;
 	}
-
-	if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
-		DEBUG(0,("connect_to_client: Can't resolve address for %s\n", remote_machine));
-		cli_shutdown(the_cli);
-	return False;
-	}
-
-	if (ismyip(the_cli->dest_ip)) {
-		DEBUG(0,("connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
-		cli_shutdown(the_cli);
+	
+	if ( is_zero_ip(*client_ip) ) {
+		if(!resolve_name( remote_machine, &the_cli->dest_ip, 0x20)) {
+			DEBUG(0,("spoolss_connect_to_client: Can't resolve address for %s\n", remote_machine));
+			cli_shutdown(the_cli);
 		return False;
+		}
+
+		if (ismyip(the_cli->dest_ip)) {
+			DEBUG(0,("spoolss_connect_to_client: Machine %s is one of our addresses. Cannot add to ourselves.\n", remote_machine));
+			cli_shutdown(the_cli);
+			return False;
+		}
+	}
+	else {
+		the_cli->dest_ip.s_addr = client_ip->s_addr;
+		DEBUG(5,("spoolss_connect_to_client: Using address %s (no name resolution necessary)\n",
+			inet_ntoa(*client_ip) ));
 	}
 
 	if (!cli_connect(the_cli, remote_machine, &the_cli->dest_ip)) {
-		DEBUG(0,("connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		DEBUG(0,("spoolss_connect_to_client: unable to connect to SMB server on machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);
 		return False;
 	}
   
 	if (!attempt_netbios_session_request(the_cli, global_myname(), remote_machine, &the_cli->dest_ip)) {
-		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
+		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
 		cli_shutdown(the_cli);
 		return False;
@@ -2543,13 +2552,13 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *rem
 	the_cli->protocol = PROTOCOL_NT1;
     
 	if (!cli_negprot(the_cli)) {
-		DEBUG(0,("connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the negotiate protocol. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);
 		return False;
 	}
 
 	if (the_cli->protocol != PROTOCOL_NT1) {
-		DEBUG(0,("connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
+		DEBUG(0,("spoolss_connect_to_client: machine %s didn't negotiate NT protocol.\n", remote_machine));
 		cli_shutdown(the_cli);
 		return False;
 	}
@@ -2559,19 +2568,19 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *rem
 	 */
     
 	if (!cli_session_setup(the_cli, "", "", 0, "", 0, "")) {
-		DEBUG(0,("connect_to_client: machine %s rejected the session setup. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the session setup. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);
 		return False;
 	}
     
 	if (!(the_cli->sec_mode & 1)) {
-		DEBUG(0,("connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
+		DEBUG(0,("spoolss_connect_to_client: machine %s isn't in user level security mode\n", remote_machine));
 		cli_shutdown(the_cli);
 		return False;
 	}
     
 	if (!cli_send_tconX(the_cli, "IPC$", "IPC", "", 1)) {
-		DEBUG(0,("connect_to_client: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
+		DEBUG(0,("spoolss_connect_to_client: machine %s rejected the tconX on the IPC$ share. Error was : %s.\n", remote_machine, cli_errstr(the_cli) ));
 		cli_shutdown(the_cli);
 		return False;
 	}
@@ -2582,7 +2591,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *rem
 	 */
 
 	if(cli_nt_session_open(the_cli, PI_SPOOLSS) == False) {
-		DEBUG(0,("connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
+		DEBUG(0,("spoolss_connect_to_client: unable to open the domain client session to machine %s. Error was : %s.\n", remote_machine, cli_errstr(the_cli)));
 		cli_nt_session_close(the_cli);
 		cli_ulogoff(the_cli);
 		cli_shutdown(the_cli);
@@ -2596,7 +2605,9 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, const char *rem
  Connect to the client.
 ****************************************************************************/
 
-static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 localprinter, uint32 type, POLICY_HND *handle)
+static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, 
+					uint32 localprinter, uint32 type, 
+					POLICY_HND *handle, struct in_addr *client_ip)
 {
 	WERROR result;
 
@@ -2609,7 +2620,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer, uint32 l
 
 		fstrcpy(unix_printer, printer+2); /* the +2 is to strip the leading 2 backslashs */
 
-		if(!spoolss_connect_to_client(&notify_cli, unix_printer))
+		if(!spoolss_connect_to_client(&notify_cli, client_ip, unix_printer))
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
@@ -2658,6 +2669,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	uint32 printerlocal = q_u->printerlocal;
 	int snum = -1;
 	SPOOL_NOTIFY_OPTION *option = q_u->option;
+	struct in_addr client_ip;
 
 	/* store the notify value in the printer struct */
 
@@ -2687,10 +2699,12 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 	else if ( (Printer->printer_type == PRINTER_HANDLE_IS_PRINTER) &&
 			!get_printer_snum(p, handle, &snum) )
 		return WERR_BADFID;
+		
+	client_ip.s_addr = inet_addr(p->conn->client_address);
 
 	if(!srv_spoolss_replyopenprinter(snum, Printer->notify.localmachine,
 					Printer->notify.printerlocal, 1,
-					&Printer->notify.client_hnd))
+					&Printer->notify.client_hnd, &client_ip))
 		return WERR_SERVER_UNAVAILABLE;
 
 	Printer->notify.client_connected=True;
