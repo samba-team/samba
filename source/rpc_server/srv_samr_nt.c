@@ -1661,7 +1661,7 @@ uint32 _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CR
     pstring add_script;
     POLICY_HND dom_pol = q_u->domain_pol;
     UNISTR2 user_account = q_u->uni_name;
-    uint32 acb_info = q_u->acb_info;
+    uint16 acb_info = q_u->acb_info;
     POLICY_HND *user_pol = &r_u->user_pol;
 
     /* find the policy handle.  open a policy on it. */
