@@ -884,7 +884,7 @@ void process_smb(char *inbuf, char *outbuf)
     }
     else
       if (!send_smb(smbd_server_fd(),outbuf))
-        exit_server("process_smb: send_smb failed.\n");
+        exit_server("process_smb: send_smb failed.");
   }
   trans_num++;
 }

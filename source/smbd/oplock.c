@@ -571,7 +571,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 
 		prepare_break_message( outbuf, fsp, False);
 		if (!send_smb(smbd_server_fd(), outbuf))
-			exit_server("oplock_break_level2: send_smb failed.\n");
+			exit_server("oplock_break_level2: send_smb failed.");
 	}
 
 	/*
@@ -709,7 +709,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	fsp->sent_oplock_break = using_levelII? LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
 
 	if (!send_smb(smbd_server_fd(), outbuf))
-		exit_server("oplock_break: send_smb failed.\n");
+		exit_server("oplock_break: send_smb failed.");
 
 	/* We need this in case a readraw crosses on the wire. */
 	global_oplock_break = True;

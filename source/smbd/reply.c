@@ -1377,7 +1377,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 void fail_readraw(void)
 {
 	pstring errstr;
-	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)\n",
+	slprintf(errstr, sizeof(errstr)-1, "FAIL ! reply_readbraw: socket write fail (%s)",
 		strerror(errno) );
 	exit_server(errstr);
 }
@@ -1767,7 +1767,7 @@ int reply_writebraw(connection_struct *conn, char *inbuf,char *outbuf, int size,
 	SSVALS(outbuf,smb_vwv0,-1);
 	outsize = set_message(outbuf,Protocol>PROTOCOL_COREPLUS?1:0,0,True);
 	if (!send_smb(smbd_server_fd(),outbuf))
-		exit_server("reply_writebraw: send_smb failed.\n");
+		exit_server("reply_writebraw: send_smb failed.");
   
 	/* Now read the raw data into the buffer and write it */
 	if (read_smb_length(smbd_server_fd(),inbuf,SMB_SECONDARY_WAIT) == -1) {
@@ -2467,7 +2467,7 @@ int reply_echo(connection_struct *conn,
 		smb_setlen(outbuf,outsize - 4);
 
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_echo: send_smb failed.\n");
+			exit_server("reply_echo: send_smb failed.");
 	}
 
 	DEBUG(3,("echo %d times\n", smb_reverb));
@@ -3885,7 +3885,7 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_readbmpx: send_smb failed.\n");
+			exit_server("reply_readbmpx: send_smb failed.");
 
 		total_read += nread;
 		startpos += nread;
@@ -4041,7 +4041,7 @@ int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		/* We need to send both a primary and a secondary response */
 		smb_setlen(outbuf,outsize - 4);
 		if (!send_smb(smbd_server_fd(),outbuf))
-			exit_server("reply_writebmpx: send_smb failed.\n");
+			exit_server("reply_writebmpx: send_smb failed.");
 
 		/* Now the secondary */
 		outsize = set_message(outbuf,1,0,True);

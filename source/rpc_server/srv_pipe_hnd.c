@@ -81,7 +81,7 @@ void init_rpc_pipe_hnd(void)
 {
 	bmap = bitmap_allocate(MAX_OPEN_PIPES);
 	if (!bmap)
-		exit_server("out of memory in init_rpc_pipe_hnd\n");
+		exit_server("out of memory in init_rpc_pipe_hnd");
 }
 
 /****************************************************************************
