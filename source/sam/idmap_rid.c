@@ -51,9 +51,9 @@ static NTSTATUS rid_idmap_parse(const char *init_param,
 	int i;
 	fstring sid_str;
 	BOOL known_domain = False;
-	p = init_param;
 	fstring tok;
 
+	p = init_param;
 	trust.number = 0;
 
 	/* falling back to automatic mapping when there were no options given */
