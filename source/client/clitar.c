@@ -1686,7 +1686,7 @@ static int get_file(file_info2 finfo, char * inbuf, char * outbuf)
 
   DEBUG(5, ("Updating creation date on %s\n", finfo.name));
 
-  if (!do_setrtime(finfo.name, finfo.mtime)) {
+  if (!do_setrtime(finfo.name, finfo.mtime, True)) {
 
     DEBUG(0, ("Could not set time on file: %s\n", finfo.name));
     /*return(False); */ /* Ignore, as Win95 does not allow changes */
@@ -1755,7 +1755,7 @@ static char * get_longfilename(file_info2 finfo)
 
     }
 
-    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size));
+    unfixtarname(longname + offset, buffer_p, MIN(TBLOCK, finfo.size),False);
     DEBUG(5, ("UnfixedName: %s, buffer: %s\n", longname, buffer_p));
 
     offset += TBLOCK;
@@ -1780,7 +1780,7 @@ static void do_tarput(void)
 
   buffer_p = tarbuf + tbufsiz;  /* init this to force first read */
 
-#ifdef 0   /* Fix later ... */
+#if 0   /* Fix later ... */
   if (push_dir(&dir_stack, &finfo)) {
 
     finfo2 = pop_dir(&dir_stack);
