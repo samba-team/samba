@@ -112,8 +112,8 @@ void reply_tcon(struct smbsrv_request *req)
 	req_setup_reply(req, 2, 0);
 
 	SSVAL(req->out.vwv, VWV(0), con.tcon.out.max_xmit);
-	SSVAL(req->out.vwv, VWV(1), con.tcon.out.cnum);
-	SSVAL(req->out.hdr, HDR_TID, req->tcon->cnum);
+	SSVAL(req->out.vwv, VWV(1), con.tcon.out.tid);
+	SSVAL(req->out.hdr, HDR_TID, req->tcon->tid);
   
 	req_send_reply(req);
 }
@@ -181,8 +181,8 @@ void reply_tcon_and_X(struct smbsrv_request *req)
 	}
 
 	/* set the incoming and outgoing tid to the just created one */
-	SSVAL(req->in.hdr, HDR_TID, con.tconx.out.cnum);
-	SSVAL(req->out.hdr,HDR_TID, con.tconx.out.cnum);
+	SSVAL(req->in.hdr, HDR_TID, con.tconx.out.tid);
+	SSVAL(req->out.hdr,HDR_TID, con.tconx.out.tid);
 
 	chain_reply(req);
 }
@@ -1360,7 +1360,7 @@ void reply_tdis(struct smbsrv_request *req)
 		return;
 	}
 
-	close_cnum(req->tcon);
+	talloc_free(req->tcon);
 
 	/* construct reply */
 	req_setup_reply(req, 0, 0);

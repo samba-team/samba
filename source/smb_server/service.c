@@ -152,7 +152,7 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	tcon = conn_new(req->smb_conn);
+	tcon = smbsrv_tcon_new(req->smb_conn);
 	if (!tcon) {
 		DEBUG(0,("Couldn't find free connection.\n"));
 		return NT_STATUS_INSUFFICIENT_RESOURCES;
@@ -165,18 +165,16 @@ static NTSTATUS make_connection_snum(struct smbsrv_request *req,
 	status = ntvfs_init_connection(req, type);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0, ("ntvfs_init_connection failed for service %s\n", lp_servicename(SNUM(tcon))));
-		conn_free(req->smb_conn, tcon);
 		return status;
 	}
-	
+
 	/* Invoke NTVFS connection hook */
 	status = ntvfs_connect(req, lp_servicename(snum));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("make_connection: NTVFS make connection failed!\n"));
-		conn_free(req->smb_conn, tcon);
 		return status;
 	}
-	
+
 	return NT_STATUS_OK;
 }
 
@@ -229,23 +227,6 @@ static NTSTATUS make_connection(struct smbsrv_request *req,
 	return make_connection_snum(req, snum, type, password, dev);
 }
 
-/****************************************************************************
-close a cnum
-****************************************************************************/
-void close_cnum(struct smbsrv_tcon *tcon)
-{
-	DEBUG(3,("%s closed connection to service %s\n",
-		 socket_get_peer_addr(tcon->smb_conn->connection->socket, tcon),
-		 lp_servicename(SNUM(tcon))));
-
-	/* tell the ntvfs backend that we are disconnecting */
-	ntvfs_disconnect(tcon);
-
-	conn_free(tcon->smb_conn, tcon);
-}
-
-
-
 /*
   backend for tree connect call
 */
@@ -274,8 +255,8 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		}
 
 		con->tcon.out.max_xmit = req->smb_conn->negotiate.max_recv;
-		con->tcon.out.cnum = req->tcon->cnum;
-		
+		con->tcon.out.tid = req->tcon->tid;
+
 		return status;
 	} 
 
@@ -285,7 +266,7 @@ NTSTATUS tcon_backend(struct smbsrv_request *req, union smb_tcon *con)
 		return status;
 	}
 
-	con->tconx.out.cnum = req->tcon->cnum;
+	con->tconx.out.tid = req->tcon->tid;
 	con->tconx.out.dev_type = talloc_strdup(req, req->tcon->dev_type);
 	con->tconx.out.fs_type = talloc_strdup(req, req->tcon->fs_type);
 	con->tconx.out.options = SMB_SUPPORT_SEARCH_BITS | (lp_csc_policy(req->tcon->service) << 2);

@@ -96,12 +96,12 @@ NTSTATUS smb_tree_connect_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, 
 	case RAW_TCON_TCON:
 		SMBCLI_CHECK_WCT(req, 2);
 		parms->tcon.out.max_xmit = SVAL(req->in.vwv, VWV(0));
-		parms->tcon.out.cnum = SVAL(req->in.vwv, VWV(1));
+		parms->tcon.out.tid = SVAL(req->in.vwv, VWV(1));
 		break;
 
 	case RAW_TCON_TCONX:
 		ZERO_STRUCT(parms->tconx.out);
-		parms->tconx.out.cnum = SVAL(req->in.hdr, HDR_TID);
+		parms->tconx.out.tid = SVAL(req->in.hdr, HDR_TID);
 		if (req->in.wct >= 4) {
 			parms->tconx.out.options = SVAL(req->in.vwv, VWV(3));
 		}
@@ -274,7 +274,7 @@ NTSTATUS smbcli_tree_full_connection(TALLOC_CTX *parent_ctx,
 		return status;
 	}
 
-	tree->tid = tcon.tconx.out.cnum;
+	tree->tid = tcon.tconx.out.tid;
 	if (tcon.tconx.out.dev_type) {
 		tree->device = talloc_strdup(tree, tcon.tconx.out.dev_type);
 	}

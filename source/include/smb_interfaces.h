@@ -177,7 +177,7 @@ union smb_tcon {
 		} in;
 		struct {
 			uint16_t max_xmit;
-			uint16_t cnum;
+			uint16_t tid;
 		} out;
 	} tcon;
 
@@ -195,7 +195,7 @@ union smb_tcon {
 			uint16_t options;
 			char *dev_type;
 			char *fs_type;
-			uint16_t cnum;
+			uint16_t tid;
 		} out;
 	} tconx;
 };

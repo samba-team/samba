@@ -88,7 +88,7 @@ static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde,
 	
 	if (!smbcli_transport_process(private->transport)) {
 		/* the connection to our server is dead */
-		close_cnum(tcon);
+		talloc_free(tcon);
 	}
 }
 
