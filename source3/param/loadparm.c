@@ -111,6 +111,7 @@ typedef struct
 	char *szPrivateDir;
 	char **szPassdbBackend;
 	char **szSamBackend;
+	char **szModules;
 	char *szPasswordServer;
 	char *szSocketOptions;
 	char *szRealm;
@@ -795,6 +796,7 @@ static struct parm_struct parm_table[] = {
 	{"allow hosts", P_LIST, P_LOCAL, &sDefault.szHostsallow, NULL, NULL, FLAG_HIDE},
 	{"hosts deny", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_GLOBAL | FLAG_BASIC | FLAG_ADVANCED | FLAG_SHARE | FLAG_PRINT | FLAG_DEVELOPER},
 	{"deny hosts", P_LIST, P_LOCAL, &sDefault.szHostsdeny, NULL, NULL, FLAG_HIDE},
+	{"modules", P_LIST, P_GLOBAL, &Globals.szModules, NULL, NULL, FLAG_BASIC | FLAG_GLOBAL},
 
 	{"Logging Options", P_SEP, P_SEPARATOR},
 
@@ -1564,6 +1566,7 @@ static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_LIST(lp_netbios_aliases, &Globals.szNetbiosAliases)
 FN_GLOBAL_LIST(lp_passdb_backend, &Globals.szPassdbBackend)
 FN_GLOBAL_LIST(lp_sam_backend, &Globals.szSamBackend)
+FN_GLOBAL_LIST(lp_modules, &Globals.szModules)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
