@@ -80,7 +80,7 @@ ss_error (int index, long code, const char *fmt, ...)
     va_list ap;
     va_start(ap, fmt);
     com_err_va (subsystems[index].name, code, fmt, ap);
-    va_end(pvar);
+    va_end(ap);
 }
 
 void
