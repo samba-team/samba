@@ -1,3 +1,6 @@
+!==
+!== NTDOMAIN.txt for Samba release 1.9.18alpha2 22 Oct 1997
+!==
 Contributor:	Luke Kenneth Casson Leighton (samba-bugs@samba.anu.edu.au)
 		Copyright (C) 1997 Luke Kenneth Casson Leighton
 Created:	October 20, 1997

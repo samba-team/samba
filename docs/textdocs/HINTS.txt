@@ -1,3 +1,6 @@
+!==
+!== HINTS.txt for Samba release 1.9.18alpha2 22 Oct 1997
+!==
 Contributor:	Many
 Updated:	Not for a long time!
 
