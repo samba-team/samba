@@ -151,9 +151,9 @@ init_auth
   }
 
   (*context_handle)->auth_context->key.keytype = cred->session.keytype;
-  krb5_data_copy (&(*context_handle)->auth_context->key.contents,
-		  cred->session.contents.data,
-		  cred->session.contents.length);
+  krb5_data_copy (&(*context_handle)->auth_context->key.keyvalue,
+		  cred->session.keyvalue.data,
+		  cred->session.keyvalue.length);
 
   kret = create_8003_checksum (input_chan_bindings,
 			       flags,

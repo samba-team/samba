@@ -53,7 +53,7 @@ OM_uint32 gss_wrap
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
-  memcpy (&key, context_handle->auth_context->key.contents.data,
+  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
 	  sizeof(key));
   des_set_key (&key, schedule);
   des_cbc_cksum ((des_cblock *)hash,
