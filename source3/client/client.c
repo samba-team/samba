@@ -2846,27 +2846,6 @@ static int do_message_op(void)
 }
 
 
-/**
- * Process "-L hostname" option.
- *
- * We don't actually do anything yet -- we just stash the name in a
- * global variable and do the query when all options have been read.
- **/
-
-static void remember_query_host(const char *arg,
-				pstring query_host)
-{
-	char *slash;
-	
-	while (*arg == '\\' || *arg == '/')
-		arg++;
-	pstrcpy(query_host, arg);
-	if ((slash = strchr(query_host, '/'))
-	    || (slash = strchr(query_host, '\\'))) {
-		*slash = 0;
-	}
-}
-
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -2961,7 +2940,7 @@ static void remember_query_host(const char *arg,
 			break;
 
 		case 'L':
-			remember_query_host(poptGetOptArg(pc), query_host);
+			pstrcpy(query_host, poptGetOptArg(pc));
 			break;
 		case 't':
 			pstrcpy(term_code, poptGetOptArg(pc));
@@ -3069,14 +3048,25 @@ static void remember_query_host(const char *arg,
 		return do_tar_op(base_directory);
 	}
 
-	if ((p=strchr_m(query_host,'#'))) {
-		*p = 0;
-		p++;
-		sscanf(p, "%x", &name_type);
-	}
-  
 	if (*query_host) {
-		return do_host_query(query_host);
+		char *qhost = query_host;
+		char *slash;
+
+		while (*qhost == '\\' || *qhost == '/')
+			qhost++;
+
+		if ((slash = strchr_m(qhost, '/'))
+		    || (slash = strchr_m(qhost, '\\'))) {
+			*slash = 0;
+		}
+
+		if ((p=strchr_m(qhost, '#'))) {
+			*p = 0;
+			p++;
+			sscanf(p, "%x", &name_type);
+		}
+  
+		return do_host_query(qhost);
 	}
 
 	if (message) {
