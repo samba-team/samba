@@ -60,10 +60,18 @@ gen_files =					\
 	asn1_NAME_TYPE.x			\
 	asn1_PADATA_TYPE.x			\
 	asn1_PA_DATA.x				\
+	asn1_PA_ENC_SAM_RESPONSE_ENC.x		\
 	asn1_PA_ENC_TS_ENC.x			\
+	asn1_PA_PAC_REQUEST.x			\
+	asn1_PA_SAM_CHALLENGE_2.x		\
+	asn1_PA_SAM_CHALLENGE_2_BODY.x		\
+	asn1_PA_SAM_REDIRECT.x			\
+	asn1_PA_SAM_RESPONSE_2.x		\
+	asn1_PA_SAM_TYPE.x			\
 	asn1_Principal.x			\
 	asn1_PrincipalName.x			\
 	asn1_Realm.x				\
+	asn1_SAMFlags.x				\
 	asn1_TGS_REP.x				\
 	asn1_TGS_REQ.x				\
 	asn1_Ticket.x				\
