@@ -160,15 +160,6 @@ void exit_server(const char *reason)
 }
 
 /****************************************************************************
- Usage of the program.
-****************************************************************************/
-
-static void usage(char *pname)
-{
-
-}
-
-/****************************************************************************
   Create an fd_set containing all the sockets in the subnet structures,
   plus the broadcast sockets.
 ***************************************************************************/
@@ -516,7 +507,6 @@ static void process(void)
 		{ "interactive", 'i', POPT_ARG_NONE, NULL, 'i', "Run interactive (not a daemon)" },
 		{ "port", 'p', POPT_ARG_INT, &wins_port, 'p', "Listen on the specified port" },
 		POPT_COMMON_SAMBA
-		POPT_COMMON_CONNECTION
 		POPT_TABLEEND
 	};
 	int opt;
@@ -539,11 +529,10 @@ static void process(void)
 		}
 	}
 
-	poptFreeContext(pc);
 
 	if (log_stdout && Fork) {
 		d_printf("Can't log to stdout (-S) unless daemon is in foreground (-F) or interactive (-i)\n");
-		usage(argv[0]);
+		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
 
@@ -671,6 +660,7 @@ static void process(void)
 
 	process();
 
+	poptFreeContext(pc);
 	exit_server("normal exit");
 	return(0);
 }

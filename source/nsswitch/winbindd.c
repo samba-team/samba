@@ -820,7 +820,6 @@ int main(int argc, char **argv)
 		{ "dual-daemon", 'B', POPT_ARG_VAL, &opt_dual_daemon, True, "Dual daemon mode" },
 		{ "no-caching", 'n', POPT_ARG_VAL, &opt_nocache, False, "Disable caching" },
 		POPT_COMMON_SAMBA
-		POPT_COMMON_CONNECTION
 		POPT_TABLEEND
 	};
 	poptContext pc;
