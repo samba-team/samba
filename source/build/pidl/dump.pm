@@ -183,7 +183,7 @@ sub DumpFunction($)
 
 #####################################################################
 # dump a module header
-sub DumpModuleHeader($)
+sub DumpInterfaceProperties($)
 {
     my($header) = shift;
     my($data) = $header->{DATA};
@@ -208,6 +208,8 @@ sub DumpInterface($)
     my($data) = $interface->{DATA};
     my($res);
 
+	$res .= DumpInterfaceProperties($interface->{PROPERTIES});
+
     $res .= "interface $interface->{NAME}\n{\n";
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "TYPEDEF") &&
@@ -230,8 +232,6 @@ sub Dump($)
 
     $res = "/* Dumped by pidl */\n\n";
     foreach my $x (@{$idl}) {
-	($x->{TYPE} eq "MODULEHEADER") && 
-	    ($res .= DumpModuleHeader($x));
 	($x->{TYPE} eq "INTERFACE") && 
 	    ($res .= DumpInterface($x));
     }

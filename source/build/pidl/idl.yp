@@ -14,36 +14,26 @@
 ################
 # grammer
 %%
-idl: idl_interface 
-     | idl idl_interface { util::FlattenArray([$_[1],$_[2]]) }
+idl: 
+	#empty  { {} }
+    | idl interface {
+		push(@{$_[1]}, $_[2]); $_[1] 
+	}
 ;
 
-idl_interface: module_header interface { [ $_[1], $_[2] ] }
-;
-
-module_header: '[' module_params ']'
-          {{ 
-              "TYPE" => "MODULEHEADER", 
-              "PROPERTIES" => util::FlattenHash($_[2])
+interface: property_list 'interface' identifier base_interface '{' definitions '}'
+          {$_[3] => {
+               "TYPE" => "INTERFACE", 
+			   "PROPERTIES" => $_[1],
+		       "NAME" => $_[3],
+			   "BASE" => $_[4],
+		       "DATA" => $_[6],
           }}
 ;
 
-module_params: 
-    #empty
-    | module_param                    { [ $_[1] ] }            
-    | module_params ',' module_param  { push(@{$_[1]}, $_[3]); $_[1] }
-;
-
-module_param: identifier '(' listtext ')'
-{ { "$_[1]" => "$_[3]" } }
-;
-
-interface: 'interface' identifier '{' definitions '}'
-          {{
-                       "TYPE" => "INTERFACE", 
-		       "NAME" => $_[2],
-		       "DATA" => $_[4]
-          }}
+base_interface:
+	#empty
+	| ':' identifier { $_[2] }
 ;
 
 definitions: 
@@ -199,7 +189,7 @@ properties: property          { $_[1] }
 ;
 
 property: identifier                   {{ "$_[1]" => "1"     }}
-          | identifier '(' anytext ')' {{ "$_[1]" => "$_[3]" }}
+          | identifier '(' listtext ')' {{ "$_[1]" => "$_[3]" }}
 ;
 
 listtext:
@@ -318,8 +308,47 @@ sub parse_idl($$)
 	my $data = `$cpp -xc $filename`;
 	$/ = $saved_delim;
 
-        $self->YYData->{INPUT} = $data;
-        $self->YYData->{LINE} = 0;
-        $self->YYData->{LAST_TOKEN} = "NONE";
-	return $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+    $self->YYData->{INPUT} = $data;
+    $self->YYData->{LINE} = 0;
+    $self->YYData->{LAST_TOKEN} = "NONE";
+
+	my $idl = $self->YYParse( yylex => \&_Lexer, yyerror => \&_Error );
+
+	foreach my $x (@{$idl}) {
+		# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+		# for 'object' interfaces
+		if (defined($x->{PROPERTIES}->{object})) {
+			foreach my $e (@{$x->{DATA}}) {
+				if($e->{TYPE} eq "FUNCTION") {
+					unshift(@{$e->{DATA}}, 
+                        { 'NAME' => 'ORPCthis',
+                          'POINTERS' => 1,
+                          'PROPERTIES' => { 'in' => '1' },
+                          'TYPE' => 'ORPCTHIS'
+                        });
+					unshift(@{$e->{DATA}},
+                        { 'NAME' => 'ORPCthat',
+                          'POINTERS' => 1,
+                          'PROPERTIES' => { 'out' => '1' },
+						  'TYPE' => 'ORPCTHAT'
+                        });
+				}
+			}
+		}
+		
+		# Do the inheritance
+		if (defined($x->{BASE}) and $x->{BASE} ne "") {
+			my $parent = util::get_interface($idl, $x->{BASE});
+
+			if(not defined($parent)) { 
+				die("No such parent interface " . $x->{BASE});
+			}
+			
+			@{$x->{INHERITED_DATA}} = (@{$parent->{INHERITED_DATA}}, @{$x->{DATA}});
+		} else {
+			$x->{INHERITED_DATA} = $x->{DATA};
+		}
+	}
+
+	return $idl;
 }
