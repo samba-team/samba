@@ -68,16 +68,19 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
     }
 
   /* Space is bufsize minus Netbios over TCP header minus SMB header */
-  /* The + 1 is to align the param and data bytes on an even byte
+  /* The alignment_offset is to align the param and data bytes on an even byte
      boundary. NT 4.0 Beta needs this to work correctly. */
   useable_space = bufsize - ((smb_buf(outbuf)+alignment_offset) - outbuf);
-  useable_space = MIN(useable_space, maxxmit); /* XXX is this needed? correct? */
+  /* useable_space can never be more than maxxmit minus the
+     alignment offset. */
+  useable_space = MIN(useable_space, maxxmit - alignment_offset);
 
   while( params_to_send || data_to_send)
     {
       /* Calculate whether we will totally or partially fill this packet */
       total_sent_thistime = params_to_send + data_to_send + alignment_offset;
-      total_sent_thistime = MIN(total_sent_thistime, useable_space);
+      /* We can never send more than maxxmit */
+      total_sent_thistime = MIN(total_sent_thistime, maxxmit);
 
       set_message(outbuf, 10, total_sent_thistime, True);
 
