@@ -24,26 +24,27 @@ case "$1" in
 	echo -n "Starting SMB services: "
 	daemon smbd -D 	
 	daemon nmbd -D 
-	if [ "`grep -i 'winbind uid' /etc/samba/smb.conf | egrep -v [\#\;]`" ]; then
-		daemon winbindd 
-	fi
 	echo
 	touch /var/lock/subsys/smb
 	;;
   stop)
 	echo -n "Shutting down SMB services: "
-	killproc smbd -TERM
+
+	## we have to get all the smbd process here instead of just the
+	## main parent (i.e. killproc) because it can take a long time
+	## for an individual process to process a TERM signal
+	smbdpids=`ps guax | grep smbd | grep -v grep | awk '{print $2}'`
+	for pid in $smbdpids; do
+		kill -TERM $pid
+	done
+	## nmbd is ok to kill using killproc()
 	killproc nmbd -TERM
-	if [ "`ps -ef | grep winbind | grep -v grep`" ]; then
-		killproc winbindd
-	fi
 	rm -f /var/lock/subsys/smb
 	echo ""
 	;;
   status)
 	status smbd
 	status nmbd
-	status winbindd
 	;;
   restart)
 	echo -n "Restarting SMB services: "
