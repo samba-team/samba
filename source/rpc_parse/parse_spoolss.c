@@ -1634,12 +1634,17 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 				return False;
 			
 			l_chaine=str_len_uni(&chaine);
-			if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+1)*sizeof(uint16))) == NULL)
+			/* extra byte added for appending the double terminating NULL */
+			if((chaine2=(uint16 *)Realloc(chaine2, (l_chaine2+l_chaine+2)*sizeof(uint16))) == NULL)
 				return False;
 			memcpy(chaine2+l_chaine2, chaine.buffer, (l_chaine+1)*sizeof(uint16));
 			l_chaine2+=l_chaine+1;
 		
 		} while(l_chaine!=0);
+		if (chaine2)
+		{
+			chaine2[l_chaine2] = '\0';
+		}
 		
 		*string=chaine2;
 
