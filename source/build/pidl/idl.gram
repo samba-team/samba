@@ -28,6 +28,16 @@ interface: 'interface' <commit> identifier '{' definition(s?) '}'
 definition : cpp_prefix
              | typedef { $item[1] }
              | function { $item[1] }
+             | const { $item[1] }
+
+const : 'const' <commit> identifier identifier '=' constant ';' 
+        {{
+                     "TYPE"  => "CONST", 
+		     "DTYPE"  => $item[3],
+		     "NAME"  => $item[4],
+		     "VALUE" => $item{constant}
+        }}
+        | <error?>
 
 typedef : 'typedef' <commit> type identifier array_len(?) ';' 
         {{
@@ -165,7 +175,7 @@ anytext: text2 '(' <commit> anytext ')' anytext
 call: expression '(' <commit> expression ')'
 	 {{ "$item[1]($item[4])" }}
 
-constant: /-?\d+/
+constant: /-?[\dx]+/
 	  | '*'
 
 cpp_prefix: '#' /.*/

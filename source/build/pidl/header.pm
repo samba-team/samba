@@ -75,7 +75,7 @@ sub HeaderStruct($$)
 {
     my($struct) = shift;
     my($name) = shift;
-    $res .= "struct $name {\n";
+    $res .= "\nstruct $name {\n";
     $tab_depth++;
     if (defined $struct->{ELEMENTS}) {
 	foreach my $e (@{$struct->{ELEMENTS}}) {
@@ -143,7 +143,15 @@ sub HeaderTypedef($)
 {
     my($typedef) = shift;
     HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    $res .= ";\n\n";
+    $res .= ";\n";
+}
+
+#####################################################################
+# parse a typedef
+sub HeaderConst($)
+{
+    my($const) = shift;
+    $res .= "#define $const->{NAME}\t( $const->{VALUE} )\n";
 }
 
 #####################################################################
@@ -165,7 +173,7 @@ sub HeaderFunctionInOut($$)
 sub HeaderFunction($)
 {
     my($fn) = shift;
-    $res .= "struct $fn->{NAME} {\n";
+    $res .= "\nstruct $fn->{NAME} {\n";
     $tab_depth++;
     tabs();
     $res .= "struct {\n";
@@ -208,7 +216,7 @@ sub HeaderInterface($)
     foreach my $d (@{$data}) {
 	    if ($d->{TYPE} eq "FUNCTION") {
 		    my $u_name = uc $d->{NAME};
-		    $res .= "#define DCERPC_$u_name $count\n";
+		    $res .= "#define DCERPC_$u_name " . sprintf("0x%02x", $count) . "\n";
 		    $count++;
 	    }
     }
@@ -216,6 +224,8 @@ sub HeaderInterface($)
     $res .= "\n\n";
 
     foreach my $d (@{$data}) {
+	($d->{TYPE} eq "CONST") &&
+	    HeaderConst($d);
 	($d->{TYPE} eq "TYPEDEF") &&
 	    HeaderTypedef($d);
 	($d->{TYPE} eq "FUNCTION") && 
