@@ -40,9 +40,10 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
 {
   SMB_STRUCT_FLOCK lock;
   int             ret;
+  void (*oldsig_handler)(int);
 
   gotalarm = 0;
-  CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+  oldsig_handler = CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
 
   lock.l_type = type;
   lock.l_whence = SEEK_SET;
@@ -54,7 +55,7 @@ BOOL do_file_lock(int fd, int waitsecs, int type)
   /* Note we must *NOT* use sys_fcntl here ! JRA */
   ret = fcntl(fd, SMB_F_SETLKW, &lock);
   alarm(0);
-  CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+  CatchSignal(SIGALRM, SIGNAL_CAST oldsig_handler);
 
   if (gotalarm) {
     DEBUG(0, ("do_file_lock: failed to %s file.\n",
