@@ -186,11 +186,11 @@ static NTSTATUS dcerpc_pull_response(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 				     struct dcerpc_hdr *hdr,
 				     struct dcerpc_response *pkt)
 {
-	uint32 alloc_hint, stub_len;
+	uint32 stub_len;
 	
 	BLOB_CHECK_BOUNDS(blob, *offset, 8);
 
-	alloc_hint        = IVAL(blob->data, (*offset) + 0);
+	pkt->alloc_hint   = IVAL(blob->data, (*offset) + 0);
 	pkt->context_id   = SVAL(blob->data, (*offset) + 4);
 	pkt->cancel_count = CVAL(blob->data, (*offset) + 6);
 
@@ -382,9 +382,7 @@ static NTSTATUS dcerpc_push_request(DATA_BLOB *blob, uint32 *offset,
 				    struct dcerpc_hdr *hdr,
 				    struct dcerpc_request *pkt)
 {
-	uint32 alloc_hint = 8 + pkt->stub_data.length + pkt->auth_verifier.length;
-
-	SIVAL(blob->data, (*offset) + 0, alloc_hint);
+	SIVAL(blob->data, (*offset) + 0, pkt->alloc_hint);
 	SSVAL(blob->data, (*offset) + 4, pkt->context_id);
 	SSVAL(blob->data, (*offset) + 6, pkt->opnum);
 
@@ -621,24 +619,67 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob_in, blob_out, payload;
+	uint32 remaining, chunk_size;
 
 	init_dcerpc_hdr(&pkt.hdr);
 
+	remaining = stub_data_in->length;
+
+	/* we can write a full max_recv_frag size, minus the dcerpc
+	   request header size */
+	chunk_size = p->srv_max_recv_frag - 24;
+
 	pkt.hdr.ptype = DCERPC_PKT_REQUEST;
-	pkt.hdr.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
 	pkt.hdr.call_id = p->call_id++;
 	pkt.hdr.auth_length = 0;
-
+	pkt.in.request.alloc_hint = remaining;
 	pkt.in.request.context_id = 0;
 	pkt.in.request.opnum = opnum;
-	pkt.in.request.stub_data = *stub_data_in;
 	pkt.in.request.auth_verifier = data_blob(NULL, 0);
 
+	/* we send a series of pdus without waiting for a reply until
+	   the last pdu */
+	while (remaining > chunk_size) {
+		if (remaining == stub_data_in->length) {
+			pkt.hdr.pfc_flags = DCERPC_PFC_FLAG_FIRST;
+		} else {
+			pkt.hdr.pfc_flags = 0;
+		}
+
+		pkt.in.request.stub_data.data = stub_data_in->data + 
+			(stub_data_in->length - remaining);
+		pkt.in.request.stub_data.length = chunk_size;
+
+		status = dcerpc_push(&blob_in, mem_ctx, &pkt);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+		
+		status = dcerpc_raw_packet_initial(p, mem_ctx, &blob_in);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}		
+
+		remaining -= chunk_size;
+	}
+
+	/* now we send a pdu with LAST_FRAG sent and get the first
+	   part of the reply */
+	if (remaining == stub_data_in->length) {
+		pkt.hdr.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
+	} else {
+		pkt.hdr.pfc_flags = DCERPC_PFC_FLAG_LAST;
+	}
+	pkt.in.request.stub_data.data = stub_data_in->data + 
+		(stub_data_in->length - remaining);
+	pkt.in.request.stub_data.length = remaining;
+	
 	status = dcerpc_push(&blob_in, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
+	/* send the pdu and get the initial response pdu */
 	status = dcerpc_raw_packet(p, mem_ctx, &blob_in, &blob_out);
 
 	status = dcerpc_pull(&blob_out, mem_ctx, &pkt);

@@ -218,3 +218,35 @@ NTSTATUS dcerpc_raw_packet_secondary(struct dcerpc_pipe *p,
 
 	return status;
 }
+
+
+/* 
+   send an initial pdu in a multi-pdu sequence
+*/
+NTSTATUS dcerpc_raw_packet_initial(struct dcerpc_pipe *p, 
+				   TALLOC_CTX *mem_ctx,
+				   DATA_BLOB *blob)
+{
+	union smb_write io;
+	NTSTATUS status;
+
+	io.generic.level = RAW_WRITE_WRITEX;
+	io.writex.in.fnum = p->fnum;
+	io.writex.in.offset = 0;
+	io.writex.in.wmode = PIPE_START_MESSAGE;
+	io.writex.in.remaining = blob->length;
+	io.writex.in.count = blob->length;
+	io.writex.in.data = blob->data;
+
+	status = smb_raw_write(p->tree, &io);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* make sure it accepted it all */
+	if (io.writex.out.nwritten != blob->length) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return status;
+}

@@ -86,6 +86,7 @@ struct dcerpc_packet {
 		} bind;
 
 		struct dcerpc_request {
+			uint32 alloc_hint;
 			uint16 context_id;
 			uint16 opnum;
 			DATA_BLOB stub_data;
@@ -114,6 +115,7 @@ struct dcerpc_packet {
 		} bind_nak;
 
 		struct dcerpc_response {
+			uint32 alloc_hint;
 			uint16 context_id;
 			uint8 cancel_count;
 			DATA_BLOB stub_data;

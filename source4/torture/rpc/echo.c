@@ -126,7 +126,7 @@ static BOOL test_sinkdata(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	int i;
 	NTSTATUS status;
 	char *data_in;
-	int len = 100;
+	int len = 200000;
 
 	printf("\nTesting SinkData\n");
 
@@ -159,11 +159,6 @@ BOOL torture_rpc_echo(int dummy)
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
-
-	if (!test_sourcedata(p, mem_ctx)) {
-		ret = False;
-	}
-	return ret;
 
 	if (!test_addone(p, mem_ctx)) {
 		ret = False;
