@@ -149,7 +149,7 @@ sub has_property($$)
 	my($p) = shift;
 
 	if (!defined $e->{PROPERTIES}) {
-		return;
+		return undef;
 	}
 
 	my($props) = $e->{PROPERTIES};
@@ -168,7 +168,7 @@ sub has_property($$)
 		}
 	}
 
-    return undef;
+	return undef;
 }
 
 
@@ -222,8 +222,6 @@ sub is_builtin_type($)
     my($type) = shift;
 
     return 1, if (is_scalar_type($type));
-    return 1, if ($type =~ "unistr.*");
-    return 1, if ($type =~ "ascstr.*");
 
     return 0;
 }
@@ -304,6 +302,11 @@ sub need_alloc($)
 sub c_push_prefix($)
 {
 	my $e = shift;
+
+	if ($e->{TYPE} =~ "string") {
+		return "";
+	}
+
 	if (is_scalar_type($e->{TYPE}) &&
 	    $e->{POINTERS}) {
 		return "*";
@@ -327,10 +330,7 @@ sub c_pull_prefix($)
 		return "&";
 	}
 
-	if ($e->{TYPE} =~ "unistr.*" ||
-	    $e->{TYPE} =~ "nstring.*" ||
-	    $e->{TYPE} =~ "ascstr.*" ||
-	    $e->{TYPE} =~ "lstring.*") {
+	if ($e->{TYPE} =~ "string") {
 		return "&";
 	}
 

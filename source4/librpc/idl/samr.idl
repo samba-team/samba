@@ -1,6 +1,7 @@
+#include "idl_types.h"
+
 /*
   samr interface definition
-
 */
 
 /*
@@ -44,7 +45,7 @@
 
 	typedef struct {
 		uint32 sd_size;
-		[subcontext] security_descriptor *sd;
+		[subcontext(4)] security_descriptor *sd;
 	} samr_SdBuf;
 
 	NTSTATUS samr_QuerySecurity (
@@ -727,9 +728,26 @@
 	/* Function    0x2b     */
 	NTSTATUS samr_TEST_PRIVATE_FUNCTIONS_USER();
 
+
 	/************************/
 	/* Function    0x2c     */
-	NTSTATUS samr_GET_USRDOM_PWINFO();
+
+/*
+const ULONG DOMAIN_PASSWORD_COMPLEX = 0x00000001;
+const ULONG DOMAIN_PASSWORD_NO_ANON_CHANGE = 0x00000002;
+const ULONG DOMAIN_PASSWORD_NO_CLEAR_CHANGE = 0x00000004;
+const ULONG DOMAIN_PASSWORD_STORE_CLEARTEXT = 0x00000010;
+const ULONG DOMAIN_REFUSE_PASSWORD_CHANGE = 0x00000020;
+*/
+	typedef struct {
+		uint16 min_pwd_len;
+		uint32 passwd_properties;
+	} samr_PwInfo;
+
+	NTSTATUS samr_GetUserPwInfo(
+		[in,ref]    policy_handle *handle,
+		[out]       samr_PwInfo info
+		);
 
 	/************************/
 	/* Function    0x2d     */

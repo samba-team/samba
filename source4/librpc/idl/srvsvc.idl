@@ -1,3 +1,5 @@
+#include "idl_types.h"
+
 /*
   srvsvc interface definitions
 */
@@ -302,7 +304,7 @@
 		unistr *path;
 		uint32 *password;
 		uint32 unknown;
-		[subcontext] security_descriptor *sd;
+		[subcontext(4)] security_descriptor *sd;
 	} srvsvc_NetShare502;
 
 	typedef struct {

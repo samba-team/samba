@@ -1,3 +1,5 @@
+#include "idl_types.h"
+
 /*
   spoolss interface definitions
 */
@@ -179,7 +181,7 @@
 		[in,ref]     policy_handle *handle,
 		[in]	     uint32 level,
 		[in]         DATA_BLOB *buffer,
-		[out,subcontext,switch_is(level)] spoolss_PrinterInfo *info,
+		[out,subcontext(4),switch_is(level)] spoolss_PrinterInfo *info,
 		[in,out,ref] uint32 *buf_size
 		);
 
