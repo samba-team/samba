@@ -72,6 +72,8 @@ command = {
 		help = "decrypt keys"
 	}
 	argument = "[dump-file]"
+	min_args = "0"
+	max_args = "1"
 	help = "Dumps the database in a human readable format to the specified file, \nor the standard out. Local (-l) mode only."
 }
 
@@ -88,16 +90,21 @@ command = {
 		help = "realm max renewable lifetime"
 	}
 	argument = "realm..."
+	min_args = "1"
 	help = "Initializes the default principals for a realm. Creates the database\nif necessary. Local (-l) mode only."
 }
 command = {
 	name = "load"
 	argument = "file"
+	min_args = "1"
+	max_args = "1"
 	help = "Loads a previously dumped file. Local (-l) mode only."
 }
 command = {
 	name = "merge"
 	argument = "file"
+	min_args = "1"
+	max_args = "1"
 	help = "Merges the contents of a dump file into the database. Local (-l) mode only."
 }
 command = {
@@ -162,6 +169,7 @@ command = {
 		help = "use default values"
 	}
 	argument = "principal..."
+	min_args = "1"
 	help = "Adds a principal to the database."
 }
 command = {
@@ -192,6 +200,7 @@ command = {
 		help = "DES key in hex"
 	}
 	argument = "principal..."
+	min_args = "1"
 	help = "Changes the password of one or more principals matching the expressions."
 }
 command = {
@@ -200,11 +209,13 @@ command = {
 	name = "del_entry"
 	function = "del_entry"
 	argument = "principal..."
+	min_args = "1"
 	help = "Deletes all principals matching the expressions."
 }
 command = {
 	name = "del_enctype"
 	argument = "principal enctype..."
+	min_args = "2"
 	help = "Delete all the mentioned enctypes for principal."
 }
 command = {
@@ -216,6 +227,7 @@ command = {
 		help = "keytab to use"
 	}
 	argument = "principal..."
+	min_args = "1"
 	help = "Extracts the keys of all principals matching the expressions, and stores them in a keytab." 
 }
 command = {
@@ -249,12 +261,15 @@ command = {
 		help = "columns to print for short output"
 	}
 	argument = "principal..."
+	min_args = "1"
 	help = "Shows information about principals matching the expressions."
 }
 command = {
 	name = "rename"
 	function = "rename_entry"
 	argument = "from to"
+	min_args = "2"
+	max_args = "2"
 	help = "Renames a principal."
 }
 command = {
@@ -298,6 +313,8 @@ command = {
 		default = "-1"
 	}
 	argument = "principal"
+	min_args = "1"
+	max_args = "1"
 	help = "Modifies some attributes of the specified principal."
 }
 command = {
@@ -336,6 +353,7 @@ command = {
 		help = "columns to print for short output"
 	}
 	argument = "principal..."
+	min_args = "1"
 	help = "Lists principals in a terse format. Equivalent to \"get -t\"." 
 }
 
@@ -344,7 +362,8 @@ command = {
 	name = "pwq"
 	function = "password_quality"
 	argument = "principal password"
-
+	min_args = "2"
+	max_args = "2"
 	help = "Try run the password quality function locally (not doing RPC out to server)."
 }
 
@@ -352,6 +371,8 @@ command = {
 	name = "help"
 	name = "?"
 	argument = "[command]"
+	min_args = "0"
+	max_args = "1"
 	help = "Help! I need somebody."
 }
 
