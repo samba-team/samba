@@ -60,7 +60,7 @@ void rpcclient_init(void)
 {
 	bzero(smb_cli, sizeof(smb_cli));
 	cli_initialise(smb_cli);
-	smb_cli->capabilities |= CAP_NT_SMBS;
+	smb_cli->capabilities |= CAP_NT_SMBS | CAP_STATUS32;
 }
 
 /****************************************************************************
