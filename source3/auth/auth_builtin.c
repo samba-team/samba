@@ -38,7 +38,8 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 				     const auth_usersupplied_info *user_info, 
 				     auth_serversupplied_info **server_info)
 {
-	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
+	/* mark this as 'not for me' */
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
 
 	if (!(user_info->internal_username.str 
 	      && *user_info->internal_username.str)) {
@@ -133,7 +134,7 @@ static NTSTATUS check_fixed_challenge_security(const struct auth_context *auth_c
 					       const auth_usersupplied_info *user_info, 
 					       auth_serversupplied_info **server_info)
 {
-	return NT_STATUS_UNSUCCESSFUL;
+	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 /****************************************************************************
