@@ -204,13 +204,19 @@ struct table_node {
 	int	version;
 };
  
+#define SPL_ARCH_WIN40		"WIN40"
+#define SPL_ARCH_W32X86		"W32X86"
+#define SPL_ARCH_W32MIPS	"W32MIPS"
+#define SPL_ARCH_W32ALPHA	"W32ALPHA"
+#define SPL_ARCH_W32PPC		"W32PPC"
+
 static const struct table_node archi_table[]= {
 
-	{"Windows 4.0",          "WIN40",	0 },
-	{"Windows NT x86",       "W32X86",	2 },
-	{"Windows NT R4000",     "W32MIPS",	2 },
-	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
-	{"Windows NT PowerPC",   "W32PPC",	2 },
+	{"Windows 4.0",          SPL_ARCH_WIN40,	0 },
+	{"Windows NT x86",       SPL_ARCH_W32X86,	2 },
+	{"Windows NT R4000",     SPL_ARCH_W32MIPS,	2 },
+	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
+	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
 	{NULL,                   "",		-1 }
 };
 
@@ -1755,6 +1761,11 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	architecture = get_short_archi(arch);
+	
+	/* Windows 4.0 (i.e. win9x) should always use a version of 0 */
+	
+	if ( strcmp( arch, SPL_ARCH_WIN40 ) == 0 )
+		version = 0;
 
 	DEBUG(8,("get_a_printer_driver_3: [%s%s/%d/%s]\n", DRIVERS_PREFIX, architecture, version, drivername));
 
