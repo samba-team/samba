@@ -21,7 +21,7 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#if defined(HAVE_MYSQL_H) || defined(WITH_MYSQLSAM)
+#if defined(HAVE_MYSQL_H) && defined(WITH_MYSQLSAM)
 
 #include "includes.h"
 
