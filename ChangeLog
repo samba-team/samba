@@ -1,3 +1,7 @@
+2001-05-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c: pass context to krb5_domain_x500_decode
+
 2001-05-14  Assar Westerlund  <assar@sics.se>
 
 	* kpasswd/kpasswdd.c: adapt to new address functions
