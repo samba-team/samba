@@ -12,7 +12,7 @@
 
 	<xsl:import href="../settings.xsl"/>
 
-	<xsl:output method="xml" indent="yes" encoding="UTF-8" doctype-public="-//Pearson//DTD Books//DE" doctype-system="../../Xml_dtd_1.1/pearson.dtd"/>
+	<xsl:output method="xml" indent="yes" encoding="UTF-8" doctype-public="-//Pearson//DTD Books//DE" doctype-system="http://www.pearson.de/pearson.dtd"/>
 
 	<xsl:template match="book">
 		<xsl:element name="book">
@@ -37,8 +37,11 @@
 	</xsl:template>
 
 	<xsl:template match="ulink">
-		<xsl:element name="url">
-			<xsl:value-of select="@ulink"/>
+		<xsl:apply-templates/>
+		<xsl:element name="footnote">
+			<xsl:element name="url">
+				<xsl:value-of select="@ulink"/>
+			</xsl:element>
 		</xsl:element>
 	</xsl:template>
 
@@ -54,7 +57,7 @@
 		</xsl:element>
 	</xsl:template>
 
-	<xsl:template match="itemizedlist">
+	<xsl:template match="para/itemizedlist|itemizedlist">
 		<xsl:element name="ul">
 			<xsl:for-each select="listitem">
 				<xsl:element name="li">
@@ -71,10 +74,13 @@
 	</xsl:template>
 
 	<xsl:template match="link">
+		<!--FIXME
 		<xsl:element name="xref">
-			<xsl:attribute name="linkend"><xsl:value-of select="@linkend"/></xsl:attribute>
+			<xsl:attribute name="xlink:href">
+				<xsl:value-of select="@linkend"/>
+			</xsl:attribute>
 			<xsl:apply-templates/>
-		</xsl:element>
+		</xsl:element>-->
 	</xsl:template>
 	
 	<xsl:template match="acronym"/>
