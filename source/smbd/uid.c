@@ -117,12 +117,6 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		   (current_user.uid == vuser->uid)) {
 	  int n, ngroups; gid_t grps[10];
 		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
-		DEBUG(10, ("UID: %d, GID: %d\n", geteuid(), getegid()));
-		ngroups = sys_getgroups(0, grps);
-		ngroups = sys_getgroups(ngroups, grps);
-		for (n=0; n < ngroups; n++)
-		  DEBUG(10, ("Grp: %d\n", grps[n]));
-		return(True);
 	}
 
 	snum = SNUM(conn);
@@ -139,7 +133,6 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ngroups = conn->ngroups;
 		token = conn->nt_user_token;
 	} else {
-	  int i;
 		if (!vuser) {
 			DEBUG(2,("change_to_user: Invalid vuid used %d\n",vuid));
 			return(False);
@@ -149,12 +142,6 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		current_user.ngroups = vuser->n_groups;
 		current_user.groups  = vuser->groups;
 		token = vuser->nt_user_token;
-
-		DEBUG(10, ("UID: %d, GID: %d, ngroups: %d, groups: \n",
-			uid, gid, current_user.ngroups));
-		for (i = 0; i < current_user.ngroups; i++)
-			DEBUG(10, ("%d, ", current_user.groups[i]));
-		DEBUG(10, ("\n"));
 	}
 
 	/*
