@@ -275,17 +275,11 @@ static SEC_DESC *sec_desc_parse(char *str)
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
-	int type=0x8004;
 
 	while (next_token(&p, tok, " \t,\r\n", sizeof(tok))) {
 
 		if (strncmp(tok,"REVISION:", 9) == 0) {
 			revision = strtol(tok+9, NULL, 16);
-			continue;
-		}
-
-		if (strncmp(tok,"TYPE:", 5) == 0) {
-			type = strtol(tok+5, NULL, 16);
 			continue;
 		}
 
@@ -341,7 +335,7 @@ static void sec_desc_print(FILE *f, SEC_DESC *sd)
 	fstring sidstr;
 	int i;
 
-	printf("REVISION:%d\nTYPE:0x%x\n", sd->revision, sd->type);
+	printf("REVISION:%d\n", sd->revision);
 
 	/* Print owner and group sid */
 
