@@ -69,7 +69,7 @@ if [ z$1 = z"devel" ]; then
 	(cd ../../.. ; mv samba samba-${VERSION} )
 fi
 
-( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION} | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
+( cd ../../.. ; tar --exclude=CVS -cf - samba-${VERSION}/. | bzip2 > ${SRCDIR}/samba-${VERSION}.tar.bz2 )
 
 cp -av samba.spec ${SPECDIR}
 cp -av samba-devel.spec ${SPECDIR}
