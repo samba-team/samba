@@ -68,8 +68,11 @@ static BOOL setsmbfilepwpos(void *vp, SMB_BIG_UINT tok)
 
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
+
+ this function is non-static as it is called (exclusively and only)
+ from getsamfile21pwent().
  *************************************************************************/
-static struct smb_passwd *getsmbfilepwent(void *vp)
+struct smb_passwd *getsmbfilepwent(void *vp)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;
