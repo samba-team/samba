@@ -22,9 +22,10 @@
 
 #include "includes.h"
 
-/*
- * Change the port number used to call on 
- */
+/****************************************************************************
+ Change the port number used to call on.
+****************************************************************************/
+
 int cli_set_port(struct cli_state *cli, int port)
 {
 	cli->port = port;
@@ -96,13 +97,13 @@ BOOL cli_receive_smb(struct cli_state *cli)
 		}
 	}
 
-        /* If the server is not responding, note that now */
+	/* If the server is not responding, note that now */
 
-        if (!ret) {
-                close(cli->fd);
-                cli->fd = -1;
+	if (!ret) {
 		cli->smb_read_error = smb_read_error;
-        }
+		close(cli->fd);
+		cli->fd = -1;
+	}
 
 	return ret;
 }
@@ -130,7 +131,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 		if (ret <= 0) {
 			close(cli->fd);
 			cli->fd = -1;
-			DEBUG(0,("Error writing %d bytes to client. %d\n", (int)len,(int)ret));
+			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
+				(int)len,(int)ret, strerror(errno) ));
 			return False;
 		}
 		nwritten += ret;
@@ -232,16 +234,14 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize);
 	cli->inbuf = (char *)malloc(cli->bufsize);
 	cli->oplock_handler = cli_oplock_ack;
-	if (lp_use_spnego()) {
+	if (lp_use_spnego())
 		cli->use_spnego = True;
-	}
 
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
-	if (getenv("CLI_FORCE_DOSERR")) {
+	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
-	}
 
 	/* A way to attempt to force SMB signing */
 	if (getenv("CLI_FORCE_SMB_SIGNING"))
@@ -295,6 +295,7 @@ void cli_close_connection(struct cli_state *cli)
 	if (cli->fd != -1) 
 		close(cli->fd);
 	cli->fd = -1;
+	cli->smb_read_error = 0;
 }
 
 /****************************************************************************
@@ -306,9 +307,8 @@ void cli_shutdown(struct cli_state *cli)
 	BOOL allocated = cli->allocated;
 	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
-	if (allocated) {
+	if (allocated)
 		free(cli);
-	} 
 }
 
 /****************************************************************************
@@ -348,4 +348,3 @@ BOOL cli_send_keepalive(struct cli_state *cli)
         }
         return True;
 }
-
