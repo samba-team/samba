@@ -85,6 +85,37 @@ static const char *lock_type_name(enum brl_type lock_type)
 }
 
 /****************************************************************************
+ Utility function to map a lock type correctly depending on the open
+ mode of a file.
+****************************************************************************/
+
+static int map_posix_lock_type( files_struct *fsp, enum brl_type lock_type)
+{
+	if((lock_type == WRITE_LOCK) && !fsp->can_write) {
+		/*
+		 * Many UNIX's cannot get a write lock on a file opened read-only.
+		 * Win32 locking semantics allow this.
+		 * Do the best we can and attempt a read-only lock.
+		 */
+		DEBUG(10,("map_posix_lock_type: Downgrading write lock to read due to read-only file.\n"));
+		return F_RDLCK;
+	} else if((lock_type == READ_LOCK) && !fsp->can_read) {
+		/*
+		 * Ditto for read locks on write only files.
+		 */
+		DEBUG(10,("map_posix_lock_type: Changing read lock to write due to write-only file.\n"));
+		return F_WRLCK;
+	}
+
+  /*
+   * This return should be the most normal, as we attempt
+   * to always open files read/write.
+   */
+
+  return (lock_type == READ_LOCK) ? F_RDLCK : F_WRLCK;
+}
+
+/****************************************************************************
  Check to see if the given unsigned lock range is within the possible POSIX
  range. Modifies the given args to be in range if possible, just returns
  False if not.
@@ -98,6 +129,10 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 
 #if defined(LARGE_SMB_OFF_T) && !defined(HAVE_BROKEN_FCNTL64_LOCKS)
 
+    SMB_OFF_T mask2 = ((SMB_OFF_T)0x4) << (SMB_OFF_T_BITS-4);
+    SMB_OFF_T mask = (mask2<<1);
+    SMB_OFF_T neg_mask = ~mask;
+
 	/*
 	 * In this case SMB_OFF_T is 64 bits,
 	 * and the underlying system can handle 64 bit signed locks.
@@ -108,12 +143,20 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	count = (SMB_OFF_T)u_count;
 
 	/*
+	 * Deal with a very common case of count of all ones.
+	 * (lock entire file).
+	 */
+
+	if(count == (SMB_OFF_T)-1)
+		count &= ~mask;
+
+	/*
 	 * POSIX lock ranges cannot be negative.
 	 * Fail if any combination becomes negative.
 	 */
 
 	if(offset < 0 || count < 0 || (offset + count < 0)) {
-		DEBUG(10,("posix_lock_in_range: negative range offset = %.0f, count = %.0f. Ignoring lock.\n",
+		DEBUG(10,("posix_lock_in_range: negative range: offset = %.0f, count = %.0f. Ignoring lock.\n",
 				(double)offset, (double)count ));
 		return False;
 
@@ -139,6 +182,14 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * SMB_OFF_T is 64 bits, but we need to use 31 bits due to
 	 * broken large locking.
 	 */
+
+	/*
+	 * Deal with a very common case of count of all ones.
+	 * (lock entire file).
+	 */
+
+	if(u_count == (SMB_BIG_UINT)-1)
+		count = 0x7FFFFFFF;
 
 	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
 		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. offset = %.0f, count = %.0f. Ignoring lock.\n",
@@ -182,6 +233,14 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * SMB_BIG_UINT is 64 bits, we can do a 32 bit shift.
 	 */
 
+	/*
+	 * Deal with a very common case of count of all ones.
+	 * (lock entire file).
+	 */
+
+	if(u_count == (SMB_BIG_UINT)-1)
+		count = 0x7FFFFFFF;
+
 	if(((u_offset >> 32) & 0xFFFFFFFF) || ((u_count >> 32) & 0xFFFFFFFF)) {
 		DEBUG(10,("posix_lock_in_range: top 32 bits not zero. u_offset = %.0f, u_count = %.0f. Ignoring lock.\n",
 				(double)u_offset, (double)u_count ));
@@ -208,6 +267,14 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 	 * SMB_BIG_UINT and SMB_OFF_T are both 32 bits,
 	 * just cast.
 	 */
+
+	/*
+	 * Deal with a very common case of count of all ones.
+	 * (lock entire file).
+	 */
+
+	if(u_count == (SMB_BIG_UINT)-1)
+		count = 0x7FFFFFFF;
 
 	/* Cast from 32 bits unsigned to 32 bits signed. */
 	offset = (SMB_OFF_T)u_offset;
@@ -242,22 +309,32 @@ static BOOL posix_lock_in_range(SMB_OFF_T *offset_out, SMB_OFF_T *count_out,
 
 /****************************************************************************
  POSIX function to see if a file region is locked. Returns True if the
- lock could be granted, False if not.
+ region is locked, False otherwise.
 ****************************************************************************/
 
-static BOOL posix_locktest(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+static BOOL is_posix_locked(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
 
-	DEBUG(10,("posix_locktest: File %s, offset = %.0f, count = %.0f, type = %s\n",
+	DEBUG(10,("is_posix_locked: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
-		return True;
+	/*
+	 * If the requested lock won't fit in the POSIX range, we will
+	 * never set it, so presume it is not locked.
+	 */
 
-	/* Placeholder - for now always return that the lock could be granted. */
-	return True;
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
+		return False;
+
+	/*
+	 * Note that most UNIX's can *test* for a write lock on
+	 * a read-only fd, just not *set* a write lock on a read-only
+	 * fd. So we don't need to use map_lock_type here.
+	 */ 
+
+	return fcntl_lock(fsp->fd,SMB_F_GETLK,offset,count,lock_type);
 }
 
 /****************************************************************************
@@ -265,40 +342,58 @@ static BOOL posix_locktest(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
  lock could be granted, False if not.
 ****************************************************************************/
 
-static BOOL get_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
+static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count, enum brl_type lock_type)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
+	BOOL ret = True;
 
-	DEBUG(5,("get_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
+	DEBUG(5,("set_posix_lock: File %s, offset = %.0f, count = %.0f, type = %s\n",
 			fsp->fsp_name, (double)offset, (double)count, lock_type_name(lock_type) ));
+
+	/*
+	 * If the requested lock won't fit in the POSIX range, we will
+	 * pretend it was successful.
+	 */
 
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
-	/* Placeholder - for now always return that the lock could be granted. */
-	fsp->num_posix_locks++;
-	return True;
+    ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,map_posix_lock_type(fsp,lock_type)); 
+
+	if(ret)
+		fsp->num_posix_locks++;
+
+	return ret;
 }
 
 /****************************************************************************
  POSIX function to release a lock. Returns True if the
- lock could be granted, False if not.
+ lock could be released, False if not.
 ****************************************************************************/
 
 static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
 {
 	SMB_OFF_T offset;
 	SMB_OFF_T count;
+	BOOL ret;
 
 	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
 			fsp->fsp_name, (double)offset, (double)count ));
 
+	/*
+	 * If the requested lock won't fit in the POSIX range, we will
+	 * pretend it was successful.
+	 */
+
 	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
 		return True;
 
-	/* Placeholder - for now always return that the lock could be granted. */
-	fsp->num_posix_locks--;
+	ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
+
+	if(ret)
+		fsp->num_posix_locks--;
+
 	return True;
 }
 
@@ -332,7 +427,7 @@ BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	 */
 
 	if(!ret && !EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && lp_posix_locking(snum))
-		ret = !posix_locktest(fsp, offset, count, lock_type);
+		ret = is_posix_locked(fsp, offset, count, lock_type);
 
 	return ret;
 }
@@ -371,7 +466,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			 * Try and get a POSIX lock on this range.
 			 */
 
-			ok = get_posix_lock(fsp, offset, count, lock_type);
+			ok = set_posix_lock(fsp, offset, count, lock_type);
 
 			if(!ok) {
 				/*
@@ -393,10 +488,10 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 	return True; /* Got lock */
 }
 
-
 /****************************************************************************
  Utility function called by unlocking requests.
 ****************************************************************************/
+
 BOOL do_unlock(files_struct *fsp,connection_struct *conn,
                SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       int *eclass,uint32 *ecode)
