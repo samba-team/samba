@@ -2138,7 +2138,8 @@ static void do_cancel(int job)
   SSVAL(p,0,job);     
   p += 2;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 6, 0, 1000,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 0,
+           6, 1000,
 	       &rprcnt,&rdrcnt,
 	       param,NULL, NULL,
 	       &rparam,&rdata))
@@ -2473,7 +2474,8 @@ static void cmd_p_queue_4(char *inbuf,char *outbuf )
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintJobEnum()...\n"));
-  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0, 10, 0, 4096,
+  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0,
+               10, 0, 4096,
                &rprcnt, &rdrcnt,
                param, NULL, NULL,
                &rparam, &rdata) )
@@ -2579,7 +2581,8 @@ static void cmd_qinfo(char *inbuf,char *outbuf )
   p = skip_string(p,1);
 
   DEBUG(1,("Calling DosPrintQueueGetInfo()...\n"));
-  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0, 10, 0, 4096,
+  if( cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param), 0, 0,
+           10, 4096,
 	       &rprcnt, &rdrcnt,
 	       param, NULL, NULL,
 	       &rparam, &rdata) )
@@ -2974,7 +2977,8 @@ static BOOL browse_host(BOOL sort)
   SSVAL(p,2,BUFFER_SIZE);
   p += 4;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 1024, 0, BUFFER_SIZE,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 0,
+             1024, BUFFER_SIZE,
                &rprcnt,&rdrcnt,
 	       param,NULL, NULL,
 	       &rparam,&rdata))
@@ -3065,7 +3069,8 @@ static void server_info()
   SSVAL(p,2,1000);
   p += 6;
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 6, 0, 1000,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p,param),0, 0,
+           6, 1000,
 	       &rprcnt,&rdrcnt,
 	       param,NULL, NULL,
 	       &rparam,&rdata))
@@ -3139,8 +3144,8 @@ static BOOL list_servers(char *wk_grp)
   /* first ask for a list of servers in this workgroup */
   SIVAL(svtype_p,0,SV_TYPE_ALL);
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 8, 0,
-           BUFFER_SIZE - SAFETY_MARGIN,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 0,
+           8, BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
 	       param,NULL, NULL,
 	       &rparam,&rdata))
@@ -3178,8 +3183,8 @@ static BOOL list_servers(char *wk_grp)
   /* now ask for a list of workgroups */
   SIVAL(svtype_p,0,SV_TYPE_DOMAIN_ENUM);
 
-  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 8, 0,
-           BUFFER_SIZE - SAFETY_MARGIN,
+  if (cli_call_api(PIPE_LANMAN, PTR_DIFF(p+4,param),0, 0,
+           8, BUFFER_SIZE - SAFETY_MARGIN,
 	       &rprcnt,&rdrcnt,
 	       param,NULL, NULL,
 	       &rparam,&rdata))
