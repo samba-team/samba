@@ -103,12 +103,24 @@ if test "$with_krb4" != "no"; then
 		CFLAGS="$save_CFLAGS"
 	])
 	if test "$ac_cv_func_krb_verify_secure" != yes; then
-		AC_DEFINE(KRB_VERIFY_NOT_SECURE, 0,
-			[Define to zero if your krb.h doesn't])
 		AC_DEFINE(KRB_VERIFY_SECURE, 1,
 			[Define to one if your krb.h doesn't])
 		AC_DEFINE(KRB_VERIFY_SECURE_FAIL, 2,
 			[Define to two if your krb.h doesn't])
+	fi
+	AC_CACHE_CHECK(for KRB_VERIFY_NOT_SECURE,
+		ac_cv_func_krb_verify_not_secure,
+		[save_CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS $INCLUDE_krb4"
+		AC_TRY_COMPILE([#include <krb.h>],[
+		int x = KRB_VERIFY_NOT_SECURE],
+		ac_cv_func_krb_verify_not_secure=yes,
+		ac_cv_func_krb_verify_not_secure=no)
+		CFLAGS="$save_CFLAGS"
+	])
+	if test "$ac_cv_func_krb_verify_not_secure" != yes; then
+		AC_DEFINE(KRB_VERIFY_NOT_SECURE, 0,
+			[Define to zero if your krb.h doesn't])
 	fi
 	save_LIBS="$LIBS"
 	LIBS="$LIB_krb4 $LIBS"
