@@ -1,5 +1,4 @@
 #include <krb5_locl.h>
-#include <md4.h>
 
 RCSID("$Id$");
 
@@ -39,7 +38,7 @@ krb5_get_credentials (krb5_context context,
     char buf[BUFSIZ];
     int i;
     unsigned char data[1024], buf2[1024];
-    int len;
+    size_t len;
 
     PA_DATA foo;
 
@@ -108,7 +107,7 @@ krb5_get_credentials (krb5_context context,
 	krb5_data in_data;
 	unsigned char buf[1024];
 	krb5_auth_context ac = NULL;
-	int len;
+	size_t len;
 	krb5_creds tmp_cred;
 
 	ret = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
