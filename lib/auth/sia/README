@@ -1,17 +1,17 @@
-    ------------------------------------------------------------
-    | NOTE: This is currently just experimental code, it might |
-    | not work as expected. You have been warned.              |
-    ------------------------------------------------------------
+    ----------------------------------------------------------
+    | NOTE: This code might not work as expected, especially |
+    | when used with C2 (aka ENHANCED) security.             |
+    ----------------------------------------------------------
 
-This is a quick attempt at a SIA module for Kerberos. To install this
-you will have to do the following:
+This is an attempt at a SIA module for Kerberos. To install this you
+will have to do the following:
 
-* Make sure libsia_krb4.so is available in /usr/athena/lib. You might
-  actually want it on local disk, so /usr/shlib might be a better
-  place if /usr/athena is not local.
+* Make sure libsia_krb4.so is available in /usr/athena/lib. If
+  /usr/athena is not on local disk, you might want to put it in
+  /usr/shlib or someplace else. If you do, you'll have to edit
+  krb4_matrix.conf to reflect the new location.
 
-* Copy krb4_matrix.conf to /etc/sia. If you put libsia_krb4.so in some
-  obscure place, you might have to edit krb4_matrix.conf.
+* Copy (your possibly edited) krb4_matrix.conf to /etc/sia.
 
 * Apply security.patch to /sbin/init.d/security
 
@@ -29,11 +29,46 @@ get passed along (since xdm zaps the environment). Instead you have to
 set KRBTKFILE to the correct value in /usr/lib/X11/xdm/Xsession. Add a
 line similar to
 
-KRBTKFILE=/tmp/tkt`id -u`_`ps -o ppid= -p $$`
-
-Also remember to export this variable.
-
+KRBTKFILE=/tmp/tkt`id -u`_`ps -o ppid= -p $$`; export KRBTKFILE
 
 There is currently no support for changing kerberos passwords. Use
 kpasswd instead.
 
+NOTES to users with ENHANCED security
+-------------------------------------
+
+Digital's ENHANCED (C2) security, and Kerberos solves two different
+problems. C2 deals with local security, and adds better control of who
+can do what, and adds auditing and similar things. Kerberos deals with
+network security.
+
+The C2 compatibility has not been extensively tested, simply because I
+don't use C2. To make C2 security work with Kerberos you will have to
+do the following.
+
+* Replace `krb4_matrix.conf' with `krb4+c2_matrix.conf' in the above
+  directions.
+
+* You must enable `vouching' in the `default' database.  This will
+  make C2 trust other SIA modules, so you can login without giving
+  your C2 password. To do this use `edauth' to edit the default entry
+  `/usr/tcb/bin/edauth -dd default', and add a
+  `d_accept_alternate_vouching' capability, if not already present.
+
+* For each user that does *not* have a C2 password, you should set the
+  password expiration field to zero. You can do this for each user, or
+  in the `default' table. To to this use `edauth' to set (or change)
+  the `u_exp' capability to `u_exp#0'.
+
+* (optional) Change the entry for telnet in `/etc/inetd.conf' to
+  explicitly use Digital's login program. You can do this by adding
+  `-L /bin/login' at the end of the line. This way users with local
+  passwords will get warnings about expiring passwords and such.
+
+REMEMBER, if you do these changes you will get a system that most
+certainly does *not* fulfill the requirements of a C2 system. If C2 is
+what you want, for instance if someone else is forcing you to use it,
+you're out of luck.  If you use ENHANCED security because you want a
+system that is more secure than it would otherwise be, you probably
+got an even more secure system. Passwords will not be sent in the
+clear, for instance.
