@@ -389,7 +389,7 @@ static BOOL rw_torture3(struct cli_state *c, char *lockfname)
 		{
 			fnum = cli_open(c, lockfname, O_RDONLY, 
 					 DENY_NONE);
-			msleep(10);
+			smb_msleep(10);
 		}
 		if (fnum == -1) {
 			printf("second open read-only of %s failed (%s)\n",
@@ -4464,12 +4464,12 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
 				}
-				msleep(10);	
+				smb_msleep(10);	
 			}
 
 			child_status[i] = getpid();
 
-			while (child_status[i] && end_timer() < 5) msleep(2);
+			while (child_status[i] && end_timer() < 5) smb_msleep(2);
 
 			child_status_out[i] = fn(i);
 			_exit(0);
@@ -4482,7 +4482,7 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 			if (child_status[i]) synccount++;
 		}
 		if (synccount == nprocs) break;
-		msleep(10);
+		smb_msleep(10);
 	} while (end_timer() < 30);
 
 	if (synccount != nprocs) {
