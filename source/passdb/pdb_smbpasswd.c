@@ -407,12 +407,6 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
     /* Skip the ':' */
     p++;
 
-    if (*p == '*' || *p == 'X') {
-	    /* NULL LM password */
-	    pw_buf->smb_passwd = NULL;
-	    DEBUG(10, ("getsmbfilepwent: LM password for user %s invalidated\n", user_name));
-     }
-
     if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
       DEBUG(0, ("getsmbfilepwent: malformed password entry (passwd too short)\n"));
       continue;
@@ -427,11 +421,16 @@ static struct smb_passwd *getsmbfilepwent(struct smbpasswd_privates *smbpasswd_s
       pw_buf->smb_passwd = NULL;
       pw_buf->acct_ctrl |= ACB_PWNOTREQ;
     } else {
-      if (!pdb_gethexpwd((char *)p, smbpwd)) {
-        DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
-        continue;
-      }
-      pw_buf->smb_passwd = smbpwd;
+	    if (*p == '*' || *p == 'X') {
+		    /* NULL LM password */
+		    pw_buf->smb_passwd = NULL;
+		    DEBUG(10, ("getsmbfilepwent: LM password for user %s invalidated\n", user_name));
+	    } else if (pdb_gethexpwd((char *)p, smbpwd)) {
+		    pw_buf->smb_passwd = smbpwd;
+	    } else {
+		    pw_buf->smb_passwd = NULL;
+		    DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
+	    }
     }
 
     /* 
