@@ -10,7 +10,9 @@ RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
 
-prefix = /usr/local
+INSTALL = @INSTALL@
+
+prefix = @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
@@ -37,7 +39,10 @@ Wall:
 	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
 
 install: all
-
+	$(INSTALL) -d $(prefix)/lib
+	$(INSTALL) $(LIB) $(libdir)
+	-$(RANLIB) $(libdir)/$(LIB)
+	
 uninstall:
 
 TAGS: $(SOURCES)
