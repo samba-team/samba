@@ -32,6 +32,8 @@ BOOL torture_rpc_alter_context(void)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct policy_handle handle;
+	struct dcerpc_syntax_id syntax;
+	struct dcerpc_syntax_id transfer_syntax;
 
 	mem_ctx = talloc_init("torture_rpc_alter_context");
 
@@ -68,6 +70,32 @@ BOOL torture_rpc_alter_context(void)
 	if (!test_lsa_Close(p, mem_ctx, &handle)) {
 		ret = False;
 	}
+
+	syntax = p->syntax;
+	transfer_syntax = p->transfer_syntax;
+
+	printf("Testing change of primary context\n");
+	status = dcerpc_alter_context(p, mem_ctx, &p2->syntax, &p2->transfer_syntax);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("dcerpc_alter_context failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	printf("testing DSSETUP pipe operations - should fault\n");
+	if (test_DsRoleGetPrimaryDomainInformation(p, mem_ctx)) {
+		ret = False;
+	}
+
+	if (!test_lsa_OpenPolicy2(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_lsa_Close(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	printf("testing DSSETUP pipe operations\n");
+	ret &= test_DsRoleGetPrimaryDomainInformation(p2, mem_ctx);
 
 	talloc_destroy(mem_ctx);
 
