@@ -26,16 +26,6 @@
 #include "includes.h"
 #include "smb.h"
 
-#include <libintl.h>
-#define _(String)   gettext(String)
-#define PACKAGE   "swat"
-#define LOCALEDIR "/usr/share/locale"
-#define LANGFILE  "/var/run/swat.lang"
-char*   getLANGfromfile(void);
-void    setLANGtofile(char *lang);
-
-#include "po/swatlang.h"
-
 #define GLOBALS_SNUM -1
 
 static pstring servicesf = CONFIGFILE;
@@ -149,9 +139,7 @@ static void print_header(void)
 
 	if (!include_html("include/header.html")) {
 		printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 3.2//EN\">\n");
-		/* printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"/swat/images/background.jpg\">\n\n"); */
-
-		printf("<HTML>\n<HEAD>\n<TITLE>%s</TITLE>\n</HEAD>\n<BODY background=\"/swat/images/background.jpg\">\n\n",  _("Samba Web Administration Tool"));
+		printf("<HTML>\n<HEAD>\n<TITLE>Samba Web Administration Tool</TITLE>\n</HEAD>\n<BODY background=\"/swat/images/background.jpg\">\n\n");
 	}
 }
 
@@ -177,27 +165,22 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		ptr = lp_local_ptr(snum, ptr);
 	}
 
-	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\">%s</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s</td><td>", 
-	       stripspace(parm->label), _("Help") , parm->label);
+	printf("<tr><td><A HREF=\"/swat/help/smb.conf.5.html#%s\" target=\"docs\">Help</A>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; %s</td><td>", 
+	       stripspace(parm->label), parm->label);
 
 	switch (parm->type) {
 	case P_CHAR:
 		printf("<input type=text size=2 name=\"parm_%s\" value=\"%c\">",
 		       make_parm_name(parm->label), *(char *)ptr);
-		/*printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%c\'\">",
-			make_parm_name(parm->label),(char)(parm->def.cvalue)); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%c\'\">",_("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%c\'\">",
 			make_parm_name(parm->label),(char)(parm->def.cvalue));
-
 		break;
 
 	case P_STRING:
 	case P_USTRING:
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), *(char **)ptr);
-		/* printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
-			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue))); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
@@ -205,9 +188,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 	case P_UGSTRING:
 		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
 		       make_parm_name(parm->label), (char *)ptr);
-		/*printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
-			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue))); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%s\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
 
@@ -216,9 +197,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		printf("<option %s>Yes", (*(BOOL *)ptr)?"selected":"");
 		printf("<option %s>No", (*(BOOL *)ptr)?"":"selected");
 		printf("</select>");
-		/*printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
-			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?0:1);*/
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
 			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?0:1);
 		break;
 
@@ -227,25 +206,19 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		printf("<option %s>Yes", (*(BOOL *)ptr)?"":"selected");
 		printf("<option %s>No", (*(BOOL *)ptr)?"selected":"");
 		printf("</select>");
-		/* printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
-			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?1:0); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
 			make_parm_name(parm->label),(BOOL)(parm->def.bvalue)?1:0);
 		break;
 
 	case P_INTEGER:
 		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
-		/* printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
-			make_parm_name(parm->label),(int)(parm->def.ivalue)); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'%d\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
 
 	case P_OCTAL:
 		printf("<input type=text size=8 name=\"parm_%s\" value=0%o>", make_parm_name(parm->label), *(int *)ptr);
-		/*printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'0%o\'\">",
-			make_parm_name(parm->label),(int)(parm->def.ivalue)); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.value=\'0%o\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'0%o\'\">",
 			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
 
@@ -254,9 +227,7 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		for (i=0;parm->enum_list[i].name;i++)
 			printf("<option %s>%s",(*(int *)ptr)==parm->enum_list[i].value?"selected":"",parm->enum_list[i].name);
 		printf("</select>");
-		/* printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
-			make_parm_name(parm->label),enum_index((int)(parm->def.ivalue),parm->enum_list)); */
-		printf("<input type=button value=\"%s\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">", _("Set Default"),
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.selectedIndex=\'%d\'\">",
 			make_parm_name(parm->label),enum_index((int)(parm->def.ivalue),parm->enum_list));
 		break;
 	case P_SEP:
@@ -331,21 +302,7 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
 		if (heading && heading != last_heading) {
-                        _("Base Options");
-                        _("Security Options");
-                        _("Logging Options");
-                        _("Browse Options");
-                        _("WINS Options");
-                        _("Miscellaneous Options");
-                        _("Locking Options");
-                        _("Logon Options");
-                        _("Domain Options");
-                        _("Protocol Options");
-                        _("Tuning Options");
-                        _("Printing Options");
-                        _("Filename Handling");
-
-			printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", _(heading));
+			printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", heading);
 			last_heading = heading;
 		}
 		show_parameter(snum, parm);
@@ -476,107 +433,9 @@ static void show_main_buttons(void)
 /****************************************************************************
   display a welcome page  
 ****************************************************************************/
-
-int n_swatlang()
-{
-   int ret=0;
-   for( ret=0; ;ret++ ) {
-       if( swatlang[ret].name==(char*)NULL ) break;
-   }
-   return ret;
-}
-
-char *get_name_swatlang( int idx )
-{
-    if( idx>=n_swatlang() ) return swatlang[0].name ;
-    return swatlang[idx].name;
-}
-char *get_lang_swatlang( int idx )
-{
-    if( idx>=n_swatlang() ) return swatlang[0].lang ;
-    return swatlang[idx].lang;
-}
-
-char *match_swatlang( char *name )
-{
-    char *ret=NULL;
-    int i;
-    for( i=0;;i++) {
-       if( swatlang[i].name==(char*)NULL ) break;
-       if( strcmp( name , swatlang[i].name )==0 )  {
-           ret=swatlang[i].lang;
-           break;
-       }    
-    } 
-    return ret;
-}
-
-
-
 static void welcome_page(void)
 {
-  int i;
-
-  if (cgi_variable("ChangeLang")) {
-       setLANGtofile(match_swatlang(cgi_variable("language")));
-  }
-
-  printf("<H2>%s</H2>\n", "Choose Language" );
-
-  printf("%s\n","Please choose Language what you want to display.");
-
-  printf("<FORM name=\"swatform\" method=post>");
-
-  printf("<input type=submit name=\"ChangeLang\" value=\"%s\">\n", 
-	"Change Language" );
-
-  printf("<table>");	
-  printf("<tr>");	
-  printf("<td><select name=language>");
-
-  for(i=0;i<n_swatlang();i++) { 
-      printf("<option value=\"%s\">%s", 
-		get_name_swatlang(i),get_name_swatlang(i));
-  } 
-
-  printf("</select></td>");
-  printf("</tr>");	
-  printf("</table></FORM>");	
-
-  /*--------------------------------------------------*/
-  printf("<HR>\n");
-
-
-  if( strcmp( getLANGfromfile(), "C" )==0  ||
-      strlen(getLANGfromfile())==0 ) {
-      include_html("help/welcome.html");
-  } else {
-    char namebuf[256];
-    char *p = namebuf;
-    int  len=0;
-    char *tmp;
-    static char welbasestr[]="help/welcome-";
-    static char welextstr[] =".html";
-
-    tmp = welbasestr;
-    while( (*tmp)!=(char)NULL&&
-	   (*tmp)!=' ' &&
-	   (*tmp)!='\n' && len<256)   *p++=*tmp++, len ++;
-
-    tmp = getLANGfromfile();
-    while( (*tmp)!=(char)NULL&&
-	   (*tmp)!=' ' &&
-	   (*tmp)!='\n' && len<256)   *p++=*tmp++, len ++;
-
-    tmp = welextstr;
-    while( (*tmp)!=(char)NULL&&
-	   (*tmp)!=' ' &&
-	   (*tmp)!='\n' && len<256)   *p++=*tmp++, len ++;
-
-    *p=(char)NULL;
-
-    include_html(namebuf);
-  }
+	include_html("help/welcome.html");
 }
 
 /****************************************************************************
@@ -590,16 +449,13 @@ static void viewconfig_page(void)
 		full_view = 1;
 	}
 
-	/*printf("<H2>Current Config</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Current Config") );
+	printf("<H2>Current Config</H2>\n");
 	printf("<form method=post>\n");
 
 	if (full_view) {
-		/* printf("<input type=submit name=\"normal_view\" value=\"Normal View\">\n"); */
-		printf("<input type=submit name=\"normal_view\" value=\"%s\">\n", _("Normal View") );
+		printf("<input type=submit name=\"normal_view\" value=\"Normal View\">\n");
 	} else {
-		/* printf("<input type=submit name=\"full_view\" value=\"Full View\">\n"); */
-		printf("<input type=submit name=\"full_view\" value=\"%s\">\n", _("Full View") );
+		printf("<input type=submit name=\"full_view\" value=\"Full View\">\n");
 	}
 
 	printf("<p><pre>");
@@ -615,8 +471,7 @@ static void globals_page(void)
 {
 	int advanced = 0;
 
-	/* printf("<H2>Global Variables</H2>\n");*/
-	printf("<H2>%s</H2>\n",_("Global Variables"));
+	printf("<H2>Global Variables</H2>\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
 		advanced = 1;
@@ -629,20 +484,14 @@ static void globals_page(void)
 	printf("<FORM name=\"swatform\" method=post>\n");
 
 	if (have_write_access) {
-	       /*printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");*/
-	       printf("<input type=submit name=\"Commit\" value=\"%s\">\n", _("Commit Changes") );
-
+		printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 	}
 
-	/*printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");*/
-	printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n",_("Reset Values") );
-
+	printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 	if (advanced == 0) {
-		/*printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");*/
-		printf("<input type=submit name=\"Advanced\" value=\"%s\">\n",_("Advanced View"));
+		printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 	} else {
-		/*printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");*/
-		printf("<input type=submit name=\"Basic\" value=\"%s\">\n", _("Basic View"));
+		printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
 	}
 	printf("<p>\n");
 	
@@ -651,8 +500,7 @@ static void globals_page(void)
 	printf("</table>\n");
 
 	if (advanced) {
-		/*printf("<input type=hidden name=\"Advanced\" value=1>\n");*/
-		printf("<input type=hidden name=\"%s\" value=1>\n", _("Advanced"));
+		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
 	printf("</FORM>\n");
@@ -672,8 +520,7 @@ static void shares_page(void)
 	if (share)
 		snum = lp_servicenumber(share);
 
-	/*printf("<H2>Share Parameters</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Share Parameters"));
+	printf("<H2>Share Parameters</H2>\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
 		advanced = 1;
@@ -702,8 +549,7 @@ static void shares_page(void)
 
 	printf("<table>\n");
 	printf("<tr>\n");
-	/*printf("<td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");*/
-	printf("<td><input type=submit name=selectshare value=\"%s\"></td>\n", _("Choose Share") );
+	printf("<td><input type=submit name=selectshare value=\"Choose Share\"></td>\n");
 	printf("<td><select name=share>\n");
 	if (snum < 0)
 		printf("<option value=\" \"> \n");
@@ -711,22 +557,20 @@ static void shares_page(void)
 		s = lp_servicename(i);
 		if (s && (*s) && strcmp(s,"IPC$") && !lp_print_ok(i)) {
 			printf("<option %s value=\"%s\">%s\n", 
-			       (share && strcmp(share,s)==0)?_("SELECTED"):"",
+			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       s, s);
 		}
 	}
 	printf("</select></td>\n");
 	if (have_write_access) {
-		/*printf("<td><input type=submit name=\"Delete\" value=\"Delete Share\"></td>\n");*/
-		printf("<td><input type=submit name=\"Delete\" value=\"%s\"></td>\n", _("Delete Share") );
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Share\"></td>\n");
 	}
 	printf("</tr>\n");
 	printf("</table>");
 	printf("<table>");
 	if (have_write_access) {
 		printf("<tr>\n");
-		/*printf("<td><input type=submit name=createshare value=\"Create Share\"></td>\n");*/
-		printf("<td><input type=submit name=createshare value=\"%s\"></td>\n", _("Create Share"));
+		printf("<td><input type=submit name=createshare value=\"Create Share\"></td>\n");
 		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
 	}
 	printf("</table>");
@@ -734,18 +578,14 @@ static void shares_page(void)
 
 	if (snum >= 0) {
 		if (have_write_access) {
-			/*printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");*/
-			printf("<input type=submit name=\"Commit\" value=\"%s\">\n",_("Commit Changes"));
+			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
 
-		/*printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");*/
-		printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n", _("Reset Values"));
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
-			/*printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");*/
-			printf("<input type=submit name=\"Advanced\" value=\"%s\">\n",_("Advanced View"));
+			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
-			/*printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");*/
-			printf("<input type=submit name=\"Basic\" value=\"%s\">\n",_("Basic View"));
+			printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
 		}
 		printf("<p>\n");
 	}
@@ -895,8 +735,7 @@ static void passwd_page(void)
 
 	if (!new_name) new_name = "";
 
-	/*printf("<H2>Server Password Management</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Server Password Management"));
+	printf("<H2>Server Password Management</H2>\n");
 
 	printf("<FORM name=\"swatform\" method=post>\n");
 
@@ -905,46 +744,30 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	/*printf("<tr><td> User Name : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("User Name"));
+	printf("<tr><td> User Name : </td>\n");
 	printf("<td><input type=text size=30 name=%s value=%s></td></tr> \n", SWAT_USER, new_name);
 	if (!am_root()) {
-		/*printf("<tr><td> Old Password : </td>\n");*/
-		printf("<tr><td> %s : </td>\n", _("Old Password"));
+		printf("<tr><td> Old Password : </td>\n");
 		printf("<td><input type=password size=30 name=%s></td></tr> \n",OLD_PSWD);
 	}
-	/*printf("<tr><td> New Password : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("New Password") );
+	printf("<tr><td> New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
-	/*printf("<tr><td> Re-type New Password : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("Re-type New Password") );
+	printf("<tr><td> Re-type New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
 	printf("</table>\n");
 
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	/*printf("<input type=submit name=%s value=\"Change Password\">\n", 
-	       CHG_S_PASSWD_FLAG);*/
-	printf("<input type=submit name=%s value=\"%s\">\n", 
-	       CHG_S_PASSWD_FLAG, _("Change Password") );
-
+	printf("<input type=submit name=%s value=\"Change Password\">\n", 
+	       CHG_S_PASSWD_FLAG);
 	if (demo_mode || am_root()) {
-		/*
 		printf("<input type=submit name=%s value=\"Add New User\">\n",
 		       ADD_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Disable User\">\n", 
 		       DISABLE_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Enable User\">\n", 
 		       ENABLE_USER_FLAG);
-		*/
-		printf("<input type=submit name=%s value=\"%s\">\n",
-		       ADD_USER_FLAG, _("Add New User"));
-		printf("<input type=submit name=%s value=\"%s\">\n", 
-		       DISABLE_USER_FLAG, _("Disable User") );
-		printf("<input type=submit name=%s value=\"%s\">\n", 
-		       ENABLE_USER_FLAG, _("Enable User") );
-
 	}
 	printf("<p></FORM>\n");
 
@@ -957,8 +780,7 @@ static void passwd_page(void)
 		chg_passwd();		
 	}
 
-	/*printf("<H2>Client/Server Password Management</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Client/Server Password Management"));
+	printf("<H2>Client/Server Password Management</H2>\n");
 
 	printf("<FORM name=\"swatform\" method=post>\n");
 
@@ -967,20 +789,15 @@ static void passwd_page(void)
 	/* 
 	 * Create all the dialog boxes for data collection
 	 */
-	/*printf("<tr><td> User Name : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("User Name"));
+	printf("<tr><td> User Name : </td>\n");
 	printf("<td><input type=text size=30 name=%s value=%s></td></tr>\n",SWAT_USER, new_name);
-	/*printf("<tr><td> Old Password : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("Old Password"));
+	printf("<tr><td> Old Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",OLD_PSWD);
-	/*printf("<tr><td> New Password : </td>\n");*/
-	printf("<tr><td> %s : </td>\n",_("New Password") );
+	printf("<tr><td> New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW_PSWD);
-	/* printf("<tr><td> Re-type New Password : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("Re-type New Password"));
+	printf("<tr><td> Re-type New Password : </td>\n");
 	printf("<td><input type=password size=30 name=%s></td></tr>\n",NEW2_PSWD);
-	/*printf("<tr><td> Remote Machine : </td>\n");*/
-	printf("<tr><td> %s : </td>\n", _("Remote Machine"));
+	printf("<tr><td> Remote Machine : </td>\n");
 	printf("<td><input type=text size=30 name=%s></td></tr>\n",RHOST);
 
 	printf("</table>");
@@ -988,12 +805,8 @@ static void passwd_page(void)
 	/*
 	 * Create all the control buttons for requesting action
 	 */
-	/*
 	printf("<input type=submit name=%s value=\"Change Password\">", 
 	       CHG_R_PASSWD_FLAG);
-	*/
-	printf("<input type=submit name=%s value=\"%s\">", 
-	       CHG_R_PASSWD_FLAG, _("Change Password") );
 
 	printf("<p></FORM>\n");
 
@@ -1022,19 +835,13 @@ static void printers_page(void)
 	if (share)
 		snum = lp_servicenumber(share);
 
-	/*printf("<H2>Printer Parameters</H2>\n");*/
-	printf("<H2>%s</H2>\n", _("Printer Parameters"));
+	printf("<H2>Printer Parameters</H2>\n");
 
-	/*printf("<H3>Important Note:</H3>\n");*/
-	printf("<H3>%s:</H3>\n", _("Important Note"));
-	/*printf("Printer names marked with [*] in the Choose Printer drop-down box ");*/
-	printf("%s ", _("Printer names marked with [*] in the Choose Printer drop-down box"));
-	/*printf("are autoloaded printers from ");*/
-	printf("%s",_("are autoloaded printers from "));
-	/*printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");*/
-	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">%s</A>.\n",_("Printcap Name"));
-	/*printf("Attempting to delete these printers from SWAT will have no effect.\n");*/
-	printf("%s", _("Attempting to delete these printers from SWAT will have no effect.\n"));
+	printf("<H3>Important Note:</H3>\n");
+	printf("Printer names marked with [*] in the Choose Printer drop-down box ");
+	printf("are autoloaded printers from ");
+	printf("<A HREF=\"/swat/help/smb.conf.5.html#printcapname\" target=\"docs\">Printcap Name</A>.\n");
+	printf("Attempting to delete these printers from SWAT will have no effect.\n");
 
 	if (cgi_variable("Advanced") && !cgi_variable("Basic"))
 		advanced = 1;
@@ -1067,8 +874,7 @@ static void printers_page(void)
 	printf("<FORM name=\"swatform\" method=post>\n");
 
 	printf("<table>\n");
-	/*printf("<tr><td><input type=submit name=selectshare value=\"Choose Printer\"></td>\n");*/
-	printf("<tr><td><input type=submit name=selectshare value=\"%s\"></td>\n", _("Choose Printer"));
+	printf("<tr><td><input type=submit name=selectshare value=\"Choose Printer\"></td>\n");
 	printf("<td><select name=share>\n");
 	if (snum < 0 || !lp_print_ok(snum))
 		printf("<option value=\" \"> \n");
@@ -1077,26 +883,24 @@ static void printers_page(void)
 		if (s && (*s) && strcmp(s,"IPC$") && lp_print_ok(i)) {
                     if (i >= iNumNonAutoPrintServices)
                         printf("<option %s value=\"%s\">[*]%s\n",
-                               (share && strcmp(share,s)==0)?_("SELECTED"):"",
+                               (share && strcmp(share,s)==0)?"SELECTED":"",
                                s, s);
                     else
 			printf("<option %s value=\"%s\">%s\n", 
-			       (share && strcmp(share,s)==0)?_("SELECTED"):"",
+			       (share && strcmp(share,s)==0)?"SELECTED":"",
 			       s, s);
 		}
 	}
 	printf("</select></td>");
 	if (have_write_access) {
-		/*printf("<td><input type=submit name=\"Delete\" value=\"Delete Printer\"></td>\n");*/
-		printf("<td><input type=submit name=\"Delete\" value=\"%s\"></td>\n",_("Delete Printer"));
+		printf("<td><input type=submit name=\"Delete\" value=\"Delete Printer\"></td>\n");
 	}
 	printf("</tr>");
 	printf("</table>\n");
 
 	if (have_write_access) {
 		printf("<table>\n");
-		/*printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");*/
-		printf("<tr><td><input type=submit name=createshare value=\"%s\"></td>\n",_("Create Printer"));
+		printf("<tr><td><input type=submit name=createshare value=\"Create Printer\"></td>\n");
 		printf("<td><input type=text size=30 name=newshare></td></tr>\n");
 		printf("</table>");
 	}
@@ -1104,17 +908,13 @@ static void printers_page(void)
 
 	if (snum >= 0) {
 		if (have_write_access) {
-			/*printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");*/
-			printf("<input type=submit name=\"Commit\" value=\"%s\">\n",_("Commit Changes"));
+			printf("<input type=submit name=\"Commit\" value=\"Commit Changes\">\n");
 		}
-		/*printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");*/
-		printf("<input type=reset name=\"Reset Values\" value=\"%s\">\n",_("Reset Values"));
+		printf("<input type=reset name=\"Reset Values\" value=\"Reset Values\">\n");
 		if (advanced == 0) {
-			/*printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");*/
-			printf("<input type=submit name=\"Advanced\" value=\"%s\">\n",_("Advanced View"));
+			printf("<input type=submit name=\"Advanced\" value=\"Advanced View\">\n");
 		} else {
-			/*printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");*/
-			printf("<input type=submit name=\"Basic\" value=\"%s\">\n",_("Basic View"));
+			printf("<input type=submit name=\"Basic\" value=\"Basic View\">\n");
 		}
 		printf("<p>\n");
 	}
@@ -1126,13 +926,11 @@ static void printers_page(void)
 	}
 
 	if (advanced) {
-		/*printf("<input type=hidden name=\"Advanced\" value=1>\n");*/
-		printf("<input type=hidden name=\"%s\" value=1>\n", _("Advanced"));
+		printf("<input type=hidden name=\"Advanced\" value=1>\n");
 	}
 
 	printf("</FORM>\n");
 }
-
 
 /****************************************************************************
   MAIN()
@@ -1144,12 +942,6 @@ static void printers_page(void)
 	extern FILE *dbf;
 	int opt;
 	char *page;
-
-	/**/
-	setenv("LANG", getLANGfromfile(),1 );
-        setlocale(LC_ALL,"");
-        bindtextdomain(PACKAGE,LOCALEDIR);
-        textdomain(PACKAGE);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
     set_auth_parameters(argc, argv);
@@ -1166,7 +958,7 @@ static void printers_page(void)
 	open("/dev/null", O_WRONLY);
 
 	while ((opt = getopt(argc, argv,"s:a")) != EOF) {
-	        switch (opt) {
+		switch (opt) {
 		case 's':
 			pstrcpy(servicesf,optarg);
 			break;	  
@@ -1200,15 +992,17 @@ static void printers_page(void)
 		have_read_access = (access(servicesf,R_OK) == 0);
 	}
 
+
+
 	show_main_buttons();
 
 	page = cgi_pathinfo();
 
 	/* Root gets full functionality */
 	if (have_read_access && strcmp(page, "globals")==0) {
-	        globals_page();
+		globals_page();
 	} else if (have_read_access && strcmp(page,"shares")==0) {
-	        shares_page();
+		shares_page();
 	} else if (have_read_access && strcmp(page,"printers")==0) {
 		printers_page();
 	} else if (have_read_access && strcmp(page,"status")==0) {
@@ -1223,45 +1017,4 @@ static void printers_page(void)
 
 	print_footer();
 	return 0;
-}
-
-
-/****************************************************************************
-****************************************************************************/
-
-char* getLANGfromfile(void)
-{
-  FILE *fp;
-  static char lang[256];
-
-  lang[0]=(char)NULL;
-
-  fp = fopen( LANGFILE, "r" );
-  if(fp) {
-    if( fgets( lang,256, fp )==NULL ) {
-      char *p = lang;
-
-      while( *p!=(char)NULL ) {
-	if( *p=='\n' || *p=='\t' || *p==' ' ) {
-	  *p = (char)NULL;
-	  break;
-	}
-	p++;
-      }
-    }
-    fclose(fp);
-  }
-  return lang;
-}
-
-void setLANGtofile(char *lang)
-{
-  FILE *fp;
-
-  fp = fopen( LANGFILE, "w" );
-  if(fp) {
-    if(lang)    fputs( lang, fp );
-    else        fputs( "", fp );
-    fclose(fp);
-  }
 }

@@ -25,9 +25,9 @@ BASEDIR= @prefix@
 BINDIR = @bindir@
 # we don't use sbindir because we want full compatibility with
 # the previous releases of Samba
-SBINDIR = @sbindir@
+SBINDIR = @bindir@
 LIBDIR = @libdir@
-VARDIR = /var/log/samba
+VARDIR = @localstatedir@
 MANDIR = @mandir@
 
 # The permissions to give the executables
@@ -448,7 +448,7 @@ bin/smbsh: $(SMBSH_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
-install: installbin installman installscripts installcp installswat installcatalogs
+install: installbin installman installscripts installcp installswat
 
 installdirs:
 	$(SHELL) $(srcdir)/install-sh -d -m $(INSTALLPERMS) \
@@ -469,10 +469,6 @@ installcp: installdirs
 
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
-
-installcatalogs: installdirs
-	@cd web/po
-	@make install PREFIX=$(BASEDIR)
 
 # revert to the previously installed version
 revert:
