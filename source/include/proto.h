@@ -1298,6 +1298,7 @@ void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
+BOOL share_modes_identical( share_mode_entry *e1, share_mode_entry *e2);
 ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 			share_mode_entry *entry, share_mode_entry **ppse);
 ssize_t del_share_mode(files_struct *fsp, share_mode_entry **ppse);

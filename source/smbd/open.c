@@ -3,6 +3,7 @@
    Version 1.9.
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -535,17 +536,51 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 
     if(broke_oplock) {
       free((char *)old_shares);
-      if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
-        DEBUG(0,("open_mode_check: cannot delete entry when breaking oplock (%x) on file %s, \
-dev = %x, inode = %.0f\n", broken_entry.op_type, fname, (unsigned int)dev, (double)inode));
-        errno = EACCES;
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadshare;
-        return -1;
-      }
       num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
       oplock_contention_count++;
-    }
+
+      /* Paranoia check that this is no longer an exlusive entry. */
+      for(i = 0; i < num_share_modes; i++) {
+        share_mode_entry *share_entry = &old_shares[i];
+
+        if (share_modes_identical(&broken_entry, share_entry) && 
+		EXCLUSIVE_OPLOCK_TYPE(share_entry->op_type) ) {
+
+          /*
+           * This should not happen. The target left this oplock
+           * as exlusive.... The process *must* be dead.... 
+           */
+
+          DEBUG(0,("open_mode_check: exlusive oplock left by process %d after break ! For file %s,
+dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
+
+          if (process_exists(broken_entry.pid)) {
+            pstring errmsg;
+            slprintf(errmsg, sizeof(errmsg)-1, 
+                 "open_mode_check: Existant process %d left active oplock.\n",
+                 broken_entry.pid );
+            smb_panic(errmsg);
+          }
+
+          if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
+            errno = EACCES;
+            unix_ERR_class = ERRDOS;
+            unix_ERR_code = ERRbadshare;
+            return -1;
+          }
+
+          /*
+           * We must reload the share modes after deleting the 
+           * other process's entry.
+           */
+
+          free((char *)old_shares);
+          num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+          break;
+        }
+      } /* end for paranoia... */
+    } /* end if broke_oplock */
+
   } while(broke_oplock);
 
   if(old_shares != 0)
@@ -578,6 +613,7 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 	else if (deny_mode == DENY_ALL) kernel_mode = LOCK_MAND;
 	if (kernel_mode) flock(fsp->fd, kernel_mode);
 #endif
+	;;
 }
 
 

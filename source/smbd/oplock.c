@@ -1141,6 +1141,9 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 	num_share_modes = get_share_modes(fsp->conn, fsp->dev, fsp->inode, &share_list);
 
+	DEBUG(10,("release_level_2_oplocks_on_change: num_share_modes = %d\n", 
+			num_share_modes ));
+
 	for(i = 0; i < num_share_modes; i++) {
 		share_mode_entry *share_entry = &share_list[i];
 
@@ -1152,6 +1155,9 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 		 * that are still waiting their turn to remove their LEVEL_II state, and
 		 * also no harm to ignore existing NO_OPLOCK states. JRA.
 		 */
+
+		DEBUG(10,("release_level_2_oplocks_on_change: share_entry[%i]->op_type == %d\n",
+				i, share_entry->op_type ));
 
 		if (share_entry->op_type == NO_OPLOCK)
 			continue;
@@ -1179,6 +1185,8 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 				abort();
 			}
 
+			DEBUG(10,("release_level_2_oplocks_on_change: breaking our own oplock.\n"));
+
 			oplock_break_level2(new_fsp, True, token);
 
 		} else {
@@ -1188,17 +1196,19 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			 * message.
 			 */
 
+			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock.\n"));
 			request_oplock_break(share_entry, fsp->dev, fsp->inode);
 		}
 	}
 
-	free((char *)share_list);
+	if (share_list)
+		free((char *)share_list);
 	unlock_share_entry_fsp(fsp);
 
 	/* Paranoia check... */
 	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
 		DEBUG(0,("release_level_2_oplocks_on_change: PANIC. File %s still has a level II oplock.\n", fsp->fsp_name));
-		abort();
+		smb_panic("release_level_2_oplocks_on_change");
 	}
 }
 
