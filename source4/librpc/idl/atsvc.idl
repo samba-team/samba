@@ -59,7 +59,7 @@
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS atsvc_JobGetInfo(
+	[public] NTSTATUS atsvc_JobGetInfo(
 		[in]	unistr *servername,
 		[in]	uint32 job_id,
 		[out]	atsvc_JobInfo *job_info

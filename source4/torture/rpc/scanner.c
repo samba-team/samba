@@ -47,27 +47,32 @@ static BOOL test_num_calls(const struct dcerpc_interface_table *iface,
 	}
 
 	/* make null calls */
-	stub_in = data_blob(NULL, 0);
+	stub_in = data_blob(NULL, 1000);
+	memset(stub_in.data, 0xFF, stub_in.length);
 
-	status = dcerpc_request(p, 10000, mem_ctx, &stub_in, &stub_out);
-	if (NT_STATUS_IS_OK(status) ||
-	    p->last_fault_code != DCERPC_FAULT_OP_RNG_ERROR) {
-		printf("\tunable to determine call count - %s %08x\n",
-		       nt_errstr(status), p->last_fault_code);
-		goto done;
-	}
-
-	for (i=128;i>=0;i--) {
+	for (i=0;i<200;i++) {
 		status = dcerpc_request(p, i, mem_ctx, &stub_in, &stub_out);
-		if (NT_STATUS_IS_OK(status) ||
-		    p->last_fault_code != DCERPC_FAULT_OP_RNG_ERROR) break;
+		if (!NT_STATUS_IS_OK(status) &&
+		    p->last_fault_code == DCERPC_FAULT_OP_RNG_ERROR) {
+			break;
+		}
+
+		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == 5) {
+			printf("\tpipe disconnected at %d\n", i);
+			goto done;
+		}
+
+		if (!NT_STATUS_IS_OK(status) && p->last_fault_code == 0x80010111) {
+			printf("\terr 0x80010111 at %d\n", i);
+			goto done;
+		}
 	}
 
-	printf("\t%d calls available\n", i+1);
+	printf("\t%d calls available\n", i);
 	idl_calls = idl_num_calls(uuid, id->major_version);
 	if (idl_calls == -1) {
 		printf("\tinterface not known in local IDL\n");
-	} else if (i+1 != idl_calls) {
+	} else if (i != idl_calls) {
 		printf("\tWARNING: local IDL defines %u calls\n", idl_calls);
 	} else {
 		printf("\tOK: matches num_calls in local IDL\n");

@@ -11,7 +11,7 @@
 [] 
 interface dcerpc
 {
-	typedef struct {
+	typedef [public] struct {
 		GUID uuid;
 		uint16 major_version;
 		uint16 minor_version;

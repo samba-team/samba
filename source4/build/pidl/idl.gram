@@ -2,7 +2,11 @@
 	use util;
 }
 
-idl: cpp_prefix(s?) module_header interface 
+idl: idl_interface(s?)
+     {{ util::FlattenArray($item[1]) }}
+  | <error>
+
+idl_interface: module_header interface
    { [$item{module_header}, $item{interface}] }
    | <error>
 
@@ -25,8 +29,7 @@ interface: 'interface' <commit> identifier '{' definition(s?) '}'
           }}
           | <error?>
 
-definition : cpp_prefix
-             | typedef { $item[1] }
+definition : typedef { $item[1] }
              | function { $item[1] }
              | const { $item[1] }
 
@@ -148,11 +151,12 @@ identifier: /[\w?]+/
 
 expression: /[\w.?\/+*-_]+/
 
-function : type identifier '(' <commit> element_list2 ');' 
+function : property_list(s?) type identifier '(' <commit> element_list2 ');' 
 	 {{
 		"TYPE" => "FUNCTION",
 		"NAME" => $item{identifier},
 		"RETURN_TYPE" => $item{type},
+		"PROPERTIES" => util::FlattenArray($item[1]),
 		"DATA" => $item{element_list2}
 	 }}
          | <error?>
@@ -177,4 +181,3 @@ anytext: text2 '(' <commit> anytext ')' anytext
 constant: /-?[\dx]+/
 	  | '*'
 
-cpp_prefix: '#' /.*/

@@ -3,11 +3,10 @@
 FULLBUILD=$1
 
 [ -d librpc/gen_ndr ] || mkdir -p librpc/gen_ndr || exit 1
-[ -d librpc/gen_rpc ] || mkdir -p librpc/gen_rpc || exit 1
 
 ( cd build/pidl && make ) || exit 1
 
-PIDL="build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser --client librpc/gen_rpc/rpc_"
+PIDL="build/pidl/pidl.pl --output librpc/gen_ndr/ndr_ --parse --header --parser"
 TABLES="build/pidl/tables.pl --output librpc/gen_ndr/tables"
 
 if [ x$FULLBUILD = xFULL ]; then
@@ -15,7 +14,7 @@ if [ x$FULLBUILD = xFULL ]; then
       $PIDL librpc/idl/*.idl || exit 1
 
       echo Rebuilding IDL tables
-      $TABLES librpc/gen_ndr/ndr_*.h
+      $TABLES librpc/gen_ndr/ndr_*.h || exit 1
       exit 0
 fi
 
@@ -30,6 +29,7 @@ done
 
 if [ "x$list" != x ]; then
     $PIDL $list || exit 1
+    $TABLES librpc/gen_ndr/ndr_*.h || exit 1
 fi
 
 exit 0
