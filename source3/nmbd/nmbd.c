@@ -677,18 +677,6 @@ static void usage(char *pname)
 
   reload_services( True );
 
-	if (!pwdb_initialise(False))
-	{
-		exit(1);
-	}
-
-	if (!get_member_domain_sid())
-	{
-		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
-		          lp_passwordserver()));
-		exit(1);
-	}
-
   set_samba_nb_type();
 
   if (!is_daemon && !is_a_socket(0))

@@ -44,7 +44,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   pstring outbuf;
   int code;
   uint16 token = 0;
-
   uint32 ntversion;
   uint16 lmnttoken;
   uint16 lm20token;
@@ -53,7 +52,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len,
   char *uniuser; /* Unicode user name. */
   pstring ascuser;
   char *unicomp; /* Unicode computer name. */
-  struct smb_passwd *smb_pass; /* To check if machine account exists */
 
   memset(outbuf, 0, sizeof(outbuf));
 
@@ -196,7 +194,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       DEBUG(3,("process_logon_packet: SAMLOGON sidsize %d ntv %d\n", domainsidsize, ntversion));
 
       /*
-       * If MACHINE$ is in our password database then respond, else ignore.
+       * we respond regadless of whether the machine is in our password 
+       * database. If it isn't then we let smbd send an appropriate error.
        * Let's ignore the SID.
        */
 
@@ -206,26 +205,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
-      smb_pass = getsmbpwnam(ascuser);
-
-      if(!smb_pass )
-      {
-        DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, not in password file\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser));
-        return;
-      }
-      else if(smb_pass->acct_ctrl & ACB_DISABLED)
-      {
-        DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, accound disabled.\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser));
-        return;
-      }
-      else
-      {
-        DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
-           unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
-           SAMLOGON_R ,lmnttoken));
-      }
+      DEBUG(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
+	       unistr(unicomp),inet_ntoa(p->ip), ascuser, reply_name, global_myworkgroup,
+	       SAMLOGON_R ,lmnttoken));
 
       /* Construct reply. */
 
