@@ -1324,11 +1324,12 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		(*server_info)->user_session_key = data_blob(info3->user_sess_key, sizeof(info3->user_sess_key));
 	}
 
-	if (memcmp(info3->padding, zeros, sizeof(zeros)) == 0) {
+	if (memcmp(info3->lm_sess_key, zeros, 8) == 0) {
 		(*server_info)->lm_session_key = data_blob(NULL, 0);
 	} else {
-		(*server_info)->lm_session_key = data_blob(info3->padding, 16);
-	}
+		(*server_info)->lm_session_key = data_blob(info3->lm_sess_key, sizeof(info3->lm_sess_key));
+	} 
+
 	return NT_STATUS_OK;
 }
 

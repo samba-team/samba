@@ -1454,12 +1454,16 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0; /* yes, we're bothering to put a domain SID in */
 
-	memset((char *)usr->padding, '\0', sizeof(usr->padding));
+	memset((char *)usr->lm_sess_key, '\0', sizeof(usr->lm_sess_key));
+	memset(&usr->acct_flags, '\0', sizeof(usr->acct_flags));
 
-#if 0 /* JRATEST - exchange auth test. */
-	if (lm_session_key != NULL) 
-		memcpy(usr->padding, lm_session_key, sizeof(usr->user_sess_key));
-#endif
+	for (i=0; i<7; i++) {
+		memset(&usr->unknown[i], '\0', sizeof(usr->unknown));
+	}
+
+	if (lm_session_key != NULL) {
+		memcpy(usr->lm_sess_key, lm_session_key, sizeof(usr->lm_sess_key));
+	}
 
 	num_other_sids = init_dom_sid2s(ctx, other_sids, &usr->other_sids);
 
@@ -1580,8 +1584,18 @@ BOOL net_io_user_info3(const char *desc, NET_USER_INFO_3 *usr, prs_struct *ps,
 
 	if(!prs_uint32("buffer_dom_id ", ps, depth, &usr->buffer_dom_id)) /* undocumented logon domain id pointer */
 		return False;
-	if(!prs_uint8s (False, "padding       ", ps, depth, usr->padding, 40)) /* unused padding bytes? */
+
+	if(!prs_uint8s(False, "lm_sess_key", ps, depth, usr->lm_sess_key, 8)) /* lm session key */
 		return False;
+
+	if(!prs_uint32("acct_flags ", ps, depth, &usr->acct_flags)) /* Account flags  */
+		return False;
+
+	for (i = 0; i < 7; i++)
+	{
+		if (!prs_uint32("unkown", ps, depth, &usr->unknown[i])) /* unknown */
+                        return False;
+	}
 
 	if (validation_level == 3) {
 		if(!prs_uint32("num_other_sids", ps, depth, &usr->num_other_sids)) /* 0 - num_sids */
