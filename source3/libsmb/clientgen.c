@@ -59,7 +59,7 @@ static BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 	BOOL ret;
 
 	for(;;) {
-		ret = receive_smb(fd, buffer, timeout);
+		ret = receive_smb_raw(fd, buffer, timeout);
 
 		if (!ret) {
 			DEBUG(10,("client_receive_smb failed\n"));
