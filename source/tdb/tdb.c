@@ -853,6 +853,8 @@ static tdb_off tdb_allocate(TDB_CONTEXT *tdb, tdb_len length,
 	tdb_off rec_ptr, last_ptr, newrec_ptr;
 	struct list_struct newrec;
 
+	memset(&newrec, '\0', sizeof(newrec));
+
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1)
 		return 0;
 
