@@ -69,6 +69,7 @@ int des_key_sched __P((des_cblock *key,des_key_schedule schedule));
 int des_string_to_key __P((char *str,des_cblock *key));
 int des_string_to_2keys __P((char *str,des_cblock *key1,des_cblock *key2));
 
+void des_rand_data __P((unsigned char *data, int size));
 void des_set_random_generator_seed __P((des_cblock *seed));
 int des_new_random_key __P((des_cblock *key));
 void des_init_random_number_generator __P((des_cblock *seed));

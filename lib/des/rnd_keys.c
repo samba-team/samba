@@ -43,17 +43,23 @@ sigALRM(int sig)
  * This is a slooow routine but it's meant to be slow.
  * It's not neccessary to be root to run it.
  */
-static
 void
-des_clock_rand(unsigned char *data, int size)
+des_rand_data(unsigned char *data, int size)
 {
     struct itimerval tv, otv;
     struct sigaction sa, osa;
     int i;
   
     /*
-     * First try to open /dev/random.
+     * If there is a /dev/random it's use is preferred.
      */
+    {
+      int fd = open("/dev/random", O_RDONLY);
+      if (fd != -1 && read(fd, data, size) == size)
+	  return;
+      if (fd != -1)
+	  close(fd);
+    }
 
     gdata = data;
     gsize = size;
@@ -73,10 +79,11 @@ des_clock_rand(unsigned char *data, int size)
 
     for(i = 0; i < 4; i++)
 	{
-	    for (igdata = 0; igdata < gsize;)
+	    int j;
+	    for (igdata = 0; igdata < size;) /* igdata++ in sigALRM */
 		counter++;
-	    for (igdata = 0; igdata < gsize; igdata++)
-		gdata[igdata] = (gdata[igdata]>>2) | (gdata[igdata]<<6);
+	    for (j = 0; j < size; j++) /* Only use 2 bits each lap */
+		gdata[j] = (gdata[j]>>2) | (gdata[j]<<6);
 	}
     setitimer(ITIMER_REAL, &otv, 0);
     sigaction(SIGALRM, &osa, 0);
@@ -87,13 +94,13 @@ des_clock_rand(unsigned char *data, int size)
  * Generate a "random" DES key.
  */
 void
-des_clock_rand_key(des_cblock *key)
+des_rand_data_key(des_cblock *key)
 {
     unsigned char data[8];
     des_key_schedule sched;
     do {
-	des_clock_rand(data, sizeof(data));
-	des_clock_rand((unsigned char*)key, sizeof(des_cblock));
+	des_rand_data(data, sizeof(data));
+	des_rand_data((unsigned char*)key, sizeof(des_cblock));
 	des_set_odd_parity(key);
 	des_key_sched(key, sched);
 	des_ecb_encrypt(&data, key, sched, DES_ENCRYPT);
@@ -126,7 +133,7 @@ do_initialize(void)
 {
     des_cblock default_seed;
     do {
-	des_clock_rand((unsigned char*)&default_seed, sizeof(default_seed));
+	des_rand_data((unsigned char*)&default_seed, sizeof(default_seed));
 	des_set_odd_parity(&default_seed);
     } while (des_is_weak_key(&default_seed));
     des_init_random_number_generator(&default_seed);
@@ -199,7 +206,7 @@ des_init_random_number_generator(des_cblock *seed)
 
     gettimeofday(&now, (struct timezone *)0);
     if (uniq[0] == 0 && uniq[1] == 0)
-	des_clock_rand((unsigned char *)uniq, sizeof(uniq));
+	des_rand_data((unsigned char *)uniq, sizeof(uniq));
 
     /* Pick a unique random key from the shared sequence. */
     des_set_random_generator_seed(seed);
@@ -231,7 +238,7 @@ main()
 
     while (1)
         {
-            des_clock_rand(data, 8);
+            des_rand_data(data, 8);
             for (i = 0; i < 8; i++)
                 printf("%02x", data[i]);
             printf("\n");
