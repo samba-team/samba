@@ -344,9 +344,11 @@ static void *make_internal_rpc_pipe_p(char *pipe_name,
 	p->pipe_user.uid = (uid_t)-1;
 	p->pipe_user.gid = (gid_t)-1;
 	
-	/* Store the session key */
-	if (vuser)
+	/* Store the session key and NT_TOKEN */
+	if (vuser) {
 		memcpy(p->session_key, vuser->session_key, sizeof(p->session_key));
+		p->pipe_user.nt_user_token = dup_nt_token(vuser->nt_user_token);
+	}
 
 	/*
 	 * Initialize the incoming RPC struct.
