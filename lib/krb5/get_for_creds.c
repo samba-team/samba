@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -111,10 +111,12 @@ krb5_get_forwarded_creds (krb5_context	    context,
     addrs.val = NULL;
 
 #ifdef HAVE_GETHOSTBYNAME2
+#ifdef HAVE_IPV6
     ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET6),
 		     AF_INET6);
     if (ret)
 	return ret;
+#endif
     ret = add_addrs (context, &addrs, gethostbyname2(hostname, AF_INET),
 		     AF_INET);
     if (ret)
