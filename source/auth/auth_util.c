@@ -29,7 +29,7 @@
 /****************************************************************************
  Create an auth_usersupplied_data structure
 ****************************************************************************/
-static NTSTATUS make_user_info(auth_usersupplied_info **user_info, 
+static NTSTATUS make_user_info(struct auth_usersupplied_info **user_info, 
                                const char *smb_name, 
                                const char *internal_username,
                                const char *client_domain, 
@@ -118,7 +118,7 @@ static NTSTATUS make_user_info(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure after appropriate mapping.
 ****************************************************************************/
 
-NTSTATUS make_user_info_map(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_map(struct auth_usersupplied_info **user_info, 
 			    const char *smb_name, 
 			    const char *client_domain, 
 			    const char *wksta_name, 
@@ -157,7 +157,7 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
+BOOL make_user_info_netlogon_network(struct auth_usersupplied_info **user_info, 
 				     const char *smb_name, 
 				     const char *client_domain, 
 				     const char *wksta_name, 
@@ -189,7 +189,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
  Decrypt and encrypt the passwords.
 ****************************************************************************/
 
-BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
+BOOL make_user_info_netlogon_interactive(struct auth_usersupplied_info **user_info, 
 					 const char *smb_name, 
 					 const char *client_domain, 
 					 const char *wksta_name, 
@@ -289,7 +289,7 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-BOOL make_user_info_for_reply(auth_usersupplied_info **user_info, 
+BOOL make_user_info_for_reply(struct auth_usersupplied_info **user_info, 
 			      const char *smb_name, 
 			      const char *client_domain,
 			      const uint8_t chal[8],
@@ -343,7 +343,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info, 
+NTSTATUS make_user_info_for_reply_enc(struct auth_usersupplied_info **user_info, 
                                       const char *smb_name,
                                       const char *client_domain, 
                                       DATA_BLOB lm_resp, DATA_BLOB nt_resp)
@@ -361,7 +361,7 @@ NTSTATUS make_user_info_for_reply_enc(auth_usersupplied_info **user_info,
  Create a guest user_info blob, for anonymous authenticaion.
 ****************************************************************************/
 
-BOOL make_user_info_guest(auth_usersupplied_info **user_info) 
+BOOL make_user_info_guest(struct auth_usersupplied_info **user_info) 
 {
 	NTSTATUS nt_status;
 
@@ -491,10 +491,11 @@ NTSTATUS create_nt_user_token(TALLOC_CTX *mem_ctx,
  Make a user_info struct
 ***************************************************************************/
 
-NTSTATUS make_server_info(auth_serversupplied_info **server_info, const char *username)
+NTSTATUS make_server_info(struct auth_serversupplied_info **server_info, 
+			  const char *username)
 {
 	TALLOC_CTX *mem_ctx = talloc_init("auth subsystem: server_info for %s", username);
-	*server_info = talloc_p(mem_ctx, auth_serversupplied_info);
+	*server_info = talloc_p(mem_ctx, struct auth_serversupplied_info);
 	if (!*server_info) {
 		DEBUG(0,("make_server_info: malloc failed!\n"));
 		talloc_destroy(mem_ctx);
@@ -508,12 +509,10 @@ NTSTATUS make_server_info(auth_serversupplied_info **server_info, const char *us
 /***************************************************************************
  Make (and fill) a user_info struct for a guest login.
 ***************************************************************************/
-NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
+NTSTATUS make_server_info_guest(struct auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status;
 	static const char zeros[16];
-	struct dom_sid *sid_Anonymous;
-	struct dom_sid *sid_Builtin_Guests;
 
 	nt_status = make_server_info(server_info, "");
 
@@ -523,17 +522,10 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
 	
 	(*server_info)->guest = True;
 
-	sid_Anonymous = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_ANONYMOUS);
-	sid_Builtin_Guests = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_BUILTIN_GUESTS);
-	
-	if (!NT_STATUS_IS_OK(nt_status = create_nt_user_token((*server_info)->mem_ctx, 
-							      sid_Anonymous, sid_Builtin_Guests,
-							      0, NULL, 
-							      True, &(*server_info)->ptok))) {
-		DEBUG(1,("check_sam_security: create_nt_user_token failed with '%s'\n", nt_errstr(nt_status)));
-		free_server_info(server_info);
-		return nt_status;
-	}
+	(*server_info)->user_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_ANONYMOUS);
+	(*server_info)->primary_group_sid = dom_sid_parse_talloc((*server_info)->mem_ctx, SID_BUILTIN_GUESTS);
+	(*server_info)->n_domain_groups = 0;
+	(*server_info)->domain_groups = NULL;
 	
 	/* annoying, but the Guest really does have a session key, 
 	   and it is all zeros! */
@@ -547,7 +539,7 @@ NTSTATUS make_server_info_guest(auth_serversupplied_info **server_info)
  Free a user_info struct
 ***************************************************************************/
 
-void free_user_info(auth_usersupplied_info **user_info)
+void free_user_info(struct auth_usersupplied_info **user_info)
 {
 	DEBUG(5,("attempting to free (and zero) a user_info structure\n"));
 	if (*user_info != NULL) {
@@ -571,7 +563,7 @@ void free_user_info(auth_usersupplied_info **user_info)
  Clear out a server_info struct that has been allocated
 ***************************************************************************/
 
-void free_server_info(auth_serversupplied_info **server_info)
+void free_server_info(struct auth_serversupplied_info **server_info)
 {
 	DEBUG(5,("attempting to free a server_info structure\n"));
 	if (!*server_info) {
@@ -584,7 +576,7 @@ void free_server_info(auth_serversupplied_info **server_info)
  Make an auth_methods struct
 ***************************************************************************/
 
-BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_method) 
+BOOL make_auth_methods(struct auth_context *auth_context, struct auth_methods **auth_method) 
 {
 	if (!auth_context) {
 		smb_panic("no auth_context supplied to make_auth_methods()!\n");
@@ -604,18 +596,35 @@ BOOL make_auth_methods(struct auth_context *auth_context, auth_methods **auth_me
 	return True;
 }
 
-/****************************************************************************
- Delete a SID token.
-****************************************************************************/
-
-void delete_nt_token(NT_USER_TOKEN **pptoken)
+NTSTATUS make_session_info(struct auth_serversupplied_info *server_info, 
+			   struct auth_session_info **session_info) 
 {
-    if (*pptoken) {
-	    NT_USER_TOKEN *ptoken = *pptoken;
-	    SAFE_FREE( ptoken->user_sids );
-	    ZERO_STRUCTP(ptoken);
-    }
-    SAFE_FREE(*pptoken);
+	NTSTATUS nt_status;
+
+	*session_info = talloc_p(server_info->mem_ctx, struct auth_session_info);
+	if (!*session_info) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	
+	(*session_info)->mem_ctx = server_info->mem_ctx;
+	server_info->mem_ctx = NULL; /* make sure not to accidentily destory it, 
+					and this information is now constant */
+	(*session_info)->server_info = server_info;
+
+	/* unless set otherwise, the session key is the user session
+	 * key from the auth subsystem */
+ 
+	(*session_info)->session_key = server_info->user_session_key;
+	
+	nt_status = create_nt_user_token((*session_info)->mem_ctx, 
+					 server_info->user_sid, 
+					 server_info->primary_group_sid, 
+					 server_info->n_domain_groups, 
+					 server_info->domain_groups,
+					 False, 
+					 &(*session_info)->nt_user_token);
+	
+	return nt_status;
 }
 
 /**

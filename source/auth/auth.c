@@ -32,7 +32,7 @@ static const uint8_t *get_ntlm_challenge(struct auth_context *auth_context)
 {
 	DATA_BLOB challenge = data_blob(NULL, 0);
 	const char *challenge_set_by = NULL;
-	auth_methods *auth_method;
+	struct auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
 	if (auth_context->challenge.length) {
@@ -158,7 +158,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 {
 	/* if all the modules say 'not for me' this is reasonable */
 	NTSTATUS nt_status = NT_STATUS_NO_SUCH_USER;
-	auth_methods *auth_method;
+	struct auth_methods *auth_method;
 	TALLOC_CTX *mem_ctx;
 
 	if (!user_info || !auth_context || !server_info)
@@ -253,7 +253,7 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 
 static void free_auth_context(struct auth_context **auth_context)
 {
-	auth_methods *auth_method;
+	struct auth_methods *auth_method;
 
 	if (*auth_context) {
 		/* Free private data of context's authentication methods */
@@ -301,8 +301,8 @@ static NTSTATUS make_auth_context(struct auth_context **auth_context)
 
 static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, char **text_list) 
 {
-	auth_methods *list = NULL;
-	auth_methods *t = NULL;
+	struct auth_methods *list = NULL;
+	struct auth_methods *t = NULL;
 	int i;
 	NTSTATUS nt_status;
 
@@ -342,7 +342,7 @@ static NTSTATUS make_auth_context_text_list(struct auth_context **auth_context, 
 		if (NT_STATUS_IS_OK(ops->init(*auth_context, module_params, &t))) {
 			DEBUG(5,("make_auth_context_text_list: auth method %s has a valid init\n",
 						*text_list));
-			DLIST_ADD_END(list, t, auth_methods *);
+			DLIST_ADD_END(list, t, struct auth_methods *);
 		} else {
 			DEBUG(0,("make_auth_context_text_list: auth method %s did not correctly init\n",
 						*text_list));
