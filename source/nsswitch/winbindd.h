@@ -80,17 +80,9 @@ extern struct winbindd_state server_state;  /* Server information */
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
-
-	/* Domain information */
-
-	fstring name;                          /* Domain name */
-	
+	fstring name;                          /* Domain name */	
 	DOM_SID sid;                           /* SID for this domain */
-	BOOL got_domain_info;                  /* Got controller and sid */
-	
-	/* Cached handles to samr pipe */
-	
-	struct winbindd_domain *prev, *next;   /* Linked list info */
+        struct winbindd_domain *prev, *next;   /* Linked list info */
 };
 
 extern struct winbindd_domain *domain_list;  /* List of domains we know */
