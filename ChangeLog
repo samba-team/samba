@@ -1,3 +1,17 @@
+2003-08-20  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c: Do the arcfour checksum mapping for
+	krb5_create_checksum and krb5_verify_checksum, From: Luke Howard
+	<lukeh@PADL.COM>
+
+2003-08-18  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/test_config.c: check krb5_prepend_config_files_default
+	and krb5_prepend_config_files
+
+	* lib/krb5/context.c: add krb5_prepend_config_files and
+	krb5_prepend_config_files_default
+
 2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/hdb/mkey.c (read_master_mit): krb5_ret_int16 takes a int16_t
