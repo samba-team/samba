@@ -2098,12 +2098,44 @@ off_t smbc_telldir(int fd)
 }
 
 /*
+ * A routine to run down the list and see if the entry is OK
+ */
+
+struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list, 
+					 struct smbc_dirent *dirent)
+{
+
+  /* Run down the list looking for what we want */
+
+  if (dirent) {
+
+    struct smbc_dir_list *tmp = list;
+
+    while (tmp) {
+
+      if (tmp->dirent == dirent)
+	return tmp;
+
+      tmp = tmp->next;
+
+    }
+
+  }
+
+  return NULL;  /* Not found, or an error */
+
+}
+
+
+/*
  * Routine to seek on a directory
  */
 
 int smbc_lseekdir(int fd, off_t offset, int whence)
 {
   struct smbc_file *fe;
+  struct smbc_dirent *dirent = (struct smbc_dirent *)whence;
+  struct smbc_dir_list *list_ent = NULL;
 
   if (!smbc_initialized) {
 
@@ -2137,7 +2169,26 @@ int smbc_lseekdir(int fd, off_t offset, int whence)
 
   /* Now, check what we were passed and see if it is OK ... */
 
-  return ENOSYS;  /* Not implemented so far ... */
+  if (!whence) {
+
+    errno = EINVAL;
+    return -1;
+
+  }
+
+  /* Now, run down the list and make sure that the entry is OK       */
+  /* This may need to be changed if we change the format of the list */
+
+  if ((list_ent = smbc_check_dir_ent(fe->dir_list, dirent)) == NULL) {
+
+    errno = EINVAL;   /* Bad entry */
+    return -1;
+
+  }
+
+  fe->dir_next = list_ent;
+
+  return 0; 
 
 }
 
