@@ -234,7 +234,7 @@ void winbindd_kill_connections(struct winbindd_domain *domain)
 	/* Find pointer to domain of pdc */
 
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
-		if (strequal(lp_workgroup(), tmp->name)) {
+		if (strequal(domain->name, tmp->name)) {
 			server_domain = tmp;
 			break;
 		}
@@ -393,19 +393,7 @@ BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 	    return False;
     }
 
-    if (!server_state.lsa_handle_open) { 
-            server_state.lsa_handle_open =
-                    lsa_open_policy(server_state.controller, 
-                                    &server_state.lsa_handle, 
-                                    False, SEC_RIGHTS_MAXIMUM_ALLOWED);
-            if (!server_state.lsa_handle_open) {
-                    DEBUG(0, ("Could not open lsa handle on %s\n",
-                              server_state.controller));
-                    return False;
-            }
-    }
-
-    if (strequal(domain->controller, server_state.controller)) {
+    if (strequal(domain_name, lp_workgroup())) {
 	    /* Do a level 5 query info policy */
 	    return lsa_query_info_pol(&server_state.lsa_handle, 0x05, 
 				      level5_dom, &domain->sid);
