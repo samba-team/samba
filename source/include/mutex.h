@@ -60,7 +60,7 @@ typedef struct {
 } smb_mutex_t;
 typedef struct {
 	void *rwlock;
-} rwlock_t;
+} smb_rwlock_t;
 
 /* the mutex model operations structure - contains function pointers to 
    the model-specific implementations of each operation */
@@ -69,11 +69,11 @@ struct mutex_ops {
 	int (*mutex_lock)(smb_mutex_t *mutex, const char *name);
 	int (*mutex_unlock)(smb_mutex_t *mutex, const char *name);
 	int (*mutex_destroy)(smb_mutex_t *mutex, const char *name);
-	int (*rwlock_init)(rwlock_t *rwlock, const char *name);
-	int (*rwlock_lock_write)(rwlock_t *rwlock, const char *name);
-	int (*rwlock_lock_read)(rwlock_t *rwlock, const char *name);
-	int (*rwlock_unlock)(rwlock_t *rwlock, const char *name);
-	int (*rwlock_destroy)(rwlock_t *rwlock, const char *name);
+	int (*rwlock_init)(smb_rwlock_t *rwlock, const char *name);
+	int (*rwlock_lock_write)(smb_rwlock_t *rwlock, const char *name);
+	int (*rwlock_lock_read)(smb_rwlock_t *rwlock, const char *name);
+	int (*rwlock_unlock)(smb_rwlock_t *rwlock, const char *name);
+	int (*rwlock_destroy)(smb_rwlock_t *rwlock, const char *name);
 };
 
 #endif /* ndef _MUTEX_H_ */
