@@ -72,7 +72,9 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int timeout);
 int cli_read(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
 int cli_write(struct cli_state *cli, int fnum, char *buf, uint32 offset, uint16 size);
-BOOL cli_stat(struct cli_state *cli, char *fname, struct stat *st);
+BOOL cli_getatr(struct cli_state *cli, char *fname, 
+		int *attr, uint32 *size, time_t *t);
+BOOL cli_setatr(struct cli_state *cli, char *fname, int attr, time_t t);
 BOOL cli_negprot(struct cli_state *cli);
 BOOL cli_session_request(struct cli_state *cli, char *host, int name_type,
 			 char *myname);

@@ -637,7 +637,7 @@ static void run_attrtest(void)
 {
 	static struct cli_state cli;
 	int fnum;
-	struct stat st;
+	time_t t, t2;
 	char *fname = "\\attrib.tst";
 
 	printf("staring attrib test\n");
@@ -650,13 +650,30 @@ static void run_attrtest(void)
 	fnum = cli_open(&cli, fname, 
 			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	cli_close(&cli, fnum);
-	if (!cli_stat(&cli, fname, &st)) {
+	if (!cli_getatr(&cli, fname, NULL, NULL, &t)) {
 		printf("getatr failed (%s)\n", cli_errstr(&cli));
 	}
 
-	if (abs(st.st_mtime - time(NULL)) > 2) {
+	if (abs(t - time(NULL)) > 2) {
 		printf("ERROR: SMBgetatr bug. time is %s",
-		       ctime(&st.st_mtime));
+		       ctime(&t));
+		t = time(NULL);
+	}
+
+	t2 = t-60*60*24; /* 1 day ago */
+
+	if (!cli_setatr(&cli, fname, 0, t2)) {
+		printf("setatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (!cli_getatr(&cli, fname, NULL, NULL, &t)) {
+		printf("getatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (t != t2) {
+		printf("ERROR: getatr/setatr bug. times are\n%s",
+		       ctime(&t));
+		printf("%s", ctime(&t2));
 	}
 
 	close_connection(&cli);
