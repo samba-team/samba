@@ -437,8 +437,10 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 ****************************************************************************/
 
 static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T dev,
-							SMB_INO_T inode, int share_mode, int *p_flags, int *p_oplock_request,
-							BOOL *p_all_current_opens_are_level_II)
+			   SMB_INO_T inode, 
+			   uint32 desired_access,
+			   int share_mode, int *p_flags, int *p_oplock_request,
+			   BOOL *p_all_current_opens_are_level_II)
 {
 	int i;
 	int num_share_modes;
@@ -510,13 +512,27 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 				*p_all_current_opens_are_level_II = False;
 			}
 			
-			/* someone else has a share lock on it, check to see 
-			   if we can too */
-			
-			if(check_share_mode(conn, share_entry, share_mode, fname, fcbopen, p_flags) == False) {
-				SAFE_FREE(old_shares);
-				errno = EACCES;
-				return -1;
+			/* this is a nasty hack, but necessary until we rewrite our open
+			   handling to use a NTCreateX call as the basic call. 
+			   NT may open a file with neither read nor write access, and in
+			   this case it expects the open not to conflict with any
+			   existing deny modes. This happens (for example) during a
+			   "xcopy /o" where the second file descriptor is used for 
+			   ACL sets
+			   This code should be removed once we have a propoer ntcreateX
+			   open functions
+			   (tridge)
+			*/
+			if (desired_access == 0 || 
+			    (desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE))) {
+				/* someone else has a share lock on it, check to see 
+				   if we can too */
+				if (!check_share_mode(conn, share_entry, share_mode, 
+						      fname, fcbopen, p_flags)) {
+					SAFE_FREE(old_shares);
+					errno = EACCES;
+					return -1;
+				}
 			}
 			
 		} /* end for */
@@ -608,6 +624,19 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
 			       int share_mode,int ofun, mode_t mode,int oplock_request, 
 			       int *Access,int *action)
+{
+	return open_file_shared1(conn, fname, psbuf, 0, share_mode, ofun, mode, 
+				 oplock_request, Access, action);
+}
+
+/****************************************************************************
+ Open a file with a share mode. On output from this open we are guarenteeing
+ that 
+****************************************************************************/
+files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
+				uint32 desired_access, 
+				int share_mode,int ofun, mode_t mode,int oplock_request, 
+				int *Access,int *action)
 {
 	int flags=0;
 	int flags2=0;
@@ -736,8 +765,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 
 		lock_share_entry(conn, dev, inode);
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
-								&flags, &oplock_request, &all_current_opens_are_level_II);
+		num_share_modes = open_mode_check(conn, fname, dev, inode, 
+						  desired_access,
+						  share_mode,
+						  &flags, &oplock_request, &all_current_opens_are_level_II);
 		if(num_share_modes == -1) {
 
 			/*
@@ -801,8 +832,10 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		lock_share_entry_fsp(fsp);
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
-								&flags, &oplock_request, &all_current_opens_are_level_II);
+		num_share_modes = open_mode_check(conn, fname, dev, inode, 
+						  desired_access,
+						  share_mode,
+						  &flags, &oplock_request, &all_current_opens_are_level_II);
 
 		if(num_share_modes == -1) {
 			unlock_share_entry_fsp(fsp);
