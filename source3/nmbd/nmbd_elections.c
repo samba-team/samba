@@ -47,7 +47,7 @@ static void send_election_dgram(struct subnet_record *subrec, const char *workgr
   SIVAL(p,1,criterion);
   SIVAL(p,5,timeup*1000); /* ms - Despite what the spec says. */
   p += 13;
-  safe_strcpy(p, server_name, sizeof(outbuf) - 1 - (p-outbuf));
+  pstrcpy_base(p, server_name, outbuf);
   strupper(p);
   p = skip_string(p,1);
   
