@@ -31,7 +31,7 @@
    ipc$ connection. It needs to keep information about all open
    pipes */
 struct ipc_private {
-	void *idtree_fnum;
+	struct idr_context *idtree_fnum;
 
 	/* a list of open pipes */
 	struct pipe_state {
@@ -212,7 +212,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  finalised for Samba4
 	*/
 	ep_description.transport = NCACN_NP;
-	ep_description.options = talloc_array_p(req, char *, 2);
+	ep_description.options = talloc_array_p(req, const char *, 2);
 	ep_description.options[0] = p->pipe_name;
 	ep_description.options[1] = NULL;
 
