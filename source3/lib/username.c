@@ -228,14 +228,12 @@ static BOOL have_passwd_hash(void)
 
 struct passwd *hashed_getpwnam(const char *name)
 {
-#ifndef USE_HASHED_GETPWNAM
-  return getpwnam(name);
-#else
   struct passwd_hash_table_s *pht=&passwd_hash_table;
 
   DEBUG(5,("getpwnam(%s)\n", name));
 
-  if (have_passwd_hash()) {
+  if (have_passwd_hash())
+  {
     int name_i=name_hash_function(name);
     int hash_index=pht->names[name_i];
     while(hash_index!=-1) {
@@ -249,7 +247,7 @@ struct passwd *hashed_getpwnam(const char *name)
 		 pass->pw_gecos,
 		 pass->pw_dir,
 		 pass->pw_shell));
-	return pass;      
+	return copy_passwd_struct(pass);      
       }
       hash_index=pht->entries[hash_index].next;
     }
@@ -258,9 +256,9 @@ struct passwd *hashed_getpwnam(const char *name)
     DEBUG(5,("%s not found\n",name));
     return NULL;
   } 
+
   /* Fall back to real getpwnam() */
-  return getpwnam(name);
-#endif
+  return sys_getpwnam(name);
 }
 
 /*******************************************************************
@@ -422,121 +420,29 @@ BOOL map_username(char *user)
   return mapped_user;
 }
 
+
 /****************************************************************************
-Get_Pwnam wrapper
+ Get_Pwnam wrapper
 ****************************************************************************/
 static struct passwd *_Get_Pwnam(char *s)
 {
-  static struct passwd mypasswd;
-  static char *mypwdp = NULL;
-  static char *myname = NULL;
-  struct passwd *ret;
+	struct passwd *ret;
 
-  if (mypwdp)
-    {
-	free(mypwdp);
-	mypwdp = NULL;
-    }
-  if (myname)
-    {
-	free(myname);
-	myname = NULL;
-    }
-  ret = hashed_getpwnam(s);
-  if (ret)
-    {
-	memcpy(&mypasswd, ret, sizeof(mypasswd));
-	ret = &mypasswd;
-  /* Deal with password information stored in shadows.  Due to the
-     dynamic allocation of password cache stuff, the original password
-     needs to be freed and the new password mallocated to avoid
-     crashing the cache destructor code. */
-
-#ifdef HAVE_GETSPNAM
-	{
-		struct spwd *spass;
-
-		/* many shadow systems require you to be root to get
-		   the password, in most cases this should already be
-		   the case when this function is called, except
-		   perhaps for IPC password changing requests */
-
-		spass = getspnam(ret->pw_name);
-		if (spass && spass->sp_pwdp) {
-		    ret->pw_passwd = mypwdp = strdup(spass->sp_pwdp);
-		}
-	}
-#elif defined(IA_UINFO)
-	{
-		/* Need to get password with SVR4.2's ia_ functions
-		   instead of get{sp,pw}ent functions. Required by
-		   UnixWare 2.x, tested on version
-		   2.1. (tangent@cyberport.com) */
-   	        /* Not sure how large the new password string should
-		   be so I'm using a pstring instead.  If anyone has
-		   access to a UnixWare system perhaps they could
-		   optimise this.  (tpot@samba.org) */
-		uinfo_t uinfo;
-		if (ia_openinfo(ret->pw_name, &uinfo) != -1) {
-		    ret->pw_passwd = mypwdp = malloc(FSTRING_LEN);
-		    ia_get_logpwd(uinfo, &(ret->pw_passwd));
-		}
-	}
-#endif
-
-#ifdef HAVE_GETPRPWNAM
-	{
-		struct pr_passwd *pr_pw = getprpwnam(ret->pw_name);
-		if (pr_pw && pr_pw->ufld.fd_encrypt) {
-		    ret->pw_passwd = mypwdp = strdup(pr_pw->ufld.fd_encrypt);
-		}
-	}
-#endif
-
-#ifdef OSF1_ENH_SEC
-	{
-		struct pr_passwd *mypasswd;
-		DEBUG(5,("Checking password for user %s in OSF1_ENH_SEC\n",
-			 user));
-		mypasswd = getprpwnam (user);
-		if (mypasswd) { 
-		    ret->pw_name = myname = strdup(mypasswd->ufld.fd_name);
-		    ret->pw_passwd = mypwdp = strdup(mypasswd->ufld.fd_encrypt);
-		} else {
-		    DEBUG(5,("No entry for user %s in protected database !\n",
-			     user));
-		    return(False);
-		}
-	}
-#endif
-
-#ifdef ULTRIX_AUTH
-	{
-		AUTHORIZATION *ap = getauthuid(ret->pw_uid);
-		if (ap) {
-		    ret->pw_passwd = mypwdp = strdup(ap->a_password);
-		    endauthent();
-		}
-	}
-#endif
-
+	ret = hashed_getpwnam(s);
 #ifdef HAVE_GETPWANAM
-      struct passwd_adjunct *pwret;
-      pwret = getpwanam(s);
-      if (pwret)
+	if (ret)
 	{
-/* ????????? I don't know what kind of ptr pwret->pwa_passwd is   ????????? */
-/* ????????? mayby the code should look like the next line        ????????? */
-/* ????????? ret->pw_passwd = mypwdp = strdup(pwret->pwa_passwd); ????????? */
-	  ret->pw_passwd = pwret->pwa_passwd;
+		struct passwd_adjunct *pwret;
+		pwret = getpwanam(s);
+		if (pwret != NULL && pwret->pwa_passwd != NULL)
+		{
+			pstrcpy(ret->pw_passwd, pwret->pwa_passwd);
+		}
 	}
 #endif
 
-    }
-
-  return ret;
+	return ret;
 }
-
 
 /****************************************************************************
 a wrapper for getpwnam() that tries with all lower and all upper case 

@@ -546,7 +546,7 @@ int sys_getgroups(int setlen, gid_t *gidset)
  Helper function for getpwnam/getpwuid wrappers.
 ****************************************************************************/
 
-static struct passwd *setup_pwret(struct passwd *pass)
+struct passwd *copy_passwd_struct(struct passwd *pass)
 {
 	static pstring pw_name;
 	static pstring pw_passwd;
@@ -582,7 +582,7 @@ static struct passwd *setup_pwret(struct passwd *pass)
 
 struct passwd *sys_getpwnam(const char *name)
 {
-	return setup_pwret(getpwnam(name));
+	return copy_passwd_struct(getpwnam(name));
 }
 
 /**************************************************************************
@@ -591,5 +591,5 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	return setup_pwret(getpwuid(uid));
+	return copy_passwd_struct(getpwuid(uid));
 }
