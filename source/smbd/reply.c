@@ -496,7 +496,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   fstring native_lanman;
   BOOL guest=False;
   static BOOL done_sesssetup = False;
-  BOOL doencrypt = SMBENCRYPT();
+  BOOL doencrypt = lp_encrypted_passwords();
   START_PROFILE(SMBsesssetupX);
 
   *smb_apasswd = 0;
@@ -745,8 +745,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 		  guest = True;
 
 	  } else {
-		  return ERROR_NT(nt_status);
-	  }  
+		  return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	  }
   }
   
   if (!strequal(user,lp_guestaccount(-1)) &&

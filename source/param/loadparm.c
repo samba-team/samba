@@ -775,7 +775,6 @@ static struct parm_struct parm_table[] = {
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, 0},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, 0},
 	
-	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL, P_GLOBAL, &Globals.bNTAclSupport, NULL, NULL, 0},
 	{"announce version", P_STRING, P_GLOBAL, &Globals.szAnnounceVersion, NULL, NULL, 0},
@@ -1273,7 +1272,6 @@ static void init_globals(void)
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.bUnicode = True;	/* Do unicode on the wire by default */
-	Globals.bNTSmbSupport = True;	/* Do NT SMB's by default. */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTAclSupport = True;	/* Use NT ACLs by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
@@ -1557,7 +1555,6 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only, &Globals.bBindInterfacesOnly)
 FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
-FN_GLOBAL_BOOL(lp_nt_smb_support, &Globals.bNTSmbSupport)
 FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_acl_support, &Globals.bNTAclSupport)

@@ -66,7 +66,7 @@ static int reply_lanman1(char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
-  BOOL doencrypt = SMBENCRYPT();
+  BOOL doencrypt = lp_encrypted_passwords();
   time_t t = time(NULL);
 
   if (lp_security()>=SEC_USER) secword |= 1;
@@ -103,7 +103,7 @@ static int reply_lanman2(char *outbuf)
 {
   int raw = (lp_readraw()?1:0) | (lp_writeraw()?2:0);
   int secword=0;
-  BOOL doencrypt = SMBENCRYPT();
+  BOOL doencrypt = lp_encrypted_passwords();
   time_t t = time(NULL);
   struct cli_state *cli = NULL;
   char cryptkey[8];
@@ -162,7 +162,7 @@ static int reply_nt1(char *outbuf)
 		CAP_LEVEL_II_OPLOCKS|CAP_STATUS32;
 
 	int secword=0;
-	BOOL doencrypt = SMBENCRYPT();
+	BOOL doencrypt = lp_encrypted_passwords();
 	time_t t = time(NULL);
 	struct cli_state *cli = NULL;
 	char cryptkey[8];
@@ -193,9 +193,7 @@ static int reply_nt1(char *outbuf)
 		}
 	}
 
-	if (lp_nt_smb_support()) {
-		capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
-	}
+	capabilities |= CAP_NT_SMBS|CAP_RPC_REMOTE_APIS;
 	
 	if (lp_large_readwrite() && (SMB_OFF_T_BITS == 64)) {
 		capabilities |= CAP_LARGE_READX|CAP_LARGE_WRITEX|CAP_W2K_SMBS;
