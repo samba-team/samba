@@ -15,6 +15,9 @@ while test $# != 0 ;do
        esym="${esym} initialize_[A-Za-z0-9]*_error_table" ;;
     -version)
        esym="${esym} print_version\$" ;;
+    -asn1compile)
+       esym="${esym} copy_ free_ length_ decode_ encode_ length_ "
+       esym="${esym} *.2int\$ int2 .*_units\$" ;;
     -*) echo "unknown option $1" ; exit 1 ;;
     *) break ;;
   esac
