@@ -341,8 +341,9 @@ subnet %s - name not found.\n", namestr(&nmb->question.question_name),
     return;
   }
  
-  /* XXXX hack, we should calculate exactly how many will fit. */
-  bufend = &rdata[MAX_DGRAM_SIZE] - 18;
+  /* this is not an exact calculation. the 46 is for the stats buffer
+     and the 60 is to leave room for the header etc */
+  bufend = &rdata[MAX_DGRAM_SIZE] - (18 + 46 + 60);
   countptr = buf = rdata;
   buf += 1;
   buf0 = buf;
