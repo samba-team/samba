@@ -11,10 +11,6 @@
 #include "symbol.h"
 #include "parse.h"
 
-#ifndef HAVE_STRDUP
-char *strdup(char *);
-#endif
-
 void error_message(char *, ...);
 
 static unsigned lineno = 1;

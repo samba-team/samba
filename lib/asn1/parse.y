@@ -11,13 +11,11 @@
 #include "lex.h"
 #include "asn1_locl.h"
 
+RCSID("$Id$");
+
 static Type *new_type (Typetype t);
 void yyerror (char *);
 int yylex();
-
-#ifndef HAVE_STRDUP
-char *strdup(char *);
-#endif
 
 static void append (Member *l, Member *r);
 
@@ -170,6 +168,10 @@ static Type *
 new_type (Typetype tt)
 {
   Type *t = malloc(sizeof(*t));
+  if (t == NULL) {
+      error_message ("out of memory in malloc(%u)", sizeof(*t));
+      exit (1);
+  }
   t->type = tt;
   t->application = 0;
   t->members = NULL;
