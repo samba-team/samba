@@ -255,7 +255,8 @@ init_tgs_req (krb5_context context,
 	    }
 	}
 
-	ret = set_auth_data (context, &t->req_body, &in_creds->authdata, key);
+	ret = set_auth_data (context, &t->req_body, &in_creds->authdata,
+			     key ? key : &krbtgt->session);
 	if (ret) {
 	    if (key)
 		krb5_free_keyblock (context, key);
