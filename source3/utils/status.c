@@ -619,7 +619,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		return profile_dump();
 	}
 	
-	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("sessionid.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		printf("sessionid.tdb not initialised\n");
 	}
@@ -633,7 +633,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 	tdb_traverse(tdb, traverse_sessionid, NULL);
 	tdb_close(tdb);
   
-	tdb = tdb_open_log(lock_path("connections.tdb"), 0, USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+	tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_DEFAULT, O_RDONLY, 0);
 	if (!tdb) {
 		printf("connections.tdb not initialised\n");
 	}  else if (verbose) {

@@ -45,7 +45,7 @@ static void send_repl_message(uint32 low_serial)
         TDB_CONTEXT *tdb;
 
         tdb = tdb_open_log(lock_path("connections.tdb"), 0,
-                           USE_TDB_MMAP_FLAG, O_RDONLY, 0);
+                           TDB_DEFAULT, O_RDONLY, 0);
 
         if (!tdb) {
                 DEBUG(3, ("send_repl_message(): failed to open connections "
