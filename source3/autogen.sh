@@ -2,29 +2,52 @@
 
 # Run this script to build samba from CVS.
 
-## first try the default names
-AUTOHEADER="autoheader"
-AUTOCONF="autoconf"
+## insert all possible names (only works with 
+## autoconf 2.x
+TESTAUTOHEADER="autoheader autoheader-2.53"
+TESTAUTOCONF="autoconf autoconf-2.53"
 
-if which $AUTOCONF > /dev/null
-then
-    :
-else
-    echo "$0: need autoconf 2.53 or later to build samba from CVS" >&2
-    exit 1
-fi
+AUTOHEADERFOUND="0"
+AUTOCONFFOUND="0"
+
 
 ##
-## what version do we need?
+## Look for autoheader 
 ##
-if [ `$AUTOCONF --version | head -1 | cut -d.  -f 2` -lt 53 ]; then
+for i in $TESTAUTOHEADER; do
+	if which $i >& /dev/null; then
+		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
+			AUTOHEADER=$i
+			AUTOHEADERFOUND="1"
+			break
+		fi
+	fi
+done
 
-	## maybe it's installed under a different name (e.g. RedHat 7.3)
+## 
+## Look for autoconf
+##
 
-	AUTOCONF="autoconf-2.53"
-	AUTOHEADER="autoheader-2.53"
+for i in $TESTAUTOCONF; do
+	if which $i >& /dev/null; then
+		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
+			AUTOCONF=$i
+			AUTOCONFFOUND="1"
+			break
+		fi
+	fi
+done
 
+
+## 
+## do we have it?
+##
+if [ "$AUTOCONFFOUND" == "0" -o "$AUTOHEADERFOUND" == "0" ]; then
+	echo "$0: need autoconf 2.53 or later to build samba from CVS" >&2
+	exit 1
 fi
+
+
 
 echo "$0: running $AUTOHEADER"
 $AUTOHEADER || exit 1
@@ -34,3 +57,4 @@ $AUTOCONF || exit 1
 
 echo "Now run ./configure and then make."
 exit 0
+
