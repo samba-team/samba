@@ -160,7 +160,6 @@ typedef struct
   int deadtime;
   int maxprotocol;
   int security;
-  int printing;
   int maxdisksize;
   int lpqcachetime;
   int syslog;
@@ -248,6 +247,7 @@ typedef struct
   int  iDir_force_mode;
   int  iMaxConnections;
   int  iDefaultCase;
+  int  iPrinting;
   BOOL bAlternatePerm;
   BOOL bRevalidate;
   BOOL bCaseSensitive;
@@ -333,6 +333,7 @@ static service sDefault =
   0000,    /* iDir_force_mode */
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
+  DEFAULT_PRINTING, /* iPrinting */
   False,   /* bAlternatePerm */
   False,   /* revalidate */
   False,   /* case sensitive */
@@ -430,7 +431,6 @@ static struct parm_struct
   {"syslog only",      P_BOOL,    P_GLOBAL, &Globals.bSyslogOnly,       NULL,   NULL},
   {"protocol",         P_ENUM,    P_GLOBAL, &Globals.maxprotocol,       NULL,   enum_protocol},
   {"security",         P_ENUM,    P_GLOBAL, &Globals.security,          NULL,   enum_security},
-  {"printing",         P_ENUM,    P_GLOBAL, &Globals.printing,          NULL,   enum_printing},
   {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL},
   {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL},
   {"announce as",      P_ENUM,    P_GLOBAL, &Globals.announce_as,       NULL,   enum_announce_as},
@@ -600,6 +600,7 @@ static struct parm_struct
   {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL},
   {"mangled names",    P_BOOL,    P_LOCAL,  &sDefault.bMangledNames,    NULL,   NULL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL},
+  {"printing",         P_ENUM,    P_LOCAL,  &sDefault.iPrinting,        NULL,   enum_printing},
   {"print command",    P_STRING,  P_LOCAL,  &sDefault.szPrintcommand,   NULL,   NULL},
   {"lpq command",      P_STRING,  P_LOCAL,  &sDefault.szLpqcommand,     NULL,   NULL},
   {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL,   NULL},
@@ -689,7 +690,6 @@ static void init_globals(void)
   Globals.maxprotocol = PROTOCOL_NT1;
   Globals.security = SEC_SHARE;
   Globals.bEncryptPasswords = False;
-  Globals.printing = DEFAULT_PRINTING;
   Globals.bReadRaw = True;
   Globals.bWriteRaw = True;
   Globals.bReadPrediction = False;
@@ -752,7 +752,7 @@ Initialise the sDefault parameter structure.
 static void init_locals(void)
 {
   /* choose defaults depending on the type of printing */
-  switch (Globals.printing)
+  switch (sDefault.iPrinting)
     {
     case PRINT_BSD:
     case PRINT_AIX:
@@ -941,7 +941,6 @@ FN_GLOBAL_INTEGER(lp_shmem_size,&Globals.shmem_size)
 FN_GLOBAL_INTEGER(lp_deadtime,&Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol,&Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security,&Globals.security)
-FN_GLOBAL_INTEGER(lp_printing,&Globals.printing)
 FN_GLOBAL_INTEGER(lp_maxdisksize,&Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime,&Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog,&Globals.syslog)
@@ -1022,6 +1021,7 @@ FN_LOCAL_INTEGER(lp_force_dir_mode,iDir_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
+FN_LOCAL_INTEGER(lp_printing,iPrinting)
 
 FN_LOCAL_CHAR(lp_magicchar,magic_char)
 
