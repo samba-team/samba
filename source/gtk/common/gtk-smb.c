@@ -239,7 +239,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_widget_grab_default (btn_connect);
 }
 
-GType gtk_rpc_binding_dialog_get_type ()
+GType gtk_rpc_binding_dialog_get_type (void)
 {
   static GType mytype = 0;
 
@@ -314,7 +314,7 @@ const char *gtk_rpc_binding_dialog_get_binding(GtkRpcBindingDialog *d, char *pip
 	}
 }
 
-GtkWidget* create_gtk_samba_about_dialog (char *appname)
+GtkWidget *create_gtk_samba_about_dialog (char *appname)
 {
   GtkWidget *samba_about_dialog;
   GtkWidget *dialog_vbox1;
@@ -358,4 +358,3 @@ GtkWidget* create_gtk_samba_about_dialog (char *appname)
 
   return samba_about_dialog;
 }
-
