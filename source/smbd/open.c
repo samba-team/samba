@@ -1164,7 +1164,7 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 		 */
 
 		if(!got_stat) {
-			DEBUG(0,("open_directory: unable to stat name = %s. Error was %s\n",
+			DEBUG(3,("open_directory: unable to stat name = %s. Error was %s\n",
 				 fname, strerror(errno) ));
 			file_free(fsp);
 			return NULL;
