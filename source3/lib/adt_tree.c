@@ -26,7 +26,8 @@
  for comparision of two children
  *************************************************************************/
 
-SORTED_TREE* sorted_tree_init( int (cmp_fn)(void*, void*),
+SORTED_TREE* sorted_tree_init( void *data_p,
+                               int (cmp_fn)(void*, void*),
                                void (free_fn)(void*) )
 {
 	SORTED_TREE *tree = NULL;
@@ -45,6 +46,7 @@ SORTED_TREE* sorted_tree_init( int (cmp_fn)(void*, void*),
 	}
 	
 	ZERO_STRUCTP( tree->root );
+	tree->root->data_p = data_p;
 	
 	return tree;
 }
@@ -94,7 +96,6 @@ void sorted_tree_destroy( SORTED_TREE *tree )
 static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 {
 	TREE_NODE *infant = NULL;
-	TREE_NODE *child, *crib;
 	TREE_NODE **siblings;
 	int i, result;
 	
@@ -116,7 +117,7 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	/* first child */
 	
 	if ( node->num_children == 1 ) {
-		DEBUG(11,("sorted_tree_birth_child: First child of node [%s]! [%s]\n", 
+		DEBUG(10,("sorted_tree_birth_child: First child of node [%s]! [%s]\n", 
 			node->key ? node->key : "NULL", infant->key ));
 		node->children[0] = infant;
 	}
@@ -133,23 +134,28 @@ static TREE_NODE* sorted_tree_birth_child( TREE_NODE *node, char* key )
 	
 		for ( i = node->num_children-1; i>=1; i-- )
 		{
-			crib = node->children[i];
-			child  = node->children[i-1];
-		
 			DEBUG(10,("sorted_tree_birth_child: Looking for crib; infant -> [%s], child -> [%s]\n",
-				infant->key, child->key));
+				infant->key, node->children[i-1]->key));
 			
 			/* the strings should never match assuming that we 
 			   have called sorted_tree_find_child() first */
 		
-			result = StrCaseCmp( infant->key, child->key );
+			result = StrCaseCmp( infant->key, node->children[i-1]->key );
 			if ( result > 0 ) {
-				crib = infant;
+				node->children[i] = infant;
 				break;
 			}
-		
-			crib = child;
+			
+			/* bump everything towards the end on slot */
+			
+			node->children[i] = node->children[i-1];
 		}
+		
+		/* if we haven't found the correct clot yet, the child 
+		   will be first in the list */
+		   
+		if ( i == 0 )
+			node->children[0] = infant;
 	}
 
 	return infant;
@@ -376,6 +382,9 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 	str  = keystr;
 	current = tree->root;
 	
+	if ( tree->root->data_p )
+		result = tree->root->data_p;
+		
 	do
 	{
 		/* break off the remaining part of the path */
@@ -384,7 +393,7 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 		if ( str )
 			*str = '\0';
 			
-		DEBUG(10,("sorted_tree_find: [loop] key => [%s]\n", base));
+		DEBUG(11,("sorted_tree_find: [loop] key => [%s]\n", base));
 
 		/* iterate to the next child */
 		
@@ -399,10 +408,18 @@ void* sorted_tree_find( SORTED_TREE *tree, char *key )
 			str = base;
 		}
 	
+		/* 
+		 * the idea is that the data_p for a parent should 
+		 * be inherited by all children, but allow it to be 
+		 * overridden farther down
+		 */
+		
+		if ( current && current->data_p )
+			result = current->data_p;
+	   
 	} while ( base && current );
-
-	if ( current )
-		result = current->data_p;
+	
+	/* result should be the data_p from the lowest match node in the tree */
 	
 	SAFE_FREE( keystr );
 	

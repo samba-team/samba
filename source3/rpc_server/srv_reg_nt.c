@@ -40,7 +40,7 @@ static REGISTRY_KEY *regkeys_list;
  free() function for REGISTRY_KEY
  *****************************************************************/
  
-static void free_reg_info(void *ptr)
+static void free_regkey_info(void *ptr)
 {
 	REGISTRY_KEY *info = (REGISTRY_KEY*)ptr;
 	
@@ -77,11 +77,10 @@ static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
 static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
 				char *subkeyname, uint32 access_granted  )
 {
-	REGISTRY_KEY *regkey = NULL;
-	pstring      parent_keyname;
-	NTSTATUS     result = NT_STATUS_OK;
-	int          num_subkeys;
-	char 	     *subkeys = NULL;
+	REGISTRY_KEY 	*regkey = NULL;
+	pstring      	parent_keyname;
+	NTSTATUS     	result = NT_STATUS_OK;
+	REGSUBKEY_CTR	subkeys;
 	
 	if ( parent ) {
 		pstrcpy( parent_keyname, parent->name );
@@ -110,27 +109,23 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	pstrcpy( regkey->name, parent_keyname );
 	pstrcat( regkey->name, subkeyname );
 	
-	/* try to use en existing hook. Otherwise, try to lookup our own */
+	/* Look up the table of registry I/O operations */
 
-	if ( parent && parent->hook )
-		regkey->hook = parent->hook;
-	else 
-		regkey->hook = reghook_cache_find( regkey->name );
-		
-	if ( regkey->hook ) {
-		DEBUG(10,("open_registry_key: Assigned REGISTRY_HOOK to [%s]\n",
+	if ( !(regkey->hook = reghook_cache_find( regkey->name )) ) {
+		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
 			regkey->name ));
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
 	
-	/* check if the path really exists...num_subkeys should be >= 0 */
-	
-	num_subkeys = fetch_reg_keys( regkey, &subkeys );	
-	
+	/* check if the path really exists; failed is indicated by -1 */
 	/* if the subkey count failed, bail out */
+
+	ZERO_STRUCTP( &subkeys );
 	
-	if ( num_subkeys == -1 ) {
-		SAFE_FREE( regkey );
-		
+	regsubkey_ctr_init( &subkeys );
+	
+	if ( fetch_reg_keys( regkey, &subkeys ) == -1 )  {
+	
 		/* don't really know what to return here */
 		
 		result = NT_STATUS_ACCESS_DENIED;
@@ -141,13 +136,18 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 		 * that doesn't sound quite right to me  --jerry
 		 */
 		
-		if ( !create_policy_hnd( p, hnd, free_reg_info, regkey ) )
+		if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) )
 			result = NT_STATUS_OBJECT_NAME_NOT_FOUND; 
 	}
 	
 	DEBUG(7,("open_registry_key: exit\n"));
 	
-	SAFE_FREE( subkeys );
+	/* clean up */
+
+	regsubkey_ctr_destroy( &subkeys );
+	
+	if ( ! NT_STATUS_IS_OK(result) )
+		SAFE_FREE( regkey );
 
 	return result;
 }
@@ -177,37 +177,35 @@ static BOOL close_registry_key(pipes_struct *p, POLICY_HND *hnd)
  
 static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *maxlen )
 {
-	int num_subkeys, i;
-	uint32 max_len;
-	char *subkeys = NULL;
-	uint32 len;
-	char *s;
+	int 		num_subkeys, i;
+	uint32 		max_len;
+	REGSUBKEY_CTR 	subkeys;
+	uint32 		len;
 	
 	if ( !key )
 		return False;
+
+	ZERO_STRUCTP( &subkeys );
 	
-	/* first use any registry hook available.  
-	   Fall back to tdb if non available */
+	regsubkey_ctr_init( &subkeys );	
 	   
-	num_subkeys = fetch_reg_keys( key, &subkeys );
-		
-	if ( num_subkeys == -1 )
+	if ( fetch_reg_keys( key, &subkeys ) == -1 )
 		return False;
 
 	/* find the longest string */
 	
 	max_len = 0;
-	s = subkeys;
+	num_subkeys = regsubkey_ctr_numkeys( &subkeys );
+	
 	for ( i=0; i<num_subkeys; i++ ) {
-		len = strlen(s);
+		len = strlen( regsubkey_ctr_specific_key(&subkeys, i) );
 		max_len = MAX(max_len, len);
-		s += len + 1;
 	}
 
 	*maxnum = num_subkeys;
 	*maxlen = max_len*2;
 	
-	SAFE_FREE(subkeys);
+	regsubkey_ctr_destroy( &subkeys );
 	
 	return True;
 }
@@ -221,31 +219,34 @@ static BOOL get_subkey_information( REGISTRY_KEY *key, uint32 *maxnum, uint32 *m
 static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum, 
                                     uint32 *maxlen, uint32 *maxsize )
 {
-	REGISTRY_VALUE *val = NULL;
-	uint32 i, sizemax, lenmax;
-	int num_values;
+	REGVAL_CTR 	val;
+	uint32 		sizemax, lenmax;
+	int 		num_values;
 	
 	if ( !key )
 		return False;
 
-	num_values = fetch_reg_values( key, &val );
-		
-	if ( num_values == -1 )
+	ZERO_STRUCTP( &val );
+	
+	regval_ctr_init( &val );
+	
+	if ( fetch_reg_values( key, &val ) == -1 )
 		return False;
-		
 	
 	lenmax = sizemax = 0;
-		
+	num_values = regval_ctr_numvals( &val );
+	
+#if 0 	/* JERRY */
 	for ( i=0; i<num_values; i++ ) {
 		lenmax  = MAX(lenmax,  strlen(val[i].valuename)+1 );
 		sizemax = MAX(sizemax, val[i].size );
 	}
-		
+#endif
 	*maxnum   = num_values;
 	*maxlen   = lenmax;
 	*maxsize  = sizemax;
 	
-	SAFE_FREE( val );
+	regval_ctr_destroy( &val );
 	
 	return True;
 }

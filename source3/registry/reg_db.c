@@ -34,73 +34,72 @@ static TDB_CONTEXT *tdb_reg;
  
 static BOOL init_registry_data( void )
 {
-	pstring keyname;
-	char *subkeys[3];
+	pstring 	keyname;
+	REGSUBKEY_CTR	subkeys;
+
+	ZERO_STRUCTP( &subkeys );
+
+	regsubkey_ctr_init( &subkeys );
 
 	/* HKEY_LOCAL_MACHINE */
 	
 	pstrcpy( keyname, KEY_HKLM );
-	subkeys[0] = "SYSTEM";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 1 ))
+	regsubkey_ctr_addkey( &subkeys, "SYSTEM" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys );
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM" );
-	subkeys[0] = "CurrentControlSet";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 1 ))
+	regsubkey_ctr_addkey( &subkeys, "CurrentControlSet" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys );
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet" );
-	subkeys[0] = "Control";
-	subkeys[1] = "services";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 2 ))
+	regsubkey_ctr_addkey( &subkeys, "Control" );
+	regsubkey_ctr_addkey( &subkeys, "services" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys );
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control" );
-	subkeys[0] = "Print";
-	subkeys[1] = "ProduceOptions";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 2 ))
+	regsubkey_ctr_addkey( &subkeys, "Print" );
+	regsubkey_ctr_addkey( &subkeys, "ProductOptions" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
-
-#if 0	/* JERRY */
-	pstrcpy( keyname, KEY_HKLM );
-	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/Print" );
-	subkeys[0] = "Environments";
-	subkeys[1] = "Forms";
-	subkeys[2] = "Printers";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 0 ))
-		return False;
-#endif
+	regsubkey_ctr_destroy( &subkeys );
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/Control/ProductOptions" );
-	if ( !regdb_store_reg_keys( keyname, subkeys, 0 ))
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
 
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services" );
-	subkeys[0] = "Netlogon";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 1 ))
+	regsubkey_ctr_addkey( &subkeys, "Netlogon" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys );
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon" );
-	subkeys[0] = "parameters";
-	if ( !regdb_store_reg_keys( keyname, subkeys, 1 ))
+	regsubkey_ctr_addkey( &subkeys, "parameters" );
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
+	regsubkey_ctr_destroy( &subkeys );
 		
 	pstrcpy( keyname, KEY_HKLM );
 	pstrcat( keyname, "/SYSTEM/CurrentControlSet/services/Netlogon/parameters" );
-	if ( !regdb_store_reg_keys( keyname, subkeys, 0 ))
+	if ( !regdb_store_reg_keys( keyname, &subkeys ))
 		return False;
-
 	
 	/* HKEY_USER */
 		
 	pstrcpy( keyname, KEY_HKU );
-	if ( !regdb_store_reg_keys( keyname, subkeys, 0 ) )
+	if ( !regdb_store_reg_keys( keyname, &subkeys ) )
 		return False;
 		
 	return True;
@@ -157,13 +156,14 @@ BOOL init_registry_db( void )
  \'s are converted to /'s.
  ***********************************************************************/
  
-BOOL regdb_store_reg_keys( char *keyname, char **subkeys, uint32 num_subkeys  )
+BOOL regdb_store_reg_keys( char *keyname, REGSUBKEY_CTR *ctr )
 {
 	TDB_DATA kbuf, dbuf;
 	char *buffer, *tmpbuf;
 	int i = 0;
 	uint32 len, buflen;
 	BOOL ret = True;
+	uint32 num_subkeys = regsubkey_ctr_numkeys( ctr );
 	
 	if ( !keyname )
 		return False;
@@ -176,23 +176,23 @@ BOOL regdb_store_reg_keys( char *keyname, char **subkeys, uint32 num_subkeys  )
 	
 	/* store the number of subkeys */
 	
-	len += tdb_pack(buffer+len, buflen-len, "d", num_subkeys);
+	len += tdb_pack(buffer+len, buflen-len, "d", num_subkeys );
 	
 	/* pack all the strings */
 	
 	for (i=0; i<num_subkeys; i++) {
-		len += tdb_pack(buffer+len, buflen-len, "f", subkeys[i]);
+		len += tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		if ( len > buflen ) {
 			/* allocate some extra space */
 			if ((tmpbuf = Realloc( buffer, len*2 )) == NULL) {
-				DEBUG(0,("store_reg_keys: Failed to realloc memory of size [%d]\n", len*2));
+				DEBUG(0,("regdb_store_reg_keys: Failed to realloc memory of size [%d]\n", len*2));
 				ret = False;
 				goto done;
 			}
 			buffer = tmpbuf;
 			buflen = len*2;
 					
-			len = tdb_pack(buffer+len, buflen-len, "f", subkeys[i]);
+			len = tdb_pack( buffer+len, buflen-len, "f", regsubkey_ctr_specific_key(ctr, i) );
 		}		
 	}
 	
@@ -218,7 +218,7 @@ done:
  of null terminated character strings
  ***********************************************************************/
 
-int regdb_fetch_reg_keys( char* key, char **subkeys )
+int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 {
 	pstring path;
 	uint32 num_items;
@@ -226,7 +226,7 @@ int regdb_fetch_reg_keys( char* key, char **subkeys )
 	char *buf;
 	uint32 buflen, len;
 	int i;
-	char *s;
+	fstring subkeyname;
 
 	
 	pstrcpy( path, key );
@@ -240,61 +240,19 @@ int regdb_fetch_reg_keys( char* key, char **subkeys )
 	buflen = dbuf.dsize;
 	
 	if ( !buf ) {
-		DEBUG(5,("fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
+		DEBUG(5,("regdb_fetch_reg_keys: Failed to fetch any subkeys for [%s]\n", key));
 		return 0;
 	}
 	
 	len = tdb_unpack( buf, buflen, "d", &num_items);
-	if (num_items) {
-		if ( (*subkeys = (char*)malloc(sizeof(fstring)*num_items)) == NULL ) {
-			DEBUG(0,("fetch_reg_keys: Failed to malloc memory for subkey array containing [%d] items!\n",
-				num_items));
-			num_items = -1;
-			goto done;
-		}
-	}
 	
-	s = *subkeys;
 	for (i=0; i<num_items; i++) {
-		len += tdb_unpack( buf+len, buflen-len, "f", s );
-		s += strlen(s) + 1;
+		len += tdb_unpack( buf+len, buflen-len, "f", subkeyname );
+		regsubkey_ctr_addkey( ctr, subkeyname );
 	}
 
-done:	
 	SAFE_FREE(dbuf.dptr);
 	return num_items;
-}
-
-/***********************************************************************
- retreive a specific subkey specified by index.  The subkey parameter
- is assumed to be an fstring.
- ***********************************************************************/
-
-BOOL regdb_fetch_reg_keys_specific( char* key, char** subkey, uint32 key_index )
-{
-	int num_subkeys, i;
-	char *subkeys = NULL;
-	char *s;
-	
-	num_subkeys = regdb_fetch_reg_keys( key, &subkeys );
-	if ( num_subkeys == -1 )
-		return False;
-
-	s = subkeys;
-	for ( i=0; i<num_subkeys; i++ ) {
-		/* copy the key if the index matches */
-		if ( i == key_index ) {
-			*subkey = strdup( s );
-			break;
-		}
-		
-		/* go onto the next string */
-		s += strlen(s) + 1;
-	}
-	
-	SAFE_FREE(subkeys);
-	
-	return True;
 }
 
 
@@ -304,8 +262,31 @@ BOOL regdb_fetch_reg_keys_specific( char* key, char** subkey, uint32 key_index )
  of null terminated character strings
  ***********************************************************************/
 
-int regdb_fetch_reg_values( char* key, REGISTRY_VALUE **val )
+int regdb_fetch_reg_values( char* key, REGVAL_CTR *val )
 {
 	return 0;
 }
+
+/***********************************************************************
+ Stub function since we do not currently support storing registry 
+ values in the registry.tdb
+ ***********************************************************************/
+
+BOOL regdb_store_reg_values( char *key, REGVAL_CTR *val )
+{
+	return False;
+}
+
+
+/* 
+ * Table of function pointers for default access
+ */
+ 
+REGISTRY_OPS regdb_ops = {
+	regdb_fetch_reg_keys,
+	regdb_fetch_reg_values,
+	regdb_store_reg_keys,
+	regdb_store_reg_values
+};
+
 
