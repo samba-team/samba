@@ -426,7 +426,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		asn1_write_enumerated(&data, r->deref);
 		asn1_write_Integer(&data, r->sizelimit);
 		asn1_write_Integer(&data, r->timelimit);
-		asn1_write_BOOLEAN2(&data, r->attributesonly);
+		asn1_write_BOOLEAN(&data, r->attributesonly);
 
 		{
 			TALLOC_CTX *mem_ctx = talloc_init("ldap_parse_tree");
@@ -565,7 +565,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 			      ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest));
 		asn1_write_OctetString(&data, r->dn, strlen(r->dn));
 		asn1_write_OctetString(&data, r->newrdn, strlen(r->newrdn));
-		asn1_write_BOOLEAN2(&data, r->deleteolddn);
+		asn1_write_BOOLEAN(&data, r->deleteolddn);
 		if (r->newsuperior != NULL) {
 			asn1_push_tag(&data, ASN1_CONTEXT_SIMPLE(0));
 			asn1_write(&data, r->newsuperior,
@@ -893,7 +893,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		asn1_read_enumerated(data, (int *)&(r->deref));
 		asn1_read_Integer(data, &r->sizelimit);
 		asn1_read_Integer(data, &r->timelimit);
-		asn1_read_BOOLEAN2(data, &r->attributesonly);
+		asn1_read_BOOLEAN(data, &r->attributesonly);
 
 		/* Maybe create a TALLOC_CTX for the filter? This can waste
 		 * quite a bit of memory recursing down. */
@@ -1039,7 +1039,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 			       ASN1_APPLICATION(LDAP_TAG_ModifyDNRequest));
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->dn);
 		asn1_read_OctetString_talloc(msg->mem_ctx, data, &r->newrdn);
-		asn1_read_BOOLEAN2(data, &r->deleteolddn);
+		asn1_read_BOOLEAN(data, &r->deleteolddn);
 		r->newsuperior = NULL;
 		if (asn1_tag_remaining(data) > 0) {
 			int len;

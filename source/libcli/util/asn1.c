@@ -221,22 +221,13 @@ BOOL asn1_write_ContextSimple(ASN1_DATA *data, uint8_t num, DATA_BLOB *blob)
 /* write a BOOLEAN */
 BOOL asn1_write_BOOLEAN(ASN1_DATA *data, BOOL v)
 {
-	asn1_write_uint8(data, ASN1_BOOLEAN);
-	asn1_write_uint8(data, v);
-	return !data->has_error;
-}
-
-/* write a BOOLEAN - hmm, I suspect this one is the correct one, and the 
-   above boolean is bogus. Need to check */
-BOOL asn1_write_BOOLEAN2(ASN1_DATA *data, BOOL v)
-{
 	asn1_push_tag(data, ASN1_BOOLEAN);
-	asn1_write_uint8(data, v);
+	asn1_write_uint8(data, v ? 0xFF : 0);
 	asn1_pop_tag(data);
 	return !data->has_error;
 }
 
-BOOL asn1_read_BOOLEAN2(ASN1_DATA *data, BOOL *v)
+BOOL asn1_read_BOOLEAN(ASN1_DATA *data, BOOL *v)
 {
 	asn1_start_tag(data, ASN1_BOOLEAN);
 	asn1_read_uint8(data, (uint8 *)v);
