@@ -2627,67 +2627,76 @@ int reply_writeunlock(connection_struct *conn, char *inbuf,char *outbuf, int siz
 
 int reply_write(connection_struct *conn, char *inbuf,char *outbuf,int size,int dum_buffsize)
 {
-  size_t numtowrite;
-  ssize_t nwritten = -1;
-  SMB_OFF_T startpos;
-  char *data;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  int outsize = 0;
-  START_PROFILE(SMBwrite);
+	size_t numtowrite;
+	ssize_t nwritten = -1;
+	SMB_OFF_T startpos;
+	char *data;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	int outsize = 0;
+	START_PROFILE(SMBwrite);
 
-  /* If it's an IPC, pass off the pipe handler. */
-  if (IS_IPC(conn)) {
-    END_PROFILE(SMBwrite);
-    return reply_pipe_write(inbuf,outbuf,size,dum_buffsize);
-  }
+	/* If it's an IPC, pass off the pipe handler. */
+	if (IS_IPC(conn)) {
+		END_PROFILE(SMBwrite);
+		return reply_pipe_write(inbuf,outbuf,size,dum_buffsize);
+	}
 
-  CHECK_FSP(fsp,conn);
-  CHECK_WRITE(fsp);
+	CHECK_FSP(fsp,conn);
+	CHECK_WRITE(fsp);
 
-  numtowrite = SVAL(inbuf,smb_vwv1);
-  startpos = IVAL(inbuf,smb_vwv2);
-  data = smb_buf(inbuf) + 3;
+	numtowrite = SVAL(inbuf,smb_vwv1);
+	startpos = IVAL(inbuf,smb_vwv2);
+	data = smb_buf(inbuf) + 3;
   
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
-    END_PROFILE(SMBwrite);
-    return ERROR_DOS(ERRDOS,ERRlock);
-  }
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)numtowrite,(SMB_BIG_UINT)startpos, WRITE_LOCK,False)) {
+		END_PROFILE(SMBwrite);
+		return ERROR_DOS(ERRDOS,ERRlock);
+	}
 
-  /* X/Open SMB protocol says that if smb_vwv1 is
-     zero then the file size should be extended or
-     truncated to the size given in smb_vwv[2-3] */
-  if(numtowrite == 0) {
-      /* This is actually an allocate call, not set EOF. JRA */
-      nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
-      if (nwritten < 0) {
-        END_PROFILE(SMBwrite);
-	      return ERROR_NT(NT_STATUS_DISK_FULL);
-      }
-  } else
-    nwritten = write_file(fsp,data,startpos,numtowrite);
+	/*
+	 * X/Open SMB protocol says that if smb_vwv1 is
+	 * zero then the file size should be extended or
+	 * truncated to the size given in smb_vwv[2-3].
+	 */
+
+	if(numtowrite == 0) {
+		/*
+		 * This is actually an allocate call, and set EOF. JRA.
+		 */
+		nwritten = vfs_allocate_file_space(fsp, (SMB_OFF_T)startpos);
+		if (nwritten < 0) {
+			END_PROFILE(SMBwrite);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+		nwritten = vfs_set_filelen(fsp, (SMB_OFF_T)startpos);
+		if (nwritten < 0) {
+			END_PROFILE(SMBwrite);
+			return ERROR_NT(NT_STATUS_DISK_FULL);
+		}
+	} else
+		nwritten = write_file(fsp,data,startpos,numtowrite);
   
-  if (lp_syncalways(SNUM(conn)))
-    sync_file(conn,fsp);
+	if (lp_syncalways(SNUM(conn)))
+		sync_file(conn,fsp);
 
-  if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
-    END_PROFILE(SMBwrite);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	if(((nwritten == 0) && (numtowrite != 0))||(nwritten < 0)) {
+		END_PROFILE(SMBwrite);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
 
-  outsize = set_message(outbuf,1,0,True);
+	outsize = set_message(outbuf,1,0,True);
   
-  SSVAL(outbuf,smb_vwv0,nwritten);
+	SSVAL(outbuf,smb_vwv0,nwritten);
 
-  if (nwritten < (ssize_t)numtowrite) {
-    CVAL(outbuf,smb_rcls) = ERRHRD;
-    SSVAL(outbuf,smb_err,ERRdiskfull);      
-  }
+	if (nwritten < (ssize_t)numtowrite) {
+		CVAL(outbuf,smb_rcls) = ERRHRD;
+		SSVAL(outbuf,smb_err,ERRdiskfull);      
+	}
   
-  DEBUG(3,("write fnum=%d num=%d wrote=%d\n",
-	   fsp->fnum, (int)numtowrite, (int)nwritten));
+	DEBUG(3,("write fnum=%d num=%d wrote=%d\n", fsp->fnum, (int)numtowrite, (int)nwritten));
 
-  END_PROFILE(SMBwrite);
-  return(outsize);
+	END_PROFILE(SMBwrite);
+	return(outsize);
 }
 
 
