@@ -189,6 +189,7 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	union smb_sesssetup setup;
 	union smb_tcon tcon;
 	TALLOC_CTX *mem_ctx;
+	char *in_path = NULL;
 
 	*ret_tree = NULL;
 
@@ -272,7 +273,9 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
 	tcon.tconx.in.password = data_blob(NULL, 0);
-	asprintf(&tcon.tconx.in.path, "\\\\%s\\%s", dest_host, service);
+	
+	asprintf(in_path, "\\\\%s\\%s", dest_host, service);
+	tcon.tconx.in.path = in_path;
 	if (!service_type) {
 		if (strequal(service, "IPC$"))
 			service_type = "IPC";
@@ -283,7 +286,7 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	
 	status = smb_tree_connect(tree, mem_ctx, &tcon);
 
-	free(tcon.tconx.in.path);
+	SAFE_FREE(in_path);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		cli_tree_close(tree);
