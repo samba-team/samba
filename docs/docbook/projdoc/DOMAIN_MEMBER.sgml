@@ -14,7 +14,7 @@
 	<title>Joining an NT Domain with Samba 3.0</title>
 
 	<para>Assume you have a Samba 3.0 server with a NetBIOS name of 
-	<constant>SERV1</constant> and are joining an or Win2k NT domain called
+	<constant>SERV1</constant> and are joining a Win2k or NT domain called
 	<constant>DOM</constant>, which has a PDC with a NetBIOS name
 	of <constant>DOMPDC</constant> and two backup domain controllers 
 	with NetBIOS names <constant>DOMBDC1</constant> and <constant>DOMBDC2
