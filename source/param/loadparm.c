@@ -910,15 +910,15 @@ static void init_globals(void)
 
 #ifdef WITH_SSL
   Globals.sslVersion = SMB_SSL_V23;
-  Globals.sslHostsRequire = NULL;
-  Globals.sslHostsResign = NULL;
-  Globals.sslCaCertDir = NULL;
-  Globals.sslCaCertFile = NULL;
-  Globals.sslCert = NULL;
-  Globals.sslPrivKey = NULL;
-  Globals.sslClientCert = NULL;
-  Globals.sslClientPrivKey = NULL;
-  Globals.sslCiphers = NULL;
+  string_set(&Globals.sslHostsRequire, "");
+  string_set(&Globals.sslHostsResign, "");
+  string_set(&Globals.sslCaCertDir, "");
+  string_set(&Globals.sslCaCertFile, "");
+  string_set(&Globals.sslCert, "");
+  string_set(&Globals.sslPrivKey, "");
+  string_set(&Globals.sslClientCert, "");
+  string_set(&Globals.sslClientPrivKey, "");
+  string_set(&Globals.sslCiphers, "");
   Globals.sslEnabled = False;
   Globals.sslReqClientCert = False;
   Globals.sslReqServerCert = False;
