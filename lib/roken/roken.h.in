@@ -82,6 +82,7 @@ char *getstr(char *id, char **cpp);
 
 #include <pwd.h>
 struct passwd *k_getpwnam (char *user);
+struct passwd *k_getpwuid (uid_t uid);
 
 #include <time.h>
 #include <sys/time.h>
