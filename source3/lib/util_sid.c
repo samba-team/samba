@@ -391,7 +391,7 @@ BOOL sid_linearize(char *outbuf, size_t len, DOM_SID *sid)
  Compare two sids.
 *****************************************************************/  
 
-BOOL sid_equal(DOM_SID *sid1, DOM_SID *sid2)
+BOOL sid_equal(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 
