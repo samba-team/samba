@@ -12,9 +12,8 @@ LIBS=@LIBS@
 CC=@CC@
 SHLD=@SHLD@
 CFLAGS=@CFLAGS@
-CPPFLAGS=@CPPFLAGS@
 LDFLAGS=@LDFLAGS@
-LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@
+LDSHFLAGS=@LDSHFLAGS@ @LDFLAGS@ @CFLAGS@
 AWK=@AWK@
 
 TERMLDFLAGS=@TERMLDFLAGS@
@@ -69,7 +68,7 @@ LOCKDIR = @lockdir@
 # man pages language(s)
 man_langs = "@manlangs@"
 
-FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  $(CPPFLAGS) -I. -I$(srcdir)
+FLAGS1 = $(CFLAGS) @FLAGS1@ -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. -I$(srcdir)
 FLAGS2 = 
 FLAGS3 = 
 FLAGS4 = 
