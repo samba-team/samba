@@ -435,7 +435,7 @@ int get_sid(DOM_SID *sid, char *sid_str)
   lstr = sid_str + 5;
 
   while (1) {
-    if (!lstr || !lstr[0] || sscanf(lstr, "-%d", &auth) == 0) {
+    if (!lstr || !lstr[0] || sscanf(lstr, "-%u", &auth) == 0) {
       if (i < 4) {
 	fprintf(stderr, "Not of form -d-d...: %s, %u\n", lstr, i);
 	return 0;
