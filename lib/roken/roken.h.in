@@ -252,7 +252,7 @@ int rcmd(char **ahost, unsigned short inport, const char *locuser,
 #endif
 
 #ifndef HAVE_IRUSEROK
-int iruserok(u_int32_t raddr, int superuser, const char *ruser,
+int iruserok(unsigned raddr, int superuser, const char *ruser,
 	     const char *luser);
 #endif
 
