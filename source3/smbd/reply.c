@@ -609,7 +609,7 @@ user %s attempted down-level SMB connection\n", user));
         passlen2 = 0;
     }
 
-    if(doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
+    if (doencrypt || ((lp_security() == SEC_SERVER) || (lp_security() == SEC_DOMAIN))) {
       /* Save the lanman2 password and the NT md4 password. */
       smb_apasslen = passlen1;
       memcpy(smb_apasswd,p,smb_apasslen);
@@ -632,12 +632,22 @@ user %s attempted down-level SMB connection\n", user));
       }
     }
     
-    p += passlen1 + passlen2;
+    if (passlen2 == 0 && smb_apasslen == 0 && ra_type == RA_WIN95)
+    {
+      /* work-around for win95 NULL sessions, where NULL password is
+         actually put in the data stream before the domain name etc */
+      p++;
+    }
+    else
+    {
+	    p += passlen1 + passlen2;
+    }
+
     fstrcpy(user,p); p = skip_string(p,1);
     domain = p;
 
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     domain,skip_string(p,1),skip_string(p,2)));
+	     domain, skip_string(p,1), skip_string(p,2)));
   }
 
   DEBUG(3,("sesssetupX:name=[%s]\n",user));
