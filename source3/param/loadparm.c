@@ -3550,6 +3550,7 @@ BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	bGlobalOnly = global_only;
 
 	init_globals();
+	debug_init();
 
 	if (save_defaults)
 	{
