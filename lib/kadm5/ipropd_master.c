@@ -215,7 +215,6 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     krb5_data data;
     krb5_data priv_data;
     int ret = 0;
-    u_char buf[4];
 
     if (s->version == current_version)
 	return 0;
@@ -267,7 +266,6 @@ process_msg (krb5_context context, slave *s, int log_fd,
     krb5_data in, out;
     krb5_storage *sp;
     int32_t tmp;
-    u_char buf[8];
 
     ret = krb5_read_message (context, &s->fd, &in);
     if (ret)
