@@ -61,7 +61,7 @@ RCSID("$Id$");
 /*
  * Initialize variables.
  */
-    void
+void
 tninit()
 {
     init_terminal();
@@ -129,7 +129,7 @@ int main(int argc, char **argv)
 	 */
 	autologin = -1;
 
-	while ((ch = getopt(argc, argv, "78EKLS:X:acde:fFk:l:n:rt:x")) != EOF) {
+	while((ch = getopt(argc, argv, "78DEKLS:X:acde:fFk:l:n:rx")) != EOF) {
 		switch(ch) {
 		case '8':
 			eight = 3;	/* binary output and input */
@@ -137,6 +137,13 @@ int main(int argc, char **argv)
 		case '7':
 			eight = 0;
 			break;
+		case 'D': {
+		    /* sometimes we don't want a mangled display */
+		    char *p;
+		    if((p = getenv("DISPLAY")))
+			env_define("DISPLAY", p);
+		    break;
+		}
 		case 'E':
 			rlogin = escape = _POSIX_VDISABLE;
 			break;
