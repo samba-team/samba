@@ -5,17 +5,32 @@ Samba now fully supports browsing. The browsing is supported by nmbd
 and is also controlled by options in the smb.conf file (see
 smb.conf(5)).
 
-Samba can act as a browse master for a workgroup and the ability for
-samba to support domain logons and scripts is now available.  See
+Samba can act as a local browse master for a workgroup and the ability
+for samba to support domain logons and scripts is now available.  See
 DOMAIN.txt for more information on domain logons.
+
+Samba can also act as a domain master browser for a workgroup.  This
+means that it will collate lists from local browse masters into a
+wide area network server list.  In order for browse clients to
+resolve the names they may find in this list, it is recommended that
+both samba and your clients use a WINS server
+
+[Note that nmbd can be configured as a WINS server, but it is not
+necessary to specifically use samba as your WINS server.  NTAS can
+be configured as your WINS server.  In a mixed NT server and
+samba environment on a Wide Area Network, it is recommended that
+you use the NT server's WINS server capabilities.  In a samba-only
+environment, it is recommended that you use one and only one nmbd
+as your WINS server].
 
 To get browsing to work you need to run nmbd as usual, but will need
 to use the "workgroup" option in smb.conf to control what workgroup
 Samba becomes a part of.
 
 Samba also has a useful option for a Samba server to offer itself for
-browsing on another subnet. See "remote announce" in the smb.conf man
-page. 
+browsing on another subnet.  It is recommended that this option is only
+used for 'unusual' purposes: announcements over the internet, for
+example. See "remote announce" in the smb.conf man page. 
 
 If something doesn't work then hopefully the log.nmb file will
 help you track down the problem. Try a debug level of 2 or 3 for
@@ -41,6 +56,7 @@ The other big problem people have is that their broadcast address,
 netmask or IP address is wrong (specified with the "interfaces" option
 in smb.conf)
 
+
 FORCING SAMBA TO BE THE MASTER
 ==============================
 
@@ -60,6 +76,18 @@ NTAS domain controller uses level 32.
 
 The maximum os level is 255
 
+If you want samba to force an election on startup, then set the
+"preferred master" global option in smb.conf to "yes".  Samba will
+then have a slight advantage over other potential master browsers
+that are not preferred master browsers.
+
+If you want samba to be a "domain master browser", then it is
+recommended that you also set "preferred master" to "yes", because
+samba will not become a domain master browser for the whole of your
+LAN or WAN if it is not also a local master browser on its own
+broadcast isolated subnet.
+
+
 MAKING SAMBA THE DOMAIN MASTER
 ==============================
 
@@ -69,11 +97,39 @@ make samba act as the domain master by setting "domain master = yes"
 in smb.conf. By default it will not be a domain master.
 
 When samba is the domain master and the master browser it will listen
-for master announcements from other subnets and then contact them to
-synchronise browse lists.
+for master announcements (made roughly every twelve minutes) from local
+master browsers on other subnets and then contact them to synchronise
+browse lists.
 
 If you want samba to be the domain master then I suggest you also set
-the "os level" high enough to make sure it wins elections.
+the "os level" high enough to make sure it wins elections, and set
+"preferred master" to "yes", to get samba to force an election on
+startup.
+
+Note that all your servers (including samba) and clients should be
+using a WINS server to resolve NetBIOS names.  If your clients are only
+using broadcasting to resolve NetBIOS names, then two things will occur:
+
+a) your local master browsers will be unable to find a domain master
+   browser, as it will only be looking on the local subnet.
+
+b) if a client happens to get hold of a domain-wide browse list, and
+   a user attempts to access a host in that list, it will be unable to
+   resolve the NetBIOS name of that host.
+
+If, however, both samba and your clients are using a WINS server, then:
+
+a) your local master browsers will contact the WINS server and, as long as
+   samba has registered that it is a domain master browser with the WINS
+   server, your local master browser will receive samba's ip address
+   as its domain master browser.
+
+b) when a client receives a domain-wide browse list, and a user attempts
+   to access a host in that list, it will contact the WINS server to
+   resolve the NetBIOS name of that host.  as long as that host has
+   registered its NetBIOS name with the same WINS server, the user will
+   be able to see that host. 
+
 
 NOTIFYING THE DOMAIN CONTROLLER
 ===============================
@@ -84,8 +140,20 @@ smb.conf. "address" can either be a name available via DNS or a IP
 address or a broadcast address. If it is a broadcast address then
 Samba will look for a domain controller on that network.
 
-When Samba is the master browser it will regularly contact the domain
-controller to synchronise browse lists.
+If you have a domain controller, then you also have a domain master
+browser (if your domain controller is Microsoft's NT Advanced Server,
+or AT&T's Advanced Server for Unix, or SCO's Advanced File and Print
+Server).
+
+It will therefore be unnecessary for you to make samba a domain master,
+and the parameter "domain master" should be set to 'no', and the
+parameter "os level" should be set to a value between 0 and 32.
+This will ensure that the domain controller will become your domain
+master browser, and it only becomes a local master browser for its
+subnet.
+
+When Samba is the local master browser it will regularly contact the
+"domain controller" to synchronise browse lists.
 
 
 NOTE ABOUT BROADCAST ADDRESSES
@@ -96,9 +164,11 @@ ends in a 0) then you will strike problems. Windows for Workgroups
 does not seem to support a 0's broadcast and you will probably find
 that browsing and name lookups won't work.
 
+
 MULTIPLE INTERFACES
 ===================
 
 Samba now supports machines with multiple network interfaces. If you
 have multiple interfaces then you will need to use the "interfaces"
 option in smb.conf to configure them. See smb.conf(5) for details.
+
