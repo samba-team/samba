@@ -504,7 +504,8 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	struct group *grp;
-
+	BOOL ret;
+	
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
@@ -513,7 +514,12 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	DEBUG(10, ("get_domain_group_from_sid\n"));
 
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
-	if(!pdb_getgrsid(map, sid))
+	
+	become_root();
+	ret = pdb_getgrsid(map, sid);
+	unbecome_root();
+	
+	if ( !ret ) 
 		return False;
 
 	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
@@ -547,14 +553,19 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 
 BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
+	BOOL ret;
+	
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
 	}
 
 	/* The group is in the mapping table */
+	become_root();
+	ret = pdb_getgrsid(map, sid);
+	unbecome_root();
 	
-	if( !pdb_getgrsid(map, sid) ) 
+	if ( !ret )
 		return False;
 		
 	if ( (map->sid_name_use != SID_NAME_ALIAS)
@@ -564,7 +575,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		return False;
 	} 		
 			
-#if 0 	/* JERRY */
+#if 1 	/* JERRY */
 	/* local groups only exist in the group mapping DB so this 
 	   is not necessary */
 	   
@@ -572,6 +583,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 		/* the group isn't in the mapping table.
 		 * make one based on the unix information */
 		uint32 alias_rid;
+		struct group *grp;
 
 		sid_peek_rid(&sid, &alias_rid);
 		map->gid=pdb_group_rid_to_gid(alias_rid);
@@ -599,13 +611,19 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 {
 	struct group *grp;
+	BOOL ret;
+	
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
 		return(False);
 	}
 
-	if(!pdb_getgrsid(map, sid))
+	become_root();
+	ret = pdb_getgrsid(map, sid);
+	unbecome_root();
+	
+	if ( !ret )
 		return False;
 
 	if (map->sid_name_use!=SID_NAME_WKN_GRP) {

@@ -707,6 +707,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	uint32 rid;
 	SAM_ACCOUNT *sam_account = NULL;
 	GROUP_MAP map;
+	BOOL ret;
 
 	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
 		DEBUG(0,("local_lookup_sid: sid_peek_check_rid return False! SID: %s\n",
@@ -736,9 +737,10 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	
 	/* see if the passdb can help us with the name of the user */
 
+	/* BEING ROOT BLLOCK */
 	become_root();
 	if (pdb_getsampwsid(sam_account, sid)) {
-		unbecome_root();
+		unbecome_root();			/* -----> EXIT BECOME_ROOT() */
 		fstrcpy(name, pdb_get_username(sam_account));
 		*psid_name_use = SID_NAME_USER;
 
@@ -746,10 +748,13 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 			
 		return True;
 	}
-	unbecome_root();
 	pdb_free_sam(&sam_account);
-		
-	if (pdb_getgrsid(&map, *sid)) {
+	
+	ret = pdb_getgrsid(&map, *sid);
+	unbecome_root();
+	/* END BECOME_ROOT BLOCK */
+	
+	if ( ret ) {
 		if (map.gid!=(gid_t)-1) {
 			DEBUG(5,("local_lookup_sid: mapped group %s to gid %u\n", map.nt_name, (unsigned int)map.gid));
 		} else {
@@ -1233,6 +1238,7 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 {
 	uint32 rid;
 	GROUP_MAP group;
+	BOOL ret;
 
 	*name_type = SID_NAME_UNKNOWN;
 
@@ -1241,8 +1247,12 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 
 	/* we don't need to disable winbindd since the gid is stored in 
 	   the GROUP_MAP object */
-
-	if ( !pdb_getgrsid(&group, *psid) ) {
+	   
+	become_root();
+	pdb_getgrsid(&group, *psid);
+	unbecome_root();
+	
+	if ( !ret ) {
 
 		/* fallback to rid mapping if enabled */
 
