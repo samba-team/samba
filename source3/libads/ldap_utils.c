@@ -42,6 +42,9 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 	bp = strdup(bind_path);
 
+	if (!bp) 
+		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
+
 	while (count--) {
 		status = ads_do_search_all(ads, bp, scope, exp, attrs, res);
 		if (ADS_ERR_OK(status)) {

@@ -167,8 +167,8 @@ typedef struct sam_context
 	NTSTATUS (*sam_get_sec_desc) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, SEC_DESC **sd);
 	NTSTATUS (*sam_set_sec_desc) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, const SEC_DESC *sd);
 	
-	NTSTATUS (*sam_lookup_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type);
-	NTSTATUS (*sam_lookup_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID **sid, uint32 *type);
+	NTSTATUS (*sam_lookup_sid) (const struct sam_context *, const NT_USER_TOKEN *access_token, TALLOC_CTX *ctx, const DOM_SID *sid, char **name, uint32 *type);
+	NTSTATUS (*sam_lookup_name) (const struct sam_context *, const NT_USER_TOKEN *access_token, const char *domain, const char *name, DOM_SID *sid, uint32 *type);
 
 
 	/* Domain API */
@@ -183,7 +183,7 @@ typedef struct sam_context
 
 	/* Account API */
 
-	NTSTATUS (*sam_create_account) (const struct sam_context *context, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_create_account) (const struct sam_context *context, const NT_USER_TOKEN *access_token, uint32 access_desired, TALLOC_CTX *mem_ctx, const DOM_SID *domainsid, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
 	NTSTATUS (*sam_add_account) (const struct sam_context *, const DOM_SID *domainsid, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_update_account) (const struct sam_context *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_delete_account) (const struct sam_context *, const SAM_ACCOUNT_HANDLE *account);
@@ -225,8 +225,8 @@ typedef struct sam_methods
 	NTSTATUS (*sam_get_sec_desc) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, SEC_DESC **sd);
 	NTSTATUS (*sam_set_sec_desc) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, const SEC_DESC *sd);
 	
-	NTSTATUS (*sam_lookup_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type);
-	NTSTATUS (*sam_lookup_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const char *name, DOM_SID **sid, uint32 *type);
+	NTSTATUS (*sam_lookup_sid) (const struct sam_methods *, const NT_USER_TOKEN *access_token, TALLOC_CTX *mem_ctx, const DOM_SID *sid, char **name, uint32 *type);
+	NTSTATUS (*sam_lookup_name) (const struct sam_methods *, const NT_USER_TOKEN *access_token, const char *name, DOM_SID *sid, uint32 *type);
 	
 	/* Domain API */
 
@@ -235,7 +235,7 @@ typedef struct sam_methods
 
 	/* Account API */
 
-	NTSTATUS (*sam_create_account) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
+	NTSTATUS (*sam_create_account) (const struct sam_methods *, const NT_USER_TOKEN *access_token, uint32 access_desired, TALLOC_CTX *mem_ctx, const char *account_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account);
 	NTSTATUS (*sam_add_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_update_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
 	NTSTATUS (*sam_delete_account) (const struct sam_methods *, const SAM_ACCOUNT_HANDLE *account);
