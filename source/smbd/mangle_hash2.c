@@ -274,7 +274,7 @@ static BOOL is_mangled(const char *name)
    simplifies things greatly (it means that we know the string won't
    get larger when converted from UNIX to DOS formats)
 */
-static BOOL is_8_3(const char *name, BOOL check_case)
+static BOOL is_8_3(const char *name, BOOL check_case, BOOL allow_wildcards)
 {
 	int len, i;
 	char *dot_p;
@@ -324,8 +324,8 @@ static BOOL is_8_3(const char *name, BOOL check_case)
 
 	/* the length are all OK. Now check to see if the characters themselves are OK */
 	for (i=0; name[i]; i++) {
-		/* note that we allow wildcard petterns! */
-		if (!FLAG_CHECK(name[i], FLAG_ASCII|FLAG_WILDCARD) && name[i] != '.') {
+		/* note that we may allow wildcard petterns! */
+		if (!FLAG_CHECK(name[i], FLAG_ASCII|(allow_wildcards ? FLAG_WILDCARD : 0)) && name[i] != '.') {
 			return False;
 		}
 	}
@@ -485,7 +485,7 @@ static BOOL name_map(char *name, BOOL need83, BOOL cache83)
 	if (!is_reserved_name(name)) {
 		/* if the name is already a valid 8.3 name then we don't need to 
 		   do anything */
-		if (is_8_3(name, False)) {
+		if (is_8_3(name, False, False)) {
 			return True;
 		}
 

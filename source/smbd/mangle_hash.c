@@ -341,106 +341,108 @@ static BOOL is_ms_wildchar(const char c)
  *                        name will be checked to see if all characters
  *                        are the correct case.  See case_mangle and
  *                        case_default above.
+ *          allow_wildcards - If True dos wildcard characters *?<>" are allowed as 8.3.
  *
  *  Output: True if the name is a valid DOS name, else False.
  *
  * ************************************************************************** **
  */
-static BOOL is_8_3( const char *cfname, BOOL check_case )
-  {
-  int   len;
-  int   l;
-  int   skip;
-  char *p;
-  char *dot_pos;
-  char *slash_pos;
-  char *fname = (char *)cfname;
 
-  slash_pos = strrchr( fname, '/' );
+static BOOL is_8_3( const char *cfname, BOOL check_case, BOOL allow_wildcards )
+{
+	int   len;
+	int   l;
+	int   skip;
+	char *p;
+	char *dot_pos;
+	char *slash_pos;
+	char *fname = (char *)cfname;
 
-  /* If there is a directory path, skip it. */
-  if( slash_pos )
-    fname = slash_pos + 1;
-  len = strlen( fname );
+	slash_pos = strrchr( fname, '/' );
 
-  DEBUG( 5, ( "Checking %s for 8.3\n", fname ) );
+	/* If there is a directory path, skip it. */
+	if( slash_pos )
+		fname = slash_pos + 1;
+	len = strlen( fname );
 
-  /* Can't be 0 chars or longer than 12 chars */
-  if( (len == 0) || (len > 12) )
-    return( False );
+	DEBUG( 5, ( "Checking %s for 8.3\n", fname ) );
 
-  /* Mustn't be an MS-DOS Special file such as lpt1 or even lpt1.txt */
-  if( is_reserved_msdos( fname ) )
-    return( False );
+	/* Can't be 0 chars or longer than 12 chars */
+	if( (len == 0) || (len > 12) )
+		return( False );
 
-  /* Check that all characters are the correct case, if asked to do so. */
-  if( check_case && case_mangle )
-    {
-    switch( case_default )
-      {
-      case CASE_LOWER:
-        if( strhasupper( fname ) )
-          return(False);
-        break;
-      case CASE_UPPER:
-        if( strhaslower( fname ) )
-          return(False);
-        break;
-      }
-    }
+	/* Mustn't be an MS-DOS Special file such as lpt1 or even lpt1.txt */
+	if( is_reserved_msdos( fname ) )
+		return( False );
 
-  /* Can't contain invalid dos chars */
-  /* Windows use the ANSI charset.
-     But filenames are translated in the PC charset.
-     This Translation may be more or less relaxed depending
-     the Windows application. */
+	/* Check that all characters are the correct case, if asked to do so. */
+	if( check_case && case_mangle ) {
+		switch( case_default ) {
+			case CASE_LOWER:
+				if( strhasupper( fname ) )
+					return(False);
+				break;
+			case CASE_UPPER:
+				if( strhaslower( fname ) )
+					return(False);
+				break;
+			}
+	}
 
-  /* %%% A nice improvment to name mangling would be to translate
-     filename to ANSI charset on the smb server host */
+	/* Can't contain invalid dos chars */
+	/* Windows use the ANSI charset.
+		But filenames are translated in the PC charset.
+		This Translation may be more or less relaxed depending
+		the Windows application. */
 
-  p       = fname;
-  dot_pos = NULL;
-  while( *p )
-    {
-    if( (skip = get_character_len( *p )) != 0 )
-      p += skip;
-    else 
-      {
-      if( *p == '.' && !dot_pos )
-        dot_pos = (char *)p;
-      else
-        if( !isdoschar( *p ) && !is_ms_wildchar(*p))
-          return( False );
-      p++;
-      }
-    }
+	/* %%% A nice improvment to name mangling would be to translate
+		filename to ANSI charset on the smb server host */
 
-  /* no dot and less than 9 means OK */
-  if( !dot_pos )
-    return( len <= 8 );
+	p       = fname;
+	dot_pos = NULL;
+	while( *p ) {
+		if( (skip = get_character_len( *p )) != 0 )
+			p += skip;
+		else {
+			if( *p == '.' && !dot_pos )
+				dot_pos = (char *)p;
+			else {
+				if( !isdoschar( *p )) {
+					if (!allow_wildcards)
+						return False;
+					if (!is_ms_wildchar(*p))
+						return False;
+				}
+			}
+			p++;
+		}
+	}
+
+	/* no dot and less than 9 means OK */
+	if( !dot_pos )
+		return( len <= 8 );
         
-  l = PTR_DIFF( dot_pos, fname );
+	l = PTR_DIFF( dot_pos, fname );
 
-  /* base must be at least 1 char except special cases . and .. */
-  if( l == 0 )
-    return( 0 == strcmp( fname, "." ) || 0 == strcmp( fname, ".." ) );
+	/* base must be at least 1 char except special cases . and .. */
+	if( l == 0 )
+		return( 0 == strcmp( fname, "." ) || 0 == strcmp( fname, ".." ) );
 
-  /* base can't be greater than 8 */
-  if( l > 8 )
-    return( False );
+	/* base can't be greater than 8 */
+	if( l > 8 )
+		return( False );
 
-  /* extension must be between 1 and 3 */
-  if( (len - l < 2 ) || (len - l > 4) )
-    return( False );
+	/* extension must be between 1 and 3 */
+	if( (len - l < 2 ) || (len - l > 4) )
+		return( False );
 
-  /* extensions may not have a dot */
-  if( strchr( dot_pos+1, '.' ) )
-    return( False );
+	/* extensions may not have a dot */
+	if( strchr( dot_pos+1, '.' ) )
+		return( False );
 
-  /* must be in 8.3 format */
-  return( True );
-  } /* is_8_3 */
-
+	/* must be in 8.3 format */
+	return( True );
+}
 
 /* ************************************************************************** **
  * Compare two cache keys and return a value indicating their ordinal
@@ -461,15 +463,16 @@ static BOOL is_8_3( const char *cfname, BOOL check_case )
  *
  * ************************************************************************** **
  */
+
 static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
-  {
-  char *Key1 = (char *)ItemPtr;
-  char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
+{
+	char *Key1 = (char *)ItemPtr;
+	char *Key2 = (char *)(((ubi_cacheEntryPtr)NodePtr) + 1);
 
-  DEBUG(100,("cache_compare: %s %s\n", Key1, Key2));
+	DEBUG(100,("cache_compare: %s %s\n", Key1, Key2));
 
-  return( StrCaseCmp( Key1, Key2 ) );
-  } /* cache_compare */
+	return( StrCaseCmp( Key1, Key2 ) );
+}
 
 /* ************************************************************************** **
  * Free a cache entry.
@@ -484,11 +487,12 @@ static signed int cache_compare( ubi_btItemPtr ItemPtr, ubi_btNodePtr NodePtr )
  *
  * ************************************************************************** **
  */
+
 static void cache_free_entry( ubi_trNodePtr WarrenZevon )
-  {
-	  ZERO_STRUCTP(WarrenZevon);
-	  SAFE_FREE( WarrenZevon );
-  } /* cache_free_entry */
+{
+	ZERO_STRUCTP(WarrenZevon);
+	SAFE_FREE( WarrenZevon );
+}
 
 /* ************************************************************************** **
  * Initializes or clears the mangled cache.
@@ -506,28 +510,25 @@ static void cache_free_entry( ubi_trNodePtr WarrenZevon )
  *
  * ************************************************************************** **
  */
+
 static void reset_mangled_cache( void )
-  {
-  if( !mc_initialized )
-    {
-    (void)ubi_cacheInit( mangled_cache,
-                         cache_compare,
-                         cache_free_entry,
-                         MANGLED_CACHE_MAX_ENTRIES,
-                         MANGLED_CACHE_MAX_MEMORY );
-    mc_initialized = True;
-    }
-  else
-    {
-    (void)ubi_cacheClear( mangled_cache );
-    }
+{
+	if( !mc_initialized ) {
+		(void)ubi_cacheInit( mangled_cache,
+							cache_compare,
+							cache_free_entry,
+							MANGLED_CACHE_MAX_ENTRIES,
+							MANGLED_CACHE_MAX_MEMORY );
+		mc_initialized = True;
+	} else {
+		(void)ubi_cacheClear( mangled_cache );
+	}
 
-  /*
-  (void)ubi_cacheSetMaxEntries( mangled_cache, lp_mangled_cache_entries() );
-  (void)ubi_cacheSetMaxMemory(  mangled_cache, lp_mangled_cache_memory() );
-  */
-  } /* reset_mangled_cache  */
-
+	/*
+		(void)ubi_cacheSetMaxEntries( mangled_cache, lp_mangled_cache_entries() );
+		(void)ubi_cacheSetMaxMemory(  mangled_cache, lp_mangled_cache_memory() );
+	*/
+}
 
 /* ************************************************************************** **
  * Add a mangled name into the cache.
@@ -554,7 +555,7 @@ static void reset_mangled_cache( void )
  * ************************************************************************** **
  */
 static void cache_mangled_name( char *mangled_name, char *raw_name )
-  {
+{
   ubi_cacheEntryPtr new_entry;
   char             *s1;
   char             *s2;
@@ -598,7 +599,7 @@ static void cache_mangled_name( char *mangled_name, char *raw_name )
   (void)StrnCpy( s1, mangled_name, mangled_len );
   (void)StrnCpy( s2, raw_name,     raw_len );
   ubi_cachePut( mangled_cache, i, new_entry, s1 );
-  } /* cache_mangled_name */
+}
 
 /* ************************************************************************** **
  * Check for a name on the mangled name stack
@@ -676,8 +677,7 @@ static BOOL check_mangled_cache( char *s )
   DEBUG( 3, ("as %s\n", s) );
 
   return( True );
-} /* check_mangled_cache */
-
+}
 
 /*****************************************************************************
  * do the actual mangling to 8.3 format
@@ -685,7 +685,7 @@ static BOOL check_mangled_cache( char *s )
  *****************************************************************************
  */
 static void mangle_name_83( char *s)
-  {
+{
   int csum;
   char *p;
   char extension[4];
@@ -802,7 +802,7 @@ static void mangle_name_83( char *s)
 
   DEBUG( 5, ( "%s\n", s ) );
 
-  } /* mangle_name_83 */
+}
 
 /*****************************************************************************
  * Convert a filename to DOS format.  Return True if successful.
@@ -842,7 +842,7 @@ static BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
 #endif  
 
 	/* check if it's already in 8.3 format */
-	if (need83 && !is_8_3(OutName, True)) {
+	if (need83 && !is_8_3(OutName, True, False)) {
 		char *tmp = NULL; 
 
 		/* mangle it into 8.3 */
@@ -859,7 +859,7 @@ static BOOL name_map_mangle(char *OutName, BOOL need83, BOOL cache83)
 
 	DEBUG(5,("name_map_mangle() ==> [%s]\n", OutName));
 	return(True);
-} /* name_map_mangle */
+}
 
 /*
  *   the following provides the abstraction layer to make it easier

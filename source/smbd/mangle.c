@@ -83,7 +83,12 @@ BOOL mangle_is_mangled(const char *s)
 */
 BOOL mangle_is_8_3(const char *fname, BOOL check_case)
 {
-	return mangle_fns->is_8_3(fname, check_case);
+	return mangle_fns->is_8_3(fname, check_case, False);
+}
+
+BOOL mangle_is_8_3_wildcards(const char *fname, BOOL check_case)
+{
+	return mangle_fns->is_8_3(fname, check_case, True);
 }
 
 /*

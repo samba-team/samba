@@ -1046,7 +1046,7 @@ close_if_end = %d requires_resume_key = %d level = %d, max_data_bytes = %d\n",
 	 * (see PR#13758). JRA.
 	 */
 
-	if(!mangle_is_8_3( mask, False))
+	if(!mangle_is_8_3_wildcards( mask, False))
 		mangle_map(mask, True, True, SNUM(conn));
 
 	return(-1);
