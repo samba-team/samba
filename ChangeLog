@@ -1,5 +1,15 @@
 Sun Aug 24 08:06:54 1997  Assar Westerlund  <assar@sics.se>
 
+	* kpasswd/kpasswd.c: removed `-p'
+
+	* kuser/kinit.c: removed `-p'
+
+	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): If
+ 	KDC_ERR_PREUATH_REQUIRED, add preauthentication and try again.
+
+	* lib/krb5/get_in_tkt.c (krb5_get_in_cred): don't print out
+ 	krb-error text
+
 	* lib/gssapi/import_name.c (input_name): more names types.
 
 	* admin/load.c (parse_keys): handle the case of an empty salt
