@@ -41,7 +41,6 @@ static struct testcase {
     const char *password;
     krb5_enctype enctype;
     unsigned char res[MAXSIZE];
-    int raw_salt;
 } tests[] = {
     {"@", "", ETYPE_DES_CBC_MD5,
      {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xf1}},
@@ -73,9 +72,9 @@ static struct testcase {
     {"Juri\xc5\xa1i\xc4\x87@ATHENA.MIT.EDU", "\xc3\x9f", ETYPE_DES_CBC_MD5,
      {0x62, 0xc8, 0x1a, 0x52, 0x32, 0xb5, 0xe6, 0x9d}},
     {"AAAAAAAA", "11119999", ETYPE_DES_CBC_MD5,
-     {0x98, 0x40, 0x54, 0xd0, 0xf1, 0xa7, 0x3e, 0x31}, 1},
+     {0x98, 0x40, 0x54, 0xd0, 0xf1, 0xa7, 0x3e, 0x31}},
     {"FFFFAAAA", "NNNN6666", ETYPE_DES_CBC_MD5,
-     {0xc4, 0xbf, 0x6b, 0x25, 0xad, 0xf7, 0xa4, 0xf8}, 1},
+     {0xc4, 0xbf, 0x6b, 0x25, 0xad, 0xf7, 0xa4, 0xf8}},
     {"raeburn@ATHENA.MIT.EDU", "password", ETYPE_DES3_CBC_SHA1,
      {0x85, 0x0b, 0xb5, 0x13, 0x58, 0x54, 0x8c, 0xd0, 0x5e, 0x86, 0x76, 0x8c, 0x31, 0x3e, 0x3b, 0xfe, 0xf7, 0x51, 0x19, 0x37, 0xdc, 0xf7, 0x2c, 0x3e}},
     {"danny@WHITEHOUSE.GOV", "potatoe", ETYPE_DES3_CBC_SHA1,
@@ -108,29 +107,15 @@ main(int argc, char **argv)
 	krb5_principal principal;
 	int i;
 
-	if(t->raw_salt == 0) {
-	    ret = krb5_parse_name (context, t->principal_name, &principal);
-	    if (ret)
-		krb5_err (context, 1, ret, "krb5_parse_name %s",
-			  t->principal_name);
-	    ret = krb5_string_to_key (context, t->enctype, t->password,
-				      principal, &key);
-	    krb5_free_principal (context, principal);
-	} else {
-	    krb5_salt salt;
-	    krb5_data password;
-	    salt.salttype = KRB5_PW_SALT;
-	    salt.saltvalue.data = t->principal_name;
-	    salt.saltvalue.length = strlen(t->principal_name);
-	    password.data = t->password;
-	    password.length = strlen(t->password);
-	    ret = krb5_string_to_key_data_salt(context, t->enctype, 
-					       password, salt, &key);
-	}
-
+	ret = krb5_parse_name (context, t->principal_name, &principal);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_parse_name %s",
+		      t->principal_name);
+	ret = krb5_string_to_key (context, t->enctype, t->password,
+				  principal, &key);
 	if (ret)
 	    krb5_err (context, 1, ret, "krb5_string_to_key");
-
+	krb5_free_principal (context, principal);
 	if (memcmp (key.keyvalue.data, t->res, key.keyvalue.length) != 0) {
 	    const unsigned char *p = key.keyvalue.data;
 
