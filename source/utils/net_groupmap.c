@@ -271,7 +271,7 @@ int net_groupmap_add(int argc, const char **argv)
 	if (ntcomment[0])
 		fstrcpy(ntcomment, "Local Unix group");
 		
-	if ( !(gid = nametogid(unixgrp)) ) {
+	if ( (gid = nametogid(unixgrp)) == (gid_t)-1 ) {
 		d_printf("Can't lookup UNIX group %s\n", ntgroup);
 		return -1;
 	}
