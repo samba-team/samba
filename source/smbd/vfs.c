@@ -397,19 +397,21 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count)
 
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 {
-  size_t total=0;
-  ssize_t ret;
+	size_t total=0;
+	ssize_t ret;
 
-  while (total < N)
-  {
-    ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
+	while (total < N) {
+		ret = fsp->conn->vfs_ops.write(fsp,fsp->fd,buffer + total,N - total);
 
-    if (ret == -1) return -1;
-    if (ret == 0) return total;
+		if (ret == -1)
+			return -1;
+		if (ret == 0)
+			return total;
 
-    total += ret;
-  }
-  return (ssize_t)total;
+		total += ret;
+	}
+
+	return (ssize_t)total;
 }
 
 /****************************************************************************
@@ -422,11 +424,16 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 {
 	int ret;
 	SMB_STRUCT_STAT st;
-	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	connection_struct *conn = fsp->conn;
+	struct vfs_ops *vfs_ops = &conn->vfs_ops;
+	SMB_OFF_T space_avail;
+	SMB_BIG_UINT bsize,dfree,dsize;
 
+#if 0
 	if (!lp_strict_allocate(SNUM(fsp->conn)))
 		return vfs_set_filelen(fsp, len);
-		
+#endif
+
 	release_level_2_oplocks_on_change(fsp);
 
 	/*
@@ -454,41 +461,20 @@ int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len)
 		return ret;
 	}
 
-	/* Grow - we need to write out the space.... */
-	{
-		static unsigned char zero_space[65536];
+	/* Grow - we need to test if we have enough space. */
 
-		SMB_OFF_T start_pos = st.st_size;
-		SMB_OFF_T len_to_write = len - st.st_size;
-		SMB_OFF_T retlen;
+	len -= st.st_size;
+	len /= 1024; /* Len is now number of 1k blocks needed. */
+	space_avail = (SMB_OFF_T)conn->vfs_ops.disk_free(conn,fsp->fsp_name,False,&bsize,&dfree,&dsize);
 
-		DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f\n",
-				fsp->fsp_name, (double)st.st_size ));
+	DEBUG(10,("vfs_allocate_file_space: file %s, grow. Current size %.0f, needed blocks = %lu, space avail = %lu\n",
+			fsp->fsp_name, (double)st.st_size, (unsigned long)len, (unsigned long)space_avail ));
 
-		if ((retlen = vfs_ops->lseek(fsp, fsp->fd, start_pos, SEEK_SET)) != start_pos)
-			return -1;
-
-		while ( len_to_write > 0) {
-			SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),len_to_write);
-
-			retlen = vfs_ops->write(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
-			if (retlen <= 0) {
-				/* Write fail - return to original size. */
-				int save_errno = errno;
-				fsp->conn->vfs_ops.ftruncate(fsp, fsp->fd, st.st_size);
-				errno = save_errno;
-				DEBUG(10,("vfs_allocate_file_space: file %s, grow. write fail %s\n",
-					fsp->fsp_name, strerror(errno) ));
-				return -1;
-			}
-
-			DEBUG(10,("vfs_allocate_file_space: file %s, grow. wrote %.0f\n",
-					fsp->fsp_name, (double)retlen ));
-
-			len_to_write -= retlen;
-		}
-		set_filelen_write_cache(fsp, len);
+	if (len > space_avail) {
+		errno = ENOSPC;
+		return -1;
 	}
+
 	return 0;
 }
 

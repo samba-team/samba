@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison 1994-2001
 
    Extensively modified by Andrew Tridgell, 1995
 
@@ -37,6 +37,7 @@ extern pstring global_myname;
   set correctly for the type of call.
   HACK ! Always assumes smb_setup field is zero.
 ****************************************************************************/
+
 static int send_trans2_replies(char *outbuf, int bufsize, char *params, 
 			       int paramsize, char *pdata, int datasize)
 {
@@ -181,10 +182,10 @@ static int send_trans2_replies(char *outbuf, int bufsize, char *params,
   return 0;
 }
 
-
 /****************************************************************************
-  reply to a TRANSACT2_OPEN
+ Reply to a TRANSACT2_OPEN.
 ****************************************************************************/
+
 static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, 
 			   int bufsize,  
 			   char **pparams, char **ppdata)
@@ -291,21 +292,25 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
 }
 
 /*********************************************************
-* Routine to check if a given string matches exactly.
-* as a special case a mask of "." does NOT match. That
-* is required for correct wildcard semantics
-* Case can be significant or not.
+ Routine to check if a given string matches exactly.
+ as a special case a mask of "." does NOT match. That
+ is required for correct wildcard semantics
+ Case can be significant or not.
 **********************************************************/
+
 static BOOL exact_match(char *str,char *mask, BOOL case_sig) 
 {
-	if (mask[0] == '.' && mask[1] == 0) return False;
-	if (case_sig) return strcmp(str,mask)==0;
+	if (mask[0] == '.' && mask[1] == 0)
+		return False;
+	if (case_sig)
+		return strcmp(str,mask)==0;
 	return strcasecmp(str,mask) == 0;
 }
 
 /****************************************************************************
-  get a level dependent lanman2 dir entry.
+ Get a level dependent lanman2 dir entry.
 ****************************************************************************/
+
 static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 char *path_mask,int dirtype,int info_level,
 				 int requires_resume_key,
@@ -314,320 +319,310 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 BOOL *out_of_space, BOOL *got_exact_match,
 				 int *last_name_off)
 {
-  char *dname;
-  BOOL found = False;
-  SMB_STRUCT_STAT sbuf;
-  pstring mask;
-  pstring pathreal;
-  pstring fname;
-  char *p, *pdata = *ppdata;
-  uint32 reskey=0;
-  int prev_dirpos=0;
-  int mode=0;
-  SMB_OFF_T size = 0;
-  uint32 len;
-  time_t mdate=0, adate=0, cdate=0;
-  char *nameptr;
-  BOOL was_8_3;
-  int nt_extmode; /* Used for NT connections instead of mode */
-  BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
+	char *dname;
+	BOOL found = False;
+	SMB_STRUCT_STAT sbuf;
+	pstring mask;
+	pstring pathreal;
+	pstring fname;
+	char *p, *pdata = *ppdata;
+	uint32 reskey=0;
+	int prev_dirpos=0;
+	int mode=0;
+	SMB_OFF_T size = 0;
+	SMB_OFF_T allocation_size = 0;
+	uint32 len;
+	time_t mdate=0, adate=0, cdate=0;
+	char *nameptr;
+	BOOL was_8_3;
+	int nt_extmode; /* Used for NT connections instead of mode */
+	BOOL needslash = ( conn->dirpath[strlen(conn->dirpath) -1] != '/');
 
-  *fname = 0;
-  *out_of_space = False;
-  *got_exact_match = False;
+	*fname = 0;
+	*out_of_space = False;
+	*got_exact_match = False;
 
-  if (!conn->dirptr)
-    return(False);
+	if (!conn->dirptr)
+		return(False);
 
-  p = strrchr(path_mask,'/');
-  if(p != NULL)
-  {
-    if(p[1] == '\0')
-      pstrcpy(mask,"*.*");
-    else
-      pstrcpy(mask, p+1);
-  }
-  else
-    pstrcpy(mask, path_mask);
+	p = strrchr(path_mask,'/');
+	if(p != NULL) {
+		if(p[1] == '\0')
+			pstrcpy(mask,"*.*");
+		else
+			pstrcpy(mask, p+1);
+	} else
+		pstrcpy(mask, path_mask);
 
-  while (!found)
-  {
-    BOOL got_match;
+	while (!found) {
+		BOOL got_match;
 
-    /* Needed if we run out of space */
-    prev_dirpos = TellDir(conn->dirptr);
-    dname = ReadDirName(conn->dirptr);
+		/* Needed if we run out of space */
+		prev_dirpos = TellDir(conn->dirptr);
+		dname = ReadDirName(conn->dirptr);
 
-    /*
-     * Due to bugs in NT client redirectors we are not using
-     * resume keys any more - set them to zero.
-     * Check out the related comments in findfirst/findnext.
-     * JRA.
-     */
+		/*
+		 * Due to bugs in NT client redirectors we are not using
+		 * resume keys any more - set them to zero.
+		 * Check out the related comments in findfirst/findnext.
+		 * JRA.
+		 */
 
-    reskey = 0;
+		reskey = 0;
 
-    DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %d\n",
-      (long)conn->dirptr,TellDir(conn->dirptr)));
+		DEBUG(8,("get_lanman2_dir_entry:readdir on dirptr 0x%lx now at offset %d\n",
+			(long)conn->dirptr,TellDir(conn->dirptr)));
       
-    if (!dname) 
-      return(False);
+		if (!dname) 
+			return(False);
 
-    pstrcpy(fname,dname);      
+		pstrcpy(fname,dname);      
 
-    if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive))) {
-        got_match = mask_match(fname, mask, case_sensitive);
-    }
+		if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
+			got_match = mask_match(fname, mask, case_sensitive);
 
-    if(!got_match && !is_8_3(fname, False)) {
+		if(!got_match && !is_8_3(fname, False)) {
 
-      /*
-       * It turns out that NT matches wildcards against
-       * both long *and* short names. This may explain some
-       * of the wildcard wierdness from old DOS clients
-       * that some people have been seeing.... JRA.
-       */
+			/*
+			 * It turns out that NT matches wildcards against
+			 * both long *and* short names. This may explain some
+			 * of the wildcard wierdness from old DOS clients
+			 * that some people have been seeing.... JRA.
+			 */
 
-      pstring newname;
-      pstrcpy( newname, fname);
-      name_map_mangle( newname, True, False, SNUM(conn));
-      if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
-        got_match = mask_match(newname, mask, case_sensitive);
-    }
+			pstring newname;
+			pstrcpy( newname, fname);
+			name_map_mangle( newname, True, False, SNUM(conn));
+			if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
+				got_match = mask_match(newname, mask, case_sensitive);
+		}
 
-    if(got_match)
-    {
-      BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
-      if (dont_descend && !isdots)
-        continue;
+		if(got_match) {
+			BOOL isdots = (strequal(fname,"..") || strequal(fname,"."));
+			if (dont_descend && !isdots)
+				continue;
 	  
-      pstrcpy(pathreal,conn->dirpath);
-      if(needslash)
-        pstrcat(pathreal,"/");
-      pstrcat(pathreal,dname);
-      if (vfs_stat(conn,pathreal,&sbuf) != 0) 
-      {
-	/* Needed to show the msdfs symlinks as directories */
-	if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
-	   || !is_msdfs_link(conn, pathreal, NULL, NULL))
-	  {
-	    DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
-		     pathreal,strerror(errno)));
-	    continue;
-	  }
-	else
-	  {
-	    DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
-	    sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
-	  }
-      }
+			pstrcpy(pathreal,conn->dirpath);
+			if(needslash)
+				pstrcat(pathreal,"/");
+			pstrcat(pathreal,dname);
 
-      mode = dos_mode(conn,pathreal,&sbuf);
+			if (vfs_stat(conn,pathreal,&sbuf) != 0) {
+				/* Needed to show the msdfs symlinks as directories */
+				if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
+						|| !is_msdfs_link(conn, pathreal, NULL, NULL)) {
+					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
+					pathreal,strerror(errno)));
+					continue;
+				} else {
+					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
+				}
+			}
 
-      if (!dir_check_ftype(conn,mode,&sbuf,dirtype)) {
-        DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
-        continue;
-      }
+			mode = dos_mode(conn,pathreal,&sbuf);
 
-      size = sbuf.st_size;
-      mdate = sbuf.st_mtime;
-      adate = sbuf.st_atime;
-      cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+			if (!dir_check_ftype(conn,mode,&sbuf,dirtype)) {
+				DEBUG(5,("[%s] attribs didn't match %x\n",fname,dirtype));
+				continue;
+			}
 
-      if (lp_dos_filetime_resolution(SNUM(conn))) {
-        cdate &= ~1;
-        mdate &= ~1;
-        adate &= ~1;
-      }
+			size = sbuf.st_size;
+			allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
+			mdate = sbuf.st_mtime;
+			adate = sbuf.st_atime;
+			cdate = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
 
-      if(mode & aDIR)
-        size = 0;
+			if (lp_dos_filetime_resolution(SNUM(conn))) {
+				cdate &= ~1;
+				mdate &= ~1;
+				adate &= ~1;
+			}
 
-      DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
+			if(mode & aDIR)
+				size = 0;
+
+			DEBUG(5,("get_lanman2_dir_entry found %s fname=%s\n",pathreal,fname));
 	  
-      found = True;
-    }
-  }
+			found = True;
+		}
+	}
 
-  name_map_mangle(fname,False,True,SNUM(conn));
+	name_map_mangle(fname,False,True,SNUM(conn));
 
-  p = pdata;
-  nameptr = p;
+	p = pdata;
+	nameptr = p;
 
-  nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
+	nt_extmode = mode ? mode : FILE_ATTRIBUTE_NORMAL;
 
-  switch (info_level)
-  {
-    case 1:
-      if(requires_resume_key) {
-        SIVAL(p,0,reskey);
-        p += 4;
-      }
-      put_dos_date2(p,l1_fdateCreation,cdate);
-      put_dos_date2(p,l1_fdateLastAccess,adate);
-      put_dos_date2(p,l1_fdateLastWrite,mdate);
-      SIVAL(p,l1_cbFile,(uint32)size);
-      SIVAL(p,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
-      SSVAL(p,l1_attrFile,mode);
-      SCVAL(p,l1_cchName,strlen(fname));
-      pstrcpy(p + l1_achName, fname);
-      nameptr = p + l1_achName;
-      p += l1_achName + strlen(fname) + 1;
-      break;
+	switch (info_level) {
+		case 1:
+			if(requires_resume_key) {
+				SIVAL(p,0,reskey);
+				p += 4;
+			}
+			put_dos_date2(p,l1_fdateCreation,cdate);
+			put_dos_date2(p,l1_fdateLastAccess,adate);
+			put_dos_date2(p,l1_fdateLastWrite,mdate);
+			SIVAL(p,l1_cbFile,(uint32)size);
+			SIVAL(p,l1_cbFileAlloc,(uint32)allocation_size);
+			SSVAL(p,l1_attrFile,mode);
+			SCVAL(p,l1_cchName,strlen(fname));
+			pstrcpy(p + l1_achName, fname);
+			nameptr = p + l1_achName;
+			p += l1_achName + strlen(fname) + 1;
+			break;
 
-    case 2:
-      /* info_level 2 */
-      if(requires_resume_key) {
-        SIVAL(p,0,reskey);
-        p += 4;
-      }
-      put_dos_date2(p,l2_fdateCreation,cdate);
-      put_dos_date2(p,l2_fdateLastAccess,adate);
-      put_dos_date2(p,l2_fdateLastWrite,mdate);
-      SIVAL(p,l2_cbFile,(uint32)size);
-      SIVAL(p,l2_cbFileAlloc,SMB_ROUNDUP(size,1024));
-      SSVAL(p,l2_attrFile,mode);
-      SIVAL(p,l2_cbList,0); /* No extended attributes */
-      SCVAL(p,l2_cchName,strlen(fname));
-      pstrcpy(p + l2_achName, fname);
-      nameptr = p + l2_achName;
-      p += l2_achName + strlen(fname) + 1;
-      break;
+		case 2:
+			if(requires_resume_key) {
+				SIVAL(p,0,reskey);
+				p += 4;
+			}
+			put_dos_date2(p,l2_fdateCreation,cdate);
+			put_dos_date2(p,l2_fdateLastAccess,adate);
+			put_dos_date2(p,l2_fdateLastWrite,mdate);
+			SIVAL(p,l2_cbFile,(uint32)size);
+			SIVAL(p,l2_cbFileAlloc,(uint32)allocation_size);
+			SSVAL(p,l2_attrFile,mode);
+			SIVAL(p,l2_cbList,0); /* No extended attributes */
+			SCVAL(p,l2_cchName,strlen(fname));
+			pstrcpy(p + l2_achName, fname);
+			nameptr = p + l2_achName;
+			p += l2_achName + strlen(fname) + 1;
+			break;
 
-    case 3:
-      SIVAL(p,0,reskey);
-      put_dos_date2(p,4,cdate);
-      put_dos_date2(p,8,adate);
-      put_dos_date2(p,12,mdate);
-      SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,SMB_ROUNDUP(size,1024));
-      SSVAL(p,24,mode);
-      SIVAL(p,26,4);
-      CVAL(p,30) = strlen(fname);
-      pstrcpy(p+31, fname);
-      nameptr = p+31;
-      p += 31 + strlen(fname) + 1;
-      break;
+		case 3:
+			SIVAL(p,0,reskey);
+			put_dos_date2(p,4,cdate);
+			put_dos_date2(p,8,adate);
+			put_dos_date2(p,12,mdate);
+			SIVAL(p,16,(uint32)size);
+			SIVAL(p,20,(uint32)allocation_size);
+			SSVAL(p,24,mode);
+			SIVAL(p,26,4);
+			CVAL(p,30) = strlen(fname);
+			pstrcpy(p+31, fname);
+			nameptr = p+31;
+			p += 31 + strlen(fname) + 1;
+			break;
 
-    case 4:
-      if(requires_resume_key) {
-        SIVAL(p,0,reskey);
-        p += 4;
-      }
-      SIVAL(p,0,33+strlen(fname)+1);
-      put_dos_date2(p,4,cdate);
-      put_dos_date2(p,8,adate);
-      put_dos_date2(p,12,mdate);
-      SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,SMB_ROUNDUP(size,1024));
-      SSVAL(p,24,mode);
-      CVAL(p,32) = strlen(fname);
-      pstrcpy(p + 33, fname);
-      nameptr = p+33;
-      p += 33 + strlen(fname) + 1;
-      break;
+		case 4:
+			if(requires_resume_key) {
+				SIVAL(p,0,reskey);
+				p += 4;
+			}
+			SIVAL(p,0,33+strlen(fname)+1);
+			put_dos_date2(p,4,cdate);
+			put_dos_date2(p,8,adate);
+			put_dos_date2(p,12,mdate);
+			SIVAL(p,16,(uint32)size);
+			SIVAL(p,20,(uint32)allocation_size);
+			SSVAL(p,24,mode);
+			CVAL(p,32) = strlen(fname);
+			pstrcpy(p + 33, fname);
+			nameptr = p+33;
+			p += 33 + strlen(fname) + 1;
+			break;
 
-    case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
-      was_8_3 = is_8_3(fname, True);
-      len = 94+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
-      SIVAL(p,0,reskey); p += 4;
-      put_long_date(p,cdate); p += 8;
-      put_long_date(p,adate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      SOFF_T(p,0,size);
-      SOFF_T(p,8,size);
-      p += 16;
-      SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      SIVAL(p,0,0); p += 4;
-      if (!was_8_3) {
-	      fstrcpy(p+2,fname);
-	      if(!name_map_mangle(p+2,True,True,SNUM(conn)))
-            (p+2)[12] = 0; 
-	      strupper(p+2);
-	      SSVAL(p, 0, strlen(p+2));
-      } else {
-	      SSVAL(p,0,0);
-	      *(p+2) = 0;
-      }
-      p += 2 + 24;
-      /* nameptr = p;  */
-      pstrcpy(p,fname); p += strlen(p);
-      p = pdata + len;
-      break;
+		case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
+			was_8_3 = is_8_3(fname, True);
+			len = 94+strlen(fname);
+			len = (len + 3) & ~3;
+			SIVAL(p,0,len); p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			put_long_date(p,cdate); p += 8;
+			put_long_date(p,adate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			SOFF_T(p,0,size);
+			SOFF_T(p,8,allocation_size);
+			p += 16;
+			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,strlen(fname)); p += 4;
+			SIVAL(p,0,0); p += 4;
+			if (!was_8_3) {
+				fstrcpy(p+2,fname);
+				if(!name_map_mangle(p+2,True,True,SNUM(conn)))
+					(p+2)[12] = 0; 
+				strupper(p+2);
+				SSVAL(p, 0, strlen(p+2));
+			} else {
+				SSVAL(p,0,0);
+				*(p+2) = 0;
+			}
+			p += 2 + 24;
+			/* nameptr = p;  */
+			pstrcpy(p,fname); p += strlen(p);
+			p = pdata + len;
+			break;
 
-    case SMB_FIND_FILE_DIRECTORY_INFO:
-      len = 64+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
-      SIVAL(p,0,reskey); p += 4;
-      put_long_date(p,cdate); p += 8;
-      put_long_date(p,adate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      SOFF_T(p,0,size);
-      SOFF_T(p,8,size);
-      p += 16;
-      SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      pstrcpy(p,fname);
-      p = pdata + len;
-      break;
+		case SMB_FIND_FILE_DIRECTORY_INFO:
+			len = 64+strlen(fname);
+			len = (len + 3) & ~3;
+			SIVAL(p,0,len); p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			put_long_date(p,cdate); p += 8;
+			put_long_date(p,adate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			SOFF_T(p,0,size);
+			SOFF_T(p,8,allocation_size);
+			p += 16;
+			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,strlen(fname)); p += 4;
+			pstrcpy(p,fname);
+			p = pdata + len;
+			break;
       
-      
-    case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-      len = 68+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
-      SIVAL(p,0,reskey); p += 4;
-      put_long_date(p,cdate); p += 8;
-      put_long_date(p,adate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      put_long_date(p,mdate); p += 8;
-      SOFF_T(p,0,size); 
-      SOFF_T(p,8,size);
-      p += 16;
-      SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      SIVAL(p,0,0); p += 4;
-      pstrcpy(p,fname);
-      p = pdata + len;
-      break;
+		case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
+			len = 68+strlen(fname);
+			len = (len + 3) & ~3;
+			SIVAL(p,0,len); p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			put_long_date(p,cdate); p += 8;
+			put_long_date(p,adate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			put_long_date(p,mdate); p += 8;
+			SOFF_T(p,0,size); 
+			SOFF_T(p,8,allocation_size);
+			p += 16;
+			SIVAL(p,0,nt_extmode); p += 4;
+			SIVAL(p,0,strlen(fname)); p += 4;
+			SIVAL(p,0,0); p += 4;
+			pstrcpy(p,fname);
+			p = pdata + len;
+			break;
 
-    case SMB_FIND_FILE_NAMES_INFO:
-      len = 12+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
-      SIVAL(p,0,reskey); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      pstrcpy(p,fname);
-      p = pdata + len;
-      break;
+		case SMB_FIND_FILE_NAMES_INFO:
+			len = 12+strlen(fname);
+			len = (len + 3) & ~3;
+			SIVAL(p,0,len); p += 4;
+			SIVAL(p,0,reskey); p += 4;
+			SIVAL(p,0,strlen(fname)); p += 4;
+			pstrcpy(p,fname);
+			p = pdata + len;
+			break;
 
-    default:      
-      return(False);
-    }
+		default:      
+			return(False);
+	}
 
 
-  if (PTR_DIFF(p,pdata) > space_remaining) {
-    /* Move the dirptr back to prev_dirpos */
-    SeekDir(conn->dirptr, prev_dirpos);
-    *out_of_space = True;
-    DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
-    return False; /* Not finished - just out of space */
-  }
+	if (PTR_DIFF(p,pdata) > space_remaining) {
+		/* Move the dirptr back to prev_dirpos */
+		SeekDir(conn->dirptr, prev_dirpos);
+		*out_of_space = True;
+		DEBUG(9,("get_lanman2_dir_entry: out of space\n"));
+		return False; /* Not finished - just out of space */
+	}
 
-  /* Setup the last_filename pointer, as an offset from base_data */
-  *last_name_off = PTR_DIFF(nameptr,base_data);
-  /* Advance the data pointer to the next slot */
-  *ppdata = p;
+	/* Setup the last_filename pointer, as an offset from base_data */
+	*last_name_off = PTR_DIFF(nameptr,base_data);
+	/* Advance the data pointer to the next slot */
+	*ppdata = p;
 
-  return(found);
+	return(found);
 }
-  
 
 /****************************************************************************
  Reply to a TRANS2_FINDFIRST.
@@ -856,10 +851,10 @@ static int call_trans2findfirst(connection_struct *conn,
   return(-1);
 }
 
-
 /****************************************************************************
-  reply to a TRANS2_FINDNEXT
+ Reply to a TRANS2_FINDNEXT.
 ****************************************************************************/
+
 static int call_trans2findnext(connection_struct *conn, 
 			       char *inbuf, char *outbuf, 
 			       int length, int bufsize,
@@ -1107,7 +1102,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 }
 
 /****************************************************************************
-  reply to a TRANS2_QFSINFO (query filesystem info)
+ Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
 
 static int call_trans2qfsinfo(connection_struct *conn, 
@@ -1156,6 +1151,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
          (unsigned int)dfree, 512));
       break;
     }
+
     case 2:
     { 
       /* Return volume name */
@@ -1173,6 +1169,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 	       pdata+l2_vol_szVolLabel));
       break;
     }
+
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
     {
       int fstype_len;
@@ -1190,11 +1187,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       break;
     }
+
     case SMB_QUERY_FS_LABEL_INFO:
       data_len = 4 + strlen(vname);
       SIVAL(pdata,0,strlen(vname));
       pstrcpy(pdata+4,vname);      
       break;
+
     case SMB_QUERY_FS_VOLUME_INFO:      
 
       /* 
@@ -1223,6 +1222,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
 	       (int)strlen(vname),vname));
       break;
+
     case SMB_QUERY_FS_SIZE_INFO:
     {
       SMB_BIG_UINT dfree,dsize,bsize;
@@ -1234,11 +1234,13 @@ static int call_trans2qfsinfo(connection_struct *conn,
       SIVAL(pdata,20,512);
       break;
     }
+
     case SMB_QUERY_FS_DEVICE_INFO:
       data_len = 8;
       SIVAL(pdata,0,0); /* dev type */
       SIVAL(pdata,4,0); /* characteristics */
       break;
+
     case SMB_MAC_QUERY_FS_INFO:
 	    /*
 	     * Thursby MAC extension... ONLY on NTFS filesystems
@@ -1254,7 +1256,6 @@ static int call_trans2qfsinfo(connection_struct *conn,
       return(ERROR(ERRDOS,ERRunknownlevel));
   }
 
-
   send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len);
 
   DEBUG( 4, ( "%s info_level = %d\n",
@@ -1264,8 +1265,9 @@ static int call_trans2qfsinfo(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_SETFSINFO (set filesystem info)
+ Reply to a TRANS2_SETFSINFO (set filesystem info)
 ****************************************************************************/
+
 static int call_trans2setfsinfo(connection_struct *conn,
 				char *inbuf, char *outbuf, int length, 
 				int bufsize,
@@ -1302,6 +1304,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	uint16 info_level;
 	int mode=0;
 	SMB_OFF_T size=0;
+	SMB_OFF_T allocation_size=0;
 	unsigned int data_size;
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
@@ -1390,6 +1393,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	l = strlen(p);  
 	mode = dos_mode(conn,fname,&sbuf);
 	size = sbuf.st_size;
+	allocation_size = SMB_ROUNDUP_ALLOCATION(sbuf.st_size);
 	if (mode & aDIR)
 		size = 0;
 
@@ -1432,7 +1436,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
 		put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
 		SIVAL(pdata,l1_cbFile,(uint32)size);
-		SIVAL(pdata,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
+		SIVAL(pdata,l1_cbFileAlloc,(uint32)allocation_size);
 		SSVAL(pdata,l1_attrFile,mode);
 		SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
 		break;
@@ -1443,7 +1447,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		put_dos_date2(pdata,4,sbuf.st_atime);
 		put_dos_date2(pdata,8,sbuf.st_mtime);
 		SIVAL(pdata,12,(uint32)size);
-		SIVAL(pdata,16,SMB_ROUNDUP(size,1024));
+		SIVAL(pdata,16,(uint32)allocation_size);
 		SIVAL(pdata,20,mode);
 		break;
 
@@ -1489,7 +1493,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		data_size = 24;
 		/* Fake up allocation size. */
-		SOFF_T(pdata,0,SMB_ROUNDUP(size + 1, ((SMB_OFF_T)0x100000)));
+		SOFF_T(pdata,0,allocation_size);
 		SOFF_T(pdata,8,size);
 		SIVAL(pdata,16,sbuf.st_nlink);
 		CVAL(pdata,20) = 0;
@@ -1540,9 +1544,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		break;
 
 	case SMB_FILE_ALLOCATION_INFORMATION:
-	case SMB_FILE_END_OF_FILE_INFORMATION:
 	case SMB_QUERY_FILE_ALLOCATION_INFO:
+		data_size = 8;
+		SOFF_T(pdata,0,allocation_size);
+		break;
+
 	case SMB_QUERY_FILE_END_OF_FILEINFO:
+	case SMB_FILE_END_OF_FILE_INFORMATION:
 		data_size = 8;
 		SOFF_T(pdata,0,size);
 		break;
@@ -1554,7 +1562,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
 		SIVAL(pdata,32,mode);
 		pdata += 40;
-		SOFF_T(pdata,0,size);
+		SOFF_T(pdata,0,allocation_size);
 		SOFF_T(pdata,8,size);
 		SIVAL(pdata,16,sbuf.st_nlink);
 		CVAL(pdata,20) = delete_pending;
@@ -1667,7 +1675,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 			SIVAL(pdata,0,0); /* ??? */
 			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 			SOFF_T(pdata,8,size);
-			SIVAL(pdata,16,0x20); /* ??? */
+			SIVAL(pdata,16,allocation_size);
 			SIVAL(pdata,20,0); /* ??? */
 			data_size = 24 + byte_len;
 		}
@@ -1685,7 +1693,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		put_long_date(pdata+8,sbuf.st_atime);
 		put_long_date(pdata+16,sbuf.st_mtime); /* write time */
 		put_long_date(pdata+24,sbuf.st_mtime); /* change time */
-		SOFF_T(pdata,32,(SMB_OFF_T)0x20); /* Allocation size. */
+		SOFF_T(pdata,32,allocation_size); /* Allocation size. */
 		SOFF_T(pdata,40,size);
 		SIVAL(pdata,48,mode);
 		SIVAL(pdata,52,0); /* ??? */
@@ -1708,7 +1716,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 		data_size = 24 + l;
 		SIVAL(pdata,0,pos);
 		SIVAL(pdata,4,size);
-		SIVAL(pdata,12,size);
+		SIVAL(pdata,12,allocation_size);
 		SIVAL(pdata,20,l);	
 		pstrcpy(pdata+24,fname);
 		break;
@@ -1724,8 +1732,9 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_SETFILEINFO (set file info by fileid)
+ Reply to a TRANS2_SETFILEINFO (set file info by fileid)
 ****************************************************************************/
+
 static int call_trans2setfilepathinfo(connection_struct *conn,
 				      char *inbuf, char *outbuf, int length, 
 				      int bufsize, char **pparams, 
@@ -1958,8 +1967,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         }
         if (ret == -1)
           return allocate_space_error(inbuf, outbuf, errno);
-
-        sbuf.st_size = size;
       }
 
       break;
@@ -2178,8 +2185,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_MKDIR (make directory with extended attributes).
+ Reply to a TRANS2_MKDIR (make directory with extended attributes).
 ****************************************************************************/
+
 static int call_trans2mkdir(connection_struct *conn,
 			    char *inbuf, char *outbuf, int length, int bufsize,
 			    char **pparams, char **ppdata)
@@ -2227,9 +2235,10 @@ static int call_trans2mkdir(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_FINDNOTIFYFIRST (start monitoring a directory for changes)
-  We don't actually do this - we just send a null response.
+ Reply to a TRANS2_FINDNOTIFYFIRST (start monitoring a directory for changes).
+ We don't actually do this - we just send a null response.
 ****************************************************************************/
+
 static int call_trans2findnotifyfirst(connection_struct *conn,
 				      char *inbuf, char *outbuf, 
 				      int length, int bufsize,
@@ -2272,9 +2281,10 @@ static int call_trans2findnotifyfirst(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_FINDNOTIFYNEXT (continue monitoring a directory for 
-  changes). Currently this does nothing.
+ Reply to a TRANS2_FINDNOTIFYNEXT (continue monitoring a directory for 
+ changes). Currently this does nothing.
 ****************************************************************************/
+
 static int call_trans2findnotifynext(connection_struct *conn,
 				     char *inbuf, char *outbuf, 
 				     int length, int bufsize,
@@ -2300,8 +2310,9 @@ static int call_trans2findnotifynext(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>
+ Reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>.
 ****************************************************************************/
+
 static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 				     char* outbuf, int length, int bufsize,
 				     char** pparams, char** ppdata)
@@ -2436,8 +2447,9 @@ int reply_transs2(connection_struct *conn,
 }
 
 /****************************************************************************
-  reply to a SMBtrans2
+ Reply to a SMBtrans2.
 ****************************************************************************/
+
 int reply_trans2(connection_struct *conn,
 		 char *inbuf,char *outbuf,int length,int bufsize)
 {
