@@ -162,8 +162,19 @@ ssize_t write_file(files_struct *fsp, char *data, SMB_OFF_T pos, size_t n)
 	ssize_t total_written = 0;
 	int write_path = -1; 
 
-	if (fsp->print_file)
-		return print_job_write(SNUM(fsp->conn), fsp->print_jobid, data, n);
+	if (fsp->print_file) {
+		int snum;
+		uint32 jobid;
+
+		if (!rap_to_pjobid(fsp->rap_print_jobid, &snum, &jobid)) {
+			DEBUG(3,("write_file: Unable to map RAP jobid %u to jobid.\n",
+						(unsigned int)fsp->rap_print_jobid ));
+			errno = EBADF;
+			return -1;
+		}
+
+		return print_job_write(SNUM(fsp->conn), jobid, data, n);
+	}
 
 	if (!fsp->can_write) {
 		errno = EPERM;

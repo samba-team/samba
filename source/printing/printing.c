@@ -53,6 +53,8 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 	TDB_DATA data, key;
 	char jinfo[8];
 
+	DEBUG(10,("pjobid_to_rap: called.\n"));
+
 	if (!rap_tdb) {
 		/* Create the in-memory tdb. */
 		rap_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL, (O_RDWR|O_CREAT), 0644);
@@ -81,13 +83,18 @@ uint16 pjobid_to_rap(int snum, uint32 jobid)
 	data.dsize = sizeof(rap_jobid);
 	tdb_store(rap_tdb, key, data, TDB_REPLACE);
 	tdb_store(rap_tdb, data, key, TDB_REPLACE);
+
+	DEBUG(10,("pjobid_to_rap: jobid %u maps to RAP jobid %u\n",
+				(unsigned int)jobid,
+				(unsigned int)rap_jobid));
 	return rap_jobid;
 }
 
 BOOL rap_to_pjobid(uint16 rap_jobid, int *psnum, uint32 *pjobid)
 {
 	TDB_DATA data, key;
-	char jinfo[8];
+
+	DEBUG(10,("rap_to_pjobid called.\n"));
 
 	if (!rap_tdb)
 		return False;
@@ -95,12 +102,18 @@ BOOL rap_to_pjobid(uint16 rap_jobid, int *psnum, uint32 *pjobid)
 	key.dptr = (char *)&rap_jobid;
 	key.dsize = sizeof(rap_jobid);
 	data = tdb_fetch(rap_tdb, key);
-	if (data.dptr && data.dsize == sizeof(jinfo)) {
-		*psnum = IVAL(&jinfo,0);
-		*pjobid = IVAL(&jinfo,4);
+	if (data.dptr && data.dsize == 8) {
+		*psnum = IVAL(data.dptr,0);
+		*pjobid = IVAL(data.dptr,4);
+		DEBUG(10,("rap_to_pjobid: jobid %u maps to RAP jobid %u\n",
+				(unsigned int)*pjobid,
+				(unsigned int)rap_jobid));
 		SAFE_FREE(data.dptr);
 		return True;
 	}
+
+	DEBUG(10,("rap_to_pjobid: Failed to lookup RAP jobid %u\n",
+				(unsigned int)rap_jobid));
 	SAFE_FREE(data.dptr);
 	return False;
 }
@@ -110,6 +123,8 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 	TDB_DATA key, data;
 	uint16 rap_jobid;
 	char jinfo[8];
+
+	DEBUG(10,("rap_jobid_delete: called.\n"));
 
 	if (!rap_tdb)
 		return;
@@ -121,9 +136,14 @@ static void rap_jobid_delete(int snum, uint32 jobid)
 	key.dsize = sizeof(jinfo);
 	data = tdb_fetch(rap_tdb, key);
 	if (!data.dptr || (data.dsize != sizeof(uint16))) {
+		DEBUG(10,("rap_jobid_delete: cannot find jobid %u\n",
+					(unsigned int)jobid ));
 		SAFE_FREE(data.dptr);
 		return;
 	}
+
+	DEBUG(10,("rap_jobid_delete: deleting jobid %u\n",
+				(unsigned int)jobid ));
 
 	memcpy(&rap_jobid, data.dptr, sizeof(uint16));
 	SAFE_FREE(data.dptr);

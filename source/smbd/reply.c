@@ -450,7 +450,7 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code)
 	{
 	    case IOCTL_QUERY_JOB_INFO:		    
-		SSVAL(p,0,fsp->print_jobid);             /* Job number */
+		SSVAL(p,0,fsp->rap_print_jobid);             /* RAP Job number */
 		StrnCpy(p+2, global_myname_dos(), 15);         /* Our NetBIOS name */
 		StrnCpy(p+18, lp_servicename_dos(SNUM(conn)), 13); /* Service name */
 		break;

@@ -3111,7 +3111,7 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, 
 			return ERROR_DOS(ERRDOS,ERRnomem);
 		*ppdata = pdata;
 
-		SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
+		SSVAL(pdata,0,fsp->rap_print_jobid);                 /* RAP Job number */
 		StrnCpy(pdata+2, global_myname_dos(), 15);           /* Our NetBIOS name */
 		StrnCpy(pdata+18, lp_servicename_dos(SNUM(conn)), 13); /* Service name */
 		send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
