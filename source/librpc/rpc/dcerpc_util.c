@@ -488,10 +488,13 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **p,
 	
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (binding->flags & (DCERPC_SIGN | DCERPC_SEAL)) {
+	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
 		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
 	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
@@ -544,20 +547,22 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_ip_tcp(struct dcerpc_pipe **p,
 
 	/* it doesn't seem to work to do a null NTLMSSP session without either sign
 	   or seal, so force signing if we are doing ntlmssp */
-	if (username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
+	if (username && username[0] && !(binding->flags & (DCERPC_SIGN|DCERPC_SEAL))) {
 		binding->flags |= DCERPC_SIGN;
 	}
 
 	(*p)->flags = binding->flags;
 
-	if (binding->flags & DCERPC_SCHANNEL_ANY) {
+	/* remember the binding string for possible secondary connections */
+	(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
+
+	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(*p, pipe_uuid, pipe_version, 
 						   domain, username, password);
-	} else if (!(binding->flags & (DCERPC_SIGN|DCERPC_SEAL)) && !username[0]) {
+	} else if (username && username[0] && (binding->flags & (DCERPC_SIGN | DCERPC_SEAL))) {
+		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version, domain, username, password);
+	} else {    
 		status = dcerpc_bind_auth_none(*p, pipe_uuid, pipe_version);
-	} else {
-		status = dcerpc_bind_auth_ntlm(*p, pipe_uuid, pipe_version,
-					       domain, username, password);
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
@@ -592,11 +597,6 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **p,
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(p, binding, pipe_uuid, pipe_version,
 							  domain, username, password);
 		break;
-	}
-
-	/* remember the binding string for possible secondary connections */
-	if (NT_STATUS_IS_OK(status)) {
-		(*p)->binding_string = dcerpc_binding_string((*p)->mem_ctx, binding);
 	}
 
 	return status;
