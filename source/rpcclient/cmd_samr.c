@@ -820,7 +820,7 @@ void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[])
 	if (argc < 2)
 	{
 		report(out_hnd,
-		       "addaliasmem <group name> [member name1] [member name2] ...\n");
+		       "addaliasmem <alias name> [member name1] [member name2] ...\n");
 		return;
 	}
 
