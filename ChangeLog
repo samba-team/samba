@@ -1,5 +1,12 @@
 Sat Mar 21 00:26:34 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/kadm5/server.c: Unifdef test for same principal when
+ 	changing password.
+
+	* kadmin/util.c: If kadm5_get_principals failes, we might still be
+ 	able to perform the requested opreration (for instance someone if
+ 	trying to change his own password).
+
 	* lib/kadm5/init_c.c: Try to get ticket via initial request, if
  	not possible via tgt.
 
