@@ -19,6 +19,9 @@
 	* admin/ktutil.c (kt_add): check the return-value from fgets and
  	overwrite the password for paranoid reasons
 
+	* lib/krb5/keytab_keyfile.c (get_cell_and_realm): only remove the
+ 	newline if it's there
+
 1999-09-13  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hpropd.c (main): remove bogus error with `--print'.  remove
