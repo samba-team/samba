@@ -1631,6 +1631,10 @@ env_find(var)
 	return(NULL);
 }
 
+#if IRIX == 4
+#define environ _environ
+#endif
+
 	void
 env_init()
 {
