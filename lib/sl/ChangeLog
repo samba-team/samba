@@ -1,3 +1,7 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* parse.y (name2number): not used here.  remove.
+
 Thu Apr  1 17:03:59 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* make_cmds.c: use getarg

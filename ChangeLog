@@ -1,5 +1,6 @@
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
+	* appl/test/uu_server.c: print messages to stderr
 	* appl/test/tcp_server.c: print messages to stderr
 	* appl/test/nt_gss_server.c: print messages to stderr
 	* appl/test/gssapi_server.c: print messages to stderr

@@ -1,3 +1,8 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* getaddrinfo.c (get_null): set loopback with correct endianess
+	for v4.  dunno about v6.
+
 1999-12-13  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in: add prototypes for str[pf]time
