@@ -182,7 +182,7 @@ make_fileinfo(const char *filename, struct fileinfo *file, int flags)
     }
     if(S_ISLNK(st->st_mode)) {
 	int n;
-	n = readlink(filename, buf, sizeof(buf));
+	n = readlink((char *)filename, buf, sizeof(buf));
 	if(n >= 0) {
 	    buf[n] = '\0';
 	    file->link = strdup(buf);
