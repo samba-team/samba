@@ -1228,7 +1228,7 @@ BOOL do_samr_unknown_8(struct cli_state *cli,
 BOOL do_samr_enum_dom_users(struct cli_state *cli, 
 				POLICY_HND *pol, uint16 num_entries, uint16 unk_0,
 				uint16 acb_mask, uint16 unk_1, uint32 size,
-				struct acct_info sam[MAX_SAM_ENTRIES],
+				struct acct_info **sam,
 				int *num_sam_users);
 BOOL do_samr_connect(struct cli_state *cli, 
 				char *srv_name, uint32 unknown_0,
