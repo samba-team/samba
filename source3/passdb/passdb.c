@@ -774,6 +774,8 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		
 		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
 			sid_copy(psid, pdb_get_user_sid(sam_user));
+		} else if (strcmp(pass->pw_name, lp_guestaccount()) == 0) {
+			sid_append_rid(psid, DOMAIN_USER_RID_GUEST);
 		} else {
 			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 		}
@@ -839,15 +841,27 @@ BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		}
 
 		if (!pdb_rid_is_user(rid)) {
-			DEBUG(3, ("local_sid_to_uid: sid '%s' cannot be mapped to a uid algorithmicly becous it is a group\n", sid_to_string(str, psid)));
+			DEBUG(3, ("local_sid_to_uid: sid '%s' cannot be mapped to a uid algorithmicly becouse it is a group\n", sid_to_string(str, psid)));
 			return False;
 		}
 		
-		*puid = fallback_pdb_user_rid_to_uid(rid);
-
-		DEBUG(5,("local_sid_to_uid: SID %s algorithmicly mapped to %ld mapped becouse SID was not found in passdb.\n", 
-			 sid_to_string(str, psid), (signed long int)(*puid)));
-		return False;
+		if (rid == DOMAIN_USER_RID_GUEST) {
+			struct passwd *pw = getpwnam_alloc(lp_guestaccount());
+			if (!pw) {
+				DEBUG(1, ("getpwnam on guest account '%s' failed!\n", lp_guestaccount())); 
+				return False;
+			}
+			*puid = pw->pw_uid;
+			passwd_free(&pw);
+			DEBUG(5,("local_sid_to_uid: Guest account (SID %s) mapped to guest account id %ld.\n", 
+				 sid_to_string(str, psid), (signed long int)(*puid)));
+		} else {
+			
+			*puid = fallback_pdb_user_rid_to_uid(rid);
+			
+			DEBUG(5,("local_sid_to_uid: SID %s algorithmicly mapped to %ld mapped becouse SID was not found in passdb.\n", 
+				 sid_to_string(str, psid), (signed long int)(*puid)));
+		}
 	}
 
 	*name_type = SID_NAME_USER;
