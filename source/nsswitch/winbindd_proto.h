@@ -5,6 +5,7 @@
 
 /*The following definitions come from  nsswitch/winbindd.c  */
 
+void winbindd_dump_status(void);
 int main(int argc, char **argv);
 
 /*The following definitions come from  nsswitch/winbindd_cache.c  */
@@ -43,6 +44,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 				    struct winbindd_gr *gr,
 				    void **extra_data, int *extra_data_len);
 void winbindd_flush_cache(void);
+void winbindd_cache_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_group.c  */
 
@@ -66,6 +68,7 @@ BOOL winbindd_idmap_get_rid_from_uid(uid_t uid, uint32 *user_rid,
 BOOL winbindd_idmap_get_rid_from_gid(gid_t gid, uint32 *group_rid, 
                                      struct winbindd_domain **domain);
 BOOL winbindd_idmap_init(void);
+void winbindd_idmap_dump_status(void);
 
 /*The following definitions come from  nsswitch/winbindd_pam.c  */
 

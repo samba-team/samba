@@ -26,6 +26,7 @@
 /* List of all connected clients */
 
 static struct winbindd_cli_state *client_list;
+static int num_clients;
 
 /* Reload configuration */
 
@@ -43,26 +44,33 @@ static BOOL reload_services_file(void)
 	return(ret);
 }
 
-/* Print client information */
-
-static void do_print_client_info(void)
+void winbindd_dump_status(void)
 {
-    struct winbindd_cli_state *client;
-    int i;
+    struct winbindd_cli_state *tmp;
 
-    if (client_list == NULL) {
-        DEBUG(0, ("no clients in list\n"));
-        return;
+    DEBUG(0, ("Global status for winbindd:\n"));
+
+    /* Print client state information */
+    
+    DEBUG(0, ("\t%d clients currently active\n", num_clients));
+
+    if (DEBUGLEVEL >= 2) {
+        DEBUG(2, ("\tclient list:\n"));
+        for(tmp = client_list; tmp; tmp = tmp->next) {
+            DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
+                      tmp->pid, tmp->sock, tmp->read_buf_len, 
+                      tmp->write_buf_len));
+        }
     }
+}
 
-    DEBUG(0, ("client list is:\n"));
+/* Print winbindd status to log file */
 
-    for (client = client_list, i = 0; client; client = client->next) {
-        DEBUG(0, ("client %3d: pid = %5d fd = %d read = %4d write = %4d\n", 
-                  i, client->pid, client->sock, client->read_buf_len, 
-                  client->write_buf_len));
-        i++;
-    }
+static void do_print_winbindd_status(void)
+{
+    winbindd_dump_status();
+    winbindd_idmap_dump_status();
+    winbindd_cache_dump_status();
 }
 
 /* Flush client cache */
@@ -89,12 +97,12 @@ static void termination_handler(int signum)
     exit(0);
 }
 
-static BOOL print_client_info;
+static BOOL print_winbindd_status;
 
 static void sigusr1_handler(int signum)
 {
     BlockSignals(True, SIGUSR1);
-    print_client_info = True;
+    print_winbindd_status = True;
     BlockSignals(False, SIGUSR1);
 }
 
@@ -301,6 +309,7 @@ static void new_connection(int accept_sock)
     /* Add to connection list */
 
     DLIST_ADD(client_list, state);
+    num_clients++;
 }
 
 /* Remove a client connection from client connection list */
@@ -328,6 +337,7 @@ static void remove_client(struct winbindd_cli_state *state)
 
         DLIST_REMOVE(client_list, state);
         free(state);
+        num_clients--;
     }
 }
 
@@ -514,9 +524,9 @@ static void process_loop(int accept_sock)
             flush_cache = False;
         }
 
-        if (print_client_info) {
-            do_print_client_info();
-            print_client_info = False;
+        if (print_winbindd_status) {
+            do_print_winbindd_status();
+            print_winbindd_status = False;
         }
 
         /* Call select */

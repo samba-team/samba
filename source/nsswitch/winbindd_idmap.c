@@ -234,3 +234,63 @@ BOOL winbindd_idmap_init(void)
 
     return True;   
 }
+
+/* Dump status information to log file.  Display different stuff based on
+   the debug level:
+
+   Debug Level        Information Displayed
+   =================================================================
+   0                  Percentage of [ug]id range allocated
+   0                  High water marks (next allocated ids)
+*/
+
+#define DUMP_INFO 0
+
+void winbindd_idmap_dump_status(void)
+{
+    int user_hwm, group_hwm;
+
+    DEBUG(0, ("Status for winbindd idmap:\n"));
+
+    /* Get current high water marks */
+
+    if ((user_hwm = tdb_fetch_int(idmap_tdb, HWM_USER)) == -1) {
+        DEBUG(DUMP_INFO, ("\tCould not get userid high water mark!\n"));
+    }
+
+    if ((group_hwm = tdb_fetch_int(idmap_tdb, HWM_GROUP)) == -1) {
+        DEBUG(DUMP_INFO, ("\tCould not get groupid high water mark!\n"));
+    }
+
+    /* Display next ids to allocate */
+
+    if (user_hwm != -1) {
+        DEBUG(DUMP_INFO, ("\tNext userid to allocate is %d\n", user_hwm));
+    }
+
+    if (group_hwm != -1) {
+        DEBUG(DUMP_INFO, ("\tNext groupid to allocate is %d\n", group_hwm));
+    }
+
+    /* Display percentage of id range already allocated. */
+
+    if (user_hwm != -1) {
+        int num_users = user_hwm - server_state.uid_low;
+        int total_users = server_state.uid_high - server_state.uid_low;
+
+        DEBUG(DUMP_INFO, ("\tUser id range is %d%% full (%d of %d)\n", 
+                          num_users * 100 / total_users, num_users,
+                          total_users));
+    }
+
+    if (group_hwm != -1) {
+        int num_groups = group_hwm - server_state.gid_low;
+        int total_groups = server_state.gid_high - server_state.gid_low;
+
+        DEBUG(DUMP_INFO, ("\tGroup id range is %d%% full (%d of %d)\n",
+                          num_groups * 100 / total_groups, num_groups,
+                          total_groups));
+    }
+
+    /* Display complete mapping of users and groups to rids */
+}

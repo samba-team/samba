@@ -415,3 +415,8 @@ void winbindd_flush_cache(void)
 	tdb_close(cache_tdb);
 	winbindd_cache_init();
 }
+
+/* Print cache status information */
+void winbindd_cache_dump_status(void)
+{
+}
