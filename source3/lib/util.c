@@ -1344,6 +1344,10 @@ gid_t nametogid(const char *name)
  Something really nasty happened - panic !
 ********************************************************************/
 
+#ifdef HAVE_LIBEXC_H
+#include <libexc.h>
+#endif
+
 void smb_panic(const char *why)
 {
 	char *cmd;
@@ -1398,6 +1402,42 @@ void smb_panic(const char *why)
 		SAFE_FREE(backtrace_strings);
 	}
 
+#elif HAVE_LIBEXC
+
+#define NAMESIZE 32 /* Arbitrary */
+
+	/* The IRIX libexc library provides an API for unwinding the stack. See
+	 * libexc(3) for details. Apparantly trace_back_stack leaks memory, but
+	 * since we are about to abort anyway, it hardly matters.
+	 *
+	 * Note that if we paniced due to a SIGSEGV or SIGBUS (or similar) this
+	 * will fail with a nasty message upon failing to open the /proc entry.
+	 */
+	{
+		__uint64_t	addrs[BACKTRACE_STACK_SIZE];
+		char *      	names[BACKTRACE_STACK_SIZE];
+		char		namebuf[BACKTRACE_STACK_SIZE * NAMESIZE];
+
+		int		i;
+		int		levels;
+
+		ZERO_ARRAY(addrs);
+		ZERO_ARRAY(names);
+		ZERO_ARRAY(namebuf);
+
+		for (i = 0; i < BACKTRACE_STACK_SIZE; i++) {
+			names[i] = namebuf + (i * NAMESIZE);
+		}
+
+		levels = trace_back_stack(0, addrs, names,
+				BACKTRACE_STACK_SIZE, NAMESIZE);
+
+		DEBUG(0, ("BACKTRACE: %d stack frames:\n", levels));
+		for (i = 0; i < levels; i++) {
+			DEBUGADD(0, (" #%d 0x%llx %s\n", i, addrs[i], names[i]));
+		}
+     }
+#undef NAMESIZE
 #endif
 
 	dbgflush();
