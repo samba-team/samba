@@ -90,6 +90,12 @@
 #include <otp.h>
 #endif
 
+#ifdef HAVE_OSFC2
+#define getargs OSFgetargs
+#include <prot.h>
+#undef getargs
+#endif
+
 #ifndef _PATH_BSHELL
 #define _PATH_BSHELL "/bin/sh"
 #endif

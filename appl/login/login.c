@@ -475,6 +475,8 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 	    exit(1);
     }
 #endif
+    if(do_osfc2_magic(pwd->pw_uid))
+	exit(1);
     if(setgid(pwd->pw_gid)){
 	warn("setgid(%u)", (unsigned)pwd->pw_gid);
 	if(rootlogin == 0)
@@ -491,8 +493,6 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
     check_shadow(pwd, sp);
 #endif
 
-    if(do_osfc2_magic(pwd->pw_uid))
-	exit(1);
 #if defined(HAVE_GETUDBNAM) && defined(HAVE_SETLIM)
     {
 	struct udb *udb;
