@@ -509,6 +509,8 @@ static void usage(char *pname)
 	fprintf(out_hnd,
 		"\t-l log basename.      Basename for log/debug files\n");
 	fprintf(out_hnd,
+		"\t-a                    append to log file instead of overwriting\n");
+	fprintf(out_hnd,
 		"\t-n netbios name.      Use this name as my netbios name\n");
 	fprintf(out_hnd,
 		"\t-N                    don't ask for a password\n");
