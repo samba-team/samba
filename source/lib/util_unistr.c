@@ -242,6 +242,52 @@ smb_ucs2_t *strchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
 	return NULL;
 }
 
+smb_ucs2_t *strrchr_w(const smb_ucs2_t *s, smb_ucs2_t c)
+{
+	const smb_ucs2_t *p = s;
+	int len = strlen_w(s);
+	if (len == 0) return NULL;
+	p += (len - 1);
+	do {
+		if (c == *p) return (smb_ucs2_t *)p;
+	} while (p-- != s);
+	return NULL;
+}
+
+/*******************************************************************
+wide strstr()
+********************************************************************/
+smb_ucs2_t *strstr_w(const smb_ucs2_t *s, const smb_ucs2_t *ins)
+{
+	smb_ucs2_t *r;
+	size_t slen, inslen;
+
+	if (!s || !*s || !ins || !*ins) return NULL;
+	slen = strlen_w(s);
+	inslen = strlen_w(ins);
+	r = (smb_ucs2_t *)s;
+	while (r = strchr_w(r, *ins)) {
+		if (strncmp_w(r, ins, inslen) == 0) return r;
+		r++;
+	}
+	return NULL;
+}
+
+smb_ucs2_t *strstr_wa(const smb_ucs2_t *s, const char *ins)
+{
+	smb_ucs2_t *r;
+	size_t slen, inslen;
+
+	if (!s || !*s || !ins || !*ins) return NULL;
+	slen = strlen_w(s);
+	inslen = strlen(ins);
+	r = (smb_ucs2_t *)s;
+	while (r = strchr_w(r, UCS2_CHAR(*ins))) {
+		if (strncmp_wa(r, ins, inslen) == 0) return r;
+		r++;
+	}
+	return NULL;
+}
 
 /*******************************************************************
  Convert a string to lower case.
@@ -280,6 +326,18 @@ BOOL strupper_w(smb_ucs2_t *s)
 }
 
 /*******************************************************************
+  convert a string to "normal" form
+********************************************************************/
+void strnorm_w(smb_ucs2_t *s)
+{
+  extern int case_default;
+  if (case_default == CASE_UPPER)
+    strupper_w(s);
+  else
+    strlower_w(s);
+}
+
+/*******************************************************************
 case insensitive string comparison
 ********************************************************************/
 int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
@@ -288,23 +346,60 @@ int strcasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
 	return (tolower_w(*a) - tolower_w(*b));
 }
 
+/*******************************************************************
+case insensitive string comparison, lenght limited
+********************************************************************/
+int strncasecmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
+{
+	size_t n = 0;
+	while ((n < len) && *b && (toupper_w(*a) == toupper_w(*b))) { a++; b++; n++; }
+	return (len - n)?(tolower_w(*a) - tolower_w(*b)):0;
+}
+
+/*******************************************************************
+  compare 2 strings 
+********************************************************************/
+BOOL strequal_w(const smb_ucs2_t *s1, const smb_ucs2_t *s2)
+{
+	if (s1 == s2) return(True);
+	if (!s1 || !s2) return(False);
+  
+	return(strcasecmp_w(s1,s2)==0);
+}
+
+/*******************************************************************
+  compare 2 strings up to and including the nth char.
+  ******************************************************************/
+BOOL strnequal_w(const smb_ucs2_t *s1,const smb_ucs2_t *s2,size_t n)
+{
+  if (s1 == s2) return(True);
+  if (!s1 || !s2 || !n) return(False);
+  
+  return(strncasecmp_w(s1,s2,n)==0);
+}
 
 /*******************************************************************
 duplicate string
 ********************************************************************/
 smb_ucs2_t *strdup_w(const smb_ucs2_t *src)
 {
+	return strndup_w(src, 0);
+}
+
+/* if len == 0 then duplicate the whole string */
+smb_ucs2_t *strndup_w(const smb_ucs2_t *src, size_t len)
+{
 	smb_ucs2_t *dest;
-	uint32 len;
 	
-	len = strlen_w(src) + 1;
-	dest = (smb_ucs2_t *)malloc(len*sizeof(smb_ucs2_t));
+	if (!len) len = strlen_w(src);
+	dest = (smb_ucs2_t *)malloc((len + 1) * sizeof(smb_ucs2_t));
 	if (!dest) {
 		DEBUG(0,("strdup_w: out of memory!\n"));
 		return NULL;
 	}
 
-	memcpy(dest, src, len*sizeof(smb_ucs2_t));
+	memcpy(dest, src, len * sizeof(smb_ucs2_t));
+	dest[len] = 0;
 	
 	return dest;
 }
@@ -368,33 +463,33 @@ void pstrcpy_wa(smb_ucs2_t *dest, const char *src)
 	}
 }
 
+int strcmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b)
+{
+	while (*b && *a == *b) { a++; b++; }
+	return (*a - *b);
+	/* warning: if *a != *b and both are not 0 we retrun a random
+		greater or lesser than 0 number not realted to which
+		string is longer */
+}
+
+int strncmp_w(const smb_ucs2_t *a, const smb_ucs2_t *b, size_t len)
+{
+	size_t n = 0;
+	while ((n < len) && *b && *a == *b) { a++; b++; n++;}
+	return (len - n)?(*a - *b):0;	
+}
+
 int strcmp_wa(const smb_ucs2_t *a, const char *b)
 {
 	while (*b && *a == UCS2_CHAR(*b)) { a++; b++; }
 	return (*a - UCS2_CHAR(*b));
 }
 
-
-
-smb_ucs2_t *strchr_wa(const smb_ucs2_t *s, char c)
+int strncmp_wa(const smb_ucs2_t *a, const char *b, size_t len)
 {
-	while (*s != 0) {
-		if (UCS2_CHAR(c) == *s) return (smb_ucs2_t *)s;
-		s++;
-	}
-	return NULL;
-}
-
-smb_ucs2_t *strrchr_wa(const smb_ucs2_t *s, char c)
-{
-	const smb_ucs2_t *p = s;
-	int len = strlen_w(s);
-	if (len == 0) return NULL;
-	p += (len-1);
-	do {
-		if (UCS2_CHAR(c) == *p) return (smb_ucs2_t *)p;
-	} while (p-- != s);
-	return NULL;
+	size_t n = 0;
+	while ((n < len) && *b && *a == UCS2_CHAR(*b)) { a++; b++; n++;}
+	return (len - n)?(*a - UCS2_CHAR(*b)):0;
 }
 
 smb_ucs2_t *strpbrk_wa(const smb_ucs2_t *s, const char *p)
@@ -451,4 +546,68 @@ smb_ucs2_t *strncat_wa(smb_ucs2_t *dest, const char *src, const size_t max)
 	strncat_w(dest, ucs2_src, max);
 	SAFE_FREE(ucs2_src);
 	return dest;
+}
+
+/*******************************************************************
+replace any occurence of oldc with newc in unicode string
+********************************************************************/
+
+void string_replace_w(smb_ucs2_t *s, smb_ucs2_t oldc, smb_ucs2_t newc)
+{
+	for(;*s;s++) {
+		if(*s==oldc) *s=newc;
+	}
+}
+
+/*******************************************************************
+trim unicode string
+********************************************************************/
+
+BOOL trim_string_w(smb_ucs2_t *s, const smb_ucs2_t *front,
+				  const smb_ucs2_t *back)
+{
+	BOOL ret = False;
+	size_t len, lw, front_len, flw, back_len, blw;
+
+	if (!s || !*s) return False;
+
+	len = strlen_w(s);
+
+	if (front && *front) {
+		front_len = strlen_w(front);
+		flw = front_len * sizeof(smb_ucs2_t);
+		lw = (len + 1) * sizeof(smb_ucs2_t);
+		while (len && strncmp_w(s, front, front_len) == 0) {
+			memcpy(s, s + flw, lw - flw);
+			len -= front_len;
+			lw -= flw;
+			ret = True;
+		}
+	}
+	
+	if (back && *back) {
+		back_len = strlen_w(back);
+		blw = back_len * sizeof(smb_ucs2_t);
+		lw = len * sizeof(smb_ucs2_t);
+		while (len && strncmp_w(s + lw - blw, back, back_len) == 0) {
+			s[len - back_len] = 0;
+			len -= back_len;
+			lw -= blw;
+			ret = True;
+		}
+	}
+
+	return ret;
+}
+
+BOOL trim_string_wa(smb_ucs2_t *s, const char *front,
+				  const char *back)
+{
+	wpstring f, b;
+
+	if (front) push_ucs2(NULL, f, front, sizeof(wpstring) - 1, STR_TERMINATE);
+	else *f = 0;
+	if (back) push_ucs2(NULL, b, back, sizeof(wpstring) - 1, STR_TERMINATE);
+	else *b = 0;
+	return trim_string_w(s, f, b);
 }

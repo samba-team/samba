@@ -245,9 +245,7 @@ void string_replace(char *s,char oldc,char newc)
 {
 	smb_ucs2_t *ptr;
 	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++) {
-		if(*ptr==UCS2_CHAR(oldc)) *ptr = UCS2_CHAR(newc);
-	}
+	string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
 	pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
 }
 
@@ -744,6 +742,65 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 }
 
 /****************************************************************************
+similar to all_string_sub but for unicode strings.
+return a new allocate unicode string.
+len is the number of bytes, not chars
+  similar to string_sub() but allows for any character to be substituted.
+  Use with caution!
+  if len==0 then no length check is performed
+****************************************************************************/
+
+smb_ucs2_t *all_string_sub_w(smb_ucs2_t *s, const smb_ucs2_t *pattern,
+					    const smb_ucs2_t *insert)
+{
+	smb_ucs2_t *r, *rp, *sp;
+	size_t	ls, lp, li, lt;
+
+	if (!insert || !pattern || !*pattern || !s) return NULL;
+
+	ls = lt = (size_t)strlen_w(s) * sizeof(smb_ucs2_t);
+	lp = (size_t)strlen_w(pattern) * sizeof(smb_ucs2_t);
+	li = (size_t)strlen_w(insert) * sizeof(smb_ucs2_t);
+
+	if (li > lp) {
+		smb_ucs2_t *st = s;
+		int ld = li - lp;
+		while (sp = strstr_w(st, pattern)) {
+			st = sp + lp;
+			lt += ld;
+		}
+	}
+
+	r = rp = (smb_ucs2_t *)malloc((lt + 1)*(sizeof(smb_ucs2_t)));
+	if (!r) {
+		DEBUG(0, ("all_string_sub_w: out of memory!\n"));
+		return NULL;
+	}
+
+	while (sp = strstr_w(s, pattern)) {
+		memcpy(rp, s, sp - s);
+		rp += (sp - s);
+		memcpy(rp, insert, li);
+		s = sp + lp;
+		rp += li;
+	}
+	*rp = 0;
+
+	return r;
+}
+
+smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
+					     const char *insert)
+{
+	wpstring p, i;
+
+	if (!insert || !pattern || !s) return NULL;
+	push_ucs2(NULL, p, pattern, sizeof(wpstring) - 1, STR_TERMINATE);
+	push_ucs2(NULL, i, insert, sizeof(wpstring) - 1, STR_TERMINATE);
+	return all_string_sub_w(s, p, i);
+}
+
+/****************************************************************************
  splits out the front and back at a separator.
 ****************************************************************************/
 void split_at_last_component(char *path, char *front, char sep, char *back)
@@ -813,7 +870,7 @@ char *strchr_m(const char *s, char c)
 	smb_ucs2_t *p;
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strchr_wa(ws, c);
+	p = strchr_w(ws, UCS2_CHAR(c));
 	if (!p) return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
@@ -827,7 +884,7 @@ char *strrchr_m(const char *s, char c)
 	smb_ucs2_t *p;
 
 	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
-	p = strrchr_wa(ws, c);
+	p = strrchr_w(ws, UCS2_CHAR(c));
 	if (!p) return NULL;
 	*p = 0;
 	pull_ucs2_pstring(s2, ws);
