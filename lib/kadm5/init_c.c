@@ -318,7 +318,7 @@ kadm5_c_init_with_context(krb5_context context,
 	if (s < 0)
 	    continue;
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
-	    warn ("connect(%s)", ctx->admin_server);
+	    krb5_warn (context, errno, "connect(%s)", ctx->admin_server);
 	    close (s);
 	    continue;
 	}
@@ -326,7 +326,7 @@ kadm5_c_init_with_context(krb5_context context,
     }
     if (a == NULL) {
 	freeaddrinfo (ai);
-	warnx ("failed to contact %s", ctx->admin_server);
+	krb5_warnx (context, "failed to contact %s", ctx->admin_server);
 	return KADM5_FAILURE;
     }
     ret = get_cred_cache(context, client_name, service_name, 
