@@ -114,6 +114,7 @@ int main(int argc, char **argv)
     int optind = 0;
     char *tmp_db;
     krb5_log_facility *fac;
+    int nprincs;
 
     set_progname(argv[0]);
 
@@ -162,6 +163,7 @@ int main(int argc, char **argv)
     ret = hdb_open(context, &db, tmp_db, O_RDWR | O_CREAT | O_TRUNC, 0600);
     if(ret) krb5_err(context, 1, ret, "hdb_open");
 
+    nprincs = 0;
     while(1){
 	krb5_data data;
 	hdb_entry entry;
@@ -181,9 +183,18 @@ int main(int argc, char **argv)
 	}
 	ret = hdb_value2entry(context, &data, &entry);
 	if(ret) krb5_err(context, 1, ret, "hdb_value2entry");
-	ret = db->store(context, db, &entry);
-	if(ret) krb5_err(context, 1, ret, "db_store");
+	ret = db->store(context, db, 0, &entry);
+	if(ret == HDB_ERR_EXISTS){
+	    char *s;
+	    krb5_unparse_name(context, entry.principal, &s);
+	    krb5_warnx(context, "Entry exists: %s", s);
+	    free(s);
+	} else if(ret) 
+	    krb5_err(context, 1, ret, "db_store");
+	else
+	    nprincs++;
 	hdb_free_entry(context, &entry);
     }
+    krb5_log(context, fac, 0, "Received %d principals", nprincs);
     exit(0);
 }
