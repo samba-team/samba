@@ -59,6 +59,7 @@
 .Nm gss_inquire_cred_by_mech ,
 .Nm gss_inquire_mechs_for_name ,
 .Nm gss_inquire_names_for_mech ,
+.Nm gss_krb5_ccache_name ,
 .Nm gss_krb5_copy_ccache ,
 .Nm gss_krb5_compat_des3_mic ,
 .Nm gss_krb5_extract_authz_data_from_sec_context ,
@@ -277,6 +278,12 @@ GSS-API library (libgssapi, -lgssapi)
 .Fa "OM_uint32 * minor_status"
 .Fa "const gss_OID mechanism"
 .Fa "gss_OID_set * name_types"
+.Fc
+.Ft OM_uint32
+.Fo gss_krb5_ccache_name
+.Fa "OM_uint32 *minor"
+.Fa "const char *name"
+.Fa "const char **old_name"
 .Fc
 .Ft OM_uint32
 .Fo gss_krb5_copy_ccache
@@ -578,6 +585,20 @@ The functions should not be used for new applications.
 They are provided so that version 1 applications can link against the
 library.
 .Sh EXTENSIONS
+.Fn gss_krb5_ccache_name
+sets the internal kerberos 5 credential cache name to
+.Fa name .
+The old name is returned in
+.Fa old_name ,
+and must not be freed.
+The data allocated for
+.Fa old_name
+is free upon next call to
+.Fn gss_krb5_ccache_name .
+This function is not threadsafe if
+.Fa old_name
+argument is used.
+.Pp
 .Fn gss_krb5_copy_ccache
 will extract the krb5 credentials that are transferred from the
 initiator to the acceptor when using token delegation in the Kerberos
