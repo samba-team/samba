@@ -818,31 +818,31 @@ BOOL reg_io_r_get_key_sec(char *desc,  REG_R_GET_KEY_SEC *r_q, prs_struct *ps, i
 /*******************************************************************
 makes a structure.
 ********************************************************************/
-BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, char *product_type,
-				time_t unix_time, uint8 major, uint8 minor)
+BOOL make_reg_q_info(REG_Q_INFO *q_i, POLICY_HND *pol, const char *val_name,
+				uint8 major, uint8 minor)
 {
-	int len_type  = strlen(product_type);
+	int len_type = val_name != NULL ? strlen(val_name) + 1 : 0;
 
 	if (q_i == NULL) return False;
 
 	memcpy(&(q_i->pol), pol, sizeof(q_i->pol));
 
-	make_uni_hdr(&(q_i->hdr_type), len_type);
-	make_unistr2(&(q_i->uni_type), product_type, len_type);
+	make_uni_hdr(&(q_i->hdr_val), len_type);
+	make_unistr2(&(q_i->uni_val), val_name, len_type);
 
-	q_i->ptr1 = 1;
-	unix_to_nt_time(&(q_i->time), unix_time);
-	q_i->major_version1 = major;
-	q_i->minor_version1 = minor;
-	memset(q_i->pad1, 0, sizeof(q_i->pad1));
+	q_i->ptr_type = 1;
+	q_i->type = 0x77872314;
 
-	q_i->ptr2 = 1;
-	q_i->major_version2 = major;
-	q_i->minor_version2 = minor;
-	memset(q_i->pad2, 0, sizeof(q_i->pad2));
+	q_i->ptr_uni_type = 0x1;
+	q_i->uni_type.buf_max_len = 0x104;
+	q_i->uni_type.buf_len     = 0x0;
+	q_i->uni_type.undoc       = 0;
 
-	q_i->ptr3 = 1;
-	q_i->unknown = 0x00000000;
+	q_i->ptr_max_len = 1;
+	q_i->buf_max_len = 0x104;
+
+	q_i->ptr_len = 1;
+	q_i->buf_len = 0x0;
 
 	return True;
 }
@@ -860,35 +860,32 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 	prs_align(ps);
 	
 	smb_io_pol_hnd("", &(r_q->pol), ps, depth); 
-	smb_io_unihdr ("", &(r_q->hdr_type), ps, depth);
-	smb_io_unistr2("", &(r_q->uni_type), r_q->hdr_type.buffer, ps, depth);
+	smb_io_unihdr ("", &(r_q->hdr_val), ps, depth);
+	smb_io_unistr2("", &(r_q->uni_val), r_q->hdr_val.buffer, ps, depth);
 
 	prs_align(ps);
 	
-	prs_uint32("ptr1", ps, depth, &(r_q->ptr1));
-
-	if (r_q->ptr1 != 0)
+	prs_uint32("ptr_type", ps, depth, &(r_q->ptr_type));
+	if (r_q->ptr_type != 0)
 	{
-		smb_io_time("", &(r_q->time), ps, depth);
-		prs_uint8 ("major_version1", ps, depth, &(r_q->major_version1));
-		prs_uint8 ("minor_version1", ps, depth, &(r_q->minor_version1));
-		prs_uint8s(False, "pad1", ps, depth, r_q->pad1, sizeof(r_q->pad1));
+		prs_uint32("type", ps, depth, &(r_q->type));
 	}
 
-	prs_uint32("ptr2", ps, depth, &(r_q->ptr2));
+	prs_uint32("ptr_uni_type", ps, depth, &(r_q->ptr_uni_type));
 
-	if (r_q->ptr2 != 0)
+	smb_io_buffer2("uni_type", &(r_q->uni_type), r_q->ptr_uni_type, ps, depth);
+	prs_align(ps);
+
+	prs_uint32("ptr_max_len", ps, depth, &(r_q->ptr_max_len));
+	if (r_q->ptr_max_len != 0)
 	{
-		prs_uint8 ("major_version2", ps, depth, &(r_q->major_version2));
-		prs_uint8 ("minor_version2", ps, depth, &(r_q->minor_version2));
-		prs_uint8s(False, "pad2", ps, depth, r_q->pad2, sizeof(r_q->pad2));
+		prs_uint32("buf_max_len", ps, depth, &(r_q->buf_max_len));
 	}
 
-	prs_uint32("ptr3", ps, depth, &(r_q->ptr3));
-
-	if (r_q->ptr3 != 0)
+	prs_uint32("ptr_len", ps, depth, &(r_q->ptr_len));
+	if (r_q->ptr_len != 0)
 	{
-		prs_uint32("unknown", ps, depth, &(r_q->unknown));
+		prs_uint32("buf_len", ps, depth, &(r_q->buf_len));
 	}
 
 	return True;
@@ -899,23 +896,26 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 creates a structure.
 ********************************************************************/
 BOOL make_reg_r_info(REG_R_INFO *r_r,
-				uint32 level, char *os_type,
+				uint32 type, char *buf,
 				uint32 status)
 {
 	int len;
 
-	if (r_r == NULL || os_type == NULL) return False;
+	if (r_r == NULL || buf == NULL) return False;
 
-	len = strlen(os_type);
+	len = strlen(buf);
 
-	r_r->ptr1 = 1;
-	r_r->level = level;
+	r_r->ptr_type = type;
+	r_r->type = type;
 
-	r_r->ptr_type = 1;
-	make_buffer2(&(r_r->uni_type), os_type, len);
+	r_r->ptr_uni_type = 1;
+	make_buffer2(&(r_r->uni_type), buf, len);
 
-	r_r->ptr2 = r_r->ptr3 = 1;
-	r_r->unknown_0 = r_r->unknown_1 = len * 2;
+	r_r->ptr_max_len = 1;
+	r_r->buf_max_len = r_r->uni_type.buf_max_len;
+
+	r_r->ptr_len = 1;
+	r_r->buf_len = r_r->uni_type.buf_len;
 
 	r_r->status = status;
 
@@ -934,31 +934,28 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	prs_uint32("ptr1", ps, depth, &(r_r->ptr1));
-
-	if (r_r->ptr1 != 0)
+	prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
+	if (r_r->ptr_type != 0)
 	{
-		prs_uint32("level", ps, depth, &(r_r->level));
-		prs_uint32("ptr_type", ps, depth, &(r_r->ptr_type));
-
-		smb_io_buffer2("uni_type", &(r_r->uni_type), r_r->ptr_type, ps, depth);
-		prs_align(ps);
-
-		prs_uint32("ptr2", ps, depth, &(r_r->ptr2));
-
-		if (r_r->ptr2 != 0)
-		{
-			prs_uint32("unknown_0", ps, depth, &(r_r->unknown_0));
-		}
-
-		prs_uint32("ptr3", ps, depth, &(r_r->ptr3));
-
-		if (r_r->ptr3 != 0)
-		{
-			prs_uint32("unknown_1", ps, depth, &(r_r->unknown_1));
-		}
-
+		prs_uint32("type", ps, depth, &(r_r->type));
 	}
+
+	prs_uint32("ptr_uni_type", ps, depth, &(r_r->ptr_uni_type));
+	smb_io_buffer2("uni_type", &(r_r->uni_type), r_r->ptr_uni_type, ps, depth);
+	prs_align(ps);
+
+	prs_uint32("ptr_max_len", ps, depth, &(r_r->ptr_max_len));
+	if (r_r->ptr_max_len != 0)
+	{
+		prs_uint32("buf_max_len", ps, depth, &(r_r->buf_max_len));
+	}
+
+	prs_uint32("ptr_len", ps, depth, &(r_r->ptr_len));
+	if (r_r->ptr_len != 0)
+	{
+		prs_uint32("buf_len", ps, depth, &(r_r->buf_len));
+	}
+
 	prs_uint32("status", ps, depth, &(r_r->status));
 
 	return True;

@@ -421,39 +421,37 @@ typedef struct q_reg_info_info
 {
 	POLICY_HND pol;        /* policy handle */
 
-	UNIHDR  hdr_type;       /* unicode product type header */
-	UNISTR2 uni_type;       /* unicode product type - "ProductType" */
+	UNIHDR  hdr_val;       /* unicode product type header */
+	UNISTR2 uni_val;       /* unicode product type - "ProductType" */
 
-	uint32 ptr1;            /* pointer */
-	NTTIME time;            /* current time? */
-	uint8  major_version1;  /* 0x4 - os major version? */
-	uint8  minor_version1;  /* 0x1 - os minor version? */
-	uint8  pad1[10];        /* padding - zeros */
+	uint32 ptr_type;            /* pointer */
+	uint32 type;            /* type of buffer */
 
-	uint32 ptr2;            /* pointer */
-	uint8  major_version2;  /* 0x4 - os major version? */
-	uint8  minor_version2;  /* 0x1 - os minor version? */
-	uint8  pad2[2];         /* padding - zeros */
+	uint32 ptr_uni_type;       /* pointer to o/s type */
+	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
 
-	uint32 ptr3;            /* pointer */
-	uint32 unknown;         /* 0x0000 0000 */
+	uint32 ptr_max_len;           /* pointer to unknown_0 */
+	uint32 buf_max_len;    /* 0x12 */
+
+	uint32 ptr_len;           /* pointer to unknown_1 */
+	uint32 buf_len;        /* 0x12 */
 
 } REG_Q_INFO;
 
 /* REG_R_INFO */
 typedef struct r_reg_info_info
 { 
-	uint32 ptr1;            /* buffer pointer */
-	uint32 level;          /* 0x1 - info level? */
+	uint32 ptr_type;            /* buffer pointer */
+	uint32 type;          /* 0x1 - info level? */
 
-	uint32 ptr_type;       /* pointer to o/s type */
+	uint32 ptr_uni_type;       /* pointer to o/s type */
 	BUFFER2 uni_type;      /* unicode string o/s type - "LanmanNT" */
 
-	uint32 ptr2;           /* pointer to unknown_0 */
-	uint32 unknown_0;      /* 0x12 */
+	uint32 ptr_max_len;    /* pointer to unknown_0 */
+	uint32 buf_max_len;    /* 0x12 */
 
-	uint32 ptr3;           /* pointer to unknown_1 */
-	uint32 unknown_1;      /* 0x12 */
+	uint32 ptr_len;    /* pointer to unknown_1 */
+	uint32 buf_len;        /* 0x12 */
 
 	uint32 status;         /* return status */
 

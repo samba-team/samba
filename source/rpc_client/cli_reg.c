@@ -450,7 +450,8 @@ BOOL do_reg_unknown_1a(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd, uint
 do a REG Query Info
 ****************************************************************************/
 BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
-				char *type, uint32 *unk_0, uint32 *unk_1)
+				const char* val_name,
+				char *type)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -466,7 +467,7 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 
 	DEBUG(4,("REG Query Info\n"));
 
-	make_reg_q_info(&q_o, hnd, "ProductType", time(NULL), 4, 1);
+	make_reg_q_info(&q_o, hnd, val_name, 4, 0);
 
 	/* turn parameters into data stream */
 	reg_io_q_info("", &q_o, &buf, 0);
@@ -494,8 +495,6 @@ BOOL do_reg_query_info(struct cli_state *cli, uint16 fnum, POLICY_HND *hnd,
 			valid_query = True;
 			unibuf_to_ascii(type, (const char*)r_o.uni_type.buffer,
 				MIN(r_o.uni_type.buf_len, sizeof(fstring)-1));
-			(*unk_0) = r_o.unknown_0;
-			(*unk_1) = r_o.unknown_1;
 		}
 	}
 
