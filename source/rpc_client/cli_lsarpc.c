@@ -407,7 +407,7 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 		
 		if (p && r_l.status != 0 &&
 		         r_l.status != 0x107 &&
-		         r_l.status != 0xC0000000 | NT_STATUS_NONE_MAPPED)
+		         r_l.status != (0xC0000000 | NT_STATUS_NONE_MAPPED))
 		{
 			/* report error code */
 			DEBUG(1,("LSA_LOOKUP_SIDS: %s\n", get_nt_error_msg(r_l.status)));

@@ -3189,6 +3189,9 @@ void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
+BOOL net_srv_get_info(struct client_info *info,
+		uint32 info_level,
+		SRV_INFO_CTR *ctr);
 void cmd_srv_query_info(struct client_info *info);
 void cmd_srv_enum_conn(struct client_info *info);
 void cmd_srv_enum_shares(struct client_info *info);

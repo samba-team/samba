@@ -1676,7 +1676,7 @@ void cmd_sam_query_dominfo(struct client_info *info)
 	BOOL res = True;
 	fstring info_str;
 	uint32 switch_value = 2;
-	uint32 ace_perms = 0x304; /* absolutely no idea. */
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
 	SAM_UNK_CTR ctr;
 
 	sid_to_string(sid, &info->dom.level5_sid);
