@@ -37,9 +37,6 @@
  * @sa lib/iconv.c
  */
 
-static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
-
-
 /**
  * Return the name of a charset to give to iconv().
  **/
@@ -66,55 +63,48 @@ static void lazy_initialize_conv(void)
 		initialized = True;
 		load_case_tables();
 		init_iconv();
-		init_valid_table();
 	}
 }
 
-/**
- Initialize iconv conversion descriptors.
-**/
 
+static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
+
+/*
+  on-demand initialisation of conversion handles
+*/
+static smb_iconv_t get_conv_handle(charset_t from, charset_t to)
+{
+	const char *n1, *n2;
+
+	if (conv_handles[from][to]) {
+		return conv_handles[from][to];
+	}
+
+	n1 = charset_name(from);
+	n2 = charset_name(to);
+
+	conv_handles[from][to] = smb_iconv_open(n2,n1);
+
+	return conv_handles[from][to];
+}
+
+/**
+ re-initialize iconv conversion descriptors
+**/
 void init_iconv(void)
 {
-	int c1, c2;
-	BOOL did_reload = False;
-
-	/* so that charset_name() works we need to get the UNIX<->UCS2 going
-	   first */
-	if (!conv_handles[CH_UNIX][CH_UTF16])
-		conv_handles[CH_UNIX][CH_UTF16] = smb_iconv_open(charset_name(CH_UTF16), 
-								"ASCII");
-
-	if (!conv_handles[CH_UTF16][CH_UNIX])
-		conv_handles[CH_UTF16][CH_UNIX] = smb_iconv_open("ASCII", 
-								charset_name(CH_UTF16));
-
+	charset_t c1, c2;
 	for (c1=0;c1<NUM_CHARSETS;c1++) {
 		for (c2=0;c2<NUM_CHARSETS;c2++) {
-			const char *n1 = charset_name((charset_t)c1);
-			const char *n2 = charset_name((charset_t)c2);
-			if (conv_handles[c1][c2] &&
-			    strcmp(n1, conv_handles[c1][c2]->from_name) == 0 &&
-			    strcmp(n2, conv_handles[c1][c2]->to_name) == 0)
-				continue;
-
-			did_reload = True;
-
-			if (conv_handles[c1][c2])
-				smb_iconv_close(conv_handles[c1][c2]);
-
-			conv_handles[c1][c2] = smb_iconv_open(n2,n1);
-			if (conv_handles[c1][c2] == (smb_iconv_t)-1) {
-				DEBUG(0,("Conversion from %s to %s not supported\n",
-					 charset_name((charset_t)c1), charset_name((charset_t)c2)));
+			if (conv_handles[c1][c2] != NULL) {
+				if (conv_handles[c1][c2] != -1) {
+					smb_iconv_close(conv_handles[c1][c2]);
+				}
 				conv_handles[c1][c2] = NULL;
 			}
 		}
 	}
 
-	if (did_reload) {
-		init_valid_table();
-	}
 }
 
 /**
@@ -141,7 +131,7 @@ ssize_t convert_string(charset_t from, charset_t to,
 
 	lazy_initialize_conv();
 
-	descriptor = conv_handles[from][to];
+	descriptor = get_conv_handle(from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, use as is */
@@ -206,7 +196,7 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
 	lazy_initialize_conv();
 
-	descriptor = conv_handles[from][to];
+	descriptor = get_conv_handle(from, to);
 
 	if (descriptor == (smb_iconv_t)-1 || descriptor == (smb_iconv_t)0) {
 		/* conversion not supported, return -1*/
