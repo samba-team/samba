@@ -387,7 +387,7 @@ process_msg (krb5_context context, slave *s, int log_fd,
 static char *realm;
 static int version_flag;
 static int help_flag;
-static char *keytab_str;
+static char *keytab_str = "HDB:";
 static char *database;
 
 static struct getargs args[] = {
@@ -430,7 +430,7 @@ main(int argc, char **argv)
 
     ret = krb5_kt_resolve(context, keytab_str, &keytab);
     if(ret)
-	krb5_err(context, 1, ret, "%s", keytab_str);
+	krb5_err(context, 1, ret, "krb5_kt_resolve: %s", keytab_str);
     
     memset(&conf, 0, sizeof(conf));
     if(realm) {
