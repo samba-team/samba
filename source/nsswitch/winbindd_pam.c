@@ -100,11 +100,9 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
                 goto done;
         }
 
-	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						name_user, name_domain, 
-						global_myname_unix(), chal, 
-						lm_resp, nt_resp, 
-						&info3);
+	result = cli_netlogon_sam_network_logon(
+		cli, mem_ctx, name_user, name_domain, global_myname_unix(), 
+		chal, lm_resp, nt_resp, &info3);
         
 done:
 
@@ -151,7 +149,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	if (*state->request.data.auth_crap.domain) {
 		domain = talloc_strdup(mem_ctx, state->request.data.auth_crap.domain);
 	} else if (lp_winbind_use_default_domain()) {
-		domain = talloc_strdup(mem_ctx, lp_workgroup());
+		domain = talloc_strdup(mem_ctx, lp_workgroup_unix());
 	} else {
 		DEBUG(5,("no domain specified with username (%s) - failing auth\n", state->request.data.auth_crap.user));
 		result = NT_STATUS_INVALID_PARAMETER;
@@ -172,7 +170,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	 */
 
 	if (!secrets_fetch_trust_account_password(
-                lp_workgroup(), trust_passwd, &last_change_time)) {
+                lp_workgroup_unix(), trust_passwd, &last_change_time)) {
 		DEBUG(0, ("winbindd_pam_auth: could not fetch trust account "
                           "password for domain %s\n", lp_workgroup()));
 		result = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
@@ -182,18 +180,17 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	ZERO_STRUCT(info3);
 
 	/* Don't shut this down - it belongs to the connection cache code */
-        result = cm_get_netlogon_cli(lp_workgroup(), trust_passwd, &cli);
+        result = cm_get_netlogon_cli(lp_workgroup_unix(), trust_passwd, &cli);
 
         if (!NT_STATUS_IS_OK(result)) {
                 DEBUG(3, ("could not open handle to NETLOGON pipe (%s)\n", nt_errstr(result)));
                 goto done;
         }
 
-	result = cli_netlogon_sam_network_logon(cli, mem_ctx,
-						state->request.data.auth_crap.user, domain,
-						global_myname, state->request.data.auth_crap.chal, 
-						lm_resp, nt_resp, 
-						&info3);
+	result = cli_netlogon_sam_network_logon(
+		cli, mem_ctx, state->request.data.auth_crap.user, domain,
+		global_myname_unix(), state->request.data.auth_crap.chal, 
+		lm_resp, nt_resp, &info3);
         
 done:
 
