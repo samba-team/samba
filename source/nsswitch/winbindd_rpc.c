@@ -184,12 +184,69 @@ NTSTATUS winbindd_rpc_sid_to_name(struct winbindd_domain *domain,
 	return status;
 }
 
+/* Lookup user information from a rid or username. */
+static NTSTATUS query_user(struct winbindd_domain *domain, 
+			   TALLOC_CTX *mem_ctx, 
+			   const char *user_name, uint32 user_rid, 
+			   WINBIND_USERINFO *user_info)
+{
+	CLI_POLICY_HND *hnd;
+	NTSTATUS result;
+	POLICY_HND dom_pol, user_pol;
+	BOOL got_dom_pol = False, got_user_pol = False;
+	SAM_USERINFO_CTR *ctr;
+
+	/* Get sam handle */
+	if (!(hnd = cm_get_sam_handle(domain->name)))
+		goto done;
+
+	/* Get domain handle */
+
+	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
+				      SEC_RIGHTS_MAXIMUM_ALLOWED, 
+				      &domain->sid, &dom_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_dom_pol = True;
+
+	/* Get user handle */
+	result = cli_samr_open_user(hnd->cli, mem_ctx, &dom_pol,
+				    SEC_RIGHTS_MAXIMUM_ALLOWED, user_rid, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	/* Get user info */
+	result = cli_samr_query_userinfo(hnd->cli, mem_ctx, &user_pol, 
+					 0x15, &ctr);
+
+	cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+	user_info->acct_name = talloc_strdup(mem_ctx, user_name);
+	user_info->group_rid = ctr->info.id21->group_rid;
+	user_info->full_name = unistr2_tdup(mem_ctx, 
+					    &ctr->info.id21->uni_full_name);
+
+ done:
+	/* Clean up policy handles */
+	if (got_user_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &user_pol);
+
+	if (got_dom_pol)
+		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+
+	return result;
+}                                   
+
 
 /* the rpc backend methods are exposed via this structure */
 struct winbindd_methods msrpc_methods = {
 	query_user_list,
 	enum_dom_groups,
 	name_to_sid,
-	winbindd_rpc_sid_to_name
+	winbindd_rpc_sid_to_name,
+	query_user
 };
 

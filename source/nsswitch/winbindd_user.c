@@ -99,10 +99,11 @@ static struct winbindd_pw negative_pw_cache_entry;
 
 enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) 
 {
-	uint32 user_rid, group_rid;
-	SAM_USERINFO_CTR *user_info;
+	uint32 user_rid;
+	WINBIND_USERINFO user_info;
 	DOM_SID user_sid;
-	fstring name_domain, name_user, name, gecos_name;
+	NTSTATUS status;
+	fstring name_domain, name_user, name;
 	enum SID_NAME_USE name_type;
 	struct winbindd_domain *domain;
 	TALLOC_CTX *mem_ctx;
@@ -163,30 +164,27 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 	}
 
 	sid_split_rid(&user_sid, &user_rid);
-	
-	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
+
+	status = domain->methods->query_user(domain, mem_ctx, name_user, user_rid,
+					     &user_info);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_user(): error getting user info for "
 			  "user '%s'\n", name_user));
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
     
-	group_rid = user_info->info.id21->group_rid;
-
-	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
-			 sizeof(gecos_name) - 1);
-
-	talloc_destroy(mem_ctx);
-	user_info = NULL;
-
-	/* Now take all this information and fill in a passwd structure */
-	
+	/* Now take all this information and fill in a passwd structure */	
 	if (!winbindd_fill_pwent(name_domain, state->request.data.username, 
-				 user_rid, group_rid, gecos_name,
+				 user_rid, user_info.group_rid, user_info.full_name,
 				 &state->response.data.pw)) {
 		winbindd_store_user_cache_entry(domain, name_user, &negative_pw_cache_entry);
+		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;
 	}
+
+	talloc_destroy(mem_ctx);
 	
 	winbindd_store_user_cache_entry(domain, name_user, &state->response.data.pw);
 	
@@ -199,12 +197,13 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 {
 	DOM_SID user_sid;
 	struct winbindd_domain *domain;
-	uint32 user_rid, group_rid;
-	fstring user_name, gecos_name;
+	uint32 user_rid;
+	fstring user_name;
 	enum SID_NAME_USE name_type;
-	SAM_USERINFO_CTR *user_info;
+	WINBIND_USERINFO user_info;
 	gid_t gid;
 	TALLOC_CTX *mem_ctx;
+	NTSTATUS status;
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -262,37 +261,34 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state
 		return WINBINDD_ERROR;
 	}
 
-	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
+	status = domain->methods->query_user(domain, mem_ctx, user_name, user_rid, 
+					     &user_info);
+	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
 			  "user '%s'\n", user_name));
 		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
-	group_rid = user_info->info.id21->group_rid;
-	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
-			 sizeof(gecos_name) - 1);
-
-	talloc_destroy(mem_ctx);
-	user_info = NULL;
-
 	/* Resolve gid number */
 
-	if (!winbindd_idmap_get_gid_from_rid(domain->name, group_rid, &gid)) {
+	if (!winbindd_idmap_get_gid_from_rid(domain->name, user_info.group_rid, &gid)) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		return WINBINDD_ERROR;
 	}
 
 	/* Fill in password structure */
 
-	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, group_rid,
-				 gecos_name, &state->response.data.pw)) {
+	if (!winbindd_fill_pwent(domain->name, user_name, user_rid, user_info.group_rid,
+				 user_info.full_name, &state->response.data.pw)) {
 		winbindd_store_uid_cache_entry(domain, state->request.data.uid, &negative_pw_cache_entry);
 		return WINBINDD_ERROR;
 	}
 	
 	winbindd_store_uid_cache_entry(domain, state->request.data.uid, &state->response.data.pw);
-	
+
+	talloc_destroy(mem_ctx);
+
 	return WINBINDD_OK;
 }
 

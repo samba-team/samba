@@ -109,6 +109,13 @@ struct winbindd_methods {
 				DOM_SID *sid,
 				char **name,
 				enum SID_NAME_USE *type);
+
+	/* query_user is a bit strange. The backend has a choice of
+           doing the lookup by user name or rid */
+	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
+			       TALLOC_CTX *mem_ctx, 
+			       const char *user_name, uint32 user_rid, 
+			       WINBIND_USERINFO *user_info);
 };
 
 /* Structures to hold per domain information */

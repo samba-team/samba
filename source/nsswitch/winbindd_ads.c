@@ -271,6 +271,76 @@ static NTSTATUS name_to_sid(struct winbindd_domain *domain,
 	return NT_STATUS_OK;
 }
 
+/* Lookup user information from a rid or username. */
+static NTSTATUS query_user(struct winbindd_domain *domain, 
+			   TALLOC_CTX *mem_ctx, 
+			   const char *user_name, uint32 user_rid, 
+			   WINBIND_USERINFO *info)
+{
+	ADS_STRUCT *ads;
+	const char *attrs[] = {"sAMAccountName", "name", "objectSid", "primaryGroupID", 
+			       "userAccountControl", NULL};
+	int rc, count;
+	void *msg;
+	char *exp;
+	DOM_SID sid;
+	fstring dom2, name2;
+
+	/* sigh. Need to fix interface to give us a raw name */
+	parse_domain_user(user_name, dom2, name2);
+	
+	DEBUG(3,("ads: query_user\n"));
+
+	ads = ads_init(NULL, NULL, NULL);
+	if (!ads) {
+		DEBUG(1,("ads_init failed\n"));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	rc = ads_connect(ads);
+	if (rc) {
+		DEBUG(1,("query_user ads_connect: %s\n", ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	asprintf(&exp, "(sAMAccountName=%s)", name2);
+	rc = ads_search(ads, &msg, exp, attrs);
+	free(exp);
+	if (rc) {
+		DEBUG(1,("query_user(%s) ads_search: %s\n", user_name, ads_errstr(rc)));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	count = ads_count_replies(ads, msg);
+	if (count != 1) {
+		DEBUG(1,("query_user(%s): Not found\n", user_name));
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	info->acct_name = ads_pull_string(ads, mem_ctx, msg, "sAMAccountName");
+	info->full_name = ads_pull_string(ads, mem_ctx, msg, "name");
+	if (!ads_pull_sid(ads, msg, "objectSid", &sid)) {
+		DEBUG(1,("No sid for %s !?\n", user_name));
+		goto error;
+	}
+	if (!ads_pull_uint32(ads, msg, "primaryGroupID", &info->group_rid)) {
+		DEBUG(1,("No primary group for %s !?\n", user_name));
+		goto error;
+	}
+	
+	if (!sid_peek_rid(&sid, &info->user_rid)) {
+		DEBUG(1,("No rid for %s !?\n", user_name));
+		goto error;
+	}
+
+	ads_destroy(&ads);
+
+	return NT_STATUS_OK;
+error:
+	ads_destroy(&ads);
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
 /* the ADS backend methods are exposed via this structure */
 struct winbindd_methods ads_methods = {
 	query_user_list,
@@ -278,8 +348,9 @@ struct winbindd_methods ads_methods = {
 	name_to_sid,
 	/* I can't see a good way to do a sid to name mapping with ldap,
 	   and MS servers always allow RPC for this (even in native mode) so
-	   just use RPC. Maybe that's why they allow it? */
-	winbindd_rpc_sid_to_name
+	   just use RPC for sid_to_name. Maybe that's why they allow it? */
+	winbindd_rpc_sid_to_name,
+	query_user
 };
 
 #endif
