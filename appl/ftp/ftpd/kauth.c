@@ -219,7 +219,8 @@ void kauth(char *principal, char *ticket)
 			  pr.instance,
 			  pr.realm,
 			  KRB_TICKET_GRANTING_TICKET,
-			  pr.realm, 12,
+			  pr.realm,
+			  DEFAULT_TKT_LIFE,
 			  NULL, save_tkt, NULL);
     if(ret != INTK_BADPW){
 	reply(500, "Kerberos error: %s.", krb_get_err_text(ret));
