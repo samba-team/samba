@@ -218,7 +218,7 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
  */
 BOOL reset_stat_cache( void )
 {
-	static BOOL initialised = False;
+	static BOOL initialised;
 	if (!lp_stat_cache()) return True;
 
 	if (!initialised) {
