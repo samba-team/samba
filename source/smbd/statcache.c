@@ -24,7 +24,6 @@
 
 extern BOOL case_sensitive;
 
-
 /****************************************************************************
  Stat cache code used in unix_convert.
 *****************************************************************************/
@@ -53,123 +52,126 @@ static hash_table stat_cache;
 
 void stat_cache_add( const char *full_orig_name, const char *orig_translated_path)
 {
-  stat_cache_entry *scp;
-  stat_cache_entry *found_scp;
-  char *translated_path;
-  size_t translated_path_length;
+	stat_cache_entry *scp;
+	stat_cache_entry *found_scp;
+	char *translated_path;
+	size_t translated_path_length;
 
-  char *original_path;
-  size_t original_path_length;
+	char *original_path;
+	size_t original_path_length;
 
-  hash_element *hash_elem;
+	hash_element *hash_elem;
 
-  if (!lp_stat_cache()) return;
+	if (!lp_stat_cache())
+		return;
 
-  /*
-   * Don't cache trivial valid directory entries.
-   */
-  if((*full_orig_name == '\0') || (strcmp(full_orig_name, ".") == 0) ||
-     (strcmp(full_orig_name, "..") == 0))
-    return;
+	/*
+	 * Don't cache trivial valid directory entries.
+	 */
 
-  /*
-   * If we are in case insentive mode, we don't need to
-   * store names that need no translation - else, it
-   * would be a waste.
-   */
+	if((*full_orig_name == '\0') || (strcmp(full_orig_name, ".") == 0) ||
+			(strcmp(full_orig_name, "..") == 0))
+		return;
 
-  if(case_sensitive && (strcmp(full_orig_name, orig_translated_path) == 0))
-    return;
+	/*
+	 * If we are in case insentive mode, we don't need to
+	 * store names that need no translation - else, it
+	 * would be a waste.
+	 */
 
-  /*
-   * Remove any trailing '/' characters from the
-   * translated path.
-   */
+	if(case_sensitive && (strcmp(full_orig_name, orig_translated_path) == 0))
+		return;
 
-  translated_path = strdup(orig_translated_path);
-  if (!translated_path)
-	  return;
+	/*
+	 * Remove any trailing '/' characters from the
+	 * translated path.
+	 */
 
-  translated_path_length = strlen(translated_path);
+	translated_path = strdup(orig_translated_path);
+	if (!translated_path)
+		return;
 
-  if(translated_path[translated_path_length-1] == '/') {
-    translated_path[translated_path_length-1] = '\0';
-    translated_path_length--;
-  }
+	translated_path_length = strlen(translated_path);
 
-  original_path = strdup(full_orig_name);
-  if (!original_path) {
-	  SAFE_FREE(translated_path);
-	  return;
-  }
+	if(translated_path[translated_path_length-1] == '/') {
+		translated_path[translated_path_length-1] = '\0';
+		translated_path_length--;
+	}
 
-  original_path_length = strlen(original_path);
+	original_path = strdup(full_orig_name);
+	if (!original_path) {
+		SAFE_FREE(translated_path);
+		return;
+	}
 
-  if(original_path[original_path_length-1] == '/') {
-    original_path[original_path_length-1] = '\0';
-    original_path_length--;
-  }
+	original_path_length = strlen(original_path);
 
-  if(!case_sensitive)
-	  strupper(original_path);
+	if(original_path[original_path_length-1] == '/') {
+		original_path[original_path_length-1] = '\0';
+		original_path_length--;
+	}
 
-  if (original_path_length != translated_path_length) {
-	  if (original_path_length < translated_path_length) {
-		  DEBUG(0, ("OOPS - tried to store stat cache entry for werid length paths [%s] %u and [%s] %u)!\n", original_path, original_path_length, translated_path, translated_path_length));
-		  SAFE_FREE(original_path);
-		  SAFE_FREE(translated_path);
-		  return;
-	  }
+	if(!case_sensitive)
+		strupper(original_path);
 
-	  /* we only want to store the first part of original_path,
-	     up to the length of translated_path */
+	if (original_path_length != translated_path_length) {
+		if (original_path_length < translated_path_length) {
+			DEBUG(0, ("OOPS - tried to store stat cache entry for werid length paths [%s] %u and [%s] %u)!\n",
+						original_path, original_path_length, translated_path, translated_path_length));
+			SAFE_FREE(original_path);
+			SAFE_FREE(translated_path);
+			return;
+		}
 
-	  original_path[translated_path_length] = '\0';
-	  original_path_length = translated_path_length;
-  }
+		/* we only want to store the first part of original_path,
+			up to the length of translated_path */
 
-  /*
-   * Check this name doesn't exist in the cache before we 
-   * add it.
-   */
+		original_path[translated_path_length] = '\0';
+		original_path_length = translated_path_length;
+	}
 
-  if ((hash_elem = hash_lookup(&stat_cache, original_path))) {
-	  found_scp = (stat_cache_entry *)(hash_elem->value);
-	  if (strcmp((found_scp->translated_path), orig_translated_path) == 0) {
-		  /* already in hash table */
-		  SAFE_FREE(original_path);
-		  SAFE_FREE(translated_path);
-		  return;
-	  }
-	  /* hash collision - remove before we re-add */
-	  hash_remove(&stat_cache, hash_elem);
-  }  
+	/*
+	 * Check this name doesn't exist in the cache before we 
+	 * add it.
+	 */
+
+	if ((hash_elem = hash_lookup(&stat_cache, original_path))) {
+		found_scp = (stat_cache_entry *)(hash_elem->value);
+		if (strcmp((found_scp->translated_path), orig_translated_path) == 0) {
+			/* already in hash table */
+			SAFE_FREE(original_path);
+			SAFE_FREE(translated_path);
+			return;
+		}
+		/* hash collision - remove before we re-add */
+		hash_remove(&stat_cache, hash_elem);
+	}  
   
-  /*
-   * New entry.
-   */
+	/*
+	 * New entry.
+	 */
   
-  if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)
-				       +original_path_length
-				       +translated_path_length)) == NULL) {
-	  DEBUG(0,("stat_cache_add: Out of memory !\n"));
-	  SAFE_FREE(original_path);
-	  SAFE_FREE(translated_path);
-	  return;
-  }
+	if((scp = (stat_cache_entry *)malloc(sizeof(stat_cache_entry)
+						+original_path_length
+						+translated_path_length)) == NULL) {
+		DEBUG(0,("stat_cache_add: Out of memory !\n"));
+		SAFE_FREE(original_path);
+		SAFE_FREE(translated_path);
+		return;
+	}
 
-  scp->original_path = scp->names;
-  scp->translated_path = scp->names + original_path_length + 1;
-  safe_strcpy(scp->original_path, original_path, original_path_length);
-  safe_strcpy(scp->translated_path, translated_path, translated_path_length);
-  scp->translated_path_length = translated_path_length;
+	scp->original_path = scp->names;
+	scp->translated_path = scp->names + original_path_length + 1;
+	safe_strcpy(scp->original_path, original_path, original_path_length);
+	safe_strcpy(scp->translated_path, translated_path, translated_path_length);
+	scp->translated_path_length = translated_path_length;
 
-  hash_insert(&stat_cache, (char *)scp, original_path);
+	hash_insert(&stat_cache, (char *)scp, original_path);
 
-  SAFE_FREE(original_path);
-  SAFE_FREE(translated_path);
+	SAFE_FREE(original_path);
+	SAFE_FREE(translated_path);
 
-  DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->original_path, scp->translated_path));
+	DEBUG(5,("stat_cache_add: Added entry %s -> %s\n", scp->original_path, scp->translated_path));
 }
 
 /**
@@ -191,73 +193,73 @@ void stat_cache_add( const char *full_orig_name, const char *orig_translated_pat
 BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath, 
 		       char **start, SMB_STRUCT_STAT *pst)
 {
-  stat_cache_entry *scp;
-  pstring chk_name;
-  size_t namelen;
-  hash_element *hash_elem;
-  char *sp;
+	stat_cache_entry *scp;
+	pstring chk_name;
+	size_t namelen;
+	hash_element *hash_elem;
+	char *sp;
 
-  if (!lp_stat_cache())
-    return False;
+	if (!lp_stat_cache())
+		return False;
  
-  namelen = strlen(name);
+	namelen = strlen(name);
 
-  *start = name;
+	*start = name;
 
-  DO_PROFILE_INC(statcache_lookups);
+	DO_PROFILE_INC(statcache_lookups);
 
-  /*
-   * Don't lookup trivial valid directory entries.
-   */
-  if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
-    DO_PROFILE_INC(statcache_misses);
-    return False;
-  }
+	/*
+	 * Don't lookup trivial valid directory entries.
+	 */
+	if((*name == '\0') || (strcmp(name, ".") == 0) || (strcmp(name, "..") == 0)) {
+		DO_PROFILE_INC(statcache_misses);
+		return False;
+	}
 
-  pstrcpy(chk_name, name);
-  if(!case_sensitive)
-    strupper( chk_name );
+	pstrcpy(chk_name, name);
+	if(!case_sensitive)
+		strupper( chk_name );
 
-  while (1) {
-    hash_elem = hash_lookup(&stat_cache, chk_name);
-    if(hash_elem == NULL) {
-      /*
-       * Didn't find it - remove last component for next try.
-       */
-      sp = strrchr_m(chk_name, '/');
-      if (sp) {
-        *sp = '\0';
-      } else {
-        /*
-         * We reached the end of the name - no match.
-         */
-	DO_PROFILE_INC(statcache_misses);
-        return False;
-      }
-      if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
-                          || (strcmp(chk_name, "..") == 0)) {
-	DO_PROFILE_INC(statcache_misses);
-        return False;
-      }
-    } else {
-      scp = (stat_cache_entry *)(hash_elem->value);
-      DO_PROFILE_INC(statcache_hits);
-      if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
-        /* Discard this entry - it doesn't exist in the filesystem.  */
-        hash_remove(&stat_cache, hash_elem);
-        return False;
-      }
-      memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
+	while (1) {
+		hash_elem = hash_lookup(&stat_cache, chk_name);
+		if(hash_elem == NULL) {
+			/*
+			 * Didn't find it - remove last component for next try.
+			 */
+			sp = strrchr_m(chk_name, '/');
+			if (sp) {
+				*sp = '\0';
+			} else {
+				/*
+				 * We reached the end of the name - no match.
+				 */
+				DO_PROFILE_INC(statcache_misses);
+				return False;
+			}
+			if((*chk_name == '\0') || (strcmp(chk_name, ".") == 0)
+					|| (strcmp(chk_name, "..") == 0)) {
+				DO_PROFILE_INC(statcache_misses);
+				return False;
+			}
+		} else {
+			scp = (stat_cache_entry *)(hash_elem->value);
+			DO_PROFILE_INC(statcache_hits);
+			if(SMB_VFS_STAT(conn,scp->translated_path, pst) != 0) {
+				/* Discard this entry - it doesn't exist in the filesystem.  */
+				hash_remove(&stat_cache, hash_elem);
+				return False;
+			}
+			memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
 
-      /* set pointer for 'where to start' on fixing the rest of the name */
-      *start = &name[scp->translated_path_length];
-      if(**start == '/')
-        ++*start;
+			/* set pointer for 'where to start' on fixing the rest of the name */
+			*start = &name[scp->translated_path_length];
+			if(**start == '/')
+				++*start;
 
-      pstrcpy(dirpath, scp->translated_path);
-      return (namelen == scp->translated_path_length);
-    }
-  }
+			pstrcpy(dirpath, scp->translated_path);
+			return (namelen == scp->translated_path_length);
+		}
+	}
 }
 
 /*************************************************************************** **
@@ -271,7 +273,8 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 BOOL reset_stat_cache( void )
 {
 	static BOOL initialised;
-	if (!lp_stat_cache()) return True;
+	if (!lp_stat_cache())
+		return True;
 
 	if (initialised) {
 		hash_clear(&stat_cache);
@@ -280,4 +283,4 @@ BOOL reset_stat_cache( void )
 	initialised = hash_table_init( &stat_cache, INIT_STAT_CACHE_SIZE, 
 				       (compare_function)(strcmp));
 	return initialised;
-} /* reset_stat_cache  */
+}

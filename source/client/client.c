@@ -2563,6 +2563,9 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		if (password[0] || !username[0] || use_kerberos ||
 		    !cli_session_setup(c, "", "", 0, "", 0, lp_workgroup())) { 
 			d_printf("session setup failed: %s\n", cli_errstr(c));
+			if (NT_STATUS_V(cli_nt_error(c)) == 
+			    NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED))
+				d_printf("did you forget to run kinit?\n");
 			cli_shutdown(c);
 			return NULL;
 		}
@@ -2859,6 +2862,7 @@ static void remember_query_host(const char *arg,
 
 	pstrcpy(username, cmdline_auth_info.username);
 	pstrcpy(password, cmdline_auth_info.password);
+
 	use_kerberos = cmdline_auth_info.use_kerberos;
 	got_pass = cmdline_auth_info.got_pass;
 

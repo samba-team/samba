@@ -6,7 +6,7 @@
 		<firstname>Tim</firstname><surname>Potter</surname>
 		<affiliation>
 			<orgname>Samba Team</orgname>
-			<address><email>tpot@linuxcare.com.au</email></address>
+			<address><email>tpot@samba.org</email></address>
 		</affiliation>
 	</author>
 	&author.tridge;

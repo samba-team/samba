@@ -460,10 +460,6 @@ Here is a list of all global parameters\&. See the section of each parameter for
 
 .TP
 \(bu
-\fIads server\fR
-
-.TP
-\(bu
 \fIalgorithmic rid base\fR
 
 .TP
@@ -501,6 +497,10 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fIchange share command\fR
+
+.TP
+\(bu
+\fIclient use spnego\fR
 
 .TP
 \(bu
@@ -629,6 +629,14 @@ Here is a list of all global parameters\&. See the section of each parameter for
 .TP
 \(bu
 \fIhosts equiv\fR
+
+.TP
+\(bu
+\fIidmap gid\fR
+
+.TP
+\(bu
+\fIidmap uid\fR
 
 .TP
 \(bu
@@ -1459,6 +1467,10 @@ Here is a list of all service parameters\&. See the section on each parameter fo
 
 .TP
 \(bu
+\fImap acl inherit\fR
+
+.TP
+\(bu
 \fImap archive\fR
 
 .TP
@@ -1863,17 +1875,6 @@ Example: \fBadmin users = jason\fR
 
 
 .TP
-ads server (G)
-If this option is specified, samba does not try to figure out what ads server to use itself, but uses the specified ads server\&. Either one DNS name or IP address can be used\&.
-
-
-Default: \fBads server = \fR
-
-
-Example: \fBads server = 192.168.1.2\fR
-
-
-.TP
 algorithmic rid base (G)
 This determines how Samba will use its algorithmic mapping from uids/gid to the RIDs needed to construct NT Security Identifiers\&.
 
@@ -1930,16 +1931,19 @@ Example: \fBannounce version = 2.0\fR
 
 .TP
 auth methods (G)
-This option allows the administrator to chose what authentication methods \fBsmbd\fR will use when authenticating a user\&. This option defaults to sensible values based on \fIsecurity\fR\&.
+This option allows the administrator to chose what authentication methods \fBsmbd\fR will use when authenticating a user\&. This option defaults to sensible values based on \fIsecurity\fR\&. This should be considered a developer option and used only in rare circumstances\&. In the majority (if not all) of production servers, the default setting should be adequate\&.
 
 
 Each entry in the list attempts to authenticate the user in turn, until the user authenticates\&. In practice only one method will ever actually be able to complete the authentication\&.
 
 
+Possible options include \fBguest\fR (anonymous access), \fBsam\fR (lookups in local list of accounts based on netbios name or domain name), \fBwinbind\fR (relay authentication requests for remote users through winbindd), \fBntdomain\fR (pre-winbindd method of authentication for remote domain users; deprecated in favour of winbind method), \fBtrustdomain\fR (authenticate trusted users by contacting the remote DC directly from smbd; deprecated in favour of winbind method)\&.
+
+
 Default: \fBauth methods = <empty string>\fR
 
 
-Example: \fBauth methods = guest sam ntdomain\fR
+Example: \fBauth methods = guest sam winbind\fR
 
 
 .TP
@@ -2077,6 +2081,14 @@ Default: \fBnone\fR
 
 
 Example: \fBchange share command = /usr/local/bin/addshare\fR
+
+
+.TP
+client use spnego (G)
+This variable controls controls whether samba clients will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000 servers to agree upon an authentication mechanism\&. SPNEGO client support with Sign and Seal is currently broken, so you might want to turn this option off when doing joins to Windows 2003 domains\&.
+
+
+Default: \fBclient use spnego = yes\fR
 
 
 .TP
@@ -3125,6 +3137,31 @@ Example: \fBhosts equiv = /etc/hosts.equiv\fR
 
 
 .TP
+idmap gid (G)
+The idmap gid parameter specifies the range of group ids that are allocated for the purpose of mapping UNX groups to NT group SIDs\&. This range of group ids should have no existing local or NIS groups within it as strange conflicts can occur otherwise\&.
+
+
+The availability of an idmap gid range is essential for correct operation of all group mapping\&.
+
+
+Default: \fBidmap gid = <empty string>\fR
+
+
+Example: \fBidmap gid = 10000-20000\fR
+
+
+.TP
+idmap uid (G)
+The idmap uid parameter specifies the range of user ids that are allocated for use in mapping UNIX users to NT user SIDs\&. This range of ids should have no existing local or NIS users within it as strange conflicts can occur otherwise\&.
+
+
+Default: \fBidmap uid = <empty string>\fR
+
+
+Example: \fBidmap uid = 10000-20000\fR
+
+
+.TP
 include (G)
 This allows you to include one config file inside another\&. The file is included literally, as though typed in place\&.
 
@@ -3963,6 +4000,14 @@ Example: \fBmangling method = hash\fR
 
 
 .TP
+map acl inherit (S)
+This boolean parameter controls whether \fBsmbd\fR(8) will attempt to map the 'inherit' and 'protected' access control entry flags stored in Windows ACLs into an extended attribute called user\&.SAMBA_PAI\&. This parameter only takes effect if Samba is being run on a platform that supports extended attributes (Linux and IRIX so far) and allows the Windows 2000 ACL editor to correctly use inheritance with the Samba POSIX ACL mapping code\&.
+
+
+Default: \fBmap acl inherit = no\fR
+
+
+.TP
 map archive (S)
 This controls whether the DOS archive attribute should be mapped to the UNIX owner execute bit\&. The DOS archive bit is set when a file has been modified since its last backup\&. One motivation for this option it to keep Samba/your PC from making any file it touches from becoming executable under UNIX\&. This can be quite annoying for shared source code, documents, etc\&.\&.\&.
 
@@ -4324,7 +4369,7 @@ Example: \fBname cache timeout = 0\fR
 
 .TP
 name resolve order (G)
-This option is used by the programs in the Samba suite to determine what naming services to use and in what order to resolve host names to IP addresses\&. The option takes a space separated string of name resolution options\&.
+This option is used by the programs in the Samba suite to determine what naming services to use and in what order to resolve host names to IP addresses\&. Its main purpose to is to control how netbios name resolution is performed\&. The option takes a space separated string of name resolution options\&.
 
 
 The options are: "lmhosts", "host", "wins" and "bcast"\&. They cause names to be resolved as follows:
@@ -4332,7 +4377,7 @@ The options are: "lmhosts", "host", "wins" and "bcast"\&. They cause names to be
 
 \fBlmhosts\fR : Lookup an IP address in the Samba lmhosts file\&. If the line in lmhosts has no name type attached to the NetBIOS name (see the lmhosts(5) for details) then any name type matches for lookup\&.
 
-\fBhost\fR : Do a standard host name to IP address resolution, using the system \fI/etc/hosts \fR, NIS, or DNS lookups\&. This method of name resolution is operating system depended for instance on IRIX or Solaris this may be controlled by the \fI/etc/nsswitch\&.conf\fR file\&. Note that this method is only used if the NetBIOS name type being queried is the 0x20 (server) name type, otherwise it is ignored\&.
+\fBhost\fR : Do a standard host name to IP address resolution, using the system \fI/etc/hosts \fR, NIS, or DNS lookups\&. This method of name resolution is operating system depended for instance on IRIX or Solaris this may be controlled by the \fI/etc/nsswitch\&.conf\fR file\&. Note that this method is used only if the NetBIOS name type being queried is the 0x20 (server) name type or 0x1c (domain controllers)\&. The latter case is only useful for active directory domains and results in a DNS query for the SRV RR entry matching _ldap\&._tcp\&.domain\&.
 
 \fBwins\fR : Query a name with the IP address listed in the \fI wins server\fR parameter\&. If no WINS server has been specified this method will be ignored\&.
 
@@ -4345,6 +4390,15 @@ Example: \fBname resolve order = lmhosts bcast host\fR
 
 
 This will cause the local lmhosts file to be examined first, followed by a broadcast attempt, followed by a normal system hostname lookup\&.
+
+
+When Samba is functioning in ADS security mode (\fBsecurity = ads\fR) it is advised to use following settings for \fIname resolve order\fR:
+
+
+\fBname resolve order = wins bcast\fR
+
+
+DC lookups will still be done via DNS, but fallbacks to netbios names will not inundate your DNS servers with needless querys for DOMAIN<0x1c> lookups\&.
 
 
 .TP
@@ -4597,7 +4651,7 @@ This parameter is in two parts, the backend's name, and a 'location' string that
 Available backends can include: .TP 3 \(bu \fBsmbpasswd\fR - The default smbpasswd backend\&. Takes a path to the smbpasswd file as an optional argument\&. .TP \(bu \fBtdbsam\fR - The TDB based password storage backend\&. Takes a path to the TDB as an optional argument (defaults to passdb\&.tdb in the \fIprivate dir\fR directory\&. .TP \(bu \fBldapsam\fR - The LDAP based passdb backend\&. Takes an LDAP URL as an optional argument (defaults to \fBldap://localhost\fR) LDAP connections should be secured where possible\&. This may be done using either Start-TLS (see \fIldap ssl\fR) or by specifying \fIldaps://\fR in the URL argument\&. .TP \(bu \fBnisplussam\fR - The NIS+ based passdb backend\&. Takes name NIS domain as an optional argument\&. Only works with sun NIS+ servers\&. .TP \(bu \fBmysql\fR - The MySQL based passdb backend\&. Takes an identifier as argument\&. Read the Samba HOWTO Collection for configuration details\&. .TP \(bu \fBguest\fR - Very simple backend that only provides one user: the guest user\&. Only maps the NT guest user to the \fIguest account\fR\&. Required in pretty much all situations\&. .LP
 
 
-Default: \fBpassdb backend = smbpasswd guest\fR
+Default: \fBpassdb backend = smbpasswd\fR
 
 
 Example: \fBpassdb backend = tdbsam:/etc/samba/private/passdb.tdb smbpasswd:/etc/samba/smbpasswd guest\fR
@@ -4709,13 +4763,13 @@ Example: \fBpassword level = 4\fR
 
 .TP
 password server (G)
-By specifying the name of another SMB server (such as a WinNT box) with this option, and using \fBsecurity = domain \fR or \fBsecurity = server\fR you can get Samba to do all its username/password validation via a remote server\&.
+By specifying the name of another SMB server or Active Directory domain controller with this option, and using \fBsecurity = [ads|domain|server]\fR it is possible to get Samba to to do all its username/password validation using a specific remote server\&.
 
 
-This option sets the name of the password server to use\&. It must be a NetBIOS name, so if the machine's NetBIOS name is different from its Internet name then you may have to add its NetBIOS name to the lmhosts file which is stored in the same directory as the \fIsmb\&.conf\fR file\&.
+This option sets the name or IP address of the password server to use\&. New syntax has been added to support defining the port to use when connecting to the server the case of an ADS realm\&. To define a port other than the default LDAP port of 389, add the port number using a colon after the name or IP address (e\&.g\&. 192\&.168\&.1\&.100:389)\&. If you do not specify a port, Samba will use the standard LDAP port of tcp/389\&. Note that port numbers have no effect on password servers for Windows NT 4\&.0 domains or netbios connections\&.
 
 
-The name of the password server is looked up using the parameter \fIname resolve order\fR and so may resolved by any method and order described in that parameter\&.
+If parameter is a name, it is looked up using the parameter \fIname resolve order\fR and so may resolved by any method and order described in that parameter\&.
 
 
 The password server must be a machine capable of using the "LM1\&.2X002" or the "NT LM 0\&.12" protocol, and it must be in user level security mode\&.
@@ -4729,13 +4783,13 @@ Never point a Samba server at itself for password serving\&. This will cause a l
 The name of the password server takes the standard substitutions, but probably the only useful one is \fI%m \fR, which means the Samba server will use the incoming client as the password server\&. If you use this then you better trust your clients, and you had better restrict them with hosts allow!
 
 
-If the \fIsecurity\fR parameter is set to \fBdomain\fR, then the list of machines in this option must be a list of Primary or Backup Domain controllers for the Domain or the character '*', as the Samba server is effectively in that domain, and will use cryptographically authenticated RPC calls to authenticate the user logging on\&. The advantage of using \fB security = domain\fR is that if you list several hosts in the \fIpassword server\fR option then \fBsmbd \fR will try each in turn till it finds one that responds\&. This is useful in case your primary server goes down\&.
+If the \fIsecurity\fR parameter is set to \fBdomain\fR or \fBads\fR, then the list of machines in this option must be a list of Primary or Backup Domain controllers for the Domain or the character '*', as the Samba server is effectively in that domain, and will use cryptographically authenticated RPC calls to authenticate the user logging on\&. The advantage of using \fB security = domain\fR is that if you list several hosts in the \fIpassword server\fR option then \fBsmbd \fR will try each in turn till it finds one that responds\&. This is useful in case your primary server goes down\&.
 
 
 If the \fIpassword server\fR option is set to the character '*', then Samba will attempt to auto-locate the Primary or Backup Domain controllers to authenticate against by doing a query for the name \fBWORKGROUP<1C>\fR and then contacting each server returned in the list of IP addresses from the name resolution source\&.
 
 
-If the list of servers contains both names and the '*' character, the list is treated as a list of preferred domain controllers, but an auto lookup of all remaining DC's will be added to the list as well\&. Samba will not attempt to optimize this list by locating the closest DC\&.
+If the list of servers contains both names/IP's and the '*' character, the list is treated as a list of preferred domain controllers, but an auto lookup of all remaining DC's will be added to the list as well\&. Samba will not attempt to optimize this list by locating the closest DC\&.
 
 
 If the \fIsecurity\fR parameter is set to \fBserver\fR, then there are different restrictions that \fBsecurity = domain\fR doesn't suffer from:
@@ -4752,6 +4806,9 @@ Default: \fBpassword server = <empty string>\fR
 
 
 Example: \fBpassword server = NT-PDC, NT-BDC1, NT-BDC2, *\fR
+
+
+Example: \fBpassword server = windc.mydomain.com:389 192.168.1.101 *\fR
 
 
 Example: \fBpassword server = *\fR
@@ -6309,6 +6366,9 @@ Default: \fBwinbind enum users = yes \fR
 
 .TP
 winbind gid (G)
+This parameter is now an alias for \fBidmap gid\fR
+
+
 The winbind gid parameter specifies the range of group ids that are allocated by the \fBwinbindd\fR(8) daemon\&. This range of group ids should have no existing local or NIS groups within it as strange conflicts can occur otherwise\&.
 
 
@@ -6334,7 +6394,10 @@ Example: \fBwinbind separator = +\fR
 
 .TP
 winbind uid (G)
-The winbind gid parameter specifies the range of group ids that are allocated by the \fBwinbindd\fR(8) daemon\&. This range of ids should have no existing local or NIS users within it as strange conflicts can occur otherwise\&.
+This parameter is now an alias for \fBidmap uid\fR
+
+
+The winbind gid parameter specifies the range of user ids that are allocated by the \fBwinbindd\fR(8) daemon\&. This range of ids should have no existing local or NIS users within it as strange conflicts can occur otherwise\&.
 
 
 Default: \fBwinbind uid = <empty string>\fR
