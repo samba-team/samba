@@ -826,5 +826,3 @@ void tdb_search_list_free(TDB_LIST_NODE* node)
 		node = next_node;
 	};
 }
-
-

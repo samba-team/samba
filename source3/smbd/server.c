@@ -405,10 +405,10 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				   done correctly in the process.  */
 				reset_globals_after_fork();
 
-				/* tdb needs special fork handling */
+				/* tdb needs special fork handling - remove CLEAR_IF_FIRST flags */
 				if (tdb_reopen_all() == -1) {
 					DEBUG(0,("tdb_reopen_all failed.\n"));
-					return False;
+					smb_panic("tdb_reopen_all failed.");
 				}
 
 				return True; 
@@ -809,7 +809,25 @@ void build_options(BOOL screen);
 	if (is_daemon)
 		pidfile_create("smbd");
 
+	/* Setup all the TDB's - including CLEAR_IF_FIRST tdb's. */
 	if (!message_init())
+		exit(1);
+
+	if (!session_init())
+		exit(1);
+
+	if (conn_tdb_ctx() == NULL)
+		exit(1);
+
+	if (!locking_init(0))
+		exit(1);
+
+	if (!share_info_db_init())
+		exit(1);
+
+	namecache_enable();
+
+	if (!init_registry())
 		exit(1);
 
 	if (!print_backend_init())
@@ -831,17 +849,6 @@ void build_options(BOOL screen);
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
-
-	namecache_enable();
-
-	if (!locking_init(0))
-		exit(1);
-
-	if (!share_info_db_init())
-		exit(1);
-
-	if (!init_registry())
-		exit(1);
 
 	/* Initialise the password backed before the global_sam_sid
 	   to ensure that we fetch from ldap before we make a domain sid up */
@@ -891,4 +898,3 @@ void build_options(BOOL screen);
 	exit_server("normal exit");
 	return(0);
 }
-
