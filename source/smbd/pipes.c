@@ -739,7 +739,6 @@ static int lsa_reply_req_chal(LSA_Q_REQ_CHAL *q_c, char *q, char *base,
 
 	DEBUG(6,("lsa_reply_req_chal: %d\n", __LINE__));
 
-	memcpy(r_c->srv_chal.data, srv_chal->data, sizeof(srv_chal->data));
 	/* set up the LSA REQUEST CHALLENGE response */
 	make_lsa_r_req_chal(&r_c, srv_chal, 0);
 
