@@ -1,0 +1,31 @@
+README for Samba Virtual File System (VFS) Examples
+===================================================
+
+This directory contains some sample code to demonstrate VFS
+construction.  The following VFS modules are given:
+
+	skel
+		A skeleton VFS module.  When used, this module simply
+		passes all requests back to the disk functions (i.e it
+		operates as a passthrough filter).  It should be
+		useful as a starting point for developing new VFS
+		modules. 
+
+	audit
+		A simple module to audit file access to the syslog
+		facility.  The following operations are logged: share
+		connect/disconnect, directory opens/create/remove,
+		file open/close/rename/unlink/chmod.
+
+	streamer
+		Stream file writes to a network address instead of to
+		disk.
+
+	perlfs
+		A wrapper for writing Samba VFS modules in Perl.
+
+The modules need only to be compiled with -I/samba/source/dir added to
+CFLAGS.
+
+Further documentation on writing VFS modules for Samba can be found in
+docs directory of the Samba source distribution.
