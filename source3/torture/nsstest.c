@@ -22,12 +22,17 @@
 #include "includes.h"
 
 static char *so_path = "/lib/libnss_winbind.so";
+static char *nss_name = "winbind";
 static int nss_errno;
 
 static void *find_fn(const char *name)
 {
+	char s[1024];
 	static void *h;
 	void *res;
+
+	snprintf(s,sizeof(s), "_nss_%s_%s", nss_name, name);
+
 	if (!h) {
 		h = dlopen(so_path, RTLD_LAZY);
 	}
@@ -35,9 +40,9 @@ static void *find_fn(const char *name)
 		printf("Can't open shared library %s\n", so_path);
 		exit(1);
 	}
-	res = dlsym(h, name);
+	res = dlsym(h, s);
 	if (!res) {
-		printf("Can't find function %s\n", name);
+		printf("Can't find function %s\n", s);
 		exit(1);
 	}
 	return res;
@@ -52,7 +57,7 @@ static void report_nss_error(NSS_STATUS status)
 static struct passwd *nss_getpwent(void)
 {
 	NSS_STATUS (*_nss_getpwent_r)(struct passwd *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getpwent_r");
+				      size_t , int *) = find_fn("getpwent_r");
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -71,7 +76,7 @@ static struct passwd *nss_getpwent(void)
 static struct passwd *nss_getpwnam(const char *name)
 {
 	NSS_STATUS (*_nss_getpwnam_r)(const char *, struct passwd *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getpwnam_r");
+				      size_t , int *) = find_fn("getpwnam_r");
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -90,7 +95,7 @@ static struct passwd *nss_getpwnam(const char *name)
 static struct passwd *nss_getpwuid(uid_t uid)
 {
 	NSS_STATUS (*_nss_getpwuid_r)(uid_t , struct passwd *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getpwuid_r");
+				      size_t , int *) = find_fn("getpwuid_r");
 	static struct passwd pwd;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -108,14 +113,14 @@ static struct passwd *nss_getpwuid(uid_t uid)
 
 static void nss_setpwent(void)
 {
-	NSS_STATUS (*_nss_setpwent)(void) = find_fn("_nss_winbind_setpwent");
+	NSS_STATUS (*_nss_setpwent)(void) = find_fn("setpwent");
 
 	report_nss_error(_nss_setpwent());
 }
 
 static void nss_endpwent(void)
 {
-	NSS_STATUS (*_nss_endpwent)(void) = find_fn("_nss_winbind_endpwent");
+	NSS_STATUS (*_nss_endpwent)(void) = find_fn("endpwent");
 
 	report_nss_error(_nss_endpwent());
 }
@@ -124,7 +129,7 @@ static void nss_endpwent(void)
 static struct group *nss_getgrent(void)
 {
 	NSS_STATUS (*_nss_getgrent_r)(struct group *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getgrent_r");
+				      size_t , int *) = find_fn("getgrent_r");
 	static struct group grp;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -143,7 +148,7 @@ static struct group *nss_getgrent(void)
 static struct group *nss_getgrnam(const char *name)
 {
 	NSS_STATUS (*_nss_getgrnam_r)(const char *, struct group *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getgrnam_r");
+				      size_t , int *) = find_fn("getgrnam_r");
 	static struct group grp;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -162,7 +167,7 @@ static struct group *nss_getgrnam(const char *name)
 static struct group *nss_getgrgid(gid_t gid)
 {
 	NSS_STATUS (*_nss_getgrgid_r)(gid_t , struct group *, char *, 
-				      size_t , int *) = find_fn("_nss_winbind_getgrgid_r");
+				      size_t , int *) = find_fn("getgrgid_r");
 	static struct group grp;
 	static char buf[1000];
 	NSS_STATUS status;
@@ -180,14 +185,14 @@ static struct group *nss_getgrgid(gid_t gid)
 
 static void nss_setgrent(void)
 {
-	NSS_STATUS (*_nss_setgrent)(void) = find_fn("_nss_winbind_setgrent");
+	NSS_STATUS (*_nss_setgrent)(void) = find_fn("setgrent");
 
 	report_nss_error(_nss_setgrent());
 }
 
 static void nss_endgrent(void)
 {
-	NSS_STATUS (*_nss_endgrent)(void) = find_fn("_nss_winbind_endgrent");
+	NSS_STATUS (*_nss_endgrent)(void) = find_fn("endgrent");
 
 	report_nss_error(_nss_endgrent());
 }
@@ -196,7 +201,7 @@ static int nss_initgroups(char *user, gid_t group, gid_t **groups, long int *sta
 {
 	NSS_STATUS (*_nss_initgroups)(char *, gid_t , long int *,
 				      long int *, gid_t **, long int , int *) = 
-		find_fn("_nss_winbind_initgroups_dyn");
+		find_fn("initgroups_dyn");
 	NSS_STATUS status;
 
 	status = _nss_initgroups(user, group, start, size, groups, 0, &nss_errno);
@@ -294,6 +299,7 @@ static void nss_test_groups(void)
  int main(int argc, char *argv[])
 {	
 	if (argc > 1) so_path = argv[1];
+	if (argc > 2) nss_name = argv[2];
 
 	nss_test_users();
 	nss_test_groups();
