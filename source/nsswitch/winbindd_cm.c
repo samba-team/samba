@@ -113,8 +113,8 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
-static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
-			       struct winbindd_cm_conn *new_conn)
+static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const int pipe_index,
+				   struct winbindd_cm_conn *new_conn)
 {
 	NTSTATUS result;
 	char *machine_password; 
@@ -125,21 +125,22 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 	ZERO_STRUCT(dc_ip);
 
-	fstrcpy(new_conn->domain, domain);
-	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
+	fstrcpy(new_conn->domain, domain->name);
 	
 	/* connection failure cache has been moved inside of get_dc_name
 	   so we can deal with half dead DC's   --jerry */
 
-	if (!get_dc_name(domain, new_conn->controller, &dc_ip)) {
+	if (!get_dc_name(domain->name, domain->alt_name[0] ? domain->alt_name : NULL, 
+			 new_conn->controller, &dc_ip)) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
-		add_failed_connection_entry(domain, "", result);
+		add_failed_connection_entry(domain->name, "", result);
 		return result;
 	}
 		
 	/* Initialise SMB connection */
+	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 
-	/* grab stored passwords */
+/* grab stored passwords */
 	machine_password = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
 	
 	if (asprintf(&machine_krb5_principal, "%s$@%s", global_myname(), lp_realm()) == -1) {
@@ -181,7 +182,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 				if (!NT_STATUS_IS_OK(result = cli_session_setup_spnego(new_conn->cli, machine_krb5_principal, 
 							      machine_password, 
-							      domain))) {
+							      domain->name))) {
 					DEBUG(4,("failed kerberos session setup with %s\n", nt_errstr(result)));
 				}
 			}
@@ -201,7 +202,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 				if (!cli_session_setup(new_conn->cli, ipc_username, 
 						       ipc_password, strlen(ipc_password)+1, 
 						       ipc_password, strlen(ipc_password)+1, 
-						       domain)) {
+						       domain->name)) {
 					result = cli_nt_error(new_conn->cli);
 					DEBUG(4,("failed authenticated session setup with %s\n", nt_errstr(result)));
 					if (NT_STATUS_IS_OK(result)) 
@@ -258,13 +259,13 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(machine_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		add_failed_connection_entry(domain, new_conn->controller, result);
+		add_failed_connection_entry(domain->name, new_conn->controller, result);
 		return result;
 	}
 	
 	/* set the domain if empty; needed for schannel connections */
 	if ( !*new_conn->cli->domain )
-		fstrcpy( new_conn->cli->domain, domain );
+		fstrcpy( new_conn->cli->domain, domain->name );
 		
 	
 	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
@@ -278,7 +279,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
 		if ( !is_win2k_pipe(pipe_index) )
-			add_failed_connection_entry(domain, new_conn->controller, result);
+			add_failed_connection_entry(domain->name, new_conn->controller, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
@@ -291,7 +292,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
  setup cli_state struct
 ************************************************************************/
 
-NTSTATUS cm_fresh_connection(const char *domain, const int pipe_index,
+NTSTATUS cm_fresh_connection(struct winbindd_domain *domain, const int pipe_index,
 			       struct cli_state **cli)
 {
 	NTSTATUS result;
@@ -338,13 +339,13 @@ static BOOL connection_ok(struct winbindd_cm_conn *conn)
 /* Search the cache for a connection. If there is a broken one,
    shut it down properly and return NULL. */
 
-static void find_cm_connection(const char *domain, const char *pipe_name,
+static void find_cm_connection(struct winbindd_domain *domain, const char *pipe_name,
 			       struct winbindd_cm_conn **conn_out) 
 {
 	struct winbindd_cm_conn *conn;
 
 	for (conn = cm_conns; conn; ) {
-		if (strequal(conn->domain, domain) && 
+		if (strequal(conn->domain, domain->name) && 
 		    strequal(conn->pipe_name, pipe_name)) {
 			if (!connection_ok(conn)) {
 				/* Dead connection - remove it. */
@@ -367,7 +368,7 @@ static void find_cm_connection(const char *domain, const char *pipe_name,
 
 /* Initialize a new connection up to the RPC BIND. */
 
-static NTSTATUS new_cm_connection(const char *domain, const char *pipe_name,
+static NTSTATUS new_cm_connection(struct winbindd_domain *domain, const char *pipe_name,
 				  struct winbindd_cm_conn **conn_out)
 {
 	struct winbindd_cm_conn *conn;
@@ -380,7 +381,7 @@ static NTSTATUS new_cm_connection(const char *domain, const char *pipe_name,
 		
 	if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
 		DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
-			  domain, pipe_name, nt_errstr(result)));
+			  domain->name, pipe_name, nt_errstr(result)));
 		SAFE_FREE(conn);
 		return result;
 	}
@@ -392,7 +393,7 @@ static NTSTATUS new_cm_connection(const char *domain, const char *pipe_name,
 
 /* Get a connection to the remote DC and open the pipe.  If there is already a connection, use that */
 
-static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_name,
+static NTSTATUS get_connection_from_cache(struct winbindd_domain *domain, const char *pipe_name,
 					  struct winbindd_cm_conn **conn_out)
 {
 	find_cm_connection(domain, pipe_name, conn_out);
@@ -406,7 +407,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 /**********************************************************************************
 **********************************************************************************/
 
-BOOL cm_check_for_native_mode_win2k( const char *domain )
+BOOL cm_check_for_native_mode_win2k( struct winbindd_domain *domain )
 {
 	NTSTATUS 		result;
 	struct winbindd_cm_conn	conn;
@@ -419,7 +420,7 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	
 	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
 		DEBUG(5, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
-			  domain, nt_errstr(result)));
+			  domain->name, nt_errstr(result)));
 		return False;
 	}
 	
@@ -450,7 +451,7 @@ done:
 
 /* Return a LSA policy handle on a domain */
 
-NTSTATUS cm_get_lsa_handle(const char *domain, CLI_POLICY_HND **return_hnd)
+NTSTATUS cm_get_lsa_handle(struct winbindd_domain *domain, CLI_POLICY_HND **return_hnd)
 {
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -503,7 +504,7 @@ NTSTATUS cm_get_lsa_handle(const char *domain, CLI_POLICY_HND **return_hnd)
 
 /* Return a SAM policy handle on a domain */
 
-NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd)
+NTSTATUS cm_get_sam_handle(struct winbindd_domain *domain, CLI_POLICY_HND **return_hnd)
 { 
 	struct winbindd_cm_conn *conn;
 	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
@@ -561,7 +562,7 @@ NTSTATUS cm_get_sam_handle(char *domain, CLI_POLICY_HND **return_hnd)
 /* Get a handle on a netlogon pipe.  This is a bit of a hack to re-use the
    netlogon pipe as no handle is returned. */
 
-NTSTATUS cm_get_netlogon_cli(const char *domain, 
+NTSTATUS cm_get_netlogon_cli(struct winbindd_domain *domain, 
 			     const unsigned char *trust_passwd, 
 			     uint32 sec_channel_type,
 			     BOOL fresh,
@@ -571,7 +572,6 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	struct winbindd_cm_conn *conn;
 	fstring lock_name;
 	BOOL got_mutex;
-	struct winbindd_domain *wb_domain = NULL;
 
 	if (!cli)
 		return NT_STATUS_INVALID_PARAMETER;
@@ -613,16 +613,9 @@ NTSTATUS cm_get_netlogon_cli(const char *domain,
 	if ( sec_channel_type == SEC_CHAN_DOMAIN )
 		fstr_sprintf(conn->cli->mach_acct, "%s$", lp_workgroup());
 			
-	/* we need the short form of the domain name for the schanel
-	   rpc bind.  What if we fail?  I don't think we should ever get 
-	   a request for a domain name not in our list but I'm not bailing 
-	   out if we do since I'm not 10% certain about this   --jerry */
-	   
-	if ( (wb_domain = find_domain_from_name( domain )) != NULL ) {
-		DEBUG(5,("cm_get_netlogon_cli: Using short for of domain name [%s] for netlogon rpc bind\n",
-			wb_domain->name));
-		fstrcpy( conn->cli->domain, wb_domain->name);
-	}
+		
+	fstrcpy( conn->cli->domain, domain->name);
+       
 	
 	result = cli_nt_establish_netlogon(conn->cli, sec_channel_type, trust_passwd);
 	
