@@ -115,10 +115,12 @@ store a job structure back to the database
 static BOOL print_job_store(int jobid, struct printjob *pjob)
 {
 	TDB_DATA d;
+	BOOL ret;
+
 	d.dptr = (void *)pjob;
 	d.dsize = sizeof(*pjob);
-
-	return (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	ret = (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	return ret;
 }
 
 /****************************************************************************
@@ -185,7 +187,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename)) {
+	if (ts->snum != lp_servicenumber(pjob.queuename)) {
 		/* this isn't for the queue we are looking at */
 		ts->total_jobs++;
 		return 0;
@@ -1176,7 +1178,7 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+	if (ts->snum != lp_servicenumber(pjob.queuename))
 		return 0;
 
 	if (ts->qcount >= ts->maxcount) return 0;
@@ -1213,7 +1215,7 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
 
 	/* maybe it isn't for this queue */
-	if (!strequal(lp_servicename(ts->snum), pjob.queuename))
+	if (ts->snum != lp_servicenumber(pjob.queuename))
 		return 0;
 
 	ts->count++;
