@@ -111,7 +111,6 @@ do_delegation (krb5_auth_context ac,
 {
     krb5_creds creds;
     krb5_kdc_flags fwd_flags;
-    krb5_keyblock *subkey;
     krb5_error_code kret;
        
     memset (&creds, 0, sizeof(creds));
