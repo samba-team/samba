@@ -271,6 +271,10 @@
 #include <sys/acl.h>
 #endif
 
+#ifdef HAVE_XFS_ACLS
+#include <acl/acl.h>
+#endif
+
 #ifdef HAVE_SYS_FS_S5PARAM_H 
 #include <sys/fs/s5param.h>
 #endif
