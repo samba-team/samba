@@ -124,6 +124,13 @@ static struct cli_state *connect_to_ipc(struct in_addr *server_ip, const char *s
 	} else {
 		DEBUG(0,("Cannot connect to server.  Error was %s\n", 
 			 get_nt_error_msg(nt_status)));
+
+		/* Display a nicer message depending on the result */
+
+		if (NT_STATUS_V(nt_status) == 
+		    NT_STATUS_V(NT_STATUS_LOGON_FAILURE))
+			d_printf("The username or password was not correct.\n");
+
 		return NULL;
 	}
 }
