@@ -388,7 +388,7 @@ somewhat to fit the way your distribution works.
 <title>Requirements</title>
 
 <para>
-If you have a samba configuration file that you are currently 
+If you have a Samba configuration file that you are currently 
 using... <emphasis>BACK IT UP!</emphasis>  If your system already uses PAM, 
 <emphasis>back up the <filename>/etc/pam.d</filename> directory 
 contents!</emphasis> If you haven't already made a boot disk, 
@@ -396,8 +396,8 @@ contents!</emphasis> If you haven't already made a boot disk,
 </para>
 
 <para>
-Messing with the pam configuration files can make it nearly impossible 
-to log in to yourmachine. That's why you want to be able to boot back 
+Messing with the PAM configuration files can make it nearly impossible 
+to log in to your machine. That's why you want to be able to boot back 
 into your machine in single user mode and restore your 
 <filename>/etc/pam.d</filename> back to the original state they were in if 
 you get frustrated with the way things are going.  ;-)
@@ -491,7 +491,7 @@ I also found it necessary to make the following symbolic link:
 &rootprompt; <userinput>ln -s /lib/libnss_winbind.so /lib/libnss_winbind.so.2</userinput>
 </para>
 
-<para>And, in the case of Sun solaris:</para>
+<para>And, in the case of Sun Solaris:</para>
 <screen>
 &rootprompt;<userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/libnss_winbind.so.1</userinput>
 &rootprompt;<userinput>ln -s /usr/lib/libnss_winbind.so /usr/lib/nss_winbind.so.1</userinput>
@@ -823,9 +823,9 @@ stop() {
 <sect4>
 <title>Solaris</title>
 
-<para>Winbind doesn't work on solaris 9, see the <link linkend="winbind-solaris9">Portability</link> chapter for details.</para>
+<para>Winbind doesn't work on Solaris 9, see the <link linkend="winbind-solaris9">Portability</link> chapter for details.</para>
 
-<para>On solaris, you need to modify the 
+<para>On Solaris, you need to modify the 
 <filename>/etc/init.d/samba.server</filename> startup script. It usually 
 only starts smbd and nmbd but should now start winbindd too. If you 
 have samba installed in <filename>/usr/local/samba/bin</filename>, 
@@ -944,7 +944,7 @@ modules reside in <filename>/usr/lib/security</filename>.
 
 <para>
 The <filename>/etc/pam.d/samba</filename> file does not need to be changed. I 
-just left this fileas it was:
+just left this file as it was:
 </para>
 
 

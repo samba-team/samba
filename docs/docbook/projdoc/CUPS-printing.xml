@@ -169,7 +169,7 @@
 
 		<para>
 			To summarize, here is the simplest printing-related setup
-			for<filename>smb.conf</filename> to enable basic CUPS support:
+			for <filename>smb.conf</filename> to enable basic CUPS support:
 		</para>
 
 		<para><screen>
@@ -215,7 +215,7 @@ CUPS</title>
 
 <para>
 Here is a slightly more complex printing-related setup
-for<filename>smb.conf</filename>. It enables general CUPS printing
+for <filename>smb.conf</filename>. It enables general CUPS printing
 support for all printers, but defines one printer share which is set
 up differently.
 </para>
@@ -257,7 +257,7 @@ up differently.
 
 <para>
 This special share is only there for my testing purposes. It doesn't
-even write the printjob to a file. It just logs the job parameters
+even write the print job to a file. It just logs the job parameters
 known to Samba into the <filename>/tmp/smbprn.log</filename> file and
 deletes the jobfile. Moreover, the <parameter>printer
 admin</parameter> of this share is "kurt" (not the "@ntadmins" group);
@@ -309,7 +309,7 @@ Most traditionally configured Unix print servers acting on behalf of
 Samba's Windows clients represented a really simple setup. Their only
 task was to manage the "raw" spooling of all jobs handed to them by
 Samba. This approach meant that the Windows clients were expected to
-prepare the printjob file in such a way that it became fit to be fed to
+prepare the print job file in such a way that it became fit to be fed to
 the printing device. Here a native (vendor-supplied) Windows printer
 driver for the target device needed to be installed on each and every
 client.
@@ -539,8 +539,8 @@ You can't expect for most file formats to just throw them towards
 printers and they get printed. There needs to be a file format
 conversion in between. The problem is: there is no common standard for
 print file formats across all manufacturers and printer types.  While
-<emphasis>PostScript</emphasis> (trademark held by Adobe), and to an
-extend<emphasis>PCL</emphasis> (trademark held by HP), have developed
+<emphasis>PostScript</emphasis> (trademark held by Adobe), and, to an
+extent, <emphasis>PCL</emphasis> (trademark held by HP), have developed
 into semi-official "standards", by being the most widely used PDLs
 (<emphasis>Page Description Languages</emphasis>), there are still
 many manufacturers who "roll their own" (their reasons may be
@@ -688,7 +688,7 @@ on the host, before you can send it away.
 <title>Ghostscript -- the Software RIP for non-PostScript Printers</title>
 
 <para>
-Here is where<emphasis>Ghostscript</emphasis> kicks in. Ghostscript is
+Here is where <emphasis>Ghostscript</emphasis> kicks in. Ghostscript is
 the traditional (and quite powerful) PostScript interpreter used on
 Unix platforms. It is a RIP in software, capable to do a
 <emphasis>lot</emphasis> of file format conversions, for a very broad
@@ -1244,7 +1244,7 @@ filtering:
 </sect2>
 
 <sect2>
-<title>rasterto [printerspecific]</title>
+<title>rasterto [printers specific]</title>
 
 <para>
 CUPS ships with quite some different raster drivers processing CUPS
@@ -1378,8 +1378,8 @@ PDF (through a "pdfgen:/" backend) or dump them to "/dev/null" (In
 fact I have the system-wide default printer set up to be connected to
 a "devnull:/" backend: there are just too many people sending jobs
 without specifying a printer, or scripts and programs which don't name
-a printer. The system-wided default deletes the job and sends a polite
-mail back to the $USER asking him to alsways specify a correct
+a printer. The system-wide default deletes the job and sends a polite
+mail back to the $USER asking him to always specify a correct
 printername).
 </para>
 
@@ -1428,7 +1428,7 @@ You can recognize these PPDs from the line calling the
 This line you may find amongst the first 40 or so lines of the PPD
 file. If you have such a PPD installed, the printer shows up in the
 CUPS web interface with a <emphasis>foomatic</emphasis> namepart for
-the driver description. cupsomatic is a Perlscript that runs
+the driver description. cupsomatic is a Perl script that runs
 Ghostscript, with all the complicated commandline options
 auto-constructed from the selected PPD and commandline options give to
 the printjob.
@@ -1616,7 +1616,7 @@ does not by default allow one to send deliberate (possibly binary)
 data to printing devices.  (This could be easily abused to launch a
 Denial of Service attack on your printer(s), causing at least the loss
 of a lot of paper and ink...) "Unknown" data are regarded by CUPS
-as<emphasis>MIME type</emphasis>
+as <emphasis>MIME type</emphasis>
 <emphasis>application/octet-stream</emphasis>. While you
 <emphasis>can</emphasis> send data "raw", the MIME type for these must
 be one that is known to CUPS and an allowed one. The file
@@ -1730,7 +1730,7 @@ specific model supports):
 </varlistentry>
 
 <varlistentry><term>laserjet.ppd</term>
-<listitem><para>all PCL printersFurther below is a discussion
+<listitem><para>all PCL printers. Further below is a discussion
 of several other driver/PPD-packages suitable fur use with CUPS.
 </para></listitem>
 </varlistentry>
@@ -1783,7 +1783,7 @@ supported. It has now been replaced by
 <emphasis>foomatic-rip</emphasis>. foomatic-rip is a complete re-write
 of the old cupsomatic idea, but very much improved and generalized to
 other (non-CUPS) spoolers. An upgrade to foomatic-rip is strongly
-adviced, especially if you are upgrading to a recent version of CUPS
+advised, especially if you are upgrading to a recent version of CUPS
 too.
 </para>
 
@@ -1806,7 +1806,7 @@ which works best for you.
 <para>
 cupsomatic "kidnaps" the printfile after the
 <emphasis>application/vnd.cups-postscript</emphasis> stage and
-deviates it through the CUPS-external, systemwide Ghostscript
+deviates it through the CUPS-external, system wide Ghostscript
 installation: Therefore the printfile bypasses the "pstoraster" filter
 (and thus also bypasses the CUPS-raster-drivers
 "rastertosomething"). After Ghostscript finished its rasterization,
@@ -1947,7 +1947,7 @@ quality;</para></listitem>
 url="http://www-124.ibm.com/developerworks/oss/linux/projects/omni/">OMNI
 (http://www-124.ibm.com/developerworks/oss/linux/projects/omni/)</ulink>
 (LPGL, Free) is a package made by IBM, now containing support for more
-than 400 printers, stemming from the inheritance of IBM OS/2 KnowHow
+than 400 printers, stemming from the inheritance of IBM OS/2 Know-How
 ported over to Linux (CUPS support is in a Beta-stage at
 present);</para></listitem>
 
@@ -2169,7 +2169,7 @@ simply use <parameter>printing = sysv</parameter>).
 <title>Samba receiving Jobfiles and passing them to CUPS</title>
 
 <para>
-Samba<emphasis>must</emphasis> use its own spool directory (it is set
+Samba <emphasis>must</emphasis> use its own spool directory (it is set
 by a line similar to <parameter>path = /var/spool/samba</parameter>,
 in the <parameter>[printers]</parameter> or
 <parameter>[printername]</parameter> section of
@@ -2403,7 +2403,7 @@ named in its man page.
 <para>
 The CUPS printer driver is available from the CUPS download site. Its
 package name is <filename>cups-samba-[version].tar.gz</filename> . It
-is prefered over the Adobe drivers since it has a number of
+is preferred over the Adobe drivers since it has a number of
 advantages:
 </para>
 
@@ -2761,7 +2761,7 @@ receiving the exact number of pages; instead the dummy page number
 of "1" is logged in a standard setup)</para></listitem>
 
 <listitem><para>the Adobe driver has more options to "mis-configure" the
-PostScript generated by it (like setting it inadvertedly to
+PostScript generated by it (like setting it inadvertently to
 <emphasis>Optimize for Speed</emphasis>, instead of
 <emphasis>Optimize for Portability</emphasis>, which
 could lead to CUPS being unable to process it)</para></listitem>
@@ -2835,7 +2835,7 @@ Here is an example of a successfully run cupsaddsmb command.
 </screen></para>
 
 <para>
-To share<emphasis>all</emphasis> printers and drivers, use the
+To share <emphasis>all</emphasis> printers and drivers, use the
 <parameter>-a</parameter> parameter instead of a printer name. Since
 cupsaddsmb "exports" the printer drivers to Samba, it should be
 obvious that it only works for queues with a CUPS driver associated.
@@ -2925,7 +2925,7 @@ unencrypted!
   Running command: rpcclient localhost -N -U'root%secret'                                  \
                              -c 'setdriver infotec_2105 infotec_2105'
   cmd = setdriver infotec_2105 infotec_2105
-  Succesfully set infotec_2105 to driver infotec_2105.
+  Successfully set infotec_2105 to driver infotec_2105.
 
 </screen></para>
 
@@ -3004,7 +3004,7 @@ architecture...)</para></listitem>
 installed.</emphasis> # (for the WIN40 == Win9x/ME
 architecture...)</para></listitem>
 
-<listitem><para><emphasis>Succesfully set [printerXPZ] to driver
+<listitem><para><emphasis>Successfully set [printerXPZ] to driver
 [printerXYZ].</emphasis></para></listitem>
 </orderedlist>
 
@@ -3144,7 +3144,7 @@ driver settings produce. Treat it well:
 
 <itemizedlist>
 <listitem><para>Avoid the <emphasis>PostScript Output Option: Optimize
-for Speed</emphasis> settting. Rather use the <emphasis>Optimize for
+for Speed</emphasis> setting. Rather use the <emphasis>Optimize for
 Portability</emphasis> instead (Adobe PostScript
 driver).</para></listitem>
 
@@ -3166,7 +3166,7 @@ get a printout at all) (Adobe)</para></listitem>
 <listitem><para>Sometimes you can choose <emphasis>PostScript Language
 Level</emphasis>: in case of problems try <emphasis>2</emphasis>
 instead of <emphasis>3</emphasis> (the latest ESP Ghostscript package
-handels Level 3 PostScript very well) (Adobe).</para></listitem>
+handles Level 3 PostScript very well) (Adobe).</para></listitem>
 
 <listitem><para>Say <emphasis>Yes</emphasis> to <emphasis>PostScript
 Error Handler</emphasis> (Adobe)</para></listitem>
@@ -3208,7 +3208,7 @@ sub-commands. <command>enumprinters</command>,
 the most interesting ones. rpcclient implements an important part of
 the MS-RPC protocol. You can use it to query (and command) a Win NT
 (or 2K/XP) PC too. MS-RPC is used by Windows clients, amongst other
-things, to benefit from the "Point'n' Print" features. Samba can now
+things, to benefit from the "Point'n'Print" features. Samba can now
 mimic this too.
 </para>
 
@@ -3376,7 +3376,7 @@ PostScript driver): therefore the field will get a "NULL" entry.
 
 <para>
 From the manpage (and from the quoted output
-of<emphasis>cupsaddsmb</emphasis>, above) it becomes clear that you
+of <emphasis>cupsaddsmb</emphasis>, above) it becomes clear that you
 need to have certain conditions in order to make the manual uploading
 and initializing of the driver files succeed. The two rpcclient
 subcommands (<command>adddriver</command> and
@@ -3750,7 +3750,7 @@ back.
 </sect3>
 
 <sect3>
-<title>Twelveth Step: Install the Printer on a Client
+<title>Twelfth Step: Install the Printer on a Client
 ("Point'n'Print")</title>
 
 <para><screen>
@@ -3960,7 +3960,7 @@ with no argument, it prints a little usage message:
  Version:3.0a
    -h            this help message
    -s suffix     set the backup suffix
-   -v            veryify mode (restore if corrupt)
+   -v            verify mode (restore if corrupt)
 
 </screen></para>
 
@@ -4044,7 +4044,7 @@ to create their printing related software (which, BTW, works on all
 UNIXes and on Mac OS X or Darwin too). It is not known as well as it
 should be, that it also has a very end-user friendly interface which
 allows for an easy update of drivers and PPDs, for all supported
-models, all spoolers, all operatings systems and all package formats
+models, all spoolers, all operating systems and all package formats
 (because there is none). Its history goes back a few years.
 </para>
 
@@ -4073,7 +4073,7 @@ automatically supported supported by CUPS to perfection, by using
 their own manufacturer-provided Windows-PPD...), and that a
 multifunctional device never qualifies as working "perfectly" if it
 doesn't also scan and copy and fax under GNU/Linux: then this is a
-truely astonishing achievement. Three years ago the number was not
+truly astonishing achievement. Three years ago the number was not
 more than 500, and Linux or UNIX "printing" at the time wasn't
 anywhere near the quality it is today!
 </para>

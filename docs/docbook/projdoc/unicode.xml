@@ -32,7 +32,7 @@ special mention. For more information about Openi18n please refer to:
 
 <para>
 Samba-2.x supported a single locale through a mechanism called 
-<emphasis>codepages</emphasis>. Samba-3 is destined to become a truely trans-global
+<emphasis>codepages</emphasis>. Samba-3 is destined to become a truly trans-global
 file and printer sharing platform.
 </para>
 
@@ -70,7 +70,7 @@ communicating.
 </para>
 
 <para>Old windows clients used to use single-byte charsets, named 
-'codepages' by microsoft. However, there is no support for 
+'codepages' by Microsoft. However, there is no support for 
 negotiating the charset to be used in the smb protocol. Thus, you 
 have to make sure you are using the same charset when talking to an old client.
 Newer clients (Windows NT, 2K, XP) talk unicode over the wire.

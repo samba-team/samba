@@ -33,7 +33,7 @@ that in some magical way is expected to solve all ills.
 </para>
 
 <para>
-From the Samba mailing list one can readilly identify many common networking issues.
+From the Samba mailing list one can readily identify many common networking issues.
 If you are not clear on the following subjects, then it will do much good to read the 
 sections of this HOWTO that deal with it. These are the most common causes of MS Windows
 networking problems:
@@ -168,7 +168,7 @@ there can be multiple back-ends for this including:
 
 <itemizedlist>
 	<listitem><para>
-	<emphasis>smbpasswd</emphasis> - the plain ascii file stored used by
+	<emphasis>smbpasswd</emphasis> - the plain ASCII file stored used by
 	earlier versions of Samba. This file configuration option requires
 	a Unix/Linux system account for EVERY entry (ie: both for user and for
 	machine accounts). This file will be located in the <emphasis>private</emphasis>
@@ -179,7 +179,7 @@ there can be multiple back-ends for this including:
 	<emphasis>tdbsam</emphasis> - a binary database backend that will be
 	stored in the <emphasis>private</emphasis> directory in a file called
 	<emphasis>passdb.tdb</emphasis>. The key benefit of this binary format
-	file is that it can store binary objects that can not be accomodated
+	file is that it can store binary objects that can not be accommodated
 	in the traditional plain text smbpasswd file. These permit the extended
 	account controls that MS Windows NT4 and later also have.
 	</para></listitem>
@@ -255,7 +255,7 @@ database with Backup Domain Controllers.
 
 <para>
 With MS Windows 200x Server based Active Directory domains, one domain controller seeds a potential
-hierachy of domain controllers, each with their own area of delegated control. The master domain
+hierarchy of domain controllers, each with their own area of delegated control. The master domain
 controller has the ability to override any down-stream controller, but a down-line controller has
 control only over it's down-line. With Samba-3 this functionality can be implemented using an
 LDAP based user and machine account back end.
@@ -276,12 +276,12 @@ On a network segment that has a BDC and a PDC the BDC will be most likely to ser
 logon requests. The PDC will answer network logon requests when the BDC is too busy (high load).
 A BDC can be promoted to a PDC. If the PDC is on line at the time that a BDC is promoted to
 PDC, the previous PDC is automatically demoted to a BDC. With Samba-3 this is NOT an automatic
-operation; the PDB and BDC must be manually configured and changes need to be made likewise.
+operation; the PDC and BDC must be manually configured and changes need to be made likewise.
 </para>
 
 <para>
 With MS Windows NT4, it is an install time decision what type of machine the server will be.
-It is possible to change the promote a BDC to a PDC and vica versa only, but the only way
+It is possible to change the promote a BDC to a PDC and vice versa only, but the only way
 to convert a domain controller to a domain member server or a stand-alone server is to
 reinstall it. The install time choices offered are:
 </para>
@@ -376,7 +376,7 @@ The following provisions are required to serve MS Windows 9x / Me Clients:
 	<member>Configuration of basic TCP/IP and MS Windows Networking</member>
 	<member>Correct designation of the Server Role (<parameter>security = user</parameter>)</member>
 	<member>Network Logon Configuration (Since Windows 9x / XP Home are not technically domain
-	members, they do not really particpate in  the security aspects of Domain logons as such)</member>
+	members, they do not really participate in  the security aspects of Domain logons as such)</member>
 	<member>Roaming Profile Configuration</member>
 	<member>Configuration of System Policy handling</member>
 	<member>Installation of the Network driver "Client for MS Windows Networks" and configuration
@@ -542,7 +542,7 @@ an Active Directory Primary Domain Controller. The protocols for some of the fun
 the Active Directory Domain Controllers is have been partially implemented on an experimental
 only basis. Please do NOT expect Samba-3 to support these protocols - nor should you depend
 on any such functionality either now or in the future. The Samba-Team may well remove such
-experiemental features or may change their behaviour.
+experimental features or may change their behaviour.
 </para>
 
 </sect1>
@@ -569,7 +569,7 @@ must be set.
 <title>Example Configuration</title>
 
 <programlisting>
-	[globals]
+	[global]
 		domain logons = Yes
 		domain master = (Yes on PDC, No on BDCs)
 
@@ -884,7 +884,7 @@ admin user system is working.
 <para>
 Alternatively if you are creating account entries manually then they 
 have not been created correctly. Make sure that you have the entry 
-correct for the machine trust account in smbpasswd file on the Samba PDC. 
+correct for the machine trust account in <filename>smbpasswd</filename> file on the Samba PDC. 
 If you added the account using an editor rather than using the smbpasswd 
 utility, make sure that the account name is the machine NetBIOS name 
 with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 

@@ -29,7 +29,7 @@ SMB server.
 If you want to test against something like a NT or WfWg server then
 you will have to disable all but TCP on either the client or
 server. Otherwise you may well be using a totally different protocol
-(such as Netbeui) and comparisons may not be valid.
+(such as NetBEUI) and comparisons may not be valid.
 </para>
 
 <para>
@@ -217,12 +217,12 @@ performance. Check the sections on the various clients in
 Hi everyone. I am running Gentoo on my server and samba 2.2.8a. Recently
 I changed kernel version from linux-2.4.19-gentoo-r10 to
 linux-2.4.20-wolk4.0s. And now I have performance issue with samba. Ok
-many of you will probably say that move to vanilla sources...well I ried
+many of you will probably say that move to vanilla sources...well I tried
 it too and it didn't work. I have 100mb LAN and two computers (linux +
 Windows2000). Linux server shares directory with DivX files, client
 (windows2000) plays them via LAN. Before when I was running 2.4.19 kernel
 everything was fine, but now movies freezes and stops...I tried moving
-files between server and Windows and it's trerribly slow.
+files between server and Windows and it's terribly slow.
 </para>
 
 <para>
@@ -238,31 +238,31 @@ error, collisions, etc... look normal for ethernet.
 <title>Corrupt tdb Files</title>
 
 <para>
-Well today it happend, our first major problem using samba.
+Well today it happened, Our first major problem using samba.
 Our samba PDC server has been hosting 3 TB of data to our 500+ users
 [Windows NT/XP]  for the last 3 years using samba, no problem.
 But today all shares went SLOW; very slow. Also the main smbd kept
 spawning new processes so we had 1600+ running smbd's (normally we avg. 250).
-It crashed the SUN E3500 cluster twice. After alot of searching I
-decided to <command>rm /var/locks/*.tbl</command>. Happy again.
+It crashed the SUN E3500 cluster twice. After a lot of searching I
+decided to <command>rm /var/locks/*.tdb</command>. Happy again.
 </para>
 
 <para>
-Q1) Is there any method of keeping the *.tbl files in top condition or
+Q1) Is there any method of keeping the *.tdb files in top condition or
 how to early detect corruption?
 </para>
 
 <para>
-A1) Yes, run <command>tdbbackup</command> each time after stoping nmbd and before starting nmbd.
+A1) Yes, run <command>tdbbackup</command> each time after stopping nmbd and before starting nmbd.
 </para>
 
 <para>
 Q2) What I also would like to mention is that the service latency seems
-alot lower then before the locks cleanup, any ideas on keeping it top notch?
+a lot lower then before the locks cleanup, any ideas on keeping it top notch?
 </para>
 
 <para>
-A2) Yes! Samba answer as for Q1!
+A2) Yes! Same answer as for Q1!
 </para>
 
 </sect1>

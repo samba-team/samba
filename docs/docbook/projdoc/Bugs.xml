@@ -75,7 +75,7 @@ time, and exactly what the results were.
 If the bug has anything to do with Samba behaving incorrectly as a
 server (like refusing to open a file) then the log files will probably
 be very useful. Depending on the problem a log level of between 3 and
-10 showing the problem may be appropriate. A higher level givesmore
+10 showing the problem may be appropriate. A higher level gives more
 detail, but may use too much disk space.
 </para>
 
@@ -166,7 +166,7 @@ If you know any assembly language then do a
 where the problem occurred (if its in a library routine then
 disassemble the routine that called it) and try to work out exactly
 where the problem is by looking at the surrounding code. Even if you
-don't know assembly then incuding this info in the bug report can be
+don't know assembly, including this info in the bug report can be
 useful. 
 </para>
 </sect1>

@@ -139,7 +139,7 @@ on this system just substitute the correct package name
 	<option>-r</option> and defining a tag name.  A list of branch tag names 
 	can be found on the "Development" page of the samba web site.  A common
 	request is to obtain the latest 3.0 release code.  This could be done by 
-	using the following userinput.
+	using the following command:
 	</para>
 	
 	<para>
@@ -283,7 +283,7 @@ example of what you would not want to see would be:
 	
 	    <listitem><para>the MIT kerberos development libraries
 	    (either install from the sources or use a package). The
-	    heimdal libraries will not work.</para></listitem>
+	    Heimdal libraries will not work.</para></listitem>
 	
 	    <listitem><para>the OpenLDAP development libraries.</para></listitem>
 	    
@@ -345,7 +345,7 @@ example of what you would not want to see would be:
 	<title>Starting the &smbd; and &nmbd;</title>
 
 	<para>You must choose to start &smbd; and &nmbd; either
-	as daemons or from <application>inetd</application>Don't try
+	as daemons or from <application>inetd</application>. Don't try
 	to do both!  Either you can put them in <filename>
 	inetd.conf</filename> and have them started on demand
 	by <application>inetd</application>, or you can start them as

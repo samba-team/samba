@@ -9,7 +9,7 @@
 <para>
 Advanced MS Windows users are frequently perplexed when file, directory and share manipulation of
 resources shared via Samba do not behave in the manner they might expect. MS Windows network
-adminstrators are often confused regarding network access controls and what is the best way to
+administrators are often confused regarding network access controls and what is the best way to
 provide users with the type of access they need while protecting resources from the consequences
 of untoward access capabilities.
 </para>
@@ -45,7 +45,7 @@ This is an opportune point to mention that it should be borne in mind that Samba
 provide a means of interoperability and interchange of data between two operating environments
 that are quite different. It was never the intent to make Unix/Linux like MS Windows NT. Instead
 the purpose was an is to provide a sufficient level of exchange of data between the two environments.
-What is available today extends well beyond early plans and expections, yet the gap continues to
+What is available today extends well beyond early plans and expectations, yet the gap continues to
 shrink.
 </para>
 
@@ -110,7 +110,7 @@ shrink.
 			operating system supports them. If not, then this option will not be
 			available to you. Current Unix technology platforms have native support
 			for POSIX ACLs. There are patches for the Linux kernel that provide
-			this also. Sadly, few Linux paltforms ship today with native ACLs and
+			this also. Sadly, few Linux platforms ship today with native ACLs and
 			Extended Attributes enabled. This chapter has pertinent information
 			for users of platforms that support them.
 			</para>
@@ -142,7 +142,7 @@ at how Samba helps to bridge the differences.
 	<para>
 	It is good news that Samba does this to a very large extent and on top of that provides a high degree
 	of optional configuration to over-ride the default behaviour. We will look at some of these over-rides,
-	but for the greater part we will stay withing the bounds of default behaviour. Those wishing to explore
+	but for the greater part we will stay within the bounds of default behaviour. Those wishing to explore
 	to depths of control ability should review the &smb.conf; man page.
 	</para>
 
@@ -239,7 +239,7 @@ at how Samba helps to bridge the differences.
 		Symbolic links are files in Unix that contain the actual location of the data (file OR directory). An
 		operation (like read or write) will operate directly on the file referenced. Symbolic links are also
 		referred to as 'soft links'. A hard link is something that MS Windows is NOT familiar with. It allows
-		one physical file to be known simulataneously by more than one file name.
+		one physical file to be known simultaneously by more than one file name.
 		</para>
 			</listitem>
 		</varlistentry>
@@ -287,7 +287,7 @@ at how Samba helps to bridge the differences.
 	</para>
 
 	<para>
-	Unix/Linux file and directory access permissions invloves setting three (3) primary sets of data and one (1) control set.
+	Unix/Linux file and directory access permissions involves setting three (3) primary sets of data and one (1) control set.
 	A Unix file listing looks as follows:-
 
 	<screen>
@@ -357,11 +357,11 @@ at how Samba helps to bridge the differences.
 	</para>
 
 	<para>
-	Additional posibilities in the [type] field are: c = character device, b = block device, p = pipe device, s = Unix Domain Socket.
+	Additional possibilities in the [type] field are: c = character device, b = block device, p = pipe device, s = Unix Domain Socket.
 	</para>
 
 	<para>
-	The letters `rwxXst' set permissions for the user, group and others as: read (r), write (w), execute (or access for directories) (x),r
+	The letters `rwxXst' set permissions for the user, group and others as: read (r), write (w), execute (or access for directories) (x),
 	execute  only  if  the  file  is a directory or already has execute permission for some user (X), set user or group ID on execution (s),
 	sticky (t).
 	</para>
@@ -506,7 +506,7 @@ Before using any of the following options please refer to the man page for &smb.
 	The following file and directory permission based controls, if misused, can result in considerable difficulty to
 	diagnose the cause of mis-configuration. Use them sparingly and carefully. By gradually introducing each one by one
 	undesirable side-effects may be detected. In the event of a problem, always comment all of them out and then gradually
-	re-instroduce them in a controlled fashion.
+	re-introduce them in a controlled fashion.
 	</para>
 
 	<table frame='all'><title>File and Directory Permission Based Controls</title>
@@ -563,13 +563,13 @@ Before using any of the following options please refer to the man page for &smb.
 		<row>
 			<entry>hide unreadable</entry>
 			<entry><para>
-			Prevents clients from seeing the existance of files that cannot be read.
+			Prevents clients from seeing the existence of files that cannot be read.
 			</para></entry>
 		</row>
 		<row>
 			<entry>hide unwriteable files</entry>
 			<entry><para>
-			Prevents clients from seeing the existance of files that cannot be written to. Unwriteable directories are shown as usual. 
+			Prevents clients from seeing the existence of files that cannot be written to. Unwriteable directories are shown as usual. 
 			</para></entry>
 		</row>
 		<row>
@@ -677,7 +677,7 @@ Before using any of the following options please refer to the man page for &smb.
 
 	<para>
 	This section deals with how to configure Samba per share access control restrictions.
-	By default samba sets no restrictions on the share itself. Restrictions on the share itself
+	By default, Samba sets no restrictions on the share itself. Restrictions on the share itself
 	can be set on MS Windows NT4/200x/XP shares. This can be a very effective way to limit who can
 	connect to a share. In the absence of specific restrictions the default setting is to allow
 	the global user <constant>Everyone</constant> Full Control (ie: Full control, Change and Read).
@@ -693,8 +693,8 @@ Before using any of the following options please refer to the man page for &smb.
 	<para>
 	Samba stores the per share access control settings in a file called <filename>share_info.tdb</filename>.
 	The location of this file on your system will depend on how samba was compiled. The default location
-	for samba's tdb files is under <filename>/usr/local/samba/var</filename>. If the <filename>tdbdump</filename>
-	utility has been compiled and installed on your system then you can examine the contents of this file
+	for Samba's tdb files is under <filename>/usr/local/samba/var</filename>. If the <filename>tdbdump</filename>
+	utility has been compiled and installed on your system, then you can examine the contents of this file
 	by: <userinput>tdbdump share_info.tdb</userinput>.
 	</para>
 
@@ -702,7 +702,7 @@ Before using any of the following options please refer to the man page for &smb.
 	<title>Share Permissions Management</title>
 
 		<para>
-		The best tool for the task is platform dependant. Choose the best tool for your environmemt.
+		The best tool for the task is platform dependant. Choose the best tool for your environment.
 		</para>
 
 			<sect3>
@@ -750,7 +750,7 @@ Before using any of the following options please refer to the man page for &smb.
 				After launching the MMC with the Computer Management snap-in, click on the menu item <guimenuitem>Action</guimenuitem>,
 				select <guilabel>Connect to another computer</guilabel>. If you are not logged onto a domain you will be prompted
 				to enter a domain login user identifier and a password. This will authenticate you to the domain.
-				If you where already logged in with administrative privilidge this step is not offered.
+				If you where already logged in with administrative privilege this step is not offered.
 			</para></step>
 
 			<step><para>
@@ -902,9 +902,9 @@ Before using any of the following options please refer to the man page for &smb.
 		<sect3>
 			<title>File Permissions</title>
 
-			<para>The standard UNIX user/group/world triple and 
+			<para>The standard UNIX user/group/world triplet and 
 			the corresponding "read", "write", "execute" permissions 
-			triples are mapped by Samba into a three element NT ACL 
+			triplets are mapped by Samba into a three element NT ACL 
 			with the 'r', 'w', and 'x' bits mapped into the corresponding 
 			NT permissions. The UNIX world permissions are mapped into 
 			the global NT group <constant>Everyone</constant>, followed 
@@ -976,14 +976,14 @@ Before using any of the following options please refer to the man page for &smb.
 		the dialog box. This actually works quite well as these are the 
 		only permissions that UNIX actually has.</para>
 
-		<para>If a permission triple (either user, group, or world) 
+		<para>If a permission triplet (either user, group, or world) 
 		is removed from the list of permissions in the NT dialog box, 
 		then when the <guibutton>OK</guibutton> button is pressed it will 
 		be applied as "no permissions" on the UNIX side. If you then 
 		view the permissions again the "no permissions" entry will appear 
 		as the NT <command>"O"</command> flag, as described above. This 
 		allows you to add permissions back to a file or directory once 
-		you have removed them from a triple component.</para>
+		you have removed them from a triplet component.</para>
 
 		<para>As UNIX supports only the "r", "w" and "x" bits of 
 		an NT ACL then if other NT security attributes such as "Delete 
@@ -1024,7 +1024,7 @@ Before using any of the following options please refer to the man page for &smb.
 
 		<para>Once a user clicks <guibutton>OK</guibutton> to apply the 
 		permissions Samba maps the given permissions into a user/group/world 
-		r/w/x triple set, and then will check the changed permissions for a 
+		r/w/x triplet set, and then will check the changed permissions for a 
 		file against the bits set in the <ulink url="smb.conf.5.html#SECURITYMASK"> 
 		<parameter>security mask</parameter></ulink> parameter. Any bits that 
 		were changed that are not set to '1' in this parameter are left alone 
@@ -1135,7 +1135,7 @@ are examples taken from the mailing list in recent times.
 	<para>
 	<quote>
 	We are facing some troubles with file / directory permissions. I can log on the domain as admin user(root),
-	and theres a public share, on which everyone needs to have permission to create / modify files, but only
+	and there's a public share, on which everyone needs to have permission to create / modify files, but only
 	root can change the file, no one else can. We need to constantly go to server to
 	<userinput>chgrp -R users *</userinput> and <userinput>chown -R nobody *</userinput> to allow others users to change the file.
 	</quote>
@@ -1229,7 +1229,7 @@ are examples taken from the mailing list in recent times.
 		Now in your &smb.conf; for the share add:
 		<programlisting>
 		force create mode = 0775
-		force direcrtory mode = 6775
+		force directory mode = 6775
 		</programlisting>
 		</para>
 
@@ -1252,10 +1252,10 @@ are examples taken from the mailing list in recent times.
 
 
 	<sect2>
-		<title>I have set force user and samba still makes <emphasis>root</emphasis> the owner of all the files
+		<title>I have set force user and Samba still makes <emphasis>root</emphasis> the owner of all the files
 			I touch!</title>
 		<para>
-			When you have a user in 'admin users', samba will always do file operations for
+			When you have a user in 'admin users', Samba will always do file operations for
 			this user as <emphasis>root</emphasis>, even if <parameter>force user</parameter> has been set.
 		</para>
 	</sect2>

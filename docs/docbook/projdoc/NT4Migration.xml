@@ -16,8 +16,8 @@ Samba-3 based domain control.
 
 <para>
 In the IT world there is often a saying that all problems are encountered because of
-poor planning. The corrollary to this saying is that not all problems can be anticpated
-and planned for. Then again, good planning will anticpate most show stopper type situations.
+poor planning. The corollary to this saying is that not all problems can be anticipated
+and planned for. Then again, good planning will anticipate most show stopper type situations.
 </para>
 
 <para>
@@ -67,9 +67,9 @@ What are the features that Samba-3 can NOT provide?
 
 <simplelist>
 	<member>Active Directory Server</member>
-	<member>Group Policy Objects (in Active Direcrtory)</member>
+	<member>Group Policy Objects (in Active Directory)</member>
 	<member>Machine Policy objects</member>
-	<member>Logon Scripts in Active Directorty</member>
+	<member>Logon Scripts in Active Directory</member>
 	<member>Software Application and Access Controls in Active Directory</member>
 </simplelist>
 
@@ -87,7 +87,7 @@ includes:
 	<member>Greater Stability, Reliability, Performance and Availability</member>
 	<member>Manageability via an ssh connection</member>
 	<member>Flexible choices of back-end authentication technologies (tdbsam, ldapsam, mysqlsam)</member>
-	<member>Ability to implement a full single-signon architecture</member>
+	<member>Ability to implement a full single-sign-on architecture</member>
 	<member>Ability to distribute authentication systems for absolute minimum wide area network bandwidth demand</member>
 </simplelist>
 
@@ -122,7 +122,7 @@ and network bandwidth.
 A physical network segment may house several domains, each of which may span multiple network segments.
 Where domains span routed network segments it is most advisable to consider and test the performance
 implications of the design and layout of a network. A Centrally located domain controller that is being
-designed to serve mulitple routed network segments may result in severe performance problems if the
+designed to serve multiple routed network segments may result in severe performance problems if the
 response time (eg: ping timing) between the remote segment and the PDC is more than 100 ms. In situations
 where the delay is too long it is highly recommended to locate a backup controller (BDC) to serve as
 the local authentication and access control server.
@@ -170,15 +170,15 @@ make sure that users will never be interrupted by the stupidity of complexity.
 <title>Logon Scripts</title>
 
 <para>
-Please refer to the section of this document on Advanced Network Adminsitration for information
+Please refer to the section of this document on Advanced Network Administration for information
 regarding the network logon script options for Samba-3. Logon scripts can help to ensure that
 all users gain share and printer connections they need.
 </para>
 
 <para>
 Logon scripts can be created on-the-fly so that all commands executed are specific to the
-rights and privilidges granted to the user. The preferred controls should be affected through
-group membership so that group information can be used to custom create a logong script using
+rights and privileges granted to the user. The preferred controls should be affected through
+group membership so that group information can be used to custom create a logon script using
 the <parameter>root preexec</parameter> parameters to the <filename>NETLOGON</filename> share.
 </para>
 
@@ -271,7 +271,7 @@ Samba-3 set up as a DC with netlogon share, profile share, etc.
 		<substeps><step><para>Now check that all groups are recognised</para></step></substeps>
 	</step>
 
-	<step><para><userinput>net rpc campire -S <replaceable>NT4PDC</replaceable> -U administrator%<replaceable>passwd</replaceable></userinput></para></step>
+	<step><para><userinput>net rpc vampire -S <replaceable>NT4PDC</replaceable> -U administrator%<replaceable>passwd</replaceable></userinput></para></step>
 
 	<step><para><userinput>pdbedit -Lv</userinput></para>
 		<substeps><step>
@@ -314,7 +314,7 @@ based solution fit into three basic categories.
 <title>Planning for Success</title>
 
 <para>
-There are three basic choices for sites that intend to migrate from MS Windwows NT4
+There are three basic choices for sites that intend to migrate from MS Windows NT4
 to Samba-3.
 </para>
 
@@ -406,13 +406,13 @@ Authentication database back end
 	External server could use Active Directory or NT4 Domain
 
 Database type
-	smbpasswd, tdbsam, ldapsam, MySQLsam
+	smbpasswd, tdbsam, ldapsam, mysqlsam
 
 Access Control Points
 	On the Share itself (Use NT4 Server Manager)
 	On the file system
 	Unix permissions on files and directories
-	Posix ACLs enablement in file system?
+	Enable Posix ACLs in file system?
 	Through Samba share parameters
 		Not recommended - except as only resort
 

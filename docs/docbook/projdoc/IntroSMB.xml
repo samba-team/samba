@@ -157,7 +157,7 @@ related to Samba: SMBFS and CIFS VFS.  These are both available in the Linux ker
 	<listitem><para>
 	CIFS VFS (Common Internet File System Virtual File System) is the successor to SMBFS, and
         is being actively developed for the upcoming version of the Linux kernel. The intent of this module
-        is to provide advanced network file system functionality including support for dfs (heirarchical
+        is to provide advanced network file system functionality including support for dfs (hierarchical
 	name space), secure per-user session establishment, safe distributed caching (oplock), 
 	optional packet signing, Unicode and other internationalization improvements, and optional 
 	Winbind (nsswitch) integration.
