@@ -33,16 +33,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 {
 	DATA_BLOB ticket;
 	krb5_context context;
-	krb5_principal server;
 	krb5_auth_context auth_context = NULL;
 	krb5_keytab keytab = NULL;
 	krb5_data packet;
 	krb5_ticket *tkt = NULL;
 	int ret;
 	char *realm, *client, *p;
-	fstring hostname;
-	char *principal;
-	extern pstring global_myname;
 	const struct passwd *pw;
 	char *user;
 	gid_t gid;
@@ -56,30 +52,21 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	fstrcpy(hostname, global_myname);
-	strlower(hostname);
-	asprintf(&principal, "HOST/%s@%s", hostname, realm);
-	
 	ret = krb5_init_context(&context);
 	if (ret) {
 		DEBUG(1,("krb5_init_context failed (%s)\n", error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	ret = krb5_parse_name(context, principal, &server);
-	if (ret) {
-		DEBUG(1,("krb5_parse_name(%s) failed (%s)\n", 
-			 principal, error_message(ret)));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	free(principal);
-
 	packet.length = ticket.length;
 	packet.data = (krb5_pointer)ticket.data;
 
+#if 0
+	file_save("/tmp/ticket.dat", ticket.data, ticket.length);
+#endif
+
 	if ((ret = krb5_rd_req(context, &auth_context, &packet, 
-				       server, keytab, NULL, &tkt))) {
+			       NULL, keytab, NULL, &tkt))) {
 		DEBUG(3,("krb5_rd_req failed (%s)\n", 
 			 error_message(ret)));
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -444,7 +431,6 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
 
 #if 0
-	chdir("/home/tridge");
 	file_save("negotiate.dat", blob1.data, blob1.length);
 #endif
 
