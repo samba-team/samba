@@ -10,28 +10,31 @@ added things at source level, script was quick&easy.
 if ($1 == "-p") then
   smbstatus -p |sort -u
 else if ($1 == "-c") then
-  echo There are `smbstatus -p |sort -u |grep -n -v z |grep -c :` unique
-smbd processes running.
+  echo There are `smbstatus -p |sort -u |grep -n -v z |grep -c :` unique smbd processes running.
  else if ($1 == "-l") then
-  echo `date '+ %d/%m/%y %H:%M:%S'` `smbstatus -p |sort -u |grep -n -v z
-|grep -c :` >>$2
+  echo `date '+ %d/%m/%y %H:%M:%S'` `smbstatus -p |sort -u |grep -n -v z |grep -c :` >>$2
+else if ($1 == "-cs") then
+  echo There are `smbstatus |awk '$1==share {n++;} END {print n}' share=$2` concurrent connections to share: $2
+else if ($1 == "-csl") then
+ echo `date '+ %d/%m/%y %H:%M:%S'` `smbstatus |awk '$1==share {n++;} END {print n}' share=$2` >>$3
 else
-  smbstatus |sort +3 -4 -u
+ echo "'smbstat -c'         ==> Count unique smbd processes."
+ echo "'smbstat -p'         ==> List unique smbd processes."
+ echo "'smbstat -l logfile' ==> Append a log entry for the number of"
+ echo "                          concurrent and unique processes to logfile."
+ echo "'smbstat -cs sharename'"
+ echo "                     ==> Count processes connected to sharename (assumed unique)"
+ echo "'smbstat -csl sharename logfile'"
+ echo "                     ==> Append a log entry for the number of concurrent"
+ echo "                         processes connected to sharename (assumed unique)"
 endif
 ******
 
-The '-p' option was just to show unique PIDs.
+Run this script from cron eg.
 
-The more important ones are the '-c' and '-l' options '-c' just counts
-the number of unique smbd's, While '-l' logs this count with date and
-time to a log file specified on the command line.  I'm using '-l' at
-the moment with cron to give me an idea of usage/max connections etc.
-I was also thinking of doing a log for individual/specified services.
+0,5,10,15,20,25,30,35,40,50,55 * * * * /usr/local/samba/bin/smbstat -l /usr/local/samba/var/smbdcount.log
 
-The default (last) option was to show unique PIDs with user names.
-Unfortunately this still lists all file locks etc.  This would be
-better with a 'no locked files' option from smbstatus (or is there one
-that I didn't see)
+and you get a good idea of usage over time.
 
 Cheers,
 ~^ MIME OK ^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~^~
