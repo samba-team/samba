@@ -351,7 +351,11 @@ static int join_domain_byuser(char *domain, char *remote,
 
 	if (!cli_establish_connection(&cli, pdc_name, &dest_ip, &calling, 
 				      &called, "IPC$", "IPC", False, True)) {
-		DEBUG(0, ("Error connecting to %s\n", pdc_name));
+		if (cli_nt_error(&cli)) {
+			DEBUG(0, ("Error connecting to %s - %s\n", pdc_name,cli_errstr(&cli)));
+		} else {
+			DEBUG(0, ("Error connecting to %s\n", pdc_name));
+		}
 		goto done;
 	}
 
