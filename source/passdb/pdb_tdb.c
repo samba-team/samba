@@ -82,6 +82,10 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
 	BOOL ret = True;
+	BOOL setflag;
+	struct passwd *pw;
+	uid_t uid;
+	gid_t gid;
 
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -125,6 +129,22 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 		goto done;
 	}
 
+	/* validate the account and fill in UNIX uid and gid. Standard
+	 * getpwnam() is used instead of Get_Pwnam() as we do not need
+	 * to try case permutations
+	 */
+	if (!username || !(pw=getpwnam(username))) {
+		DEBUG(0,("tdb_sam: getpwnam(%s) return NULL.  User does not exist!\n",
+			username?username:"NULL"));
+		ret = False;
+		goto done;
+	}
+
+	uid = pw->pw_uid;
+	gid = pw->pw_gid;
+	pdb_set_uid(sampass, uid);
+	pdb_set_gid(sampass, gid);
+
 	pdb_set_logon_time(sampass, logon_time);
 	pdb_set_logoff_time(sampass, logoff_time);
 	pdb_set_kickoff_time(sampass, kickoff_time);
@@ -136,18 +156,55 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	pdb_set_domain       (sampass, domain_len?domain:NULL);
 	pdb_set_nt_username  (sampass, nt_username_len?nt_username:NULL);
 	pdb_set_fullname     (sampass, fullname_len?fullname:NULL);
-	pdb_set_homedir      (sampass, homedir_len?homedir:NULL, True);
-	pdb_set_dir_drive    (sampass, dir_drive_len?dir_drive:NULL, True);
-	pdb_set_logon_script (sampass, logon_script_len?logon_script:NULL, True);
-	pdb_set_profile_path (sampass, profile_path_len?profile_path:NULL, True);
-	pdb_set_acct_desc    (sampass, acct_desc_len?acct_desc:NULL);
-	pdb_set_workstations (sampass, workstations_len?workstations:NULL);
-	pdb_set_munged_dial  (sampass, munged_dial_len?munged_dial:NULL);
-	if (!pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL)) {
+
+	if (homedir) setflag = True;
+	else {
+		setflag = False;
+		homedir = strdup(lp_logon_home());
+		if(!homedir) { ret = False; goto done; }
+		standard_sub_advanced(-1, username, "", gid, homedir);
+		DEBUG(5,("Home directory set back to %s\n", homedir));
+	}
+	pdb_set_homedir(sampass, homedir, setflag);
+
+	if (dir_drive) setflag = True;
+	else {
+		setflag = False;
+		dir_drive = strdup(lp_logon_drive());
+		if(!dir_drive) { ret = False; goto done; }
+		standard_sub_advanced(-1, username, "", gid, dir_drive);
+		DEBUG(5,("Home directory set back to %s\n", dir_drive));
+	}
+	pdb_set_dir_drive(sampass, dir_drive, setflag);
+
+	if (logon_script) setflag = True;
+	else {
+		setflag = False;
+		logon_script = strdup(lp_logon_script());
+		if(!logon_script) { ret = False; goto done; }
+		standard_sub_advanced(-1, username, "", gid, logon_script);
+		DEBUG(5,("Home directory set back to %s\n", logon_script));
+	}
+	pdb_set_logon_script(sampass, logon_script, setflag);
+
+	if (profile_path) setflag = True;
+	else {
+		setflag = False;
+		profile_path = strdup(lp_logon_path());
+		if(!profile_path) { ret = False; goto done; }
+		standard_sub_advanced(-1, username, "", gid, profile_path);
+		DEBUG(5,("Home directory set back to %s\n", profile_path));
+	}
+	pdb_set_profile_path(sampass, profile_path, setflag);
+
+	pdb_set_acct_desc    (sampass, acct_desc);
+	pdb_set_workstations (sampass, workstations);
+	pdb_set_munged_dial  (sampass, munged_dial);
+	if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
 		ret = False;
 		goto done;
 	}
-	if (!pdb_set_nt_passwd(sampass, ntpwlen?nt_pw_ptr:NULL)) {
+	if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
 		ret = False;
 		goto done;
 	}
@@ -220,8 +277,10 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	uint32	nt_pw_len = 16;
 
 	/* do we have a valid SAM_ACCOUNT pointer? */
-	if (sampass == NULL)
+	if (sampass == NULL) {
+		DEBUG(0, ("init_buffer_from_sam: SAM_ACCOUNT is NULL!\n"));
 		return -1;
+	}
 		
 	*buf = NULL;
 	buflen = 0;
@@ -235,71 +294,65 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 
 
 	username = pdb_get_username(sampass);
-	if (username)
-		username_len = strlen(username) +1;
-	else
-		username_len = 0;
+	if (username) username_len = strlen(username) +1;
+	else username_len = 0;
+
 	domain = pdb_get_domain(sampass);
-	if (domain)
-		domain_len = strlen(domain) +1;
-	else
-		domain_len = 0;
+	if (domain) domain_len = strlen(domain) +1;
+	else domain_len = 0;
+
 	nt_username = pdb_get_nt_username(sampass);
-	if (nt_username)
-		nt_username_len = strlen(nt_username) +1;
-	else
-		nt_username_len = 0;
-	dir_drive = pdb_get_dirdrive(sampass);
-	if (dir_drive)
-		dir_drive_len = strlen(dir_drive) +1;
-	else
-		dir_drive_len = 0;
-	unknown_str = NULL;
-	unknown_str_len = 0;
-	munged_dial = pdb_get_munged_dial(sampass);
-	if (munged_dial)
-		munged_dial_len = strlen(munged_dial) +1;
-	else
-		munged_dial_len = 0;
-		
+	if (nt_username) nt_username_len = strlen(nt_username) +1;
+	else nt_username_len = 0;
+
 	fullname = pdb_get_fullname(sampass);
-	if (fullname)
-		fullname_len = strlen(fullname) +1;
-	else
-		fullname_len = 0;
-	homedir = pdb_get_homedir(sampass);
-	if (homedir)
-		homedir_len = strlen(homedir) +1;
-	else
-		homedir_len = 0;
-	logon_script = pdb_get_logon_script(sampass);
-	if (logon_script)
-		logon_script_len = strlen(logon_script) +1;
-	else
-		logon_script_len = 0;
-	profile_path = pdb_get_profile_path(sampass);
-	if (profile_path)
-		profile_path_len = strlen(profile_path) +1;
-	else
-		profile_path_len = 0;
-	acct_desc = pdb_get_acct_desc(sampass);
-	if (acct_desc)
-		acct_desc_len = strlen(acct_desc) +1;
-	else
-		acct_desc_len = 0;
-	workstations = pdb_get_workstations(sampass);
-	if (workstations)
-		workstations_len = strlen(workstations) +1;
-	else
-		workstations_len = 0;
+	if (fullname) fullname_len = strlen(fullname) +1;
+	else fullname_len = 0;
+
+	/*
+	 * Only updates fields which have been set (not defaults from smb.conf)
+	 */
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) dir_drive = pdb_get_dirdrive(sampass);
+	else dir_drive = NULL;
+	if (dir_drive) dir_drive_len = strlen(dir_drive) +1;
+	else dir_drive_len = 0;
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_SMBHOME)) homedir = pdb_get_homedir(sampass);
+	else homedir = NULL;
+	if (homedir) homedir_len = strlen(homedir) +1;
+	else homedir_len = 0;
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT)) logon_script = pdb_get_logon_script(sampass);
+	else logon_script = NULL;
+	if (logon_script) logon_script_len = strlen(logon_script) +1;
+	else logon_script_len = 0;
+
+	if (IS_SAM_SET(sampass, FLAG_SAM_PROFILE)) profile_path = pdb_get_profile_path(sampass);
+	else profile_path = NULL;
+	if (profile_path) profile_path_len = strlen(profile_path) +1;
+	else profile_path_len = 0;
 	
 	lm_pw = pdb_get_lanman_passwd(sampass);
-	if (!lm_pw)
-		lm_pw_len = 0;
+	if (!lm_pw) lm_pw_len = 0;
 	
 	nt_pw = pdb_get_nt_passwd(sampass);
-	if (!nt_pw)
-		nt_pw_len = 0;
+	if (!nt_pw) nt_pw_len = 0;
+		
+	acct_desc = pdb_get_acct_desc(sampass);
+	if (acct_desc) acct_desc_len = strlen(acct_desc) +1;
+	else acct_desc_len = 0;
+
+	workstations = pdb_get_workstations(sampass);
+	if (workstations) workstations_len = strlen(workstations) +1;
+	else workstations_len = 0;
+
+	unknown_str = NULL;
+	unknown_str_len = 0;
+
+	munged_dial = pdb_get_munged_dial(sampass);
+	if (munged_dial) munged_dial_len = strlen(munged_dial) +1;
+	else munged_dial_len = 0;
 		
 	/* one time to get the size needed */
 	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
@@ -438,7 +491,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 		return False;
 	}
 
-	/* skip all non-USER entries (eg. RIDS)  */
+	/* skip all non-USER entries (eg. RIDS) */
 	while ((global_tdb_ent.key.dsize != 0) && (strncmp(global_tdb_ent.key.dptr, prefix, prefixlen)))
 		/* increment to next in line */
 		global_tdb_ent.key = tdb_nextkey(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
@@ -463,27 +516,6 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	}
 	SAFE_FREE(data.dptr);
 	
-	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
-	   is used instaed of Get_Pwnam() as we do not need to try case
-	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL) {
-		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
-		          pdb_get_username(user)));
-		return False;
-	}
-
-	uid = pw->pw_uid;
-	gid = pw->pw_gid;
-	pdb_set_uid(user, uid);
-	pdb_set_gid(user, gid);
-
-	/* 21 days from present */
-	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
-
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
-	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
-
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey(global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
@@ -550,28 +582,6 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	/* no further use for database, close it now */
 	tdb_close(pwd_tdb);
 	
-	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
-	   is used instead of Get_Pwnam() as we do not need to try case
-	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user)))) {
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-		pdb_set_uid (user, uid);
-		pdb_set_gid (user, gid);
-
-		/* 21 days from present */
-		pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
-
-		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
-		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
-		standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
-	}
-	else {
-		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
-		          pdb_get_username(user)));
-		return False;
-	}
-
 	return True;
 }
 
