@@ -113,6 +113,7 @@ send_and_recv_tcp(int fd,
 static int
 send_and_recv_http(int fd, 
 		   time_t tmout,
+		   const char *prefix,
 		   const krb5_data *send,
 		   krb5_data *recv)
 {
@@ -123,7 +124,7 @@ send_and_recv_http(int fd,
     int len = base64_encode(send->data, send->length, &str);
     if(len < 0)
 	return -1;
-    asprintf(&request, "GET %s HTTP/1.1\r\n\r\n", str);
+    asprintf(&request, "GET %s%s HTTP/1.0\r\n\r\n", prefix, str);
     free(str);
     r.data = request;
     r.length = strlen(request);
@@ -136,12 +137,18 @@ send_and_recv_http(int fd,
 	s = realloc(recv->data, recv->length + 1);
 	s[recv->length] = 0;
 	p = strstr(s, "\r\n\r\n");
-	if(p == NULL)
+	if(p == NULL) {
+	    free(s);
 	    return -1;
+	}
 	p += 4;
 	recv->data = s;
 	recv->length -= p - s;
-	memmove(recv->data, p, recv->length);
+	if(recv->length < 4) { /* remove length */
+	    free(s);
+	    return -1;
+	}
+	memmove(recv->data, p + 4, recv->length - 4);
     }
     return 0;
 }
@@ -210,6 +217,50 @@ krb5_sendto_kdc (krb5_context context,
 	     } else if(strncmp(p, "udp/", 4) == 0) {
 		 p += 4;
 	     }
+	     if(http_flag && context->http_proxy) {
+		 char *proxy = strdup(context->http_proxy);
+		 char *prefix;
+		 struct hostent *hp;
+		 
+		 colon = strchr(proxy, ':');
+		 if(colon) {
+		     *colon = '\0';
+		 }
+		 hp = roken_gethostbyname(proxy);
+		 if(colon)
+		     *colon++ = ':';
+		 if(hp == NULL) {
+		     free(proxy);
+		     continue;
+		 }
+		 ret = krb5_h_addr2sockaddr (hp->h_addrtype,
+					     hp->h_addr,
+					     sa,
+					     &sa_size,
+					     init_port(colon, htons(80)));
+		 free(proxy);
+		 if(ret)
+		     continue;
+		 fd = socket(hp->h_addrtype, SOCK_STREAM, 0);
+		 if(fd < 0) 
+		     continue;
+		 if(connect(fd, sa, sa_size) < 0) {
+		     close(fd);
+		     continue;
+		 }
+		 asprintf(&prefix, "http://%s/", p);
+		 if(prefix == NULL) {
+		     close(fd);
+		     continue;
+		 }
+		 ret = send_and_recv_http(fd, context->kdc_timeout,
+					  prefix, send, receive);
+		 close (fd);
+		 free(prefix);
+		 if(ret == 0 && receive->length != 0)
+		     goto out;
+		 continue;
+	     }
 	     colon = strchr (p, ':');
 	     if (colon)
 		 *colon = '\0';
@@ -251,7 +302,7 @@ krb5_sendto_kdc (krb5_context context,
 		    
 		 if(http_flag)
 		     ret = send_and_recv_http(fd, context->kdc_timeout,
-					      send, receive);
+					      "", send, receive);
 		 else if(tcp_flag)
 			
 		     ret = send_and_recv_tcp (fd, context->kdc_timeout,
