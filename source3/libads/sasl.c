@@ -241,7 +241,12 @@ static ADS_STATUS ads_sasl_gssapi_bind(ADS_STRUCT *ads)
 	ADS_STATUS status;
 	krb5_principal principal;
 	krb5_context ctx;
-	krb5_enctype enc_types[] = {ENCTYPE_DES_CBC_MD5, ENCTYPE_NULL};
+	krb5_enctype enc_types[] = {
+#ifdef ENCTYPE_ARCFOUR_HMAC
+			ENCTYPE_ARCFOUR_HMAC,
+#endif
+			ENCTYPE_DES_CBC_MD5,
+			ENCTYPE_NULL};
 	gss_OID_desc nt_principal = 
 	{10, "\052\206\110\206\367\022\001\002\002\002"};
 

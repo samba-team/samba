@@ -446,6 +446,13 @@ static DATA_BLOB cli_session_setup_blob(struct cli_state *cli, DATA_BLOB blob)
 
 #ifdef HAVE_KRB5
 /****************************************************************************
+ Use in-memory credentials cache
+****************************************************************************/
+static void use_in_memory_ccache() {
+	setenv(KRB5_ENV_CCNAME, "MEMORY:net_ads_testjoin", 1);
+}
+
+/****************************************************************************
  Do a spnego/kerberos encrypted session setup.
 ****************************************************************************/
 
@@ -656,6 +663,21 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	fstrcpy(cli->user_name, user);
 
 #ifdef HAVE_KRB5
+	/* If password is set we reauthenticate to kerberos server
+	 * and do not store results */
+
+	if (*pass) {
+		int ret;
+
+		use_in_memory_ccache();
+		ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */);
+
+		if (ret){
+	  		DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
+			return False;
+		}
+	}
+
 	if (got_kerberos_mechanism && cli->use_kerberos) {
 		return cli_session_setup_kerberos(cli, principal, workgroup);
 	}
