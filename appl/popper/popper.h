@@ -49,6 +49,8 @@
 #include <syslog.h>
 #include "version.h"
 
+#include <roken.h>
+
 #define KERBEROS
 
 #ifdef KERBEROS

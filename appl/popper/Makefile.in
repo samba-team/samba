@@ -75,6 +75,6 @@ dist: $(DISTFILES)
 	done
 
 kpopper: $(OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
 
 $(OBJECTS): ../../config.h
