@@ -388,7 +388,7 @@ it in directly. </para></listitem>
 
 <!ENTITY stdarg.authfile '
 <varlistentry>
-<term>-A|--authfile=filename</term>
+<term>-A|--authentication-file=filename</term>
 <listitem><para>This option allows
 you to specify a file from which to read the username and
 password used in the connection.  The format of the file is
