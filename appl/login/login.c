@@ -376,8 +376,10 @@ main(int argc, char **argv)
 
     if(help_flag)
 	usage(0);
-    if (version_flag)
-	errx(0, "%s version %s", PACKAGE, VERSION);
+    if (version_flag) {
+	print_version (NULL);
+	return 0;
+    }
 	
     if (geteuid() != 0)
 	err(1, "only root may use login, use su");

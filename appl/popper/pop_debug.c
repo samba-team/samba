@@ -225,7 +225,7 @@ main(int argc, char **argv)
 	usage (0);
 
     if (do_version) {
-	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
+	print_version (NULL);
 	return 0;
     }
 	
