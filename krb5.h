@@ -340,5 +340,15 @@ krb5_425_conv_principal(krb5_context context,
 			const char *realm,
 			krb5_principal *princ);
 
+krb5_error_code
+krb5_get_krbhst (krb5_context context,
+		 const krb5_data *realm,
+		 char ***hostlist);
+
+krb5_error_code
+krb5_free_krbhst (krb5_context context,
+		  char *const *hostlist);
+
+
 #endif /* __KRB5_H__ */
 
