@@ -654,15 +654,13 @@ sub ParseElementPushPtr($$$)
 
 #####################################################################
 # print scalars in a structure element
-sub ParseElementPrintScalar($$)
+sub ParseElementPrint($$)
 {
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my $cprefix = c_push_prefix($e);
 
-	if (util::has_property($e, "noprint")) {
-		return;
-	}
+	return if (util::has_property($e, "noprint"));
 
 	if (my $value = util::has_property($e, "value")) {
 		pidl "if (ndr->flags & LIBNDR_PRINT_SET_VALUES) {";
@@ -672,17 +670,32 @@ sub ParseElementPrintScalar($$)
 		pidl "}";
 	}
 
-	if (is_fixed_array($e)) {
-		ParseElementPrintBuffer($e, $var_prefix);
-	} elsif ($e->{POINTERS} || util::array_size($e)) {
+	if (!is_fixed_array($e) and ($e->{POINTERS} or util::array_size($e))) {
 		pidl "ndr_print_ptr(ndr, \"$e->{NAME}\", $var_prefix$e->{NAME});";
 		pidl "ndr->depth++;";
-		ParseElementPrintBuffer($e, $var_prefix);
-		pidl "ndr->depth--;";
+	}
+	if (need_wire_pointer($e)) {
+		pidl "if ($var_prefix$e->{NAME}) {";
+		indent;
+	}
+
+	if (util::array_size($e)) {
+		ParseArrayPrint($e, $var_prefix)
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPrintSwitch($e, $var_prefix, $switch);
+		my $switch_var = ParseExpr($e, $switch, $var_prefix);
+		check_null_pointer_void($switch_var);
+
+		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});";
 	} else {
 		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});";
+	}
+
+	if (need_wire_pointer($e)) {
+		deindent;
+		pidl "}";
+	}
+	if (!is_fixed_array($e) and ($e->{POINTERS} or util::array_size($e))) {
+		pidl "ndr->depth--;";
 	}
 }
 
@@ -782,22 +795,6 @@ sub ParseElementPushSwitch($$$$)
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));";
 	}
 }
-
-#####################################################################
-# print scalars in a structure element 
-sub ParseElementPrintSwitch($$$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my $switch = shift;
-	my $switch_var = ParseExpr($e, $switch, $var_prefix);
-	my $cprefix = c_push_prefix($e);
-
-	check_null_pointer_void($switch_var);
-
-	pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});";
-}
-
 
 #####################################################################
 # parse scalars in a structure element - pull size
@@ -905,33 +902,6 @@ sub ParseElementPushBuffer($$$)
 	}	
 
 	end_flags($e);
-}
-
-#####################################################################
-# print buffers in a structure element
-sub ParseElementPrintBuffer($$)
-{
-	my($e) = shift;
-	my($var_prefix) = shift;
-	my $cprefix = c_push_prefix($e);
-
-	if (need_wire_pointer($e)) {
-		pidl "if ($var_prefix$e->{NAME}) {";
-		indent;
-	}
-	    
-	if (util::array_size($e)) {
-		ParseArrayPrint($e, $var_prefix)
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseElementPrintSwitch($e, $var_prefix, $switch);
-	} else {
-		pidl "ndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $cprefix$var_prefix$e->{NAME});";
-	}
-
-	if (need_wire_pointer($e)) {
-		deindent;
-		pidl "}";
-	}	
 }
 
 #####################################################################
@@ -1246,7 +1216,7 @@ sub ParseStructPrint($)
 
 	pidl "ndr->depth++;";
 	foreach my $e (@{$struct->{ELEMENTS}}) {
-		ParseElementPrintScalar($e, "r->");
+		ParseElementPrint($e, "r->");
 	}
 	pidl "ndr->depth--;";
 
@@ -1478,7 +1448,7 @@ sub ParseUnionPrint($)
 		}
 		if ($el->{TYPE} ne "EMPTY") {
 			indent;
-			ParseElementPrintScalar($el, "r->");
+			ParseElementPrint($el, "r->");
 			deindent;
 		}
 		pidl "break;";
@@ -1688,7 +1658,7 @@ sub ParseFunctionPrint($)
 
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "in")) {
-			ParseElementPrintScalar($e, "r->in.");
+			ParseElementPrint($e, "r->in.");
 		}
 	}
 	pidl "ndr->depth--;";
@@ -1701,7 +1671,7 @@ sub ParseFunctionPrint($)
 	pidl "ndr->depth++;";
 	foreach my $e (@{$fn->{ELEMENTS}}) {
 		if (util::has_property($e, "out")) {
-			ParseElementPrintScalar($e, "r->out.");
+			ParseElementPrint($e, "r->out.");
 		}
 	}
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
