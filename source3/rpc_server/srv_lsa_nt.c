@@ -174,7 +174,7 @@ static void init_lsa_rid2s(DOM_R_REF *ref, DOM_RID2 *rid2,
 			(*mapped_count)++;
 		} else {
 			dom_idx = -1;
-			rid = 0xffffffff;
+			rid = 0;
 			name_type = SID_NAME_UNKNOWN;
 		}
 
@@ -202,11 +202,6 @@ static void init_reply_lookup_names(LSA_R_LOOKUP_NAMES *r_l,
 	r_l->dom_rid      = rid2;
 
 	r_l->mapped_count = mapped_count;
-
-	if (mapped_count == 0)
-		r_l->status = NT_STATUS_NONE_MAPPED;
-	else
-		r_l->status = NT_STATUS_OK;
 }
 
 /***************************************************************************
@@ -711,6 +706,12 @@ done:
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);
+	if (mapped_count == 0)
+		r_u->status = NT_STATUS_NONE_MAPPED;
+	else if (mapped_count != num_entries)
+		r_u->status = STATUS_SOME_UNMAPPED;
+	else
+		r_u->status = NT_STATUS_OK;
 	init_reply_lookup_names(r_u, ref, num_entries, rids, mapped_count);
 
 	return r_u->status;
