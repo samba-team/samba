@@ -23,9 +23,10 @@
 
 #include "includes.h"
 
-/*
- * Change the port number used to call on 
- */
+/****************************************************************************
+ Change the port number used to call on.
+****************************************************************************/
+
 int cli_set_port(struct cli_state *cli, int port)
 {
 	cli->port = port;
@@ -67,17 +68,19 @@ BOOL cli_receive_smb(struct cli_state *cli)
 
         /* If the server is not responding, note that now */
 
-        if (!ret && cli->timeout > 0) {
-                close(cli->fd);
-                cli->fd = -1;
+	if (!ret) {
 		cli->smb_read_error = smb_read_error;
+		if (cli->timeout > 0) {
+	                close(cli->fd);
+			cli->fd = -1;
+		}
         }
 
 	return ret;
 }
 
 /****************************************************************************
-  send an smb to a fd.
+ Send an smb to a fd.
 ****************************************************************************/
 
 BOOL cli_send_smb(struct cli_state *cli)
@@ -87,7 +90,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 	ssize_t ret;
 
 	/* fd == -1 causes segfaults -- Tom (tom@ninja.nl) */
-	if (cli->fd == -1) return False;
+	if (cli->fd == -1)
+		return False;
 
 	len = smb_len(cli->outbuf) + 4;
 
@@ -96,8 +100,8 @@ BOOL cli_send_smb(struct cli_state *cli)
 		if (ret <= 0) {
                         close(cli->fd);
                         cli->fd = -1;
-			DEBUG(0,("Error writing %d bytes to client. %d\n",
-				 (int)len,(int)ret));
+			DEBUG(0,("Error writing %d bytes to client. %d (%s)\n",
+				 (int)len,(int)ret, strerror(errno) ));
 			return False;
 		}
 		nwritten += ret;
@@ -199,9 +203,8 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	/* Set the CLI_FORCE_DOSERR environment variable to test
 	   client routines using DOS errors instead of STATUS32
 	   ones.  This intended only as a temporary hack. */	
-	if (getenv("CLI_FORCE_DOSERR")) {
+	if (getenv("CLI_FORCE_DOSERR"))
 		cli->force_dos_errors = True;
-	}
 
 	if (!cli->outbuf || !cli->inbuf)
                 goto error;
@@ -269,18 +272,19 @@ void cli_shutdown(struct cli_state *cli)
 	} 
 }
 
-
 /****************************************************************************
-set socket options on a open connection
+ Set socket options on a open connection.
 ****************************************************************************/
+
 void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
 }
 
 /****************************************************************************
-set the PID to use for smb messages. Return the old pid.
+ Set the PID to use for smb messages. Return the old pid.
 ****************************************************************************/
+
 uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16 ret = cli->pid;
