@@ -39,6 +39,8 @@ struct connect_state {
 	struct smb_composite_connect *io;
 	union smb_tcon *io_tcon;
 	struct smb_composite_sesssetup *io_setup;
+	struct smbcli_request *req;
+	struct smbcli_composite *creq;
 };
 
 
@@ -52,15 +54,13 @@ static NTSTATUS connect_send_negprot(struct smbcli_composite *c,
 				     struct smb_composite_connect *io)
 {
 	struct connect_state *state = c->private;
-	struct smbcli_request *req;
 
-	req = smb_raw_negotiate_send(state->transport, lp_maxprotocol());
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smb_raw_negotiate_send(state->transport, lp_maxprotocol());
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
-	req->async.fn = request_handler;
-	req->async.private = c;
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
 	c->stage = CONNECT_NEGPROT;
-	c->req = req;
 	
 	return NT_STATUS_OK;
 }
@@ -73,10 +73,9 @@ static NTSTATUS connect_tcon(struct smbcli_composite *c,
 			     struct smb_composite_connect *io)
 {
 	struct connect_state *state = c->private;
-	struct smbcli_request *req = c->req;
 	NTSTATUS status;
 
-	status = smb_tree_connect_recv(req, c, state->io_tcon);
+	status = smb_tree_connect_recv(state->req, c, state->io_tcon);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	io->out.tree->tid = state->io_tcon->tconx.out.tid;
@@ -106,11 +105,9 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 				      struct smb_composite_connect *io)
 {
 	struct connect_state *state = c->private;
-	struct smbcli_composite *req = c->req;
-	struct smbcli_request *req2;
 	NTSTATUS status;
 
-	status = smb_composite_sesssetup_recv(req);
+	status = smb_composite_sesssetup_recv(state->creq);
 	NT_STATUS_NOT_OK_RETURN(status);
 	
 	state->session->vuid = state->io_setup->out.vuid;
@@ -138,12 +135,11 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 		state->io_tcon->tconx.in.device = io->in.service_type;
 	}
 
-	req2 = smb_tree_connect_send(io->out.tree, state->io_tcon);
-	NT_STATUS_HAVE_NO_MEMORY(req2);
+	state->req = smb_tree_connect_send(io->out.tree, state->io_tcon);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
-	req2->async.fn = request_handler;
-	req2->async.private = c;
-	c->req = req2;
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
 	c->stage = CONNECT_TCON;
 
 	return NT_STATUS_OK;
@@ -156,11 +152,9 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 				struct smb_composite_connect *io)
 {
 	struct connect_state *state = c->private;
-	struct smbcli_request *req = c->req;
-	struct smbcli_composite *req2;
 	NTSTATUS status;
 
-	status = smb_raw_negotiate_recv(req);
+	status = smb_raw_negotiate_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a session setup */
@@ -180,12 +174,11 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 	state->io_setup->in.user         = io->in.user;
 	state->io_setup->in.password     = io->in.password;
 
-	req2 = smb_composite_sesssetup_send(state->session, state->io_setup);
-	NT_STATUS_HAVE_NO_MEMORY(req2);
+	state->creq = smb_composite_sesssetup_send(state->session, state->io_setup);
+	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
-	req2->async.fn = composite_handler;
-	req2->async.private = c;
-	c->req = req2;
+	state->creq->async.fn = composite_handler;
+	state->creq->async.private = c;
 	c->stage = CONNECT_SESSION_SETUP;
 	
 	return NT_STATUS_OK;
@@ -198,10 +191,10 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 static NTSTATUS connect_session_request(struct smbcli_composite *c, 
 					struct smb_composite_connect *io)
 {
-	struct smbcli_request *req = c->req;
+	struct connect_state *state = c->private;
 	NTSTATUS status;
 
-	status = smbcli_transport_connect_recv(req);
+	status = smbcli_transport_connect_recv(state->req);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* next step is a negprot */
@@ -216,10 +209,9 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 {
 	struct connect_state *state = c->private;
 	NTSTATUS status;
-	struct smbcli_request *req;
 	struct nmb_name calling, called;
 
-	status = smbcli_sock_connect_recv(c->req);
+	status = smbcli_sock_connect_recv(state->creq);
 	NT_STATUS_NOT_OK_RETURN(status);
 
 	/* the socket is up - we can initialise the smbcli transport layer */
@@ -236,13 +228,12 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 	make_nmb_name(&calling, io->in.calling_name, 0x0);
 	choose_called_name(&called, io->in.called_name, 0x20);
 
-	req = smbcli_transport_connect_send(state->transport, &calling, &called);
-	NT_STATUS_HAVE_NO_MEMORY(req);
+	state->req = smbcli_transport_connect_send(state->transport, &calling, &called);
+	NT_STATUS_HAVE_NO_MEMORY(state->req);
 
-	req->async.fn = request_handler;
-	req->async.private = c;
+	state->req->async.fn = request_handler;
+	state->req->async.private = c;
 	c->stage = CONNECT_SESSION_REQUEST;
-	c->req = req;
 
 	return NT_STATUS_OK;
 }
@@ -306,7 +297,7 @@ static void composite_handler(struct smbcli_composite *req)
 */
 struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect *io)
 {
-	struct smbcli_composite *c, *req;
+	struct smbcli_composite *c;
 	struct connect_state *state;
 
 	c = talloc_zero(NULL, struct smbcli_composite);
@@ -325,12 +316,11 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 	c->event_ctx = state->sock->event.ctx;
 	c->private = state;
 
-	req = smbcli_sock_connect_send(state->sock, io->in.dest_host, io->in.port);
-	if (req == NULL) goto failed;
+	state->creq = smbcli_sock_connect_send(state->sock, io->in.dest_host, io->in.port);
+	if (state->creq == NULL) goto failed;
 
-	req->async.private = c;
-	req->async.fn = composite_handler;
-	c->req = req;
+	state->creq->async.private = c;
+	state->creq->async.fn = composite_handler;
 
 	return c;
 failed:
