@@ -79,7 +79,11 @@ The maximum os level is 255
 If you want samba to force an election on startup, then set the
 "preferred master" global option in smb.conf to "yes".  Samba will
 then have a slight advantage over other potential master browsers
-that are not preferred master browsers.
+that are not preferred master browsers.  Use this parameter with
+care, as if you have two hosts (whether they are windows 95 or NT or
+samba) on the same local subnet both set with "preferred master" to
+"yes", then periodically and continually they will force an election
+in order to become the local master browser.
 
 If you want samba to be a "domain master browser", then it is
 recommended that you also set "preferred master" to "yes", because
@@ -87,6 +91,14 @@ samba will not become a domain master browser for the whole of your
 LAN or WAN if it is not also a local master browser on its own
 broadcast isolated subnet.
 
+It is possible to configure two samba servers to attempt to become
+the domain master browser for a domain.  The first server that comes
+up with be the domain master browser.  All other samba servers will
+attempt to become the domain master browser every 5 minutes.  They
+will find that another samba server is already the domain master
+browser and will fail.  This provides automatic redundancy, should
+the current domain master browser fail.
+ 
 
 MAKING SAMBA THE DOMAIN MASTER
 ==============================
