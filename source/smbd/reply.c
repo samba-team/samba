@@ -706,8 +706,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   pstring smb_ntpasswd;
   BOOL valid_nt_password = False;
   BOOL valid_lm_password = False;
-  pstring user;
-  pstring orig_user;
+  fstring user;
+  fstring orig_user;
   BOOL guest=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
@@ -731,12 +731,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     smb_apasswd[smb_apasslen] = 0;
-    pstrcpy(user,smb_buf(inbuf)+smb_apasslen);
+    fstrcpy(user,smb_buf(inbuf)+smb_apasslen);
     /*
      * Incoming user is in DOS codepage format. Convert
      * to UNIX.
      */
-    pstrcpy(user,dos_to_unix_static(user));
+    fstrcpy(user,dos_to_unix_static(user));
   
     if (!doencrypt && (lp_security() != SEC_SERVER)) {
       smb_apasslen = strlen(smb_apasswd);
@@ -852,7 +852,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      * Incoming user and domain are in DOS codepage format. Convert
      * to UNIX.
      */
-    pstrcpy(user,dos_to_unix_static(user));
+    fstrcpy(user,dos_to_unix_static(user));
     fstrcpy(domain, dos_to_unix_static(p));
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
 	     domain,skip_string(p,1),skip_string(p,2)));
@@ -898,11 +898,11 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* If no username is sent use the guest account */
   if (!*user) {
-    pstrcpy(user,lp_guestaccount(-1));
+    fstrcpy(user,lp_guestaccount(-1));
     guest = True;
   }
 
-  pstrcpy(current_user_info.smb_name,user);
+  fstrcpy(current_user_info.smb_name,user);
   
   reload_services(True);
 
@@ -912,7 +912,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    * and security=domain checking.
    */
 
-  pstrcpy( orig_user, user);
+  fstrcpy( orig_user, user);
 
   /*
    * Always try the "DOMAIN\user" lookup first, as this is the most
@@ -920,7 +920,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
    */
 
   {
-    pstring dom_user;
+    fstring dom_user;
 
     /* Work out who's who */
 
@@ -928,7 +928,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
                domain, lp_winbind_separator(), user);
 
     if (sys_getpwnam(dom_user) != NULL) {
-      pstrcpy(user, dom_user);
+      fstrcpy(user, dom_user);
       DEBUG(3,("Using unix username %s\n", dom_user));
     }
   }
@@ -1038,7 +1038,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
       }
 
       if (*smb_apasswd || !smb_getpwnam(user,True))
-         pstrcpy(user,lp_guestaccount(-1));
+         fstrcpy(user,lp_guestaccount(-1));
       DEBUG(3,("Registered username %s for guest access\n",user));
       guest = True;
     }
@@ -1046,7 +1046,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if (!smb_getpwnam(user,True)) {
     DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
-    pstrcpy(user,lp_guestaccount(-1));
+    fstrcpy(user,lp_guestaccount(-1));
     guest = True;
   }
 
