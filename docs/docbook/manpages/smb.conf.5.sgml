@@ -5692,7 +5692,7 @@ df $1 | tail -1 | awk '{print $2" "$4}'
 		resolve order</parameter></link> and so may resolved
 		by any method and order described in that parameter.</para>
 
-		<para>The password server much be a machine capable of using 
+		<para>The password server must be a machine capable of using 
 		the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 		user level security mode.</para>
 
