@@ -7,11 +7,10 @@
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
-
-RCSID("$Id$");
 
 void* memmove(void *s1, const void *s2, size_t n)
 {

@@ -1,12 +1,11 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include "roken.h"
 
 #ifndef HAVE_HSTRERROR
-
-RCSID("$Id$");
 
 #include <stdio.h>
 #include <netdb.h>

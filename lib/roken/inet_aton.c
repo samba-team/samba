@@ -1,5 +1,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include "roken.h"
@@ -8,8 +9,6 @@
 #include <stdio.h>
 #include <netinet/in.h>
 #include <netdb.h>
-
-RCSID("$Id$");
 
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
 

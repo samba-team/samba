@@ -1,10 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 #include <stdlib.h>
 #include <string.h>
-
-RCSID("$Id$");
 
 #ifndef HAVE_STRDUP
 char *

@@ -1,6 +1,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include "base64.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+RCSID("$Id$");
+#endif
 
 static char base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 

@@ -35,6 +35,8 @@
  *	@(#)extern.h	8.3 (Berkeley) 10/9/94
  */
 
+/* $Id$ */
+
 #include <setjmp.h>
 #include <stdlib.h>
 #include <sys/time.h>

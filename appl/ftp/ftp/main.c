@@ -36,6 +36,7 @@
  */
 
 #include "ftp_locl.h"
+RCSID("$Id$");
 
 int
 main(int argc, char **argv)

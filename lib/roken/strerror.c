@@ -1,11 +1,10 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include <errno.h>
 #include <string.h>
-
-RCSID("$Id$");
 
 extern int sys_nerr;
 extern char *sys_errlist[];

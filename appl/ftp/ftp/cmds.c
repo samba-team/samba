@@ -38,6 +38,7 @@
  */
 
 #include "ftp_locl.h"
+RCSID("$Id$");
 
 typedef void (*sighand)(int);
 

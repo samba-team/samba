@@ -1,4 +1,5 @@
 #include "ftp_locl.h"
+RCSID("$Id$");
 
 /*
  * Options and other state info.

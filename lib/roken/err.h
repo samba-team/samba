@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __ERR_H__
 #define __ERR_H__
 

@@ -34,6 +34,7 @@
  */
 
 #include "ftp_locl.h"
+RCSID("$Id$");
 
 void
 domacro(int argc, char **argv)

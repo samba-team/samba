@@ -34,6 +34,7 @@
  */
 
 #include "ftp_locl.h"
+RCSID("$Id$");
 
 static	int token __P((void));
 static	FILE *cfile;

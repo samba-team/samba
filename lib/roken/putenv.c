@@ -1,10 +1,9 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include <stdlib.h>
-
-RCSID("$Id$");
 
 extern char **environ;
 

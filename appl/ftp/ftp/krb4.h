@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __KRB4_H__
 #define __KRB4_H__
 
