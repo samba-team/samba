@@ -3145,20 +3145,20 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 	}
 
 	if (DEBUGLEVEL >= 10) {
-		SEC_ACL *acl = (*secdesc_ctr)->sec->dacl;
+		SEC_ACL *the_acl = (*secdesc_ctr)->sec->dacl;
 		int i;
 
 		DEBUG(10, ("secdesc_ctr for %s has %d aces:\n", 
-			   printername, acl->num_aces));
+			   printername, the_acl->num_aces));
 
-		for (i = 0; i < acl->num_aces; i++) {
+		for (i = 0; i < the_acl->num_aces; i++) {
 			fstring sid_str;
 
-			sid_to_string(sid_str, &acl->ace[i].sid);
+			sid_to_string(sid_str, &the_acl->ace[i].sid);
 
 			DEBUG(10, ("%s %d %d 0x%08x\n", sid_str,
-				   acl->ace[i].type, acl->ace[i].flags, 
-				   acl->ace[i].info.mask)); 
+				   the_acl->ace[i].type, the_acl->ace[i].flags, 
+				   the_acl->ace[i].info.mask)); 
 		}
 	}
 

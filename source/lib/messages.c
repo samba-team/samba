@@ -70,7 +70,7 @@ a useful function for testing the message system
 ****************************************************************************/
 void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	DEBUG(1,("INFO: Received PING message from PID %d\n",src));
+	DEBUG(1,("INFO: Received PING message from PID %u\n",(unsigned int)src));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 /****************************************************************************
@@ -78,7 +78,7 @@ return current debug level
 ****************************************************************************/
 void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 {
-	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %d\n",src));
+	DEBUG(1,("INFO: Received REQ_DEBUGLEVEL message from PID %u\n",(unsigned int)src));
 	message_send_pid(src, MSG_DEBUGLEVEL, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS), True);
 }
 
@@ -372,8 +372,8 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 		
 		/* if the pid was not found delete the entry from connections.tdb */
 		if (errno == ESRCH) {
-			DEBUG(2,("pid %d doesn't exist - deleting connections %d [%s]\n",
-					crec.pid, crec.cnum, crec.name));
+			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
+					(unsigned int)crec.pid, crec.cnum, crec.name));
 			tdb_delete(the_tdb, kbuf);
 		}
 	}
