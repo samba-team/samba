@@ -769,6 +769,7 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 		if (!s) {
 			DEBUG(0,("get_sid_list_of_group: unable to enlarge "
 				 "SID list!\n"));
+			pwent_free(userlist);
 			winbind_on();
 			return False;
 		}
