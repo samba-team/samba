@@ -377,6 +377,8 @@ void cmd_reg_query_info(struct client_info *info, int argc, char *argv[])
 		memcpy(&key_pol, &pol_con, sizeof(key_pol));
 	}
 
+	buf.buf_max_len = 256;
+
 	/* query it */
 	res2 = res1 ? reg_query_info(&key_pol,
 	                        val_name, &type, &buf) : False;

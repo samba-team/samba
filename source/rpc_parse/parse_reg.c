@@ -876,7 +876,8 @@ BOOL reg_io_r_get_key_sec(char *desc, REG_R_GET_KEY_SEC * r_q, prs_struct *ps,
 makes a structure.
 ********************************************************************/
 BOOL make_reg_q_info(REG_Q_INFO * q_i, POLICY_HND *pol, const char *val_name,
-		     uint8 major, uint8 minor)
+		     uint8 major, uint8 minor,
+		     int buf_len)
 {
 	int len_type = val_name != NULL ? strlen(val_name) + 1 : 0;
 
@@ -892,12 +893,12 @@ BOOL make_reg_q_info(REG_Q_INFO * q_i, POLICY_HND *pol, const char *val_name,
 	q_i->ptr_buf = 1;
 
 	q_i->ptr_bufsize = 1;
-	q_i->bufsize = 0;
+	q_i->bufsize = buf_len;
 	q_i->buf_unk = 0;
 
 	q_i->unk1 = 0;
 	q_i->ptr_buflen = 1;
-	q_i->buflen = 0;
+	q_i->buflen = buf_len;
 
 	q_i->ptr_buflen2 = 1;
 	q_i->buflen2 = 0;

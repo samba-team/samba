@@ -283,7 +283,8 @@ void make_reg_r_get_key_sec(REG_R_GET_KEY_SEC * r_i, POLICY_HND *pol,
 BOOL reg_io_r_get_key_sec(char *desc, REG_R_GET_KEY_SEC * r_q, prs_struct *ps,
 			  int depth);
 BOOL make_reg_q_info(REG_Q_INFO * q_i, POLICY_HND *pol, const char *val_name,
-		     uint8 major, uint8 minor);
+		     uint8 major, uint8 minor,
+		     int buf_len);
 BOOL reg_io_q_info(char *desc, REG_Q_INFO * r_q, prs_struct *ps, int depth);
 BOOL make_reg_r_info(uint32 include_keyval, REG_R_INFO * r_r,
 		     uint32 *type, BUFFER2 * buf, uint32 status);

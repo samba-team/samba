@@ -152,15 +152,26 @@ uint32 _reg_info(POLICY_HND * pol, BUFFER2 * buf, uint32 * type)
 	    (name, "SYSTEM\\CurrentControlSet\\Control\\ProductOptions"))
 	{
 		char *key;
-		if (lp_server_role() == ROLE_DOMAIN_PDC)
+		switch (lp_server_role())
 		{
-			key = "LanmanNT";
+			case ROLE_DOMAIN_PDC:
+			case ROLE_DOMAIN_BDC:
+			{
+				key = "LanmanNT";
+				break;
+			}
+			case ROLE_STANDALONE:
+			{
+				key = "ServerNT";
+				break;
+			}
+			case ROLE_DOMAIN_MEMBER:
+			{
+				key = "WinNT";
+				break;
+			}
 		}
-		else
-		{
-			key = "ServerNT";
-		}
-		make_buffer2(buf, key, strlen(key));
+		make_buffer2(buf, key, strlen(key)+1);
 		*type = 0x1;
 	}
 	else

@@ -480,7 +480,7 @@ BOOL reg_query_info(POLICY_HND *hnd, const char *val_name,
 
 	DEBUG(4,("REG Query Info\n"));
 
-	make_reg_q_info(&q_o, hnd, val_name, 4, 0);
+	make_reg_q_info(&q_o, hnd, val_name, 4, 0, buffer->buf_max_len);
 
 	/* turn parameters into data stream */
 	if (reg_io_q_info("", &q_o, &buf, 0) &&
