@@ -240,11 +240,204 @@ static void ldap_reply_SearchRequest(struct ldapsrv_connection *conn,
 	if ((strlen(req->basedn) == 0) &&
 	    (req->scope == LDAP_SEARCH_SCOPE_BASE) &&
 	    strequal(req->filter, "(objectclass=*)")) {
+
+#define ATTR_BLOB_CONST(val) data_blob(val, sizeof(val)-1)
+#define ATTR_CONST_SINGLE(attr, blob, nam, val) do { \
+	attr.name = nam; \
+	attr.num_values = ARRAY_SIZE(blob); \
+	attr.values = blob; \
+	blob[0] = ATTR_BLOB_CONST(val); \
+} while(0)
+#define ATTR_CONST_SINGLE_NOVAL(attr, blob, nam) do { \
+	attr.name = nam;\
+	attr.num_values = ARRAY_SIZE(blob); \
+	attr.values = blob;\
+} while(0)
+		TALLOC_CTX *mem_ctx;
+		struct ldap_attribute attrs[3];
+		DATA_BLOB currentTime[1];
+		DATA_BLOB supportedLDAPVersion[2];
+		DATA_BLOB dnsHostName[1];
+
+		mem_ctx = talloc_init("rootDSE");
+		if (!mem_ctx) {
+			ldapsrv_terminate_connection(conn, "no memory");
+			return;
+		}
+
+		/* 
+		 * currentTime
+		 * 20040918090350.0Z
+		 */
+		ATTR_CONST_SINGLE_NOVAL(attrs[0], currentTime, "currentTime");
+		{
+			char *str = ldap_timestring(mem_ctx, time(NULL));
+			if (!str) {
+				ldapsrv_terminate_connection(conn, "no memory");
+				return;
+			}
+			currentTime[0] = data_blob(str, strlen(str));
+			talloc_free(str);
+		}
+
+		/* 
+		 * subschemaSubentry 
+		 * CN=Aggregate,CN=Schema,CN=Configuration,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * dsServiceName
+		 * CN=NTDS Settings,CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * namingContexts
+		 * DC=DOM,DC=TLD
+		 * CN=Configuration,DC=DOM,DC=TLD
+		 * CN=Schema,CN=Configuration,DC=DOM,DC=TLD
+		 * DC=DomainDnsZones,DC=DOM,DC=TLD
+		 * DC=ForestDnsZones,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * defaultNamingContext
+		 * DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * schemaNamingContext
+		 * CN=Schema,CN=Configuration,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * configurationNamingContext
+		 * CN=Configuration,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * rootDomainNamingContext
+		 * DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * supportedControl
+		 * 1.2.840.113556.1.4.319
+		 * 1.2.840.113556.1.4.801
+		 * 1.2.840.113556.1.4.473
+		 * 1.2.840.113556.1.4.528
+		 * 1.2.840.113556.1.4.417
+		 * 1.2.840.113556.1.4.619
+		 * 1.2.840.113556.1.4.841
+		 * 1.2.840.113556.1.4.529
+		 * 1.2.840.113556.1.4.805
+		 * 1.2.840.113556.1.4.521
+		 * 1.2.840.113556.1.4.970
+		 * 1.2.840.113556.1.4.1338
+		 * 1.2.840.113556.1.4.474
+		 * 1.2.840.113556.1.4.1339
+		 * 1.2.840.113556.1.4.1340
+		 * 1.2.840.113556.1.4.1413
+		 * 2.16.840.1.113730.3.4.9
+		 * 2.16.840.1.113730.3.4.10
+		 * 1.2.840.113556.1.4.1504
+		 * 1.2.840.113556.1.4.1852
+		 * 1.2.840.113556.1.4.802
+		 */
+
+		/* 
+		 * supportedLDAPVersion 
+		 * 3
+		 * 2
+		 */
+		ATTR_CONST_SINGLE_NOVAL(attrs[1], supportedLDAPVersion, "supportedLDAPVersion");
+		supportedLDAPVersion[0] = ATTR_BLOB_CONST("3");
+		supportedLDAPVersion[1] = ATTR_BLOB_CONST("2");
+
+		/* 
+		 * supportedLDAPPolicies
+		 * MaxPoolThreads
+		 * MaxDatagramRecv
+		 * MaxReceiveBuffer
+		 * InitRecvTimeout
+		 * MaxConnections
+		 * MaxConnIdleTime
+		 * MaxPageSize
+		 * MaxQueryDuration
+		 * MaxTempTableSize
+		 * MaxResultSetSize
+		 * MaxNotificationPerConn
+		 * MaxValRange
+		 */
+
+		/* 
+		 * highestCommittedUSN 
+		 * 4555
+		 */
+
+		/* 
+		 * supportedSASLMechanisms
+		 * GSSAPI
+		 * GSS-SPNEGO
+		 * EXTERNAL
+		 * DIGEST-MD5
+		 */
+
+		/* 
+		 * dnsHostName
+		 * netbiosname.dom.tld
+		 */
+		ATTR_CONST_SINGLE_NOVAL(attrs[2], dnsHostName, "dnsHostName");
+		dnsHostName[0] = data_blob(lp_netbios_name(),strlen(lp_netbios_name()));
+
+		/* 
+		 * ldapServiceName
+		 * dom.tld:netbiosname$@DOM.TLD
+		 */
+
+		/* 
+		 * serverName:
+		 * CN=NETBIOSNAME,CN=Servers,CN=Default-First-Site,CN=Sites,CN=Configuration,DC=DOM,DC=TLD
+		 */
+
+		/* 
+		 * supportedCapabilities
+		 * 1.2.840.113556.1.4.800
+		 * 1.2.840.113556.1.4.1670
+		 * 1.2.840.113556.1.4.1791
+		 */
+
+		/* 
+		 * isSynchronized:
+		 * TRUE/FALSE
+		 */
+
+		/* 
+		 * isGlobalCatalogReady
+		 * TRUE/FALSE
+		 */
+
+		/* 
+		 * domainFunctionality
+		 * 0
+		 */
+
+		/* 
+		 * forestFunctionality
+		 * 0
+		 */
+
+		/* 
+		 * domainControllerFunctionality
+		 * 2
+		 */
+
 		msg->type = LDAP_TAG_SearchResultEntry;
 		msg->r.SearchResultEntry.dn = "";
-		msg->r.SearchResultEntry.num_attributes = 0;
-		msg->r.SearchResultEntry.attributes = NULL;
-		return;
+		msg->r.SearchResultEntry.num_attributes = ARRAY_SIZE(attrs);
+		msg->r.SearchResultEntry.attributes = attrs;
+
+		ldap_append_to_buf(msg, &conn->out_buffer);
+		talloc_free(mem_ctx);
 	}
 
 	msg->type = LDAP_TAG_SearchResultDone;
@@ -362,6 +555,8 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 	ldap_queue_run(conn);
 
+	conn->event.fde->flags |= EVENT_FD_WRITE;
+
 	return;
 }
 	
@@ -379,6 +574,8 @@ static void ldapsrv_send(struct server_connection *conn, time_t t,
 		ldapsrv_terminate_connection(ldap_conn, "write_from_buf() failed");
 		return;
 	}
+
+	conn->event.fde->flags &= ~EVENT_FD_WRITE;
 
 	return;
 }
