@@ -66,7 +66,7 @@ static void check_magic(files_struct *fsp,connection_struct *conn)
   Common code to close a file or a directory.
 ****************************************************************************/
 
-void close_filestruct(files_struct *fsp)
+static void close_filestruct(files_struct *fsp)
 {   
 	connection_struct *conn = fsp->conn;
     

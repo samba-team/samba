@@ -382,8 +382,9 @@ BOOL authorise_login(int snum, char *user, char *domain,
 	return (ok);
 }
 
-BOOL check_user_equiv_line(char *buf, const char *user, const char *remote,
-			   BOOL *plus_allowed, BOOL *ret)
+static BOOL check_user_equiv_line(char *buf, const char *user,
+				  const char *remote, BOOL *plus_allowed,
+				  BOOL *ret)
 {
 	BOOL is_group = False;
 	int plus = 1;

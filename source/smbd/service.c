@@ -85,7 +85,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 /****************************************************************************
   find a service entry
 ****************************************************************************/
-int find_service(char *service)
+static int find_service(char *service)
 {
    int iService;
 

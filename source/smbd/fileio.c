@@ -29,7 +29,7 @@ static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
 
-SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
+static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
   SMB_OFF_T offset = 0;
   SMB_OFF_T seek_ret;
@@ -71,7 +71,7 @@ SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 
 static unsigned int cache_read_hits;
 
-BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
+static BOOL read_from_write_cache(files_struct *fsp,char *data,SMB_OFF_T pos,size_t n)
 {
   write_cache *wcp = fsp->wcp;
 
@@ -550,7 +550,7 @@ n = %u, wcp->offset=%.0f, wcp->data_size=%u\n",
  Delete the write cache structure.
 ****************************************************************************/
 
-void delete_write_cache(files_struct *fsp)
+static void delete_write_cache(files_struct *fsp)
 {
   write_cache *wcp;
 
