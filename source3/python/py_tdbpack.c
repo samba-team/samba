@@ -600,14 +600,14 @@ pytdbpack_pack_data(const char *format_str,
 		    PyObject *val_seq,
 		    unsigned char *packed)
 {
-	int i;
+	int format_i, val_i = 0;
 
-	for (i = 0; format_str[i]; i++) {
-		char ch = format_str[i];
+	for (format_i = 0, val_i = 0; format_str[format_i]; format_i++) {
+		char ch = format_str[format_i];
 		PyObject *val_obj;
 
 		/* borrow a reference to the item */
-		val_obj = PySequence_GetItem(val_seq, i);
+		val_obj = PySequence_GetItem(val_seq, val_i++);
 		if (!val_obj)
 			return NULL;
 
@@ -661,10 +661,13 @@ pytdbpack_pack_data(const char *format_str,
 			long size;
 			char *sval;
 
+			if (!PyInt_Check(val_obj))
+				return NULL;
+
 			size = PyInt_AsLong(val_obj);
 			pack_uint32(size, &packed);
 
-			val_obj = PySequence_GetItem(val_seq, ++i);
+			val_obj = PySequence_GetItem(val_seq, val_i++);
 			if (!val_obj)
 				return NULL;
 			
