@@ -288,8 +288,8 @@ OM_uint32 gss_get_mic
 		      message_buffer, message_token, key);
       break;
   case KEYTYPE_ARCFOUR:
-      *minor_status = (OM_uint32)KRB5_PROG_ETYPE_NOSUPP;
-      ret = GSS_S_FAILURE;
+      ret = _gssapi_get_mic_arcfour (minor_status, context_handle, qop_req,
+				     message_buffer, message_token, key);
       break;
   default :
 #ifdef HAVE_GSSAPI_CFX
