@@ -248,13 +248,22 @@ BOOL spnego_parse_krb5_wrap(DATA_BLOB blob, DATA_BLOB *ticket)
 {
 	BOOL ret;
 	ASN1_DATA data;
+	int ata_remaining;
 
 	asn1_load(&data, blob);
 	asn1_start_tag(&data, ASN1_APPLICATION(0));
 	asn1_check_OID(&data, OID_KERBEROS5);
 	asn1_check_BOOLEAN(&data, 0);
-	*ticket = data_blob(data.data, asn1_tag_remaining(&data));
-	asn1_read(&data, ticket->data, ticket->length);
+
+	data_remaining = asn1_tag_remaining(&data);
+
+	if (data_remaining < 1) {
+		data.has_error = True;
+	} else {
+		*ticket = data_blob(data.data, data_remaining);
+		asn1_read(&data, ticket->data, ticket->length);
+	}
+
 	asn1_end_tag(&data);
 
 	ret = !data.has_error;
