@@ -610,6 +610,18 @@ typedef int socklen_t;
 #  endif
 #endif
 
+#if defined(HAVE_LONGLONG)
+#define SMB_BIG_UINT unsigned long long
+#define SMB_BIG_INT long long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
+#else
+#define SMB_BIG_UINT unsigned long
+#define SMB_BIG_INT long
+#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
+#endif
+
+#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
+
 /* this should really be a 64 bit type if possible */
 #define br_off SMB_BIG_UINT
 
@@ -699,18 +711,6 @@ typedef int socklen_t;
 #    define SMB_F_GETLK F_GETLK
 #  endif
 #endif
-
-#if defined(HAVE_LONGLONG)
-#define SMB_BIG_UINT unsigned long long
-#define SMB_BIG_INT long long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,(v)&0xFFFFFFFF), SIVAL(p,(ofs)+4,(v)>>32))
-#else
-#define SMB_BIG_UINT unsigned long
-#define SMB_BIG_INT long
-#define SBIG_UINT(p, ofs, v) (SIVAL(p,ofs,v),SIVAL(p,(ofs)+4,0))
-#endif
-
-#define SMB_BIG_UINT_BITS (sizeof(SMB_BIG_UINT)*8)
 
 #ifndef MIN
 #define MIN(a,b) ((a)<(b)?(a):(b))
