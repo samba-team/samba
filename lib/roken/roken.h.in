@@ -1,6 +1,6 @@
 /* -*- C -*- */
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -642,6 +642,41 @@ const char *get_progname(void);
 #ifndef HAVE_LOCALTIME_R
 struct tm *
 localtime_r(const time_t *timer, struct tm *result);
+#endif
+
+#if !defined(HAVE_STRSVIS) || defined(NEED_STRSVIS_PROTO)
+int
+strsvis(char *dst, const char *src, int flag, const char *extra);
+#endif
+
+#if !defined(HAVE_STRUNVIS) || defined(NEED_STRUNVIS_PROTO)
+int
+strunvis(char *dst, const char *src);
+#endif
+
+#if !defined(HAVE_STRVIS) || defined(NEED_STRVIS_PROTO)
+int
+strvis(char *dst, const char *src, int flag);
+#endif
+
+#if !defined(HAVE_STRVISX) || defined(NEED_STRVISX_PROTO)
+int
+strvisx(char *dst, const char *src, size_t len, int flag);
+#endif
+
+#if !defined(HAVE_SVIS) || defined(NEED_SVIS_PROTO)
+char *
+svis(char *dst, int c, int flag, int nextc, const char *extra);
+#endif
+
+#if !defined(HAVE_UNVIS) || defined(NEED_UNVIS_PROTO)
+int
+unvis(char *cp, int c, int *astate, int flag);
+#endif
+
+#if !defined(HAVE_VIS) || defined(NEED_VIS_PROTO)
+char *
+vis(char *dst, int c, int flag, int nextc)
 #endif
 
 ROKEN_CPP_END
