@@ -105,16 +105,17 @@ allowing an administrator to easily look up the effects of any change.
 #%patch1 -p1
 #%patch2 -p1
 
+# The commented out fixUP below should be best known as screwUP!
 # instead of patch (to help configuration) ...   ;^)
-%{fixUP} -vbT source/Makefile.in -e '
-  s:we don.t use sbindir because we want:if you want : +
-  s:(the previous releases of Samba):$1, please use: +
-  s:(SBINDIR\s*=\s*\@)b:# ./configure --sbindir=\\\$(BINDIR)\n${1}sb: +
-  s:/log\.(\S+):/log/samba.d/${1}d: +
-  s:(PASSWD_PROGRAM\s*=\s*)(/bin):$1/usr$2: +
-  s:^(LIBS\s*=):AUTH_$1: +
-  s:((SMBD|SWAT|RPCCLIENT|SMBPASSWD)_OBJ\) )(\$\(LDF):$1\$(AUTH_LIBS) $3:
-'
+#%{fixUP} -vbT source/Makefile.in -e '
+#  s:we don.t use sbindir because we want:if you want : +
+#  s:(the previous releases of Samba):$1, please use: +
+#  s:(SBINDIR\s*=\s*\@)b:# ./configure --sbindir=\\\$(BINDIR)\n${1}sb: +
+#  s:/log\.(\S+):/log/samba.d/${1}d: +
+#  s:(PASSWD_PROGRAM\s*=\s*)(/bin):$1/usr$2: +
+#  s:^(LIBS\s*=):AUTH_$1: +
+#  s:((SMBD|SWAT|RPCCLIENT|SMBPASSWD)_OBJ\) )(\$\(LDF):$1\$(AUTH_LIBS) $3:
+#'
 
 for i in {cvs.,change-}log; do [ ! -f ../$i ] || mv ../$i source; done
 
@@ -145,7 +146,8 @@ done
 
 %Build
 cd source
-autoreconf
+rm configure
+autoconf
 
 CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--prefix='$(DESTDIR)/usr' \
@@ -156,14 +158,8 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-smbmount \
 	--with-pam \
-	--with-pam_smbpass \
 	--with-tdbsam \
-	--with-ldapsam \
-	--with-nisplussam \
-	--with-nisplus-home \
 	--with-winbind \
-	--with-acl-support \
-	--without-smbwrapper \
 	--with-utmp \
 	--with-quotas \
 	--with-vfs \
@@ -173,6 +169,14 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-utmp \
 	--with-netatalk \
 	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
+
+# Temp disabled - add later - JHT
+#	--with-pam_smbpass \
+#	--without-smbwrapper \
+#	--with-ldapsam \
+#	--with-nisplussam \
+#	--with-nisplus-home \
+#	--with-acl-support \
 
 make all
 
