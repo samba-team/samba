@@ -415,7 +415,7 @@ int smbw_chdir(const char *name)
 	DEBUG(4,("set SMBW_CWD to %s\n", cwd));
 
 	pstrcpy(smbw_cwd, cwd);
-	if (setenv(SMBW_PWD_ENV, smbw_cwd, 1)) {
+	if (smbw_setenv(SMBW_PWD_ENV, smbw_cwd)) {
 		DEBUG(4,("setenv failed\n"));
 	}
 

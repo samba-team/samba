@@ -56,7 +56,7 @@ void smbw_setup_shared(void)
 
 	slprintf(s,sizeof(s)-1,"%d", shared_fd);
 
-	setenv("SMBW_HANDLE", s, 1);
+	smbw_setenv("SMBW_HANDLE", s);
 
 	return;
 
@@ -177,3 +177,17 @@ void smbw_setshared(const char *name, const char *val)
 
 	unlockit();
 }
+
+
+/*****************************************************************
+set an env variable - some systems don't have this
+*****************************************************************/  
+int smbw_setenv(const char *name, const char *value)
+{
+	pstring s;
+
+	slprintf(s,sizeof(s)-1,"%s=%s", name, value);
+
+	return putenv(s);
+}
+
