@@ -118,7 +118,7 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
 	   const char **error_message)
 {
     char buf[BUFSIZ];
-    int ret;
+    krb5_error_code ret;
     krb5_config_binding *b = NULL;
     unsigned beg_lineno = *lineno;
 
