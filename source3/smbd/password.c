@@ -21,7 +21,8 @@
 #include "includes.h"
 
 /* users from session setup */
-static pstring session_users="";
+static char *session_userlist = NULL;
+static int len_session_userlist = 0;
 
 /* this holds info on user ids that are already validated for this VC */
 static user_struct *validated_users;
@@ -295,14 +296,33 @@ void add_session_user(const char *user)
 
 	fstrcpy(suser,passwd->pw_name);
 
-	if (suser && *suser && !in_list(suser,session_users,False)) {
-		if (strlen(suser) + strlen(session_users) + 2 >= sizeof(pstring)) {
-			DEBUG(1,("Too many session users??\n"));
-		} else {
-			pstrcat(session_users," ");
-			pstrcat(session_users,suser);
+	if(!*suser)
+		return;
+
+	if( session_userlist && in_list(suser,session_userlist,False) )
+		return;
+
+	if( !session_userlist || (strlen(suser) + strlen(session_userlist) + 2 >= len_session_userlist) ) {
+		char *newlist;
+
+		if (len_session_userlist > 128 * PSTRING_LEN) {
+			DEBUG(3,("add_session_user: session userlist already too large.\n"));
+			return;
 		}
+		newlist = Realloc( session_userlist, len_session_userlist + PSTRING_LEN );
+		if( newlist == NULL ) {
+			DEBUG(1,("Unable to resize session_userlist\n"));
+			return;
+		}
+		if (!session_userlist) {
+			*newlist = '\0';
+		}
+		session_userlist = newlist;
+		len_session_userlist += PSTRING_LEN;
 	}
+
+	safe_strcat(session_userlist," ",len_session_userlist-1);
+	safe_strcat(session_userlist,suser,len_session_userlist-1);
 }
 
 /****************************************************************************
@@ -468,7 +488,7 @@ BOOL authorise_login(int snum, fstring user, DATA_BLOB password,
 	/* now check the list of session users */
 	if (!ok) {
 		char *auser;
-		char *user_list = strdup(session_users);
+		char *user_list = strdup(session_userlist);
 		if (!user_list)
 			return(False);
 		

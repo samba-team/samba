@@ -1239,7 +1239,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 			SOFF_T(p,0,get_allocation_size(NULL,&sbuf)); /* Number of bytes used on disk - 64 Bit */
 			p+= 8;
 
-			put_long_date(p,sbuf.st_ctime);       /* Creation Time 64 Bit */
+			put_long_date(p,sbuf.st_ctime);       /* Inode change Time 64 Bit */
 			put_long_date(p+8,sbuf.st_atime);     /* Last access time 64 Bit */
 			put_long_date(p+16,sbuf.st_mtime);    /* Last modification time 64 Bit */
 			p+= 24;
