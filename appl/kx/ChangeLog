@@ -1,3 +1,7 @@
+1999-06-23  Assar Westerlund  <assar@sics.se>
+
+	* kx.c: conditionalize krb_enable_debug
+
 1999-06-20  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (main): hopefully do inetd confusion right
