@@ -1,3 +1,7 @@
+2002-10-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* sunos.m4: more quoting
+
 2002-09-19  Johan Danielsson  <joda@pdc.kth.se>
 
 	* make-proto.pl: check the processed string for closing ), not the
