@@ -263,19 +263,18 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 					       	r[i].out.result, r[i].in.seconds, (uint_t)diff[i].tv_sec);
 					ret = False;
 				} else {
-					if (r[i].out.result > diff[i].tv_sec+1) {
-						printf("Failed - Sleeped for %u seconds (but reply takes only %u seconds)\n", 
-					       		r[i].out.result, (uint_t)diff[i].tv_sec);
-						ret = False;
+					if (r[i].out.result > diff[i].tv_sec) {
+						printf("Failed - Sleeped for %u seconds (but reply takes only %u.%06u seconds)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else if (r[i].out.result+1 == diff[i].tv_sec) {
-						printf("Sleeped for %u seconds (but reply takes %u seconds - busy server?)\n", 
-					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+						printf("Sleeped for %u seconds (but reply takes %u.%06u seconds - busy server?)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else if (r[i].out.result == diff[i].tv_sec) {
-						printf("Sleeped for %u seconds (reply takes %u seconds - ok)\n", 
-					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+						printf("Sleeped for %u seconds (reply takes %u.%06u seconds - ok)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 					} else {
-					       	printf("(Failed) - Not async - Sleeped for %u seconds (but reply takes %u seconds)\n", 
-					       		r[i].out.result, (uint_t)diff[i].tv_sec);
+					       	printf("(Failed) - Not async - Sleeped for %u seconds (but reply takes %u.%06u seconds)\n", 
+					       		r[i].out.result, (uint_t)diff[i].tv_sec, (uint_t)diff[i].tv_usec);
 						/* TODO: let the test fail here, when we support async rpc on ncacn_np
 						ret = False;*/
 					}
