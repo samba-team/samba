@@ -406,6 +406,8 @@ BOOL torture_raw_context(int dummy)
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 
+	lp_set_cmdline("use spnego", "False");
+
 	if (!torture_open_connection(&cli)) {
 		return False;
 	}
