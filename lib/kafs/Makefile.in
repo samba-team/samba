@@ -45,10 +45,14 @@ Wall:
 
 install: all
 	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
+	@for i in $(LIB); do \
+	echo "$(INSTALL) -m 0555 $$i $(libdir)" ;\
+	$(INSTALL) -m 0555 $$i $(libdir) ; done
 
 uninstall:
-	rm -f $(libdir)/$(LIB)
+	@for i in $(LIB); do \
+	echo "rm -f $(libdir)/$$i" ;\
+	rm -f $(libdir)/$$i ; done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
