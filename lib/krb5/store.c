@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -465,13 +465,37 @@ krb5_ret_addrs(krb5_storage *sp, krb5_addresses *adr)
 }
 
 krb5_error_code
-krb5_store_authdata(krb5_storage *sp, krb5_data p)
+krb5_store_authdata(krb5_storage *sp, krb5_authdata auth)
 {
-    return krb5_store_data(sp, p);
+    krb5_error_code ret;
+    int i;
+    ret = krb5_store_int32(sp, auth.len);
+    if(ret) return ret;
+    for(i = 0; i < auth.len; i++){
+	ret = krb5_store_int16(sp, auth.val[i].ad_type);
+	if(ret) break;
+	ret = krb5_store_data(sp, auth.val[i].ad_data);
+	if(ret) break;
+    }
+    return 0;
 }
 
 krb5_error_code
-krb5_ret_authdata(krb5_storage *sp, krb5_data *auth)
+krb5_ret_authdata(krb5_storage *sp, krb5_authdata *auth)
 {
-    return krb5_ret_data(sp, auth);
+    krb5_error_code ret;
+    int32_t tmp;
+    int16_t tmp2;
+    int i;
+    ret = krb5_ret_int32(sp, &tmp);
+    if(ret) return ret;
+    ALLOC_SEQ(auth, tmp);
+    for(i = 0; i < tmp; i++){
+	ret = krb5_ret_int16(sp, &tmp2);
+	if(ret) break;
+	auth->val[i].ad_type = tmp2;
+	ret = krb5_ret_data(sp, &auth->val[i].ad_data);
+	if(ret) break;
+    }
+    return ret;
 }

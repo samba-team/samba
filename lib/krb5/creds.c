@@ -50,7 +50,7 @@ krb5_free_creds_contents (krb5_context context, krb5_creds *c)
     krb5_free_keyblock_contents (context, &c->session);
     krb5_data_free (&c->ticket);
     krb5_data_free (&c->second_ticket);
-    krb5_data_free (&c->authdata);
+    free_AuthorizationData (&c->authdata);
     krb5_free_addresses (context, &c->addresses);
     return 0;
 }
@@ -83,9 +83,7 @@ krb5_copy_creds_contents (krb5_context context,
 			  incred->second_ticket.length);
     if (ret)
 	goto fail;
-    ret = krb5_data_copy (&c->authdata,
-			  incred->authdata.data,
-			  incred->authdata.length);
+    ret = copy_AuthorizationData(&incred->authdata, &c->authdata);
     if (ret)
 	goto fail;
     ret = krb5_copy_addresses (context,

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -258,8 +258,8 @@ _krb5_extract_ticket(krb5_context context,
     }
     creds->flags.b = rep->part2.flags;
 	  
-    creds->authdata.length = 0;
-    creds->authdata.data = NULL;
+    creds->authdata.len = 0;
+    creds->authdata.val = NULL;
     creds->session.keyvalue.length = 0;
     creds->session.keyvalue.data   = NULL;
     creds->session.keytype = rep->part2.key.keytype;
