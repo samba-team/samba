@@ -373,11 +373,22 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	/* couple of hard coded registry values */
 	
 	if ( strequal(name, "RefusePasswordChange") ) {
+		uint32 dwValue;
+
 		if ( (val = SMB_MALLOC_P(REGISTRY_VALUE)) == NULL ) {
 			DEBUG(0,("_reg_info: malloc() failed!\n"));
 			return NT_STATUS_NO_MEMORY;
 		}
-		ZERO_STRUCTP( val );
+
+		if (!account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
+			dwValue = 0;
+		regval_ctr_addvalue(&regvals, "RefusePasswordChange", 
+				    REG_DWORD,
+				    (const char*)&dwValue, sizeof(dwValue));
+		val = dup_registry_value(
+			regval_ctr_specific_value( &regvals, 0 ) );
+ 	
+		status = NT_STATUS_OK;
 	
 		goto out;
 	}

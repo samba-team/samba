@@ -22,7 +22,19 @@
 #include "includes.h"
 static TDB_CONTEXT *tdb; /* used for driver files */
 
-#define DATABASE_VERSION 1
+#define DATABASE_VERSION 2
+
+/****************************************************************************
+ Set default for a field if it is empty
+****************************************************************************/
+
+static void set_default_on_empty(int field, uint32 value)
+{
+	if (account_policy_get(field, NULL))
+		return;
+	account_policy_set(field, value);
+	return;
+}
 
 /****************************************************************************
  Open the account policy tdb.
@@ -44,18 +56,38 @@ BOOL init_account_policy(void)
 	/* handle a Samba upgrade */
 	tdb_lock_bystring(tdb, vstring,0);
 	if (!tdb_fetch_uint32(tdb, vstring, &version) || version != DATABASE_VERSION) {
-		tdb_traverse(tdb, tdb_traverse_delete_fn, NULL);
 		tdb_store_uint32(tdb, vstring, DATABASE_VERSION);
 		
-		account_policy_set(AP_MIN_PASSWORD_LEN, MINPASSWDLENGTH);   /* 5 chars minimum             */
-		account_policy_set(AP_PASSWORD_HISTORY, 0);		    /* don't keep any old password */
-		account_policy_set(AP_USER_MUST_LOGON_TO_CHG_PASS, 0);	    /* don't force user to logon   */
-		account_policy_set(AP_MAX_PASSWORD_AGE, (uint32)-1);        /* don't expire		   */
-		account_policy_set(AP_MIN_PASSWORD_AGE, 0);		    /* 0 days                      */
-		account_policy_set(AP_LOCK_ACCOUNT_DURATION, 30);	    /* lockout for 30 minutes      */
-		account_policy_set(AP_RESET_COUNT_TIME, 30);		    /* reset after 30 minutes      */
-		account_policy_set(AP_BAD_ATTEMPT_LOCKOUT, 0);		    /* don't lockout               */
-		account_policy_set(AP_TIME_TO_LOGOUT, -1);		    /* don't force logout          */
+		set_default_on_empty(
+			AP_MIN_PASSWORD_LEN, 
+			MINPASSWDLENGTH);/* 5 chars minimum             */
+		set_default_on_empty(
+			AP_PASSWORD_HISTORY, 
+			0);		/* don't keep any old password	*/
+		set_default_on_empty(
+			AP_USER_MUST_LOGON_TO_CHG_PASS, 
+			0);		/* don't force user to logon	*/
+		set_default_on_empty(
+			AP_MAX_PASSWORD_AGE, 
+			(uint32)-1);	/* don't expire			*/
+		set_default_on_empty(
+			AP_MIN_PASSWORD_AGE, 
+			0);		/* 0 days                      */
+		set_default_on_empty(
+			AP_LOCK_ACCOUNT_DURATION, 
+			30);		/* lockout for 30 minutes      */
+		set_default_on_empty(
+			AP_RESET_COUNT_TIME, 
+			30);		/* reset after 30 minutes      */
+		set_default_on_empty(
+			AP_BAD_ATTEMPT_LOCKOUT, 
+			0);		/* don't lockout               */
+		set_default_on_empty(
+			AP_TIME_TO_LOGOUT, 
+			-1);		/* don't force logout          */
+		set_default_on_empty(
+			AP_REFUSE_MACHINE_PW_CHANGE, 
+			0);		/* allow machine pw changes    */
 	}
 	tdb_unlock_bystring(tdb, vstring);
 
@@ -75,6 +107,7 @@ static const struct {
 	{AP_RESET_COUNT_TIME, "reset count minutes"},
 	{AP_BAD_ATTEMPT_LOCKOUT, "bad lockout attempt"},
 	{AP_TIME_TO_LOGOUT, "disconnect time"},
+	{AP_REFUSE_MACHINE_PW_CHANGE, "refuse machine password change"},
 	{0, NULL}
 };
 
@@ -138,21 +171,26 @@ int account_policy_name_to_fieldnum(const char *name)
 BOOL account_policy_get(int field, uint32 *value)
 {
 	fstring name;
+	uint32 regval;
 
 	if(!init_account_policy())return False;
 
-	*value = 0;
+	if (value)
+		*value = 0;
 
 	fstrcpy(name, decode_account_policy_name(field));
 	if (!*name) {
 		DEBUG(1, ("account_policy_get: Field %d is not a valid account policy type!  Cannot get, returning 0.\n", field));
 		return False;
 	}
-	if (!tdb_fetch_uint32(tdb, name, value)) {
+	if (!tdb_fetch_uint32(tdb, name, &regval)) {
 		DEBUG(1, ("account_policy_get: tdb_fetch_uint32 failed for field %d (%s), returning 0\n", field, name));
 		return False;
 	}
-	DEBUG(10,("account_policy_get: %s:%d\n", name, *value));
+	if (value)
+		*value = regval;
+
+	DEBUG(10,("account_policy_get: %s:%d\n", name, regval));
 	return True;
 }
 

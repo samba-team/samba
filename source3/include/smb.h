@@ -638,7 +638,7 @@ typedef struct {
 #define AP_RESET_COUNT_TIME		7
 #define AP_BAD_ATTEMPT_LOCKOUT		8
 #define AP_TIME_TO_LOGOUT		9
-
+#define AP_REFUSE_MACHINE_PW_CHANGE	10
 
 /*
  * Flags for local user manipulation.
