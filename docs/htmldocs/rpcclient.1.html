@@ -37,7 +37,7 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >rpcclient</B
->  {server} [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N]</P
+>  [-A authfile] [-c &#60;command string&#62;] [-d debuglevel] [-h] [-l logfile] [-N] [-s &#60;smb config file&#62;] [-U username[%password]] [-W workgroup] [-N] {server}</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -96,7 +96,7 @@ CLASS="FILENAME"
 >.</P
 ></DD
 ><DT
->-A filename</DT
+>-A|--authfile=filename</DT
 ><DD
 ><P
 >This option allows 
@@ -125,14 +125,14 @@ CLASS="PROGRAMLISTING"
 		access from unwanted users. </P
 ></DD
 ><DT
->-c 'command string'</DT
+>-c|--command='command string'</DT
 ><DD
 ><P
 >execute semicolon separated commands (listed 
 		below)) </P
 ></DD
 ><DT
->-d debuglevel</DT
+>-d|--debug=debuglevel</DT
 ><DD
 ><P
 >set the debuglevel. Debug level 0 is the lowest 
@@ -144,14 +144,14 @@ CLASS="FILENAME"
 		</P
 ></DD
 ><DT
->-h</DT
+>-h|--help</DT
 ><DD
 ><P
 >Print a summary of command line options.
 		</P
 ></DD
 ><DT
->-l logbasename</DT
+>-l|--logfile=logbasename</DT
 ><DD
 ><P
 >File name for log/debug files. The extension 
@@ -163,7 +163,7 @@ CLASS="CONSTANT"
 		</P
 ></DD
 ><DT
->-N</DT
+>-N|--nopass</DT
 ><DD
 ><P
 >instruct <B
@@ -182,7 +182,7 @@ CLASS="PARAMETER"
 > option.</P
 ></DD
 ><DT
->-s smb.conf</DT
+>-s|--conf=smb.conf</DT
 ><DD
 ><P
 >Specifies the location of the all important 
@@ -192,7 +192,7 @@ CLASS="FILENAME"
 > file. </P
 ></DD
 ><DT
->-U username[%password]</DT
+>-U|--user=username[%password]</DT
 ><DD
 ><P
 >Sets the SMB username or username and password. </P
@@ -238,7 +238,7 @@ CLASS="COMMAND"
 		it in directly. </P
 ></DD
 ><DT
->-W domain</DT
+>-W|--workgroup=domain</DT
 ><DD
 ><P
 >Set the SMB domain of the username.   This 
@@ -693,7 +693,7 @@ NAME="AEN222"
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of the Samba 
+>This man page is correct for version 3.0 of the Samba 
 	suite.</P
 ></DIV
 ><DIV

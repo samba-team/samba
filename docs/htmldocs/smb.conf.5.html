@@ -18435,14 +18435,18 @@ CLASS="FILENAME"
 > modules for UNIX services.
 		</P
 ><P
+>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</P
+><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = \</B
+>winbind separator = \\</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = +</B
+>winbind separator = /</B
 ></P
 ></DD
 ><DT
@@ -18869,7 +18873,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5973"
+NAME="AEN5974"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18899,7 +18903,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5979"
+NAME="AEN5980"
 ></A
 ><H2
 >VERSION</H2
@@ -18910,7 +18914,7 @@ NAME="AEN5979"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5982"
+NAME="AEN5983"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18989,7 +18993,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6002"
+NAME="AEN6003"
 ></A
 ><H2
 >AUTHOR</H2

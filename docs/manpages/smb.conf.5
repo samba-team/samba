@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 April 2002" "" ""
+.TH "SMB.CONF" "5" "16 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -7016,9 +7016,13 @@ used when listing a username of the form of \fIDOMAIN
 is only applicable when using the \fIpam_winbind.so\fR
 and \fInss_winbind.so\fR modules for UNIX services.
 
-Example: \fBwinbind separator = \\\fR
+Please note that setting this parameter to + causes problems
+with group membership at least on glibc systems, as the character +
+is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = +\fR
+Example: \fBwinbind separator = \\\\\fR
+
+Example: \fBwinbind separator = /\fR
 .TP
 \fBwinbind uid\fR
 The winbind gid parameter specifies the range of group 
