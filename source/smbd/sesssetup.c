@@ -60,9 +60,13 @@ static NTSTATUS do_map_to_guest(NTSTATUS status, auth_serversupplied_info **serv
 static void add_signature(char *outbuf) 
 {
 	char *p;
+	fstring lanman;
+
+	snprintf( lanman, sizeof(lanman), "Samba %s", VERSION );
+
 	p = smb_buf(outbuf);
 	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lanman, -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
 	set_message_end(outbuf,p);
 }
