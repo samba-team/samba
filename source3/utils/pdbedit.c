@@ -260,17 +260,19 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_profile_path (sam_pwent, profile, PDB_CHANGED);
 
 	if (account_control) {
-		uint16 types = ACB_NORMAL|ACB_MNS|ACB_DOMTRUST|ACB_WSTRUST|ACB_SVRTRUST;
+		uint16 not_settable = ~(ACB_DISABLED|ACB_HOMDIRREQ|ACB_PWNOTREQ|
+					ACB_PWNOEXP|ACB_AUTOLOCK);
+
 		uint16 newflag = pdb_decode_acct_ctrl(account_control);
 
-		if (newflag & types) {
+		if (newflag & not_settable) {
 			fprintf(stderr, "Can only set [NDHLX] flags\n");
 			pdb_free_sam(&sam_pwent);
 			return -1;
 		}
 
 		pdb_set_acct_ctrl(sam_pwent,
-				  (pdb_get_acct_ctrl(sam_pwent) & types) | newflag,
+				  (pdb_get_acct_ctrl(sam_pwent) & not_settable) | newflag,
 				  PDB_CHANGED);
 	}
 	
