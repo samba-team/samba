@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -157,6 +157,6 @@ main(int argc, char **argv)
     print_and_decode_tkt (context, &out->ticket, out->server,
 			  out->session.keytype);
 
-    krb5_free_creds_contents(context, out);
+    krb5_free_cred_contents(context, out);
     return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -148,7 +148,7 @@ generate_requests (const char *filename, unsigned nreq)
 
 	free (old_pwd);
 	free (new_pwd);
-	krb5_free_creds_contents (context, &cred);
+	krb5_free_cred_contents (context, &cred);
 	krb5_get_init_creds_opt_free(opt);
     }
 }

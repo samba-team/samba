@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -219,7 +219,7 @@ get_new_cache(krb5_context context,
     ret = krb5_cc_store_cred (context, id, &cred);
     if (ret)
 	return ret;
-    krb5_free_creds_contents (context, &cred);
+    krb5_free_cred_contents (context, &cred);
     *ret_cache = id;
     return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -206,7 +206,7 @@ init_cred (krb5_context context,
     return 0;
 
 out:
-    krb5_free_creds_contents (context, cred);
+    krb5_free_cred_contents (context, cred);
     return ret;
 }
 
@@ -455,7 +455,7 @@ out:
     memset (buf2, 0, sizeof(buf2));
     krb5_data_free (&result_string);
     krb5_data_free (&result_code_string);
-    krb5_free_creds_contents (context, &cpw_cred);
+    krb5_free_cred_contents (context, &cpw_cred);
     return ret;
 }
 
@@ -517,7 +517,7 @@ krb5_get_init_creds_keytab(krb5_context context,
     if (ret == 0 && creds)
 	*creds = ctx.cred;
     else
-	krb5_free_creds_contents (context, &ctx.cred);
+	krb5_free_cred_contents (context, &ctx.cred);
 
  out:
     free_init_creds_ctx(context, &ctx);
@@ -1437,7 +1437,7 @@ krb5_get_init_creds(krb5_context context,
 	*creds = ctx.cred;
 	krb5_free_kdc_rep (context, &kdc_reply);
     } else
-	krb5_free_creds_contents (context, &ctx.cred);
+	krb5_free_cred_contents (context, &ctx.cred);
 
     return ret;
 }

@@ -421,7 +421,7 @@ renew_validate(krb5_context context,
 	goto out;
     }
 out:
-    krb5_free_creds_contents(context, &in);
+    krb5_free_cred_contents(context, &in);
     return ret;
 }
 
@@ -626,7 +626,7 @@ get_new_tickets(krb5_context context,
     if (ret)
 	krb5_err (context, 1, ret, "krb5_cc_store_cred");
 
-    krb5_free_creds_contents (context, &cred);
+    krb5_free_cred_contents (context, &cred);
 
     return 0;
 }

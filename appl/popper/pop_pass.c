@@ -100,7 +100,7 @@ krb5_verify_password (POP *p)
 				  &verify_options);
     krb5_free_principal (p->context, client);
     krb5_free_principal (p->context, server);
-    krb5_free_creds_contents (p->context, &creds);
+    krb5_free_cred_contents (p->context, &creds);
     return ret;
 }
 #endif

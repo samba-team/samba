@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995-2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -189,7 +189,7 @@ verify_krb5(struct passwd *pwd,
 		tf_setup(&c, c.pname, c.pinst); 
 	    }
 	    memset(&c, 0, sizeof(c));
-	    krb5_free_creds_contents(context, &cred);
+	    krb5_free_cred_contents(context, &cred);
 	} else
 	    syslog(LOG_AUTH|LOG_DEBUG, "krb5_cc_retrieve_cred: %s", 
 		   krb5_get_err_text(context, ret));

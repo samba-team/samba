@@ -35,14 +35,15 @@
 
 RCSID("$Id$");
 
+/* keep this for compatibility with older code */
 krb5_error_code
-krb5_free_cred_contents (krb5_context context, krb5_creds *c)
+krb5_free_creds_contents (krb5_context context, krb5_creds *c)
 {
-    return krb5_free_creds_contents (context, c);
+    return krb5_free_cred_contents (context, c);
 }    
 
 krb5_error_code
-krb5_free_creds_contents (krb5_context context, krb5_creds *c)
+krb5_free_cred_contents (krb5_context context, krb5_creds *c)
 {
     krb5_free_principal (context, c->client);
     c->client = NULL;
@@ -96,7 +97,7 @@ krb5_copy_creds_contents (krb5_context context,
     return 0;
 
 fail:
-    krb5_free_creds_contents (context, c);
+    krb5_free_cred_contents (context, c);
     return ret;
 }
 
@@ -120,7 +121,7 @@ krb5_copy_creds (krb5_context context,
 krb5_error_code
 krb5_free_creds (krb5_context context, krb5_creds *c)
 {
-    krb5_free_creds_contents (context, c);
+    krb5_free_cred_contents (context, c);
     free (c);
     return 0;
 }

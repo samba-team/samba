@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -112,7 +112,7 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_verify_init_creds: %s",
 	      krb5_get_err_text(context, ret));
-    krb5_free_creds_contents (context, &cred);
+    krb5_free_cred_contents (context, &cred);
     krb5_free_context (context);
     return 0;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -540,7 +540,7 @@ get_creds(krb5_context context, krb5_ccache *cache)
     ret = krb5_cc_store_cred(context, *cache, &creds);
     if(ret) krb5_err(context, 1, ret, "krb5_cc_store_cred");
 
-    krb5_free_creds_contents(context, &creds);
+    krb5_free_cred_contents(context, &creds);
 }
 
 enum hprop_source {

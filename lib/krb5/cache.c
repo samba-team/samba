@@ -330,7 +330,7 @@ krb5_cc_retrieve_cred(krb5_context context,
 	    ret = 0;
 	    break;
 	}
-	krb5_free_creds_contents (context, creds);
+	krb5_free_cred_contents (context, creds);
     }
     krb5_cc_end_seq_get(context, id, &cursor);
     return ret;
@@ -395,7 +395,7 @@ krb5_cc_next_cred_match(krb5_context context,
 	    return ret;
 	if (mcreds == NULL || krb5_compare_creds(context, whichfields, mcreds, creds))
 	    return 0;
-	krb5_free_creds_contents(context, creds);
+	krb5_free_cred_contents(context, creds);
     }
 }
 
@@ -480,7 +480,7 @@ krb5_cc_copy_cache_match(krb5_context context,
 	if (matched)
 	    (*matched)++;
 	ret = krb5_cc_store_cred(context, to, &cred);
-	krb5_free_creds_contents(context, &cred);
+	krb5_free_cred_contents(context, &cred);
     }
     krb5_cc_end_seq_get(context, from, &cursor);
     krb5_free_principal(context, princ);

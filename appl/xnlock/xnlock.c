@@ -611,7 +611,7 @@ verify_krb5(const char *password)
 		if(ret == 0) 
 		    tf_setup(&c, c.pname, c.pinst);
 		memset(&c, 0, sizeof(c));
-		krb5_free_creds_contents(context, &cred);
+		krb5_free_cred_contents(context, &cred);
 	    }
 	    krb5_free_principal(context, mcred.server);
 	}

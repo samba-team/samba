@@ -716,7 +716,7 @@ krb5_ret_creds(krb5_storage *sp, krb5_creds *creds)
 cleanup:
     if(ret) {
 #if 0	
-	krb5_free_creds_contents(context, creds); /* XXX */
+	krb5_free_cred_contents(context, creds); /* XXX */
 #endif
     }
     return ret;

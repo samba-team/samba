@@ -210,7 +210,7 @@ mcc_destroy(krb5_context context,
 	while (l != NULL) {
 	    struct link *old;
 	    
-	    krb5_free_creds_contents (context, &l->cred);
+	    krb5_free_cred_contents (context, &l->cred);
 	    old = l;
 	    l = l->next;
 	    free (old);
@@ -318,7 +318,7 @@ mcc_remove_cred(krb5_context context,
     for(q = &m->creds, p = *q; p; p = *q) {
 	if(krb5_compare_creds(context, which, mcreds, &p->cred)) {
 	    *q = p->next;
-	    krb5_free_creds_contents(context, &p->cred);
+	    krb5_free_cred_contents(context, &p->cred);
 	    free(p);
 	} else
 	    q = &p->next;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -170,7 +170,7 @@ static OM_uint32 acquire_initiator_cred
 
 end:
     if (cred.client != NULL)
-	krb5_free_creds_contents(gssapi_krb5_context, &cred);
+	krb5_free_cred_contents(gssapi_krb5_context, &cred);
     if (def_princ != NULL)
 	krb5_free_principal(gssapi_krb5_context, def_princ);
     if (keytab != NULL)

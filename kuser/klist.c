@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -282,7 +282,7 @@ print_tickets (krb5_context context,
 	}else{
 	    print_cred(context, &creds, ct, do_flags);
 	}
-	krb5_free_creds_contents (context, &creds);
+	krb5_free_cred_contents (context, &creds);
     }
     if(ret != KRB5_CC_END)
 	krb5_err(context, 1, ret, "krb5_cc_get_next");
@@ -325,7 +325,7 @@ check_for_tgt (krb5_context context,
     ret = krb5_cc_retrieve_cred (context, ccache, 0, &pattern, &creds);
     expired = time(NULL) > creds.times.endtime;
     krb5_free_principal (context, pattern.server);
-    krb5_free_creds_contents (context, &creds);
+    krb5_free_cred_contents (context, &creds);
     if (ret) {
 	if (ret == KRB5_CC_END)
 	    return 1;

@@ -710,7 +710,7 @@ get_cred_from_kdc_flags(krb5_context context,
 		    *out_creds = NULL;
 		}
 	    }
-	    krb5_free_creds_contents(context, &tgts);
+	    krb5_free_cred_contents(context, &tgts);
 	    krb5_free_principal(context, tmp_creds.server);
 	    krb5_free_principal(context, tmp_creds.client);
 	    return ret;

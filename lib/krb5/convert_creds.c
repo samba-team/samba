@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -430,18 +430,18 @@ krb524_convert_creds_kdc_ccache(krb5_context context,
 	template.session.keytype = ENCTYPE_DES_CBC_CRC;
 	ret = krb5_copy_principal (context, in_cred->client, &template.client);
 	if (ret) {
-	    krb5_free_creds_contents (context, &template);
+	    krb5_free_cred_contents (context, &template);
 	    return ret;
 	}
 	ret = krb5_copy_principal (context, in_cred->server, &template.server);
 	if (ret) {
-	    krb5_free_creds_contents (context, &template);
+	    krb5_free_cred_contents (context, &template);
 	    return ret;
 	}
 
 	ret = krb5_get_credentials (context, 0, ccache,
 				    &template, &v5_creds);
-	krb5_free_creds_contents (context, &template);
+	krb5_free_cred_contents (context, &template);
 	if (ret)
 	    return ret;
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,7 +56,7 @@ krb5_mk_req_exact(krb5_context context,
 
     ret = krb5_copy_principal (context, server, &this_cred.server);
     if (ret) {
-	krb5_free_creds_contents (context, &this_cred);
+	krb5_free_cred_contents (context, &this_cred);
 	return ret;
     }
 
@@ -65,7 +65,7 @@ krb5_mk_req_exact(krb5_context context,
 	this_cred.session.keytype = (*auth_context)->keytype;
 
     ret = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
-    krb5_free_creds_contents(context, &this_cred);
+    krb5_free_cred_contents(context, &this_cred);
     if (ret)
 	return ret;
 
