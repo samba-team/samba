@@ -374,7 +374,7 @@ static void do_list_helper(file_info *f, const char *mask)
 			if (do_list_fn == display_finfo) {
 				DEBUG(0,("\n%s\n",CNV_LANG(mask2)));
 			}
-			pstrcat(mask2,"\\*.*");
+			pstrcat(mask2,"\\*");
 			do_list(mask2, do_list_attr, do_list_fn, True, True);
 		}
 		return;
@@ -422,7 +422,7 @@ static void cmd_dir(void)
 			pstrcat(mask,p);
 	}
 	else {
-		pstrcat(mask,"*.*");
+		pstrcat(mask,"*");
 	}
 
 	do_list(mask, attribute, display_finfo, recurse, True);
@@ -455,7 +455,7 @@ static void cmd_du(void)
 		else
 			pstrcat(mask,p);
 	} else {
-		pstrcat(mask,"*.*");
+		pstrcat(mask,"*");
 	}
 
 	do_list(mask, attribute, do_du, recurse, True);
@@ -644,7 +644,7 @@ static void do_mget(file_info *finfo)
 	}
 
 	pstrcpy(mget_mask,cur_dir);
-	pstrcat(mget_mask,"*.*");
+	pstrcat(mget_mask,"*");
 	
 	do_list(mget_mask, aSYSTEM | aHIDDEN | aDIR,do_mget,False, True);
 	chdir("..");
@@ -718,7 +718,7 @@ static void cmd_mget(void)
 		pstrcpy(mget_mask,cur_dir);
 		if(mget_mask[strlen(mget_mask)-1]!='\\')
 			pstrcat(mget_mask,"\\");
-		pstrcat(mget_mask,"*.*");
+		pstrcat(mget_mask,"*");
 		do_list(mget_mask, attribute,do_mget,False,True);
 	}
 }
