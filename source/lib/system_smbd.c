@@ -114,7 +114,7 @@ int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 	
 	/* see if we should disable winbindd lookups for local users */
 	if ( (p = strchr(user, *lp_winbind_separator())) == NULL ) {
-		if ( setenv(WINBINDD_DONT_ENV, "1", True) == -1 )
+		if ( setenv(WINBINDD_DONT_ENV, "1", 1) == -1 )
 			DEBUG(0,("sys_getgroup_list: Insufficient environment space for %s\n",
 				WINBINDD_DONT_ENV));
 		else
@@ -131,7 +131,7 @@ int sys_getgrouplist(const char *user, gid_t gid, gid_t *groups, int *grpcnt)
 #endif
 
 	/* allow winbindd lookups */
-	unsetenv( WINBINDD_DONT_ENV );
+	setenv( WINBINDD_DONT_ENV, "0", 1);
 	
 	return retval;
 }
