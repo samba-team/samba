@@ -124,7 +124,7 @@ typedef int (*ldb_traverse_fn)(struct ldb_context *, const struct ldb_message *)
 struct ldb_backend_ops {
 	int (*close)(struct ldb_context *);
 	int (*search)(struct ldb_context *, const char *, enum ldb_scope,
-		      const char *, const char *[], struct ldb_message ***);
+		      const char *, char * const [], struct ldb_message ***);
 	int (*search_free)(struct ldb_context *, struct ldb_message **);
 	int (*add_record)(struct ldb_context *, const struct ldb_message *);
 	int (*modify_record)(struct ldb_context *, const struct ldb_message *);
@@ -207,6 +207,11 @@ int ldb_delete(struct ldb_context *ldb, const char *dn);
 const char *ldb_errstring(struct ldb_context *ldb);
 
 /*
+  casefold a string (should be UTF8, but at the moment it isn't)
+*/
+char *ldb_casefold(const char *s);
+
+/*
   ldif manipulation functions
 */
 int ldif_write(int (*fprintf_fn)(void *, const char *, ...), 
@@ -217,3 +222,4 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data);
 struct ldb_ldif *ldif_read_file(FILE *f);
 struct ldb_ldif *ldif_read_string(const char *s);
 int ldif_write_file(FILE *f, const struct ldb_ldif *msg);
+

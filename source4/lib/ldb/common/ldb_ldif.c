@@ -407,6 +407,7 @@ void ldif_read_free(struct ldb_ldif *ldif)
 	struct ldb_message *msg = &ldif->msg;
 	int i;
 	for (i=0;i<msg->num_elements;i++) {
+		if (msg->elements[i].name) free(msg->elements[i].name);
 		if (msg->elements[i].values) free(msg->elements[i].values);
 	}
 	if (msg->elements) free(msg->elements);
@@ -431,10 +432,15 @@ static int msg_add_empty(struct ldb_message *msg, const char *name, unsigned fla
 
 	el = &msg->elements[msg->num_elements];
 	
-	el->name = name;
+	el->name = strdup(name);
 	el->num_values = 0;
 	el->values = NULL;
 	el->flags = flags;
+
+	if (!el->name) {
+		errno = ENOMEM;
+		return -1;
+	}
 
 	msg->num_elements++;
 
@@ -478,7 +484,7 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 	}
 	
 	/* first line must be a dn */
-	if (strcmp(attr, "dn") != 0) {
+	if (ldb_attr_cmp(attr, "dn") != 0) {
 		fprintf(stderr, "First line must be a dn not '%s'\n", attr);
 		goto failed;
 	}
@@ -489,10 +495,10 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 		struct ldb_message_element *el;
 		int empty = 0;
 
-		if (strcmp(attr, "changetype") == 0) {
+		if (ldb_attr_cmp(attr, "changetype") == 0) {
 			int i;
 			for (i=0;ldb_changetypes[i].name;i++) {
-				if (strcmp((char *)value.data, ldb_changetypes[i].name) == 0) {
+				if (ldb_attr_cmp((char *)value.data, ldb_changetypes[i].name) == 0) {
 					ldif->changetype = ldb_changetypes[i].changetype;
 					break;
 				}
@@ -505,19 +511,19 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 			continue;
 		}
 
-		if (strcmp(attr, "add") == 0) {
+		if (ldb_attr_cmp(attr, "add") == 0) {
 			flags = LDB_FLAG_MOD_ADD;
 			empty = 1;
 		}
-		if (strcmp(attr, "delete") == 0) {
+		if (ldb_attr_cmp(attr, "delete") == 0) {
 			flags = LDB_FLAG_MOD_DELETE;
 			empty = 1;
 		}
-		if (strcmp(attr, "replace") == 0) {
+		if (ldb_attr_cmp(attr, "replace") == 0) {
 			flags = LDB_FLAG_MOD_REPLACE;
 			empty = 1;
 		}
-		if (strcmp(attr, "-") == 0) {
+		if (ldb_attr_cmp(attr, "-") == 0) {
 			flags = 0;
 			continue;
 		}
@@ -531,7 +537,7 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 		
 		el = &msg->elements[msg->num_elements-1];
 
-		if (msg->num_elements > 0 && strcmp(attr, el->name) == 0 &&
+		if (msg->num_elements > 0 && ldb_attr_cmp(attr, el->name) == 0 &&
 		    flags == el->flags) {
 			/* its a continuation */
 			el->values = 
@@ -549,11 +555,11 @@ struct ldb_ldif *ldif_read(int (*fgetc_fn)(void *), void *private_data)
 			if (!msg->elements) {
 				goto failed;
 			}
-			msg->elements[msg->num_elements].flags = flags;
-			msg->elements[msg->num_elements].name = attr;
 			el = &msg->elements[msg->num_elements];
+			el->flags = flags;
+			el->name = strdup(attr);
 			el->values = malloc_p(struct ldb_val);
-			if (!el->values) {
+			if (!el->values || !el->name) {
 				goto failed;
 			}
 			el->num_values = 1;
