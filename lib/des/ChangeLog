@@ -1,5 +1,9 @@
 2005-02-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* ui.c: remove dependency on asprintf
+
+	* Makefile.am: make destest only once
+
 	* Replace the eay DES code with key scheule setup code by me and DES
 	s-box and p permutation from Richard Outerbridge implemtation (in
 	public domain).  The DES modes are implemented by me. ui.c code are
