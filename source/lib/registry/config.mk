@@ -38,7 +38,7 @@ SUBSYSTEM = REGISTRY
 INIT_OBJ_FILES = \
 		lib/registry/reg_backend_rpc/reg_backend_rpc.o
 REQUIRED_SUBSYSTEMS = \
-		LIBSMB
+		LIBRPC
 # End MODULE registry_rpc
 ################################################
 
