@@ -4978,7 +4978,7 @@ inits a SAM_USER_INFO_12 structure.
 ********************************************************************/
 
 void init_sam_user_info12(SAM_USER_INFO_12 * usr,
-			  uint8 lm_pwd[16], uint8 nt_pwd[16])
+			  const uint8 lm_pwd[16], const uint8 nt_pwd[16])
 {
 	DEBUG(5, ("init_sam_user_info12\n"));
 
@@ -5770,15 +5770,15 @@ void init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw)
 			len_description, len_workstations, len_unknown_str,
 			len_munged_dial;
 			
-	char*		user_name = pdb_get_username(pw);
-	char*		full_name = pdb_get_fullname(pw);
-	char*		home_dir  = pdb_get_homedir(pw);
-	char*		dir_drive = pdb_get_dirdrive(pw);
-	char*		logon_script = pdb_get_logon_script(pw);
-	char*		profile_path = pdb_get_profile_path(pw);
-	char*		description = pdb_get_acct_desc(pw);
-	char*		workstations = pdb_get_workstations(pw);
-	char*		munged_dial = pdb_get_munged_dial(pw);
+	const char*		user_name = pdb_get_username(pw);
+	const char*		full_name = pdb_get_fullname(pw);
+	const char*		home_dir  = pdb_get_homedir(pw);
+	const char*		dir_drive = pdb_get_dirdrive(pw);
+	const char*		logon_script = pdb_get_logon_script(pw);
+	const char*		profile_path = pdb_get_profile_path(pw);
+	const char*		description = pdb_get_acct_desc(pw);
+	const char*		workstations = pdb_get_workstations(pw);
+	const char*		munged_dial = pdb_get_munged_dial(pw);
 
 	len_user_name    = user_name    != NULL ? strlen(user_name   )+1 : 0;
 	len_full_name    = full_name    != NULL ? strlen(full_name   )+1 : 0;
@@ -5974,7 +5974,7 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 * usr,
 void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
 {
 	int 		len_munged_dial;
-	char*		munged_dial = pdb_get_munged_dial(pw);
+	const char*		munged_dial = pdb_get_munged_dial(pw);
 
 	len_munged_dial  = munged_dial  != NULL ? strlen(munged_dial )+1 : 0;
 	init_uni_hdr(&usr->hdr_munged_dial, len_munged_dial);

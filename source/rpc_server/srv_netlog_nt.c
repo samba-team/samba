@@ -170,7 +170,7 @@ static void init_net_r_srv_pwset(NET_R_SRV_PWSET *r_s,
 static BOOL get_md4pw(char *md4pw, char *mach_acct)
 {
 	SAM_ACCOUNT *sampass = NULL;
-	uint8 *pass;
+	const uint8 *pass;
 	BOOL ret;
 
 #if 0

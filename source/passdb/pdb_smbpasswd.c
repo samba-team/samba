@@ -34,10 +34,10 @@
 struct smb_passwd
 {
         uid_t smb_userid;     /* this is actually the unix uid_t */
-        char *smb_name;     /* username string */
+        const char *smb_name;     /* username string */
 
-        unsigned char *smb_passwd; /* Null if no password */
-        unsigned char *smb_nt_passwd; /* Null if no password */
+        const unsigned char *smb_passwd; /* Null if no password */
+        const unsigned char *smb_nt_passwd; /* Null if no password */
 
         uint16 acct_ctrl; /* account info (ACB_xxxx bit-mask) */
         time_t pass_last_set_time;    /* password last set time */
@@ -489,7 +489,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
  Create a new smbpasswd entry - malloced space returned.
 *************************************************************************/
 
-static char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
+static char *format_new_smbpasswd_entry(const struct smb_passwd *newpwd)
 {
   int new_entry_length;
   char *new_entry;
@@ -549,7 +549,7 @@ static char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
  Routine to add an entry to the smbpasswd file.
 *************************************************************************/
 
-static BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd)
+static BOOL add_smbfilepwd_entry(const struct smb_passwd *newpwd)
 {
   char *pfile = lp_smb_passwd_file();
   struct smb_passwd *pwd = NULL;
@@ -651,7 +651,7 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  override = True, override XXXXXXXX'd out password or NO PASS
 ************************************************************************/
 
-static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
+static BOOL mod_smbfilepwd_entry(const struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
   static pstring  user_name;
@@ -1323,7 +1323,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
  call getpwnam() for unix account information until we have found
  the correct entry
  ***************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
+BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, const char *username)
 {
 	struct smb_passwd *smb_pw;
 	void *fp = NULL;
@@ -1508,7 +1508,7 @@ BOOL pdb_update_sam_account(const SAM_ACCOUNT *sampass, BOOL override)
 	return True;
 }
 
-BOOL pdb_delete_sam_account (char* username)
+BOOL pdb_delete_sam_account (const char* username)
 {
 	return del_smbfilepwd_entry(username);
 }

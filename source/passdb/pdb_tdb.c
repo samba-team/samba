@@ -173,7 +173,7 @@ done:
 /**********************************************************************
  Intialize a BYTE buffer from a SAM_ACCOUNT struct
  *********************************************************************/
-static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
+static uint32 init_buffer_from_sam (uint8 **buf, const SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
@@ -186,25 +186,25 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 		pass_last_set_time,
 		pass_can_change_time,
 		pass_must_change_time;
-	char *username;
-	char *domain;
-	char *nt_username;
-	char *dir_drive;
-	char *unknown_str;
-	char *munged_dial;
-	char *fullname;
-	char *homedir;
-	char *logon_script;
-	char *profile_path;
-	char *acct_desc;
-	char *workstations;
+	const char *username;
+	const char *domain;
+	const char *nt_username;
+	const char *dir_drive;
+	const char *unknown_str;
+	const char *munged_dial;
+	const char *fullname;
+	const char *homedir;
+	const char *logon_script;
+	const char *profile_path;
+	const char *acct_desc;
+	const char *workstations;
 	uint32	username_len, domain_len, nt_username_len,
 		dir_drive_len, unknown_str_len, munged_dial_len,
 		fullname_len, homedir_len, logon_script_len,
 		profile_path_len, acct_desc_len, workstations_len;
 
-	uint8		*lm_pw;
-	uint8		*nt_pw;
+	const uint8 *lm_pw;
+	const uint8 *nt_pw;
 	uint32	lm_pw_len = 16;
 	uint32	nt_pw_len = 16;
 
@@ -476,7 +476,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
  Lookup a name in the SAM TDB
 ******************************************************************/
 
-BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
+BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 {
 	TDB_CONTEXT 	*pwd_tdb;
 	TDB_DATA 	data, key;
@@ -624,7 +624,7 @@ BOOL pdb_getsampwrid (SAM_ACCOUNT *user, uint32 rid)
  Delete a SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
 	SAM_ACCOUNT	*sam_pass = NULL;
 	TDB_CONTEXT 	*pwd_tdb;
@@ -799,7 +799,7 @@ done:
  Modifies an existing SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override)
+BOOL pdb_update_sam_account (const SAM_ACCOUNT *newpwd, BOOL override)
 {
 	return (tdb_update_sam(newpwd, override, TDB_MODIFY));
 }
@@ -808,7 +808,7 @@ BOOL pdb_update_sam_account (SAM_ACCOUNT *newpwd, BOOL override)
  Adds an existing SAM_ACCOUNT
 ****************************************************************************/
 
-BOOL pdb_add_sam_account (SAM_ACCOUNT *newpwd)
+BOOL pdb_add_sam_account (const SAM_ACCOUNT *newpwd)
 {
 	return (tdb_update_sam(newpwd, True, TDB_INSERT));
 }

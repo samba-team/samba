@@ -319,19 +319,19 @@ void E_P24(const unsigned char *p21, const unsigned char *c8, unsigned char *p24
 	smbhash(p24+16, c8, p21+14, 1);
 }
 
-void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out)
+void D_P16(const unsigned char *p14, const unsigned char *in, unsigned char *out)
 {
 	smbhash(out, in, p14, 0);
         smbhash(out+8, in+8, p14+7, 0);
 }
 
-void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out)
+void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *out)
 {
         smbhash(out, in, p14, 1);
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash1(unsigned char *out, const unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 
@@ -339,7 +339,7 @@ void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
+void cred_hash2(unsigned char *out, const unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 	static unsigned char key2[8];
@@ -358,7 +358,7 @@ void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int for
         smbhash(out + 8, in + 8, key2, forw);
 }
 
-void SamOEMhash( unsigned char *data, unsigned char *key, int val)
+void SamOEMhash( unsigned char *data, const unsigned char *key, int val)
 {
   unsigned char s_box[256];
   unsigned char index_i = 0;

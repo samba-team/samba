@@ -824,7 +824,7 @@ static void strip_mount_options( pstring *str)
 *******************************************************************/
 
 #ifdef WITH_NISPLUS_HOME
-char *automount_lookup(char *user_name)
+char *automount_lookup(const char *user_name)
 {
   static fstring last_key = "";
   static pstring last_value = "";
@@ -872,7 +872,7 @@ char *automount_lookup(char *user_name)
   return last_value;
 }
 #else /* WITH_NISPLUS_HOME */
-char *automount_lookup(char *user_name)
+char *automount_lookup(const char *user_name)
 {
   static fstring last_key = "";
   static pstring last_value = "";
@@ -1020,7 +1020,7 @@ uid_t nametouid(char *name)
  is present does a shortcut lookup...
 ********************************************************************/
 
-gid_t nametogid(char *name)
+gid_t nametogid(const char *name)
 {
 	struct group *grp;
 	char *p;
