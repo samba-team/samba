@@ -5351,7 +5351,7 @@
 		made - the password as is and the password in all-lower case.</para>
 
 		<para>Default: <command>password level = 0</command></para>
-		<para>Example: <command>password level = 4</command</para>
+		<para>Example: <command>password level = 4</command></para>
 		</listitem>
 		</varlistentry>
 
@@ -5700,7 +5700,7 @@
 		or PLP :</command></para>
 		<para><command>print command = lpr -r -P%p %s</command></para>
 
-		<para>For <command>printing = SYS or HPUX :</command></para>
+		<para>For <command>printing = SYSV or HPUX :</command></para>
 		<para><command>print command = lp -c -d%p %s; rm %s</command></para>
 
 		<para>For <command>printing = SOFTQ :</command></para>
