@@ -135,8 +135,13 @@ type :
 
 text: /[\w\s\..?-]*/
 
-anytext: call(s?) 
-	 {{ "$item[1][0]" }}
+text2: /[\w\s\*\>\/\..?-]*/
+
+anytext: text2 '(' <commit> anytext ')' anytext
+	 {{ "$item[1]($item[4])$item[6]" }}
+	 | text2 '+' anytext 
+	 {{ "$item[1]+$item[3]" }}
+	 | text2
 
 call: expression '(' <commit> expression ')'
 	 {{ "$item[1]($item[4])" }}
