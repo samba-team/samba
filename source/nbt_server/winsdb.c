@@ -78,7 +78,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	    rec->expire_time <= time(NULL)) {
 		DEBUG(5,("WINS: expiring name %s (expired at %s)\n", 
 			 nbt_name_string(tmp_ctx, rec->name), timestring(tmp_ctx, rec->expire_time)));
-		rec->state = WINS_REC_EXPIRED;
+		rec->state = WINS_REC_RELEASED;
 	}
 
 	talloc_steal(mem_ctx, rec);
