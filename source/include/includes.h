@@ -541,7 +541,9 @@ char *mktemp(char *); /* No standard include */
 #define NEED_AUTH_PARAMETERS
 #endif
 #define SIGNAL_CAST (void (*)(__harg))
+#ifndef HPUX10 /* This is only needed for HPUX 9.x */
 #define SELECT_CAST (int *)
+#endif /* HPUX10 */
 #define SYSV
 #define USE_WAITPID
 #define WAIT3_CAST2 (int *)
@@ -550,7 +552,7 @@ char *mktemp(char *); /* No standard include */
 #define USE_SETRES
 #define DEFAULT_PRINTING PRINT_HPUX
 #define SIGCLD_IGNORE
-#endif
+#endif /* HPUX */
 
 
 #ifdef SEQUENT

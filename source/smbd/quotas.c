@@ -331,8 +331,8 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   ret = quotactl(Q_GETQUOTA, name, euser_id, &D);
 #endif
 
-  seteuid(euser_id); /* Restore the original uid status. */
-  setuid(user_id);  
+  setuid(user_id); /* Restore the original uid status. */
+  seteuid(euser_id);
 
   if (ret < 0) {
     DEBUG(2,("disk_quotas ioctl (Solaris) failed\n"));
@@ -363,6 +363,47 @@ DEBUG(5,("disk_quotas for path \"%s\" returning  bsize %d, dfree %d, dsize %d\n"
       return(True);
 }
 
+
+#elif defined(OSF1)
+#include <ufs/quota.h>
+
+/****************************************************************************
+try to get the disk space from disk quotas - OFS1 version
+****************************************************************************/
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+{
+  uid_t user_id, euser_id;
+  int r;
+  struct dqblk D;
+  struct stat S;
+
+  euser_id = geteuid();
+  user_id = getuid();
+
+  setreuid(euser_id, euser_id);
+  r= quotactl(path,QCMD(Q_GETQUOTA, USRQUOTA),euser_id,(char *) &D);
+  if (setreuid(user_id, euser_id) == -1)
+    DEBUG(5,("Unable to reset uid to %d\n", user_id));
+
+  *bsize = DEV_BSIZE;
+
+  if (r)
+      return(False);
+
+  /* Use softlimit to determine disk space, except when it has been exceeded */
+
+  if (D.dqb_bsoftlimit==0)
+    return(False);
+
+  if ((D.dqb_curblocks>D.dqb_bsoftlimit)) {
+    *dfree = 0;
+    *dsize = D.dqb_curblocks;
+  } else {
+    *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
+    *dsize = D.dqb_bsoftlimit;
+  }
+  return (True);
+}
 #else
 
 #ifdef        __FreeBSD__

@@ -269,7 +269,7 @@ static void usage(char *name)
     if ((argv[1][0] == '-') && (argv[1][1] == 'a'))
       add_user = True;
 
-    if(add_user && (argc < 2 || argc > 4))
+    if(add_user && (argc <= 2 || argc > 4))
       usage(argv[0]);
 
     /* root can specify password on command-line */
@@ -338,7 +338,7 @@ static void usage(char *name)
 
     p = getpass("Retype new SMB password:");
 
-    if (strcmp(p, new_passwd))
+    if (strncmp(p, new_passwd, sizeof(fstring)-1))
     {
       fprintf(stderr, "%s: Mismatch - password unchanged.\n", argv[0]);
       exit(1);

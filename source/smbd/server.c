@@ -1704,20 +1704,21 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 /****************************************************************************
 seek a file. Try to avoid the seek if possible
 ****************************************************************************/
-int seek_file(int fnum,int pos)
+int seek_file(int fnum,uint32 pos)
 {
-  int offset = 0;
+  uint32 offset = 0;
   if (Files[fnum].print_file && POSTSCRIPT(Files[fnum].cnum))
     offset = 3;
 
-  Files[fnum].pos = lseek(Files[fnum].fd_ptr->fd,pos+offset,SEEK_SET) - offset;
+  Files[fnum].pos = (int)(lseek(Files[fnum].fd_ptr->fd,pos+offset,SEEK_SET) 
+                                  - offset);
   return(Files[fnum].pos);
 }
 
 /****************************************************************************
 read from a file
 ****************************************************************************/
-int read_file(int fnum,char *data,int pos,int n)
+int read_file(int fnum,char *data,uint32 pos,int n)
 {
   int ret=0,readret;
 
@@ -1733,7 +1734,7 @@ int read_file(int fnum,char *data,int pos,int n)
 #if USE_MMAP
   if (Files[fnum].mmap_ptr)
     {
-      int num = MIN(n,Files[fnum].mmap_size-pos);
+      int num = MIN(n,(int)(Files[fnum].mmap_size-pos));
       if (num > 0)
 	{
 	  memcpy(data,Files[fnum].mmap_ptr+pos,num);
@@ -2541,22 +2542,25 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   pcon->ngroups = 0;
   pcon->groups = NULL;
 
-  /* Find all the groups this uid is in and store them. Used by become_user() */
-  setup_groups(pcon->user,pcon->uid,pcon->gid,&pcon->ngroups,&pcon->igroups,&pcon->groups);
+  if (!IS_IPC(cnum))
+    {
+      /* Find all the groups this uid is in and store them. Used by become_user() */
+      setup_groups(pcon->user,pcon->uid,pcon->gid,&pcon->ngroups,&pcon->igroups,&pcon->groups);
       
-  /* check number of connections */
-  if (!claim_connection(cnum,
+      /* check number of connections */
+      if (!claim_connection(cnum,
 			    lp_servicename(SNUM(cnum)),
 			    lp_max_connections(SNUM(cnum)),False))
-  {
-    DEBUG(1,("too many connections - rejected\n"));
-    return(-8);
-  }  
+	{
+	  DEBUG(1,("too many connections - rejected\n"));
+	  return(-8);
+	}  
 
-  if (lp_status(SNUM(cnum)))
-    claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
+      if (lp_status(SNUM(cnum)))
+	claim_connection(cnum,"STATUS.",MAXSTATUS,first_connection);
 
-  first_connection = False;
+      first_connection = False;
+    } /* IS_IPC */
 
   pcon->open = True;
 
@@ -2574,13 +2578,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       DEBUG(0,("Can't become connected user!\n"));
       pcon->open = False;
-      yield_connection(cnum,
+      if (!IS_IPC(cnum)) {
+	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
 			 lp_max_connections(SNUM(cnum)));
-      if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
-      {
-        return(-1);
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
       }
+      return(-1);
     }
 
   if (ChDir(pcon->connectpath) != 0)
@@ -2589,13 +2593,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 	       pcon->connectpath,strerror(errno)));
       pcon->open = False;
       unbecome_user();
-      yield_connection(cnum,
+      if (!IS_IPC(cnum)) {
+	yield_connection(cnum,
 			 lp_servicename(SNUM(cnum)),
 			 lp_max_connections(SNUM(cnum)));
-      if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
-      {
-        return(-5);      
+	if (lp_status(SNUM(cnum))) yield_connection(cnum,"STATUS.",MAXSTATUS);
       }
+      return(-5);      
     }
 
   string_set(&pcon->origpath,pcon->connectpath);
@@ -3420,7 +3424,7 @@ void exit_server(char *reason)
   DEBUG(2,("Closing connections\n"));
   for (i=0;i<MAX_CONNECTIONS;i++)
     if (Connections[i].open)
-      close_cnum(i,-1);
+      close_cnum(i,(uint16)-1);
 #ifdef DFS_AUTH
   if (dcelogin_atmost_once)
     dfs_unlogin();
