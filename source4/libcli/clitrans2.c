@@ -213,7 +213,11 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname,
 		return cli_nt_error(cli);
 	}
 
-	*alt_name = strdup(parms.alt_name_info.out.fname.s);
+	if (!parms.alt_name_info.out.fname.s) {
+		*alt_name = strdup("");
+	} else {
+		*alt_name = strdup(parms.alt_name_info.out.fname.s);
+	}
 
 	talloc_destroy(mem_ctx);
 
