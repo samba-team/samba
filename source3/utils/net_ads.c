@@ -131,7 +131,6 @@ static ADS_STRUCT *ads_startup(void)
 
 	if (opt_user_specified) {
 		need_password = True;
-		use_in_memory_ccache();
 	}
 
 retry:
@@ -142,8 +141,10 @@ retry:
 		free(prompt);
 	}
 
-	if (opt_password)
+	if (opt_password) {
+		use_in_memory_ccache();
 		ads->auth.password = strdup(opt_password);
+	}
 
 	ads->auth.user_name = strdup(opt_user_name);
 
