@@ -38,7 +38,7 @@ do a LSA Open Policy
 ****************************************************************************/
 
 BOOL do_lsa_open_policy(struct cli_state *cli,
-			char *server_name, POLICY_HND *hnd,
+			char *system_name, POLICY_HND *hnd,
 			BOOL sec_qos)
 {
 	prs_struct rbuf;
