@@ -551,24 +551,22 @@ BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE 
 
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 {
-        uid_t low, high;
+	uid_t low, high;
 	fstring sid;
 
-        if (lp_winbind_uid(&low, &high) && uid >= low && uid <= high) {
-                if (winbind_uid_to_sid(psid, uid)) {
+	if (lp_winbind_uid(&low, &high) && uid >= low && uid <= high) {
+		if (winbind_uid_to_sid(psid, uid)) {
 
-                        DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
-                                  (unsigned int)uid, 
-                                  sid_to_string(sid, psid)));
+			DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
+				(unsigned int)uid, sid_to_string(sid, psid)));
 
-                        return psid;
-                }
-        }
+			return psid;
+		}
+	}
 
-        local_uid_to_sid(psid, uid);
+	local_uid_to_sid(psid, uid);
         
-	DEBUG(10,("uid_to_sid: local %u -> %s\n",
-                  (unsigned int)uid, sid_to_string(sid, psid)));
+	DEBUG(10,("uid_to_sid: local %u -> %s\n", (unsigned int)uid, sid_to_string(sid, psid)));
 
 	return psid;
 }
@@ -581,24 +579,22 @@ DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
 
 DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-        gid_t low, high;
+	gid_t low, high;
 	fstring sid;
 
-        if (lp_winbind_gid(&low, &high) && gid >= low && gid <= high) {
-                if (winbind_gid_to_sid(psid, gid)) {
+	if (lp_winbind_gid(&low, &high) && gid >= low && gid <= high) {
+		if (winbind_gid_to_sid(psid, gid)) {
 
-                        DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
-                                  (unsigned int)gid, 
-                                  sid_to_string(sid, psid)));
+			DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
+				(unsigned int)gid, sid_to_string(sid, psid)));
                         
-                        return psid;
-                }
-        }
+			return psid;
+		}
+	}
 
-        local_gid_to_sid(psid, gid);
+	local_gid_to_sid(psid, gid);
         
-	DEBUG(10,("gid_to_sid: local %u -> %s\n",
-                  (unsigned int)gid, sid_to_string(sid, psid)));
+	DEBUG(10,("gid_to_sid: local %u -> %s\n", (unsigned int)gid, sid_to_string(sid, psid)));
 
 	return psid;
 }
