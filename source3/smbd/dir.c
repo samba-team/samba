@@ -634,8 +634,6 @@ int TellDir(void *p)
  * -------------------------------------------------------------------------- **
  */
 
-#include "ubi_dLinkList.h"
-
 typedef struct
   {
   ubi_dlNode  node;
