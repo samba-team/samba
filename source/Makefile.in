@@ -428,7 +428,7 @@ NSSTEST_OBJ = torture/nsstest.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 VFSTEST_OBJ = torture/cmd_vfs.o torture/vfstest.o $(SMBD_OBJ_BASE) \
-		$(READLINE_OBJ) $(POPT_LIB_OBJ)
+		$(READLINE_OBJ)
 
 LOCKTEST2_OBJ = torture/locktest2.o $(LOCKING_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
