@@ -67,7 +67,7 @@ static ADS_STRUCT *ads_cached_connection(struct winbindd_domain *domain)
 
 		/* if we get ECONNREFUSED then it might be a NT4
                    server, fall back to MSRPC */
-		if (status.error_type == ADS_ERROR_SYSTEM &&
+		if (status.error_type == ENUM_ADS_ERROR_SYSTEM &&
 		    status.err.rc == ECONNREFUSED) {
 			DEBUG(1,("Trying MSRPC methods\n"));
 			if (domain->methods == &cache_methods) {

@@ -1574,9 +1574,9 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 		   checksum after the decode, below
 		*/
 		DEBUG(2, ("netsec_decode: FAILED: packet sequence number:\n"));
-		dump_data(2, verf->seq_num, sizeof(verf->seq_num));
+		dump_data(2, (const char*)verf->seq_num, sizeof(verf->seq_num));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, seq_num, sizeof(seq_num));
+		dump_data(2, (const char*)seq_num, sizeof(seq_num));
 
 		return False;
 	}
@@ -1584,9 +1584,9 @@ BOOL netsec_decode(struct netsec_auth_struct *a, int auth_flags,
 	if (memcmp(verf->sig, netsec_sig, sizeof(verf->sig))) {
 		/* Validate that the other end sent the expected header */
 		DEBUG(2, ("netsec_decode: FAILED: packet header:\n"));
-		dump_data(2, verf->sig, sizeof(verf->sig));
+		dump_data(2, (const char*)verf->sig, sizeof(verf->sig));
 		DEBUG(2, ("should be:\n"));
-		dump_data(2, netsec_sig, sizeof(netsec_sig));
+		dump_data(2, (const char*)netsec_sig, sizeof(netsec_sig));
 		return False;
 	}
 
