@@ -580,7 +580,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 	   owns their job. */
 
 	if (!owner && 
-	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -622,7 +622,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 	owner = is_owner(user, jobid);
 
 	if (!owner &&
-	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -673,7 +673,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 	owner = is_owner(user, jobid);
 
 	if (!is_owner(user, jobid) &&
-	    !print_access_check(user, snum, PRINTER_ACCESS_ADMINISTER)) {
+	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
 		*errcode = ERROR_ACCESS_DENIED;
 		return False;
@@ -921,12 +921,17 @@ BOOL print_job_end(int jobid)
 
 	snum = print_job_snum(jobid);
 
-	if (sys_fstat(pjob->fd, &sbuf) == 0)
+	if (sys_fstat(pjob->fd, &sbuf) == 0) {
 		pjob->size = sbuf.st_size;
-
-	close(pjob->fd);
-	pjob->fd = -1;
-
+		close(pjob->fd);
+		pjob->fd = -1;
+	} else {
+		/* Couldn't stat the job file, so something has gone wrong. Cleanup */
+		unlink(pjob->filename);
+		tdb_delete(tdb, print_key(jobid));
+		return False;
+	}
+	
 	if (pjob->size == 0) {
 		/* don't bother spooling empty files */
 		unlink(pjob->filename);
@@ -965,9 +970,9 @@ BOOL print_job_end(int jobid)
 	pjob->spooled = True;
 	print_job_store(jobid, pjob);
 
-	/* force update the database */
-	print_cache_flush(snum);
-	
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
+
 	/* Send a printer notify message */
 
 	printer_name = PRINTERNAME(snum);
@@ -1186,8 +1191,8 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 		return False;
 	}
 
-	/* force update the database */
-	print_cache_flush(snum);
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
 
 	/* Send a printer notify message */
 
@@ -1216,7 +1221,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 		}
 	}
 
-	print_cache_flush(snum);
+	print_queue_update(snum);
 	safe_free(queue);
 
 	/* Send a printer notify message */
