@@ -1,3 +1,11 @@
+Changes in release 0.0p:
+
+ * keytab moved to /etc/krb5.keytab
+ * avoid false detection of IPv6 on Linux
+ * Lots of more functionality in the gssapi-library
+ * hprop can now read ka-server databases
+ * bug fixes
+
 Changes in release 0.0o:
 
  * FTP with GSSAPI support.
