@@ -1,5 +1,5 @@
 #
-# @(#) Test builtin domain/local groups resolve using getgrnam()
+# @(#) Test domain/local groups resolve using getgrnam()
 #
 
 load_lib util-defs.exp

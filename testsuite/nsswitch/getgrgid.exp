@@ -29,7 +29,7 @@ foreach {line} [split $output "\n"] {
     set grp_entry [split $line ":"]
     set group [lindex $grp_entry 0]
 
-    if {[regexp "^($domain|BUILTIN)/" $group]} {
+    if {[regexp "^($domain)/" $group]} {
 
         set got_entries 1
 
@@ -50,5 +50,5 @@ foreach {line} [split $output "\n"] {
 }
 
 if {!$got_entries} {
-    perror "No domain or builtin groups returned from getent"
+    perror "No domain groups returned from getent"
 }
