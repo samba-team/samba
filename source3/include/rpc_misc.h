@@ -210,6 +210,22 @@ typedef struct unistr3_info
 
 } UNISTR3;
 
+/* an element in a unicode string array */
+typedef struct
+{
+	uint16 length;
+	uint16 size;
+	uint32 ref_id;
+	UNISTR2 string;
+} UNISTR_ARRAY_EL;
+
+/* an array of unicode strings */
+typedef struct 
+{
+	uint32 ref_id;
+	uint32 count;
+	UNISTR_ARRAY_EL *strings;
+} UNISTR_ARRAY;
 
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
 typedef struct domrid2_info
