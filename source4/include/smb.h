@@ -308,26 +308,6 @@ struct interface
 	struct in_addr nmask;
 };
 
-/* struct returned by get_share_modes */
-typedef struct {
-	pid_t pid;
-	uint16 op_port;
-	uint16 op_type;
-	int share_mode;
-	uint32 desired_access;
-	struct timeval time;
-	SMB_DEV_T dev;
-	SMB_INO_T inode;
-	unsigned long share_file_id;
-} share_mode_entry;
-
-
-#define SHAREMODE_FN_CAST() \
-	void (*)(share_mode_entry *, char*)
-
-#define SHAREMODE_FN(fn) \
-	void (*fn)(share_mode_entry *, char*)
-
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
