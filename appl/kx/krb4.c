@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -217,6 +217,11 @@ krb4_copy_encrypted (kx_context *kc,
     for (;;) {
 	fd_set fdset;
 	int ret;
+
+	if (fd1 >= FD_SETSIZE || fd2 >= FD_SETSIZE) {
+	    warnx ("fd too large");
+	    return 1;
+	}
 
 	FD_ZERO(&fdset);
 	FD_SET(fd1, &fdset);
