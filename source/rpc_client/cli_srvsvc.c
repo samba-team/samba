@@ -49,8 +49,8 @@ BOOL do_srv_net_srv_conn_enum(struct cli_state *cli,
 	if (server_name == NULL || ctr == NULL || preferred_len == 0)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4,  cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, 4,  cli->mem_ctx, UNMARSHALL);
+	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SRV_NETCONNENUM */
 
@@ -129,8 +129,8 @@ BOOL do_srv_net_srv_sess_enum(struct cli_state *cli,
 	if (server_name == NULL || ctr == NULL || preferred_len == 0)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4,  cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, 4,  cli->mem_ctx, UNMARSHALL);
+	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SRV_NETSESSENUM */
 
@@ -206,8 +206,8 @@ BOOL do_srv_net_srv_share_enum(struct cli_state *cli,
 	if (server_name == NULL || preferred_len == 0)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4,  cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, 4,  cli->mem_ctx, UNMARSHALL);
+	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SRV_NETSHAREENUM */
 
@@ -277,8 +277,8 @@ BOOL do_srv_net_srv_file_enum(struct cli_state *cli,
 	if (server_name == NULL || ctr == NULL || preferred_len == 0)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4,  cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, 4,  cli->mem_ctx, UNMARSHALL);
+	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SRV_NETFILEENUM */
 
@@ -355,8 +355,8 @@ BOOL do_srv_net_srv_get_info(struct cli_state *cli,
 	if (server_name == NULL || switch_value == 0 || ctr == NULL)
 		return False;
 
-	prs_init(&data , MAX_PDU_FRAG_LEN, 4,  cli->mem_ctx, MARSHALL);
-	prs_init(&rdata, 0, 4,  cli->mem_ctx, UNMARSHALL);
+	prs_init(&data, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* create and send a MSRPC command with api SRV_NET_SRV_GET_INFO */
 

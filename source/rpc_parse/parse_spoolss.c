@@ -2515,7 +2515,12 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		buffer->string_at_end=0;
 		
 		if (buffer->ptr==0) {
-			if (!prs_init(&buffer->prs, 0, 4, prs_get_mem_context(ps), UNMARSHALL))
+			/*
+			 * JRA. I'm not sure if the data in here is in big-endian format if
+			 * the client is big-endian. Leave as default (little endian) for now.
+			 */
+
+			if (!prs_init(&buffer->prs, 0, prs_get_mem_context(ps), UNMARSHALL))
 				return False;
 			return True;
 		}
@@ -2523,7 +2528,12 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (!prs_uint32("size", ps, depth, &buffer->size))
 			return False;
 					
-		if (!prs_init(&buffer->prs, buffer->size, 4, prs_get_mem_context(ps), UNMARSHALL))
+		/*
+		 * JRA. I'm not sure if the data in here is in big-endian format if
+		 * the client is big-endian. Leave as default (little endian) for now.
+		 */
+
+		if (!prs_init(&buffer->prs, buffer->size, prs_get_mem_context(ps), UNMARSHALL))
 			return False;
 
 		if (!prs_append_some_prs_data(&buffer->prs, ps, prs_offset(ps), buffer->size))

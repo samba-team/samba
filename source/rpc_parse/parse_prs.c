@@ -67,12 +67,12 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 /*******************************************************************
  Initialise a parse structure - malloc the data if requested.
  ********************************************************************/
-BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, TALLOC_CTX *ctx, BOOL io)
+BOOL prs_init(prs_struct *ps, uint32 size, TALLOC_CTX *ctx, BOOL io)
 {
 	ZERO_STRUCTP(ps);
 	ps->io = io;
-	ps->bigendian_data = False;
-	ps->align = align;
+	ps->bigendian_data = RPC_LITTLE_ENDIAN;
+	ps->align = RPC_PARSE_ALIGN;
 	ps->is_dynamic = False;
 	ps->data_offset = 0;
 	ps->buffer_size = 0;
@@ -387,12 +387,12 @@ BOOL prs_append_data(prs_struct *dst, char *src, uint32 len)
 }
 
 /*******************************************************************
- Set the data as big-endian (external interface).
+ Set the data as X-endian (external interface).
  ********************************************************************/
 
-void prs_set_bigendian_data(prs_struct *ps)
+void prs_set_endian_data(prs_struct *ps, BOOL endian)
 {
-	ps->bigendian_data = True;
+	ps->bigendian_data = endian;
 }
 
 /*******************************************************************
@@ -1010,7 +1010,7 @@ int tdb_prs_fetch(TDB_CONTEXT *tdb, char *keystr, prs_struct *ps, TALLOC_CTX *me
     if (!dbuf.dptr) return -1;
 
     ZERO_STRUCTP(ps);
-    prs_init(ps, 0, 4, mem_ctx, UNMARSHALL);
+    prs_init(ps, 0, mem_ctx, UNMARSHALL);
     prs_give_memory(ps, dbuf.dptr, dbuf.dsize, True);
 
     return 0;

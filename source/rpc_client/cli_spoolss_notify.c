@@ -141,8 +141,8 @@ BOOL cli_spoolss_reply_open_printer(struct cli_state *cli, char *printer, uint32
 	SPOOL_Q_REPLYOPENPRINTER q_s;
 	SPOOL_R_REPLYOPENPRINTER r_s;
 
-	prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+	prs_init(&buf, 1024, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api SPOOLSS_REPLYOPENPRINTER */
 /*
@@ -197,8 +197,8 @@ BOOL cli_spoolss_reply_rrpcn(struct cli_state *cli, POLICY_HND *handle,
 	SPOOL_Q_REPLY_RRPCN q_s;
 	SPOOL_R_REPLY_RRPCN r_s;
 
-	prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+	prs_init(&buf, 1024, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api  */
 /*
@@ -251,8 +251,8 @@ BOOL cli_spoolss_reply_close_printer(struct cli_state *cli, POLICY_HND *handle, 
 	SPOOL_Q_REPLYCLOSEPRINTER q_s;
 	SPOOL_R_REPLYCLOSEPRINTER r_s;
 
-	prs_init(&buf , 1024, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0,    4, cli->mem_ctx, True );
+	prs_init(&buf, 1024, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api  */
 /*

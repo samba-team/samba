@@ -2756,7 +2756,7 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	/* Store the security descriptor in a tdb */
 
 	prs_init(&ps, (uint32)sec_desc_size(new_secdesc_ctr->sec) +
-		 sizeof(SEC_DESC_BUF), 4, mem_ctx, MARSHALL);
+		 sizeof(SEC_DESC_BUF), mem_ctx, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &new_secdesc_ctr,
 			     &ps, 1)) {

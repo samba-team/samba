@@ -203,7 +203,7 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 
 	if (ps->io && rpc->pack_type[0] == 0) {
 		DEBUG(10,("smb_io_rpc_hdr: PDU data format is big-endian. Setting flag.\n"));
-		prs_set_bigendian_data(ps);
+		prs_set_endian_data(ps, RPC_BIG_ENDIAN);
 	}
 
 	if(!prs_uint16("frag_len  ", ps, depth, &rpc->frag_len))
@@ -239,7 +239,7 @@ static BOOL smb_io_rpc_iface(char *desc, RPC_IFACE *ifc, prs_struct *ps, int dep
 
 	if(!prs_uint8s (False, "data   ", ps, depth, ifc->uuid.remaining, sizeof(ifc->uuid.remaining)))
 		return False;
-	if(!prs_uint32 (       "version", ps, depth, &(ifc->version)))
+	if(!prs_uint32 (       "version", ps, depth, &ifc->version))
 		return False;
 
 	return True;

@@ -106,13 +106,15 @@ static BOOL rpc_read(struct cli_state *cli, prs_struct *rdata, uint32 data_to_re
 }
 
 /****************************************************************************
- Checks the header.
+ Checks the header. This will set the endian bit in the rdata prs_struct. JRA.
  ****************************************************************************/
 
 static BOOL rpc_check_hdr(prs_struct *rdata, RPC_HDR *rhdr, 
                           BOOL *first, BOOL *last, uint32 *len)
 {
 	DEBUG(5,("rpc_check_hdr: rdata->data_size = %u\n", (uint32)prs_data_size(rdata) ));
+
+	/* Next call sets endian bit. */
 
 	if(!smb_io_rpc_hdr("rpc_hdr   ", rhdr, rdata, 0)) {
 		DEBUG(0,("rpc_check_hdr: Failed to unmarshall RPC_HDR.\n"));
@@ -223,7 +225,12 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 
 		memcpy(data, dp, sizeof(data));
 		
-		prs_init(&auth_req , 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&auth_req , 0, cli->mem_ctx, UNMARSHALL);
+
+		/* The endianness must be preserved... JRA. */
+
+		prs_set_endian_data(&auth_req, rdata->bigendian_data);
+
 		prs_give_memory(&auth_req, data, RPC_HDR_AUTH_LEN, False);
 
 		/*
@@ -267,7 +274,11 @@ static BOOL rpc_auth_pipe(struct cli_state *cli, prs_struct *rdata, int len, int
 		memcpy(data, dp, RPC_AUTH_NTLMSSP_CHK_LEN);
 		dump_data(100, data, auth_len);
 
-		prs_init(&auth_verf, 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&auth_verf, 0, cli->mem_ctx, UNMARSHALL);
+
+		/* The endinness must be preserved. JRA. */
+		prs_set_endian_data( &auth_verf, rdata->bigendian_data);
+
 		prs_give_memory(&auth_verf, data, RPC_AUTH_NTLMSSP_CHK_LEN, False);
 
 		if(!smb_io_rpc_auth_ntlmssp_chk("auth_sign", &chk, &auth_verf, 0)) {
@@ -369,6 +380,8 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 	prs_give_memory(rdata, prdata, rdata_len, True);
 	current_offset = rdata_len;
 
+	/* This next call sets the endian bit correctly in rdata. */
+
 	if (!rpc_check_hdr(rdata, &rhdr, &first, &last, &len)) {
 		prs_mem_free(rdata);
 		return False;
@@ -446,7 +459,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 		 * First read the header of the next PDU.
 		 */
 
-		prs_init(&hps, 0, 4, cli->mem_ctx, UNMARSHALL);
+		prs_init(&hps, 0, cli->mem_ctx, UNMARSHALL);
 		prs_give_memory(&hps, hdr_data, sizeof(hdr_data), False);
 
 		num_read = cli_read(cli, cli->nt_pipe_fnum, hdr_data, 0, RPC_HEADER_LEN+RPC_HDR_RESP_LEN);
@@ -463,8 +476,19 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 			return False;
 		}
 
+		/* This call sets the endianness in hps. */
+
 		if (!rpc_check_hdr(&hps, &rhdr, &first, &last, &len))
 			return False;
+
+		/* Ensure the endianness in rdata is set correctly - must be same as hps. */
+
+		if (hps.bigendian_data != rdata->bigendian_data) {
+			DEBUG(0,("rpc_api_pipe: Error : Endianness changed from %s to %s\n",
+				rdata->bigendian_data ? "big" : "little",
+				hps.bigendian_data ? "big" : "little" ));
+			return False;
+		}
 
 		if(!smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, &hps, 0)) {
 			DEBUG(0,("rpc_api_pipe: Error in unmarshalling RPC_HDR_RESP.\n"));
@@ -522,7 +546,7 @@ static BOOL create_rpc_bind_req(prs_struct *rpc_out, BOOL do_auth, uint32 rpc_ca
 	prs_struct auth_info;
 	int auth_len = 0;
 
-	prs_init(&auth_info, 0, 4, prs_get_mem_context(rpc_out), MARSHALL);
+	prs_init(&auth_info, 0, prs_get_mem_context(rpc_out), MARSHALL);
 
 	if (do_auth) {
 		RPC_HDR_AUTH hdr_auth;
@@ -626,7 +650,7 @@ static BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 	 * Marshall the variable length data into a temporary parse
 	 * struct, pointing into a 4k local buffer.
 	 */
-        prs_init(&auth_info, 0, 4, prs_get_mem_context(rpc_out), MARSHALL);
+	prs_init(&auth_info, 0, prs_get_mem_context(rpc_out), MARSHALL);
 
 	/*
 	 * Use the 4k buffer to store the auth info.
@@ -784,7 +808,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	 * Malloc a parse struct to hold it (and enough for alignments).
 	 */
 
-	if(!prs_init(&outgoing_packet, data_len + 8, 4, cli->mem_ctx, MARSHALL)) {
+	if(!prs_init(&outgoing_packet, data_len + 8, cli->mem_ctx, MARSHALL)) {
 		DEBUG(0,("rpc_api_pipe_req: Failed to malloc %u bytes.\n", (unsigned int)data_len ));
 		return False;
 	}
@@ -1022,7 +1046,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
 
 	pwd_make_lm_nt_owf(&cli->pwd, rhdr_chal.challenge);
 
-	prs_init(&rpc_out, 0, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
 
 	prs_give_memory( &rpc_out, buffer, sizeof(buffer), False);
 
@@ -1094,7 +1118,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 	if (!valid_pipe_name(pipe_name, &abstract, &transfer))
 		return False;
 
-	prs_init(&rpc_out, 0, 4, cli->mem_ctx, MARSHALL);
+	prs_init(&rpc_out, 0, cli->mem_ctx, MARSHALL);
 
 	/*
 	 * Use the MAX_PDU_FRAG_LEN buffer to store the bind request.
@@ -1110,7 +1134,7 @@ BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
 
 	/* Initialize the incoming data struct. */
-	prs_init(&rdata, 0, 4, cli->mem_ctx, UNMARSHALL);
+	prs_init(&rdata, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* send data on \PIPE\.  receive a response */
 	if (rpc_api_pipe(cli, 0x0026, &rpc_out, &rdata)) {

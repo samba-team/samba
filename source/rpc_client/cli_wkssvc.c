@@ -47,8 +47,8 @@ BOOL do_wks_query_info(struct cli_state *cli,
 	if (server_name == 0 || wks100 == NULL)
 		return False;
 
-	prs_init(&buf , MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, MARSHALL);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, UNMARSHALL );
+	prs_init(&buf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL );
 
 	/* create and send a MSRPC command with api WKS_QUERY_INFO */
 
