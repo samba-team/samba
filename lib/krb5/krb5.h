@@ -227,7 +227,7 @@ struct krb5_cc_ops;
 typedef void *krb5_cc_cursor;
 
 typedef struct krb5_ccache_data {
-    struct krb5_cc_ops *ops;
+    const struct krb5_cc_ops *ops;
     krb5_data data;
 }krb5_ccache_data;
 
