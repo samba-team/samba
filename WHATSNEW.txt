@@ -1,8 +1,18 @@
-            WHAT'S NEW IN Samba 2.2.6rc1  - 30th Sept. 2002
-            ===============================================
+            WHAT'S NEW IN Samba 2.2.6rc1  - 9th October 2002
+            ================================================
 
 This is a prelease snapshot of SAMBA_2_2 cvs branch.  This is a non-production
 release provided for testing purposes only.
+
+The following new new smb.conf(5) options have been added in this preview
+release:
+
+	* profiles acls (S)
+
+The following options have been added to Samba's configure script
+
+	--with-sendfile (enable experiemental sendfile support)
+
 
 Changes since 2.2.6pre2
 -----------------------
@@ -43,13 +53,19 @@ Changes since 2.2.6pre2
 25) Memory leak fix and correct use of negative caching in winbindd
 26) Updated spoolss parsing code with known good state of APPLIANCE_HEAD
 27) Delete printer security check was reversed
-28) Windows allows delete printer on a handle opened by an admin user, then 
+28) Windows allows delete printer on a handle opened by an admin user, then
     used on a pipe handle created by an anonymous user...We do to now...
 29) Make explicit the difference between a tdb key with no data attached, and 
     a non existent entry
-30)
-
-
+30) Ensure we register the 1c name on the unicast subnet.
+31) Fix inheritance problem when recusively setting ACLs on directories
+32) prevent ACL set on read-only share
+33) Ensure we never have more than MAX_PRINT_JOBS in a queue
+34) Added timeout to tdb_lock_bystring()
+35) Ensure we set FIRST+LAST flags on a bind request
+36) Add version strings to the usage message for smbcacls and smbpasswd
+37) Fix bug in the write cache code
+38) make the default printed values for boolean the same for all parameters
 
 
 Changes since 2.2.6pre1
