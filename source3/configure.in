@@ -1613,6 +1613,7 @@ dnl Try to find iconv(3)
     jm_ICONV($i)
 
     if test "$ICONV_FOUND" = yes; then
+	LDFLAGS=$save_LDFLAG
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
         ICONV_LOCATION=$i
