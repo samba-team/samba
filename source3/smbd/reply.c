@@ -3570,6 +3570,7 @@ int rename_internals(connection_struct *conn,
 	int error = ERRnoaccess;
 	BOOL exists=False;
 	BOOL rc = True;
+        pstring zdirectory;
 
 	*directory = *mask = 0;
 
@@ -3667,23 +3668,24 @@ int rename_internals(connection_struct *conn,
 			}
 		}
 		
+                pstrcpy(zdirectory, dos_to_unix(directory, False));
 		if(replace_if_exists) {
 			/*
 			 * NT SMB specific flag - rename can overwrite
 			 * file with the same name so don't check for
-			 * dos_file_exist().
+			 * vfs_file_exist().
 			 */
 			if(resolve_wildcards(directory,newname) &&
 			   can_rename(directory,conn) &&
-			   !conn->vfs_ops.rename(dos_to_unix(directory,False),
-						 newname))
+			   !conn->vfs_ops.rename(zdirectory,
+						 dos_to_unix(newname,False)))
 				count++;
 		} else {
 			if (resolve_wildcards(directory,newname) && 
 			    can_rename(directory,conn) && 
 			    !vfs_file_exist(conn,newname,NULL) &&
-			    !conn->vfs_ops.rename(dos_to_unix(directory,False),
-						  newname))
+			    !conn->vfs_ops.rename(zdirectory,
+						  dos_to_unix(newname,False)))
 				count++;
 		}
 
@@ -3714,6 +3716,7 @@ int rename_internals(connection_struct *conn,
 			
 			while ((dname = ReadDirName(dirptr))) {
 				pstring fname;
+
 				pstrcpy(fname,dname);
 				
 				if(!mask_match(fname, mask, case_sensitive, False))
@@ -3741,7 +3744,7 @@ int rename_internals(connection_struct *conn,
 				}
 				
 				if (!conn->vfs_ops.rename(dos_to_unix(fname,False),
-                                                          destname))
+                                                          dos_to_unix(destname,False)))
 					count++;
 				DEBUG(3,("rename_internals: doing rename on %s -> %s\n",fname,destname));
 			}
