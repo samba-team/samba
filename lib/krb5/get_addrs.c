@@ -126,7 +126,7 @@ find_all_addresses (krb5_context context,
 	  return -1;
 
      buf_size = 8192;
-     do {
+     for (;;) {
 	 buf = malloc(buf_size);
 	 if (buf == NULL) {
 	     ret = ENOMEM;
@@ -143,9 +143,11 @@ find_all_addresses (krb5_context context,
 	  * be determined?
 	  */
 
-	 if (ifconf.ifc_len == buf_size)
-	     free (buf);
-     } while (ifconf.ifc_len == buf_size);
+	 if (ifconf.ifc_len < buf_size)
+	     break;
+	 free (buf);
+	 buf_size *= 2;
+     }
 
      num = ifconf.ifc_len / ifreq_sz;
      res->len = num;
