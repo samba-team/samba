@@ -22,6 +22,7 @@
 
 extern pstring myhostname;
 extern pstring global_myname;
+extern pstring global_myworkgroup;
 extern int DEBUGLEVEL;
 
 /*
@@ -80,6 +81,98 @@ static void usage(void)
 }
 
 /*********************************************************
+record Trust Account password.
+**********************************************************/
+static BOOL create_trust_account_file(char *domain, char *name, uchar pass[16])
+{
+	/*
+	 * Create the machine account password file.
+	 */
+
+	if(!trust_password_lock( domain, name, True))
+	{
+		fprintf(stderr, "unable to open the trust account password file for \
+machine %s in domain %s.\n", global_myname, domain); 
+		return False;
+	}
+
+	/*
+	 * Write the old machine account password.
+	 */
+	
+	if(!set_trust_account_password( pass))
+	{              
+		fprintf(stderr, "unable to write the trust account password for \
+%s in domain %s.\n", name, domain);
+		trust_password_unlock();
+		return False;
+	}
+	
+	trust_password_unlock();
+	
+	return True;
+}
+
+/*********************************************************
+Join a domain.
+**********************************************************/
+static int create_interdomain_trust_acct(char *domain, char *name)
+{
+	fstring trust_passwd;
+	unsigned char hash[16];
+	uint16 sec_chan;
+
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_PDC:
+		{
+			DEBUG(0, ("Joining domain - we are PDC\n"));
+			sec_chan = SEC_CHAN_DOMAIN;
+			break;
+		}
+		case ROLE_DOMAIN_BDC:
+		{
+			DEBUG(0, ("Cannot set up inter-domain trust as BDC!\n"));
+			return 1;
+		}
+		default:
+		{
+			DEBUG(0, ("Cannot set up inter-domain trust as workstation!\n"));
+			return 1;
+		}
+	}
+
+#if 0
+	pstrcpy(remote_machine, remote ? remote : lp_passwordserver());
+
+	if (!remote_machine[0])
+	{
+		fprintf(stderr, "You must specify the PDC via 'password server' or -r.");
+		return 1;
+	}
+#endif
+
+	fstrcpy(trust_passwd, name);
+	strlower(trust_passwd);
+	E_md4hash( (uchar *)trust_passwd, hash);
+
+	if (!create_trust_account_file(domain, name, hash))
+	{
+		return 1;
+	}
+	
+#if 0
+	if(!change_trust_account_password(domain, remote_machine, sec_chan))
+	{
+		fprintf(stderr,"Unable to join domain %s.\n",domain);
+		return 1;
+	}
+#endif
+	printf("Created Inter-Domain Trust Account for %s.\n",domain);
+	return 0;
+}
+
+/*********************************************************
 Join a domain.
 **********************************************************/
 static int join_domain(char *domain, char *remote)
@@ -87,7 +180,6 @@ static int join_domain(char *domain, char *remote)
 	pstring remote_machine;
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
-	BOOL ret;
 	uint16 sec_chan;
 
 	switch (lp_server_role())
@@ -122,32 +214,13 @@ static int join_domain(char *domain, char *remote)
 	strlower(trust_passwd);
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
-	/*
-	 * Create the machine account password file.
-	 */
-	if(!trust_password_lock( domain, global_myname, True))
+	if (!create_trust_account_file(domain, global_myname, trust_passwd))
 	{
-		fprintf(stderr, "unable to open the machine account password file for \
-machine %s in domain %s.\n", global_myname, domain); 
-		return 1;
-	}
-
-	/*
-	 * Write the old machine account password.
-	 */
-	
-	if(!set_trust_account_password( orig_trust_passwd_hash))
-	{              
-		fprintf(stderr, "unable to write the machine account password for \
-machine %s in domain %s.\n", global_myname, domain);
-		trust_password_unlock();
 		return 1;
 	}
 	
-	ret = change_trust_account_password(domain, remote_machine, sec_chan);
-	trust_password_unlock();
-	
-	if(!ret) {
+	if(!change_trust_account_password(domain, remote_machine, sec_chan))
+	{
 		fprintf(stderr,"Unable to join domain %s.\n",domain);
 		return 1;
 	}
@@ -423,11 +496,14 @@ static int process_root(int argc, char *argv[])
 	
 	if (joining_domain)
 	{
-		if (argc != 0) usage();
-		ret = join_domain(new_domain, remote_machine);
+		if (!dom_trust_account)
+		{
+			if (argc != 0) usage();
+			ret = join_domain(new_domain, remote_machine);
 
-		if ((ret != 0) || (!sam_sync))
-			return ret;
+			if ((ret != 0) || (!sam_sync))
+				return ret;
+		}
 	}
 
 	if (sam_sync)
@@ -496,13 +572,24 @@ static int process_root(int argc, char *argv[])
 		exit(1);
 	}
 
+	if (joining_domain)
+	{
+		if (dom_trust_account)
+		{
+			ret = create_interdomain_trust_acct(new_domain,
+			                                    global_myworkgroup);
+
+			if ((ret != 0) || (!sam_sync))
+				return ret;
+		}
+	}
+
 	if (remote_machine != NULL) {
 		old_passwd = get_pass("Old SMB password:",stdin_passwd_get);
 	}
 	
 	if (!new_passwd)
 	{
-
 		/*
 		 * If we are trying to enable a user, first we need to find out
 		 * if they are using a modern version of the smbpasswd file that
