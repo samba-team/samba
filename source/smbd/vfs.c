@@ -784,7 +784,6 @@ BOOL reduce_name(connection_struct *conn, char *s,char *dir,BOOL widelinks)
 	*dir2 = *wd = *base_name = *newname = 0;
 
 	if (widelinks) {
-		unix_clean_name(s);
 		/* can't have a leading .. */
 		if (strncmp(s,"..",2) == 0 && (s[2]==0 || s[2]=='/')) {
 			DEBUG(3,("Illegal file name? (%s)\n",s));
