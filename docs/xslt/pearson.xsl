@@ -629,7 +629,7 @@
    <xsl:template match="programlisting">
 	   <listing>
 		   <xsl:if test="title != ''">
-			   <xsl:description><xsl:value-of select="title"/></xsl:description>
+			   <description><xsl:value-of select="title"/></description>
 		   </xsl:if>
 		   <listingcode>
 			   <xsl:apply-templates/>
