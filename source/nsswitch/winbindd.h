@@ -112,6 +112,6 @@ typedef struct {
 #include "rpc_parse.h"
 #include "rpc_client.h"
 
-#define WINBINDD_ESTABLISH_LOOP 5
+#define WINBINDD_ESTABLISH_LOOP 30
 
 #endif /* _WINBINDD_H */

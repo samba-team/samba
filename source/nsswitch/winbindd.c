@@ -456,6 +456,7 @@ static void process_loop(int accept_sock)
         state = client_list;
 
         while (state) {
+	    establish_connections();
 
             /* Dispose of client connection if it is marked as finished */ 
 
@@ -501,8 +502,6 @@ static void process_loop(int accept_sock)
         /* Call select */
         
         selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
-
-	establish_connections();
 
 	if (selret == 0) continue;
 
@@ -609,9 +608,6 @@ int main(int argc, char **argv)
     if (!winbindd_param_init()) {
 	    return 1;
     }
-
-    /* try to establish the connections now, but don't fail if we can't */
-    establish_connections();
 
     if (!winbindd_idmap_init()) {
         return 1;
