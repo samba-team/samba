@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -109,6 +109,9 @@ check_boolean(krb5_context context, const char *path, char *data)
 		   path, data);
 	return 1;
     }
+    if(v != 0 && v != 1)
+	krb5_warnx(context, "%s: numeric value \"%s\" is treated as \"true\"", 
+		   path, data);
     return 0;
 }
 
@@ -143,6 +146,126 @@ check_host(krb5_context context, const char *path, char *data)
 	return 1;
     }
     return 0;
+}
+
+struct s2i {
+    char *s;
+    int val;
+};
+
+#define L(X) { #X, LOG_ ## X }
+
+static struct s2i syslogvals[] = {
+    L(EMERG),
+    L(ALERT),
+    L(CRIT),
+    L(ERR),
+    L(WARNING),
+    L(NOTICE),
+    L(INFO),
+    L(DEBUG),
+
+    L(AUTH),
+#ifdef LOG_AUTHPRIV
+    L(AUTHPRIV),
+#endif
+#ifdef LOG_CRON
+    L(CRON),
+#endif
+    L(DAEMON),
+#ifdef LOG_FTP
+    L(FTP),
+#endif
+    L(KERN),
+    L(LPR),
+    L(MAIL),
+#ifdef LOG_NEWS
+    L(NEWS),
+#endif
+    L(SYSLOG),
+    L(USER),
+#ifdef LOG_UUCP
+    L(UUCP),
+#endif
+    L(LOCAL0),
+    L(LOCAL1),
+    L(LOCAL2),
+    L(LOCAL3),
+    L(LOCAL4),
+    L(LOCAL5),
+    L(LOCAL6),
+    L(LOCAL7),
+    { NULL, -1 }
+};
+
+static int
+find_value(const char *s, struct s2i *table)
+{
+    while(table->s && strcasecmp(table->s, s))
+	table++;
+    return table->val;
+}
+
+static int
+check_log(krb5_context context, const char *path, char *data)
+{
+    /* XXX sync with log.c */
+    int min = 0, max = -1, n;
+    char c;
+    const char *p = data;
+
+    n = sscanf(p, "%d%c%d/", &min, &c, &max);
+    if(n == 2){
+	if(c == '/') {
+	    if(min < 0){
+		max = -min;
+		min = 0;
+	    }else{
+		max = min;
+	    }
+	}
+    }
+    if(n){
+	p = strchr(p, '/');
+	if(p == NULL) {
+	    krb5_warnx(context, "%s: failed to parse \"%s\"", path, data);
+	    return 1;
+	}
+	p++;
+    }
+    if(strcmp(p, "STDERR") == 0 || 
+       strcmp(p, "CONSOLE") == 0 ||
+       (strncmp(p, "FILE", 4) == 0 && (p[4] == ':' || p[4] == '=')) ||
+       (strncmp(p, "DEVICE", 6) == 0 && p[6] == '='))
+	return 0;
+    if(strncmp(p, "SYSLOG", 6) == 0){
+	int ret = 0;
+	char severity[128] = "";
+	char facility[128] = "";
+	p += 6;
+	if(*p != '\0')
+	    p++;
+	if(strsep_copy(&p, ":", severity, sizeof(severity)) != -1)
+	    strsep_copy(&p, ":", facility, sizeof(facility));
+	if(*severity == '\0')
+	    strlcpy(severity, "ERR", sizeof(severity));
+ 	if(*facility == '\0')
+	    strlcpy(facility, "AUTH", sizeof(facility));
+	if(find_value(severity, syslogvals) == NULL) {
+	    krb5_warnx(context, "%s: unknown syslog facility \"%s\"", 
+		       path, facility);
+	    ret++;
+	}
+	if(find_value(severity, syslogvals) == NULL) {
+	    krb5_warnx(context, "%s: unknown syslog severity \"%s\"", 
+		       path, severity);
+	    ret++;
+	}
+	return ret;
+    }else{
+	krb5_warnx(context, "%s: unknown log type: \"%s\"", path, data);
+	return 1;
+    }
 }
 
 typedef int (*check_func_t)(krb5_context, const char*, char*);
@@ -245,7 +368,7 @@ struct entry kdc_database_entries[] = {
 struct entry kdc_entries[] = {
     { "database", krb5_config_list, kdc_database_entries },
     { "key-file", krb5_config_string, NULL },
-    { "logging", krb5_config_string, NULL },
+    { "logging", krb5_config_string, check_log },
     { "max-request", krb5_config_string, check_bytes },
     { "require-preauth", krb5_config_string, check_boolean },
     { "ports", krb5_config_string, NULL },
@@ -269,11 +392,16 @@ struct entry kadmin_entries[] = {
     { "use_v4_salt", krb5_config_string, NULL },
     { NULL }
 };
+struct entry log_strings[] = {
+    { "", krb5_config_string, check_log },
+    { NULL }
+};
+
 struct entry toplevel_sections[] = {
     { "libdefaults" , krb5_config_list, libdefaults_entries },
     { "realms", krb5_config_list, realms_foobar },
     { "domain_realm", krb5_config_list, all_strings },
-    { "logging", krb5_config_list, all_strings },
+    { "logging", krb5_config_list, log_strings },
     { "kdc", krb5_config_list, kdc_entries },
     { "kadmin", krb5_config_list, kadmin_entries },
     { "appdefaults", krb5_config_list, appdefaults_entries },
