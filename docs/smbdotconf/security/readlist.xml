@@ -12,7 +12,7 @@
     invalid users</parameter></link> parameter.</para>
   
     <para>This parameter will not work with the <link linkend="SECURITY">
-    <parameter moreinfo="none">security = share</parameter></linkend> in 
+    <parameter moreinfo="none">security = share</parameter></link> in 
     Samba 3.0.  This is by design.</para>
 </description>
 
