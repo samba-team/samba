@@ -1,3 +1,7 @@
+2000-07-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* doc/misc.texi: language; say something about kadmin del_enctype
+
 2000-07-10  Assar Westerlund  <assar@sics.se>
 
 	* appl/kf/Makefile.am: actually install
