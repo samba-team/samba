@@ -4,6 +4,10 @@ Sat Jul 19 04:07:39 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
  	ENOMEM).
 
 Fri Jul 18 02:54:58 1997  Assar Westerlund  <assar@sics.se>
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm): do the
+ 	name2name thing
+
+	* kdc/misc.c: check result of hdb_open
 
 	* admin/kdb_edit: updated to new sl
 
