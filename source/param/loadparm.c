@@ -477,7 +477,7 @@ static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_
 
 static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "upper"}, {-1, NULL}};
 
-static struct enum_list enum_bool_auto[] = {{False, "False"}, {True, "True"}, {Auto, "Auto"}, {-1, NULL}};
+static struct enum_list enum_bool_auto[] = {{True, "True"}, {False, "False"}, {True, "Yes"}, {False, "No"}, {Auto, "Auto"}, {-1, NULL}};
 
 /* 
    Do you want session setups at user level security with a invalid
