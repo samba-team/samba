@@ -69,6 +69,10 @@ html:
 	$(DOCBOOK2TXT) -o .. $<
 	mv ../samba-doc.txt $@
 
+../Samba-Developers-Guide.txt: $(SGMLDIR)/samba-doc.sgml
+	$(DOCBOOK2TXT) -o .. $<
+	mv ../samba-doc.txt $@
+
 ../Samba-HOWTO-Collection.ps: $(SGMLDIR)/samba-doc.sgml
 	$(DOCBOOK2PS) -o .. $<
 	mv ../samba-doc.ps $@
@@ -102,4 +106,4 @@ $(MANDIR)/%: $(MANSGMLDIR)/%.sgml
 	mv $@.temp $@
 
 clean: 
-	rm -f $(MANPAGES) $(MANPAGES_HTML) ../htmldocs/*.html ../Samba-HOWTO-Collection.pdf ../Samba-HOWTO-Collection.ps
+	rm -f $(MANPAGES) $(MANPAGES_HTML) ../htmldocs/*.html ../Samba-HOWTO-Collection.p* ../Samba-Developers-Guide.p*
