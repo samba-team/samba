@@ -222,85 +222,90 @@ all : CHECK $(SPROGS) $(PROGS)
 CHECK:
 	@echo "Using FLAGS = $(FLAGS)"
 	@echo "Using LIBS = $(LIBS)"
+
+.PHONY: obj-dirs
+obj-dirs:
 	@(cd $(srcdir) && ls -1d */*.c) | sed 's,/[^/]*$$,,;s,^$$,.,' | \
 	 while read dir; do \
 	   if test ! -d "$$dir"; then mkdir "$$dir" || true; else true; fi; \
 	 done
 
-.c.o: @MAINT@ .deps/.dummy
+.c.o: @MAINT@ .deps/.dummy obj-dirs
 	@echo Compiling $*.c
-	@dir=`echo $@ | sed 's,/[^/]*$$,,;s,^$$,.,'` && \
-	   if test ! -d "$$dir"; then mkdir "$$dir" || true; else true; fi
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< -o $@ \
 	@MAINT@ -Wp,-MD,.deps/`echo $* | sed s,/,_,g`.P && : >.deps/.stamp
 # the line above is for atomatic dependency tracking
 # it will only work with GNU make, gcc and --enable-maintainer-mode
 
-bin/smbd: $(SMBD_OBJ) 
+.PHONY: bin-dir
+bin-dir:
+	@if test ! -d bin; then mkdir bin || true; else true; fi
+
+bin/smbd: $(SMBD_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBD_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/nmbd: $(NMBD_OBJ)
+bin/nmbd: $(NMBD_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/swat: $(SWAT_OBJ)
+bin/swat: $(SWAT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(LIBS) 
 
-bin/smbrun: $(SMBRUN_OBJ)
+bin/smbrun: $(SMBRUN_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/rpcclient: $(RPCCLIENT_OBJ) 
+bin/rpcclient: $(RPCCLIENT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbclient: $(CLIENT_OBJ) 
+bin/smbclient: $(CLIENT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbmount: $(MOUNT_OBJ) 
+bin/smbmount: $(MOUNT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MOUNT_OBJ) $(LIBS)
 
-bin/smbmnt: $(MNT_OBJ) 
+bin/smbmnt: $(MNT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MNT_OBJ) $(LIBS)
 
-bin/smbumount: $(UMOUNT_OBJ) 
+bin/smbumount: $(UMOUNT_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(UMOUNT_OBJ) $(LIBS)
 
-bin/testparm: $(TESTPARM_OBJ)
+bin/testparm: $(TESTPARM_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPARM_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/testprns: $(TESTPRNS_OBJ)
+bin/testprns: $(TESTPRNS_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TESTPRNS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbstatus: $(STATUS_OBJ)
+bin/smbstatus: $(STATUS_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbpasswd: $(SMBPASSWD_OBJ)
+bin/smbpasswd: $(SMBPASSWD_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBPASSWD_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) 
+bin/make_smbcodepage: $(MAKE_SMBCODEPAGE_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_SMBCODEPAGE_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/nmblookup: $(NMBLOOKUP_OBJ)
+bin/nmblookup: $(NMBLOOKUP_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(NMBLOOKUP_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) 
+bin/make_printerdef: $(MAKE_PRINTERDEF_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(MAKE_PRINTERDEF_OBJ) $(LDFLAGS) $(LIBS)
 
-bin/smbtorture: $(SMBTORTURE_OBJ) 
+bin/smbtorture: $(SMBTORTURE_OBJ) bin-dir
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
