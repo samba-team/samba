@@ -221,9 +221,6 @@ sub is_builtin_type($)
 
     return 1, if (is_scalar_type($type));
     return 1, if ($type =~ "unistr.*");
-    return 1, if ($type eq "security_descriptor");
-    return 1, if ($type eq "dom_sid");
-    return 1, if ($type eq "dom_sid2");
     return 1, if ($type eq "policy_handle");
 
     return 0;
@@ -374,7 +371,8 @@ sub is_inline_array($)
 {
 	my $e = shift;
 	my $len = $e->{"ARRAY_LEN"};
-	if (defined $len && $len ne "*") {
+	if (is_fixed_array($e) ||
+	    defined $len && $len ne "*") {
 		return 1;
 	}
 	return 0;
