@@ -868,7 +868,7 @@ static BOOL test_Close(struct dcerpc_pipe *p,
 	return True;
 }
 
-BOOL torture_rpc_lsa(int dummy)
+BOOL torture_rpc_lsa(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

@@ -30,7 +30,7 @@
      must not use posix semantics)
   2) support for lock timeouts
  */
-BOOL torture_locktest1(int dummy)
+BOOL torture_locktest1(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\lockt1.lck";
@@ -184,7 +184,7 @@ BOOL torture_locktest1(int dummy)
 
   3) the server denies unlock requests by an incorrect client PID
 */
-BOOL torture_locktest2(int dummy)
+BOOL torture_locktest2(void)
 {
 	struct smbcli_state *cli;
 	const char *fname = "\\lockt2.lck";
@@ -322,7 +322,7 @@ BOOL torture_locktest2(int dummy)
 
   1) the server supports the full offset range in lock requests
 */
-BOOL torture_locktest3(int dummy)
+BOOL torture_locktest3(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\lockt3.lck";
@@ -454,7 +454,7 @@ BOOL torture_locktest3(int dummy)
 /*
   looks at overlapping locks
 */
-BOOL torture_locktest4(int dummy)
+BOOL torture_locktest4(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\lockt4.lck";
@@ -622,7 +622,7 @@ BOOL torture_locktest4(int dummy)
 /*
   looks at lock upgrade/downgrade.
 */
-BOOL torture_locktest5(int dummy)
+BOOL torture_locktest5(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	const char *fname = "\\lockt5.lck";
@@ -743,7 +743,7 @@ ret = NT_STATUS_IS_OK(smbcli_unlock(cli1->tree, fnum1, 0, 4)) &&
 /*
   tries the unusual lockingX locktype bits
 */
-BOOL torture_locktest6(int dummy)
+BOOL torture_locktest6(void)
 {
 	struct smbcli_state *cli;
 	const char *fname[1] = { "\\lock6.txt" };
@@ -781,7 +781,7 @@ BOOL torture_locktest6(int dummy)
 	return True;
 }
 
-BOOL torture_locktest7(int dummy)
+BOOL torture_locktest7(void)
 {
 	struct smbcli_state *cli1;
 	const char *fname = "\\lockt7.lck";

@@ -180,7 +180,7 @@ static BOOL test_compare_sasl(struct ldap_connection *conn, const char *basedn)
 	return ret;
 }
 
-BOOL torture_ldap_basic(int dummy)
+BOOL torture_ldap_basic(void)
 {
         NTSTATUS status;
         struct ldap_connection *conn;

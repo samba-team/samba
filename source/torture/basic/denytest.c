@@ -1406,7 +1406,7 @@ static void progress_bar(uint_t i, uint_t total)
 /*
   this produces a matrix of deny mode behaviour for 1 connection
  */
-BOOL torture_denytest1(int dummy)
+BOOL torture_denytest1(void)
 {
 	static struct smbcli_state *cli1;
 	int fnum1, fnum2;
@@ -1505,7 +1505,7 @@ failed:
 /*
   this produces a matrix of deny mode behaviour with 2 connections
  */
-BOOL torture_denytest2(int dummy)
+BOOL torture_denytest2(void)
 {
 	static struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;
@@ -1606,7 +1606,7 @@ failed:
 /*
    simple test harness for playing with deny modes
  */
-BOOL torture_denytest3(int dummy)
+BOOL torture_denytest3(void)
 {
 	struct smbcli_state *cli1, *cli2;
 	int fnum1, fnum2;

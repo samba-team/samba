@@ -105,7 +105,7 @@ static BOOL test_CloseServiceHandle(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 	return True;
 }
 
-BOOL torture_rpc_svcctl(int dummy)
+BOOL torture_rpc_svcctl(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

@@ -210,7 +210,7 @@ done:
 /* 
    basic testing of chkpath calls 
 */
-BOOL torture_raw_chkpath(int dummy)
+BOOL torture_raw_chkpath(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

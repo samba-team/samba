@@ -119,7 +119,7 @@ done:
 /* 
    basic testing of all RAW_MKDIR_* calls 
 */
-BOOL torture_raw_mkdir(int dummy)
+BOOL torture_raw_mkdir(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

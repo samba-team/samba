@@ -114,7 +114,7 @@ static const char *test_strings[] = {
 	"ncacn_unix_stream:[/tmp/epmapper,sign]",
 };
 
-BOOL torture_local_binding_string(int dummy) 
+BOOL torture_local_binding_string(void) 
 {
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx = talloc_init("test_BindingString");

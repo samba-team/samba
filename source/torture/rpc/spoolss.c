@@ -88,7 +88,8 @@ static BOOL test_ClosePrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		  struct policy_handle *handle, char *formname)
+			 struct policy_handle *handle, 
+			 const char *formname)
 {
 	NTSTATUS status;
 	struct spoolss_GetForm r;
@@ -190,7 +191,8 @@ static BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-		     struct policy_handle *handle, char *formname)
+			    struct policy_handle *handle, 
+			    const char *formname)
 {
 	NTSTATUS status;
 	struct spoolss_DeleteForm r;
@@ -466,7 +468,8 @@ static BOOL test_EnumJobs(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			 struct policy_handle *handle, char *value_name)
+				struct policy_handle *handle, 
+				const char *value_name)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterData r;
@@ -501,8 +504,9 @@ static BOOL test_GetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_GetPrinterDataEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			   struct policy_handle *handle, char *key_name,
-			   char *value_name)
+				  struct policy_handle *handle, 
+				  const char *key_name,
+				  const char *value_name)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDataEx r;
@@ -586,7 +590,8 @@ static BOOL test_EnumPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 }
 
 static BOOL test_DeletePrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-			    struct policy_handle *handle, char *value_name)
+				   struct policy_handle *handle, 
+				   const char *value_name)
 {
 	NTSTATUS status;
 	struct spoolss_DeletePrinterData r;
@@ -611,8 +616,8 @@ static BOOL test_SetPrinterData(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_SetPrinterData r;
-	char *value_name = "spottyfoot";
-
+	const char *value_name = "spottyfoot";
+	
 	r.in.handle = handle;
 	r.in.value_name = value_name;
 	r.in.type = 0;
@@ -888,7 +893,8 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 }
 
 static BOOL test_GetPrinterDriver2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
-				   struct policy_handle *handle, char *driver_name)
+				   struct policy_handle *handle, 
+				   const char *driver_name)
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinterDriver2 r;
@@ -1018,7 +1024,7 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-BOOL torture_rpc_spoolss(int dummy)
+BOOL torture_rpc_spoolss(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

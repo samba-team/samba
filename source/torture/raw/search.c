@@ -1078,7 +1078,7 @@ done:
 /* 
    basic testing of all RAW_SEARCH_* calls using a single file
 */
-BOOL torture_raw_search(int dummy)
+BOOL torture_raw_search(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

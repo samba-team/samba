@@ -158,7 +158,7 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	
 	memset(ptr_out, 0, outsize2);
 	errno = 0;
-	ret2 = iconv(cd, &ptr_in, &size_in2, &ptr_out, &outsize2);
+	ret2 = iconv(cd, discard_const_p(char *, &ptr_in), &size_in2, &ptr_out, &outsize2);
 	errno2 = errno;
 
 	len1 = sizeof(buf1) - outsize1;
@@ -293,7 +293,7 @@ static int test_codepoint(unsigned int codepoint)
 	return 1;
 }
 
-BOOL torture_local_iconv(int dummy) 
+BOOL torture_local_iconv(void) 
 {
 	size_t size;
 	unsigned char inbuf[1000];
@@ -351,7 +351,7 @@ BOOL torture_local_iconv(int dummy)
 
 #else
 
-BOOL torture_local_iconv(int dummy) 
+BOOL torture_local_iconv(void) 
 {
 	printf("No native iconv library - can't run iconv test\n");
 	return True;

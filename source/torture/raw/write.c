@@ -913,7 +913,7 @@ static BOOL test_finfo_after_write(struct smbcli_state *cli, TALLOC_CTX *mem_ctx
 /* 
    basic testing of write calls
 */
-BOOL torture_raw_write(int dummy)
+BOOL torture_raw_write(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

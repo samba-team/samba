@@ -379,7 +379,7 @@ static void setpathinfo_aliases(struct smbcli_state *cli)
 
 
 /* look for aliased info levels in trans2 calls */
-BOOL torture_trans2_aliases(int dummy)
+BOOL torture_trans2_aliases(void)
 {
 	struct smbcli_state *cli;
 

@@ -26,7 +26,7 @@
 /*
   Test delete on close semantics.
  */
-BOOL torture_test_delete(int dummy)
+BOOL torture_test_delete(void)
 {
 	struct smbcli_state *cli1;
 	struct smbcli_state *cli2 = NULL;

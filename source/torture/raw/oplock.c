@@ -327,7 +327,7 @@ done:
 /* 
    basic testing of oplocks
 */
-BOOL torture_raw_oplock(int dummy)
+BOOL torture_raw_oplock(void)
 {
 	struct smbcli_state *cli1;
 	BOOL ret = True;

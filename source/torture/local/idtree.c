@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-BOOL torture_local_idtree(int dummy) 
+BOOL torture_local_idtree(void) 
 {
 	struct idr_context *idr;
 	int i;

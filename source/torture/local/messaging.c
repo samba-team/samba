@@ -133,7 +133,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-BOOL torture_local_messaging(int dummy) 
+BOOL torture_local_messaging(void) 
 {
 	TALLOC_CTX *mem_ctx = talloc_init("torture_local_messaging");
 	BOOL ret = True;

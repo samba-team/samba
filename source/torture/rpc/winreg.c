@@ -544,7 +544,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	return ret;
 }
 
-BOOL torture_rpc_winreg(int dummy)
+BOOL torture_rpc_winreg(void)
 {
         NTSTATUS status;
        struct dcerpc_pipe *p;

@@ -50,7 +50,7 @@
 /* 
    basic testing of change notify
 */
-BOOL torture_raw_notify(int dummy)
+BOOL torture_raw_notify(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

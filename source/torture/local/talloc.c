@@ -679,7 +679,7 @@ static BOOL test_speed(void)
 }
 
 
-BOOL torture_local_talloc(int dummy) 
+BOOL torture_local_talloc(void) 
 {
 	BOOL ret = True;
 

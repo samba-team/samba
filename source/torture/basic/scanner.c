@@ -236,7 +236,7 @@ static BOOL scan_trans2(struct smbcli_state *cli, int op, int level,
 }
 
 
-BOOL torture_trans2_scan(int dummy)
+BOOL torture_trans2_scan(void)
 {
 	static struct smbcli_state *cli;
 	int op, level;
@@ -475,7 +475,7 @@ static BOOL scan_nttrans(struct smbcli_state *cli, int op, int level,
 }
 
 
-BOOL torture_nttrans_scan(int dummy)
+BOOL torture_nttrans_scan(void)
 {
 	static struct smbcli_state *cli;
 	int op, level;
@@ -515,7 +515,7 @@ BOOL torture_nttrans_scan(int dummy)
 
 
 /* scan for valid base SMB requests */
-BOOL torture_smb_scan(int dummy)
+BOOL torture_smb_scan(void)
 {
 	static struct smbcli_state *cli;
 	int op;

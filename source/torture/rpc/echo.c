@@ -207,7 +207,7 @@ static BOOL test_testcall2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return ret;
 }
 
-
+#if 0
 /*
   test the TestSleep interface
 */
@@ -259,8 +259,9 @@ static BOOL test_sleep(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	return ret;
 }
+#endif
 
-BOOL torture_rpc_echo(int dummy)
+BOOL torture_rpc_echo(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

@@ -129,7 +129,7 @@ done:
 /* 
    basic testing of some ioctl calls 
 */
-BOOL torture_raw_ioctl(int dummy)
+BOOL torture_raw_ioctl(void)
 {
 	struct smbcli_state *cli;
 	BOOL ret = True;

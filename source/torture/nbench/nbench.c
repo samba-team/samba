@@ -162,7 +162,7 @@ done:
 
 
 /* run a test that simulates an approximate netbench client load */
-BOOL torture_nbench(int dummy)
+BOOL torture_nbench(void)
 {
 	BOOL correct = True;
 	extern int torture_nprocs;
@@ -193,7 +193,7 @@ BOOL torture_nbench(int dummy)
 	printf("Running for %d seconds with load '%s' and warmup %d secs\n", 
 	       timelimit, loadfile, warmup);
 
-	signal(SIGALRM, SIGNAL_CAST nb_alarm);
+	signal(SIGALRM, nb_alarm);
 	alarm(1);
 	torture_create_procs(run_netbench, &correct);
 	alarm(0);

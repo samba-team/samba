@@ -144,7 +144,7 @@ static BOOL test_OpenEventLog(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct
 	return True;
 }
 
-BOOL torture_rpc_eventlog(int dummy)
+BOOL torture_rpc_eventlog(void)
 {
     NTSTATUS status;
     struct dcerpc_pipe *p;

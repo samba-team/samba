@@ -679,7 +679,7 @@ static BOOL test_NetRemoteTOD(struct dcerpc_pipe *p,
 	return ret;
 }
 
-BOOL torture_rpc_srvsvc(int dummy)
+BOOL torture_rpc_srvsvc(void)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;

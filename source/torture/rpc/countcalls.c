@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-BOOL torture_rpc_countcalls(int dummy)
+BOOL torture_rpc_countcalls(void)
 {
 	const struct dcerpc_interface_table *iface;
 	NTSTATUS status;

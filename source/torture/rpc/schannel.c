@@ -108,7 +108,7 @@ failed:
 /*
   a schannel test suite
  */
-BOOL torture_rpc_schannel(int dummy)
+BOOL torture_rpc_schannel(void)
 {
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;

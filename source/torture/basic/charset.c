@@ -225,7 +225,7 @@ static BOOL test_widea(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-BOOL torture_charset(int dummy)
+BOOL torture_charset(void)
 {
 	static struct smbcli_state *cli;
 	BOOL ret = True;
