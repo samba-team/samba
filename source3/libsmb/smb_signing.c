@@ -208,8 +208,10 @@ void cli_simple_set_signing(struct cli_state *cli, const uchar user_session_key[
 
 static void cli_null_sign_outgoing_message(struct cli_state *cli)
 {
-	static uchar zeros[8];
-	memcpy(&cli->outbuf[smb_ss_field], zeros, sizeof(zeros));
+	/* we can't zero out the sig, as we might be trying to send a
+	   session request - which is NBT-level, not SMB level and doesn't
+	   have the feild */
+	return;
 }
 
 /***********************************************************
@@ -295,7 +297,7 @@ void cli_temp_set_signing(struct cli_state *cli)
 }
 
 /**
- *  Free the singing context
+ * Free the singing context
  */
  
 void cli_free_signing_context(struct cli_state *cli) 
@@ -306,11 +308,21 @@ void cli_free_signing_context(struct cli_state *cli)
 	cli_null_set_signing(cli);
 }
 
+/**
+ * Sign a packet with the current mechinism
+ */
+ 
 void cli_caclulate_sign_mac(struct cli_state *cli)
 {
 	cli->sign_info.sign_outgoing_message(cli);
 }
 
+/**
+ * Check a packet with the current mechinism
+ * @return False if we had an established signing connection
+ *         which had a back checksum, True otherwise
+ */
+ 
 BOOL cli_check_sign_mac(struct cli_state *cli) 
 {
 	BOOL good;
