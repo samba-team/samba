@@ -1250,7 +1250,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
   struct in_addr dest_ip;
   fstring remote_machine;
 
-  if(cli_initialise(pcli) == False) {
+  if(!cli_initialise(pcli)) {
     DEBUG(0,("connect_to_domain_password_server: unable to initialize client connection.\n"));
     return False;
   }

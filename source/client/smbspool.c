@@ -279,7 +279,7 @@ smb_connect(char *workgroup,		/* I - Workgroup */
 
   if ((c = cli_initialise(NULL)) == NULL)
   {
-    fputs("ERROR: cli_initialize() failed...\n", stderr);
+    fputs("ERROR: cli_initialise() failed...\n", stderr);
     return (NULL);
   }
 
