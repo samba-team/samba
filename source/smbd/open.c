@@ -407,6 +407,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 			fname ));
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRnoaccess;
+		unix_ERR_ntstatus = NT_STATUS_DELETE_PENDING;
 		return False;
 	}
 
