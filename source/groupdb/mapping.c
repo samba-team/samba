@@ -313,7 +313,7 @@ BOOL add_initial_entry(gid_t gid, fstring sid, enum SID_NAME_USE sid_name_use,
 	map.priv_set.count=priv_set.count;
 	map.priv_set.set=priv_set.set;
 
-	add_mapping_entry(&map, TDB_INSERT);
+	pdb_add_group_mapping_entry(&map);
 
 	return True;
 }
@@ -915,7 +915,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	DEBUG(10, ("get_domain_group_from_sid\n"));
 
 	/* if the group is NOT in the database, it CAN NOT be a domain group */
-	if(!get_group_map_from_sid(sid, map, with_priv))
+	if(!pdb_getgrsid(map, sid, with_priv))
 		return False;
 
 	DEBUG(10, ("get_domain_group_from_sid: SID found in the TDB\n"));
@@ -962,7 +962,7 @@ BOOL get_local_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 	}
 
 	/* The group is in the mapping table */
-	if(get_group_map_from_sid(sid, map, with_priv)) {
+	if(pdb_getgrsid(map, sid, with_priv)) {
 		if (map->sid_name_use!=SID_NAME_ALIAS) {
 			if (with_priv)
 				free_privilege(&map->priv_set);
@@ -1016,7 +1016,7 @@ BOOL get_builtin_group_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 		return(False);
 	}
 
-	if(!get_group_map_from_sid(sid, map, with_priv))
+	if(!pdb_getgrsid(map, sid, with_priv))
 		return False;
 
 	if (map->sid_name_use!=SID_NAME_WKN_GRP) {
@@ -1060,7 +1060,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 	/*
 	 * make a group map from scratch if doesn't exist.
 	 */
-	if (!get_group_map_from_gid(gid, map, with_priv)) {
+	if (!pdb_getgrgid(map, gid, with_priv)) {
 		map->gid=gid;
 		map->sid_name_use=SID_NAME_ALIAS;
 		map->systemaccount=PR_ACCESS_FROM_NETWORK;

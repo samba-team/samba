@@ -49,7 +49,7 @@ static BOOL update_smbpassword_file(const char *user, const char *password)
 	 * Remove the account disabled flag - we are updating the
 	 * users password from a login.
 	 */
-	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED)) {
+	if (!pdb_set_acct_ctrl(sampass, pdb_get_acct_ctrl(sampass) & ~ACB_DISABLED, PDB_CHANGED)) {
 		pdb_free_sam(&sampass);
 		return False;
 	}

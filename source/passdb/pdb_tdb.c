@@ -163,28 +163,28 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
 		
-		pdb_set_unix_homedir(sampass, pw->pw_dir);
+		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
 
 		passwd_free(&pw);
 
-		pdb_set_uid(sampass, uid);
-		pdb_set_gid(sampass, gid);
+		pdb_set_uid(sampass, uid, PDB_SET);
+		pdb_set_gid(sampass, gid, PDB_SET);
 	}
 
-	pdb_set_logon_time(sampass, logon_time, True);
-	pdb_set_logoff_time(sampass, logoff_time, True);
-	pdb_set_kickoff_time(sampass, kickoff_time, True);
-	pdb_set_pass_can_change_time(sampass, pass_can_change_time, True);
-	pdb_set_pass_must_change_time(sampass, pass_must_change_time, True);
-	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
+	pdb_set_logon_time(sampass, logon_time, PDB_SET);
+	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
+	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
+	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
+	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
+	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
 
-	pdb_set_username     (sampass, username); 
-	pdb_set_domain       (sampass, domain);
-	pdb_set_nt_username  (sampass, nt_username);
-	pdb_set_fullname     (sampass, fullname);
+	pdb_set_username     (sampass, username, PDB_SET); 
+	pdb_set_domain       (sampass, domain, PDB_SET);
+	pdb_set_nt_username  (sampass, nt_username, PDB_SET);
+	pdb_set_fullname     (sampass, fullname, PDB_SET);
 
 	if (homedir) {
-		pdb_set_homedir(sampass, homedir, True);
+		pdb_set_homedir(sampass, homedir, PDB_SET);
 	}
 	else {
 		pdb_set_homedir(sampass, 
@@ -192,69 +192,69 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 						       lp_logon_home(),
 						       username, domain, 
 						       uid, gid),
-				False);
+				PDB_DEFAULT);
 	}
 
 	if (dir_drive) 	
-		pdb_set_dir_drive(sampass, dir_drive, True);
+		pdb_set_dir_drive(sampass, dir_drive, PDB_SET);
 	else {
 		pdb_set_dir_drive(sampass, 
 				  talloc_sub_specified(sampass->mem_ctx, 
 							 lp_logon_drive(),
 							 username, domain, 
 							 uid, gid),
-				  False);
+				  PDB_DEFAULT);
 	}
 
 	if (logon_script) 
-		pdb_set_logon_script(sampass, logon_script, True);
+		pdb_set_logon_script(sampass, logon_script, PDB_SET);
 	else {
 		pdb_set_logon_script(sampass, 
 				     talloc_sub_specified(sampass->mem_ctx, 
 							    lp_logon_script(),
 							    username, domain, 
 							    uid, gid),
-				  False);
+				  PDB_DEFAULT);
 	}
 	
 	if (profile_path) {	
-		pdb_set_profile_path(sampass, profile_path, True);
+		pdb_set_profile_path(sampass, profile_path, PDB_SET);
 	} else {
 		pdb_set_profile_path(sampass, 
 				     talloc_sub_specified(sampass->mem_ctx, 
 							    lp_logon_path(),
 							    username, domain, 
 							    uid, gid),
-				     False);
+				     PDB_DEFAULT);
 	}
 
-	pdb_set_acct_desc    (sampass, acct_desc);
-	pdb_set_workstations (sampass, workstations);
-	pdb_set_munged_dial  (sampass, munged_dial);
+	pdb_set_acct_desc    (sampass, acct_desc, PDB_SET);
+	pdb_set_workstations (sampass, workstations, PDB_SET);
+	pdb_set_munged_dial  (sampass, munged_dial, PDB_SET);
 
 	if (lm_pw_ptr && lm_pw_len == LM_HASH_LEN) {
-		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr)) {
+		if (!pdb_set_lanman_passwd(sampass, lm_pw_ptr, PDB_SET)) {
 			ret = False;
 			goto done;
 		}
 	}
 
 	if (nt_pw_ptr && nt_pw_len == NT_HASH_LEN) {
-		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr)) {
+		if (!pdb_set_nt_passwd(sampass, nt_pw_ptr, PDB_SET)) {
 			ret = False;
 			goto done;
 		}
 	}
 
-	pdb_set_user_sid_from_rid(sampass, user_rid);
-	pdb_set_group_sid_from_rid(sampass, group_rid);
-	pdb_set_unknown_3(sampass, unknown_3);
-	pdb_set_hours_len(sampass, hours_len);
-	pdb_set_unknown_5(sampass, unknown_5);
-	pdb_set_unknown_6(sampass, unknown_6);
-	pdb_set_acct_ctrl(sampass, acct_ctrl);
-	pdb_set_logon_divs(sampass, logon_divs);
-	pdb_set_hours(sampass, hours);
+	pdb_set_user_sid_from_rid(sampass, user_rid, PDB_SET);
+	pdb_set_group_sid_from_rid(sampass, group_rid, PDB_SET);
+	pdb_set_unknown_3(sampass, unknown_3, PDB_SET);
+	pdb_set_hours_len(sampass, hours_len, PDB_SET);
+	pdb_set_unknown_5(sampass, unknown_5, PDB_SET);
+	pdb_set_unknown_6(sampass, unknown_6, PDB_SET);
+	pdb_set_acct_ctrl(sampass, acct_ctrl, PDB_SET);
+	pdb_set_logon_divs(sampass, logon_divs, PDB_SET);
+	pdb_set_hours(sampass, hours, PDB_SET);
 
 done:
 
@@ -354,23 +354,23 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
 	 * Only updates fields which have been set (not defaults from smb.conf)
 	 */
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_DRIVE)) 
+	if (!IS_SAM_DEFAULT(sampass, PDB_DRIVE)) 
 	  dir_drive = pdb_get_dir_drive(sampass);
 	else dir_drive = NULL;
 	if (dir_drive) dir_drive_len = strlen(dir_drive) +1;
 	else dir_drive_len = 0;
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_SMBHOME)) homedir = pdb_get_homedir(sampass);
+	if (!IS_SAM_DEFAULT(sampass, PDB_SMBHOME)) homedir = pdb_get_homedir(sampass);
 	else homedir = NULL;
 	if (homedir) homedir_len = strlen(homedir) +1;
 	else homedir_len = 0;
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_LOGONSCRIPT)) logon_script = pdb_get_logon_script(sampass);
+	if (!IS_SAM_DEFAULT(sampass, PDB_LOGONSCRIPT)) logon_script = pdb_get_logon_script(sampass);
 	else logon_script = NULL;
 	if (logon_script) logon_script_len = strlen(logon_script) +1;
 	else logon_script_len = 0;
 
-	if (IS_SAM_SET(sampass, FLAG_SAM_PROFILE)) profile_path = pdb_get_profile_path(sampass);
+	if (!IS_SAM_DEFAULT(sampass, PDB_PROFILE)) profile_path = pdb_get_profile_path(sampass);
 	else profile_path = NULL;
 	if (profile_path) profile_path_len = strlen(profile_path) +1;
 	else profile_path_len = 0;
@@ -421,12 +421,12 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
 		lm_pw_len, lm_pw,
 		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
-		pdb_get_unknown3(sampass),
+		pdb_get_unknown_3(sampass),
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
-		pdb_get_unknown5(sampass),
-		pdb_get_unknown6(sampass));
+		pdb_get_unknown_5(sampass),
+		pdb_get_unknown_6(sampass));
 
 
 	/* malloc the space needed */
@@ -460,12 +460,12 @@ static uint32 init_buffer_from_sam (struct tdbsam_privates *tdb_state,
 		lm_pw_len, lm_pw,
 		nt_pw_len, nt_pw,
 		pdb_get_acct_ctrl(sampass),
-		pdb_get_unknown3(sampass),
+		pdb_get_unknown_3(sampass),
 		pdb_get_logon_divs(sampass),
 		pdb_get_hours_len(sampass),
 		MAX_HOURS_LEN, pdb_get_hours(sampass),
-		pdb_get_unknown5(sampass),
-		pdb_get_unknown6(sampass));
+		pdb_get_unknown_5(sampass),
+		pdb_get_unknown_6(sampass));
 	
 	
 	/* check to make sure we got it correct */
@@ -781,7 +781,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 						goto done;
 					}
 				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid);
+				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
 			} else {
 				user_rid = tdb_state->low_nua_rid;
 				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
@@ -794,7 +794,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 					ret = False;
 					goto done;
 				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid);
+				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
@@ -811,7 +811,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 				goto done;
 			} else {
 				/* This seems like a good default choice for non-unix users */
-				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS);
+				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
@@ -896,6 +896,58 @@ static NTSTATUS tdbsam_add_sam_account (struct pdb_methods *my_methods, SAM_ACCO
 		return NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS tdbsam_getgrsid(struct pdb_methods *methods, GROUP_MAP *map,
+				DOM_SID sid, BOOL with_priv)
+{
+	return get_group_map_from_sid(sid, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_getgrgid(struct pdb_methods *methods, GROUP_MAP *map,
+				gid_t gid, BOOL with_priv)
+{
+	return get_group_map_from_gid(gid, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
+				char *name, BOOL with_priv)
+{
+	return get_group_map_from_ntname(name, map, with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_add_group_mapping_entry(struct pdb_methods *methods,
+					       GROUP_MAP *map)
+{
+	return add_mapping_entry(map, TDB_INSERT) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_update_group_mapping_entry(struct pdb_methods *methods,
+						  GROUP_MAP *map)
+{
+	return add_mapping_entry(map, TDB_REPLACE) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_delete_group_mapping_entry(struct pdb_methods *methods,
+						  DOM_SID sid)
+{
+	return group_map_remove(sid) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static NTSTATUS tdbsam_enum_group_mapping(struct pdb_methods *methods,
+					  enum SID_NAME_USE sid_name_use,
+					  GROUP_MAP **rmap, int *num_entries,
+					  BOOL unix_only, BOOL with_priv)
+{
+	return enum_group_mapping(sid_name_use, rmap, num_entries, unix_only,
+				  with_priv) ?
+		NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 static void free_private_data(void **vp) 
 {
 	struct tdbsam_privates **tdb_state = (struct tdbsam_privates **)vp;
@@ -933,6 +985,13 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 	(*pdb_method)->add_sam_account = tdbsam_add_sam_account;
 	(*pdb_method)->update_sam_account = tdbsam_update_sam_account;
 	(*pdb_method)->delete_sam_account = tdbsam_delete_sam_account;
+	(*pdb_method)->getgrsid = tdbsam_getgrsid;
+	(*pdb_method)->getgrgid = tdbsam_getgrgid;
+	(*pdb_method)->getgrnam = tdbsam_getgrnam;
+	(*pdb_method)->add_group_mapping_entry = tdbsam_add_group_mapping_entry;
+	(*pdb_method)->update_group_mapping_entry = tdbsam_update_group_mapping_entry;
+	(*pdb_method)->delete_group_mapping_entry = tdbsam_delete_group_mapping_entry;
+	(*pdb_method)->enum_group_mapping = tdbsam_enum_group_mapping;
 
 	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
 

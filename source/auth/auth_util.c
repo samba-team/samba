@@ -931,47 +931,47 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		return nt_status;
 	}
 		
-	if (!pdb_set_user_sid(sam_account, &user_sid)) {
+	if (!pdb_set_user_sid(sam_account, &user_sid, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!pdb_set_group_sid(sam_account, &group_sid)) {
+	if (!pdb_set_group_sid(sam_account, &group_sid, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 		
-	if (!pdb_set_nt_username(sam_account, nt_username)) {
+	if (!pdb_set_nt_username(sam_account, nt_username, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_domain(sam_account, nt_domain)) {
+	if (!pdb_set_domain(sam_account, nt_domain, PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_fullname(sam_account, pdb_unistr2_convert(&(info3->uni_full_name)))) {
+	if (!pdb_set_fullname(sam_account, pdb_unistr2_convert(&(info3->uni_full_name)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_logon_script(sam_account, pdb_unistr2_convert(&(info3->uni_logon_script)), True)) {
+	if (!pdb_set_logon_script(sam_account, pdb_unistr2_convert(&(info3->uni_logon_script)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_profile_path(sam_account, pdb_unistr2_convert(&(info3->uni_profile_path)), True)) {
+	if (!pdb_set_profile_path(sam_account, pdb_unistr2_convert(&(info3->uni_profile_path)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_homedir(sam_account, pdb_unistr2_convert(&(info3->uni_home_dir)), True)) {
+	if (!pdb_set_homedir(sam_account, pdb_unistr2_convert(&(info3->uni_home_dir)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!pdb_set_dir_drive(sam_account, pdb_unistr2_convert(&(info3->uni_dir_drive)), True)) {
+	if (!pdb_set_dir_drive(sam_account, pdb_unistr2_convert(&(info3->uni_dir_drive)), PDB_CHANGED)) {
 		pdb_free_sam(&sam_account);
 		return NT_STATUS_NO_MEMORY;
 	}

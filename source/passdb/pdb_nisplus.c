@@ -745,7 +745,7 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 	/* Don't change these timestamp settings without a good reason.  They are
 	   important for NT member server compatibility. */
 
-	pdb_set_logon_time (pw_buf, (time_t) 0, True);
+	pdb_set_logon_time (pw_buf, (time_t) 0, PDB_DEFAULT);
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_LOGON_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "LNT-", 4) == 0)) {
 		int i;
@@ -758,11 +758,11 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 		if (i == 8) {
 			pdb_set_logon_time (pw_buf,
 					    (time_t) strtol (ptr, NULL, 16),
-					    True);
+					    PDB_SET);
 		}
 	}
 
-	pdb_set_logoff_time (pw_buf, get_time_t_max (), True);
+	pdb_set_logoff_time (pw_buf, get_time_t_max (), PDB_DEFAULT);
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_LOGOFF_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "LOT-", 4) == 0)) {
 		int i;
@@ -775,11 +775,11 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 		if (i == 8) {
 			pdb_set_logoff_time (pw_buf,
 					     (time_t) strtol (ptr, NULL, 16),
-					     True);
+					     PDB_SET);
 		}
 	}
 
-	pdb_set_kickoff_time (pw_buf, get_time_t_max (), True);
+	pdb_set_kickoff_time (pw_buf, get_time_t_max (), PDB_DEFAULT);
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_KICK_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "KOT-", 4) == 0)) {
 		int i;
@@ -792,11 +792,11 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 		if (i == 8) {
 			pdb_set_kickoff_time (pw_buf,
 					      (time_t) strtol (ptr, NULL, 16),
-					      True);
+					      PDB_SET);
 		}
 	}
 
-	pdb_set_pass_last_set_time (pw_buf, (time_t) 0);
+	pdb_set_pass_last_set_time (pw_buf, (time_t) 0, PDB_DEFAULT);
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_PWDLSET_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "LCT-", 4) == 0)) {
 		int i;
@@ -810,11 +810,12 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 			pdb_set_pass_last_set_time (pw_buf,
 						    (time_t) strtol (ptr,
 								     NULL,
-								     16));
+								     16),
+						     PDB_SET);
 		}
 	}
 
-	pdb_set_pass_can_change_time (pw_buf, (time_t) 0, True);
+	pdb_set_pass_can_change_time (pw_buf, (time_t) 0, PDB_DEFAULT);
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_PWDCCHG_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "CCT-", 4) == 0)) {
 		int i;
@@ -829,11 +830,11 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 						      (time_t) strtol (ptr,
 								       NULL,
 								       16),
-						      True);
+						      PDB_SET);
 		}
 	}
 
-	pdb_set_pass_must_change_time (pw_buf, get_time_t_max (), True);	/* Password never expires. */
+	pdb_set_pass_must_change_time (pw_buf, get_time_t_max (), PDB_DEFAULT);	/* Password never expires. */
 	ptr = (uchar *) ENTRY_VAL (obj, NPF_PWDMCHG_T);
 	if (ptr && *ptr && (StrnCaseCmp (ptr, "MCT-", 4) == 0)) {
 		int i;
@@ -848,13 +849,13 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 						       (time_t) strtol (ptr,
 									NULL,
 									16),
-						       True);
+						       PDB_SET);
 		}
 	}
 
 	/* string values */
-	pdb_set_username (pw_buf, ENTRY_VAL (obj, NPF_NAME));
-	pdb_set_domain (pw_buf, lp_workgroup ());
+	pdb_set_username (pw_buf, ENTRY_VAL (obj, NPF_NAME), PDB_SET);
+	pdb_set_domain (pw_buf, lp_workgroup (), PDB_DEFAULT);
 	/* pdb_set_nt_username() -- cant set it here... */
 
 	get_single_attribute (obj, NPF_FULL_NAME, full_name,
@@ -862,27 +863,27 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 #if 0
 	unix_to_dos (full_name, True);
 #endif
-	pdb_set_fullname (pw_buf, full_name);
+	pdb_set_fullname (pw_buf, full_name, PDB_SET);
 
 	pdb_set_acct_ctrl (pw_buf, pdb_decode_acct_ctrl (ENTRY_VAL (obj,
-								    NPF_ACB)));
+								    NPF_ACB), PDB_SET));
 
 	get_single_attribute (obj, NPF_ACCT_DESC, acct_desc,
 			      sizeof (pstring));
 #if 0
 	unix_to_dos (acct_desc, True);
 #endif
-	pdb_set_acct_desc (pw_buf, acct_desc);
+	pdb_set_acct_desc (pw_buf, acct_desc, PDB_SET);
 
-	pdb_set_workstations (pw_buf, ENTRY_VAL (obj, NPF_WORKSTATIONS));
-	pdb_set_munged_dial (pw_buf, NULL);
+	pdb_set_workstations (pw_buf, ENTRY_VAL (obj, NPF_WORKSTATIONS), PDB_SET);
+	pdb_set_munged_dial (pw_buf, NULL, PDB_DEFAULT);
 
-	pdb_set_uid (pw_buf, atoi (ENTRY_VAL (obj, NPF_UID)));
-	pdb_set_gid (pw_buf, atoi (ENTRY_VAL (obj, NPF_SMB_GRPID)));
+	pdb_set_uid (pw_buf, atoi (ENTRY_VAL (obj, NPF_UID)), PDB_SET);
+	pdb_set_gid (pw_buf, atoi (ENTRY_VAL (obj, NPF_SMB_GRPID)), PDB_SET);
 	pdb_set_user_sid_from_rid (pw_buf,
-				   atoi (ENTRY_VAL (obj, NPF_USER_RID)));
+				   atoi (ENTRY_VAL (obj, NPF_USER_RID)), PDB_SET);
 	pdb_set_group_sid_from_rid (pw_buf,
-				    atoi (ENTRY_VAL (obj, NPF_GROUP_RID)));
+				    atoi (ENTRY_VAL (obj, NPF_GROUP_RID)), PDB_SET);
 
 	/* values, must exist for user */
 	if (!(pdb_get_acct_ctrl (pw_buf) & ACB_WSTRUST)) {
@@ -891,59 +892,60 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 				      sizeof (pstring));
 		if (!(home_dir && *home_dir)) {
 			pstrcpy (home_dir, lp_logon_home ());
-			pdb_set_homedir (pw_buf, home_dir, False);
+			pdb_set_homedir (pw_buf, home_dir, PDB_DEFAULT);
 		} else
-			pdb_set_homedir (pw_buf, home_dir, True);
+			pdb_set_homedir (pw_buf, home_dir, PDB_SET);
 
 		get_single_attribute (obj, NPF_DIR_DRIVE, home_drive,
 				      sizeof (pstring));
 		if (!(home_drive && *home_drive)) {
 			pstrcpy (home_drive, lp_logon_drive ());
-			pdb_set_dir_drive (pw_buf, home_drive, False);
+			pdb_set_dir_drive (pw_buf, home_drive, PDB_DEFAULT);
 		} else
-			pdb_set_dir_drive (pw_buf, home_drive, True);
+			pdb_set_dir_drive (pw_buf, home_drive, PDB_SET);
 
 		get_single_attribute (obj, NPF_LOGON_SCRIPT, logon_script,
 				      sizeof (pstring));
 		if (!(logon_script && *logon_script)) {
 			pstrcpy (logon_script, lp_logon_script ());
+			pdb_set_logon_script (pw_buf, logon_script, PDB_DEFAULT);
 		} else
-			pdb_set_logon_script (pw_buf, logon_script, True);
+			pdb_set_logon_script (pw_buf, logon_script, PDB_SET);
 
 		get_single_attribute (obj, NPF_PROFILE_PATH, profile_path,
 				      sizeof (pstring));
 		if (!(profile_path && *profile_path)) {
 			pstrcpy (profile_path, lp_logon_path ());
-			pdb_set_profile_path (pw_buf, profile_path, False);
+			pdb_set_profile_path (pw_buf, profile_path, PDB_DEFAULT);
 		} else
-			pdb_set_profile_path (pw_buf, profile_path, True);
+			pdb_set_profile_path (pw_buf, profile_path, PDB_SET);
 
 	} else {
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-		pdb_set_group_sid_from_rid (pw_buf, DOMAIN_GROUP_RID_USERS);
+		pdb_set_group_sid_from_rid (pw_buf, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
 	}
 
 	/* Check the lanman password column. */
 	ptr = (char *) ENTRY_VAL (obj, NPF_LMPWD);
-	if (!pdb_set_lanman_passwd (pw_buf, NULL))
+	if (!pdb_set_lanman_passwd (pw_buf, NULL, PDB_DEFAULT))
 		return False;
 
 	if (!strncasecmp (ptr, "NO PASSWORD", 11)) {
 		pdb_set_acct_ctrl (pw_buf,
-				   pdb_get_acct_ctrl (pw_buf) | ACB_PWNOTREQ);
+				   pdb_get_acct_ctrl (pw_buf) | ACB_PWNOTREQ, PDB_SET);
 	} else {
 		if (strlen (ptr) != 32 || !pdb_gethexpwd (ptr, smbpwd)) {
 			DEBUG (0, ("malformed LM pwd entry: %s.\n",
 				   pdb_get_username (pw_buf)));
 			return False;
 		}
-		if (!pdb_set_lanman_passwd (pw_buf, smbpwd))
+		if (!pdb_set_lanman_passwd (pw_buf, smbpwd, PDB_SET))
 			return False;
 	}
 
 	/* Check the NT password column. */
 	ptr = ENTRY_VAL (obj, NPF_NTPWD);
-	if (!pdb_set_nt_passwd (pw_buf, NULL))
+	if (!pdb_set_nt_passwd (pw_buf, NULL, PDB_DEFAULT))
 		return False;
 
 	if (!(pdb_get_acct_ctrl (pw_buf) & ACB_PWNOTREQ) &&
@@ -953,12 +955,12 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
  uid = %d.\n", pdb_get_uid (pw_buf)));
 			return False;
 		}
-		if (!pdb_set_nt_passwd (pw_buf, smbntpwd))
+		if (!pdb_set_nt_passwd (pw_buf, smbntpwd, PDB_SET))
 			return False;
 	}
 
-	pdb_set_unknown_3 (pw_buf, 0xffffff);	/* don't know */
-	pdb_set_logon_divs (pw_buf, 168);	/* hours per week */
+	pdb_set_unknown_3 (pw_buf, 0xffffff, PDB_DEFAULT);	/* don't know */
+	pdb_set_logon_divs (pw_buf, 168, PDB_DEFAULT);	/* hours per week */
 
 	if ((hours_len = ENTRY_LEN (obj, NPF_HOURS)) == 21) {
 		memcpy (hours, ENTRY_VAL (obj, NPF_HOURS), hours_len);
@@ -967,11 +969,11 @@ static BOOL make_sam_from_nisp_object (SAM_ACCOUNT * pw_buf,
 		/* available at all hours */
 		memset (hours, 0xff, hours_len);
 	}
-	pdb_set_hours_len (pw_buf, hours_len);
-	pdb_set_hours (pw_buf, hours);
+	pdb_set_hours_len (pw_buf, hours_len, PDB_SET);
+	pdb_set_hours (pw_buf, hours, PDB_SET);
 
-	pdb_set_unknown_5 (pw_buf, 0x00020000);	/* don't know */
-	pdb_set_unknown_6 (pw_buf, 0x000004ec);	/* don't know */
+	pdb_set_unknown_5 (pw_buf, 0x00020000, PDB_DEFAULT);	/* don't know */
+	pdb_set_unknown_6 (pw_buf, 0x000004ec, PDB_DEFAULT);	/* don't know */
 
 	return True;
 }
@@ -1078,9 +1080,8 @@ static BOOL init_nisp_from_sam (nis_object * obj, const SAM_ACCOUNT * sampass,
 		rid = pdb_get_group_rid (sampass);
 
 		if (rid == 0) {
-			if (get_group_map_from_gid
-			    (pdb_get_gid (sampass), &map,
-			     MAPPING_WITHOUT_PRIV)) {
+			if (pdb_getgrgid(&map, pdb_get_gid (sampass),
+					 MAPPING_WITHOUT_PRIV)) {
 				if (!sid_peek_check_rid
 				    (get_global_sam_sid (), &map.sid, &rid))
 					return False;

@@ -583,10 +583,12 @@ static struct enum_list enum_printing[] = {
 };
 
 static struct enum_list enum_ldap_ssl[] = {
+#ifdef WITH_LDAP_SAMCONFIG
 	{LDAP_SSL_ON, "Yes"},
 	{LDAP_SSL_ON, "yes"},
 	{LDAP_SSL_ON, "on"},
 	{LDAP_SSL_ON, "On"},
+#endif
 	{LDAP_SSL_OFF, "no"},
 	{LDAP_SSL_OFF, "No"},
 	{LDAP_SSL_OFF, "off"},
