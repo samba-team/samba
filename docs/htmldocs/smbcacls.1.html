@@ -11,7 +11,7 @@
 
 <h1>smbcacls (1)</h1>
 <h2>Samba</h2>
-<h2>3 Dec 2000</h2>
+<h2>22 Dec 2000</h2>
 
 
     
@@ -21,9 +21,10 @@
 <p><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
-<p><strong>smbcacls</strong> //server/share filename <a href="smbcacls.1.html#minusU">-U username</a>
+<p><strong>smbcacls</strong> //server/share filename [<a href="smbcacls.1.html#minusU">-U username</a>]
 [<a href="smbcacls.1.html#minusA">-A acls</a>] [<a href="smbcacls.1.html#minusM">-M acls</a>] 
 [<a href="smbcacls.1.html#minusD">-D acls</a>] [<a href="smbcacls.1.html#minusS">-S acls</a>] 
+[<a href="smbcacls.1.html#minusC">-C name</a>] [<a href="smbcacls.1.html#minusG">-G name</a>]
 [<a href="smbcacls.1.html#minusn">-n</a>] [<a href="smbcacls.1.html#minush">-h</a>]
 <p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
@@ -62,6 +63,18 @@ prompted to enter in a password and the workgroup specified in the
 <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file is used, or <code>username%password</code>
 or <code>DOMAIN\username%password</code> and the password and workgroup names are
 used as provided.
+<p><a name="minusC"></a>
+<p></p><dt><strong><strong>-C name</strong></strong><dd>
+<p>The owner of a file or directory can be changed to the name given
+using the -C option.  The name can be a sid in the form <code>S-1-x-y-z</code> or a
+name resolved against the server specified in the first argument.
+<p>This command is a shortcut for <code>-M OWNER:name</code>.
+<p><a name="minusG"></a>
+<p></p><dt><strong><strong>-G name</strong></strong><dd>
+<p>The group owner of a file or directory can be changed to the name given
+using the -G option.  The name can be a sid in the form <code>S-1-x-y-z</code> or a
+name resolved against the server specified in the first argument.
+<p>This command is a shortcut for <code>-M GROUP:name</code>.
 <p><a name="minusn"></a>
 <p></p><dt><strong><strong>-n</strong></strong><dd>
 <p>This option displays all ACL information in numeric format.  The default is
@@ -74,10 +87,9 @@ format.
 <p><a name="ACLFORMAT"></a>
 <h2>ACL FORMAT</h2>
     
-<p>The format of an ACL is one or more ACL entries separated by either spaces,
+<p>The format of an ACL is one or more ACL entries separated by either 
 commas or newlines.  An ACL entry is one of the following:
 <p><pre>
-
 REVISION:&lt;revision number&gt;
 OWNER:&lt;sid or name&gt;
 GROUP:&lt;sid or name&gt;
@@ -85,11 +97,12 @@ ACL:&lt;sid or name&gt;:&lt;type&gt;/&lt;flags&gt;/&lt;mask&gt;
 </pre>
 
 <p>The revision of the ACL specifies the internal Windows NT ACL revision for
-the security descriptor.  If not specified it defaults to 1.
+the security descriptor.  If not specified it defaults to 1.  Using values
+other than 1 may cause strange behaviour.
 <p>The owner and group specify the owner and group sids for the object.  If a
 SID in the format <code>S-1-x-y-z</code> is specified this is used, otherwise
 the name specified is resolved using the server on which the file or
-directory resides. 
+directory resides.
 <p>ACLs specify permissions granted to the SID.  This SID again can be
 specified in <code>S-1-x-y-z</code> format or as a name in which case it is resolved
 against the server on which the file or directory resides.  The type, flags
@@ -98,17 +111,17 @@ and mask values determine the type of access granted to the SID.
 the SID.  The flags values are generally zero for file ACLs and either 9 or
 2 for directory ACLs.  Some common flags are:
 <p><pre>
-
 #define SEC_ACE_FLAG_OBJECT_INHERIT     	0x1
 #define SEC_ACE_FLAG_CONTAINER_INHERIT  	0x2
 #define SEC_ACE_FLAG_NO_PROPAGATE_INHERIT       0x4
 #define SEC_ACE_FLAG_INHERIT_ONLY       	0x8
 </pre>
 
-<p>The mask is a value which expresses the access right granted to
-the SID.  It can be given as a hexadecimal value or by using one of the
+<p>At present flags can only be specified as decimal or hexadecimal values. 
+<p>The mask is a value which expresses the access right granted to the SID.
+It can be given as a decimal or hexadecimal value, or by using one of the
 following text strings which map to the NT file permissions of the same
-name. 
+name.
 <p><dl>
 <p><p></p><dt><strong></strong><dd> <code>R</code> 	Allow read access
 <p><p></p><dt><strong></strong><dd> <code>W</code> 	Allow write access
@@ -119,13 +132,24 @@ name.
 <p></dl>
 <p>The following combined permissions can be specified:
 <p><dl>
-<p><p></p><dt><strong></strong><dd> <code>READ</code>	 Equivalent to <code>RX</code> permissions
-<p></p><dt><strong></strong><dd> <code>CHANGE</code> Equivalent to <code>RXWD</code> permissions
-<p></p><dt><strong></strong><dd> <code>FULL</code>   Equivalent to <code>RWXDPO</code> permissions
+<p><p></p><dt><strong></strong><dd> <code>READ</code>	 
+<p>Equivalent to <code>RX</code> permissions
+<p><p></p><dt><strong></strong><dd> <code>CHANGE</code> 
+<p>Equivalent to <code>RXWD</code> permissions
+<p><p></p><dt><strong></strong><dd> <code>FULL</code>   
+<p>Equivalent to <code>RWXDPO</code> permissions
 <p></dl>
 <p><a name="EXITSTATUS"></a>
 <h2>EXIT STATUS</h2>
     
+<p>The <strong>smbcacls</strong> program sets the exit status depending on the success or
+otherwise of the operations performed.  The exit status may be one of the
+following values.
+<p>If the operation succeded, <strong>smbcacls</strong> returns and exit status of 0.  If
+<strong>smbcacls</strong> couldn't connect to the specified server, or there was an
+error getting or setting the ACLs, an exit status of 1 is returned.  If
+there was an error parsing any command line arguments, an exit status of 2
+is returned.
 <p><a name="AUTHOR"></a>
 <h2>AUTHOR</h2>
     
