@@ -87,7 +87,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/kanji.o lib/md4.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
-          lib/util.o lib/genrand.o 
+          lib/util.o lib/genrand.o lib/username.o
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -116,8 +116,7 @@ RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
 
-PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/username.o \
-             passdb/smbpass.o 
+PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o 
 
 SMBD_OBJ1 = smbd/server.o smbd/access.o smbd/chgpasswd.o smbd/connection.o \
             smbd/dfree.o smbd/dir.o smbd/password.o \
@@ -151,38 +150,38 @@ NMBD_OBJ = $(NMBD_OBJ1) $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) \
 SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
            web/swat.o \
            smbd/password.o \
-           $(PASSDB_OBJ) $(LIBSMB_OBJ) $(LOCKING_OBJ) \
-           $(PARAM_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
+           $(LIBSMB_OBJ) $(LOCKING_OBJ) \
+           $(PARAM_OBJ) $(PASSDB_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) \
            $(UBIQX_OBJ) $(LIB_OBJ)
 
 SMBRUN_OBJ = utils/smbrun.o
 
-MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
                        $(UBIQX_OBJ) $(LIB_OBJ)
 
-MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) $(PASSDB_OBJ) \
+MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
 
-STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
+STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
                smbd/access.o \
-               $(PARAM_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+               $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) \
+TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                $(LIB_OBJ)
 
-SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(PASSDB_OBJ) $(LIBSMB_OBJ) \
+SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
-             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(PASSDB_OBJ) $(LIB_OBJ)
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
-NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(PASSDB_OBJ) $(UBIQX_OBJ) \
+NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
                 $(LIBSMB_OBJ) $(LIB_OBJ)
 
-SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) $(PASSDB_OBJ) \
+SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
 PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)

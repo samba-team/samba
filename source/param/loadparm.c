@@ -2315,21 +2315,20 @@ static void lp_add_auto_services(char *str)
   homes = lp_servicenumber(HOMES_NAME);
   printers = lp_servicenumber(PRINTERS_NAME);
 
-  for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP))
-    {
-      char *home = get_home_dir(p);
+  for (p=strtok(s,LIST_SEP);p;p=strtok(NULL,LIST_SEP)) {
+	  char *home = get_home_dir(p);
 
-      if (lp_servicenumber(p) >= 0) continue;
+	  if (lp_servicenumber(p) >= 0) continue;
 
-      if (home && homes >= 0)
-	{
-	  lp_add_home(p,homes,home);
-	  continue;
-	}
-
-      if (printers >= 0 && pcap_printername_ok(p,NULL))
-	lp_add_printer(p,printers);
-    }
+	  if (home && homes >= 0) {
+		  lp_add_home(p,homes,home);
+		  continue;
+	  }
+	  
+	  if (printers >= 0 && pcap_printername_ok(p,NULL)) {
+		  lp_add_printer(p,printers);
+	  }
+  }
   free(s);
 }
 
