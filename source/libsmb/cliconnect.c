@@ -293,14 +293,18 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			uchar nt_hash[16];
 			E_md4hash(pass, nt_hash);
 
+			nt_response = data_blob(NULL, 24);
+			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
+
 			/* non encrypted password supplied. Ignore ntpass. */
 			if (lp_client_lanman_auth()) {
 				lm_response = data_blob(NULL, 24);
-				SMBencrypt(pass,cli->secblob.data,lm_response.data);
+				SMBencrypt(pass,cli->secblob.data, lm_response.data);
+			} else {
+				/* LM disabled, place NT# in LM feild instead */
+				lm_response = data_blob(nt_response.data, nt_response.length);
 			}
 
-			nt_response = data_blob(NULL, 24);
-			SMBNTencrypt(pass,cli->secblob.data,nt_response.data);
 			session_key = data_blob(NULL, 16);
 			SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
 		}
@@ -575,7 +579,6 @@ static BOOL cli_session_setup_ntlmssp(struct cli_state *cli, const char *user,
 			}
 			data_blob_free(&tmp_blob);
 		} else {
-			/* the server might give us back two challenges */
 			if (!spnego_parse_auth_response(blob, nt_status, 
 							&blob_in)) {
 				DEBUG(3,("Failed to parse auth response\n"));
@@ -713,8 +716,22 @@ BOOL cli_session_setup(struct cli_state *cli,
 
 	/* if its an older server then we have to use the older request format */
 
-	if (cli->protocol < PROTOCOL_NT1)
+	if (cli->protocol < PROTOCOL_NT1) {
+		if (!lp_client_lanman_auth() && passlen != 24 && (*pass)) {
+			DEBUG(1, ("Server requested LM password but 'client lanman auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
+		if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0 &&
+		    !lp_client_plaintext_auth() && (*pass)) {
+			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
 		return cli_session_setup_lanman2(cli, user, pass, passlen, workgroup);
+	}
 
 	/* if no user is supplied then we have to do an anonymous connection.
 	   passwords are ignored */
@@ -726,17 +743,21 @@ BOOL cli_session_setup(struct cli_state *cli,
            password at this point. The password is sent in the tree
            connect */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0)
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_USER_LEVEL) == 0) 
 		return cli_session_setup_plaintext(cli, user, "", workgroup);
 
 	/* if the server doesn't support encryption then we have to use 
 	   plaintext. The second password is ignored */
 
-	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0)
+	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) == 0) {
+		if (!lp_client_plaintext_auth() && (*pass)) {
+			DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+				  " is disabled\n"));
+			return False;
+		}
 		return cli_session_setup_plaintext(cli, user, pass, workgroup);
+	}
 
-	/* Indidicate signing */
-	
 	/* if the server supports extended security then use SPNEGO */
 
 	if (cli->capabilities & CAP_EXTENDED_SECURITY)
@@ -789,6 +810,12 @@ BOOL cli_send_tconX(struct cli_state *cli,
 	}
 
 	if ((cli->sec_mode & NEGOTIATE_SECURITY_CHALLENGE_RESPONSE) && *pass && passlen != 24) {
+		if (!lp_client_lanman_auth()) {
+			DEBUG(1, ("Server requested LANMAN password but 'client use lanman auth'"
+				  " is disabled\n"));
+			return False;
+		}
+
 		/*
 		 * Non-encrypted passwords - convert to DOS codepage before encryption.
 		 */
@@ -796,10 +823,17 @@ BOOL cli_send_tconX(struct cli_state *cli,
 		SMBencrypt(pass,cli->secblob.data,(uchar *)pword);
 	} else {
 		if((cli->sec_mode & (NEGOTIATE_SECURITY_USER_LEVEL|NEGOTIATE_SECURITY_CHALLENGE_RESPONSE)) == 0) {
+			if (!lp_client_plaintext_auth() && (*pass)) {
+				DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+					  " is disabled\n"));
+				return False;
+			}
+
 			/*
 			 * Non-encrypted passwords - convert to DOS codepage before using.
 			 */
 			passlen = clistr_push(cli, pword, pass, sizeof(pword), STR_TERMINATE);
+			
 		} else {
 			memcpy(pword, pass, passlen);
 		}
@@ -1374,6 +1408,12 @@ NTSTATUS cli_raw_tcon(struct cli_state *cli,
 		      uint16 *max_xmit, uint16 *tid)
 {
 	char *p;
+
+	if (!lp_client_plaintext_auth() && (*pass)) {
+		DEBUG(1, ("Server requested plaintext password but 'client use plaintext auth'"
+			  " is disabled\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	memset(cli->outbuf,'\0',smb_size);
 	memset(cli->inbuf,'\0',smb_size);
