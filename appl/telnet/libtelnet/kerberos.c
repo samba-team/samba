@@ -332,6 +332,14 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 			 TKT_ROOT,
 			 (unsigned)pw->pw_uid);
 		setenv("KRBTKFILE", ts, 1);
+
+		if (pw->pw_uid == 0)
+		    syslog(LOG_INFO|LOG_AUTH,
+			   "ROOT Kerberos login from %s on %s\n",
+			   krb_unparse_name_long(adat.pname,
+						 adat.pinst,
+						 adat.prealm),
+			   RemoteHostName);
 	    }
 	    Data(ap, KRB_ACCEPT, NULL, 0);
 	} else {
