@@ -1,3 +1,34 @@
+.\" Copyright (c) 2003 Kungliga Tekniska Högskolan
+.\" (Royal Institute of Technology, Stockholm, Sweden). 
+.\" All rights reserved. 
+.\"
+.\" Redistribution and use in source and binary forms, with or without 
+.\" modification, are permitted provided that the following conditions 
+.\" are met: 
+.\"
+.\" 1. Redistributions of source code must retain the above copyright 
+.\"    notice, this list of conditions and the following disclaimer. 
+.\"
+.\" 2. Redistributions in binary form must reproduce the above copyright 
+.\"    notice, this list of conditions and the following disclaimer in the 
+.\"    documentation and/or other materials provided with the distribution. 
+.\"
+.\" 3. Neither the name of the Institute nor the names of its contributors 
+.\"    may be used to endorse or promote products derived from this software 
+.\"    without specific prior written permission. 
+.\"
+.\" THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+.\" ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+.\" IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+.\" ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+.\" FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+.\" DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+.\" OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+.\" HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+.\" LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+.\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+.\" SUCH DAMAGE. 
+.\" 
 .\" $Id$
 .\"
 .Dd January 23, 2003
@@ -14,6 +45,58 @@ provides security services to callers in a generic fashion,
 supportable with a range of underlying mechanisms and technologies and
 hence allowing source-level portability of applications to different
 environments.
+.Sh LIST OF FUNCTIONS
+These functions constitute the gssapi library,
+.Em libgssapi .
+Declarations for these functions may be obtained from the include file
+.Pa gssapi.h .
+.sp 2
+.nf
+.ta \w'gss_inquire_names_for_mech'u+2n +\w'Description goes here'u
+\fIName/Page\fP	\fIDescription\fP
+.ta \w'gss_inquire_names_for_mech'u+2n +\w'Description goes here'u+6nC
+.sp 5p
+gss_accept_sec_context.3
+gss_acquire_cred.3
+.\" gss_add_cred.3
+gss_add_oid_set_member.3
+gss_canonicalize_name.3
+gss_compare_name.3
+gss_context_time.3
+gss_create_empty_oid_set.3
+gss_delete_sec_context.3
+gss_display_name.3
+gss_display_status.3
+gss_duplicate_name.3
+gss_export_name.3
+gss_export_sec_context.3
+gss_get_mic.3
+gss_import_name.3
+gss_import_sec_context.3
+gss_indicate_mechs.3
+gss_init_sec_context.3
+gss_inquire_context.3
+gss_inquire_cred.3
+.\" gss_inquire_cred_by_mech.3
+.\" gss_inquire_mechs_for_name.3
+.\" gss_inquire_names_for_mech.3
+gss_krb5_copy_ccache.3
+gss_process_context_token.3
+gss_release_buffer.3
+gss_release_cred.3
+gss_release_name.3
+gss_release_oid_set.3
+gss_seal.3
+gss_sign.3
+gss_test_oid_set_member.3
+gss_unseal.3
+gss_unwrap.3
+gss_verify.3
+gss_verify_mic.3
+gss_wrap.3
+gss_wrap_size_limit.3
+.ta
+.Fi
 .Sh COMPATIBILITY
 The
 .Nm Heimdal
@@ -46,8 +129,6 @@ All of 0.5.x versions of
 .Nm heimdal
 had broken token delegations in the client side, the server side was
 correct.
-.\" .Sh LIST OF FUNCTIONS
-.\"
 .Sh SEE ALSO
 .Xr krb5 3 ,
 .Xr krb5.conf 5 ,
