@@ -3325,7 +3325,7 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 {
 	struct current_user user;
 	int snum;
-	int errcode = ERROR_INVALID_FUNCTION;
+	int errcode = 0;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
 	get_current_user(&user, p);
@@ -3335,29 +3335,35 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
 		return ERROR_INVALID_HANDLE;
 	}
 
-	if (!get_printer_snum(handle, &snum))
+	if (!get_printer_snum(handle, &snum) )	 
 		return ERROR_INVALID_HANDLE;
 
 	switch (command) {
 	case PRINTER_CONTROL_PAUSE:
 		if (print_queue_pause(&user, snum, &errcode)) {
-			errcode = 0;
+			srv_spoolss_sendnotify(handle);
+			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_RESUME:
 	case PRINTER_CONTROL_UNPAUSE:
 		if (print_queue_resume(&user, snum, &errcode)) {
-			errcode = 0;
+			srv_spoolss_sendnotify(handle);
+			return 0;
 		}
 		break;
 	case PRINTER_CONTROL_PURGE:
 		if (print_queue_purge(&user, snum, &errcode)) {
-			errcode = 0;
+			srv_spoolss_sendnotify(handle);
+			return 0;
 		}
 		break;
 	}
 
-	return errcode;
+	if (errcode)
+		return (uint32)errcode;
+
+	return ERROR_INVALID_FUNCTION;
 }
 
 /********************************************************************
