@@ -175,16 +175,23 @@ static char* next_command (char** cmdstr)
 	return command;
 }
 
+
+/**
+ * Find default username from environment variables.
+ *
+ * @param username fstring to receive username; not touched if none is
+ * known.
+ **/
 static void get_username (char *username)
 {
         if (getenv("USER"))
-                pstrcpy(username,getenv("USER"));
+                fstrcpy(username,getenv("USER"));
  
         if (*username == 0 && getenv("LOGNAME"))
-                pstrcpy(username,getenv("LOGNAME"));
+                fstrcpy(username,getenv("LOGNAME"));
  
         if (*username == 0) {
-                pstrcpy(username,"GUEST");
+                fstrcpy(username,"GUEST");
         }
 
 	return;
