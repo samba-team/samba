@@ -57,10 +57,10 @@ struct smbsrv_request *init_smb_request(struct smbsrv_connection *smb_conn)
 
 	req->async_states = talloc_p(req, struct ntvfs_async_state);
 	if (!req->async_states) {
+		talloc_free(req);
 		return NULL;
 	}
-
-	ZERO_STRUCTP(req->async_states);
+	req->async_states->state = 0;
 
 	return req;
 }
