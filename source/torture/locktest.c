@@ -108,6 +108,7 @@ static struct cli_state *connect_one(char *share, int snum)
 	fstring server, myname;
 	uint_t flags = 0;
 	NTSTATUS status;
+	int retries = 10;
 
 	fstrcpy(server,share+2);
 	share = strchr_m(server,'\\');
@@ -119,12 +120,17 @@ static struct cli_state *connect_one(char *share, int snum)
 
 	if (use_kerberos)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
-	
-	status = cli_full_connection(&c, myname,
-				     server, NULL,  
-				     share, "?????", 
-				     username[snum], lp_workgroup(), 
-				     password[snum], flags, NULL);
+
+	do {
+		status = cli_full_connection(&c, myname,
+					     server, NULL,  
+					     share, "?????", 
+					     username[snum], lp_workgroup(), 
+					     password[snum], flags, NULL);
+		if (!NT_STATUS_IS_OK(status)) {
+			sleep(2);
+		}
+	} while (!NT_STATUS_IS_OK(status) && retries--);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return NULL;
@@ -485,7 +491,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:EZ")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:ho:aAW:OkR:B:M:EZW:")) != EOF) {
 		switch (opt) {
 		case 'k':
 #ifdef HAVE_KRB5
@@ -541,6 +547,9 @@ static void usage(void)
 			break;
 		case 'E':
 			exact_error_codes = True;
+			break;
+		case 'W':
+			lp_set_cmdline("workgroup", optarg);
 			break;
 		case 'h':
 			usage();
