@@ -218,7 +218,8 @@ int main(int argc,char *argv[])
         sscanf(p+1,"%x",&lookup_type);
       }
 
-      if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,recursion_desired,
+      if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
+				use_bcast?True:recursion_desired,
 				bcast_addr,&count,NULL))) {
 	      for (j=0;j<count;j++)
 		      printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
