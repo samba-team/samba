@@ -782,7 +782,9 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 	if (desired_access & DELETE_ACCESS) {
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		/* We're only going to fail here if it's access denied, as that's the
+		   only error we care about for "can we delete this ?" questions. */
+		if (!NT_STATUS_IS_OK(status) && NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED)) {
 			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
@@ -1330,7 +1332,9 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
     
 	if (desired_access & DELETE_ACCESS) {
 		status = can_delete(conn, fname, file_attributes, bad_path, True);
-		if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status,NT_STATUS_FILE_IS_A_DIRECTORY)) {
+		/* We're only going to fail here if it's access denied, as that's the
+		   only error we care about for "can we delete this ?" questions. */
+		if (!NT_STATUS_IS_OK(status) && NT_STATUS_EQUAL(status,NT_STATUS_ACCESS_DENIED)) {
 			restore_case_semantics(conn, file_attributes);
 			END_PROFILE(SMBntcreateX);
 			return ERROR_NT(status);
