@@ -75,7 +75,9 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 
 	DEBUG(3, ("check_password:  mapped user is: [%s]\\[%s]@[%s]\n", 
 		  user_info->domain.str, user_info->internal_username.str, user_info->wksta_name.str));
-	DEBUG(10, ("auth_info challenge created by %s\n", auth_info->challenge_set_by));
+	if (auth_info->challenge_set_by) {
+		DEBUG(10, ("auth_info challenge created by %s\n", auth_info->challenge_set_by));
+	}
 	DEBUG(10, ("challenge is: \n"));
 	dump_data(5, (auth_info)->challenge.data, (auth_info)->challenge.length);
 
