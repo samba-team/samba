@@ -2644,6 +2644,8 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		sharename++;
 	}
 
+	asprintf(&sharename, "\\\\%s\\%s", server, sharename);
+
 	server_n = server;
 	
 	zero_ip(&ip);
