@@ -72,6 +72,7 @@ pid_file_delete (char **filename)
     }
 }
 
+#ifndef HAVE_PIDFILE
 static char *pidfile_path;
 
 static void
@@ -91,3 +92,4 @@ pidfile(const char *basename)
     pidfile_path = pid_file_write(basename);
     atexit(pidfile_cleanup);
 }
+#endif
