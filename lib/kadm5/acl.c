@@ -83,7 +83,7 @@ _kadm5_acl_init(kadm5_server_context *context)
     ret = krb5_principal_compare(context->context, context->caller, princ);
     krb5_free_principal(context->context, princ);
     if(ret != 0){
-	context->acl_flags = ~0;
+	context->acl_flags = KADM5_PRIV_ALL;
 	return 0;
     }
 
