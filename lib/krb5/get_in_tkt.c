@@ -352,20 +352,33 @@ add_padata(krb5_context context,
 	   krb5_principal client,
 	   krb5_key_proc key_proc,
 	   krb5_const_pointer keyseed,
-	   krb5_enctype enctype, 
+	   krb5_enctype *enctypes, 
+	   unsigned netypes,
 	   krb5_salt *salt)
 {
     krb5_error_code ret;
     PA_DATA *pa2;
     krb5_keyblock *key;
     krb5_salt salt2;
+    krb5_enctype *ep;
     
     if(salt == NULL) {
 	/* default to standard salt */
 	ret = krb5_get_pw_salt (context, client, &salt2);
 	salt = &salt2;
     }
-    ret = (*key_proc)(context, enctype, *salt, keyseed, &key);
+    if (!enctypes) {
+	enctypes = context->etypes; /* XXX */
+	netypes = 0;
+	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
+	    netypes++;
+    }
+    while (netypes--) {
+	ret = (*key_proc)(context, *enctypes, *salt, keyseed, &key);
+	if (ret != KRB5_KT_NOTFOUND)
+	    break;
+	enctypes++;
+    }
     if(salt == &salt2)
 	krb5_free_salt(context, salt2);
     if (ret)
@@ -374,7 +387,7 @@ add_padata(krb5_context context,
     if(pa2 == NULL)
 	return ENOMEM;
     md->val = pa2;
-    ret = make_pa_enc_timestamp(context, &md->val[md->len], enctype, key);
+    ret = make_pa_enc_timestamp(context, &md->val[md->len], *enctypes, key);
     krb5_free_keyblock (context, key);
     if(ret)
 	return ret;
@@ -397,7 +410,6 @@ init_as_req (krb5_context context,
 {
     krb5_error_code ret;
     krb5_salt salt;
-    krb5_enctype etype;
 
     memset(a, 0, sizeof(*a));
 
@@ -452,8 +464,6 @@ init_as_req (krb5_context context,
     if (ret)
 	goto fail;
 
-    etype = a->req_body.etype.val[0]; /* XXX */
-
     a->req_body.addresses = malloc(sizeof(*a->req_body.addresses));
     if (a->req_body.addresses == NULL) {
 	ret = ENOMEM;
@@ -504,7 +514,7 @@ init_as_req (krb5_context context,
 			    krb5_data_zero(&salt.saltvalue);
 		    add_padata(context, a->padata, creds->client, 
 			       key_proc, keyseed, 
-			       preauth->val[i].info.val[j].etype,
+			       &preauth->val[i].info.val[j].etype, 1,
 			       sp);
 		}
 	    }
@@ -524,13 +534,15 @@ init_as_req (krb5_context context,
 
 	/* make a v5 salted pa-data */
 	add_padata(context, a->padata, creds->client, 
-		   key_proc, keyseed, etype, NULL);
+		   key_proc, keyseed, a->req_body.etype.val,
+		   a->req_body.etype.len, NULL);
 	
 	/* make a v4 salted pa-data */
 	salt.salttype = KRB5_PW_SALT;
 	krb5_data_zero(&salt.saltvalue);
 	add_padata(context, a->padata, creds->client, 
-		   key_proc, keyseed, etype, &salt);
+		   key_proc, keyseed, a->req_body.etype.val,
+		   a->req_body.etype.len, &salt);
     } else {
 	ret = KRB5_PREAUTH_BAD_TYPE;
 	goto fail;
