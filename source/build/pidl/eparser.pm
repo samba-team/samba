@@ -288,11 +288,23 @@ sub NeededTypedef($)
 	if ($t->{DATA}->{TYPE} eq "ENUM") {
 
 	    $needed{"hf_$t->{NAME}"} = {
-		'name' => $t->{NAME},
+		'name' => field2name($t->{NAME}),
 		'ft' => 'FT_UINT16',
 		'base' => 'BASE_DEC',
 		'strings' => "VALS($t->{NAME}_vals)"
 		};
+	}
+
+	if ($t->{DATA}->{TYPE} eq "BITMAP") {
+	    foreach my $e (@{$t->{DATA}{ELEMENTS}}) {
+		$e =~ /^(.*?) \( (.*?) \)$/;
+		$needed{"hf_$t->{NAME}_$1"} = {
+		    'name' => "$t->{NAME} $1",
+		    'ft' => "FT_BOOLEAN",
+		    'base' => "32",
+		    'bitmask' => "$2"
+		    };
+	    }
 	}
 }
 
@@ -766,7 +778,8 @@ sub RewriteC($$$)
 	next, if !($x =~ /^hf_/);
 	pidl "\t{ &$x,\n";
 	$needed{$x}{strings} = "NULL", if !defined($needed{$x}{strings});
-	pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base}, $needed{$x}{strings}, 0, \"$x\", HFILL }},\n";
+	$needed{$x}{bitmask} = "0", if !defined($needed{$x}{bitmask});
+	pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base}, $needed{$x}{strings}, $needed{$x}{bitmask}, \"$x\", HFILL }},\n";
     }
 
     pidl "\t};\n\n";
