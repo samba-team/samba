@@ -21,26 +21,61 @@
 
 #include "includes.h"
 
+static void smbsh_usage(void)
+{
+	printf("smbsh [options]\n\n");
+	printf(" -W workgroup\n");
+	printf(" -U username\n");
+	printf(" -P prefix\n");
+	printf(" -R resolve order\n");
+	printf(" -d debug level\n");
+	printf(" -l logfile\n");
+	exit(0);
+}
+
 int main(int argc, char *argv[])
 {
 	char *p, *u;
 	char *libd = BINDIR;	
 	pstring line;
 	extern FILE *dbf;
+	int opt;
+	extern char *optarg;
+	extern int optind;
 
 	smbw_setup_shared();
 
-	p = getenv("SMBW_DEBUG");
-	if (p) smbw_setshared("DEBUG", p);
+	while ((opt = getopt(argc, argv, "W:U:R:d:P:l:h")) != EOF) {
+		switch (opt) {
+		case 'W':
+			smbw_setshared("WORKGROUP", optarg);
+			break;
+		case 'l':
+			smbw_setshared("LOGFILE", optarg);
+			break;
+		case 'P':
+			smbw_setshared("PREFIX", optarg);
+			break;
+		case 'd':
+			smbw_setshared("DEBUG", optarg);
+			break;
+		case 'U':
+			p = strchr(optarg,'%');
+			if (p) {
+				*p=0;
+				smbw_setshared("PASSWORD",p+1);
+			}
+			smbw_setshared("USER", optarg);
+			break;
+		case 'R':
+			smbw_setshared("RESOLVE_ORDER",optarg);
+			break;
 
-	p = getenv("SMBW_WORKGROUP");
-	if (p) smbw_setshared("WORKGROUP", p);
-
-	p = getenv("SMBW_USER");
-	if (p) smbw_setshared("USER", p);
-
-	p = getenv("SMBW_PASSWORD");
-	if (p) smbw_setshared("PASSWORD", p);
+		case 'h':
+		default:
+			smbsh_usage();
+		}
+	}
 
 	charset_initialise();
 
