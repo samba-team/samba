@@ -670,6 +670,32 @@ static BOOL krb5_auth(char *this_user,char *password)
 }
 #endif /* KRB5_AUTH */
 
+#ifdef KRB4_AUTH
+/*******************************************************************
+check on Kerberos authentication
+********************************************************************/
+static BOOL krb4_auth(char *this_user,char *password)
+{
+  char realm[REALM_SZ];
+  char tkfile[MAXPATHLEN];
+  
+  if (krb_get_lrealm(realm, 1) != KSUCCESS)
+    (void) strncpy(realm, KRB_REALM, sizeof (realm));
+  
+  (void) sprintf(tkfile, "/tmp/samba_tkt_%d", getpid());
+  
+  krb_set_tkt_string(tkfile);
+  if (krb_verify_user(this_user, "", realm,
+                     password, 0,
+                     "rmcd") == KSUCCESS) {
+    unlink(tkfile);
+    return 1;
+  }
+  unlink(tkfile);
+  return 0;
+}
+#endif /* KRB4_AUTH */
+
 #ifdef LINUX_BIGCRYPT
 /****************************************************************************
 an enhanced crypt for Linux to handle password longer than 8 characters
@@ -773,6 +799,10 @@ Hence we make a direct return to avoid a second chance!!!
 
 #ifdef KRB5_AUTH
   if (krb5_auth(this_user,password)) return(True);
+#endif
+
+#ifdef KRB4_AUTH
+  if (krb4_auth(this_user,password)) return(True);
 #endif
 
 #ifdef PWDAUTH
