@@ -2,11 +2,11 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include
-
 SUFFIXES = .x .et .h
 
-INCLUDES = -I../asn1 -I$(srcdir)/../asn1
+INCLUDES = $(WFLAGS) -I../asn1 -I$(srcdir)/../asn1
+
+COMPILE_ET = ../com_err/compile_et
 
 BUILT_SOURCES = asn1_Key.c asn1_Event.c asn1_HDBFlags.c asn1_hdb_entry.c \
 	asn1_Salt.c hdb_err.c hdb_err.h
@@ -23,7 +23,7 @@ include_HEADERS = hdb.h
 incdir = $(includedir)
 inc_DATA = hdb_err.h hdb_asn1.h
 
-libhdb_a_LIBADD = ../error/error.o
+libhdb_a_LIBADD = 
 
 idir = $(top_builddir)/include
 
@@ -46,8 +46,8 @@ $(libhdb_a_OBJECTS): hdb_asn1.h hdb_err.h
 	@cmp -s $< $@ 2> /dev/null || cp $< $@
 
 .et.h:
-	$(SHELL) ../error/compile_et $<
+	$(COMPILE_ET) $<
 
 .et.c:
-	$(SHELL) ../error/compile_et $<
+	$(COMPILE_ET) $<
 
