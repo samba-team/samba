@@ -9,6 +9,14 @@
                         <address><email>kpfeifle@danka.de</email></address>
 		</affiliation>
 	</author>
+	<author>
+		<firstname>Ciprian</firstname><surname>Vizitiu</surname>
+		<affiliation>
+			<address><email>CVizitiu@gbif.org</email></address>
+		</affiliation>
+		<contrib>drawings</contrib>
+	</author>
+
 	<pubdate> (3 June 2003) </pubdate>
 </chapterinfo>
 
@@ -16,190 +24,190 @@
 
 <sect1>
 
-<title>Introduction</title>
+	<title>Introduction</title>
 
-<sect2>
-<title>Features and Benefits</title>
+	<sect2>
+		<title>Features and Benefits</title>
 
-<para>
-The Common Unix Print System (<ulink
-url="http://www.cups.org/">CUPS</ulink>) has become very popular. All
-big Linux distributions now ship it as their default printing
-system. But to many it is still a very mystical tool.  Normally it
-"just works" (TM). People tend to regard it as a sort of "black box",
-which they don't want to look into, as long as it works OK. But once
-there is a little problem, they are in trouble to find out where to
-start debugging it. Also, even the most recent and otherwise excellent
-printed Samba documentation has only limited attention paid to CUPS
-printing, leaving out important pieces or even writing plain wrong
-things about it. This demands rectification.  But before you dive into
-this chapter, make sure that you don't forget to refer to the
-"Classical Printing" chapter also. It contains a lot of information
-that is relevant for CUPS too.
-</para>
+		<para>
+			The Common Unix Print System (<ulink
+				url="http://www.cups.org/">CUPS</ulink>) has become very popular. All
+			big Linux distributions now ship it as their default printing
+			system. But to many it is still a very mystical tool.  Normally it
+			"just works" (TM). People tend to regard it as a sort of "black box",
+			which they don't want to look into, as long as it works OK. But once
+			there is a little problem, they are in trouble to find out where to
+			start debugging it. Also, even the most recent and otherwise excellent
+			printed Samba documentation has only limited attention paid to CUPS
+			printing, leaving out important pieces or even writing plain wrong
+			things about it. This demands rectification.  But before you dive into
+			this chapter, make sure that you don't forget to refer to the
+			"Classical Printing" chapter also. It contains a lot of information
+			that is relevant for CUPS too.
+		</para>
 
-<para>
-CUPS sports quite a few unique and powerful features. While their
-basic functions may be grasped quite easily, they are also
-new. Because they are different from other, more traditional printing
-systems, it is best to try and not apply any prior knowledge about
-printing upon this new system. Rather try to start understand CUPS
-from the beginning. This documentation will lead you here to a
-complete understanding of CUPS, if you study all of the material
-contained. But lets start with the most basic things first. Maybe this
-is all you need for now. Then you can skip most of the other
-paragraphs.
-</para>
+		<para>
+			CUPS sports quite a few unique and powerful features. While their
+			basic functions may be grasped quite easily, they are also
+			new. Because they are different from other, more traditional printing
+			systems, it is best to try and not apply any prior knowledge about
+			printing upon this new system. Rather try to start understand CUPS
+			from the beginning. This documentation will lead you here to a
+			complete understanding of CUPS, if you study all of the material
+			contained. But lets start with the most basic things first. Maybe this
+			is all you need for now. Then you can skip most of the other
+			paragraphs.
+		</para>
 
-</sect2>
+	</sect2>
 
-<sect2>
-<title>Overview</title>
+	<sect2>
+		<title>Overview</title>
 
-<para>
-CUPS is more than just a print spooling system. It is a complete
-printer management system that complies with the new IPP
-(<emphasis>Internet Printing Protocol</emphasis>). IPP is an industry
-and IETF (<emphasis>Internet Engineering Task Force</emphasis>)
-standard for network printing. Many of its functions can be managed
-remotely (or locally) via a web browser (giving you a
-platform-independent access to the CUPS print server). In addition it
-has the traditional commandline and several more modern GUI interfaces
-(GUI interfaces developed by 3rd parties, like KDE's
-overwhelming <ulink
-url="http://printing.kde.org/">KDEPrint</ulink>).
-</para>
+		<para>
+			CUPS is more than just a print spooling system. It is a complete
+			printer management system that complies with the new IPP
+			(<emphasis>Internet Printing Protocol</emphasis>). IPP is an industry
+			and IETF (<emphasis>Internet Engineering Task Force</emphasis>)
+			standard for network printing. Many of its functions can be managed
+			remotely (or locally) via a web browser (giving you a
+			platform-independent access to the CUPS print server). In addition it
+			has the traditional commandline and several more modern GUI interfaces
+			(GUI interfaces developed by 3rd parties, like KDE's
+			overwhelming <ulink
+				url="http://printing.kde.org/">KDEPrint</ulink>).
+		</para>
 
-<para>
-CUPS allows creation of "raw" printers (ie: NO print file
-format translation) as well as "smart" printers (i.e. CUPS does
-file format conversion as required for the printer). In many ways
-this gives CUPS similar capabilities to the MS Windows print
-monitoring system. Of course, if you are a CUPS advocate, you would
-argue that CUPS is better! In any case, let us now move on to
-explore how one may configure CUPS for interfacing with MS Windows
-print clients via Samba.
-</para>
-</sect2>
+		<para>
+			CUPS allows creation of "raw" printers (ie: NO print file
+			format translation) as well as "smart" printers (i.e. CUPS does
+			file format conversion as required for the printer). In many ways
+			this gives CUPS similar capabilities to the MS Windows print
+			monitoring system. Of course, if you are a CUPS advocate, you would
+			argue that CUPS is better! In any case, let us now move on to
+			explore how one may configure CUPS for interfacing with MS Windows
+			print clients via Samba.
+		</para>
+	</sect2>
 </sect1>
 
 <sect1>
-<title>Basic Configuration of CUPS support</title>
+	<title>Basic Configuration of CUPS support</title>
 
-<para>
-Printing with CUPS in the most basic <filename>smb.conf</filename>
-setup in Samba 3.0 (as was true for 2.2.x) only needs two
-settings: <parameter>printing = cups</parameter> and <parameter>printcap
-= cups</parameter>. CUPS itself doesn't need a printcap file
-anymore. However, the <filename>cupsd.conf</filename> configuration
-file knows two related directives: they control if such a file should
-be automatically created and maintained by CUPS for the convenience of
-third party applications (example: <parameter>Printcap
-/etc/printcap</parameter> and <parameter>PrintcapFormat
-BSD</parameter>). These legacy programs often require the existence of
-printcap file containing printernames or they will refuse to
-print. Make sure CUPS is set to generate and maintain a printcap! For
-details see <command>man cupsd.conf</command> and other CUPS-related
-documentation, like the wealth of documents on your CUPS server
-itself: <ulink
-url="http://localhost:631/documentation.html">http://localhost:631/documentation.html</ulink>.
-</para>
+	<para>
+		Printing with CUPS in the most basic <filename>smb.conf</filename>
+		setup in Samba 3.0 (as was true for 2.2.x) only needs two
+		settings: <parameter>printing = cups</parameter> and <parameter>printcap
+			= cups</parameter>. CUPS itself doesn't need a printcap file
+		anymore. However, the <filename>cupsd.conf</filename> configuration
+		file knows two related directives: they control if such a file should
+		be automatically created and maintained by CUPS for the convenience of
+		third party applications (example: <parameter>Printcap
+			/etc/printcap</parameter> and <parameter>PrintcapFormat
+			BSD</parameter>). These legacy programs often require the existence of
+		printcap file containing printernames or they will refuse to
+		print. Make sure CUPS is set to generate and maintain a printcap! For
+		details see <command>man cupsd.conf</command> and other CUPS-related
+		documentation, like the wealth of documents on your CUPS server
+		itself: <ulink
+			url="http://localhost:631/documentation.html">http://localhost:631/documentation.html</ulink>.
+	</para>
 
-<sect2>
-<title>Linking of smbd with <filename>libcups.so</filename></title>
+	<sect2>
+		<title>Linking of smbd with <filename>libcups.so</filename></title>
 
-<para>
-Samba has a very special relationship to CUPS. The reason is: Samba
-can be compiled with CUPS library support. Most recent installations
-have this support enabled, and per default CUPS linking is compiled
-into smbd and other Samba binaries. Of course, you can use CUPS even
-if Samba is not linked against <filename>libcups.so</filename> -- but
-there are some differences in required or supported configuration
-then.
-</para>
+		<para>
+			Samba has a very special relationship to CUPS. The reason is: Samba
+			can be compiled with CUPS library support. Most recent installations
+			have this support enabled, and per default CUPS linking is compiled
+			into smbd and other Samba binaries. Of course, you can use CUPS even
+			if Samba is not linked against <filename>libcups.so</filename> -- but
+			there are some differences in required or supported configuration
+			then.
+		</para>
 
-<para>
-If SAMBA is compiled against libcups, then <parameter>printcap =
-cups</parameter> uses the CUPS API to list printers, submit jobs,
-query queues, etc.  Otherwise it maps to the System V commands with an
-additional <command>-oraw</command> option for printing. On a Linux
-system, you can use the <command>ldd</command> utility to find out
-details (ldd may not be present on other OS platforms, or its function
-may be embodied by a different command):
-</para>
+		<para>
+			If SAMBA is compiled against libcups, then <parameter>printcap =
+				cups</parameter> uses the CUPS API to list printers, submit jobs,
+			query queues, etc.  Otherwise it maps to the System V commands with an
+			additional <command>-oraw</command> option for printing. On a Linux
+			system, you can use the <command>ldd</command> utility to find out
+			details (ldd may not be present on other OS platforms, or its function
+			may be embodied by a different command):
+		</para>
 
-<para><screen>
- transmeta:/home/kurt # ldd `which smbd`
-        libssl.so.0.9.6 =&gt; /usr/lib/libssl.so.0.9.6 (0x4002d000)
-        libcrypto.so.0.9.6 =&gt; /usr/lib/libcrypto.so.0.9.6 (0x4005a000)
-        libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
-        [....]
-</screen></para>
+		<para><screen>
+				transmeta:/home/kurt # ldd `which smbd`
+				libssl.so.0.9.6 =&gt; /usr/lib/libssl.so.0.9.6 (0x4002d000)
+				libcrypto.so.0.9.6 =&gt; /usr/lib/libcrypto.so.0.9.6 (0x4005a000)
+				libcups.so.2 =&gt; /usr/lib/libcups.so.2 (0x40123000)
+				[....]
+		</screen></para>
 
-<para>
-The line <computeroutput>libcups.so.2 =&gt; /usr/lib/libcups.so.2
-(0x40123000)</computeroutput> shows there is CUPS support compiled
-into this version of Samba. If this is the case, and printing = cups
-is set, then <emphasis>any otherwise manually set print command in
-<filename>smb.conf</filename> is ignored</emphasis>. This is an
-important point to remember!
-</para>
+		<para>
+			The line <computeroutput>libcups.so.2 =&gt; /usr/lib/libcups.so.2
+				(0x40123000)</computeroutput> shows there is CUPS support compiled
+			into this version of Samba. If this is the case, and printing = cups
+			is set, then <emphasis>any otherwise manually set print command in
+				<filename>smb.conf</filename> is ignored</emphasis>. This is an
+			important point to remember!
+		</para>
 
-<tip><para> Should you require -- for any reason -- to set your own
-print commands, you can still do this by setting <parameter>printing =
-sysv</parameter>. However, you'll loose all the benefits from the
-close CUPS/Samba integration. You are on your own then to manually
-configure the rest of the printing system commands (most important:
-<parameter>print command</parameter>; other commands are
-<parameter>lppause command, lpresume command, lpq command, lprm
-command, queuepause command </parameter> and <parameter>queue resume
-command</parameter>).</para></tip>
-</sect2>
+		<tip><para> Should you require -- for any reason -- to set your own
+				print commands, you can still do this by setting <parameter>printing =
+					sysv</parameter>. However, you'll loose all the benefits from the
+				close CUPS/Samba integration. You are on your own then to manually
+				configure the rest of the printing system commands (most important:
+				<parameter>print command</parameter>; other commands are
+				<parameter>lppause command, lpresume command, lpq command, lprm
+					command, queuepause command </parameter> and <parameter>queue resume
+					command</parameter>).</para></tip>
+	</sect2>
 
-<sect2>
-<title>Simple <filename>smb.conf</filename> Settings for CUPS</title>
+	<sect2>
+		<title>Simple <filename>smb.conf</filename> Settings for CUPS</title>
 
-<para>
-To summarize, here is the simplest printing-related setup
-for<filename>smb.conf</filename> to enable basic CUPS support:
-</para>
+		<para>
+			To summarize, here is the simplest printing-related setup
+			for<filename>smb.conf</filename> to enable basic CUPS support:
+		</para>
 
-<para><screen>
+		<para><screen>
 
- [global]
-         load printers = yes
-         printing = cups
-         printcap name = cups
+				[global]
+				load printers = yes
+				printing = cups
+				printcap name = cups
 
- [printers]
-         comment = All Printers
-         path = /var/spool/samba
-         browseable = no
-         public = yes
-         guest ok = yes
-         writable = no
-         printable = yes
-         printer admin = root, @ntadmins
+				[printers]
+				comment = All Printers
+				path = /var/spool/samba
+				browseable = no
+				public = yes
+				guest ok = yes
+				writable = no
+				printable = yes
+				printer admin = root, @ntadmins
 
-</screen></para>
+		</screen></para>
 
-<para>
-This is all you need for basic printing setup for CUPS. It will print
-all Graphic, Text, PDF and PostScript file submitted from Windows
-clients. However, most of your Windows users would not know how to
-send these kind of files to print without opening a GUI
-application. Windows clients tend to have local printer drivers
-installed. And the GUI application's print buttons start a printer
-driver. Your users also very rarely send files from the command
-line. Unlike UNIX clients, they hardly submit graphic, text or PDF
-formatted files directly to the spooler. They nearly exclusively print
-from GUI applications, with a "printer driver" hooked in between the
-applications native format and the print data stream.  If the backend
-printer is not a PostScript device, the print data stream is "binary",
-sensible only for the target printer. Read on to learn which problem
-this may cause and how to avoid it.
-</para>
-</sect2>
+		<para>
+			This is all you need for basic printing setup for CUPS. It will print
+			all Graphic, Text, PDF and PostScript file submitted from Windows
+			clients. However, most of your Windows users would not know how to
+			send these kind of files to print without opening a GUI
+			application. Windows clients tend to have local printer drivers
+			installed. And the GUI application's print buttons start a printer
+			driver. Your users also very rarely send files from the command
+			line. Unlike UNIX clients, they hardly submit graphic, text or PDF
+			formatted files directly to the spooler. They nearly exclusively print
+			from GUI applications, with a "printer driver" hooked in between the
+			applications native format and the print data stream.  If the backend
+			printer is not a PostScript device, the print data stream is "binary",
+			sensible only for the target printer. Read on to learn which problem
+			this may cause and how to avoid it.
+		</para>
+	</sect2>
 
 <sect2>
 <title>More complex <filename>smb.conf</filename> Settings for
