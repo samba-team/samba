@@ -4,6 +4,8 @@
 # Start SUBSYSTEM LIBREPLACE
 [SUBSYSTEM::LIBREPLACE]
 INIT_OBJ_FILES = lib/replace.o
+ADD_OBJ_FILES = \
+		lib/snprintf.o
 # End SUBSYSTEM LIBREPLACE
 ##############################
 
@@ -23,7 +25,6 @@ ADD_OBJ_FILES = \
 		lib/time.o \
 		lib/genrand.o \
 		lib/username.o \
-		lib/snprintf.o \
 		lib/dprintf.o \
 		lib/xfile.o \
 		lib/wins_srv.o \
