@@ -31,11 +31,7 @@
  * SUCH DAMAGE. 
  */
 
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-#include <stdio.h>
-#include <string.h>
+#include "der_locl.h"
 #include <err.h>
 #include <roken.h>
 
@@ -88,6 +84,83 @@ test_integer (void)
 			 (generic_length) length_integer,
 			 (generic_decode)decode_integer,
 			 cmp_integer);
+}
+
+static int
+test_one_int(int val)
+{
+    int len, ret, len_len, dval;
+    unsigned char *buf;
+
+    len = _heim_len_int(val);
+
+    buf = emalloc(len + 2);
+
+    buf[0] = '\xff';
+    buf[len + 1] = '\xff';
+    memset(buf + 1, 0, len);
+
+    ret = der_put_int(buf + 1 + len - 1, len, val, &len_len);
+    if (ret) {
+	printf("integer %d encode failed %d\n", val, ret);
+	return 1;
+    }
+    if (len != len_len) {
+	printf("integer %d encode fail with %d len %d, result len %d\n",
+	       val, ret, len, len_len);
+	return 1;
+    }
+
+    ret = der_get_int(buf + 1, len, &dval, &len_len);
+    if (ret) {
+	printf("integer %d decode failed %d\n", val, ret);
+	return 1;
+    }
+    if (len != len_len) {
+	printf("integer %d decoded diffrent len %d != %d",
+	       val, len, len_len);
+	return 1;
+    }
+    if (val != dval) {
+	printf("decode decoded to diffrent value %d != %d",
+	       val, dval);
+	return 1;
+    }
+
+    if (buf[0] != (unsigned char)'\xff') {
+	printf("precanary dead %d\n", val);
+	return 1;
+    }
+    if (buf[len + 1] != (unsigned char)'\xff') {
+	printf("postecanary dead %d\n", val);
+	return 1;
+    }
+    free(buf);
+    return 0;
+}
+
+static int
+test_integer_more (void)
+{
+    int i, n1, n2, n3, n4, n5, n6;
+
+    n2 = 0;
+    for (i = 0; i < (sizeof(int) * 8); i++) {
+	n1 = 0x01 << i;
+	n2 = n2 | n1;
+	n3 = ~n1;
+	n4 = ~n2;
+	n5 = (-1) & ~(0x3f << i);
+	n6 = (-1) & ~(0x7f << i);
+
+	test_one_int(n1);
+	test_one_int(n2);
+	test_one_int(n3);
+	test_one_int(n4);
+	test_one_int(n5);
+	test_one_int(n6);
+    }
+    return 0;
 }
 
 static int
@@ -226,6 +299,7 @@ main(int argc, char **argv)
     int ret = 0;
 
     ret += test_integer ();
+    ret += test_integer_more();
     ret += test_unsigned ();
     ret += test_octet_string ();
     ret += test_general_string ();
