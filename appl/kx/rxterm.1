@@ -1,4 +1,4 @@
-.\" Copyright (c) 1996 - 1997, 2001 - 2002 Kungliga Tekniska Högskolan
+.\" Copyright (c) 1996 - 1997, 2001 - 2003 Kungliga Tekniska Högskolan
 .\" (Royal Institute of Technology, Stockholm, Sweden). 
 .\" All rights reserved. 
 .\"
@@ -31,7 +31,7 @@
 .\" 
 .\" $Id$
 .\"
-.Dd September 27, 1996
+.Dd April 11, 2003
 .Dt RXTERM 1
 .Os KTH_KRB
 .Sh NAME
@@ -52,12 +52,12 @@ start a secure remote xterm
 .Sh DESCRIPTION
 The
 .Nm
-program starts a
+program starts an
 .Nm xterm
 window on host
 .Ar host .
 From this window you will also be able to run X clients that will be
-able to connect securily to your X server. If
+able to connect securely to your X server. If
 .Ar port
 is given, that port will be used instead of the default.
 .Pp
@@ -65,24 +65,24 @@ The supported options are:
 .Bl -tag -width Ds
 .It Fl l
 Log in on the remote host as user
-.Ar username
+.Ar username .
 .It Fl k
-Disable keep-alives
+Disable keep-alives.
 .It Fl r
 Send
 .Ar rsh_args
 as arguments to
-.Nm rsh
+.Nm rsh .
 .It Fl x
 Send
 .Ar xterm_args
 as arguments to
-.Nm xterm
+.Nm xterm .
 .It Fl X
 Send
 .Ar kx_args
 as arguments to
-.Nm kx
+.Nm kx .
 .It Fl w
 Use
 .Ar term_emulator

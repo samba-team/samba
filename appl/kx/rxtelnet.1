@@ -54,12 +54,12 @@ start a telnet and forward X-connections.
 .Sh DESCRIPTION
 The
 .Nm
-program starts a
+program starts an
 .Nm xterm
 window with a telnet to host
 .Ar host .
 From this window you will also be able to run X clients that will be
-able to connect securily to your X server. If
+able to connect securely to your X server. If
 .Ar port
 is given, that port will be used instead of the default.
 .Pp
@@ -67,24 +67,24 @@ The supported options are:
 .Bl -tag -width Ds
 .It Fl l
 Log in on the remote host as user
-.Ar username
+.Ar username .
 .It Fl k
-Disables keep-alives
+Disables keep-alives.
 .It Fl t
 Send
 .Ar telnet_args
 as arguments to
-.Nm telnet
+.Nm telnet .
 .It Fl x
 Send
 .Ar xterm_args
 as arguments to
-.Nm xterm
+.Nm xterm .
 .It Fl X
 Send
 .Ar kx_args
 as arguments to
-.Nm kx
+.Nm kx .
 .It Fl w
 Use
 .Ar term_emulator
