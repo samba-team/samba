@@ -199,7 +199,7 @@ typedef struct krb5_keytab_entry {
 } krb5_keytab_entry;
 
 typedef struct krb5_kt_cursor {
-  int foo;
+  int fd;
 } krb5_kt_cursor;
 
 typedef struct krb5_auth_context{
