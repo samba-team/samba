@@ -1380,7 +1380,7 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	fstrcpy(info.servername, global_myname);
 	fstrcpy(info.printername, sharename);
-	fstrcpy(info.portname, sharename);
+	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 	pstrcpy(info.comment, "");
 	fstrcpy(info.printprocessor, "winprint");
@@ -1398,10 +1398,8 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	if ((info.devmode = construct_nt_devicemode(info.printername)) == NULL)
 		goto fail;
 
-#if 1
 	if (!nt_printing_getsec(sharename, &info.secdesc_buf))
 		goto fail;
-#endif
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
 	if (! *info_ptr) {
@@ -1438,7 +1436,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 
 	dbuf = tdb_fetch(tdb, kbuf);
 #if 1 /* JRATEST */
-	if (!dbuf.dptr) return get_a_printer_2_default(info_ptr, sharename);
+	if (!dbuf.dptr)
+		return get_a_printer_2_default(info_ptr, sharename);
 #else
 	if (!dbuf.dptr) return 1;
 #endif
@@ -1543,12 +1542,31 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	return (success);
 }
 
+/****************************************************************************
+ Get the parameters we can substitute in an NT print job.
+****************************************************************************/
+
+void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+
+	**printername = **sharename = **portname = '\0';
+
+	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
+		return;
+
+	fstrcpy(*printername, printer->info_2->printername);
+	fstrcpy(*sharename, printer->info_2->sharename);
+	fstrcpy(*portname, printer->info_2->portname);
+
+	free_a_printer(&printer, 2);
+}
+
 /*
  * The function below are the high level ones.
  * only those ones must be called from the spoolss code.
  * JFM.
  */
-
 
 /****************************************************************************
 ****************************************************************************/
@@ -1827,10 +1845,10 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 	return (False);
 }
 
-
 /****************************************************************************
-store a security desc for a printer
+ Store a security desc for a printer.
 ****************************************************************************/
+
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL;
@@ -2160,4 +2178,34 @@ BOOL print_access_check(struct current_user *user, int snum,
 
 	return result;
 }
+
+/****************************************************************************
+ Check the time parameters allow a print operation.
+*****************************************************************************/
+
+BOOL print_time_access_check(int snum)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	BOOL ok = False;
+	time_t now = time(NULL);
+	struct tm *t;
+	uint32 mins;
+
+	if (get_a_printer(&printer, 2, lp_servicename(snum))!=0)
+		return False;
+
+	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)
+		ok = True;
+
+	t = gmtime(&now);
+	mins = (uint32)t->tm_hour*60 + (uint32)t->tm_min;
+
+	if (mins >= printer->info_2->starttime && mins <= printer->info_2->untiltime)
+		ok = True;
+
+	free_a_printer(&printer, 2);
+
+	return ok;
+}
+
 #undef OLD_NTDOMAIN

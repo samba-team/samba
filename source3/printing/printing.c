@@ -716,8 +716,9 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 }
 
 /****************************************************************************
-print a file - called on closing the file. This spools the job
+ Print a file - called on closing the file. This spools the job.
 ****************************************************************************/
+
 BOOL print_job_end(int jobid)
 {
 	struct printjob *pjob = print_job_find(jobid);
@@ -728,13 +729,16 @@ BOOL print_job_end(int jobid)
 	char *wd, *p;
 	pstring jobname;
 
-	if (!pjob) return False;
+	if (!pjob)
+		return False;
 
-	if (pjob->spooled || pjob->pid != local_pid) return False;
+	if (pjob->spooled || pjob->pid != local_pid)
+		return False;
 
 	snum = print_job_snum(jobid);
 
-	if (sys_fstat(pjob->fd, &sbuf) == 0) pjob->size = sbuf.st_size;
+	if (sys_fstat(pjob->fd, &sbuf) == 0)
+		pjob->size = sbuf.st_size;
 
 	close(pjob->fd);
 	pjob->fd = -1;
@@ -749,14 +753,17 @@ BOOL print_job_end(int jobid)
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
 	wd = sys_getwd(current_directory);
-	if (!wd) return False;		
+	if (!wd)
+		return False;		
 
 	pstrcpy(print_directory, pjob->filename);
 	p = strrchr(print_directory,'/');
-	if (!p) return False;
+	if (!p)
+		return False;
 	*p++ = 0;
 
-	if (chdir(print_directory) != 0) return False;
+	if (chdir(print_directory) != 0)
+		return False;
 
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
@@ -780,10 +787,10 @@ BOOL print_job_end(int jobid)
 	return True;
 }
 
-
 /****************************************************************************
-check if the print queue has been updated recently enough
+ Check if the print queue has been updated recently enough.
 ****************************************************************************/
+
 static BOOL print_cache_expired(int snum)
 {
 	fstring key;

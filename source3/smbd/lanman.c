@@ -707,23 +707,21 @@ static int get_printerdrivernumber(int snum)
 	} else {
 		/* didn't find driver in tdb */
 	
-	DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
+		DEBUG(10,("snum: %d\nlp_printerdriver: [%s]\nlp_driverfile: [%s]\n",
 			  snum, lp_printerdriver(snum), lp_driverfile(snum)));
 		
-	lines = file_lines_load(lp_driverfile(snum), NULL);
-	if (!lines) {
+		lines = file_lines_load(lp_driverfile(snum), NULL);
+		if (!lines) {
 			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
-	}
-	else
-	{
+		} else {
 			/* lookup the long printer driver name in the file description */
-		for (i=0;lines[i] && !ok;i++) {
-		p = lines[i];
-		if (next_token(&p,tok,":",sizeof(tok)) &&
-				(strlen(lp_printerdriver(snum)) == strlen(tok)) &&
-		    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
+			for (i=0;lines[i] && !ok;i++) {
+				p = lines[i];
+				if (next_token(&p,tok,":",sizeof(tok)) &&
+						(strlen(lp_printerdriver(snum)) == strlen(tok)) &&
+					    (!strncmp(tok,lp_printerdriver(snum),strlen(lp_printerdriver(snum))))) 
 					ok = True;
-	}
+			}
 		}
 	}
 	
@@ -741,7 +739,7 @@ static int get_printerdrivernumber(int snum)
 			i++;
 	
 		file_lines_free(lines);
-	return(i);
+		return(i);
 	}
 
   err:
@@ -861,10 +859,10 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
   return(True);
 }
 
-
 /****************************************************************************
-  view list of all print jobs on all queues
-  ****************************************************************************/
+ View list of all print jobs on all queues.
+****************************************************************************/
+
 static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param, char* data,
  			      int mdrcnt, int mprcnt,
  			      char **rdata, char** rparam,
