@@ -1594,9 +1594,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
   BOOL bad_path = False;
   files_struct *fsp = NULL;
 
-  if (!CAN_WRITE(conn))
-    return(ERROR(ERRSRV,ERRaccess));
-
   if (tran_call == TRANSACT2_SETFILEINFO) {
     fsp = file_fsp(params,0);
     info_level = SVAL(params,2);    
@@ -1618,6 +1615,20 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
         }
         return(UNIXERROR(ERRDOS,ERRbadpath));
       }
+    } else if (fsp->print_file) {
+        /*
+         * Doing a DELETE_ON_CLOSE should cancel a print job.
+         */
+        if ((info_level == SMB_SET_FILE_DISPOSITION_INFO) && CVAL(pdata,0)) {
+          fsp->share_mode = FILE_DELETE_ON_CLOSE;
+
+          DEBUG(3,("call_trans2setfilepathinfo: Cancelling print job (%s)\n",
+               fsp->fsp_name ));
+
+          SSVAL(params,0,0);
+          send_trans2_replies(outbuf, bufsize, params, 2, *ppdata, 0);
+          return(-1);
+        }
     } else {
       /*
        * Original code - this is an open file.
@@ -1659,6 +1670,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRbadpath));
     }    
   }
+
+  if (!CAN_WRITE(conn))
+    return(ERROR(ERRSRV,ERRaccess));
 
   DEBUG(3,("call_trans2setfilepathinfo(%d) %s info_level=%d totdata=%d\n",
 	   tran_call,fname,info_level,total_data));
