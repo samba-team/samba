@@ -26,6 +26,7 @@
 
 #include "includes.h"
 #include "trans2.h"
+#include "nterr.h"
 
 /* look in server.c for some explanation of these variables */
 extern int Protocol;
@@ -498,7 +499,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
      DEBUG(4,("Rejecting workstation trust account %s",user));
      SSVAL(outbuf, smb_flg2, 0xc003); /* PAXX: Someone please unhack this */
      CVAL(outbuf, smb_reh) = 1; /* PAXX: Someone please unhack this */
-     return(ERROR(0x99,0xc000)); /* 0x99 NT error, 0xc00 */
+     return(ERROR(NT_STATUS_ALLOTTED_SPACE_EXCEEDED, 0xc000)); /* 0x99 NT error, 0xc00 */
    }
    computer_id = True;
 #else /* not NTDOMAIN, leave this in. PAXX: Someone get rid of this */
