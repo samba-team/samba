@@ -860,11 +860,4 @@ AC_TRY_RUN([#include "${srcdir-.}/tests/summary.c"],
            echo "configure OK";,
 	   AC_MSG_ERROR([summary failure. Aborting config]),:)
 
-DUMMY_FILES=`cd ${srcdir-.} >/dev/null &&
-	     echo */. | sed 's, ,dummy ,g;s,$,dummy,'`
-AC_SUBST(DUMMY_FILES)
-DUMMY_BASE=:include/stamp-h.in
-AC_SUBST(DUMMY_BASE)
-
-DUMMY_GEN=`echo "$DUMMY_FILES" | sed "s, ,$DUMMY_BASE ,g;s,\$,$DUMMY_BASE,"`
-AC_OUTPUT($DUMMY_GEN Makefile include/stamp-h)
+AC_OUTPUT(include/stamp-h Makefile)
