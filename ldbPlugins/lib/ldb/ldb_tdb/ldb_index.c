@@ -124,7 +124,7 @@ static int ltdb_index_dn_simple(struct ldb_module *module,
 	/*
 	  if the value is a wildcard then we can't do a match via indexing
 	*/
-	if (ltdb_has_wildcard(ldb, tree->u.simple.attr, &tree->u.simple.value)) {
+	if (ltdb_has_wildcard(module, tree->u.simple.attr, &tree->u.simple.value)) {
 		return -1;
 	}
 
@@ -526,7 +526,7 @@ static int ldb_index_filter(struct ldb_module *module, struct ldb_parse_tree *tr
 		}
 
 		if (ldb_message_match(module, &msg, tree, base, scope) == 1) {
-			ret = ltdb_add_attr_results(ldb, &msg, attrs, &count, res);
+			ret = ltdb_add_attr_results(module, &msg, attrs, &count, res);
 		}
 		ltdb_search_dn1_free(module, &msg);
 		if (ret != 0) {
