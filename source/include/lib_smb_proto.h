@@ -23,74 +23,6 @@ void MD5Update(struct MD5Context *ctx, uchar const *buf, unsigned len);
 void MD5Final(uchar digest[16], struct MD5Context *ctx);
 void MD5Transform(uint32 buf[4], const uchar inext[64]);
 
-/*The following definitions come from  lib/util_hnd.c  */
-
-struct policy_cache *get_global_hnd_cache(void);
-struct policy_cache *init_policy_cache(int num_pol_hnds);
-void free_policy_cache(struct policy_cache *cache);
-BOOL policy_hnd_set_name(struct policy_cache *cache,
-			 POLICY_HND *hnd, const char *name);
-const char *policy_hnd_get_name(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from);
-BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev);
-void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL policy_hnd_set_state_type(struct policy_cache *cache,
-			       POLICY_HND *hnd, int type);
-int policy_hnd_get_state_type(struct policy_cache *cache,
-			      const POLICY_HND *hnd);
-BOOL policy_hnd_check_state_type(struct policy_cache *cache,
-				 const POLICY_HND *hnd, int type);
-BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
-BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to);
-const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16]);
-
-/*The following definitions come from  lib/vuser.c  */
-
-BOOL is_valid_user_struct(const vuser_key * key);
-user_struct *get_valid_user_struct(const vuser_key * key);
-void invalidate_vuid(vuser_key * key);
-BOOL validated_username(vuser_key * key, char *name, size_t len);
-uint16 create_vuid(pid_t pid,
-		   uid_t uid, gid_t gid,
-		   int n_groups, gid_t * groups,
-		   const char *unix_name,
-		   const char *requested_name,
-		   const char *real_name,
-		   BOOL guest, const NET_USER_INFO_3 * info3);
-uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
-		     const char *unix_name,
-		     const char *requested_name,
-		     BOOL guest, const NET_USER_INFO_3 * info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
-
-/*The following definitions come from  lib/vuser_db.c  */
-
-BOOL tdb_delete_vuid( const vuser_key *uk);
-BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
-BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
-BOOL vuid_init_db(void);
-
 /*The following definitions come from  libsmb/clientgen.c  */
 
 int cli_set_port(struct cli_state *cli, int port);
@@ -263,15 +195,14 @@ void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw);
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
 void SMBencrypt(uchar * pwrd, uchar * c8, uchar * p24);
-void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24);
 void E_md4hash(uchar * pwrd, uchar * p16);
-void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16]);
 void lm_owf_gen(const char *pwd, uchar p16[16]);
-void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16]);
 void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
-void nt_lm_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void SMBOWFencrypt(const uchar pwrd[16], const uchar * c8, uchar p24[24]);
+void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
+		       uchar p24[24]);
+void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24);
 void SMBOWFencrypt_ntv2(const uchar kr[16],
 			const uchar * srv_chal, int srv_chal_len,
 			const uchar * cli_chal, int cli_chal_len,
@@ -285,18 +216,16 @@ void SMBgenclientchals(char *lm_cli_chal,
 		       const char *srv, const char *dom);
 void ntv2_owf_gen(const uchar owf[16],
 		  const char *user_n, const char *domain_n, uchar kr_buf[16]);
-void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
-				uchar p24[24]);
+void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16]);
+void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
+void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 BOOL make_oem_passwd_hash(uchar data[516],
 			  const char *pwrd, int new_pw_len,
 			  const uchar old_pw_hash[16], BOOL unicode);
 BOOL nt_encrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key);
 BOOL nt_decrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key);
-void create_ntlmssp_resp(struct pwd_info *pwd,
-			 char *domain, char *user_name, char *my_name,
-			 uint32 ntlmssp_cli_flgs, prs_struct * auth_resp);
 BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 * new_pw_len);
+		      int new_pwrd_size, uint32 *new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 		      int new_pw_len, BOOL nt_pass_set);
 
@@ -306,6 +235,74 @@ char *smb_err_msg(uint8 class, uint32 num);
 BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
+
+/*The following definitions come from  lib/util_hnd.c  */
+
+struct policy_cache *get_global_hnd_cache(void);
+struct policy_cache *init_policy_cache(int num_pol_hnds);
+void free_policy_cache(struct policy_cache *cache);
+BOOL policy_hnd_set_name(struct policy_cache *cache,
+			 POLICY_HND *hnd, const char *name);
+const char *policy_hnd_get_name(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL dup_policy_hnd(struct policy_cache *cache,
+				POLICY_HND *hnd,
+				const POLICY_HND *from);
+BOOL register_policy_hnd(struct policy_cache *cache,
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache, 
+				const vuser_key *key,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache, 
+				const POLICY_HND *parent_hnd,
+				POLICY_HND *hnd,
+				uint32 access_mask);
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
+				void(*fn)(void*), void *dev);
+void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL policy_hnd_set_state_type(struct policy_cache *cache,
+			       POLICY_HND *hnd, int type);
+int policy_hnd_get_state_type(struct policy_cache *cache,
+			      const POLICY_HND *hnd);
+BOOL policy_hnd_check_state_type(struct policy_cache *cache,
+				 const POLICY_HND *hnd, int type);
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
+BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
+				POLICY_HND *to);
+const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
+				const POLICY_HND *hnd);
+BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
+				uchar usr_sess_key[16]);
+
+/*The following definitions come from  lib/vuser.c  */
+
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
+uint16 create_vuid(pid_t pid,
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
+uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
+
+/*The following definitions come from  lib/vuser_db.c  */
+
+BOOL tdb_delete_vuid( const vuser_key *uk);
+BOOL tdb_lookup_vuid( const vuser_key *uk, user_struct **usr);
+BOOL tdb_store_vuid( const vuser_key *uk, user_struct *usr);
+BOOL vuid_init_db(void);
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
@@ -579,25 +576,34 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 
 /*The following definitions come from  rpc_parse/parse_ntlmssp.c  */
 
-BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH *rai);
-BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
-				uint32 neg_flgs,
-				fstring myname, fstring domain);
-BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL *chl,
-				uint32 neg_flags,
-				uint8 challenge[8]);
-BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL *chl, prs_struct *ps, int depth);
-BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
-				uchar lm_resp[24],
-				uchar *nt_resp, size_t nt_len,
-				char *domain, char *user, char *wks,
-				uint32 neg_flags);
-BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_struct *ps, int depth);
-BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num);
-BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk,
-				uint32 ver, uint32 crc32, uint32 seq_num);
-BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_struct *ps, int depth);
+BOOL rpc_hdr_ntlmssp_auth_chk(RPC_HDR_AUTH * rai);
+BOOL make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG * neg,
+			       uint32 neg_flgs,
+			       fstring myname, fstring domain);
+BOOL smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG * neg,
+				 prs_struct *ps, int depth);
+BOOL make_rpc_auth_ntlmssp_chal(RPC_AUTH_NTLMSSP_CHAL * chl,
+				uint32 neg_flags, uint8 challenge[8]);
+BOOL smb_io_rpc_auth_ntlmssp_chal(char *desc, RPC_AUTH_NTLMSSP_CHAL * chl,
+				  prs_struct *ps, int depth);
+void create_ntlmssp_resp(const uchar lm_owf[24], const uchar nt_owf[128],
+			 size_t nt_owf_len,
+			 const char *domain, const char *user_name,
+			 const char *my_name, uint32 ntlmssp_cli_flgs,
+			 prs_struct *auth_resp);
+BOOL make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP * rsp,
+				const uchar lm_resp[24],
+				const uchar * nt_resp, size_t nt_len,
+				const char *domain, const char *user,
+				const char *wks, uint32 neg_flags);
+BOOL smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP * rsp,
+				  prs_struct *ps, int depth);
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK * chk, uint32 crc32,
+			  uint32 seq_num);
+BOOL make_rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK * chk,
+			       uint32 ver, uint32 crc32, uint32 seq_num);
+BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK * chk,
+				 prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 

@@ -3147,6 +3147,10 @@ BOOL cli_establish_connection(struct cli_state *cli,
 		char *p;
 		char *e = pwd_buf + sizeof(pwd_buf);
 
+		uchar lm_owf[24];
+		uchar nt_owf[128];
+		size_t nt_owf_len;
+
 		/* 1st session setup */
 		uchar pwd_data[34] =
 		{
@@ -3248,7 +3252,9 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			           cli->nt.usr_sess_key);
 		}
 
-		create_ntlmssp_resp(&cli->usr.pwd, cli->usr.domain,
+		pwd_get_lm_nt_owf(&cli->usr.pwd, lm_owf, nt_owf, &nt_owf_len);
+
+		create_ntlmssp_resp(lm_owf, nt_owf, nt_owf_len, cli->usr.domain,
 				     cli->usr.user_name, cli->calling.name,
 				     ntlmssp_flgs,
 				     &auth_resp);

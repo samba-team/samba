@@ -432,6 +432,9 @@ static BOOL create_ntlmssp_rpc_bind_resp(struct pwd_info *pwd,
 	RPC_HDR           hdr;
 	RPC_HDR_AUTHA     hdr_autha;
 	RPC_AUTH_VERIFIER auth_verifier;
+	uchar lm_owf[24];
+	uchar nt_owf[128];
+	size_t nt_owf_len;
 
 	make_rpc_hdr_autha(&hdr_autha, 0x1630, 0x1630, 0x0a, 0x06, 0x00);
 	smb_io_rpc_hdr_autha("hdr_autha", &hdr_autha, rhdr_autha, 0);
@@ -443,7 +446,10 @@ static BOOL create_ntlmssp_rpc_bind_resp(struct pwd_info *pwd,
 	smb_io_rpc_auth_verifier("auth_verifier", &auth_verifier, auth_resp, 0);
 	prs_realloc_data(auth_resp, auth_resp->offset);
 
-	create_ntlmssp_resp(pwd, domain, user_name, my_name, ntlmssp_cli_flgs,
+	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
+
+	create_ntlmssp_resp(lm_owf, nt_owf, nt_owf_len,
+			domain, user_name, my_name, ntlmssp_cli_flgs,
                                 auth_resp);
 
 	/* create the request RPC_HDR */

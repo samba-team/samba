@@ -123,7 +123,7 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 	char pwrd[15];
 
 	ZERO_STRUCT(pwrd);
-	
+
 	if (pwd != NULL)
 	{
 		safe_strcpy(pwrd, pwd, sizeof(pwrd) - 1);
@@ -189,7 +189,7 @@ void SMBOWFencrypt(const uchar pwrd[16], const uchar * c8, uchar p24[24])
 
 /* Does the des encryption from the FIRST 8 BYTES of the NT or LM MD4 hash. */
 void NTLMSSPOWFencrypt(const uchar pwrd[8], const uchar * ntlmchalresp,
-				uchar p24[24])
+		       uchar p24[24])
 {
 	uchar p21[21];
 
@@ -362,7 +362,7 @@ void ntv2_owf_gen(const uchar owf[16],
 }
 
 /* Does the LM owf of a user's password */
-void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
+void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16])
 {
 	char pwrd[15];
 
@@ -390,14 +390,14 @@ void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
 }
 
 /* Does both the NT and LM owfs of a user's password */
-void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
+void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16])
 {
 	char buf[512];
 	int i;
-	
-	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf)/2); i++)
+
+	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf) / 2); i++)
 	{
-		SIVAL(buf, i*2, pwd->buffer[i]);
+		SIVAL(buf, i * 2, pwd->buffer[i]);
 	}
 	/* Calculate the MD4 hash (NT compatible) of the password */
 	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
@@ -410,7 +410,7 @@ void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
 }
 
 /* Does both the NT and LM owfs of a user's UNICODE password */
-void nt_lm_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16], uchar lm_p16[16])
+void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16])
 {
 	nt_owf_genW(pwd, nt_p16);
 	lm_owf_genW(pwd, lm_p16);
@@ -547,40 +547,11 @@ BOOL nt_decrypt_string2(STRING2 * out, const STRING2 * in, const uchar * key)
 	return True;
 }
 
-/*******************************************************************
- creates a DCE/RPC bind authentication response
-
- - initialises the parse structure.
- - dynamically allocates the header data structure
- - caller is expected to free the header data structure once used.
-
- ********************************************************************/
-void create_ntlmssp_resp(struct pwd_info *pwd,
-			 char *domain, char *user_name, char *my_name,
-			 uint32 ntlmssp_cli_flgs, prs_struct * auth_resp)
-{
-	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
-	uchar lm_owf[24];
-	uchar nt_owf[128];
-	size_t nt_owf_len;
-
-	pwd_get_lm_nt_owf(pwd, lm_owf, nt_owf, &nt_owf_len);
-
-	make_rpc_auth_ntlmssp_resp(&ntlmssp_resp,
-				   lm_owf, nt_owf, nt_owf_len,
-				   domain, user_name, my_name,
-				   ntlmssp_cli_flgs);
-
-	smb_io_rpc_auth_ntlmssp_resp("ntlmssp_resp", &ntlmssp_resp, auth_resp,
-				     0);
-	prs_realloc_data(auth_resp, auth_resp->offset);
-}
-
 /***********************************************************
  decode a password buffer
 ************************************************************/
 BOOL decode_pw_buffer(const char buffer[516], char *new_pwrd,
-		      int new_pwrd_size, uint32 * new_pw_len)
+		      int new_pwrd_size, uint32 *new_pw_len)
 {
 	/* 
 	 * The length of the new password is in the last 4 bytes of

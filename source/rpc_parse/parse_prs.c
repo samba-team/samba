@@ -566,7 +566,7 @@ void prs_switch_type(prs_struct *ps, BOOL io)
 }
 
 /*******************************************************************
- Force a prs_struct to be dynamic even when it's size is 0.
+ Force a prs_struct to be dynamic even when its size is 0.
  ********************************************************************/
 
 void prs_force_dynamic(prs_struct *ps)
