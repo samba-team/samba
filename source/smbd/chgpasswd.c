@@ -311,8 +311,8 @@ static int talktochild(int master, char *seq)
 	if (!strequal(issue, ".")) {
 		/* we have one final issue to send */
 		fstrcpy(expected, ".");
-		/* always does a return True when only sending */
-		(void)expect(master, issue, expected);
+		if (!expect(master, issue, expected))
+			return False;
 	}
 
 	return (count > 0);
