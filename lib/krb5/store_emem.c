@@ -24,9 +24,8 @@ static size_t
 emem_store(krb5_storage *sp, void *data, size_t size)
 {
     emem_storage *s = (emem_storage*)sp->data;
-    size_t sz = size - (s->base + s->size - s->ptr);
-    if(sz > 0){
-	s->size = 2 * (s->size + sz);
+    if(size > s->base + s->size - s->ptr){
+	s->size = 2 * (size + (s->ptr - s->base)); /* XXX */
 	s->base = realloc(s->base, s->size);
     }
     memmove(s->ptr, data, size);
@@ -40,17 +39,20 @@ emem_seek(krb5_storage *sp, off_t offset, int whence)
     emem_storage *s = (emem_storage*)sp->data;
     switch(whence){
     case SEEK_SET:
-	if(offset > s->len)
-	    offset = s->len;
+	if(offset > s->size)
+	    offset = s->size;
 	if(offset < 0)
 	    offset = 0;
 	s->ptr = s->base + offset;
+	if(offset > s->len)
+	    s->len = offset;
 	break;
     case SEEK_CUR:
 	sp->seek(sp,s->ptr - s->base + offset, SEEK_SET);
 	break;
     case SEEK_END:
 	sp->seek(sp, s->len + offset, SEEK_SET);
+	break;
     default:
 	errno = EINVAL;
 	return -1;
