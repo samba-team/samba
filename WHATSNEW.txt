@@ -1,5 +1,5 @@
-                   WHATS NEW IN Samba 3.0.0 RC3
-                          September 8, 2003
+                     WHATS NEW IN Samba 3.0.0 
+                         September XX, 2003
                   ==============================
 
 This is the third release candidate snapshot of Samba 3.0.0. A release 
@@ -560,11 +560,12 @@ Removed Parameters (order alphabetically):
   * domain guest group
   * force unknown acl user
   * nt smb support
-  * post script
+  * postscript
   * printer driver
   * printer driver file
   * printer driver location
   * status
+  * strip dot
   * total print jobs
   * use rhosts
   * valid chars
@@ -655,7 +656,7 @@ New Parameters (new parameters have been grouped by function):
   General Configuration
   ---------------------
   * preload modules
-  * privatedir
+  * private dir
 
 Modified Parameters (changes in behavior):
 
