@@ -20,14 +20,18 @@ endif
 libroken_la_SOURCES =		\
 	base64.c		\
 	concat.c		\
+	copyhostent.c		\
 	emalloc.c		\
 	eread.c			\
 	erealloc.c		\
 	estrdup.c		\
 	ewrite.c		\
+	freehostent.c		\
 	get_default_username.c	\
 	get_window_size.c	\
 	getarg.c		\
+	getipnodebyaddr.c	\
+	getipnodebyname.c	\
 	inaddr2str.c		\
 	issuid.c		\
 	k_getpwnam.c		\
