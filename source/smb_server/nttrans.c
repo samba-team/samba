@@ -188,7 +188,7 @@ void reply_nttrans(struct smbsrv_request *req)
 	/* its a full request, give it to the backend */
 	status = nttrans_backend(req, &trans);
 
-	if (!NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_ERR(status)) {
 		req_reply_error(req, status);
 		return;
 	}
@@ -198,14 +198,19 @@ void reply_nttrans(struct smbsrv_request *req)
 	params      = trans.out.params.data;
 	data        = trans.out.data.data;
 
+	req_setup_reply(req, 18 + trans.out.setup_count, 0);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		req_setup_error(req, status);
+	}
+
 	/* we need to divide up the reply into chunks that fit into
 	   the negotiated buffer size */
 	do {
 		uint16_t this_data, this_param, max_bytes;
 		uint_t align1 = 1, align2 = (params_left ? 2 : 0);
+		struct smbsrv_request *this_req;
 
-		req_setup_reply(req, 18 + trans.out.setup_count, 0);
-	
 		max_bytes = req_max_data(req) - (align1 + align2);
 
 		this_param = params_left;
@@ -219,34 +224,43 @@ void reply_nttrans(struct smbsrv_request *req)
 			this_data = max_bytes;
 		}
 
+		/* don't destroy unless this is the last chunk */
+		if (params_left - this_param != 0 || 
+		    data_left - this_data != 0) {
+			this_req = req_setup_secondary(req);
+		} else {
+			this_req = req;
+		}
+
 		req_grow_data(req, this_param + this_data + (align1 + align2));
 
-		SSVAL(req->out.vwv, 0, 0); /* reserved */
-		SCVAL(req->out.vwv, 2, 0); /* reserved */
-		SIVAL(req->out.vwv, 3, trans.out.params.length);
-		SIVAL(req->out.vwv, 7, trans.out.data.length);
+		SSVAL(this_req->out.vwv, 0, 0); /* reserved */
+		SCVAL(this_req->out.vwv, 2, 0); /* reserved */
+		SIVAL(this_req->out.vwv, 3, trans.out.params.length);
+		SIVAL(this_req->out.vwv, 7, trans.out.data.length);
 
-		SIVAL(req->out.vwv, 11, this_param);
-		SIVAL(req->out.vwv, 15, align1 + PTR_DIFF(req->out.data, req->out.hdr));
-		SIVAL(req->out.vwv, 19, PTR_DIFF(params, trans.out.params.data));
+		SIVAL(this_req->out.vwv, 11, this_param);
+		SIVAL(this_req->out.vwv, 15, align1 + PTR_DIFF(this_req->out.data, this_req->out.hdr));
+		SIVAL(this_req->out.vwv, 19, PTR_DIFF(params, trans.out.params.data));
 
-		SIVAL(req->out.vwv, 23, this_data);
-		SIVAL(req->out.vwv, 27, align1 + align2 + 
-		      PTR_DIFF(req->out.data + this_param, req->out.hdr));
-		SIVAL(req->out.vwv, 31, PTR_DIFF(data, trans.out.data.data));
+		SIVAL(this_req->out.vwv, 23, this_data);
+		SIVAL(this_req->out.vwv, 27, align1 + align2 + 
+		      PTR_DIFF(this_req->out.data + this_param, this_req->out.hdr));
+		SIVAL(this_req->out.vwv, 31, PTR_DIFF(data, trans.out.data.data));
 
-		SCVAL(req->out.vwv, 35, trans.out.setup_count);
+		SCVAL(this_req->out.vwv, 35, trans.out.setup_count);
 		for (i=0;i<trans.out.setup_count;i++) {
-			SSVAL(req->out.vwv, VWV(18+i), trans.out.setup[i]);
+			SSVAL(this_req->out.vwv, VWV(18+i), trans.out.setup[i]);
 		}
 
-		memset(req->out.data, 0, align1);
+		memset(this_req->out.data, 0, align1);
 		if (this_param != 0) {
-			memcpy(req->out.data + align1, params, this_param);
+			memcpy(this_req->out.data + align1, params, this_param);
 		}
-		memset(req->out.data+this_param+align1, 0, align2);
+		memset(this_req->out.data+this_param+align1, 0, align2);
 		if (this_data != 0) {
-			memcpy(req->out.data+this_param+align1+align2, data, this_data);
+			memcpy(this_req->out.data+this_param+align1+align2, 
+			       data, this_data);
 		}
 
 		params_left -= this_param;
@@ -254,12 +268,7 @@ void reply_nttrans(struct smbsrv_request *req)
 		params += this_param;
 		data += this_data;
 
-		/* don't destroy unless this is the last segment */
-		if (params_left != 0 || data_left != 0) {
-			talloc_increase_ref_count(req);
-		}
-
-		req_send_reply(req);
+		req_send_reply(this_req);
 	} while (params_left != 0 || data_left != 0);
 }
 
