@@ -351,7 +351,7 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
-#if 0 /* JRATEST */
+#if 1 /* JRATEST */
 		{
 			int i;
 			reply_seq_number -= 5;
@@ -702,7 +702,7 @@ static BOOL srv_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		DEBUG(5, ("srv_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
 
-#if 0 /* JRATEST */
+#if 1 /* JRATEST */
 		{
 			int i;
 			reply_seq_number -= 5;
