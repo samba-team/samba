@@ -4438,6 +4438,8 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	return True;
 }
 
+#if 0	/* JERRY */
+
 /* Return true if two devicemodes are equal */
 
 #define DEVMODE_CHECK_INT(field) \
@@ -4446,6 +4448,10 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
             d1->field, d2->field)); \
         return False; \
     }
+
+/************************************************************************
+ Handy, but currently unused functions
+ ***********************************************************************/
 
 static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 {
@@ -4678,6 +4684,8 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	return True;
 }
 
+#endif
+
 /********************************************************************
  * Called by spoolss_api_setprinter
  * when updating a printer description.
@@ -4751,15 +4759,21 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
-	/* NT likes to call this function even though nothing has actually
-	   changed.  Check this so the user doesn't end up with an
-	   annoying permission denied dialog box. */
+#if 0	/* JERRY */
+	
+	/*
+	 * Another one of those historical misunderstandings...
+	 * This is reminisent of a similar call we had in _spoolss_setprinterdata()
+	 * I'm leaving it here as a reminder.  --jerry
+	 */
 
 	if (nt_printer_info_level_equal(printer, old_printer)) {
 		DEBUG(3, ("update_printer: printer info has not changed\n"));
 		result = WERR_OK;
 		goto done;
 	}
+
+#endif
 
 	/* Check calling user has permission to update printer description */
 
@@ -4800,7 +4814,7 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		 * lookup previously saved driver initialization info, which is then
 		 * bound to the printer, simulating what happens in the Windows arch.
 		 */
-		if (strequal(printer->info_2->drivername, old_printer->info_2->drivername))
+		if (!strequal(printer->info_2->drivername, old_printer->info_2->drivername))
 			set_driver_init(printer, 2);
 	}
 
