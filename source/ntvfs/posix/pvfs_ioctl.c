@@ -50,6 +50,7 @@ static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
 	case FSCTL_SET_SPARSE:
 		/* maybe some posix systems have a way of marking
 		   a file non-sparse? */
+		io->ntioctl.out.blob = data_blob(NULL, 0);
 		return NT_STATUS_OK;
 	}
 
@@ -62,7 +63,7 @@ static NTSTATUS pvfs_ntioctl(struct ntvfs_module_context *ntvfs,
 NTSTATUS pvfs_ioctl(struct ntvfs_module_context *ntvfs,
 		    struct smbsrv_request *req, union smb_ioctl *io)
 {
-	NTSTATUS status;
+	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
 
 	switch (io->generic.level) {
 	case RAW_IOCTL_IOCTL:
