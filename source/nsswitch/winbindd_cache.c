@@ -486,7 +486,17 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	}
 
 do_cached:	
-	status = centry->status;
+
+	/* If we are returning cached data and the domain controller
+	   is down then we don't know whether the data is up to date
+	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
+	   indicate this. */
+
+	if (wcache_server_down(domain))
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	else
+		status = centry->status;
+
 	centry_free(centry);
 	return status;
 
@@ -559,7 +569,17 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	}
 
 do_cached:	
-	status = centry->status;
+
+	/* If we are returning cached data and the domain controller
+	   is down then we don't know whether the data is up to date
+	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
+	   indicate this. */
+
+	if (wcache_server_down(domain))
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	else
+		status = centry->status;
+
 	centry_free(centry);
 	return status;
 
