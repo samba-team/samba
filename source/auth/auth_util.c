@@ -1425,8 +1425,10 @@ BOOL is_trusted_domain(const char* dom_name)
 
 	/* if we are a DC, then check for a direct trust relationships */
 
-	if (lp_server_role() == ROLE_DOMAIN_BDC || lp_server_role() == ROLE_DOMAIN_PDC) {
+	if ( IS_DC ) {
 		become_root();
+		DEBUG (5,("is_trusted_domain: Checking for domain trust with [%s]\n",
+			dom_name ));
 		ret = secrets_fetch_trusted_domain_password(dom_name, &pass, &trustdom_sid, &lct);
 		unbecome_root();
 		SAFE_FREE(pass);
