@@ -102,11 +102,11 @@ static void cm_get_ipc_userpass(char **username, char **domain, char **password)
 		if (!*password || !**password)
 			*password = smb_xstrdup("");
 
-		DEBUG(3, ("IPC$ connections done by user %s\\%s\n", 
+		DEBUG(3, ("cm_get_ipc_userpass: Retrieved auth-user from secrets.tdb [%s\\%s]\n", 
 			  *domain, *username));
 
 	} else {
-		DEBUG(3, ("IPC$ connections done anonymously\n"));
+		DEBUG(3, ("cm_get_ipc_userpass: No auth-user defined\n"));
 		*username = smb_xstrdup("");
 		*domain = smb_xstrdup("");
 		*password = smb_xstrdup("");
