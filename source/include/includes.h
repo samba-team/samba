@@ -984,9 +984,6 @@ extern char *sys_errlist[];
 #include "nameserv.h"
 #include "proto.h"
 #include "byteorder.h"
-#ifdef SMB_PASSWD
-#include "smbpass.h"
-#endif
 
 #include "kanji.h"
 #include "charset.h"

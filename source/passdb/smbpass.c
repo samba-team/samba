@@ -109,8 +109,7 @@ static int gethexpwd(char *p, char *pwd)
 /*
  * Routine to search the smbpasswd file for an entry matching the username.
  */
-struct smb_passwd *
-get_smbpwnam(char *name)
+struct smb_passwd *get_smbpwnam(char *name)
 {
 	/* Static buffers we will return. */
 	static struct smb_passwd pw_buf;

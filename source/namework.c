@@ -412,7 +412,6 @@ static void send_backup_list(char *work_name, struct nmb_name *src_name,
 			     int token, uint32 info,
 			     int name_type, struct in_addr ip)
 {                     
-  struct subnet_record *d;
   char outbuf[1024];
   char *p, *countptr, *nameptr;
   int count = 0;
