@@ -677,7 +677,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 					return False;
 				}
 			}
-		NextDriver:
+		NextDriver: ;
 		}
 	}
 
