@@ -56,6 +56,10 @@ struct mbuf;
 #include <sys/sockio.h>
 #endif /* HAVE_SYS_SOCKIO_H */
 
+#ifdef HAVE_NETINET_IN6_VAR_H
+#include <netinet/in6_var.h>
+#endif /* HAVE_NETINET_IN6_VAR_H */
+
 static krb5_error_code
 gethostname_fallback (krb5_addresses *res)
 {
@@ -92,133 +96,157 @@ gethostname_fallback (krb5_addresses *res)
  * Include loopback (lo*) interfaces iff loop.
  */
 
-#if defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS) && defined(SIOCGIFADDR)
 static krb5_error_code
-find_all_addresses (krb5_addresses *res, int loop)
+find_all_addresses (krb5_addresses *res, int loop,
+		    int af, int siocgifconf, int siocgifflags,
+		    size_t ifreq_sz)
 {
-     krb5_error_code err;
+     krb5_error_code ret;
      int fd;
-     char buf[BUFSIZ];
-     struct ifreq ifreq;
+     size_t buf_size;
+     char *buf;
      struct ifconf ifconf;
      int num, j;
      char *p;
      size_t sz;
+     struct sockaddr sa_zero;
+     struct ifreq *ifr;
 
-     fd = socket(AF_INET, SOCK_DGRAM, 0);
+     buf = NULL;
+     res->val = NULL;
+
+     memset (&sa_zero, 0, sizeof(sa_zero));
+     fd = socket(af, SOCK_DGRAM, 0);
      if (fd < 0)
 	  return -1;
 
-     ifconf.ifc_len = sizeof(buf);
-     ifconf.ifc_buf = buf;
-     if(ioctl(fd, SIOCGIFCONF, &ifconf) < 0)
-	  return -1;
-     num = ifconf.ifc_len / sizeof(struct ifreq);
+     buf_size = 8192;
+     do {
+	 buf = malloc(buf_size);
+	 if (buf == NULL) {
+	     ret = ENOMEM;
+	     goto error_out;
+	 }
+	 ifconf.ifc_len = buf_size;
+	 ifconf.ifc_buf = buf;
+	 if (ioctl (fd, siocgifconf, &ifconf) < 0) {
+	     ret = errno;
+	     goto error_out;
+	 }
+	 /*
+	  * Can the difference between a full and a overfull buf
+	  * be determined?
+	  */
+
+	 if (ifconf.ifc_len == buf_size)
+	     free (buf);
+     } while (ifconf.ifc_len == buf_size);
+
+     num = ifconf.ifc_len / ifreq_sz;
      res->len = num;
      res->val = calloc(num, sizeof(*res->val));
      if (res->val == NULL) {
-	 close (fd);
-	 return ENOMEM;
+	 ret = ENOMEM;
+	 goto error_out;
      }
 
      j = 0;
-     ifreq.ifr_name[0] = '\0';
      for (p = ifconf.ifc_buf;
 	  p < ifconf.ifc_buf + ifconf.ifc_len;
 	  p += sz) {
-          struct ifreq *ifr = (struct ifreq *)p;
+	 struct ifreq ifreq;
+	 struct sockaddr *sa;
 
-	  /* This is somewhat kludgy, but it seems to work. */
+	 ifr = (struct ifreq *)p;
+	 sa  = &ifr->ifr_addr;
 
-	  sz = sizeof(*ifr);
+	 sz = ifreq_sz;
 #ifdef SOCKADDR_HAS_SA_LEN
-	  if(ifr->ifr_addr.sa_len)
-	      sz = sizeof(ifr->ifr_name) + ifr->ifr_addr.sa_len;
+	 sz = max(sz, sizeof(ifr->ifr_name) + sa->sa_len);
 #endif
-	  if(strncmp(ifreq.ifr_name,
-		     ifr->ifr_name,
-		     sizeof(ifr->ifr_name)) == 0)
-	      continue;
 
-	  if(ioctl(fd, SIOCGIFFLAGS, ifr) < 0) {
-	      close (fd);
-	      free (res->val);
-	      return errno;
-	  }
+	 memcpy (ifreq.ifr_name, ifr->ifr_name, sizeof(ifr->ifr_name));
 
-	  if(!(ifr->ifr_flags & IFF_UP)
-	     || (loop == 0 && (ifr->ifr_flags & IFF_LOOPBACK)))
-	      continue;
+	 if (ioctl(fd, siocgifflags, &ifreq) < 0) {
+	     ret = errno;
+	     goto error_out;
+	 }
 
-	  /*
-	   * Get the address of the interface.  If this fails, it's
-	   * usually because this interface is up, but has no address
-	   * configured.  There might be some fatal errors for which
-	   * we should bail out, but now we prefer ignoring them.
-	   */
-	  if(ioctl(fd, SIOCGIFADDR, ifr) < 0)
-	      continue;
+	 if(!(ifreq.ifr_flags & IFF_UP)
+	    || (!loop && (ifreq.ifr_flags & IFF_LOOPBACK))
+	    || memcmp (sa, &sa_zero, sizeof(sa_zero)) == 0)
+	     continue;
 
-	  switch (ifr->ifr_addr.sa_family) {
+	 switch (sa->sa_family) {
 #ifdef AF_INET
-	  case AF_INET: {
-	      unsigned char addr[4];
-	      struct sockaddr_in *sin;
-	      res->val[j].addr_type = AF_INET;
-	      /* This is somewhat XXX */
-	      sin = (struct sockaddr_in*)&ifr->ifr_addr;
-	      memcpy(addr, &sin->sin_addr, 4);
-	      err = krb5_data_copy(&res->val[j].address,
-				   addr, 4);
-	      if (err) {
-		  close (fd);
-		  free (res->val);
-		  return ENOMEM;
-	      }
-	      ++j;
-	      break;
-	  }
+	 case AF_INET: {
+	     unsigned char addr[4];
+	     struct sockaddr_in *sin;
+	     res->val[j].addr_type = AF_INET;
+	     /* This is somewhat XXX */
+	     sin = (struct sockaddr_in*)sa;
+	     memcpy(addr, &sin->sin_addr, 4);
+	     ret = krb5_data_copy(&res->val[j].address,
+				  addr, 4);
+	     if (ret)
+		 goto error_out;
+	     ++j;
+	     break;
+	 }
 #endif /* AF_INET */
-
-/*
- * This is not an correct nor ideal test.
- */
-
 #if defined(AF_INET6) && defined(HAVE_NETINET_IN6_H)
-	  case AF_INET6: {
-	      res->val[j].addr_type = AF_INET6;
-	      err = krb5_data_copy(&res->val[j].address,
-				   &ifr->ifr_addr,
-				   sizeof(struct sockaddr_in6));
-	      if (err) {
-		  close (fd);
-		  free (res->val);
-		  return ENOMEM;
-	      }
-	      ++j;
-	      break;
-	  }
+	 case AF_INET6: {
+	     struct in6_addr *sin6;
+
+	     sin6 = &((struct sockaddr_in6 *)(&ifr->ifr_addr))->sin6_addr;
+
+	     if (IN6_LOOPBACK(*sin6) || IN6_LINK_LOCAL(*sin6)) {
+		 break;
+	     } else if (IN6_IN4COMPAT(*sin6)) {
+		 res->val[j].addr_type = AF_INET;
+		 ret = krb5_data_copy(&res->val[j].address,
+				      &IN6_IN4ADDR(*sin6),
+				      sizeof(struct in_addr));
+	     } else {
+		 res->val[j].addr_type = AF_INET6;
+		 ret = krb5_data_copy(&res->val[j].address,
+				      sin6,
+				      sizeof(struct in6_addr));
+	     }
+	     if (ret)
+		 goto error_out;
+	     ++j;
+	     break;
+	 }
 #endif /* AF_INET6 */
-	  default:
-	      break;
-	  }
-	  ifreq = *ifr;
+	 default:
+	     break;
+	 }
      }
-     close (fd);
      if (j != num) {
 	 void *tmp;
 
 	 res->len = j;
 	 tmp = realloc (res->val, j * sizeof(*res->val));
-	 if (tmp == NULL) {
-	     free (res->val);
-	     return ENOMEM;
+	 if (j != 0 && tmp == NULL) {
+	     ret = ENOMEM;
+	     goto error_out;
 	 }
 	 res->val = tmp;
      }
-     return 0;
+     ret = 0;
+     goto cleanup;
+
+error_out:
+     while(j--) {
+	 krb5_data_free (&res->val[j].address);
+     }
+     free (res->val);
+cleanup:
+     close (fd);
+     free (buf);
+     return ret;
 }
-#endif /* SIOCGIFCONF */
 
 /*
  * Try to get all addresses, but return the one corresponding to
@@ -231,11 +259,17 @@ find_all_addresses (krb5_addresses *res, int loop)
 krb5_error_code
 krb5_get_all_client_addrs (krb5_addresses *res)
 {
-#if !defined(SIOCGIFCONF) || !defined(SIOCGIFFLAGS) || !defined(SIOCGIFADDR)
-    return gethostname_fallback (res);
+#if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
+    return find_all_addresses (res, 1,
+			       AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
+			       sizeof(struct in6_ifreq));
+#elif defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
+    return find_all_addresses (res, 0,
+			       AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
+			       sizeof(struct ifreq));
 #else
-    return find_all_addresses (res, 0);
-#endif /* SIOCGIFCONF */
+    return gethostname_fallback (res);
+#endif
 }
 
 /*
