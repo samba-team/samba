@@ -1,3 +1,7 @@
+2003-05-06  Johan Danielsson  <joda@pdc.kth.se>
+
+	* no checks here
+
 2003-04-29  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* xnlock.c: include kafs.h in the krb5 case
