@@ -135,54 +135,6 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	return True;
 }
 
-/*
-  find the DC for a domain using methods appropriate for a RPC domain
-*/
-static BOOL cm_rpc_find_dc(const char *domain, struct in_addr *dc_ip, fstring srv_name)
-{
-	struct in_addr *ip_list = NULL;
-	int count, i;
-	BOOL list_ordered;
-
-	if (!get_dc_list(domain, &ip_list, &count, &list_ordered)) {
-		struct in_addr pdc_ip;
-		
-		if (!get_pdc_ip(domain, &pdc_ip)) {
-			DEBUG(3, ("Could not look up any DCs for domain %s\n", 
-				  domain));
-			return False;
-		}
-
-		ip_list = (struct in_addr *)malloc(sizeof(struct in_addr));
-
-		if (!ip_list)
-			return False;
-
-		ip_list[0] = pdc_ip;
-		count = 1;
-	}
-
-	/* Pick a nice close server, but only if the list was not ordered */
-	if (!list_ordered && (count > 1) ) {
-		qsort(ip_list, count, sizeof(struct in_addr), QSORT_CAST ip_compare);
-	}
-
-	for (i = 0; i < count; i++) {
-		if (is_zero_ip(ip_list[i]))
-			continue;
-
-		if (name_status_find(domain, 0x1c, 0x20, ip_list[i], srv_name)) {
-			*dc_ip = ip_list[i];
-			SAFE_FREE(ip_list);
-			return True;
-		}
-	}
-
-
-	SAFE_FREE(ip_list);
-
-	return False;
-}
 
 
 static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr *ip_out)
@@ -247,7 +199,7 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 	}
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
-		ret = cm_rpc_find_dc(domain, &dc_ip, srv_name);
+		ret = rpc_find_dc(domain, srv_name, &dc_ip);
 	}
 
 	if (!ret) {
