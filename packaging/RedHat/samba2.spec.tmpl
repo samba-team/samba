@@ -8,6 +8,7 @@ Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
+Provides: samba = %{version}, samba-common = %{version}, samba-client = %{version}, samba-swat = %{version}
 BuildRoot: /var/tmp/samba
 Prefix: /usr
 
