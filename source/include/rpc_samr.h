@@ -1076,6 +1076,7 @@ typedef struct samr_group_info3
 
 typedef struct samr_group_info4
 {
+	uint16 level;
 	UNIHDR hdr_acct_desc;
 	UNISTR2 uni_acct_desc;
 
