@@ -1219,7 +1219,11 @@ static BOOL test_DatabaseDeltas(struct samsync_state *samsync_state, TALLOC_CTX 
 
 		if (r.in.sequence_num == 0) continue;
 
-		r.in.sequence_num -= 1;
+		/* this shows that the bdc doesn't need to do a single call for
+		 * each seqnumber, and the pdc doesn't need to know about old values
+		 * -- metze
+		 */
+		r.in.sequence_num -= 10;
 
 
 		printf("Testing DatabaseDeltas of id %d at %llu\n", 
