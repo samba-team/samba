@@ -31,14 +31,14 @@ while(<>) {
 	next;
     }
     if(/\{/){
+	$_ = $line;
+	while(s/\*\//\ca/){
+	    s/\/\*(.|\n)*\ca//;
+	}
+	s/^\s*//;
+	s/\s$//;
+	s/\s+/ /g;
 	if($line =~ /\)\s$/){
-	    $_ = $line;
-	    while(s/\*\//\ca/){
-		s/\/\*(.|\n)*\ca//;
-	    }
-	    s/^\s*//;
-	    s/\s$//;
-	    s/\s+/ /g;
 	    if(!/^static/ && !/^PRIVATE/){
 		# remove outer ()
 		s/\s*\(/@/;
@@ -52,15 +52,19 @@ while(<>) {
 		/([a-zA-Z0-9_]+)\s*@/;
 		$f = $1;
 		# only add newline if more than one parameter
+		$LP = "((";  # XXX workaround for indentation bug in emacs
+		$RP = "))";
+		$P = "__P((";
                 if(/,/){ 
-		    s/@/ __P((\n\t/;
+		    s/@/ __P$LP\n\t/;
 		}else{
-		    s/@/ __P((/;
+		    s/@/ __P$LP/;
 		}
-		s/@/))/;
+		s/@/$RP/;
 		$_ = $_ . ";";
 		# insert newline before function name
 		s/(.*)\s([a-zA-Z0-9_]+ __P)/$1\n$2/;
+		s/(.*)\s(__attribute__.*)/$1\n\t$2/;
 		$funcs{$f} = $_;
 	    }
 	}
@@ -141,9 +145,31 @@ foreach(sort keys %funcs){
     if(/^(main)$/) { next }
     if(/^_/) {
 	$private_h .= $funcs{$_} . "\n\n";
+	if($funcs{$_} =~ /__attribute__/) {
+	    $private_attribute_seen = 1;
+	}
     } else {
 	$public_h .= $funcs{$_} . "\n\n";
+	if($funcs{$_} =~ /__attribute__/) {
+	    $public_attribute_seen = 1;
+	}
     }
+}
+
+if ($public_attribute_seen) {
+    $public_h_header .= "#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+";
+}
+
+if ($private_attribute_seen) {
+    $private_h_header .= "#if !defined(__GNUC__) && !defined(__attribute__)
+#define __attribute__(x)
+#endif
+
+";
 }
 
 
