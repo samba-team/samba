@@ -1948,7 +1948,7 @@ enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
 	num_groups = centry_uint32(centry);
 
 	user_sids = talloc(mem_ctx, sizeof(*user_sids) * num_groups);
-	if (user_sids == NULL)
+	if ((num_groups != 0) && (user_sids == NULL))
 		smb_panic("cache_getusersids out of memory");
 
 	for (i=0; i<num_groups; i++)
@@ -1963,7 +1963,7 @@ enum winbindd_result cache_getusersids(struct winbindd_cli_state *state)
 	}
 
 	ret = malloc(ret_size);
-	if (ret == NULL)
+	if ((ret_size != 0) && (ret == NULL))
 		smb_panic("cache_getusersids out of memory");
 
 	ofs = 0;
