@@ -1,3 +1,7 @@
+2003-08-21  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* get.c (print_entry_terse): handle error when unparsing name
+	
 2003-08-18  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* kadmind.c (main): use krb5_prepend_config_files_default, now all
