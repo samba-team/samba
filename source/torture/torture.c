@@ -131,6 +131,33 @@ BOOL torture_close_connection(struct cli_state *c)
 }
 
 /* open a rpc connection to a named pipe */
+static NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p, 
+				const char *pipe_name,
+				const char *pipe_uuid, 
+				uint32 pipe_version)
+{
+        NTSTATUS status;
+	char *host = lp_parm_string(-1, "torture", "host");
+	const char *port = lp_parm_string(-1, "torture", "share");
+
+	DEBUG(2,("Connecting to dcerpc server %s:%s\n", host, port));
+
+	status = dcerpc_pipe_open_tcp(p, host, atoi(port),
+				      pipe_uuid, pipe_version);
+	if (!NT_STATUS_IS_OK(status)) {
+                printf("Open of pipe '%s' failed with error (%s)\n",
+		       pipe_name, nt_errstr(status));
+                return status;
+        }
+
+	/* always do NDR validation in smbtorture */
+	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
+ 
+        return status;
+}
+
+
+/* open a rpc connection to a named pipe */
 NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p, 
 				const char *pipe_name,
 				const char *pipe_uuid, 
@@ -138,6 +165,16 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
 {
         struct cli_state *cli;
         NTSTATUS status;
+	char *transport = lp_parm_string(-1, "torture", "transport");
+
+	if (strcmp(transport, "ncacn_ip_tcp") == 0) {
+		return torture_rpc_tcp(p, pipe_name, pipe_uuid, pipe_version);
+	}
+
+	if (strcmp(transport, "ncacn_np") != 0) {
+		printf("Unsupported RPC transport '%s'\n", transport);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	if (!torture_open_connection(&cli)) {
                 return NT_STATUS_UNSUCCESSFUL;
@@ -148,30 +185,6 @@ NTSTATUS torture_rpc_connection(struct dcerpc_pipe **p,
                 printf("Open of pipe '%s' failed with error (%s)\n",
 		       pipe_name, nt_errstr(status));
 		torture_close_connection(cli);
-                return status;
-        }
-
-	/* always do NDR validation in smbtorture */
-	(*p)->flags |= DCERPC_DEBUG_VALIDATE_BOTH;
- 
-        return status;
-}
-
-/* open a rpc connection to a named pipe */
-NTSTATUS torture_rpc_tcp(struct dcerpc_pipe **p, 
-			 const char *pipe_name,
-			 const char *pipe_uuid, 
-			 uint32 pipe_version)
-{
-        NTSTATUS status;
-
-	status = dcerpc_pipe_open_tcp(p, 
-				      lp_parm_string(-1, "torture", "host"),
-				      lp_parm_int(-1, "torture", "share"), 
-				      pipe_uuid, pipe_version);
-	if (!NT_STATUS_IS_OK(status)) {
-                printf("Open of pipe '%s' failed with error (%s)\n",
-		       pipe_name, nt_errstr(status));
                 return status;
         }
 
@@ -4148,27 +4161,50 @@ static void usage(void)
         for(p = argv[1]; *p; p++)
           if(*p == '\\')
             *p = '/';
- 
-	if (strncmp(argv[1], "//", 2)) {
-		usage();
-	}
 
-	host = strdup(&argv[1][2]);
-	p = strchr_m(&host[2],'/');
-	if (!p) {
-		usage();
+
+	/* see if its a RPC transport specifier */
+	if (strncmp(argv[1], "ncacn", 5) == 0) {
+		char *transport = strdup(argv[1]);
+		p = strchr_m(transport, ':');
+		if (!p) usage();
+		*p = 0;
+		host = p+1;
+		p = strchr_m(host, ':');
+		if (p) {
+			*p = 0;
+			share = p+1;
+			lp_set_cmdline("torture:share", share);
+		} else {
+			share = "";
+			lp_set_cmdline("torture:share", share);
+		}
+		lp_set_cmdline("torture:host", host);
+		lp_set_cmdline("torture:transport", transport);
+	} else {
+		if (strncmp(argv[1], "//", 2)) {
+			usage();
+		}
+
+		host = strdup(&argv[1][2]);
+		p = strchr_m(&host[2],'/');
+		if (!p) {
+			usage();
+		}
+		*p = 0;
+		share = strdup(p+1);
+		
+		lp_set_cmdline("torture:host", host);
+		lp_set_cmdline("torture:share", share);
+		lp_set_cmdline("torture:password", "");
+		lp_set_cmdline("torture:transport", "ncacn_np");
 	}
-	*p = 0;
-	share = strdup(p+1);
 
 	if (getenv("LOGNAME")) {
 		username = strdup(getenv("LOGNAME"));
 	}
-
-	lp_set_cmdline("torture:host", host);
-	lp_set_cmdline("torture:share", share);
 	lp_set_cmdline("torture:username", username);
-	lp_set_cmdline("torture:password", "");
+
 
 	argc--;
 	argv++;

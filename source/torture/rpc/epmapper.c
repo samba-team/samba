@@ -50,7 +50,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 			printf(" IP:");
 			if (rhs->rhs_data.length == 4) {
 				struct in_addr in;
-				in.s_addr = RIVAL(rhs->rhs_data.data, 0);
+				in.s_addr = IVAL(rhs->rhs_data.data, 0);
 				printf("%s", inet_ntoa(in));
 			}
 			break;
@@ -74,14 +74,14 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr)
 		case 0x1f:
 			printf(" TCP:");
 			if (rhs->rhs_data.length == 2) {
-				printf("%d", SVAL(rhs->rhs_data.data, 0));
+				printf("%d", RSVAL(rhs->rhs_data.data, 0));
 			}
 			break;
 
 		default:
 			printf(" UNK(%02x):", lhs->protocol);
 			if (rhs->rhs_data.length == 2) {
-				printf("%d", SVAL(rhs->rhs_data.data, 0));
+				printf("%d", RSVAL(rhs->rhs_data.data, 0));
 			}
 			break;
 		}
@@ -179,10 +179,10 @@ BOOL torture_rpc_epmapper(int dummy)
 
 	mem_ctx = talloc_init("torture_rpc_epmapper");
 
-	status = torture_rpc_tcp(&p, 
-				 DCERPC_EPMAPPER_NAME,
-				 DCERPC_EPMAPPER_UUID,
-				 DCERPC_EPMAPPER_VERSION);
+	status = torture_rpc_connection(&p, 
+					DCERPC_EPMAPPER_NAME,
+					DCERPC_EPMAPPER_UUID,
+					DCERPC_EPMAPPER_VERSION);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}

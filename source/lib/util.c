@@ -467,7 +467,7 @@ uint32 interpret_addr(const char *str)
 	if (strcmp(str,"255.255.255.255") == 0)
 		return(0xFFFFFFFF);
 
-  /* if it's in the form of an IP address then get the lib to interpret it */
+	/* if it's in the form of an IP address then get the lib to interpret it */
 	if (is_ipaddress(str)) {
 		res = inet_addr(str);
 	} else {
