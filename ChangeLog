@@ -1,5 +1,8 @@
 2003-03-26  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* doc/misc.texi: update 2b example to match reality (from
+	mattiasa@e.kth.se)
+
 	* doc/misc.texi: spelling and add `Configuring AFS clients'
 	subsection
 
