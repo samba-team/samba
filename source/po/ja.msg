@@ -85,11 +85,11 @@ msgstr "現在の設定"
 
 #: web/swat.c:543
 msgid "Normal View"
-msgstr "標準表\示"
+msgstr "標準表示"
 
 #: web/swat.c:545
 msgid "Full View"
-msgstr "完全表\示"
+msgstr "完全表示"
 
 #: web/swat.c:561
 msgid "Global Variables"
@@ -105,11 +105,11 @@ msgstr "リセット"
 
 #: web/swat.c:581 web/swat.c:676 web/swat.c:1018
 msgid "Advanced View"
-msgstr "詳細表\示"
+msgstr "詳細表示"
 
 #: web/swat.c:583 web/swat.c:678 web/swat.c:1020
 msgid "Basic View"
-msgstr "標準表\示"
+msgstr "標準表示"
 
 #: web/swat.c:613
 msgid "Share Parameters"
@@ -202,7 +202,7 @@ msgstr "使用不可にする"
 
 #: web/swat.c:872
 msgid "Enable User"
-msgstr "使用可能\にする"
+msgstr "使用可能にする"
 
 #: web/swat.c:885
 msgid "Client/Server Password Management"
@@ -306,15 +306,15 @@ msgstr "サーバー動作状況"
 
 #: web/statuspage.c:200
 msgid "Auto Refresh"
-msgstr "自動再表\示"
+msgstr "自動再表示"
 
 #: web/statuspage.c:201 web/statuspage.c:206
 msgid "Refresh Interval: "
-msgstr "再表\示間隔(秒): "
+msgstr "再表示間隔(秒): "
 
 #: web/statuspage.c:205
 msgid "Stop Refreshing"
-msgstr "自動表\示停止"
+msgstr "自動表示停止"
 
 #: web/statuspage.c:220
 msgid "version:"
@@ -760,7 +760,7 @@ msgstr "拒否するホスト"
 
 #: param/loadparm.c:736
 msgid "Secure Socket Layer Options"
-msgstr "セキュア ソ\ケット レイアー オプション"
+msgstr "セキュア ソケット レイアー オプション"
 
 #: param/loadparm.c:737
 msgid "ssl"
@@ -1251,7 +1251,7 @@ msgstr "アーカイブ属性にマップ"
 
 #: param/loadparm.c:873
 msgid "mangled names"
-msgstr "変換した名前で表\示"
+msgstr "変換した名前で表示"
 
 #: param/loadparm.c:874
 msgid "mangled map"
@@ -1350,7 +1350,7 @@ msgstr "ドメイン ログオン"
 
 #: param/loadparm.c:906
 msgid "Browse Options"
-msgstr "コンピュータ一覧表\示オプション"
+msgstr "コンピュータ一覧表示オプション"
 
 #: param/loadparm.c:908
 msgid "os level"
@@ -1635,7 +1635,7 @@ msgstr "ルートで切断時実行"
 
 #: param/loadparm.c:992
 msgid "available"
-msgstr "利用可能\"
+msgstr "利用可能"
 
 #: param/loadparm.c:993
 msgid "volume"
@@ -1689,7 +1689,7 @@ msgstr "dos のファイル時刻"
 
 #: param/loadparm.c:1005
 msgid "dos filetime resolution"
-msgstr "dos のファイル時刻の分解能\"
+msgstr "dos のファイル時刻の分解能"
 
 #: param/loadparm.c:1007
 msgid "fake directory create times"
