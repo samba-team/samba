@@ -349,6 +349,12 @@ static int process_root(int local_flags)
 		goto done;
 	}
 
+	/* Ensure passdb startup(). */
+	if(!initialize_password_db(False)) {
+		DEBUG(0, ("Failed to open passdb!\n"));
+		exit(1);
+	}
+		
 	/* Ensure we have a SAM sid. */
 	get_global_sam_sid();
 
