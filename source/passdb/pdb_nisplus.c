@@ -1236,7 +1236,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
       /* we need full name for nis_add_entry() */
       slprintf(pfiletmp, sizeof(pfiletmp)-1, "%s.%s", obj->zo_name,
 		obj->zo_domain);
-#if 0
+#if 1 /* matching } from previous #if */
     }
 #endif
 
