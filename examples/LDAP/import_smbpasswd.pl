@@ -26,7 +26,7 @@ $conn = new Mozilla::LDAP::Conn ("$LDAPSERVER", "389", $ROOTDN, $rootpw );
 die "Unable to connect to LDAP server $LDAPSERVER" unless $conn;
 
 
-while ( $string = <$infile> ) {
+while ( $string = <STDIN> ) {
 	chop ($string);
 
 	## get the account information
