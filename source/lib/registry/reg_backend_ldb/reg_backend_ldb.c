@@ -1,7 +1,7 @@
 /* 
    Unix SMB/CIFS implementation.
    Registry interface
-   Copyright (C) Jelmer Vernooij					  2004.
+   Copyright (C) Jelmer Vernooij  2004.
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -88,7 +88,8 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 
 static WERROR ldb_get_hive(REG_HANDLE *h, int num, REG_KEY **key)
 {
-	/* FIXME */	
+	/* FIXME */
+	return WERR_FOOBAR;	
 }
 
 static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **key)
@@ -109,7 +110,7 @@ static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **k
 	ldb_search_free(c, msg);
 	talloc_destroy(mem_ctx);
 
-	return WERR_OK;;
+	return WERR_OK;
 }
 
 static struct registry_ops reg_backend_ldb = {
