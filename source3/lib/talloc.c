@@ -35,7 +35,7 @@
 
 #include "includes.h"
 
-/* initialissa talloc context. */
+/* initialise talloc context. */
 TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
