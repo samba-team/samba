@@ -77,6 +77,9 @@ OM_uint32 gss_accept_sec_context
 
   gssapi_krb5_init ();
 
+  output_token->length = 0;
+  output_token->value   = NULL;
+
   if (*context_handle == GSS_C_NO_CONTEXT) {
       *context_handle = malloc(sizeof(**context_handle));
     if (*context_handle == GSS_C_NO_CONTEXT) {
