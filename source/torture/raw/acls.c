@@ -764,6 +764,7 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig, *sd_def;
 	const char *owner_sid;
+	const struct dom_sid *creator_owner;
 	const struct {
 		uint32_t parent_flags;
 		uint32_t file_flags;
@@ -901,6 +902,8 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	owner_sid = dom_sid_string(mem_ctx, sd_orig->owner_sid);
 
+	printf("owner_sid is %s\n", owner_sid);
+
 	sd_def = security_descriptor_create(mem_ctx,
 					    owner_sid, NULL,
 					    owner_sid,
@@ -913,10 +916,12 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 					    0,
 					    NULL);
 
+	creator_owner = dom_sid_parse_talloc(mem_ctx, SID_CREATOR_OWNER);
+
 	for (i=0;i<ARRAY_SIZE(test_flags);i++) {
 		sd = security_descriptor_create(mem_ctx,
 						NULL, NULL,
-						owner_sid,
+						SID_CREATOR_OWNER,
 						SEC_ACE_TYPE_ACCESS_ALLOWED,
 						SEC_FILE_WRITE_DATA,
 						test_flags[i].parent_flags,
@@ -998,26 +1003,51 @@ static BOOL test_inheritance(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 			continue;
 		}
 
-		if (q.query_secdesc.out.sd->dacl == NULL ||
-		    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
-		    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
-		    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
-				   sd_orig->owner_sid)) {
-			printf("Bad sd in child dir at %d (parent 0x%x)\n", 
-			       i, test_flags[i].parent_flags);
-			NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
-			ret = False;
-			continue;
-		}
-
-		if (q.query_secdesc.out.sd->dacl->aces[0].flags != 
-		    test_flags[i].dir_flags) {
-			printf("incorrect dir_flags 0x%x - expected 0x%x for parent 0x%x with (i=%d)\n",
-			       q.query_secdesc.out.sd->dacl->aces[0].flags,
-			       test_flags[i].dir_flags,
-			       test_flags[i].parent_flags,
-			       i);
-			ret = False;
+		if ((test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) && 
+		    (test_flags[i].parent_flags & SEC_ACE_FLAG_NO_PROPAGATE_INHERIT)) {
+			if (q.query_secdesc.out.sd->dacl == NULL ||
+			    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
+			    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
+			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
+					   sd_orig->owner_sid) ||
+			    q.query_secdesc.out.sd->dacl->aces[0].flags != test_flags[i].dir_flags) {
+				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+				       i, test_flags[i].parent_flags);
+				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+				ret = False;
+				continue;
+			}
+		} else if (test_flags[i].parent_flags & SEC_ACE_FLAG_CONTAINER_INHERIT) {
+			if (q.query_secdesc.out.sd->dacl == NULL ||
+			    q.query_secdesc.out.sd->dacl->num_aces != 2 ||
+			    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
+			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
+					   sd_orig->owner_sid) ||
+			    q.query_secdesc.out.sd->dacl->aces[1].access_mask != SEC_FILE_WRITE_DATA ||
+			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[1].trustee,
+					   creator_owner) ||
+			    q.query_secdesc.out.sd->dacl->aces[0].flags != 0 ||
+			    q.query_secdesc.out.sd->dacl->aces[1].flags != 
+			    (test_flags[i].dir_flags | SEC_ACE_FLAG_INHERIT_ONLY)) {
+				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+				       i, test_flags[i].parent_flags);
+				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+				ret = False;
+				continue;
+			}
+		} else {
+			if (q.query_secdesc.out.sd->dacl == NULL ||
+			    q.query_secdesc.out.sd->dacl->num_aces != 1 ||
+			    q.query_secdesc.out.sd->dacl->aces[0].access_mask != SEC_FILE_WRITE_DATA ||
+			    !dom_sid_equal(&q.query_secdesc.out.sd->dacl->aces[0].trustee,
+					   creator_owner) ||
+			    q.query_secdesc.out.sd->dacl->aces[0].flags != test_flags[i].dir_flags) {
+				printf("Bad sd in child dir at %d (parent 0x%x)\n", 
+				       i, test_flags[i].parent_flags);
+				NDR_PRINT_DEBUG(security_descriptor, q.query_secdesc.out.sd);
+				ret = False;
+				continue;
+			}
 		}
 	}
 
@@ -1063,6 +1093,11 @@ BOOL torture_raw_acls(void)
 	ret &= test_creator_sid(cli, mem_ctx);
 	ret &= test_generic_bits(cli, mem_ctx);
 	ret &= test_inheritance(cli, mem_ctx);
+
+	printf("\n *** NOTE! need to add dynamic inheritance test **\n");
+#if 0
+	ret &= test_inheritance_dynamic(cli, mem_ctx);
+#endif
 
 	smb_raw_exit(cli->session);
 	smbcli_deltree(cli->tree, BASEDIR);
