@@ -2065,7 +2065,7 @@ static BOOL unpack_nt_permissions(uid_t *puser, gid_t *pgrp, mode_t *pmode, uint
 
   *pmode = 0;
   *puser = (uid_t)-1;
-  *pgrp = (uid_t)-1;
+  *pgrp = (gid_t)-1;
 
   if(security_info_sent == 0) {
     DEBUG(0,("unpack_unix_permissions: no security info sent !\n"));
