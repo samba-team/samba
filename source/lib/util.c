@@ -2674,8 +2674,6 @@ BOOL mask_match(char *string, char *pattern, BOOL is_case_sensitive)
 	return ms_fnmatch(p2, s2) == 0;
 }
 
-
-
 #ifdef __INSURE__
 
 /*******************************************************************
@@ -2711,3 +2709,23 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 	return ret;
 }
 #endif
+
+/****************************************************************************
+ Return true if a string could be a pure IP address.
+****************************************************************************/
+
+BOOL is_ipaddress(const char *str)
+{
+  BOOL pure_address = True;
+  int i;
+  
+  for (i=0; pure_address && str[i]; i++)
+    if (!(isdigit((int)str[i]) || str[i] == '.'))
+      pure_address = False;
+
+  /* Check that a pure number is not misinterpreted as an IP */
+  pure_address = pure_address && (strchr(str, '.') != NULL);
+
+  return pure_address;
+}
+
