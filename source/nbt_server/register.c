@@ -163,7 +163,7 @@ static void nbtd_register_name_iface(struct nbt_interface *iface,
 	if (!iname) return;
 
 	iname->iface     = iface;
-	iname->name.name = talloc_strdup(iname, name);
+	iname->name.name = strupper_talloc(iname, name);
 	iname->name.type = type;
 	if (scope && *scope) {
 		iname->name.scope = talloc_strdup(iname, scope);
@@ -228,12 +228,19 @@ static void nbtd_register_name(struct nbt_server *nbtsrv,
 void nbtd_register_names(struct nbt_server *nbtsrv)
 {
 	uint16_t nb_flags = NBT_NODE_M;
+	const char **aliases;
 
 	/* note that we don't initially mark the names "ACTIVE". They are 
 	   marked active once registration is successful */
 	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_CLIENT, nb_flags);
 	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_USER,   nb_flags);
 	nbtd_register_name(nbtsrv, lp_netbios_name(), NBT_NAME_SERVER, nb_flags);
+
+	aliases = lp_netbios_aliases();
+	while (aliases && aliases[0]) {
+		nbtd_register_name(nbtsrv, aliases[0], NBT_NAME_SERVER, nb_flags);
+		aliases++;
+	}
 
 	nb_flags |= NBT_NM_GROUP;
 	nbtd_register_name(nbtsrv, lp_workgroup(),    NBT_NAME_CLIENT, nb_flags);
