@@ -1381,11 +1381,6 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	srvstr_get_path(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE, &ntstatus, True);
 	if (!NT_STATUS_IS_OK(ntstatus)) {
-		/* W2k3 never seems to return OBJECT_PATH_NOT_FOUND on a
-		   bad pathname parse in a findfirst, but always OBJECT_NAME_INVALID. JRA */
-		/* It remains to be seen what it does on CreateFile(). JRA. (ie. I need to check) */
-		if (NT_STATUS_EQUAL(NT_STATUS_OBJECT_PATH_NOT_FOUND,ntstatus))
-			return ERROR_NT(NT_STATUS_OBJECT_NAME_INVALID);
 		return ERROR_NT(ntstatus);
 	}
 
