@@ -331,5 +331,32 @@ BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 #endif
 	
 	return True;
+}
 
+/***********************************************************
+ SMB signing - calculate a MAC to send.
+************************************************************/
+
+void cli_caclulate_sign_mac(struct cli_state *cli)
+{
+	unsigned char calc_md5_mac[16];
+	struct MD5Context md5_ctx;
+
+	/*
+	 * Firstly put the sequence number into the first 4 bytes.
+	 * and zero out the next 4 bytes.
+	 */
+	SIVAL(cli->outbuf, smb_ss_field, cli->sign_info.send_seq_num);
+	SIVAL(cli->outbuf, smb_ss_field + 4, 0);
+
+	/* Calculate the 16 byte MAC and place first 8 bytes into the field. */
+	MD5Init(&md5_ctx);
+	MD5Update(&md5_ctx, cli->sign_info.mac_key, cli->sign_info.mac_key_len);
+	MD5Update(&md5_ctx, cli->outbuf + 4, smb_len(cli->outbuf));
+	MD5Final(calc_md5_mac, &md5_ctx);
+
+	memcpy(&cli->outbuf[smb_ss_field], calc_md5_mac, 8);
+	cli->sign_info.send_seq_num++;
+	cli->sign_info.reply_seq_num = cli->sign_info.send_seq_num;
+	cli->sign_info.send_seq_num++;
 }
