@@ -40,26 +40,15 @@ enum lsa_handle {
   state associated with a lsa_OpenPolicy() operation
 */
 struct lsa_policy_state {
-	int reference_count;
 	void *sam_ctx;
 	struct sidmap_context *sidmap;
 	uint32_t access_mask;
 	const char *domain_dn;
 	const char *domain_name;
 	struct dom_sid *domain_sid;
+	struct dom_sid *builtin_sid;
 };
 
-
-/*
-  destroy policy state
-*/
-static void lsa_Policy_close(struct lsa_policy_state *state)
-{
-	state->reference_count--;
-	if (state->reference_count == 0) {
-		talloc_free(state);
-	}
-}
 
 /*
   destroy an open policy. This closes the database connection
@@ -67,7 +56,7 @@ static void lsa_Policy_close(struct lsa_policy_state *state)
 static void lsa_Policy_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
 {
 	struct lsa_policy_state *state = h->data;
-	lsa_Policy_close(state);
+	talloc_free(state);
 }
 
 /* 
@@ -195,6 +184,12 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 		return NT_STATUS_NO_SUCH_DOMAIN;		
 	}
 
+	state->builtin_sid = dom_sid_parse_talloc(state, SID_BUILTIN);
+	if (!state->builtin_sid) {
+		talloc_free(state);
+		return NT_STATUS_NO_SUCH_DOMAIN;		
+	}
+
 	state->domain_name = samdb_search_string(state->sam_ctx, state, NULL,
 						 "name", "dn=%s", state->domain_dn);
 	if (!state->domain_name) {
@@ -212,7 +207,6 @@ static NTSTATUS lsa_OpenPolicy2(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	handle->data = state;
 	handle->destroy = lsa_Policy_destroy;
 
-	state->reference_count = 1;
 	state->access_mask = r->in.access_mask;
 	*r->out.handle = handle->wire_handle;
 
@@ -417,6 +411,12 @@ static NTSTATUS lsa_authority_name(struct lsa_policy_state *state,
 		return NT_STATUS_OK;
 	}
 
+	if (dom_sid_in_domain(state->builtin_sid, sid)) {
+		*authority_name = "BUILTIN";
+		*authority_sid = state->builtin_sid;
+		return NT_STATUS_OK;
+	}
+
 	*authority_sid = dom_sid_dup(mem_ctx, sid);
 	if (*authority_sid == NULL) {
 		return NT_STATUS_NO_MEMORY;
@@ -435,7 +435,8 @@ static NTSTATUS lsa_authority_name(struct lsa_policy_state *state,
 */
 static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *mem_ctx, 
 				   struct dom_sid *sid, 
-				   struct lsa_RefDomainList *domains)
+				   struct lsa_RefDomainList *domains,
+				   uint32_t *sid_index)
 {
 	NTSTATUS status;
 	const char *authority_name;
@@ -452,21 +453,22 @@ static NTSTATUS lsa_authority_list(struct lsa_policy_state *state, TALLOC_CTX *m
 	/* see if we've already done this authority name */
 	for (i=0;i<domains->count;i++) {
 		if (strcmp(authority_name, domains->domains[i].name.string) == 0) {
-			break;
+			*sid_index = i;
+			return NT_STATUS_OK;
 		}
 	}
-	if (i == domains->count) {
-		domains->domains = talloc_realloc_p(domains, 
-						    domains->domains,
-						    struct lsa_TrustInformation,
-						    domains->count+1);
-		if (domains->domains == NULL) {
-			return NT_STATUS_NO_MEMORY;
-		}
-		domains->domains[i].name.string = authority_name;
-		domains->domains[i].sid         = authority_sid;
-		domains->count++;
+
+	domains->domains = talloc_realloc_p(domains, 
+					    domains->domains,
+					    struct lsa_TrustInformation,
+					    domains->count+1);
+	if (domains->domains == NULL) {
+		return NT_STATUS_NO_MEMORY;
 	}
+	domains->domains[i].name.string = authority_name;
+	domains->domains[i].sid         = authority_sid;
+	domains->count++;
+	*sid_index = i;
 	
 	return NT_STATUS_OK;
 }
@@ -542,7 +544,7 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 		struct dom_sid *sid = r->in.sids->sids[i].sid;
 		char *sid_str = dom_sid_string(mem_ctx, sid);
 		const char *name;
-		uint32_t atype, rtype;
+		uint32_t atype, rtype, sid_index;
 		NTSTATUS status2;
 
 		r->out.names->count++;
@@ -560,7 +562,7 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 		}
 
 		/* work out the authority name */
-		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains);
+		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			return status2;
 		}
@@ -580,7 +582,7 @@ static NTSTATUS lsa_LookupSids2(struct dcesrv_call_state *dce_call,
 
 		r->out.names->names[i].sid_type    = rtype;
 		r->out.names->names[i].name.string = name;
-		r->out.names->names[i].sid_index   = 0;
+		r->out.names->names[i].sid_index   = sid_index;
 		r->out.names->names[i].unknown     = 0;
 	}
 	
@@ -1065,7 +1067,7 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 		const char *sid_str;
 		struct ldb_message **res;
 		struct dom_sid *sid;
-		uint32_t atype, rtype;
+		uint32_t atype, rtype, sid_index;
 		NTSTATUS status2;
 
 		r->out.sids->count++;
@@ -1106,15 +1108,15 @@ static NTSTATUS lsa_LookupNames2(struct dcesrv_call_state *dce_call,
 			continue;
 		}
 
-		r->out.sids->sids[i].sid_type    = rtype;
-		r->out.sids->sids[i].rid         = sid->sub_auths[sid->num_auths-1];
-		r->out.sids->sids[i].sid_index   = 0;
-		r->out.sids->sids[i].unknown     = 0;
-
-		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains);
+		status2 = lsa_authority_list(state, mem_ctx, sid, r->out.domains, &sid_index);
 		if (!NT_STATUS_IS_OK(status2)) {
 			return status2;
 		}
+
+		r->out.sids->sids[i].sid_type    = rtype;
+		r->out.sids->sids[i].rid         = sid->sub_auths[sid->num_auths-1];
+		r->out.sids->sids[i].sid_index   = sid_index;
+		r->out.sids->sids[i].unknown     = 0;
 	}
 	
 	return status;
