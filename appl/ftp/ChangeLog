@@ -1,3 +1,8 @@
+2004-08-16  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftp/main.c: reverse help strings for --no-gss-bindings and
+	--no-gss-delegate
+
 2004-06-20  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftpd/ftpcmd.y: make cbuf 64k to handle lager tickets From:
