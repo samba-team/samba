@@ -1953,7 +1953,6 @@ static void do_put(char *rname,char *lname,file_info *finfo)
       int n = maxwrite;
       int ret;
 
-      fseek(f,nread,SEEK_SET);
       if ((n = readfile(buf+4,1,n,f)) < 1)
 	{
 	  DEBUG(0,("Error reading local file\n"));
@@ -1963,13 +1962,14 @@ static void do_put(char *rname,char *lname,file_info *finfo)
       ret = smb_writefile(outbuf,fnum,nread,buf+4,n);
 
       if (n != ret) {
-	if (!maxwrite) {
-	  DEBUG(0,("Error writing file\n"));
-	  break;
-	} else {
-	  maxwrite /= 2;
-	  continue;
-	}
+	      if (!maxwrite) {
+		      DEBUG(0,("Error writing file\n"));
+		      break;
+	      } else {
+		      fseek(f,nread,SEEK_SET);
+		      maxwrite /= 2;
+		      continue;
+	      }
       }
 
       nread += n;
