@@ -1,3 +1,13 @@
+2001-06-20  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/krb5_principal_get_realm.3: manpage
+
+	* lib/krb5/principal.c: add functions `krb5_principal_get_realm'
+	and `krb5_principal_get_comp_string' that returns parts of a
+	principal; this is a replacement for the internal
+	`krb5_princ_realm' and `krb5_princ_component' macros that everyone
+	seem to use
+
 2001-06-19  Assar Westerlund  <assar@sics.se>
 
 	* kuser/kinit.c (main): dereference result from krb5_princ_realm.
