@@ -30,17 +30,41 @@ LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
-SOURCES = cbc_cksm.c cbc_enc.c ecb_enc.c pcbc_enc.c \
-        qud_cksm.c read_pwd.c set_key.c str2key.c \
-        cfb_enc.c \
-	3ecb_enc.c ofb_enc.c 3cbc_enc.c rnd_keys.c key_par.c \
-	enc_read.c enc_writ.c fcrypt.c
+SOURCES = 3cbc_enc.c \
+          3ecb_enc.c \
+          cfb_enc.c \
+          enc_writ.c \
+          enc_read.c \
+          cbc_enc.c \
+          fcrypt.c \
+          key_par.c \
+          ofb_enc.c \
+          pcbc_enc.c \
+          qud_cksm.c \
+          read_pwd.c \
+          rnd_keys.c \
+          str2key.c \
+          cbc_cksm.c \
+          ecb_enc.c \
+          set_key.c
 
-OBJECTS = cbc_cksm.o cbc_enc.o ecb_enc.o pcbc_enc.o \
-        qud_cksm.o read_pwd.o set_key.o str2key.o \
-        cfb_enc.o \
-	3ecb_enc.o ofb_enc.o 3cbc_enc.o rnd_keys.o key_par.o \
-	enc_read.o enc_writ.o fcrypt.o
+OBJECTS = 3cbc_enc.o \
+          3ecb_enc.o \
+          cfb_enc.o \
+          enc_writ.o \
+          enc_read.o \
+          cbc_enc.o \
+          fcrypt.o \
+          key_par.o \
+          ofb_enc.o \
+          pcbc_enc.o \
+          qud_cksm.o \
+          read_pwd.o \
+          rnd_keys.o \
+          str2key.o \
+          cbc_cksm.o \
+          ecb_enc.o \
+          set_key.o
 
 all: $(LIB)
 
