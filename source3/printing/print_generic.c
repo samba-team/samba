@@ -22,37 +22,12 @@
 #include "printing.h"
 
 
-/*
- * Generic printing interface definitions...
- */
-
-static int generic_job_delete(int snum, struct printjob *pjob);
-static int generic_job_pause(int snum, struct printjob *pjob);
-static int generic_job_resume(int snum, struct printjob *pjob);
-static int generic_job_submit(int snum, struct printjob *pjob);
-static int generic_queue_get(int snum, print_queue_struct **q,
-                             print_status_struct *status);
-static int generic_queue_pause(int snum);
-static int generic_queue_resume(int snum);
-
-
-struct printif	generic_printif =
-		{
-		  generic_queue_get,
-		  generic_queue_pause,
-		  generic_queue_resume,
-		  generic_job_delete,
-		  generic_job_pause,
-		  generic_job_resume,
-		  generic_job_submit,
-		};
-
 /****************************************************************************
 run a given print command 
 a null terminated list of value/substitute pairs is provided
 for local substitution strings
 ****************************************************************************/
-static int print_run_command(int snum,char *command, int *outfd, ...)
+static int print_run_command(int snum, const char* printername, BOOL do_sub, char *command, int *outfd, ...)
 {
 
 	pstring syscmd;
@@ -61,12 +36,13 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	va_list ap;
 	va_start(ap, outfd);
 
-	if (!command || !*command) return -1;
+	/* check for a valid system printername and valid command to run */
 
-	if (!VALID_SNUM(snum)) {
-		DEBUG(0,("Invalid snum %d for command %s\n", snum, command));
+	if ( !printername || !*printername ) 
 		return -1;
-	}
+
+	if (!command || !*command) 
+		return -1;
 
 	pstrcpy(syscmd, command);
 
@@ -76,9 +52,11 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	}
 	va_end(ap);
   
-	pstring_sub(syscmd, "%p", PRINTERNAME(snum));
-	standard_sub_snum(snum,syscmd,sizeof(syscmd));
+	pstring_sub( syscmd, "%p", printername );
 
+	if ( do_sub && snum != -1 )
+		standard_sub_snum(snum,syscmd,sizeof(syscmd));
+		
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -96,8 +74,7 @@ static int generic_job_delete(int snum, struct printjob *pjob)
 
 	/* need to delete the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(
-		   snum, 
+	return print_run_command(snum, PRINTERNAME(snum), True,
 		   lp_lprmcommand(snum), NULL,
 		   "%j", jobstr,
 		   "%T", http_timestring(pjob->starttime),
@@ -113,7 +90,7 @@ static int generic_job_pause(int snum, struct printjob *pjob)
 	
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, 
+	return print_run_command(snum, PRINTERNAME(snum), True,
 				 lp_lppausecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -128,7 +105,7 @@ static int generic_job_resume(int snum, struct printjob *pjob)
 	
 	/* need to pause the spooled entry */
 	slprintf(jobstr, sizeof(jobstr)-1, "%d", pjob->sysjob);
-	return print_run_command(snum, 
+	return print_run_command(snum, PRINTERNAME(snum), True,
 				 lp_lpresumecommand(snum), NULL,
 				 "%j", jobstr,
 				 NULL);
@@ -168,7 +145,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 	slprintf(job_size, sizeof(job_size)-1, "%lu", (unsigned long)pjob->size);
 
 	/* send it to the system spooler */
-	ret = print_run_command(snum, 
+	ret = print_run_command(snum, PRINTERNAME(snum), True,
 			lp_printcommand(snum), NULL,
 			"%s", p,
 			"%J", jobname,
@@ -186,17 +163,22 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 /****************************************************************************
 get the current list of queued jobs
 ****************************************************************************/
-static int generic_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
+static int generic_queue_get(const char *printer_name, 
+                             enum printing_types printing_type,
+                             char *lpq_command,
+                             print_queue_struct **q, 
+                             print_status_struct *status)
 {
 	char **qlines;
 	int fd;
 	int numlines, i, qcount;
 	print_queue_struct *queue = NULL;
-	fstring printer_name;
-              
-	fstrcpy(printer_name, lp_servicename(snum));
 	
-	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
+	/* never do substitution when running the 'lpq command' since we can't
+	   get it rigt when using the background update daemon.  Make the caller 
+	   do it before passing off the command string to us here. */
+
+	print_run_command(-1, printer_name, False, lpq_command, &fd, NULL);
 
 	if (fd == -1) {
 		DEBUG(5,("generic_queue_get: Can't read print queue status for printer %s\n",
@@ -218,7 +200,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));
 		for (i=0; i<numlines; i++) {
 			/* parse the line */
-			if (parse_lpq_entry(snum,qlines[i],
+			if (parse_lpq_entry(printing_type,qlines[i],
 					    &queue[qcount],status,qcount==0)) {
 				qcount++;
 			}
@@ -235,7 +217,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
 ****************************************************************************/
 static int generic_queue_pause(int snum)
 {
-	return print_run_command(snum, lp_queuepausecommand(snum), NULL, NULL);
+	return print_run_command(snum, PRINTERNAME(snum), True, lp_queuepausecommand(snum), NULL, NULL);
 }
 
 /****************************************************************************
@@ -243,5 +225,22 @@ static int generic_queue_pause(int snum)
 ****************************************************************************/
 static int generic_queue_resume(int snum)
 {
-	return print_run_command(snum, lp_queueresumecommand(snum), NULL, NULL);
+	return print_run_command(snum, PRINTERNAME(snum), True, lp_queueresumecommand(snum), NULL, NULL);
 }
+
+/****************************************************************************
+ * Generic printing interface definitions...
+ ***************************************************************************/
+
+struct printif	generic_printif =
+{
+	DEFAULT_PRINTING,
+	generic_queue_get,
+	generic_queue_pause,
+	generic_queue_resume,
+	generic_job_delete,
+	generic_job_pause,
+	generic_job_resume,
+	generic_job_submit,
+};
+

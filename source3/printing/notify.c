@@ -297,7 +297,7 @@ to notify_queue_head\n", msg->type, msg->field, msg->printer));
 	num_messages++;
 }
 
-static void send_notify_field_values(const char *printer_name, uint32 type,
+static void send_notify_field_values(const char *sharename, uint32 type,
 				     uint32 field, uint32 id, uint32 value1, 
 				     uint32 value2, uint32 flags)
 {
@@ -315,7 +315,7 @@ static void send_notify_field_values(const char *printer_name, uint32 type,
 
 	ZERO_STRUCTP(msg);
 
-	fstrcpy(msg->printer, printer_name);
+	fstrcpy(msg->printer, sharename);
 	msg->type = type;
 	msg->field = field;
 	msg->id = id;
@@ -326,7 +326,7 @@ static void send_notify_field_values(const char *printer_name, uint32 type,
 	send_spoolss_notify2_msg(msg);
 }
 
-static void send_notify_field_buffer(const char *printer_name, uint32 type,
+static void send_notify_field_buffer(const char *sharename, uint32 type,
 				     uint32 field, uint32 id, uint32 len,
 				     char *buffer)
 {
@@ -344,7 +344,7 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 	ZERO_STRUCTP(msg);
 
-	fstrcpy(msg->printer, printer_name);
+	fstrcpy(msg->printer, sharename);
 	msg->type = type;
 	msg->field = field;
 	msg->id = id;
@@ -356,140 +356,131 @@ static void send_notify_field_buffer(const char *printer_name, uint32 type,
 
 /* Send a message that the printer status has changed */
 
-void notify_printer_status_byname(const char *printer_name, uint32 status)
+void notify_printer_status_byname(const char *sharename, uint32 status)
 {
 	/* Printer status stored in value1 */
 
-	send_notify_field_values(printer_name, PRINTER_NOTIFY_TYPE, 
+	send_notify_field_values(sharename, PRINTER_NOTIFY_TYPE, 
 				 PRINTER_NOTIFY_STATUS, 0, 
 				 status, 0, 0);
 }
 
 void notify_printer_status(int snum, uint32 status)
 {
-	const char *printer_name = SERVICE(snum); 
+	const char *sharename = SERVICE(snum); 
 
-	if (printer_name)
-		notify_printer_status_byname(printer_name, status);
+	if (sharename)
+		notify_printer_status_byname(sharename, status);
 }
 
-void notify_job_status_byname(const char *printer_name, uint32 jobid, uint32 status,
+void notify_job_status_byname(const char *sharename, uint32 jobid, uint32 status,
 			      uint32 flags)
 {
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
+	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_STATUS, jobid,
 				 status, 0, flags);
 }
 
-void notify_job_status(int snum, uint32 jobid, uint32 status)
+void notify_job_status(const char *sharename, uint32 jobid, uint32 status)
 {
-	const char *printer_name = SERVICE(snum);
-
-	notify_job_status_byname(printer_name, jobid, status, 0);
+	notify_job_status_byname(sharename, jobid, status, 0);
 }
 
-void notify_job_total_bytes(int snum, uint32 jobid, uint32 size)
+void notify_job_total_bytes(const char *sharename, uint32 jobid,
+			    uint32 size)
 {
-	const char *printer_name = SERVICE(snum);
-
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
+	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_TOTAL_BYTES, jobid,
 				 size, 0, 0);
 }
 
-void notify_job_total_pages(int snum, uint32 jobid, uint32 pages)
+void notify_job_total_pages(const char *sharename, uint32 jobid,
+			    uint32 pages)
 {
-	const char *printer_name = SERVICE(snum);
-
 	/* Job id stored in id field, status in value1 */
 
-	send_notify_field_values(printer_name, JOB_NOTIFY_TYPE,
+	send_notify_field_values(sharename, JOB_NOTIFY_TYPE,
 				 JOB_NOTIFY_TOTAL_PAGES, jobid,
 				 pages, 0, 0);
 }
 
-void notify_job_username(int snum, uint32 jobid, char *name)
+void notify_job_username(const char *sharename, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
-		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_USER_NAME,
 		jobid, strlen(name) + 1, name);
 }
 
-void notify_job_name(int snum, uint32 jobid, char *name)
+void notify_job_name(const char *sharename, uint32 jobid, char *name)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
-		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_DOCUMENT,
 		jobid, strlen(name) + 1, name);
 }
 
-void notify_job_submitted(int snum, uint32 jobid, time_t submitted)
+void notify_job_submitted(const char *sharename, uint32 jobid,
+			  time_t submitted)
 {
-	const char *printer_name = SERVICE(snum);
-
 	send_notify_field_buffer(
-		printer_name, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,
+		sharename, JOB_NOTIFY_TYPE, JOB_NOTIFY_SUBMITTED,
 		jobid, sizeof(submitted), (char *)&submitted);
 }
 
 void notify_printer_driver(int snum, char *driver_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_DRIVER_NAME,
 		snum, strlen(driver_name) + 1, driver_name);
 }
 
 void notify_printer_comment(int snum, char *comment)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_COMMENT,
 		snum, strlen(comment) + 1, comment);
 }
 
 void notify_printer_sharename(int snum, char *share_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SHARE_NAME,
 		snum, strlen(share_name) + 1, share_name);
 }
 
 void notify_printer_printername(int snum, char *printername)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PRINTER_NAME,
 		snum, strlen(printername) + 1, printername);
 }
 
 void notify_printer_port(int snum, char *port_name)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_PORT_NAME,
 		snum, strlen(port_name) + 1, port_name);
 }
 
 void notify_printer_location(int snum, char *location)
 {
-	const char *printer_name = SERVICE(snum);
+	const char *sharename = SERVICE(snum);
 
 	send_notify_field_buffer(
-		printer_name, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,
+		sharename, PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_LOCATION,
 		snum, strlen(location) + 1, location);
 }
 
