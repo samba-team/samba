@@ -414,3 +414,17 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return setvbuf(stream, (char *)NULL, _IOLBF, 0);
 }
 #endif /* HAVE_SETLINEBUF */
+
+#ifndef HAVE_VSYSLOG
+#ifdef HAVE_SYSLOG
+ void vsyslog (int facility_priority, char *format, va_list arglist)
+{
+	char *msg = NULL;
+	vasprintf(&msg, format, arglist);
+	if (!msg)
+		return;
+	syslog(facility_priority, "%s", msg);
+	SAFE_FREE(msg);
+}
+#endif /* HAVE_SYSLOG */
+#endif /* HAVE_VSYSLOG */
