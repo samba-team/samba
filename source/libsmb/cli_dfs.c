@@ -31,13 +31,13 @@ struct cli_state *cli_dfs_initialise(struct cli_state *cli, char *system_name,
 
 /* Query DFS support */
 
-uint32 cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		     BOOL *dfs_exists)
+NTSTATUS cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                       BOOL *dfs_exists)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_EXIST q;
 	DFS_R_DFS_EXIST r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -75,14 +75,14 @@ uint32 cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-uint32 cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		   char *entrypath, char *servername, char *sharename,
-		   char *comment, uint32 flags)
+NTSTATUS cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                     char *entrypath, char *servername, char *sharename,
+                     char *comment, uint32 flags)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_ADD q;
 	DFS_R_DFS_ADD r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -117,13 +117,13 @@ uint32 cli_dfs_add(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-uint32 cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		      char *entrypath, char *servername, char *sharename)
+NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                        char *entrypath, char *servername, char *sharename)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_REMOVE q;
 	DFS_R_DFS_REMOVE r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -159,15 +159,15 @@ uint32 cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-uint32 cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			char *entrypath, char *servername, char *sharename,
-			uint32 info_level, DFS_INFO_CTR *ctr)
+NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                          char *entrypath, char *servername, char *sharename,
+                          uint32 info_level, DFS_INFO_CTR *ctr)
 
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_GET_INFO q;
 	DFS_R_DFS_GET_INFO r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -207,13 +207,13 @@ uint32 cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Enumerate dfs shares */
 
-uint32 cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		    uint32 info_level, DFS_INFO_CTR *ctr)
+NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                      uint32 info_level, DFS_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_ENUM q;
 	DFS_R_DFS_ENUM r;
-	uint32 result = NT_STATUS_UNSUCCESSFUL;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);

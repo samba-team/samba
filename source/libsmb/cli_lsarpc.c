@@ -35,14 +35,14 @@ struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 
 /* Open a LSA policy handle */
 
-uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
 	LSA_R_OPEN_POL r;
 	LSA_SEC_QOS qos;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -91,14 +91,14 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Open a LSA policy handle */
 
-uint32 cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                            BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
+NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL2 q;
 	LSA_R_OPEN_POL2 r;
 	LSA_SEC_QOS qos;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -149,13 +149,13 @@ uint32 cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Close a LSA policy handle */
 
-uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-		     POLICY_HND *pol)
+NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                       POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
 	LSA_R_CLOSE r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -197,16 +197,16 @@ uint32 cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Lookup a list of sids */
 
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			   POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-			   char ***names, uint32 **types, int *num_names)
+NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, int num_sids, DOM_SID *sids, 
+                             char ***names, uint32 **types, int *num_names)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
 	LSA_R_LOOKUP_SIDS r;
 	DOM_R_REF ref;
 	LSA_TRANS_NAME_ENUM t_names;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 
 	ZERO_STRUCT(q);
@@ -306,15 +306,15 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Lookup a list of names */
 
-uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			    POLICY_HND *pol, int num_names, char **names, 
-			    DOM_SID **sids, uint32 **types, int *num_sids)
+NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                              POLICY_HND *pol, int num_names, char **names, 
+                              DOM_SID **sids, uint32 **types, int *num_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
 	LSA_R_LOOKUP_NAMES r;
 	DOM_R_REF ref;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 	
 	ZERO_STRUCT(q);
@@ -407,14 +407,14 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Query info policy */
 
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				 POLICY_HND *pol, uint16 info_class, 
-				 fstring domain_name, DOM_SID *domain_sid)
+NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                   POLICY_HND *pol, uint16 info_class, 
+                                   fstring domain_name, DOM_SID *domain_sid)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_QUERY_INFO q;
 	LSA_R_QUERY_INFO r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -494,15 +494,15 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 /* Enumerate list of trusted domains */
 
-uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			      POLICY_HND *pol, uint32 *enum_ctx, 
-			      uint32 *num_domains, char ***domain_names, 
-			      DOM_SID **domain_sids)
+NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                                POLICY_HND *pol, uint32 *enum_ctx, 
+                                uint32 *num_domains, char ***domain_names, 
+                                DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
 	LSA_R_ENUM_TRUST_DOM r;
-	uint32 result;
+	NTSTATUS result;
 	int i;
 
 	ZERO_STRUCT(q);

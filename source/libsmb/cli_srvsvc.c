@@ -32,13 +32,14 @@ struct cli_state *cli_svrsvc_initialise(struct cli_state *cli,
         return cli_pipe_initialise(cli, system_name, PIPE_SRVSVC, creds);
 }
 
-uint32 cli_srvsvc_net_srv_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				   uint32 switch_value, SRV_INFO_CTR *ctr)
+NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
+                                     TALLOC_CTX *mem_ctx,
+                                     uint32 switch_value, SRV_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_SRV_GET_INFO q;
 	SRV_R_NET_SRV_GET_INFO r;
-	uint32 result;
+	NTSTATUS result;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
