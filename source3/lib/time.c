@@ -694,7 +694,7 @@ char *timestring(BOOL hires)
 				 ".%06ld", 
 				 (long)tp.tv_usec);
 		} else {
-			strftime(TimeBuf,100,"%Y/%m/%d %H:%M:%S",tm);
+			strftime(TimeBuf,sizeof(TimeBuf)-1,"%Y/%m/%d %H:%M:%S",tm);
 		}
 #else
 		if (hires) {
