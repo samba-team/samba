@@ -225,7 +225,9 @@ static void utmp_update(const pstring dirname, const struct utmp *u, const char 
 
 	getutmpx(u, &ux);
 	if (host) {
+#if defined(HAVE_UX_UT_SYSLEN)
 		ux.ut_syslen = strlen(host);
+#endif /* defined(HAVE_UX_UT_SYSLEN) */
 		pstrcpy(ux.ut_host, host);
 	}
 
