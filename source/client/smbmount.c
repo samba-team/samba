@@ -550,7 +550,7 @@ static void usage(void)
 
 	DEBUG(3,("smbmount started (version %s)\n", VERSION));
 
-	if (!get_myname(myhostname,NULL)) {
+	if (!get_myname(myhostname)) {
 		DEBUG(0,("Failed to get my hostname.\n"));
 	}
 
@@ -567,7 +567,7 @@ static void usage(void)
 		pstrcpy(workgroup,lp_workgroup());
 
 	load_interfaces();
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);  
 	strupper(global_myname);
 
 	init_mount(service, mpoint, "");

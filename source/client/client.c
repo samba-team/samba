@@ -2213,7 +2213,7 @@ static int do_message_op(void)
 	TimeInit();
 	charset_initialise();
 
-	if(!get_myname(myhostname,NULL)) {
+	if(!get_myname(myhostname)) {
 		DEBUG(0,("Failed to get my hostname.\n"));
 	}
 
@@ -2407,7 +2407,7 @@ static int do_message_op(void)
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);  
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

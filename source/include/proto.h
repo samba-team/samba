@@ -252,7 +252,7 @@ void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p,size_t size);
-BOOL get_myname(char *my_name,struct in_addr *ip);
+BOOL get_myname(char *my_name);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int interpret_protocol(char *str,int def);
 uint32 interpret_addr(char *str);
