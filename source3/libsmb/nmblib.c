@@ -287,6 +287,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
   return(ret);
 }
 
+
 /*******************************************************************
   useful for debugging messages
   ******************************************************************/
@@ -296,13 +297,21 @@ char *nmb_namestr(struct nmb_name *n)
   static fstring ret[4];
   char *p = ret[i];
 
-  if (!n->scope[0])
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>",n->name,n->name_type);
-  else
-    slprintf(p,sizeof(fstring)-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
+  nmb_safe_namestr(n, p, sizeof(fstring));
 
   i = (i+1)%4;
   return(p);
+}
+
+/*******************************************************************
+  useful for debugging messages
+  ******************************************************************/
+void nmb_safe_namestr(struct nmb_name *n, char *str, size_t len)
+{
+  if (!n->scope[0])
+    slprintf(str, len-1, "%s<%02x>",n->name,n->name_type);
+  else
+    slprintf(str, len-1, "%s<%02x>.%s",n->name,n->name_type,n->scope);
 }
 
 /*******************************************************************
