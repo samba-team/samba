@@ -81,6 +81,7 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
 afslib.so: afslib.o
-	$(CC) -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
+	cc -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
+# gcc is unable to create afslib.so on AIX with all these strange switches
 
 $(OBJECTS): ../../config.h
