@@ -115,7 +115,7 @@ NTSTATUS security_descriptor_dacl_add(struct security_descriptor *sd,
 		if (sd->dacl == NULL) {
 			return NT_STATUS_NO_MEMORY;
 		}
-		sd->dacl->revision = SD_REVISION;
+		sd->dacl->revision = NT4_ACL_REVISION;
 		sd->dacl->size     = 0;
 		sd->dacl->num_aces = 0;
 		sd->dacl->aces     = NULL;
