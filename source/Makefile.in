@@ -84,16 +84,16 @@ FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(ISA) $(FLAGS5) $(PASSWD_FLAGS)
 FLAGS32  = $(ISA32) $(FLAGS5) $(PASSWD_FLAGS)
 
-WINBIND_PROGS = bin/wbinfo
-WINBIND_SPROGS = bin/winbindd
-WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
-WINBIND_LPROGS = @WINBIND_PAM_PROGS@ nsswitch/libnss_winbind.so
+WINBIND_PROGS = @WINBIND_TARGETS@
+WINBIND_SPROGS = @WINBIND_STARGETS@
+WINBIND_PAM_PROGS = @WINBIND_PAM_TARGETS@
+WINBIND_LPROGS = @WINBIND_LTARGETS@
 
-SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@ @WINBIND_TARGETS@
+SPROGS = bin/smbd bin/nmbd bin/swat
+PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/make_printerdef @RUNPROG@ 
 PROGS2 = bin/smbpasswd bin/make_smbcodepage bin/rpcclient bin/make_unicodemap bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@ @PDBEDIT@ @LIBSMBCLIENT@
 MPROGS = @MPROGS@
-LPROGS = @WINBIND_LTARGETS@
+LPROGS = $(WINBIND_PAM_PROGS) $(WINBIND_LPROGS)
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup
 SHLIBS = libsmbclient
 
@@ -400,7 +400,7 @@ NSS_OBJ = $(NSS_OBJ_0:.o=.po)
 # now the rules...
 ######################################################################
 
-all : CHECK $(SPROGS) $(PROGS) nsswitch
+all : CHECK $(SPROGS) $(PROGS) $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 # The following "everything" is NOT needed except by Samba developers - so do not use this!
 everything : CHECK $(SPROGS) $(PROGS) $(SHLIBS) nsswitch smbwrapper smbtorture debug2html smbfilter nsswitch/libnss_wins.so
@@ -431,7 +431,7 @@ debug2html : CHECK bin/debug2html
 
 smbfilter : CHECK bin/smbfilter
 
-nsswitch : CHECK @WINBIND_TARGETS@ @WINBIND_STARGETS@ @WINBIND_LTARGETS@
+nsswitch : CHECK $(WINBIND_PROGS) $(WINBIND_SPROGS) $(LPROGS)
 
 .SUFFIXES:
 .SUFFIXES: .c .o .po .po32 .lo
@@ -655,8 +655,8 @@ installservers: all installdirs
 	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
 
 installbin: all installdirs
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/installbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 installscripts: installdirs
 	@$(SHELL) $(srcdir)/script/installscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)
@@ -667,7 +667,6 @@ installcp: installdirs
 installswat: installdirs
 	@$(SHELL) $(srcdir)/script/installswat.sh $(SWATDIR) $(srcdir)
 
- 
 installclientlib:
 	-$(INSTALLCMD) bin/libsmbclient.so.$(LIBSMBCLIENT_MAJOR).$(LIBSMBCLIENT_MINOR) $(LIBDIR)
 	-$(INSTALLCMD) -d ${prefix}/include
@@ -687,8 +686,8 @@ uninstallman:
 	@$(SHELL) $(srcdir)/script/uninstallman.sh $(MANDIR) $(srcdir)
 
 uninstallbin:
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS)
-	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(SBINDIR) $(LIBDIR) $(VARDIR) $(SPROGS) $(WINBIND_SPROGS)
+	@$(SHELL) $(srcdir)/script/uninstallbin.sh $(INSTALLPERMS) $(BASEDIR) $(BINDIR) $(LIBDIR) $(VARDIR) $(PROGS) $(WINBIND_PROGS)
 
 uninstallscripts:
 	@$(SHELL) $(srcdir)/script/uninstallscripts.sh $(INSTALLPERMS) $(BINDIR) $(SCRIPTS)

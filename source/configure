@@ -12485,13 +12485,13 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
         echo "$ac_t""yes" 1>&6
 
-	WINBIND_TARGETS="\$(WINBIND_PROGS)"
-	WINBIND_STARGETS="\$(WINBIND_SPROGS)"
-	WINBIND_LTARGETS="\$(WINBIND_LPROGS)"
+	WINBIND_TARGETS="bin/wbinfo"
+	WINBIND_STARGETS="bin/winbindd"
+	WINBIND_LTARGETS="nsswitch/libnss_winbind.so"
 
 	case "$with_pam" in
 		yes)
-			WINBIND_PAM_PROGS="\$(WINBIND_PAM_PROGS)"
+			WINBIND_PAM_TARGETS="nsswitch/pam_winbind.so"
 		;;
 	esac
 else
@@ -12500,7 +12500,7 @@ else
 	WINBIND_TARGETS=""
 	WINBIND_STARGETS=""
 	WINBIND_LTARGETS=""
-	WINBIND_PAM_PROGS=""
+	WINBIND_PAM_TARGETS=""
 fi
 
 # Substitution time!
@@ -12721,7 +12721,7 @@ s%@QUOTAOBJS@%$QUOTAOBJS%g
 s%@WINBIND_TARGETS@%$WINBIND_TARGETS%g
 s%@WINBIND_STARGETS@%$WINBIND_STARGETS%g
 s%@WINBIND_LTARGETS@%$WINBIND_LTARGETS%g
-s%@WINBIND_PAM_PROGS@%$WINBIND_PAM_PROGS%g
+s%@WINBIND_PAM_TARGETS@%$WINBIND_PAM_TARGETS%g
 s%@builddir@%$builddir%g
 
 CEOF
