@@ -52,6 +52,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
 static const char *default_structural_object = "account";
 static char *structural_object;
+static int samba_forwardable;
 
 /*
  *
@@ -1204,7 +1205,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    goto out2;
 
 	/* Allow forwarding */
-	ent->flags.forwardable = TRUE;
+	if (samba_forwardable)
+	    ent->flags.forwardable = TRUE;
 
 	for (i=0; i < flags_len; i++) {
 	    switch (samba_acct_flags[i]) {
@@ -1672,6 +1674,10 @@ hdb_ldap_create(krb5_context context, HDB ** db, const char *arg)
 	    return ENOMEM;
 	}
     }
+
+    samba_forwardable = 
+	krb5_config_get_bool_default(context, NULL, TRUE,
+				     "kdc", "hdb-samba-forwardable", NULL);
 
     *db = malloc(sizeof(**db));
     if (*db == NULL) {
