@@ -1,7 +1,8 @@
 /* 
    Samba Unix/Linux SMB client library 
    Distributed SMB/CIFS Server Management Utility 
-   Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
+
+   Copyright (C) Stefan Metzmacher 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -15,45 +16,20 @@
    
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
-   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
-#define NET_FLAGS_MASTER 1
-#define NET_FLAGS_DMB 2
-
-/* Would it be insane to set 'localhost' as the default
-   remote host for this operation? 
-
-   For example, localhost is insane for a 'join' operation.
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
-#define NET_FLAGS_LOCALHOST_DEFAULT_INSANE 4 
 
-/* We want to find the PDC only */
-#define NET_FLAGS_PDC 8 
+#ifndef _UTIL_NET_H
+#define _UTIL_NET_H
 
-/* We want an anonymous connection */
-#define NET_FLAGS_ANONYMOUS 16 
+struct net_context {
+	TALLOC_CTX *mem_ctx;
+};
 
+struct net_functable {
+	const char *name;
+	int (*fn)(struct net_context *ctx, int argc, const char **argv);
+	int (*help)(struct net_context *ctx, int argc, const char **argv);	
+};
 
-extern int opt_maxusers;
-extern const char *opt_comment;
-extern char *opt_container;
-extern int opt_flags;
-
-extern const char *opt_comment;
-
-extern const char *opt_target_workgroup;
-extern const char *opt_workgroup;
-extern int opt_long_list_entries;
-extern int opt_reboot;
-extern int opt_force;
-extern int opt_timeout;
-extern const char *opt_host;
-extern const char *opt_user_name;
-extern const char *opt_password;
-extern BOOL opt_user_specified;
-
-extern BOOL opt_have_ip;
-extern struct in_addr opt_dest_ip;
-
-extern const char *share_type[];
-
+#endif /* _UTIL_NET_H */
