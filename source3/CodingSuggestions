@@ -25,7 +25,11 @@ documents are:
    http://www.fsf.org/prep/standards_toc.html
 
 but note that coding style in Samba varies due to the many different
-programmers who have contributed.
+programmers who have contributed. 
+
+The indent utility can be used to format C files in the general 
+samba coding style. The arguments you should give to indent are:
+-bad -bap -br -ce -cdw -nbc -brs -bbb -nbc
 
 Following are some considerations you should use when adding new code to
 Samba.  First and foremost remember that:
@@ -137,12 +141,20 @@ Here are some other suggestions:
     to and maintain your code. If it would be hard for someone else to
     maintain then do it another way. 
 
+26) Always keep the declaration of a function on one line. The autoprototyper 
+    doesn't catch declarations spread over multiple lines. 
+    Use:
+static char foo(int bar)
+    and not:
+static char
+foo(int bar)
+
 The suggestions above are simply that, suggestions, but the information may
 help in reducing the routine rework done on new code.  The preceeding list
 is expected to change routinely as new support routines and macros are
 added.
 
 Written by Steve French, with contributions from Simo Sorce, Andrew
-Bartlett, Tim Potter and Martin Pool.
+Bartlett, Tim Potter, Martin Pool and Jelmer Vernooij.
 
 **/
