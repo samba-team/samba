@@ -98,9 +98,6 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 			py_from_DRIVER_INFO_1(&value, &ctr.info1[i]);
 
-			PyDict_SetItemString(
-				value, "level", PyInt_FromLong(1));
-
 			PyDict_SetItemString(result, name, value);
 		}
 		
@@ -116,9 +113,6 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_DRIVER_INFO_2(&value, &ctr.info2[i]);
-
-			PyDict_SetItemString(
-				value, "level", PyInt_FromLong(2));
 
 			PyDict_SetItemString(result, name, value);
 		}
@@ -136,9 +130,6 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 
 			py_from_DRIVER_INFO_3(&value, &ctr.info3[i]);
 
-			PyDict_SetItemString(
-				value, "level", PyInt_FromLong(3));
-
 			PyDict_SetItemString(result, name, value);
 		}
 
@@ -154,9 +145,6 @@ PyObject *spoolss_enumprinterdrivers(PyObject *self, PyObject *args,
 				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_DRIVER_INFO_6(&value, &ctr.info6[i]);
-
-			PyDict_SetItemString(
-				value, "level", PyInt_FromLong(6));
 
 			PyList_SetItem(result, i, value);
 		}
@@ -302,8 +290,6 @@ PyObject *spoolss_getprinterdriverdir(PyObject *self, PyObject *args,
 	switch (level) {
 	case 1:
 		py_from_DRIVER_DIRECTORY_1(&result, ctr.info1);
-		PyDict_SetItemString(
-			result, "level", PyInt_FromLong(1));
 		break;
 	default:
 		PyErr_SetString(spoolss_error, "unknown info level");
