@@ -934,6 +934,7 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 	pstring term_code;
 	pstring password;	/* local copy only, if one is entered */
 	fstring srv_name;
+	int new_debuglevel = -1;
 
 	password[0] = 0;
 	usr_creds = &usr;
@@ -1086,9 +1087,9 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 			{
 				cmd_set_options |= CMD_DBLV;
 				if (*optarg == 'A')
-					DEBUGLEVEL = 10000;
+					new_debuglevel = 10000;
 				else
-					DEBUGLEVEL = atoi(optarg);
+					new_debuglevel = atoi(optarg);
 				break;
 			}
 
@@ -1161,6 +1162,10 @@ static uint32 cmd_set(CLIENT_INFO *info, int argc, char *argv[])
 				servicesf);
 		}
 
+	}
+
+	if (new_debuglevel != -1) {
+		DEBUGLEVEL = new_debuglevel;
 	}
 
 	if (cmd_set_options & CMD_INTER) 
