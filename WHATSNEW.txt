@@ -1,5 +1,5 @@
-          WHATS NEW IN Samba (The Next Generation) 2.4
-          ============================================
+          WHATS NEW IN Samba (The Next Generation) 2.4.1
+          ==============================================
 
 This is an ALPHA release of Samba TNG, the UNIX based SMB/CIFS file,
 print and login server for Windows systems.

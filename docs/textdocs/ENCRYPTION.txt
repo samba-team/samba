@@ -1,5 +1,5 @@
 !==
-!== ENCRYPTION.txt for Samba release TNG-alpha 13 Apr 2000
+!== ENCRYPTION.txt for Samba release TNG-alpha 14 Apr 2000
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.org>
 Updated:	March 19, 1998
