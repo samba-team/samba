@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -74,7 +74,8 @@
 #include <err.h>
 #include <krb5.h>
 
-#define SERVICE "host"
+#define KF_SERVICE		"host"
 
-#define PORT "kf"
-#define PORT_NUM 2110
+#define KF_PORT_NAME		"kf"
+#define KF_PORT_NUM		2110
+#define KF_VERSION_1		"KFWDV0.1"
