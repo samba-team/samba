@@ -34,12 +34,13 @@ struct nbench_private {
 /*
   log one request to the nbench log
 */
-static void nbench_log(struct nbench_private *private, 
+static void nbench_log(struct smbsrv_request *req,
 		       const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
 
-static void nbench_log(struct nbench_private *private, 
+static void nbench_log(struct smbsrv_request *req,
 		       const char *format, ...)
 {
+	struct nbench_private *private = req->async_states->ntvfs->private_data;
 	va_list ap;
 	char *s = NULL;
 
@@ -84,9 +85,6 @@ static void nbench_log(struct nbench_private *private,
 		req->async_states->send_fn(req); \
 	} \
 } while (0)
-
-#define PASS_THRU_REP_PRE(req) \
-	struct nbench_private *nprivates = req->async_states->ntvfs->private_data
 
 /*
   connect to a share - used when a tree_connect operation comes in.
@@ -141,10 +139,9 @@ static NTSTATUS nbench_disconnect(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_unlink_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	struct smb_unlink *unl = req->async_states->private_data;
 
-	nbench_log(nprivates, "Unlink \"%s\" 0x%x %s\n", 
+	nbench_log(req, "Unlink \"%s\" 0x%x %s\n", 
 		   unl->in.pattern, unl->in.attrib, 
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -166,9 +163,7 @@ static NTSTATUS nbench_unlink(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_ioctl_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Ioctl - NOT HANDLED\n");
+	nbench_log(req, "Ioctl - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -188,10 +183,9 @@ static NTSTATUS nbench_ioctl(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_chkpath_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	struct smb_chkpath *cp = req->async_states->private_data;
 
-	nbench_log(nprivates, "Chkpath \"%s\" %s\n", 
+	nbench_log(req, "Chkpath \"%s\" %s\n", 
 		   cp->in.path, 
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -213,10 +207,9 @@ static NTSTATUS nbench_chkpath(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_qpathinfo_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_fileinfo *info = req->async_states->private_data;
 
-	nbench_log(nprivates, "QUERY_PATH_INFORMATION \"%s\" %d %s\n", 
+	nbench_log(req, "QUERY_PATH_INFORMATION \"%s\" %d %s\n", 
 		   info->generic.in.fname, 
 		   info->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
@@ -239,10 +232,9 @@ static NTSTATUS nbench_qpathinfo(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_qfileinfo_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_fileinfo *info = req->async_states->private_data;
 
-	nbench_log(nprivates, "QUERY_FILE_INFORMATION %d %d %s\n", 
+	nbench_log(req, "QUERY_FILE_INFORMATION %d %d %s\n", 
 		   info->generic.in.fnum, 
 		   info->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
@@ -265,10 +257,9 @@ static NTSTATUS nbench_qfileinfo(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_setpathinfo_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_setfileinfo *st = req->async_states->private_data;
 
-	nbench_log(nprivates, "SET_PATH_INFORMATION \"%s\" %d %s\n", 
+	nbench_log(req, "SET_PATH_INFORMATION \"%s\" %d %s\n", 
 		   st->generic.file.fname, 
 		   st->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
@@ -291,12 +282,11 @@ static NTSTATUS nbench_setpathinfo(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_open_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_open *io = req->async_states->private_data;
 
 	switch (io->generic.level) {
 	case RAW_OPEN_NTCREATEX:
-		nbench_log(nprivates, "NTCreateX \"%s\" 0x%x 0x%x %d %s\n", 
+		nbench_log(req, "NTCreateX \"%s\" 0x%x 0x%x %d %s\n", 
 			   io->ntcreatex.in.fname, 
 			   io->ntcreatex.in.create_options, 
 			   io->ntcreatex.in.open_disposition, 
@@ -305,7 +295,7 @@ static void nbench_open_send(struct smbsrv_request *req)
 		break;
 
 	default:
-		nbench_log(nprivates, "Open-%d - NOT HANDLED\n",
+		nbench_log(req, "Open-%d - NOT HANDLED\n",
 			   io->generic.level);
 		break;
 	}
@@ -328,9 +318,7 @@ static NTSTATUS nbench_open(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_mkdir_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Mkdir - NOT HANDLED\n");
+	nbench_log(req, "Mkdir - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -350,10 +338,9 @@ static NTSTATUS nbench_mkdir(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_rmdir_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	struct smb_rmdir *rd = req->async_states->private_data;
 
-	nbench_log(nprivates, "Rmdir \"%s\" %s\n", 
+	nbench_log(req, "Rmdir \"%s\" %s\n", 
 		   rd->in.path, 
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -375,19 +362,18 @@ static NTSTATUS nbench_rmdir(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_rename_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_rename *ren = req->async_states->private_data;
 
 	switch (ren->generic.level) {
 	case RAW_RENAME_RENAME:
-		nbench_log(nprivates, "Rename \"%s\" \"%s\" %s\n", 
+		nbench_log(req, "Rename \"%s\" \"%s\" %s\n", 
 			   ren->rename.in.pattern1, 
 			   ren->rename.in.pattern2, 
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 
 	default:
-		nbench_log(nprivates, "Rename-%d - NOT HANDLED\n",
+		nbench_log(req, "Rename-%d - NOT HANDLED\n",
 			   ren->generic.level);
 		break;
 	}
@@ -410,9 +396,7 @@ static NTSTATUS nbench_rename(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_copy_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Copy - NOT HANDLED\n");
+	nbench_log(req, "Copy - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -432,12 +416,11 @@ static NTSTATUS nbench_copy(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_read_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_read *rd = req->async_states->private_data;
 
 	switch (rd->generic.level) {
 	case RAW_READ_READX:
-		nbench_log(nprivates, "ReadX %d %d %d %d %s\n", 
+		nbench_log(req, "ReadX %d %d %d %d %s\n", 
 			   rd->readx.in.fnum, 
 			   (int)rd->readx.in.offset,
 			   rd->readx.in.maxcnt,
@@ -445,7 +428,7 @@ static void nbench_read_send(struct smbsrv_request *req)
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 	default:
-		nbench_log(nprivates, "Read-%d - NOT HANDLED\n",
+		nbench_log(req, "Read-%d - NOT HANDLED\n",
 			   rd->generic.level);
 		break;
 	}
@@ -468,12 +451,11 @@ static NTSTATUS nbench_read(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_write_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_write *wr = req->async_states->private_data;
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
-		nbench_log(nprivates, "WriteX %d %d %d %d %s\n", 
+		nbench_log(req, "WriteX %d %d %d %d %s\n", 
 			   wr->writex.in.fnum, 
 			   (int)wr->writex.in.offset,
 			   wr->writex.in.count,
@@ -482,7 +464,7 @@ static void nbench_write_send(struct smbsrv_request *req)
 		break;
 
 	case RAW_WRITE_WRITE:
-		nbench_log(nprivates, "Write %d %d %d %d %s\n", 
+		nbench_log(req, "Write %d %d %d %d %s\n", 
 			   wr->write.in.fnum, 
 			   wr->write.in.offset,
 			   wr->write.in.count,
@@ -491,7 +473,7 @@ static void nbench_write_send(struct smbsrv_request *req)
 		break;
 
 	default:
-		nbench_log(nprivates, "Write-%d - NOT HANDLED\n",
+		nbench_log(req, "Write-%d - NOT HANDLED\n",
 			   wr->generic.level);
 		break;
 	}
@@ -514,9 +496,7 @@ static NTSTATUS nbench_write(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_seek_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Seek - NOT HANDLED\n");
+	nbench_log(req, "Seek - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -536,10 +516,9 @@ static NTSTATUS nbench_seek(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_flush_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	struct smb_flush *io = req->async_states->private_data;
 
-	nbench_log(nprivates, "Flush %d %s\n",
+	nbench_log(req, "Flush %d %s\n",
 		   io->in.fnum,
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -561,18 +540,17 @@ static NTSTATUS nbench_flush(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_close_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_close *io = req->async_states->private_data;
 
 	switch (io->generic.level) {
 	case RAW_CLOSE_CLOSE:
-		nbench_log(nprivates, "Close %d %s\n",
+		nbench_log(req, "Close %d %s\n",
 			   io->close.in.fnum,
 			   get_nt_error_c_code(req->async_states->status));
 		break;
 
 	default:
-		nbench_log(nprivates, "Close-%d - NOT HANDLED\n",
+		nbench_log(req, "Close-%d - NOT HANDLED\n",
 			   io->generic.level);
 		break;
 	}		
@@ -595,9 +573,7 @@ static NTSTATUS nbench_close(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_exit_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Exit - NOT HANDLED\n");
+	nbench_log(req, "Exit - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -617,9 +593,7 @@ static NTSTATUS nbench_exit(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_logoff_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Logoff - NOT HANDLED\n");
+	nbench_log(req, "Logoff - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
@@ -635,13 +609,25 @@ static NTSTATUS nbench_logoff(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  async_setup - send fn
+*/
+static void nbench_async_setup_send(struct smbsrv_request *req)
+{
+	PASS_THRU_REP_POST(req);
+}
+
+/*
   async setup
 */
 static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
 				   struct smbsrv_request *req,
 				   void *private)
 {
-	return NT_STATUS_OK;
+	NTSTATUS status;
+
+	PASS_THRU_REQ(ntvfs, req, async_setup, NULL, (ntvfs, req, private));
+
+	return status;
 }
 
 /*
@@ -649,26 +635,25 @@ static NTSTATUS nbench_async_setup(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_lock_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_lock *lck = req->async_states->private_data;
 
 	if (lck->generic.level == RAW_LOCK_LOCKX &&
 	    lck->lockx.in.lock_cnt == 1 &&
 	    lck->lockx.in.ulock_cnt == 0) {
-		nbench_log(nprivates, "LockX %d %d %d %s\n", 
+		nbench_log(req, "LockX %d %d %d %s\n", 
 			   lck->lockx.in.fnum,
 			   (int)lck->lockx.in.locks[0].offset,
 			   (int)lck->lockx.in.locks[0].count,
 			   get_nt_error_c_code(req->async_states->status));
 	} else if (lck->generic.level == RAW_LOCK_LOCKX &&
 		   lck->lockx.in.ulock_cnt == 1) {
-		nbench_log(nprivates, "UnlockX %d %d %d %s\n", 
+		nbench_log(req, "UnlockX %d %d %d %s\n", 
 			   lck->lockx.in.fnum,
 			   (int)lck->lockx.in.locks[0].offset,
 			   (int)lck->lockx.in.locks[0].count,
 			   get_nt_error_c_code(req->async_states->status));
 	} else {
-		nbench_log(nprivates, "Lock-%d - NOT HANDLED\n", lck->generic.level);
+		nbench_log(req, "Lock-%d - NOT HANDLED\n", lck->generic.level);
 	}
 
 	PASS_THRU_REP_POST(req);
@@ -689,10 +674,9 @@ static NTSTATUS nbench_lock(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_setfileinfo_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_setfileinfo *info = req->async_states->private_data;
 
-	nbench_log(nprivates, "SET_FILE_INFORMATION %d %d %s\n", 
+	nbench_log(req, "SET_FILE_INFORMATION %d %d %s\n", 
 		   info->generic.file.fnum,
 		   info->generic.level,
 		   get_nt_error_c_code(req->async_states->status));
@@ -716,10 +700,9 @@ static NTSTATUS nbench_setfileinfo(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_fsinfo_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_fsinfo *fs = req->async_states->private_data;
 
-	nbench_log(nprivates, "QUERY_FS_INFORMATION %d %s\n", 
+	nbench_log(req, "QUERY_FS_INFORMATION %d %s\n", 
 		   fs->generic.level, 
 		   get_nt_error_c_code(req->async_states->status));
 
@@ -741,10 +724,9 @@ static NTSTATUS nbench_fsinfo(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_lpq_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_lpq *lpq = req->async_states->private_data;
 
-	nbench_log(nprivates, "Lpq-%d - NOT HANDLED\n", lpq->generic.level);
+	nbench_log(req, "Lpq-%d - NOT HANDLED\n", lpq->generic.level);
 
 	PASS_THRU_REP_POST(req);
 }
@@ -764,12 +746,11 @@ static NTSTATUS nbench_lpq(struct ntvfs_module_context *ntvfs,
 */
 static void nbench_search_first_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_search_first *io = req->async_states->private_data;
 	
 	switch (io->generic.level) {
 	case RAW_SEARCH_BOTH_DIRECTORY_INFO:
-		nbench_log(nprivates, "FIND_FIRST \"%s\" %d %d %d %s\n", 
+		nbench_log(req, "FIND_FIRST \"%s\" %d %d %d %s\n", 
 			   io->t2ffirst.in.pattern,
 			   io->generic.level,
 			   io->t2ffirst.in.max_count,
@@ -778,7 +759,7 @@ static void nbench_search_first_send(struct smbsrv_request *req)
 		break;
 		
 	default:
-		nbench_log(nprivates, "Search-%d - NOT HANDLED\n", io->generic.level);
+		nbench_log(req, "Search-%d - NOT HANDLED\n", io->generic.level);
 		break;
 	}
 
@@ -800,10 +781,9 @@ static NTSTATUS nbench_search_first(struct ntvfs_module_context *ntvfs,
 /* continue a search */
 static void nbench_search_next_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_search_next *io = req->async_states->private_data;
 
-	nbench_log(nprivates, "Searchnext-%d - NOT HANDLED\n", io->generic.level);
+	nbench_log(req, "Searchnext-%d - NOT HANDLED\n", io->generic.level);
 
 	PASS_THRU_REP_POST(req);
 }
@@ -823,10 +803,9 @@ static NTSTATUS nbench_search_next(struct ntvfs_module_context *ntvfs,
 /* close a search */
 static void nbench_search_close_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
 	union smb_search_close *io = req->async_states->private_data;
 
-	nbench_log(nprivates, "Searchclose-%d - NOT HANDLED\n", io->generic.level);
+	nbench_log(req, "Searchclose-%d - NOT HANDLED\n", io->generic.level);
 
 	PASS_THRU_REP_POST(req);
 }
@@ -844,9 +823,7 @@ static NTSTATUS nbench_search_close(struct ntvfs_module_context *ntvfs,
 /* SMBtrans - not used on file shares */
 static void nbench_trans_send(struct smbsrv_request *req)
 {
-	PASS_THRU_REP_PRE(req);
-
-	nbench_log(nprivates, "Trans - NOT HANDLED\n");
+	nbench_log(req, "Trans - NOT HANDLED\n");
 
 	PASS_THRU_REP_POST(req);
 }
