@@ -32,6 +32,9 @@ static DATA_BLOB unwrap_pac(TALLOC_CTX *mem_ctx, DATA_BLOB *auth_data)
 	DATA_BLOB pac_contents = data_blob(NULL, 0);
 	ASN1_DATA data;
 	int data_type;
+	if (!auth_data->length) {
+		return data_blob(NULL, 0);
+	}
 
 	asn1_load(&data, *auth_data);
 	asn1_start_tag(&data, ASN1_SEQUENCE(0));
@@ -95,7 +98,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 			goto out;
 		}
 		/* Look for a CIFS ticket */
-		if (!StrnCaseCmp(princ_name, "cifs/", 5)) {
+		if (!StrnCaseCmp(princ_name, "cifs/", 5) || (!StrnCaseCmp(princ_name, "host/", 5))) {
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
 			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.keyblock);
 #else
@@ -254,6 +257,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	char *myname;
 	BOOL auth_ok = False;
 
+	char *malloc_principal;
+
 	ZERO_STRUCT(packet);
 	ZERO_STRUCTP(auth_data);
 	ZERO_STRUCTP(ap_rep);
@@ -329,7 +334,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-	get_auth_data_from_tkt(mem_ctx, auth_data, tkt);
+	*auth_data = get_auth_data_from_tkt(mem_ctx, tkt);
 
 	*auth_data = unwrap_pac(mem_ctx, auth_data);
 
@@ -342,10 +347,18 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 #endif
 
 	if ((ret = krb5_unparse_name(context, get_principal_from_tkt(tkt),
-				     principal))) {
+				     &malloc_principal))) {
 		DEBUG(3,("ads_verify_ticket: krb5_unparse_name failed (%s)\n", 
 			 error_message(ret)));
 		sret = NT_STATUS_LOGON_FAILURE;
+		goto out;
+	}
+
+	*principal = talloc_strdup(mem_ctx, malloc_principal);
+	SAFE_FREE(malloc_principal);
+	if (!principal) {
+		DEBUG(3,("ads_verify_ticket: talloc_strdup() failed\n"));
+		sret = NT_STATUS_NO_MEMORY;
 		goto out;
 	}
 

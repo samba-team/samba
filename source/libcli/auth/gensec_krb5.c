@@ -38,13 +38,14 @@ enum GENSEC_KRB5_STATE {
 struct gensec_krb5_state {
 	TALLOC_CTX *mem_ctx;
 	DATA_BLOB session_key;
-	struct PAC_LOGON_INFO logon_info;
+	struct PAC_LOGON_INFO *logon_info;
 	enum GENSEC_KRB5_STATE state_position;
 	krb5_context krb5_context;
 	krb5_auth_context krb5_auth_context;
 	krb5_ccache krb5_ccache;
 	krb5_data ticket;
 	krb5_keyblock krb5_keyblock;
+	char *peer_principal;
 };
 
 #ifdef KRB5_DO_VERIFY_PAC
@@ -56,6 +57,7 @@ static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 	krb5_error_code ret;
 	krb5_crypto crypto;
 	Checksum cksum;
+	int i;
 
 	cksum.cksumtype		= (CKSUMTYPE)sig->type;
 	cksum.checksum.length	= sizeof(sig->signature);
@@ -70,21 +72,19 @@ static NTSTATUS gensec_krb5_pac_checksum(DATA_BLOB pac_data,
 		DEBUG(0,("krb5_crypto_init() failed\n"));
 		return NT_STATUS_FOOBAR;
 	}
-{
-int i;
-for (i=0; i < 40; i++) {
-	keyusage = i;
-	ret = krb5_verify_checksum(gensec_krb5_state->krb5_context,
-					crypto,
-					keyusage,
-					pac_data.data,
-					pac_data.length,
-					&cksum);
-	if (!ret) {
-		DEBUG(0,("PAC Verified: keyusage: %d\n", keyusage));
-		break;
+	for (i=0; i < 40; i++) {
+		keyusage = i;
+		ret = krb5_verify_checksum(gensec_krb5_state->krb5_context,
+					   crypto,
+					   keyusage,
+					   pac_data.data,
+					   pac_data.length,
+					   &cksum);
+		if (!ret) {
+			DEBUG(0,("PAC Verified: keyusage: %d\n", keyusage));
+			break;
+		}
 	}
-}}
 	krb5_crypto_destroy(gensec_krb5_state->krb5_context, crypto);
 
 	if (ret) {
@@ -99,7 +99,7 @@ for (i=0; i < 40; i++) {
 #endif
 
 static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
-				struct PAC_LOGON_INFO *logon_info_out,
+				struct PAC_LOGON_INFO **logon_info_out,
 				DATA_BLOB blob,
 				struct gensec_krb5_state *gensec_krb5_state)
 {
@@ -220,7 +220,7 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	}
 #endif
 	DEBUG(0,("account_name: %s [%s]\n",logon_info->account_name.string, logon_info->full_name.string));
-	*logon_info_out = *logon_info;
+	*logon_info_out = logon_info;
 
 	return status;
 }
@@ -542,16 +542,22 @@ static NTSTATUS gensec_krb5_update(struct gensec_security *gensec_security, TALL
 			return nt_status;
 		}
 
-		/* decode and verify the pac */
-		nt_status = gensec_krb5_decode_pac(gensec_krb5_state->mem_ctx, &gensec_krb5_state->logon_info, pac,
-						    gensec_krb5_state);
+		if (pac.data) {
+			/* decode and verify the pac */
+			nt_status = gensec_krb5_decode_pac(gensec_krb5_state->mem_ctx, &gensec_krb5_state->logon_info, pac,
+							   gensec_krb5_state);
+		} else {
+			/* NULL PAC, we might need to figure this information out the hard way */
+			gensec_krb5_state->logon_info = NULL;
+		}
 
 		if (NT_STATUS_IS_OK(nt_status)) {
 			gensec_krb5_state->state_position = GENSEC_KRB5_DONE;
 			/* wrap that up in a nice GSS-API wrapping */
 			*out = gensec_gssapi_gen_krb5_wrap(out_mem_ctx, &unwrapped_out, TOK_ID_KRB_AP_REP);
+
+			gensec_krb5_state->peer_principal = talloc_steal(gensec_krb5_state->mem_ctx, principal);
 		}
-		SAFE_FREE(principal);
 		return nt_status;
 	}
 	case GENSEC_KRB5_DONE:
@@ -597,88 +603,88 @@ static NTSTATUS gensec_krb5_session_key(struct gensec_security *gensec_security,
 		return NT_STATUS_NO_USER_SESSION_KEY;
 	}
 }
-/*
-struct gensec_krb5_state {
-	TALLOC_CTX *mem_ctx;
-	DATA_BLOB session_key;
-	struct PAC_LOGON_INFO logon_info;
-	enum GENSEC_KRB5_STATE state_position;
-	krb5_context krb5_context;
-	krb5_auth_context krb5_auth_context;
-	krb5_ccache krb5_ccache;
-	krb5_data ticket;
-	krb5_keyblock krb5_keyblock;
-};
-struct auth_session_info 
-{
-	TALLOC_CTX *mem_ctx;
 
-	int refcount;
-	
-	NT_USER_TOKEN *nt_user_token;
-
-	struct auth_serversupplied_info *server_info;
-
-	DATA_BLOB session_key;
-
-	const char *workstation;
-};
-*/
 static NTSTATUS gensec_krb5_session_info(struct gensec_security *gensec_security,
 				     struct auth_session_info **session_info_out) 
 {
+	NTSTATUS nt_status;
 	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
 	TALLOC_CTX *mem_ctx;
+	struct auth_serversupplied_info *server_info = NULL;
 	struct auth_session_info *session_info = NULL;
-	struct PAC_LOGON_INFO *logon_info = &gensec_krb5_state->logon_info;
+	struct PAC_LOGON_INFO *logon_info = gensec_krb5_state->logon_info;
 	struct nt_user_token *ptoken;
 	struct dom_sid *sid;
+	char *p;
+	char *principal;
 
 	*session_info_out = NULL;
 
-	mem_ctx = talloc_init("krb5: session_info");
+	nt_status = make_server_info(&server_info, gensec_krb5_state->peer_principal);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return nt_status;
+	}
 
-	session_info = talloc_p(mem_ctx, struct auth_session_info);
-	if (!session_info) {
+	server_info->guest = False;
+
+	principal = talloc_strdup(server_info->mem_ctx, gensec_krb5_state->peer_principal);
+	p = strchr(principal, '@');
+	if (p) {
+		*p = '\0';
+	}
+	server_info->account_name = principal;
+	server_info->domain = talloc_strdup(server_info->mem_ctx, p++);
+	if (!server_info->domain) {
+		free_server_info(&server_info);
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	session_info->mem_ctx = mem_ctx;
-	session_info->refcount = 1;
-	session_info->server_info = NULL;
-	
-	ptoken = talloc_p(session_info->mem_ctx, struct nt_user_token);
-	if (!ptoken) {
-		return NT_STATUS_NO_MEMORY;
+	nt_status = make_session_info(server_info, &session_info);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		free_server_info(&server_info);
+		return nt_status;
 	}
 
-	ptoken->num_sids = 0;
+	/* IF we have the PAC - otherwise (TODO) we need to get this
+	 * data from elsewere - local ldb, or lookup of some
+	 * kind... */
 
-	ptoken->user_sids = talloc_array_p(mem_ctx, struct dom_sid*, logon_info->groups_count + 2);
-	if (!ptoken->user_sids) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-
-	sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-	ptoken->user_sids[0] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->user_rid);
-	ptoken->num_sids++;
-	sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-	ptoken->user_sids[1] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->group_rid);
-	ptoken->num_sids++;
-
-	for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
+	if (logon_info) {
+		ptoken = talloc_p(session_info->mem_ctx, struct nt_user_token);
+		if (!ptoken) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		ptoken->num_sids = 0;
+		
+		ptoken->user_sids = talloc_array_p(mem_ctx, struct dom_sid*, logon_info->groups_count + 2);
+		if (!ptoken->user_sids) {
+			return NT_STATUS_NO_MEMORY;
+		}
+		
+		
 		sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
-		ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->groups[ptoken->num_sids - 2].rid);
+		ptoken->user_sids[0] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->user_rid);
+		ptoken->num_sids++;
+		sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
+		ptoken->user_sids[1] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->group_rid);
+		ptoken->num_sids++;
+		
+		for (;ptoken->num_sids < logon_info->groups_count; ptoken->num_sids++) {
+			sid = dom_sid_dup(session_info->mem_ctx, logon_info->dom_sid);
+			ptoken->user_sids[ptoken->num_sids] = dom_sid_add_rid(session_info->mem_ctx, sid, logon_info->groups[ptoken->num_sids - 2].rid);
+		}
+		
+		debug_nt_user_token(DBGC_AUTH, 0, ptoken);
+		
+		session_info->nt_user_token = ptoken;
+	} else {
+		session_info->nt_user_token = NULL;
 	}
-	
-	debug_nt_user_token(DBGC_AUTH, 0, ptoken);
-
-	session_info->nt_user_token = ptoken;
 
 	session_info->session_key = data_blob_talloc(session_info->mem_ctx, 
-							gensec_krb5_state->session_key.data,
-							gensec_krb5_state->session_key.length);
+						     gensec_krb5_state->session_key.data,
+						     gensec_krb5_state->session_key.length);
 
 	session_info->workstation = NULL;
 

@@ -150,18 +150,23 @@
 }
 #endif
 
- void get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
- 	 		    DATA_BLOB *auth_data, krb5_ticket *tkt)
+ DATA_BLOB get_auth_data_from_tkt(TALLOC_CTX *mem_ctx, 
+ 	 		    krb5_ticket *tkt)
 {
+	DATA_BLOB auth_data = data_blob(NULL, 0); 
 #if defined(HAVE_KRB5_TKT_ENC_PART2)
-	if (tkt && tkt->enc_part2)
-		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
+	if (tkt && tkt->enc_part2 
+	    && tkt->enc_part2->authorization_data
+	    && tkt->enc_part2->authorization_data[0]
+	    && tkt->enc_part2->authorization_data[0]->length)
+		auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
 			tkt->enc_part2->authorization_data[0]->length);
 #else
 	if (tkt && tkt->ticket.authorization_data && tkt->ticket.authorization_data->len)
-		*auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
+		auth_data = data_blob(tkt->ticket.authorization_data->val->ad_data.data,
 			tkt->ticket.authorization_data->val->ad_data.length);
 #endif
+	return auth_data;
 }
 
  krb5_const_principal get_principal_from_tkt(krb5_ticket *tkt)
