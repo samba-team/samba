@@ -661,7 +661,7 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, st
   if(fsp == NULL)
   {
     /* The file could have been closed in the meantime - return success. */
-    if( DEBUGLVL( 0 ) )
+    if( DEBUGLVL( 3 ) )
     {
       dbgtext( "initial_break_processing: cannot find open file with " );
       dbgtext( "dev = %x, inode = %.0f ", (unsigned int)dev, (double)inode);
@@ -681,7 +681,7 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, st
 
   if(fsp->oplock_type == NO_OPLOCK)
   {
-    if( DEBUGLVL( 0 ) )
+    if( DEBUGLVL( 3 ) )
     {
       dbgtext( "initial_break_processing: file %s ", fsp->fsp_name );
       dbgtext( "(dev = %x, inode = %.0f) has no oplock.\n", (unsigned int)dev, (double)inode );
@@ -747,7 +747,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
     DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
   }
 
-  if (got_lock)
+  if (!local_request && got_lock)
     unlock_share_entry(fsp->conn, dev, inode, token);
 
   fsp->oplock_type = NO_OPLOCK;
@@ -789,6 +789,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   pstring saved_dir; 
   int break_counter = OPLOCK_BREAK_RESENDS;
   int timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
+  pstring file_name;
 
   if((fsp = initial_break_processing(dev, inode, tval)) == NULL)
     return True;
@@ -889,7 +890,17 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   /* Save the chain fnum. */
   file_chain_save();
 
-  while(OPEN_FSP(fsp) && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+  /*
+   * From Charles Hoch <hoch@exemplary.com>. If the break processing
+   * code closes the file (as it often does), then the fsp pointer here
+   * points to free()'d memory. We *must* revalidate fsp each time
+   * around the loop.
+   */
+
+  pstrcpy(file_name, fsp->fsp_name);
+
+  while((fsp = initial_break_processing(dev, inode, tval)) &&
+        OPEN_FSP(fsp) && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
   {
     if(receive_smb(Client,inbuf, timeout) == False)
     {
@@ -921,7 +932,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
         DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n",
                      OPLOCK_BREAK_TIMEOUT ) );
 
-      DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->fsp_name ) );
+      DEBUGADD( 0, ( "oplock_break failed for file %s ", file_name ) );
       DEBUGADD( 0, ( "(dev = %x, inode = %.0f).\n", (unsigned int)dev, (double)inode));
 
       shutdown_server = True;
