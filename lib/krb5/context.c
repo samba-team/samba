@@ -214,15 +214,11 @@ krb5_init_context(krb5_context *context)
 void
 krb5_free_context(krb5_context context)
 {
-    int i;
-
     free(context->etypes);
     free(context->etypes_des);
     krb5_free_host_realm (context, context->default_realms);
     krb5_config_file_free (context, context->cf);
     free_error_table (context->et_list);
-    for(i = 0; i < context->num_cc_ops; ++i)
-	free(context->cc_ops[i].prefix);
     free(context->cc_ops);
     free(context->kt_types);
     krb5_clear_error_string(context);
