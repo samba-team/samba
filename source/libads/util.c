@@ -25,17 +25,30 @@
 ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_principal)
 {
     char *tmp_password;
+    NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+    SAM_TRUST_PASSWD *trust = NULL;
     char *password;
     char *new_password;
     char *service_principal;
     ADS_STATUS ret;
     uint32 sec_channel_type;
-    
-    if ((password = secrets_fetch_machine_password(lp_workgroup(), NULL, &sec_channel_type)) == NULL) {
-	DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
-	return ADS_ERROR_SYSTEM(ENOENT);
-    }
 
+    nt_status = pdb_init_trustpw(&trust);
+    if (!NT_STATUS_IS_OK(nt_status)) {
+	    DEBUG(0, ("Could not init trust password\n"));
+	    return ADS_ERROR_SYSTEM(ENOMEM);
+    }
+    
+    nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+    if (!NT_STATUS_IS_OK(nt_status) || !(trust->private.flags | PASS_MACHINE_TRUST_ADS)) {
+	    DEBUG(1,("Failed to retrieve password for principal %s\n", host_principal));
+	    trust->free_fn(&trust);
+	    return ADS_ERROR_SYSTEM(ENOENT);
+    }
+    
+    password = trust->private.pass.data;
+    sec_channel_type = SCHANNEL_TYPE(trust->private.flags);
+    
     tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
     new_password = strdup(tmp_password);
     
@@ -45,14 +58,21 @@ ADS_STATUS ads_change_trust_account_password(ADS_STRUCT *ads, char *host_princip
 
     if (!ADS_ERR_OK(ret)) goto failed;
 
-    if (!secrets_store_machine_password(new_password, lp_workgroup(), sec_channel_type)) {
-	    DEBUG(1,("Failed to save machine password\n"));
+    pdb_set_tp_pass(trust, new_password, strlen(new_password) + 1);
+    trust->private.pass.data[trust->private.pass.length] = '\0';
+    pdb_set_tp_mod_time(trust, time(NULL));
+
+    nt_status = pdb_update_trust_passwd(trust);
+    if (!NT_STATUS_IS_OK(nt_status)) {
+	    DEBUG(1,("Failed to update trust password\n"));
+	    trust->free_fn(&trust);
 	    return ADS_ERROR_SYSTEM(EACCES);
     }
-
+    
 failed:
     SAFE_FREE(service_principal);
     SAFE_FREE(new_password);
+    trust->free_fn(&trust);
 
     return ret;
 }

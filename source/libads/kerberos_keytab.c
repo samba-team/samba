@@ -36,6 +36,8 @@
 int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 {
 	krb5_error_code ret = 0;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD *trust = NULL;
 	krb5_context context = NULL;
 	krb5_keytab keytab = NULL;
 	krb5_kt_cursor cursor;
@@ -83,20 +85,19 @@ int ads_keytab_add_entry(ADS_STRUCT *ads, const char *srvPrinc)
 		goto out;
 	}
 
-	/* retrieve the password */
-	if (!secrets_init()) {
-		DEBUG(1,("ads_keytab_add_entry: secrets_init failed\n"));
-		ret = -1;
-		goto out;
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		return False;
 	}
-	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	if (!password_s) {
-		DEBUG(1,("ads_keytab_add_entry: failed to fetch machine password\n"));
-		ret = -1;
-		goto out;
+
+	nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		trust->free_fn(&trust);
+		return False;
 	}
-	password.data = password_s;
-	password.length = strlen(password_s);
+	
+	password.data = trust->private.pass.data;
+	password.length = trust->private.pass.length;
 
 	/* Construct our principal */
 	name_to_fqdn(my_fqdn, global_myname());
@@ -253,6 +254,7 @@ out:
 	SAFE_FREE(principal);
 	SAFE_FREE(password_s);
 	SAFE_FREE(princ_s);
+	trust->free_fn(&trust);
 
 	{
 		krb5_keytab_entry zero_kt_entry;

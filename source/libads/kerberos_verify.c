@@ -131,6 +131,8 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt)
 {
 	krb5_error_code ret = 0;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_TRUST_PASSWD *trust = NULL;
 	BOOL auth_ok = False;
 	char *password_s = NULL;
 	krb5_data password;
@@ -142,14 +144,19 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 		return False;
 	}
 
-	password_s = secrets_fetch_machine_password(lp_workgroup(), NULL, NULL);
-	if (!password_s) {
-		DEBUG(1,("ads_secrets_verify_ticket: failed to fetch machine password\n"));
+	nt_status = pdb_init_trustpw(&trust);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return False;
 	}
 
-	password.data = password_s;
-	password.length = strlen(password_s);
+	nt_status = pdb_gettrustpwnam(trust, lp_workgroup());
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		trust->free_fn(&trust);
+		return False;
+	}
+	
+	password.data = trust->private.pass.data;
+	password.length = trust->private.pass.length;
 
 	/* CIFS doesn't use addresses in tickets. This would break NAT. JRA */
 
@@ -197,6 +204,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 
 	free_kerberos_etypes(context, enctypes);
 	SAFE_FREE(password_s);
+	trust->free_fn(&trust);
 
 	return auth_ok;
 }
