@@ -147,18 +147,18 @@ BOOL do_reg_open_unk_4(struct cli_state *cli, uint16 unknown_0, uint32 level,
 }
 
 /****************************************************************************
-do a REG Query Unknown 10
+do a REG Query Key
 ****************************************************************************/
-BOOL do_reg_query_unk_10(struct cli_state *cli, POLICY_HND *hnd,
-				uint32 *unknown_0, uint32 *unknown_1,
+BOOL do_reg_query_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *class, uint32 *class_len,
 				uint32 *num_subkeys, uint32 *max_subkeylen,
-				uint32 *unknown_4, uint32 *num_values,
+				uint32 *max_subkeysize, uint32 *num_values,
 				uint32 *max_valnamelen, uint32 *max_valbufsize,
-				uint32 *unknown_8, NTTIME *mod_time)
+				uint32 *sec_desc, NTTIME *mod_time)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
-	REG_Q_QUERY_UNK_10 q_o;
+	REG_Q_QUERY_KEY q_o;
 	BOOL valid_query = False;
 
 	if (hnd == NULL) return False;
@@ -166,30 +166,30 @@ BOOL do_reg_query_unk_10(struct cli_state *cli, POLICY_HND *hnd,
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
 
-	/* create and send a MSRPC command with api REG_QUERY_UNK_10 */
+	/* create and send a MSRPC command with api REG_QUERY_KEY */
 
-	DEBUG(4,("REG Query Unknown 10\n"));
+	DEBUG(4,("REG Query Key\n"));
 
-	make_reg_q_query_unk_10(&q_o, hnd);
+	make_reg_q_query_key(&q_o, hnd, *class_len);
 
 	/* turn parameters into data stream */
-	reg_io_q_query_unk_10("", &q_o, &buf, 0);
+	reg_io_q_query_key("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, REG_QUERY_UNK_10, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, REG_QUERY_KEY, &buf, &rbuf))
 	{
-		REG_R_QUERY_UNK_10 r_o;
+		REG_R_QUERY_KEY r_o;
 		BOOL p;
 
 		ZERO_STRUCT(r_o);
 
-		reg_io_r_query_unk_10("", &r_o, &rbuf, 0);
+		reg_io_r_query_key("", &r_o, &rbuf, 0);
 		p = rbuf.offset != 0;
 
 		if (p && r_o.status != 0)
 		{
 			/* report error code */
-			DEBUG(0,("REG_QUERY_UNK_10: %s\n", get_nt_error_msg(r_o.status)));
+			DEBUG(0,("REG_QUERY_KEY: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
@@ -197,16 +197,16 @@ BOOL do_reg_query_unk_10(struct cli_state *cli, POLICY_HND *hnd,
 		{
 			valid_query = True;
 			
-			*unknown_0      = r_o.unknown_0     ;
-			*unknown_1      = r_o.unknown_1     ;
+			*class_len      = r_o.hdr_class.uni_max_len;
+			fstrcpy(class, unistr2_to_str(&r_o.uni_class));
 			*num_subkeys    = r_o.num_subkeys   ;
 			*max_subkeylen  = r_o.max_subkeylen ;
-			*unknown_4      = r_o.unknown_4     ;
+			*max_subkeysize = r_o.max_subkeysize;
 			*num_values     = r_o.num_values    ;
 			*max_valnamelen = r_o.max_valnamelen;
 			*max_valbufsize = r_o.max_valbufsize;
-			*unknown_8      = r_o.unknown_8    ;
-			*mod_time       = r_o.mod_time     ;
+			*sec_desc       = r_o.sec_desc      ;
+			*mod_time       = r_o.mod_time      ;
 		}
 	}
 
@@ -395,6 +395,65 @@ BOOL do_reg_get_key_sec(struct cli_state *cli, POLICY_HND *hnd,
 }
 
 /****************************************************************************
+do a REG Create Key
+****************************************************************************/
+BOOL do_reg_create_key(struct cli_state *cli, POLICY_HND *hnd,
+				char *key_name, char *key_class,
+				SEC_INFO *sam_access,
+				POLICY_HND *key)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_CREATE_KEY q_o;
+	BOOL valid_create = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_CREATE_KEY */
+
+	DEBUG(4,("REG Create Key: %s %s 0x%08x\n", key_name, key_class,
+		sam_access != NULL ? sam_access->perms : 0));
+
+	make_reg_q_create_key(&q_o, hnd, key_name, key_class, sam_access);
+
+	/* turn parameters into data stream */
+	reg_io_q_create_key("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_CREATE_KEY, &buf, &rbuf))
+	{
+		REG_R_CREATE_KEY r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_create_key("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_CREATE_KEY: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_create = True;
+			memcpy(key, r_o.key_pol.data, sizeof(key->data));
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_create;
+}
+
+/****************************************************************************
 do a REG Enum Key
 ****************************************************************************/
 BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
@@ -453,6 +512,61 @@ BOOL do_reg_enum_key(struct cli_state *cli, POLICY_HND *hnd,
 	prs_mem_free(&buf );
 
 	return valid_query;
+}
+
+/****************************************************************************
+do a REG Create Value
+****************************************************************************/
+BOOL do_reg_create_val(struct cli_state *cli, POLICY_HND *hnd,
+				char *val_name, uint32 type, BUFFER3 *data)
+{
+	prs_struct rbuf;
+	prs_struct buf; 
+	REG_Q_CREATE_VALUE q_o;
+	BOOL valid_create = False;
+
+	if (hnd == NULL) return False;
+
+	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
+	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
+
+	/* create and send a MSRPC command with api REG_CREATE_VALUE */
+
+	DEBUG(4,("REG Create Value: %s\n", val_name));
+
+	make_reg_q_create_val(&q_o, hnd, val_name, type, data);
+
+	/* turn parameters into data stream */
+	reg_io_q_create_val("", &q_o, &buf, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_api_pipe_req(cli, REG_CREATE_VALUE, &buf, &rbuf))
+	{
+		REG_R_CREATE_VALUE r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		reg_io_r_create_val("", &r_o, &rbuf, 0);
+		p = rbuf.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(0,("REG_CREATE_VALUE: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_create = True;
+		}
+	}
+
+	prs_mem_free(&rbuf);
+	prs_mem_free(&buf );
+
+	return valid_create;
 }
 
 /****************************************************************************

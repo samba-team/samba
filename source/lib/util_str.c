@@ -857,6 +857,56 @@ char *strncpyn(char *dest, char *src,int n, char c)
 }
 
 
+/*************************************************************
+ Routine to get hex characters and turn them into a 16 byte array.
+ the array can be variable length, and any non-hex-numeric
+ characters are skipped.  "0xnn" or "0Xnn" is specially catered
+ for.
+
+ valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
+
+**************************************************************/
+int strhex_to_str(char *p, int len, const char *strhex)
+{
+	int i;
+	int num_chars = 0;
+	unsigned char   lonybble, hinybble;
+	char           *hexchars = "0123456789ABCDEF";
+	char           *p1 = NULL, *p2 = NULL;
+
+	for (i = 0; i < len && strhex[i] != 0; i++)
+	{
+		if (strnequal(hexchars, "0x", 2))
+		{
+			i++; /* skip two chars */
+			continue;
+		}
+
+		while (!(p1 = strchr(hexchars, toupper(strhex[i]))))
+		{
+			continue;
+		}
+
+		i++; /* next hex digit */
+
+		while (!(p2 = strchr(hexchars, toupper(strhex[i]))))
+		{
+			continue;
+		}
+
+		/* get the two nybbles */
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		p[num_chars] = (hinybble << 4) | lonybble;
+		num_chars++;
+
+		p1 = NULL;
+		p2 = NULL;
+	}
+	return num_chars;
+}
+
 /****************************************************************************
 check if a string is part of a list
 ****************************************************************************/

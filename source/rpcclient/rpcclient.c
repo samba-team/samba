@@ -29,13 +29,13 @@
 #define REGISTER 0
 #endif
 
+extern pstring debugf;
 extern pstring scope;
 extern pstring global_myname;
 
 extern pstring user_socket_options;
 
 
-extern pstring debugf;
 extern int DEBUGLEVEL;
 
 
@@ -105,6 +105,12 @@ struct
   char *description;
 } commands[] = 
 {
+  {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
+  {"regcreatekey",cmd_reg_create_key,  "<parentname> <keyname> [keyclass] Registry Key Create"},
+  {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
+  {"regcreateval",cmd_reg_create_val,  "<parentname> <valname> <valtype> <value> Registry Key Create"},
+  {"regtest2",   cmd_reg_test2,        "Registry Testing No 2"},
+  {"reggetsec",  cmd_reg_get_key_sec,  "<keyname> | <valname> Registry Key Security"},
   {"ntlogin",    cmd_netlogon_login_test, "[username] [password] NT Domain login test"},
   {"wksinfo",    cmd_wks_query_info,   "Workstation Query Info"},
   {"srvinfo",    cmd_srv_query_info,   "Server Query Info"},
@@ -386,7 +392,8 @@ enum client_action
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	char *pname = argv[0];
+	BOOL interactive = True;
+
 	int opt;
 	extern FILE *dbf;
 	extern char *optarg;
@@ -404,6 +411,7 @@ enum client_action
 	pstring password; /* local copy only, if one is entered */
 
 	out_hnd = stdout;
+	fstrcpy(debugf, argv[0]);
 
 	rpcclient_init();
 
@@ -446,18 +454,15 @@ enum client_action
 	pstrcpy(cli_info.share, "");
 	pstrcpy(cli_info.service, "");
 
-	pstrcpy(cli_info.dom.level3_sid, "");
-	pstrcpy(cli_info.dom.level3_dom, "");
-	pstrcpy(cli_info.dom.level5_sid, "");
-	pstrcpy(cli_info.dom.level5_dom, "");
+	ZERO_STRUCT(cli_info.dom.level3_sid);
+	ZERO_STRUCT(cli_info.dom.level5_sid);
+	fstrcpy(cli_info.dom.level3_dom, "");
+	fstrcpy(cli_info.dom.level5_dom, "");
 
 	smb_cli->nt_pipe_fnum   = 0xffff;
 
-	setup_logging(pname, True);
-
 	TimeInit();
 	charset_initialise();
-/*	crc32_build_table(); */
 
 	myumask = umask(0);
 	umask(myumask);
@@ -501,7 +506,7 @@ enum client_action
 
 	if (argc < 2)
 	{
-		usage(pname);
+		usage(argv[0]);
 		exit(1);
 	}
 
@@ -514,11 +519,11 @@ enum client_action
 		argc--;
 		argv++;
 
-		DEBUG(1,("service: %s\n", cli_info.service));
+		fprintf(out_hnd, "service: %s\n", cli_info.service);
 
 		if (count_chars(cli_info.service,'\\') < 3)
 		{
-			usage(pname);
+			usage(argv[0]);
 			printf("\n%s: Not enough '\\' characters in service\n", cli_info.service);
 			exit(1);
 		}
@@ -644,7 +649,8 @@ enum client_action
 			case 'l':
 			{
 				slprintf(debugf, sizeof(debugf)-1,
-				         "%s.client",optarg);
+				         "%s.client", optarg);
+				interactive = False;
 				break;
 			}
 
@@ -657,7 +663,7 @@ enum client_action
 
 			case 'h':
 			{
-				usage(pname);
+				usage(argv[0]);
 				exit(0);
 				break;
 			}
@@ -676,16 +682,18 @@ enum client_action
 
 			default:
 			{
-				usage(pname);
+				usage(argv[0]);
 				exit(1);
 				break;
 			}
 		}
 	}
 
+	setup_logging(debugf, interactive);
+
 	if (cli_action == CLIENT_NONE)
 	{
-		usage(pname);
+		usage(argv[0]);
 		exit(1);
 	}
 

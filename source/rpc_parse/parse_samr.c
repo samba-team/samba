@@ -1810,7 +1810,7 @@ void make_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 
 		for (i = 0; i < num_rids; i++)
 		{
-			make_dom_rid3(&(r_u->dom_rid[i]), rid[i]);
+			make_dom_rid3(&(r_u->dom_rid[i]), rid[i], 0x01);
 		}
 
 		r_u->num_entries3 = num_rids;

@@ -119,6 +119,70 @@ char *unistr2_to_str(UNISTR2 *str)
 }
 
 /*******************************************************************
+Return a number stored in a buffer
+********************************************************************/
+uint32 buffer2_to_uint32(BUFFER2 *str)
+{
+	if (str->buf_len == 4)
+	{
+		return IVAL(str->buffer, 0);
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+/*******************************************************************
+Return a ascii version of a NOTunicode string
+********************************************************************/
+char *buffer2_to_str(BUFFER2 *str)
+{
+	char *lbuf = lbufs[nexti];
+	char *p;
+	uint16 *buf = str->buffer;
+	int max_size = MIN(sizeof(str->buffer)-2, str->buf_len/2);
+
+	nexti = (nexti+1)%8;
+
+	for (p = lbuf; *buf && p-lbuf < max_size; p++, buf++)
+	{
+		*p = *buf;
+	}
+
+	*p = 0;
+	return lbuf;
+}
+
+/*******************************************************************
+Return a ascii version of a NOTunicode string
+********************************************************************/
+char *buffer2_to_multistr(BUFFER2 *str)
+{
+	char *lbuf = lbufs[nexti];
+	char *p;
+	uint16 *buf = str->buffer;
+	int max_size = MIN(sizeof(str->buffer)-2, str->buf_len/2);
+
+	nexti = (nexti+1)%8;
+
+	for (p = lbuf; p-lbuf < max_size; p++, buf++)
+	{
+		if (*buf == 0)
+		{
+			*p = ' ';
+		}
+		else
+		{
+			*p = *buf;
+		}
+	}
+
+	*p = 0;
+	return lbuf;
+}
+
+/*******************************************************************
 create a null-terminated unicode string from a null-terminated ascii string.
 return number of unicode chars copied, excluding the null character.
 

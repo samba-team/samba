@@ -114,7 +114,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_net.o rpc_parse/parse_prs.o \
                 rpc_parse/parse_reg.o rpc_parse/parse_rpc.o \
                 rpc_parse/parse_samr.o rpc_parse/parse_srv.o \
-                rpc_parse/parse_wks.o
+                rpc_parse/parse_wks.o rpc_parse/parse_sec.o
 
 RPC_CLIENT_OBJ = \
 		rpc_client/cli_login.o    \
@@ -123,6 +123,7 @@ RPC_CLIENT_OBJ = \
 		rpc_client/cli_lsarpc.o   \
 		rpc_client/cli_wkssvc.o   \
 		rpc_client/cli_srvsvc.o   \
+		rpc_client/cli_reg.o   \
 		rpc_client/cli_samr.o 
 
 
@@ -196,6 +197,7 @@ RPCCLIENT_OBJ = rpcclient/rpcclient.o \
              rpcclient/cmd_lsarpc.o \
              rpcclient/cmd_wkssvc.o \
              rpcclient/cmd_samr.o \
+             rpcclient/cmd_reg.o \
              rpcclient/cmd_srvsvc.o \
              rpcclient/cmd_netlogon.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \

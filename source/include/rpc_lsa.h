@@ -28,9 +28,14 @@
 
 enum SID_NAME_USE
 {
-	SID_NAME_USER    = 1,
+	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP = 2, /* domain group */
-	SID_NAME_WKN_GRP = 5  /* well-known group */
+	SID_NAME_DOMAIN  = 3, /* domain: don't know what this is */
+	SID_NAME_ALIAS   = 4, /* local group */
+	SID_NAME_WKN_GRP = 5, /* well-known group */
+	SID_NAME_DELETED = 6, /* deleted account: needed for c2 rating */
+	SID_NAME_INVALID = 7, /* invalid account */
+	SID_NAME_UNKNOWN = 8  /* oops. */
 };
 
 /* ntlsa pipe */
@@ -284,14 +289,6 @@ typedef struct lsa_r_lookup_sids
 
 } LSA_R_LOOKUP_SIDS;
 
-/* DOM_NAME - XXXX not sure about this structure */
-typedef struct dom_name_info
-{
-    uint32 uni_str_len;
-	UNISTR str;
-
-} DOM_NAME;
-
 
 #define UNKNOWN_LEN 1
 
@@ -303,7 +300,7 @@ typedef struct lsa_q_lookup_rids
     uint32 num_entries2;
     uint32 buffer_dom_sid; /* undocumented domain SID buffer pointer */
     uint32 buffer_dom_name; /* undocumented domain name buffer pointer */
-    DOM_NAME lookup_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
+    UNISTR3 lookup_name[MAX_LOOKUP_SIDS]; /* names to be looked up */
     uint8 undoc[UNKNOWN_LEN]; /* completely undocumented bytes of unknown length */
 
 } LSA_Q_LOOKUP_RIDS;

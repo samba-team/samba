@@ -91,8 +91,8 @@ typedef struct sid_info_2
 /* STRHDR - string header */
 typedef struct header_info
 {
-  uint16 str_max_len;
   uint16 str_str_len;
+  uint16 str_max_len;
   uint32 buffer; /* non-zero */
 
 } STRHDR;
@@ -100,8 +100,8 @@ typedef struct header_info
 /* UNIHDR - unicode string header */
 typedef struct unihdr_info
 {
-  uint16 uni_max_len;
   uint16 uni_str_len;
+  uint16 uni_max_len;
   uint32 buffer; /* usually has a value of 4 */
 
 } UNIHDR;
@@ -117,6 +117,7 @@ typedef struct unihdr2_info
 /* clueless as to what maximum length should be */
 #define MAX_UNISTRLEN 256
 #define MAX_STRINGLEN 256
+#define MAX_BUFFERLEN 512
 
 /* UNISTR - unicode string size and buffer */
 typedef struct unistr_info
@@ -125,17 +126,34 @@ typedef struct unistr_info
 
 } UNISTR;
 
-/* UNINOTSTR2 - unicode string, size (in uint8 ascii chars) and buffer */
+/* BUFHDR - buffer header */
+typedef struct bufhdr_info
+{
+  uint32 buf_max_len;
+  uint32 buf_len;
+
+} BUFHDR;
+
+/* BUFFER2 - unicode string, size (in uint8 ascii chars) and buffer */
 /* pathetic.  some stupid team of \PIPE\winreg writers got the concept */
 /* of a unicode string different from the other \PIPE\ writers */
-typedef struct uninotstr2_info
+typedef struct buffer2_info
 {
-  uint32 uni_max_len;
+  uint32 buf_max_len;
   uint32 undoc;
-  uint32 uni_buf_len;
+  uint32 buf_len;
   uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. **NOT** necessarily null-terminated */
 
-} UNINOTSTR2;
+} BUFFER2;
+
+/* BUFFER3 */
+typedef struct buffer3_info
+{
+  uint32 buf_max_len;
+  uint8  buffer[MAX_BUFFERLEN]; /* data */
+  uint32 buf_len;
+
+} BUFFER3;
 
 /* UNISTR2 - unicode string size (in uint16 unicode chars) and buffer */
 typedef struct unistr2_info
@@ -156,6 +174,14 @@ typedef struct string2_info
   uint8  buffer[MAX_STRINGLEN]; /* uint8 characters. **NOT** necessarily null-terminated */
 
 } STRING2;
+
+/* UNISTR3 - XXXX not sure about this structure */
+typedef struct unistr3_info
+{
+	uint32 uni_str_len;
+	UNISTR str;
+
+} UNISTR3;
 
 
 /* DOM_RID2 - domain RID structure for ntlsa pipe */
