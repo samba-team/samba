@@ -9,7 +9,7 @@
 #define OLESTR unistr
 
 [
-	uuid(18f70770-8e64-11cf-9af1-0020af6e72f4),
+	uuid("18f70770-8e64-11cf-9af1-0020af6e72f4"),
 	version(0.0)
 ] interface dcom_Unknown
 {
@@ -19,7 +19,7 @@
 }
 
 [
-	uuid(99fcfe60-5260-101b-bbcb-00aa0021347a),
+	uuid("99fcfe60-5260-101b-bbcb-00aa0021347a"),
 	pointer_default(unique)
 ]
 interface ObjectRpcBaseTypes
@@ -270,7 +270,7 @@ interface ObjectRpcBaseTypes
 
 [
 	object,
-	uuid(00000000-0000-0000-C000-000000000046),
+	uuid("00000000-0000-0000-C000-000000000046"),
 	helpstring("Base interface for most COM interfaces")
 ]
 interface IUnknown
@@ -294,7 +294,7 @@ interface IUnknown
 
 [
 	object,
-	uuid(00000001-0000-0000-C000-000000000046),
+	uuid("00000001-0000-0000-C000-000000000046"),
 	pointer_default(unique)
 ] interface IClassFactory : IUnknown
 {
@@ -321,7 +321,7 @@ interface IUnknown
 /* This interface is passed along during OXID resolution. */
 /* */
 [
-	uuid(00000131-0000-0000-C000-000000000046),
+	uuid("00000131-0000-0000-C000-000000000046"),
 	object,
 	helpstring("Remote version of IUnknown")
 ]
@@ -362,7 +362,7 @@ interface IRemUnknown : IUnknown
 }
 
 [
-	uuid(00000140-0000-0000-c000-000000000046),
+	uuid("00000140-0000-0000-c000-000000000046"),
 	object
 ] interface IClassActivator : IUnknown
 {
@@ -376,7 +376,7 @@ interface IRemUnknown : IUnknown
 /* Looks like this is the equivalent of .NET's 
    System.Activator class */
 [
-	uuid(000001a0-0000-0000-c000-000000000046),
+	uuid("000001a0-0000-0000-c000-000000000046"),
 	object
 ]
 	interface ISystemActivator : IClassActivator
@@ -395,7 +395,7 @@ interface IRemUnknown : IUnknown
 /* marshaled interface packets. */
 [
 	object,
-	uuid(00000143-0000-0000-C000-000000000046)
+	uuid("00000143-0000-0000-C000-000000000046")
 ]
 
 interface IRemUnknown2 : IRemUnknown
@@ -411,7 +411,7 @@ interface IRemUnknown2 : IRemUnknown
 
 [
 object,
-	uuid(00000136-0000-0000-C000-000000000046)
+	uuid("00000136-0000-0000-C000-000000000046")
 	] interface ISCMActivator : IUnknown
 {
 	WERROR SCMActivator_GetClassObject();
@@ -420,7 +420,7 @@ object,
 
 [
 	object,
-	uuid(00020400-0000-0000-C000-000000000046)
+	uuid("00020400-0000-0000-C000-000000000046")
 	] interface IDispatch : IUnknown
 {
 	/*****************/
@@ -481,7 +481,7 @@ object,
 
 [
 object,
-	uuid(330E9E75-DF48-11CF-8E2C-00A0C90DC94B),
+	uuid("330E9E75-DF48-11CF-8E2C-00A0C90DC94B"),
 	pointer_default(unique)
 	]
 	interface IDcomEchoServ : IDispatch
@@ -491,7 +491,7 @@ object,
 
 [
 	object,
-	uuid(00000003-0000-0000-C000-000000000046)
+	uuid("00000003-0000-0000-C000-000000000046")
 ] interface IMarshal : IUnknown
 {
 	HRESULT MarshalInterface();

@@ -1,5 +1,5 @@
 [ 
-  uuid(6bffd098-a112-3610-9833-012892020162),
+  uuid("6bffd098-a112-3610-9833-012892020162"),
   version(0.0), 
   helpstring("Browsing"),
   endpoint("lcalrpc:")

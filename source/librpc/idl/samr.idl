@@ -8,7 +8,7 @@
   Thanks to Todd Sabin for some information from his samr.idl in acltools
 */
 
-[ uuid(12345778-1234-abcd-ef00-0123456789ac),
+[ uuid("12345778-1234-abcd-ef00-0123456789ac"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\samr]","ncacn_ip_tcp:", "ncalrpc:"),
   pointer_default(unique)

@@ -1,7 +1,7 @@
 #include "idl_types.h"
 
 [ 
-  uuid(e3514235-4b06-11d1-ab04-00c04fc2dcd2),
+  uuid("e3514235-4b06-11d1-ab04-00c04fc2dcd2"),
   version(4.0),
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:"),
   helpstring("Active Directory Replication"),

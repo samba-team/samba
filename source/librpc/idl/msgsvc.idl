@@ -1,7 +1,7 @@
 /* Works over UDP */
 
 [
-	uuid(17fdd703-1827-4e34-79d4-24a55c53bb37),
+	uuid("17fdd703-1827-4e34-79d4-24a55c53bb37"),
 	version(1.0),
 	helpstring("Messaging Service")
 ] interface msgsvc
@@ -13,7 +13,7 @@
 }
 
 [
-	uuid(5a7b91f8-ff00-11d0-a9b2-00c04fb6e6fc),
+	uuid("5a7b91f8-ff00-11d0-a9b2-00c04fb6e6fc"),
 	version(1.0)
 ] interface msgsvcsend
 {
