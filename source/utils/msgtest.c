@@ -1,8 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
-   Version 1.9.
-   status reporting
-   Copyright (C) Andrew Tridgell 1994-1998
+   Version 3.0
+   Copyright (C) Andrew Tridgell 2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -17,19 +16,10 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
-
-   Revision History:
-
-   12 aug 96: Erik.Devriendt@te6.siemens.be
-   added support for shared memory implementation of share mode locking
-
-   21-Jul-1998: rsharpe@ns.aus.com (Richard Sharpe)
-   Added -L (locks only) -S (shares only) flags and code
-
 */
 
 /*
- * This program reports current SMB connections
+  test code for internal messaging
  */
 
 #define NO_SYSLOG
@@ -71,7 +61,7 @@ void pong_message(int msg_type, pid_t src, void *buf, size_t len)
 		message_send_pid(pid, MSG_PING, NULL, 0);
 	}
 
-	while (pong_count < n) {
+	while (pong_count < i) {
 		message_dispatch();
 		msleep(1);
 	}
