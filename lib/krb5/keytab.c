@@ -149,26 +149,63 @@ krb5_kt_get_entry(krb5_context context,
 		  krb5_keytype keytype,
 		  krb5_keytab_entry *entry)
 {
+    krb5_keytab_entry tmp;
     krb5_error_code r;
     krb5_kt_cursor cursor;
 
     r = krb5_kt_start_seq_get (context, id, &cursor);
     if (r)
 	return KRB5_KT_NOTFOUND; /* XXX i.e. file not found */
-    while (krb5_kt_next_entry(context, id, entry, &cursor) == 0) {
+
+    entry->vno = 0;
+    while (krb5_kt_next_entry(context, id, &tmp, &cursor) == 0) {
 	if ((principal == NULL
-	     || (krb5_principal_compare(context,
-					principal,
-					entry->principal)))
-	    && (kvno == 0 || kvno == entry->vno)
-	    && (keytype == 0 || keytype == entry->keyblock.keytype)) {
-	    krb5_kt_end_seq_get (context, id, &cursor);
-	    return 0;
+	     || krb5_principal_compare(context,
+				       principal,
+				       tmp.principal))
+	    && (keytype == 0 || keytype == tmp.keyblock.keytype)) {
+	    if (kvno == tmp.vno) {
+		krb5_kt_copy_entry_contents (context, &tmp, entry);
+		krb5_kt_free_entry (context, &tmp);
+		krb5_kt_end_seq_get(context, id, &cursor);
+		return 0;
+	    } else if (kvno == 0 && tmp.vno > entry->vno) {
+		if (entry->vno)
+		    krb5_kt_free_entry (context, entry);
+		krb5_kt_copy_entry_contents (context, &tmp, entry);
+	    }
 	}
-	krb5_kt_free_entry(context, entry);
+	krb5_kt_free_entry(context, &tmp);
     }
     krb5_kt_end_seq_get (context, id, &cursor);
-    return KRB5_KT_NOTFOUND;
+    if (entry->vno)
+	return 0;
+    else
+	return KRB5_KT_NOTFOUND;
+}
+
+krb5_error_code
+krb5_kt_copy_entry_contents(krb5_context context,
+			    const krb5_keytab_entry *in,
+			    krb5_keytab_entry *out)
+{
+    krb5_error_code ret;
+
+    memset(out, 0, sizeof(*out));
+    out->vno = in->vno;
+
+    ret = krb5_copy_principal (context, in->principal, &out->principal);
+    if (ret)
+	goto fail;
+    ret = krb5_copy_keyblock_contents (context,
+				       &in->keyblock,
+				       &out->keyblock);
+    if (ret)
+	goto fail;
+    return 0;
+fail:
+    krb5_kt_free_entry (context, out);
+    return ret;
 }
 
 krb5_error_code
@@ -246,7 +283,6 @@ krb5_kt_ret_principal(krb5_storage *sp,
     ALLOC(p, 1);
     if(p == NULL)
 	return ENOMEM;
-
 
     ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
