@@ -1,5 +1,9 @@
 Changes in release 0.2r:
 
+ * klist supports listing v4 tickets
+
+ * support for anonymous tickets
+
  * new man-pages
 
  * telnetd: do not negotiate KERBEROS5 authentication if there's no keytab.
