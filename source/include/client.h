@@ -27,7 +27,7 @@
    overlap on the wire. This size gives us a nice read/write size, which
    will be a multiple of the page size on almost any system */
 #define CLI_BUFFER_SIZE (0xFFFF)
-
+#define CLI_MAX_LARGE_READX_SIZE (127*1024)
 
 /*
  * These definitions depend on smb.h

@@ -48,6 +48,7 @@ static BOOL cli_issue_read(struct cli_state *cli, int fnum, off_t offset,
 	SIVAL(cli->outbuf,smb_vwv3,offset);
 	SSVAL(cli->outbuf,smb_vwv5,size);
 	SSVAL(cli->outbuf,smb_vwv6,size);
+	SSVAL(cli->outbuf,smb_vwv7,((size >> 16) & 1));
 	SSVAL(cli->outbuf,smb_mid,cli->mid + i);
 
 	if (bigoffset)
@@ -75,7 +76,11 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * rounded down to a multiple of 1024.
 	 */
 
-	readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	if (cli->capabilities & CAP_LARGE_READX) {
+		readsize = CLI_MAX_LARGE_READX_SIZE;
+	} else {
+		readsize = (cli->max_xmit - (smb_size+32)) & ~1023;
+	}
 
 	while (total < size) {
 		readsize = MIN(readsize, size-total);
@@ -117,6 +122,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		}
 
 		size2 = SVAL(cli->inbuf, smb_vwv5);
+		size2 |= (SVAL(cli->inbuf, smb_vwv7) & 1);
 
 		if (size2 > readsize) {
 			DEBUG(5,("server returned more than we wanted!\n"));
