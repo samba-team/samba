@@ -156,7 +156,11 @@ typedef struct krb5_creds {
 
 
 typedef struct krb5_authenticator_data{
-  int dummy;
+  int vno;
+  krb5_principal cname;
+  int cusec;
+  krb5_time ctime;
+  int *seq_number;
 } krb5_authenticator_data;
 
 typedef krb5_authenticator_data *krb5_authenticator;

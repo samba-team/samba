@@ -88,6 +88,7 @@ krb5_get_in_tkt(krb5_context context,
 
      a.pvno = 5;
      a.msg_type = KRB_AS_REQ;
+     memset (&a.kdc_options, 0, sizeof(a.kdc_options));
 /* a.kdc_options */
      a.cname = creds->client;
      a.sname = creds->server;

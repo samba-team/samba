@@ -6,9 +6,9 @@ CFLAGS=-I. -I/usr/athena/include -g
 YACC=yacc
 
 SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
-	  krbhst.c get_port.c send_to_kdc.c der.c e.c d.c str2key.c \
-	  get_in_tkt.c get_in_tkt_pw.c der_put.c constants.c get_addrs.c \
-	  k5_der.c
+	  krbhst.c get_port.c send_to_kdc.c str2key.c \
+	  get_in_tkt.c get_in_tkt_pw.c constants.c get_addrs.c \
+	  get_cred.c
 
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 

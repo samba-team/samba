@@ -102,8 +102,13 @@ static krb5_error_code
 store_int32(int fd,
 	    int32_t value)
 {
+  int ret;
+
   value = htonl(value);
-  return write(fd, &value, sizeof(value));
+  ret = write(fd, &value, sizeof(value));
+  if (ret != sizeof(value))
+    return (ret<0)?errno:-1;
+  return 0;
 }
 
 static krb5_error_code
@@ -124,8 +129,13 @@ static krb5_error_code
 store_int16(int fd,
 	    int16_t value)
 {
+  int ret;
+
   value = htons(value);
-  return write(fd, &value, sizeof(value));
+  ret = write(fd, &value, sizeof(value));
+  if (ret != sizeof(value))
+    return (ret<0)?errno:-1;
+  return 0;
 }
 
 static krb5_error_code
@@ -146,7 +156,12 @@ static krb5_error_code
 store_int8(int fd,
 	   int8_t value)
 {
-  return write(fd, &value, sizeof(value));
+  int ret;
+
+  ret = write(fd, &value, sizeof(value));
+  if (ret != sizeof(value))
+    return (ret<0)?errno:-1;
+  return 0;
 }
 
 static krb5_error_code
