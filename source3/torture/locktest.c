@@ -33,11 +33,11 @@ static BOOL hide_unlock_fails;
 static BOOL use_oplocks;
 
 #define FILENAME "\\locktest.dat"
-#define LOCKRANGE 5
+#define LOCKRANGE 100
 #define LOCKBASE 0
 #define MINLENGTH 0
 
-#define ZERO_ZERO 1
+#define ZERO_ZERO 0
 
 /*
 #define LOCKBASE (0x40000000 - 50)
@@ -532,6 +532,7 @@ static void usage(void)
         -o numops\n\
         -u          hide unlock fails\n\
         -a          (show all ops)\n\
+        -A          analyse for minimal ops\n\
         -O          use oplocks\n\
 ");
 }
