@@ -591,6 +591,11 @@ void ndr_print_nstring(struct ndr_print *ndr, const char *name, const char **s)
 	ndr_print_unistr(ndr, name, *s);
 }
 
+void ndr_print_DATA_BLOB(struct ndr_print *ndr, const char *name, DATA_BLOB r)
+{
+	ndr->print(ndr, "%-25s: DATA_BLOB length=%u", name, r.length);
+}
+
 
 /*
   push a DATA_BLOB onto the wire. 
@@ -634,4 +639,15 @@ NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr,
 {
 	NDR_CHECK(ndr_push_bytes(ndr, r->data, 20));
 	return NT_STATUS_OK;
+}
+
+
+void ndr_print_policy_handle(struct ndr_print *ndr, const char *name, struct policy_handle *r)
+{
+	ndr->print(ndr, "%-25s: policy_handle %02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x%02x", 
+		   name, 
+		   r->data[0], r->data[1], r->data[2], r->data[3], r->data[4], 
+		   r->data[5], r->data[6], r->data[7], r->data[8], r->data[9], 
+		   r->data[10], r->data[11], r->data[12], r->data[13], r->data[14], 
+		   r->data[15], r->data[16], r->data[17], r->data[18], r->data[19]);
 }

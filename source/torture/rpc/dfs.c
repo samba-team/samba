@@ -36,7 +36,7 @@ static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	printf("exist=%d\n", exist);
+	NDR_PRINT_BOTH_DEBUG(dfs_Exist, &r);
 
 	return True;
 }
@@ -60,7 +60,7 @@ static BOOL test_InfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 		return False;
 	}
 
-	NDR_PRINT_UNION_DEBUG(dfs_Info, r.in.level, &r.out.info);
+	NDR_PRINT_BOTH_DEBUG(dfs_GetInfo, &r);
 
 	return True;
 }
@@ -106,9 +106,7 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 		return False;
 	}
 
-	printf("Received %d records\n", r.out.total?*r.out.total:-1);
-
-	NDR_PRINT_DEBUG(dfs_EnumStruct, r.out.info);
+	NDR_PRINT_BOTH_DEBUG(dfs_Enum, &r);
 
 	if (level == 1 && r.out.total) {
 		int i;

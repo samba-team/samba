@@ -2279,6 +2279,110 @@ NTSTATUS ndr_pull_samr_VALIDATE_PASSWORD(struct ndr_pull *ndr, struct samr_VALID
 	return NT_STATUS_OK;
 }
 
+void ndr_print_samr_Connect(struct ndr_print *ndr, const char *name, int flags, struct samr_Connect *r)
+{
+	ndr_print_struct(ndr, name, "samr_Connect");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_Connect");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "system_name", r->in.system_name);
+	ndr->depth++;
+	if (r->in.system_name) {
+		ndr_print_uint16(ndr, "system_name", *r->in.system_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_Connect");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_Close(struct ndr_print *ndr, const char *name, int flags, struct samr_Close *r)
+{
+	ndr_print_struct(ndr, name, "samr_Close");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_Close");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_Close");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SetSecurity(struct ndr_print *ndr, const char *name, int flags, struct samr_SetSecurity *r)
+{
+	ndr_print_struct(ndr, name, "samr_SetSecurity");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SetSecurity");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SetSecurity");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QuerySecurity(struct ndr_print *ndr, const char *name, int flags, struct samr_QuerySecurity *r)
+{
+	ndr_print_struct(ndr, name, "samr_QuerySecurity");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QuerySecurity");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QuerySecurity");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_Shutdown(struct ndr_print *ndr, const char *name, int flags, struct samr_Shutdown *r)
+{
+	ndr_print_struct(ndr, name, "samr_Shutdown");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_Shutdown");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_Shutdown");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_samr_Name(struct ndr_print *ndr, const char *name, struct samr_Name *r)
 {
 	ndr_print_struct(ndr, name, "samr_Name");
@@ -2291,6 +2395,37 @@ void ndr_print_samr_Name(struct ndr_print *ndr, const char *name, struct samr_Na
 		ndr_print_unistr_noterm(ndr, "name", r->name);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_samr_LookupDomain(struct ndr_print *ndr, const char *name, int flags, struct samr_LookupDomain *r)
+{
+	ndr_print_struct(ndr, name, "samr_LookupDomain");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_LookupDomain");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "domain", r->in.domain);
+	ndr->depth++;
+		ndr_print_samr_Name(ndr, "domain", r->in.domain);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_LookupDomain");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "sid", r->out.sid);
+	ndr->depth++;
+	if (r->out.sid) {
+		ndr_print_dom_sid2(ndr, "sid", r->out.sid);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -2314,6 +2449,76 @@ void ndr_print_samr_SamArray(struct ndr_print *ndr, const char *name, struct sam
 		ndr_print_array(ndr, "entries", r->entries, sizeof(r->entries[0]), r->count, (ndr_print_fn_t)ndr_print_samr_SamEntry);
 	}
 	ndr->depth--;
+	ndr->depth--;
+}
+
+void ndr_print_samr_EnumDomains(struct ndr_print *ndr, const char *name, int flags, struct samr_EnumDomains *r)
+{
+	ndr_print_struct(ndr, name, "samr_EnumDomains");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_EnumDomains");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "buf_size", r->in.buf_size);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_EnumDomains");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sam", r->out.sam);
+	ndr->depth++;
+	if (r->out.sam) {
+		ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+	}
+	ndr->depth--;
+	ndr_print_ptr(ndr, "num_entries", r->out.num_entries);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "num_entries", *r->out.num_entries);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_OpenDomain(struct ndr_print *ndr, const char *name, int flags, struct samr_OpenDomain *r)
+{
+	ndr_print_struct(ndr, name, "samr_OpenDomain");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_OpenDomain");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr_print_ptr(ndr, "sid", r->in.sid);
+	ndr->depth++;
+		ndr_print_dom_sid2(ndr, "sid", r->in.sid);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_OpenDomain");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "domain_handle", r->out.domain_handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "domain_handle", r->out.domain_handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
 	ndr->depth--;
 }
 
@@ -2503,6 +2708,292 @@ void ndr_print_samr_DomainInfo(struct ndr_print *ndr, const char *name, uint16 l
 	}
 }
 
+void ndr_print_samr_QueryDomainInfo(struct ndr_print *ndr, const char *name, int flags, struct samr_QueryDomainInfo *r)
+{
+	ndr_print_struct(ndr, name, "samr_QueryDomainInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QueryDomainInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QueryDomainInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_samr_DomainInfo(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_DOMAIN_INFO(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_DOMAIN_INFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_DOMAIN_INFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_DOMAIN_INFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_DOMAIN_INFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CREATE_DOM_GROUP(struct ndr_print *ndr, const char *name, int flags, struct samr_CREATE_DOM_GROUP *r)
+{
+	ndr_print_struct(ndr, name, "samr_CREATE_DOM_GROUP");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CREATE_DOM_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CREATE_DOM_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_EnumDomainGroups(struct ndr_print *ndr, const char *name, int flags, struct samr_EnumDomainGroups *r)
+{
+	ndr_print_struct(ndr, name, "samr_EnumDomainGroups");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_EnumDomainGroups");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "max_size", r->in.max_size);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_EnumDomainGroups");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sam", r->out.sam);
+	ndr->depth++;
+	if (r->out.sam) {
+		ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_entries", r->out.num_entries);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CREATE_USER_IN_DOMAIN(struct ndr_print *ndr, const char *name, int flags, struct samr_CREATE_USER_IN_DOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "samr_CREATE_USER_IN_DOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CREATE_USER_IN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CREATE_USER_IN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_EnumDomainUsers(struct ndr_print *ndr, const char *name, int flags, struct samr_EnumDomainUsers *r)
+{
+	ndr_print_struct(ndr, name, "samr_EnumDomainUsers");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_EnumDomainUsers");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "acct_flags", r->in.acct_flags);
+	ndr_print_uint32(ndr, "max_size", r->in.max_size);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_EnumDomainUsers");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sam", r->out.sam);
+	ndr->depth++;
+	if (r->out.sam) {
+		ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_entries", r->out.num_entries);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CREATE_DOM_ALIAS(struct ndr_print *ndr, const char *name, int flags, struct samr_CREATE_DOM_ALIAS *r)
+{
+	ndr_print_struct(ndr, name, "samr_CREATE_DOM_ALIAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CREATE_DOM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CREATE_DOM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_EnumDomainAliases(struct ndr_print *ndr, const char *name, int flags, struct samr_EnumDomainAliases *r)
+{
+	ndr_print_struct(ndr, name, "samr_EnumDomainAliases");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_EnumDomainAliases");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "resume_handle", r->in.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->in.resume_handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "max_size", r->in.max_size);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_EnumDomainAliases");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "resume_handle", r->out.resume_handle);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "resume_handle", *r->out.resume_handle);
+	ndr->depth--;
+	ndr_print_ptr(ndr, "sam", r->out.sam);
+	ndr->depth++;
+	if (r->out.sam) {
+		ndr_print_samr_SamArray(ndr, "sam", r->out.sam);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "num_entries", r->out.num_entries);
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_ALIAS_MEMBERSHIP(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_ALIAS_MEMBERSHIP *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_ALIAS_MEMBERSHIP");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_ALIAS_MEMBERSHIP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_ALIAS_MEMBERSHIP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_LOOKUP_NAMES(struct ndr_print *ndr, const char *name, int flags, struct samr_LOOKUP_NAMES *r)
+{
+	ndr_print_struct(ndr, name, "samr_LOOKUP_NAMES");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_LOOKUP_NAMES");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_LOOKUP_NAMES");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_LOOKUP_RIDS(struct ndr_print *ndr, const char *name, int flags, struct samr_LOOKUP_RIDS *r)
+{
+	ndr_print_struct(ndr, name, "samr_LOOKUP_RIDS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_LOOKUP_RIDS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_LOOKUP_RIDS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_OpenGroup(struct ndr_print *ndr, const char *name, int flags, struct samr_OpenGroup *r)
+{
+	ndr_print_struct(ndr, name, "samr_OpenGroup");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_OpenGroup");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr_print_uint32(ndr, "rid", r->in.rid);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_OpenGroup");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_samr_GroupInfoAll(struct ndr_print *ndr, const char *name, struct samr_GroupInfoAll *r)
 {
 	ndr_print_struct(ndr, name, "samr_GroupInfoAll");
@@ -2563,6 +3054,163 @@ void ndr_print_samr_GroupInfo(struct ndr_print *ndr, const char *name, uint16 le
 	}
 }
 
+void ndr_print_samr_QueryGroupInfo(struct ndr_print *ndr, const char *name, int flags, struct samr_QueryGroupInfo *r)
+{
+	ndr_print_struct(ndr, name, "samr_QueryGroupInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QueryGroupInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QueryGroupInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_samr_GroupInfo(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_GROUPINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_GROUPINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_GROUPINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_GROUPINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_GROUPINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_ADD_GROUPMEM(struct ndr_print *ndr, const char *name, int flags, struct samr_ADD_GROUPMEM *r)
+{
+	ndr_print_struct(ndr, name, "samr_ADD_GROUPMEM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_ADD_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_ADD_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_DELETE_DOM_GROUP(struct ndr_print *ndr, const char *name, int flags, struct samr_DELETE_DOM_GROUP *r)
+{
+	ndr_print_struct(ndr, name, "samr_DELETE_DOM_GROUP");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_DELETE_DOM_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_DELETE_DOM_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_DEL_GROUPMEM(struct ndr_print *ndr, const char *name, int flags, struct samr_DEL_GROUPMEM *r)
+{
+	ndr_print_struct(ndr, name, "samr_DEL_GROUPMEM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_DEL_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_DEL_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_GROUPMEM(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_GROUPMEM *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_GROUPMEM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_GROUPMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_MEMBER_ATTRIBUTES_OF_GROUP(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_MEMBER_ATTRIBUTES_OF_GROUP *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_MEMBER_ATTRIBUTES_OF_GROUP");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_MEMBER_ATTRIBUTES_OF_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_MEMBER_ATTRIBUTES_OF_GROUP");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_OpenAlias(struct ndr_print *ndr, const char *name, int flags, struct samr_OpenAlias *r)
+{
+	ndr_print_struct(ndr, name, "samr_OpenAlias");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_OpenAlias");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr_print_uint32(ndr, "rid", r->in.rid);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_OpenAlias");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
 void ndr_print_samr_AliasInfoAll(struct ndr_print *ndr, const char *name, struct samr_AliasInfoAll *r)
 {
 	ndr_print_struct(ndr, name, "samr_AliasInfoAll");
@@ -2608,6 +3256,163 @@ void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, uint16 le
 	default:
 		ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+void ndr_print_samr_QueryAliasInfo(struct ndr_print *ndr, const char *name, int flags, struct samr_QueryAliasInfo *r)
+{
+	ndr_print_struct(ndr, name, "samr_QueryAliasInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QueryAliasInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QueryAliasInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_samr_AliasInfo(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_ALIASINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_ALIASINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_ALIASINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_ALIASINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_ALIASINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_DELETE_DOM_ALIAS(struct ndr_print *ndr, const char *name, int flags, struct samr_DELETE_DOM_ALIAS *r)
+{
+	ndr_print_struct(ndr, name, "samr_DELETE_DOM_ALIAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_DELETE_DOM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_DELETE_DOM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_ADD_ALIASMEM(struct ndr_print *ndr, const char *name, int flags, struct samr_ADD_ALIASMEM *r)
+{
+	ndr_print_struct(ndr, name, "samr_ADD_ALIASMEM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_ADD_ALIASMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_ADD_ALIASMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_DEL_ALIASMEM(struct ndr_print *ndr, const char *name, int flags, struct samr_DEL_ALIASMEM *r)
+{
+	ndr_print_struct(ndr, name, "samr_DEL_ALIASMEM");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_DEL_ALIASMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_DEL_ALIASMEM");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_MEMBERS_IN_ALIAS(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_MEMBERS_IN_ALIAS *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_MEMBERS_IN_ALIAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_MEMBERS_IN_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_MEMBERS_IN_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_OpenUser(struct ndr_print *ndr, const char *name, int flags, struct samr_OpenUser *r)
+{
+	ndr_print_struct(ndr, name, "samr_OpenUser");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_OpenUser");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr_print_uint32(ndr, "rid", r->in.rid);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_OpenUser");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "acct_handle", r->out.acct_handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_DELETE_DOM_USER(struct ndr_print *ndr, const char *name, int flags, struct samr_DELETE_DOM_USER *r)
+{
+	ndr_print_struct(ndr, name, "samr_DELETE_DOM_USER");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_DELETE_DOM_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_DELETE_DOM_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
 }
 
 void ndr_print_samr_UserInfo1(struct ndr_print *ndr, const char *name, struct samr_UserInfo1 *r)
@@ -2938,5 +3743,572 @@ void ndr_print_samr_UserInfo(struct ndr_print *ndr, const char *name, uint16 lev
 	default:
 		ndr_print_bad_level(ndr, name, level);
 	}
+}
+
+void ndr_print_samr_QueryUserInfo(struct ndr_print *ndr, const char *name, int flags, struct samr_QueryUserInfo *r)
+{
+	ndr_print_struct(ndr, name, "samr_QueryUserInfo");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QueryUserInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->in.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+	ndr->depth--;
+	ndr_print_uint16(ndr, "level", r->in.level);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QueryUserInfo");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "info", r->out.info);
+	ndr->depth++;
+	if (r->out.info) {
+	ndr_print_samr_UserInfo(ndr, "info", r->in.level, r->out.info);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_USERINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_USERINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_USERINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_USERINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_USERINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CHANGE_PASSWORD_USER(struct ndr_print *ndr, const char *name, int flags, struct samr_CHANGE_PASSWORD_USER *r)
+{
+	ndr_print_struct(ndr, name, "samr_CHANGE_PASSWORD_USER");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CHANGE_PASSWORD_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CHANGE_PASSWORD_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_GROUPS_FOR_USER(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_GROUPS_FOR_USER *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_GROUPS_FOR_USER");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_GROUPS_FOR_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_GROUPS_FOR_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_DISPINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_DISPINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_DISPINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_DISPINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_DISPINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_DISPLAY_ENUMERATION_INDEX(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_DISPLAY_ENUMERATION_INDEX *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_DISPLAY_ENUMERATION_INDEX");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_DISPLAY_ENUMERATION_INDEX");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_DISPLAY_ENUMERATION_INDEX");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_TEST_PRIVATE_FUNCTIONS_DOMAIN(struct ndr_print *ndr, const char *name, int flags, struct samr_TEST_PRIVATE_FUNCTIONS_DOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "samr_TEST_PRIVATE_FUNCTIONS_DOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_TEST_PRIVATE_FUNCTIONS_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_TEST_PRIVATE_FUNCTIONS_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_TEST_PRIVATE_FUNCTIONS_USER(struct ndr_print *ndr, const char *name, int flags, struct samr_TEST_PRIVATE_FUNCTIONS_USER *r)
+{
+	ndr_print_struct(ndr, name, "samr_TEST_PRIVATE_FUNCTIONS_USER");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_TEST_PRIVATE_FUNCTIONS_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_TEST_PRIVATE_FUNCTIONS_USER");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_USRDOM_PWINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_USRDOM_PWINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_USRDOM_PWINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_USRDOM_PWINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_USRDOM_PWINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN(struct ndr_print *ndr, const char *name, int flags, struct samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_REMOVE_MEMBER_FROM_FOREIGN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_INFORMATION_DOMAIN2(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_INFORMATION_DOMAIN2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_INFORMATION_DOMAIN2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_INFORMATION_DOMAIN2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_INFORMATION_DOMAIN2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_INFORMATION_USER2(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_INFORMATION_USER2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_INFORMATION_USER2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_INFORMATION_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_INFORMATION_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_DISPINFO2(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_DISPINFO2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_DISPINFO2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_DISPINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_DISPINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_DISPLAY_ENUMERATION_INDEX2(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_DISPLAY_ENUMERATION_INDEX2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_DISPLAY_ENUMERATION_INDEX2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_DISPLAY_ENUMERATION_INDEX2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_DISPLAY_ENUMERATION_INDEX2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CREATE_USER2_IN_DOMAIN(struct ndr_print *ndr, const char *name, int flags, struct samr_CREATE_USER2_IN_DOMAIN *r)
+{
+	ndr_print_struct(ndr, name, "samr_CREATE_USER2_IN_DOMAIN");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CREATE_USER2_IN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CREATE_USER2_IN_DOMAIN");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_QUERY_DISPINFO3(struct ndr_print *ndr, const char *name, int flags, struct samr_QUERY_DISPINFO3 *r)
+{
+	ndr_print_struct(ndr, name, "samr_QUERY_DISPINFO3");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_QUERY_DISPINFO3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_QUERY_DISPINFO3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS(struct ndr_print *ndr, const char *name, int flags, struct samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS *r)
+{
+	ndr_print_struct(ndr, name, "samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_ADD_MULTIPLE_MEMBERS_TO_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS(struct ndr_print *ndr, const char *name, int flags, struct samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS *r)
+{
+	ndr_print_struct(ndr, name, "samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_REMOVE_MULTIPLE_MEMBERS_FROM_ALIAS");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_OEM_CHANGE_PASSWORD_USER2(struct ndr_print *ndr, const char *name, int flags, struct samr_OEM_CHANGE_PASSWORD_USER2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_OEM_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_OEM_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_OEM_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_UNICODE_CHANGE_PASSWORD_USER2(struct ndr_print *ndr, const char *name, int flags, struct samr_UNICODE_CHANGE_PASSWORD_USER2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_UNICODE_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_UNICODE_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_UNICODE_CHANGE_PASSWORD_USER2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_DOM_PWINFO(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_DOM_PWINFO *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_DOM_PWINFO");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_DOM_PWINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_DOM_PWINFO");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CONNECT2(struct ndr_print *ndr, const char *name, int flags, struct samr_CONNECT2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_CONNECT2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CONNECT2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CONNECT2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_USERINFO2(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_USERINFO2 *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_USERINFO2");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_USERINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_USERINFO2");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_BOOT_KEY_INFORMATION(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_BOOT_KEY_INFORMATION *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_GET_BOOT_KEY_INFORMATION(struct ndr_print *ndr, const char *name, int flags, struct samr_GET_BOOT_KEY_INFORMATION *r)
+{
+	ndr_print_struct(ndr, name, "samr_GET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_GET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_GET_BOOT_KEY_INFORMATION");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CONNECT3(struct ndr_print *ndr, const char *name, int flags, struct samr_CONNECT3 *r)
+{
+	ndr_print_struct(ndr, name, "samr_CONNECT3");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CONNECT3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CONNECT3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_Connect4(struct ndr_print *ndr, const char *name, int flags, struct samr_Connect4 *r)
+{
+	ndr_print_struct(ndr, name, "samr_Connect4");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_Connect4");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "system_name", r->in.system_name);
+	ndr->depth++;
+	if (r->in.system_name) {
+		ndr_print_unistr(ndr, "system_name", r->in.system_name);
+	}
+	ndr->depth--;
+	ndr_print_uint32(ndr, "unknown", r->in.unknown);
+	ndr_print_uint32(ndr, "access_mask", r->in.access_mask);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_Connect4");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "handle", r->out.handle);
+	ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_UNICODE_CHANGE_PASSWORD_USER3(struct ndr_print *ndr, const char *name, int flags, struct samr_UNICODE_CHANGE_PASSWORD_USER3 *r)
+{
+	ndr_print_struct(ndr, name, "samr_UNICODE_CHANGE_PASSWORD_USER3");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_UNICODE_CHANGE_PASSWORD_USER3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_UNICODE_CHANGE_PASSWORD_USER3");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_CONNECT5(struct ndr_print *ndr, const char *name, int flags, struct samr_CONNECT5 *r)
+{
+	ndr_print_struct(ndr, name, "samr_CONNECT5");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_CONNECT5");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_CONNECT5");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_RID_TO_SID(struct ndr_print *ndr, const char *name, int flags, struct samr_RID_TO_SID *r)
+{
+	ndr_print_struct(ndr, name, "samr_RID_TO_SID");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_RID_TO_SID");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_RID_TO_SID");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_SET_DSRM_PASSWORD(struct ndr_print *ndr, const char *name, int flags, struct samr_SET_DSRM_PASSWORD *r)
+{
+	ndr_print_struct(ndr, name, "samr_SET_DSRM_PASSWORD");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_SET_DSRM_PASSWORD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_SET_DSRM_PASSWORD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_samr_VALIDATE_PASSWORD(struct ndr_print *ndr, const char *name, int flags, struct samr_VALIDATE_PASSWORD *r)
+{
+	ndr_print_struct(ndr, name, "samr_VALIDATE_PASSWORD");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "samr_VALIDATE_PASSWORD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "samr_VALIDATE_PASSWORD");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
 }
 

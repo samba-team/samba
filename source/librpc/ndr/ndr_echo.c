@@ -100,3 +100,121 @@ NTSTATUS ndr_pull_TestCall(struct ndr_pull *ndr, struct TestCall *r)
 	return NT_STATUS_OK;
 }
 
+void ndr_print_echo_AddOne(struct ndr_print *ndr, const char *name, int flags, struct echo_AddOne *r)
+{
+	ndr_print_struct(ndr, name, "echo_AddOne");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "echo_AddOne");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "v", r->in.v);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "v", *r->in.v);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "echo_AddOne");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "v", r->out.v);
+	ndr->depth++;
+		ndr_print_uint32(ndr, "v", *r->out.v);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_echo_EchoData(struct ndr_print *ndr, const char *name, int flags, struct echo_EchoData *r)
+{
+	ndr_print_struct(ndr, name, "echo_EchoData");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "echo_EchoData");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "len", r->in.len);
+	ndr_print_ptr(ndr, "in_data", r->in.in_data);
+	ndr->depth++;
+		ndr_print_array_uint8(ndr, "in_data", r->in.in_data, r->in.len);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "echo_EchoData");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "out_data", r->out.out_data);
+	ndr->depth++;
+		ndr_print_array_uint8(ndr, "out_data", r->out.out_data, r->in.len);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_echo_SinkData(struct ndr_print *ndr, const char *name, int flags, struct echo_SinkData *r)
+{
+	ndr_print_struct(ndr, name, "echo_SinkData");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "echo_SinkData");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "len", r->in.len);
+	ndr_print_ptr(ndr, "data", r->in.data);
+	ndr->depth++;
+		ndr_print_array_uint8(ndr, "data", r->in.data, r->in.len);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "echo_SinkData");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_echo_SourceData(struct ndr_print *ndr, const char *name, int flags, struct echo_SourceData *r)
+{
+	ndr_print_struct(ndr, name, "echo_SourceData");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "echo_SourceData");
+	ndr->depth++;
+	ndr_print_uint32(ndr, "len", r->in.len);
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "echo_SourceData");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "data", r->out.data);
+	ndr->depth++;
+		ndr_print_array_uint8(ndr, "data", r->out.data, r->in.len);
+	ndr->depth--;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+void ndr_print_TestCall(struct ndr_print *ndr, const char *name, int flags, struct TestCall *r)
+{
+	ndr_print_struct(ndr, name, "TestCall");
+	ndr->depth++;
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "TestCall");
+	ndr->depth++;
+	ndr_print_ptr(ndr, "s", r->in.s);
+	ndr->depth++;
+	if (r->in.s) {
+		ndr_print_unistr(ndr, "s", r->in.s);
+	}
+	ndr->depth--;
+	ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "TestCall");
+	ndr->depth++;
+	ndr->depth--;
+	}
+	ndr->depth--;
+}
+

@@ -134,13 +134,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.domains) {
-		NDR_PRINT_DEBUG(lsa_RefDomainList, r.out.domains);
-	}
-
-	printf("lookup gave %d sids (sids.count=%d)\n", count, sids.count);
-
-	NDR_PRINT_DEBUG(lsa_TransSidArray, r.out.sids);
+	NDR_PRINT_BOTH_DEBUG(lsa_LookupNames, &r);
 
 	printf("\n");
 
@@ -177,11 +171,7 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.domains) {
-		NDR_PRINT_DEBUG(lsa_RefDomainList, r.out.domains);
-	}
-
-	NDR_PRINT_DEBUG(lsa_TransNameArray, r.out.names);
+	NDR_PRINT_BOTH_DEBUG(lsa_LookupSids, &r);
 
 	printf("\n");
 
@@ -209,7 +199,7 @@ static BOOL test_LookupPrivName(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_DEBUG(lsa_Name, r.out.name);
+	NDR_PRINT_BOTH_DEBUG(lsa_LookupPrivName, &r);
 
 	return True;
 }
@@ -232,12 +222,10 @@ static BOOL test_EnumPrivsAccount(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("received %d privileges\n", 
-	       r.out.privs?r.out.privs->count:0);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumPrivsAccount, &r);
 
 	if (r.out.privs) {
 		int i;
-		NDR_PRINT_DEBUG(lsa_PrivilegeSet, r.out.privs);
 		for (i=0;i<r.out.privs->count;i++) {
 			test_LookupPrivName(p, mem_ctx, handle, 
 					    &r.out.privs->set[i].luid);
@@ -268,7 +256,7 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_DEBUG(lsa_RightSet, r.out.rights);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccountRights, &r);
 
 	return True;
 }
@@ -293,7 +281,7 @@ static BOOL test_QuerySecObj(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_DEBUG(sec_desc_buf, r.out.sd);
+	NDR_PRINT_BOTH_DEBUG(lsa_QuerySecObj, &r);
 
 	return True;
 }
@@ -356,9 +344,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("Got %d sids resume_handle=%u\n", sids1.num_sids, resume_handle);
-
-	NDR_PRINT_DEBUG(lsa_SidArray, r.out.sids);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccounts, &r);
 
 	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
 		return False;
@@ -386,7 +372,7 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	NDR_PRINT_DEBUG(lsa_SidArray, r.out.sids);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumAccounts, &r);
 
 	if (sids2.num_sids != 1) {
 		printf("Returned wrong number of entries (%d)\n", sids2.num_sids);
@@ -421,9 +407,7 @@ static BOOL test_EnumPrivs(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("Got %d privs resume_handle=%u\n", privs1.count, resume_handle);
-
-	NDR_PRINT_DEBUG(lsa_PrivArray, r.out.privs);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumPrivs, &r);
 
 	return True;
 }
@@ -452,9 +436,7 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	printf("lookup gave %d domains\n", domains.count);
-
-	NDR_PRINT_DEBUG(lsa_DomainList, r.out.domains);
+	NDR_PRINT_BOTH_DEBUG(lsa_EnumTrustDom, &r);
 
 	return True;
 }
@@ -483,7 +465,7 @@ static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p,
 			continue;
 		}
 
-		NDR_PRINT_UNION_DEBUG(lsa_PolicyInformation, r.in.level, r.out.info);
+		NDR_PRINT_BOTH_DEBUG(lsa_QueryInfoPolicy, &r);
 	}
 
 	return ret;
