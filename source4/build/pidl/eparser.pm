@@ -978,7 +978,7 @@ sub ParseHeader($$)
 			}
 
 			if ($d->{DATA}{TYPE} eq "UNION") {
-			    pidl "void ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree, struct $d->{NAME} *r, uint16 level);\n\n";
+			    pidl "void ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, proto_tree *tree, union $d->{NAME} *r, uint16 level);\n\n";
 			}
 		    }
 		}
