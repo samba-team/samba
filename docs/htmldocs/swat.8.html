@@ -1,0 +1,196 @@
+
+
+ 
+
+
+<html><head><title>swat</title>
+
+<link rev="made" href="mailto:samba-bugs@samba.anu.edu.au">
+</head>
+<body>
+
+<hr>
+
+<h1>swat</h1>
+<h2>Samba</h2>
+<h2>23 Oct 1998</h2>
+
+    
+
+    
+<p><br><a name="NAME"></a>
+<h2>NAME</h2>
+    swat - swat - Samba Web Administration Tool
+<p><br><a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+    
+<p><br><strong>swat</strong> [<a href="swat.8.html#minuss">-s smb config file</a>] [<a href="swat.8.html#minusa">-a</a>]
+<p><br><a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+    
+<p><br>This program is part of the <strong>Samba</strong> suite.
+<p><br><strong>swat</strong> allows a Samba administrator to configure the complex
+<a href="smb.conf.5.html"><strong>smb.conf</strong></a> file via a Web browser. In
+addition, a swat configuration page has help links to all the
+configurable options in the <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file
+allowing an administrator to easily look up the effects of any change.
+<p><br><strong>swat</strong> can be run as a stand-alone daemon, from <strong>inetd</strong>,
+or invoked via CGI from a Web server.
+<p><br><a name="OPTIONS"></a>
+<h2>OPTIONS</h2>
+    
+<p><br><ul>
+<p><br><a name="minuss"></a>
+<li><strong><strong>-s smb configuration file</strong></strong> The default configuration file path is
+determined at compile time.
+<p><br>The file specified contains the configuration details required by the
+<a href="smbd.8.html"><strong>smbd</strong></a> server. This is the file that <strong>swat</strong> will
+modify. The information in this file includes server-specific
+information such as what printcap file to use, as well as descriptions
+of all the services that the server is to provide. See <a href="smb.conf.5.html">smb.conf
+(5)</a> for more information.
+<p><br><a name="minusa"></a>
+<li><strong><strong>-a</strong></strong> 
+<p><br>This option is only used if <strong>swat</strong> is running as it's own mini-web
+server (see the <a href="swat.8.html#INSTALLATION"><strong>INSTALLATION</strong></a> section below).
+<p><br>This option removes the need for authentication needed to modify the
+<a href="smb.conf.5.html"><strong>smb.conf</strong></a> file. <em>**THIS IS ONLY MEANT FOR
+DEMOING SWAT AND MUST NOT BE SET IN NORMAL SYSTEMS**</em> as it would
+allow <em>*ANYONE*</em> to modify the <a href="smb.conf.5.html"><strong>smb.conf</strong></a>
+file, thus giving them root access.
+<p><br></ul>
+<p><br><a name="INSTALLATION"></a>
+<h2>INSTALLATION</h2>
+    
+<p><br>After you compile SWAT you need to run <code>"make install"</code> to install the
+swat binary and the various help files and images. A default install
+would put these in:
+<p><br><pre>
+
+/usr/local/samba/bin/swat
+/usr/local/samba/swat/images/*
+/usr/local/samba/swat/help/*
+
+</pre>
+
+<p><br><a name="RUNNINGVIAINETD"></a>
+<h2>RUNNING VIA INETD</h2>
+    
+<p><br>You need to edit your <code>/etc/inetd.conf</code> and <code>/etc/services</code> to
+enable <strong>SWAT</strong> to be launched via inetd. Note that <strong>swat</strong> can also
+be launched via the cgi-bin mechanisms of a web server (such as
+apache) and that is described below in the section <a href="swat.8.html#RUNNINGVIACGIBIN"><strong>RUNNING VIA
+CGI-BIN</strong></a>.
+<p><br>In <code>/etc/services</code> you need to add a line like this:
+<p><br><code>swat            901/tcp</code>
+<p><br>Note for NIS/YP users - you may need to rebuild the NIS service maps
+rather than alter your local <code>/etc/services</code> file.
+<p><br>the choice of port number isn't really important except that it should
+be less than 1024 and not currently used (using a number above 1024
+presents an obscure security hole depending on the implementation
+details of your <strong>inetd</strong> daemon).
+<p><br>In <code>/etc/inetd.conf</code> you should add a line like this:
+<p><br><code>swat    stream  tcp     nowait.400  root    /usr/local/samba/bin/swat swat</code>
+<p><br>If you just want to see a demo of how swat works and don't want to be
+able to actually change any Samba config via swat then you may chose
+to change <code>"root"</code> to some other user that does not have permission
+to write to <a href="smb.conf.5.html"><strong>smb.conf</strong></a>.
+<p><br>One you have edited <code>/etc/services</code> and <code>/etc/inetd.conf</code> you need
+to send a HUP signal to inetd. To do this use <code>"kill -1 PID"</code> where
+PID is the process ID of the inetd daemon.
+<p><br><a name="RUNNINGVIACGIBIN"></a>
+<h2>RUNNING VIA CGI-BIN</h2>
+    
+<p><br>To run <strong>swat</strong> via your web servers cgi-bin capability you need to
+copy the <strong>swat</strong> binary to your cgi-bin directory. Note that you
+should run <strong>swat</strong> either via <a href="swat.8.html#RUNNINGVIAINETD"><strong>inetd</strong></a> or via
+cgi-bin but not both.
+<p><br>Then you need to create a <code>swat/</code> directory in your web servers root
+directory and copy the <code>images/*</code> and <code>help/*</code> files found in the
+<code>swat/</code> directory of your Samba source distribution into there so
+that they are visible via the URL <code>http://your.web.server/swat/</code>
+<p><br>Next you need to make sure you modify your web servers authentication
+to require a username/pssword for the URL
+<code>http://your.web.server/cgi-bin/swat</code>. <em>**Don't forget this
+step!**</em> If you do forget it then you will be allowing anyone to edit
+your Samba configuration which would allow them to easily gain root
+access on your machine.
+<p><br>After testing the authentication you need to change the ownership and
+permissions on the <strong>swat</strong> binary. It should be owned by root wth the
+setuid bit set. It should be ONLY executable by the user that the web
+server runs as. Make sure you do this carefully!
+<p><br>for example, the following would be correct if the web server ran as
+group <code>"nobody"</code>.
+<p><br><code>-rws--x---    1 root     nobody    </code>
+<p><br>You must also realise that this means that any user who can run
+programs as the <code>"nobody"</code> group can run <strong>swat</strong> and modify your
+Samba config. Be sure to think about this!
+<p><br><a name="LAUNCHING"></a>
+<h2>LAUNCHING</h2>
+    
+<p><br>To launch <strong>swat</strong> just run your favourite web browser and point it at
+<code>http://localhost:901/</code> or <code>http://localhost/cgi-bin/swat/</code>
+depending on how you installed it.
+<p><br>Note that you can attach to <strong>swat</strong> from any IP connected machine but
+connecting from a remote machine leaves your connection open to
+password sniffing as passwords will be sent in the clear over the
+wire.
+<p><br>If installed via <strong>inetd</strong> then you should be prompted for a
+username/password when you connect. You will need to provide the
+username <code>"root"</code> and the correct root password. More sophisticated
+authentication options are planned for future versions of <strong>swat</strong>.
+<p><br>If installed via cgi-bin then you should receive whatever
+authentication request you configured in your web server.
+<p><br><h2>FILES</h2>
+    
+<p><br><strong>/etc/inetd.conf</strong>
+<p><br>If the server is to be run by the inetd meta-daemon, this file must
+contain suitable startup information for the meta-daemon. See the
+section <a href="swat.8.html#RUNNINGVIAINETD"><strong>RUNNING VIA INETD</strong></a> above.
+<p><br><strong>/etc/services</strong>
+<p><br>If running the server via the meta-daemon inetd, this file must
+contain a mapping of service name (eg., swat) to service port
+(eg., 901) and protocol type (eg., tcp). See the section
+<a href="swat.8.html#RUNNINGVIAINETD"><strong>RUNNING VIA INETD</strong></a> above.
+<p><br><strong>/usr/local/samba/lib/smb.conf</strong>
+<p><br>This is the default location of the <em>smb.conf</em> server configuration
+file that <strong>swat</strong> edits. Other common places that systems install
+this file are <em>/usr/samba/lib/smb.conf</em> and <em>/etc/smb.conf</em>.
+<p><br>This file describes all the services the server is to make available
+to clients. See <strong>smb.conf (5)</strong> for more information.
+<p><br><a name="WARNINGS"></a>
+<h2>WARNINGS</h2>
+    
+<p><br><strong>swat</strong> will rewrite your <a href="smb.conf.5.html"><strong>smb.conf</strong></a> file. It
+will rearrange the entries and delete all comments,
+<a href="smb.conf.5.html#include"><strong>"include="</strong></a> and
+<a href="smb.conf.5.html#copy"><strong>"copy="</strong></a> options. If you have a
+carefully crafted <a href="smb.conf.5.html"><strong>smb.conf</strong></a> then back it up
+or don't use <strong>swat</strong>!
+<p><br><a name="VERSION"></a>
+<h2>VERSION</h2>
+    
+<p><br>This man page is correct for version 2.0 of the Samba suite.
+<p><br><a name="SEEALSO"></a>
+<h2>SEE ALSO</h2>
+    
+<p><br><strong>inetd (8)</strong>, <a href="nmbd.8.html"><strong>nmbd (8)</strong></a>,
+<a href="smb.conf.5.html"><strong>smb.conf (5)</strong></a>.
+<p><br><a name="AUTHOR"></a>
+<h2>AUTHOR</h2>
+    
+<p><br>The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+<p><br>The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software, available at
+<a href="ftp://ftp.icce.rug.nl/pub/unix/"><strong>ftp://ftp.icce.rug.nl/pub/unix/</strong></a>)
+and updated for the Samba2.0 release by Jeremy Allison.
+<a href="mailto:samba-bugs@samba.anu.edu.au"><em>samba-bugs@samba.anu.edu.au</em></a>.
+<p><br>See <a href="samba.7.html"><strong>samba (7)</strong></a> to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc.
+</body>
+</html>
