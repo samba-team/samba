@@ -12,9 +12,7 @@ man_MANS = editline.3
 
 lib_LTLIBRARIES = libeditline.la
 if el_compat
-noinst_LTLIBRARIES = libel_compat.la
-else
-noinst_LTLIBRARIES =
+noinst_LTLIBRARIES += libel_compat.la
 endif
 
 noinst_PROGRAMS = testit
@@ -37,13 +35,9 @@ libeditline_la_SOURCES = \
 	unix.h \
 	$(EXTRA_SOURCE)
 
-libeditline_la_LDFLAGS = -static
-
 EXTRA_SOURCE = $(ES) 
 
 libel_compat_la_SOURCES = edit_compat.c
-
-libel_compat_la_LDFLAGS = -static
 
 EXTRA_DIST = $(man_MANS)
 
