@@ -497,11 +497,14 @@ static void cgi_download(char *file)
 
 
 
-/***************************************************************************
-setup the cgi framework, handling the possability that this program is either
-run as a true cgi program by a web browser or is itself a mini web server
-  ***************************************************************************/
-void cgi_setup(char *rootdir, int auth_required)
+/**
+ * @brief Setup the CGI framework.
+ *
+ * Setup the cgi framework, handling the possibility that this program
+ * is either run as a true CGI program with a gateway to a web server, or
+ * is itself a mini web server.
+ **/
+void cgi_setup(const char *rootdir, int auth_required)
 {
 	BOOL authenticated = False;
 	char line[1024];
