@@ -117,8 +117,16 @@ static BOOL brl_same_context(struct lock_context *ctx1, struct lock_context *ctx
 static BOOL brl_overlap(struct lock_struct *lck1, 
 			struct lock_struct *lck2)
 {
-	if (lck1->start >= (lck2->start + lck2->size) ||
-	    lck2->start >= (lck1->start + lck1->size)) {
+	/* this extra check is not redundent - it copes with locks
+	   that go beyond the end of 64 bit file space */
+	if (lck1->size != 0 &&
+	    lck1->start == lck2->start &&
+	    lck1->size == lck2->size) {
+		return True;
+	}
+	    
+	if (lck1->start >= (lck2->start+lck2->size) ||
+	    lck2->start >= (lck1->start+lck1->size)) {
 		return False;
 	}
 	return True;
@@ -193,11 +201,12 @@ static NTSTATUS brl_lock_failed(struct brl_context *brl, struct lock_struct *loc
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 	brl->last_lock_failure = *lock;
-	if (lock->start >= 0xEF000000) {
+	if (lock->start >= 0xEF000000 && 
+	    (lock->start >> 63) == 0) {
 		/* amazing the little things you learn with a test
 		   suite. Locks beyond this offset (as a 64 bit
-		   number!) always generate the conflict error
-		   code. */
+		   number!) always generate the conflict error code,
+		   unless the top bit is set */
 		return NT_STATUS_FILE_LOCK_CONFLICT;
 	}
 	return NT_STATUS_LOCK_NOT_GRANTED;

@@ -123,7 +123,11 @@ struct pvfs_file {
 
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
+
+	/* a list of pending locks - used for locking cancel operations */
+	struct pvfs_pending_lock *pending_list;
 };
+
 
 struct pvfs_mangle_context {
 	uint8_t char_flags[256];

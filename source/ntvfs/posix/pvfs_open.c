@@ -171,6 +171,7 @@ do_open:
 	f->session = req->session;
 	f->smbpid = req->smbpid;
 	f->pvfs = pvfs;
+	f->pending_list = NULL;
 
 	/* we must zero here to take account of padding */
 	ZERO_STRUCT(lock_context);
