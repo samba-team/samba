@@ -6,7 +6,7 @@ SUFFIXES = .et .h
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDES_roken)
 
-AM_CFLAGS += $(WFLAGS)
+AM_CFLAGS = $(WFLAGS)
 
 CP	= cp
 
