@@ -33,7 +33,6 @@ the child as it may leave the caller in a privileged state.
 static BOOL setup_stdout_file(char *outfile,BOOL shared)
 {  
   int fd;
-  SMB_STRUCT_STAT st;
   mode_t mode = S_IWUSR|S_IRUSR|S_IRGRP|S_IROTH;
   int flags = O_RDWR|O_CREAT|O_TRUNC|O_EXCL;
 
