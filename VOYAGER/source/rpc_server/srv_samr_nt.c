@@ -1922,12 +1922,13 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 
 NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, SAMR_R_QUERY_USERGROUPS *r_u)
 {
-	SAM_ACCOUNT *sam_pass=NULL;
 	DOM_SID  sid;
 	DOM_GID *gids = NULL;
-	int num_groups = 0;
 	uint32 acc_granted;
-	BOOL ret;
+	gid_t *ugids;
+	int num_gids;
+	fstring username;
+	int i;
 
 	/*
 	 * from the SID in the request:
@@ -1956,28 +1957,36 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 	if (!sid_check_is_in_our_domain(&sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	pdb_init_sam(&sam_pass);
-	
-	become_root();
-	ret = pdb_getsampwsid(sam_pass, &sid);
-	unbecome_root();
-
-	if (ret == False) {
-		pdb_free_sam(&sam_pass);
+	if (!sid_to_local_user_name(&sid, username))
 		return NT_STATUS_NO_SUCH_USER;
+
+	ugids = NULL;
+	num_gids = 0;
+
+	if (!getgroups_user(username, &ugids, &num_gids))
+		return NT_STATUS_NO_SUCH_USER;
+
+	gids = (DOM_GID *)talloc(p->mem_ctx, sizeof(DOM_GID) * num_gids);
+
+	if (gids == NULL) {
+		/* Don't free ugids, we already cluttered malloc... */
+		return NT_STATUS_NO_MEMORY;
 	}
-	
-	if(!get_domain_user_groups(p->mem_ctx, &num_groups, &gids, sam_pass)) {
-		pdb_free_sam(&sam_pass);
-		return NT_STATUS_NO_SUCH_GROUP;
+
+	for (i=0; i<num_gids; i++) {
+		DOM_SID group_sid;
+
+		gid_to_sid(&group_sid, ugids[i]);
+		sid_peek_rid(&group_sid, &(gids[i].g_rid));
+		gids[i].attr = 7;
 	}
-	
+
+	SAFE_FREE(ugids);
+
 	/* construct the response.  lkclXXXX: gids are not copied! */
-	init_samr_r_query_usergroups(r_u, num_groups, gids, r_u->status);
+	init_samr_r_query_usergroups(r_u, num_gids, gids, r_u->status);
 	
 	DEBUG(5,("_samr_query_usergroups: %d\n", __LINE__));
-	
-	pdb_free_sam(&sam_pass);
 	
 	return r_u->status;
 }
