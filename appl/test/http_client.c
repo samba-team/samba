@@ -108,11 +108,13 @@ fdprintf(int s, const char *fmt, ...)
 
 static int help_flag;
 static int version_flag;
+static int verbose_flag;
 static char *port_str;
 static char *service = "HTTP";
 static char *gss_mech = "SPNEGO";
 
 static struct getargs args[] = {
+    { "verbose", 'v', arg_flag, &verbose_flag, "verbose logging", "port" },
     { "port", 'p', arg_string, &port_str, "port to listen to", "port" },
     { "service", 's', arg_string, &service, "service to use", "service" },
     { "mech", 'm', arg_string, &gss_mech, "gssapi mech to use", "mech" },
@@ -232,7 +234,6 @@ http_query(const char *host, const char *page,
 		    req->response = strndup(in_buf, p - in_buf);
 		    state = HEADER;
 		} else {
-		    /* printf("Header: %.*s\n", p - in_buf, in_buf); */
 		    req->headers = realloc(req->headers,
 					   (req->num_headers + 1) * sizeof(req->headers[0]));
 		    req->headers[req->num_headers] = strndup(in_buf, p - in_buf);
@@ -259,6 +260,15 @@ http_query(const char *host, const char *page,
 	} else
 	    abort();
     }
+
+    if (verbose_flag) {
+	int i;
+	printf("response: %s\n", req->response);
+	for (i = 0; i < req->num_headers; i++)
+	    printf("header[%d] %s\n", i, req->headers[i]);
+	printf("body: %*.s\n", (int)req->body_size, (char *)req->body);
+    }
+
     close(s);
     return 0;
 }
@@ -269,7 +279,7 @@ main(int argc, char **argv)
 {
     struct http_req req;
     const char *host, *page;
-    int i, done, print_body, gssapi_done, gssapi_started, debug_print = 0;
+    int i, done, print_body, gssapi_done, gssapi_started;
     char *headers[10]; /* XXX */
     int num_headers;
     gss_ctx_id_t context_hdl = GSS_C_NO_CONTEXT;
@@ -331,7 +341,7 @@ main(int argc, char **argv)
 		OM_uint32 maj_stat, min_stat;
 		gss_buffer_desc input_token, output_token;
 
-		if (debug_print)
+		if (verbose_flag)
 		    printf("Negotiate found\n");
 		
 		if (server == GSS_C_NO_NAME) {
@@ -445,9 +455,10 @@ main(int argc, char **argv)
 		    base64_encode(output_token.value,
 				  output_token.length,
 				  &neg_token);
-
+		    
 		    asprintf(&headers[0], "Authorization: Negotiate %s",
 			     neg_token);
+
 		    num_headers = 1;
 		    free(neg_token);
 		    gss_release_buffer(&min_stat, &output_token);
@@ -460,15 +471,14 @@ main(int argc, char **argv)
 	} else
 	    done = 1;
 
-	if (debug_print) {
+	if (verbose_flag) {
 	    printf("%s\n\n", req.response);
 
 	    for (i = 0; i < req.num_headers; i++)
 		printf("%s\n", req.headers[i]);
 	    printf("\n");
 	}
-
-	if (print_body)
+	if (print_body || verbose_flag)
 	    printf("%.*s\n", (int)req.body_size, (char *)req.body);
 
 	http_req_free(&req);
