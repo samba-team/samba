@@ -1008,7 +1008,7 @@ static char *null_string = NULL;
 /****************************************************************************
 set a string value, allocing the space for the string
 ****************************************************************************/
-BOOL string_init(char **dest,const char *src)
+static BOOL string_init(char **dest,const char *src)
 {
   size_t l;
   if (!src)     
