@@ -262,7 +262,7 @@ BOOL fetch_ldap_pw(char **dn, char** pw)
  manage memory used by the array, by each struct, and values
  ***********************************************************************/
 
-void ldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value)
+void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const char *value)
 {
 	LDAPMod **mods;
 	int i;
@@ -343,4 +343,5 @@ void ldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, const 
 	}
 	*modlist = mods;
 }
+
 
