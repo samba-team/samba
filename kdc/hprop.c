@@ -52,6 +52,11 @@ static char *database;
 static char *mkeyfile;
 static int to_stdout;
 static int verbose_flag;
+static int encrypt_flag;
+static int decrypt_flag;
+static EncryptionKey mkey5;
+static krb5_data msched5;
+
 #ifdef KRB4
 static int v4_db;
 #endif
@@ -98,6 +103,12 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
     krb5_error_code ret;
     struct prop_data *pd = appdata;
     krb5_data data;
+    int i;
+
+    if(encrypt_flag)
+	hdb_seal_keys(entry, msched5);
+    if(decrypt_flag)
+	hdb_unseal_keys(entry, msched5);
 
     ret = hdb_entry2value(context, entry, &data);
     if(ret) return ret;
@@ -111,10 +122,6 @@ v5_prop(krb5_context context, HDB *db, hdb_entry *entry, void *appdata)
 }
 
 #ifdef KRB4
-EncryptionKey mkey5;
-krb5_data msched5;
-int use_master_key = 0;
-
 static des_cblock mkey4;
 static des_key_schedule msched4;
 static char realm[REALM_SZ];
@@ -157,8 +164,8 @@ v4_prop(void *arg, Principal *p)
 	memcpy(key + 4, &p->key_high, 4);
 	kdb_encrypt_key((des_cblock*)key, (des_cblock*)key, &mkey4, msched4, 0);
     }
-    if(use_master_key)
-	hdb_seal_key(&ent.keys.val[0], msched5);
+    if(encrypt)
+	hdb_seal_keys(&ent, msched5);
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
@@ -204,6 +211,8 @@ struct getargs args[] = {
     { "v4-db",    '4',	arg_flag, &v4_db, "use version 4 database" },
 #endif
     { "keytab",   'k',	arg_string, &ktname, "keytab to use for authentication", "keytab" },
+    { "decrypt",  'D',  arg_flag,   &decrypt_flag,   "decrypt keys" },
+    { "encrypt",  'E',  arg_flag,   &encrypt_flag,   "encrypt keys" },
     { "stdout",	  'n',  arg_flag,   &to_stdout, "dump to stdout" },
     { "verbose",  'v',	arg_flag, &verbose_flag },
     { "version",   0,	arg_flag, &version_flag },
@@ -284,21 +293,27 @@ int main(int argc, char **argv)
     if(ret)
 	exit(1);
 
+    if(encrypt_flag && decrypt_flag)
+	krb5_errx(context, 1, 
+		  "Only one of `--encrypt' and `--decrypt' is meaningful");
+
     if(!to_stdout)
 	get_creds(context, &ccache);
     
+    ret = hdb_read_master_key(context, mkeyfile, &mkey5);
+    if(ret && ret != ENOENT)
+	krb5_err(context, 1, ret, "hdb_read_master_key");
+    if(ret){
+	if(encrypt_flag || decrypt_flag)
+	    krb5_errx(context, 1, "No master key file found");
+    }else{
+	ret = hdb_process_master_key(context, mkey5, &msched5);
+	if(ret)
+	    krb5_err(context, 1, ret, "hdb_process_master_key");
+    }
+    
 #ifdef KRB4
     if(v4_db){
-	ret = hdb_read_master_key(context, mkeyfile, &mkey5);
-	if(ret != ENOENT)
-	    krb5_err(context, 1, ret, "hdb_read_master_key");
-	if(!ret){
-	    ret = hdb_process_master_key(context, mkey5, &msched5);
-	    if(ret)
-		krb5_err(context, 1, ret, "hdb_process_master_key");
-	    use_master_key = 1;
-	}
-    
 	e = kerb_db_set_name (database);
 	if(e) krb5_errx(context, 1, "kerb_db_set_name: %s", krb_get_err_text(e));
 	e = kdb_get_master_key(0, &mkey4, msched4);
