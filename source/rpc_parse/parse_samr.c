@@ -698,10 +698,10 @@ unknown_6   : 0x0002
 unknown_7   : 0x5800 or 0x0070
 
 ********************************************************************/
-static BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
+BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
 				uint16 unknown_2, uint16 unknown_3,
 				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
-				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS])
+				int num_sid3s)
 {
 	stf->unknown_2 = unknown_2;
 	stf->unknown_3 = unknown_3;
@@ -717,8 +717,6 @@ static BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
 	stf->num_sids  = num_sid3s;
 
 	stf->padding2  = 0x0000;
-
-	memcpy(stf->sid, sid3, sizeof(DOM_SID3) * num_sid3s);
 
 	return True;
 }
@@ -756,37 +754,6 @@ static BOOL sam_io_sid_stuff(char *desc,  SAM_SID_STUFF *stf, prs_struct *ps, in
 
 	return True;
 }
-
-/*******************************************************************
-reads or writes a SAMR_R_UNKNOWN3 structure.
-********************************************************************/
-BOOL make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
-				uint16 unknown_2, uint16 unknown_3,
-				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
-				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS],
-				uint32 status)
-{
-	if (r_u == NULL) return False;
-
-	DEBUG(5,("samr_make_r_unknown_3\n"));
-
-	r_u->ptr_0 = 0;
-	r_u->ptr_1 = 0;
-
-	if (status == 0x0)
-	{
-		r_u->ptr_0 = 1;
-		r_u->ptr_1 = 1;
-		make_sam_sid_stuff(&(r_u->sid_stuff), unknown_2, unknown_3,
-	               unknown_4, unknown_6, unknown_7,
-	               num_sid3s, sid3);
-	}
-
-	r_u->status = status;
-
-	return True;
-}
-
 
 /*******************************************************************
 reads or writes a SAMR_R_UNKNOWN_3 structure.
@@ -1141,7 +1108,7 @@ static BOOL sam_io_sam_entry5(char *desc, SAM_ENTRY5 *sam, prs_struct *ps, int d
 /*******************************************************************
 makes a SAM_ENTRY structure.
 ********************************************************************/
-static BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
+BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
 {
 	if (sam == NULL) return False;
 
@@ -1224,17 +1191,13 @@ makes a SAMR_R_ENUM_DOM_USERS structure.
 ********************************************************************/
 BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 next_idx,
-		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status)
+		uint32 num_sam_entries)
 {
-	uint32 i;
-
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_enum_dom_users\n"));
 
 	r_u->next_idx = next_idx;
-	r_u->sam = NULL;
-	r_u->uni_acct_name = NULL;
 
 	if (num_sam_entries != 0)
 	{
@@ -1242,24 +1205,6 @@ BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
-
-		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-		r_u->uni_acct_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_acct_name[0]));
-
-		if (r_u->sam == NULL || r_u->uni_acct_name == NULL)
-		{
-			DEBUG(0,("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
-			return False;
-		}
-
-		for (i = 0; i < num_sam_entries; i++)
-		{
-			make_sam_entry(&(r_u->sam[i]),
-			               pass[i].uni_user_name.uni_str_len,
-			               pass[i].user_rid);
-
-			copy_unistr2(&(r_u->uni_acct_name[i]), &(pass[i].uni_user_name));
-		}
 
 		r_u->num_entries4 = num_sam_entries;
 	}
@@ -1269,8 +1214,6 @@ BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	r_u->status = status;
 
 	return True;
 }

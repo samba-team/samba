@@ -622,11 +622,11 @@ BOOL set_policy_samr_rid(struct policy_cache *cache,
 BOOL set_policy_samr_pol_status(struct policy_cache *cache,
 				POLICY_HND *hnd, uint32 pol_status);
 BOOL set_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, DOM_SID *sid);
+				POLICY_HND *hnd, const DOM_SID *sid);
 BOOL get_policy_samr_sid(struct policy_cache *cache,
 				const POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_policy_samr_rid(struct policy_cache *cache,
-				POLICY_HND *hnd);
+				const POLICY_HND *hnd);
 BOOL get_policy_svc_name(struct policy_cache *cache,
 				POLICY_HND *hnd, fstring name);
 BOOL set_policy_svc_name(struct policy_cache *cache,
@@ -3138,19 +3138,24 @@ BOOL make_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO *r_u,
 				uint32 status);
 BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_struct *ps, int depth);
 BOOL make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid);
+BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
+				uint16 unknown_2, uint16 unknown_3,
+				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
+				int num_sid3s);
 BOOL make_samr_r_unknown_3(SAMR_R_UNKNOWN_3 *r_u,
 				uint16 unknown_2, uint16 unknown_3,
 				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
 				int num_sid3s, DOM_SID3 sid3[MAX_SAM_SIDS],
 				uint32 status);
 BOOL samr_io_r_unknown_3(char *desc,  SAMR_R_UNKNOWN_3 *r_u, prs_struct *ps, int depth);
+BOOL make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid);
 BOOL make_samr_q_enum_dom_users(SAMR_Q_ENUM_DOM_USERS *q_e, POLICY_HND *pol,
 				uint32 start_idx, 
 				uint16 acb_mask, uint16 unk_1, uint32 size);
 BOOL samr_io_q_enum_dom_users(char *desc,  SAMR_Q_ENUM_DOM_USERS *q_e, prs_struct *ps, int depth);
 BOOL make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 next_idx,
-		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
+		uint32 num_sam_entries);
 BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
 				uint16 switch_level, uint32 start_idx,
@@ -4224,6 +4229,24 @@ void readline_init(void);
 /*The following definitions come from  samrd/samrd.c  */
 
 msrpc_service_fns *get_service_fns(void);
+
+/*The following definitions come from  samrd/srv_samr_passdb.c  */
+
+uint32 _samr_close(POLICY_HND *hnd);
+uint32 _samr_open_domain(const POLICY_HND *connect_pol,
+				uint32 ace_perms,
+				const DOM_SID *sid,
+				POLICY_HND *domain_pol);
+uint32 _samr_unknown_2c(const POLICY_HND *user_pol,
+				uint32 *unknown_0,
+				uint32 *unknown_1);
+uint32 _samr_unknown_3(const POLICY_HND *user_pol,
+				SAM_SID_STUFF *sid_stuff);
+uint32 _samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx, 
+				uint16 acb_mask, uint16 unk_1, uint32 size,
+				SAM_ENTRY **sam,
+				UNISTR2 **uni_acct_name,
+				uint32 *num_sam_users);
 
 /*The following definitions come from  smbd/blocking.c  */
 

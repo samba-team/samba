@@ -286,7 +286,7 @@ BOOL set_policy_samr_pol_status(struct policy_cache *cache,
   set samr sid
 ****************************************************************************/
 BOOL set_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, DOM_SID *sid)
+				POLICY_HND *hnd, const DOM_SID *sid)
 {
 	pstring sidstr;
 	struct policy *p = find_policy(cache, hnd);
@@ -339,7 +339,7 @@ BOOL get_policy_samr_sid(struct policy_cache *cache,
   get samr rid
 ****************************************************************************/
 uint32 get_policy_samr_rid(struct policy_cache *cache,
-				POLICY_HND *hnd)
+				const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
