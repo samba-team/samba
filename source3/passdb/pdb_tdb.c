@@ -530,16 +530,12 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 	/* validate the account and fill in UNIX uid and gid.  sys_getpwnam()
 	   is used instaed of Get_Pwnam() as we do not need to try case
 	   permutations */
-	if ((pw=sys_getpwnam(pdb_get_username(user))) == NULL) {
-		DEBUG(0,("pdb_getsampwent: getpwnam(%s) return NULL.  User does not exist!\n", 
-		          pdb_get_username(user)));
-		return False;
+	if ((pw=sys_getpwnam(pdb_get_username(user)))) {
+		uid = pw->pw_uid;
+		gid = pw->pw_gid;
+		pdb_set_uid (user, &uid);
+		pdb_set_gid (user, &gid);
 	}
-	
-	uid = pw->pw_uid;
-	gid = pw->pw_gid;
-	pdb_set_uid (user, &uid);
-	pdb_set_gid (user, &gid);
 	
 	/* cleanup */
 	tdb_close (pwd_tdb);
