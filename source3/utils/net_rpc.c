@@ -37,7 +37,8 @@
 
 
 /* A function of this type is passed to the 'run_rpc_command' wrapper */
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_CTX *, int, const char **);
+typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, const char *, 
+				   struct cli_state *, TALLOC_CTX *, int, const char **);
 
 /**
  * Many of the RPC functions need the domain sid.  This function gets
@@ -48,13 +49,12 @@ typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_C
  * @return The Domain SID of the remote machine.
  **/
 
-static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem_ctx, char **domain_name)
 {
 	DOM_SID *domain_sid;
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;
 	uint32 info_class = 5;
-        char *domain_name;
 	
 	if (!cli_nt_session_open (cli, PI_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
@@ -69,7 +69,7 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli, TALLOC_CTX *mem
 	}
 
 	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
-					   &domain_name, &domain_sid);
+					   domain_name, &domain_sid);
 	if (!NT_STATUS_IS_OK(result)) {
  error:
 		fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
@@ -107,6 +107,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
+	char *domain_name;
 
 	/* make use of cli_state handed over as an argument, if possible */
 	if (!cli_arg)
@@ -126,13 +127,15 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		return -1;
 	}
 	
-	domain_sid = net_get_remote_domain_sid(cli, mem_ctx);
+	domain_sid = net_get_remote_domain_sid(cli, mem_ctx, &domain_name);
 
-	if (!cli_nt_session_open(cli, pipe_idx)) {
-		DEBUG(0, ("Could not initialise pipe\n"));
+	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
+		if (!cli_nt_session_open(cli, pipe_idx)) {
+			DEBUG(0, ("Could not initialise pipe\n"));
+		}
 	}
 	
-	nt_status = fn(domain_sid, cli, mem_ctx, argc, argv);
+	nt_status = fn(domain_sid, domain_name, cli, mem_ctx, argc, argv);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(1, ("rpc command function failed! (%s)\n", nt_errstr(nt_status)));
@@ -140,10 +143,11 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		DEBUG(5, ("rpc command function succedded\n"));
 	}
 		
-	    
-	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
-	
+	if (!(conn_flags & NET_FLAGS_NO_PIPE)) {
+		if (cli->nt_pipe_fnum)
+			cli_nt_session_close(cli);
+	}
+
 	/* close the connection only if it was opened here */
 	if (!cli_arg)
 		cli_shutdown(cli);
@@ -173,8 +177,9 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-				       int argc, const char **argv) {
+static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					    struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					    int argc, const char **argv) {
 	
 	return trust_pw_find_change_and_store_it(cli, mem_ctx, opt_target_workgroup);
 }
@@ -191,7 +196,8 @@ static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cl
 
 int net_rpc_changetrustpw(int argc, const char **argv) 
 {
-	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, rpc_changetrustpw_internals,
+	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC, 
+			       rpc_changetrustpw_internals,
 			       argc, argv);
 }
 
@@ -219,9 +225,10 @@ int net_rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, struct cli_state *cli, 
-					    TALLOC_CTX *mem_ctx, 
-					    int argc, const char **argv) {
+static NTSTATUS rpc_oldjoin_internals(const DOM_SID *domain_sid, const char *domain_name, 
+				      struct cli_state *cli, 
+				      TALLOC_CTX *mem_ctx, 
+				      int argc, const char **argv) {
 	
 	fstring trust_passwd;
 	unsigned char orig_trust_passwd_hash[16];
@@ -367,7 +374,8 @@ int net_rpc_join(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_info_internals(const DOM_SID *domain_sid, const char *domain_name, 
+		   struct cli_state *cli,
 		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -442,16 +450,17 @@ int net_rpc_info(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
-		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
+rpc_getsid_internals(const DOM_SID *domain_sid, const char *domain_name, 
+		     struct cli_state *cli,
+		     TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	fstring sid_str;
 
 	sid_to_string(sid_str, domain_sid);
 	d_printf("Storing SID %s for Domain %s in secrets.tdb\n",
-		 sid_str, lp_workgroup());
+		 sid_str, domain_name);
 
-	if (!secrets_store_domain_sid(global_myname(), domain_sid)) {
+	if (!secrets_store_domain_sid(domain_name, domain_sid)) {
 		DEBUG(0,("Can't store domain SID\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
@@ -504,7 +513,8 @@ static int rpc_user_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, const char *domain_name, 
+				       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) {
 	
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -593,6 +603,7 @@ static int rpc_user_add(int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid, 
+				       const char *domain_name, 
 				       struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv)
@@ -694,6 +705,7 @@ static int rpc_user_delete(int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_user_password_internals(const DOM_SID *domain_sid, 
+					    const char *domain_name, 
 					    struct cli_state *cli, 
 					    TALLOC_CTX *mem_ctx, 
 					    int argc, const char **argv)
@@ -823,7 +835,8 @@ static int rpc_user_password(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_user_info_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -925,7 +938,8 @@ static int rpc_user_info(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_user_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -1047,7 +1061,8 @@ static int rpc_group_usage(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_group_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			 struct cli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -1237,7 +1252,8 @@ static int rpc_group_list(int argc, const char **argv)
 }
  
 static NTSTATUS 
-rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_group_members_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			    struct cli_state *cli,
 			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	NTSTATUS result;
@@ -1387,7 +1403,8 @@ static int rpc_share_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_add_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
 {
 	WERROR result;
@@ -1435,7 +1452,8 @@ static int rpc_share_add(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_share_del_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_del_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
 {
 	WERROR result;
@@ -1504,7 +1522,8 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
  **/
 
 static NTSTATUS 
-rpc_share_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			 struct cli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SRV_SHARE_INFO_CTR ctr;
@@ -1580,7 +1599,8 @@ static int rpc_file_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_file_close_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_file_close_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			 struct cli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	WERROR result;
@@ -1644,7 +1664,8 @@ static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
  **/
 
 static NTSTATUS 
-rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_file_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+			struct cli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SRV_FILE_INFO_CTR ctr;
@@ -1748,6 +1769,7 @@ int net_rpc_file(int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, 
+					     const char *domain_name, 
 					     struct cli_state *cli, 
 					     TALLOC_CTX *mem_ctx, 
 					     int argc, const char **argv) 
@@ -1782,6 +1804,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid,
  **/
 
 static NTSTATUS rpc_reg_shutdown_abort_internals(const DOM_SID *domain_sid, 
+						 const char *domain_name, 
 						 struct cli_state *cli, 
 						 TALLOC_CTX *mem_ctx, 
 						 int argc, const char **argv) 
@@ -1840,7 +1863,9 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, 
+				       const char *domain_name, 
+				       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1925,7 +1950,9 @@ static int rpc_shutdown(int argc, const char **argv)
  * @return normal NTSTATUS return code
  */
 
-static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, 
+					   const char *domain_name, 
+					   struct cli_state *cli, TALLOC_CTX *mem_ctx, 
                                            int argc, const char **argv) {
 
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -2280,8 +2307,10 @@ static int rpc_trustdom_usage(int argc, const char **argv)
 }
 
 
-static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              int argc, const char **argv)
+static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, 
+				     const char *domain_name, 
+				     struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     int argc, const char **argv)
 {
 	fstring str_sid;
 	sid_to_string(str_sid, domain_sid);
@@ -2592,7 +2621,17 @@ BOOL net_rpc_check(unsigned flags)
 	return ret;
 }
 
+/* dump sam database via samsync rpc calls */
+static int rpc_samdump(int argc, const char **argv) {
+	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS, rpc_samdump_internals,
+			       argc, argv);
+}
 
+/* syncronise sam database via samsync rpc calls */
+static int rpc_vampire(int argc, const char **argv) {
+	return run_rpc_command(NULL, PI_NETLOGON, NET_FLAGS_ANONYMOUS, rpc_vampire_internals,
+			       argc, argv);
+}
 /****************************************************************************/
 
 
