@@ -541,7 +541,6 @@ static void process(void)
 ****************************************************************************/
  int main(int argc,char *argv[])
 {
-	extern BOOL append_log;
 	extern char *optarg;
 	/* shall I run as a daemon */
 	BOOL is_daemon = False;
@@ -576,16 +575,8 @@ static void process(void)
 			lp_set_logfile(logfile);
 			break;
 
-		case 'a':
-			append_log = True;
-			break;
-
 		case 'i':
 			interactive = True;
-			break;
-
-		case 'o':
-			append_log = False;
 			break;
 
 		case 'D':
@@ -627,8 +618,6 @@ static void process(void)
 	sec_init();
 
 	load_case_tables();
-
-	append_log = True;
 
 	if(!specified_logfile) {
 		slprintf(logfile, sizeof(logfile)-1, "%s/log.wrepld",

@@ -661,15 +661,12 @@ static BOOL init_structs(void)
  **************************************************************************** */
  int main(int argc, const char *argv[])
 {
-	extern BOOL append_log;
 	static BOOL opt_interactive = False;
 	poptContext pc;
 	struct poptOption long_options[] = {
 	POPT_AUTOHELP
 	{"daemon", 'D', POPT_ARG_VAL, &is_daemon, True, "Become a daemon(default)" },
-	{"log-append", 'a', POPT_ARG_VAL, &append_log, True, "Append to log file" },
 	{"interactive", 'i', POPT_ARG_VAL, &opt_interactive, True, "Run interactive (not a daemon)" },
-	{"log-overwrite", 'o', POPT_ARG_VAL, &append_log, False, "Overwrite log file, don't append" },
 	{"hosts", 'H', POPT_ARG_STRING, dyn_LMHOSTSFILE, 'H', "Load a netbios hosts file"},
 	{"port", 'p', POPT_ARG_INT, &global_nmb_port, NMB_PORT, "Listen on the specified port" },
 	{NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
@@ -682,8 +679,6 @@ static BOOL init_structs(void)
 	};
 	int opt;
 	pstring logfile;
-
-  append_log = True;  /* Default, override with '-o' option. */
 
   global_nmb_port = NMB_PORT;
   global_in_nmbd = True;

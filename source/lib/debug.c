@@ -74,15 +74,12 @@
  *
  *  dbf           - Global debug file handle.
  *  debugf        - Debug file name.
- *  append_log    - If True, then the output file will be opened in append
- *                  mode.
  *  DEBUGLEVEL    - System-wide debug message limit.  Messages with message-
  *                  levels higher than DEBUGLEVEL will not be processed.
  */
 
 XFILE   *dbf        = NULL;
 pstring debugf     = "";
-BOOL    append_log = False;
 BOOL    debug_warn_unknown_class = True;
 BOOL    debug_auto_add_unknown_class = True;
 BOOL    AllowDebugChange = True;
@@ -576,10 +573,7 @@ BOOL reopen_logs( void )
 	}
 
 	pstrcpy( debugf, fname );
-	if (append_log)
-		new_dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
-	else
-		new_dbf = x_fopen( debugf, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
+	new_dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644);
 
 	if (!new_dbf) {
 		log_overflow = True;
@@ -731,10 +725,7 @@ void check_log_size( void )
       {
       mode_t oldumask = umask( 022 );
 
-      if( append_log )
-        dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
-      else
-        dbf = x_fopen( debugf, O_WRONLY|O_CREAT|O_TRUNC, 0644 );
+      dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
       (void)umask( oldumask );
       if( dbf )
         {
