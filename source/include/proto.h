@@ -291,6 +291,7 @@ void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 char *smbd_mktemp(char *template);
 void *memdup(void *p, size_t size);
+char *myhostname(void);
 
 /*The following definitions come from  lib/util_file.c  */
 

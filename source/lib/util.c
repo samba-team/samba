@@ -93,7 +93,6 @@ fstring local_machine="";
 fstring remote_arch="UNKNOWN";
 static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
-pstring myhostname="";
 pstring user_socket_options="";   
 
 pstring sesssetup_user="";
@@ -2201,7 +2200,7 @@ void standard_sub_basic(char *str)
 				string_sub(p,"%d", pidstr,l);
 				break;
 			}
-			case 'h' : string_sub(p,"%h", myhostname,l); break;
+			case 'h' : string_sub(p,"%h", myhostname(),l); break;
 			case 'm' : string_sub(p,"%m", remote_machine,l); break;
 			case 'v' : string_sub(p,"%v", VERSION,l); break;
 			case '$' : p += expand_env_var(p,l); break; /* Expand environment variables */
@@ -3154,4 +3153,16 @@ void *memdup(void *p, size_t size)
 	if (!p2) return NULL;
 	memcpy(p2, p, size);
 	return p2;
+}
+
+/*****************************************************************
+get local hostname and cache result
+ *****************************************************************/  
+char *myhostname(void)
+{
+	static pstring ret;
+	if (ret[0] == 0) {
+		get_myname(ret);
+	}
+	return ret;
 }

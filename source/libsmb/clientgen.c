@@ -50,12 +50,12 @@ static BOOL cli_receive_smb(struct cli_state *cli)
  again:
 	ret = client_receive_smb(cli->fd,cli->inbuf,cli->timeout);
 	
-	if (ret && cli->use_oplocks) {
+	if (ret) {
 		/* it might be an oplock break request */
 		if (CVAL(cli->inbuf,smb_com) == SMBlockingX &&
 		    SVAL(cli->inbuf,smb_vwv6) == 0 &&
 		    SVAL(cli->inbuf,smb_vwv7) == 0) {
-			cli_process_oplock(cli);
+			if (cli->use_oplocks) cli_process_oplock(cli);
 			/* try to prevent loops */
 			CVAL(cli->inbuf,smb_com) = 0xFF;
 			goto again;

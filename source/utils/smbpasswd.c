@@ -19,7 +19,6 @@
 
 #include "includes.h"
 
-extern pstring myhostname;
 extern pstring global_myname;
 extern int DEBUGLEVEL;
 
@@ -575,11 +574,6 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	if(!get_myname(myhostname)) {
-		fprintf(stderr, "unable to get my hostname.\n");
-		exit(1);
-	}
-
 	/*
 	 * Set the machine NETBIOS name if not already
 	 * set from the config file. 
@@ -587,7 +581,7 @@ int main(int argc, char **argv)
     
 	if (!*global_myname) {   
 		char *p;
-		fstrcpy(global_myname, myhostname);
+		fstrcpy(global_myname, myhostname());
 		p = strchr(global_myname, '.' );
 		if (p) *p = 0;
 	}           

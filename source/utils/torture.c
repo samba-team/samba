@@ -1095,6 +1095,58 @@ static void run_trans2test(int dummy)
 	printf("trans2 test finished\n");
 }
 
+
+/*
+  this is a harness for some oplock tests
+ */
+static void run_oplock(int dummy)
+{
+	static struct cli_state cli1, cli2;
+	char *fname = "\\lockt1.lck";
+	char *fname2 = "\\lockt2.lck";
+	int fnum1, fnum2;
+
+	printf("starting oplock test\n");
+
+	if (!open_connection(&cli1)) {
+		return;
+	}
+
+	cli_unlink(&cli1, fname);
+
+	cli_sockopt(&cli1, sockops);
+
+	cli1.use_oplocks = True;
+
+	fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	cli1.use_oplocks = False;
+
+	cli_unlink(&cli1, fname);
+	cli_unlink(&cli1, fname);
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("close2 failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (!cli_unlink(&cli1, fname)) {
+		printf("unlink failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+
+	close_connection(&cli1);
+
+	printf("finished oplock test\n");
+}
+
+
+
 static double create_procs(void (*fn)(int))
 {
 	int i, status;
@@ -1192,6 +1244,7 @@ static struct {
 	{"RANDOMIPC", run_randomipc, 0},
 	{"NBW95",  run_nbw95, 0},
 	{"NBWNT",  run_nbwnt, 0},
+	{"OPLOCK",  run_oplock, 0},
 	{NULL, NULL, 0}};
 
 
@@ -1303,6 +1356,8 @@ static void usage(void)
 	argc--;
 	argv++;
 
+
+	fstrcpy(workgroup, lp_workgroup());
 
 	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:")) != EOF) {
 		switch (opt) {
