@@ -1383,6 +1383,7 @@ sub FunctionTable($)
 	pidl "\t\"$interface->{NAME}\",\n";
 	pidl "\tDCERPC_$uname\_UUID,\n";
 	pidl "\tDCERPC_$uname\_VERSION,\n";
+	pidl "\tDCERPC_$uname\_HELPSTRING,\n";
 	pidl "\t$count,\n";
 	pidl "\t$interface->{NAME}\_calls,\n";
 	pidl "\t&$interface->{NAME}\_endpoints\n";

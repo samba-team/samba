@@ -69,7 +69,11 @@ static void show_pipes(void)
 	printf("\nYou must specify a pipe\n");
 	printf("known pipes are:\n");
 	for (i=0;dcerpc_pipes[i];i++) {
-		printf("\t%s\n", dcerpc_pipes[i]->name);
+		if(dcerpc_pipes[i]->helpstring) {
+			printf("\t%s - %s\n", dcerpc_pipes[i]->name, dcerpc_pipes[i]->helpstring);
+		} else {
+			printf("\t%s\n", dcerpc_pipes[i]->name);
+		}
 	}
 	exit(1);
 }
