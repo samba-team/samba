@@ -2655,7 +2655,7 @@ if test x"$with_ads_support" != x"no"; then
         KRB5_LDFLAGS="-L$withval/lib"
         FOUND_KRB5=yes
 	if test -x "$withval/bin/krb5-config"; then
-		KRB5_CONFIG=$withval/bin/krb5-config
+		KRB5CONFIG=$withval/bin/krb5-config
 	fi
         ;;
       esac ],
@@ -2665,17 +2665,17 @@ if test x"$with_ads_support" != x"no"; then
 
   #################################################
   # check for krb5-config from recent MIT and Heimdal kerberos 5
-  AC_PATH_PROG(KRB5_CONFIG, krb5-config)
+  AC_PATH_PROG(KRB5CONFIG, krb5-config)
   AC_MSG_CHECKING(for working krb5-config)
-  if test -x "$KRB5_CONFIG"; then
+  if test -x "$KRB5CONFIG"; then
     ac_save_CFLAGS=$CFLAGS
     CFLAGS="";export CFLAGS
     ac_save_LDFLAGS=$LDFLAGS
     LDFLAGS="";export LDFLAGS
-    KRB5_LIBS="`$KRB5_CONFIG --libs gssapi`"
-    KRB5_LDFLAGS="`$KRB5_CONFIG --libs gssapi | sed s/-lgss.*//`"
-    KRB5_CFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
-    KRB5_CPPFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
+    KRB5_LIBS="`$KRB5CONFIG --libs gssapi`"
+    KRB5_LDFLAGS="`$KRB5CONFIG --libs gssapi | sed s/-lgss.*//`"
+    KRB5_CFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`" 
+    KRB5_CPPFLAGS="`$KRB5CONFIG --cflags | sed s/@INCLUDE_des@//`"
     CFLAGS=$ac_save_CFLAGS;export CFLAGS
     LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
     FOUND_KRB5=yes

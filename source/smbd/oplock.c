@@ -598,13 +598,13 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, un
 
 /****************************************************************************
  Process a level II oplock break directly.
+ We must call this function with the share mode entry locked.
 ****************************************************************************/
 
-BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
+static BOOL oplock_break_level2(files_struct *fsp, BOOL local_request)
 {
 	extern uint32 global_client_caps;
 	char outbuf[128];
-	BOOL got_lock = False;
 	SMB_DEV_T dev = fsp->dev;
 	SMB_INO_T inode = fsp->inode;
 
@@ -644,24 +644,15 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 	/*
 	 * Now we must update the shared memory structure to tell
 	 * everyone else we no longer have a level II oplock on 
-	 * this open file. If local_request is true then token is
-	 * the existing lock on the shared memory area.
+	 * this open file. We must call this function with the share mode
+	 * entry locked so we can change the entry directly.
 	 */
-
-	if(!local_request && lock_share_entry_fsp(fsp) == False) {
-		DEBUG(0,("oplock_break_level2: unable to lock share entry for file %s\n", fsp->fsp_name ));
-	} else {
-		got_lock = True;
-	}
 
 	if(remove_share_oplock(fsp)==False) {
 		DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
 	}
 
 	release_file_oplock(fsp);
-
-	if (!local_request && got_lock)
-		unlock_share_entry_fsp(fsp);
 
 	if(level_II_oplocks_open < 0) {
 		DEBUG(0,("oplock_break_level2: level_II_oplocks_open < 0 (%d). PANIC ERROR\n",
@@ -680,6 +671,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 
 /****************************************************************************
  Process an oplock break directly.
+ This is always called with the share mode lock *NOT* held.
 ****************************************************************************/
 
 static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, BOOL local_request)
@@ -708,8 +700,18 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	 * Deal with a level II oplock going break to none separately.
 	 */
 
-	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
-		return oplock_break_level2(fsp, local_request, -1);
+	if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
+		BOOL ret;
+		/* We must always call oplock_break_level2() with
+		   the share mode entry locked. */
+		if (lock_share_entry_fsp(fsp) == False) {
+			DEBUG(0,("oplock_break: unable to lock share entry for file %s\n", fsp->fsp_name ));
+			return False;
+		}
+		ret = oplock_break_level2(fsp, local_request);
+		unlock_share_entry_fsp(fsp);
+		return ret;
+	}
 
 	/* Mark the oplock break as sent - we don't want to send twice! */
 	if (fsp->sent_oplock_break) {
@@ -942,11 +944,12 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 }
 
 /****************************************************************************
-Send an oplock break message to another smbd process. If the oplock is held 
-by the local smbd then call the oplock break function directly.
+ Send an oplock break message to another smbd process. If the oplock is held 
+ by the local smbd then call the oplock break function directly.
+ This function is called with no share locks held.
 ****************************************************************************/
 
-BOOL request_oplock_break(share_mode_entry *share_entry, BOOL async)
+BOOL request_oplock_break(share_mode_entry *share_entry)
 {
 	char op_break_msg[OPLOCK_BREAK_MSG_LEN];
 	struct sockaddr_in addr_out;
@@ -987,7 +990,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 	/* We need to send a OPLOCK_BREAK_CMD message to the port in the share mode entry. */
 
 	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type)) {
-		break_cmd_type = async ? ASYNC_LEVEL_II_OPLOCK_BREAK_CMD : LEVEL_II_OPLOCK_BREAK_CMD;
+		break_cmd_type = LEVEL_II_OPLOCK_BREAK_CMD;
 	} else {
 		break_cmd_type = OPLOCK_BREAK_CMD;
 	}
@@ -1005,7 +1008,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 	addr_out.sin_family = AF_INET;
    
 	if( DEBUGLVL( 3 ) ) {
-		dbgtext( "request_oplock_break: sending a %s oplock break message to ", async ? "asynchronous" : "synchronous" );
+		dbgtext( "request_oplock_break: sending a synchronous oplock break message to " );
 		dbgtext( "pid %d on port %d ", (int)share_entry->pid, share_entry->op_port );
 		dbgtext( "for dev = %x, inode = %.0f, file_id = %lu\n",
             (unsigned int)dev, (double)inode, file_id );
@@ -1022,16 +1025,6 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
 			dbgtext( "Error was %s\n", strerror(errno) );
 		}
 		return False;
-	}
-
-	/*
-	 * If we just sent a message to a level II oplock share entry in async mode then
-	 * we are done and may return.
-	 */
-
-	if (LEVEL_II_OPLOCK_TYPE(share_entry->op_type) && async) {
-		DEBUG(3,("request_oplock_break: sent async break message to level II entry.\n"));
-		return True;
 	}
 
 	/*
@@ -1147,6 +1140,57 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 }
 
 /****************************************************************************
+ Send an asynchronous oplock break message to another smbd process.
+****************************************************************************/
+
+static BOOL request_remote_level2_async_oplock_break(share_mode_entry *share_entry)
+{
+	char op_break_msg[OPLOCK_BREAK_MSG_LEN];
+	struct sockaddr_in addr_out;
+	pid_t pid = sys_getpid();
+	SMB_DEV_T dev = share_entry->dev;
+	SMB_INO_T inode = share_entry->inode;
+	unsigned long file_id = share_entry->share_file_id;
+
+	/* We need to send a ASYNC_LEVEL_II_OPLOCK_BREAK_CMD message to the port in the share mode entry. */
+
+	SSVAL(op_break_msg,OPBRK_MESSAGE_CMD_OFFSET,ASYNC_LEVEL_II_OPLOCK_BREAK_CMD);
+	memcpy(op_break_msg+OPLOCK_BREAK_PID_OFFSET,(char *)&pid,sizeof(pid));
+	memcpy(op_break_msg+OPLOCK_BREAK_DEV_OFFSET,(char *)&dev,sizeof(dev));
+	memcpy(op_break_msg+OPLOCK_BREAK_INODE_OFFSET,(char *)&inode,sizeof(inode));
+	memcpy(op_break_msg+OPLOCK_BREAK_FILEID_OFFSET,(char *)&file_id,sizeof(file_id));
+
+	/* Set the address and port. */
+	memset((char *)&addr_out,'\0',sizeof(addr_out));
+	addr_out.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+	addr_out.sin_port = htons( share_entry->op_port );
+	addr_out.sin_family = AF_INET;
+   
+	if( DEBUGLVL( 3 ) ) {
+		dbgtext( "request_remote_level2_async_oplock_break: sending an asynchronous oplock break message to ");
+		dbgtext( "pid %d on port %d ", (int)share_entry->pid, share_entry->op_port );
+		dbgtext( "for dev = %x, inode = %.0f, file_id = %lu\n",
+            (unsigned int)dev, (double)inode, file_id );
+	}
+
+	if(sys_sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
+			(struct sockaddr *)&addr_out,sizeof(addr_out)) < 0) {
+		if( DEBUGLVL( 0 ) ) {
+			dbgtext( "request_remote_level2_async_oplock_break: failed when sending a oplock " );
+			dbgtext( "break message to pid %d ", (int)share_entry->pid );
+			dbgtext( "on port %d ", share_entry->op_port );
+			dbgtext( "for dev = %x, inode = %.0f, file_id = %lu\n",
+				(unsigned int)dev, (double)inode, file_id );
+			dbgtext( "Error was %s\n", strerror(errno) );
+		}
+		return False;
+	}
+
+	DEBUG(3,("request_remote_level2_async_oplock_break: sent async break message to level II entry.\n"));
+	return True;
+}
+
+/****************************************************************************
  This function is called on any file modification or lock request. If a file
  is level 2 oplocked then it must tell all other level 2 holders to break to none.
 ****************************************************************************/
@@ -1155,7 +1199,6 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 {
 	share_mode_entry *share_list = NULL;
 	pid_t pid = sys_getpid();
-	int token = -1;
 	int num_share_modes = 0;
 	int i;
 
@@ -1222,7 +1265,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 
 			DEBUG(10,("release_level_2_oplocks_on_change: breaking our own oplock.\n"));
 
-			oplock_break_level2(new_fsp, True, token);
+			oplock_break_level2(new_fsp, True);
 
 		} else {
 
@@ -1232,7 +1275,7 @@ void release_level_2_oplocks_on_change(files_struct *fsp)
 			 */
 
 			DEBUG(10,("release_level_2_oplocks_on_change: breaking remote oplock (async).\n"));
-			request_oplock_break(share_entry, True);
+			request_remote_level2_async_oplock_break(share_entry);
 		}
 	}
 

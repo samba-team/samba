@@ -757,13 +757,17 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			if (ret){
 				SAFE_FREE(principal);
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
+				if (cli->fallback_after_kerberos)
+					goto ntlmssp;
 				return ADS_ERROR_KRB5(ret);
 			}
 		}
 		
 		rc = cli_session_setup_kerberos(cli, principal, domain);
-		SAFE_FREE(principal);
-		return rc;
+		if (ADS_ERR_OK(rc) || !cli->fallback_after_kerberos) {
+			SAFE_FREE(principal);
+			return rc;
+		}
 	}
 #endif
 

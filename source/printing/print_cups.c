@@ -664,7 +664,6 @@ static int cups_job_submit(int snum, struct printjob *pjob)
 		httpClose(http);
 
 	return ret;
-	return (ret);
 }
 
 /*
@@ -912,6 +911,8 @@ static int cups_queue_get(const char *printer_name,
 	*    requested-attributes
 	*    printer-uri
 	*/
+
+	request = ippNew();
 
 	request->request.op.operation_id = IPP_GET_PRINTER_ATTRIBUTES;
 	request->request.op.request_id   = 1;

@@ -665,7 +665,7 @@ dev = %x, inode = %.0f\n", *p_oplock_request, share_entry->op_type, fname, (unsi
 				/* Oplock break - unlock to request it. */
 				unlock_share_entry(conn, dev, inode);
 				
-				opb_ret = request_oplock_break(share_entry, False);
+				opb_ret = request_oplock_break(share_entry);
 				
 				/* Now relock. */
 				lock_share_entry(conn, dev, inode);
