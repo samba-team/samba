@@ -1617,7 +1617,7 @@ dnl Try to find iconv(3)
 	LDFLAGS=$save_LDFLAG
         LIB_ADD_DIR(LDFLAGS, "$i/lib")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-        LIBS="$save_LIBS"
+	LIBS="$save_LIBS"
         ICONV_LOCATION=$i
         export LDFLAGS LIBS CPPFLAGS
 dnl Now, check for a working iconv ... we want to do it here because
@@ -1628,6 +1628,9 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         ic_save_LIBS="$LIBS"
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
            LIBS="$LIBS -L$ICONV_LOCATION/lib"
+        fi
+        if test x"$jm_cv_lib_iconv" != x; then
+           LIBS="$LIBS -l$jm_cv_lib_iconv"
         fi
 dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
@@ -1683,6 +1686,13 @@ dnl ])
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
   	   CPPFLAGS=$save_CPPFLAGS
 	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   LIBS=$save_LIBS
+           if test x"$jm_cv_lib_iconv" != x; then
+              LIBS="$LIBS -l$jm_cv_lib_iconv"
+           fi
+	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
+	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
+	   LIB_ADD_DIR(LDFLAGS, "$i/lib")
 	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
