@@ -1,4 +1,18 @@
-2004-09-28  Love Hörnquist Åstrand  <lha@it.su.se>
+2004-09-30 Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: assume minutes for time
+
+	* lib/krb5/config_file.c (krb5_config_vget_time_default): use
+	krb5_string_to_deltat
+
+	* lib/krb5/appdefault.c (krb5_appdefault_time): use
+	krb5_string_to_deltat
+
+	* lib/krb5/time.c (krb5_string_to_deltat): set default unit to
+	minute for compatibility with MIT Kerberos.
+	
+
+2004-09-28 Love Hörnquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/get_cred.c (get_cred_kdc_usage): retry using "large
 	message safe" transport if we get back
