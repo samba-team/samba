@@ -26,7 +26,7 @@
 int net_ads_usage(int argc, const char **argv)
 {
 	d_printf(
-"\nnet ads join"\
+"\nnet ads join <org_unit>"\
 "\n\tjoins the local machine to a ADS realm\n"\
 "\nnet ads leave"\
 "\n\tremoves the local machine from a ADS realm\n"\
@@ -169,11 +169,13 @@ static int net_ads_status(int argc, const char **argv)
 
 static int net_ads_leave(int argc, const char **argv)
 {
-	ADS_STRUCT *ads;
+	ADS_STRUCT *ads = NULL;
 	int rc;
 	extern pstring global_myname;
 
-	if (!(ads = ads_startup())) return -1;
+	if (!(ads = ads_startup())) {
+		return -1;
+	}
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
@@ -200,19 +202,39 @@ static int net_ads_join(int argc, const char **argv)
 	char *tmp_password;
 	extern pstring global_myname;
 	NTSTATUS status;
+	const char *org_unit = "Computers";
+	char *dn;
+	void *res;
+
+	if (argc > 0) org_unit = argv[0];
 
 	if (!secrets_init()) {
 		DEBUG(1,("Failed to initialise secrets database\n"));
 		return -1;
 	}
-	
-	
+
 	tmp_password = generate_random_str(DEFAULT_TRUST_ACCOUNT_PASSWORD_LENGTH);
 	password = strdup(tmp_password);
 
 	if (!(ads = ads_startup())) return -1;
 
-	rc = ads_join_realm(ads, global_myname);
+	asprintf(&dn, "cn=%s,%s", org_unit, ads->bind_path);
+
+	rc = ads_search_dn(ads, &res, dn, NULL);
+	free(dn);
+	ads_msgfree(ads, res);
+
+	if (rc == LDAP_NO_SUCH_OBJECT) {
+		d_printf("ads_join_realm: organisational unit %s does not exist\n", org_unit);
+		return rc;
+	}
+
+	if (rc) {
+		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
+		return -1;
+	}	
+
+	rc = ads_join_realm(ads, global_myname, org_unit);
 	if (rc) {
 		d_printf("ads_join_realm: %s\n", ads_errstr(rc));
 		return -1;
