@@ -942,6 +942,9 @@ NTSTATUS ntvfs_map_write(struct smbsrv_request *req, union smb_write *wr,
 
 	status = ntvfs_map_async_setup(req, ntvfs, wr, wr2, 
 				       (second_stage_t)ntvfs_map_write_finish);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	wr2->writex.level = RAW_WRITE_GENERIC;
 

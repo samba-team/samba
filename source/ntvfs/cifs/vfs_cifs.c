@@ -651,6 +651,15 @@ static NTSTATUS cvfs_async_setup(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  cancel an async call
+*/
+static NTSTATUS cvfs_cancel(struct ntvfs_module_context *ntvfs, 
+			    struct smbsrv_request *req)
+{
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs, 
@@ -855,6 +864,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.trans = cvfs_trans;
 	ops.logoff = cvfs_logoff;
 	ops.async_setup = cvfs_async_setup;
+	ops.cancel = cvfs_cancel;
 
 	if (lp_parm_bool(-1, "cifs", "maptrans2", False)) {
 		ops.trans2 = cvfs_trans2;

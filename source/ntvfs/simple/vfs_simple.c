@@ -609,6 +609,14 @@ static NTSTATUS svfs_async_setup(struct ntvfs_module_context *ntvfs,
 }
 
 /*
+  cancel an async call
+*/
+static NTSTATUS svfs_cancel(struct ntvfs_module_context *ntvfs, struct smbsrv_request *req)
+{
+	return NT_STATUS_UNSUCCESSFUL;
+}
+
+/*
   lock a byte range
 */
 static NTSTATUS svfs_lock(struct ntvfs_module_context *ntvfs,
@@ -668,6 +676,10 @@ static NTSTATUS svfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
   		break;
+	default:
+		DEBUG(2,("svfs_setfileinfo: level %d not implemented\n", 
+			 info->generic.level));
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 	return NT_STATUS_OK;
 }
@@ -986,6 +998,7 @@ NTSTATUS ntvfs_simple_init(void)
 	ops.trans = svfs_trans;
 	ops.logoff = svfs_logoff;
 	ops.async_setup = svfs_async_setup;
+	ops.cancel = svfs_cancel;
 
 	/* register ourselves with the NTVFS subsystem. We register
 	   under names 'simple'
