@@ -10,12 +10,13 @@ RCSID("$Id$");
 
 #ifdef KERBEROS
 
-int net_read(POP *p, int fd, void *buf, size_t len)
+static int
+net_read(POP *p, int fd, void *buf, size_t len)
 {
 #ifdef KRB5
-    return krb5_net_read(p->context, 0, buf, len);
+    return krb5_net_read(p->context, &fd, buf, len);
 #elif defined(KRB4)
-    return krb_net_read(0, buf, len);
+    return krb_net_read(fd, buf, len);
 #endif
 }
 #endif
@@ -82,7 +83,7 @@ krb5_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
 	return -1;
     len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | (buf[3]);
 	
-    if (krb5_net_read(p->context, s, buf, len) != len)
+    if (krb5_net_read(p->context, &s, buf, len) != len)
 	return -1;
     if (len != sizeof(KRB5_SENDAUTH_VERSION)
 	|| memcmp (buf, KRB5_SENDAUTH_VERSION, len) != 0)
@@ -185,8 +186,9 @@ static int num_args = sizeof(args) / sizeof(args[0]);
  *  init:   Start a Post Office Protocol session
  */
 
-int pop_getportbyname(POP *p, const char *service, 
-		      const char *proto, short def)
+static int
+pop_getportbyname(POP *p, const char *service, 
+		  const char *proto, short def)
 {
 #ifdef KRB5
     return krb5_getportbyname(p->context, service, proto, def);
