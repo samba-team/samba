@@ -19,7 +19,7 @@ ADD_OBJ_FILES = \
 		libcli/auth/kerberos.o \
 		libcli/auth/kerberos_verify.o \
 		libcli/auth/gssapi_parse.o
-REQUIRED_SUBSYSTEMS = EXT_LIB_KRB5
+REQUIRED_SUBSYSTEMS = NDR_KRB5PAC EXT_LIB_KRB5
 # End MODULE gensec_krb5
 ################################################
 

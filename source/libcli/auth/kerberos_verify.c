@@ -101,7 +101,9 @@ static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_
 		}
 		DEBUG(10, ("Checking principal: %s\n", princ_name));
 		/* Look for a CIFS ticket */
-		if (!strncasecmp(princ_name, "cifs/", 5) || (!strncasecmp(princ_name, "host/", 5))) {
+		if (!strncasecmp(princ_name, "cifs/", 5) || 
+		    !strncasecmp(princ_name, "host/", 5) ||
+		    !strncasecmp(princ_name, "ldap/", 5)) {
 #ifdef HAVE_KRB5_KEYTAB_ENTRY_KEYBLOCK
 			krb5_auth_con_setuseruserkey(context, auth_context, &kt_entry.keyblock);
 #else
