@@ -56,6 +56,9 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 
 </dedication>
 
+<!-- Contents -->
+<toc/>
+
 <!-- Chapters -->
 &NetBIOS;
 &Architecture;

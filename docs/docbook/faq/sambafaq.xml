@@ -30,6 +30,8 @@ and the old samba text documents which were mostly written by John Terpstra.
 </para>
 </dedication>
 
+<toc/>
+
 &general;
 &install;
 &config;
