@@ -1,4 +1,3 @@
-#define strrchr(p, ch) rindex(p, ch)
 /*
  * Copyright (c) 1995, 1996 Kungliga Tekniska Högskolan (Royal Institute
  * of Technology, Stockholm, Sweden).
