@@ -158,7 +158,7 @@ fi # unknown
 
 if test "$have_ndbm" = "yes"; then
   AC_MSG_CHECKING([if ndbm is implemented with db])
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <unistd.h>
 #include <fcntl.h>
 #if defined(HAVE_GDBM_NDBM_H)
@@ -177,7 +177,7 @@ int main()
     return 1;
   dbm_close(d);
   return 0;
-}],[
+}]])],[
     if test -f conftest.db; then
       AC_MSG_RESULT([yes])
       AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files *.db)])

@@ -31,7 +31,7 @@ AC_CACHE_CHECK(whether byte ordering is bigendian, krb_cv_c_bigendian,[
   not big endian
 #endif]])],[krb_cv_c_bigendian=yes],[krb_cv_c_bigendian=no])
   else
-    AC_TRY_RUN([main () {
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[main () {
       /* Are we little or big endian?  From Harbison&Steele.  */
       union
       {
@@ -40,8 +40,8 @@ AC_CACHE_CHECK(whether byte ordering is bigendian, krb_cv_c_bigendian,[
     } u;
     u.l = 1;
     exit (u.c[sizeof (long) - 1] == 1);
-  }], krb_cv_c_bigendian=no, krb_cv_c_bigendian=yes,
-  AC_MSG_ERROR([specify either --enable-bigendian or --enable-littleendian]))
+  }]])],[krb_cv_c_bigendian=no],[krb_cv_c_bigendian=yes],
+  [AC_MSG_ERROR([specify either --enable-bigendian or --enable-littleendian])])
   fi
 ])
 if test "$krb_cv_c_bigendian" = "yes"; then

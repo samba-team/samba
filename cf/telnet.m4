@@ -31,7 +31,7 @@ case "$host" in
 	AC_CHECK_FUNC(getmsg)
 	if test "$ac_cv_func_getmsg" = "yes"; then
 		AC_CACHE_CHECK([if getmsg works], ac_cv_func_getmsg_works,
-		AC_TRY_RUN([
+		AC_RUN_IFELSE([AC_LANG_SOURCE([[
 			#include <stdio.h>
 			#include <errno.h>
 
@@ -43,9 +43,9 @@ case "$host" in
 			    return 1;
 			  return 0;
 			}
-			], ac_cv_func_getmsg_works=yes, 
-			ac_cv_func_getmsg_works=no,
-			ac_cv_func_getmsg_works=no))
+			]])], [ac_cv_func_getmsg_works=yes], 
+			[ac_cv_func_getmsg_works=no],
+			[ac_cv_func_getmsg_works=no]))
 		if test "$ac_cv_func_getmsg_works" = "yes"; then
 			AC_DEFINE(HAVE_GETMSG, 1,
 				[Define if you have a working getmsg.])

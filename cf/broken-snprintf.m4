@@ -3,7 +3,7 @@ dnl
 AC_DEFUN([AC_BROKEN_SNPRINTF], [
 AC_CACHE_CHECK(for working snprintf,ac_cv_func_snprintf_working,
 ac_cv_func_snprintf_working=yes
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
 int main()
@@ -11,7 +11,7 @@ int main()
 	char foo[[3]];
 	snprintf(foo, 2, "12");
 	return strcmp(foo, "1");
-}],:,ac_cv_func_snprintf_working=no,:))
+}]])],[:],[ac_cv_func_snprintf_working=no],[:]))
 
 if test "$ac_cv_func_snprintf_working" = yes; then
 	AC_DEFINE_UNQUOTED(HAVE_SNPRINTF, 1, [define if you have a working snprintf])
@@ -24,7 +24,7 @@ fi
 AC_DEFUN([AC_BROKEN_VSNPRINTF],[
 AC_CACHE_CHECK(for working vsnprintf,ac_cv_func_vsnprintf_working,
 ac_cv_func_vsnprintf_working=yes
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
@@ -43,7 +43,7 @@ int foo(int num, ...)
 int main()
 {
 	return foo(0, "12");
-}],:,ac_cv_func_vsnprintf_working=no,:))
+}]])],[:],[ac_cv_func_vsnprintf_working=no],[:]))
 
 if test "$ac_cv_func_vsnprintf_working" = yes; then
 	AC_DEFINE_UNQUOTED(HAVE_VSNPRINTF, 1, [define if you have a working vsnprintf])
