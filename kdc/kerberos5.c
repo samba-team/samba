@@ -225,20 +225,24 @@ as_rep(krb5_context context,
 	    goto out;
 	}
     }else if (require_preauth) {
-	PA_DATA foo;
+	METHOD_DATA method_data;
+	PA_DATA pa_data;
 	u_char buf[16];
 	size_t len;
 	krb5_data foo_data;
 	
     use_pa:
-	foo.padata_type = pa_enc_timestamp;
-	foo.padata_value.length = 0;
-	foo.padata_value.data   = NULL;
+	method_data.len = 1;
+	method_data.val = &pa_data;
+
+	pa_data.padata_type         = pa_enc_timestamp;
+	pa_data.padata_value.length = 0;
+	pa_data.padata_value.data   = NULL;
 	
-	encode_PA_DATA(buf + sizeof(buf) - 1,
-		       sizeof(buf),
-		       &foo,
-		       &len);
+	encode_METHOD_DATA(buf + sizeof(buf) - 1,
+			   sizeof(buf),
+			   &method_data,
+			   &len);
 	foo_data.length = len;
 	foo_data.data   = buf + sizeof(buf) - len;
 	
