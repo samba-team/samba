@@ -640,6 +640,8 @@ struct ldif_write_file_state {
 	FILE *f;
 };
 
+static int fprintf_file(void *private_data, const char *fmt, ...) PRINTF_ATTRIBUTE(2, 3);
+
 static int fprintf_file(void *private_data, const char *fmt, ...)
 {
 	struct ldif_write_file_state *state = private_data;

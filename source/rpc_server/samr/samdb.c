@@ -30,7 +30,7 @@ struct samdb_context {
 /*
   this is used to catch debug messages from ldb
 */
-void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
+void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)  _PRINTF_ATTRIBUTE(3,0)
 {
 	char *s = NULL;
 	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
@@ -128,7 +128,7 @@ const char *samdb_search_string_v(void *ctx,
 				  TALLOC_CTX *mem_ctx,
 				  const char *basedn,
 				  const char *attr_name,
-				  const char *format, va_list ap)
+				  const char *format, va_list ap) _PRINTF_ATTRIBUTE(5,0)
 {
 	struct samdb_context *sam_ctx = ctx;
 	int count;

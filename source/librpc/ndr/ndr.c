@@ -282,7 +282,7 @@ void ndr_print_array(struct ndr_print *ndr, const char *name, void *base,
 
 
 
-void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...)
+void ndr_print_debug_helper(struct ndr_print *ndr, const char *format, ...) _PRINTF_ATTRIBUTE(2,3)
 {
 	va_list ap;
 	char *s = NULL;
@@ -394,7 +394,7 @@ NTSTATUS ndr_pull_error(struct ndr_pull *ndr,
 /*
   return and possibly log an NDR error
 */
-NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char *format, ...)
+NTSTATUS ndr_push_error(struct ndr_push *ndr, enum ndr_err_code err, const char *format, ...)  _PRINTF_ATTRIBUTE(3,4)
 {
 	char *s=NULL;
 	va_list ap;

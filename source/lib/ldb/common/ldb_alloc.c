@@ -122,7 +122,7 @@ void *ldb_strdup(struct ldb_context *ldb, const char *str)
 /*
   a ldb wrapper for asprintf(), using ldb_malloc()
 */
-int ldb_asprintf(struct ldb_context *ldb, char **strp, const char *fmt, ...)
+int ldb_asprintf(struct ldb_context *ldb, char **strp, const char *fmt, ...) _PRINTF_ATTRIBUTE(3, 4)
 {
 	int len, len2;
 	va_list ap;

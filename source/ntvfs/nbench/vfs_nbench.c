@@ -39,6 +39,9 @@ struct nbench_private {
   log one request to the nbench log
 */
 static void nbench_log(struct nbench_private *private, 
+		       const char *format, ...) PRINTF_ATTRIBUTE(2, 3);
+
+static void nbench_log(struct nbench_private *private, 
 		       const char *format, ...)
 {
 	va_list ap;
