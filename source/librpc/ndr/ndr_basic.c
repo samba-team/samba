@@ -279,6 +279,21 @@ NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *d
 }
 
 /*
+  push an array of uint16
+*/
+NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16 *data, uint32 n)
+{
+	int i;
+	if (!(ndr_flags & NDR_SCALARS)) {
+		return NT_STATUS_OK;
+	}
+	for (i=0;i<n;i++) {
+		NDR_CHECK(ndr_push_uint16(ndr, data[i]));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   push an array of uint32
 */
 NTSTATUS ndr_push_array_uint32(struct ndr_push *ndr, int ndr_flags, const uint32 *data, uint32 n)
@@ -696,6 +711,24 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 		asprintf(&idx, "[%d]", i);
 		if (idx) {
 			ndr_print_uint32(ndr, idx, data[i]);
+			free(idx);
+		}
+	}
+	ndr->depth--;	
+}
+
+void ndr_print_array_uint16(struct ndr_print *ndr, const char *name, 
+			    const uint16 *data, uint32 count)
+{
+	int i;
+
+	ndr->print(ndr, "%s: ARRAY(%d)", name, count);
+	ndr->depth++;
+	for (i=0;i<count;i++) {
+		char *idx=NULL;
+		asprintf(&idx, "[%d]", i);
+		if (idx) {
+			ndr_print_uint16(ndr, idx, data[i]);
 			free(idx);
 		}
 	}
