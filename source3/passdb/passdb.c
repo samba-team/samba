@@ -156,7 +156,6 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
 NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 {
 	GROUP_MAP map;
-	uint32 rid;
 
 	if (!pwd) {
 		return NT_STATUS_UNSUCCESSFUL;
@@ -184,18 +183,25 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	   -- abartlet 11-May-02
 	*/
 
-	pdb_set_user_rid(sam_account, 
-			 fallback_pdb_uid_to_user_rid(pwd->pw_uid));
+	if (!pdb_set_user_sid_from_rid(sam_account, 
+			 fallback_pdb_uid_to_user_rid(pwd->pw_uid))) {
+		DEBUG(0,("Can't set User SID from RID!\n"));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	/* call the mapping code here */
 	if(get_group_map_from_gid(pwd->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-		sid_peek_rid(&map.sid, &rid);
+		if (!pdb_set_group_sid(sam_account,&map.sid)){
+			DEBUG(0,("Can't set Group SID!\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	} 
 	else {
-		rid=pdb_gid_to_group_rid(pwd->pw_gid);
+		if (!pdb_set_group_sid_from_rid(sam_account,pdb_gid_to_group_rid(pwd->pw_gid))) {
+			DEBUG(0,("Can't set Group SID\n"));
+			return NT_STATUS_INVALID_PARAMETER;
+		}
 	}
-		
-	pdb_set_group_rid(sam_account, rid);
 
 	/* check if this is a user account or a machine account */
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
@@ -455,39 +461,6 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 	return (True);
 }
 
-#if 0 /* seem it is not used by anyone */
-/*******************************************************************
- Group and User RID username mapping function
- ********************************************************************/
-
-BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
-{
-	GROUP_MAP map;
-	struct passwd *pw = Get_Pwnam(user_name);
-
-	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
-		return False;
-
-	if (!pw) {
-		DEBUG(1,("Username %s is invalid on this system\n", user_name));
-		return False;
-	}
-
-	/* turn the unix UID into a Domain RID.  this is what the posix
-	   sub-system does (adds 1000 to the uid) */
-	*u_rid = fallback_pdb_uid_to_user_rid(pw->pw_uid);
-
-	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	/* map it ! */
-	if (get_group_map_from_gid(pw->pw_gid, &map, MAPPING_WITHOUT_PRIV)) {
-		sid_peek_rid(&map.sid, g_rid);
-	} else 
-		*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
-
-	return True;
-}
-#endif /* seem it is not used by anyone */
-
 /*******************************************************************
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
@@ -578,7 +551,11 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 	SAM_ACCOUNT *sam_account = NULL;
 	GROUP_MAP map;
 
-	sid_peek_rid(sid, &rid);
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid)){
+		DEBUG(0,("local_sid_to_gid: sid_peek_check_rid return False! SID: %s\n",
+			sid_string_static(&map.sid)));
+		return False;
+	}	
 	*psid_name_use = SID_NAME_UNKNOWN;
 	
 	DEBUG(5,("local_lookup_sid: looking up RID %u.\n", (unsigned int)rid));
@@ -724,10 +701,9 @@ BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psi
 	}
 	
 	if (pdb_getsampwnam(sam_account, user)) {
-		sid_append_rid( &local_sid, pdb_get_user_rid(sam_account));
+		sid_copy(psid, (DOM_SID *) pdb_get_user_sid(sam_account));
 		*psid_name_use = SID_NAME_USER;
 		
-		sid_copy( psid, &local_sid);
 		pdb_free_sam(&sam_account);
 		return True;
 	}
@@ -800,7 +776,7 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		}
 		
 		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
-			sid_append_rid(psid, pdb_get_user_rid(sam_user));
+			sid_copy(psid, (DOM_SID *) pdb_get_user_sid(sam_user));
 		} else {
 			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 		}
@@ -920,7 +896,11 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 		if (map.gid==-1)
 			return False;
 
-		sid_peek_rid(&map.sid, &rid);
+		if (!sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid)){
+			DEBUG(0,("local_sid_to_gid: sid_peek_check_rid return False! SID: %s\n",
+				sid_string_static(&map.sid)));
+			return False;
+		}
 		*pgid = map.gid;
 		*name_type = map.sid_name_use;
 		DEBUG(10,("local_sid_to_gid: mapped SID %s (%s) -> gid (%u).\n", sid_to_string( str, psid),
@@ -996,9 +976,9 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		pdb_set_munged_dial(to   , pdb_unistr2_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
-		pdb_set_user_rid(to, from->user_rid);
+		pdb_set_user_sid_from_rid(to, from->user_rid);
 	if (from->group_rid)
-		pdb_set_group_rid(to, from->group_rid);
+		pdb_set_group_sid_from_rid(to, from->group_rid);
 
 	pdb_set_acct_ctrl(to, from->acb_info);
 	pdb_set_unknown_3(to, from->unknown_3);
@@ -1051,9 +1031,9 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		pdb_set_munged_dial(to   , pdb_unistr2_convert(&from->uni_munged_dial ));
 
 	if (from->user_rid)
-		pdb_set_user_rid(to, from->user_rid);
+		pdb_set_user_sid_from_rid(to, from->user_rid);
 	if (from->group_rid)
-		pdb_set_group_rid(to, from->group_rid);
+		pdb_set_group_sid_from_rid(to, from->group_rid);
 
 	/* FIXME!!  Do we need to copy the passwords here as well?
 	   I don't know.  Need to figure this out   --jerry */

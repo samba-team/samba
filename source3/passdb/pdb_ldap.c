@@ -624,7 +624,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 			GROUP_MAP map;
 			/* call the mapping code here */
 			if(get_group_map_from_gid(gid, &map, MAPPING_WITHOUT_PRIV)) {
-				sid_peek_rid(&map.sid, &group_rid);
+				if (!sid_peek_check_rid(get_global_sam_sid(), &map.sid, &group_rid))
+					return False;
 			} 
 			else {
 				group_rid=pdb_gid_to_group_rid(gid);
@@ -780,8 +781,8 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logon_divs(sampass, logon_divs);
 
-	pdb_set_user_rid(sampass, user_rid);
-	pdb_set_group_rid(sampass, group_rid);
+	pdb_set_user_sid_from_rid(sampass, user_rid);
+	pdb_set_group_sid_from_rid(sampass, group_rid);
 
 	pdb_set_username(sampass, username);
 
@@ -1273,7 +1274,8 @@ static BOOL ldapsam_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT * us
 static BOOL ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
 {
 	uint32 rid;
-	sid_peek_rid(sid, &rid);
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return False;
 	return ldapsam_getsampwrid(my_methods, user, rid);
 }	
 

@@ -658,7 +658,8 @@ static NTSTATUS sid_to_name(struct winbindd_domain *domain,
 	NTSTATUS status;
 	uint32 rid = 0;
 
-	sid_peek_rid(sid, &rid);
+	if (!sid_peek_check_rid(&domain->sid, sid, &rid))
+		return NT_STATUS_INVALID_PARAMETER;
 
 	if (!cache->tdb) goto do_query;
 

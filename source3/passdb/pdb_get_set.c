@@ -5,6 +5,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
+   Copyright (C) Stefan (metze) Metzmacher	2002
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -155,21 +156,41 @@ const char* pdb_get_plaintext_passwd (const SAM_ACCOUNT *sampass)
 	else
 		return (NULL);
 }
+const DOM_SID *pdb_get_user_sid(const SAM_ACCOUNT *sampass)
+{
+	if (sampass) 
+		return &sampass->private.user_sid;
+	else
+		return (NULL);
+}
+
+const DOM_SID *pdb_get_group_sid(const SAM_ACCOUNT *sampass)
+{
+	if (sampass)
+		return &sampass->private.group_sid;
+	else	
+		return (NULL);
+}	
 
 uint32 pdb_get_user_rid (const SAM_ACCOUNT *sampass)
 {
+	uint32 u_rid;
+
 	if (sampass)
-		return (sampass->private.user_rid);
-	else
-		return (-1);
+		if (sid_peek_check_rid(get_global_sam_sid(), (DOM_SID *) pdb_get_user_sid(sampass),&u_rid))
+			return u_rid;
+	
+	return (-1);
 }
 
 uint32 pdb_get_group_rid (const SAM_ACCOUNT *sampass)
 {
+	uint32 g_rid;
+
 	if (sampass)
-		return (sampass->private.group_rid);
-	else
-		return (-1);
+		if (sid_peek_check_rid(get_global_sam_sid(), (DOM_SID *) pdb_get_group_sid(sampass),&g_rid))
+			return g_rid;
+	return (-1);
 }
 
 /**
@@ -487,27 +508,71 @@ BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t gid)
 
 }
 
-BOOL pdb_set_user_rid (SAM_ACCOUNT *sampass, uint32 rid)
+BOOL pdb_set_user_sid (SAM_ACCOUNT *sampass, DOM_SID *u_sid)
 {
-	if (!sampass)
+	if (!sampass || !u_sid)
 		return False;
+	
+	sid_copy(&sampass->private.user_sid, u_sid);
 
-	DEBUG(10, ("pdb_set_rid: setting user rid %d, was %d\n", 
-		   rid, sampass->private.user_rid));
- 
-	sampass->private.user_rid = rid;
+	DEBUG(10, ("pdb_set_user_sid: setting user sid %s\n", 
+		    sid_string_static(&sampass->private.user_sid)));
+	
 	return True;
 }
 
-BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
+BOOL pdb_set_group_sid(SAM_ACCOUNT *sampass, DOM_SID *g_sid)
 {
+	if (!sampass || !g_sid)
+		return False;
+
+	sid_copy(&sampass->private.group_sid, g_sid);
+
+	DEBUG(10, ("pdb_set_group_sid: setting group sid %s\n", 
+		    sid_string_static(&sampass->private.group_sid)));
+
+	return True;
+}
+
+BOOL pdb_set_user_sid_from_rid (SAM_ACCOUNT *sampass, uint32 rid)
+{
+	DOM_SID u_sid;
+
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_group_rid: setting group rid %d, was %d\n", 
-		   grid, sampass->private.group_rid));
- 
-	sampass->private.group_rid = grid;
+	sid_copy(&u_sid, get_global_sam_sid());
+
+	if (!sid_append_rid(&u_sid, rid))
+		return False;
+
+	if (!pdb_set_user_sid(sampass, &u_sid))
+		return False;
+
+	DEBUG(10, ("pdb_set_user_sid_from_rid:\n\tsetting user sid %s from rid %d\n", 
+		    sid_string_static(&u_sid),rid));
+
+	return True;
+}
+
+BOOL pdb_set_group_sid_from_rid (SAM_ACCOUNT *sampass, uint32 grid)
+{
+	DOM_SID g_sid;
+
+	if (!sampass)
+		return False;
+	
+	sid_copy(&g_sid, get_global_sam_sid());
+	
+	if (!sid_append_rid(&g_sid, grid))
+		return False;
+
+	if (!pdb_set_group_sid(sampass, &g_sid))
+		return False;
+
+	DEBUG(10, ("pdb_set_group_sid_from_rid:\n\tsetting group sid %s from rid %d\n", 
+		    sid_string_static(&g_sid), grid));
+
 	return True;
 }
 

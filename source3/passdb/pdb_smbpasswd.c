@@ -1242,14 +1242,14 @@ static BOOL build_sam_account(struct smbpasswd_privates *smbpasswd_state,
 	    && (pw_buf->smb_userid >= smbpasswd_state->low_nua_userid) 
 	    && (pw_buf->smb_userid <= smbpasswd_state->high_nua_userid)) {
 
-		pdb_set_user_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid));
+		pdb_set_user_sid_from_rid(sam_pass, fallback_pdb_uid_to_user_rid (pw_buf->smb_userid));
 
 		/* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. 
 		   
 		   This was down the bottom for machines, but it looks pretty good as
 		   a general default for non-unix users. --abartlet 2002-01-08
 		*/
-		pdb_set_group_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
+		pdb_set_group_sid_from_rid (sam_pass, DOMAIN_GROUP_RID_USERS); 
 		pdb_set_username (sam_pass, pw_buf->smb_name);
 		pdb_set_domain (sam_pass, lp_workgroup());
 	} else {
@@ -1458,7 +1458,8 @@ static BOOL smbpasswd_getsampwrid(struct pdb_methods *my_methods, SAM_ACCOUNT *s
 static BOOL smbpasswd_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT * user, DOM_SID *sid)
 {
 	uint32 rid;
-	sid_peek_rid(sid, &rid);
+	if (!sid_peek_check_rid(get_global_sam_sid(), sid, &rid))
+		return False;
 	return smbpasswd_getsampwrid(my_methods, user, rid);
 }
 
