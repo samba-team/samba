@@ -975,7 +975,7 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 		domain = domain;
 	}
 	
-	/* try to fill the same account..  If getpwnam() fails, then try the 
+	/* try to fill the SAM account..  If getpwnam() fails, then try the 
 	   add user script (2.2.x behavior) */
 	   
 	nt_status = fill_sam_account(mem_ctx, nt_domain, internal_username,
