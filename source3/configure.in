@@ -3169,7 +3169,7 @@ AC_ARG_WITH(libsmbclient,
         INSTALLCLIENTCMD_A="\$(INSTALLCMD)"
         LIBSMBCLIENT=libsmbclient
      fi
-     INSTALLCLIENT=installclietlib
+     INSTALLCLIENT=installclientlib
      ;;
   esac ],
 [
