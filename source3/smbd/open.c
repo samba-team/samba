@@ -941,6 +941,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			/* Remember to delete the mode we just added. */
+			del_share_mode(fsp, NULL);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
