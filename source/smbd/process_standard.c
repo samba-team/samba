@@ -26,6 +26,7 @@
 */
 static void model_startup(void)
 {
+	signal(SIGCHLD, SIG_IGN);
 }
 
 /*
