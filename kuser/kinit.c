@@ -448,7 +448,7 @@ get_new_tickets(krb5_context context,
     if (pac_flag != -1)
 	krb5_get_init_creds_opt_set_paq_request(context, opt, 
 						pac_flag ? TRUE : FALSE);
-    if (pk_cert_file || pk_key_file || pk_ca_dir) {
+    if (pk_cert_file || pk_key_file) {
 	ret = krb5_get_init_creds_opt_set_pkinit(context, opt,
 						 pk_cert_file,
 						 pk_key_file,
@@ -703,6 +703,11 @@ main (int argc, char **argv)
 	krb5_appdefault_boolean(context, "kinit", 
 				krb5_principal_get_realm(context, principal), 
 				"afslog", TRUE, &do_afslog);
+
+    if (pk_ca_dir == NULL)
+	krb5_appdefault_string(context, "kinit",
+			       krb5_principal_get_realm(context, principal), 
+			       "pkinit-ca-dir", NULL, &pk_ca_dir);
 
     if(!addrs_flag && extra_addresses.num_strings > 0)
 	krb5_errx(context, 1, "specifying both extra addresses and "
