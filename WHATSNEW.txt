@@ -1,8 +1,8 @@
-                     WHATS NEW IN Samba 3.0.0 
-                         September XX, 2003
+                    WHATS NEW IN Samba 3.0.0
+                        September XX, 2003
                   ==============================
 
-This is the third release candidate snapshot of Samba 3.0.0. A release 
+This is the fourth release candidate snapshot of Samba 3.0.0. A release 
 candidate implies that the code is very close to a final release, remember 
 that this is still a non-production release intended for testing purposes.  
 Use at your own risk. 
@@ -82,11 +82,37 @@ License.
 
 
 ######################################################################
-Changes since 3.0rc2
+Changes since 3.0rc3
 ####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
+
+1)  Fix incorrect error message in testparm.c regarding 'map system'.
+2)  Protect against core dump if ioctl for print job sends invalid 
+    fid.
+3)  Fix bug in generic hash cacluation.
+4)  Remove references to unused 'strip dot' parameter
+5)  Fix CPU burn bug in multi-byte character conversion.
+6)  Use opt_target_workgroup instead of lp_workgroup() in vampire 
+    code so we can override the value in smb.conf with the -w option.
+7)  Display an error if we can't create a posix account for the 
+    user when running 'net rpc vampire' (bug 323).
+8)  Fix UTF8 conversion bugs in LDAP passdb and idmap code (bug 296).
+9)  Fix smbd crash when changing the machine trust account password 
+    (bug 273).
+10) Remove getpwnam() calls from init_sam_from_xxx().  This means 
+    that %u & %g will no longer expand in the "login ..." set of 
+    smb.conf options, but %U and %G still do. The payback is that 
+    winbindd local accounts for users work with 'wbinfo -u' 
+    when winbind is running on a Samba PDC.
+11) Fix unitiailized timestamp where merging print_jobs and 
+    lpq listing.
+12) Fix bug in debian packaging files affecting non-i386 platforms.
+
+
+Changes since 3.0rc2
+####################
 
 1)  Remove Perl module dependencies in generated RedHat 8/9 RPMS.
 2)  Update mount helper to take synonyms for file_mode and 
