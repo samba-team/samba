@@ -77,28 +77,43 @@ krb5_ccache id;
 #endif
 
 static const char *
+expand_one_file(FILE *f, const char *cell)
+{
+    static char buf[1024];
+    char *p;
+
+    while (fgets (buf, sizeof(buf), f) != NULL) {
+	if(buf[0] == '>') {
+	    for(p = buf; *p && !isspace((unsigned char)*p) && *p != '#'; p++)
+		;
+	    *p = '\0';
+	    if(strncmp(buf + 1, cell, strlen(cell)) == 0)
+		return buf + 1;
+	}
+	buf[0] = '\0';
+    }
+    return NULL;
+}
+
+static const char *
 expand_cell_name(const char *cell)
 {
     FILE *f;
-    static char buf[128];
-    char *p;
-
-    f = fopen(_PATH_CELLSERVDB, "r");
-    if(f == NULL)
-	return cell;
-    while (fgets (buf, sizeof(buf), f) != NULL) {
-	if(buf[0] == '>'){
-	    for(p=buf; *p && !isspace((unsigned char)*p) && *p != '#'; p++)
-		;
-	    *p = '\0';
-	    if(strstr(buf, cell)){
-		fclose(f);
-		return buf + 1;
-	    }
-	}
-	buf[0] = 0;
+    const char *c;
+    const char **fn, *files[] = { _PATH_CELLSERVDB,
+				  _PATH_ARLA_CELLSERVDB,
+				  _PATH_OPENAFS_DEBIAN_CELLSERVDB,
+				  _PATH_ARLA_DEBIAN_CELLSERVDB,
+				  NULL };
+    for(fn = files; *fn; fn++) {
+	f = fopen(*fn, "r");
+	if(f == NULL)
+	    continue;
+	c = expand_one_file(f, cell);
+	fclose(f);
+	if(c)
+	    return c;
     }
-    fclose(f);
     return cell;
 }
 
