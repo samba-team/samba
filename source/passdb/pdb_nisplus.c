@@ -211,7 +211,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
   /* Don't change these timestamp settings without a good reason.  They are
      important for NT member server compatibility. */
 
-  pdb_set_logon_time(pw_buf, (time_t)0);
+  pdb_set_logon_time(pw_buf, (time_t)0, True);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGON_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LNT-", 4)==0)) {
     int i;
@@ -221,11 +221,11 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 	break;
     }
     if(i == 8) {
-      pdb_set_logon_time(pw_buf, (time_t)strtol(ptr, NULL, 16));
+      pdb_set_logon_time(pw_buf, (time_t)strtol(ptr, NULL, 16), True);
     }
   }
 
-  pdb_set_logoff_time(pw_buf, get_time_t_max());
+  pdb_set_logoff_time(pw_buf, get_time_t_max(), True);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGOFF_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LOT-", 4)==0)) {
     int i;
@@ -235,11 +235,11 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 	break;
     }
     if(i == 8) {
-      pdb_set_logoff_time(pw_buf, (time_t)strtol(ptr, NULL, 16));
+      pdb_set_logoff_time(pw_buf, (time_t)strtol(ptr, NULL, 16), True);
     }
   }
 
-  pdb_set_kickoff_time(pw_buf, get_time_t_max());
+  pdb_set_kickoff_time(pw_buf, get_time_t_max(), True);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_KICK_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "KOT-", 4)==0)) {
     int i;
@@ -249,7 +249,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 	break;
     }
     if(i == 8) {
-      pdb_set_kickoff_time(pw_buf, (time_t)strtol(ptr, NULL, 16));
+      pdb_set_kickoff_time(pw_buf, (time_t)strtol(ptr, NULL, 16), True);
     }
   }
 
@@ -267,7 +267,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
     }
   }
   
-  pdb_set_pass_can_change_time(pw_buf, (time_t)0);
+  pdb_set_pass_can_change_time(pw_buf, (time_t)0, True);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDCCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "CCT-", 4)==0)) {
     int i;
@@ -277,11 +277,11 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 	break;
     }
     if(i == 8) {
-      pdb_set_pass_can_change_time(pw_buf, (time_t)strtol(ptr, NULL, 16));
+      pdb_set_pass_can_change_time(pw_buf, (time_t)strtol(ptr, NULL, 16), True);
     }
   }
   
-  pdb_set_pass_must_change_time(pw_buf, get_time_t_max()); /* Password never expires. */
+  pdb_set_pass_must_change_time(pw_buf, get_time_t_max(), True); /* Password never expires. */
   ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDMCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "MCT-", 4)==0)) {
     int i;
@@ -291,7 +291,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
 	break;
     }
     if(i == 8) {
-      pdb_set_pass_must_change_time(pw_buf, (time_t)strtol(ptr, NULL, 16));
+      pdb_set_pass_must_change_time(pw_buf, (time_t)strtol(ptr, NULL, 16), True);
     }
   }
 
@@ -301,14 +301,18 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
   /* pdb_set_nt_username() -- cant set it here... */
 
   get_single_attribute(obj, NPF_FULL_NAME, full_name, sizeof(pstring));
+#if 0
   unix_to_dos(full_name, True);
+#endif
   pdb_set_fullname(pw_buf, full_name);
 
   pdb_set_acct_ctrl(pw_buf, pdb_decode_acct_ctrl(ENTRY_VAL(obj,
 							   NPF_ACB)));
 
   get_single_attribute(obj, NPF_ACCT_DESC, acct_desc, sizeof(pstring));
+#if 0
   unix_to_dos(acct_desc, True);
+#endif
   pdb_set_acct_desc(pw_buf, acct_desc);
 
   pdb_set_workstations(pw_buf, ENTRY_VAL(obj, NPF_WORKSTATIONS));
@@ -341,7 +345,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, const nis_object *obj
     get_single_attribute(obj, NPF_LOGON_SCRIPT, logon_script,
 			 sizeof(pstring));
     if( !(logon_script && *logon_script) ) {
-      pstrcpy(logon_script, lp_logon_script(), False);
+      pstrcpy(logon_script, lp_logon_script());
     }
     else
       pdb_set_logon_script(pw_buf, logon_script, True);
@@ -542,10 +546,17 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
   slprintf(pwdmchg_t, 13, "MCT-%08X",
 	   (uint32)pdb_get_pass_must_change_time(sampass));
   safe_strcpy(full_name, pdb_get_fullname(sampass), sizeof(full_name)-1);
-  dos_to_unix(full_name, True);
   safe_strcpy(acct_desc, pdb_get_acct_desc(sampass), sizeof(acct_desc)-1);
+
+#if 0
+
+  /* Not sure what to do with these guys. -tpot */
+
+  dos_to_unix(full_name, True);
   dos_to_unix(acct_desc, True);
-  
+
+#endif
+
   if( old ) {
     /* name */
     if(strcmp(ENTRY_VAL(old, NPF_NAME), name))
@@ -868,7 +879,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 /***************************************************************
  calls nis_list, returns results.
  ****************************************************************/
-static nis_result *nisp_get_nis_list(const char *nis_name, uint_t flags)
+static nis_result *nisp_get_nis_list(const char *nis_name, unsigned int flags)
 {
 	nis_result *result;
 	int i;
@@ -1054,7 +1065,7 @@ BOOL pdb_delete_sam_account(SAM_ACCOUNT * user)
 	  return False;
   }
 
-  suser = pdb_get_username(user);
+  sname = pdb_get_username(user);
 
   if (!*pfile)
     {
@@ -1198,7 +1209,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		nisname,  nis_sperrno(result->status)));
       nis_freeresult(result);
 
-      if (!passwd = getpwnam_alloc(pdb_get_username(newpwd))) {
+      if (!(passwd = getpwnam_alloc(pdb_get_username(newpwd)))) {
 	/* no such user in system! */
 	return False;
       }
@@ -1396,4 +1407,3 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd)
  void nisplus_dummy_function(void);
  void nisplus_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* WITH_NISPLUSSAM */
-
