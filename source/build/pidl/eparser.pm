@@ -290,7 +290,8 @@ sub NeededTypedef($)
 	    $needed{"hf_$t->{NAME}"} = {
 		'name' => $t->{NAME},
 		'ft' => 'FT_UINT16',
-		'base' => 'BASE_DEC'
+		'base' => 'BASE_DEC',
+		'strings' => "VALS($t->{NAME}_vals)"
 		};
 	}
 }
@@ -360,6 +361,25 @@ sub ParseHeader($$)
 	}
 
 	close(OUT);
+}
+
+#####################################################################
+# generate code to parse an enum
+
+sub ParseEnum($)
+{
+    my ($e) = shift;
+    print Dumper($e);
+
+    pidl "static const value_string $e->{PARENT}{NAME}_vals[] =\n";
+    pidl "{\n";
+
+    foreach my $x (@{$e->{ELEMENTS}}) {
+	$x =~ /([^=]*)=(.*)/;
+	pidl "\t{ $1, \"$1\" },\n";
+    }
+    
+    pidl "};\n\n";
 }
 
 #####################################################################
@@ -475,10 +495,28 @@ sub RewriteC($$$)
 
 	#
         # Regexps to do a first pass at removing stuff we aren't
-	# interested in for ehtereal parsers.
+	# interested in for ethereal parsers.
 	#
 
 	next, if /^\#include \"includes.h\"/;
+
+	# Rewrite includes to packet-dcerpc-foo.h instead of ndr_foo.h
+
+	s/^\#include \".*?ndr_(.*?).h\"$/\#include \"packet-dcerpc-$1.h\"/smg;
+
+	if (/\.h\"$/) {
+	    pidl $_;
+	    foreach my $x (@{$idl}) {
+		if ($x->{TYPE} eq "INTERFACE") { 
+		    foreach my $y (@{$x->{INHERITED_DATA}}) {
+			if ($y->{TYPE} eq "TYPEDEF") {
+			    ParseEnum($y->{DATA}), if $y->{DATA}{TYPE} eq "ENUM";
+			}
+		    }
+		}
+	    }
+	    next;
+	}
 
 	# Remove the NDR_CHECK() macro calls.  Ethereal take care of
 	# this for us as part of the tvbuff_t structure.
@@ -501,10 +539,6 @@ sub RewriteC($$$)
         next, if /^const struct dcerpc_interface_table/ .. /^};/;
         next, if /^static NTSTATUS dcerpc_ndr_[a-z]+_init/ .. /^}/;
         next, if /^NTSTATUS dcerpc_[a-z]+_init/ .. /^}/;
-
-	# Rewrite includes to packet-dcerpc-foo.h instead of ndr_foo.h
-
-	s/^\#include \".*?ndr_(.*?).h\"$/\#include \"packet-dcerpc-$1.h\"/smg;
 
         #
         # Remember which structure or function we are processing.
@@ -587,12 +621,21 @@ sub RewriteC($$$)
 	# ndr_pull_uint32(ndr, &r->in.access_mask);
 	# ndr_pull_uint32(ndr, &r->idx);
 
-	s/(ndr_pull_([^\)]*?)
-	   \(ndr,\ 
-	   (&?r->((in|out)\.)?         # Function args contain leading junk
-	    ([^\)]*?))                 # Element name
-	   \);)          
-	    /ndr_pull_$2(ndr, tree, hf_${cur_fn}_$6, $3);/smgx;
+        if (/(ndr_pull_([^\)]*?)\(ndr, (&?r->((in|out)\.)?([^\)]*?))\);)/) {
+
+	    my $pull_type = "${cur_fn}_$6";
+
+	    if (defined($needed{"hf_$2"})) {
+		$pull_type = "$2";
+	    }
+
+	    s/(ndr_pull_([^\)]*?)
+	       \(ndr,\ 
+	       (&?r->((in|out)\.)?         # Function args contain leading junk
+		([^\)]*?))                 # Element name
+	       \);)          
+		/ndr_pull_$2(ndr, tree, hf_$pull_type, $3);/smgx;
+	}
 
 	# Add tree and hf argument to pulls of "internal" scalars like
 	# array sizes, levels, etc.
@@ -723,7 +766,8 @@ sub RewriteC($$$)
     foreach my $x (keys(%needed)) {
 	next, if !($x =~ /^hf_/);
 	pidl "\t{ &$x,\n";
-	pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base}, NULL, 0, \"$x\", HFILL }},\n";
+	$needed{$x}{strings} = "NULL", if !defined($needed{$x}{strings});
+	pidl "\t  { \"$needed{$x}{name}\", \"$x\", $needed{$x}{ft}, $needed{$x}{base}, $needed{$x}{strings}, 0, \"$x\", HFILL }},\n";
     }
 
     pidl "\t};\n\n";
