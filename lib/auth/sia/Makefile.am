@@ -12,10 +12,8 @@ DEFS = @DEFS@
 ## unconditionally build shared libraries, and it does not allow us to
 ## link with non-installed libraries
 
-if KRB4
 KAFS=$(top_builddir)/lib/kafs/.libs/libkafs.a
 KAFS_S=$(top_builddir)/lib/kafs/.libs/libkafs.so
-endif
 
 if KRB5
 L = \
