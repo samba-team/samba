@@ -1035,10 +1035,6 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 int vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 
-#if !defined(HAVE_BZERO) && defined(HAVE_MEMSET)
-#define bzero(a,b) memset((a),'\0',(b))
-#endif
-
 #ifdef REPLACE_GETPASS
 #define getpass(prompt) getsmbpass((prompt))
 #endif
