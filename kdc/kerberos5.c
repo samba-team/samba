@@ -776,7 +776,6 @@ as_rep(KDC_REQ *req,
     free_AS_REP(&rep);
 out:
     if(ret){
-	/* XXX should just return protocol errors */
 	krb5_mk_error(context,
 		      ret,
 		      e_text,
@@ -1189,7 +1188,7 @@ tgs_check_authenticator(krb5_auth_context ac,
 	goto out;
     }
 		
-    /* XXX */
+    /* XXX should not re-encode this */
     ret = encode_KDC_REQ_BODY(buf + sizeof(buf) - 1, sizeof(buf),
 			      b, &len);
     if(ret){
@@ -1276,7 +1275,6 @@ tgs_rep2(KDC_REQ_BODY *b,
     krbtgt = db_fetch(princ);
 
     if(krbtgt == NULL) {
-	/* XXX find intermediate realm */
 	char *p;
 	krb5_unparse_name(context, princ, &p);
 	kdc_log(0, "Ticket-granting ticket not found in database: %s", p);
