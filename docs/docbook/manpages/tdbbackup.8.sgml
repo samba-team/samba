@@ -1,11 +1,11 @@
 <!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
 <!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
 ]>
-<refentry id="tdbbackup.1">
+<refentry id="tdbbackup.8">
 
 <refmeta>
 	<refentrytitle>tdbbackup</refentrytitle>
-	<manvolnum>1</manvolnum>
+	<manvolnum>8</manvolnum>
 </refmeta>
 
 
