@@ -26,114 +26,9 @@ frame) protocol.
 Please refer to the WHATSNEW.txt document for fixup information.
 
 %changelog
-* Thu Jun 6 2002 Gerald Carter <jerry@samba.org>
-  - add separate winbindd init script
-  - build and install libsmbclient
-
-* Sun Jun 2 2002 Gerald Carter <jerry@samba.org>
-  - include audit and recycle VFS modules in /usr/lib/samba
-
-* Mon May 6 2002 Gerald Carter <jerry@samba.org>
-  - moved findsmb to a standard component in samba's 
-    "make install".  Removed from specfile.
- 
-* Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
- - Set SBINDIR for codepage/manpage install, cope with 
-    broken Makefile
-
-* Mon Aug 1 2001 Tim Potter <tpot@samba.org>
- - Install winbind daemon, client programs, nss and pam libraries
-
-* Sat Mar 31 2001 Andrew Bartlett <abartlet@pcug.org.au>
- - Changed prefix/share/man for _mandir/share/man
-  - Changed this for a sed macro MANDIR_MACRO
-  - This allows us to build both RH7 (RPM4)
-     and older versions from same specfile.
- - Made makerpms.sh use the rpm -ta command rather 
-    than attempting to devine the correct location to 
-    put the file.  Also removes some /tmp symlink games.
-  - Allows build on RPM4
- - Increased PAM requirements to allow us to use 
-   system-auth (this pam is in 6.x errata at least)
-
-* Tue Mar 27 2001 John H Terpstra <jht@samba.org>
- - Fixed typos introduced by Sum Wun.
- - Build for Red Hat 7.x
-
-* Sun Nov 12 2000 John H Terpstra <jht@samba.org>
- - Updated for Samba-2.2 releases
- - Added libnss_wins.so stuff
- - Added compile-time options
-
-* Sat Nov 29 1999 Matthew Vanecek <mev0003@unt.edu>
- - Added a Prefix and changed "/usr" to "%{prefix}"
-
-* Sat Nov 11 1999 Tridge <tridge@linuxcare.com>
- - changed from mount.smb to mount.smbfs
-
-* Sat Oct 9 1999 Tridge <tridge@linuxcare.com>
- - removed smbwrapper
- - added smbmnt and smbmount
-
-* Sun Apr 25 1999 John H Terpstra <jht@samba.org>
- - added smbsh.1 man page
-
-* Fri Mar 26 1999 Andrew Tridgell <tridge@samba.org>
- - added --with-pam as pam is no longer used by default
-
-* Sat Jan 27 1999 Jeremy Allison <jra@samba.org>
- - Removed smbrun binary and tidied up some loose ends
-
-* Sun Oct 25 1998 John H Terpstra <jht@samba.org>
- - Added parameters to /config to ensure smb.conf, lmhosts, 
-	and smbusers never gets over-written.
-
-* Sat Oct 24 1998 John H Terpstra <jht@samba.org>
- - removed README.smbsh file from docs area
-
-* Mon Oct 05 1998 John H Terpstra <jht@samba.org>
- - Added rpcclient to binaries list
- - Added smbwrapper stuff
-
-* Fri Aug 21 1998 John H Terpstra <jht@samba.org>
- - Updated for Samba version 2.0 building
-
-* Tue Jul 07 1998 Erik Troan <ewt@redhat.com>
-  - updated postun triggerscript to check $0
-  - clear /etc/codepages from %preun instead of %postun
-
-* Sat Jul 04 1998 John H Terpstra <jht@samba.org>
- - fixed codepage preservation during update via -Uvh
-
-* Mon Jun 08 1998 Erik Troan <ewt@redhat.com>
-  - made the %postun script a tad less agressive; no reason to remove
-    the logs or lock file 
-  - the %postun and %preun should only exectute if this is the final
-    removal
-  - migrated %triggerpostun from Red Hat's samba package to work around
-    packaging problems in some Red Hat samba releases
-
-* Sun Apr 26 1998 John H Terpstra <jht@samba.org>
- - Tidy up for early alpha releases
- - added findsmb from SGI packaging
-
-* Thu Apr 09 1998 John H Terpstra <jht@samba.org>
- - Updated spec file
- - Included new codepage.936
-
-* Sat Mar 20 1998 John H Terpstra <jht@samba.org>
- - Added swat facility
-
-* Sat Jan 24 1998 John H Terpstra <jht@samba.org>
- - Many optimisations (some suggested by Manoj Kasichainula <manojk@io.com>
-  - Use of chkconfig in place of individual symlinks to /etc/rc.d/init/smb
-  - Compounded make line
-  - Updated smb.init restart mechanism
-  - Use compound mkdir -p line instead of individual calls to mkdir
-  - Fixed smb.conf file path for log files
-  - Fixed smb.conf file path for incoming smb print spool directory
-  - Added a number of options to smb.conf file
-  - Added smbuser file and smb.conf file updates for username map
+* Mon Nov 18 2002 Gerald Carter <jerry@samba.org>
+  - removed change log entries since history
+    is being maintained in CVS
 
 %prep
 %setup
@@ -171,8 +66,8 @@ make -j${NUMCPU} debug2html
 make -j${NUMCPU} bin/smbspool
 
 ## Build VFS modules
-cd ../examples/VFS
-make
+#cd ../examples/VFS
+#make
 
 
 
@@ -244,12 +139,12 @@ install -m755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/lib/security
 install -m755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/lib/security
 
 # Install the VFS modules
-install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
-install -m755 examples/VFS/netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+#install -m755 examples/VFS/recycle.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+#install -m755 examples/VFS/audit.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
+#install -m755 examples/VFS/netatalk.so $RPM_BUILD_ROOT%{prefix}/lib/samba/vfs
 
 # clean out VFS directory since it will get installed as documentation later
-(cd examples/VFS; make clean)
+#(cd examples/VFS; make clean)
 
 # libsmbclient
 install -m 755 source/bin/libsmbclient.so $RPM_BUILD_ROOT%{prefix}/lib/
