@@ -17,14 +17,15 @@ libdir = $(exec_prefix)/lib
 
 SUBDIRS=libtelnet telnet telnetd
 
-all:
+all: stamp-configure
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) all); done
 
-.PHONY: configure
+stamp-configure:
+	@echo "Configuring directory appl/telnet"
+	$(srcdir)/configure && touch stamp-configure
 
-configure: 
-	$(srcdir)/configure
+configure: stamp-configure
 
 clean cleandir:
 	for i in $(SUBDIRS); \
