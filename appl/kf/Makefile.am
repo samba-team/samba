@@ -2,7 +2,9 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-noinst_PROGRAMS = kf kfd
+bin_PROGRAMS = kf
+
+libexec_PROGRAMS = kfd
 
 man_MANS = kf.1 kfd.8
 
