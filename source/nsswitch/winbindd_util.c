@@ -174,8 +174,11 @@ void rescan_trusted_domains(BOOL force)
 		char **names;
 		char **alt_names;
 		int num_domains = 0;
-		DOM_SID *dom_sids;
+		DOM_SID *dom_sids, null_sid;
 		int i;
+		struct winbindd_domain *new_domain;
+		
+		ZERO_STRUCTP(&null_sid);
 
 		result = domain->methods->trusted_domains(domain, mem_ctx, &num_domains,
 		                                          &names, &alt_names, &dom_sids);
@@ -189,6 +192,26 @@ void rescan_trusted_domains(BOOL force)
 			DEBUG(10,("Found domain %s\n", names[i]));
 			add_trusted_domain(names[i], alt_names?alt_names[i]:NULL,
 			                   domain->methods, &dom_sids[i]);
+					   
+			/* if the SID was empty, we better set it now */
+			
+			if ( sid_equal(&dom_sids[i], &null_sid) ) {
+			
+				 new_domain = find_domain_from_name(names[i]);
+				 
+				 /* this should never happen */
+				 if ( !domain) { 	
+				 	DEBUG(0,("rescan_trust_domains: can't find the domain I just added! [%s]\n",
+						names[i]));
+					break;
+				 }
+				 
+				 result = domain->methods->domain_sid( new_domain, &new_domain->sid );
+				 
+				 if ( NT_STATUS_IS_OK(result) )
+				 	sid_copy( &dom_sids[i], &domain->sid );
+			
+			}
 			
 			/* store trusted domain in the cache */
 			trustdom_cache_store(names[i], alt_names ? alt_names[i] : NULL,
