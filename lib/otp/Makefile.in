@@ -12,6 +12,7 @@ AR = ar
 RANLIB = @RANLIB@
 DEFS = @DEFS@
 CFLAGS = @CFLAGS@
+LIBS = @LIBS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
@@ -76,7 +77,7 @@ realclean: distclean
 	rm -f TAGS
 
 otptest: $(OTPTEST_OBJECTS)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OTPTEST_OBJECTS) -L. -lotp -L../des -ldes $(LIBS)
 
 $(LIBNAME).a: $(LIB_OBJECTS)
 	rm -f $@
