@@ -167,13 +167,6 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 	}
 
 	for (i = 0; modules[i] != NULL; i++) {
-#ifdef HAVE_DLOPEN_DISABLED
-		void *handle;
-		ldb_module_init_function init;
-		struct stat st;
-		char *filename;
-		const char *errstr;
-#endif
 		struct ldb_module *current;
 
 		if (strcmp(modules[i], "schema") == 0) {
@@ -208,43 +201,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 		}
 #endif
 
-#ifdef HAVE_DLOPEN_DISABLED
-		filename = talloc_asprintf(ldb, "%s.so", modules[i]);
-		if (!filename) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "Talloc failed!\n");
-			return -1;
-		}
-
-		if (stat(filename, &st) < 0) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
-			return -1;
-		}
-
-		handle = dlopen(filename, RTLD_LAZY);
-
-		if (!handle) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "Error loading module %s [%s]\n", modules[i], dlerror());
-			return -1;
-		}
-
-		init = (ldb_module_init_function)dlsym(handle, "init_module");
-
-		errstr = dlerror();
-		if (errstr) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "Error trying to resolve symbol 'init_module' in %s [%s]\n", modules[i], errstr);
-			return -1;
-		}
-
-		current = init(ldb, options);
-		if (!current) {
-			ldb_debug(ldb, LDB_DEBUG_FATAL, "function 'init_module' in %s fails\n", modules[i]);
-			return -1;
-		}
-		DLIST_ADD(ldb->modules, current);
-#else
-		ldb_debug(ldb, LDB_DEBUG_FATAL, "Required module [%s] not found, bailing out!\n", modules[i]);
-		return -1;
-#endif
+		ldb_debug(ldb, LDB_DEBUG_WARNING, "WARNING: Module [%s] not found\n", modules[i]);
 	}
 
 	talloc_free(modules);
