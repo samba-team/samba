@@ -487,7 +487,7 @@ o   Richard Sharpe <rsharpe@samba.org>
       share mode locking requests fail.
 
 
-o   Simo Source <idra@samba.org>
+o   Simo Sorce <idra@samba.org>
     * Update Debian stable & unstable packaging.
     * Tidy up parametric options in testparm output.
 
@@ -1140,7 +1140,7 @@ o   Richard Sharpe <rsharpe@samba.org>
     * Add support for printing out the MAC address on nmblookup.
 
 
-o   Simo Source <idra@samba.org>
+o   Simo Sorce <idra@samba.org>
     * Replace unknown_3 with fields_present in SAMR code.
     * More length checks in strlcat().
 
