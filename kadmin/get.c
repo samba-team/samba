@@ -384,8 +384,8 @@ getit(struct get_options *opt, const char *name, int argc, char **argv)
     if(data.table != NULL) {
 	rtbl_format(data.table, stdout);
 	rtbl_destroy(data.table);
-	free_columns(&data);
     }
+    free_columns(&data);
     return 0;
 }
 
