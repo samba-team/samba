@@ -32,37 +32,6 @@ static char this_salt[100]="";
 static char this_crypted[100]="";
 
 
-/****************************************************************************
-update the enhanced security database. Only relevant for OSF1 at the moment.
-****************************************************************************/
-static void update_protected_database(char *user, BOOL result)
-{
-#ifdef OSF1_ENH_SEC
-	struct pr_passwd *mypasswd;
-	time_t starttime;
-
-	mypasswd = getprpwnam (user);
-	starttime = time (NULL);
-
-	if (result)  {
-		mypasswd->ufld.fd_slogin = starttime;
-		mypasswd->ufld.fd_nlogins = 0;
-      
-		putprpwnam(user,mypasswd);
-      	} else {
-		mypasswd->ufld.fd_ulogin = starttime;
-		mypasswd->ufld.fd_nlogins = mypasswd->ufld.fd_nlogins + 1;
-		if (mypasswd->ufld.fd_max_tries != 0 && 
-		    mypasswd->ufld.fd_nlogins > mypasswd->ufld.fd_max_tries) {
-			mypasswd->uflg.fg_lock = 0;
-			DEBUG(3,("Account %s is disabled\n", user));
-		}
-		putprpwnam(user ,mypasswd);
-	}
-#endif
-}
-
-
 #ifdef HAVE_PAM
 /*******************************************************************
 check on PAM authentication
@@ -899,7 +868,6 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 
 	/* try it as it came to us */
 	if (password_check(password)) {
-		update_protected_database(user,True);
 		if (fn) fn(user,password);
 		return(True);
 	}
@@ -917,14 +885,12 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 	/* try all lowercase */
 	strlower(password);
 	if (password_check(password)) {
-		update_protected_database(user,True);
 		if (fn) fn(user,password);
 		return(True);
 	}
 
 	/* give up? */
 	if (level < 1) {
-		update_protected_database(user,False);
 
 		/* restore it */
 		fstrcpy(password,pass2);
@@ -936,13 +902,10 @@ BOOL pass_check(char *user,char *password, int pwlen, struct passwd *pwd,
 	strlower(password);
 
 	if (string_combinations(password,password_check,level)) {
-		update_protected_database(user,True);
 		if (fn) fn(user,password);
 		return(True);
 	}
 
-	update_protected_database(user,False);
-  
 	/* restore it */
 	fstrcpy(password,pass2);
   
