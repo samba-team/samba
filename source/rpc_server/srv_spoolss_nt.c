@@ -3534,11 +3534,16 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 
 static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 {
-	if (!d1 && !d2) return True;  /* if both are NULL they are equal */
-	if (!d1 ^  !d2) return False; /* if either is exclusively NULL are not equal */
+	if (!d1 && !d2) goto equal;  /* if both are NULL they are equal */
+
+	if (!d1 ^ !d2) {
+		DEBUG(10, ("nt_devicemode_equal(): pointers not equal\n"));
+		return False; /* if either is exclusively NULL are not equal */
+	}
 
 	if (!strequal(d1->devicename, d2->devicename) ||
 	    !strequal(d1->formname, d2->formname)) {
+		DEBUG(10, ("nt_devicemode_equal(): device,form not equal\n"));
 		return False;
 	}
 
@@ -3560,6 +3565,8 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 	    d1->ttoption != d2->ttoption ||
 	    d1->collate != d2->collate ||
 	    d1->logpixels != d2->logpixels) {
+		DEBUG(10, ("nt_devicemode_equal(): specversion-logpixels "
+			   "not equal\n"));
 		return False;
 	}
 
@@ -3577,14 +3584,26 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 	    d1->reserved2 != d2->reserved2 ||
 	    d1->panningwidth != d2->panningwidth ||
 	    d1->panningheight != d2->panningheight) {
+		DEBUG(10, ("nt_devicemode_equal(): fields-panningheight "
+			   "not equal\n"));
 		return False;
 	}
 
 	/* compare the private data if it exists */
-	if (!d1->driverextra && !d2->driverextra) return True;
-	if ( d1->driverextra !=  d2->driverextra) return False;
-	if (memcmp(d1->private, d2->private, d1->driverextra)) return False;
+	if (!d1->driverextra && !d2->driverextra) goto equal;
 
+	if (d1->driverextra != d2->driverextra) {
+		DEBUG(10, ("nt_devicemode_equal(): driverextra not equal\n"));
+		return False;
+	}
+
+	if (memcmp(d1->private, d2->private, d1->driverextra)) {
+		DEBUG(10, ("nt_devicemode_equal(): private data not equal\n"));
+		return False;
+	}
+
+ equal:
+	DEBUG(10, ("nt_devicemode_equal(): devicemodes identical\n"));
 	return True;
 }
 
@@ -3593,9 +3612,12 @@ static BOOL nt_devicemode_equal(NT_DEVICEMODE *d1, NT_DEVICEMODE *d2)
 static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
 				   NT_PRINTER_PARAM *p2)
 {
-	if (!p1 && !p2) return True;
+	if (!p1 && !p2) goto equal;
 
-	if ((!p1 && p2) || (p1 && !p2)) return False;
+	if ((!p1 && p2) || (p1 && !p2)) {
+		DEBUG(10, ("nt_printer_param_equal(): pointers differ\n"));
+		return False;
+	}
 
 	/* Compare lists of printer parameters */
 
@@ -3620,12 +3642,17 @@ static BOOL nt_printer_param_equal(NT_PRINTER_PARAM *p1,
 
 	found_it:
 		if (!found) {
+			DEBUG(10, ("nt_printer_param_equal(): param %s "
+				   "differs\n", p1->value));
 			return False;
 		}
 
 		p1 = p1->next;
 	}
 
+	equal:
+
+	DEBUG(10, ("nt_printer_param_equal(): printer params identical\n"));
 	return True;
 }
 
@@ -3642,12 +3669,14 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	/* Trivial conditions */
 
 	if ((!p1 && !p2) || (!p1->info_2 && !p2->info_2)) {
-		return True;
+		goto equal;
 	}
 
 	if ((!p1 && p2) || (p1 && !p2) ||
 	    (!p1->info_2 && p2->info_2) ||
 	    (p1->info_2 && !p2->info_2)) {
+		DEBUG(10, ("nt_printer_info_level_equal(): info levels "
+			   "differ\n"));
 		return False;
 	}
 
@@ -3664,6 +3693,8 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	    pi1->starttime != pi2->starttime ||
 	    pi1->untiltime != pi2->untiltime ||
 	    pi1->averageppm != pi2->averageppm) {
+		DEBUG(10, ("nt_printer_info_level_equal(): attr-ppm values "
+			   "differ\n"));
 		return False;
 	}
 
@@ -3677,6 +3708,8 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	    !strequal(pi1->drivername, pi2->drivername) ||
 	    !strequal(pi1->comment, pi2->comment) ||
 	    !strequal(pi1->location, pi2->location)) {
+		DEBUG(10, ("nt_printer_info_level_equal(): values for names "
+			   "differ\n"));
 		return False;
 	}
 
@@ -3688,6 +3721,8 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	    !strequal(pi1->printprocessor, pi2->printprocessor) ||
 	    !strequal(pi1->datatype, pi2->datatype) ||
 	    !strequal(pi1->parameters, pi2->parameters)) {
+		DEBUG(10, ("nt_printer_info_level_equal(): sep-params values "
+			   "differ\n"));
 		return False;
 	}
 
@@ -3702,9 +3737,13 @@ static BOOL nt_printer_info_level_equal(NT_PRINTER_INFO_LEVEL *p1,
 	if (pi1->changeid != pi2->changeid ||
 	    pi1->c_setprinter != pi2->c_setprinter ||
 	    pi1->setuptime != pi2->setuptime) {
+		DEBUG(10, ("nt_printer_info_level_equal(): id-setuptime "
+			   "values differ\n"));
 		return False;
 	}
 
+ equal:
+	DEBUG(10, ("nt_printer_info_level_equal(): infos are identical\n"));
 	return True;
 }
 
