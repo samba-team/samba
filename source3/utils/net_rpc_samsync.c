@@ -43,7 +43,7 @@ static void display_alias_mem(uint32 rid, SAM_ALIAS_MEM_INFO *a)
 {
 	int i;
 	d_printf("Alias rid %u: ", rid);
-	for (i=0;i<a->num_sids;i++) {
+	for (i=0;i<a->num_members;i++) {
 		d_printf("%s ", sid_string_static(&a->sids[i].sid));
 	}
 	d_printf("\n");
@@ -88,19 +88,49 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 	}
 }
 
-/* dump sam database via samsync rpc calls */
-int rpc_samdump(int argc, const char **argv)
+
+static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
 {
-        TALLOC_CTX *mem_ctx = NULL;
+	unsigned last_rid = 0;
+        NTSTATUS result;
+	int i;
+        TALLOC_CTX *mem_ctx;
         SAM_DELTA_HDR *hdr_deltas;
         SAM_DELTA_CTR *deltas;
         uint32 num_deltas;
+
+	if (!(mem_ctx = talloc_init())) {
+		return;
+	}
+
+	d_printf("Dumping database %u\n", db_type);
+
+	do {
+		result = cli_netlogon_sam_sync(cli, mem_ctx, ret_creds, db_type, last_rid+1,
+					       &num_deltas, &hdr_deltas, &deltas);
+		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), ret_creds);
+		last_rid = 0;
+                for (i = 0; i < num_deltas; i++) {
+			display_sam_entry(&hdr_deltas[i], &deltas[i]);
+			last_rid = hdr_deltas[i].target_rid;
+			if (last_rid == 0) {
+				break;
+			}
+                }
+	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+
+	talloc_destroy(mem_ctx);
+}
+
+/* dump sam database via samsync rpc calls */
+int rpc_samdump(int argc, const char **argv)
+{
         NTSTATUS result;
-	int i;
-	unsigned last_rid=0;
-	DOM_CRED ret_creds;
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
+	DOM_CRED ret_creds;
+
+	ZERO_STRUCT(ret_creds);
 
 	/* Connect to remote machine */
 	if (!(cli = net_make_ipc_connection(NET_FLAGS_ANONYMOUS | NET_FLAGS_PDC))) {
@@ -123,40 +153,17 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 
-	if (!(mem_ctx = talloc_init())) {
-		DEBUG(0,("talloc_init failed\n"));
-		goto fail;
-	}
-
-	/* on first call the returnAuthenticator is empty */
-	memset(&ret_creds, 0, sizeof(ret_creds));
-
-        /* Do sam synchronisation on the SAM database*/
-	do {
-		result = cli_netlogon_sam_sync(cli, mem_ctx, &ret_creds, SAM_DATABASE_DOMAIN, last_rid+1,
-					       &num_deltas, &hdr_deltas, &deltas);
-		clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
-		last_rid = 0;
-                for (i = 0; i < num_deltas; i++) {
-			display_sam_entry(&hdr_deltas[i], &deltas[i]);
-			last_rid = hdr_deltas[i].target_rid;
-			if (last_rid == 0) {
-				break;
-			}
-                }
-	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
+	dump_database(cli, SAM_DATABASE_DOMAIN, &ret_creds);
+	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
+	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
 
 	cli_nt_session_close(cli);
-	talloc_destroy(mem_ctx);
         
         return 0;
 
 fail:
 	if (cli) {
 		cli_nt_session_close(cli);
-	}
-	if (mem_ctx) {
-		talloc_destroy(mem_ctx);
 	}
 	return -1;
 }
