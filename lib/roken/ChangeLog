@@ -1,3 +1,9 @@
+2003-06-29  Johan Danielsson  <joda@pdc.kth.se>
+
+	* snprintf.c: * don't ever print sign for unsigned conversions *
+	don't break when right justifying a number past the end of the
+	buffer * handle zero precision and the value zero more correctly
+
 2003-06-14  Love  <lha@stacken.kth.se>
 
 	* glob.hin: prefix glob symbols with rk_
