@@ -1182,7 +1182,7 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		len = ls;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (ls + (li-lp) >= len) {
+		if (ls + (li-lp) > len) {
 			DEBUG(0,("ERROR: string overflow by %d in string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
@@ -1244,7 +1244,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 		len = ls;
 	
 	while (lp <= ls && (p = strstr(s,pattern))) {
-		if (ls + (li-lp) >= len) {
+		if (ls + (li-lp) > len) {
 			DEBUG(0,("ERROR: string overflow by %d in all_string_sub(%.50s, %d)\n", 
 				 (int)(ls + (li-lp) - len),
 				 pattern, (int)len));
