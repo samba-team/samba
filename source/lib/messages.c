@@ -576,8 +576,10 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
 		msg_all.msg_flag = FLAG_MSG_GENERAL;
 	else if (msg_type > 1000 && msg_type < 2000)
 		msg_all.msg_flag = FLAG_MSG_NMBD;
-	else if (msg_type > 2000 && msg_type < 3000)
-		msg_all.msg_flag = FLAG_MSG_PRINTING;
+	else if (msg_type > 2000 && msg_type < 2100)
+		msg_all.msg_flag = FLAG_MSG_PRINT_NOTIFY;
+	else if (msg_type > 2100 && msg_type < 3000)
+		msg_all.msg_flag = FLAG_MSG_PRINT_GENERAL;
 	else if (msg_type > 3000 && msg_type < 4000)
 		msg_all.msg_flag = FLAG_MSG_SMBD;
 	else

@@ -846,6 +846,8 @@ void build_options(BOOL screen);
 		exit(1);
 
 	/* Setup the main smbd so that we can get messages. */
+	/* don't worry about general printing messages here */
+
 	claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
 
 	/* only start the background queue daemon if we are 

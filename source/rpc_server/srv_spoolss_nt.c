@@ -180,7 +180,7 @@ static void srv_spoolss_replycloseprinter(int snum, POLICY_HND *handle)
         	/* Tell the connections db we're no longer interested in
 		 * printer notify messages. */
 
-		register_message_flags( False, FLAG_MSG_PRINTING );
+		register_message_flags( False, FLAG_MSG_PRINT_NOTIFY );
 	}
 
 	smb_connections--;
@@ -1194,12 +1194,6 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 		notify2_unpack_msg( &notify, &msg_tv, msg_ptr, msg_len );
 		msg_ptr += msg_len;
 
-		/* we don't know if the change was from us or not so kill 
-		   any cached printer objects */
-
-		if ( notify.type == PRINTER_NOTIFY_TYPE )
-			invalidate_printer_hnd_cache( notify.printer );
-		
 		/* add to correct list in container */
 		
 		notify_msg_ctr_addmsg( &messages, &notify );
@@ -1224,6 +1218,22 @@ static void receive_notify2_message_list(int msg_type, pid_t src, void *msg, siz
 	notify_msg_ctr_destroy( &messages );
 	
 	return;
+}
+
+/********************************************************************
+ callback to MSG_PRINTER_CHANGED.  When a printer is changed by 
+ one smbd, all of processes must clear their printer cache immediately.
+ ********************************************************************/
+
+void receive_printer_mod_msg(int msg_type, pid_t src, void *buf, size_t len)
+{
+	fstring printername;
+	
+	fstrcpy( printername, buf );
+	
+	DEBUG(10,("receive_printer_mod_msg: Printer change [%s]\n", printername ));
+	
+	invalidate_printer_hnd_cache( printername );
 }
 
 /********************************************************************
@@ -2641,7 +2651,7 @@ static BOOL srv_spoolss_replyopenprinter(int snum, const char *printer,
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
 		/* Tell the connections db we're now interested in printer
 		 * notify messages. */
-		register_message_flags( True, FLAG_MSG_PRINTING );
+		register_message_flags( True, FLAG_MSG_PRINT_NOTIFY );
 	}
 
 	/* 

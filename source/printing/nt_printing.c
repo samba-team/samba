@@ -365,6 +365,17 @@ BOOL nt_printing_init(void)
 
 	message_register( MSG_PRINTERDATA_INIT_RESET, reset_all_printerdata );
 
+	/*
+	 * register callback to handle invalidating the printer cache 
+	 * between smbd processes.
+	 */
+
+	message_register( MSG_PRINTER_MOD, receive_printer_mod_msg);
+
+	/* of course, none of the message callbacks matter if you don't
+	   tell messages.c that you interested in receiving PRINT_GENERAL 
+	   msgs.  This is done in claim_connection() */
+
 
 	return True;
 }
@@ -3458,6 +3469,27 @@ static uint32 rev_changeid(void)
 #endif
 }
 
+/********************************************************************
+ Send a message to all smbds about the printer that just changed
+ ********************************************************************/
+ 
+static BOOL send_printer_mod_msg( char* printername )
+{
+	int len = strlen(printername);
+	
+	if (!len)
+		return False;
+
+	DEBUG(10,("send_printer_mod_msg: Sending message about printer change [%s]\n",
+		printername));
+		
+	/* spam everyone that we just changed this printer */
+	
+	message_send_all( conn_tdb_ctx(), MSG_PRINTER_MOD, printername, len+1, False, NULL );
+
+	return True;
+}
+
 /*
  * The function below are the high level ones.
  * only those ones must be called from the spoolss code.
@@ -3481,6 +3513,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	 */
 	 
 	invalidate_printer_hnd_cache( printer.info_2->sharename );
+	send_printer_mod_msg( printer.info_2->sharename );
 	
 	switch (level) {
 		case 2:

@@ -242,7 +242,7 @@ int reply_special(char *inbuf,char *outbuf)
 		reload_services(True);
 		reopen_logs();
 
-		claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD);
+		claim_connection(NULL,"",0,True,FLAG_MSG_GENERAL|FLAG_MSG_SMBD|FLAG_MSG_PRINT_GENERAL);
 
 		already_got_session = True;
 		break;
