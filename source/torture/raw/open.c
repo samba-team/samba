@@ -115,9 +115,9 @@ static const char *rdwr_string(enum rdwr_mode m)
 	finfo.all_info.in.fname = fname; \
 	status = smb_raw_pathinfo(cli->tree, mem_ctx, &finfo); \
 	CHECK_STATUS(status, NT_STATUS_OK); \
-	if ((v) != finfo.all_info.out.field) { \
+	if ((v) != (finfo.all_info.out.field)) { \
 		printf("(%s) wrong value for field %s  0x%x - 0x%x\n", \
-		       __location__, #field, (int)v, (int)finfo.all_info.out.field); \
+		       __location__, #field, (int)v, (int)(finfo.all_info.out.field)); \
 		dump_all_info(mem_ctx, &finfo); \
 		ret = False; \
 	}} while (0)
@@ -125,7 +125,7 @@ static const char *rdwr_string(enum rdwr_mode m)
 #define CHECK_VAL(v, correct) do { \
 	if ((v) != (correct)) { \
 		printf("(%s) wrong value for %s  0x%x - 0x%x\n", \
-		       __location__, #v, (int)v, (int)correct); \
+		       __location__, #v, (int)(v), (int)correct); \
 		ret = False; \
 	}} while (0)
 
@@ -242,7 +242,7 @@ static BOOL test_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* check other reply fields */
 	CHECK_TIME(io.open.out.write_time, write_time);
 	CHECK_ALL_INFO(io.open.out.size, size);
-	CHECK_ALL_INFO(io.open.out.attrib, attrib);
+	CHECK_ALL_INFO(io.open.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 
 done:
 	smbcli_close(cli->tree, fnum);
@@ -331,7 +331,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_VAL(io.openx.out.size, 1024*1024);
 	CHECK_ALL_INFO(io.openx.in.size, size);
 	CHECK_TIME(io.openx.out.write_time, write_time);
-	CHECK_ALL_INFO(io.openx.out.attrib, attrib);
+	CHECK_ALL_INFO(io.openx.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	CHECK_VAL(io.openx.out.access, OPENX_MODE_ACCESS_RDWR);
 	CHECK_VAL(io.openx.out.ftype, 0);
 	CHECK_VAL(io.openx.out.devstate, 0);
@@ -356,7 +356,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_TIME(io.openx.out.write_time, write_time);
 	CHECK_VAL(io.openx.out.action, OPENX_ACTION_EXISTED);
 	CHECK_VAL(io.openx.out.unknown, 0);
-	CHECK_ALL_INFO(io.openx.out.attrib, attrib);
+	CHECK_ALL_INFO(io.openx.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	smbcli_close(cli->tree, fnum);
 
 	/* now check the search attrib for hidden files - win2003 ignores this? */
@@ -382,7 +382,8 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	io.openx.in.file_attrs = FILE_ATTRIBUTE_SYSTEM;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, attrib);
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_ARCHIVE, 
+		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	smbcli_close(cli->tree, io.openx.out.fnum);
 	smbcli_unlink(cli->tree, fname);
 
@@ -526,7 +527,7 @@ static BOOL test_t2open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	CHECK_ALL_INFO(io.t2open.out.size, size);
 	CHECK_VAL(io.t2open.out.write_time, 0);
-	CHECK_ALL_INFO(io.t2open.out.attrib, attrib);
+	CHECK_ALL_INFO(io.t2open.out.attrib, attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	CHECK_VAL(io.t2open.out.access, OPENX_MODE_DENY_NONE | OPENX_MODE_ACCESS_RDWR);
 	CHECK_VAL(io.t2open.out.ftype, 0);
 	CHECK_VAL(io.t2open.out.devstate, 0);
@@ -722,7 +723,8 @@ static BOOL test_ntcreatex(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_NTTIME(io.ntcreatex.out.write_time, write_time);
 	CHECK_NTTIME(io.ntcreatex.out.change_time, change_time);
 	CHECK_ALL_INFO(io.ntcreatex.out.attrib, attrib);
-	CHECK_VAL(io.ntcreatex.out.attrib, FILE_ATTRIBUTE_DIRECTORY);
+	CHECK_VAL(io.ntcreatex.out.attrib & ~FILE_ATTRIBUTE_NONINDEXED, 
+		  FILE_ATTRIBUTE_DIRECTORY);
 	CHECK_ALL_INFO(io.ntcreatex.out.alloc_size, alloc_size);
 	CHECK_ALL_INFO(io.ntcreatex.out.size, size);
 	CHECK_ALL_INFO(io.ntcreatex.out.is_directory, directory);
@@ -858,7 +860,8 @@ static BOOL test_mknew(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.mknew.out.fnum;
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, attrib);
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
+		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	
 done:
 	smbcli_close(cli->tree, fnum);
@@ -913,7 +916,8 @@ static BOOL test_create(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.create.out.fnum;
-	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, attrib);
+	CHECK_ALL_INFO(FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_ARCHIVE, 
+		       attrib & ~FILE_ATTRIBUTE_NONINDEXED);
 	
 done:
 	smbcli_close(cli->tree, fnum);
