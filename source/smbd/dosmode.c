@@ -182,6 +182,7 @@ static BOOL get_ea_dos_attribute(connection_struct *conn, const char *path,SMB_S
 		if ((errno != ENOTSUP) && (errno != ENOATTR) && (errno != EACCES)) {
 			DEBUG(1,("get_ea_dos_attributes: Cannot get attribute from EA on file %s: Error = %s\n",
 				path, strerror(errno) ));
+			set_store_dos_attributes(SNUM(conn), False);
 		}
 #endif
 		return False;
@@ -224,9 +225,21 @@ static BOOL set_ea_dos_attribute(connection_struct *conn, const char *path, SMB_
 	files_struct *fsp = NULL;
 	BOOL ret = False;
 
+	if (!lp_store_dos_attributes(SNUM(conn))) {
+		return False;
+	}
+
 	snprintf(attrstr, sizeof(attrstr)-1, "0x%x", dosmode & SAMBA_ATTRIBUTES_MASK);
 	if (SMB_VFS_SETXATTR(conn, path, SAMBA_XATTR_DOS_ATTRIB, attrstr, strlen(attrstr), 0) == -1) {
 		if((errno != EPERM) && (errno != EACCES)) {
+			if (errno == ENOSYS
+#if defined(ENOTSUP)
+				|| errno == ENOTSUP) {
+#else
+				) {
+#endif
+				set_store_dos_attributes(SNUM(conn), False);
+			}
 			return False;
 		}
 
