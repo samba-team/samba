@@ -157,6 +157,11 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		}
 	}
 
+	if (lp_status(-1) && lp_max_smbd_processes()) {
+		printf("ERROR: the 'max smbd processes' parameter is set and the 'status' parameter is set to 'no'.\n");
+		ret = 1;
+	}
+
 	return ret;
 }   
 
