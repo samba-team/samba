@@ -10,6 +10,7 @@ if test "$withval" = no; then
 fi
 ])
 
+have_ndbm=no
 db_type=unknown
 
 if test "$berkeley_db"; then
@@ -76,6 +77,7 @@ dnl test for ndbm compatability
       LIB_NDBM=""
     fi
     AC_DEFINE(HAVE_DB_NDBM, 1, [define if you have ndbm compat in db])
+    AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files *.db)])
   else
     $as_unset ac_cv_func_dbm_firstkey
     $as_unset ac_cv_funclib_dbm_firstkey
@@ -109,6 +111,7 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
       LIB_NDBM=""
     fi
     AC_DEFINE(HAVE_NDBM, 1, [define if you have a ndbm library])dnl
+    have_ndbm=yes
     if test "$db_type" = "unknown"; then
       db_type=ndbm
       DBLIB="$LIB_NDBM"
@@ -135,6 +138,7 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
 	LIB_NDBM=""
       fi
       AC_DEFINE(HAVE_NDBM, 1, [define if you have a ndbm library])dnl
+      have_ndbm=yes
       if test "$db_type" = "unknown"; then
 	db_type=ndbm
 	DBLIB="$LIB_NDBM"
@@ -143,6 +147,37 @@ if test "$db_type" = "unknown" -o "$ac_cv_func_dbm_firstkey" = ""; then
   fi
 
 fi # unknown
+
+if test "$have_ndbm" = "yes"; then
+  AC_MSG_CHECKING([if ndbm is implemented with db])
+  AC_TRY_RUN([
+#include <unistd.h>
+#include <fcntl.h>
+#if defined(HAVE_GDBM_NDBM_H)
+#include <gdbm/ndbm.h>
+#elif defined(HAVE_NDBM_H)
+#include <ndbm.h>
+#elif defined(HAVE_DBM_H)
+#include <dbm.h>
+#endif
+int main()
+{
+  DBM *d;
+
+  d = dbm_open("conftest", O_RDWR | O_CREAT, 0666);
+  if (d == NULL)
+    return 1;
+  dbm_close(d);
+  return 0;
+}],[
+    if test -f conftest.db; then
+      AC_MSG_RESULT([yes])
+      AC_DEFINE(HAVE_NEW_DB, 1, [Define if NDBM really is DB (creates files *.db)])
+    else
+      AC_MSG_RESULT([no])
+    fi],[AC_MSG_RESULT([no])])
+fi
+
 AC_SUBST(DBLIB)dnl
 AC_SUBST(LIB_NDBM)dnl
 ])
