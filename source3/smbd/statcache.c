@@ -198,6 +198,8 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	size_t namelen;
 	hash_element *hash_elem;
 	char *sp;
+	BOOL sizechanged = False;
+	unsigned int num_components = 0;
 
 	if (!lp_stat_cache())
 		return False;
@@ -217,8 +219,17 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	}
 
 	pstrcpy(chk_name, name);
-	if(!case_sensitive)
+
+	if(!case_sensitive) {
 		strupper( chk_name );
+		/*
+		 * In some language encodings the length changes
+		 * if we uppercase. We need to treat this differently
+		 * below.
+		 */
+		if (strlen(chk_name) != namelen)
+			sizechanged = True;
+	}
 
 	while (1) {
 		hash_elem = hash_lookup(&stat_cache, chk_name);
@@ -229,6 +240,13 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 			sp = strrchr_m(chk_name, '/');
 			if (sp) {
 				*sp = '\0';
+				/*
+				 * Count the number of times we have done this,
+				 * we'll need it when reconstructing the string.
+				 */
+				if (sizechanged)
+					num_components++;
+
 			} else {
 				/*
 				 * We reached the end of the name - no match.
@@ -249,7 +267,20 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 				hash_remove(&stat_cache, hash_elem);
 				return False;
 			}
-			memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
+
+			if (!sizechanged) {
+				memcpy(name, scp->translated_path, MIN(sizeof(pstring)-1, scp->translated_path_length));
+			} else {
+				pstring last_component;
+				sp = strnrchr_m(name, '/', num_components);
+				if (!sp) {
+					/* Logic error. */
+					smb_panic("logic error in stat_cache_lookup\n");
+				}
+				pstrcpy(last_component, sp);
+				pstrcpy(name, scp->translated_path);
+				pstrcat(name, last_component);
+			}
 
 			/* set pointer for 'where to start' on fixing the rest of the name */
 			*start = &name[scp->translated_path_length];
