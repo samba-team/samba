@@ -891,7 +891,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 	dgram->header.packet_offset = 0;
 	
 	make_nmb_name(&dgram->source_name,srcname,0);
-	make_nmb_name(&dgram->dest_name,domain,0x1B);
+	make_nmb_name(&dgram->dest_name,domain,0x1C);
 	
 	ptr = &dgram->data[0];
 	
