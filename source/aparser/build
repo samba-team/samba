@@ -1,0 +1,7 @@
+#!/bin/sh
+
+file=$1
+
+igawk -f main.awk $file
+
+gcc -Wall -g -o vluke parser.c vluke.c
