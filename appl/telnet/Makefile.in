@@ -17,19 +17,13 @@ libdir = $(exec_prefix)/lib
 
 SUBDIRS=libtelnet telnet telnetd
 
-all: stamp-configure
+all:
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) all); done
 
 install:
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) install); done
-
-stamp-configure:
-	@echo "Configuring directory appl/telnet"
-	$(srcdir)/configure && touch stamp-configure
-
-configure: stamp-configure
 
 clean cleandir:
 	for i in $(SUBDIRS); \
@@ -38,4 +32,4 @@ clean cleandir:
 distclean: 
 	for i in $(SUBDIRS); \
 	do (cd $$i; $(MAKE) $(MFLAGS) distclean); done
-	rm -f Makefile config.status config.cache config.log config.h stamp-configure
+	rm -f Makefile config.status config.cache config.log config.h
