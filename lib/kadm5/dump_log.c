@@ -214,10 +214,12 @@ print_entry(kadm5_server_context *server_context,
 }
 
 static char *realm;
+static char *config_file;
 static int version_flag;
 static int help_flag;
 
 static struct getargs args[] = {
+    { "config-file", 'c', arg_string, &config_file },
     { "realm", 'r', arg_string, &realm },
     { "version", 0, arg_flag, &version_flag },
     { "help", 0, arg_flag, &help_flag }
@@ -232,6 +234,7 @@ main(int argc, char **argv)
     void *kadm_handle;
     kadm5_server_context *server_context;
     kadm5_config_params conf;
+    char **files;
 
     krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -241,6 +244,18 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if (ret)
+	krb5_err(context, 1, ret, "reading configuration files");
 
     memset(&conf, 0, sizeof(conf));
     if(realm) {

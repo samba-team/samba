@@ -557,8 +557,10 @@ static int version_flag;
 static int help_flag;
 static char *keytab_str = "HDB:";
 static char *database;
+static char *config_file;
 
 static struct getargs args[] = {
+    { "config-file", 'c', arg_string, &config_file },
     { "realm", 'r', arg_string, &realm },
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
@@ -585,6 +587,7 @@ main(int argc, char **argv)
     u_int32_t current_version = 0, old_version = 0;
     krb5_keytab keytab;
     int optind;
+    char **files;
     
     optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
@@ -594,6 +597,18 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if (ret)
+	krb5_err(context, 1, ret, "reading configuration files");
 
     time_before_gone = parse_time (slave_time_gone,  "s");
     if (time_before_gone < 0)

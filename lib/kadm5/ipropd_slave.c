@@ -338,12 +338,14 @@ receive_everything (krb5_context context, int fd,
 	krb5_err (context, 1, ret, "db->destroy");
 }
 
+static char *config_file;
 static char *realm;
 static int version_flag;
 static int help_flag;
 static char *keytab_str;
 
 static struct getargs args[] = {
+    { "config-file", 'c', arg_string, &config_file },
     { "realm", 'r', arg_string, &realm },
     { "keytab", 'k', arg_string, &keytab_str,
       "keytab to get authentication from", "kspec" },
@@ -374,6 +376,7 @@ main(int argc, char **argv)
     int master_fd;
     krb5_ccache ccache;
     krb5_principal server;
+    char **files;
 
     int optind;
     const char *master;
@@ -386,6 +389,18 @@ main(int argc, char **argv)
 	print_version(NULL);
 	exit(0);
     }
+
+    if (config_file == NULL)
+	config_file = HDB_DB_DIR "/kdc.conf";
+
+    ret = krb5_prepend_config_files_default(config_file, &files);
+    if (ret)
+	krb5_err(context, 1, ret, "getting configuration files");
+
+    ret = krb5_set_config_files(context, files);
+    krb5_free_config_files(files);
+    if (ret)
+	krb5_err(context, 1, ret, "reading configuration files");
 
     argc -= optind;
     argv += optind;
