@@ -16,7 +16,7 @@ do
   --version) echo "$0: %PACKAGE% %VERSION%"; exit 0;;
   -h) echo $usage; exit 0;;
   --help) echo $usage; exit 0;;
-  -v) set -x; shift;;
+  -v) set -x; verb=1; shift;;
   -*) echo "$0: Bad option $1"; echo $usage; exit 1;;
   *) break;;
   esac
@@ -54,6 +54,7 @@ if test -z "$term"; then
     done
   done
 fi
+test "$verb" && echo "Telnet command used is `type telnet`."
 if test -n "$term" -a "$term" != "none"; then
   ($term -title $title -n $title $xterm_args -e env DISPLAY=$disp XAUTHORITY=$auth telnet -D $telnet_args $host $port; kill -USR2 $pid) &
 else
