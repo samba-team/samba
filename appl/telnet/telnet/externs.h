@@ -66,14 +66,12 @@
 #endif
 
 #ifdef	USE_TERMIO
-# ifndef	VINTR
 #  ifdef SYSV_TERMIO
 #   include <sys/termio.h>
 #  else
 #   include <termios.h>
 #   define termio termios
 #  endif
-# endif
 #endif
 #if defined(NO_CC_T) || !defined(USE_TERMIO)
 # if !defined(USE_TERMIO)
