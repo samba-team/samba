@@ -400,7 +400,7 @@ static NTSTATUS gensec_spnego_server_negTokenTarg(struct gensec_security *gensec
 		spnego_state->state_position = SPNEGO_DONE;
 	} else {
 		spnego_out.negTokenTarg.negResult = SPNEGO_REJECT;
-		DEBUG(1, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
+		DEBUG(2, ("SPNEGO login failed: %s\n", nt_errstr(nt_status)));
 		spnego_state->state_position = SPNEGO_DONE;
 	}
 
