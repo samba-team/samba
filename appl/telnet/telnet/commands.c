@@ -1944,14 +1944,12 @@ ayt_status(void)
 }
 #endif
 
-static char *rcname = 0;
-static char rcbuf[128];
-
 static Command *getcmd(char *name);
 
 static void
 cmdrc(char *m1, char *m2)
 {
+    static char rcname[128];
     Command *c;
     FILE *rcfile;
     int gotmachine = 0;
@@ -1965,14 +1963,11 @@ cmdrc(char *m1, char *m2)
     strcpy(m1save, m1);
     m1 = m1save;
 
-    if (rcname == 0) {
-	rcname = getenv("HOME");
-	if (rcname)
-	    strcpy(rcbuf, rcname);
-	else
-	    rcbuf[0] = '\0';
-	strcat(rcbuf, "/.telnetrc");
-	rcname = rcbuf;
+    if (rcname[0] == 0) {
+	char *home = getenv("HOME");
+
+	snprintf (rcname, sizeof(rcname), "%s/.telnetrc",
+		  home ? home : "");
     }
 
     if ((rcfile = fopen(rcname, "r")) == 0) {

@@ -1251,17 +1251,18 @@ void start_login(char *host, int autologin, char *name)
     int pid = getpid();
     struct utmpx utmpx;
     struct timeval tmp;
+    char *clean_tty;
 
     /*
      * Create utmp entry for child
      */
 
+    clean_tty = clean_ttyname(line);
     memset(&utmpx, 0, sizeof(utmpx));
     strncpy(utmpx.ut_user,  ".telnet", sizeof(utmpx.ut_user));
-
-    strncpy(utmpx.ut_line,  clean_ttyname(line), sizeof(utmpx.ut_line));
+    strncpy(utmpx.ut_line,  clean_tty, sizeof(utmpx.ut_line));
 #ifdef HAVE_UT_ID
-    strncpy(utmpx.ut_id, make_id(utmpx.ut_line), sizeof(utmpx.ut_id));
+    strncpy(utmpx.ut_id, make_id(clean_tty), sizeof(utmpx.ut_id));
 #endif
     utmpx.ut_pid = pid;
 	
@@ -1379,6 +1380,7 @@ rmut(void)
     struct stat statbf;
     struct timeval tmp;
     struct utmpx *utxp, utmpx;
+    char *clean_tty = clean_ttyname(line);
 
     /*
      * This updates the utmpx and utmp entries and make a wtmp/x entry
@@ -1386,7 +1388,7 @@ rmut(void)
 
     setutxent();
     memset(&utmpx, 0, sizeof(utmpx));
-    strncpy(utmpx.ut_line, clean_ttyname(line), sizeof(utmpx.ut_line));
+    strncpy(utmpx.ut_line, clean_tty, sizeof(utmpx.ut_line));
     utmpx.ut_type = LOGIN_PROCESS;
     utxp = getutxline(&utmpx);
     if (utxp) {
@@ -1412,7 +1414,7 @@ rmut(void)
 	  int f = open(wtmpf, O_WRONLY|O_APPEND);
 	  struct utmp wtmp;
 	  if (f >= 0) {
-	    strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
+	    strncpy(wtmp.ut_line,  clean_tty, sizeof(wtmp.ut_line));
 	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
 #ifdef HAVE_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
@@ -1439,6 +1441,7 @@ rmut(void)
     struct utmp *u, *utmp;
     int nutmp;
     struct stat statbf;
+    char *clean_tty = clean_ttyname(line);
 
     f = open(utmpf, O_RDWR);
     if (f >= 0) {
@@ -1452,7 +1455,7 @@ rmut(void)
 
 	    for (u = utmp ; u < &utmp[nutmp] ; u++) {
 		if (strncmp(u->ut_line,
-			    clean_ttyname(line),
+			    clean_tty,
 			    sizeof(u->ut_line)) ||
 		    u->ut_name[0]==0)
 		    continue;
@@ -1471,7 +1474,7 @@ rmut(void)
     if (found) {
 	f = open(wtmpf, O_WRONLY|O_APPEND);
 	if (f >= 0) {
-	    strncpy(wtmp.ut_line,  clean_ttyname(line), sizeof(wtmp.ut_line));
+	    strncpy(wtmp.ut_line,  clean_tty, sizeof(wtmp.ut_line));
 	    strncpy(wtmp.ut_name,  "", sizeof(wtmp.ut_name));
 #ifdef HAVE_UT_HOST
 	    strncpy(wtmp.ut_host,  "", sizeof(wtmp.ut_host));
