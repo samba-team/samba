@@ -1348,7 +1348,6 @@ typedef struct spool_printer_info_level_2
 	UNISTR2 printprocessor;
 	UNISTR2 datatype;
 	UNISTR2 parameters;
-	SEC_DESC_BUF *secdesc;
 }
 SPOOL_PRINTER_INFO_LEVEL_2;
 
@@ -1490,10 +1489,8 @@ typedef struct spool_q_addprinter
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
-	uint32 unk0;
-	uint32 unk1;
-	uint32 unk2;
-	uint32 unk3;
+	DEVMODE_CTR devmode_ctr;
+	SEC_DESC_BUF *secdesc_ctr;
 	uint32 user_level;
 	SPOOL_USER_LEVEL user;
 }
@@ -1537,10 +1534,8 @@ typedef struct spool_q_addprinterex
 	UNISTR2 server_name;
 	uint32 level;
 	SPOOL_PRINTER_INFO_LEVEL info;
-	uint32 unk0;
-	uint32 unk1;
-	uint32 unk2;
-	uint32 unk3;
+	DEVMODE_CTR devmode_ctr;
+	SEC_DESC_BUF *secdesc_ctr;
 	uint32 user_switch;
 	SPOOL_USER_CTR user_ctr;
 }
