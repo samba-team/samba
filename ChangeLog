@@ -5,6 +5,26 @@
 
 	* lib/hdb/Makefile.am (libhdb_la_LDFLAGS): bump version to 6:2:0
 
+2000-09-17  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c (krb5_decrypt_ticket): plug some memory leak
+	(krb5_rd_req): try not to return an allocated auth_context on error
+
+	* lib/krb5/log.c (krb5_vlog_msg): fix const-ness
+
+2000-09-10  Assar Westerlund  <assar@sics.se>
+
+	* kdc/524.c: re-organize
+	* kdc/kerberos5.c (tgs_rep2): try to avoid leaking auth_context
+	* kdc/kerberos4.c (valid_princ): check return value of functions
+	(encode_v4_ticket): add some const
+	* kdc/misc.c (db_fetch): check malloc
+	(free_ent): new function
+
+	* lib/krb5/log.c (krb5_vlog_msg): log just the format string it we
+	fail to allocate the actual string to log, should at least provide
+	some hint as to where things went wrong
+
 2000-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/log.c: use DEFAULT_LOG_DEST
@@ -12,6 +32,10 @@
 	* kdc/config.c: use _PATH_KDC_CONF
 
 	* kdc/kdc_locl.h: add macro constants for kdc.conf, and kdc.log
+
+2000-09-09  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/crypto.c (_key_schedule): re-use an existing schedule
 
 2000-09-06  Johan Danielsson  <joda@pdc.kth.se>
 
@@ -29,6 +53,30 @@
 	* kdc/kstash.c: fix typo, and remove unused option
 
 	* lib/krb5/kerberos.7: short kerberos intro page
+
+2000-08-27  Assar Westerlund  <assar@sics.se>
+
+	* include/bits.c: add __attribute__ for gcc's pleasure
+	* lib/hdb/keytab.c: re-write to delay the opening of the database
+	till it's known which principal is being sought, thereby allowing
+	the usage of multiple databases, however they need to be specified
+	in /etc/krb5.conf since all the programs using this keytab do not
+	read kdc.conf
+
+	* appl/test/test_locl.h (keytab): add
+	* appl/test/common.c: add --keytab
+	* lib/krb5/crypto.c: remove trailing commas
+	(KRB5_KU_USAGE_SEQ): renamed from KRB5_KU_USAGE_MIC
+
+2000-08-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/send_to_kdc.c (send_via_proxy): handle `http://' at the
+	beginning of the proxy specification.  use getaddrinfo correctly
+	(krb5_sendto): always return a return code
+
+	* lib/krb5/krb5.h (KRB5_KU_USAGE_MIC): rename to KRB5_KU_USAGE_SEQ
+	* lib/krb5/auth_context.c (krb5_auth_con_free): handle
+	auth_context == NULL
 
 2000-08-23  Assar Westerlund  <assar@sics.se>
 
