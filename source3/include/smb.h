@@ -1412,6 +1412,7 @@ char *strdup(char *s);
 #define SV_TYPE_SERVER_OSF          0x00100000
 #define SV_TYPE_SERVER_VMS          0x00200000
 #define SV_TYPE_WIN95_PLUS          0x00400000
+#define SV_TYPE_DFS_SERVER	    0x00800000
 #define SV_TYPE_ALTERNATE_XPORT     0x20000000  
 #define SV_TYPE_LOCAL_LIST_ONLY     0x40000000  
 #define SV_TYPE_DOMAIN_ENUM         0x80000000

@@ -2946,6 +2946,7 @@ static void set_default_server_announce_type(void)
   else if(lp_announce_as() == ANNOUNCE_AS_WFW)
     default_server_announce |= SV_TYPE_WFW;
   default_server_announce |= (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0);
+  default_server_announce |= (lp_host_msdfs() ? SV_TYPE_DFS_SERVER : 0);
 }
 
 

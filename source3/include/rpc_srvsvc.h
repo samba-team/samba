@@ -305,6 +305,12 @@ typedef struct share_info_2_info
 
 } SRV_SHARE_INFO_2;
 
+/* SRV_SHARE_INFO_1005 */
+typedef struct share_info_1005_info
+{
+  uint32 dfs_root_flag; 
+} SRV_SHARE_INFO_1005;
+
 /* SRV_SHARE_INFO_CTR */
 typedef struct srv_share_info_ctr_info
 {
@@ -373,7 +379,7 @@ typedef struct r_net_share_get_info_info
 	union {
 		SRV_SHARE_INFO_1 info1;
 		SRV_SHARE_INFO_2 info2;
-
+	        SRV_SHARE_INFO_1005 info1005;
 	} share;
 
 	uint32 status;

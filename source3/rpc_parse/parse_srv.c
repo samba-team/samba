@@ -204,6 +204,27 @@ static BOOL srv_io_share_info2(char *desc, SH_INFO_2 *sh2, prs_struct *ps, int d
 /*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
+static BOOL srv_io_share_info1005(char* desc, SRV_SHARE_INFO_1005* sh1005,
+				  prs_struct* ps, int depth)
+{
+  if(sh1005 == NULL)
+    return False;
+
+  prs_debug(ps, depth, desc, "srv_io_share_info1005");
+  depth++;
+
+  if(!prs_align(ps))
+    return False;
+
+  if(!prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag))
+    return False;
+
+  return True;
+}   
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
 
 static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct *ps, int depth)
 {
@@ -527,8 +548,12 @@ BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_
 				return False;
 
 			break;
+		case 1005:
+		        if(!srv_io_share_info1005("", &r_n->share.info1005, 
+			       		          ps, depth))
+                                return False;  		
 		default:
-			DEBUG(5,("%s no share info at switch_value %d\n",
+		        DEBUG(5,("%s no share info at switch_value %d\n",
 			         tab_depth(depth), r_n->switch_value));
 			break;
 		}

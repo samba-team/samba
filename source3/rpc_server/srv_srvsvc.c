@@ -90,6 +90,20 @@ static void init_srv_share_info_2(SRV_SHARE_INFO_2 *sh2, int snum)
 	init_srv_share_info2_str(&sh2->info_2_str, net_name, remark, path, passwd);
 }
 
+/***************************************************************************
+ Fill in a share info level 1005 structure.
+ ***************************************************************************/
+static void init_srv_share_info_1005(SRV_SHARE_INFO_1005* sh1005, int snum)
+{
+	sh1005->dfs_root_flag = 0;
+
+#ifdef MS_DFS
+	if(lp_host_msdfs() && *lp_dfsmap(snum) && lp_dfsmap_loaded(snum))
+		sh1005->dfs_root_flag = 3;
+#endif
+
+}
+
 /*******************************************************************
  Fill in a share info structure.
  ********************************************************************/
@@ -234,6 +248,9 @@ static void init_srv_r_net_share_get_info(SRV_R_NET_SHARE_GET_INFO *r_n,
 			break;
 		case 2:
 			init_srv_share_info_2(&r_n->share.info2, snum);
+			break;
+		case 1005:
+			init_srv_share_info_1005(&r_n->share.info1005, snum);
 			break;
 		default:
 			DEBUG(5,("init_srv_net_share_get_info: unsupported switch value %d\n", info_level));
