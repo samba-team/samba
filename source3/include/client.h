@@ -114,7 +114,7 @@ struct cli_state {
 	int max_mux;
 	char *outbuf;
 	char *inbuf;
-	int bufsize;
+	unsigned int bufsize;
 	int initialised;
 	int win95;
 	uint32 capabilities;

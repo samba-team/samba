@@ -29,8 +29,8 @@
 
 static BOOL cli_link_internal(struct cli_state *cli, const char *fname_src, const char *fname_dst, BOOL hard_link)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
 	char param[sizeof(pstring)+6];
 	pstring data;
@@ -123,8 +123,8 @@ BOOL cli_unix_hardlink(struct cli_state *cli, const char *fname_src, const char 
 
 static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, uint32 mode, uint32 uid, uint32 gid)
 {
-	int data_len = 0;
-	int param_len = 0;
+	unsigned int data_len = 0;
+	unsigned int param_len = 0;
 	uint16 setup = TRANSACT2_SETPATHINFO;
 	char param[sizeof(pstring)+6];
 	char data[100];
@@ -335,8 +335,8 @@ BOOL cli_rmdir(struct cli_state *cli, const char *dname)
 
 int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 {
-	int data_len = 1;
-	int param_len = 6;
+	unsigned int data_len = 1;
+	unsigned int param_len = 6;
 	uint16 setup = TRANSACT2_SETFILEINFO;
 	pstring param;
 	unsigned char data;
