@@ -33,7 +33,7 @@ extern uint16 samba_nb_type; /* Samba's NetBIOS name type. */
 void insert_permanent_name_into_unicast( struct subnet_record *subrec, 
                                                 struct nmb_name *nmbname, uint16 nb_type )
 {
-	fstring name;
+	unstring name;
 	struct name_record *namerec;
 
 	if((namerec = find_name_on_subnet(unicast_subnet, nmbname, FIND_SELF_NAME)) == NULL) {
@@ -135,7 +135,7 @@ static void unbecome_local_master_success(struct subnet_record *subrec,
                              struct in_addr released_ip)
 { 
 	BOOL force_new_election = False;
-	fstring relname;
+	unstring relname;
 
 	memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
 
@@ -166,7 +166,7 @@ static void unbecome_local_master_fail(struct subnet_record *subrec, struct resp
 	struct name_record *namerec;
 	struct userdata_struct *userdata = rrec->userdata;
 	BOOL force_new_election = False;
-	fstring failname;
+	unstring failname;
 
 	memcpy((char *)&force_new_election, userdata->data, sizeof(BOOL));
 
@@ -330,7 +330,7 @@ static void become_local_master_stage2(struct subnet_record *subrec,
 	struct server_record *sl;
 	struct work_record *work;
 	struct server_record *servrec;
-	fstring regname;
+	unstring regname;
 
 	pull_ascii_nstring(regname, sizeof(regname), registered_name->name);
 	work = find_workgroup_on_subnet( subrec, regname);
@@ -410,7 +410,7 @@ static void become_local_master_fail2(struct subnet_record *subrec,
                                       struct response_record *rrec,
                                       struct nmb_name *fail_name)
 {
-	fstring failname;
+	unstring failname;
 	struct work_record *work;
 
 	DEBUG(0,("become_local_master_fail2: failed to register name %s on subnet %s. \
@@ -590,5 +590,5 @@ local_master_browser_name for workgroup %s to workgroup name.\n",
   }
 #endif
 
-	fstrcpy(work->local_master_browser_name, newname);
+	unstrcpy(work->local_master_browser_name, newname);
 }

@@ -102,7 +102,7 @@ As a local master browser, send an announce packet to the domain master browser.
 static void announce_local_master_browser_to_domain_master_browser( struct work_record *work)
 {
 	pstring outbuf;
-	fstring myname;
+	unstring myname;
 	char *p;
 
 	if(ismyip(work->dmb_addr)) {
@@ -120,7 +120,7 @@ static void announce_local_master_browser_to_domain_master_browser( struct work_
 	SCVAL(p,0,ANN_MasterAnnouncement);
 	p++;
 
-	fstrcpy(myname, global_myname());
+	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
 	/* The call below does CH_UNIX -> CH_DOS conversion. JRA */
@@ -146,7 +146,7 @@ As a local master browser, do a sync with a domain master browser.
 
 static void sync_with_dmb(struct work_record *work)
 {
-	fstring dmb_name;
+	unstring dmb_name;
 
 	if( DEBUGLVL( 2 ) ) {
 		dbgtext( "sync_with_dmb:\n" );
@@ -156,7 +156,7 @@ static void sync_with_dmb(struct work_record *work)
 		dbgtext( "for workgroup %s\n", work->work_group );
 	}
 
-	pull_ascii_nstring(dmb_name, sizeof(fstring), work->dmb_name.name);
+	pull_ascii_nstring(dmb_name, sizeof(dmb_name), work->dmb_name.name);
 	sync_browse_lists(work, dmb_name, work->dmb_name.name_type, 
 		work->dmb_addr, False, True);
 }
@@ -197,7 +197,7 @@ static void domain_master_node_status_success(struct subnet_record *subrec,
 		p += 1;
 
 		while (numnames--) {
-			fstring qname;
+			unstring qname;
 			uint16 nb_flags;
 			int name_type;
 
@@ -278,7 +278,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 	struct nmb_name nmbname;
 	struct userdata_struct *userdata;
 	size_t size = sizeof(struct userdata_struct) + sizeof(fstring)+1;
-	fstring qname;
+	unstring qname;
 
 	pull_ascii_nstring(qname, sizeof(qname), q_name->name);
 	if( !(work = find_workgroup_on_subnet(subrec, qname)) ) {
@@ -399,7 +399,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
                                               struct in_addr from_ip)
 {
 	struct work_record *work;
-	fstring server_name;
+	unstring server_name;
 
 	server_name[0] = 0;
 
@@ -420,7 +420,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 		p += 1;
 
 		while (numnames--) {
-			fstring qname;
+			unstring qname;
 			uint16 nb_flags;
 			int name_type;
 
@@ -434,7 +434,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 			if(!(nb_flags & NB_GROUP) && (name_type == 0x00) && 
 					server_name[0] == 0) {
 				/* this is almost certainly the server netbios name */
-				fstrcpy(server_name, qname);
+				unstrcpy(server_name, qname);
 				continue;
 			}
 
@@ -460,7 +460,7 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 						return;
 
 					/* remember who the master is */
-					fstrcpy(work->local_master_browser_name, server_name);
+					unstrcpy(work->local_master_browser_name, server_name);
 					make_nmb_name(&nmbname, server_name, 0x20);
 					work->dmb_name = nmbname;
 					work->dmb_addr = from_ip;
@@ -647,7 +647,7 @@ void sync_all_dmbs(time_t t)
 	/* sync with a probability of 1/count */
 	for (work=unicast_subnet->workgrouplist; work; work = work->next) {
 		if (strcmp(lp_workgroup(), work->work_group)) {
-			fstring dmb_name;
+			unstring dmb_name;
 
 			if (((unsigned)sys_random()) % count != 0)
 				continue;

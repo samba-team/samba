@@ -1034,7 +1034,7 @@ static void process_browse_packet(struct packet_struct *p, char *buf,int len)
 	int command = CVAL(buf,0);
 	struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
 	char scope[64];
-	fstring src_name;
+	unstring src_name;
 
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 	pull_ascii(scope, dgram->dest_name.scope, 64, 64, STR_TERMINATE);
@@ -1121,7 +1121,7 @@ static void process_lanman_packet(struct packet_struct *p, char *buf,int len)
 	int command = SVAL(buf,0);
 	struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
 	char scope[64];
-	fstring src_name;
+	unstring src_name;
 
 	/* Drop the packet if it's a different NetBIOS scope, or the source is from one of our names. */
 

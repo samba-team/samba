@@ -525,7 +525,7 @@ void browse_sync_remote(time_t t)
 	struct work_record *work;
 	pstring outbuf;
 	char *p;
-	fstring myname;
+	unstring myname;
  
 	if (last_time && (t < (last_time + REMOTE_ANNOUNCE_INTERVAL)))
 		return;
@@ -558,7 +558,7 @@ for workgroup %s on subnet %s.\n", lp_workgroup(), FIRST_SUBNET->subnet_name ));
 	SCVAL(p,0,ANN_MasterAnnouncement);
 	p++;
 
-	fstrcpy(myname, global_myname());
+	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);

@@ -1509,7 +1509,10 @@ struct cnotify_fns {
 #include "smb_macros.h"
 
 #define MAX_NETBIOSNAME_LEN 16
+/* DOS character, NetBIOS namestring. Type used on the wire. */
 typedef char nstring[MAX_NETBIOSNAME_LEN];
+/* Unix character, NetBIOS namestring. Type used to manipulate name in nmbd. */
+typedef char unstring[MAX_NETBIOSNAME_LEN*4];
 
 /* A netbios name structure. */
 struct nmb_name {

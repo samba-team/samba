@@ -235,7 +235,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 
 			{
 				fstring getdc_str;
-				nstring source_name;
+				fstring source_name;
 				char *q = buf + 2;
 				fstring asccomp;
 
@@ -440,7 +440,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 				send_mailslot(True, getdc,
 					outbuf,PTR_DIFF(q,outbuf),
 					global_myname(), 0x0,
-					dgram->source_name.name,
+					source_name,
 					dgram->source_name.name_type,
 					p->ip, *iface_ip(p->ip), p->port);  
 				break;

@@ -35,7 +35,7 @@ static void become_logon_server_fail(struct subnet_record *subrec,
                                       struct response_record *rrec,
                                       struct nmb_name *fail_name)
 {
-	fstring failname;
+	unstring failname;
 	struct work_record *work;
 	struct server_record *servrec;
 
@@ -76,7 +76,7 @@ static void become_logon_server_success(struct subnet_record *subrec,
                                         uint16 nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
-	fstring reg_name;
+	unstring reg_name;
 	struct work_record *work;
 	struct server_record *servrec;
 
