@@ -421,9 +421,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 end:	
 	data_blob_free(&lm_response);
 	data_blob_free(&nt_response);
-
-	if (!ret)
-		data_blob_free(&session_key);
+	data_blob_free(&session_key);
 	return ret;
 }
 
@@ -558,6 +556,7 @@ static ADS_STATUS cli_session_setup_kerberos(struct cli_state *cli, const char *
 	cli_set_session_key(cli, session_key_krb5);
 
 	data_blob_free(&negTokenTarg);
+	data_blob_free(&session_key_krb5);
 
 	if (cli_is_error(cli)) {
 		if (NT_STATUS_IS_OK(cli_nt_error(cli))) {
@@ -744,6 +743,8 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 	 * and do not store results */
 
 	if (got_kerberos_mechanism && cli->use_kerberos) {
+		ADS_STATUS rc;
+
 		if (pass && *pass) {
 			int ret;
 			
@@ -751,16 +752,19 @@ ADS_STATUS cli_session_setup_spnego(struct cli_state *cli, const char *user,
 			ret = kerberos_kinit_password(user, pass, 0 /* no time correction for now */, NULL);
 			
 			if (ret){
+				SAFE_FREE(principal);
 				DEBUG(0, ("Kinit failed: %s\n", error_message(ret)));
 				return ADS_ERROR_KRB5(ret);
 			}
 		}
 		
-		return cli_session_setup_kerberos(cli, principal, domain);
+		rc = cli_session_setup_kerberos(cli, principal, domain);
+		SAFE_FREE(principal);
+		return rc;
 	}
 #endif
 
-	free(principal);
+	SAFE_FREE(principal);
 
 ntlmssp:
 
