@@ -2871,15 +2871,11 @@ struct
 } api_fd_commands [] =
   {
 #ifdef NTDOMAIN
-    { "SetNmdPpHndState",	"lsarpc",	"lsass",	1,	api_LsarpcSNPHS },
-    { "SetNmdPpHndState",	"srvsvc",	"lsass",	1,	api_LsarpcSNPHS },
-    { "SetNmdPpHndState",	"NETLOGON",	"NETLOGON",	1,	api_LsarpcSNPHS },
     { "TransactNmPipe",     "lsarpc",	"lsass",	0x26,	api_ntLsarpcTNP },
     { "TransactNmPipe",     "srvsvc",	"lsass",	0x26,	api_srvsvcTNP },
     { "TransactNmPipe",     "NETLOGON",	"NETLOGON",	0x26,	api_netlogrpcTNP },
     { NULL,		            NULL,       NULL,	-1,	(BOOL (*)())api_Unsupported }
 #else
-    { "SetNmdPpHndState",	"lsarpc",	1,	api_LsarpcSNPHS },
     { "TransactNmPipe"  ,	"lsarpc",	0x26,	api_LsarpcTNP },
     { NULL,		NULL,		-1,	(BOOL (*)())api_Unsupported }
 #endif
@@ -2899,6 +2895,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 
   BOOL reply    = False;
   BOOL bind_req = False;
+  BOOL set_nphs = False;
 
   int i;
   int fd;
@@ -2943,6 +2940,7 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
   
 #ifdef NTDOMAIN
+  /* RPC Pipe command 0x26. */
   if (data != NULL && api_fd_commands[i].subcommand == 0x26)
   {
     RPC_HDR hdr;
@@ -2988,7 +2986,14 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
   }
 #endif
 
-  if (!bind_req)
+  /* Set Named Pipe Handle state */
+  if (subcommand == 0x1)
+  {
+    set_nphs = True;
+    reply = api_LsarpcSNPHS(fd, cnum, params);
+  }
+
+  if (!bind_req && !set_nphs)
   {
     DEBUG(10,("calling api_fd_command\n"));
 
@@ -3003,19 +3008,18 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 			   &rdata,&rparam,&rdata_len,&rparam_len);
   }
   
-  
   /* if we get False back then it's actually unsupported */
   if (!reply)
+  {
     api_Unsupported(cnum,vuid,params,data,mdrcnt,mprcnt,
 		    &rdata,&rparam,&rdata_len,&rparam_len);
+  }
   
   /* now send the reply */
   send_trans_reply(outbuf,rdata,rparam,NULL,rdata_len,rparam_len,0);
   
-  if (rdata)
-    free(rdata);
-  if (rparam)
-    free(rparam);
+  if (rdata ) free(rdata );
+  if (rparam) free(rparam);
   
   return(-1);
 }
