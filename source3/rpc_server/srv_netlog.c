@@ -527,9 +527,7 @@ static void api_net_sam_logoff( pipes_struct *p,
 	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 	/* construct reply.  always indicate success */
-	net_reply_sam_logoff(&q_l, rdata,
-					&srv_cred,
-	                0x0);
+	net_reply_sam_logoff(&q_l, rdata, &srv_cred, 0x0);
 }
 
 /*************************************************************************
@@ -657,17 +655,11 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static void api_net_sam_logon( pipes_struct *p,
-                               prs_struct *data,
-                               prs_struct *rdata)
+static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
+	DOM_CRED *srv_cred, NET_USER_INFO_3 *usr_info)
 {
-	NET_Q_SAM_LOGON q_l;
-	NET_ID_INFO_CTR ctr;	
-	NET_USER_INFO_3 usr_info;
-	uint32 status = 0x0;
-	DOM_CRED srv_cred;
 	struct sam_passwd *sam_pass = NULL;
-	UNISTR2 *uni_samlogon_user = NULL;
+	UNISTR2 *uni_samusr = NULL;
 	UNISTR2 *uni_domain = NULL;
 	fstring nt_username;
 
@@ -688,119 +680,107 @@ static void api_net_sam_logon( pipes_struct *p,
 	uint32 user_rid ;
 	uint32 group_rid;
 
-	user_struct *vuser = NULL;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-	return;
-
-	q_l.sam_id.ctr = &ctr;
-
-	net_io_q_sam_logon("", &q_l, data, 0);
+	int num_gids = 0;
+	DOMAIN_GRP *grp_mem = NULL;
+	DOM_GID *gids = NULL;
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
-	                     &(q_l.sam_id.client.cred), &srv_cred))
+	                     &(q_l->sam_id.client.cred), srv_cred))
 	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
-	else
-	{
-		memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
-	}
+	
+	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
 
 	/* find the username */
 
-	if (status == 0)
+	switch (q_l->sam_id.logon_level)
 	{
-		switch (q_l.sam_id.logon_level)
+		case INTERACTIVE_LOGON_TYPE:
 		{
-			case INTERACTIVE_LOGON_TYPE:
-			{
-				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id1.uni_user_name);
-				uni_domain        = &(q_l.sam_id.ctr->auth.id1.uni_domain_name);
+			uni_samusr = &(q_l->sam_id.ctr->auth.id1.uni_user_name);
+			uni_domain        = &(q_l->sam_id.ctr->auth.id1.uni_domain_name);
 
-				DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
-				break;
-			}
-			case NET_LOGON_TYPE:
-			{
-				uni_samlogon_user = &(q_l.sam_id.ctr->auth.id2.uni_user_name);
-				uni_domain        = &(q_l.sam_id.ctr->auth.id2.uni_domain_name);
+			DEBUG(3,("SAM Logon (Interactive). Domain:[%s].  ", global_sam_name));
+			break;
+		}
+		case NET_LOGON_TYPE:
+		{
+			uni_samusr = &(q_l->sam_id.ctr->auth.id2.uni_user_name);
+			uni_domain        = &(q_l->sam_id.ctr->auth.id2.uni_domain_name);
 
-				DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
-				break;
-			}
-			default:
-			{
-				DEBUG(2,("SAM Logon: unsupported switch value\n"));
-				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
-				break;
-			}
-		} /* end switch */
-	} /* end if status == 0 */
+			DEBUG(3,("SAM Logon (Network). Domain:[%s].  ", global_sam_name));
+			break;
+		}
+		default:
+		{
+			DEBUG(2,("SAM Logon: unsupported switch value\n"));
+			return 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
+		}
+	} 
 
 	/* check username exists */
 
-	if (status == 0)
+	unistr2_to_ascii(nt_username, uni_samusr,
+			 sizeof(nt_username)-1);
+
+	DEBUG(3,("User:[%s]\n", nt_username));
+
+	become_root(True);
+	sam_pass = getsam21pwntnam(nt_username);
+	unbecome_root(True);
+
+	if (sam_pass == NULL)
 	{
-		unistr2_to_ascii(nt_username, uni_samlogon_user,
-				 sizeof(nt_username)-1);
-
-		DEBUG(3,("User:[%s]\n", nt_username));
-
-		become_root(True);
-		sam_pass = getsam21pwntnam(nt_username);
-		unbecome_root(True);
-
-		if (sam_pass == NULL)
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-		}
-		else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED) &&
-			 IS_BITS_CLR_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ))
-		{
-			status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
-		}
+		return 0xC0000000 | NT_STATUS_NO_SUCH_USER;
+	}
+	else if (IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_DISABLED) &&
+		 IS_BITS_CLR_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ))
+	{
+		return 0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
 	}
 
-	if (status == 0x0)
-	{
-		logon_time            = sam_pass->logon_time;
-		logoff_time           = sam_pass->logoff_time;
-		kickoff_time          = sam_pass->kickoff_time;
-		pass_last_set_time    = sam_pass->pass_last_set_time;
-		pass_can_change_time  = sam_pass->pass_can_change_time;
-		pass_must_change_time = sam_pass->pass_must_change_time;
+	logon_time            = sam_pass->logon_time;
+	logoff_time           = sam_pass->logoff_time;
+	kickoff_time          = sam_pass->kickoff_time;
+	pass_last_set_time    = sam_pass->pass_last_set_time;
+	pass_can_change_time  = sam_pass->pass_can_change_time;
+	pass_must_change_time = sam_pass->pass_must_change_time;
 
-		fstrcpy(nt_name     , sam_pass->nt_name);
-		fstrcpy(full_name   , sam_pass->full_name);
-		fstrcpy(logon_script, sam_pass->logon_script);
-		fstrcpy(profile_path, sam_pass->profile_path);
-		fstrcpy(home_dir    , sam_pass->home_dir);
-		fstrcpy(dir_drive   , sam_pass->dir_drive);
+	fstrcpy(nt_name     , sam_pass->nt_name);
+	fstrcpy(full_name   , sam_pass->full_name);
+	fstrcpy(logon_script, sam_pass->logon_script);
+	fstrcpy(profile_path, sam_pass->profile_path);
+	fstrcpy(home_dir    , sam_pass->home_dir);
+	fstrcpy(dir_drive   , sam_pass->dir_drive);
 
-		user_rid  = sam_pass->user_rid;
-		group_rid = sam_pass->group_rid;
-	}
+	user_rid  = sam_pass->user_rid;
+	group_rid = sam_pass->group_rid;
 
 	/* validate password - if required */
 
-	if (status == 0 && !(IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ)))
+	if (!(IS_BITS_SET_ALL(sam_pass->acct_ctrl, ACB_PWNOTREQ)))
 	{
-		switch (q_l.sam_id.logon_level)
+		uint32 status = 0x0;
+		switch (q_l->sam_id.logon_level)
 		{
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status = net_login_interactive(&q_l.sam_id.ctr->auth.id1, sam_pass, vuser);
+				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, vuser);
 				break;
 			}
 			case NET_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l.sam_id.ctr->auth.id2, sam_pass, vuser);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, vuser);
 				break;
 			}
+		}
+		if (status != 0x0)
+		{
+			return status;
 		}
 	}
 
@@ -811,64 +791,80 @@ static void api_net_sam_logon( pipes_struct *p,
 
 	/* return the profile plus other bits :-) */
 
-	if (status == 0)
+	/* set up pointer indicating user/password failed to be found */
+	usr_info->ptr_user_info = 0;
+
+	if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
 	{
-		int num_gids = 0;
-		DOMAIN_GRP *grp_mem = NULL;
-
-		/* set up pointer indicating user/password failed to be found */
-		usr_info.ptr_user_info = 0;
-
-		if (!getusergroupsntnam(nt_username, &grp_mem, &num_gids))
-		{
-			status = 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
-		}
-
-		if (status == 0x0)
-		{
-			DOM_GID *gids = NULL;
-			num_gids = make_dom_gids(grp_mem, num_gids, &gids);
-
-			make_net_user_info3(&usr_info,
-				&logon_time,
-				&logoff_time,
-				&kickoff_time,
-				&pass_last_set_time,
-				&pass_can_change_time,
-				&pass_must_change_time,
-
-				nt_name         , /* user_name */
-				full_name       , /* full_name */
-				logon_script    , /* logon_script */
-				profile_path    , /* profile_path */
-				home_dir        , /* home_dir */
-				dir_drive       , /* dir_drive */
-
-				0, /* logon_count */
-				0, /* bad_pw_count */
-
-				user_rid   , /* RID user_id */
-				group_rid  , /* RID group_id */
-				num_gids,    /* uint32 num_groups */
-				gids    , /* DOM_GID *gids */
-				0x20    , /* uint32 user_flgs (?) */
-
-				NULL, /* char sess_key[16] */
-
-				global_myname  , /* char *logon_srv */
-				global_sam_name, /* char *logon_dom */
-				&global_sam_sid, /* DOM_SID *dom_sid */
-				NULL); /* char *other_sids */
-
-			/* Free any allocated groups array. */
-			if (gids)
-			{
-				free((char *)gids);
-			}
-		}
-
+		return 0xC0000000 | NT_STATUS_INVALID_PRIMARY_GROUP;
 	}
 
+	num_gids = make_dom_gids(grp_mem, num_gids, &gids);
+
+	make_net_user_info3(usr_info,
+		&logon_time,
+		&logoff_time,
+		&kickoff_time,
+		&pass_last_set_time,
+		&pass_can_change_time,
+		&pass_must_change_time,
+
+		nt_name         , /* user_name */
+		full_name       , /* full_name */
+		logon_script    , /* logon_script */
+		profile_path    , /* profile_path */
+		home_dir        , /* home_dir */
+		dir_drive       , /* dir_drive */
+
+		0, /* logon_count */
+		0, /* bad_pw_count */
+
+		user_rid   , /* RID user_id */
+		group_rid  , /* RID group_id */
+		num_gids,    /* uint32 num_groups */
+		gids    , /* DOM_GID *gids */
+		0x20    , /* uint32 user_flgs (?) */
+
+		NULL, /* char sess_key[16] */
+
+		global_myname  , /* char *logon_srv */
+		global_sam_name, /* char *logon_dom */
+		&global_sam_sid, /* DOM_SID *dom_sid */
+		NULL); /* char *other_sids */
+
+	/* Free any allocated groups array. */
+	if (gids)
+	{
+		free((char *)gids);
+	}
+
+	return 0x0;
+}
+
+/*************************************************************************
+ api_net_sam_logon:
+ *************************************************************************/
+static void api_net_sam_logon( pipes_struct *p,
+                               prs_struct *data,
+                               prs_struct *rdata)
+{
+	NET_Q_SAM_LOGON q_l;
+	NET_ID_INFO_CTR ctr;	
+	NET_USER_INFO_3 usr_info;
+	uint32 status = 0x0;
+	DOM_CRED srv_cred;
+
+	user_struct *vuser = get_valid_user_struct(p->vuid);
+
+	if (vuser == NULL)
+	{
+		return;
+	}
+
+	q_l.sam_id.ctr = &ctr;
+	net_io_q_sam_logon("", &q_l, data, 0);
+
+	status = reply_net_sam_logon(&q_l, vuser, &srv_cred, &usr_info);
 	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
 }
 
