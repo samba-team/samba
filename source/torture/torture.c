@@ -1959,7 +1959,9 @@ static BOOL run_fdsesstest(int dummy)
 	uint16 new_cnum;
 	uint16 saved_cnum;
 	const char *fname = "\\fdsess.tst";
+	const char *fname1 = "\\fdsess1.tst";
 	int fnum1;
+	int fnum2;
 	pstring buf;
 	BOOL ret = True;
 
@@ -1979,6 +1981,7 @@ static BOOL run_fdsesstest(int dummy)
 	printf("starting fdsesstest\n");
 
 	cli_unlink(cli, fname);
+	cli_unlink(cli, fname1);
 
 	fnum1 = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum1 == -1) {
@@ -1999,6 +2002,16 @@ static BOOL run_fdsesstest(int dummy)
 		       buf);
 		ret = False;
 	}
+	/* Try to open a file with different vuid, samba cnum. */
+	fnum2 = cli_open(cli, fname1, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum2 != -1) {
+		printf("create with different vuid, same cnum succeeded.\n");
+		cli_close(cli, fnum2);
+		cli_unlink(cli, fname1);
+	} else {
+		printf("create with different vuid, same cnum failed.\n");
+	}
+
 	cli->vuid = saved_vuid;
 
 	/* Try with same vuid, different cnum. */
