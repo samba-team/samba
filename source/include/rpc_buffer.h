@@ -25,7 +25,6 @@
 #define _RPC_BUFFER_H
 
 typedef struct {
-	uint32 ptr;
 	uint32 size;
 	prs_struct prs;
 	uint32 struct_start;

@@ -1032,7 +1032,7 @@ static BOOL print_cache_expired(const char *sharename, BOOL check_pending)
 		snprintf(key, sizeof(key), "MSG_PENDING/%s", sharename);
 
 		if ( check_pending 
-			&& tdb_fetch_uint32( pdb->tdb, key, &msg_pending_time ) 
+			&& tdb_fetch_uint32( pdb->tdb, key, (uint32*)&msg_pending_time ) 
 			&& msg_pending_time > 0
 			&& msg_pending_time <= time_now 
 			&& (time_now - msg_pending_time) < 60 ) 
@@ -1735,9 +1735,9 @@ static BOOL remove_from_jobs_changed(const char* sharename, uint32 jobid)
 
 	ZERO_STRUCT(data);
 
-	if (tdb_chainlock_with_timeout(pdb->tdb,
-				       string_tdb_data("INFO/jobs_changed"),
-				       5) == -1)
+	key = string_tdb_data("INFO/jobs_changed");
+
+	if (tdb_chainlock_with_timeout(pdb->tdb, key, 5) == -1)
 		goto out;
 
 	gotlock = True;
