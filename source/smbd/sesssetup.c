@@ -782,13 +782,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	
 	if (server_info->guest) {
 		SSVAL(outbuf,smb_vwv2,1);
-	} else {
-		const char *home_dir = pdb_get_homedir(server_info->sam_account);
-		const char *username = pdb_get_username(server_info->sam_account);
-		if ((home_dir && *home_dir)
-		    && (lp_servicenumber(username) < 0)) {
-			add_home_service(username, home_dir);	  
-		}
 	}
 
 	/* register the name and uid as being validated, so further connections

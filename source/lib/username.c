@@ -205,29 +205,7 @@ BOOL map_username(char *user)
 }
 
 /****************************************************************************
- Get_Pwnam wrapper
-****************************************************************************/
-
-static struct passwd *_Get_Pwnam(const char *s)
-{
-	struct passwd *ret;
-
-	ret = sys_getpwnam(s);
-	if (ret) {
-#ifdef HAVE_GETPWANAM
-		struct passwd_adjunct *pwret;
-		pwret = getpwanam(s);
-		if (pwret && pwret->pwa_passwd)
-			pstrcpy(ret->pw_passwd,pwret->pwa_passwd);
-#endif
-	}
-
-	return(ret);
-}
-
-
-/****************************************************************************
- * A wrapper for getpwnam().  The following variations are tried:
+ * A wrapper for sys_getpwnam().  The following variations are tried:
  *   - as transmitted
  *   - in all lower case if this differs from transmitted
  *   - in all upper case if this differs from transmitted
@@ -248,23 +226,23 @@ struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	   common case on UNIX systems */
 	strlower(user2);
 	DEBUG(5,("Trying _Get_Pwnam(), username as lowercase is %s\n",user2));
-	ret = _Get_Pwnam(user2);
+	ret = sys_getpwnam(user2);
 	if(ret)
 		goto done;
 
 	/* Try as given, if username wasn't originally lowercase */
 	if(strcmp(user,user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as given is %s\n",user));
-		ret = _Get_Pwnam(user);
+		ret = sys_getpwnam(user);
 		if(ret)
 			goto done;
-	}	
+	}
 
 	/* Try as uppercase, if username wasn't originally uppercase */
 	strupper(user2);
 	if(strcmp(user,user2) != 0) {
 		DEBUG(5,("Trying _Get_Pwnam(), username as uppercase is %s\n",user2));
-		ret = _Get_Pwnam(user2);
+		ret = sys_getpwnam(user2);
 		if(ret)
 			goto done;
 	}
@@ -272,7 +250,7 @@ struct passwd *Get_Pwnam_internals(const char *user, char *user2)
 	/* Try all combinations up to usernamelevel */
 	strlower(user2);
 	DEBUG(5,("Checking combinations of %d uppercase letters in %s\n",lp_usernamelevel(),user2));
-	ret = uname_string_combinations(user2, _Get_Pwnam, lp_usernamelevel());
+	ret = uname_string_combinations(user2, sys_getpwnam, lp_usernamelevel());
 
 done:
 	DEBUG(5,("Get_Pwnam %s find a valid username!\n",ret ? "did":"didn't"));

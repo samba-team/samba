@@ -1618,6 +1618,8 @@ typedef struct user_struct
 	gid_t gid; /* gid of a validated user */
 
 	userdom_struct user;
+	char *homedir;
+	
 	BOOL guest;
 
 	/* following groups stuff added by ih */

@@ -96,7 +96,7 @@ static NTSTATUS check_unix_security(const struct auth_context *auth_context,
 	pass = Get_Pwnam(user_info->internal_username.str);
 
 	
-	/** This call assumes a ASCII password, no charset transformation is 
+	/** @todo This call assumes a ASCII password, no charset transformation is 
 	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->internal_username.str, 

@@ -64,6 +64,8 @@ void invalidate_vuid(uint16 vuid)
 	if (vuser == NULL)
 		return;
 
+	SAFE_FREE(vuser->homedir);
+
 	session_yield(vuser);
 
 	DLIST_REMOVE(validated_users, vuser);
@@ -255,6 +257,14 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
 	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
 
+	{
+		/* Keep the homedir handy */
+		const char *homedir = pdb_get_homedir(server_info->sam_account);
+		if (homedir) {
+			vuser->homedir = smb_xstrdup(homedir);
+		}
+	}
+
 	DEBUG(10,("register_vuid: (%u,%u) %s %s %s guest=%d\n", 
 		  (unsigned int)vuser->uid, 
 		  (unsigned int)vuser->gid,
@@ -289,6 +299,12 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 		return -1;
 	}
 
+	/* Register a home dir service for this user */
+	if ((!vuser->guest) && vuser->homedir && *(vuser->homedir)
+		&& (lp_servicenumber(vuser->user.unix_name) < 0)) {
+		add_home_service(vuser->user.unix_name, vuser->homedir);	  
+	}
+	
 	return vuser->vuid;
 }
 

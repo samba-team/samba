@@ -659,6 +659,7 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 		char *sep;
 		struct sys_grent *glist;
 		struct sys_grent *grp;
+		struct passwd *pw;
 	
 		sep = lp_winbind_separator();
 
@@ -696,8 +697,18 @@ static NTSTATUS get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM
 			}
 
 			/* Don't return user private groups... */
-			if (Get_Pwnam(smap.nt_name) != 0) {
+			
+			/* 
+			 *  We used to do a Get_Pwnam() here, but this has been
+			 * trimmed back to the common case for private groups
+			 * to save lookups and to use the _alloc interface.
+			 *
+			 * This also matches the group mapping code
+			 */
+
+			if ((pw = getpwnam_alloc(smap.nt_name)) != 0) {
 				DEBUG(10,("get_group_alias_entries: not returing %s, clashes with user.\n", smap.nt_name ));
+				passwd_free(&pw);
 				continue;			
 			}
 
@@ -1245,9 +1256,9 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 	(void)map_username(user_name);
  
 	/*
-	 * Do any UNIX username case mangling.
+	 * UNIX username case mangling not required, pass_oem_change 
+	 * is case insensitive.
 	 */
-	(void)Get_Pwnam_Modify( user_name);
 
     if (!pass_oem_change(user_name, q_u->lm_newpass.pass, q_u->lm_oldhash.hash,
                          q_u->nt_newpass.pass, q_u->nt_oldhash.hash))

@@ -92,7 +92,6 @@ static size_t expand_env_var(char *p, int len)
 static char *automount_path(const char *user_name)
 {
 	static pstring server_path;
-	struct passwd *pass;
 
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
