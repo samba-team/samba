@@ -552,6 +552,10 @@ BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
 				smb_read_error = READ_ERROR;
 			return False;
 		}
+		
+		/* not all of samba3 properly checks for packet-termination of strings. This
+		   ensures that we don't run off into empty space. */
+		SSVAL(buffer+4,len, 0);
 	}
 
 	return True;
