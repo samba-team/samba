@@ -148,8 +148,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	char *extra_data = NULL;
+	const char *which_domain;
 
 	DEBUG(3, ("[%5lu]: show sequence\n", (unsigned long)state->pid));
+
+	/* Ensure null termination */
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
+	which_domain = state->request.domain_name;
 
 	extra_data = strdup("");
 
@@ -157,6 +162,13 @@ enum winbindd_result winbindd_show_sequence(struct winbindd_cli_state *state)
 	   if that is ever needed */
 	for (domain = domain_list(); domain; domain = domain->next) {
 		char *s;
+
+		/* if we have a domain name restricting the request and this
+		   one in the list doesn't match, then just bypass the remainder
+		   of the loop */
+
+		if ( *which_domain && !strequal(which_domain, domain->name) )
+			continue;
 
 		domain->methods->sequence_number(domain, &domain->sequence_number);
 		

@@ -575,6 +575,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
 	WINBIND_USERINFO *info;
+	const char *which_domain;
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
@@ -586,13 +587,24 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	if (!(mem_ctx = talloc_init("winbindd_list_users")))
 		return WINBINDD_ERROR;
 
+	/* Ensure null termination */
+	state->request.domain_name[sizeof(state->request.domain_name)-1]='\0';	
+	which_domain = state->request.domain_name;
+	
 	/* Enumerate over trusted domains */
 
 	for (domain = domain_list(); domain; domain = domain->next) {
 		NTSTATUS status;
 		struct winbindd_methods *methods;
 		unsigned int i;
-
+		
+		/* if we have a domain name restricting the request and this
+		   one in the list doesn't match, then just bypass the remainder
+		   of the loop */
+		   
+		if ( *which_domain && !strequal(which_domain, domain->name) )
+			continue;
+			
 		methods = domain->methods;
 
 		/* Query display info */
