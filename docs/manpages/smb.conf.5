@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "08 May 2002" "" ""
+.TH "SMB.CONF" "5" "15 May 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -6617,9 +6617,11 @@ always>\fR parameter.
 Default: \fBstrict sync = no\fR
 .TP
 \fBstrip dot (G)\fR
-This is a boolean that controls whether to 
-strip trailing dots off UNIX filenames. This helps with some 
-CDROMs that have filenames ending in a single dot.
+This parameter is now unused in Samba (2.2.5 and above).
+It used strip trailing dots off UNIX filenames but was not correctly implmented.
+In Samba 2.2.5 and above UNIX filenames ending in a dot are invalid Windows long
+filenames (as they are in Windows NT and above) and are mangled to 8.3 before
+being returned to a client.
 
 Default: \fBstrip dot = no\fR
 .TP
