@@ -401,6 +401,7 @@ typedef struct files_struct
 	SMB_OFF_T size;
 	mode_t mode;
 	uint16 vuid;
+	write_bmpx_struct *wbmpx_ptr;
 	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;

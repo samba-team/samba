@@ -82,6 +82,9 @@
 #define CHECK_WRITE(fsp) if (!(fsp)->can_write) \
                                return(ERROR_DOS(ERRDOS,ERRbadaccess))
 
+#define CHECK_ERROR(fsp) if (HAS_CACHED_ERROR(fsp)) \
+								return(CACHED_ERROR(fsp))
+
 /* translates a connection number into a service number */
 #define SNUM(conn)         ((conn)?(conn)->service:-1)
 
@@ -135,6 +138,15 @@
 #define SMB_LARGE_LKOFF_OFFSET_LOW(indx) (8 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_HIGH(indx) (12 + (20 * (indx)))
 #define SMB_LARGE_LKLEN_OFFSET_LOW(indx) (16 + (20 * (indx)))
+
+/* Macro to cache an error in a write_bmpx_struct */
+#define CACHE_ERROR(w,c,e) ((w)->wr_errclass = (c), (w)->wr_error = (e), \
+                w->wr_discard = True, -1)
+/* Macro to test if an error has been cached for this fnum */
+#define HAS_CACHED_ERROR(fsp) ((fsp)->wbmpx_ptr && \
+                (fsp)->wbmpx_ptr->wr_discard)
+/* Macro to turn the cached error into an error packet */
+#define CACHED_ERROR(fsp) cached_error_packet(outbuf,fsp,__LINE__,__FILE__)
 
 /* these are the datagram types */
 #define DGRAM_DIRECT_UNIQUE 0x10

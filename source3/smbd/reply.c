@@ -3786,84 +3786,83 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
 	return chain_reply(inbuf,outbuf,length,bufsize);
 }
 
-
 /****************************************************************************
-  reply to a SMBreadbmpx (read block multiplex) request
+ Reply to a SMBreadbmpx (read block multiplex) request.
 ****************************************************************************/
+
 int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
-  ssize_t nread = -1;
-  ssize_t total_read;
-  char *data;
-  SMB_OFF_T startpos;
-  int outsize;
-  size_t maxcount;
-  int max_per_packet;
-  size_t tcount;
-  int pad;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  START_PROFILE(SMBreadBmpx);
+	ssize_t nread = -1;
+	ssize_t total_read;
+	char *data;
+	SMB_OFF_T startpos;
+	int outsize;
+	size_t maxcount;
+	int max_per_packet;
+	size_t tcount;
+	int pad;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBreadBmpx);
 
-  /* this function doesn't seem to work - disable by default */
-  if (!lp_readbmpx()) {
-    END_PROFILE(SMBreadBmpx);
-    return ERROR_DOS(ERRSRV,ERRuseSTD);
-  }
+	/* this function doesn't seem to work - disable by default */
+	if (!lp_readbmpx()) {
+		END_PROFILE(SMBreadBmpx);
+		return ERROR_DOS(ERRSRV,ERRuseSTD);
+	}
 
-  outsize = set_message(outbuf,8,0,True);
+	outsize = set_message(outbuf,8,0,True);
 
-  CHECK_FSP(fsp,conn);
-  CHECK_READ(fsp);
+	CHECK_FSP(fsp,conn);
+	CHECK_READ(fsp);
 
-  startpos = IVAL(inbuf,smb_vwv1);
-  maxcount = SVAL(inbuf,smb_vwv3);
+	startpos = IVAL(inbuf,smb_vwv1);
+	maxcount = SVAL(inbuf,smb_vwv3);
 
-  data = smb_buf(outbuf);
-  pad = ((long)data)%4;
-  if (pad) pad = 4 - pad;
-  data += pad;
+	data = smb_buf(outbuf);
+	pad = ((long)data)%4;
+	if (pad)
+		pad = 4 - pad;
+	data += pad;
 
-  max_per_packet = bufsize-(outsize+pad);
-  tcount = maxcount;
-  total_read = 0;
+	max_per_packet = bufsize-(outsize+pad);
+	tcount = maxcount;
+	total_read = 0;
 
-  if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
-    END_PROFILE(SMBreadBmpx);
-    return ERROR_DOS(ERRDOS,ERRlock);
-  }
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)maxcount,(SMB_BIG_UINT)startpos, READ_LOCK,False)) {
+		END_PROFILE(SMBreadBmpx);
+		return ERROR_DOS(ERRDOS,ERRlock);
+	}
 
-  do
-    {
-      size_t N = MIN(max_per_packet,tcount-total_read);
+	do {
+		size_t N = MIN(max_per_packet,tcount-total_read);
   
-      nread = read_file(fsp,data,startpos,N);
+		nread = read_file(fsp,data,startpos,N);
 
-      if (nread <= 0) nread = 0;
+		if (nread <= 0)
+			nread = 0;
 
-      if (nread < (ssize_t)N)
-        tcount = total_read + nread;
+		if (nread < (ssize_t)N)
+			tcount = total_read + nread;
 
-      set_message(outbuf,8,nread,False);
-      SIVAL(outbuf,smb_vwv0,startpos);
-      SSVAL(outbuf,smb_vwv2,tcount);
-      SSVAL(outbuf,smb_vwv6,nread);
-      SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
+		set_message(outbuf,8,nread,False);
+		SIVAL(outbuf,smb_vwv0,startpos);
+		SSVAL(outbuf,smb_vwv2,tcount);
+		SSVAL(outbuf,smb_vwv6,nread);
+		SSVAL(outbuf,smb_vwv7,smb_offset(data,outbuf));
 
-      if (!send_smb(smbd_server_fd(),outbuf))
-        exit_server("reply_readbmpx: send_smb failed.\n");
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_readbmpx: send_smb failed.\n");
 
-      total_read += nread;
-      startpos += nread;
-    }
-  while (total_read < (ssize_t)tcount);
+		total_read += nread;
+		startpos += nread;
+	} while (total_read < (ssize_t)tcount);
 
-  END_PROFILE(SMBreadBmpx);
-  return(-1);
+	END_PROFILE(SMBreadBmpx);
+	return(-1);
 }
 
-
 /****************************************************************************
-  reply to a SMBsetattrE
+ Reply to a SMBsetattrE.
 ****************************************************************************/
 
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
@@ -3919,8 +3918,199 @@ int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, 
 }
 
 
+/* Back from the dead for OS/2..... JRA. */
+
 /****************************************************************************
-  reply to a SMBgetattrE
+ Reply to a SMBwritebmpx (write block multiplex primary) request.
+****************************************************************************/
+
+int reply_writebmpx(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
+{
+	size_t numtowrite;
+	ssize_t nwritten = -1;
+	int outsize = 0;
+	SMB_OFF_T startpos;
+	size_t tcount;
+	BOOL write_through;
+	int smb_doff;
+	char *data;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBwriteBmpx);
+
+	CHECK_FSP(fsp,conn);
+	CHECK_WRITE(fsp);
+	CHECK_ERROR(fsp);
+
+	tcount = SVAL(inbuf,smb_vwv1);
+	startpos = IVAL(inbuf,smb_vwv3);
+	write_through = BITSETW(inbuf+smb_vwv7,0);
+	numtowrite = SVAL(inbuf,smb_vwv10);
+	smb_doff = SVAL(inbuf,smb_vwv11);
+
+	data = smb_base(inbuf) + smb_doff;
+
+	/* If this fails we need to send an SMBwriteC response,
+		not an SMBwritebmpx - set this up now so we don't forget */
+	CVAL(outbuf,smb_com) = SMBwritec;
+
+	if (is_locked(fsp,conn,(SMB_BIG_UINT)tcount,(SMB_BIG_UINT)startpos,WRITE_LOCK,False)) {
+		END_PROFILE(SMBwriteBmpx);
+		return(ERROR_DOS(ERRDOS,ERRlock));
+	}
+
+	nwritten = write_file(fsp,data,startpos,numtowrite);
+
+	if(lp_syncalways(SNUM(conn)) || write_through)
+		sync_file(conn,fsp);
+  
+	if(nwritten < (ssize_t)numtowrite) {
+		END_PROFILE(SMBwriteBmpx);
+		return(UNIXERROR(ERRHRD,ERRdiskfull));
+	}
+
+	/* If the maximum to be written to this file
+		is greater than what we just wrote then set
+		up a secondary struct to be attached to this
+		fd, we will use this to cache error messages etc. */
+
+	if((ssize_t)tcount > nwritten) {
+		write_bmpx_struct *wbms;
+		if(fsp->wbmpx_ptr != NULL)
+			wbms = fsp->wbmpx_ptr; /* Use an existing struct */
+		else
+			wbms = (write_bmpx_struct *)malloc(sizeof(write_bmpx_struct));
+		if(!wbms) {
+			DEBUG(0,("Out of memory in reply_readmpx\n"));
+			END_PROFILE(SMBwriteBmpx);
+			return(ERROR_DOS(ERRSRV,ERRnoresource));
+		}
+		wbms->wr_mode = write_through;
+		wbms->wr_discard = False; /* No errors yet */
+		wbms->wr_total_written = nwritten;
+		wbms->wr_errclass = 0;
+		wbms->wr_error = 0;
+		fsp->wbmpx_ptr = wbms;
+	}
+
+	/* We are returning successfully, set the message type back to
+		SMBwritebmpx */
+	CVAL(outbuf,smb_com) = SMBwriteBmpx;
+  
+	outsize = set_message(outbuf,1,0,True);
+  
+	SSVALS(outbuf,smb_vwv0,-1); /* We don't support smb_remaining */
+  
+	DEBUG( 3, ( "writebmpx fnum=%d num=%d wrote=%d\n",
+			fsp->fnum, (int)numtowrite, (int)nwritten ) );
+
+	if (write_through && tcount==nwritten) {
+		/* We need to send both a primary and a secondary response */
+		smb_setlen(outbuf,outsize - 4);
+		if (!send_smb(smbd_server_fd(),outbuf))
+			exit_server("reply_writebmpx: send_smb failed.\n");
+
+		/* Now the secondary */
+		outsize = set_message(outbuf,1,0,True);
+		CVAL(outbuf,smb_com) = SMBwritec;
+		SSVAL(outbuf,smb_vwv0,nwritten);
+	}
+
+	END_PROFILE(SMBwriteBmpx);
+	return(outsize);
+}
+
+/****************************************************************************
+ Reply to a SMBwritebs (write block multiplex secondary) request.
+****************************************************************************/
+
+int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
+{
+	size_t numtowrite;
+	ssize_t nwritten = -1;
+	int outsize = 0;
+	SMB_OFF_T startpos;
+	size_t tcount;
+	BOOL write_through;
+	int smb_doff;
+	char *data;
+	write_bmpx_struct *wbms;
+	BOOL send_response = False; 
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBwriteBs);
+
+	CHECK_FSP(fsp,conn);
+	CHECK_WRITE(fsp);
+
+	tcount = SVAL(inbuf,smb_vwv1);
+	startpos = IVAL(inbuf,smb_vwv2);
+	numtowrite = SVAL(inbuf,smb_vwv6);
+	smb_doff = SVAL(inbuf,smb_vwv7);
+
+	data = smb_base(inbuf) + smb_doff;
+
+	/* We need to send an SMBwriteC response, not an SMBwritebs */
+	CVAL(outbuf,smb_com) = SMBwritec;
+
+	/* This fd should have an auxiliary struct attached,
+		check that it does */
+	wbms = fsp->wbmpx_ptr;
+	if(!wbms) {
+		END_PROFILE(SMBwriteBs);
+		return(-1);
+	}
+
+	/* If write through is set we can return errors, else we must cache them */
+	write_through = wbms->wr_mode;
+
+	/* Check for an earlier error */
+	if(wbms->wr_discard) {
+		END_PROFILE(SMBwriteBs);
+		return -1; /* Just discard the packet */
+	}
+
+	nwritten = write_file(fsp,data,startpos,numtowrite);
+
+	if(lp_syncalways(SNUM(conn)) || write_through)
+		sync_file(conn,fsp);
+  
+	if (nwritten < (ssize_t)numtowrite) {
+		if(write_through) {
+			/* We are returning an error - we can delete the aux struct */
+			if (wbms)
+				free((char *)wbms);
+			fsp->wbmpx_ptr = NULL;
+			END_PROFILE(SMBwriteBs);
+			return(ERROR_DOS(ERRHRD,ERRdiskfull));
+		}
+		END_PROFILE(SMBwriteBs);
+		return(CACHE_ERROR(wbms,ERRHRD,ERRdiskfull));
+	}
+
+	/* Increment the total written, if this matches tcount
+		we can discard the auxiliary struct (hurrah !) and return a writeC */
+	wbms->wr_total_written += nwritten;
+	if(wbms->wr_total_written >= tcount) {
+		if (write_through) {
+			outsize = set_message(outbuf,1,0,True);
+			SSVAL(outbuf,smb_vwv0,wbms->wr_total_written);    
+			send_response = True;
+		}
+
+		free((char *)wbms);
+		fsp->wbmpx_ptr = NULL;
+	}
+
+	if(send_response) {
+		END_PROFILE(SMBwriteBs);
+		return(outsize);
+	}
+
+	END_PROFILE(SMBwriteBs);
+	return(-1);
+}
+
+/****************************************************************************
+ Reply to a SMBgetattrE.
 ****************************************************************************/
 
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
