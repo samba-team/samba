@@ -126,6 +126,7 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 
 	while (((pwd = getsam21pwent(vp)) != NULL) && (*num_entries) < max_num_entries) {
 		int user_name_len;
+		int full_name_len;
 
 		if (acb_mask != 0 && !(pwd->acct_ctrl & acb_mask))
 			continue;
@@ -138,9 +139,14 @@ static BOOL jf_get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
 			continue;
 		}
 
-		user_name_len = strlen(pwd->smb_name)+1;
+		user_name_len = strlen(pwd->smb_name);
 		init_unistr2(&pw_buf[(*num_entries)].uni_user_name, pwd->smb_name, user_name_len);
 		init_uni_hdr(&pw_buf[(*num_entries)].hdr_user_name, user_name_len);
+
+		full_name_len = strlen(pwd->full_name);
+		init_unistr2(&pw_buf[(*num_entries)].uni_full_name, pwd->full_name, full_name_len);
+		init_uni_hdr(&pw_buf[(*num_entries)].hdr_full_name, full_name_len);
+
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
 		memset((char *)pw_buf[(*num_entries)].nt_pwd, '\0', 16);
 

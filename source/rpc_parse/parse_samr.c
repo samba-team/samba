@@ -1446,12 +1446,9 @@ void init_sam_dispinfo_1(SAM_DISPINFO_1 * sam, uint32 *num_entries,
 				len_sam_name, len_sam_full, len_sam_desc,
 				pass[i].user_rid, pass[i].acb_info);
 
-		copy_unistr2(&sam->str[i].uni_acct_name,
-			     &pass[i].uni_user_name);
-		copy_unistr2(&sam->str[i].uni_full_name,
-			     &pass[i].uni_full_name);
-		copy_unistr2(&sam->str[i].uni_acct_desc,
-			     &pass[i].uni_acct_desc);
+		copy_unistr2(&sam->str[i].uni_acct_name, &pass[i].uni_user_name);
+		copy_unistr2(&sam->str[i].uni_full_name, &pass[i].uni_full_name);
+		copy_unistr2(&sam->str[i].uni_acct_desc, &pass[i].uni_acct_desc);
 
 		dsize += sizeof(SAM_ENTRY1);
 		dsize += len_sam_name + len_sam_full + len_sam_desc;
