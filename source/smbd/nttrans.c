@@ -907,7 +907,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	allocation_size |= (((SMB_BIG_UINT)IVAL(inbuf,smb_ntcreate_AllocationSize + 4)) << 32);
 #endif
 	if (allocation_size && (allocation_size > (SMB_BIG_UINT)file_len)) {
-		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		fsp->initial_allocation_size = smb_roundup(allocation_size);
 		if (fsp->is_directory) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -920,7 +920,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 	} else {
-		fsp->initial_allocation_size = SMB_ROUNDUP(((SMB_BIG_UINT)file_len),SMB_ROUNDUP_ALLOCATION_SIZE);
+		fsp->initial_allocation_size = smb_roundup((SMB_BIG_UINT)file_len);
 	}
 
 	/* 
@@ -1429,7 +1429,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	allocation_size |= (((SMB_BIG_UINT)IVAL(params,16)) << 32);
 #endif
 	if (allocation_size && (allocation_size > file_len)) {
-		fsp->initial_allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+		fsp->initial_allocation_size = smb_roundup(allocation_size);
 		if (fsp->is_directory) {
 			close_file(fsp,False);
 			END_PROFILE(SMBntcreateX);
@@ -1441,7 +1441,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 			return ERROR_NT(NT_STATUS_DISK_FULL);
 		}
 	} else {
-		fsp->initial_allocation_size = SMB_ROUNDUP(((SMB_BIG_UINT)file_len),SMB_ROUNDUP_ALLOCATION_SIZE);
+		fsp->initial_allocation_size = smb_roundup((SMB_BIG_UINT)file_len);
 	}
 
 	/* Realloc the size of parameters and data we will return */
