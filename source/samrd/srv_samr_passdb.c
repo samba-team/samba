@@ -49,8 +49,6 @@
 					uint32 *num_names,
 					char   ***names,
 					uint32 **type);
-	BOOL samr_query_aliasmem(  const POLICY_HND *alias_pol, 
-					uint32 *num_mem, DOM_SID2 *sid);
 	BOOL samr_query_usergroups(  POLICY_HND *pol, uint32 *num_groups,
 					DOM_GID **gid);
 	BOOL samr_set_userinfo2(  POLICY_HND *pol, uint16 switch_value,
@@ -1333,30 +1331,28 @@ uint32 _samr_delete_dom_alias(POLICY_HND *alias_pol)
 	return status;
 }
 
-#if 0
-
 
 /*******************************************************************
  samr_reply_query_aliasmem
  ********************************************************************/
-uint32 _samr_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
-				prs_struct *rdata)
+uint32 _samr_query_aliasmem(const POLICY_HND *alias_pol, 
+				uint32 *num_mem, DOM_SID2 **sid)
 {
 	uint32 status = 0;
 
 	LOCAL_GRP_MEMBER *mem_grp = NULL;
-	DOM_SID2 *sid = NULL;
 	int num_sids = 0;
 	DOM_SID alias_sid;
 	uint32 alias_rid;
 	fstring alias_sid_str;
 
-	SAMR_R_QUERY_ALIASMEM r_u;
-
 	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
 
+	(*sid) = NULL;
+	(*num_mem) = 0;
+
 	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &alias_pol, &alias_sid))
+	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), alias_pol, &alias_sid))
 	{
 		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -1394,32 +1390,28 @@ uint32 _samr_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 
 	if (status == 0x0 && num_sids > 0)
 	{
-		sid = malloc(num_sids * sizeof(DOM_SID));
+		(*sid) = malloc(num_sids * sizeof(DOM_SID2));
 		if (mem_grp != NULL && sid != NULL)
 		{
 			int i;
 			for (i = 0; i < num_sids; i++)
 			{
-				make_dom_sid2(&sid[i], &mem_grp[i].sid);
+				make_dom_sid2(&(*sid)[i], &mem_grp[i].sid);
 			}
-			free(mem_grp);
 		}
 	}
 
-	make_samr_r_query_aliasmem(&r_u, num_sids, sid, status);
+	(*num_mem) = num_sids;
 
-	/* store the response in the SMB stream */
-	samr_io_r_query_aliasmem("", &r_u, rdata, 0);
-
-	if (sid != NULL)
+	if (mem_grp != NULL)
 	{
-		free(sid);
+		free(mem_grp);
 	}
 
-	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
-
+	return status;
 }
 
+#if 0
 
 /*******************************************************************
  samr_reply_lookup_names

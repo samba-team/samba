@@ -483,75 +483,21 @@ static void api_samr_delete_dom_alias( rpcsrv_struct *p, prs_struct *data, prs_s
 
 
 /*******************************************************************
- samr_reply_query_aliasmem
+ api_samr_query_aliasmem
  ********************************************************************/
-static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
-				prs_struct *rdata)
+static void api_samr_query_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
+	SAMR_Q_QUERY_ALIASMEM q_u;
+	SAMR_R_QUERY_ALIASMEM r_u;
 	uint32 status = 0;
-
-	LOCAL_GRP_MEMBER *mem_grp = NULL;
 	DOM_SID2 *sid = NULL;
 	int num_sids = 0;
-	DOM_SID alias_sid;
-	uint32 alias_rid;
-	fstring alias_sid_str;
 
-	SAMR_R_QUERY_ALIASMEM r_u;
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
-	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), &q_u->alias_pol, &alias_sid))
-	{
-		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
-	else
-	{
-		sid_to_string(alias_sid_str, &alias_sid     );
-		sid_split_rid(&alias_sid, &alias_rid);
-	}
-
-	if (status == 0x0)
-	{
-		DEBUG(10,("sid is %s\n", alias_sid_str));
-
-		if (sid_equal(&alias_sid, &global_sid_S_1_5_20))
-		{
-			DEBUG(10,("lookup on S-1-5-20\n"));
-
-			become_root(True);
-			status = getbuiltinrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
-			unbecome_root(True);
-		}
-		else if (sid_equal(&alias_sid, &global_sam_sid))
-		{
-			DEBUG(10,("lookup on Domain SID\n"));
-
-			become_root(True);
-			status = getaliasrid(alias_rid, &mem_grp, &num_sids) != NULL ? 0x0 : 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
-			unbecome_root(True);
-		}
-		else
-		{
-			status = 0xC0000000 | NT_STATUS_NO_SUCH_ALIAS;
-		}
-	}
-
-	if (status == 0x0 && num_sids > 0)
-	{
-		sid = malloc(num_sids * sizeof(DOM_SID));
-		if (mem_grp != NULL && sid != NULL)
-		{
-			int i;
-			for (i = 0; i < num_sids; i++)
-			{
-				make_dom_sid2(&sid[i], &mem_grp[i].sid);
-			}
-			free(mem_grp);
-		}
-	}
-
+	samr_io_q_query_aliasmem("", &q_u, data, 0);
+	status = _samr_query_aliasmem(&q_u.alias_pol, &num_sids, &sid);
 	make_samr_r_query_aliasmem(&r_u, num_sids, sid, status);
 
 	/* store the response in the SMB stream */
@@ -562,18 +508,6 @@ static void samr_reply_query_aliasmem(SAMR_Q_QUERY_ALIASMEM *q_u,
 		free(sid);
 	}
 
-	DEBUG(5,("samr_query_aliasmem: %d\n", __LINE__));
-
-}
-
-/*******************************************************************
- api_samr_query_aliasmem
- ********************************************************************/
-static void api_samr_query_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
-{
-	SAMR_Q_QUERY_ALIASMEM q_u;
-	samr_io_q_query_aliasmem("", &q_u, data, 0);
-	samr_reply_query_aliasmem(&q_u, rdata);
 }
 
 /*******************************************************************
