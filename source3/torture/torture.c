@@ -954,10 +954,10 @@ static BOOL run_tcon_test(int dummy)
 	cli->cnum = cnum2;
 
 	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
-		printf("server allows write with wrong TID\n");
-	} else {
-		printf("* server fails write with wrong TID : %s\n", cli_errstr(cli));
+		printf("* server allows write with wrong TID\n");
 		ret = False;
+	} else {
+		printf("server fails write with wrong TID : %s\n", cli_errstr(cli));
 	}
 
 
@@ -965,10 +965,10 @@ static BOOL run_tcon_test(int dummy)
 	cli->cnum = cnum3;
 
 	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
-		printf("server allows write with invalid TID\n");
-	} else {
-		printf("* server fails write with invalid TID : %s\n", cli_errstr(cli));
+		printf("* server allows write with invalid TID\n");
 		ret = False;
+	} else {
+		printf("server fails write with invalid TID : %s\n", cli_errstr(cli));
 	}
 
 	/* try a write with an invalid vuid */
@@ -976,10 +976,10 @@ static BOOL run_tcon_test(int dummy)
 	cli->cnum = cnum1;
 
 	if (cli_write(cli, fnum1, 0, buf, 130, 4) == 4) {
-		printf("server allows write with invalid VUID\n");
-	} else {
-		printf("* server fails write with invalid VUID : %s\n", cli_errstr(cli));
+		printf("* server allows write with invalid VUID\n");
 		ret = False;
+	} else {
+		printf("server fails write with invalid VUID : %s\n", cli_errstr(cli));
 	}
 
 	cli->cnum = cnum1;
@@ -2179,7 +2179,7 @@ static BOOL run_attrtest(int dummy)
 	struct cli_state *cli;
 	int fnum;
 	time_t t, t2;
-	const char *fname = "\\attrib.tst";
+	const char *fname = "\\attrib123456789.tst";
 	BOOL correct = True;
 
 	printf("starting attrib test\n");
