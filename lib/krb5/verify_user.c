@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -62,7 +62,7 @@ krb5_verify_user(krb5_context context,
 					&cred,
 					principal,
 					(char*)password,
-					NULL,
+					krb5_prompter_posix,
 					NULL,
 					0,
 					NULL,
