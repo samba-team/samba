@@ -3822,7 +3822,7 @@ static NTSTATUS copy_printer_data( NT_PRINTER_DATA *dst, NT_PRINTER_DATA *src )
  Caller must free.
 ****************************************************************************/
 
-static NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
+NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2 *printer )
 {
 	NT_PRINTER_INFO_LEVEL_2 *copy;
 	
@@ -3854,8 +3854,6 @@ static NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
 ****************************************************************************/
 
-#define ENABLE_PRINT_HND_CACHE	1
-
 WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
 			const char *sharename)
 {
@@ -3880,7 +3878,6 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 			 * is actually for a printer and that the printer_info pointer 
 			 * is valid
 			 */
-#ifdef ENABLE_PRINT_HND_CACHE	/* JERRY */
 			if ( print_hnd 
 				&& (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER) 
 				&& print_hnd->printer_info )
@@ -3899,20 +3896,27 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				
 				break;
 			}
-#endif 
 
-			/* no cache; look it up on disk */
+			/* no cache for this handle; see if we can match one from another handle */
 			
-			result=get_a_printer_2(&printer->info_2, sharename);
-			if (W_ERROR_IS_OK(result)) {
-				dump_a_printer(*printer, level);
+			if ( print_hnd )
+				result = find_printer_in_print_hnd_cache(print_hnd->ctx, &printer->info_2, sharename);
+			
+			/* fail to disk if we don't have it with any open handle */
 
-#if ENABLE_PRINT_HND_CACHE	/* JERRY */								
+			if ( !print_hnd || !W_ERROR_IS_OK(result) )
+				result = get_a_printer_2(&printer->info_2, sharename);				
+			
+			/* we have a new printer now.  Save it with this handle */
+			
+			if ( W_ERROR_IS_OK(result) ) {
+				dump_a_printer(*printer, level);
+					
 				/* save a copy in cache */
 				if ( print_hnd && (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER)) {
 					if ( !print_hnd->printer_info )
 						print_hnd->printer_info = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL));
-					
+
 					if ( print_hnd->printer_info ) {
 						print_hnd->printer_info->info_2 = dup_printer_2(print_hnd->ctx, printer->info_2);
 						
@@ -3920,16 +3924,14 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 						if ( !print_hnd->printer_info->info_2 )
 							DEBUG(0,("get_a_printer: unable to copy new printer info!\n"));
 					}
-					
 				}
-#endif
-				*pp_printer = printer;
+				*pp_printer = printer;	
 			}
-			else 
+			else
 				SAFE_FREE(printer);
-	
-
+			
 			break;
+			
 		default:
 			result=WERR_UNKNOWN_LEVEL;
 			break;
