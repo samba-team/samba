@@ -635,8 +635,6 @@ static BOOL test_lsakey_puzzle(struct dcerpc_pipe *p_smb,
 	printf("Test-text:\n");
 	dump_data(0, blob2.data, blob2.length);
 
-	talloc_destroy(mem_ctx);
-        torture_rpc_close(p_smb);
         torture_rpc_close(p_tcp);
 
 	return True;
