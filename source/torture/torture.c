@@ -2755,6 +2755,36 @@ static BOOL run_deletetest(int dummy)
 	return correct;
 }
 
+
+/*
+  print out server properties
+ */
+static BOOL run_properties(int dummy)
+{
+	static struct cli_state cli;
+	BOOL correct = True;
+	
+	printf("starting properties test\n");
+	
+	ZERO_STRUCT(cli);
+
+	if (!torture_open_connection(&cli)) {
+		return False;
+	}
+	
+	cli_sockopt(&cli, sockops);
+
+	d_printf("Capabilities 0x%08x\n", cli.capabilities);
+
+	if (!torture_close_connection(&cli)) {
+		correct = False;
+	}
+
+	return correct;
+}
+
+
+
 /* FIRST_DESIRED_ACCESS   0xf019f */
 #define FIRST_DESIRED_ACCESS   FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|\
                                FILE_READ_EA|                           /* 0xf */ \
@@ -3353,6 +3383,7 @@ static struct {
 	{"XCOPY", run_xcopy, 0},
 	{"RENAME", run_rename, 0},
 	{"DELETE", run_deletetest, 0},
+	{"PROPERTIES", run_properties, 0},
 	{"W2K", run_w2ktest, 0},
 	{"TRANS2SCAN", torture_trans2_scan, 0},
 	{"NTTRANSSCAN", torture_nttrans_scan, 0},
