@@ -199,7 +199,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
    * add it.
    */
 
-  if (hash_elem = hash_lookup(&stat_cache, orig_name)) {
+  if ((hash_elem = hash_lookup(&stat_cache, orig_name))) {
     found_scp = (stat_cache_entry *)(hash_elem->value);
     if (strcmp((found_scp->names+found_scp->name_len+1), translated_path) == 0) {
       return;
