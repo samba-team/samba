@@ -272,8 +272,8 @@ static NTSTATUS rid_idmap_get_domains(uint32 *num_domains, fstring **domain_name
 
 	/* put the results together */
 	*num_domains = trusted_num_domains + 1;
-	*domain_names = (fstring *) realloc(domain_names, sizeof(fstring) * *num_domains);
-	*domain_sids = (DOM_SID *) realloc(domain_sids, sizeof(DOM_SID) * *num_domains); 
+	*domain_names = (fstring *) realloc(*domain_names, sizeof(fstring) * *num_domains);
+	*domain_sids = (DOM_SID *) realloc(*domain_sids, sizeof(DOM_SID) * *num_domains); 
 
 	/* first add myself at the end*/
 	fstrcpy((*domain_names)[0], domain_name);
