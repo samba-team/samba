@@ -134,7 +134,7 @@ BOOL torture_rpc_scanner(void)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
-	struct dcerpc_interface_list *l;
+	const struct dcerpc_interface_list *l;
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
 
@@ -151,7 +151,7 @@ BOOL torture_rpc_scanner(void)
 		return False;
 	}
 
-	for (l=dcerpc_pipes;l;l=l->next) {		
+	for (l=librpc_dcerpc_pipes();l;l=l->next) {		
 		/* some interfaces are not mappable */
 		if (l->table->num_calls == 0 ||
 		    strcmp(l->table->name, "mgmt") == 0) {

@@ -1,9 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
-   DCERPC interface structures
+
+   DCERPC client side interface structures
 
    Copyright (C) Tim Potter 2003
-   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Tridgell 2003-2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,17 +29,19 @@ enum dcerpc_transport_t {
 /*
   this defines a generic security context for signed/sealed dcerpc pipes.
 */
-struct dcerpc_pipe;
+struct dcerpc_connection;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
 
 	/* get the session key */
-	NTSTATUS (*session_key)(struct dcerpc_pipe *, DATA_BLOB *);
+	NTSTATUS (*session_key)(struct dcerpc_connection *, DATA_BLOB *);
 };
 
-struct dcerpc_pipe {
-	int reference_count;
+/*
+  this holds the information that is not specific to a particular rpc context_id
+*/
+struct dcerpc_connection {
 	uint32_t call_id;
 	uint32_t srv_max_xmit_frag;
 	uint32_t srv_max_recv_frag;
@@ -46,34 +49,27 @@ struct dcerpc_pipe {
 	struct dcerpc_security security_state;
 	const char *binding_string;
 
-	struct dcerpc_syntax_id syntax;
-	struct dcerpc_syntax_id transfer_syntax;
-
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
 		void *private;
 
-		NTSTATUS (*shutdown_pipe)(struct dcerpc_pipe *);
+		NTSTATUS (*shutdown_pipe)(struct dcerpc_connection *);
 
-		const char *(*peer_name)(struct dcerpc_pipe *);
+		const char *(*peer_name)(struct dcerpc_connection *);
 
 		/* send a request to the server */
-		NTSTATUS (*send_request)(struct dcerpc_pipe *, DATA_BLOB *, BOOL trigger_read);
+		NTSTATUS (*send_request)(struct dcerpc_connection *, DATA_BLOB *, BOOL trigger_read);
 
 		/* send a read request to the server */
-		NTSTATUS (*send_read)(struct dcerpc_pipe *);
+		NTSTATUS (*send_read)(struct dcerpc_connection *);
 
 		/* get an event context for the connection */
-		struct event_context *(*event_context)(struct dcerpc_pipe *);
+		struct event_context *(*event_context)(struct dcerpc_connection *);
 
 		/* a callback to the dcerpc code when a full fragment
 		   has been received */
-		void (*recv_data)(struct dcerpc_pipe *, DATA_BLOB *, NTSTATUS status);
-
+		void (*recv_data)(struct dcerpc_connection *, DATA_BLOB *, NTSTATUS status);
 	} transport;
-
-	/* the last fault code from a DCERPC fault */
-	uint32_t last_fault_code;
 
 	/* pending requests */
 	struct rpc_request *pending;
@@ -81,6 +77,22 @@ struct dcerpc_pipe {
 	/* private pointer for pending full requests */
 	void *full_request_private;
 };
+
+/*
+  this encapsulates a full dcerpc client side pipe 
+*/
+struct dcerpc_pipe {
+	uint32_t context_id;
+
+	struct dcerpc_syntax_id syntax;
+	struct dcerpc_syntax_id transfer_syntax;
+
+	struct dcerpc_connection *conn;
+
+	/* the last fault code from a DCERPC fault */
+	uint32_t last_fault_code;
+};
+
 
 /* dcerpc pipe flags */
 #define DCERPC_DEBUG_PRINT_IN          (1<<0)
@@ -141,8 +153,7 @@ struct dcerpc_interface_table {
 	const struct dcerpc_endpoint_list *endpoints;
 };
 
-struct dcerpc_interface_list
-{
+struct dcerpc_interface_list {
 	struct dcerpc_interface_list *prev, *next;
 	const struct dcerpc_interface_table *table;
 };

@@ -354,6 +354,8 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
 	oxid = iface->ox->oxid;
 	iid = iface->interface->iid;
 
+#warning "dcerpc_alter needed"
+#if 0
 	if (iface->ox->pipe) {
 		if (!GUID_equal(&iface->ox->pipe->syntax.uuid, &iid)) {
 			iface->ox->pipe->syntax.uuid = iid;
@@ -365,7 +367,7 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
 		*p = iface->ox->pipe;
 		return NT_STATUS_OK;
 	}
-
+#endif
 	i = 0;
 	do {
 		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->ox->bindings.stringbindings[i]);

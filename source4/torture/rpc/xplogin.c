@@ -180,14 +180,8 @@ static NTSTATUS anon_ipc(struct smbcli_transport *transport,
 	return NT_STATUS_OK;
 }
 
-static int close_pipe(void *ptr)
-{
-	struct dcerpc_pipe *p = ptr;
-	dcerpc_pipe_close(p);
-	return 0;
-}
-
-static NTSTATUS connect_to_pipe(struct dcerpc_pipe **p,
+static NTSTATUS connect_to_pipe(struct dcerpc_pipe **pp,
+				TALLOC_CTX *mem_ctx,
 				struct smbcli_transport *transport,
 				const char *pipe_name,
 				const char *pipe_uuid,
@@ -196,26 +190,30 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **p,
 	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
+	struct dcerpc_pipe *p;
+	TALLOC_CTX *tmp_ctx;
 	struct smbcli_tree *tree;
-
+	
 	if (!NT_STATUS_IS_OK(status = anon_ipc(transport, &tree)))
 		return status;
 
 	if (binding == NULL)
 		return NT_STATUS_INVALID_PARAMETER;
 
-	mem_ctx = talloc_init("dcerpc_pipe_connect");
-	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
+	p = dcerpc_pipe_init(mem_ctx);
+	if (p == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	tmp_ctx = talloc_new(p);
 
-	status = dcerpc_parse_binding(mem_ctx, binding, &b);
+	status = dcerpc_parse_binding(tmp_ctx, binding, &b);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to parse dcerpc binding '%s'\n", binding));
-		talloc_destroy(mem_ctx);
+		talloc_free(p);
 		return status;
 	}
 
-	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(mem_ctx, &b)));
+	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, &b)));
 
 	if (b.endpoint == NULL) {
 		const struct dcerpc_interface_table *table =
@@ -226,14 +224,14 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **p,
 		if (!table) {
 			DEBUG(0,("Unknown interface endpoint '%s'\n",
 				 pipe_uuid));
-			talloc_destroy(mem_ctx);
+			talloc_free(tmp_ctx);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 
 		/* Find one of the default pipes for this interface */
 		for (i = 0; i < table->endpoints->count; i++) {
 			const char * const *names = table->endpoints->names;
-			status = dcerpc_parse_binding(mem_ctx, names[i],
+			status = dcerpc_parse_binding(tmp_ctx, names[i],
 						      &default_binding);
 
 			if (NT_STATUS_IS_OK(status) &&
@@ -248,23 +246,23 @@ static NTSTATUS connect_to_pipe(struct dcerpc_pipe **p,
 
 	if (!strncasecmp(pipe_name, "/pipe/", 6) || 
 		!strncasecmp(pipe_name, "\\pipe\\", 6)) {
-		pipe_name+=6;
+		pipe_name += 6;
 	}
 
 	if (pipe_name[0] != '\\') {
 		pipe_name = talloc_asprintf(mem_ctx, "\\%s", pipe_name);
 	}
 	
-	status = dcerpc_pipe_open_smb(p, tree, pipe_name);
+	status = dcerpc_pipe_open_smb(p->conn, tree, pipe_name);
 
-	if (!NT_STATUS_IS_OK(status))
+	if (!NT_STATUS_IS_OK(status)) {
+		talloc_free(p);
 		return status;
+	}
 
-	talloc_destroy(mem_ctx);
+	talloc_free(tmp_ctx);
+	(*pp) = p;
 	
-	talloc_set_destructor(*p, close_pipe);
-	talloc_steal(*p, tree);
-
 	return NT_STATUS_OK;
 }
 
@@ -284,7 +282,7 @@ static NTSTATUS test_enumtrusts(struct smbcli_transport *transport)
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(&p, transport, DCERPC_LSARPC_NAME,
+	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_LSARPC_NAME,
 				 DCERPC_LSARPC_UUID, 
 				 DCERPC_LSARPC_VERSION);
 
@@ -355,7 +353,7 @@ static NTSTATUS test_lookupnames(struct smbcli_transport *transport,
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(&p, transport, DCERPC_LSARPC_NAME,
+	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_LSARPC_NAME,
 				 DCERPC_LSARPC_UUID, 
 				 DCERPC_LSARPC_VERSION);
 
@@ -462,7 +460,7 @@ static NTSTATUS setup_netlogon_creds(struct smbcli_transport *transport,
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(p, transport, DCERPC_NETLOGON_NAME,
+	status = connect_to_pipe(p, mem_ctx, transport, DCERPC_NETLOGON_NAME,
 				 DCERPC_NETLOGON_UUID,
 				 DCERPC_NETLOGON_VERSION);
 
@@ -621,7 +619,7 @@ static NTSTATUS test_getgroups(struct smbcli_transport *transport,
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(&p, transport, DCERPC_SAMR_NAME,
+	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SAMR_NAME,
 				 DCERPC_SAMR_UUID, 
 				 DCERPC_SAMR_VERSION);
 
@@ -785,7 +783,7 @@ static NTSTATUS test_getallsids(struct smbcli_transport *transport,
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(&p, transport, DCERPC_SAMR_NAME,
+	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SAMR_NAME,
 				 DCERPC_SAMR_UUID, 
 				 DCERPC_SAMR_VERSION);
 
@@ -984,7 +982,7 @@ static NTSTATUS test_remoteTOD(struct smbcli_transport *transport)
 	if (mem_ctx == NULL)
 		return NT_STATUS_NO_MEMORY;
 
-	status = connect_to_pipe(&p, transport, DCERPC_SRVSVC_NAME,
+	status = connect_to_pipe(&p, mem_ctx, transport, DCERPC_SRVSVC_NAME,
 				 DCERPC_SRVSVC_UUID,
 				 DCERPC_SRVSVC_VERSION);
 
@@ -1054,14 +1052,14 @@ static BOOL xp_login(const char *dcname, const char *wksname,
 		return False;
 
 	status = connect_to_pipe(&netlogon_schannel_pipe,
-				 transport, DCERPC_NETLOGON_NAME,
+				 mem_ctx, transport, DCERPC_NETLOGON_NAME,
 				 DCERPC_NETLOGON_UUID,
 				 DCERPC_NETLOGON_VERSION);
 
 	if (!NT_STATUS_IS_OK(status))
 		return False;
 
-	netlogon_schannel_pipe->flags |= DCERPC_SEAL;
+	netlogon_schannel_pipe->conn->flags |= DCERPC_SEAL;
 
 	status = dcerpc_bind_auth_schannel_withkey(netlogon_schannel_pipe,
 						   DCERPC_NETLOGON_UUID,

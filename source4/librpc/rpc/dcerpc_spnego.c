@@ -3,7 +3,9 @@
 
    dcerpc authentication operations
 
-   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan Metzmacher 2004
+   Copyright (C) Andrew Tridgell 2003-2005
+   Copyright (C) Andrew Bartlett 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,6 +24,8 @@
 
 #include "includes.h"
 
+#warning "this needs dcerpc_alter"
+#if 0
 /*
   do spnego style authentication on a gensec pipe
 */
@@ -33,49 +37,53 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 
-	status = gensec_client_start(p, &p->security_state.generic_state);
+	status = gensec_client_start(p, &p->conn->security_state.generic_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start GENSEC client mode: %s\n", nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_domain(p->security_state.generic_state, domain);
+	status = gensec_set_domain(p->conn->security_state.generic_state, domain);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client domain to %s: %s\n", 
 			  domain, nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_username(p->security_state.generic_state, username);
+	status = gensec_set_username(p->conn->security_state.generic_state, username);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client username to %s: %s\n", 
 			  username, nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_password(p->security_state.generic_state, password);
+	status = gensec_set_password(p->conn->security_state.generic_state, password);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client password: %s\n", 
 			  nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_set_target_hostname(p->security_state.generic_state, p->transport.peer_name(p));
+	status = gensec_set_target_hostname(p->conn->security_state.generic_state, 
+					    p->conn->transport.peer_name(p->conn));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
 			  nt_errstr(status)));
 		return status;
 	}
 
-	status = gensec_start_mech_by_authtype(p->security_state.generic_state, DCERPC_AUTH_TYPE_SPNEGO, dcerpc_auth_level(p));
+	status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 
+					       DCERPC_AUTH_TYPE_SPNEGO, 
+					       dcerpc_auth_level(p->conn));
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1, ("Failed to start set GENSEC client SPNEGO mechanism: %s\n",
 			  nt_errstr(status)));
 		return status;
 	}
 	
-	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO, dcerpc_auth_level(p),
-				  uuid, version);
+	status = dcerpc_bind_alter(p, DCERPC_AUTH_TYPE_SPNEGO, 
+				   dcerpc_auth_level(p->conn),
+				   uuid, version);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2, ("Failed to bind to pipe with SPNEGO: %s\n", nt_errstr(status)));
@@ -84,3 +92,4 @@ NTSTATUS dcerpc_bind_auth_spnego(struct dcerpc_pipe *p,
 
 	return status;
 }
+#endif

@@ -3,7 +3,7 @@
    raw dcerpc operations
 
    Copyright (C) Tim Potter 2003
-   Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Andrew Tridgell 2003-2005
    Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
@@ -25,8 +25,11 @@
 #include "dlinklist.h"
 #include "librpc/gen_ndr/ndr_epmapper.h"
 
-struct dcerpc_interface_list *dcerpc_pipes = NULL;
+static struct dcerpc_interface_list *dcerpc_pipes = NULL;
 
+/*
+  register a dcerpc client interface
+*/
 NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interface)
 {
 	struct dcerpc_interface_list *l = talloc_p(talloc_autofree_context(),
@@ -43,52 +46,92 @@ NTSTATUS librpc_register_interface(const struct dcerpc_interface_table *interfac
   	return NT_STATUS_OK;
 }
 
+/*
+  return the list of registered dcerpc_pipes
+*/
+const struct dcerpc_interface_list *librpc_dcerpc_pipes(void)
+{
+	return dcerpc_pipes;
+}
+
+/* destroy a dcerpc connection */
+static int dcerpc_connection_destructor(void *ptr)
+{
+	struct dcerpc_connection *c = ptr;
+	if (c->transport.shutdown_pipe) {
+		c->transport.shutdown_pipe(c);
+	}
+	return 0;
+}
+
+
+/* initialise a dcerpc connection. */
+struct dcerpc_connection *dcerpc_connection_init(TALLOC_CTX *mem_ctx)
+{
+	struct dcerpc_connection *c;
+
+	c = talloc_zero(mem_ctx, struct dcerpc_connection);
+	if (!c) {
+		return NULL;
+	}
+
+	c->call_id = 1;
+	c->security_state.auth_info = NULL;
+	c->security_state.session_key = dcerpc_generic_session_key;
+	c->security_state.generic_state = NULL;
+	c->binding_string = NULL;
+	c->flags = 0;
+	c->srv_max_xmit_frag = 0;
+	c->srv_max_recv_frag = 0;
+	c->pending = NULL;
+
+	talloc_set_destructor(c, dcerpc_connection_destructor);
+
+	return c;
+}
+
 /* initialise a dcerpc pipe. */
-struct dcerpc_pipe *dcerpc_pipe_init(void)
+struct dcerpc_pipe *dcerpc_pipe_init(TALLOC_CTX *mem_ctx)
 {
 	struct dcerpc_pipe *p;
 
-	p = talloc_p(NULL, struct dcerpc_pipe);
+	p = talloc_p(mem_ctx, struct dcerpc_pipe);
 	if (!p) {
 		return NULL;
 	}
 
-	p->reference_count = 0;
-	p->call_id = 1;
-	p->security_state.auth_info = NULL;
-	p->security_state.session_key = dcerpc_generic_session_key;
-	p->security_state.generic_state = NULL;
-	p->binding_string = NULL;
-	p->flags = 0;
-	p->srv_max_xmit_frag = 0;
-	p->srv_max_recv_frag = 0;
+	p->conn = dcerpc_connection_init(p);
+	if (p->conn == NULL) {
+		talloc_free(p);
+		return NULL;
+	}
+
 	p->last_fault_code = 0;
-	p->pending = NULL;
+	p->context_id = 0;
+
+	ZERO_STRUCT(p->syntax);
+	ZERO_STRUCT(p->transfer_syntax);
 
 	return p;
 }
 
+
 /* 
    choose the next call id to use
 */
-static uint32_t next_call_id(struct dcerpc_pipe *p)
+static uint32_t next_call_id(struct dcerpc_connection *c)
 {
-	p->call_id++;
-	if (p->call_id == 0) {
-		p->call_id++;
+	c->call_id++;
+	if (c->call_id == 0) {
+		c->call_id++;
 	}
-	return p->call_id;
+	return c->call_id;
 }
 
 /* close down a dcerpc over SMB pipe */
 void dcerpc_pipe_close(struct dcerpc_pipe *p)
 {
-	if (!p) return;
-	p->reference_count--;
-	if (p->reference_count <= 0) {
-		p->transport.shutdown_pipe(p);
-		talloc_free(p);
-	}
+	talloc_free(p);
 }
 
 /* we need to be able to get/set the fragment length without doing a full
@@ -124,17 +167,18 @@ void dcerpc_set_auth_length(DATA_BLOB *blob, uint16_t v)
 /*
   setup for a ndr pull, also setting up any flags from the binding string
 */
-static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_pipe *p, DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
+static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_connection *c, 
+					    DATA_BLOB *blob, TALLOC_CTX *mem_ctx)
 {
 	struct ndr_pull *ndr = ndr_pull_init_blob(blob, mem_ctx);
 
 	if (ndr == NULL) return ndr;
 
-	if (p->flags & DCERPC_DEBUG_PAD_CHECK) {
+	if (c->flags & DCERPC_DEBUG_PAD_CHECK) {
 		ndr->flags |= LIBNDR_FLAG_PAD_CHECK;
 	}
 
-	if (p->flags & DCERPC_NDR_REF_ALLOC) {
+	if (c->flags & DCERPC_NDR_REF_ALLOC) {
 		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
 	}
 
@@ -145,12 +189,12 @@ static struct ndr_pull *ndr_pull_init_flags(struct dcerpc_pipe *p, DATA_BLOB *bl
    parse a data blob into a dcerpc_packet structure. This handles both
    input and output packets
 */
-static NTSTATUS dcerpc_pull(struct dcerpc_pipe *p, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
+static NTSTATUS dcerpc_pull(struct dcerpc_connection *c, DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 			    struct dcerpc_packet *pkt)
 {
 	struct ndr_pull *ndr;
 
-	ndr = ndr_pull_init_flags(p, blob, mem_ctx);
+	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -177,7 +221,7 @@ static NTSTATUS dcerpc_connect_verifier(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 }
 
 /*
-  generate a CONNECT level verifier
+  check a CONNECT level verifier
 */
 static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
 {
@@ -191,7 +235,7 @@ static NTSTATUS dcerpc_check_connect_verifier(DATA_BLOB *blob)
 /* 
    parse a possibly signed blob into a dcerpc request packet structure
 */
-static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p, 
+static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 					 struct dcerpc_packet *pkt)
 {
@@ -201,12 +245,12 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB auth_blob;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || 
-	    !p->security_state.generic_state) {
-		return dcerpc_pull(p, blob, mem_ctx, pkt);
+	if (!c->security_state.auth_info || 
+	    !c->security_state.generic_state) {
+		return dcerpc_pull(c, blob, mem_ctx, pkt);
 	}
 
-	ndr = ndr_pull_init_flags(p, blob, mem_ctx);
+	ndr = ndr_pull_init_flags(c, blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -226,7 +270,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	}
 
 	if (pkt->auth_length == 0 &&
-	    p->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
+	    c->security_state.auth_info->auth_level == DCERPC_AUTH_LEVEL_CONNECT) {
 		return NT_STATUS_OK;
 	}
 
@@ -243,7 +287,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	pkt->u.response.stub_and_verifier.length -= auth_blob.length;
 
 	/* pull the auth structure */
-	ndr = ndr_pull_init_flags(p, &auth_blob, mem_ctx);
+	ndr = ndr_pull_init_flags(c, &auth_blob, mem_ctx);
 	if (!ndr) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -259,9 +303,9 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	
 	
 	/* check signature or unseal the packet */
-	switch (p->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_unseal_packet(p->security_state.generic_state, 
+		status = gensec_unseal_packet(c->security_state.generic_state, 
 					      mem_ctx, 
 					      blob->data + DCERPC_REQUEST_LENGTH,
 					      pkt->u.response.stub_and_verifier.length, 
@@ -274,7 +318,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		break;
 		
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = gensec_check_packet(p->security_state.generic_state, 
+		status = gensec_check_packet(c->security_state.generic_state, 
 					     mem_ctx, 
 					     pkt->u.response.stub_and_verifier.data, 
 					     pkt->u.response.stub_and_verifier.length, 
@@ -308,7 +352,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 /* 
    push a dcerpc request packet into a blob, possibly signing it.
 */
-static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p, 
+static NTSTATUS dcerpc_push_request_sign(struct dcerpc_connection *c, 
 					 DATA_BLOB *blob, TALLOC_CTX *mem_ctx, 
 					 struct dcerpc_packet *pkt)
 {
@@ -317,9 +361,9 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	DATA_BLOB creds2;
 
 	/* non-signed packets are simpler */
-	if (!p->security_state.auth_info || 
-	    !p->security_state.generic_state) {
-		return dcerpc_push_auth(blob, mem_ctx, pkt, p->security_state.auth_info);
+	if (!c->security_state.auth_info || 
+	    !c->security_state.generic_state) {
+		return dcerpc_push_auth(blob, mem_ctx, pkt, c->security_state.auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -327,7 +371,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
+	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
 		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -342,25 +386,25 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 
 	/* pad to 16 byte multiple in the payload portion of the
 	   packet. This matches what w2k3 does */
-	p->security_state.auth_info->auth_pad_length = 
+	c->security_state.auth_info->auth_pad_length = 
 		(16 - (pkt->u.request.stub_and_verifier.length & 15)) & 15;
-	ndr_push_zero(ndr, p->security_state.auth_info->auth_pad_length);
+	ndr_push_zero(ndr, c->security_state.auth_info->auth_pad_length);
 
 	/* sign or seal the packet */
-	switch (p->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		p->security_state.auth_info->credentials
-			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(p->security_state.generic_state));
-		data_blob_clear(&p->security_state.auth_info->credentials);
+		c->security_state.auth_info->credentials
+			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(c->security_state.generic_state));
+		data_blob_clear(&c->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_CONNECT:
-		status = dcerpc_connect_verifier(mem_ctx, &p->security_state.auth_info->credentials);
+		status = dcerpc_connect_verifier(mem_ctx, &c->security_state.auth_info->credentials);
 		break;
 		
 	case DCERPC_AUTH_LEVEL_NONE:
-		p->security_state.auth_info->credentials = data_blob(NULL, 0);
+		c->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
 		
 	default:
@@ -373,7 +417,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	}	
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, p->security_state.auth_info);
+	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, c->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -385,18 +429,19 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
-	dcerpc_set_auth_length(blob, p->security_state.auth_info->credentials.length);
+	dcerpc_set_auth_length(blob, c->security_state.auth_info->credentials.length);
 
 	/* sign or seal the packet */
-	switch (p->security_state.auth_info->auth_level) {
+	switch (c->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_seal_packet(p->security_state.generic_state, 
+		status = gensec_seal_packet(c->security_state.generic_state, 
 					    mem_ctx, 
 					    blob->data + DCERPC_REQUEST_LENGTH, 
-					    pkt->u.request.stub_and_verifier.length+p->security_state.auth_info->auth_pad_length,
+					    pkt->u.request.stub_and_verifier.length + 
+					    c->security_state.auth_info->auth_pad_length,
 					    blob->data,
 					    blob->length - 
-					    p->security_state.auth_info->credentials.length,
+					    c->security_state.auth_info->credentials.length,
 					    &creds2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -405,13 +450,14 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = gensec_sign_packet(p->security_state.generic_state, 
+		status = gensec_sign_packet(c->security_state.generic_state, 
 					    mem_ctx, 
 					    blob->data + DCERPC_REQUEST_LENGTH, 
-					    pkt->u.request.stub_and_verifier.length+p->security_state.auth_info->auth_pad_length,
+					    pkt->u.request.stub_and_verifier.length + 
+					    c->security_state.auth_info->auth_pad_length,
 					    blob->data,
 					    blob->length - 
-					    p->security_state.auth_info->credentials.length,
+					    c->security_state.auth_info->credentials.length,
 					    &creds2);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
@@ -423,7 +469,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:
-		p->security_state.auth_info->credentials = data_blob(NULL, 0);
+		c->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
 
 	default:
@@ -431,7 +477,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 		break;
 	}
 
-	data_blob_free(&p->security_state.auth_info->credentials);
+	data_blob_free(&c->security_state.auth_info->credentials);
 
 	return NT_STATUS_OK;
 }
@@ -440,11 +486,11 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 /* 
    fill in the fixed values in a dcerpc header 
 */
-static void init_dcerpc_hdr(struct dcerpc_pipe *p, struct dcerpc_packet *pkt)
+static void init_dcerpc_hdr(struct dcerpc_connection *c, struct dcerpc_packet *pkt)
 {
 	pkt->rpc_vers = 5;
 	pkt->rpc_vers_minor = 0;
-	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
+	if (c->flags & DCERPC_PUSH_BIGENDIAN) {
 		pkt->drep[0] = 0;
 	} else {
 		pkt->drep[0] = DCERPC_DREP_LE;
@@ -465,10 +511,10 @@ struct full_request_state {
 /*
   receive a reply to a full request
  */
-static void full_request_recv(struct dcerpc_pipe *p, DATA_BLOB *blob, 
+static void full_request_recv(struct dcerpc_connection *c, DATA_BLOB *blob, 
 			      NTSTATUS status)
 {
-	struct full_request_state *state = p->full_request_private;
+	struct full_request_state *state = c->full_request_private;
 
 	if (!NT_STATUS_IS_OK(status)) {
 		state->status = status;
@@ -482,7 +528,7 @@ static void full_request_recv(struct dcerpc_pipe *p, DATA_BLOB *blob,
   perform a single pdu synchronous request - used for the bind code
   this cannot be mixed with normal async requests
 */
-static NTSTATUS full_request(struct dcerpc_pipe *p, 
+static NTSTATUS full_request(struct dcerpc_connection *c, 
 			     TALLOC_CTX *mem_ctx,
 			     DATA_BLOB *request_blob,
 			     DATA_BLOB *reply_blob)
@@ -497,16 +543,16 @@ static NTSTATUS full_request(struct dcerpc_pipe *p,
 	state->reply_blob = reply_blob;
 	state->status = NT_STATUS_OK;
 
-	p->transport.recv_data = full_request_recv;
-	p->full_request_private = state;
+	c->transport.recv_data = full_request_recv;
+	c->full_request_private = state;
 
-	status = p->transport.send_request(p, request_blob, True);
+	status = c->transport.send_request(c, request_blob, True);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	while (NT_STATUS_IS_OK(state->status) && state->reply_blob) {
-		struct event_context *ctx = p->transport.event_context(p);
+		struct event_context *ctx = c->transport.event_context(c);
 		if (event_loop_once(ctx) != 0) {
 			return NT_STATUS_CONNECTION_DISCONNECTED;
 		}
@@ -534,41 +580,41 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	p->syntax = *syntax;
 	p->transfer_syntax = *transfer_syntax;
 
-	init_dcerpc_hdr(p, &pkt);
+	init_dcerpc_hdr(p->conn, &pkt);
 
 	pkt.ptype = DCERPC_PKT_BIND;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->call_id;
+	pkt.call_id = p->conn->call_id;
 	pkt.auth_length = 0;
 
 	pkt.u.bind.max_xmit_frag = 5840;
 	pkt.u.bind.max_recv_frag = 5840;
 	pkt.u.bind.assoc_group_id = 0;
 	pkt.u.bind.num_contexts = 1;
-	pkt.u.bind.ctx_list = talloc_p(mem_ctx, struct dcerpc_ctx_list);
+	pkt.u.bind.ctx_list = talloc_array(mem_ctx, struct dcerpc_ctx_list, 1);
 	if (!pkt.u.bind.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	pkt.u.bind.ctx_list[0].context_id = 0;
+	pkt.u.bind.ctx_list[0].context_id = p->context_id;
 	pkt.u.bind.ctx_list[0].num_transfer_syntaxes = 1;
 	pkt.u.bind.ctx_list[0].abstract_syntax = p->syntax;
 	pkt.u.bind.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->conn->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* send it on its way */
-	status = full_request(p, mem_ctx, &blob, &blob);
+	status = full_request(p->conn, mem_ctx, &blob, &blob);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* unmarshall the NDR */
-	status = dcerpc_pull(p, &blob, mem_ctx, &pkt);
+	status = dcerpc_pull(p->conn, &blob, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -585,117 +631,49 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.ptype == DCERPC_PKT_BIND_ACK) {
-		p->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
-		p->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
+		p->conn->srv_max_xmit_frag = pkt.u.bind_ack.max_xmit_frag;
+		p->conn->srv_max_recv_frag = pkt.u.bind_ack.max_recv_frag;
 	}
 
 	/* the bind_ack might contain a reply set of credentials */
-	if (p->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
+	if (p->conn->security_state.auth_info && pkt.u.bind_ack.auth_info.length) {
 		status = ndr_pull_struct_blob(&pkt.u.bind_ack.auth_info,
 					      mem_ctx,
-					      p->security_state.auth_info,
+					      p->conn->security_state.auth_info,
 					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	}
 
 	return status;	
 }
 
-/* 
-   perform a alter context using the given syntax 
-
-   the auth_info structure is updated with the reply authentication info
-   on success
-*/
-NTSTATUS dcerpc_alter(struct dcerpc_pipe *p, 
-		     TALLOC_CTX *mem_ctx)
-{
-	struct dcerpc_packet pkt;
-	NTSTATUS status;
-	DATA_BLOB blob;
-
-	init_dcerpc_hdr(p, &pkt);
-
-	pkt.ptype = DCERPC_PKT_ALTER;
-	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = p->call_id;
-	pkt.auth_length = 0;
-
-	pkt.u.alter.max_xmit_frag = 0x2000;
-	pkt.u.alter.max_recv_frag = 0x2000;
-	pkt.u.alter.assoc_group_id = 0;
-	pkt.u.alter.num_contexts = 1;
-	pkt.u.alter.ctx_list = talloc_p(mem_ctx, struct dcerpc_ctx_list);
-	if (!pkt.u.alter.ctx_list) {
-		return NT_STATUS_NO_MEMORY;
-	}
-	pkt.u.alter.ctx_list[0].context_id = 0;
-	pkt.u.alter.ctx_list[0].num_transfer_syntaxes = 1;
-	pkt.u.alter.ctx_list[0].abstract_syntax = p->syntax;
-	pkt.u.alter.ctx_list[0].transfer_syntaxes = &p->transfer_syntax;
-	pkt.u.alter.auth_info = data_blob(NULL, 0);
-
-	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* send it on its way */
-	status = full_request(p, mem_ctx, &blob, &blob);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	/* unmarshall the NDR */
-	status = dcerpc_pull(p, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
-	if ((pkt.ptype != DCERPC_PKT_ALTER_ACK) ||
-	    pkt.u.alter_ack.num_results == 0 ||
-	    pkt.u.alter_ack.ctx_list[0].result != 0) {
-		status = NT_STATUS_UNSUCCESSFUL;
-	}
-
-	/* the bind_ack might contain a reply set of credentials */
-	if (p->security_state.auth_info && pkt.u.alter_ack.auth_info.length) {
-		status = ndr_pull_struct_blob(&pkt.u.alter_ack.auth_info,
-					      mem_ctx,
-					      p->security_state.auth_info,
-					      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
-	}
-
-	return status;	
-}
 
 /* 
    perform a continued bind (and auth3)
 */
-NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p, 
+NTSTATUS dcerpc_auth3(struct dcerpc_connection *c, 
 		      TALLOC_CTX *mem_ctx)
 {
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
 	DATA_BLOB blob;
 
-	init_dcerpc_hdr(p, &pkt);
+	init_dcerpc_hdr(c, &pkt);
 
 	pkt.ptype = DCERPC_PKT_AUTH3;
 	pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	pkt.call_id = next_call_id(p);
+	pkt.call_id = next_call_id(c);
 	pkt.auth_length = 0;
 	pkt.u.auth3._pad = 0;
 	pkt.u.auth3.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->security_state.auth_info);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, c->security_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
 	/* send it on its way */
-	status = p->transport.send_request(p, &blob, False);
+	status = c->transport.send_request(c, &blob, False);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -733,7 +711,7 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
   process a fragment received from the transport layer during a
   request
 */
-static void dcerpc_request_recv_data(struct dcerpc_pipe *p, 
+static void dcerpc_request_recv_data(struct dcerpc_connection *c, 
 				     DATA_BLOB *data,
 				     NTSTATUS status)
 {
@@ -743,11 +721,11 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		/* all pending requests get the error */
-		while (p->pending) {
-			req = p->pending;
+		while (c->pending) {
+			req = c->pending;
 			req->state = RPC_REQUEST_DONE;
 			req->status = status;
-			DLIST_REMOVE(p->pending, req);
+			DLIST_REMOVE(c->pending, req);
 			if (req->async.callback) {
 				req->async.callback(req);
 			}
@@ -757,12 +735,12 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 
 	pkt.call_id = 0;
 
-	status = dcerpc_pull_request_sign(p, data, (TALLOC_CTX *)data->data, &pkt);
+	status = dcerpc_pull_request_sign(c, data, (TALLOC_CTX *)data->data, &pkt);
 
 	/* find the matching request. Notice we match before we check
 	   the status.  this is ok as a pending call_id can never be
 	   zero */
-	for (req=p->pending;req;req=req->next) {
+	for (req=c->pending;req;req=req->next) {
 		if (pkt.call_id == req->call_id) break;
 	}
 
@@ -774,7 +752,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		req->status = status;
 		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(p->pending, req);
+		DLIST_REMOVE(c->pending, req);
 		if (req->async.callback) {
 			req->async.callback(req);
 		}
@@ -782,11 +760,11 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
-		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(p, pkt.u.fault.status)));
+		DEBUG(5,("rpc fault: %s\n", dcerpc_errstr(c, pkt.u.fault.status)));
 		req->fault_code = pkt.u.fault.status;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(p->pending, req);
+		DLIST_REMOVE(c->pending, req);
 		if (req->async.callback) {
 			req->async.callback(req);
 		}
@@ -799,7 +777,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		req->fault_code = DCERPC_FAULT_OTHER;
 		req->status = NT_STATUS_NET_WRITE_FAULT;
 		req->state = RPC_REQUEST_DONE;
-		DLIST_REMOVE(p->pending, req);
+		DLIST_REMOVE(c->pending, req);
 		if (req->async.callback) {
 			req->async.callback(req);
 		}
@@ -816,7 +794,7 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 		if (!req->payload.data) {
 			req->status = NT_STATUS_NO_MEMORY;
 			req->state = RPC_REQUEST_DONE;
-			DLIST_REMOVE(p->pending, req);
+			DLIST_REMOVE(c->pending, req);
 			if (req->async.callback) {
 				req->async.callback(req);
 			}
@@ -828,13 +806,13 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 	}
 
 	if (!(pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		p->transport.send_read(p);
+		c->transport.send_read(c);
 		return;
 	}
 
 	/* we've got the full payload */
 	req->state = RPC_REQUEST_DONE;
-	DLIST_REMOVE(p->pending, req);
+	DLIST_REMOVE(c->pending, req);
 
 	if (!(pkt.drep[0] & DCERPC_DREP_LE)) {
 		req->flags |= DCERPC_PULL_BIGENDIAN;
@@ -854,12 +832,12 @@ static void dcerpc_request_recv_data(struct dcerpc_pipe *p,
 static int dcerpc_req_destructor(void *ptr)
 {
 	struct rpc_request *req = ptr;
-	DLIST_REMOVE(req->p->pending, req);
+	DLIST_REMOVE(req->p->conn->pending, req);
 	return 0;
 }
 
 /*
-  perform the send size of a async dcerpc request
+  perform the send side of a async dcerpc request
 */
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
 					const struct GUID *object,
@@ -873,7 +851,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	uint32_t remaining, chunk_size;
 	BOOL first_packet = True;
 
-	p->transport.recv_data = dcerpc_request_recv_data;
+	p->conn->transport.recv_data = dcerpc_request_recv_data;
 
 	req = talloc_p(mem_ctx, struct rpc_request);
 	if (req == NULL) {
@@ -881,7 +859,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	}
 
 	req->p = p;
-	req->call_id = next_call_id(p);
+	req->call_id = next_call_id(p->conn);
 	req->status = NT_STATUS_OK;
 	req->state = RPC_REQUEST_PENDING;
 	req->payload = data_blob(NULL, 0);
@@ -889,20 +867,20 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	req->fault_code = 0;
 	req->async.callback = NULL;
 
-	init_dcerpc_hdr(p, &pkt);
+	init_dcerpc_hdr(p->conn, &pkt);
 
 	remaining = stub_data->length;
 
 	/* we can write a full max_recv_frag size, minus the dcerpc
 	   request header size */
-	chunk_size = p->srv_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
+	chunk_size = p->conn->srv_max_recv_frag - (DCERPC_MAX_SIGN_SIZE+DCERPC_REQUEST_LENGTH);
 
 	pkt.ptype = DCERPC_PKT_REQUEST;
 	pkt.call_id = req->call_id;
 	pkt.auth_length = 0;
 	pkt.pfc_flags = 0;
 	pkt.u.request.alloc_hint = remaining;
-	pkt.u.request.context_id = 0;
+	pkt.u.request.context_id = p->context_id;
 	pkt.u.request.opnum = opnum;
 
 	if (object) {
@@ -911,7 +889,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 		chunk_size -= ndr_size_GUID(object,0);
 	}
 
-	DLIST_ADD(p->pending, req);
+	DLIST_ADD(p->conn->pending, req);
 
 	/* we send a series of pdus without waiting for a reply */
 	while (remaining > 0 || first_packet) {
@@ -933,17 +911,17 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 			(stub_data->length - remaining);
 		pkt.u.request.stub_and_verifier.length = chunk;
 
-		req->status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
+		req->status = dcerpc_push_request_sign(p->conn, &blob, mem_ctx, &pkt);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
-			DLIST_REMOVE(p->pending, req);
+			DLIST_REMOVE(p->conn->pending, req);
 			return req;
 		}
 		
-		req->status = p->transport.send_request(p, &blob, last_frag);
+		req->status = p->conn->transport.send_request(p->conn, &blob, last_frag);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
-			DLIST_REMOVE(p->pending, req);
+			DLIST_REMOVE(p->conn->pending, req);
 			return req;
 		}		
 
@@ -961,7 +939,7 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 */
 struct event_context *dcerpc_event_context(struct dcerpc_pipe *p)
 {
-	return p->transport.event_context(p);
+	return p->conn->transport.event_context(p->conn);
 }
 
 
@@ -1020,7 +998,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
   for that to the NDR we initially generated. If they don't match then we know
   we must have a bug in either the pull or push side of our code
 */
-static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_pipe *p, 
+static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_connection *c, 
 				       TALLOC_CTX *mem_ctx,
 				       DATA_BLOB blob,
 				       size_t struct_size,
@@ -1038,7 +1016,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pull = ndr_pull_init_flags(p, &blob, mem_ctx);
+	pull = ndr_pull_init_flags(c, &blob, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1084,7 +1062,7 @@ static NTSTATUS dcerpc_ndr_validate_in(struct dcerpc_pipe *p,
   initially generated. If they don't match then we know we must have a
   bug in either the pull or push side of our code
 */
-static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
+static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_connection *c,
 					TALLOC_CTX *mem_ctx,
 					void *struct_ptr,
 					size_t struct_size,
@@ -1117,7 +1095,7 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
 
 	blob = ndr_push_blob(push);
 
-	pull = ndr_pull_init_flags(p, &blob, mem_ctx);
+	pull = ndr_pull_init_flags(c, &blob, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1182,7 +1160,7 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 		return NULL;
 	}
 
-	if (p->flags & DCERPC_PUSH_BIGENDIAN) {
+	if (p->conn->flags & DCERPC_PUSH_BIGENDIAN) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
@@ -1198,8 +1176,8 @@ struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
 	/* retrieve the blob */
 	request = ndr_push_blob(push);
 
-	if (p->flags & DCERPC_DEBUG_VALIDATE_IN) {
-		status = dcerpc_ndr_validate_in(p, mem_ctx, request, call->struct_size, 
+	if (p->conn->flags & DCERPC_DEBUG_VALIDATE_IN) {
+		status = dcerpc_ndr_validate_in(p->conn, mem_ctx, request, call->struct_size, 
 						call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(2,("Validation failed in dcerpc_ndr_request_send - %s\n",
@@ -1256,7 +1234,7 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 	talloc_free(req);
 
 	/* prepare for ndr_pull_* */
-	pull = ndr_pull_init_flags(p, &response, mem_ctx);
+	pull = ndr_pull_init_flags(p->conn, &response, mem_ctx);
 	if (!pull) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1276,8 +1254,8 @@ NTSTATUS dcerpc_ndr_request_recv(struct rpc_request *req)
 		return status;
 	}
 
-	if (p->flags & DCERPC_DEBUG_VALIDATE_OUT) {
-		status = dcerpc_ndr_validate_out(p, mem_ctx, r, call->struct_size, 
+	if (p->conn->flags & DCERPC_DEBUG_VALIDATE_OUT) {
+		status = dcerpc_ndr_validate_out(p->conn, mem_ctx, r, call->struct_size, 
 						 call->ndr_push, call->ndr_pull);
 		if (!NT_STATUS_IS_OK(status)) {
 			dcerpc_log_packet(table, opnum, NDR_OUT, 
@@ -1329,25 +1307,25 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 */
 const char *dcerpc_server_name(struct dcerpc_pipe *p)
 {
-	if (!p->transport.peer_name) {
+	if (!p->conn->transport.peer_name) {
 		return "";
 	}
-	return p->transport.peer_name(p);
+	return p->conn->transport.peer_name(p->conn);
 }
 
-/*
-  a useful function to get the auth_level 
-*/
 
-uint32 dcerpc_auth_level(struct dcerpc_pipe *p) 
+/*
+  get the dcerpc auth_level for a open connection
+*/
+uint32 dcerpc_auth_level(struct dcerpc_connection *c) 
 {
 	uint8_t auth_level;
 
-	if (p->flags & DCERPC_SEAL) {
+	if (c->flags & DCERPC_SEAL) {
 		auth_level = DCERPC_AUTH_LEVEL_PRIVACY;
-	} else if (p->flags & DCERPC_SIGN) {
+	} else if (c->flags & DCERPC_SIGN) {
 		auth_level = DCERPC_AUTH_LEVEL_INTEGRITY;
-	} else if (p->flags & DCERPC_CONNECT) {
+	} else if (c->flags & DCERPC_CONNECT) {
 		auth_level = DCERPC_AUTH_LEVEL_CONNECT;
 	} else {
 		auth_level = DCERPC_AUTH_LEVEL_NONE;
