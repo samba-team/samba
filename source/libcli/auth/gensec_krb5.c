@@ -224,6 +224,40 @@ static NTSTATUS gensec_krb5_decode_pac(TALLOC_CTX *mem_ctx,
 	return status;
 }
 
+static void gensec_krb5_end(struct gensec_security *gensec_security)
+{
+	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
+
+	if (gensec_krb5_state->ticket.length) { 
+	/* Hmm, heimdal dooesn't have this - what's the correct call? */
+#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
+		krb5_free_data_contents(gensec_krb5_state->krb5_context, &gensec_krb5_state->ticket); 
+#endif
+	}
+	if (gensec_krb5_state->krb5_ccache) {
+		/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
+		   JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
+		   SuSE 9.1 Pro 
+		*/
+#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
+		krb5_cc_close(context, gensec_krb5_state->krb5_ccache);
+#endif
+	}
+
+	if (gensec_krb5_state->krb5_auth_context) {
+		krb5_auth_con_free(gensec_krb5_state->krb5_context, 
+				   gensec_krb5_state->krb5_auth_context);
+	}
+
+	if (gensec_krb5_state->krb5_context) {
+		krb5_free_context(gensec_krb5_state->krb5_context);
+	}
+
+	talloc_free(gensec_krb5_state);
+	gensec_security->private_data = NULL;
+}
+
+
 static NTSTATUS gensec_krb5_start(struct gensec_security *gensec_security)
 {
 	struct gensec_krb5_state *gensec_krb5_state;
@@ -324,6 +358,9 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 				DEBUG(1, ("Could not determine hostname for target computer, cannot use kerberos\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
+			
+			in_data.length = 0;
+
 			ret = krb5_mk_req(gensec_krb5_state->krb5_context, 
 					  &gensec_krb5_state->krb5_auth_context,
 					  AP_OPTS_USE_SUBKEY | AP_OPTS_MUTUAL_REQUIRED,
@@ -390,39 +427,6 @@ static NTSTATUS gensec_krb5_client_start(struct gensec_security *gensec_security
 			return NT_STATUS_UNSUCCESSFUL;
 		}
 	}
-}
-
-static void gensec_krb5_end(struct gensec_security *gensec_security)
-{
-	struct gensec_krb5_state *gensec_krb5_state = gensec_security->private_data;
-
-	if (gensec_krb5_state->ticket.length) { 
-	/* Hmm, heimdal dooesn't have this - what's the correct call? */
-#ifdef HAVE_KRB5_FREE_DATA_CONTENTS
-		krb5_free_data_contents(gensec_krb5_state->krb5_context, &gensec_krb5_state->ticket); 
-#endif
-	}
-	if (gensec_krb5_state->krb5_ccache) {
-		/* Removed by jra. They really need to fix their kerberos so we don't leak memory. 
-		   JERRY -- disabled since it causes heimdal 0.6.1rc3 to die
-		   SuSE 9.1 Pro 
-		*/
-#if 0 /* redisabled by gd :) at least until any official heimdal version has it fixed. */
-		krb5_cc_close(context, gensec_krb5_state->krb5_ccache);
-#endif
-	}
-
-	if (gensec_krb5_state->krb5_auth_context) {
-		krb5_auth_con_free(gensec_krb5_state->krb5_context, 
-				   gensec_krb5_state->krb5_auth_context);
-	}
-
-	if (gensec_krb5_state->krb5_context) {
-		krb5_free_context(gensec_krb5_state->krb5_context);
-	}
-
-	talloc_free(gensec_krb5_state);
-	gensec_security->private_data = NULL;
 }
 
 
