@@ -123,10 +123,10 @@ get_des_key(hdb_entry *principal, krb5_boolean prefer_afs_key, Key **ret_key)
 		if(v5_key == NULL)
 		    v5_key = key;
 	    } else if(key->salt->type == hdb_pw_salt && 
-		      key->salt->length == 0) {
+		      key->salt->salt.length == 0) {
 		if(v4_key == NULL)
 		    v4_key = key;
-	    } else if(key->salt->salttype == hdb_afs3_salt) {
+	    } else if(key->salt->type == hdb_afs3_salt) {
 		if(afs_key == NULL)
 		    afs_key = key;
 	    }
