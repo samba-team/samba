@@ -1,0 +1,16 @@
+# $Id$
+
+include $(top_srcdir)/cf/Makefile.am.common
+
+LEXLIB = @LEXLIB@
+
+SUFFIXES += .x
+
+.x.c:
+	@cmp -s $< $@ 2> /dev/null || cp $< $@
+
+check-local::
+	@foo='$(bin_PROGRAMS) $(libexec_PROGRAMS) $(sbin_PROGRAMS)'; \
+	for i in $$foo; do \
+	if ./$$i --help > /dev/null 2>&1; then :; \
+	else echo "*** $$i failed check ***"; fi; done
