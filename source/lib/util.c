@@ -2527,7 +2527,7 @@ void become_daemon(void)
   /* detach from the terminal */
 #ifdef USE_SETSID
   setsid();
-#else
+#else /* USE_SETSID */
 #ifdef TIOCNOTTY
   {
     int i = open("/dev/tty", O_RDWR);
@@ -2537,9 +2537,11 @@ void become_daemon(void)
 	close(i);
       }
   }
-#endif
-#endif
-#endif
+#endif /* TIOCNOTTY */
+#endif /* USE_SETSID */
+  /* Close fd's 0,1,2. Needed if started by rsh */
+  close_low_fds();
+#endif /* NO_FORK_DEBUG */
 }
 
 

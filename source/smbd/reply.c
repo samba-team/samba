@@ -1026,7 +1026,6 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   pstring fname;
   int cnum = SVAL(inbuf,smb_tid);
   int fnum = -1;
-  int openmode = 0;
   int smb_mode = SVAL(inbuf,smb_vwv3);
   int smb_attr = SVAL(inbuf,smb_vwv5);
   BOOL oplock_request = BITSETW(inbuf+smb_vwv2,1);
@@ -1050,12 +1049,6 @@ int reply_open_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   strcpy(fname,smb_buf(inbuf));
   unix_convert(fname,cnum,0);
     
-  /* now add create and trunc bits */
-  if (smb_ofun & 0x10)
-    openmode |= O_CREAT;
-  if ((smb_ofun & 0x3) == 2)
-    openmode |= O_TRUNC;
-  
   fnum = find_free_file();
   if (fnum < 0)
     return(ERROR(ERRSRV,ERRnofids));

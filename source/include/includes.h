@@ -348,6 +348,8 @@ char *getwd(char *);
 #ifdef SGI5
 #include <arpa/inet.h>
 #include <netinet/tcp.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
 #include <sys/statvfs.h>
 #include <string.h>
 #include <signal.h>
@@ -1057,6 +1059,10 @@ struct spwd { /* fake shadow password structure */
 #ifdef DFS_AUTH
 #include <dce/dce_error.h>
 #include <dce/sec_login.h>
+#endif
+
+#ifdef KRB5_AUTH
+#include <krb5.h>
 #endif
 
 #ifdef NO_UTIMBUF

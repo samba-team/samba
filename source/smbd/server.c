@@ -1577,9 +1577,9 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
       int old_open_mode = old_shares[i].share_mode &0xF;
       int old_deny_mode = (old_shares[i].share_mode >>4)&7;
 
-      if (deny_mode > 4 || old_deny_mode > 4 || old_open_mode > 2) 
+      if (old_deny_mode > 4 || old_open_mode > 2) 
       {
-	DEBUG(2,("Invalid share mode (%d,%d,%d) on file %s\n",
+	DEBUG(0,("Invalid share mode found (%d,%d,%d) on file %s\n",
 		 deny_mode,old_deny_mode,old_open_mode,fname));
         free((char *)old_shares);
         if(share_locked)
