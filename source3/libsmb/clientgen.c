@@ -2938,12 +2938,15 @@ static int cli_init_redirect(struct cli_state *cli,
 	struct sockaddr_un sa;
 	fstring ip_name;
 	struct cli_state cli_redir;
+	fstring path;
 
 	pstring data;
 	uint32 len;
 	char *p;
 	char *in = cli->inbuf;
 	char *out = cli->outbuf;
+
+	slprintf(path, sizeof(path)-1, "/tmp/smb-agent/smb.%d", getuid());
 
 	if (strequal(srv_name, "*SMBSERVER"))
 	{
@@ -2962,8 +2965,7 @@ static int cli_init_redirect(struct cli_state *cli,
 
 	ZERO_STRUCT(sa);
 	sa.sun_family = AF_UNIX;
-	safe_strcpy(sa.sun_path, "/tmp/smb-agent/smb.sock",
-	            sizeof(sa.sun_path)-1);
+	safe_strcpy(sa.sun_path, path, sizeof(sa.sun_path)-1);
 
 	DEBUG(10, ("socket open succeeded.  file name: %s\n", sa.sun_path));
 
