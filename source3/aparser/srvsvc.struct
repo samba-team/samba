@@ -1,5 +1,16 @@
 module srvsvc
+test SRV_R_NET_SHARE_ENUM
 test SRV_R_NET_SERVER_INFO
+test SRV_Q_NET_SERVER_INFO
+
+#define SRV_NETCONNENUM        0x08
+#define SRV_NETFILEENUM        0x09
+#define SRV_NETSESSENUM        0x0c
+#define SRV_NETSHAREENUM       0x0f
+#define SRV_NET_SHARE_GET_INFO 0x10
+#define SRV_NET_SRV_GET_INFO   0x15
+#define SRV_NET_SRV_SET_INFO   0x16
+#define SRV_NET_REMOTE_TOD     0x1c
 
 struct UNISTR2 {
        uint32 max_len;
@@ -10,6 +21,40 @@ struct UNISTR2 {
 
 struct LPWSTR {
        UNISTR2 *str;
+};
+
+struct ENUM_HND {
+	uint32 *handle;           /* enumeration handle */
+};
+
+/* function 8 */
+struct CONN_INFO_0 {
+	uint32 id; /* connection id. */
+};
+
+struct CONN_INFO_1 {
+	uint32 id; 
+	uint32 type;
+	uint32 num_opens;
+	uint32 num_users;
+	uint32 open_time;
+	LPWSTR usr_name;
+	LPWSTR net_name; 
+};
+
+struct SRV_R_NET_CONN_ENUM {
+	uint32 level;
+	uint32 level2;
+	uint32 num_entries;
+	union *info[level] {
+		case 0 CONN_INFO_0 info0[num_entries]; 
+		case 1 CONN_INFO_1 info1[num_entries]; 
+	}
+        .trailer;
+        uint32 count;
+        ENUM_HND handle;
+        uint32 status1;
+        uint32 status2;
 };
 
 /* function 15 */
@@ -63,28 +108,35 @@ struct SERVER_INFO_101 {
 };
 
 struct SERVER_INFO_102 {
-    uint32  dwPlatformID;
+    uint32 dwPlatformID;
     LPWSTR pszName;
-    uint32  dwVerMajor;
-    uint32  dwVerMinor;
-    uint32  dwType;
+    uint32 dwVerMajor;
+    uint32 dwVerMinor;
+    uint32 dwType;
     LPWSTR pszComment;
-    uint32  dwUsers;
-    uint32   lDisc;
-    uint32   bHidden;
-    uint32  dwAnnounce;
-    uint32  dwAnnDelta;
-    uint32  dwLicenses;
+    uint32 dwUsers;
+    uint32 lDisc;
+    uint32 bHidden;
+    uint32 dwAnnounce;
+    uint32 dwAnnDelta;
+    uint32 dwLicenses;
     LPWSTR pszUserPath;
 };
 
 struct SRV_R_NET_SERVER_INFO {
-       uint32 level;
-       union info[level] {
-		case 100 SERVER_INFO_100 *sv100;
-		case 101 SERVER_INFO_101 *sv101;
-		case 102 SERVER_INFO_102 *sv102;
-       }
        .trailer;
+       uint32 level;
+       union *info[level] {
+		case 100 SERVER_INFO_100 sv100;
+		case 101 SERVER_INFO_101 sv101;
+		case 102 SERVER_INFO_102 sv102;
+       }
        uint32 status;
 };
+
+struct SRV_Q_NET_SERVER_INFO {
+       .trailer;
+       LPWSTR server;
+       uint32 level;
+};
+

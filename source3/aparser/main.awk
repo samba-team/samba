@@ -14,7 +14,7 @@
 }
 
 /^test/ {
-	test=$2;
+	add_test($2);
 	next;
 }
 
