@@ -125,18 +125,6 @@ static unsigned pkcs7_enveloped_num[] =
     { 1, 2, 840, 113549, 1, 7, 3 };
 heim_oid pkcs7_enveloped_oid =
 	oid_enc(pkcs7_enveloped_num);
-static unsigned pkauthdata_num[] = 
-    { 1, 3, 6, 1, 5, 2, 3, 1 };
-heim_oid heim_pkauthdata_oid =
-	oid_enc(pkauthdata_num);
-static unsigned pkdhkeydata_num[] = 
-    { 1, 3, 6, 1, 5, 2, 3, 2 };
-heim_oid heim_pkdhkeydata_oid =
-	oid_enc(pkdhkeydata_num);
-static unsigned pkrkeydata_num[] = 
-    { 1, 3, 6, 1, 5, 2, 3, 3 };
-heim_oid heim_pkrkeydata_oid =
-	oid_enc(pkrkeydata_num);
 static unsigned dhpublicnumber_num[] = 
     { 1, 2, 840, 10046, 2, 1 };
 heim_oid heim_dhpublicnumber_oid =
@@ -641,7 +629,7 @@ pk_mk_padata(krb5_context context,
 	if (buf.length != size)
 	    krb5_abortx(context, "internal ASN1 encoder error");
 
-	oid = &heim_pkauthdata_oid;
+	oid = oid_id_pkauthdata();
     }
 
     ret = _krb5_pk_create_sign(context,
@@ -1415,7 +1403,7 @@ pk_rd_pa_reply_enckey(krb5_context context,
 	    goto out;
 	}
     } else {
-	if (heim_oid_cmp(&contentType, &heim_pkrkeydata_oid) != 0) {
+	if (heim_oid_cmp(&contentType, oid_id_pkrkeydata()) != 0) {
 	    krb5_set_error_string(context, "PKINIT: reply key, wrong oid");
 	    ret = KRB5KRB_AP_ERR_MSG_TYPE;
 	    goto out;
@@ -1489,7 +1477,7 @@ pk_rd_pa_reply_dh(krb5_context context,
     if (ret)
 	goto out;
 
-    if (heim_oid_cmp(&contentType, &heim_pkdhkeydata_oid)) {
+    if (heim_oid_cmp(&contentType, oid_id_pkdhkeydata())) {
 	ret = KRB5KRB_AP_ERR_MSG_TYPE; /* XXX */
 	goto out;
     }
