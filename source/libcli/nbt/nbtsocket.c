@@ -122,10 +122,10 @@ failed:
 	nbt_name_request_destructor(req);
 	req->status = status;
 	req->state = NBT_REQUEST_ERROR;
+	talloc_free(tmp_ctx);
 	if (req->async.fn) {
 		req->async.fn(req);
 	}
-	talloc_free(tmp_ctx);
 	return;
 }
 
