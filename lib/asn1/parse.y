@@ -66,6 +66,7 @@ static void append (Member *l, Member *r);
 %token UTF8String NULLTYPE
 %token EXTERNAL DEFAULT
 %token DOTDOT DOTDOTDOT
+%token BOOLEAN
 %token IMPORTS FROM
 %token OBJECT IDENTIFIER
 %token <name> IDENT 
@@ -182,6 +183,7 @@ type		: INTEGER     { $$ = new_type(TInteger); }
 		  $$->subtype = $5;
 		  $$->application = $3;
 		}
+		| BOOLEAN     { $$ = new_type(TBoolean); }
 		;
 
 memberdecls	: { $$ = NULL; }

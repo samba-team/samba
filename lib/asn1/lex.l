@@ -61,6 +61,7 @@ static unsigned lineno = 1;
 
 %%
 INTEGER			{ return INTEGER; }
+BOOLEAN			{ return BOOLEAN; }
 IMPORTS			{ return IMPORTS; }
 FROM			{ return FROM; }
 SEQUENCE		{ return SEQUENCE; }
