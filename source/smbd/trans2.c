@@ -1240,6 +1240,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   int l;
   SMB_OFF_T pos = 0;
   BOOL bad_path = False;
+  BOOL delete_pending = False;
 
   if (tran_call == TRANSACT2_QFILEINFO) {
     files_struct *fsp = file_fsp(params,0);
@@ -1276,6 +1277,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       }
       if((pos = sys_lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
         return(UNIXERROR(ERRDOS,ERRnoaccess));
+
+      delete_pending = fsp->fd_ptr->delete_on_close;
     }
   } else {
     /* qpathinfo */
@@ -1429,7 +1432,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       SOFF_T(pdata,0,size);
       SOFF_T(pdata,8,size);
       SIVAL(pdata,16,sbuf.st_nlink);
-      CVAL(pdata,20) = 0;
+      CVAL(pdata,20) = delete_pending;
       CVAL(pdata,21) = (mode&aDIR)?1:0;
       pdata += 24;
       SINO_T(pdata,0,(SMB_INO_T)sbuf.st_ino); 
@@ -1440,7 +1443,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       else
         SIVAL(pdata,0,0xd01BF);
       pdata += 4;
-      SIVAL(pdata,0,pos); /* current offset */
+      SOFF_T(pdata,0,pos); /* current offset */
       pdata += 8;
       SIVAL(pdata,0,mode); /* is this the right sort of mode info? */
       pdata += 4;
