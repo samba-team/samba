@@ -55,6 +55,28 @@ time_t StartupTime =0;
 extern struct in_addr ipzero;
 
 
+ /****************************************************************************
+catch a sigterm
+****************************************************************************/
+static int sig_term()
+{
+  BlockSignals(True);
+  
+  DEBUG(0,("Got SIGTERM: going down...\n"));
+  
+  dump_names();
+  reload_services(True);
+  
+  /* remove all samba names, with wins server if necessary. */
+  remove_my_names();
+  
+  /* XXXX don't care if we never receive a response back... yet */
+  /* XXXX other things: if we are a master browser, force an election? */
+  
+  exit(0);
+}
+
+
 /****************************************************************************
 catch a sighup
 ****************************************************************************/
@@ -267,7 +289,7 @@ static void load_hosts_file(char *fname)
 	if (group) {
 	  add_domain_entry(ipaddr, ipmask, name, True);
 	} else {
-	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr,False);
+	  add_netbios_entry(name,0x20,NB_ACTIVE,0,source,ipaddr);
 	}
       }
     }
@@ -426,8 +448,9 @@ static void usage(char *pname)
   fault_setup(fault_continue);
 
   signal(SIGHUP,SIGNAL_CAST sig_hup);
+  signal(SIGTERM,SIGNAL_CAST sig_term);
 
-  while ((opt = getopt (argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)
+  while ((opt = getopt(argc, argv, "s:T:I:C:bAi:B:N:Rn:l:d:Dp:hSH:G:")) != EOF)
     {
       switch (opt)
 	{
