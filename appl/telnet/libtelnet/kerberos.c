@@ -302,6 +302,14 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    auth_finished(ap, AUTH_REJECT);
 	    return;
 	}
+	if (addr.sin_family != AF_INET) {
+	    if (auth_debug_mode)
+		printf("unknown address family: %d\r\n", addr.sin_family);
+	    Data(ap, KRB_REJECT, "bad address family", -1);
+	    auth_finished(ap, AUTH_REJECT);
+	    return;
+	}
+
 	r = krb_rd_req(&auth, KRB_SERVICE_NAME,
 		       instance, addr.sin_addr.s_addr, &adat, "");
 	if (r) {
@@ -637,13 +645,13 @@ unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
     u_int32_t tmp;
 
     strncpy (cred->service, p, ANAME_SZ);
-    cred->service[ANAME_SZ] = '\0';
+    cred->service[ANAME_SZ - 1] = '\0';
     p += ANAME_SZ;
     strncpy (cred->instance, p, INST_SZ);
-    cred->instance[INST_SZ] = '\0';
+    cred->instance[INST_SZ - 1] = '\0';
     p += INST_SZ;
     strncpy (cred->realm, p, REALM_SZ);
-    cred->realm[REALM_SZ] = '\0';
+    cred->realm[REALM_SZ - 1] = '\0';
     p += REALM_SZ;
 
     memcpy(cred->session, p, 8);
@@ -661,11 +669,11 @@ unpack_cred(unsigned char *buf, int len, CREDENTIALS *cred)
     p += krb_get_int(p, (u_int32_t *)&cred->issue_date, 4, 0);
 
     strncpy (cred->pname, p, ANAME_SZ);
-    cred->pname[ANAME_SZ] = '\0';
+    cred->pname[ANAME_SZ - 1] = '\0';
     p += ANAME_SZ;
-    strncpy (cred->pinst, p, ANAME_SZ);
-    cred->pinst[ANAME_SZ] = '\0';
-    p += ANAME_SZ;
+    strncpy (cred->pinst, p, INST_SZ);
+    cred->pinst[INST_SZ - 1] = '\0';
+    p += INST_SZ;
     return 0;
 }
 
