@@ -381,6 +381,15 @@ struct server_info_struct
 };
 
 
+/* used for network interfaces */
+struct interface
+{
+	struct interface *next;
+	struct in_addr ip;
+	struct in_addr bcast;
+	struct in_addr nmask;
+};
+
 /* this is used for smbstatus */
 struct connect_record
 {

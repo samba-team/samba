@@ -102,6 +102,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
 	      uint32 stype = IVAL(p,18);
 	      int comment_offset = IVAL(p,22) & 0xFFFF;
 	      char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+	      
 	      struct work_record *w = work;
 	      
 	      DEBUG(4, ("\t%-16.16s     %08x    %s\n", sname, stype, cmnt));
@@ -137,10 +138,11 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   log in on the remote server's SMB port to their IPC$ service,
   do a NetServerEnum and update our server and workgroup databases.
   ******************************************************************/
-void sync_browse_lists(struct work_record *work, char *name, int nm_type,
-		       struct in_addr ip)
+void sync_browse_lists(struct subnet_record *d, struct work_record *work,
+		char *name, int nm_type, struct in_addr ip)
 {
-  struct subnet_record *d;
+  if (!d || !work || !AM_MASTER(work)) return;
+
   pid = getpid();
   uid = getuid();
   gid = getgid();
@@ -158,8 +160,6 @@ void sync_browse_lists(struct work_record *work, char *name, int nm_type,
   
   if (zero_ip(dest_ip)) return;
   have_ip = True;
-  
-  if (!(d = find_domain(ip))) return;
   
   connect_as_ipc = True;
   

@@ -29,8 +29,12 @@
 
 #define NMB_QUERY  0x20
 #define NMB_STATUS 0x21
-#define NMB_REG    0x05
-#define NMB_REL    0x06
+
+#define NMB_REG         0x05 /* see rfc1002.txt 4.2.2,3,5,6,7,8 */
+#define NMB_REG_REFRESH 0x09 /* see rfc1002.txt 4.2.4 */
+#define NMB_REL         0x06 /* see rfc1002.txt 4.2.9,10,11 */
+#define NMB_WAIT_ACK    0x07 /* see rfc1002.txt 4.2.17 */
+/* XXXX what about all the other types?? 0x1, 0x2, 0x3, 0x4, 0x8? */
 
 #define NB_GROUP  0x80
 #define NB_PERM   0x02
@@ -44,6 +48,8 @@
 #define NB_FLGMSK 0x60
 
 #define REFRESH_TIME (15*60)
+#define NAME_POLL_REFRESH_TIME (5*60)
+#define NAME_POLL_INTERVAL 15
 
 #define NAME_PERMANENT(p) ((p) & NB_PERM)
 #define NAME_ACTIVE(p)    ((p) & NB_ACTIVE)
@@ -58,7 +64,6 @@
 
 #define MSBROWSE "\001\002__MSBROWSE__\002"
 
-enum name_search { FIND_SELF, FIND_GLOBAL };
 enum name_source {STATUS_QUERY, LMHOSTS, REGISTER, SELF, DNS, DNSFAIL};
 enum node_type {B_NODE=0, P_NODE=1, M_NODE=2, NBDD_NODE=3};
 enum packet_type {NMB_PACKET, DGRAM_PACKET};
@@ -66,13 +71,14 @@ enum cmd_type
 {
 	NAME_STATUS_MASTER_CHECK,
 	NAME_STATUS_CHECK,
-	MASTER_SERVER_CHECK,
-	SERVER_CHECK,
-	FIND_MASTER,
-	CHECK_MASTER,
 	NAME_REGISTER,
 	NAME_RELEASE,
-	NAME_CONFIRM_QUERY
+	NAME_QUERY_CONFIRM,
+	NAME_QUERY_SYNC,
+	NAME_QUERY_MST_SRV_CHK,
+	NAME_QUERY_SRV_CHK,
+	NAME_QUERY_FIND_MST,
+	NAME_QUERY_MST_CHK
 };
 
 /* a netbios name structure */
@@ -87,11 +93,15 @@ struct name_record
 {
   struct name_record *next;
   struct name_record *prev;
-  struct nmb_name name;
-  time_t death_time;
-  struct in_addr ip;
-  int nb_flags;
-  enum name_source source;
+
+  struct nmb_name name;    /* the netbios name */
+  struct in_addr ip;       /* ip address of host that owns this name */
+  int nb_flags;            /* netbios flags */
+
+  enum name_source source; /* where the name came from */
+
+  time_t death_time; /* time record must be removed (do not remove if 0) */
+  time_t refresh_time; /* time record should be refreshed */
 };
 
 /* browse and backup server cache for synchronising browse list */
@@ -144,13 +154,63 @@ struct work_record
   uint32  ElectionCriterion;
 };
 
-/* a subnet structure. it contains a list of workgroups */
+/* initiated name queries recorded in this list to track any responses... */
+struct response_record
+{
+  struct response_record *next;
+  struct response_record *prev;
+
+  uint16 response_id;
+  enum cmd_type cmd_type;
+
+  int fd;
+  int quest_type;
+  struct nmb_name name;
+  int nb_flags;
+  time_t ttl;
+
+  BOOL bcast;
+  BOOL recurse;
+  struct in_addr to_ip;
+
+  int num_msgs;
+
+  time_t repeat_time;
+  time_t repeat_interval;
+  int    repeat_count;
+};
+
+/* a subnet structure. it contains a list of workgroups and netbios names*/
+
+/* note that a subnet of 255.255.255.255 contains all the WINS netbios names.
+   all communication from such nodes are on a non-broadcast basis: they
+   are point-to-point (P nodes) or mixed point-to-point and broadcast
+   (M nodes). M nodes use point-to-point as a preference, and will use
+   broadcasting for certain activities, or will resort to broadcasting as a
+   last resort, if the WINS server fails (users of wfwg will notice that their
+   machine often freezes for 30 seconds at a time intermittently, if the WINS
+   server is down).
+
+   B nodes will have their own, totally separate subnet record, with their
+   own netbios name set. these do NOT interact with other subnet records'
+   netbios names, INCLUDING the WINS one (with an ip "address", so called,
+   of 255.255.255.255)
+
+   there is a separate response list for each subnet record. in the case of
+   the 255.255.255.255 subnet record (WINS), the WINS server will be able to
+   use this to poll (infrequently!) each of its entries, to ensure that the
+   names are still in use.
+   XXXX this polling is a planned feature for a really over-cautious WINS server 
+*/
+
 struct subnet_record
 {
   struct subnet_record *next;
   struct subnet_record *prev;
 
-  struct work_record *workgrouplist;
+  struct work_record *workgrouplist; /* list of workgroups */
+  struct name_record *namelist;      /* list of netbios names */
+  struct response_record *responselist; /* list of responses expected */
 
   struct in_addr bcast_ip;
   struct in_addr mask_ip;
@@ -201,25 +261,6 @@ struct nmb_packet
   struct res_rec *additional;
 };
 
-
-/* initiated name queries recorded in this list to track any responses... */
-struct name_response_record
-{
-  struct name_response_record *next;
-  struct name_response_record *prev;
-
-  uint16 response_id;
-  enum cmd_type cmd_type;
-
-  int fd;
-  struct nmb_name name;
-  BOOL bcast;
-  BOOL recurse;
-  struct in_addr to_ip;
-
-  time_t start_time;
-  int num_msgs;
-};
 
 /* a datagram - this normally contains SMB data in the data[] array */
 struct dgram_packet {

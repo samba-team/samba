@@ -38,9 +38,16 @@ extern pstring myname;
 extern pstring scope;
 
 extern struct in_addr ipgrp;
+extern struct in_addr ipzero;
 
 /* this is our browse master/backup cache database */
 struct browse_cache_record *browserlist = NULL;
+
+/* local interfaces structure */
+extern struct interface *local_interfaces;
+
+/* remote interfaces structure */
+extern struct interface *remote_interfaces;
 
 /* this is our domain/workgroup/server database */
 struct subnet_record *subnetlist = NULL;
@@ -317,8 +324,8 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
     {
       DEBUG(2,("add any workgroups: initiating browser search on %s\n",
 	       inet_ntoa(d->bcast_ip)));
-      queue_netbios_pkt_wins(ClientNMB,NMB_QUERY, FIND_MASTER,
-			     MSBROWSE,0x1,0,
+      queue_netbios_pkt_wins(d,ClientNMB,NMB_QUERY, NAME_QUERY_FIND_MST,
+			     MSBROWSE,0x1,0,0,
 			     True,False, d->bcast_ip);
       return NULL;
     }
@@ -339,8 +346,6 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
   
   if ((work = make_workgroup(name)))
     {
-      work->needelection = False;
-
       if (lp_preferred_master() &&
 	  strequal(lp_workgroup(), name) &&
 	  d->my_interface)
@@ -349,6 +354,10 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
 	  work->needelection = True;
 	  work->ElectionCriterion |= (1<<3);
 	}
+      if (!d->my_interface)
+	{
+	  work->needelection = False;
+	}
       add_workgroup(work, d);
       return(work);
     }
@@ -356,19 +365,30 @@ struct work_record *find_workgroupstruct(struct subnet_record *d,
 }
 
 /****************************************************************************
-  find a domain in the subnetlist 
+  find a subnet in the subnetlist 
   **************************************************************************/
-struct subnet_record *find_domain(struct in_addr ip)
+struct subnet_record *find_subnet(struct in_addr bcast_ip)
 {   
   struct subnet_record *d;
+  struct in_addr wins_ip = ipgrp;
   
-  /* search through domain list for broadcast/netmask that matches
-     the source ip address */
+  /* search through subnet list for broadcast/netmask that matches
+     the source ip address. a subnet 255.255.255.255 represents the
+     WINS list. */
   
   for (d = subnetlist; d; d = d->next)
     {
-      if (same_net(ip, d->bcast_ip, d->mask_ip))
+        if (ip_equal(bcast_ip, wins_ip))
+	    {
+           if (ip_equal(bcast_ip, d->bcast_ip))
+           {
+               return d;
+           }
+        }
+        else if (same_net(bcast_ip, d->bcast_ip, d->mask_ip))
+	    {
 	return(d);
+    }
     }
   
   return (NULL);
@@ -411,8 +431,7 @@ void dump_workgroups(void)
 /****************************************************************************
   create a domain entry
   ****************************************************************************/
-static struct subnet_record *make_subnet(struct in_addr bcast_ip,
-					 struct in_addr mask)
+static struct subnet_record *make_subnet(struct in_addr bcast_ip, struct in_addr mask_ip)
 {
   struct subnet_record *d;
   d = (struct subnet_record *)malloc(sizeof(*d));
@@ -421,54 +440,107 @@ static struct subnet_record *make_subnet(struct in_addr bcast_ip,
   
   bzero((char *)d,sizeof(*d));
   
-  DEBUG(4,("making subnet %s ", inet_ntoa(bcast_ip)));
-  DEBUG(4,("%s\n", inet_ntoa(mask)));
+  DEBUG(4, ("making domain %s ", inet_ntoa(bcast_ip)));
+  DEBUG(4, ("%s\n", inet_ntoa(mask_ip)));
   
   d->bcast_ip = bcast_ip;
-  d->mask_ip  = mask;
+  d->mask_ip  = mask_ip;
   d->workgrouplist = NULL;
-  d->my_interface = ismybcast(d->bcast_ip);
+  d->my_interface = False; /* True iff the interface is on the samba host */
 
   add_subnet(d);
   
   return d;
 }
 
+
+/****************************************************************************
+  add the remote interfaces from lp_remote_interfaces() and lp_interfaces()
+  to the netbios subnet database.
+  ****************************************************************************/
+void add_subnet_interfaces(void)
+{
+	struct interface *i;
+
+	/* loop on all local interfaces */
+	for (i = local_interfaces; i; i = i->next)
+	{
+		/* add the interface into our subnet database */
+		if (!find_subnet(i->bcast))
+		{
+		    struct subnet_record *d = make_subnet(i->bcast,i->nmask);
+			if (d)
+			{
+				/* short-cut method to identifying local interfaces */
+				d->my_interface = True;
+			}
+		}
+	}
+
+	/* loop on all remote interfaces */
+	for (i = remote_interfaces; i; i = i->next)
+	{
+		/* add the interface into our subnet database */
+		if (!find_subnet(i->bcast))
+		{
+		    make_subnet(i->bcast,i->nmask);
+		}
+	}
+
+	/* add the pseudo-ip interface for WINS: 255.255.255.255 */
+	if (lp_wins_support())
+    {
+		struct in_addr wins_bcast = ipgrp;
+		struct in_addr wins_nmask = ipzero;
+		make_subnet(wins_bcast, wins_nmask);
+    }
+}
+
+
 /****************************************************************************
   add a domain entry. creates a workgroup, if necessary, and adds the domain
   to the named a workgroup.
   ****************************************************************************/
-struct subnet_record *add_subnet_entry(struct in_addr source_ip, 
-				       struct in_addr source_mask,
-				       char *name, BOOL add)
+struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
+				       struct in_addr mask_ip,
+				       char *name, BOOL add, BOOL lmhosts)
 {
   struct subnet_record *d;
-  struct in_addr ip;
   
-  ip = ipgrp;
+  /* XXXX andrew: struct in_addr ip appears not to be referenced at all except
+     in the DEBUG comment. i assume that the DEBUG comment below actually
+     intends to refer to bcast_ip? i don't know.
+
+  struct in_addr ip = ipgrp;
+
+  */
   
-  if (zero_ip(source_ip)) 
-    source_ip = *iface_bcast(source_ip);
+  if (zero_ip(bcast_ip)) 
+    bcast_ip = *iface_bcast(bcast_ip);
   
   /* add the domain into our domain database */
-  if ((d = find_domain(source_ip)) ||
-      (d = make_subnet(source_ip, source_mask)))
+  if ((d = find_subnet(bcast_ip)) ||
+      (d = make_subnet(bcast_ip, mask_ip)))
     {
       struct work_record *w = find_workgroupstruct(d, name, add);
+	  extern pstring ServerComment;
       
       if (!w) return NULL;
 
       /* add WORKGROUP(1e) and WORKGROUP(00) entries into name database
 	 or register with WINS server, if it's our workgroup */
-      if (strequal(lp_workgroup(), name))
+      if (strequal(lp_workgroup(), name) && d->my_interface)
 	{
-	  extern pstring ServerComment;
-	  add_name_entry(name,0x1e,NB_ACTIVE|NB_GROUP);
-	  add_name_entry(name,0x0 ,NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d,name,0x1e,NB_ACTIVE|NB_GROUP);
+	  add_my_name_entry(d,name,0x0 ,NB_ACTIVE|NB_GROUP);
+	}
+      /* add samba server name to workgroup list */
+      if ((strequal(lp_workgroup(), name) && d->my_interface) || lmhosts)
+	{
 	  add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
 	}
       
-      DEBUG(3,("Added domain name entry %s at %s\n", name,inet_ntoa(ip)));
+      DEBUG(3,("Added domain name entry %s at %s\n", name,inet_ntoa(bcast_ip)));
       return d;
     }
   return NULL;
@@ -542,6 +614,28 @@ struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
 
 
 /****************************************************************************
+  remove all samba's server entries
+  ****************************************************************************/
+void remove_my_servers(void)
+{
+	struct subnet_record *d; 
+	for (d = subnetlist; d; d = d->next)
+	{
+		struct work_record *work;
+		for (work = d->workgrouplist; work; work = work->next)
+		{
+			struct server_record *s;
+			for (s = work->serverlist; s; s = s->next)
+			{
+				if (!strequal(myname,s->serv.name)) continue;
+				announce_server(d, work, s->serv.name, s->serv.comment, 0, 0);
+			}
+		}
+	}
+}
+
+
+/****************************************************************************
   add a server entry
   ****************************************************************************/
 struct server_record *add_server_entry(struct subnet_record *d, 
@@ -569,6 +663,7 @@ struct server_record *add_server_entry(struct subnet_record *d,
       return(s);
     }
   
+  if (!s || s->serv.type != servertype || !strequal(s->serv.comment, comment))
   updatedlists=True;
   
   if (!s)
@@ -581,8 +676,8 @@ struct server_record *add_server_entry(struct subnet_record *d,
       bzero((char *)s,sizeof(*s));
     }
   
-  if (d->my_interface &&
-      strequal(lp_workgroup(),work->work_group))
+  
+  if (d->my_interface && strequal(lp_workgroup(),work->work_group))
     {
       if (servertype)
 	servertype |= SV_TYPE_LOCAL_LIST_ONLY;
@@ -597,10 +692,7 @@ struct server_record *add_server_entry(struct subnet_record *d,
   StrnCpy(s->serv.comment,comment,sizeof(s->serv.comment)-1);
   strupper(s->serv.name);
   s->serv.type  = servertype;
-  s->death_time = ttl?time(NULL)+ttl*3:0;
-
-  if (servertype == 0)
-    s->death_time = time(NULL)-1;
+  s->death_time = servertype ? (ttl?time(NULL)+ttl*3:0) : (time(NULL)-1);
   
   /* for a domain entry, the comment field refers to the server name */
   
@@ -669,8 +761,7 @@ void write_browse_list(void)
 	      fstring tmp;
 	      
 	      /* don't list domains I don't have a master for */
-	      if ((s->serv.type & SV_TYPE_DOMAIN_ENUM) &&
-		  !s->serv.comment[0])
+	      if ((s->serv.type & SV_TYPE_DOMAIN_ENUM) && !s->serv.comment[0])
 		{
 		  continue;
 		}

@@ -129,6 +129,7 @@ typedef struct
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
+  char *szRemoteInterfaces;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -366,6 +367,7 @@ struct parm_struct
   {"null passwords",   P_BOOL,    P_GLOBAL, &Globals.bNullPasswords,    NULL},
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL},
+  {"remote interfaces",P_STRING,  P_GLOBAL, &Globals.szRemoteInterfaces,NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
@@ -704,6 +706,7 @@ FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
+FN_GLOBAL_STRING(lp_remote_interfaces,&Globals.szRemoteInterfaces)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)

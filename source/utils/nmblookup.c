@@ -93,7 +93,7 @@ static void usage(void)
 int main(int argc,char *argv[])
 {
   int opt;
-  unsigned int lookup_type = 0;
+  unsigned int lookup_type = 0x0;
   pstring lookup;
   extern int optind;
   extern char *optarg;
