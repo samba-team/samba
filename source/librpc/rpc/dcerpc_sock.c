@@ -361,7 +361,15 @@ static NTSTATUS dcerpc_pipe_open_socket(struct dcerpc_pipe **p,
 */
 NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p, const char *server, uint32_t port)
 {
-	return dcerpc_pipe_open_socket(p, server, port, "ip", NCACN_IP_TCP);
+	NTSTATUS status;
+	
+	/* Try IPv6 first */
+	status = dcerpc_pipe_open_socket(p, server, port, "ipv6", NCACN_IP_TCP);
+	if (NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+	
+	return dcerpc_pipe_open_socket(p, server, port, "ipv4", NCACN_IP_TCP);
 }
 
 /* 
