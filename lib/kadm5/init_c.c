@@ -96,88 +96,182 @@ _kadm5_c_init_context(kadm5_client_context **ctx,
 }
 
 static krb5_error_code
-get_cred_cache(krb5_context context, krb5_ccache *cc, 
-	       const char *client_name, krb5_prompter_fct prompter)
+get_kadm_ticket(krb5_context context,
+		krb5_ccache id,
+		krb5_principal client,
+		const char *server_name)
 {
-    krb5_ccache id;
-    krb5_creds in, *out = NULL;
-    krb5_principal client, server = NULL;
     krb5_error_code ret;
+    krb5_creds in, *out;
     
-    if(client_name == NULL) {
-	ret = krb5_cc_default(context, &id);
-	ret = krb5_cc_get_principal(context, id, &client);
-	ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
-	memset(&in, 0, sizeof(in));
-	in.client = client;
-	in.server = server;
-	ret = krb5_get_credentials(context, 0, id, &in, &out);
-	if(out != NULL)
-	    krb5_free_creds(context, out);
-	if(ret == 0) {
-	    *cc = id;
-	    goto out;
-	}
-	krb5_cc_close(context, id);
-    } else 
-	krb5_parse_name(context, client_name, &client);
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
-
-    {
-	krb5_creds cred;
-	krb5_get_init_creds_opt opt;
-	krb5_get_init_creds_opt_init (&opt);
-	ret = krb5_get_init_creds_password (context,
-					    &cred,
-					    client,
-					    NULL,
-					    prompter,
-					    NULL,
-					    0,
-					    KADM5_ADMIN_SERVICE,
-					    &opt);
-	switch(ret){
-	case 0:
-	    break;
-	case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
-	    exit(1);
-	case KRB5KRB_AP_ERR_BAD_INTEGRITY:
-	case KRB5KRB_AP_ERR_MODIFIED:
-	    ret = KADM5_BAD_PASSWORD;
-	    break;
-	default:
-	    krb5_err(context, 1, ret, "krb5_get_init_creds");
-	}
-	if(ret) {
-	    goto out;
-	}
-	ret = krb5_cc_initialize (context, id, cred.client);
-	if (ret)
-	    return ret;
-	
-	ret = krb5_cc_store_cred (context, id, &cred);
-	if (ret)
-	    return ret;
-	krb5_free_creds_contents (context, &cred);
-	*cc = id;
-    }
-    
-out:
-    krb5_free_principal(context, client);
-    krb5_free_principal(context, server);
+    memset(&in, 0, sizeof(in));
+    in.client = client;
+    ret = krb5_parse_name(context, server_name, &in.server);
+    if(ret) 
+	return ret;
+    ret = krb5_get_credentials(context, 0, id, &in, &out);
+    if(out != NULL)
+	krb5_free_creds(context, out);
+    krb5_free_principal(context, in.server);
     return ret;
 }
 
+static krb5_error_code
+get_new_cache(krb5_context context,
+	      krb5_principal client,
+	      const char *password,
+	      krb5_prompter_fct prompter,
+	      const char *keytab,
+	      const char *server_name,
+	      krb5_ccache *ret_cache)
+{
+    krb5_error_code ret;
+    krb5_creds cred;
+    krb5_get_init_creds_opt opt;
+    krb5_ccache id;
+    
+    krb5_get_init_creds_opt_init (&opt);
+    if(password == NULL && prompter == NULL) {
+	krb5_keytab kt;
+	if(keytab == NULL)
+	    ret = krb5_kt_default(context, &kt);
+	else
+	    ret = krb5_kt_resolve(context, keytab, &kt);
+	if(ret) 
+	    return ret;
+	ret = krb5_get_init_creds_keytab (context,
+					  &cred,
+					  client,
+					  kt,
+					  0,
+					  server_name,
+					  &opt);
+	krb5_kt_close(context, kt);
+    } else {
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    client,
+					    password,
+					    prompter,
+					    NULL,
+					    0,
+					    server_name,
+					    &opt);
+    }
+    switch(ret){
+    case 0:
+	break;
+    case KRB5KDC_ERR_NONE: /* XXX hack in krb5_get_init_creds_password */
+	abort();
+    case KRB5KRB_AP_ERR_BAD_INTEGRITY:
+    case KRB5KRB_AP_ERR_MODIFIED:
+	ret = KADM5_BAD_PASSWORD;
+	break;
+    default:
+	break;
+    }
+    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    if(ret)
+	return ret;
+    ret = krb5_cc_initialize (context, id, cred.client);
+    if (ret)
+	return ret;
+    ret = krb5_cc_store_cred (context, id, &cred);
+    if (ret)
+	return ret;
+    krb5_free_creds_contents (context, &cred);
+    *ret_cache = id;
+    return 0;
+}
 
-kadm5_ret_t 
-kadm5_c_init_with_password_ctx(krb5_context context,
-			       char *client_name, 
-			       char *pass,
-			       char *service_name,
-			       kadm5_config_params *realm_params,
-			       unsigned long struct_version,
-			       unsigned long api_version,
-			       void **server_handle)
+static krb5_error_code
+get_cred_cache(krb5_context context,
+	       const char *client_name,
+	       const char *server_name,
+	       const char *password,
+	       krb5_prompter_fct prompter,
+	       const char *keytab,
+	       krb5_ccache ccache,
+	       krb5_ccache *ret_cache)
+{
+    krb5_error_code ret;
+    krb5_ccache id = NULL;
+    krb5_principal default_client = NULL, client = NULL;
+    
+    /* treat empty password as NULL */
+    if(password && *password == '\0')
+	password = NULL;
+    if(server_name == NULL)
+	server_name = KADM5_ADMIN_SERVICE;
+    
+    if(client_name != NULL) {
+	ret = krb5_parse_name(context, client_name, &client);
+	if(ret) 
+	    return ret;
+    }
+
+    if(password != NULL || prompter != NULL) {
+	/* get principal from default cache, ok if this doesn't work */
+	ret = krb5_cc_default(context, &id);
+	if(ret == 0) {
+	    ret = krb5_cc_get_principal(context, id, &default_client);
+	    if(ret) {
+		krb5_cc_close(context, id);
+		id = NULL;
+	    }
+	}
+	
+	if(client == NULL)
+	    client = default_client;
+	if(client == NULL)
+	    /* client_name not passed, and 
+	       couldn't get principal from cache */
+	    return -1;
+
+	if(client == default_client) {
+	    krb5_free_principal(context, default_client);
+	    default_client = NULL;
+	}
+    } else if(ccache != NULL)
+	id = ccache;
+    
+
+    if(id && (default_client == NULL || 
+	      krb5_principal_compare(context, client, default_client))) {
+	ret = get_kadm_ticket(context, id, client, server_name);
+	if(ret == 0) {
+	    *ret_cache = id;
+	    krb5_free_principal(context, default_client);
+	    krb5_free_principal(context, client);
+	    return 0;
+	}
+	if(ccache != NULL)
+	    /* couldn't get ticket from cache */
+	    return -1;
+    }
+    /* get creds via AS request */
+    if(id)
+	krb5_cc_close(context, id);
+    krb5_free_principal(context, default_client);
+
+    ret = get_new_cache(context, client, password, prompter, keytab, 
+			server_name, ret_cache);
+    krb5_free_principal(context, client);
+    return ret;
+}
+
+static kadm5_ret_t 
+kadm5_c_init_with_context(krb5_context context,
+			  const char *client_name, 
+			  const char *password,
+			  krb5_prompter_fct prompter,
+			  const char *keytab,
+			  krb5_ccache ccache,
+			  const char *service_name,
+			  kadm5_config_params *realm_params,
+			  unsigned long struct_version,
+			  unsigned long api_version,
+			  void **server_handle)
 {
     kadm5_ret_t ret;
     kadm5_client_context *ctx;
@@ -203,14 +297,27 @@ kadm5_c_init_with_password_ctx(krb5_context context,
 	close(s);
 	return KADM5_RPC_ERROR;
     }
-    ret = get_cred_cache(context, &cc, client_name, krb5_prompter_posix);
-    krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    ret = get_cred_cache(context, client_name, service_name, 
+			 password, prompter, keytab, ccache, &cc);
+    
+    if(ret) {
+	close(s);
+	return ret;
+    }
+    ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+    if(ret) {
+	if(ccache == NULL)
+	    krb5_cc_close(context, cc);
+	close(s);
+	return ret;
+    }
     ctx->ac = NULL;
     ret = krb5_sendauth(context, &ctx->ac, &s, KADMIN_APPL_VERSION, NULL, 
 			server, AP_OPTS_MUTUAL_REQUIRED, 
 			NULL, NULL, cc, NULL, NULL, NULL);
     krb5_free_principal(context, server);
-    krb5_cc_close(context, cc);
+    if(ccache == NULL)
+	krb5_cc_close(context, cc);
     if(ret){
 	close(s);
 	return KADM5_FAILURE;
@@ -220,28 +327,34 @@ kadm5_c_init_with_password_ctx(krb5_context context,
     return 0;
 }
 
-kadm5_ret_t 
-kadm5_c_init_with_password(char *client_name, 
-			   char *pass,
-			   char *service_name,
-			   kadm5_config_params *realm_params,
-			   unsigned long struct_version,
-			   unsigned long api_version,
-			   void **server_handle)
+static kadm5_ret_t 
+init_context(const char *client_name, 
+	     const char *password,
+	     krb5_prompter_fct prompter,
+	     const char *keytab,
+	     krb5_ccache ccache,
+	     const char *service_name,
+	     kadm5_config_params *realm_params,
+	     unsigned long struct_version,
+	     unsigned long api_version,
+	     void **server_handle)
 {
     krb5_context context;
     kadm5_ret_t ret;
     kadm5_server_context *ctx;
-
+    
     krb5_init_context(&context);
-    ret = kadm5_c_init_with_password_ctx(context, 
-					 client_name, 
-					 pass, 
-					 service_name, 
-					 realm_params, 
-					 struct_version, 
-					 api_version, 
-					 server_handle);
+    ret = kadm5_c_init_with_context(context,
+				    client_name,
+				    password,
+				    prompter,
+				    keytab,
+				    ccache,
+				    service_name,
+				    realm_params,
+				    struct_version,
+				    api_version,
+				    server_handle);
     if(ret){
 	krb5_free_context(context);
 	return ret;
@@ -251,17 +364,140 @@ kadm5_c_init_with_password(char *client_name,
     return 0;
 }
 
-#if 0
 kadm5_ret_t 
-kadm5_init_with_skey(char *client_name, char *keytab,
-		     char *service_name,
+kadm5_c_init_with_password_ctx(krb5_context context,
+			       const char *client_name, 
+			       const char *password,
+			       const char *service_name,
+			       kadm5_config_params *realm_params,
+			       unsigned long struct_version,
+			       unsigned long api_version,
+			       void **server_handle)
+{
+    return kadm5_c_init_with_context(context,
+				     client_name,
+				     password,
+				     krb5_prompter_posix,
+				     NULL,
+				     NULL,
+				     service_name,
+				     realm_params,
+				     struct_version,
+				     api_version,
+				     server_handle);
+}
+
+kadm5_ret_t 
+kadm5_c_init_with_password(const char *client_name, 
+			   const char *password,
+			   const char *service_name,
+			   kadm5_config_params *realm_params,
+			   unsigned long struct_version,
+			   unsigned long api_version,
+			   void **server_handle)
+{
+    return init_context(client_name, 
+			password, 
+			krb5_prompter_posix,
+			NULL,
+			NULL,
+			service_name, 
+			realm_params, 
+			struct_version, 
+			api_version, 
+			server_handle);
+}
+
+kadm5_ret_t 
+kadm5_c_init_with_skey_ctx(krb5_context context,
+			   const char *client_name, 
+			   const char *keytab,
+			   const char *service_name,
+			   kadm5_config_params *realm_params,
+			   unsigned long struct_version,
+			   unsigned long api_version,
+			   void **server_handle)
+{
+    return kadm5_c_init_with_context(context,
+				     client_name,
+				     NULL,
+				     NULL,
+				     keytab,
+				     NULL,
+				     service_name,
+				     realm_params,
+				     struct_version,
+				     api_version,
+				     server_handle);
+}
+
+
+kadm5_ret_t 
+kadm5_c_init_with_skey(const char *client_name, 
+		     const char *keytab,
+		     const char *service_name,
 		     kadm5_config_params *realm_params,
 		     unsigned long struct_version,
 		     unsigned long api_version,
 		     void **server_handle)
 {
+    return init_context(client_name, 
+			NULL,
+			NULL,
+			keytab,
+			NULL,
+			service_name, 
+			realm_params, 
+			struct_version, 
+			api_version, 
+			server_handle);
 }
 
+kadm5_ret_t 
+kadm5_c_init_with_creds_ctx(krb5_context context,
+			    const char *client_name,
+			    krb5_ccache ccache,
+			    const char *service_name,
+			    kadm5_config_params *realm_params,
+			    unsigned long struct_version,
+			    unsigned long api_version,
+			    void **server_handle)
+{
+    return kadm5_c_init_with_context(context,
+				     client_name,
+				     NULL,
+				     NULL,
+				     NULL,
+				     ccache,
+				     service_name,
+				     realm_params,
+				     struct_version,
+				     api_version,
+				     server_handle);
+}
+
+kadm5_ret_t 
+kadm5_c_init_with_creds(const char *client_name,
+			krb5_ccache ccache,
+			const char *service_name,
+			kadm5_config_params *realm_params,
+			unsigned long struct_version,
+			unsigned long api_version,
+			void **server_handle)
+{
+    return init_context(client_name, 
+			NULL,
+			NULL,
+			NULL,
+			ccache,
+			service_name, 
+			realm_params, 
+			struct_version, 
+			api_version, 
+			server_handle);
+}
+
+#if 0
 kadm5_ret_t 
 kadm5_init(char *client_name, char *pass,
 	   char *service_name,
@@ -271,17 +507,5 @@ kadm5_init(char *client_name, char *pass,
 	   void **server_handle)
 {
 }
-
-kadm5_ret_t 
-kadm5_init_with_creds(char *client_name,
-		      krb5_ccache ccache,
-		      char *service_name,
-		      kadm5_config_params *params,
-		      krb5_ui_4 struct_version,
-		      krb5_ui_4 api_version,
-		      void **server_handle)
-{
-}
-
-
 #endif
+
