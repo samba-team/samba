@@ -36,9 +36,14 @@
 #define BUFFER_SIZE (0xFFFF)
 #define SAFETY_MARGIN 1024
 
-/* size of shared memory used for share mode locking */
+/* Default size of shared memory used for share mode locking */
 #ifndef SHMEM_SIZE
 #define SHMEM_SIZE 102400
+#endif
+
+/* Default number of hash buckets used in shared memory share mode */
+#ifndef SHMEM_HASH_SIZE
+#define SHMEM_HASH_SIZE 113
 #endif
 
 #define NMB_PORT 137
@@ -295,8 +300,8 @@ typedef struct
 typedef struct
 {
   uint16 ref_count;
-  int32 dev;
-  int32 inode;
+  uint32 dev;
+  uint32 inode;
   int fd;
   int fd_readonly;
   int fd_writeonly;
@@ -320,7 +325,6 @@ typedef struct
   BOOL can_read;
   BOOL can_write;
   BOOL share_mode;
-  BOOL share_pending;
   BOOL print_file;
   BOOL modified;
   char *name;
@@ -420,19 +424,40 @@ struct interface
 	struct in_addr nmask;
 };
 
-/* share mode record in shared memory */
+/* share mode record pointed to in shared memory hash bucket */
 typedef struct
 {
-  smb_shm_offset_t next_offset; /* offset of next record in list in shared mem */
+  smb_shm_offset_t next_offset; /* offset of next record in chain from hash bucket */
   int locking_version;
-  int share_mode;
-  struct timeval time;
-  int pid;
-  dev_t st_dev;
-  ino_t st_ino;
-  char file_name[1];   /* dynamically allocated with correct size */
+  int32 st_dev;
+  int32 st_ino;
+  int num_share_mode_entries;
+  smb_shm_offset_t share_mode_entries; /* Chain of share mode entries for this file */
+  char file_name[1];
 } share_mode_record;
 
+/* share mode entry pointed to by share_mode_record struct */
+typedef struct
+{
+  smb_shm_offset_t next_share_mode_entry;
+  int pid;
+  int share_mode;
+  struct timeval time;
+} share_mode_entry;
+
+/* struct returned by get_share_modes */
+typedef struct
+{
+  int pid;
+  int share_mode;
+  struct timeval time;
+} min_share_mode_entry;
+
+/* Token returned by lock_share_entry (actually ignored by FAST_SHARE_MODES code) */
+typedef int share_lock_token;
+
+/* Conversion to hash entry index from device and inode numbers. */
+#define HASH_ENTRY(dev,ino) ((( (uint32)(dev) )* ( (uint32)(ino) )) % lp_shmem_hash_size())
 
 /* this is used for smbstatus */
 struct connect_record
@@ -798,12 +823,15 @@ char *Strstr(char *s, char *p);
 #define SV_TYPE_DOMAIN_ENUM         0x80000000
 #define SV_TYPE_ALL                 0xFFFFFFFF  
 
-/* What server type are we currently  - JHT Says we ARE 4.20 */
+/* what server type are we currently  - JHT Says we ARE 4.20 */
+/* this was set by JHT in liaison with Jeremy Allison early 1997 */
+/* setting to 4.20 at same time as announcing ourselves as NT Server */
 /* History: */
 /* Version 4.0 - never made public */
 /* Version 4.10 - New to 1.9.16p2, lost in space 1.9.16p3 to 1.9.16p9 */
 /*		- Reappeared in 1.9.16p11 with fixed smbd services */
 /* Version 4.20 - To indicate that nmbd and browsing now works better */
+
 #define MAJOR_VERSION 0x04
 #define MINOR_VERSION 0x02
 

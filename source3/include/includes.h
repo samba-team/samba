@@ -481,6 +481,7 @@ char *mktemp(char *); /* No standard include */
 
 
 #ifdef FreeBSD
+#include <arpa/inet.h>
 #include <strings.h>
 #include <netinet/tcp.h>
 #include <netinet/in_systm.h>
@@ -970,7 +971,7 @@ typedef int mode_t;
 end of the platform specific sections
 ********************************************************************/
 
-#if defined(USE_MMAP) || FAST_SHARE_MODES
+#if defined(USE_MMAP) || defined(FAST_SHARE_MODES)
 #include <sys/mman.h>
 #endif
 

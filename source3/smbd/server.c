@@ -25,6 +25,7 @@
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
 extern pstring sesssetup_user;
+extern fstring myworkgroup;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -32,8 +33,6 @@ char *last_inbuf = NULL;
 
 int am_parent = 1;
 int atexit_set = 0;
-
-BOOL share_mode_pending = False;
 
 /* the last message the was processed */
 int last_message = -1;
@@ -113,6 +112,7 @@ static int find_free_connection(int hash);
 void  *dflt_sig(void)
 {
   exit_server("caught signal");
+  return 0; /* Keep -Wall happy :-) */
 }
 /****************************************************************************
   Send a SIGTERM to our process group.
@@ -837,8 +837,8 @@ file_fd_struct *fd_get_already_open(struct stat *sbuf)
   for(i = 0; i <= max_file_fd_used; i++) {
     fd_ptr = &FileFd[i];
     if((fd_ptr->ref_count > 0) &&
-       (((int32)sbuf->st_dev) == fd_ptr->dev) &&
-       (((int32)sbuf->st_ino) == fd_ptr->inode)) {
+       (((uint32)sbuf->st_dev) == fd_ptr->dev) &&
+       (((uint32)sbuf->st_ino) == fd_ptr->inode)) {
       fd_ptr->ref_count++;
       DEBUG(3,
        ("Re-used file_fd_struct %d, dev = %x, inode = %x, ref_count = %d\n",
@@ -861,8 +861,8 @@ file_fd_struct *fd_get_new()
   for(i = 0; i < MAX_OPEN_FILES; i++) {
     fd_ptr = &FileFd[i];
     if(fd_ptr->ref_count == 0) {
-      fd_ptr->dev = (int32)-1;
-      fd_ptr->inode = (int32)-1;
+      fd_ptr->dev = (uint32)-1;
+      fd_ptr->inode = (uint32)-1;
       fd_ptr->fd = -1;
       fd_ptr->fd_readonly = -1;
       fd_ptr->fd_writeonly = -1;
@@ -927,8 +927,8 @@ int fd_attempt_close(file_fd_struct *fd_ptr)
       fd_ptr->fd_readonly = -1;
       fd_ptr->fd_writeonly = -1;
       fd_ptr->real_open_flags = -1;
-      fd_ptr->dev = -1;
-      fd_ptr->inode = -1;
+      fd_ptr->dev = (uint32)-1;
+      fd_ptr->inode = (uint32)-1;
     }
   } 
  return fd_ptr->ref_count;
@@ -1124,8 +1124,8 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
         sbuf = &statbuf;
       }
       /* Set the correct entries in fd_ptr. */
-      fd_ptr->dev = (int32)sbuf->st_dev;
-      fd_ptr->inode = (int32)sbuf->st_ino;
+      fd_ptr->dev = (uint32)sbuf->st_dev;
+      fd_ptr->inode = (uint32)sbuf->st_ino;
 
       Files[fnum].fd_ptr = fd_ptr;
       Connections[cnum].num_files_open++;
@@ -1141,7 +1141,6 @@ void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *s
       Files[fnum].can_read = ((flags & O_WRONLY)==0);
       Files[fnum].can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
       Files[fnum].share_mode = 0;
-      Files[fnum].share_pending = False;
       Files[fnum].print_file = Connections[cnum].printer;
       Files[fnum].modified = False;
       Files[fnum].cnum = cnum;
@@ -1241,38 +1240,49 @@ close a file - possibly invalidating the read prediction
 ****************************************************************************/
 void close_file(int fnum)
 {
-  int cnum = Files[fnum].cnum;
-  invalidate_read_prediction(Files[fnum].fd_ptr->fd);
-  Files[fnum].open = False;
+  files_struct *fs_p = &Files[fnum];
+  int cnum = fs_p->cnum;
+  uint32 dev = fs_p->fd_ptr->dev;
+  uint32 inode = fs_p->fd_ptr->inode;
+  share_lock_token token;
+
+  invalidate_read_prediction(fs_p->fd_ptr->fd);
+  fs_p->open = False;
   Connections[cnum].num_files_open--;
-  if(Files[fnum].wbmpx_ptr) 
+  if(fs_p->wbmpx_ptr) 
     {
-      free((char *)Files[fnum].wbmpx_ptr);
-      Files[fnum].wbmpx_ptr = NULL;
+      free((char *)fs_p->wbmpx_ptr);
+      fs_p->wbmpx_ptr = NULL;
     }
 
 #if USE_MMAP
-  if(Files[fnum].mmap_ptr) 
+  if(fs_p->mmap_ptr) 
     {
-      munmap(Files[fnum].mmap_ptr,Files[fnum].mmap_size);
-      Files[fnum].mmap_ptr = NULL;
+      munmap(fs_p->mmap_ptr,fs_p->mmap_size);
+      fs_p->mmap_ptr = NULL;
     }
 #endif
 
   if (lp_share_modes(SNUM(cnum)))
-    del_share_mode(fnum);
+  {
+    lock_share_entry( cnum, dev, inode, &token);
+    del_share_mode(token, fnum);
+  }
 
-  fd_attempt_close(Files[fnum].fd_ptr);
+  fd_attempt_close(fs_p->fd_ptr);
+
+  if (lp_share_modes(SNUM(cnum)))
+    unlock_share_entry( cnum, dev, inode, token);
 
   /* NT uses smbclose to start a print - weird */
-  if (Files[fnum].print_file)
+  if (fs_p->print_file)
     print_file(fnum);
 
   /* check for magic scripts */
   check_magic(fnum,cnum);
 
   DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
-	   timestring(),Connections[cnum].user,Files[fnum].name,
+	   timestring(),Connections[cnum].user,fs_p->name,
 	   Connections[cnum].num_files_open));
 }
 
@@ -1334,17 +1344,44 @@ return True if sharing doesn't prevent the operation
 ********************************************************************/
 BOOL check_file_sharing(int cnum,char *fname)
 {
-  int pid=0;
-  int share_mode = get_share_mode_byname(cnum,fname,&pid);
+  int i;
+  int ret = False;
+  min_share_mode_entry *old_shares = 0;
+  int num_share_modes;
+  struct stat sbuf;
+  share_lock_token token;
+  int pid = getpid();
 
-  if (!pid || !share_mode) return(True);
- 
-  if (share_mode == DENY_DOS)
-    return(pid == getpid());
+  if(!lp_share_modes(SNUM(cnum)))
+    return True;
+
+  if (stat(fname,&sbuf) == -1) return(True);
+
+  lock_share_entry(cnum, (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, &token);
+  num_share_modes = get_share_modes(cnum, token, 
+                     (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, &old_shares);
+
+  for( i = 0; i < num_share_modes; i++)
+  {
+    if (old_shares[i].share_mode != DENY_DOS)
+      goto free_and_exit;
+
+    if(old_shares[i].pid != pid);
+      goto free_and_exit;
+  }
 
   /* XXXX exactly what share mode combinations should be allowed for
      deleting/renaming? */
-  return(False);
+  /* If we got here then either there were no share modes or
+     all share modes were DENY_DOS and the pid == getpid() */
+  ret = True;
+
+free_and_exit:
+
+  unlock_share_entry(cnum, (uint32)sbuf.st_dev, (uint32)sbuf.st_ino, token);
+  if(old_shares != NULL)
+    free((char *)old_shares);
+  return(ret);
 }
 
 /****************************************************************************
@@ -1373,25 +1410,31 @@ open a file with a share mode
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 		      int mode,int *Access,int *action)
 {
+  files_struct *fs_p = &Files[fnum];
   int flags=0;
   int flags2=0;
   int deny_mode = (share_mode>>4)&7;
   struct stat sbuf;
   BOOL file_existed = file_exist(fname,&sbuf);
+  BOOL share_locked = False;
   BOOL fcbopen = False;
-  int share_pid=0;
+  share_lock_token token;
+  uint32 dev = 0;
+  uint32 inode = 0;
 
-  Files[fnum].open = False;
-  Files[fnum].fd_ptr = 0;
+  fs_p->open = False;
+  fs_p->fd_ptr = 0;
 
   /* this is for OS/2 EAs - try and say we don't support them */
-  if (strstr(fname,".+,;=[].")) {
+  if (strstr(fname,".+,;=[].")) 
+  {
     unix_ERR_class = ERRDOS;
     unix_ERR_code = ERROR_EAS_NOT_SUPPORTED;
     return;
   }
 
-  if ((ofun & 0x3) == 0 && file_existed) {
+  if ((ofun & 0x3) == 0 && file_existed)  
+  {
     errno = EEXIST;
     return;
   }
@@ -1405,7 +1448,7 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
      append does not mean the same thing under dos and unix */
 
   switch (share_mode&0xF)
-    {
+  {
     case 1: 
       flags = O_WRONLY; 
       break;
@@ -1419,18 +1462,21 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
     default:
       flags = O_RDONLY;
       break;
-    }
+  }
   
   if (flags != O_RDONLY && file_existed && 
-      (!CAN_WRITE(cnum) || IS_DOS_READONLY(dos_mode(cnum,fname,&sbuf)))) {
-    if (!fcbopen) {
+      (!CAN_WRITE(cnum) || IS_DOS_READONLY(dos_mode(cnum,fname,&sbuf)))) 
+  {
+    if (!fcbopen) 
+    {
       errno = EACCES;
       return;
     }
     flags = O_RDONLY;
   }
 
-  if (deny_mode > DENY_NONE && deny_mode!=DENY_FCB) {
+  if (deny_mode > DENY_NONE && deny_mode!=DENY_FCB) 
+  {
     DEBUG(2,("Invalid deny mode %d on file %s\n",deny_mode,fname));
     errno = EINVAL;
     return;
@@ -1438,21 +1484,36 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 
   if (deny_mode == DENY_FCB) deny_mode = DENY_DOS;
 
-  if (lp_share_modes(SNUM(cnum))) {
-    int old_share=0;
+  if (lp_share_modes(SNUM(cnum))) 
+  {
+    int num_shares = 0;
+    int i;
+    min_share_mode_entry *old_shares = 0;
+
 
     if (file_existed)
-      old_share = get_share_mode(cnum,&sbuf,&share_pid);
+    {
+      dev = (uint32)sbuf.st_dev;
+      inode = (uint32)sbuf.st_ino;
+      lock_share_entry(cnum, dev, inode, &token);
+      share_locked = True;
+      num_shares = get_share_modes(cnum, token, dev, inode, &old_shares);
+    }
 
-    if (share_pid) {
+    for(i = 0; i < num_shares; i++)
+    {
       /* someone else has a share lock on it, check to see 
 	 if we can too */
-      int old_open_mode = old_share&0xF;
-      int old_deny_mode = (old_share>>4)&7;
+      int old_open_mode = old_shares[i].share_mode &0xF;
+      int old_deny_mode = (old_shares[i].share_mode >>4)&7;
 
-      if (deny_mode > 4 || old_deny_mode > 4 || old_open_mode > 2) {
+      if (deny_mode > 4 || old_deny_mode > 4 || old_open_mode > 2) 
+      {
 	DEBUG(2,("Invalid share mode (%d,%d,%d) on file %s\n",
 		 deny_mode,old_deny_mode,old_open_mode,fname));
+        free((char *)old_shares);
+        if(share_locked)
+          unlock_share_entry(cnum, dev, inode, token);
 	errno = EACCES;
 	unix_ERR_class = ERRDOS;
 	unix_ERR_code = ERRbadshare;
@@ -1461,21 +1522,25 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 
       {
 	int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-					  share_pid,fname);
+					  old_shares[i].pid,fname);
 
 	if ((access_allowed == AFAIL) ||
 	    (!fcbopen && (access_allowed == AREAD && flags == O_RDWR)) ||
 	    (access_allowed == AREAD && flags == O_WRONLY) ||
-	    (access_allowed == AWRITE && flags == O_RDONLY)) {
+	    (access_allowed == AWRITE && flags == O_RDONLY)) 
+        {
 	  DEBUG(2,("Share violation on file (%d,%d,%d,%d,%s) = %d\n",
 		   deny_mode,old_deny_mode,old_open_mode,
-		   share_pid,fname,
+		   old_shares[i].pid,fname,
 		   access_allowed));
+          free((char *)old_shares);
+          if(share_locked)
+            unlock_share_entry(cnum, dev, inode, token);
 	  errno = EACCES;
 	  unix_ERR_class = ERRDOS;
 	  unix_ERR_code = ERRbadshare;
 	  return;
-	}
+        }
 	
 	if (access_allowed == AREAD)
 	  flags = O_RDONLY;
@@ -1484,75 +1549,68 @@ void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
 	  flags = O_WRONLY;
       }
     }
+    if(old_shares != 0)
+      free((char *)old_shares);
   }
 
   DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 	   flags,flags2,mode));
 
   open_file(fnum,cnum,fname,flags|(flags2&~(O_TRUNC)),mode,file_existed ? &sbuf : 0);
-  if (!Files[fnum].open && flags==O_RDWR && errno!=ENOENT && fcbopen) {
+  if (!fs_p->open && flags==O_RDWR && errno!=ENOENT && fcbopen) 
+  {
     flags = O_RDONLY;
     open_file(fnum,cnum,fname,flags,mode,file_existed ? &sbuf : 0 );
   }
 
-  if (Files[fnum].open) {
+  if (fs_p->open) 
+  {
     int open_mode=0;
-    switch (flags) {
-    case O_RDONLY:
-      open_mode = 0;
-      break;
-    case O_RDWR:
-      open_mode = 2;
-      break;
-    case O_WRONLY:
-      open_mode = 1;
-      break;
+
+    if((share_locked == False) && lp_share_modes(SNUM(cnum)))
+    {
+      /* We created the file - thus we must now lock the share entry before creating it. */
+      dev = fs_p->fd_ptr->dev;
+      inode = fs_p->fd_ptr->inode;
+      lock_share_entry(cnum, dev, inode, &token);
+      share_locked = True;
     }
 
-    Files[fnum].share_mode = (deny_mode<<4) | open_mode;
-    Files[fnum].share_pending = True;
+    switch (flags) 
+    {
+      case O_RDONLY:
+        open_mode = 0;
+        break;
+      case O_RDWR:
+        open_mode = 2;
+        break;
+      case O_WRONLY:
+        open_mode = 1;
+        break;
+    }
 
-    if (Access) {
+    fs_p->share_mode = (deny_mode<<4) | open_mode;
+
+    if (Access)
       (*Access) = open_mode;
-    }
-    
-    if (action) {
+
+    if (action) 
+    {
       if (file_existed && !(flags2 & O_TRUNC)) *action = 1;
       if (!file_existed) *action = 2;
       if (file_existed && (flags2 & O_TRUNC)) *action = 3;
     }
 
-    if (!share_pid)
-      share_mode_pending = True;
-
     if ((flags2&O_TRUNC) && file_existed)
       truncate_unless_locked(fnum,cnum);
+
+    if (lp_share_modes(SNUM(cnum)))
+      set_share_mode(token, fnum);
   }
+
+  if (share_locked && lp_share_modes(SNUM(cnum)))
+    unlock_share_entry( cnum, dev, inode, token);
 }
-
-
-
-/*******************************************************************
-check for files that we should now set our share modes on
-********************************************************************/
-static void check_share_modes(void)
-{
-  int i;
-  for (i=0;i<MAX_OPEN_FILES;i++)
-    if(Files[i].open && Files[i].share_pending) {
-      if (lp_share_modes(SNUM(Files[i].cnum))) {
-	int pid=0;
-	get_share_mode_by_fnum(Files[i].cnum,i,&pid);
-	if (!pid) {
-	  set_share_mode(i,Files[i].share_mode);
-	  Files[i].share_pending = False;
-	}
-      } else {
-	Files[i].share_pending = False;	
-      }
-    }
-}
-
 
 /****************************************************************************
 seek a file. Try to avoid the seek if possible
@@ -2694,18 +2752,18 @@ int reply_nt1(char *outbuf)
    */
   encrypt_len = doencrypt?challenge_len:0;
 #if UNICODE
-  data_len = encrypt_len + 2*(strlen(lp_workgroup())+1);
+  data_len = encrypt_len + 2*(strlen(myworkgroup)+1);
 #else
-  data_len = encrypt_len + strlen(lp_workgroup()) + 1;
+  data_len = encrypt_len + strlen(myworkgroup) + 1;
 #endif
 
   set_message(outbuf,17,data_len,True);
 
 #if UNICODE
   /* put the OEM'd domain name */
-  PutUniCode(smb_buf(outbuf)+encrypt_len,lp_workgroup());
+  PutUniCode(smb_buf(outbuf)+encrypt_len,myworkgroup);
 #else
-  strcpy(smb_buf(outbuf)+encrypt_len, lp_workgroup());
+  strcpy(smb_buf(outbuf)+encrypt_len, myworkgroup);
 #endif
 
   CVAL(outbuf,smb_vwv1) = secword;
@@ -3258,9 +3316,9 @@ void exit_server(char *reason)
 #endif
   }    
 
-#if FAST_SHARE_MODES
+#ifdef FAST_SHARE_MODES
   stop_share_mode_mgmt();
-#endif
+#endif /* FAST_SHARE_MODES */
 
   DEBUG(3,("%s Server exit  (%s)\n",timestring(),reason?reason:""));
   exit(0);
@@ -3738,24 +3796,6 @@ static void process(void)
       if (lp_readprediction())
 	do_read_prediction();
 
-      {
-	extern pstring share_del_pending;
-	if (*share_del_pending) {
-	  unbecome_user();
-	  if (!unlink(share_del_pending))
-	    DEBUG(3,("Share file deleted %s\n",share_del_pending));
-	  else
-	    DEBUG(2,("Share del failed of %s\n",share_del_pending));
-	  share_del_pending[0] = 0;
-	}
-      }
-
-      if (share_mode_pending) {
-	unbecome_user();
-	check_share_modes();
-	share_mode_pending=False;
-      }
-
       errno = 0;      
 
       for (counter=SMBD_SELECT_LOOP; 
@@ -3787,6 +3827,7 @@ static void process(void)
 	  if (!(counter%SMBD_RELOAD_CHECK))
 	    reload_services(True);
 
+#if 0 /* JRA */
 	  /* check the share modes every 10 secs */
 	  if (!(counter%SHARE_MODES_CHECK))
 	    check_share_modes();
@@ -3794,6 +3835,7 @@ static void process(void)
 	  /* clean the share modes every 5 minutes */
 	  if (!(counter%SHARE_MODES_CLEAN))
 	    clean_share_modes();
+#endif /* JRA */
 
 	  /* automatic timeout if all connections are closed */      
 	  if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) {
@@ -4082,6 +4124,8 @@ static void usage(char *pname)
   if (!reload_services(False))
     return(-1);	
 
+  strcpy(myworkgroup, lp_workgroup());
+
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);
 #endif
@@ -4128,10 +4172,10 @@ static void usage(char *pname)
   if (!open_sockets(is_daemon,port))
     exit(1);
 
-#if FAST_SHARE_MODES
+#ifdef FAST_SHARE_MODES
   if (!start_share_mode_mgmt())
     exit(1);
-#endif
+#endif /* FAST_SHARE_MODES */
 
   /* possibly reload the services file. */
   reload_services(True);

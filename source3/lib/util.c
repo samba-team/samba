@@ -73,6 +73,7 @@ pstring myhostname="";
 pstring user_socket_options="";   
 pstring sesssetup_user="";
 pstring myname = "";
+fstring myworkgroup = "";
 
 int smb_read_error = 0;
 
@@ -3431,7 +3432,7 @@ BOOL is_vetoed_name(char *name)
           nameptr++;
           continue;
         }
-      if(name_end = strchr(nameptr,'/')) 
+      if((name_end = strchr(nameptr,'/'))!=NULL) 
         {
           *name_end = 0;
         }
@@ -3472,7 +3473,7 @@ BOOL is_vetoed_path(char *name)
           nameptr++;
           continue;
         }
-      if(name_end = strchr(nameptr,'/')) 
+      if((name_end = strchr(nameptr,'/'))!=NULL) 
         {
           *name_end = 0;
         }

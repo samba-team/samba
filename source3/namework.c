@@ -37,6 +37,7 @@ extern pstring scope;
 extern BOOL CanRecurse;
 
 extern pstring myname;
+extern fstring myworkgroup;
 
 extern int ClientNMB;
 extern int ClientDGRAM;
@@ -603,7 +604,7 @@ static void process_reset_browser(struct packet_struct *p,char *buf)
 	  struct work_record *work;
 	  for (work=d->workgrouplist;work;work=remove_workgroup(d,work,True));
 	}
-      add_my_subnets(lp_workgroup());
+      add_my_subnets(myworkgroup);
     }
   
   /* stop browsing altogether. i don't think this is a good idea! */
@@ -639,7 +640,7 @@ static void process_announce_request(struct packet_struct *p,char *buf)
      this workgroup before announcing, particularly as we only
      respond on local interfaces anyway.
 
-     if (strequal(dgram->dest_name, lp_workgroup()) return; ???
+     if (strequal(dgram->dest_name, myworkgroup) return; ???
    */
 
   if (!d) 

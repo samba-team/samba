@@ -40,6 +40,7 @@ int ClientDGRAM = -1;
 extern pstring myhostname;
 static pstring host_file;
 extern pstring myname;
+extern fstring myworkgroup;
 
 /* are we running as a daemon ? */
 static BOOL is_daemon = False;
@@ -67,7 +68,7 @@ static int sig_term()
   
   /* announce all server entries as 0 time-to-live, 0 type */
   /* XXXX don't care if we never receive a response back... yet */
-  remove_my_servers();
+  announce_my_servers_removed();
 
   /* XXXX other things: if we are a master browser, force an election? */
   
@@ -202,9 +203,6 @@ BOOL reload_services(BOOL test)
     DEBUG(3,("services not loaded\n"));
     reload_services(True);
   }
-
-  load_interfaces();
-  add_subnet_interfaces();
 
   /* Do a sanity check for a misconfigured nmbd */
   if(lp_wins_support() && *lp_wins_server()) {
@@ -502,6 +500,8 @@ static void usage(char *pname)
 
   reload_services(True);
 
+  strcpy(myworkgroup, lp_workgroup());
+
   set_samba_nb_type();
 
   if (!is_daemon && !is_a_socket(0)) {
@@ -549,14 +549,15 @@ static void usage(char *pname)
     DEBUG(3,("Loaded hosts file\n"));
   }
 
+  load_interfaces();
+  add_my_subnets(myworkgroup);
+
   add_my_names();
 
-  if (strequal(lp_workgroup(),"*")) {
+  if (strequal(myworkgroup,"*")) {
     DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
     exit(1);
   }
-
-  add_my_subnets(lp_workgroup());
 
   DEBUG(3,("Checked names\n"));
   

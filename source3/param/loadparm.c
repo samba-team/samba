@@ -152,8 +152,11 @@ typedef struct
   int os_level;
   int max_ttl;
   int ReadSize;
+  int shmem_size;
+  int shmem_hash_size;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
+  BOOL bLocalMaster;
   BOOL bPreferredMaster;
   BOOL bDomainMaster;
   BOOL bDomainLogons;
@@ -427,6 +430,8 @@ struct parm_struct
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL},
   {"time offset",      P_INTEGER, P_GLOBAL, &extra_time_offset,         NULL},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL},
+  {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL},
+  {"shared file entries",  P_INTEGER, P_GLOBAL, &Globals.shmem_hash_size, NULL},
 #ifdef KANJI
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
 #endif /* KANJI */
@@ -437,6 +442,7 @@ struct parm_struct
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
   {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL},
+  {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL},
   {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL},
@@ -601,15 +607,11 @@ static void init_globals(void)
   Globals.bSyslogOnly = False;
   Globals.os_level = 0;
   Globals.max_ttl = 60*60*4; /* 2 hours default */
-  Globals.bPreferredMaster = True;
-  Globals.bDomainMaster = False;
-  Globals.bDomainLogons = False;
-  Globals.bBrowseList = True;
-  Globals.bWINSsupport = False;
-  Globals.bWINSproxy = False;
   Globals.ReadSize = 16*1024;
+  Globals.shmem_size = SHMEM_SIZE;
+  Globals.shmem_hash_size = SHMEM_HASH_SIZE;
   Globals.bUnixRealname = False;
-#ifdef NETGROUP
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
   Globals.bNISHomeMap = False;
   string_set(&Globals.szNISHomeMapName, "auto.home");
 #endif
@@ -617,6 +619,25 @@ static void init_globals(void)
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
 #endif /* KANJI */
 
+/* these parameters are set to defaults that are more appropriate
+   for the increasing samba install base:
+
+   as a member of the workgroup, that will possibly become a
+   _local_ master browser (lm = True).  this is opposed to a forced
+   local master browser startup (pm = True).
+
+   doesn't provide WINS server service by default (wsupp = False),
+   and doesn't provide domain master browser services by default, either.
+
+*/
+
+  Globals.bPreferredMaster = False;
+  Globals.bLocalMaster = True;
+  Globals.bDomainMaster = False;
+  Globals.bDomainLogons = False;
+  Globals.bBrowseList = True;
+  Globals.bWINSsupport = False;
+  Globals.bWINSproxy = False;
 }
 
 /***************************************************************************
@@ -771,6 +792,7 @@ FN_GLOBAL_STRING(lp_nis_home_map_name,&Globals.szNISHomeMapName)
 
 FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
+FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
 FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)
@@ -799,6 +821,8 @@ FN_GLOBAL_INTEGER(lp_maxpacket,&Globals.max_packet)
 FN_GLOBAL_INTEGER(lp_keepalive,&keepalive)
 FN_GLOBAL_INTEGER(lp_passwordlevel,&Globals.pwordlevel)
 FN_GLOBAL_INTEGER(lp_readsize,&Globals.ReadSize)
+FN_GLOBAL_INTEGER(lp_shmem_size,&Globals.shmem_size)
+FN_GLOBAL_INTEGER(lp_shmem_hash_size,&Globals.shmem_hash_size)
 FN_GLOBAL_INTEGER(lp_deadtime,&Globals.deadtime)
 FN_GLOBAL_INTEGER(lp_maxprotocol,&Globals.maxprotocol)
 FN_GLOBAL_INTEGER(lp_security,&Globals.security)

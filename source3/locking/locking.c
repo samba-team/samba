@@ -22,15 +22,15 @@
 
    12 aug 96: Erik.Devriendt@te6.siemens.be
    added support for shared memory implementation of share mode locking
+
+   May 1997. Jeremy Allison (jallison@whistle.com). Modified share mode
+   locking to deal with multiple share modes per open file.
 */
 
 #include "includes.h"
 extern int DEBUGLEVEL;
 extern connection_struct Connections[];
 extern files_struct Files[];
-
-pstring share_del_pending="";
-
 
 /****************************************************************************
   utility function called to see if a file region is locked
@@ -100,7 +100,7 @@ BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *
   return True; /* Did unlock */
 }
 
-#if FAST_SHARE_MODES
+#ifdef FAST_SHARE_MODES
 /*******************************************************************
   initialize the shared memory for share_mode management 
   ******************************************************************/
@@ -114,7 +114,7 @@ BOOL start_share_mode_mgmt(void)
   trim_string(shmem_file_name,"","/");
   if (!*shmem_file_name) return(False);
   strcat(shmem_file_name, "/SHARE_MEM_FILE");
-  return smb_shm_open(shmem_file_name, SHMEM_SIZE);
+  return smb_shm_open(shmem_file_name, lp_shmem_size());
 }
 
 
@@ -126,14 +126,465 @@ BOOL stop_share_mode_mgmt(void)
    return smb_shm_close();
 }
 
-#else
+/*******************************************************************
+  lock a hash bucket entry in shared memory for share_mode management 
+  ******************************************************************/
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok)
+{
+  return smb_shm_lock_hash_entry(HASH_ENTRY(dev, inode));
+}
+
+/*******************************************************************
+  unlock a hash bucket entry in shared memory for share_mode management 
+  ******************************************************************/
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token)
+{
+  return smb_shm_unlock_hash_entry(HASH_ENTRY(dev, inode));
+}
+
+/*******************************************************************
+get all share mode entries in shared memory for a dev/inode pair.
+********************************************************************/
+int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
+                    min_share_mode_entry **old_shares)
+{
+  smb_shm_offset_t *mode_array;
+  unsigned int hash_entry = HASH_ENTRY(dev, inode); 
+  share_mode_record *file_scanner_p;
+  share_mode_record *file_prev_p;
+  share_mode_entry *entry_scanner_p;
+  share_mode_entry *entry_prev_p;
+  int num_entries;
+  int num_entries_copied;
+  BOOL found = False;
+  min_share_mode_entry *share_array = (min_share_mode_entry *)0;
+
+  *old_shares = 0;
+
+  if(hash_entry > lp_shmem_hash_size() )
+  {
+    DEBUG(0, 
+      ("PANIC ERROR : get_share_modes (FAST_SHARE_MODES): hash_entry %d too large \
+(max = %d)\n",
+      hash_entry, lp_shmem_hash_size() ));
+    abort();
+  }
+
+  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+  
+  if(mode_array[hash_entry] == NULL_OFFSET)
+  {
+    DEBUG(5,("get_share_modes (FAST_SHARE_MODES): hash bucket %d empty\n", hash_entry));
+    return 0;
+  }
+
+  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_prev_p = file_scanner_p;
+  while(file_scanner_p)
+  {
+     if( (file_scanner_p->st_dev == dev) && (file_scanner_p->st_ino == inode) )
+     {
+	found = True;
+	break;
+     }
+     else
+     {
+	file_prev_p = file_scanner_p ;
+	file_scanner_p = (share_mode_record *)smb_shm_offset2addr(
+                                                file_scanner_p->next_offset);
+     }
+  }
+  
+  if(!found)
+  {
+     DEBUG(5,("get_share_modes (FAST_SHARE_MODES): no entry for \
+file dev = %d, ino = %d in hash_bucket %d\n", dev, inode, hash_entry));
+     return (0);
+  }
+  
+  if(file_scanner_p->locking_version != LOCKING_VERSION)
+  {
+     DEBUG(0,("ERROR:get_share_modes (FAST_SHARE_MODES): Deleting old share mode \
+record due to old locking version %d for file dev = %d, inode = %d in hash \
+bucket %d",file_scanner_p->locking_version, dev, inode, hash_entry));
+     if(file_prev_p == file_scanner_p)
+	mode_array[hash_entry] = file_scanner_p->next_offset;
+     else
+	file_prev_p->next_offset = file_scanner_p->next_offset;
+     smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+     return (0);
+  }
+
+  /* Allocate the old_shares array */
+  num_entries = file_scanner_p->num_share_mode_entries;
+  if(num_entries)
+  {
+    *old_shares = share_array = (min_share_mode_entry *)
+                 malloc(num_entries * sizeof(min_share_mode_entry));
+    if(*old_shares == 0)
+    {
+      DEBUG(0,("get_share_modes (FAST_SHARE_MODES): malloc fail !\n"));
+      return 0;
+    }
+  }
+
+  num_entries_copied = 0;
+  
+  entry_scanner_p = (share_mode_entry*)smb_shm_offset2addr(
+                                           file_scanner_p->share_mode_entries);
+  entry_prev_p = entry_scanner_p;
+  while(entry_scanner_p)
+  {
+    int pid = entry_scanner_p->pid;
+
+    if (pid && !process_exists(pid))
+    {
+      /* Delete this share mode entry */
+      share_mode_entry *delete_entry_p = entry_scanner_p;
+
+      if(entry_prev_p == entry_scanner_p)
+      {
+        /* We are at start of list */
+        file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
+        entry_scanner_p = (share_mode_entry*)smb_shm_offset2addr(
+                                           file_scanner_p->share_mode_entries);
+        entry_prev_p = entry_scanner_p;
+      }
+      else
+      {
+        entry_prev_p->next_share_mode_entry = entry_scanner_p->next_share_mode_entry;
+        entry_scanner_p = (share_mode_entry*)
+                           smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+      }
+      /* Decrement the number of share mode entries on this share mode record */
+      file_scanner_p->num_share_mode_entries -= 1;
+
+      /* PARANOIA TEST */
+      if(file_scanner_p->num_share_mode_entries < 0)
+      {
+        DEBUG(0,("PANIC ERROR:get_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
+for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
+             dev, inode, hash_entry));
+        abort();
+      }
+
+      DEBUG(0,("get_share_modes (FAST_SHARE_MODES): process %d no longer exists and \
+it left a share mode entry with mode 0x%X for file dev = %d, ino = %d in hash \
+bucket (number of entries now = %d)\n", 
+            pid, entry_scanner_p->share_mode, dev, inode, hash_entry,
+            file_scanner_p->num_share_mode_entries));
+
+      smb_shm_free(smb_shm_addr2offset(delete_entry_p));
+    } 
+    else
+    {
+       /* This is a valid share mode entry and the process that
+           created it still exists. Copy it into the output array.
+       */
+       share_array[num_entries_copied].pid = entry_scanner_p->pid;
+       share_array[num_entries_copied].share_mode = entry_scanner_p->share_mode;
+       memcpy(&share_array[num_entries_copied].time, &entry_scanner_p->time,
+              sizeof(struct timeval));
+       num_entries_copied++;
+       DEBUG(5,("get_share_modes (FAST_SHARE_MODES): Read share mode \
+record mode 0x%X pid=%d\n", entry_scanner_p->share_mode, entry_scanner_p->pid));
+       entry_prev_p = entry_scanner_p;
+       entry_scanner_p = (share_mode_entry *)
+                           smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+    }
+  }
+  
+  /* If no valid share mode entries were found then this record shouldn't exist ! */
+  if(num_entries_copied == 0)
+  {
+    DEBUG(0,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
+hash bucket %d has a share mode record but no entries - deleting\n", 
+                 dev, inode, hash_entry));
+    if(*old_shares)
+      free((char *)old_shares);
+    *old_shares = 0;
+
+    if(file_prev_p == file_scanner_p)
+      mode_array[hash_entry] = file_scanner_p->next_offset;
+    else
+      file_prev_p->next_offset = file_scanner_p->next_offset;
+    smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+  }
+
+  DEBUG(5,("get_share_modes (FAST_SHARE_MODES): file with dev %d, inode %d in \
+hash bucket %d returning %d entries\n", dev, inode, hash_entry,
+                         num_entries_copied));
+
+  return(num_entries_copied);
+}  
+
+/*******************************************************************
+del the share mode of a file.
+********************************************************************/
+void del_share_mode(share_lock_token token, int fnum)
+{
+  uint32 dev, inode;
+  smb_shm_offset_t *mode_array;
+  unsigned int hash_entry;
+  share_mode_record *file_scanner_p;
+  share_mode_record *file_prev_p;
+  share_mode_entry *entry_scanner_p;
+  share_mode_entry *entry_prev_p;
+  BOOL found = False;
+  int pid = getpid();
+
+  dev = Files[fnum].fd_ptr->dev;
+  inode = Files[fnum].fd_ptr->inode;
+
+  hash_entry = HASH_ENTRY(dev, inode);
+
+  if(hash_entry > lp_shmem_hash_size() )
+  {
+    DEBUG(0,
+      ("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
+(max = %d)\n",
+      hash_entry, lp_shmem_hash_size() ));
+    abort();
+  }
+
+  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+ 
+  if(mode_array[hash_entry] == NULL_OFFSET)
+  {  
+    DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): hash bucket %d empty\n", 
+                  hash_entry));
+    abort();
+  }  
+  
+  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_prev_p = file_scanner_p;
+
+  while(file_scanner_p)
+  {
+     if( (file_scanner_p->st_dev == dev) && (file_scanner_p->st_ino == inode) )
+     {
+	found = True;
+	break;
+     }
+     else
+     {
+	file_prev_p = file_scanner_p ;
+	file_scanner_p = (share_mode_record *)
+                          smb_shm_offset2addr(file_scanner_p->next_offset);
+     }
+  }
+    
+  if(!found)
+  {
+     DEBUG(0,("ERROR:del_share_mode (FAST_SHARE_MODES): no entry found for dev %d, \
+inode %d in hash bucket %d\n", dev, inode, hash_entry));
+     return;
+  }
+  
+  if(file_scanner_p->locking_version != LOCKING_VERSION)
+  {
+     DEBUG(0,("ERROR: del_share_modes (FAST_SHARE_MODES): Deleting old share mode \
+record due to old locking version %d for file dev %d, inode %d hash bucket %d\n",
+       file_scanner_p->locking_version, dev, inode, hash_entry ));
+     if(file_prev_p == file_scanner_p)
+	mode_array[hash_entry] = file_scanner_p->next_offset;
+     else
+	file_prev_p->next_offset = file_scanner_p->next_offset;
+     smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+     return;
+  }
+
+  found = False;
+  entry_scanner_p = (share_mode_entry*)smb_shm_offset2addr(
+                                           file_scanner_p->share_mode_entries);
+  entry_prev_p = entry_scanner_p;
+  while(entry_scanner_p)
+  {
+    if( (pid == entry_scanner_p->pid) && 
+          (memcmp(&entry_scanner_p->time, 
+                 &Files[fnum].open_time,sizeof(struct timeval)) == 0) )
+    {
+      found = True;
+      break;
+    }
+    else
+    {
+      entry_prev_p = entry_scanner_p;
+      entry_scanner_p = (share_mode_entry *)
+                          smb_shm_offset2addr(entry_scanner_p->next_share_mode_entry);
+    }
+  } 
+
+  if (found)
+  {
+    /* Decrement the number of entries in the record. */
+    file_scanner_p->num_share_mode_entries -= 1;
+
+    DEBUG(2,("del_share_modes (FAST_SHARE_MODES): \
+Deleting share mode entry dev = %d, inode = %d in hash bucket %d (num entries now = %d)\n",
+              dev, inode, hash_entry, file_scanner_p->num_share_mode_entries));
+    if(entry_prev_p == entry_scanner_p)
+      /* We are at start of list */
+      file_scanner_p->share_mode_entries = entry_scanner_p->next_share_mode_entry;
+    else
+      entry_prev_p->next_share_mode_entry = entry_scanner_p->next_share_mode_entry;
+    smb_shm_free(smb_shm_addr2offset(entry_scanner_p));
+
+    /* PARANOIA TEST */
+    if(file_scanner_p->num_share_mode_entries < 0)
+    {
+      DEBUG(0,("PANIC ERROR:del_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
+for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
+           dev, inode, hash_entry));
+      abort();
+    }
+
+    /* If we deleted the last share mode entry then remove the share mode record. */
+    if(file_scanner_p->num_share_mode_entries == 0)
+      {
+      DEBUG(2,("del_share_modes (FAST_SHARE_MODES): num entries = 0, deleting share_mode \
+record dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+      if(file_prev_p == file_scanner_p)
+	mode_array[hash_entry] = file_scanner_p->next_offset;
+      else
+	file_prev_p->next_offset = file_scanner_p->next_offset;
+      smb_shm_free(smb_shm_addr2offset(file_scanner_p));
+      }
+  }
+  else
+  {
+    DEBUG(0,("ERROR: del_share_modes (FAST_SHARE_MODES): No share mode record found \
+dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
+  }
+}
+
+/*******************************************************************
+set the share mode of a file. Return False on fail, True on success.
+********************************************************************/
+BOOL set_share_mode(share_lock_token token, int fnum)
+{
+  files_struct *fs_p = &Files[fnum];
+  int32 dev, inode;
+  smb_shm_offset_t *mode_array;
+  unsigned int hash_entry;
+  share_mode_record *file_scanner_p;
+  share_mode_record *file_prev_p;
+  share_mode_entry *new_entry_p;
+  smb_shm_offset_t new_entry_offset;
+  BOOL found = False;
+
+  dev = fs_p->fd_ptr->dev;
+  inode = fs_p->fd_ptr->inode;
+
+  hash_entry = HASH_ENTRY(dev, inode);
+  if(hash_entry > lp_shmem_hash_size() )
+  {
+    DEBUG(0,
+      ("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): hash_entry %d too large \
+(max = %d)\n",
+      hash_entry, lp_shmem_hash_size() ));
+    abort();
+  }
+
+  mode_array = (smb_shm_offset_t *)smb_shm_offset2addr(smb_shm_get_userdef_off());
+
+  file_scanner_p = (share_mode_record *)smb_shm_offset2addr(mode_array[hash_entry]);
+  file_prev_p = file_scanner_p;
+  
+  while(file_scanner_p)
+  {
+     if( (file_scanner_p->st_dev == dev) && (file_scanner_p->st_ino == inode) )
+     {
+        found = True;
+        break;
+     }
+     else
+     {
+        file_prev_p = file_scanner_p ;
+        file_scanner_p = (share_mode_record *)
+                          smb_shm_offset2addr(file_scanner_p->next_offset);
+     }
+  }
+  
+  if(!found)
+  {
+    /* We must create a share_mode_record */
+    share_mode_record *new_mode_p = NULL;
+    smb_shm_offset_t new_offset = smb_shm_alloc( sizeof(share_mode_record) +
+                                        strlen(fs_p->name) + 1);
+    if(new_offset == NULL_OFFSET)
+    {
+      DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): smb_shm_alloc fail !\n"));
+      return False;
+    }
+    new_mode_p = smb_shm_offset2addr(new_offset);
+    new_mode_p->locking_version = LOCKING_VERSION;
+    new_mode_p->st_dev = dev;
+    new_mode_p->st_ino = inode;
+    new_mode_p->num_share_mode_entries = 0;
+    new_mode_p->share_mode_entries = NULL_OFFSET;
+    strcpy(new_mode_p->file_name, fs_p->name);
+
+    /* Chain onto the start of the hash chain (in the hope we will be used first). */
+    new_mode_p->next_offset = mode_array[hash_entry];
+    mode_array[hash_entry] = new_offset;
+
+    file_scanner_p = new_mode_p;
+
+    DEBUG(3,("set_share_mode (FAST_SHARE_MODES): Created share record for %s (dev %d \
+inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
+  }
+ 
+  /* Now create the share mode entry */ 
+  new_entry_offset = smb_shm_alloc( sizeof(share_mode_entry));
+  if(new_entry_offset == NULL_OFFSET)
+  {
+    smb_shm_offset_t delete_offset = mode_array[hash_entry];
+    DEBUG(0,("ERROR:set_share_mode (FAST_SHARE_MODES): smb_shm_alloc fail 1!\n"));
+    /* Unlink the damaged record */
+    mode_array[hash_entry] = file_scanner_p->next_offset;
+    /* And delete it */
+    smb_shm_free( delete_offset );
+    return False;
+  }
+
+  new_entry_p = smb_shm_offset2addr(new_entry_offset);
+
+  new_entry_p->pid = getpid();
+  new_entry_p->share_mode = fs_p->share_mode;
+  memcpy( (char *)&new_entry_p->time, (char *)&fs_p->open_time, sizeof(struct timeval));
+
+  /* Chain onto the share_mode_record */
+  new_entry_p->next_share_mode_entry = file_scanner_p->share_mode_entries;
+  file_scanner_p->share_mode_entries = new_entry_offset;
+
+  /* PARANOIA TEST */
+  if(file_scanner_p->num_share_mode_entries < 0)
+  {
+    DEBUG(0,("PANIC ERROR:set_share_mode (FAST_SHARE_MODES): num_share_mode_entries < 0 (%d) \
+for dev = %d, ino = %d, hashbucket %d\n", file_scanner_p->num_share_mode_entries,
+         dev, inode, hash_entry));
+    abort();
+  }
+
+  /* Increment the share_mode_entries counter */
+  file_scanner_p->num_share_mode_entries += 1;
+
+  DEBUG(3,("set_share_mode (FAST_SHARE_MODES): Created share entry for %s with mode \
+0x%X pid=%d (num_entries now = %d)\n",fs_p->name, fs_p->share_mode, new_entry_p->pid,
+                             file_scanner_p->num_share_mode_entries));
+
+  return(True);
+}
+
+#else /* FAST_SHARE_MODES */
 
 /* SHARE MODE LOCKS USING SLOW DESCRIPTION FILES */
 
 /*******************************************************************
   name a share file
   ******************************************************************/
-static BOOL share_name(int cnum,struct stat *st,char *name)
+static BOOL share_name(int cnum, uint32 dev, uint32 inode, char *name)
 {
   strcpy(name,lp_lockdir());
   standard_sub(cnum,name);
@@ -141,444 +592,652 @@ static BOOL share_name(int cnum,struct stat *st,char *name)
   if (!*name) return(False);
   name += strlen(name);
   
-  sprintf(name,"/share.%d.%d",(int)st->st_dev,(int)st->st_ino);
+  sprintf(name,"/share.%u.%u",dev,inode);
   return(True);
 }
 
 /*******************************************************************
-  use the fnum to get the share file name
+  lock a share mode file.
   ******************************************************************/
-static BOOL share_name_fnum(int fnum,char *name)
+BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok)
 {
-  struct stat st;
-  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return(False);
-  return(share_name(Files[fnum].cnum,&st,name));
-}
-
-#endif
-
-/*******************************************************************
-  get the share mode of a file using the fnum
-  ******************************************************************/
-int get_share_mode_by_fnum(int cnum,int fnum,int *pid)
-{
-  struct stat sbuf;
-  if (fstat(Files[fnum].fd_ptr->fd,&sbuf) == -1) return(0);
-  return(get_share_mode(cnum,&sbuf,pid));
-}
-
-/*******************************************************************
-  get the share mode of a file using the files name
-  ******************************************************************/
-int get_share_mode_byname(int cnum,char *fname,int *pid)
-{
-  struct stat sbuf;
-  if (stat(fname,&sbuf) == -1) return(0);
-  return(get_share_mode(cnum,&sbuf,pid));
-}  
-
-
-/*******************************************************************
-get the share mode of a file
-********************************************************************/
-int get_share_mode(int cnum,struct stat *sbuf,int *pid)
-{
-#if FAST_SHARE_MODES
-  share_mode_record *scanner_p;
-  share_mode_record *prev_p;
-  int ret;
-  BOOL found = False;
-
-  *pid = 0;
-
-  if(!smb_shm_lock()) return (0);
-
-  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
-  prev_p = scanner_p;
-  while(scanner_p)
-  {
-     if( (scanner_p->st_dev == sbuf->st_dev) && (scanner_p->st_ino == sbuf->st_ino) )
-     {
-	found = True;
-	break;
-     }
-     else
-     {
-	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
-     }
-  }
-  
-  if(!found)
-  {
-     smb_shm_unlock();
-     return (0);
-  }
-  
-  if(scanner_p->locking_version != LOCKING_VERSION)
-  {
-     DEBUG(2,("Deleting old share mode record due to old locking version %d",scanner_p->locking_version));
-     if(prev_p == scanner_p)
-	smb_shm_set_userdef_off(scanner_p->next_offset);
-     else
-	prev_p->next_offset = scanner_p->next_offset;
-     smb_shm_free(smb_shm_addr2offset(scanner_p));
-     *pid = 0;
-	
-     smb_shm_unlock();
-     return (0);
-  }
-  
-  *pid = scanner_p->pid;
-  ret = scanner_p->share_mode;
-
-  if (*pid && !process_exists(*pid))
-  {
-    ret = 0;
-    *pid = 0;
-  }
-  
-  if (! *pid)
-  {
-     if(prev_p == scanner_p)
-	smb_shm_set_userdef_off(scanner_p->next_offset);
-     else
-	prev_p->next_offset = scanner_p->next_offset;
-     smb_shm_free(smb_shm_addr2offset(scanner_p));
-  }
-  
-  if (*pid)
-    DEBUG(5,("Read share mode record mode 0x%X pid=%d\n",ret,*pid));
-
-  if(!smb_shm_unlock()) return (0);
-  
-  return(ret);
-  
-#else
   pstring fname;
-  int fd2;
-  char buf[20];
-  int ret;
-  struct timeval t;
+  int fd;
 
-  *pid = 0;
+  *ptok = (share_lock_token)-1;
 
-  if (!share_name(cnum,sbuf,fname)) return(0);
+  if(!share_name(cnum, dev, inode, fname))
+    return False;
 
-  fd2 = open(fname,O_RDONLY,0);
-  if (fd2 < 0) return(0);
-
-  if (read(fd2,buf,20) != 20) {
-    DEBUG(2,("Failed to read share file %s\n",fname));
-    close(fd2);
-    unlink(fname);
-    return(0);
-  }
-  close(fd2);
-
-  t.tv_sec = IVAL(buf,4);
-  t.tv_usec = IVAL(buf,8);
-  ret = IVAL(buf,12);
-  *pid = IVAL(buf,16);
-  
-  if (IVAL(buf,0) != LOCKING_VERSION) {    
-    if (!unlink(fname)) DEBUG(2,("Deleted old locking file %s",fname));
-    *pid = 0;
-    return(0);
-  }
-
-  if (*pid && !process_exists(*pid)) {
-    ret=0;
-    *pid = 0;
-  }
-
-  if (! *pid) unlink(fname); /* XXXXX race, race */
-
-  if (*pid)
-    DEBUG(5,("Read share file %s mode 0x%X pid=%d\n",fname,ret,*pid));
-
-  return(ret);
-#endif
-}
-
-
-/*******************************************************************
-del the share mode of a file, if we set it last
-********************************************************************/
-void del_share_mode(int fnum)
-{
-#if FAST_SHARE_MODES
-  struct stat st;
-  struct timeval t;
-  int pid=0;
-  BOOL del = False;
-  share_mode_record *scanner_p;
-  share_mode_record *prev_p;
-  BOOL found = False;
-
-  t.tv_sec = t.tv_usec = 0;
-  
-  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return;
-  
-  if (!smb_shm_lock()) return;
-  
-  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
-  prev_p = scanner_p;
-  while(scanner_p)
   {
-     if( (scanner_p->st_dev == st.st_dev) && (scanner_p->st_ino == st.st_ino) )
-     {
-	found = True;
-	break;
-     }
-     else
-     {
-	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
-     }
-  }
-    
-  if(!found)
-  {
-     smb_shm_unlock();
-     return;
-  }
-  
-  t.tv_sec = scanner_p->time.tv_sec;
-  t.tv_usec = scanner_p->time.tv_usec;
-  pid = scanner_p->pid;
-  
-  if( (scanner_p->locking_version != LOCKING_VERSION) || !pid || !process_exists(pid))
-    del = True;
-
-  if (!del && (memcmp(&t,&Files[fnum].open_time,sizeof(t)) == 0)
-      && pid==(int)getpid())
-    del = True;
-
-  if (del)
-  {
-     DEBUG(2,("Deleting share mode record\n"));
-     if(prev_p == scanner_p)
-	smb_shm_set_userdef_off(scanner_p->next_offset);
-     else
-	prev_p->next_offset = scanner_p->next_offset;
-     smb_shm_free(smb_shm_addr2offset(scanner_p));
-	
-  }
-
-  smb_shm_unlock();
-  return;
-
-#else
-  pstring fname;
-  int fd2;
-  char buf[20];
-  struct timeval t;
-  int pid=0;
-  BOOL del = False;
-
-  t.tv_sec = t.tv_usec = 0;
-  if (!share_name_fnum(fnum,fname)) return;
-
-  fd2 = open(fname,O_RDONLY,0);
-  if (fd2 < 0) return;
-  if (read(fd2,buf,20) != 20)
-    del = True;
-  close(fd2);
-
-  if (!del) {
-    t.tv_sec = IVAL(buf,4);
-    t.tv_usec = IVAL(buf,8);
-    pid = IVAL(buf,16);
-  }
-
-  if (!del)
-    if (IVAL(buf,0) != LOCKING_VERSION || !pid || !process_exists(pid))
-      del = True;
-
-  if (!del && (memcmp(&t,&Files[fnum].open_time,sizeof(t)) == 0) && (pid==(int)getpid()))
-    del = True;
-
-  if (del) {
-    if (!unlink(fname)) 
-      DEBUG(2,("Deleted share file %s\n",fname));
-    else {
-      DEBUG(3,("Pending delete share file %s\n",fname));
-      if (*share_del_pending) DEBUG(0,("Share del clash!\n"));
-      strcpy(share_del_pending,fname);
+    int old_umask;
+    unbecome_user();
+    old_umask = umask(0);
+#ifdef SECURE_SHARE_MODES
+    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0600);
+#else /* SECURE_SHARE_MODES */
+    fd = (share_lock_token)open(fname,O_RDWR|O_CREAT,0644);
+#endif /* SECURE_SHARE_MODES */
+    umask(old_umask);
+    if(!become_user(cnum,Connections[cnum].vuid))
+    {
+      DEBUG(0,("lock_share_entry: Can't become connected user!\n"));
+      close(fd);
+      return False;
+    }
+    /* We need to change directory back to the connection root. */
+    if (ChDir(Connections[cnum].connectpath) != 0)
+    {
+      DEBUG(0,("lock_share_entry: Can't change directory to %s (%s)\n",
+              Connections[cnum].connectpath, strerror(errno)));
+      close(fd);
+      return False;  
     }
   }
-#endif
+
+  /* At this point we have an open fd to the share mode file. 
+     Lock the first byte exclusively to signify a lock. */
+  if(fcntl_lock(fd, F_SETLKW, 0, 1, F_WRLCK) == False)
+   {
+      DEBUG(0,("ERROR lock_share_entry: fcntl_lock failed with %s\n",
+                  strerror(errno)));   
+      close(fd);
+      return False;
+   }
+
+   *ptok = (share_lock_token)fd;
+   return True;
+}
+
+/*******************************************************************
+  unlock a share mode file.
+  ******************************************************************/
+BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token)
+{
+  int fd = (int)token;
+  int ret = True;
+
+  /* token is the fd of the open share mode file. */
+  /* Unlock the first byte. */
+  if(fcntl_lock(fd, F_SETLKW, 0, 1, F_UNLCK) == False)
+   { 
+      DEBUG(0,("ERROR unlock_share_entry: fcntl_lock failed with %s\n",
+                      strerror(errno)));   
+      ret = False;
+   }
+ 
+  close((int)token);
+  return ret;
+}
+
+/*******************************************************************
+Force a share file to be deleted.
+********************************************************************/
+
+static int delete_share_file( int cnum, char *fname )
+{
+  unbecome_user();
+  if(unlink(fname) != 0)
+  {
+    DEBUG(0,("delete_share_file: Can't delete share file %s (%s)\n",
+            fname, strerror(errno)));
+  }
+
+  DEBUG(5,("delete_share_file: Deleted share file %s\n", fname));
+
+  if(!become_user(cnum,Connections[cnum].vuid))
+  {
+    DEBUG(0,("delete_share_file: Can't become connected user!\n"));
+    return -1;
+  }
+  /* We need to change directory back to the connection root. */
+  if (ChDir(Connections[cnum].connectpath) != 0)
+  {
+    DEBUG(0,("delete_share_file: Can't change directory to %s (%s)\n",
+            Connections[cnum].connectpath, strerror(errno)));
+    return -1;  
+  }
+  return 0;
+}
+
+/*******************************************************************
+Read a share file into a buffer.
+********************************************************************/
+
+static int read_share_file(int cnum, int fd, char *fname, char **out, BOOL *p_new_file)
+{
+  struct stat sb;
+  char *buf;
+  int size;
+
+  *out = 0;
+  *p_new_file = False;
+
+  if(fstat(fd, &sb) != 0)
+  {
+    DEBUG(0,("ERROR: read_share_file: Failed to do stat on share file %s (%s)\n",
+                  fname, strerror(errno)));
+    return -1;
+  }
+
+  if(sb.st_size == 0)
+  {
+     *p_new_file = True;
+     return 0;
+  }
+
+  /* Allocate space for the file */
+  if((buf = (char *)malloc(sb.st_size)) == NULL)
+  {
+    DEBUG(0,("read_share_file: malloc for file size %d fail !\n", sb.st_size));
+    return -1;
+  }
+  
+  if(lseek(fd, 0, SEEK_SET) != 0)
+  {
+    DEBUG(0,("ERROR: read_share_file: Failed to reset position to 0 \
+for share file %s (%s)\n", fname, strerror(errno)));
+    if(buf)
+      free(buf);
+    return -1;
+  }
+  
+  if (read(fd,buf,sb.st_size) != sb.st_size)
+  {
+    DEBUG(0,("ERROR: read_share_file: Failed to read share file %s (%s)\n",
+               fname, strerror(errno)));
+    if(buf)
+      free(buf);
+    return -1;
+  }
+  
+  if (IVAL(buf,0) != LOCKING_VERSION) {
+    DEBUG(0,("ERROR: read_share_file: share file %s has incorrect \
+locking version (was %d, should be %d).\n",fname, IVAL(buf,0), LOCKING_VERSION));
+    if(buf)
+      free(buf);
+    delete_share_file(cnum, fname);
+    return -1;
+  }
+
+  /* Sanity check for file contents */
+  size = sb.st_size;
+  size -= 10; /* Remove the header */
+
+  /* Remove the filename component. */
+  size -= SVAL(buf, 8);
+
+  /* The remaining size must be a multiple of 16 - error if not. */
+  if((size % 16) != 0)
+  {
+    DEBUG(0,("ERROR: read_share_file: share file %s is an incorrect length - \
+deleting it.\n", fname));
+    if(buf)
+      free(buf);
+    delete_share_file(cnum, fname);
+    return -1;
+  }
+
+  *out = buf;
+  return 0;
+}
+
+/*******************************************************************
+get all share mode entries in a share file for a dev/inode pair.
+********************************************************************/
+int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
+                    min_share_mode_entry **old_shares)
+{
+  int fd = (int)token;
+  pstring fname;
+  int i;
+  int num_entries;
+  int num_entries_copied;
+  int newsize;
+  min_share_mode_entry *share_array;
+  char *buf = 0;
+  char *base = 0;
+  BOOL new_file;
+
+  *old_shares = 0;
+
+  /* Read the share file header - this is of the form:
+     0   -  locking version.
+     4   -  number of share mode entries.
+     8   -  2 byte name length
+     [n bytes] file name (zero terminated).
+
+   Followed by <n> share mode entries of the form :
+
+     0   -  tv_sec
+     4   -  tv_usec
+     8   -  share_mode
+    12   -  pid
+
+  */
+
+  share_name(cnum, dev, inode, fname);
+
+  if(read_share_file( cnum, fd, fname, &buf, &new_file) != 0)
+  {
+    DEBUG(0,("ERROR: get_share_modes: Failed to read share file %s\n",
+                  fname));
+    return 0;
+  }
+
+  if(new_file == True)
+    return 0;
+
+  num_entries = IVAL(buf,4);
+
+  DEBUG(5,("get_share_modes: share file %s has %d share mode entries.\n",
+            fname, num_entries));
+
+  /* PARANOIA TEST */
+  if(num_entries < 0)
+  {
+    DEBUG(0,("PANIC ERROR:get_share_mode: num_share_mode_entries < 0 (%d) \
+for share file %d\n", num_entries, fname));
+    abort();
+  }
+
+  if(num_entries)
+  {
+    *old_shares = share_array = (min_share_mode_entry *)
+                 malloc(num_entries * sizeof(min_share_mode_entry));
+    if(*old_shares == 0)
+    {
+      DEBUG(0,("get_share_modes: malloc fail !\n"));
+      return 0;
+    }
+  } 
+  else
+  {
+    /* No entries - just delete the file. */
+    DEBUG(0,("get_share_modes: share file %s has no share mode entries - deleting.\n",
+              fname));
+    if(buf)
+      free(buf);
+    delete_share_file(cnum, fname);
+    return 0;
+  }
+
+  num_entries_copied = 0;
+  base = buf + 10 + SVAL(buf,8);
+
+  for( i = 0; i < num_entries; i++)
+  {
+    int pid;
+    char *p = base + (i*16);
+
+    pid = IVAL(p,12);
+
+    if(!process_exists(pid))
+    {
+      DEBUG(0,("get_share_modes: process %d no longer exists and \
+it left a share mode entry with mode 0x%X in share file %s\n",
+            pid, IVAL(p,8), fname));
+      continue;
+    }
+    share_array[num_entries_copied].time.tv_sec = IVAL(p,0);
+    share_array[num_entries_copied].time.tv_usec = IVAL(p,4);
+    share_array[num_entries_copied].share_mode = IVAL(p,8);
+    share_array[num_entries_copied].pid = pid;
+
+    num_entries_copied++;
+  }
+
+  if(num_entries_copied == 0)
+  {
+    /* Delete the whole file. */
+    DEBUG(0,("get_share_modes: share file %s had no valid entries - deleting it !\n",
+             fname));
+    if(*old_shares)
+      free((char *)old_shares);
+    if(buf)
+      free(buf);
+    delete_share_file(cnum, fname);
+    return 0;
+  }
+
+  /* If we deleted some entries we need to re-write the whole number of
+     share mode entries back into the file. */
+
+  if(num_entries_copied != num_entries)
+  {
+    if(lseek(fd, 0, SEEK_SET) != 0)
+    {
+      DEBUG(0,("ERROR: get_share_modes: lseek failed to reset to \
+position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
+      if(*old_shares)
+        free((char *)old_shares);
+      if(buf)
+        free(buf);
+      return 0;
+    }
+
+    SIVAL(buf, 4, num_entries_copied);
+    for( i = 0; i < num_entries_copied; i++)
+    {
+      char *p = base + (i*16);
+
+      SIVAL(p,12,share_array[i].pid);
+      SIVAL(p,8,share_array[i].share_mode);
+      SIVAL(p,0,share_array[i].time.tv_sec);
+      SIVAL(p,4,share_array[i].time.tv_usec);
+    }
+
+    newsize = (base - buf) + (16*num_entries_copied);
+    if(write(fd, buf, newsize) != newsize)
+    {
+      DEBUG(0,("ERROR: get_share_modes: failed to re-write share \
+mode file %s (%s)\n", fname, strerror(errno)));
+      if(*old_shares)
+        free((char *)old_shares);
+      if(buf)
+        free(buf);
+      return 0;
+    }
+    /* Now truncate the file at this point. */
+    if(ftruncate(fd, newsize)!= 0)
+    {
+      DEBUG(0,("ERROR: get_share_modes: failed to ftruncate share \
+mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
+      if(*old_shares)
+        free((char *)old_shares);
+      if(buf)
+        free(buf);
+      return 0;
+    }
+  }
+
+  if(buf)
+    free(buf);
+
+  DEBUG(5,("get_share_modes: Read share file %s returning %d entries\n",fname,
+            num_entries_copied));
+
+  return num_entries_copied;
+}
+
+/*******************************************************************
+del a share mode from a share mode file.
+********************************************************************/
+void del_share_mode(share_lock_token token, int fnum)
+{
+  pstring fname;
+  int fd = (int)token;
+  char *buf = 0;
+  char *base = 0;
+  int num_entries;
+  int newsize;
+  int i;
+  files_struct *fs_p = &Files[fnum];
+  int pid;
+  BOOL deleted = False;
+  BOOL new_file;
+
+  share_name(fs_p->cnum, fs_p->fd_ptr->dev, 
+                       fs_p->fd_ptr->inode, fname);
+
+  if(read_share_file( fs_p->cnum, fd, fname, &buf, &new_file) != 0)
+  {
+    DEBUG(0,("ERROR: del_share_mode: Failed to read share file %s\n",
+                  fname));
+    return;
+  }
+
+  if(new_file == True)
+  {
+    DEBUG(0,("ERROR:del_share_mode: share file %s is new (size zero), deleting it.\n",
+              fname));
+    delete_share_file(fs_p->cnum, fname);
+    return;
+  }
+
+  num_entries = IVAL(buf,4);
+
+  DEBUG(5,("del_share_mode: share file %s has %d share mode entries.\n",
+            fname, num_entries));
+
+  /* PARANOIA TEST */
+  if(num_entries < 0)
+  {
+    DEBUG(0,("PANIC ERROR:del_share_mode: num_share_mode_entries < 0 (%d) \
+for share file %d\n", num_entries, fname));
+    abort();
+  }
+
+  if(num_entries == 0)
+  {
+    /* No entries - just delete the file. */
+    DEBUG(0,("del_share_mode: share file %s has no share mode entries - deleting.\n",
+              fname));
+    if(buf)
+      free(buf);
+    delete_share_file(fs_p->cnum, fname);
+    return;
+  }
+
+  pid = getpid();
+
+  /* Go through the entries looking for the particular one
+     we have set - delete it.
+  */
+
+  base = buf + 10 + SVAL(buf,8);
+
+  for(i = 0; i < num_entries; i++)
+  {
+    char *p = base + (i*16);
+
+    if((IVAL(p,0) != fs_p->open_time.tv_sec) || (IVAL(p,4) != fs_p->open_time.tv_usec) ||
+        (IVAL(p,8) != fs_p->share_mode) || (IVAL(p,12) != pid))
+      continue;
+
+    DEBUG(5,("del_share_mode: deleting entry number %d (of %d) from the share file %s\n",
+             i, num_entries, fname));
+
+    /* Remove this entry. */
+    if(i != num_entries - 1)
+      memcpy(p, p + 16, (num_entries - i - 1)*16);
+
+    deleted = True;
+    break;
+  }
+
+  if(!deleted)
+  {
+    DEBUG(0,("del_share_mode: entry not found in share file %s\n", fname));
+    if(buf)
+      free(buf);
+    return;
+  }
+
+  num_entries--;
+  SIVAL(buf,4, num_entries);
+
+  if(num_entries == 0)
+  {
+    /* Deleted the last entry - remove the file. */
+    DEBUG(5,("del_share_mode: removed last entry in share file - deleting share file %s\n",
+             fname));
+    if(buf)
+      free(buf);
+    delete_share_file(fs_p->cnum,fname);
+    return;
+  }
+
+  /* Re-write the file - and truncate it at the correct point. */
+  if(lseek(fd, 0, SEEK_SET) != 0)
+    {
+      DEBUG(0,("ERROR: del_share_mode: lseek failed to reset to \
+position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
+      if(buf)
+        free(buf);
+      return;
+    }
+
+  newsize = (base - buf) + (16*num_entries);
+  if(write(fd, buf, newsize) != newsize)
+    {
+      DEBUG(0,("ERROR: del_share_mode: failed to re-write share \
+mode file %s (%s)\n", fname, strerror(errno)));
+      if(buf)
+        free(buf);
+      return;
+    }
+  /* Now truncate the file at this point. */
+  if(ftruncate(fd, newsize) != 0)
+  {
+    DEBUG(0,("ERROR: del_share_mode: failed to ftruncate share \
+mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
+    if(buf)
+      free(buf);
+    return;
+  }
 }
   
-
 /*******************************************************************
 set the share mode of a file
 ********************************************************************/
-BOOL set_share_mode(int fnum,int mode)
+BOOL set_share_mode(share_lock_token token,int fnum)
 {
-#if FAST_SHARE_MODES
-  int pid = (int)getpid();
-  struct stat st;
-  smb_shm_offset_t new_off;
-  share_mode_record *new_p;
-  
-  
-  if (fstat(Files[fnum].fd_ptr->fd,&st) != 0) return(False);
-  
-  if (!smb_shm_lock()) return (False);
-  new_off = smb_shm_alloc(sizeof(share_mode_record) + strlen(Files[fnum].name) );
-  if (new_off == NULL_OFFSET) return (False);
-  new_p = (share_mode_record *)smb_shm_offset2addr(new_off);
-  new_p->locking_version = LOCKING_VERSION;
-  new_p->share_mode = mode;
-  new_p->time.tv_sec = Files[fnum].open_time.tv_sec;
-  new_p->time.tv_usec = Files[fnum].open_time.tv_usec;
-  new_p->pid = pid;
-  new_p->st_dev = st.st_dev;
-  new_p->st_ino = st.st_ino;
-  strcpy(new_p->file_name,Files[fnum].name);
-  new_p->next_offset = smb_shm_get_userdef_off();
-  smb_shm_set_userdef_off(new_off);
-
-
-  DEBUG(3,("Created share record for %s with mode 0x%X pid=%d\n",Files[fnum].name,mode,pid));
-
-  if (!smb_shm_unlock()) return (False);
-  return(True);
-
-#else
+  files_struct *fs_p = &Files[fnum];
   pstring fname;
-  int fd2;
-  char buf[20];
+  int fd = (int)token;
   int pid = (int)getpid();
+  struct stat sb;
+  char *buf;
+  int num_entries;
+  int header_size;
+  char *p;
 
-  if (!share_name_fnum(fnum,fname)) return(False);
+  share_name(fs_p->cnum, fs_p->fd_ptr->dev,
+                       fs_p->fd_ptr->inode, fname);
 
+  if(fstat(fd, &sb) != 0)
   {
-    int old_umask = umask(0);
-    fd2 = open(fname,O_WRONLY|O_CREAT|O_TRUNC,0644);
-    umask(old_umask);
-  }
-  if (fd2 < 0) {
-    DEBUG(2,("Failed to create share file %s\n",fname));
-    return(False);
+    DEBUG(0,("ERROR: set_share_mode: Failed to do stat on share file %s\n",
+                  fname));
+    return False;
   }
 
-  SIVAL(buf,0,LOCKING_VERSION);
-  SIVAL(buf,4,Files[fnum].open_time.tv_sec);
-  SIVAL(buf,8,Files[fnum].open_time.tv_usec);
-  SIVAL(buf,12,mode);
-  SIVAL(buf,16,pid);
-
-  if (write(fd2,buf,20) != 20) {
-    DEBUG(2,("Failed to write share file %s\n",fname));
-    close(fd2);
-    unlink(fname);
-    return(False);
-  }
-
-  write(fd2,Files[fnum].name,strlen(Files[fnum].name)+1);
-
-  close(fd2);
-
-  DEBUG(3,("Created share file %s with mode 0x%X pid=%d\n",fname,mode,pid));
-
-  return(True);
-#endif
-}
-  
-
-/*******************************************************************
-cleanup any stale share files
-********************************************************************/
-void clean_share_modes(void)
-{
-#ifdef USE_SHMEM
-  share_mode_record *scanner_p;
-  share_mode_record *prev_p;
-  int pid;
-  
-  if (!smb_shm_lock()) return;
-  
-  scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
-  prev_p = scanner_p;
-  while(scanner_p)
+  /* Sanity check for file contents (if it's not a new share file). */
+  if(sb.st_size != 0)
   {
-     pid = scanner_p->pid;
-     
-     if( (scanner_p->locking_version != LOCKING_VERSION) || !process_exists(pid))
-     {
-	DEBUG(2,("Deleting stale share mode record"));
-	if(prev_p == scanner_p)
-	{
-	   smb_shm_set_userdef_off(scanner_p->next_offset);
-	   smb_shm_free(smb_shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)smb_shm_offset2addr(smb_shm_get_userdef_off());
-           prev_p = scanner_p;
-	}
-	else
-	{
-	   prev_p->next_offset = scanner_p->next_offset;
-  	   smb_shm_free(smb_shm_addr2offset(scanner_p));
-           scanner_p = (share_mode_record *)smb_shm_offset2addr(prev_p->next_offset);
-	}
-	
-     }
-     else
-     {
-	prev_p = scanner_p ;
-	scanner_p = (share_mode_record *)smb_shm_offset2addr(scanner_p->next_offset);
-     }
-  }
-    
+    int size = sb.st_size;
 
-  smb_shm_unlock();
-  return;
+    /* Allocate space for the file plus one extra entry */
+    if((buf = (char *)malloc(sb.st_size + 16)) == NULL)
+    {
+      DEBUG(0,("set_share_mode: malloc for file size %d fail !\n", sb.st_size + 16));
+      return False;
+    }
+ 
+    if(lseek(fd, 0, SEEK_SET) != 0)
+    {
+      DEBUG(0,("ERROR: set_share_mode: Failed to reset position \
+to 0 for share file %s (%s)\n", fname, strerror(errno)));
+      if(buf)
+        free(buf);
+      return False;
+    }
+
+    if (read(fd,buf,sb.st_size) != sb.st_size)
+    {
+      DEBUG(0,("ERROR: set_share_mode: Failed to read share file %s (%s)\n",
+                  fname, strerror(errno)));
+      if(buf)
+        free(buf);
+      return False;
+    }   
   
-#else
-  char *lockdir = lp_lockdir();
-  void *dir;
-  char *s;
+    if (IVAL(buf,0) != LOCKING_VERSION) 
+    {
+      DEBUG(0,("ERROR: set_share_mode: share file %s has incorrect \
+locking version (was %d, should be %d).\n",fname, IVAL(buf,0), LOCKING_VERSION));
+      if(buf)
+        free(buf);
+      delete_share_file(fs_p->cnum, fname);
+      return False;
+    }   
 
-  if (!*lockdir) return;
+    size -= (10 + SVAL(buf, 8)); /* Remove the header */
 
-  dir = opendir(lockdir);
-  if (!dir) return;
-
-  while ((s=readdirname(dir))) {
-    char buf[20];
-    int pid;
-    int fd;
-    pstring lname;
-    int dev,inode;
-
-    if (sscanf(s,"share.%d.%d",&dev,&inode)!=2) continue;
-
-    strcpy(lname,lp_lockdir());
-    trim_string(lname,NULL,"/");
-    strcat(lname,"/");
-    strcat(lname,s);
-
-    fd = open(lname,O_RDONLY,0);
-    if (fd < 0) continue;
-
-    if (read(fd,buf,20) != 20) {
-      close(fd);
-      if (!unlink(lname))
-	printf("Deleted corrupt share file %s\n",s);
-      continue;
+    /* The remaining size must be a multiple of 16 - error if not. */
+    if((size % 16) != 0)
+    {
+      DEBUG(0,("ERROR: set_share_mode: share file %s is an incorrect length - \
+deleting it.\n", fname));
+      if(buf)
+        free(buf);
+      delete_share_file(fs_p->cnum, fname);
+      return False;
     }
-    close(fd);
 
-    pid = IVAL(buf,16);
-
-    if (IVAL(buf,0) != LOCKING_VERSION || !process_exists(pid)) {
-      if (!unlink(lname))
-	printf("Deleted stale share file %s\n",s);
+  }
+  else
+  {
+    /* New file - just use a single_entry. */
+    if((buf = (char *)malloc(10 + strlen(fs_p->name) + 1 + 16)) == NULL)
+    {
+      DEBUG(0,("ERROR: set_share_mode: malloc failed for single entry.\n"));
+      return False;
     }
+    SIVAL(buf,0,LOCKING_VERSION);
+    SIVAL(buf,4,0);
+    SSVAL(buf,8,strlen(fs_p->name) + 1);
+    strcpy(buf + 10, fs_p->name);
   }
 
-  closedir(dir);
-#endif
+  num_entries = IVAL(buf,4);
+  header_size = 10 + SVAL(buf,8);
+  p = buf + header_size + (num_entries * 16);
+  SIVAL(p,0,fs_p->open_time.tv_sec);
+  SIVAL(p,4,fs_p->open_time.tv_usec);
+  SIVAL(p,8,fs_p->share_mode);
+  SIVAL(p,12,pid);
+
+  num_entries++;
+
+  SIVAL(buf,4,num_entries);
+
+  if(lseek(fd, 0, SEEK_SET) != 0)
+  {
+    DEBUG(0,("ERROR: set_share_mode: (1) Failed to reset position to \
+0 for share file %s (%s)\n", fname, strerror(errno)));
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  if (write(fd,buf,header_size + (num_entries*16)) != (header_size + (num_entries*16))) 
+  {
+    DEBUG(2,("ERROR: set_share_mode: Failed to write share file %s - \
+deleting it (%s).\n",fname, strerror(errno)));
+    delete_share_file(fs_p->cnum, fname);
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  /* Now truncate the file at this point - just for safety. */
+  if(ftruncate(fd, header_size + (16*num_entries))!= 0)
+  {
+    DEBUG(0,("ERROR: set_share_mode: failed to ftruncate share \
+mode file %s to size %d (%s)\n", fname, header_size + (16*num_entries), strerror(errno)));
+    if(buf)
+      free(buf);
+    return False;
+  }
+
+  if(buf)
+    free(buf);
+
+  DEBUG(3,("set_share_mode: Created share file %s with \
+mode 0x%X pid=%d\n",fname,fs_p->share_mode,pid));
+
+  return True;
 }
+#endif /* FAST_SHARE_MODES */
