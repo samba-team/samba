@@ -74,6 +74,9 @@
 #ifdef HAVE_NETINET6_IN6_H
 #include <netinet6/in6.h>
 #endif
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
@@ -392,6 +395,26 @@ extern const char *__progname;
 
 #ifndef HAVE_ENVIRON_DECLARATION
 extern char **environ;
+#endif
+
+#ifndef HAVE_GETIPNODEBYNAME
+struct hostent *
+getipnodebyname (const char *name, int af, int flags, int *error_num);
+#endif
+
+#ifndef HAVE_GETIPNODEBYADDR
+struct hostent *
+getipnodebyaddr (const void *src, size_t len, int af, int *error_num);
+#endif
+
+#ifndef HAVE_FREEHOSTENT
+void
+freehostent (struct hostent *h);
+#endif
+
+#ifndef HAVE_COPYHOSTENT
+struct hostent *
+copyhostent (const struct hostent *h);
 #endif
 
 /*
