@@ -147,7 +147,7 @@ otp_md4_hash (char *data,
   return otp_md_hash (data, len,
 		      (void (*)(void *))MD4Init,
 		      (void (*)(void *, void *, size_t))MD4Update, 
-		      (void (*)(void *, void *))MD4Finito,
+		      (void (*)(void *, void *))MD4Final,
 		      &md4, res, 16);
 }
 
@@ -160,7 +160,7 @@ otp_md4_next (OtpKey key)
   return otp_md_next (key, 
 		      (void (*)(void *))MD4Init, 
 		      (void (*)(void *, void *, size_t))MD4Update, 
-		      (void (*)(void *, void *))MD4FInal,
+		      (void (*)(void *, void *))MD4Final,
 		      &md4, res, sizeof(res));
 }
 
@@ -212,13 +212,13 @@ otp_md5_next (OtpKey key)
  */
 
 static void
-sha_finito_little_endian (struct sha *m, void *res)
+SHA1Final_little_endian (void *res, struct sha1 *m)
 {
   unsigned char tmp[20];
   unsigned char *p = res;
   int j;
 
-  sha_finito (m, tmp);
+  SHA1Final (tmp, m);
   for (j = 0; j < 20; j += 4) {
     p[j]   = tmp[j+3];
     p[j+1] = tmp[j+2];
@@ -231,13 +231,13 @@ int
 otp_sha_init (OtpKey key, char *pwd, char *seed)
 {
   unsigned char res[20];
-  struct sha sha;
+  struct sha1 sha1;
 
   return otp_md_init (key, pwd, seed, 
-		      (void (*)(void *))sha_init, 
-		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito_little_endian,
-		      &sha, res, sizeof(res));
+		      (void (*)(void *))SHA1Init, 
+		      (void (*)(void *, void *, size_t))SHA1Update, 
+		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      &sha1, res, sizeof(res));
 }
 
 int
@@ -245,24 +245,24 @@ otp_sha_hash (char *data,
 	      size_t len,
 	      unsigned char *res)
 {
-  struct sha sha;
+  struct sha1 sha1;
 
   return otp_md_hash (data, len,
-		      (void (*)(void *))sha_init,
-		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito_little_endian,
-		      &sha, res, 20);
+		      (void (*)(void *))SHA1Init,
+		      (void (*)(void *, void *, size_t))SHA1Update, 
+		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      &sha1, res, 20);
 }
 
 int
 otp_sha_next (OtpKey key)
 {
   unsigned char res[20];
-  struct sha sha;
+  struct sha1 sha1;
 
   return otp_md_next (key, 
-		      (void (*)(void *))sha_init, 
-		      (void (*)(void *, void *, size_t))sha_update, 
-		      (void (*)(void *, void *))sha_finito_little_endian,
-		      &sha, res, sizeof(res));
+		      (void (*)(void *))SHA1Init, 
+		      (void (*)(void *, void *, size_t))SHA1Update, 
+		      (void (*)(void *, void *))SHA1Final_little_endian,
+		      &sha1, res, sizeof(res));
 }
