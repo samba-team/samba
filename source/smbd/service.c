@@ -182,14 +182,14 @@ void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t,
 {
 	struct server_connection *conn = fde->private;
 
+	conn->event.idle->next_event = t + conn->event.idle_time;
+
 	if (flags & EVENT_FD_WRITE) {
 		conn->service->ops->send_handler(conn, t, flags);
-		conn->event.idle->next_event = t + conn->event.idle_time;
 	}
 
 	if (flags & EVENT_FD_READ) {
 		conn->service->ops->recv_handler(conn, t, flags);
-		conn->event.idle->next_event = t + conn->event.idle_time;
 	}
 
 }
