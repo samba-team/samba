@@ -13,6 +13,7 @@
 		[in,ref]     policy_handle *handle
 		);
 	
+
 	/******************/
 	/* Function: 0x01 */
 	NTSTATUS lsa_Delete ();
@@ -51,7 +52,9 @@
 		security_descriptor *sec_desc;
 		lsa_QosInfo *sec_qos;
 	} lsa_ObjectAttribute;
-	
+
+	/* notice the screwup with the system_name - thats why MS created
+	   OpenPolicy2 */
 	NTSTATUS lsa_OpenPolicy (
 		[in]       uint16 *system_name,
 		[in,ref]   lsa_ObjectAttribute *attr,
@@ -59,6 +62,7 @@
 		[out,ref]  policy_handle *handle
 		);
 	
+
 
 	/******************/
 	/* Function: 0x07 */
