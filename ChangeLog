@@ -1,3 +1,7 @@
+2000-09-01  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/kerberos.7: short kerberos intro page
+
 2000-08-23  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (find_type): make sure of always setting
