@@ -314,7 +314,7 @@ Every slave needs a keytab with a principal,
 @code{propd}, as follows:
 
 @example
-slave# ktutil get -p foo/admin host/`hostname`
+slave# ktutil get -p foo/admin hprop/`hostname`
 slave# hpropd
 @end example
 
