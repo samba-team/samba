@@ -620,6 +620,7 @@
 		<listitem><para><parameter>domain logons</parameter></para></listitem>
 		<listitem><para><parameter>domain master</parameter></para></listitem>
 		<listitem><para><parameter>encrypt passwords</parameter></para></listitem>
+		<listitem><para><parameter>enhanced browsing</parameter></para></listitem>
 		<listitem><para><parameter>enumports command</parameter></para></listitem>
 		<listitem><para><parameter>getwd cache</parameter></para></listitem>
 		<listitem><para><parameter>hide local users</parameter></para></listitem>
@@ -2253,7 +2254,33 @@
 		
 		<para>Default: <command>encrypt passwords = no</command></para></listitem>
 		</varlistentry>
-		
+
+
+		<varlistentry>
+		<term><anchor id="ENHANCEDBROWSING">enhanced browsing (G)</term>
+		<listitem><para>This option enables a couple of enhancements to 
+		cross-subnet browse propogation that have been added in Samba 
+		but which are not standard in Microsoft implementations.  
+		<emphasis>These enhancements are currently only available in
+		the HEAD Samba CVS tree (not Samba 2.2.x).</emphasis></para>
+
+		<para>The first enhancement to browse propogation consists of a regular
+		wildcard query to a Samba WINS server for all Domain Master Browsers,
+		followed by a browse synchronisation with each of the returned
+		DMBs. The second enhancement consists of a regular randomised browse
+		synchronisation with all currently known DMBs.</para>
+
+		<para>You may wish to disable this option if you have a problem with empty
+		workgroups not disappearing from browse lists. Due to the restrictions
+		of the browse protocols these enhancements can cause a empty workgroup
+		to stay around forever which can be annoying.</para>
+
+		<para>In general you should leave this option enabled as it makes
+		cross-subnet browse propogation much more reliable.</para>
+
+		<para>Default: <command>enhanced browsing = yes</command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>

@@ -322,6 +322,16 @@
 		- Execute an OpenPrinterEx() and ClosePrinter() RPC 
 		against a given printer. </para></listitem> 
 
+
+		<listitem><para><command>setdriver &lt;printername&gt; &lt;drivername&gt;</command> 
+		- Execute a SetPrinter() command to update the printer driver associated
+		with an installed printer.  The printer driver must already be correctly
+		installed on the print server.  </para>
+
+		<para>See also the <command>enumprinters</command> and 
+		<command>enumdrivers</command> commands for obtaining a list of
+		of installed printers and drivers.</para></listitem>
+
 	</itemizedlist>
 
 
