@@ -42,6 +42,10 @@ static char rcsid[] = "$NetBSD: logwtmp.c,v 1.4 1995/04/11 02:44:58 cgd Exp $";
 #endif
 #endif /* not lint */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/stat.h>
@@ -61,13 +65,12 @@ static int fd = -1;
  * after login, but before logout).
  */
 void
-logwtmp(line, name, host)
-	char *line, *name, *host;
+logwtmp(char *line, char *name, char *host)
 {
 	struct utmp ut;
 	struct stat buf;
 
-	if (fd < 0 && (fd = open(_PATH_WTMP, O_WRONLY|O_APPEND, 0)) < 0)
+	if (fd < 0 && (fd = open(WTMP_PATH, O_WRONLY|O_APPEND, 0)) < 0)
 		return;
 	if (fstat(fd, &buf) == 0) {
 		(void)strncpy(ut.ut_line, line, sizeof(ut.ut_line));

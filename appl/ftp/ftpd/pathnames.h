@@ -35,7 +35,21 @@
  *	@(#)pathnames.h	8.1 (Berkeley) 6/4/93
  */
 
+#ifdef HAVE_PATH_H
 #include <paths.h>
+#endif
+
+#ifndef _PATH_DEVNULL
+#define _PATH_DEVNULL "/dev/null"
+#endif
+
+#ifndef _PATH_NOLOGIN
+#define _PATH_NOLOGIN "/etc/nologin"
+#endif
+
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL "/bin/sh"
+#endif
 
 #define	_PATH_FTPUSERS		"/etc/ftpusers"
 #define	_PATH_FTPCHROOT		"/etc/ftpchroot"

@@ -45,6 +45,10 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 #endif
 #endif /* not lint */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include <sys/types.h>
 #include <sys/wait.h>
 
@@ -67,15 +71,14 @@ static int *pids;
 static int fds;
 
 FILE *
-ftpd_popen(program, type)
-	char *program, *type;
+ftpd_popen(char *program, char *type)
 {
 	char *cp;
 	FILE *iop;
 	int argc, gargc, pdes[2], pid;
 	char **pop, *argv[100], *gargv[1000];
 
-	if (*type != 'r' && *type != 'w' || type[1])
+	if (strcmp(type, "r") && strcmp(type, "w"))
 		return (NULL);
 
 	if (!pids) {
@@ -151,10 +154,9 @@ pfree:	for (argc = 1; gargv[argc] != NULL; argc++)
 }
 
 int
-ftpd_pclose(iop)
-	FILE *iop;
+ftpd_pclose(FILE *iop)
 {
-	int fdes, omask, status;
+	int fdes, status;
 	pid_t pid;
 	sigset_t sigset, osigset;
 

@@ -35,33 +35,72 @@
  *	@(#)extern.h	8.2 (Berkeley) 4/4/94
  */
 
-void	blkfree __P((char **));
-char  **copyblk __P((char **));
-void	cwd __P((char *));
-void	delete __P((char *));
-void	dologout __P((int));
-void	fatal __P((char *));
-int	ftpd_pclose __P((FILE *));
-FILE   *ftpd_popen __P((char *, char *));
-char   *getline __P((char *, int, FILE *));
-void	logwtmp __P((char *, char *, char *));
-void	lreply __P((int, const char *, ...));
-void	makedir __P((char *));
-void	nack __P((char *));
-void	pass __P((char *));
-void	passive __P((void));
-void	perror_reply __P((int, char *));
-void	pwd __P((void));
-void	removedir __P((char *));
-void	renamecmd __P((char *, char *));
-char   *renamefrom __P((char *));
-void	reply __P((int, const char *, ...));
-void	retrieve __P((char *, char *));
-void	send_file_list __P((char *));
-void	setproctitle __P((const char *, ...));
-void	statcmd __P((void));
-void	statfilecmd __P((char *));
-void	store __P((char *, char *, int));
-void	upper __P((char *));
-void	user __P((char *));
-void	yyerror __P((char *));
+#ifndef _EXTERN_H_
+#define _EXTERN_H_
+
+#include <netinet/in.h>
+#include <netdb.h>
+
+#include <stdio.h>
+#include <stdarg.h>
+#include <setjmp.h>
+#include <pwd.h>
+
+void	blkfree(char **);
+char  **copyblk(char **);
+void	cwd(char *);
+void	delete(char *);
+void	dologout(int);
+void	fatal(char *);
+int	ftpd_pclose(FILE *);
+FILE   *ftpd_popen(char *, char *);
+char   *getline(char *, int);
+void	logwtmp(char *, char *, char *);
+void	lreply(int, const char *, ...);
+void	makedir(char *);
+void	nack(char *);
+void	pass(char *);
+void	passive(void);
+void	perror_reply(int, char *);
+void	pwd(void);
+void	removedir(char *);
+void	renamecmd(char *, char *);
+char   *renamefrom(char *);
+void	reply(int, const char *, ...);
+void	retrieve(char *, char *);
+void	send_file_list(char *);
+void	setproctitle(const char *, ...);
+void	statcmd(void);
+void	statfilecmd(char *);
+void	store(char *, char *, int);
+void	upper(char *);
+void	user(char *);
+void	yyerror(char *);
+
+extern struct sockaddr_in ctrl_addr, his_addr;
+extern char hostname[];
+
+extern	struct sockaddr_in data_dest;
+extern	int logged_in;
+extern	struct passwd *pw;
+extern	int guest;
+extern	int logging;
+extern	int type;
+extern	int oobflag;
+extern off_t file_size;
+extern off_t byte_count;
+extern jmp_buf urgcatch;
+
+extern	int form;
+extern	int debug;
+extern	int timeout;
+extern	int maxtimeout;
+extern  int pdata;
+extern	char hostname[], remotehost[];
+extern	char proctitle[];
+extern	int usedefault;
+extern  int transflag;
+extern  char tmpline[];
+
+
+#endif /* _EXTERN_H_ */

@@ -71,23 +71,7 @@ static char rcsid[] = "$NetBSD: ftpcmd.y,v 1.6 1995/06/03 22:46:45 mycroft Exp $
 #include <unistd.h>
 
 #include "extern.h"
-
-extern	struct sockaddr_in data_dest;
-extern	int logged_in;
-extern	struct passwd *pw;
-extern	int guest;
-extern	int logging;
-extern	int type;
-extern	int form;
-extern	int debug;
-extern	int timeout;
-extern	int maxtimeout;
-extern  int pdata;
-extern	char hostname[], remotehost[];
-extern	char proctitle[];
-extern	int usedefault;
-extern  int transflag;
-extern  char tmpline[];
+#include "auth.h"
 
 off_t	restart_point;
 
@@ -120,6 +104,9 @@ char	*fromname;
 
 	UMASK	IDLE	CHMOD
 
+	AUTH	ADAT	PROT	PBSZ	CCC	MIC
+	CONF	ENC
+
 	LEXERR
 
 %token	<s> STRING
@@ -147,6 +134,43 @@ cmd
 	: USER SP username CRLF
 		{
 			user($3);
+			free($3);
+		}
+	| AUTH SP STRING CRLF
+		{
+			auth($3);
+			free($3);
+		}
+	| ADAT SP STRING CRLF
+		{
+			adat($3);
+			free($3);
+		}
+	| PBSZ SP NUMBER CRLF
+		{
+			pbsz($3);
+		}
+	| PROT SP STRING CRLF
+		{
+			prot($3);
+		}
+	| CCC CRLF
+		{
+			ccc();
+		}
+	| MIC SP STRING CRLF
+		{
+			mic($3);
+			free($3);
+		}
+	| CONF SP STRING CRLF
+		{
+			conf($3);
+			free($3);
+		}
+	| ENC SP STRING CRLF
+		{
+			enc($3);
 			free($3);
 		}
 	| PASS SP password CRLF
@@ -288,8 +312,15 @@ cmd
 		}
 	| STAT CRLF
 		{
-			statcmd();
-		}
+			if(oobflag){
+				if (file_size != (off_t) -1)
+					reply(213, "Status: %ld of %ld bytes transferred",
+						byte_count, file_size);
+				else
+					reply(213, "Status: %ld bytes transferred", byte_count);
+			}else
+				statcmd();
+	}
 	| DELE check_login SP pathname CRLF
 		{
 			if ($2 && $4 != NULL)
@@ -310,7 +341,13 @@ cmd
 		}
 	| ABOR CRLF
 		{
-			reply(225, "ABOR command successful.");
+			if(oobflag){
+				reply(426, "Transfer aborted. Data connection closed.");
+				reply(226, "Abort successful");
+				oobflag = 0;
+				longjmp(urgcatch, 1);
+			}else
+				reply(225, "ABOR command successful.");
 		}
 	| CWD check_login CRLF
 		{
@@ -531,7 +568,7 @@ rcmd
 		{
 			fromname = (char *) 0;
 			restart_point = $3;	/* XXX $3 is only "int" */
-			reply(350, "Restarting at %qd. %s", restart_point,
+			reply(350, "Restarting at %ld. %s", restart_point,
 			    "Send STORE or RETRIEVE to initiate transfer.");
 		}
 	;
@@ -558,7 +595,6 @@ host_port
 		{
 			char *a, *p;
 
-			data_dest.sin_len = sizeof(struct sockaddr_in);
 			data_dest.sin_family = AF_INET;
 			p = (char *)&data_dest.sin_port;
 			p[0] = $9; p[1] = $11;
@@ -717,11 +753,15 @@ octal_number
 check_login
 	: /* empty */
 		{
+		    if(auth_complete && prot_level == prot_clear){
+			reply(533, "Command protection level denied for paranoid reasons.");
+			$$ = 0;
+		    }else
 			if (logged_in)
-				$$ = 1;
+			    $$ = 1;
 			else {
-				reply(530, "Please login with USER and PASS.");
-				$$ = 0;
+			    reply(530, "Please login with USER and PASS.");
+			    $$ = 0;
 			}
 		}
 	;
@@ -796,6 +836,17 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "STOU", STOU, STR1, 1,	"<sp> file-name" },
 	{ "SIZE", SIZE, OSTR, 1,	"<sp> path-name" },
 	{ "MDTM", MDTM, OSTR, 1,	"<sp> path-name" },
+
+	/* extensions from draft-ietf-cat-ftpsec-08 */
+	{ "AUTH", AUTH,	STR1, 1,	"<sp> auth-type" },
+	{ "ADAT", ADAT,	STR1, 1,	"<sp> auth-data" },
+	{ "PBSZ", PBSZ,	ARGS, 1,	"<sp> buffer-size" },
+	{ "PROT", PROT,	ARGS, 1,	"<sp> prot-level" },
+	{ "CCC",  CCC,	ARGS, 1,	"" },
+	{ "MIC",  MIC,	STR1, 1,	"<sp> integrity command" },
+	{ "CONF", CONF,	STR1, 1,	"<sp> confidentiality command" },
+	{ "ENC",  ENC,	STR1, 1,	"<sp> privacy command" },
+
 	{ NULL,   0,    0,    0,	0 }
 };
 
@@ -833,43 +884,38 @@ lookup(p, cmd)
  * getline - a hacked up version of fgets to ignore TELNET escape codes.
  */
 char *
-getline(s, n, iop)
-	char *s;
-	int n;
-	FILE *iop;
+getline(char *s, int n)
 {
 	int c;
 	register char *cs;
 
 	cs = s;
 /* tmpline may contain saved command from urgent mode interruption */
-	for (c = 0; tmpline[c] != '\0' && --n > 0; ++c) {
-		*cs++ = tmpline[c];
-		if (tmpline[c] == '\n') {
-			*cs++ = '\0';
-			if (debug)
-				syslog(LOG_DEBUG, "command: %s", s);
-			tmpline[0] = '\0';
-			return(s);
-		}
-		if (c == 0)
-			tmpline[0] = '\0';
+	if(ftp_command){
+	  strncpy(s, ftp_command, n);
+	  if (debug)
+	    syslog(LOG_DEBUG, "command: %s", s);
+#if 0
+	  fprintf(stderr, "%s\n", s);
+#endif
+	  return s;
 	}
-	while ((c = getc(iop)) != EOF) {
+	prot_level = prot_clear;
+	while ((c = getc(stdin)) != EOF) {
 		c &= 0377;
 		if (c == IAC) {
-		    if ((c = getc(iop)) != EOF) {
+		    if ((c = getc(stdin)) != EOF) {
 			c &= 0377;
 			switch (c) {
 			case WILL:
 			case WONT:
-				c = getc(iop);
+				c = getc(stdin);
 				printf("%c%c%c", IAC, DONT, 0377&c);
 				(void) fflush(stdout);
 				continue;
 			case DO:
 			case DONT:
-				c = getc(iop);
+				c = getc(stdin);
 				printf("%c%c%c", IAC, WONT, 0377&c);
 				(void) fflush(stdout);
 				continue;
@@ -905,6 +951,9 @@ getline(s, n, iop)
 			syslog(LOG_DEBUG, "command: %.*s", len, s);
 		}
 	}
+#if 0
+	fprintf(stderr, "%s\n", s);
+#endif
 	return (s);
 }
 
@@ -936,7 +985,7 @@ yylex()
 		case CMD:
 			(void) signal(SIGALRM, toolong);
 			(void) alarm((unsigned) timeout);
-			if (getline(cbuf, sizeof(cbuf)-1, stdin) == NULL) {
+			if (getline(cbuf, sizeof(cbuf)-1) == NULL) {
 				reply(221, "You could at least say goodbye.");
 				dologout(0);
 			}
@@ -1171,6 +1220,7 @@ help(ctab, s)
 	struct tab *c;
 	int width, NCMDS;
 	char *type;
+	char buf[1024];
 
 	if (ctab == sitetab)
 		type = "SITE ";
@@ -1196,22 +1246,21 @@ help(ctab, s)
 			columns = 1;
 		lines = (NCMDS + columns - 1) / columns;
 		for (i = 0; i < lines; i++) {
-			printf("   ");
-			for (j = 0; j < columns; j++) {
-				c = ctab + j * lines + i;
-				printf("%s%c", c->name,
-					c->implemented ? ' ' : '*');
-				if (c + lines >= &ctab[NCMDS])
-					break;
-				w = strlen(c->name) + 1;
-				while (w < width) {
-					putchar(' ');
-					w++;
-				}
+		    sprintf(buf, "   ");
+		    for (j = 0; j < columns; j++) {
+			c = ctab + j * lines + i;
+			sprintf(buf + strlen(buf), "%s%c", c->name,
+				c->implemented ? ' ' : '*');
+			if (c + lines >= &ctab[NCMDS])
+			    break;
+			w = strlen(c->name) + 1;
+			while (w < width) {
+			    strcat(buf, " ");
+			    w++;
 			}
-			printf("\r\n");
+		    }
+		    lreply(214, buf);
 		}
-		(void) fflush(stdout);
 		reply(214, "Direct comments to ftp-bugs@%s.", hostname);
 		return;
 	}
@@ -1265,7 +1314,7 @@ sizecmd(filename)
 		}
 		(void) fclose(fin);
 
-		reply(213, "%qd", count);
+		reply(213, "%ld", count);
 		break; }
 	default:
 		reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);

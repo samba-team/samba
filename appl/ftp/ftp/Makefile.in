@@ -1,0 +1,41 @@
+# 
+
+srcdir		= @srcdir@
+top_srcdir	= @top_srcdir@
+VPATH		= @srcdir@
+
+SHELL		= /bin/sh
+
+CC 	= @CC@
+RANLIB 	= @RANLIB@
+DEFS 	= @DEFS@
+CFLAGS 	= @CFLAGS@
+LIBS	= @LIBS@
+
+INSTALL = @INSTALL@
+
+prefix 	= @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+ATHENA = /usr/athena
+
+ftp_OBJS = cmds.o cmdtab.o ftp.o main.o ruserpass.o domacro.o globals.o
+
+all: ftp
+
+.c.o:
+	$(CC) -c $(CFLAGS) -I.. -I$(srcdir)/.. -I../common -I$(srcdir)/../common -I$(ATHENA)/include  $(DEFS) $<
+
+install:
+
+
+ftp: $(ftp_OBJS) ../common/libcommon.a
+	$(CC) -o ftp $(ftp_OBJS) ../common/libcommon.a -L$(ATHENA)/lib -lkrb -ldes $(LIBS)
+
+clean cleandir:
+	rm -f *~ *.o core ftpd ftpcmd.c \#*
+
+distclean: 
+	rm -f Makefile
+	rm -rf CVS

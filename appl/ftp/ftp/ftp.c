@@ -35,6 +35,8 @@
 
 #include "ftp_locl.h"
 
+
+
 struct	sockaddr_in hisctladdr;
 struct	sockaddr_in data_addr;
 int	data = -1;
@@ -157,6 +159,77 @@ bad:
 	return ((char *)0);
 }
 
+#include <des.h>
+#include <krb.h>
+
+int krb4_auth = 0;
+KTEXT_ST krb4_adat;
+
+static des_cblock key;
+static des_key_schedule schedule;
+
+int do_auth(char *service, char *host)
+{
+    int ret;
+    CREDENTIALS cred;
+    char sname[SNAME_SZ], inst[INST_SZ], realm[REALM_SZ];
+    strcpy(sname, service);
+    strcpy(inst, krb_get_phost(host));
+    strcpy(realm, krb_realmofhost(host));
+    ret = krb_mk_req(&krb4_adat, sname, inst, realm, 0);
+    if(ret)
+	return ret;
+    strcpy(sname, service);
+    strcpy(inst, krb_get_phost(host));
+    strcpy(realm, krb_realmofhost(host));
+    ret = krb_get_cred(sname, inst, realm, &cred);
+    memmove(&key, &cred.session, sizeof(des_cblock));
+    des_key_sched(&key, schedule);
+    memset(&cred, 0, sizeof(cred));
+    return ret;
+}
+
+
+int do_klogin(char *host)
+{
+    int ret;
+    char *phost;
+    char *p, *q;
+    int len;
+    char *serv = "ftp";
+    char adat[1024];
+    MSG_DAT msg_data;
+    int checksum;
+
+    ret = command("AUTH KERBEROS_V4");
+    if(ret == CONTINUE){
+	ret = do_auth("ftp", host);
+	if(ret == KDC_PR_UNKNOWN)
+	    ret = do_auth("rcmd", host);
+	if(ret)
+	    return ret;
+	base64_encode(krb4_adat.dat, krb4_adat.length, &p);
+	ret = command("ADAT %s", p);
+	free(p);
+	if(ret == COMPLETE){
+	    p = strstr(reply_string, "ADAT=");
+	    if(p){
+		p+=5;
+		for(q = p; isalnum(*q) || strchr("/+=", *q); q++);
+		*q = 0;
+		len = base64_decode(p, adat);
+		ret = krb_rd_safe(adat, len, &key, 
+				  &hisctladdr, &myctladdr, &msg_data);
+		memmove(&checksum, msg_data.app_data, 4);
+		checksum = ntohl(checksum);
+	    }
+	    krb4_auth = 1;
+	    return 0;
+	}
+    }
+    return -1;
+}
+
 int
 login(char *host)
 {
@@ -188,6 +261,9 @@ login(char *host)
 			user = myname;
 		else
 			user = tmp;
+	}
+	if(strcmp(user, "ftp") && strcmp(user, "anonymous")){
+	    do_klogin(host);
 	}
 	n = command("USER %s", user);
 	if (n == CONTINUE) {
@@ -230,6 +306,69 @@ cmdabort(int sig)
 		longjmp(ptabort,1);
 }
 
+int krb4_write_enc(FILE *F, char *fmt, va_list ap)
+{
+    int len;
+    char *p;
+    char buf[1024];
+    char enc[1024];
+    vsprintf(buf, fmt, ap);
+    len = krb_mk_priv(buf, enc, strlen(buf), schedule, &key, 
+		      &myctladdr, &hisctladdr);
+    base64_encode(enc, len, &p);
+
+    fprintf(F, "ENC %s", p);
+    return 0;
+}
+
+
+int krb4_read_msg(char *s, int priv)
+{
+    int len;
+    int ret;
+    char buf[1024];
+    MSG_DAT m;
+    int code;
+    
+    len = base64_decode(s + 4, buf);
+    if(priv)
+	ret = krb_rd_priv(buf, len, schedule, &key, 
+			  &hisctladdr, &myctladdr, &m);
+    else
+	ret = krb_rd_safe(buf, len, &key, &myctladdr, &hisctladdr, &m);
+    if(ret){
+      fprintf(stderr, "%s\n", krb_get_err_text(ret));
+      return -1;
+    }
+	
+    m.app_data[m.app_length] = 0;
+    if(m.app_data[3] == '-')
+      code = 0;
+    else
+      sscanf((char*)m.app_data, "%d", &code);
+    strncpy(s, (char*)m.app_data, strlen((char*)m.app_data));
+    
+    s[m.app_length] = 0;
+    len = strlen(s);
+    if(s[len-1] == '\n')
+	s[len-1] = 0;
+    
+    return code;
+}
+
+int
+krb4_read_mic(char *s)
+{
+    return krb4_read_msg(s, 0);
+}
+
+int
+krb4_read_enc(char *s)
+{
+    return krb4_read_msg(s, 1);
+}
+
+
 int
 command(char *fmt, ...)
 {
@@ -252,7 +391,10 @@ command(char *fmt, ...)
 		printf("PASS XXXX");
 	    else 
 		vfprintf(stdout, fmt, ap);
-	vfprintf(cout, fmt, ap);
+	if(krb4_auth)
+	    krb4_write_enc(cout, fmt, ap);
+	else
+	    vfprintf(cout, fmt, ap);
 	va_end(ap);
 	if(debug){
 	    printf("\n");
@@ -270,6 +412,93 @@ command(char *fmt, ...)
 
 char reply_string[BUFSIZ];		/* last line of previous reply */
 
+int
+getreply(int expecteof)
+{
+    char *p;
+    int c;
+    struct sigaction sa, osa;
+    char buf[1024];
+
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sa.sa_handler = cmdabort;
+    sigaction(SIGINT, &sa, &osa);
+    
+    p = buf;
+
+    while(1){
+	c = getc(cin);
+	switch(c){
+	case EOF:
+	    if (expecteof) {
+		sigaction(SIGINT,&osa, NULL);
+		code = 221;
+		return 0;
+	    }
+	    lostpeer(0);
+	    if (verbose) {
+		printf("421 Service not available, remote server has closed connection\n");
+		fflush(stdout);
+	    }
+	    code = 421;
+	    return (4);
+	    break;
+	case IAC:
+	    c = getc(cin);
+	    if(c == WILL || c == WONT)
+		fprintf(cout, "%c%c%c", IAC, DONT, getc(cin));
+	    if(c == DO || c == DONT)
+		fprintf(cout, "%c%c%c", IAC, WONT, getc(cin));
+	    continue;
+	case '\n':
+	    *p++ = 0;
+	    if(isdigit(buf[0])){
+		sscanf(buf, "%d", &code);
+		if(code == 631){
+		    krb4_read_mic(buf);
+		    sscanf(buf, "%d", &code);
+		    fprintf(stdout, "S:");
+		} else if(code == 632){
+		    krb4_read_enc(buf);
+		    sscanf(buf, "%d", &code);
+		    fprintf(stdout, "P:");
+		}else if(code == 633){
+		    fprintf(stdout, "Confidentiality is meaningless:/n");
+		}else if(krb4_auth)
+		    fprintf(stdout, "!!"); /* clear text */
+		fprintf(stdout, "%s\n", buf);
+		if(buf[3] == ' '){
+		    strcpy(reply_string, buf);
+		    if (code < 200)
+			cpend = 0;
+		    sigaction(SIGINT, &osa, NULL);
+		    if (code == 421)
+			lostpeer(0);
+#if 0
+		    if (abrtflag && 
+			osa.sa_handler != cmdabort && 
+			osa.sa_handler != SIG_IGN)
+			osa.sa_handler(SIGINT);
+#endif
+		    return code / 100;
+		}
+	    }else{
+		if(krb4_auth)
+		    fprintf(stdout, "!!");
+		fprintf(stdout, "%s\n", buf);
+	    }
+	    p = buf;
+	    continue;
+	default:
+	    *p++ = c;
+	}
+    }
+    
+}
+
+
+#if 0
 int
 getreply(int expecteof)
 {
@@ -360,6 +589,16 @@ getreply(int expecteof)
 			continue;
 		}
 		*cp = '\0';
+		if(krb4_auth){
+		    if(code == 631)
+			krb4_read_mic(reply_string);
+		    else
+			krb4_read_enc(reply_string);
+		    n = code / 100 + '0';
+		}
+		
+		    
+
 		if (n != '1')
 			cpend = 0;
 		(void) signal(SIGINT,oldintr);
@@ -370,6 +609,7 @@ getreply(int expecteof)
 		return (n - '0');
 	}
 }
+#endif
 
 int
 empty(struct fd_set *mask, int sec)
@@ -1109,8 +1349,8 @@ ptransfer(char *direction, long int bytes,
     long bs;
 
     if (verbose) {
-	td.tv_sec = t0->tv_sec - t1->tv_sec;
-	td.tv_usec = t0->tv_usec - t1->tv_usec;
+	td.tv_sec = t1->tv_sec - t0->tv_sec;
+	td.tv_usec = t1->tv_usec - t0->tv_usec;
 	if(td.tv_usec < 0){
 	    td.tv_sec--;
 	    td.tv_usec += 1000000;

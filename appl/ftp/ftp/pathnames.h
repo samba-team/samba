@@ -35,7 +35,13 @@
  *	@(#)pathnames.h	8.1 (Berkeley) 6/6/93
  */
 
+#ifdef HAVE_PATHS_H
 #include <paths.h>
+#endif
 
 #undef _PATH_TMP
 #define	_PATH_TMP	"/tmp/ftpXXXXXX"
+
+#ifndef _PATH_BSHELL
+#define _PATH_BSHELL	"/bin/sh"
+#endif

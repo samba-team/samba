@@ -1,0 +1,30 @@
+#
+# configure script for kftp
+#
+# $Id$
+#
+
+
+AC_INIT(ftp/main.c)
+AC_CONFIG_HEADER(config.h)
+
+# This may be overridden using --prefix=/usr to configure
+AC_PREFIX_DEFAULT(/usr/athena)
+
+AC_PROG_CC
+AC_PROG_RANLIB
+AC_PROG_CPP
+
+AC_SUBST(CFLAGS)dnl
+AC_SUBST(LDFLAGS)dnl
+
+AC_CHECK_HEADERS(sys/select.h paths.h)
+
+AC_CHECK_LIB(socket, socket)
+AC_CHECK_LIB(nsl, gethostbyname)
+AC_CHECK_LIB(krb, krb_mk_req)
+
+
+AC_REPLACE_FUNCS(errx hstrerror inet_aton krb_get_err_text memmove snprintf vsyslog verrx vwarn vwarnx warn warnx)
+
+AC_OUTPUT(Makefile common/Makefile ftp/Makefile ftpd/Makefile)
