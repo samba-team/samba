@@ -55,6 +55,8 @@ static void single_accept_connection(struct event_context *ev, struct fd_event *
 		return;
 	}
 
+	talloc_steal(conn, sock);
+
 	DLIST_ADD(server_socket->connection_list,conn);
 
 	/* return to event handling */

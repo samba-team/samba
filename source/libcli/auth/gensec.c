@@ -124,11 +124,10 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 
-	(*gensec_security) = talloc_p(NULL, struct gensec_security);
+	(*gensec_security) = talloc_p(mem_ctx, struct gensec_security);
 	if (!(*gensec_security)) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_name(*gensec_security, "gensec_start");
 
 	(*gensec_security)->ops = NULL;
 

@@ -988,7 +988,6 @@ NTSTATUS dcesrv_init_context(TALLOC_CTX *mem_ctx, struct dcesrv_context **dce_ct
 	if (! *dce_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	talloc_set_name(*dce_ctx, "struct dcesrv_context");
 
 	(*dce_ctx)->endpoint_list = NULL;
 
@@ -1030,12 +1029,11 @@ static void dcesrv_init(struct server_service *service, const struct model_ops *
 		return;
 	}
 
-	dce_ctx = talloc_p(NULL, struct dcesrv_context);
+	dce_ctx = talloc_p(service, struct dcesrv_context);
 	if (!dce_ctx) {
 		DEBUG(0,("talloc_p(mem_ctx, struct dcesrv_context) failed\n"));
 		return;
 	}
-	talloc_set_name(dce_ctx, "dcesrv_init");
 
 	ZERO_STRUCTP(dce_ctx);
 	dce_ctx->endpoint_list	= NULL;

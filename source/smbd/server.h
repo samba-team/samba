@@ -25,7 +25,6 @@ struct server_service;
 struct event_context;
 
 struct server_context {
-	TALLOC_CTX *mem_ctx;
 	struct server_service *service_list;
 	struct event_context *events;
 };

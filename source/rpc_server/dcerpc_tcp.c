@@ -59,7 +59,7 @@ static void add_socket_rpc(struct server_service *service,
 		       struct in_addr *ifip)
 {
 	struct dcesrv_endpoint *e;
-	char *ip_str = talloc_strdup(service->mem_ctx, inet_ntoa(*ifip));
+	char *ip_str = talloc_strdup(service, inet_ntoa(*ifip));
 
 	for (e=dce_ctx->endpoint_list;e;e=e->next) {
 		if (e->ep_description.type == ENDPOINT_TCP) {

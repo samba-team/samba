@@ -87,6 +87,8 @@ static void thread_accept_connection(struct event_context *ev, struct fd_event *
 		return;
 	}
 
+	talloc_steal(conn, sock);
+
 	/* TODO: is this MUTEX_LOCK in the right place here?
 	 *       --metze
 	 */

@@ -67,7 +67,6 @@ struct socket_context;
 
 struct server_socket {
 	struct server_socket *next,*prev;
-	TALLOC_CTX *mem_ctx;
 	void *private_data;
 
 	struct {
@@ -84,7 +83,6 @@ struct server_socket {
 
 struct server_service {
 	struct server_service *next,*prev;
-	TALLOC_CTX *mem_ctx;
 	void *private_data;
 	const struct server_service_ops *ops;
 
@@ -97,7 +95,6 @@ struct server_service {
 
 struct server_connection {
 	struct server_connection *next,*prev;
-	TALLOC_CTX *mem_ctx;
 	void *private_data;
 
 	struct {

@@ -20,6 +20,18 @@
 
 #include "includes.h"
 
+/*
+  auto-close sockets on free
+*/
+static int socket_destructor(void *ptr)
+{
+	struct socket_context *sock = ptr;
+	if (sock->ops->close) {
+		sock->ops->close(sock);
+	}
+	return 0;
+}
+
 NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_context **new_sock, uint32_t flags)
 {
 	NTSTATUS status;
@@ -38,24 +50,24 @@ NTSTATUS socket_create(const char *name, enum socket_type type, struct socket_co
 	(*new_sock)->private_data = NULL;
 	(*new_sock)->ops = socket_getops_byname(name, type);
 	if (!(*new_sock)->ops) {
-		talloc_free((*new_sock));
+		talloc_free(*new_sock);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
 	status = (*new_sock)->ops->init((*new_sock));
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free((*new_sock));
+		talloc_free(*new_sock);
 		return status;
 	}
+
+	talloc_set_destructor(*new_sock, socket_destructor);
 
 	return NT_STATUS_OK;
 }
 
 void socket_destroy(struct socket_context *sock)
 {
-	if (sock->ops->close) {
-		sock->ops->close(sock);
-	}
+	/* the close is handled by the destructor */
 	talloc_free(sock);
 }
 
@@ -98,6 +110,8 @@ NTSTATUS socket_listen(struct socket_context *sock, const char *my_address, int 
 
 NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_sock, uint32_t flags)
 {
+	NTSTATUS status;
+
 	if (sock->type != SOCKET_TYPE_STREAM) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -110,7 +124,13 @@ NTSTATUS socket_accept(struct socket_context *sock, struct socket_context **new_
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
 
-	return sock->ops->accept(sock, new_sock, flags);
+	status = sock->ops->accept(sock, new_sock, flags);
+
+	if (NT_STATUS_IS_OK(status)) {
+		talloc_set_destructor(*new_sock, socket_destructor);
+	}
+
+	return status;
 }
 
 NTSTATUS socket_recv(struct socket_context *sock, TALLOC_CTX *mem_ctx,
