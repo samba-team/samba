@@ -438,8 +438,6 @@ BOOL reload_services(BOOL test)
 	if (test && !lp_file_list_changed())
 		return(True);
 
-	lp_killunused(conn_snum_used);
-	
 	ret = lp_load(dyn_CONFIGFILE, False, False, True);
 
 	load_printers();
