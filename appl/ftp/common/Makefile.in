@@ -2,7 +2,7 @@
 
 srcdir		= @srcdir@
 top_srcdir	= @top_srcdir@
-VPATH		= @srcdir@
+VPATH=@srcdir@
 
 SHELL		= /bin/sh
 
@@ -17,16 +17,12 @@ prefix 	= @prefix@
 exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 
-ATHENA = ../../..
-
-INCTOP = $(ATHENA)/include
-
 libcommon_OBJS = base64.o glob.o
 
 all: libcommon.a
 
 .c.o:
-	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. -I$(INCTOP) $(DEFS) $<
+	$(CC) -c $(CFLAGS) -I$(srcdir) -I.. $(DEFS) $<
 
 libcommon.a: $(libcommon_OBJS)
 	ar cr libcommon.a $(libcommon_OBJS)
