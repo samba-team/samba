@@ -147,10 +147,11 @@ krb5_rd_safe(krb5_context context,
   /* check sequence number */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
       if (safe.safe_body.seq_number == NULL ||
-	  *safe.safe_body.seq_number != auth_context->remote_seqnumber++) {
+	  *safe.safe_body.seq_number != auth_context->remote_seqnumber) {
 	  ret = KRB5KRB_AP_ERR_BADORDER;
 	  goto failure;
       }
+      auth_context->remote_seqnumber++;
   }
 
   ret = verify_checksum (context, auth_context, &safe);
