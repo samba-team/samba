@@ -485,8 +485,8 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	pdb_set_hours_len(sampass, hours_len);
 	pdb_set_logons_divs(sampass, logon_divs);
 
-	pdb_set_uid(sampass, &sys_user->pw_uid);
-	pdb_set_gid(sampass, &sys_user->pw_gid);
+	pdb_set_uid(sampass, sys_user->pw_uid);
+	pdb_set_gid(sampass, sys_user->pw_gid);
 	pdb_set_user_rid(sampass, user_rid);
 	pdb_set_group_rid(sampass, group_rid);
 
@@ -577,9 +577,10 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 	make_a_mod(mods, ldap_state, "description", pdb_get_acct_desc(sampass));
 	make_a_mod(mods, ldap_state, "userWorkstations", pdb_get_workstations(sampass));
 
-	if ( !sampass->user_rid)
-               sampass->user_rid = pdb_uid_to_user_rid(pdb_get_uid(sampass));
-	slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
+	if ( !sampass->user_rid )
+		slprintf(temp, sizeof(temp) - 1, "%i", pdb_uid_to_user_rid(pdb_get_uid(sampass)));
+	else
+		slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
 	make_a_mod(mods, ldap_state, "rid", temp);
 
 	if ( !sampass->group_rid) {

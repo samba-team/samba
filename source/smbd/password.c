@@ -209,8 +209,8 @@ tell random client vuid's (normally zero) from valid vuids.
 int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 {
 	user_struct *vuser = NULL;
-	uid_t *puid;
-	gid_t *pgid;
+	uid_t uid;
+	gid_t gid;
 
 	/* Ensure no vuid gets registered in share level security. */
 	if(lp_security() == SEC_SHARE)
@@ -227,14 +227,14 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 
 	ZERO_STRUCTP(vuser);
 
-	puid = pdb_get_uid(server_info->sam_account);
-	pgid = pdb_get_gid(server_info->sam_account);
-
-	if (!puid || !pgid) {
+	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
 		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
 		free(vuser);
 		return UID_FIELD_INVALID;
 	}
+
+	uid = pdb_get_uid(server_info->sam_account);
+	gid = pdb_get_gid(server_info->sam_account);
 
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
 	while( get_valid_user_struct(next_vuid) != NULL ) {
@@ -247,8 +247,8 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name)
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
 
 	vuser->vuid = next_vuid;
-	vuser->uid = *puid;
-	vuser->gid = *pgid;
+	vuser->uid = uid;
+	vuser->gid = gid;
 	vuser->guest = server_info->guest;
 	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account));
 	fstrcpy(vuser->user.smb_name, smb_name);

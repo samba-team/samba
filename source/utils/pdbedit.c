@@ -74,17 +74,17 @@ static void usage(void)
 
 static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdstyle)
 {
-	uid_t *puid;
-	gid_t *pgid;
+	uid_t uid;
+	gid_t gid;
 
 	/* TODO: chaeck if entry is a user or a workstation */
 	if (!sam_pwent) return -1;
 	
 	if (verbosity) {
 		printf ("username:       %s\n",  pdb_get_username(sam_pwent));
-		if ((puid = pdb_get_uid(sam_pwent)) && (pgid = pdb_get_gid(sam_pwent))) {
-			printf ("user ID/Group:  %d/%d\n", (unsigned int)*puid,
-				(unsigned int)*pgid);
+		if ((uid = pdb_get_uid(sam_pwent)) && (gid = pdb_get_gid(sam_pwent))) {
+			printf ("user ID/Group:  %d/%d\n", (unsigned int)uid,
+				(unsigned int)gid);
 		}
 		printf ("user RID/GRID:  %u/%u\n", (unsigned int)sam_pwent->user_rid,
 			(unsigned int)sam_pwent->group_rid);
@@ -94,7 +94,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 		printf ("Logon Script:   %s\n", pdb_get_logon_script(sam_pwent));
 		printf ("Profile Path:   %s\n", pdb_get_profile_path(sam_pwent));
 	} else if (smbpwdstyle) {
-		if ((puid = pdb_get_uid(sam_pwent))) {
+		if ((uid = pdb_get_uid(sam_pwent))) {
 			char lm_passwd[33];
 			char nt_passwd[33];
 			pdb_sethexpwd(lm_passwd, 
@@ -106,7 +106,7 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 			
 			printf("%s:%d:%s:%s:%s:LCT-%08X:\n",
 			       pdb_get_username(sam_pwent),
-			       (unsigned int)*puid,
+			       (unsigned int)uid,
 			       lm_passwd,
 			       nt_passwd,
 			       pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sam_pwent),NEW_PW_FORMAT_SPACE_PADDED_LEN),
@@ -115,8 +115,8 @@ static int print_sam_info (SAM_ACCOUNT *sam_pwent, BOOL verbosity, BOOL smbpwdst
 			fprintf(stderr, "Can't output in smbpasswd format, no uid on this record.\n");
 		}
 	} else {
-		if ((puid = pdb_get_uid(sam_pwent))) {		
-			printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), *puid, pdb_get_fullname(sam_pwent));
+		if ((uid = pdb_get_uid(sam_pwent))) {		
+			printf ("%s:%d:%s\n", pdb_get_username(sam_pwent), uid, pdb_get_fullname(sam_pwent));
 		} else {	
 			printf ("%s:(null):%s\n", pdb_get_username(sam_pwent), pdb_get_fullname(sam_pwent));
 		}

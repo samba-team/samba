@@ -274,8 +274,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p, RPC_AUTH_NTLMSSP_RESP *ntlm
 	auth_authsupplied_info *auth_info = NULL;
 	auth_serversupplied_info *server_info = NULL;
 
-	uid_t *puid;
-	uid_t *pgid;
+	uid_t uid;
+	uid_t gid;
 
 	DEBUG(5,("api_pipe_ntlmssp_verify: checking user details\n"));
 
@@ -417,17 +417,17 @@ failed authentication on named pipe %s.\n", domain, user_name, wks, p->name ));
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
-	puid = pdb_get_uid(server_info->sam_account);
-	pgid = pdb_get_gid(server_info->sam_account);
-	
-	if (!puid || !pgid) {
+	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
 		DEBUG(0,("Attempted authenticated pipe with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
 		free_server_info(&server_info);
 		return False;
 	}
 	
-	p->pipe_user.uid = *puid;
-	p->pipe_user.gid = *pgid;
+	uid = pdb_get_uid(server_info->sam_account);
+	gid = pdb_get_gid(server_info->sam_account);
+
+	p->pipe_user.uid = uid;
+	p->pipe_user.gid = gid;
 
 	/* Set up pipe user group membership. */
 	initialise_groups(p->pipe_user_name, p->pipe_user.uid, p->pipe_user.gid);

@@ -1133,22 +1133,22 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
  ********************************************************************/
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
-	uid_t *uid;
-	gid_t *gid;
+	uid_t uid;
+	gid_t gid;
 
 	if (sampass == NULL) 
 		return False;
 	uid = pdb_get_uid(sampass);
 	gid = pdb_get_gid(sampass);
 
-	if (!uid || !gid) {
+	if (!IS_SAM_UNIX_USER(sampass)) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user	without a UNIX uid or gid. \n"));
 		return False;
 	}
 
 	ZERO_STRUCTP(smb_pw);
 
-	smb_pw->smb_userid=*uid;
+	smb_pw->smb_userid=uid;
 	smb_pw->smb_name=pdb_get_username(sampass);
 
 	smb_pw->smb_passwd=pdb_get_lanman_passwd(sampass);
@@ -1157,7 +1157,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	smb_pw->acct_ctrl=pdb_get_acct_ctrl(sampass);
 	smb_pw->pass_last_set_time=pdb_get_pass_last_set_time(sampass);
 
-	if (*uid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
+	if (uid != pdb_user_rid_to_uid(pdb_get_user_rid(sampass))) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
 		return False;
 	}
@@ -1174,7 +1174,7 @@ static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampas
 	 * our domain SID ? well known SID ? local SID ?
 	 */
 
-	if (*gid != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
+	if (gid != pdb_group_rid_to_gid(pdb_get_group_rid(sampass))) {
 		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-gid based primary group RID. \n"));
 		DEBUG(0,("build_sam_pass: %d %d %d. \n", *gid, pdb_group_rid_to_gid(pdb_get_group_rid(sampass)), pdb_get_group_rid(sampass)));
 		return False;
@@ -1206,8 +1206,8 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 		return False;
 	}
 
-	pdb_set_uid (sam_pass, &pwfile->pw_uid);
-	pdb_set_gid (sam_pass, &pwfile->pw_gid);
+	pdb_set_uid (sam_pass, pwfile->pw_uid);
+	pdb_set_gid (sam_pass, pwfile->pw_gid);
 		
 	pdb_set_fullname(sam_pass, pwfile->pw_gecos);		
 	
@@ -1236,12 +1236,13 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, const struct smb_passwd *pw
 	
 	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
 
+#if 0	/* JERRY */
 	/* the smbpasswd format doesn't have a must change time field, so
 	   we can't get this right. The best we can do is to set this to 
 	   some time in the future. 21 days seems as reasonable as any other value :) 
 	*/
 	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE);
-
+#endif
 	/* check if this is a user account or a machine account */
 	if (pw_buf->smb_name[strlen(pw_buf->smb_name)-1] != '$')
 	{
@@ -1524,7 +1525,8 @@ BOOL pdb_update_sam_account(const SAM_ACCOUNT *sampass, BOOL override)
 	struct smb_passwd smb_pw;
 	
 	/* convert the SAM_ACCOUNT */
-	build_smb_pass(&smb_pw, sampass);
+	if (!build_smb_pass(&smb_pw, sampass))
+		return False;
 	
 	/* update the entry */
 	if(!mod_smbfilepwd_entry(&smb_pw, override))

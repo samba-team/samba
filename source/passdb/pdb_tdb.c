@@ -461,8 +461,8 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 
 	uid = pw->pw_uid;
 	gid = pw->pw_gid;
-	pdb_set_uid (user, &uid);
-	pdb_set_gid (user, &gid);
+	pdb_set_uid (user, uid);
+	pdb_set_gid (user, gid);
 
 	/* increment to next in line */
 	global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
@@ -531,8 +531,8 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, const char *sname)
 	if ((pw=sys_getpwnam(pdb_get_username(user)))) {
 		uid = pw->pw_uid;
 		gid = pw->pw_gid;
-		pdb_set_uid (user, &uid);
-		pdb_set_gid (user, &gid);
+		pdb_set_uid (user, uid);
+		pdb_set_gid (user, gid);
 	}
 	
 	/* cleanup */

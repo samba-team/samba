@@ -588,8 +588,27 @@ typedef struct {
 #define SHAREMODE_FN(fn) \
 	void (*fn)(share_mode_entry *, char*)
 
+/*
+ * bit flags representing initialized fields in SAM_ACCOUNT
+ */
+#define FLAG_SAM_UNINIT		0x00000000
+#define FLAG_SAM_UID		0x00000001
+#define FLAG_SAM_GID		0x00000002
+#define FLAG_SAM_SMBHOME	0x00000004
+#define FLAG_SAM_PROFILE	0x00000008
+#define FLAG_SAM_LOGONSCRIPT	0x00000010
+#define FLAG_SAM_DRIVE		0x00000020
+
+#define IS_SAM_UNIX_USER(x) \
+	(((x)->init_flag & FLAG_SAM_UID) \
+	 && ((x)->init_flag & FLAG_SAM_GID))
+
+		
 typedef struct sam_passwd
 {
+	/* initiailization flags */
+	uint32 init_flag;
+	
 	time_t logon_time;            /* logon time */
 	time_t logoff_time;           /* logoff time */
 	time_t kickoff_time;          /* kickoff time */
@@ -610,8 +629,8 @@ typedef struct sam_passwd
 	pstring unknown_str ; /* don't know what this is, yet. */
 	pstring munged_dial ; /* munged path name and dial-back tel number */
 
-        uid_t *uid;          /* this is a pointer to the unix uid_t */
-        gid_t *gid;          /* this is a pointer to the unix gid_t */
+        uid_t uid;          /* this is a pointer to the unix uid_t */
+        gid_t gid;          /* this is a pointer to the unix gid_t */
         uint32 user_rid;    /* Primary User ID */
         uint32 group_rid;   /* Primary Group ID */
 
