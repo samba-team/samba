@@ -928,9 +928,9 @@ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
 	}
 }
 
-void ndr_print_union(struct ndr_print *ndr, const char *name, uint16_t level, const char *type)
+void ndr_print_union(struct ndr_print *ndr, const char *name, int level, const char *type)
 {
-	ndr->print(ndr, "%-25s: union %s(case %u)", name, type, level);
+	ndr->print(ndr, "%-25s: union %s(case %d)", name, type, level);
 }
 
 void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level)
