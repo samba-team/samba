@@ -26,6 +26,7 @@
 #include "includes.h"
 
 static fstring host, workgroup, share, password, username, myname;
+static int max_protocol = PROTOCOL_NT1;
 static char *sockops="";
 
 
@@ -56,6 +57,8 @@ static BOOL open_connection(struct cli_state *c)
 		cli_shutdown(c);
 		return False;
 	}
+
+	c->protocol = max_protocol;
 
 	if (!cli_negprot(c)) {
 		printf("%s rejected the negprot (%s)\n",host, cli_errstr(c));
@@ -184,6 +187,7 @@ static void usage(void)
 	printf("\t-W workgroup\n");
 	printf("\t-o num_operations\n");
 	printf("\t-O socket_options\n");
+	printf("\t-m maximum protocol\n");
 	printf("\n");
 
 	exit(1);
@@ -626,6 +630,40 @@ static void run_browsetest(void)
 }
 
 
+/*
+  This checks how the getatr calls works
+*/
+static void run_attrtest(void)
+{
+	static struct cli_state cli;
+	int fnum;
+	struct stat st;
+	char *fname = "\\attrib.tst";
+
+	printf("staring attrib test\n");
+
+	if (!open_connection(&cli)) {
+		return;
+	}
+
+	cli_unlink(&cli, fname);
+	fnum = cli_open(&cli, fname, 
+			O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	cli_close(&cli, fnum);
+	if (!cli_stat(&cli, fname, &st)) {
+		printf("getatr failed (%s)\n", cli_errstr(&cli));
+	}
+
+	if (abs(st.st_mtime - time(NULL)) > 2) {
+		printf("ERROR: SMBgetatr bug. time is %s",
+		       ctime(&st.st_mtime));
+	}
+
+	close_connection(&cli);
+
+	printf("attrib test finished\n");
+}
+
 
 static void create_procs(int nprocs, int numops)
 {
@@ -689,10 +727,13 @@ static void create_procs(int nprocs, int numops)
 	argv++;
 
 
-	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hW:U:n:N:O:o:m:")) != EOF) {
 		switch (opt) {
 		case 'W':
 			fstrcpy(workgroup,optarg);
+			break;
+		case 'm':
+			max_protocol = interpret_protocol(optarg, max_protocol);
 			break;
 		case 'N':
 			nprocs = atoi(optarg);
@@ -742,6 +783,7 @@ static void create_procs(int nprocs, int numops)
 	run_locktest3(numops);
 	run_unlinktest();
 	run_browsetest();
+	run_attrtest();
 
 	return(0);
 }
