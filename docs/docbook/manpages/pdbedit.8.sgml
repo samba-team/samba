@@ -31,7 +31,9 @@
 		<arg choice="opt">-x</arg>	
 		<arg choice="opt">-i passdb-backend</arg>	
 		<arg choice="opt">-e passdb-backend</arg>   
+		<arg choice="opt">-g</arg>   
 		<arg choice="opt">-b passdb-backend</arg>
+		<arg choice="opt">-g</arg>
 		<arg choice="opt">-d debuglevel</arg>
 		<arg choice="opt">-s configfile</arg>
 		<arg choice="opt">-P account-policy</arg>
@@ -260,6 +262,30 @@ retype new password
 		another and will ease backing up.</para>
 		
 		<para>Example: <command>pdbedit -e smbpasswd:/root/samba-users.backup</command></para>
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-g</term>
+		<listitem><para>If you specify <parameter>-g</parameter>,
+		then <parameter>-i in-backend -e out-backend</parameter>
+		applies to the group mapping instead of the user database.
+
+		<para>This option will ease migration from one passdb backend to
+		another and will ease backing up.</para>
+		
+		</listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term>-g</term>
+		<listitem><para>If you specify <parameter>-g</parameter>,
+		then <parameter>-i in-backend -e out-backend</parameter>
+		applies to the group mapping instead of the user database.
+
+		<para>This option will ease migration from one passdb backend to
+		another and will ease backing up.</para>
+		
 		</listitem>
 		</varlistentry>
 
