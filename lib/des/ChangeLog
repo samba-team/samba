@@ -1,3 +1,7 @@
+2001-01-30  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am (libdes_la_LDFLAGS): bump version to 3:0:0
+
 2000-10-19  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (LIBSRC, LIBOBJ): add rc4* and enc_{read,write}

@@ -1,5 +1,6 @@
 2001-01-30  Assar Westerlund  <assar@sics.se>
 
+	* Makefile.am (libgssapi_la_LDFLAGS): bump version to 3:0:2
 	* acquire_cred.c, init_sec_context.c, release_cred.c: add support
 	for getting creds from a keytab, from fvdl@netbsd.org
 
