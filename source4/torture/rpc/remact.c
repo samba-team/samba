@@ -37,8 +37,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.this.version.MinorVersion = 1;
 	uuid_generate_random(&r.in.this.cid);
 	GUID_from_string(CLSID_SIMPLE, &r.in.Clsid);
-	r.in.num_protseqs = 1;
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
+	r.in.num_protseqs = 2;
 	r.in.protseq = protseq;
 	r.in.Interfaces = 1;
 	GUID_from_string(DCERPC_IUNKNOWN_UUID, &iids[0]);
@@ -55,8 +55,8 @@ static int test_RemoteActivation(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return 0;
 	}
 
-	if(!W_ERROR_IS_OK(W_ERROR(r.out.phr))) {
-		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(W_ERROR(r.out.phr)));
+	if(!W_ERROR_IS_OK(W_ERROR(r.out.hr))) {
+		fprintf(stderr, "RemoteActivation: %s\n", win_errstr(W_ERROR(r.out.hr)));
 		return 0;
 	}
 
