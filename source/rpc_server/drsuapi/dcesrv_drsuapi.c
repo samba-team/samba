@@ -190,10 +190,10 @@ static NTSTATUS DRSUAPI_GET_NT4_CHANGELOG(struct dcesrv_call_state *dce_call, TA
 
 
 /* 
-  DRSUAPI_CRACKNAMES 
+  drsuapi_DsCrackNames 
 */
-static NTSTATUS DRSUAPI_CRACKNAMES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct DRSUAPI_CRACKNAMES *r)
+static NTSTATUS drsuapi_DsCrackNames(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct drsuapi_DsCrackNames *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
