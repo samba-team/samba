@@ -123,6 +123,8 @@ interface epmapper
 	/**********************/
 	/* Function 0x03      */
 
+	const int EPMAPPER_MAP_FAILED = 0x16c9a0d6;
+
 	typedef struct {
 		epm_twr_t *twr;
 	} epm_twr_p_t;

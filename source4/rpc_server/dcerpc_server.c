@@ -105,6 +105,7 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	(*p)->ndr = NULL;
 	(*p)->dispatch = NULL;
 	(*p)->handles = NULL;
+	(*p)->next_handle = 0;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
