@@ -52,10 +52,10 @@ static void cli_use_free(struct cli_use *cli)
 				cli_ulogoff(cli->cli);
 			cli_shutdown(cli->cli);
 		}
-		free(cli->cli);
+		SAFE_FREE(cli->cli);
 	}
 
-	free(cli);
+	SAFE_FREE(cli);
 }
 
 /****************************************************************************

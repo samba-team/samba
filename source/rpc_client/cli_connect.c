@@ -252,23 +252,10 @@ void cli_connection_free(struct cli_connection *con)
 		free(oldcli);
 	} */
         
-        if (con->srv_name != NULL)
-        {
-                free(con->srv_name);
-                con->srv_name = NULL;
-        }
-        if (con->pipe_name != NULL)
-        {
-                free(con->pipe_name);
-                con->pipe_name = NULL;
-        }
-
-        if (con->auth_info != NULL)
-        {
-                free(con->auth_info);
-                con->auth_info = NULL;
-        }
-
+        SAFE_FREE(con->srv_name);
+        SAFE_FREE(con->pipe_name);
+	SAFE_FREE(con->auth_info);
+        
         memset(&con->usr_creds, 0, sizeof(con->usr_creds));
 
         for (i = 0; i < num_cons; i++)
@@ -279,7 +266,7 @@ void cli_connection_free(struct cli_connection *con)
                 }
         }
 
-        free(con);
+        SAFE_FREE(con);
 }
 
 void cli_connection_unlink(struct cli_connection *con)

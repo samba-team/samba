@@ -363,10 +363,7 @@ static BOOL rpc_api_pipe(struct cli_state *cli, uint16 cmd, prs_struct *data, pr
 
 	/* Throw away returned params - we know we won't use them. */
 
-	if(rparam) {
-		free(rparam);
-		rparam = NULL;
-	}
+	SAFE_FREE(rparam);
 
 	if (prdata == NULL) {
 		DEBUG(0,("rpc_api_pipe: cmd %x on pipe %x failed to return data.\n",
@@ -934,10 +931,8 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint1
 		state_set = True;
 	}
 
-	if (rparam)
-		free(rparam);
-	if (rdata)
-		free(rdata );
+	SAFE_FREE(rparam);
+	SAFE_FREE(rdata);
 
 	return state_set;
 }

@@ -214,8 +214,7 @@ account password for domain %s.\n", domain));
           break;
       }
 
-      if(ip_list != NULL)
-        free((char *)ip_list);
+      SAFE_FREE(ip_list);
 
     } else {
       res = modify_trust_password( domain, remote_machine,
