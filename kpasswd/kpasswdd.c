@@ -225,9 +225,17 @@ setup_passwd_quality_check(krb5_context context)
     void *handle;
     void *sym;
     int *version;
+    int flags;
+
+#ifdef RTLD_NOW
+    flags = RTLD_NOW;
+#else
+    flags = 0;
+#endif
+
     if(check_library == NULL)
 	return;
-    handle = dlopen(check_library, RTLD_NOW);
+    handle = dlopen(check_library, flags);
     if(handle == NULL) {
 	krb5_warnx(context, "failed to open `%s'", check_library);
 	return;
