@@ -873,6 +873,8 @@ uint32 cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 uint32 cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
 			      POLICY_HND *user_pol, uint16 switch_value,
 			      uchar sess_key[16], SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *user_pol);
 
 /* The following definitions come from libsmb/cli_spoolss.c  */
 
