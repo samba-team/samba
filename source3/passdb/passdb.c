@@ -826,8 +826,6 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 		
 		if (pdb_getsampwnam(sam_user, pass->pw_name)) {
 			sid_copy(psid, pdb_get_user_sid(sam_user));
-		} else if (strcmp(pass->pw_name, lp_guestaccount()) == 0) {
-			sid_append_rid(psid, DOMAIN_USER_RID_GUEST);
 		} else {
 			sid_append_rid(psid, fallback_pdb_uid_to_user_rid(uid));
 		}
