@@ -31,8 +31,18 @@ extern int DEBUGLEVEL;
  * set the port that will be used for connections by the client
  */
 
-void copy_user_creds(struct user_credentials *to, const struct user_credentials *from)
+void copy_user_creds(struct user_credentials *to,
+				const struct user_credentials *from)
 {
+	if (from == NULL)
+	{
+		to->domain[0] = 0;
+		to->user_name[0] = 0;
+		pwd_set_nullpwd(&to->pwd);
+		to->ntlmssp_flags = 0;
+
+		return;
+	}
 	safe_strcpy(to->domain   , from->domain   , sizeof(from->domain   )-1);
 	safe_strcpy(to->user_name, from->user_name, sizeof(from->user_name)-1);
 	memcpy(&to->pwd, &from->pwd, sizeof(from->pwd));
@@ -2675,18 +2685,7 @@ initialise a client structure
 ****************************************************************************/
 void cli_init_creds(struct cli_state *cli, const struct user_credentials *usr)
 {
-	if (usr != NULL)
-	{
-		copy_user_creds(&cli->usr, usr);
-		cli->ntlmssp_cli_flgs = usr->ntlmssp_flags;
-	}
-	else
-	{
-		cli->usr.domain[0] = 0;
-		cli->usr.user_name[0] = 0;
-		pwd_set_nullpwd(&cli->usr.pwd);
-		cli->ntlmssp_cli_flgs = 0;
-	}
+	copy_user_creds(&cli->usr, usr);
 }
 
 /****************************************************************************
@@ -3336,6 +3335,8 @@ BOOL cli_connect_auth(struct cli_state *cli,
 	extern pstring global_myname;
 	extern pstring scope;
 	struct nmb_name calling, called;
+
+	ZERO_STRUCTP(cli);
 	if (!cli_initialise(cli))
 	{
 		DEBUG(0,("unable to initialise client connection.\n"));
@@ -3412,7 +3413,6 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 	if (!connected_ok)
 	{
 		DEBUG(0,("Domain password server not available.\n"));
-		cli_shutdown(cli);
 	}
 
 	return connected_ok;
@@ -3485,7 +3485,6 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	if (!connected_ok)
 	{
 		DEBUG(0,("cli_connect_serverlist: Domain password server not available.\n"));
-		cli_shutdown(cli);
 	}
 
 	return connected_ok;
