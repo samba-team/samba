@@ -683,12 +683,13 @@ BOOL cli_send_login(char *inbuf,char *outbuf,BOOL start_session,BOOL use_setup)
       uid = SVAL(inbuf,smb_uid);
     }
 
-  if (SVAL(inbuf, smb_vwv2) & 1)
-	  DEBUG(1,("connected as guest "));
-  if (sec_mode & 1)
+  if (sec_mode & 1) {
+	  if (SVAL(inbuf, smb_vwv2) & 1)
+		  DEBUG(1,("connected as guest "));
 	  DEBUG(1,("security=user\n"));
-  else
+  } else {
 	  DEBUG(1,("security=share\n"));
+  }
 
   /* now we've got a connection - send a tcon message */
   bzero(outbuf,smb_size);

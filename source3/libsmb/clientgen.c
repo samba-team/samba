@@ -313,6 +313,79 @@ BOOL cli_NetWkstaUserLogon(struct cli_state *cli,char *user, char *workstation)
 }
 
 
+/****************************************************************************
+call a NetServerEnum for the specified workgroup and servertype mask.
+This function then calls the specified callback function for each name returned.
+
+The callback function takes 3 arguments: the machine name, the server type and
+the comment.
+****************************************************************************/
+BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
+		       void (*fn)(char *, uint32, char *))
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	int rdrcnt,rprcnt;
+	char *p;
+	pstring param;
+	int uLevel = 1;
+	int count = -1;
+  
+	/* send a SMBtrans command with api NetServerEnum */
+	p = param;
+	SSVAL(p,0,0x68); /* api number */
+	p += 2;
+	strcpy(p,"WrLehDz");
+	p = skip_string(p,1);
+  
+	strcpy(p,"B16BBDz");
+  
+	p = skip_string(p,1);
+	SSVAL(p,0,uLevel);
+	SSVAL(p,2,BUFFER_SIZE);
+	p += 4;
+	SIVAL(p,0,stype);
+	p += 4;
+	
+	pstrcpy(p, workgroup);
+	p = skip_string(p,1);
+	
+	if (cli_api(cli, 
+		    PTR_DIFF(p,param), /* param count */
+		    8, /*data count */
+		    0, /* mprcount */
+		    BUFFER_SIZE, /* mdrcount */
+		    &rprcnt,&rdrcnt,
+		    param, NULL, 
+		    &rparam,&rdata)) {
+		int res = SVAL(rparam,0);
+		int converter=SVAL(rparam,2);
+		int i;
+			
+		if (res == 0) {
+			count=SVAL(rparam,4);
+			p = rdata;
+					
+			for (i = 0;i < count;i++, p += 26) {
+				char *sname = p;
+				int comment_offset = IVAL(p,22) & 0xFFFF;
+				char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
+
+				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
+
+				fn(sname, stype, cmnt);
+			}
+		}
+	}
+  
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+	
+	return(count > 0);
+}
+
+
+
 
 static  struct {
     int prot;
