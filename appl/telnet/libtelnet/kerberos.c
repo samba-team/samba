@@ -317,7 +317,7 @@ kerberos4_is(ap, data, cnt)
 				 "login as `%s'", 
 				 krb_unparse_name(adat.pname, 
 						  adat.pinst, 
-						  adat.realm), 
+						  adat.prealm), 
 				 UserNameRequested);
 
 			Data(ap, KRB_REJECT, (void *)msg, -1);
