@@ -17,8 +17,10 @@
 		<command>smbstatus</command>
 		<arg choice="opt">-P</arg>
 		<arg choice="opt">-b</arg>
-		<arg choice="opt">-d</arg>
+		<arg choice="opt">-d &lt;debug level&gt;</arg>
+		<arg choice="opt">-v</arg>
 		<arg choice="opt">-L</arg>
+		<arg choice="opt">-B</arg>
 		<arg choice="opt">-p</arg>
 		<arg choice="opt">-S</arg>
 		<arg choice="opt">-s &lt;configuration file&gt;</arg>
@@ -41,34 +43,47 @@
 
 	<variablelist>
 		<varlistentry>
-		<term>-P</term>
+		<term>-P|--profile</term>
 		<listitem><para>If samba has been compiled with the 
 		profiling option, print only the contents of the profiling 
 		shared memory area.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
-		<term>-b</term>
+		<term>-b|--brief</term>
 		<listitem><para>gives brief output.</para></listitem>
 		</varlistentry>
 
 
 		<varlistentry>
-		<term>-d</term>
+		<term>-d|--debug=&lt;debuglevel&gt;</term>
+		<listitem><para>sets debugging to specified level</para>
+		</listitem>
+		</varlistentry>
+
+
+		<varlistentry>
+		<term>-v|--verbose</term>
 		<listitem><para>gives verbose output.</para></listitem>
 		</varlistentry>
 
 
 		<varlistentry>
-		<term>-L</term>
+		<term>-L|--locks</term>
 		<listitem><para>causes smbstatus to only list locks.</para>
 		</listitem>
 		</varlistentry>
+
 		
+		<varlistentry>
+		<term>-B|--byterange</term>
+		<listitem><para>causes smbstatus to include byte range locks.
+		</para></listitem>
+		</varlistentry>
 
 
 		<varlistentry>
-		<term>-p</term>
+		<term>-p|--processes</term>
 		<listitem><para>print a list of <ulink url="smbd.8.html">
 		<command>smbd(8)</command></ulink> processes and exit. 
 		Useful for scripting.</para></listitem>
@@ -76,7 +91,7 @@
 		
 		
 		<varlistentry>
-		<term>-S</term>
+		<term>-S|--shares</term>
 		<listitem><para>causes smbstatus to only list shares.</para>
 		</listitem>
 		</varlistentry>
@@ -84,7 +99,7 @@
 
 
 		<varlistentry>
-		<term>-s &lt;configuration file&gt;</term>
+		<term>-s|--conf=&lt;configuration file&gt;</term>
 		<listitem><para>The default configuration file name is
 		determined at compile time. The file specified contains the
 		configuration details required by the server. See <ulink 
@@ -95,7 +110,7 @@
 
 
 		<varlistentry>
-		<term>-u &lt;username&gt;</term>
+		<term>-u|--user=&lt;username&gt;</term>
 		<listitem><para>selects information relevant to 
 		<parameter>username</parameter> only.</para>
 		</listitem>
@@ -107,7 +122,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of 
+	<para>This man page is correct for version 3.0 of 
 	the Samba suite.</para>
 </refsect1>
 
