@@ -1971,6 +1971,7 @@ fi
 	AC_DEFINE(HAVE_NO_ACLS)
     ;;
   esac ],
+  AC_DEFINE(HAVE_NO_ACLS)
   AC_MSG_RESULT(no)
 )
 echo "checking configure summary"

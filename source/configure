@@ -11604,6 +11604,10 @@ EOF
     ;;
   esac 
 else
+  cat >> confdefs.h <<\EOF
+#define HAVE_NO_ACLS 1
+EOF
+
   echo "$ac_t""no" 1>&6
 
 fi
@@ -11613,11 +11617,11 @@ if test "$cross_compiling" = yes; then
   :
 else
   cat > conftest.$ac_ext <<EOF
-#line 11617 "configure"
+#line 11621 "configure"
 #include "confdefs.h"
 #include "${srcdir-.}/tests/summary.c"
 EOF
-if { (eval echo configure:11621: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
+if { (eval echo configure:11625: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext} && (./conftest; exit) 2>/dev/null
 then
   echo "configure OK";
 else
