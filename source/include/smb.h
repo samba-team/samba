@@ -103,6 +103,7 @@ typedef int BOOL;
 #define DOS_OPEN_RDONLY 0
 #define DOS_OPEN_WRONLY 1
 #define DOS_OPEN_RDWR 2
+#define DOS_OPEN_EXEC 3
 #define DOS_OPEN_FCB 0xF
 
 /* define shifts and masks for share and open modes. */
