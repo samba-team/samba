@@ -12,14 +12,16 @@ CLEANFILES = roken.h make-roken.c $(XHEADERS)
 lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 12:0:3
 
-noinst_PROGRAMS = make-roken
+noinst_PROGRAMS = make-roken snprintf-test
 
 nodist_make_roken_SOURCES = make-roken.c
 
-check_PROGRAMS = parse_bytes-test \
-		strpftime-test \
-		getaddrinfo-test \
-		base64-test
+check_PROGRAMS = 				\
+		base64-test			\
+		getaddrinfo-test		\
+		parse_bytes-test		\
+		snprintf-test			\
+		strpftime-test
 
 TESTS = $(check_PROGRAMS)
 
@@ -27,12 +29,13 @@ LIB_crypt = @LIB_crypt@
 
 common_LDADD = libroken.la $(LIB_crypt)
 
-strpftime_test_SOURCES = strpftime-test.c strftime.c strptime.c snprintf.c
-##snprintf_test_SOURCES  = snprintf-test.c snprintf.c
-##snprintf_test_LDADD    = $(common_LDADD) -lm
-base64_test_LDADD = $(common_LDADD)
-getaddrinfo_test_LDADD = $(common_LDADD)
-parse_bytes_test_LDADD = $(common_LDADD)
+strpftime_test_SOURCES	= strpftime-test.c strftime.c strptime.c snprintf.c
+base64_test_LDADD	= $(common_LDADD)
+getaddrinfo_test_LDADD	= $(common_LDADD)
+parse_bytes_test_LDADD	= $(common_LDADD)
+snprintf_test_SOURCES	= snprintf-test.c snprintf.c
+snprintf_test_CFLAGS	= -DTEST_SNPRINTF
+snprintf_test_LDADD	= $(common_LDADD)
 
 libroken_la_SOURCES =		\
 	base64.c		\
