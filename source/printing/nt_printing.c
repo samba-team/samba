@@ -3917,6 +3917,16 @@ NT_PRINTER_INFO_LEVEL_2* dup_printer_2( TALLOC_CTX *ctx, NT_PRINTER_INFO_LEVEL_2
 
 /****************************************************************************
  Get a NT_PRINTER_INFO_LEVEL struct. It returns malloced memory.
+
+ Previously the code had a memory allocation problem because it always
+ used the TALLOC_CTX from the Printer_entry*.   This context lasts 
+ as a long as the original handle is open.  So if the client made a lot 
+ of getprinter[data]() calls, the memory usage would climb.  Now we use
+ a short lived TALLOC_CTX for printer_info_2 objects returned.  We 
+ still use the Printer_entry->ctx for maintaining the cache copy though
+ since that object must live as long as the handle by definition.  
+                                                    --jerry
+
 ****************************************************************************/
 
 WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, 
@@ -3947,7 +3957,11 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				&& (print_hnd->printer_type==PRINTER_HANDLE_IS_PRINTER) 
 				&& print_hnd->printer_info )
 			{
-				if ( !(printer->info_2 = dup_printer_2(print_hnd->ctx, print_hnd->printer_info->info_2)) ) {
+				/* get_talloc_ctx() works here because we need a short 
+				   lived talloc context */
+
+				if ( !(printer->info_2 = dup_printer_2(get_talloc_ctx(), print_hnd->printer_info->info_2)) ) 
+				{
 					DEBUG(0,("get_a_printer: unable to copy cached printer info!\n"));
 					
 					SAFE_FREE(printer);
@@ -3962,10 +3976,11 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				break;
 			}
 
-			/* no cache for this handle; see if we can match one from another handle */
-			
+			/* no cache for this handle; see if we can match one from another handle.
+			   Make sure to use a short lived talloc ctx */
+
 			if ( print_hnd )
-				result = find_printer_in_print_hnd_cache(print_hnd->ctx, &printer->info_2, sharename);
+				result = find_printer_in_print_hnd_cache(get_talloc_ctx(), &printer->info_2, sharename);
 			
 			/* fail to disk if we don't have it with any open handle */
 
@@ -3983,6 +3998,9 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 						print_hnd->printer_info = (NT_PRINTER_INFO_LEVEL *)malloc(sizeof(NT_PRINTER_INFO_LEVEL));
 
 					if ( print_hnd->printer_info ) {
+						/* make sure to use the handle's talloc ctx here since 
+						   the printer_2 object must last until the handle is closed */
+
 						print_hnd->printer_info->info_2 = dup_printer_2(print_hnd->ctx, printer->info_2);
 						
 						/* don't fail the lookup just because the cache update failed */
