@@ -473,7 +473,7 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 
 /****************************************************************************
  Create an auth_usersupplied_data, making the DATA_BLOBs here. 
- Decrupt and encrypt the passwords.
+ Decrypt and encrypt the passwords.
 ****************************************************************************/
 
 BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info, 
@@ -484,7 +484,7 @@ BOOL make_user_info_winbind_crap(auth_usersupplied_info **user_info,
 				 uchar *nt_network_pwd, int nt_pwd_len)
 {
 	BOOL ret;
-	DATA_BLOB sec_blob = data_blob(chal, sizeof(chal));
+	DATA_BLOB sec_blob = data_blob(chal, 8);
 	DATA_BLOB lm_blob = data_blob(lm_network_pwd, lm_pwd_len);
 	DATA_BLOB nt_blob = data_blob(nt_network_pwd, nt_pwd_len);
 	DATA_BLOB plaintext_blob = data_blob(NULL, 0);
