@@ -1,3 +1,7 @@
+1999-05-10  Assar Westerlund  <assar@sics.se>
+
+	* pop_debug.c (doit_v5): call krb5_sendauth with ccache == NULL
+	
 1999-04-11  Assar Westerlund  <assar@sics.se>
 
 	* pop_debug.c (main): use print_version

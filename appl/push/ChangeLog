@@ -1,3 +1,7 @@
+1999-05-10  Assar Westerlund  <assar@sics.se>
+
+	* push.c (do_v5): call krb5_sendauth with ccache == NULL
+	
 Wed Apr  7 23:40:00 1999  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: fix names of hesiod variables

@@ -1,3 +1,17 @@
+1999-05-10  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c (send_krb5_auth): call krb5_sendauth with ccache == NULL.
+	check return value from krb5_crypto_init
+	
+	* common.c (do_write, do_read): always return -1 for failure
+	(net_write, net_read): remove.  they already exist in libroken
+
+1999-05-09  Assar Westerlund  <assar@sics.se>
+
+	* rsh.c: make sure it tries with all other authentication methods
+	after one has failed
+	* rsh.c (main): detect the case of no command given.
+	
 1999-04-11  Assar Westerlund  <assar@sics.se>
 
 	* rsh.c: new option --forwardable. use print_version
