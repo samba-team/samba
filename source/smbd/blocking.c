@@ -282,9 +282,10 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
 			  (SMB_BIG_UINT)startpos, READ_LOCK);
 	if (NT_STATUS_V(status)) {
-		if ((errno != EACCES) && (errno != EAGAIN)) {
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
 			/*
-			 * We have other than a "can't get lock" POSIX
+			 * We have other than a "can't get lock"
 			 * error. Send an error.
 			 * Return True so we get dequeued.
 			 */
@@ -348,9 +349,10 @@ static BOOL process_lock(blocking_lock_record *blr)
 	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
 			 (SMB_BIG_UINT)offset, WRITE_LOCK);
 	if (NT_STATUS_IS_ERR(status)) {
-		if((errno != EACCES) && (errno != EAGAIN)) {
+		if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
 			/*
-			 * We have other than a "can't get lock" POSIX
+			 * We have other than a "can't get lock"
 			 * error. Send an error.
 			 * Return True so we get dequeued.
 			 */
@@ -432,12 +434,13 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 
 		reply_lockingX_success(blr);
 		return True;
-	} else if ((errno != EACCES) && (errno != EAGAIN)) {
-		/*
-		 * We have other than a "can't get lock" POSIX
-		 * error. Free any locks we had and return an error.
-		 * Return True so we get dequeued.
-		 */
+	} else if (!NT_STATUS_EQUAL(status,NT_STATUS_LOCK_NOT_GRANTED) &&
+			!NT_STATUS_EQUAL(status,NT_STATUS_FILE_LOCK_CONFLICT)) {
+			/*
+			 * We have other than a "can't get lock"
+			 * error. Free any locks we had and return an error.
+			 * Return True so we get dequeued.
+			 */
 		
 		blocking_lock_reply_error(blr, status);
 		return True;
