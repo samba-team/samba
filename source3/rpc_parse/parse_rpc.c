@@ -248,7 +248,7 @@ BOOL smb_io_rpc_hdr(const char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 
 static BOOL smb_io_rpc_uuid(const char *desc, RPC_UUID *uuid, prs_struct *ps, int depth)
 {
-	if (ifc == NULL)
+	if (uuid == NULL)
 		return False;
 
 	prs_debug(ps, depth, desc, "smb_io_rpc_uuid");
@@ -267,7 +267,7 @@ static BOOL smb_io_rpc_uuid(const char *desc, RPC_UUID *uuid, prs_struct *ps, in
 	if(!prs_uint8s (False, "data   ", ps, depth, uuid->remaining, sizeof(uuid->remaining)))
 		return False;
 
-	return true;
+	return True;
 }
 
 /*******************************************************************
@@ -282,10 +282,10 @@ static BOOL smb_io_rpc_iface(const char *desc, RPC_IFACE *ifc, prs_struct *ps, i
 	prs_debug(ps, depth, desc, "smb_io_rpc_iface");
 	depth++;
 
-	if (!smb_io_rpc_uuid(  "uuid", ps, depth, &ifc->uuid))
+	if (!smb_io_rpc_uuid(  "uuid", &ifc->uuid, ps, depth))
 		return False;
 
-	if(!prs_uint32 (       "version", ps, depth, &ifc->version))
+	if(!prs_uint32 ("version", ps, depth, &ifc->version))
 		return False;
 
 	return True;
