@@ -1098,23 +1098,6 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 		return print_fsp_open(conn, fname);
 	}
 
-	switch(ofun) {
-		case FILE_EXISTS_OPEN:
-		case FILE_EXISTS_TRUNCATE:
-		case FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST:
-		case FILE_EXISTS_OPEN | FILE_CREATE_IF_NOT_EXIST:
-		case FILE_EXISTS_TRUNCATE | FILE_CREATE_IF_NOT_EXIST:
-			break; /* These are ok. */
-		default:
-			if (GET_OPEN_MODE(share_mode) == DOS_OPEN_EXEC) {
-				ofun = FILE_EXISTS_FAIL | FILE_CREATE_IF_NOT_EXIST;
-				break;
-			}
-			/* Cause caller to force dos errors. */
-			set_saved_error_triple(ERRDOS, ERRbadaccess, NT_STATUS_INVALID);
-			return NULL;
-	}
-
 	DEBUG(10,("open_file_shared: fname = %s, dos_attrs = %x, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, new_dos_mode, share_mode, ofun, (int)mode,  oplock_request ));
 
