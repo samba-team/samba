@@ -140,7 +140,7 @@ unlink("newrootdse.ldb");
 print "creating newrootdse.ldb ...\n";
 
 # allow provisioning to be run from the source directory
-$ENV{"PATH"} .= ":bin";
+$ENV{"PATH"} .= ":bin:../bin";
 
 system("ldbadd -H newrootdse.ldb newrootdse.ldif");
 

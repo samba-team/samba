@@ -52,7 +52,7 @@ sub ShowHelp()
 	print "
 Samba4 newuser
 
-provision.pl [options]
+newuser.pl [options]
   --username  USERNAME     choose new username
   --password  PASSWORD     set password
   --samdb     DBPATH       path to sam.ldb
@@ -89,7 +89,7 @@ if (!$opt_unixname) {
 my $res = "";
 
 # allow provisioning to be run from the source directory
-$ENV{"PATH"} .= ":bin";
+$ENV{"PATH"} .= ":bin:../bin";
 
 $ENV{"LDB_URL"} = $opt_samdb;
 
