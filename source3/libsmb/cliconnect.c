@@ -261,7 +261,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, const char *user,
 			server_chal = data_blob(cli->secblob.data, MIN(cli->secblob.length, 8)); 
 
 			if (!SMBNTLMv2encrypt(user, workgroup, pass, server_chal, 
-					      &lm_response, &nt_response, &session_key)) {
+					      &lm_response, &nt_response, NULL, &session_key)) {
 				data_blob_free(&server_chal);
 				return False;
 			}
