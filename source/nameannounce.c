@@ -372,7 +372,7 @@ void announce_server(struct subnet_record *d, struct work_record *work,
 							MSBROWSE, 0x01, d->bcast_ip,
 							ttl*1000,
 							work->work_group, server_type ? domain_type : 0,
-							comment);
+							name);
 			}
 		}
 		else
