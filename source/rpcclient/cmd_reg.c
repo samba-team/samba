@@ -935,7 +935,7 @@ static NTSTATUS cmd_reg_shutdown(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, reboot, force);
+	result = werror_to_ntstatus(cli_reg_shutdown(cli, mem_ctx, msg, timeout, reboot, force));
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_shutdown: query succeeded\n"));
@@ -954,7 +954,7 @@ static NTSTATUS cmd_reg_abort_shutdown(struct cli_state *cli,
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
-	result = cli_reg_abort_shutdown(cli, mem_ctx);
+	result = werror_to_ntstatus(cli_reg_abort_shutdown(cli, mem_ctx));
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));

@@ -79,11 +79,11 @@ static REGISTRY_KEY *find_regkey_index_by_hnd(pipes_struct *p, POLICY_HND *hnd)
  HK[LM|U]\<key>\<key>\...
  *******************************************************************/
  
-static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
+static WERROR open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY *parent,
 				const char *subkeyname, uint32 access_granted  )
 {
 	REGISTRY_KEY 	*regkey = NULL;
-	NTSTATUS     	result = NT_STATUS_OK;
+	WERROR     	result = WERR_OK;
 	REGSUBKEY_CTR	subkeys;
 	pstring		subkeyname2;
 	int		subkey_len;
@@ -98,7 +98,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 		subkeyname2[subkey_len-1] = '\0';
 
 	if ((regkey=SMB_MALLOC_P(REGISTRY_KEY)) == NULL)
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 		
 	ZERO_STRUCTP( regkey );
 	
@@ -126,7 +126,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	if ( !(regkey->hook = reghook_cache_find( regkey->name )) ) {
 		DEBUG(0,("open_registry_key: Failed to assigned a REGISTRY_HOOK to [%s]\n",
 			regkey->name ));
-		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
+		return WERR_BADFILE;
 	}
 	
 	/* check if the path really exists; failed is indicated by -1 */
@@ -139,7 +139,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	if ( fetch_reg_keys( regkey, &subkeys ) == -1 )  {
 	
 		/* don't really know what to return here */
-		result = NT_STATUS_NO_SUCH_FILE;
+		result = WERR_BADFILE;
 	}
 	else {
 		/* 
@@ -148,7 +148,7 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 		 */
 		
 		if ( !create_policy_hnd( p, hnd, free_regkey_info, regkey ) )
-			result = NT_STATUS_OBJECT_NAME_NOT_FOUND; 
+			result = WERR_BADFILE; 
 	}
 	
 	/* clean up */
@@ -276,22 +276,22 @@ static BOOL get_value_information( REGISTRY_KEY *key, uint32 *maxnum,
  reg_close
  ********************************************************************/
 
-NTSTATUS _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
+WERROR _reg_close(pipes_struct *p, REG_Q_CLOSE *q_u, REG_R_CLOSE *r_u)
 {
 	/* set up the REG unknown_1 response */
 	ZERO_STRUCT(r_u->pol);
 
 	/* close the policy handle */
 	if (!close_registry_key(p, &q_u->pol))
-		return NT_STATUS_OBJECT_NAME_INVALID;
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 /*******************************************************************
  ********************************************************************/
 
-NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
+WERROR _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKLM, 0x0 );
 }
@@ -299,7 +299,7 @@ NTSTATUS _reg_open_hklm(pipes_struct *p, REG_Q_OPEN_HKLM *q_u, REG_R_OPEN_HKLM *
 /*******************************************************************
  ********************************************************************/
 
-NTSTATUS _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *r_u)
+WERROR _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKCR, 0x0 );
 }
@@ -307,7 +307,7 @@ NTSTATUS _reg_open_hkcr(pipes_struct *p, REG_Q_OPEN_HKCR *q_u, REG_R_OPEN_HKCR *
 /*******************************************************************
  ********************************************************************/
 
-NTSTATUS _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u)
+WERROR _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u)
 {
 	return open_registry_key( p, &r_u->pol, NULL, KEY_HKU, 0x0 );
 }
@@ -316,17 +316,17 @@ NTSTATUS _reg_open_hku(pipes_struct *p, REG_Q_OPEN_HKU *q_u, REG_R_OPEN_HKU *r_u
  reg_reply_open_entry
  ********************************************************************/
 
-NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
+WERROR _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTRY *r_u)
 {
 	POLICY_HND pol;
 	fstring name;
 	REGISTRY_KEY *key = find_regkey_index_by_hnd(p, &q_u->pol);
-	NTSTATUS result;
+	WERROR result;
 
 	DEBUG(5,("reg_open_entry: Enter\n"));
 
 	if ( !key )
-		return NT_STATUS_INVALID_HANDLE;
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
 	rpcstr_pull(name,q_u->uni_name.buffer,sizeof(name),q_u->uni_name.uni_str_len*2,0);
 	
@@ -343,9 +343,9 @@ NTSTATUS _reg_open_entry(pipes_struct *p, REG_Q_OPEN_ENTRY *q_u, REG_R_OPEN_ENTR
  reg_reply_info
  ********************************************************************/
 
-NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
+WERROR _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 {
-	NTSTATUS 		status = NT_STATUS_NO_SUCH_FILE;
+	WERROR			status = WERR_BADFILE;
 	fstring 		name;
 	const char              *value_ascii = "";
 	fstring                 value;
@@ -358,7 +358,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 	DEBUG(5,("_reg_info: Enter\n"));
 
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 		
 	DEBUG(7,("_reg_info: policy key name = [%s]\n", regkey->name));
 	
@@ -377,7 +377,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 
 		if ( (val = SMB_MALLOC_P(REGISTRY_VALUE)) == NULL ) {
 			DEBUG(0,("_reg_info: malloc() failed!\n"));
-			return NT_STATUS_NO_MEMORY;
+			return WERR_NOMEM;
 		}
 
 		if (!account_policy_get(AP_REFUSE_MACHINE_PW_CHANGE, &dwValue))
@@ -388,7 +388,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		val = dup_registry_value(
 			regval_ctr_specific_value( &regvals, 0 ) );
  	
-		status = NT_STATUS_OK;
+		status = WERR_OK;
 	
 		goto out;
 	}
@@ -418,7 +418,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		
 		val = dup_registry_value( regval_ctr_specific_value( &regvals, 0 ) );
 		
-		status = NT_STATUS_OK;
+		status = WERR_OK;
 		
 		goto out;
 	}
@@ -430,7 +430,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
 		DEBUG(10,("_reg_info: Testing value [%s]\n", val->valuename));
 		if ( StrCaseCmp( val->valuename, name ) == 0 ) {
 			DEBUG(10,("_reg_info: Found match for value [%s]\n", name));
-			status = NT_STATUS_OK;
+			status = WERR_OK;
 			break;
 		}
 		
@@ -454,21 +454,21 @@ out:
  Implementation of REG_QUERY_KEY
  ****************************************************************************/
  
-NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_u)
+WERROR _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *r_u)
 {
-	NTSTATUS 	status = NT_STATUS_OK;
+	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
 	DEBUG(5,("_reg_query_key: Enter\n"));
 	
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;	
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 	
 	if ( !get_subkey_information( regkey, &r_u->num_subkeys, &r_u->max_subkeylen ) )
-		return NT_STATUS_ACCESS_DENIED;
+		return WERR_ACCESS_DENIED;
 		
 	if ( !get_value_information( regkey, &r_u->num_values, &r_u->max_valnamelen, &r_u->max_valbufsize ) )
-		return NT_STATUS_ACCESS_DENIED;	
+		return WERR_ACCESS_DENIED;	
 
 		
 	r_u->sec_desc = 0x00000078;	/* size for key's sec_desc */
@@ -488,15 +488,15 @@ NTSTATUS _reg_query_key(pipes_struct *p, REG_Q_QUERY_KEY *q_u, REG_R_QUERY_KEY *
  Implementation of REG_UNKNOWN_1A
  ****************************************************************************/
  
-NTSTATUS _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1A *r_u)
+WERROR _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1A *r_u)
 {
-	NTSTATUS 	status = NT_STATUS_OK;
+	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
 	DEBUG(5,("_reg_unknown_1a: Enter\n"));
 	
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;	
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 	
 	r_u->unknown = 0x00000005;	/* seems to be consistent...no idea what it means */
 	
@@ -510,9 +510,9 @@ NTSTATUS _reg_unknown_1a(pipes_struct *p, REG_Q_UNKNOWN_1A *q_u, REG_R_UNKNOWN_1
  Implementation of REG_ENUM_KEY
  ****************************************************************************/
  
-NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
+WERROR _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u)
 {
-	NTSTATUS 	status = NT_STATUS_OK;
+	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	char		*subkey = NULL;
 	
@@ -520,13 +520,13 @@ NTSTATUS _reg_enum_key(pipes_struct *p, REG_Q_ENUM_KEY *q_u, REG_R_ENUM_KEY *r_u
 	DEBUG(5,("_reg_enum_key: Enter\n"));
 	
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;	
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
 	DEBUG(8,("_reg_enum_key: enumerating key [%s]\n", regkey->name));
 	
 	if ( !fetch_reg_keys_specific( regkey, &subkey, q_u->key_index ) )
 	{
-		status = NT_STATUS_NO_MORE_ENTRIES;
+		status = WERR_NO_MORE_ITEMS;
 		goto done;
 	}
 	
@@ -547,9 +547,9 @@ done:
  Implementation of REG_ENUM_VALUE
  ****************************************************************************/
  
-NTSTATUS _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE *r_u)
+WERROR _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALUE *r_u)
 {
-	NTSTATUS 	status = NT_STATUS_OK;
+	WERROR 	status = WERR_OK;
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	REGISTRY_VALUE	*val;
 	
@@ -557,13 +557,13 @@ NTSTATUS _reg_enum_value(pipes_struct *p, REG_Q_ENUM_VALUE *q_u, REG_R_ENUM_VALU
 	DEBUG(5,("_reg_enum_value: Enter\n"));
 	
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;	
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
 	DEBUG(8,("_reg_enum_key: enumerating values for key [%s]\n", regkey->name));
 
 	if ( !fetch_reg_values_specific( regkey, &val, q_u->val_index ) )
 	{
-		status = NT_STATUS_NO_MORE_ENTRIES;
+		status = WERR_NO_MORE_ITEMS;
 		goto done;
 	}
 	
@@ -591,9 +591,9 @@ done:
 #define SHUTDOWN_F_STRING "-f"
 
 
-NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
+WERROR _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	WERROR status = WERR_OK;
 	pstring shutdown_script;
 	UNISTR2 unimsg = q_u->uni_msg;
 	pstring message;
@@ -632,9 +632,9 @@ NTSTATUS _reg_shutdown(pipes_struct *p, REG_Q_SHUTDOWN *q_u, REG_R_SHUTDOWN *r_u
  reg_abort_shutdwon
  ********************************************************************/
 
-NTSTATUS _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
+WERROR _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_ABORT_SHUTDOWN *r_u)
 {
-	NTSTATUS status = NT_STATUS_OK;
+	WERROR status = WERR_OK;
 	pstring abort_shutdown_script;
 
 	pstrcpy(abort_shutdown_script, lp_abort_shutdown_script());
@@ -652,7 +652,7 @@ NTSTATUS _reg_abort_shutdown(pipes_struct *p, REG_Q_ABORT_SHUTDOWN *q_u, REG_R_A
  REG_SAVE_KEY (0x14)
  ********************************************************************/
 
-NTSTATUS _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
+WERROR _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_u)
 {
 	REGISTRY_KEY	*regkey = find_regkey_index_by_hnd( p, &q_u->pol );
 	
@@ -664,12 +664,12 @@ NTSTATUS _reg_save_key(pipes_struct *p, REG_Q_SAVE_KEY  *q_u, REG_R_SAVE_KEY *r_
 	 */
 	 
 	if ( !regkey )
-		return NT_STATUS_INVALID_HANDLE;	
+		return WERR_BADFID; /* This will be reported as an RPC fault anyway. */
 
 	DEBUG(8,("_reg_save_key: berifying backup of key [%s]\n", regkey->name));
 	
 
-	return NT_STATUS_OK;
+	return WERR_OK;
 }
 
 
