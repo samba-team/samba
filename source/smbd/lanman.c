@@ -1635,6 +1635,7 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
+	BOOL ret;
 
 	GROUP_MAP *group_list;
 	int num_entries;
@@ -1653,8 +1654,12 @@ static BOOL api_RNetGroupEnum(connection_struct *conn,uint16 vuid, char *param,c
 		return False;
 
 	/* get list of domain groups SID_DOMAIN_GRP=2 */
-	if(!pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False)) {
-		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));
+	become_root();
+	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP , &group_list, &num_entries, False);
+	unbecome_root();
+	
+	if( !ret ) {
+		DEBUG(3,("api_RNetGroupEnum:failed to get group list"));	
 		return False;
 	}
 
