@@ -879,7 +879,15 @@ spnego_initial
 	    return GSS_S_FAILURE;
 	}
 	ni.mechToken->length = mech_token.length;
-	ni.mechToken->data   = mech_token.value;
+	ni.mechToken->data = malloc(mech_token.length);
+	if (ni.mechToken->data == NULL && mech_token.length != 0) {
+	    free_NegTokenInit(&ni);
+	    gss_release_buffer(&minor, &mech_token);
+	    *minor_status = ENOMEM;
+	    return GSS_S_FAILURE;
+	}
+	memcpy(ni.mechToken->data, mech_token.value, mech_token.length);
+	gss_release_buffer(&minor, &mech_token);
     } else
 	ni.mechToken = NULL;
 
@@ -952,8 +960,6 @@ spnego_initial
     data.data   = buf + buf_size - buf_len;
     data.length = buf_len;
 #endif
-    if (mech_token.length != 0)
-	gss_release_buffer(&minor, &mech_token);
     free_NegTokenInit(&ni);
     if (ret)
 	return ret;
