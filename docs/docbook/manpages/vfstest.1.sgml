@@ -50,7 +50,6 @@
 		</para> </listitem>
 		</varlistentry>
 
-		&stdarg.debuglevel;
 		&stdarg.help;
 
 		<varlistentry>
@@ -60,6 +59,8 @@
 		by the client.
 		</para></listitem>
 		</varlistentry>
+
+		&popt.common.samba;
 
 	</variablelist>
 </refsect1>

@@ -1,4 +1,6 @@
-<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN">
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook V4.1//EN" [
+<!ENTITY % globalentities SYSTEM '../global.ent'> %globalentities;
+]>
 <refentry id="winbindd.8">
 
 <refmeta>
@@ -128,13 +130,9 @@ group:          files winbind
 		than a file.</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-d debuglevel</term>
-		<listitem><para>Sets the debuglevel to an integer between 
-		0 and 100. 0 is for no debugging and 100 is for reams and 
-		reams. To submit a bug report to the Samba Team, use debug 
-		level 100 (see BUGS.txt).   </para></listitem>
-		</varlistentry>
+		&popt.common.samba;
+		&popt.common.connection;
+		&stdarg.help;
 
 		<varlistentry>
 		<term>-i</term>
@@ -168,12 +166,6 @@ group:          files winbind
 		</para></listitem>
 		</varlistentry>
 
-		<varlistentry>
-		<term>-s|--conf=smb.conf</term>
-		<listitem><para>Specifies the location of the all-important
-		<citerefentry><refentrytitle>smb.conf</refentrytitle>
-		<manvolnum>5</manvolnum></citerefentry> file. </para></listitem>
-		</varlistentry>
 	</variablelist>
 </refsect1>
 

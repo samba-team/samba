@@ -141,11 +141,8 @@
 		</para></listitem>
 		</varlistentry>
 				
-		<varlistentry>
-		<term>-h</term>
-		<listitem><para>Print usage information on the <command>smbcacls
-		</command> program.</para></listitem>
-		</varlistentry>
+		&stdarg.help;
+		&popt.common.samba.small;
 	</variablelist>
 </refsect1>
 

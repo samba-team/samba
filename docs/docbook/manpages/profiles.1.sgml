@@ -54,6 +54,7 @@
 		</para></listitem>
 		</varlistentry>
 
+		&stdarg.help;
 
 
 		<varlistentry>
