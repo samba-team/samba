@@ -559,6 +559,62 @@ int vfswrap_utime(connection_struct *conn, char *path, struct utimbuf *times)
     return result;
 }
 
+/*********************************************************************
+ A version of ftruncate that will write the space on disk if strict
+ allocate is set.
+**********************************************************************/
+
+static int strict_allocate_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
+{
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	SMB_STRUCT_STAT st;
+	SMB_OFF_T currpos = vfs_ops->lseek(fsp, fd, 0, SEEK_CUR);
+	unsigned char zero_space[4096];
+	SMB_OFF_T space_to_write = len - st.st_size;
+
+	if (currpos == -1)
+		return -1;
+
+	if (vfs_ops->fstat(fsp, fd, &st) == -1)
+		return -1;
+
+#ifdef S_ISFIFO
+	if (S_ISFIFO(st.st_mode))
+		return 0;
+#endif
+
+	if (st.st_size == len)
+		return 0;
+
+	/* Shrink - just ftruncate. */
+	if (st.st_size > len)
+		return sys_ftruncate(fd, len);
+
+	/* Write out the real space on disk. */
+	if (vfs_ops->lseek(fsp, fd, st.st_size, SEEK_SET) != st.st_size)
+		return -1;
+
+	space_to_write = len - st.st_size;
+
+	memset(zero_space, '\0', sizeof(zero_space));
+	while ( space_to_write > 0) {
+		SMB_OFF_T retlen;
+		SMB_OFF_T current_len_to_write = MIN(sizeof(zero_space),space_to_write);
+
+		retlen = vfs_ops->write(fsp,fsp->fd,(char *)zero_space,current_len_to_write);
+		if (retlen <= 0)
+			return -1;
+
+		space_to_write -= retlen;
+	}
+
+	/* Seek to where we were */
+	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos)
+		return -1;
+
+	return 0;
+}
+
 int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 {
 	int result = -1;
@@ -569,13 +625,21 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 
 	START_PROFILE(syscall_ftruncate);
 
+	if (lp_strict_allocate(SNUM(fsp->conn))) {
+		result = strict_allocate_ftruncate(fsp, fd, len);
+		END_PROFILE(syscall_ftruncate);
+		return result;
+	}
+
 	/* we used to just check HAVE_FTRUNCATE_EXTEND and only use
 	   sys_ftruncate if the system supports it. Then I discovered that
 	   you can have some filesystems that support ftruncate
 	   expansion and some that don't! On Linux fat can't do
 	   ftruncate extend but ext2 can. */
+
 	result = sys_ftruncate(fd, len);
-	if (result == 0) goto done;
+	if (result == 0)
+		goto done;
 
 	/* According to W. R. Stevens advanced UNIX prog. Pure 4.3 BSD cannot
 	   extend a file with ftruncate. Provide alternate implementation
@@ -589,7 +653,7 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 	   size in which case the ftruncate above should have
 	   succeeded or shorter, in which case seek to len - 1 and
 	   write 1 byte of zero */
-	if (vfs_ops->fstat(fsp, fd, &st) < 0) {
+	if (vfs_ops->fstat(fsp, fd, &st) == -1) {
 		goto done;
 	}
 
@@ -610,19 +674,17 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 		goto done;
 	}
 
-	if (vfs_ops->lseek(fsp, fd, len-1, SEEK_SET) != len -1) {
+	if (vfs_ops->lseek(fsp, fd, len-1, SEEK_SET) != len -1)
 		goto done;
-	}
 
-	if (vfs_ops->write(fsp, fd, &c, 1)!=1) {
+	if (vfs_ops->write(fsp, fd, &c, 1)!=1)
 		goto done;
-	}
 
 	/* Seek to where we were */
-	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos) {
+	if (vfs_ops->lseek(fsp, fd, currpos, SEEK_SET) != currpos)
 		goto done;
-	}
 	result = 0;
+
   done:
 
 	END_PROFILE(syscall_ftruncate);
