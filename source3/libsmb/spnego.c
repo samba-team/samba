@@ -140,8 +140,22 @@ static BOOL write_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 	/* write mechListMIC */
 	if (token->mechListMIC.data) {
 		asn1_push_tag(asn1, ASN1_CONTEXT(3));
+#if 0
+		/* This is what RFC 2478 says ... */
 		asn1_write_OctetString(asn1, token->mechListMIC.data,
 				       token->mechListMIC.length);
+#else
+		/* ... but unfortunately this is what Windows
+		   sends/expects */
+		asn1_push_tag(asn1, ASN1_SEQUENCE(0));
+		asn1_push_tag(asn1, ASN1_CONTEXT(0));
+		asn1_push_tag(asn1, ASN1_GENERAL_STRING);
+		asn1_write(asn1, token->mechListMIC.data,
+			   token->mechListMIC.length);
+		asn1_pop_tag(asn1);
+		asn1_pop_tag(asn1);
+		asn1_pop_tag(asn1);
+#endif		
 		asn1_pop_tag(asn1);
 	}
 
