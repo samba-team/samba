@@ -40,8 +40,6 @@ static const char *attr[] = { "uid", "rid", "domain", "uidNumber",
 
 static const char *pool_attr[] = {"uidNumber", "gidNumber", "cn", NULL};
 
-static const char *group_attr[] = {"gidNumber", "ntSid", NULL};
-
 static long ldap_allocate_id(BOOL is_user)
 {
 	int rc, count;
