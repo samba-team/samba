@@ -35,18 +35,20 @@ extern FILE* out_hnd;
 
 extern struct user_creds *usr_creds;
 
+/********************************************************************
+initialize a spoolss NEW_BUFFER.
+
+  ** WARNING ** Calling this function on an existing buffer
+  (which already hgolds data in the buffer->prs.data_p)
+  will result in memory leakage
+********************************************************************/
 static void init_buffer(NEW_BUFFER *buffer, uint32 size)
 {
-	int new_size = 0;
-
 	buffer->ptr = (size!=0)? 1:0;
 	buffer->size=size;
 	buffer->string_at_end=size;
-	prs_init(&(buffer->prs), MAX_PDU_FRAG_LEN, 4, MARSHALL);
-        new_size = MAX(size,buffer->prs.buffer_size) - MIN(size,buffer->prs.buffer_size);
-	prs_grow(&(buffer->prs), new_size);
-	buffer->prs.io=MARSHALL;
-	buffer->prs.data_offset=0;
+	prs_init(&(buffer->prs), size, 4, MARSHALL);
+	buffer->struct_start = prs_offset(&buffer->prs);
 }
 
 static void decode_printer_info_0(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_0 **info)
