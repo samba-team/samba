@@ -836,7 +836,11 @@ main(int argc, char **argv)
     switch(type) {
 #ifdef KRB4
     case HPROP_KRB4_DB: {
-	int e = kerb_db_set_name (database);
+	int e;
+
+	if (database == NULL)
+	    krb5_errx(context, 1, "no database specified");
+	e = kerb_db_set_name (database);
 	if(e)
 	    krb5_errx(context, 1, "kerb_db_set_name: %s",
 		      krb_get_err_text(e));
@@ -849,7 +853,8 @@ main(int argc, char **argv)
 	break;
     }
     case HPROP_KRB4_DUMP:
-	/* nothing to do */
+	if (database == NULL)
+	    krb5_errx(context, 1, "no dump file specified");
 	break;
 #ifdef KASERVER_DB
     case HPROP_KASERVER:
@@ -864,6 +869,8 @@ main(int argc, char **argv)
 #endif
 #endif /* KRB4 */
     case HPROP_MIT_DUMP:
+	if (database == NULL)
+	    krb5_errx(context, 1, "no dump file specified");
 	break;
     case HPROP_HEIMDAL:
 	ret = hdb_create (context, &db, database);
