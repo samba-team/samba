@@ -7798,7 +7798,7 @@
 		the line (either in the [global] section or in the section for 
 		the particular NetBench share :</para>
 
-		<para>Example: <command>veto oplock files = /*;.SEM/
+		<para>Example: <command>veto oplock files = /*.SEM/
 		</command></para>
 		</listitem>
 		</varlistentry>
