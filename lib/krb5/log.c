@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2000, 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -315,15 +315,18 @@ krb5_addlog_dest(krb5_context context, krb5_log_facility *f, const char *orig)
 	ret = open_file(context, f, min, max, fn, "a", file, keep_open);
     }else if(strncmp(p, "DEVICE=", 6) == 0){
 	ret = open_file(context, f, min, max, strdup(p + 7), "w", NULL, 0);
-    }else if(strncmp(p, "SYSLOG", 6) == 0){
-	char *severity;
-	char *facility;
-	severity = strchr(p, ':');
-	if(severity == NULL)
-	    severity = "ERR";
-	facility = strchr(severity, ':');
-	if(facility == NULL)
-	    facility = "AUTH";
+    }else if(strncmp(p, "SYSLOG", 6) == 0 && (p[6] == '\0' || p[6] == ':')){
+	char severity[128] = "";
+	char facility[128] = "";
+	p += 6;
+	if(*p != '\0')
+	    p++;
+	if(strsep_copy(&p, ":", severity, sizeof(severity)) != -1)
+	    strsep_copy(&p, ":", facility, sizeof(facility));
+	if(*severity == '\0')
+	    strlcpy(severity, "ERR", sizeof(severity));
+ 	if(*facility == '\0')
+	    strlcpy(facility, "AUTH", sizeof(facility));
 	ret = open_syslog(context, f, min, max, severity, facility);
     }else{
 	krb5_set_error_string (context, "unknown log type: %s", p);
