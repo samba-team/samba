@@ -193,7 +193,7 @@ BOOL stat_cache_lookup(connection_struct *conn, char *name, char *dirpath,
       scp = (stat_cache_entry *)(hash_elem->value);
       DO_PROFILE_INC(statcache_hits);
       trans_name = scp->names+scp->name_len+1;
-      if(conn->vfs_ops.stat(conn,dos_to_unix(trans_name,False), pst) != 0) {
+      if(vfs_stat(conn,trans_name, pst) != 0) {
         /* Discard this entry - it doesn't exist in the filesystem.  */
         hash_remove(&stat_cache, hash_elem);
         return False;

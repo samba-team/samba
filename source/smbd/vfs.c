@@ -323,6 +323,8 @@ BOOL vfs_file_exist(connection_struct *conn,char *fname,SMB_STRUCT_STAT *sbuf)
 
 	if (!sbuf)
 		sbuf = &st;
+
+	ZERO_STRUCTP(sbuf);
  
 	if (vfs_stat(conn,fname,sbuf) != 0) 
 		return(False);
