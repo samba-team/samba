@@ -45,14 +45,38 @@
 #include <sys/sockio.h>
 #endif
 
+#ifdef AUTOCONF
 struct iface_struct {
 	char name[16];
 	struct in_addr ip;
 	struct in_addr netmask;
 };
+#else
+#include "config.h"
+#include "interfaces.h"
+#endif
 
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
 
-#ifdef HAVE_IFACE_IFCONF
+#ifdef HAVE_STRING_H
+#include <string.h>
+#endif
+
+#ifdef HAVE_STRINGS_H
+#include <strings.h>
+#endif
+
+#ifdef __COMPAR_FN_T
+#define QSORT_CAST (__compar_fn_t)
+#endif
+
+#ifndef QSORT_CAST
+#define QSORT_CAST (int (*)(const void *, const void *))
+#endif
+
+#if HAVE_IFACE_IFCONF
 
 /* this works for Linux 2.2, Solaris 2.5, SunOS4, HPUX 10.20, OSF1
    V4.0, Ultrix 4.4, SCO Unix 3.2, IRIX 6.4 and FreeBSD 3.2.
@@ -124,7 +148,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	return total;
 }  
 
-#elif defined(HAVE_IFACE_IFREQ)
+#elif HAVE_IFACE_IFREQ
 
 #ifndef I_STR
 #include <sys/stropts.h>
@@ -194,8 +218,8 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 			continue;
 		}
 
-		ipaddr = (*(struct sockaddr_in *) &ifr->ifr_addr).sin_addr;
-		iname = ifr[i].ifr_name;
+		ipaddr = (*(struct sockaddr_in *) &ifreq.ifr_addr).sin_addr;
+		iname = ifreq.ifr_name;
 
 		strioctl.ic_cmd = SIOCGIFNETMASK;
 		strioctl.ic_dp  = (char *)&ifreq;
@@ -219,7 +243,7 @@ static int _get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	return total;
 }
 
-#elif defined(HAVE_IFACE_AIX)
+#elif HAVE_IFACE_AIX
 
 /****************************************************************************
 this one is for AIX (tested on 4.2)
@@ -336,7 +360,7 @@ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
 	if (total <= 0) return total;
 
 	/* now we need to remove duplicates */
-	qsort(ifaces, total, sizeof(ifaces[0]), iface_comp);
+	qsort(ifaces, total, sizeof(ifaces[0]), QSORT_CAST iface_comp);
 
 	for (i=1;i<total;) {
 		if (iface_comp(&ifaces[i-1], &ifaces[i]) == 0) {
