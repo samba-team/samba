@@ -23,24 +23,20 @@ Changes since 3.0.1rc1
 Please refer to the CVS log for the SAMBA_3_0 branch for complete
 details:
 
-1)  Correct bug with multiple pdu request rpc's broken over 
-    SMBwriteX calls each.
-2)  Fix incorrect smb flags2 for connections to pre-NT servers;
-    causes smbclient to fail to OS2 for example (bug 821).
-3)  Correct version string in smbldap-tools Makefile.
-4)  Correct a problem with "net rpc vampire" mis-parsing the 
+1)  Correct version string in smbldap-tools Makefile.
+2)  Correct a problem with "net rpc vampire" mis-parsing the 
     alias member info reply.
-5)  Ensure the libdir is created by the installclientlib script.
-6)  Fix detection of Windows 2003 in smb.conf %a variable.
-7)  Ensure that smbd calls the add user script for a missing UNIX 
+3)  Ensure the libdir is created by the installclientlib script.
+4)  Fix detection of Windows 2003 in smb.conf %a variable.
+5)  Ensure that smbd calls the add user script for a missing UNIX 
     user on kerberos auth call  (bug 445).
-8)  Fix bugs in hosts allow/deny when using a mismatched 
+6)  Fix bugs in hosts allow/deny when using a mismatched 
     network/netmask pair.
-9)  Protect alloc_sub_basic() from crashing when the source string 
+7)  Protect alloc_sub_basic() from crashing when the source string 
     is NULL (partial work on bug 687).
-10) Fix spinlocks on IRIX.
-11) Corrected some bad paths with using --with-fhs to configure.
-12) Add packaging for Fedora Core 1.
+8)  Fix spinlocks on IRIX.
+9)  Corrected some bad paths with using --with-fhs to configure.
+10) Add packaging for Fedora Core 1.
 
 
 Changes since 3.0.1pre3
