@@ -1,5 +1,19 @@
 1999-08-19  Assar Westerlund  <assar@sics.se>
 
+	* util.c (edit_timet): break when we manage to parse the time not
+ 	the inverse.
+
+	* mod.c: add parsing of lots of options.  From Love
+ 	<lha@stacken.kth.se>
+
+	* ank.c: add setting of expiration and password expiration
+
+	* kadmin_locl.h: update util.c prototypes
+
+	* util.c: move-around.  clean-up, rename, make consistent (and
+ 	some other weird stuff).  based on patches from Love
+ 	<lha@stacken.kth.se>
+
 	* version4.c (kadm_ser_cpw): initialize password
 	(handle_v4): remove unused variable `ret'
 
