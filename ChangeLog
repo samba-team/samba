@@ -1,3 +1,9 @@
+2001-07-26  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/sock_principal.c (krb5_sock_to_principal): rename
+	sa_len -> salen to avoid the macro that's defined on irix.  noted
+	by "Jacques A. Vidrine" <n@nectar.com>
+
 2001-07-24  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/addr_families.c: add support for type
