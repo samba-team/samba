@@ -21,19 +21,21 @@ handle a keytab
 .Nm
 is a program for managing keytabs.
 .Ar command
-can be one of these:
+can be one of the following:
 .Bl -tag -width Ds
 .It add Xo
 .Op Fl p Ar principal
 .Op Fl -principal= Ns Ar principal
 .Op Fl V Ar kvno
 .Op Fl -kvno= Ns Ar kvno
-.Op Fl t Ar keytype
-.Op Fl -keytype= Ns Ar keytype
+.Op Fl e Ar encype
+.Op Fl -enctype= Ns Ar enctype
 .Op Fl w Ar password
 .Op Fl -password= Ns Ar password
 .Op Fl r
 .Op Fl -random
+.Op Fl s
+.Op Fl -no-salt
 .Xc
 Adds a key to the keytab. Options that are not specified will be
 prompted for.
@@ -44,25 +46,46 @@ List the keys stored in the keytab.
 .Op Fl -principal= Ns Ar principal
 .Op Fl V kvno
 .Op Fl -kvno= Ns Ar kvno
-.Op Fl t keytype
-.Op Fl -keytype= Ns Ar keytype
+.Op Fl e enctype
+.Op Fl -enctype= Ns Ar enctype
 .Xc
 Removes the specified key or keys. Not specifying a
 .Ar kvno
 removes keys with any version number. Not specifying a
-.Ar keytype
-removes keys of any type.  Removes a key from the keytab.
+.Ar enctype
+removes keys of any type.
 .It srvconvert
 .It srv2keytab Xo
 .Op Fl s Ar srvtab
 .Op Fl -srvtab= Ns Ar srvtab
-.Op Fl k Ar keytab
-.Op Fl -keytab= Ns Ar keytab
 .Xc
 Converts the version 4 srvtab in
 .Ar srvtab
 to a version 5 keytab and stores it in
 .Ar keytab .
+.It srvcreate
+.It key2srvtab Xo
+.Op Fl s Ar srvtab
+.Op Fl -srvtab= Ns Ar srvtab
+.Xc
+Converts the version 5 keytab in
+.Ar keytab
+to a version 4 srvtab and stores it in
+.Ar srvtab .
+.It get Xo
+.Op Fl p Ar admin principal
+.Op Fl -principal= Ns Ar admin principal
+.Op Fl r Ar realm
+.Op Fl -realm= Ns Ar realm
+.Op Fl a Ar admin server
+.Op Fl -admin-server= Ns Ar admin server
+.Op Fl s Ar server port
+.Op Fl -server-port= Ns Ar server port
+principal
+.Xc
+Get a key for
+.Nm principal
+and store it in a keytab.
 .El
 .\" .Sh SEE ALSO
 .\" .Xr kadmin 8
