@@ -1637,6 +1637,22 @@ release name %s as this record is not anymore active.\n",
     return;
   }    
 
+  /*
+   * Check if the record is a 0x1c group
+   * and has more then one ip
+   * remove only this address.
+   */
+
+  if(releasing_group_name &&
+		(question->name_type == 0x1c) &&
+		(namerec->data.num_ips > 1)) {
+	remove_ip_from_name_record(namerec, from_ip);
+	DEBUG(3,("wins_process_name_release_request: Remove IP %s from NAME: %s\n",
+			inet_ntoa(from_ip),nmb_namestr(question)));
+	send_wins_name_release_response(0, p);
+	return;
+  }
+
   /* 
    * Send a release response.
    * Flag the name as released and update the ttl
