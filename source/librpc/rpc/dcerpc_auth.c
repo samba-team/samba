@@ -146,7 +146,8 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 				   const char *domain,
 				   const char *username,
 				   const char *password,
-				   uint8_t auth_type)
+				   uint8_t auth_type,
+				   const char *service)
 {
 	NTSTATUS status;
 
@@ -187,6 +188,15 @@ NTSTATUS dcerpc_bind_auth_password(struct dcerpc_pipe *p,
 		DEBUG(1, ("Failed to start set GENSEC target hostname: %s\n", 
 			  nt_errstr(status)));
 		return status;
+	}
+
+	if (service) {
+		status = gensec_set_target_service(p->conn->security_state.generic_state, service);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to start set GENSEC target service: %s\n", 
+				  nt_errstr(status)));
+			return status;
+		}
 	}
 
 	status = gensec_start_mech_by_authtype(p->conn->security_state.generic_state, 

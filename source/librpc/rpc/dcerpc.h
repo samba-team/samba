@@ -153,6 +153,11 @@ struct dcerpc_endpoint_list {
 	const char * const *names;
 };
 
+struct dcerpc_authservice_list {
+	uint32_t count;
+	const char * const *names;
+};
+
 struct dcerpc_interface_table {
 	const char *name;
 	const char *uuid;
@@ -161,6 +166,7 @@ struct dcerpc_interface_table {
 	uint32_t num_calls;
 	const struct dcerpc_interface_call *calls;
 	const struct dcerpc_endpoint_list *endpoints;
+	const struct dcerpc_authservice_list *authservices;
 };
 
 struct dcerpc_interface_list {
@@ -175,6 +181,7 @@ struct dcerpc_binding {
 	uint16_t object_version;
 	const char *host;
 	const char *endpoint;
+	const char *authservice;
 	const char **options;
 	uint32_t flags;
 };

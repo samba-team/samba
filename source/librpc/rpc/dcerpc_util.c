@@ -789,13 +789,15 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 
 	if (table) {
 		struct dcerpc_binding default_binding;
-		
+
+		binding->authservice = talloc_strdup(mem_ctx, table->authservices->names[0]);
+
 		/* Find one of the default pipes for this interface */
 		for (i = 0; i < table->endpoints->count; i++) {
 			status = dcerpc_parse_binding(mem_ctx, table->endpoints->names[i], &default_binding);
 
 			if (NT_STATUS_IS_OK(status) && default_binding.transport == binding->transport && default_binding.endpoint) {
-				binding->endpoint = talloc_strdup(mem_ctx, default_binding.endpoint);	
+				binding->endpoint = talloc_strdup(mem_ctx, default_binding.endpoint);
 				return NT_STATUS_OK;
 			}
 		}
@@ -808,6 +810,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	epmapper_binding.options = NULL;
 	epmapper_binding.flags = 0;
 	epmapper_binding.endpoint = NULL;
+	epmapper_binding.authservice = NULL;
 	
 	status = dcerpc_pipe_connect_b(&p,
 					&epmapper_binding,
@@ -903,8 +906,9 @@ static NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 
 		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
 						   domain, username, password, 
-						   auth_type);
-	} else {    
+						   auth_type,
+						   binding->authservice);
+	} else {
 		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
 	}
 
