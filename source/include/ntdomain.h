@@ -57,6 +57,7 @@ typedef struct
 	uint32 offset; /* offset currently being accessed in memory buffer */
 	uint8 align; /* data alignment */
 	BOOL io; /* parsing in or out of data stream */
+	BOOL error; /* error occurred */
 
 } prs_struct;
 
