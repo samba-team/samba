@@ -193,6 +193,14 @@ char *strtok_r(char *s1, const char *s2, char **lasts);
 char * strupr(char *);
 #endif
 
+#ifndef HAVE_STRCPY_TRUNCATE
+int strcpy_truncate (char *dst, const char *src, size_t dst_sz);
+#endif
+
+#ifndef HAVE_STRCAT_TRUNCATE
+int strcat_truncate (char *dst, const char *src, size_t dst_sz);
+#endif
+
 #ifndef HAVE_GETDTABLESIZE
 int getdtablesize(void);
 #endif

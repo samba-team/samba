@@ -35,6 +35,11 @@ Sat Apr  4 15:13:56 1998  Assar Westerlund  <assar@sics.se>
 
 	* popper.h: include <io.h>
 
+Sat Feb  7 10:07:39 1998  Assar Westerlund  <assar@sics.se>
+
+	* pop_pass.c(krb4_verify_password: Don't use REALM_SZ + 1, just
+ 	REALM_SZ
+
 Mon Dec 29 16:37:26 1997  Assar Westerlund  <assar@sics.se>
 
 	* pop_updt.c (pop_updt): lseek before ftruncating the file.  From

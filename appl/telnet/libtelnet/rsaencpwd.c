@@ -159,9 +159,8 @@ rsaencpwd_init(ap, server)
 		memset(key_file, 0, sizeof(key_file));
 		gethostname(lhostname, sizeof(lhostname));
 		if ((cp = strchr(lhostname, '.')) != 0)  *cp = '\0';
-		strcpy(key_file, "/etc/.");
-		strcat(key_file, lhostname);
-		strcat(key_file, "_privkey");
+		snprintf(key_file, sizeof(key_file),
+			 "/etc/.%s_privkey", lhostname);
 		if ((fp=fopen(key_file, "r"))==NULL) return(0);
 		fclose(fp);
 	} else {
@@ -261,7 +260,7 @@ rsaencpwd_is(ap, data, cnt)
 		    snprintf(challenge, sizeof(challenge), "%x", now);
 		    challenge_len = strlen(challenge);
 		  } else {
-		    strcpy(challenge, "randchal");
+		    strcpy_truncate(challenge, "randchal", sizeof(challenge));
 		    challenge_len = 8;
 		  }
 
@@ -382,9 +381,10 @@ rsaencpwd_reply(ap, data, cnt)
 }
 
 	int
-rsaencpwd_status(ap, name, level)
+rsaencpwd_status(ap, name, name_sz, level)
 	Authenticator *ap;
 	char *name;
+	size_t name_sz;
 	int level;
 {
 
@@ -392,7 +392,7 @@ rsaencpwd_status(ap, name, level)
 		return(level);
 
 	if (UserNameRequested && rsaencpwd_passwdok(UserNameRequested, UserPassword)) {
-		strcpy(name, UserNameRequested);
+		strcpy_truncate(name, UserNameRequested, name_sz);
 		return(AUTH_VALID);
 	} else {
 		return(AUTH_USER);
@@ -407,7 +407,6 @@ rsaencpwd_printsub(data, cnt, buf, buflen)
 	unsigned char *data, *buf;
 	int cnt, buflen;
 {
-	char lbuf[32];
 	int i;
 
 	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
@@ -415,11 +414,11 @@ rsaencpwd_printsub(data, cnt, buf, buflen)
 
 	switch(data[3]) {
 	case RSA_ENCPWD_REJECT:	/* Rejected (reason might follow) */
-		strncpy((char *)buf, " REJECT ", buflen);
+		strcpy_truncate((char *)buf, " REJECT ", buflen);
 		goto common;
 
 	case RSA_ENCPWD_ACCEPT:	/* Accepted (name might follow) */
-		strncpy((char *)buf, " ACCEPT ", buflen);
+		strcpy_truncate((char *)buf, " ACCEPT ", buflen);
 	common:
 		BUMP(buf, buflen);
 		if (cnt <= 4)
@@ -432,21 +431,19 @@ rsaencpwd_printsub(data, cnt, buf, buflen)
 		break;
 
 	case RSA_ENCPWD_AUTH:		/* Authentication data follows */
-		strncpy((char *)buf, " AUTH", buflen);
+		strcpy_truncate((char *)buf, " AUTH", buflen);
 		goto common2;
 
 	case RSA_ENCPWD_CHALLENGEKEY:
-		strncpy((char *)buf, " CHALLENGEKEY", buflen);
+		strcpy_truncate((char *)buf, " CHALLENGEKEY", buflen);
 		goto common2;
 
 	default:
-		snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
-		strncpy((char *)buf, lbuf, buflen);
+		snprintf(buf, buflen, " %d (unknown)", data[3]);
 	common2:
 		BUMP(buf, buflen);
 		for (i = 4; i < cnt; i++) {
-			snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
-			strncpy((char *)buf, lbuf, buflen);
+			snprintf(buf, buflen, " %d", data[i]);
 			BUMP(buf, buflen);
 		}
 		break;

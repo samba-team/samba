@@ -87,9 +87,10 @@ static char *
 get_realm(kafs_data *data, const char *host)
 {
     char *r = krb_realmofhost(host);
-    if(r)
+    if(r != NULL)
 	return strdup(r);
-    return NULL;
+    else
+	return NULL;
 }
 
 int
@@ -97,6 +98,7 @@ krb_afslog_uid(const char *cell, const char *realm, uid_t uid)
 {
     kafs_data kd;
     struct krb_kafs_data d;
+
     kd.afslog_uid = afslog_uid_int;
     kd.get_cred = get_cred;
     kd.get_realm = get_realm;

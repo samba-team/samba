@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -56,7 +56,7 @@ strerror(int eno)
     if(eno < 0 || eno >= sys_nerr)
 	snprintf(emsg, sizeof(emsg), "Error %d occurred.", eno);
     else
-	strcpy(emsg, sys_errlist[eno]);
+	snprintf(emsg, sizeof(emsg), "%s", sys_errlist[eno]);
 
     return emsg;
 }

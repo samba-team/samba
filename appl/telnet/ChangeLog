@@ -20,6 +20,36 @@ Thu Mar 12 02:33:48 1998  Assar Westerlund  <assar@sics.se>
 	* telnet/telnet_locl.h: include <term.h>. From Gregory S. Stark
  	<gsstark@mit.edu>
 
+Sat Feb 21 15:12:38 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/ext.h: add prototype for login_tty
+
+	* telnet/utilities.c (printsub): `direction' is now an int.
+
+	* libtelnet/misc-proto.h: add prototype for `printsub'
+
+Tue Feb 17 02:45:01 1998  Assar Westerlund  <assar@sics.se>
+
+	* libtelnet/kerberos.c (kerberos4_is): cred.pname should be
+ 	cred.pinst.  From <art@stacken.kth.se>
+
+Sun Feb 15 02:46:39 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnet/*/*.c: renamed `telnet' to `my_telnet' to avoid
+ 	conflicts with system header files on mklinux.
+
+Tue Feb 10 02:09:03 1998  Assar Westerlund  <assar@sics.se>
+
+	* telnetd/telnetd.c: new signature for `getterminaltype' and
+ 	`auth_wait'
+
+	* libtelnet: changed the signature of the authentication method
+ 	`status'
+
+Sat Feb  7 07:21:29 1998  Assar Westerlund  <assar@sics.se>
+
+	* */*.c: replace HAS_GETTOS by HAVE_PARSETOS and HAVE_GETTOSBYNAME
+
 Fri Dec 26 16:17:10 1997  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (tn): repair support for numeric addresses

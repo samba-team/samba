@@ -72,7 +72,7 @@ SetSockOpt(int fd, int level, int option, int yesno)
  * The following are routines used to print out debugging information.
  */
 
-unsigned char NetTraceFile[256] = "(standard output)";
+char NetTraceFile[256] = "(standard output)";
 
 void
 SetNetTrace(char *file)
@@ -82,13 +82,13 @@ SetNetTrace(char *file)
     if (file  && (strcmp(file, "-") != 0)) {
 	NetTrace = fopen(file, "w");
 	if (NetTrace) {
-	    strcpy((char *)NetTraceFile, file);
+	    strcpy_truncate(NetTraceFile, file, sizeof(NetTraceFile));
 	    return;
 	}
 	fprintf(stderr, "Cannot open %s.\n", file);
     }
     NetTrace = stdout;
-    strcpy((char *)NetTraceFile, "(standard output)");
+    strcpy_truncate(NetTraceFile, "(standard output)", sizeof(NetTraceFile));
 }
 
 void
@@ -250,7 +250,7 @@ optionstatus(void)
 }
 
 void
-printsub(char direction, unsigned char *pointer, int length)
+printsub(int direction, unsigned char *pointer, int length)
 {
     int i;
     unsigned char buf[512];

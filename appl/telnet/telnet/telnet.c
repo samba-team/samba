@@ -32,6 +32,9 @@
  */
 
 #include "telnet_locl.h"
+#ifdef HAVE_TERMCAP_H
+#include <termcap.h>
+#endif
 
 RCSID("$Id$");
 
@@ -107,7 +110,7 @@ unsigned char telopt_environ = TELOPT_NEW_ENVIRON;
 # define telopt_environ TELOPT_NEW_ENVIRON
 #endif
 
-jmp_buf	toplevel = { 0 };
+jmp_buf	toplevel;
 jmp_buf	peerdied;
 
 int	flushline;
@@ -1550,7 +1553,7 @@ telrcv(void)
 {
     int c;
     int scc;
-    unsigned char *sbp;
+    unsigned char *sbp = NULL;
     int count;
     int returnValue = 0;
 
@@ -1795,7 +1798,7 @@ telsnd()
     int tcc;
     int count;
     int returnValue = 0;
-    unsigned char *tbp;
+    unsigned char *tbp = NULL;
 
     tcc = 0;
     count = 0;
@@ -1991,7 +1994,7 @@ Scheduler(int block) /* should we block in the select ? */
  * Select from tty and network...
  */
 void
-telnet(char *user)
+my_telnet(char *user)
 {
     sys_telnet_init();
 

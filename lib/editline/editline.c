@@ -23,6 +23,7 @@
 #include <config.h>
 #include "editline.h"
 #include <ctype.h>
+#include <errno.h>
 
 RCSID("$Id$");
 
@@ -177,10 +178,11 @@ TTYstring(unsigned char *p)
 	TTYshow(*p++);
 }
 
-static unsigned int
+static int
 TTYget()
 {
-    unsigned char	c;
+    char c;
+    int e;
 
     TTYflush();
     if (Pushed) {
@@ -189,7 +191,12 @@ TTYget()
     }
     if (*Input)
 	return *Input++;
-    return read(0, &c, (size_t)1) == 1 ? c : EOF;
+    do {
+	e = read(0, &c, 1);
+    } while(e < 0 && errno == EINTR);
+    if(e == 1)
+	return c;
+    return EOF;
 }
 
 #define TTYback()	(backspace ? TTYputs((unsigned char *)backspace) : TTYput('\b'))

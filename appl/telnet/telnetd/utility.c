@@ -391,8 +391,8 @@ void edithost(char *pat, char *host)
 	pat++;
     }
     if (*host)
-	strncpy(res, host,
-		sizeof editedhost - (res - editedhost) -1);
+	strcpy_truncate (res, host,
+			 sizeof editedhost - (res - editedhost));
     else
 	*res = '\0';
     editedhost[sizeof editedhost - 1] = '\0';
@@ -527,7 +527,7 @@ printsub(int direction, unsigned char *pointer, int length)
                  	         	/* where suboption data sits */
        			       		/* length of suboption data */
 {
-    int i;
+    int i = 0;
     unsigned char buf[512];
 
     if (!(diagnostic & TD_OPTIONS))

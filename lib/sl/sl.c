@@ -143,6 +143,11 @@ sl_command(SL_cmd *cmds, int argc, char **argv)
     return (*c->func)(argc, argv);
 }
 
+struct sl_data {
+    int max_count;
+    char **ptr;
+};
+
 int
 sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
 {
@@ -178,39 +183,47 @@ sl_make_argv(char *line, int *ret_argc, char ***ret_argv)
     return 0;
 }
 
+/* return values: 0 on success, -1 on fatal error, or return value of command */
 int
-sl_loop (SL_cmd *cmds, char *prompt)
+sl_command_loop(SL_cmd *cmds, char *prompt, void **data)
 {
+    int ret = 0;
     char *buf;
+    SL_cmd *c;
     int argc;
     char **argv;
-    int ret = 0;
+	
+    ret = 0;
+    buf = readline(prompt);
+    if(buf == NULL)
+	return 1;
 
-    while(ret == 0) {
-	ret = 0;
-	/* XXX should make sure this doesn't do funny things if stdin
-           is not a tty */
-	buf = readline(prompt);
-	if(buf == NULL)
-	    break;
-
-	if(*buf)
-	    add_history(buf);
-	argc = 0;
-	ret = sl_make_argv(buf, &argc, &argv);
-	if(ret) {
-	    fprintf(stderr, "sl_loop: out of memory\n");
-	    return -1;
-	}
-	if(argc >= 1) {
-	    ret = sl_command(cmds, argc, argv);
-	    if(ret == -1) {
-		printf ("Unrecognized command: %s\n", argv[0]);
-		ret = 0;
-	    }
-	}
-	free(argv);
+    if(*buf)
+	add_history(buf);
+    ret = sl_make_argv(buf, &argc, &argv);
+    if(ret) {
+	fprintf(stderr, "sl_loop: out of memory\n");
 	free(buf);
+	return -1;
     }
-    return 0;
+    if (argc >= 1) {
+	ret = sl_command(cmds, argc, argv);
+	if(ret == -1) {
+	    printf ("Unrecognized command: %s\n", argv[0]);
+	    ret = 0;
+	}
+    }
+    free(buf);
+    free(argv);
+    return ret;
+}
+
+int 
+sl_loop(SL_cmd *cmds, char *prompt)
+{
+    void *data = NULL;
+    int ret;
+    while((ret = sl_command_loop(cmds, prompt, &data)) == 0)
+	;
+    return ret;
 }

@@ -63,7 +63,7 @@ aix_setup(void)
      * If we are root or running setuid don't trust AFSLIBPATH!
      */
     if (getuid() != 0 && !issuid() && (p = getenv("AFSLIBPATH")) != NULL)
-	snprintf(path, sizeof(path), "%s", p);
+	strcpy_truncate(path, p, sizeof(path));
     else
 	snprintf(path, sizeof(path), "%s/afslib.so", LIBDIR);
 	

@@ -308,7 +308,7 @@ krb4encpwd_reply(ap, data, cnt)
 		des_read_pw_string(user_passwd, sizeof(user_passwd)-1, "Password: ", 0);
 		UserPassword = user_passwd;
 		Challenge = challenge;
-		strcpy(instance, RemoteHostName);
+		strcpy_truncate(instance, RemoteHostName, sizeof(instance));
 		if ((cp = strchr(instance, '.')) != 0)  *cp = '\0';
 
 		if (r = krb_mk_encpwd_req(&krb_token, KRB_SERVICE_NAME, instance, realm, Challenge, UserNameRequested, user_passwd)) {
@@ -327,9 +327,10 @@ krb4encpwd_reply(ap, data, cnt)
 }
 
 	int
-krb4encpwd_status(ap, name, level)
+krb4encpwd_status(ap, name, name_sz, level)
 	Authenticator *ap;
 	char *name;
+	size_t name_sz;
 	int level;
 {
 
@@ -337,7 +338,7 @@ krb4encpwd_status(ap, name, level)
 		return(level);
 
 	if (UserNameRequested && passwdok(UserNameRequested, UserPassword)) {
-		strcpy(name, UserNameRequested);
+		strcpy_truncate(name, UserNameRequested, name_sz);
 		return(AUTH_VALID);
 	} else {
 		return(AUTH_USER);
@@ -352,7 +353,6 @@ krb4encpwd_printsub(data, cnt, buf, buflen)
 	unsigned char *data, *buf;
 	int cnt, buflen;
 {
-	char lbuf[32];
 	int i;
 
 	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
@@ -360,11 +360,11 @@ krb4encpwd_printsub(data, cnt, buf, buflen)
 
 	switch(data[3]) {
 	case KRB4_ENCPWD_REJECT:	/* Rejected (reason might follow) */
-		strncpy((char *)buf, " REJECT ", buflen);
+		strcpy_truncate((char *)buf, " REJECT ", buflen);
 		goto common;
 
 	case KRB4_ENCPWD_ACCEPT:	/* Accepted (name might follow) */
-		strncpy((char *)buf, " ACCEPT ", buflen);
+		strcpy_truncate((char *)buf, " ACCEPT ", buflen);
 	common:
 		BUMP(buf, buflen);
 		if (cnt <= 4)
@@ -377,25 +377,23 @@ krb4encpwd_printsub(data, cnt, buf, buflen)
 		break;
 
 	case KRB4_ENCPWD_AUTH:		/* Authentication data follows */
-		strncpy((char *)buf, " AUTH", buflen);
+		strcpy_truncate((char *)buf, " AUTH", buflen);
 		goto common2;
 
 	case KRB4_ENCPWD_CHALLENGE:
-		strncpy((char *)buf, " CHALLENGE", buflen);
+		strcpy_truncate((char *)buf, " CHALLENGE", buflen);
 		goto common2;
 
 	case KRB4_ENCPWD_ACK:
-		strncpy((char *)buf, " ACK", buflen);
+		strcpy_truncate((char *)buf, " ACK", buflen);
 		goto common2;
 
 	default:
-		snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
-		strncpy((char *)buf, lbuf, buflen);
+		snprintf(buf, buflen, " %d (unknown)", data[3]);
 	common2:
 		BUMP(buf, buflen);
 		for (i = 4; i < cnt; i++) {
-			snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
-			strncpy((char *)buf, lbuf, buflen);
+			snprintf(buf, buflen, " %d", data[i]);
 			BUMP(buf, buflen);
 		}
 		break;

@@ -360,7 +360,7 @@ char *line = Xline;
 char myline[] = "\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0";
 #endif	/* CRAY */
 
-#ifndef HAVE_PTSNAME
+#if !defined(HAVE_PTSNAME) && defined(STREAMSPTY)
 static char *ptsname(int fd)
 {
 #ifdef HAVE_TTYNAME
@@ -388,7 +388,7 @@ int getpty(int *ptynum)
     p = _getpty(&master, O_RDWR, 0600, 1);
     if(p == NULL)
 	return -1;
-    strcpy(line, p);
+    strcpy_truncate(line, p, sizeof(Xline));
     return master;
 #else
 
@@ -420,7 +420,7 @@ int getpty(int *ptynum)
 #ifdef HAVE_UNLOCKPT
 	    unlockpt(p);
 #endif
-	    strcpy(line, ptsname(p));
+	    strcpy_truncate(line, ptsname(p), sizeof(Xline));
 	    really_stream = 1;
 	    return p;
 	}
@@ -1087,6 +1087,7 @@ clean_ttyname (char *tty)
  * Generate a name usable as an `ut_id', typically without `tty'.
  */
 
+#ifdef HAVE_UT_ID
 static char *
 make_id (char *tty)
 {
@@ -1098,6 +1099,7 @@ make_id (char *tty)
     res += 3;
   return res;
 }
+#endif
 
 /*
  * startslave(host)
@@ -1190,7 +1192,7 @@ init_env(void)
     char **envp;
 
     envp = envinit;
-    if (*envp = getenv("TZ"))
+    if ((*envp = getenv("TZ")))
 	*envp++ -= 3;
 #if defined(_CRAY) || defined(__hpux)
     else
@@ -1392,7 +1394,7 @@ rmut(void)
     utmpx.ut_type = LOGIN_PROCESS;
     utxp = getutxline(&utmpx);
     if (utxp) {
-	strcpy(utxp->ut_user, "");
+	utxp->ut_user[0] = '\0';
 	utxp->ut_type = DEAD_PROCESS;
 #ifdef HAVE_UT_EXIT
 #ifdef _STRUCT___EXIT_STATUS

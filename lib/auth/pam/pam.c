@@ -150,10 +150,10 @@ auth_su(pam_handle_t *pamh, int flags, char *user, struct pam_conv *conv)
     
     pw = getpwuid(getuid());
     if(strcmp(user, "root") == 0){
-	strcpy(pr.name, pw->pw_name);
-	strcpy(pr.instance, "root");
+	strcpy_truncate(pr.name, pw->pw_name, sizeof(pr.name));
+	strcpy_truncate(pr.instance, "root", sizeof(pr.instance));
     }else{
-	strcpy(pr.name, user);
+	strcpy_truncate(pr.name, user, sizeof(pr.name));
 	pr.instance[0] = 0;
     }
     pmsg = &msg;

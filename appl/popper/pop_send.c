@@ -115,10 +115,10 @@ pop_send(POP *p)
 		    *return_path_end = '\0';
 		if (strlen(return_path_adr) != 0 && *return_path_adr != '\n') {
 		    static char tmpbuf[MAXMSGLINELEN + 20];
-		    strcpy(tmpbuf, "Return-Path: ");
-		    strcat(tmpbuf, return_path_adr);
-		    strcat(tmpbuf, "\n");
-		    if (strlen(tmpbuf) < MAXMSGLINELEN) {
+		    if (snprintf (tmpbuf,
+				  sizeof(tmpbuf),
+				  "Return-Path: %s\n",
+				  return_path_adr) < MAXMSGLINELEN) {
 			pop_sendline (p,tmpbuf);
 			if (hangup)
 			    return pop_msg (p, POP_FAILURE,

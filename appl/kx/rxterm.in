@@ -34,4 +34,4 @@ pid=$1
 disp=${2}${screen}
 auth=$3
 kill -USR1 $pid
-rsh -n $rsh_args $host "env DISPLAY=$disp XAUTHORITY=$auth $term -T $title -n $title $xterm_args &"
+rsh -n $rsh_args $host "/bin/sh -c 'DISPLAY=$disp XAUTHORITY=$auth $term -T $title -n $title $xterm_args </dev/null >/dev/null 2>/dev/null &'"

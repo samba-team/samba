@@ -167,7 +167,7 @@ extern int (*decrypt_input) (int);
 
 extern FILE
     *NetTrace;		/* Where debugging output goes */
-extern unsigned char
+extern char
     NetTraceFile[];	/* Name of file where debugging output goes */
 extern void
     SetNetTrace (char *);	/* Function to change where debugging goes */
@@ -222,7 +222,7 @@ int 	EncryptStatus (void);
 #endif
 
 #ifdef SIGINFO
-void ayt_status(void);
+void ayt_status(int);
 #endif
 int tn(int argc, char **argv);
 void command(int top, char *tbuf, int cnt);
@@ -281,13 +281,13 @@ void xmitEC(void);
 
 void     Dump (char, unsigned char *, int);
 void     printoption (char *, int, int);
-void     printsub (char, unsigned char *, int);
+void     printsub (int, unsigned char *, int);
 void     sendnaws (void);
 void     setconnmode (int);
 void     setcommandmode (void);
 void     setneturg (void);
 void     sys_telnet_init (void);
-void     telnet (char *);
+void     my_telnet (char *);
 void     tel_enter_binary (int);
 void     TerminalFlushOutput (void);
 void     TerminalNewMode (int);
@@ -351,7 +351,7 @@ void SetNetTrace(char *file);
 void Dump(char direction, unsigned char *buffer, int length);
 void printoption(char *direction, int cmd, int option);
 void optionstatus(void);
-void printsub(char direction, unsigned char *pointer, int length);
+void printsub(int direction, unsigned char *pointer, int length);
 void EmptyTerminal(void);
 void SetForExit(void);
 void Exit(int returnCode);

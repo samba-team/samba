@@ -175,6 +175,10 @@
 #endif
 #endif
 
+#ifdef HAVE_LIBUTIL_H
+#include <libutil.h>
+#endif
+
 #include <roken.h>
 
 /* Don't use the system login, use our version instead */

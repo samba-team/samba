@@ -608,7 +608,7 @@ kerberos5_reply(Authenticator *ap, unsigned char *data, int cnt)
 }
 
 int
-kerberos5_status(Authenticator *ap, char *name, int level)
+kerberos5_status(Authenticator *ap, char *name, size_t name_sz, int level)
 {
     if (level < AUTH_USER)
 	return(level);
@@ -618,7 +618,7 @@ kerberos5_status(Authenticator *ap, char *name, int level)
 		     ticket->client,
 		     UserNameRequested))
 	{
-	    strcpy(name, UserNameRequested);
+	    strcpy_truncate(name, UserNameRequested, name_sz);
 	    return(AUTH_VALID);
 	} else
 	    return(AUTH_USER);
@@ -630,7 +630,6 @@ kerberos5_status(Authenticator *ap, char *name, int level)
 void
 kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
-    char lbuf[32];
     int i;
 
     buf[buflen-1] = '\0';		/* make sure its NULL terminated */
@@ -638,11 +637,11 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 
     switch(data[3]) {
     case KRB_REJECT:		/* Rejected (reason might follow) */
-	strncpy((char *)buf, " REJECT ", buflen);
+	strcpy_truncate((char *)buf, " REJECT ", buflen);
 	goto common;
 
     case KRB_ACCEPT:		/* Accepted (name might follow) */
-	strncpy((char *)buf, " ACCEPT ", buflen);
+	strcpy_truncate((char *)buf, " ACCEPT ", buflen);
     common:
 	BUMP(buf, buflen);
 	if (cnt <= 4)
@@ -656,36 +655,34 @@ kerberos5_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 
 
     case KRB_AUTH:			/* Authentication data follows */
-	strncpy((char *)buf, " AUTH", buflen);
+	strcpy_truncate((char *)buf, " AUTH", buflen);
 	goto common2;
 
     case KRB_RESPONSE:
-	strncpy((char *)buf, " RESPONSE", buflen);
+	strcpy_truncate((char *)buf, " RESPONSE", buflen);
 	goto common2;
 
 #ifdef	FORWARD
     case KRB_FORWARD:		/* Forwarded credentials follow */
-	strncpy((char *)buf, " FORWARD", buflen);
+	strcpy_truncate((char *)buf, " FORWARD", buflen);
 	goto common2;
 
     case KRB_FORWARD_ACCEPT:	/* Forwarded credentials accepted */
-	strncpy((char *)buf, " FORWARD_ACCEPT", buflen);
+	strcpy_truncate((char *)buf, " FORWARD_ACCEPT", buflen);
 	goto common2;
 
     case KRB_FORWARD_REJECT:	/* Forwarded credentials rejected */
 	/* (reason might follow) */
-	strncpy((char *)buf, " FORWARD_REJECT", buflen);
+	strcpy_truncate((char *)buf, " FORWARD_REJECT", buflen);
 	goto common2;
 #endif	/* FORWARD */
 
     default:
-	snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
-	strncpy((char *)buf, lbuf, buflen);
+	snprintf(buf, buflen, " %d (unknown)", data[3]);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
-	    strncpy((char *)buf, lbuf, buflen);
+	    snprintf(buf, buflen, " %d", data[i]);
 	    BUMP(buf, buflen);
 	}
 	break;

@@ -51,6 +51,10 @@ Sun Feb 15 05:12:11 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* sl.c: Move command line split to function `sl_make_argv'.
 
+Tue Feb  3 16:45:44 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* sl.c: Add sl_command_loop, that is the loop body of sl_loop.
+
 Mon Oct 20 01:13:21 1997  Assar Westerlund  <assar@sics.se>
 
 	* sl.c (sl_help): actually use the `help' field of `SL_cmd'

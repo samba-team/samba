@@ -53,13 +53,13 @@ char *
 hookup(char *host, int port)
 {
     struct hostent *hp = 0;
-    int s, len, tos;
-    static char hostnamebuf[80];
+    int s, len;
+    static char hostnamebuf[MaxHostNameLen];
 
     memset(&hisctladdr, 0, sizeof (hisctladdr));
     if(inet_aton(host, &hisctladdr.sin_addr)){
 	hisctladdr.sin_family = AF_INET;
-	strncpy(hostnamebuf, host, sizeof(hostnamebuf));
+	strcpy_truncate (hostnamebuf, host, sizeof (hostnamebuf));
     } else {
 	hp = gethostbyname(host);
 	if (hp == NULL) {
@@ -71,8 +71,7 @@ hookup(char *host, int port)
 	memmove(&hisctladdr.sin_addr,
 		hp->h_addr_list[0],
 		sizeof(hisctladdr.sin_addr));
-	strncpy(hostnamebuf, hp->h_name, sizeof(hostnamebuf));
-	hostnamebuf[sizeof(hostnamebuf) - 1] = '\0';
+	strcpy_truncate (hostnamebuf, hp->h_name, sizeof (hostnamebuf));
     }
     hostname = hostnamebuf;
     s = socket(hisctladdr.sin_family, SOCK_STREAM, 0);
@@ -116,9 +115,12 @@ hookup(char *host, int port)
 	goto bad;
     }
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-    tos = IPTOS_LOWDELAY;
+    {
+	int tos = IPTOS_LOWDELAY;
+
     if (setsockopt(s, IPPROTO_IP, IP_TOS, (char *)&tos, sizeof(int)) < 0)
 	warn("setsockopt TOS (ignored)");
+    }
 #endif
     cin = fdopen(s, "r");
     cout = fdopen(s, "w");
@@ -168,6 +170,7 @@ login(char *host)
 
     char *myname = NULL;
     struct passwd *pw = k_getpwuid(getuid());
+
     if (pw != NULL)
 	myname = pw->pw_name;
 
@@ -195,7 +198,7 @@ login(char *host)
 	else
 	    user = tmp;
     }
-    strcpy(username, user);
+    strcpy_truncate(username, user, sizeof(username));
     n = command("USER %s", user);
     if (n == CONTINUE) {
 	if(sec_complete)
@@ -204,10 +207,12 @@ login(char *host)
 	    char prompt[128];
 	    if(myname && 
 	       (!strcmp(user, "ftp") || !strcmp(user, "anonymous"))){
-		snprintf(defaultpass, sizeof(defaultpass), "%s@%s", myname, mydomain);
-		snprintf(prompt, sizeof(prompt), "Password (%s): ", defaultpass);
+		snprintf(defaultpass, sizeof(defaultpass), 
+			 "%s@%s", myname, mydomain);
+		snprintf(prompt, sizeof(prompt), 
+			 "Password (%s): ", defaultpass);
 	    }else{
-		strcpy(defaultpass, "");
+		*defaultpass = '\0';
 		snprintf(prompt, sizeof(prompt), "Password: ");
 	    }
 	    pass = defaultpass;
@@ -233,7 +238,7 @@ login(char *host)
 	return (1);
     for (n = 0; n < macnum; ++n) {
 	if (!strcmp("init", macros[n].mac_name)) {
-	    strcpy(line, "$init");
+	    strcpy_truncate (line, "$init", sizeof (line));
 	    makeargv();
 	    domacro(margc, margv);
 	    break;
@@ -337,7 +342,7 @@ getreply(int expecteof)
 		fprintf(cout, "%c%c%c", IAC, WONT, getc(cin));
 	    continue;
 	case '\n':
-	    *p++ = 0;
+	    *p++ = '\0';
 	    if(isdigit(buf[0])){
 		sscanf(buf, "%d", &code);
 		if(code == 631){
@@ -373,13 +378,14 @@ getreply(int expecteof)
 #endif
 		    if(code == 227){
 			char *p, *q;
+
 			pasv[0] = 0;
 			p = strchr(reply_string, '(');
 			if(p){
 			    p++;
 			    q = strchr(p, ')');
 			    if(q){
-				strncpy(pasv, p, q - p);
+				memcpy (pasv, p, q - p);
 				pasv[q - p] = 0;
 			    }
 			}
@@ -503,7 +509,6 @@ getreply(int expecteof)
 		sec_read_msg(reply_string, prot_confidential);
 	    n = code / 100 + '0';
 	}
-
 	if (n != '1')
 	    cpend = 0;
 	signal(SIGINT,oldintr);
@@ -514,6 +519,7 @@ getreply(int expecteof)
 	return (n - '0');
     }
 }
+
 #endif
 
 int
@@ -608,6 +614,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
     int c, d;
     FILE *fin, *dout = 0;
     int (*closefunc) (FILE *);
+
     RETSIGTYPE (*oldintr)(), (*oldintp)();
     long bytes = 0, hashbytes = HASHBYTES;
     char *lmode;
@@ -726,8 +733,7 @@ sendrequest(char *cmd, char *local, char *remote, int printnames)
 		(*closefunc)(fin);
 	    return;
 	}
-    } else
-	if (command("%s", cmd) != PRELIM) {
+    } else if (command ("%s", cmd) != PRELIM) {
 	    signal(SIGINT, oldintr);
 	    if (oldintp)
 		signal(SIGPIPE, oldintp);
@@ -906,8 +912,7 @@ recvrequest(char *cmd, char *local, char *remote,
 		code = -1;
 		return;
 	    }
-	}
-	else if (runique && (local = gunique(local)) == NULL) {
+	} else if (runique && (local = gunique (local)) == NULL) {
 	    signal(SIGINT, oldintr);
 	    code = -1;
 	    return;
@@ -1031,7 +1036,6 @@ recvrequest(char *cmd, char *local, char *remote,
 		return;
 	    }
 	}
-
 	while ((c = sec_getc(din)) != EOF) {
 	    if (c == '\n')
 		bare_lfs++;
@@ -1102,7 +1106,6 @@ abort:
 	signal(SIGINT, oldintr);
 	return;
     }
-
     abort_remote(din);
     code = -1;
     if (data >= 0) {
@@ -1148,11 +1151,10 @@ initconn(void)
 	}
 
 	/*
-	 * What we've got at this point is a string of comma
-	 * separated one-byte unsigned integer values.
-	 * The first four are the an IP address. The fifth is
-	 * the MSB of the port number, the sixth is the LSB.
-	 * From that we'll prepare a sockaddr_in.
+	 * What we've got at this point is a string of comma separated
+	 * one-byte unsigned integer values. The first four are the an IP
+	 * address. The fifth is the MSB of the port number, the sixth is the
+	 * LSB. From that we'll prepare a sockaddr_in.
 	 */
 
 	if (sscanf(pasv,"%d,%d,%d,%d,%d,%d",
@@ -1170,7 +1172,6 @@ initconn(void)
 	    printf("Can't parse passive mode string.\n");
 	    goto bad;
 	}
-	
 	memset(&data_addr, 0, sizeof(data_addr));
 	data_addr.sin_family = AF_INET;
 	data_addr.sin_addr.s_addr = htonl((a0 << 24) | (a1 << 16) | 
@@ -1190,7 +1191,6 @@ initconn(void)
 #endif
 	return(0);
     }
-
 noport:
     data_addr = myctladdr;
     if (sendport)
@@ -1230,6 +1230,7 @@ noport:
     if (sendport) {
 	unsigned int a = ntohl(data_addr.sin_addr.s_addr);
 	unsigned int p = ntohs(data_addr.sin_port);
+
 	result = command("PORT %d,%d,%d,%d,%d,%d", 
 			 (a >> 24) & 0xff,
 			 (a >> 16) & 0xff,
@@ -1372,8 +1373,7 @@ pswitch(int flag)
     ip->connect = connected;
     connected = op->connect;
     if (hostname) {
-	strncpy(ip->name, hostname, sizeof(ip->name) - 1);
-	ip->name[strlen(ip->name)] = '\0';
+	strcpy_truncate (ip->name, hostname, sizeof (ip->name));
     } else
 	ip->name[0] = 0;
     hostname = op->name;
@@ -1399,20 +1399,16 @@ pswitch(int flag)
     mcase = op->mcse;
     ip->ntflg = ntflag;
     ntflag = op->ntflg;
-    strncpy(ip->nti, ntin, 16);
-    (ip->nti)[strlen(ip->nti)] = '\0';
-    strcpy(ntin, op->nti);
-    strncpy(ip->nto, ntout, 16);
-    (ip->nto)[strlen(ip->nto)] = '\0';
-    strcpy(ntout, op->nto);
+    strcpy_truncate (ip->nti, ntin, sizeof (ip->nti));
+    strcpy_truncate (ntin, op->nti, 17);
+    strcpy_truncate (ip->nto, ntout, sizeof (ip->nto));
+    strcpy_truncate (ntout, op->nto, 17);
     ip->mapflg = mapflag;
     mapflag = op->mapflg;
-    strncpy(ip->mi, mapin, MaxPathLen - 1);
-    (ip->mi)[strlen(ip->mi)] = '\0';
-    strcpy(mapin, op->mi);
-    strncpy(ip->mo, mapout, MaxPathLen - 1);
-    (ip->mo)[strlen(ip->mo)] = '\0';
-    strcpy(mapout, op->mo);
+    strcpy_truncate (ip->mi, mapin, MaxPathLen);
+    strcpy_truncate (mapin, op->mi, MaxPathLen);
+    strcpy_truncate (ip->mo, mapout, MaxPathLen);
+    strcpy_truncate (mapout, op->mo, MaxPathLen);
     signal(SIGINT, oldintr);
     if (abrtflag) {
 	abrtflag = 0;
@@ -1563,8 +1559,7 @@ reset(int argc, char **argv)
 	    warn("reset");
 	    code = -1;
 	    lostpeer(0);
-	}
-	else if (nfnd) {
+	} else if (nfnd) {
 	    getreply(0);
 	}
     }
@@ -1587,7 +1582,7 @@ gunique(char *local)
 	warn("local: %s", local);
 	return NULL;
     }
-    strcpy(new, local);
+    strcpy_truncate (new, local, sizeof(new));
     cp = new + strlen(new);
     *cp++ = '.';
     while (!d) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -84,12 +84,12 @@ pwd_dialog(char *buf, int size)
     switch(DialogBox(hInst,MAKEINTRESOURCE(IDD_PASSWD_DIALOG),wnd,pwd_dialog_proc))
     {
     case IDOK:
-	strcpy(buf,passwd);
-	for(i=0; passwd[i] != '\0'; i++) passwd[i] = '\0';
+	strcpy_truncate(buf, passwd, size);
+	memset (passwd, 0, sizeof(passwd));
 	return 0;
     case IDCANCEL:
     default:
-	for(i=0; passwd[i] != '\0'; i++) passwd[i] = '\0';
+	memset (passwd, 0, sizeof(passwd));
 	return 1;
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -145,8 +145,7 @@ otp_get_internal (void *v, OtpContext *ctx, int lockp)
   p += 4;
   memcpy (ctx->key, p, OTPKEYSIZE);
   p += OTPKEYSIZE;
-  strncpy (ctx->seed, p, sizeof(ctx->seed));
-  ctx->seed[sizeof(ctx->seed) - 1] = '\0';
+  strcpy_truncate (ctx->seed, p, sizeof(ctx->seed));
   if (lockp)
     return dbm_store (dbm, key, dat, DBM_REPLACE);
   else
@@ -184,15 +183,29 @@ otp_put (void *v, OtpContext *ctx)
   datum dat, key;
   char buf[1024], *p;
   time_t zero = 0;
+  size_t len, rem;
 
   key.dsize = strlen(ctx->user);
   key.dptr  = ctx->user;
 
   p = buf;
+  rem = sizeof(buf);
+
+  if (rem < sizeof(zero))
+      return -1;
   memcpy (p, &zero, sizeof(zero));
   p += sizeof(zero);
+  rem -= sizeof(zero);
+  len = strlen(ctx->alg->name) + 1;
+
+  if (rem < len)
+      return -1;
   strcpy (p, ctx->alg->name);
-  p += strlen(p) + 1;
+  p += len;
+  rem -= len;
+
+  if (rem < 4)
+      return -1;
   {
     unsigned char *up = (unsigned char *)p;
     *up++ = (ctx->n >> 24) & 0xFF;
@@ -201,10 +214,20 @@ otp_put (void *v, OtpContext *ctx)
     *up++ = (ctx->n >>  0) & 0xFF;
   }
   p += 4;
+  rem -= 4;
+
+  if (rem < OTPKEYSIZE)
+      return -1;
   memcpy (p, ctx->key, OTPKEYSIZE);
   p += OTPKEYSIZE;
+  rem -= OTPKEYSIZE;
+
+  len = strlen(ctx->seed) + 1;
+  if (rem < len)
+      return -1;
   strcpy (p, ctx->seed);
-  p += strlen(p) + 1;
+  p += len;
+  rem -= len;
   dat.dptr  = buf;
   dat.dsize = p - buf;
   return dbm_store (dbm, key, dat, DBM_REPLACE);

@@ -43,6 +43,8 @@
 
 RCSID("$Id$");
 
+#ifndef HAVE_STRCPY_TRUNCATE
+
 int
 strcpy_truncate (char *dst, const char *src, size_t dst_sz)
 {
@@ -59,3 +61,5 @@ strcpy_truncate (char *dst, const char *src, size_t dst_sz)
     else
 	return dst_sz;
 }
+
+#endif

@@ -46,7 +46,7 @@ pop_get_command(POP *p, char *mp)
 
     /*  Save a copy of the original client line */
 #ifdef DEBUG
-    if(p->debug) strcpy (buf,mp);
+    if(p->debug) strcpy_truncate (buf, mp, sizeof(buf));
 #endif /* DEBUG */
 
     /*  Parse the message into the parameter array */

@@ -325,8 +325,7 @@ create_and_write_cookie (char *xauthfile,
      auth.data = (char*)cookie;
      des_rand_data (cookie, sz);
 
-     strncpy(xauthfile, "/tmp/AXXXXXX", size);
-     xauthfile[size-1] = 0;
+     strcpy_truncate(xauthfile, "/tmp/AXXXXXX", size);
      fd = mkstemp(xauthfile);
      if(fd < 0) {
 	 syslog(LOG_ERR, "create_and_write_cookie: mkstemp: %m");

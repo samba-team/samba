@@ -122,11 +122,11 @@ void start_login (char *host, int autologin, char *name);
 void cleanup (int sig);
 int main (int argc, char **argv);
 void usage (void);
-int getterminaltype (char *name);
+int getterminaltype (char *name, size_t);
 void _gettermname (void);
 int terminaltypeok (char *s);
 void doit (struct sockaddr_in *who);
-void telnet (int f, int p, char*, int, char*);
+void my_telnet (int f, int p, char*, int, char*);
 void interrupt (void);
 void sendbrk (void);
 void sendsusp (void);
@@ -150,7 +150,7 @@ void putf (char *cp, char *where);
 void printoption (char *fmt, int option);
 void printsub (int direction, unsigned char *pointer, int length);
 void printdata (char *tag, char *ptr, int cnt);
-
+int login_tty(int t);
 
 #ifdef ENCRYPTION
 extern void	(*encrypt_output) (unsigned char *, int);

@@ -180,10 +180,9 @@ kerberos4_send(char *name, Authenticator *ap)
 
     memset(instance, 0, sizeof(instance));
 
-    if ((realm = krb_get_phost(RemoteHostName)))
-	strncpy(instance, realm, sizeof(instance));
-
-    instance[sizeof(instance)-1] = '\0';
+    strcpy_truncate (instance,
+		     krb_get_phost(RemoteHostName),
+		     INST_SZ);
 
     realm = dest_realm ? dest_realm : krb_realmofhost(RemoteHostName);
 
@@ -410,7 +409,7 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 		   cred.issue_date < 0 || 
 		   cred.issue_date > time(0) + CLOCK_SKEW ||
 		   strncmp(cred.pname, adat.pname, sizeof(cred.pname)) ||
-		   strncmp(cred.pinst, adat.pinst, sizeof(cred.pname))){
+		   strncmp(cred.pinst, adat.pinst, sizeof(cred.pinst))){
 		    Data(ap, KRB_FORWARD_REJECT, "Bad credentials", -1);
 		}else{
 		    if((ret = tf_setup(&cred,
@@ -508,13 +507,13 @@ kerberos4_reply(Authenticator *ap, unsigned char *data, int cnt)
 }
 
 int
-kerberos4_status(Authenticator *ap, char *name, int level)
+kerberos4_status(Authenticator *ap, char *name, size_t name_sz, int level)
 {
     if (level < AUTH_USER)
 	return(level);
 
     if (UserNameRequested && !kuserok(&adat, UserNameRequested)) {
-	strcpy(name, UserNameRequested);
+	strcpy_truncate(name, UserNameRequested, name_sz);
 	return(AUTH_VALID);
     } else
 	return(AUTH_USER);
@@ -526,7 +525,6 @@ kerberos4_status(Authenticator *ap, char *name, int level)
 void
 kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 {
-    char lbuf[32];
     int i;
 
     buf[buflen-1] = '\0';		/* make sure its NULL terminated */
@@ -534,11 +532,11 @@ kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 
     switch(data[3]) {
     case KRB_REJECT:		/* Rejected (reason might follow) */
-	strncpy((char *)buf, " REJECT ", buflen);
+	strcpy_truncate((char *)buf, " REJECT ", buflen);
 	goto common;
 
     case KRB_ACCEPT:		/* Accepted (name might follow) */
-	strncpy((char *)buf, " ACCEPT ", buflen);
+	strcpy_truncate((char *)buf, " ACCEPT ", buflen);
     common:
 	BUMP(buf, buflen);
 	if (cnt <= 4)
@@ -551,25 +549,23 @@ kerberos4_printsub(unsigned char *data, int cnt, unsigned char *buf, int buflen)
 	break;
 
     case KRB_AUTH:			/* Authentication data follows */
-	strncpy((char *)buf, " AUTH", buflen);
+	strcpy_truncate((char *)buf, " AUTH", buflen);
 	goto common2;
 
     case KRB_CHALLENGE:
-	strncpy((char *)buf, " CHALLENGE", buflen);
+	strcpy_truncate((char *)buf, " CHALLENGE", buflen);
 	goto common2;
 
     case KRB_RESPONSE:
-	strncpy((char *)buf, " RESPONSE", buflen);
+	strcpy_truncate((char *)buf, " RESPONSE", buflen);
 	goto common2;
 
     default:
-	snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
-	strncpy((char *)buf, lbuf, buflen);
+	snprintf(buf, buflen, " %d (unknown)", data[3]);
     common2:
 	BUMP(buf, buflen);
 	for (i = 4; i < cnt; i++) {
-	    snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
-	    strncpy((char *)buf, lbuf, buflen);
+	    snprintf(buf, buflen, " %d", data[i]);
 	    BUMP(buf, buflen);
 	}
 	break;
@@ -624,13 +620,13 @@ pack_cred(CREDENTIALS *cred, unsigned char *buf)
     p += REALM_SZ;
     memcpy(p, cred->session, 8);
     p += 8;
-    p += krb_put_int(cred->lifetime, p, 4);
-    p += krb_put_int(cred->kvno, p, 4);
-    p += krb_put_int(cred->ticket_st.length, p, 4);
+    p += krb_put_int(cred->lifetime, p, 4, 4);
+    p += krb_put_int(cred->kvno, p, 4, 4);
+    p += krb_put_int(cred->ticket_st.length, p, 4, 4);
     memcpy(p, cred->ticket_st.dat, cred->ticket_st.length);
     p += cred->ticket_st.length;
-    p += krb_put_int(0, p, 4);
-    p += krb_put_int(cred->issue_date, p, 4);
+    p += krb_put_int(0, p, 4, 4);
+    p += krb_put_int(cred->issue_date, p, 4, 4);
     memcpy (p, cred->pname, ANAME_SZ);
     p += ANAME_SZ;
     memcpy (p, cred->pinst, INST_SZ);

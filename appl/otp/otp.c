@@ -92,8 +92,7 @@ renew (int argc, char **argv, OtpAlgorithm *alg, char *user)
   newctx.alg = alg;
   newctx.user = user;
   newctx.n = atoi (argv[0]);
-  strncpy (newctx.seed, argv[1], sizeof(newctx.seed));
-  newctx.seed[sizeof(newctx.seed) - 1] = '\0';
+  strcpy_truncate (newctx.seed, argv[1], sizeof(newctx.seed));
   strlwr(newctx.seed);
   snprintf (prompt, sizeof(prompt),
 	    "[ otp-%s %u %s ]",
@@ -161,8 +160,7 @@ set (int argc, char **argv, OtpAlgorithm *alg, char *user)
     err (1, "out of memory");
 
   ctx.n = atoi (argv[0]);
-  strncpy (ctx.seed, argv[1], sizeof(ctx.seed));
-  ctx.seed[sizeof(ctx.seed) - 1] = '\0';
+  strcpy_truncate (ctx.seed, argv[1], sizeof(ctx.seed));
   strlwr(ctx.seed);
   do {
     if (des_read_pw_string (pw, sizeof(pw), "Pass-phrase: ", 1))

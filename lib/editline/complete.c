@@ -169,9 +169,8 @@ rl_complete(pathname, unique)
 	if ((p = NEW(char, j + 1)) != NULL) {
 	    COPYFROMTO(p, av[0] + len, j);
 	    if ((new = NEW(char, strlen(dir) + strlen(av[0]) + 2)) != NULL) {
-		(void)strcpy(new, dir);
-		(void)strcat(new, "/");
-		(void)strcat(new, av[0]);
+		snprintf (new, sizeof(new),
+			  "%s/%s", dir, av[0]);
 		rl_add_slash(new, p);
 		DISPOSE(new);
 	    }

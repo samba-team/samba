@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -55,7 +55,8 @@ loop(int s)
 	    err(1, "select");
 	if(FD_ISSET(0, &fds)){
 	    fgets(cmd, sizeof(cmd), stdin);
-	    strcpy(cmd + strlen(cmd) - 1, "\r\n");
+	    cmd[strlen(cmd) - 1] = '\0';
+	    strcat_truncate (cmd, "\r\n", sizeof(cmd));
 	    write(s, cmd, strlen(cmd));
 	}
 	if(FD_ISSET(s, &fds)){

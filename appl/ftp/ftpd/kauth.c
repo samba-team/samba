@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995, 1996, 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995, 1996, 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -66,7 +66,7 @@ store_ticket(KTEXT cip)
     unsigned char kvno;
     KTEXT_ST tkt;
     int left = cip->length;
-
+    int len;
     int kerror;
     
     ptr = (char *) cip->dat;
@@ -76,29 +76,32 @@ store_ticket(KTEXT cip)
     ptr += 8;
     left -= 8;
 
-    if (strnlen(ptr, left) == left)
+    len = strnlen(ptr, left);
+    if (len == left)
 	return(INTK_BADPW);
     
     /* extract server's name */
-    strcpy(sp.name, ptr);
-    ptr += strlen(sp.name) + 1;
-    left -= strlen(sp.name) + 1;
+    strcpy_truncate(sp.name, ptr, sizeof(sp.name));
+    ptr += len + 1;
+    left -= len + 1;
 
-    if (strnlen(ptr, left) == left)
+    len = strnlen(ptr, left);
+    if (len == left)
 	return(INTK_BADPW);
 
     /* extract server's instance */
-    strcpy(sp.instance, ptr);
-    ptr += strlen(sp.instance) + 1;
-    left -= strlen(sp.instance) + 1;
+    strcpy_truncate(sp.instance, ptr, sizeof(sp.instance));
+    ptr += len + 1;
+    left -= len + 1;
 
-    if (strnlen(ptr, left) == left)
+    len = strnlen(ptr, left);
+    if (len == left)
 	return(INTK_BADPW);
 
     /* extract server's realm */
-    strcpy(sp.realm,ptr);
-    ptr += strlen(sp.realm) + 1;
-    left -= strlen(sp.realm) + 1;
+    strcpy_truncate(sp.realm, ptr, sizeof(sp.realm));
+    ptr += len + 1;
+    left -= len + 1;
 
     if(left < 3)
 	return INTK_BADPW;
@@ -297,12 +300,12 @@ klist(void)
 		   "  Issued", "  Expires", "  Principal (kvno)");
 	    header = 0;
 	}
-	strcpy(buf1, short_date(c.issue_date));
+	strcpy_truncate(buf1, short_date(c.issue_date), sizeof(buf1));
 	c.issue_date = krb_life_to_time(c.issue_date, c.lifetime);
 	if (time(0) < (unsigned long) c.issue_date)
-	    strcpy(buf2, short_date(c.issue_date));
+	    strcpy_truncate(buf2, short_date(c.issue_date), sizeof(buf2));
 	else
-	    strcpy(buf2, ">>> Expired <<< ");
+	    strcpy_truncate(buf2, ">>> Expired <<< ", sizeof(buf2));
 	lreply(200, "%s  %s  %s (%d)", buf1, buf2,
 	       krb_unparse_name_long(c.service, c.instance, c.realm), c.kvno); 
     }

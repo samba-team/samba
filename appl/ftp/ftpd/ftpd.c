@@ -135,12 +135,12 @@ static void	 usage(void);
 static char *
 curdir(void)
 {
-	static char path[MaxPathLen+1+1];	/* path + '/' + '\0' */
+	static char path[MaxPathLen+1];	/* path + '/' + '\0' */
 
-	if (getcwd(path, sizeof(path)-2) == NULL)
+	if (getcwd(path, sizeof(path)-1) == NULL)
 		return ("");
 	if (path[1] != '\0')		/* special case for root dir. */
-		strcat(path, "/");
+		strcat_truncate(path, "/", sizeof(path));
 	/* For guest account, skip / since it's chrooted */
 	return (guest ? path+1 : path);
 }
@@ -530,7 +530,7 @@ user(char *name)
 		}
 	}
 	if (logging)
-		strncpy(curname, name, sizeof(curname)-1);
+	    strcpy_truncate(curname, name, sizeof(curname));
 	if(sec_complete) {
 	    if(sec_userok(name) == 0)
 		do_login(232, name);
@@ -1092,14 +1092,14 @@ dataconn(char *name, off_t size, char *mode)
 {
 	char sizebuf[32];
 	FILE *file;
-	int retry = 0, tos;
+	int retry = 0;
 
 	file_size = size;
 	byte_count = 0;
 	if (size >= 0)
 	    snprintf(sizebuf, sizeof(sizebuf), " (%ld bytes)", (long)size);
 	else
-	    strcpy(sizebuf, "");
+	    *sizebuf = '\0';
 	if (pdata >= 0) {
 		struct sockaddr_in from;
 		int s, fromlen = sizeof(from);
@@ -1114,9 +1114,12 @@ dataconn(char *name, off_t size, char *mode)
 		close(pdata);
 		pdata = s;
 #if defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
-		tos = IPTOS_THROUGHPUT;
-		setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
-		    sizeof(int));
+		{
+		    int tos = IPTOS_THROUGHPUT;
+		    
+		    setsockopt(s, IPPROTO_IP, IP_TOS, (void *)&tos,
+			       sizeof(tos));
+		}
 #endif
 		reply(150, "Opening %s mode data connection for '%s'%s.",
 		     type == TYPE_A ? "ASCII" : "BINARY", name, sizebuf);
@@ -1608,7 +1611,7 @@ removedir(char *name)
 void
 pwd(void)
 {
-    char path[MaxPathLen + 1];
+    char path[MaxPathLen];
     char *ret;
 
     /* SunOS has a broken getcwd that does popen(pwd) (!!!), this

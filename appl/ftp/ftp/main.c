@@ -104,8 +104,8 @@ main(int argc, char **argv)
 	 */
 	pw = k_getpwuid(getuid());
 	if (pw != NULL) {
+		strcpy_truncate(homedir, pw->pw_dir, sizeof(homedir));
 		home = homedir;
-		strcpy(home, pw->pw_dir);
 	}
 	if (argc > 0) {
 	    char *xargv[5];
@@ -243,8 +243,7 @@ cmdscanner(int top)
 	    p = readline("ftp> ");
 	    if(p == NULL)
 		quit(0, 0);
-	    strncpy(line, p, sizeof(line));
-	    line[sizeof(line) - 1] = 0;
+	    strcpy_truncate(line, p, sizeof(line));
 	    add_history(p);
 	    free(p);
 	} else{

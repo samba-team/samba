@@ -275,7 +275,7 @@ int main(int argc, char **argv)
 #endif	/* CRAY */
 
 	case 'S':
-#ifdef	HAS_GETTOS
+#ifdef	HAVE_PARSETOS
 	    if ((tos = parsetos(optarg, "tcp")) < 0)
 		fprintf(stderr, "%s%s%s\n",
 			"telnetd: Bad TOS argument '", optarg,
@@ -329,7 +329,7 @@ int main(int argc, char **argv)
     argv += optind;
 
     if (debug) {
-	int port;
+	int port = 0;
 	struct servent *sp;
 
 	if (argc > 1) {
@@ -423,7 +423,7 @@ int main(int argc, char **argv)
 
 #if	defined(IPPROTO_IP) && defined(IP_TOS) && defined(HAVE_SETSOCKOPT)
     {
-# ifdef HAS_GETTOS
+# ifdef HAVE_GETTOSBYNAME
 	struct tosent *tp;
 	if (tos < 0 && (tp = gettosbyname("telnet", "tcp")))
 	    tos = tp->t_tos;
@@ -440,6 +440,7 @@ int main(int argc, char **argv)
     net = 0;
     doit(&from);
     /* NOTREACHED */
+    return 0;
 }  /* end of main */
 
 void
@@ -463,7 +464,7 @@ usage()
     fprintf(stderr, " [-r[lowpty]-[highpty]]");
 #endif
     fprintf(stderr, "\n\t");
-#ifdef	HAS_GETTOS
+#ifdef	HAVE_GETTOSBYNAME
     fprintf(stderr, " [-S tos]");
 #endif
 #ifdef	AUTHENTICATION
@@ -485,7 +486,7 @@ static unsigned char ttytype_sbbuf[] = {
 };
 
 int
-getterminaltype(char *name)
+getterminaltype(char *name, size_t name_sz)
 {
     int retval = -1;
     void _gettermname();
@@ -499,7 +500,7 @@ getterminaltype(char *name)
     while (his_will_wont_is_changing(TELOPT_AUTHENTICATION))
 	ttloop();
     if (his_state_is_will(TELOPT_AUTHENTICATION)) {
-	retval = auth_wait(name);
+	retval = auth_wait(name, name_sz);
     }
 #endif
 
@@ -593,12 +594,12 @@ getterminaltype(char *name)
 	 * we have to just go with what we (might) have already gotten.
 	 */
 	if (his_state_is_will(TELOPT_TTYPE) && !terminaltypeok(terminaltype)) {
-	    strncpy(first, terminaltype, sizeof(first));
+	    strcpy_truncate(first, terminaltype, sizeof(first));
 	    for(;;) {
 		/*
 		 * Save the unknown name, and request the next name.
 		 */
-		strncpy(last, terminaltype, sizeof(last));
+		strcpy_truncate(last, terminaltype, sizeof(last));
 		_gettermname();
 		if (terminaltypeok(terminaltype))
 		    break;
@@ -661,7 +662,7 @@ char remote_host_name[MaxHostNameLen];
 void
 doit(struct sockaddr_in *who)
 {
-    char *host;
+    char *host = NULL;
     struct hostent *hp;
     int level;
     int ptynum;
@@ -707,8 +708,7 @@ Please contact your net administrator");
      * We must make a copy because Kerberos is probably going
      * to also do a gethost* and overwrite the static data...
      */
-    strncpy(remote_host_name, host, sizeof(remote_host_name)-1);
-    remote_host_name[sizeof(remote_host_name)-1] = 0;
+    strcpy_truncate(remote_host_name, host, sizeof(remote_host_name));
     host = remote_host_name;
 
     /* XXX - should be k_gethostname? */
@@ -732,9 +732,9 @@ Please contact your net administrator");
      * If hostname still doesn't fit utmp, use ipaddr.
      */
     if (strlen(remote_host_name) > abs(utmp_len))
-	strncpy(remote_host_name,
+	strcpy_truncate(remote_host_name,
 		inet_ntoa(who->sin_addr),
-		sizeof(remote_host_name)-1);
+		sizeof(remote_host_name));
 
 #ifdef AUTHENTICATION
     auth_encrypt_init(hostname, host, "TELNETD", 1);
@@ -745,7 +745,7 @@ Please contact your net administrator");
      * get terminal type.
      */
     *user_name = 0;
-    level = getterminaltype(user_name);
+    level = getterminaltype(user_name, sizeof(user_name));
     setenv("TERM", terminaltype ? terminaltype : "network", 1);
 
 #ifdef _SC_CRAY_SECURE_SYS
@@ -757,7 +757,8 @@ Please contact your net administrator");
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    telnet(net, ourpty, host, level, user_name);  /* begin server processing */
+    /* begin server processing */
+    my_telnet(net, ourpty, host, level, user_name);
     /*NOTREACHED*/
 }  /* end of doit */
 
@@ -784,17 +785,11 @@ show_issue(void)
  * hand data to telnet receiver finite state machine.
  */
 void
-telnet(int f, int p, char *host, int level, char *autoname)
+my_telnet(int f, int p, char *host, int level, char *autoname)
 {
     int on = 1;
-#define	TABBUFSIZ	512
-    char	defent[TABBUFSIZ];
-    char	defstrs[TABBUFSIZ];
-#undef	TABBUFSIZ
     char *he;
-    char *HN;
     char *IM;
-    void netflush();
     int nfd;
     int startslave_called = 0;
     time_t timeout;

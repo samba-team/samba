@@ -66,7 +66,8 @@ makeargv()
     margc = 0;
     cp = line;
     if (*cp == '!') {		/* Special case shell escape */
-	strcpy(saveline, line);	/* save for shell command */
+	/* save for shell command */
+	strcpy_truncate(saveline, line, sizeof(saveline));
 	*argp++ = "!";		/* No room in string to get this */
 	margc++;
 	cp++;
@@ -1561,9 +1562,8 @@ env_init(void)
 		/* If this is not the full name, try to get it via DNS */
 		if (strchr(hbuf, '.') == 0) {
 			struct hostent *he = roken_gethostbyname(hbuf);
-			if (he != 0)
-				strncpy(hbuf, he->h_name, 256);
-			hbuf[256] = '\0';
+			if (he != NULL)
+				strcpy_truncate(hbuf, he->h_name, 256);
 		}
 
 		asprintf (&cp, "%s%s", hbuf, cp2);
@@ -1939,7 +1939,7 @@ status(int argc, char **argv)
  * Function that gets called when SIGINFO is received.
  */
 void
-ayt_status(void)
+ayt_status(int ignore)
 {
     call(status, "status", "notmuch", 0);
 }
@@ -1961,7 +1961,7 @@ cmdrc(char *m1, char *m2)
     if (skiprc)
 	return;
 
-    strcpy(m1save, m1);
+    strcpy_truncate(m1save, m1, sizeof(m1save));
     m1 = m1save;
 
     if (rcname[0] == 0) {
@@ -2033,8 +2033,8 @@ tn(int argc, char **argv)
     struct sockaddr_in6 sin6;
 #endif
     struct sockaddr_in sin;
-    struct sockaddr *sa;
-    int sa_size;
+    struct sockaddr *sa = NULL;
+    int sa_size = 0;
     struct servent *sp = 0;
     unsigned long temp;
     extern char *inet_ntoa();
@@ -2042,8 +2042,9 @@ tn(int argc, char **argv)
     char *srp = 0;
     int srlen;
 #endif
-    char *cmd, *hostp = 0, *portp = 0, *user = 0;
-    int family, port;
+    char *cmd, *hostp = 0, *portp = 0;
+    char *user = 0;
+    int family, port = 0;
 
     /* clear the socket address prior to use */
 
@@ -2053,7 +2054,7 @@ tn(int argc, char **argv)
 	return 0;
     }
     if (argc < 2) {
-	strcpy(line, "open ");
+	strcpy_truncate(line, "open ", sizeof(line));
 	printf("(to) ");
 	fgets(&line[strlen(line)], sizeof(line) - strlen(line), stdin);
 	makeargv();
@@ -2124,7 +2125,7 @@ tn(int argc, char **argv)
 	    sin6.sin6_family = family = AF_INET6;
 	    sa = (struct sockaddr *)&sin6;
 	    sa_size = sizeof(sin6);
-	    strcpy(_hostname, hostp);
+	    strcpy_truncate(_hostname, hostp, sizeof(_hostname));
 	    hostname =_hostname;
 	} else
 #endif
@@ -2132,7 +2133,7 @@ tn(int argc, char **argv)
 	    sin.sin_family = family = AF_INET;
 	    sa = (struct sockaddr *)&sin;
 	    sa_size = sizeof(sin);
-	    strcpy(_hostname, hostp);
+	    strcpy_truncate(_hostname, hostp, sizeof(_hostname));
 	    hostname = _hostname;
 	} else {
 #ifdef HAVE_GETHOSTBYNAME2
@@ -2143,7 +2144,7 @@ tn(int argc, char **argv)
 	    host = roken_gethostbyname(hostp);
 #endif
 	    if (host) {
-		strncpy(_hostname, host->h_name, sizeof(_hostname));
+		strcpy_truncate(_hostname, host->h_name, sizeof(_hostname));
 		family = host->h_addrtype;
 
 		switch(family) {
@@ -2253,7 +2254,7 @@ tn(int argc, char **argv)
 #endif
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
 	{
-# if	defined(HAS_GETTOS)
+# if	defined(HAVE_GETTOSBYNAME)
 	    struct tosent *tp;
 	    if (tos < 0 && (tp = gettosbyname("telnet", "tcp")))
 		tos = tp->t_tos;
@@ -2316,7 +2317,7 @@ tn(int argc, char **argv)
 
 	user = getenv("USER");
 	if (user == NULL ||
-	    ((pw = k_getpwnam(user)) && pw->pw_uid != getuid())) {
+	    ((pw = k_getpwnam((char *)user)) && pw->pw_uid != getuid())) {
 		if ((pw = k_getpwuid(getuid())))
 			user = pw->pw_name;
 		else
@@ -2329,7 +2330,7 @@ tn(int argc, char **argv)
     }
     call(status, "status", "notmuch", 0);
     if (setjmp(peerdied) == 0)
-	telnet(user);
+	my_telnet((char *)user);
     NetClose(net);
     ExitString("Connection closed by foreign host.\r\n",1);
     /*NOTREACHED*/

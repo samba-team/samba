@@ -173,8 +173,8 @@ spx_init(ap, server)
 	if (server) {
 		str_data[3] = TELQUAL_REPLY;
 		gethostname(lhostname, sizeof(lhostname));
-		strcpy(targ_printable, "SERVICE:rcmd@");
-		strcat(targ_printable, lhostname);
+		snprintf (targ_printable, sizeof(targ_printable),
+			  "SERVICE:rcmd@%s", lhostname);
 		input_name_buffer.length = strlen(targ_printable);
 		input_name_buffer.value = targ_printable;
 		major_status = gss_import_name(&status,
@@ -216,8 +216,8 @@ spx_send(ap)
 	char *address;
 
 	printf("[ Trying SPX ... ]\r\n");
-	strcpy(targ_printable, "SERVICE:rcmd@");
-	strcat(targ_printable, RemoteHostName);
+	snprintf (targ_printable, sizeof(targ_printable),
+		  "SERVICE:rcmd@%s", RemoteHostName);
 
 	input_name_buffer.length = strlen(targ_printable);
 	input_name_buffer.value = targ_printable;
@@ -324,8 +324,8 @@ spx_is(ap, data, cnt)
 
 		gethostname(lhostname, sizeof(lhostname));
 
-		strcpy(targ_printable, "SERVICE:rcmd@");
-		strcat(targ_printable, lhostname);
+		snprintf(targ_printable, sizeof(targ_printable),
+			 "SERVICE:rcmd@%s", lhostname);
 
 		input_name_buffer.length = strlen(targ_printable);
 		input_name_buffer.value = targ_printable;
@@ -472,9 +472,10 @@ spx_reply(ap, data, cnt)
 }
 
 	int
-spx_status(ap, name, level)
+spx_status(ap, name, name_sz, level)
 	Authenticator *ap;
 	char *name;
+	size_t name_sz;
 	int level;
 {
 
@@ -495,8 +496,9 @@ spx_status(ap, name, level)
 	  return(AUTH_USER);   /*  not authenticated  */
 	}
 
-	strcpy(acl_file, pwd->pw_dir);
-	strcat(acl_file, "/.sphinx");
+	snprintf (acl_file, sizeof(acl_file),
+		  "%s/.sphinx", pwd->pw_dir);
+
 	acl_file_buffer.value = acl_file;
 	acl_file_buffer.length = strlen(acl_file);
 
@@ -512,7 +514,7 @@ spx_status(ap, name, level)
 					&acl_file_buffer);
 
 	if (major_status == GSS_S_COMPLETE) {
-	  strcpy(name, UserNameRequested);
+	  strcpy_truncate(name, UserNameRequested, name_sz);
 	  return(AUTH_VALID);
 	} else {
 	   return(AUTH_USER);
@@ -528,7 +530,6 @@ spx_printsub(data, cnt, buf, buflen)
 	unsigned char *data, *buf;
 	int cnt, buflen;
 {
-	char lbuf[32];
 	int i;
 
 	buf[buflen-1] = '\0';		/* make sure its NULL terminated */
@@ -536,11 +537,11 @@ spx_printsub(data, cnt, buf, buflen)
 
 	switch(data[3]) {
 	case SPX_REJECT:		/* Rejected (reason might follow) */
-		strncpy((char *)buf, " REJECT ", buflen);
+		strcpy_truncate((char *)buf, " REJECT ", buflen);
 		goto common;
 
 	case SPX_ACCEPT:		/* Accepted (name might follow) */
-		strncpy((char *)buf, " ACCEPT ", buflen);
+		strcpy_truncate((char *)buf, " ACCEPT ", buflen);
 	common:
 		BUMP(buf, buflen);
 		if (cnt <= 4)
@@ -553,17 +554,15 @@ spx_printsub(data, cnt, buf, buflen)
 		break;
 
 	case SPX_AUTH:			/* Authentication data follows */
-		strncpy((char *)buf, " AUTH", buflen);
+		strcpy_truncate((char *)buf, " AUTH", buflen);
 		goto common2;
 
 	default:
-		snprintf(lbuf, sizeof(lbuf), " %d (unknown)", data[3]);
-		strncpy((char *)buf, lbuf, buflen);
+		snprintf(buf, buflen, " %d (unknown)", data[3]);
 	common2:
 		BUMP(buf, buflen);
 		for (i = 4; i < cnt; i++) {
-			snprintf(lbuf, sizeof(lbuf), " %d", data[i]);
-			strncpy((char *)buf, lbuf, buflen);
+			snprintf(buf, buflen, " %d", data[i]);
 			BUMP(buf, buflen);
 		}
 		break;

@@ -127,8 +127,7 @@ __ivaliduser(FILE *hostf, unsigned raddr, const char *luser,
 				sizeof(u_long),
 				AF_INET)) == NULL)
 		return (-1);
-	strncpy(hname, hp->h_name, sizeof(hname));
-	hname[sizeof(hname) - 1] = '\0';
+	strcpy_truncate(hname, hp->h_name, sizeof(hname));
 
 	while (fgets(buf, sizeof(buf), hostf)) {
 		p = buf;
@@ -257,8 +256,7 @@ again:
 		first = 0;
 		if ((pwd = k_getpwnam((char*)luser)) == NULL)
 			return (-1);
-		strcpy(pbuf, pwd->pw_dir);
-		strcat(pbuf, "/.rhosts");
+		snprintf (pbuf, sizeof(pbuf), "%s/.rhosts", pwd->pw_dir);
 
 		/*
 		 * Change effective uid while opening .rhosts.  If root and

@@ -168,7 +168,7 @@ main(int argc, char **argv)
 			break;
 		case 'S':
 		    {
-#ifdef	HAS_GETTOS
+#ifdef	HAVE_PARSETOS
 			extern int tos;
 
 			if ((tos = parsetos(optarg, "tcp")) < 0)
@@ -237,7 +237,7 @@ main(int argc, char **argv)
 			extern char *dest_realm, dst_realm_buf[];
 			extern int dst_realm_sz;
 			dest_realm = dst_realm_buf;
-			strncpy(dest_realm, optarg, dst_realm_sz);
+			strcpy_truncate(dest_realm, optarg, dst_realm_sz);
 		    }
 #else
 			fprintf(stderr,

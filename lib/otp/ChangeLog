@@ -10,6 +10,10 @@ Sun Apr 19 09:59:46 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in: add symlink magic for linux
 
+Sat Feb  7 07:27:18 1998  Assar Westerlund  <assar@sics.se>
+
+	* otp_db.c (otp_put): make sure we don't overrun `buf'
+
 Sun Nov  9 07:14:59 1997  Assar Westerlund  <assar@sics.se>
 
 	* otp_locl.h: use xdbm.h

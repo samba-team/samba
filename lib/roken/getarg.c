@@ -97,12 +97,11 @@ mandoc_template(struct getargs *args,
     printf(".\\\"   * use better macros for arguments (like .Pa for files)\n");
     printf(".\\\"\n");
     t = time(NULL);
-    strftime(timestr, sizeof(timestr), "%b %d, %Y", localtime(&t));
+    strftime(timestr, sizeof(timestr), "%B %e, %Y", localtime(&t));
     printf(".Dd %s\n", timestr);
     p = strrchr(__progname, '/');
     if(p) p++; else p = __progname;
-    strncpy(cmd, p, sizeof(cmd));
-    cmd[sizeof(cmd)-1] = '\0';
+    strcpy_truncate(cmd, p, sizeof(cmd));
     strupr(cmd);
        
     printf(".Dt %s SECTION\n", cmd);

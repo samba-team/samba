@@ -71,7 +71,7 @@ ruserpass(char *host, char **aname, char **apass, char **aacct)
 	struct stat stb;
 
 	if(gethostname(myhostname, MaxHostNameLen) < 0)
-	    strcpy(myhostname, "");
+	    strcpy_truncate(myhostname, "", MaxHostNameLen);
 	if((mydomain = strchr(myhostname, '.')) == NULL)
 	    mydomain = myhostname;
 	else

@@ -83,7 +83,7 @@ fatal (int fd, des_cblock *key, des_key_schedule schedule,
     vsnprintf (p + 4, sizeof(msg) - 5, format, args);
     syslog (LOG_ERR, p + 4);
     len = strlen (p + 4);
-    p += krb_put_int (len, p, 4);
+    p += krb_put_int (len, p, 4, 4);
     p += len;
     write_encrypted (fd, msg, p - msg, schedule, key, thisaddr, thataddr);
     va_end(args);
@@ -113,8 +113,8 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      int status;
      KTEXT_ST ticket;
      AUTH_DAT auth;
-     char user[ANAME_SZ + 1];
-     char instance[INST_SZ + 1];
+     char user[ANAME_SZ];
+     char instance[INST_SZ];
      int addrlen;
      char version[KRB_SENDAUTH_VLEN + 1];
      struct passwd *passwd;
@@ -177,7 +177,7 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      p++;
      p += krb_get_int (p, &tmp, 4, 0);
      len = min(sizeof(user), tmp);
-     strncpy (user, p, len);
+     memcpy (user, p, len);
      p += tmp;
      user[len] = '\0';
 
@@ -208,12 +208,13 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
      if (!(flags & PASSIVE)) {
 	 p += krb_get_int (p, &tmp, 4, 0);
 	 len = min(tmp, display_size);
-	 strncpy (display, p, len);
+	 memcpy (display, p, len);
 	 display[len] = '\0';
 	 p += tmp;
 	 p += krb_get_int (p, &tmp, 4, 0);
 	 len = min(tmp, xauthfile_size);
-	 strncpy (xauthfile, p, len);
+	 memcpy (xauthfile, p, len);
+	 xauthfile[len] = '\0';
 	 p += tmp;
      }
 #if defined(SO_KEEPALIVE) && defined(HAVE_SETSOCKOPT)
@@ -301,7 +302,7 @@ doit_conn (int fd, int meta_sock, int flags,
     }
     p = msg;
     *p++ = NEW_CONN;
-    p += krb_put_int (ntohs(addr.sin_port), p, 4);
+    p += krb_put_int (ntohs(addr.sin_port), p, 4, 4);
 
     if (write_encrypted (meta_sock, msg, p - msg, schedule, key,
 			 thisaddr, thataddr) < 0) {
@@ -362,6 +363,7 @@ doit(int sock, int tcpp)
      if (flags & PASSIVE) {
 	  int tmp;
 	  int len;
+	  size_t rem;
 
 	  tmp = get_xsockets (&nsockets, &sockets, tcpp);
 	  if (tmp < 0) {
@@ -385,15 +387,37 @@ doit(int sock, int tcpp)
 	  }
 
 	  p = msg;
+	  rem = sizeof(msg);
 	  *p++ = ACK;
+	  --rem;
+
 	  len = strlen (display);
-	  p += krb_put_int (len, p, 4);
-	  strncpy (p, display, len);
+	  tmp = krb_put_int (len, p, rem, 4);
+	  if (tmp < 0 || rem < len + 4) {
+	      syslog (LOG_ERR, "doit: buffer too small");
+	      cleanup(nsockets, sockets);
+	      return 1;
+	  }
+	  p += tmp;
+	  rem -= tmp;
+
+	  memcpy (p, display, len);
 	  p += len;
+	  rem -= len;
+
 	  len = strlen (xauthfile);
-	  p += krb_put_int (len, p, 4);
-	  strncpy (p, xauthfile, len);
+	  tmp = krb_put_int (len, p, rem, 4);
+	  if (tmp < 0 || rem < len + 4) {
+	      syslog (LOG_ERR, "doit: buffer too small");
+	      cleanup(nsockets, sockets);
+	      return 1;
+	  }
+	  p += tmp;
+	  rem -= tmp;
+
+	  memcpy (p, xauthfile, len);
 	  p += len;
+	  rem -= len;
 	  
 	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
 			      &me, &him) < 0) {

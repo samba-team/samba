@@ -155,8 +155,9 @@ dns_find_cell(const char *cell, char *dbserver, size_t len)
 	struct resource_record *rr = r->head;
 	while(rr){
 	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
-		strncpy(dbserver, rr->u.afsdb->domain, len);
-		dbserver[len - 1] = '\0';
+		strcpy_truncate(dbserver,
+				rr->u.afsdb->domain,
+				len);
 		ok = 0;
 		break;
 	    }
@@ -184,7 +185,10 @@ find_cells(char *file, char ***cells, int *index)
 	return;
     while (fgets(cell, sizeof(cell), f)) {
 	char *nl = strchr(cell, '\n');
-	if (nl) *nl = 0;
+	if (nl)
+	    *nl = '\0';
+	if (cell[0] == '\0')
+	    continue;
 	for(i = 0; i < ind; i++)
 	    if(strcmp((*cells)[i], cell) == 0)
 		break;

@@ -84,12 +84,10 @@ inaddr2str(struct in_addr addr, char *s, size_t len)
     if(h)
       while ((p = *(h->h_addr_list)++))
 	if (memcmp (p, &addr, sizeof(addr)) == 0) {
-	  strncpy (s, h->h_name, len);
-	  s[len - 1] = '\0';
+	  strcpy_truncate (s, h->h_name, len);
 	  return;
 	}
   }
-  strncpy (s, inet_ntoa (addr), len);
-  s[len - 1] = '\0';
+  strcpy_truncate (s, inet_ntoa (addr), len);
   return;
 }

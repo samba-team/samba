@@ -79,7 +79,7 @@
 #define AFS_SYSCALL	31
 #endif
 
-#if defined(__NetBSD__) || defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 #define AFS_SYSCALL 210
 #endif
 

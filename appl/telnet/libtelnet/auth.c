@@ -584,7 +584,7 @@ auth_intr(int sig)
 }
 
 int
-auth_wait(char *name)
+auth_wait(char *name, size_t name_sz)
 {
     if (auth_debug_mode)
 	printf(">>>%s: in auth_wait.\r\n", Name);
@@ -611,7 +611,8 @@ auth_wait(char *name)
 
     if (authenticated->status)
 	validuser = (*authenticated->status)(authenticated,
-					     name, validuser);
+					     name, name_sz,
+					     validuser);
     return(validuser);
 }
 

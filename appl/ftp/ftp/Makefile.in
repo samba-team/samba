@@ -42,7 +42,7 @@ ftp_SOURCES =		\
 	domacro.c	\
 	ftp.c		\
 	globals.c	\
-	kauth.c
+	kauth.c		\
 	krb4.c		\
 	main.c		\
 	ruserpass.c	\
@@ -54,7 +54,7 @@ ftp_OBJS =		\
 	domacro.o	\
 	ftp.o		\
 	globals.o	\
-	kauth.o
+	kauth.o		\
 	krb4.o		\
 	main.o		\
 	ruserpass.o	\

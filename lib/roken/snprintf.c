@@ -70,6 +70,7 @@ struct state {
   /* XXX - methods */
 };
 
+#ifndef HAVE_VSNPRINTF
 static int
 sn_reserve (struct state *state, size_t n)
 {
@@ -86,6 +87,7 @@ sn_append_char (struct state *state, char c)
     return 0;
   }
 }
+#endif
 
 static int
 as_reserve (struct state *state, size_t n)

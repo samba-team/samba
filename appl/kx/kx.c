@@ -236,8 +236,8 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      p = msg;
      *p++ = INIT;
      len = strlen(user);
-     p += krb_put_int (len, p, 4);
-     strncpy(p, user, len);
+     p += krb_put_int (len, p, sizeof(msg) - 1, 4);
+     memcpy(p, user, len);
      p += len;
      *p++ = PASSIVE | (keepalivep ? KEEP_ALIVE : 0);
      if (write_encrypted (otherside, msg, p - msg, schedule,
@@ -260,12 +260,12 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      } else
 	 p++;
      p += krb_get_int (p, &tmp, 4, 0);
-     strncpy(display, p, tmp);
+     memcpy(display, p, tmp);
      display[tmp] = '\0';
      p += tmp;
 
      p += krb_get_int (p, &tmp, 4, 0);
-     strncpy(xauthfile, p, tmp);
+     memcpy(xauthfile, p, tmp);
      xauthfile[tmp] = '\0';
      p += tmp;
 
@@ -358,6 +358,8 @@ doit_active (char *host, char *user,
     int tmp2;
     char *s;
     int i;
+    size_t rem;
+    u_int32_t other_port;
 
     otherside = connect_host (host, user, &key, schedule, port,
 			      &me, &him);
@@ -372,28 +374,46 @@ doit_active (char *host, char *user,
     }
 #endif
     p = msg;
+    rem = sizeof(msg);
     *p++ = INIT;
+    --rem;
     len = strlen(user);
-    p += krb_put_int (len, p, 4);
-    strncpy(p, user, len);
+    tmp = krb_put_int (len, p, rem, 4);
+    if (tmp < 0)
+	return 1;
+    p += tmp;
+    rem -= tmp;
+    memcpy(p, user, len);
     p += len;
+    rem -= len;
     *p++ = (keepalivep ? KEEP_ALIVE : 0);
+    --rem;
 
     s = getenv("DISPLAY");
     if (s == NULL || (s = strchr(s, ':')) == NULL) 
 	s = ":0";
     len = strlen (s);
-    p += krb_put_int (len, p, 4);
-    strncpy (p, s, len);
+    tmp = krb_put_int (len, p, rem, 4);
+    if (tmp < 0)
+	return 1;
+    rem -= tmp;
+    p += tmp;
+    memcpy (p, s, len);
     p += len;
+    rem -= len;
 
     s = getenv("XAUTHORITY");
     if (s == NULL)
 	s = "";
     len = strlen (s);
-    p += krb_put_int (len, p, 4);
-    strncpy (p, s, len);
+    tmp = krb_put_int (len, p, rem, 4);
+    if (tmp < 0)
+	return 1;
     p += len;
+    rem -= len;
+    memcpy (p, s, len);
+    p += len;
+    rem -= len;
 
     if (write_encrypted (otherside, msg, p - msg, schedule,
 			 &key, &me, &him) < 0)
@@ -405,9 +425,11 @@ doit_active (char *host, char *user,
 	err (1, "read from %s", host);
     p = (u_char *)ret;
     if (*p == ERROR) {
+	u_int32_t u32;
+
 	p++;
-	p += krb_get_int (p, &tmp, 4, 0);
-	errx (1, "%s: %.*s", host, (int)tmp, p);
+	p += krb_get_int (p, &u32, 4, 0);
+	errx (1, "%s: %.*s", host, (int)u32, p);
     } else if (*p != ACK) {
 	errx (1, "%s: strange msg %d", host, *p);
     } else
@@ -458,14 +480,16 @@ doit_active (char *host, char *user,
 	    err (1, "read from %s", host);
 	p = (u_char *)ret;
 	if (*p == ERROR) {
+	    u_int32_t val;
+
 	    p++;
-	    p += krb_get_int (p, &tmp, 4, 0);
-	    errx (1, "%s: %.*s", host, (int)tmp, p);
+	    p += krb_get_int (p, &val, 4, 0);
+	    errx (1, "%s: %.*s", host, (int)val, p);
 	} else if (*p != NEW_CONN) {
 	    errx (1, "%s: strange msg %d", host, *p);
 	} else {
 	    p++;
-	    p += krb_get_int (p, &tmp, 4, 0);
+	    p += krb_get_int (p, &other_port, 4, 0);
 	}
 
 	++nchild;
@@ -483,7 +507,7 @@ doit_active (char *host, char *user,
 	    addr = him;
 	    close (otherside);
 
-	    addr.sin_port = htons(tmp);
+	    addr.sin_port = htons(other_port);
 	    s = socket (AF_INET, SOCK_STREAM, 0);
 	    if (s < 0)
 		err(1, "socket");

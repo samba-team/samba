@@ -713,7 +713,7 @@ ayt(int sig)
     if (connected)
 	sendayt();
     else
-	ayt_status();
+	ayt_status(sig);
 }
 #endif
 

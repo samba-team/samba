@@ -64,7 +64,7 @@ roken_vconcat (char *s, size_t len, va_list args)
 
 	if (n >= len)
 	    return -1;
-	strncpy (s, a, n);
+	memcpy (s, a, n);
 	s += n;
 	len -= n;
     }
@@ -82,7 +82,6 @@ roken_vmconcat (char **s, size_t max_len, va_list args)
     p = malloc(1);
     if(p == NULL)
 	return 0;
-    *p = 0;
     len = 1;
     while ((a = va_arg(args, const char*))) {
 	size_t n = strlen (a);
@@ -97,9 +96,10 @@ roken_vmconcat (char **s, size_t max_len, va_list args)
 	    return 0;
 	}
 	p = q;
+	memcpy (p + len - 1, a, n);
 	len += n;
-	strcat(p, a);
     }
+    p[len - 1] = '\0';
     *s = p;
     return len;
 }

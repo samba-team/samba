@@ -58,7 +58,7 @@ afs_verify(char *name,
 	   int quiet)
 {
   int ret = 1;
-  char lrealm[REALM_SZ + 1];
+  char lrealm[REALM_SZ];
   char tkt_string[MaxPathLen];
   struct passwd *pwd;
 

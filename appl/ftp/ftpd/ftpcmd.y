@@ -326,11 +326,11 @@ cmd
 		{
 		    if(oobflag){
 			if (file_size != (off_t) -1)
-			    reply(213, "Status: %ld of %ld bytes transferred",
+			    reply(213, "Status: %lu of %lu bytes transferred",
 				  (unsigned long)byte_count, 
 				  (unsigned long)file_size);
 			else
-			    reply(213, "Status: %ld bytes transferred", 
+			    reply(213, "Status: %lu bytes transferred", 
 				  (unsigned long)byte_count);
 		    }else
 			statcmd();
@@ -999,7 +999,7 @@ getline(char *s, int n)
 	cs = s;
 /* tmpline may contain saved command from urgent mode interruption */
 	if(ftp_command){
-	  strncpy(s, ftp_command, n);
+	  strcpy_truncate(s, ftp_command, n);
 	  if (debug)
 	    syslog(LOG_DEBUG, "command: %s", s);
 #ifdef XXX
@@ -1338,16 +1338,21 @@ help(struct tab *ctab, char *s)
 			columns = 1;
 		lines = (NCMDS + columns - 1) / columns;
 		for (i = 0; i < lines; i++) {
-		    strcpy (buf, "   ");
+		    strcpy_truncate (buf, "   ", sizeof(buf));
 		    for (j = 0; j < columns; j++) {
 			c = ctab + j * lines + i;
-			snprintf (buf + strlen(buf), sizeof(buf) - strlen(buf),
-				  "%s%c", c->name, c->implemented ? ' ' : '*');
+			snprintf (buf + strlen(buf),
+				  sizeof(buf) - strlen(buf),
+				  "%s%c",
+				  c->name,
+				  c->implemented ? ' ' : '*');
 			if (c + lines >= &ctab[NCMDS])
 			    break;
 			w = strlen(c->name) + 1;
 			while (w < width) {
-			    strcat(buf, " ");
+			    strcat_truncate (buf,
+					     " ",
+					     sizeof(buf));
 			    w++;
 			}
 		    }
@@ -1405,7 +1410,7 @@ sizecmd(char *filename)
 		}
 		fclose(fin);
 
-		reply(213, "%ld", (unsigned long)count);
+		reply(213, "%lu", (unsigned long)count);
 		break; }
 	default:
 		reply(504, "SIZE not implemented for Type %c.", "?AEIL"[type]);

@@ -363,8 +363,12 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 	return SIADFAIL;
     if(entity->name == NULL)
 	return SIADFAIL;
-    if(entity->name[0] == 0)
-	strcpy(entity->name, "root");
+    if(entity->name[0] == 0) {
+	free(entity->name);
+	entity->name = strdup("root");
+	if (entity->name == NULL)
+	    return SIADFAIL;
+    }
     return common_auth(collect, entity, siastat, pkgind);
 }
 

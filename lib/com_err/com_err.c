@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,7 @@ RCSID("$Id$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 #include "com_err.h"
 
 struct et_list *_et_list;
@@ -53,8 +54,7 @@ error_message (long code)
     static char msg[128];
     const char *p = com_right(_et_list, code);
     if(p){
-	strncpy(msg, p, sizeof(msg));
-	msg[sizeof(msg)-1] = '\0';
+	strcpy_truncate(msg, p, sizeof(msg));
     } else{
 	snprintf(msg, sizeof(msg), "Unknown error %d", code);
     }
@@ -76,18 +76,18 @@ default_proc (const char *whoami, long code, const char *fmt, va_list args)
     const void *arg[3], **ap = arg;
     
     if(whoami) {
-	strcat(f, "%s: ");
+	strcat_truncate(f, "%s: ", sizeof(f));
 	*ap++ = whoami;
     }
     if(code) {
-	strcat(f, "%s ");
+	strcat_truncate(f, "%s ", sizeof(f));
 	*ap++ = error_message(code);
     }
     if(fmt) {
-	strcat(f, "%s");
+	strcat_truncate(f, "%s", sizeof(f));
 	*ap++ = fmt;
     }
-    strcat(f, "\r\n");
+    strcat_truncate(f, "\r\n", sizeof(f));
     asprintf(&x, f, arg[0], arg[1], arg[2]);
     vfprintf(stderr, x, args);
     free(x);

@@ -12,7 +12,7 @@ static int
 krb4_verify_password (POP *p)
 {
     int status;
-    char lrealm[REALM_SZ + 1];
+    char lrealm[REALM_SZ];
     char tkt[MaxPathLen];
 
     status = krb_get_lrealm(lrealm,1);

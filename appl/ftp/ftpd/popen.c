@@ -89,10 +89,10 @@ ftp_rooted(const char *path)
 
     if(!home[0])
 	if((pwd = k_getpwnam("ftp")))
-	    strcpy(home, pwd->pw_dir);
+	    strcpy_truncate(home, pwd->pw_dir, sizeof(home));
     snprintf(newpath, sizeof(newpath), "%s/%s", home, path);
     if(access(newpath, X_OK))
-	strcpy(newpath, path);
+	strcpy_truncate(newpath, path, sizeof(newpath));
     return newpath;
 }
 
