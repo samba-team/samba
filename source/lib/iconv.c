@@ -21,13 +21,15 @@
 
 #include "includes.h"
 
-static size_t ascii_pull(char **, size_t *, char **, size_t *);
-static size_t ascii_push(char **, size_t *, char **, size_t *);
-static size_t  utf8_pull(char **, size_t *, char **, size_t *);
-static size_t  utf8_push(char **, size_t *, char **, size_t *);
-static size_t weird_pull(char **, size_t *, char **, size_t *);
-static size_t weird_push(char **, size_t *, char **, size_t *);
-static size_t iconv_copy(char **, size_t *, char **, size_t *);
+static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
+static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
+static size_t  utf8_pull(void *,char **, size_t *, char **, size_t *);
+static size_t  utf8_push(void *,char **, size_t *, char **, size_t *);
+static size_t weird_pull(void *,char **, size_t *, char **, size_t *);
+static size_t weird_push(void *,char **, size_t *, char **, size_t *);
+static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
+static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
+static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
 
 /*
   for each charset we have a function that pulls from that charset to 
@@ -35,17 +37,38 @@ static size_t iconv_copy(char **, size_t *, char **, size_t *);
 */
 static struct {
 	char *name;
-	size_t (*pull)(char **inbuf, size_t *inbytesleft,
+	size_t (*pull)(void *, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(char **inbuf, size_t *inbytesleft,
+	size_t (*push)(void *, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
 } charsets[] = {
 	{"UCS-2LE",  iconv_copy, iconv_copy},
 	{"UTF8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"WEIRD", weird_pull, weird_push},
+	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
 	{NULL, NULL, NULL}
 };
+
+
+/* if there was an error then reset the internal state,
+   this ensures that we don't have a shift state remaining for
+   character sets like SJIS */
+static size_t sys_iconv(void *cd, 
+			char **inbuf, size_t *inbytesleft,
+			char **outbuf, size_t *outbytesleft)
+{
+#ifdef HAVE_NATIVE_ICONV
+	size_t ret = iconv((iconv_t)cd, 
+			   inbuf, inbytesleft, 
+			   outbuf, outbytesleft);
+	if (ret == (size_t)-1) iconv(cd, NULL, NULL, NULL, NULL);
+	return ret;
+#else
+	errno = EINVAL;
+	return -1;
+#endif
+}
 
 /*
   this is a simple portable iconv() implementaion. It only knows about
@@ -60,36 +83,28 @@ size_t smb_iconv(smb_iconv_t cd,
 	char *bufp = cvtbuf;
 	size_t bufsize;
 
-#ifdef HAVE_NATIVE_ICONV
-	if (cd->cd) {
-		size_t ret;
-		ret = iconv(cd->cd, inbuf, inbytesleft, outbuf, outbytesleft);
-
-		/* if there was an error then reset the internal state,
-		   this ensures that we don't have a shift state remaining for
-		   character sets like SJIS */
-		if (ret == (size_t)-1) {
-			iconv(cd->cd, NULL, NULL, NULL, NULL);
-		}
-		return ret;
-	}
-#endif
-
-	/* in most cases we can go direct */
+	/* in many cases we can go direct */
 	if (cd->direct) {
-		return cd->direct(inbuf, inbytesleft, outbuf, outbytesleft);
+		return cd->direct(cd->cd_direct, 
+				  inbuf, inbytesleft, outbuf, outbytesleft);
 	}
+
 
 	/* otherwise we have to do it chunks at a time */
 	while (*inbytesleft > 0) {
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf);
-		if (cd->pull(inbuf, inbytesleft, &bufp, &bufsize) == -1 &&
-		    errno != E2BIG) return -1;
+		
+		if (cd->pull(cd->cd_pull, 
+			     inbuf, inbytesleft, &bufp, &bufsize) == -1
+		    && errno != E2BIG) return -1;
 
 		bufp = cvtbuf;
 		bufsize = sizeof(cvtbuf) - bufsize;
-		if (cd->push(&bufp, &bufsize, outbuf, outbytesleft) == -1) return -1;
+
+		if (cd->push(cd->cd_push, 
+			     &bufp, &bufsize, 
+			     outbuf, outbytesleft) == -1) return -1;
 	}
 
 	return 0;
@@ -102,28 +117,6 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 {
 	smb_iconv_t ret;
 	int from, to;
-#ifdef HAVE_NATIVE_ICONV
-	iconv_t cd = NULL;
-#endif
-
-	for (from=0; charsets[from].name; from++) {
-		if (strcasecmp(charsets[from].name, fromcode) == 0) break;
-	}
-	for (to=0; charsets[to].name; to++) {
-		if (strcasecmp(charsets[to].name, tocode) == 0) break;
-	}
-
-	if (!charsets[from].name || !charsets[to].name) {
-#ifdef HAVE_NATIVE_ICONV
-		/* its not builtin - see if iconv() has it */
-		cd = iconv_open(tocode, fromcode);
-		if (!cd)
-#endif
-		{
-			errno = EINVAL;
-			return (smb_iconv_t)-1;
-		}
-	}
 
 	ret = (smb_iconv_t)malloc(sizeof(*ret));
 	if (!ret) {
@@ -132,34 +125,70 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	}
 	memset(ret, 0, sizeof(*ret));
 
-#ifdef HAVE_NATIVE_ICONV
-	/* see if we will be using the native iconv */
-	if (cd) {
-		ret->cd = cd;
-		return ret;
-	}
-#endif
-
 	/* check for the simplest null conversion */
-	if (from == to) {
+	if (strcmp(fromcode, tocode) == 0) {
 		ret->direct = iconv_copy;
 		return ret;
 	}
 
+	for (from=0; charsets[from].name; from++) {
+		if (strcasecmp(charsets[from].name, fromcode) == 0) break;
+	}
+	for (to=0; charsets[to].name; to++) {
+		if (strcasecmp(charsets[to].name, tocode) == 0) break;
+	}
+
+#ifdef HAVE_NATIVE_ICONV
+	if (!charsets[from].name) {
+		ret->pull = sys_iconv;
+		ret->cd_pull = iconv_open("UCS-2LE", fromcode);
+		if (!ret->cd_pull) goto failed;
+	}
+	if (!charsets[to].name) {
+		ret->push = sys_iconv;
+		ret->cd_push = iconv_open(tocode, "UCS-2LE");
+		if (!ret->cd_push) goto failed;
+	}
+#else
+	if (!charsets[from].name || !charsets[to].name) {
+		goto failed;
+	}
+#endif
+
 	/* check for conversion to/from ucs2 */
-	if (from == 0) {
+	if (from == 0 && charsets[to].name) {
 		ret->direct = charsets[to].push;
 		return ret;
 	}
-	if (to == 0) {
+	if (to == 0 && charsets[from].name) {
 		ret->direct = charsets[from].pull;
 		return ret;
 	}
 
+#ifdef HAVE_NATIVE_ICONV
+	if (from == 0) {
+		ret->direct = sys_iconv;
+		ret->cd_direct = ret->cd_push;
+		ret->cd_push = NULL;
+		return ret;
+	}
+	if (to == 0) {
+		ret->direct = sys_iconv;
+		ret->cd_direct = ret->cd_pull;
+		ret->cd_pull = NULL;
+		return ret;
+	}
+#endif
+
 	/* the general case has to go via a buffer */
-	ret->pull = charsets[from].pull;
-	ret->push = charsets[to].push;
+	if (!ret->pull) ret->pull = charsets[from].pull;
+	if (!ret->push) ret->push = charsets[to].push;
 	return ret;
+
+failed:
+	free(ret);
+	errno = EINVAL;
+	return (smb_iconv_t)-1;
 }
 
 /*
@@ -168,10 +197,11 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 int smb_iconv_close (smb_iconv_t cd)
 {
 #ifdef HAVE_NATIVE_ICONV
-	if (cd->cd) {
-		iconv_close(cd->cd);
-	}
+	if (cd->cd_direct) iconv_close((iconv_t)cd->cd_direct);
+	if (cd->cd_pull) iconv_close((iconv_t)cd->cd_pull);
+	if (cd->cd_push) iconv_close((iconv_t)cd->cd_push);
 #endif
+
 	memset(cd, 0, sizeof(*cd));
 	free(cd);
 	return 0;
@@ -184,7 +214,7 @@ int smb_iconv_close (smb_iconv_t cd)
  multi-byte character set support for english users
 ***********************************************************************/
 
-static size_t ascii_pull(char **inbuf, size_t *inbytesleft,
+static size_t ascii_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -204,7 +234,7 @@ static size_t ascii_pull(char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t ascii_push(char **inbuf, size_t *inbytesleft,
+static size_t ascii_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
@@ -232,6 +262,91 @@ static size_t ascii_push(char **inbuf, size_t *inbytesleft,
 }
 
 
+static size_t ucs2hex_pull(void *cd, char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
+		unsigned v;
+
+		if ((*inbuf)[0] != '@') {
+			/* seven bit ascii case */
+			(*outbuf)[0] = (*inbuf)[0];
+			(*outbuf)[1] = 0;
+			(*inbytesleft)  -= 1;
+			(*outbytesleft) -= 2;
+			(*inbuf)  += 1;
+			(*outbuf) += 2;
+			continue;
+		}
+		/* it's a hex character */
+		if (*inbytesleft < 5) {
+			errno = EINVAL;
+			return -1;
+		}
+		
+		if (sscanf(&(*inbuf)[1], "%04x", &v) != 1) {
+			errno = EILSEQ;
+			return -1;
+		}
+
+		(*outbuf)[0] = v&0xff;
+		(*outbuf)[1] = v>>8;
+		(*inbytesleft)  -= 5;
+		(*outbytesleft) -= 2;
+		(*inbuf)  += 5;
+		(*outbuf) += 2;
+	}
+
+	if (*inbytesleft > 0) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	return 0;
+}
+
+static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
+			   char **outbuf, size_t *outbytesleft)
+{
+	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
+		char buf[6];
+
+		if ((*inbuf)[1] == 0 && 
+		    ((*inbuf)[0] & 0x80) == 0 &&
+		    (*inbuf)[0] != '@') {
+			(*outbuf)[0] = (*inbuf)[0];
+			(*inbytesleft)  -= 2;
+			(*outbytesleft) -= 1;
+			(*inbuf)  += 2;
+			(*outbuf) += 1;
+			continue;
+		}
+		if (*outbytesleft < 5) {
+			errno = E2BIG;
+			return -1;
+		}
+		snprintf(buf, 6, "@%04x", SVAL(*inbuf, 0));
+		memcpy(*outbuf, buf, 5);
+		(*inbytesleft)  -= 2;
+		(*outbytesleft) -= 5;
+		(*inbuf)  += 2;
+		(*outbuf) += 5;
+	}
+
+	if (*inbytesleft == 1) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	if (*inbytesleft > 1) {
+		errno = E2BIG;
+		return -1;
+	}
+	
+	return 0;
+}
+
+
 /* the "weird" character set is very useful for testing multi-byte
    support and finding bugs. Don't use on a production system! 
 */
@@ -245,7 +360,7 @@ static struct {
 	{0, NULL}
 };
 
-static size_t weird_pull(char **inbuf, size_t *inbytesleft,
+static size_t weird_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -288,7 +403,7 @@ static size_t weird_pull(char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t weird_push(char **inbuf, size_t *inbytesleft,
+static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int ir_count=0;
@@ -337,7 +452,7 @@ static size_t weird_push(char **inbuf, size_t *inbytesleft,
 	return ir_count;
 }
 
-static size_t iconv_copy(char **inbuf, size_t *inbytesleft,
+static size_t iconv_copy(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	int n;
@@ -359,7 +474,7 @@ static size_t iconv_copy(char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-static size_t utf8_pull(char **inbuf, size_t *inbytesleft,
+static size_t utf8_pull(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
@@ -406,7 +521,7 @@ badseq:
 	return -1;
 }
 
-static size_t utf8_push(char **inbuf, size_t *inbytesleft,
+static size_t utf8_push(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
 {
 	while (*inbytesleft >= 2 && *outbytesleft >= 1) {

@@ -1687,15 +1687,13 @@ typedef struct {
 
 /* generic iconv conversion structure */
 typedef struct {
-	size_t (*direct)(char **inbuf, size_t *inbytesleft,
+	size_t (*direct)(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft);
-	size_t (*pull)(char **inbuf, size_t *inbytesleft,
+	size_t (*pull)(void *cd, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
-	size_t (*push)(char **inbuf, size_t *inbytesleft,
+	size_t (*push)(void *cd, char **inbuf, size_t *inbytesleft,
 		       char **outbuf, size_t *outbytesleft);
-#ifdef HAVE_NATIVE_ICONV
-	iconv_t cd;
-#endif
+	void *cd_direct, *cd_pull, *cd_push;
 } *smb_iconv_t;
 
 #endif /* _SMB_H */
