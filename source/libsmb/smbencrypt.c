@@ -194,24 +194,21 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 /* Does both the NT and LM owfs of a user's password */
 void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
 {
-	UNISTR2 pwrd;
-
-	ZERO_STRUCT(pwrd);
-	if (pwd != NULL)
+	char buf[512];
+	int i;
+	
+	for (i = 0; i < MIN(pwd->uni_str_len, sizeof(buf)/2); i++)
 	{
-		copy_unistr2(&pwrd, pwd);
+		SIVAL(buf, i*2, pwd->buffer[i]);
 	}
-
 	/* Calculate the MD4 hash (NT compatible) of the password */
-	mdfour(nt_p16, (uchar *) pwrd.buffer, pwrd.uni_str_len * 2);
+	mdfour(nt_p16, buf, pwd->uni_str_len * 2);
 
-#ifdef DEBUG_PASSWORD
-	DEBUG(100, ("nt_owf_genW: pwd, nt#\n"));
-	dump_data(120, (const char *)pwrd.buffer, pwrd.uni_str_len * 2);
-	dump_data(100, nt_p16, 16);
-#endif
+	dump_data_pw("nt_owf_genW:", buf, pwd->uni_str_len * 2);
+	dump_data_pw("nt#:", nt_p16, 16);
+
 	/* clear out local copy of user's password (just being paranoid). */
-	ZERO_STRUCT(pwrd);
+	ZERO_STRUCT(buf);
 }
 
 /* Does both the NT and LM owfs of a user's password */

@@ -962,6 +962,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 	BOOL join_domain = False;
 	int opt;
 	char *password = NULL;
+	pstring upwb;
 	int plen = 0;
 	int len = 0;
 	UNISTR2 upw;
@@ -1031,7 +1032,8 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				fstring pwd;
 				safe_strcpy(pwd, optarg, sizeof(pwd)-1);
 				make_unistr2(&upw, pwd, strlen(pwd));
-				password = (char*)upw.buffer;
+				ascii_to_unibuf(upwb, pwd, strlen(pwd)*2);
+				password = upwb;
 				plen = upw.uni_str_len * 2;
 				memset(pwd, 0, sizeof(pwd));
 				break;

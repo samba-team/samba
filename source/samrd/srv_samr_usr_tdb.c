@@ -462,15 +462,22 @@ static BOOL set_user_info_24(TDB_CONTEXT * usr_tdb,
 	static uchar nt_hash[16];
 	static uchar lm_hash[16];
 	UNISTR2 new_pw;
+	char buf[512];
 	uint32 len;
+	uint32 i;
 
-	if (!decode_pw_buffer(id24->pass, (char *)new_pw.buffer, 256, &len))
+	if (!decode_pw_buffer(id24->pass, buf, 256, &len))
 	{
 		return False;
 	}
 
 	new_pw.uni_max_len = len / 2;
 	new_pw.uni_str_len = len / 2;
+
+	for (i = 0; i < new_pw.uni_str_len; i++)
+	{
+		new_pw.buffer[i] = SVAL(buf, i*2);
+	}
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
