@@ -1,11 +1,11 @@
 ###################################################
-# stub boilerplate generator
-# Copyright jelmer@samba.org 2004
+# DCOM stub boilerplate generator
+# Copyright jelmer@samba.org 2004-2005
 # Copyright tridge@samba.org 2003
 # Copyright metze@samba.org 2004
 # released under the GNU GPL
 
-package IdlStub;
+package DCOMStub;
 
 use strict;
 
@@ -15,7 +15,6 @@ sub pidl($)
 {
 	$res .= shift;
 }
-
 
 #####################################################
 # generate the switch statement for function dispatch
@@ -290,6 +289,9 @@ NTSTATUS dcerpc_server_$name\_init(void)
 sub ParseInterface($)
 {
 	my($interface) = shift;
+	
+	return "" if util::has_property($interface, "local");
+	
 	my($data) = $interface->{DATA};
 	my $count = 0;
 

@@ -15,12 +15,13 @@ use Getopt::Long;
 use File::Basename;
 use idl;
 use dump;
-use header;
+use ndr_header;
+use ndr;
 use server;
 use client;
-use proxy;
-use stub;
-use ndr;
+use dcom_proxy;
+use dcom_stub;
+use com_header;
 use odl;
 use eparser;
 use validator;
@@ -41,6 +42,8 @@ my($opt_parser) = 0;
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
 my($opt_swig) = 0;
+my($opt_dcom_proxy) = 0;
+my($opt_com_header) = 0;
 my($opt_odl) = 0;
 my($opt_output);
 
@@ -62,27 +65,29 @@ sub IdlParse($)
 sub ShowHelp()
 {
     print "
-           perl IDL parser and code generator
-           Copyright (C) tridge\@samba.org
+       perl IDL parser and code generator
+       Copyright (C) tridge\@samba.org
 
-           Usage: pidl.pl [options] <idlfile>
+       Usage: pidl.pl [options] <idlfile>
 
-           Options:
-             --help                this help page
-             --output OUTNAME      put output in OUTNAME.*
-             --parse               parse a idl file to a .pidl file
-             --dump                dump a pidl file back to idl
-             --header              create a C header file
-             --parser              create a C NDR parser
-             --client              create a C client
-             --server              create server boilerplate
-             --template            print a template for a pipe
-             --eparser             create an ethereal parser
-             --swig                create swig wrapper file
-             --diff                run diff on the idl and dumped output
-             --keep                keep the .pidl file
-             --odl                 accept ODL input
-           \n";
+       Options:
+         --help                this help page
+         --output OUTNAME      put output in OUTNAME.*
+         --parse               parse a idl file to a .pidl file
+         --dump                dump a pidl file back to idl
+         --header              create a C header file
+         --parser              create a C NDR parser
+         --client              create a C client
+         --server              create server boilerplate
+         --template            print a template for a pipe
+         --eparser             create an ethereal parser
+         --swig                create swig wrapper file
+         --diff                run diff on the idl and dumped output
+         --keep                keep the .pidl file
+         --odl                 accept ODL input
+         --dcom-proxy          create DCOM proxy (implies --odl)
+         --com-header          create header for COM interfaces (implies --odl)
+         \n";
     exit(0);
 }
 
@@ -101,7 +106,9 @@ GetOptions (
 	    'diff' => \$opt_diff,
 		'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
-	    'swig' => \$opt_swig
+	    'swig' => \$opt_swig,
+		'dcom-proxy' => \$opt_dcom_proxy,
+		'com-header' => \$opt_com_header
 	    );
 
 if ($opt_help) {
@@ -113,7 +120,6 @@ sub process_file($)
 {
 	my $idl_file = shift;
 	my $output;
-	my $podl;
 	my $pidl;
 
 	my $basename = basename($idl_file, ".idl");
@@ -144,18 +150,48 @@ sub process_file($)
 		print IdlDump::Dump($pidl);
 	}
 
-	if ($opt_header || $opt_parser) {
+	if ($opt_diff) {
+		my($tempfile) = util::ChangeExtension($output, ".tmp");
+		util::FileSave($tempfile, IdlDump::Dump($pidl));
+		system("diff -wu $idl_file $tempfile");
+		unlink($tempfile);
+	}
+
+	if ($opt_header || $opt_parser || $opt_com_header || $opt_dcom_proxy) {
 		typelist::LoadIdl($pidl);
 	}
 
+	if ($opt_com_header) {
+		my $res = COMHeader::Parse($pidl);
+		if ($res) {
+			my $h_filename = dirname($output) . "/com_$basename.h";
+			util::FileSave($h_filename, 
+			"#include \"librpc/gen_ndr/ndr_orpc.h\"\n" . 
+			"#include \"librpc/gen_ndr/ndr_$basename.h\"\n" . 
+			$res);
+		}
+		$opt_odl = 1;
+	}
+
+	if ($opt_dcom_proxy) {
+		my $res = DCOMProxy::Parse($pidl);
+		if ($res) {
+			my ($client) = util::ChangeExtension($output, "_p.c");
+			util::FileSave($client, 
+			"#include \"includes.h\"\n" .
+			"#include \"librpc/gen_ndr/com_$basename.h\"\n" . 
+			"#include \"lib/dcom/common/orpc.h\"\n". $res);
+		}
+		$opt_odl = 1;
+	}
+
 	if ($opt_odl) {
-		$podl = $pidl;
-		$pidl = ODL::ODL2IDL($podl);
+		$pidl = ODL::ODL2IDL($pidl);
 	}
 
 	if ($opt_header) {
 		my($header) = util::ChangeExtension($output, ".h");
-		util::FileSave($header, IdlHeader::Parse($pidl));
+		util::FileSave($header, NdrHeader::Parse($pidl));
 		if ($opt_eparser) {
 		  my($eparserhdr) = dirname($output) . "/packet-dcerpc-$basename.h";
 		  IdlEParser::RewriteHeader($pidl, $header, $eparserhdr);
@@ -172,23 +208,14 @@ sub process_file($)
 		my ($client) = util::ChangeExtension($output, "_c.c");
 		my $res = "";
 		my $h_filename = util::ChangeExtension($output, ".h");
-		my $need_dcom_register = 0;
 
 		$res .= "#include \"includes.h\"\n";
 		$res .= "#include \"$h_filename\"\n\n";
 
 		foreach my $x (@{$pidl}) {
-			if (util::has_property($x, "object")) {
-				$res .= IdlProxy::ParseInterface($x);
-				$need_dcom_register = 1;
-			} else {
-				$res .= IdlClient::ParseInterface($x);
-			}
+			$res .= IdlClient::ParseInterface($x);
 		}
 
-		if ($need_dcom_register) {
-			$res .= IdlProxy::RegistrationFunction($pidl, $basename);
-		}
 		util::FileSave($client, $res);
 	}
 
@@ -201,7 +228,7 @@ sub process_file($)
 			next if ($x->{TYPE} ne "INTERFACE");
 
 			if (util::has_property($x, "object")) {
-				$dcom .= IdlStub::ParseInterface($x);
+				$dcom .= DCOMStub::ParseInterface($x);
 			} else {
 				$plain .= IdlServer::ParseInterface($x);
 			}
@@ -231,13 +258,6 @@ $dcom
 		  my($eparser) = dirname($output) . "/packet-dcerpc-$basename.c";
 		  IdlEParser::RewriteC($pidl, $parser, $eparser);
 		}
-	}
-
-	if ($opt_diff) {
-		my($tempfile) = util::ChangeExtension($output, ".tmp");
-		util::FileSave($tempfile, IdlDump::Dump($pidl));
-		system("diff -wu $idl_file $tempfile");
-		unlink($tempfile);
 	}
 
 	if ($opt_template) {

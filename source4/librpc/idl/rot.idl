@@ -4,6 +4,7 @@
 	uuid("b9e79e60-3d52-11ce-aaa1-00006901293f"),
 	version(0.2),
     pointer_default(unique),
+	depends(orpc),
  	endpoint("ncacn_np:[\\pipe\\epmapper]", "ncacn_ip_tcp:[135]", 
 		  "ncalrpc:[EPMAPPER]", "ncacn_unix_stream:[/tmp/epmapper]")
 ] interface rot
@@ -42,16 +43,3 @@
 					   [out] MInterfacePointer *EnumMoniker
 					   );
 }
-
-/*
-[
-	object,
-] interface IRotData : IUnknown
-{
-	WERROR irotdata_getdata(
-							[out,size_is(max),length_is(ret)] uint8 *data, 
-							[in] uint32 max,
-							[out] uint32 ret
-						   );
-}
-*/
