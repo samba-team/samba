@@ -2037,9 +2037,6 @@ uint32 del_a_printer(char *sharename)
 	return 0;
 }
 
-/* FIXME!!!  Reorder so this forward declaration is not necessary --jerry */
-static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **, const char* sharename);
-static void free_nt_printer_info_level_2(NT_PRINTER_INFO_LEVEL_2 **);
 /****************************************************************************
 ****************************************************************************/
 static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
@@ -2056,10 +2053,13 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 *                and printer is \\server\\printer
 	 *
 	 * Samba manages only local printers.
-	 * we currently don't support things like path=\\other_server\printer
+	 * we currently don't support things like i
+	 * path=\\other_server\printer
+	 *
+	 * We only store the printername, not \\server\printername
 	 */
 
-	if (info->servername[0]!='\0') {
+	if ( info->servername[0] != '\0' ) {
 		trim_string(info->printername, info->servername, NULL);
 		trim_char(info->printername, '\\', '\0');
 		info->servername[0]='\0';
@@ -3070,10 +3070,13 @@ static int unpack_values(NT_PRINTER_DATA *printer_data, char *buf, int buflen)
 	
 		/*
 		 * break of the keyname from the value name.  
-		 * Should only be one '\' in the string returned.
+		 * Valuenames can have embedded '\'s so be careful.
+		 * only support one level of keys.  See the 
+		 * "Konica Fiery S300 50C-K v1.1. enu" 2k driver.
+		 * -- jerry
 		 */	
 		 
-		str = strrchr( string, '\\');
+		str = strchr_m( string, '\\');
 		
 		/* Put in "PrinterDriverData" is no key specified */
 		
