@@ -67,13 +67,13 @@ PASSWD_FLAGS = -DSMB_PASSWD=\"$(SMB_PASSWD)\" -DSMB_PASSWD_FILE=\"$(SMB_PASSWD_F
 FLAGS1 = $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper -DSMBLOGFILE=\"$(SMBLOGFILE)\" -DNMBLOGFILE=\"$(NMBLOGFILE)\"
 FLAGS2 = -DCONFIGFILE=\"$(CONFIGFILE)\" -DLMHOSTSFILE=\"$(LMHOSTSFILE)\"  
 FLAGS3 = -DSWATDIR=\"$(SWATDIR)\" -DSBINDIR=\"$(SBINDIR)\" -DLOCKDIR=\"$(LOCKDIR)\" -DSMBRUN=\"$(SMBRUN)\" -DCODEPAGEDIR=\"$(CODEPAGEDIR)\"
-FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\"
+FLAGS4 = -DDRIVERFILE=\"$(DRIVERFILE)\" -DBINDIR=\"$(BINDIR)\"
 FLAGS5 = $(FLAGS1) $(FLAGS2) $(FLAGS3) $(FLAGS4) -DHAVE_INCLUDES_H
 FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/smbsh bin/smbwrapper.so @WRAP32@
 MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(MPROGS) bin/nmblookup bin/make_printerdef 
 
@@ -166,6 +166,8 @@ SWAT_OBJ = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 
 SMBRUN_OBJ = utils/smbrun.o
 
+SMBSH_OBJ = smbwrapper/smbsh.o $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
+
 MAKE_SMBCODEPAGE_OBJ = utils/make_smbcodepage.o $(PARAM_OBJ) \
                        $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -230,7 +232,7 @@ PICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
 
 all : CHECK $(SPROGS) $(PROGS) 
 
-smbwrapper : CHECK smbwrapper/smbsh smbwrapper/smbwrapper.so @WRAP32@
+smbwrapper : CHECK bin/smbsh bin/smbwrapper.so @WRAP32@
 
 smbtorture : CHECK bin/smbtorture
 
@@ -349,17 +351,17 @@ bin/smbtorture: $(SMBTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBTORTURE_OBJ) $(LDFLAGS) $(LIBS)
 
-smbwrapper/smbwrapper.so: $(PICOBJS)
+bin/smbwrapper.so: $(PICOBJS)
 	@echo Linking shared library $@
 	@$(LD) @LDSHFLAGS@ -o $@ $(PICOBJS) $(LIBS)
 
-smbwrapper/smbwrapper.32.so: $(PICOBJS32)
+bin/smbwrapper.32.so: $(PICOBJS32)
 	@echo Linking shared library $@
 	@$(LD) -32 @LDSHFLAGS@ -o $@ $(PICOBJS32) $(LIBS)
 
-smbwrapper/smbsh: smbwrapper/smbsh.in config.status
-	CONFIG_FILES=$@ CONFIG_HEADERS= $(SHELL) ./config.status
-	chmod +x $@
+bin/smbsh: $(SMBSH_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(SMBSH_OBJ) $(LDFLAGS) $(LIBS)
 
 install: installbin installman installscripts installcp installswat
 
@@ -419,7 +421,6 @@ ctags:
 realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS) bin/.dummy
 	-rmdir bin
-	-rm -f smbwrapper/smbsh smbwrapper/smbwrapper*.so
 
 distclean: realclean
 	-rm -f include/config.h include/stamp-h Makefile
