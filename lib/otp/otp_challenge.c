@@ -49,6 +49,7 @@ otp_challenge (OtpContext *ctx, char *user, char *str, size_t len)
   void *dbm;
   int ret;
 
+  ctx->challengep = 0;
   ctx->user = strdup(user);
   dbm = otp_db_open ();
   if (dbm == NULL) {
