@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001, 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -410,6 +410,23 @@ _kadm5_set_keys3(kadm5_server_context *context,
 }
 
 /*
+ *
+ */
+
+static krb5_error_code
+gen_random_key(krb5_context context, krb5_enctype enctype, 
+	       krb5_keyblock *key, Key *hkey)
+{
+    krb5_error_code ret;
+
+    ret = krb5_generate_random_keyblock (context, enctype, key);
+    if (ret)
+	return ret;
+
+    return krb5_copy_keyblock_contents (context, key, &hkey->key);
+}
+
+/*
  * Set the keys of `ent' to random keys and return them in `n_keys'
  * and `new_keys'.
  */
@@ -426,7 +443,11 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
     krb5_keyblock *keys;
     Key *hkeys;
 
+#ifdef ENABLE_AES
+    len  = n_des_types + 2;
+#else
     len  = n_des_types + 1;
+#endif
     keys = malloc (len * sizeof(*keys));
     if (keys == NULL)
 	return ENOMEM;
@@ -444,15 +465,7 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 
     _kadm5_init_keys (hkeys, len);
 
-    ret = krb5_generate_random_keyblock (context->context,
-					 des_types[0],
-					 &keys[0]);
-    if (ret)
-	goto out;
-
-    ret = krb5_copy_keyblock_contents (context->context,
-				       &keys[0],
-				       &hkeys[0].key);
+    ret = gen_random_key(context->context, des_types[0], &keys[0], &hkeys[0]);
     if (ret)
 	goto out;
 
@@ -471,17 +484,19 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 	hkeys[i].key.keytype = des_types[i];
     }
 
-    ret = krb5_generate_random_keyblock (context->context,
-					 ETYPE_DES3_CBC_SHA1,
-					 &keys[n_des_types]);
+    ret = gen_random_key(context->context, ETYPE_DES3_CBC_SHA1, 
+			 &keys[n_des_types], 
+			 &hkeys[n_des_types]);
     if (ret)
 	goto out;
 
-    ret = krb5_copy_keyblock_contents (context->context,
-				       &keys[n_des_types],
-				       &hkeys[n_des_types].key);
+#ifdef ENABLE_AES
+    ret = gen_random_key(context->context, ETYPE_AES256_CTS_HMAC_SHA1_96,
+			 &keys[n_des_types + 2], 
+			 &hkeys[n_des_types + 2]);
     if (ret)
 	goto out;
+#endif
 
     _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.len = len;
