@@ -10,21 +10,27 @@ called COPYING).
 WHAT CAN SAMBA DO?
 ==================
 
-Here is a very short list of what samba includes, and what it does
+Here is a very short list of what samba includes, and what it does. 
 
-- a SMB server, to provide LanManager style file and print services to PCs
+- a SMB server, to provide Windows NT and LAN Manager-style file and print 
+  services to SMB clients such as Windows 95, Warp Server, smbfs and others.
 
-- a Netbios (rfc1001/1002) nameserver
+- a Netbios (rfc1001/1002) nameserver, which among other things gives 
+  browsing support. Samba can be the master browser on your LAN if you wish.
 
 - a ftp-like SMB client so you can access PC resources (disks and
-printers) from unix
+printers) from unix, Netware and other operating systems
 
 - a tar extension to the client for backing up PCs
 
+For a much better overview have a look at the web site at
+http://samba.canberra.edu.au/pub/samba, and browse the user survey.
+
 Related packages include:
 
-- ksmbfs, a linux-only filesystem allowing you to mount remote SMB
-filesystems from PCs on your linux box
+- smbfs, a linux-only filesystem allowing you to mount remote SMB
+filesystems from PCs on your linux box. This is included as standard with
+Linux 2.0 and later.
 
 - tcpdump-smb, a extension to tcpdump to allow you to investigate SMB
 networking problems over netbeui and tcp/ip
@@ -47,7 +53,8 @@ see who added it, then send them an email.
 
 Remember that free software of this kind lives or dies by the response
 we get. If noone tells us they like it then we'll probably move onto
-something else.
+something else. However, as you can see from the user survey quite a lot of 
+people do seem to like it at the moment :-)
 
 Andrew Tridgell
 Email: samba-bugs@samba.anu.edu.au
