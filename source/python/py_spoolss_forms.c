@@ -102,7 +102,7 @@ PyObject *spoolss_hnd_getform(PyObject *self, PyObject *args, PyObject *kw)
 	/* Call rpc function */
 
 	werror = cli_spoolss_getform(hnd->cli, hnd->mem_ctx, 0, &needed,
-				     &hnd->pol, form_name, 1, &form);
+				     &hnd->pol, form_name, level, &form);
 
 	if (W_ERROR_V(werror) == ERRinsufficientbuffer)
 		werror = cli_spoolss_getform(
