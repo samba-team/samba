@@ -67,14 +67,16 @@ static void lazy_initialize_conv(void)
 		initialized = True;
 		load_case_tables();
 		init_iconv();
-		init_valid_table();
 	}
 }
 
 /**
- Initialize iconv conversion descriptors.
-**/
-
+ * Initialize iconv conversion descriptors.
+ *
+ * This is called the first time it is needed, and also called again
+ * every time the configuration is reloaded, because the charset or
+ * codepage might have changed.
+ **/
 void init_iconv(void)
 {
 	int c1, c2;
