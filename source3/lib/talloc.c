@@ -121,13 +121,13 @@ TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
 
-	t = (TALLOC_CTX *)malloc(sizeof(*t));
-	if (!t) return NULL;
-
-	t->list = NULL;
-	t->total_alloc_size = 0;
-	t->name = NULL;
-	talloc_enroll(t);
+	t = (TALLOC_CTX *)malloc(sizeof(TALLOC_CTX));
+	if (t) {
+		t->list = NULL;
+		t->total_alloc_size = 0;
+		t->name = NULL;
+		talloc_enroll(t);
+	}
 
 	return t;
 }
@@ -144,7 +144,7 @@ TALLOC_CTX *talloc_init(void)
 	va_list ap;
 
 	t = talloc_init();
-	if (fmt) {
+	if (t && fmt) {
 		va_start(ap, fmt);
 		t->name = talloc_vasprintf(t, fmt, ap);
 		va_end(ap);
@@ -160,23 +160,22 @@ void *talloc(TALLOC_CTX *t, size_t size)
 	void *p;
 	struct talloc_chunk *tc;
 
-	if (size == 0) return NULL;
+	if (!t || size == 0) return NULL;
 
 	p = malloc(size);
-	if (!p) return p;
-
-	tc = malloc(sizeof(*tc));
-	if (!tc) {
-		SAFE_FREE(p);
-		return NULL;
+	if (p) {
+		tc = malloc(sizeof(*tc));
+		if (tc) {
+			tc->ptr = p;
+			tc->size = size;
+			tc->next = t->list;
+			t->list = tc;
+			t->total_alloc_size += size;
+		}
+		else {
+			SAFE_FREE(p);
+		}
 	}
-
-	tc->ptr = p;
-	tc->size = size;
-	tc->next = t->list;
-	t->list = tc;
-	t->total_alloc_size += size;
-
 	return p;
 }
 
@@ -187,7 +186,7 @@ void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 	void *new_ptr;
 
 	/* size zero is equivalent to free() */
-	if (size == 0)
+	if (!t || size == 0)
 		return NULL;
 
 	/* realloc(NULL) is equavalent to malloc() */
@@ -232,21 +231,28 @@ void talloc_destroy(TALLOC_CTX *t)
 {
 	if (!t)
 		return;
+
 	talloc_destroy_pool(t);
 	talloc_disenroll(t);
-	memset(t, 0, sizeof(*t));
+	memset(t, 0, sizeof(TALLOC_CTX));
 	SAFE_FREE(t);
 }
 
 /** Return the current total size of the pool. */
 size_t talloc_pool_size(TALLOC_CTX *t)
 {
-	return t->total_alloc_size;
+	if (t)
+		return t->total_alloc_size;
+	else
+		return 0;
 }
 
 const char * talloc_pool_name(TALLOC_CTX const *t)
 {
-	return t->name;
+	if (t)
+		return t->name;
+	else
+		return NULL;
 }
 
 
@@ -266,10 +272,8 @@ void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 {
 	void *newp = talloc(t,size);
 
-	if (!newp)
-		return 0;
-
-	memcpy(newp, p, size);
+	if (newp)
+		memcpy(newp, p, size);
 
 	return newp;
 }
@@ -277,7 +281,10 @@ void *talloc_memdup(TALLOC_CTX *t, const void *p, size_t size)
 /** strdup with a talloc */
 char *talloc_strdup(TALLOC_CTX *t, const char *p)
 {
-	return talloc_memdup(t, p, strlen(p) + 1);
+	if (p)
+		return talloc_memdup(t, p, strlen(p) + 1);
+	else
+		return NULL;
 }
 
 /**
@@ -304,9 +311,8 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 	len = vsnprintf(NULL, 0, fmt, ap);
 
 	ret = talloc(t, len+1);
-	if (!ret) return NULL;
-
-	vsnprintf(ret, len+1, fmt, ap);
+	if (ret)
+		vsnprintf(ret, len+1, fmt, ap);
 
 	return ret;
 }
@@ -363,6 +369,8 @@ char *talloc_describe_all(TALLOC_CTX *rt)
 	TALLOC_CTX *it;
 	char *s;
 
+	if (!rt) return NULL;
+
 	s = talloc_asprintf(rt, "global talloc allocations in pid: %u\n",
 			    (unsigned) sys_getpid());
 	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
@@ -418,12 +426,14 @@ void talloc_get_allocation(TALLOC_CTX *t,
 {
 	struct talloc_chunk *chunk;
 
-	*total_bytes = 0;
-	*n_chunks = 0;
+	if (t) {
+		*total_bytes = 0;
+		*n_chunks = 0;
 
-	for (chunk = t->list; chunk; chunk = chunk->next) {
-		n_chunks[0]++;
-		*total_bytes += chunk->size;
+		for (chunk = t->list; chunk; chunk = chunk->next) {
+			n_chunks[0]++;
+			*total_bytes += chunk->size;
+		}
 	}
 }
 
