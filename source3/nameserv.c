@@ -141,8 +141,8 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
          actually be true
        */
 
-      add_netbios_entry(d,name,type,nb_flags,0,
-				SELF,ipzero,False,lp_wins_support());
+      /* this will call add_netbios_entry() */
+      name_register_work(d, name, type, nb_flags,0, ipzero, False);
     }
     else
     {

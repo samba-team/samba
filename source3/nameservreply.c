@@ -40,55 +40,22 @@ extern struct in_addr ipgrp;
 
 
 /****************************************************************************
-reply to a name release
-****************************************************************************/
-void reply_name_release(struct packet_struct *p)
+  add a netbios entry. respond to the (possibly new) owner.
+  **************************************************************************/
+void add_name_respond(struct subnet_record *d, int fd, uint16 response_id,
+				struct nmb_name *name,
+				int nb_flags, int ttl, struct in_addr register_ip,
+				BOOL new_owner, struct in_addr reply_to_ip)
 {
-  struct nmb_packet *nmb = &p->packet.nmb;
-  struct in_addr ip;
-  int nb_flags = nmb->additional->rdata[0];
-  BOOL bcast = nmb->header.nm_flags.bcast;
-  struct name_record *n;
-  struct subnet_record *d = NULL;
-  int search = 0;
-  
-  putip((char *)&ip,&nmb->additional->rdata[2]);  
-  
-  DEBUG(3,("Name release on name %s\n",
-	   namestr(&nmb->question.question_name)));
-  
-  if (!(d = find_req_subnet(p->ip, bcast)))
-  {
-    DEBUG(3,("response packet: bcast %s not known\n",
-			inet_ntoa(p->ip)));
-    return;
-  }
+	/* register the old or the new owners' ip */
+	add_netbios_entry(d,name->name,name->name_type,
+						nb_flags,ttl,REGISTER,register_ip,False,True);
 
-  if (bcast)
-	search &= FIND_LOCAL;
-  else
-	search &= FIND_WINS;
-
-  n = find_name_search(&d, &nmb->question.question_name, 
-					search, ip);
-  
-  /* XXXX under what conditions should we reject the removal?? */
-  if (n && n->nb_flags == nb_flags)
-    {
-      /* success = True; */
-      
-      remove_name(d,n);
-      n = NULL;
-    }
-  
-  if (bcast) return;
-  
-  /* Send a NAME RELEASE RESPONSE */
-  send_name_response(p->fd, nmb->header.name_trn_id, NMB_REL,
-						True, False,
-						&nmb->question.question_name, nb_flags, 0, ip);
+	/* reply yes or no to the host that requested the name */
+	send_name_response(fd, response_id, NMB_REG,
+				new_owner, True,
+				name, nb_flags, ttl, reply_to_ip);
 }
-
 
 /****************************************************************************
 send a registration / release response: pos/neg
@@ -133,6 +100,58 @@ void send_name_response(int fd,
 
 
 /****************************************************************************
+reply to a name release
+****************************************************************************/
+void reply_name_release(struct packet_struct *p)
+{
+  struct nmb_packet *nmb = &p->packet.nmb;
+  struct in_addr ip;
+  int nb_flags = nmb->additional->rdata[0];
+  BOOL bcast = nmb->header.nm_flags.bcast;
+  struct name_record *n;
+  struct subnet_record *d = NULL;
+  int search = 0;
+  BOOL success = False;
+  
+  putip((char *)&ip,&nmb->additional->rdata[2]);  
+  
+  DEBUG(3,("Name release on name %s\n",
+	   namestr(&nmb->question.question_name)));
+  
+  if (!(d = find_req_subnet(p->ip, bcast)))
+  {
+    DEBUG(3,("response packet: bcast %s not known\n",
+			inet_ntoa(p->ip)));
+    return;
+  }
+
+  if (bcast)
+	search &= FIND_LOCAL;
+  else
+	search &= FIND_WINS;
+
+  n = find_name_search(&d, &nmb->question.question_name, 
+					search, ip);
+  
+  /* XXXX under what conditions should we reject the removal?? */
+  if (n && n->nb_flags == nb_flags)
+  {
+      success = True;
+      
+      remove_name(d,n);
+      n = NULL;
+  }
+  
+  if (bcast) return;
+  
+  /* Send a NAME RELEASE RESPONSE (pos/neg) see rfc1002.txt 4.2.10-11 */
+  send_name_response(p->fd, nmb->header.name_trn_id, NMB_REL,
+						success, False,
+						&nmb->question.question_name, nb_flags, 0, ip);
+}
+
+
+/****************************************************************************
 reply to a reg request
 **************************************************************************/
 void reply_name_reg(struct packet_struct *p)
@@ -156,10 +175,6 @@ void reply_name_reg(struct packet_struct *p)
 
   BOOL success = True;
   BOOL secured_redirect = False;
-  BOOL recurse = True; /* true if samba replies yes/no: false if caller
-                          must challenge the current owner of the unique
-                          name: applies to non-secured WINS server only
-                        */
 
   struct in_addr ip, from_ip;
   int search = 0;
@@ -205,38 +220,6 @@ void reply_name_reg(struct packet_struct *p)
 	  }
 	  else if(!ip_equal(ip, n->ip))
 	  {
-#if 0
-	      /* hm. this unique name doesn't belong to them. */
-	      
-	      /* XXXX rfc1001.txt says:
-	       * if we are doing non-secured WINS (which is much simpler) then
-	       * we send a message to the person wanting the name saying 'he
-	       * owns this name: i don't want to hear from you ever again
-	       * until you've checked with him if you can have it!'. we then
-	       * abandon the registration. once the person wanting the name
-	       * has checked with the current owner, they will repeat the
-	       * registration packet if the current owner is dead or doesn't
-	       * want the name.
-	       */
-
-	      /* non-secured WINS implementation: caller is responsible
-		 for checking with current owner of name, then getting back
-		 to us... IF current owner no longer owns the unique name */
-	      
-           /* XXXX please note also that samba cannot cope with 
-              _receiving_ such redirecting, non-secured registration
-              packets. code to do this needs to be added.
-            */
-
-          secured_redirect = False;
-	      success = False;
-	      recurse = False;
-	      
-	      /* we inform on the current owner to the caller (which is
-		 why it's non-secure */
-	      
-	      reply_name = &n->name;
-#else
 	      /* XXXX rfc1001.txt says:
 	       * if we are doing secured WINS, we must send a Wait-Acknowledge
 	       * packet (WACK) to the person who wants the name, then do a
@@ -246,12 +229,8 @@ void reply_name_reg(struct packet_struct *p)
 	       */
 
           secured_redirect = True;
-	      recurse = False;
 
 	      reply_name = &n->name;
-
-#endif /* 0 */
-
 	  }
 	  else
 	  {
@@ -324,7 +303,7 @@ void reply_name_reg(struct packet_struct *p)
      */
 
   	send_name_response(p->fd, nmb->header.name_trn_id, NMB_REG,
-						success, recurse,
+						success, True,
 						reply_name, nb_flags, ttl, ip);
   }
 }

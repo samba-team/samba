@@ -255,6 +255,7 @@ void become_master(struct subnet_record *d, struct work_record *work)
   {
     case MST_NONE: /* while we were nothing but a server... */
     {
+      DEBUG(3,("go to first stage: register ^1^2__MSBROWSE__^2^1\n"));
       work->state = MST_WON; /* ... an election win was successful */
 
       work->ElectionCriterion |= 0x5;
@@ -263,29 +264,29 @@ void become_master(struct subnet_record *d, struct work_record *work)
       work->ServerType &= ~SV_TYPE_POTENTIAL_BROWSER;
       add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
 
-      DEBUG(3,("go to first stage: register ^1^2__MSBROWSE__^2^1\n"));
-
       /* add special browser name */
       add_my_name_entry(d,MSBROWSE        ,0x01,NB_ACTIVE|NB_GROUP);
 
-      break;
+      /* DON'T do anything else after calling add_my_name_entry() */
+      return;
     }
     case MST_WON: /* while nothing had happened except we won an election... */
     {
+      DEBUG(3,("go to second stage: register as master browser\n"));
       work->state = MST_MSB; /* ... registering MSBROWSE was successful */
 
       /* add server entry on successful registration of MSBROWSE */
       add_server_entry(d,work,work->work_group,domain_type,0,myname,True);
 
-      DEBUG(3,("go to second stage: register as master browser\n"));
-
       /* add master name */
       add_my_name_entry(d,work->work_group,0x1d,NB_ACTIVE         );
   
-      break;
+      /* DON'T do anything else after calling add_my_name_entry() */
+      return;
     }
     case MST_MSB: /* while we were still only registered MSBROWSE state... */
     {
+      DEBUG(3,("2nd stage complete: registered as master browser\n"));
       work->state = MST_BROWSER; /* ... registering WORKGROUP(1d) succeeded */
 
       /* update our server status */
@@ -301,8 +302,12 @@ void become_master(struct subnet_record *d, struct work_record *work)
       if (lp_domain_master())
       {
         DEBUG(3,("third stage: register as domain master\n"));
+
         /* add domain master name */
         add_my_name_entry(d,work->work_group,0x1b,NB_ACTIVE         );
+
+        /* DON'T do anything else after calling add_my_name_entry() */
+        return;
       }
       else
       {
@@ -313,11 +318,12 @@ void become_master(struct subnet_record *d, struct work_record *work)
     }
     case MST_BROWSER: /* while we were still a master browser... */
     {
-      work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
-
       /* update our server status */
       if (lp_domain_master())
       {
+        DEBUG(3,("fourth stage: samba is now a domain master.\n"));
+        work->state = MST_DOMAIN; /* ... registering WORKGROUP(1b) succeeded */
+
         work->ServerType |= SV_TYPE_DOMAIN_MASTER;
       
         if (lp_domain_logons())
@@ -325,7 +331,6 @@ void become_master(struct subnet_record *d, struct work_record *work)
 	      work->ServerType |= SV_TYPE_DOMAIN_CTRL;
 	      work->ServerType |= SV_TYPE_DOMAIN_MEMBER;
 	    }
-        DEBUG(3,("fourth stage: samba is now a domain master.\n"));
         add_server_entry(d,work,myname,work->ServerType,0,ServerComment,True);
       }
   

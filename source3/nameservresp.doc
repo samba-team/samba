@@ -2,6 +2,9 @@ this module deals with the receipt of response packets. the
 response packets are expected to be received, and there is a
 record of this kept (see also: modules nameresp and namedbresp)
 
+point of interest to design purists: every function in this
+module is static except response_netbios_packet().
+
 /*************************************************************************
   response_netbios_packet()
   *************************************************************************/
@@ -59,33 +62,6 @@ its netbios name database of all machines that have registered with it.
 we don't normally expect a negative response from such a query, although
 we may do so if the query was sent to another WINS server. the registered
 entry should be removed if we receive a negative response.
-
-
-/*************************************************************************
-  response_name_query_register()
-  *************************************************************************/
-
-this function receives responses to samba 'states'
-NAME_REGISTER_CHALLENGE.
-
-NAME_REGISTER_CHALLENGE: name query a server to establish whether to
-hand over a unique name to another server that asked for that name.
-
-if a positive response is received to the name query, this indicates
-that the current owner still wants the name. we therefore refresh
-the name records indicating that the current owner still wants it,
-and we inform the potential owner (the other host) that they cannot
-have it.
-
-if a negative response is received, this indicates that for some
-reason (for example, it may have just released the name or the
-WINS server may have had out-of-date records) the current owner
-does not want the name. in this instance, the name records are
-updated to give this unique name to the other host that wanted
-it, and the other host is informed that they can have it.
-
-a failure to respond on the part of the current owner of the name
-is dealt with in dead_netbios_entry().
 
 
 /*************************************************************************

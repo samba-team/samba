@@ -253,13 +253,16 @@ struct subnet_record *add_subnet_entry(struct in_addr bcast_ip,
 	  add_my_name_entry(d,name,0x1e,NB_ACTIVE|NB_GROUP);
 	  add_my_name_entry(d,name,0x0 ,NB_ACTIVE|NB_GROUP);
 	}
-      /* add samba server name to workgroup list */
-      if ((strequal(lp_workgroup(), name) && d->my_interface) || lmhosts)
+      /* add samba server name to workgroup list. don't add
+         lmhosts server entries to local interfaces */
+      if ((strequal(lp_workgroup(), name) && d->my_interface) ||
+          (lmhosts && !d->my_interface))
       {
 	    add_server_entry(d,w,myname,w->ServerType,0,ServerComment,True);
+        DEBUG(3,("Added server name entry %s at %s\n",
+                  name,inet_ntoa(bcast_ip)));
       }
       
-      DEBUG(3,("Added domain name entry %s at %s\n", name,inet_ntoa(bcast_ip)));
       return d;
     }
   return NULL;
