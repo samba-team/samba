@@ -557,6 +557,13 @@ struct passwd *copy_passwd_struct(struct passwd *pass)
 		return NULL;
 	}
 
+	if (pass == &pw_ret)
+	{
+		/* catch silly error where buffer was already copied */
+		DEBUG(0,("copy_passwd_struct: can't copy internal buffer!\n"));
+		return NULL;
+	}
+
 	memcpy((char *)&pw_ret, pass, sizeof(struct passwd));
 
 	if (pass->pw_name)
