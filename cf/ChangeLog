@@ -1,5 +1,26 @@
 2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
+	* crypto.m4: try to extract the crypto compiler flags from
+	{INCLUDE,LIB}_krb4
+	(XXX this is really horrible)
+
+	* krb-readline.m4: don't add -rpath to LIB_readline (libtool
+	should to this for us), also don't append LIB_tgetent to
+	LIB_readline (TEST_PACKAGE should do this)
+
+	* test-package.m4: add the possibility to use a *-config program
+	to get flags; rename to rk_TEST_PACKAGE while here
+
+	* krb-bigendian.m4: move ENDIANESS_IN_SYS_PARAM_H tests here
+
+	* aix.m4: rename to rk_AIX
+
+	* telnet.m4: move telnet tests here
+
+	* aix.m4: restructure this somewhat
+
+	* dlopen.m4: test for dlopen suitable for AC_REQUIRE
+
 	* irix.m4: move some stuff here and rename to irix.m4
 
 	* krb-sys-nextstep.m4: move SGTTY stuff to read_pwd.c
