@@ -584,7 +584,8 @@ static int send_trans2_replies(char *outbuf,
 ****************************************************************************/
 
 static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
-			   char **pparams, int total_params, char **ppdata, int total_data)
+				char **pparams, int total_params, char **ppdata, int total_data,
+				unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	int16 open_mode;
@@ -1317,14 +1318,14 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 ****************************************************************************/
 
 static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outbuf, int bufsize,  
-				char **pparams, int total_params, char **ppdata, int total_data)
+				char **pparams, int total_params, char **ppdata, int total_data,
+				unsigned int max_data_bytes)
 {
 	/* We must be careful here that we don't return more than the
 		allowed number of data bytes. If this means returning fewer than
 		maxentries then so be it. We assume that the redirector has
 		enough room for the fixed number of parameter bytes it has
 		requested. */
-	uint32 max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	int dirtype = SVAL(params,0);
@@ -1542,14 +1543,14 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 ****************************************************************************/
 
 static int call_trans2findnext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	/* We must be careful here that we don't return more than the
 		allowed number of data bytes. If this means returning fewer than
 		maxentries then so be it. We assume that the redirector has
 		enough room for the fixed number of parameter bytes it has
 		requested. */
-	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	int dptr_num = SVAL(params,0);
@@ -1809,11 +1810,10 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
  Reply to a TRANS2_QFSINFO (query filesystem info).
 ****************************************************************************/
 
-static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf, 
-			int length, int bufsize,
-			char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
-	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 	char *pdata = *ppdata;
 	char *params = *pparams;
 	uint16 info_level = SVAL(params,0);
@@ -2117,9 +2117,9 @@ cBytesSector=%u, cUnitTotal=%u, cUnitAvail=%d\n", (unsigned int)bsize, (unsigned
  Reply to a TRANS2_SETFSINFO (set filesystem info).
 ****************************************************************************/
 
-static int call_trans2setfsinfo(connection_struct *conn,
-				char *inbuf, char *outbuf, int length, int bufsize,
-				char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
 	char *params = *pparams;
@@ -2250,12 +2250,10 @@ int set_bad_path_error(int err, BOOL bad_path, char *outbuf, int def_class, uint
  file name or file id).
 ****************************************************************************/
 
-static int call_trans2qfilepathinfo(connection_struct *conn,
-				    char *inbuf, char *outbuf, int length, 
-				    int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
-	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 	char *params = *pparams;
 	char *pdata = *ppdata;
 	uint16 tran_call = SVAL(inbuf, smb_setup0);
@@ -2983,9 +2981,9 @@ NTSTATUS hardlink_internals(connection_struct *conn, char *oldname, char *newnam
  Reply to a TRANS2_SETFILEINFO (set file info by fileid).
 ****************************************************************************/
 
-static int call_trans2setfilepathinfo(connection_struct *conn,
-					char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	char *pdata = *ppdata;
@@ -3735,9 +3733,9 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
  Reply to a TRANS2_MKDIR (make directory with extended attributes).
 ****************************************************************************/
 
-static int call_trans2mkdir(connection_struct *conn,
-			    char *inbuf, char *outbuf, int length, int bufsize,
-				char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2mkdir(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 	pstring directory;
@@ -3789,9 +3787,9 @@ static int call_trans2mkdir(connection_struct *conn,
  We don't actually do this - we just send a null response.
 ****************************************************************************/
 
-static int call_trans2findnotifyfirst(connection_struct *conn,
-					char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2findnotifyfirst(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	static uint16 fnf_handle = 257;
 	char *params = *pparams;
@@ -3836,9 +3834,9 @@ static int call_trans2findnotifyfirst(connection_struct *conn,
  changes). Currently this does nothing.
 ****************************************************************************/
 
-static int call_trans2findnotifynext(connection_struct *conn,
-					char *inbuf, char *outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2findnotifynext(connection_struct *conn, char *inbuf, char *outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
 
@@ -3862,9 +3860,9 @@ static int call_trans2findnotifynext(connection_struct *conn,
  Reply to a TRANS2_GET_DFS_REFERRAL - Shirish Kalele <kalele@veritas.com>.
 ****************************************************************************/
 
-static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
-					char* outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *params = *pparams;
   	pstring pathname;
@@ -3898,9 +3896,9 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
  Reply to a TRANS2_IOCTL - used for OS/2 printing.
 ****************************************************************************/
 
-static int call_trans2ioctl(connection_struct *conn, char* inbuf,
-					char* outbuf, int length, int bufsize,
-					char **pparams, int total_params, char **ppdata, int total_data)
+static int call_trans2ioctl(connection_struct *conn, char* inbuf, char* outbuf, int length, int bufsize,
+					char **pparams, int total_params, char **ppdata, int total_data,
+					unsigned int max_data_bytes)
 {
 	char *pdata = *ppdata;
 	files_struct *fsp = file_fsp(inbuf,smb_vwv15);
@@ -4004,9 +4002,9 @@ int reply_trans2(connection_struct *conn,
 	int outsize = 0;
 	unsigned int total_params = SVAL(inbuf, smb_tpscnt);
 	unsigned int total_data =SVAL(inbuf, smb_tdscnt);
+	unsigned int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
 #if 0
 	unsigned int max_param_reply = SVAL(inbuf, smb_mprcnt);
-	unsigned int max_data_reply = SVAL(inbuf, smb_mdrcnt);
 	unsigned int max_setup_fields = SVAL(inbuf, smb_msrcnt);
 	BOOL close_tid = BITSETW(inbuf+smb_flags,0);
 	BOOL no_final_response = BITSETW(inbuf+smb_flags,1);
@@ -4204,28 +4202,28 @@ int reply_trans2(connection_struct *conn,
 	case TRANSACT2_OPEN:
 		START_PROFILE_NESTED(Trans2_open);
 		outsize = call_trans2open(conn, inbuf, outbuf, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_open);
 		break;
 
 	case TRANSACT2_FINDFIRST:
 		START_PROFILE_NESTED(Trans2_findfirst);
 		outsize = call_trans2findfirst(conn, inbuf, outbuf, bufsize,
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_findfirst);
 		break;
 
 	case TRANSACT2_FINDNEXT:
 		START_PROFILE_NESTED(Trans2_findnext);
 		outsize = call_trans2findnext(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_findnext);
 		break;
 
 	case TRANSACT2_QFSINFO:
 		START_PROFILE_NESTED(Trans2_qfsinfo);
 		outsize = call_trans2qfsinfo(conn, inbuf, outbuf, length, bufsize,
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_qfsinfo);
 	    break;
 
@@ -4233,7 +4231,7 @@ int reply_trans2(connection_struct *conn,
 	case TRANSACT2_SETFSINFO:
 		START_PROFILE_NESTED(Trans2_setfsinfo);
 		outsize = call_trans2setfsinfo(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_setfsinfo);
 		break;
 #endif
@@ -4241,47 +4239,47 @@ int reply_trans2(connection_struct *conn,
 	case TRANSACT2_QFILEINFO:
 		START_PROFILE_NESTED(Trans2_qpathinfo);
 		outsize = call_trans2qfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_qpathinfo);
 		break;
 	case TRANSACT2_SETPATHINFO:
 	case TRANSACT2_SETFILEINFO:
 		START_PROFILE_NESTED(Trans2_setpathinfo);
 		outsize = call_trans2setfilepathinfo(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_setpathinfo);
 		break;
 
 	case TRANSACT2_FINDNOTIFYFIRST:
 		START_PROFILE_NESTED(Trans2_findnotifyfirst);
 		outsize = call_trans2findnotifyfirst(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_findnotifyfirst);
 		break;
 
 	case TRANSACT2_FINDNOTIFYNEXT:
 		START_PROFILE_NESTED(Trans2_findnotifynext);
 		outsize = call_trans2findnotifynext(conn, inbuf, outbuf, length, bufsize, 
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_findnotifynext);
 		break;
 	case TRANSACT2_MKDIR:
 		START_PROFILE_NESTED(Trans2_mkdir);
 		outsize = call_trans2mkdir(conn, inbuf, outbuf, length, bufsize,
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_mkdir);
 		break;
 
 	case TRANSACT2_GET_DFS_REFERRAL:
 		START_PROFILE_NESTED(Trans2_get_dfs_referral);
 		outsize = call_trans2getdfsreferral(conn,inbuf,outbuf,length, bufsize,
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_get_dfs_referral);
 		break;
 	case TRANSACT2_IOCTL:
 		START_PROFILE_NESTED(Trans2_ioctl);
 		outsize = call_trans2ioctl(conn,inbuf,outbuf,length, bufsize,
-					  &params, total_params, &data, total_data);
+					  &params, total_params, &data, total_data, max_data_bytes);
 		END_PROFILE_NESTED(Trans2_ioctl);
 		break;
 	default:
