@@ -2294,3 +2294,16 @@ int fchmod_acl(int fd, mode_t mode)
 	sys_acl_free_acl(posix_acl);
 	return ret;
 }
+
+BOOL directory_has_default_acl(const char *fname)
+{
+        SMB_ACL_T dir_acl = sys_acl_get_file( fname, SMB_ACL_TYPE_DEFAULT);
+        BOOL has_acl = False;
+        SMB_ACL_ENTRY_T entry;
+
+        if (dir_acl != NULL && (sys_acl_get_entry(dir_acl, SMB_ACL_FIRST_ENTRY, &entry) == 1))
+                has_acl = True;
+
+        sys_acl_free_acl(dir_acl);
+        return has_acl;
+}
