@@ -393,6 +393,7 @@ int reply_ioctl(connection_struct *conn,
 	uint32 ioctl_code = (device << 16) + function;
 	int replysize, outsize;
 	char *p;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
 
@@ -413,8 +414,8 @@ int reply_ioctl(connection_struct *conn,
 
 	switch (ioctl_code)
 	{
-	    case IOCTL_QUERY_JOB_INFO:
-		SSVAL(p,0,1);                            /* Job number */
+	    case IOCTL_QUERY_JOB_INFO:		    
+		SSVAL(p,0,fsp->print_jobid);             /* Job number */
 		StrnCpy(p+2, global_myname, 15);         /* Our NetBIOS name */
 		StrnCpy(p+18, lp_servicename(SNUM(conn)), 13); /* Service name */
 		break;
@@ -3029,7 +3030,7 @@ int reply_printopen(connection_struct *conn,
 		return(ERROR(ERRSRV,ERRnofids));
 	
 	/* Open for exclusive use, write only. */
-	print_open_file(fsp,conn,"dos.prn");
+	print_fsp_open(fsp,conn,"dos.prn");
 
 	if (!fsp->open) {
 		file_free(fsp);
@@ -3104,7 +3105,7 @@ int reply_printqueue(connection_struct *conn,
 	{
 		print_queue_struct *queue = NULL;
 		char *p = smb_buf(outbuf) + 3;
-		int count = get_printqueue(SNUM(conn), conn,&queue,NULL);
+		int count = print_queue_status(SNUM(conn), &queue,NULL);
 		int num_to_get = ABS(max_count);
 		int first = (max_count>0?start_index:start_index+max_count+1);
 		int i;
@@ -3118,8 +3119,7 @@ int reply_printqueue(connection_struct *conn,
 		for (i=first;i<first+num_to_get;i++) {
 			put_dos_date2(p,0,queue[i].time);
 			CVAL(p,4) = (queue[i].status==LPQ_PRINTING?2:3);
-			SSVAL(p,5,printjob_encode(SNUM(conn), 
-						  queue[i].job));
+			SSVAL(p,5, queue[i].job);
 			SIVAL(p,7,queue[i].size);
 			CVAL(p,11) = 0;
 			StrnCpy(p+12,queue[i].user,16);
