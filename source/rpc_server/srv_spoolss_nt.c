@@ -2466,6 +2466,14 @@ struct s_notify_info_data_table
 		    NT_PRINTER_INFO_LEVEL *printer, TALLOC_CTX *mem_ctx);
 };
 
+/* A table describing the various print notification constants and
+   whether the notification data is a pointer to a variable sized
+   buffer, a one value uint32 or a two value uint32. */
+
+#define ONE_VALUE 1
+#define TWO_VALUE 2
+#define POINTER   3
+
 struct s_notify_info_data_table notify_info_data_table[] =
 {
 { PRINTER_NOTIFY_TYPE, PRINTER_NOTIFY_SERVER_NAME,         "PRINTER_NOTIFY_SERVER_NAME",         POINTER,   spoolss_notify_server_name },
