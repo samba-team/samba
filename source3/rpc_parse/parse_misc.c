@@ -852,20 +852,70 @@ void init_unistr2(UNISTR2 *str, const char *buf, size_t len)
 	str->undoc       = 0;
 	str->uni_str_len = (uint32)len;
 
-    if (!parse_misc_talloc)
+	if (!parse_misc_talloc)
 		parse_misc_talloc = talloc_init();
 
 	if (len < MAX_UNISTRLEN)
 		len = MAX_UNISTRLEN;
 	len *= sizeof(uint16);
 
-    str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
+	str->buffer = (uint16 *)talloc(parse_misc_talloc, len);
 	if (str->buffer == NULL)
 		smb_panic("init_unistr2: malloc fail\n");
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	dos_struni2((char *)str->buffer, buf, len);
 }
+
+/*******************************************************************
+ Inits a UNISTR2 structure from a UNISTR
+********************************************************************/
+void init_unistr2_from_unistr (UNISTR2 *to, UNISTR *from)
+{
+
+	BOOL found;
+	uint32 i = 0;
+
+	if ((to == NULL) || (from == NULL) || (from->buffer == NULL))
+		return;
+		
+	ZERO_STRUCTP (to);
+
+	/* get the length; UNISTR **are** NULL terminated */
+	found = False;
+	while (!found)
+	{
+		if ((from->buffer)[i]=='\0' && (from->buffer)[(2*i)+1]=='\0')
+			found = True;
+		else
+			i++;
+	}
+	i++;
+
+	if (!found)
+	{
+		DEBUG(0,("init_unistr2_from_unistr: non-null terminiated UNISTR!\n"));
+		return;
+	}
+
+	/* set up string lengths. */
+	to->uni_max_len = i;
+	to->undoc       = 0;
+	to->uni_str_len = i;
+
+	if (!parse_misc_talloc)
+		parse_misc_talloc = talloc_init();
+	
+	to->buffer = (uint16 *)talloc(parse_misc_talloc, sizeof(uint16)*(to->uni_str_len));
+	if (to->buffer == NULL)
+		smb_panic("init_unistr2_from_unistr: malloc fail\n");
+
+	for (i=0; i < to->uni_str_len; i++)
+		to->buffer[i] = from->buffer[i];
+		
+	return;
+}
+
 
 /*******************************************************************
  Reads or writes a UNISTR2 structure.

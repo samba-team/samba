@@ -171,7 +171,9 @@ typedef struct unistr2_info
   uint32 uni_max_len;
   uint32 undoc;
   uint32 uni_str_len;
-  /* unicode characters. ***MUST*** be little-endian. **NOT** necessarily null-terminated */
+  /* unicode characters. ***MUST*** be little-endian. 
+     **must** be null-terminated and the uni_str_len should include
+     the NULL character */
   uint16 *buffer;
 
 } UNISTR2;
