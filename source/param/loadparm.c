@@ -764,8 +764,8 @@ static struct parm_struct parm_table[] = {
 	{"workgroup", P_USTRING, P_GLOBAL, &Globals.szWorkgroup, handle_workgroup, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 #ifdef WITH_ADS
 	{"realm", P_USTRING, P_GLOBAL, &Globals.szRealm, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
-	{"afs username map", P_USTRING, P_GLOBAL, &Globals.szAfsUsernameMap, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 #endif
+	{"afs username map", P_USTRING, P_GLOBAL, &Globals.szAfsUsernameMap, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"netbios name", P_USTRING, P_GLOBAL, &Globals.szNetbiosName, handle_netbios_name, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD}, 
 	{"netbios aliases", P_LIST, P_GLOBAL, &Globals.szNetbiosAliases, handle_netbios_aliases,  NULL, FLAG_ADVANCED}, 
 	{"netbios scope", P_USTRING, P_GLOBAL, &Globals.szNetbiosScope, handle_netbios_scope,  NULL, FLAG_ADVANCED}, 
