@@ -321,7 +321,8 @@ BOOL smbcli_request_check_sign_mac(struct smbcli_request *req)
 /***********************************************************
  SMB signing - Simple implementation - setup the MAC key.
 ************************************************************/
-BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
+BOOL smbcli_simple_set_signing(TALLOC_CTX *mem_ctx,
+			       struct smb_signing_context *sign_info,
 			       const DATA_BLOB *user_session_key, 
 			       const DATA_BLOB *response)
 {
@@ -332,9 +333,9 @@ BOOL smbcli_simple_set_signing(struct smb_signing_context *sign_info,
 	DEBUG(5, ("SMB signing enabled!\n"));
 
 	if (response && response->length) {
-		sign_info->mac_key = data_blob(NULL, response->length + user_session_key->length);
+		sign_info->mac_key = data_blob_talloc(mem_ctx, NULL, response->length + user_session_key->length);
 	} else {
-		sign_info->mac_key = data_blob(NULL, user_session_key->length);
+		sign_info->mac_key = data_blob_talloc(mem_ctx, NULL, user_session_key->length);
 	}
 		
 	memcpy(&sign_info->mac_key.data[0], user_session_key->data, user_session_key->length);
@@ -365,7 +366,8 @@ BOOL smbcli_transport_simple_set_signing(struct smbcli_transport *transport,
 		return False;
 	}
 
-	return smbcli_simple_set_signing(&transport->negotiate.sign_info,
+	return smbcli_simple_set_signing(transport,
+					 &transport->negotiate.sign_info,
 					 &user_session_key,
 					 &response);
 }
