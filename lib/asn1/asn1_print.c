@@ -40,6 +40,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <getarg.h>
+#include <err.h>
 
 RCSID("$Id$");
 
