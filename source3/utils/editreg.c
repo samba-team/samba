@@ -299,6 +299,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #include <stdio.h>
 #include <errno.h>
+#include <assert.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -315,8 +316,8 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
  */
 
 typedef struct date_time_s {
-  int sec, microsec;
-} DATE_TIME;
+  unsigned int low, high;
+} NTTIME;
 
 /*
  * Definition of a Key. It has a name, classname, date/time last modified,
@@ -330,7 +331,7 @@ typedef struct reg_key_s {
   char *name;         /* Name of the key                    */
   char *class_name;
   int type;           /* One of REG_ROOT_KEY or REG_SUB_KEY */
-  DATE_TIME last_mod; /* Time last modified                 */
+  NTTIME last_mod; /* Time last modified                 */
   struct reg_key_s *owner;
   struct key_list_s *sub_keys;
   struct val_list_s *values;
@@ -537,6 +538,14 @@ int nt_get_regf_hdr(REGF *regf)
       return -1;
     }
   }
+
+  /* 
+   * At this point, regf->base != NULL, and we should be able to read the 
+   * header 
+   */
+
+  ASSERT(regf->base != NULL);
+
 
 }
 
