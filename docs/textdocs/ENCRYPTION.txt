@@ -2,7 +2,7 @@
 !== ENCRYPTION.txt for Samba release 1.9.18p3 19 Feb 1998
 !==
 Contributor:	Jeremy Allison <samba-bugs@samba.anu.edu.au>
-Updated:	June 27, 1997
+Updated:	March 19, 1998
 Note:		Please refer to WinNT.txt also
 
 Subject:	LanManager / Samba Password Encryption.
@@ -207,7 +207,16 @@ bob:100:NO PASSWORDXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:Bob's 
 If you are allowing users to use the smbpasswd command to set their own
 passwords, you may want to give users NO PASSWORD initially so they do
 not have to enter a previous password when changing to their new
-password (not recommended).
+password (not recommended). In order for you to allow this the
+smbpasswd program must be able to connect to the smbd daemon as
+that user with no password. Enable this by adding the line :
+
+null passwords = true
+
+to the [global] section of the smb.conf file (this is why the
+above scenario is not recommended). Preferebly, allocate your
+users a default password to begin with, so you do not have
+to enable this on your server.
 
 Note : This file should be protected very carefully. Anyone with
 access to this file can (with enough knowledge of the protocols) gain
@@ -220,22 +229,28 @@ The smbpasswd Command.
 The smbpasswd command maintains the two 32 byte password fields in
 the smbpasswd file. If you wish to make it similar to the unix passwd
 or yppasswd programs, install it in /usr/local/samba/bin (or your main
-Samba binary directory) and make it setuid root.
+Samba binary directory).
 
-Note that if you do not do this then the root user will have to set all
-users passwords.
+Note that as of Samba 1.9.18p4 this program MUST NOT BE INSTALLED
+setuid root (the new smbpasswd code enforces this restriction so
+it cannot be run this way by accident).
 
-To set up smbpasswd as setuid root, change to the Samba binary install
-directory and then type (as root) :
+smbpasswd now works in a client-server mode where it contacts
+the local smbd to change the users password on its behalf. This
+has enormous benefits - as follows.
 
-chown root smbpasswd
-chmod 4555 smbpasswd
+1). smbpasswd no longer has to be setuid root - an enourmous
+range of potential security problems is eliminated.
 
-If smbpasswd is installed as setuid root then you would use it as
-follows.
+2). smbpasswd now has the capability to change passwords
+on Windows NT servers (this only works when the request is
+sent to the NT Primary Domain Controller if you are changing 
+an NT Domain users password).
+
+To run smbpasswd as a normal user just type :
 
 smbpasswd
-Old SMB password: <type old alue here - just hit return if there is NO PASSWORD>
+Old SMB password: <type old value here - or hit return if there was no old password >
 New SMB Password: < type new value >
 Repeat New SMB Password: < re-type new value >
 
@@ -255,15 +270,8 @@ forgotten their passwords.
 smbpasswd is designed to work in the same way and be familiar to UNIX
 users who use the passwd or yppasswd commands.
 
-NOTE. As smbpasswd is designed to be installed as setuid root I would
-appreciate it if everyone examined the source code to look for
-potential security flaws. A setuid program, if not written properly can
-be an open door to a system cracker. Please help make this program
-secure by reporting all problems to me (the author, Jeremy Allison).
-
-My email address is :-
-
-jallison@whistle.com
+For more details on using smbpasswd refer to the man page which
+will always be the definitive reference.
 
 Setting up Samba to support LanManager Encryption.
 --------------------------------------------------
@@ -309,11 +317,6 @@ tridge:148:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX:And
 
 note that the uid and username fields must be right. Also, you must get
 the number of X's right (there should be 32).
-
-If you wish, install the smbpasswd program as suid root.
-
-chown root /usr/local/samba/bin/smbpasswd
-chmod 4555 /usr/local/samba/bin/smbpasswd
 
 5) set the passwords for users using the smbpasswd command. For
 example, as root you could do "smbpasswd tridge"

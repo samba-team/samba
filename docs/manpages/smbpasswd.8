@@ -4,7 +4,10 @@ smbpasswd \- change a users smb password in the smbpasswd file.
 .SH SYNOPSIS
 .B smbpasswd
 [
-.B \-add
+.B \-a
+] [
+.B \-r
+remote_machine
 ] [
 .B username
 ]
@@ -27,14 +30,38 @@ smb password (specified by the string "NO PASSWORD" in the
 smbpasswd file) then just press the <Enter> key when asked
 for your old password.
 
+.B New for 1.9.18p4.
+smbpasswd will now allow a user to change their password
+on a Windows NT server. To use this add the 
+.I \-r
+.I \<remote_machine\>
+paramter to the smbpasswd command. The machine name is looked
+up using the "name resolve order" parameter defined in the
+smb.conf [global] section. Note that when changing a Windows
+NT password for a domain user,
+.I \<remote machine\>
+must be the name of the Primary domain controller.
+
+To allow users to change their passwords from "NO PASSWORD"
+in the smbpasswd file to a valid password the administrator
+must set the following parameter in the [global] section of
+the smb.conf :
+
+null passwords = true
+
+This is 
+.B NOT
+recommended as a general policy, it is recommended that
+new users be assigned a default password instead.
+
 The 
-.I \-add
+.I \-a
 and 
 .I username
 options can only be used by a user running as root.
 
 .SH OPTIONS
-.I \-add
+.I \-a
 
 .RS 3
 Specifies that the username following should be added to
@@ -70,13 +97,12 @@ It is recommended that the
 program be installed in the /usr/local/samba/bin directory. This should be
 a directory readable by all, writeable only by root. The program should be
 executable by all. The program 
-.B must
-be setuid root. This means the permissions should
-look like -r-sr-xr-x and the program must be owned by root.
+.B must not 
+be setuid root.
 
 .SH VERSION
 
-This man page is correct for version 1.9.17 of the Samba suite.
+This man page is correct for version 1.9.18p4 of the Samba suite.
 These notes will necessarily lag behind 
 development of the software, so it is possible that your version of 
 the program has extensions or parameter semantics that differ from or are not 
@@ -93,7 +119,7 @@ The
 .B smbpasswd
 command is only useful if
 .I Samba
-has been compiled with encrypted passwords. See the file
+has been set up to use encrypted passwords. See the file
 .I ENCRYPTION.txt
 in the docs directory for details on how to do this.
 
