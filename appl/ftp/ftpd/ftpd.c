@@ -846,6 +846,36 @@ done:
 	(*closefunc)(fin);
 }
 
+/* filename sanity check */
+
+static const char good_chars[] = "+-=_,.";
+
+int 
+filename_check(char *filename)
+{
+    char *p;
+
+    p = strrchr(filename, '/');
+    if(p)
+	filename = p + 1;
+
+    p = filename;
+
+    if(isalnum(*p)){
+	p++;
+	while(*p && (isalnum(*p) || strchr(good_chars, *p)))
+	    p++;
+	if(*p == NULL)
+	    return 0;
+    }
+    lreply(553, "\"%s\" is an illegal filename.", filename);
+    lreply(553, "The filename must start with an alphanumeric "
+	   "character and must only");
+    reply(553, "consist of alphanumeric characters or any of the following: %s", 
+	  good_chars);
+    return 1;
+}
+
 void
 store(char *name, char *mode, int unique)
 {
@@ -853,6 +883,8 @@ store(char *name, char *mode, int unique)
 	struct stat st;
 	int (*closefunc) __P((FILE *));
 
+	if(filename_check(name))
+	    return;
 	if (unique && stat(name, &st) == 0 &&
 	    (name = gunique(name)) == NULL) {
 		LOGCMD(*mode == 'w' ? "put" : "append", name);
@@ -1401,6 +1433,8 @@ makedir(char *name)
 {
 
 	LOGCMD("mkdir", name);
+	if(filename_check(name))
+	    return;
 	if (mkdir(name, 0777) < 0)
 		perror_reply(550, name);
 	else
@@ -1456,6 +1490,8 @@ renamecmd(char *from, char *to)
 {
 
 	LOGCMD2("rename", from, to);
+	if(filename_check(to))
+	    return;
 	if (rename(from, to) < 0)
 		perror_reply(550, "rename");
 	else
