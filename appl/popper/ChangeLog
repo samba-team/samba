@@ -1,3 +1,8 @@
+2003-09-02  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* popper.c (tgets): avoid be clobbered by `longjmp' or `vfork'
+	warning
+
 2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* popper.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
