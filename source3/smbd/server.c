@@ -250,7 +250,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 				set_socket_options(s,"SO_KEEPALIVE"); 
 				set_socket_options(s,user_socket_options);
       
-				if (listen(s, 5) == -1) {
+				if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
 					DEBUG(0,("listen: %s\n",strerror(errno)));
 					close(s);
 					return False;
@@ -286,7 +286,7 @@ static BOOL open_sockets_smbd(BOOL is_daemon, BOOL interactive, const char *smb_
 			set_socket_options(s,"SO_KEEPALIVE"); 
 			set_socket_options(s,user_socket_options);
 			
-			if (listen(s, 5) == -1) {
+			if (listen(s, SMBD_LISTEN_BACKLOG) == -1) {
 				DEBUG(0,("open_sockets_smbd: listen: %s\n",
 					 strerror(errno)));
 				close(s);
