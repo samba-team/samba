@@ -469,17 +469,14 @@ sub ParseElementPullSwitch($$$$)
 	    !util::has_property($utype, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
 		my $type_decl = $e2->{TYPE};
-		my $type_fn = $e2->{TYPE};
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		if (util::is_enum($e2->{TYPE})) {
 			$type_decl = util::enum_type_decl($e2);
-			$type_fn = util::enum_type_fn($e2);
 		} elsif (util::is_bitmap($e2->{TYPE})) {
 			$type_decl = util::bitmap_type_decl($e2);
-			$type_fn = util::bitmap_type_fn($e2);
 		}
 		pidl "\t\t$type_decl _level;\n";
-		pidl "\t\tNDR_CHECK(ndr_pull_$type_fn(ndr, &_level));\n";
+		pidl "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
 		if ($switch_var =~ /r->in/) {
 			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {\n";
 		} else {
@@ -804,16 +801,11 @@ sub ParseStructPush($)
 sub ParseEnumPush($)
 {
 	my($enum) = shift;
+	my($type_fn) = util::enum_type_fn($enum);
 
 	start_flags($enum);
 
-	if (util::has_property($enum->{PARENT}, "v1_enum")) {
-		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, r));\n";
-	} elsif (util::has_property($enum->{PARENT}, "enum8bit")) {
-		pidl "\tNDR_CHECK(ndr_push_uint8(ndr, r));\n";
-	} else {
-		pidl "\tNDR_CHECK(ndr_push_uint16(ndr, r));\n";
-	}
+	pidl "\tNDR_CHECK(ndr_push_$type_fn(ndr, r));\n";
 
 	end_flags($enum);
 }
@@ -823,19 +815,12 @@ sub ParseEnumPush($)
 sub ParseEnumPull($)
 {
 	my($enum) = shift;
+	my($type_fn) = util::enum_type_fn($enum);
 
 	start_flags($enum);
 
-	if (util::has_property($enum->{PARENT}, "v1_enum")) {
-		pidl "\tuint32_t v;\n";
-		pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &v));\n";
-	} elsif (util::has_property($enum->{PARENT}, "enum8bit")) {
-		pidl "\tuint8_t v;\n";
-		pidl "\tNDR_CHECK(ndr_pull_uint8(ndr, &v));\n";
-	} else {
-		pidl "\tuint16_t v;\n";
-		pidl "\tNDR_CHECK(ndr_pull_uint16(ndr, &v));\n";
-	}
+	pidl "\t$type_fn v;\n";
+	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
 
 	end_flags($enum);
@@ -873,7 +858,6 @@ sub ParseEnumPrint($)
 sub ParseBitmapPush($)
 {
 	my($bitmap) = shift;
-	my($type_decl) = util::bitmap_type_decl($bitmap);
 	my($type_fn) = util::bitmap_type_fn($bitmap);
 
 	start_flags($bitmap);
@@ -888,12 +872,11 @@ sub ParseBitmapPush($)
 sub ParseBitmapPull($)
 {
 	my($bitmap) = shift;
-	my($type_decl) = util::bitmap_type_decl($bitmap);
 	my($type_fn) = util::bitmap_type_fn($bitmap);
 
 	start_flags($bitmap);
 
-	pidl "\t$type_decl v;\n";
+	pidl "\t$type_fn v;\n";
 	pidl "\tNDR_CHECK(ndr_pull_$type_fn(ndr, &v));\n";
 	pidl "\t*r = v;\n";
 

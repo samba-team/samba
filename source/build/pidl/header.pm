@@ -98,7 +98,7 @@ sub HeaderEnum($$)
     my($enum) = shift;
     my($name) = shift;
 
-    util::register_enum($name);
+    util::register_enum($enum, $name);
 
     $res .= "\nenum $name {\n";
     $tab_depth++;
