@@ -185,7 +185,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	if (script) pdb_set_logon_script(sam_pwent, script);
 	if (profile) pdb_set_profile_path (sam_pwent, profile);
 	
-	if (pdb_update_sam_account (sam_pwent, TRUE)) print_user_info (username, TRUE, FALSE);
+	if (pdb_update_sam_account (sam_pwent, True)) print_user_info (username, True, False);
 	else
 	{
 		fprintf (stderr, "Unable to modify entry!\n");
@@ -246,7 +246,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	sam_pwent.nt_pw = new_nt_p16;
 	sam_pwent.acct_ctrl = ACB_NORMAL;
 	
-	if (pdb_add_sam_account (&sam_pwent)) print_user_info (username, TRUE, FALSE);
+	if (pdb_add_sam_account (&sam_pwent)) print_user_info (username, True, False);
 	else
 	{
 		fprintf (stderr, "Unable to add user!\n");
@@ -297,7 +297,7 @@ static int new_machine (char *machinename)
 	sam_pwent.acct_ctrl = ACB_WSTRUST;
 	
 	if (pdb_add_sam_account (&sam_pwent))
-		print_user_info (name, TRUE, FALSE);
+		print_user_info (name, True, False);
 	else {
 		fprintf (stderr, "Unable to add machine!\n");
 		return -1;
@@ -572,14 +572,14 @@ int main (int argc, char **argv)
 {
 	int ch;
 	static pstring servicesf = CONFIGFILE;
-	BOOL list_users = FALSE;
-	BOOL verbose = FALSE;
-	BOOL spstyle = FALSE;
-	BOOL setparms = FALSE;
-	BOOL machine = FALSE;
-	BOOL add_user = FALSE;
-	BOOL delete_user = FALSE;
-	BOOL import = FALSE;
+	BOOL list_users = False;
+	BOOL verbose = False;
+	BOOL spstyle = False;
+	BOOL setparms = False;
+	BOOL machine = False;
+	BOOL add_user = False;
+	BOOL delete_user = False;
+	BOOL import = False;
 	char *user_name = NULL;
 	char *full_name = NULL;
 	char *home_dir = NULL;
@@ -613,48 +613,48 @@ int main (int argc, char **argv)
 	while ((ch = getopt(argc, argv, "ad:f:h:i:lmp:s:u:vwx")) != EOF) {
 		switch(ch) {
 		case 'a':
-			add_user = TRUE;
+			add_user = True;
 			break;
 		case 'm':
-			machine = TRUE;
+			machine = True;
 			break;
 		case 'l':
-			list_users = TRUE;
+			list_users = True;
 			break;
 		case 'v':
-			verbose = TRUE;
+			verbose = True;
 			break;
 		case 'w':
-			spstyle = TRUE;
+			spstyle = True;
 			break;
 		case 'u':
 			user_name = optarg;
 			break;
 		case 'f':
-			setparms = TRUE;
+			setparms = True;
 			full_name = optarg;
 			break;
 		case 'h':
-			setparms = TRUE;
+			setparms = True;
 			home_dir = optarg;
 			break;
 		case 'd':
-			setparms = TRUE;
+			setparms = True;
 			home_drive = optarg;
 			break;
 		case 's':
-			setparms = TRUE;
+			setparms = True;
 			logon_script = optarg;
 			break;
 		case 'p':
-			setparms = TRUE;
+			setparms = True;
 			profile_path = optarg;
 			break;
 		case 'x':
-			delete_user = TRUE;
+			delete_user = True;
 			break;
 		case 'i':
-			import = TRUE;
+			import = True;
 			smbpasswd = optarg;
 			break;
 		default:

@@ -44,7 +44,7 @@ void error_message(gchar *message) {
   /* Create the widgets */
      
   dialog = gtk_dialog_new();
-  gtk_window_set_modal(GTK_WINDOW(dialog), TRUE);
+  gtk_window_set_modal(GTK_WINDOW(dialog), True);
   label = gtk_label_new (message);
   okay_button = gtk_button_new_with_label("Okay");
      
