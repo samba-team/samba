@@ -181,10 +181,6 @@ static nt_forms_struct default_forms[] = {
 static void upgrade_to_version_2(void)
 {
 	TDB_DATA kbuf, newkey, dbuf;
-	nt_forms_struct form;
-	int ret;
-	int i;
-	int n = 0;
 
 	DEBUG(0,("upgrade_to_version_2:upgrading to version 2\n"));
 
@@ -226,10 +222,6 @@ BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
 	char *vstring = "INFO/version";
-
-	fstring *list=NULL;
-	int count;
-	int i;
 
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid()) return True;
 
