@@ -1017,7 +1017,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		*type = 0x4;
 		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x01);
+		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;			
 		return True;
 	}
@@ -1026,7 +1026,8 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		*type = 0x4;
 		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x1B);
+		/* formally was 0x1b */
+		SIVAL(*data, 0, 0x0);
 		*needed = 0x4;			
 		return True;
 	}
@@ -1035,7 +1036,7 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		*type = 0x4;
 		if((*data = (uint8 *)malloc( 4*sizeof(uint8) )) == NULL)
 			return False;
-		SIVAL(*data, 0, 0x01);
+		SIVAL(*data, 0, 0x00);
 		*needed = 0x4;
 		return True;
 	}
@@ -1049,8 +1050,10 @@ static BOOL getprinterdata_printer_server(fstring value, uint32 *type, uint8 **d
 		return True;
 	}
 
-   if (!strcmp(value, "DefaultSpoolDirectory")) {
-		pstring string="You are using a Samba server";
+   	if (!strcmp(value, "DefaultSpoolDirectory")) {
+		fstring string;
+
+		fstrcpy(string, string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
 		*type = 0x1;			
 		*needed = 2*(strlen(string)+1);		
 		if((*data  = (uint8 *)malloc( ((*needed > in_size) ? *needed:in_size) *sizeof(uint8))) == NULL)
