@@ -433,12 +433,22 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 {
 	struct passwd *pw;
 	char *p;
+	char *sep;
+	extern pstring global_myname;
 
 	pw = Get_Pwnam(user, allow_change);
 	if (pw) return pw;
 
-	p = strchr(user,'/');
-	if (p) return Get_Pwnam(p+1, allow_change);
+	/* if it is a domain qualified name and it isn't in our password
+	   database but the domain portion matches our local machine name then
+	   lookup just the username portion locally */
+	sep = lp_winbind_separator();
+	if (!sep || !*sep) sep = "\\";
+	p = strchr(user,*sep);
+	if (p && 
+	    strncasecmp(global_myname, user, strlen(global_myname))==0) {
+		return Get_Pwnam(p+1, allow_change);
+	}
 
 	return NULL;
 }
