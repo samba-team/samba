@@ -34,6 +34,7 @@ interface ObjectRpcBaseTypes
 	// Causality Identifier
 #define CID GUID
 
+	// Class ID
 #define CLSID GUID
 
 	// Interface identifier
@@ -499,6 +500,9 @@ interface ISystemActivator
 {
 	WERROR IRunDown_Dummy();
 }
+
+
+// Service COntrol Manager
 
 [
 	uuid(00000136-0000-0000-C000-000000000046),

@@ -1,0 +1,63 @@
+[
+	uuid(1544f5e0-613c-11d1-93df-00c04fd7bd09),
+	helpstring("Exchange 2003 System Attendant Request For Response")
+] interface exchange_rfr
+{
+	void rfr_dummy();
+}
+
+[
+	uuid(469d6ec0-0d87-11ce-b13f-00aa003bec6c),
+	helpstring("Exchange 5.5 System Attendant Request for Response")
+] interface exchange_system_attendant
+{
+	void sysatt_dummy();
+}
+
+[
+	uuid(9e8ee830-4559-11ce-979b-00aa005ffebe),
+	helpstring("Exchange 5.5 MTA")
+] interface exchange_mta
+{
+	void mta_dummy();
+}
+
+[
+	uuid(f5cc59b4-4264-101a-8c59-08002b2f8426),
+	helpstring("Exchange 5.5 DRS")
+] interface exchange_drs
+{
+	void drs_dummy();
+}
+
+[
+	uuid(f5cc5a7c-4264-101a-8c59-08002b2f8426),
+	helpstring("Exchange 5.5 XDS")
+] interface exchange_xds
+{
+	void xds_dummy();
+}
+
+[
+	uuid(f5cc5a18-4264-101a-8c59-08002b2f8426),
+	helpstring("Exchange 5.5 Name Service Provider")
+] interface exchange_nsp
+{
+	void nsp_dummy();
+}
+
+[
+	uuid(a4f1db00-ca47-1067-b31f-00dd010662da),
+	helpstring("Exchange 5.5 EMSMDB")
+] interface exchange_emsmdb
+{
+	void emsmdb_dummy();
+}
+
+[
+	uuid(c840a7dc-42c0-1a10-b4b9-08002b2fe182),
+	helpstring("Unknwon")
+] interface exchange_unknown
+{
+	void unknown_dummy();
+}
