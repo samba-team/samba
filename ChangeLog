@@ -1,3 +1,8 @@
+2002-10-17  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/klist.c (display_tokens): allow tokens up to size of
+	buffer (from Magnus Holmberg)
+
 2002-09-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* lib/krb5/changepw.c (process_reply): fix reply length check
