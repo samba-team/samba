@@ -1,3 +1,9 @@
+Tue Sep 23 03:00:53 1997  Assar Westerlund  <assar@sics.se>
+
+ 	(krb5_sendto_kdc): no data returned means no contact?
+
+	* lib/krb5/addr_families.c: fix typo in `ipv6_anyaddr'
+
 Mon Sep 22 11:44:27 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* kdc/kerberos5.c: Somewhat fix the etype usage. The list sent by
