@@ -179,8 +179,8 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
 	else
 		exclusive_oplocks_open++;
 
-	DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, file_id = %lu, \
-tv_sec = %x, tv_usec = %x\n",
+	DEBUG(5,("set_file_oplock: granted oplock type %d on file %s, dev = %x, inode = %.0f, file_id = %lu, \
+tv_sec = %x, tv_usec = %x\n", oplock_type,
 		 fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode, fsp->file_id,
 		 (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
 

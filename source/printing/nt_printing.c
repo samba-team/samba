@@ -493,8 +493,9 @@ Version information in Microsoft files is held in a VS_VERSION_INFO structure.
 There are two case to be covered here: PE (Portable Executable) and NE (New
 Executable) files. Both files support the same INFO structure, but PE files
 store the signature in unicode, and NE files store it as !unicode.
+returns -1 on error, 1 on version info found, and 0 on no version info found.
 ****************************************************************************/
-static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
+static int get_file_version(files_struct *fsp, char *fname,uint32 *major,
 							 uint32 *minor)
 {
 	int     i;
@@ -609,7 +610,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 									  (*major>>16)&0xffff, *major&0xffff,
 									  (*minor>>16)&0xffff, *minor&0xffff));
 							free(buf);
-							return True;
+							return 1;
 						}
 					}
 				}
@@ -619,7 +620,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 		/* Version info not found, fall back to origin date/time */
 		DEBUG(10,("get_file_version: PE file [%s] has no version info\n", fname));
 		free(buf);
-		return False;
+		return 0;
 
 	} else if (SVAL(buf,NE_HEADER_SIGNATURE_OFFSET) == NE_HEADER_SIGNATURE) {
 		if (CVAL(buf,NE_HEADER_TARGET_OS_OFFSET) != NE_HEADER_TARGOS_WIN ) {
@@ -686,7 +687,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 							  (*major>>16)&0xffff, *major&0xffff,
 							  (*minor>>16)&0xffff, *minor&0xffff));
 					free(buf);
-					return True;
+					return 1;
 				}
 			}
 		}
@@ -694,7 +695,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 		/* Version info not found, fall back to origin date/time */
 		DEBUG(0,("get_file_version: NE file [%s] Version info not found\n", fname));
 		free(buf);
-		return False;
+		return 0;
 
 	} else
 		/* Assume this isn't an error... the file just looks sort of like a PE/NE file */
@@ -703,7 +704,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 
 	no_version_info:
 		free(buf);
-		return False;
+		return 0;
 
 	error_exit:
 		free(buf);
@@ -773,9 +774,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
-
+	close_file(fsp, True);
 
 	/* Get file version info (if available) for new file */
 	pstrcpy(filepath, new_file);
@@ -804,8 +803,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
+	close_file(fsp, True);
 
 	if (use_version) {
 		/* Compare versions and choose the larger version number */
@@ -833,11 +831,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	}
 
 	error_exit:
-		if(fsp) {
-			file_free(fsp);
-			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
-		}
+		if(fsp)
+			close_file(fsp, True);
 		return -1;
 }
 
@@ -851,8 +846,6 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	int               access_mode;
 	int               action;
 	int               ecode;
-	char              buf[PE_HEADER_SIZE];
-	ssize_t           byte_count;
 	pstring           driverpath;
 	fstring           user_name;
 	fstring           null_pw;
@@ -864,9 +857,12 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	ZERO_STRUCT(st);
 
+	*perr = ERROR_INVALID_PARAMETER;
+
 	/* If architecture is Windows 95/98, the version is always 0. */
 	if (strcmp(architecture, "WIN40") == 0) {
 		DEBUG(10,("get_correct_cversion: Driver is Win9x, cversion = 0\n"));
+		*perr = 0;
 		return 0;
 	}
 
@@ -959,23 +955,18 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	DEBUG(10,("get_correct_cversion: Driver file [%s] cversion = %d\n",
 			driverpath, cversion));
 
-	fsp->conn->vfs_ops.close(fsp, fsp->fd);
-	file_free(fsp);
+	close_file(fsp, True);
 	close_cnum(conn, user->vuid);
 	pop_sec_ctx();
+	*perr = 0;
 	return cversion;
 
-
-	error_exit:
-		if(fsp) {
-			if(fsp->fd != -1)
-				fsp->conn->vfs_ops.close(fsp, fsp->fd);
-			file_free(fsp);
-		}
-
-		close_cnum(conn, user->vuid);
-		pop_sec_ctx();
-		return -1;
+  error_exit:
+	if(fsp)
+		close_file(fsp, True);
+	close_cnum(conn, user->vuid);
+	pop_sec_ctx();
+	return -1;
 }
 
 /****************************************************************************

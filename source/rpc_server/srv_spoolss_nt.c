@@ -6028,7 +6028,9 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+#if 0 /* see below. */
 	int snum;
+#endif
 	uint32 result = NT_STATUS_NO_PROBLEMO;
 
 	DEBUG(5,("spoolss_addform\n"));
