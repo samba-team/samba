@@ -219,17 +219,17 @@ int make_dom_gids(char *gids_str, DOM_GID *gids)
 
 int create_rpc_request(uint32 call_id, uint8 op_num, char *q, int data_len)
 {
-	RPC_HDR hdr;
+	RPC_HDR_RR hdr;
 
-	make_rpc_header(&hdr, RPC_REQUEST, call_id, data_len, op_num);
-	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
+	make_rpc_hdr_rr(&hdr, RPC_REQUEST, call_id, data_len, op_num);
+	return smb_io_rpc_hdr_rr(False, &hdr, q, q, 4, 0) - q;
 }
 
 int create_rpc_reply(uint32 call_id, char *q, int data_len)
 {
-	RPC_HDR hdr;
+	RPC_HDR_RR hdr;
 
-	make_rpc_header(&hdr, RPC_RESPONSE, call_id, data_len, 0);
-	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
+	make_rpc_hdr_rr(&hdr, RPC_RESPONSE, call_id, data_len, 0);
+	return smb_io_rpc_hdr_rr(False, &hdr, q, q, 4, 0) - q;
 }
 

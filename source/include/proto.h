@@ -943,11 +943,36 @@ void make_sam_info(DOM_SAM_INFO *sam,
 				DOM_ID_INFO_1 *id1);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
-void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
-				uint32 call_id, int data_len, uint8 opnum);
+void make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
+void make_rpc_iface(RPC_IFACE *ifc, char data[16], uint32 version);
+char* smb_io_rpc_iface(BOOL io, RPC_IFACE *ifc, char *q, char *base, int align, int depth);
+void make_rpc_addr_str(RPC_ADDR_STR *str, char *name);
+char* smb_io_rpc_addr_str(BOOL io, RPC_ADDR_STR *str, char *q, char *base, int align, int depth);
+void make_rpc_hdr_bba(RPC_HDR_BBA *bba, uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid);
+char* smb_io_rpc_hdr_bba(BOOL io, RPC_HDR_BBA *rpc, char *q, char *base, int align, int depth);
+void make_rpc_hdr_rb(RPC_HDR_RB *rpc, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len,
+				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
+				RPC_IFACE *abstract, RPC_IFACE *transfer);
+char* smb_io_rpc_hdr_rb(BOOL io, RPC_HDR_RB *rpc, char *q, char *base, int align, int depth);
+void make_rpc_results(RPC_RESULTS *res, 
+				uint8 num_results, uint16 result, uint16 reason);
+char* smb_io_rpc_results(BOOL io, RPC_RESULTS *res, char *q, char *base, int align, int depth);
+void make_rpc_hdr_ba(RPC_HDR_BA *rpc, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len,
+				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
+				char *pipe_addr,
+				uint8 num_results, uint16 result, uint16 reason,
+				RPC_IFACE *transfer);
+char* smb_io_rpc_hdr_ba(BOOL io, RPC_HDR_BA *rpc, char *q, char *base, int align, int depth);
 void make_obj_attr(LSA_OBJ_ATTR *attr, uint32 attributes, uint32 sec_qos);
 char* smb_io_obj_attr(BOOL io, LSA_OBJ_ATTR *attr, char *q, char *base, int align, int depth);
+void make_rpc_hdr_rr(RPC_HDR_RR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len, uint8 opnum);
+char* smb_io_rpc_hdr_rr(BOOL io, RPC_HDR_RR *rpc, char *q, char *base, int align, int depth);
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_5(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);
