@@ -1,3 +1,10 @@
+Sat Apr  4 15:08:48 1998  Assar Westerlund  <assar@sics.se>
+
+	* kafs.h: add arla paths
+
+	* common.c (_kafs_afslog_all_local_cells): Try _PATH_ARLA_*
+	(_realm_of_cell): Try _PATH_ARLA_CELLSERVDB
+
 Thu Feb 19 14:50:22 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* common.c: Don't store expired tokens (this broke when using
