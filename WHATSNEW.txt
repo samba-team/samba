@@ -1,10 +1,10 @@
-              WHATS NEW IN Samba 2.2.4  - 2nd May 2002
-              ==============================================
+              WHAT'S NEW IN Samba 2.2.4  - 2nd May 2002
+              =========================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
-There have been several fixes and internal enhancements whic include:
+There have been several fixes and internal enhancements which include:
 
  * More/better SPOOLSS printing functionality for Windows
    NT/2k/XP clients.
@@ -15,7 +15,7 @@ There have been several fixes and internal enhancements whic include:
    examples/VFS/README for more details on this.
  * Addition of a tool (tdbbackup) for backup/restore of Samba's
    tdb's
- * Continued improvemenmt to winbind for greater scalability
+ * Continued improvements to winbind for greater scalability
    and stability
  * Several fixes related to Samba's MS-DFS support
  * Rpcclient's various printer commands now work (again)
@@ -125,12 +125,12 @@ See the cvs log for SAMBA_2_2 for more details
     on a 4 byte boundary
 54) do not idle an smbd when there is an open pipe
 55) when a new driver is added to a Samba server, cycle through
-    all printers and bump te change_id for each one bound to the driver
+    all printers and bump the change_id for each one bound to the driver
 56) allow smbclient to work with a FIFO as well (needed for KDE
     ioslave)
-57) various updates to pdn_nisplus.c
+57) various updates to pdb_nisplus.c
 58) many small documentation updates
-59) removed many compiler wanrings
+59) removed many compiler warnings
 
 
 
@@ -138,13 +138,13 @@ Known Bugs
 ----------
 
 * Under certain conditions when serving the MS Access 2000
-  exectureable file and an Acess database from a Samba share,
+  executable file and an Access database from a Samba share,
   it is possible to experience data corruption.  This pug does
   does occur when the database is served from a Samba file share
   but the Access *.exe is stored on the client's local file system.
   The exact reason for this bug is unknown at this time.
 
-              ==============================================
+              =========================================
 
 
 
@@ -159,7 +159,7 @@ release had a problem that was visible to Windows 2000 Explorer
 users in that copying files into a share that already existed
 failed with "Access Denied" rather than asking the user if an
 overwrite was required. This was due to an incorrect error mapping
-between the UNIX EEXIST error code and the NT status error.
+between the UNIX EXIST error code and the NT status error.
 
 As Windows Explorer is a highly visible end user application a quick
 bugfix release was required, hence 2.2.3a.
@@ -246,7 +246,7 @@ this.
 8). Improved NT error code mapping table.
 9). Many new point and print RPC calls added.
 10). Win9x clients can now see full user list.
-11). fileid added to identify simultaneous open files (no longer
+11). field added to identify simultaneous open files (no longer
 use dev/inode/time as unique value).
 12). HPUX ACL code added (donated by HP).
 13). vfs interfaces updated (again !).
@@ -334,7 +334,7 @@ Added/changed parameters.
 strict allocate
 
 Causes Samba not to create UNIX 'sparse' files, but to follow the
-Windows behaviour of always allocating on-disk space.
+Windows behavior of always allocating on-disk space.
 
 use mmap
 
@@ -354,7 +354,7 @@ New printing parameters.
 disable spoolss
 
 Setting this parameter causes Samba to go back to the old 2.0.x
-LANMAN printing behaviour, for people who wish to disable the
+LANMAN printing behavior, for people who wish to disable the
 new SPOOLSS pipe.
 
 use client driver
