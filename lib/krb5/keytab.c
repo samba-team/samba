@@ -1,5 +1,7 @@
 #include "krb5_locl.h"
 
+RCSID("$Id$");
+
 krb5_error_code
 krb5_kt_resolve(krb5_context context,
 		const char *name,
@@ -147,11 +149,13 @@ krb5_kt_start_seq_get(krb5_context context,
 {
   int16_t tag;
   int ret;
+  krb5_storage *sp;
 
   cursor->fd = open (id->filename, O_RDONLY);
   if (cursor->fd < 0)
     return -1;
-  ret = krb5_ret_int16(cursor->fd, &tag);
+  cursor->sp = krb5_storage_from_fd(cursor->fd);
+  ret = krb5_ret_int16(cursor->sp, &tag);
   if (ret)
     return ret;
   if (tag != 0x0502)
@@ -160,48 +164,65 @@ krb5_kt_start_seq_get(krb5_context context,
 }
 
 static krb5_error_code
-krb5_kt_ret_data(int fd,
-	      krb5_data *data)
+krb5_kt_store_data(krb5_storage *sp,
+		   krb5_data data)
+{
+    int ret;
+    ret = krb5_store_int16(sp, data.length);
+    if(ret < 0)
+	return ret;
+    ret = sp->store(sp, data.data, data.length);
+    if(ret != data.length){
+	if(ret < 0)
+	    return errno;
+	return KRB5_CC_END;
+    }
+    return 0;
+}
+
+static krb5_error_code
+krb5_kt_ret_data(krb5_storage *sp,
+		 krb5_data *data)
 {
     int ret;
     int16_t size;
-
-    ret = krb5_ret_int16(fd, &size);
+    ret = krb5_ret_int16(sp, &size);
     if(ret)
 	return ret;
     data->length = size;
     data->data = malloc(size);
-    ret = read(fd, data->data, size);
+    ret = sp->fetch(sp, data->data, size);
     if(ret != size)
 	return (ret < 0)? errno : KRB5_CC_END;
     return 0;
 }
 
 static krb5_error_code
-krb5_kt_ret_principal(int fd,
+krb5_kt_ret_principal(krb5_storage *sp,
 		      krb5_principal *princ)
 {
     int i;
     int ret;
     krb5_principal p;
     int16_t tmp;
-
+    
     p = ALLOC(1, krb5_principal_data);
     if(p == NULL)
 	return ENOMEM;
 
+
     p->type = KRB5_NT_SRV_HST;
-    ret = krb5_ret_int16(fd, &tmp);
+    ret = krb5_ret_int16(sp, &tmp);
     if(ret) return ret;
     p->ncomp = tmp;
-    ret = krb5_kt_ret_data(fd, &p->realm);
+    ret = krb5_kt_ret_data(sp, &p->realm);
     if(ret) return ret;
     p->comp = ALLOC(p->ncomp, krb5_data);
     if(p->comp == NULL){
 	return ENOMEM;
     }
     for(i = 0; i < p->ncomp; i++){
-	ret = krb5_kt_ret_data(fd, &p->comp[i]);
+	ret = krb5_kt_ret_data(sp, &p->comp[i]);
 	if(ret) return ret;
     }
     *princ = p;
@@ -209,15 +230,15 @@ krb5_kt_ret_principal(int fd,
 }
 
 static krb5_error_code
-krb5_kt_ret_keyblock(int fd, krb5_keyblock *p)
+krb5_kt_ret_keyblock(krb5_storage *sp, krb5_keyblock *p)
 {
     int ret;
     int16_t tmp;
 
-    ret = krb5_ret_int16(fd, &tmp); /* keytype + etype */
+    ret = krb5_ret_int16(sp, &tmp); /* keytype + etype */
     if(ret) return ret;
     p->keytype = tmp;
-    ret = krb5_kt_ret_data(fd, &p->contents);
+    ret = krb5_kt_ret_data(sp, &p->contents);
     return ret;
 }
 
@@ -232,23 +253,23 @@ krb5_kt_next_entry(krb5_context context,
   int ret;
   int8_t tmp;
 
-  ret = krb5_ret_int32(cursor->fd, &len);
+  ret = krb5_ret_int32(cursor->sp, &len);
   if (ret)
     return ret;
-  ret = krb5_kt_ret_principal (cursor->fd, &entry->principal);
+  ret = krb5_kt_ret_principal (cursor->sp, &entry->principal);
   if (ret)
     return ret;
-  ret = krb5_ret_int32(cursor->fd, &entry->principal->type);
+  ret = krb5_ret_int32(cursor->sp, &entry->principal->type);
   if (ret)
     return ret;
-  ret = krb5_ret_int32(cursor->fd, &timestamp);
+  ret = krb5_ret_int32(cursor->sp, &timestamp);
   if (ret)
     return ret;
-  ret = krb5_ret_int8(cursor->fd, &tmp);
+  ret = krb5_ret_int8(cursor->sp, &tmp);
   if (ret)
     return ret;
   entry->vno = tmp;
-  ret = krb5_kt_ret_keyblock (cursor->fd, &entry->keyblock);
+  ret = krb5_kt_ret_keyblock (cursor->sp, &entry->keyblock);
   if (ret)
     return ret;
   return 0;
@@ -259,6 +280,7 @@ krb5_kt_end_seq_get(krb5_context context,
 		    krb5_keytab id,
 		    krb5_kt_cursor *cursor)
 {
-  close (cursor->fd);
-  return 0;
+    krb5_storage_free(cursor->sp);
+    close (cursor->fd);
+    return 0;
 }

@@ -141,10 +141,15 @@ krb5_cc_initialize(krb5_context context,
     fd = open(f, O_RDWR | O_CREAT | O_EXCL, 0600);
     if(fd == -1)
 	return errno;
-    krb5_store_int16(fd, 0x503);
-    krb5_store_principal(fd, primary_principal);
+    {
+	krb5_storage *sp;    
+	sp = krb5_storage_from_fd(fd);
+	krb5_store_int16(sp, 0x503);
+	krb5_store_principal(sp, primary_principal);
+	krb5_storage_free(sp);
+    }
     close(fd);
-  
+	
     return 0;
 }
 
@@ -185,17 +190,22 @@ krb5_cc_store_cred(krb5_context context,
     fd = open(f->filename, O_WRONLY | O_APPEND);
     if(fd < 0)
 	return errno;
-    krb5_store_principal(fd, creds->client);
-    krb5_store_principal(fd, creds->server);
-    krb5_store_keyblock(fd, creds->session);
-    krb5_store_times(fd, creds->times);
-    krb5_store_int8(fd, 0); /* s/key */
-    krb5_store_int32(fd, 0); /* flags */
-    krb5_store_addrs(fd, creds->addresses);
-    krb5_store_authdata(fd, creds->authdata);
-    krb5_store_data(fd, creds->ticket);
-    krb5_store_data(fd, creds->second_ticket);
-    close(fd);
+    {
+	krb5_storage *sp;
+	sp = krb5_storage_from_fd(fd);
+	krb5_store_principal(sp, creds->client);
+	krb5_store_principal(sp, creds->server);
+	krb5_store_keyblock(sp, creds->session);
+	krb5_store_times(sp, creds->times);
+	krb5_store_int8(sp, 0); /* s/key */
+	krb5_store_int32(sp, 0); /* flags */
+	krb5_store_addrs(sp, creds->addresses);
+	krb5_store_authdata(sp, creds->authdata);
+	krb5_store_data(sp, creds->ticket);
+	krb5_store_data(sp, creds->second_ticket);
+	krb5_storage_free(sp);
+    }
+	close(fd);
     return 0; /* XXX */
 }
 
@@ -206,26 +216,30 @@ krb5_cc_read_cred (int fd,
     int ret;
     int8_t dummy8;
     int32_t dummy32;
+    krb5_storage *sp;
 
-    ret = krb5_ret_principal (fd, &creds->client);
+    sp = krb5_storage_from_fd(fd);
+
+    ret = krb5_ret_principal (sp,  &creds->client);
     if(ret) return ret;
-    ret = krb5_ret_principal (fd, &creds->server);
+    ret = krb5_ret_principal (sp,  &creds->server);
     if(ret) return ret;
-    ret = krb5_ret_keyblock (fd, &creds->session);
+    ret = krb5_ret_keyblock (sp,  &creds->session);
     if(ret) return ret;
-    ret = krb5_ret_times (fd, &creds->times);
+    ret = krb5_ret_times (sp,  &creds->times);
     if(ret) return ret;
-    ret = krb5_ret_int8 (fd, &dummy8);
+    ret = krb5_ret_int8 (sp,  &dummy8);
     if(ret) return ret;
-    ret = krb5_ret_int32 (fd, &dummy32);
+    ret = krb5_ret_int32 (sp,  &dummy32);
     if(ret) return ret;
-    ret = krb5_ret_addrs (fd, &creds->addresses);
+    ret = krb5_ret_addrs (sp,  &creds->addresses);
     if(ret) return ret;
-    ret = krb5_ret_authdata (fd, &creds->authdata);
+    ret = krb5_ret_authdata (sp,  &creds->authdata);
     if(ret) return ret;
-    ret = krb5_ret_data (fd, &creds->ticket);
+    ret = krb5_ret_data (sp,  &creds->ticket);
     if(ret) return ret;
-    ret = krb5_ret_data (fd, &creds->second_ticket);
+    ret = krb5_ret_data (sp,  &creds->second_ticket);
+    krb5_storage_free(sp);
     return ret;
 }
 
@@ -256,12 +270,15 @@ krb5_cc_get_principal(krb5_context context,
 {
     int fd;
     int16_t tag;
+    krb5_storage *sp;
 
     fd = open(krb5_cc_get_name(context, id), O_RDONLY);
     if(fd < 0)
 	return errno;
-    krb5_ret_int16(fd, &tag);
-    krb5_ret_principal(fd, principal);
+    sp = krb5_storage_from_fd(fd);
+    krb5_ret_int16(sp, &tag);
+    krb5_ret_principal(sp, principal);
+    krb5_storage_free(sp);
     close(fd);
     return 0;
 }
@@ -273,14 +290,17 @@ krb5_cc_start_seq_get (krb5_context context,
 {
     int16_t tag;
     krb5_principal principal;
+    krb5_storage *sp;
 
     if (id->type != 1)
 	abort ();
     cursor->fd = open (krb5_cc_get_name (context, id), O_RDONLY);
     if (cursor->fd < 0)
 	return errno;
-    krb5_ret_int16 (cursor->fd, &tag);
-    krb5_ret_principal (cursor->fd, &principal);
+    sp = krb5_storage_from_fd(cursor->fd);
+    krb5_ret_int16 (sp, &tag);
+    krb5_ret_principal (sp, &principal);
+    krb5_storage_free(sp);
     krb5_free_principal (principal);
     return 0;
 }
@@ -291,9 +311,14 @@ krb5_cc_next_cred (krb5_context context,
 		   krb5_creds *creds,
 		   krb5_cc_cursor *cursor)
 {
+    krb5_error_code err;
+    krb5_storage *sp;
     if (id->type != 1)
 	abort ();
-    return krb5_cc_read_cred (cursor->fd, creds);
+    
+    krb5_storage_from_fd(cursor->fd);
+    err = krb5_cc_read_cred (sp, creds);
+    krb5_storage_free(sp);
 }
 
 krb5_error_code
@@ -314,11 +339,14 @@ krb5_cc_get_first(krb5_context context,
     int fd;
     int16_t tag;
     krb5_principal principal;
+    krb5_storage *sp;
     
     fd = open(krb5_cc_get_name (context, id), O_RDONLY);
     cursor->fd = fd;
-    krb5_ret_int16(fd, &tag);
-    krb5_ret_principal(fd, &principal);
+    sp = krb5_storage_from_fd(fd);
+    krb5_ret_int16(sp, &tag);
+    krb5_ret_principal(sp, &principal);
+    krb5_storage_free(sp);
     return 0;
 }
 
