@@ -1052,16 +1052,19 @@ BOOL process_exists(pid_t pid)
  Convert a uid into a user name.
 ********************************************************************/
 
-char *uidtoname(uid_t uid)
+const char *uidtoname(uid_t uid)
 {
 	static fstring name;
 	struct passwd *pass;
 
-	pass = sys_getpwuid(uid);
-	if (pass)
-		return(pass->pw_name);
-	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
-	return(name);
+	pass = getpwuid_alloc(uid);
+	if (pass) {
+		fstrcpy(name, pass->pw_name);
+		passwd_free(&pass);
+	} else {
+		slprintf(name, sizeof(name) - 1, "%ld",(long int)uid);
+	}
+	return name;
 }
 
 

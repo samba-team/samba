@@ -744,131 +744,23 @@ int sys_setgroups(int setlen, gid_t *gidset)
 
 #endif /* HAVE_SETGROUPS */
 
-/*
- * We only wrap pw_name and pw_passwd for now as these
- * are the only potentially modified fields.
- */
-
-/**************************************************************************
- Helper function for getpwnam/getpwuid wrappers.
-****************************************************************************/
-
-struct saved_pw {
-	fstring 	pw_name;
-	fstring 	pw_passwd;
-	fstring		pw_gecos;
-	pstring		pw_dir;
-	pstring		pw_shell;
-	struct passwd pass;
-};
-
-static struct saved_pw pw_mod; /* This is the structure returned - can be modified. */
-static struct saved_pw pw_cache; /* This is the structure saved - used to check cache. */
-
-static int num_lookups; /* Counter so we don't always use cache. */
-#ifndef PW_RET_CACHE_MAX_LOOKUPS
-#define PW_RET_CACHE_MAX_LOOKUPS 100
-#endif
-
-static void copy_pwent(struct saved_pw *dst, struct passwd *pass)
-{
-	memcpy((char *)&dst->pass, pass, sizeof(struct passwd));
-
-	fstrcpy(dst->pw_name, pass->pw_name);
-	dst->pass.pw_name = dst->pw_name;
-
-	fstrcpy(dst->pw_passwd, pass->pw_passwd);
-	dst->pass.pw_passwd = dst->pw_passwd;
-
-	fstrcpy(dst->pw_gecos, pass->pw_gecos);
-	dst->pass.pw_gecos = dst->pw_gecos;
-
-	pstrcpy(dst->pw_dir, pass->pw_dir);
-	dst->pass.pw_dir = dst->pw_dir;
-
-	pstrcpy(dst->pw_shell, pass->pw_shell);
-	dst->pass.pw_shell = dst->pw_shell;
-}
-
-static struct passwd *setup_pwret(struct passwd *pass)
-{
-	if (pass == NULL) {
-		/* Clear the caches. */
-		memset(&pw_cache, '\0', sizeof(struct saved_pw));
-		memset(&pw_mod, '\0', sizeof(struct saved_pw));
-		num_lookups = 0;
-		return NULL;
-	}
-
-	copy_pwent( &pw_mod, pass);
-
-	if (pass != &pw_cache.pass) {
-
-		/* If it's a cache miss we must also refill the cache. */
-
-		copy_pwent( &pw_cache, pass);
-		num_lookups = 1;
-
-	} else {
-
-		/* Cache hit. */
-
-		num_lookups++;
-		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
-	}
-
-	return &pw_mod.pass;
-}
-
 /**************************************************************************
  Wrappers for setpwent(), getpwent() and endpwent()
 ****************************************************************************/
 
 void sys_setpwent(void)
 {
-	setup_pwret(NULL); /* Clear cache. */
 	setpwent();
 }
 
 struct passwd *sys_getpwent(void)
 {
-	return setup_pwret(getpwent());
+	return getpwent();
 }
 
 void sys_endpwent(void)
 {
-	setup_pwret(NULL); /* Clear cache. */
 	endpwent();
-}
-
-/**************************************************************************
- Wrapper for getpwnam(). Always returns a static that can be modified.
-****************************************************************************/
-
-struct passwd *sys_getpwnam(const char *name)
-{
-	if (!name || !name[0])
-		return NULL;
-
-	/* check for a cache hit first */
-	if (num_lookups && pw_cache.pass.pw_name && !strcmp(name, pw_cache.pass.pw_name)) {
-		return setup_pwret(&pw_cache.pass);
-	}
-
-	return setup_pwret(getpwnam(name));
-}
-
-/**************************************************************************
- Wrapper for getpwuid(). Always returns a static that can be modified.
-****************************************************************************/
-
-struct passwd *sys_getpwuid(uid_t uid)
-{
-	if (num_lookups && pw_cache.pass.pw_name && (uid == pw_cache.pass.pw_uid)) {
-		return setup_pwret(&pw_cache.pass);
-	}
-	
-  	return setup_pwret(getpwuid(uid));
 }
 
 #if 0 /* NOT CURRENTLY USED - JRA */

@@ -644,13 +644,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
-					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
-						(long)ap->a_id);
-					id = idbuf;
-				} else {
-					id = pw->pw_name;
-				}
+				id = uidtoname(ap->a_id);
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;
@@ -1281,13 +1275,7 @@ char *sys_acl_to_text(SMB_ACL_T acl_d, ssize_t *len_p)
 				break;
 
 			case SMB_ACL_USER:
-				if ((pw = sys_getpwuid(ap->a_id)) == NULL) {
-					slprintf(idbuf, sizeof(idbuf)-1, "%ld",
-						(long)ap->a_id);
-					id = idbuf;
-				} else {
-					id = pw->pw_name;
-				}
+				id = uidtoname(ap->a_id);
 			case SMB_ACL_USER_OBJ:
 				tag = "user";
 				break;

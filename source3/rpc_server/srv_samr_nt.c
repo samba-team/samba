@@ -2935,8 +2935,11 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 
 	pdb_free_sam(&sam_user);
 
-	if ((pwd=getpwuid(uid)) == NULL)
+	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
+	} else {
+		passwd_free(&pwd);
+	}
 
 	if ((grp=getgrgid(map.gid)) == NULL)
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -3076,8 +3079,11 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 	pdb_free_sam(&sam_user);
 
-	if ((pwd=getpwuid(uid)) == NULL)
+	if ((pwd=getpwuid_alloc(uid)) == NULL) {
 		return NT_STATUS_NO_SUCH_USER;
+	} else {
+		passwd_free(&pwd);
+	}
 
 	if ((grp=getgrgid(map.gid)) == NULL)
 		return NT_STATUS_NO_SUCH_GROUP;
