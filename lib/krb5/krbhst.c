@@ -536,6 +536,7 @@ kpasswd_get_next(krb5_context context,
 
     if((kd->flags & KD_CONFIG) == 0) {
 	config_get_hosts(context, kd, "kpasswd_server");
+	kd->flags |= KD_CONFIG;
 	if(get_next(kd, host))
 	    return 0;
     }
