@@ -1,11 +1,12 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN">
 <HTML
 ><HEAD
 ><TITLE
 >findsmb</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"></HEAD
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"></HEAD
 ><BODY
 CLASS="REFENTRY"
 BGCOLOR="#FFFFFF"
@@ -15,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="FINDSMB"
-></A
->findsmb</H1
+NAME="FINDSMB">findsmb</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -30,15 +29,13 @@ NAME="AEN5"
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
-NAME="AEN8"
-></A
-><H2
+NAME="AEN8"><H2
 >Synopsis</H2
 ><P
 ><B
 CLASS="COMMAND"
 >findsmb</B
->  [subnet broadcast address]</P
+> [subnet broadcast address]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
@@ -90,6 +87,30 @@ NAME="AEN22"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
+>-r</DT
+><DD
+><P
+>Controls whether <B
+CLASS="COMMAND"
+>findsmb</B
+> takes
+		bugs in Windows95 into account when trying to find a Netbios name
+		registered of the remote machine. This option is disabled by default
+		because it is specific to Windows 95 and Windows 95 machines only. 
+		If set, <A
+HREF="nmblookup.1.html"
+TARGET="_top"
+><B
+CLASS="COMMAND"
+>nmblookup</B
+></A
+>
+		will be called with <TT
+CLASS="CONSTANT"
+>-B</TT
+> option.</P
+></DD
+><DT
 >subnet broadcast address</DT
 ><DD
 ><P
@@ -117,7 +138,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN33"
+NAME="AEN41"
 ></A
 ><H2
 >EXAMPLES</H2
@@ -141,7 +162,11 @@ CLASS="COMMAND"
 	not show any information about the operating system or server 
 	version.</P
 ><P
->The command must be run on a system without <A
+>The command with <TT
+CLASS="CONSTANT"
+>-r</TT
+> option
+	must be run on a system without <A
 HREF="nmbd.8.html"
 TARGET="_top"
 ><B
@@ -155,17 +180,30 @@ CLASS="COMMAND"
 > is running on the system, you will 
 	only  get the IP address and the DNS name of the machine. To 
 	get proper responses  from Windows 95 and Windows 98 machines, 
-	the command must be run as root. </P
+	the command must be run as root and with <TT
+CLASS="CONSTANT"
+>-r</TT
+>
+	option on a machine without <B
+CLASS="COMMAND"
+>nmbd</B
+> running.</P
 ><P
 >For example, running <B
 CLASS="COMMAND"
 >findsmb</B
-> on a machine 
-	without <B
-CLASS="COMMAND"
->nmbd</B
-> running would yield output similar
+> without 
+	<TT
+CLASS="CONSTANT"
+>-r</TT
+> option set would yield output similar
 	to the following</P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
 ><PRE
 CLASS="SCREEN"
 ><TT
@@ -184,11 +222,14 @@ CLASS="COMPUTEROUTPUT"
 192.168.35.97   HERBNT1       *[HERB-NT] [Windows NT 4.0] [NT LAN Manager 4.0]
 	</TT
 ></PRE
+></TD
+></TR
+></TABLE
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN48"
+NAME="AEN59"
 ></A
 ><H2
 >VERSION</H2
@@ -199,7 +240,7 @@ NAME="AEN48"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN51"
+NAME="AEN62"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -233,7 +274,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN60"
+NAME="AEN71"
 ></A
 ><H2
 >AUTHOR</H2

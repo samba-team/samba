@@ -5,7 +5,8 @@
 >Passdb MySQL plugin</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,17 +73,13 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="PDB-MYSQL"
-></A
->Chapter 17. Passdb MySQL plugin</H1
+NAME="PDB-MYSQL">Chapter 16. Passdb MySQL plugin</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2579"
-></A
->17.1. Building</H1
+NAME="AEN2566">16.1. Building</H1
 ><P
 >To build the plugin, run <B
 CLASS="COMMAND"
@@ -101,9 +98,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2585"
-></A
->17.2. Configuring</H1
+NAME="AEN2572">16.2. Configuring</H1
 ><P
 >This plugin lacks some good documentation, but here is some short info:</P
 ><P
@@ -134,6 +129,17 @@ identifier:mysql user                     - defaults to 'samba'
 identifier:mysql database                 - defaults to 'samba'
 identifier:mysql port                     - defaults to 3306
 identifier:table                          - Name of the table containing users</PRE
+></P
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>WARNING: since the password for the mysql user is stored in the 
+smb.conf file, you should make the the smb.conf file 
+readable only to the user that runs samba. This is considered a security 
+bug and will be fixed soon.</I
+></SPAN
 ></P
 ><P
 >Names of the columns in this table(I've added column types those columns should have first):</P
@@ -183,9 +189,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2600"
-></A
->17.3. Using plaintext passwords or encrypted password</H1
+NAME="AEN2589">16.3. Using plaintext passwords or encrypted password</H1
 ><P
 >I strongly discourage the use of plaintext passwords, however, you can use them:</P
 ><P
@@ -198,9 +202,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2605"
-></A
->17.4. Getting non-column data from the table</H1
+NAME="AEN2594">16.4. Getting non-column data from the table</H1
 ><P
 >It is possible to have not all data in the database and making some 'constant'.</P
 ><P

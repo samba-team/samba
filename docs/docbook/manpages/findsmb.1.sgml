@@ -46,7 +46,7 @@
 		registered of the remote machine. This option is disabled by default
 		because it is specific to Windows 95 and Windows 95 machines only. 
 		If set, <ulink url="nmblookup.1.html"><command>nmblookup</command></ulink>
-		will be called with <constant>-B<constant> option.</para></listitem>
+		will be called with <constant>-B</constant> option.</para></listitem>
 		</varlistentry>
 		<varlistentry>
 		<term>subnet broadcast address</term>

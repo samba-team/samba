@@ -16,9 +16,7 @@ VLINK="#840084"
 ALINK="#0000FF"
 ><H1
 ><A
-NAME="SMB.CONF"
-></A
->smb.conf</H1
+NAME="SMB.CONF">smb.conf</H1
 ><DIV
 CLASS="REFNAMEDIV"
 ><A
@@ -1605,6 +1603,30 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#LDAPPORT"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap port</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#LDAPSERVER"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap server</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#LDAPSSL"
 ><TT
 CLASS="PARAMETER"
@@ -3155,7 +3177,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1013"
+NAME="AEN1021"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4670,7 +4692,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1517"
+NAME="AEN1525"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -9808,6 +9830,74 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="LDAPPORT"
+></A
+>ldap port (G)</DT
+><DD
+><P
+>This parameter is only available if Samba has been
+                configure to include the <B
+CLASS="COMMAND"
+>--with-ldapsam</B
+> option
+                at compile time.
+                </P
+><P
+>                This option is used to control the tcp port number used to contact
+                the <A
+HREF="#LDAPSERVER"
+><TT
+CLASS="PARAMETER"
+><I
+>ldap server</I
+></TT
+></A
+>.
+                The default is to use the stand LDAPS port 636.
+                </P
+><P
+>See Also: <A
+HREF="#LDAPSSL"
+>ldap ssl</A
+>
+                </P
+><P
+>Default : <B
+CLASS="COMMAND"
+>ldap port = 636 ; if ldap ssl = on</B
+></P
+><P
+>Default : <B
+CLASS="COMMAND"
+>ldap port = 389 ; if ldap ssl = off</B
+></P
+></DD
+><DT
+><A
+NAME="LDAPSERVER"
+></A
+>ldap server (G)</DT
+><DD
+><P
+>This parameter is only available if Samba has been
+                configure to include the <B
+CLASS="COMMAND"
+>--with-ldapsam</B
+> option
+                at compile time.
+                </P
+><P
+>                This parameter should contain the FQDN of the ldap directory
+                server which should be queried to locate user account information.
+                </P
+><P
+>Default : <B
+CLASS="COMMAND"
+>ldap server = localhost</B
+></P
+></DD
+><DT
+><A
 NAME="LDAPSSL"
 ></A
 >ldap ssl (G)</DT
@@ -13057,7 +13147,7 @@ CLASS="PARAMETER"
 > 
 		list will be allowed. By default this option is disabled so that a 
 		client can supply a username to be used by the server.  Enabling
-		this parameter will force the server to only user the login 
+		this parameter will force the server to only use the login 
 		names from the <TT
 CLASS="PARAMETER"
 ><I
@@ -13066,7 +13156,7 @@ CLASS="PARAMETER"
 > list and is only really
 		useful in <A
 HREF="#SECURITYEQUALSSHARE"
->shave level</A
+>share level</A
 >
 		security.</P
 ><P
@@ -19486,7 +19576,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6163"
+NAME="AEN6195"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19516,7 +19606,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6169"
+NAME="AEN6201"
 ></A
 ><H2
 >VERSION</H2
@@ -19527,7 +19617,7 @@ NAME="AEN6169"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6172"
+NAME="AEN6204"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19606,7 +19696,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6192"
+NAME="AEN6224"
 ></A
 ><H2
 >AUTHOR</H2

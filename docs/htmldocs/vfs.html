@@ -5,7 +5,8 @@
 >Stackable VFS modules</TITLE
 ><META
 NAME="GENERATOR"
-CONTENT="Modular DocBook HTML Stylesheet Version 1.77"><LINK
+CONTENT="Modular DocBook HTML Stylesheet Version 1.76b+
+"><LINK
 REL="HOME"
 TITLE="SAMBA Project Documentation"
 HREF="samba-howto-collection.html"><LINK
@@ -72,63 +73,58 @@ WIDTH="100%"></DIV
 CLASS="CHAPTER"
 ><H1
 ><A
-NAME="VFS"
-></A
->Chapter 19. Stackable VFS modules</H1
+NAME="VFS">Chapter 18. Stackable VFS modules</H1
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2651"
-></A
->19.1. Introduction and configuration</H1
+NAME="AEN2640">18.1. Introduction and configuration</H1
 ><P
->Since samba 3.0, samba supports stackable VFS(Virtual File System) modules. 
+>Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
 Samba passes each request to access the unix file system thru the loaded VFS modules. 
 This chapter covers all the modules that come with the samba source and references to 
 some external modules.</P
 ><P
 >You may have problems to compile these modules, as shared libraries are
 compiled and linked in different ways on different systems.
-I currently tested them against GNU/linux and IRIX.</P
+They currently have been tested against GNU/linux and IRIX.</P
 ><P
 >To use the VFS modules, create a share similar to the one below.  The
 important parameter is the <B
 CLASS="COMMAND"
 >vfs object</B
 > parameter which must point to
-the exact pathname of the shared library object. For example, to use audit.so:
+the exact pathname of the shared library objects. For example, to log all access 
+to files and use a recycle bin:
 
 <PRE
 CLASS="PROGRAMLISTING"
 >       [audit]
                 comment = Audited /data directory
                 path = /data
-                vfs object = /path/to/audit.so
+                vfs object = /path/to/audit.so /path/to/recycle.so
                 writeable = yes
                 browseable = yes</PRE
 ></P
 ><P
+>The modules are used in the order they are specified.</P
+><P
 >Further documentation on writing VFS modules for Samba can be found in
-docs directory of the Samba source distribution.</P
+the Samba Developers Guide.</P
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2659"
-></A
->19.2. Included modules</H1
+NAME="AEN2649">18.2. Included modules</H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2661"
-></A
->19.2.1. audit</H2
+NAME="AEN2651">18.2.1. audit</H2
 ><P
 >A simple module to audit file access to the syslog
 facility.  The following operations are logged:
@@ -164,9 +160,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2669"
-></A
->19.2.2. recycle</H2
+NAME="AEN2659">18.2.2. recycle</H2
 ><P
 >A recycle-bin like modules. When used any unlink call
 will be intercepted and files moved to the recycle
@@ -235,9 +229,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2706"
-></A
->19.2.3. netatalk</H2
+NAME="AEN2696">18.2.3. netatalk</H2
 ><P
 >A netatalk module, that will ease co-existence of samba and
 netatalk file sharing services.</P
@@ -268,9 +260,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN2713"
-></A
->19.3. VFS modules available elsewhere</H1
+NAME="AEN2703">18.3. VFS modules available elsewhere</H1
 ><P
 >This section contains a listing of various other VFS modules that 
 have been posted but don't currently reside in the Samba CVS 
@@ -284,9 +274,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2717"
-></A
->19.3.1. DatabaseFS</H2
+NAME="AEN2707">18.3.1. DatabaseFS</H2
 ><P
 >URL: <A
 HREF="http://www.css.tayloru.edu/~elorimer/databasefs/index.php"
@@ -318,9 +306,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2725"
-></A
->19.3.2. vscan</H2
+NAME="AEN2715">18.3.2. vscan</H2
 ><P
 >URL: <A
 HREF="http://www.openantivirus.org/"

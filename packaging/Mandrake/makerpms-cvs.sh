@@ -5,8 +5,8 @@
 
 [ $# -lt 1 ] &&  echo "Usage: $0 <Samba version>" && exit 1
 
-VERSION=$1cvs
-RELEASE=`date +%Y%m%d`
+VERSION=$1
+RELEASE=0.`date +%Y%m%d`
 shift
 
 # Replace PRELEASE and PVERSION with release number in all files ending with

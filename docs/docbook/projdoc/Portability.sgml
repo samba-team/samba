@@ -174,4 +174,5 @@ is the master browse list holder and who is the master browser.
 Corrective Action:	Delete the entry after the word loopback
 	in the line starting 127.0.0.1
 </para>
+</sect1>
 </chapter>
