@@ -443,6 +443,9 @@ NTSTATUS gensec_update(struct gensec_security *gensec_security, TALLOC_CTX *out_
 
 void gensec_end(struct gensec_security **gensec_security)
 {
+	if (!*gensec_security) {
+		return;
+	}
 	if ((*gensec_security)->ops) {
 		(*gensec_security)->ops->end(*gensec_security);
 	}
