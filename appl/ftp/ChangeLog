@@ -1,5 +1,7 @@
 1999-08-03  Assar Westerlund  <assar@sics.se>
 
+	* ftp/ftp.c (active_mode): hide failure of EPRT by setting verbose
+
 	* ftp/gssapi.c (gss_auth): initialize application_data in bindings
 
 1999-08-02  Assar Westerlund  <assar@sics.se>
