@@ -223,7 +223,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 
 	/* Check for cached group entry */
 
-	if (winbindd_fetch_group_cache_entry(name_domain, name_group,
+	if (winbindd_fetch_group_cache_entry(domain, name_group,
 					     &state->response.data.gr,
 					     &state->response.extra_data,
 					     &extra_data_len)) {
@@ -272,7 +272,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 
 	/* Update cached group info */
 
-	winbindd_store_group_cache_entry(name_domain, name_group, 
+	winbindd_store_group_cache_entry(domain, name_group, 
 					 &state->response.data.gr,
 					 state->response.extra_data,
 					 gr_mem_len);
@@ -313,7 +313,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
 	/* Try a cached entry */
 
-	if (winbindd_fetch_gid_cache_entry(domain->name, 
+	if (winbindd_fetch_gid_cache_entry(domain, 
 					   state->request.data.gid,
 					   &state->response.data.gr,
 					   &state->response.extra_data,
@@ -361,7 +361,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 
 	/* Update cached group info */
 
-	winbindd_store_gid_cache_entry(domain->name, state->request.data.gid,
+	winbindd_store_gid_cache_entry(domain, state->request.data.gid,
 				       &state->response.data.gr,
 				       state->response.extra_data,
 				       gr_mem_len);
@@ -451,7 +451,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		return False;
 
 #if 0
-	if (winbindd_fetch_group_cache(ent->domain->name, 
+	if (winbindd_fetch_group_cache(ent->domain, 
 				       &ent->sam_entries,
 				       &ent->num_sam_entries))
 		return True;
@@ -515,7 +515,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 #if 0
 	/* Fill cache with received entries */
 
-	winbindd_store_group_cache(ent->domain->name, ent->sam_entries,
+	winbindd_store_group_cache(ent->domain, ent->sam_entries,
 				   ent->num_sam_entries);
 #endif
 
