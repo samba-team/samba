@@ -359,7 +359,7 @@ BOOL spnego_free_data(struct spnego_data *spnego)
 		break;
 	case SPNEGO_NEG_TOKEN_TARG:
 		if (spnego->negTokenTarg.supportedMech) {
-			talloc_free(spnego->negTokenTarg.supportedMech);
+			talloc_free(discard_const(spnego->negTokenTarg.supportedMech));
 		}
 		data_blob_free(&spnego->negTokenTarg.responseToken);
 		data_blob_free(&spnego->negTokenTarg.mechListMIC);
