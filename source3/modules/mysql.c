@@ -933,7 +933,7 @@ static NTSTATUS mysqlsam_init(struct pdb_context * pdb_context, struct pdb_metho
 	data->pwent = NULL;
 
 	if (!location) {
-		DEBUG(0, ("No identifier specified. See README for details\n"));
+		DEBUG(0, ("No identifier specified. Check the Samba HOWTO Collection for details\n"));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

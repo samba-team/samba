@@ -563,8 +563,6 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
-	init_modules();
-	
 	if (!init_names())
 		exit(1);
 
