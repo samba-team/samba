@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -288,6 +288,11 @@ init_auth
 	goto failure;
     }
 
+    ret = _gss_DES3_get_mic_compat(minor_status, *context_handle);
+    if (ret)
+	goto failure;
+
+
     memset(&this_cred, 0, sizeof(this_cred));
     this_cred.client          = (*context_handle)->source;
     this_cred.server          = (*context_handle)->target;
@@ -342,7 +347,7 @@ init_auth
     if (ret_flags)
 	*ret_flags = flags;
     (*context_handle)->flags = flags;
-    (*context_handle)->more_flags = LOCAL;
+    (*context_handle)->more_flags |= LOCAL;
     
     ret = gssapi_krb5_create_8003_checksum (minor_status,
 					    input_chan_bindings,
