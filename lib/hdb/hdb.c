@@ -158,13 +158,39 @@ hdb_etype2key(krb5_context context,
     return hdb_next_etype2key(context,e, etype, key);
 }
 
+krb5_error_code
+hdb_lock(int fd, int operation)
+{
+    int i, code;
+    for(i = 0; i < 3; i++){
+	code = flock(fd, (operation == HDB_RLOCK ? LOCK_SH : LOCK_EX) | LOCK_NB);
+	if(code == 0 || errno != EWOULDBLOCK)
+	    break;
+	sleep(1);
+    }
+    if(code == 0)
+	return 0;
+    if(errno == EWOULDBLOCK)
+	return HDB_ERR_DB_INUSE;
+    return HDB_ERR_CANT_LOCK_DB;
+}
+
+krb5_error_code
+hdb_unlock(int fd)
+{
+    int code;
+    code = flock(fd, LOCK_UN);
+    if(code)
+	return 4711 /* XXX */;
+    return 0;
+}
 
 void
 hdb_free_entry(krb5_context context, hdb_entry *ent)
 {
     free_hdb_entry(ent);
 }
-	       
+
 
 
 krb5_error_code
