@@ -73,7 +73,8 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: lookupname %s\n", state->pid,
 		  state->request.data.name));
 
-	parse_domain_user(state->request.data.name, name_domain, name_user);
+	if (!parse_domain_user(state->request.data.name, name_domain, name_user))
+		return False;
 
 	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
 

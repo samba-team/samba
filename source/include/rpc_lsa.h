@@ -29,6 +29,7 @@
 
 enum SID_NAME_USE
 {
+	SID_NAME_USE_NONE = 0,/* NOTUSED */
 	SID_NAME_USER    = 1, /* user */
 	SID_NAME_DOM_GRP = 2, /* domain group */
 	SID_NAME_DOMAIN  = 3, /* domain sid */

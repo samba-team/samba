@@ -24,6 +24,8 @@
 #include "winbindd.h"
 #include "sids.h"
 
+static const fstring name_deadbeef = "<deadbeef>";
+
 /* Debug connection state */
 
 void debug_conn_state(void)
@@ -453,6 +455,113 @@ BOOL get_domain_info(struct winbindd_domain *domain)
     return True;
 }        
 
+/* Store a SID in a domain indexed by name in the cache. */
+ 
+static void store_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE type)
+{
+    fstring domain_str;
+    char *p;
+    struct winbindd_sid sid_val;
+
+    /* Get name from domain. */
+    fstrcpy( domain_str, name);
+    p = strchr(domain_str, '\\');
+    if (p)
+        *p = '\0';
+ 
+    sid_to_string(sid_val.sid, sid);
+    sid_val.type = (int)type;
+ 
+    DEBUG(10,("store_sid_by_name_in_cache: storing cache entry %s -> SID %s\n",
+        name, sid_val.sid ));
+ 
+    winbindd_store_sid_cache_entry(domain_str, name, &sid_val);
+}
+
+/* Lookup a SID in a domain indexed by name in the cache. */
+ 
+static BOOL winbindd_lookup_sid_by_name_in_cache(fstring name, DOM_SID *sid, enum SID_NAME_USE *type)
+{
+    fstring domain_str;
+    char *p;
+    struct winbindd_sid sid_ret;
+ 
+    /* Get name from domain. */
+    fstrcpy( domain_str, name);
+    p = strchr(domain_str, '\\');
+    if (p)
+        *p = '\0';
+ 
+    if (!winbindd_fetch_sid_cache_entry(domain_str, name, &sid_ret))
+        return False;
+ 
+    string_to_sid( sid, sid_ret.sid);
+    *type = (enum SID_NAME_USE)sid_ret.type;
+ 
+    DEBUG(10,("winbindd_lookup_sid_by_name_in_cache: Cache hit for name %s. SID = %s\n",
+        name, sid_ret.sid ));
+ 
+    return True;
+}
+
+/* Store a name in a domain indexed by SID in the cache. */
+ 
+static void store_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE type)
+{
+    fstring sid_str;
+    uint32 rid;
+    DOM_SID domain_sid;
+    struct winbindd_name name_val;
+    struct winbindd_domain *domain;
+
+    /* Split sid into domain sid and user rid */
+    sid_copy(&domain_sid, sid);
+    sid_split_rid(&domain_sid, &rid);
+ 
+    if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
+        return;
+ 
+    sid_to_string(sid_str, sid);
+    fstrcpy( name_val.name, name );
+    name_val.type = (int)type;
+ 
+    DEBUG(10,("store_name_by_sid_in_cache: storing cache entry SID %s -> %s\n",
+        sid_str, name_val.name ));
+ 
+    winbindd_store_name_cache_entry(domain->name, sid_str, &name_val);
+}
+
+/* Lookup a name in a domain indexed by SID in the cache. */
+ 
+static BOOL winbindd_lookup_name_by_sid_in_cache(DOM_SID *sid, fstring name, enum SID_NAME_USE *type)
+{
+    fstring sid_str;
+    uint32 rid;
+    DOM_SID domain_sid;
+    struct winbindd_name name_ret;
+    struct winbindd_domain *domain;
+
+    /* Split sid into domain sid and user rid */
+    sid_copy(&domain_sid, sid);
+    sid_split_rid(&domain_sid, &rid);
+ 
+    if ((domain = find_domain_from_sid(&domain_sid)) == NULL)
+        return False;
+ 
+    sid_to_string(sid_str, sid);
+ 
+    if (!winbindd_fetch_name_cache_entry(domain->name, sid_str, &name_ret))
+        return False;
+ 
+    fstrcpy( name, name_ret.name );
+    *type = (enum SID_NAME_USE)name_ret.type;
+ 
+    DEBUG(10,("winbindd_lookup_name_by_sid_in_cache: Cache hit for SID = %s, name %s\n",
+        sid_str, name ));
+ 
+    return True;
+}
+
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
@@ -467,6 +576,13 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
 
     if (name[strlen(name) - 1] == '$') {
         return False;
+    }
+
+    /* First check cache. */
+    if (winbindd_lookup_sid_by_name_in_cache(name, sid, type)) {
+        if (*type == SID_NAME_USE_NONE)
+            return False; /* Negative cache hit. */
+        return True;
     }
 
     /* Lookup name */
@@ -489,6 +605,19 @@ BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
         if ((type != NULL) && (types != NULL)) {
             *type = types[0];
         }
+
+        /* Store the forward and reverse map of this lookup in the cache. */
+        store_sid_by_name_in_cache(name, &sids[0], types[0]);
+        store_name_by_sid_in_cache(&sids[0], name, types[0]);
+
+    } else {
+
+        /* JRA. Here's where we add the -ve cache store with a name type of SID_NAME_USE_NONE. */
+        DOM_SID nullsid;
+
+        ZERO_STRUCT(nullsid);
+        store_sid_by_name_in_cache(name, &nullsid, SID_NAME_USE_NONE);
+        *type = SID_NAME_UNKNOWN;
     }
     
     /* Free memory */
@@ -508,6 +637,16 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
     uint32 *types = NULL;
     char **names;
     BOOL res;
+
+    /* First check cache. */
+    if (winbindd_lookup_name_by_sid_in_cache(sid, name, type)) {
+        if (*type == SID_NAME_USE_NONE) {
+            fstrcpy(name, name_deadbeef);
+            *type = SID_NAME_UNKNOWN;
+            return False; /* Negative cache hit. */
+        } else
+            return True;
+    }
 
     /* Lookup name */
 
@@ -529,8 +668,19 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid, fstring name,
         if ((type != NULL) && (types != NULL)) {
             *type = types[0];
         }
-    }
 
+        store_sid_by_name_in_cache(names[0], sid, types[0]);
+        store_name_by_sid_in_cache(sid, names[0], types[0]);
+
+    } else {
+
+        /* OK, so we tried to look up a name in this sid, and
+         * didn't find it.  Therefore add a negative cache
+         * entry.  */
+        store_name_by_sid_in_cache(sid, "", SID_NAME_USE_NONE);
+        *type = SID_NAME_UNKNOWN;
+        fstrcpy(name, name_deadbeef);
+    }
     /* Free memory */
 
     safe_free(types);
@@ -876,18 +1026,12 @@ BOOL check_domain_env(char *domain_env, char *domain)
 
 /* Parse a string of the form DOMAIN/user into a domain and a user */
 
-void parse_domain_user(char *domuser, fstring domain, fstring user)
+BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-	char *p;
-	char *sep = lp_winbind_separator();
-	if (!sep) sep = "\\";
-	p = strchr(domuser,*sep);
-	if (!p) p = strchr(domuser,'\\');
-	if (!p) {
-		fstrcpy(domain,"");
-		fstrcpy(user, domuser);
-		return;
-	}
+	char *p = strchr(domuser, *lp_winbind_separator());
+
+	if (!p)
+		return False;
 	
 	fstrcpy(user, p+1);
 	fstrcpy(domain, domuser);
@@ -896,6 +1040,7 @@ void parse_domain_user(char *domuser, fstring domain, fstring user)
 	unix_to_dos(domain, True);
 	strupper(domain);
 	dos_to_unix(domain, True);
+	return True;
 }
 
 /* Return the uppercased workgroup name */

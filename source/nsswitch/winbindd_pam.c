@@ -26,18 +26,12 @@
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
    form DOMAIN/user into a domain and a user */
 
-static void parse_domain_user(char *domuser, fstring domain, fstring user)
+static BOOL parse_domain_user(char *domuser, fstring domain, fstring user)
 {
-        char *p;
-        char *sep = lp_winbind_separator();
-        if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
+        char *p = strchr(domuser,*lp_winbind_separator());
+
+        if (!p)
+		return False;
         
         fstrcpy(user, p+1);
         fstrcpy(domain, domuser);
@@ -45,6 +39,7 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 	unix_to_dos(domain, True);
 	strupper(domain);
 	dos_to_unix(domain, True);
+	return True;
 }
 
 /* Authenticate a user from a plaintext password */
@@ -64,11 +59,9 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 		  state->request.data.auth.user));
 
 	/* Parse domain and username */
-	parse_domain_user(state->request.data.auth.user, name_domain, 
-                          name_user);
-
-	/* don't allow the null domain */
-	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
+	if (!parse_domain_user(state->request.data.auth.user, name_domain, 
+                          name_user))
+		return WINBINDD_ERROR;
 
 	ZERO_STRUCT(info3);
 
@@ -114,11 +107,9 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		  state->request.data.auth_crap.user));
 
 	/* Parse domain and username */
-	parse_domain_user(state->request.data.auth_crap.user, 
-                          name_domain, name_user);
-
-	/* don't allow the null domain */
-	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
+	if (!parse_domain_user(state->request.data.auth_crap.user, 
+                          name_domain, name_user))
+		return WINBINDD_ERROR;
 
 	ZERO_STRUCT(info3);
 
@@ -164,7 +155,8 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 
     if (state == NULL) return WINBINDD_ERROR;
 
-    parse_domain_user(state->request.data.chauthtok.user, domain, user);
+    if (!parse_domain_user(state->request.data.chauthtok.user, domain, user))
+        return WINBINDD_ERROR;
 
     oldpass = state->request.data.chauthtok.oldpass;
     newpass = state->request.data.chauthtok.newpass;

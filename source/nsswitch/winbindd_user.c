@@ -101,15 +101,9 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	
 	/* Parse domain and username */
 
-	parse_domain_user(state->request.data.username, name_domain, 
-			  name_user);
-
-	/* Reject names that don't have a domain - i.e name_domain contains 
-	   the entire name. */
- 
-	if (strequal(name_domain, "")) {
+	if (!parse_domain_user(state->request.data.username, name_domain, 
+			  name_user))
 		return WINBINDD_ERROR;
-	}
 	
 	/* Get info for the domain */
 	

@@ -154,6 +154,6 @@ uint32 winbindd_query_dispinfo(struct winbindd_domain *domain,
 			     uint32 *start_ndx, uint16 info_level, 
 			     uint32 *num_entries, SAM_DISPINFO_CTR *ctr);
 BOOL check_domain_env(char *domain_env, char *domain);
-void parse_domain_user(char *domuser, fstring domain, fstring user);
+BOOL parse_domain_user(char *domuser, fstring domain, fstring user);
 char *lp_uworkgroup(void);
 #endif /* _WINBINDD_PROTO_H_ */
