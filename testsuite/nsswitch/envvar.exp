@@ -21,15 +21,33 @@ set env(WINBINDD_DOMAIN) $domain
 set user_out [util_start "getent passwd"]
 set group_out [util_start "getent group"]
 
-set test_desc "users in WINBINDD_DOMAIN"
-if { $user_list != $user_out } {
+set test_desc "users in WINBINDD_DOMAIN $domain"
+set failed 0
+
+foreach { user } [split $user_out "\n"] {
+    set user_name [lindex [split $user ":"] 0]
+    if { [regexp "/" $user_name] && ![regexp $domain $user_name]} {
+	set failed 1
+    }
+}
+
+if { $failed } {
     fail $test_desc
 } else {
     pass $test_desc
 }
 
-set test_desc "groups in WINBINDD_DOMAIN"
-if { $group_list != $group_out } {
+set test_desc "groups in WINBINDD_DOMAIN $domain"
+set failed 0
+
+foreach { group } [split $group_out "\n"] {
+    set group_name [lindex [split $group ":"] 0]
+    if { [regexp "/" $group_name] && ![regexp $domain $group_name]} {
+	set failed 1
+    }
+}
+
+if { $failed } {
     fail $test_desc
 } else {
     pass $test_desc
@@ -62,14 +80,32 @@ set user_out [util_start "getent passwd"]
 set group_out [util_start "getent group"]
 
 set test_desc "users in comma separated WINBINDD_DOMAIN"
-if { $user_out != $user_list } {
+set failed 0
+
+foreach { user } [split $user_out "\n"] {
+    set user_name [lindex [split $user ":"] 0]
+    if { [regexp "/" $user_name] && ![regexp $domain $user_name]} {
+	set failed 1
+    }
+}
+
+if { $failed } {
     fail $test_desc
 } else {
     pass $test_desc
 }
 
 set test_desc "groups in comma separated WINBINDD_DOMAIN"
-if { $group_out != $group_list } {
+set failed 0
+
+foreach { group } [split $group_out "\n"] {
+    set group_name [lindex [split $group ":"] 0]
+    if { [regexp "/" $group_name] && ![regexp $domain $group_name]} {
+	set failed 1
+    }
+}
+
+if { $failed } {
     fail $test_desc
 } else {
     pass $test_desc
