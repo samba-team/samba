@@ -872,6 +872,16 @@ def test_EnumDomains(pipe, connect_handle):
     for domain in result['sam']['entries']:
         test_LookupDomain(pipe, handle, domain['name']['name'])
 
+def test_LongInt(pipe):
+
+    # Check that we can use long values for shorter width types
+
+    r = {}
+    r['system_name'] = 0L;
+    r['access_mask'] = 0x02000000L
+
+    result = dcerpc.samr_Connect(pipe, r)
+
 # Parse command line
 
 parser = OptionParser()
@@ -907,6 +917,8 @@ print 'Connecting...'
 pipe = dcerpc.pipe_connect(binding,
 	dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
 	domain, username, password)
+
+test_LongInt(pipe)
 
 handle = test_Connect(pipe)
 
