@@ -136,6 +136,8 @@ struct cli_state {
 
 	/* a oplock break request handler */
 	BOOL (*oplock_handler)(struct cli_state *cli, int fnum, unsigned char level);
+
+	BOOL force_dos_errors;
 };
 
 #endif /* _CLIENT_H */
