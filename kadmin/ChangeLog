@@ -1,3 +1,9 @@
+2001-05-14  Assar Westerlund  <assar@sics.se>
+
+	* kadmind.c: new krb5_config_parse_file
+	* kadmin.c: new krb5_config_parse_file
+	* kadm_conn.c: update to new krb5_sockaddr2address
+
 2001-05-07  Assar Westerlund  <assar@sics.se>
 
 	* kadmin_locl.h (foreach_principal): update prototype

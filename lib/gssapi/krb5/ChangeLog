@@ -1,3 +1,7 @@
+2001-05-14  Assar Westerlund  <assar@sics.se>
+
+	* address_to_krb5addr.c: adapt to new address functions
+
 2001-05-11  Assar Westerlund  <assar@sics.se>
 
 	* try to return the error string from libkrb5 where applicable

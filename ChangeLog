@@ -1,3 +1,15 @@
+2001-05-14  Assar Westerlund  <assar@sics.se>
+
+	* kpasswd/kpasswdd.c: adapt to new address functions
+	* kdc/kerberos5.c: adapt to changing address functions use LR_TYPE
+	* kdc/connect.c: adapt to changing address functions
+	* kdc/config.c: new krb5_config_parse_file
+	* kdc/524.c: new krb5_sockaddr2address
+	* lib/krb5/*: add some krb5_{set,clear}_error_string
+
+	* lib/asn1/k5.asn1 (LR_TYPE): add
+	* lib/asn1/Makefile.am (gen_files): add asn1_LR_TYPE.x
+
 2001-05-11  Assar Westerlund  <assar@sics.se>
 
 	* kdc/kerberos5.c (tsg_rep): fix typo in variable name
