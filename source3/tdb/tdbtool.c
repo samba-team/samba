@@ -174,9 +174,9 @@ static void create_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, TDB_CLEAR_IF_FIRST,
-		       O_RDWR | O_CREAT | O_TRUNC, 0600,
-		       tdb_log_to_stderr);
+	tdb = tdb_open_ex(tok, 0, TDB_CLEAR_IF_FIRST,
+			  O_RDWR | O_CREAT | O_TRUNC, 0600,
+			  tdb_log_to_stderr);
 	if (!tdb) {
 		printf("Could not create %s: %s\n", tok, strerror(errno));
 	}
@@ -190,7 +190,7 @@ static void open_tdb(void)
 		return;
 	}
 	if (tdb) tdb_close(tdb);
-	tdb = tdb_open(tok, 0, 0, O_RDWR, 0600, tdb_log_to_stderr);
+	tdb = tdb_open_ex(tok, 0, 0, O_RDWR, 0600, tdb_log_to_stderr);
 	if (!tdb) {
 		printf("Could not open %s: %s\n", tok, strerror(errno));
 	}
