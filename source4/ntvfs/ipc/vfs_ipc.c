@@ -212,9 +212,7 @@ static NTSTATUS ipc_open_generic(struct ntvfs_module_context *ntvfs,
 	  finalised for Samba4
 	*/
 	ep_description.transport = NCACN_NP;
-	ep_description.options = talloc_array_p(req, const char *, 2);
-	ep_description.options[0] = p->pipe_name;
-	ep_description.options[1] = NULL;
+	ep_description.endpoint = p->pipe_name;
 
 	/* tell the RPC layer the session_info */
 	if (req->session) {

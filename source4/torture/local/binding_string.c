@@ -64,9 +64,7 @@ static BOOL test_BindingString(TALLOC_CTX *mem_ctx, const char *binding)
 
 	/* Compare to a stripped down version of the binding string because 
 	 * the protocol tower doesn't contain the extra option data */
-	if (b.options && b.options[0]) {
-		b.options[1] = NULL; 
-	}
+	b.options = NULL;
 
 	b.flags = 0;
 	
