@@ -337,8 +337,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 	depth++;
 
 	how_many_words=data->size;	
-	if (how_many_words==POINTER)
-	{
+	if (how_many_words==POINTER) {
 		how_many_words=TWO_VALUE;
 	}
 	
@@ -356,20 +355,20 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 		return False;
 	if(!prs_uint32("id",             ps, depth, &data->id))
 		return False;
+#if 1 /* JRATEST - NEEDED ???? */
 	if(!prs_uint32("how many words", ps, depth, &how_many_words))
 		return False;
+#endif /* JRATEST - NEEDED ???? */
+
 	/*prs_align(ps);*/
 
-	if (isvalue==True)
-	{
+	if (isvalue==True) {
 		if(!prs_uint32("value[0]", ps, depth, &data->notify_data.value[0]))
 			return False;
 		if(!prs_uint32("value[1]", ps, depth, &data->notify_data.value[1]))
 			return False;
 		/*prs_align(ps);*/
-	}
-	else
-	{
+	} else {
 		/* it's a string */
 		/* length in ascii including \0 */
 		x=2*(data->notify_data.data.length+1);
@@ -400,8 +399,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 
 	isvalue=data->enc_type;
 
-	if (isvalue==False)
-	{
+	if (isvalue==False) {
 		/* length of string in unicode include \0 */
 		x=data->notify_data.data.length+1;
 		if(!prs_uint32("string length", ps, depth, &x ))
@@ -437,15 +435,13 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *
 	if(!prs_uint32("count", ps, depth, &info->count))
 		return False;
 
-	for (i=0;i<info->count;i++)
-	{
+	for (i=0;i<info->count;i++) {
 		if(!smb_io_notify_info_data(desc, &info->data[i], ps, depth))
 			return False;
 	}
 
 	/* now do the strings at the end of the stream */	
-	for (i=0;i<info->count;i++)
-	{
+	for (i=0;i<info->count;i++) {
 		if(!smb_io_notify_info_data_strings(desc, &info->data[i], ps, depth))
 			return False;
 	}
@@ -599,8 +595,7 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 	if (!prs_uint32("panningheight",    ps, depth, &devmode->panningheight))
 		return False;
 
-	if (devmode->driverextra!=0)
-	{
+	if (devmode->driverextra!=0) {
 		if (UNMARSHALLING(ps)) {
 			devmode->private=(uint8 *)malloc(devmode->driverextra*sizeof(uint8));
 			if(devmode->private == NULL)
@@ -614,6 +609,15 @@ static BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE
 	}
 
 	return True;
+}
+
+void free_spoolss_devmode(DEVICEMODE *devmode)
+{
+	if (devmode == NULL)
+		return;
+
+	safe_free(devmode->private);
+	safe_free(devmode);
 }
 
 /*******************************************************************
@@ -761,6 +765,11 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
 		return False;
 		
 	return True;
+}
+
+void free_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u)
+{
+	free_spoolss_devmode(q_u->printer_default.devmode_cont.devmode);
 }
 
 /*******************************************************************
@@ -1435,6 +1444,15 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		uint16 zero=0;
 		p=*string;
 		q=*string;
+
+#if 0 /* JRATEST */
+		if (p == NULL) {
+			relative_offset = 0;
+			if (!prs_uint32("offset", ps, depth, &relative_offset))
+				return False;
+			return True;
+		}
+#endif
 		
 		/* first write the last 0 */
 		buffer->string_at_end -= 2;
@@ -1442,6 +1460,13 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 
 		if(!prs_uint16("leading zero", ps, depth, &zero))
 			return False;
+
+#if 0 /* JRATEST */
+		if (p == NULL)
+			p = &zero;
+		if (q == NULL)
+			q = &zero;
+#endif /* JRATEST */
 
 		do
 		{	
@@ -1515,8 +1540,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 	prs_debug(ps, depth, desc, "new_smb_io_relsecdesc");
 	depth++;
 
-	if (MARSHALLING(ps))
-	{
+	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
 		
@@ -1537,9 +1561,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		/* write its offset */
 		if (!prs_uint32("offset", ps, depth, &relative_offset))
 			return False;
-	}
-	else
-	{
+	} else {
 		uint32 old_offset;
 		
 		/* read the offset */
@@ -2079,7 +2101,7 @@ static BOOL new_spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUF
 		if (!prs_init(&buffer->prs, buffer->size, 4, UNMARSHALL))
 			return False;
 
-		if (!prs_append_some_prs_data(&(buffer->prs), ps, prs_offset(ps), buffer->size))
+		if (!prs_append_some_prs_data(&buffer->prs, ps, prs_offset(ps), buffer->size))
 			return False;
 
 		if (!prs_set_offset(&buffer->prs, 0))
@@ -2375,7 +2397,7 @@ return the size required by a struct in the stream
 ********************************************************************/
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
-	int size=0;
+	uint32 size=0;
 		
 	size += size_of_sec_desc( info->secdesc );
 	
@@ -2543,9 +2565,9 @@ uint32 spoolss_size_form_1(FORM_1 *info)
 {
 	int size=0;
 
-	size+=size_of_uint32( &(info->flag) );
+	size+=size_of_uint32( &info->flag );
 	size+=size_of_relative_string( &info->name );
-	size+=size_of_uint32( &(info->width) );
+	size+=size_of_uint32( &info->width );
 	size+=size_of_uint32( &(info->length) );
 	size+=size_of_uint32( &(info->left) );
 	size+=size_of_uint32( &(info->top) );
@@ -2654,9 +2676,7 @@ BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u,
 			       NEW_BUFFER *buffer, uint32 offered)
 {      
 	if (q_u == NULL)
-	{
 		return False;
-	}
 
 	memcpy(&q_u->handle, hnd, sizeof(q_u->handle));
 
@@ -2844,7 +2864,7 @@ BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps
 
 	if (!prs_align(ps))
 		return False;
-		
+
 	if (!prs_uint32("needed", ps, depth, &r_u->needed))
 		return False;
 		
@@ -2918,7 +2938,9 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
 }
 
 /*******************************************************************
+ Marshall/unmarshall a SPOOL_Q_SETPRINTER struct.
 ********************************************************************/  
+
 BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
 {
 	uint32 ptr_sec_desc = 0;
@@ -3553,6 +3575,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 				il->info_1=g_new(SPOOL_PRINTER_INFO_LEVEL_1, 1);
 				if(il->info_1 == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_1);
 			}
 			if (!spool_io_printer_info_level_1("", il->info_1, ps, depth))
 				return False;
@@ -3563,6 +3586,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 				il->info_2=g_new(SPOOL_PRINTER_INFO_LEVEL_2, 1);
 				if(il->info_2 == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_2);
 			}
 			if (!spool_io_printer_info_level_2("", il->info_2, ps, depth))
 				return False;
@@ -3573,6 +3597,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 				il->info_3=g_new(SPOOL_PRINTER_INFO_LEVEL_3, 1);
 				if(il->info_3 == NULL)
 					return False;
+				ZERO_STRUCTP(il->info_3);
 			}
 			if (!spool_io_printer_info_level_3("", il->info_3, ps, depth))
 				return False;
@@ -4019,14 +4044,14 @@ BOOL uni_2_asc_printer_driver_3(SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *uni,
 
 	d->cversion=uni->cversion;
 
-	unistr2_to_ascii(d->name,            &(uni->name),            sizeof(d->name)-1);
+	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
 	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
 	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
 	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
 	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
 	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &(uni->defaultdatatype), sizeof(d->defaultdatatype)-1);
+	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->cversion));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -4065,13 +4090,13 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	d->version=uni->version;
 
 	unistr2_to_ascii(d->name,            &uni->name,            sizeof(d->name)-1);
-	unistr2_to_ascii(d->environment,     &(uni->environment),     sizeof(d->environment)-1);
+	unistr2_to_ascii(d->environment,     &uni->environment,     sizeof(d->environment)-1);
 	unistr2_to_ascii(d->driverpath,      &(uni->driverpath),      sizeof(d->driverpath)-1);
 	unistr2_to_ascii(d->datafile,        &(uni->datafile),        sizeof(d->datafile)-1);
 	unistr2_to_ascii(d->configfile,      &(uni->configfile),      sizeof(d->configfile)-1);
 	unistr2_to_ascii(d->helpfile,        &(uni->helpfile),        sizeof(d->helpfile)-1);
 	unistr2_to_ascii(d->monitorname,     &(uni->monitorname),     sizeof(d->monitorname)-1);
-	unistr2_to_ascii(d->defaultdatatype, &(uni->defaultdatatype), sizeof(d->defaultdatatype)-1);
+	unistr2_to_ascii(d->defaultdatatype, &uni->defaultdatatype, sizeof(d->defaultdatatype)-1);
 
 	DEBUGADD(8,( "version:         %d\n", d->version));
 	DEBUGADD(8,( "name:            %s\n", d->name));
@@ -4084,7 +4109,7 @@ BOOL uni_2_asc_printer_driver_6(SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *uni,
 	DEBUGADD(8,( "defaultdatatype: %s\n", d->defaultdatatype));
 
 	uniarray_2_dosarray(&uni->dependentfiles, &d->dependentfiles );
-	uniarray_2_dosarray(&(uni->previousnames), &(d->previousnames) );
+	uniarray_2_dosarray(&uni->previousnames, &d->previousnames );
 
 	return True;
 }
@@ -4542,6 +4567,11 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 	return True;
 }
 
+void free_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u)
+{
+	safe_free(q_u->data);
+}
+
 /*******************************************************************
 ********************************************************************/  
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth)
@@ -4776,8 +4806,7 @@ BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int de
 
 void free_devmode(DEVICEMODE *devmode)
 {
-	if (devmode!=NULL)
-	{
+	if (devmode!=NULL) {
 		if (devmode->private!=NULL)
 			free(devmode->private);
 		free(devmode);
@@ -4795,8 +4824,7 @@ void free_printer_info_3(PRINTER_INFO_3 *printer)
 
 void free_printer_info_2(PRINTER_INFO_2 *printer)
 {
-	if (printer!=NULL)
-	{
+	if (printer!=NULL) {
 		free_devmode(printer->devmode);
 		printer->devmode = NULL;
 		if (printer->secdesc != NULL)
@@ -4812,16 +4840,11 @@ void free_printer_info_2(PRINTER_INFO_2 *printer)
 static PRINTER_INFO_2 *prt2_dup(const PRINTER_INFO_2* from)
 {
 	PRINTER_INFO_2 *copy = (PRINTER_INFO_2 *)malloc(sizeof(PRINTER_INFO_2));
-	if (copy != NULL)
-	{
+	if (copy != NULL) {
 		if (from != NULL)
-		{
 			memcpy(copy, from, sizeof(*copy));
-		}
 		else
-		{
 			ZERO_STRUCTP(copy);
-		}
 	}
 	return copy;
 }
@@ -4843,16 +4866,11 @@ PRINTER_INFO_2 *add_print2_to_array(uint32 *len, PRINTER_INFO_2 ***array,
 static PRINTER_INFO_1 *prt1_dup(const PRINTER_INFO_1* from)
 {
 	PRINTER_INFO_1 *copy = (PRINTER_INFO_1 *)malloc(sizeof(PRINTER_INFO_1));
-	if (copy != NULL)
-	{
+	if (copy != NULL) {
 		if (from != NULL)
-		{
 			memcpy(copy, from, sizeof(*copy));
-		}
 		else
-		{
 			ZERO_STRUCTP(copy);
-		}
 	}
 	return copy;
 }
