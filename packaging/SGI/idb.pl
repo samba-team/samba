@@ -55,7 +55,7 @@ if (@codepage) {
 }
 
 # add my local files to the list of binaries to install
-@bins = sort (@sprogs,@progs,@progs1,@scripts,("psfixes.pl","sambalp","smbprint"));
+@bins = sort (@sprogs,@progs,@progs1,@scripts,("sambalp","smbprint"));
 
 # the files installed in docs include all the original files in docs plus all
 # the "*.doc" files from the source tree
