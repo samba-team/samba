@@ -195,5 +195,5 @@ krb5_get_in_tkt(krb5_context context,
      if (err)
 	  return err;
 
-     return 0;
+     return krb5_cc_store_cred (context, ccache, creds);
 }
