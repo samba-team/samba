@@ -304,6 +304,37 @@ BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, siz
 }
 
 /****************************************************************************
+ Count the messages pending for a particular pid. Expensive....
+****************************************************************************/
+
+unsigned int messages_pending_for_pid(pid_t pid)
+{
+	TDB_DATA kbuf;
+	TDB_DATA dbuf;
+	char *buf;
+	unsigned int message_count = 0;
+
+	kbuf = message_key_pid(sys_getpid());
+
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (dbuf.dptr == NULL || dbuf.dsize == 0) {
+		SAFE_FREE(dbuf.dptr);
+		return 0;
+	}
+
+	for (buf = dbuf.dptr; dbuf.dsize > sizeof(struct message_rec);) {
+		struct message_rec rec;
+		memcpy(&rec, buf, sizeof(rec));
+		buf += (sizeof(rec) + rec.len);
+		dbuf.dsize -= (sizeof(rec) + rec.len);
+		message_count++;
+	}
+
+	SAFE_FREE(dbuf.dptr);
+	return message_count;
+}
+
+/****************************************************************************
  Retrieve all messages for the current process.
 ****************************************************************************/
 

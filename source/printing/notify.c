@@ -174,8 +174,15 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 	if (!print_notify_pid_list(printer, send_ctx, &num_pids, &pid_list))
 		return;
 
-	for (i = 0; i < num_pids; i++)
+	for (i = 0; i < num_pids; i++) {
+		unsigned int q_len = messages_pending_for_pid(pid_list[i]);
+		if (q_len > 1000) {
+			DEBUG(5, ("print_notify_send_messages_to_printer: discarding notify to printer %s as queue length = %u\n",
+				printer, q_len ));
+			continue;
+		}
 		message_send_pid_with_timeout(pid_list[i], MSG_PRINTER_NOTIFY2, buf, offset, True, timeout);
+	}
 }
 
 /*******************************************************************
