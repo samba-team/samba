@@ -488,7 +488,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyResponse: {
-/*		struct ldap_ModifyResponse *r = &msg->r.ModifyResponse; */
+/*		struct ldap_Result *r = &msg->r.ModifyResponse; */
 		break;
 	}
 	case LDAP_TAG_AddRequest: {
@@ -514,7 +514,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_AddResponse: {
-/*		struct ldap_AddResponse *r = &msg->r.AddResponse; */
+/*		struct ldap_Result *r = &msg->r.AddResponse; */
 		break;
 	}
 	case LDAP_TAG_DelRequest: {
@@ -525,7 +525,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_DelResponse: {
-/*		struct ldap_DelResponse *r = &msg->r.DelResponse; */
+/*		struct ldap_Result *r = &msg->r.DelResponse; */
 		break;
 	}
 	case LDAP_TAG_ModifyDNRequest: {
@@ -544,7 +544,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_ModifyDNResponse: {
-/*		struct ldap_ModifyDNResponse *r = &msg->r.ModifyDNResponse; */
+/*		struct ldap_Result *r = &msg->r.ModifyDNResponse; */
 		break;
 	}
 	case LDAP_TAG_CompareRequest: {
@@ -561,7 +561,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_CompareResponse: {
-/*		struct ldap_CompareResponse *r = &msg->r.CompareResponse; */
+/*		struct ldap_Result *r = &msg->r.CompareResponse; */
 		break;
 	}
 	case LDAP_TAG_AbandonRequest: {
@@ -572,7 +572,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		break;
 	}
 	case LDAP_TAG_SearchResultReference: {
-/*		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference; */
+/*		struct ldap_SearchResRef *r = &msg->r.SearchResultReference; */
 		break;
 	}
 	case LDAP_TAG_ExtendedRequest: {
@@ -755,7 +755,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 	}
 
 	case ASN1_APPLICATION(LDAP_TAG_SearchResultReference): {
-/*		struct ldap_SearchResultReference *r = &msg->r.SearchResultReference; */
+/*		struct ldap_SearchResRef *r = &msg->r.SearchResultReference; */
 		msg->type = LDAP_TAG_SearchResultReference;
 		break;
 	}
