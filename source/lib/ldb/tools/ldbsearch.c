@@ -149,6 +149,8 @@ static int do_search(struct ldb_context *ldb,
 		exit(1);
 	}
 
+	ldb_set_debug_stderr(ldb);
+
 	if (interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {

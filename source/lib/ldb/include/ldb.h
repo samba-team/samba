@@ -152,6 +152,21 @@ struct ldb_alloc_ops {
 	void *context;
 };
 
+/* debugging uses one of the following levels */
+enum ldb_debug_level {LDB_DEBUG_FATAL, LDB_DEBUG_ERROR, 
+		      LDB_DEBUG_WARNING, LDB_DEBUG_TRACE};
+
+/*
+  the user can optionally supply a debug function. The function
+  is based on the vfprintf() style of interface, but with the addition
+  of a severity level
+*/
+struct ldb_debug_ops {
+	void (*debug)(void *context, enum ldb_debug_level level, 
+		      const char *fmt, va_list ap);
+	void *context;
+};
+
 
 /*
   every ldb connection is started by establishing a ldb_context
@@ -165,6 +180,9 @@ struct ldb_context {
 
 	/* memory allocation info */
 	struct ldb_alloc_ops alloc_ops;
+
+	/* memory allocation info */
+	struct ldb_debug_ops debug_ops;
 };
 
 
@@ -307,6 +325,17 @@ const char *ldb_msg_find_string(const struct ldb_message *msg,
 int ldb_set_alloc(struct ldb_context *ldb,
 		  void *(*alloc)(void *context, void *ptr, size_t size),
 		  void *context);
+
+/*
+  this allows the user to set a debug function for error reporting
+*/
+int ldb_set_debug(struct ldb_context *ldb,
+		  void (*debug)(void *context, enum ldb_debug_level level, 
+				const char *fmt, va_list ap),
+		  void *context);
+
+/* this sets up debug to print messages on stderr */
+int ldb_set_debug_stderr(struct ldb_context *ldb);
 
 
 /* these are used as type safe versions of the ldb allocation functions */

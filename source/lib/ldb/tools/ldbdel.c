@@ -85,6 +85,8 @@ static void usage(void)
 		exit(1);
 	}
 
+	ldb_set_debug_stderr(ldb);
+
 	for (i=0;i<argc;i++) {
 		ret = ldb_delete(ldb, argv[i]);
 		if (ret != 0) {

@@ -68,6 +68,7 @@ struct ldb_context *ldb_connect(const char *url, unsigned int flags,
 */
 int ldb_close(struct ldb_context *ldb)
 {
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_close");
 	return ldb->ops->close(ldb);
 }
 
@@ -83,7 +84,12 @@ int ldb_search(struct ldb_context *ldb,
 	       const char *expression,
 	       char * const *attrs, struct ldb_message ***res)
 {
-	return ldb->ops->search(ldb, base, scope, expression, attrs, res);
+	int ret;
+	ret = ldb->ops->search(ldb, base, scope, expression, attrs, res);
+
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_search(%s) -> %d records\n", 
+		  expression, ret);
+	return ret;
 }
 
 /* 
@@ -102,7 +108,10 @@ int ldb_search_free(struct ldb_context *ldb, struct ldb_message **msgs)
 int ldb_add(struct ldb_context *ldb, 
 	    const struct ldb_message *message)
 {
-	return ldb->ops->add_record(ldb, message);
+	int ret;
+	ret = ldb->ops->add_record(ldb, message);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_add(%s) -> %d\n", message->dn, ret);
+	return ret;
 }
 
 /*
@@ -111,7 +120,11 @@ int ldb_add(struct ldb_context *ldb,
 int ldb_modify(struct ldb_context *ldb, 
 	       const struct ldb_message *message)
 {
-	return ldb->ops->modify_record(ldb, message);
+	int ret;
+	ret = ldb->ops->modify_record(ldb, message);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_modify(%s) -> %d\n", 
+		  message->dn, ret);
+	return ret;
 }
 
 
@@ -120,7 +133,10 @@ int ldb_modify(struct ldb_context *ldb,
 */
 int ldb_delete(struct ldb_context *ldb, const char *dn)
 {
-	return ldb->ops->delete_record(ldb, dn);
+	int ret;
+	ret = ldb->ops->delete_record(ldb, dn);
+	ldb_debug(ldb, LDB_DEBUG_TRACE, "ldb_delete(%s) -> %d\n", dn, ret);
+	return ret;
 }
 
 /*

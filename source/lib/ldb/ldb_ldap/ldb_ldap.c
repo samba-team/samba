@@ -248,7 +248,7 @@ static int lldb_search(struct ldb_context *ldb, const char *base,
 
 		if (msg_count == count) {
 			/* hmm, got too many? */
-			fprintf(stderr,"Too many messages?!\n");
+			ldb_debug(ldb, LDB_DEBUG_FATAL, "Fatal: ldap message count inconsistent\n");
 			break;
 		}
 

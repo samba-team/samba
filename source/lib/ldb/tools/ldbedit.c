@@ -351,6 +351,8 @@ static void usage(void)
 		exit(1);
 	}
 
+	ldb_set_debug_stderr(ldb);
+
 	ret = ldb_search(ldb, basedn, scope, expression, NULL, &msgs);
 
 	if (ret == -1) {

@@ -33,6 +33,21 @@
 static struct ldb_context *sam_db;
 
 /*
+  this is used to catch debug messages from ldb
+*/
+void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_list ap)
+{
+	char *s = NULL;
+	if (DEBUGLEVEL < 4 && level > LDB_DEBUG_WARNING) {
+		return;
+	}
+	vasprintf(&s, fmt, ap);
+	if (!s) return;
+	DEBUG(level, ("samdb: %s\n", s));
+	free(s);
+}
+
+/*
   connect to the SAM database
   return 0 on success, -1 on failure
  */
@@ -46,6 +61,8 @@ int samdb_connect(void)
 	if (sam_db == NULL) {
 		return -1;
 	}
+
+	ldb_set_debug(sam_db, samdb_debug, NULL);
 
 	return 0;
 }
