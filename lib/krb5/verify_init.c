@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -94,7 +94,7 @@ krb5_verify_init_creds(krb5_context context,
 
 	if (gethostname (local_hostname, sizeof(local_hostname)) < 0) {
 	    ret = errno;
-	    krb5_set_error_string (context, "getsockname: %s",
+	    krb5_set_error_string (context, "gethostname: %s",
 				   strerror(ret));
 	    return ret;
 	}
