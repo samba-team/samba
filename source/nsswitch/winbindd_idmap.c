@@ -42,7 +42,7 @@ static BOOL allocate_id(uid_t *id, BOOL isgroup)
 
     /* Get current high water mark */
 
-    if ((hwm = tdb_fetch_int(idmap_tdb, 
+    if ((hwm = tdb_fetch_int32(idmap_tdb, 
                              isgroup ? HWM_GROUP : HWM_USER)) == -1) {
         return False;
     }
@@ -63,7 +63,7 @@ static BOOL allocate_id(uid_t *id, BOOL isgroup)
 
     /* Store new high water mark */
 
-    tdb_store_int(idmap_tdb, isgroup ? HWM_GROUP : HWM_USER, hwm);
+    tdb_store_int32(idmap_tdb, isgroup ? HWM_GROUP : HWM_USER, hwm);
 
     return True;
 }
@@ -401,11 +401,11 @@ void winbindd_idmap_status(void)
 
     /* Get current high water marks */
 
-    if ((user_hwm = tdb_fetch_int(idmap_tdb, HWM_USER)) == -1) {
+    if ((user_hwm = tdb_fetch_int32(idmap_tdb, HWM_USER)) == -1) {
         DEBUG(DUMP_INFO, ("\tCould not get userid high water mark!\n"));
     }
 
-    if ((group_hwm = tdb_fetch_int(idmap_tdb, HWM_GROUP)) == -1) {
+    if ((group_hwm = tdb_fetch_int32(idmap_tdb, HWM_GROUP)) == -1) {
         DEBUG(DUMP_INFO, ("\tCould not get groupid high water mark!\n"));
     }
 
