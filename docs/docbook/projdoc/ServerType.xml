@@ -342,17 +342,21 @@ in this HOWTO collection.
 <title>ADS Security Mode (User Level Security)</title>
 
 <para>
-Samba-2.2.x could join and Active Directory domain so long as the Active Directory domain
-controller is configured for mixed mode operation, and is running NetBIOS over TCP/IP. MS
-Windows 2000 and later can be configured to run without NetBIOS over TCP/IP, instead it
-can run SMB natively over TCP/IP.
+Both Samba 2.2 and 3.0 can join an active directory domain. This is
+possible even if the domain is run in native mode. Active Directory in
+native mode perfectly allows NT4-style domain members, contrary to
+popular belief. The only thing that Active Directory in native mode
+prohibits is Backup Domain Controllers running NT4.
 </para>
 
 <para>
-The ability to natively join an Active Directory domain requires the use of Kerberos
-based authentication. The Kerberos protocols have been extended by Microsoft so that
-a plain MIT Kerberos, or a Heimdal client is not sufficient. Samba-3 now has the ability
-to be a native Active Directory member server.
+If you are running Active Directory starting with Samba 3.0 you can
+however join as a native AD member. Why would you want to do that?
+Your security policy might prohibit the use of NT-compatible
+authentication protocols. All your machines are running Windows 2000
+and above and all use full Kerberos. In this case Samba as a NT4-style
+domain would still require NT-compatible authentication data. Samba in
+AD-member mode can accept Kerberos.
 </para>
 
 <sect3>
