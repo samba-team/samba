@@ -1550,7 +1550,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 	<filename>/usr/share/doc/packages/samba3/Examples/LDAP/smbldap-tools</filename>
 	directory. On a Red Hat Linux system, they are in a similar path. If you cannot find
 	the scripts on your system, it is easy enough to download them from the Idealx
-	<ulink url="http://samba.idealx.org/index.en.html">Web Site.</ulink> The tarbell may
+	<ulink url="http://samba.idealx.org/index.en.html">Web Site.</ulink> The tarball may
 	be directly <ulink
 	    url="http://samba.idealx.org/dist/smbldap-tools-0.8.2.tgz">downloaded</ulink>
 	for this site, also.
@@ -1579,7 +1579,7 @@ SID for domain MASSIVE is: S-1-5-21-3504140859-1010554828-2431957765
 		</para></step>
 
 		<step><para>
-		If you wish to use the downloaded tarbell, unpack the smbldap-tools in a suitable temporary location.
+		If you wish to use the downloaded tarball, unpack the smbldap-tools in a suitable temporary location.
 		Change into either the directory extracted from the tarball, or else into the smbldap-tools
 		directory in your <filename>/usr/share/doc/packages</filename> directory tree.
 		</para></step>
