@@ -105,7 +105,7 @@ elem_insert(struct gss_msg_order *o,
 
     if (o->length > after_slot)
 	memmove(&o->elem[after_slot + 1], &o->elem[after_slot],
-		(o->length - after_slot) * sizeof(o->elem[0]));
+		(o->length - after_slot - 1) * sizeof(o->elem[0]));
 
     elem_set(o, after_slot, seq_num);
 
