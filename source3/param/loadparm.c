@@ -1289,7 +1289,9 @@ static void init_globals(void)
 
 	Globals.bLoadPrinters = True;
 	Globals.mangled_stack = 50;
-	Globals.max_xmit = 65535;
+	/* Was 65535 (0xFFFF). 0x4101 matches W2K and causes major speed improvements... */
+	/* Discovered by 2 days of pain by Don McCall @ HP :-). */
+	Globals.max_xmit = 0x4104;
 	Globals.max_mux = 50;	/* This is *needed* for profile support. */
 	Globals.lpqcachetime = 10;
 	Globals.bDisableSpoolss = False;
