@@ -2046,17 +2046,32 @@ static int pack_values(NT_PRINTER_DATA *data, char *buf, int buflen)
  handles are not affected.
 ****************************************************************************/
 
-uint32 del_a_printer(char *sharename)
+uint32 del_a_printer(const char *sharename)
 {
 	pstring key;
 	TDB_DATA kbuf;
+	pstring printdb_path;
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
-
 	tdb_delete(tdb_printers, kbuf);
+
+	slprintf(key, sizeof(key)-1, "%s%s", SECDESC_PREFIX, sharename);
+	kbuf.dptr=key;
+	kbuf.dsize=strlen(key)+1;
+	tdb_delete(tdb_printers, kbuf);
+
+	close_all_print_db();
+
+	if (geteuid() == 0) {
+		pstrcpy(printdb_path, lock_path("printing/"));
+		pstrcat(printdb_path, sharename);
+		pstrcat(printdb_path, ".tdb");
+
+		unlink(printdb_path);
+	}
+
 	return 0;
 }
 
@@ -2899,7 +2914,8 @@ BOOL is_printer_published(Printer_entry *print_hnd, int snum,
 		return False;
 	}
 
-	if (regval_size(guid_val) == sizeof(struct uuid))
+	/* fetching printer guids really ought to be a separate function.. */
+	if (guid && regval_size(guid_val) == sizeof(struct uuid))
 		memcpy(guid, regval_data_p(guid_val), sizeof(struct uuid));
 
 	free_a_printer(&printer, 2);
