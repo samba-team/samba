@@ -205,6 +205,14 @@ Set the form given by the dictionary argument.
            METH_VARARGS | METH_KEYWORDS,
           "Notify spooler that a page is about to be printed." },
 
+        { "startdocprinter", spoolss_startdocprinter, 
+           METH_VARARGS | METH_KEYWORDS,
+          "Notify spooler that a document is about to be printed." },
+
+        { "enddocprinter", spoolss_enddocprinter, 
+           METH_VARARGS | METH_KEYWORDS,
+          "Notify spooler that a document is about to be printed." },
+
 	{ NULL }
 
 };
