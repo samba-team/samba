@@ -152,7 +152,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 								  out_mem_ctx, in, out);
 	}
 
-	len = read_spnego_data(in, &spnego);
+	len = spnego_read_data(in, &spnego);
 
 	if (len == -1 && spnego_state->state_position == SPNEGO_SERVER_START) {
 		int i;
@@ -180,7 +180,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 	} else {
 
 		if (spnego.type != spnego_state->expected_packet) {
-			free_spnego_data(&spnego);
+			spnego_free_data(&spnego);
 			DEBUG(1, ("Invalid SPENGO request: %d, expected %d\n", spnego.type, 
 				  spnego_state->expected_packet));
 			return NT_STATUS_INVALID_PARAMETER;
@@ -231,7 +231,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 				DEBUG(1, ("SPENGO: Could not find a suitable mechtype in NEG_TOKEN_INIT\n"));
 			}
 
-			free_spnego_data(&spnego);
+			spnego_free_data(&spnego);
 			if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 				return nt_status;
 			}
@@ -245,7 +245,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			spnego_out.negTokenInit.mechListMIC = null_data_blob;
 			spnego_out.negTokenInit.mechToken = unwrapped_out;
 			
-			if (write_spnego_data(out_mem_ctx, out, &spnego_out) == -1) {
+			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_INIT\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -278,7 +278,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			}
 
 			spnego_state->result = spnego.negTokenTarg.negResult;
-			free_spnego_data(&spnego);
+			spnego_free_data(&spnego);
 			
 			if (NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 				/* compose reply */
@@ -288,7 +288,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 				spnego_out.negTokenTarg.responseToken = unwrapped_out;
 				spnego_out.negTokenTarg.mechListMIC = null_data_blob;
 				
-			if (write_spnego_data(out_mem_ctx, out, &spnego_out) == -1) {
+			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
 				DEBUG(1, ("Failed to write SPENGO reply to NEG_TOKEN_TARG\n"));
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -302,7 +302,7 @@ NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TALLOC_CT
 			
 			return nt_status;
 		} else {
-			free_spnego_data(&spnego);
+			spnego_free_data(&spnego);
 			DEBUG(1, ("Invalid SPENGO request: %d\n", spnego.type));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
