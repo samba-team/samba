@@ -628,23 +628,6 @@ static BOOL create_rpc_request(prs_struct *rhdr, uint8 op_num, int data_len,
 /****************************************************************************
  send a request on an rpc pipe.
  ****************************************************************************/
-BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
-                      prs_struct *data, prs_struct *rdata)
-{
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(hnd, &cli, &fnum))
-	{
-		return False;
-	}
-
-	return rpc_api_pipe_req(cli, fnum, op_num, data, rdata);
-}
-
-/****************************************************************************
- send a request on an rpc pipe.
- ****************************************************************************/
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
                       prs_struct *data, prs_struct *rdata)
 {
@@ -1163,5 +1146,8 @@ close the session
 
 void cli_nt_session_close(struct cli_state *cli, uint16 fnum)
 {
-	cli_close(cli, fnum);
+	if (fnum != 0xffff)
+	{
+		cli_close(cli, fnum);
+	}
 }

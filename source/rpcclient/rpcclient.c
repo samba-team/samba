@@ -70,14 +70,7 @@ FILE *out_hnd;
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
-struct
-{
-	char *name;
-	void (*fn)(struct client_info*, int, char*[]);
-	char *description;
-	char compl_args[2];
-}
-commands[] = 
+struct command_set commands[] = 
 {
 	/*
 	 * eventlog

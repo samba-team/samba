@@ -539,10 +539,9 @@ BOOL get_policy_samr_sid(POLICY_HND *hnd, DOM_SID *sid);
 uint32 get_policy_samr_rid(POLICY_HND *hnd);
 BOOL set_policy_reg_name(POLICY_HND *hnd, fstring name);
 BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name);
-BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
-				void (*free_fn)(struct cli_state *, uint16));
-BOOL get_policy_cli_state(const POLICY_HND *hnd, struct cli_state **cli,
-	uint16 *fnum);
+BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
+				void (*free_fn)(struct cli_connection *));
+BOOL get_policy_con(const POLICY_HND *hnd, struct cli_connection **con);
 BOOL close_policy_hnd(POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_pwdb.c  */
@@ -1788,15 +1787,19 @@ BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum,
 
 /*The following definitions come from  rpc_client/cli_connect.c  */
 
-void cli_state_free(struct cli_state *cli, uint16 fnum);
-BOOL cli_state_init(const char* server_name, const char* pipe_name,
-				struct cli_state **cli,
-				uint16 *fnum);
-BOOL cli_state_get(const POLICY_HND *pol,
-				struct cli_state **cli,
-				uint16 *fnum);
+void cli_connection_free(struct cli_connection *con);
+void cli_connection_unlink(struct cli_connection *con);
+BOOL cli_connection_init_list(char* servers, const char* pipe_name,
+				struct cli_connection **con);
+BOOL cli_connection_init(const char* server_name, const char* pipe_name,
+				struct cli_connection **con);
+BOOL cli_connection_get(const POLICY_HND *pol, struct cli_connection **con);
 BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from);
 BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar sess_key[16]);
+BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
+                      prs_struct *data, prs_struct *rdata);
+BOOL rpc_con_pipe_req(struct cli_connection *con, uint8 op_num,
+                      prs_struct *data, prs_struct *rdata);
 
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
@@ -1902,8 +1905,6 @@ BOOL create_rpc_bind_resp(struct pwd_info *pwd,
 				prs_struct *rhdr,
                                 prs_struct *rhdr_autha,
                                 prs_struct *auth_resp);
-BOOL rpc_hnd_pipe_req(const POLICY_HND *hnd, uint8 op_num,
-                      prs_struct *data, prs_struct *rdata);
 BOOL rpc_api_pipe_req(struct cli_state *cli, uint16 fnum, uint8 op_num,
                       prs_struct *data, prs_struct *rdata);
 void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs);
@@ -1917,13 +1918,13 @@ BOOL reg_connect( const char* srv_name,
 				const char *full_keyname,
 				char *key_name,
 				POLICY_HND *reg_hnd);
-BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hkcr( struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hklm( struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
-BOOL reg_open_hku( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hku( struct cli_connection *con, 
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd);
 BOOL reg_flush_key( POLICY_HND *hnd);
@@ -1968,11 +1969,11 @@ BOOL reg_shutdown(const char *srv_name,
 
 /*The following definitions come from  rpc_client/cli_samr.c  */
 
-BOOL samr_chgpasswd_user( struct cli_state *cli, uint16 fnum,
+BOOL samr_chgpasswd_user( struct cli_connection *con, 
 		char *srv_name, char *user_name,
 		char nt_newpass[516], uchar nt_oldhash[16],
 		char lm_newpass[516], uchar lm_oldhash[16]);
-BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name);
+BOOL samr_unknown_38(struct cli_connection *con, char *srv_name);
 BOOL samr_query_dom_info(  POLICY_HND *domain_pol, uint16 switch_value,
 				SAM_UNK_CTR *ctr);
 uint32 samr_enum_domains(  POLICY_HND *pol,

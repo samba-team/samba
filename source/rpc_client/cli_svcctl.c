@@ -43,10 +43,9 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 	SVC_Q_OPEN_SC_MAN q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(srv_name, PIPE_SVCCTL, &cli, &fnum))
+	if (!cli_connection_init(srv_name, PIPE_SVCCTL, &con))
 	{
 		return False;
 	}
@@ -66,7 +65,7 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 	svc_io_q_open_sc_man("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_OPEN_SC_MAN, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_OPEN_SC_MAN, &buf, &rbuf))
 	{
 		SVC_R_OPEN_SC_MAN r_o;
 		BOOL p;
@@ -89,8 +88,8 @@ BOOL svc_open_sc_man( const char *srv_name, char *db_name,
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = True;
 			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_cli_state(hnd, cli, fnum,
-			                                 cli_state_free);
+			            set_policy_con(hnd, con, 
+			                                 cli_connection_unlink);
 		}
 	}
 
@@ -114,10 +113,9 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 	SVC_Q_OPEN_SERVICE q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(scm_hnd, &cli, &fnum))
+	if (!cli_connection_get(scm_hnd, &con))
 	{
 		return False;
 	}
@@ -137,7 +135,7 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 	svc_io_q_open_service("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_OPEN_SERVICE, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_OPEN_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_OPEN_SERVICE r_o;
 		BOOL p;
@@ -159,8 +157,7 @@ BOOL svc_open_service( POLICY_HND *scm_hnd,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_cli_state(hnd, cli, fnum,
-			                                 NULL);
+			            set_policy_con(hnd, con, NULL);
 		}
 	}
 
@@ -185,10 +182,9 @@ BOOL svc_enum_svcs( POLICY_HND *hnd,
 	SVC_Q_ENUM_SVCS_STATUS q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -213,7 +209,7 @@ BOOL svc_enum_svcs( POLICY_HND *hnd,
 	svc_io_q_enum_svcs_status("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_ENUM_SVCS_STATUS, &buf, &rbuf))
 	{
 		SVC_R_ENUM_SVCS_STATUS r_o;
 		BOOL p;
@@ -266,10 +262,9 @@ BOOL svc_stop_service( POLICY_HND *hnd,
 	SVC_Q_STOP_SERVICE q_c;
 	BOOL valid_cfg = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -290,7 +285,7 @@ BOOL svc_stop_service( POLICY_HND *hnd,
 	svc_io_q_stop_service("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_STOP_SERVICE, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_STOP_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_STOP_SERVICE r_c;
 		BOOL p;
@@ -332,10 +327,9 @@ BOOL svc_start_service( POLICY_HND *hnd,
 	SVC_Q_START_SERVICE q_c;
 	BOOL valid_cfg = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -356,7 +350,7 @@ BOOL svc_start_service( POLICY_HND *hnd,
 	svc_io_q_start_service("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_START_SERVICE, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_START_SERVICE, &buf, &rbuf))
 	{
 		SVC_R_START_SERVICE r_c;
 		BOOL p;
@@ -398,10 +392,9 @@ BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 	SVC_Q_QUERY_SVC_CONFIG q_c;
 	BOOL valid_cfg = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -422,7 +415,7 @@ BOOL svc_query_svc_cfg( POLICY_HND *hnd,
 	svc_io_q_query_svc_config("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_QUERY_SVC_CONFIG, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_QUERY_SVC_CONFIG, &buf, &rbuf))
 	{
 		SVC_R_QUERY_SVC_CONFIG r_c;
 		BOOL p;
@@ -465,10 +458,9 @@ BOOL svc_close(POLICY_HND *hnd)
 	SVC_Q_CLOSE q_c;
 	BOOL valid_close = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -489,7 +481,7 @@ BOOL svc_close(POLICY_HND *hnd)
 	svc_io_q_close("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_CLOSE, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_CLOSE, &buf, &rbuf))
 	{
 		SVC_R_CLOSE r_c;
 		BOOL p;
@@ -553,10 +545,9 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 	SVC_Q_CHANGE_SVC_CONFIG q_c;
 	BOOL valid_cfg = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_get(hnd, &cli, &fnum))
+	if (!cli_connection_get(hnd, &con))
 	{
 		return False;
 	}
@@ -583,7 +574,7 @@ BOOL svc_change_svc_cfg( POLICY_HND *hnd,
 	svc_io_q_change_svc_config("", &q_c, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SVC_CHANGE_SVC_CONFIG, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, SVC_CHANGE_SVC_CONFIG, &buf, &rbuf))
 	{
 		SVC_R_CHANGE_SVC_CONFIG r_c;
 		BOOL p;

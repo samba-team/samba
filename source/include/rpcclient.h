@@ -61,8 +61,6 @@ struct nt_client_info
 
     /************** \PIPE\lsarpc stuff ********************/
 
-    POLICY_HND lsa_info_pol;
-
     /* domain member */
     DOM_SID level3_sid;
     DOM_SID level5_sid;
@@ -85,5 +83,17 @@ struct client_info
 };
 
 enum action_type {ACTION_HEADER, ACTION_ENUMERATE, ACTION_FOOTER};
+
+/****************************************************************************
+ This defines the commands supported by this client
+ ****************************************************************************/
+struct command_set
+{
+	char *name;
+	void (*fn)(struct client_info*, int, char*[]);
+	char *description;
+	char compl_args[2];
+
+};
 
 #endif /* _RPCCLIENT_H */
