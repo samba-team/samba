@@ -37,6 +37,35 @@
  * codepoints in UTF-8).  This may have to change at some point
  **/
 
+static SIG_ATOMIC_T gotalarm;
+                                                                                                                   
+/***************************************************************
+ Signal function to tell us we timed out.
+****************************************************************/
+                                                                                                                   
+static void gotalarm_sig(void)
+{
+	gotalarm = 1;
+}
+                                                                                                                   
+LDAP *ldap_open_with_timeout(const char *server, int port, unsigned int to)
+{
+	LDAP *ldp = NULL;
+                                                                                                                   
+	/* Setup timeout */
+	gotalarm = 0;
+	CatchSignal(SIGALRM, SIGNAL_CAST gotalarm_sig);
+	alarm(to);
+	/* End setup timeout. */
+                                                                                                                   
+	ldp = ldap_open(server, port);
+                                                                                                                   
+	/* Teardown timeout. */
+	CatchSignal(SIGALRM, SIGNAL_CAST SIG_IGN);
+	alarm(0);
+                                                                                                                   
+	return ldp;
+}
 
 /*
   try a connection to a given ldap server, returning True and setting the servers IP
@@ -58,7 +87,7 @@ static BOOL ads_try_connect(ADS_STRUCT *ads, const char *server, unsigned port)
 	/* this copes with inet_ntoa brokenness */
 	srv = strdup(server);
 
-	ads->ld = ldap_open(srv, port);
+	ads->ld = ldap_open_with_timeout(srv, port, lp_ldap_timeout());
 	if (!ads->ld) {
 		free(srv);
 		return False;
