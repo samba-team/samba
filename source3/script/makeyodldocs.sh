@@ -44,6 +44,7 @@ do
 				exit 1
 			fi
 			cp $bn.man ../manpages/$bn || echo "Cannot create $YODLDIR/../manpages/$bn"
+			rm -f $bn.man
 
 			echo "Creating html versions of man pages..."
 			echo $d
@@ -54,6 +55,7 @@ do
 				exit 1
 			fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
+			rm -f $bn.html
 			;;
 		*)
 #
@@ -67,6 +69,7 @@ do
                 exit 1
             fi
 			cp $bn.html ../htmldocs || echo "Cannot create $YODLDIR/../htmldocs/$bn.html"
+			rm -f $bn.html
 		;;
 	esac
 done
