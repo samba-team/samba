@@ -174,7 +174,7 @@ static struct passwd *_Get_Pwnam(char *s)
     - as transmitted IF a different case
     - in all upper case IF that is different from the transmitted username
     - using the lp_usernamelevel() for permutations
- Note that this can change user!
+ Note that this can change user! The user name is in Unix code page.
 ****************************************************************************/
 
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
@@ -198,7 +198,10 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 
 	/* try in all lower case first as this is the most
 	   common case on UNIX systems */
+	unix_to_dos(user, True);
 	strlower(user);
+	dos_to_unix(user, True);
+
 	ret = _Get_Pwnam(user);
 	if (ret)
 		return(ret);
@@ -213,7 +216,10 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* finally, try in all caps if that is a new case */
+	unix_to_dos(user, True);
 	strupper(user);
+	dos_to_unix(user, True);
+
 	if (strcmp(user, orig_username) != 0)
 	{
 		ret = _Get_Pwnam(user);
@@ -222,8 +228,12 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 	}
 
 	/* Try all combinations up to usernamelevel. */
+	unix_to_dos(user, True);
 	strlower(user);
+	dos_to_unix(user, True);
+
 	ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
+
 	if (ret)
 		return(ret);
 
