@@ -4,7 +4,7 @@ AUTOMAKE_OPTIONS = no-dependencies foreign
 
 INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) @HESIODINCLUDE@
 
-bin_PROGRAMS		= pfrom
+bin_SCRIPTS		= pfrom
 
 libexec_PROGRAMS	= push
 
