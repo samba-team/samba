@@ -8776,6 +8776,7 @@ WERROR _spoolss_getprintprocessordirectory(pipes_struct *p, SPOOL_Q_GETPRINTPROC
 	case 1:
 		result = getprintprocessordirectory_level_1
 		  (&q_u->name, &q_u->environment, buffer, offered, needed);
+		break;
 	default:
 		result = WERR_UNKNOWN_LEVEL;
 	}
