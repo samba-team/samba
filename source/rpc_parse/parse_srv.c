@@ -340,22 +340,45 @@ static BOOL srv_io_share_info502_str(char *desc, SH_INFO_502_STR *sh502, prs_str
 /*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
+
 static BOOL srv_io_share_info1005(char* desc, SRV_SHARE_INFO_1005* sh1005,
 				  prs_struct* ps, int depth)
 {
-  if(sh1005 == NULL)
-    return False;
+	if(sh1005 == NULL)
+		return False;
 
-  prs_debug(ps, depth, desc, "srv_io_share_info1005");
-  depth++;
+	prs_debug(ps, depth, desc, "srv_io_share_info1005");
+		depth++;
 
-  if(!prs_align(ps))
-    return False;
+	if(!prs_align(ps))
+		return False;
 
-  if(!prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag))
-    return False;
+	if(!prs_uint32("dfs_root_flag", ps, depth, &sh1005->dfs_root_flag))
+		return False;
 
-  return True;
+	return True;
+}   
+
+/*******************************************************************
+ Reads or writes a structure.
+********************************************************************/
+
+static BOOL srv_io_share_info1501(char* desc, SRV_SHARE_INFO_1501* sh1501,
+				  prs_struct* ps, int depth)
+{
+	if(sh1501 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "srv_io_share_info1501");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!sec_io_desc_buf(desc, &sh1501->sdb, ps, depth))
+		return False;
+
+	return True;
 }   
 
 /*******************************************************************
@@ -656,8 +679,12 @@ static BOOL srv_io_srv_share_info(char *desc, prs_struct *ps, int depth, SRV_SHA
 				return False;
 			break;
 		case 1005:
-		        if(!srv_io_share_info1005("", &r_n->share.info1005, ps, depth))
-                                return False;  		
+			if(!srv_io_share_info1005("", &r_n->share.info1005, ps, depth))
+				return False;  		
+			break;
+		case 1501:
+			if (!srv_io_share_info1501("", &r_n->share.info1501, ps, depth))
+				return False;
 		default:
 		        DEBUG(5,("%s no share info at switch_value %d\n",
 			         tab_depth(depth), r_n->switch_value));
