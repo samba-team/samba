@@ -818,7 +818,7 @@ TDB_DATA tdb_nextkey(TDB_CONTEXT *tdb, TDB_DATA key)
 	}
 
 	/* Read the record. */
-	if (rec_read(tdb, rec_ptr, &rec) == 0) {
+	if (rec_read(tdb, rec_ptr, &rec) == -1) {
 		tdb_unlock(tdb, hbucket);
 		return null_data;
 	}
