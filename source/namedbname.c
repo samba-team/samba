@@ -219,30 +219,30 @@ void dump_names(void)
   
   if (!f)
   {
-    DEBUG(4,("Can't open %s - %s\n",fnamenew,strerror(errno)));
+    DEBUG(3,("Can't open %s - %s\n",fnamenew,strerror(errno)));
   }
   
-  DEBUG(3,("Dump of local name table:\n"));
+  DEBUG(4,("Dump of local name table:\n"));
   
   for (d = subnetlist; d; d = d->next)
    for (n = d->namelist; n; n = n->next)
     {
       int i;
 
-	  DEBUG(3,("%15s ", inet_ntoa(d->bcast_ip)));
-	  DEBUG(3,("%15s ", inet_ntoa(d->mask_ip)));
-      DEBUG(3,("%-19s TTL=%ld ",
+	  DEBUG(4,("%15s ", inet_ntoa(d->bcast_ip)));
+	  DEBUG(4,("%15s ", inet_ntoa(d->mask_ip)));
+      DEBUG(4,("%-19s TTL=%ld ",
 	       namestr(&n->name),
 	       n->death_time?n->death_time-t:0));
 
         for (i = 0; i < n->num_ips; i++)
         {
-           DEBUG(3,("%15s NB=%2x source=%d",
+           DEBUG(4,("%15s NB=%2x source=%d",
 		    inet_ntoa(n->ip_flgs[i].ip),
 		    n->ip_flgs[i].nb_flags,n->source));
 
         }
-		DEBUG(3,("\n"));
+		DEBUG(4,("\n"));
 
       if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
       {
