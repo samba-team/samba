@@ -106,7 +106,7 @@ END {
 	print name "_num_errors, ERROR_TABLE_BASE_" name ");" > c_file
 	print "}" > c_file
 	print "" > c_file
-	print "void initialize__" name "_error_table(void)" > c_file
+	print "void initialize_" name "_error_table(void)" > c_file
 	print "{" > c_file
 	printf "    init_error_table(text, ERROR_TABLE_BASE_" name ", " > c_file
 	print name "_num_errors);" > c_file
