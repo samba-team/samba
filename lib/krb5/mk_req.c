@@ -17,7 +17,7 @@ krb5_mk_req(krb5_context context,
   Authenticator *auth;
   krb5_data realm_data, authenticator;
 
-  if (auth_context == NULL) {
+  if (*auth_context == NULL) {
       r = krb5_auth_con_init(context, auth_context);
       if (r)
 	  return r;
