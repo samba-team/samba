@@ -141,6 +141,51 @@ void add_msrpc_command_processor(char *pipe_name,
 	add_api_cmd_to_array(&num_cmds, &api_fd_commands, &cmd);
 }
 
+static BOOL api_pipe_nack_resp(rpcsrv_struct * l, uint16 rej_code,
+				prs_struct * resp)
+{
+	prs_struct rhdr;
+	prs_struct rnack;
+	RPC_HDR_NACK hdr_nack;
+
+	DEBUG(5, ("api_pipe_nack_resp: make response\n"));
+
+	l->faulted_once_before = True;
+
+	prs_init(&(rhdr), 0, 4, False);
+	prs_init(&(rnack), 0, 4, False);
+
+	/***/
+	/*** set up the header and nack status ***/
+	/***/
+
+	hdr_nack.rej_code = rej_code;
+
+	make_rpc_hdr(&l->hdr, RPC_BINDNACK,
+		     RPC_FLG_FIRST | RPC_FLG_LAST,
+		     l->hdr.call_id, 0x12, 0);
+
+	smb_io_rpc_hdr("hdr", &l->hdr, &rhdr, 0);
+	smb_io_rpc_hdr_nack("nack", &hdr_nack, &rnack, 0);
+	prs_realloc_data(&rhdr, rhdr.offset);
+	prs_realloc_data(&rnack, rnack.offset);
+
+	/***/
+	/*** link rpc header and nack together ***/
+	/***/
+
+	prs_link(NULL, &rhdr, &rnack);
+	prs_link(&rhdr, &rnack, NULL);
+
+	prs_init(resp, 0, 4, False);
+	if (!prs_copy(resp, &rhdr))
+		return False;
+	prs_free_data(&rnack);
+	prs_free_data(&rhdr);
+
+	return True;
+}
+
 static BOOL api_pipe_fault_resp(rpcsrv_struct * l, uint32 status,
 				prs_struct * resp)
 {
@@ -500,6 +545,10 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 		case RPC_BIND:
 		{
 			reply = api_pipe_bind_req(l, name, resp);
+			if (!reply)
+			{
+				reply = api_pipe_nack_resp(l, 0x0, resp);
+			}
 			break;
 		}
 		case RPC_ALTCONT:

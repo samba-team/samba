@@ -67,24 +67,22 @@ BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
 
 /*The following definitions come from  lib/vuser.c  */
 
-BOOL is_valid_user_struct(const vuser_key *key);
-user_struct *get_valid_user_struct(const vuser_key *key);
-void invalidate_vuid(vuser_key *key);
-BOOL validated_username(vuser_key *key, char *name, size_t len);
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
 uint16 create_vuid(pid_t pid,
-				uid_t uid, gid_t gid,
-				int n_groups, gid_t *groups,
-				const char *unix_name,
-				const char *requested_name,
-				const char *real_name,
-				BOOL guest, const NET_USER_INFO_3 *info3);
-uint16 register_vuid(pid_t pid,
-				uid_t uid,gid_t gid,
-				const char *unix_name,
-				const char *requested_name,
-				BOOL guest,
-				const NET_USER_INFO_3 *info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
+uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
 
 /*The following definitions come from  lib/vuser_db.c  */
 
@@ -668,15 +666,16 @@ void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd);
 
 /*The following definitions come from  rpc_parse/parse_vuid.c  */
 
-BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth);
-BOOL make_vuid_user_struct(user_struct *r_u,
-				uid_t uid, gid_t gid,
-				const char* name,
-				const char* requested_name,
-				const char* real_name,
-				BOOL guest,
-				uint32 n_groups, const gid_t *groups,
-				const NET_USER_INFO_3 *usr);
-BOOL vuid_io_user_struct(char *desc, user_struct *r_u, prs_struct *ps, int depth);
-void vuid_free_user_struct(user_struct *r_u);
+BOOL vuid_io_key(char *desc, vuser_key * r_u, prs_struct * ps, int depth);
+BOOL make_vuid_user_struct(user_struct * r_u,
+			   uid_t uid, gid_t gid,
+			   const char *name,
+			   const char *requested_name,
+			   const char *real_name,
+			   BOOL guest,
+			   uint32 n_groups, const gid_t * groups,
+			   const NET_USER_INFO_3 * usr);
+BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
+			 int depth);
+void vuid_free_user_struct(user_struct * r_u);
 #endif /* _LIB_SMB_PROTO_H_ */

@@ -270,6 +270,7 @@ BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
 BOOL is_complete_pdu(prs_struct *ps);
+BOOL smb_io_rpc_hdr_nack(char *desc,  RPC_HDR_NACK *rpc, prs_struct *ps, int depth);
 BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,

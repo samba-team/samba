@@ -262,6 +262,21 @@ BOOL is_complete_pdu(prs_struct *ps)
 }
 
 /*******************************************************************
+reads or writes an RPC_HDR_NACK structure.
+********************************************************************/
+BOOL smb_io_rpc_hdr_nack(char *desc,  RPC_HDR_NACK *rpc, prs_struct *ps, int depth)
+{
+	if (rpc == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_nack");
+	depth++;
+
+	prs_uint16("rej_code", ps, depth, &(rpc->rej_code));
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes an RPC_HDR_FAULT structure.
 ********************************************************************/
 BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)

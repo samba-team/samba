@@ -2,9 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
-   Copyright (C) Andrew Tridgell 1992-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
-   Copyright (C) Paul Ashton 1997
+   Copyright (C) Andrew Tridgell              1992-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
+   Copyright (C) Paul Ashton                  1997-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,20 +24,19 @@
 #ifndef _DCE_RPC_H /* _DCE_RPC_H */
 #define _DCE_RPC_H 
 
-#include "rpc_misc.h" /* this only pulls in STRHDR */
-
 /* DCE/RPC packet types */
 
 enum RPC_PKT_TYPE
 {
-	RPC_REQUEST = 0x00,
-	RPC_RESPONSE = 0x02,
-	RPC_FAULT    = 0x03,
-	RPC_BIND     = 0x0B,
-	RPC_BINDACK  = 0x0C,
+	RPC_REQUEST     = 0x00,
+	RPC_RESPONSE    = 0x02,
+	RPC_FAULT       = 0x03,
+	RPC_BIND        = 0x0B,
+	RPC_BINDACK     = 0x0C,
+	RPC_BINDNACK    = 0x0D,
 	RPC_ALTCONT     = 0x0E,
 	RPC_ALTCONTRESP = 0x0F,
-	RPC_BINDRESP = 0x10 /* not the real name!  this is undocumented! */
+	RPC_BINDRESP    = 0x10 /* not the real name!  this is undocumented! */
 };
 
 /* DCE/RPC flags */
@@ -79,7 +78,7 @@ typedef struct rpc_hdr_info
 
 } RPC_HDR;
 
-/* RPC_HDR_REQ - ms request rpc header */
+/* RPC_HDR_REQ - request rpc header */
 typedef struct rpc_hdr_req_info
 {
   uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
@@ -88,7 +87,7 @@ typedef struct rpc_hdr_req_info
 
 } RPC_HDR_REQ;
 
-/* RPC_HDR_RESP - ms response rpc header */
+/* RPC_HDR_RESP - response rpc header */
 typedef struct rpc_hdr_resp_info
 {
   uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
@@ -98,13 +97,20 @@ typedef struct rpc_hdr_resp_info
 
 } RPC_HDR_RESP;
 
-/* RPC_HDR_FAULT - ms fault rpc header */
+/* RPC_HDR_FAULT - fault rpc header */
 typedef struct rpc_hdr_fault_info
 {
 	uint32 status;
 	uint32 reserved; /* 0x0000 0000 */
 
 } RPC_HDR_FAULT;
+
+/* RPC_HDR_NACK - nack rpc header */
+typedef struct rpc_hdr_nack_info
+{
+	uint16 rej_code;
+
+} RPC_HDR_NACK;
 
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
@@ -165,7 +171,7 @@ typedef struct rpc_auth_ntlmssp_info
 
 } RPC_AUTH_VERIFIER;
 
-/* RPC_BIND_REQ - ms req bind */
+/* RPC_BIND_REQ - req bind */
 typedef struct rpc_bind_req_info
 {
   RPC_HDR_BBA bba;

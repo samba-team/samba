@@ -827,24 +827,22 @@ void start_agent(struct vagent_ops *va);
 
 /*The following definitions come from  lib/vuser.c  */
 
-BOOL is_valid_user_struct(const vuser_key *key);
-user_struct *get_valid_user_struct(const vuser_key *key);
-void invalidate_vuid(vuser_key *key);
-BOOL validated_username(vuser_key *key, char *name, size_t len);
+BOOL is_valid_user_struct(const vuser_key * key);
+user_struct *get_valid_user_struct(const vuser_key * key);
+void invalidate_vuid(vuser_key * key);
+BOOL validated_username(vuser_key * key, char *name, size_t len);
 uint16 create_vuid(pid_t pid,
-				uid_t uid, gid_t gid,
-				int n_groups, gid_t *groups,
-				const char *unix_name,
-				const char *requested_name,
-				const char *real_name,
-				BOOL guest, const NET_USER_INFO_3 *info3);
-uint16 register_vuid(pid_t pid,
-				uid_t uid,gid_t gid,
-				const char *unix_name,
-				const char *requested_name,
-				BOOL guest,
-				const NET_USER_INFO_3 *info3);
-BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum);
+		   uid_t uid, gid_t gid,
+		   int n_groups, gid_t * groups,
+		   const char *unix_name,
+		   const char *requested_name,
+		   const char *real_name,
+		   BOOL guest, const NET_USER_INFO_3 * info3);
+uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
+		     const char *unix_name,
+		     const char *requested_name,
+		     BOOL guest, const NET_USER_INFO_3 * info3);
+BOOL check_vuser_ok(struct uid_cache *cache, user_struct * vuser, int snum);
 
 /*The following definitions come from  lib/vuser_db.c  */
 
@@ -3194,6 +3192,7 @@ BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
 BOOL is_complete_pdu(prs_struct *ps);
+BOOL smb_io_rpc_hdr_nack(char *desc,  RPC_HDR_NACK *rpc, prs_struct *ps, int depth);
 BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
@@ -3246,17 +3245,18 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_vuid.c  */
 
-BOOL vuid_io_key(char *desc, vuser_key *r_u, prs_struct *ps, int depth);
-BOOL make_vuid_user_struct(user_struct *r_u,
-				uid_t uid, gid_t gid,
-				const char* name,
-				const char* requested_name,
-				const char* real_name,
-				BOOL guest,
-				uint32 n_groups, const gid_t *groups,
-				const NET_USER_INFO_3 *usr);
-BOOL vuid_io_user_struct(char *desc, user_struct *r_u, prs_struct *ps, int depth);
-void vuid_free_user_struct(user_struct *r_u);
+BOOL vuid_io_key(char *desc, vuser_key * r_u, prs_struct * ps, int depth);
+BOOL make_vuid_user_struct(user_struct * r_u,
+			   uid_t uid, gid_t gid,
+			   const char *name,
+			   const char *requested_name,
+			   const char *real_name,
+			   BOOL guest,
+			   uint32 n_groups, const gid_t * groups,
+			   const NET_USER_INFO_3 * usr);
+BOOL vuid_io_user_struct(char *desc, user_struct * r_u, prs_struct * ps,
+			 int depth);
+void vuid_free_user_struct(user_struct * r_u);
 
 /*The following definitions come from  rpc_server/srv_brs.c  */
 
