@@ -503,11 +503,10 @@ an Active Directory environment.
 <!ENTITY WINBIND SYSTEM "projdoc/winbind.xml">
 <!ENTITY ClientConfig SYSTEM "projdoc/WindowsClientConfig.xml">
 <!ENTITY locking SYSTEM "projdoc/locking.xml">
-<!ENTITY pdb-mysql SYSTEM "projdoc/pdb_mysql.xml">
-<!ENTITY pdb.xml SYSTEM "projdoc/pdb.xml.xml">
 <!ENTITY problems SYSTEM "projdoc/Problems.xml">
 <!ENTITY unicode SYSTEM "projdoc/unicode.xml">
 <!ENTITY attributions SYSTEM "projdoc/attributions.xml">
+<!ENTITY attributions-dev SYSTEM "devdoc/attributions.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">

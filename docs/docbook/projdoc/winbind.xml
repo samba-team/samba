@@ -1149,7 +1149,7 @@ configured in the pam.conf.
 		we require the C library of the target operating system to 
 		support the Name Service Switch and Pluggable Authentication
 		Modules systems. This is becoming more common as NSS and 
-		PAM gain	support among UNIX vendors.</para></listitem>
+		PAM gain support among UNIX vendors.</para></listitem>
 		
 		<listitem><para>The mappings of Windows NT RIDs to UNIX ids 
 		is not made algorithmically and depends on the order in which 
