@@ -1,5 +1,9 @@
 2000-12-06  Johan Danielsson  <joda@pdc.kth.se>
 
+	* vis.c: make sure _DIAGASSERT is defined
+
+	* unvis.c: make sure _DIAGASSERT is defined
+
 	* Makefile.am: unvis.c, and vis.h
 
 	* vis.h: vis.h from NetBSD
