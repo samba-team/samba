@@ -159,6 +159,9 @@ typedef struct
   char *szAddUserScript;
   char *szDelUserScript;
   char *szWINSHook;
+#ifdef WITH_UTMP
+  char *szUtmpDir;
+#endif /* WITH_UTMP */
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -333,6 +336,9 @@ typedef struct
   BOOL bMap_archive;
   BOOL bLocking;
   BOOL bStrictLocking;
+#ifdef WITH_UTMP
+  BOOL bUtmp;
+#endif
   BOOL bShareModes;
   BOOL bOpLocks;
   BOOL bLevel2OpLocks;
@@ -435,6 +441,9 @@ static service sDefault =
   True,  /* bMap_archive */
   True,  /* bLocking */
   False,  /* bStrictLocking */
+#ifdef WITH_UTMP
+  False,  /* bUtmp */
+#endif
   True,  /* bShareModes */
   True,  /* bOpLocks */
   True, /* bLevel2OpLocks */
@@ -773,6 +782,9 @@ static struct parm_struct parm_table[] =
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  FLAG_SHARE},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#ifdef WITH_UTMP
+  {"utmp",             P_BOOL,    P_LOCAL,  &sDefault.bUtmp,            NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+#endif
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -799,6 +811,10 @@ static struct parm_struct parm_table[] =
   {"auto services",    P_STRING,  P_GLOBAL, &Globals.szAutoServices,    NULL,   NULL,  0},
   {"lock dir",         P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
   {"lock directory",   P_STRING,  P_GLOBAL, &Globals.szLockDir,         NULL,   NULL,  0},
+#ifdef WITH_UTMP
+  {"utmp dir",         P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+  {"utmp directory",   P_STRING,  P_GLOBAL, &Globals.szUtmpDir,         NULL,   NULL,  0},
+#endif /* WITH_UTMP */
   {"default service",  P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"default",          P_STRING,  P_GLOBAL, &Globals.szDefaultService,  NULL,   NULL,  0},
   {"message command",  P_STRING,  P_GLOBAL, &Globals.szMsgCommand,      NULL,   NULL,  0},
@@ -882,6 +898,7 @@ static void init_globals(void)
   string_set(&Globals.szDriverFile, DRIVERFILE);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
+  string_set(&Globals.szUtmpDir, "");
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
   pstrcpy(s, "Samba ");
@@ -1162,6 +1179,9 @@ FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
 FN_GLOBAL_STRING(lp_printcapname,&Globals.szPrintcapname)
 FN_GLOBAL_STRING(lp_lockdir,&Globals.szLockDir)
+#ifdef WITH_UTMP
+FN_GLOBAL_STRING(lp_utmpdir,&Globals.szUtmpDir)
+#endif /* WITH_UTMP */
 FN_GLOBAL_STRING(lp_rootdir,&Globals.szRootdir)
 FN_GLOBAL_STRING(lp_defaultservice,&Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command,&Globals.szMsgCommand)
@@ -1355,6 +1375,9 @@ FN_LOCAL_BOOL(lp_map_hidden,bMap_hidden)
 FN_LOCAL_BOOL(lp_map_archive,bMap_archive)
 FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
+#ifdef WITH_UTMP
+FN_LOCAL_BOOL(lp_utmp,bUtmp)
+#endif
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
 FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks,bLevel2OpLocks)

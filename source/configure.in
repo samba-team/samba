@@ -198,6 +198,9 @@ AC_CHECK_HEADERS(stropts.h poll.h readline.h history.h readline/readline.h)
 AC_CHECK_HEADERS(readline/history.h sys/capability.h syscall.h sys/syscall.h)
 AC_CHECK_HEADERS(sys/acl.h sys/cdefs.h glob.h)
 
+# For experimental utmp support
+AC_CHECK_HEADERS(utmp.h utmpx.h)
+
 AC_CHECK_SIZEOF(int,cross)
 AC_CHECK_SIZEOF(long,cross)
 AC_CHECK_SIZEOF(short,cross)
@@ -1383,6 +1386,25 @@ AC_ARG_WITH(quotas,
   AC_MSG_RESULT(no)
 )
 AC_SUBST(QUOTAOBJS)
+
+#################################################
+# check for experimental utmp accounting
+
+AC_MSG_CHECKING(whether to support utmp accounting)
+AC_ARG_WITH(utmp,
+[  --with-utmp     Include experimental utmp accounting
+  --without-utmp  Don't include experimental utmp accounting (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_UTMP)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # set private directory location
