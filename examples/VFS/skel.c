@@ -232,11 +232,21 @@ static BOOL skel_set_nt_acl(struct files_struct *fsp, const char *name, uint32 s
 
 static BOOL skel_chmod_acl(struct connection_struct *conn, const char *name, mode_t mode)
 {
+	/* If the underlying VFS doesn't have ACL support... */
+	if (!default_vfs_ops.chmod_acl) {
+		errno = ENOSYS;
+		return -1;
+	}
 	return default_vfs_ops.chmod_acl(conn, name, mode);
 }
 
 static BOOL skel_fchmod_acl(struct files_struct *fsp, int fd, mode_t mode)
 {
+	/* If the underlying VFS doesn't have ACL support... */
+	if (!default_vfs_ops.fchmod_acl) {
+		errno = ENOSYS;
+		return -1;
+	}
 	return default_vfs_ops.fchmod_acl(fsp, fd, mode);
 }
 
