@@ -474,7 +474,6 @@ static int import_users (char *filename)
 				pdb_set_lanman_passwd(sam_pwent, smbpwd);
 			}
 			/* NT password */
-			pdb_set_nt_passwd(sam_pwent, smbpwd);
 			p += 33;
 			if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
 				if (*p != '*' && *p != 'X') {
