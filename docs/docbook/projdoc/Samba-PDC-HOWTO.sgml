@@ -94,6 +94,7 @@ PDC functionality.
 Roaming Profiles and System/Network policies are advanced network administration topics
 that are covered separately in this document.
 </para>
+</note>
 
 <para>
 The following functionalities are new to the Samba 3.0 release:
