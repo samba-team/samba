@@ -1,3 +1,7 @@
+2000-01-06  Assar Westerlund  <assar@sics.se>
+
+	* context_s.c (_kadm5_s_init_context): handle params == NULL
+
 1999-12-26  Assar Westerlund  <assar@sics.se>
 
 	* get_s.c (kadm5_s_get_principal): handle modified_by->principal

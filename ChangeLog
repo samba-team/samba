@@ -1,5 +1,10 @@
 2000-01-06  Assar Westerlund  <assar@sics.se>
 
+	* kdc/hpropd.c (dump_krb4): use `krb5_get_default_realms'
+	* lib/krb5/get_in_tkt.c (add_padata): change types to make
+	everything work out
+	(krb5_get_in_cred): remove const to make types match
+	* lib/krb5/crypto.c (ARCFOUR_string_to_key): correct signature
 	* lib/krb5/principal.c (krb5_sname_to_principal): handle not
 	getting back a canonname
 
