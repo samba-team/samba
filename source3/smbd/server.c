@@ -2765,8 +2765,8 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   time_t start_time;
   BOOL shutdown_server = False;
 
-  DEBUG(5,("oplock_break: called for dev = %x, inode = %x. Current \
-global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
+  DEBUG(3,("%s oplock_break: called for dev = %x, inode = %x. Current \
+global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
 
   if(inbuf == NULL)
   {
@@ -2802,8 +2802,8 @@ global_oplocks_open = %d\n", dev, inode, global_oplocks_open));
   if(fsp == NULL)
   {
     /* The file could have been closed in the meantime - return success. */
-    DEBUG(3,("oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
-allowing break to succeed.\n", dev, inode, fnum));
+    DEBUG(3,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
+allowing break to succeed.\n", timestring(), dev, inode, fnum));
     return True;
   }
 
@@ -2818,8 +2818,8 @@ allowing break to succeed.\n", dev, inode, fnum));
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(3,("oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
-Allowing break to succeed regardless.\n", fsp->name, fnum, dev, inode));
+    DEBUG(3,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. \
+Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
     return True;
   }
 
@@ -2862,18 +2862,18 @@ Allowing break to succeed regardless.\n", fsp->name, fnum, dev, inode));
        */
 
       if (smb_read_error == READ_EOF)
-        DEBUG(0,("oplock_break: end of file from client\n"));
+        DEBUG(0,("%s oplock_break: end of file from client\n", timestring()));
  
       if (smb_read_error == READ_ERROR)
-        DEBUG(0,("oplock_break: receive_smb error (%s)\n",
-                  strerror(errno)));
+        DEBUG(0,("%s oplock_break: receive_smb error (%s)\n",
+                  timestring(), strerror(errno)));
 
       if (smb_read_error == READ_TIMEOUT)
-        DEBUG(0,("oplock_break: receive_smb timed out after %d seconds.\n",
-                  OPLOCK_BREAK_TIMEOUT));
+        DEBUG(0,("%s oplock_break: receive_smb timed out after %d seconds.\n",
+                  timestring(), OPLOCK_BREAK_TIMEOUT));
 
-      DEBUG(0,("oplock_break failed for file %s (fnum = %d, dev = %x, \
-inode = %x).\n", fsp->name, fnum, dev, inode));
+      DEBUG(0,("%s oplock_break failed for file %s (fnum = %d, dev = %x, \
+inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
       shutdown_server = True;
       break;
     }
@@ -2889,10 +2889,10 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
 
     if((time(NULL) - start_time) > OPLOCK_BREAK_TIMEOUT)
     {
-      DEBUG(0,("oplock_break: no break received from client within \
-%d seconds.\n", OPLOCK_BREAK_TIMEOUT));
-      DEBUG(0,("oplock_break failed for file %s (fnum = %d, dev = %x, \
-inode = %x).\n", fsp->name, fnum, dev, inode));
+      DEBUG(0,("%s oplock_break: no break received from client within \
+%d seconds.\n", timestring(), OPLOCK_BREAK_TIMEOUT));
+      DEBUG(0,("%s oplock_break failed for file %s (fnum = %d, dev = %x, \
+inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
       shutdown_server = True;
       break;
     }
@@ -2904,7 +2904,8 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
 
   if(shutdown_server)
   {
-    DEBUG(0,("oplock_break: client failure in break - shutting down this smbd.\n"));
+    DEBUG(0,("%s oplock_break: client failure in break - shutting down this smbd.\n",
+          timestring()));
     close_sockets();
     close(oplock_sock);
     exit_server("oplock break failure");
@@ -2928,8 +2929,8 @@ inode = %x).\n", fsp->name, fnum, dev, inode));
     exit_server("oplock_break: global_oplocks_open < 0");
   }
 
-  DEBUG(5,("oplock_break: returning success for fnum = %d, dev = %x, inode = %x. Current \
-global_oplocks_open = %d\n", fnum, dev, inode, global_oplocks_open));
+  DEBUG(3,("%s oplock_break: returning success for fnum = %d, dev = %x, inode = %x. Current \
+global_oplocks_open = %d\n", timestring(), fnum, dev, inode, global_oplocks_open));
 
   return True;
 }
@@ -2978,15 +2979,15 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
   addr_out.sin_port = htons( share_entry->op_port );
   addr_out.sin_family = AF_INET;
    
-  DEBUG(3,("request_oplock_break: sending a oplock break message to pid %d on port %d \
-for dev = %x, inode = %x\n", share_entry->pid, share_entry->op_port, dev, inode));
+  DEBUG(3,("%s request_oplock_break: sending a oplock break message to pid %d on port %d \
+for dev = %x, inode = %x\n", timestring(), share_entry->pid, share_entry->op_port, dev, inode));
 
   if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
          (struct sockaddr *)&addr_out,sizeof(addr_out)) < 0)
   {
-    DEBUG(0,("request_oplock_break: failed when sending a oplock break message \
+    DEBUG(0,("%s request_oplock_break: failed when sending a oplock break message \
 to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
-         share_entry->pid, share_entry->op_port, dev, inode,
+         timestring(), share_entry->pid, share_entry->op_port, dev, inode,
          strerror(errno)));
     return False;
   }
@@ -2994,7 +2995,7 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
   /*
    * Now we must await the oplock broken message coming back
    * from the target smbd process. Timeout if it fails to
-   * return in OPLOCK_BREAK_TIMEOUT seconds.
+   * return in (OPLOCK_BREAK_TIMEOUT + OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR) seconds.
    * While we get messages that aren't ours, loop.
    */
 
@@ -3006,15 +3007,25 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
     char *reply_msg_start;
 
     if(receive_local_message(oplock_sock, op_break_reply, sizeof(op_break_reply),
-                             OPLOCK_BREAK_TIMEOUT * 1000) == False)
+               (OPLOCK_BREAK_TIMEOUT+OPLOCK_BREAK_TIMEOUT_FUDGEFACTOR) * 1000) == False)
     {
       if(smb_read_error == READ_TIMEOUT)
-        DEBUG(0,("request_oplock_break: no response received to oplock break request to \
-pid %d on port %d for dev = %x, inode = %x\n", share_entry->pid, 
+      {
+        DEBUG(0,("%s request_oplock_break: no response received to oplock break request to \
+pid %d on port %d for dev = %x, inode = %x\n", timestring(), share_entry->pid, 
                            share_entry->op_port, dev, inode));
+        /*
+         * This is a hack to make handling of failing clients more robust.
+         * If a oplock break response message is not received in the timeout
+         * period we may assume that the smbd servicing that client holding
+         * the oplock has died and the client changes were lost anyway, so
+         * we should continue to try and open the file.
+         */
+        break;
+      }
       else
-        DEBUG(0,("request_oplock_break: error in response received to oplock break request to \
-pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", share_entry->pid, 
+        DEBUG(0,("%s request_oplock_break: error in response received to oplock break request to \
+pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, share_entry->pid, 
                          share_entry->op_port, dev, inode, strerror(errno)));
       return False;
     }
@@ -3044,7 +3055,8 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", share_entry->pid
     if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
     {
       /* Ignore it. */
-      DEBUG(0,("request_oplock_break: invalid message length received. Ignoring\n"));
+      DEBUG(0,("%s request_oplock_break: invalid message length received. Ignoring\n",
+             timestring()));
       continue;
     }
 
@@ -3054,9 +3066,9 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", share_entry->pid
                &op_break_msg[OPLOCK_BREAK_PID_OFFSET],
                OPLOCK_BREAK_MSG_LEN - OPLOCK_BREAK_PID_OFFSET) != 0))
     {
-      DEBUG(3,("request_oplock_break: received other message whilst awaiting \
+      DEBUG(3,("%s request_oplock_break: received other message whilst awaiting \
 oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
-             share_entry->pid, share_entry->op_port, dev, inode));
+             timestring(), share_entry->pid, share_entry->op_port, dev, inode));
       if(push_local_message(op_break_reply, sizeof(op_break_reply)) == False)
         return False;
       continue;
@@ -3065,7 +3077,7 @@ oplock break response from pid %d on port %d for dev = %x, inode = %x.\n",
     break;
   }
 
-  DEBUG(3,("request_oplock_break: broke oplock.\n"));
+  DEBUG(3,("%s request_oplock_break: broke oplock.\n", timestring()));
 
   return True;
 }
