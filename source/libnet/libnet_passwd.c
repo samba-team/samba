@@ -29,8 +29,16 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 {
         NTSTATUS status;
 	union libnet_rpc_connect c;
+#if 0
+	struct policy_handle user_handle;
+	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
+	struct samr_ChangePasswordUser pw;
+#endif
+	struct samr_OemChangePasswordUser2 oe2;
+	struct samr_ChangePasswordUser2 pw2;
 	struct samr_ChangePasswordUser3 pw3;
 	struct samr_Name server, account;
+	struct samr_AsciiName a_server, a_account;
 	struct samr_CryptPassword nt_pass, lm_pass;
 	struct samr_Password nt_verifier, lm_verifier;
 	uint8_t old_nt_hash[16], new_nt_hash[16];
@@ -47,8 +55,8 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 	status = libnet_rpc_connect(ctx, mem_ctx, &c);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
-						"Connection to SAMR pipe of PDC of domain '%s' failed\n",
-						r->rpc.in.domain_name);
+						"Connection to SAMR pipe of PDC of domain '%s' failed: %s\n",
+						r->rpc.in.domain_name, nt_errstr(status));
 		return status;
 	}
 
@@ -83,20 +91,128 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 	status = dcerpc_samr_ChangePasswordUser3(c.pdc.out.dcerpc_pipe, mem_ctx, &pw3);
 	if (!NT_STATUS_IS_OK(status)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
-						"ChangePassword3 failed: %s\n",nt_errstr(status));
-		goto disconnect;
+						"ChangePasswordUser3 failed: %s\n",nt_errstr(status));
+		goto ChangePasswordUser2;
 	}
 
 	/* check result of password change */
 	if (!NT_STATUS_IS_OK(pw3.out.result)) {
 		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
-						"ChangePassword3 for '%s\\%s' failed: %s\n",
+						"ChangePasswordUser3 for '%s\\%s' failed: %s\n",
 						r->rpc.in.domain_name, r->rpc.in.account_name, 
 						nt_errstr(status));
 						/* TODO: give the reason of the reject */
+		goto ChangePasswordUser2;
+	}
+
+	goto disconnect;
+
+ChangePasswordUser2:
+
+	encode_pw_buffer(lm_pass.data, r->rpc.in.newpassword, STR_ASCII|STR_TERMINATE);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
+	encode_pw_buffer(nt_pass.data, r->rpc.in.newpassword, STR_UNICODE);
+	arcfour_crypt(nt_pass.data, old_nt_hash, 516);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, nt_verifier.hash);
+
+	pw2.in.server = &server;
+	pw2.in.account = &account;
+	pw2.in.nt_password = &nt_pass;
+	pw2.in.nt_verifier = &nt_verifier;
+	pw2.in.lm_change = 1;
+	pw2.in.lm_password = &lm_pass;
+	pw2.in.lm_verifier = &lm_verifier;
+
+	status = dcerpc_samr_ChangePasswordUser2(c.pdc.out.dcerpc_pipe, mem_ctx, &pw2);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"ChangePasswordUser2 failed: %s\n",nt_errstr(status));
+		goto OemChangePasswordUser2;
+	}
+
+	/* check result of password change */
+	if (!NT_STATUS_IS_OK(pw2.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"ChangePasswordUser2 for '%s\\%s' failed: %s\n",
+						r->rpc.in.domain_name, r->rpc.in.account_name, 
+						nt_errstr(status));
+		goto OemChangePasswordUser2;
+	}
+
+	goto disconnect;
+
+OemChangePasswordUser2:
+
+	a_server.name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(c.pdc.out.dcerpc_pipe));
+	a_account.name = r->rpc.in.account_name;
+
+	encode_pw_buffer(lm_pass.data, r->rpc.in.newpassword, STR_ASCII);
+	arcfour_crypt(lm_pass.data, old_lm_hash, 516);
+	E_old_pw_hash(new_lm_hash, old_lm_hash, lm_verifier.hash);
+
+	oe2.in.server = &a_server;
+	oe2.in.account = &a_account;
+	oe2.in.password = &lm_pass;
+	oe2.in.hash = &lm_verifier;
+
+	status = dcerpc_samr_OemChangePasswordUser2(c.pdc.out.dcerpc_pipe, mem_ctx, &oe2);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"OemChangePasswordUser2 failed: %s\n",nt_errstr(status));
+		goto ChangePasswordUser;
+	}
+
+	/* check result of password change */
+	if (!NT_STATUS_IS_OK(pw2.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"OemChangePasswordUser2 for '%s\\%s' failed: %s\n",
+						r->rpc.in.domain_name, r->rpc.in.account_name, 
+						nt_errstr(status));
+		goto ChangePasswordUser;
+	}
+
+	goto disconnect;
+
+ChangePasswordUser:
+#if 0
+	E_old_pw_hash(new_lm_hash, old_lm_hash, hash1.hash);
+	E_old_pw_hash(old_lm_hash, new_lm_hash, hash2.hash);
+	E_old_pw_hash(new_nt_hash, old_nt_hash, hash3.hash);
+	E_old_pw_hash(old_nt_hash, new_nt_hash, hash4.hash);
+	E_old_pw_hash(old_lm_hash, new_nt_hash, hash5.hash);
+	E_old_pw_hash(old_nt_hash, new_lm_hash, hash6.hash);
+
+	/* TODO: ask for a user_handle */
+	pw.in.handle = &user_handle;
+	pw.in.lm_present = 1;
+	pw.in.old_lm_crypted = &hash1;
+	pw.in.new_lm_crypted = &hash2;
+	pw.in.nt_present = 1;
+	pw.in.old_nt_crypted = &hash3;
+	pw.in.new_nt_crypted = &hash4;
+	pw.in.cross1_present = 1;
+	pw.in.nt_cross = &hash5;
+	pw.in.cross2_present = 1;
+	pw.in.lm_cross = &hash6;
+
+	status = dcerpc_samr_ChangePasswordUser(c.pdc.out.dcerpc_pipe, mem_ctx, &pw);
+	if (!NT_STATUS_IS_OK(status)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"ChangePasswordUser failed: %s\n",nt_errstr(status));
 		goto disconnect;
 	}
 
+	/* check result of password change */
+	if (!NT_STATUS_IS_OK(pw2.out.result)) {
+		r->rpc.out.error_string = talloc_asprintf(mem_ctx,
+						"ChangePasswordUser for '%s\\%s' failed: %s\n",
+						r->rpc.in.domain_name, r->rpc.in.account_name, 
+						nt_errstr(status));
+		goto disconnect;
+	}
+#endif
 disconnect:
 	/* close connection */
 	dcerpc_pipe_close(c.pdc.out.dcerpc_pipe);
