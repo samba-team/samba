@@ -105,6 +105,21 @@ static BOOL test_chkpath(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_chkpath(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
+	io.in.path = BASEDIR "\\nt\\Visual Studio\\VB98\\vb600";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
+
+	io.in.path = BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
+
+	io.in.path = BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe\\3";
+	printf("testing %s\n", io.in.path);
+	status = smb_raw_chkpath(cli->tree, &io);
+	CHECK_STATUS(status, NT_STATUS_OBJECT_PATH_NOT_FOUND);
+
 done:
 	cli_close(cli->tree, fnum);
 	return ret;
@@ -117,6 +132,7 @@ BOOL torture_raw_chkpath(int dummy)
 {
 	struct cli_state *cli;
 	BOOL ret = True;
+	int fnum;
 	TALLOC_CTX *mem_ctx;
 
 	if (!torture_open_connection(&cli)) {
@@ -134,9 +150,33 @@ BOOL torture_raw_chkpath(int dummy)
 		return False;
 	}
 
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR "\\nt"))) {
+		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+		return False;
+	}
+
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR "\\nt\\Visual Studio"))) {
+		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+		return False;
+	}
+
+	if (NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR "\\nt\\Visual Studio\\VB98"))) {
+		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
+		return False;
+	}
+
+	fnum = create_complex_file(cli, mem_ctx, BASEDIR "\\nt\\Visual Studio\\VB98\\vb6.exe");
+	if (fnum == -1) {
+		printf("failed to open \\nt\\Visual Studio\\VB98\\vb6.exe - %s\n", cli_errstr(cli->tree));
+		ret = False;
+		goto done;
+	}
+
 	if (!test_chkpath(cli, mem_ctx)) {
 		ret = False;
 	}
+
+ done:
 
 	smb_raw_exit(cli->session);
 	cli_deltree(cli->tree, BASEDIR);
