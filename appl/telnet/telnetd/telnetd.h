@@ -151,21 +151,6 @@
 #include <paths.h>
 #endif
 
-/* Don't use the system login, use our version instead */
-
-#undef _PATH_LOGIN
-#define _PATH_LOGIN	BINDIR "/login"
-
-/* fallbacks */
-
-#ifndef _PATH_DEV
-#define _PATH_DEV "/dev/"
-#endif
-
-#ifndef _PATH_TTY
-#define _PATH_TTY "/dev/tty"
-#endif /* _PATH_TTY */
-
 #include <protos.h>
 
 #ifdef SOCKS
@@ -186,6 +171,21 @@
 #endif
 
 #include <roken.h>
+
+/* Don't use the system login, use our version instead */
+
+#undef _PATH_LOGIN
+#define _PATH_LOGIN	BINDIR "/login"
+
+/* fallbacks */
+
+#ifndef _PATH_DEV
+#define _PATH_DEV "/dev/"
+#endif
+
+#ifndef _PATH_TTY
+#define _PATH_TTY "/dev/tty"
+#endif /* _PATH_TTY */
 
 #ifdef	DIAGNOSTICS
 #define	DIAG(a,b)	if (diagnostic & (a)) b
