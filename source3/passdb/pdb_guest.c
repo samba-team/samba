@@ -98,6 +98,21 @@ static NTSTATUS guestsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT
 }
 
 
+/***************************************************************************
+  Updates a SAM_ACCOUNT
+
+  This isn't a particulary practical option for pdb_guest.  We certainly don't
+  want to twidde the filesystem, so what should we do?
+
+  Current plan is to transparently add the account.  It should appear
+  as if the pdb_unix version was modified, but its actually stored somehwere.
+ ****************************************************************************/
+
+static NTSTATUS guestsam_update_sam_account (struct pdb_methods *methods, SAM_ACCOUNT *newpwd)
+{
+	return methods->parent->pdb_add_sam_account(methods->parent, newpwd);
+}
+
 NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
 {
 	NTSTATUS nt_status;
@@ -115,6 +130,7 @@ NTSTATUS pdb_init_guestsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, c
 	
 	(*pdb_method)->getsampwnam = guestsam_getsampwnam;
 	(*pdb_method)->getsampwsid = guestsam_getsampwsid;
+	(*pdb_method)->update_sam_account = guestsam_update_sam_account;
 	
 	/* we should do no group mapping here */
 	(*pdb_method)->getgrsid = pdb_nop_getgrsid;

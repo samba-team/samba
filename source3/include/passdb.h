@@ -138,6 +138,8 @@ typedef struct sam_passwd
 		
 		uint32 unknown_5; /* 0x0002 0000 */
 		uint32 unknown_6; /* 0x0000 04ec */
+		/* a tag for who added the private methods */
+		const struct pdb_methods *backend_private_methods;
 		void *backend_private_data; 
 		void (*backend_private_data_free_fn)(void **);
 	} private;

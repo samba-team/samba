@@ -332,7 +332,7 @@ uint32 pdb_get_unknown_6 (const SAM_ACCOUNT *sampass)
 
 void *pdb_get_backend_private_data (const SAM_ACCOUNT *sampass, const struct pdb_methods *my_methods)
 {
-	if (sampass && my_methods == sampass->methods)
+	if (sampass && my_methods == sampass->private.backend_private_methods)
 		return sampass->private.backend_private_data;
 	else
 		return NULL;
@@ -1028,7 +1028,7 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
 		return False;
 
 	/* does this backend 'own' this SAM_ACCOUNT? */
-	if (my_methods != sampass->methods)
+	if (my_methods != sampass->private.backend_private_methods)
 		return False;
 
 	if (sampass->private.backend_private_data && sampass->private.backend_private_data_free_fn) {
@@ -1037,6 +1037,7 @@ BOOL pdb_set_backend_private_data (SAM_ACCOUNT *sampass, void *private_data,
 
 	sampass->private.backend_private_data = private_data;
 	sampass->private.backend_private_data_free_fn = free_fn;
+	sampass->private.backend_private_methods = my_methods;
 
 	return pdb_set_init_flags(sampass, PDB_BACKEND_PRIVATE_DATA, flag);
 }

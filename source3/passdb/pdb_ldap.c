@@ -1528,6 +1528,8 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 {
 	int rc = -1;
 	char ** attr_list;
+	uint32 rid;
+
 	switch ( ldap_state->schema_ver )
 	{
 		case SCHEMAVER_SAMBASAMACCOUNT:
@@ -1540,8 +1542,6 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 			break;
 			
 		case SCHEMAVER_SAMBAACCOUNT:
-		{
-			uint32 rid;
 			if (!sid_peek_check_rid(&ldap_state->domain_sid, sid, &rid)) {
 				return rc;
 			}
@@ -1552,8 +1552,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 
 			if ( rc != LDAP_SUCCESS ) 
 				return rc;
-		}
-		break;
+			break;
 	}
 	return rc;
 }
@@ -1610,7 +1609,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	} else {
 		ldap_msgfree(result);
 	}
-	return ret;
+	return NT_STATUS_NO_SUCH_USER;
 }	
 
 /********************************************************************
@@ -1810,8 +1809,9 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 		attr_list = get_userattr_list(ldap_state->schema_ver);
 		rc = ldapsam_search_suffix_by_name(ldap_state, pdb_get_username(newpwd), &result, attr_list );
 		free_attr_list( attr_list );
-		if (rc != LDAP_SUCCESS) 
+		if (rc != LDAP_SUCCESS) {
 			return NT_STATUS_UNSUCCESSFUL;
+		}
 		pdb_set_backend_private_data(newpwd, result, private_data_free_fn, my_methods, PDB_CHANGED);
 	}
 
@@ -1822,6 +1822,8 @@ static NTSTATUS ldapsam_update_sam_account(struct pdb_methods *my_methods, SAM_A
 
 	entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct, result);
 	dn = ldap_get_dn(ldap_state->smbldap_state->ldap_struct, entry);
+
+	DEBUG(4, ("user %s to be modified has dn: %s\n", pdb_get_username(newpwd), dn));
 
 	if (!init_ldap_from_sam(ldap_state, entry, &mods, newpwd,
 				element_is_changed)) {
@@ -1926,7 +1928,7 @@ static NTSTATUS ldapsam_add_sam_account(struct pdb_methods *my_methods, SAM_ACCO
 		}
 	}
 
-	/* does the entry already exist but without a samba rttibutes?
+	/* does the entry already exist but without a samba attributes?
 	   we need to return the samba attributes here */
 	   
 	escape_user = escape_ldap_string_alloc( username );
