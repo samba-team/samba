@@ -1,3 +1,7 @@
+2001-08-31  Assar Westerlund  <assar@sics.se>
+
+	* ipropd_slave.c (main): syslog with the correct name
+
 2001-08-30  Jacques Vidrine <n@nectar.com>
 
 	* ipropd_slave.c, ipropd_master.c (main): call pidfile
