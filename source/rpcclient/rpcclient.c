@@ -560,10 +560,10 @@ static void usage(void)
 	int 			olddebug;
 	pstring 		cmdstr = "";
 	struct cli_state	*cli;
-	fstring 		password,
-				username,
-				domain,
-				server;
+	fstring 		password="",
+				username="",
+				domain="",
+				server="";
 	struct cmd_set **cmd_set;
 	struct in_addr server_ip;
 	NTSTATUS nt_status;
