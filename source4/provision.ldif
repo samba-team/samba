@@ -1,0 +1,734 @@
+dn: @INDEXLIST
+@IDXATTR: name
+@IDXATTR: sAMAccountName
+@IDXATTR: objectSid
+@IDXATTR: objectClass
+
+dn: @ATTRIBUTES
+name: CASE_INSENSITIVE WILDCARD
+sAMAccountName: CASE_INSENSITIVE WILDCARD
+
+dn: @SUBCLASSES
+top: domain
+top: person
+top: group
+domain: domainDNS
+domain: builtinDomain
+person: organizationalPerson
+organizationalPerson: user
+user: computer
+
+dn: ${BASEDN}
+objectClass: top
+objectClass: domain
+objectClass: domainDNS
+name: ${DOMAIN}
+dc: ${DOMAIN}
+objectGUID: ${NEWGUID}
+creationTime: ${NTTIME}
+forceLogoff: 0x8000000000000000
+lockoutDuration: -18000000000
+lockOutObservationWindow: -18000000000
+lockoutThreshold: 0
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+maxPwdAge: -37108517437440
+minPwdAge: 0
+minPwdLength: 7
+modifiedCountAtLastProm: 0
+nextRid: 1000
+pwdProperties: 1
+pwdHistoryLength: 24
+objectSid: ${DOMAINSID}
+serverState: 1
+uASCompat: 1
+modifiedCount: 1
+objectCategory: CN=Domain-DNS,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Users,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Users
+description: Default container for upgraded user accounts
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+name: Users
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Computers,${BASEDN}
+objectClass: top
+objectClass: container
+cn: Computers
+description: Default container for upgraded computer accounts
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+name: Computers
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: OU=Domain Controllers,${BASEDN}
+objectClass: top
+objectClass: organizationalUnit
+ou: Domain Controllers
+description: Default container for domain controllers
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+name: Domain Controllers
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Organizational-Unit,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=ForeignSecurityPrincipals,${BASEDN}
+objectClass: top
+objectClass: container
+cn: ForeignSecurityPrincipals
+description: Default container for security identifiers (SIDs) associated with objects from external, trusted domains
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: FALSE
+name: ForeignSecurityPrincipals
+objectGUID: ${NEWGUID}
+systemFlags: 0x8c000000
+objectCategory: CN=Container,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: builtinDomain
+cn: Builtin
+instanceType: 4
+showInAdvancedViewOnly: FALSE
+name: Builtin
+forceLogoff: 0x8000000000000000
+lockoutDuration: -18000000000
+lockOutObservationWindow: -18000000000
+lockoutThreshold: 0
+maxPwdAge: -37108517437440
+minPwdAge: 0
+minPwdLength: 0
+modifiedCountAtLastProm: 0
+nextRid: 1000
+pwdProperties: 0
+pwdHistoryLength: 0
+objectSid: S-1-5-32
+serverState: 1
+uASCompat: 1
+modifiedCount: 1
+objectCategory: CN=Builtin-Domain,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Administrator,CN=Users,${BASEDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: Administrator
+description: Built-in account for administering the computer/domain
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
+memberOf: CN=Domain Admins,CN=Users,${BASEDN}
+memberOf: CN=Enterprise Admins,CN=Users,${BASEDN}
+memberOf: CN=Schema Admins,CN=Users,${BASEDN}
+memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Administrator
+objectGUID: ${NEWGUID}
+userAccountControl: 0x10200
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 513
+objectSid: ${DOMAINSID}-500
+adminCount: 1
+accountExpires: -1
+logonCount: 0
+sAMAccountName: Administrator
+sAMAccountType: 0x30000000
+objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Guest,CN=Users,${BASEDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: Guest
+description: Built-in account for guest access to the computer/domain
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Guests,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Guest
+objectGUID: ${NEWGUID}
+userAccountControl: 0x10222
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 0
+primaryGroupID: 514
+objectSid: ${DOMAINSID}-501
+accountExpires: -1
+logonCount: 0
+sAMAccountName: Guest
+sAMAccountType: 0x30000000
+objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Administrators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Administrators
+description: Administrators have complete and unrestricted access to the computer/domain
+member: CN=Domain Admins,CN=Users,${BASEDN}
+member: CN=Enterprise Admins,CN=Users,${BASEDN}
+member: CN=Administrator,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Administrators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-544
+adminCount: 1
+sAMAccountName: Administrators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Users,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Users
+description: Users are prevented from making accidental or intentional system-wide changes.  Thus, Users can run certified applications, but not most legacy applications
+member: CN=Domain Users,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Users
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-545
+sAMAccountName: Users
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Guests,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Guests
+description: Guests have the same access as members of the Users group by default, except for the Guest account which is further restricted
+member: CN=Domain Guests,CN=Users,${BASEDN}
+member: CN=Guest,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Guests
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-546
+sAMAccountName: Guests
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Print Operators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Print Operators
+description: Members can administer domain printers
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Print Operators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-550
+adminCount: 1
+sAMAccountName: Print Operators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Backup Operators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Backup Operators
+description: Backup Operators can override security restrictions for the sole purpose of backing up or restoring files
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Backup Operators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-551
+adminCount: 1
+sAMAccountName: Backup Operators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Replicator,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Replicator
+description: Supports file replication in a domain
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Replicator
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-552
+adminCount: 1
+sAMAccountName: Replicator
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Remote Desktop Users,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Remote Desktop Users
+description: Members in this group are granted the right to logon remotely
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Remote Desktop Users
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-555
+sAMAccountName: Remote Desktop Users
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Network Configuration Operators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Network Configuration Operators
+description: Members in this group can have some administrative privileges to manage configuration of networking features
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Network Configuration Operators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-556
+sAMAccountName: Network Configuration Operators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Performance Monitor Users,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Performance Monitor Users
+description: Members of this group have remote access to monitor this computer
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Performance Monitor Users
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-558
+sAMAccountName: Performance Monitor Users
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Performance Log Users,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Performance Log Users
+description: Members of this group have remote access to schedule logging of performance counters on this computer
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Performance Log Users
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-559
+sAMAccountName: Performance Log Users
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=${HOSTNAME},OU=Domain Controllers,${BASEDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+objectClass: computer
+cn: ${HOSTNAME}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: ${HOSTNAME}
+objectGUID: ${NEWGUID}
+userAccountControl: 532480
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 127273269057298624
+localPolicyFlags: 0
+pwdLastSet: 127258826171655328
+primaryGroupID: 516
+objectSid: ${DOMAINSID}-1000
+accountExpires: 9223372036854775807
+logonCount: 30
+sAMAccountName: ${HOSTNAME}$
+sAMAccountType: 805306369
+operatingSystem: Samba
+operatingSystemVersion: 4.0
+dNSHostName: ${DNSNAME}
+objectCategory: CN=Computer,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=krbtgt,CN=Users,${BASEDN}
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: user
+cn: krbtgt
+description: Key Distribution Center Service Account
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+showInAdvancedViewOnly: TRUE
+name: krbtgt
+objectGUID: ${NEWGUID}
+userAccountControl: 514
+badPwdCount: 0
+codePage: 0
+countryCode: 0
+badPasswordTime: 0
+lastLogoff: 0
+lastLogon: 0
+pwdLastSet: 127258826179466560
+primaryGroupID: 513
+objectSid: ${DOMAINSID}-502
+adminCount: 1
+accountExpires: 9223372036854775807
+logonCount: 0
+sAMAccountName: krbtgt
+sAMAccountType: 805306368
+servicePrincipalName: kadmin/changepw
+objectCategory: CN=Person,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Computers,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Domain Computers
+description: All workstations and servers joined to the domain
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Domain Computers
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-515
+sAMAccountName: Domain Computers
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Controllers,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Domain Controllers
+description: All domain controllers in the domain
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Domain Controllers
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-516
+adminCount: 1
+sAMAccountName: Domain Controllers
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Schema Admins,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Schema Admins
+description: Designated administrators of the schema
+member: CN=Administrator,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Schema Admins
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-518
+adminCount: 1
+sAMAccountName: Schema Admins
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Enterprise Admins,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Enterprise Admins
+description: Designated administrators of the enterprise
+member: CN=Administrator,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Enterprise Admins
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-519
+adminCount: 1
+sAMAccountName: Enterprise Admins
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Cert Publishers,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Cert Publishers
+description: Members of this group are permitted to publish certificates to the Active Directory
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Cert Publishers
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-517
+sAMAccountName: Cert Publishers
+sAMAccountType: 0x20000000
+groupType: -2147483644
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Admins,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Domain Admins
+description: Designated administrators of the domain
+member: CN=Administrator,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Administrators,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Domain Admins
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-512
+adminCount: 1
+sAMAccountName: Domain Admins
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Users,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Domain Users
+description: All domain users
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Users,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Domain Users
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-513
+sAMAccountName: Domain Users
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Domain Guests,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Domain Guests
+description: All domain guests
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+memberOf: CN=Guests,CN=Builtin,${BASEDN}
+uSNChanged: 1
+name: Domain Guests
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-514
+sAMAccountName: Domain Guests
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Group Policy Creator Owners,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Group Policy Creator Owners
+description: Members in this group can modify group policy for the domain
+member: CN=Administrator,CN=Users,${BASEDN}
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Group Policy Creator Owners
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-520
+sAMAccountName: Group Policy Creator Owners
+sAMAccountType: 268435456
+groupType: -2147483646
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=RAS and IAS Servers,CN=Users,${BASEDN}
+objectClass: top
+objectClass: group
+cn: RAS and IAS Servers
+description: Servers in this group can access remote access properties of users
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: RAS and IAS Servers
+objectGUID: ${NEWGUID}
+objectSid: ${DOMAINSID}-553
+sAMAccountName: RAS and IAS Servers
+sAMAccountType: 0x20000000
+groupType: -2147483644
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Server Operators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Server Operators
+description: Members can administer domain servers
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Server Operators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-549
+adminCount: 1
+sAMAccountName: Server Operators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
+
+dn: CN=Account Operators,CN=Builtin,${BASEDN}
+objectClass: top
+objectClass: group
+cn: Account Operators
+description: Members can administer domain user and group accounts
+instanceType: 4
+whenCreated: ${LDAPTIME}
+whenChanged: ${LDAPTIME}
+uSNCreated: 1
+uSNChanged: 1
+name: Account Operators
+objectGUID: ${NEWGUID}
+objectSid: S-1-5-32-548
+adminCount: 1
+sAMAccountName: Account Operators
+sAMAccountType: 0x20000000
+systemFlags: 0x8c000000
+groupType: 0x80000005
+objectCategory: CN=Group,CN=Schema,CN=Configuration,${BASEDN}
+isCriticalSystemObject: TRUE
