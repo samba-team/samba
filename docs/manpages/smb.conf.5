@@ -323,6 +323,10 @@ parameter for details.  Note that some are synonyms.
 
 auto services
 
+browse list
+
+character set
+
 config file
 
 deadtime
@@ -334,6 +338,8 @@ default
 default service
 
 dfree command
+
+domain controller
 
 domain master
 
@@ -359,9 +365,9 @@ log file
 
 log level
 
-logon script
-
 logon path
+
+logon script
 
 lpq cache time
 
@@ -369,11 +375,17 @@ mangled stack
 
 max log size
 
+max mux
+
 max packet
+
+max ttl
 
 max xmit
 
 message command
+
+netbios name
 
 nis homedir
 
@@ -421,6 +433,12 @@ security
 
 server string
 
+shared file entries
+
+shared mem size
+
+smb passwd file
+
 smbrun
 
 socket address
@@ -430,6 +448,10 @@ socket options
 status
 
 strip dot
+
+syslog
+
+syslog only
 
 time offset
 
@@ -725,11 +747,32 @@ shares in a net view and in the browse list.
 
 .B Example: 
 	browseable = No
+.SS browse list(G)
+This controls whether the smbd will serve a browse list to a client
+doing a NetServerEnum call. Normally set to true. You should never
+need to change this.
+
+.B Default:
+	browse list = Yes
+
 .SS case sensitive (G)
 See the discussion on NAME MANGLING.
 
 .SS case sig names (G)
 See "case sensitive"
+
+.SS character set (G)
+This allows a smbd to map incoming characters from a DOS 850 Code page
+to either a Western European (ISO8859-1) or Easter European (ISO8859-2)
+code page. Normally not set, meaning no filename translation is done.
+
+.B Default
+
+	character set =
+
+.B Example
+
+	character set = iso8859-1
 
 .SS comment (S)
 This is a text field that is seen when a client does a net view to
@@ -952,6 +995,16 @@ least user read, write and execute for Samba to work properly.
 .SS directory mode (S)
 See
 .B directory mask.
+.SS domain controller (G)
+
+Specifies the DNS name or IP address of the machine that nmbd 
+will sync browse lists with if it becomes a local master browser. 
+Also sets the machine to refer domain logons from Win95 machines 
+to. You should never need to set this parameter.
+
+.B Default:
+	domain controller =
+
 .SS domain master (G)
 
 Enable WAN-wide browse list collation.  Local master browsers on 
@@ -991,6 +1044,31 @@ defaults to no.
 
 This is an alias for preexec
 
+.SS fake oplocks (S)
+
+Oplocks are the way that SMB clients get permission from a server to
+locally cache file operations. If a server grants an oplock
+(opportunistic lock) then the client is free to assume that it is the
+only one accessing the file and it will aggressively cache file
+data. With some oplock types the client may even cache file open/close
+operations. This can give enormous performance benefits.
+
+Samba does not support opportunistic locks because they are very
+difficult to do under Unix. Samba can fake them, however, by granting
+a oplock whenever a client asks for one. This is controlled using the
+smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
+you are telling the client that it may aggressively cache the file
+data.
+
+By enabling this option on all read-only shares or shares that you know
+will only be accessed from one client at a time you will see a big
+performance improvement on many operations. If you enable this option
+on shares where multiple clients may be accessing the files read-write
+at the same time you can get data corruption. Use this option
+carefully! 
+
+This option is disabled by default.
+
 
 .SS force group (S)
 This specifies a group name that all connections to this service
@@ -1019,6 +1097,21 @@ password. Once connected, all file operations will be performed as the
 .B Example:
        force user = auser
 
+.SS getwd cache (G)
+This is a tuning option. When this is enabled a cacheing algorithm will
+be used to reduce the time taken for getwd() calls. This can have a
+significant impact on performance, especially when widelinks is False.
+
+.B Default:
+ 	getwd cache = No
+
+.B Example:
+ 	getwd cache = Yes
+
+.SS group (S)
+This is an alias for "force group" and is only kept for compatibility
+with old versions of Samba. It may be removed in future versions.
+
 .SS guest account (S)
 This is a username which will be used for access to services which are
 specified as 'guest ok' (see below). Whatever privileges this user has
@@ -1041,16 +1134,6 @@ differently for each service.
 
 .B Example:
  	guest account = nobody
-.SS getwd cache (G)
-This is a tuning option. When this is enabled a cacheing algorithm will
-be used to reduce the time taken for getwd() calls. This can have a
-significant impact on performance, especially when widelinks is False.
-
-.B Default:
- 	getwd cache = No
-
-.B Example:
- 	getwd cache = Yes
 .SS guest ok (S)
 See
 .B public.
@@ -1106,10 +1189,6 @@ See
 See
 .B deny hosts.
 
-.SS group (S)
-This is an alias for "force group" and is only kept for compatibility
-with old versions of Samba. It may be removed in future versions.
-
 .SS hosts equiv (G)
 If this global parameter is a non-null string, it specifies the name of
 a file to read for the names of hosts and users who will be allowed access
@@ -1132,6 +1211,13 @@ or perhaps on a home network where you trust your wife and kids :-)
 
 .B Example
 	hosts equiv = /etc/hosts.equiv
+
+.SS include (G)
+
+This allows you to include one config file inside another.  The file is
+included literally, as though typed in place.
+
+It takes the standard substitutions, except %u, %P and %S
 
 .SS interfaces (G)
 
@@ -1175,13 +1261,6 @@ See also "valid users"
 
 .B Example
 	invalid users = root fred admin @wheel
-
-.SS include (G)
-
-This allows you to include one config file inside another.  The file is
-included literally, as though typed in place.
-
-It takes the standard substitutions, except %u, %P and %S
 
 .SS keep alive (G)
 The value of the parameter (an integer) represents the number of seconds 
@@ -1253,6 +1332,33 @@ separate log files for each user or machine.
 .SS log level (G)
 see "debug level"
 
+.SS logon path (G)
+
+This parameter specifies the home directory where roaming profiles 
+(USER.DAT / USER.MAN files) are stored.
+
+This option takes the standard substitutions, allowing you to have
+separate logon scripts for each user or machine.  It also specifies
+the directory from which the "desktop", "start menu", "nethood" and
+"programs" folders, and their contents, are loaded and displayed
+on your Windows 95 client.
+
+The share and the path must be readable by the user for the preferences
+and directories to be loaded onto the Windows 95 client.  The share
+must be writeable when the logs in for the first time, in order that
+the Windows 95 client can create the user.dat and other directories.
+
+Thereafter, the directories and any of contents can, if required,
+be made read-only.  It is not adviseable that the USER.DAT file be made
+read-only - rename it to USER.MAN to achieve the desired effect
+(a MANdatory profile).
+
+.B Default:
+ 	logon path = \\\\%L\\%U 
+
+.B Example:
+	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U
+
 .SS logon script (G)
 
 This parameter specifies the batch file (.bat) or NT command file (.cmd)
@@ -1283,33 +1389,6 @@ separate logon scripts for each user or machine.
 
 .B Example:
 	logon script = scripts/%U.bat
-
-.SS logon path (G)
-
-This parameter specifies the home directory where roaming profiles 
-(USER.DAT / USER.MAN files) are stored.
-
-This option takes the standard substitutions, allowing you to have
-separate logon scripts for each user or machine.  It also specifies
-the directory from which the "desktop", "start menu", "nethood" and
-"programs" folders, and their contents, are loaded and displayed
-on your Windows 95 client.
-
-The share and the path must be readable by the user for the preferences
-and directories to be loaded onto the Windows 95 client.  The share
-must be writeable when the logs in for the first time, in order that
-the Windows 95 client can create the user.dat and other directories.
-
-Thereafter, the directories and any of contents can, if required,
-be made read-only.  It is not adviseable that the USER.DAT file be made
-read-only - rename it to USER.MAN to achieve the desired effect
-(a MANdatory profile).
-
-.B Default:
- 	logon path = \\\\%L\\%U 
-
-.B Example:
-	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U
 
 .SS lppause command (S)
 This parameter specifies the command to be executed on the server host in
@@ -1477,6 +1556,11 @@ Magic scripts are EXPERIMENTAL and should NOT be relied upon.
 
 .B Example:
  	magic script = user.csh
+
+.SS mangle case (S)
+
+See the section on "NAME MANGLING"
+
 .SS mangled map (S)
 This is for those who want to directly map UNIX file names which are
 not representable on DOS.  The mangling of names is not always what is
@@ -1498,10 +1582,6 @@ use a map of (*;1 *)
 
 .B Example:
 	mangled map = (*;1 *)
-
-.SS mangle case (S)
-
-See the section on "NAME MANGLING"
 
 .SS mangled names (S)
 This controls whether non-DOS names under UNIX should be mapped to
@@ -1564,55 +1644,6 @@ software. Use this option to set it to whatever you prefer.
 
 .B Example:
  	mangling char = ^
-
-.SS max disk size (G)
-This option allows you to put an upper limit on the apparent size of
-disks. If you set this option to 100 then all shares will appear to be
-not larger than 100 MB in size.
-
-Note that this option does not limit the amount of data you can put on
-the disk. In the above case you could still store much more than 100
-MB on the disk, but if a client ever asks for the amount of free disk
-space or the total disk size then the result will be bounded by the
-amount specified in "max disk size".
-
-This option is primarily useful to work around bugs in some pieces of
-software that can't handle very large disks, particularly disks over
-1GB in size.
-
-A "max disk size" of 0 means no limit.
-
-.B Default:
-	max disk size = 0
-
-.B Example:
-	max disk size = 1000
-.SS max log size (G)
-
-This option (an integer in kilobytes) specifies the max size the log
-file should grow to. Samba periodically checks the size and if it is
-exceeded it will rename the file, adding a .old extension.
-
-A size of 0 means no limit.
-
-.B Default:
-	max log size = 5000
-
-.B Example:
- 	max log size = 1000
-
-.SS max xmit (G)
-
-This option controls the maximum packet size that will be negotiated
-by Samba. The default is 65535, which is the maximum. In some cases
-you may find you get better performance with a smaller value. A value
-below 2048 is likely to cause problems.
-
-.B Default:
-	max xmit = 65535
-
-.B Example:
- 	max xmit = 8192
 
 .SS mangled stack (G)
 This parameter controls the number of mangled names that should be cached in
@@ -1682,48 +1713,76 @@ will be stored in the directory specified by the "lock directory" option.
 
 .B Example:
 	max connections = 10
-.SS only user (S)
-This is a boolean option that controls whether connections with
-usernames not in the user= list will be allowed. By default this
-option is disabled so a client can supply a username to be used by
-the server.
 
-Note that this also means Samba won't try to deduce usernames from the
-service name. This can be annoying for the [homes] section. To get
-around this you could use "user = %S" which means your "user" list
-will be just the service name, which for home directories is the name
-of the user.
+.SS max disk size (G)
+This option allows you to put an upper limit on the apparent size of
+disks. If you set this option to 100 then all shares will appear to be
+not larger than 100 MB in size.
 
-.B Default: 
-	only user = False
+Note that this option does not limit the amount of data you can put on
+the disk. In the above case you could still store much more than 100
+MB on the disk, but if a client ever asks for the amount of free disk
+space or the total disk size then the result will be bounded by the
+amount specified in "max disk size".
 
-.B Example: 
-	only user = True
+This option is primarily useful to work around bugs in some pieces of
+software that can't handle very large disks, particularly disks over
+1GB in size.
 
-.SS fake oplocks (S)
+A "max disk size" of 0 means no limit.
 
-Oplocks are the way that SMB clients get permission from a server to
-locally cache file operations. If a server grants an oplock
-(opportunistic lock) then the client is free to assume that it is the
-only one accessing the file and it will aggressively cache file
-data. With some oplock types the client may even cache file open/close
-operations. This can give enormous performance benefits.
+.B Default:
+	max disk size = 0
 
-Samba does not support opportunistic locks because they are very
-difficult to do under Unix. Samba can fake them, however, by granting
-a oplock whenever a client asks for one. This is controlled using the
-smb.conf option "fake oplocks". If you set "fake oplocks = yes" then
-you are telling the client that it may aggressively cache the file
-data.
+.B Example:
+	max disk size = 1000
 
-By enabling this option on all read-only shares or shares that you know
-will only be accessed from one client at a time you will see a big
-performance improvement on many operations. If you enable this option
-on shares where multiple clients may be accessing the files read-write
-at the same time you can get data corruption. Use this option
-carefully! 
+.SS max log size (G)
 
-This option is disabled by default.
+This option (an integer in kilobytes) specifies the max size the log
+file should grow to. Samba periodically checks the size and if it is
+exceeded it will rename the file, adding a .old extension.
+
+A size of 0 means no limit.
+
+.B Default:
+	max log size = 5000
+
+.B Example:
+ 	max log size = 1000
+
+.SS max mux (G)
+
+This option controls the maximum number of simultaneous reads that
+samba tells the client it will allow. You should never need to set this
+parameter.
+
+.B Default:
+	max mux = 2
+
+.SS max packet (G)
+
+A synonym for this parameter is 'packet size'.
+
+.SS max ttl (G)
+
+This option tells nmbd what the default 'time to live' of NetBIOS
+names should be (in seconds). You should never need to change this parameter.
+
+.B Default:
+	max ttl = 14400
+.SS max xmit (G)
+
+This option controls the maximum packet size that will be negotiated
+by Samba. The default is 65535, which is the maximum. In some cases
+you may find you get better performance with a smaller value. A value
+below 2048 is likely to cause problems.
+
+.B Default:
+	max xmit = 65535
+
+.B Example:
+ 	max xmit = 8192
 
 .SS message command (G)
 
@@ -1799,6 +1858,11 @@ kilobytes. The default is 0, which means no limit.
 .B Example:
 	min print space = 2000
 
+.SS netbios name (G)
+
+This sets the NetBIOS name by which a Samba server is known. By
+default it is the same as the first component of the host's DNS name.
+
 .SS nis homedir (G)
 Get the home share server from a NIS (or YP) map. For unix systems that
 use an automounter, the user's home directory will often be mounted on
@@ -1827,6 +1891,27 @@ Allow or disallow access to accounts that have null passwords.
 
 .B Example:
 	null passwords = yes
+
+.SS only guest (S)
+A synonym for this command is 'guest only'.
+
+.SS only user (S)
+This is a boolean option that controls whether connections with
+usernames not in the user= list will be allowed. By default this
+option is disabled so a client can supply a username to be used by
+the server.
+
+Note that this also means Samba won't try to deduce usernames from the
+service name. This can be annoying for the [homes] section. To get
+around this you could use "user = %S" which means your "user" list
+will be just the service name, which for home directories is the name
+of the user.
+
+.B Default: 
+	only user = False
+
+.B Example: 
+	only user = True
 
 .SS os level (G)
 This integer value controls what level Samba advertises itself as for
@@ -2142,19 +2227,6 @@ parameter controls only non-printing access to the resource.
 .B Example:
  	printable = yes
 
-.SS printing (G)
-This parameters controls how printer status information is interpreted
-on your system, and also affects the default values for the "print
-command", "lpq command" and "lprm command".
-
-Currently six printing styles are supported. They are "printing =
-bsd", "printing = sysv", "printing = hpux", "printing = aix",
-"printing = qnx" and "printing = plp".
-
-To see what the defaults are for the other print commands when using
-these three options use the "testparm" program.
-
-
 .SS printcap name (G)
 This parameter may be used to override the compiled-in default printcap
 name used by the server (usually /etc/printcap). See the discussion of the
@@ -2222,6 +2294,19 @@ scrollbox after you have chosen the printer manufacturer.
 .SS printer name (S)
 See
 .B printer.
+
+.SS printing (G)
+This parameters controls how printer status information is interpreted
+on your system, and also affects the default values for the "print
+command", "lpq command" and "lprm command".
+
+Currently six printing styles are supported. They are "printing =
+bsd", "printing = sysv", "printing = hpux", "printing = aix",
+"printing = qnx" and "printing = plp".
+
+To see what the defaults are for the other print commands when using
+these three options use the "testparm" program.
+
 
 .SS protocol (G)
 The value of the parameter (a string) is the highest protocol level that will
@@ -2401,6 +2486,18 @@ The set of files that must be mirrored is operating system dependent.
 
 .B Example:
  	root directory = /homes/smb
+.SS root postexec (S)
+
+This is the same as postexec except that the command is run as
+root. This is useful for unmounting filesystems (such as cdroms) after
+a connection is closed.
+
+.SS root preexec (S)
+
+This is the same as preexec except that the command is run as
+root. This is useful for mounting filesystems (such as cdroms) before
+a connection is finalised.
+
 .SS security (G)
 This option affects how clients respond to Samba.
 
@@ -2452,40 +2549,6 @@ A %h will be replaced with the hostname.
 .B Example:
 	server string = University of GNUs Samba Server
 
-.SS smbrun (G)
-This sets the full path to the smbrun binary. This defaults to the
-value in the Makefile.
-
-You must get this path right for many services to work correctly.
-
-.B Default:
-taken from Makefile
-
-.B Example:
-	smbrun = /usr/local/samba/bin/smbrun
-
-.SS short preserve case (S)
-
-This controls if new short filenames are created with the case that
-the client passes, or if they are forced to be the "default" case.
-
-.B Default:
-       short preserve case = no
-
-See the section on "NAME MANGLING" for a fuller discussion.
-
-.SS root preexec (S)
-
-This is the same as preexec except that the command is run as
-root. This is useful for mounting filesystems (such as cdroms) before
-a connection is finalised.
-
-.SS root postexec (S)
-
-This is the same as postexec except that the command is run as
-root. This is useful for unmounting filesystems (such as cdroms) after
-a connection is closed.
-
 .SS set directory (S)
 If 'set directory = no', then users of the service may not use the setdir
 command to change directory.
@@ -2498,6 +2561,41 @@ Pathworks documentation for details.
 
 .B Example:
  	set directory = yes
+
+.SS shared file entries (G)
+This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
+It specifies the number of hash bucket entries used for share file locking.
+You should never change this parameter unless you have studied the source 
+and know what you are doing.
+
+.B Default
+	shared file entries = 113
+
+.SS shared mem size (G)
+This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
+It specifies the size of the shared memory (in bytes) to use between smbd 
+processes. You should never change this parameter unless you have studied 
+the source and know what you are doing.
+
+.B Default
+	shared mem size = 102400
+
+.SS smb passwd file (G)
+This option sets the path to the encrypted smbpasswd file. This is a *VERY
+DANGEROUS OPTION* if the smb.conf is user writable. By default the path
+to the smbpasswd file is compiled into Samba.
+
+.SS smbrun (G)
+This sets the full path to the smbrun binary. This defaults to the
+value in the Makefile.
+
+You must get this path right for many services to work correctly.
+
+.B Default:
+taken from Makefile
+
+.B Example:
+	smbrun = /usr/local/samba/bin/smbrun
 
 .SS share modes (S)
 
@@ -2520,6 +2618,16 @@ of processing time on the UNIX server. They are enabled by default.
 
 .B Example:
 	share modes = no
+
+.SS short preserve case (S)
+
+This controls if new short filenames are created with the case that
+the client passes, or if they are forced to be the "default" case.
+
+.B Default:
+       short preserve case = no
+
+See the section on "NAME MANGLING" for a fuller discussion.
 
 .SS socket address (G)
 
@@ -2627,15 +2735,6 @@ connections are active.
 .B Example:
 	status = no
 
-.SS strip dot (G)
-This is a boolean that controls whether to strip trailing dots off
-filenames. This helps with some CDROMs that have filenames ending in a
-single dot.
-
-NOTE: This option is now obsolete, and may be removed in future. You
-should use the "mangled map" option instead as it is much more
-general. 
-
 .SS strict locking (S)
 This is a boolean that controls the handling of file locking in the
 server. When this is set to yes the server will check every read and
@@ -2653,6 +2752,35 @@ so in the vast majority of cases "strict locking = no" is preferable.
 
 .B Example:
 	strict locking = yes
+
+.SS strip dot (G)
+This is a boolean that controls whether to strip trailing dots off
+filenames. This helps with some CDROMs that have filenames ending in a
+single dot.
+
+NOTE: This option is now obsolete, and may be removed in future. You
+should use the "mangled map" option instead as it is much more
+general. 
+
+.SS syslog (G)
+This parameter maps how Samba debug messages are logged onto the
+system syslog logging levels. Samba debug level zero maps onto
+syslog LOG_ERR, debug level one maps onto LOG_WARNING, debug
+level two maps to LOG_NOTICE, debug level three maps onto LOG_INFO.
+The paramter sets the threshold for doing the mapping, all Samba
+debug messages above this threashold are mapped to syslog LOG_DEBUG
+messages.
+
+.B Default:
+
+	syslog = 1
+
+.SS syslog only (G)
+If this parameter is set then Samba debug messages are logged into
+the system syslog only, and not to the debug log files.
+
+.B Default:
+	syslog only = no
 
 .SS sync always (S)
 
@@ -2883,25 +3011,27 @@ some older clients.
 
 .B Default:
 	wins proxy = no
+.SS wins server (G)
+
+This specifies the DNS name (or IP address) of the WINS server that Samba 
+should register with. If you have a WINS server on your network then you
+should set this to the WINS servers name.
+
+You should point this at your WINS server if you have a multi-subnetted
+network.
+.B Default:
+	wins server = 
+
 .SS wins support (G)
 
 This boolean controls if Samba will act as a WINS server. You should
-normally set this to true unless you already have another WINS server
-on the network.
+not set this to true unless you have a multi-subnetted network and
+you wish a particular nmbd to be your WINS server. Note that you
+should *NEVER* set this to true on more than one machine in your
+network.
 
 .B Default:
-	wins support = yes
-.SS wins server (G)
-
-This specifies the DNS name of the WINS server that Samba should
-register with. If you have a WINS server on your network then you
-should set this to the WINS servers name.
-
-This option only takes effect if Samba is not acting as a WINS server
-itself. 
-
-.B Default:
-	wins server = 
+	wins support = no
 .SS workgroup (G)
 
 This controls what workgroup your server will appear to be in when
@@ -2913,11 +3043,6 @@ queried by clients.
 .B Example:
  	workgroup = MYGROUP
 
-.SS write ok (S)
-See
-.B writable
-and
-.B read only.
 .SS writable (S)
 A synonym for this parameter is 'write ok'. An inverted synonym is 'read only'.
 
@@ -2952,6 +3077,11 @@ See also the "read list" option
 .B Example:
      write list = admin, root, @staff
 
+.SS write ok (S)
+See
+.B writable
+and
+.B read only.
 .SS write raw (G)
 This parameter controls whether or not the server will support raw writes when
 transferring data from clients.
@@ -3015,7 +3145,7 @@ administrator easy, but the various combinations of default attributes can be
 tricky. Take extreme care when designing these sections. In particular,
 ensure that the permissions on spool directories are correct.
 .SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
+This man page is (mostly) correct for version 1.9.16 of the Samba suite, plus some
 of the recent patches to it. These notes will necessarily lag behind 
 development of the software, so it is possible that your version of 
 the server has extensions or parameter semantics that differ from or are not 
