@@ -107,7 +107,7 @@ posix_getpwuid_r(uid_t uid, struct passwd *pwd,
 #ifndef DEBUG
 #define SIA_DEBUG(X)
 #else
-#define SIA_DEBUG(X) warnx X
+#define SIA_DEBUG(X) SIALOG X
 #endif
 
 struct state{
@@ -124,7 +124,7 @@ siad_init(void)
 int 
 siad_chk_invoker(void)
 {
-    SIA_DEBUG(("siad_chk_invoker"));
+    SIA_DEBUG(("DEBUG", "siad_chk_invoker"));
     return SIADFAIL;
 }
 
@@ -132,7 +132,7 @@ int
 siad_ses_init(SIAENTITY *entity, int pkgind)
 {
     struct state *s = malloc(sizeof(*s));
-    SIA_DEBUG(("siad_ses_init"));
+    SIA_DEBUG(("DEBUG", "siad_ses_init"));
     if(s == NULL)
 	return SIADFAIL;
     memset(s, 0, sizeof(*s));
@@ -143,10 +143,10 @@ siad_ses_init(SIAENTITY *entity, int pkgind)
 static int
 setup_name(SIAENTITY *e, prompt_t *p)
 {
-    SIA_DEBUG(("setup_name"));
+    SIA_DEBUG(("DEBUG", "setup_name"));
     e->name = malloc(SIANAMEMIN+1);
     if(e->name == NULL){
-	SIA_DEBUG(("failed to malloc %u bytes", SIANAMEMIN+1));
+	SIA_DEBUG(("DEBUG", "failed to malloc %u bytes", SIANAMEMIN+1));
 	return SIADFAIL;
     }
     p->prompt = (unsigned char*)"login: ";
@@ -160,10 +160,10 @@ setup_name(SIAENTITY *e, prompt_t *p)
 static int
 setup_password(SIAENTITY *e, prompt_t *p)
 {
-    SIA_DEBUG(("setup_password"));
+    SIA_DEBUG(("DEBUG", "setup_password"));
     e->password = malloc(SIAMXPASSWORD+1);
     if(e->password == NULL){
-	SIA_DEBUG(("failed to malloc %u bytes", SIAMXPASSWORD+1));
+	SIA_DEBUG(("DEBUG", "failed to malloc %u bytes", SIAMXPASSWORD+1));
 	return SIADFAIL;
     }
     p->prompt = (unsigned char*)"Password: ";
@@ -185,11 +185,11 @@ common_auth(sia_collect_func_t *collect,
     char *toname, *toinst;
     char *name;
 
-    SIA_DEBUG(("common_auth"));
+    SIA_DEBUG(("DEBUG", "common_auth"));
     if((siastat == SIADSUCCESS) && (geteuid() == 0))
 	return SIADSUCCESS;
     if(entity == NULL) {
-	SIA_DEBUG(("entity == NULL"));
+	SIA_DEBUG(("DEBUG", "entity == NULL"));
 	return SIADFAIL | SIADSTOP;
     }
     name = entity->name;
@@ -213,13 +213,13 @@ common_auth(sia_collect_func_t *collect,
 	if(num == 1){
 	    if((*collect)(240, SIAONELINER, (unsigned char*)"", num, 
 			  prompts) != SIACOLSUCCESS){
-		SIA_DEBUG(("collect failed"));
+		SIA_DEBUG(("DEBUG", "collect failed"));
 		return SIADFAIL | SIADSTOP;
 	    }
 	} else if(num > 0){
 	    if((*collect)(0, SIAFORM, (unsigned char*)"", num, 
 			  prompts) != SIACOLSUCCESS){
-		SIA_DEBUG(("collect failed"));
+		SIA_DEBUG(("DEBUG", "collect failed"));
 		return SIADFAIL | SIADSTOP;
 	    }
 	}
@@ -227,12 +227,12 @@ common_auth(sia_collect_func_t *collect,
     if(name == NULL)
 	name = entity->name;
     if(name == NULL || name[0] == '\0'){
-	SIA_DEBUG(("name is null"));
+	SIA_DEBUG(("DEBUG", "name is null"));
 	return SIADFAIL;
     }
 
     if(entity->password == NULL || strlen(entity->password) > SIAMXPASSWORD){
-	SIA_DEBUG(("entity->password is null"));
+	SIA_DEBUG(("DEBUG", "entity->password is null"));
 	return SIADFAIL;
     }
     
@@ -244,7 +244,7 @@ common_auth(sia_collect_func_t *collect,
 	struct state *s = (struct state*)entity->mech[pkgind];
 	
 	if(getpwnam_r(name, &pw, pwbuf, sizeof(pwbuf), &pwd) != 0){
-	    SIA_DEBUG(("failed to getpwnam(%s)", name));
+	    SIA_DEBUG(("DEBUG", "failed to getpwnam(%s)", name));
 	    return SIADFAIL;
 	}
 	
@@ -261,7 +261,7 @@ common_auth(sia_collect_func_t *collect,
 	    ouid = getuid();
 #endif
 	    if(getpwuid_r(ouid, &fpw, fpwbuf, sizeof(fpwbuf), &fpwd) != 0){
-		SIA_DEBUG(("failed to getpwuid(%u)", ouid));
+		SIA_DEBUG(("DEBUG", "failed to getpwuid(%u)", ouid));
 		return SIADFAIL;
 	    }
 	    snprintf(s->ticket, sizeof(s->ticket), TKT_ROOT "_%s_to_%s_%d", 
@@ -278,14 +278,14 @@ common_auth(sia_collect_func_t *collect,
 	
 	setuid(0); /* XXX fix for fix in tf_util.c */
 	if(krb_kuserok(toname, toinst, realm, name)){
-	    SIA_DEBUG(("%s.%s@%s is not allowed to login as %s", 
+	    SIA_DEBUG(("DEBUG", "%s.%s@%s is not allowed to login as %s", 
 		       toname, toinst, realm, name));
 	    return SIADFAIL;
 	}
 	ret = krb_verify_user(toname, toinst, realm,
 			      entity->password, getuid() == 0, NULL);
 	if(ret){
-	    SIA_DEBUG(("krb_verify_user: %s", krb_get_err_text(ret)));
+	    SIA_DEBUG(("DEBUG", "krb_verify_user: %s", krb_get_err_text(ret)));
 	    if(ret != KDC_PR_UNKNOWN)
 		/* since this is most likely a local user (such as
                    root), just silently return failure when the
@@ -308,7 +308,7 @@ siad_ses_authent(sia_collect_func_t *collect,
 		 int siastat,
 		 int pkgind)
 {
-    SIA_DEBUG(("siad_ses_authent"));
+    SIA_DEBUG(("DEBUG", "siad_ses_authent"));
     return common_auth(collect, entity, siastat, pkgind);
 }
 
@@ -316,7 +316,7 @@ int
 siad_ses_estab(sia_collect_func_t *collect, 
 	       SIAENTITY *entity, int pkgind)
 {
-    SIA_DEBUG(("siad_ses_estab"));
+    SIA_DEBUG(("DEBUG", "siad_ses_estab"));
     return SIADFAIL;
 }
 
@@ -327,7 +327,7 @@ siad_ses_launch(sia_collect_func_t *collect,
 {
     static char env[MaxPathLen];
     struct state *s = (struct state*)entity->mech[pkgind];
-    SIA_DEBUG(("siad_ses_launch"));
+    SIA_DEBUG(("DEBUG", "siad_ses_launch"));
     if(s->valid){
 	chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
 	snprintf(env, sizeof(env), "KRBTKFILE=%s", s->ticket);
@@ -346,7 +346,7 @@ siad_ses_launch(sia_collect_func_t *collect,
 int 
 siad_ses_release(SIAENTITY *entity, int pkgind)
 {
-    SIA_DEBUG(("siad_ses_release"));
+    SIA_DEBUG(("DEBUG", "siad_ses_release"));
     if(entity->mech[pkgind])
 	free(entity->mech[pkgind]);
     return SIADSUCCESS;
@@ -358,7 +358,7 @@ siad_ses_suauthent(sia_collect_func_t *collect,
 		   int siastat,
 		   int pkgind)
 {
-    SIA_DEBUG(("siad_ses_suauth"));
+    SIA_DEBUG(("DEBUG", "siad_ses_suauth"));
     if(geteuid() != 0)
 	return SIADFAIL;
     if(entity->name == NULL)
@@ -377,16 +377,22 @@ siad_ses_reauthent (sia_collect_func_t *collect,
 		    int pkgind)
 {
     int ret;
-    SIA_DEBUG(("siad_ses_reauthent"));
+    SIA_DEBUG(("DEBUG", "siad_ses_reauthent"));
     if(entity == NULL || entity->name == NULL)
 	return SIADFAIL;
     ret = common_auth(collect, entity, siastat, pkgind);
-    if((ret & SIADSUCCESS) && k_hasafs()) {
-	char cell[64];
-	k_setpag();
-	if(k_afs_cell_of_file(entity->pwd->pw_dir, cell, sizeof(cell)) == 0)
-	    krb_afslog(cell, 0);
-	krb_afslog(0, 0);
+    if((ret & SIADSUCCESS)){
+	/* launch isn't (always?) called when doing reauth, so we must
+           duplicate some code here... */
+	struct state *s = (struct state*)entity->mech[pkgind];
+	chown(s->ticket, entity->pwd->pw_uid, entity->pwd->pw_gid);
+	if(k_hasafs()) {
+	    char cell[64];
+	    if(k_afs_cell_of_file(entity->pwd->pw_dir, 
+				  cell, sizeof(cell)) == 0)
+		krb_afslog(cell, 0);
+	    krb_afslog(0, 0);
+	}
     }
     return ret;
 }
@@ -397,7 +403,7 @@ siad_chg_finger (sia_collect_func_t *collect,
 		     int argc, 
 		     char *argv[])
 {
-    SIA_DEBUG(("siad_chg_finger"));
+    SIA_DEBUG(("DEBUG", "siad_chg_finger"));
     return SIADFAIL;
 }
 
@@ -419,7 +425,7 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
     char tktstring[128];
     int ret;
     
-    SIA_DEBUG(("init_change"));
+    SIA_DEBUG(("DEBUG", "init_change"));
     prompt.prompt = (unsigned char*)"Old password: ";
     prompt.result = (unsigned char*)old_pw;
     prompt.min_result_length = 0;
@@ -427,12 +433,12 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
     prompt.control_flags = SIARESINVIS;
     asprintf(&msg, "Changing password for %s", krb_unparse_name(princ));
     if(msg == NULL){
-	SIA_DEBUG(("out of memory"));
+	SIA_DEBUG(("DEBUG", "out of memory"));
 	return SIADFAIL;
     }
     ret = (*collect)(60, SIAONELINER, (unsigned char*)msg, 1, &prompt);
     free(msg);
-    SIA_DEBUG(("ret = %d", ret));
+    SIA_DEBUG(("DEBUG", "ret = %d", ret));
     if(ret != SIACOLSUCCESS)
 	return SIADFAIL;
     snprintf(tktstring, sizeof(tktstring), 
@@ -442,7 +448,7 @@ init_change(sia_collect_func_t *collect, krb_principal *princ)
     ret = krb_get_pw_in_tkt(princ->name, princ->instance, princ->realm, 
 			    PWSERV_NAME, KADM_SINST, 1, old_pw);
     if (ret != KSUCCESS) {
-	SIA_DEBUG(("krb_get_pw_in_tkt: %s", krb_get_err_text(ret)));
+	SIA_DEBUG(("DEBUG", "krb_get_pw_in_tkt: %s", krb_get_err_text(ret)));
 	if (ret == INTK_BADPW)
 	    sia_message(collect, SIAWARNING, "", "Incorrect old password.");
 	else
@@ -473,7 +479,7 @@ siad_chg_password (sia_collect_func_t *collect,
 
     set_progname(argv[0]);
 
-    SIA_DEBUG(("siad_chg_password"));
+    SIA_DEBUG(("DEBUG", "siad_chg_password"));
     if(collect == NULL)
 	return SIADFAIL;
 
