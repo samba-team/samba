@@ -41,7 +41,7 @@ BOOL lookup_name(const char *domain, const char *name, DOM_SID *psid,
 		return False;
 
 	become_root();
-	res = nt_to_unix_name(name, &unix_name, &is_user);
+	res = nt_to_unix_name(NULL, name, &unix_name, &is_user);
 	unbecome_root();
 
 	if (!res)
@@ -90,7 +90,7 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 		fstrcpy(dom_name, get_global_sam_name());
 
 		become_root();
-		unix_username_to_ntname(pwd->pw_name, &ntname);
+		unix_username_to_ntname(NULL, pwd->pw_name, &ntname);
 		unbecome_root();
 		fstrcpy(name, ntname);
 		SAFE_FREE(ntname);
@@ -107,7 +107,7 @@ BOOL lookup_sid(const DOM_SID *sid, fstring dom_name, fstring name,
 		fstrcpy(dom_name, get_global_sam_name());
 
 		become_root();
-		unix_groupname_to_ntname(grp->gr_name, &ntname);
+		unix_groupname_to_ntname(NULL, grp->gr_name, &ntname);
 		unbecome_root();
 		fstrcpy(name, ntname);
 		SAFE_FREE(ntname);

@@ -28,6 +28,7 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 #define GROUP_PREFIX "UNIXGROUP/"
 #define NAME_PREFIX "NAMEMAP/"
+#define COMMENT_PREFIX "COMMENT/"
 
 /* Alias memberships are stored reverse, as memberships. The performance
  * critical operation is to determine the aliases a SID is member of, not
@@ -1410,45 +1411,63 @@ NTSTATUS pdb_nop_enum_group_mapping(struct pdb_methods *methods,
 	return NT_STATUS_UNSUCCESSFUL;
 }
 
+static char *maybe_talloc_strdup(TALLOC_CTX *mem_ctx, const char *p)
+{
+	return (mem_ctx != NULL) ? talloc_strdup(mem_ctx, p) : strdup(p);
+}
+
 /****************************************************************************
  These need to be redirected through pdb_interface.c
 ****************************************************************************/
-void pdb_get_dom_grp_info(fstring unix_name, struct dom_grp_info *info)
-{
-	GROUP_MAP map;
-	BOOL res;
-	char *ntname;
 
-	unix_groupname_to_ntname(unix_name, &ntname);
-	fstrcpy(info->name, ntname);
-	SAFE_FREE(ntname);
-	fstrcpy(info->desc, "");
+void pdb_get_group_comment(TALLOC_CTX *mem_ctx, const char *unix_name,
+			   char **comment)
+{
+	TDB_DATA kbuf, dbuf;
+	pstring key;
 
 	become_root();
-	res = pdb_getgrnam(&map, unix_name);
+	if(!init_group_mapping()) {
+		unbecome_root();
+		*comment = maybe_talloc_strdup(mem_ctx, "");
+		DEBUG(0,("failed to initialize group mapping\n"));
+		return;
+	}
+
+	slprintf(key, sizeof(key), "%s%s", COMMENT_PREFIX, unix_name);
+
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+
+	dbuf = tdb_fetch(tdb, kbuf);
+
 	unbecome_root();
 
-	if (res && (map.sid_name_use == SID_NAME_DOM_GRP)) {
-		fstrcpy(info->desc, map.comment);
-	}
+	*comment = maybe_talloc_strdup(mem_ctx,
+				       (dbuf.dptr != NULL) ? dbuf.dptr : "");
+	SAFE_FREE(dbuf.dptr);
+
+	return;
 }
 
-BOOL pdb_set_dom_grp_info(fstring unix_name, const struct dom_grp_info *info)
+BOOL pdb_set_group_comment(const char *unix_name, const char *comment)
 {
-	GROUP_MAP map;
-	BOOL res;
+	TDB_DATA kbuf, dbuf;
+	pstring key;
 
-	become_root();
-	res = pdb_getgrnam(&map, unix_name);
-	unbecome_root();
-
-	if (!res || (map.sid_name_use != SID_NAME_DOM_GRP))
+	if(!init_group_mapping()) {
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return False;
+	}
 
-	fstrcpy(map.nt_name, info->name);
-	fstrcpy(map.comment, info->desc);
+	slprintf(key, sizeof(key), "%s%s", COMMENT_PREFIX, unix_name);
 
-	return pdb_update_group_mapping_entry(&map);
+	kbuf.dptr = key;
+	kbuf.dsize = strlen(key)+1;
+	dbuf.dptr = comment;
+	dbuf.dsize = strlen(comment)+1;
+
+	return (tdb_store(tdb, kbuf, dbuf, 0) == 0);
 }
 
 /* NT to Unix name table.
@@ -1466,7 +1485,8 @@ BOOL pdb_set_dom_grp_info(fstring unix_name, const struct dom_grp_info *info)
  * random stuff.
  */
 
-BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
+BOOL nt_to_unix_name(TALLOC_CTX *mem_ctx, const char *nt_name,
+		     char **unix_name, BOOL *is_user)
 {
 	TDB_DATA kbuf, dbuf;
 	char *lcname;
@@ -1501,7 +1521,7 @@ BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
 	SAFE_FREE(dbuf.dptr);
 
 	if (ret > 0) {
-		*unix_name = strdup(tmp_unixname);
+		*unix_name = maybe_talloc_strdup(mem_ctx, tmp_unixname);
 		return True;
 	}
 
@@ -1509,6 +1529,7 @@ BOOL nt_to_unix_name(const char *nt_name, char **unix_name, BOOL *is_user)
 }
 
 struct find_unixname_closure {
+	TALLOC_CTX *mem_ctx;
 	BOOL want_user;
 	const char *unixname;
 	char **ntname;
@@ -1539,7 +1560,8 @@ static BOOL find_name_entry(TDB_CONTEXT *ctx, TDB_DATA key, TDB_DATA dbuf,
 	    (strcmp(closure->unixname, unixname) != 0))
 		return False;
 
-	*(closure->ntname) = strdup(ntname);
+	*(closure->ntname) = maybe_talloc_strdup(closure->mem_ctx, ntname);
+
 	closure->found = True;
 	return True;
 }
@@ -1577,14 +1599,15 @@ static BOOL set_name_mapping(const char *unixname, const char *ntname,
 	return res;
 }
 
-static void generate_name_mapping(const char *unixname, char **ntname,
+static void generate_name_mapping(TALLOC_CTX *mem_ctx,
+				  const char *unixname, char **ntname,
 				  BOOL is_user)
 {
 	fstring generated_name;
 	int attempts;
 
 	if (set_name_mapping(unixname, unixname, is_user, TDB_INSERT)) {
-		*ntname = strdup(unixname);
+		*ntname = maybe_talloc_strdup(mem_ctx, unixname);
 		return;
 	}
 
@@ -1592,7 +1615,7 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 		 unixname, is_user ? "user" : "group");
 
 	if (set_name_mapping(unixname, generated_name, is_user, TDB_INSERT)) {
-		*ntname = strdup(generated_name);
+		*ntname = maybe_talloc_strdup(mem_ctx, generated_name);
 		return;
 	}
 
@@ -1603,7 +1626,7 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 			 unixname, generate_random_str(4));
 		if (set_name_mapping(unixname, generated_name, is_user,
 				     TDB_INSERT)) {
-			*ntname = strdup(generated_name);
+			*ntname = maybe_talloc_strdup(mem_ctx, generated_name);
 			return;
 		}
 	}
@@ -1623,10 +1646,12 @@ static void generate_name_mapping(const char *unixname, char **ntname,
 	smb_panic("Could not generate a NT name\n");
 }
 
-static void unix_name_to_nt_name(const char *unixname, char **ntname,
+static void unix_name_to_nt_name(TALLOC_CTX *mem_ctx,
+				 const char *unixname, char **ntname,
 				 BOOL want_user)
 {
 	struct find_unixname_closure closure;
+	closure.mem_ctx = mem_ctx;
 	closure.want_user = want_user;
 	closure.unixname = unixname;
 	closure.ntname = ntname;
@@ -1646,16 +1671,18 @@ static void unix_name_to_nt_name(const char *unixname, char **ntname,
 		return;
 	}
 
-	generate_name_mapping(unixname, ntname, want_user);
+	generate_name_mapping(mem_ctx, unixname, ntname, want_user);
 	unbecome_root();
 }
 
-void unix_username_to_ntname(const char *unixname, char **ntname)
+void unix_username_to_ntname(TALLOC_CTX *mem_ctx,
+			     const char *unixname, char **ntname)
 {
-	unix_name_to_nt_name(unixname, ntname, True);
+	unix_name_to_nt_name(mem_ctx, unixname, ntname, True);
 }
 
-void unix_groupname_to_ntname(const char *unixname, char **ntname)
+void unix_groupname_to_ntname(TALLOC_CTX *mem_ctx,
+			      const char *unixname, char **ntname)
 {
-	unix_name_to_nt_name(unixname, ntname, False);
+	unix_name_to_nt_name(mem_ctx, unixname, ntname, False);
 }

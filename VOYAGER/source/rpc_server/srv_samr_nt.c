@@ -338,15 +338,20 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info,
 	i=0;
 	for (gent = glist; gent != NULL; gent = gent->next) {
 		DOM_SID grp_sid;
-		struct dom_grp_info grp_info;
+		char *comment, *ntname;
+
+		pdb_get_group_comment(NULL, gent->gr_name, &comment);
+		fstrcpy(grp_array[i].comment, comment);
+		SAFE_FREE(comment);
+		
+		unix_groupname_to_ntname(NULL, gent->gr_name, &ntname);
+		fstrcpy(grp_array[i].name, ntname);
+		SAFE_FREE(ntname);
+
 		gid_to_sid(&grp_sid, gent->gr_gid);
-
-		pdb_get_dom_grp_info(gent->gr_name, &grp_info);
-		fstrcpy(grp_array[i].name, grp_info.name);
-		fstrcpy(grp_array[i].comment, grp_info.desc);
-
 		sid_split_rid(&grp_sid, &grp_array[i].rid);
 		grp_array[i].attr=SID_NAME_DOM_GRP;
+
 		i += 1;
 	}
 
@@ -3864,7 +3869,9 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
 	fstring name;
-	struct dom_grp_info info;
+
+	char *comment;
+	char *ntname;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted)) 
 		return NT_STATUS_INVALID_HANDLE;
@@ -3876,7 +3883,8 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	if (!sid_to_local_dom_grp_name(&group_sid, name))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	pdb_get_dom_grp_info(name, &info);
+	pdb_get_group_comment(p->mem_ctx, name, &comment);
+	unix_groupname_to_ntname(p->mem_ctx, name, &ntname);
 
 	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
 		return NT_STATUS_INVALID_HANDLE;
@@ -3892,8 +3900,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 				return NT_STATUS_NO_SUCH_GROUP;
 			SAFE_FREE(uids);
 			init_samr_group_info1(&ctr->group.info1,
-					      info.name, info.desc,
-					      num);
+					      ntname, comment, num);
 			break;
 		case 3:
 			ctr->switch_value1 = 3;
@@ -3901,8 +3908,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 			break;
 		case 4:
 			ctr->switch_value1 = 4;
-			init_samr_group_info4(&ctr->group.info4,
-					      info.desc);
+			init_samr_group_info4(&ctr->group.info4, comment);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
@@ -3924,8 +3930,7 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	DOM_SID group_sid;
 	GROUP_INFO_CTR *ctr;
 	uint32 acc_granted;
-	fstring name;
-	struct dom_grp_info info;
+	fstring name, comment;
 
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid, &acc_granted))
 		return NT_STATUS_INVALID_HANDLE;
@@ -3937,26 +3942,24 @@ NTSTATUS _samr_set_groupinfo(pipes_struct *p, SAMR_Q_SET_GROUPINFO *q_u, SAMR_R_
 	if (!sid_to_local_dom_grp_name(&group_sid, name))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	pdb_get_dom_grp_info(name, &info);
-
 	ctr=q_u->ctr;
 
 	switch (ctr->switch_value1) {
 		case 1:
-			unistr2_to_ascii(info.desc,
+			unistr2_to_ascii(comment,
 					 &(ctr->group.info1.uni_acct_desc),
-					 sizeof(info.desc)-1);
+					 sizeof(comment)-1);
 			break;
 		case 4:
-			unistr2_to_ascii(info.desc,
+			unistr2_to_ascii(comment,
 					 &(ctr->group.info4.uni_acct_desc),
-					 sizeof(info.desc)-1);
+					 sizeof(comment)-1);
 			break;
 		default:
 			return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	if (!pdb_set_dom_grp_info(name, &info))
+	if (!pdb_set_group_comment(name, comment))
 		return NT_STATUS_ACCESS_DENIED;
 
 	return NT_STATUS_OK;
