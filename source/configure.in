@@ -2045,6 +2045,21 @@ fi
   AC_CHECK_LIB(krb5, krb5_set_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_set_default_in_tkt_etypes, is available])])
   AC_CHECK_LIB(krb5, krb5_set_default_tgs_ktypes, [AC_DEFINE(HAVE_KRB5_SET_DEFAULT_TGS_KTYPES,1,[Whether krb5_set_default_tgs_ktypes is available])])
 
+AC_CACHE_CHECK([for addrtype in krb5_address],samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
+AC_TRY_COMPILE([#include <krb5.h>],
+[krb5_address kaddr; kaddr.addrtype = ADDRTYPE_INET;],
+samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS=yes,samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS=no)])
+if test x"$samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS" = x"yes"; then
+    AC_DEFINE(HAVE_ADDRTYPE_IN_KRB5_ADDRESS,1,[Whether the krb5_address struct has a addrtype property])
+fi
+
+AC_CACHE_CHECK([for addr_type in krb5_address],samba_cv_HAVE_ADDR_TYPE_IN_KRB5_ADDRESS,[
+AC_TRY_COMPILE([#include <krb5.h>],
+[krb5_address kaddr; kaddr.addr_type = KRB5_ADDRESS_INET;],
+samba_cv_HAVE_ADDR_TYPE_IN_KRB5_ADDRESS=yes,samba_cv_HAVE_ADDR_TYPE_IN_KRB5_ADDRESS=no)])
+if test x"$samba_cv_HAVE_ADDR_TYPE_IN_KRB5_ADDRESS" = x"yes"; then
+    AC_DEFINE(HAVE_ADDR_TYPE_IN_KRB5_ADDRESS,1,[Whether the krb5_address struct has a addr_type property])
+fi
 
   ########################################################
   # now see if we can find the krb5 libs in standard paths
