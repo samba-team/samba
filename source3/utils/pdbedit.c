@@ -346,12 +346,9 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	fstring machinename;
+	struct passwd  *pwd = NULL;
 	char name[16];
 	
-	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
-		return -1;
-	}
-
 	fstrcpy(machinename, machine_in); 
 
 	if (machinename[strlen (machinename) -1] == '$')
@@ -361,6 +358,19 @@ static int new_machine (struct pdb_context *in, const char *machine_in)
 	
 	safe_strcpy (name, machinename, 16);
 	safe_strcat (name, "$", 16);
+
+	if ((pwd = getpwnam_alloc(name))) {
+		if (!NT_STATUS_IS_OK(pdb_init_sam_pw( &sam_pwent, pwd))) {
+			fprintf(stderr, "Could not init sam from pw\n");
+			passwd_free(&pwd);
+			return -1;
+		}
+	} else {
+		if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
+			fprintf(stderr, "Could not init sam from pw\n");
+			return -1;
+		}
+	}
 
 	pdb_set_plaintext_passwd (sam_pwent, machinename);
 
