@@ -666,7 +666,10 @@ void close_low_fds(void)
 {
   int fd;
   int i;
-  close(0); close(1); close(2);
+  close(0); close(1); 
+#ifndef __INSURE__
+  close(2);
+#endif
   /* try and use up these file descriptors, so silly
      library routines writing to stdout etc won't cause havoc */
   for (i=0;i<3;i++) {
