@@ -137,7 +137,6 @@ static NTSTATUS gensec_start(TALLOC_CTX *mem_ctx, struct gensec_security **gense
 
 	(*gensec_security)->subcontext = False;
 	(*gensec_security)->want_features = 0;
-	(*gensec_security)->have_features = 0;
 	return NT_STATUS_OK;
 }
 
@@ -395,6 +394,28 @@ size_t gensec_sig_size(struct gensec_security *gensec_security)
 	return gensec_security->ops->sig_size(gensec_security);
 }
 
+NTSTATUS gensec_wrap(struct gensec_security *gensec_security, 
+		     TALLOC_CTX *mem_ctx, 
+		     const DATA_BLOB *in, 
+		     DATA_BLOB *out) 
+{
+	if (!gensec_security->ops->wrap) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return gensec_security->ops->wrap(gensec_security, mem_ctx, in, out);
+}
+
+NTSTATUS gensec_unwrap(struct gensec_security *gensec_security, 
+		       TALLOC_CTX *mem_ctx, 
+		       const DATA_BLOB *in, 
+		       DATA_BLOB *out) 
+{
+	if (!gensec_security->ops->unwrap) {
+		return NT_STATUS_NOT_IMPLEMENTED;
+	}
+	return gensec_security->ops->unwrap(gensec_security, mem_ctx, in, out);
+}
+
 NTSTATUS gensec_session_key(struct gensec_security *gensec_security, 
 			    DATA_BLOB *session_key)
 {
@@ -459,11 +480,10 @@ void gensec_want_feature(struct gensec_security *gensec_security,
 BOOL gensec_have_feature(struct gensec_security *gensec_security,
 			 uint32 feature) 
 {
-	if (gensec_security->have_features & feature) {
-		return True;
+	if (!gensec_security->ops->have_feature) {
+		return False;
 	}
-
-	return False;
+	return gensec_security->ops->have_feature(gensec_security, feature);
 }
 
 /** 

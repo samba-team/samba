@@ -57,7 +57,7 @@ NTSTATUS torture_ldap_bind_sasl(struct ldap_connection *conn, const char *userna
 
 	result = ldap_bind_sasl(conn, username, domain, password);
 	if (result != LDAP_SUCCESS) {
-		printf("Failed to bind with provided credentialsi and SASL mechanism\n");
+		printf("Failed to bind with provided credentials and SASL mechanism\n");
 		/* FIXME: what abut actually implementing an ldap_connection_free() function ?
 		          :-) sss */
 		return status;
@@ -109,9 +109,9 @@ BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 	NTSTATUS status;
 	DATA_BLOB request;
 	BOOL result;
-	DATA_BLOB creds;
-	DATA_BLOB pdu;
+	DATA_BLOB wrapped;
 	int len;
+	char length[4];
 	struct asn1_data asn1;
 	TALLOC_CTX *mem_ctx;
 
@@ -120,53 +120,48 @@ BOOL ldap_sasl_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 	if (!ldap_encode(msg, &request))
 		return False;
 
-	status = gensec_seal_packet(conn->gensec, 
-				    msg->mem_ctx, 
-				    request.data, request.length,
-				    request.data, request.length,
-				    &creds);
+	status = gensec_wrap(conn->gensec, 
+			     msg->mem_ctx, 
+			     &request,
+			     &wrapped);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("gensec_seal_packet: %s\n",nt_errstr(status)));
+		DEBUG(0,("gensec_wrap: %s\n",nt_errstr(status)));
 		return False;
 	}
 
-	len = 4 + creds.length + request.length;
-	pdu = data_blob_talloc(msg->mem_ctx, NULL, len);
-	RSIVAL(pdu.data, 0, len-4);
-	memcpy(pdu.data + 4, creds.data, creds.length);
-	memcpy(pdu.data + 4 + creds.length, request.data, request.length);
+	RSIVAL(length, 0, wrapped.length);
 
-	result = (write_data_until(conn->sock, pdu.data, pdu.length,
-				   endtime) == pdu.length);
+	result = (write_data_until(conn->sock, length, 4,
+				   endtime) == 4);
 	if (!result)
 		return result;
 
-	pdu = data_blob(NULL, 0x4000);
-	data_blob_clear(&pdu);
-
-	result = (read_data_until(conn->sock, pdu.data, 4, NULL) == 4);
+	result = (write_data_until(conn->sock, wrapped.data, wrapped.length,
+				   endtime) == wrapped.length);
 	if (!result)
 		return result;
 
-	len = RIVAL(pdu.data,0);
+	wrapped = data_blob(NULL, 0x4000);
+	data_blob_clear(&wrapped);
 
-	result = (read_data_until(conn->sock, pdu.data + 4, MIN(0x4000,len), NULL) == len);
+	result = (read_data_until(conn->sock, length, 4, NULL) == 4);
 	if (!result)
 		return result;
 
-	pdu.length = 4+len;
+	len = RIVAL(length,0);
 
-	creds = data_blob(pdu.data + 4 , gensec_sig_size(conn->gensec));
+	result = (read_data_until(conn->sock, wrapped.data, MIN(wrapped.length,len), NULL) == len);
+	if (!result)
+		return result;
 
-	request = data_blob(pdu.data + (4 + creds.length), pdu.length - (4 + creds.length));
+	wrapped.length = len;
 
-	status = gensec_unseal_packet(conn->gensec,
-			     msg->mem_ctx,
-			     request.data, request.length,
-			     request.data, request.length,
-			     &creds);
+	status = gensec_unwrap(conn->gensec,
+			       msg->mem_ctx,
+			       &wrapped,
+			       &request);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("gensec_unseal_packet: %s\n",nt_errstr(status)));
+		DEBUG(0,("gensec_unwrap: %s\n",nt_errstr(status)));
 		return False;
 	}
 
