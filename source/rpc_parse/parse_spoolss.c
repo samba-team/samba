@@ -374,6 +374,14 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 			return False;
 
 		break;
+	
+	case NOTIFY_SECDESC:
+		if( !prs_uint32( "sd size", ps, depth, &data->notify_data.sd.size ) )
+			return False;
+		if( !prs_uint32( "pointer", ps, depth, &useless_ptr ) )
+			return False;
+		
+		break;
 
 	default:
 		DEBUG(3, ("invalid enc_type %d for smb_io_notify_info_data\n",
@@ -446,6 +454,13 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 		if(!prs_uint8s(True,"buffer",ps,depth,(uint8*)data->notify_data.data.string,data->notify_data.data.length))
 			return False;
 
+		break;
+		
+	case NOTIFY_SECDESC:	
+		if( !prs_uint32("secdesc size ", ps, depth, &data->notify_data.sd.size ) )
+			return False;
+		if ( !sec_io_desc( "sec_desc", &data->notify_data.sd.desc, ps, depth ) )
+			return False;
 		break;
 
 	default:

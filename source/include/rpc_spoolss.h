@@ -202,6 +202,7 @@
 #define NOTIFY_TWO_VALUE 2		/* Notify data is stored in value2 */
 #define NOTIFY_POINTER   3		/* Data is a pointer to a buffer */
 #define NOTIFY_STRING    4		/* Data is a pointer to a buffer w/length */
+#define NOTIFY_SECDESC   5		/* Data is a security descriptor */
 
 #define PRINTER_NOTIFY_TYPE 0x00
 #define JOB_NOTIFY_TYPE     0x01
@@ -801,15 +802,16 @@ typedef struct spool_notify_info_data
 	uint16 field;
 	uint32 reserved;
 	uint32 id;
-	union
-	{
+	union {
 		uint32 value[2];
-		struct
-		{
+		struct {
 			uint32 length;
 			uint16 *string;
-		}
-		data;
+		} data;
+		struct {
+			uint32	size;
+			SEC_DESC *desc;
+		} sd;
 	}
 	notify_data;
 	uint32 size;
