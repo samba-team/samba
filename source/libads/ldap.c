@@ -890,7 +890,7 @@ ADS_STATUS ads_gen_mod(ADS_STRUCT *ads, const char *mod_dn, ADS_MODLIST mods)
 	   non-existent attribute (but allowable for the object) to run
 	*/
 	LDAPControl PermitModify = {
-		"1.2.840.113556.1.4.1413",
+		ADS_PERMIT_MODIFY_OID,
 		{0, NULL},
 		(char) 1};
 	LDAPControl *controls[2];

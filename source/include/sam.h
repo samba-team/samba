@@ -152,10 +152,10 @@ typedef struct sam_group_enum {
 
 
 /* bits for group_ctrl: to spezify if the group is global group or alias */
-#define GCB_LOCAL_GROUP	0x0001
-#define GCB_ALIAS_GROUP	GCB_LOCAL_GROUP
+#define GCB_LOCAL_GROUP		0x0001
+#define GCB_ALIAS_GROUP		(GCB_LOCAL_GROUP |GCB_BUILTIN)
 #define GCB_GLOBAL_GROUP	0x0002
-
+#define GCB_BUILTIN		0x1000
 
 typedef struct sam_context 
 {
