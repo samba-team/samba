@@ -1274,12 +1274,12 @@ subnet 192.168.2.0 netmask 255.255.255.0 {
         host qmsf {
                 hardware ethernet 01:04:31:db:e1:c0;
                 fixed-address 192.168.1.20;
-                }
-        }
+        	}
         host hplj6f {
                 hardware ethernet 00:03:47:cf:83:e2;
                 fixed-address 192.168.2.30;
                 }
+	}
 subnet 127.0.0.0 netmask 255.0.0.0 {
         }
 subnet 123.45.67.64 netmask 255.255.255.252 {
@@ -1510,7 +1510,7 @@ abmas.biz       IN SOA  sleeth1.abmas.biz. root.abmas.biz. (
                                 38400      ; minimum (10 hours 40 minutes)
                                 )
                         NS      dns.abmas.biz.
-                        MX      10 mail.abmas.biz.
+                        MX      10 sleeth1.abmas.biz.
 $ORIGIN abmas.biz.
 sleeth1                 A       192.168.1.1
 sleeth2                 A       192.168.2.1
@@ -1520,6 +1520,7 @@ qmsf                    A       192.168.2.20
 hplj6f                  A       192.168.2.30
 dns                     CNAME   sleeth1
 diamond                 CNAME   sleeth1
+mail                    CNAME   sleeth1
 </screen>
 </example>
 
@@ -1537,7 +1538,7 @@ abmas.us        IN SOA  server.abmas.us. root.abmas.us. (
                                 )
                         NS      dns.abmas.us.
                         NS      dns2.abmas.us.
-                        MX      10 mail.abmas.us.
+                        MX      10 server.abmas.us.
 $ORIGIN abmas.us.
 server                  A       123.45.67.66
 dns2                    A       123.45.54.32
@@ -2754,4 +2755,3 @@ Nmap run completed -- 1 IP address (1 host up) scanned in 168 seconds
 </sect1>
 
 </chapter>
-

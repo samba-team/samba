@@ -618,7 +618,6 @@ subnet 192.168.1.0 netmask 255.255.255.0 {
 		fixed-address 192.168.1.11;
 		}
 	}
-
 subnet 192.168.2.0 netmask 255.255.255.0 {
 	range dynamic-bootp 192.168.2.128 192.168.2.254;
 	option subnet-mask 255.255.255.0;
@@ -629,7 +628,6 @@ subnet 192.168.2.0 netmask 255.255.255.0 {
 		fixed-address 192.168.1.10;
 		}
 	}
-
 subnet 127.0.0.0 netmask 255.0.0.0 {
 	}
 </screen>
