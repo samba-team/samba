@@ -5603,23 +5603,17 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	char *cmd = lp_addprinter_cmd();
 	char **qlines;
 	pstring command;
-	pstring driverlocation;
 	int numlines;
 	int ret;
 	int fd;
 	fstring remote_machine = "%m";
 
-	/* build driver path... only 9X architecture is needed for legacy reasons */
-	slprintf(driverlocation, sizeof(driverlocation)-1, "\\\\%s\\print$\\WIN40\\0",
-			get_called_name());
-	/* change \ to \\ for the shell */
-	all_string_sub(driverlocation,"\\","\\\\",sizeof(pstring));
 	standard_sub_basic(current_user_info.smb_name, remote_machine,sizeof(remote_machine));
 	
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\" \"%s\"",
 			cmd, printer->info_2->printername, printer->info_2->sharename,
 			printer->info_2->portname, printer->info_2->drivername,
-			printer->info_2->location, driverlocation, remote_machine);
+			printer->info_2->location, printer->info_2->comment, remote_machine);
 
 	DEBUG(10,("Running [%s]\n", command));
 	ret = smbrun(command, &fd);
