@@ -157,6 +157,7 @@ uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
 	gid_t *groups = NULL;
 	fstring real_name;
 	struct passwd *pwfile;	/* for getting real name from passwd file */
+	uint16 vuid;
 
 	/* Ensure no vuid gets registered in share level security. */
 	if (lp_security() == SEC_SHARE)
@@ -190,9 +191,12 @@ uint16 register_vuid(pid_t pid, uid_t uid, gid_t gid,
 		}
 	}
 
-	return create_vuid(pid, uid, gid, n_groups, groups,
+	vuid = create_vuid(pid, uid, gid, n_groups, groups,
 			   unix_name, requested_name,
 			   real_name, guest, info3);
+
+	safe_free(groups);
+	return vuid;
 }
 
 /*******************************************************************
