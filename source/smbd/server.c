@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-int am_parent = 1;
+static int am_parent = 1;
 
 /* the last message the was processed */
 int last_message = -1;
