@@ -25,6 +25,35 @@
 uint32 global_client_caps = 0;
 static auth_authsupplied_info *ntlmssp_auth_info;
 
+/*
+  on a logon error possibly map the error to success if "map to guest"
+  is set approriately
+*/
+static NTSTATUS do_map_to_guest(NTSTATUS status, auth_serversupplied_info **server_info,
+				const char *user, const char *domain)
+{
+	if (NT_STATUS_EQUAL(status, NT_STATUS_NO_SUCH_USER)) {
+		if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
+		    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
+			DEBUG(3,("No such user %s [%s] - using guest account\n",
+				 user, domain));
+			make_server_info_guest(server_info);
+			status = NT_STATUS_OK;
+		}
+	}
+
+	if (NT_STATUS_EQUAL(status, NT_STATUS_WRONG_PASSWORD)) {
+		if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {
+			DEBUG(3,("Registered username %s for guest access\n",user));
+			make_server_info_guest(server_info);
+			status = NT_STATUS_OK;
+		}
+	}
+
+	return status;
+}
+
+
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
@@ -341,11 +370,15 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 
+	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		nt_status = do_map_to_guest(nt_status, &server_info, user, workgroup);
+	}
+
 	SAFE_FREE(workgroup);
 	SAFE_FREE(machine);
-	
-	nt_status = check_password(user_info, ntlmssp_auth_info, &server_info); 
-	
+			
 	free_auth_info(&ntlmssp_auth_info);
 
 	free_user_info(&user_info);
@@ -353,7 +386,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	data_blob_free(&lmhash);
 	
 	data_blob_free(&nthash);
-	
+
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		SAFE_FREE(user);
 		return ERROR_NT(nt_status_squash(nt_status));
@@ -371,6 +404,11 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 	set_message(outbuf,4,0,True);
 	SSVAL(outbuf, smb_vwv3, 0);
+
+	if (server_info->guest) {
+		SSVAL(outbuf,smb_vwv2,1);
+	}
+
 	add_signature(outbuf);
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
@@ -663,7 +701,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		}
 		
 		nt_status = check_password(user_info, negprot_global_auth_info, &server_info); 
-
 	} else {
 		auth_authsupplied_info *plaintext_auth_info = NULL;
 		DATA_BLOB chal;
@@ -692,22 +729,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	data_blob_clear_free(&plaintext_password);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {
-			if ((lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_USER) || 
-			    (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD)) {
-				
-				DEBUG(3,("No such user %s [%s] - using guest account\n",user, domain));
-				make_server_info_guest(&server_info);
-				nt_status = NT_STATUS_OK;
-			}
-
-		} else if NT_STATUS_EQUAL(nt_status, NT_STATUS_WRONG_PASSWORD) {			
-			if (lp_map_to_guest() == MAP_TO_GUEST_ON_BAD_PASSWORD) {				
-				DEBUG(3,("Registered username %s for guest access\n",user));
-				make_server_info_guest(&server_info);
-				nt_status = NT_STATUS_OK;
-			}
-		}
+		nt_status = do_map_to_guest(nt_status, &server_info, user, domain);
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
