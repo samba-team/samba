@@ -1819,6 +1819,7 @@ BOOL init_sam_from_buffer_v1(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	pdb_set_logon_time(sampass, logon_time, PDB_SET);
 	pdb_set_logoff_time(sampass, logoff_time, PDB_SET);
 	pdb_set_kickoff_time(sampass, kickoff_time, PDB_SET);
+	pdb_set_bad_password_time(sampass, bad_password_time, PDB_SET);
 	pdb_set_pass_can_change_time(sampass, pass_can_change_time, PDB_SET);
 	pdb_set_pass_must_change_time(sampass, pass_must_change_time, PDB_SET);
 	pdb_set_pass_last_set_time(sampass, pass_last_set_time, PDB_SET);
@@ -1960,7 +1961,7 @@ uint32 init_buffer_from_sam_v1 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	logon_time = (uint32)pdb_get_logon_time(sampass);
 	logoff_time = (uint32)pdb_get_logoff_time(sampass);
 	kickoff_time = (uint32)pdb_get_kickoff_time(sampass);
-	bad_password_time = (uint32)0;
+	bad_password_time = (uint32)pdb_get_bad_password_time(sampass);
 	pass_can_change_time = (uint32)pdb_get_pass_can_change_time(sampass);
 	pass_must_change_time = (uint32)pdb_get_pass_must_change_time(sampass);
 	pass_last_set_time = (uint32)pdb_get_pass_last_set_time(sampass);
