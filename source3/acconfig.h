@@ -72,7 +72,7 @@
 #undef HAVE_SETRESUID
 #undef WITH_NETATALK
 #undef WITH_UTMP
-#undef MS_DFS
+#undef WITH_MSDFS
 #undef HAVE_INO64_T
 #undef HAVE_STRUCT_FLOCK64
 #undef SIZEOF_INO_T
