@@ -3506,6 +3506,7 @@ static const struct s_notify_info_data_table notify_info_data_table[] =
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_PAGES,             "JOB_NOTIFY_TOTAL_PAGES",             NOTIFY_ONE_VALUE, spoolss_notify_total_pages },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_PAGES_PRINTED,           "JOB_NOTIFY_PAGES_PRINTED",           NOTIFY_ONE_VALUE, spoolss_notify_pages_printed },
 { JOB_NOTIFY_TYPE,     JOB_NOTIFY_TOTAL_BYTES,             "JOB_NOTIFY_TOTAL_BYTES",             NOTIFY_ONE_VALUE, spoolss_notify_job_size },
+{ PRINT_TABLE_END, 0x0, NULL, 0x0, NULL },
 };
 
 /*******************************************************************
@@ -3571,7 +3572,7 @@ static int search_notify(uint16 type, uint16 field, int *value)
 {	
 	int i;
 
-	for (i = 0; i < sizeof(notify_info_data_table); i++) {
+	for (i = 0; notify_info_data_table[i].type != PRINT_TABLE_END; i++) {
 		if (notify_info_data_table[i].type == type &&
 		    notify_info_data_table[i].field == field &&
 		    notify_info_data_table[i].fn != NULL) {
