@@ -130,7 +130,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				DLIST_ADD(ldb->modules, current);
 				continue;
 			}
-#if 0
+
 			if (strcmp(modules[i], "schema") == 0) {
 				current = schema_module_init(ldb, options);
 				if (!current) {
@@ -140,7 +140,7 @@ int ldb_load_modules(struct ldb_context *ldb, const char *options[])
 				DLIST_ADD(ldb->modules, current);
 				continue;
 			}
-#endif
+
 #ifdef HAVE_DLOPEN_DISABLED
 		{
 			void *handle;

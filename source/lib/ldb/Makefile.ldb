@@ -36,7 +36,7 @@ COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
 	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
 	   common/ldb_debug.o common/ldb_modules.o
 
-MODULES_OBJ=modules/timestamps.o
+MODULES_OBJ=modules/timestamps.o modules/schema.o
 
 OBJS =  $(MODULES_OBJ) $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(TALLOC_OBJ) $(LDB_LDAP_OBJ)
 
