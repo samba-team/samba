@@ -15,9 +15,9 @@ RCSID("$Id$");
 #ifdef UIDL
 
 /*
- *Copy the string found after after : into a malloced buffer. Stop
+ * Copy the string found after after : into a malloced buffer. Stop
  * copying at end of string or end of line. End of line delimiter is
- * not part the resulting copy of copy.
+ * not part of the resulting copy.
  */
 static
 char *
