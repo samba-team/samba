@@ -368,10 +368,11 @@ oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
 int setup_oplock_select_set( fd_set *fds)
 {
   int maxfd = oplock_sock;
-  FD_SET(oplock_sock,fds);
 
   if(oplock_sock == -1)
     return 0;
+
+  FD_SET(oplock_sock,fds);
 
 #if defined(HAVE_KERNEL_OPLOCKS)
   if(lp_kernel_oplocks()) {
