@@ -1575,11 +1575,8 @@ int smbc_opendir(const char *fname)
     /* find the name of the server ... */
 
     if (!name_status_find(0, rem_ip, server)) {
-
-      fprintf(stderr, "Could not get the name of local master browser ...\n");
       errno = EINVAL;
       return -1;
-
     }
 
     /*
@@ -1637,11 +1634,8 @@ int smbc_opendir(const char *fname)
 	/*cli_get_backup_server(my_netbios_name, server, buserver, sizeof(buserver)); */
 
 	if (!name_status_find(0, rem_ip, buserver)) {
-
-	  fprintf(stderr, "Could not get name of local master browser ...\n");
 	  errno = EPERM;  /* FIXME, is this correct */
 	  return -1;
-
 	}
 
 	/*

@@ -23,9 +23,6 @@
 
 #include "includes.h"
 
-/* we will delete this variable once our client side unicode support is complete */
-extern int cli_use_unicode;
-
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
 dos code page destination choosing unicode or ascii based on the 
@@ -55,7 +52,7 @@ int clistr_push(struct cli_state *cli, void *dest, char *src, int dest_len, int 
 		len++;
 	}
 
-	if ((flags & CLISTR_ASCII) || !cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
+	if ((flags & CLISTR_ASCII) || !(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		safe_strcpy(dest, src, dest_len);
 		len = strlen(dest);
@@ -91,7 +88,7 @@ int clistr_push_size(struct cli_state *cli, void *dest, char *src, int dest_len,
 {
 	int len = strlen(src);
 	if (flags & CLISTR_TERMINATE) len++;
-	if (!(flags & CLISTR_ASCII) && cli_use_unicode && (cli->capabilities & CAP_UNICODE)) len *= 2;
+	if (!(flags & CLISTR_ASCII) && (cli->capabilities & CAP_UNICODE)) len *= 2;
 
 	if (!(flags & CLISTR_ASCII) && dest && clistr_align(cli, PTR_DIFF(cli->outbuf, dest))) {
 		len++;
@@ -123,7 +120,7 @@ int clistr_pull(struct cli_state *cli, char *dest, void *src, int dest_len, int 
 		if (src_len > 0) src_len--;
 	}
 
-	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
+	if (!(cli->capabilities & CAP_UNICODE)) {
 		/* the server doesn't want unicode */
 		if (flags & CLISTR_TERMINATE) {
 			safe_strcpy(dest, src, dest_len);
@@ -167,7 +164,7 @@ int clistr_pull_size(struct cli_state *cli, void *src, int src_len)
 		if (src_len > 0) src_len--;
 	}
 
-	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) {
+	if (!(cli->capabilities & CAP_UNICODE)) {
 		return strlen(src);
 	}	
 	return strlen_w(src);
@@ -180,6 +177,6 @@ otherwise return 1 if offset is off
 ****************************************************************************/
 int clistr_align(struct cli_state *cli, int offset)
 {
-	if (!cli_use_unicode || !(cli->capabilities & CAP_UNICODE)) return 0;
+	if (!(cli->capabilities & CAP_UNICODE)) return 0;
 	return offset & 1;
 }
