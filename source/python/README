@@ -1,3 +1,9 @@
+This directory contains Python bindings to allow you to access various
+aspects of Samba.  At the moment their status is "experimental" and
+they are not built by default.
+
+
+----
 Quick Install Guide
 --
 Lines prepended with a $ indicate shell commands.
