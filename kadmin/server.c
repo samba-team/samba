@@ -235,6 +235,77 @@ kadmind_dispatch(void *kadm_handle, krb5_boolean initial,
 	krb5_store_int32(sp, ret);
 	break;
     }
+    case kadm_chpass_with_key:{
+	int i;
+	krb5_key_data *key_data;
+	int n_key_data;
+
+	op = "CHPASS_WITH_KEY";
+	ret = krb5_ret_principal(sp, &princ);
+	if(ret)
+	    goto fail;
+	ret = krb5_ret_int32(sp, &n_key_data);
+	if (ret) {
+	    krb5_free_principal(context->context, princ);
+	    goto fail;
+	}
+
+	key_data = malloc (n_key_data * sizeof(*key_data));
+	if (key_data == NULL) {
+	    ret = ENOMEM;
+	    krb5_free_principal(context->context, princ);
+	    goto fail;
+	}
+
+	for (i = 0; i < n_key_data; ++i) {
+	    ret = kadm5_ret_key_data (sp, &key_data[i]);
+	    if (ret) {
+		int16_t dummy = i;
+
+		kadm5_free_key_data (context, &dummy, key_data);
+		free (key_data);
+		krb5_free_principal(context->context, princ);
+		goto fail;
+	    }
+	}
+
+	krb5_unparse_name_fixed(context->context, princ, name, sizeof(name));
+	krb5_warnx(context->context, "%s: %s %s", client, op, name);
+
+	/*
+	 * The change is allowed if at least one of:
+	 * a) it's for the principal him/herself and this was an initial ticket
+	 * b) the user is on the CPW ACL.
+	 */
+
+	if (initial
+	    && krb5_principal_compare (context->context, context->caller,
+				       princ))
+	    ret = 0;
+	else
+	    ret = _kadm5_acl_check_permission(context, KADM5_PRIV_CPW);
+
+	if(ret) {
+	    int16_t dummy = n_key_data;
+
+	    kadm5_free_key_data (context, &dummy, key_data);
+	    free (key_data);
+	    krb5_free_principal(context->context, princ);
+	    goto fail;
+	}
+	ret = kadm5_chpass_principal_with_key(kadm_handle, princ,
+					      n_key_data, key_data);
+	{
+	    int16_t dummy = n_key_data;
+	    kadm5_free_key_data (context, &dummy, key_data);
+	}
+	free (key_data);
+	krb5_free_principal(context->context, princ);
+	krb5_storage_free(sp);
+	sp = krb5_storage_emem();
+	krb5_store_int32(sp, ret);
+	break;
+    }
     case kadm_randkey:{
 	op = "RANDKEY";
 	ret = krb5_ret_principal(sp, &princ);
