@@ -8,7 +8,7 @@
         <firstname>David</firstname><surname>Bannon</surname>
         <affiliation><orgname>La Trobe University</orgname></affiliation>
     </author>
-    <address><email>D.Bannon@latrobe.edu.au</email></address>    
+    <address><email>dbannon@samba.org</email></address>    
     <pubdate>November 2000</pubdate>
 </bookinfo>
 
@@ -45,10 +45,18 @@
 <sect1><title id=stateofplay>State of Play</title>
 	<para><emphasis>It should be noted that 2.2.0 in its pre-release form still has a few problems,
 	I'll try and keep this section current while things are still dynamic. 
-	At the time of this update (November 13, 2000) the current state of play is :</emphasis></para>
+	At the time of this update (December 15, 2000) the current state of play is :</emphasis></para>
 
     <para>Comments here about W2K joining the domain apply only to Samba 2.2 from the CVS after November 27th. The
     'snapshot' release Samba2.2alpha1 does not work !!! See below on how to get a CVS tree.</para>
+
+    <para><command>Known Bug !</>W2K machines will not successfully join a domain with a name that
+    is made up from an even number of characters. Yep, thats right ! BIOTEST is OK as is MYDOMAI
+    but MYDOMAIN will not work until this bug is fixed.</para> 
+
+    <para><command>Know Bug !</>NTs (and possibly W2K ?) are not told the logged on user is a domain
+    admin if the parameter "domain admin users = user" is used. The alternative, "domain admin group"
+    does work. See the HowTo.</>
 
     <para>Client Side creation of Machine accounts does work but is not complete. 
     Firstly, the <filename>add user script</> runs as the user who's
@@ -552,6 +560,21 @@
 
 <chapter><title>Miscellaneous</title>
 <sect1><title></title>
+<sect2><title>What editor can I use in DOS/Windows that won't mess with my unix EOF</title>
+    <para>There are a number of Windows or DOS based editors that will understand, and
+    leave intact, the unix eof (as opposed to a DOS CL/LF). List members suggested :</para>
+
+    <itemizedlist>
+    <listitem><para>UltraEdit at <ulink url="http://www.ultraedit.com">www.ultraedit.com</></></>
+    <listitem><para>VI for windows at <ulink url="http://home.snafu.de/ramo/WinViEn.htm">
+        home.snafu.de/ramo/WinViEn.htm</></></>
+    <listitem><para>The author prefers PFE at <ulink url="http://www.lancs.ac.uk/people/cpaap/pfe/">
+            www.lancs.ac.uk/people/cpaap/pfe/</> but its no longer being developed...</></>
+    </itemizedlist>
+</sect2>
+
+
+
 
 <sect2><title>How do I get 'User Manager' and 'Server Manager'</title>
 
@@ -707,6 +730,11 @@
 	haven't set a really short smbd idle timeout)  So, in between pressing ctrl alt 
 	delete, and actually typing in your password, you can gdb attach and continue.</para>
 
+    <itemizedlist><title>Some usefull samba commands worth investigating:</>
+    <listitem><para>testparam | more</></>
+    <listitem><para>smbclient -L //{netbios name of server}</></>
+    </itemizedlist>
+    
     <para>An SMB enabled version of tcpdump is available from 
     <ulink url="ftp://samba.org/pub/samba/tcpdump-smb/">ftp://samba.org/pub/samba/tcpdump-smb/
     </ulink></para>
@@ -779,7 +807,7 @@
 	and documentation.  The docs that come with the samba distribution contain very 
 	good explanations of general SMB topics such as browsing.</para> 
 
-<sect2><title>URLs and similar</title>
+<sect2><title id=urls>URLs and similar</title>
 
 
 <itemizedlist>
@@ -803,6 +831,10 @@
 		<ulink url="http://www.kneschke.de/projekte/samba_tng">
 		http://www.kneschke.de/projekte/samba_tng</ulink>, but again, a 
 		lot of it does not apply to the main stream Samba.</para></listitem>
+
+    <listitem><para>See how Scott Merrill simulates a BDC behaviour at 
+        <ulink url="http://www.skippy.net/linux/smb-howto.html">
+        http://www.skippy.net/linux/smb-howto.html</>. </para></listitem>
 
     <listitem><para>Although 2.0.7 has almost had its day as a PDC, I (drb) will
         keep the 2.0.7 PDC pages at <ulink url="http://bioserve.latrobe.edu.au/samba">
