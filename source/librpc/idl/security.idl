@@ -120,6 +120,11 @@ interface security
 		[relative] security_acl *dacl; /* user (discretionary) ACL */
 	} security_descriptor;
 
+	typedef [public] struct {
+		[range(0,0x40000),value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
+		[subcontext(4)] security_descriptor *sd;
+	} sec_desc_buf;
+
 	typedef [public,printonly] struct {
 		/* TODO */
 		uint32 flags;

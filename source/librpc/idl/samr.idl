@@ -48,15 +48,10 @@
 	/******************/
 	/* Function: 0x02 */
 
-	typedef struct {
-		[range(0,0x40000),value(ndr_size_security_descriptor(r->sd))] uint32 sd_size;
-		[subcontext(4)] security_descriptor *sd;
-	} samr_SdBuf;
-
 	NTSTATUS samr_SetSecurity (
 		[in,ref]          policy_handle *handle,
 		[in]              uint32 sec_info,
-		[in,ref]          samr_SdBuf *sdbuf
+		[in,ref]          sec_desc_buf *sdbuf
 		);
 
 	/******************/
@@ -65,7 +60,7 @@
 	NTSTATUS samr_QuerySecurity (
 		[in,ref]          policy_handle *handle,
 		[in]              uint32 sec_info,
-		[out]             samr_SdBuf *sdbuf
+		[out]             sec_desc_buf *sdbuf
 		);
 
 	/******************/
