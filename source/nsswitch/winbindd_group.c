@@ -256,8 +256,8 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                 name_domain = current_group->domain;
             }
 
-            if (winbindd_lookup_sid_by_name(name_domain, name_user, NULL, 
-                                            &name_type) == WINBINDD_OK) {
+            if (winbindd_lookup_sid_by_name(name_user, NULL, &name_type) 
+		== WINBINDD_OK) {
 
                 /* Check name type */
 
@@ -288,9 +288,9 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
 
                     /* Add group to todo list */
 
-                    if (winbindd_lookup_sid_by_name(name_domain, names[i], 
-                                                    &todo_sid, &name_type) 
-                        == WINBINDD_OK) {
+                    if (winbindd_lookup_sid_by_name(names[i], &todo_sid, 
+						    &name_type) 
+			== WINBINDD_OK) {
 
                         /* Fill in group entry */
 
@@ -484,8 +484,7 @@ enum winbindd_result winbindd_getgrnam_from_group(
 
     /* Get rid and name type from name */
         
-    if (!winbindd_lookup_sid_by_name(domain, name, &group_sid, 
-                                     &name_type)) {
+    if (!winbindd_lookup_sid_by_name(name, &group_sid, &name_type)) {
         DEBUG(1, ("group %s in domain %s does not exist\n", name_group,
                   name_domain));
         return WINBINDD_ERROR;
@@ -559,8 +558,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
     sid_copy(&group_sid, &domain->sid);
     sid_append_rid(&group_sid, group_rid);
 
-    if (!winbindd_lookup_name_by_sid(domain, &group_sid, group_name, 
-                                     &name_type)) {
+    if (!winbindd_lookup_name_by_sid(&group_sid, group_name, &name_type)) {
         DEBUG(1, ("Could not lookup sid\n"));
         return WINBINDD_ERROR;
     }
@@ -834,9 +832,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			slprintf(name, sizeof(name), "%s%s%s",
 				 domain->name, lp_winbind_separator(),
 				 group_name);
-
-
-			DEBUG(0, ("appending name %s\n", name));
 
 			/* Append to extra data */
 			

@@ -110,7 +110,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
 
     /* Get rid and name type from name */
     /* the following costs 1 packet */
-    if (!winbindd_lookup_sid_by_name(domain, name, &user_sid, &name_type)) {
+    if (!winbindd_lookup_sid_by_name(name, &user_sid, &name_type)) {
         DEBUG(1, ("user '%s' does not exist\n", name_user));
         return WINBINDD_ERROR;
     }
@@ -198,8 +198,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
     sid_copy(&user_sid, &domain->sid);
     sid_append_rid(&user_sid, user_rid);
 
-    if (!winbindd_lookup_name_by_sid(domain, &user_sid, user_name, 
-                                     &name_type)) {
+    if (!winbindd_lookup_name_by_sid(&user_sid, user_name, &name_type)) {
         fstring temp;
 
         sid_to_string(temp, &user_sid);
@@ -473,9 +472,6 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			slprintf(name, sizeof(name), "%s%s%s",
 				 domain->name, lp_winbind_separator(),
 				 acct_name);
-
-
-			DEBUG(0, ("appending name %s\n", name));
 
 			/* Append to extra data */
 			
