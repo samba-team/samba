@@ -452,6 +452,24 @@ static NTSTATUS context_enum_group_mapping(struct pdb_context *context,
 							num_entries, unix_only);
 }
 
+static NTSTATUS context_enum_group_memberships(struct pdb_context *context,
+					       const char *username,
+					       gid_t primary_gid,
+					       DOM_SID **sids, gid_t **gids,
+					       int *num_groups)
+{
+	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
+
+	if ((!context) || (!context->pdb_methods)) {
+		DEBUG(0, ("invalid pdb_context specified!\n"));
+		return ret;
+	}
+
+	return context->pdb_methods->
+		enum_group_memberships(context->pdb_methods, username,
+				       primary_gid, sids, gids, num_groups);
+}
+
 static NTSTATUS context_find_alias(struct pdb_context *context,
 				   const char *name, DOM_SID *sid)
 {
@@ -718,6 +736,7 @@ static NTSTATUS make_pdb_context(struct pdb_context **context)
 	(*context)->pdb_update_group_mapping_entry = context_update_group_mapping_entry;
 	(*context)->pdb_delete_group_mapping_entry = context_delete_group_mapping_entry;
 	(*context)->pdb_enum_group_mapping = context_enum_group_mapping;
+	(*context)->pdb_enum_group_memberships = context_enum_group_memberships;
 
 	(*context)->pdb_find_alias = context_find_alias;
 	(*context)->pdb_create_alias = context_create_alias;
@@ -1038,6 +1057,21 @@ BOOL pdb_enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 						      rmap, num_entries, unix_only));
 }
 
+NTSTATUS pdb_enum_group_memberships(const char *username, gid_t primary_gid,
+				    DOM_SID **sids, gid_t **gids,
+				    int *num_groups)
+{
+	struct pdb_context *pdb_context = pdb_get_static_context(False);
+
+	if (!pdb_context) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return pdb_context->pdb_enum_group_memberships(pdb_context, username,
+						       primary_gid, sids, gids,
+						       num_groups);
+}
+
 BOOL pdb_find_alias(const char *name, DOM_SID *sid)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1250,6 +1284,7 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
 	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
 	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
+	(*methods)->enum_group_memberships = pdb_default_enum_group_memberships;
 	(*methods)->find_alias = pdb_default_find_alias;
 	(*methods)->create_alias = pdb_default_create_alias;
 	(*methods)->delete_alias = pdb_default_delete_alias;
