@@ -47,6 +47,10 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 		return NULL;
 	}
 
+	if (f->fnum != fnum) {
+		smb_panic("pvfs_find_fd: idtree_fnum corruption\n");
+	}
+
 	if (req->session != f->session) {
 		DEBUG(2,("pvfs_find_fd: attempt to use wrong session for fnum %d\n", 
 			 fnum));
@@ -60,19 +64,28 @@ struct pvfs_file *pvfs_find_fd(struct pvfs_state *pvfs,
 /*
   cleanup a open directory handle
 */
-static int pvfs_dir_fd_destructor(void *p)
+static int pvfs_dir_handle_destructor(void *p)
+{
+	struct pvfs_file_handle *h = p;
+
+	if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (rmdir(h->name->full_name) != 0) {
+			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
+				 h->name->full_name, strerror(errno)));
+		}
+	}
+
+	return 0;
+}
+
+/*
+  cleanup a open directory fnum
+*/
+static int pvfs_dir_fnum_destructor(void *p)
 {
 	struct pvfs_file *f = p;
 	DLIST_REMOVE(f->pvfs->open_files, f);
 	idr_remove(f->pvfs->idtree_fnum, f->fnum);
-
-	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		if (rmdir(f->name->full_name) != 0) {
-			DEBUG(0,("pvfs_close: failed to rmdir '%s' - %s\n", 
-				 f->name->full_name, strerror(errno)));
-		}
-	}
-
 	return 0;
 }
 
@@ -124,34 +137,41 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	f->handle = talloc_p(f, struct pvfs_file_handle);
+	if (f->handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_DIR_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	f->fnum = fnum;
-	f->fd = -1;
-	f->name = talloc_steal(f, name);
-	f->session = req->session;
-	f->smbpid = req->smbpid;
-	f->pvfs = pvfs;
+	f->fnum         = fnum;
+	f->session      = req->session;
+	f->smbpid       = req->smbpid;
+	f->pvfs         = pvfs;
 	f->pending_list = NULL;
-	f->lock_count = 0;
-	f->locking_key = data_blob(NULL, 0);
-	f->create_options = io->generic.in.create_options;
-	f->share_access = io->generic.in.share_access;
-	f->seek_offset = 0;
-	f->position = 0;
-	f->mode = 0;
+	f->lock_count   = 0;
+
+	f->handle->pvfs           = pvfs;
+	f->handle->name           = talloc_steal(f->handle, name);
+	f->handle->fd             = -1;
+	f->handle->locking_key    = data_blob(NULL, 0);
+	f->handle->create_options = io->generic.in.create_options;
+	f->handle->share_access   = io->generic.in.share_access;
+	f->handle->seek_offset    = 0;
+	f->handle->position       = 0;
+	f->handle->mode           = 0;
 
 	DLIST_ADD(pvfs->open_files, f);
 
 	/* TODO: should we check in the opendb? Do directory opens 
 	   follow the share_access rules? */
 
-
-	/* setup a destructor to avoid leaks on abnormal termination */
-	talloc_set_destructor(f, pvfs_dir_fd_destructor);
+	/* setup destructors to avoid leaks on abnormal termination */
+	talloc_set_destructor(f->handle, pvfs_dir_handle_destructor);
+	talloc_set_destructor(f, pvfs_dir_fnum_destructor);
 
 	if (!name->exists) {
 		uint32_t attrib = io->generic.in.file_attr | FILE_ATTRIBUTE_DIRECTORY;
@@ -193,51 +213,61 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	return NT_STATUS_OK;
 }
 
-
 /*
-  by using a destructor we make sure that abnormal cleanup will not 
-  leak file descriptors (assuming at least the top level pointer is freed, which
-  will cascade down to here)
+  destroy a struct pvfs_file_handle
 */
-static int pvfs_fd_destructor(void *p)
+static int pvfs_handle_destructor(void *p)
 {
-	struct pvfs_file *f = p;
-	struct odb_lock *lck;
-	NTSTATUS status;
+	struct pvfs_file_handle *h = p;
 
-	DLIST_REMOVE(f->pvfs->open_files, f);
-
-	pvfs_lock_close(f->pvfs, f);
-
-	if (f->fd != -1) {
-		close(f->fd);
-		f->fd = -1;
+	if (h->fd != -1) {
+		if (close(h->fd) != 0) {
+			DEBUG(0,("pvfs_handle_destructor: close(%d) failed for %s - %s\n",
+				 h->fd, h->name->full_name, strerror(errno)));
+		}
+		h->fd = -1;
 	}
 
-	idr_remove(f->pvfs->idtree_fnum, f->fnum);
-
-	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
-		if (unlink(f->name->full_name) != 0) {
+	if (h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (unlink(h->name->full_name) != 0) {
 			DEBUG(0,("pvfs_close: failed to delete '%s' - %s\n", 
-				 f->name->full_name, strerror(errno)));
+				 h->name->full_name, strerror(errno)));
 		}
 	}
 
-	lck = odb_lock(f, f->pvfs->odb_context, &f->locking_key);
-	if (lck == NULL) {
-		DEBUG(0,("Unable to lock opendb for close\n"));
-		return 0;
-	}
+	if (h->have_opendb_entry) {
+		struct odb_lock *lck;
+		NTSTATUS status;
 
-	if (f->have_opendb_entry) {
-		status = odb_close_file(lck, f->fnum);
+		lck = odb_lock(h, h->pvfs->odb_context, &h->locking_key);
+		if (lck == NULL) {
+			DEBUG(0,("Unable to lock opendb for close\n"));
+			return 0;
+		}
+
+		status = odb_close_file(lck, h);
 		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n", 
-				 f->name->full_name, nt_errstr(status)));
+				 h->name->full_name, nt_errstr(status)));
 		}
+
+		talloc_free(lck);
 	}
 
-	talloc_free(lck);
+	return 0;
+}
+
+
+/*
+  destroy a struct pvfs_file
+*/
+static int pvfs_fnum_destructor(void *p)
+{
+	struct pvfs_file *f = p;
+
+	DLIST_REMOVE(f->pvfs->open_files, f);
+	pvfs_lock_close(f->pvfs, f);
+	idr_remove(f->pvfs->idtree_fnum, f->fnum);
 
 	return 0;
 }
@@ -310,6 +340,11 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	f->handle = talloc_p(f, struct pvfs_file_handle);
+	if (f->handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_NEW_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
@@ -343,7 +378,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
-	status = pvfs_locking_key(name, f, &f->locking_key);
+	status = pvfs_locking_key(name, f->handle, &f->handle->locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
 		close(fd);
@@ -351,7 +386,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	/* grab a lock on the open file record */
-	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
 	if (lck == NULL) {
 		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
 			 name->full_name));
@@ -362,7 +397,8 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_open_file(lck, fnum, share_access, create_options, access_mask);
+	status = odb_open_file(lck, f->handle, 
+			       share_access, create_options, access_mask);
 	talloc_free(lck);
 	if (!NT_STATUS_IS_OK(status)) {
 		/* bad news, we must have hit a race */
@@ -372,26 +408,29 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	}
 
 	f->fnum = fnum;
-	f->fd = fd;
-	f->name = talloc_steal(f, name);
 	f->session = req->session;
 	f->smbpid = req->smbpid;
 	f->pvfs = pvfs;
 	f->pending_list = NULL;
 	f->lock_count = 0;
-	f->create_options = io->generic.in.create_options;
-	f->share_access = io->generic.in.share_access;
-	f->access_mask = access_mask;
-	f->seek_offset = 0;
-	f->position = 0;
-	f->mode = 0;
-	f->have_opendb_entry = True;
+
+	f->handle->pvfs              = pvfs;
+	f->handle->name              = talloc_steal(f->handle, name);
+	f->handle->fd                = fd;
+	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->share_access      = io->generic.in.share_access;
+	f->handle->access_mask       = access_mask;
+	f->handle->seek_offset       = 0;
+	f->handle->position          = 0;
+	f->handle->mode              = 0;
+	f->handle->have_opendb_entry = True;
 
 	DLIST_ADD(pvfs->open_files, f);
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
-	talloc_set_destructor(f, pvfs_fd_destructor);
+	talloc_set_destructor(f, pvfs_fnum_destructor);
+	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum          = f->fnum;
@@ -518,7 +557,9 @@ static NTSTATUS pvfs_open_setup_retry(struct ntvfs_module_context *ntvfs,
 	r->ntvfs = ntvfs;
 	r->req = req;
 	r->io = io;
-	r->locking_key = data_blob_talloc(r, f->locking_key.data, f->locking_key.length);
+	r->locking_key = data_blob_talloc(r, 
+					  f->handle->locking_key.data, 
+					  f->handle->locking_key.length);
 
 	end_time = timeval_add(&req->request_time, 0, pvfs->sharing_violation_delay);
 
@@ -714,37 +755,44 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	f->handle = talloc_p(f, struct pvfs_file_handle);
+	if (f->handle == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
 	/* allocate a fnum */
 	fnum = idr_get_new_above(pvfs->idtree_fnum, f, PVFS_MIN_FILE_FNUM, UINT16_MAX);
 	if (fnum == -1) {
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	f->fnum = fnum;
-	f->fd = -1;
-	f->name = talloc_steal(f, name);
-	f->session = req->session;
-	f->smbpid = req->smbpid;
-	f->pvfs = pvfs;
+	f->fnum         = fnum;
+	f->session      = req->session;
+	f->smbpid       = req->smbpid;
+	f->pvfs         = pvfs;
 	f->pending_list = NULL;
-	f->lock_count = 0;
-	f->create_options = io->generic.in.create_options;
-	f->share_access = io->generic.in.share_access;
-	f->access_mask = access_mask;
-	f->seek_offset = 0;
-	f->position = 0;
-	f->have_opendb_entry = False;
+	f->lock_count   = 0;
+
+	f->handle->pvfs              = pvfs;
+	f->handle->fd                = -1;
+	f->handle->name              = talloc_steal(f->handle, name);
+	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->share_access      = io->generic.in.share_access;
+	f->handle->access_mask       = access_mask;
+	f->handle->seek_offset       = 0;
+	f->handle->position          = 0;
+	f->handle->have_opendb_entry = False;
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
-	status = pvfs_locking_key(name, f, &f->locking_key);
+	status = pvfs_locking_key(name, f->handle, &f->handle->locking_key);
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, f->fnum);
 		return status;
 	}
 
 	/* get a lock on this file before the actual open */
-	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
 	if (lck == NULL) {
 		DEBUG(0,("pvfs_open: failed to lock file '%s' in opendb\n",
 			 name->full_name));
@@ -758,11 +806,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
-	talloc_set_destructor(f, pvfs_fd_destructor);
+	talloc_set_destructor(f, pvfs_fnum_destructor);
+	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
 
 	/* see if we are allowed to open at the same time as existing opens */
-	status = odb_open_file(lck, f->fnum, share_access, create_options, access_mask);
+	status = odb_open_file(lck, f->handle, 
+			       share_access, create_options, access_mask);
 
 	/* on a sharing violation we need to retry when the file is closed by 
 	   the other user, or after 1 second */
@@ -776,19 +826,19 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	f->have_opendb_entry = True;
+	f->handle->have_opendb_entry = True;
 
 	/* do the actual open */
-	fd = open(f->name->full_name, flags);
+	fd = open(f->handle->name->full_name, flags);
 	if (fd == -1) {
 		talloc_free(lck);
 		return pvfs_map_errno(f->pvfs, errno);
 	}
 
-	f->fd = fd;
+	f->handle->fd = fd;
 
 	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(f->pvfs, fd, f->name);
+	status = pvfs_resolve_name_fd(f->pvfs, fd, f->handle->name);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(lck);
 		return status;
@@ -816,13 +866,13 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum	      = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
-	io->generic.out.create_time   = f->name->dos.create_time;
-	io->generic.out.access_time   = f->name->dos.access_time;
-	io->generic.out.write_time    = f->name->dos.write_time;
-	io->generic.out.change_time   = f->name->dos.change_time;
-	io->generic.out.attrib        = f->name->dos.attrib;
-	io->generic.out.alloc_size    = f->name->dos.alloc_size;
-	io->generic.out.size          = f->name->st.st_size;
+	io->generic.out.create_time   = name->dos.create_time;
+	io->generic.out.access_time   = name->dos.access_time;
+	io->generic.out.write_time    = name->dos.write_time;
+	io->generic.out.change_time   = name->dos.change_time;
+	io->generic.out.attrib        = name->dos.attrib;
+	io->generic.out.alloc_size    = name->dos.alloc_size;
+	io->generic.out.size          = name->st.st_size;
 	io->generic.out.file_type     = FILE_TYPE_DISK;
 	io->generic.out.ipc_state     = 0;
 	io->generic.out.is_directory  = 0;
@@ -842,7 +892,6 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
-	NTSTATUS status;
 	struct utimbuf unix_times;
 
 	if (io->generic.level == RAW_CLOSE_SPLCLOSE) {
@@ -861,21 +910,12 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 	if (!null_time(io->close.in.write_time)) {
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
-		utime(f->name->full_name, &unix_times);
+		utime(f->handle->name->full_name, &unix_times);
 	}
 	
-	if (f->fd != -1 && 
-	    close(f->fd) == -1) {
-		status = pvfs_map_errno(pvfs, errno);
-	} else {
-		status = NT_STATUS_OK;
-	}
-	f->fd = -1;
-
-	/* the destructor takes care of the rest */
 	talloc_free(f);
 
-	return status;
+	return NT_STATUS_OK;
 }
 
 
@@ -929,23 +969,23 @@ NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
 	struct odb_lock *lck;
 	NTSTATUS status;
 
-	if (f->create_options == create_options) {
+	if (f->handle->create_options == create_options) {
 		return NT_STATUS_OK;
 	}
 
-	if ((f->name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
+	if ((f->handle->name->dos.attrib & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
 	}
 
-	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	lck = odb_lock(req, pvfs->odb_context, &f->handle->locking_key);
 	if (lck == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	status = odb_set_create_options(lck, f->fnum, create_options);
+	status = odb_set_create_options(lck, f->handle, create_options);
 	if (NT_STATUS_IS_OK(status)) {
-		f->create_options = create_options;
+		f->handle->create_options = create_options;
 	}
 
 	return status;

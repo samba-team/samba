@@ -108,7 +108,6 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	pvfs->odb_context = odb_init(pvfs, 
 				     pvfs->tcon->smb_conn->connection->server_id,  
-				     pvfs->tcon->service,
 				     pvfs->tcon->smb_conn->connection->messaging_ctx);
 	if (pvfs->odb_context == NULL) {
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;

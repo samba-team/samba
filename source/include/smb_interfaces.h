@@ -794,7 +794,7 @@ union smb_setfileinfo {
 		enum smb_setfileinfo_level level;
 		union setfileinfo_file file;
 
-		struct {
+		struct smb_rename_information {
 			uint8_t overwrite;
 			uint32_t root_fid;
 			const char *new_name;

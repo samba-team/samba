@@ -46,7 +46,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	if (f->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->handle->name->dos.attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
@@ -54,7 +54,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 	if (req->flags2 & FLAGS2_READ_PERMIT_EXECUTE) {
 		mask |= SA_RIGHT_FILE_EXECUTE;
 	}
-	if (!(f->access_mask & mask)) {
+	if (!(f->handle->access_mask & mask)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -71,7 +71,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	ret = pread(f->fd, 
+	ret = pread(f->handle->fd, 
 		    rd->readx.out.data, 
 		    maxcnt,
 		    rd->readx.in.offset);
@@ -79,7 +79,7 @@ NTSTATUS pvfs_read(struct ntvfs_module_context *ntvfs,
 		return pvfs_map_errno(pvfs, errno);
 	}
 
-	f->position = f->seek_offset = rd->readx.in.offset + ret;
+	f->handle->position = f->handle->seek_offset = rd->readx.in.offset + ret;
 
 	rd->readx.out.nread = ret;
 	rd->readx.out.remaining = 0xFFFF;

@@ -31,31 +31,33 @@ NTSTATUS pvfs_seek(struct ntvfs_module_context *ntvfs,
 {
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct pvfs_file *f;
+	struct pvfs_file_handle *h;
 	NTSTATUS status;
 
 	f = pvfs_find_fd(pvfs, req, io->in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
+	h = f->handle;
 
 	status = NT_STATUS_OK;
 
 	switch (io->in.mode) {
 	case SEEK_MODE_START:
-		f->seek_offset = io->in.offset;
+		h->seek_offset = io->in.offset;
 		break;
 
 	case SEEK_MODE_CURRENT:
-		f->seek_offset += io->in.offset;
+		h->seek_offset += io->in.offset;
 		break;
 
 	case SEEK_MODE_END:
-		status = pvfs_resolve_name_fd(pvfs, f->fd, f->name);
-		f->seek_offset = f->name->st.st_size + io->in.offset;
+		status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
+		h->seek_offset = h->name->st.st_size + io->in.offset;
 		break;
 	}
 
-	io->out.offset = f->seek_offset;
+	io->out.offset = h->seek_offset;
 
 	return status;
 }

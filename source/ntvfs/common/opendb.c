@@ -44,7 +44,6 @@
 struct odb_context {
 	struct tdb_wrap *w;
 	servid_t server;
-	uint16_t tid;
 	struct messaging_context *messaging_ctx;
 };
 
@@ -54,8 +53,7 @@ struct odb_context {
 */
 struct odb_entry {
 	servid_t server;
-	uint16_t tid;
-	uint16_t fnum;
+	void     *file_handle;
 	uint32_t share_access;
 	uint32_t create_options;
 	uint32_t access_mask;
@@ -78,7 +76,7 @@ struct odb_lock {
   talloc_free(). We need the messaging_ctx to allow for pending open
   notifications.
 */
-struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid, 
+struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, 
 			     struct messaging_context *messaging_ctx)
 {
 	char *path;
@@ -100,7 +98,6 @@ struct odb_context *odb_init(TALLOC_CTX *mem_ctx, servid_t server, uint16_t tid,
 	}
 
 	odb->server = server;
-	odb->tid = tid;
 	odb->messaging_ctx = messaging_ctx;
 
 	return odb;
@@ -205,7 +202,7 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
   register an open file in the open files database. This implements the share_access
   rules
 */
-NTSTATUS odb_open_file(struct odb_lock *lck, uint16_t fnum, 
+NTSTATUS odb_open_file(struct odb_lock *lck, void *file_handle,
 		       uint32_t share_access, uint32_t create_options,
 		       uint32_t access_mask)
 {
@@ -219,8 +216,7 @@ NTSTATUS odb_open_file(struct odb_lock *lck, uint16_t fnum,
 	dbuf = tdb_fetch(odb->w->tdb, lck->key);
 
 	e.server         = odb->server;
-	e.tid            = odb->tid;
-	e.fnum           = fnum;
+	e.file_handle    = file_handle;
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;
@@ -276,8 +272,7 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 	dbuf = tdb_fetch(odb->w->tdb, lck->key);
 
 	e.server         = odb->server;
-	e.tid            = odb->tid;
-	e.fnum           = 0;
+	e.file_handle    = NULL;
 	e.share_access   = 0;
 	e.create_options = 0;
 	e.access_mask    = 0;
@@ -314,7 +309,7 @@ NTSTATUS odb_open_file_pending(struct odb_lock *lck, void *private)
 /*
   remove a opendb entry
 */
-NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
+NTSTATUS odb_close_file(struct odb_lock *lck, void *file_handle)
 {
 	struct odb_context *odb = lck->odb;
 	TDB_DATA dbuf;
@@ -344,9 +339,8 @@ NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
 
 	/* find the entry, and delete it */
 	for (i=0;i<count;i++) {
-		if (fnum == elist[i].fnum &&
-		    odb->server == elist[i].server &&
-		    odb->tid == elist[i].tid) {
+		if (file_handle == elist[i].file_handle &&
+		    odb->server == elist[i].server) {
 			if (i < count-1) {
 				memmove(elist+i, elist+i+1, 
 					(count - (i+1)) * sizeof(struct odb_entry));
@@ -399,8 +393,7 @@ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
 	/* find the entry, and delete it */
 	for (i=0;i<count;i++) {
 		if (private == elist[i].notify_ptr &&
-		    odb->server == elist[i].server &&
-		    odb->tid == elist[i].tid) {
+		    odb->server == elist[i].server) {
 			if (i < count-1) {
 				memmove(elist+i, elist+i+1, 
 					(count - (i+1)) * sizeof(struct odb_entry));
@@ -434,7 +427,7 @@ NTSTATUS odb_remove_pending(struct odb_lock *lck, void *private)
   update create options on an open file
 */
 NTSTATUS odb_set_create_options(struct odb_lock *lck, 
-				uint16_t fnum, uint32_t create_options)
+				void *file_handle, uint32_t create_options)
 {
 	struct odb_context *odb = lck->odb;
 	TDB_DATA dbuf;
@@ -452,9 +445,8 @@ NTSTATUS odb_set_create_options(struct odb_lock *lck,
 
 	/* find the entry, and modify it */
 	for (i=0;i<count;i++) {
-		if (fnum == elist[i].fnum &&
-		    odb->server == elist[i].server &&
-		    odb->tid == elist[i].tid) {
+		if (file_handle == elist[i].file_handle &&
+		    odb->server == elist[i].server) {
 			elist[i].create_options = create_options;
 			break;
 		}
@@ -503,8 +495,7 @@ NTSTATUS odb_can_open(struct odb_context *odb, DATA_BLOB *key,
 	}
 
 	e.server         = odb->server;
-	e.tid            = odb->tid;
-	e.fnum           = -1;
+	e.file_handle    = NULL;
 	e.share_access   = share_access;
 	e.create_options = create_options;
 	e.access_mask    = access_mask;
