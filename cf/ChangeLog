@@ -1,5 +1,8 @@
 2000-11-15  Assar Westerlund  <assar@sics.se>
 
+	* krb-readline.m4: link against the libtool-versions of
+	libeditline and libel_compat
+
 	* Makefile.am.common (INCLUDES): add $(INCLUDES_roken)
 	* roken-frag.m4 (CPPFLAGS_roken): rename to INCLUDES_roken
 
