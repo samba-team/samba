@@ -42,6 +42,8 @@ krb5_get_credentials (krb5_context context,
 
     PA_DATA *foo;
 
+    krb5_kdc_flags flags;
+
     /*
      * XXX - Check if cred found in ccache
      */
@@ -77,10 +79,9 @@ krb5_get_credentials (krb5_context context,
 
     a.pvno = 5;
     a.msg_type = krb_tgs_req;
-    /*
-    memset (&a.req_body.kdc_options, 0, sizeof(a.req_body.kdc_options));
-    */
-    /* a.kdc_options */
+
+    flags.i = options;
+    a.req_body.kdc_options = flags.b;
 
 #ifdef USE_ASN1_PRINCIPAL
     copy_Realm(&in_creds->server->realm, &a.req_body.realm);
