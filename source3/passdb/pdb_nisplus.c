@@ -3,7 +3,7 @@
  * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  * Copyright (C) Benny Holmgren 1998 <bigfoot@astrakan.hgs.se> 
  * Copyright (C) Luke Kenneth Casson Leighton 1996-1998.
- * Copyright (C) Toomas Soomea <tsoome@ut.ee> 2001
+ * Copyright (C) Toomas Soome <tsoome@ut.ee> 2001
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -484,6 +484,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
   static fstring pwdmchg_t;               /* from SAM */
   static fstring full_name;               /* from SAM */
   static fstring acct_desc;               /* from SAM */
+  static char empty[1];                   /* just an empty string */
 
 
   name = pdb_get_username(sampass);
@@ -764,7 +765,6 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 			   pdb_get_hours_len(sampass)-1, EN_MODIFIED);
     }  
   } else {
-    char empty[1];
     char *homedir, *dirdrive, *logon_script, *profile_path, *workstations;
 
     *empty = '\0'; /* empty string */
