@@ -47,7 +47,7 @@ DATA_BLOB data_blob(const void *p, size_t length)
 	if (p) {
 		ret.data = smb_xmemdup(p, length);
 	} else {
-		ret.data = SMB_XMALLOC_ARRAY(char, length);
+		ret.data = SMB_XMALLOC_ARRAY(unsigned char, length);
 	}
 	ret.length = length;
 	ret.free = free_data_blob;
