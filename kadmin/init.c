@@ -104,8 +104,8 @@ init(int argc, char **argv)
 {
     kadm5_ret_t ret;
     int i;
-    char *realm_max_life;
-    char *realm_max_rlife;
+    char *realm_max_life  = NULL;
+    char *realm_max_rlife = NULL;
     HDB *db;
     int optind = 0;
     unsigned max_life, max_rlife;
