@@ -608,13 +608,43 @@ static struct passwd *setup_pwret(struct passwd *pass)
 	return &pw_ret;
 }
 
+/* static pointer to be used for caching the last
+   getpw[nam|uid]() call.  Patch by "Richard Bollinger"
+   <rabollinger@home.com> */
+
+static struct passwd *sv_pw_ret; /* implicitly initialized to NULL */
+static int num_lookups; /* Counter so we don't always use cache. */
+#ifndef PW_RET_CACHE_MAX_LOOKUPS 
+#define PW_RET_CACHE_MAX_LOOKUPS 100
+#endif
+
 /**************************************************************************
  Wrapper for getpwnam(). Always returns a static that can be modified.
 ****************************************************************************/
 
 struct passwd *sys_getpwnam(const char *name)
 {
-	return setup_pwret(getpwnam(name));
+	if (!name || !name[0])
+		return NULL;
+
+	/* check for a cache hit first */
+	if (num_lookups && sv_pw_ret && !strcmp(name, sv_pw_ret->pw_name))
+	{
+		DEBUG(2,("getpwnam(%s) avoided - using cached results\n",name));
+		num_lookups++;
+		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
+		return setup_pwret(sv_pw_ret);
+	}
+
+	/* no cache hit--use old lookup instead */
+	DEBUG(2,("getpwnam(%s) called\n",name));
+
+	if (!(sv_pw_ret = getpwnam(name)))
+		return NULL;
+
+	num_lookups = 1;
+
+	return setup_pwret(sv_pw_ret);
 }
 
 /**************************************************************************
@@ -623,7 +653,21 @@ struct passwd *sys_getpwnam(const char *name)
 
 struct passwd *sys_getpwuid(uid_t uid)
 {
-	return setup_pwret(getpwuid(uid));
+	if (num_lookups && sv_pw_ret && (uid == sv_pw_ret->pw_uid))
+	{
+		DEBUG(2,("getpwuid(%d) avoided - using cached results\n",uid));
+		num_lookups++;
+		num_lookups = (num_lookups % PW_RET_CACHE_MAX_LOOKUPS);
+		return setup_pwret(sv_pw_ret);
+	}
+
+	DEBUG(2,("getpwuid(%d) called\n",uid));
+	if (!(sv_pw_ret = getpwuid(uid)))
+		return NULL;
+
+	num_lookups = 1;
+
+	return setup_pwret(sv_pw_ret);
 }
 
 /**************************************************************************
