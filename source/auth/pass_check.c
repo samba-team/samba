@@ -24,7 +24,7 @@
 #include "includes.h"
 
 #undef DBGC_CLASS
-#define DBGC_CLASS DGBC_AUTH
+#define DBGC_CLASS DBGC_AUTH
 
 /* these are kept here to keep the string_combinations function simple */
 static fstring this_user;
