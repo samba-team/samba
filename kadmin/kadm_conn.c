@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -159,6 +159,8 @@ spawn_child(krb5_context context, int *socks, int num_socks, int this_sock)
 	if(s != STDIN_FILENO && s != STDOUT_FILENO)
 	    close(s);
 	return 0;
+    } else {
+	close(s);
     }
     return 1;
 }
