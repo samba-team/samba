@@ -160,8 +160,6 @@ specify the <parameter>-k</parameter> option to choose kerberos authentication.
 <para>You must change administrator password at least once after DC 
 install, to create the right encoding types</para>
 
-<!--RS: right encoding types for what?  I don't understand this note as I did not do this on my server and did not have any problems (that I know of)-->
-
 <para>w2k doesn't seem to create the _kerberos._udp and _ldap._tcp in
    their defaults DNS setup. Maybe fixed in service packs?</para>
 </sect1>
