@@ -445,10 +445,9 @@ int dos_chmod(char *fname,mode_t mode)
 }
 
 /*******************************************************************
-for getwd - takes a UNIX directory name and returns the name
-in dos format.
+system wrapper for getwd
 ********************************************************************/
-char *dos_getwd(char *s)
+char *sys_getwd(char *s)
 {
 	char *wd;
 #ifdef HAVE_GETCWD
@@ -456,6 +455,17 @@ char *dos_getwd(char *s)
 #else
 	wd = (char *)getwd(s);
 #endif
+	return wd;
+}
+
+/*******************************************************************
+for getwd - takes a UNIX directory name and returns the name
+in dos format.
+********************************************************************/
+char *dos_getwd(char *s)
+{
+	char *wd;
+	wd = sys_getwd(s);
 	if (wd)
 		unix_to_dos(wd, True);
 	return wd;
