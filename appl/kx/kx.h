@@ -203,8 +203,8 @@ struct kx_context {
     int (*copy_encrypted)(struct kx_context *kc,
 			  int fd1, int fd2);
     void (*destroy)(struct kx_context *kc);
-    char *host;
-    char *user;
+    const char *host;
+    const char *user;
     int port;
     int debug_flag;
     int keepalive_flag;
@@ -216,7 +216,7 @@ struct kx_context {
 typedef struct kx_context kx_context;
 
 void
-context_set (kx_context *kc, char *host, char *user, int port,
+context_set (kx_context *kc, const char *host, const char *user, int port,
 	     int debug_flag, int keepalive_flag, int tcp_flag);
 
 void
