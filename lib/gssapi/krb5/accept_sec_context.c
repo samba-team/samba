@@ -448,7 +448,8 @@ gsskrb5_accept_sec_context
     if(flags & GSS_C_MUTUAL_FLAG) {
 	krb5_data outbuf;
 
-	if (is_cfx) {
+	if (is_cfx != 0
+	    || (ap_options & AP_OPTS_USE_SUBKEY)) {
 	    kret = krb5_auth_con_addflags(gssapi_krb5_context,
 					  (*context_handle)->auth_context,
 					  KRB5_AUTH_CONTEXT_USE_SUBKEY,
