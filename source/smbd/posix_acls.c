@@ -296,8 +296,13 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 			nt_mask = UNIX_ACCESS_NONE;
 		} else {
 			/* Not owner, no access. */
-			*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
-			nt_mask = GENERIC_ALL_ACCESS;
+			if (ace->type == SMB_ACL_USER) {
+				/* user objects can be deny entries. */
+				*pacl_type = SEC_ACE_TYPE_ACCESS_DENIED;
+				nt_mask = GENERIC_ALL_ACCESS;
+			}
+			else
+				nt_mask = UNIX_ACCESS_NONE;
 		}
 	} else {
 		nt_mask |= ((ace->perms & S_IRUSR) ? UNIX_ACCESS_R : 0 );
@@ -1502,7 +1507,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 		ZERO_STRUCTP(ace);
 		ace->type = tagtype;
 		ace->perms = convert_permset_to_mode_t(permset);
-		ace->attr = ace->perms ? ALLOW_ACE : DENY_ACE;
+		ace->attr = ALLOW_ACE;
 		ace->sid = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
@@ -1520,6 +1525,8 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 		DLIST_ADD(list_head, ace);
 	}
+
+	arrange_posix_perms(fsp->fsp_name,&list_head );
 
 	/*
 	 * Now go through the list, masking the permissions with the
@@ -1543,8 +1550,6 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 			print_canon_ace(ace, ace_count);
 		}
 	}
-
-	arrange_posix_perms(fsp->fsp_name,&list_head );
 
 	print_canon_ace_list( "canonicalize_acl: ace entries after arrange", list_head );
 
