@@ -593,6 +593,9 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
                 return False;
         }
 
+        /* Add to the internal list. */
+        DLIST_ADD(printers_list, new_printer);
+
         if (!set_printer_hnd_printertype(new_printer, name)) {
                 close_printer_handle(p, hnd);
                 return False;
@@ -604,9 +607,6 @@ static BOOL open_printer_hnd(pipes_struct *p, POLICY_HND *hnd, char *name)
         }
 
         DEBUG(5, ("%d printer handles active\n", (int)p->pipe_handles->count ));
-
-        /* Add to the internal list. */
-        DLIST_ADD(printers_list, new_printer);
 
         return True;
 }
