@@ -1,10 +1,7 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
+include $(top_srcdir)/Makefile.am.common
 
-AM_CFLAGS = $(WFLAGS)
-
-## ACLOCAL = @ACLOCAL@ -I cf
 ACLOCAL_AMFLAGS = -I ../../cf
 
 CLEANFILES = roken.h make-roken.c $(XHEADERS)
@@ -27,15 +24,12 @@ TESTS = $(check_PROGRAMS)
 
 LIB_crypt = @LIB_crypt@
 
-LDADD_common = libroken.la $(LIB_crypt)
+LDADD = libroken.la $(LIB_crypt)
+make_roken_LDADD = 
 
 strpftime_test_SOURCES	= strpftime-test.c strftime.c strptime.c snprintf.c
-base64_test_LDADD	= $(LDADD_common)
-getaddrinfo_test_LDADD	= $(LDADD_common)
-parse_bytes_test_LDADD	= $(LDADD_common)
 snprintf_test_SOURCES	= snprintf-test.c snprintf.c
 snprintf_test_CFLAGS	= -DTEST_SNPRINTF
-snprintf_test_LDADD	= $(LDADD_common)
 
 libroken_la_SOURCES =		\
 	base64.c		\
@@ -161,8 +155,6 @@ EXTRA_libroken_la_SOURCES =	\
 EXTRA_DIST = roken.awk roken.h.in
 
 libroken_la_LIBADD = @LTLIBOBJS@ $(DBLIB)
-
-$(LTLIBOBJS) $(libroken_la_OBJECTS): $(include_HEADERS) roken.h
 
 BUILT_SOURCES = make-roken.c roken.h
 
