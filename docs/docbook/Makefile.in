@@ -30,6 +30,8 @@ MANPAGES_NAMES=findsmb.1 smbclient.1 \
 
 XSLTPROC = @XSLTPROC@
 PDFLATEX = @PDFLATEX@
+LATEX = @LATEX@
+DVIPS = @DVIPS@
 HTMLDOC = @HTMLDOC@
 SRCDIR = @srcdir@
 MANDIR=../manpages
@@ -41,6 +43,7 @@ XMLTO = @XMLTO@
 SMBDOTCONFDOC = smbdotconf
 PSDIR = ..
 PDFDIR = ..
+DVIDIR = ..
 TXTDIR = ../textdocs
 FAQPROJDOC = faq
 FAQDIR = ../faq
@@ -52,6 +55,9 @@ all:
 	@echo "Supported make targets:"
 	@echo "manpages - Build manpages"
 	@echo "pdf - Build PDF version of HOWTO Collection and Developers Guide"
+	@echo "tex - Build Latex version of HOWTO Collection and Developers Guide"
+	@echo "dvi - Build Device Independant Files of HOWTO Collection and Developers Guide"
+	@echo "ps - Build PostScript version of HOWTO Collection and Developers Guide"
 	@echo "txt - Build plain text version of HOWTO Collection and Developers Guide"
 	@echo -n "html-single - Build single file HTML version of HOWTO Collection"
 	@echo " and developers guide"
@@ -60,12 +66,15 @@ all:
 	@echo "htmlfaq - Build html version of the FAQ"
 	@echo "everything - Build all of the above"
 
-everything: manpages pdf html-single html htmlman htmlfaq txt
+everything: manpages pdf html-single html htmlman htmlfaq txt ps
 
 # Global rules
 
 manpages: $(MANDIR) $(MANPAGES)
+tex: samba-doc.tex dev-doc.tex
 pdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf $(PDFDIR)/Samba-Developers-Guide.pdf
+dvi: $(DVIDIR) $(DVIDIR)/Samba-HOWTO-Collection.dvi $(DVIDIR)/Samba-Developers-Guide.dvi
+ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.ps
 hpdf: $(PDFDIR) $(PDFDIR)/Samba-HOWTO-Collection.pdf
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
@@ -89,26 +98,55 @@ $(TXTDIR)/Samba-Developers-Guide.txt: $(DEVDOC)/dev-doc.xml
 	@$(XMLTO) txt -o $(TXTDIR) $<
 	@mv $(TXTDIR)/dev-doc.txt $(TXTDIR)/Samba-Developers-Guide.txt
 
-# Adobe PDF files
-$(PDFDIR)/Samba-HOWTO-Collection.pdf: $(PROJDOC)/samba-doc.xml
+# Tex files
+samba-doc.tex: $(PROJDOC)/samba-doc.xml
 	@echo "Converting samba-doc to LaTeX..."
-	@$(XSLTPROC) --output samba-doc.tex xslt/latex.xsl $<
+	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
+	
+dev-doc.tex: $(DEVDOC)/dev-doc.xml
+	@echo "Converting dev-doc to LaTeX..."
+	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
+
+# Adobe PDF files
+$(PDFDIR)/Samba-HOWTO-Collection.pdf: samba-doc.tex
 	@echo "Building LaTeX sources via $(PDFLATEX)..."
-	@$(PDFLATEX) samba-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) samba-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) samba-doc.tex || echo
+	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< || echo
 	@echo "done"
 	@mv samba-doc.pdf $@
 
-$(PDFDIR)/Samba-Developers-Guide.pdf: $(DEVDOC)/dev-doc.xml
-	@echo "Converting dev-doc to LaTeX..."
-	@$(XSLTPROC) --output dev-doc.tex xslt/latex.xsl $<
+$(PDFDIR)/Samba-Developers-Guide.pdf: dev-doc.tex
 	@echo "Building LaTeX sources via $(PDFLATEX)..."
-	@$(PDFLATEX) dev-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) dev-doc.tex | grep 'Rerun to get cross-references right' && \
-	$(PDFLATEX) dev-doc.tex || echo 
+	@$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(PDFLATEX) $< || echo 
 	@echo "done"
 	@mv dev-doc.pdf $@
+
+# DVI files
+$(DVIDIR)/Samba-HOWTO-Collection.dvi: samba-doc.tex
+	@echo "Building LaTeX sources via $(LATEX)..."
+	@$(LATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< || echo
+	@echo "done"
+	@mv samba-doc.dvi $@
+
+$(DVIDIR)/Samba-Developers-Guide.dvi: dev-doc.tex
+	@echo "Building LaTeX sources via $(LATEX)..."
+	@$(LATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< | grep 'Rerun to get cross-references right' && \
+	$(LATEX) $< || echo 
+	@echo "done"
+	@mv dev-doc.dvi $@
+
+# PostScript files
+$(PSDIR)/Samba-HOWTO-Collection.ps: $(DVIDIR)/Samba-HOWTO-Collection.dvi
+	$(DVIPS) -o $@ $<
+
+$(PSDIR)/Samba-Developers-Guide.ps: $(DVIDIR)/Samba-Developers-Guide.dvi
+	$(DVIPS) -o $@ $<
 
 # Single large HTML files
 
