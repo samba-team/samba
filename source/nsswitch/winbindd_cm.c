@@ -174,6 +174,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	struct in_addr dc_ip;
 	int i;
 	BOOL retry = True;
+	BOOL got_mutex = False;
 	ZERO_STRUCT(dc_ip);
 
 	fstrcpy(new_conn->domain, domain);
@@ -235,6 +236,8 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			continue;
 		}
 
+		got_mutex = True;
+
 		result = cli_full_connection(&new_conn->cli, global_myname_unix(), new_conn->controller, 
 			     &dc_ip, 0, CLI_AUTH_TIMEOUT, "IPC$", 
 			     "IPC", ipc_username, ipc_domain, 
@@ -244,6 +247,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 			break;
 
 		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
+		got_mutex = False;
 	}
 
 	SAFE_FREE(ipc_username);
@@ -251,7 +255,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	SAFE_FREE(ipc_password);
 
 	if (!NT_STATUS_IS_OK(result)) {
-		if (new_conn->mutex_ref_count > 0)
+		if (got_mutex)
 			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		add_failed_connection_entry(new_conn, result);
 		return result;
@@ -267,7 +271,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * if the PDC is an NT4 box.   but since there is only one 2k 
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
-		if (new_conn->mutex_ref_count > 0)
+		if (got_mutex)
 			secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 		if ( !is_win2k_pipe(pipe_index) )
 			add_failed_connection_entry(new_conn, result);
@@ -275,7 +279,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		return result;
 	}
 
-	if ((new_conn->mutex_ref_count > 0) && !keep_mutex)
+	if ((got_mutex) && !keep_mutex)
 		secrets_named_mutex_release(new_conn->controller, &new_conn->mutex_ref_count);
 	return NT_STATUS_OK;
 }
@@ -360,7 +364,6 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	*conn_out = conn;
 	return NT_STATUS_OK;
 }
-
 
 /**********************************************************************************
 **********************************************************************************/
@@ -765,13 +768,13 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, unsigned char *trust_passwd,
 	result = new_cli_nt_setup_creds(conn->cli, (lp_server_role() == ROLE_DOMAIN_MEMBER) ?
 					SEC_CHAN_WKSTA : SEC_CHAN_BDC, trust_passwd);
 
+	if (conn->mutex_ref_count)
+		secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
+
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
 			  nt_errstr(result)));
 		
-		if (conn->mutex_ref_count)
-			secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
-
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) {
 			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn, True)))
@@ -792,9 +795,6 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, unsigned char *trust_passwd,
 			return result;
 		}
 	}
-
-	if (conn->mutex_ref_count)
-		secrets_named_mutex_release(conn->controller, &conn->mutex_ref_count);
 
 	*cli = conn->cli;
 
