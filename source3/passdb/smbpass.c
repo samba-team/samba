@@ -98,7 +98,7 @@ static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 
 static BOOL pw_file_unlock(int fd, int *plock_depth)
 {
-  BOOL ret;
+  BOOL ret=True;
 
   if(*plock_depth == 1)
     ret = do_pw_lock(fd, 5, F_UNLCK);
