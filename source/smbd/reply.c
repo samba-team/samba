@@ -3513,7 +3513,7 @@ uint16 get_lock_pid( char *data, int data_offset, BOOL large_file_format)
 	if(!large_file_format)
 		return SVAL(data,SMB_LPID_OFFSET(data_offset));
 	else
-		return SVAL(data,SMB_LARGE__LPID_OFFSET(data_offset));
+		return SVAL(data,SMB_LARGE_LPID_OFFSET(data_offset));
 }
 
 /****************************************************************************
