@@ -22,11 +22,6 @@
 
 #include "includes.h"
 
-struct smb_basic_signing_context {
-	DATA_BLOB mac_key;
-	uint32_t next_seq_num;
-};
-
 /***********************************************************
  SMB signing - Common code before we set a new signing implementation
 ************************************************************/
