@@ -176,8 +176,17 @@ static BOOL api_netsec_create_pdu(rpcsrv_struct * l, uint32 data_start,
 
 static BOOL api_netsec_verify(rpcsrv_struct * l)
 {
+	extern vuser_key ctx_id_table[65536];
+	const vuser_key *key = get_sec_ctx();
+
 	netsec_auth_struct *a = (netsec_auth_struct *) l->auth_info;
 	struct dcinfo dc;
+
+	if (key == NULL)
+	{
+		DEBUG(5,("api_netsec_verify: no vuser_key\n"));
+		return False;
+	}
 
 	DEBUG(5, ("api_netsec_verify: checking credential details\n"));
 
@@ -188,6 +197,8 @@ static BOOL api_netsec_verify(rpcsrv_struct * l)
 	{
 		return False;
 	}
+
+	ctx_id_table[l->hdr_rb.context_id] = *key;
 
 	l->auth_validated = True;
 
