@@ -1464,8 +1464,9 @@ NTSTATUS _samr_chgpasswd_user(pipes_struct *p, SAMR_Q_CHGPASSWD_USER *q_u, SAMR_
 makes a SAMR_R_LOOKUP_RIDS structure.
 ********************************************************************/
 
-static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring names[],
-	    UNIHDR **pp_hdr_name, UNISTR2 **pp_uni_name)
+static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names,
+				  const char **names, UNIHDR **pp_hdr_name,
+				  UNISTR2 **pp_uni_name)
 {
 	uint32 i;
 	UNIHDR *hdr_name=NULL;
@@ -1485,7 +1486,7 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	}
 
 	for (i = 0; i < num_names; i++) {
-		DEBUG(10, ("names[%d]:%s\n", i, names[i] ? names[i] : ""));
+		DEBUG(10, ("names[%d]:%s\n", i, *names[i] ? names[i] : ""));
 		init_unistr2(&uni_name[i], names[i], UNI_FLAGS_NONE);
 		init_uni_hdr(&hdr_name[i], &uni_name[i]);
 	}
@@ -1502,16 +1503,13 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 
 NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP_RIDS *r_u)
 {
-	fstring group_names[MAX_SAM_ENTRIES];
-	uint32 *group_attrs = NULL;
+	const char **names;
+	uint32 *attrs = NULL;
 	UNIHDR *hdr_name = NULL;
 	UNISTR2 *uni_name = NULL;
 	DOM_SID pol_sid;
 	int num_rids = q_u->num_rids1;
-	int i;
 	uint32 acc_granted;
-	BOOL have_mapped = False;
-	BOOL have_unmapped = False;
 	
 	r_u->status = NT_STATUS_OK;
 
@@ -1527,11 +1525,12 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (num_rids) {
-		if ((group_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids )) == NULL)
-			return NT_STATUS_NO_MEMORY;
- 	}
- 
+	names = TALLOC_ZERO_ARRAY(p->mem_ctx, const char *, num_rids);
+	attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids);
+
+	if ((num_rids != 0) && ((names == NULL) || (attrs == NULL)))
+		return NT_STATUS_NO_MEMORY;
+
 	if (!sid_equal(&pol_sid, get_global_sam_sid())) {
 		/* TODO: Sooner or later we need to look up BUILTIN rids as
 		 * well. -- vl */
@@ -1539,44 +1538,17 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	become_root();  /* lookup_sid can require root privs */
-
-	for (i = 0; i < num_rids; i++) {
-		fstring tmpname;
-		fstring domname;
-		DOM_SID sid;
-   		enum SID_NAME_USE type;
-
-		group_attrs[i] = SID_NAME_UNKNOWN;
-		*group_names[i] = '\0';
-
-		sid_copy(&sid, &pol_sid);
-		sid_append_rid(&sid, q_u->rid[i]);
-
-		if (lookup_sid(&sid, domname, tmpname, &type)) {
-			group_attrs[i] = (uint32)type;
-			fstrcpy(group_names[i],tmpname);
-			DEBUG(5,("_samr_lookup_rids: %s:%d\n", group_names[i],
-				 group_attrs[i]));
-			have_mapped = True;
-		} else {
-			have_unmapped = True;
-		}
-	}
-
+	r_u->status = pdb_lookup_rids(p->mem_ctx, &pol_sid, num_rids, q_u->rid,
+				      &names, &attrs);
 	unbecome_root();
 
  done:
 
-	r_u->status = NT_STATUS_NONE_MAPPED;
-
-	if (have_mapped)
-		r_u->status =
-			have_unmapped ? STATUS_SOME_UNMAPPED : NT_STATUS_OK;
-
-	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, group_names, &hdr_name, &uni_name))
+	if(!make_samr_lookup_rids(p->mem_ctx, num_rids, names,
+				  &hdr_name, &uni_name))
 		return NT_STATUS_NO_MEMORY;
 
-	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, group_attrs);
+	init_samr_r_lookup_rids(r_u, num_rids, hdr_name, uni_name, attrs);
 
 	DEBUG(5,("_samr_lookup_rids: %d\n", __LINE__));
 
