@@ -255,7 +255,7 @@ krb5_DES_AFS3_CMU_string_to_key (krb5_data pw,
     }
     password[8] = '\0';
 
-    memcpy(key, crypt(password, "#~") + 2, sizeof(des_cblock));
+    memcpy(key, crypt(password, "p1") + 2, sizeof(des_cblock));
 
     /* parity is inserted into the LSB so left shift each byte up one
        bit. This allows ascii characters with a zero MSB to retain as
