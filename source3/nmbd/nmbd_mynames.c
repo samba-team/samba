@@ -164,9 +164,13 @@ BOOL register_my_workgroup_and_names(void)
 
 void release_my_names(void)
 {
+#if 0 /*JRR: do WINS server only, otherwise clients ignore us when we come back up*/
   struct subnet_record *subrec;
 
   for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec))
+#else
+  struct subnet_record *subrec = unicast_subnet;
+#endif
   {
     struct name_record *namerec, *nextnamerec;
 
