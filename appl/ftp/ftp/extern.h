@@ -167,3 +167,5 @@ extern off_t	restart_point;
 extern int	NCMDS;
 
 extern char 	username[32];
+extern char	myhostname[];
+extern char	*mydomain;
