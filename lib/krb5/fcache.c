@@ -83,26 +83,54 @@ fcc_resolve(krb5_context context, krb5_ccache *id, const char *res)
     return 0;
 }
 
+/*
+ * Try to scrub the contents of `filename' safely.
+ */
+
 static krb5_error_code
 erase_file(const char *filename)
 {
     int fd;
     off_t pos;
     char buf[128];
+    struct stat sb1, sb2;
+    int ret;
+
+    ret = lstat (filename, &sb1);
+    if (ret < 0)
+	return errno;
 
     fd = open(filename, O_RDWR | O_BINARY);
-    if(fd < 0){
+    if(fd < 0) {
 	if(errno == ENOENT)
 	    return 0;
 	else
 	    return errno;
     }
+    ret = fstat (fd, &sb2);
+    if (ret < 0) {
+	close (fd);
+	return errno;
+    }
+
+    /* someone was playing with symlinks */
+
+    if (sb1.st_dev != sb2.st_dev || sb1.st_ino != sb2.st_ino) {
+	close (fd);
+	return EPERM;
+    }
+
+    /* XXX - uid checks? */
+
     pos = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
     memset(buf, 0, sizeof(buf));
     while(pos > 0)
 	pos -= write(fd, buf, sizeof(buf));
     close(fd);
+#ifdef HAVE_REVOKE
+    revoke(filename);
+#endif
     unlink(filename);
     return 0;
 }
