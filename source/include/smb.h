@@ -187,8 +187,10 @@ implemented */
 #define ERROR_EAS_DIDNT_FIT		(275)	/* Extended attributes didn't fit */
 #define ERROR_EAS_NOT_SUPPORTED		(282)	/* Extended attributes not supported */
 #define ERROR_NOTIFY_ENUM_DIR	       (1022)	/* Buffer too small to return change notify. */
+#define ERROR_UNKNOWN_PRINTER_DRIVER   (1797)
 #define ERROR_INVALID_PRINTER_NAME     (1801)
 #define ERROR_INVALID_DATATYPE	       (1804)
+#define ERROR_INVALID_ENVIRONMENT      (1805)
 
 /* here's a special one from observing NT */
 #define ERRnoipc 66		/* don't support ipc */
@@ -375,7 +377,17 @@ struct sam_disp_info
 	char *full_name;	/* user's full name string */
 };
 
+typedef struct
+{
+	uint32 pid;
+	uint16 vuid;
+
+}
+vuser_key;
+
+#ifndef MAXSUBAUTHS
 #define MAXSUBAUTHS 15		/* max sub authorities in a SID */
+#endif
 
 /* DOM_SID - security id */
 typedef struct sid_info
@@ -412,7 +424,18 @@ typedef enum
 	DOM_MAP_USER
 }
 DOM_MAP_TYPE;
+/*
+ * The complete list of SIDS belonging to this user.
+ * Created when a vuid is registered.
+ */
 
+#ifndef _NT_USER_TOKEN
+typedef struct _nt_user_token {
+	size_t num_sids;
+	DOM_SID *user_sids;
+} NT_USER_TOKEN;
+#define _NT_USER_TOKEN
+#endif
 
 /*** query a local group, get a list of these: shows who is in that group ***/
 
@@ -436,18 +459,6 @@ typedef struct local_grp_info
 
 } LOCAL_GRP;
 
-/*** query a domain group, get a list of these: shows who is in that group ***/
-
-/* domain group info */
-typedef struct domain_grp_member_info
-{
-	fstring name;
-	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
-	uint32 rid;		/* rid of domain group member */
-	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
-
-} DOMAIN_GRP_MEMBER;
-
 /*** enumerate these to get list of domain groups ***/
 
 /* domain group member info */
@@ -459,6 +470,18 @@ typedef struct domain_grp_info
 	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
 
 } DOMAIN_GRP;
+
+/*** query a domain group, get a list of these: shows who is in that group ***/
+
+/* domain group info */
+typedef struct domain_grp_member_info
+{
+	fstring name;
+	uint8 attr;		/* attributes forced to be set to 0x7: SE_GROUP_xxx */
+	uint32 rid;		/* rid of domain group member */
+	uint8 sid_use;		/* usr=1 grp=2 dom=3 alias=4 wkng=5 del=6 inv=7 unk=8 */
+
+} DOMAIN_GRP_MEMBER;
 
 /* DOM_CHAL - challenge info */
 typedef struct chal_info
@@ -603,14 +626,6 @@ typedef struct connection_struct
 	name_compare_entry *veto_oplock_list;	/* Per-share list of files to refuse oplocks on. */
 
 } connection_struct;
-
-typedef struct
-{
-	uint32 pid;
-	uint16 vuid;
-
-}
-vuser_key;
 
 struct current_user
 {

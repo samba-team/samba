@@ -3536,7 +3536,7 @@ uint32 _spoolss_writeprinter( const POLICY_HND *handle,
 uint32 _spoolss_setprinter(const POLICY_HND *handle, uint32 level,
 			   const SPOOL_PRINTER_INFO_LEVEL *info,
 			   const DEVMODE_CTR devmode_ctr,
-			   const SEC_DESC_BUF *secdesc_ctr,
+			   SEC_DESC_BUF *secdesc_ctr,
 			   uint32 command);
 uint32 _spoolss_fcpn(const POLICY_HND *handle);
 uint32 _spoolss_addjob(const POLICY_HND *handle, uint32 level,
