@@ -11,6 +11,7 @@ spnego_files =					\
 	asn1_ContextFlags.x			\
 	asn1_MechType.x				\
 	asn1_MechTypeList.x			\
+	asn1_NegotiationToken.x			\
 	asn1_NegTokenInit.x			\
 	asn1_NegTokenTarg.x
 
