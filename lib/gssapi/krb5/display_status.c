@@ -87,7 +87,7 @@ routine_error(OM_uint32 v)
     if (v == 0)
 	return "";
     else if (v >= sizeof(msgs)/sizeof(*msgs))
-	return "unknown ruotine error";
+	return "unknown routine error";
     else
 	return msgs[v];
 }
