@@ -708,13 +708,22 @@ int valid_regf_hdr(REGF_HDR *regf_hdr)
 }
 
 /*
+ * Process an LF Header and return a list of sub-keys
+ */
+KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size)
+{
+
+  return NULL;
+}
+
+/*
  * This routine is passed a NK_HDR pointer and retrieves the entire tree
  * from there down. It return a REG_KEY *.
  */
-REG_KEY *nt_get_key_tree(NK_HDR *nk_hdr, int size)
+REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size)
 {
-  REG_KEY *tmp;
-  int rec_size, name_len, clsname_len;
+  REG_KEY *tmp = NULL;
+  int rec_size, name_len, clsname_len, lf_off;
   LF_HDR *lf_hdr;
   VL_TYPE *vl;
   char key_name[1024];
@@ -750,6 +759,23 @@ REG_KEY *nt_get_key_tree(NK_HDR *nk_hdr, int size)
   strncpy(key_name, nk_hdr->key_nam, name_len);
 
   fprintf(stderr, "Key name: %s\n", key_name);
+
+  lf_off = IVAL(&nk_hdr->lf_off);
+
+  /*
+   * No more subkeys if lf_off == -1
+   */
+
+  if (lf_off != -1) {
+
+    lf_hdr = (LF_HDR *)LOCN(regf->base, lf_off);
+    
+    /* Should assign this to something */ 
+    process_lf(regf, lf_hdr, BLK_SIZE(lf_hdr));
+
+  }
+
+  return tmp;
 
 }
 
@@ -811,7 +837,7 @@ int nt_load_registry(REGF *regf)
    * Now, get the registry tree by processing that NK recursively
    */
 
-  regf->root = nt_get_key_tree(first_key, BLK_SIZE(first_key));
+  regf->root = nt_get_key_tree(regf, first_key, BLK_SIZE(first_key));
 
   assert(regf->root != NULL);
 
