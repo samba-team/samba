@@ -47,7 +47,7 @@ static void init_winreg_String(struct winreg_String *name, const char *s)
 	unknown.unknown0 = 0x84e0; \
 	unknown.unknown1 = 0x0000; \
 	r.in.unknown = &unknown; \
-	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED; \
+	r.in.access_required = SEC_FLAG_MAXIMUM_ALLOWED; \
 	r.out.handle = hnd;\
 	\
 	status = dcerpc_winreg_Open ## u(p, mem_ctx, &r); \

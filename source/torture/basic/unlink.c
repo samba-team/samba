@@ -82,7 +82,7 @@ BOOL torture_unlinktest(void)
 	io.ntcreatex.in.security_flags = 0;
 	io.ntcreatex.in.fname = fname;
 	io.ntcreatex.in.share_access = NTCREATEX_SHARE_ACCESS_DELETE;
-	io.ntcreatex.in.access_mask  = SEC_RIGHTS_FULL_CONTROL;
+	io.ntcreatex.in.access_mask  = SEC_RIGHTS_FILE_ALL;
 
 	status = smb_raw_open(cli->tree, cli, &io);
 	if (!NT_STATUS_IS_OK(status)) {

@@ -136,7 +136,7 @@ GtkWidget *gtk_select_domain_dialog_new (struct dcerpc_pipe *sam_pipe)
 	d->sam_pipe = sam_pipe;
 
 	cr.in.system_name = 0;
-	cr.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	cr.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	cr.out.connect_handle = &handle;
 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &cr);

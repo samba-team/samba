@@ -128,7 +128,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing Open on %s\n", "\\.\\\\\\\\\\\\.");
 	/* findfirst seems to fail with a different error. */
 	fnum1 = smbcli_nt_create_full(cli->tree, "\\.\\\\\\\\\\\\.",
-				      0, SEC_RIGHTS_FULL_CONTROL,
+				      0, SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE|
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -169,7 +169,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing Open on %s\n", BASEDIR".\\.\\.\\.\\foo\\..\\.\\");
 	/* findfirst seems to fail with a different error. */
 	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR".\\.\\.\\.\\foo\\..\\.\\",
-				      0, SEC_RIGHTS_FULL_CONTROL,
+				      0, SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE|
 				      NTCREATEX_SHARE_ACCESS_READ|
@@ -187,7 +187,7 @@ static BOOL test_chkpath(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* findfirst seems to fail with a different error. */
 	printf("testing Open on %s\n", BASEDIR "\\nt\\V S\\VB98\\vb6.exe\\3");
 	fnum1 = smbcli_nt_create_full(cli->tree, BASEDIR "\\nt\\V S\\VB98\\vb6.exe\\3",
-				      0, SEC_RIGHTS_FULL_CONTROL,
+				      0, SEC_RIGHTS_FILE_ALL,
 				      FILE_ATTRIBUTE_NORMAL,
 				      NTCREATEX_SHARE_ACCESS_DELETE|
 				      NTCREATEX_SHARE_ACCESS_READ|

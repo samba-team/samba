@@ -60,7 +60,7 @@ static NTSTATUS DeleteUser_byname(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	r.in.domain_handle = handle;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.in.rid = rid;
 	r.out.user_handle = &user_handle;
 
@@ -125,7 +125,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	}
 
 	c.in.system_name = NULL;
-	c.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	c.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	c.out.connect_handle = &handle;
 
 	status = dcerpc_samr_Connect(join->p, join, &c);
@@ -151,7 +151,7 @@ struct test_join *torture_join_domain(const char *machine_name,
 	}
 
 	o.in.connect_handle = &handle;
-	o.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	o.in.sid = l.out.sid;
 	o.out.domain_handle = &domain_handle;
 
@@ -168,7 +168,7 @@ again:
 	r.in.domain_handle = &domain_handle;
 	r.in.account_name = &name;
 	r.in.acct_flags = acct_flags;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.user_handle = &join->user_handle;
 	r.out.access_granted = &access_granted;
 	r.out.rid = &rid;

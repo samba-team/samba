@@ -144,7 +144,7 @@ static void connect_sam(void)
 	}
 
 	r.in.system_name = 0;
-	r.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
 	r.out.connect_handle = &sam_handle;
 
 	status = dcerpc_samr_Connect(sam_pipe, mem_ctx, &r);
