@@ -11,6 +11,8 @@ details on exact updates.
 
 Common bugs fixed in 3.0.7 include:
 
+  o Fixes for two Denial of Service vulnerabalities
+    (CVE ID# CAN-2004-0807 & CAN-2004-0808).
   o Winbind failure to return user entries under certain 
     conditions.
   o Syntax errors in the OpenLDAP schema file (samba.schema).
@@ -40,6 +42,10 @@ o   Jeremy Allison <jra@samba.org>
     * More paranoia checks in the hash2 mangling code.
     * Fix syntax error in configure.in.
     * Match Win2k3's behavior for pathname parsing error returns.
+    * Make nmbd more robust against bad netbios packets 
+      (CAN-2004-0808).
+    * Add more checks for invalid ASN.1 packets for SPNEGO packets
+      (CAN-2004-0807).
 
   
 o   Andrew Bartlett <abartlet@samba.org>  
