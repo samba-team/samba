@@ -501,7 +501,7 @@ BOOL make_server_info_sam(auth_serversupplied_info **server_info, SAM_ACCOUNT *s
 BOOL make_server_info_pw(auth_serversupplied_info **server_info, const struct passwd *pwd)
 {
 	SAM_ACCOUNT *sampass = NULL;
-	if (!pdb_init_sam_pw(&sampass, pwd)) {		
+	if (!NT_STATUS_IS_OK(pdb_init_sam_pw(&sampass, pwd))) {		
 		return False;
 	}
 	return make_server_info_sam(server_info, sampass);
