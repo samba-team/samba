@@ -119,6 +119,7 @@ union libnet_find_pdc;
 union libnet_rpc_connect;
 union libnet_RemoteTOD;
 union libnet_JoinDomain;
+union libnet_CreateUser;
 struct net_functable;
 struct net_context;
 
