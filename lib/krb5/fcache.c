@@ -65,8 +65,9 @@ fcc_get_name(krb5_context context,
     return FILENAME(id);
 }
 
-static int
-xlock(int fd, krb5_boolean exclusive)
+int
+_krb5_xlock(krb5_context context, int fd, krb5_boolean exclusive,
+	    const char *filename)
 {
     int ret;
 #ifdef HAVE_FCNTL
@@ -84,11 +85,17 @@ xlock(int fd, krb5_boolean exclusive)
 	ret = errno;
     if(ret == EACCES) /* fcntl can return EACCES instead of EAGAIN */
 	ret = EAGAIN;
+    if(ret == EAGAIN)
+	krb5_set_error_string(context, "timed out locking cache file %s", 
+			      filename);
+    else if(ret != 0)
+	krb5_set_error_string(context, "error locking cache file %s: %s",
+			      filename);
     return ret;
 }
 
-static int
-xunlock(int fd)
+int
+_krb5_xunlock(int fd)
 {
 #ifdef HAVE_FCNTL_LOCK
     struct flock l;
@@ -106,21 +113,13 @@ static krb5_error_code
 fcc_lock(krb5_context context, krb5_ccache id,
 	 int fd, krb5_boolean exclusive)
 {
-    krb5_error_code ret = 0;
-    ret = xlock(fd, exclusive);
-    if(ret == EAGAIN)
-	krb5_set_error_string(context, "timed out locking cache file %s", 
-			      fcc_get_name(context, id));
-    else if(ret != 0)
-	krb5_set_error_string(context, "error locking cache file %s: %s",
-			      fcc_get_name(context, id), strerror(ret));
-    return ret;
+    return _krb5_xlock(context, fd, exclusive, fcc_get_name(context, id));
 }
 
 static krb5_error_code
 fcc_unlock(krb5_context context, int fd)
 {
-    return xunlock(fd);
+    return _krb5_xunlock(fd);
 }
 
 static krb5_error_code
