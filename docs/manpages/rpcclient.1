@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "RPCCLIENT" "1" "24 April 2001" "" ""
+.TH "RPCCLIENT" "1" "01 June 2001" "" ""
 .SH NAME
 rpcclient \- tool for executing client side  MS-RPC functions
 .SH SYNOPSIS
@@ -56,8 +56,9 @@ planning on submitting a bug report to the Samba team (see BUGS.txt).
 Print a summary of command line options.
 .TP
 \fB-l logbasename\fR
-File name for log/debug files. .client will be 
-appended. The log file is never removed by the client.
+File name for log/debug files. The extension 
+\&'.client' will be appended. The log file is never removed 
+by the client.
 .TP
 \fB-N\fR
 instruct \fBrpcclient\fR not to ask 
@@ -93,9 +94,8 @@ it in directly.
 .TP
 \fB-W domain\fR
 Set the SMB domain of the username. This 
-overrides the default domain which is the domain of the 
-server specified with the \fI-S\fR option. 
-If the domain specified is the same as the server's NetBIOS name, 
+overrides the default domain which is the domain defined in 
+smb.conf. If the domain specified is the same as the server's NetBIOS name, 
 it causes the client to log on using the server's local SAM (as 
 opposed to the Domain SAM). 
 .SH "COMMANDS"
@@ -106,10 +106,12 @@ opposed to the Domain SAM).
 \fBlsaquery\fR
 .TP 0.2i
 \(bu
-\fBlookupsids\fR
+\fBlookupsids\fR - Resolve a list 
+of SIDs to usernames.
 .TP 0.2i
 \(bu
-\fBlookupnames\fR
+\fBlookupnames\fR - Resolve s list 
+of usernames to SIDs.
 .TP 0.2i
 \(bu
 \fBenumtrusts\fR
@@ -130,6 +132,18 @@ opposed to the Domain SAM).
 .TP 0.2i
 \(bu
 \fBquerygroupmem\fR
+.TP 0.2i
+\(bu
+\fBqueryaliasmem\fR
+.TP 0.2i
+\(bu
+\fBquerydispinfo\fR
+.TP 0.2i
+\(bu
+\fBquerydominfo\fR
+.TP 0.2i
+\(bu
+\fBenumdomgroups\fR
 .PP
 .PP
 .PP
@@ -178,6 +192,12 @@ will be automatically shared. Be aware that the printer driver
 must already be installed on the server (see \fBadddriver\fR) 
 and the \fIport\fRmust be a valid port name (see
 \fBenumports\fR.
+.TP 0.2i
+\(bu
+\fBdeldriver\fR - Delete the 
+specified printer driver for all architectures. This
+does not delete the actual driver files from the server,
+only the entry from the server's list of drivers.
 .TP 0.2i
 \(bu
 \fBenumdata\fR - Enumerate all 
