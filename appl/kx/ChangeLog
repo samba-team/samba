@@ -1,3 +1,8 @@
+1999-12-17  Assar Westerlund  <assar@sics.se>
+
+	* common.c (match_local_auth): remove extra brace.  spotted by
+ 	Jakob Schlyter <jakob@cdg.chalmers.se>
+
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
 	* common.c (match_local_auth): handle ai_canonname not being set

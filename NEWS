@@ -1,3 +1,7 @@
+Changes in release 0.2h:
+
+ * fix typo in kx (now compiles)
+
 Changes in release 0.2g:
 
  * lots of bug fixes:
