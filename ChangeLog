@@ -1,5 +1,7 @@
 2000-07-25  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/krb5/Makefile.am: bump version to 12:0:1
+
 	* lib/krb5/krb5_config.3: manpage
 
 	* lib/krb5/krb5_appdefault.3: manpage
