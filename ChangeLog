@@ -1,3 +1,13 @@
+2000-01-08  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_sname_to_principal): use
+	krb5_expand_hostname
+
+	* lib/krb5/expand_hostname.c (krb5_expand_hostname): handle
+	ai_canonname being set in any of the addresses returnedby
+	getaddrinfo.  glibc apparently returns the reverse lookup of every
+	address in ai_canonname.
+
 2000-01-06  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2l
