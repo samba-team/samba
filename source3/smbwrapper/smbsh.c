@@ -37,7 +37,7 @@ int main(int argc, char *argv[])
 {
 	char *p, *u;
 	char *libd = BINDIR;	
-	pstring line;
+	pstring line, wd;
 	int opt;
 	extern char *optarg;
 	extern int optind;
@@ -91,9 +91,11 @@ int main(int argc, char *argv[])
 
 	smbw_setenv("PS1", "smbsh$ ");
 
-	sys_getwd(line);
+	sys_getwd(wd);
 
-	smbw_setenv("PWD", line);
+	slprintf(line,sizeof(line)-1,"PWD_%d", getpid());
+
+	smbw_setshared(line, wd);
 
 	slprintf(line,sizeof(line)-1,"%s/smbwrapper.so", libd);
 	smbw_setenv("LD_PRELOAD", line);
