@@ -683,45 +683,11 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 }
 
 /*******************************************************************
- samr_reply_enum_dom_groups
- Only reply with one group - domain admins. This must be fixed for
- a real PDC. JRA.
- ********************************************************************/
-
-uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
-{
-	DOMAIN_GRP grp;
-	int num_entries;
-	char *dummy_group = "Domain Admins";
-	
-	r_u->status = NT_STATUS_NOPROBLEMO;
-
-	/* find the policy handle.  open a policy on it. */
-	if (find_lsa_policy_by_hnd(&q_u->pol) == -1)
-		return NT_STATUS_INVALID_HANDLE;
-
-	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
-
-	num_entries = 1;
-	ZERO_STRUCT(grp);
-	fstrcpy(grp.name, dummy_group);
-	grp.rid = DOMAIN_GROUP_RID_ADMINS;
-
-	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &grp);
-
-	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
-
-	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
-
-	return r_u->status;
-}
-
-/*******************************************************************
  Get the group entries - similar to get_sampwd_entries().
  ********************************************************************/
 
-static BOOL get_group_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
-							  uint32 *p_num_entries, uint32 max_entries)
+static BOOL get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+				    uint32 *p_num_entries, uint32 max_entries)
 {
 	fstring sid_str;
 	fstring sam_sid_str;
@@ -776,7 +742,7 @@ static BOOL get_group_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
 
 			/* JRA - added this for large group db enumeration... */
 
-        	if (start_idx > 0) {
+			if (start_idx > 0) {
 				/* skip the requested number of entries.
 					not very efficient, but hey...
 				*/
@@ -798,6 +764,67 @@ static BOOL get_group_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
 }
 
 /*******************************************************************
+ Get the group entries - similar to get_sampwd_entries().
+ ********************************************************************/
+
+static BOOL get_group_domain_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 start_idx,
+				     uint32 *p_num_entries, uint32 max_entries)
+{
+	fstring sid_str;
+	fstring sam_sid_str;
+	uint32 num_entries = 0;
+	fstring name="Domain Admins";
+	fstring comment="Just to make it work !";
+
+	sid_to_string(sid_str, sid);
+	sid_to_string(sam_sid_str, &global_sam_sid);
+
+	*p_num_entries = 0;
+
+	fstrcpy(d_grp[0].name, name);
+	fstrcpy(d_grp[0].comment, comment);
+	d_grp[0].rid = DOMAIN_GROUP_RID_ADMINS;
+	d_grp[0].attr=SID_NAME_DOM_GRP;
+
+	num_entries = 1;
+
+	*p_num_entries = num_entries;
+
+	return True;
+}
+
+/*******************************************************************
+ samr_reply_enum_dom_groups
+ Only reply with one group - domain admins. This must be fixed for
+ a real PDC. JRA.
+ ********************************************************************/
+
+uint32 _samr_enum_dom_groups(pipes_struct *p, SAMR_Q_ENUM_DOM_GROUPS *q_u, SAMR_R_ENUM_DOM_GROUPS *r_u)
+{
+	DOMAIN_GRP grp;
+	int num_entries;
+	DOM_SID sid;
+
+	r_u->status = NT_STATUS_NOPROBLEMO;
+
+	if (!get_lsa_policy_samr_sid(&q_u->pol, &sid))
+		return NT_STATUS_INVALID_HANDLE;
+
+	DEBUG(5,("samr_reply_enum_dom_groups: %d\n", __LINE__));
+
+	get_group_domain_entries(&grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+
+	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, &grp);
+
+	init_samr_r_enum_dom_groups(r_u, q_u->start_idx, num_entries);
+
+	DEBUG(5,("samr_enum_dom_groups: %d\n", __LINE__));
+
+	return r_u->status;
+}
+
+
+/*******************************************************************
  samr_reply_enum_dom_aliases
  ********************************************************************/
 
@@ -817,7 +844,7 @@ uint32 _samr_enum_dom_aliases(pipes_struct *p, SAMR_Q_ENUM_DOM_ALIASES *q_u, SAM
 	sid_to_string(sid_str, &sid);
 	DEBUG(5,("samr_reply_enum_dom_aliases: sid %s\n", sid_str));
 
-	if (!get_group_entries(grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
+	if (!get_group_alias_entries(grp, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES))
 		return NT_STATUS_ACCESS_DENIED;
 
 	make_group_sam_entry_list(p->mem_ctx, &r_u->sam, &r_u->uni_grp_name, num_entries, grp);
@@ -851,13 +878,13 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	r_u->status = NT_STATUS_NOPROBLEMO;
 
 	if (!get_lsa_policy_samr_sid(&q_u->domain_pol, &sid))
-        return NT_STATUS_INVALID_HANDLE;
+		return NT_STATUS_INVALID_HANDLE;
 
-    /* decide how many entries to get depending on the max_entries
-        and max_size passed by client */
+	/* decide how many entries to get depending on the max_entries
+	   and max_size passed by client */
 
-    if(q_u->max_entries > MAX_SAM_ENTRIES)
-        q_u->max_entries = MAX_SAM_ENTRIES;
+	if(q_u->max_entries > MAX_SAM_ENTRIES)
+		q_u->max_entries = MAX_SAM_ENTRIES;
 
 	/* Get what we need from the password database */
 	switch (q_u->switch_level) {
@@ -890,7 +917,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x3:
 	case 0x5:
-		ret = get_group_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
+		ret = get_group_domain_entries(grps, &sid, q_u->start_idx, &num_entries, MAX_SAM_ENTRIES);
 		if (!ret)
 			return NT_STATUS_ACCESS_DENIED;
 		break;
@@ -948,7 +975,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		return STATUS_MORE_ENTRIES;
 	}
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -989,7 +1016,7 @@ uint32 _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_
 
 	DEBUG(5,("_samr_query_aliasinfo: %d\n", __LINE__));
 
-	return True;
+	return r_u->status;
 }
 
 #if 0

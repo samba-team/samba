@@ -1592,13 +1592,10 @@ void init_sam_dispinfo_3(SAM_DISPINFO_3 * sam, uint32 *num_entries,
 		len_sam_name = strlen(grp[i].name);
 		len_sam_desc = strlen(grp[i].comment);
 
-		init_sam_entry3(&sam->sam[i], start_idx + i + 1,
-			  len_sam_name, len_sam_desc, grp[i].rid);
+		init_sam_entry3(&sam->sam[i], start_idx + i + 1, len_sam_name, len_sam_desc, grp[i].rid);
 	  
-		init_unistr2(&sam->str[i].uni_grp_name, grp[i].name,
-		       len_sam_name);
-		init_unistr2(&sam->str[i].uni_grp_desc, grp[i].comment,
-		       len_sam_desc);
+		init_unistr2(&sam->str[i].uni_grp_name, grp[i].name, len_sam_name);
+		init_unistr2(&sam->str[i].uni_grp_desc, grp[i].comment, len_sam_desc);
 	  
 		dsize += sizeof(SAM_ENTRY3);
 		dsize += (len_sam_name + len_sam_desc) * 2;
