@@ -262,7 +262,7 @@ const char *hstrerror(int herr);
 #endif
 #endif
 
-#ifndef HAVE_H_ERRNO_DECLARATION
+#if !HAVE_DECL_H_ERRNO
 extern int h_errno;
 #endif
 
@@ -427,21 +427,17 @@ int get_window_size(int fd, struct winsize *);
 void vsyslog(int pri, const char *fmt, va_list ap);
 #endif
 
-#ifndef HAVE_OPTARG_DECLARATION
+#if !HAVE_DECL_OPTARG
 extern char *optarg;
 #endif
-#ifndef HAVE_OPTIND_DECLARATION
+#if !HAVE_DECL_OPTIND
 extern int optind;
 #endif
-#ifndef HAVE_OPTERR_DECLARATION
+#if !HAVE_DECL_OPTERR
 extern int opterr;
 #endif
 
-#ifndef HAVE___PROGNAME_DECLARATION
-extern const char *__progname;
-#endif
-
-#ifndef HAVE_ENVIRON_DECLARATION
+#if !HAVE_DECL_ENVIRON
 extern char **environ;
 #endif
 
@@ -631,6 +627,10 @@ void setprogname(const char *argv0);
 
 #ifndef HAVE_GETPROGNAME
 const char *getprogname(void);
+#endif
+
+#if !defined(HAVE_SETPROGNAME) && !defined(HAVE_GETPROGNAME) && !HAVE_DECL___PROGNAME
+extern const char *__progname;
 #endif
 
 void mini_inetd_addrinfo (struct addrinfo*);
