@@ -1,0 +1,200 @@
+<chapter id="VFS">
+<chapterinfo>
+	<author><firstname>Jelmer</firstname><surname>Vernooij</surname></author>
+	<author><firstname>Alexander</firstname><surname>Bokovoy</surname></author>
+	<author><firstname>Tim</firstname><surname>Potter</surname></author>
+	<author><firstname>Simo</firstname><surname>Sorce</surname></author>
+</chapterinfo>
+<title>Stackable VFS modules</title>
+
+<sect1>
+<title>Introduction and configuration</title>
+
+<para>
+Since samba 3.0, samba supports stackable VFS(Virtual File System) modules.  
+Samba passes each request to access the unix file system thru the loaded VFS modules. 
+This chapter covers all the modules that come with the samba source and references to 
+some external modules.
+</para>
+
+<para>
+You may have problems to compile these modules, as shared libraries are
+compiled and linked in different ways on different systems.
+They currently have been tested against GNU/linux and IRIX.
+</para>
+
+<para>
+To use the VFS modules, create a share similar to the one below.  The
+important parameter is the <command>vfs object</command> parameter which must point to
+the exact pathname of the shared library objects. For example, to log all access 
+to files and use a recycle bin:
+
+<programlisting>
+       [audit]
+                comment = Audited /data directory
+                path = /data
+                vfs object = /path/to/audit.so /path/to/recycle.so
+                writeable = yes
+                browseable = yes
+</programlisting>
+</para>
+
+<para>
+The modules are used in the order they are specified.
+</para>
+
+<para>
+Further documentation on writing VFS modules for Samba can be found in
+the Samba Developers Guide.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Included modules</title>
+
+<sect2>
+<title>audit</title>
+<para>A simple module to audit file access to the syslog
+facility.  The following operations are logged:
+<simplelist>
+<member>share</member>
+<member>connect/disconnect</member>
+<member>directory opens/create/remove</member>
+<member>file open/close/rename/unlink/chmod</member>
+</simplelist>
+</para>
+</sect2>
+
+<sect2>
+<title>recycle</title>
+<para>
+A recycle-bin like modules. When used any unlink call
+will be intercepted and files moved to the recycle
+directory instead of beeing deleted.
+</para>
+
+<para>Supported options:
+<variablelist>
+	<varlistentry>
+	<term>vfs_recycle_bin:repository</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:keeptree</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+	
+	<varlistentry>
+	<term>vfs_recycle_bin:versions</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:touch</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:maxsize</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:exclude</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:exclude_dir</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+
+	<varlistentry>
+	<term>vfs_recycle_bin:noversions</term>
+	<listitem><para>FIXME</para></listitem>
+	</varlistentry>
+</variablelist>
+</para>
+
+</sect2>
+
+<sect2>
+<title>netatalk</title>
+<para>
+A netatalk module, that will ease co-existence of samba and
+netatalk file sharing services.
+</para>
+
+<para>Advantages compared to the old netatalk module:
+<simplelist>
+<member>it doesn't care about creating of .AppleDouble forks, just keeps ones in sync</member>
+<member>if share in smb.conf doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</member>
+</simplelist>
+</para>
+
+</sect2>
+
+</sect1>
+
+<sect1>
+<title>VFS modules available elsewhere</title>
+
+<para>
+This section contains a listing of various other VFS modules that 
+have been posted but don't currently reside in the Samba CVS 
+tree for one reason ot another (e.g. it is easy for the maintainer 
+to have his or her own CVS tree).
+</para>
+
+<para>
+No statemets about the stability or functionality any module
+should be implied due to its presence here.
+</para>
+
+<sect2>
+<title>DatabaseFS</title>
+
+<para>
+URL: <ulink url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
+</para>
+
+<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer</ulink>.</para>
+
+<para>
+I have created a VFS module which implements a fairly complete read-only
+filesystem.  It presents information from a database as a filesystem in
+a modular and generic way to allow different databases to be used
+(originally designed for organizing MP3s under directories such as
+"Artists," "Song Keywords," etc... I have since applied it to a student
+roster database very easily).  The directory structure is stored in the
+database itself and the module makes no assumptions about the database
+structure beyond the table it requires to run.
+</para>
+
+<para>
+Any feedback would be appreciated: comments, suggestions, patches,
+etc...  If nothing else, hopefully it might prove useful for someone
+else who wishes to create a virtual filesystem.
+</para>
+
+</sect2>
+
+<sect2>
+<title>vscan</title>
+<para>URL: <ulink url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
+
+<para>
+samba-vscan is a proof-of-concept module for Samba, which
+uses the VFS (virtual file system) features of Samba 2.2.x/3.0
+alphaX. Of couse, Samba has to be compiled with VFS support. 
+samba-vscan supports various virus scanners and is maintained 
+by Rainer Link.
+</para>
+
+</sect2>
+
+</sect1>
+
+</chapter>
