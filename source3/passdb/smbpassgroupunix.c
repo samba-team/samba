@@ -148,7 +148,7 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 			{
 				pstring sid_str;
 				sid_to_string(sid_str, &sid);
-				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT RID (0x%x) in another domain (%s)\n",
+				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT Domain Alias RID (0x%x) in another domain (%s)\n",
 				          pw_buf->smb_name, unix_grpname, rid, sid_str));
 				continue;
 			}
@@ -170,7 +170,7 @@ static struct smb_passwd *getsmbunixgrpent(void *vp,
 			{
 				pstring sid_str;
 				sid_to_string(sid_str, &sid);
-				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT RID (0x%x) in another domain (%s)\n",
+				DEBUG(0,("user %s is in a UNIX group %s that maps to an NT Domain Group RID (0x%x) in another domain (%s)\n",
 				          pw_buf->smb_name, unix_grpname, rid, sid_str));
 				continue;
 			}
