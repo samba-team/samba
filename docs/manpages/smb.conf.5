@@ -724,10 +724,11 @@ then the "load printers" option is easier.
 A synonym for this parameter is 'hosts allow'.
 
 This parameter is a comma delimited set of hosts which are permitted to access
-a services. If specified in the [global] section, matching hosts will be
-allowed access to any service that does not specifically exclude them from
-access. Specific services my have their own list, which override those
-specified in the [global] section.
+a service. 
+
+If specified in the [global] section then it will apply to all
+services, regardless of whether the individual service has a different
+setting. 
 
 You can specify the hosts by name or IP number. For example, you could
 restrict access to only the hosts on a Class C subnet with something like
