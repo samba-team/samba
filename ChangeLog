@@ -1,3 +1,7 @@
+2000-01-08  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.2m
+
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/principal.c (krb5_sname_to_principal): use
