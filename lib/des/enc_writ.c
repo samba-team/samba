@@ -5,6 +5,8 @@
 #include <errno.h>
 #include "des_locl.h"
 
+extern int LEFT_JUSTIFIED;
+
 int des_enc_write(int fd, char *buf, int len, struct des_ks_struct *sched, des_cblock (*iv))
 {
   long rnum;
@@ -45,19 +47,22 @@ int des_enc_write(int fd, char *buf, int len, struct des_ks_struct *sched, des_c
   /* pad short strings */
   if (len < 8)
     {
-#ifdef LEFT_JUSTIFIED
-      p=shortbuf;
-      memcpy(shortbuf,buf,len);
-      for (i=len; i<8; i++)
-	shortbuf[i]=rand();
-      rnum=8;
-#else
-      p=shortbuf;
-      for (i=0; i<8-len; i++)
-	shortbuf[i]=rand();
-      memcpy(shortbuf + 8 - len, buf, len);
-      rnum=8;
-#endif
+	if (LEFT_JUSTIFIED)
+	    {
+		p=shortbuf;
+		memcpy(shortbuf,buf,len);
+		for (i=len; i<8; i++)
+		    shortbuf[i]=rand();
+		rnum=8;
+	    }
+	else
+	    {
+		p=shortbuf;
+		for (i=0; i<8-len; i++)
+		    shortbuf[i]=rand();
+		memcpy(shortbuf + 8 - len, buf, len);
+		rnum=8;
+	    }
     }
   else
     {

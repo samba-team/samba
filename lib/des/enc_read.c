@@ -5,6 +5,8 @@
 #include <errno.h>
 #include "des_locl.h"
 
+int LEFT_JUSTIFIED = 0;
+
 /* This has some uglies in it but it works - even over sockets. */
 extern int errno;
 int des_rw_mode=DES_PCBC_MODE;
@@ -120,7 +122,10 @@ int des_enc_read(int fd, char *buf, int len, struct des_ks_struct *sched, des_cb
 
 	  /* eay 26/08/92 fix a bug that returned more
 	   * bytes than you asked for (returned len bytes :-( */
-	  memcpy(buf,tmpbuf,num);
+	  if (LEFT_JUSTIFIED || (len >= 8))
+	      memcpy(buf,tmpbuf,num);
+	  else
+	      memcpy(buf,tmpbuf+(8-num),num); /* Right justified */
 	}
       else if (num >= 8)
 	{
@@ -143,11 +148,8 @@ int des_enc_read(int fd, char *buf, int len, struct des_ks_struct *sched, des_cb
 	    des_cbc_encrypt((des_cblock *)net,
 			(des_cblock *)buf,8,sched,iv,
 			DES_DECRYPT);
-#ifdef LEFT_JUSTIFIED
-	  memcpy(buf, buf, num);
-#else
-	  memcpy(buf, buf+(8-num), num);
-#endif
+	  if (!LEFT_JUSTIFIED)
+	      memcpy(buf, buf+(8-num), num); /* Right justified */
 	}
     }
   return(num);
