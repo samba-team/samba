@@ -3380,7 +3380,7 @@ SMB_MODULE($MODULE_pdb_smbpasswd, pdb_smbpasswd, passdb/pdb_smbpasswd.o, bin/smb
 SMB_MODULE($MODULE_pdb_tdb, pdb_tdbsam, passdb/pdb_tdb.o, bin/tdbsam.so, PDB)
 SMB_MODULE($MODULE_pdb_nisplus, pdb_nisplussam, passdb/pdb_nisplus.o, bin/nisplussam.so, PDB)
 SMB_MODULE($MODULE_pdb_unix, pdb_unixsam, passdb/pdb_unix.o, bin/unixsam.so, PDB)
-SMB_MODULE(STATIC, pdb_guest, passdb/pdb_guest.o, bin/pdb_guest.so, PDB)
+SMB_MODULE(STATIC, pdb_guest, passdb/pdb_guest.o, bin/guest.so, PDB)
 SMB_SUBSYSTEM(PDB)
 
 SMB_MODULE($MODULE_rpc_lsa, rpc_lsa, \$(RPC_LSA_OBJ), bin/librpc_lsa.so, RPC)
