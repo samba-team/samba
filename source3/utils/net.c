@@ -277,8 +277,13 @@ struct cli_state *net_make_ipc_connection(unsigned flags)
 	} else {
 		nt_status = connect_to_ipc(&cli, &server_ip, server_name);
 	}
+
 	SAFE_FREE(server_name);
-	return cli;
+	if (NT_STATUS_IS_OK(nt_status)) {
+		return cli;
+	} else {
+		return NULL;
+	}
 }
 
 static int net_user(int argc, const char **argv)

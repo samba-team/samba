@@ -309,15 +309,24 @@ static int rpc_join_usage(int argc, const char **argv)
  * Main 'net_rpc_join()' (where the admain username/password is used) is 
  * in net_rpc_join.c
  * Assume if a -U is specified, it's the new style, otherwise it's the
- * old style
+ * old style.  If 'oldstyle' is specfied explicity, do it and don't prompt.
  **/
 
 int net_rpc_join(int argc, const char **argv) 
 {
-	if ((net_rpc_join_oldstyle(argc, argv) == 0))
-		return 0;
-	
-	return net_rpc_join_newstyle(argc, argv);
+	struct functable func[] = {
+		{"oldstyle", net_rpc_join_oldstyle},
+		{NULL, NULL}
+	};
+
+	if (argc == 0) {
+		if ((net_rpc_join_oldstyle(argc, argv) == 0))
+			return 0;
+		
+		return net_rpc_join_newstyle(argc, argv);
+	}
+
+	return net_run_function(argc, argv, func, rpc_join_usage);
 }
 
 

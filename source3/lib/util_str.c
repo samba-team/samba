@@ -643,8 +643,8 @@ void string_free(char **s)
 }
 
 /****************************************************************************
-set a string value, allocing the space for the string, and deallocating any 
-existing space
+set a string value, deallocating any existing space, and allocing the space
+for the string
 ****************************************************************************/
 BOOL string_set(char **dest,const char *src)
 {
@@ -724,7 +724,7 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 
 /* similar to string_sub, but it will accept only allocated strings
  * and may realloc them so pay attention at what you pass on no
- * pointers inside strings, no pstrings or const must be passed
+ * pointers inside strings, no pstrings or const may be passed
  * as string.
  */
 
@@ -830,7 +830,7 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 
 /****************************************************************************
 similar to all_string_sub but for unicode strings.
-return a new allocate unicode string.
+return a new allocated unicode string.
   similar to string_sub() but allows for any character to be substituted.
   Use with caution!
 ****************************************************************************/
@@ -1203,7 +1203,7 @@ BOOL str_list_copy(char ***dest, char **src)
 			lsize += S_LIST_ABS;
 			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
 			if (!rlist) {
-				DEBUG(0,("str_list_copy: Unable to allocate memory"));
+				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
 				str_list_free(&list);
 				return False;
 			}
@@ -1225,7 +1225,7 @@ BOOL str_list_copy(char ***dest, char **src)
 	return True;	
 }
 
-/* return true if all the elemnts of the list matches exactly */
+/* return true if all the elements of the list match exactly */
 
 BOOL str_list_compare(char **list1, char **list2)
 {
