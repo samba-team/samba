@@ -38,8 +38,6 @@ struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
 
 	/* Initialise cli_state information */
 
-	ZERO_STRUCTP(cli);
-
 	if (!cli_initialise(cli)) {
 		return NULL;
 	}
@@ -87,7 +85,7 @@ void cli_lsa_shutdown(struct cli_state *cli)
 /* Open a LSA policy handle */
 
 uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos, 
-			   uint32 des_access, POLICY_HND *hnd)
+			   uint32 des_access, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_OPEN_POL q;
@@ -127,12 +125,10 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 		goto done;
 	}
 
-	result = r.status;
-
 	/* Return output parameters */
 
-	if (result == NT_STATUS_NOPROBLEMO) {
-		*hnd = r.pol;
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*pol = r.pol;
 	}
 
  done:
@@ -144,7 +140,7 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 /* Close a LSA policy handle */
 
-uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
+uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_CLOSE q;
@@ -161,7 +157,7 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 	/* Marshall data and send request */
 
-	init_lsa_q_close(&q, hnd);
+	init_lsa_q_close(&q, pol);
 
 	if (!lsa_io_q_close("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_CLOSE, &qbuf, &rbuf)) {
@@ -176,12 +172,10 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 		goto done;
 	}
 
-	result = r.status;
-
 	/* Return output parameters */
 
-	if (result == NT_STATUS_NOPROBLEMO) {
-		*hnd = r.pol;
+	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
+		*pol = r.pol;
 	}
 
  done:
@@ -193,7 +187,7 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *hnd)
 
 /* Lookup a list of sids */
 
-uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
+uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 			   int num_sids, DOM_SID *sids, char ***names, 
 			   uint32 **types, int *num_names)
 {
@@ -215,7 +209,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 
 	/* Marshall data and send request */
 
-	init_q_lookup_sids(cli->mem_ctx, &q, hnd, num_sids, sids, 1);
+	init_q_lookup_sids(cli->mem_ctx, &q, pol, num_sids, sids, 1);
 
 	if (!lsa_io_q_lookup_sids("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPSIDS, &qbuf, &rbuf)) {
@@ -238,8 +232,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 
 	result = r.status;
 
-	if (result != 0 && r.status != 0x107 &&
-	    r.status != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (result != NT_STATUS_NOPROBLEMO && result != 0x00000107 &&
+	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
 		
 		/* An actual error occured */
 
@@ -300,7 +294,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *hnd,
 
 /* Lookup a list of names */
 
-uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
+uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 			    int num_names, char **names, DOM_SID **sids,
 			    uint32 **types, int *num_sids)
 {
@@ -321,7 +315,7 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 	/* Marshall data and send request */
 
-	init_q_lookup_names(cli->mem_ctx, &q, hnd, num_names, names);
+	init_q_lookup_names(cli->mem_ctx, &q, pol, num_names, names);
 
 	if (!lsa_io_q_lookup_names("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_LOOKUPNAMES, &qbuf, &rbuf)) {
@@ -341,7 +335,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 	result = r.status;
 
-	if (result != 0 && result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
+	if (result != NT_STATUS_NOPROBLEMO && 
+	    result != (0xC0000000 | NT_STATUS_NONE_MAPPED)) {
 
 		/* An actual error occured */
 
@@ -400,7 +395,7 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *hnd,
 
 /* Query info policy */
 
-uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd, 
+uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol, 
 				 uint16 info_class, fstring domain_name, 
 				 DOM_SID * domain_sid)
 {
@@ -419,7 +414,7 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd,
 
 	/* Marshall data and send request */
 
-	init_q_query(&q, hnd, info_class);
+	init_q_query(&q, pol, info_class);
 
 	if (!lsa_io_q_query("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_QUERYINFOPOLICY, &qbuf, &rbuf)) {
@@ -434,9 +429,7 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd,
 		goto done;
 	}
 
-	result = r.status;
-
-	if (result != NT_STATUS_NOPROBLEMO) {
+	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
 		goto done;
 	}
 
@@ -477,6 +470,90 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *hnd,
 		break;		      
 	}
 	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/* Enumerate list of trusted domains */
+
+uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol, 
+			      uint32 *enum_ctx, uint32 *num_domains,
+			      char ***domain_names, DOM_SID **domain_sids)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUM_TRUST_DOM q;
+	LSA_R_ENUM_TRUST_DOM r;
+	uint32 result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
+	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+
+	/* Marshall data and send request */
+
+        init_q_enum_trust_dom(&q, pol, *enum_ctx, 0xffffffff);
+
+	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_enum_trust_dom("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	result = r.status;
+
+	if (result != NT_STATUS_NOPROBLEMO && result != 0x8000001a) {
+
+		/* An actual error ocured */
+
+		goto done;
+	}
+
+	result = NT_STATUS_NOPROBLEMO;
+
+	/* Return output parameters */
+
+	if (!((*domain_names) = (char **)malloc(sizeof(char *) *
+						r.num_domains))) {
+		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!((*domain_sids) = (DOM_SID *)malloc(sizeof(DOM_SID) *
+						 r.num_domains))) {
+		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	for (i = 0; i < r.num_domains; i++) {
+		fstring tmp;
+
+		unistr2_to_ascii(tmp, &r.uni_domain_name[i], sizeof(tmp) - 1);
+		(*domain_names)[i] = strdup(tmp);
+		sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
+	}
+
+	*num_domains = r.num_domains;
+	*enum_ctx = r.enum_context;
+
+	lsa_free_r_enum_trust_dom(&r);
+
  done:
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
