@@ -37,6 +37,7 @@ smbstatus
 smbtorture
 smbtree
 smbumount
+smbiconv
 swat
 t_push_ucs2
 t_snprintf
