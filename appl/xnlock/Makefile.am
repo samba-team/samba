@@ -8,7 +8,6 @@ WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
 if HAVE_X
 
-CHECK_LOCAL = no-check-local
 bin_PROGRAMS = xnlock
 
 else
@@ -17,7 +16,7 @@ bin_PROGRAMS =
 
 endif
 
-CHECK_LOCAL = 
+CHECK_LOCAL = no-check-local
 
 man_MANS = xnlock.1
 
