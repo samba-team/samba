@@ -43,6 +43,7 @@ struct rpc_composite_userinfo {
 struct userinfo_state {
 	enum userinfo_stage stage;
 	struct dcerpc_pipe *pipe;
+	struct rpc_request *req;
 	struct rpc_composite_userinfo io;
 };
 
@@ -53,7 +54,7 @@ static NTSTATUS userinfo_openuser(struct composite_context *c,
 				  struct rpc_composite_userinfo *io)
 {
 	struct userinfo_state *s = talloc_get_type(c->private, struct userinfo_state);
-	struct rpc_request *req = s->pipe->conn->pending;
+	struct rpc_request *req = s->req;
 	struct samr_OpenUser *rep;
 	struct samr_QueryUserInfo r;
 
@@ -63,18 +64,21 @@ static NTSTATUS userinfo_openuser(struct composite_context *c,
 	rep = (struct samr_OpenUser*)req->ndr.struct_ptr;
 
 	/* prepare parameters for QueryUserInfo call */
-	r.in.user_handle = talloc_zero(c, struct policy_handle);
-	memcpy((void*)r.in.user_handle, (void*)rep->out.user_handle, sizeof(struct policy_handle));
-	r.in.level = io->in.level;
+	r.in.user_handle = rep->out.user_handle;
+	r.in.level       = io->in.level;
 	
 	/* queue rpc call, set event handling and new state */
-	s->pipe->conn->pending = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &r);
+	s->req = dcerpc_samr_QueryUserInfo_send(s->pipe, c, &r);
+	if (s->req == NULL) goto failure;
 	
-	s->pipe->conn->pending->async.callback = userinfo_handler;
-	s->pipe->conn->pending->async.private  = c;
+	s->req->async.callback = userinfo_handler;
+	s->req->async.private  = c;
 	s->stage = USERINFO_GETUSER;
 	
 	return rep->out.result;
+
+failure:
+	return NT_STATUS_UNSUCCESSFUL;
 }
 
 
@@ -92,18 +96,17 @@ static NTSTATUS userinfo_getuser(struct composite_context *c,
 	rep = (struct samr_QueryUserInfo*)req->ndr.struct_ptr;
 	
 	/* prepare arguments for Close call */
-	r.in.handle = talloc_zero(c, struct policy_handle);
-	memcpy((void*)r.in.handle, (void*)rep->in.user_handle, sizeof(struct policy_handle));
+	r.in.handle = rep->in.user_handle;
 	
 	/* queue rpc call, set event handling and new state */
-	s->pipe->conn->pending = dcerpc_samr_Close_send(s->pipe, c, &r);
+	s->req = dcerpc_samr_Close_send(s->pipe, c, &r);
 	
-	s->pipe->conn->pending->async.callback = userinfo_handler;
-	s->pipe->conn->pending->async.private  = c;
+	s->req->async.callback = userinfo_handler;
+	s->req->async.private  = c;
 	s->stage = USERINFO_CLOSEUSER;
 
 	/* copying result of composite call */
-	memcpy((void*)&io->out.info, (void*)rep->out.info, sizeof(union samr_UserInfo));
+	io->out.info = *rep->out.info;
 
 	return rep->out.result;
 }
@@ -146,11 +149,10 @@ static void userinfo_handler(struct rpc_request *req)
 	}
 
 	if (!NT_STATUS_IS_OK(c->status)) {
-		/* this should be some error state instead */
-		c->state = RPC_REQUEST_DONE;
+		c->state = SMBCLI_REQUEST_ERROR;
 	}
 
-	if (c->state >= RPC_REQUEST_DONE &&
+	if (c->state >= SMBCLI_REQUEST_DONE &&
 	    c->async.fn) {
 		c->async.fn(c);
 	}
@@ -173,10 +175,11 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	if (s == NULL) goto failure;
 	
 	/* copying input parameters */
-	memcpy((void*)&s->io.in.domain_handle, (void*)&io->in.domain_handle, sizeof(struct policy_handle));
-	s->io.in.sid     = talloc_strdup(p, io->in.sid);
-	s->io.in.level   = io->in.level;
-	sid              = dom_sid_parse_talloc(c, s->io.in.sid);
+	s->io.in.domain_handle  = io->in.domain_handle;
+	s->io.in.sid            = talloc_strdup(p, io->in.sid);
+	s->io.in.level          = io->in.level;
+	sid                     = dom_sid_parse_talloc(c, s->io.in.sid);
+	if (sid == NULL) goto failure;
 	
 	c->private = s;
 	c->event_ctx = dcerpc_event_context(p);
@@ -188,11 +191,11 @@ struct composite_context* rpc_composite_userinfo_send(struct dcerpc_pipe *p,
 	r->in.rid            = sid->sub_auths[sid->num_auths - 1];
 
 	/* send request */
-	s->pipe->conn->pending = dcerpc_samr_OpenUser_send(p, c, r);
+	s->req = dcerpc_samr_OpenUser_send(p, c, r);
 
 	/* callback handler */
-	s->pipe->conn->pending->async.callback = userinfo_handler;
-	s->pipe->conn->pending->async.private  = c;
+	s->req->async.callback = userinfo_handler;
+	s->req->async.private  = c;
 	s->stage = USERINFO_OPENUSER;
 
 	return c;
@@ -202,16 +205,18 @@ failure:
 }
 
 
-NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx)
+NTSTATUS rpc_composite_userinfo_recv(struct composite_context *c, TALLOC_CTX *mem_ctx,
+				     struct rpc_composite_userinfo *io)
 {
 	NTSTATUS status;
 	struct userinfo_state *s;
 	
 	status = composite_wait(c);
 	
-	if (NT_STATUS_IS_OK(status)) {
+	if (NT_STATUS_IS_OK(status) && io) {
 		s = talloc_get_type(c->private, struct userinfo_state);
 		talloc_steal(mem_ctx, &s->io.out.info);
+		io->out.info = s->io.out.info;
 	}
 
 	talloc_free(c);
@@ -224,5 +229,5 @@ NTSTATUS rpc_composite_userinfo(struct dcerpc_pipe *pipe,
 				struct rpc_composite_userinfo *io)
 {
 	struct composite_context *c = rpc_composite_userinfo_send(pipe, io);
-	return rpc_composite_userinfo_recv(c, mem_ctx);
+	return rpc_composite_userinfo_recv(c, mem_ctx, io);
 }
