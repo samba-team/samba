@@ -61,7 +61,7 @@ print servers to provide support for printer driver download.
 </aside>
 
 You should modify the server's smb.conf file to create the 
-following share (of course, some of the parameter values,
+following file share (of course, some of the parameter values,
 such as 'path' are arbitrary and should be replaced with
 appropriate values for your site):
 
@@ -110,8 +110,31 @@ each architecture you wish to support.
 		|-W32PPC		; "Windows NT PowerPC"
 
 
-These directories should be owned by an administrative account.
-Currently this must initially be an "root" account (uid = 0).
++++++++++++++ ATTENTION!  REQUIRED PERMISSIONS +++++++++++++++++
+
+Currently, the connected user must have uid 0 in order to
+successfully install a new printer driver.  There are two
+points of authorization in this process.
+
+	o	Access permissions to add files to the [print$]
+		share.  This access control is managed using
+		the same semantics as normal file shares.
+		(i.e. filesystem permissions, write list, 
+		writeable, etc...)
+
+	o	Authorization to add entries to
+
+			$SAMBA/var/locks/ntdrivers.tdb
+
+		Updates to this TDB are curently restricted
+		to the root account.
+
+Therefore, you must be connected to the samba host as the
+root user in order to add a new printer driver.
+
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
 
 !== The Windows NT APW
 
