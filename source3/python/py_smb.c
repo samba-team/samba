@@ -61,7 +61,6 @@ static PyObject *py_smb_session_request(PyObject *self, PyObject *args,
 	static char *kwlist[] = { "called", "calling", NULL };
 	char *calling_name = NULL, *called_name;
 	struct nmb_name calling, called;
-	extern pstring global_myname;
 	BOOL result;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kw, "s|s", kwlist, &called_name, 
@@ -69,7 +68,7 @@ static PyObject *py_smb_session_request(PyObject *self, PyObject *args,
 		return NULL;
 
 	if (!calling_name)
-		calling_name = global_myname;
+		calling_name = global_myname();
 
 	make_nmb_name(&calling, calling_name, 0x00);
 	make_nmb_name(&called, called_name, 0x20);
