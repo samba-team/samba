@@ -54,7 +54,6 @@ security services, but like all other domain members can interact with the
 Windows NT security system for all access authentication.
 
 When Samba is configured with the 'security = server' option and the
-'domain controller = Your_Windows_NT_Server_Name' option, then it will
-redirect all access authentication to that Domain Contolling (PDC or BDC)
-Windows NT Server.
+'password server = Your_Windows_NT_Server_Name' option, then it will
+redirect all access authentication to that server.
 
