@@ -568,7 +568,7 @@ static BOOL is_client_monitoring_event(Printer_entry *p, uint32 flags)
  --jerry
  **************************************************************************/
  
-static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *reply_cli, TALLOC_CTX *mem_ctx,
 					POLICY_HND *pol, PRINTER_MESSAGE_INFO *info,
 					NT_PRINTER_INFO_LEVEL *printer)				
 {
@@ -578,7 +578,7 @@ static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CT
 	if (info->flags & PRINTER_MESSAGE_DRIVER)
 		condition = PRINTER_CHANGE_SET_PRINTER_DRIVER;
 	
-	result = cli_spoolss_routerreplyprinter(cli, mem_ctx, pol, condition, 
+	result = cli_spoolss_routerreplyprinter(reply_cli, mem_ctx, pol, condition, 
 			printer->info_2->changeid);
 
 	return result;
@@ -590,7 +590,7 @@ static NTSTATUS srv_spoolss_routerreplyprinter (struct cli_state *cli, TALLOC_CT
  **********************************************************************/
  
 static NTSTATUS srv_spoolss_send_event_to_client(Printer_entry* Printer, 
-	struct cli_state *cli,	PRINTER_MESSAGE_INFO *msg, 
+	struct cli_state *send_cli,	PRINTER_MESSAGE_INFO *msg, 
 	NT_PRINTER_INFO_LEVEL *info)
 {
 	NTSTATUS result;
@@ -599,12 +599,12 @@ static NTSTATUS srv_spoolss_send_event_to_client(Printer_entry* Printer,
 		/* This is a single call that can send information about multiple changes */
 		if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 			msg->flags |= PRINTER_MESSAGE_ATTRIBUTES;
-		result = cli_spoolss_reply_rrpcn(cli, cli->mem_ctx, &Printer->notify.client_hnd, 
+		result = cli_spoolss_reply_rrpcn(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
 	else {
 		/* This requires that the server send an individual event notification for each change */
-		result = srv_spoolss_routerreplyprinter(cli, cli->mem_ctx, &Printer->notify.client_hnd, 
+		result = srv_spoolss_routerreplyprinter(send_cli, send_cli->mem_ctx, &Printer->notify.client_hnd, 
 				msg, info);
 	}
 	
