@@ -508,11 +508,6 @@ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, i
 	return src_len;
 }
 
-ssize_t pull_ucs2_pstring(char *dest, const void *src)
-{
-	return pull_ucs2(dest, src, sizeof(pstring), -1, STR_TERMINATE);
-}
-
 /**
  * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
  *
