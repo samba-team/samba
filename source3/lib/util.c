@@ -684,48 +684,61 @@ static int name_interpret(char *in,char *out)
 
 /****************************************************************************
 mangle a name into netbios format
+
+  Note:  <Out> must be (33 + strlen(scope) + 2) bytes long, at minimum.
 ****************************************************************************/
-int name_mangle(char *In,char *Out,char name_type)
-{
-  fstring name;
-  char buf[20];
-  char *in = (char *)&buf[0];
-  char *out = (char *)Out;
-  char *p, *label;
-  int i;
+int name_mangle( char *In, char *Out, char name_type )
+  {
+  int   i;
+  int   c;
+  int   len;
+  char  buf[20];
+  char *p = Out;
 
-  if (In[0] != '*') {
-    StrnCpy(name,In,sizeof(name)-1);
-    sprintf(buf,"%-15.15s%c",name,name_type);
-  } else {
-    buf[0]='*';
-    memset(&buf[1],0,16);
-  }
+  /* Safely copy the input string, In, into buf[]. */
+  (void)memset( buf, 0, 20 );
+  if( '*' == In[0] )
+    buf[0] = '*';
+  else
+    (void)sprintf( buf, "%-15.15s%c", In, name_type );
 
-  *out++ = 32;
-  for (i=0;i<16;i++) {
-    char c = toupper(in[i]);
-    out[i*2] = (c>>4) + 'A';
-    out[i*2+1] = (c & 0xF) + 'A';
-  }
-  out[32]=0;
-  out += 32;
-  
-  label = scope;
-  while (*label)
+  /* Place the length of the first field into the output buffer. */
+  p[0] = 32;
+  p++;
+
+  /* Now convert the name to the rfc1001/1002 format. */
+  for( i = 0; i < 16; i++ )
     {
-      p = strchr(label, '.');
-      if (p == 0)
-	p = label + strlen(label);
-      *out++ = p - label;
-      memcpy(out, label, p - label);
-      out += p - label;
-      label += p - label + (*p == '.');
+    c = toupper( buf[i] );
+    p[i*2]     = ( (c >> 4) & 0x000F ) + 'A';
+    p[(i*2)+1] = (c & 0x000F) + 'A';
     }
-  *out = 0;
-  return(name_len(Out));
-}
+  p += 32;
+  p[0] = '\0';
 
+  /* Add the scope string. */
+  for( i = 0, len = 0; NULL != scope; i++, len++ )
+    {
+    switch( scope[i] )
+      {
+      case '\0':
+        p[0]     = len;
+        if( len > 0 )
+          p[len+1] = 0;
+        return( name_len(Out) );
+      case '.':
+        p[0] = len;
+        p   += (len + 1);
+        len  = 0;
+        break;
+      default:
+        p[len+1] = scope[i];
+        break;
+      }
+    }
+
+  return( name_len(Out) );
+  } /* name_mangle */
 
 /*******************************************************************
   check if a file exists
@@ -2555,21 +2568,27 @@ int name_extract(char *buf,int ofs,char *name)
   strcpy(name,"");
   if (d < -50 || d > 50) return(0);
   return(name_interpret(p,name));
-}  
+}
   
-
 /****************************************************************************
 return the total storage length of a mangled name
 ****************************************************************************/
-int name_len(char *s)
-{
-  char *s0=s;
-  unsigned char c = *(unsigned char *)s;
-  if ((c & 0xC0) == 0xC0)
+int name_len( char *s )
+  {
+  int len;
+
+  /* If the two high bits of the byte are set, return 2. */
+  if( 0xC0 == (*(unsigned char *)s & 0xC0) )
     return(2);
-  while (*s) s += (*s)+1;
-  return(PTR_DIFF(s,s0)+1);
-}
+
+  /* Add up the length bytes. */
+  for( len = 1; (*s); s += (*s) + 1 )
+    {
+    len += *s + 1;
+    }
+
+  return( len );
+  } /* name_len */
 
 /****************************************************************************
 send a single packet to a port on another machine
