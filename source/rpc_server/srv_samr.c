@@ -107,7 +107,7 @@ static void samr_reply_close_hnd(SAMR_Q_CLOSE_HND *q_u,
 	SAMR_R_CLOSE_HND r_u;
 
 	/* set up the SAMR unknown_1 response */
-	bzero(&(r_u.pol.data), POL_HND_SIZE);
+	bzero(r_u.pol.data, POL_HND_SIZE);
 
 	/* close the policy handle */
 	if (close_lsa_policy_hnd(&(q_u->pol)))
@@ -795,7 +795,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	BOOL pol_open = False;
 
 	/* set up the SAMR open_user response */
-	bzero(&(r_u.user_pol.data), POL_HND_SIZE);
+	bzero(r_u.user_pol.data, POL_HND_SIZE);
 
 	r_u.status = 0x0;
 
@@ -1105,7 +1105,7 @@ static void samr_reply_unknown_32(SAMR_Q_UNKNOWN_32 *q_u,
 	SAMR_R_UNKNOWN_32 r_u;
 
 	/* set up the SAMR unknown_32 response */
-	bzero(&(r_u.pol.data), POL_HND_SIZE);
+	bzero(r_u.pol.data, POL_HND_SIZE);
 	if (status == 0)
 	{
 		for (i = 4; i < POL_HND_SIZE; i++)
