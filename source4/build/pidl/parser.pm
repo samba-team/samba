@@ -724,7 +724,9 @@ sub ParseFunctionPush($)
 				$res .= "\t}\n";
 			} else {
 				ParseElementPushScalar($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
-				ParseElementPushBuffer($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
+				if ($e->{POINTERS}) {
+					ParseElementPushBuffer($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
+				}
 			}
 		}
 	}
