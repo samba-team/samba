@@ -1,5 +1,9 @@
 2003-03-20  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/Makefile.am (man_MANS): += krb5_data.3
+
+	* lib/krb5/krb5_data.3: document krb5_data
+
 	* lib/krb5/init_creds_pw.c (krb5_get_init_creds_password): if
 	prompter is NULL, don't try to ask for a password to
 	change. reported by Iain Moffat @ ufl.edu via Howard Chu
