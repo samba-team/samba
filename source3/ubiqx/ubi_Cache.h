@@ -93,6 +93,10 @@
  * -------------------------------------------------------------------------- **
  *
  *  Log: ubi_Cache.h,v 
+ *  Revision 0.3  1998/06/03 18:00:15  crh
+ *  Further fiddling with sys_include.h, which is no longer explicitly
+ *  included by this module since it is inherited from ubi_BinTree.h.
+ *
  *  Revision 0.2  1998/06/02 01:36:18  crh
  *  Changed include name from ubi_null.h to sys_include.h to make it
  *  more generic.
