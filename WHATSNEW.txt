@@ -1,20 +1,135 @@
-**** THIS IS AN ALPHA RELEASE *****
-
-This is version 2.0.6pre3 of Samba. This snapshot release is intended
-for testing purposes and should not be used on production sites.
-
---------------------------------
-              WHATS NEW IN Samba 2.0.5a
-              =========================
+              WHATS NEW IN Samba 2.0.6
+              ========================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
 for all current bug-fixes.
 
+New/Changed parameters in 2.0.6
+-------------------------------
+
+There are 6 new parameters in the smb.conf file.
+
+wins hook
+
+This parameter allows an external program to be called
+on all changes to a Samba WINS database, allowing dynamic
+DNS updates.
+
+debug hires timestamp
+debug pid
+debug uid
+
+The above 3 parameters provide greater debug information.
+
+preexec close
+rootpreexec close
+
+The above 2 parameters control the action taken on the
+success or failure of a 'preexec' script.
+
+There is also one removed parameter.
+
+mangle locks
+
+The addition of these new parameters and the removal of the old
+is described in more detail in the smb.conf man page,
+
+When using "security=domain" the "password server"
+parameter can now be set to the string "*', which will
+cause Samba to search for Domain controllers in the
+same way that Windows NT does. See the smb.conf man
+page for more details.
+
+The "interfaces" parameter in smb.conf can now be dynamically
+detected on startup and can also now take an interface name
+such as eth0. See the smb.conf man page for the details
+on the new features of the "interfaces" parameter.
+nmbd has been enhanced to use this feature.
+
+The syntax for the Linux-specific smbmount command
+has been changed. See the modified smbmount man page
+for details.
+
+Support for the UNIX CUPS printer standard has been added.
+See www.cups.org for details. Thanks to the folks at Easy Software
+Products for this code. Set the printcap name to "cups" to
+enable this. See the smb.conf man page for details.
+
+Changes in 2.0.6
+-----------------
+
+1). 64-bit locking removed from Linux autoconf build. This fixes
+several Linux specific locking issues.
+2). Crash bug fix in smbclient recursive processing. Fix from
+E. Jay Berkenbilt (ejb@ql.org).
+3). "history" command added to smbclient if readline available.
+4). smbtar - updates files and directory message on restore.
+5). smbmnt - 'u', 'g', 'r', 'f', 'd' options added by Andrew. See
+man page for details.
+6). smbmount updated to be useable by autofs on Linux. See the
+samba/examples/autofs/README file for details.
+7). Bug fixed where TCP_NODELAY was not being used by default in smbd.
+8). Many oplock fixes. Samba now waits 30 seconds, not 45. Also
+smbd no longer aborts on client break failure, but logs a message
+and continues. This is what NT does. This should fix many "oplock
+break" message problems people have been having.
+9). New code from Andrew to dynamically detect interfaces. nmbd will
+now attempt to dynamically detect interface changes and register names
+as an interface goes "up".
+10). Win95 ioctl for print jobs added by Matt.
+11). Mapping for ISO8859-1 extended for codepage 437 and 850.
+12). Code Page 737 -> ISO-8859-7 (Greek-Hellenic) mapping added.
+13). Character strings now correctly converted from UNIX character set
+format to DOS codepage when read from smb.conf or external passwd or
+group files. Samba is now much more careful about what format external
+strings should be converted to/from.
+14). snprintf crash fix for IRIX 6.2 and below.
+15). Increased timestamp debug fixes (adds milliseconds and uid/pid if
+requested).
+16). Optimisation for wildcard exact match requests.
+17). Win95 wildcard semantics fix - unused code removed.
+18). 'mangle locks' parameter removed. This now done automatically.
+19). setXid() routines re-written to provide asserts and also to fix
+AIX versions prior to 4.1.x.
+20). MSG_WAITALL optimisation removed due to bugs in FreeBSD.
+21). Length fix when writing UNICODE string.
+22). oplock processing added to libsmb client code.
+23). Added more client error message strings.
+24). Fix bug with connecting to encrypted server when non-encrypted
+password given.
+25). In security=domain, password server extended to search for DC's
+if parameter = '*'.
+26). "root did not create samaphore" bug fixed.
+27). random generator initialized early to prevent icons not showing
+up in Win9x.
+28). Logging fix after SIGHUP.
+29). WINS hook external call added when nmbd is a WINS server.
+30). Support for CUPS printer protocol added by Michael Sweet.
+31). Support for NIS+ backend password database updates.
+32). Handle dashes in print job id's. Fix from Dom.Mitchell@palmerharvey.co.uk
+33). Race condition in UNIX password sync on some platforms fixed by Matt.
+34). Dirptr leak from Win98 fixed.
+35). Logic bug in handling of level II oplocks fixed.
+36). smbd crash bug fix when opening directories.
+37). Paranoia oplock fix from Charles Hoch (hoch@exemplary.com)
+38). Fix Win2k problem where DCE/RPC is done on SMBwrite as well as SMBwriteX.
+39). Fix Win95 redirector alignment bug that caused oplock break failures.
+40). Preexec close code added.
+41). Extra sanity checks in testparm code.
+42). oplock tests added to smbtorture.
+43). Tell SWAT user if logged in as root or not.
+44). Solaris packaging fixes donated by VERITAS.
+
+Older release notes for Samba 2.0.x follow.
+
+Previous Release notes for 2.0.5a
+---------------------------------
+
 IMPORTANT NOTE !
 ----------------
 
-This version of Samba contains three security bugfixes for
+Version 2.0.5a of Samba contains three security bugfixes for
 problems in previous versions of Samba found by Olaf Kirch of
 Caldera Systems (www.caldera.com). The Samba Team would like
 to publicly thank Olaf for his help in doing a security review
