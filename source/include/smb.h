@@ -623,19 +623,24 @@ typedef struct files_struct
 	struct timeval open_time;
 	int share_mode;
 	time_t pending_modtime;
+	int oplock_type;
+	int sent_oplock_break;
 	BOOL open;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
 	BOOL print_file;
 	BOOL modified;
-	BOOL granted_oplock;
-	BOOL sent_oplock_break;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
 	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
+
+/* Defines for the sent_oplock_break field above. */
+#define NO_BREAK_SENT 0
+#define EXCLUSIVE_BREAK_SENT 1
+#define LEVEL_II_BREAK_SENT 2
 
 /* Domain controller authentication protocol info */
 struct dcinfo
@@ -1597,11 +1602,27 @@ extern int unix_ERR_code;
 /*
  * Bits we test with.
  */
+
+#define NO_OPLOCK 0
 #define EXCLUSIVE_OPLOCK 1
 #define BATCH_OPLOCK 2
+#define LEVEL_II_OPLOCK 4
+
+#define EXLUSIVE_OPLOCK_TYPE(lck) ((lck) & (EXCLUSIVE_OPLOCK|BATCH_OPLOCK))
+#define BATCH_OPLOCK_TYPE(lck) ((lck) & BATCH_OPLOCK)
+#define LEVEL_II_OPLOCK_TYPE(lck) ((lck) & LEVEL_II_OPLOCK)
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)
+
+/*
+ * Return values for oplock types.
+ */
+
+#define NO_OPLOCK_RETURN 0
+#define EXCLUSIVE_OPLOCK_RETURN 1
+#define BATCH_OPLOCK_RETURN 2
+#define LEVEL_II_OPLOCK_RETURN 3
 
 /*
  * Loopback command offsets.
@@ -1615,8 +1636,9 @@ extern int unix_ERR_code;
 
 /*
  * Oplock break command code to send over the udp socket.
+ * The same message is sent for both exlusive and level II breaks. 
  * 
- * Form of this is :
+ * The form of this is :
  *
  *  0     2       6        10       14    14+devsize 14+devsize+inodesize
  *  +----+--------+--------+--------+-------+--------+
@@ -1631,6 +1653,8 @@ extern int unix_ERR_code;
 #define OPLOCK_BREAK_DEV_OFFSET (OPLOCK_BREAK_USEC_OFFSET + sizeof(long))
 #define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
 #define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
+
+#define LEVEL_II_OPLOCK_BREAK_CMD 0x3
 
 /*
  * Capabilities abstracted for different systems.

@@ -601,7 +601,8 @@ int get_share_modes(connection_struct *conn,
 void del_share_mode(int token, files_struct *fsp);
 BOOL set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type);
 BOOL remove_share_oplock(int token, files_struct *fsp);
-BOOL modify_share_mode(int token, files_struct *fsp, int new_mode);
+BOOL downgrade_share_oplock(int token, files_struct *fsp);
+BOOL modify_share_mode(int token, files_struct *fsp, int new_mode, uint16 new_oplock);
 int share_mode_forall(void (*fn)(share_mode_entry *, char *));
 void share_status(FILE *f);
 
@@ -1136,6 +1137,7 @@ BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
 BOOL lp_share_modes(int );
 BOOL lp_oplocks(int );
+BOOL lp_level2_oplocks(int );
 BOOL lp_onlyuser(int );
 BOOL lp_manglednames(int );
 BOOL lp_widelinks(int );
@@ -2479,10 +2481,12 @@ int32 get_number_of_open_oplocks(void);
 BOOL setup_kernel_oplock_pipe(void);
 BOOL open_oplock_ipc(void);
 BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeout);
-BOOL set_file_oplock(files_struct *fsp);
+BOOL set_file_oplock(files_struct *fsp, int oplock_type);
 void release_file_oplock(files_struct *fsp);
+void downgrade_file_oplock(files_struct *fsp);
 int setup_oplock_select_set( fd_set *fds);
 BOOL process_local_message(char *buffer, int buf_size);
+BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token);
 BOOL request_oplock_break(share_mode_entry *share_entry, 
                           SMB_DEV_T dev, SMB_INO_T inode);
 BOOL attempt_close_oplocked_file(files_struct *fsp);

@@ -241,7 +241,7 @@ static void remove_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_I
         (unsigned int)dev, (double)inode ));
   /* Delete the oplock info. */
   entry->op_port = 0;
-  entry->op_type = 0;
+  entry->op_type = NO_OPLOCK;
 }
 
 /*******************************************************************
@@ -258,14 +258,45 @@ BOOL remove_share_oplock(int token, files_struct *fsp)
  below.
 ********************************************************************/
 
+static void downgrade_share_oplock_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
+                                   void *param)
+{
+  DEBUG(10,("downgrade_share_oplock_fn: downgrading oplock info for entry dev=%x ino=%.0f\n",
+        (unsigned int)dev, (double)inode ));
+  entry->op_type = LEVEL_II_OPLOCK;
+}
+
+/*******************************************************************
+ Downgrade a oplock type from exclusive to level II.
+********************************************************************/
+
+BOOL downgrade_share_oplock(int token, files_struct *fsp)
+{
+    return share_ops->mod_entry(token, fsp, downgrade_share_oplock_fn, NULL);
+}
+
+/*******************************************************************
+ Static function that actually does the work for the generic function
+ below.
+********************************************************************/
+
+struct mod_val {
+	int new_share_mode;
+	uint16 new_oplock;
+};
+
 static void modify_share_mode_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO_T inode, 
                                    void *param)
 {
-  int new_share_mode = *(int *)param;
-  DEBUG(10,("modify_share_mode_fn: changing share mode info from %x to %x for entry dev=%x ino=%.0f\n",
-        entry->share_mode, new_share_mode, (unsigned int)dev, (double)inode ));
-  /* Change the share mode info. */
-  entry->share_mode = new_share_mode;
+	struct mod_val *mvp = (struct mod_val *)param;
+
+	DEBUG(10,("modify_share_mode_fn: changing share mode info from %x to %x for entry dev=%x ino=%.0f\n",
+        entry->share_mode, mvp->new_share_mode, (unsigned int)dev, (double)inode ));
+	DEBUG(10,("modify_share_mode_fn: changing oplock state from %x to %x for entry dev=%x ino=%.0f\n",
+        entry->op_type, (int)mvp->new_oplock, (unsigned int)dev, (double)inode ));
+	/* Change the share mode info. */
+	entry->share_mode = mvp->new_share_mode;
+	entry->op_type = mvp->new_oplock;
 }
 
 /*******************************************************************
@@ -273,9 +304,14 @@ static void modify_share_mode_fn(share_mode_entry *entry, SMB_DEV_T dev, SMB_INO
  Return False on fail, True on success.
 ********************************************************************/
 
-BOOL modify_share_mode(int token, files_struct *fsp, int new_mode)
+BOOL modify_share_mode(int token, files_struct *fsp, int new_mode, uint16 new_oplock)
 {
-	return share_ops->mod_entry(token, fsp, modify_share_mode_fn, (void *)&new_mode);
+	struct mod_val mv;
+
+	mv.new_share_mode = new_mode;
+    mv.new_oplock = new_oplock;
+
+	return share_ops->mod_entry(token, fsp, modify_share_mode_fn, (void *)&mv);
 }
 
 /*******************************************************************

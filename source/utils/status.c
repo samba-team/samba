@@ -130,6 +130,8 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 		printf("EXCLUSIVE       ");
 	  else if (e->op_type & BATCH_OPLOCK)
 		printf("BATCH           ");
+	  else if (e->op_type & LEVEL_II_OPLOCK)
+		printf("LEVEL_II        ");
 	  else
 		printf("NONE            ");
 

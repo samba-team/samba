@@ -1504,7 +1504,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
     
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   return(outsize);
 }
@@ -1599,7 +1599,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
-  if(ex_oplock_request && fsp->granted_oplock) {
+  if(ex_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
@@ -1612,7 +1612,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
-  if(core_oplock_request && fsp->granted_oplock) {
+  if(core_oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type)) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
 
@@ -1735,7 +1735,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
  
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
  
   DEBUG( 2, ( "new file %s\n", fname ) );
@@ -1809,7 +1809,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
   }
   
-  if(fsp->granted_oplock)
+  if(EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
@@ -4141,9 +4141,9 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
     DEBUG(5,("reply_lockingX: oplock break reply from client for fnum = %d\n",
               fsp->fnum));
     /*
-     * Make sure we have granted an oplock on this file.
+     * Make sure we have granted an exclusive or batch oplock on this file.
      */
-    if(!fsp->granted_oplock)
+    if(!EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     {
       DEBUG(0,("reply_lockingX: Error : oplock break from client for fnum = %d and \
 no oplock granted on this file.\n", fsp->fnum));
@@ -4156,13 +4156,38 @@ no oplock granted on this file.\n", fsp->fnum));
     }
 
     /* Remove the oplock flag from the sharemode. */
-    lock_share_entry(fsp->conn, dev, inode, &token);
-    if(remove_share_oplock(token, fsp)==False) {
-      DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
+    if (lock_share_entry(fsp->conn, dev, inode, &token) == False) {
+      DEBUG(0,("reply_lockingX: failed to lock share entry for file %s\n",
+            fsp->fsp_name ));
     }
 
-    release_file_oplock(fsp);
+    if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT) {
+
+      /*
+       * Deal with a reply when a break-to-none was sent.
+       */
+
+      if(remove_share_oplock(token, fsp)==False) {
+        DEBUG(0,("reply_lockingX: failed to remove share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      }
+
+      release_file_oplock(fsp);
+
+    } else {
+
+      /*
+       * Deal with a reply when a break-to-level II was sent.
+       */
+
+      if(downgrade_share_oplock(token, fsp)==False) {
+        DEBUG(0,("reply_lockingX: failed to downgrade share oplock for file %s fnum %d, \
+dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)inode));
+      }
+
+      downgrade_file_oplock(fsp);
+    }
+
     unlock_share_entry(fsp->conn, dev, inode, token);
 
     /* if this is a pure oplock break request then don't send a reply */

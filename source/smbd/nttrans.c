@@ -867,9 +867,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 	
-	if(oplock_request && fsp->granted_oplock)
+	if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
-	
+
 	set_message(outbuf,34,0,True);
 	
 	p = outbuf + smb_vwv2;
@@ -878,9 +878,14 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * Currently as we don't support level II oplocks we just report
 	 * exclusive & batch here.
 	 */
-	
-	SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
 
+    if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+	  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+        SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+	else
+		SCVAL(p,0,NO_OPLOCK_RETURN);
+	
 	p++;
 	SSVAL(p,0,fsp->fnum);
 	p += 2;
@@ -1099,7 +1104,26 @@ static int call_nt_transact_create(connection_struct *conn,
 
       if (!fsp->open) { 
 
-		if(errno == EACCES && stat_open_only) {
+		if(errno == EISDIR) {
+
+			/*
+			 * Fail the open if it was explicitly a non-directory file.
+			 */
+
+			if (create_options & FILE_NON_DIRECTORY_FILE) {
+				SSVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+				return(ERROR(0, 0xc0000000|NT_STATUS_FILE_IS_A_DIRECTORY));
+			}
+	
+			oplock_request = 0;
+			open_directory(fsp, conn, fname, smb_ofun, unixmode, &smb_action);
+				
+			if(!fsp->open) {
+				file_free(fsp);
+				restore_case_semantics(file_attributes);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} else if(errno == EACCES && stat_open_only) {
 
 			/*
 			 * We couldn't open normally and all we want
@@ -1157,7 +1181,7 @@ static int call_nt_transact_create(connection_struct *conn,
       if (oplock_request && lp_fake_oplocks(SNUM(conn)))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
   
-      if(oplock_request && fsp->granted_oplock)
+      if(oplock_request && EXLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
         smb_action |= EXTENDED_OPLOCK_GRANTED;
     }
   }
@@ -1172,7 +1196,13 @@ static int call_nt_transact_create(connection_struct *conn,
   memset((char *)params,'\0',69);
 
   p = params;
-  SCVAL(p,0, (smb_action & EXTENDED_OPLOCK_GRANTED ? BATCH_OPLOCK : 0));
+  if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
+  else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+    SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+  else
+	SCVAL(p,0,NO_OPLOCK_RETURN);
+	
   p += 2;
   if (IS_IPC(conn)) {
 	  SSVAL(p,0,pnum);

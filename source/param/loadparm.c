@@ -323,6 +323,7 @@ typedef struct
   BOOL bStrictLocking;
   BOOL bShareModes;
   BOOL bOpLocks;
+  BOOL bLevel2OpLocks;
   BOOL bOnlyUser;
   BOOL bMangledNames;
   BOOL bWidelinks;
@@ -418,6 +419,7 @@ static service sDefault =
   False,  /* bStrictLocking */
   True,  /* bShareModes */
   True,  /* bOpLocks */
+  True,  /* bLevel2OpLocks */
   False, /* bOnlyUser */
   True,  /* bMangledNames */
   True,  /* bWidelinks */
@@ -746,6 +748,7 @@ static struct parm_struct parm_table[] =
   {"mangle locks",     P_BOOL,    P_LOCAL,  &sDefault.bMangleLocks,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"level2 oplocks",   P_BOOL,    P_LOCAL,  &sDefault.bLevel2OpLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"oplock break wait time",P_INTEGER,P_GLOBAL,&Globals.oplock_break_wait_time,NULL,NULL,FLAG_GLOBAL},
   {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -1319,6 +1322,7 @@ FN_LOCAL_BOOL(lp_locking,bLocking)
 FN_LOCAL_BOOL(lp_strict_locking,bStrictLocking)
 FN_LOCAL_BOOL(lp_share_modes,bShareModes)
 FN_LOCAL_BOOL(lp_oplocks,bOpLocks)
+FN_LOCAL_BOOL(lp_level2_oplocks,bLevel2OpLocks)
 FN_LOCAL_BOOL(lp_onlyuser,bOnlyUser)
 FN_LOCAL_BOOL(lp_manglednames,bMangledNames)
 FN_LOCAL_BOOL(lp_widelinks,bWidelinks)
