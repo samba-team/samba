@@ -80,7 +80,7 @@ static Pixmap		left0, left1, right0, right1, left_front,
 static int state; /* indicates states: walking or getting passwd */
 
 static int ALLOW_LOGOUT = (60*10);	/* Allow logout after nn seconds */
-static char LOGOUT_PASSWD[] = "LOGOUT"; /* when given password "xx" */
+#define LOGOUT_PASSWD "enuHDmTo5Lq4g" /* when given password "LOGOUT" */
 static time_t locked_at;
 
 struct appres_t {
@@ -90,7 +90,7 @@ struct appres_t {
     Boolean ignore_passwd;
     Boolean do_reverse;
     Boolean accept_root;
-    char *text, *text_prog, *file;
+    char *text, *text_prog, *file, *logoutPasswd;
     Boolean no_screensaver;
 } appres;
 
@@ -120,6 +120,9 @@ static XtResource resources[] = {
     { "file", "File", XtRString, sizeof(String),
       XtOffsetOf(struct appres_t,file), XtRImmediate, NULL },
 
+    { "logoutPasswd", "logoutPasswd", XtRString, sizeof(String),
+      XtOffsetOf(struct appres_t, logoutPasswd), XtRString, LOGOUT_PASSWD },
+    
     { "noScreenSaver", "NoScreenSaver", XtRBoolean, sizeof(Boolean),
       XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)True },
 };
@@ -535,7 +538,7 @@ verify(char *password)
     if (getuid() != 0 &&
 	geteuid() != 0 &&
 	(time(0) - locked_at) > ALLOW_LOGOUT &&
-	strncmp(password, LOGOUT_PASSWD, sizeof(LOGOUT_PASSWD)) == 0)
+	strcmp(crypt(password, appres.logoutPasswd), appres.logoutPasswd) == 0)
 	    {
 		signal(SIGHUP, SIG_IGN);
 		kill(-1, SIGHUP);
