@@ -104,15 +104,6 @@ void build_options(BOOL screen)
 #ifdef WITH_PAM
        output(screen,"   WITH_PAM\n");
 #endif
-#ifdef WITH_TDB_SAM
-       output(screen,"   WITH_TDB_SAM\n");
-#endif
-#ifdef WITH_SMBPASSWD_SAM
-       output(screen,"   WITH_SMBPASSWD_SAM\n");
-#endif
-#ifdef WITH_NISPLUS_SAM
-       output(screen,"   WITH_NISPLUS_SAM\n");
-#endif
 #ifdef WITH_NISPLUS_HOME
        output(screen,"   WITH_NISPLUS_HOME\n");
 #endif
@@ -532,6 +523,9 @@ void build_options(BOOL screen)
        output(screen,"   sizeof(uint32):  %d\n",sizeof(uint32));
        output(screen,"   sizeof(short):   %d\n",sizeof(short));
        output(screen,"   sizeof(void*):   %d\n",sizeof(void*));
+
+	   output(screen,"\nBuiltin modules:\n");
+	   output(screen,"%s\n", STRING_STATIC_MODULES);
 }
 
 
