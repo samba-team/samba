@@ -1736,7 +1736,7 @@ void initiate_wins_processing(time_t t)
 				DEBUG(3,("initiate_wins_processing: deleting timed out DNS name %s\n",
 						nmb_namestr(&namerec->name)));
 				remove_name_from_namelist( wins_server_subnet, namerec );
-				break;
+				continue;
 			}
 
 			/* handle records, samba is the wins owner */
