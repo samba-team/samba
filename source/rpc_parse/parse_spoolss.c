@@ -5922,7 +5922,7 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
 ********************************************************************/  
 BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth)
 {
-	prs_debug(ps, depth, desc, "spoolss_io_q_replycloseprinter");
+	prs_debug(ps, depth, desc, "spoolss_io_q_reply_rrpcn");
 	depth++;
 
 	if(!prs_align(ps))

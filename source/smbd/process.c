@@ -131,9 +131,6 @@ static void async_processing(fd_set *fds, char *buffer, int buffer_len)
 		reload_services(False);
 		reload_after_sighup = False;
 	}
-
-	/* check for any pending internal messages */
-	message_dispatch();
 }
 
 /****************************************************************************
@@ -166,6 +163,15 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 
 	smb_read_error = 0;
 
+ again:
+
+	/*
+	 * Note that this call must be before processing any SMB
+	 * messages as we need to synchronously process any messages
+	 * we may have sent to ourselves from the previous SMB.
+	 */
+	message_dispatch();
+
 	/*
 	 * Check to see if we already have a message on the smb queue.
 	 * If so - copy and return it.
@@ -187,7 +193,6 @@ static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
 	 * Setup the select read fd set.
 	 */
 
- again:
 	FD_ZERO(&fds);
 	FD_SET(smbd_server_fd(),&fds);
 	maxfd = setup_oplock_select_set(&fds);
