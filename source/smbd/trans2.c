@@ -1694,8 +1694,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
         /* NT expects the name to be in an exact form */
 	if (strequal(fname,"."))
 		pstrcpy(dos_fname, "\\");
-	else
+	else {
 		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+		string_replace( dos_fname, '/','\\');
+	}
 
 	switch (info_level) {
 	case SMB_INFO_STANDARD:
