@@ -1,3 +1,8 @@
+2001-09-02  Assar Westerlund  <assar@sics.se>
+
+	* check-compile-et.m4: only add /usr/include/et to CPPFLAGS if
+	it's actually used
+
 2001-09-01  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am.common (AUTOMAKE_OPTIONS): set 1.4b here so that
