@@ -1633,7 +1633,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum, fstring 
 	counter_printer_0 *session_counter;
 	uint32 global_counter;
 	struct tm *t;
-	time_t setup_time;
+	time_t setup_time = time(NULL);
 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
@@ -1949,13 +1949,20 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
  * fill a printer_info_3 struct
  ********************************************************************/
 static BOOL construct_printer_info_3(fstring servername,
-			PRINTER_INFO_3 *printer, int snum)
+			PRINTER_INFO_3 **pp_printer, int snum)
 {
 	NT_PRINTER_INFO_LEVEL *ntprinter = NULL;
+	PRINTER_INFO_3 *printer = NULL;
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 		return False;
-		
+
+	*pp_printer = NULL;
+	if ((printer = (PRINTER_INFO_3 *)malloc(sizeof(PRINTER_INFO_3))) == NULL) {
+		DEBUG(0,("construct_printer_info_3: malloc fail.\n"));
+		return False;
+	}
+	
 	printer->flags = 4; /* This is the offset to the SEC_DESC. */
 	if (ntprinter->info_2->secdesc_buf->len != 0) {
 		/* steal the printer info sec_desc structure.  [badly done]. */
@@ -1966,6 +1973,8 @@ static BOOL construct_printer_info_3(fstring servername,
 	}
 
 	free_a_printer(&ntprinter, 2);
+
+	*pp_printer = printer;
 	return True;
 }
 
@@ -2172,8 +2181,8 @@ static BOOL enum_all_printers_info_2(fstring servername, NEW_BUFFER *buffer, uin
 	
 	/* clear memory */
 	for (i=0; i<*returned; i++) {
-		safe_free(printers[i].devmode->private);
-		safe_free(printers[i].devmode);
+		free_devmode(printers[i].devmode);
+		free_sec_desc(&printers[i].secdesc);
 	}
 	safe_free(printers);
 
@@ -2408,18 +2417,16 @@ static uint32 getprinter_level_3(fstring servername, int snum, NEW_BUFFER *buffe
 	PRINTER_INFO_3 *printer=NULL;
 	fstring temp;
 
-	if((printer=(PRINTER_INFO_3*)malloc(sizeof(PRINTER_INFO_3)))==NULL)
-		return ERROR_NOT_ENOUGH_MEMORY;
-	
 	fstrcpy(temp, "\\\\");
 	fstrcat(temp, servername);
-	construct_printer_info_3(temp, printer, snum);
+	if (!construct_printer_info_3(temp, &printer, snum))
+		return ERROR_NOT_ENOUGH_MEMORY;
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_3(printer);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
-		safe_free(printer);
+		free_printer_info_3(printer);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
@@ -2427,8 +2434,8 @@ static uint32 getprinter_level_3(fstring servername, int snum, NEW_BUFFER *buffe
 	new_smb_io_printer_info_3("", buffer, printer, 0);	
 	
 	/* clear memory */
-	free_sec_desc(&printer->secdesc);
-
+	free_printer_info_3(printer);
+	
 	if (*needed > offered) {
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
@@ -2565,8 +2572,12 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *whe
 	*uni_array=NULL;
 
 	while (1) {
-		v = char_array[i];
-		if (!v) v = ""; /* hack to handle null lists */
+		if (char_array == NULL)
+			v = "";
+		else {
+			v = char_array[i];
+			if (!v) v = ""; /* hack to handle null lists */
+		}
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
@@ -2626,7 +2637,7 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 	init_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
 
 	info->dependentfiles=NULL;
-	init_unistr_array(&(info->dependentfiles), driver.info_3->dependentfiles, where);
+	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, where);
 }
 
 /********************************************************************
@@ -2647,6 +2658,14 @@ static void construct_printer_driver_info_3(DRIVER_INFO_3 *info, int snum,
 	fill_printer_driver_info_3(info, driver, servername, architecture);
 
 	free_a_printer(&printer,2);
+}
+
+/****************************************************************************
+****************************************************************************/
+
+static void free_printer_driver_info_3(DRIVER_INFO_3 *info)
+{
+	safe_free(info->dependentfiles);
 }
 
 /****************************************************************************
@@ -2725,11 +2744,14 @@ static uint32 getprinterdriver2_level3(fstring servername, fstring architecture,
 	*needed += spoolss_size_printer_driver_info_3(&info);
 
 	if (!alloc_buffer_size(buffer, *needed)) {
+		free_printer_driver_info_3(&info);
 		return ERROR_INSUFFICIENT_BUFFER;
 	}
 
 	/* fill the buffer with the structures */
 	new_smb_io_printer_driver_info_3("", buffer, &info, 0);
+
+	free_printer_driver_info_3(&info);
 
 	if (*needed > offered)
 		return ERROR_INSUFFICIENT_BUFFER;
