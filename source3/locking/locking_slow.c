@@ -81,12 +81,14 @@ static BOOL slow_stop_share_mode_mgmt(void)
   ******************************************************************/
 static BOOL share_name(int cnum, uint32 dev, uint32 inode, char *name)
 {
-  strcpy(name,lp_lockdir());
+  int len;
+  pstrcpy(name,lp_lockdir());
   trim_string(name,"","/");
   if (!*name) return(False);
+  len = strlen(name);
   name += strlen(name);
   
-  sprintf(name,"/share.%u.%u",dev,inode);
+  slprintf(name, sizeof(pstring) - len - 1, "/share.%u.%u",dev,inode);
   return(True);
 }
 
@@ -784,7 +786,7 @@ deleting it.\n", fname));
     SIVAL(buf,SMF_VERSION_OFFSET,LOCKING_VERSION);
     SIVAL(buf,SMF_NUM_ENTRIES_OFFSET,0);
     SSVAL(buf,SMF_FILENAME_LEN_OFFSET,strlen(fs_p->name) + 1);
-    strcpy(buf + SMF_HEADER_LENGTH, fs_p->name);
+    pstrcpy(buf + SMF_HEADER_LENGTH, fs_p->name);
   }
 
   num_entries = IVAL(buf,SMF_NUM_ENTRIES_OFFSET);
@@ -1001,10 +1003,10 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 
 		if (sscanf(s,"share.%u.%u",&dev,&inode)!=2) continue;
        
-		strcpy(lname,lp_lockdir());
+		pstrcpy(lname,lp_lockdir());
 		trim_string(lname,NULL,"/");
-		strcat(lname,"/");
-		strcat(lname,s);
+		pstrcat(lname,"/");
+		pstrcat(lname,s);
        
 		fd = open(lname,read_only?O_RDONLY:O_RDWR,0);
 		if (fd < 0) {
@@ -1022,7 +1024,7 @@ static int slow_share_forall(void (*fn)(share_mode_entry *, char *))
 			close(fd);
 			continue;
 		} 
-		strcpy( fname, &buf[10]);
+		pstrcpy( fname, &buf[10]);
 		close(fd);
       
 		base = buf + SMF_HEADER_LENGTH + 

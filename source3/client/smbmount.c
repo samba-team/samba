@@ -148,7 +148,7 @@ static BOOL chkpath(char *path,BOOL report)
   pstring inbuf,outbuf;
   char *p;
 
-  strcpy(path2,path);
+  fstrcpy(path2,path);
   trim_string(path2,NULL,"\\");
   if (!*path2) *path2 = '\\';
 
@@ -160,7 +160,7 @@ static BOOL chkpath(char *path,BOOL report)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p,path2);
+  fstrcpy(p,path2);
 
 #if 0
   {
@@ -346,7 +346,7 @@ static void cmd_mount(char *inbuf,char *outbuf)
 	 * Build the service name to report on the Unix side,
 	 * converting '\' to '/' and ' ' to '_'.
 	 */
-	strcpy(share_name, service);  
+	pstrcpy(share_name, service);  
 	string_replace(share_name, '\\', '/');
 	string_replace(share_name, ' ', '_');
 
@@ -354,8 +354,8 @@ static void cmd_mount(char *inbuf,char *outbuf)
 
 	while(next_token(NULL, buf, NULL))
 	{
-		strcat(mount_command, " ");
-		strcat(mount_command, buf);
+		pstrcat(mount_command, " ");
+		pstrcat(mount_command, buf);
 	}
 
 	DEBUG(3, ("mount command: %s\n", mount_command));
@@ -683,7 +683,7 @@ static void usage(char *pname)
   char *p;
 
 #ifdef KANJI
-  strcpy(term_code, KANJI);
+  pstrcpy(term_code, KANJI);
 #else /* KANJI */
   *term_code = 0;
 #endif /* KANJI */
@@ -707,7 +707,7 @@ static void usage(char *pname)
 
   if (getenv("USER"))
   {
-    strcpy(username,getenv("USER"));
+    pstrcpy(username,getenv("USER"));
 
     /* modification to support userid%passwd syntax in the USER var
        25.Aug.97, jdblair@uab.edu */
@@ -715,7 +715,7 @@ static void usage(char *pname)
     if ((p=strchr(username,'%')))
     {
       *p = 0;
-      strcpy(password,p+1);
+      pstrcpy(password,p+1);
       got_pass = True;
       memset(strchr(getenv("USER"),'%')+1,'X',strlen(password));
     }
@@ -726,11 +726,11 @@ static void usage(char *pname)
   25.Aug.97, jdblair@uab.edu */
 
   if (getenv("PASSWD"))
-    strcpy(password,getenv("PASSWD"));
+    pstrcpy(password,getenv("PASSWD"));
 
   if (*username == 0 && getenv("LOGNAME"))
     {
-      strcpy(username,getenv("LOGNAME"));
+      pstrcpy(username,getenv("LOGNAME"));
       strupper(username);
     }
 
@@ -743,7 +743,7 @@ static void usage(char *pname)
   if (*argv[1] != '-')
     {
 
-      strcpy(service, argv[1]);  
+      pstrcpy(service, argv[1]);  
       /* Convert any '/' characters in the service name to '\' characters */
       string_replace( service, '/','\\');
       argc--;
@@ -759,7 +759,7 @@ static void usage(char *pname)
       if (argc > 1 && (*argv[1] != '-'))
 	{
 	  got_pass = True;
-	  strcpy(password,argv[1]);  
+	  pstrcpy(password,argv[1]);  
 	  memset(argv[1],'X',strlen(argv[1]));
 	  argc--;
 	  argv++;
@@ -774,10 +774,10 @@ static void usage(char *pname)
 	max_protocol = interpret_protocol(optarg,max_protocol);
 	break;
       case 'O':
-	strcpy(user_socket_options,optarg);
+	pstrcpy(user_socket_options,optarg);
 	break;	
       case 'S':
-	strcpy(desthost,optarg);
+	pstrcpy(desthost,optarg);
 	strupper(desthost);
 	nt_domain_logon = True;
 	break;
@@ -785,19 +785,19 @@ static void usage(char *pname)
 	iface_set_default(NULL,optarg,NULL);
 	break;
       case 'D':
-	strcpy(base_directory,optarg);
+	pstrcpy(base_directory,optarg);
 	break;
       case 'i':
-	strcpy(scope,optarg);
+	pstrcpy(scope,optarg);
 	break;
       case 'U':
 	{
 	  char *lp;
-	strcpy(username,optarg);
+	pstrcpy(username,optarg);
 	if ((lp=strchr(username,'%')))
 	  {
 	    *lp = 0;
-	    strcpy(password,lp+1);
+	    pstrcpy(password,lp+1);
 	    got_pass = True;
 	    memset(strchr(optarg,'%')+1,'X',strlen(password));
 	  }
@@ -805,7 +805,7 @@ static void usage(char *pname)
 	    
 	break;
       case 'W':
-	strcpy(workgroup,optarg);
+	pstrcpy(workgroup,optarg);
 	break;
       case 'E':
 	dbf = stderr;
@@ -818,7 +818,7 @@ static void usage(char *pname)
 	}
 	break;
       case 'n':
-	strcpy(global_myname,optarg);
+	pstrcpy(global_myname,optarg);
 	break;
       case 'N':
 	got_pass = True;
@@ -844,10 +844,10 @@ static void usage(char *pname)
 	exit(0);
 	break;
       case 's':
-	strcpy(servicesf, optarg);
+	pstrcpy(servicesf, optarg);
 	break;
       case 't':
-        strcpy(term_code, optarg);
+        pstrcpy(term_code, optarg);
 	break;
       default:
 	usage(pname);
@@ -877,7 +877,7 @@ static void usage(char *pname)
   interpret_coding_system(term_code);
 
   if (*workgroup == 0)
-    strcpy(workgroup,lp_workgroup());
+    pstrcpy(workgroup,lp_workgroup());
 
   load_interfaces();
   get_myname((*global_myname)?NULL:global_myname,NULL);  

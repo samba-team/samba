@@ -237,7 +237,7 @@ implemented */
 
 typedef char pstring[1024];
 typedef char fstring[128];
-typedef fstring string;
+/* typedef fstring string; */
 
 
 /* pipe strings */

@@ -420,7 +420,7 @@ workgroup %s\n", q_name->name ));
   userdata->copy_fn = NULL;
   userdata->free_fn = NULL;
   userdata->userdata_len = strlen(work->work_group)+1;
-  strcpy(userdata->data, work->work_group);
+  pstrcpy(userdata->data, work->work_group);
 
   node_status( subrec, &nmbname, answer_ip, 
                domain_master_node_status_success,

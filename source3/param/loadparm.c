@@ -720,9 +720,10 @@ static void init_globals(void)
   string_set(&Globals.szRootdir, "/");
   string_set(&Globals.szSmbrun, SMBRUN);
   string_set(&Globals.szSocketAddress, "0.0.0.0");
-  sprintf(s,"Samba %s",VERSION);
+  pstrcpy(s, "Samba ");
+  pstrcat(s, VERSION);
   string_set(&Globals.szServerString,s);
-  sprintf(s,"%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
+  slprintf(s,sizeof(s)-1, "%d.%d", DEFAULT_MAJOR_VERSION, DEFAULT_MINOR_VERSION);
   string_set(&Globals.szAnnounceVersion,s);
 
   string_set(&Globals.szLogonDrive, "");
@@ -1829,11 +1830,11 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
        break;
 
      case P_GSTRING:
-       strcpy((char *)parm_ptr,pszParmValue);
+       pstrcpy((char *)parm_ptr,pszParmValue);
        break;
 
      case P_UGSTRING:
-       strcpy((char *)parm_ptr,pszParmValue);
+       pstrcpy((char *)parm_ptr,pszParmValue);
        strupper((char *)parm_ptr);
        break;
 

@@ -58,7 +58,7 @@ void pidfile_create(char *name)
 	}
 
 	memset(buf, 0, sizeof(buf));
-	sprintf(buf, "%u\n", (unsigned int) getpid());
+	slprintf(buf, sizeof(buf) - 1, "%u\n", (unsigned int) getpid());
 	if (write(fd, buf, sizeof(buf)) != sizeof(buf)) {
 		DEBUG(0,("ERROR: can't write to %s: %s\n", 
 			 pidFile, strerror(errno)));

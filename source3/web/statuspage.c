@@ -121,7 +121,7 @@ void status_page(void)
 	pstrcpy(fname,lp_lockdir());
 	standard_sub_basic(fname);
 	trim_string(fname,"","/");
-	strcat(fname,"/STATUS..LCK");
+	pstrcat(fname,"/STATUS..LCK");
 
 
 	f = fopen(fname,"r");
@@ -131,7 +131,7 @@ void status_page(void)
 			if (crec.magic == 0x280267 && crec.cnum == -1 &&
 			    process_exists(crec.pid)) {
 				char buf[30];
-				sprintf(buf,"kill_%d", crec.pid);
+				slprintf(buf,sizeof(buf)-1,"kill_%d", crec.pid);
 				if (cgi_variable(buf)) {
 					kill_pid(crec.pid);
 				}

@@ -534,7 +534,7 @@ BOOL add_smbpwd_entry(struct smb_passwd *newpwd)
 
   int fd;
   int new_entry_length;
-  char *new_entry;
+  unsigned char *new_entry;
   long offpos;
   unsigned char *p;
 
@@ -583,19 +583,19 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     return False;
   }
 
-  sprintf(new_entry, "%s:%u:", newpwd->smb_name, (unsigned)newpwd->smb_userid);
+  slprintf(new_entry, new_entry_length - 1, "%s:%u:", newpwd->smb_name, (unsigned)newpwd->smb_userid);
   p = (unsigned char *)&new_entry[strlen(new_entry)];
 
   if(newpwd->smb_passwd != NULL) {
     for( i = 0; i < 16; i++) {
-      sprintf((char *)&p[i*2], "%02X", newpwd->smb_passwd[i]);
+      slprintf((char *)&p[i*2], new_entry_length - (p - new_entry) - 1, "%02X", newpwd->smb_passwd[i]);
     }
   } else {
     i=0;
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      safe_strcpy((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
     else
-      sprintf((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      safe_strcpy((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
   }
   
   p += 32;
@@ -604,13 +604,13 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 
   if(newpwd->smb_nt_passwd != NULL) {
     for( i = 0; i < 16; i++) {
-      sprintf((char *)&p[i*2], "%02X", newpwd->smb_nt_passwd[i]);
+      slprintf((char *)&p[i*2], new_entry_length - 1 - (p - new_entry), "%02X", newpwd->smb_nt_passwd[i]);
     }
   } else {
     if(newpwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      safe_strcpy((char *)p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
     else
-      sprintf((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      safe_strcpy((char *)p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", new_entry_length - 1 - (p - new_entry));
   }
 
   p += 32;
@@ -618,7 +618,8 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
   *p++ = ':';
 
   /* Add the account encoding and the last change time. */
-  sprintf((char *)p, "%s:LCT-%08X:\n", encode_acct_ctrl(newpwd->acct_ctrl),
+  slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
+                                  encode_acct_ctrl(newpwd->acct_ctrl),
                      (uint32)time(NULL));
 
 #ifdef DEBUG_PASSWORD
@@ -945,13 +946,13 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   /* Create the 32 byte representation of the new p16 */
   if(pwd->smb_passwd != NULL) {
     for (i = 0; i < 16; i++) {
-      sprintf(&ascii_p16[i*2], "%02X", (uchar) pwd->smb_passwd[i]);
+      slprintf(&ascii_p16[i*2], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_passwd[i]);
     }
   } else {
     if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      fstrcpy(ascii_p16, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else
-      sprintf(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      fstrcpy(ascii_p16, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
 
   /* Add on the NT md4 hash */
@@ -959,13 +960,13 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
   wr_len = 65;
   if (pwd->smb_nt_passwd != NULL) {
     for (i = 0; i < 16; i++) {
-      sprintf(&ascii_p16[(i*2)+33], "%02X", (uchar) pwd->smb_nt_passwd[i]);
+      slprintf(&ascii_p16[(i*2)+33], sizeof(fstring) - 1, "%02X", (uchar) pwd->smb_nt_passwd[i]);
     }
   } else {
     if(pwd->acct_ctrl & ACB_PWNOTREQ)
-      sprintf(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
+      fstrcpy(&ascii_p16[33], "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX");
     else
-      sprintf(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+      fstrcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
   }
 
   /* Add on the account info bits and the time of last
@@ -1024,10 +1025,10 @@ static void get_trust_account_file_name( char *domain, char *name, char *mac_fil
     return;
   }
 
-  strcat(mac_file, domain);
-  strcat(mac_file, ".");
-  strcat(mac_file, name);
-  strcat(mac_file, ".mac");
+  pstrcat(mac_file, domain);
+  pstrcat(mac_file, ".");
+  pstrcat(mac_file, name);
+  pstrcat(mac_file, ".mac");
 }
  
 /************************************************************************
@@ -1191,9 +1192,9 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
   } 
 
   for (i = 0; i < 16; i++)
-    sprintf(&linebuf[(i*2)], "%02X", md4_new_pwd[i]);
+    slprintf(&linebuf[(i*2)], sizeof(linebuf) -  (i*2) - 1, "%02X", md4_new_pwd[i]);
 
-  sprintf(&linebuf[32], ":TLC-%08X\n", (unsigned)time(NULL));
+  slprintf(&linebuf[32], 32, ":TLC-%08X\n", (unsigned)time(NULL));
 
   if(fwrite( linebuf, 1, 45, mach_passwd_fp)!= 45) {
     DEBUG(0,("set_trust_account_password: Failed to write file. Warning - the trust \

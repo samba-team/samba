@@ -134,7 +134,7 @@ static BOOL rw_torture(struct cli_state *c, int numops)
 		if (i % 10 == 0) {
 			printf("%d\r", i); fflush(stdout);
 		}
-		sprintf(fname,"\\torture.%u", n);
+		slprintf(fname, sizeof(fstring) - 1, "\\torture.%u", n);
 
 		if (!wait_lock(c, fnum2, n*sizeof(int), sizeof(int))) {
 			return False;
@@ -860,7 +860,7 @@ static void create_procs(int nprocs, int numops)
 	get_myname(myname,NULL);
 
 	if (*username == 0 && getenv("LOGNAME")) {
-	  strcpy(username,getenv("LOGNAME"));
+	  pstrcpy(username,getenv("LOGNAME"));
 	}
 
 	argc--;
@@ -888,11 +888,11 @@ static void create_procs(int nprocs, int numops)
 			fstrcpy(myname, optarg);
 			break;
 		case 'U':
-			strcpy(username,optarg);
+			pstrcpy(username,optarg);
 			p = strchr(username,'%');
 			if (p) {
 				*p = 0;
-				strcpy(password, p+1);
+				pstrcpy(password, p+1);
 				gotpass = 1;
 			}
 			break;
@@ -906,7 +906,7 @@ static void create_procs(int nprocs, int numops)
 	while (!gotpass) {
 		p = getpass("Password:");
 		if (p) {
-			strcpy(password, p);
+			pstrcpy(password, p);
 			gotpass = 1;
 		}
 	}

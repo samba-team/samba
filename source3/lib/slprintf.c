@@ -41,7 +41,15 @@ int vslprintf(char *str, int n, char *format, va_list ap)
 		/* note: we don't free the old memory (if any) as we don't 
 		   want a malloc lib to reuse the memory as it will
 		   have the wrong permissions */
+#ifdef HAVE_MEMALIGN
 		buf = memalign(pagesize, len);
+#else /* HAVE_MEMALIGN */
+#ifdef HAVE_VALLOC
+		buf = valloc(len);
+#else /* HAVE_VALLOC */
+                buf = malloc(len);
+#endif /* HAVE_VALLOC */
+#endif /* HAVE_MEMALIGN */
 		if (buf) {
 			if (mprotect(buf+(len-pagesize), pagesize, PROT_READ) != 0) {
 				exit(1);

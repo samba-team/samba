@@ -335,9 +335,9 @@ static BOOL initiate_multihomed_name_register_packet( struct packet_struct *pack
                                     uint16 nb_flags, struct in_addr *register_ip)
 {
   struct nmb_packet *nmb = &packet->packet.nmb;
-  char second_ip_buf[25];
+  fstring second_ip_buf;
 
-  strcpy(second_ip_buf, inet_ntoa(packet->ip));
+  fstrcpy(second_ip_buf, inet_ntoa(packet->ip));
 
   nmb->header.opcode = NMB_NAME_MULTIHOMED_REG_OPCODE;
   nmb->header.arcount = 1;
@@ -1914,7 +1914,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   SSVAL(ptr,smb_vwv15,1);
   SSVAL(ptr,smb_vwv16,2);
   p2 = smb_buf(ptr);
-  strcpy(p2,mailslot);
+  pstrcpy(p2,mailslot);
   p2 = skip_string(p2,1);
 
   memcpy(p2,buf,len);

@@ -427,8 +427,8 @@ static BOOL mangled_equal(char *name1, char *name2)
   if (is_8_3(name2, True))
     return(False);
 
-  strcpy(tmpname,name2);
-  mangle_name_83(tmpname);
+  pstrcpy(tmpname,name2);
+  mangle_name_83(tmpname,sizeof(tmpname));
 
   return(strequal(name1,tmpname));
 }
@@ -453,7 +453,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
     path = ".";
 
   if (docache && (dname = DirCacheCheck(path,name,SNUM(cnum)))) {
-    strcpy(name, dname);	
+    pstrcpy(name, dname);	
     return(True);
   }      
 
@@ -489,7 +489,7 @@ static BOOL scan_directory(char *path, char *name,int cnum,BOOL docache)
 	{
 	  /* we've found the file, change it's name and return */
 	  if (docache) DirCacheAdd(path,name,dname,SNUM(cnum));
-	  strcpy(name, dname);
+	  pstrcpy(name, dname);
 	  CloseDir(cur_dir);
 	  return(True);
 	}
@@ -547,9 +547,9 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
   if(saved_last_component) {
     end = strrchr(name, '/');
     if(end)
-      strcpy(saved_last_component, end + 1);
+      pstrcpy(saved_last_component, end + 1);
     else
-      strcpy(saved_last_component, name);
+      pstrcpy(saved_last_component, name);
   }
 
   if (!case_sensitive && 
@@ -567,7 +567,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 	  /* sanitise the name */
 	  for (s=name2 ; *s ; s++)
 	    if (!issafe(*s)) *s = '_';
-	  strcpy(name,(char *)mktemp(name2));	  
+	  pstrcpy(name,(char *)mktemp(name2));	  
 	}      
       return(True);
     }
@@ -604,7 +604,7 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
       if (end) 	*end = 0;
 
       if(saved_last_component != 0)
-        strcpy(saved_last_component, end ? end + 1 : start);
+        pstrcpy(saved_last_component, end ? end + 1 : start);
 
       /* check if the name exists up to this point */
       if (sys_stat(name, &st) == 0) 
@@ -669,14 +669,14 @@ BOOL unix_convert(char *name,int cnum,pstring saved_last_component, BOOL *bad_pa
 	  /* restore the rest of the string */
 	  if (end) 
 	    {
-	      strcpy(start+strlen(start)+1,rest);
+	      pstrcpy(start+strlen(start)+1,rest);
 	      end = start + strlen(start);
 	    }
 	}
 
       /* add to the dirpath that we have resolved so far */
-      if (*dirpath) strcat(dirpath,"/");
-      strcat(dirpath,start);
+      if (*dirpath) pstrcat(dirpath,"/");
+      pstrcat(dirpath,start);
 
       /* restore the / that we wiped out earlier */
       if (end) *end = '/';
@@ -990,7 +990,7 @@ static int fd_attempt_open(char *fname, int flags, int mode)
   if((fd == -1) && (errno == ENOENT) &&
      (strchr(fname,'.')==NULL))
     {
-      strcat(fname,".");
+      pstrcat(fname,".");
       fd = sys_open(fname,flags,mode);
     }
 
@@ -3370,7 +3370,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
       {
         if (validated_username(vuid))
         {
-          strcpy(user,validated_username(vuid));
+          pstrcpy(user,validated_username(vuid));
           return(make_connection(user,user,password,pwlen,dev,vuid));
         }
       }
@@ -3381,7 +3381,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
          */
         if(*sesssetup_user)
         {
-          strcpy(user,sesssetup_user);
+          pstrcpy(user,sesssetup_user);
           return(make_connection(user,user,password,pwlen,dev,vuid));
         }
       }
@@ -3393,14 +3393,14 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   /* you can only connect to the IPC$ service as an ipc device */
   if (strequal(service,"IPC$"))
-    strcpy(dev,"IPC");
+    pstrcpy(dev,"IPC");
 
   if (*dev == '?' || !*dev)
     {
       if (lp_print_ok(snum))
-	strcpy(dev,"LPT1:");
+	pstrcpy(dev,"LPT1:");
       else
-	strcpy(dev,"A:");
+	pstrcpy(dev,"A:");
     }
 
   /* if the request is as a printer and you can't print then refuse */
@@ -3964,7 +3964,7 @@ int reply_nt1(char *outbuf)
   data_len = crypt_len + strlen(global_myworkgroup) + 1;
 
   set_message(outbuf,17,data_len,True);
-  strcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
+  pstrcpy(smb_buf(outbuf)+crypt_len, global_myworkgroup);
 
   CVAL(outbuf,smb_vwv1) = secword;
   SSVALS(outbuf,smb_vwv16+1,crypt_len);
@@ -4221,7 +4221,7 @@ void close_cnum(int cnum, uint16 vuid)
   if (*lp_postexec(SNUM(cnum)) && become_user(&Connections[cnum], cnum,vuid))
     {
       pstring cmd;
-      strcpy(cmd,lp_postexec(SNUM(cnum)));
+      pstrcpy(cmd,lp_postexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
       unbecome_user();
@@ -4232,7 +4232,7 @@ void close_cnum(int cnum, uint16 vuid)
   if (*lp_rootpostexec(SNUM(cnum)))
     {
       pstring cmd;
-      strcpy(cmd,lp_rootpostexec(SNUM(cnum)));
+      pstrcpy(cmd,lp_rootpostexec(SNUM(cnum)));
       standard_sub(cnum,cmd);
       smbrun(cmd,NULL,False);
     }
@@ -4270,7 +4270,7 @@ static BOOL dump_core(void)
   pstring dname;
   pstrcpy(dname,debugf);
   if ((p=strrchr(dname,'/'))) *p=0;
-  strcat(dname,"/corefiles");
+  pstrcat(dname,"/corefiles");
   mkdir(dname,0700);
   sys_chown(dname,getuid(),getgid());
   chmod(dname,0700);
@@ -5060,9 +5060,9 @@ static void usage(char *pname)
 
   TimeInit();
 
-  strcpy(debugf,SMBLOGFILE);  
+  pstrcpy(debugf,SMBLOGFILE);  
 
-  strcpy(remote_machine, "smb");
+  pstrcpy(remote_machine, "smb");
 
   setup_logging(argv[0],False);
 
@@ -5101,10 +5101,10 @@ static void usage(char *pname)
     switch (opt)
       {
       case 'O':
-	strcpy(user_socket_options,optarg);
+	pstrcpy(user_socket_options,optarg);
 	break;
       case 'i':
-	strcpy(scope,optarg);
+	pstrcpy(scope,optarg);
 	break;
       case 'P':
 	{
@@ -5113,10 +5113,10 @@ static void usage(char *pname)
 	}
 	break;	
       case 's':
-	strcpy(servicesf,optarg);
+	pstrcpy(servicesf,optarg);
 	break;
       case 'l':
-	strcpy(debugf,optarg);
+	pstrcpy(debugf,optarg);
 	break;
       case 'a':
 	{
@@ -5185,7 +5185,7 @@ static void usage(char *pname)
 
   codepage_initialise(lp_client_code_page());
 
-  strcpy(global_myworkgroup, lp_workgroup());
+  pstrcpy(global_myworkgroup, lp_workgroup());
 
 #ifndef NO_SIGNAL_TEST
   signal(SIGHUP,SIGNAL_CAST sig_hup);

@@ -56,7 +56,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 	fstrcpy(mach_pwd, myhostname);
 	strlower(mach_pwd);
 
-	sprintf(tmp, "Enter Workstation Trust Account password for [%s].\nDefault is [%s].\nPassword:",
+	slprintf(tmp, sizeof(tmp) - 1,"Enter Workstation Trust Account password for [%s].\nDefault is [%s].\nPassword:",
 				mach_acct, mach_pwd);
 
 	start_mach_pwd = (char*)getpass(tmp);
@@ -66,7 +66,7 @@ BOOL trust_account_check(struct in_addr dest_ip, char *dest_host,
 		fstrcpy(mach_pwd, start_mach_pwd);
 	}
 
-	sprintf(tmp, "Enter new Workstation Trust Account password for [%s]\nPress Return to leave at old value.\nNew Password:",
+	slprintf(tmp, sizeof(tmp)-1, "Enter new Workstation Trust Account password for [%s]\nPress Return to leave at old value.\nNew Password:",
 				mach_acct);
 
 	change_mach_pwd = (char*)getpass(tmp);

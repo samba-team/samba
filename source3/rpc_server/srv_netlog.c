@@ -279,7 +279,7 @@ static void api_net_req_chal( int uid,
 	fstrcpy(mach_name, mach_acct);
 	strlower(mach_name);
 
-	strcat(mach_acct, "$");
+	fstrcat(mach_acct, "$");
 
 	if (get_md4pw((char *)vuser->dc.md4pw, mach_name, mach_acct))
 	{

@@ -139,7 +139,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
       processes_only = 1;
       break;
     case 's':
-      strcpy(servicesf, optarg);
+      pstrcpy(servicesf, optarg);
       break;
     case 'u':                                       /* added by OH */
       Ucrit_addUsername(optarg);                    /* added by OH */
@@ -162,10 +162,10 @@ static void print_share_mode(share_mode_entry *e, char *fname)
     printf("lockdir = %s\n", *lp_lockdir() ? lp_lockdir() : "NULL");
   }
 
-  strcpy(fname,lp_lockdir());
+  pstrcpy(fname,lp_lockdir());
   standard_sub_basic(fname);
   trim_string(fname,"","/");
-  strcat(fname,"/STATUS..LCK");
+  pstrcat(fname,"/STATUS..LCK");
 
   f = fopen(fname,"r");
   if (!f) {
@@ -281,7 +281,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 /* added by OH */
 void Ucrit_addUsername(pstring username)
 {
-  strcpy(Ucrit_username, username);
+  pstrcpy(Ucrit_username, username);
   if(strlen(Ucrit_username) > 0)
     Ucrit_IsActive = 1;
 }

@@ -297,22 +297,22 @@ void get_domain_user_groups(char *domain_groups, char *user)
 	/* can only be a user or a guest.  cannot be guest _and_ admin */
 	if (user_in_list(user, lp_domain_guest_users()))
 	{
-		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_GUESTS);
-		strcat(domain_groups, tmp);
+		slprintf(tmp, sizeof(tmp) - 1, " %ld/7 ", DOMAIN_GROUP_RID_GUESTS);
+		pstrcat(domain_groups, tmp);
 
 		DEBUG(3,("domain guest access %s granted\n", tmp));
 	}
 	else
 	{
-		sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_USERS);
-		strcat(domain_groups, tmp);
+		slprintf(tmp, sizeof(tmp) -1, " %ld/7 ", DOMAIN_GROUP_RID_USERS);
+		pstrcat(domain_groups, tmp);
 
 		DEBUG(3,("domain user access %s granted\n", tmp));
 
 		if (user_in_list(user, lp_domain_admin_users()))
 		{
-			sprintf(tmp, " %ld/7 ", DOMAIN_GROUP_RID_ADMINS);
-			strcat(domain_groups, tmp);
+			slprintf(tmp, sizeof(tmp) - 1, " %ld/7 ", DOMAIN_GROUP_RID_ADMINS);
+			pstrcat(domain_groups, tmp);
 
 			DEBUG(3,("domain admin access %s granted\n", tmp));
 		}

@@ -92,7 +92,7 @@ canonicalize (const char *path)
 	if (realpath (path, canonical))
 		return canonical;
 
-	strcpy (canonical, path);
+	pstrcpy (canonical, path);
 	return canonical;
 }
 

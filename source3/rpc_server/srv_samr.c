@@ -231,9 +231,9 @@ static void samr_reply_unknown_3(SAMR_Q_UNKNOWN_3 *q_u,
 
 	if (status == 0x0)
 	{
-		strcpy(user_sid, lp_domain_sid());
-		sprintf(user_rid, "-%x", rid);
-		strcat(user_sid, user_rid);
+		fstrcpy(user_sid, lp_domain_sid());
+		slprintf(user_rid, sizeof(user_rid) - 1, "-%x", rid);
+		fstrcat(user_sid, user_rid);
 
 		/* maybe need another 1 or 2 (S-1-5-20-0x220 and S-1-5-20-0x224) */
 		/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */

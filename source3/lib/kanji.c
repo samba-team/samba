@@ -419,7 +419,7 @@ static char *sj_to_euc(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy((char *) save, (char *) cvtbuf);
+	pstrcpy((char *) save, (char *) cvtbuf);
 	return (char *) save;
     } else {
 	return cvtbuf;
@@ -451,7 +451,7 @@ static char *euc_to_sj(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy(save, (char *) cvtbuf);
+	pstrcpy(save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -522,7 +522,7 @@ static char *jis8_to_sj(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -578,7 +578,7 @@ static char *sj_to_jis8(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -637,7 +637,7 @@ static char *jis7_to_sj(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -713,7 +713,7 @@ static char *sj_to_jis7(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -769,7 +769,7 @@ static char *junet_to_sj(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -838,7 +838,7 @@ static char *sj_to_junet(char *from, BOOL overwrite)
     }
     *out = 0;
     if (overwrite) {
-	strcpy (save, (char *) cvtbuf);
+	pstrcpy (save, (char *) cvtbuf);
 	return save;
     } else {
 	return cvtbuf;
@@ -864,7 +864,7 @@ static char *hex_to_sj(char *from, BOOL overwrite)
     }
     *dp = '\0';
     if (overwrite) {
-	strcpy ((char *) from, (char *) cvtbuf);
+	pstrcpy ((char *) from, (char *) cvtbuf);
 	return (char *) from;
     } else {
 	return cvtbuf;
@@ -900,7 +900,7 @@ static char *sj_to_hex(char *from, BOOL overwrite)
     }
     *dp = '\0';
     if (overwrite) {
-	strcpy ((char *) from, (char *) cvtbuf);
+	pstrcpy ((char *) from, (char *) cvtbuf);
 	return (char *) from;
     } else {
 	return cvtbuf;
@@ -932,7 +932,7 @@ static char *cap_to_sj(char *from, BOOL overwrite)
     }
     *dp = '\0';
     if (overwrite) {
-        strcpy ((char *) from, (char *) cvtbuf);
+        pstrcpy ((char *) from, (char *) cvtbuf);
         return (char *) from;
     } else {
         return cvtbuf;
@@ -960,7 +960,7 @@ static char *sj_to_cap(char *from, BOOL overwrite)
     }
     *dp = '\0';
     if (overwrite) {
-	strcpy ((char *) from, (char *) cvtbuf);
+	pstrcpy ((char *) from, (char *) cvtbuf);
 	return (char *) from;
     } else {
 	return cvtbuf;
@@ -973,7 +973,7 @@ static char *sj_to_cap(char *from, BOOL overwrite)
 static char *sj_to_sj(char *from, BOOL overwrite)
 {
     if (!overwrite) {
-	strcpy (cvtbuf, (char *) from);
+	pstrcpy (cvtbuf, (char *) from);
 	return cvtbuf;
     } else {
 	return (char *) from;

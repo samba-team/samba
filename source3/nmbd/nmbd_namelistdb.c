@@ -553,14 +553,14 @@ static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
 
 void dump_all_namelists(void)
 {
-  fstring fname;
+  pstring fname;
   FILE *fp; 
   struct subnet_record *subrec;
 
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
-  strcat(fname,"/"); 
-  strcat(fname,"namelist.debug");
+  pstrcat(fname,"/"); 
+  pstrcat(fname,"namelist.debug");
 
   fp = fopen(fname,"w");
      

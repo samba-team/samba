@@ -675,13 +675,16 @@ Error was %s\n", pipe_name, cli->desthost, cli_errstr(cli)));
    * Setup the remote server name prefixed by \ and the machine account name.
    */
 
-  sprintf(cli->srv_name_slash, "\\\\%s", cli->desthost);
+  fstrcpy(cli->srv_name_slash, "\\\\");
+  fstrcat(cli->srv_name_slash, cli->desthost);
   strupper(cli->srv_name_slash);
 
-  sprintf(cli->clnt_name_slash, "\\\\%s", global_myname);
+  fstrcpy(cli->clnt_name_slash, "\\\\");
+  fstrcat(cli->clnt_name_slash, global_myname);
   strupper(cli->clnt_name_slash);
 
-  sprintf(cli->mach_acct, "%s$", global_myname);
+  fstrcpy(cli->mach_acct, global_myname);
+  fstrcat(cli->mach_acct, "$");
   strupper(cli->mach_acct);
 
   return True;

@@ -248,7 +248,7 @@ static void writetarheader(int f,  char *aname, int size, time_t mtime,
   /* write out a "standard" tar format header */
 
   hb.dbuf.name[NAMSIZ-1]='\0';
-  strcpy(hb.dbuf.mode, amode);
+  fstrcpy(hb.dbuf.mode, amode);
   oct_it(0L, 8, hb.dbuf.uid);
   oct_it(0L, 8, hb.dbuf.gid);
   oct_it((long) size, 13, hb.dbuf.size);
@@ -309,7 +309,7 @@ static long readtarheader(union hblock *hb, file_info2 *finfo, char *prefix)
 
   }
 
-  strcpy(finfo->name, prefix);
+  pstrcpy(finfo->name, prefix);
 
   /* use l + 1 to do the null too; do prefix - prefcnt to zap leading slash */
   unfixtarname(finfo->name + strlen(prefix), hb->dbuf.name,
@@ -574,9 +574,9 @@ static int do_setrtime(char *fname, int mtime)
 
   }
 
-  strcpy(name, fname);
-  strcpy(fname, "\\");
-  strcat(fname, name);
+  pstrcpy(name, fname);
+  pstrcpy(fname, "\\");
+  pstrcat(fname, name);
 
   inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -599,7 +599,7 @@ static int do_setrtime(char *fname, int mtime)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p, fname);
+  pstrcpy(p, fname);
   p+= (strlen(fname)+1);
 
   *p++ = 4;
@@ -634,9 +634,9 @@ static int do_setrattr(char *fname, int attr, int setit)
   pstring name;
   int fattr;
 
-  strcpy(name,fname);
-  strcpy(fname,"\\");
-  strcat(fname,name);
+  pstrcpy(name,fname);
+  pstrcpy(fname,"\\");
+  pstrcat(fname,name);
 
   inbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   outbuf = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -657,7 +657,7 @@ static int do_setrattr(char *fname, int attr, int setit)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p,fname);
+  pstrcpy(p,fname);
   p += (strlen(fname)+1);
   
   *p++ = 4;
@@ -695,7 +695,7 @@ static int do_setrattr(char *fname, int attr, int setit)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,fname);
+  pstrcpy(p,fname);
   p += (strlen(fname)+1);
   
   *p++ = 4;
@@ -736,7 +736,7 @@ static BOOL smbcreat(file_info2 finfo, int *fnum, char *inbuf, char *outbuf)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,finfo.name);
+  pstrcpy(p,finfo.name);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -844,7 +844,7 @@ static BOOL smbchkpath(char *fname, char *inbuf, char *outbuf)
 
   p = smb_buf(outbuf);
   *p++ = 4;
-  strcpy(p,fname);
+  pstrcpy(p,fname);
 
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -871,7 +871,7 @@ static BOOL smbmkdir(char *fname, char *inbuf, char *outbuf)
   
   p = smb_buf(outbuf);
   *p++ = 4;      
-  strcpy(p,fname);
+  pstrcpy(p,fname);
   
   send_smb(Client,outbuf);
   client_receive_smb(Client,inbuf,CLIENT_TIMEOUT);
@@ -913,7 +913,7 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
 
   /* fname copied to ffname so can strtok */
 
-  strcpy(ffname, fname);
+  pstrcpy(ffname, fname);
 
   /* do a `basename' on ffname, so don't try and make file name directory */
   if ((basehack=strrchr(ffname, '\\')) == NULL)
@@ -925,7 +925,7 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
 
   while (p)
     {
-      strcat(partpath, p);
+      pstrcat(partpath, p);
 
       if (!smbchkpath(partpath, inbuf, outbuf)) {
 	if (!smbmkdir(partpath, inbuf, outbuf))
@@ -938,7 +938,7 @@ static BOOL ensurepath(char *fname, char *inbuf, char *outbuf)
 
       }
 
-      strcat(partpath, "\\");
+      pstrcat(partpath, "\\");
       p = strtok(NULL,"/\\");
     }
 
@@ -1014,7 +1014,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
   SSVAL(outbuf,smb_vwv8,1);
 
   p = smb_buf(outbuf);
-  strcpy(p,rname);
+  pstrcpy(p,rname);
   p = skip_string(p,1);
 
   dos_clean_name(rname);
@@ -1052,7 +1052,7 @@ static void do_atar(char *rname,char *lname,file_info *finfo1)
       return;
     }
 
-  strcpy(finfo.name,rname);
+  pstrcpy(finfo.name,rname);
   if (!finfo1)
     {
       finfo.mode = SVAL(inbuf,smb_vwv3);
@@ -1388,11 +1388,11 @@ static void do_tar(file_info *finfo)
   if (!tar_excl && clipn) {
     pstring exclaim;
 
-    strcpy(exclaim, cur_dir);
+    pstrcpy(exclaim, cur_dir);
     *(exclaim+strlen(exclaim)-1)='\0';
 
-    strcat(exclaim, "\\");
-    strcat(exclaim, finfo->name);
+    pstrcat(exclaim, "\\");
+    pstrcat(exclaim, finfo->name);
 
     DEBUG(5, ("...tar_re_search: %d\n", tar_re_search));
 
@@ -1422,10 +1422,10 @@ static void do_tar(file_info *finfo)
 	  return;
 	}
 
-      strcpy(saved_curdir,cur_dir);
+      pstrcpy(saved_curdir,cur_dir);
 
-      strcat(cur_dir,finfo->name);
-      strcat(cur_dir,"\\");
+      pstrcat(cur_dir,finfo->name);
+      pstrcat(cur_dir,"\\");
 
       DEBUG(5, ("Writing a dir, Name = %s\n", cur_dir));
 
@@ -1433,16 +1433,16 @@ static void do_tar(file_info *finfo)
        * 40755 */
       writetarheader(tarhandle, cur_dir, 0, finfo->mtime, "040755 \0", '5');
       ntarf++;  /* Make sure we have a file on there */
-      strcpy(mtar_mask,cur_dir);
-      strcat(mtar_mask,"*");
+      pstrcpy(mtar_mask,cur_dir);
+      pstrcat(mtar_mask,"*");
       /*      do_dir((char *)inbuf,(char *)outbuf,mtar_mask,attribute,do_tar,recurse,True); */
-	      strcpy(cur_dir,saved_curdir);
+	      pstrcpy(cur_dir,saved_curdir);
       free(inbuf);free(outbuf);
     }
   else
     {
-      strcpy(rname,cur_dir);
-      strcat(rname,finfo->name);
+      pstrcpy(rname,cur_dir);
+      pstrcat(rname,finfo->name);
       do_atar(rname,finfo->name,finfo);
     }
 }
@@ -2060,8 +2060,8 @@ void cmd_setmode(char *dum_in, char *dum_out)
       return;
     }
 
-  strcpy(fname, cur_dir);
-  strcat(fname, buf);
+  pstrcpy(fname, cur_dir);
+  pstrcat(fname, buf);
 
   while (next_token(NULL,buf,NULL)) {
     q=buf;
@@ -2153,29 +2153,29 @@ int process_tar(char *inbuf, char *outbuf)
 	if (strrchr(cliplist[i], '\\')) {
 	  pstring saved_dir;
 	  
-	  strcpy(saved_dir, cur_dir);
+	  pstrcpy(saved_dir, cur_dir);
 	  
 	  if (*cliplist[i]=='\\') {
-	    strcpy(tarmac, cliplist[i]);
+	    pstrcpy(tarmac, cliplist[i]);
 	  } else {
-	    strcpy(tarmac, cur_dir);
-	    strcat(tarmac, cliplist[i]);
+	    pstrcpy(tarmac, cur_dir);
+	    pstrcat(tarmac, cliplist[i]);
 	  }
-	  strcpy(cur_dir, tarmac);
+	  pstrcpy(cur_dir, tarmac);
 	  *(strrchr(cur_dir, '\\')+1)='\0';
 
 	  do_dir((char *)inbuf,(char *)outbuf,tarmac,attribute,do_tar,recurse, True);
-	  strcpy(cur_dir,saved_dir);
+	  pstrcpy(cur_dir,saved_dir);
 	} else {
-	  strcpy(tarmac, cur_dir);
-	  strcat(tarmac, cliplist[i]);
+	  pstrcpy(tarmac, cur_dir);
+	  pstrcat(tarmac, cliplist[i]);
 	  do_dir((char *)inbuf,(char *)outbuf,tarmac,attribute,do_tar,recurse, True);
 	}
       }
     } else {
       pstring mask;
-      strcpy(mask,cur_dir);
-      strcat(mask,"\\*");
+      pstrcpy(mask,cur_dir);
+      pstrcat(mask,"\\*");
       do_dir((char *)inbuf,(char *)outbuf,mask,attribute,do_tar,recurse, True);
     }
     

@@ -84,7 +84,7 @@ static void do_dirrand(char *name, unsigned char *buf, int buf_len)
       struct stat st;
 
       if(strlen(p) <= len_left)
-        strcpy(pos, p);
+        pstrcpy(pos, p);
 
       if(sys_stat(fullname,&st) == 0) {
         SIVAL(buf, ((counter * 4)%(buf_len-4)), 

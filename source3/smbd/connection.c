@@ -48,9 +48,9 @@ BOOL yield_connection(int cnum,char *name,int max_connections)
 	pstrcpy(fname,lp_lockdir());
 	trim_string(fname,"","/");
 
-	strcat(fname,"/");
-	strcat(fname,name);
-	strcat(fname,".LCK");
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+	pstrcat(fname,".LCK");
 
 	fd = open(fname,O_RDWR);
 	if (fd == -1) {
@@ -133,9 +133,9 @@ BOOL claim_connection(int cnum,char *name,int max_connections,BOOL Clear)
 	if (!directory_exist(fname,NULL))
 		mkdir(fname,0755);
 	
-	strcat(fname,"/");
-	strcat(fname,name);
-	strcat(fname,".LCK");
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+	pstrcat(fname,".LCK");
 	
 	if (!file_exist(fname,NULL)) {
 		fd = open(fname,O_RDWR|O_CREAT|O_EXCL, 0644);
