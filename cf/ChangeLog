@@ -1,5 +1,7 @@
 2000-11-30  Johan Danielsson  <joda@pdc.kth.se>
 
+	* check-man.m4: update this after recent changes
+
 	* Makefile.am.common: use install-catman.sh
 
 	* install-catman.sh: script to install preformatted manual pages
