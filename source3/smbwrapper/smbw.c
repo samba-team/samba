@@ -531,12 +531,9 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		/* it might be a directory. Maybe we should use chkpath? */
 		eno = smbw_error(&srv->cli);
 		fd = smbw_dir_open(fname);
+		if (fd == -1) errno = eno;
 		smbw_busy--;
 		return fd;
-	}
-	if (fd == -1) {
-		errno = eno;
-		goto failed;
 	}
 
 	file = (struct smbw_file *)malloc(sizeof(*file));
