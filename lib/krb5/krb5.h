@@ -196,7 +196,7 @@ typedef struct krb5_context_data{
     krb5_enctype *etypes;
     char *default_realm;
     krb5_config_section *cf;
-    struct error_list *et_list;
+    struct error_table *et_list;
     krb5_cc_ops *cc_ops;
     int num_ops;
 } krb5_context_data;
@@ -842,17 +842,6 @@ krb5_cksumsize(krb5_context,
 #include "cache.h"
 
 #include "keytab.h"
-
-struct error_table {
-    char const * const * msgs;
-    long base;
-    int n_msgs;
-};
-
-struct error_list {
-    struct error_list *next;
-    const struct error_table * table;
-};
 
 const char *krb5_get_err_text(krb5_context context, long code);
 
