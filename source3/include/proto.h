@@ -1903,9 +1903,9 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name);
 BOOL samr_query_dom_info(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *domain_pol, uint16 switch_value,
 				SAM_UNK_CTR *ctr);
-BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
+uint32 samr_enum_dom_groups(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol,
-				uint32 start_idx, uint32 size,
+				uint32 *start_idx, uint32 size,
 				struct acct_info **sam,
 				uint32 *num_sam_groups);
 BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum, 

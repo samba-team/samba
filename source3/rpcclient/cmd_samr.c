@@ -1397,7 +1397,7 @@ int msrpc_sam_enum_users(struct client_info *info,
 	uint16 acb_mask = 0;
 	uint16 unk_1 = 0x0;
 	uint32 ace_perms = 0x304; /* access control permissions */
-	uint32 status = STATUS_MORE_ENTRIES;
+	uint32 status;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
 	POLICY_HND pol_blt;
@@ -1450,13 +1450,14 @@ int msrpc_sam_enum_users(struct client_info *info,
 	if (res1)
 	{
 		/* read some users */
-		while (status == STATUS_MORE_ENTRIES)
+		do
 		{
 			status = samr_enum_dom_users(smb_cli, fnum, 
 			     &pol_dom,
-			     &start_idx, acb_mask, unk_1, 0x10000,
+			     &start_idx, acb_mask, unk_1, 0x100000,
 			     sam, num_sam_entries);
-		}
+
+		} while (status == STATUS_MORE_ENTRIES);
 
 		if ((*num_sam_entries) == 0)
 		{
@@ -2137,9 +2138,9 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 	DOM_SID sid1;
 	BOOL res = True;
 	uint32 ace_perms = 0x02000000; /* access control permissions. */
-	uint32 group_idx;
 	POLICY_HND sam_pol;
 	POLICY_HND pol_dom;
+	uint32 status;
 
 	sid_copy(&sid1, &info->dom.level5_sid);
 
@@ -2175,19 +2176,25 @@ uint32 msrpc_sam_enum_groups(struct client_info *info,
 
 	(*sam) = NULL;
 
-	/* read some groups */
-	res = res ? samr_enum_dom_groups(smb_cli, fnum,
-	                        &pol_dom,
-	                        0x0, 0x100000,
-	                        sam, num_sam_entries) : False;
-
-	if (res && (*num_sam_entries) == 0)
-	{
-		report(out_hnd, "No groups\n");
-	}
-
 	if (res)
 	{
+		uint32 group_idx;
+		uint32 start_idx = 0;
+		/* read some groups */
+		do
+		{
+			status = samr_enum_dom_groups(smb_cli, fnum, 
+			     &pol_dom,
+			     &start_idx, 0x100000,
+			     sam, num_sam_entries);
+
+		} while (status == STATUS_MORE_ENTRIES);
+
+		if ((*num_sam_entries) == 0)
+		{
+			report(out_hnd, "No groups\n");
+		}
+
 		for (group_idx = 0; group_idx < (*num_sam_entries); group_idx++)
 		{
 			uint32 group_rid = (*sam)[group_idx].rid;
@@ -2236,8 +2243,8 @@ void cmd_sam_enum_groups(struct client_info *info)
 	BOOL request_group_info = False;
 	fstring tmp;
 	int i;
-	struct acct_info *sam;
-	uint32 num_sam_entries;
+	struct acct_info *sam = NULL;
+	uint32 num_sam_entries = 0;
 
 	for (i = 0; i < 3; i++)
 	{
