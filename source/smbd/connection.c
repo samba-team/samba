@@ -141,13 +141,17 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		 * locked. This is slow but removes race conditions. JRA.
 		 */
 
-		if (tdb_chainlock(tdb, lockkey))
+		if (tdb_chainlock(tdb, lockkey)) {
+			DEBUG(0,("claim_connection: tdb_chainlock failed %s\n",
+				tdb_errorstr(tdb) ));
 			return False;
+		}
 
 		rec_locked = True;
 
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
-			DEBUG(0,("claim_connection: traverse of connections.tdb failed.\n"));
+			DEBUG(0,("claim_connection: traverse of connections.tdb failed with error %s.\n",
+				tdb_errorstr(tdb) ));
 			ret = False;
 			goto out;
 		}
@@ -190,8 +194,11 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);
 
-	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0)
+	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
+		DEBUG(0,("claim_connection: tdb_store failed with error %s.\n",
+			tdb_errorstr(tdb) ));
 		ret = False;
+	}
 
   out:
 
