@@ -182,6 +182,91 @@ test_init_vs_destroy(krb5_context context, const krb5_cc_ops *ops)
     krb5_free_principal(context, p2);
 }
 
+static void
+test_fcache_remove(krb5_context context)
+{
+    krb5_error_code ret;
+    krb5_ccache id;
+    krb5_principal p;
+    krb5_creds cred;
+
+    ret = krb5_parse_name(context, "lha@SU.SE", &p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_gen_new");
+
+    ret = krb5_cc_initialize(context, id, p);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+    /* */
+    memset(&cred, 0, sizeof(cred));
+    ret = krb5_parse_name(context, "krbtgt/SU.SE@SU.SE", &cred.server);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+    ret = krb5_parse_name(context, "lha@SU.SE", &cred.client);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_parse_name");
+
+    ret = krb5_cc_store_cred(context, id, &cred);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_store_cred");
+
+    ret = krb5_cc_remove_cred(context, id, 0, &cred);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_remove_cred");
+
+    ret = krb5_cc_destroy(context, id);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_cc_destroy");
+
+    //krb5_cc_destroy(context, id);
+    krb5_free_principal(context, p);
+    krb5_free_principal(context, cred.server);
+    krb5_free_principal(context, cred.client);
+}
+
+static void
+test_mcc_default(void)
+{
+    krb5_context context;
+    krb5_error_code ret;
+    krb5_ccache id, id2;
+    int i;
+
+    for (i = 0; i < 10; i++) {
+
+	ret = krb5_init_context(&context);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_init_context");
+
+	ret = krb5_cc_set_default_name(context, "MEMORY:foo");
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_set_default_name");
+
+	ret = krb5_cc_default(context, &id);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_default");
+
+	ret = krb5_cc_default(context, &id2);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_default");
+
+	ret = krb5_cc_close(context, id);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_close");
+
+	ret = krb5_cc_close(context, id2);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_close");
+
+	krb5_free_context(context);
+    }
+}
+
 int
 main(int argc, char **argv)
 {
@@ -194,10 +279,12 @@ main(int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
 
+    test_fcache_remove(context);
     test_default_name(context);
     test_mcache(context);
     test_init_vs_destroy(context, &krb5_mcc_ops);
     test_init_vs_destroy(context, &krb5_fcc_ops);
+    test_mcc_default();
 
     krb5_free_context(context);
 
