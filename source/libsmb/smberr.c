@@ -78,6 +78,7 @@ err_code_struct dos_msgs[] = {
   {"ERRlogonfailure",ERRlogonfailure,"Logon failure"},
   {"ERRdiskfull",ERRdiskfull,"Disk full"},
   {"ERRgeneral",ERRgeneral, "General failure"},
+  {"ERRunknownlevel",ERRunknownlevel, "Unknown info level"},
   {NULL,-1,NULL}};
 
 /* Server Error Messages */

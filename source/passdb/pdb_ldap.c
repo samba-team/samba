@@ -155,9 +155,9 @@ static BOOL ldap_open_connection (LDAP ** ldap_struct)
 	/* Connect to older servers using SSL and V2 rather than Start TLS */
 	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
 	{
-		if (version != LDAP_VERSION2)
+		if (version != LDAP_VERSION3)
 		{
-			version = LDAP_VERSION2;
+			version = LDAP_VERSION3;
 			ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
 		}
 	}
