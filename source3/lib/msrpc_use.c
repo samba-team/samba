@@ -23,7 +23,6 @@
 #define NO_SYSLOG
 
 #include "includes.h"
-#include "trans2.h"
 
 extern int DEBUGLEVEL;
 extern pstring global_myname;

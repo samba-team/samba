@@ -25,8 +25,6 @@
 
 
 #include "includes.h"
-#include "trans2.h"
-#include "nterr.h"
 
 /* look in server.c for some explanation of these variables */
 extern int Protocol;

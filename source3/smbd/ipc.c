@@ -27,7 +27,6 @@
    */
 
 #include "includes.h"
-#include "nterr.h"
 
 extern int DEBUGLEVEL;
 extern int max_send;

@@ -27,7 +27,6 @@
 
 
 #include "includes.h"
-#include "trans2.h"
 
 #define	PIPE		"\\PIPE\\"
 #define	PIPELEN		strlen(PIPE)

@@ -27,7 +27,6 @@
    */
 
 #include "includes.h"
-#include "nterr.h"
 
 #ifdef CHECK_TYPES
 #undef CHECK_TYPES

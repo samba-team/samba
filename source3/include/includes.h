@@ -605,6 +605,8 @@ extern int errno;
 #include "talloc.h"
 #include "interfaces.h"
 #include "hash.h"
+#include "trans2.h"
+#include "nterr.h"
 
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
@@ -866,5 +868,7 @@ int setresgid(gid_t rgid, gid_t egid, gid_t sgid);
 #ifdef HAVE_LIBDL
 #include <dlfcn.h>
 #endif
+
+extern int DEBUGLEVEL;
 
 #endif /* _INCLUDES_H */

@@ -20,7 +20,6 @@
 */
 
 #include "includes.h"
-#include "trans2.h"
 
 pstring servicesf = CONFIGFILE;
 extern pstring debugf;
