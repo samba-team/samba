@@ -1,0 +1,278 @@
+.TH "SAMEDIT" "8" "March 27 2000" "SambaTNG" "SAMBA" 
+.SH "NAME" 
+samedit \- Security Access Manager editor
+.SH "SYNOPSIS" 
+.YODLTAGSTART. roffcmd .IP "\fBsamedit\fP [-d debuglevel] [-S server] [-l logbasename] [-n netbios name] [-N]
+[-m maxprotocol] [-I destIP] [-E] [-U username] [-W workgroup] [-c `command string`]
+[-t terminalcode] [-i scope] [-O socket options]
+[-s smb\&.conf]" .YODLTAGEND. 
+.SH "DESCRIPTION" 
+used for editing the Security Access Manager (SAM) database\&. The SAM
+database is the portion of the NT registry that holds the user and
+machine account information and passwords\&. Samedit can also do a number of
+tests and queries on the SAM database\&.
+.SH "OPTIONS" 
+.PP 
+.IP "\fB-d debuglevel\fP" 
+set the debuglevel\&. Debug level 0 is the lowest and 100 being the
+highest\&. This should be set to 100 if you are planning on 
+submitting a bug report to the Samba team (see BUGS\&.txt)\&.
+.PP 
+.IP "\fB-S server\fP" 
+NetBIOS name of Server to connect to (\e\e\&. or \&.
+for localhost)\&. The server can be any SMB/CIFS server\&. The name is resolved
+using either the "name resolve order = " line or by using the
+\fB-R\fP option\&.
+.PP 
+.IP "\fB-l logbasename\fP" 
+File name for log/debug files\&. \&.client will be
+appended\&. The log file is never removed  by the client\&.
+.PP 
+.IP "\fB-n netbios name\fP" 
+NetBIOS name of the local machine\&. This option
+is only needed if your Samba client cannot find
+it automatically\&. Samba should use the uppercase of the machine\'s
+hostname\&.
+.PP 
+.IP "\fB-N\fP" 
+tells samedit not to ask for a password\&. samedit will prompt
+the user by default\&.
+.PP 
+.IP "\fB-m max protocol\fP" 
+is ignored in Samba TNG\&. It is included only for backwards compatibility\&.
+.PP 
+.IP "\fB-I destIP\fP" 
+The IP address of the server specified with the \fB-S\fP
+option\&. Only needed when the server\'s NetBIOS
+name cannot be resolved using WINS or broadcast
+and isn\'t found in the LMHOSTS file\&.
+.PP 
+.IP "\fB-E\fP" 
+causes regedit to write messages to stderr instead of stdout\&.
+.PP 
+.IP "\fB-U username[%pass]\fP" 
+Sets the SMB username or username and password\&. If %pass is not
+specified, The user will be prompted\&. The client will first check the USER
+environment variable, then the LOGNAME variable and if either exist, the
+string is uppercased\&. Anything in these variables following a % sign will be
+treated as the password\&. If these environmental variables are not found, the
+username GUEST is used\&.
+.PP 
+.IP "\fB-W domain\fP" 
+Set the SMB domain\&. Note that this is very different
+from the DNS domain name\&. For information on NT domains,
+consult
+\fBLars Kneschke\'s Samba TNG FAQ\fP at if(http://www\&.kneschke\&.de/projekte/samba_tng/)\&.
+This overrides the default domain which is the domain of the server specified
+with the bt(-S) option\&. If the domain specified is the same as the server\'s NetBIOS
+name, it causes the client to log on using the server\'s local SAM (as opposed to the
+Domain SAM)\&.
+.PP 
+.IP "\fB-c \'command string\'\fP" 
+execute semicolon separated commands (listed below))
+.PP 
+.IP "\fB-t terminalcode\fP" 
+This tells the Samba client how to interpret the incoming filenames, in regards
+to character sets\&. The list here is not complete\&. For a complete list see your
+local Samba source\&. Some valid options are sjis, euc, jis7, jis8, junet and hex\&.
+.PP 
+.IP "\fB-O socket options\fP" 
+These socket options are the same as in smb\&.conf (under the bt(socket options = )
+section)\&.
+.PP 
+.IP "\fB-s smb\&.conf\fP" 
+Specifies the location of the all important smb\&.conf file\&.
+.PP 
+.IP "\fB-i scope\fP" 
+Defines the NetBIOS scope\&. For more information on NetBIOS scopes, see rfc1001
+and rfc1002\&. NetBIOS scopes are rarely used\&.
+.PP 
+.SH "COMMANDS" 
+.PP 
+.IP "ntlogin" 
+.IP "domtrust" 
+.IP "samsync" 
+.IP "lookupdomain" 
+.IP "lookuprids" 
+.IP "samlookupnames" 
+.IP "enumusers" 
+.IP "addgroupmem" 
+.IP "addaliasmem" 
+.IP "delgroupmem" 
+.IP "delaliasmem" 
+.IP "creategroup" 
+.IP "createalias" 
+.IP "createuser" 
+.IP "deluser" 
+.IP "delgroup" 
+.IP "delalias" 
+.IP "ntpass" 
+.IP "samquerysync" 
+.IP "samuserset2" 
+.IP "samuserset" 
+.IP "samuser" 
+.IP "samgroup" 
+.IP "samalias" 
+.IP "samaliasmem" 
+.IP "samgroupmem" 
+.IP "samtest" 
+.IP "enumaliases" 
+.IP "enumdomains" 
+.IP "enumgroups" 
+.IP "enumprivs" 
+.IP "lsaenumsids" 
+.IP "dominfo" 
+.IP "dispinfo" 
+.IP "set" 
+.IP "use" 
+.IP "help" 
+.IP "quit" 
+.PP 
+.IP "\fBntlogin [username]\fP" 
+Logs into an NT domain as \fBusername\&.\fP
+If username is not specified, the current Unix username is used\&.
+.PP 
+.IP "\fBdomtrust\fP" 
+Experimental NT netlogon test
+.PP 
+.IP "\fBsamsync\fP" 
+Experimental command that Synchronises the
+\fBSAM database\fP
+on a Backup Domain Controller with a Primary Domain Controller\&. For
+information on Domain Controllers, see Lars Kneschke\'s Samba TNG FAQ at
+if(http://www\&.kneschke\&.de/projekte/samba_tng/)
+.PP 
+.IP "\fBlookupdomain\fP" 
+Returns the SID string for the local NT domain\&.
+.PP 
+.IP "\fBsamlookuprids [-d domain] <RID> [<RID>\&.\&.\&.]\fP" 
+Return a value associated with a specified RID in the specified NT domain
+.PP 
+.IP "\fBsamlookupnames [-d domain] <name> [<name>\&.\&.\&.]\fP" 
+Return a RID associated with the specified name(s) in the specified NT domain
+.PP 
+.IP "\fBenumusers\fP" 
+Experimental SAM database query command
+.PP 
+.IP "\fBaddgroupmem <grouprid> [user\&.\&.\&.]\fP" 
+Adds a user to the group specified by
+\fBgrouprid\&.\fP
+.PP 
+.IP "\fBaddaliasmem <grouprid> [member sid\&.\&.\&.]\fP" 
+Adds a Domain Alias member
+.PP 
+.IP "\fBdelgroupmem <grouprid> [user\&.\&.\&.]\fP" 
+Removes members from the group specified by
+\fBgrouprid\&.\fP
+.PP 
+.IP "\fBdelaliasmem <grouprid> [member sid\&.\&.\&.]\fP" 
+Removes a Domain Alias member
+.PP 
+.IP "\fBcreategroup <group>\fP" 
+Creates a domainwide (Global) group in the domain\&.
+.PP 
+.IP "\fBcreatealias <alias>\fP" 
+Creates a domain alias\&.
+.PP 
+.IP "\fBcreateuser <accountname> [-s] [-j] DOMAIN\fP" 
+Creates an account in the NT domain\&. This account can be either a user account
+or a machine trust account (ending in a `$` sign)\&. The -s option is for
+server (BDC) account and -j will tell samba to try and join the specified
+machine account to the specified domain\&.
+.PP 
+.IP "\fBdeluser <accountname>\fP" 
+Removes an account from the domain\&.
+.PP 
+.IP "\fBdelgroup <group name>\fP" 
+Removes a group from the domain\&.
+.PP 
+.IP "\fBdelalias <alias name>\fP" 
+Removes an alias from the domain\&.
+.PP 
+.IP "\fBntpass\fP" 
+Change the NT password\&.
+.PP 
+.IP "\fBsamquerysec <user name>\fP" 
+Query SAM security object
+.PP 
+.IP "\fBsamuserset2 <user> [-p password]\fP" 
+and
+.PP 
+.IP "\fBsamuserset <user> [-p password]\fP" 
+Set the a user\'s password
+.PP 
+.IP "\fBsamuser <name> [-a | -u | -g]\fP" 
+Do a query on a username in the SAM database\&. The option that follows the \fBname\fP can be an alias \fB-a\fP, a user account
+\fB-u\fP or a group account \fB-g\fP\&.
+.PP 
+.IP "\fBsamgroup <name>\fP" 
+Do a SAM query on a group account\&.
+.PP 
+.IP "\fBsamalias <name>\fP" 
+Do a SAM query on an alias account
+.PP 
+.IP "\fBsamaliasmem <name>\fP" 
+Query SAM alias members\&.
+.PP 
+.IP "\fBsamgroupmem\fP" 
+Do a SAM query on group members
+.PP 
+.IP "\fBsamtest\fP" 
+encrypted RPC-based SAM test
+.PP 
+.IP "\fBenumaliases\fP" 
+experimental SAM alias query
+.PP 
+.IP "\fBenumdomains\fP" 
+expermental domain query
+.PP 
+.IP "\fBenumgroups\fP" 
+experimental SAM group query
+.PP 
+.IP "\fBenumprivs [-i]\fP" 
+Lists the short (internal) names of all the privileges/rights known by the
+current server\&. With the -i, it will also show the long textual
+representation (currently in German ;-))\&.
+.PP 
+.IP "\fBlsaenumsids\fP" 
+Show the SIDs that have privileges assigned to them
+.PP 
+.IP "\fBdominfo\fP" 
+experimental domain info query
+.PP 
+.IP "\fBdispinfo\fP" 
+SAM query display info
+.PP 
+.IP "\fBset [OPTIONS\&.\&.\&.]\fP" 
+Runs samedit within itself (thus allowing command line options to be changed)\&.
+Set\'s options are the same as the Command line options listed above\&.
+.PP 
+.IP "\fBuse [\e\eServer] [-U user%pass] [-W domain] [-d] [-f]\fP" 
+or
+.PP 
+.IP "\fBuse -u\fP" 
+Equivalent of the net view and net use commands\&. Can be used to browse browse
+lists and connect to remote services\&. The net -u command shows all current
+connections\&. The -W option sets the NT domain\&. To delete a connection, use the
+-d option and -f forcibly deletes a connection\&.
+.PP 
+.IP "\fBhelp, ?\fP" 
+Shows all commands or help on a specific command\&.
+.PP 
+.IP "\fBquit, exit, bye\fP" 
+Exits the utility
+.PP 
+.SH "BUGS" 
+Samba TNG is still in alpha stage and considered not suitable for production use\&.
+.PP 
+From Luke Leighton\'s original rpcclient man page:
+"WARNING! The MSRPC over SMB code has been developed from examining Network traces\&. No documentation is available from the original creators (Microsoft) on how MSRPC over SMB works, or how the individual MSRPC services work\&. Microsoft\'s implementation of these services has been demonstrated (and reported) to be\&.\&.\&. a bit flakey in places\&.
+.PP 
+The development of Samba\'s implementation is also a bit rough, and as more of the services are understood, it can even result in versions of \fBsmbd(8)\fP and rpcclient that are incompatible for some commands or services\&. Additionally, the developers are sending reports to Microsoft, and problems found or reported to Microsoft are fixed in Service Packs, which may result in incompatabilities\&."
+.PP 
+.SH "SEE ALSO" 
+samba (7),
+regedit (8)
+.PP 
+.SH "AUTHOR" 
+Samba is written by The Samba Team as open source\&. This man page was written by Matthew Geddes and has strongly "borrowed" from Luke Kenneth Casson Leighton\'s original rpcclient man page and wise words and the Samba source\&.

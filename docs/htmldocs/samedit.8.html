@@ -1,0 +1,302 @@
+
+
+
+
+
+<html><head><title>SAMEDIT</title>
+
+<link rev="made" href="mailto:samba-bugs@samba.org">
+</head>
+<body>
+
+<hr>
+
+<h1>SAMEDIT</h1>
+<h2>SambaTNG</h2>
+<h2>March 27 2000</h2>
+
+
+    
+<a name="NAME"></a>
+<h2>NAME</h2>
+    samedit - Security Access Manager editor
+<a name="SYNOPSIS"></a>
+<h2>SYNOPSIS</h2>
+    
+<p></p><dt><strong><strong>samedit</strong> [<a href="samedit.8.html#minusd">-d debuglevel</a>] [<a href="samedit.8.html#minusS">-S server</a>] [<a href="samedit.8.html#minusl">-l logbasename</a>] [<a href="samedit.8.html#minusn">-n netbios name</a>] [<a href="samedit.8.html#minusN">-N</a>]
+[<a href="samedit.8.html#minusl">-m maxprotocol</a>] [<a href="samedit.8.html#minusI">-I destIP</a>] [<a href="samedit.8.html#minusE">-E</a>] [<a href="samedit.8.html#minusU">-U username</a>] [<a href="samedit.8.html#minusW">-W workgroup</a>] [<a href="samedit.8.html#minusc">-c `command string`</a>]
+[<a href="samedit.8.html#minust">-t terminalcode</a>] [<a href="samedit.8.html#minusi">-i scope</a>] [<a href="samedit.8.html#minusO">-O socket options</a>]
+[<a href="samedit.8.html#minuss">-s smb.conf</a>]</strong><dd>
+<a name="DESCRIPTION"></a>
+<h2>DESCRIPTION</h2>
+    
+used for editing the Security Access Manager (SAM) database. The SAM
+database is the portion of the NT registry that holds the user and
+machine account information and passwords. Samedit can also do a number of
+tests and queries on the SAM database.
+<a name="OPTIONS"></a>
+<h2>OPTIONS</h2>
+    
+<p><a name="minusd"></a>
+<p></p><dt><strong><strong>-d debuglevel</strong></strong><dd>
+set the debuglevel. Debug level 0 is the lowest and 100 being the
+highest. This should be set to 100 if you are planning on 
+submitting a bug report to the Samba team (see BUGS.txt).
+<p><a name="minusS"></a>
+<p></p><dt><strong><strong>-S server</strong></strong><dd>
+NetBIOS name of Server to connect to (\\. or .
+for localhost). The server can be any SMB/CIFS server. The name is resolved
+using either the "name resolve order = " line or by using the
+<strong>-R</strong> option.
+<p><a name="minusl"></a>
+<p></p><dt><strong><strong>-l logbasename</strong></strong><dd>
+File name for log/debug files. .client will be
+appended. The log file is never removed  by the client.
+<p><a name="minusn"></a>
+<p></p><dt><strong><strong>-n netbios name</strong></strong><dd>
+NetBIOS name of the local machine. This option
+is only needed if your Samba client cannot find
+it automatically. Samba should use the uppercase of the machine's
+hostname.
+<p><a name="minusN"></a>
+<p></p><dt><strong><strong>-N</strong></strong><dd>
+tells samedit not to ask for a password. samedit will prompt
+the user by default.
+<p><a name="minusm"></a>
+<p></p><dt><strong><strong>-m max protocol</strong></strong><dd>
+is ignored in Samba TNG. It is included only for backwards compatibility.
+<p><a name="minusI"></a>
+<p></p><dt><strong><strong>-I destIP</strong></strong><dd>
+The IP address of the server specified with the <strong>-S</strong>
+option. Only needed when the server's NetBIOS
+name cannot be resolved using WINS or broadcast
+and isn't found in the LMHOSTS file.
+<p><a name="minusE"></a>
+<p></p><dt><strong><strong>-E</strong></strong><dd>
+causes regedit to write messages to stderr instead of stdout.
+<p><a name="minusU"></a>
+<p></p><dt><strong><strong>-U username[%pass]</strong></strong><dd>
+Sets the SMB username or username and password. If %pass is not
+specified, The user will be prompted. The client will first check the USER
+environment variable, then the LOGNAME variable and if either exist, the
+string is uppercased. Anything in these variables following a % sign will be
+treated as the password. If these environmental variables are not found, the
+username GUEST is used.
+<p><a name="minusW"></a>
+<p></p><dt><strong><strong>-W domain</strong></strong><dd>
+Set the SMB domain. Note that this is very different
+from the DNS domain name. For information on NT domains,
+consult
+<strong>Lars Kneschke's Samba TNG FAQ</strong> at if(http://www.kneschke.de/projekte/samba_tng/).
+This overrides the default domain which is the domain of the server specified
+with the bt(-S) option. If the domain specified is the same as the server's NetBIOS
+name, it causes the client to log on using the server's local SAM (as opposed to the
+Domain SAM).
+<p><a name="minusc"></a>
+<p></p><dt><strong><strong>-c 'command string'</strong></strong><dd>
+execute semicolon separated commands (listed below))
+<p><a name="minust"></a>
+<p></p><dt><strong><strong>-t terminalcode</strong></strong><dd>
+This tells the Samba client how to interpret the incoming filenames, in regards
+to character sets. The list here is not complete. For a complete list see your
+local Samba source. Some valid options are sjis, euc, jis7, jis8, junet and hex.
+<p><a name="minusO"></a>
+<p></p><dt><strong><strong>-O socket options</strong></strong><dd>
+These socket options are the same as in smb.conf (under the bt(socket options = )
+section).
+<p><a name="minuss"></a>
+<p></p><dt><strong><strong>-s smb.conf</strong></strong><dd>
+Specifies the location of the all important smb.conf file.
+<p><a name="minusi"></a>
+<p></p><dt><strong><strong>-i scope</strong></strong><dd>
+Defines the NetBIOS scope. For more information on NetBIOS scopes, see rfc1001
+and rfc1002. NetBIOS scopes are rarely used.
+<p><a name="COMMANDS"></a>
+<h2>COMMANDS</h2>
+    
+<p><p></p><dt><strong><a href="samedit.8.html#NTLOGIN">ntlogin</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DOMTRUST">domtrust</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMSYNC">samsync</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#LOOKUPDOMAIN">lookupdomain</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#LOOKUPRIDS">lookuprids</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMLOOKUPNAMES">samlookupnames</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ENUMUSERS">enumusers</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ADDGROUPMEM">addgroupmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ADDALIASMEM">addaliasmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DELGROUPMEM">delgroupmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DELALIASMEM">delaliasmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#CREATEGROUP">creategroup</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#CREATEALIAS">createalias</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#CREATEUSER">createuser</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DELUSER">deluser</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DELGROUP">delgroup</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DELALIAS">delalias</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#NTPASS">ntpass</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMQUERYSYNC">samquerysync</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMUSERSET2">samuserset2</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMUSERSET">samuserset</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMUSER">samuser</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMGROUP">samgroup</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMALIAS">samalias</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMALIASMEM">samaliasmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMBAGROUPMEM">samgroupmem</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SAMTEST">samtest</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ENUMALIASES">enumaliases</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ENUMDOMAINS">enumdomains</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ENUMGROUPS">enumgroups</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#ENUMPRIVS">enumprivs</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#LSAENUMSIDS">lsaenumsids</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DOMINFO">dominfo</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#DISPINFO">dispinfo</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#SET">set</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#USE">use</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#HELP">help</a></strong><dd>
+<p></p><dt><strong><a href="samedit.8.html#QUIT">quit</a></strong><dd>
+<p><a name="NTLOGIN"></a>
+<p></p><dt><strong><strong>ntlogin [username]</strong></strong><dd>
+Logs into an NT domain as <strong>username.</strong>
+If username is not specified, the current Unix username is used.
+<p><a name="DOMTRUST"></a>
+<p></p><dt><strong><strong>domtrust</strong></strong><dd>
+Experimental NT netlogon test
+<p><a name="SAMSYNC"></a>
+<p></p><dt><strong><strong>samsync</strong></strong><dd>
+Experimental command that Synchronises the
+<strong>SAM database</strong>
+on a Backup Domain Controller with a Primary Domain Controller. For
+information on Domain Controllers, see Lars Kneschke's Samba TNG FAQ at
+if(http://www.kneschke.de/projekte/samba_tng/)
+<p><a name="LOOKUPDOMAIN"></a>
+<p></p><dt><strong><strong>lookupdomain</strong></strong><dd>
+Returns the SID string for the local NT domain.
+<p><a name="LOOKUPRIDS"></a>
+<p></p><dt><strong><strong>samlookuprids [-d domain] &lt;RID&gt; [&lt;RID&gt;...]</strong></strong><dd>
+Return a value associated with a specified RID in the specified NT domain
+<p><a name="SAMLOOKUPNAMES"></a>
+<p></p><dt><strong><strong>samlookupnames [-d domain] &lt;name&gt; [&lt;name&gt;...]</strong></strong><dd>
+Return a RID associated with the specified name(s) in the specified NT domain
+<p><a name="ENUMUSERS"></a>
+<p></p><dt><strong><strong>enumusers</strong></strong><dd>
+Experimental SAM database query command
+<p><a name="ADDGROUPMEM"></a>
+<p></p><dt><strong><strong>addgroupmem &lt;grouprid&gt; [user...]</strong></strong><dd>
+Adds a user to the group specified by
+<strong>grouprid.</strong>
+<p><a name="ADDALIASMEM"></a>
+<p></p><dt><strong><strong>addaliasmem &lt;grouprid&gt; [member sid...]</strong></strong><dd>
+Adds a Domain Alias member
+<p><a name="DELGROUPMEM"></a>
+<p></p><dt><strong><strong>delgroupmem &lt;grouprid&gt; [user...]</strong></strong><dd>
+Removes members from the group specified by
+<strong>grouprid.</strong>
+<p><a name="DELALIASMEM"></a>
+<p></p><dt><strong><strong>delaliasmem &lt;grouprid&gt; [member sid...]</strong></strong><dd>
+Removes a Domain Alias member
+<p><a name="CREATEGROUP"></a>
+<p></p><dt><strong><strong>creategroup &lt;group&gt;</strong></strong><dd>
+Creates a domainwide (Global) group in the domain.
+<p><a name="CREATEALIAS"></a>
+<p></p><dt><strong><strong>createalias &lt;alias&gt;</strong></strong><dd>
+Creates a domain alias.
+<p><a name="CREATEUSER"></a>
+<p></p><dt><strong><strong>createuser &lt;accountname&gt; [-s] [-j] DOMAIN</strong></strong><dd>
+Creates an account in the NT domain. This account can be either a user account
+or a machine trust account (ending in a `$` sign). The -s option is for
+server (BDC) account and -j will tell samba to try and join the specified
+machine account to the specified domain.
+<p><a name="DELUSER"></a>
+<p></p><dt><strong><strong>deluser &lt;accountname&gt;</strong></strong><dd>
+Removes an account from the domain.
+<p><a name="DELGROUP"></a>
+<p></p><dt><strong><strong>delgroup &lt;group name&gt;</strong></strong><dd>
+Removes a group from the domain.
+<p><a name="DELALIAS"></a>
+<p></p><dt><strong><strong>delalias &lt;alias name&gt;</strong></strong><dd>
+Removes an alias from the domain.
+<p><a name="NTPASS"></a>
+<p></p><dt><strong><strong>ntpass</strong></strong><dd>
+Change the NT password.
+<p><a name="SAMQUERYSYNC"></a>
+<p></p><dt><strong><strong>samquerysec &lt;user name&gt;</strong></strong><dd>
+Query SAM security object
+<p><a name="SAMUSERSET2"></a>
+<p></p><dt><strong><strong>samuserset2 &lt;user&gt; [-p password]</strong></strong><dd> and
+<p><a name="SAMUSERSET"></a>
+<p></p><dt><strong><strong>samuserset &lt;user&gt; [-p password]</strong></strong><dd>
+Set the a user's password
+<p><a name="SAMUSER"></a>
+<p></p><dt><strong><strong>samuser &lt;name&gt; [-a | -u | -g]</strong></strong><dd>
+Do a query on a username in the SAM database. The option that follows the <strong>name</strong> can be an alias <strong>-a</strong>, a user account
+<strong>-u</strong> or a group account <strong>-g</strong>.
+<p><a name="SAMGROUP"></a>
+<p></p><dt><strong><strong>samgroup &lt;name&gt;</strong></strong><dd>
+Do a SAM query on a group account.
+<p><a name="SAMALIAS"></a>
+<p></p><dt><strong><strong>samalias &lt;name&gt;</strong></strong><dd>
+Do a SAM query on an alias account
+<p><a name="SAMALIASMEM"></a>
+<p></p><dt><strong><strong>samaliasmem &lt;name&gt;</strong></strong><dd>
+Query SAM alias members.
+<p><a name="SAMBAGROUPMEM"></a>
+<p></p><dt><strong><strong>samgroupmem</strong></strong><dd>
+Do a SAM query on group members
+<p><a name="SAMTEST"></a>
+<p></p><dt><strong><strong>samtest</strong></strong><dd>
+encrypted RPC-based SAM test
+<p><a name="ENUMALIASES"></a>
+<p></p><dt><strong><strong>enumaliases</strong></strong><dd>
+experimental SAM alias query
+<p><a name="ENUMDOMAINS"></a>
+<p></p><dt><strong><strong>enumdomains</strong></strong><dd>
+expermental domain query
+<p><a name="ENUMGROUPS"></a>
+<p></p><dt><strong><strong>enumgroups</strong></strong><dd>
+experimental SAM group query
+<p><a name="ENUMPRIVS"></a>
+<p></p><dt><strong><strong>enumprivs [-i]</strong></strong><dd>
+Lists the short (internal) names of all the privileges/rights known by the
+current server. With the -i, it will also show the long textual
+representation (currently in German ;-)).
+<p><a name="LSAENUMSIDS"></a>
+<p></p><dt><strong><strong>lsaenumsids</strong></strong><dd>
+Show the SIDs that have privileges assigned to them
+<p><a name="DOMINFO"></a>
+<p></p><dt><strong><strong>dominfo</strong></strong><dd>
+experimental domain info query
+<p><a name="DISPINFO"></a>
+<p></p><dt><strong><strong>dispinfo</strong></strong><dd>
+SAM query display info
+<p><a name="SET"></a>
+<p></p><dt><strong><strong>set [OPTIONS...]</strong></strong><dd>
+Runs samedit within itself (thus allowing command line options to be changed).
+Set's options are the same as the Command line options listed above.
+<p><a name="USE"></a>
+<p></p><dt><strong><strong>use [\\Server] [-U user%pass] [-W domain] [-d] [-f]</strong></strong><dd> or
+<p><p></p><dt><strong><strong>use -u</strong></strong><dd>
+Equivalent of the net view and net use commands. Can be used to browse browse
+lists and connect to remote services. The net -u command shows all current
+connections. The -W option sets the NT domain. To delete a connection, use the
+-d option and -f forcibly deletes a connection.
+<p><a name="HELP"></a>
+<p></p><dt><strong><strong>help, ?</strong></strong><dd>
+Shows all commands or help on a specific command.
+<p><a name="QUIT"></a>
+<p></p><dt><strong><strong>quit, exit, bye</strong></strong><dd>
+Exits the utility
+<p><a name="BUGS"></a>
+<h2>BUGS</h2>
+    
+Samba TNG is still in alpha stage and considered not suitable for production use.
+<p>From Luke Leighton's original rpcclient man page:
+"WARNING! The MSRPC over SMB code has been developed from examining Network traces. No documentation is available from the original creators (Microsoft) on how MSRPC over SMB works, or how the individual MSRPC services work. Microsoft's implementation of these services has been demonstrated (and reported) to be... a bit flakey in places.
+<p>The development of Samba's implementation is also a bit rough, and as more of the services are understood, it can even result in versions of <strong>smbd(8)</strong> and rpcclient that are incompatible for some commands or services. Additionally, the developers are sending reports to Microsoft, and problems found or reported to Microsoft are fixed in Service Packs, which may result in incompatabilities."
+<p><a name="SEEALSO"></a>
+<h2>SEE ALSO</h2>
+    
+samba (7),
+regedit (8)
+<p><h2>AUTHOR</h2>
+    
+Samba is written by The Samba Team as open source. This man page was written by Matthew Geddes and has strongly "borrowed" from Luke Kenneth Casson Leighton's original rpcclient man page and wise words and the Samba source.
+</body>
+</html>
