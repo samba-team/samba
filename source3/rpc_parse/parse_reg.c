@@ -6,6 +6,7 @@
  *  Copyright (C) Paul Ashton                       1997.
  *  Copyright (C) Marc Jacobsen                     1999.
  *  Copyright (C) Simo Sorce                        2000.
+ *  Copyright (C) Gerald Carter                     2002.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -26,6 +27,89 @@
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_RPC_PARSE
+
+/*******************************************************************
+ Fill in a BUFFER2 for the data given a REGISTRY_VALUE
+ *******************************************************************/
+
+static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
+{
+	UNISTR2		unistr;
+	uint32		real_size = 0;
+	char 		*string;
+	char 		*list = NULL;
+	char 		*list2 = NULL;
+	
+	if ( !buf2 || !val )
+		return 0;
+		
+	real_size = val->size;
+		
+	switch (val->type )
+	{
+		case REG_SZ:
+			string = (char*)val->data_p;
+			DEBUG(10,("reg_init_buffer2: REG_SZ string => [%s]\n", string));
+			
+			init_unistr2( &unistr, (char*)val->data_p, strlen((char*)val->data_p)+1 );
+			init_buffer2( buf2, (char*)unistr.buffer, unistr.uni_str_len*2 );
+			real_size = unistr.uni_str_len*2;
+			break;
+			
+		case REG_MULTI_SZ:
+			string = (char*)val->data_p;
+			real_size = 0;
+			while ( string && *string )
+			{
+				DEBUG(10,("reg_init_buffer2: REG_MULTI_SZ string => [%s], size => [%d]\n", string, real_size ));
+				
+				init_unistr2( &unistr, string, strlen(string)+1 );
+				
+				list2 = Realloc( list, real_size + unistr.uni_str_len*2 );
+				if ( !list2 )
+					break;
+				list = list2;
+				
+				memcpy( list+real_size, unistr.buffer, unistr.uni_str_len*2 );
+				
+				real_size += unistr.uni_str_len*2;
+				
+				string += strlen(string)+1;
+			}
+			
+			list2 = Realloc( list, real_size + 2 );
+			if ( !list2 )
+				break;
+			list = list2;
+			list[real_size++] = 0x0;
+			list[real_size++] = 0x0;
+			
+			init_buffer2( buf2, (char*)list, real_size );
+			
+			DEBUG(10,("reg_init_buffer2: REG_MULTI_SZ size => [%d]\n", real_size ));
+			
+			break;
+			
+		case REG_BINARY:
+			DEBUG(10,("reg_init_buffer2: REG_BINARY size => [%d]\n", val->size ));
+			
+			init_buffer2( buf2, val->data_p, val->size );
+			break;
+			
+		case REG_DWORD: 
+			DEBUG(10,("reg_init_buffer2: REG_DWORD value => [%d]\n", *(uint32*)val->data_p));
+			init_buffer2( buf2, val->data_p, val->size );
+			break;
+			
+		default:
+			DEBUG(0,("reg_init_buffer2: Unsupported registry data type [%d]\n", val->type));
+			break;
+	}
+	
+	SAFE_FREE( list );
+
+	return real_size;
+}
 
 /*******************************************************************
  Inits a structure.
@@ -163,6 +247,8 @@ BOOL reg_io_r_open_hklm(char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
 
 	return True;
 }
+
+
 
 
 /*******************************************************************
@@ -1025,33 +1111,71 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 
 /*******************************************************************
  Inits a structure.
+ New version to replace older init_reg_r_info()
+********************************************************************/
+
+BOOL new_init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
+		     REGISTRY_VALUE *val, NTSTATUS status)
+{
+	uint32		buf_len = 0;
+	
+	if(r_r == NULL)
+		return False;
+	
+	if ( !val )
+		return False;
+  
+	r_r->ptr_type = 1;
+	r_r->type = val->type;
+
+	/* if include_keyval is not set, don't send the key value, just
+	   the buflen data. probably used by NT5 to allocate buffer space - SK */
+
+	if ( include_keyval ) {
+		r_r->ptr_uni_val = 1;
+		buf_len = reg_init_buffer2( &r_r->uni_val, val );
+	
+	}
+
+	r_r->ptr_max_len = 1;
+	r_r->buf_max_len = buf_len;
+
+	r_r->ptr_len = 1;
+	r_r->buf_len = buf_len;
+
+	r_r->status = status;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a structure.
 ********************************************************************/
 
 BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
 		     BUFFER2* buf, uint32 type, NTSTATUS status)
 {
-  if(r_r == NULL)
-    return False;
-
+	if(r_r == NULL)
+		return False;
   
-  r_r->ptr_type = 1;
-  r_r->type = type;
+	r_r->ptr_type = 1;
+	r_r->type = type;
 
-  /* if include_keyval is not set, don't send the key value, just
-     the buflen data. probably used by NT5 to allocate buffer space - SK */
-  r_r->ptr_uni_val = include_keyval ? 1:0;
-  r_r->uni_val = buf;
+	/* if include_keyval is not set, don't send the key value, just
+	   the buflen data. probably used by NT5 to allocate buffer space - SK */
 
-  r_r->ptr_max_len = 1;
-  r_r->buf_max_len = r_r->uni_val->buf_max_len;
+	r_r->ptr_uni_val = include_keyval ? 1:0;
+	r_r->uni_val = *buf;
 
-  r_r->ptr_len = 1;
-  r_r->buf_len = r_r->uni_val->buf_len;
+	r_r->ptr_max_len = 1;
+	r_r->buf_max_len = r_r->uni_val.buf_max_len;
 
-  r_r->status = status;
+	r_r->ptr_len = 1;
+	r_r->buf_len = r_r->uni_val.buf_len;
 
-  return True;
-  
+	r_r->status = status;
+
+	return True;
 }
 
 /*******************************************************************
@@ -1081,7 +1205,7 @@ BOOL reg_io_r_info(char *desc, REG_R_INFO *r_r, prs_struct *ps, int depth)
 		return False;
 
 	if(r_r->ptr_uni_val != 0) {
-		if(!smb_io_buffer2("uni_val", r_r->uni_val, r_r->ptr_uni_val, ps, depth))
+		if(!smb_io_buffer2("uni_val", &r_r->uni_val, r_r->ptr_uni_val, ps, depth))
 			return False;
 	}
 
@@ -1144,10 +1268,16 @@ makes a structure.
 
 void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 {
+	uint32 real_size;
+	
+	DEBUG(8,("init_reg_r_enum_val: Enter\n"));
+	
 	ZERO_STRUCTP(r_u);
 
 	/* value name */
 
+	DEBUG(10,("init_reg_r_enum_val: Valuename => [%s]\n", val->valuename));
+	
 	init_uni_hdr( &r_u->hdr_name, strlen(val->valuename)+1 );
 	init_unistr2( &r_u->uni_name, val->valuename, strlen(val->valuename)+1 );
 		
@@ -1156,18 +1286,20 @@ void init_reg_r_enum_val(REG_R_ENUM_VALUE *r_u, REGISTRY_VALUE *val )
 	r_u->ptr_type = 1;
 	r_u->type = val->type;
 
-	/* data */
+	/* REG_SZ & REG_MULTI_SZ must be converted to UNICODE */
 	
 	r_u->ptr_value = 1;
-	init_buffer2( &r_u->buf_value, val->data.void_ptr, val->size );
+	real_size = reg_init_buffer2( &r_u->buf_value, val );
 	
 	/* lengths */
 
 	r_u->ptr1 = 1;
-	r_u->len_value1 = val->size;
+	r_u->len_value1 = real_size;
 	
 	r_u->ptr2 = 1;
-	r_u->len_value2 = val->size;
+	r_u->len_value2 = real_size;
+		
+	DEBUG(8,("init_reg_r_enum_val: Exit\n"));
 }
 
 /*******************************************************************

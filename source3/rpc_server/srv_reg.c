@@ -83,7 +83,7 @@ static BOOL api_reg_open_hklm(pipes_struct *p)
 }
 
 /*******************************************************************
- api_reg_open_khlm
+ api_reg_open_khu
  ********************************************************************/
 
 static BOOL api_reg_open_hku(pipes_struct *p)
@@ -103,6 +103,32 @@ static BOOL api_reg_open_hku(pipes_struct *p)
 	r_u.status = _reg_open_hku(p, &q_u, &r_u);
 
 	if(!reg_io_r_open_hku("", &r_u, rdata, 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ api_reg_open_khcr
+ ********************************************************************/
+
+static BOOL api_reg_open_hkcr(pipes_struct *p)
+{
+	REG_Q_OPEN_HKCR q_u;
+	REG_R_OPEN_HKCR r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	/* grab the reg open */
+	if(!reg_io_q_open_hkcr("", &q_u, data, 0))
+		return False;
+
+	r_u.status = _reg_open_hkcr(p, &q_u, &r_u);
+
+	if(!reg_io_r_open_hkcr("", &r_u, rdata, 0))
 		return False;
 
 	return True;
@@ -324,6 +350,7 @@ static struct api_struct api_reg_cmds[] =
 {
 	{ "REG_CLOSE"              , REG_CLOSE              , api_reg_close            },
 	{ "REG_OPEN_ENTRY"         , REG_OPEN_ENTRY         , api_reg_open_entry       },
+	{ "REG_OPEN_HKCR"          , REG_OPEN_HKCR          , api_reg_open_hkcr        },
 	{ "REG_OPEN_HKLM"          , REG_OPEN_HKLM          , api_reg_open_hklm        },
 	{ "REG_OPEN_HKU"     	   , REG_OPEN_HKU           , api_reg_open_hku         },
 	{ "REG_ENUM_KEY"           , REG_ENUM_KEY           , api_reg_enum_key         },

@@ -149,7 +149,6 @@ int regval_ctr_numvals( REGVAL_CTR *ctr )
 REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 {
 	REGISTRY_VALUE 	*copy = NULL;
-	BOOL		fail = True;
 	
 	if ( !val )
 		return NULL;
@@ -162,35 +161,15 @@ REGISTRY_VALUE* dup_registry_value( REGISTRY_VALUE *val )
 	/* copy all the non-pointer initial data */
 	
 	memcpy( copy, val, sizeof(REGISTRY_VALUE) );
+	if ( val->data_p ) 
+	{
+		if ( !(copy->data_p = memdup( val->data_p, val->size )) ) {
+			DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
+				val->size));
+			SAFE_FREE( copy );
+		}
+	}
 	
-	switch ( val->type ) {
-		case REG_SZ:
-			if ( !(copy->data.string = strdup( val->data.string )) ) {
-				DEBUG(0,("dup_registry_value: strdup() failed for [%s]!\n",
-					val->data.string));
-				goto done;
-			}
-			break;
-			
-		case REG_DWORD:
-			/* nothing to be done; already copied by memcpy() */
-			break;
-			
-		case REG_BINARY:
-			if ( !(copy->data.string = memdup( val->data.binary, val->size )) ) {
-				DEBUG(0,("dup_registry_value: memdup() failed for [%d] bytes!\n",
-					val->size));
-				goto done;
-			}
-			break;
-	 } 
-	 
-	 fail = False;
-	 
-done:
-	if ( fail )
-		SAFE_FREE( copy );
-
 	return copy;	
 }
 
@@ -203,16 +182,7 @@ void free_registry_value( REGISTRY_VALUE *val )
 	if ( !val )
 		return;
 		
-	switch ( val->type ) 
-	{
-		case REG_SZ:
-			SAFE_FREE( val->data.string );
-			break;
-		case REG_BINARY:
-			SAFE_FREE( val->data.binary );
-			break;
-	}
-	
+	SAFE_FREE( val->data_p );
 	SAFE_FREE( val );
 	
 	return;
@@ -263,19 +233,26 @@ int regval_ctr_addvalue( REGVAL_CTR *ctr, char *name, uint16 type,
 	
 		fstrcpy( ctr->values[ctr->num_values]->valuename, name );
 		ctr->values[ctr->num_values]->type = type;
+		ctr->values[ctr->num_values]->data_p = talloc_memdup( ctr->ctx, data_p, size );
+		ctr->values[ctr->num_values]->size = size;
+#if 0
 		switch ( type )
 		{
 			case REG_SZ:
 				ctr->values[ctr->num_values]->data.string = talloc_strdup( ctr->ctx, data_p );
 				break;
+			case REG_MULTI_SZ:
+				ctr->values[ctr->num_values]->data.string = talloc_memdup( ctr->ctx, data_p, size );
+				break;
 			case REG_DWORD:
+				ctr->values[ctr->num_values]->data.dword = *(uint32*)data_p;
 				break;
 			case REG_BINARY:
 				ctr->values[ctr->num_values]->data.binary = talloc_memdup( ctr->ctx, data_p, size );
 				break;
 				
 		}
-		ctr->values[ctr->num_values]->size = size;
+#endif
 		
 		ctr->num_values++;
 	}
@@ -374,23 +351,46 @@ int fetch_reg_keys( REGISTRY_KEY *key, REGSUBKEY_CTR *subkey_ctr )
 
 BOOL fetch_reg_keys_specific( REGISTRY_KEY *key, char** subkey, uint32 key_index )
 {
+	static REGSUBKEY_CTR ctr;
+	static pstring save_path;
+	static BOOL ctr_init = False;
 	char *s;
-	REGSUBKEY_CTR ctr;
 	
-	ZERO_STRUCTP( &ctr );
+	*subkey = NULL;
 	
-	regsubkey_ctr_init( &ctr );
+	/* simple caching for performance; very basic heuristic */
 	
-	if ( fetch_reg_keys( key, &ctr) == -1 )
-		return False;
+	if ( !ctr_init ) {
+		DEBUG(8,("fetch_reg_keys_specific: Initializing cache of subkeys for [%s]\n", key->name));
+		ZERO_STRUCTP( &ctr );	
+		regsubkey_ctr_init( &ctr );
+		
+		pstrcpy( save_path, key->name );
+		
+		if ( fetch_reg_keys( key, &ctr) == -1 )
+			return False;
+			
+		ctr_init = True;
+	}
+	/* clear the cache when key_index == 0 or the path has changed */
+	else if ( !key_index || StrCaseCmp( save_path, key->name) ) {
 
+		DEBUG(8,("fetch_reg_keys_specific: Updating cache of subkeys for [%s]\n", key->name));
+		
+		regsubkey_ctr_destroy( &ctr );	
+		regsubkey_ctr_init( &ctr );
+		
+		pstrcpy( save_path, key->name );
+		
+		if ( fetch_reg_keys( key, &ctr) == -1 )
+			return False;
+	}
+	
 	if ( !(s = regsubkey_ctr_specific_key( &ctr, key_index )) )
 		return False;
 
 	*subkey = strdup( s );
 
-	regsubkey_ctr_destroy( &ctr ); 
-	
 	return True;
 }
 
@@ -416,25 +416,49 @@ int fetch_reg_values( REGISTRY_KEY *key, REGVAL_CTR *val )
  responsible for freeing memory
  ***********************************************************************/
 
-BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 key_index )
+BOOL fetch_reg_values_specific( REGISTRY_KEY *key, REGISTRY_VALUE **val, uint32 val_index )
 {
-	REGVAL_CTR 	ctr;
-	REGISTRY_VALUE	*v;
+	static REGVAL_CTR 	ctr;
+	static pstring		save_path;
+	static BOOL		ctr_init = False;
+	REGISTRY_VALUE		*v;
 	
-	ZERO_STRUCTP( &ctr );
+	*val = NULL;
 	
-	regval_ctr_init( &ctr );
+	/* simple caching for performance; very basic heuristic */
 	
-	if ( fetch_reg_values( key, &ctr) == -1 )
-		return False;
+	if ( !ctr_init ) {
+		DEBUG(8,("fetch_reg_values_specific: Initializing cache of values for [%s]\n", key->name));
 
-	if ( !(v = regval_ctr_specific_value( &ctr, key_index )) )
+		ZERO_STRUCTP( &ctr );	
+		regval_ctr_init( &ctr );
+		
+		pstrcpy( save_path, key->name );
+		
+		if ( fetch_reg_values( key, &ctr) == -1 )
+			return False;
+			
+		ctr_init = True;
+	}
+	/* clear the cache when val_index == 0 or the path has changed */
+	else if ( !val_index || StrCaseCmp(save_path, key->name) ) {
+
+		DEBUG(8,("fetch_reg_values_specific: Updating cache of values for [%s]\n", key->name));		
+		
+		regval_ctr_destroy( &ctr );	
+		regval_ctr_init( &ctr );
+		
+		pstrcpy( save_path, key->name );
+		
+		if ( fetch_reg_values( key, &ctr) == -1 )
+			return False;
+	}
+	
+	if ( !(v = regval_ctr_specific_value( &ctr, val_index )) )
 		return False;
 
 	*val = dup_registry_value( v );
 
-	regval_ctr_destroy( &ctr ); 
-	
 	return True;
 }
 

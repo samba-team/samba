@@ -84,17 +84,269 @@ static char* trim_reg_path( char *path )
  
 static int print_subpath_environments( char *key, REGSUBKEY_CTR *subkeys )
 {
+	char *environments[] = {
+		"Windows 4.0",
+		"Windows NT x86",
+		"Windows NT R4000",
+		"Windows NT Alpha_AXP",
+		"Windows NT PowerPC",
+		NULL };
+	fstring *drivers = NULL;
+	int i, env_index, num_drivers;
+	BOOL valid_env = False;
+	char *base, *new_path;
+	char *keystr;
+	char *key2 = NULL;
+	int num_subkeys = -1;
+
 	DEBUG(10,("print_subpath_environments: key=>[%s]\n", key ? key : "NULL" ));
 	
-	if ( !key )
+	/* listed architectures of installed drivers */
+	
+	if ( !key ) 
 	{
-		/* listed architectures of installed drivers */
+		/* Windows 9x drivers */
 		
+		if ( get_ntdrivers( &drivers, environments[0], 0 ) )
+			regsubkey_ctr_addkey( subkeys, 	environments[0] );
+		SAFE_FREE( drivers );
+					
+		/* Windows NT/2k intel drivers */
+		
+		if ( get_ntdrivers( &drivers, environments[1], 2 ) 
+			|| get_ntdrivers( &drivers, environments[1], 3 ) )
+		{
+			regsubkey_ctr_addkey( subkeys, 	environments[1] );
+		}
+		SAFE_FREE( drivers );
+		
+		/* Windows NT 4.0; non-intel drivers */
+		for ( i=2; environments[i]; i++ ) {
+			if ( get_ntdrivers( &drivers, environments[i], 2 ) )
+				regsubkey_ctr_addkey( subkeys, 	environments[i] );
+		
+		}
+		SAFE_FREE( drivers );
+
+		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
+		goto done;
 	}
 	
+	/* we are dealing with a subkey of "Environments */
 	
-	return 0;
+	key2 = strdup( key );
+	keystr = key2;
+	reg_split_path( keystr, &base, &new_path );
+	
+	/* sanity check */
+	
+	for ( env_index=0; environments[env_index]; env_index++ ) {
+		if ( StrCaseCmp( environments[env_index], base ) == 0 ) {
+			valid_env = True;
+			break;
+		}
+	}
+		
+	if ( !valid_env )
+		return -1;
+
+	/* enumerate driver versions; environment is environments[env_index] */
+	
+	if ( !new_path ) {
+		switch ( env_index ) {
+			case 0:	/* Win9x */
+				if ( get_ntdrivers( &drivers, environments[0], 0 ) ) {
+					regsubkey_ctr_addkey( subkeys, "0" );
+					SAFE_FREE( drivers );
+				}
+				break;
+			case 1: /* Windows NT/2k - intel */
+				if ( get_ntdrivers( &drivers, environments[1], 2 ) ) {
+					regsubkey_ctr_addkey( subkeys, "2" );
+					SAFE_FREE( drivers );
+				}
+				if ( get_ntdrivers( &drivers, environments[1], 3 ) ) {
+					regsubkey_ctr_addkey( subkeys, "3" );
+					SAFE_FREE( drivers );
+				}
+				break;
+			default: /* Windows NT - nonintel */
+				if ( get_ntdrivers( &drivers, environments[env_index], 2 ) ) {
+					regsubkey_ctr_addkey( subkeys, "2" );
+					SAFE_FREE( drivers );
+				}
+			
+		}
+		
+		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
+		goto done;
+	}
+	
+	/* we finally get to enumerate the drivers */
+	
+	keystr = new_path;
+	reg_split_path( keystr, &base, &new_path );
+	
+	if ( !new_path ) {
+		num_drivers = get_ntdrivers( &drivers, environments[env_index], atoi(base) );
+		for ( i=0; i<num_drivers; i++ )
+			regsubkey_ctr_addkey( subkeys, drivers[i] );
+			
+		num_subkeys = regsubkey_ctr_numkeys( subkeys );	
+		goto done;
+	}
+	
+done:
+	SAFE_FREE( key2 );
+		
+	return num_subkeys;
 }
+
+/***********************************************************************
+ simple function to prune a pathname down to the basename of a file 
+ **********************************************************************/
+ 
+static char* dos_basename ( char *path )
+{
+	char *p;
+	
+	p = strrchr( path, '\\' );
+	if ( p )
+		p++;
+	else
+		p = path;
+		
+	return p;
+}
+
+/**********************************************************************
+ handle enumeration of values below 
+ KEY_PRINTING\Environments\<arch>\<version>\<drivername>
+ *********************************************************************/
+ 
+static int print_subpath_values_environments( char *key, REGVAL_CTR *val )
+{
+	char 		*keystr;
+	char		*key2 = NULL;
+	char 		*base, *new_path;
+	fstring		env;
+	fstring		driver;
+	int		version;
+	NT_PRINTER_DRIVER_INFO_LEVEL	driver_ctr;
+	NT_PRINTER_DRIVER_INFO_LEVEL_3	*info3;
+	WERROR		w_result;
+	char 		*buffer = NULL;
+	char		*buffer2 = NULL;
+	int		buffer_size = 0;
+	int 		i, length;
+	char 		*filename;
+	
+	DEBUG(8,("print_subpath_values_environments: Enter key => [%s]\n", key ? key : "NULL"));
+	
+	if ( !key )
+		return 0;
+		
+	/* 
+	 * The only key below KEY_PRINTING\Environments that 
+	 * posseses values is each specific printer driver 
+	 * First get the arch, version, & driver name
+	 */
+	
+	/* env */
+	
+	key2 = strdup( key );
+	keystr = key2;
+	reg_split_path( keystr, &base, &new_path );
+	if ( !base || !new_path )
+		return 0;
+	fstrcpy( env, base );
+	
+	/* version */
+	
+	keystr = new_path;
+	reg_split_path( keystr, &base, &new_path );
+	if ( !base || !new_path )
+		return 0;
+	version = atoi( base );
+
+	/* printer driver name */
+	
+	keystr = new_path;
+	reg_split_path( keystr, &base, &new_path );
+	/* new_path should be NULL here since this must be the last key */
+	if ( !base || new_path )
+		return 0;
+	fstrcpy( driver, base );
+
+	w_result = get_a_printer_driver( &driver_ctr, 3, driver, env, version );
+
+	if ( !W_ERROR_IS_OK(w_result) )
+		return -1;
+		
+	/* build the values out of the driver information */
+	info3 = driver_ctr.info_3;
+	
+	filename = dos_basename( info3->driverpath );
+	regval_ctr_addvalue( val, "Driver",             REG_SZ,       filename, strlen(filename)+1 );
+	filename = dos_basename( info3->configfile );
+	regval_ctr_addvalue( val, "Configuration File", REG_SZ,       filename, strlen(filename)+1 );
+	filename = dos_basename( info3->datafile );
+	regval_ctr_addvalue( val, "Data File",          REG_SZ,       filename, strlen(filename)+1 );
+	filename = dos_basename( info3->helpfile );
+	regval_ctr_addvalue( val, "Help File",          REG_SZ,       filename, strlen(filename)+1 );
+		
+	regval_ctr_addvalue( val, "Data Type",          REG_SZ,       info3->defaultdatatype, strlen(info3->defaultdatatype)+1 );
+	
+	regval_ctr_addvalue( val, "Version",            REG_DWORD,    (char*)&info3->cversion, sizeof(info3->cversion) );
+	
+	if ( info3->dependentfiles )
+	{
+		/* place the list of dependent files in a single 
+		   character buffer, separating each file name by
+		   a NULL */
+		   
+		for ( i=0; strcmp(info3->dependentfiles[i], ""); i++ )
+		{
+			/* strip the path to only the file's base name */
+		
+			filename = dos_basename( info3->dependentfiles[i] );
+			
+			length = strlen(filename);
+		
+			buffer2 = Realloc( buffer, buffer_size + length + 1 );
+			if ( !buffer2 )
+				break;
+			buffer = buffer2;
+		
+			memcpy( buffer+buffer_size, filename, length+1 );
+		
+			buffer_size += length + 1;
+		}
+		
+		/* terminated by double NULL.  Add the final one here */
+		
+		buffer2 = Realloc( buffer, buffer_size + 1 );
+		if ( !buffer2 ) {
+			SAFE_FREE( buffer );
+			buffer_size = 0;
+		}
+		else {
+			buffer = buffer2;
+			buffer[buffer_size++] = '\0';
+		}
+	}
+	
+	regval_ctr_addvalue( val, "Dependent Files",    REG_MULTI_SZ, buffer, buffer_size );
+	
+	free_a_printer_driver( driver_ctr, 3 );
+	SAFE_FREE( key2 );
+	SAFE_FREE( buffer );
+		
+	DEBUG(8,("print_subpath_values_environments: Exit\n"));
+	
+	return regval_ctr_numvals( val );
+}
+
 
 /**********************************************************************
  handle enumeration of subkeys below KEY_PRINTING\Forms
@@ -263,6 +515,8 @@ static int handle_printing_subpath( char *key, REGSUBKEY_CTR *subkeys, REGVAL_CT
 		case KEY_INDEX_ENVIR:
 			if ( subkeys )
 				print_subpath_environments( p, subkeys );
+			if ( val )
+				print_subpath_values_environments( p, val );
 			break;
 		
 		case KEY_INDEX_FORMS:
