@@ -222,16 +222,7 @@ generalizedtime2time (char *s, time_t *t)
 	  &tm.tm_min, &tm.tm_sec);
   tm.tm_year -= 1900;
   tm.tm_mon -= 1;
-  tm.tm_isdst = 0;
-
-  *t = mktime(&tm);
-#ifdef HAVE_STRUCT_TM_TM_GMTOFF
-  *t += tm.tm_gmtoff;
-#elif defined(HAVE_TIMEZONE)
-  *t -= timezone;
-#else
-#error Cannot figure out where in timezoneworld we are
-#endif
+  *t = timegm (&tm);
 }
 
 int
