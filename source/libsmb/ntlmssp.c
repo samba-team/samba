@@ -577,6 +577,9 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 		}
 	}
 
+	if (auth_flags)
+		ntlmssp_handle_neg_flags(ntlmssp_state, auth_flags, lp_lanman_auth());
+
 	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_set_domain(ntlmssp_state, domain))) {
 		SAFE_FREE(domain);
 		SAFE_FREE(user);
@@ -670,20 +673,26 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
 				 sizeof(session_nonce), session_key.data);
 			DEBUG(10,("ntlmssp_server_auth: Created NTLM2 session key.\n"));
 			dump_data_pw("NTLM2 session key:\n", session_key.data, session_key.length);
-
-		}else {
+			
+		} else {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM2 session key.\n"));
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 	} else if (ntlmssp_state->neg_flags & NTLMSSP_NEGOTIATE_LM_KEY) {
-		if (lm_session_key.data && lm_session_key.length >= 8 && 
-		    ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
-			session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
-			SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data, 
-					   session_key.data);
-			DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
-			dump_data_pw("LM session key:\n", session_key.data, session_key.length);
+		if (lm_session_key.data && lm_session_key.length >= 8) {
+			if (ntlmssp_state->lm_resp.data && ntlmssp_state->lm_resp.length == 24) {
+				session_key = data_blob_talloc(ntlmssp_state->mem_ctx, NULL, 16);
+				SMBsesskeygen_lm_sess_key(lm_session_key.data, ntlmssp_state->lm_resp.data, 
+							  session_key.data);
+				DEBUG(10,("ntlmssp_server_auth: Created NTLM session key.\n"));
+				dump_data_pw("LM session key:\n", session_key.data, session_key.length);
+			} else {
+				/* use the key unmodified - it's
+				 * probably a NULL key from the guest
+				 * login */
+				session_key = lm_session_key;
+			}
 		} else {
 			data_blob_free(&encrypted_session_key);
 			DEBUG(10,("ntlmssp_server_auth: Failed to create NTLM session key.\n"));
