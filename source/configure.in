@@ -670,6 +670,8 @@ case "$host_os" in
 		*sco*) AC_DEFINE(SCO);;
 		*unixware*) AC_DEFINE(UNIXWARE)
 			BLDSHARED="true"
+			LDSHFLAGS="-Wl,-soname,\$@ -shared"
+			PICFLAG="-KPIC"
 		;;
 		*next2*) AC_DEFINE(NEXT2);;
 		*dgux*) AC_CHECK_PROG( ROFF, groff, [groff -etpsR -Tascii -man]);;
