@@ -31,6 +31,11 @@ static TDB_CONTEXT *tdb;
 
 TDB_CONTEXT *conn_tdb_ctx(void)
 {
+	if (!tdb) {
+		tdb = tdb_open_log(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST|TDB_DEFAULT, 
+			       O_RDWR | O_CREAT, 0644);
+	}
+
 	return tdb;
 }
 
