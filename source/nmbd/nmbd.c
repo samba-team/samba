@@ -192,6 +192,7 @@ static void reload_interfaces(time_t t)
 	int n;
 	struct subnet_record *subrec;
 	extern BOOL rescan_listen_set;
+	extern struct in_addr loopback_ip;
 
 	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return;
 	lastt = t;
@@ -205,10 +206,23 @@ static void reload_interfaces(time_t t)
 	/* find any interfaces that need adding */
 	for (n=iface_count() - 1; n >= 0; n--) {
 		struct interface *iface = get_interface(n);
+
+		/*
+		 * We don't want to add a loopback interface, in case
+		 * someone has added 127.0.0.1 for smbd, nmbd needs to
+		 * ignore it here. JRA.
+		 */
+
+		if (ip_equal(iface->ip, loopback_ip)) {
+			DEBUG(2,("reload_interfaces: Ignoring loopback interface %s\n", inet_ntoa(iface->ip)));
+			continue;
+		}
+
 		for (subrec=subnetlist; subrec; subrec=subrec->next) {
 			if (ip_equal(iface->ip, subrec->myip) &&
 			    ip_equal(iface->nmask, subrec->mask_ip)) break;
 		}
+
 		if (!subrec) {
 			/* it wasn't found! add it */
 			DEBUG(2,("Found new interface %s\n", 
