@@ -60,7 +60,7 @@ static void do_header(FILE *out, char *filename, int mode)
 	  filename, ctime(&t), fmt);
 }
 
-static void do_output(FILE *out, char *buf, int len, int mode)
+static void do_output(FILE *out, unsigned char *buf, int len, int mode)
 {
   int i, esc_colon;
 
