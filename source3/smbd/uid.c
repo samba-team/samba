@@ -565,7 +565,7 @@ static struct gid_sid_cache {
   Find a SID given a uid.
 *****************************************************************/  
 
-static BOOL fetch_sid_from_uid_cache(const DOM_SID *psid, uid_t uid)
+static BOOL fetch_sid_from_uid_cache(DOM_SID *psid, uid_t uid)
 {
 	struct uid_sid_cache *pc;
 
