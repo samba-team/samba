@@ -1,3 +1,7 @@
+1999-12-03  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pop_init.c: optionally trace connected addresses to a file
+
 1999-11-02  Assar Westerlund  <assar@sics.se>
 
 	* pop_debug.c (main): redo the v4/v5 selection for consistency.
