@@ -6,6 +6,7 @@
 
 package IdlEParser;
 
+use ndr;
 use strict;
 
 # the list of needed functions
@@ -170,7 +171,7 @@ sub NeededFunction($)
 		$e->{PARENT} = $fn;
 		$needed{"pull_$e->{TYPE}"} = 1;
 
-		if (util::is_scalar_type($e->{TYPE})) {
+		if (NdrParser::is_scalar_type($e->{TYPE})) {
 
 		    if (defined($e->{ARRAY_LEN}) or 
 			util::has_property($e, "size_is")) {
@@ -232,96 +233,90 @@ sub NeededTypedef($)
 
 	if ($t->{DATA}->{TYPE} eq "STRUCT") {
 
-	    for my $e (@{$t->{DATA}->{ELEMENTS}}) {
-
-		$e->{PARENT} = $t->{DATA};
-
-		if ($needed{"pull_$t->{NAME}"}) {
-		    $needed{"pull_$e->{TYPE}"} = 1;
-		}
-	    
-		if (util::is_scalar_type($e->{TYPE})) {
-		
-		    if (defined($e->{ARRAY_LEN}) or 
-			util::has_property($e, "size_is")) {
-
-			# Arrays of scalar types are FT_BYTES
-		    
-			$needed{"hf_$t->{NAME}_$e->{NAME}_array"} = {
-			    'name' => field2name($e->{NAME}),
-			    'type' => $e->{TYPE},
-			    'ft'   => "FT_BYTES",
-			    'base' => elementbase($e)
-			    };
-
-		    } else {
-
-			$needed{"hf_$t->{NAME}_$e->{NAME}"} = {
-			    'name' => field2name($e->{NAME}),
-			    'type' => $e->{TYPE},
-			    'ft'   => type2ft($e->{TYPE}),
-			    'base' => elementbase($e)
-			    };
-		    }
-		    
-		    $e->{PARENT} = $t->{DATA};
-		    
-		    if ($needed{"pull_$t->{NAME}"}) {
-			$needed{"pull_$e->{TYPE}"} = 1;
-		    }
-
-		} else {
-		    
-		    $needed{"ett_$e->{TYPE}"} = 1;
-		    
-		}
-	    }
-	}
-
-	if ($t->{DATA}->{TYPE} eq "UNION") {
-
 		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
 
 			$e->{PARENT} = $t->{DATA};
 
-			if ($e->{TYPE} eq "UNION_ELEMENT") {
+			if ($needed{"pull_$t->{NAME}"}) {
+				$needed{"pull_$e->{TYPE}"} = 1;
+			}
 
-				if ($needed{"pull_$t->{NAME}"}) {
-					$needed{"pull_$e->{ELEMENTS}->{TYPE}"} = 1;
+			if (NdrParser::is_scalar_type($e->{TYPE})) {
+
+				if (defined($e->{ARRAY_LEN}) or 
+				util::has_property($e, "size_is")) {
+
+					# Arrays of scalar types are FT_BYTES
+
+					$needed{"hf_$t->{NAME}_$e->{NAME}_array"} = {
+						'name' => field2name($e->{NAME}),
+						'type' => $e->{TYPE},
+						'ft'   => "FT_BYTES",
+						'base' => elementbase($e)
+					};
+
+				} else {
+
+					$needed{"hf_$t->{NAME}_$e->{NAME}"} = {
+						'name' => field2name($e->{NAME}),
+						'type' => $e->{TYPE},
+						'ft'   => type2ft($e->{TYPE}),
+						'base' => elementbase($e)
+					};
 				}
 
-				$needed{"ett_$e->{ELEMENTS}{TYPE}"} = 1;
+				$e->{PARENT} = $t->{DATA};
+
+				if ($needed{"pull_$t->{NAME}"}) {
+					$needed{"pull_$e->{TYPE}"} = 1;
+				}
+
+			} else {
+				$needed{"ett_$e->{TYPE}"} = 1;
 			}
 		}
+	}
 
-	    $needed{"ett_$t->{NAME}"} = 1;
+	if ($t->{DATA}->{TYPE} eq "UNION") {
+		for my $e (@{$t->{DATA}->{ELEMENTS}}) {
+
+			$e->{PARENT} = $t->{DATA};
+
+			if ($needed{"pull_$t->{NAME}"}) {
+				$needed{"pull_$e->{TYPE}"} = 1;
+			}
+
+			$needed{"ett_$e->{TYPE}"} = 1;
+		}
+
+		$needed{"ett_$t->{NAME}"} = 1;
 	}
 
 	if ($t->{DATA}->{TYPE} eq "ENUM") {
 
-	    $needed{"hf_$t->{NAME}"} = {
-		'name' => field2name($t->{NAME}),
-		'ft' => 'FT_UINT16',
-		'base' => 'BASE_DEC',
-		'strings' => "VALS($t->{NAME}_vals)"
+		$needed{"hf_$t->{NAME}"} = {
+			'name' => field2name($t->{NAME}),
+			'ft' => 'FT_UINT16',
+			'base' => 'BASE_DEC',
+			'strings' => "VALS($t->{NAME}_vals)"
 		};
 	}
 
 	if ($t->{DATA}->{TYPE} eq "BITMAP") {
 
-	    $bitmaps{$t->{NAME}} = $t;
+		$bitmaps{$t->{NAME}} = $t;
 
-	    foreach my $e (@{$t->{DATA}{ELEMENTS}}) {
-		$e =~ /^(.*?) \( (.*?) \)$/;
-		$needed{"hf_$t->{NAME}_$1"} = {
-		    'name' => "$1",
-		    'ft' => "FT_BOOLEAN",
-		    'base' => bitmapbase($t),
-		    'bitmask' => "$2"
-		    };
-	    }
+		foreach my $e (@{$t->{DATA}{ELEMENTS}}) {
+			$e =~ /^(.*?) \( (.*?) \)$/;
+			$needed{"hf_$t->{NAME}_$1"} = {
+				'name' => "$1",
+				'ft' => "FT_BOOLEAN",
+				'base' => bitmapbase($t),
+				'bitmask' => "$2"
+			};
+		}
 
-	    $needed{"ett_$t->{NAME}"} = 1;
+		$needed{"ett_$t->{NAME}"} = 1;
 	}
 }
 
@@ -418,6 +413,8 @@ sub RewriteHeader($$$)
     my($input) = shift;
     my($output) = shift;
 
+	NdrParser::Load($idl);
+
     %needed = ();
 
     # Open files
@@ -455,7 +452,7 @@ sub RewriteHeader($$$)
 
 	# Bitmaps
 
-	s/(uint32_t \*r\);)/pidl_tree *tree, int hf, $1/smg;
+	s/int ndr_flags, (pidl_tree \*tree), (uint32_t \*r\);)/$1, int hf, $2/smg;
 
 	pidl $_;
     }
@@ -470,6 +467,8 @@ sub RewriteC($$$)
     my($idl) = shift;
     my($input) = shift;
     my($output) = shift;
+
+	NdrParser::Load($idl);
 
     # Open files
 
@@ -591,9 +590,9 @@ sub RewriteC($$$)
 	# of adding a couple of parameters to each function call.
         #
 
-	# Add proto tree and name argument to ndr_pull_ptr() calls.
+	# Add proto tree and name argument to ndr_pull_unique_ptr() calls.
 
-	s/(ndr_pull_ptr\(ndr,\ (&_ptr_([^\)]*?))\);)
+	s/(ndr_pull_unique_ptr\(ndr,\ (&_ptr_([^\)]*?))\);)
 	    /ndr_pull_ptr(ndr, tree, "$3", $2);/smgx;
 
 	# Wrap ndr_pull_array_size() and ndr_pull_array_length()
@@ -620,28 +619,28 @@ sub RewriteC($$$)
 	   (.*?)\);)                                # Number of elements
 	    /ndr_pull_array_$2( ndr, $3, tree, hf_${cur_fn}_$7_array, $4, $8);/smgx;
  
-	# Save ndr_pull_relative{1,2}() calls from being wrapped by the
+	# Save ndr_pull_relative_ptr{1,2}() calls from being wrapped by the
 	# proceeding regexp by adding a leading space.
 
-	s/ndr_pull_(relative1|relative2)\((.*?)\);/
+	s/ndr_pull_(relative_ptr1|relative_ptr2)\((.*?)\);/
 	    ndr_pull_$1( $2);/smgx;
 
 	# Enums
 
-        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ (enum\ .+?)\))
+        s/(^static\ NTSTATUS\ ndr_pull_(.+?),\ int\ ndr_flags,\ (enum\ .+?)\))
 	    /static NTSTATUS ndr_pull_$2, pidl_tree *tree, int hf, $3)/smgx;
 	s/uint(8|16|32) v;/uint$1_t v;/smg;
-	s/(ndr_pull_([^\(]+?)\(ndr,\ &_level\);)
+	s/(ndr_pull_([^\(]+?)\(ndr,\ NDR_[^,]*,\ &_level\);)
 	    /ndr_pull_$2(ndr, tree, hf_${cur_fn}_level, &_level);/smgx;
 
 	# Bitmaps
 
-        s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ uint(8|16|32)\ \*r\))
+        s/(^(static\ )?NTSTATUS\ ndr_pull_(.+?),\ int\ ndr_flags,\ uint(8|16|32)_t\ \*r\))
 	    /NTSTATUS ndr_pull_$3, pidl_tree *tree, int hf, uint$4_t *r)/smgx;
 
-        if (/ndr_pull_([^\)]*?)\(ndr, &v\);/) {
+        if (/ndr_pull_([^\)]*?)\(ndr,\ NDR_[^,]*,\ &v\);/) {
 
-	    s/(ndr_pull_([^\)]*?)\(ndr,\ &v\);)
+	    s/(ndr_pull_([^\)]*?)\(ndr,\ (NDR_[^,]*?),\ &v\);)
 		/ndr_pull_$2(ndr, tree, hf, &v);/smgx;
 
 	    pidl $_;
@@ -665,7 +664,7 @@ sub RewriteC($$$)
 	# ndr_pull_uint32(ndr, &r->in.access_mask);
 	# ndr_pull_uint32(ndr, &r->idx);
 
-        if (/(ndr_pull_([^\)]*?)\(ndr, (&?r->((in|out)\.)?([^\)]*?))\);)/) {
+        if (/(ndr_pull_([^\)]*?)\(ndr, NDR_[^,]*?, (&?r->((in|out)\.)?([^\)]*?))\);)/ and NdrParser::is_scalar_type($2)) {
 
 	    my $pull_type = "${cur_fn}_$6";
 
@@ -673,9 +672,10 @@ sub RewriteC($$$)
 		$pull_type = "$2";
 	    }
 
-	    s/(ndr_pull_([^\)]*?)
-	       \(ndr,\ 
-	       (&?r->((in|out)\.)?         # Function args contain leading junk
+	    s/(ndr_pull_([^\)]*?)\(
+		   ndr,\ 
+		   NDR_[^,]*?,\ 
+		   (&?r->((in|out)\.)?         # Function args contain leading junk
 		([^\)]*?))                 # Element name
 	       \);)          
 		/ndr_pull_$2(ndr, tree, hf_$pull_type, $3);/smgx;
@@ -685,7 +685,8 @@ sub RewriteC($$$)
 	# array sizes, levels, etc.
 
 	s/(ndr_pull_(uint32|uint16)\(
-	   ndr,\ 
+	   ndr,\  
+	   NDR_[^,]*?,\ 
 	   (&_([^\)]*?))        # Internal arg names have leading underscore
 	   \);)
 	    /ndr_pull_$2(ndr, tree, hf_$4, $3);/smgx;
@@ -695,11 +696,11 @@ sub RewriteC($$$)
 	# ndr_pull_string(ndr, NDR_SCALARS|NDR_BUFFERS, &r->command);
 	# ndr_pull_atsvc_enum_ctr(ndr, NDR_SCALARS|NDR_BUFFERS, r->in.ctr);
 
-        # Three argument version is for structures
+	# Three argument version is for structures
 
-        if (/ndr_pull([^\)]*?)\(ndr, (NDR_[^,]*?), ([^,]*?)\);/) {
-
-	    s/(ndr_pull_([^\)]*?)\(
+    if (/ndr_pull_([^\)]*?)\(ndr, (NDR_[^,]*?), ([^,]*?)\);/ and 
+			not NdrParser::is_scalar_type($1)) {
+	   	s/(ndr_pull_([^\)]*?)\(
 	       ndr,\ 
 	       (NDR_[^,]*?),\ 
 	       (&?r->((in|out)\.)?([^\(].*?))\);)
@@ -707,9 +708,9 @@ sub RewriteC($$$)
 	    /smgx;
 	}
 
-        # Four argument version if for unions
-
-        if (/ndr_pull([^\)]*?)\(ndr, (NDR_[SB][^,]*?), ([^,]*?), ([^,]*?)\);/) {
+    # Four argument version if for unions
+    if (/ndr_pull_([^\)]*?)\(ndr, (NDR_[SB][^,]*?), ([^,]*?), ([^,]*?)\);/ and
+			not NdrParser::is_scalar_type($1)) {
 	    s/(ndr_pull_([^\)]*?)\(
 	       ndr,\ 
 	       (NDR_[^,]*?),\ 

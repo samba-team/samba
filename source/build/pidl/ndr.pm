@@ -43,6 +43,7 @@ sub RegisterPrimitives()
      "DATA_BLOB"      => 4,
      "error_status_t" => 4,
      "WERROR"         => 4,
+	 "NTSTATUS" 	  => 4,
      "boolean32"      => 4,
      "unsigned32"     => 4,
      "ipv4address"    => 4,
@@ -848,7 +849,6 @@ sub ParseElementPrintBuffer($$)
 	}	
 }
 
-
 #####################################################################
 # parse buffers in a structure element - pull side
 sub ParseElementPullBuffer($$$)
@@ -959,7 +959,6 @@ sub ParseStructPush($)
 
 	end_flags($struct);
 }
-
 
 #####################################################################
 # generate a push function for an enum
