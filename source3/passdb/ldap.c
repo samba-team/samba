@@ -39,8 +39,8 @@ static BOOL ldap_open_connection(LDAP **ldap_struct)
 {
 	if ( (*ldap_struct = ldap_open(lp_ldap_server(),lp_ldap_port()) ) == NULL)
 	{
-		DEBUG(0,("%s: The LDAP server is not responding !\n",timestring()));
-		return(False);
+		DEBUG( 0, ( "The LDAP server is not responding !\n" ) );
+		return( False );
 	}
 	DEBUG(2,("ldap_open_connection: connection opened\n"));
 	return (True);
@@ -55,7 +55,7 @@ static BOOL ldap_connect_anonymous(LDAP *ldap_struct)
 {
 	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
-		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
+		DEBUG( 0, ( "Couldn't bind to the LDAP server !\n" ) );
 		return(False);
 	}
 	return (True);
@@ -69,7 +69,7 @@ static BOOL ldap_connect_system(LDAP *ldap_struct)
 {
 	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
-		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
+		DEBUG( 0, ( "Couldn't bind to the LDAP server!\n" ) );
 		return(False);
 	}
 	DEBUG(2,("ldap_connect_system: succesful connection to the LDAP server\n"));
@@ -83,7 +83,7 @@ static BOOL ldap_connect_user(LDAP *ldap_struct, char *user, char *password)
 {
 	if ( ldap_simple_bind_s(ldap_struct,lp_ldap_root(),lp_ldap_rootpasswd()) ! = LDAP_SUCCESS)
 	{
-		DEBUG(0,("%s: Couldn't bind to the LDAP server !\n", timestring() ));
+		DEBUG( 0, ( "Couldn't bind to the LDAP server !\n" ) );
 		return(False);
 	}
 	DEBUG(2,("ldap_connect_user: succesful connection to the LDAP server\n"));
@@ -104,7 +104,7 @@ static BOOL ldap_search_one_user(LDAP *ldap_struct, char *filter, LDAPMessage **
 
 	if (rc ! = LDAP_SUCCESS )
 	{
-		DEBUG(0,("%s: Problem during the LDAP search\n",timestring()));
+		DEBUG( 0, ( "Problem during the LDAP search\n" ) );
 		return(False);
 	}
 	return (True);

@@ -807,10 +807,9 @@ static int call_trans2findfirst(char *inbuf, char *outbuf, int bufsize, int cnum
   if ((! *directory) && dptr_path(dptr_num))
     slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
-  DEBUG(4,("%s %s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
-	timestring(),
-	smb_fn_name(CVAL(inbuf,smb_com)), 
-	mask,directory,cnum,dirtype,numentries));
+  DEBUG( 4, ( "%s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
+	    smb_fn_name(CVAL(inbuf,smb_com)), 
+	    mask, directory, cnum, dirtype, numentries ) );
 
   return(-1);
 }
@@ -1020,10 +1019,9 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   if ((! *directory) && dptr_path(dptr_num))
     slprintf(directory,sizeof(directory)-1, "(%s)",dptr_path(dptr_num));
 
-  DEBUG(3,("%s %s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
-	   timestring(),
-	   smb_fn_name(CVAL(inbuf,smb_com)), 
-	   mask,directory,cnum,dirtype,numentries));
+  DEBUG( 3, ( "%s mask=%s directory=%s cnum=%d dirtype=%d numentries=%d\n",
+	    smb_fn_name(CVAL(inbuf,smb_com)), 
+	    mask, directory, cnum, dirtype, numentries ) );
 
   return(-1);
 }
@@ -1133,7 +1131,8 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
 
   send_trans2_replies( outbuf, bufsize, params, 0, pdata, data_len);
 
-  DEBUG(4,("%s %s info_level =%d\n",timestring(),smb_fn_name(CVAL(inbuf,smb_com)), info_level));
+  DEBUG( 4, ( "%s info_level = %d\n",
+            smb_fn_name(CVAL(inbuf,smb_com)), info_level) );
 
   return -1;
 }
@@ -1719,7 +1718,7 @@ int reply_findclose(char *inbuf,char *outbuf,int length,int bufsize)
 
   outsize = set_message(outbuf,0,0,True);
 
-  DEBUG(3,("%s SMBfindclose cnum=%d, dptr_num = %d\n",timestring(),cnum,dptr_num));
+  DEBUG( 3, ( "SMBfindclose cnum=%d, dptr_num = %d\n", cnum, dptr_num ) );
 
   return(outsize);
 }
@@ -1744,7 +1743,7 @@ int reply_findnclose(char *inbuf,char *outbuf,int length,int bufsize)
 
   outsize = set_message(outbuf,0,0,True);
 
-  DEBUG(3,("%s SMB_findnclose cnum=%d, dptr_num = %d\n",timestring(),cnum,dptr_num));
+  DEBUG( 3, ( "SMB_findnclose cnum=%d, dptr_num = %d\n", cnum, dptr_num ) );
 
   return(outsize);
 }
@@ -1787,8 +1786,8 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
      * Queue this open message as we are the process of an oplock break.
      */
 
-    DEBUG(2,("%s: reply_trans2: queueing message trans2open due to being in oplock break state.\n",
-           timestring() ));
+    DEBUG( 2, ( "reply_trans2: queueing message trans2open due to being " ) );
+    DEBUGADD( 2, ( "in oplock break state.\n" ) );
 
     push_oplock_pending_smb_message( inbuf, length);
     return -1;
@@ -1915,7 +1914,7 @@ int reply_trans2(char *inbuf,char *outbuf,int length,int bufsize)
       break;
     default:
       /* Error in request */
-      DEBUG(2,("%s Unknown request %d in trans2 call\n",timestring(), tran_call));
+      DEBUG( 2, ( "Unknown request %d in trans2 call\n", tran_call ) );
       if(params)
 	free(params);
       if(data)

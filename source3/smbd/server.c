@@ -1302,11 +1302,10 @@ static void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct 
       write_file(fnum,"%!\n",3);
     }
       
-    DEBUG(2,("%s %s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
-          timestring(),
+    DEBUG( 2, ( "%s opened file %s read=%s write=%s (numopen=%d fnum=%d)\n",
           *sesssetup_user ? sesssetup_user : Connections[cnum].user,fname,
-          BOOLSTR(fsp->can_read),BOOLSTR(fsp->can_write),
-          Connections[cnum].num_files_open,fnum));
+          BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
+          Connections[cnum].num_files_open,fnum ) );
 
   }
 
@@ -1452,9 +1451,9 @@ void close_file(int fnum, BOOL normal_close)
 
   fs_p->sent_oplock_break = False;
 
-  DEBUG(2,("%s %s closed file %s (numopen=%d)\n",
-	   timestring(),Connections[cnum].user,fs_p->name,
-	   Connections[cnum].num_files_open));
+  DEBUG( 2, ( "%s closed file %s (numopen=%d)\n",
+	      Connections[cnum].user,fs_p->name,
+	      Connections[cnum].num_files_open ) );
 
   if (fs_p->name) {
 	  string_free(&fs_p->name);
@@ -2201,8 +2200,8 @@ BOOL become_service(int cnum,BOOL do_chdir)
       ChDir(Connections[cnum].connectpath) != 0 &&
       ChDir(Connections[cnum].origpath) != 0)
     {
-      DEBUG(0,("%s chdir (%s) failed cnum=%d\n",timestring(),
-	    Connections[cnum].connectpath,cnum));     
+      DEBUG( 0, ( "chdir (%s) failed cnum=%d\n",
+	        Connections[cnum].connectpath, cnum ) );
       return(False);
     }
 
@@ -2419,20 +2418,19 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
   {
     SIVAL(outbuf,smb_rcls,error_code);
     
-    DEBUG(3,("%s 32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
-           timestring(), line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf)));
+    DEBUG( 3, ( "32 bit error packet at line %d cmd=%d (%s) eclass=%08x [%s]\n",
+              line, cmd, smb_fn_name(cmd), error_code, smb_errstr(outbuf) ) );
   }
   else
   {
     CVAL(outbuf,smb_rcls) = error_class;
     SSVAL(outbuf,smb_err,error_code);  
-    DEBUG(3,("%s error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
-	   timestring(),
-	   line,
-	   (int)CVAL(inbuf,smb_com),
-	   smb_fn_name(CVAL(inbuf,smb_com)),
-	   error_class,
-	   error_code));
+    DEBUG( 3, ( "error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",
+	      line,
+	      (int)CVAL(inbuf,smb_com),
+	      smb_fn_name(CVAL(inbuf,smb_com)),
+	      error_class,
+	      error_code ) );
 
   }
   
@@ -2680,15 +2678,15 @@ static void process_smb(char *inbuf, char *outbuf)
 		  /* send a negative session response "not listining on calling
 		   name" */
 		  static unsigned char buf[5] = {0x83, 0, 0, 1, 0x81};
-		  DEBUG(1,("%s Connection denied from %s\n",
-			   timestring(),client_addr(Client)));
+		  DEBUG( 1, ( "Connection denied from %s\n",
+			      client_addr(Client) ) );
 		  send_smb(Client,(char *)buf);
 		  exit_server("connection denied");
 	  }
   }
 
-  DEBUG(6,("got message type 0x%x of len 0x%x\n",msg_type,len));
-  DEBUG(3,("%s Transaction %d of length %d\n",timestring(),trans_num,nread));
+  DEBUG( 6, ( "got message type 0x%x of len 0x%x\n", msg_type, len ) );
+  DEBUG( 3, ( "Transaction %d of length %d\n", trans_num, nread ) );
 
 #ifdef WITH_SSL
     if(sslEnabled && !sslConnected){
@@ -2908,8 +2906,11 @@ BOOL oplock_break(uint32 dev, uint32 inode, struct timeval *tval)
   int saved_vuid;
   pstring saved_dir; 
 
-  DEBUG(3,("%s oplock_break: called for dev = %x, inode = %x. Current \
-global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
+  if( DEBUGLVL( 3 ) )
+    {
+    dbgtext( "oplock_break: called for dev = %x, inode = %x.\n", dev, inode );
+    dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
+    }
 
   /* We need to search the file open table for the
      entry containing this dev and inode, and ensure
@@ -2930,8 +2931,12 @@ global_oplocks_open = %d\n", timestring(), dev, inode, global_oplocks_open));
   if(fsp == NULL)
   {
     /* The file could have been closed in the meantime - return success. */
-    DEBUG(0,("%s oplock_break: cannot find open file with dev = %x, inode = %x (fnum = %d) \
-allowing break to succeed.\n", timestring(), dev, inode, fnum));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "oplock_break: cannot find open file with " );
+      dbgtext( "dev = %x, inode = %x (fnum = %d) ", dev, inode, fnum );
+      dbgtext( "allowing break to succeed.\n" );
+      }
     return True;
   }
 
@@ -2946,18 +2951,30 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
 
   if(!fsp->granted_oplock)
   {
-    DEBUG(0,("%s oplock_break: file %s (fnum = %d, dev = %x, inode = %x) has no oplock. Allowing break to succeed regardless.\n", timestring(), fsp->name, fnum, dev, inode));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "oplock_break: file %s (fnum = %d, ", fsp->name, fnum );
+      dbgtext( "dev = %x, inode = %x) has no oplock.\n", dev, inode );
+      dbgtext( "Allowing break to succeed regardless.\n" );
+      }
     return True;
   }
 
   /* mark the oplock break as sent - we don't want to send twice! */
   if (fsp->sent_oplock_break)
   {
-    DEBUG(0,("%s oplock_break: ERROR: oplock_break already sent for file %s (fnum = %d, dev = %x, inode = %x)\n", timestring(), fsp->name, fnum, dev, inode));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "oplock_break: ERROR: oplock_break already sent for " );
+      dbgtext( "file %s (fnum = %d, ", fsp->name, fnum );
+      dbgtext( "dev = %x, inode = %x)\n", dev, inode );
+      }
 
-    /* We have to fail the open here as we cannot send another oplock break on this
-       file whilst we are awaiting a response from the client - neither can we
-       allow another open to succeed while we are waiting for the client. */
+    /* We have to fail the open here as we cannot send another oplock break on
+       this file whilst we are awaiting a response from the client - neither
+       can we allow another open to succeed while we are waiting for the
+       client.
+     */
     return False;
   }
 
@@ -3030,18 +3047,17 @@ allowing break to succeed.\n", timestring(), dev, inode, fnum));
        */
 
       if (smb_read_error == READ_EOF)
-        DEBUG(0,("%s oplock_break: end of file from client\n", timestring()));
+        DEBUG( 0, ( "oplock_break: end of file from client\n" ) );
  
       if (smb_read_error == READ_ERROR)
-        DEBUG(0,("%s oplock_break: receive_smb error (%s)\n",
-                  timestring(), strerror(errno)));
+        DEBUG( 0, ("oplock_break: receive_smb error (%s)\n", strerror(errno)) );
 
       if (smb_read_error == READ_TIMEOUT)
-        DEBUG(0,("%s oplock_break: receive_smb timed out after %d seconds.\n",
-                  timestring(), OPLOCK_BREAK_TIMEOUT));
+        DEBUG( 0, ( "oplock_break: receive_smb timed out after %d seconds.\n",
+                     OPLOCK_BREAK_TIMEOUT ) );
 
-      DEBUG(0,("%s oplock_break failed for file %s (fnum = %d, dev = %x, \
-inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
+      DEBUGADD( 0, ( "oplock_break failed for file %s ", fsp->name ) );
+      DEBUGADD( 0, ( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode));
       shutdown_server = True;
       break;
     }
@@ -3063,10 +3079,13 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
 
     if((time(NULL) - start_time) > OPLOCK_BREAK_TIMEOUT)
     {
-      DEBUG(0,("%s oplock_break: no break received from client within \
-%d seconds.\n", timestring(), OPLOCK_BREAK_TIMEOUT));
-      DEBUG(0,("%s oplock_break failed for file %s (fnum = %d, dev = %x, \
-inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
+      if( DEBUGLVL( 0 ) )
+        {
+        dbgtext( "oplock_break: no break received from client " );
+        dbgtext( "within %d seconds.\n", OPLOCK_BREAK_TIMEOUT );
+        dbgtext( "oplock_break failed for file %s ", fsp->name );
+        dbgtext( "(fnum = %d, dev = %x, inode = %x).\n", fnum, dev, inode );
+        }
       shutdown_server = True;
       break;
     }
@@ -3078,8 +3097,8 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
    */
   if(!become_user(&Connections[saved_cnum], saved_cnum, saved_vuid))
   {
-    DEBUG(0,("%s oplock_break: unable to re-become user ! Shutting down server\n",
-          timestring()));
+    DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
+    DEBUGADD( 0, ( "Shutting down server\n" ) );
     close_sockets();
     close(oplock_sock);
     exit_server("unable to re-become user");
@@ -3101,8 +3120,8 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
 
   if(shutdown_server)
   {
-    DEBUG(0,("%s oplock_break: client failure in break - shutting down this smbd.\n",
-          timestring()));
+    DEBUG( 0, ( "oplock_break: client failure in break - " ) );
+    DEBUGADD( 0, ( "shutting down this smbd.\n" ) );
     close_sockets();
     close(oplock_sock);
     exit_server("oplock break failure");
@@ -3126,8 +3145,12 @@ inode = %x).\n", timestring(), fsp->name, fnum, dev, inode));
     exit_server("oplock_break: global_oplocks_open < 0");
   }
 
-  DEBUG(3,("%s oplock_break: returning success for fnum = %d, dev = %x, inode = %x. Current \
-global_oplocks_open = %d\n", timestring(), fnum, dev, inode, global_oplocks_open));
+  if( DEBUGLVL( 3 ) )
+    {
+    dbgtext( "oplock_break: returning success for " );
+    dbgtext( "fnum = %d, dev = %x, inode = %x.\n", fnum, dev, inode );
+    dbgtext( "Current global_oplocks_open = %d\n", global_oplocks_open );
+    }
 
   return True;
 }
@@ -3178,16 +3201,24 @@ should be %d\n", pid, share_entry->op_port, oplock_port));
   addr_out.sin_port = htons( share_entry->op_port );
   addr_out.sin_family = AF_INET;
    
-  DEBUG(3,("%s request_oplock_break: sending a oplock break message to pid %d on port %d \
-for dev = %x, inode = %x\n", timestring(), share_entry->pid, share_entry->op_port, dev, inode));
+  if( DEBUGLVL( 3 ) )
+    {
+    dbgtext( "request_oplock_break: sending a oplock break message to " );
+    dbgtext( "pid %d on port %d ", share_entry->pid, share_entry->op_port );
+    dbgtext( "for dev = %x, inode = %x\n", dev, inode );
+    }
 
   if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
          (struct sockaddr *)&addr_out,sizeof(addr_out)) < 0)
   {
-    DEBUG(0,("%s request_oplock_break: failed when sending a oplock break message \
-to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
-         timestring(), share_entry->pid, share_entry->op_port, dev, inode,
-         strerror(errno)));
+    if( DEBUGLVL( 0 ) )
+      {
+      dbgtext( "request_oplock_break: failed when sending a oplock " );
+      dbgtext( "break message to pid %d ", share_entry->pid );
+      dbgtext( "on port %d ", share_entry->op_port );
+      dbgtext( "for dev = %x, inode = %x.\n", dev, inode );
+      dbgtext( "Error was %s\n", strerror(errno) );
+      }
     return False;
   }
 
@@ -3213,9 +3244,13 @@ to pid %d on port %d for dev = %x, inode = %x. Error was %s\n",
     {
       if(smb_read_error == READ_TIMEOUT)
       {
-        DEBUG(0,("%s request_oplock_break: no response received to oplock break request to \
-pid %d on port %d for dev = %x, inode = %x\n", timestring(), share_entry->pid, 
-                           share_entry->op_port, dev, inode));
+        if( DEBUGLVL( 0 ) )
+          {
+          dbgtext( "request_oplock_break: no response received to oplock " );
+          dbgtext( "break request to pid %d ", share_entry->pid );
+          dbgtext( "on port %d ", share_entry->op_port );
+          dbgtext( "for dev = %x, inode = %x\n", dev, inode );
+          }
         /*
          * This is a hack to make handling of failing clients more robust.
          * If a oplock break response message is not received in the timeout
@@ -3226,9 +3261,14 @@ pid %d on port %d for dev = %x, inode = %x\n", timestring(), share_entry->pid,
         break;
       }
       else
-        DEBUG(0,("%s request_oplock_break: error in response received to oplock break request to \
-pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, share_entry->pid, 
-                         share_entry->op_port, dev, inode, strerror(errno)));
+        if( DEBUGLVL( 0 ) )
+          {
+          dbgtext( "request_oplock_break: error in response received " );
+          dbgtext( "to oplock break request to pid %d ", share_entry->pid );
+          dbgtext( "on port %d ", share_entry->op_port );
+          dbgtext( "for dev = %x, inode = %x.\n", dev, inode );
+          dbgtext( "Error was (%s).\n", strerror(errno) );
+          }
       return False;
     }
 
@@ -3240,8 +3280,8 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, shar
     if(reply_msg_len != OPLOCK_BREAK_MSG_LEN)
     {
       /* Ignore it. */
-      DEBUG(0,("%s request_oplock_break: invalid message length received. Ignoring\n",
-             timestring()));
+      DEBUG( 0, ( "request_oplock_break: invalid message length received." ) );
+      DEBUGADD( 0, ( "  Ignoring.\n" ) );
       continue;
     }
 
@@ -3278,7 +3318,7 @@ pid %d on port %d for dev = %x, inode = %x. Error was (%s).\n", timestring, shar
     time_left -= (time(NULL) - start_time);
   }
 
-  DEBUG(3,("%s request_oplock_break: broke oplock.\n", timestring()));
+  DEBUG( 3, ( "%s request_oplock_break: broke oplock.\n" ) );
 
   return True;
 }
@@ -3422,12 +3462,13 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     {
       extern int Client;
       if (strequal(service,"IPC$"))
-	{	  
-	  DEBUG(3,("%s refusing IPC connection\n",timestring()));
-	  return(-3);
+	{
+	  DEBUG( 3, ( "refusing IPC connection\n" ) );
+	  return( -3 );
 	}
 
-      DEBUG(0,("%s %s (%s) couldn't find service %s\n",timestring(),remote_machine,client_addr(Client),service));      
+      DEBUG( 0, ( "%s (%s) couldn't find service %s\n",
+                remote_machine, client_addr(Client), service ) );
       return(-2);
     }
 
@@ -3489,14 +3530,14 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
   /* shall we let them in? */
   if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid))
     {
-      DEBUG(2,("%s invalid username/password for %s\n",timestring(),service));
+      DEBUG( 2, ( "Invalid username/password for %s\n", service ) );
       return(-1);
     }
   
-  cnum = find_free_connection(str_checksum(service) + str_checksum(user));
+  cnum = find_free_connection( str_checksum(service) + str_checksum(user) );
   if (cnum < 0)
     {
-      DEBUG(0,("%s couldn't find free connection\n",timestring()));      
+      DEBUG( 0, ( "Couldn't find free connection.\n" ) );
       return(-1);
     }
 
@@ -3508,7 +3549,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 
   if (pass == NULL)
     {
-      DEBUG(0,("%s couldn't find account %s\n",timestring(),user)); 
+      DEBUG( 0, ( "Couldn't find account %s\n", user ) );
       return(-7);
     }
 
@@ -3711,17 +3752,16 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
     set_namearray( &pcon->veto_oplock_list, lp_veto_oplocks(SNUM(cnum)));
   }
 
-  {
+  if( DEBUGLVL( IS_IPC(cnum) ? 3 : 1 ) )
+    {
     extern int Client;
-    DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) connect to service %s as user %s (uid=%d,gid=%d) (pid %d)\n",
-			    timestring(),
-			    remote_machine,
-			    client_addr(Client),
-			    lp_servicename(SNUM(cnum)),user,
-			    pcon->uid,
-			    pcon->gid,
-			    (int)getpid()));
-  }
+
+    dbgtext( "%s (%s) ", remote_machine, client_addr(Client) );
+    dbgtext( "connect to service %s ", lp_servicename(SNUM(cnum)) );
+    dbgtext( "as user %s ", user );
+    dbgtext( "(uid=%d, gid=%d) ", pcon->uid, pcon->gid );
+    dbgtext( "(pid %d)\n", (int)getpid() );
+    }
 
   return(cnum);
 }
@@ -4235,7 +4275,7 @@ static int reply_negprot(char *inbuf,char *outbuf, int dum_size, int dum_buffsiz
   }
   SSVAL(outbuf,smb_vwv0,choice);
   
-  DEBUG(5,("%s negprot index=%d\n",timestring(),choice));
+  DEBUG( 5, ( "negprot index=%d\n", choice ) );
 
   return(outsize);
 }
@@ -4274,10 +4314,9 @@ void close_cnum(int cnum, uint16 vuid)
       return;
     }
 
-  DEBUG(IS_IPC(cnum)?3:1,("%s %s (%s) closed connection to service %s\n",
-			  timestring(),
-			  remote_machine,client_addr(Client),
-			  lp_servicename(SNUM(cnum))));
+  DEBUG( IS_IPC(cnum)?3:1, ( "%s (%s) closed connection to service %s\n",
+			     remote_machine,client_addr(Client),
+			     lp_servicename(SNUM(cnum)) ) );
 
   yield_connection(cnum,
 		   lp_servicename(SNUM(cnum)),
@@ -4400,7 +4439,7 @@ void exit_server(char *reason)
 
   locking_end();
 
-  DEBUG(3,("%s Server exit  (%s)\n",timestring(),reason?reason:""));
+  DEBUG( 3, ( "Server exit (%s)\n", (reason ? reason : "") ) );
   exit(0);
 }
 
@@ -4645,10 +4684,10 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
        * Queue this message as we are the process of an oplock break.
        */
 
-      DEBUG(2,("%s: switch_message: queueing message due to being in oplock break state.\n",
-             timestring() ));
+      DEBUG( 2, ( "switch_message: queueing message due to being in " ) );
+      DEBUGADD( 2, ( "oplock break state.\n" ) );
 
-      push_oplock_pending_smb_message( inbuf, size);
+      push_oplock_pending_smb_message( inbuf, size );
       return -1;
     }          
 
@@ -4995,15 +5034,15 @@ static void process(void)
       /* automatic timeout if all connections are closed */      
       if (num_connections_open==0 && counter >= IDLE_CLOSED_TIMEOUT) 
       {
-        DEBUG(2,("%s Closing idle connection\n",timestring()));
+        DEBUG( 2, ( "Closing idle connection\n" ) );
         return;
       }
 
       if (keepalive && (counter-last_keepalive)>keepalive) 
       {
 	      struct cli_state *cli = server_client();
-	      if (!send_keepalive(Client)) { 
-		      DEBUG(2,("%s Keepalive failed - exiting\n",timestring()));
+	      if (!send_keepalive(Client)) {
+		      DEBUG( 2, ( "Keepalive failed - exiting.\n" ) );
 		      return;
 	      }	    
 	      /* also send a keepalive to the password server if its still
@@ -5028,7 +5067,7 @@ static void process(void)
 
       if (allidle && num_connections_open>0) 
       {
-        DEBUG(2,("%s Closing idle connection 2\n",timestring()));
+        DEBUG( 2, ( "Closing idle connection 2.\n" ) );
         return;
       }
 
@@ -5281,8 +5320,8 @@ static void usage(char *pname)
 
   reopen_logs();
 
-  DEBUG(2,("%s smbd version %s started\n",timestring(),VERSION));
-  DEBUG(2,("Copyright Andrew Tridgell 1992-1997\n"));
+  DEBUG( 1, ( "smbd version %s started.\n", VERSION ) );
+  DEBUGADD( 1, ( "Copyright Andrew Tridgell 1992-1997\n" ) );
 
 #ifdef HAVE_GETRLIMIT
 #ifdef RLIMIT_NOFILE
@@ -5353,7 +5392,7 @@ static void usage(char *pname)
 #endif /* SIGUSR2 */
 #endif /* MEM_MAN */
 
-  DEBUG(3,("%s loaded services\n",timestring()));
+  DEBUG( 3, ( "loaded services\n" ) );
 
   if (!is_daemon && !is_a_socket(0))
     {
@@ -5363,7 +5402,7 @@ static void usage(char *pname)
 
   if (is_daemon)
     {
-      DEBUG(3,("%s becoming a daemon\n",timestring()));
+      DEBUG( 3, ( "Becoming a daemon.\n" ) );
       become_daemon();
     }
 
@@ -5392,11 +5431,11 @@ static void usage(char *pname)
   if (*lp_rootdir())
     {
       if (sys_chroot(lp_rootdir()) == 0)
-	DEBUG(2,("%s changed root to %s\n",timestring(),lp_rootdir()));
+	DEBUG( 2, ( "Changed root to %s\n", lp_rootdir() ) );
     }
 
   /* Setup the oplock IPC socket. */
-  if(!open_oplock_ipc())
+  if( !open_oplock_ipc() )
     exit(1);
 
   process();

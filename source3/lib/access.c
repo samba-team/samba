@@ -71,9 +71,9 @@ BOOL check_access(int snum)
 	}
       else
 	if (snum >= 0)
-	  DEBUG(0,("%s Denied connection from %s (%s) to %s\n",
-		   timestring(), client_name(Client),client_addr(Client),
-		   lp_servicename(snum)));
+	  DEBUG( 0, ( "Denied connection from %s (%s) to %s\n",
+		      client_name(Client),client_addr(Client),
+		      lp_servicename(snum) ) );
     }
 
   if (denyl) free(denyl);

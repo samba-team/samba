@@ -117,7 +117,7 @@ int reply_sends(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
 
-  DEBUG(3,("%s SMBsends (from %s to %s)\n",timestring(),orig,dest));
+  DEBUG( 3, ( "SMBsends (from %s to %s)\n", orig, dest ) );
 
   msg_deliver();
 
@@ -146,7 +146,7 @@ int reply_sendstrt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   fstrcpy(msgfrom,orig);
   fstrcpy(msgto,dest);
 
-  DEBUG(3,("%s SMBsendstrt (from %s to %s)\n",timestring(),msgfrom,msgto));
+  DEBUG( 3, ( "SMBsendstrt (from %s to %s)\n", msgfrom, msgto ) );
 
   return(outsize);
 }
@@ -174,7 +174,7 @@ int reply_sendtxt(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
   memcpy(&msgbuf[msgpos],msg+2,len);
   msgpos += len;
 
-  DEBUG(3,("%s SMBsendtxt\n",timestring()));
+  DEBUG( 3, ( "SMBsendtxt\n" ) );
 
   return(outsize);
 }
@@ -192,7 +192,7 @@ int reply_sendend(char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 
   outsize = set_message(outbuf,0,0,True);
 
-  DEBUG(3,("%s SMBsendend\n",timestring()));
+  DEBUG( 3, ( "%s SMBsendend\n" ) );
 
   msg_deliver();
 
