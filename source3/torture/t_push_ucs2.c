@@ -30,19 +30,22 @@ static int check_push_ucs2(const char *orig)
 int main(int argc, char *argv[])
 {
 	int i, ret = 0;
+	int count = 1;
 
 	/* Needed to initialize character set */
 	lp_load("/dev/null", True, False, False);
 
-	if (argc != 2) {
-		fprintf(stderr, "usage: %s STRING1\n"
+	if (argc < 2) {
+		fprintf(stderr, "usage: %s STRING1 [COUNT]\n"
 			"Checks that a string translated UNIX->UCS2->UNIX is unchanged\n"
 			"Should be always 0\n",
 			argv[0]);
 		return 2;
 	}
+	if (argc >= 3)
+		count = atoi(argv[2]);
 
-	for (i = 0; ((i < 10000) && (!ret)); i++)
+	for (i = 0; ((i < count) && (!ret)); i++)
 		ret = check_push_ucs2(argv[1]);
 
 	printf("%d\n", ret);
