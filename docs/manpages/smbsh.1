@@ -39,6 +39,90 @@ the user to set the directory prefix for SMB access. The
 default value if this option is not specified is 
 \fBsmb\fR.
 .TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
+.TP
+\fB-d|--debug=debuglevel\fR
+\fIdebuglevel\fR is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.
+
+The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.
+
+Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.
+
+Note that specifying this parameter here will 
+override the log
+level file.
+.TP
+\fB-R <name resolve order>\fR
+This option is used to determine what naming 
+services and in what order to resolve 
+host names to IP addresses. The option takes a space-separated 
+string of different name resolution options.
+
+The options are: "lmhosts", "host", "wins" and "bcast". 
+They cause names to be resolved as follows :
+.RS
+.TP 0.2i
+\(bu
+lmhosts: 
+Lookup an IP address in the Samba lmhosts file. If the 
+line in lmhosts has no name type attached to the 
+NetBIOS name 
+(see the \fBlmhosts\fR(5) for details) 
+then any name type matches for lookup.
+.TP 0.2i
+\(bu
+host: 
+Do a standard host name to IP address resolution, using
+the system \fI/etc/hosts\fR, NIS, or DNS
+lookups. This method of name resolution is operating 
+system dependent, for instance on IRIX or Solaris this 
+may be controlled by the \fI/etc/nsswitch.conf\fR file).  Note that this method is only used 
+if the NetBIOS name type being queried is the 0x20 
+(server) name type, otherwise it is ignored.
+.TP 0.2i
+\(bu
+wins: 
+Query a name with the IP address listed in the 
+\fIwins server\fR parameter.  If no 
+WINS server has been specified this method will be 
+ignored.
+.TP 0.2i
+\(bu
+bcast: 
+Do a broadcast on each of the known local interfaces 
+listed in the \fIinterfaces\fR
+parameter. This is the least reliable of the name 
+resolution methods as it depends on the target host 
+being on a locally connected subnet.
+.RE
+
+If this parameter is not set then the name resolve order 
+defined in the \fBsmb.conf\fR(5) file parameter  
+(\fIname resolve order\fR) will be used. 
+
+The default order is lmhosts, host, wins, bcast. Without 
+this parameter or any entry in the \fIname resolve order\fR parameter of the \fBsmb.conf\fR(5) file, the name resolution methods 
+will be attempted in this order. 
+.TP
 \fB-L libdir\fR
 This parameter specifies the location of the 
 shared libraries used by \fBsmbsh\fR. The default

@@ -70,6 +70,9 @@ This is preferred over having passwords in plaintext in a
 shared file, such as \fI/etc/fstab\fR. Be sure to protect any
 credentials file properly.
 .TP
+\fBkrb\fR
+Use kerberos (Active Directory). 
+.TP
 \fBnetbiosname=<arg>\fR
 sets the source NetBIOS name. It defaults 
 to the local hostname. 
@@ -95,30 +98,30 @@ permissions that remote files have in the local filesystem.
 The default is based on the current umask. 
 .TP
 \fBdmask=<arg>\fR
-sets the directory mask. This determines the 
+Sets the directory mask. This determines the 
 permissions that remote directories have in the local filesystem. 
 The default is based on the current umask. 
 .TP
 \fBdebug=<arg>\fR
-sets the debug level. This is useful for 
+Sets the debug level. This is useful for 
 tracking down SMB connection problems. A suggested value to
 start with is 4. If set too high there will be a lot of
 output, possibly hiding the useful output.
 .TP
 \fBip=<arg>\fR
-sets the destination host or IP address.
+Sets the destination host or IP address.
 .TP
 \fBworkgroup=<arg>\fR
-sets the workgroup on the destination 
+Sets the workgroup on the destination 
 .TP
 \fBsockopt=<arg>\fR
-sets the TCP socket options. See the \fBsmb.conf\fR(5) \fIsocket options\fR option.
+Sets the TCP socket options. See the \fBsmb.conf\fR(5) \fIsocket options\fR option.
 .TP
 \fBscope=<arg>\fR
-sets the NetBIOS scope 
+Sets the NetBIOS scope 
 .TP
 \fBguest\fR
-don't prompt for a password 
+Don't prompt for a password 
 .TP
 \fBro\fR
 mount read-only 

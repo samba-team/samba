@@ -9,7 +9,7 @@
 smbtar \- shell script for backing up SMB/CIFS shares  directly to UNIX tape drives
 .SH SYNOPSIS
 
-\fBsmbtar\fR \fB-s server\fR [ \fB-p password\fR ] [ \fB-x services\fR ] [ \fB-X\fR ] [ \fB-d directory\fR ] [ \fB-u user\fR ] [ \fB-t tape\fR ] [ \fB-t tape\fR ] [ \fB-b blocksize\fR ] [ \fB-N filename\fR ] [ \fB-i\fR ] [ \fB-r\fR ] [ \fB-l loglevel\fR ] [ \fB-v\fR ] \fBfilenames\fR
+\fBsmbtar\fR [ \fB-r\fR ] [ \fB-i\fR ] [ \fB-a\fR ] [ \fB-v\fR ] \fB-s server\fR [ \fB-p password\fR ] [ \fB-x services\fR ] [ \fB-X\fR ] [ \fB-N filename\fR ] [ \fB-b blocksize\fR ] [ \fB-d directory\fR ] [ \fB-l loglevel\fR ] [ \fB-u user\fR ] [ \fB-t tape\fR ] \fBfilenames\fR
 
 .SH "DESCRIPTION"
 .PP
@@ -45,6 +45,10 @@ Default: none
 \fB-u user\fR
 The user id to connect as. Default: 
 UNIX login name. 
+.TP
+\fB-a\fR
+Reset DOS archive bit mode to 
+indicate file has been archived. 
 .TP
 \fB-t tape\fR
 Tape device. May be regular file or tape 
