@@ -96,7 +96,7 @@ static void terminate_connection(struct server_context *server, const char *reas
 /*
   mutex init function for thread model
 */
-static int thread_mutex_init(mutex_t *mutex, const char *name)
+static int thread_mutex_init(smb_mutex_t *mutex, const char *name)
 {
 	pthread_mutex_t m = PTHREAD_MUTEX_INITIALIZER;
 	mutex->mutex = memdup(&m, sizeof(m));
@@ -110,7 +110,7 @@ static int thread_mutex_init(mutex_t *mutex, const char *name)
 /*
   mutex destroy function for thread model
 */
-static int thread_mutex_destroy(mutex_t *mutex, const char *name)
+static int thread_mutex_destroy(smb_mutex_t *mutex, const char *name)
 {
 	return pthread_mutex_destroy((pthread_mutex_t *)mutex->mutex);
 }
@@ -131,7 +131,7 @@ static double mutex_end_timer(struct timeval tp1)
 /*
   mutex lock function for thread model
 */
-static int thread_mutex_lock(mutex_t *mutexP, const char *name)
+static int thread_mutex_lock(smb_mutex_t *mutexP, const char *name)
 {
 	pthread_mutex_t *mutex = (pthread_mutex_t *)mutexP->mutex;
 	int rc;
@@ -160,7 +160,7 @@ static int thread_mutex_lock(mutex_t *mutexP, const char *name)
 /* 
    mutex unlock for thread model
 */
-static int thread_mutex_unlock(mutex_t *mutex, const char *name)
+static int thread_mutex_unlock(smb_mutex_t *mutex, const char *name)
 {
 	return pthread_mutex_unlock((pthread_mutex_t *)mutex->mutex);
 }
