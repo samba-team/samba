@@ -150,7 +150,7 @@ out2:
  */
 
 static krb5_error_code
-mssetpw_send_request (krb5_context context,
+setpw_send_request (krb5_context context,
 		    krb5_auth_context *auth_context,
 		    krb5_creds *creds,
 		    krb5_principal targprinc,
@@ -394,17 +394,6 @@ process_reply (krb5_context context,
     }
 }
 
-static krb5_error_code
-setpw_send_request (krb5_context context,
-		    krb5_auth_context *auth_context,
-		    krb5_creds *creds,
-		    krb5_principal targprinc,
-		    int sock,
-		    char *passwd,
-		    const char *host)
-{
-    
-}
 
 /*
  * change the password using the credentials in `creds' (for the
@@ -432,8 +421,7 @@ struct kpwd_proc {
     kpwd_send_request send_req;
     kpwd_process_reply process_rep;
 } procs[] = {
-    { "set password", setpw_send_request, process_reply },
-    { "MS set password", mssetpw_send_request, process_reply },
+    { "MS set password", setpw_send_request, process_reply },
     { "change password", chgpw_send_request, process_reply },
     { NULL }
 };
