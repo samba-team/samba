@@ -1011,6 +1011,7 @@ static void find_fill_info(struct smbsrv_request *req,
 {
 	uint8_t *data;
 	uint_t ofs = trans->out.data.length;
+	uint32_t ea_size;
 
 	switch (state->level) {
 	case RAW_SEARCH_SEARCH:
@@ -1057,6 +1058,29 @@ static void find_fill_info(struct smbsrv_request *req,
 		SIVAL(data, 22, file->ea_size.ea_size);
 		trans2_append_data_string(req, trans, &file->ea_size.name, 
 					  ofs + 26, STR_LEN8BIT | STR_NOALIGN);
+		trans2_grow_data(req, trans, trans->out.data.length + 1);
+		trans->out.data.data[trans->out.data.length-1] = 0;
+		break;
+
+	case RAW_SEARCH_EA_LIST:
+		ea_size = ea_list_size(file->ea_list.eas.num_eas, file->ea_list.eas.eas);
+		if (state->flags & FLAG_TRANS2_FIND_REQUIRE_RESUME) {
+			trans2_grow_data(req, trans, ofs + 27 + ea_size);
+			SIVAL(trans->out.data.data, ofs, file->ea_list.resume_key);
+			ofs += 4;
+		} else {
+			trans2_grow_data(req, trans, ofs + 23 + ea_size);
+		}
+		data = trans->out.data.data + ofs;
+		srv_push_dos_date2(req->smb_conn, data, 0, file->ea_list.create_time);
+		srv_push_dos_date2(req->smb_conn, data, 4, file->ea_list.access_time);
+		srv_push_dos_date2(req->smb_conn, data, 8, file->ea_list.write_time);
+		SIVAL(data, 12, file->ea_list.size);
+		SIVAL(data, 16, file->ea_list.alloc_size);
+		SSVAL(data, 20, file->ea_list.attrib);
+		ea_put_list(data+22, file->ea_list.eas.num_eas, file->ea_list.eas.eas);
+		trans2_append_data_string(req, trans, &file->ea_list.name, 
+					  ofs + 22 + ea_size, STR_LEN8BIT | STR_NOALIGN);
 		trans2_grow_data(req, trans, trans->out.data.length + 1);
 		trans->out.data.data[trans->out.data.length-1] = 0;
 		break;
@@ -1233,6 +1257,15 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 		return NT_STATUS_INVALID_LEVEL;
 	}
 
+	if (search.t2ffirst.level == RAW_SEARCH_EA_LIST) {
+		status = ea_pull_name_list(&trans->in.data, req,
+					   &search.t2ffirst.in.num_names, 
+					   &search.t2ffirst.in.ea_names);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
+	}
+
 	/* setup the private state structure that the backend will give us in the callback */
 	state.req = req;
 	state.trans = trans;
@@ -1292,6 +1325,15 @@ static NTSTATUS trans2_findnext(struct smbsrv_request *req, struct smb_trans2 *t
 	search.t2fnext.level = (enum smb_search_level)level;
 	if (search.t2fnext.level >= RAW_SEARCH_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
+	}
+
+	if (search.t2fnext.level == RAW_SEARCH_EA_LIST) {
+		status = ea_pull_name_list(&trans->in.data, req,
+					   &search.t2fnext.in.num_names, 
+					   &search.t2fnext.in.ea_names);
+		if (!NT_STATUS_IS_OK(status)) {
+			return status;
+		}
 	}
 
 	/* setup the private state structure that the backend will give us in the callback */

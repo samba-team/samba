@@ -160,3 +160,16 @@ char *data_blob_hex_string(TALLOC_CTX *mem_ctx, DATA_BLOB *blob)
 
 	return hex_string;
 }
+
+/*
+  useful for constructing data blobs in test suites, while
+  avoiding const warnings
+*/
+DATA_BLOB data_blob_string_const(const char *str)
+{
+	DATA_BLOB blob;
+	blob.data = discard_const(str);
+	blob.length = strlen(str);
+	return blob;
+}
+

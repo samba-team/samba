@@ -550,7 +550,7 @@ NTSTATUS smb_raw_fileinfo(struct smbcli_tree *tree,
  Query path info (async send)
 ****************************************************************************/
 struct smbcli_request *smb_raw_pathinfo_send(struct smbcli_tree *tree,
-					  union smb_fileinfo *parms)
+					     union smb_fileinfo *parms)
 {
 	DATA_BLOB data;
 	struct smbcli_request *req;

@@ -35,6 +35,8 @@ struct pvfs_search_state {
 	uint16_t must_attrib;
 	struct pvfs_dir *dir;
 	time_t last_used;
+	uint_t num_ea_names;
+	struct ea_name *ea_names;
 };
 
 
@@ -117,6 +119,20 @@ static NTSTATUS fill_search_info(struct pvfs_state *pvfs,
 		file->ea_size.ea_size      = name->dos.ea_size;
 		file->ea_size.name.s       = fname;
 		return NT_STATUS_OK;
+
+	case RAW_SEARCH_EA_LIST:
+		file->ea_list.resume_key   = dir_index;
+		file->ea_list.create_time  = nt_time_to_unix(name->dos.create_time);
+		file->ea_list.access_time  = nt_time_to_unix(name->dos.access_time);
+		file->ea_list.write_time   = nt_time_to_unix(name->dos.write_time);
+		file->ea_list.size         = name->st.st_size;
+		file->ea_list.alloc_size   = name->dos.alloc_size;
+		file->ea_list.attrib       = name->dos.attrib;
+		file->ea_list.name.s       = fname;
+		return pvfs_query_ea_list(pvfs, file, name, -1, 
+					  search->num_ea_names,
+					  search->ea_names,
+					  &file->ea_list.eas);
 
 	case RAW_SEARCH_DIRECTORY_INFO:
 		file->directory_info.file_index   = dir_index;
@@ -471,6 +487,8 @@ NTSTATUS pvfs_search_first(struct ntvfs_module_context *ntvfs,
 	search->search_attrib = search_attrib;
 	search->must_attrib = 0;
 	search->last_used = 0;
+	search->num_ea_names = io->t2ffirst.in.num_names;
+	search->ea_names = io->t2ffirst.in.ea_names;
 
 	talloc_set_destructor(search, pvfs_search_destructor);
 
@@ -549,6 +567,9 @@ NTSTATUS pvfs_search_next(struct ntvfs_module_context *ntvfs,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
+
+	search->num_ea_names = io->t2fnext.in.num_names;
+	search->ea_names = io->t2fnext.in.ea_names;
 
 	status = pvfs_search_fill(pvfs, req, io->t2fnext.in.max_count, search, io->generic.level,
 				  &reply_count, search_private, callback);

@@ -27,11 +27,11 @@
 /*
   reply to a RAW_FILEINFO_EA_LIST call
 */
-static NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
-				   struct pvfs_filename *name, int fd, 
-				   uint_t num_names,
-				   struct ea_name *names,
-				   struct smb_ea_list *eas)
+NTSTATUS pvfs_query_ea_list(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx, 
+			    struct pvfs_filename *name, int fd, 
+			    uint_t num_names,
+			    struct ea_name *names,
+			    struct smb_ea_list *eas)
 {
 	NTSTATUS status;
 	int i;
