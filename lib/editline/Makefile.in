@@ -77,7 +77,7 @@ clean:
 mostlyclean: clean
 
 distclean: clean
-	rm -f Makefile *.tab.c *~ roken_rename.h
+	rm -f Makefile *.tab.c *~
 
 realclean: distclean
 	rm -f TAGS
