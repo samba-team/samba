@@ -186,8 +186,10 @@ int sys_statvfs( const char *path, SMB_STRUCT_STATVFS *fsd)
 {
 #if defined(STAT_STATVFS64)
   return statvfs64(path, fsd);
-#else
+#elif defined(STAT_STATVFS)
   return statvfs(path, fsd);
+#else
+  return -1;
 #endif
 }
 

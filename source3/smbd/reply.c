@@ -932,7 +932,7 @@ int reply_dskattr(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
   SSVAL(outbuf,smb_vwv2,512);
   SSVAL(outbuf,smb_vwv3,dfree);
 
-  DEBUG(3,("dskattr dfree=%d\n", dfree));
+  DEBUG(3,("dskattr dfree=%d\n", (unsigned int)dfree));
 
   return(outsize);
 }
