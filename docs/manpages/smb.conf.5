@@ -3252,7 +3252,7 @@ Default: \fBno file included\fR
 
 Example: \fBinclude = /usr/local/samba/lib/admin_smb.conf
 \fR.TP
-\fBinherit acls(S)\fR
+\fBinherit acls (S)\fR
 This parameter can be used to ensure
 that if default acls exist on parent directories,
 they are always honored when creating a subdirectory.
@@ -5261,13 +5261,22 @@ spool file when it has been processed, otherwise you will need to
 manually remove old spool files.
 
 The print command is simply a text string. It will be used 
-verbatim, with two exceptions: All occurrences of \fI%s
-\fRand \fI%f\fR will be replaced by the 
-appropriate spool file name, and all occurrences of \fI%p
-\fRwill be replaced by the appropriate printer name. The 
-spool file name is generated automatically by the server. The 
-\fI%J\fR macro can be used to access the job 
+verbatim after macro substitutions have been made:
+
+s, %p - the path to the spool
+file name
+
+%p - the appropriate printer 
+name
+
+%J - the job 
 name as transmitted by the client.
+
+%c - The number of printed pages
+of the spooled job (if known).
+
+%z - the size of the spooled
+print job (in bytes)
 
 The print command \fBMUST\fR contain at least 
 one occurrence of \fI%s\fR or \fI%f
@@ -7248,9 +7257,9 @@ Please note that setting this parameter to + causes problems
 with group membership at least on glibc systems, as the character +
 is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = \\\\\fR
+Default: \fBwinbind separator = '\\'\fR
 
-Example: \fBwinbind separator = /\fR
+Example: \fBwinbind separator = +\fR
 .TP
 \fBwinbind uid (G)\fR
 The winbind gid parameter specifies the range of group 

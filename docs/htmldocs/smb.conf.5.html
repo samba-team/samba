@@ -9309,7 +9309,7 @@ CLASS="COMMAND"
 ><A
 NAME="INHERITACLS"
 ></A
->inherit acls(S)</DT
+>inherit acls (S)</DT
 ><DD
 ><P
 >This parameter can be used to ensure
@@ -14252,33 +14252,22 @@ CLASS="COMMAND"
 		manually remove old spool files.</P
 ><P
 >The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <TT
-CLASS="PARAMETER"
-><I
->%s
-		</I
-></TT
-> and <TT
-CLASS="PARAMETER"
-><I
->%f</I
-></TT
-> will be replaced by the 
-		appropriate spool file name, and all occurrences of <TT
-CLASS="PARAMETER"
-><I
->%p
-		</I
-></TT
-> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<TT
-CLASS="PARAMETER"
-><I
->%J</I
-></TT
-> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</P
+><P
+>s, %p - the path to the spool
+		file name</P
+><P
+>%p - the appropriate printer 
+		name</P
+><P
+>%J - the job 
 		name as transmitted by the client.</P
+><P
+>%c - The number of printed pages
+		of the spooled job (if known).</P
+><P
+>%z - the size of the spooled
+		print job (in bytes)</P
 ><P
 >The print command <EM
 >MUST</EM
@@ -18992,14 +18981,14 @@ CLASS="FILENAME"
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</P
 ><P
->Example: <B
+>Default: <B
 CLASS="COMMAND"
->winbind separator = \\</B
+>winbind separator = '\'</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = /</B
+>winbind separator = +</B
 ></P
 ></DD
 ><DT
@@ -19418,7 +19407,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6133"
+NAME="AEN6134"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19448,7 +19437,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6139"
+NAME="AEN6140"
 ></A
 ><H2
 >VERSION</H2
@@ -19459,7 +19448,7 @@ NAME="AEN6139"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6142"
+NAME="AEN6143"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19538,7 +19527,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6162"
+NAME="AEN6163"
 ></A
 ><H2
 >AUTHOR</H2

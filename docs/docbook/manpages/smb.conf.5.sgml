@@ -3208,7 +3208,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="INHERITACLS">inherit acls(S)</term>
+		<term><anchor id="INHERITACLS">inherit acls (S)</term>
 		<listitem><para>This parameter can be used to ensure
 		that if default acls exist on parent directories,
 		they are always honored when creating a subdirectory.
@@ -5770,13 +5770,22 @@
 		manually remove old spool files.</para>
 		
 		<para>The print command is simply a text string. It will be used 
-		verbatim, with two exceptions: All occurrences of <parameter>%s
-		</parameter> and <parameter>%f</parameter> will be replaced by the 
-		appropriate spool file name, and all occurrences of <parameter>%p
-		</parameter> will be replaced by the appropriate printer name. The 
-		spool file name is generated automatically by the server.  The 
-		<parameter>%J</parameter> macro can be used to access the job 
+		verbatim after macro substitutions have been made:</para>
+
+		<para>s, %p - the path to the spool
+		file name</para>
+
+		<para>%p - the appropriate printer 
+		name</para>
+
+		<para>%J - the job 
 		name as transmitted by the client.</para>
+
+		<para>%c - The number of printed pages
+		of the spooled job (if known).</para>
+
+		<para>%z - the size of the spooled
+		print job (in bytes)</para>
 
 		<para>The print command <emphasis>MUST</emphasis> contain at least 
 		one occurrence of <parameter>%s</parameter> or <parameter>%f
@@ -8305,8 +8314,8 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		with group membership at least on glibc systems, as the character +
 		is used as a special character for NIS in /etc/group.</para>
 
-		<para>Example: <command>winbind separator = \\</command></para>
-		<para>Example: <command>winbind separator = /</command></para>
+		<para>Default: <command>winbind separator = '\'</command></para>
+		<para>Example: <command>winbind separator = +</command></para>
 		</listitem>
 		</varlistentry>
 
