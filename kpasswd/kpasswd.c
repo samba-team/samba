@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,10 +43,8 @@ static int version_flag;
 static int help_flag;
 
 static struct getargs args[] = {
-    { "version", 		0,   arg_flag, &version_flag, 
-      "print version", NULL },
-    { "help",			0,   arg_flag, &help_flag, 
-      NULL, NULL}
+    { "version", 		0,   arg_flag, &version_flag },
+    { "help",			0,   arg_flag, &help_flag }
 };
 
 static void
@@ -137,7 +135,7 @@ main (int argc, char **argv)
     if (ret)
 	krb5_err (context, 1, ret, "krb5_change_password");
 
-    printf ("%.*s\n", (int)result_string.length,
+    printf ("Reply from server: %.*s\n", (int)result_string.length,
 	    (char *)result_string.data);
 
     krb5_data_free (&result_code_string);
