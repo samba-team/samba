@@ -67,18 +67,21 @@ cmp_with_sprintf_int (void)
     for (i = 0; i < sizeof(int_values) / sizeof(int_values[0]); ++i) {
 	tot += try ("%d", int_values[i]);
 	tot += try ("%x", int_values[i]);
+	tot += try ("%X", int_values[i]);
 	tot += try ("%o", int_values[i]);
 	tot += try ("%#x", int_values[i]);
 	tot += try ("%#X", int_values[i]);
 	tot += try ("%#o", int_values[i]);
 	tot += try ("%10d", int_values[i]);
 	tot += try ("%10x", int_values[i]);
+	tot += try ("%10X", int_values[i]);
 	tot += try ("%10o", int_values[i]);
 	tot += try ("%#10x", int_values[i]);
 	tot += try ("%#10X", int_values[i]);
 	tot += try ("%#10o", int_values[i]);
 	tot += try ("%-10d", int_values[i]);
 	tot += try ("%-10x", int_values[i]);
+	tot += try ("%-10X", int_values[i]);
 	tot += try ("%-10o", int_values[i]);
 	tot += try ("%-#10x", int_values[i]);
 	tot += try ("%-#10X", int_values[i]);
@@ -86,6 +89,79 @@ cmp_with_sprintf_int (void)
     }
     return tot;
 }
+
+static int
+cmp_with_sprintf_long (void)
+{
+    int tot = 0;
+    long long_values[] = {LONG_MIN, -17, -1, 0, 1, 17, 4711, 65535, LONG_MAX};
+    int i;
+
+    for (i = 0; i < sizeof(long_values) / sizeof(long_values[0]); ++i) {
+	tot += try ("%ld", long_values[i]);
+	tot += try ("%lx", long_values[i]);
+	tot += try ("%lX", long_values[i]);
+	tot += try ("%lo", long_values[i]);
+	tot += try ("%#lx", long_values[i]);
+	tot += try ("%#lX", long_values[i]);
+	tot += try ("%#lo", long_values[i]);
+	tot += try ("%10ld", long_values[i]);
+	tot += try ("%10lx", long_values[i]);
+	tot += try ("%10lX", long_values[i]);
+	tot += try ("%10lo", long_values[i]);
+	tot += try ("%#10lx", long_values[i]);
+	tot += try ("%#10lX", long_values[i]);
+	tot += try ("%#10lo", long_values[i]);
+	tot += try ("%-10ld", long_values[i]);
+	tot += try ("%-10lx", long_values[i]);
+	tot += try ("%-10lX", long_values[i]);
+	tot += try ("%-10lo", long_values[i]);
+	tot += try ("%-#10lx", long_values[i]);
+	tot += try ("%-#10lX", long_values[i]);
+	tot += try ("%-#10lo", long_values[i]);
+    }
+    return tot;
+}
+
+#ifdef HAVE_LONG_LONG
+
+static int
+cmp_with_sprintf_long_long (void)
+{
+    int tot = 0;
+    long long long_long_values[] = {
+	(long long)LONG_MIN -1, LONG_MIN, -17, -1,
+	0,
+	1, 17, 4711, 65535, LONG_MAX, (long long)LONG_MAX + 1};
+    int i;
+
+    for (i = 0; i < sizeof(long_long_values) / sizeof(long_long_values[0]); ++i) {
+	tot += try ("%lld", long_long_values[i]);
+	tot += try ("%llx", long_long_values[i]);
+	tot += try ("%llX", long_long_values[i]);
+	tot += try ("%llo", long_long_values[i]);
+	tot += try ("%#llx", long_long_values[i]);
+	tot += try ("%#llX", long_long_values[i]);
+	tot += try ("%#llo", long_long_values[i]);
+	tot += try ("%10lld", long_long_values[i]);
+	tot += try ("%10llx", long_long_values[i]);
+	tot += try ("%10llX", long_long_values[i]);
+	tot += try ("%10llo", long_long_values[i]);
+	tot += try ("%#10llx", long_long_values[i]);
+	tot += try ("%#10llX", long_long_values[i]);
+	tot += try ("%#10llo", long_long_values[i]);
+	tot += try ("%-10lld", long_long_values[i]);
+	tot += try ("%-10llx", long_long_values[i]);
+	tot += try ("%-10llX", long_long_values[i]);
+	tot += try ("%-10llo", long_long_values[i]);
+	tot += try ("%-#10llx", long_long_values[i]);
+	tot += try ("%-#10llX", long_long_values[i]);
+	tot += try ("%-#10llo", long_long_values[i]);
+    }
+    return tot;
+}
+
+#endif
 
 #if 0
 static int
@@ -150,6 +226,10 @@ main (int argc, char **argv)
     int ret = 0;
 
     ret += cmp_with_sprintf_int ();
+    ret += cmp_with_sprintf_long ();
+#ifdef HAVE_LONG_LONG
+    ret += cmp_with_sprintf_long_long ();
+#endif
     ret += test_null ();
     return ret;
 }
