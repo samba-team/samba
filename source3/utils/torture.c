@@ -1178,7 +1178,7 @@ static void run_denytest1(int dummy)
 	static struct cli_state cli1, cli2;
 	int fnum1, fnum2;
 	int f, d1, d2, o1, o2, x=0;
-	char *fnames[] = {"denytest1.exe", "denytest1.dat", NULL};
+	char *fnames[] = {"\\denytest1.exe", "\\denytest1.dat", NULL};
 	struct {
 		int v;
 		char *name; 
@@ -1269,7 +1269,7 @@ static void run_denytest2(int dummy)
 	static struct cli_state cli1;
 	int fnum1, fnum2;
 	int f, d1, d2, o1, o2, x=0;
-	char *fnames[] = {"denytest2.exe", "denytest2.dat", NULL};
+	char *fnames[] = {"\\denytest2.exe", "\\denytest2.dat", NULL};
 	struct {
 		int v;
 		char *name; 
