@@ -174,10 +174,29 @@ krb5_verify(struct passwd *pwd, const char *password)
 static krb5_error_code
 krb5_to4 (krb5_ccache id)
 {
-    if (krb5_config_get_bool(context, NULL,
-			     "libdefaults",
-			     "krb4_get_tickets",
-			     NULL)) {
+    krb5_error_code ret;
+    krb5_principal princ;
+
+    int get_v4_tgt;
+
+    get_v4_tgt = krb5_config_get_bool(context, NULL,
+				      "libdefaults",
+				      "krb4_get_tickets",
+				      NULL);
+
+    ret = krb5_cc_get_principal(context, id, &princ);
+    if (ret == 0) {
+	get_v4_tgt = krb5_config_get_bool_default(context, NULL,
+						  get_v4_tgt,
+						  "realms",
+						  krb5_princ_realm(context,
+								   princ),
+						  "krb4_get_tickets",
+						  NULL);
+	krb5_free_principal(context, princ);
+    }
+
+    if (get_v4_tgt) {
         CREDENTIALS c;
         krb5_creds mcred, cred;
         char krb4tkfile[MAXPATHLEN];
