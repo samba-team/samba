@@ -510,27 +510,27 @@ static struct sam_passwd *getsamtdb21pwnam(char *name)
 
 static SMB_BIG_UINT getsamtdbpwpos(void *vp)
 {
-	return (SMB_BIG_UINT)0;
+  return (SMB_BIG_UINT)0;
 }
 
 static BOOL setsamtdbpwpos(void *vp, SMB_BIG_UINT tok)
 {
-	return False;
+  return False;
 }
 
 static struct smb_passwd *getsamtdbpwent(void *vp)
 {
-	return pdb_sam_to_smb(getsamtdb21pwent(vp));
+  return pdb_sam_to_smb(getsamtdb21pwent(vp));
 }
 
 static BOOL add_samtdbpwd_entry(struct smb_passwd *newpwd)
 {
-	return add_samtdb21pwd_entry(pdb_smb_to_sam(newpwd));
+  return add_samtdb21pwd_entry(pdb_smb_to_sam(newpwd));
 }
 
 static BOOL mod_samtdbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
-	return mod_samtdb21pwd_entry(pdb_smb_to_sam(pwd), override);
+  return mod_samtdb21pwd_entry(pdb_smb_to_sam(pwd), override);
 }
 
 static struct sam_disp_info *getsamtdbdispnam(char *name)
@@ -559,30 +559,26 @@ static struct smb_passwd *getsamtdbpwnam(char *name)
 }
 
 static struct passdb_ops tdb_ops = {
-	startsamtdbpwent,
-	endsamtdbpwent,
-	getsamtdbpwpos,
-	setsamtdbpwpos,
-	getsamtdbpwnam,
-	iterate_getsmbpwuid,          /* In passdb.c */
-	iterate_getsamtdbpwrid,
-	getsamtdbpwent,
-	add_samtdbpwd_entry,
-	mod_samtdbpwd_entry,
-	del_samtdbpwd_entry,
-	getsamtdb21pwent,
-	getsamtdb21pwnam,
-
-	/* TODO change get username from uid and then use
-	   getsamtdb21pwnam */
-	iterate_getsam21pwuid,
-
-	iterate_getsamtdb21pwrid, 
-	add_samtdb21pwd_entry,
-	mod_samtdb21pwd_entry,
-	getsamtdbdispnam,
-	getsamtdbdisprid,
-	getsamtdbdispent
+  startsamtdbpwent,
+  endsamtdbpwent,
+  getsamtdbpwpos,
+  setsamtdbpwpos,
+  getsamtdbpwnam,
+  iterate_getsmbpwuid,          /* In passdb.c */
+  iterate_getsamtdbpwrid,
+  getsamtdbpwent,
+  add_samtdbpwd_entry,
+  mod_samtdbpwd_entry,
+  del_samtdbpwd_entry,
+  getsamtdb21pwent,
+  getsamtdb21pwnam,
+  iterate_getsam21pwuid,	/* TODO change get username from uid and then use getsamtdb21pwnam */
+  iterate_getsamtdb21pwrid, 
+  add_samtdb21pwd_entry,
+  mod_samtdb21pwd_entry,
+  getsamtdbdispnam,
+  getsamtdbdisprid,
+  getsamtdbdispent
 };
 
 struct passdb_ops *tdb_initialize_password_db(void)
@@ -591,6 +587,6 @@ struct passdb_ops *tdb_initialize_password_db(void)
 }
 
 #else
-	/* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
-	void samtdb_dummy_function(void) { } /* stop some compilers complaining */
+ /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
+ void samtdb_dummy_function(void) { } /* stop some compilers complaining */
 #endif /* WITH_TDBPWD */
