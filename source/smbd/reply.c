@@ -2463,7 +2463,7 @@ int reply_printqueue(char *inbuf,char *outbuf)
       {
 	put_dos_date2(p,0,queue[i].time);
 	CVAL(p,4) = (queue[i].status==LPQ_PRINTING?2:3);
-	SSVAL(p,5,queue[i].job);
+	SSVAL(p,5,printjob_encode(SNUM(cnum), queue[i].job));
 	SIVAL(p,7,queue[i].size);
 	CVAL(p,11) = 0;
 	StrnCpy(p+12,queue[i].user,16);
