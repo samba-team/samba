@@ -45,7 +45,11 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 
 	ads->last_attempt = time(NULL);
 
-	ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
+	ads->ld = NULL;
+
+	if (ads->ldap_server) {
+		ads->ld = ldap_open(ads->ldap_server, ads->ldap_port);
+	}
 
 	/* if that failed then try each of the BDC's in turn */
 	if (!ads->ld) {
@@ -60,7 +64,7 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 				if (ads->ld) break;
 			}
 			if (ads->ld) {
-				free(ads->ldap_server);
+				SAFE_FREE(ads->ldap_server);
 				ads->ldap_server = strdup(inet_ntoa(ip_list[i]));
 			}
 			free(ip_list);

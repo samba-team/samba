@@ -58,7 +58,7 @@ ADS_STATUS ads_do_search_retry(ADS_STRUCT *ads, const char *bind_path, int scope
 
 		if (*res) ads_msgfree(ads, *res);
 		*res = NULL;
-		DEBUG(1,("Reopening ads connection to %s after error %s\n", 
+		DEBUG(3,("Reopening ads connection to %s after error %s\n", 
 			 ads->ldap_server, ads_errstr(status)));
 		if (ads->ld) {
 			ldap_unbind(ads->ld); 
