@@ -179,6 +179,10 @@ static struct smbcli_request *session_setup_nt1(struct composite_context *c,
 	state->setup.nt1.in.capabilities = io->in.capabilities;
 	state->setup.nt1.in.os           = "Unix";
 	state->setup.nt1.in.lanman       = "Samba";
+	state->setup.nt1.in.user         = cli_credentials_get_username(io->in.credentials);
+	if (state->setup.nt1.in.user == NULL) return NULL;
+	state->setup.nt1.in.domain       = cli_credentials_get_domain(io->in.credentials);
+	if (state->setup.nt1.in.domain == NULL) return NULL;
 
 	state->setup.old.in.domain  = cli_credentials_get_domain(io->in.credentials);
 	state->setup.old.in.user    = cli_credentials_get_username(io->in.credentials);
@@ -330,7 +334,7 @@ static struct smbcli_request *session_setup_spnego(struct composite_context *c,
   the spnego varient
 */
 struct composite_context *smb_composite_sesssetup_send(struct smbcli_session *session, 
-						      struct smb_composite_sesssetup *io)
+						       struct smb_composite_sesssetup *io)
 {
 	struct composite_context *c;
 	struct sesssetup_state *state;
