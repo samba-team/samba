@@ -93,10 +93,6 @@ pstring fileselection = "";
 
 extern file_info def_finfo;
 
-/* readline variables */
-static pstring command_line;
-static int readline_event;
-
 /* timing globals */
 int get_total_size = 0;
 int get_total_time_ms = 0;
@@ -933,7 +929,6 @@ static BOOL do_mkdir(char *name)
 ****************************************************************************/
 static void cmd_quit(void)
 {
-	smb_readline_remove_handler();
 	cli_shutdown(cli);
 	exit(0);
 }
@@ -1720,40 +1715,6 @@ static void cmd_help(void)
 }
 
 /****************************************************************************
-wait for keyboard activity, swallowing network packets
-****************************************************************************/
-static void wait_keyboard(void)
-{
-	fd_set fds;
-	struct timeval timeout;
-  
-	while (1) {
-		FD_ZERO(&fds);
-		FD_SET(cli->fd,&fds);
-		FD_SET(fileno(stdin),&fds);
-
-		timeout.tv_sec = 20;
-		timeout.tv_usec = 0;
-		sys_select_intr(MAX(cli->fd,fileno(stdin))+1,&fds,&timeout);
-      		
-		if (FD_ISSET(fileno(stdin),&fds))
-		{
-			smb_rl_read_char();
-			if (readline_event != RL_NO_EVENTS) return;
-		}
-
-		/* We deliberately use receive_smb instead of
-		   client_receive_smb as we want to receive
-		   session keepalives and then drop them here.
-		*/
-		if (FD_ISSET(cli->fd,&fds))
-			receive_smb(cli->fd,cli->inbuf,0);
-      
-		cli_chkpath(cli, "\\");
-	}  
-}
-
-/****************************************************************************
 process a -c command string
 ****************************************************************************/
 static void process_command_string(char *cmd)
@@ -1793,36 +1754,69 @@ static void process_command_string(char *cmd)
 
 
 /****************************************************************************
+make sure we swallow keepalives during idle time
+****************************************************************************/
+static void readline_callback(void)
+{
+	fd_set fds;
+	struct timeval timeout;
+	static time_t last_t;
+	time_t t;
+
+	t = time(NULL);
+
+	if (t - last_t < 5) return;
+
+	last_t = t;
+
+ again:
+	FD_ZERO(&fds);
+	FD_SET(cli->fd,&fds);
+
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 0;
+	sys_select_intr(cli->fd+1,&fds,&timeout);
+      		
+	/* We deliberately use receive_smb instead of
+	   client_receive_smb as we want to receive
+	   session keepalives and then drop them here.
+	*/
+	if (FD_ISSET(cli->fd,&fds)) {
+		receive_smb(cli->fd,cli->inbuf,0);
+		goto again;
+	}
+      
+	cli_chkpath(cli, "\\");
+}
+
+
+/****************************************************************************
 process commands on stdin
 ****************************************************************************/
 static void process_stdin(void)
 {
 	char *ptr;
 
-	init_smb_readline("smbclient", command_line, &readline_event);
-	
-	while (!feof(stdin)) {
+	while (1) {
 		fstring tok;
 		fstring prompt;
+		char *line;
 		int i;
 		
 		/* display a prompt */
 		slprintf(prompt, sizeof(prompt), "smb: %s> ", cur_dir);
-		smb_readline_prompt(prompt);
+		line = smb_readline(prompt, readline_callback);
 
-		wait_keyboard();
-
-		if (readline_event == RL_GOT_EOF) /* got an eof */
-			break;
+		if (!line) break;
 
 		/* special case - first char is ! */
-		if (*command_line == '!') {
-			system(command_line + 1);
+		if (*line == '!') {
+			system(line + 1);
 			continue;
 		}
       
 		/* and get the first part of the command */
-		ptr = command_line;
+		ptr = line;
 		if (!next_token(&ptr,tok,NULL,sizeof(tok))) continue;
 
 		if ((i = process_tok(tok)) >= 0) {
@@ -1833,7 +1827,6 @@ static void process_stdin(void)
 			DEBUG(0,("%s: command not found\n",tok));
 		}
 	}
-	smb_readline_remove_handler ();
 }
 
 
