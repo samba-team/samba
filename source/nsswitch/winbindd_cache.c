@@ -847,6 +847,18 @@ static NTSTATUS query_user(struct winbindd_domain *domain,
 	if (!cache->tdb) goto do_query;
 
 	centry = wcache_fetch(cache, domain, "U/%s/%d", domain->name, user_rid);
+
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(&domain->sid, user_rid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		goto do_query;
+	}
+
 	if (!centry) goto do_query;
 
 	info->acct_name = centry_string(centry, mem_ctx);
@@ -889,6 +901,18 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	if (!cache->tdb) goto do_query;
 
 	centry = wcache_fetch(cache, domain, "UG/%s/%d", domain->name, user_rid);
+
+	/* If we have an access denied cache entry and a cached info3 in the
+           samlogon cache then do a query.  This will force the rpc back end
+           to return the info3 data. */
+
+	if (NT_STATUS_V(domain->last_status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED) &&
+	    netsamlogon_cache_have(&domain->sid, user_rid)) {
+		DEBUG(10, ("query_user: cached access denied and have cached info3\n"));
+		domain->last_status = NT_STATUS_OK;
+		goto do_query;
+	}
+
 	if (!centry) goto do_query;
 
 	*num_groups = centry_uint32(centry);
@@ -1048,6 +1072,20 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf,
 		tdb_delete(the_tdb, kbuf);
 
 	return 0;
+}
+
+/* Invalidate the getpwnam and getgroups entries for a winbindd domain */
+
+void wcache_invalidate_samlogon(struct winbindd_domain *domain, 
+				NET_USER_INFO_3 *info3)
+{
+	struct winbind_cache *cache;
+	
+	if (!domain)
+		return;
+
+	cache = get_cache(domain);
+	netsamlogon_clear_cached_user(cache->tdb, info3);
 }
 
 void wcache_invalidate_cache(void)
