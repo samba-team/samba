@@ -138,26 +138,36 @@ krb5_sendto_kdc (krb5_context context,
 		 const krb5_realm *realm,
 		 krb5_data *receive)
 {
-     krb5_error_code err;
+     krb5_error_code ret;
      char **hostlist, **hp, *p;
      struct hostent *hostent;
      int fd;
      int port;
      int i;
+     char *buf;
+     struct sockaddr *sa;
 
      port = krb5_getportbyname (context, "kerberos", "udp", 88);
 
-     err = krb5_get_krbhst (context, realm, &hostlist);
-     if (err) {
+     ret = krb5_get_krbhst (context, realm, &hostlist);
+     if (ret) {
 	  close (fd);
-	  return err;
+	  return ret;
      }
+
+     buf = malloc(krb5_max_sockaddr_size ());
+     if (buf == NULL) {
+	 ret = ENOMEM;
+	 goto out;
+     }
+     sa = (struct sockaddr *)buf;
 
      for (i = 0; i < context->max_retries; ++i)
 	 for (hp = hostlist; (p = *hp); ++hp) {
 	     char *addr;
 	     char *colon;
 	     int http_flag = 0;
+	     int sa_size;
 
 	     if(strncmp(p, "http://", 7) == 0){
 		 p += 7;
@@ -178,46 +188,24 @@ krb5_sendto_kdc (krb5_context context,
 	     if (colon)
 		 *colon++ = ':';
 	     while ((addr = *hostent->h_addr_list++)) {
-		 int ret;
-		 int family;
-		 struct sockaddr *sa;
-		 int sa_size;
-		 struct sockaddr_in sin;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-		 struct sockaddr_in6 sin6;
-#endif
-
-		 family = hostent->h_addrtype;
+		 int family = hostent->h_addrtype;
 		    
 		 if(http_flag)
 		     fd = socket(family, SOCK_STREAM, 0);
 		 else
 		     fd = socket(family, SOCK_DGRAM, 0);
 		    
-		 if(fd < 0)
-		     return errno;
-		 switch (family) {
-		 case AF_INET :
-		     memset(&sin, 0, sizeof(sin));
-		     sa_size = sizeof(sin);
-		     sa = (struct sockaddr *)&sin;
-		     sin.sin_family = family;
-		     sin.sin_port   = init_port(colon, port);
-		     sin.sin_addr   = *((struct in_addr *)addr);
-		     break;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-		 case AF_INET6:
-		     memset(&sin6, 0, sizeof(sin6));
-		     sa_size = sizeof(sin6);
-		     sa = (struct sockaddr *)&sin6;
-		     sin6.sin6_family = family;
-		     sin6.sin6_port   = init_port(colon, port);
-		     sin6.sin6_addr   = *((struct in6_addr *)addr);
-		     break;
-#endif
-		 default:
-		     continue;
+		 if(fd < 0) {
+		     ret = errno;
+		     goto out;
 		 }
+		 ret = krb5_h_addr2sockaddr (family,
+					     addr,
+					     sa,
+					     &sa_size,
+					     init_port(colon, port));
+		 if (ret)
+		     continue;
 
 		 if(connect(fd, sa, sa_size) < 0) {
 		     close (fd);
@@ -232,12 +220,13 @@ krb5_sendto_kdc (krb5_context context,
 		     ret = send_and_recv (fd, context->kdc_timeout, 1,
 					  send, receive);
 		 close (fd);
-		 if(ret == 0){
-		     krb5_free_krbhst (context, hostlist);
-		     return 0;
-		 }
+		 if(ret == 0)
+		     goto out;
 	     }
 	 }
+     ret = KRB5_KDC_UNREACH;
+out:
      krb5_free_krbhst (context, hostlist);
-     return KRB5_KDC_UNREACH;
+     free (buf);
+     return ret;
 }

@@ -151,19 +151,25 @@ struct descr {
 static void 
 init_socket(struct descr *d, int family, int type, int port)
 {
+    krb5_error_code ret;
     struct sockaddr *sa;
-    struct sockaddr_in sin;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    struct sockaddr_in6 sin6;
-#endif
+    char *sa_buf;
     int sa_size;
+
+    sa_size = krb5_max_sockaddr_size ();
+    sa_buf = malloc(sa_size);
+    if (sa_buf == NULL) {
+	kdc_log(0, "Failed to allocate %u bytes", sa_size);
+	return;
+    }
+    sa = (struct sockaddr *)sa_buf;
 
     memset(d, 0, sizeof(*d));
     d->s = socket(family, type, 0);
     if(d->s < 0){
 	krb5_warn(context, errno, "socket(%d, %d, 0)", family, type);
 	d->s = -1;
-	return;
+	goto out;
     }
 #if defined(HAVE_SETSOCKOPT) && defined(SOL_SOCKET) && defined(SO_REUSEADDR)
     {
@@ -172,43 +178,27 @@ init_socket(struct descr *d, int family, int type, int port)
     }
 #endif
     d->type = type;
-    switch (family) {
-    case AF_INET :
-	memset(&sin, 0, sizeof(sin));
-	sin.sin_family      = family;
-	sin.sin_port        = port;
-	sin.sin_addr.s_addr = INADDR_ANY;
-	sa = (struct sockaddr *)&sin;
-	sa_size = sizeof(sin);
-	break;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    case AF_INET6 :
-	memset(&sin6, 0, sizeof(sin6));
-	sin6.sin6_family = family;
-	sin6.sin6_port   = port;
-	sin6.sin6_addr   = in6addr_any;
-	sa = (struct sockaddr *)&sin6;
-	sa_size = sizeof(sin6);
-	break;
-#endif
-    default :
-	krb5_warnx(context, "Unknown family: %d", family);
+    ret = krb5_anyaddr (family, sa, &sa_size, port);
+    if (ret) {
+	krb5_warn(context, ret, "krb5_anyaddr");
 	close(d->s);
 	d->s = -1;
-	return;
+	goto out;
     }
-	
+
     if(bind(d->s, sa, sa_size) < 0){
 	krb5_warn(context, errno, "bind(%d)", ntohs(port));
 	close(d->s);
 	d->s = -1;
-	return;
+	goto out;
     }
     if(type == SOCK_STREAM && listen(d->s, SOMAXCONN) < 0){
 	krb5_warn(context, errno, "listen");
 	close(d->s);
 	d->s = -1;
     }
+out:
+    free (sa_buf);
 }
 
 static int
@@ -282,7 +272,7 @@ addr_to_string(struct sockaddr *addr, size_t addr_len, char *str, size_t len)
     case AF_INET:
 	strncpy(str, inet_ntoa(((struct sockaddr_in*)addr)->sin_addr), len);
 	break;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6) && defined(HAVE_INET_NTOP)
+#if defined(AF_INET6) && defined(HAVE_STRUCT_SOCKADDR_IN6) && defined(HAVE_INET_NTOP)
     case AF_INET6 :
 	inet_ntop(AF_INET6, &((struct sockaddr_in6*)addr)->sin6_addr,
 		  str, len);
@@ -317,22 +307,30 @@ static void
 handle_udp(struct descr *d)
 {
     unsigned char *buf;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    struct sockaddr_in6 from;
-#else
-    struct sockaddr_in from;
-#endif
-    int from_len = sizeof(from);
+    struct sockaddr *sa;
+    char *sa_buf;
+    int sa_size;
+    int from_len;
     size_t n;
+
+    sa_size = krb5_max_sockaddr_size ();
+    sa_buf = malloc(sa_size);
+    if (sa_buf == NULL) {
+	kdc_log(0, "Failed to allocate %u bytes", sa_size);
+	return;
+    }
+    sa = (struct sockaddr *)sa_buf;
     
     buf = malloc(max_request);
     if(buf == NULL){
 	kdc_log(0, "Failed to allocate %u bytes", max_request);
+	free (sa_buf);
 	return;
     }
 
+    from_len = sa_size;
     n = recvfrom(d->s, buf, max_request, 0, 
-		 (struct sockaddr*)&from, &from_len);
+		 sa, &from_len);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
 	goto out;
@@ -340,9 +338,10 @@ handle_udp(struct descr *d)
     if(n == 0){
 	goto out;
     }
-    do_request(buf, n, d->s, (struct sockaddr*)&from, from_len);
+    do_request(buf, n, d->s, sa, from_len);
 out:
     free (buf);
+    free (sa_buf);
 }
 
 static void
@@ -363,57 +362,66 @@ handle_tcp(struct descr *d, int index, int min_free)
 {
     unsigned char buf[1024];
     char addr[32];
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    struct sockaddr_in6 from;
-#else
-    struct sockaddr_in from;
-#endif    
-    int from_len = sizeof(from);
+    char *sa_buf;
+    struct sockaddr *sa;
+    int sa_size;
+    int from_len;
     size_t n;
+
+    sa_size = krb5_max_sockaddr_size ();
+    sa_buf = malloc(sa_size);
+    if (sa_buf == NULL) {
+	kdc_log(0, "Failed to allocate %u bytes", sa_size);
+	return;
+    }
+    sa = (struct sockaddr *)sa_buf;
 
     if(d[index].timeout == 0){
 	int s;
-	from_len = sizeof(from);
-	s = accept(d[index].s, (struct sockaddr*)&from, &from_len);
+
+	from_len = sa_size;
+	s = accept(d[index].s, sa, &from_len);
 	if(s < 0){
 	    krb5_warn(context, errno, "accept");
-	    return;
+	    goto out;
 	}
 	if(min_free == -1){
 	    close(s);
-	    return;
+	    goto out;
 	}
 	    
 	d[min_free].s = s;
 	d[min_free].timeout = time(NULL) + TCP_TIMEOUT;
 	d[min_free].type = SOCK_STREAM;
-	return;
+	goto out;
     }
+    from_len = sa_size;
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, 
-		 (struct sockaddr*)&from, &from_len);
+		 sa, &from_len);
     if(n < 0){
 	krb5_warn(context, errno, "recvfrom");
-	return;
+	goto out;
     }
     /* sometimes recvfrom doesn't return an address */
     if(from_len == 0){
-	from_len = sizeof(from);
-	getpeername(d[index].s, (struct sockaddr*)&from, &from_len);
+	from_len = sa_size;
+	getpeername(d[index].s, sa, &from_len);
     }
-    addr_to_string((struct sockaddr*)&from, from_len, addr, sizeof(addr));
+    addr_to_string(sa, from_len, addr, sizeof(addr));
     if(d[index].size - d[index].len < n){
 	unsigned char *tmp;
 	d[index].size += 1024;
 	if(d[index].size >= max_request){
-	    kdc_log(0, "Request exceeds max request size (%u bytes).", d[index].size);
+	    kdc_log(0, "Request exceeds max request size (%u bytes).",
+		    d[index].size);
 	    clear_descr(d + index);
-	    return;
+	    goto out;
 	}
 	tmp = realloc(d[index].buf, d[index].size);
 	if(tmp == NULL){
 	    kdc_log(0, "Failed to re-allocate %u bytes.", d[index].size);
 	    clear_descr(d + index);
-	    return;
+	    goto out;
 	}
 	d[index].buf = tmp;
     }
@@ -444,9 +452,13 @@ handle_tcp(struct descr *d, int index, int min_free)
 	if(t == NULL){
 	    kdc_log(0, "Malformed HTTP request from %s", addr);
 	    clear_descr(d + index);
-	    return;
+	    goto out;
 	}
 	data = malloc(strlen(t));
+	if (data == NULL) {
+	    kdc_log(0, "Failed to allocate %u bytes", strlen(t));
+	    goto out;
+	}
 	len = base64_decode(t, data);
 	if(len < 0){
 	    const char *msg = 
@@ -462,7 +474,7 @@ handle_tcp(struct descr *d, int index, int min_free)
 	    free(data);
 	    clear_descr(d + index);
 	    kdc_log(0, "HTTP request from %s is non KDC request", addr);
-	    return;
+	    goto out;
 	}
 	{
 	    const char *msg = 
@@ -479,12 +491,13 @@ handle_tcp(struct descr *d, int index, int min_free)
     }
     if(n == 0){
 	do_request(d[index].buf, d[index].len, 
-		   d[index].s, (struct sockaddr*)&from, from_len);
+		   d[index].s, sa, from_len);
 	clear_descr(d + index);
     }
+out:
+    free (sa_buf);
+    return;
 }
-
-
 
 void
 loop(void)

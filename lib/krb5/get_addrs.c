@@ -174,52 +174,13 @@ find_all_addresses (krb5_addresses *res, int loop,
 	    || memcmp (sa, &sa_zero, sizeof(sa_zero)) == 0)
 	     continue;
 
-	 switch (sa->sa_family) {
-#ifdef AF_INET
-	 case AF_INET: {
-	     unsigned char addr[4];
-	     struct sockaddr_in *sin;
-	     res->val[j].addr_type = AF_INET;
-	     /* This is somewhat XXX */
-	     sin = (struct sockaddr_in*)sa;
-	     memcpy(addr, &sin->sin_addr, 4);
-	     ret = krb5_data_copy(&res->val[j].address,
-				  addr, 4);
-	     if (ret)
-		 goto error_out;
-	     ++j;
-	     break;
-	 }
-#endif /* AF_INET */
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-	 case AF_INET6: {
-	     struct in6_addr *sin6;
+	 if (krb5_sockaddr_uninteresting (sa))
+	     continue;
 
-	     sin6 = &((struct sockaddr_in6 *)(&ifr->ifr_addr))->sin6_addr;
-
-#ifndef IN6_IS_ADDR_LOOPBACK
-#define IN6_IS_ADDR_LOOPBACK(x) IN6_IS_LOOPBACK(*x)
-#endif
-
-	     if (IN6_IS_ADDR_LOOPBACK(sin6)
-		 || IN6_IS_ADDR_LINKLOCAL(sin6)
-		 || IN6_IS_ADDR_V4COMPAT(sin6)) {
-		 break;
-	     } else {
-		 res->val[j].addr_type = AF_INET6;
-		 ret = krb5_data_copy(&res->val[j].address,
-				      sin6,
-				      sizeof(struct in6_addr));
-	     }
-	     if (ret)
-		 goto error_out;
-	     ++j;
-	     break;
-	 }
-#endif /* AF_INET6 */
-	 default:
-	     break;
-	 }
+	 ret = krb5_sockaddr2address (sa, &res->val[j]);
+	 if (ret)
+	     goto error_out;
+	 ++j;
      }
      if (j != num) {
 	 void *tmp;

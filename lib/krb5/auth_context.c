@@ -132,81 +132,55 @@ krb5_auth_con_setaddrs(krb5_context context,
     return 0;
 }
 
-static void
-sockaddr2krb5_address (struct sockaddr *sa,
-		       krb5_address *ka)
-{
-    switch (sa->sa_family) {
-    case AF_INET: {
-	struct sockaddr_in *sin = (struct sockaddr_in *)sa;
-
-	ka->addr_type = AF_INET;
-	ka->address.length = sizeof(sin->sin_addr);
-	ka->address.data   = &sin->sin_addr;
-	break;
-    }
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    case AF_INET6: {
-	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
-
-	if (IN6_IS_ADDR_V4MAPPED(&sin6->sin6_addr)) {
-	    ka->addr_type      = AF_INET;
-	    ka->address.length = sizeof(struct in_addr);
-#ifndef IN6_ADDR_V6_TO_V4
-#define IN6_ADDR_V6_TO_V4(x) (&IN6_EXTRACT_V4ADDR(x))
-#endif
-
-	    ka->address.data   = IN6_ADDR_V6_TO_V4(&sin6->sin6_addr);
-	} else {
-	    ka->addr_type = AF_INET6;
-	    ka->address.length = sizeof(sin6->sin6_addr);
-	    ka->address.data   = &sin6->sin6_addr;
-	}
-	break;
-    }
-#endif
-    default:
-	break;
-    }
-}
-
-
 krb5_error_code
 krb5_auth_con_setaddrs_from_fd (krb5_context context,
 				krb5_auth_context auth_context,
 				int fd)
 {
-    krb5_address *lptr = NULL, *rptr = NULL;
+    krb5_error_code ret;
     krb5_address local_k_address, remote_k_address;
-#if defined(AF_INET6) && defined(HAVE_SOCKADDR_IN6)
-    struct sockaddr_in6 local_addr, remote_addr;
-#else
-    struct sockaddr_in local_addr, remote_addr;
-#endif
+    krb5_address *lptr = NULL, *rptr = NULL;
+    size_t max_sz = krb5_max_sockaddr_size ();
+    char *buf1 = NULL, *buf2 = NULL;
+    struct sockaddr *local, *remote;
     int len;
 
+    buf1 = malloc(max_sz);
+    if (buf1 == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    local = (struct sockaddr *)buf1;
+
+    buf2 = malloc(max_sz);
+    if (buf2 == NULL) {
+	ret = ENOMEM;
+	goto out;
+    }
+    remote = (struct sockaddr *)buf2;
+
     if (auth_context->local_address == NULL) {
-	len = sizeof (local_addr);
-	if (getsockname (fd, (struct sockaddr *)&local_addr, &len) < 0)
-	    return errno;
-	sockaddr2krb5_address((struct sockaddr *)&local_addr,
-			      &local_k_address);
+	len = max_sz;
+	if(getsockname(fd, local, &len) < 0)
+	    goto out;
+	krb5_sockaddr2address (local, &local_k_address);
 	lptr = &local_k_address;
     }
-
     if (auth_context->remote_address == NULL) {
-	len = sizeof (remote_addr);
-	if (getpeername (fd, (struct sockaddr *)&remote_addr, &len) < 0)
-	    return errno;
-	sockaddr2krb5_address((struct sockaddr *)&remote_addr,
-			      &remote_k_address);
+	len = max_sz;
+	if(getpeername(fd, remote, &len) < 0)
+	    goto out;
+	krb5_sockaddr2address (remote, &remote_k_address);
 	rptr = &remote_k_address;
     }
-
-    return krb5_auth_con_setaddrs (context,
-				   auth_context,
-				   lptr,
-				   rptr);
+    ret = krb5_auth_con_setaddrs (context,
+				  auth_context,
+				  lptr,
+				  rptr);
+out:
+    free (buf1);
+    free (buf2);
+    return ret;
 }
 
 krb5_error_code
