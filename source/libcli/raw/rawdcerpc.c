@@ -59,6 +59,9 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe *p, const char *pipe_name)
 	io.ntcreatex.in.fname = name;
 
 	mem_ctx = talloc_init("torture_rpc_connection");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
 	status = smb_raw_open(p->tree, mem_ctx, &io);
 	free(name);
 	talloc_destroy(mem_ctx);

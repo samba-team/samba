@@ -57,3 +57,16 @@ struct lsa_OpenPolicy2 {
 		NTSTATUS status;
 	} out;
 };
+
+struct lsa_EnumSids {
+	struct {
+		struct policy_handle *handle;
+		uint32 start_at;
+		uint32 num_entries;
+	} in;
+	struct {
+		uint32 num_entries;
+		struct dom_sid **sids;
+		NTSTATUS status;
+	} out;
+};
