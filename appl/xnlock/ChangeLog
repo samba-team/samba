@@ -1,3 +1,7 @@
+Tue Mar 24 05:20:34 1998  Assar Westerlund  <assar@sics.se>
+
+	* xnlock.c: remove redundant preprocessor stuff
+
 Sat Mar 21 14:36:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c (init_words): recognize both `-p' and `-prog'
