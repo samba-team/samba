@@ -259,6 +259,13 @@ static int cmd_pwd(const char **cmd_ptr)
 	return 0;
 }
 
+/*
+  convert a string to dos format
+*/
+static void dos_format(char *s)
+{
+	string_replace(s, '/', '\\');
+}
 
 /****************************************************************************
 change directory - inner section
@@ -858,7 +865,7 @@ static void do_mget(file_info *finfo)
 	pstrcat(cur_dir,finfo->name);
 	pstrcat(cur_dir,"\\");
 
-	unix_format(finfo->name);
+	string_replace(finfo->name, '\\', '/');
 	if (lowercase)
 		strlower(finfo->name);
 	
