@@ -49,7 +49,7 @@ void SMBNTencrypt(uchar * pwrd, uchar * c8, uchar * p24)
 {
 	uchar p21[21];
 
-	memset(p21, '\0', 21);
+	ZERO_STRUCT(p21);
 
 	nt_owf_gen(pwrd, p21);
 	SMBOWFencrypt(p21, c8, p24);
@@ -139,7 +139,7 @@ void lm_owf_genW(const UNISTR2 * pwd, uchar p16[16])
 {
 	char pwrd[15];
 
-	memset(pwrd, '\0', 15);
+	ZERO_STRUCT(pwrd);
 	if (pwd != NULL)
 	{
 		unistr2_to_ascii(pwrd, pwd, sizeof(pwrd) - 1);
@@ -167,7 +167,8 @@ void lm_owf_gen(const char *pwd, uchar p16[16])
 {
 	char pwrd[15];
 
-	memset(pwrd, '\0', 15);
+	ZERO_STRUCT(pwrd);
+	
 	if (pwd != NULL)
 	{
 		safe_strcpy(pwrd, pwd, sizeof(pwrd) - 1);
@@ -195,7 +196,7 @@ void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
 {
 	UNISTR2 pwrd;
 
-	memset(&pwrd, '\0', sizeof(pwrd));
+	ZERO_STRUCT(pwrd);
 	if (pwd != NULL)
 	{
 		copy_unistr2(&pwrd, pwd);
@@ -210,7 +211,7 @@ void nt_owf_genW(const UNISTR2 * pwd, uchar nt_p16[16])
 	dump_data(100, nt_p16, 16);
 #endif
 	/* clear out local copy of user's password (just being paranoid). */
-	memset(&pwrd, 0, sizeof(pwrd));
+	ZERO_STRUCT(pwrd);
 }
 
 /* Does both the NT and LM owfs of a user's password */
@@ -218,14 +219,13 @@ void nt_owf_gen(const char *pwd, uchar nt_p16[16])
 {
 	char pwrd[130];
 
-	memset(pwrd, '\0', 130);
+	ZERO_STRUCT(pwrd);
 	if (pwd != NULL)
 	{
 		safe_strcpy(pwrd, pwd, sizeof(pwrd) - 1);
 	}
 
 	/* Calculate the MD4 hash (NT compatible) of the password */
-	memset(nt_p16, '\0', 16);
 	E_md4hash((uchar *) pwrd, nt_p16);
 
 #ifdef DEBUG_PASSWORD
@@ -256,7 +256,7 @@ void SMBOWFencrypt(const uchar pwrd[16], const uchar * c8, uchar p24[24])
 {
 	uchar p21[21];
 
-	memset(p21, '\0', 21);
+	ZERO_STRUCT(p21);
 
 	memcpy(p21, pwrd, 16);
 	E_P24(p21, c8, p24);
@@ -392,7 +392,7 @@ void NTLMSSPOWFencrypt(uchar pwrd[8], uchar * ntlmchalresp, uchar p24[24])
 {
 	uchar p21[21];
 
-	memset(p21, '\0', 21);
+	ZERO_STRUCT(p21);
 	memcpy(p21, pwrd, 8);
 	memset(p21 + 8, 0xbd, 8);
 
