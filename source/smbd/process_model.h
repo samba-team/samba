@@ -40,10 +40,12 @@ struct model_ops {
 	void (*model_startup)(void);
 
 	/* function to accept new connection */
-	void (*accept_connection)(struct event_context *, struct fd_event *, time_t, uint16_t);
+	void (*accept_connection)(struct event_context *, struct fd_event *, 
+				  struct timeval t, uint16_t);
 			
 	/* function to terminate a connection */
-	void (*terminate_connection)(struct server_connection *srv_conn, const char *reason);
+	void (*terminate_connection)(struct server_connection *srv_conn, 
+				     const char *reason);
 
 	/* function to exit server */
 	void (*exit_server)(struct server_context *srv_ctx, const char *reason);

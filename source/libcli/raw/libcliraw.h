@@ -114,7 +114,7 @@ struct smbcli_transport {
 	uint_t readbraw_pending:1;
 	
 	/* an idle function - if this is defined then it will be
-	   called once every period seconds while we are waiting
+	   called once every period microseconds while we are waiting
 	   for a packet */
 	struct {
 		void (*func)(struct smbcli_transport *, void *);

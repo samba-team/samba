@@ -42,6 +42,8 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum;
 	BOOL ret = True;
 	struct smbcli_request *req;
+	struct timeval tv;
+	double d;
 
 	printf("testing multiplexed open/open/close\n");
 
@@ -64,14 +66,25 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 	fnum = io.ntcreatex.out.fnum;
 
+	tv = timeval_current();
+
 	/* send an open that will conflict */
 	io.ntcreatex.in.open_disposition = NTCREATEX_DISP_OPEN;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
 
+	d = timeval_elapsed(&tv);
+	if (d < 0.5 || d > 1.5) {
+		printf("bad timeout for conflict - %.2f should be 1.0\n", d);
+		ret = False;
+	} else {
+		printf("open delay %.2f\n", d);
+	}
+
 	/*
 	  same request, but async
 	*/
+	tv = timeval_current();
 	req = smb_raw_open_send(cli->tree, &io);
 	
 	/* and close the file */
@@ -80,6 +93,14 @@ static BOOL test_mux_open(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	/* see if the async open succeeded */
 	status = smb_raw_open_recv(req, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
+
+	d = timeval_elapsed(&tv);
+	if (d > 0.25) {
+		printf("bad timeout for async conflict - %.2f should be <0.25\n", d);
+		ret = False;
+	} else {
+		printf("async open delay %.2f\n", d);
+	}
 
 	smbcli_close(cli->tree, io.ntcreatex.out.fnum);
 

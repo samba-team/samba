@@ -190,7 +190,7 @@ static void sock_process_recv(struct dcerpc_pipe *p)
   called when a IO is triggered by the events system
 */
 static void sock_io_handler(struct event_context *ev, struct fd_event *fde, 
-			   time_t t, uint16_t flags)
+			    struct timeval t, uint16_t flags)
 {
 	struct dcerpc_pipe *p = fde->private;
 	struct sock_private *sock = p->transport.private;

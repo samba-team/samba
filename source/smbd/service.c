@@ -205,7 +205,7 @@ static int server_destructor(void *ptr)
 struct server_connection *server_setup_connection(struct event_context *ev, 
 						  struct server_socket *server_socket, 
 						  struct socket_context *sock, 
-						  time_t t,
+						  struct timeval t,
 						  servid_t server_id)
 {
 	struct fd_event fde;
@@ -226,13 +226,13 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	fde.handler	= server_io_handler;
 
 	idle.private 	= srv_conn;
-	idle.next_event	= t + SERVER_DEFAULT_IDLE_TIME;
+	idle.next_event	= timeval_add(&t, SERVER_DEFAULT_IDLE_TIME, 0);
 	idle.handler	= server_idle_handler;
 
 	srv_conn->event.ctx		= ev;
 	srv_conn->event.fde		= &fde;
 	srv_conn->event.idle		= &idle;
-	srv_conn->event.idle_time	= SERVER_DEFAULT_IDLE_TIME;
+	srv_conn->event.idle_time	= timeval_set(SERVER_DEFAULT_IDLE_TIME, 0);
 
 	srv_conn->server_socket		= server_socket;
 	srv_conn->service		= server_socket->service;
@@ -269,11 +269,12 @@ void server_terminate_connection(struct server_connection *srv_conn, const char 
 	srv_conn->service->model_ops->terminate_connection(srv_conn, reason);
 }
 
-void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
+void server_io_handler(struct event_context *ev, struct fd_event *fde, 
+		       struct timeval t, uint16_t flags)
 {
 	struct server_connection *conn = fde->private;
 
-	conn->event.idle->next_event = t + conn->event.idle_time;
+	conn->event.idle->next_event = timeval_sum(&t,  &conn->event.idle_time);
 
 	if (flags & EVENT_FD_WRITE) {
 		conn->service->ops->send_handler(conn, t, flags);
@@ -286,13 +287,14 @@ void server_io_handler(struct event_context *ev, struct fd_event *fde, time_t t,
 
 }
 
-void server_idle_handler(struct event_context *ev, struct timed_event *idle, time_t t)
+void server_idle_handler(struct event_context *ev, struct timed_event *idle, 
+			 struct timeval t)
 {
 	struct server_connection *conn = idle->private;
 
-	conn->event.idle->next_event = t + conn->event.idle_time;
+	conn->event.idle->next_event = timeval_sum(&t, &conn->event.idle_time);
 
-	conn->service->ops->idle_handler(conn,t);
+	conn->service->ops->idle_handler(conn, t);
 }
 /*
   return the operations structure for a named backend of the specified type

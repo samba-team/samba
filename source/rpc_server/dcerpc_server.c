@@ -1057,19 +1057,16 @@ static void dcesrv_accept(struct server_connection *srv_conn)
 	dcesrv_sock_accept(srv_conn);
 }
 
-static void dcesrv_recv(struct server_connection *srv_conn, time_t t, uint16_t flags)
+static void dcesrv_recv(struct server_connection *srv_conn, 
+			struct timeval t, uint16_t flags)
 {
 	dcesrv_sock_recv(srv_conn, t, flags);
 }
 
-static void dcesrv_send(struct server_connection *srv_conn, time_t t, uint16_t flags)
+static void dcesrv_send(struct server_connection *srv_conn, 
+			struct timeval t, uint16_t flags)
 {
 	dcesrv_sock_send(srv_conn, t, flags);
-}
-
-static void dcesrv_idle(struct server_connection *srv_conn, time_t t)
-{
-	dcesrv_sock_idle(srv_conn, t);
 }
 
 static void dcesrv_close(struct server_connection *srv_conn, const char *reason)
@@ -1190,7 +1187,7 @@ static const struct server_service_ops dcesrv_ops = {
 	.accept_connection	= dcesrv_accept,
 	.recv_handler		= dcesrv_recv,
 	.send_handler		= dcesrv_send,
-	.idle_handler		= dcesrv_idle,
+	.idle_handler		= NULL,
 	.close_connection	= dcesrv_close,
 	.service_exit		= dcesrv_exit,	
 };

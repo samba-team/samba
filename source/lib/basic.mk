@@ -72,7 +72,8 @@ ADD_OBJ_FILES = \
 		lib/events.o \
 		lib/db_wrap.o \
 		lib/server_mutex.o \
-		lib/idtree.o
+		lib/idtree.o \
+		lib/unix_privs.o
 REQUIRED_SUBSYSTEMS = \
 		LIBTDB CHARSET LIBREPLACE LIBNETIF LIBCRYPTO
 # End SUBSYSTEM LIBBASIC

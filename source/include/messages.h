@@ -29,5 +29,6 @@ struct messaging_context;
 #define MSG_PING		2
 #define MSG_PONG		3
 #define MSG_BRL_RETRY		4
+#define MSG_PVFS_RETRY_OPEN	5
 
 #endif

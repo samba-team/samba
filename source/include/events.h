@@ -28,7 +28,8 @@ struct event_context {
 		struct fd_event *next, *prev;
 		int fd;
 		uint16_t flags; /* see EVENT_FD_* flags */
-		void (*handler)(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags);
+		void (*handler)(struct event_context *ev, struct fd_event *fde, 
+				struct timeval t, uint16_t flags);
 		void *private;
 		int ref_count;
 	} *fd_events;
@@ -36,8 +37,9 @@ struct event_context {
 	/* list of timed events */
 	struct timed_event {
 		struct timed_event *next, *prev;
-		time_t next_event;
-		void (*handler)(struct event_context *ev, struct timed_event *te, time_t t);
+		struct timeval next_event;
+		void (*handler)(struct event_context *ev, struct timed_event *te, 
+				struct timeval t);
 		void *private;
 		int ref_count;
 	} *timed_events;
@@ -45,7 +47,8 @@ struct event_context {
 	/* list of loop events - called on each select() */
 	struct loop_event {
 		struct loop_event *next, *prev;
-		void (*handler)(struct event_context *ev, struct loop_event *le, time_t t);
+		void (*handler)(struct event_context *ev, struct loop_event *le, 
+				struct timeval t);
 		void *private;
 		int ref_count;
 	} *loop_events;

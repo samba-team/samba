@@ -266,6 +266,7 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	int fnum = -1, fnum2;
 	BOOL ret = True;
 	int i;
+	struct timeval tv;
 	struct {
 		uint16_t open_func;
 		BOOL with_file;
@@ -398,13 +399,13 @@ static BOOL test_openx(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	fnum = io.openx.out.fnum;
 
 	io.openx.in.timeout = 20000;
-	start_timer();
+	tv = timeval_current();
 	io.openx.in.open_mode = OPENX_MODE_ACCESS_RDWR | OPENX_MODE_DENY_NONE;
 	status = smb_raw_open(cli->tree, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_SHARING_VIOLATION);
-	if (end_timer() > 3) {
-		printf("(%s) Incorrect timing in openx with timeout - waited %d seconds\n",
-		       __location__, (int)end_timer());
+	if (timeval_elapsed(&tv) > 3.0) {
+		printf("(%s) Incorrect timing in openx with timeout - waited %.2f seconds\n",
+		       __location__, timeval_elapsed(&tv));
 		ret = False;
 	}
 	smbcli_close(cli->tree, fnum);

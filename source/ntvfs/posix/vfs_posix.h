@@ -112,6 +112,8 @@ struct pvfs_file {
 	/* yes, we need 2 independent positions ... */
 	uint64_t seek_offset;
 	uint64_t position;
+
+	BOOL have_opendb_entry;
 };
 
 

@@ -58,6 +58,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 	int ping_count = 0;
 	int pong_count = 0;
 	BOOL ret = True;
+	struct timeval tv;
 
 	if (fork() == 0) {
 		struct messaging_context *msg_ctx2 = messaging_init(mem_ctx, 1, ev);
@@ -83,10 +84,10 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	messaging_register(msg_ctx, &pong_count, MY_PONG, pong_message);
 
-	start_timer();
+	tv = timeval_current();
 
 	printf("Sending pings for 10 seconds\n");
-	while (end_timer() < 10.0) {
+	while (timeval_elapsed(&tv) < 10.0) {
 		DATA_BLOB data;
 		NTSTATUS status1, status2;
 
@@ -113,7 +114,7 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 
 	printf("waiting for %d remaining replies (done %d)\n", 
 	       ping_count - pong_count, pong_count);
-	while (end_timer() < 30 && pong_count < ping_count) {
+	while (timeval_elapsed(&tv) < 30 && pong_count < ping_count) {
 		event_loop_once(ev);
 	}
 
@@ -125,7 +126,8 @@ static BOOL test_ping_speed(TALLOC_CTX *mem_ctx)
 		ret = False;
 	}
 
-	printf("ping rate of %.0f messages/sec\n", (ping_count+pong_count)/end_timer());
+	printf("ping rate of %.0f messages/sec\n", 
+	       (ping_count+pong_count)/timeval_elapsed(&tv));
 
 	talloc_free(msg_ctx);
 

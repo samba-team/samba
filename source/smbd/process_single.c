@@ -38,7 +38,8 @@ static void single_start_server(void)
 /*
   called when a listening socket becomes readable
 */
-static void single_accept_connection(struct event_context *ev, struct fd_event *srv_fde, time_t t, uint16_t flags)
+static void single_accept_connection(struct event_context *ev, struct fd_event *srv_fde, 
+				     struct timeval t, uint16_t flags)
 {
 	NTSTATUS status;
 	struct socket_context *sock;
@@ -55,7 +56,7 @@ static void single_accept_connection(struct event_context *ev, struct fd_event *
 
 	conn = server_setup_connection(ev, server_socket, sock, t, socket_get_fd(sock));
 	if (!conn) {
-		DEBUG(0,("server_setup_connection(ev, server_socket, sock, t) failed\n"));
+		DEBUG(0,("server_setup_connection failed\n"));
 		return;
 	}
 

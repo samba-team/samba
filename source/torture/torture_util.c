@@ -24,21 +24,6 @@
 #include "system/time.h"
 
 
-static struct timeval tp1,tp2;
-
-void start_timer(void)
-{
-	gettimeofday(&tp1,NULL);
-}
-
-double end_timer(void)
-{
-	gettimeofday(&tp2,NULL);
-	return((tp2.tv_sec - tp1.tv_sec) + 
-	       (tp2.tv_usec - tp1.tv_usec)*1.0e-6);
-}
-
-
 /*
   create a directory, returning a handle to it
 */

@@ -48,13 +48,13 @@ struct server_service_ops {
 	void (*accept_connection)(struct server_connection *);
 
 	/* function to accept new connection */
-	void (*recv_handler)(struct server_connection *, time_t, uint16_t);
+	void (*recv_handler)(struct server_connection *, struct timeval, uint16_t);
 
 	/* function to accept new connection */
-	void (*send_handler)(struct server_connection *, time_t, uint16_t);
+	void (*send_handler)(struct server_connection *, struct timeval, uint16_t);
 
 	/* function to accept new connection */
-	void (*idle_handler)(struct server_connection *, time_t);
+	void (*idle_handler)(struct server_connection *, struct timeval);
 
 	/* function to close a connection */
 	void (*close_connection)(struct server_connection *, const char *reason);
@@ -114,7 +114,7 @@ struct server_connection {
 		struct event_context *ctx;
 		struct fd_event *fde;
 		struct timed_event *idle;
-		time_t idle_time;
+		struct timeval idle_time;
 	} event;
 
 	servid_t server_id;
