@@ -29,7 +29,28 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <dirent.h>
+
+#define SMBC_MAX_NAME 1023
+
+struct smbc_dirent {
+
+  uint smbc_type;  /* Type of entity, see below */
+  uint namelen;
+  uint commentlen;
+  char *comment;   /* Points to the comment futher down */
+  char name[1];
+
+};
+
+#define SMBC_WORKGROUP     1
+#define SMBC_SERVER        2
+#define SMBC_FILE_SHARE    3
+#define SMBC_PRINTER_SHARE 4
+#define SMBC_COMMS_SHARE   5
+#define SMBC_IPC_SHARE     6
+#define SMBC_DIR           7
+#define SMBC_FILE          8
+#define SMBC_LINK          9
 
 #define SMBC_FILE_MODE (S_IFREG | 0444)
 #define SMBC_DIR_MODE  (S_IFDIR | 0555)
@@ -133,7 +154,7 @@ int smbc_closedir(int fd);
  * Get a directory entry
  */
 
-int smbc_getdents(unsigned int fd, struct dirent *dirp, int count);
+int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count);
 
 /* 
  * Create a directory on a server, share, dir in fname URL
