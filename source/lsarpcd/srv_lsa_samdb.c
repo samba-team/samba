@@ -581,6 +581,31 @@ uint32 _lsa_query_info_pol(POLICY_HND * hnd, uint16 info_class,
 				       &global_sam_sid);
 			break;
 		}
+		case 0x06:
+		{
+			switch(lp_server_role())
+			{
+				case ROLE_DOMAIN_BDC:
+				{
+					/*
+					 * only a BDC is a backup controller
+					 * of the domain, it controls.
+					 */
+					info->id6.server_role = 2;
+					break;
+				}
+				default:
+				{
+					/*
+					 * any other role is a primary
+					 * of the domain, it controls.
+					 */
+					info->id6.server_role = 3;
+					break;
+				}
+			}
+			break;
+		}
 		default:
 		{
 			DEBUG(3, ("unknown info level in Lsa Query: %d\n",

@@ -1012,8 +1012,8 @@ BOOL lsa_query_info_pol(POLICY_HND *hnd, uint16 info_class,
 		LSA_R_QUERY_INFO r_q;
 		BOOL p;
 
-		lsa_io_r_query("", &r_q, &rbuf, 0);
-		p = rbuf.offset != 0;
+		p = lsa_io_r_query("", &r_q, &rbuf, 0)
+			&& rbuf.offset != 0;
 
 		if (p && r_q.status != 0)
 		{

@@ -142,6 +142,12 @@ typedef struct dom_query_2
 	uint32 *auditsettings;
 } DOM_QUERY_2;
 
+/* level 6 is server role information */
+typedef struct dom_query_6
+{
+	uint16 server_role; /* 2=backup, 3=primary */
+} DOM_QUERY_6;
+
 
 typedef struct seq_qos_info
 {
@@ -227,6 +233,7 @@ typedef union lsa_info_union
 	DOM_QUERY_2 id2;
 	DOM_QUERY_3 id3;
 	DOM_QUERY_5 id5;
+	DOM_QUERY_6 id6;
 } LSA_INFO_UNION;
 
 /* LSA_Q_QUERY_INFO - LSA query info policy */
