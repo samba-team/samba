@@ -905,6 +905,9 @@ void unistr_to_dos(char *dest, char *src, size_t len);
 
 BOOL name_status(int fd,char *name,int name_type,BOOL recurse,
 		 struct in_addr to_ip,char *master,char *rname);
+struct node_status *name_status_query(int fd,struct nmb_name *name,
+				      struct in_addr to_ip, int *num_names);
+BOOL name_status_find(int type, struct in_addr to_ip, char *name);
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
