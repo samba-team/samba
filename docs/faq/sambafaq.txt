@@ -547,9 +547,12 @@
   coordinating the effort to get CAP working with Native Ethertalk under
   Linux, but we're not done yet.
 
-  [lkcl - update 09mar97 - the answer is "Yes!".  Thursby now have a
+  lkcl - update 09mar97 - the answer is "Yes!".  Thursby now have a
   CIFS Client / Server - see www.thursby.com.  They test it against
-  Windows 95, Windows NT and samba for compatibility issues].
+  Windows 95, Windows NT and samba for compatibility issues.  At
+  present, DAVE is at version 1.0.0.  DAVE version 1.0.1 is in beta,
+  and will be released in April 97 (the speed of finder copies has
+  been greatly enhanced, and there are bug-fixes included).
 
   3.2.  Session request failed (131,130)" error
 
