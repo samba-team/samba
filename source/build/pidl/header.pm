@@ -239,37 +239,15 @@ sub HeaderTypedefProto($)
 	    return;
     }
 
-    if ($d->{DATA}{TYPE} eq "STRUCT") {
-	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
-	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, struct $d->{NAME} *r);\n";
-	    if (!util::has_property($d, "noprint")) {
-		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, struct $d->{NAME} *r);\n";
-	    }
+	my $tf = NdrParser::get_typefamily($d->{DATA}{TYPE});
 
-    }
-    if ($d->{DATA}{TYPE} eq "UNION") {
-	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
-	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
-	    if (!util::has_property($d, "noprint")) {
-		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
-	    }
-    }
-
-    if ($d->{DATA}{TYPE} eq "ENUM") {
-	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, enum $d->{NAME} r);\n";
-	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, enum $d->{NAME} *r);\n";
-	    if (!util::has_property($d, "noprint")) {
-		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, enum $d->{NAME} r);\n";
-	    }
-    }
-
-    if ($d->{DATA}{TYPE} eq "BITMAP") {
-    	    my $type_decl = util::bitmap_type_decl($d->{DATA});
-	    pidl "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, int ndr_flags, $type_decl r);\n";
-	    pidl "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, $type_decl *r);\n";
-	    if (!util::has_property($d, "noprint")) {
-		    pidl "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r);\n";
-	    }
+	my $pull_args = $tf->{PULL_FN_ARGS}->($d);
+	my $push_args = $tf->{PUSH_FN_ARGS}->($d);
+	my $print_args = $tf->{PRINT_FN_ARGS}->($d);
+	pidl "NTSTATUS ndr_push_$d->{NAME}($push_args);\n";
+    pidl "NTSTATUS ndr_pull_$d->{NAME}($pull_args);\n";
+    if (!util::has_property($d, "noprint")) {
+	    pidl "void ndr_print_$d->{NAME}($print_args);\n";
     }
 }
 
