@@ -59,10 +59,20 @@
 #define HKEY_LOCAL_MACHINE 	0x80000002
 #define HKEY_USERS         	0x80000003
 
-#define REG_SZ		1
-#define REG_BINARY	3
-#define REG_DWORD	4
-#define REG_MULTI_SZ	7
+/* Registry data types */
+
+#define REG_NONE                       0
+#define REG_SZ		               1
+#define REG_EXPAND_SZ                  2
+#define REG_BINARY 	               3
+#define REG_DWORD	               4
+#define REG_DWORD_LE	               4	/* DWORD, little endian */
+#define REG_DWORD_BE	               5	/* DWORD, big endian */
+#define REG_LINK                       6
+#define REG_MULTI_SZ  	               7
+#define REG_RESOURCE_LIST              8
+#define REG_FULL_RESOURCE_DESCRIPTOR   9
+#define REG_RESOURCE_REQUIREMENTS_LIST 10
 
 /* REG_Q_OPEN_HKCR   */
 typedef struct q_reg_open_hkcr_info
