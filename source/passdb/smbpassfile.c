@@ -223,6 +223,7 @@ BOOL set_trust_account_password( unsigned char *md4_new_pwd)
 
   pwdb_sethexpwd((char *)linebuf, (uchar*)md4_new_pwd, 0);
   pwdb_set_time_last_changed(&linebuf[32], 32, (unsigned)time(NULL));
+  linebuf[45] = '\n';
 
   if(fwrite( linebuf, 1, 46, mach_passwd_fp)!= 46) {
     DEBUG(0,("set_trust_account_password: Failed to write file. Warning - the trust \
