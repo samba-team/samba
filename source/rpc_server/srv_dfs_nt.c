@@ -34,6 +34,9 @@ extern pstring global_myname;
 
 #define MAX_MSDFS_JUNCTIONS 256
 
+/* This function does not return a WERROR or NTSTATUS code but rather 1 if
+   dfs exists, or 0 otherwise. */
+
 uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u)
 {
 	if(lp_host_msdfs()) 
@@ -42,7 +45,7 @@ uint32 _dfs_exist(pipes_struct *p, DFS_Q_DFS_EXIST *q_u, DFS_R_DFS_EXIST *r_u)
 		return 0;
 }
 
-uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
+WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 {
   struct current_user user;
   struct junction_map jn;
@@ -56,7 +59,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 
   if (user.uid != 0) {
 	DEBUG(10,("_dfs_add: uid != 0. Access denied.\n"));
-	return ERROR_ACCESS_DENIED;
+	return WERR_ACCESS_DENIED;
   }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
@@ -71,7 +74,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   pstrcat(altpath, sharename);
 
   if(!create_junction(dfspath, &jn))
-    return NERR_DfsNoSuchServer;
+    return WERR_DFS_NO_SUCH_SERVER;
 
   if(get_referred_path(&jn))
     {
@@ -88,7 +91,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   if(jn.referral_list == NULL)
     {
       DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
-      return NERR_DfsInternalError;
+      return WERR_DFS_INTERNAL_ERROR;
     }
 
   if(old_referral_list)
@@ -104,12 +107,13 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   pstrcpy(jn.referral_list[jn.referral_count-1].alternate_path, altpath);
   
   if(!create_msdfs_link(&jn, exists))
-    return NERR_DfsCantCreateJunctionPoint;
+    return WERR_DFS_CANT_CREATE_JUNCT;
 
-  return NT_STATUS_OK;
+  return WERR_OK;
 }
 
-uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u)
+WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, 
+                   DFS_R_DFS_REMOVE *r_u)
 {
   struct current_user user;
   struct junction_map jn;
@@ -122,7 +126,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 
   if (user.uid != 0) {
 	DEBUG(10,("_dfs_remove: uid != 0. Access denied.\n"));
-	return ERROR_ACCESS_DENIED;
+	return WERR_ACCESS_DENIED;
   }
 
   unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
@@ -143,16 +147,16 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 	   dfspath, servername, sharename));
 
   if(!create_junction(dfspath, &jn))
-    return NERR_DfsNoSuchServer;
+    return WERR_DFS_NO_SUCH_SERVER;
 
   if(!get_referred_path(&jn))
-    return NERR_DfsNoSuchVolume;
+    return WERR_DFS_NO_SUCH_VOL;
 
   /* if no server-share pair given, remove the msdfs link completely */
   if(!q_u->ptr_ServerName && !q_u->ptr_ShareName)
     {
       if(!remove_msdfs_link(&jn))
-	return NERR_DfsNoSuchVolume;
+	return WERR_DFS_NO_SUCH_VOL;
     }
   else
     {
@@ -170,22 +174,22 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 	    }
 	}
       if(!found)
-	return NERR_DfsNoSuchShare;
+	return WERR_DFS_NO_SUCH_SHARE;
       
       /* Only one referral, remove it */
       if(jn.referral_count == 1)
 	{
 	  if(!remove_msdfs_link(&jn))
-	    return NERR_DfsNoSuchVolume;
+	    return WERR_DFS_NO_SUCH_VOL;
 	}
       else
 	{
 	  if(!create_msdfs_link(&jn, True))
-	    return NERR_DfsCantCreateJunctionPoint;
+	    return WERR_DFS_CANT_CREATE_JUNCT;
 	}
     }
 
-  return NT_STATUS_OK;
+  return WERR_OK;
 }
 
 static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int num_j)
@@ -270,8 +274,9 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
   return True;
 }
 
-static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ctr, 
-			       struct junction_map* jn, int num_jn)
+static WERROR init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, 
+                                   DFS_INFO_CTR* ctr, struct junction_map* jn,
+                                   int num_jn)
 {
   /* do the levels */
   switch(level)
@@ -281,7 +286,7 @@ static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ct
 	DFS_INFO_1* dfs1;
 	dfs1 = (DFS_INFO_1*) talloc(ctx, num_jn * sizeof(DFS_INFO_1));
 	if (!dfs1)
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	init_reply_dfs_info_1(jn, dfs1, num_jn);
 	ctr->dfs.info1 = dfs1;
 	break;
@@ -291,7 +296,7 @@ static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ct
 	DFS_INFO_2* dfs2;
 	dfs2 = (DFS_INFO_2*) talloc(ctx, num_jn * sizeof(DFS_INFO_2));
 	if (!dfs2)
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	init_reply_dfs_info_2(jn, dfs2, num_jn);
 	ctr->dfs.info2 = dfs2;
 	break;
@@ -301,18 +306,18 @@ static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ct
 	DFS_INFO_3* dfs3;
 	dfs3 = (DFS_INFO_3*) talloc(ctx, num_jn * sizeof(DFS_INFO_3));
 	if (!dfs3)
-		return NT_STATUS_NO_MEMORY;
+		return WERR_NOMEM;
 	init_reply_dfs_info_3(ctx, jn, dfs3, num_jn);
 	ctr->dfs.info3 = dfs3;
 	break;
       }
 	default:
-		return NT_STATUS_INVALID_LEVEL;
+		return WERR_INVALID_PARAM;
     }
-  return NT_STATUS_OK;
+  return WERR_OK;
 }
       
-uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
+WERROR _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
 {
   uint32 level = q_u->level;
   struct junction_map jn[MAX_MSDFS_JUNCTIONS];
@@ -331,7 +336,7 @@ uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
   
   r_u->ctr = (DFS_INFO_CTR*)talloc(p->mem_ctx, sizeof(DFS_INFO_CTR));
   if (!r_u->ctr)
-    return NT_STATUS_NO_MEMORY;
+    return WERR_NOMEM;
   ZERO_STRUCTP(r_u->ctr);
   r_u->ctr->switch_value = level;
   r_u->ctr->num_entries = num_jn;
@@ -342,7 +347,8 @@ uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
   return r_u->status;
 }
       
-uint32 _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, DFS_R_DFS_GET_INFO *r_u)
+WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, 
+                     DFS_R_DFS_GET_INFO *r_u)
 {
   UNISTR2* uni_path = &q_u->uni_path;
   uint32 level = q_u->level;
@@ -351,10 +357,10 @@ uint32 _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u, DFS_R_DFS_GET_INF
 
   unistr2_to_ascii(path, uni_path, sizeof(path)-1);
   if(!create_junction(path, &jn))
-     return NERR_DfsNoSuchServer;
+     return WERR_DFS_NO_SUCH_SERVER;
   
   if(!get_referred_path(&jn))
-    return NERR_DfsNoSuchVolume;
+    return WERR_DFS_NO_SUCH_VOL;
 
   r_u->level = level;
   r_u->ptr_ctr = 1;
