@@ -386,7 +386,7 @@ static BOOL api_samr_chgpasswd_user(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* unknown 38 command */
+	/* change password request */
 	if (!samr_io_q_chgpasswd_user("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_chgpasswd_user: Failed to unmarshall SAMR_Q_CHGPASSWD_USER.\n"));
 		return False;
@@ -448,7 +448,6 @@ static BOOL api_samr_open_user(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 22 */
 	if(!samr_io_q_open_user("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_open_user: unable to unmarshall SAMR_Q_OPEN_USER.\n"));
 		return False;
@@ -479,7 +478,6 @@ static BOOL api_samr_query_userinfo(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 24 */
 	if(!samr_io_q_query_userinfo("", &q_u, data, 0)){
 		DEBUG(0,("api_samr_query_userinfo: unable to unmarshall SAMR_Q_QUERY_USERINFO.\n"));
 		return False;
@@ -510,7 +508,6 @@ static BOOL api_samr_query_usergroups(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 32 */
 	if(!samr_io_q_query_usergroups("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_query_usergroups: unable to unmarshall SAMR_Q_QUERY_USERGROUPS.\n"));
 		return False;
@@ -541,7 +538,6 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 8 command */
 	if(!samr_io_q_query_dom_info("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_query_dom_info: unable to unmarshall SAMR_Q_QUERY_DOMAIN_INFO.\n"));
 		return False;
@@ -1347,13 +1343,13 @@ static BOOL api_samr_open_group(pipes_struct *p)
 }
 
 /*******************************************************************
- api_samr_unknown_2d
+ api_samr_remove_user_foreign_domain
  ********************************************************************/
 
-static BOOL api_samr_unknown_2d(pipes_struct *p)
+static BOOL api_samr_remove_user_foreign_domain(pipes_struct *p)
 {
-	SAMR_Q_UNKNOWN_2D q_u;
-	SAMR_R_UNKNOWN_2D r_u;
+	SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN q_u;
+	SAMR_R_REMOVE_USER_FOREIGN_DOMAIN r_u;
 
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
@@ -1361,15 +1357,15 @@ static BOOL api_samr_unknown_2d(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	if (!samr_io_q_unknown_2d("", &q_u, data, 0)) {
-		DEBUG(0,("api_samr_unknown_2d: unable to unmarshall SAMR_Q_UNKNOWN_2D.\n"));
+	if (!samr_io_q_remove_user_foreign_domain("", &q_u, data, 0)) {
+		DEBUG(0,("api_samr_remove_user_foreign_domain: unable to unmarshall SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN.\n"));
 		return False;
 	}
 
-	r_u.status = _samr_unknown_2d(p, &q_u, &r_u);
+	r_u.status = _samr_remove_user_foreign_domain(p, &q_u, &r_u);
 
-	if (!samr_io_r_unknown_2d("", &r_u, rdata, 0)) {
-		DEBUG(0,("api_samr_unknown_2d: unable to marshall SAMR_R_UNKNOWN_2D.\n"));
+	if (!samr_io_r_remove_user_foreign_domain("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_samr_remove_user_foreign_domain: unable to marshall SAMR_R_REMOVE_USER_FOREIGN_DOMAIN.\n"));
 		return False;
 	}
 
@@ -1421,7 +1417,6 @@ static BOOL api_samr_set_dom_info(pipes_struct *p)
 	ZERO_STRUCT(q_u);
 	ZERO_STRUCT(r_u);
 
-	/* grab the samr unknown 8 command */
 	if(!samr_io_q_set_domain_info("", &q_u, data, 0)) {
 		DEBUG(0,("api_samr_set_dom_info: unable to unmarshall SAMR_Q_SET_DOMAIN_INFO.\n"));
 		return False;
@@ -1488,7 +1483,7 @@ static struct api_struct api_samr_cmds [] =
       {"SAMR_OPEN_ALIAS"        , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
       {"SAMR_OPEN_GROUP"        , SAMR_OPEN_GROUP       , api_samr_open_group       },
       {"SAMR_OPEN_DOMAIN"       , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
-      {"SAMR_UNKNOWN_2D"        , SAMR_UNKNOWN_2D       , api_samr_unknown_2d       },
+      {"SAMR_REMOVE_USER_FOREIGN_DOMAIN"       , SAMR_REMOVE_USER_FOREIGN_DOMAIN      , api_samr_remove_user_foreign_domain      },
       {"SAMR_LOOKUP_DOMAIN"     , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
       
       {"SAMR_QUERY_SEC_OBJECT"  , SAMR_QUERY_SEC_OBJECT , api_samr_query_sec_obj    },

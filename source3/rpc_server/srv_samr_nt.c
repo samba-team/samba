@@ -8,6 +8,7 @@
  *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Jean François Micouleau      1998-2001,
  *  Copyright (C) Jim McDonough <jmcd@us.ibm.com>   2002.
+ *  Copyright (C) Gerald (Jerry) Carter             2003.
  *
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -3787,7 +3788,8 @@ NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAM
 	/* check if the user exists before trying to delete */
 	pdb_init_sam(&sam_pass);
 	if(!pdb_getsampwsid(sam_pass, &user_sid)) {
-		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", pdb_get_username(sam_pass)));
+		DEBUG(5,("_samr_delete_dom_user:User %s doesn't exist.\n", 
+			sid_string_static(&user_sid)));
 		pdb_free_sam(&sam_pass);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -4283,13 +4285,75 @@ NTSTATUS _samr_open_group(pipes_struct *p, SAMR_Q_OPEN_GROUP *q_u, SAMR_R_OPEN_G
 }
 
 /*********************************************************************
- _samr_unknown_2d
+ _samr_remove_user_foreign_domain
 *********************************************************************/
 
-NTSTATUS _samr_unknown_2d(pipes_struct *p, SAMR_Q_UNKNOWN_2D *q_u, SAMR_R_UNKNOWN_2D *r_u)
+NTSTATUS _samr_remove_user_foreign_domain(pipes_struct *p, 
+                                          SAMR_Q_REMOVE_USER_FOREIGN_DOMAIN *q_u, 
+                                          SAMR_R_REMOVE_USER_FOREIGN_DOMAIN *r_u)
 {
-	DEBUG(0,("_samr_unknown_2d: Not yet implemented.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID			user_sid, dom_sid;
+	SAM_ACCOUNT 		*sam_pass=NULL;
+	uint32 			acc_granted;
+	
+	sid_copy( &user_sid, &q_u->sid.sid );
+	
+	DEBUG(5,("_samr_remove_user_foreign_domain: removing user [%s]\n",
+		sid_string_static(&user_sid)));
+		
+	/* Find the policy handle. Open a policy on it. */
+	
+	if (!get_lsa_policy_samr_sid(p, &q_u->dom_pol, &dom_sid, &acc_granted)) 
+		return NT_STATUS_INVALID_HANDLE;
+		
+	if (!NT_STATUS_IS_OK(r_u->status = access_check_samr_function(acc_granted, 
+		STD_RIGHT_DELETE_ACCESS, "_samr_remove_user_foreign_domain"))) 
+	{
+		return r_u->status;
+	}
+		
+	if ( !sid_check_is_in_our_domain(&user_sid) ) {
+		DEBUG(5,("_samr_remove_user_foreign_domain: user not is our domain!\n"));
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* check if the user exists before trying to delete */
+	
+	pdb_init_sam(&sam_pass);
+	
+	if ( !pdb_getsampwsid(sam_pass, &user_sid) ) {
+	
+		DEBUG(5,("_samr_remove_user_foreign_domain:User %s doesn't exist.\n", 
+			sid_string_static(&user_sid)));
+			
+		pdb_free_sam(&sam_pass);
+		
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/*
+	 * delete the unix side
+	 * 
+	 * note: we don't check if the delete really happened
+	 * as the script is not necessary present
+	 * and maybe the sysadmin doesn't want to delete the unix side
+	 */
+	 
+	smb_delete_user(pdb_get_username(sam_pass));
+
+	/* and delete the samba side */
+	
+	if ( !pdb_delete_sam_account(sam_pass) ) {
+	
+		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", pdb_get_username(sam_pass)));
+		pdb_free_sam(&sam_pass);
+		
+		return NT_STATUS_CANNOT_DELETE;
+	}
+	
+	pdb_free_sam(&sam_pass);
+
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
