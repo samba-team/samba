@@ -166,7 +166,9 @@ getconnmode(void)
     if ((eight & 1) || my_want_state_is_will(TELOPT_BINARY))
 	mode |= MODE_INBIN;
 
-    if ((eight & 2) || his_want_state_is_will(TELOPT_BINARY))
+    if (eight & 2)
+	mode |= MODE_OUT8;
+    if (his_want_state_is_will(TELOPT_BINARY))
 	mode |= MODE_OUTBIN;
 
 #ifdef	KLUDGELINEMODE
