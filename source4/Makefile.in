@@ -642,7 +642,7 @@ NTLM_AUTH_OBJ = utils/ntlm_auth.o $(LIBNTLMSSP_OBJ) $(LIBSAMBA_OBJ) $(POPT_LIB_O
 ######################################################################
 # now the rules...
 ######################################################################
-all: bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
+all: proto_test idl_test bin/smbd bin/smbclient bin/smbtorture bin/locktest bin/masktest bin/gentest
 
 #SHOWFLAGS proto_exists $(SBIN_PROGS) $(BIN_PROGS) $(SHLIBS) \
 #	$(TORTURE_PROGS) $(RPC_MODULES) @EXTRA_ALL_TARGETS@
@@ -716,7 +716,10 @@ pch:
 
 
 idl:
-	script/build_idl.sh
+	script/build_idl.sh FULL
+
+idl_test:
+	@script/build_idl.sh
 
 
 # These dependencies are only approximately correct: we want to make
@@ -1259,6 +1262,9 @@ headers:
 @STFS_ENABLED@	$(MAKE) ntvfs/tank/vfs_tank_proto.h
 
 proto: headers 
+
+proto_test:
+	@[ -f include/proto.h ] || $(MAKE) proto
 
 .PHONY: headers proto
 
