@@ -251,7 +251,10 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     pa.len = 0;
     for(i = 0; i < client->keys.len; i++){
 	krb5_enctype *etypes, *e;
-	krb5_enctype ex[2] = { client->keys.val[i].key.keytype, 0 };
+	krb5_enctype ex[2];
+
+	ex[0] = client->keys.val[i].key.keytype;
+	ex[1] = 0;
 	if(context->ktype_is_etype)
 	    ret = krb5_keytype_to_etypes(context, 
 					 client->keys.val[i].key.keytype,
