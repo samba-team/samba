@@ -163,41 +163,31 @@ struct: 'struct' '{' element_list1 '}'
         }}
 ;
 
-union: 'union' '{' union_elements '}' 
-	 {{
-		"TYPE" => "UNION",
-		"DATA" => $_[3]
+empty_element: property_list ';'
+	{{
+		 "NAME" => "",
+		 "TYPE" => "EMPTY",
+		 "PROPERTIES" => $_[0],
+		 "POINTERS" => 0
 	 }}
+;
+
+base_or_empty: base_element ';' | empty_element;
+
+optional_base_element:
+	property_list base_or_empty { $_[2]->{PROPERTIES} = util::FlattenHash([$_[1],$_[2]->{PROPERTIES}]); $_[2] }
 ;
 
 union_elements: 
-      union_element                    { [ $_[1] ] }            
-    | union_elements union_element  { push(@{$_[1]}, $_[2]); $_[1] }
+    #empty
+    | union_elements optional_base_element { push(@{$_[1]}, $_[2]); $_[1] }
 ;
 
-union_element: 
-         '[' 'case' '(' anytext ')' ']' base_element ';'
-	 {{
-		"TYPE" => "UNION_ELEMENT",
-		"CASE" => $_[4],
-		"DATA" => $_[7]
-	 }}
-         | '[' 'case' '(' anytext ')' ']' ';'
-	 {{
-		"TYPE" => "EMPTY",
-		"CASE" => $_[4],
-	 }}
-         | '[' 'default' ']' base_element ';'
-	 {{
-		"TYPE" => "UNION_ELEMENT",
-		"CASE" => "default",
-		"DATA" => $_[4]
-	 }}
-         | '[' 'default' ']' ';'
-	 {{
-		"TYPE" => "EMPTY",
-		"CASE" => "default",
-	 }}
+union: 'union' '{' union_elements '}' 
+        {{
+                     "TYPE" => "UNION", 
+		     "ELEMENTS" => $_[3]
+        }}
 ;
 
 base_element: property_list type pointers identifier array_len
@@ -216,8 +206,6 @@ pointers:
    { 0 }
     | pointers '*'  { $_[1]+1 }
 ;
-
-
 
 element_list1: 
     #empty
@@ -353,7 +341,7 @@ again:
 			$parser->YYData->{LAST_TOKEN} = $1;
 			if ($1 =~ 
 			    /^(coclass|interface|const|typedef|declare|union
-			      |struct|enum|bitmap|void|case|default)$/x) {
+			      |struct|enum|bitmap|void)$/x) {
 				return $1;
 			}
 			return('IDENTIFIER',$1);

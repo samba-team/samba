@@ -168,7 +168,7 @@ sub get_interface($$)
 }
 
 #####################################################################
-# see if a pidl property list contains a give property
+# see if a pidl property list contains a given property
 sub has_property($$)
 {
 	my($e) = shift;
