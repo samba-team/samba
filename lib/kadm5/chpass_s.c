@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -56,6 +56,42 @@ kadm5_s_chpass_principal(void *server_handle,
     if(ret == HDB_ERR_NOENTRY)
 	goto out;
     ret = _kadm5_set_keys(context, &ent, password);
+    if(ret)
+	goto out2;
+    ret = _kadm5_set_modifier(context, &ent);
+    if(ret)
+	goto out2;
+
+    kadm5_log_modify (context,
+		      &ent,
+		      KADM5_PRINCIPAL | KADM5_MOD_NAME | KADM5_MOD_TIME |
+		      KADM5_KEY_DATA | KADM5_KVNO);
+    
+    ret = context->db->store(context->context, context->db, 1, &ent);
+out2:
+    hdb_free_entry(context->context, &ent);
+out:
+    context->db->close(context->context, context->db);
+    return _kadm5_error_code(ret);
+}
+
+kadm5_ret_t
+kadm5_s_chpass_principal_with_key(void *server_handle, 
+				  krb5_principal princ,
+				  int n_key_data,
+				  krb5_key_data *key_data)
+{
+    kadm5_server_context *context = server_handle;
+    hdb_entry ent;
+    kadm5_ret_t ret;
+    ent.principal = princ;
+    ret = context->db->open(context->context, context->db, O_RDWR, 0);
+    if(ret)
+	return ret;
+    ret = context->db->fetch(context->context, context->db, &ent);
+    if(ret == HDB_ERR_NOENTRY)
+	goto out;
+    ret = _kadm5_set_keys2(context, &ent, n_key_data, key_data);
     if(ret)
 	goto out2;
     ret = _kadm5_set_modifier(context, &ent);
