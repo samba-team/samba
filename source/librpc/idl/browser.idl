@@ -2,6 +2,7 @@
   uuid("6bffd098-a112-3610-9833-012892020162"),
   version(0.0), 
   helpstring("Browsing"),
+  pointer_default(unique),
   endpoint("ncacn_np:[\\pipe\\browser]", "ncacn_ip_tcp:", "ncalrpc:")
 ] 
 interface browser

@@ -55,6 +55,7 @@ sub ValidElement($)
 	if (!$e->{POINTERS} && (
 		util::has_property($e, "ptr") or
 		util::has_property($e, "unique") or
+		util::has_property($e, "relative") or
 		util::has_property($e, "ref"))) {
 		fatal(el_name($e) . " : pointer properties on non-pointer element\n");	
 	}
@@ -136,6 +137,11 @@ sub ValidInterface($)
 {
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
+
+	if (util::has_property($interface, "pointer_default") && 
+		$interface->{PROPERTIES}->{pointer_default} eq "ptr") {
+		fatal "Full pointers are not supported yet\n";
+	}
 
 	if (util::has_property($interface, "object")) {
      	if(util::has_property($interface, "version") && 
