@@ -277,9 +277,6 @@ static void process_request(struct winbindd_cli_state *state)
 
 	/* Process command */
 
-	DEBUG(3,("[%5d]: %s\n", state->pid,
-		 winbindd_cmd_to_string(state->request.cmd)));
-
 	if (!server_state.lsa_handle_open) return;
 
 	for (table = dispatch_table; table->fn; table++) {

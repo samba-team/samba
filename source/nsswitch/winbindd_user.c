@@ -96,6 +96,9 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	fstring name_domain, name_user, name, gecos_name;
 	struct winbindd_domain *domain;
 	
+	DEBUG(3, ("[%5d]: getpwnam %s\n", state->pid,
+		  state->request.data.username));
+	
 	/* Parse domain and username */
 
 	parse_domain_user(state->request.data.username, name_domain, 
@@ -117,7 +120,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	}
 
 	if (!domain_handles_open(domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Check for cached user entry */
@@ -189,6 +192,9 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	SAM_USERINFO_CTR user_info;
 	gid_t gid;
 	
+	DEBUG(3, ("[%5d]: getpwuid %d\n", state->pid, 
+		  state->request.data.uid));
+	
 	/* Get rid from uid */
 
 	if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid, 
@@ -199,7 +205,7 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	}
 	
 	if (!domain_handles_open(domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Check for cached uid entry */
@@ -272,12 +278,14 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 {
     struct winbindd_domain *tmp;
 
+    DEBUG(3, ("[%5d]: setpwent\n", state->pid));
+
     if (state == NULL) return WINBINDD_ERROR;
     
     /* Check user has enabled this */
 
     if (!lp_winbind_enum_users()) {
-	    return WINBINDD_OK;
+	    return WINBINDD_ERROR;
     }
 
     /* Free old static data if it exists */
@@ -322,6 +330,8 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 {
+    DEBUG(0, ("[%5d]: endpwent\n", state->pid));
+
     if (state == NULL) return WINBINDD_ERROR;
 
     free_getent_state(state->getpwent_state);    
@@ -374,7 +384,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	group_rid = DOMAIN_GROUP_RID_USERS;
 
 	if (!domain_handles_open(ent->domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Free any existing user info */
@@ -468,12 +478,14 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	int num_users, user_list_ndx = 0, i;
 	char *sep;
 
+	DEBUG(3, ("[%5d]: getpwent\n", state->pid));
+
 	if (state == NULL) return WINBINDD_ERROR;
 
 	/* Check user has enabled this */
 
 	if (!lp_winbind_enum_users()) {
-		return WINBINDD_OK;
+		return WINBINDD_ERROR;
 	}
 
 	/* Allocate space for returning a chunk of users */
@@ -492,7 +504,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 	sep = lp_winbind_separator();
 	
 	if (!(ent = state->getpwent_state)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Start sending back users */
@@ -584,6 +596,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
         uint32 num_entries = 0, total_entries = 0;
 	char *extra_data = NULL;
 	int extra_data_len = 0;
+
+	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
         /* Enumerate over trusted domains */
 

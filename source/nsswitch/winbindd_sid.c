@@ -31,6 +31,9 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	fstring name;
 
+	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
+		  state->request.data.sid));
+
 	/* Lookup sid from PDC using lsa_lookup_sids() */
 
 	string_to_sid(&sid, state->request.data.sid);
@@ -54,6 +57,9 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	fstring sid_str, name_domain, name_user, name;
 	DOM_SID sid;
 	
+	DEBUG(3, ("[%5d]: lookupname %s\n", state->pid,
+		  state->request.data.name));
+
 	parse_domain_user(state->request.data.name, name_domain, name_user);
 
 	snprintf(name, sizeof(name), "%s\\%s", name_domain, name_user);
@@ -79,6 +85,9 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	uint32 user_rid;
 	struct winbindd_domain *domain;
+
+	DEBUG(3, ("[%5d]: sid to uid %s\n", state->pid,
+		  state->request.data.sid));
 
 	/* Split sid into domain sid and user rid */
 
@@ -116,6 +125,9 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 	uint32 group_rid;
 	struct winbindd_domain *domain;
 
+	DEBUG(3, ("[%5d]: sid to gid %s\n", state->pid, 
+		  state->request.data.sid));
+
 	/* Split sid into domain sid and user rid */
 
 	string_to_sid(&sid, state->request.data.sid);
@@ -151,6 +163,9 @@ enum winbindd_result winbindd_uid_to_sid(struct winbindd_cli_state *state)
 	uint32 user_rid;
 	DOM_SID sid;
 
+	DEBUG(3, ("[%5d]: uid to sid %d\n", state->pid, 
+		  state->request.data.uid));
+
 	/* Lookup rid for this uid */
 
 	if (!winbindd_idmap_get_rid_from_uid(state->request.data.uid,
@@ -177,6 +192,9 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state)
 	struct winbindd_domain *domain;
 	uint32 group_rid;
 	DOM_SID sid;
+
+	DEBUG(3, ("[%5d]: gid to sid %d\n", state->pid,
+		  state->request.data.gid));
 
 	/* Lookup rid for this uid */
 

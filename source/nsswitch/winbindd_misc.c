@@ -60,6 +60,8 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state
 	fstring server;
 	uint32 status;
 
+	DEBUG(3, ("[%5d]: check machine account\n", state->pid));
+
 	/* Get trust account password */
 
 	if (!_get_trust_account_password(lp_workgroup(), trust_passwd,
@@ -96,6 +98,8 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 	struct winbindd_domain *domain;
 	int total_entries = 0, extra_data_len = 0;
 	char *extra_data = NULL;
+
+	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
 	for(domain = domain_list; domain; domain = domain->next) {
 

@@ -189,12 +189,11 @@ BOOL domain_handles_open(struct winbindd_domain *domain)
 	t = time(NULL);
 
 	if ((t - domain->last_check) < WINBINDD_ESTABLISH_LOOP) {
-		DEBUG(3, ("checking domain handles for domain %s\n", 
-			  domain->name));
-
 		return domain->sam_handle_open &&
 			domain->sam_dom_handle_open;
 	}
+	
+	DEBUG(3, ("checking domain handles for domain %s\n", domain->name));
 
 	domain->last_check = t;
 

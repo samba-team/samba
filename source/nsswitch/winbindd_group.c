@@ -171,6 +171,9 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 	gid_t gid;
 	int extra_data_len, gr_mem_len;
 	
+	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
+		  state->request.data.groupname));
+
 	/* Parse domain and groupname */
 	
 	memset(name_group, 0, sizeof(fstring));
@@ -194,7 +197,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state
 	}
 
 	if (!domain_handles_open(domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Check for cached group entry */
@@ -270,6 +273,9 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	int extra_data_len, gr_mem_len;
 	char *gr_mem;
 
+	DEBUG(3, ("[%5d]: getgrgid %d\n", state->pid, 
+		  state->request.data.gid));
+
 	/* Get rid from gid */
 
 	if (!winbindd_idmap_get_rid_from_gid(state->request.data.gid, 
@@ -280,7 +286,7 @@ enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state
 	}
 
 	if (!domain_handles_open(domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Try a cached entry */
@@ -353,12 +359,14 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *tmp;
 
+	DEBUG(3, ("[%5d]: setgrent\n", state->pid));
+
 	if (state == NULL) return WINBINDD_ERROR;
 	
 	/* Check user has enabled this */
 
 	if (!lp_winbind_enum_groups()) {
-		return WINBINDD_OK;
+		return WINBINDD_ERROR;
 	}
 
 	/* Free old static data if it exists */
@@ -404,6 +412,8 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 {
+	DEBUG(3, ("[%5d]: endgrent\n", state->pid));
+
 	if (state == NULL) return WINBINDD_ERROR;
 
 	free_getent_state(state->getgrent_state);
@@ -515,12 +525,14 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	int num_groups, group_list_ndx = 0, i, gr_mem_list_len = 0;
 	char *sep, *new_extra_data, *gr_mem_list = NULL;
 
+	DEBUG(3, ("[%5d]: getgrent\n", state->pid));
+
 	if (state == NULL) return WINBINDD_ERROR;
 
 	/* Check user has enabled this */
 
 	if (!lp_winbind_enum_groups()) {
-		return WINBINDD_OK;
+		return WINBINDD_ERROR;
 	}
 
 	num_groups = MIN(MAX_GETGRENT_GROUPS, state->request.data.num_entries);
@@ -534,7 +546,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	sep = lp_winbind_separator();
 
 	if (!(ent = state->getgrent_state)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	/* Start sending back groups */
@@ -655,6 +667,10 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 	/* Copy the list of group memberships to the end of the extra data */
 
+	if (group_list_ndx == 0) {
+		goto done;
+	}
+
 	new_extra_data = Realloc(
 		state->response.extra_data,
 		group_list_ndx * sizeof(struct winbindd_gr) + gr_mem_list_len);
@@ -678,7 +694,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	state->response.length += gr_mem_list_len;
 
 	/* Out of domains */
-
+ done:
 	return (group_list_ndx > 0) ? WINBINDD_OK : WINBINDD_ERROR;
 }
 
@@ -691,6 +707,8 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 	struct getent_state groups;
 	char *extra_data = NULL;
 	int extra_data_len = 0, i;
+
+	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
         /* Enumerate over trusted domains */
 
@@ -777,6 +795,9 @@ enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state)
 	gid_t *gid_list;
 	int i;
 	
+	DEBUG(3, ("[%5d]: initgroups %s\n", state->pid,
+		  state->request.data.username));
+
 	if (state == NULL) return WINBINDD_ERROR;
 
 	/* Parse domain and username */
@@ -800,7 +821,7 @@ enum winbindd_result winbindd_initgroups(struct winbindd_cli_state *state)
 	}
 
 	if (!domain_handles_open(domain)) {
-		return False;
+		return WINBINDD_ERROR;
 	}
 
 	slprintf(name, sizeof(name) - 1, "%s\\%s", name_domain, name_user);
