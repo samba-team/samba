@@ -515,7 +515,7 @@ static int setup_ver3_dfs_referral(char* pathname, char** ppdata,
 		/* copy referred path into current offset */
 
                 unilen = rpcstr_push(pdata+uni_curroffset, ref->alternate_path,
-                                     -1, STR_UNICODE);
+                                     -1, STR_UNICODE|STR_TERMINATE);
 		SSVAL(pdata,offset+16,uni_curroffset-offset);
 		/* copy 0x10 bytes of 00's in the ServiceSite GUID */
 		memset(pdata+offset+18,'\0',16);
