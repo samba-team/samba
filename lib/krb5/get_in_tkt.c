@@ -542,9 +542,9 @@ init_as_req (krb5_context context,
 			else
 			    krb5_data_zero(&salt.saltvalue);
 		    ret = add_padata(context, a->padata, creds->client, 
-			       key_proc, keyseed, 
-			       &preauth->val[i].info.val[j].etype, 1,
-			       sp);
+				     key_proc, keyseed, 
+				     &preauth->val[i].info.val[j].etype, 1,
+				     sp);
 		    if (ret == 0)
 			break;
 		}
@@ -820,7 +820,7 @@ krb5_get_in_tkt(krb5_context context,
 			    ret_as_reply);
     if(ret) 
 	return ret;
-    ret = krb5_cc_store_cred (context, ccache, creds);
-    krb5_free_creds_contents (context, creds);
+    if (ccache)
+	ret = krb5_cc_store_cred (context, ccache, creds);
     return ret;
 }
