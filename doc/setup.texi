@@ -349,7 +349,7 @@ the slaves that the database should be propagated to.  Each line contains
 the full name of the principal (for example
 @samp{iprop/hemligare.foo.se@@FOO.SE}).
 
-You should already have @samp{iprop/tcp} defined as 212, in your
+You should already have @samp{iprop/tcp} defined as 2121, in your
 @file{/etc/services}.  Otherwise, or if you need to use a different port
 for some peculiar reason, you can use the @kbd{--port} option.  This is
 useful when you have multiple realms to distribute from one server.
