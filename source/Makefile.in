@@ -158,6 +158,8 @@ MODULES = $(VFS_MODULES) $(PDB_MODULES) $(RPC_MODULES) $(IDMAP_MODULES) $(CHARSE
 TDBBASE_OBJ = tdb/tdb.o tdb/spinlock.o
 TDB_OBJ = $(TDBBASE_OBJ) tdb/tdbutil.o 
 
+SMBLDAP_OBJ = @SMBLDAP@
+
 LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
           lib/getsmbpass.o lib/interface.o lib/md4.o \
           lib/interfaces.o lib/pidfile.o lib/replace.o \
@@ -178,7 +180,7 @@ LIB_OBJ = lib/charcnv.o lib/debug.o lib/fault.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
 	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@
 
-LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o
+LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
 READLINE_OBJ = lib/readline.o
 
@@ -277,13 +279,13 @@ PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 
 PASSDB_OBJ = $(PASSDB_GET_SET_OBJ) passdb/passdb.o passdb/pdb_interface.o \
 		passdb/machine_sid.o passdb/util_sam_sid.o passdb/pdb_compat.o \
-		passdb/privileges.o @PDB_STATIC@
+		passdb/privileges.o @PDB_STATIC@ $(SMBLDAP__OBJ)
 
 XML_OBJ = passdb/pdb_xml.o
 MYSQL_OBJ = passdb/pdb_mysql.o
 DEVEL_HELP_OBJ = modules/weird.o
 
-IDMAP_OBJ = sam/idmap.o sam/idmap_util.o @IDMAP_STATIC@
+IDMAP_OBJ = sam/idmap.o sam/idmap_util.o @IDMAP_STATIC@ $(SMBLDAP_OBJ)
 
 GROUPDB_OBJ = groupdb/mapping.o
 
@@ -387,7 +389,7 @@ SWAT_OBJ1 = web/cgi.o web/diagnose.o web/startstop.o web/statuspage.o \
 SWAT_OBJ = $(SWAT_OBJ1) $(PARAM_OBJ) $(PRINTING_OBJ) $(LIBSMB_OBJ) \
 	   $(LOCKING_OBJ) $(PASSDB_OBJ) $(SECRETS_OBJ) $(KRBCLIENT_OBJ) \
 	   $(UBIQX_OBJ) $(LIB_OBJ) $(GROUPDB_OBJ) $(PLAINTEXT_AUTH_OBJ) \
-	   $(POPT_LIB_OBJ) $(IDMAP_OBJ)
+	   $(POPT_LIB_OBJ) $(IDMAP_OBJ) 
 
 SMBSH_OBJ = smbwrapper/smbsh.o smbwrapper/shared.o \
             $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
@@ -597,7 +599,7 @@ WINBINDD_OBJ = \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
 		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) \
-		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ)
+		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \
 		$(UBIQX_OBJ) $(SECRETS_OBJ) $(POPT_LIB_OBJ)

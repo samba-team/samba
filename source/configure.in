@@ -2302,8 +2302,8 @@ AC_ARG_WITH(ldap,
 AC_MSG_RESULT($with_ldap_support)
 
 if test x"$with_ldap_support" = x"yes"; then
-ac_save_LIBS="$LIBS"
-LIBS=""
+  ac_save_LIBS="$LIBS"
+  LIBS=""
 
   ##################################################################
   # we might need the lber lib on some systems. To avoid link errors
@@ -2322,6 +2322,9 @@ LIBS=""
            ])
         ])
 
+	## we have ldap so build the list of files for the generic samba ldap library
+	SMBLDAP="lib/smbldap.o"
+
 	########################################################
 	# If we have LDAP, does it's rebind procedure take 2 or 3 arguments?
 	# Check found in pam_ldap 145.
@@ -2334,8 +2337,9 @@ LIBS=""
 	AC_CHECK_FUNCS(ldap_initialize)	
   fi
   
-LDAP_LIBS="$LIBS";
-LIBS="$ac_save_LIBS";
+  AC_SUBST(SMBLDAP)
+  LDAP_LIBS="$LIBS";
+  LIBS="$ac_save_LIBS";
 else
     # Can't have ADS support without LDAP
     if test x"$with_ads_support" = x"yes"; then

@@ -869,6 +869,10 @@ struct printjob;
 
 struct smb_ldap_privates;
 
+/* forward declarations from smbldap.c */
+
+#include "smbldap.h"
+
 /***** automatically generated prototypes *****/
 #ifndef NO_PROTO_H
 #include "proto.h"
