@@ -21,7 +21,7 @@ LDADD = libhdb.la \
 	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la
-libhdb_la_LDFLAGS = -version-info 7:3:0
+libhdb_la_LDFLAGS = -version-info 7:4:0
 
 libhdb_la_SOURCES =				\
 	common.c				\
