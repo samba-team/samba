@@ -33,6 +33,8 @@
 #define O_DIRECTORY 0
 #endif
 
+#define CHECK_READ_ONLY(req) do { if (lp_readonly(req->conn->service)) return NT_STATUS_ACCESS_DENIED; } while (0)
+
 /*
   connect to a share - used when a tree_connect operation comes
   in. For a disk based backend we needs to ensure that the base
@@ -94,6 +96,8 @@ static struct svfs_file *find_fd(struct svfs_private *private, int fd)
 static NTSTATUS svfs_unlink(struct request_context *req, struct smb_unlink *unl)
 {
 	char *unix_path;
+
+	CHECK_READ_ONLY(req);
 
 	unix_path = svfs_unix_path(req, unl->in.pattern);
 
@@ -274,39 +278,49 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 	struct stat st;
 	int fd, flags;
 	struct svfs_file *f;
+	int create_flags, rdwr_flags;
 	
 	if (io->generic.level != RAW_OPEN_GENERIC) {
 		return ntvfs_map_open(req, io);
+	}
+
+	if (lp_readonly(req->conn->service)) {
+		create_flags = 0;
+		rdwr_flags = O_RDONLY;
+	} else {
+		create_flags = O_CREAT;
+		rdwr_flags = O_RDWR;
 	}
 
 	unix_path = svfs_unix_path(req, io->ntcreatex.in.fname);
 
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
-		flags = O_RDWR | O_CREAT | O_TRUNC;
+	case NTCREATEX_DISP_OVERWRITE_IF:
+		flags = create_flags | O_TRUNC;
 		break;
 	case NTCREATEX_DISP_OPEN:
-		flags = O_RDWR;
+	case NTCREATEX_DISP_OVERWRITE:
+		flags = 0;
 		break;
 	case NTCREATEX_DISP_CREATE:
-		flags = O_RDWR | O_CREAT | O_EXCL;
+		flags = create_flags | O_EXCL;
 		break;
 	case NTCREATEX_DISP_OPEN_IF:
-		flags = O_RDWR | O_CREAT;
-		break;
-	case NTCREATEX_DISP_OVERWRITE:
-		flags = O_RDWR;
-		break;
-	case NTCREATEX_DISP_OVERWRITE_IF:
-		flags = O_RDWR | O_CREAT | O_TRUNC;
+		flags = create_flags;
 		break;
 	default:
-		flags = O_RDWR;
+		flags = 0;
 		break;
 	}
+	
+	flags |= rdwr_flags;
 
 	if (io->generic.in.create_options & NTCREATEX_OPTIONS_DIRECTORY) {
 		flags = O_RDONLY | O_DIRECTORY;
+		if (lp_readonly(req->conn->service)) {
+			goto do_open;
+		}
 		switch (io->generic.in.open_disposition) {
 		case NTCREATEX_DISP_CREATE:
 			if (mkdir(unix_path, 0755) == -1) {
@@ -322,9 +336,9 @@ static NTSTATUS svfs_open(struct request_context *req, union smb_open *io)
 			break;
 		}
 	}
-	DEBUG(9,("svfs_open: file %s flags=0x%x\n", unix_path, flags));
+
+do_open:
 	fd = open(unix_path, flags, 0644);
-	DEBUG(9,("svfs_open: fd=%d errno=%d\n", fd, errno));
 	if (fd == -1) {
 		if (errno == 0)
 			errno = ENOENT;
@@ -367,6 +381,8 @@ static NTSTATUS svfs_mkdir(struct request_context *req, union smb_mkdir *md)
 {
 	char *unix_path;
 
+	CHECK_READ_ONLY(req);
+
 	if (md->generic.level != RAW_MKDIR_MKDIR) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
@@ -387,6 +403,8 @@ static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
 {
 	char *unix_path;
 
+	CHECK_READ_ONLY(req);
+
 	unix_path = svfs_unix_path(req, rd->in.path);
 
 	if (rmdir(unix_path) == -1) {
@@ -402,6 +420,8 @@ static NTSTATUS svfs_rmdir(struct request_context *req, struct smb_rmdir *rd)
 static NTSTATUS svfs_rename(struct request_context *req, union smb_rename *ren)
 {
 	char *unix_path1, *unix_path2;
+
+	CHECK_READ_ONLY(req);
 
 	if (ren->generic.level != RAW_RENAME_RENAME) {
 		return NT_STATUS_INVALID_LEVEL;
@@ -457,6 +477,8 @@ static NTSTATUS svfs_read(struct request_context *req, union smb_read *rd)
 static NTSTATUS svfs_write(struct request_context *req, union smb_write *wr)
 {
 	ssize_t ret;
+
+	CHECK_READ_ONLY(req);
 
 	switch (wr->generic.level) {
 	case RAW_WRITE_WRITEX:
@@ -563,6 +585,8 @@ static NTSTATUS svfs_lock(struct request_context *req, union smb_lock *lck)
 */
 static NTSTATUS svfs_setpathinfo(struct request_context *req, union smb_setfileinfo *st)
 {
+	CHECK_READ_ONLY(req);
+
 	return NT_STATUS_NOT_SUPPORTED;
 }
 
@@ -574,6 +598,8 @@ static NTSTATUS svfs_setfileinfo(struct request_context *req,
 {
 	struct utimbuf unix_times;
 	int fd;
+
+	CHECK_READ_ONLY(req);
 		
 	switch (info->generic.level) {
 	case RAW_SFILEINFO_END_OF_FILE_INFO:
