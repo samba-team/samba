@@ -42,8 +42,8 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  */
 
 static const struct ntlmssp_callbacks {
-	enum NTLMSSP_ROLE role;
-	enum NTLM_MESSAGE_TYPE ntlmssp_command;
+	enum ntlmssp_role role;
+	enum ntlmssp_message_type ntlmssp_command;
 	NTSTATUS (*fn)(struct ntlmssp_state *ntlmssp_state, 
 		       TALLOC_CTX *out_mem_ctx, 
 		       DATA_BLOB in, DATA_BLOB *out);
@@ -141,7 +141,7 @@ static NTSTATUS set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *ch
  *
  */
 
-NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user) 
+NTSTATUS ntlmssp_set_username(struct ntlmssp_state *ntlmssp_state, const char *user) 
 {
 	ntlmssp_state->user = talloc_strdup(ntlmssp_state->mem_ctx, user);
 	if (!ntlmssp_state->user) {
@@ -154,7 +154,7 @@ NTSTATUS ntlmssp_set_username(NTLMSSP_STATE *ntlmssp_state, const char *user)
  * Set a password on an NTLMSSP context - ensures it is talloc()ed 
  *
  */
-NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password) 
+NTSTATUS ntlmssp_set_password(struct ntlmssp_state *ntlmssp_state, const char *password) 
 {
 	if (!password) {
 		ntlmssp_state->password = NULL;
@@ -171,7 +171,7 @@ NTSTATUS ntlmssp_set_password(NTLMSSP_STATE *ntlmssp_state, const char *password
  * Set a domain on an NTLMSSP context - ensures it is talloc()ed 
  *
  */
-NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain) 
+NTSTATUS ntlmssp_set_domain(struct ntlmssp_state *ntlmssp_state, const char *domain) 
 {
 	ntlmssp_state->domain = talloc_strdup(ntlmssp_state->mem_ctx, domain);
 	if (!ntlmssp_state->domain) {
@@ -184,7 +184,7 @@ NTSTATUS ntlmssp_set_domain(NTLMSSP_STATE *ntlmssp_state, const char *domain)
  * Set a workstation on an NTLMSSP context - ensures it is talloc()ed 
  *
  */
-NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *workstation) 
+NTSTATUS ntlmssp_set_workstation(struct ntlmssp_state *ntlmssp_state, const char *workstation) 
 {
 	ntlmssp_state->workstation = talloc_strdup(ntlmssp_state->mem_ctx, workstation);
 	if (!ntlmssp_state->domain) {
@@ -198,7 +198,7 @@ NTSTATUS ntlmssp_set_workstation(NTLMSSP_STATE *ntlmssp_state, const char *works
  *  This copies the data blob
  */
 
-NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
+NTSTATUS ntlmssp_store_response(struct ntlmssp_state *ntlmssp_state,
 				DATA_BLOB response) 
 {
 	ntlmssp_state->stored_response = data_blob_talloc(ntlmssp_state->mem_ctx, 
@@ -217,7 +217,7 @@ NTSTATUS ntlmssp_store_response(NTLMSSP_STATE *ntlmssp_state,
  *                or NT_STATUS_OK if the user is authenticated. 
  */
 
-NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state, 
+NTSTATUS ntlmssp_update(struct ntlmssp_state *ntlmssp_state, 
 			TALLOC_CTX *out_mem_ctx, 
 			const DATA_BLOB in, DATA_BLOB *out) 
 {
@@ -292,7 +292,7 @@ NTSTATUS ntlmssp_update(NTLMSSP_STATE *ntlmssp_state,
  * @param ntlmssp_state NTLMSSP State, free()ed by this function
  */
 
-void ntlmssp_end(NTLMSSP_STATE **ntlmssp_state)
+void ntlmssp_end(struct ntlmssp_state **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx = (*ntlmssp_state)->mem_ctx;
 
@@ -878,7 +878,7 @@ static NTSTATUS ntlmssp_server_auth(struct ntlmssp_state *ntlmssp_state,
  * @param ntlmssp_state NTLMSSP State, allocated by this function
  */
 
-NTSTATUS ntlmssp_server_start(NTLMSSP_STATE **ntlmssp_state)
+NTSTATUS ntlmssp_server_start(struct ntlmssp_state **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx;
 
@@ -1234,7 +1234,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }
 
-NTSTATUS ntlmssp_client_start(NTLMSSP_STATE **ntlmssp_state)
+NTSTATUS ntlmssp_client_start(struct ntlmssp_state **ntlmssp_state)
 {
 	TALLOC_CTX *mem_ctx;
 
