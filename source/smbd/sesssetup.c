@@ -646,7 +646,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 		data_blob_free(&lm_resp);
 		data_blob_free(&nt_resp);
-		data_blob_free(&plaintext_password);
+		data_blob_clear_free(&plaintext_password);
 
 		guest = True;
 		map_username(user);
@@ -667,7 +667,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			
 			data_blob_free(&lm_resp);
 			data_blob_free(&nt_resp);
-			data_blob_free(&plaintext_password);
+			data_blob_clear_free(&plaintext_password);
 
 			END_PROFILE(SMBsesssetupX);
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
@@ -689,7 +689,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		
 		data_blob_free(&lm_resp);
 		data_blob_free(&nt_resp);
-		data_blob_free(&plaintext_password);
+		data_blob_clear_free(&plaintext_password);
 		
 		if (!NT_STATUS_IS_OK(nt_status)) {
 			if NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER) {

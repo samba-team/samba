@@ -581,11 +581,11 @@ NTSTATUS _net_sam_logon(pipes_struct *p, NET_Q_SAM_LOGON *q_u, NET_R_SAM_LOGON *
 		   auth subsystem to chew on */
 	{
 		make_user_info_netlogon_interactive(&user_info, 
-					   nt_username, nt_domain, 
-					   nt_workstation, 
-					   ctr->auth.id1.lm_owf.data, 16, 
-					   ctr->auth.id1.nt_owf.data, 16, 
-					   p->dc.sess_key);
+						    nt_username, nt_domain, 
+						    nt_workstation, 
+						    ctr->auth.id1.lm_owf.data, 
+						    ctr->auth.id1.nt_owf.data, 
+						    p->dc.sess_key);
 		break;
 	}
 	default:
