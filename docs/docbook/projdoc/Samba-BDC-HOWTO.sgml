@@ -157,10 +157,17 @@ Several things have to be done:
 <itemizedlist>
 
 <listitem><para>
-The file private/MACHINE.SID identifies the domain. When a samba
-server is first started, it is created on the fly and must never be
-changed again. This file has to be the same on the PDC and the BDC,
-so the MACHINE.SID has to be copied from the PDC to the BDC.
+The domain SID has to be the same on the PDC and the BDC. This used to
+be stored in the file private/MACHINE.SID. This file is not created
+anymore since Samba 2.2.5 or even earlier. Nowadays the domain SID is
+stored in the file private/secrets.tdb. Simply copying the secrets.tdb
+from the PDC to the BDC does not work, as the BDC would
+generate a new SID for itself and override the domain SID with this
+new BDC SID.</para>
+
+<para>
+To retrieve the domain SID from the PDC or an existing BDC and store it in the
+secrets.tdb, execute 'net rpc getsid' on the BDC.
 </para></listitem>
 
 <listitem><para>
