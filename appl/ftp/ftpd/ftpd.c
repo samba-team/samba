@@ -736,9 +736,6 @@ pass(char *passwd)
 			rval = 1;	/* failure below */
 			goto skip;
 		}
-		rval = klogin(pw->pw_name, passwd);
-		if (rval == 0)
-			goto skip;
 #ifdef SKEY
 		if (skeyverify (&sk, passwd) == 0) {
 			rval = 0;
@@ -748,6 +745,10 @@ pass(char *passwd)
 			goto skip;
 		}
 #endif
+		rval = klogin(pw->pw_name, passwd);
+		if (rval == 0)
+			goto skip;
+
 		/* the strcmp does not catch null passwords! */
 		if (pw == NULL || *pw->pw_passwd == 0 ||
 		    strcmp((char*)crypt(passwd, pw->pw_passwd), pw->pw_passwd)){
