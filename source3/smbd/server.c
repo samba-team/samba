@@ -189,7 +189,7 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
   int result = 0;
   extern struct current_user current_user;
 
-  DEBUG(5,("dos_mode: %d %s\n", cnum, path));
+  DEBUG(8,("dos_mode: %d %s\n", cnum, path));
 
   if (CAN_WRITE(cnum) && !lp_alternate_permissions(SNUM(cnum))) {
     if (!((sbuf->st_mode & S_IWOTH) ||
@@ -241,15 +241,15 @@ int dos_mode(int cnum,char *path,struct stat *sbuf)
     result |= aHIDDEN;
   }
 
-  DEBUG(5,("dos_mode returning "));
+  DEBUG(8,("dos_mode returning "));
 
-  if (result & aHIDDEN) DEBUG(5, ("h"));
-  if (result & aRONLY ) DEBUG(5, ("r"));
-  if (result & aSYSTEM) DEBUG(5, ("s"));
-  if (result & aDIR   ) DEBUG(5, ("d"));
-  if (result & aARCH  ) DEBUG(5, ("a"));
+  if (result & aHIDDEN) DEBUG(8, ("h"));
+  if (result & aRONLY ) DEBUG(8, ("r"));
+  if (result & aSYSTEM) DEBUG(8, ("s"));
+  if (result & aDIR   ) DEBUG(8, ("d"));
+  if (result & aARCH  ) DEBUG(8, ("a"));
 
-  DEBUG(5,("\n"));
+  DEBUG(8,("\n"));
 
   return(result);
 }
