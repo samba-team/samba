@@ -3862,7 +3862,7 @@ void get_private_directory(pstring privdir)
  Is netbios alias or name
 *****************************************************************/
 
-BOOL is_netbios_alias_or_name(char *name)
+BOOL is_netbios_alias_or_name(const char *name)
 {
 	char **netbios_aliases = lp_netbios_aliases();
 	

@@ -36,9 +36,15 @@
                 goto done; \
         }
 
-/*********************************************************
-Join a domain using the administrator username and password
-**********************************************************/
+/**
+ * Join a domain using the administrator username and password
+ *
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped.  Currently not used.
+ * @return A shell status integer (0 for success)
+ *
+ **/
 
 int net_rpc_join(int argc, const char **argv) 
 {

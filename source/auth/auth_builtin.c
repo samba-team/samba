@@ -21,10 +21,13 @@
 
 #include "includes.h"
 
-/****************************************************************************
- Check for a guest logon (username = "") and if so create the required 
- structure.
-****************************************************************************/
+/**
+ * Return a guest logon for guest users (username = "")
+ *
+ * Typically used as the first module in the auth chain, this allows
+ * guest logons to be delt with in one place.  Non-gust logons 'fail'
+ * and pass onto the next module.
+ **/
 
 static NTSTATUS check_guest_security(void *my_private_data, 
 			      const auth_usersupplied_info *user_info, 
@@ -45,6 +48,7 @@ static NTSTATUS check_guest_security(void *my_private_data,
 	return nt_status;
 }
 
+/* Guest modules initialisation */
 BOOL auth_init_guest(auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_method)) {
@@ -55,9 +59,18 @@ BOOL auth_init_guest(auth_methods **auth_method)
 	return True;
 }
 
-/****************************************************************************
- Return an error based on username
-****************************************************************************/
+/** 
+ * Return an error based on username
+ *
+ * This function allows the testing of obsure errors, as well as the generation
+ * of NT_STATUS -> DOS error mapping tables.
+ *
+ * This module is of no value to end-users.
+ *
+ * The password is ignored.
+ *
+ * @return An NTSTATUS value based on the username
+ **/
 
 static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
 						const auth_usersupplied_info *user_info, 
@@ -78,6 +91,7 @@ static NTSTATUS check_name_to_ntstatus_security(void *my_private_data,
 	return nt_status;
 }
 
+/** Module initailisation function */
 BOOL auth_init_name_to_ntstatus(auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_method)) {
@@ -87,4 +101,7 @@ BOOL auth_init_name_to_ntstatus(auth_methods **auth_method)
 	(*auth_method)->auth = check_name_to_ntstatus_security;
 	return True;
 }
+
+
+
 

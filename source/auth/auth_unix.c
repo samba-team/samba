@@ -21,11 +21,11 @@
 
 #include "includes.h"
 
-/****************************************************************************
-update the encrypted smbpasswd file from the plaintext username and password
-
-this ugly hack needs to die, but not quite yet...
-*****************************************************************************/
+/**
+ * update the encrypted smbpasswd file from the plaintext username and password
+ *  
+ *  this ugly hack needs to die, but not quite yet, I think people still use it...
+ **/
 static BOOL update_smbpassword_file(char *user, char *password)
 {
 	SAM_ACCOUNT 	*sampass = NULL;
@@ -77,10 +77,11 @@ static BOOL update_smbpassword_file(char *user, char *password)
 }
 
 
-/****************************************************************************
-check if a username/password is OK assuming the password 
-in PLAIN TEXT
-****************************************************************************/
+/** Check a plaintext username/password
+ *
+ * Cannot deal with an encrupted password in any manner whatsoever,
+ * unless the account has a null password.
+ **/
 
 NTSTATUS check_unix_security(void *my_private_data,
 			     const auth_usersupplied_info *user_info, 
@@ -93,6 +94,9 @@ NTSTATUS check_unix_security(void *my_private_data,
 	become_root();
 	pass = Get_Pwnam(user_info->internal_username.str);
 
+	
+	/** This call assumes a ASCII password, no charset transformation is 
+	    done.  We may need to revisit this **/
 	nt_status = pass_check(pass,
 				pass ? pass->pw_name : user_info->internal_username.str, 
 				(char *)user_info->plaintext_password.data,
