@@ -2424,8 +2424,7 @@
 		<listitem><para>This option enables a couple of enhancements to 
 		cross-subnet browse propagation that have been added in Samba 
 		but which are not standard in Microsoft implementations.  
-		<emphasis>These enhancements are currently only available in
-		the HEAD Samba CVS tree (not Samba 2.2.x).</emphasis></para>
+		</para>
 
 		<para>The first enhancement to browse propagation consists of a regular
 		wildcard query to a Samba WINS server for all Domain Master Browsers,
