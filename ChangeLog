@@ -1,5 +1,7 @@
 Sat Nov  1 01:40:53 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* kadmin: Simple kadmin utility.
+
 	* admin/ktutil.c: Print keytype.
 
 	* lib/kadm5/get_s.c: Set correct n_key_data.
