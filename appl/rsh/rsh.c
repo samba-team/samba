@@ -557,7 +557,7 @@ doit_broken (int argc,
     hints.ai_protocol = IPPROTO_TCP;
     hints.ai_family   = AF_INET;
 
-    snprintf (portstr, sizeof(portstr), "%u", htons(port));
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(port));
 
     error = getaddrinfo (host, portstr, &hints, &ai);
     if (error) {
