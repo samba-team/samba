@@ -145,6 +145,10 @@
 	if (smbw_fd(fd)) {
 		return smbw_close(fd);
 	}
+	if (smbw_local_fd(fd)) {
+		errno = EBADF;
+		return -1;
+	}
 
 	return real_close(fd);
 }

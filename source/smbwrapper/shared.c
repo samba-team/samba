@@ -212,3 +212,10 @@ int smbw_setenv(const char *name, const char *value)
 	return ret;
 }
 
+/*****************************************************************
+return true if the passed fd is the SMBW_HANDLE
+*****************************************************************/  
+int smbw_shared_fd(int fd)
+{
+	return (shared_fd && shared_fd == fd);
+}

@@ -126,6 +126,25 @@ int smbw_fd(int fd)
 }
 
 /***************************************************** 
+determine if a file descriptor is an internal smbw fd
+*******************************************************/
+int smbw_local_fd(int fd)
+{
+	struct smbw_server *srv;
+	
+	smbw_init();
+
+	if (smbw_busy) return 0;
+	if (smbw_shared_fd(fd)) return 1;
+
+	for (srv=smbw_srvs;srv;srv=srv->next) {
+		if (srv->cli.fd == fd) return 1;
+	}
+
+	return 0;
+}
+
+/***************************************************** 
 a crude inode number generator
 *******************************************************/
 ino_t smbw_inode(const char *name)
@@ -736,7 +755,6 @@ ssize_t smbw_write(int fd, void *buf, size_t count)
 
 	file = smbw_file(fd);
 	if (!file) {
-		DEBUG(3,("bad fd in read\n"));
 		errno = EBADF;
 		smbw_busy--;
 		return -1;
@@ -768,7 +786,6 @@ ssize_t smbw_pwrite(int fd, void *buf, size_t count, off_t ofs)
 
 	file = smbw_file(fd);
 	if (!file) {
-		DEBUG(3,("bad fd in read\n"));
 		errno = EBADF;
 		smbw_busy--;
 		return -1;
