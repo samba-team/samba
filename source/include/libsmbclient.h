@@ -5,6 +5,8 @@
   Copyright (C) Andrew Tridgell 1998
   Copyright (C) Richard Sharpe 2000
   Copyright (C) John Terpsra 2000
+  Copyright (C) Tom Jansen (Ninja ISD) 2002 
+
    
   This program is free software; you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
@@ -196,6 +198,250 @@ typedef void (*smbc_get_auth_data_fn)(const char *srv,
  *
  */ 
 typedef void (*smbc_get_print_job_info)(struct print_job_info *i);
+
+
+
+#ifndef _SMBC_INTERNAL
+/**@ingroup structure
+ * Type for connected server management
+ *
+ */
+typedef int SMBCSRV;
+
+/**@ingroup structure
+ * Type for open file/directory management
+ *
+ */
+typedef int SMBCFILE;
+
+#else
+/*
+ * These definitions are only available to the libsmbclient internals 
+ * They all have to define _SMBC_INTERNAL to get these
+ */
+typedef struct _SMBCSRV {
+	struct cli_state cli;
+	dev_t dev;
+	BOOL no_pathinfo2;
+	int server_fd;
+
+	struct _SMBCSRV *next, *prev;
+	
+} SMBCSRV;
+
+/* 
+ * Keep directory entries in a list 
+ */
+struct smbc_dir_list {
+	struct smbc_dir_list *next;
+	struct smbc_dirent *dirent;
+};
+
+
+/*
+ * Structure for open file management
+ */ 
+typedef struct _SMBCFILE {
+	int cli_fd; 
+	char *fname;
+	off_t offset;
+	SMBCSRV *srv;
+	BOOL file;
+	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
+	int dir_type, dir_error;
+
+	struct _SMBCFILE *next, *prev;
+} SMBCFILE;
+#endif /* ifndef _SMBC_INTERNAL */
+
+/**@ingroup structure
+ * Structure that contains a client context information 
+ */
+typedef struct _SMBCCTX {
+	/** debug level 
+	 */
+	int     debug;
+	
+	/** netbios name used for making connections
+	 */
+	char * netbios_name;
+
+	/** workgroup name used for making connections 
+	 */
+	char * workgroup;
+
+	/** username used for making connections 
+	 */
+	char * user;
+
+	/** timeout used for waiting on connections / response data (in milliseconds)
+	 */
+	int timeout;
+
+	/** callable functions for files:
+	 * For usage and return values see the smbc_* functions
+	 */ 
+	SMBCFILE * (*open)    (struct _SMBCCTX *c, const char *fname, int flags, mode_t mode);
+	SMBCFILE * (*creat)   (struct _SMBCCTX *c, const char *path, mode_t mode);
+	ssize_t    (*read)    (struct _SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
+	ssize_t    (*write)   (struct _SMBCCTX *c, SMBCFILE *file, void *buf, size_t count);
+	int        (*unlink)  (struct _SMBCCTX *c, const char *fname);
+	int        (*rename)  (struct _SMBCCTX *ocontext, const char *oname, 
+			       struct _SMBCCTX *ncontext, const char *nname);
+	off_t      (*lseek)   (struct _SMBCCTX *c, SMBCFILE * file, off_t offset, int whence);
+	int        (*stat)    (struct _SMBCCTX *c, const char *fname, struct stat *st);
+	int        (*fstat)   (struct _SMBCCTX *c, SMBCFILE *file, struct stat *st);
+	int        (*close)   (struct _SMBCCTX *c, SMBCFILE *file);
+
+	/** callable functions for dirs
+	 */ 
+	SMBCFILE * (*opendir) (struct _SMBCCTX *c, const char *fname);
+	int        (*closedir)(struct _SMBCCTX *c, SMBCFILE *dir);
+	struct smbc_dirent * (*readdir)(struct _SMBCCTX *c, SMBCFILE *dir);
+	int        (*getdents)(struct _SMBCCTX *c, SMBCFILE *dir, 
+			       struct smbc_dirent *dirp, int count);
+	int        (*mkdir)   (struct _SMBCCTX *c, const char *fname, mode_t mode);
+	int        (*rmdir)   (struct _SMBCCTX *c, const char *fname);
+	off_t      (*telldir) (struct _SMBCCTX *c, SMBCFILE *dir);
+	int        (*lseekdir)(struct _SMBCCTX *c, SMBCFILE *dir, off_t offset);
+	int        (*fstatdir)(struct _SMBCCTX *c, SMBCFILE *dir, struct stat *st);
+
+	/** callable functions for printing
+	 */ 
+	int        (*print_file)(struct _SMBCCTX *c_file, const char *fname, 
+				 struct _SMBCCTX *c_print, const char *printq);
+	SMBCFILE * (*open_print_job)(struct _SMBCCTX *c, const char *fname);
+	int        (*list_print_jobs)(struct _SMBCCTX *c, const char *fname, void (*fn)(struct print_job_info *));
+	int        (*unlink_print_job)(struct _SMBCCTX *c, const char *fname, int id);
+
+
+	/** Callbacks
+	 * These callbacks _always_ have to be intialized because they will not be checked
+	 * at dereference for increased speed.
+	 */
+	struct _smbc_callbacks {
+		/** authentication function callback: called upon auth requests
+		 */
+		smbc_get_auth_data_fn auth_fn;
+		
+		/** check if a server is still good
+		 */
+		int (*check_server_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+
+		/** remove a server if unused
+		 */
+		int (*remove_unused_server_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+
+		/** Cache subsystem
+		 * For an example cache system see samba/source/libsmb/libsmb_cache.c
+		 * Cache subsystem functions follow.
+		 */
+
+		/** server cache addition 
+		 */
+		int (*add_cached_srv_fn)   (struct _SMBCCTX * c, SMBCSRV *srv, 
+					    char * server, char * share, 
+					    char * workgroup, char * username);
+		/** server cache lookup 
+		 */
+		SMBCSRV * (*get_cached_srv_fn)   (struct _SMBCCTX * c, char * server, 
+					    char * share, char * workgroup, char * username);
+		/** server cache removal
+		 */
+		int (*remove_cached_srv_fn)(struct _SMBCCTX * c, SMBCSRV *srv);
+		
+		/** server cache purging, try to remove all cached servers (disconnect)
+		 */
+		int (*purge_cached_fn)     (struct _SMBCCTX * c);
+		
+	} callbacks;
+
+
+	/** Space to store private data of the server cache.
+	 */
+	void * server_cache;
+
+	/** INTERNAL functions
+	 * do _NOT_ touch these from your program !
+	 */
+
+	/** INTERNAL: is this handle initialized ? 
+	 */
+	int     _initialized;
+
+	/** INTERNAL: dirent pointer location 
+	 */
+	char    _dirent[512];  
+
+	/** INTERNAL: server connection list
+	 */
+	SMBCSRV * _servers;
+	
+	/** INTERNAL: open file/dir list
+	 */
+	SMBCFILE * _files;
+	
+} SMBCCTX;
+
+
+/**@ingroup misc
+ * Create a new SBMCCTX (a context).
+ *
+ * Must be called before the context is passed to smbc_context_init()
+ *
+ * @return          The given SMBCCTX pointer on success, NULL on error with errno set:
+ *                  - ENOMEM Out of memory
+ *
+ * @see             smbc_free_context(), smbc_init_context()
+ *
+ * @note            Do not forget to smbc_init_context() the returned SMBCCTX pointer !
+ */
+SMBCCTX * smbc_new_context(void);
+
+
+/**@ingroup misc
+ * Delete a SBMCCTX (a context) acquired from smbc_new_context().
+ *
+ * The context will be deleted if possible.
+ *
+ * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
+ *
+ * @param shutdown_ctx   If 1, all connections and files will be closed even if they are busy.
+ *
+ *
+ * @return          Returns 0 on succes. Returns 1 on failure with errno set:
+ *                  - EBUSY Server connections are still used, Files are open or cache 
+ *                          could not be purged
+ *                  - EBADF context == NULL
+ *
+ * @see             smbc_new_context()
+ *
+ * @note            It is advised to clean up all the contexts with shutdown_ctx set to 1
+ *                  just before exit()'ing. When shutdown_ctx is 0, this function can be
+ *                  use in periodical cleanup functions for example.
+ */
+int smbc_free_context(SMBCCTX * context, int shutdown_ctx);
+
+
+/**@ingroup misc
+ * Initialize a SBMCCTX (a context).
+ *
+ * Must be called before using any SMBCCTX API function
+ *
+ * @param context   A pointer to a SMBCCTX obtained from smbc_new_context()
+ *
+ * @return          A pointer to the given SMBCCTX on success, NULL on error with errno set:
+ *                  - EBADF  NULL context given
+ *                  - ENOMEM Out of memory
+ *                  - ENOENT The smb.conf file would not load
+ *
+ * @see             smbc_new_context()
+ *
+ * @note            my_context = smbc_init_context(smbc_new_context()) is perfectly safe, 
+ *                  but it might leak memory on smbc_context_init() failure. Avoid this.
+ *                  You'll have to call smbc_free_context() yourself on failure.  
+ */
+SMBCCTX * smbc_init_context(SMBCCTX * context);
 
 
 /**@ingroup misc

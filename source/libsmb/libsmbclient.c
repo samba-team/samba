@@ -5,6 +5,7 @@
    Copyright (C) Andrew Tridgell 1998
    Copyright (C) Richard Sharpe 2000
    Copyright (C) John Terpstra 2000
+   Copyright (C) Tom Jansen (Ninja ISD) 2002 
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,56 +23,41 @@
 */
 
 #include "includes.h"
+
+/*
+ * Define this to get the real SMBCFILE and SMBCSRV structures 
+ */
+#define _SMBC_INTERNAL
+
 #include "libsmbclient.h"
 
-/* Structure for servers ... Held here so we don't need an include ...
- * May be better to put in an include file
+/*
+ * Functions exported by libsmb_cache.c that we need here
  */
+int smbc_default_cache_functions(SMBCCTX * context);
 
-struct smbc_server {
-	struct smbc_server *next, *prev;
-	struct cli_state cli;
-	dev_t dev;
-	char *server_name;
-	char *share_name;
-	char *workgroup;
-	char *username;
-	BOOL no_pathinfo2;
-};
-
-/* Keep directory entries in a list */
-struct smbc_dir_list {
-	struct smbc_dir_list *next;
-	struct smbc_dirent *dirent;
-};
-
-struct smbc_file {
-	int cli_fd; 
-	int smbc_fd;
-	char *fname;
-	off_t offset;
-	struct smbc_server *srv;
-	BOOL file;
-	struct smbc_dir_list *dir_list, *dir_end, *dir_next;
-	int dir_type, dir_error;
-};
-
-int smbc_fstatdir(int fd, struct stat *st); /* Forward decl */
-BOOL smbc_getatr(struct smbc_server *srv, char *path, 
-		 uint16 *mode, size_t *size, 
-		 time_t *c_time, time_t *a_time, time_t *m_time,
-		 SMB_INO_T *ino);
+/* 
+ * check if an element is part of the list. 
+ * FIXME: Does not belong here !  
+ * Can anyone put this in a macro in dlinklist.h ?
+ * -- Tom
+ */
+static int DLIST_CONTAINS(SMBCFILE * list, SMBCFILE *p) {
+	if (!p || !list) return False;
+	do {
+		if (p == list) return True;
+		list = list->next;
+	} while (list);
+	return False;
+}
 
 extern BOOL in_client;
 extern pstring global_myname;
+
+/*
+ * Is the logging working / configfile read ? 
+ */
 static int smbc_initialized = 0;
-static smbc_get_auth_data_fn smbc_auth_fn = NULL;
-/*static int smbc_debug;*/
-static int smbc_start_fd;
-static struct smbc_file **smbc_file_table;
-static struct smbc_server *smbc_srvs;
-static pstring  my_netbios_name;
-static pstring smbc_user;
 
 /*
  * Function to parse a path and turn it into components
@@ -86,7 +72,7 @@ static pstring smbc_user;
 static const char *smbc_prefix = "smb:";
 
 static int
-smbc_parse_path(const char *fname, char *server, char *share, char *path,
+smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, char *path,
 		char *user, char *password) /* FIXME, lengths of strings */
 {
 	static pstring s;
@@ -122,7 +108,8 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
 
 	if (*p == '/') {
 
-		strncpy(server, (char *)lp_workgroup(), 16); /* FIXME: Danger here */
+		strncpy(server, context->workgroup, 
+			(strlen(context->workgroup) < 16)?strlen(context->workgroup):16);
 		return 0;
 		
 	}
@@ -197,7 +184,7 @@ smbc_parse_path(const char *fname, char *server, char *share, char *path,
  * Convert an SMB error into a UNIX error ...
  */
 
-int smbc_errno(struct cli_state *c)
+static int smbc_errno(SMBCCTX *context, struct cli_state *c)
 {
 	int ret;
 
@@ -223,6 +210,59 @@ int smbc_errno(struct cli_state *c)
 	return ret;
 }
 
+/* 
+ * Check a server_fd.
+ * returns 0 if the server is in shape. Returns 1 on error 
+ * 
+ * Also useable outside libsmbclient to enable external cache
+ * to do some checks too.
+ */
+int smbc_check_server(SMBCCTX * context, SMBCSRV * server) 
+{
+	if ( cli_send_keepalive(&server->cli) == False )
+		return 1;
+
+	/* connection is ok */
+	return 0;
+}
+
+/* 
+ * Remove a server from the list server_table if it's unused.
+ * On success, 0 is returned. 1 is returned if the server could not be removed.
+ * 
+ * Also useable outside libsmbclient
+ */
+int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
+{
+	SMBCFILE * file;
+
+	/* are we being fooled ? */
+	if (!context || !context->_initialized || !srv) return 1;
+
+	
+	/* Check all open files/directories for a relation with this server */
+	for (file = context->_files; file; file=file->next) {
+		if (file->srv == srv) {
+			/* Still used */
+			DEBUG(3, ("smbc_remove_usused_server: %p still used by %p.\n", 
+				  srv, file));
+			return 1;
+		}
+	}
+
+	DLIST_REMOVE(context->_servers, srv);
+
+	cli_shutdown(&srv->cli);
+
+	DEBUG(3, ("smbc_remove_usused_server: %p removed.\n", srv));
+
+	context->callbacks.remove_cached_srv_fn(context, srv);
+	
+	SAFE_FREE(srv);
+	
+	return 0;
+}
+
 /*
  * Connect to a server, possibly on an existing connection
  *
@@ -234,11 +274,13 @@ int smbc_errno(struct cli_state *c)
  * info we need, unless the username and password were passed in.
  */
 
-struct smbc_server *smbc_server(char *server, char *share, 
-				char *workgroup, char *username, 
-				char *password)
+SMBCSRV *smbc_server(SMBCCTX *context,
+		     char *server, char *share, 
+		     char *workgroup, char *username, 
+		     char *password)
 {
-	struct smbc_server *srv=NULL;
+	SMBCSRV *srv=NULL;
+	int auth_called = 0;
 	struct cli_state c;
 	struct nmb_name called, calling;
 	char *p, *server_n = server;
@@ -250,43 +292,52 @@ struct smbc_server *smbc_server(char *server, char *share,
 	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
-	/* try to use an existing connection */
-	for (srv=smbc_srvs;srv;srv=srv->next) {
-		if (strcmp(server,srv->server_name)==0 &&
-		    strcmp(share,srv->share_name)==0 &&
-		    strcmp(workgroup,srv->workgroup)==0 &&
-		    strcmp(username, srv->username) == 0) 
-			return srv;
-	}
-
 	if (server[0] == 0) {
 		errno = EPERM;
 		return NULL;
 	}
 
-	/* 
-	 * Pick up the auth info here, once we know we need to connect
-	 * But only if we do not have a username and password ...
-	 */
+ check_server_cache:
 
-	if (!username[0] || !password[0])
-		smbc_auth_fn(server, share, workgroup, sizeof(fstring),
-			     username, sizeof(fstring), password, sizeof(fstring));
-
-	/* 
-	 * However, smbc_auth_fn may have picked up info relating to an 
-	 * existing connection, so try for an existing connection again ...
-	 */
-
-	for (srv=smbc_srvs;srv;srv=srv->next) {
-		if (strcmp(server,srv->server_name)==0 &&
-		    strcmp(share,srv->share_name)==0 &&
-		    strcmp(workgroup,srv->workgroup)==0 &&
-		    strcmp(username, srv->username) == 0) 
-			return srv;
+	srv = context->callbacks.get_cached_srv_fn(context, server, share, 
+						   workgroup, username);
+	
+	if (!auth_called && !srv && (!username[0] || !password[0])) {
+		context->callbacks.auth_fn(server, share, workgroup, sizeof(fstring),
+ 			     username, sizeof(fstring), password, sizeof(fstring));
+		/* 
+		 * However, smbc_auth_fn may have picked up info relating to an 
+		 * existing connection, so try for an existing connection again ...
+		 */
+		auth_called = 1;
+		goto check_server_cache;
+		
 	}
+	
+	if (srv) {
+		if (context->callbacks.check_server_fn(context, srv)) {
+			/* 
+			 * This server is no good anymore 
+			 * Try to remove it and check for more possible servers in the cache 
+			 */
+			if (context->callbacks.remove_unused_server_fn(context, srv)) { 
+				/* 
+				 * We could not remove the server completely, remove it from the cache
+				 * so we will not get it again. It will be removed when the last file/dir
+				 * is closed.
+				 */
+				context->callbacks.remove_cached_srv_fn(context, srv);
+			}
+			
+			/* 
+			 * Maybe there are more cached connections to this server 
+			 */
+			goto check_server_cache; 
+		}
+		return srv;
+ 	}
 
-	make_nmb_name(&calling, my_netbios_name, 0x0);
+	make_nmb_name(&calling, context->netbios_name, 0x0);
 	make_nmb_name(&called , server, 0x20);
 
 	DEBUG(4,("smbc_server: server_n=[%s] server=[%s]\n", server_n, server));
@@ -308,11 +359,18 @@ struct smbc_server *smbc_server(char *server, char *share,
 	zero_ip(&ip);
 
 	/* have to open a new connection */
-	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {
-		if (c.initialised) cli_shutdown(&c);
+	if (!cli_initialise(&c)) {
 		errno = ENOENT;
 		return NULL;
 	}
+
+	c.timeout = context->timeout;
+
+	if (!cli_connect(&c, server_n, &ip)) {
+		cli_shutdown(&c);
+ 		errno = ENOENT;
+ 		return NULL;
+ 	}
 
 	if (!cli_session_request(&c, &calling, &called)) {
 		cli_shutdown(&c);
@@ -371,50 +429,37 @@ struct smbc_server *smbc_server(char *server, char *share,
 
 	if (!cli_send_tconX(&c, share, "?????",
 			    password, strlen(password)+1)) {
-		errno = smbc_errno(&c);
+		errno = smbc_errno(context, &c);
 		cli_shutdown(&c);
 		return NULL;
 	}
   
 	DEBUG(4,(" tconx ok\n"));
   
-	srv = (struct smbc_server *)malloc(sizeof(*srv));
+	/*
+	 * Ok, we have got a nice connection
+	 * Let's find a free server_fd 
+	 */
+
+	srv = (SMBCSRV *)malloc(sizeof(*srv));
 	if (!srv) {
 		errno = ENOMEM;
 		goto failed;
 	}
 
 	ZERO_STRUCTP(srv);
-
 	srv->cli = c;
-
 	srv->dev = (dev_t)(str_checksum(server) ^ str_checksum(share));
 
-	srv->server_name = strdup(server);
-	if (!srv->server_name) {
-		errno = ENOMEM;
+	/* now add it to the cache (internal or external) */
+	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
+		DEBUG(3, (" Failed to add server to cache\n"));
 		goto failed;
 	}
 
-	srv->share_name = strdup(share);
-	if (!srv->share_name) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	srv->workgroup = strdup(workgroup);
-	if (!srv->workgroup) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	srv->username = strdup(username);
-	if (!srv->username) {
-		errno = ENOMEM;
-		goto failed;
-	}
-
-	DLIST_ADD(smbc_srvs, srv);
+	
+	DEBUG(2, ("Server connect ok: //%s/%s: %p\n", 
+		  server, share, srv));
 
 	return srv;
 
@@ -422,217 +467,48 @@ struct smbc_server *smbc_server(char *server, char *share,
 	cli_shutdown(&c);
 	if (!srv) return NULL;
   
-	SAFE_FREE(srv->server_name);
-	SAFE_FREE(srv->share_name);
-	SAFE_FREE(srv->workgroup);
-	SAFE_FREE(srv->username);
 	SAFE_FREE(srv);
 	return NULL;
-}
-
-/* 
- *Remove a server from the list smbc_srvs if it's unused -- Tom (tom@ninja.nl)
- *
- * We accept a *srv 
- */
-BOOL smbc_remove_unused_server(struct smbc_server * s)
-{
-	int p;
-
-	/* are we being fooled ? */
-	if (!s) return False;
-
-	/* close all open files/directories on this server */
-	for (p = 0; p < SMBC_MAX_FD; p++) {
-		if (smbc_file_table[p] &&
-		    smbc_file_table[p]->srv == s) {
-			/* Still used .. DARN */
-			DEBUG(3, ("smbc_remove_usused_server: %x still used by %s (%d).\n", (int) s, 
-				  smbc_file_table[p]->fname, smbc_file_table[p]->smbc_fd));
-			return False;
-		}
-	}
-
-	cli_shutdown(&s->cli);
-	
-	SAFE_FREE(s->username);
-	SAFE_FREE(s->workgroup);
-	SAFE_FREE(s->server_name);
-	SAFE_FREE(s->share_name);
-	DLIST_REMOVE(smbc_srvs, s);
-	DEBUG(3, ("smbc_remove_usused_server: %x removed.\n", (int) s));
-	SAFE_FREE(s);
-	return True;
-}
-
-
-/*
- *Initialise the library etc 
- *
- * We accept valiv values for debug from 0 to 100,
- * and insist that fn must be non-null.
- */
-
-int smbc_init(smbc_get_auth_data_fn fn, int debug)
-{
-	pstring conf;
-	int p, pid;
-	char *user = NULL, *home = NULL, *pname="libsmbclient";
-
-	if (!fn || debug < 0 || debug > 100) {
-
-		errno = EINVAL;
-		return -1;
-
-	}
-
-	if (smbc_initialized) { /* Don't go through this if we have already done it */
-
-		return 0;
-
-	}
-
-	smbc_initialized = 1;
-	smbc_auth_fn = fn;
-	/*  smbc_debug = debug; */
-
-	DEBUGLEVEL = -1;
-
-	setup_logging(pname, False);
-
-	/* Here we would open the smb.conf file if needed ... */
-
-	home = getenv("HOME");
-
-	slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
-
-	load_interfaces();  /* Load the list of interfaces ... */
-
-	charset_initialise();
-	
-	in_client = True; /* FIXME, make a param */
-
-	if (!lp_load(conf, True, False, False)) {
-
-		/*
-		 * Hmmm, what the hell do we do here ... we could not parse the
-		 * config file ... We must return an error ... and keep info around
-		 * about why we failed
-		 */
-    
-		errno = ENOENT; /* FIXME: Figure out the correct error response */
-		return -1;
-
-	}
-
-	codepage_initialise(lp_client_code_page()); /* Get a codepage */
-
-	reopen_logs();  /* Get logging working ... */
-
-	/*
-	 * FIXME: Is this the best way to get the user info? 
-	 */
-
-	user = getenv("USER");
-	/* walk around as "guest" if no username can be found */
-	if (!user) user = strdup("guest");
-	pstrcpy(smbc_user, user); /* Save for use elsewhere */
-	
-	/*
-	 * We try to get our netbios name from the config. If that fails we fall
-	 * back on constructing our netbios name from our hostname etc
-	 */
-	if (global_myname) {
-		pstrcpy(my_netbios_name, global_myname);
-	}
-	else {
-		/*
-		 * Hmmm, I want to get hostname as well, but I am too lazy for the moment
-		 */
-		pid = getpid();
-		slprintf(my_netbios_name, 16, "smbc%s%d", user, pid);
-	}
-	DEBUG(0,("Using netbios name %s.\n", my_netbios_name));
-
-	name_register_wins(my_netbios_name, 0);
-
-	/* 
-	 * Now initialize the file descriptor array and figure out what the
-	 * max open files is, so we can return FD's that are above the max
-	 * open file, and separated by a guard band
-	 */
-
-#if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
-	do {
-		struct rlimit rlp;
-		
-		if (getrlimit(RLIMIT_NOFILE, &rlp)) {
-
-			DEBUG(0, ("smbc_init: getrlimit(1) for RLIMIT_NOFILE failed with error %s\n", strerror(errno)));
-
-			smbc_start_fd = 1000000;
-
-		}
-		else {
-			
-			smbc_start_fd = rlp.rlim_max + 10000; /* Leave a guard space of 10,000 */
-			
-		}
-	} while ( 0 );
-#else /* !defined(HAVE_GETRLIMIT) || !defined(RLIMIT_NOFILE) */
-
-	smbc_start_fd = 1000000;
-
-#endif
-
-	smbc_file_table = malloc(SMBC_MAX_FD * sizeof(struct smbc_file *));
-	if (!smbc_file_table)
-		return ENOMEM;
-
-	for (p = 0; p < SMBC_MAX_FD; p++)
-		smbc_file_table[p] = NULL;
-
-	return 0;  /* Success */
-
 }
 
 /*
  * Routine to open() a file ...
  */
 
-int smbc_open(const char *fname, int flags, mode_t mode)
+static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, mode_t mode)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
-	struct smbc_server *srv = NULL;
+	SMBCSRV *srv   = NULL;
+	SMBCFILE *file = NULL;
 	int fd;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
-		return -1;
+		return NULL;
 
 	}
 
 	if (!fname) {
 
 		errno = EINVAL;
-		return -1;
+		return NULL;
 
 	}
 
-	smbc_parse_path(fname, server, share, path, user, password); /* FIXME, check errors */
+	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
 		if (errno == EPERM) errno = EACCES;
-		return -1;  /* smbc_server sets errno */
+		return NULL;  /* smbc_server sets errno */
     
 	}
 
@@ -645,49 +521,37 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 	}
 	else {
 	  
-		int slot = 0;
+		file = malloc(sizeof(SMBCFILE));
 
-		/* Find a free slot first */
-
-		while (smbc_file_table[slot])
-			slot++;
-
-		if (slot > SMBC_MAX_FD) {
-
-			errno = ENOMEM; /* FIXME, is this best? */
-			return -1;
-
-		}
-
-		smbc_file_table[slot] = malloc(sizeof(struct smbc_file));
-
-		if (!smbc_file_table[slot]) {
+		if (!file) {
 
 			errno = ENOMEM;
-			return -1;
+			return NULL;
 
 		}
+
+		ZERO_STRUCTP(file);
 
 		if ((fd = cli_open(&srv->cli, path, flags, DENY_NONE)) < 0) {
 
 			/* Handle the error ... */
 
-			SAFE_FREE(smbc_file_table[slot]);
-			errno = smbc_errno(&srv->cli);
-			return -1;
+			SAFE_FREE(file);
+			errno = smbc_errno(context, &srv->cli);
+			return NULL;
 
 		}
 
 		/* Fill in file struct */
 
-		smbc_file_table[slot]->cli_fd  = fd;
-		smbc_file_table[slot]->smbc_fd = slot + smbc_start_fd;
-		smbc_file_table[slot]->fname   = strdup(fname);
-		smbc_file_table[slot]->srv     = srv;
-		smbc_file_table[slot]->offset  = 0;
-		smbc_file_table[slot]->file    = True;
+		file->cli_fd  = fd;
+		file->fname   = strdup(fname);
+		file->srv     = srv;
+		file->offset  = 0;
+		file->file    = True;
 
-		return smbc_file_table[slot]->smbc_fd;
+		DLIST_ADD(context->_files, file);
+		return file;
 
 	}
 
@@ -696,14 +560,15 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 	if (fd == -1) {
 		int eno = 0;
 
-		eno = smbc_errno(&srv->cli);
-		fd = smbc_opendir(fname);
-		if (fd < 0) errno = eno;
-		return fd;
+		eno = smbc_errno(context, &srv->cli);
+		file = context->opendir(context, fname);
+		if (!file) errno = eno;
+		return file;
 
 	}
 
-	return 1;  /* Success, with fd ... */
+	errno = EINVAL; /* FIXME, correct errno ? */
+	return NULL;
 
 }
 
@@ -713,38 +578,37 @@ int smbc_open(const char *fname, int flags, mode_t mode)
 
 static int creat_bits = O_WRONLY | O_CREAT | O_TRUNC; /* FIXME: Do we need this */
 
-int smbc_creat(const char *path, mode_t mode)
+static SMBCFILE *smbc_creat_ctx(SMBCCTX *context, const char *path, mode_t mode)
 {
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
-		return -1;
+		return NULL;
 
 	}
 
-	return smbc_open(path, creat_bits, mode);
+	return smbc_open_ctx(context, path, creat_bits, mode);
 }
 
 /*
  * Routine to read() a file ...
  */
 
-ssize_t smbc_read(int fd, void *buf, size_t count)
+static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t count)
 {
-	struct smbc_file *fe;
 	int ret;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	DEBUG(4, ("smbc_read(%d, %d)\n", fd, (int)count));
+	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!file || !DLIST_CONTAINS(context->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -760,25 +624,16 @@ ssize_t smbc_read(int fd, void *buf, size_t count)
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe || !fe->file) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	ret = cli_read(&fe->srv->cli, fe->cli_fd, buf, fe->offset, count);
+	ret = cli_read(&file->srv->cli, file->cli_fd, buf, file->offset, count);
 
 	if (ret < 0) {
 
-		errno = smbc_errno(&fe->srv->cli);
+		errno = smbc_errno(context, &file->srv->cli);
 		return -1;
 
 	}
 
-	fe->offset += ret;
+	file->offset += ret;
 
 	DEBUG(4, ("  --> %d\n", ret));
 
@@ -790,19 +645,18 @@ ssize_t smbc_read(int fd, void *buf, size_t count)
  * Routine to write() a file ...
  */
 
-ssize_t smbc_write(int fd, void *buf, size_t count)
+static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t count)
 {
 	int ret;
-	struct smbc_file *fe;
 
-	if (!smbc_initialized) {
+	if (!context || context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!file || !DLIST_CONTAINS(context->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -818,25 +672,16 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe || !fe->file) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	ret = cli_write(&fe->srv->cli, fe->cli_fd, 0, buf, fe->offset, count);
+	ret = cli_write(&file->srv->cli, file->cli_fd, 0, buf, file->offset, count);
 
 	if (ret <= 0) {
 
-		errno = smbc_errno(&fe->srv->cli);
+		errno = smbc_errno(context, &file->srv->cli);
 		return -1;
 
 	}
 
-	fe->offset += ret;
+	file->offset += ret;
 
 	return ret;  /* Success, 0 bytes of data ... */
 }
@@ -845,72 +690,123 @@ ssize_t smbc_write(int fd, void *buf, size_t count)
  * Routine to close() a file ...
  */
 
-int smbc_close(int fd)
+static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 {
-	struct smbc_file *fe;
-	struct smbc_server *srv;
+        SMBCSRV *srv; 
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!file || !DLIST_CONTAINS(context->_files, file)) {
    
 		errno = EBADF;
 		return -1;
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
-
-		errno = EBADF;
-		return -1;
+	/* IS a dir ... */
+	if (!file->file) {
+		
+		return context->closedir(context, file);
 
 	}
 
-	if (!fe->file) {
+	if (!cli_close(&file->srv->cli, file->cli_fd)) {
 
-		return smbc_closedir(fd);
-
-	}
-
-	if (!cli_close(&fe->srv->cli, fe->cli_fd)) {
-		DEBUG(3, ("cli_close failed on %s (%d). purging server.\n", 
-			  fe->fname, fe->smbc_fd));
+		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
+			  file->fname));
 		/* Deallocate slot and remove the server 
 		 * from the server cache if unused */
-		errno = smbc_errno(&fe->srv->cli);  
-		srv = fe->srv;
-		SAFE_FREE(fe->fname);
-		SAFE_FREE(fe);
-		smbc_file_table[fd - smbc_start_fd] = NULL;
-		smbc_remove_unused_server(srv);
+		errno = smbc_errno(context, &file->srv->cli);  
+		srv = file->srv;
+		DLIST_REMOVE(context->_files, file);
+		SAFE_FREE(file->fname);
+		SAFE_FREE(file);
+		context->callbacks.remove_unused_server_fn(context, srv);
+
+		return -1;
+
+	}
+
+	if (!file->file) {
+
+		return context->closedir(context, file);
+
+	}
+
+	if (!cli_close(&file->srv->cli, file->cli_fd)) {
+		DEBUG(3, ("cli_close failed on %s. purging server.\n", 
+			  file->fname));
+		/* Deallocate slot and remove the server 
+		 * from the server cache if unused */
+		errno = smbc_errno(context, &file->srv->cli);  
+		srv = file->srv;
+		DLIST_REMOVE(context->_files, file);
+		SAFE_FREE(file->fname);
+		SAFE_FREE(file);
+		context->callbacks.remove_unused_server_fn(context, srv);
+
 		return -1;
 	}
 
-	SAFE_FREE(fe->fname);
-	SAFE_FREE(fe);
-	smbc_file_table[fd - smbc_start_fd] = NULL;
+	DLIST_REMOVE(context->_files, file);
+	SAFE_FREE(file->fname);
+	SAFE_FREE(file);
 
 	return 0;
+}
+
+/*
+ * Get info from an SMB server on a file. Use a qpathinfo call first
+ * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
+ */
+static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
+		 uint16 *mode, size_t *size, 
+		 time_t *c_time, time_t *a_time, time_t *m_time,
+		 SMB_INO_T *ino)
+{
+
+	if (!context || !context->_initialized) {
+ 
+		errno = EINVAL;
+ 		return -1;
+ 
+ 	}
+
+	DEBUG(4,("smbc_getatr: sending qpathinfo\n"));
+  
+	if (!srv->no_pathinfo2 &&
+	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
+			   size, mode, ino)) return True;
+
+	/* if this is NT then don't bother with the getatr */
+	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
+
+	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
+		a_time = c_time = m_time;
+		srv->no_pathinfo2 = True;
+		return True;
+	}
+
+	return False;
+
 }
 
 /*
  * Routine to unlink() a file
  */
 
-int smbc_unlink(const char *fname)
+static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
-	struct smbc_server *srv = NULL;
+	SMBCSRV *srv = NULL;
 
-	if (!smbc_initialized) {
+	if (!context || context->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -924,13 +820,13 @@ int smbc_unlink(const char *fname)
 
 	}
 
-	smbc_parse_path(fname, server, share, path, user, password); /* FIXME, check errors */
+	smbc_parse_path(context, fname, server, share, path, user, password); /* FIXME, check errors */
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -956,7 +852,7 @@ int smbc_unlink(const char *fname)
 
 	if (!cli_unlink(&srv->cli, path)) {
 
-		errno = smbc_errno(&srv->cli);
+		errno = smbc_errno(context, &srv->cli);
 
 		if (errno == EACCES) { /* Check if the file is a directory */
 
@@ -966,12 +862,12 @@ int smbc_unlink(const char *fname)
 			time_t m_time = 0, a_time = 0, c_time = 0;
 			SMB_INO_T ino = 0;
 
-			if (!smbc_getatr(srv, path, &mode, &size,
+			if (!smbc_getatr(context, srv, path, &mode, &size,
 					 &c_time, &a_time, &m_time, &ino)) {
 
 				/* Hmmm, bad error ... What? */
 
-				errno = smbc_errno(&srv->cli);
+				errno = smbc_errno(context, &srv->cli);
 				return -1;
 
 			}
@@ -997,13 +893,15 @@ int smbc_unlink(const char *fname)
  * Routine to rename() a file
  */
 
-int smbc_rename(const char *oname, const char *nname)
+static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname, 
+			   SMBCCTX *ncontext, const char *nname)
 {
 	fstring server1, share1, server2, share2, user1, user2, password1, password2, workgroup;
 	pstring path1, path2;
-	struct smbc_server *srv = NULL;
+	SMBCSRV *srv = NULL;
 
-	if (!smbc_initialized) {
+	if (!ocontext || !ncontext ||
+	    !ocontext->_initialized || !ncontext->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -1019,13 +917,13 @@ int smbc_rename(const char *oname, const char *nname)
 	
 	DEBUG(4, ("smbc_rename(%s,%s)\n", oname, nname));
 
-	smbc_parse_path(oname, server1, share1, path1, user1, password1);
+	smbc_parse_path(ocontext, oname, server1, share1, path1, user1, password1);
 
-	if (user1[0] == (char)0) pstrcpy(user1, smbc_user);
+	if (user1[0] == (char)0) pstrcpy(user1, ocontext->user);
 
-	smbc_parse_path(nname, server2, share2, path2, user2, password2);
+	smbc_parse_path(ncontext, nname, server2, share2, path2, user2, password2);
 
-	if (user2[0] == (char)0) pstrcpy(user2, smbc_user);
+	if (user2[0] == (char)0) pstrcpy(user2, ncontext->user);
 
 	if (strcmp(server1, server2) || strcmp(share1, share2) ||
 	    strcmp(user1, user2)) {
@@ -1037,9 +935,9 @@ int smbc_rename(const char *oname, const char *nname)
 
 	}
 
-	pstrcpy(workgroup, lp_workgroup());
-
-	srv = smbc_server(server1, share1, workgroup, user1, password1);
+	pstrcpy(workgroup, ocontext->workgroup);
+	/* HELP !!! Which workgroup should I use ? Or are they always the same -- Tom */ 
+	srv = smbc_server(ocontext, server1, share1, workgroup, user1, password1);
 	if (!srv) {
 
 		return -1;
@@ -1047,7 +945,7 @@ int smbc_rename(const char *oname, const char *nname)
 	}
 
 	if (!cli_rename(&srv->cli, path1, path2)) {
-		int eno = smbc_errno(&srv->cli);
+		int eno = smbc_errno(ocontext, &srv->cli);
 
 		if (eno != EEXIST ||
 		    !cli_unlink(&srv->cli, path2) ||
@@ -1067,35 +965,25 @@ int smbc_rename(const char *oname, const char *nname)
  * A routine to lseek() a file
  */
 
-off_t smbc_lseek(int fd, off_t offset, int whence)
+static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence)
 {
-	struct smbc_file *fe;
 	size_t size;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 		
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!file || !DLIST_CONTAINS(context->_files, file)) {
 
 		errno = EBADF;
 		return -1;
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	if (!fe->file) {
+	if (!file->file) {
 
 		errno = EINVAL;
 		return -1;      /* Can't lseek a dir ... */
@@ -1104,23 +992,23 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
 
 	switch (whence) {
 	case SEEK_SET:
-		fe->offset = offset;
+		file->offset = offset;
 		break;
 
 	case SEEK_CUR:
-		fe->offset += offset;
+		file->offset += offset;
 		break;
 
 	case SEEK_END:
-		if (!cli_qfileinfo(&fe->srv->cli, fe->cli_fd, NULL, &size, NULL, NULL,
+		if (!cli_qfileinfo(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
 				   NULL, NULL, NULL) &&
-		    !cli_getattrE(&fe->srv->cli, fe->cli_fd, NULL, &size, NULL, NULL,
+		    !cli_getattrE(&file->srv->cli, file->cli_fd, NULL, &size, NULL, NULL,
 				  NULL)) {
 
 			errno = EINVAL;
 			return -1;
 		}
-		fe->offset = size + offset;
+		file->offset = size + offset;
 		break;
 
 	default:
@@ -1129,7 +1017,7 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
 
 	}
 
-	return fe->offset;
+	return file->offset;
 
 }
 
@@ -1138,8 +1026,15 @@ off_t smbc_lseek(int fd, off_t offset, int whence)
  */
 
 static
-ino_t smbc_inode(const char *name)
+ino_t smbc_inode(SMBCCTX *context, const char *name)
 {
+
+	if (!context || !context->_initialized) {
+
+		errno = EINVAL;
+		return -1;
+
+	}
 
 	if (!*name) return 2; /* FIXME, why 2 ??? */
 	return (ino_t)str_checksum(name);
@@ -1152,7 +1047,7 @@ ino_t smbc_inode(const char *name)
  */
 
 static
-int smbc_setup_stat(struct stat *st, char *fname, size_t size, int mode)
+int smbc_setup_stat(SMBCCTX *context, struct stat *st, char *fname, size_t size, int mode)
 {
 	
 	st->st_mode = 0;
@@ -1181,7 +1076,7 @@ int smbc_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 	}
 
 	if (st->st_ino == 0) {
-		st->st_ino = smbc_inode(fname);
+		st->st_ino = smbc_inode(context, fname);
 	}
 	
 	return True;  /* FIXME: Is this needed ? */
@@ -1189,47 +1084,12 @@ int smbc_setup_stat(struct stat *st, char *fname, size_t size, int mode)
 }
 
 /*
- * Get info from an SMB server on a file. Use a qpathinfo call first
- * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
- */
-
-BOOL smbc_getatr(struct smbc_server *srv, char *path, 
-		 uint16 *mode, size_t *size, 
-		 time_t *c_time, time_t *a_time, time_t *m_time,
-		 SMB_INO_T *ino)
-{
-
-	if (!smbc_initialized) {
-		
-		errno = EINVAL;
-		return -1;
-
-	}
-
-	DEBUG(4,("smbc_getatr: sending qpathinfo\n"));
-  
-	if (!srv->no_pathinfo2 &&
-	    cli_qpathinfo2(&srv->cli, path, c_time, a_time, m_time, NULL,
-			   size, mode, ino)) return True;
-
-	/* if this is NT then don't bother with the getatr */
-	if (srv->cli.capabilities & CAP_NT_SMBS) return False;
-
-	if (cli_getatr(&srv->cli, path, mode, size, m_time)) {
-		a_time = c_time = m_time;
-		srv->no_pathinfo2 = True;
-		return True;
-	}
-	return False;
-}
-
-/*
  * Routine to stat a file given a name
  */
 
-int smbc_stat(const char *fname, struct stat *st)
+static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 {
-	struct smbc_server *srv;
+	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 	time_t m_time = 0, a_time = 0, c_time = 0;
@@ -1237,7 +1097,7 @@ int smbc_stat(const char *fname, struct stat *st)
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -1253,13 +1113,13 @@ int smbc_stat(const char *fname, struct stat *st)
   
 	DEBUG(4, ("smbc_stat(%s)\n", fname));
 
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -1288,17 +1148,17 @@ int smbc_stat(const char *fname, struct stat *st)
 	   }
 	   else { */
 
-	if (!smbc_getatr(srv, path, &mode, &size, 
+	if (!smbc_getatr(context, srv, path, &mode, &size, 
 			 &c_time, &a_time, &m_time, &ino)) {
 
-		errno = smbc_errno(&srv->cli);
+		errno = smbc_errno(context, &srv->cli);
 		return -1;
 		
 	}
 
 	st->st_ino = ino;
 
-	smbc_setup_stat(st, path, size, mode);
+	smbc_setup_stat(context, st, path, size, mode);
 
 	st->st_atime = a_time;
 	st->st_ctime = c_time;
@@ -1313,46 +1173,36 @@ int smbc_stat(const char *fname, struct stat *st)
  * Routine to stat a file given an fd
  */
 
-int smbc_fstat(int fd, struct stat *st)
+static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 {
-	struct smbc_file *fe;
 	time_t c_time, a_time, m_time;
 	size_t size;
 	uint16 mode;
 	SMB_INO_T ino = 0;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
-
-		errno = EBADF;
-		return -1;
-    
-	}
-
-	fe = smbc_file_table[fd - smbc_start_fd];
-	
-	if (!fe) {
+	if (!file || !DLIST_CONTAINS(context->_files, file)) {
 
 		errno = EBADF;
 		return -1;
 
 	}
 
-	if (!fe->file) {
+	if (!file->file) {
 
-		return smbc_fstatdir(fd, st);
+		return context->fstatdir(context, file, st);
 
 	}
 
-	if (!cli_qfileinfo(&fe->srv->cli, fe->cli_fd,
+	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd,
 			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino) &&
-	    !cli_getattrE(&fe->srv->cli, fe->cli_fd,
+	    !cli_getattrE(&file->srv->cli, file->cli_fd,
 			  &mode, &size, &c_time, &a_time, &m_time)) {
 
 		errno = EINVAL;
@@ -1362,12 +1212,12 @@ int smbc_fstat(int fd, struct stat *st)
 
 	st->st_ino = ino;
 
-	smbc_setup_stat(st, fe->fname, size, mode);
+	smbc_setup_stat(context, st, file->fname, size, mode);
 
 	st->st_atime = a_time;
 	st->st_ctime = c_time;
 	st->st_mtime = m_time;
-	st->st_dev = fe->srv->dev;
+	st->st_dev = file->srv->dev;
 
 	return 0;
 
@@ -1387,7 +1237,7 @@ int smbc_fstat(int fd, struct stat *st)
  * smb://<IP-addr>/share which should list files on share
  */
 
-static void smbc_remove_dir(struct smbc_file *dir)
+static void smbc_remove_dir(SMBCFILE *dir)
 {
 	struct smbc_dir_list *d,*f;
 
@@ -1405,7 +1255,7 @@ static void smbc_remove_dir(struct smbc_file *dir)
 
 }
 
-static int add_dirent(struct smbc_file *dir, const char *name, const char *comment, uint32 type)
+static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint32 type)
 {
 	struct smbc_dirent *dirent;
 	int size;
@@ -1428,6 +1278,11 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 
 	}
 
+	ZERO_STRUCTP(dirent);
+
+	ZERO_STRUCTP(dirent);
+
+
 	if (dir->dir_list == NULL) {
 
 		dir->dir_list = malloc(sizeof(struct smbc_dir_list));
@@ -1438,6 +1293,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 			return -1;
 
 		}
+		ZERO_STRUCTP(dir->dir_list);
 
 		dir->dir_end = dir->dir_next = dir->dir_list;
   
@@ -1453,6 +1309,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 			return -1;
 
 		}
+		ZERO_STRUCTP(dir->dir_end);
 
 		dir->dir_end = dir->dir_end->next;
 
@@ -1478,7 +1335,7 @@ static int add_dirent(struct smbc_file *dir, const char *name, const char *comme
 static void
 list_fn(const char *name, uint32 type, const char *comment, void *state)
 {
-	struct smbc_file *dir = (struct smbc_file *)state;
+	SMBCFILE *dir = (SMBCFILE *)state;
 	int dirent_type;
 
 	/* We need to process the type a little ... */
@@ -1506,6 +1363,7 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			dirent_type = SMBC_FILE_SHARE; /* FIXME, error? */
 			break;
 		}
+		ZERO_STRUCTP(dir->dir_list);
 
 	}
 	else dirent_type = dir->dir_type;
@@ -1523,7 +1381,7 @@ static void
 dir_list_fn(file_info *finfo, const char *mask, void *state)
 {
 
-	if (add_dirent((struct smbc_file *)state, finfo->name, "", 
+	if (add_dirent((SMBCFILE *)state, finfo->name, "", 
 		       (finfo->mode&aDIR?SMBC_DIR:SMBC_FILE)) < 0) {
 
 		/* Handle an error ... */
@@ -1534,82 +1392,68 @@ dir_list_fn(file_info *finfo, const char *mask, void *state)
 
 }
 
-int smbc_opendir(const char *fname)
+static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 {
 	fstring server, share, user, password, workgroup;
 	pstring path;
-	struct smbc_server *srv = NULL;
+	SMBCSRV *srv  = NULL;
+	SMBCFILE *dir = NULL;
 	struct in_addr rem_ip;
 	int slot = 0;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
-		return -1;
+		return NULL;
 
 	}
 
 	if (!fname) {
     
 		errno = EINVAL;
-		return -1;
+		return NULL;
 
 	}
 
-	if (smbc_parse_path(fname, server, share, path, user, password)) {
+	if (smbc_parse_path(context, fname, server, share, path, user, password)) {
 
 		errno = EINVAL;
-		return -1;
+		return NULL;
 
 	}
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	/* Get a file entry ... */
+	dir = malloc(sizeof(*dir));
 
-	slot = 0;
-
-	while (smbc_file_table[slot])
-		slot++;
-
-	if (slot > SMBC_MAX_FD) {
+	if (!dir) {
 
 		errno = ENOMEM;
-		return -1; /* FIXME, ... move into a func */
-      
-	}
-
-	smbc_file_table[slot] = malloc(sizeof(struct smbc_file));
-
-	if (!smbc_file_table[slot]) {
-
-		errno = ENOMEM;
-		return -1;
+		return NULL;
 
 	}
 
-	smbc_file_table[slot]->cli_fd   = 0;
-	smbc_file_table[slot]->smbc_fd  = slot + smbc_start_fd;
-	smbc_file_table[slot]->fname    = strdup(fname);
-	smbc_file_table[slot]->srv      = NULL;
-	smbc_file_table[slot]->offset   = 0;
-	smbc_file_table[slot]->file     = False;
-	smbc_file_table[slot]->dir_list = 
-		smbc_file_table[slot]->dir_next =
-		smbc_file_table[slot]->dir_end = NULL;
+	ZERO_STRUCTP(dir);
+
+	dir->cli_fd   = 0;
+	dir->fname    = strdup(fname);
+	dir->srv      = NULL;
+	dir->offset   = 0;
+	dir->file     = False;
+	dir->dir_list = dir->dir_next = dir->dir_end = NULL;
 
 	if (server[0] == (char)0) {
 
 		if (share[0] != (char)0 || path[0] != (char)0) {
     
 			errno = EINVAL;
-			if (smbc_file_table[slot]) {
-				SAFE_FREE(smbc_file_table[slot]->fname);
-				SAFE_FREE(smbc_file_table[slot]);
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
 			}
-			return -1;
+			return NULL;
 
 		}
 
@@ -1617,15 +1461,15 @@ int smbc_opendir(const char *fname)
                 /* first try to get the LMB for our workgroup, and if that fails,     */
                 /* try the DMB                                                        */
 
-		if (!(resolve_name(lp_workgroup(), &rem_ip, 0x1d) ||
-                      resolve_name(lp_workgroup(), &rem_ip, 0x1b))) {
+		if (!(resolve_name(context->workgroup, &rem_ip, 0x1d) ||
+                      resolve_name(context->workgroup, &rem_ip, 0x1b))) {
       
 			errno = EINVAL;  /* Something wrong with smb.conf? */
-			return -1;
+			return NULL;
 
 		}
 
-		smbc_file_table[slot]->dir_type = SMBC_WORKGROUP;
+		dir->dir_type = SMBC_WORKGROUP;
 
 		/* find the name of the server ... */
 
@@ -1633,7 +1477,7 @@ int smbc_opendir(const char *fname)
 
 			DEBUG(0,("Could not get the name of local/domain master browser for server %s\n", server));
 			errno = EINVAL;
-			return -1;
+			return NULL;
 
 		}
 
@@ -1641,33 +1485,34 @@ int smbc_opendir(const char *fname)
 		 * Get a connection to IPC$ on the server if we do not already have one
 		 */
 
-		srv = smbc_server(server, "IPC$", workgroup, user, password);
+		srv = smbc_server(context, server, "IPC$", workgroup, user, password);
 
 		if (!srv) {
 
-			if (smbc_file_table[slot]) {
-				SAFE_FREE(smbc_file_table[slot]->fname);
-				SAFE_FREE(smbc_file_table[slot]);
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
 			}
 			
-			return -1;
+			return NULL;
 
 		}
+		ZERO_STRUCTP(dir->dir_end);
 
-		smbc_file_table[slot]->srv = srv;
+		dir->srv = srv;
 
 		/* Now, list the stuff ... */
 
 		if (!cli_NetServerEnum(&srv->cli, workgroup, 0x80000000, list_fn,
-				       (void *)smbc_file_table[slot])) {
+				       (void *)dir)) {
 
-			if (smbc_file_table[slot]) {
-				SAFE_FREE(smbc_file_table[slot]->fname);
-				SAFE_FREE(smbc_file_table[slot]);
+			if (dir) {
+				SAFE_FREE(dir->fname);
+				SAFE_FREE(dir);
 			}
 			errno = cli_errno(&srv->cli);
 
-			return -1;
+			return NULL;
 
 		}
 	}
@@ -1678,11 +1523,11 @@ int smbc_opendir(const char *fname)
 			if (path[0] != (char)0) { /* Should not have empty share with path */
 
 				errno = EINVAL;
-				if (smbc_file_table[slot]) {
-					SAFE_FREE(smbc_file_table[slot]->fname);
-					SAFE_FREE(smbc_file_table[slot]);
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
 				}
-				return -1;
+				return NULL;
 	
 			}
 
@@ -1694,7 +1539,7 @@ int smbc_opendir(const char *fname)
                                     resolve_name(server, &rem_ip, 0x1b) )) { /* Found DMB */
 				pstring buserver;
 
-				smbc_file_table[slot]->dir_type = SMBC_SERVER;
+				dir->dir_type = SMBC_SERVER;
 
 				/*
 				 * Get the backup list ...
@@ -1705,7 +1550,7 @@ int smbc_opendir(const char *fname)
 
 					DEBUG(0, ("Could not get name of local/domain master browser for server %s\n", server));
 					errno = EPERM;  /* FIXME, is this correct */
-					return -1;
+					return NULL;
 
 				}
 
@@ -1713,31 +1558,31 @@ int smbc_opendir(const char *fname)
 				 * Get a connection to IPC$ on the server if we do not already have one
 				 */
 
-				srv = smbc_server(buserver, "IPC$", workgroup, user, password);
+				srv = smbc_server(context, buserver, "IPC$", workgroup, user, password);
 
 				if (!srv) {
 
-					if (smbc_file_table[slot]) {
-						SAFE_FREE(smbc_file_table[slot]->fname);
-						SAFE_FREE(smbc_file_table[slot]);
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
 					}
-					return -1;
+					return NULL;
 
 				}
 
-				smbc_file_table[slot]->srv = srv;
+				dir->srv = srv;
 
 				/* Now, list the servers ... */
 
 				if (!cli_NetServerEnum(&srv->cli, server, 0x0000FFFE, list_fn,
-						       (void *)smbc_file_table[slot])) {
+						       (void *)dir)) {
 
-					if (smbc_file_table[slot]) {
-						SAFE_FREE(smbc_file_table[slot]->fname);
-						SAFE_FREE(smbc_file_table[slot]);
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
 					}
 					errno = cli_errno(&srv->cli);
-					return -1;
+					return NULL;
 					
 				}
 
@@ -1748,33 +1593,33 @@ int smbc_opendir(const char *fname)
 
 					/* Now, list the shares ... */
 
-					smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
+					dir->dir_type = SMBC_FILE_SHARE;
 
-					srv = smbc_server(server, "IPC$", workgroup, user, password);
+					srv = smbc_server(context, server, "IPC$", workgroup, user, password);
 
 					if (!srv) {
 
-						if (smbc_file_table[slot]) {
-							SAFE_FREE(smbc_file_table[slot]->fname);
-							SAFE_FREE(smbc_file_table[slot]);
+						if (dir) {
+							SAFE_FREE(dir->fname);
+							SAFE_FREE(dir);
 						}
-						return -1;
+						return NULL;
 
 					}
 
-					smbc_file_table[slot]->srv = srv;
+					dir->srv = srv;
 
 					/* Now, list the servers ... */
 
 					if (cli_RNetShareEnum(&srv->cli, list_fn, 
-							      (void *)smbc_file_table[slot]) < 0) {
+							      (void *)dir) < 0) {
 
 						errno = cli_errno(&srv->cli);
-						if (smbc_file_table[slot]) {
-							SAFE_FREE(smbc_file_table[slot]->fname);
-							SAFE_FREE(smbc_file_table[slot]);
+						if (dir) {
+							SAFE_FREE(dir->fname);
+							SAFE_FREE(dir);
 						}
-						return -1;
+						return NULL;
 
 					}
 
@@ -1782,11 +1627,11 @@ int smbc_opendir(const char *fname)
 				else {
 
 					errno = ENODEV;   /* Neither the workgroup nor server exists */
-					if (smbc_file_table[slot]) {
-						SAFE_FREE(smbc_file_table[slot]->fname);
-						SAFE_FREE(smbc_file_table[slot]);
+					if (dir) {
+						SAFE_FREE(dir->fname);
+						SAFE_FREE(dir);
 					}
-					return -1;
+					return NULL;
 
 				}
 
@@ -1797,42 +1642,43 @@ int smbc_opendir(const char *fname)
 
 			/* Well, we connect to the server and list the directory */
 
-			smbc_file_table[slot]->dir_type = SMBC_FILE_SHARE;
+			dir->dir_type = SMBC_FILE_SHARE;
 
-			srv = smbc_server(server, share, workgroup, user, password);
+			srv = smbc_server(context, server, share, workgroup, user, password);
 
 			if (!srv) {
 
-				if (smbc_file_table[slot]) {
-					SAFE_FREE(smbc_file_table[slot]->fname);
-					SAFE_FREE(smbc_file_table[slot]);
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
 				}
-				return -1;
+				return NULL;
 
 			}
 
-			smbc_file_table[slot]->srv = srv;
+			dir->srv = srv;
 
 			/* Now, list the files ... */
 
 			pstrcat(path, "\\*");
 
 			if (cli_list(&srv->cli, path, aDIR | aSYSTEM | aHIDDEN, dir_list_fn, 
-				     (void *)smbc_file_table[slot]) < 0) {
+				     (void *)dir) < 0) {
 
-				if (smbc_file_table[slot]) {
-					SAFE_FREE(smbc_file_table[slot]->fname);
-					SAFE_FREE(smbc_file_table[slot]);
+				if (dir) {
+					SAFE_FREE(dir->fname);
+					SAFE_FREE(dir);
 				}
-				errno = smbc_errno(&srv->cli);
-				return -1;
+				errno = smbc_errno(context, &srv->cli);
+				return NULL;
 
 			}
 		}
 
 	}
 
-	return smbc_file_table[slot]->smbc_fd;
+	DLIST_ADD(context->_files, dir);
+	return dir;
 
 }
 
@@ -1840,43 +1686,33 @@ int smbc_opendir(const char *fname)
  * Routine to close a directory
  */
 
-int smbc_closedir(int fd)
+static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
-	struct smbc_file *fe;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
     
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
+	smbc_remove_dir(dir); /* Clean it up */
 
-	if (!fe) {
+	DLIST_REMOVE(context->_files, dir);
 
-		errno = EBADF;  
-		return -1;
+	if (dir) {
 
-	}
-
-	smbc_remove_dir(fe); /* Clean it up */
-
-	if (fe) {
-
-		SAFE_FREE(fe->fname);
-		SAFE_FREE(fe);    /* Free the space too */
+		SAFE_FREE(dir->fname);
+		SAFE_FREE(dir);    /* Free the space too */
 
 	}
-
-	smbc_file_table[fd - smbc_start_fd] = NULL;
 
 	return 0;
 
@@ -1886,50 +1722,38 @@ int smbc_closedir(int fd)
  * Routine to get a directory entry
  */
 
-static char smbc_local_dirent[512];  /* Make big enough */
-
-struct smbc_dirent *smbc_readdir(unsigned int fd)
+struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
-	struct smbc_file *fe;
 	struct smbc_dirent *dirp, *dirent;
 
 	/* Check that all is ok first ... */
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return NULL;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
 
 		errno = EBADF;
 		return NULL;
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
-
-		errno = EBADF;
-		return NULL;
-
-	}
-
-	if (fe->file != False) { /* FIXME, should be dir, perhaps */
+	if (dir->file != False) { /* FIXME, should be dir, perhaps */
 
 		errno = ENOTDIR;
 		return NULL;
 
 	}
 
-	if (!fe->dir_next)
+	if (!dir->dir_next)
 		return NULL;
 	else {
 
-		dirent = fe->dir_next->dirent;
+		dirent = dir->dir_next->dirent;
 
 		if (!dirent) {
 
@@ -1940,12 +1764,12 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
 
 		/* Hmmm, do I even need to copy it? */
 
-		memcpy(smbc_local_dirent, dirent, dirent->dirlen); /* Copy the dirent */
-		dirp = (struct smbc_dirent *)smbc_local_dirent;
+		memcpy(context->_dirent, dirent, dirent->dirlen); /* Copy the dirent */
+		dirp = (struct smbc_dirent *)context->_dirent;
 		dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
-		fe->dir_next = fe->dir_next->next;
+		dir->dir_next = dir->dir_next->next;
 
-		return (struct smbc_dirent *)smbc_local_dirent;
+		return (struct smbc_dirent *)context->_dirent;
 	}
 
 }
@@ -1954,39 +1778,29 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
  * Routine to get directory entries
  */
 
-int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
+static int smbc_getdents_ctx(SMBCCTX *context, SMBCFILE *dir, struct smbc_dirent *dirp, int count)
 {
-	struct smbc_file *fe;
-	struct smbc_dir_list *dir;
+	struct smbc_dir_list *dirlist;
 	int rem = count, reqd;
 	char *ndir = (char *)dirp;
 
 	/* Check that all is ok first ... */
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
+	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
     
 	}
 
-	if (fe->file != False) { /* FIXME, should be dir, perhaps */
+	if (dir->file != False) { /* FIXME, should be dir, perhaps */
 
 		errno = ENOTDIR;
 		return -1;
@@ -1999,18 +1813,18 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 	 * send a request to the server to get the info.
 	 */
 
-	while ((dir = fe->dir_next)) {
+	while ((dirlist = dir->dir_next)) {
 		struct smbc_dirent *dirent;
 
-		if (!dir->dirent) {
+		if (!dirlist->dirent) {
 
 			errno = ENOENT;  /* Bad error */
 			return -1;
 
 		}
 
-		if (rem < (reqd = (sizeof(struct smbc_dirent) + dir->dirent->namelen + 
-				   dir->dirent->commentlen + 1))) {
+		if (rem < (reqd = (sizeof(struct smbc_dirent) + dirlist->dirent->namelen + 
+				   dirlist->dirent->commentlen + 1))) {
 
 			if (rem < count) { /* We managed to copy something */
 
@@ -2027,7 +1841,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
 		}
 
-		dirent = dir->dirent;
+		dirent = dirlist->dirent;
 
 		memcpy(ndir, dirent, reqd); /* Copy the data in ... */
     
@@ -2038,7 +1852,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
 		rem -= reqd;
 
-		fe->dir_next = dir = dir -> next;
+		dir->dir_next = dirlist = dirlist -> next;
 	}
 
 	if (rem == count)
@@ -2052,13 +1866,13 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
  * Routine to create a directory ...
  */
 
-int smbc_mkdir(const char *fname, mode_t mode)
+static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 {
-	struct smbc_server *srv;
+	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2074,13 +1888,13 @@ int smbc_mkdir(const char *fname, mode_t mode)
   
 	DEBUG(4, ("smbc_mkdir(%s)\n", fname));
 
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -2111,7 +1925,7 @@ int smbc_mkdir(const char *fname, mode_t mode)
 
 	if (!cli_mkdir(&srv->cli, path)) {
 
-		errno = smbc_errno(&srv->cli);
+		errno = smbc_errno(context, &srv->cli);
 		return -1;
 
 	} 
@@ -2138,13 +1952,13 @@ static void rmdir_list_fn(file_info *finfo, const char *mask, void *state)
  * Routine to remove a directory
  */
 
-int smbc_rmdir(const char *fname)
+static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 {
-	struct smbc_server *srv;
+	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2160,13 +1974,13 @@ int smbc_rmdir(const char *fname)
   
 	DEBUG(4, ("smbc_rmdir(%s)\n", fname));
 
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -2197,7 +2011,7 @@ int smbc_rmdir(const char *fname)
 
 	if (!cli_rmdir(&srv->cli, path)) {
 
-		errno = smbc_errno(&srv->cli);
+		errno = smbc_errno(context, &srv->cli);
 
 		if (errno == EACCES) {  /* Check if the dir empty or not */
 
@@ -2214,7 +2028,7 @@ int smbc_rmdir(const char *fname)
 				/* Fix errno to ignore latest error ... */
 
 				DEBUG(5, ("smbc_rmdir: cli_list returned an error: %d\n", 
-					  smbc_errno(&srv->cli)));
+					  smbc_errno(context, &srv->cli)));
 				errno = EACCES;
 
 			}
@@ -2238,45 +2052,31 @@ int smbc_rmdir(const char *fname)
  * Routine to return the current directory position
  */
 
-off_t smbc_telldir(int fd)
+static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
-	struct smbc_file *fe;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
+	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
 
 	}
 
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	if (fe->file != False) { /* FIXME, should be dir, perhaps */
+	if (dir->file != False) { /* FIXME, should be dir, perhaps */
 
 		errno = ENOTDIR;
 		return -1;
 
 	}
 
-	/*
-	 * This causes problems on some UNIXens ... wonder who is using
-	 * it ... FIXME.
-	 */
-	return (off_t) fe->dir_next;
+	return (off_t) dir->dir_next;
 
 }
 
@@ -2314,36 +2114,19 @@ struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list,
  * Routine to seek on a directory
  */
 
-int smbc_lseekdir(int fd, off_t offset)
+static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
 {
-	struct smbc_file *fe;
 	struct smbc_dirent *dirent = (struct smbc_dirent *)offset;
 	struct smbc_dir_list *list_ent = NULL;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (fd < smbc_start_fd || fd >= (smbc_start_fd + SMBC_MAX_FD)) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	fe = smbc_file_table[fd - smbc_start_fd];
-
-	if (!fe) {
-
-		errno = EBADF;
-		return -1;
-
-	}
-
-	if (fe->file != False) { /* FIXME, should be dir, perhaps */
+	if (dir->file != False) { /* FIXME, should be dir, perhaps */
 
 		errno = ENOTDIR;
 		return -1;
@@ -2354,7 +2137,7 @@ int smbc_lseekdir(int fd, off_t offset)
 
 	if (dirent == NULL) {  /* Seek to the begining of the list */
 
-		fe->dir_next = fe->dir_list;
+		dir->dir_next = dir->dir_list;
 		return 0;
 
 	}
@@ -2362,14 +2145,14 @@ int smbc_lseekdir(int fd, off_t offset)
 	/* Now, run down the list and make sure that the entry is OK       */
 	/* This may need to be changed if we change the format of the list */
 
-	if ((list_ent = smbc_check_dir_ent(fe->dir_list, dirent)) == NULL) {
+	if ((list_ent = smbc_check_dir_ent(dir->dir_list, dirent)) == NULL) {
 
 		errno = EINVAL;   /* Bad entry */
 		return -1;
 
 	}
 
-	fe->dir_next = list_ent;
+	dir->dir_next = list_ent;
 
 	return 0; 
 
@@ -2379,10 +2162,10 @@ int smbc_lseekdir(int fd, off_t offset)
  * Routine to fstat a dir
  */
 
-int smbc_fstatdir(int fd, struct stat *st)
+static int smbc_fstatdir_ctx(SMBCCTX *context, SMBCFILE *dir, struct stat *st)
 {
 
-	if (!smbc_initialized) {
+	if (context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2396,18 +2179,53 @@ int smbc_fstatdir(int fd, struct stat *st)
 }
 
 /*
+ * Open a print file to be written to by other calls
+ */
+
+static SMBCFILE *smbc_open_print_job_ctx(SMBCCTX *context, const char *fname)
+{
+	fstring server, share, user, password;
+	pstring path;
+	
+	if (!context || context->_initialized) {
+
+		errno = EINVAL;
+		return NULL;
+    
+	}
+
+	if (!fname) {
+
+		errno = EINVAL;
+		return NULL;
+
+	}
+  
+	DEBUG(4, ("smbc_open_print_job_ctx(%s)\n", fname));
+
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
+
+	/* What if the path is empty, or the file exists? */
+
+	return context->open(context, fname, O_WRONLY, 666);
+
+}
+
+/*
  * Routine to print a file on a remote server ...
  *
  * We open the file, which we assume to be on a remote server, and then
  * copy it to a print file on the share specified by printq.
  */
 
-int smbc_print_file(const char *fname, const char *printq)
+static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_print, const char *printq)
 {
-	int fid1, fid2, bytes, saverr, tot_bytes = 0;
+        SMBCFILE *fid1, *fid2;
+	int bytes, saverr, tot_bytes = 0;
 	char buf[4096];
 
-	if (!smbc_initialized) {
+	if (!c_file || !c_file->_initialized || !c_print ||
+	    !c_print->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2423,7 +2241,7 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	/* Try to open the file for reading ... */
 
-	if ((fid1 = smbc_open(fname, O_RDONLY, 0666)) < 0) {
+	if ((fid1 = c_file->open(c_file, fname, O_RDONLY, 0666)) < 0) {
 		
 		DEBUG(3, ("Error, fname=%s, errno=%i\n", fname, errno));
 		return -1;  /* smbc_open sets errno */
@@ -2432,24 +2250,24 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	/* Now, try to open the printer file for writing */
 
-	if ((fid2 = smbc_open_print_job(printq)) < 0) {
+	if ((fid2 = c_print->open_print_job(c_print, printq)) < 0) {
 
 		saverr = errno;  /* Save errno */
-		smbc_close(fid1);
+		c_file->close(c_file, fid1);
 		errno = saverr;
 		return -1;
 
 	}
 
-	while ((bytes = smbc_read(fid1, buf, sizeof(buf))) > 0) {
+	while ((bytes = c_file->read(c_file, fid1, buf, sizeof(buf))) > 0) {
 
 		tot_bytes += bytes;
 
-		if ((smbc_write(fid2, buf, bytes)) < 0) {
+		if ((c_print->write(c_print, fid2, buf, bytes)) < 0) {
 
 			saverr = errno;
-			smbc_close(fid1);
-			smbc_close(fid2);
+			c_file->close(c_file, fid1);
+			c_print->close(c_print, fid2);
 			errno = saverr;
 
 		}
@@ -2458,8 +2276,8 @@ int smbc_print_file(const char *fname, const char *printq)
 
 	saverr = errno;
 
-	smbc_close(fid1);  /* We have to close these anyway */
-	smbc_close(fid2);
+	c_file->close(c_file, fid1);  /* We have to close these anyway */
+	c_print->close(c_print, fid2);
 
 	if (bytes < 0) {
 
@@ -2473,49 +2291,16 @@ int smbc_print_file(const char *fname, const char *printq)
 }
 
 /*
- * Open a print file to be written to by other calls
- */
-
-int smbc_open_print_job(const char *fname)
-{
-	fstring server, share, user, password;
-	pstring path;
-	
-	if (!smbc_initialized) {
-
-		errno = EINVAL;
-		return -1;
-    
-	}
-
-	if (!fname) {
-
-		errno = EINVAL;
-		return -1;
-
-	}
-  
-	DEBUG(4, ("smbc_open_print_job(%s)\n", fname));
-
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
-
-	/* What if the path is empty, or the file exists? */
-
-	return smbc_open(fname, O_WRONLY, 666);
-
-}
-
-/*
  * Routine to list print jobs on a printer share ...
  */
 
-int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
+static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, void (*fn)(struct print_job_info *))
 {
-	struct smbc_server *srv;
+	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2531,13 +2316,13 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
   
 	DEBUG(4, ("smbc_list_print_jobs(%s)\n", fname));
 
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 	
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -2547,7 +2332,7 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
 
 	if (cli_print_queue(&srv->cli, fn) < 0) {
 
-		errno = smbc_errno(&srv->cli);
+		errno = smbc_errno(context, &srv->cli);
 		return -1;
 
 	}
@@ -2560,14 +2345,14 @@ int smbc_list_print_jobs(const char *fname, void (*fn)(struct print_job_info *))
  * Delete a print job from a remote printer share
  */
 
-int smbc_unlink_print_job(const char *fname, int id)
+static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id)
 {
-	struct smbc_server *srv;
+	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 	int err;
 
-	if (!smbc_initialized) {
+	if (!context || !context->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2583,13 +2368,13 @@ int smbc_unlink_print_job(const char *fname, int id)
   
 	DEBUG(4, ("smbc_unlink_print_job(%s)\n", fname));
 
-	smbc_parse_path(fname, server, share, path, user, password); /*FIXME, errors*/
+	smbc_parse_path(context, fname, server, share, path, user, password); /*FIXME, errors*/
 
-	if (user[0] == (char)0) pstrcpy(user, smbc_user);
+	if (user[0] == (char)0) pstrcpy(user, context->user);
 
-	pstrcpy(workgroup, lp_workgroup());
+	pstrcpy(workgroup, context->workgroup);
 
-	srv = smbc_server(server, share, workgroup, user, password);
+	srv = smbc_server(context, server, share, workgroup, user, password);
 
 	if (!srv) {
 
@@ -2600,7 +2385,7 @@ int smbc_unlink_print_job(const char *fname, int id)
 	if ((err = cli_printjob_del(&srv->cli, id)) != 0) {
 
 		if (err < 0)
-			errno = smbc_errno(&srv->cli);
+			errno = smbc_errno(context, &srv->cli);
 		else if (err == ERRnosuchprintjob)
 			errno = EINVAL;
 		return -1;
@@ -2611,3 +2396,260 @@ int smbc_unlink_print_job(const char *fname, int id)
 
 }
 
+/*
+ * Get a new empty handle to fill in with your own info 
+ */
+SMBCCTX * smbc_new_context(void)
+{
+	SMBCCTX * context;
+
+	context = malloc(sizeof(*context));
+	if (!context) {
+		errno = ENOMEM;
+		return NULL;
+	}
+	
+	ZERO_STRUCTP(context);
+
+	/* ADD REASONABLE DEFAULTS */
+	context->debug            = 0;
+	context->timeout          = 20000; /* 20 seconds */
+
+	context->open             = smbc_open_ctx;
+	context->creat            = smbc_creat_ctx;
+	context->read             = smbc_read_ctx;
+	context->write            = smbc_write_ctx;
+	context->close            = smbc_close_ctx;
+	context->unlink           = smbc_unlink_ctx;
+	context->rename           = smbc_rename_ctx;
+	context->lseek            = smbc_lseek_ctx;
+	context->stat             = smbc_stat_ctx;
+	context->fstat            = smbc_fstat_ctx;
+	context->opendir          = smbc_opendir_ctx;
+	context->closedir         = smbc_closedir_ctx;
+	context->readdir          = smbc_readdir_ctx;
+	context->getdents         = smbc_getdents_ctx;
+	context->mkdir            = smbc_mkdir_ctx;
+	context->rmdir            = smbc_rmdir_ctx;
+	context->telldir          = smbc_telldir_ctx;
+	context->lseekdir         = smbc_lseekdir_ctx;
+	context->fstatdir         = smbc_fstatdir_ctx;
+	context->open_print_job   = smbc_open_print_job_ctx;
+	context->print_file       = smbc_print_file_ctx;
+	context->list_print_jobs  = smbc_list_print_jobs_ctx;
+	context->unlink_print_job = smbc_unlink_print_job_ctx;
+
+	context->callbacks.check_server_fn      = smbc_check_server;
+	context->callbacks.remove_unused_server_fn = smbc_remove_unused_server;
+
+	smbc_default_cache_functions(context);
+
+	return context;
+}
+
+/* 
+ * Free a context
+ *
+ * Returns 0 on success. Otherwise returns 1, the SMBCCTX is _not_ freed 
+ * and thus you'll be leaking memory if not handled properly.
+ *
+ */
+int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
+{
+	if (!context) {
+		errno = EBADF;
+		return 1;
+	}
+	
+	if (shutdown_ctx) {
+		SMBCFILE * f;
+		DEBUG(1,("Performing aggressive shutdown.\n"));
+		
+		f = context->_files;
+		while (f) {
+			context->close(context, f);
+			f = f->next;
+		}
+		context->_files = NULL;
+
+		/* First try to remove the servers the nice way. */
+		if (context->callbacks.purge_cached_fn(context)) {
+			SMBCSRV * s;
+			DEBUG(1, ("Could not purge all servers, Nice way shutdown failed.\n"));
+			s = context->_servers;
+			while (s) {
+				cli_shutdown(&s->cli);
+				context->callbacks.remove_cached_srv_fn(context, s);
+				SAFE_FREE(s);
+				s = s->next;
+			}
+			context->_servers = NULL;
+		}
+	}
+	else {
+		/* This is the polite way */	
+		if (context->callbacks.purge_cached_fn(context)) {
+			DEBUG(1, ("Could not purge all servers, free_context failed.\n"));
+			errno = EBUSY;
+			return 1;
+		}
+		if (context->_servers) {
+			DEBUG(1, ("Active servers in context, free_context failed.\n"));
+			errno = EBUSY;
+			return 1;
+		}
+		if (context->_files) {
+			DEBUG(1, ("Active files in context, free_context failed.\n"));
+			errno = EBUSY;
+			return 1;
+		}		
+	}
+
+	/* Things we have to clean up */
+	SAFE_FREE(context->workgroup);
+	SAFE_FREE(context->netbios_name);
+	SAFE_FREE(context->user);
+	
+	DEBUG(3, ("Context %p succesfully freed\n", context));
+	SAFE_FREE(context);
+	return 0;
+}
+
+
+/*
+ * Initialise the library etc 
+ *
+ * We accept a struct containing handle information.
+ * valid values for info->debug from 0 to 100,
+ * and insist that info->fn must be non-null.
+ */
+SMBCCTX * smbc_init_context(SMBCCTX * context)
+{
+	pstring conf;
+	int pid;
+	char *user = NULL, *home = NULL;
+
+	if (!context) {
+		errno = EBADF;
+		return NULL;
+	}
+
+	/* Do not initialise the same client twice */
+	if (context->_initialized) { 
+		return 0;
+	}
+
+	if (!context->callbacks.auth_fn || context->debug < 0 || context->debug > 100) {
+
+		errno = EINVAL;
+		return NULL;
+
+	}
+
+	if (!smbc_initialized) {
+		/* Do some library wide intialisations the first time we get called */
+
+		/* Do we still need this ? */
+		DEBUGLEVEL = -1;
+		
+		setup_logging( "libsmbclient", False);
+
+		/* Here we would open the smb.conf file if needed ... */
+		
+		home = getenv("HOME");
+		
+		slprintf(conf, sizeof(conf), "%s/.smb/smb.conf", home);
+		
+		load_interfaces();  /* Load the list of interfaces ... */
+		
+		in_client = True; /* FIXME, make a param */
+
+		if (!lp_load(conf, True, False, False)) {
+
+			/*
+			 * Hmmm, what the hell do we do here ... we could not parse the
+			 * config file ... We must return an error ... and keep info around
+			 * about why we failed
+			 */
+			
+			errno = ENOENT; /* FIXME: Figure out the correct error response */
+			return NULL;
+		}
+
+		reopen_logs();  /* Get logging working ... */
+	
+		/* 
+		 * Block SIGPIPE (from lib/util_sock.c: write())  
+		 * It is not needed and should not stop execution 
+		 */
+		BlockSignals(True, SIGPIPE);
+		
+		/* Done with one-time initialisation */
+		smbc_initialized = 1; 
+
+	}
+	
+	if (!context->user) {
+		/*
+		 * FIXME: Is this the best way to get the user info? 
+		 */
+		user = getenv("USER");
+		/* walk around as "guest" if no username can be found */
+		if (!user) context->user = strdup("guest");
+		else context->user = strdup(user);
+	}
+
+	if (!context->netbios_name) {
+		/*
+		 * We try to get our netbios name from the config. If that fails we fall
+		 * back on constructing our netbios name from our hostname etc
+		 */
+		if (global_myname) {
+			context->netbios_name = strdup(global_myname);
+		}
+		else {
+			/*
+			 * Hmmm, I want to get hostname as well, but I am too lazy for the moment
+			 */
+			pid = sys_getpid();
+			context->netbios_name = malloc(17);
+			if (!context->netbios_name) {
+				errno = ENOMEM;
+				return NULL;
+			}
+			slprintf(context->netbios_name, 16, "smbc%s%d", context->user, pid);
+		}
+	}
+	DEBUG(0,("Using netbios name %s.\n", context->netbios_name));
+	
+
+	if (!context->workgroup) {
+		if (lp_workgroup()) {
+			context->workgroup = strdup(lp_workgroup());
+		}
+		else {
+			/* TODO: Think about a decent default workgroup */
+			context->workgroup = strdup("samba");
+		}
+	}
+	DEBUG(0,("Using workgroup %s.\n", context->workgroup));
+	
+					
+	/* 
+	 * I think we can do this more than once for the same name without being shot
+	 * but who am I? -- Tom
+	 */
+	name_register_wins(context->netbios_name, 0);
+
+	/* shortest timeout is 1 second */
+	if (context->timeout > 0 && context->timeout < 1000) 
+		context->timeout = 1000;
+
+	/*
+	 * FIXME: Should we check the function pointers here? 
+	 */
+
+	context->_initialized = 1;
+	
+	return context;
+}

@@ -272,3 +272,21 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 	cli->pid = pid;
 	return ret;
 }
+
+/****************************************************************************
+Send a keepalive packet to the server
+****************************************************************************/
+BOOL cli_send_keepalive(struct cli_state *cli)
+{
+        if (cli->fd == -1) {
+                DEBUG(3, ("cli_send_keepalive: fd == -1\n"));
+                return False;
+        }
+        if (!send_keepalive(cli->fd)) {
+                close(cli->fd);
+                cli->fd = -1;
+                DEBUG(0,("Error sending keepalive packet to client.\n"));
+                return False;
+        }
+        return True;
+}
