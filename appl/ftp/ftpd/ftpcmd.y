@@ -587,7 +587,7 @@ cmd
 		}
 	| SYST CRLF
 		{
-#if defined(unix) || defined(__unix__) || defined(_AIX) || defined(_CRAY)
+#if defined(unix) || defined(__unix__) || defined(__unix) || defined(_AIX) || defined(_CRAY)
 		    reply(215, "UNIX Type: L%d", NBBY);
 #else
 		    reply(215, "UNKNOWN Type: L%d", NBBY);
