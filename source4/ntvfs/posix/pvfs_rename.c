@@ -62,7 +62,7 @@ NTSTATUS pvfs_rename(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	if (rename(name1->full_name, name2->full_name) != 0) {
+	if (rename(name1->full_name, name2->full_name) == -1) {
 		return pvfs_map_errno(pvfs, errno);
 	}
 	
