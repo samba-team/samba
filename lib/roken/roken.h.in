@@ -39,7 +39,7 @@ typedef RETSIGTYPE (*SigAction)(/* int??? */);
 SigAction signal(int iSig, SigAction pAction); /* BSD compatible */
 #endif
 
-#ifndef HAVE_STRERROR
+#if !defined(HAVE_STRERROR) && !defined(strerror)
 char *strerror(int eno);
 #endif
 
