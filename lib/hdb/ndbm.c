@@ -59,7 +59,9 @@ NDBM_fetch(krb5_context context, HDB *db, hdb_entry *entry)
     krb5_data data;
 
     hdb_principal2key(context, entry->principal, &data);
+#if 0
     krb5_free_principal (context, entry->principal);
+#endif
 
     key.dptr = data.data;
     key.dsize = data.length;

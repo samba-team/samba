@@ -64,7 +64,9 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
     key.size = data.length;
     switch(op){
     case 0:
+#if 0
 	krb5_free_principal (context, entry->principal);
+#endif
 	err = d->get(d, &key, &value, 0);
 	break;
     case 1:
@@ -75,7 +77,9 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 	krb5_data_free(&data);
 	break;
     case 2:
+#if 0
 	krb5_free_principal (context, entry->principal);
+#endif
 	err = d->del(d, &key, 0);
 	break;
     }
