@@ -222,7 +222,7 @@ doit(char *filename, int merge)
 
     f = fopen(filename, "r");
     if(f == NULL){
-	krb5_warn(context, errno, "%s: %s", filename);
+	krb5_warn(context, errno, "fopen(%s)", filename);
 	return;
     }
     if(!merge)
