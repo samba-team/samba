@@ -21,6 +21,9 @@ proto (int sock, const char *service)
     krb5_ticket *ticket;
     char *name;
     char hostname[MAXHOSTNAMELEN];
+    krb5_data packet;
+    krb5_data data;
+    u_int32_t len, net_len;
 
     addrlen = sizeof(local);
     if (getsockname (sock, (struct sockaddr *)&local, &addrlen) < 0
@@ -91,6 +94,51 @@ proto (int sock, const char *service)
 
     printf ("User is `%s'\n", name);
     free (name);
+
+    krb5_data_zero (&data);
+    krb5_data_zero (&packet);
+
+    if (krb5_net_read (context, sock, &net_len, 4) != 4)
+	err (1, "krb5_net_read");
+
+    len = ntohl(net_len);
+
+    krb5_data_alloc (&packet, len);
+
+    if (krb5_net_read (context, sock, packet.data, len) != len)
+	err (1, "krb5_net_read");
+    
+    status = krb5_rd_safe (context,
+			   auth_context,
+			   &packet,
+			   &data,
+			   NULL);
+    if (status)
+	errx (1, "krb5_rd_safe: %s",
+	      krb5_get_err_text(context, status));
+
+    printf ("safe packet: %.*s\n", data.length, data.data);
+
+    if (krb5_net_read (context, sock, &net_len, 4) != 4)
+	err (1, "krb5_net_read");
+
+    len = ntohl(net_len);
+
+    krb5_data_alloc (&packet, len);
+
+    if (krb5_net_read (context, sock, packet.data, len) != len)
+	err (1, "krb5_net_read");
+    
+    status = krb5_rd_priv (context,
+			   auth_context,
+			   &packet,
+			   &data,
+			   NULL);
+    if (status)
+	errx (1, "krb5_rd_priv: %s",
+	      krb5_get_err_text(context, status));
+
+    printf ("priv packet: %.*s\n", data.length, data.data);
 
     return 0;
 }
