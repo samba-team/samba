@@ -571,13 +571,14 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 	static char buf[16384];
 	size_t total = 0;
 	ssize_t read_ret;
-	size_t write_total = 0;
-    ssize_t write_ret;
+	ssize_t write_ret;
+	size_t num_to_read_thistime;
+	size_t num_written = 0;
 
 	while (total < n) {
-		size_t num_to_read_thistime = MIN((n - total), sizeof(buf));
+		num_to_read_thistime = MIN((n - total), sizeof(buf));
 
-		read_ret = (*read_fn)(infd, buf + total, num_to_read_thistime);
+		read_ret = (*read_fn)(infd, buf, num_to_read_thistime);
 		if (read_ret == -1) {
 			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
 			return -1;
@@ -585,10 +586,10 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 		if (read_ret == 0)
 			break;
 
-		write_total = 0;
+		num_written = 0;
  
-		while (write_total < read_ret) {
-			write_ret = (*write_fn)(outfd,buf + total, read_ret);
+		while (num_written < read_ret) {
+			write_ret = (*write_fn)(outfd,buf + num_written, read_ret);
  
 			if (write_ret == -1) {
 				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
@@ -597,7 +598,7 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 			if (write_ret == 0)
 				return (ssize_t)total;
  
-			write_total += (size_t)write_ret;
+			num_written += (size_t)write_ret;
 		}
 
 		total += (size_t)read_ret;
