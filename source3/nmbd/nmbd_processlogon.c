@@ -55,7 +55,7 @@ static void send_repl_message(uint32 low_serial)
                   low_serial));
         
         message_send_all(tdb, MSG_SMB_SAM_REPL, &low_serial,
-                         sizeof(low_serial), False);
+                         sizeof(low_serial), False, NULL);
 
         tdb_close(tdb);
 }

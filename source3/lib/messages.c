@@ -3,6 +3,7 @@
    Version 3.0
    Samba internal messaging functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001 by Martin Pool
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +21,8 @@
 */
 
 /**
+   @defgroups messages Internal messaging framework
+   @{
    @file messages.c
 
    This module is used for internal messaging between Samba daemons. 
@@ -158,7 +161,8 @@ static BOOL message_notify(pid_t pid)
  Send a message to a particular pid.
 ****************************************************************************/
 
-BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len,
+		      BOOL duplicates_allowed)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -205,7 +209,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, void *buf, size_t len, BOOL dupli
 			 */
 
 			if (!memcmp(ptr, &rec, sizeof(rec))) {
-				if (!len || (len && !memcmp( ptr + sizeof(rec), (char *)buf, len))) {
+				if (!len || (len && !memcmp( ptr + sizeof(rec), buf, len))) {
 					DEBUG(10,("message_send_pid: discarding duplicate message.\n"));
 					SAFE_FREE(dbuf.dptr);
 					tdb_chainunlock(tdb, kbuf);
@@ -373,9 +377,10 @@ void message_deregister(int msg_type)
 
 struct msg_all {
 	int msg_type;
-	void *buf;
+	const void *buf;
 	size_t len;
 	BOOL duplicates;
+	int		n_sent;
 };
 
 /****************************************************************************
@@ -397,8 +402,9 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 	/* if the msg send fails because the pid was not found (i.e. smbd died), 
 	 * the msg has already been deleted from the messages.tdb.*/
-	if (!message_send_pid(crec.pid, msg_all->msg_type, msg_all->buf, msg_all->len,
-							msg_all->duplicates)) {
+	if (!message_send_pid(crec.pid, msg_all->msg_type,
+			      msg_all->buf, msg_all->len,
+			      msg_all->duplicates)) {
 		
 		/* if the pid was not found delete the entry from connections.tdb */
 		if (errno == ESRCH) {
@@ -407,16 +413,26 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 			tdb_delete(the_tdb, kbuf);
 		}
 	}
+	msg_all->n_sent++;
 	return 0;
 }
 
-/****************************************************************************
- This is a useful function for sending messages to all smbd processes.
- It isn't very efficient, but should be OK for the sorts of applications that 
- use it. When we need efficient broadcast we can add it.
-****************************************************************************/
-
-BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len, BOOL duplicates_allowed)
+/**
+ * Send a message to all smbd processes.
+ *
+ * It isn't very efficient, but should be OK for the sorts of
+ * applications that use it. When we need efficient broadcast we can add
+ * it.
+ *
+ * @param n_sent Set to the number of messages sent.  This should be
+ * equal to the number of processes, but be careful for races.
+ *
+ * @return True for success.
+ **/
+BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type,
+		      const void *buf, size_t len,
+		      BOOL duplicates_allowed,
+		      int *n_sent)
 {
 	struct msg_all msg_all;
 
@@ -424,7 +440,12 @@ BOOL message_send_all(TDB_CONTEXT *conn_tdb, int msg_type, void *buf, size_t len
 	msg_all.buf = buf;
 	msg_all.len = len;
 	msg_all.duplicates = duplicates_allowed;
+	msg_all.n_sent = 0;
 
 	tdb_traverse(conn_tdb, traverse_fn, &msg_all);
+	if (n_sent)
+		*n_sent = msg_all.n_sent;
 	return True;
 }
+
+/** @} **/
