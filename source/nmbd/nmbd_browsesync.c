@@ -496,6 +496,9 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
                                               struct in_addr from_ip)
 {
   struct work_record *work;
+  fstring server_name;
+
+  server_name[0] = 0;
 
   DEBUG(3,("get_domain_master_name_node_status_success: Success in node status from ip %s\n",
             inet_ntoa(from_ip) ));
@@ -525,11 +528,19 @@ static void get_domain_master_name_node_status_success(struct subnet_record *sub
 
       p += 18;
 
+      if(!(nb_flags & NB_GROUP) && (name_type == 0x00) && 
+	 server_name[0] == 0) {
+	      /* this is almost certainly the server netbios name */
+	      fstrcpy(server_name, qname);
+	      continue;
+      }
+
       if(!(nb_flags & NB_GROUP) && (name_type == 0x1b))
       {
 
-        DEBUG(5,("get_domain_master_name_node_status_success: IP %s is a domain \
-master browser for workgroup %s. Adding this name.\n", inet_ntoa(from_ip), qname ));
+        DEBUG(5,("get_domain_master_name_node_status_success: %s(%s) is a domain \
+master browser for workgroup %s. Adding this name.\n", 
+		 server_name, inet_ntoa(from_ip), qname ));
 
         /* 
          * If we don't already know about this workgroup, add it
@@ -537,11 +548,18 @@ master browser for workgroup %s. Adding this name.\n", inet_ntoa(from_ip), qname
          */
         if((work = find_workgroup_on_subnet( subrec, qname)) == NULL)
 	{
-          /* 
-           * Add it - with an hour in the cache.
-           */
-          if((work = create_workgroup_on_subnet(subrec, qname, 60*60))==NULL)
-            return;
+		struct nmb_name nmbname;
+		/* 
+		 * Add it - with an hour in the cache.
+		 */
+		if(!(work= create_workgroup_on_subnet(subrec, qname, 60*60)))
+			return;
+
+		/* remember who the master is */
+		fstrcpy(work->local_master_browser_name, server_name);
+		make_nmb_name(&nmbname, server_name, 0x20, scope);
+		work->dmb_name = nmbname;
+		work->dmb_addr = from_ip;
         }
         break;
       }
