@@ -3546,6 +3546,9 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 			printer->info_2->location, driverlocation);
 
 	unlink(tmp_file);
+
+    /* Convert script args to unix-codepage */
+    dos_to_unix(command, True);
 	DEBUG(10,("Running [%s > %s]\n", command,tmp_file));
 	ret = smbrun(command, tmp_file, False);
 	DEBUGADD(10,("returned [%d]\n", ret));
@@ -3556,9 +3559,10 @@ static BOOL add_printer_hook(NT_PRINTER_INFO_LEVEL *printer)
 	}
 
 	numlines = 0;
+    /* Get lines and convert them back to dos-codepage */
 	qlines = file_lines_load(tmp_file, &numlines, True);
 	DEBUGADD(10,("Lines returned = [%d]\n", numlines));
-	DEBUGADD(10,("Unlinking port file [%s]\n", tmp_file));
+	DEBUGADD(10,("Unlinking script output file [%s]\n", tmp_file));
 	unlink(tmp_file);
 
 	if(numlines) {
