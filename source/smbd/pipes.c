@@ -44,6 +44,8 @@ extern BOOL case_sensitive;
 extern pstring sesssetup_user;
 extern int Client;
 
+extern pstring local_machine;
+
 /* this macro should always be used to extract an fnum (smb_fid) from
 a packet to ensure chaining works correctly */
 #define GETFNUM(buf,where) (chain_fnum!= -1?chain_fnum:SVAL(buf,where))
@@ -251,9 +253,18 @@ static void LsarpcTNP3(char *data,char **rdata, int *rdata_len)
 {
   uint32 dword1;
   uint16 word1;
-  char * workgroup = lp_workgroup();
-  int wglen = strlen(workgroup);
+  int wglen;
   int i;
+  char domain[17];
+
+  char *work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
+
+  if (work_alias)
+      StrnCpy(domain, work_alias, 16);
+  else
+      StrnCpy(domain, lp_workgroup(), 16);
+
+  wglen = strlen(domain);
 
   /* All kinds of mysterious numbers here */
   *rdata_len = 90 + 2 * wglen;
@@ -279,7 +290,7 @@ static void LsarpcTNP3(char *data,char **rdata, int *rdata_len)
   SIVAL(*rdata,0x2C,4);
   SIVAL(*rdata,0x34,wglen);
   for ( i = 0 ; i < wglen ; i++ )
-    (*rdata)[0x38 + i * 2] = workgroup[i];
+    (*rdata)[0x38 + i * 2] = domain[i];
    
   /* Now fill in the rest */
   i = 0x38 + wglen * 2;

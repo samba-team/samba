@@ -54,6 +54,19 @@
 #define NB_HFLAG  0x60 /* microsoft 'hybrid' node type */
 #define NB_FLGMSK 0x60
 
+
+#define WG_BROWSE_SIGNATURE   0x017e
+#define WG_BROWSE_VERSION     0xff08
+
+#define HOST_BROWSE_SIGNATURE 0xaa55
+#define HOST_BROWSE_VERSION   0x010f
+
+#define WG_MAJOR_VERSION  0x03
+#define WG_MINOR_VERSION  0x0a
+
+#define HOST_MAJOR_VERSION  0x04 /* nt/as host version */
+#define HOST_MINOR_VERSION  0x01 /* one better than current nt/as version */
+
 #define REFRESH_TIME (15*60)
 #define NAME_POLL_REFRESH_TIME (5*60)
 #define NAME_POLL_INTERVAL 15
@@ -73,7 +86,7 @@
 /* server type identifiers */
 #define AM_MASTER(work) (work->ServerType & SV_TYPE_MASTER_BROWSER)
 #define AM_BACKUP(work) (work->ServerType & SV_TYPE_BACKUP_BROWSER)
-#define AM_DOMCTL(work) (work->ServerType & SV_TYPE_DOMAIN_CTRL)
+#define AM_DMBRSE(work) (work->ServerType & SV_TYPE_DOMAIN_MASTER)
 
 /* microsoft browser NetBIOS name */
 #define MSBROWSE "\001\002__MSBROWSE__\002"
@@ -99,19 +112,19 @@ enum master_state
 
 enum state_type
 {
-	NAME_STATUS_DOM_SRV_CHK,
-	NAME_STATUS_SRV_CHK,
-	NAME_REGISTER_CHALLENGE,
-	NAME_REGISTER,
-	NAME_RELEASE,
-	NAME_QUERY_CONFIRM,
-	NAME_QUERY_ANNOUNCE_HOST,
-	NAME_QUERY_SYNC_LOCAL,
-	NAME_QUERY_SYNC_REMOTE,
-	NAME_QUERY_DOM_SRV_CHK,
-	NAME_QUERY_SRV_CHK,
-	NAME_QUERY_FIND_MST,
-	NAME_QUERY_MST_CHK
+    NAME_STATUS_DOM_SRV_CHK,
+    NAME_STATUS_SRV_CHK,
+    NAME_REGISTER_CHALLENGE,
+    NAME_REGISTER,
+    NAME_RELEASE,
+    NAME_QUERY_CONFIRM,
+    NAME_QUERY_ANNOUNCE_HOST,
+    NAME_QUERY_SYNC_LOCAL,
+    NAME_QUERY_SYNC_REMOTE,
+    NAME_QUERY_DOM_SRV_CHK,
+    NAME_QUERY_SRV_CHK,
+    NAME_QUERY_FIND_MST,
+    NAME_QUERY_MST_CHK
 };
 
 /* a netbios name structure */
@@ -119,6 +132,14 @@ struct nmb_name {
   char name[17];
   char scope[64];
   int name_type;
+};
+
+/* A server name and comment. */
+struct server_identity
+{
+    char *name;
+    char *comment;
+    struct server_identity *next;
 };
 
 /* a netbios flags + ip address structure */
@@ -148,16 +169,16 @@ struct name_record
 /* browse and backup server cache for synchronising browse list */
 struct browse_cache_record
 {
-	struct browse_cache_record *next;
-	struct browse_cache_record *prev;
+    struct browse_cache_record *next;
+    struct browse_cache_record *prev;
 
-	pstring name;
-	int type;
-	pstring group;
-	struct in_addr ip;
-	time_t sync_time;
-	BOOL synced;
-	BOOL local;
+    char name[17];
+    int type;
+    char group[17];
+    struct in_addr ip;
+    time_t sync_time;
+    BOOL synced;
+    BOOL local;
 };
 
 /* this is used to hold the list of servers in my domain, and is */
@@ -183,7 +204,7 @@ struct work_record
   enum master_state state;
 
   /* work group info */
-  fstring work_group;
+  char    work_group[17];
   int     token;        /* used when communicating with backup browsers */
   int     ServerType;
 
@@ -214,17 +235,18 @@ struct response_record
   int fd;
   int quest_type;
   struct nmb_name name;
-  int nb_flags;
+  struct nmb_ip reply;
   time_t ttl;
+  enum name_source source;
 
+  int token; /* unique workgroup token id */
   int server_type;
-  fstring my_name;
-  fstring my_comment;
+  char my_name[17];
+  char my_comment[50];
 
   BOOL bcast;
   BOOL recurse;
   struct in_addr send_ip;
-  struct in_addr reply_to_ip;
 
   int num_msgs;
 

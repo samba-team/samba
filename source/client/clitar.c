@@ -374,7 +374,7 @@ static long unoct(char *p, int ndgs)
 /****************************************************************************
 Compare two strings in a slash insensitive way
 ***************************************************************************/
-int strslashcmp(const char *s1, const char *s2)
+int strslashcmp(char *s1,char *s2)
 {
   while(*s1 && *s2 &&
 	(*s1 == *s2

@@ -100,6 +100,7 @@ int main(int argc,char *argv[])
   BOOL find_master=False;
   BOOL find_status=False;
   int i;
+  static pstring servicesf = CONFIGFILE;
   
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -110,7 +111,7 @@ int main(int argc,char *argv[])
 
   charset_initialise();
 
-  while ((opt = getopt(argc, argv, "p:d:B:i:SMh")) != EOF)
+  while ((opt = getopt(argc, argv, "p:d:B:i:s:SMh")) != EOF)
     switch (opt)
       {
       case 'B':
@@ -129,6 +130,9 @@ int main(int argc,char *argv[])
       case 'd':
 	DEBUGLEVEL = atoi(optarg);
 	break;
+      case 's':
+	strcpy(servicesf, optarg);
+	break;
       case 'h':
 	usage();
 	exit(0);
@@ -141,6 +145,11 @@ int main(int argc,char *argv[])
   if (argc < 2) {
     usage();
     exit(1);
+  }
+
+  if (!lp_load(servicesf,True)) {
+    fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
+    return (-1);
   }
 
   load_interfaces();
