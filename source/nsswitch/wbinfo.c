@@ -427,6 +427,7 @@ static BOOL wbinfo_auth(char *username)
 	struct winbindd_request request;
 	struct winbindd_response response;
         NSS_STATUS result;
+	fstring name_user, name_domain;
         char *p;
 
 	/* Send off request */
@@ -438,11 +439,16 @@ static BOOL wbinfo_auth(char *username)
 
         if (p) {
                 *p = 0;
-                fstrcpy(request.data.auth.user, username);
                 fstrcpy(request.data.auth.pass, p + 1);
-                *p = '%';
-        } else
-                fstrcpy(request.data.auth.user, username);
+        } 
+
+	parse_wbinfo_domain_user(username, name_domain, name_user);
+
+	if (p)
+		*p = '%';
+
+	fstrcpy(request.data.auth.user, name_user);
+	fstrcpy(request.data.auth.domain, name_domain);
 
 	result = winbindd_request(WINBINDD_PAM_AUTH, &request, &response);
 
@@ -451,9 +457,10 @@ static BOOL wbinfo_auth(char *username)
         printf("plaintext password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (0x%x)\n", 
-		 response.data.auth.nt_status_string, 
-		 response.data.auth.nt_status);
+	if (response.data.auth.nt_status)
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
@@ -486,8 +493,10 @@ static BOOL wbinfo_auth_crap(char *username)
 		
 	parse_wbinfo_domain_user(username, name_domain, name_user);
 
-	fstrcpy(request.data.auth_crap.user, name_user);
+	if (p)
+		*p = '%';
 
+	fstrcpy(request.data.auth_crap.user, name_user);
 	fstrcpy(request.data.auth_crap.domain, name_domain);
 
 	generate_random_buffer(request.data.auth_crap.chal, 8, False);
@@ -507,9 +516,10 @@ static BOOL wbinfo_auth_crap(char *username)
         printf("challenge/response password authentication %s\n", 
                (result == NSS_STATUS_SUCCESS) ? "succeeded" : "failed");
 
-	printf("error code was %s (0x%x)\n", 
-	       response.data.auth.nt_status_string, 
-	       response.data.auth.nt_status);
+	if (response.data.auth.nt_status)
+		printf("error code was %s (0x%x)\n", 
+		       response.data.auth.nt_status_string, 
+		       response.data.auth.nt_status);
 
         return result == NSS_STATUS_SUCCESS;
 }
