@@ -1373,7 +1373,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
   unixmode = unix_mode(conn,smb_attr | aARCH);
       
   open_file_shared(fsp,conn,fname,smb_mode,smb_ofun,unixmode,
-		   oplock_request, &rmode,&smb_action);
+	               oplock_request, &rmode,&smb_action);
       
   if (!fsp->open)
   {

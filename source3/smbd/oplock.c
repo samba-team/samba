@@ -30,7 +30,6 @@ uint16 oplock_port = 0;
 static int oplock_pipes[2];
 #endif /* HAVE_KERNEL_OPLOCKS */
 
-int oplock
 /* Current number of oplocks we have outstanding. */
 int32 global_oplocks_open = 0;
 BOOL global_oplock_break = False;
@@ -697,7 +696,7 @@ void check_kernel_oplocks(BOOL *have_oplocks)
     return;
 
   done = True;
-  *have_oplocks = False
+  *have_oplocks = False;
 
 #if defined(HAVE_KERNEL_OPLOCKS)
   slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", getpid());
