@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,13 +37,11 @@ RCSID("$Id$");
 static krb5_log_facility *logf;
 
 void
-kdc_openlog(krb5_config_section *cf)
+kdc_openlog(void)
 {
     char **s = NULL, **p;
     krb5_initlog(context, "kdc", &logf);
-    if(cf)
-	s = krb5_config_get_strings(context, cf, "kdc", "logging", NULL);
-
+    s = krb5_config_get_strings(context, NULL, "kdc", "logging", NULL);
     if(s == NULL)
 	s = krb5_config_get_strings(context, NULL, "logging", "kdc", NULL);
     if(s){
