@@ -158,13 +158,16 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
  Create an auth_usersupplied_data structure
 ****************************************************************************/
 
-BOOL make_user_info(auth_usersupplied_info **user_info, 
-		    char *smb_name, char *internal_username,
-		    char *client_domain, char *domain,
-		    char *wksta_name, DATA_BLOB sec_blob, 
-		    DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
-		    DATA_BLOB plaintext, 
-		    uint32 ntlmssp_flags, BOOL encrypted)
+static BOOL make_user_info(auth_usersupplied_info **user_info, 
+			   const char *smb_name, 
+			   const char *internal_username,
+			   const char *client_domain, 
+			   const char *domain,
+			   const char *wksta_name, 
+			   DATA_BLOB sec_blob, 
+			   DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
+			   DATA_BLOB plaintext, 
+			   uint32 ntlmssp_flags, BOOL encrypted)
 {
 
 	DEBUG(5,("attempting to make a user_info for %s (%s)\n", internal_username, smb_name));
@@ -239,14 +242,14 @@ BOOL make_user_info(auth_usersupplied_info **user_info,
 ****************************************************************************/
 
 BOOL make_user_info_map(auth_usersupplied_info **user_info, 
-			char *smb_name, 
-			char *client_domain, 
-			char *wksta_name, DATA_BLOB sec_blob, 
+			const char *smb_name, 
+			const char *client_domain, 
+			const char *wksta_name, DATA_BLOB sec_blob, 
 			DATA_BLOB lm_pwd, DATA_BLOB nt_pwd,
 			DATA_BLOB plaintext, 
 			uint32 ntlmssp_flags, BOOL encrypted)
 {
-	char *domain;
+	const char *domain;
 	fstring internal_username;
 	fstrcpy(internal_username, smb_name);
 	map_username(internal_username); 
@@ -418,7 +421,7 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 	generate_random_buffer(chal, 8, False);
 
 	if (*password) {
-		SMBencrypt( (uchar *)password, chal, local_lm_response);
+		SMBencrypt( (const uchar *)password, chal, local_lm_response);
 		
 		/* This encrypts the lm_pwd feild, which actualy contains the password
 		   rather than the nt_pwd field becouse that contains nothing */
@@ -564,7 +567,7 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 	if (plaintext_password.data) {
 		unsigned char local_lm_response[24];
 
-		SMBencrypt( (uchar *)plaintext_password.data, chal, local_lm_response);
+		SMBencrypt( (const uchar *)plaintext_password.data, chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
 		/* We can't do an NT hash here, as the password needs to be case insensitive */
@@ -604,22 +607,30 @@ BOOL make_user_info_guest(auth_usersupplied_info **user_info)
 	return make_user_info(user_info, 
 			      "","", 
 			      "","", 
-			      "", sec_blob, 
+			      "", sec_blob,
 			      nt_blob, lm_blob,
 			      plaintext_blob, 
 			      ntlmssp_flags, True);
 }
 
+/***************************************************************************
+ Make a user_info struct
+***************************************************************************/
+
 BOOL make_server_info(auth_serversupplied_info **server_info) 
 {
 	*server_info = malloc(sizeof(**server_info));
 	if (!*server_info) {
-		DEBUG(0,("make_server_info_sam: malloc failed!\n"));
+		DEBUG(0,("make_server_info: malloc failed!\n"));
 		return False;
 	}
 	ZERO_STRUCTP(*server_info);
 	return True;
 }
+
+/***************************************************************************
+ Make (and fill) a user_info struct from a SAM_ACCOUNT
+***************************************************************************/
 
 BOOL make_server_info_sam(auth_serversupplied_info **server_info, SAM_ACCOUNT *sampass) 
 {
@@ -630,12 +641,17 @@ BOOL make_server_info_sam(auth_serversupplied_info **server_info, SAM_ACCOUNT *s
 	(*server_info)->sam_fill_level = SAM_FILL_ALL;
 	(*server_info)->sam_account = sampass;
 
-	DEBUG(5,("make_server_info_sam: made sever info for user %s\n",
+	DEBUG(5,("make_server_info_sam: made server info for user %s\n",
 		 pdb_get_username((*server_info)->sam_account)));
 	return True;
 }
 
-BOOL make_server_info_pw(auth_serversupplied_info **server_info, struct passwd *pwd)
+/***************************************************************************
+ Make (and fill) a user_info struct from a 'struct passwd' by conversion 
+ to a SAM_ACCOUNT
+***************************************************************************/
+
+BOOL make_server_info_pw(auth_serversupplied_info **server_info, const struct passwd *pwd)
 {
 	SAM_ACCOUNT *sampass = NULL;
 	if (!pdb_init_sam_pw(&sampass, pwd)) {		
@@ -643,6 +659,10 @@ BOOL make_server_info_pw(auth_serversupplied_info **server_info, struct passwd *
 	}
 	return make_server_info_sam(server_info, sampass);
 }
+
+/***************************************************************************
+ Free a user_info struct
+***************************************************************************/
 
 void free_user_info(auth_usersupplied_info **user_info)
 {
