@@ -537,7 +537,7 @@ int main(int argc, char *argv[])
   HBIN_HDR *hbin_hdr;
   NK_HDR *nk_hdr;
   SK_HDR *sk_hdr;
-  WORD first_sk_off, sk_off;
+  DWORD first_sk_off, sk_off;
   MY_SEC_DESC *sec_desc;
   int *ptr;
 
