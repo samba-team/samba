@@ -40,9 +40,6 @@ LIB = $(LIBNAME).$(LIBEXT)
 SOURCES = error.c com_err.c
 OBJECTS = error.o com_err.o
 
-# This is only needed by some shared library implementations
-LDOBJ = et_list.o
-
 all: $(LIB) $(PROGS)
 
 Wall:
