@@ -1,3 +1,10 @@
+Changes in release 0.2e:
+
+ * support for having several databases
+ * strptime (and new strftime) add to roken
+ * more paranoia about finding libdb
+ * bug fixes
+
 Changes in release 0.2d:
 
  * new configuration option [libdefaults]default_etypes_des
