@@ -14,49 +14,6 @@ DIR_des=
 AC_MSG_CHECKING([for crypto library])
 
 openssl=no
-if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
-
-  save_CPPFLAGS="$CPPFLAGS"
-  save_LIBS="$LIBS"
-  INCLUDE_des=
-  LIB_des=
-  if test "$with_openssl_include" != ""; then
-    INCLUDE_des="-I${with_openssl}/include"
-  fi
-  if test "$with_openssl_lib" != ""; then
-    LIB_des="-L${with_openssl}/lib"
-  fi
-  CPPFLAGS="${INCLUDE_des} ${CPPFLAGS}"
-  LIB_des="${LIB_des} -lcrypto"
-  LIB_des_a="$LIB_des"
-  LIB_des_so="$LIB_des"
-  LIB_des_appl="$LIB_des"
-  LIBS="${LIBS} ${LIB_des}"
-  AC_TRY_LINK([
-  #include <openssl/md4.h>
-  #include <openssl/md5.h>
-  #include <openssl/sha.h>
-  #include <openssl/des.h>
-  #include <openssl/rc4.h>
-  ],
-  [
-    void *schedule = 0;
-    MD4_CTX md4;
-    MD5_CTX md5;
-    SHA_CTX sha1;
-
-    MD4_Init(&md4);
-    MD5_Init(&md5);
-    SHA1_Init(&sha1);
-
-    des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
-    RC4(0, 0, 0, 0);
-  ], [
-  crypto_lib=libcrypto openssl=yes
-  AC_MSG_RESULT([libcrypto])])
-  CPPFLAGS="$save_CPPFLAGS"
-  LIBS="$save_LIBS"
-fi
 
 if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 	save_CPPFLAGS="$CPPFLAGS"
@@ -172,6 +129,50 @@ if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
 	fi
 fi
 
+if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
+
+  save_CPPFLAGS="$CPPFLAGS"
+  save_LIBS="$LIBS"
+  INCLUDE_des=
+  LIB_des=
+  if test "$with_openssl_include" != ""; then
+    INCLUDE_des="-I${with_openssl}/include"
+  fi
+  if test "$with_openssl_lib" != ""; then
+    LIB_des="-L${with_openssl}/lib"
+  fi
+  CPPFLAGS="${INCLUDE_des} ${CPPFLAGS}"
+  LIB_des="${LIB_des} -lcrypto"
+  LIB_des_a="$LIB_des"
+  LIB_des_so="$LIB_des"
+  LIB_des_appl="$LIB_des"
+  LIBS="${LIBS} ${LIB_des}"
+  AC_TRY_LINK([
+  #include <openssl/md4.h>
+  #include <openssl/md5.h>
+  #include <openssl/sha.h>
+  #include <openssl/des.h>
+  #include <openssl/rc4.h>
+  ],
+  [
+    void *schedule = 0;
+    MD4_CTX md4;
+    MD5_CTX md5;
+    SHA_CTX sha1;
+
+    MD4_Init(&md4);
+    MD5_Init(&md5);
+    SHA1_Init(&sha1);
+
+    des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
+    RC4(0, 0, 0, 0);
+  ], [
+  crypto_lib=libcrypto openssl=yes
+  AC_MSG_RESULT([libcrypto])])
+  CPPFLAGS="$save_CPPFLAGS"
+  LIBS="$save_LIBS"
+fi
+
 if test "$crypto_lib" = "unknown"; then
 
   DIR_des='des'
@@ -182,6 +183,12 @@ if test "$crypto_lib" = "unknown"; then
 
   AC_MSG_RESULT([included libdes])
 
+fi
+
+if test "$with_krb4" != no -a "$crypto_lib" != krb4; then
+	AC_MSG_ERROR([the crypto library used by krb4 lacks features
+required by Kerberos 5; to continue, you need to install a newer 
+Kerberos 4 or configure --without-krb4])
 fi
 
 if test "$openssl" = "yes"; then
