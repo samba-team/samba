@@ -1,0 +1,238 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   NBT netbios library routines
+   Copyright (C) Andrew Tridgell 1994-1997
+   Copyright (C) Luke Kenneth Casson Leighton 1994-1997 
+   Copyright (C) Jeremy Allison 1994-1997
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+   
+*/
+
+#include "includes.h"
+
+extern int ClientNMB;
+
+extern int DEBUGLEVEL;
+
+extern pstring scope;
+extern pstring myname;
+extern struct in_addr ipzero;
+
+int num_response_packets = 0;
+
+/***************************************************************************
+  Add an expected response record into the list
+  **************************************************************************/
+
+void add_response_record(struct subnet_record *subrec,
+				struct response_record *rrec)
+{
+  struct response_record *rrec2;
+
+  num_response_packets++; /* count of total number of packets still around */
+
+  DEBUG(4,("add_response_record: adding response record id:%hu to subnet %s. num_records:%d\n",
+            rrec->response_id, subrec->subnet_name, num_response_packets));
+
+  if (!subrec->responselist)
+  {
+    subrec->responselist = rrec;
+    rrec->prev = NULL;
+    rrec->next = NULL;
+    return;
+  }
+  
+  for (rrec2 = subrec->responselist; rrec2->next; rrec2 = rrec2->next) 
+    ;
+  
+  rrec2->next = rrec;
+  rrec->next = NULL;
+  rrec->prev = rrec2;
+}
+
+/***************************************************************************
+  Remove an expected response record from the list
+  **************************************************************************/
+
+void remove_response_record(struct subnet_record *subrec,
+				struct response_record *rrec)
+{
+  if (rrec->prev)
+    rrec->prev->next = rrec->next;
+  if (rrec->next)
+    rrec->next->prev = rrec->prev;
+
+  if (subrec->responselist == rrec) 
+    subrec->responselist = rrec->next; 
+
+  if(rrec->userdata)
+  {
+    if(rrec->userdata->free_fn)
+      (*rrec->userdata->free_fn)(rrec->userdata);
+    else
+      free((char *)rrec->userdata);
+  }
+
+  /* Ensure we can delete. */
+  rrec->packet->locked = False;
+  free_packet(rrec->packet);
+
+  free((char *)rrec);
+
+  num_response_packets--; /* count of total number of packets still around */
+}
+
+/****************************************************************************
+  Create a response record for an outgoing packet.
+  **************************************************************************/
+
+struct response_record *make_response_record( struct subnet_record *subrec,
+                    struct packet_struct *p,
+                    response_function resp_fn,
+                    timeout_response_function timeout_fn,
+                    success_function success_fn,
+                    fail_function fail_fn,
+                    struct userdata_struct *userdata)
+{
+  struct response_record *rrec;
+  struct nmb_packet *nmb = &p->packet.nmb;
+
+  if (!(rrec = (struct response_record *)malloc(sizeof(*rrec)))) 
+  {
+    DEBUG(0,("make_response_queue_record: malloc fail for response_record.\n"));
+    return NULL;
+  }
+
+  bzero((char *)rrec, sizeof(*rrec));
+
+  rrec->response_id = nmb->header.name_trn_id;
+
+  rrec->resp_fn = resp_fn;
+  rrec->timeout_fn = timeout_fn;
+  rrec->success_fn = success_fn;
+  rrec->fail_fn = fail_fn;
+
+  rrec->packet = p;
+
+  if(userdata)
+  {
+    /* Intelligent userdata. */
+    if(userdata->copy_fn)
+    {
+      if((rrec->userdata = (*userdata->copy_fn)(userdata)) == NULL)
+      {
+        DEBUG(0,("make_response_queue_record: copy fail for userdata.\n"));
+        free(rrec);
+        return NULL;
+      }
+    }
+    else
+    {
+      /* Primitive userdata, do a memcpy. */
+      if((rrec->userdata = (struct userdata_struct *)
+           malloc(sizeof(struct userdata_struct)+userdata->userdata_len)) == NULL)
+      {
+        DEBUG(0,("make_response_queue_record: malloc fail for userdata.\n"));
+        free(rrec);
+        return NULL;
+      }
+      rrec->userdata->copy_fn = userdata->copy_fn;
+      rrec->userdata->free_fn = userdata->free_fn;
+      rrec->userdata->userdata_len = userdata->userdata_len;
+      memcpy(rrec->userdata->data, userdata->data, userdata->userdata_len);
+    }
+  }
+  else
+    rrec->userdata = NULL;
+
+  rrec->num_msgs = 0;
+
+  if(!nmb->header.nm_flags.bcast)
+    rrec->repeat_interval = 5; /* 5 seconds for unicast packets. */
+  else
+    rrec->repeat_interval = 1; /* XXXX should be in ms */
+  rrec->repeat_count = 3; /* 3 retries */
+  rrec->repeat_time = time(NULL) + rrec->repeat_interval; /* initial retry time */
+
+  /* Lock the packet so we won't lose it while it's on the list. */
+  p->locked = True;
+
+  add_response_record(subrec, rrec);
+
+  return rrec;
+}
+
+/****************************************************************************
+  Find a response in a subnet's name query response list. 
+  **************************************************************************/
+
+static struct response_record *find_response_record_on_subnet(
+                                struct subnet_record *subrec, uint16 id)
+{  
+  struct response_record *rrec = NULL;
+
+  for (rrec = subrec->responselist; rrec; rrec = rrec->next)
+  {
+    if (rrec->response_id == id) 
+    {
+      DEBUG(4, ("find_response_record: found response record id = %hu on subnet %s\n",
+               id, subrec->subnet_name));
+      break;
+    }
+  }
+  return rrec;
+}
+
+/****************************************************************************
+  Find a response in any subnet's name query response list. 
+  **************************************************************************/
+
+struct response_record *find_response_record(struct subnet_record **ppsubrec,
+				uint16 id)
+{  
+  struct response_record *rrec = NULL;
+
+  for ((*ppsubrec) = FIRST_SUBNET; (*ppsubrec); 
+                  (*ppsubrec) = NEXT_SUBNET_INCLUDING_UNICAST(*ppsubrec))
+  {
+    if((rrec = find_response_record_on_subnet(*ppsubrec, id)) != NULL)
+      return rrec;
+  }
+
+  /* There should never be response records on the remote_broadcast subnet.
+     Sanity check to ensure this is so. */
+  if(remote_broadcast_subnet->responselist != NULL)
+  {
+    DEBUG(0,("find_response_record: response record found on subnet %s. This should \
+never happen !\n", remote_broadcast_subnet->subnet_name));
+  }
+
+  /* Now check the WINS server subnet if it exists. */
+  if(wins_server_subnet != NULL)
+  {
+    *ppsubrec = wins_server_subnet;
+    if((rrec = find_response_record_on_subnet(*ppsubrec, id))!= NULL)
+      return rrec;
+  }
+
+  DEBUG(0,("find_response_record: repsonse packet id %hu received with no \
+matching record.\n", id));
+ 
+  *ppsubrec = NULL;
+
+  return NULL;
+}

@@ -157,6 +157,8 @@ typedef struct
   int syslog;
   int os_level;
   int max_ttl;
+  int max_wins_ttl;
+  int min_wins_ttl;
   int ReadSize;
   int shmem_size;
   int client_code_page;
@@ -503,6 +505,8 @@ static struct parm_struct
   {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL,   NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL,   NULL},
+  {"max wins ttl",     P_INTEGER, P_GLOBAL, &Globals.max_wins_ttl,      NULL,   NULL},
+  {"min wins ttl",     P_INTEGER, P_GLOBAL, &Globals.min_wins_ttl,      NULL,   NULL},
   {"dns proxy",        P_BOOL,    P_GLOBAL, &Globals.bDNSproxy,         NULL,   NULL},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL},
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL},
@@ -691,7 +695,9 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.os_level = 0;
-  Globals.max_ttl = 60*60*4; /* 2 hours default */
+  Globals.max_ttl = 60*60*4; /* 4 hours default */
+  Globals.max_wins_ttl = 60*60*24*3; /* 3 days default */
+  Globals.min_wins_ttl = 60*60*6; /* 6 hours default */
   Globals.ReadSize = 16*1024;
   Globals.shmem_size = SHMEM_SIZE;
   Globals.announce_as = ANNOUNCE_AS_NT;
@@ -921,6 +927,8 @@ FN_GLOBAL_BOOL(lp_bind_interfaces_only,&Globals.bBindInterfacesOnly)
 
 FN_GLOBAL_INTEGER(lp_os_level,&Globals.os_level)
 FN_GLOBAL_INTEGER(lp_max_ttl,&Globals.max_ttl)
+FN_GLOBAL_INTEGER(lp_max_wins_ttl,&Globals.max_wins_ttl)
+FN_GLOBAL_INTEGER(lp_min_wins_ttl,&Globals.max_wins_ttl)
 FN_GLOBAL_INTEGER(lp_max_log_size,&Globals.max_log_size)
 FN_GLOBAL_INTEGER(lp_mangledstack,&Globals.mangled_stack)
 FN_GLOBAL_INTEGER(lp_maxxmit,&Globals.max_xmit)

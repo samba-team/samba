@@ -34,11 +34,13 @@ static struct opcode_names {
 	char *nmb_opcode_name;
 	int opcode;
 } nmb_header_opcode_names[] = {
-      { "Query",           0 },
+      {"Query",           0 },
       {"Registration",      5 },
       {"Release",           6 },
       {"WACK",              7 },
-      {"refresh",           8 },
+      {"Refresh",           8 },
+      {"Refresh(altcode)",  9 },
+      {"Multi-homed Registration", 15 },
       {0, -1 }
 };
 
@@ -205,7 +207,7 @@ static int parse_nmb_name(char *inbuf,int offset,int length, struct nmb_name *na
   if (n==16) {
     /* parse out the name type, 
        its always in the 16th byte of the name */
-    name->name_type = name->name[15];
+    name->name_type = ((unsigned char)name->name[15]) & 0xff;
   
     /* remove trailing spaces */
     name->name[15] = 0;
@@ -249,6 +251,7 @@ static int put_nmb_name(char *buf,int offset,struct nmb_name *name)
     /* special case for wildcard name */
     bzero(buf1,20);
     buf1[0] = '*';
+    buf1[15] = name->name_type;
   } else {
     sprintf(buf1,"%-15.15s%c",name->name,name->name_type);
   }
@@ -292,9 +295,9 @@ char *namestr(struct nmb_name *n)
   char *p = ret[i];
 
   if (!n->scope[0])
-    sprintf(p,"%s(%x)",n->name,n->name_type);
+    sprintf(p,"%s<%02x>",n->name,n->name_type);
   else
-    sprintf(p,"%s(%x).%s",n->name,n->name_type,n->scope);
+    sprintf(p,"%s<%02x>.%s",n->name,n->name_type,n->scope);
 
   i = (i+1)%4;
   return(p);
@@ -468,9 +471,119 @@ static BOOL parse_nmb(char *inbuf,int length,struct nmb_packet *nmb)
 }
 
 /*******************************************************************
+  'Copy constructor' for an nmb packet
+  ******************************************************************/
+static struct packet_struct *copy_nmb_packet(struct packet_struct *packet)
+{  
+  struct nmb_packet *nmb;
+  struct nmb_packet *copy_nmb;
+  struct packet_struct *pkt_copy;
+
+  if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL)
+  {
+    DEBUG(0,("copy_nmb_packet: malloc fail.\n"));
+    return NULL;
+  }
+
+  /* Structure copy of entire thing. */
+
+  *pkt_copy = *packet;
+
+  /* Ensure this copy is not locked. */
+  pkt_copy->locked = False;
+
+  /* Ensure this copy has no resource records. */
+  nmb = &packet->packet.nmb;
+  copy_nmb = &pkt_copy->packet.nmb;
+
+  copy_nmb->answers = NULL;
+  copy_nmb->nsrecs = NULL;
+  copy_nmb->additional = NULL;
+
+  /* Now copy any resource records. */
+
+  if (nmb->answers)
+  {
+    if((copy_nmb->answers = (struct res_rec *)
+                  malloc(nmb->header.ancount * sizeof(struct res_rec))) == NULL)
+      goto free_and_exit;
+    memcpy((char *)copy_nmb->answers, (char *)nmb->answers, 
+           nmb->header.ancount * sizeof(struct res_rec));
+  }
+  if (nmb->nsrecs)
+  {
+    if((copy_nmb->nsrecs = (struct res_rec *)
+                  malloc(nmb->header.nscount * sizeof(struct res_rec))) == NULL)
+      goto free_and_exit;
+    memcpy((char *)copy_nmb->nsrecs, (char *)nmb->nsrecs, 
+           nmb->header.nscount * sizeof(struct res_rec));
+  }
+  if (nmb->additional)
+  {
+    if((copy_nmb->additional = (struct res_rec *)
+                  malloc(nmb->header.arcount * sizeof(struct res_rec))) == NULL)
+      goto free_and_exit;
+    memcpy((char *)copy_nmb->additional, (char *)nmb->additional, 
+           nmb->header.arcount * sizeof(struct res_rec));
+  }
+
+  return pkt_copy;
+
+free_and_exit:
+
+  if(copy_nmb->answers)
+    free((char *)copy_nmb->answers);
+  if(copy_nmb->nsrecs)
+    free((char *)copy_nmb->nsrecs);
+  if(copy_nmb->additional)
+    free((char *)copy_nmb->additional);
+  free((char *)pkt_copy);
+
+  DEBUG(0,("copy_nmb_packet: malloc fail in resource records.\n"));
+  return NULL;
+}
+
+/*******************************************************************
+  'Copy constructor' for a dgram packet
+  ******************************************************************/
+static struct packet_struct *copy_dgram_packet(struct packet_struct *packet)
+{ 
+  struct packet_struct *pkt_copy;
+
+  if(( pkt_copy = (struct packet_struct *)malloc(sizeof(*packet))) == NULL)
+  {
+    DEBUG(0,("copy_dgram_packet: malloc fail.\n"));
+    return NULL;
+  }
+
+  /* Structure copy of entire thing. */
+
+  *pkt_copy = *packet;
+
+  /* Ensure this copy is not locked. */
+  pkt_copy->locked = False;
+
+  /* There are no additional pointers in a dgram packet,
+     we are finished. */
+  return pkt_copy;
+}
+
+/*******************************************************************
+  'Copy constructor' for a generic packet
+  ******************************************************************/
+struct packet_struct *copy_packet(struct packet_struct *packet)
+{  
+  if(packet->packet_type == NMB_PACKET)
+    return copy_nmb_packet(packet);
+  else if (packet->packet_type == DGRAM_PACKET)
+    return copy_dgram_packet(packet);
+  return NULL;
+}
+ 
+/*******************************************************************
   free up any resources associated with an nmb packet
   ******************************************************************/
-void free_nmb_packet(struct nmb_packet *nmb)
+static void free_nmb_packet(struct nmb_packet *nmb)
 {  
   if (nmb->answers) free(nmb->answers);
   if (nmb->nsrecs) free(nmb->nsrecs);
@@ -478,15 +591,25 @@ void free_nmb_packet(struct nmb_packet *nmb)
 }
 
 /*******************************************************************
+  free up any resources associated with a dgram packet
+  ******************************************************************/
+static void free_dgram_packet(struct dgram_packet *nmb)
+{  
+  /* We have nothing to do for a dgram packet. */
+}
+
+/*******************************************************************
   free up any resources associated with a packet
   ******************************************************************/
 void free_packet(struct packet_struct *packet)
 {  
-	if (packet->locked) 
-		return;
-	if (packet->packet_type == NMB_PACKET)
-		free_nmb_packet(&packet->packet.nmb);
-	free(packet);
+  if (packet->locked) 
+    return;
+  if (packet->packet_type == NMB_PACKET)
+    free_nmb_packet(&packet->packet.nmb);
+  else if (packet->packet_type == DGRAM_PACKET)
+    free_dgram_packet(&packet->packet.dgram);
+  free(packet);
 }
 
 /*******************************************************************
@@ -619,12 +742,22 @@ static int build_dgram(char *buf,struct packet_struct *p)
   ******************************************************************/
 void make_nmb_name(struct nmb_name *n,char *name,int type,char *this_scope)
 {
-  fstrcpy(n->name,name);
+  StrnCpy(n->name,name,15);
   strupper(n->name);
-  n->name_type = type;
-  fstrcpy(n->scope,this_scope);
+  n->name_type = (unsigned int)type & 0xFF;
+  StrnCpy(n->scope,this_scope,63);
 }
 
+/*******************************************************************
+  Compare two nmb names
+  ******************************************************************/
+
+BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
+{
+  return ((n1->name_type == n2->name_type) &&
+         strequal(n1->name ,n2->name ) &&
+         strequal(n1->scope,n2->scope));
+}
 
 /*******************************************************************
   build a nmb packet ready for sending
