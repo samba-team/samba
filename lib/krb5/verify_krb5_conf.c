@@ -319,7 +319,6 @@ struct entry libdefaults_entries[] = {
     { "ignore_addresses", krb5_config_string, NULL },
     { "kdc_timeout", krb5_config_string, check_time },
     { "kdc_timesync", krb5_config_string, check_boolean },
-    { "krb4_get_tickets", krb5_config_string, check_boolean },
     { "log_utc", krb5_config_string, check_boolean },
     { "maxretries", krb5_config_string, check_numeric },
     { "scan_interfaces", krb5_config_string, check_boolean },
@@ -340,6 +339,7 @@ struct entry appdefaults_entries[] = {
     { "ticket_lifetime", krb5_config_string, check_time },
     { "renew_lifetime", krb5_config_string, check_time },
     { "no-addresses", krb5_config_string, check_boolean },
+    { "krb4_get_tickets", krb5_config_string, check_boolean },
 #if 0
     { "anonymous", krb5_config_string, check_boolean },
 #endif
