@@ -1,0 +1,86 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 3.0
+   MSDfs services for Samba
+   Copyright (C) Shirish Kalele 2000
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#ifndef _MSDFS_H
+#define _MSDFS_H
+
+#define REFERRAL_TTL 600
+
+/* Flags used in trans2 Get Referral reply */
+#define DFSREF_REFERRAL_SERVER 0x1
+#define DFSREF_STORAGE_SERVER  0x2
+
+
+struct referral
+{
+	pstring alternate_path; /* contains the path referred (UNICODE?) */
+	uint32 proximity;
+	uint32 ttl; /* how long should client cache referral */
+};
+
+struct junction_map
+{
+  pstring service_name;
+  pstring volume_name;
+  int referral_count;
+  struct referral* referral_list;
+};
+
+struct dfs_path
+{
+  pstring hostname;
+  pstring servicename;
+  pstring volumename;
+  pstring restofthepath;
+};
+
+#ifdef MS_DFS
+
+#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) \
+{ if(((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES)) && \
+     dfs_redirect(name,conn)) \
+     return(dfs_path_error(inbuf,outbuf)); }
+
+#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) \
+{ if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) || \
+     get_remote_arch()==RA_WIN95) \
+      if(dfs_findfirst_redirect(directory,conn)) \
+	 return(dfs_path_error(inbuf,outbuf)); }
+ 
+#define init_dfsroot(conn, inbuf, outbuf) \
+{ if(*lp_dfsmap(SNUM(conn)) && lp_host_msdfs()) { \
+	SSVAL(outbuf, smb_vwv2, SMB_SHARE_IN_DFS | SMB_SUPPORT_SEARCH_BITS); \
+	if(lp_dfsmap_loaded(SNUM(conn))) \
+	  msdfs_open(False); \
+	else { \
+	  DEBUG(3,("msdfs map database not initialized!\n")); \
+	  pstrcpy(lp_dfsmap(SNUM(conn)),""); \
+	} } }
+
+#else
+/* Stub macros */
+#define RESOLVE_DFSPATH(name, conn, inbuf, outbuf) ;
+#define RESOLVE_FINDFIRST_DFSPATH(name, conn, inbuf, outbuf) ;
+#define init_dfsroot(conn, inbuf, outbuf) ;
+
+#endif
+
+#endif /* _MSDFS_H */
