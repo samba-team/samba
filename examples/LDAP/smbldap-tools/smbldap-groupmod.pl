@@ -1,3 +1,4 @@
+#!/usr/bin/perl
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
