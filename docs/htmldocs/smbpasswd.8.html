@@ -128,12 +128,13 @@ CLASS="VARIABLELIST"
 		new password typed (type &#60;Enter&#62; for the old password). This 
 		option is ignored if the username following already exists in 
 		the smbpasswd file and it is treated like a regular change 
-		password command. Note that the user to be added must already exist 
-		in the system password file (usually <TT
+		password command.  Note that the default passdb backends require 
+                the user to already exist in the system password file (usually 
+                <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
->)
-		else the request to add the user will fail. </P
+>), else the request to add the 
+                user will fail.  </P
 ><P
 >This option is only available when running smbpasswd 
 		as root. </P
@@ -168,8 +169,7 @@ CLASS="CONSTANT"
 ><P
 >If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 		format) there is no space in the user's password entry to write
-		this information and so the user is disabled by writing 'X' characters 
-		into the password space in the smbpasswd file. See <B
+		this information and the command will FAIL. See <B
 CLASS="COMMAND"
 >smbpasswd(5)
 		</B
@@ -195,15 +195,8 @@ CLASS="CONSTANT"
 >If the smbpasswd file is in the 'old' format, then <B
 CLASS="COMMAND"
 >		smbpasswd</B
-> will prompt for a new password for this user, 
-		otherwise the account will be enabled by removing the <TT
-CLASS="CONSTANT"
->'D'
-		</TT
-> flag from account control space in the <TT
-CLASS="FILENAME"
->		smbpasswd</TT
-> file. See <B
+> will FAIL to enable the account.  
+                See <B
 CLASS="COMMAND"
 >smbpasswd (5)</B
 > for 
@@ -410,66 +403,6 @@ CLASS="FILENAME"
 		</P
 ></DD
 ><DT
->-j DOMAIN</DT
-><DD
-><P
->This option is used to add a Samba server 
-		into a Windows NT Domain, as a Domain member capable of authenticating 
-		user accounts to any Domain Controller in the same way as a Windows 
-		NT Server. See the <B
-CLASS="COMMAND"
->security = domain</B
-> option in 
-		the <TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-> man page. </P
-><P
->In order to be used in this way, the Administrator for 
-		the Windows NT Domain must have used the program "Server Manager 
-		for Domains" to add the primary NetBIOS name of  the Samba server 
-		as a member of the Domain. </P
-><P
->After this has been done, to join the Domain invoke <B
-CLASS="COMMAND"
->		smbpasswd</B
-> with this parameter. smbpasswd will then 
-		look up the Primary Domain Controller for the Domain (found in 
-		the <TT
-CLASS="FILENAME"
->smb.conf</TT
-> file in the parameter 
-		<TT
-CLASS="PARAMETER"
-><I
->password server</I
-></TT
-> and change the machine account 
-		password used to create the secure Domain communication.  This 
-		password is then stored by smbpasswd in a TDB, writeable only by root, 
-		called <TT
-CLASS="FILENAME"
->secrets.tdb</TT
-> </P
-><P
->Once this operation has been performed the <TT
-CLASS="FILENAME"
->		smb.conf</TT
-> file may be updated to set the <B
-CLASS="COMMAND"
->		security = domain</B
-> option and all future logins
-		to the Samba server will be authenticated to the Windows NT 
-		PDC. </P
-><P
->Note that even though the authentication is being 
-		done to the PDC all users accessing the Samba server must still 
-		have a valid UNIX account on that machine. </P
-><P
->This option is only available when running smbpasswd as root. 
-		</P
-></DD
-><DT
 >-U username</DT
 ><DD
 ><P
@@ -570,7 +503,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN182"
+NAME="AEN163"
 ></A
 ><H2
 >NOTES</H2
@@ -613,18 +546,18 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN192"
+NAME="AEN173"
 ></A
 ><H2
 >VERSION</H2
 ><P
->This man page is correct for version 2.2 of 
+>This man page is correct for version 3.0 of 
 	the Samba suite.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN195"
+NAME="AEN176"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -647,7 +580,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN201"
+NAME="AEN182"
 ></A
 ><H2
 >AUTHOR</H2

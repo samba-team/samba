@@ -232,7 +232,9 @@
 		<listitem><para>If the server is to be run by the 
 		<command>inetd</command> meta-daemon, this file 
 		must contain suitable startup information for the 
-		meta-daemon. See the section INSTALLATION below.
+		meta-daemon. See the <ulink
+		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
+		for details.
 		</para></listitem>
 		</varlistentry>
 		
@@ -243,8 +245,9 @@
 
 		<para>If running the server as a daemon at startup, 
 		this file will need to contain an appropriate startup 
-		sequence for the server. See the section INSTALLATION 
-		below.</para></listitem>
+		sequence for the server. See the <ulink
+		url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink> document
+		for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -253,7 +256,8 @@
 		meta-daemon <command>inetd</command>, this file 
 		must contain a mapping of service name (e.g., netbios-ssn) 
 		to service port (e.g., 139) and protocol type (e.g., tcp). 
-		See the section INSTALLATION below.</para></listitem>
+		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -265,18 +269,18 @@
 		and <filename>/etc/smb.conf</filename>.</para>
 		
 		<para>When run as a WINS server (see the 
-		<ulink url="smb.conf.5.html#winssupport">wins support</ulink>
-		parameter in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> man page), <command>nmbd</command> 
+		<ulink url="smb.conf.5.html#WINSSUPPORT">wins support</ulink>
+		parameter in the <filename>smb.conf(5)</filename> man page),
+		<command>nmbd</command>
 		will store the WINS database in the file <filename>wins.dat</filename> 
 		in the <filename>var/locks</filename> directory configured under 
 		wherever Samba was configured to install itself.</para>
 
 		<para>If <command>nmbd</command> is acting as a <emphasis>
 		browse master</emphasis> (see the <ulink 
-		url="smb.conf.5.html#localmaster">local master</ulink>
-		parameter in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> man page), <command>nmbd</command> 
+		url="smb.conf.5.html#LOCALMASTER">local master</ulink>
+		parameter in the <filename>smb.conf(5)</filename> man page,
+		<command>nmbd</command>
 		will store the browsing database in the file <filename>browse.dat
 		</filename> in the <filename>var/locks</filename> directory
 		configured under wherever Samba was configured to install itself.

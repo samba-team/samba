@@ -4951,6 +4951,7 @@
                 <para>NOTE: These userids never appear on the system and Samba will never
                 'become' these users. They are used only to ensure that the algorithmic 
                 RID mapping does not conflict with normal users.
+		</para>
 
 		<para>Default: <command>non unix account range = &lt;empty string&gt;
 		</command></para>
@@ -8236,7 +8237,6 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		<varlistentry>
 		<term>winbind use default domain</term>
 		
-		<varlistentry>
 		<term><anchor id="WINBINDUSEDEFAULTDOMAIN">winbind use default domain</term>
 		<listitem><para>This parameter specifies whether the <ulink url="winbindd.8.html">
 		winbindd(8)</ulink>

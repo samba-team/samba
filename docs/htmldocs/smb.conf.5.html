@@ -957,6 +957,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#AUTHMETHODS"
+><TT
+CLASS="PARAMETER"
+><I
+>auth methods</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#AUTOSERVICES"
 ><TT
 CLASS="PARAMETER"
@@ -1953,11 +1965,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#NTPIPESUPPORT"
+HREF="#NONUNIXACCOUNTRANGE"
 ><TT
 CLASS="PARAMETER"
 ><I
->nt pipe support</I
+>non unix account range</I
 ></TT
 ></A
 ></P
@@ -1965,11 +1977,11 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
-HREF="#NTSMBSUPPORT"
+HREF="#NTPIPESUPPORT"
 ><TT
 CLASS="PARAMETER"
 ><I
->nt smb support</I
+>nt pipe support</I
 ></TT
 ></A
 ></P
@@ -2054,6 +2066,18 @@ HREF="#PANICACTION"
 CLASS="PARAMETER"
 ><I
 >panic action</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#PASSDBBACKEND"
+><TT
+CLASS="PARAMETER"
+><I
+>passdb backend</I
 ></TT
 ></A
 ></P
@@ -2925,6 +2949,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#WINBINDUSEDEFAULTDOMAIN"
+><TT
+CLASS="PARAMETER"
+><I
+>winbind use default domain</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#WINSHOOK"
 ><TT
 CLASS="PARAMETER"
@@ -2999,7 +3035,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN970"
+NAME="AEN982"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4430,7 +4466,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1446"
+NAME="AEN1458"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5124,6 +5160,43 @@ CLASS="PARAMETER"
 ></TT
 ></A
 >.</P
+></DD
+><DT
+><A
+NAME="AUTHMETHODS"
+></A
+>auth methods (G)</DT
+><DD
+><P
+>This option allows the administrator to chose what
+                authentication methods <B
+CLASS="COMMAND"
+>smbd</B
+> will use when authenticating
+                a user.  This option defaults to sensible values based on <A
+HREF="#SECURITY"
+><TT
+CLASS="PARAMETER"
+><I
+>		security</I
+></TT
+></A
+>.
+
+                Each entry in the list attempts to authenticate the user in turn, until
+                the user authenticates.  In practice only one method will ever actually 
+                be able to complete the authentication.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>auth methods = &#60;empty string&#62;</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>auth methods = guest sam ntdomain</B
+></P
 ></DD
 ><DT
 ><A
@@ -7925,7 +7998,7 @@ CLASS="COMMAND"
 > program for information on how to set up 
  		and maintain this file), or set the <A
 HREF="#SECURITY"
->security = [server|domain]</A
+>security = [server|domain|ads]</A
 > parameter which 
 		causes <B
 CLASS="COMMAND"
@@ -12576,6 +12649,37 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="NONUNIXACCOUNTRANGE"
+></A
+>non unix account range (G)</DT
+><DD
+><P
+>The non unix account range parameter specifies 
+                the range of 'user ids' that are allocated by the various 'non unix 
+                account' passdb backends.  These backends allow
+                the storage of passwords for users who don't exist in /etc/passwd.  
+                This is most often used for machine account creation. 
+                This range of ids should have no existing local or NIS users within 
+                it as strange conflicts can occur otherwise.</P
+><P
+>NOTE: These userids never appear on the system and Samba will never
+                'become' these users. They are used only to ensure that the algorithmic 
+                RID mapping does not conflict with normal users.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>non unix account range = &#60;empty string&#62;
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>non unix account range = 10000-20000</B
+></P
+></DD
+><DT
+><A
 NAME="NTACLSUPPORT"
 ></A
 >nt acl support (S)</DT
@@ -12619,40 +12723,6 @@ CLASS="CONSTANT"
 >Default: <B
 CLASS="COMMAND"
 >nt pipe support = yes</B
-></P
-></DD
-><DT
-><A
-NAME="NTSMBSUPPORT"
-></A
->nt smb support (G)</DT
-><DD
-><P
->This boolean parameter controls whether <A
-HREF="smbd.8.html"
-TARGET="_top"
->smbd(8)</A
-> will negotiate NT specific SMB 
-		support with Windows NT clients. Although this is a developer 
-		debugging option and should be left alone, benchmarking has discovered 
-		that Windows NT clients give faster performance with this option 
-		set to <TT
-CLASS="CONSTANT"
->no</TT
->. This is still being investigated. 
-	 	If this option is set to <TT
-CLASS="CONSTANT"
->no</TT
-> then Samba offers 
-		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-		This information may be of use if any users are having problems 
-		with NT SMB support.</P
-><P
->You should not need to ever disable this parameter.</P
-><P
->Default: <B
-CLASS="COMMAND"
->nt smb support = yes</B
 ></P
 ></DD
 ><DT
@@ -13073,6 +13143,30 @@ CLASS="COMMAND"
 >Example: <B
 CLASS="COMMAND"
 >panic action = "/bin/sleep 90000"</B
+></P
+></DD
+><DT
+><A
+NAME="PASSDBBACKEND"
+></A
+>passdb backend (G)</DT
+><DD
+><P
+>This option allows the administrator to chose what
+                backend in which to store passwords.  This allows (for example) both 
+                smbpasswd and tdbsam to be used without a recompile.  Only one can
+                be used at a time however, and experimental backends must still be selected
+                (eg --with-tdbsam) at configure time.
+		</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>passdb backend = smbpasswd</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>passdb backend = tdbsam</B
 ></P
 ></DD
 ><DT
@@ -18825,6 +18919,34 @@ CLASS="COMMAND"
 ></P
 ></DD
 ><DT
+>winbind use default domain, <A
+NAME="WINBINDUSEDEFAULTDOMAIN"
+></A
+>winbind use default domain</DT
+><DD
+><P
+>This parameter specifies whether the <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>		winbindd(8)</A
+>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind use default domain = &#60;falseg&#62; 
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind use default domain = true</B
+></P
+></DD
+><DT
 ><A
 NAME="WINSHOOK"
 ></A
@@ -19193,7 +19315,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6054"
+NAME="AEN6097"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19223,7 +19345,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6060"
+NAME="AEN6103"
 ></A
 ><H2
 >VERSION</H2
@@ -19234,7 +19356,7 @@ NAME="AEN6060"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6063"
+NAME="AEN6106"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19313,7 +19435,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6083"
+NAME="AEN6126"
 ></A
 ><H2
 >AUTHOR</H2

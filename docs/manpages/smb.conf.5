@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "04 January 2002" "" ""
+.TH "SMB.CONF" "5" "24 January 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -527,6 +527,9 @@ each parameter for details. Note that some are synonyms.
 \fIannounce version\fR
 .TP 0.2i
 \(bu
+\fIauth methods\fR
+.TP 0.2i
+\(bu
 \fIauto services\fR
 .TP 0.2i
 \(bu
@@ -776,10 +779,10 @@ each parameter for details. Note that some are synonyms.
 \fInis homedir\fR
 .TP 0.2i
 \(bu
-\fInt pipe support\fR
+\fInon unix account range\fR
 .TP 0.2i
 \(bu
-\fInt smb support\fR
+\fInt pipe support\fR
 .TP 0.2i
 \(bu
 \fInull passwords\fR
@@ -801,6 +804,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIpanic action\fR
+.TP 0.2i
+\(bu
+\fIpassdb backend\fR
 .TP 0.2i
 \(bu
 \fIpasswd chat\fR
@@ -1017,6 +1023,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIwinbind uid\fR
+.TP 0.2i
+\(bu
+\fIwinbind use default domain\fR
 .TP 0.2i
 \(bu
 \fIwins hook\fR
@@ -1638,6 +1647,18 @@ Example: \fBannounce version = 2.0\fR
 .TP
 \fBauto services (G)\fR
 This is a synonym for the  \fIpreload\fR.
+.TP
+\fBauth methods (G)\fR
+This option allows the administrator to chose what
+authentication methods \fBsmbd\fR will use when authenticating
+a user. This option defaults to sensible values based on \fI security\fR.
+Each entry in the list attempts to authenticate the user in turn, until
+the user authenticates. In practice only one method will ever actually 
+be able to complete the authentication.
+
+Default: \fBauth methods = <empty string>\fR
+
+Example: \fBauth methods = guest sam ntdomain\fR
 .TP
 \fBavailable (S)\fR
 This parameter lets you "turn off" a service. If 
@@ -2678,7 +2699,7 @@ In order for encrypted passwords to work correctly
 \fBsmbd(8)\fRmust either 
 have access to a local \fIsmbpasswd(5)
 \fRprogram for information on how to set up 
-and maintain this file), or set the security = [server|domain] parameter which 
+and maintain this file), or set the security = [server|domain|ads] parameter which 
 causes \fBsmbd\fR to authenticate against another 
 server.
 
@@ -4596,6 +4617,23 @@ be a logon server.
 
 Default: \fBnis homedir = no\fR
 .TP
+\fBnon unix account range (G)\fR
+The non unix account range parameter specifies 
+the range of 'user ids' that are allocated by the various 'non unix 
+account' passdb backends. These backends allow
+the storage of passwords for users who don't exist in /etc/passwd. 
+This is most often used for machine account creation. 
+This range of ids should have no existing local or NIS users within 
+it as strange conflicts can occur otherwise.
+
+NOTE: These userids never appear on the system and Samba will never
+\&'become' these users. They are used only to ensure that the algorithmic 
+RID mapping does not conflict with normal users.
+
+Default: \fBnon unix account range = <empty string>
+\fR
+Example: \fBnon unix account range = 10000-20000\fR
+.TP
 \fBnt acl support (S)\fR
 This boolean parameter controls whether 
 smbd(8)will attempt to map 
@@ -4613,21 +4651,6 @@ pipes. This is a developer debugging option and can be left
 alone.
 
 Default: \fBnt pipe support = yes\fR
-.TP
-\fBnt smb support (G)\fR
-This boolean parameter controls whether smbd(8)will negotiate NT specific SMB 
-support with Windows NT clients. Although this is a developer 
-debugging option and should be left alone, benchmarking has discovered 
-that Windows NT clients give faster performance with this option 
-set to no. This is still being investigated. 
-If this option is set to no then Samba offers 
-exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-This information may be of use if any users are having problems 
-with NT SMB support.
-
-You should not need to ever disable this parameter.
-
-Default: \fBnt smb support = yes\fR
 .TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
@@ -4787,6 +4810,17 @@ a problem occurred.
 Default: \fBpanic action = <empty string>\fR
 
 Example: \fBpanic action = "/bin/sleep 90000"\fR
+.TP
+\fBpassdb backend (G)\fR
+This option allows the administrator to chose what
+backend in which to store passwords. This allows (for example) both 
+smbpasswd and tdbsam to be used without a recompile. Only one can
+be used at a time however, and experimental backends must still be selected
+(eg --with-tdbsam) at configure time.
+
+Default: \fBpassdb backend = smbpasswd\fR
+
+Example: \fBpassdb backend = tdbsam\fR
 .TP
 \fBpasswd chat (G)\fR
 This string controls the \fB"chat"\fR 
@@ -7164,6 +7198,19 @@ occur otherwise.
 Default: \fBwinbind uid = <empty string>
 \fR
 Example: \fBwinbind uid = 10000-20000\fR
+.TP
+\fBwinbind use default domain\fR
+.TP
+\fBwinbind use default domain\fR
+This parameter specifies whether the  winbindd(8)
+daemon should operate on users without domain component in their username. 
+Users without a domain component are treated as is part of the winbindd server's 
+own domain. While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+function in a way much closer to the way they would in a native unix system.
+
+Default: \fBwinbind use default domain = <falseg> 
+\fR
+Example: \fBwinbind use default domain = true\fR
 .TP
 \fBwins hook (G)\fR
 When Samba is running as a WINS server this 
