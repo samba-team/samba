@@ -637,6 +637,8 @@ static BOOL test_lsakey_puzzle(struct dcerpc_pipe *p_smb,
 
         torture_rpc_close(p_tcp);
 
+	test_Delete(p_smb, mem_ctx, &sec_handle);
+
 	return True;
 }
 
