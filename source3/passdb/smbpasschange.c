@@ -80,7 +80,7 @@ BOOL local_password_change(char *user_name,
 	*err_str = '\0';
 	*msg_str = '\0';
 
-	pwd = getpwnam(user_name);
+	pwd = Get_Pwnam(user_name, False);
 	
 	/*
 	 * Check for a trust account.

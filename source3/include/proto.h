@@ -753,7 +753,7 @@ void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
-void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
+void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
@@ -1516,6 +1516,7 @@ struct sam_passwd *getsam21pwntnam(const char *name);
 struct sam_passwd *getsam21pwrid(uint32 rid);
 void pwdb_init_sam(struct sam_passwd *user);
 struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user);
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from);
 struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user);
 struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user);
 struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam);

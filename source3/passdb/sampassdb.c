@@ -134,6 +134,9 @@ struct sam_passwd *getsam21pwent(void *vp)
 
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override)
 {
+	DEBUG(10,("mod_sam21pwd_entry: unix user %s rid %d\n", 
+		pwd->unix_name, pwd->user_rid));
+
  	return pwdb_ops->mod_sam21pwd_entry(pwdb_sam_map_names(pwd), override);
 }
 
@@ -338,6 +341,150 @@ struct sam_disp_info *pwdb_sam_to_dispinfo(struct sam_passwd *user)
 
 	return &disp_info;
 }
+
+/*************************************************************
+ copies a sam passwd.
+ **************************************************************/
+void copy_sam_passwd(struct sam_passwd *to, const struct sam_passwd *from)
+{
+	static fstring nt_name;
+	static fstring unix_name;
+	static fstring full_name;
+	static fstring home_dir;
+	static fstring dir_drive;
+	static fstring logon_script;
+	static fstring profile_path;
+	static fstring acct_desc;
+	static fstring workstations;
+	static fstring unknown_str;
+	static fstring munged_dial;
+
+	if (from == NULL || to == NULL) return;
+
+	memcpy(to, from, sizeof(*from));
+
+	if (from->nt_name != NULL)
+	{
+		fstrcpy(nt_name  , from->nt_name);
+		to->nt_name = nt_name;
+	}
+	else if (to->nt_name != NULL)
+	{
+		fstrcpy(nt_name  , to->nt_name);
+		to->nt_name = nt_name;
+	}
+
+	if (from->unix_name != NULL)
+	{
+		fstrcpy(unix_name, from->unix_name);
+		to->unix_name = unix_name;
+	}
+	else if (to->unix_name != NULL)
+	{
+		fstrcpy(unix_name, to->unix_name);
+		to->unix_name = unix_name;
+	}
+
+	if (from->full_name != NULL)
+	{
+		fstrcpy(full_name, from->full_name);
+		to->full_name = full_name;
+	}
+	else if (to->full_name != NULL)
+	{
+		fstrcpy(full_name, to->full_name);
+		to->full_name = full_name;
+	}
+
+	if (from->home_dir != NULL)
+	{
+		fstrcpy(home_dir  , from->home_dir);
+		to->home_dir = home_dir;
+	}
+	else if (to->home_dir != NULL)
+	{
+		fstrcpy(home_dir  , to->home_dir);
+		to->home_dir = home_dir;
+	}
+
+	if (from->dir_drive != NULL)
+	{
+		fstrcpy(dir_drive  , from->dir_drive);
+		to->dir_drive = dir_drive;
+	}
+	else if (to->dir_drive != NULL)
+	{
+		fstrcpy(dir_drive  , to->dir_drive);
+		to->dir_drive = dir_drive;
+	}
+
+	if (from->logon_script != NULL)
+	{
+		fstrcpy(logon_script  , from->logon_script);
+		to->logon_script = logon_script;
+	}
+	else if (to->logon_script != NULL)
+	{
+		fstrcpy(logon_script  , to->logon_script);
+		to->logon_script = logon_script;
+	}
+
+	if (from->profile_path != NULL)
+	{
+		fstrcpy(profile_path  , from->profile_path);
+		to->profile_path = profile_path;
+	}
+	else if (to->profile_path != NULL)
+	{
+		fstrcpy(profile_path  , to->profile_path);
+		to->profile_path = profile_path;
+	}
+
+	if (from->acct_desc != NULL)
+	{
+		fstrcpy(acct_desc  , from->acct_desc);
+		to->acct_desc = acct_desc;
+	}
+	else if (to->acct_desc != NULL)
+	{
+		fstrcpy(acct_desc  , to->acct_desc);
+		to->acct_desc = acct_desc;
+	}
+
+	if (from->workstations != NULL)
+	{
+		fstrcpy(workstations  , from->workstations);
+		to->workstations = workstations;
+	}
+	else if (to->workstations != NULL)
+	{
+		fstrcpy(workstations  , to->workstations);
+		to->workstations = workstations;
+	}
+
+	if (from->unknown_str != NULL)
+	{
+		fstrcpy(unknown_str  , from->unknown_str);
+		to->unknown_str = unknown_str;
+	}
+	else if (to->unknown_str != NULL)
+	{
+		fstrcpy(unknown_str  , to->unknown_str);
+		to->unknown_str = unknown_str;
+	}
+
+	if (from->munged_dial != NULL)
+	{
+		fstrcpy(munged_dial  , from->munged_dial);
+		to->munged_dial = munged_dial;
+	}
+	else if (to->munged_dial != NULL)
+	{
+		fstrcpy(munged_dial  , to->munged_dial);
+		to->munged_dial = munged_dial;
+	}
+}
+
 
 /*************************************************************
  converts a sam_passwd structure to a smb_passwd structure.
