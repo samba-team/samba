@@ -2395,7 +2395,7 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 /*******************************************************************
 sleep for a specified number of milliseconds
 ********************************************************************/
-static void msleep(int t)
+void msleep(int t)
 {
   int tdiff=0;
   struct timeval tval,t1,t2;  
