@@ -817,6 +817,9 @@ EmptyTerminal(void)
 
     FD_ZERO(&outs);
 
+    if (tout >= FD_SETSIZE)
+	fatal (, "fd too large");
+
     if (TTYBYTES() == 0) {
 	FD_SET(tout, &outs);
 	select(tout+1, 0, &outs, 0,
