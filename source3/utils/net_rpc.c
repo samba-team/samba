@@ -235,6 +235,14 @@ static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cl
 
 	fstrcpy(trust_passwd, global_myname);
 	strlower(trust_passwd);
+
+	/*
+	 * Machine names can be 15 characters, but the max length on
+	 * a password is 14.  --jerry
+	 */
+
+	trust_passwd[14] = '\0';
+
 	E_md4hash( (uchar *)trust_passwd, orig_trust_passwd_hash);
 
 	return trust_pw_change_and_store_it(cli, mem_ctx, orig_trust_passwd_hash);
