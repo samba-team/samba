@@ -1077,6 +1077,9 @@ parameter for details\&. Note that some are synonyms\&.
 \fBmangle case\fP
 .IP 
 .IP o 
+\fBmangle locks\fP
+.IP 
+.IP o 
 \fBmangled map\fP
 .IP 
 .IP o 
@@ -3334,6 +3337,37 @@ Magic scripts are \fIEXPERIMENTAL\fP and should \fINOT\fP be relied upon\&.
 .IP "\fBmangle case (S)\fP" 
 .IP 
 See the section on \fB"NAME MANGLING"\fP\&.
+.IP 
+.IP "\fBmangle locks (S)\fP" 
+.IP 
+This option is new with Samba 2\&.0\&.4 and above\&. It only has an effect on locking
+when Samba is running on a 32-bit platform such as Linux (2\&.0, 2\&.2) on x86 but not on
+64-bit platforms such as IRIX, Solaris 2\&.7 and above, AIX 4\&.2 etc\&.
+.IP 
+This option was introduced as NT clients have a bug in that they still send 64-bit
+lock requests to servers like Samba on 32-bit platforms that have explicitly 
+told the client that they do not support 64-bit file access\&.
+.IP 
+If this option is set to "True" (the default) on a 32-bit system then Samba
+will truncate any lock length greater than 31 bits (the POSIX limit on 32-bit
+systems) and then attempt to mangle the lock offset from a 64-bit value to a
+high 32 bit value\&. It does this by examining the number of bits set in the
+top 32 bits, looking at the lower 31 bits starting from the 31st bit going
+downward (the POSIX limit on 32-bit systems) for a range of zero bits that
+this can be mapped into and then mapping the upper set bits into the lower
+set bits\&.
+.IP 
+If no space can be found then a locking error is returned to the client\&.
+.IP 
+Note that this option has \fBNO\fP effect on 64 bit systems\&. It should not
+be turned off on 32 bit systems unless it can be shown that this is causing
+a locking problem for a client application\&.
+.IP 
+\fBDefault:\fP
+\f(CW		mangle locks = Yes\fP
+.IP 
+\fBExample:\fP
+\f(CW		mangle locks = No\fP
 .IP 
 .IP "\fBmangled map (S)\fP" 
 .IP 

@@ -601,6 +601,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#magicoutput"><strong>magic output</strong></a>
 <p><br><li > <a href="smb.conf.5.html#magicscript"><strong>magic script</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglecase"><strong>mangle case</strong></a>
+<p><br><li > <a href="smb.conf.5.html#manglelocks"><strong>mangle locks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#mangledmap"><strong>mangled map</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglednames"><strong>mangled names</strong></a>
 <p><br><li > <a href="smb.conf.5.html#manglingchar"><strong>mangling char</strong></a>
@@ -2255,6 +2256,30 @@ end.
 <p><br><a name="manglecase"></a>
 <li><strong><strong>mangle case (S)</strong></strong>
 <p><br>See the section on <a href="smb.conf.5.html#NAMEMANGLING"><strong>"NAME MANGLING"</strong></a>.
+<p><br><a name="manglelocks"></a>
+<li><strong><strong>mangle locks (S)</strong></strong>
+<p><br>This option is new with Samba 2.0.4 and above. It only has an effect on locking
+when Samba is running on a 32-bit platform such as Linux (2.0, 2.2) on x86 but not on
+64-bit platforms such as IRIX, Solaris 2.7 and above, AIX 4.2 etc.
+<p><br>This option was introduced as NT clients have a bug in that they still send 64-bit
+lock requests to servers like Samba on 32-bit platforms that have explicitly 
+told the client that they do not support 64-bit file access.
+<p><br>If this option is set to "True" (the default) on a 32-bit system then Samba
+will truncate any lock length greater than 31 bits (the POSIX limit on 32-bit
+systems) and then attempt to mangle the lock offset from a 64-bit value to a
+high 32 bit value. It does this by examining the number of bits set in the
+top 32 bits, looking at the lower 31 bits starting from the 31st bit going
+downward (the POSIX limit on 32-bit systems) for a range of zero bits that
+this can be mapped into and then mapping the upper set bits into the lower
+set bits.
+<p><br>If no space can be found then a locking error is returned to the client.
+<p><br>Note that this option has <strong>NO</strong> effect on 64 bit systems. It should not
+be turned off on 32 bit systems unless it can be shown that this is causing
+a locking problem for a client application.
+<p><br><strong>Default:</strong>
+<code>		mangle locks = Yes</code>
+<p><br><strong>Example:</strong>
+<code>		mangle locks = No</code>
 <p><br><a name="mangledmap"></a>
 <li><strong><strong>mangled map (S)</strong></strong>
 <p><br>This is for those who want to directly map UNIX file names which can

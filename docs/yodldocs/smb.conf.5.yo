@@ -875,6 +875,8 @@ it() link(bf(magic script))(magicscript)
 
 it() link(bf(mangle case))(manglecase)
 
+it() link(bf(mangle locks))(manglelocks)
+
 it() link(bf(mangled map))(mangledmap)
 
 it() link(bf(mangled names))(manglednames)
@@ -3152,6 +3154,38 @@ label(manglecase)
 dit(bf(mangle case (S)))
 
 See the section on link(bf("NAME MANGLING"))(NAMEMANGLING).
+
+label(manglelocks)
+dit(bf(mangle locks (S)))
+
+This option is new with Samba 2.0.4 and above. It only has an effect on locking
+when Samba is running on a 32-bit platform such as Linux (2.0, 2.2) on x86 but not on
+64-bit platforms such as IRIX, Solaris 2.7 and above, AIX 4.2 etc.
+
+This option was introduced as NT clients have a bug in that they still send 64-bit
+lock requests to servers like Samba on 32-bit platforms that have explicitly 
+told the client that they do not support 64-bit file access.
+
+If this option is set to "True" (the default) on a 32-bit system then Samba
+will truncate any lock length greater than 31 bits (the POSIX limit on 32-bit
+systems) and then attempt to mangle the lock offset from a 64-bit value to a
+high 32 bit value. It does this by examining the number of bits set in the
+top 32 bits, looking at the lower 31 bits starting from the 31st bit going
+downward (the POSIX limit on 32-bit systems) for a range of zero bits that
+this can be mapped into and then mapping the upper set bits into the lower
+set bits.
+
+If no space can be found then a locking error is returned to the client.
+
+Note that this option has bf(NO) effect on 64 bit systems. It should not
+be turned off on 32 bit systems unless it can be shown that this is causing
+a locking problem for a client application.
+
+  bf(Default:)
+tt(		mangle locks = Yes)
+
+  bf(Example:)
+tt(		mangle locks = No)
 
 label(mangledmap)
 dit(bf(mangled map (S)))
