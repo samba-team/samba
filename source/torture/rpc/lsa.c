@@ -523,22 +523,22 @@ static BOOL test_EnumAccountRights(struct dcerpc_pipe *p,
 }
 
 
-static BOOL test_QuerySecObj(struct dcerpc_pipe *p, 
+static BOOL test_QuerySecurity(struct dcerpc_pipe *p, 
 			     TALLOC_CTX *mem_ctx, 
 			     struct policy_handle *handle,
 			     struct policy_handle *acct_handle)
 {
 	NTSTATUS status;
-	struct lsa_QuerySecObj r;
+	struct lsa_QuerySecurity r;
 
-	printf("Testing QuerySecObj\n");
+	printf("Testing QuerySecuriy\n");
 
 	r.in.handle = acct_handle;
 	r.in.sec_info = 7;
 
-	status = dcerpc_lsa_QuerySecObj(p, mem_ctx, &r);
+	status = dcerpc_lsa_QuerySecurity(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("QuerySecObj failed - %s\n", nt_errstr(status));
+		printf("QuerySecurity failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -571,7 +571,7 @@ static BOOL test_OpenAccount(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (!test_QuerySecObj(p, mem_ctx, handle, &acct_handle)) {
+	if (!test_QuerySecurity(p, mem_ctx, handle, &acct_handle)) {
 		return False;
 	}
 
@@ -746,6 +746,8 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	uint32_t resume_handle = 0;
 	struct lsa_DomainList domains;
+	int i;
+	BOOL ret = True;
 
 	printf("\nTesting EnumTrustDom\n");
 
@@ -767,7 +769,59 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	return True;
+	printf("\nTesting OpenTrustedDomain and OpenTrustedDomainByName\n");
+
+	for (i=0; i< domains.count; i++) {
+		struct lsa_OpenTrustedDomain trust;
+		struct lsa_OpenTrustedDomainByName trust_by_name;
+		struct policy_handle trust_handle;
+		struct policy_handle handle2;
+		struct lsa_Close c;
+		
+		trust.in.handle = handle;
+		trust.in.sid = domains.domains[i].sid;
+		trust.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		trust.out.trustdom_handle = &trust_handle;
+
+		status = dcerpc_lsa_OpenTrustedDomain(p, mem_ctx, &trust);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("OpenTrustedDomain failed - %s\n", nt_errstr(status));
+			return False;
+		}
+
+		c.in.handle = &trust_handle;
+		c.out.handle = &handle2;
+		
+		status = dcerpc_lsa_Close(p, mem_ctx, &c);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Close of trusted doman failed - %s\n", nt_errstr(status));
+			return False;
+		}
+
+		trust_by_name.in.handle = handle;
+		trust_by_name.in.name = domains.domains[i].name;
+		trust_by_name.in.access_mask = SEC_RIGHTS_MAXIMUM_ALLOWED;
+		trust_by_name.out.trustdom_handle = &trust_handle;
+		
+		status = dcerpc_lsa_OpenTrustedDomainByName(p, mem_ctx, &trust_by_name);
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("OpenTrustedDomainByName failed - %s\n", nt_errstr(status));
+			return False;
+		}
+
+		c.in.handle = &trust_handle;
+		c.out.handle = &handle2;
+		
+		status = dcerpc_lsa_Close(p, mem_ctx, &c);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("Close of trusted doman failed - %s\n", nt_errstr(status));
+			return False;
+		}
+	}
+
+	return ret;
 }
 
 static BOOL test_QueryInfoPolicy(struct dcerpc_pipe *p, 

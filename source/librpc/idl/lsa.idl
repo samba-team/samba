@@ -56,10 +56,10 @@
 	/******************/
 	/* Function: 0x03 */
 
-	NTSTATUS lsa_QuerySecObj (
+	NTSTATUS lsa_QuerySecurity (
 		[in,ref]     policy_handle *handle,
 		[in]         uint32 sec_info,
-		[out]        sec_desc_buf *sd
+		[out]        sec_desc_buf *sdbuf
 		);
 
 
@@ -396,8 +396,15 @@
 	NTSTATUS lsa_GetSystemAccessAccount();
 	/* Function:    0x18 */
 	NTSTATUS lsa_SetSystemAccessAccount();
+
 	/* Function:        0x19 */
-	NTSTATUS lsa_OpenTrustedDomain();
+	NTSTATUS lsa_OpenTrustedDomain(
+		[in,ref]     policy_handle *handle,
+		[in,ref]     dom_sid2      *sid,
+		[in]         uint32         access_mask,
+		[out,ref]    policy_handle *trustdom_handle
+		);
+
 	/* Function:       0x1a */
 	NTSTATUS lsa_QueryInfoTrustedDomain();
 	/* Function:     0x1b */
@@ -566,7 +573,12 @@
 	NTSTATUS lsa_SetDomInfoPolicy();
 
 	/* Function 0x37 */
-	NTSTATUS lsa_OpenTrustedDomainByName();
+	NTSTATUS lsa_OpenTrustedDomainByName(
+		[in,ref]     policy_handle *handle,
+		[in]         lsa_Name       name,
+		[in]         uint32         access_mask,
+		[out,ref]    policy_handle *trustdom_handle
+		);
 
 	/* Function 0x38 */
 	NTSTATUS lsa_TestCall();

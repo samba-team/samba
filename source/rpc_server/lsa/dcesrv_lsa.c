@@ -113,8 +113,8 @@ static NTSTATUS lsa_EnumPrivs(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 /* 
   lsa_QuerySecObj 
 */
-static NTSTATUS lsa_QuerySecObj(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-				struct lsa_QuerySecObj *r)
+static NTSTATUS lsa_QuerySecurity(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct lsa_QuerySecurity *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
