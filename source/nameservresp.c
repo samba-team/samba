@@ -507,7 +507,6 @@ void debug_state_type(int state)
     case NAME_QUERY_CONFIRM      : DEBUG(4,("NAME_QUERY_CONFIRM\n")); break;
     case NAME_QUERY_SYNC_LOCAL   : DEBUG(4,("NAME_QUERY_SYNC_LOCAL\n")); break;
     case NAME_QUERY_SYNC_REMOTE  : DEBUG(4,("NAME_QUERY_SYNC_REMOTE\n")); break;
-/*    case NAME_QUERY_ANNOUNCE_HOST: DEBUG(4,("NAME_QUERY_ANNCE_HOST\n"));break; */
     case NAME_QUERY_DOMAIN       : DEBUG(4,("NAME_QUERY_DOMAIN\n")); break;
       
     case NAME_REGISTER           : DEBUG(4,("NAME_REGISTER\n")); break;
@@ -585,7 +584,6 @@ static BOOL response_problem_check(struct response_record *n,
 			     lots of responses */
 			  return False;
 			}
-/*		      case NAME_QUERY_ANNOUNCE_HOST: */
 		      case NAME_QUERY_DOM_SRV_CHK:
 		      case NAME_QUERY_SRV_CHK:
 		      case NAME_QUERY_MST_CHK:
@@ -654,7 +652,6 @@ static BOOL response_compatible(struct response_record *n,
 
     case NAME_REGISTER_CHALLENGE: /* this is a query: we then do a register */
     case NAME_QUERY_CONFIRM:
-/*    case NAME_QUERY_ANNOUNCE_HOST: */
     case NAME_QUERY_SYNC_LOCAL:
     case NAME_QUERY_SYNC_REMOTE:
     case NAME_QUERY_DOM_SRV_CHK:
