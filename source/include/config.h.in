@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -210,6 +210,7 @@
 #undef HAVE_SOLARIS_ACLS
 #undef HAVE_IRIX_ACLS
 #undef HAVE_AIX_ACLS
+#undef HAVE_DRAFT13_POSIX_ACLS
 #undef HAVE_NO_ACLS
 #undef HAVE_LIBPAM
 #undef HAVE_ASPRINTF_DECL

@@ -1457,7 +1457,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					uid_to_sid( &sid, *puid);
 					unix_ug.uid = *puid;
 					owner_type = UID_ACE;
-					sys_acl_free_qualifier((void *)puid);
+					sys_acl_free_qualifier((void *)puid,tagtype);
 					break;
 				}
 			case SMB_ACL_GROUP_OBJ:
@@ -1476,7 +1476,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 					gid_to_sid( &sid, *pgid);
 					unix_ug.gid = *pgid;
 					owner_type = GID_ACE;
-					sys_acl_free_qualifier((void *)pgid);
+					sys_acl_free_qualifier((void *)pgid,tagtype);
 					break;
 				}
 			case SMB_ACL_MASK:
