@@ -32,9 +32,8 @@ void prs_debug(prs_struct *ps, int depth, const char *desc,
 	       const char *fn_name)
 {
 	CHECK_STRUCT(ps);
-	DEBUG(5 + depth,
-	      ("%s%06x %s %s\n", tab_depth(depth), ps->offset, fn_name,
-	       desc));
+	DEBUG(5 + depth, ("%s%06x %s %s\n",
+			  tab_depth(depth), ps->offset, fn_name, desc));
 }
 
 /*******************************************************************
@@ -92,8 +91,8 @@ void prs_set_packtype(prs_struct *ps, const uint8 *pack_type)
 {
 	CHECK_STRUCT(ps);
 	ps->bigendian = pack_type[0] == 0x0;
-	DEBUG(10,
-	      ("prs_set_packtype: bigendian: %s\n", BOOLSTR(ps->bigendian)));
+	DEBUG(10, ("prs_set_packtype: bigendian: %s\n",
+		   BOOLSTR(ps->bigendian)));
 }
 
 /*******************************************************************
@@ -188,8 +187,7 @@ static const prs_struct *prs_find(const prs_struct *buf, uint32 offset)
 
 	if (f != NULL)
 	{
-		DEBUG(200,
-		      ("prs_find: found data[%d..%d]\n", f->start, f->end));
+		DEBUG(200, ("prs_find: found [%d..%d]\n", f->start, f->end));
 	}
 
 	return f;
@@ -212,8 +210,9 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 	CHECK_STRUCT(buf);
 	if (DEBUGLVL(200))
 	{
-		DEBUG(200, ("prs_struct_copy: data[%d..%d] offset %d len %d\n",
-		    buf->start, prs_buf_len(buf), offset, len));
+		DEBUG(200, ("prs_struct_copy: data[%d..%d] "
+			"offset %d len %d\n",
+		       buf->start, prs_buf_len(buf), offset, len));
 	}
 
 	prs_debug_out(bcp, "prs_struct_copy", 200);
@@ -235,9 +234,8 @@ BOOL prs_buf_copy(char *copy_into, const prs_struct *buf,
 
 	if (bcp != NULL)
 	{
-		DEBUG(200,
-		      ("prs_struct_copy: copied %d bytes\n",
-		       offset - start_offset));
+		DEBUG(200, ("prs_struct_copy: copied %d bytes\n",
+			    offset - start_offset));
 	}
 	else
 	{
@@ -276,7 +274,8 @@ static void prs_free_chain(prs_struct **buf)
 	CHECK_STRUCT(*buf);
 	if ((*buf)->next != NULL)
 	{
-		prs_free_chain(&((*buf)->next));	/* delete all other items in chain */
+		/* delete all other items in chain */
+		prs_free_chain(&((*buf)->next));
 	}
 	prs_struct_free(buf);
 }
@@ -309,7 +308,7 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 
 	prs_debug_out(buf, "prs_realloc_data - before", 200);
 
-	SMB_ASSERT(new_size >= 0);
+	SMB_ASSERT(((ssize_t) new_size) >= 0);
 
 	if (new_size == 0)
 	{
@@ -331,15 +330,13 @@ BOOL prs_realloc_data(prs_struct *buf, size_t new_size)
 	}
 	else if (buf->data_size >= new_size)
 	{
-		DEBUG(3,
-		      ("prs_realloc_data: warning - could not realloc to %d\n",
-		       new_size));
+		DEBUG(3, ("prs_realloc_data: warning - "
+			  "could not realloc to %d\n", new_size));
 	}
 	else
 	{
-		DEBUG(3,
-		      ("prs_realloc_data: error - could not realloc to %d\n",
-		       new_size));
+		DEBUG(3, ("prs_realloc_data: error - "
+			  "could not realloc to %d\n", new_size));
 
 		prs_free_data(buf);
 		buf->error = True;
@@ -1114,7 +1111,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 	DEBUG(200, ("_prs_string: string %s len %d max %d\n",
 		    str, len, max_buf_size));
 
-	DEBUG(5+depth,
+	DEBUG(5 + depth,
 	      ("%s%04x %s: ", tab_depth(depth), ps->offset,
 	       name != NULL ? name : ""));
 	do
@@ -1130,7 +1127,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 		if (q == NULL)
 		{
 			ps->error = True;
-			DEBUG(5+depth, ("%s\n", str));
+			DEBUG(5 + depth, ("%s\n", str));
 			prs_debug_out(ps, "_prs_string error", 5);
 			return False;
 		}
@@ -1150,7 +1147,7 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str,
 
 	ps->offset += i + 1;
 
-	DEBUG(5+depth, ("%s\n", str));
+	DEBUG(5 + depth, ("%s\n", str));
 
 	return True;
 }

@@ -1307,6 +1307,17 @@ static uint32 size_of_relative_string(UNISTR *string)
 }
 
 /*******************************************************************
+ * return the length of a uint32 + sec desc
+ ********************************************************************/
+static uint32 size_of_sec_desc(SEC_DESC *sec)
+{
+	if (sec==NULL)
+		return 4;
+	else 
+		return 4+1024;
+}
+
+/*******************************************************************
  * return the length of a uint32 (obvious, but the code is clean)
  ********************************************************************/
 static uint32 size_of_device_mode(DEVICEMODE *devmode)
@@ -1512,7 +1523,7 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 		
 		if (*secdesc != NULL)
 		{
-			buffer->string_at_end -= 512; /* HACK! */
+			buffer->string_at_end -= 1024; /* HACK! */
 			
 			prs_set_offset(ps, buffer->string_at_end);
 			
@@ -2367,7 +2378,7 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
 	int size=0;
 		
-	size+=4;      /* the security descriptor */
+	size += size_of_sec_desc( info->secdesc );
 	
 	size+=size_of_device_mode( info->devmode );
 	
@@ -2404,7 +2415,7 @@ uint32 spoolss_size_printer_info_3(PRINTER_INFO_3 *info)
 	 * security descriptor.  spoolss is a stupidly designed
 	 * api.
 	 */
-	return 1024;
+	return size_of_sec_desc( &info->sec );
 }
 
 /*******************************************************************

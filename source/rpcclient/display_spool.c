@@ -98,7 +98,7 @@ static void display_print_info_1(FILE *out_hnd, PRINTER_INFO_1 *i1)
 /****************************************************************************
 printer info level 2 display function
 ****************************************************************************/
-static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
+static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i2)
 {
 	fstring servername;
 	fstring printername;
@@ -112,20 +112,20 @@ static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
 	fstring datatype;
 	fstring parameters;
 	
-	if (i1 == NULL)
+	if (i2 == NULL)
 		return;
 
-	unistr_to_ascii(servername, i1->servername.buffer, sizeof(servername)-1);
-	unistr_to_ascii(printername, i1->printername.buffer, sizeof(printername)-1);
-	unistr_to_ascii(sharename, i1->sharename.buffer, sizeof(sharename)-1);
-	unistr_to_ascii(portname, i1->portname.buffer, sizeof(portname)-1);
-	unistr_to_ascii(drivername, i1->drivername.buffer, sizeof(drivername)-1);
-	unistr_to_ascii(comment, i1->comment.buffer, sizeof(comment)-1);
-	unistr_to_ascii(location, i1->location.buffer, sizeof(location)-1);
-	unistr_to_ascii(sepfile, i1->sepfile.buffer, sizeof(sepfile)-1);
-	unistr_to_ascii(printprocessor, i1->printprocessor.buffer, sizeof(printprocessor)-1);
-	unistr_to_ascii(datatype, i1->datatype.buffer, sizeof(datatype)-1);
-	unistr_to_ascii(parameters, i1->parameters.buffer, sizeof(parameters)-1);
+	unistr_to_ascii(servername, i2->servername.buffer, sizeof(servername)-1);
+	unistr_to_ascii(printername, i2->printername.buffer, sizeof(printername)-1);
+	unistr_to_ascii(sharename, i2->sharename.buffer, sizeof(sharename)-1);
+	unistr_to_ascii(portname, i2->portname.buffer, sizeof(portname)-1);
+	unistr_to_ascii(drivername, i2->drivername.buffer, sizeof(drivername)-1);
+	unistr_to_ascii(comment, i2->comment.buffer, sizeof(comment)-1);
+	unistr_to_ascii(location, i2->location.buffer, sizeof(location)-1);
+	unistr_to_ascii(sepfile, i2->sepfile.buffer, sizeof(sepfile)-1);
+	unistr_to_ascii(printprocessor, i2->printprocessor.buffer, sizeof(printprocessor)-1);
+	unistr_to_ascii(datatype, i2->datatype.buffer, sizeof(datatype)-1);
+	unistr_to_ascii(parameters, i2->parameters.buffer, sizeof(parameters)-1);
 
 	report(out_hnd, "\tservername:[%s]\n", servername);
 	report(out_hnd, "\tprintername:[%s]\n", printername);
@@ -138,14 +138,21 @@ static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
 	report(out_hnd, "\tprintprocessor:[%s]\n", printprocessor);
 	report(out_hnd, "\tdatatype:[%s]\n", datatype);
 	report(out_hnd, "\tparameters:[%s]\n", parameters);
-	report(out_hnd, "\tattributes:[%x]\n", i1->attributes);
-	report(out_hnd, "\tpriority:[%x]\n", i1->priority);
-	report(out_hnd, "\tdefaultpriority:[%x]\n", i1->defaultpriority);
-	report(out_hnd, "\tstarttime:[%x]\n", i1->starttime);
-	report(out_hnd, "\tuntiltime:[%x]\n", i1->untiltime);
-	report(out_hnd, "\tstatus:[%x]\n", i1->status);
-	report(out_hnd, "\tcjobs:[%x]\n", i1->cjobs);
-	report(out_hnd, "\taverageppm:[%x]\n\n", i1->averageppm);
+	report(out_hnd, "\tattributes:[%x]\n", i2->attributes);
+	report(out_hnd, "\tpriority:[%x]\n", i2->priority);
+	report(out_hnd, "\tdefaultpriority:[%x]\n", i2->defaultpriority);
+	report(out_hnd, "\tstarttime:[%x]\n", i2->starttime);
+	report(out_hnd, "\tuntiltime:[%x]\n", i2->untiltime);
+	report(out_hnd, "\tstatus:[%x]\n", i2->status);
+	report(out_hnd, "\tcjobs:[%x]\n", i2->cjobs);
+	report(out_hnd, "\taverageppm:[%x]\n\n", i2->averageppm);
+
+	if (i2->secdesc != NULL)
+	{
+		display_sec_desc(out_hnd, ACTION_HEADER   , i2->secdesc);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, i2->secdesc);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , i2->secdesc);
+	}
 }
 
 /****************************************************************************
