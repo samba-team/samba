@@ -414,7 +414,7 @@ static NTSTATUS db_idmap_init( char *params )
 		tdb_is_new = True;
 	}
 
-	DEBUG(10,("db_idmap_init: Opening tdbfile\n", tdbfile ));
+	DEBUG(10,("db_idmap_init: Opening tdbfile %s\n", tdbfile ));
 
 	/* Open idmap repository */
 	if (!(idmap_tdb = tdb_open_log(tdbfile, 0,
@@ -427,20 +427,20 @@ static NTSTATUS db_idmap_init( char *params )
 
 	SAFE_FREE(tdbfile);
 
+	if (tdb_is_new) {
+		/* the file didn't existed before opening it, let's
+		 * store idmap version as nobody else yet opened and
+		 * stored it. I do not like this method but didn't
+		 * found a way to understand if an opened tdb have
+		 * been just created or not --- SSS */
+		tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION);
+	}
+
 	/* check against earlier versions */
 	version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
 	if (version != IDMAP_VERSION) {
-		if (tdb_is_new) {
-			/* the file didn't existed before opening it, let's
-			 * store idmap version as nobody else yet opened and
-			 * stored it. I do not like this method but didn't
-			 * found a way to understand if an opened tdb have
-			 * been just created or not --- SSS */
-			tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION);
-		} else {
-			DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
-			return NT_STATUS_INTERNAL_DB_ERROR;
-		}
+		DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
+		return NT_STATUS_INTERNAL_DB_ERROR;
 	}
 
 	/* Create high water marks for group and user id */
