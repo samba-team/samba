@@ -97,12 +97,12 @@ should check again if the module has been registered.
 
 <para>
 Each module has an initialisation function. For modules that are 
-included with samba this name is '<replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>_init'. For external modules (that will never be built-in, but only available as a module) this name is always 'module_init'. (In the case of modules included with samba, the configure system will add a #define subsystem_backend_init() module_init()).
+included with samba this name is '<replaceable>subsystem</replaceable>_<replaceable>backend</replaceable>_init'. For external modules (that will never be built-in, but only available as a module) this name is always 'init_module'. (In the case of modules included with samba, the configure system will add a #define subsystem_backend_init() init_module()).
 The prototype for these functions is:
 </para>
 
 <para><programlisting>
-int module_init(void);
+int init_module(void);
 </programlisting></para>
 
 <para>This function should call one or more 
