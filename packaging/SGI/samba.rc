@@ -4,8 +4,25 @@
 # Samba server control
 #
 
+stop_samba()
+{
+    if [ -r /usr/samba/var/locks/smbd.pid ]; then
+	smbd_group=`cat /usr/samba/var/locks/smbd.pid`
+	ps -p $smbd_group | grep smbd > /dev/null
+	if [ $? -eq 0 ]; then
+	    /usr/bin/kill -15 -$smbd_group
+	fi
+    fi
+    if [ -r /usr/samba/var/locks/nmbd.pid ]; then
+	nmbd_group=`cat /usr/samba/var/locks/nmbd.pid`
+	ps -p $nmbd_group | grep nmbd > /dev/null
+	if [ $? -eq 0 ]; then
+	    /usr/bin/kill -15 -$nmbd_group
+	fi
+    fi
+}
+
 IS_ON=/etc/chkconfig
-KILL=/usr/bin/kill
 
 SAMBAD=/usr/samba/bin/smbd
 #SAMBA_OPTS=-d2
@@ -25,14 +42,7 @@ fi
 case $1 in
 'profile')
 	if $IS_ON samba && test -x $SAMBAD; then
-	    ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
-	    if [ $? -eq 0 ]; then
-		$KILL -15 `cat /usr/samba/var/locks/smbd.pid`
-	    fi
-	    ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
-	    if [ $? -eq 0 ]; then
-		$KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
-	    fi
+	    stop_samba;
 	    $ECHO "Samba:\c"
 	    $SAMBAD.profile $SAMBA_OPTS; $ECHO " smbd.profile\c"
 	    $NMBD.profile $NMBD_OPTS; $ECHO " nmbd.profile\c"
@@ -41,14 +51,7 @@ case $1 in
 	;;
 'start')
 	if $IS_ON samba && test -x $SAMBAD; then
-	    ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
-	    if [ $? -eq 0 ]; then
-		$KILL -15 `cat /usr/samba/var/locks/smbd.pid`
-	    fi
-	    ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
-	    if [ $? -eq 0 ]; then
-		$KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
-	    fi
+	    stop_samba;
 	    $ECHO "Samba:\c"
 	    $SAMBAD $SAMBA_OPTS; $ECHO " smbd\c"
 	    $NMBD $NMBD_OPTS; $ECHO " nmbd\c"
@@ -57,14 +60,7 @@ case $1 in
 	;;
 'stop')
 	$ECHO "Stopping Samba Servers."
-	ps -p `cat /usr/samba/var/locks/smbd.pid` | grep smbd > /dev/null
-	if [ $? -eq 0 ]; then
-	    $KILL -15 `cat /usr/samba/var/locks/smbd.pid`
-	fi
-	ps -p `cat /usr/samba/var/locks/nmbd.pid` | grep nmbd > /dev/null
-	if [ $? -eq 0 ]; then
-	    $KILL -15 `cat /usr/samba/var/locks/nmbd.pid`
-	fi
+	stop_samba;
 	exit 0
 	;;
 *)
