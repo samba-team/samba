@@ -341,6 +341,9 @@ int smbw_path(const char *path)
 	char *cwd;
 	int len;
 
+	if(!path)
+		return 0;
+
 	/* this is needed to prevent recursion with the BSD malloc which
 	   opens /etc/malloc.conf on the first call */
 	if (strncmp(path,"/etc/", 5) == 0) {
