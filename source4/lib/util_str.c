@@ -76,51 +76,6 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 
 static uint16_t tmpbuf[sizeof(pstring)];
 
-/**
- Convert list of tokens to array; dependent on above routine.
- Uses last_ptr from above - bit of a hack.
-**/
-
-char **toktocliplist(const char *ptr, int *ctok, const char *sep)
-{
-	char *s = ptr;
-	int ictok=0;
-	char **ret, **iret;
-
-	if (!sep)
-		sep = " \t\n\r";
-
-	while(*s && strchr_m(sep,*s))
-		s++;
-
-	/* nothing left? */
-	if (!*s)
-		return(NULL);
-
-	do {
-		ictok++;
-		while(*s && (!strchr_m(sep,*s)))
-			s++;
-		while(*s && strchr_m(sep,*s))
-			*s++=0;
-	} while(*s);
-	
-	*ctok=ictok;
-	s = ptr;
-	
-	if (!(ret=iret=malloc(ictok*sizeof(char *))))
-		return NULL;
-	
-	while(ictok--) {    
-		*iret++=s;
-		while(*s++)
-			;
-		while(!*s)
-			s++;
-	}
-
-	return ret;
-}
 
 /**
  Case insensitive string compararison.
@@ -736,6 +691,12 @@ char *strchr_m(const char *s, char c)
 	pstring s2;
 	smb_ucs2_t *p;
 
+	/* characters below 0x3F are guaranteed to not appear in
+	   non-initial position in multi-byte charsets */
+	if ((c & 0xC0) == 0) {
+		return strchr(s, c);
+	}
+
 	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
 	if (!p)
@@ -750,6 +711,12 @@ char *strrchr_m(const char *s, char c)
 	wpstring ws;
 	pstring s2;
 	smb_ucs2_t *p;
+
+	/* characters below 0x3F are guaranteed to not appear in
+	   non-initial position in multi-byte charsets */
+	if ((c & 0xC0) == 0) {
+		return strrchr(s, c);
+	}
 
 	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
 	p = strrchr_w(ws, UCS2_CHAR(c));
