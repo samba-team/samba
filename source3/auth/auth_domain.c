@@ -212,7 +212,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(*cli)));
 	result = cli_nt_setup_creds(*cli, sec_chan, trust_passwd, &neg_flags, 2);
 
         if (!NT_STATUS_IS_OK(result)) {
-		DEBUG(0,("connect_to_domain_password_server: unable to setup the PDC credentials to machine \
+		DEBUG(0,("connect_to_domain_password_server: unable to setup the NETLOGON credentials to machine \
 %s. Error was : %s.\n", remote_machine, nt_errstr(result)));
 		cli_nt_session_close(*cli);
 		cli_ulogoff(*cli);
