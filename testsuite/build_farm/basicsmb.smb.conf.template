@@ -1,7 +1,7 @@
 [global]
     netbios name = BUILDFARM
     workgroup = TESTWG
-    log level = 3
+    log level = LOGLEVEL
     debug timestamp = no
     encrypt passwords = yes
     server string = Samba %v Build Farm Tests

@@ -1,2 +1,3 @@
 security=server
-password server=localhost
+password server=user
+smb password file=/dev/null
