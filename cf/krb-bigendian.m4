@@ -50,4 +50,13 @@ fi
 if test "$krb_cv_c_bigendian_compile" = "yes"; then
   AC_DEFINE(ENDIANESS_IN_SYS_PARAM_H, 1, [define if sys/param.h defines the endiness])dnl
 fi
+AH_BOTTOM([
+#if ENDIANESS_IN_SYS_PARAM_H
+#  include <sys/types.h>
+#  include <sys/param.h>
+#  if BYTE_ORDER == BIG_ENDIAN
+#  define WORDS_BIGENDIAN 1
+#  endif
+#endif
+])
 ])
