@@ -776,7 +776,7 @@ PYTHON_DCERPC_OBJ = \$(SUBSYSTEM_LIBRPC_RAW_OBJS) \\
 
 PYTHON_DCERPC_LIBS = -lldap
 
-SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/winreg.i
+SWIG_INCLUDES = librpc/gen_ndr/samr.i librpc/gen_ndr/lsa.i librpc/gen_ndr/winreg.i librpc/gen_ndr/spoolss.i
 
 scripting/swig/dcerpc.py: scripting/swig/dcerpc.i scripting/swig/samba.i \$(SWIG_INCLUDES)
 	swig -python scripting/swig/dcerpc.i
