@@ -838,8 +838,11 @@ void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
 void SMBencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 void E_md4hash(uchar *passwd, uchar *p16);
+void lm_owf_genW(const UNISTR2 *pwd, uchar p16[16]);
 void lm_owf_gen(const char *pwd, uchar p16[16]);
+void nt_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16]);
 void nt_owf_gen(const char *pwd, uchar nt_p16[16]);
+void nt_lm_owf_genW(const UNISTR2 *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void nt_lm_owf_gen(const char *pwd, uchar nt_p16[16], uchar lm_p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void SMBOWFencrypt_ntv2(const uchar kr[16], 
@@ -861,7 +864,7 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 				uint32 ntlmssp_cli_flgs,
                                 prs_struct *auth_resp);
 BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
-			int new_passwd_size, BOOL nt_pass_set);
+			int new_passwd_size, uint32 *new_pw_len);
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set);
 
