@@ -88,7 +88,6 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 	}
 	else
 		*parent_keyname = '\0';
-		
 
 	DEBUG(7,("open_registry_key: name = [%s][%s]\n", parent_keyname, subkeyname));
 
@@ -102,8 +101,6 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 		
 	ZERO_STRUCTP( regkey );
 	
-	DLIST_ADD( regkeys_list, regkey );
-
 	/* copy the name */
 	
 	pstrcpy( regkey->name, parent_keyname );
@@ -140,14 +137,17 @@ static NTSTATUS open_registry_key(pipes_struct *p, POLICY_HND *hnd, REGISTRY_KEY
 			result = NT_STATUS_OBJECT_NAME_NOT_FOUND; 
 	}
 	
-	DEBUG(7,("open_registry_key: exit\n"));
-	
 	/* clean up */
 
 	regsubkey_ctr_destroy( &subkeys );
 	
 	if ( ! NT_STATUS_IS_OK(result) )
 		SAFE_FREE( regkey );
+	else
+		DLIST_ADD( regkeys_list, regkey );
+
+	
+	DEBUG(7,("open_registry_key: exit\n"));
 
 	return result;
 }
@@ -380,7 +380,7 @@ NTSTATUS _reg_info(pipes_struct *p, REG_Q_INFO *q_u, REG_R_INFO *r_u)
  out:
 	init_reg_r_info(q_u->ptr_buf, r_u, buf, type, status);
 
-	DEBUG(5,("reg_open_entry: Exit\n"));
+	DEBUG(5,("_reg_info: Exit\n"));
 
 	return status;
 }
