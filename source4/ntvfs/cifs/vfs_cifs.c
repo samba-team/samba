@@ -32,7 +32,7 @@ struct cvfs_private {
 	struct smbcli_tree *tree;
 	struct smbcli_transport *transport;
 	struct smbsrv_tcon *tcon;
-	const struct ntvfs_ops *ops;
+	/*const struct ntvfs_ops *ops;*/
 };
 
 
@@ -89,7 +89,8 @@ static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, 
 /*
   connect to a share - used when a tree_connect operation comes in.
 */
-static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename, int depth)
+static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	NTSTATUS status;
@@ -120,7 +121,7 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename, 
 	}
 	ZERO_STRUCTP(private);
 
-	ntvfs_set_private(req->tcon, depth, private);
+	ntvfs->private_data = private;
 
 	status = smbcli_tree_full_connection(private,
 					     &private->tree, 
@@ -137,7 +138,7 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename, 
 	private->transport = private->tree->session->transport;
 	private->tree->session->pid = SVAL(req->in.hdr, HDR_PID);
 	private->tcon = req->tcon;
-	private->ops  = ntvfs_backend_byname("cifs", NTVFS_DISK);
+	/*private->ops  = ntvfs_backend_byname("cifs", NTVFS_DISK);*/
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
 	tcon->dev_type = talloc_strdup(tcon, "A:");
@@ -158,9 +159,10 @@ static NTSTATUS cvfs_connect(struct smbsrv_request *req, const char *sharename, 
 /*
   disconnect from a share
 */
-static NTSTATUS cvfs_disconnect(struct smbsrv_tcon *tcon, int depth)
+static NTSTATUS cvfs_disconnect(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_tcon *tcon)
 {
-	struct cvfs_private *private = tcon->ntvfs_private_list[depth];
+	struct cvfs_private *private = ntvfs->private_data;
 
 	smb_tree_disconnect(private->tree);
 	talloc_free(private->tree);
@@ -204,9 +206,10 @@ static void async_simple(struct smbcli_request *c_req)
   delete a file - the dirtype specifies the file types to include in the search. 
   The name can contain CIFS wildcards, but rarely does (except with OS/2 clients)
 */
-static NTSTATUS cvfs_unlink(struct smbsrv_request *req, struct smb_unlink *unl)
+static NTSTATUS cvfs_unlink(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_unlink *unl)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	/* see if the front end will allow us to perform this
@@ -234,9 +237,10 @@ static void async_ioctl(struct smbcli_request *c_req)
 /*
   ioctl interface
 */
-static NTSTATUS cvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
+static NTSTATUS cvfs_ioctl(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_ioctl *io)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	/* see if the front end will allow us to perform this
@@ -253,9 +257,10 @@ static NTSTATUS cvfs_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 /*
   check if a directory exists
 */
-static NTSTATUS cvfs_chkpath(struct smbsrv_request *req, struct smb_chkpath *cp)
+static NTSTATUS cvfs_chkpath(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_chkpath *cp)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -281,9 +286,10 @@ static void async_qpathinfo(struct smbcli_request *c_req)
 /*
   return info on a pathname
 */
-static NTSTATUS cvfs_qpathinfo(struct smbsrv_request *req, union smb_fileinfo *info)
+static NTSTATUS cvfs_qpathinfo(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -309,9 +315,10 @@ static void async_qfileinfo(struct smbcli_request *c_req)
 /*
   query info on a open file
 */
-static NTSTATUS cvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *info)
+static NTSTATUS cvfs_qfileinfo(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_fileinfo *info)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -327,9 +334,10 @@ static NTSTATUS cvfs_qfileinfo(struct smbsrv_request *req, union smb_fileinfo *i
 /*
   set info on a pathname
 */
-static NTSTATUS cvfs_setpathinfo(struct smbsrv_request *req, union smb_setfileinfo *st)
+static NTSTATUS cvfs_setpathinfo(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_setfileinfo *st)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -356,9 +364,10 @@ static void async_open(struct smbcli_request *c_req)
 /*
   open a file
 */
-static NTSTATUS cvfs_open(struct smbsrv_request *req, union smb_open *io)
+static NTSTATUS cvfs_open(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_open *io)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -373,9 +382,10 @@ static NTSTATUS cvfs_open(struct smbsrv_request *req, union smb_open *io)
 /*
   create a directory
 */
-static NTSTATUS cvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
+static NTSTATUS cvfs_mkdir(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_mkdir *md)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -390,9 +400,10 @@ static NTSTATUS cvfs_mkdir(struct smbsrv_request *req, union smb_mkdir *md)
 /*
   remove a directory
 */
-static NTSTATUS cvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
+static NTSTATUS cvfs_rmdir(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_rmdir *rd)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -406,9 +417,10 @@ static NTSTATUS cvfs_rmdir(struct smbsrv_request *req, struct smb_rmdir *rd)
 /*
   rename a set of files
 */
-static NTSTATUS cvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
+static NTSTATUS cvfs_rename(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_rename *ren)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -423,7 +435,8 @@ static NTSTATUS cvfs_rename(struct smbsrv_request *req, union smb_rename *ren)
 /*
   copy a set of files
 */
-static NTSTATUS cvfs_copy(struct smbsrv_request *req, struct smb_copy *cp)
+static NTSTATUS cvfs_copy(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_copy *cp)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -442,9 +455,10 @@ static void async_read(struct smbcli_request *c_req)
 /*
   read from a file
 */
-static NTSTATUS cvfs_read(struct smbsrv_request *req, union smb_read *rd)
+static NTSTATUS cvfs_read(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_read *rd)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -470,9 +484,10 @@ static void async_write(struct smbcli_request *c_req)
 /*
   write to a file
 */
-static NTSTATUS cvfs_write(struct smbsrv_request *req, union smb_write *wr)
+static NTSTATUS cvfs_write(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_write *wr)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -487,7 +502,8 @@ static NTSTATUS cvfs_write(struct smbsrv_request *req, union smb_write *wr)
 /*
   seek in a file
 */
-static NTSTATUS cvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
+static NTSTATUS cvfs_seek(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_seek *io)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -495,7 +511,8 @@ static NTSTATUS cvfs_seek(struct smbsrv_request *req, struct smb_seek *io)
 /*
   flush a file
 */
-static NTSTATUS cvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
+static NTSTATUS cvfs_flush(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_flush *io)
 {
 	return NT_STATUS_OK;
 }
@@ -503,9 +520,10 @@ static NTSTATUS cvfs_flush(struct smbsrv_request *req, struct smb_flush *io)
 /*
   close a file
 */
-static NTSTATUS cvfs_close(struct smbsrv_request *req, union smb_close *io)
+static NTSTATUS cvfs_close(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_close *io)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -520,9 +538,10 @@ static NTSTATUS cvfs_close(struct smbsrv_request *req, union smb_close *io)
 /*
   exit - closing files open by the pid
 */
-static NTSTATUS cvfs_exit(struct smbsrv_request *req)
+static NTSTATUS cvfs_exit(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -537,7 +556,8 @@ static NTSTATUS cvfs_exit(struct smbsrv_request *req)
 /*
   logoff - closing files open by the user
 */
-static NTSTATUS cvfs_logoff(struct smbsrv_request *req)
+static NTSTATUS cvfs_logoff(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req)
 {
 	/* we can't do this right in the cifs backend .... */
 	return NT_STATUS_OK;
@@ -546,9 +566,10 @@ static NTSTATUS cvfs_logoff(struct smbsrv_request *req)
 /*
   lock a byte range
 */
-static NTSTATUS cvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
+static NTSTATUS cvfs_lock(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_lock *lck)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -562,10 +583,11 @@ static NTSTATUS cvfs_lock(struct smbsrv_request *req, union smb_lock *lck)
 /*
   set info on a open file
 */
-static NTSTATUS cvfs_setfileinfo(struct smbsrv_request *req, 
+static NTSTATUS cvfs_setfileinfo(struct ntvfs_module_context *ntvfs, 
+				 struct smbsrv_request *req, 
 				 union smb_setfileinfo *info)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -591,9 +613,10 @@ static void async_fsinfo(struct smbcli_request *c_req)
 /*
   return filesystem space info
 */
-static NTSTATUS cvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
+static NTSTATUS cvfs_fsinfo(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_fsinfo *fs)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -608,7 +631,8 @@ static NTSTATUS cvfs_fsinfo(struct smbsrv_request *req, union smb_fsinfo *fs)
 /*
   return print queue info
 */
-static NTSTATUS cvfs_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
+static NTSTATUS cvfs_lpq(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, union smb_lpq *lpq)
 {
 	return NT_STATUS_NOT_SUPPORTED;
 }
@@ -616,29 +640,32 @@ static NTSTATUS cvfs_lpq(struct smbsrv_request *req, union smb_lpq *lpq)
 /* 
    list files in a directory matching a wildcard pattern
 */
-static NTSTATUS cvfs_search_first(struct smbsrv_request *req, union smb_search_first *io, 
+static NTSTATUS cvfs_search_first(struct ntvfs_module_context *ntvfs, 
+				  struct smbsrv_request *req, union smb_search_first *io, 
 				  void *search_private, 
 				  BOOL (*callback)(void *, union smb_search_data *))
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 
 	return smb_raw_search_first(private->tree, req, io, search_private, callback);
 }
 
 /* continue a search */
-static NTSTATUS cvfs_search_next(struct smbsrv_request *req, union smb_search_next *io, 
+static NTSTATUS cvfs_search_next(struct ntvfs_module_context *ntvfs, 
+				 struct smbsrv_request *req, union smb_search_next *io, 
 				 void *search_private, 
 				 BOOL (*callback)(void *, union smb_search_data *))
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 
 	return smb_raw_search_next(private->tree, req, io, search_private, callback);
 }
 
 /* close a search */
-static NTSTATUS cvfs_search_close(struct smbsrv_request *req, union smb_search_close *io)
+static NTSTATUS cvfs_search_close(struct ntvfs_module_context *ntvfs, 
+				  struct smbsrv_request *req, union smb_search_close *io)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 
 	return smb_raw_search_close(private->tree, io);
 }
@@ -655,9 +682,10 @@ static void async_trans2(struct smbcli_request *c_req)
 }
 
 /* raw trans2 */
-static NTSTATUS cvfs_trans2(struct smbsrv_request *req, struct smb_trans2 *trans2)
+static NTSTATUS cvfs_trans2(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_trans2 *trans2)
 {
-	NTVFS_GET_PRIVATE(cvfs_private, private, req);
+	struct cvfs_private *private = ntvfs->private_data;
 	struct smbcli_request *c_req;
 
 	if (!req->async.send_fn) {
@@ -671,7 +699,8 @@ static NTSTATUS cvfs_trans2(struct smbsrv_request *req, struct smb_trans2 *trans
 
 
 /* SMBtrans - not used on file shares */
-static NTSTATUS cvfs_trans(struct smbsrv_request *req, struct smb_trans2 *trans2)
+static NTSTATUS cvfs_trans(struct ntvfs_module_context *ntvfs, 
+				struct smbsrv_request *req, struct smb_trans2 *trans2)
 {
 	return NT_STATUS_ACCESS_DENIED;
 }
@@ -721,7 +750,7 @@ NTSTATUS ntvfs_cifs_init(void)
 	ops.logoff = cvfs_logoff;
 
 	if (lp_parm_bool(-1, "cifs", "maptrans2", False)) {
-	    ops.trans2 = cvfs_trans2;
+		ops.trans2 = cvfs_trans2;
 	}
 
 	/* register ourselves with the NTVFS subsystem. We register
