@@ -2725,7 +2725,7 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 	fstring remote_machine;
 	struct in_addr dest_ip;
 	struct nmb_name calling, called;
-	BOOL connected_ok = True;
+	BOOL connected_ok = False;
 
 	ZERO_STRUCTP(cli);
 
