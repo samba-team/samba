@@ -5736,8 +5736,8 @@ uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
 		return ERROR_INVALID_HANDLE;
 
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("_spoolss_deleteprinterdata: security descriptor change denied by existing "
-			  "security descriptor\n"));
+		DEBUG(3, ("_spoolss_deleteprinterdata: printer properties "
+			  "change denied by existing security descriptor\n"));
 		return ERROR_ACCESS_DENIED;
 	}
 
