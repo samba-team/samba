@@ -3425,9 +3425,7 @@ int reply_lockingX(char *inbuf,char *outbuf,int length,int bufsize)
   /* Check if this is an oplock break on a file
      we have granted an oplock on.
    */
-  if((locktype == LOCKING_ANDX_OPLOCK_RELEASE) && 
-     (num_ulocks == 0) && (num_locks == 0) &&
-     (CVAL(inbuf,smb_vwv0) == 0xFF))
+  if ((locktype & LOCKING_ANDX_OPLOCK_RELEASE))
   {
     int token;
     files_struct *fsp = &Files[fnum];
@@ -3448,19 +3446,21 @@ no oplock granted on this file.\n", fnum));
 
     /* Remove the oplock flag from the sharemode. */
     lock_share_entry(fsp->cnum, dev, inode, &token);
-    if(remove_share_oplock( fnum, token)==False)
-    {
-      DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
-dev = %x, inode = %x\n", fnum, dev, inode));
-      unlock_share_entry(fsp->cnum, dev, inode, token);
-      return -1;
+    if(remove_share_oplock( fnum, token)==False) {
+	    DEBUG(0,("reply_lockingX: failed to remove share oplock for fnum %d, \
+dev = %x, inode = %x\n", 
+		     fnum, dev, inode));
+	    unlock_share_entry(fsp->cnum, dev, inode, token);
+    } else {
+	    unlock_share_entry(fsp->cnum, dev, inode, token);
+
+	    /* Clear the granted flag and return. */
+	    fsp->granted_oplock = False;
     }
-    unlock_share_entry(fsp->cnum, dev, inode, token);
 
-    /* Clear the granted flag and return. */
-
-    fsp->granted_oplock = False;
-    return -1;
+    /* if this is a pure oplock break request then don't send a reply */
+    if (num_locks == 0 && num_ulocks == 0)
+	    return -1;
   }
 
   /* Data now points at the beginning of the list

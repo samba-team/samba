@@ -1804,14 +1804,12 @@ extern int unix_ERR_code;
 /*
  * Core protocol.
  */
-#define CORE_OPLOCK_REQUEST(inbuf) (((CVAL(inbuf,smb_flg)|(1<<5))>>5) | \
-                                    ((CVAL(inbuf,smb_flg)|(1<<6))>>5))
+#define CORE_OPLOCK_REQUEST(inbuf) ((CVAL(inbuf,smb_flg)&((1<<5)|(1<<6)))>>5)
 
 /*
  * Extended protocol.
  */
-#define EXTENDED_OPLOCK_REQUEST(inbuf) (((SVAL(inbuf,smb_vwv2)|(1<<1))>>1) | \
-                                        ((SVAL(inbuf,smb_vwv2)|(1<<2))>>1))
+#define EXTENDED_OPLOCK_REQUEST(inbuf) ((SVAL(inbuf,smb_vwv2)&((1<<1)|(1<<2)))>>1)
 
 /* Lock types. */
 #define LOCKING_ANDX_SHARED_LOCK 0x1
