@@ -686,13 +686,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 
 		  /* If we found it, apply the other bits, else create such a key */
 		  if (W_ERROR_EQUAL(error, WERR_DEST_NOT_FOUND)) {
-			  if(W_ERROR_IS_OK(reg_key_add_name_recursive_abs(r, cmd->key))) {
-				  error = reg_open_key_abs(mem_ctx, r, cmd->key, &tmp);
-				  if(!W_ERROR_IS_OK(error)) {
-					DEBUG(0, ("Error finding new key '%s' after it has been added\n", cmd->key));
-					continue;
-				  }
-			  } else {
+			  if(!W_ERROR_IS_OK(reg_key_add_abs(mem_ctx, r, cmd->key, 0, NULL, &tmp))) {
 					DEBUG(0, ("Error adding new key '%s'\n", cmd->key));
 					continue;
 			  }
@@ -730,13 +724,7 @@ static int nt_apply_reg_command_file(struct registry_context *r, const char *cmd
 		   * Find the key if it exists, and delete it ...
 		   */
 
-		  error = reg_open_key_abs(mem_ctx, r, cmd->key, &tmp);
-		  if(!W_ERROR_IS_OK(error)) {
-			  DEBUG(0, ("Unable to open key '%s'\n", cmd->key));
-			  continue;
-		  }
-		  
-		  error = reg_key_del_recursive(tmp);
+		  error = reg_key_del_abs(r, cmd->key); 
 		  if(!W_ERROR_IS_OK(error)) {
 			  DEBUG(0, ("Unable to delete key '%s'\n", cmd->key));
 			  continue;

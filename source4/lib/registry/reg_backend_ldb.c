@@ -235,18 +235,74 @@ static WERROR ldb_add_key (TALLOC_CTX *mem_ctx, struct registry_key *parent, con
 	return WERR_OK;
 }
 
-static WERROR ldb_del_key (struct registry_key *key)
+static WERROR ldb_del_key (struct registry_key *key, const char *child)
 {
 	int ret;
 	struct ldb_key_data *kd = key->backend_data;
+	char *childdn = talloc_asprintf(NULL, "key=%s,%s", child, kd->dn);
 
-	ret = ldb_delete(key->hive->backend_data, kd->dn);
+	ret = ldb_delete(key->hive->backend_data, childdn);
+
+	talloc_destroy(childdn);
 
 	if (ret < 0) {
 		DEBUG(1, ("ldb_del_key: %s\n", ldb_errstring(key->hive->backend_data)));
 		return WERR_FOOBAR;
 	}
 
+	return WERR_OK;
+}
+
+static WERROR ldb_del_value (struct registry_key *key, const char *child)
+{
+	int ret;
+	struct ldb_key_data *kd = key->backend_data;
+	char *childdn = talloc_asprintf(NULL, "value=%s,%s", child, kd->dn);
+
+	ret = ldb_delete(key->hive->backend_data, childdn);
+
+	talloc_destroy(childdn);
+
+	if (ret < 0) {
+		DEBUG(1, ("ldb_del_value: %s\n", ldb_errstring(key->hive->backend_data)));
+		return WERR_FOOBAR;
+	}
+
+	return WERR_OK;
+}
+
+static WERROR ldb_set_value (struct registry_key *parent, const char *name, uint32 type, void *data, int len)
+{
+	struct ldb_context *ctx = parent->hive->backend_data;
+	struct ldb_message msg;
+	struct ldb_val val;
+	int ret;
+	char *type_s;
+	TALLOC_CTX *mem_ctx = talloc_init("ldb_set_value");
+
+	ZERO_STRUCT(msg);
+
+	msg.dn = reg_path_to_ldb(mem_ctx, parent->path, talloc_asprintf(mem_ctx, "value=%s,", name));
+
+	ldb_msg_add_string(ctx, &msg, "value", talloc_strdup(mem_ctx, name));
+	val.length = len;
+	val.data = data;
+	ldb_msg_add_value(ctx, &msg, "data", &val);
+
+	type_s = talloc_asprintf(mem_ctx, "%u", type);
+	ldb_msg_add_string(ctx, &msg, "type", type_s); 
+
+	ret = ldb_add(ctx, &msg);
+	if (ret < 0) {
+		ret = ldb_modify(ctx, &msg);
+		if (ret < 0) {
+			DEBUG(1, ("ldb_msg_add: %s\n", ldb_errstring(parent->hive->backend_data)));
+			talloc_destroy(mem_ctx);
+			return WERR_FOOBAR;
+		}
+	}
+	
+	talloc_destroy(mem_ctx);
 	return WERR_OK;
 }
 
@@ -258,6 +314,8 @@ static struct hive_operations reg_backend_ldb = {
 	.open_key = ldb_open_key,
 	.get_value_by_index = ldb_get_value_by_id,
 	.get_subkey_by_index = ldb_get_subkey_by_id,
+	.set_value = ldb_set_value,
+	.del_value = ldb_del_value,
 };
 
 NTSTATUS registry_ldb_init(void)

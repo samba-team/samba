@@ -126,16 +126,13 @@ static WERROR winreg_DeleteKey(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 		       struct winreg_DeleteKey *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_key *key;
 	WERROR result;
 
 	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
-	result = reg_open_key(mem_ctx, (struct registry_key *)h->data, r->in.key.name, &key);
-
 	if (W_ERROR_IS_OK(result)) {
-		return reg_key_del(key);
+		return reg_key_del((struct registry_key *)h->data, r->in.key.name);
 	}
 
 	return result;
