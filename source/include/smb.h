@@ -193,11 +193,18 @@ typedef struct nttime_info
 } NTTIME;
 
 
+/* The Splint code analysis tool doesn't like immediate structures. */
+
+#ifdef _SPLINT_                      /* http://www.splint.org */
+#undef HAVE_IMMEDIATE_STRUCTURES
+#endif
+
 /* the following rather strange looking definitions of NTSTATUS and WERROR
    and there in order to catch common coding errors where different error types
    are mixed up. This is especially important as we slowly convert Samba
    from using BOOL for internal functions 
 */
+
 #if defined(HAVE_IMMEDIATE_STRUCTURES)
 typedef struct {uint32 v;} NTSTATUS;
 #define NT_STATUS(x) ((NTSTATUS) { x })
