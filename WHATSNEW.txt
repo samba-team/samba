@@ -151,6 +151,22 @@ The text and html versions of NT_Security were missing from
 the shipping tarball. Also a compile bug for platforms that
 don't have usleep was fixed.
 
+Changes in 2.0.4
+----------------
+
+There are 5 new parameters and one modified parameter in
+the smb.conf file.
+
+allow trusted domains
+restrict anonymous
+mangle locks
+oplock break wait time
+oplock contention limit
+
+The modified parameter is :
+
+nt acl support
+
 Bugfixes added since 2.0.3
 --------------------------
 
