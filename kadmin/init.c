@@ -84,13 +84,54 @@ create_random_entry(krb5_principal princ, time_t max_life, time_t max_rlife,
     return 0;
 }
 
+static struct getargs args[] = {
+    { "realm-max-ticket-life",  0,	arg_string,	NULL,
+      "realm max ticket lifetime" },
+    { "realm-max-renewable-life",  0,	arg_string,	NULL,
+      "realm max renewable lifetime" },
+};
+
+static int num_args = sizeof(args) / sizeof(args[0]);
+
+static void
+usage(void)
+{
+    arg_printusage (args, num_args, "ank", "principal");
+}
+
 int
 init(int argc, char **argv)
 {
     kadm5_ret_t ret;
     int i;
+    char *realm_max_life;
+    char *realm_max_rlife;
+    HDB *db;
+    int optind = 0;
+    unsigned max_life, max_rlife;
 
-    HDB *db = _kadm5_s_get_db(kadm_handle);
+    args[0].value = &realm_max_life;
+    args[1].value = &realm_max_rlife;
+
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	usage();
+	return 0;
+    }
+
+    if (realm_max_life) {
+	if (str2deltat (realm_max_life, &max_life) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'", realm_max_life);
+	    return 0;
+	}
+    }
+    if (realm_max_rlife) {
+	if (str2deltat (realm_max_rlife, &max_rlife) != 0) {
+	    krb5_warnx (context, "unable to parse `%s'", realm_max_rlife);
+	    return 0;
+	}
+    }
+
+    db = _kadm5_s_get_db(kadm_handle);
 
     ret = db->open(context, db, O_RDWR | O_CREAT, 0600);
     if(ret){
@@ -98,18 +139,19 @@ init(int argc, char **argv)
 	return 0;
     }
     db->close(context, db);
-    for(i = 1; i < argc; i++){
+    for(i = optind; i < argc; i++){
 	krb5_principal princ;
-	unsigned max_life, max_rlife;
 
 	/* Create `krbtgt/REALM' */
 	krb5_make_principal(context, &princ, argv[i], "krbtgt", argv[i], NULL);
-	get_deltat("Realm max ticket life", 
-		   "unlimited",
-		   &max_life);
-	get_deltat("Realm max renewable ticket life", 
-		   "unlimited",
-		   &max_rlife);
+	if (realm_max_life == NULL)
+	    get_deltat("Realm max ticket life", 
+		       "unlimited",
+		       &max_life);
+	if (realm_max_rlife == NULL)
+	    get_deltat("Realm max renewable ticket life", 
+		       "unlimited",
+		       &max_rlife);
 	create_random_entry(princ, max_life, max_rlife, 0);
 	krb5_free_principal(context, princ);
 	/* Create `kadmin/changepw' */
