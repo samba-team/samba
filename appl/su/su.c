@@ -173,18 +173,18 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info,
 	    char *cc_name;
 
 	    if (seteuid(su_info->pw_uid))
-		;
+		krb5_err (context, 1, errno, "seteuid");
 	    ret = krb5_cc_gen_new(context, &krb5_fcc_ops, &ccache2);
 	    if (ret) {
 		if (seteuid (0))
-		    ;
+		    krb5_err (context, 1, errno, "seteuid");
 		krb5_cc_destroy(context, ccache);
 		return 1;
 	    }
 
 	    ret = krb5_cc_copy_cache(context, ccache, ccache2);
 	    if (seteuid(0))
-		;
+		krb5_err (context, 1, errno, "seteuid");
 	    ret = krb5_cc_close(context, ccache2);
 
 	    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
