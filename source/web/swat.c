@@ -305,7 +305,7 @@ static void viewconfig_page(void)
 	}
 
 	printf("<p><pre>");
-	write_config(stdout, !full_view);
+	write_config(stdout, full_view);
 	printf("</pre>");
 	printf("</form>\n");
 }

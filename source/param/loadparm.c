@@ -2307,7 +2307,7 @@ void lp_dump(FILE *f, BOOL show_defaults)
 {
    int iService;
 
-   if (!show_defaults) {
+   if (show_defaults) {
 	   defaults_saved = False;
    }
 
