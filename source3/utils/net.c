@@ -329,6 +329,31 @@ static int net_file(int argc, const char **argv)
 	return net_rap_file(argc, argv);
 }
 
+/*
+ Retrieve our local SID or the SID for the specified name
+ */
+static int net_getlocalsid(int argc, const char **argv)
+{
+        DOM_SID sid;
+	const char *name;
+	fstring sid_str;
+
+	if (argc >= 1) {
+		name = argv[0];
+        }
+	else {
+		name = global_myname;
+	}
+
+	if (!secrets_fetch_domain_sid(name, &sid)) {
+		DEBUG(0, ("Can't fetch domain SID for name: %s\n", name));	
+		return 1;
+	}
+	sid_to_string(sid_str, &sid);
+	d_printf("SID for domain %s is: %s\n", name, sid_str);
+	return 0;
+}
+
 static int net_setlocalsid(int argc, const char **argv)
 {
 	DOM_SID sid;
@@ -396,6 +421,7 @@ static struct functable net_func[] = {
 	{"LOOKUP", net_lookup},
 	{"JOIN", net_join},
 	{"CACHE", net_cache},
+	{"GETLOCALSID", net_getlocalsid},
 	{"SETLOCALSID", net_setlocalsid},
 	{"GETDOMAINSID", net_getdomainsid},
 
