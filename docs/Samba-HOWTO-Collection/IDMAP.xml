@@ -8,11 +8,15 @@
 
 ]>
 
-<chapter id="groupmapping">
+<chapter id="idmapper">
 <chapterinfo>
 	&author.jht;
 </chapterinfo>
 <title>Identity Mapping &smbmdash; IDMAP</title>
+
+<note><para>
+THIS IS A WORK IN PROGRESS - it is a preparation for the release of Samba-3.0.8.
+</para></note>
 
 <para>
 The Microsoft Windows operating system has a number of features that impose specific challenges
@@ -56,6 +60,15 @@ on Server Types and Security Modes</link>.
 	<title>Stand-Alone Samba Server</title>
 
 	<para>
+	A stand-alone Samba server is an implementation that is not a member of a Windows NT4 Domain,
+	a Windows 200X Active Directory Domain, or of a Samba Domain.
+	</para>
+
+	<para>
+	By definition, this means that users and groups will be created and controlled locally and
+	the identity of a network user must match a local UNIX/Linux user login. The IDMAP facility
+	is therefore of little to no interest, winbind will not be necessary, and the IDMAP facility
+	will not be relevant or of interest.
 	</para>
 
 	</sect2>
@@ -64,6 +77,10 @@ on Server Types and Security Modes</link>.
 	<title>Domain Member Server or Domain Member Client</title>
 
 	<para>
+	Samba-3 can act as a Windows NT4 PDC or BDC thereby providing domain control protocols that
+	are based on Windows NT4. Thus, where Samba-3 is a Domain Member server or client the matter
+	if SID to UID/GID resolution is equivalent with the same configuration with a Windows NT4 or
+	earlier domain environment.
 	</para>
 
 	</sect2>
