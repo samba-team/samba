@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1995 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1995 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden).
  * All rights reserved.
  * 
@@ -328,17 +328,23 @@ dns_lookup_int(const char *domain, int rr_class, int rr_type)
     unsigned char reply[1024];
     int len;
     struct dns_reply *r = NULL;
+#ifdef HAVE__RES
     u_long old_options = 0;
+#endif
     
     if (_resolve_debug) {
+#ifdef HAVE__RES
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
+#endif
 	fprintf(stderr, "dns_lookup(%s, %d, %s)\n", domain,
 		rr_class, dns_type_to_string(rr_type));
     }
     len = res_search(domain, rr_class, rr_type, reply, sizeof(reply));
     if (_resolve_debug) {
+#ifdef HAVE__RES
         _res.options = old_options;
+#endif
 	fprintf(stderr, "dns_lookup(%s, %d, %s) --> %d\n",
 		domain, rr_class, dns_type_to_string(rr_type), len);
     }
