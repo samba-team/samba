@@ -1045,7 +1045,7 @@ Initialise the sDefault parameter structure for the printer values.
 static void init_printer_values(void)
 {
 	string_set(&sDefault.szPrinterDriver, "");
-	string_set(&sDefault.szDriverFile, DRIVERFILE);
+	string_set(&sDefault.szDriverFile, dyn_DRIVERFILE);
 
 	/* choose defaults depending on the type of printing */
 	switch (sDefault.iPrinting)
@@ -1186,8 +1186,8 @@ static void init_globals(void)
 
 	DEBUG(3, ("Initialising global parameters\n"));
 
-	string_set(&Globals.szSMBPasswdFile, SMB_PASSWD_FILE);
-	string_set(&Globals.szPrivateDir, PRIVATE_DIR);
+	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
+	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 	string_set(&Globals.szPassdbModulePath, "");
 
 	string_set(&Globals.szGuestaccount, GUEST_ACCOUNT);

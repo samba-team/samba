@@ -195,16 +195,8 @@ void build_options(BOOL screen)
        output(screen,"   SBINDIR: %s\n", dyn_SBINDIR);
        output(screen,"   BINDIR: %s\n", dyn_BINDIR);
        output(screen,"   LOCKDIR: %s\n",dyn_LOCKDIR);
-#ifdef DRIVERFILE
-       output(screen,"   DRIVERFILE: %s\n",DRIVERFILE);
-#endif
+       output(screen,"   DRIVERFILE: %s\n", dyn_DRIVERFILE);
        output(screen,"   LOGFILEBASE: %s\n", dyn_LOGFILEBASE);
-#ifdef FORMSFILE
-       output(screen,"   FORMSFILE: %s\n",FORMSFILE);
-#endif
-#ifdef NTDRIVERSDIR
-       output(screen,"   NTDRIVERSDIR: %s\n",NTDRIVERSDIR);
-#endif 
 
        /*Output various other options (most map to defines in the configure script*/
        output(screen,"\nOther Build Options:\n");
