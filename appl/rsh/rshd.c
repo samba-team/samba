@@ -549,7 +549,7 @@ main(int argc, char **argv)
     int port = 0;
 
     set_progname (argv[0]);
-    openlog ("rshd", LOG_ODELAY | LOG_PID, LOG_AUTH);
+    roken_openlog ("rshd", LOG_ODELAY | LOG_PID, LOG_AUTH);
 
     while ((c = getopt(argc, argv, "ixp:")) != EOF) {
 	switch (c) {
@@ -560,7 +560,7 @@ main(int argc, char **argv)
 	    do_encrypt = 1;
 	    break;
 	case 'p': {
-	    struct servent *s = getservbyname (optarg, "tcp");
+	    struct servent *s = roken_getservbyname (optarg, "tcp");
 
 	    if (s)
 		port = s->s_port;

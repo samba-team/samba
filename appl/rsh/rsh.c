@@ -418,7 +418,7 @@ doit (char *hostname, char *remote_user, int port, int argc, char **argv)
 
     cmd_len = construct_command(&cmd, argc, argv);
 
-    hostent = gethostbyname (hostname);
+    hostent = roken_gethostbyname (hostname);
     if (hostent == NULL)
 	errx (1, "gethostbyname '%s' failed: %s",
 	      hostname,
@@ -522,7 +522,7 @@ main(int argc, char **argv)
 	usage (1);
 
     if (port_str) {
-	struct servent *s = getservbyname (port_str, "tcp");
+	struct servent *s = roken_getservbyname (port_str, "tcp");
 
 	if (s)
 	    port = s->s_port;
