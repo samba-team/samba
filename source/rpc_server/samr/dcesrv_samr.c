@@ -500,7 +500,7 @@ static NTSTATUS samr_CreateUser2(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 
 	/* check if the user already exists */
 	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
-				   "name", "(&(name=%s)(objectclass=user))", username);
+				   "name", "(&(sAMAccountName=%s)(objectclass=user))", username);
 	if (name != NULL) {
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -611,14 +611,88 @@ static NTSTATUS samr_CreateUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return samr_CreateUser2(dce_call, mem_ctx, &r2);
 }
 
+/*
+  comparison function for sorting SamEntry array
+*/
+static int compare_SamEntry(struct samr_SamEntry *e1, struct samr_SamEntry *e2)
+{
+	return e1->idx - e2->idx;
+}
 
 /* 
   samr_EnumDomainUsers 
 */
 static NTSTATUS samr_EnumDomainUsers(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_EnumDomainUsers *r)
+				     struct samr_EnumDomainUsers *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_domain_state *state;
+	struct ldb_message **res;
+	int count, i, first;
+	struct samr_SamEntry *entries;
+	const char * const attrs[3] = { "objectSid", "sAMAccountName", NULL };
+
+	*r->out.resume_handle = 0;
+	r->out.sam = NULL;
+	r->out.num_entries = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	state = h->data;
+	
+	/* search for all users in this domain. This could possibly be cached and 
+	   resumed based on resume_key */
+	count = samdb_search(state->sam_ctx, mem_ctx, state->basedn, &res, attrs, 
+			     "objectclass=user");
+	if (count == -1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	if (count == 0) {
+		return NT_STATUS_OK;
+	}
+
+	/* convert to SamEntry format */
+	entries = talloc_array_p(mem_ctx, struct samr_SamEntry, count);
+	if (!entries) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	for (i=0;i<count;i++) {
+		entries[i].idx = samdb_result_rid_from_sid(mem_ctx, res[i], "objectSid", 0);
+		entries[i].name.name = samdb_result_string(res[i], "sAMAccountName", "");
+	}
+
+	/* sort the results by rid */
+	qsort(entries, count, sizeof(struct samr_SamEntry), 
+	      (comparison_fn_t)compare_SamEntry);
+
+	/* find the first entry to return */
+	for (first=0;
+	     first<count && entries[first].idx <= *r->in.resume_handle;
+	     first++) ;
+
+	if (first == count) {
+		return NT_STATUS_OK;
+	}
+
+	/* return the rest, limit by max_size. Note that we 
+	   use the w2k3 element size value of 54 */
+	r->out.num_entries = count - first;
+	r->out.num_entries = MIN(r->out.num_entries, 1+(r->in.max_size/54));
+
+	r->out.sam = talloc_p(mem_ctx, struct samr_SamArray);
+	if (!r->out.sam) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	r->out.sam->entries = entries+first;
+	r->out.sam->count = r->out.num_entries;
+
+	if (r->out.num_entries < count - first) {
+		*r->out.resume_handle = entries[first+r->out.num_entries-1].idx;
+		return STATUS_MORE_ENTRIES;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1016,24 +1090,155 @@ static NTSTATUS samr_DeleteUser(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 	return NT_STATUS_OK;
 }
 
+/* these query macros make samr_QueryUserInfo a bit easier to read */
+#define QUERY_STRING(msg, field, attr) \
+	r->out.info->field = samdb_result_string(msg, attr, "");
+#define QUERY_UINT(msg, field, attr) \
+	r->out.info->field = samdb_result_uint(msg, attr, 0);
+#define QUERY_RID(msg, field, attr) \
+	r->out.info->field = samdb_result_rid_from_sid(mem_ctx, msg, attr, 0);
+#define QUERY_NTTIME(msg, field, attr) \
+	r->out.info->field = samdb_result_nttime(msg, attr, 0);
 
 /* 
   samr_QueryUserInfo 
 */
 static NTSTATUS samr_QueryUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_QueryUserInfo *r)
+				   struct samr_QueryUserInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	struct ldb_message *msg, **res;
+	int ret;
+
+	r->out.info = NULL;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+
+	state = h->data;
+
+	/* pull all the user attributes */
+	ret = samdb_search(state->sam_ctx, mem_ctx, NULL, &res, NULL,
+			   "dn=%s", state->basedn);
+	if (ret != 1) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+	msg = res[0];
+
+	/* allocate the info structure */
+	r->out.info = talloc_p(mem_ctx, union samr_UserInfo);
+	if (r->out.info == NULL) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	ZERO_STRUCTP(r->out.info);
+
+	/* fill in the reply */
+	switch (r->in.level) {
+	case 1:
+		QUERY_STRING(msg, info1.username.name,    "sAMAccountName");
+		QUERY_STRING(msg, info1.full_name.name,   "displayName");
+		QUERY_UINT  (msg, info1.primary_gid,      "primaryGroupID");
+		QUERY_STRING(msg, info1.description.name, "description");
+		QUERY_STRING(msg, info1.comment.name,     "comment");
+		break;
+
+	case 2:
+		QUERY_STRING(msg, info2.comment.name,     "comment");
+		QUERY_UINT  (msg, info2.country_code,     "countryCode");
+		QUERY_UINT  (msg, info2.code_page,        "codePage");
+		break;
+
+	case 3:
+		QUERY_STRING(msg, info3.username.name,       "sAMAccountName");
+		QUERY_STRING(msg, info3.full_name.name,      "displayName");
+		QUERY_RID   (msg, info3.Rid,                 "objectSid");
+		QUERY_UINT  (msg, info3.primary_gid,         "primaryGroupID");
+		QUERY_STRING(msg, info3.home_directory.name, "homeDirectory");
+		QUERY_STRING(msg, info3.home_drive.name,     "homeDrive");
+		QUERY_STRING(msg, info3.logon_script.name,   "scriptPath");
+		QUERY_STRING(msg, info3.profile.name,        "profilePath");
+		QUERY_STRING(msg, info3.workstations.name,   "userWorkstations");
+		QUERY_NTTIME(msg, info3.last_logon,          "lastLogon");
+		QUERY_NTTIME(msg, info3.last_logoff,         "lastLogoff");
+		QUERY_NTTIME(msg, info3.last_pwd_change,     "pwdLastSet");
+/*
+		QUERY_APASSC(msg, info2.allow_pwd_change, "pwdLastSet");
+		QUERY_LHOURS(msg, info2.logon_hours,      "logonHours");
+		QUERY_UINT  (msg, info2.bad_pwd_count,    "badPwdCount");
+		QUERY_UINT  (msg, info2.num_logons,       "logonCount");
+		QUERY_AFLAGS(msg, info2.acct_flags,       "userAccountControl");
+*/
+		break;
+
+	default:
+		r->out.info = NULL;
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+	
+	return NT_STATUS_OK;
 }
+
+/* these are used to make the SetUserInfo code easier to follow */
+#define SET_STRING(mod, field, attr) do { \
+	if (r->in.info->field == NULL) return NT_STATUS_INVALID_PARAMETER; \
+	if (samdb_msg_add_string(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
+
+#define SET_UINT(mod, field, attr) do { \
+	if (samdb_msg_add_uint(state->sam_ctx, mem_ctx, mod, attr, r->in.info->field) != 0) { \
+		return NT_STATUS_NO_MEMORY; \
+	} \
+} while (0)
 
 
 /* 
   samr_SetUserInfo 
 */
 static NTSTATUS samr_SetUserInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_SetUserInfo *r)
+				 struct samr_SetUserInfo *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle *h;
+	struct samr_account_state *state;
+	struct ldb_message mod;
+	int i, ret;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_USER);
+
+	state = h->data;
+
+	ZERO_STRUCT(mod);
+	mod.dn = talloc_strdup(mem_ctx, state->basedn);
+	if (!mod.dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	switch (r->in.level) {
+	case 2:
+		SET_STRING(&mod, info2.comment.name, "description");
+		SET_UINT  (&mod, info2.country_code, "countryCode");
+		SET_UINT  (&mod, info2.code_page,    "codePage");
+		break;
+
+	default:
+		/* many info classes are not valid for SetUserInfo */
+		return NT_STATUS_INVALID_INFO_CLASS;
+	}
+
+	/* mark all the message elements as LDB_FLAG_MOD_REPLACE */
+	for (i=0;i<mod.num_elements;i++) {
+		mod.elements[i].flags = LDB_FLAG_MOD_REPLACE;
+	}
+
+	/* modify the samdb record */
+	ret = samdb_modify(state->sam_ctx, mem_ctx, &mod);
+	if (ret != 0) {
+		/* we really need samdb.c to return NTSTATUS */
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	return NT_STATUS_OK;
 }
 
 
@@ -1271,11 +1476,19 @@ static NTSTATUS samr_Connect2(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 
 /* 
   samr_SetUserInfo2 
+
+  just an alias for samr_SetUserInfo
 */
 static NTSTATUS samr_SetUserInfo2(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct samr_SetUserInfo2 *r)
+				  struct samr_SetUserInfo2 *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_SetUserInfo r2;
+
+	r2.in.handle = r->in.handle;
+	r2.in.level = r->in.level;
+	r2.in.info = r->in.info;
+
+	return samr_SetUserInfo(dce_call, mem_ctx, &r2);
 }
 
 

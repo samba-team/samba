@@ -428,3 +428,21 @@ NTTIME pull_nttime(void *base, uint16 offset)
 	return ret;
 }
 
+
+/*
+  parse a nttime as a integer in a string and return a NTTIME
+*/
+NTTIME nttime_from_string(const char *s)
+{
+	double t = 0;
+	const double t32 = 4294967296.0;
+	NTTIME ret;
+	/* i wish we could rely on 64 bit systems and sscanf %llu */
+	if (sscanf(s, "%lf", &t) != 1) {
+		ret.low = 0;
+		ret.high = 0;
+	}
+	ret.high = t / t32;
+	ret.low = t - (ret.high*t32);
+	return ret;
+}
