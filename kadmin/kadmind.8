@@ -26,6 +26,7 @@
 .Fl -ports= Ns Ar port
 .Xc
 .Oc
+.Op Fl -no-kerberos4
 .Sh DESCRIPTION
 .Nm
 listens for requests for changes to the Kerberos database and performs
@@ -118,11 +119,16 @@ enable debugging
 .Fl -ports= Ns Ar port
 .Xc
 ports to listen to. By default, if run as a daemon, it listen to ports
-749, and 751 (if built with Kerberos 4 support), but you can add any
-number of ports with this option. The port string is a whitespace
-separated list of port specifications, with the special string
+749, and 751 (if Kerberos 4 support is built and enabled), but you can
+add any number of ports with this option. The port string is a
+whitespace separated list of port specifications, with the special
+string
 .Dq +
 representing the default set of ports.
+.It Fl -no-kerberos4
+make 
+.Nm 
+ignore Kerberos 4 kadmin requests.
 .El
 .\".Sh ENVIRONMENT
 .Sh FILES

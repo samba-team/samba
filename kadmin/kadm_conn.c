@@ -62,12 +62,15 @@ add_kadm_port(krb5_context context, const char *service, unsigned int port)
     kadm_ports = p;
 }
 
+extern int do_kerberos4;
+
 static void
 add_standard_ports (krb5_context context)
 {
     add_kadm_port(context, "kerberos-adm", 749);
 #ifdef KRB4
-    add_kadm_port(context, "kerberos-master", 751);
+    if(do_kerberos4)
+	add_kadm_port(context, "kerberos-master", 751);
 #endif
 }
 
