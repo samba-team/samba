@@ -113,7 +113,7 @@ parse_section(char *p, krb5_config_section **s, krb5_config_section **parent,
  * Store the error message in `error_message'.
  */
 
-static int
+static krb5_error_code
 parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
 	   const char **error_message)
 {
@@ -152,14 +152,14 @@ parse_list(FILE *f, unsigned *lineno, krb5_config_binding **parent,
  *
  */
 
-static int
+static krb5_error_code
 parse_binding(FILE *f, unsigned *lineno, char *p,
 	      krb5_config_binding **b, krb5_config_binding **parent,
 	      const char **error_message)
 {
     krb5_config_binding *tmp;
     char *p1, *p2;
-    int ret = 0;
+    krb5_error_code ret = 0;
 
     p1 = p;
     while (*p && *p != '=' && !isspace((unsigned char)*p))
