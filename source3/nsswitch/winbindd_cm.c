@@ -384,7 +384,7 @@ static void add_failed_connection_entry(struct winbindd_cm_conn *new_conn,
 	
 /* Open a connction to the remote server, cache failures for 30 seconds */
 
-static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
+static NTSTATUS cm_open_connection(const char *domain, const iont pipe_index,
 			       struct winbindd_cm_conn *new_conn)
 {
 	struct failed_connection_cache *fcc;
@@ -396,7 +396,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 	ZERO_STRUCT(dc_ip);
 
 	fstrcpy(new_conn->domain, domain);
-	fstrcpy(new_conn->pipe_name, pipe_name);
+	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 	
 	/* Look for a domain controller for this domain.  Negative results
 	   are cached so don't bother applying the caching for this
@@ -460,7 +460,7 @@ static NTSTATUS cm_open_connection(const char *domain,const char *pipe_name,
 		return result;
 	}
 	
-	if (!cli_nt_session_open (new_conn->cli, get_pipe_index(pipe_name))) {
+	if ( !cli_nt_session_open (new_conn->cli, pipe_index) ) {
 		result = NT_STATUS_PIPE_NOT_AVAILABLE;
 		add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
@@ -533,7 +533,7 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 		
 		ZERO_STRUCTP(conn);
 		
-		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, pipe_name, conn))) {
+		if (!NT_STATUS_IS_OK(result = cm_open_connection(domain, get_pipe_index(pipe_name), conn))) {
 			DEBUG(3, ("Could not open a connection to %s for %s (%s)\n", 
 				  domain, pipe_name, nt_errstr(result)));
 		        SAFE_FREE(conn);
@@ -545,6 +545,52 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 	*conn_out = conn;
 	return NT_STATUS_OK;
 }
+
+
+/**********************************************************************************
+**********************************************************************************/
+
+BOOL cm_check_for_native_mode_win2k( const char *domain )
+{
+	NTSTATUS 		result;
+	struct winbindd_cm_conn	conn;
+	DS_DOMINFO_CTR		ctr;
+	BOOL			ret = False;
+	
+	ZERO_STRUCT( conn );
+	ZERO_STRUCT( ctr );
+	
+	
+	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) 
+	{
+		DEBUG(3, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
+			  domain, nt_errstr(result)));
+		return False;
+	}
+	
+	if ( conn.cli ) {
+		if ( !NT_STATUS_IS_OK(cli_ds_getprimarydominfo( conn.cli, 
+			conn.cli->mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr)) ) 
+		{
+			ret = False;
+			goto done;
+		}
+	}
+				
+	if ( (ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) 
+		&& !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
+	{
+		ret = True;
+	}
+
+done:
+	if ( conn.cli )
+		cli_shutdown( conn.cli );
+	
+	return ret;
+}
+
+
 
 /* Return a LSA policy handle on a domain */
 

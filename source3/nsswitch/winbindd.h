@@ -90,6 +90,7 @@ struct winbindd_domain {
 	fstring name;                          /* Domain name */	
 	fstring alt_name;                      /* alt Domain name (if any) */
 	DOM_SID sid;                           /* SID for this domain */
+	BOOL native_mode;                      /* is this a win2k domain in native mode ? */
 
 	/* Lookup methods for this domain (LDAP or RPC) */
 
