@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-extern fstring local_machine;
 extern uint32 global_client_caps;
 
 /**********************************************************************
@@ -462,7 +461,7 @@ BOOL get_referred_path(char *pathname, struct junction_map *jucn,
 	parse_dfs_path(pathname, &dp);
 
 	/* Verify hostname in path */
-	if (local_machine && (!strequal(local_machine, dp.hostname))) {
+	if ( !strequal(get_local_machine_name(), dp.hostname) ) {
 		/* Hostname mismatch, check if one of our IP addresses */
 		if (!ismyip(*interpret_addr2(dp.hostname))) {
 			DEBUG(3, ("get_referred_path: Invalid hostname %s in path %s\n",
@@ -810,7 +809,7 @@ BOOL create_junction(char* pathname, struct junction_map* jucn)
         parse_dfs_path(pathname,&dp);
 
         /* check if path is dfs : validate first token */
-        if (local_machine && (!strequal(local_machine,dp.hostname))) {
+        if ( !strequal(get_local_machine_name(),dp.hostname) ) {
 	    
 	   /* Hostname mismatch, check if one of our IP addresses */
 	   if (!ismyip(*interpret_addr2(dp.hostname))) {
@@ -978,7 +977,7 @@ static BOOL form_junctions(int snum, struct junction_map* jucn, int* jn_count)
 	}
 		
 	slprintf(ref->alternate_path, sizeof(pstring)-1,
-		 "\\\\%s\\%s", local_machine, service_name);
+		 "\\\\%s\\%s", get_local_machine_name(), service_name);
 	cnt++;
 	
 	/* Now enumerate all dfs links */
