@@ -145,7 +145,7 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 	p = strchr(str,':');
 	if (!p) return False;
 	*p = 0;
-	if (sscanf(p+1, "%x/%x/%08x", 
+	if (sscanf(p+1, "%i/%i/%i", 
 		   &atype, &aflags, &amask) != 3 ||
 	    !StringToSid(&sid, str)) {
 		return False;
@@ -280,7 +280,7 @@ static void cacl_dump(struct cli_state *cli, char *filename)
 	int fnum;
 	SEC_DESC *sd;
 
-	fnum = cli_nt_create(cli, filename);
+	fnum = cli_nt_create(cli, filename, 0x20000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
@@ -317,7 +317,7 @@ static void cacl_set(struct cli_state *cli, char *filename,
 		return;
 	}
 
-	fnum = cli_nt_create(cli, filename);
+	fnum = cli_nt_create(cli, filename, MAXIMUM_ALLOWED_ACCESS | 0x60000);
 	if (fnum == -1) {
 		printf("Failed to open %s: %s\n", filename, cli_errstr(cli));
 		return;
