@@ -766,7 +766,8 @@ static int call_nt_transact_rename(char *inbuf, char *outbuf, int bufsize, int c
   StrnCpy(new_name,params+4,fname_len);
   new_name[fname_len] = '\0';
 
-  outsize = rename_internals(inbuf, outbuf, Files[fnum].name, newname, replace_if_exists);
+  outsize = rename_internals(inbuf, outbuf, Files[fnum].name,
+                             newname, replace_if_exists);
   if(outsize == 0) {
     /*
      * Rename was successful.
