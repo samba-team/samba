@@ -800,7 +800,7 @@ include/build_env.h:
 
 headers: delheaders include/proto.h include/build_env.h
 
-proto: headers
+proto: headers winbindd_proto
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]" | grep -v /CVS/`
