@@ -305,6 +305,7 @@ static BOOL sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 	
 	/* start of security descriptor stored for back-calc offset purposes */
 	old_offset = ps->offset;
+	max_offset = old_offset;
 
 	prs_uint16("revision ", ps, depth, &(t->revision ));
 	prs_uint16("type     ", ps, depth, &(t->type     ));
@@ -526,6 +527,8 @@ BOOL sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 	size = ps->offset - old_offset;
 	prs_uint32_post("max_len", ps, depth, &(sec->max_len), off_max_len, size == 0 ? sec->max_len : size + 8);
 	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , size == 0 ? 0 : size + 8);
+
+	ps->offset = old_offset + sec->max_len;
 
 	return True;
 }

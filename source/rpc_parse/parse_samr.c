@@ -305,14 +305,14 @@ BOOL samr_io_r_get_usrdom_pwinfo(char *desc,  SAMR_R_GET_USRDOM_PWINFO *r_u, prs
 reads or writes a structure.
 ********************************************************************/
 BOOL make_samr_q_query_sec_obj(SAMR_Q_QUERY_SEC_OBJ *q_u,
-				POLICY_HND *user_pol, uint16 switch_value)
+				const POLICY_HND *user_pol, uint32 sec_info)
 {
 	if (q_u == NULL) return False;
 
 	DEBUG(5,("samr_make_samr_q_query_sec_obj\n"));
 
 	memcpy(&q_u->user_pol, user_pol, sizeof(q_u->user_pol));
-	q_u->switch_value = switch_value;
+	q_u->sec_info = sec_info;
 
 	return True;
 }
@@ -333,8 +333,7 @@ BOOL samr_io_q_query_sec_obj(char *desc,  SAMR_Q_QUERY_SEC_OBJ *q_u, prs_struct 
 	smb_io_pol_hnd("user_pol", &(q_u->user_pol), ps, depth); 
 	prs_align(ps);
 
-	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
-	prs_align(ps);
+	prs_uint32("sec_info", ps, depth, &(q_u->sec_info));
 
 	return True;
 }
@@ -674,111 +673,6 @@ BOOL samr_io_r_query_dom_info(char *desc, SAMR_R_QUERY_DOMAIN_INFO *r_u, prs_str
 
 
 /*******************************************************************
- makes a DOM_SID3 structure.
-
- calculate length by adding up the size of the components.
- ********************************************************************/
-BOOL make_dom_sid3(DOM_SID3 *sid3, uint16 unk_0, uint16 unk_1, DOM_SID *sid)
-{
-	if (sid3 == NULL) return False;
-
-    sid3->sid = *sid;
-	sid3->len = 2 + 8 + sid3->sid.num_auths * 4;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a SAM_SID3 structure.
-
-this one's odd, because the length (in bytes) is specified at the beginning.
-the length _includes_ the length of the length, too :-)
-
-********************************************************************/
-static BOOL sam_io_dom_sid3(char *desc,  DOM_SID3 *sid3, prs_struct *ps, int depth)
-{
-	if (sid3 == NULL) return False;
-
-	prs_debug(ps, depth, desc, "sam_io_dom_sid3");
-	depth++;
-
-	prs_uint16("len", ps, depth, &(sid3->len));
-	prs_align(ps);
-	smb_io_dom_sid("", &(sid3->sid), ps, depth); 
-
-	return True;
-}
-
-/*******************************************************************
-makes a SAMR_R_UNKNOWN3 structure.
-
-unknown_2   : 0x0001
-unknown_3   : 0x8004
-
-unknown_4,5 : 0x0000 0014
-
-unknown_6   : 0x0002
-unknown_7   : 0x5800 or 0x0070
-
-********************************************************************/
-BOOL make_sam_sid_stuff(SAM_SID_STUFF *stf,
-				uint16 unknown_2, uint16 unknown_3,
-				uint32 unknown_4, uint16 unknown_6, uint16 unknown_7,
-				int num_sid3s)
-{
-	stf->unknown_2 = unknown_2;
-	stf->unknown_3 = unknown_3;
-
-	bzero(stf->padding1, sizeof(stf->padding1));
-
-	stf->unknown_4 = unknown_4;
-	stf->unknown_5 = unknown_4;
-
-	stf->unknown_6 = unknown_6;
-	stf->unknown_7 = unknown_7;
-
-	stf->num_sids  = num_sid3s;
-
-	stf->padding2  = 0x0000;
-
-	return True;
-}
-
-/*******************************************************************
-reads or writes a SAM_SID_STUFF structure.
-********************************************************************/
-static BOOL sam_io_sid_stuff(char *desc,  SAM_SID_STUFF *stf, prs_struct *ps, int depth)
-{
-	uint32 i;
-
-	if (stf == NULL) return False;
-
-	DEBUG(5,("make_sam_sid_stuff\n"));
-
-	prs_uint16("unknown_2", ps, depth, &(stf->unknown_2));
-	prs_uint16("unknown_3", ps, depth, &(stf->unknown_3));
-
-	prs_uint8s(False, "padding1", ps, depth, stf->padding1, sizeof(stf->padding1)); 
-	
-	prs_uint32("unknown_4", ps, depth, &(stf->unknown_4));
-	prs_uint32("unknown_5", ps, depth, &(stf->unknown_5));
-	prs_uint16("unknown_6", ps, depth, &(stf->unknown_6));
-	prs_uint16("unknown_7", ps, depth, &(stf->unknown_7));
-
-	prs_uint32("num_sids ", ps, depth, &(stf->num_sids ));
-	prs_uint16("padding2 ", ps, depth, &(stf->padding2 ));
-
-	SMB_ASSERT_ARRAY(stf->sid, stf->num_sids);
-
-	for (i = 0; i < stf->num_sids; i++)
-	{
-		sam_io_dom_sid3("", &(stf->sid[i]), ps, depth); 
-	}
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a SAMR_R_QUERY_SEC_OBJ structure.
 
 this one's odd, because the daft buggers use a different mechanism
@@ -792,10 +686,6 @@ wierd.
 ********************************************************************/
 BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct *ps, int depth)
 {
-	int ptr_len0=0;
-	int ptr_len1=0;
-	int ptr_sid_stuff = 0;
-
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "samr_io_r_query_sec_obj");
@@ -803,57 +693,11 @@ BOOL samr_io_r_query_sec_obj(char *desc,  SAMR_R_QUERY_SEC_OBJ *r_u, prs_struct 
 
 	prs_align(ps);
 
-	prs_uint32("ptr_0         ", ps, depth, &(r_u->ptr_0         ));
-
-	if (ps->io) 
+	prs_uint32("ptr", ps, depth, &(r_u->ptr));
+	if (r_u->ptr != 0x0)
 	{
-		/* reading.  do the length later */
-		prs_uint32("sid_stuff_len0", ps, depth, &(r_u->sid_stuff_len0));
+		sec_io_desc_buf("sec", &r_u->buf, ps, depth);
 	}
-	else
-	{
-		/* storing */
-		ptr_len0 = ps->offset; ps->offset += 4;
-	}
-
-	if (r_u->ptr_0 != 0)
-	{
-		prs_uint32("ptr_1         ", ps, depth, &(r_u->ptr_1         ));
-		if (ps->io)
-		{
-			/* reading.  do the length later */
-			prs_uint32("sid_stuff_len1", ps, depth, &(r_u->sid_stuff_len1));
-		}
-		else
-		{
-			/* storing */
-			ptr_len1 = ps->offset; ps->offset += 4;
-		}
-
-		if (r_u->ptr_1 != 0)
-		{
-			ptr_sid_stuff = ps->offset;
-			sam_io_sid_stuff("", &(r_u->sid_stuff), ps, depth); 
-		}
-	}
-
-	if (!(ps->io)) /* storing not reading.  do the length, now. */
-	{
-		if (ptr_sid_stuff != 0)
-		{
-			uint32 sid_stuff_len = ps->offset - ptr_sid_stuff;
-			int old_len = ps->offset;
-
-			ps->offset = ptr_len0;
-			prs_uint32("sid_stuff_len0", ps, depth, &sid_stuff_len); 
-
-			ps->offset = ptr_len1;
-			prs_uint32("sid_stuff_len1", ps, depth, &sid_stuff_len);
-
-			ps->offset = old_len;
-		}
-	}
-
 	prs_uint32("status", ps, depth, &(r_u->status));
 
 	return True;

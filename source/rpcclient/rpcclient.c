@@ -421,6 +421,12 @@ struct command_set commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"samquerysec",
+		cmd_sam_query_sec_obj,
+		"<username>",
+		{COMPL_SAMUSR, COMPL_NONE}
+	},
+	{
 		"samuserset2",
 		cmd_sam_set_userinfo2,
 		"<username> [-s acb_bits] SAM User Set Info 2 (experimental!)",

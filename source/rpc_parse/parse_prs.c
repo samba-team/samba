@@ -600,8 +600,10 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 	q = prs_data(ps, ps->offset);
 	if (q == NULL)
 	{
+		fstring str;
+		slprintf(str, sizeof(str)-1, "_prs_uint32 error (%s)", name);
 		ps->error = True;
-		prs_debug_out(ps, "_prs_uint32 error", 5);
+		prs_debug_out(ps, str, 5);
 		return False;
 	}
 

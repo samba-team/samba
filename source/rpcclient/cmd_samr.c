@@ -999,6 +999,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 			case 'j':
 			{
 				join_domain = True;
+				break;
 			}
 		}
 	}
@@ -1839,6 +1840,117 @@ void cmd_sam_query_group(struct client_info *info, int argc, char *argv[])
 	
 }
 
+
+/****************************************************************************
+experimental SAM query security object.
+****************************************************************************/
+void cmd_sam_query_sec_obj(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	fstring domain;
+	fstring sid_str;
+	DOM_SID sid;
+	BOOL res = True;
+	BOOL res1 = True;
+
+	char *user_name;
+	const char *names[1];
+	uint32 num_rids;
+	uint32 *rids;
+	uint32 *types;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
+
+	if (sid.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	if (argc < 2)
+	{
+		report(out_hnd, "samsecquery <name>\n");
+		return;
+	}
+
+	user_name = argv[1];
+
+	argc--;
+	argv++;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_to_string(sid_str, &sid);
+
+	report(out_hnd, "SAM Query User: %s\n", user_name);
+	report(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid_str);
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, 0x304, &sid,
+	            &pol_dom) : False;
+
+	/* look up user rid */
+	names[0] = user_name;
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x3e8,
+					1, names,
+					&num_rids, &rids, &types) : False;
+
+	/* send user info query */
+	if (res1 && num_rids == 1)
+	{
+		POLICY_HND pol_usr;
+		BOOL ret = True;
+		SEC_DESC_BUF buf;
+
+		/* send open domain (on user sid) */
+		ret = samr_open_user( &pol_dom, 0x02011b, rids[0], &pol_usr);
+		res1 = ret ? samr_query_sec_obj(&pol_usr, 0x04, &buf) : False;
+		ret = ret ? samr_close (&pol_usr) : False;
+
+		if (buf.sec != NULL)
+		{
+			display_sec_desc(out_hnd, ACTION_HEADER   , buf.sec);
+			display_sec_desc(out_hnd, ACTION_ENUMERATE, buf.sec);
+			display_sec_desc(out_hnd, ACTION_FOOTER   , buf.sec);
+		}
+
+		free_sec_desc_buf(&buf);
+	}
+	else
+	{
+		res1 = False;
+	}
+
+	res = res ? samr_close( &pol_dom) : False;
+	res = res ? samr_close( &sam_pol) : False;
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_sam_query_sec_obj: succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_query_sec_obj: failed\n"));
+	}
+	if (rids != NULL)
+	{
+		free(rids);
+	}
+	if (types != NULL)
+	{
+		free(types);
+	}
+}
 
 /****************************************************************************
 experimental SAM user query.

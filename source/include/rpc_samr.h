@@ -389,69 +389,15 @@ SAMR_Q_QUERY_SEC_OBJ - info level 4.  returns SIDs.
 typedef struct q_samr_query_sec_obj_info
 {
 	POLICY_HND user_pol;          /* policy handle */
-	uint16 switch_value;     /* 0x0000 0004 */
-	/* uint8 pad[2] */
+	uint32 sec_info;     /* xxxx_SECURITY_INFORMATION 0x0000 0004 */
 
 } SAMR_Q_QUERY_SEC_OBJ;
-
-/* DOM_SID3 example:
-   0x14 0x035b 0x0002 S-1-1
-   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ADMINS
-   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ACCOUNT_OPS
-   0x24 0x0044 0x0002 S-1-5-21-nnn-nnn-nnn-0x03f1
- */
-
-/* DOM_SID3 example:
-   0x24 0x0044 0x0002 S-1-5-21-nnn-nnn-nnn-0x03ee
-   0x18 0x07ff 0x000f S-1-5-20-DOMAIN_ALIAS_RID_ADMINS
-   0x14 0x035b 0x0002 S-1-1
- */
-
-/* DOM_SID3 - security id */
-typedef struct sid_info_3
-{
-	uint16 len; /* length, bytes, including length of len :-) */
-	/* uint8  pad[2]; */
-	
-	DOM_SID sid;
-
-} DOM_SID3;
-
-
-#define MAX_SAM_SIDS 15
-
-/* SAM_SID_STUFF */
-typedef struct sid_stuff_info
-{
-	uint16 unknown_2; /* 0x0001 */
-	uint16 unknown_3; /* 0x8004 */
-
-	uint8 padding1[8];
-
-	uint32 unknown_4; /* 0x0000 0014 */
-	uint32 unknown_5; /* 0x0000 0014 */
-
-	uint16 unknown_6; /* 0x0002 */
-	uint16 unknown_7; /* 0x5800 */
-
-	uint32 num_sids;
-
-	uint16 padding2;
-
-	DOM_SID3 sid[MAX_SAM_SIDS];
-
-} SAM_SID_STUFF;
 
 /* SAMR_R_QUERY_SEC_OBJ - probably an open */
 typedef struct r_samr_query_sec_obj_info
 {
-	uint32 ptr_0;
-	uint32 sid_stuff_len0;
-
-	uint32 ptr_1;
-	uint32 sid_stuff_len1;
-
-	SAM_SID_STUFF sid_stuff;
+	uint32 ptr;
+	SEC_DESC_BUF buf;
 
 	uint32 status;         /* return status */
 

@@ -685,6 +685,65 @@ BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 }
 
 /****************************************************************************
+do a SAMR Query Security Object
+****************************************************************************/
+BOOL samr_query_sec_obj(  const POLICY_HND *pol,
+				uint32 type,
+				SEC_DESC_BUF *buf)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_QUERY_SEC_OBJ q_o;
+	BOOL valid_pol = False;
+
+	DEBUG(4,("SAMR Query Sec Object: type %x\n", type));
+
+	if (pol == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_QUERY_SEC_OBJ */
+
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
+
+	/* store the parameters */
+	make_samr_q_query_sec_obj(&q_o, pol, type);
+
+	/* turn parameters into data stream */
+	samr_io_q_query_sec_obj("", &q_o,  &data, 0);
+
+	/* send the data on \PIPE\ */
+	if (rpc_hnd_pipe_req(pol, SAMR_QUERY_SEC_OBJECT, &data, &rdata))
+	{
+		SAMR_R_QUERY_SEC_OBJ r_o;
+		BOOL p;
+
+		ZERO_STRUCT(r_o);
+
+		samr_io_r_query_sec_obj("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+		
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SAMR_R_QUERY_SEC_OBJ: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+			buf->sec = r_o.buf.sec;
+		}
+	}
+
+	prs_free_data(&data   );
+	prs_free_data(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Open User
 ****************************************************************************/
 BOOL samr_open_user(  const POLICY_HND *pol,

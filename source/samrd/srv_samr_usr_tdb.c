@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "rpc_parse.h"
 #include "nterr.h"
 #include "sids.h"
 
@@ -226,7 +227,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 /*******************************************************************
  samr_reply_query_sec_obj
  ********************************************************************/
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
+uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf)
 {
 	uint32 rid;
 	DOM_SID usr_sid;
@@ -241,6 +242,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 	sid_copy(&usr_sid, &global_sam_sid);
 	sid_append_rid(&usr_sid, rid);
 
+#if 0
 	/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
 	/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
 	make_dom_sid3(&sid_stuff->sid[0], 0x035b, 0x0002, &global_sid_S_1_1);
@@ -251,6 +253,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 				0x00000014, 0x0002, 0x0070,
 				2);
 
+#endif
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
 	return NT_STATUS_NOPROBLEMO;
@@ -686,13 +689,34 @@ static void create_user_info_21(SAM_USER_INFO_21 *usr,
 	init_nt_time(&usr->logon_time);
 	init_nt_time(&usr->logoff_time);
 	init_nt_time(&usr->kickoff_time);
-	init_nt_time(&usr->pass_can_change_time);
+	init_nt_time(&usr->pass_must_change_time);
 	unix_to_nt_time(&usr->pass_last_set_time, t);
-	unix_to_nt_time(&usr->pass_must_change_time, t);
+	unix_to_nt_time(&usr->pass_can_change_time, t);
 
 	usr->acb_info = acb_info | ACB_DISABLED | ACB_PWNOTREQ;
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
+
+	make_uni_hdr(&(usr->hdr_full_name   ), 0);
+	make_uni_hdr(&(usr->hdr_home_dir    ), 1);
+	make_uni_hdr(&(usr->hdr_dir_drive   ), 0);
+	make_uni_hdr(&(usr->hdr_logon_script), 0);
+	make_uni_hdr(&(usr->hdr_profile_path), 1);
+	make_uni_hdr(&(usr->hdr_acct_desc   ), 0);
+	make_uni_hdr(&(usr->hdr_workstations), 0);
+	make_uni_hdr(&(usr->hdr_unknown_str ), 0);
+	make_uni_hdr(&(usr->hdr_munged_dial ), 0);
+
+	make_unistr2(&(usr->uni_user_name   ), "", 0);
+	make_unistr2(&(usr->uni_full_name   ), "", 0);
+	make_unistr2(&(usr->uni_home_dir    ), "", 1);
+	make_unistr2(&(usr->uni_dir_drive   ), "", 0);
+	make_unistr2(&(usr->uni_logon_script), "", 0);
+	make_unistr2(&(usr->uni_profile_path), "", 1);
+	make_unistr2(&(usr->uni_acct_desc   ), "", 0 );
+	make_unistr2(&(usr->uni_workstations), "", 0);
+	make_unistr2(&(usr->uni_unknown_str ), "", 0 );
+	make_unistr2(&(usr->uni_munged_dial ), "", 0 );
 
 	copy_unistr2(&usr->uni_user_name, uni_user_name);
 	make_uni_hdr(&usr->hdr_user_name, uni_user_name->uni_str_len);

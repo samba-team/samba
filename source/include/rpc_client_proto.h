@@ -311,6 +311,9 @@ uint32 samr_enum_dom_users(  POLICY_HND *pol, uint32 *start_idx,
 				uint32 *num_sam_users);
 BOOL samr_connect(  const char *srv_name, uint32 access_mask,
 				POLICY_HND *connect_pol);
+BOOL samr_query_sec_obj(  const POLICY_HND *pol,
+				uint32 type,
+				SEC_DESC_BUF *buf);
 BOOL samr_open_user(  const POLICY_HND *pol,
 				uint32 unk_0, uint32 rid, 
 				POLICY_HND *user_pol);

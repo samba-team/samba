@@ -145,6 +145,10 @@ void display_sec_ace(FILE *out_hnd, enum action_type action, SEC_ACE *const ace)
  ****************************************************************************/
 void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *const sec_acl)
 {
+	if (sec_acl == NULL)
+	{
+		return;
+	}
 	switch (action)
 	{
 		case ACTION_HEADER:

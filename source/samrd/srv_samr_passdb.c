@@ -150,7 +150,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	endsmbpwent(vp);
 
-	return (*num_entries) > 0;
+	return (*total_entries) > 0;
 }
 
 /*******************************************************************
@@ -263,7 +263,7 @@ uint32 _samr_get_usrdom_pwinfo(const POLICY_HND *user_pol,
 /*******************************************************************
  samr_reply_query_sec_obj
  ********************************************************************/
-uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
+uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SEC_DESC_BUF *buf)
 {
 	DOM_SID usr_sid;
 
@@ -275,6 +275,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 
 	SMB_ASSERT_ARRAY(usr_sid.sub_auths, usr_sid.num_auths+1);
 
+#if 0
 	/* maybe need another 1 or 2 (S-1-5-0x20-0x220 and S-1-5-20-0x224) */
 	/* these two are DOMAIN_ADMIN and DOMAIN_ACCT_OP group RIDs */
 	make_dom_sid3(&sid_stuff->sid[0], 0x035b, 0x0002, &global_sid_S_1_1);
@@ -285,6 +286,7 @@ uint32 _samr_query_sec_obj(const POLICY_HND *user_pol, SAM_SID_STUFF *sid_stuff)
 				0x00000014, 0x0002, 0x0070,
 				2);
 
+#endif
 	DEBUG(5,("samr_query_sec_obj: %d\n", __LINE__));
 
 	return NT_STATUS_NOPROBLEMO;
@@ -793,7 +795,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 	DOMAIN_GRP *sam_grps = NULL;
 	uint16 acb_mask = ACB_NORMAL;
 	int num_sam_entries = 0;
-	int total_entries;
+	int total_entries = 0;
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
@@ -827,6 +829,7 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 			unbecome_root(True);
 			if (!ret)
 			{
+				DEBUG(5,("get_sampwd_entries: failed\n"));
 				return NT_STATUS_ACCESS_DENIED;
 			}
 			break;
@@ -918,7 +921,6 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 		{
 			ctr->sam.info = NULL;
 			safe_free(sam_grps);
-			safe_free(grps);
 			return NT_STATUS_INVALID_INFO_CLASS;
 		}
 	}
@@ -926,7 +928,6 @@ uint32 _samr_query_dispinfo(  const POLICY_HND *domain_pol, uint16 level,
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	safe_free(sam_grps);
-	safe_free(grps);
 
 	if ((*num_entries) < num_sam_entries)
 	{
