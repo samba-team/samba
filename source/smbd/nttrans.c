@@ -644,6 +644,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	files_struct *fsp=NULL;
 	char *p = NULL;
 	time_t c_time;
+	BOOL extended_oplock_granted = False;
+
 	START_PROFILE(SMBntcreateX);
 
 	DEBUG(10,("reply_ntcreateX: flags = 0x%x, desired_access = 0x%x \
@@ -907,10 +909,10 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 */
 	
 	if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-		smb_action |= EXTENDED_OPLOCK_GRANTED;
+		extended_oplock_granted = True;
 	
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-		smb_action |= EXTENDED_OPLOCK_GRANTED;
+		extended_oplock_granted = True;
 
 #if 0 
 	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
@@ -926,7 +928,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * exclusive & batch here.
 	 */
 
-	if (smb_action & EXTENDED_OPLOCK_GRANTED) {
+	if (extended_oplock_granted) {
 		if (flags & REQUEST_BATCH_OPLOCK) {
 			SCVAL(p,0, BATCH_OPLOCK_RETURN);
 		} else {
@@ -1145,6 +1147,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp = NULL;
 	char *p = NULL;
+	BOOL extended_oplock_granted = False;
 	uint32 flags;
 	uint32 desired_access;
 	uint32 file_attributes;
@@ -1386,10 +1389,10 @@ static int call_nt_transact_create(connection_struct *conn,
 		 */
     
 		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
+			extended_oplock_granted = True;
   
 		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-			smb_action |= EXTENDED_OPLOCK_GRANTED;
+			extended_oplock_granted = True;
 	}
 
 	/*
@@ -1414,7 +1417,7 @@ static int call_nt_transact_create(connection_struct *conn,
 	memset((char *)params,'\0',69);
 
 	p = params;
-	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+	if (extended_oplock_granted)
 		SCVAL(p,0, BATCH_OPLOCK_RETURN);
 	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
