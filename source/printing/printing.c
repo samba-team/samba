@@ -307,14 +307,14 @@ static void print_queue_update(int snum)
 	struct traverse_struct tstruct;
 	fstring keystr;
 	TDB_DATA data, key;
-
- 	/*
- 	 * Update the cache time FIRST ! Stops others doing this
- 	 * if the lpq takes a long time.
- 	 */
  
- 	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
- 	tdb_store_int(tdb, keystr, (int)time(NULL));
+	/*
+	 * Update the cache time FIRST ! Stops others doing this
+	 * if the lpq takes a long time.
+	 */
+
+	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
+	tdb_store_int(tdb, keystr, (int)time(NULL));
 
 	slprintf(tmp_file, sizeof(tmp_file), "%s/smblpq.%d", path, local_pid);
 
@@ -409,10 +409,10 @@ static void print_queue_update(int snum)
 	slprintf(keystr, sizeof(keystr) - 1, "LOCK/%s", lp_servicename(snum));
 	tdb_unlock_bystring(tdb, keystr);
 
- 	/*
- 	 * Update the cache time again. We want to do this call
- 	 * as little as possible...
- 	 */
+	/*
+	 * Update the cache time again. We want to do this call
+	 * as little as possible...
+	 */
 
 	slprintf(keystr, sizeof(keystr), "CACHE/%s", lp_servicename(snum));
 	tdb_store_int(tdb, keystr, (int)time(NULL));
@@ -1018,6 +1018,8 @@ int print_queue_status(int snum,
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
+
+	*queue = NULL;
 	
 	/*
 	 * Count the number of entries.
@@ -1025,6 +1027,9 @@ int print_queue_status(int snum,
 	tsc.count = 0;
 	tsc.snum = snum;
 	tdb_traverse(tdb, traverse_count_fn_queue, (void *)&tsc);
+
+	if (tsc.count == 0)
+		return 0;
 
 	/* Allocate the queue size. */
 	if (( tstruct.queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*tsc.count))
