@@ -998,8 +998,20 @@ static void run_locktest5(int dummy)
 		goto fail;
 	}
 
+	/* Check for NT bug... */
+	ret = cli_lock(&cli1, fnum1, 0, 8, 0, READ_LOCK) &&
+		  cli_lock(&cli1, fnum3, 0, 1, 0, READ_LOCK);
+	cli_close(&cli1, fnum1);
+	fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+	ret = cli_lock(&cli1, fnum1, 7, 1, 0, WRITE_LOCK);
+	EXPECTED(ret, True);
+	printf("this server %s the NT locking bug\n", ret ? "doesn't have" : "has");
+	cli_close(&cli1, fnum1);
+	fnum1 = cli_open(&cli1, fname, O_RDWR, DENY_NONE);
+	cli_unlock(&cli1, fnum3, 0, 1);
+
 	ret = cli_lock(&cli1, fnum1, 0, 4, 0, WRITE_LOCK) &&
-	      cli_lock(&cli1, fnum1, 0, 4, 0, READ_LOCK);
+	      cli_lock(&cli1, fnum1, 1, 1, 0, READ_LOCK);
 	EXPECTED(ret, True);
 	printf("the same process %s overlay a write with a read lock\n", ret?"can":"cannot");
 
@@ -1040,7 +1052,7 @@ static void run_locktest5(int dummy)
 
 	/* We should have 3 stacked locks here. Ensure we need to do 3 unlocks. */
 
-	ret = cli_unlock(&cli1, fnum1, 0, 4) &&
+	ret = cli_unlock(&cli1, fnum1, 1, 1) &&
 		  cli_unlock(&cli1, fnum1, 0, 4) &&
 		  cli_unlock(&cli1, fnum1, 0, 4);
 
