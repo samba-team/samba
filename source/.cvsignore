@@ -1,10 +1,12 @@
 .headers.stamp
 .proto.stamp
-bin
+ID
 Makefile
+bin
 config.cache
 config.log
 config.status
 cvs.log
-so_locations
+dox
 libtool
+so_locations
