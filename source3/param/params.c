@@ -191,10 +191,10 @@ static int EatComment( myFILE *InFile )
  *
  *****************************************************************************/
 
-static int Continuation( char *line, int pos )
+static int Continuation(char *line, int pos )
 {
 	pos--;
-	while( (pos >= 0) && isspace(line[pos]) )
+	while( (pos >= 0) && isspace((int)line[pos]))
 		pos--;
 
 	return (((pos >= 0) && ('\\' == line[pos])) ? pos : -1 );
@@ -425,7 +425,7 @@ static BOOL Parameter( myFILE *InFile, BOOL (*pfunc)(char *, char *), int c )
           c = 0;
         else
           {
-          for( end = i; (end >= 0) && isspace(bufr[end]); end-- )
+          for( end = i; (end >= 0) && isspace((int)bufr[end]); end-- )
             ;
           c = mygetc( InFile );
           }
