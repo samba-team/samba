@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -335,6 +335,7 @@ kadm_connect(kadm5_client_context *ctx)
     int error;
     char portstr[NI_MAXSERV];
     char *hostname, *slash;
+    char *service_name;
     krb5_context context = ctx->context;
 
     memset (&hints, 0, sizeof(hints));
@@ -377,7 +378,20 @@ kadm_connect(kadm5_client_context *ctx)
 	close(s);
 	return ret;
     }
-    ret = krb5_parse_name(context, KADM5_ADMIN_SERVICE, &server);
+
+    if (ctx->realm)
+	asprintf(&service_name, "%s@%s", KADM5_ADMIN_SERVICE, ctx->realm);
+    else
+	asprintf(&service_name, "%s", KADM5_ADMIN_SERVICE);
+
+    if (service_name == NULL) {
+	freeaddrinfo (ai);
+	close(s);
+	return ENOMEM;
+    }
+
+    ret = krb5_parse_name(context, service_name, &server);
+    free(service_name);
     if(ret) {
 	freeaddrinfo (ai);
 	if(ctx->ccache == NULL)
