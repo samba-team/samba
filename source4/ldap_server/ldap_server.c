@@ -289,7 +289,7 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		}
 
 		done = &done_r->msg.r.SearchResultDone;
-		done->resultcode = 32;
+		done->resultcode = 53;
 		done->dn = NULL;
 		done->errormessage = NULL;
 		done->referral = NULL;
@@ -312,7 +312,7 @@ static void ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Modify) {
-		ldapsrv_unwilling(call, 2);
+		ldapsrv_unwilling(call, 53);
 		return;
 	}
 
@@ -330,7 +330,7 @@ static void ldapsrv_AddRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Add) {
-		ldapsrv_unwilling(call, 2);
+		ldapsrv_unwilling(call, 53);
 		return;
 	}
 
@@ -348,7 +348,7 @@ static void ldapsrv_DelRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Del) {
-		ldapsrv_unwilling(call, 2);
+		ldapsrv_unwilling(call, 53);
 		return;
 	}
 
@@ -367,7 +367,7 @@ static void ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->ModifyDN) {
-		ldapsrv_unwilling(call, 2);
+		ldapsrv_unwilling(call, 53);
 		return;
 	}
 
@@ -385,7 +385,7 @@ static void ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Compare) {
-		ldapsrv_unwilling(call, 2);
+		ldapsrv_unwilling(call, 53);
 		return;
 	}
 
