@@ -75,7 +75,7 @@ WINBIND_PAM_PROGS = nsswitch/pam_winbind.so
 WINBIND_LPROGS = @WINBIND_PAM_PROGS@ nsswitch/libnss_winbind.so
 
 SPROGS = bin/smbd bin/nmbd bin/swat @WINBIND_STARGETS@
-PROGS1 = bin/smbclient bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree @RUNPROG@ @WINBIND_TARGETS@
+PROGS1 = bin/smbclient bin/net bin/smbspool bin/testparm bin/testprns bin/smbstatus bin/smbcontrol bin/smbtree @RUNPROG@ @WINBIND_TARGETS@
 PROGS2 = bin/smbpasswd bin/rpcclient bin/smbcacls @WRAP@ @WRAP32@ @PAM_MOD@
 MPROGS = @MPROGS@
 LPROGS = @WINBIND_LTARGETS@
@@ -124,7 +124,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/namequery.o libsmb/nmblib.o libsmb/clistr.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
-	     libsmb/clioplock.o libsmb/errormap.o \
+	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
 
 LIBMSRPC_OBJ = libsmb/cli_lsarpc.o libsmb/cli_samr.o libsmb/cli_spoolss.o \
@@ -300,6 +300,8 @@ LIBSMBCLIENT_OBJ = libsmb/libsmbclient.o $(LIB_OBJ) $(LIBSMB_OBJ) $(PARAM_OBJ) $
 CLIENT_OBJ = client/client.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
              $(READLINE_OBJ)
+
+NET_OBJ = utils/net.o  $(LIBSMB_OBJ) $(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
 CUPS_OBJ = client/smbspool.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -511,6 +513,10 @@ bin/samsync: $(SAMSYNC_OBJ) bin/.dummy
 bin/smbclient: $(CLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(CLIENT_OBJ) $(LDFLAGS) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
+
+bin/net: $(NET_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(NET_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbspool: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
