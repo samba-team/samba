@@ -1134,6 +1134,19 @@ static NTSTATUS ldapsam_getsampwent(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	return NT_STATUS_OK;
 }
 
+static void append_attr(char ***attr_list, const char *new_attr)
+{
+	int i;
+
+	for (i=0; (*attr_list)[i] != NULL; i++)
+		;
+
+	(*attr_list) = Realloc((*attr_list), sizeof(**attr_list) * (i+2));
+	SMB_ASSERT((*attr_list) != NULL);
+	(*attr_list)[i] = strdup(new_attr);
+	(*attr_list)[i+1] = NULL;
+}
+
 /**********************************************************************
 Get SAM_ACCOUNT entry from LDAP by username.
 *********************************************************************/
@@ -1149,6 +1162,7 @@ static NTSTATUS ldapsam_getsampwnam(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	int rc;
 	
 	attr_list = get_userattr_list( ldap_state->schema_ver );
+	append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
 	rc = ldapsam_search_suffix_by_name(ldap_state, sname, &result, attr_list);
 	free_attr_list( attr_list );
 
@@ -1194,6 +1208,7 @@ static int ldapsam_get_ldap_user_by_sid(struct ldapsam_privates *ldap_state,
 	switch ( ldap_state->schema_ver ) {
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			attr_list = get_userattr_list(ldap_state->schema_ver);
+			append_attr(&attr_list, MODIFY_TIMESTAMP_STRING);
 			rc = ldapsam_search_suffix_by_sid(ldap_state, sid, result, attr_list);
 			free_attr_list( attr_list );
 
