@@ -99,10 +99,12 @@ BOOL lang_tdb_init(const char *lang)
 	struct stat st;
 	static int initialised;
 	time_t loadtime;
+	BOOL result = False;
 
 	/* we only want to init once per process, unless given
 	   an override */
-	if (initialised && !lang) return True;
+	if (initialised && !lang) 
+		return True;
 
 	if (initialised) {
 		/* we are re-initialising, free up any old init */
@@ -121,29 +123,33 @@ BOOL lang_tdb_init(const char *lang)
 	}
 
 	/* if no lang then we don't translate */
-	if (!lang) return True;
+	if (!lang) 
+		return True;
 
 	asprintf(&msg_path, "%s.msg", lib_path((const char *)lang));
 	if (stat(msg_path, &st) != 0) {
 		/* the msg file isn't available */
-		free(msg_path);
-		return False;
+		DEBUG(10, ("lang_tdb_init: %s: %s", msg_path, 
+			   strerror(errno)));
+		goto done;
 	}
 	
-
 	asprintf(&path, "%s%s.tdb", lock_path("lang_"), lang);
+
+	DEBUG(10, ("lang_tdb_init: loading %s\n", path));
 
 	tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0644);
 	if (!tdb) {
 		tdb = tdb_open_log(path, 0, TDB_DEFAULT, O_RDONLY, 0);
-		free(path);
-		free(msg_path);
-		if (!tdb) return False;
+		if (!tdb) {
+			DEBUG(10, ("lang_tdb_init: %s: %s\n", path,
+				   strerror(errno)));
+			goto done;
+		}
 		current_lang = strdup(lang);
-		return True;
+		result = True;
+		goto done;
 	}
-
-	free(path);
 
 	loadtime = tdb_fetch_int32(tdb, "/LOADTIME/");
 
@@ -151,11 +157,14 @@ BOOL lang_tdb_init(const char *lang)
 		load_msg(msg_path);
 		tdb_store_int32(tdb, "/LOADTIME/", (int)time(NULL));
 	}
-	free(msg_path);
 
 	current_lang = strdup(lang);
 
-	return True;
+ done:
+	SAFE_FREE(msg_path);
+	SAFE_FREE(path);
+
+	return result;
 }
 
 /* translate a msgid to a message string in the current language 
