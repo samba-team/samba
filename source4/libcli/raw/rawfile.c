@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
 	req = smbcli_request_setup(tree, cmd, wct, buflen); \
@@ -213,6 +214,132 @@ NTSTATUS smb_raw_rmdir(struct smbcli_tree *tree,
 }
 
 
+/*
+ Open a file using TRANSACT2_OPEN - async recv
+*/
+static NTSTATUS smb_raw_nttrans_create_recv(struct smbcli_request *req, 
+					    TALLOC_CTX *mem_ctx, 
+					    union smb_open *parms)
+{
+	NTSTATUS status;
+	struct smb_nttrans nt;
+	uint8_t *params;
+
+	status = smb_raw_nttrans_recv(req, mem_ctx, &nt);
+	if (!NT_STATUS_IS_OK(status)) return status;
+
+	if (nt.out.params.length < 69) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	params = nt.out.params.data;
+
+	parms->ntcreatex.out.oplock_level =                 CVAL(params, 0);
+	parms->ntcreatex.out.fnum =                         SVAL(params, 2);
+	parms->ntcreatex.out.create_action =                IVAL(params, 4);
+	parms->ntcreatex.out.create_time =   smbcli_pull_nttime(params, 12);
+	parms->ntcreatex.out.access_time =   smbcli_pull_nttime(params, 20);
+	parms->ntcreatex.out.write_time =    smbcli_pull_nttime(params, 28);
+	parms->ntcreatex.out.change_time =   smbcli_pull_nttime(params, 36);
+	parms->ntcreatex.out.attrib =                      IVAL(params, 44);
+	parms->ntcreatex.out.alloc_size =                  BVAL(params, 48);
+	parms->ntcreatex.out.size =                        BVAL(params, 56);
+	parms->ntcreatex.out.file_type =                   SVAL(params, 64);
+	parms->ntcreatex.out.ipc_state =                   SVAL(params, 66);
+	parms->ntcreatex.out.is_directory =                CVAL(params, 68);
+	
+	return NT_STATUS_OK;
+}
+
+
+/*
+ Open a file using NTTRANS CREATE - async send 
+*/
+static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tree, 
+							  union smb_open *parms)
+{
+	struct smb_nttrans nt;
+	uint8_t *params;
+	TALLOC_CTX *mem_ctx = talloc(tree, 0);
+	uint16_t fname_len;
+	DATA_BLOB sd_blob, ea_blob;
+	struct smbcli_request *req;
+	NTSTATUS status;
+
+	nt.in.max_setup = 0;
+	nt.in.max_param = 101;
+	nt.in.max_data  = 0;
+	nt.in.setup_count = 0;
+	nt.in.function = NT_TRANSACT_CREATE;
+	nt.in.setup = NULL;
+
+	sd_blob = data_blob(NULL, 0);
+	ea_blob = data_blob(NULL, 0);
+
+	if (parms->ntcreatex.in.sec_desc) {
+		status = ndr_push_struct_blob(&sd_blob, mem_ctx, 
+					      parms->ntcreatex.in.sec_desc, 
+					      (ndr_push_flags_fn_t)ndr_push_security_descriptor);
+		if (!NT_STATUS_IS_OK(status)) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+	}
+
+	if (parms->ntcreatex.in.ea_list) {
+		uint32_t ea_size = ea_list_size(parms->ntcreatex.in.ea_list->num_eas,
+						parms->ntcreatex.in.ea_list->eas);
+		ea_blob = data_blob_talloc(mem_ctx, NULL, ea_size);
+		if (ea_blob.data == NULL) {
+			return NULL;
+		}
+		ea_put_list(ea_blob.data, 
+			    parms->ntcreatex.in.ea_list->num_eas,
+			    parms->ntcreatex.in.ea_list->eas);
+	}
+
+	nt.in.params = data_blob_talloc(mem_ctx, NULL, 54);
+	if (nt.in.params.data == NULL) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* build the parameter section */
+	params = nt.in.params.data;
+
+	SIVAL(params,  0, parms->ntcreatex.in.flags);
+	SIVAL(params,  4, parms->ntcreatex.in.root_fid);
+	SIVAL(params,  8, parms->ntcreatex.in.access_mask);
+	SBVAL(params, 12, parms->ntcreatex.in.alloc_size);
+	SIVAL(params, 20, parms->ntcreatex.in.file_attr);
+	SIVAL(params, 24, parms->ntcreatex.in.share_access);
+	SIVAL(params, 28, parms->ntcreatex.in.open_disposition);
+	SIVAL(params, 32, parms->ntcreatex.in.create_options);
+	SIVAL(params, 36, sd_blob.length);
+	SIVAL(params, 40, ea_blob.length);
+	SIVAL(params, 48, parms->ntcreatex.in.impersonation);
+	SCVAL(params, 52, parms->ntcreatex.in.security_flags);
+	SCVAL(params, 53, 0);
+	
+	fname_len = smbcli_blob_append_string(tree->session, mem_ctx, &nt.in.params,
+					      parms->ntcreatex.in.fname, STR_TERMINATE);
+
+	SIVAL(nt.in.params.data, 44, fname_len);
+
+	/* build the data section */
+	nt.in.data = data_blob_talloc(mem_ctx, NULL, sd_blob.length + ea_blob.length);
+	memcpy(nt.in.data.data, sd_blob.data, sd_blob.length);
+	memcpy(nt.in.data.data+sd_blob.length, ea_blob.data, ea_blob.length);
+
+	/* send the request on its way */
+	req = smb_raw_nttrans_send(tree, &nt);
+
+	talloc_free(mem_ctx);
+	
+	return req;
+}
+
+
 /****************************************************************************
  Open a file using TRANSACT2_OPEN - async send 
 ****************************************************************************/
@@ -377,6 +504,9 @@ struct smbcli_request *smb_raw_open_send(struct smbcli_tree *tree, union smb_ope
 		smbcli_req_append_string_len(req, parms->ntcreatex.in.fname, STR_TERMINATE, &len);
 		SSVAL(req->out.vwv, 5, len);
 		break;
+
+	case RAW_OPEN_NTTRANS_CREATE:
+		return smb_raw_nttrans_create_send(tree, parms);
 	}
 
 	if (!smbcli_request_send(req)) {
@@ -469,6 +599,9 @@ NTSTATUS smb_raw_open_recv(struct smbcli_request *req, TALLOC_CTX *mem_ctx, unio
 		parms->ntcreatex.out.ipc_state =                SVAL(req->in.vwv, 65);
 		parms->ntcreatex.out.is_directory =             CVAL(req->in.vwv, 67);
 		break;
+
+	case RAW_OPEN_NTTRANS_CREATE:
+		return smb_raw_nttrans_create_recv(req, mem_ctx, parms);
 	}
 
 failed:
