@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
 
 noinst_PROGRAMS = tcp_client tcp_server gssapi_server gssapi_client \
 	uu_server uu_client

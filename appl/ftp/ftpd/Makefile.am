@@ -1,6 +1,6 @@
 # $Id$
 
-include $(top_srcdir)/Makefile.am.common
+include $(top_srcdir)/cf/Makefile.am.common
 
 INCLUDES += -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
 
