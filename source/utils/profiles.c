@@ -398,7 +398,7 @@ DOM_SID old_sid, new_sid;
 int change = 0, new = 0;
 
 /* Compare two SIDs for equality */
-int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
+static int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
 {
   int sa1, sa2;
 
@@ -417,7 +417,7 @@ int my_sid_equal(DOM_SID *s1, DOM_SID *s2)
  * Quick and dirty to read a SID in S-1-5-21-x-y-z-rid format and 
  * construct a DOM_SID
  */
-int get_sid(DOM_SID *sid, char *sid_str)
+static int get_sid(DOM_SID *sid, char *sid_str)
 {
   int i = 0, auth;
   char *lstr; 
@@ -460,7 +460,7 @@ int get_sid(DOM_SID *sid, char *sid_str)
  * This routine does not need to deal with endianism as 
  * long as the incoming SIDs are both in the same (LE) format.
  */
-void change_sid(DOM_SID *s1, DOM_SID *s2)
+static void change_sid(DOM_SID *s1, DOM_SID *s2)
 {
   int i;
   
@@ -469,7 +469,7 @@ void change_sid(DOM_SID *s1, DOM_SID *s2)
   }
 }
 
-void print_sid(DOM_SID *sid)
+static void print_sid(DOM_SID *sid)
 {
   int i, comps = sid->num_auths;
   fprintf(stdout, "S-%u-%u", sid->sid_rev_num, sid->id_auth[5]);
@@ -482,7 +482,7 @@ void print_sid(DOM_SID *sid)
   fprintf(stdout, "\n");
 }
 
-void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid) 
+static void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid) 
 {
   int i;
   if (my_sid_equal(sid, o_sid)) {
@@ -496,7 +496,7 @@ void process_sid(DOM_SID *sid, DOM_SID *o_sid, DOM_SID *n_sid)
 
 }
 
-void process_acl(ACL *acl, const char *prefix)
+static void process_acl(ACL *acl, const char *prefix)
 {
   int ace_cnt, i;
   ACE *ace;
@@ -514,7 +514,7 @@ void process_acl(ACL *acl, const char *prefix)
   }
 } 
 
-void usage(void)
+static void usage(void)
 {
   fprintf(stderr, "usage: profiles [-c <OLD-SID> -n <NEW-SID>] <profilefile>\n");
   fprintf(stderr, "Version: %s\n", VERSION);
