@@ -129,7 +129,7 @@ static void SidToString(fstring str, DOM_SID *sid)
 }
 
 /* convert a string to a SID, either numeric or username/group */
-static BOOL StringToSid(DOM_SID *sid, char *str)
+static BOOL StringToSid(DOM_SID *sid, const char *str)
 {
 	uint32 *types = NULL;
 	DOM_SID *sids = NULL;
