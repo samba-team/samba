@@ -1,6 +1,6 @@
   Samba meta FAQ
-  Dan Shearer & Paul Blackman, ictinus@lake.canberra.edu.au
-  v 0.1, 23 Aug '97
+  Dan Shearer & Paul Blackman, ictinus@samba.anu.edu.au
+  v 0.3, 7 Oct '97
 
   This is the meta-Frequently Asked Questions (FAQ) document for Samba,
   the free and very popular SMB and CIFS server product. It contains
