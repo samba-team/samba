@@ -49,7 +49,7 @@ uint32 check_domain_security(const auth_usersupplied_info *user_info,
 
 	if (!secrets_fetch_trust_account_password(lp_workgroup(), trust_passwd, &last_change_time))
 	{
-		DEBUG(0, ("domain_client_validate: could not fetch trust account password for domain %s\n", lp_workgroup()));
+		DEBUG(0, ("check_domain_security: could not fetch trust account password for domain %s\n", lp_workgroup()));
 		unbecome_root();
 		return NT_STATUS_LOGON_FAILURE;
 	}
@@ -76,6 +76,3 @@ uint32 check_domain_security(const auth_usersupplied_info *user_info,
 
 	return nt_status;
 }
-
-
-
