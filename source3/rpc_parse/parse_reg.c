@@ -5,7 +5,8 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
- *  Copyright (C) Marc Jacobsen						1999.
+ *  Copyright (C) Marc Jacobsen                     1999.
+ *  Copyright (C) Simo Sorce                        2000.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -32,7 +33,7 @@ extern int DEBUGLEVEL;
  Inits a structure.
 ********************************************************************/
 
-void init_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
+void init_reg_q_open_hkcr(REG_Q_OPEN_HKCR *q_o,
 				uint16 unknown_0, uint32 level)
 {
 	q_o->ptr = 1;
@@ -45,12 +46,12 @@ void init_reg_q_open_hklm(REG_Q_OPEN_HKLM *q_o,
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int depth)
+BOOL reg_io_q_open_hkcr(char *desc,  REG_Q_OPEN_HKCR *r_q, prs_struct *ps, int depth)
 {
 	if (r_q == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
+	prs_debug(ps, depth, desc, "reg_io_q_open_hkcr");
 	depth++;
 
 	if(!prs_align(ps))
@@ -76,12 +77,12 @@ BOOL reg_io_q_open_hklm(char *desc,  REG_Q_OPEN_HKLM *r_q, prs_struct *ps, int d
 reads or writes a structure.
 ********************************************************************/
 
-BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int depth)
+BOOL reg_io_r_open_hkcr(char *desc,  REG_R_OPEN_HKCR *r_r, prs_struct *ps, int depth)
 {
 	if (r_r == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
+	prs_debug(ps, depth, desc, "reg_io_r_open_hkcr");
 	depth++;
 
 	if(!prs_align(ps))
@@ -91,6 +92,75 @@ BOOL reg_io_r_open_hklm(char *desc,  REG_R_OPEN_HKLM *r_r, prs_struct *ps, int d
 		return False;
 
 	if(!prs_uint32("status", ps, depth, &r_r->status))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ Inits a structure.
+********************************************************************/
+
+void init_reg_q_open_hklm(REG_Q_OPEN_HKLM * q_o,
+			  uint16 unknown_0, uint32 access_mask)
+{
+	q_o->ptr = 1;
+	q_o->unknown_0 = unknown_0;
+	q_o->unknown_1 = 0x0;	/* random - changes */
+	q_o->access_mask = access_mask;
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_q_open_hklm(char *desc, REG_Q_OPEN_HKLM * r_q, prs_struct *ps,
+			int depth)
+{
+	if (r_q == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_open_hklm");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr      ", ps, depth, &(r_q->ptr)))
+		return False;
+	if (r_q->ptr != 0)
+	{
+		if (!prs_uint16("unknown_0", ps, depth, &(r_q->unknown_0)))
+		return False;
+		if (!prs_uint16("unknown_1", ps, depth, &(r_q->unknown_1)))
+		return False;
+		if (!prs_uint32("access_mask", ps, depth, &(r_q->access_mask)))
+		return False;
+	}
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_r_open_hklm(char *desc, REG_R_OPEN_HKLM * r_r, prs_struct *ps,
+			int depth)
+{
+	if (r_r == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_open_hklm");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!smb_io_pol_hnd("", &(r_r->pol), ps, depth))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &(r_r->status)))
 		return False;
 
 	return True;
@@ -1478,3 +1548,138 @@ BOOL reg_io_r_open_entry(char *desc,  REG_R_OPEN_ENTRY *r_r, prs_struct *ps, int
 
 	return True;
 }
+
+/*******************************************************************
+Inits a structure.
+********************************************************************/
+void init_reg_q_shutdown(REG_Q_SHUTDOWN * q_s,
+			 const char *msg, uint32 timeout, uint16 flags)
+{
+	int msg_len;
+	msg_len = strlen(msg);
+
+	q_s->ptr_0 = 1;
+	q_s->ptr_1 = 1;
+	q_s->ptr_2 = 1;
+
+	init_uni_hdr(&(q_s->hdr_msg), msg_len);
+	init_unistr2(&(q_s->uni_msg), msg, msg_len);
+
+	q_s->timeout = timeout;
+	q_s->flags = flags;
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_q_shutdown(char *desc, REG_Q_SHUTDOWN * q_s, prs_struct *ps,
+		       int depth)
+{
+	if (q_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_shutdown");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_0", ps, depth, &(q_s->ptr_0)))
+		return False;
+	if (!prs_uint32("ptr_1", ps, depth, &(q_s->ptr_1)))
+		return False;
+	if (!prs_uint32("ptr_2", ps, depth, &(q_s->ptr_2)))
+		return False;
+
+	if (!smb_io_unihdr("hdr_msg", &(q_s->hdr_msg), ps, depth))
+		return False;
+	if (!smb_io_unistr2("uni_msg", &(q_s->uni_msg), q_s->hdr_msg.buffer, ps, depth))
+		return False;
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("timeout", ps, depth, &(q_s->timeout)))
+		return False;
+	if (!prs_uint16("flags  ", ps, depth, &(q_s->flags)))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_r_shutdown(char *desc, REG_R_SHUTDOWN * r_s, prs_struct *ps,
+		       int depth)
+{
+	if (r_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_shutdown");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("status", ps, depth, &(r_s->status)))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+Inits a structure.
+********************************************************************/
+void init_reg_q_abort_shutdown(REG_Q_ABORT_SHUTDOWN * q_s)
+{
+
+	q_s->ptr_server = 0;
+
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_q_abort_shutdown(char *desc, REG_Q_ABORT_SHUTDOWN * q_s,
+			     prs_struct *ps, int depth)
+{
+	if (q_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_q_abort_shutdown");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("ptr_server", ps, depth, &(q_s->ptr_server)))
+		return False;
+	if (q_s->ptr_server != 0)
+		if (!prs_uint16("server", ps, depth, &(q_s->server)))
+			return False;
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL reg_io_r_abort_shutdown(char *desc, REG_R_ABORT_SHUTDOWN * r_s,
+			     prs_struct *ps, int depth)
+{
+	if (r_s == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "reg_io_r_abort_shutdown");
+	depth++;
+
+	if (!prs_align(ps))
+		return False;
+
+	if (!prs_uint32("status", ps, depth, &(r_s->status)))
+		return False;
+
+	return True;
+}
+

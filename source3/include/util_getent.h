@@ -19,6 +19,9 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
+#ifndef _UTIL_GETENT_H
+#define _UTIL_GETENT_H
+
 /* element for a single linked list of group entries */
 /* replace the use of struct group in some cases */
 /* used by getgrent_list() */
@@ -43,3 +46,5 @@ struct sys_pwent {
 	char *pw_shell;
 	struct sys_pwent *next;
 };
+
+#endif /* _UTIL_GETENT_H */
