@@ -274,7 +274,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
   numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
   data = smb_buf(outbuf) + 3;
  
-  if(!do_lock( fsp, conn, numtoread, startpos, F_RDLCK, &eclass, &ecode)) {
+  if(!do_lock( fsp, conn, numtoread, startpos, READ_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
       /*
        * We have other than a "can't get lock" POSIX
@@ -337,7 +337,7 @@ static BOOL process_lock(blocking_lock_record *blr)
   offset = IVAL(inbuf,smb_vwv3);
 
   errno = 0;
-  if (!do_lock(fsp, conn, count, offset, F_WRLCK, &eclass, &ecode)) {
+  if (!do_lock(fsp, conn, count, offset, WRITE_LOCK, &eclass, &ecode)) {
     if((errno != EACCES) && (errno != EAGAIN)) {
 
       /*
@@ -409,7 +409,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
      * request would never have been queued. JRA.
      */
     errno = 0;
-    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? F_RDLCK : F_WRLCK),
+    if(!do_lock(fsp,conn,count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode))
       break;
   }

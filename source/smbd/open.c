@@ -597,7 +597,7 @@ static void truncate_unless_locked(files_struct *fsp, connection_struct *conn, i
 		SMB_OFF_T mask2 = ((SMB_OFF_T)0x3) << (SMB_OFF_T_BITS-4);
 		SMB_OFF_T mask = (mask2<<2);
 		
-		if (is_locked(fsp,conn,~mask,0,F_WRLCK)){
+		if (is_locked(fsp,conn,~mask,0,WRITE_LOCK)){
 			/* If share modes are in force for this connection we
 			   have the share entry locked. Unlock it before closing. */
 			if (*share_locked && lp_share_modes(SNUM(conn)))
@@ -640,7 +640,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 	  strequal(fname,".dll") ||
 	  strequal(fname,".exe") ||
 	  strequal(fname,".sym"))
-	return(AREAD);
+	return(AALL);
     }
 
     if (old_deny == DENY_READ || new_deny == DENY_READ) return AFAIL;
