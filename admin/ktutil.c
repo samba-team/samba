@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -116,10 +116,9 @@ ktutil_open_keytab(void)
     krb5_error_code ret;
     krb5_keytab keytab;
     if (keytab_string == NULL) {
-	ret = krb5_kt_default_modify_name (context, keytab_buf,
-					   sizeof(keytab_buf));
+	ret = krb5_kt_default_name (context, keytab_buf, sizeof(keytab_buf));
 	if (ret) {
-	    krb5_warn(context, ret, "krb5_kt_default_modify_name");
+	    krb5_warn(context, ret, "krb5_kt_default_name");
 	    return NULL;
 	}
 	keytab_string = keytab_buf;
