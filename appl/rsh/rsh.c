@@ -1,21 +1,19 @@
 #include "rsh_locl.h"
 RCSID("$Id$");
 
-static enum auth_method auth_method;
+enum auth_method auth_method;
+int do_encrypt;
+krb5_context context;
+krb5_keyblock *keyblock;
+des_key_schedule schedule;
+des_cblock iv;
+
 
 /*
  *
  */
 
-#define RSH_BUFSIZ 10240
-
-static krb5_context context;
-static krb5_auth_context auth_context;
-static krb5_keyblock keyblock;
-static des_key_schedule schedule;
-static des_cblock iv;
-
-static int no_input, do_encrypt;
+static int no_input;
 
 static void
 usage (void)
@@ -23,94 +21,18 @@ usage (void)
     errx (1, "Usage: %s [-45nx] [-l user] host command", __progname);
 }
 
-static ssize_t
-do_read (int fd,
-	 void *buf,
-	 size_t sz)
-{
-    int ret;
-
-    if (do_encrypt) {
-	if (auth_method == AUTH_KRB4) {
-	    return des_enc_read (fd, buf, sz, schedule, &iv);
-	} else if(auth_method == AUTH_KRB5) {
-	    u_int32_t len, outer_len;
-	    int status;
-	    krb5_data data;
-
-	    ret = krb5_net_read (context, fd, &len, 4);
-	    if (ret != 4)
-		return ret;
-	    len = ntohl(len);
-	    outer_len = len + 12;
-	    outer_len = (outer_len + 7) & ~7;
-	    if (outer_len > sz)
-		abort ();
-	    ret = krb5_net_read (context, fd, buf, outer_len);
-	    if (ret != outer_len)
-		return ret;
-	    status = krb5_decrypt(context, buf, outer_len,
-				  &keyblock, &data);
-	    if (status != KSUCCESS)
-		errx ("%s", krb5_get_err_text (context, status));
-	    memcpy (buf, data.data, len);
-	    free (data.data);
-	    return len;
-	} else {
-	    abort ();
-	}
-    } else
-	return read (fd, buf, sz);
-}
-
-static ssize_t
-do_write (int fd, void *buf, size_t sz)
-{
-    int ret;
-
-    if (do_encrypt) {
-	if(auth_method == AUTH_KRB4) {
-	    return des_enc_write (fd, buf, sz, schedule, &iv);
-	} else if(auth_method == AUTH_KRB5) {
-	    krb5_error_code status;
-	    krb5_data data;
-	    u_int32_t len;
-	    int ret;
-
-	    status = krb5_encrypt (context,
-				   buf,
-				   sz,
-				   &keyblock,
-				   &data);
-	    if (status != KSUCCESS)
-		errx (1, "%s", krb5_get_err_text(context, status));
-	    len = htonl(sz);
-	    ret = krb5_net_write (context, fd, &len, 4);
-	    if (ret != 4)
-		return ret;
-	    ret = krb5_net_write (context, fd, data.data, data.length);
-	    if (ret != data.length)
-		return ret;
-	    free (data.data);
-	    return sz;
-	} else {
-	    abort();
-	}
-    } else
-	return write (fd, buf, sz);
-}
-
 static int
 loop (int s, int errsock)
 {
     struct fd_set real_readset;
-    int count = 0;
+    int count = 2;
 
     FD_ZERO(&real_readset);
     FD_SET(s, &real_readset);
     FD_SET(errsock, &real_readset);
-    if(!no_input)
+    if(!no_input) {
 	FD_SET(STDIN_FILENO, &real_readset);
+    }
 
     for (;;) {
 	int ret;
@@ -131,7 +53,7 @@ loop (int s, int errsock)
 	    else if (ret == 0) {
 		close (s);
 		FD_CLR(s, &real_readset);
-		if (++count == 2)
+		if (--count == 0)
 		    return 0;
 	    } else
 		krb_net_write (STDOUT_FILENO, buf, ret);
@@ -143,7 +65,7 @@ loop (int s, int errsock)
 	    else if (ret == 0) {
 		close (errsock);
 		FD_CLR(errsock, &real_readset);
-		if (++count == 2)
+		if (--count == 0)
 		    return 0;
 	    } else
 		krb_net_write (STDERR_FILENO, buf, ret);
@@ -152,9 +74,10 @@ loop (int s, int errsock)
 	    ret = read (STDIN_FILENO, buf, sizeof(buf));
 	    if (ret < 0)
 		err (1, "read");
-	    else if (ret == 0)
-		return 0;
-	    else
+	    else if (ret == 0) {
+		close (STDIN_FILENO);
+		FD_CLR(STDIN_FILENO, &real_readset);
+	    } else
 		do_write (s, buf, ret);
 	}
     }
@@ -181,7 +104,7 @@ send_krb4_auth(int s, struct sockaddr_in thisaddr,
 			   getpid(), &msg, &cred, schedule,
 			   &thisaddr, &thataddr, KCMD_VERSION);
     if (status != KSUCCESS)
-	errx ("%s: %s", hostname, krb_get_err_text(status));
+	errx (1, "%s: %s", hostname, krb_get_err_text(status));
     memcpy (iv, cred.session, sizeof(iv));
 
     len = strlen(remote_user) + 1;
@@ -204,9 +127,9 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
     krb5_data cksum_data;
     krb5_ccache ccache;
     des_cblock key;
-    char *buf;
     int status;
     size_t len;
+    krb5_auth_context auth_context = NULL;
 
     krb5_init_context(&context);
 
@@ -218,16 +141,14 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 				     KRB5_NT_SRV_INST,
 				     &server);
     if (status)
-	errx ("%s: %s", hostname, krb5_get_err_text(context, status));
+	errx (1, "%s: %s", hostname, krb5_get_err_text(context, status));
 
-    len = 6 + 3 + cmd_len + strlen(local_user);
-    buf = malloc (len);
-    snprintf (buf, len, "%u:%s%s%s", ntohs(thataddr.sin_port),
-	      do_encrypt ? "-x " : "",
-	      cmd, local_user);
-
-    cksum_data.data   = buf;
-    cksum_data.length = strlen (buf);
+    cksum_data.length = asprintf ((char **)&cksum_data.data,
+				  "%u:%s%s%s",
+				  ntohs(thataddr.sin_port),
+				  do_encrypt ? "-x " : "",
+				  cmd,
+				  local_user);
 
     status = krb5_sendauth (context,
 			    &auth_context,
@@ -243,9 +164,12 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 			    NULL,
 			    NULL);
     if (status)
-	errx ("%s: %s", hostname, krb5_get_err_text(context, status));
+	errx (1, "%s: %s", hostname, krb5_get_err_text(context, status));
 
-    keyblock = auth_context->key;
+    status = krb5_auth_con_getkey (context, auth_context, &keyblock);
+    if (status)
+      errx (1, "krb5_auth_con_getkey: %s",
+	    krb5_get_err_text(context, status));
 
     len = strlen(local_user) + 1;
     if (krb_net_write (s, local_user, len) != len)
@@ -254,7 +178,6 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 	err (1, "write");
     if (krb_net_write (s, cmd, cmd_len) != cmd_len)
 	err (1, "write");
-    free (cmd);
     len = strlen(remote_user) + 1;
     if (krb_net_write (s, remote_user, len) != len)
 	err (1, "write");
@@ -371,25 +294,19 @@ construct_command (char **res, int argc, char **argv)
 }
 
 static int
-doit (char *hostname, char *remote_user, int argc, char **argv)
+doit (char *hostname, char *remote_user, int port, int argc, char **argv)
 {
     struct hostent *hostent;
     struct in_addr **h;
     struct passwd *pwd;
     char *cmd;
     size_t cmd_len;
-    int port;
 
     pwd = getpwuid (getuid());
     if (pwd == NULL)
 	errx (1, "who are you?");
 
     cmd_len = construct_command(&cmd, argc, argv);
-
-    if (do_encrypt)
-	port = k_getportbyname ("ekshell", "tcp", htons(545));
-    else
-	port = k_getportbyname ("kshell", "tcp", htons(544));
 
     hostent = gethostbyname (hostname);
     if (hostent == NULL)
@@ -431,13 +348,14 @@ main(int argc, char **argv)
 {
     int c;
     char *remote_user = NULL;
+    int port = 0;
 
     set_progname (argv[0]);
 
     if (argc < 3)
 	usage ();
     auth_method = AUTH_KRB5;
-    while ((c = getopt(argc, argv, "45l:nx")) != EOF) {
+    while ((c = getopt(argc, argv, "45l:nxp:")) != EOF) {
 	switch (c) {
 	case '4':
 	    auth_method = AUTH_KRB4;
@@ -454,11 +372,33 @@ main(int argc, char **argv)
 	case 'x':
 	    do_encrypt = 1;
 	    break;
+	case 'p': {
+	    struct servent *s = getservbyname (optarg, "tcp");
+
+	    if (s)
+		port = s->s_port;
+	    else {
+		char *ptr;
+
+		port = strtol (optarg, &ptr, 10);
+		if (port == 0 && ptr == optarg)
+		    errx (1, "Bad port `%s'", optarg);
+		port = htons(port);
+	    }
+	    break;
+	}
 	default:
 	    usage ();
 	    break;
 	}
     }
-    return doit (argv[optind], remote_user,
+
+    if (port == 0)
+	if (do_encrypt && auth_method == AUTH_KRB4)
+	    port = k_getportbyname ("ekshell", "tcp", htons(545));
+	else
+	    port = k_getportbyname ("kshell", "tcp", htons(544));
+
+    return doit (argv[optind], remote_user, port,
 		 argc - optind - 1, argv + optind + 1);
 }
