@@ -310,12 +310,11 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     size_t len;
     EncryptedData encdata;
     krb5_error_code ret;
-    int32_t sec, usec;
+    int32_t usec;
     int usec2;
     krb5_crypto crypto;
     
-    krb5_us_timeofday (context, &sec, &usec);
-    p.patimestamp = sec;
+    krb5_us_timeofday (context, &p.patimestamp, &usec);
     usec2         = usec;
     p.pausec      = &usec2;
 
