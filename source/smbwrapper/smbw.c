@@ -1511,3 +1511,90 @@ off_t smbw_lseek(int fd, off_t offset, int whence)
 	smbw_busy--;
 	return file->offset;
 }
+
+
+/***************************************************** 
+a wrapper for mkdir()
+*******************************************************/
+int smbw_mkdir(const char *fname, mode_t mode)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_mkdir(&srv->cli, path)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
+
+/***************************************************** 
+a wrapper for rmdir()
+*******************************************************/
+int smbw_rmdir(const char *fname)
+{
+	struct smbw_server *srv;
+	fstring server, share;
+	pstring path;
+
+	DEBUG(4,("%s (%s)\n", __FUNCTION__, fname));
+
+	if (!fname) {
+		errno = EINVAL;
+		return -1;
+	}
+
+	smbw_init();
+
+	smbw_busy++;
+
+	/* work out what server they are after */
+	smbw_parse_path(fname, server, share, path);
+
+	/* get a connection to the server */
+	srv = smbw_server(server, share);
+	if (!srv) {
+		/* smbw_server sets errno */
+		goto failed;
+	}
+
+	if (!cli_rmdir(&srv->cli, path)) {
+		errno = smbw_errno(&srv->cli);
+		goto failed;
+	}
+
+	smbw_busy--;
+	return 0;
+
+ failed:
+	smbw_busy--;
+	return -1;
+}
