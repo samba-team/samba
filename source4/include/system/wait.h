@@ -23,3 +23,11 @@
 #ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
 #endif
+
+/*
+ * Define additional missing types
+ */
+#ifndef HAVE_SIG_ATOMIC_T_TYPE
+typedef int sig_atomic_t;
+#endif
+

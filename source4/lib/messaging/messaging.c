@@ -22,6 +22,8 @@
 
 #include "includes.h"
 #include "system/time.h"
+#include "messages.h"
+#include "dlinklist.h"
 
 /* change the message version with any incompatible changes in the protocol */
 #define MESSAGING_VERSION 1

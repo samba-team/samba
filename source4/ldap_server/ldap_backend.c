@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 
 
 struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_request_tag type)

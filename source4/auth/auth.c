@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 #include "auth/auth.h"
 
 #undef DBGC_CLASS

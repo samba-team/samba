@@ -24,6 +24,7 @@
 #include "vfs_posix.h"
 #include "system/time.h"
 #include "system/filesys.h"
+#include "dlinklist.h"
 
 /*
   create file handles with convenient numbers for sniffers

@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "ioctl.h"
 
 #define BASEDIR "\\rawioctl"
 

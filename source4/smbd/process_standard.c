@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "dlinklist.h"
 
 /*
   called when the process model is selected

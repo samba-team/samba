@@ -29,6 +29,7 @@
 #include "includes.h"
 #include "svfs.h"
 #include "system/time.h"
+#include "dlinklist.h"
 
 #ifndef O_DIRECTORY
 #define O_DIRECTORY 0

@@ -26,6 +26,7 @@
    used. This allows us to provide the same semantics as NT */
 
 #include "includes.h"
+#include "messages.h"
 
 /*
   in this module a "DATA_BLOB *file_key" is a blob that uniquely identifies

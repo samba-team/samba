@@ -23,11 +23,12 @@
 
 #include "includes.h"
 #include "auth/auth.h"
+#include "asn_1.h"
 
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_AUTH
 
-static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token)
+static BOOL read_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
 {
 	ZERO_STRUCTP(token);
 
@@ -117,7 +118,7 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token
 	return !asn1->has_error;
 }
 
-static BOOL write_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *token)
+static BOOL write_negTokenInit(struct asn1_data *asn1, struct spnego_negTokenInit *token)
 {
 	asn1_push_tag(asn1, ASN1_CONTEXT(0));
 	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
@@ -180,7 +181,7 @@ static BOOL write_negTokenInit(ASN1_DATA *asn1, struct spnego_negTokenInit *toke
 	return !asn1->has_error;
 }
 
-static BOOL read_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token)
+static BOOL read_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTarg *token)
 {
 	ZERO_STRUCTP(token);
 
@@ -229,7 +230,7 @@ static BOOL read_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token
 	return !asn1->has_error;
 }
 
-static BOOL write_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *token)
+static BOOL write_negTokenTarg(struct asn1_data *asn1, struct spnego_negTokenTarg *token)
 {
 	asn1_push_tag(asn1, ASN1_CONTEXT(1));
 	asn1_push_tag(asn1, ASN1_SEQUENCE(0));
@@ -268,7 +269,7 @@ static BOOL write_negTokenTarg(ASN1_DATA *asn1, struct spnego_negTokenTarg *toke
 
 ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 {
-	ASN1_DATA asn1;
+	struct asn1_data asn1;
 	ssize_t ret = -1;
 	uint8_t context;
 
@@ -312,7 +313,7 @@ ssize_t spnego_read_data(DATA_BLOB data, struct spnego_data *token)
 
 ssize_t spnego_write_data(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, struct spnego_data *spnego)
 {
-	ASN1_DATA asn1;
+	struct asn1_data asn1;
 	ssize_t ret = -1;
 
 	ZERO_STRUCT(asn1);
