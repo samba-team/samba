@@ -38,7 +38,7 @@ RCSID("$Id$");
 
 #include "otp_locl.h"
 
-#ifdef HAVE_DB3
+#if !defined(HAVE_NDBM) && !defined(HAVE_DB_NDBM)
 #include "ndbm_wrap.h"
 #endif
 
