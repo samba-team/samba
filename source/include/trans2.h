@@ -194,6 +194,11 @@ Byte offset   Type     name                description
 } FSINFO;
 *************************************************************/
 
+#define SMB_INFO_STANDARD               1
+#define SMB_INFO_QUERY_EA_SIZE          2
+#define SMB_INFO_QUERY_EAS_FROM_LIST    3
+#define SMB_INFO_QUERY_ALL_EAS          4
+#define SMB_INFO_IS_NAME_VALID          6
 #define SMB_QUERY_FS_LABEL_INFO			0x101
 #define SMB_QUERY_FS_VOLUME_INFO		0x102
 #define SMB_QUERY_FS_SIZE_INFO			0x103
