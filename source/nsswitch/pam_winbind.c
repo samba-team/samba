@@ -19,8 +19,12 @@
 #define MODULE_NAME "pam_winbind"
 #define PAM_SM_AUTH
 #define PAM_SM_ACCOUNT
+#ifdef HAVE_SECURITY_PAM_MODULES_H
 #include <security/pam_modules.h>
+#endif
+#ifdef HAVE_SECURITY__PAM_MACROS_H
 #include <security/_pam_macros.h>
+#endif
 
 #define PAM_DEBUG_ARG (1<<0)
 #define PAM_USE_AUTHTOK_ARG (1<<1)
