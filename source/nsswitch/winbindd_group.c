@@ -1118,6 +1118,8 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 		}
 	}
 
+	remove_duplicate_gids( &num_gids, gid_list );
+
 	/* Send data back to client */
 
 	state->response.data.num_entries = num_gids;
