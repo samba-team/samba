@@ -83,18 +83,77 @@ copy_env(void)
 	extend_env(*p);
 }
 
+static int
+start_login_process(void)
+{
+    char *prog, *argv0;
+    prog = login_conf_get_string("login_program");
+    if(prog == NULL)
+	return 0;
+    argv0 = strrchr(prog, '/');
+
+    if(argv0)
+	argv0++;
+    else
+	argv0 = prog;
+
+    return simple_execle(prog, argv0, NULL, env);
+}
+
+static int
+start_logout_process(void)
+{
+    char *prog, *argv0;
+    pid_t pid;
+    if(prog == NULL)
+	return 0;
+    prog = login_conf_get_string("logout_program");
+    if(prog == NULL)
+	return 0;
+    argv0 = strrchr(prog, '/');
+
+    if(argv0)
+	argv0++;
+    else
+	argv0 = prog;
+
+    pid = fork();
+    if(pid == 0)
+	return 0;
+    if(pid == -1)
+	err(1, "fork");
+    /* wait for the real login process to exit */
+    while(1) {
+	int status;
+	int ret;
+	ret = waitpid(pid, &status, 0);
+	if(ret > 0) {
+	    if(WIFEXITED(status) || WIFSIGNALED(status)) {
+		execle(prog, argv0, NULL, env);
+		err(1, "exec %s", prog);
+	    }
+	} else if(ret < 0) 
+	    err(1, "waitpid");
+    }
+}
+
 static void
 exec_shell(const char *shell, int fallback)
 {
     char *sh;
     const char *p;
+    
+    extend_env(NULL);
+    if(start_login_process() < 0)
+	warn("login process");
+    start_logout_process();
+
     p = strrchr(shell, '/');
     if(p)
 	p++;
     else
 	p = shell;
     asprintf(&sh, "-%s", p);
-    extend_env(NULL);
     execle(shell, sh, NULL, env);
     if(fallback){
 	warnx("Can't exec %s, trying %s", 
@@ -222,14 +281,7 @@ krb5_get_afs_tokens (struct passwd *pwd)
     ret = krb5_cc_default(context, &id2);
  
     if (ret == 0) {
-#ifdef _AIX
-	/* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
-	   this hack the kernel crashes on the following
-	   pioctl... */
-	pw_dir = strdup(pwd->pw_dir);
-#else
 	pw_dir = pwd->pw_dir;
-#endif
 
 	if (!pag_set) {
 	    k_setpag();
@@ -292,14 +344,7 @@ krb4_get_afs_tokens (struct passwd *pwd)
     if (!k_hasafs ())
 	return;
 
-#ifdef _AIX
-    /* XXX this is a fix for a bug in AFS for AIX 4.3, w/o
-	   this hack the kernel crashes on the following
-	   pioctl... */
-    pw_dir = strdup(pwd->pw_dir);
-#else
     pw_dir = pwd->pw_dir;
-#endif
 
     if (!pag_set) {
 	k_setpag();
@@ -547,6 +592,13 @@ main(int argc, char **argv)
 
     if(p_flag)
 	copy_env();
+    else {
+	/* this set of variables is always preserved by BSD login */
+	if(getenv("TERM"))
+	    add_env("TERM", getenv("TERM"));
+	if(getenv("TZ"))
+	    add_env("TZ", getenv("TZ"));
+    }
 
     if(*argv){
 	if(strchr(*argv, '=') == NULL && strcmp(*argv, "-") != 0){
@@ -554,6 +606,7 @@ main(int argc, char **argv)
 	    ask = 0;
 	}
     }
+    /* XXX should we care about environment on the command line? */
     for(try = 0; try < max_tries; try++){
 	struct passwd *pwd;
 	char password[128];
