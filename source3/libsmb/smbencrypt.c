@@ -442,6 +442,11 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
 	 */
 
 	uint32 new_pw_len = IVAL(buffer, 512);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buffer, 516);
+#endif
+
 	if (new_pw_len < 0 || new_pw_len > new_passwd_size - 1)
 	{
 		DEBUG(0,("check_oem_password: incorrect password length (%d).\n", new_pw_len));
@@ -472,6 +477,8 @@ BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
 BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 			int new_pw_len, BOOL nt_pass_set)
 {
+	generate_random_buffer(buffer, 516, True);
+
 	if (nt_pass_set)
 	{
 		/*
@@ -492,6 +499,10 @@ BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
 	 */
 
 	SIVAL(buffer, 512, new_pw_len);
+
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buffer, 516);
+#endif
 
 	return True;
 }

@@ -841,6 +841,10 @@ void create_ntlmssp_resp(struct pwd_info *pwd,
 				char *domain, char *user_name, char *my_name,
 				uint32 ntlmssp_cli_flgs,
                                 prs_struct *auth_resp);
+BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
+			int new_passwd_size, BOOL nt_pass_set);
+BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
+			int new_pw_len, BOOL nt_pass_set);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1906,7 +1910,7 @@ BOOL delete_samr_dom_alias(struct cli_state *cli, uint16 fnum,
 BOOL get_samr_query_aliasmem(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 alias_rid, uint32 *num_mem, DOM_SID2 *sid);
-BOOL set_samr_query_userinfo(struct cli_state *cli, uint16 fnum, 
+BOOL set_samr_set_userinfo(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, void *usr);
@@ -2769,7 +2773,37 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 *usr,
 BOOL sam_io_user_info11(char *desc,  SAM_USER_INFO_11 *usr, prs_struct *ps, int depth);
 BOOL make_sam_user_info24(SAM_USER_INFO_24 *usr,
 	char newpass[516]);
-BOOL make_sam_user_info23(SAM_USER_INFO_23 *usr,
+BOOL make_sam_user_info23W(SAM_USER_INFO_23 *usr,
+
+	NTTIME *logon_time, /* all zeros */
+	NTTIME *logoff_time, /* all zeros */
+	NTTIME *kickoff_time, /* all zeros */
+	NTTIME *pass_last_set_time, /* all zeros */
+	NTTIME *pass_can_change_time, /* all zeros */
+	NTTIME *pass_must_change_time, /* all zeros */
+
+	UNISTR2 *user_name, /* NULL */
+	UNISTR2 *full_name,
+	UNISTR2 *home_dir,
+	UNISTR2 *dir_drive,
+	UNISTR2 *log_scr,
+	UNISTR2 *prof_path,
+	UNISTR2 *desc,
+	UNISTR2 *wkstas,
+	UNISTR2 *unk_str,
+	UNISTR2 *mung_dial,
+
+	uint32 user_rid, /* 0x0000 0000 */
+	uint32 group_rid,
+	uint16 acb_info, 
+
+	uint32 unknown_3,
+	uint16 logon_divs,
+	LOGON_HRS *hrs,
+	uint32 unknown_5,
+	char newpass[516],
+	uint32 unknown_6);
+BOOL make_sam_user_info23A(SAM_USER_INFO_23 *usr,
 
 	NTTIME *logon_time, /* all zeros */
 	NTTIME *logoff_time, /* all zeros */
@@ -3530,10 +3564,6 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, uchar *pass1, uchar *pass2
 BOOL pass_oem_change(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash);
-BOOL decode_pw_buffer(const char buffer[516], char *new_passwd,
-			int new_passwd_size, BOOL nt_pass_set);
-BOOL encode_pw_buffer(char buffer[516], const char *new_passwd,
-			int new_pw_len, BOOL nt_pass_set);
 BOOL check_oem_password(char *user,
 			uchar *lmdata, uchar *lmhash,
 			uchar *ntdata, uchar *nthash,
