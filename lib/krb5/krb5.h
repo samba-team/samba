@@ -1241,6 +1241,8 @@ krb5_change_password (krb5_context	context,
 #define KRB5_KPASSWD_AUTHERROR	0
 #define KRB5_KPASSWD_SOFTERROR	0
 
+#define KPASSWD_PORT 464
+
 krb5_error_code
 krb5_timeofday (krb5_context context,
 		int32_t *timeret);
