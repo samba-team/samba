@@ -746,8 +746,8 @@ int ltdb_index_add(struct ldb_module *module, const struct ldb_message *msg)
 /*
   delete an index entry for one message element
 */
-static int ltdb_index_del1(struct ldb_module *module, const char *dn, 
-			   struct ldb_message_element *el, int v_idx)
+int ltdb_index_del_value(struct ldb_module *module, const char *dn, 
+			 struct ldb_message_element *el, int v_idx)
 {
 	struct ldb_context *ldb = module->ldb;
 	struct ldb_message msg;
@@ -826,7 +826,7 @@ int ltdb_index_del(struct ldb_module *module, const struct ldb_message *msg)
 			continue;
 		}
 		for (j=0;j<msg->elements[i].num_values;j++) {
-			ret = ltdb_index_del1(module, msg->dn, &msg->elements[i], j);
+			ret = ltdb_index_del_value(module, msg->dn, &msg->elements[i], j);
 			if (ret == -1) {
 				return -1;
 			}
