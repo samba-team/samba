@@ -48,7 +48,6 @@ DB_op(krb5_context context, HDB *db, hdb_entry *entry, int op)
 	data.data = value.data;
 	data.length = value.size;
 	hdb_value2entry(context, &data, entry);
-	krb5_data_free(&data);
     }
     return 0;
 }
