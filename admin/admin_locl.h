@@ -106,7 +106,7 @@ void init_entry (HDB *db, hdb_entry *ent);
 void set_created_by (hdb_entry *ent);
 void set_modified_by (hdb_entry *ent);
 void edit_entry(hdb_entry *ent);
-void set_password(hdb_entry *ent);
+int set_password(hdb_entry *ent);
 
 /* life.c */
 
