@@ -113,7 +113,7 @@ int main(int argc, char **argv)
 	extern char *optarg;
 	extern int optind;
 	int ch;
-	char *user, *strrchr();
+	char *user;
 #ifdef	FORWARD
 	extern int forward_flags;
 #endif	/* FORWARD */

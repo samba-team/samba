@@ -1399,7 +1399,6 @@ shell(argc, argv)
 	     * Fire up the shell in the child.
 	     */
 	    register char *shellp, *shellname;
-	    extern char *strrchr();
 
 	    shellp = getenv("SHELL");
 	    if (shellp == NULL)
@@ -1676,7 +1675,6 @@ env_init()
 	extern char **environ;
 	register char **epp, *cp;
 	register struct env_lst *ep;
-	extern char *strchr();
 
 	for (epp = environ; *epp; epp++) {
 		if (cp = strchr(*epp, '=')) {
@@ -2298,7 +2296,7 @@ int tn(int argc, char **argv)
     unsigned long temp;
     extern char *inet_ntoa();
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
-    char *srp = 0, *strrchr();
+    char *srp = 0;
     unsigned long sourceroute(), srlen;
 #endif
     char *cmd, *hostp = 0, *portp = 0, *user = 0;
