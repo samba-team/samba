@@ -374,16 +374,40 @@ krb5_sendto_kdc2(krb5_context context,
 		 krb5_data *receive,
 		 krb5_boolean master)
 {
+    int flags = 0;
+
+    if (master)
+	flags |= KRB5_KRBHST_FLAGS_MASTER;
+
+   return krb5_sendto_kdc_flags(context, send_data, realm, receive, flags);
+}
+
+krb5_error_code
+krb5_sendto_kdc(krb5_context context,
+		const krb5_data *send_data,
+		const krb5_realm *realm,
+		krb5_data *receive)
+{
+    return krb5_sendto_kdc_flags(context, send_data, realm, receive, 0);
+}
+
+krb5_error_code
+krb5_sendto_kdc_flags(krb5_context context,
+		      const krb5_data *send_data,
+		      const krb5_realm *realm,
+		      krb5_data *receive,
+		      int flags)
+{
     krb5_error_code ret;
     krb5_krbhst_handle handle;
     int type;
 
-    if (master || context->use_admin_kdc)
+    if ((flags & KRB5_KRBHST_FLAGS_MASTER) || context->use_admin_kdc)
 	type = KRB5_KRBHST_ADMIN;
     else
 	type = KRB5_KRBHST_KDC;
 
-    ret = krb5_krbhst_init(context, *realm, type, &handle);
+    ret = krb5_krbhst_init_flags(context, *realm, type, flags, &handle);
     if (ret)
 	return ret;
 
@@ -393,13 +417,4 @@ krb5_sendto_kdc2(krb5_context context,
 	krb5_set_error_string(context,
 			      "unable to reach any KDC in realm %s", *realm);
     return ret;
-}
-
-krb5_error_code
-krb5_sendto_kdc(krb5_context context,
-		const krb5_data *send_data,
-		const krb5_realm *realm,
-		krb5_data *receive)
-{
-    return krb5_sendto_kdc2(context, send_data, realm, receive, FALSE);
 }
