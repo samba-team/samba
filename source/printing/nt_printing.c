@@ -2443,6 +2443,7 @@ uint32 get_printer_subkeys( NT_PRINTER_DATA *data, const char* key, fstring **su
 	return num_subkeys;
 }
 
+#ifdef HAVE_ADS
 static void map_sz_into_ctr(REGVAL_CTR *ctr, const char *val_name, 
 			    const char *sz)
 {
@@ -2555,7 +2556,6 @@ static BOOL map_nt_printer_info2_to_dsspooler(NT_PRINTER_INFO_LEVEL_2 *info2)
 	return True;
 }
 
-#ifdef HAVE_ADS
 static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, GUID guid)
 {
 	int i;
