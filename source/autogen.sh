@@ -1,4 +1,4 @@
-#! /bin/sh
+#!/bin/sh
 
 # Run this script to build samba from CVS.
 
@@ -15,7 +15,7 @@ AUTOCONFFOUND="0"
 ## Look for autoheader 
 ##
 for i in $TESTAUTOHEADER; do
-	if which $i >& /dev/null; then
+	if which $i > /dev/null 2>&1; then
 		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
 			AUTOHEADER=$i
 			AUTOHEADERFOUND="1"
@@ -29,7 +29,7 @@ done
 ##
 
 for i in $TESTAUTOCONF; do
-	if which $i >& /dev/null; then
+	if which $i > /dev/null 2>&1; then
 		if [ `$i --version | head -1 | cut -d.  -f 2` -ge 53 ]; then
 			AUTOCONF=$i
 			AUTOCONFFOUND="1"
@@ -42,7 +42,7 @@ done
 ## 
 ## do we have it?
 ##
-if [ "$AUTOCONFFOUND" == "0" -o "$AUTOHEADERFOUND" == "0" ]; then
+if [ "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0" ]; then
 	echo "$0: need autoconf 2.53 or later to build samba from CVS" >&2
 	exit 1
 fi
