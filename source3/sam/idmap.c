@@ -102,35 +102,6 @@ NTSTATUS idmap_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 
 	lazy_initialize_idmap();
 
-	if (!lp_idmap_only()) {
-		if (id_type & ID_USERID) {
-			uid_t low, high;
-			if (!lp_idmap_uid(&low, &high)) {
-				DEBUG(0, ("idmap uid range missing or invalid\n"));
-				DEBUGADD(0, ("idmap will be unable to map SIDs\n"));
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			if (low > id.uid || high < id.uid) {
-				DEBUG(0, ("uid not in range and idmap only is flase - not storing the mapping\n"));
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-		} else if (id_type & ID_GROUPID) {
-			gid_t low, high;
-			if (!lp_idmap_gid(&low, &high)) {
-				DEBUG(0, ("idmap gid range missing or invalid\n"));
-				DEBUGADD(0, ("idmap will be unable to map SIDs\n"));
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-			if (low > id.gid || high < id.gid) {
-				DEBUG(0, ("uid not in range and idmap only is flase - not storing the mapping\n"));
-				return NT_STATUS_UNSUCCESSFUL;
-			}
-		} else {
-			DEBUG(0, ("Wrong ID Type, mapping failed!"));
-			return NT_STATUS_UNSUCCESSFUL;
-		}
-	}
-	
 	ret = local_map->set_mapping(sid, id, id_type);
 	if (NT_STATUS_IS_ERR(ret)) {
 		DEBUG (0, ("idmap_set_mapping: Error, unable to modify local cache!\n"));
@@ -239,4 +210,3 @@ void idmap_status(void)
 	local_map->status();
 	if (remote_map) remote_map->status();
 }
-

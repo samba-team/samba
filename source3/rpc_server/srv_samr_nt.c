@@ -3396,7 +3396,7 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	}
 
 	/* check a real user exist before we run the script to add a user to a group */
-	if (!sid_to_uid(pdb_get_user_sid(sam_user), &uid)) {
+	if (NT_STATUS_IS_ERR(sid_to_uid(pdb_get_user_sid(sam_user), &uid))) {
 		pdb_free_sam(&sam_user);
 		return NT_STATUS_NO_SUCH_USER;
 	}

@@ -213,7 +213,7 @@ idok:
 
 static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 {
-	TDB_DATA ksid, kid;
+	TDB_DATA ksid, kid, data;
 	fstring ksidstr;
 	fstring kidstr;
 
@@ -234,6 +234,20 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 
 	kid.dptr = kidstr;
 	kid.dsize = strlen(kidstr) + 1;
+
+	/* *DELETE* prevoius mappings if any.
+	 * This is done both SID and [U|G]ID passed in */
+	
+	data = tdb_fetch(idmap_tdb, ksid);
+	if (data.dptr) {
+		tdb_delete(idmap_tdb, data);
+		tdb_delete(idmap_tdb, ksid);
+	}
+	data = tdb_fetch(idmap_tdb, kid);
+	if (data.dptr) {
+		tdb_delete(idmap_tdb, data);
+		tdb_delete(idmap_tdb, kid);
+	}
 
 	if (tdb_store(idmap_tdb, ksid, kid, TDB_INSERT) == -1) {
 		DEBUG(0, ("idb_set_mapping: tdb_store 1 error: %s\n", tdb_errorstr(idmap_tdb)));
@@ -427,4 +441,3 @@ NTSTATUS idmap_reg_tdb(struct idmap_methods **meth)
 
 	return NT_STATUS_OK;
 }
-
