@@ -5,7 +5,7 @@
 #
 id "$Id$"
 
-error_table kadm5 ovk
+error_table ovk kadm5
 
 prefix KADM5
 error_code FAILURE,		"Operation failed for unspecified reason"
