@@ -42,6 +42,7 @@ RCSID("$Id$");
 #include <ldap.h>
 #include <ctype.h>
 #include <sys/un.h>
+#include <hex.h>
 
 static krb5_error_code LDAP__connect(krb5_context context, HDB *);
 static krb5_error_code LDAP_close(krb5_context context, HDB *);
@@ -111,54 +112,6 @@ static char *krb5principal_attrs[] = {
     "uid",
     NULL
 };
-
-const static char hexchar[] = "0123456789ABCDEF";
-
-static int 
-pos(char c)
-{
-    const char *p;
-    c = toupper((unsigned char)c);
-    for (p = hexchar; *p; p++)
-	if (*p == c)
-	    return p - hexchar;
-    return -1;
-}
-
-static krb5_error_code
-LDAP__hex2bytes(const char *hex_in, unsigned char *buffer, size_t len)
-{
-    const char *p;
-    size_t i;
-	
-    if (strlen(hex_in) != (2 * len))
-	return EINVAL;
-
-    p = hex_in;
-    for (i = 0; i < len; i++)
-	buffer[i] = pos(p[i * 2]) << 4 | pos(p[(i * 2) + 1]);
-    return 0;
-}
-
-static krb5_error_code
-LDAP__bytes2hex(const char *buffer, size_t buf_len, char **out)
-{
-    size_t i;
-    char *p;
-
-    p = malloc(buf_len * 2 + 1);
-    if (p == NULL)
-	return ENOMEM;
-    
-    for (i = 0; i < buf_len; i++) {
-	p[i * 2] = hexchar[((unsigned char)buffer[i] >> 4) & 0xf];
-	p[i * 2 + 1] = hexchar[(unsigned char)buffer[i] & 0xf];
-    }
-    p[i * 2] = '\0';
-    *out = p;
-
-    return 0;
-}
 
 static int
 LDAP_no_size_limit(krb5_context context, LDAP *lp)
@@ -673,9 +626,13 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 		    
 	    nt = ent->keys.val[i].key.keyvalue.data;
 	    /* store in ntPassword, not krb5key */
-	    ret = LDAP__bytes2hex(nt, 16, &ntHexPassword);
-	    if (ret)
+	    ret = hex_encode(nt, 16, &ntHexPassword);
+	    if (ret < 0) {
+		krb5_set_error_string(context, "hdb-ldap: failed to "
+				      "hex encode key");
+		ret = ENOMEM;
 		goto out;
+	    }
 	    ret = LDAP_addmod(&mods, LDAP_MOD_REPLACE, "sambaNTPassword", 
 			      ntHexPassword);
 	    free(ntHexPassword);
@@ -1034,10 +991,8 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 	    ret = ENOMEM;
 	    goto out;
 	}
-	LDAP__hex2bytes(ntPasswordIN,
-			ent->keys.val[ent->keys.len].key.keyvalue.data, 16);
-	free(ntPasswordIN);
-
+	ret = hex_decode(ntPasswordIN,
+			 ent->keys.val[ent->keys.len].key.keyvalue.data, 16);
 	ent->keys.len++;
 
 	if (ent->etypes == NULL) {
