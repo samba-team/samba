@@ -922,7 +922,7 @@ userpaddword: buttercup
 <screen>
 &rootprompt; slapadd -v -l admin-accts.ldif
 </screen>
-	<para></step>
+	</para></step>
 
 	<step><para><indexterm>
 	      <primary>LDIF</primary>
