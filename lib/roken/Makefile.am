@@ -8,6 +8,6 @@ lib_LIBRARIES = libroken.a
 
 libroken_a_SOURCES = \
 k_getpwuid.c k_getpwnam.c signal.c verify.c inaddr2str.o mini_inetd.c \
-get_window_size.c warnerr.c snprintf.c
+get_window_size.c warnerr.c snprintf.c getarg.c
 
 libroken_a_LIBADD = @LIBOBJS@
