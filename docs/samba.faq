@@ -5,7 +5,7 @@
 
                                    SAMBA Suite
 
-                  (FAQ version 1.9.15, Samba version 1.09.15)
+                  (FAQ version 1.9.15a, Samba version 1.09.15)
 
 -------------------------------------------------------------------------------
 
@@ -87,20 +87,20 @@ written by Karl Auer.
 
 At time of writing, the current version was 1.9.15. If you want to be sure
 check the bottom of the change-log file. 
-(nimbus.anu.edu.au/pub/tridge/samba/change-log)
+(ftp://samba.anu.edu.au/pub/samba/alpha/change-log)
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 3: Where can I get it?
 
-The Samba suite is available via anonymous ftp from nimbus.anu.edu.au. The
+The Samba suite is available via anonymous ftp from samba.anu.edu.au. The
 latest and greatest versions of the suite are in the directory:
 
-/pub/tridge/samba/
+/pub/samba/
 
 Development (read "alpha") versions, which are NOT necessarily stable and which
 do NOT necessarily have accurate documentation, are available in the directory:
 
-/pub/tridge/samba/alpha
+/pub/samba/alpha
 
 Note that binaries are NOT included in any of the above. Samba is distributed
 ONLY in source form, though binaries may be available from other sites. Recent
@@ -215,7 +215,7 @@ SECTION THREE: Common client problems
 * 1: I can't see the Samba server in any browse lists!
 
 *** Until the FAQ can be updated, please check the file:
-*** ftp://nimbus.anu.edu.au/pub/tridge/samba/BROWSING.txt
+*** ftp://samba.anu.edu.au/pub/samba/BROWSING.txt
 *** for more information on browsing. 
 
 If your GUI client does not permit you to select non-browsable servers, you may
