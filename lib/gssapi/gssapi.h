@@ -77,6 +77,7 @@ typedef struct gss_ctx_id_t_desc_struct {
   gss_name_t source, target;
   OM_uint32 flags;
   enum { LOCAL = 1, OPEN = 2} more_flags;
+  struct krb5_ticket *ticket;
 } gss_ctx_id_t_desc;
 
 typedef gss_ctx_id_t_desc *gss_ctx_id_t;
