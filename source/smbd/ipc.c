@@ -3367,6 +3367,9 @@ static int api_fd_reply(int cnum,uint16 vuid,char *outbuf,
 		/* record maximum data length that can be transmitted in an SMBtrans */
 		p->max_rdata_len = mdrcnt;
 
+                DEBUG(10,("api_fd_reply: p:%p max_rdata_len: %d\n",
+                           p, p->max_rdata_len));
+
 		switch (subcommand)
 		{
 			case 0x26:

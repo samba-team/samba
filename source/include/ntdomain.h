@@ -69,7 +69,8 @@ typedef struct
         RPC_HDR     hdr;
         RPC_HDR_BA  hdr_ba;
         RPC_HDR_RB  hdr_rb;
-        RPC_HDR_RR  hdr_rr;
+        RPC_HDR_REQ  hdr_req;
+        RPC_HDR_RESP hdr_resp;
 
         RPC_AUTH_NTLMSSP_REQ  ntlmssp_req;
         RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;

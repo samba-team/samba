@@ -606,11 +606,6 @@ char *mktemp(char *); /* No standard include */
    not good for HPUX */
 /* #define SIGCLD_IGNORE */
 #define USE_SIGPROCMASK /* Needed to stop zombie processes on HPUX 9.x and 10.x.*/
-#ifdef HPUX10
-#ifdef SEMMSL
-#undef SEMMSL
-#endif /* SEMMSL */
-#endif /* HPUX10 */
 #endif /* HPUX */
 
 
@@ -1137,6 +1132,11 @@ union semun {
 	unsigned short *array;
 };
 #endif
+#if defined(HPUX) && defined(HPUX10)
+#ifdef SEMMSL
+#undef SEMMSL
+#endif /* SEMMSL */
+#endif /* HPUX && HPUX10 */
 #endif
 
 #ifdef AFS_AUTH

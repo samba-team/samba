@@ -157,9 +157,10 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 
 	if (OPEN_PNUM(pnum - PIPE_HANDLE_OFFSET))
 	{
-		int num;
-		int len;
-		uint32 rpc_frag_pos;
+		int num = 0;
+		int len = 0;
+		uint32 hdr_num = 0;
+		uint32 rpc_frag_pos = 0;
 
 		DEBUG(6,("OK\n"));
 
@@ -169,8 +170,13 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 			return 0;
 		}
 
+		DEBUG(6,("read_pipe: p: %p max_rdata_len: %d data_pos: %d num: %d\n",
+		          p, p->max_rdata_len, data_pos, num));
+
 		/* the read request starts from where the SMBtrans2 left off. */
 		data_pos += p->max_rdata_len;
+
+		rpc_frag_pos = data_pos % p->hdr.frag_len;
 
 		/* headers accumulate an offset */
 		data_pos -= p->hdr_offsets;
@@ -182,22 +188,32 @@ int read_pipe(uint16 pnum, char *data, uint32 pos, int n)
 
 		if (!IS_BITS_SET_ALL(p->hdr.flags, RPC_FLG_LAST))
 		{
-			rpc_frag_pos = data_pos % p->hdr.frag_len;
+			DEBUG(5,("read_pipe: hdr_offsets: %d rpc_frag_pos: %d frag_len: %d\n",
+			          p->hdr_offsets, rpc_frag_pos, p->hdr.frag_len));
 
 			if (rpc_frag_pos == 0)
 			{
+				/* this is subtracted from the total data bytes, later */
+				hdr_num = 0x18;
+
 				/* create and copy in a new header. */
 				create_rpc_reply(p, data_pos, p->rdata.offset);
 				mem_buf_copy(data, p->rhdr.data, 0, 0x18);
 
 				/* make room in data stream for header */
 				p->hdr_offsets += 0x18;
+				data += 0x18;
+
+				DEBUG(6,("read_pipe: hdr_offsets: %d\n", p->hdr_offsets));
 			}
 		}
 
 		if (num > 0)
 		{
-			mem_buf_copy(data, p->rhdr.data, data_pos, num);
+			DEBUG(6,("read_pipe: adjusted data_pos: %d num: %d\n",
+			          data_pos, num - hdr_num));
+			mem_buf_copy(data, p->rhdr.data, data_pos, num - hdr_num);
+
 			return num;
 		}
 

@@ -75,16 +75,24 @@ typedef struct rpc_hdr_info
 
 } RPC_HDR;
 
-/* RPC_HDR_RR - ms request / response rpc header */
-typedef struct rpc_hdr_rr_info
+/* RPC_HDR_REQ - ms request rpc header */
+typedef struct rpc_hdr_req_info
 {
   uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
-  uint8  context_id;   /* 0 - presentation context identifier */
+  uint16 context_id;   /* 0 - presentation context identifier */
+  uint16  opnum;        /* opnum */
+
+} RPC_HDR_REQ;
+
+/* RPC_HDR_RESP - ms response rpc header */
+typedef struct rpc_hdr_resp_info
+{
+  uint32 alloc_hint;   /* allocation hint - data size (bytes) minus header and tail. */
+  uint16 context_id;   /* 0 - presentation context identifier */
   uint8  cancel_count; /* 0 - cancel count */
-  uint8  opnum;        /* opnum */
   uint8  reserved;     /* 0 - reserved. */
 
-} RPC_HDR_RR;
+} RPC_HDR_RESP;
 
 /* this seems to be the same string name depending on the name of the pipe,
  * but is more likely to be linked to the interface name
