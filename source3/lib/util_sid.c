@@ -445,6 +445,19 @@ BOOL sid_split_rid(DOM_SID *sid, uint32 *rid)
 }
 
 /*****************************************************************
+ Return the last rid from the end of a sid
+*****************************************************************/  
+
+BOOL sid_peek_rid(DOM_SID *sid, uint32 *rid)
+{
+	if (sid->num_auths > 0) {
+		*rid = sid->sub_auths[sid->num_auths - 1];
+		return True;
+	}
+	return False;
+}
+
+/*****************************************************************
  Copies a sid
 *****************************************************************/  
 
