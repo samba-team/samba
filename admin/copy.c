@@ -123,19 +123,20 @@ kt_copy (int argc, char **argv)
     return kt_copy_int(argv[0], argv[1]);
 }
 
-/* convert a version 4 srvtab to a version 5 keytab */
-
 #ifndef KEYFILE
 #define KEYFILE "/etc/srvtab"
 #endif
 
-int
-srvconv(int argc, char **argv)
+/* copy to from v4 srvtab, just short for copy */
+static int
+conv(int srvconv, int argc, char **argv)
 {
     int help_flag = 0;
     char *srvtab = KEYFILE;
     int optind = 0;
     char kt4[1024], kt5[1024];
+
+    char *name;
 
     struct getargs args[] = {
 	{ "srvtab", 's', arg_string, NULL},
@@ -148,12 +149,17 @@ srvconv(int argc, char **argv)
     args[i++].value = &srvtab;
     args[i++].value = &help_flag;
 
+    if(srvconv)
+	name = "ktutil srvconvert";
+    else 
+	name = "ktutil srvcreate";
+
     if(getarg(args, num_args, argc, argv, &optind)){
-	arg_printusage(args, num_args, "ktutil srvconvert", "");
+	arg_printusage(args, num_args, name, "");
 	return 1;
     }
     if(help_flag){
-	arg_printusage(args, num_args, "ktutil srvconvert", "");
+	arg_printusage(args, num_args, name, "");
 	return 0;
     }
 
@@ -161,15 +167,36 @@ srvconv(int argc, char **argv)
     argv += optind;
 
     if (argc != 0) {
-	arg_printusage(args, num_args, "ktutil srvconvert", "");
+	arg_printusage(args, num_args, name, "");
 	return 1;
     }
 
     snprintf(kt4, sizeof(kt4), "krb4:%s", srvtab);
 
-    if(keytab_string != NULL)
-	return kt_copy_int(kt4, keytab_string);
+    if(srvconv) {
+	if(keytab_string != NULL)
+	    return kt_copy_int(kt4, keytab_string);
+	else {
+	    krb5_kt_default_name(context, kt5, sizeof(kt5));
+	    return kt_copy_int(kt4, kt5);
+	}
+    } else {
+	if(keytab_string != NULL)
+	    return kt_copy_int(keytab_string, kt4);
 
-    krb5_kt_default_name(context, kt5, sizeof(kt5));
-    return kt_copy_int(kt4, kt5);
+	krb5_kt_default_name(context, kt5, sizeof(kt5));
+	return kt_copy_int(kt5, kt4);
+    }
+}
+
+int
+srvconv(int argc, char **argv)
+{
+    return conv(1, argc, argv);
+}
+
+int
+srvcreate(int argc, char **argv)
+{
+    return conv(0, argc, argv);
 }

@@ -15,8 +15,7 @@ ktutil_SOURCES = add.c				\
 		 ktutil.c			\
 		 list.c				\
 		 purge.c			\
-		 remove.c			\
-		 srvcreate.c
+		 remove.c
 
 LDADD = \
 	$(top_builddir)/lib/kadm5/libkadm5clnt.la \
