@@ -87,10 +87,6 @@ char *dos_GetWd(char *path);
 
 void fault_setup(void (*fn)(void *));
 
-/*The following definitions come from  lib/fnmatch.c  */
-
-int fnmatch (const char *pattern, const char *string, int flags);
-
 /*The following definitions come from  lib/fsusage.c  */
 
 int sys_fsusage(const char *path, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
@@ -636,6 +632,8 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
 
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
 	     void (*fn)(file_info *, const char *));
+int cli_list_old(struct cli_state *cli,const char *Mask,uint16 attribute, 
+		 void (*fn)(file_info *, const char *));
 
 /*The following definitions come from  libsmb/climessage.c  */
 

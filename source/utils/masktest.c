@@ -30,7 +30,7 @@ static fstring workgroup;
 static int got_pass;
 
 static BOOL showall = False;
-
+static BOOL old_list = False;
 static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 
@@ -190,7 +190,11 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 	resultp = res1;
 	fstrcpy(short_name, "");
 	finfo = NULL;
-	cli_list(cli, mask, aHIDDEN | aDIR, listfn);
+	if (old_list) {
+		cli_list_old(cli, mask, aHIDDEN | aDIR, listfn);
+	} else {
+		cli_list(cli, mask, aHIDDEN | aDIR, listfn);
+	}
 	if (finfo) {
 		fstrcpy(short_name, finfo->short_name);
 		strlower(short_name);
@@ -310,8 +314,8 @@ static void usage(void)
 
 	setup_logging(argv[0],True);
 
-	argc -= 2;
-	argv += 2;
+	argc -= 1;
+	argv += 1;
 
 	TimeInit();
 	charset_initialise();
@@ -325,7 +329,7 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:a")) != EOF) {
+	while ((opt = getopt(argc, argv, "U:s:hm:f:ao")) != EOF) {
 		switch (opt) {
 		case 'U':
 			pstrcpy(username,optarg);
@@ -350,6 +354,9 @@ static void usage(void)
 			break;
 		case 'a':
 			showall = 1;
+			break;
+		case 'o':
+			old_list = True;
 			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
