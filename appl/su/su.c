@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -544,12 +544,6 @@ main(int argc, char **argv)
 	if (ok == 4)
 	    krb_start_session();
 #endif
-	{
-	    char **p;
-	    for(p = args; *p; p++)
-		printf("%s ", *p);
-	    printf("\n");
-	}
 	execv(shell, args);
     }
     
