@@ -2601,28 +2601,24 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	char adevice[MAXDEVICENAME];
 	WERROR err;
 
-	NT_PRINTER_INFO_LEVEL_2 *info = NULL;
-
-	ZERO_STRUCT(info);
-
-	err = printerdb_get_printer(&info, sharename);
+	err = printerdb_get_printer(info_ptr, sharename);
 
 	if (!W_ERROR_IS_OK(err))
 		return get_a_printer_2_default(info_ptr, servername, sharename);
 
 	/* Samba has to have shared raw drivers. */
-	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
-	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
+	(*info_ptr)->attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	(*info_ptr)->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	/* Restore the stripped strings. */
-	slprintf(info->servername, sizeof(info->servername)-1, "\\\\%s", servername);
+	slprintf((*info_ptr)->servername, sizeof((*info_ptr)->servername)-1, "\\\\%s", servername);
 
 	if ( lp_force_printername(snum) )
 		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
 	else 
-		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info->printername);
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, (*info_ptr)->printername);
 
-	fstrcpy(info->printername, printername);
+	fstrcpy((*info_ptr)->printername, printername);
 
 	/*
 	 * Some client drivers freak out if there is a NULL devmode
@@ -2632,31 +2628,29 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *se
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(snum) && !info->devmode) {
+	if (lp_default_devmode(snum) && !(*info_ptr)->devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
-		info->devmode = construct_nt_devicemode(printername);
+		(*info_ptr)->devmode = construct_nt_devicemode(printername);
 	}
 
-	slprintf( adevice, sizeof(adevice), "%s", info->printername );
-	if (info->devmode) {
-		fstrcpy(info->devmode->devicename, adevice);	
+	slprintf( adevice, sizeof(adevice), "%s", (*info_ptr)->printername );
+	if ((*info_ptr)->devmode) {
+		fstrcpy((*info_ptr)->devmode->devicename, adevice);	
 	}
 
 	/* This will get the current RPC talloc context, but we should be
 	   passing this as a parameter... fixme... JRA ! */
 
-	nt_printing_getsec(get_talloc_ctx(), sharename, &info->secdesc_buf);
+	nt_printing_getsec(get_talloc_ctx(), sharename, &(*info_ptr)->secdesc_buf);
 
 	/* Fix for OS/2 drivers. */
 
 	if (get_remote_arch() == RA_OS2)
-		map_to_os2_driver(info->drivername);
+		map_to_os2_driver((*info_ptr)->drivername);
 
 	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
-		 sharename, info->printername, info->drivername));
-
-	*info_ptr = memdup(info, sizeof(*info));
+		 sharename, (*info_ptr)->printername, (*info_ptr)->drivername));
 
 	return WERR_OK;	
 }
