@@ -44,7 +44,7 @@ interface xattr
 		utf8string name;       /* will be used for case-insensitive speedup */
 	} xattr_DosInfo2;
 
-	typedef union {
+	typedef [switch_type(uint16)] union {
 		[case(1)] xattr_DosInfo1 info1;
 		[case(2)] xattr_DosInfo2 info2;
 	} xattr_DosInfo;
@@ -102,7 +102,7 @@ interface xattr
 	*/
 	const string XATTR_NTACL_NAME = "security.NTACL";
 
-	typedef union {
+	typedef [switch_type(uint16)] union {
 		[case(1)] security_descriptor *sd;
 	} xattr_NTACL_Info;
 

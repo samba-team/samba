@@ -666,9 +666,11 @@ sub ParseElementPushScalar($$$)
 		ParseArrayPush($e, $ndr, "r->", "NDR_SCALARS");
 	} elsif (need_alloc($e)) {
 		# no scalar component
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseSwitchPush($e, $ndr, $var_prefix, $ndr_flags, $switch);
 	} else {
+		if (my $switch = util::has_property($e, "switch_is")) {
+			ParseSwitchPush($e, $ndr, $var_prefix, $ndr_flags, $switch);
+		}
+
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
@@ -759,33 +761,8 @@ sub ParseSwitchPull($$$$$)
 
 	check_null_pointer($switch_var);
 
-	if (!defined $utype ||
-	    !util::has_property($utype, "nodiscriminant")) {
-		my $e2 = util::find_sibling($e, $switch);
-		my $type_decl = typelist::mapType($e2);
-		pidl "if (($ndr_flags) & NDR_SCALARS) {";
-		indent;
-		pidl "$type_decl _level;";
-		pidl "NDR_CHECK(ndr_pull_$e2->{TYPE}($ndr, NDR_SCALARS, &_level));";
-		if ($switch_var =~ /r->in/) {
-			pidl "if (!($ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _level != $switch_var) {";
-			indent;
-		} else {
-			pidl "if (_level != $switch_var) {"; 
-			indent;
-		}
-		pidl "return ndr_pull_error($ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", _level);";
-		deindent;
-		if ($switch_var =~ /r->/) {
-			pidl "} else { $switch_var = _level; }";
-		} else {
-			pidl "}";
-		}
-		deindent;
-		pidl "}";
-	}
+	pidl "NDR_CHECK(ndr_pull_set_switch_value($ndr, $cprefix$var_prefix$e->{NAME}, $switch_var));";
 
-	pidl "NDR_CHECK(ndr_pull_$e->{TYPE}($ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));";
 }
 
 #####################################################################
@@ -802,16 +779,8 @@ sub ParseSwitchPush($$$$$)
 
 	check_null_pointer($switch_var);
 
-	my $utype = typelist::getType($e->{TYPE});
-	if (!defined $utype ||
-	    !util::has_property($utype, "nodiscriminant")) {
-		my $e2 = util::find_sibling($e, $switch);
-		pidl "if (($ndr_flags) & NDR_SCALARS) {";
-		pidl "\tNDR_CHECK(ndr_push_$e2->{TYPE}($ndr, NDR_SCALARS, $switch_var));";
-		pidl "}";
-	}
+	pidl "NDR_CHECK(ndr_push_set_switch_value($ndr, $cprefix$var_prefix$e->{NAME}, $switch_var));";
 
-	pidl "NDR_CHECK(ndr_push_$e->{TYPE}($ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));";
 }
 
 #####################################################################
@@ -838,9 +807,11 @@ sub ParseElementPullScalar($$$)
 	} elsif (need_wire_pointer($e)) {
 		ParsePtrPull($e, $ptr_prefix.$var_prefix);
 	} elsif (is_surrounding_array($e)) {
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseSwitchPull($e, $ndr, $var_prefix, $ndr_flags, $switch);
 	} else {
+		if (my $switch = util::has_property($e, "switch_is")) {
+			ParseSwitchPull($e, $ndr, $var_prefix, $ndr_flags, $switch);
+		}
+
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
@@ -919,9 +890,11 @@ sub ParseElementPushBuffer($$)
 	    
 	if (util::array_size($e)) {
 		ParseArrayPush($e, $ndr, "r->", $ndr_flags);
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseSwitchPush($e, $ndr, $var_prefix, $ndr_flags, $switch);
 	} else {
+		if (my $switch = util::has_property($e, "switch_is")) {
+			ParseSwitchPush($e, $ndr, $var_prefix, $ndr_flags, $switch);
+		}
+
 		pidl "NDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
@@ -980,9 +953,11 @@ sub ParseElementPullBuffer($$)
 
 	if (util::array_size($e)) {
 		ParseArrayPull($e, $ndr, "r->", $ndr_flags);
-	} elsif (my $switch = util::has_property($e, "switch_is")) {
-		ParseSwitchPull($e, $ndr, $var_prefix, $ndr_flags, $switch);
 	} else {
+		if (my $switch = util::has_property($e, "switch_is")) {
+			ParseSwitchPull($e, $ndr, $var_prefix, $ndr_flags, $switch);
+		}
+
 		pidl "NDR_CHECK(ndr_pull_$e->{TYPE}($ndr, $ndr_flags, $cprefix$var_prefix$e->{NAME}));";
 	}
 
@@ -1400,9 +1375,19 @@ sub ParseUnionPush($)
 	my $e = shift;
 	my $have_default = 0;
 
+	pidl "int level;";
+
 	start_flags($e);
 
+	pidl "level = ndr_push_get_switch_value(ndr, r);";
+
 	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+
+	if (!util::has_property($e, "nodiscriminant")) {
+		my $switch_type = util::has_property($e, "switch_type");
+		$switch_type = "uint32" unless  (defined ($switch_type));
+		pidl "NDR_CHECK(ndr_push_$switch_type(ndr, NDR_SCALARS, level));";
+	}
 
 	pidl "NDR_CHECK(ndr_push_struct_start(ndr));";
 
@@ -1506,10 +1491,29 @@ sub ParseUnionPull($)
 {
 	my $e = shift;
 	my $have_default = 0;
+	my $switch_type = util::has_property($e, "switch_type");
+	$switch_type = "uint32" unless defined($switch_type);
+
+	pidl "int level;";
+	if (!util::has_property($e, "nodiscriminant")) {
+		if (typelist::typeIs($switch_type, "ENUM")) {
+			$switch_type = typelist::enum_type_fn(typelist::getType($switch_type));
+		}
+		pidl typelist::mapScalarType($switch_type) . " _level;";
+	}
 
 	start_flags($e);
 
+	pidl "level = ndr_pull_get_switch_value(ndr, r);";
+
 	pidl "if (!(ndr_flags & NDR_SCALARS)) goto buffers;";
+
+	if (!util::has_property($e, "nodiscriminant")) {
+		pidl "NDR_CHECK(ndr_pull_$switch_type(ndr, NDR_SCALARS, &_level));";
+		pidl "if (_level != level) {"; 
+		pidl "\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u for $e->{PARENT}->{NAME}\", _level);";
+		pidl "}";
+	}
 
 	pidl "NDR_CHECK(ndr_pull_struct_start(ndr));";
 
@@ -1574,7 +1578,7 @@ sub ParseUnionPull($)
 sub ArgsUnionPush($)
 {
 	my $e = shift;
-	return "struct ndr_push *ndr, int ndr_flags, int level, union $e->{NAME} *r";
+	return "struct ndr_push *ndr, int ndr_flags, union $e->{NAME} *r";
 }
 
 sub ArgsUnionPrint($)
@@ -1586,7 +1590,7 @@ sub ArgsUnionPrint($)
 sub ArgsUnionPull($)
 {
 	my $e = shift;
-	return "struct ndr_pull *ndr, int ndr_flags, int level, union $e->{NAME} *r";
+	return "struct ndr_pull *ndr, int ndr_flags, union $e->{NAME} *r";
 }
 
 sub ArgsUnionNdrSize($)
