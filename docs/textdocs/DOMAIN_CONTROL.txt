@@ -28,7 +28,7 @@ this. Please read the file docs/NTDOMAIN.txt for more information on this.
 ============================================================================
 
 Windows NT Server can be installed as either a plain file and print server
-(WORKGROUP workstaion or server) or as a server that participates in Domain
+(WORKGROUP workstation or server) or as a server that participates in Domain
 Control (DOMAIN member, Primary Domain controller or Backup Domain controller).
 
 The same is true for OS/2 Warp Server, Digital Pathworks and other similar

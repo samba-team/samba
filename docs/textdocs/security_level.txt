@@ -12,6 +12,10 @@ Samba supports the following options to the global smb.conf parameter
 "security =":
 	share, user, server
 
+Note: Samba-2.0.0 now adds the "domain" security mode. Please refer to
+the smb.conf man page for usage information and to the document
+docs/textdocs/DOMAIN_MEMBER.txt for further background details.
+
 Of the above, "security = server" means that Samba reports to clients that
 it is running in "user mode" but actually passes off all authentication
 requests to another "user mode" server. This requires an additional
