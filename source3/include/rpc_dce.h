@@ -89,6 +89,7 @@ enum NTLM_MESSAGE_TYPE
 
 /* Maximum PDU fragment size. */
 #define MAX_PDU_FRAG_LEN 0x1630
+/* #define MAX_PDU_FRAG_LEN 0x10b8		this is what w2k sets */
 
 /*
  * Actual structure of a DCE UUID

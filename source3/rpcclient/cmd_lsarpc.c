@@ -525,13 +525,6 @@ static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli,
 }
 
 
-static NTSTATUS cmd_lsa_dsrole_getprimarydominfo(struct cli_state *cli,
-					TALLOC_CTX *mem_ctx, int argc,
-					char **argv)
-{
-	return NT_STATUS_OK;
-}
-
 /* List of commands exported by this module */
 
 struct cmd_set lsarpc_commands[] = {
@@ -548,7 +541,6 @@ struct cmd_set lsarpc_commands[] = {
 	{ "lsaenumprivsaccount", cmd_lsa_enum_privsaccounts, PI_LSARPC, "Enumerate the privileges of an SID",   "" },
 	{ "lsalookupprivvalue",  cmd_lsa_lookupprivvalue,    PI_LSARPC, "Get a privilege value given its name", "" },
 	{ "lsaquerysecobj",      cmd_lsa_query_secobj,       PI_LSARPC, "Query LSA security object", "" },
-	{ "lsarpcbind",		cmd_lsa_dsrole_getprimarydominfo,       PI_LSARPC_V2, "Test 2k UUID in rpc bind", "" },
 
 	{ NULL }
 };

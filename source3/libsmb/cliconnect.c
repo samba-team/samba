@@ -344,7 +344,7 @@ static BOOL cli_session_setup_nt1(struct cli_state *cli, char *user,
 		/* Have plaintext orginal */
 		set_signing_on_cli(cli, pass, ntpword);
 	}
-
+	
 	return True;
 }
 
