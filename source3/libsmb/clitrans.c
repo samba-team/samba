@@ -488,6 +488,17 @@ BOOL cli_receive_nt_trans(struct cli_state *cli,
 		}
 	}
 
+	/*
+	 * Likewise for NT_STATUS_BUFFER_TOO_SMALL
+	 */
+	if (cli_is_nt_error(cli)) {
+		if (!NT_STATUS_EQUAL(cli_nt_error(cli),
+				     NT_STATUS_BUFFER_TOO_SMALL)) {
+			cli_signing_trans_stop(cli);
+			return(False);
+		}
+	}
+
 	/* parse out the lengths */
 	total_data = SVAL(cli->inbuf,smb_ntr_TotalDataCount);
 	total_param = SVAL(cli->inbuf,smb_ntr_TotalParameterCount);
