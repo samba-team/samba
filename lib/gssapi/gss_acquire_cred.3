@@ -366,6 +366,40 @@ described in
 and
 .Li RFC2744 .
 .Pp
+Gssapi supports the following mechanisms
+.Bl -bullet
+.It
+.Li GSS_KRB5_MECHANISM
+.El
+.Pp
+Gssapi have some generic name types
+.Bl -bullet
+.It
+.Li GSS_C_NT_USER_NAME
+.It
+.Li GSS_C_NT_MACHINE_UID_NAME
+.It
+.Li GSS_C_NT_STRING_UID_NAME
+.It
+.Li GSS_C_NT_HOSTBASED_SERVICE
+.It
+.Li GSS_C_NT_ANONYMOUS
+.It
+.Li GSS_C_NT_EXPORT_NAME
+.El
+.Pp
+Gssapi that supports Kerberos 5 have some additional name types
+.Bl -bullet
+.It
+.Li GSS_KRB5_NT_PRINCIPAL_NAME
+.It
+.Li GSS_KRB5_NT_USER_NAME
+.It
+.Li GSS_KRB5_NT_MACHINE_UID_NAME
+.It
+.Li GSS_KRB5_NT_STRING_UID_NAME
+.El
+.Pp
 .Fn gss_display_name
 takes the gssapi name in
 .Fa input_name
