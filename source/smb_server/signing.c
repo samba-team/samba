@@ -67,7 +67,8 @@ BOOL srv_setup_signing(struct smbsrv_connection *smb_conn,
 	if (!set_smb_signing_common(&smb_conn->signing)) {
 		return False;
 	}
-	return smbcli_simple_set_signing(&smb_conn->signing, session_key, response);
+	return smbcli_simple_set_signing(smb_conn,
+					 &smb_conn->signing, session_key, response);
 }
 
 void srv_signing_restart(struct smbsrv_connection *smb_conn,
