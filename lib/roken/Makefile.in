@@ -31,7 +31,7 @@ SHLIBEXT = @SHLIBEXT@
 LIB = $(LIBNAME).$(LIBEXT)
 
 
-OBJECTS = k_getpwnam.o signal.o tm2time.o verify.o @LIBOBJS@
+OBJECTS = k_getpwnam.o signal.o tm2time.o verify.o inaddr2str.o @LIBOBJS@
 
 all: $(LIB)
 
