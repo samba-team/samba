@@ -88,13 +88,13 @@ Init dom_query
 
 static void init_dom_query(DOM_QUERY *d_q, char *dom_name, DOM_SID *dom_sid)
 {
-	int domlen = (dom_name != NULL) ? strlen(dom_name)+1 : 0;
+	int domlen = (dom_name != NULL) ? strlen(dom_name) : 0;
 
 	d_q->uni_dom_max_len = domlen * 2;
 	d_q->uni_dom_str_len = domlen * 2;
 
-	d_q->buffer_dom_name = (dom_name != 0)   ? 1 : 0;
-	d_q->buffer_dom_sid  = (dom_sid != NULL) ? 1 : 0;
+	d_q->buffer_dom_name = dom_name ? 1 : 0;
+	d_q->buffer_dom_sid  = dom_sid ? 1 : 0;
 
 	/* this string is supposed to be character short */
 	init_unistr2(&d_q->uni_domain_name, dom_name, domlen);

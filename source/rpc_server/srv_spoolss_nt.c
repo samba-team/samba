@@ -526,6 +526,8 @@ static BOOL open_printer_hnd(POLICY_HND *hnd, char *name)
 		return False;
 	}
 
+	DEBUG(5, ("%d printer handles active\n", ubi_dlCount(&Printer_list)));
+
 	return True;
 }
 

@@ -76,8 +76,14 @@ static known_sid_users nt_authority_users[] = {
 	{ 18, SID_NAME_ALIAS, "SYSTEM"},
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
-static known_sid_users builtin_users[] = {
-	{ DOMAIN_USER_RID_ADMIN, SID_NAME_USER, "Administrator" },
+static known_sid_users builtin_groups[] = {
+	{ BUILTIN_ALIAS_RID_ADMINS, SID_NAME_ALIAS, "Administrators" },
+	{ BUILTIN_ALIAS_RID_USERS, SID_NAME_ALIAS, "Users" },
+	{ BUILTIN_ALIAS_RID_GUESTS, SID_NAME_ALIAS, "Guests" },
+	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS, SID_NAME_ALIAS, "Account Operators" },
+	{ BUILTIN_ALIAS_RID_SYSTEM_OPS, SID_NAME_ALIAS, "Server Operators" },
+	{ BUILTIN_ALIAS_RID_PRINT_OPS, SID_NAME_ALIAS, "Print Operators" },
+	{ BUILTIN_ALIAS_RID_BACKUP_OPS, SID_NAME_ALIAS, "Backup Operators" },
 	{  0, (enum SID_NAME_USE)0, NULL}};
 
 static struct sid_name_map_info
@@ -90,8 +96,7 @@ sid_name_map[] =
 {
 	{ &global_sam_sid, global_myname, NULL},
 	{ &global_sam_sid, global_myworkgroup, NULL},
-	{ &global_sid_Builtin, "BUILTIN", NULL},
-	{ &global_sid_Builtin, "", &builtin_users[0]},
+	{ &global_sid_Builtin, "BUILTIN", &builtin_groups[0]},
 	{ &global_sid_World_Domain, "", &everyone_users[0] },
 	{ &global_sid_Creator_Owner_Domain, "", &creator_owner_users[0] },
 	{ &global_sid_NT_Authority, "NT Authority", &nt_authority_users[0] },
