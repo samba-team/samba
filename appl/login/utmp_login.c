@@ -44,7 +44,6 @@ RCSID("$Id$");
 
 void utmp_login(char *tty, char *username, char *hostname)
 {
-#ifndef HAVE_UTMPX
     struct utmp utmp;
     struct hostent *he;
     int fd;
@@ -119,5 +118,4 @@ void utmp_login(char *tty, char *username, char *hostname)
 	write(fd, (char *)&utmp, sizeof(struct utmp));
 	close(fd);
     }
-#endif /* HAVE_UTMPX */
 }
