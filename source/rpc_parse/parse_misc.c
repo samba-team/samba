@@ -15,7 +15,7 @@
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *  
+ e  
  *  You should have received a copy of the GNU General Public License
  *  along with this program; if not, write to the Free Software
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
@@ -554,8 +554,6 @@ BOOL smb_io_unistr(char *desc, UNISTR *uni, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_unistr");
 	depth++;
 
-	if(!prs_align(ps))
-		return False;
 	if(!prs_unistr("unistr", ps, depth, uni))
 		return False;
 
@@ -571,7 +569,7 @@ static void create_buffer3(BUFFER3 *str, size_t len)
 	if (len < MAX_BUFFERLEN)
 		len = MAX_BUFFERLEN;
 
-    str->buffer = talloc_zero(get_talloc_ctx(), len);
+	str->buffer = talloc_zero(get_talloc_ctx(), len);
 	if (str->buffer == NULL)
 		smb_panic("create_buffer3: talloc fail\n");
 

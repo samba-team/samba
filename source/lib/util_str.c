@@ -857,29 +857,29 @@ include the terminating zero.
 
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
-    size_t len;
+	size_t len;
 
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
-        return NULL;
-    }
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in safe_strcpy\n"));
+		return NULL;
+	}
 
-    if (!src) {
-        *dest = 0;
-        return dest;
-    }  
+	if (!src) {
+		*dest = 0;
+		return dest;
+	}  
 
-    len = strlen(src);
+	len = strlen(src);
 
-    if (len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
-		     (int)(len-maxlength), src));
-	    len = maxlength;
-    }
+	if (len > maxlength) {
+		DEBUG(0,("ERROR: string overflow by %d in safe_strcpy [%.50s]\n",
+			(int)(len-maxlength), src));
+		len = maxlength;
+	}
       
-    memcpy(dest, src, len);
-    dest[len] = 0;
-    return dest;
+	memcpy(dest, src, len);
+	dest[len] = 0;
+	return dest;
 }  
 
 /*******************************************************************
@@ -889,29 +889,30 @@ include the terminating zero.
 
 char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
-    size_t src_len, dest_len;
+	size_t src_len, dest_len;
 
-    if (!dest) {
-        DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
-        return NULL;
-    }
+	if (!dest) {
+		DEBUG(0,("ERROR: NULL dest in safe_strcat\n"));
+		return NULL;
+	}
 
-    if (!src) {
-        return dest;
-    }  
+	if (!src)
+		return dest;
 
-    src_len = strlen(src);
-    dest_len = strlen(dest);
+	src_len = strlen(src);
+	dest_len = strlen(dest);
 
-    if (src_len + dest_len > maxlength) {
-	    DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
-		     (int)(src_len + dest_len - maxlength), src));
-	    src_len = maxlength - dest_len;
-    }
+	if (src_len + dest_len > maxlength) {
+		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
+			(int)(src_len + dest_len - maxlength), src));
+		if (dest_len >= maxlength)
+			return dest;
+		src_len = maxlength - dest_len;
+	}
       
-    memcpy(&dest[dest_len], src, src_len);
-    dest[dest_len + src_len] = 0;
-    return dest;
+	memcpy(&dest[dest_len], src, src_len);
+	dest[dest_len + src_len] = 0;
+	return dest;
 }
 
 /*******************************************************************
@@ -1307,5 +1308,27 @@ char *string_truncate(char *s, int length)
 	if (s && strlen(s) > length) {
 		s[length] = 0;
 	}
+	return s;
+}
+
+/*
+  return a RFC2254 binary string representation of a buffer
+  used in LDAP filters
+  caller must free
+*/
+char *binary_string(char *buf, int len)
+{
+	char *s;
+	int i, j;
+	const char *hex = "0123456789ABCDEF";
+	s = malloc(len * 3 + 1);
+	if (!s) return NULL;
+	for (j=i=0;i<len;i++) {
+		s[j] = '\\';
+		s[j+1] = hex[((unsigned char)buf[i]) >> 4];
+		s[j+2] = hex[((unsigned char)buf[i]) & 0xF];
+		j += 3;
+	}
+	s[j] = 0;
 	return s;
 }

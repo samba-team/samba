@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
    a WINS nsswitch module 
    Copyright (C) Andrew Tridgell 1999
    
@@ -35,6 +34,7 @@
 
 static int initialised;
 
+extern BOOL AllowDebugChange;
 
 /* Use our own create socket code so we don't recurse.... */
 
@@ -77,7 +77,8 @@ static int wins_lookup_open_socket_in(void)
 static void nss_wins_init(void)
 {
 	initialised = 1;
-	DEBUGLEVEL = 10;
+	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 
 	/* needed for lp_xx() functions */
 	charset_initialise();
@@ -130,7 +131,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		return NULL;
 
 	p = wins_srv_ip();
-	if( !zero_ip(p) ) {
+	if( !is_zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
 		goto out;
 	}
@@ -205,7 +206,7 @@ int lookup(nsd_file_t *rq)
 		if ( status = lookup_byaddr_backend(key, &count)) {
 		    size = strlen(key) + 1;
 		    if (size > len) {
-			SAFE_FREE(status);
+			free(status);
 			return NSD_ERROR;
 		    }
 		    len -= size;
@@ -217,7 +218,7 @@ int lookup(nsd_file_t *rq)
 			if (status[i].type == 0x20) {
 				size = sizeof(status[i].name) + 1;
 				if (size > len) {
-				    SAFE_FREE(status);
+				    free(status);
 				    return NSD_ERROR;
 				}
 				len -= size;
@@ -227,7 +228,7 @@ int lookup(nsd_file_t *rq)
 			}
 		    }
 		    response[strlen(response)-1] = '\n';
-		    SAFE_FREE(status);
+		    free(status);
 		}
 	} else if (strcasecmp(map,"hosts.byname") == 0) {
 	    if (ip_list = lookup_byname_backend(key, &count)) {
@@ -235,7 +236,7 @@ int lookup(nsd_file_t *rq)
 		    addr = inet_ntoa(ip_list[i-1]);
 		    size = strlen(addr) + 1;
 		    if (size > len) {
-			SAFE_FREE(ip_list);
+			free(ip_list);
 			return NSD_ERROR;
 		    }
 		    len -= size;
@@ -246,13 +247,13 @@ int lookup(nsd_file_t *rq)
 		}
 		size = strlen(key) + 1;
 		if (size > len) {
-		    SAFE_FREE(ip_list);
+		    free(ip_list);
 		    return NSD_ERROR;
 		}   
 		strncat(response,key,size);
 		strncat(response,"\n",1);
 		found = True;
-		SAFE_FREE(ip_list);
+		free(ip_list);
 	    }
 	}
 
@@ -310,7 +311,8 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 		host_addresses++;
 	}
 
-	SAFE_FREE(ip_list);
+	if (ip_list)
+		free(ip_list);
 
 	memcpy(buffer, name, namelen);
 	he->h_name = buffer;
@@ -318,4 +320,3 @@ _nss_wins_gethostbyname_r(const char *name, struct hostent *he,
 	return NSS_STATUS_SUCCESS;
 }
 #endif
-

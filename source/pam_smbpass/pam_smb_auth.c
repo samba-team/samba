@@ -47,6 +47,9 @@ do {								\
 static int _smb_add_user(pam_handle_t *pamh, unsigned int ctrl,
                          const char *name, SAM_ACCOUNT *sampass, BOOL exist);
 
+int make_remark(pam_handle_t *, unsigned int, int, const char *);
+
+
 /*
  * pam_sm_authenticate() authenticates users against the samba password file.
  *

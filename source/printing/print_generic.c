@@ -82,7 +82,7 @@ static int print_run_command(int snum,char *command, int *outfd, ...)
 	standard_sub_snum(snum,syscmd);
 
 	/* Convert script args to unix-codepage */
-	dos_to_unix(syscmd, True);
+	dos_to_unix(syscmd);
 	ret = smbrun(syscmd,outfd);
 
 	DEBUG(3,("Running the command `%s' gave %d\n",syscmd,ret));
@@ -149,6 +149,7 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 	pstring print_directory;
 	char *wd, *p;
 	pstring jobname;
+	fstring job_page_count, job_size;
 
 	/* we print from the directory path to give the best chance of
            parsing the lpq output */
@@ -167,6 +168,8 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 
 	pstrcpy(jobname, pjob->jobname);
 	pstring_sub(jobname, "'", "_");
+	slprintf(job_page_count, sizeof(job_page_count)-1, "%d", pjob->page_count);
+	slprintf(job_size, sizeof(job_size)-1, "%d", pjob->size);
 
 	/* send it to the system spooler */
 	ret = print_run_command(snum, 
@@ -174,6 +177,8 @@ static int generic_job_submit(int snum, struct printjob *pjob)
 			  "%s", p,
   			  "%J", jobname,
 			  "%f", p,
+			  "%z", job_size,
+			  "%c", job_page_count,
 			  NULL);
 
 	chdir(wd);
@@ -195,7 +200,7 @@ static int generic_queue_get(int snum, print_queue_struct **q, print_status_stru
               
 	/* Convert printer name (i.e. share name) to unix-codepage */
 	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name, True);
+	dos_to_unix(printer_name);
 	
 	print_run_command(snum, lp_lpqcommand(snum), &fd, NULL);
 

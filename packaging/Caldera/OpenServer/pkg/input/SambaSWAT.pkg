@@ -125,6 +125,14 @@ flags =
 exportPath = /usr/lib/samba/swat/help/Samba-HOWTO-Collection.html
 exportPath = /usr/share/doc/samba/help/Samba-HOWTO-Collection.html
 
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/Samba-LDAP-HOWTO.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/Samba-LDAP-HOWTO.html
+exportPath = /usr/share/doc/samba/help/Samba-LDAP-HOWTO.html
+
 FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/UNIX_INSTALL.html:
 mode  = 0644
 owner = root
@@ -181,6 +189,14 @@ flags =
 exportPath = /usr/lib/samba/swat/help/nmblookup.1.html
 exportPath = /usr/share/doc/samba/help/nmblookup.1.html
 
+FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/pdbedit.8.html:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /usr/lib/samba/swat/help/pdbedit.1.html
+exportPath = /usr/share/doc/samba/help/pdbedit.1.html
+
 FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/printer_driver2.html:
 mode  = 0644
 owner = root
@@ -196,22 +212,6 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/swat/help/rpcclient.1.html
 exportPath = /usr/share/doc/samba/help/rpcclient.1.html
-
-FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba-pdc-faq.html:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/swat/help/samba-pdc-faq.html
-exportPath = /usr/share/doc/samba/help/samba-pdc-faq.html
-
-FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba-pdc-howto.html:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/swat/help/samba-pdc-howto.html
-exportPath = /usr/share/doc/samba/help/samba-pdc-howto.html
 
 FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/samba.7.html:
 mode  = 0644
@@ -292,22 +292,6 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/swat/help/smbpasswd.8.html
 exportPath = /usr/share/doc/samba/help/smbpasswd.8.html
-
-FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbrun.1.html:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/swat/help/smbrun.1.html
-exportPath = /usr/share/doc/samba/help/smbrun.1.html
-
-FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbsh.1.html:
-mode  = 0644
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/swat/help/smbsh.1.html
-exportPath = /usr/share/doc/samba/help/smbsh.1.html
 
 FILE:SambaSWAT:SHARED:usr/lib/samba/swat/help/smbspool.8.html:
 mode  = 0644

@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.2
+   Unix SMB/CIFS implementation.
    RPC pipe client
    Copyright (C) Tim Potter                        2000-2001,
    Copyright (C) Andrew Tridgell              1992-1997,2000,
@@ -25,7 +24,7 @@
 
 #include "includes.h"
 
-/** @defgroup lsa LSA rpc client routines
+/** @defgroup lsa LSA - Local Security Architecture
  *  @ingroup rpc_client
  *
  * @{
@@ -75,7 +74,7 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
+		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol(&q, '\\', 0, des_access, &qos);
 	} else {
 		init_q_open_pol(&q, '\\', 0, des_access, NULL);
@@ -109,7 +108,10 @@ NTSTATUS cli_lsa_open_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Open a LSA policy handle */
+/** Open a LSA policy handle
+  *
+  * @param cli Handle on an initialised SMB connection 
+  */
 
 NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                               BOOL sec_qos, uint32 des_access, POLICY_HND *pol)
@@ -131,11 +133,11 @@ NTSTATUS cli_lsa_open_policy2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* Initialise input parameters */
 
 	if (sec_qos) {
-		init_lsa_sec_qos(&qos, 2, 1, 0, des_access);
-		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+		init_lsa_sec_qos(&qos, 2, 1, 0);
+		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
                                  &qos);
 	} else {
-		init_q_open_pol2(&q, cli->clnt_name_slash, 0, des_access, 
+		init_q_open_pol2(&q, cli->srv_name_slash, 0, des_access, 
                                  NULL);
 	}
 
@@ -219,7 +221,7 @@ NTSTATUS cli_lsa_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                              POLICY_HND *pol, int num_sids, DOM_SID *sids, 
-                             char ***names, uint32 **types, int *num_names)
+                             char ***domains, char ***names, uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_SIDS q;
@@ -263,12 +265,12 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	result = r.status;
 
 	if (!NT_STATUS_IS_OK(result) &&
-		NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_FILES_OPEN)) {
+	    NT_STATUS_V(result) != NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
+	  
 		/* An actual error occured */
 
 		goto done;
 	}
-
 
 	/* Return output parameters */
 
@@ -277,23 +279,29 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	(*num_names) = r.mapped_count;
-	result = NT_STATUS_OK;
-
-	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) * r.mapped_count))) {
+	if (!((*domains) = (char **)talloc(mem_ctx, sizeof(char *) *
+					   num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.mapped_count))) {
+	if (!((*names) = (char **)talloc(mem_ctx, sizeof(char *) *
+					 num_sids))) {
+		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!((*types) = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
+					  num_sids))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 		
-	for (i = 0; i < r.mapped_count; i++) {
-		fstring name, dom_name, full_name;
+	for (i = 0; i < num_sids; i++) {
+		fstring name, dom_name;
 		uint32 dom_idx = t_names.name[i].domain_idx;
 
 		/* Translate optimised name through domain index array */
@@ -303,13 +311,15 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)- 1);
 			unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name) - 1);
 
-			slprintf(full_name, sizeof(full_name) - 1,
-				 "%s%s%s", dom_name, 
-                                 (dom_name[0] && name[0]) ? 
-				 lp_winbind_separator() : "", name);
-
-			(*names)[i] = talloc_strdup(mem_ctx, full_name);
+			(*names)[i] = talloc_strdup(mem_ctx, name);
+			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
+			
+			if (((*names)[i] == NULL) || ((*domains)[i] == NULL)) {
+				DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
+				result = NT_STATUS_UNSUCCESSFUL;
+				goto done;
+			}
 
 		} else {
 			(*names)[i] = NULL;
@@ -327,8 +337,9 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 /** Lookup a list of names */
 
 NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                              POLICY_HND *pol, int num_names, char **names, 
-                              DOM_SID **sids, uint32 **types, int *num_sids)
+                              POLICY_HND *pol, int num_names, 
+			      const char **names, DOM_SID **sids, 
+			      uint32 **types)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_LOOKUP_NAMES q;
@@ -367,12 +378,13 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_OK(result)) {
+	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) !=
+	    NT_STATUS_V(STATUS_SOME_UNMAPPED)) {
+
 		/* An actual error occured */
 
 		goto done;
 	}
-
 
 	/* Return output parameters */
 
@@ -381,22 +393,21 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
-	(*num_sids) = r.mapped_count;
-	result = NT_STATUS_OK;
-
-	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) * r.mapped_count)))) {
+	if (!((*sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
+					 num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) * r.mapped_count)))) {
+	if (!((*types = (uint32 *)talloc(mem_ctx, sizeof(uint32) *
+					 num_names)))) {
 		DEBUG(0, ("cli_lsa_lookup_sids(): out of memory\n"));
 		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	for (i = 0; i < r.mapped_count; i++) {
+	for (i = 0; i < num_names; i++) {
 		DOM_RID2 *t_rids = r.dom_rid;
 		uint32 dom_idx = t_rids[i].rid_idx;
 		uint32 dom_rid = t_rids[i].rid;
@@ -426,7 +437,9 @@ NTSTATUS cli_lsa_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Query info policy */
+/** Query info policy
+ *
+ *  @param domain_sid - returned remote server's domain sid */
 
 NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                    POLICY_HND *pol, uint16 info_class, 
@@ -593,7 +606,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 			unistr2_to_ascii(tmp, &r.uni_domain_name[i], 
 					 sizeof(tmp) - 1);
-			(*domain_names)[i] = strdup(tmp);
+			(*domain_names)[i] = talloc_strdup(mem_ctx, tmp);
 			sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
 		}
 	}
@@ -785,6 +798,8 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		goto done;
 	}
 
+	if (r.sids.num_entries==0)
+		goto done;
 
 	/* Return output parameters */
 
@@ -803,6 +818,231 @@ NTSTATUS cli_lsa_enum_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*num_sids= r.sids.num_entries;
 	*enum_ctx = r.enum_context;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Open a LSA user handle
+ *
+ * @param cli Handle on an initialised SMB connection */
+
+NTSTATUS cli_lsa_open_account(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *dom_pol, DOM_SID *sid, uint32 des_access, 
+			     POLICY_HND *user_pol)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_OPENACCOUNT q;
+	LSA_R_OPENACCOUNT r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_open_account(&q, dom_pol, sid, des_access);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_open_account("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_OPENACCOUNT, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_open_account("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (NT_STATUS_IS_OK(result = r.status)) {
+		*user_pol = r.pol;
+	}
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Enumerate user privileges
+ *
+ * @param cli Handle on an initialised SMB connection */
+
+NTSTATUS cli_lsa_enum_privsaccount(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                             POLICY_HND *pol, uint32 *count, LUID_ATTR **set)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_ENUMPRIVSACCOUNT q;
+	LSA_R_ENUMPRIVSACCOUNT r;
+	NTSTATUS result;
+	int i;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+	init_lsa_q_enum_privsaccount(&q, pol);
+
+	/* Marshall data and send request */
+
+	if (!lsa_io_q_enum_privsaccount("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_ENUMPRIVSACCOUNT, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_enum_privsaccount("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	if (r.count == 0)
+		goto done;
+
+	if (!((*set = (LUID_ATTR *)talloc(mem_ctx, sizeof(LUID_ATTR) * r.count)))) {
+		DEBUG(0, ("(cli_lsa_enum_privsaccount): out of memory\n"));
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	for (i=0; i<r.count; i++) {
+		(*set)[i].luid.low = r.set.set[i].luid.low;
+		(*set)[i].luid.high = r.set.set[i].luid.high;
+		(*set)[i].attr = r.set.set[i].attr;
+	}
+
+	*count=r.count;
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Get a privilege value given its name */
+
+NTSTATUS cli_lsa_lookupprivvalue(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, char *name, LUID *luid)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_LOOKUPPRIVVALUE q;
+	LSA_R_LOOKUPPRIVVALUE r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_lsa_q_lookupprivvalue(&q, pol, name);
+
+	if (!lsa_io_q_lookupprivvalue("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_LOOKUPPRIVVALUE, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_lookupprivvalue("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	(*luid).low=r.luid.low;
+	(*luid).high=r.luid.high;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
+/** Query LSA security object */
+
+NTSTATUS cli_lsa_query_secobj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      POLICY_HND *pol, uint32 sec_info, 
+			      SEC_DESC_BUF **psdb)
+{
+	prs_struct qbuf, rbuf;
+	LSA_Q_QUERY_SEC_OBJ q;
+	LSA_R_QUERY_SEC_OBJ r;
+	NTSTATUS result;
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_q_query_sec_obj(&q, pol, sec_info);
+
+	if (!lsa_io_q_query_sec_obj("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, LSA_QUERYSECOBJ, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	/* Unmarshall response */
+
+	if (!lsa_io_r_query_sec_obj("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result = r.status)) {
+		goto done;
+	}
+
+	/* Return output parameters */
+
+	if (psdb)
+		*psdb = r.buf;
 
  done:
 	prs_mem_free(&qbuf);
@@ -839,8 +1079,8 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
 	}
 
 	if (!attempt_netbios_session_request(&cli, global_myname, remote_machine, &cli.dest_ip)) {
-		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS \
-session request. Error was %s\n", remote_machine, cli_errstr(&cli) ));
+		DEBUG(0,("fetch_domain_sid: machine %s rejected the NetBIOS session request.\n", 
+			remote_machine));
 		goto done;
 	}
  

@@ -49,55 +49,30 @@ cleanup()
 #
 Save_SSO_Upgrade_Config()
 {
-    if [ -f /etc/smbusers ]; then
-        ex_cmd cp -f /etc/smbusers $CCS_PERSISTENT_STORAGE/smbusers
+    if [ -f /etc/samba.d/smbusers ]; then
+        ex_cmd cp -f /etc/samba.d/smbusers $CCS_PERSISTENT_STORAGE/smbusers
     fi
-    if [ -f /usr/lib/samba/lib/smb.conf ]; then
-        ex_cmd cp -f /usr/lib/samba/lib/smb.conf $CCS_PERSISTENT_STORAGE/smb.conf
+    if [ -f /etc/samba.d/smbpasswd ]; then
+        ex_cmd cp -f /etc/samba.d/smbpasswd ${CCS_PERSISTENT_STORAGE}/smbpasswd
+    fi
+    if [ -f /etc/samba.d/smb.conf ]; then
+        ex_cmd cp -f /etc/samba.d/smb.conf ${CCS_PERSISTENT_STORAGE}/smb.conf
+    fi
+    if [ -f /etc/samba.d/lmhosts ]; then
+        ex_cmd cp -f /etc/samba.d/lmhosts ${CCS_PERSISTENT_STORAGE}/lmhosts
+    fi
+    if [ -f /etc/samba.d/printers.def ]; then
+        ex_cmd cp -f /etc/samba.d/printers.def \
+		${CCS_PERSISTENT_STORAGE}/printers.def
     fi
 
     return 0
 }
 
-#******************************************************************************
-# check_libsocket
-#
-# Check to see if libsocket.so.2 is installed on this system.  If not, print
-# a warning message and ask if the user wants to continue installation anyway.
-#******************************************************************************
-
-MSG_missLibrary="WARNING: Samba requires the library /usr/lib/libsocket.so.2
-	to install and run correctly.  That library does not exist
-	on this system.  It is provided in OpenServer releases
-	5.0.6a and higher."
-
-check_libsocket() {
-	if [ -f "/usr/lib/libsocket.so.2" ]; then
-		return $OK
-	else
-		echo "${MSG_missLibrary}"
-
-	        while echo "\n\tContinue installation? \c"
-        	do      read yn rest
-                	case $yn in
-                		+x|-x)  set $yn	;;
-                		[yY]*)  return $OK ;;
-                		[nN]*)  cleanup $FAIL ;;
-                		*)      echo "\tPlease answer y or n" ;;
-			esac
-        	done
-	fi
-}
-
-
 ################################################################################
 # main Main MAIN
 #
 trap "cleanup $FAIL" 1 2 3 15
-
-[ "$customMode" = "LAYERED" ] && {
-	check_libsocket
-}
 
 # Parse keyword list to determine how custom was invoked, the installation type,
 # whether we running on the target CPU, and finally if we have access to 

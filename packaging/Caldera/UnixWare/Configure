@@ -7,15 +7,33 @@
 V=
 [ "$1" = "-n" ] && V=echo
 
-CC="cc -Kthread -Kalloca -I/usr/local/include -L/usr/local/lib"
+#CC="cc -Kthread -Kalloca -I/usr/local/include -L/usr/local/lib"
+CC="cc -Kthread -Kalloca"
 CPP="$CC -E"
 CFLAGS="-Xa -Dasm=__asm -DANSICPP -O3"
-LDFLAGS="-L/usr/local/lib"
-CXX="CC -I/usr/local/include"
-CXXFLAGS="-O3 -I/usr/local/include/stl -L/usr/local/lib"
+#LDFLAGS="-L/usr/local/lib"
+LDFLAGS=
+#CXX="CC -I/usr/local/include"
+CXX="CC"
+#CXXFLAGS="-O3 -I/usr/local/include/stl -L/usr/local/lib"
+CXXFLAGS="-O3"
 RANLIB=true
-MAKE=/usr/local/bin/make
-PREFIX=/usr/local/samba
+PREFIX=/usr/lib/samba
+
+if [ -x /usr/gnu/bin/make ]
+then
+    MAKE=/usr/gnu/bin/make
+elif [ -x /usr/local/bin/make ]
+then
+    MAKE=/usr/local/bin/make
+elif [ -x /usr/bin/make ]
+then
+    MAKE=/usr/bin/make
+else
+    echo "Can't find make - exiting"
+    exit 1
+fi
+
 if [ "$V" = "echo" ]
 then
     echo "exporting the following shell variables:"

@@ -139,7 +139,7 @@ static BOOL send_message(char *dest, int msg_type, void *buf, int len, BOOL dupl
 
 	/* "smbd" is the only broadcast operation */
 	if (strequal(dest,"smbd")) {
-		retval = message_send_all(the_tdb,msg_type, buf, len, duplicates);
+		retval = message_send_all(the_tdb,msg_type, buf, len, duplicates, NULL);
 	} else if (strequal(dest,"nmbd")) {
 		pid = pidfile_pid(dest);
 		if (pid == 0) {
@@ -281,8 +281,15 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 			fprintf(stderr, "printer-notify needs a printer name\n");
 			return (False);
 		}
-		retval = send_message(dest, MSG_PRINTER_NOTIFY, params[0],
-				      strlen(params[0]) + 1, False);
+		{
+			char msg[8 + sizeof(fstring)+4];
+			SIVAL(msg,0,PRINTER_CHANGE_ALL);
+			SIVAL(msg,4,0);
+			fstrcpy(&msg[8], params[0]);
+			SIVAL(msg,8+strlen(params[0])+1, PRINTER_MESSAGE_DRIVER);
+
+			retval = send_message(dest, MSG_PRINTER_NOTIFY, msg, 8 + strlen(params[0]) + 1 + 4, False);
+		}
 		break;
 
 	case MSG_SMB_FORCE_TDIS:

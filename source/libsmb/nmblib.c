@@ -767,6 +767,14 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
   XXXX This currently doesn't handle packets too big for one
   datagram. It should split them and use the packet_offset, more and
   first flags to handle the fragmentation. Yuck.
+
+    [...but it isn't clear that we would ever need to send a
+    a fragmented NBT Datagram.  The IP layer does its own
+    fragmentation to ensure that messages can fit into the path
+    MTU.  It *is* important to be able to receive and rebuild
+    fragmented NBT datagrams, just in case someone out there
+    really has implemented this 'feature'.  crh -)------ ]
+
   ******************************************************************/
 static int build_dgram(char *buf,struct packet_struct *p)
 {
@@ -777,8 +785,10 @@ static int build_dgram(char *buf,struct packet_struct *p)
   /* put in the header */
   ubuf[0] = dgram->header.msg_type;
   ubuf[1] = (((int)dgram->header.flags.node_type)<<2);
-  if (dgram->header.flags.more) ubuf[1] |= 1;
-  if (dgram->header.flags.first) ubuf[1] |= 2;
+  if (dgram->header.flags.more)
+    ubuf[1] |= 1;
+  if (dgram->header.flags.first)
+    ubuf[1] |= 2;
   RSSVAL(ubuf,2,dgram->header.dgm_id);
   putip(ubuf+4,(char *)&dgram->header.source_ip);
   RSSVAL(ubuf,8,dgram->header.source_port);
@@ -788,7 +798,7 @@ static int build_dgram(char *buf,struct packet_struct *p)
 
   if (dgram->header.msg_type == 0x10 ||
       dgram->header.msg_type == 0x11 ||
-      dgram->header.msg_type == 0x12) {      
+      dgram->header.msg_type == 0x12) {
     offset += put_nmb_name((char *)ubuf,offset,&dgram->source_name);
     offset += put_nmb_name((char *)ubuf,offset,&dgram->dest_name);
   }
@@ -796,8 +806,11 @@ static int build_dgram(char *buf,struct packet_struct *p)
   memcpy(ubuf+offset,dgram->data,dgram->datasize);
   offset += dgram->datasize;
 
-  /* automatically set the dgm_length */
-  dgram->header.dgm_length = offset;
+  /* automatically set the dgm_length
+   * NOTE: RFC1002 says the dgm_length does *not*
+   *       include the fourteen-byte header. crh
+   */
+  dgram->header.dgm_length = (offset - 14);
   RSSVAL(ubuf,10,dgram->header.dgm_length); 
 
   return(offset);
@@ -811,7 +824,7 @@ void make_nmb_name( struct nmb_name *n, const char *name, int type)
 	extern pstring global_scope;
 	memset( (char *)n, '\0', sizeof(struct nmb_name) );
 	StrnCpy( n->name, name, 15 );
-	unix_to_dos(n->name, True);
+	unix_to_dos(n->name);
 	strupper( n->name );
 	n->name_type = (unsigned int)type & 0xFF;
 	StrnCpy( n->scope, global_scope, 63 );

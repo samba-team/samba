@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    Blocking Locking functions
    Copyright (C) Jeremy Allison 1998
    
@@ -176,6 +175,12 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, NTSTATUS stat
 	char *inbuf = blr->inbuf;
 	construct_reply_common(inbuf, outbuf);
 
+	/* whenever a timeout is given w2k maps LOCK_NOT_GRANTED to
+	   FILE_LOCK_CONFLICT! (tridge) */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_LOCK_NOT_GRANTED)) {
+		status = NT_STATUS_FILE_LOCK_CONFLICT;
+	}
+
 	ERROR_NT(status);
 	if (!send_smb(smbd_server_fd(),outbuf))
 		exit_server("generic_blocking_lock_error: send_smb failed.");
@@ -274,7 +279,7 @@ static BOOL process_lockread(blocking_lock_record *blr)
 	numtoread = MIN(BUFFER_SIZE-outsize,numtoread);
 	data = smb_buf(outbuf) + 3;
  
-	status = do_lock( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
+	status = do_lock_spin( fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)numtoread, 
 			  (SMB_BIG_UINT)startpos, READ_LOCK);
 	if (NT_STATUS_V(status)) {
 		if ((errno != EACCES) && (errno != EAGAIN)) {
@@ -340,7 +345,7 @@ static BOOL process_lock(blocking_lock_record *blr)
 	offset = IVAL(inbuf,smb_vwv3);
 
 	errno = 0;
-	status = do_lock(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
+	status = do_lock_spin(fsp, conn, SVAL(inbuf,smb_pid), (SMB_BIG_UINT)count, 
 			 (SMB_BIG_UINT)offset, WRITE_LOCK);
 	if (NT_STATUS_IS_ERR(status)) {
 		if((errno != EACCES) && (errno != EAGAIN)) {
@@ -412,7 +417,7 @@ static BOOL process_lockingX(blocking_lock_record *blr)
 		 * request would never have been queued. JRA.
 		 */
 		errno = 0;
-		status = do_lock(fsp,conn,lock_pid,count,offset, 
+		status = do_lock_spin(fsp,conn,lock_pid,count,offset, 
 				 ((locktype & 1) ? READ_LOCK : WRITE_LOCK));
 		if (NT_STATUS_IS_ERR(status)) break;
 	}

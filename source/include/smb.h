@@ -25,7 +25,12 @@
 #ifndef _SMB_H
 #define _SMB_H
 
+#if defined(LARGE_SMB_OFF_T)
+#define BUFFER_SIZE (128*1024)
+#else /* no large readwrite possible */
 #define BUFFER_SIZE (0xFFFF)
+#endif
+
 #define SAFETY_MARGIN 1024
 #define LARGE_WRITEX_HDR_SIZE 65
 
@@ -80,12 +85,12 @@ implemented */
 #define pSETDIR '\377'
 
 /* these define the attribute byte as seen by DOS */
-#define aRONLY (1L<<0)
-#define aHIDDEN (1L<<1)
-#define aSYSTEM (1L<<2)
-#define aVOLID (1L<<3)
-#define aDIR (1L<<4)
-#define aARCH (1L<<5)
+#define aRONLY (1L<<0)          /* 0x01 */
+#define aHIDDEN (1L<<1)         /* 0x02 */
+#define aSYSTEM (1L<<2)         /* 0x04 */
+#define aVOLID (1L<<3)          /* 0x08 */
+#define aDIR (1L<<4)            /* 0x10 */
+#define aARCH (1L<<5)           /* 0x20 */
 
 /* deny modes */
 #define DENY_DOS 0
@@ -123,11 +128,6 @@ implemented */
 #define DELETE_ON_CLOSE_FLAG (1<<16)
 #define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
 #define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
-
-/* was delete access requested in NT open ? */
-#define DELETE_ACCESS_REQUESTED (1<<17)
-#define GET_DELETE_ACCESS_REQUESTED(x) (((x) & DELETE_ACCESS_REQUESTED) ? True : False)
-#define SET_DELETE_ACCESS_REQUESTED(x) ((x) ? DELETE_ACCESS_REQUESTED : 0)
 
 /* open disposition values */
 #define FILE_EXISTS_FAIL 0
@@ -399,6 +399,7 @@ typedef struct files_struct
 	write_cache *wcp;
 	struct timeval open_time;
 	int share_mode;
+	uint32 desired_access;
 	time_t pending_modtime;
 	int oplock_type;
 	int sent_oplock_break;
@@ -410,9 +411,15 @@ typedef struct files_struct
 	BOOL modified;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
-	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
+
+/* used to hold an arbitrary blob of data */
+typedef struct data_blob {
+	uint8 *data;
+	size_t length;
+	void (*free)(struct data_blob *data_blob);
+} DATA_BLOB;
 
 /*
  * Structure used to keep directory state information around.
@@ -438,6 +445,7 @@ typedef struct
 
 /* Include VFS stuff */
 
+#include "smb_acls.h"
 #include "vfs.h"
 
 typedef struct connection_struct
@@ -459,6 +467,7 @@ typedef struct connection_struct
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
 	/* Handle on dlopen() call */
 	void *dl_handle;
+	void *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */
@@ -515,11 +524,12 @@ typedef struct _print_queue_struct
 {
   int job;
   int size;
+  int page_count;
   int status;
   int priority;
   time_t time;
-  fstring user;
-  fstring file;
+  fstring fs_user;
+  fstring fs_file;
 } print_queue_struct;
 
 enum {LPSTAT_OK, LPSTAT_STOPPED, LPSTAT_ERROR};
@@ -557,6 +567,7 @@ typedef struct {
 	uint16 op_port;
 	uint16 op_type;
 	int share_mode;
+	uint32 desired_access;
 	struct timeval time;
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
@@ -1031,11 +1042,11 @@ struct bitmap {
 #define SYNCHRONIZE_ACCESS   (1L<<20) /* 0x00100000 */
 
 /* Combinations of standard masks. */
-#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS)
-#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS)
-#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS)
-#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS)
+#define STANDARD_RIGHTS_ALL_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS) /* 0x001f0000 */
+#define STANDARD_RIGHTS_EXECUTE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
+#define STANDARD_RIGHTS_READ_ACCESS (READ_CONTROL_ACCESS) /* 0x00200000 */
+#define STANDARD_RIGHTS_REQUIRED_ACCESS (DELETE_ACCESS|READ_CONTROL_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS) /* 0x000f0000 */
+#define STANDARD_RIGHTS_WRITE_ACCESS (READ_CONTROL_ACCESS) /* 0x00020000 */
 
 #define SYSTEM_SECURITY_ACCESS (1L<<24)	          /* 0x01000000 */
 #define MAXIMUM_ALLOWED_ACCESS (1L<<25)	          /* 0x02000000 */
@@ -1274,6 +1285,7 @@ char *strdup(char *s);
    
 #define FLAGS2_LONG_PATH_COMPONENTS   0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES    0x0002
+#define FLAGS2_IS_LONG_NAME           0x0040
 #define FLAGS2_DFS_PATHNAMES          0x1000
 #define FLAGS2_READ_PERMIT_NO_EXECUTE 0x2000
 #define FLAGS2_32_BIT_ERROR_CODES     0x4000 
@@ -1380,7 +1392,7 @@ extern int global_is_multibyte_codepage;
 #define COPYBUF_SIZE (8*1024)
 
 /* 
- * Integers used to override error codes. 
+ * Values used to override error codes. 
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
@@ -1648,6 +1660,5 @@ struct unix_error_map {
 #define SAFE_NETBIOS_CHARS ". -_"
 
 #include "nsswitch/winbindd_nss.h"
-#include "smb_acls.h"
 
 #endif /* _SMB_H */

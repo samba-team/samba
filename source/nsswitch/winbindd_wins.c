@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon - WINS related functions
 
@@ -95,7 +94,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 		return NULL;
 
 	p = wins_srv_ip();
-	if( !zero_ip(p) ) {
+	if( !is_zero_ip(p) ) {
 		ret = name_query(fd,name,0x20,False,True, p, count);
 		goto out;
 	}
@@ -125,42 +124,42 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 
 enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 {
-	char response[1024];
-	int i, count, len, size, maxsize;
+	fstring response;
+	int i, count, maxlen, size;
 	struct node_status *status;
 
 	DEBUG(3, ("[%5d]: wins_byip %s\n", state->pid,
-		state->request.data.name));
+		state->request.data.winsreq));
 
 	*response = '\0';
-	maxsize = len = sizeof(response) - 1;
+	maxlen = sizeof(response) - 1;
 
-	if ((status = lookup_byaddr_backend(state->request.data.name, &count))){
-	    size = strlen(state->request.data.name) + 1;
-	    if (size > len) {
+	if ((status = lookup_byaddr_backend(state->request.data.winsreq, &count))){
+	    size = strlen(state->request.data.winsreq);
+	    if (size > maxlen) {
 		SAFE_FREE(status);
 		return WINBINDD_ERROR;
 	    }
-	    len -= size;
-	    safe_strcat(response,state->request.data.name,maxsize);
-	    safe_strcat(response,"\t",maxsize);
+	    safe_strcat(response,state->request.data.winsreq,maxlen);
+	    safe_strcat(response,"\t",maxlen);
 	    for (i = 0; i < count; i++) {
 		/* ignore group names */
 		if (status[i].flags & 0x80) continue;
 		if (status[i].type == 0x20) {
-			size = sizeof(status[i].name) + 1;
-			if (size > len) {
+			size = sizeof(status[i].name) + strlen(response);
+			if (size > maxlen) {
 			    SAFE_FREE(status);
 			    return WINBINDD_ERROR;
 			}
-			len -= size;
-			safe_strcat(response, status[i].name, maxsize);
-			safe_strcat(response, " ", maxsize);
+			safe_strcat(response, status[i].name, maxlen);
+			safe_strcat(response, " ", maxlen);
 		}
 	    }
+	    /* make last character a newline */
+	    response[strlen(response)-1] = '\n';
 	    SAFE_FREE(status);
 	}
-	fstrcpy(state->response.data.name.name,response);
+	fstrcpy(state->response.data.winsresp,response);
 	return WINBINDD_OK;
 }
 
@@ -169,40 +168,43 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 {
 	struct in_addr *ip_list;
-	int i, count, len, size, maxsize;
-	char response[1024];
+	int i, count, maxlen, size;
+	fstring response;
 	char * addr;
 
 	DEBUG(3, ("[%5d]: wins_byname %s\n", state->pid,
-		state->request.data.name));
+		state->request.data.winsreq));
 
 	*response = '\0';
-	maxsize = len = sizeof(response) - 1;
+	maxlen = sizeof(response) - 1;
 
-	if ((ip_list = lookup_byname_backend(state->request.data.name,&count))){
+	if ((ip_list = lookup_byname_backend(state->request.data.winsreq,&count))){
 		for (i = count; i ; i--) {
 		    addr = inet_ntoa(ip_list[i-1]);
-		    size = strlen(addr) + 1;
-		    if (size > len) {
+		    size = strlen(addr);
+		    if (size > maxlen) {
 			SAFE_FREE(ip_list);
 			return WINBINDD_ERROR;
 		    }
-		    len -= size;
-		    safe_strcat(response,addr,maxsize);
-		    safe_strcat(response," ",maxsize);
+		    if (i != 0) {
+			/* Clear out the newline character */
+			response[strlen(response)-1] = ' '; 
+		    }
+		    safe_strcat(response,addr,maxlen);
+		    safe_strcat(response,"\t",maxlen);
 		}
-		size = strlen(state->request.data.name) + 1;
-		if (size > len) {
+		size = strlen(state->request.data.winsreq) + strlen(response);
+		if (size > maxlen) {
 		    SAFE_FREE(ip_list);
 		    return WINBINDD_ERROR;
 		}   
-		response[strlen(response)-1] = '\t';
-		safe_strcat(response,state->request.data.name,maxsize);
+		safe_strcat(response,state->request.data.winsreq,maxlen);
+		safe_strcat(response,"\n",maxlen);
 		SAFE_FREE(ip_list);
 	} else
 		return WINBINDD_ERROR;
 
-	fstrcpy(state->response.data.name.name,response);
+	fstrcpy(state->response.data.winsresp,response);
 
 	return WINBINDD_OK;
 }

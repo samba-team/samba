@@ -622,7 +622,7 @@ BOOL get_dir_entry(connection_struct *conn,char *mask,int dirtype,char *fname,
       pstrcpy(pathreal,path);
       pstrcat(path,fname);
       pstrcat(pathreal,dname);
-      if (conn->vfs_ops.stat(conn,dos_to_unix(pathreal, False), &sbuf) != 0)
+      if (conn->vfs_ops.stat(conn,dos_to_unix_static(pathreal), &sbuf) != 0)
       {
         DEBUG(5,("Couldn't stat 1 [%s]. Error = %s\n",path, strerror(errno) ));
         continue;
@@ -675,28 +675,39 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 	size_t sd_size;
 	files_struct *fsp;
 	int smb_action;
+	int access_mode;
 	NTSTATUS status;
 	uint32 access_granted;
 
 	ZERO_STRUCT(ste);
 
-	/* if we can't stat it does not show it */
+	/*
+	 * If user is a member of the Admin group
+	 * we never hide files from them.
+	 */
+
+	if (conn->admin_user)
+		return True;
+
+	/* If we can't stat it does not show it */
 	if (vfs_stat(conn, name, &ste) != 0)
 		return False;
 
 	/* Pseudo-open the file (note - no fd's created). */
 
 	if(S_ISDIR(ste.st_mode))	
-		 fsp = open_directory(conn, name, &ste, SET_DENY_MODE(DENY_NONE), FILE_OPEN,
+		 fsp = open_directory(conn, name, &ste, 0, SET_DENY_MODE(DENY_NONE), (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 			unix_mode(conn,aRONLY|aDIR, name), &smb_action);
 	else
-		fsp = open_file_stat(conn,name,&ste,DOS_OPEN_RDONLY,&smb_action);
+		fsp = open_file_shared1(conn, name, &ste, FILE_READ_ATTRIBUTES, SET_DENY_MODE(DENY_NONE), 
+                                (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN), 0, 0, &access_mode, &smb_action);
+
 	if (!fsp)
 		return False;
 
 	/* Get NT ACL -allocated in main loop talloc context. No free needed here. */
 	sd_size = conn->vfs_ops.fget_nt_acl(fsp, fsp->fd, &psd);
-	close_file(fsp, True);
+	close_file(fsp, False);
 
 	/* No access if SD get failed. */
 	if (!sd_size)
@@ -704,26 +715,6 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
 
 	return se_access_check(psd, current_user.nt_user_token, FILE_READ_DATA,
                                  &access_granted, &status);
-
-#if 0
-	/* Old - crappy check :-). JRA */
-
-	if (ste.st_uid == conn->uid) {
-		return (ste.st_mode & S_IRUSR) == S_IRUSR;
-      	} else {
-		int i;
-		if (ste.st_gid == conn->gid) {
-			return (ste.st_mode & S_IRGRP) == S_IRGRP;
-		}
-		for (i=0; i<conn->ngroups; i++) {
-			if (conn->groups[i] == ste.st_gid) {
-				return (ste.st_mode & S_IRGRP) == S_IRGRP;
-			}
-		}
-	}
-
-	return (ste.st_mode & S_IROTH) == S_IROTH;
-#endif
 }
 
 /*******************************************************************
@@ -734,7 +725,7 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
 {
   Dir *dirp;
   char *n;
-  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix(name,False));
+  DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix_static(name));
   int used=0;
 
   if (!p) return(NULL);
@@ -747,9 +738,21 @@ void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
   dirp->pos = dirp->numentries = dirp->mallocsize = 0;
   dirp->data = dirp->current = NULL;
 
-  while ((n = vfs_readdirname(conn, p)))
+  while (True)
   {
     int l;
+
+    if (used == 0) {
+	n = ".";
+    } else if (used == 2) {
+	n = "..";
+    } else {
+	n = vfs_readdirname(conn, p);
+	if (n == NULL)
+		break;
+	if ((strcmp(".",n) == 0) ||(strcmp("..",n) == 0))
+		continue;
+    }
 
     l = strlen(n)+1;
 

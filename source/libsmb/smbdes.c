@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
 
    a partial implementation of DES designed for use in the 
    SMB authentication protocol
@@ -331,7 +330,7 @@ void E_old_pw_hash( unsigned char *p14, const unsigned char *in, unsigned char *
         smbhash(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(unsigned char *out, const unsigned char *in,unsigned char *key)
+void cred_hash1(unsigned char *out, const unsigned char *in, const unsigned char *key)
 {
 	unsigned char buf[8];
 
@@ -339,7 +338,7 @@ void cred_hash1(unsigned char *out, const unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key+9, 1);
 }
 
-void cred_hash2(unsigned char *out, const unsigned char *in,unsigned char *key)
+void cred_hash2(unsigned char *out, const unsigned char *in, const unsigned char *key)
 {
 	unsigned char buf[8];
 	static unsigned char key2[8];
@@ -349,7 +348,7 @@ void cred_hash2(unsigned char *out, const unsigned char *in,unsigned char *key)
 	smbhash(out, buf, key2, 1);
 }
 
-void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key, int forw)
+void cred_hash3(unsigned char *out, unsigned char *in, const unsigned char *key, int forw)
 {
         static unsigned char key2[8];
 

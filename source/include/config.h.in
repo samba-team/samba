@@ -42,6 +42,9 @@
 /* Define to `int' if <sys/types.h> doesn't define.  */
 #undef pid_t
 
+/* Define if you need to in order for stat and other things to work.  */
+#undef _POSIX_SOURCE
+
 /* Define as the return type of signal handlers (int or void).  */
 #undef RETSIGTYPE
 
@@ -185,7 +188,10 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
-#undef HAVE_LIBDL
+#undef HAVE_DLOPEN
+#undef HAVE_DLCLOSE
+#undef HAVE_DLSYM
+#undef HAVE_DLERROR
 #undef SYSCONF_SC_NGROUPS_MAX
 #undef HAVE_UT_UT_NAME
 #undef HAVE_UT_UT_USER
@@ -236,6 +242,35 @@
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_MAKEDEV_FN
+#undef HAVE_GETGROUPS_TOO_MANY_EGIDS
+/*
+ * Add these definitions to allow VFS modules to
+ * see the CPPFLAGS defines.
+ */
+#ifndef _HPUX_SOURCE
+#undef _HPUX_SOURCE
+#endif
+#ifndef _POSIX_SOURCE
+#undef _POSIX_SOURCE
+#endif
+#ifndef _LARGEFILE64_SOURCE
+#undef _LARGEFILE64_SOURCE
+#endif
+#ifndef _ALIGNMENT_REQUIRED
+#undef _ALIGNMENT_REQUIRED
+#endif
+#ifndef _MAX_ALIGNMENT
+#undef _MAX_ALIGNMENT
+#endif
+#ifndef _LARGE_FILES
+#undef _LARGE_FILES
+#endif
+#ifndef _FILE_OFFSET_BITS
+#undef _FILE_OFFSET_BITS
+#endif
+#ifndef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -489,6 +524,18 @@
 /* Define if you have the crypt16 function.  */
 #undef HAVE_CRYPT16
 
+/* Define if you have the dlclose function.  */
+#undef HAVE_DLCLOSE
+
+/* Define if you have the dlerror function.  */
+#undef HAVE_DLERROR
+
+/* Define if you have the dlopen function.  */
+#undef HAVE_DLOPEN
+
+/* Define if you have the dlsym function.  */
+#undef HAVE_DLSYM
+
 /* Define if you have the dup2 function.  */
 #undef HAVE_DUP2
 
@@ -741,6 +788,12 @@
 /* Define if you have the strftime function.  */
 #undef HAVE_STRFTIME
 
+/* Define if you have the strlcat function.  */
+#undef HAVE_STRLCAT
+
+/* Define if you have the strlcpy function.  */
+#undef HAVE_STRLCPY
+
 /* Define if you have the strpbrk function.  */
 #undef HAVE_STRPBRK
 
@@ -806,6 +859,9 @@
 
 /* Define if you have the <dirent.h> header file.  */
 #undef HAVE_DIRENT_H
+
+/* Define if you have the <dlfcn.h> header file.  */
+#undef HAVE_DLFCN_H
 
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
@@ -1002,6 +1058,9 @@
 /* Define if you have the <sys/syscall.h> header file.  */
 #undef HAVE_SYS_SYSCALL_H
 
+/* Define if you have the <sys/syslog.h> header file.  */
+#undef HAVE_SYS_SYSLOG_H
+
 /* Define if you have the <sys/termio.h> header file.  */
 #undef HAVE_SYS_TERMIO_H
 
@@ -1019,6 +1078,9 @@
 
 /* Define if you have the <syscall.h> header file.  */
 #undef HAVE_SYSCALL_H
+
+/* Define if you have the <syslog.h> header file.  */
+#undef HAVE_SYSLOG_H
 
 /* Define if you have the <termio.h> header file.  */
 #undef HAVE_TERMIO_H

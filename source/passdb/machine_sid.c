@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Password and authentication handling
-   Copyright (C) Jeremy Allison 		1996-1998
-   Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
+   Copyright (C) Jeremy Allison 		1996-2002
+   Copyright (C) Andrew Tridgell		2002
    Copyright (C) Gerald (Jerry) Carter		2000
       
    This program is free software; you can redistribute it and/or modify
@@ -27,29 +27,45 @@
  Read the machine SID from a file.
 ****************************************************************************/
 
-static BOOL read_sid_from_file(int fd, char *sid_file)
+static BOOL read_sid_from_file(char *fname, DOM_SID *sid)
 {
-  fstring fline;
+	char **lines;
+	int numlines;
+	BOOL ret;
 
-  memset(fline, '\0', sizeof(fline));
+	lines = file_lines_load(fname, &numlines, False);
 
-  if(read(fd, fline, sizeof(fline) -1 ) < 0) {
-    DEBUG(0,("unable to read file %s. Error was %s\n",
-           sid_file, strerror(errno) ));
-    return False;
-  }
+	if (!lines || numlines < 1) {
+		if (lines)
+			file_lines_free(lines);
+		return False;
+	}
 
-  /*
-   * Convert to the machine SID.
-   */
+	ret = string_to_sid(sid, lines[0]);
+	if (!ret)
+		DEBUG(0,("read_sid_from_file: Failed to convert machine SID. (%s)\n", lines[0]));
+	file_lines_free(lines);
+	return ret;
+}
 
-  fline[sizeof(fline)-1] = '\0';
-  if(!string_to_sid( &global_sam_sid, fline)) {
-    DEBUG(0,("unable to generate machine SID.\n"));
-    return False;
-  }
+/****************************************************************************
+ Generate a random sid - used to build our own sid if we don't have one.
+****************************************************************************/
 
-  return True;
+static void generate_random_sid(DOM_SID *sid)
+{
+	int i;
+	unsigned char raw_sid_data[12];
+
+	memset((char *)sid, '\0', sizeof(*sid));
+	sid->sid_rev_num = 1;
+	sid->id_auth[5] = 5;
+	sid->num_auths = 0;
+	sid->sub_auths[sid->num_auths++] = 21;
+
+	generate_random_buffer(raw_sid_data, 12, True);
+	for (i = 0; i < 3; i++)
+		sid->sub_auths[sid->num_auths++] = IVAL(raw_sid_data, i*4);
 }
 
 /****************************************************************************
@@ -60,196 +76,99 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
 
 BOOL pdb_generate_sam_sid(void)
 {
-	int fd;
-	pstring sid_file;
-	fstring sid_string;
-	SMB_STRUCT_STAT st;
-	BOOL overwrite_bad_sid = False;
+	char *fname = NULL;
+	extern pstring global_myname;
+	extern fstring global_myworkgroup;
+	BOOL is_dc = False;
+	pstring priv_dir;
 
 	generate_wellknown_sids();
 
-	get_private_directory(sid_file);
+	switch (lp_server_role()) {
+	case ROLE_DOMAIN_PDC:
+	case ROLE_DOMAIN_BDC:
+		is_dc = True;
+		break;
+	default:
+		is_dc = False;
+		break;
+	}
 
-	if (!directory_exist(sid_file, NULL)) {
-		if (mkdir(sid_file, 0700) != 0) {
-			DEBUG(0,("can't create private directory %s : %s\n",
-				 sid_file, strerror(errno)));
+	if (secrets_fetch_domain_sid(global_myname, &global_sam_sid)) {
+		DOM_SID domain_sid;
+
+		/* We got our sid. If not a pdc/bdc, we're done. */
+		if (!is_dc)
+			return True;
+
+		if (!secrets_fetch_domain_sid(global_myworkgroup, &domain_sid)) {
+
+			/* No domain sid and we're a pdc/bdc. Store it */
+
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Can't store domain SID as a pdc/bdc.\n"));
+				return False;
+			}
+			return True;
+		}
+
+		if (!sid_equal(&domain_sid, &global_sam_sid)) {
+
+			/* Domain name sid doesn't match global sam sid. Re-store global sam sid as domain sid. */
+
+			DEBUG(0,("pdb_generate_sam_sid: Mismatched SIDs as a pdc/bdc.\n"));
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Can't re-store domain SID as a pdc/bdc.\n"));
+				return False;
+			}
+			return True;
+		}
+
+		return True;
+	}
+
+	/* check for an old MACHINE.SID file for backwards compatibility */
+	get_private_directory(priv_dir);
+	asprintf(&fname, "%s/MACHINE.SID", priv_dir);
+
+	if (read_sid_from_file(fname, &global_sam_sid)) {
+		/* remember it for future reference and unlink the old MACHINE.SID */
+		if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
+			DEBUG(0,("pdb_generate_sam_sid: Failed to store SID from file.\n"));
+			SAFE_FREE(fname);
+			return False;
+		}
+		unlink(fname);
+		if (is_dc) {
+			if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+				DEBUG(0,("pdb_generate_sam_sid: Failed to store domain SID from file.\n"));
+				SAFE_FREE(fname);
+				return False;
+			}
+		}
+
+		/* Stored the old sid from MACHINE.SID successfully.
+			Patch from Stefan "metze" Metzmacher <metze@metzemix.de>*/
+		SAFE_FREE(fname);
+		return True;
+	}
+
+	SAFE_FREE(fname);
+
+	/* we don't have the SID in secrets.tdb, we will need to
+		generate one and save it */
+	generate_random_sid(&global_sam_sid);
+
+	if (!secrets_store_domain_sid(global_myname, &global_sam_sid)) {
+		DEBUG(0,("pdb_generate_sam_sid: Failed to store generated machine SID.\n"));
+		return False;
+	}
+	if (is_dc) {
+		if (!secrets_store_domain_sid(global_myworkgroup, &global_sam_sid)) {
+			DEBUG(0,("pdb_generate_sam_sid: Failed to store generated domain SID.\n"));
 			return False;
 		}
 	}
 
-	pstrcat(sid_file, "/MACHINE.SID");
-    
-	if((fd = sys_open(sid_file, O_RDWR | O_CREAT, 0644)) == -1) {
-		DEBUG(0,("unable to open or create file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		return False;
-	} 
-  
-	/*
-	 * Check if the file contains data.
-	 */
-	
-	if(sys_fstat( fd, &st) < 0) {
-		DEBUG(0,("unable to stat file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
-  
-	if(st.st_size > 0) {
-		/*
-		 * We have a valid SID - read it.
-		 */
-		if(!read_sid_from_file( fd, sid_file)) {
-			DEBUG(0,("unable to read file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		}
-
-		/*
-		 * JRA. Reversed the sense of this test now that I have
-		 * actually done this test *personally*. One more reason
-		 * to never trust third party information you have not
-		 * independently verified.... sigh. JRA.
-		 */
-
-		if(global_sam_sid.num_auths > 0 && global_sam_sid.sub_auths[0] == 0x21) {
-			/*
-			 * Fix and re-write...
-			 */
-			overwrite_bad_sid = True;
-			global_sam_sid.sub_auths[0] = 21;
-			DEBUG(5,("pdb_generate_sam_sid: Old (incorrect) sid id_auth of hex 21 \
-detected - re-writing to be decimal 21 instead.\n" ));
-			sid_to_string(sid_string, &global_sam_sid);
-			if(sys_lseek(fd, (SMB_OFF_T)0, SEEK_SET) != 0) {
-				DEBUG(0,("unable to seek file file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-		} else {
-			close(fd);
-			return True;
-		}
-	} else {
-		/*
-		 * The file contains no data - we need to generate our
-		 * own sid.
-		 * Generate the new sid data & turn it into a string.
-		 */
-		int i;
-		uchar raw_sid_data[12];
-		DOM_SID mysid;
-
-		memset((char *)&mysid, '\0', sizeof(DOM_SID));
-		mysid.sid_rev_num = 1;
-		mysid.id_auth[5] = 5;
-		mysid.num_auths = 0;
-		mysid.sub_auths[mysid.num_auths++] = 21;
-
-		generate_random_buffer( raw_sid_data, 12, True);
-		for( i = 0; i < 3; i++)
-			mysid.sub_auths[mysid.num_auths++] = IVAL(raw_sid_data, i*4);
-
-		sid_to_string(sid_string, &mysid);
-	} 
-	
-	fstrcat(sid_string, "\n");
-	
-	/*
-	 * Ensure our new SID is valid.
-	 */
-	
-	if(!string_to_sid( &global_sam_sid, sid_string)) {
-		DEBUG(0,("unable to generate machine SID.\n"));
-		return False;
-	} 
-  
-	/*
-	 * Do an exclusive blocking lock on the file.
-	 */
-	
-	if(!do_file_lock( fd, 60, F_WRLCK)) {
-		DEBUG(0,("unable to lock file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		close(fd);
-		return False;
-	} 
- 
-	if(!overwrite_bad_sid) {
-		/*
-		 * At this point we have a blocking lock on the SID
-		 * file - check if in the meantime someone else wrote
-		 * SID data into the file. If so - they were here first,
-		 * use their data.
-		 */
-	
-		if(sys_fstat( fd, &st) < 0) {
-			DEBUG(0,("unable to stat file %s. Error was %s\n",
-				 sid_file, strerror(errno) ));
-			close(fd);
-			return False;
-		} 
-  
-		if(st.st_size > 0) {
-			/*
-			 * Unlock as soon as possible to reduce
-			 * contention on the exclusive lock.
-			 */ 
-			do_file_lock( fd, 60, F_UNLCK);
-		
-			/*
-			 * We have a valid SID - read it.
-			 */
-		
-			if(!read_sid_from_file( fd, sid_file)) {
-				DEBUG(0,("unable to read file %s. Error was %s\n",
-					 sid_file, strerror(errno) ));
-				close(fd);
-				return False;
-			}
-			close(fd);
-			return True;
-		} 
-	}
-	
-	/*
-	 * The file is still empty and we have an exlusive lock on it,
-	 * or we're fixing an earlier mistake.
-	 * Write out out SID data into the file.
-	 */
-
-	/*
-	 * Use chmod here as some (strange) UNIX's don't
-	 * have fchmod. JRA.
-	 */	
-
-	if(chmod(sid_file, 0644) < 0) {
-		DEBUG(0,("unable to set correct permissions on file %s. \
-Error was %s\n", sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
-		return False;
-	} 
-	
-	if(write( fd, sid_string, strlen(sid_string)) != strlen(sid_string)) {
-		DEBUG(0,("unable to write file %s. Error was %s\n",
-			 sid_file, strerror(errno) ));
-		do_file_lock( fd, 60, F_UNLCK);
-		close(fd);
-		return False;
-	} 
-	
-	/*
-	 * Unlock & exit.
-	 */
-	
-	do_file_lock( fd, 60, F_UNLCK);
-	close(fd);
 	return True;
-}   
-
-
+}

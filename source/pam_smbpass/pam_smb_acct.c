@@ -45,7 +45,6 @@ int pam_sm_acct_mgmt( pam_handle_t *pamh, int flags,
     int retval;
 
     const char *name;
-    const char *p;
     SAM_ACCOUNT *sampass = NULL;
 
     extern BOOL in_client;

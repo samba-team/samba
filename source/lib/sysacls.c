@@ -1204,7 +1204,7 @@ SMB_ACL_T sys_acl_get_fd(int fd)
 	 * can use the relative path.
 	 */
 
-	return sys_acl_get_file(dos_to_unix(fsp->fsp_name,False), SMB_ACL_TYPE_ACCESS);
+	return sys_acl_get_file(dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_ACCESS);
 }
 
 int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset_d)
@@ -1892,7 +1892,7 @@ int sys_acl_set_fd(int fd, SMB_ACL_T acl_d)
 	 * can use the relative path.
 	 */
 
-	return sys_acl_set_file(dos_to_unix(fsp->fsp_name,False), SMB_ACL_TYPE_ACCESS, acl_d);
+	return sys_acl_set_file(dos_to_unix_static(fsp->fsp_name), SMB_ACL_TYPE_ACCESS, acl_d);
 }
 
 int sys_acl_delete_def_file(const char *path)

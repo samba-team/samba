@@ -534,7 +534,8 @@ nt_err_code_struct nt_errs[] =
 	{ "NT_STATUS_TOO_MANY_LINKS", NT_STATUS_TOO_MANY_LINKS },
 	{ "NT_STATUS_QUOTA_LIST_INCONSISTENT", NT_STATUS_QUOTA_LIST_INCONSISTENT },
 	{ "NT_STATUS_FILE_IS_OFFLINE", NT_STATUS_FILE_IS_OFFLINE },
-        { "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
+	{ "NT_STATUS_NO_MORE_ENTRIES", NT_STATUS_NO_MORE_ENTRIES },
+	{ "STATUS_SOME_UNMAPPED", STATUS_SOME_UNMAPPED },
 	{ NULL, NT_STATUS(0) }
 };
 
@@ -557,6 +558,11 @@ char *get_nt_error_msg(NTSTATUS nt_code)
 	}
 
         return msg;
+}
+
+char *nt_errstr(NTSTATUS nt_code)
+{
+	return get_nt_error_msg(nt_code);
 }
 
 /*****************************************************************************

@@ -17,6 +17,7 @@ PREFIX=/usr/lib/samba
 LIBDIR=/etc/samba.d
 PRIVATEDIR=/etc/samba.d
 LOCKDIR=/var/locks/samba.d
+LOGDIR=/var/log/samba.d
 if [ "$V" = "echo" ]
 then
     echo "exporting the following shell variables:"
@@ -46,7 +47,8 @@ then
 	--prefix=${PREFIX} \
 	--libdir=${LIBDIR} \
 	--with-privatedir=${PRIVATEDIR} \
-        --with-lockdir={$LOCKDIR} \
+        --with-lockdir=${LOCKDIR} \
+        --with-logfilebase=${LOGDIR} \
 	--with-profile \
 	--with-syslog \
 	--with-utmp \
@@ -59,7 +61,8 @@ else
 	--prefix=${PREFIX} \
 	--libdir=${LIBDIR} \
 	--with-privatedir=${PRIVATEDIR} \
-        --with-lockdir={$LOCKDIR} \
+        --with-lockdir=${LOCKDIR} \
+        --with-logfilebase=${LOGDIR} \
 	--with-profile \
 	--with-syslog \
 	--with-utmp \

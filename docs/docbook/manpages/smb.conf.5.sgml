@@ -41,7 +41,7 @@
 	<para>Section and parameter names are not case sensitive.</para>
 
 	<para>Only the first equals sign in a parameter is significant. 
-	Whitespace before or after the first equals sign is discarded. 
+	Whitespace before or after the first equals sign is discarded.
 	Leading, trailing and internal whitespace in section and parameter 
 	names is irrelevant. Leading and trailing whitespace in a parameter 
 	value is discarded. Internal whitespace within a parameter value 
@@ -84,7 +84,7 @@
 	printable services (used by the client to access print services 
 	on the host running the server).</para>
 	
-	<para>Sections may be designated <emphasis>guest</emphasis> services, 
+	<para>Sections may be designated <emphasis>guest</emphasis> services,
 	in which case no password is required to access them. A specified 
 	UNIX <emphasis>guest account</emphasis> is used to define access
 	privileges in this case.</para>
@@ -213,7 +213,7 @@
 		the [homes] section will hide the [homes] share but make
 		any auto home directories visible.</para>
 	</refsect2>
-	
+
 	<refsect2>
 		<title id="PRINTERSSECT">The [printers] section</title>
 		
@@ -428,7 +428,7 @@
 
 		<varlistentry>
 		<term>%d</term>
-		<listitem><para>The process id of the current server 
+		<listitem><para>The process id of the current server
 		process.</para></listitem>
 		</varlistentry>
 		
@@ -514,7 +514,7 @@
 
 		<varlistentry>
 		<term>short preserve case = yes/no</term>
-		<listitem><para>controls if new files which conform to 8.3 syntax, 
+		<listitem><para>controls if new files which conform to 8.3 syntax,
 		that is all in upper case and of suitable length, are created 
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
@@ -650,6 +650,7 @@
 		<listitem><para><link linkend="LOCALMASTER"><parameter>local master</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIR"><parameter>lock dir</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOCKDIRECTORY"><parameter>lock directory</parameter></link></para></listitem>
+		<listitem><para><link linkend="PIDDIRECTORY"><parameter>pid directory</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGFILE"><parameter>log file</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGLEVEL"><parameter>log level</parameter></link></para></listitem>
 		<listitem><para><link linkend="LOGONDRIVE"><parameter>logon drive</parameter></link></para></listitem>
@@ -681,6 +682,7 @@
 		<listitem><para><link linkend="NISHOMEDIR"><parameter>nis homedir</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTPIPESUPPORT"><parameter>nt pipe support</parameter></link></para></listitem>
 		<listitem><para><link linkend="NTSMBSUPPORT"><parameter>nt smb support</parameter></link></para></listitem>
+		<listitem><para><link linkend="NTSTATUSSUPPORT"><parameter>nt status support</parameter></link></para></listitem>
 		<listitem><para><link linkend="NULLPASSWORDS"><parameter>null passwords</parameter></link></para></listitem>
 		<listitem><para><link linkend="OBEYPAMRESTRICTIONS"><parameter>obey pam restrictions</parameter></link></para></listitem>
 		<listitem><para><link linkend="OPLOCKBREAKWAITTIME"><parameter>oplock break wait time</parameter></link></para></listitem>
@@ -792,6 +794,8 @@
 		<listitem><para><link linkend="COPY"><parameter>copy</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMASK"><parameter>create mask</parameter></link></para></listitem>
 		<listitem><para><link linkend="CREATEMODE"><parameter>create mode</parameter></link></para></listitem>
+		<listitem><para><link linkend="CSCPOLICY"><parameter>csc policy</parameter></link></para></listitem>
+		
 		<listitem><para><link linkend="DEFAULTCASE"><parameter>default case</parameter></link></para></listitem>
 		<listitem><para><link linkend="DEFAULTDEVMODE"><parameter>default devmode</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEREADONLY"><parameter>delete readonly</parameter></link></para></listitem>
@@ -1071,8 +1075,8 @@
 		<emphasis>ON DEMAND</emphasis> when a user accesses the Samba server.</para>
 
 		<para>In order to use this option, <ulink url="smbd.8.html">smbd</ulink> 
-		must be set to <parameter>security = server</parameter> or <parameter>
-		security = domain</parameter> and <parameter>add user script</parameter>
+		must <emphasis>NOT</emphasis> be set to <parameter>security = share</parameter>
+		and <parameter>add user script</parameter>
 		must be set to a full pathname for a script that will create a UNIX 
 		user given one argument of <parameter>%u</parameter>, which expands into 
 		the UNIX user name to create.</para>
@@ -1734,6 +1738,24 @@
 		</varlistentry>
 		
 		
+		<varlistentry>
+		<term><anchor id="CSCPOLICY">csc policy (S)</term>
+		<listitem><para>This stands for <emphasis>client-side caching 
+		policy</emphasis>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</para>
+
+		<para>These values correspond to those used on Windows
+		servers.</para>
+
+		<para>For example, shares containing roaming profiles can have
+		offline caching disabled using <command>csc policy = disable
+		</command>.</para>
+
+		<para>Default: <command>csc policy = manual</command></para>
+		<para>Example: <command>csc policy = programs</command></para>
+		</listitem>
+		</varlistentry>
 		
 		<varlistentry>
 		<term><anchor id="DEADTIME">deadtime (G)</term>
@@ -2049,19 +2071,11 @@
 		Windows NT user no longer exists.</para>
 		
 		<para>In order to use this option, <command>smbd</command> must be 
-		set to <parameter>security = domain</parameter> and <parameter>delete 
-		user script</parameter> must be set to a full pathname for a script 
-		that will delete a UNIX user given one argument of <parameter>%u
-		</parameter>, which expands into the UNIX user name to delete.
-		<emphasis>NOTE</emphasis> that this is different to the <link
-		linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link>
-		which will work with the <parameter>security = server</parameter> option 
-		as well as <parameter>security = domain</parameter>. The reason for this
-		is only when Samba is a domain member does it get the information
-		on an attempted user logon that a user no longer exists. In the
-		<parameter>security = server</parameter> mode a missing user
-		is treated the same as an invalid password logon attempt. Deleting
-		the user in this circumstance would not be a good idea.</para>
+		set to <parameter>security = domain</parameter> or <parameter>security =
+		user</parameter> and <parameter>delete user script</parameter> 
+		must be set to a full pathname for a script 
+		that will delete a UNIX user given one argument of <parameter>%u</parameter>, 
+		which expands into the UNIX user name to delete.</para>
 
 		<para>When the Windows user attempts to access the Samba server, 
 		at <emphasis>login</emphasis> (session setup in the SMB protocol) 
@@ -4988,23 +5002,41 @@
 
 		<varlistentry>
 		<term><anchor id="NTSMBSUPPORT">nt smb support (G)</term>
-		<listitem><para>This boolean parameter controls whether <ulink 
-		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific SMB 
-		support with Windows NT clients. Although this is a developer 
-		debugging option and should be left alone, benchmarking has discovered 
-		that Windows NT clients give faster performance with this option 
-		set to <constant>no</constant>. This is still being investigated. 
-	 	If this option is set to <constant>no</constant> then Samba offers 
-		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-		This information may be of use if any users are having problems 
+		<listitem><para>This boolean parameter controls whether <ulink
+		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific SMB
+		support with Windows NT/2k/XP clients. Although this is a developer
+		debugging option and should be left alone, benchmarking has discovered
+		that Windows NT clients give faster performance with this option
+		set to <constant>no</constant>. This is still being investigated.
+	 	If this option is set to <constant>no</constant> then Samba offers
+		exactly the same SMB calls that versions prior to Samba 2.0 offered.
+		This information may be of use if any users are having problems
 		with NT SMB support.</para>
-		
+
 		<para>You should not need to ever disable this parameter.</para>
 
 		<para>Default: <command>nt smb support = yes</command></para>
 		</listitem>
 		</varlistentry>
-	
+
+
+
+		<varlistentry>
+		<term><anchor id="NTSTATUSSUPPORT">nt status support (G)</term>
+		<listitem><para>This boolean parameter controls whether <ulink
+		url="smbd.8.html">smbd(8)</ulink> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <constant>no</constant> then Samba offers
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</para>
+
+		<para>You should not need to ever disable this parameter.</para>
+
+		<para>Default: <command>nt status support = yes</command></para>
+		</listitem>
+		</varlistentry>
+
 
 
 		<varlistentry>
@@ -5522,6 +5554,18 @@
 
 
 		<varlistentry>
+		<term><anchor id="PIDDIRECTORY">pid directory (G)</term>
+		<listitem><para>This option specifies the directory where pid 
+		files will be placed.  </para>
+
+		<para>Default: <command>pid directory = ${prefix}/var/locks</command></para>
+		<para>Example: <command>pid directory = /var/run/</command>
+		</para></listitem>
+		</varlistentry>
+
+
+
+		<varlistentry>
 		<term><anchor id="POSIXLOCKING">posix locking (S)</term>
 		<listitem><para>The <ulink url="smbd.8.html"><command>smbd(8)</command></ulink>
 		daemon maintains an database of file locks obtained by SMB clients.
@@ -5804,6 +5848,8 @@
 		linkend="PRINTERSSECT">[printers]</link> section above for reasons 
 		why you might want to do this.</para>
 
+		<para>To use the CUPS printing interface set <command>printcap name = cups
+		</command>.</para>
 		<para>On System V systems that use <command>lpstat</command> to 
 		list available printers you can use <command>printcap name = lpstat
 		</command> to automatically obtain lists of available printers. This 
@@ -8255,8 +8301,12 @@ veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 		and <filename>nss_winbind.so</filename> modules for UNIX services.
 		</para>
 
-		<para>Example: <command>winbind separator = \</command></para>
-		<para>Example: <command>winbind separator = +</command></para>
+		<para>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</para>
+
+		<para>Example: <command>winbind separator = \\</command></para>
+		<para>Example: <command>winbind separator = /</command></para>
 		</listitem>
 		</varlistentry>
 

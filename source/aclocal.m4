@@ -87,7 +87,7 @@ EOF
 
 dnl Add an #include
 dnl AC_ADD_INCLUDE(VARIABLE)
-define(AC_ADD_INCLUDE,
+AC_DEFUN(AC_ADD_INCLUDE,
 [cat >> confdefs.h <<\EOF
 [#include] $1
 EOF

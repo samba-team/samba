@@ -272,7 +272,7 @@ static BOOL Section( myFILE *InFile, BOOL (*sfunc)(char *) )
           DEBUG(0, ("%s Empty section name in configuration file.\n", func ));
           return( False );
           }
-        if( !sfunc( unix_to_dos(bufr,True) ) )            /* Got a valid name.  Deal with it. */
+        if( !sfunc( unix_to_dos(bufr) ) )            /* Got a valid name.  Deal with it. */
           return( False );
         (void)EatComment( InFile );     /* Finish off the line.             */
         return( True );

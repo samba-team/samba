@@ -62,6 +62,10 @@ int make_remark(pam_handle_t *, unsigned int, int, const char *);
 void _cleanup(pam_handle_t *, void *, int);
 char *_pam_delete(register char *);
 
+/* default configuration file location */
+
+pstring servicesf = CONFIGFILE;
+
 /* syslogging function for errors and other information */
 
 void _log_err( int err, const char *format, ... )
@@ -136,6 +140,9 @@ int set_ctrl( int flags, int argc, const char **argv )
     /* A good, sane default (matches Samba's behavior). */
     set( SMB__NONULL, ctrl );
 
+    /* initialize service file location */
+    service_file=servicesf;
+
     if (flags & PAM_SILENT) {
         set( SMB__QUIET, ctrl );
     }
@@ -164,6 +171,8 @@ int set_ctrl( int flags, int argc, const char **argv )
     if(lp_load(service_file,True,False,False) == False) {
 	_log_err( LOG_ERR, "Error loading service file %s", service_file );
     }
+
+    secrets_init();
 
     if (lp_null_passwords()) {
         set( SMB__NULLOK, ctrl );
@@ -303,7 +312,7 @@ int _smb_verify_password( pam_handle_t * pamh, SAM_ACCOUNT *sampass,
     uchar hash_pass[16];
     uchar lm_pw[16];
     uchar nt_pw[16];
-    int retval;
+    int retval = PAM_AUTH_ERR;
     char *data_name;
     const char *name;
 

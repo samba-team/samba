@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
@@ -88,7 +87,6 @@ NSS_STATUS _nss_winbind_getgrgid_r(gid_t gid,
 				   struct group *result, char *buffer,
 				   size_t buflen, int *errnop);
 
-#ifndef _SMB_MACROS_H
 /* I'm trying really hard not to include anything from smb.h with the
    result of some silly looking redeclaration of structures. */
 
@@ -135,7 +133,7 @@ typedef int BOOL;
 
 /* zero a structure given a pointer to the structure */
 #define ZERO_STRUCTP(x) { if ((x) != NULL) memset((char *)(x), 0, sizeof(*(x))); }
-
+    
 /* Some systems (SCO) treat UNIX domain sockets as FIFOs */
 
 #ifndef S_IFSOCK
@@ -146,5 +144,4 @@ typedef int BOOL;
 #define S_ISSOCK(mode)  ((mode & S_IFSOCK) == S_IFSOCK)
 #endif
 
-#endif /* _SMB_MACROS_H */
 #endif

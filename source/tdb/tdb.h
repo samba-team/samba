@@ -2,8 +2,7 @@
 #define __TDB_H__
 
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Andrew Tridgell 1999
    
@@ -39,6 +38,7 @@ extern "C" {
 #define TDB_NOLOCK   4 /* don't do any locking */
 #define TDB_NOMMAP   8 /* don't use mmap */
 #define TDB_CONVERT 16 /* convert endian (internal use) */
+#define TDB_BIGENDIAN 32 /* header is big-endian (internal use) */
 
 #define TDB_ERRCODE(code, ret) ((tdb->ecode = (code)), ret)
 
@@ -127,11 +127,11 @@ void tdb_unlockall(TDB_CONTEXT *tdb);
 
 /* Low level locking functions: use with care */
 int tdb_chainlock(TDB_CONTEXT *tdb, TDB_DATA key);
-void tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
+int tdb_chainunlock(TDB_CONTEXT *tdb, TDB_DATA key);
 
 /* Debug functions. Not used in production. */
 void tdb_dump_all(TDB_CONTEXT *tdb);
-void tdb_printfreelist(TDB_CONTEXT *tdb);
+int tdb_printfreelist(TDB_CONTEXT *tdb);
 
 extern TDB_DATA tdb_null;
 

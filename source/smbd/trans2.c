@@ -523,15 +523,23 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 					continue;
 				}
 			} else if (vfs_stat(conn,pathreal,&sbuf) != 0) {
-				/* Needed to show the msdfs symlinks as directories */
-				if(!lp_host_msdfs() || !lp_msdfs_root(SNUM(conn)) 
-						|| !is_msdfs_link(conn, pathreal, NULL, NULL)) {
+
+				/* Needed to show the msdfs symlinks as 
+				 * directories */
+
+				if(lp_host_msdfs() && 
+				   lp_msdfs_root(SNUM(conn)) &&
+				   is_msdfs_link(conn, pathreal, NULL, NULL,
+						 &sbuf)) {
+
+					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
+					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
+
+				} else {
+
 					DEBUG(5,("get_lanman2_dir_entry:Couldn't stat [%s] (%s)\n",
 						pathreal,strerror(errno)));
 					continue;
-				} else {
-					DEBUG(5,("get_lanman2_dir_entry: Masquerading msdfs link %s as a directory\n", pathreal));
-					sbuf.st_mode = (sbuf.st_mode & 0xFFF) | S_IFDIR;
 				}
 			}
 
@@ -1367,7 +1375,7 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 			SIVAL(pdata,4,255); /* Max filename component length */
 			/* NOTE! the fstype must *not* be null terminated or win98 won't recognise it
 				and will think we can't do long filenames */
-			fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring), False);
+			fstype_len = dos_PutUniCode(pdata+12,unix_to_dos_static(fstype),sizeof(pstring), False);
 			SIVAL(pdata,8,fstype_len);
 			data_len = 12 + fstype_len;
 			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
@@ -1413,12 +1421,13 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		case SMB_QUERY_FS_SIZE_INFO:
 		case SMB_FS_SIZE_INFORMATION:
 		{
-			SMB_BIG_UINT dfree,dsize,bsize;
+			SMB_BIG_UINT dfree,dsize,bsize,secs_per_unit;;
 			data_len = 24;
 			conn->vfs_ops.disk_free(conn,".",False,&bsize,&dfree,&dsize);	
-			SBIG_UINT(pdata,0,dsize);
-			SBIG_UINT(pdata,8,dfree);
-			SIVAL(pdata,16,bsize/512);
+			secs_per_unit = 2;
+			SBIG_UINT(pdata,0,dsize*(bsize/(512*secs_per_unit)));
+			SBIG_UINT(pdata,8,dfree*(bsize/(512*secs_per_unit)));
+			SIVAL(pdata,16,secs_per_unit);
 			SIVAL(pdata,20,512);
 			break;
 		}
@@ -1509,12 +1518,14 @@ static int call_trans2setfsinfo(connection_struct *conn, char *inbuf, char *outb
  Utility function to set bad path error.
 ****************************************************************************/
 
-void set_bad_path_error(int err, BOOL bad_path)
+NTSTATUS set_bad_path_error(int err, BOOL bad_path)
 {
 	if((err == ENOENT) && bad_path) {
 		unix_ERR_class = ERRDOS;
 		unix_ERR_code = ERRbadpath;
+		return NT_STATUS_OBJECT_PATH_NOT_FOUND;
 	}
+	return NT_STATUS_OK;
 }
 
 /****************************************************************************
@@ -1537,6 +1548,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	SMB_STRUCT_STAT sbuf;
 	pstring fname1;
 	char *fname;
+	pstring dos_fname;
 	char *fullpathname;
 	char *p;
 	int l;
@@ -1559,7 +1571,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -1690,6 +1702,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		sbuf.st_mtime &= ~1;
 	}
 
+        /* NT expects the name to be in an exact form */
+	if (strequal(fname,"."))
+		pstrcpy(dos_fname, "\\");
+	else {
+		snprintf(dos_fname, sizeof(dos_fname), "\\%s", fname);
+		string_replace( dos_fname, '/','\\');
+	}
+
 	switch (info_level) {
 	case SMB_INFO_STANDARD:
 	case SMB_INFO_QUERY_EA_SIZE:
@@ -1719,7 +1739,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		break;
 
 	case 6:
-			return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
+		return ERROR_DOS(ERRDOS,ERRbadfunc); /* os/2 needs this */      
 
 	case SMB_FILE_BASIC_INFORMATION:
 	case SMB_QUERY_FILE_BASIC_INFO:
@@ -1780,6 +1800,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 				*short_name = '\0';
 		}
 		strupper(short_name);
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
 		l = dos_PutUniCode(pdata + 4, short_name, sizeof(pstring), False);
 		data_size = 4 + l;
 		SIVAL(pdata,0,l);
@@ -1794,13 +1815,8 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		 * you like hearing about me suffering.... :-). JRA.
 		 */
 
-		if(strequal(".", fname) && (global_client_caps & CAP_UNICODE)) {
-			l = l*2;
-			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
-			dos_PutUniCode(pdata + 4, "\\",sizeof(pstring), False);
-		} else {
-			pstrcpy(pdata+4,fname);
-		}
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+		l = dos_PutUniCode(pdata + 4, dos_fname,sizeof(pstring), False);
 		data_size = 4 + l;
 		SIVAL(pdata,0,l);
 		break;
@@ -1844,7 +1860,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		pdata += 4;
 		pdata += 4; /* alignment */
 		SIVAL(pdata,0,l);
-		pstrcpy(pdata+4,fname);
+		pstrcpy(pdata+4,dos_fname);
 		pdata += 4 + l;
 		data_size = PTR_DIFF(pdata,(*ppdata));
 		break;
@@ -1864,12 +1880,10 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	case SMB_FILE_NAME_INFORMATION:
 		/* Pathname with leading '\'. */
 		{
-			pstring new_fname;
 			size_t byte_len;
 
-			pstrcpy(new_fname, "\\");
-			pstrcat(new_fname, fname);
-			byte_len = dos_PutUniCode(pdata+4,new_fname,max_data_bytes,False);
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 			SIVAL(pdata,0,byte_len);
 			data_size = 4 + byte_len;
 			break;
@@ -1899,7 +1913,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	/* Not yet finished... JRA */
 	case 1018:
 		{
-			pstring new_fname;
 			size_t byte_len;
 
 			put_long_date(pdata,c_time);
@@ -1923,22 +1936,30 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 	case SMB_FILE_ALTERNATE_NAME_INFORMATION:
 		/* Last component of pathname. */
 		{
-			size_t byte_len = dos_PutUniCode(pdata+4,fname,max_data_bytes,False);
+			size_t byte_len = dos_PutUniCode(pdata+4,dos_fname,max_data_bytes,False);
 			SIVAL(pdata,0,byte_len);
 			data_size = 4 + byte_len;
 			break;
 		}
 		
+#if 0
+	/*
+	 * NT4 server just returns "invalid query" to this - if we try to answer 
+	 * it then NTws gets a BSOD! (tridge).
+	 * W2K seems to want this. JRA.
+	 */ 
+	case SMB_QUERY_FILE_STREAM_INFO:
+#endif
 	case SMB_FILE_STREAM_INFORMATION:
 		if (mode & aDIR) {
 			data_size = 0;
 		} else {
-			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 0xE, False);
-			SIVAL(pdata,0,0); /* ??? */
+			size_t byte_len = dos_PutUniCode(pdata+24,"::$DATA", 14, False);
+			SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+			SIVAL(pdata,0,0); /* Next stream (none). */
 			SIVAL(pdata,4,byte_len); /* Byte length of unicode string ::$DATA */
 			SOFF_T(pdata,8,size);
-			SIVAL(pdata,16,allocation_size);
-			SIVAL(pdata,20,0); /* ??? */
+			SOFF_T(pdata,16,allocation_size);
 			data_size = 24 + byte_len;
 		}
 		break;
@@ -1967,25 +1988,6 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 		SIVAL(pdata,4,0);
 		data_size = 8;
 		break;
-
-#if 0
-	/*
-	 * NT4 server just returns "invalid query" to this - if we try to answer 
-	 * it then NTws gets a BSOD! (tridge).
-	 * W2K seems to want this. JRA.
-	 */
-
-	case SMB_QUERY_FILE_STREAM_INFO:
-		if (get_remote_arch() != RA_WIN2K)
-			return ERROR_DOS(ERRDOS,ERRunknownlevel);
-		data_size = 24 + l;
-		SIVAL(pdata,0,pos);
-		SIVAL(pdata,4,size);
-		SIVAL(pdata,12,allocation_size);
-		SIVAL(pdata,20,l);	
-		pstrcpy(pdata+24,fname);
-		break;
-#endif
 
 	/*
 	 * CIFS UNIX Extensions.
@@ -2062,13 +2064,13 @@ static int call_trans2qfilepathinfo(connection_struct *conn, char *inbuf, char *
 			if(!S_ISLNK(sbuf.st_mode))
 				return(UNIXERROR(ERRSRV,ERRbadlink));
 #else
-			return(UNIXERROR(ERRDOS,ErrNotALink));
+			return(UNIXERROR(ERRDOS,ERRbadlink));
 #endif
-			len = conn->vfs_ops.readlink(conn,dos_to_unix(fullpathname,False), buffer, sizeof(pstring)-1);     /* read link */
+			len = conn->vfs_ops.readlink(conn,dos_to_unix_static(fullpathname), buffer, sizeof(pstring)-1);     /* read link */
 			if (len == -1)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			buffer[len] = 0;
-			unix_to_dos(buffer,True);
+			unix_to_dos(buffer);
 			pstrcpy(pdata,buffer);                            /* write '\0' terminated string */
 			pdata += strlen(buffer)+1;
 			data_size = PTR_DIFF(pdata,(*ppdata));
@@ -2106,7 +2108,7 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 	 * Only allow delete on close for files/directories opened with delete intent.
 	 */
 
-	if (delete_on_close && !GET_DELETE_ACCESS_REQUESTED(fsp->share_mode)) {
+	if (delete_on_close && !(fsp->desired_access & DELETE_ACCESS)) {
 		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
 				fsp->fsp_name ));
 		return NT_STATUS_ACCESS_DENIED;
@@ -2116,11 +2118,6 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 		fsp->directory_delete_on_close = delete_on_close;
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-	} else if(fsp->stat_open) {
-
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, stat open %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
 	} else {
 
 		files_struct *iterate_fsp;
@@ -2211,10 +2208,10 @@ static int ensure_link_is_safe(connection_struct *conn, const char *link_dest_in
 		pstrcpy(link_dest, "./");
 	}
 		
-	if (conn->vfs_ops.realpath(conn,dos_to_unix(link_dest,False),resolved_name) == NULL)
+	if (conn->vfs_ops.realpath(conn,dos_to_unix_static(link_dest),resolved_name) == NULL)
 		return -1;
 
-	pstrcpy(link_dest, unix_to_dos(resolved_name,False));
+	pstrcpy(link_dest, unix_to_dos_static(resolved_name));
 	pstrcat(link_dest, "/");
 	pstrcat(link_dest, last_component);
 
@@ -2270,7 +2267,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
-		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -2358,6 +2355,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
+    if (fsp) {
+		/* the pending modtime overrides the current modtime */
+		sbuf.st_mtime = fsp->pending_modtime;
+    }
+
 	size = sbuf.st_size;
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
@@ -2435,6 +2437,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 			tvs.modtime = MIN(write_time, changed_time);
 
+			if (write_time > tvs.modtime && write_time != 0xffffffff) {
+				tvs.modtime = write_time;
+			}
+
 			/* Prefer a defined time to an undefined one. */
 			if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
 				tvs.modtime = (write_time == (time_t)0 || write_time == (time_t)-1
@@ -2486,7 +2492,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 						return -1;
 					}          
 
-					new_fsp = open_file_shared(conn, fname, &sbuf,
+					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
 							SET_OPEN_MODE(DOS_OPEN_RDWR),
 							(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 							0, 0, &access_mode, &action);
@@ -2634,7 +2640,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 0%o for file %s\n", (double)dev, unixmode, fname ));
 
 				/* Ok - do the mknod. */
-				if (conn->vfs_ops.mknod(conn,dos_to_unix(fname,False), unixmode, dev) != 0)
+				if (conn->vfs_ops.mknod(conn,dos_to_unix_static(fname), unixmode, dev) != 0)
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 
 				SSVAL(params,0,0);
@@ -2696,8 +2702,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			dos_to_unix(link_dest, True);
-			dos_to_unix(fname, True);
+			dos_to_unix(link_dest);
+			dos_to_unix(fname);
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing symlink %s -> %s\n",
 				fname, link_dest ));
@@ -2724,8 +2730,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			if (ensure_link_is_safe(conn, link_dest, link_dest) != 0)
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-			dos_to_unix(link_dest, True);
-			dos_to_unix(fname, True);
+			dos_to_unix(link_dest);
+			dos_to_unix(fname);
 
 			DEBUG(10,("call_trans2setfilepathinfo: SMB_SET_FILE_UNIX_LINK doing hard link %s -> %s\n",
 				fname, link_dest ));
@@ -2751,6 +2757,11 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	DEBUG(6,("actime: %s " , ctime(&tvs.actime)));
 	DEBUG(6,("modtime: %s ", ctime(&tvs.modtime)));
 	DEBUG(6,("size: %.0f ", (double)size));
+	if (S_ISDIR(sbuf.st_mode))
+		dosmode |= aDIR;
+	else
+		dosmode &= ~aDIR;
+
 	DEBUG(6,("dosmode: %x\n"  , dosmode));
 
 	if(!((info_level == SMB_SET_FILE_END_OF_FILE_INFO) ||
@@ -2777,7 +2788,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			 * NT does this a lot. It's actually pointless
 			 * setting the time here, as it will be overwritten
 			 * on the next write, so we save the request
-			 * away and will set it on file code. JRA.
+			 * away and will set it on file close. JRA.
 			 */
 
 			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
@@ -2809,6 +2820,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 	if(size != sbuf.st_size) {
 
+		int ret;
+
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting new size to %.0f\n",
 			fname, (double)size ));
 
@@ -2834,11 +2847,14 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 	
 			if (new_fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadpath));
-			vfs_set_filelen(new_fsp, size);
+			ret = vfs_set_filelen(new_fsp, size);
 			close_file(new_fsp,True);
 		} else {
-			vfs_set_filelen(fsp, size);
+			ret = vfs_set_filelen(fsp, size);
 		}
+
+		if (ret == -1)
+			return (UNIXERROR(ERRHRD,ERRdiskfull));
 	}
 
 	SSVAL(params,0,0);
@@ -3232,9 +3248,8 @@ int reply_trans2(connection_struct *conn, char *inbuf,char *outbuf,int length,in
 		}
 	}
 	
-	if (Protocol >= PROTOCOL_NT1) {
-		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
-	}
+	if (Protocol >= PROTOCOL_NT1)
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
 
 	/* Now we must call the relevant TRANS2 function */
 	switch(tran_call)  {

@@ -1,3 +1,6 @@
+#ifndef PRINTING_H_
+#define PRINTING_H_
+
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -34,12 +37,13 @@ struct printjob {
 	time_t starttime; /* when the job started spooling */
 	int status; /* the status of this job */
 	size_t size; /* the size of the job so far */
+	int page_count;	/* then number of pages so far */
 	BOOL spooled; /* has it been sent to the spooler yet? */
 	BOOL smbjob; /* set if the job is a SMB job */
 	fstring filename; /* the filename used to spool the file */
 	fstring jobname; /* the job name given to us by the client */
 	fstring user; /* the user who started the job */
-	fstring qname; /* name of the print queue the job was sent to */
+	fstring queuename; /* service number of printer for this job */
 };
 
 /* Information for print interfaces */
@@ -65,5 +69,9 @@ extern struct printif	cups_printif;
 #define UNIX_JOB_START PRINT_MAX_JOBID
 #define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
 
+#define MAX_CACHE_VALID_TIME 3600
+
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 2
+#define PRINT_DATABASE_VERSION 4
+
+#endif /* PRINTING_H_ */

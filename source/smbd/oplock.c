@@ -132,7 +132,7 @@ BOOL receive_local_message(fd_set *fds, char *buffer, int buffer_len, int timeou
 	/*
 	 * Read a loopback udp message.
 	 */
-	msg_len = recvfrom(oplock_sock, &buffer[OPBRK_CMD_HEADER_LEN],
+	msg_len = sys_recvfrom(oplock_sock, &buffer[OPBRK_CMD_HEADER_LEN],
 						buffer_len - OPBRK_CMD_HEADER_LEN, 0, (struct sockaddr *)&from, &fromlen);
 
 	if(msg_len < 0) {
@@ -418,7 +418,7 @@ oplocks. Returning success.\n"));
 		toaddr.sin_port = htons(from_port);
 		toaddr.sin_family = AF_INET;
 
-		if(sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
+		if(sys_sendto( oplock_sock, msg_start, OPLOCK_BREAK_MSG_LEN, 0,
 				(struct sockaddr *)&toaddr, sizeof(toaddr)) < 0) {
 			DEBUG(0,("process_local_message: sendto process %d failed. Errno was %s\n",
 				(int)remotepid, strerror(errno)));
@@ -730,8 +730,8 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, unsigned long file_id, 
 	saved_user_conn = current_user.conn;
 	saved_vuid = current_user.vuid;
 	saved_fsp_conn = fsp->conn;
-	vfs_GetWd(saved_fsp_conn,saved_dir);
 	change_to_root_user();
+	vfs_GetWd(saved_fsp_conn,saved_dir);
 	/* Save the chain fnum. */
 	file_chain_save();
 
@@ -929,7 +929,7 @@ dev = %x, inode = %.0f, file_id = %lu and no fsp found !\n",
             (unsigned int)dev, (double)inode, file_id );
 	}
 
-	if(sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
+	if(sys_sendto(oplock_sock,op_break_msg,OPLOCK_BREAK_MSG_LEN,0,
 			(struct sockaddr *)&addr_out,sizeof(addr_out)) < 0) {
 		if( DEBUGLVL( 0 ) ) {
 			dbgtext( "request_oplock_break: failed when sending a oplock " );

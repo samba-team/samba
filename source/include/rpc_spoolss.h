@@ -28,7 +28,6 @@
 #define STRING 2
 
 /* spoolss pipe: this are the calls which are not implemented ...
-#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_GETPRINTERDRIVER			0x0b
 #define SPOOLSS_READPRINTER				0x16
 #define SPOOLSS_WAITFORPRINTERCHANGE			0x1c
@@ -46,16 +45,13 @@
 #define SPOOLSS_DELETEPRINTPROCESSOR			0x30
 #define SPOOLSS_ADDPRINTPROVIDOR			0x31
 #define SPOOLSS_DELETEPRINTPROVIDOR			0x32
-#define SPOOLSS_RESETPRINTER				0x34
 #define SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION	0x36
 #define SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION	0x37
 #define SPOOLSS_ROUTERFINDFIRSTPRINTERNOTIFICATIONOLD	0x39
-#define SPOOLSS_ROUTERREPLYPRINTER			0x3b
 #define SPOOLSS_ADDPORTEX				0x3d
 #define SPOOLSS_REMOTEFINDFIRSTPRINTERCHANGENOTIFICATION0x3e
 #define SPOOLSS_SPOOLERINIT				0x3f
 #define SPOOLSS_RESETPRINTEREX				0x40
-#define SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION	0x42
 #define SPOOLSS_DELETEPRINTERDATAEX			0x51
 #define SPOOLSS_DELETEPRINTERDRIVEREX			0x54
 #define SPOOLSS_ADDPRINTERDRIVEREX			0x59
@@ -63,6 +59,7 @@
 
 /* those are implemented */
 #define SPOOLSS_ENUMPRINTERS				0x00
+#define SPOOLSS_OPENPRINTER				0x01
 #define SPOOLSS_SETJOB					0x02
 #define SPOOLSS_GETJOB					0x03
 #define SPOOLSS_ENUMJOBS				0x04
@@ -96,17 +93,15 @@
 #define SPOOLSS_ENUMPORTS				0x23
 #define SPOOLSS_ENUMMONITORS				0x24
 #define SPOOLSS_ENUMPRINTPROCDATATYPES			0x33
+#define SPOOLSS_RESETPRINTER				0x34
 #define SPOOLSS_GETPRINTERDRIVER2			0x35
-/* find close printer notification */
-#define SPOOLSS_FCPN					0x38
+#define SPOOLSS_FCPN					0x38	/* FindClosePrinterNotify */
 #define SPOOLSS_REPLYOPENPRINTER			0x3a
+#define SPOOLSS_ROUTERREPLYPRINTER			0x3b
 #define SPOOLSS_REPLYCLOSEPRINTER			0x3c
-/* remote find first printer change notifyEx */
-#define SPOOLSS_RFFPCNEX				0x41
-/*SPOOLSS_ROUTERREFRESHPRINTERCHANGENOTIFICATION */
-#define SPOOLSS_RRPCN					0x42
-/* remote find next printer change notifyEx */
-#define SPOOLSS_RFNPCNEX				0x43
+#define SPOOLSS_RFFPCNEX				0x41	/* RemoteFindFirstPrinterChangeNotifyEx */
+#define SPOOLSS_RRPCN					0x42	/* RouteRefreshPrinterChangeNotification */
+#define SPOOLSS_RFNPCNEX				0x43	/* RemoteFindNextPrinterChangeNotifyEx */
 #define SPOOLSS_OPENPRINTEREX				0x45
 #define SPOOLSS_ADDPRINTEREX				0x46
 #define SPOOLSS_ENUMPRINTERDATA				0x48
@@ -264,6 +259,8 @@
 #define JOB_NOTIFY_TOTAL_BYTES			0x16
 #define JOB_NOTIFY_BYTES_PRINTED		0x17
 
+#define PRINTER_NOTIFY_OPTIONS_REFRESH  	0x01
+
 #define PRINTER_CHANGE_ADD_PRINTER			0x00000001
 #define PRINTER_CHANGE_SET_PRINTER			0x00000002
 #define PRINTER_CHANGE_DELETE_PRINTER			0x00000004
@@ -316,6 +313,34 @@
 				 PRINTER_CHANGE_PRINTER_DRIVER )
 
 #define PRINTER_NOTIFY_INFO_DISCARDED	0x1
+
+/*
+ * Set of macros for flagging what changed in the PRINTER_INFO_2 struct
+ * when sending messages to other smbd's
+ */
+#define PRINTER_MESSAGE_NULL            0x00000000
+#define PRINTER_MESSAGE_DRIVER		0x00000001
+#define PRINTER_MESSAGE_COMMENT		0x00000002
+#define PRINTER_MESSAGE_PRINTERNAME	0x00000004
+#define PRINTER_MESSAGE_LOCATION	0x00000008
+#define PRINTER_MESSAGE_DEVMODE		0x00000010	/* not curently supported */
+#define PRINTER_MESSAGE_SEPFILE		0x00000020
+#define PRINTER_MESSAGE_PRINTPROC	0x00000040
+#define PRINTER_MESSAGE_PARAMS		0x00000080
+#define PRINTER_MESSAGE_DATATYPE	0x00000100
+#define PRINTER_MESSAGE_SECDESC		0x00000200
+#define PRINTER_MESSAGE_CJOBS		0x00000400
+#define PRINTER_MESSAGE_PORT		0x00000800
+#define PRINTER_MESSAGE_SHARENAME	0x00001000
+#define PRINTER_MESSAGE_ATTRIBUTES	0x00002000
+
+typedef struct printer_message_info {
+	uint32 low;		/* PRINTER_CHANGE_XXX */
+	uint32 high;		/* PRINTER_CHANGE_XXX */
+	fstring printer_name;
+	uint32 flags;		/* PRINTER_MESSAGE_XXX */
+}
+PRINTER_MESSAGE_INFO;
 
 /*
  * The printer attributes.
@@ -395,6 +420,44 @@ typedef struct spool_user_ctr_info
 }
 SPOOL_USER_CTR;
 
+/*
+ * various bits in the DEVICEMODE.fields member
+ */
+
+#define DEVMODE_ORIENTATION		0x00000001
+#define DEVMODE_PAPERSIZE		0x00000002
+#define DEVMODE_PAPERLENGTH		0x00000004
+#define DEVMODE_PAPERWIDTH		0x00000008
+#define DEVMODE_SCALE			0x00000010
+#define DEVMODE_POSITION		0x00000020
+#define DEVMODE_NUP			0x00000040
+#define DEVMODE_COPIES			0x00000100
+#define DEVMODE_DEFAULTSOURCE		0x00000200
+#define DEVMODE_PRINTQUALITY		0x00000400
+#define DEVMODE_COLOR			0x00000800
+#define DEVMODE_DUPLEX			0x00001000
+#define DEVMODE_YRESOLUTION		0x00002000
+#define DEVMODE_TTOPTION		0x00004000
+#define DEVMODE_COLLATE			0x00008000
+#define DEVMODE_FORMNAME		0x00010000
+#define DEVMODE_LOGPIXELS		0x00020000
+#define DEVMODE_BITSPERPEL		0x00040000
+#define DEVMODE_PELSWIDTH		0x00080000
+#define DEVMODE_PELSHEIGHT		0x00100000
+#define DEVMODE_DISPLAYFLAGS		0x00200000
+#define DEVMODE_DISPLAYFREQUENCY	0x00400000
+#define DEVMODE_ICMMETHOD		0x00800000
+#define DEVMODE_ICMINTENT		0x01000000
+#define DEVMODE_MEDIATYPE		0x02000000
+#define DEVMODE_DITHERTYPE		0x04000000
+#define DEVMODE_PANNINGWIDTH		0x08000000
+#define DEVMODE_PANNINGHEIGHT		0x10000000
+
+
+/* 
+ * Devicemode structure
+ */
+
 typedef struct devicemode
 {
 	UNISTR devicename;
@@ -451,6 +514,23 @@ typedef struct _printer_default
 	uint32 access_required;
 }
 PRINTER_DEFAULT;
+
+/* SPOOL_Q_OPEN_PRINTER request to open a printer */
+typedef struct spool_q_open_printer
+{
+	uint32 printername_ptr;
+	UNISTR2 printername;
+	PRINTER_DEFAULT printer_default;
+}
+SPOOL_Q_OPEN_PRINTER;
+
+/* SPOOL_R_OPEN_PRINTER reply to an open printer */
+typedef struct spool_r_open_printer
+{
+	POLICY_HND handle;	/* handle used along all transactions (20*uint8) */
+	WERROR status;
+}
+SPOOL_R_OPEN_PRINTER;
 
 /* SPOOL_Q_OPEN_PRINTER_EX request to open a printer */
 typedef struct spool_q_open_printer_ex
@@ -1253,6 +1333,10 @@ typedef struct spool_r_enumprinterdrivers
 }
 SPOOL_R_ENUMPRINTERDRIVERS;
 
+#define FORM_USER    0
+#define FORM_BUILTIN 1
+#define FORM_PRINTER 2
+
 typedef struct spool_form_1
 {
 	uint32 flag;
@@ -1741,6 +1825,23 @@ typedef struct spool_r_setprinterdata
 }
 SPOOL_R_SETPRINTERDATA;
 
+typedef struct spool_q_resetprinter
+{
+	POLICY_HND handle;
+	uint32 datatype_ptr;
+	UNISTR2 datatype;
+	DEVMODE_CTR devmode_ctr;
+
+} SPOOL_Q_RESETPRINTER;
+
+typedef struct spool_r_resetprinter
+{
+	WERROR status;
+} 
+SPOOL_R_RESETPRINTER;
+
+
+
 typedef struct _form
 {
 	uint32 flags;
@@ -1759,7 +1860,7 @@ typedef struct spool_q_addform
 {
 	POLICY_HND handle;
 	uint32 level;
-	uint32 level2;
+	uint32 level2;		/* This should really be part of the FORM structure */
 	FORM form;
 }
 SPOOL_Q_ADDFORM;
@@ -1846,6 +1947,22 @@ typedef struct spool_r_replyopenprinter
 	WERROR status;
 }
 SPOOL_R_REPLYOPENPRINTER;
+
+typedef struct spool_q_routerreplyprinter
+{
+	POLICY_HND handle;
+	uint32 condition;
+	uint32 unknown1;	/* 0x00000001 */
+	uint32 change_id;
+	uint8  unknown2[5];	/* 0x0000000001 */
+}
+SPOOL_Q_ROUTERREPLYPRINTER;
+
+typedef struct spool_r_routerreplyprinter
+{
+	WERROR status;
+}
+SPOOL_R_ROUTERREPLYPRINTER;
 
 typedef struct spool_q_replycloseprinter
 {

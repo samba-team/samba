@@ -36,6 +36,7 @@
 #include "smb.h"
 
 extern BOOL AllowDebugChange;
+extern int parsed_debuglevel_class[DBGC_LAST];
 
 /* these live in util.c */
 extern FILE *dbf;
@@ -68,6 +69,12 @@ cannot be set in the smb.conf file. nmbd will abort with this setting.\n");
 	} else if ((st.st_mode & 0777) != 0755) {
 		printf("WARNING: lock directory %s should have permissions 0755 for browsing to work\n",
 		       lp_lockdir());
+		ret = 1;
+	}
+
+	if (!directory_exist(lp_piddir(), &st)) {
+		printf("ERROR: pid directory %s does not exist\n",
+		       lp_piddir());
 		ret = 1;
 	}
 
@@ -149,6 +156,15 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	if (lp_status(-1) && lp_max_smbd_processes()) {
 		printf("ERROR: the 'max smbd processes' parameter is set and the 'status' parameter is set to 'no'.\n");
 		ret = 1;
+	}
+
+	if (strlen(lp_winbind_separator()) != 1) {
+		printf("ERROR: the 'winbind separator' parameter must be a single character.\n");
+		ret = 1;
+	}
+
+	if (*lp_winbind_separator() == '+') {
+		printf("'winbind separator = +' might cause problems with group membership.\n");
 	}
 
 	return ret;
@@ -281,7 +297,8 @@ Level II oplocks can only be set if oplocks are also set.\n",
       fflush(stdout);
       getc(stdin);
     }
-    lp_dump(stdout,True, lp_numservices(), _dos_to_unix);
+    memcpy(DEBUGLEVEL_CLASS,parsed_debuglevel_class,sizeof(parsed_debuglevel_class));
+    lp_dump(stdout,True, lp_numservices(), _dos_to_unix_static);
   }
   
   if (argc >= 3) {

@@ -21,6 +21,8 @@
 
 #include "includes.h"
 
+#define CHECK_PATH_ON_TCONX 1
+
 extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
@@ -225,6 +227,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL guest = False;
 	BOOL force = False;
 	connection_struct *conn;
+	struct stat st;
 	uid_t euid;
 	int ret;
 
@@ -255,7 +258,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		if (*user && Get_Pwnam(user,True)) {
 			fstring dos_username;
 			fstrcpy(dos_username, user);
-			unix_to_dos(dos_username, True);
+			unix_to_dos(dos_username);
 			return(make_connection(dos_username,user,password,
 					       pwlen,dev,vuid,ecode));
 		}
@@ -265,7 +268,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,validated_username(vuid));
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
+				unix_to_dos(dos_username);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		} else {
@@ -275,7 +278,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				fstring dos_username;
 				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
-				unix_to_dos(dos_username, True);
+				unix_to_dos(dos_username);
 				return(make_connection(dos_username,user,password,pwlen,dev,vuid,ecode));
 			}
 		}
@@ -496,6 +499,17 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
 	get_current_groups(&conn->ngroups,&conn->groups);
+
+#ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
+	/*
+	 * Some OSes, like FreeBSD return EGID as group 0 from getgroups
+	 * and ignore group 0 on setgroups.
+	 * get_current_groups returns group 0 as 0, which is wrong.
+	 * We set it to gid here to prevent the token creation below
+	 * from creating an incorrect token (SID for local group 0).
+	 */
+	if (conn->ngroups) conn->groups[0] = conn->gid;
+#endif /* HAVE_GETGROUPS_TOO_MANY_EGIDS */
 		
 	/* check number of connections */
 	if (!claim_connection(conn,
@@ -537,8 +551,8 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	/* Initialise VFS function pointers */
 
-	if (!vfs_init(conn)) {
-		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+	if (!smbd_vfs_init(conn)) {
+		DEBUG(0, ("smbd_vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
@@ -583,6 +597,17 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 	}
 
+	/*
+	 * FIXME!!!! Reenabled this code since it current;y breaks 
+	 * move_driver_to_download_area() by keeping the root path 
+	 * of the connection at /tmp.  I'll work on a real fix, but this
+	 * will keep people happy for a temporary meaure.  --jerry
+	 */ 
+#if CHECK_PATH_ON_TCONX
+	/* win2000 does not check the permissions on the directory
+	   during the tree connect, instead relying on permission
+	   check during individual operations. To match this behaviour
+	   I have disabled this chdir check (tridge) */
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
 			 remote_machine, conn->client_address,
@@ -593,12 +618,23 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		*ecode = ERRnosuchshare;
 		return NULL;
 	}
+#else
+	/* the alternative is just to check the directory exists */
+	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
+		DEBUG(0,("%s is not a directory\n", conn->connectpath));
+		change_to_root_user();
+		yield_connection(conn, lp_servicename(SNUM(conn)));
+		conn_free(conn);
+		*ecode = ERRnosuchshare;
+		return NULL;
+	}
+#endif
 	
 	string_set(&conn->origpath,conn->connectpath);
 	
 #if SOFTLINK_OPTIMISATION
-	/* resolve any soft links early */
-	{
+	/* resolve any soft links early if possible */
+	if (vfs_ChDir(conn,conn->connectpath) == 0) {
 		pstring s;
 		pstrcpy(s,conn->connectpath);
 		vfs_GetWd(conn,s);
@@ -633,6 +669,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Invoke VFS make connection hook */
 
 	if (conn->vfs_ops.connect) {
+		DEBUG(10,("calling vfs_ops.connect for service %s (options = %s)\n", service, lp_vfs_options(SNUM(conn)) ));
 		if (conn->vfs_ops.connect(conn, service, user) < 0)
 			return NULL;
 	}
@@ -684,6 +721,10 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 		standard_sub_conn(conn,cmd);
 		smbrun(cmd,NULL);
 	}
+
+	/* make sure we leave the directory available for unmount */
+	vfs_ChDir(conn, "/");
+
 	conn_free(conn);
 }
 

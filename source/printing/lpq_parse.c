@@ -3,6 +3,7 @@
    Version 3.0
    lpq parsing routines
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2002 by Martin Pool 
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -146,25 +147,21 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
   buf->size = atoi(tok[TOTALTOK]);
   buf->status = strequal(tok[RANKTOK],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->time = time(NULL);
-  StrnCpy(buf->user,tok[USERTOK],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[FILETOK],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user,tok[USERTOK]);
+  fstrcpy(buf->fs_file,tok[FILETOK]);
 
   if ((FILETOK + 1) != TOTALTOK) {
-    int bufsize;
     int i;
 
-    bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
-
     for (i = (FILETOK + 1); i < TOTALTOK; i++) {
-      safe_strcat(buf->file," ",bufsize);
-      safe_strcat(buf->file,tok[i],bufsize - 1);
-      bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
-      if (bufsize <= 0) {
-        break;
-      }
+      /* FIXME: Using fstrcat rather than other means is a bit
+       * inefficient; this might be a problem for enormous queues with
+       * many fields. */
+      fstrcat(buf->fs_file, " ");
+      fstrcat(buf->fs_file, tok[i]);
     }
     /* Ensure null termination. */
-    buf->file[sizeof(buf->file)-1] = '\0';
+    fstrterminate(buf->fs_file);
   }
 
 #ifdef PRIOTOK
@@ -270,34 +267,30 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 
   buf->time = LPRng_time(tokarr[LPRNG_TIMETOK]);
 
-  StrnCpy(buf->user,tokarr[LPRNG_USERTOK],sizeof(buf->user)-1);
+  fstrcpy(buf->fs_user,tokarr[LPRNG_USERTOK]);
 
   /* The '@hostname' prevents windows from displaying the printing icon
    * for the current user on the taskbar.  Plop in a null.
    */
 
-  if ((cptr = strchr(buf->user,'@')) != NULL) {
+  if ((cptr = strchr(buf->fs_user,'@')) != NULL) {
     *cptr = '\0';
   }
 
-  StrnCpy(buf->file,tokarr[LPRNG_FILETOK],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_file,tokarr[LPRNG_FILETOK]);
 
   if ((LPRNG_FILETOK + 1) != LPRNG_TOTALTOK) {
-    int bufsize;
     int i;
 
-    bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
-
     for (i = (LPRNG_FILETOK + 1); i < LPRNG_TOTALTOK; i++) {
-      safe_strcat(buf->file," ",bufsize);
-      safe_strcat(buf->file,tokarr[i],bufsize - 1);
-      bufsize = sizeof(buf->file) - strlen(buf->file) - 1;
-      if (bufsize <= 0) {
-        break;
-      }
+      /* FIXME: Using fstrcat rather than other means is a bit
+       * inefficient; this might be a problem for enormous queues with
+       * many fields. */
+      fstrcat(buf->fs_file, " ");
+      fstrcat(buf->fs_file, tokarr[i]);
     }
     /* Ensure null termination. */
-    buf->file[sizeof(buf->file)-1] = '\0';
+    fstrterminate(buf->fs_file);
   }
 
   return(True);
@@ -360,8 +353,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
           buf->status = strequal(tok[0],"HELD")?LPQ_PAUSED:LPQ_QUEUED;
 	  buf->priority = 0;
           buf->time = time(NULL);
-          StrnCpy(buf->user,tok[3],sizeof(buf->user)-1);
-          StrnCpy(buf->file,tok[2],sizeof(buf->file)-1);
+          fstrcpy(buf->fs_user, tok[3]);
+          fstrcpy(buf->fs_file, tok[2]);
       }
       else
       {
@@ -394,8 +387,8 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       buf->status = strequal(tok[2],"RUNNING")?LPQ_PRINTING:LPQ_QUEUED;
       buf->priority = 0;
       buf->time = time(NULL);
-      StrnCpy(buf->user,tok[5],sizeof(buf->user)-1);
-      StrnCpy(buf->file,tok[4],sizeof(buf->file)-1);
+      fstrcpy(buf->fs_user, tok[5]);
+      fstrcpy(buf->fs_file, tok[4]);
   }
 
 
@@ -456,14 +449,14 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
       fstrcpy(tok[0],"STDIN");
     
     buf->size = atoi(tok[1]);
-    StrnCpy(buf->file,tok[0],sizeof(buf->file)-1);
+    fstrcpy(buf->fs_file,tok[0]);
     
     /* fill things from header line */
     buf->time = jobtime;
     buf->job = jobid;
     buf->status = jobstat;
     buf->priority = jobprio;
-    StrnCpy(buf->user,jobuser,sizeof(buf->user)-1);
+    fstrcpy(buf->fs_user, jobuser);
     
     return(True);
   }
@@ -489,7 +482,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     /* the 2nd, 5th & 7th column must be integer */
     if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[4]) || !isdigit((int)*tok[6])) return(False);
     jobid = atoi(tok[1]);
-    StrnCpy(jobuser,tok[2],sizeof(buf->user)-1);
+    fstrcpy(jobuser, tok[2]);
     jobprio = atoi(tok[4]);
     
     /* process time */
@@ -579,8 +572,8 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
     buf->status = LPQ_QUEUED;
   buf->priority = 0;
   buf->time = EntryTime(tok, 4, count, 7);
-  StrnCpy(buf->user,tok[2],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[2],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user, tok[2]);
+  fstrcpy(buf->fs_file, tok[2]);
   return(True);
 }
 
@@ -640,8 +633,8 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   buf->status = strequal(tok[3],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->priority = 0;
   buf->time = time(NULL);
-  StrnCpy(buf->user,tok[1],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[6],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user,tok[1]);
+  fstrcpy(buf->fs_file,tok[6]);
   return(True);
 }
 
@@ -710,8 +703,8 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
   buf->status = strequal(tok[0],"active")?LPQ_PRINTING:LPQ_QUEUED;
   buf->priority = 0;
   buf->time = time(NULL);
-  StrnCpy(buf->user,tok[1],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[6],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user,tok[1]);
+  fstrcpy(buf->fs_file,tok[6]);
   return(True);
 }
 
@@ -767,8 +760,8 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
   buf->job = atoi(tok[0]);
   buf->size = atoi(tok[count+6]);
   buf->priority = atoi(tok[count+5]);
-  StrnCpy(buf->user,tok[count+7],sizeof(buf->user)-1);
-  StrnCpy(buf->file,tok[count+8],sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user,tok[count+7]);
+  fstrcpy(buf->fs_file,tok[count+8]);
   buf->time = time(NULL);		/* default case: take current time */
   {
     time_t jobtime;
@@ -864,8 +857,8 @@ static BOOL parse_lpq_nt(char *line,print_queue_struct *buf,BOOL first)
   buf->priority = 0;
   buf->size = atoi(parse_line.size);
   buf->time = time(NULL);
-  StrnCpy(buf->user, parse_line.owner, sizeof(buf->user)-1);
-  StrnCpy(buf->file, parse_line.jobname, sizeof(buf->file)-1);
+  fstrcpy(buf->fs_user, parse_line.owner);
+  fstrcpy(buf->fs_file, parse_line.jobname);
   if (strequal(parse_line.status, LPRNT_PRINTING))
     buf->status = LPQ_PRINTING;
   else if (strequal(parse_line.status, LPRNT_PAUSED))
@@ -923,7 +916,7 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
   /* Get the job name */
   parse_line.space2[0] = '\0';
   trim_string(parse_line.jobname, NULL, " ");
-  StrnCpy(buf->file, parse_line.jobname, sizeof(buf->file)-1);
+  fstrcpy(buf->fs_file, parse_line.jobname);
 
   buf->priority = 0;
   buf->size = atoi(parse_line.size);
@@ -941,7 +934,7 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
       !strequal(parse_line.status, LPROS2_WAITING))
     return(False);
 
-  StrnCpy(buf->user, parse_line.owner, sizeof(buf->user)-1);
+  fstrcpy(buf->fs_user, parse_line.owner);
   if (strequal(parse_line.status, LPROS2_PRINTING))
     buf->status = LPQ_PRINTING;
   else if (strequal(parse_line.status, LPROS2_PAUSED))
@@ -987,10 +980,10 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 			buf->time = atoi(tok);
 			break;
 		case 4:
-			fstrcpy(buf->user, tok);
+			fstrcpy(buf->fs_user, tok);
 			break;
 		case 5:
-			fstrcpy(buf->file, tok);
+			fstrcpy(buf->fs_file, tok);
 			break;
 		}
 		toknum++;

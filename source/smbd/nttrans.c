@@ -332,17 +332,17 @@ static BOOL saved_short_case_preserve;
 
 static void set_posix_case_semantics(uint32 file_attributes)
 {
-  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
-    return;
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+		return;
 
-  saved_case_sensitive = case_sensitive;
-  saved_case_preserve = case_preserve;
-  saved_short_case_preserve = short_case_preserve;
+	saved_case_sensitive = case_sensitive;
+	saved_case_preserve = case_preserve;
+	saved_short_case_preserve = short_case_preserve;
 
-  /* Set to POSIX. */
-  case_sensitive = True;
-  case_preserve = True;
-  short_case_preserve = True;
+	/* Set to POSIX. */
+	case_sensitive = True;
+	case_preserve = True;
+	short_case_preserve = True;
 }
 
 /****************************************************************************
@@ -351,12 +351,12 @@ static void set_posix_case_semantics(uint32 file_attributes)
 
 static void restore_case_semantics(uint32 file_attributes)
 {
-  if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
-    return;
+	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
+		return;
 
-  case_sensitive = saved_case_sensitive;
-  case_preserve = saved_case_preserve;
-  short_case_preserve = saved_short_case_preserve;
+	case_sensitive = saved_case_sensitive;
+	case_preserve = saved_case_preserve;
+	short_case_preserve = saved_short_case_preserve;
 }
 
 /****************************************************************************
@@ -365,179 +365,172 @@ static void restore_case_semantics(uint32 file_attributes)
 
 static int map_create_disposition( uint32 create_disposition)
 {
-  int ret;
+	int ret;
 
-  switch( create_disposition ) {
-  case FILE_CREATE:
-    /* create if not exist, fail if exist */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
-    break;
-  case FILE_SUPERSEDE:
-  case FILE_OVERWRITE_IF:
-    /* create if not exist, trunc if exist */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-    break;
-  case FILE_OPEN:
-    /* fail if not exist, open if exists */
-    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-    break;
-  case FILE_OPEN_IF:
-    /* create if not exist, open if exists */
-    ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
-    break;
-  case FILE_OVERWRITE:
-    /* fail if not exist, truncate if exists */
-    ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
-    break;
-  default:
-    DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
-             create_disposition ));
-    return -1;
-  }
+	switch( create_disposition ) {
+		case FILE_CREATE:
+			/* create if not exist, fail if exist */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL);
+			break;
+		case FILE_SUPERSEDE:
+		case FILE_OVERWRITE_IF:
+			/* create if not exist, trunc if exist */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
+			break;
+		case FILE_OPEN:
+			/* fail if not exist, open if exists */
+			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN);
+			break;
+		case FILE_OPEN_IF:
+			/* create if not exist, open if exists */
+			ret = (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_OPEN);
+			break;
+		case FILE_OVERWRITE:
+			/* fail if not exist, truncate if exists */
+			ret = (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_TRUNCATE);
+			break;
+		default:
+			DEBUG(0,("map_create_disposition: Incorrect value for create_disposition = %d\n",
+				create_disposition ));
+			return -1;
+	}
 
-  DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
-        (unsigned long)create_disposition, ret ));
+	DEBUG(10,("map_create_disposition: Mapped create_disposition 0x%lx to 0x%x\n",
+		(unsigned long)create_disposition, ret ));
 
-  return ret;
+	return ret;
 }
 
 /****************************************************************************
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
-							uint32 desired_access, uint32 share_access, uint32 file_attributes)
+static int map_share_mode( char *fname, uint32 create_options,
+			uint32 *desired_access, uint32 share_access, uint32 file_attributes)
 {
-  int smb_open_mode = -1;
+	int smb_open_mode = -1;
 
-  *pstat_open_only = False;
+	/*
+	 * Convert GENERIC bits to specific bits.
+	 */
 
-  /*
-   * Convert GENERIC bits to specific bits.
-   */
+	se_map_generic(desired_access, &file_generic_mapping);
 
-  se_map_generic(&desired_access, &file_generic_mapping);
+	switch( *desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
+		case FILE_READ_DATA:
+			smb_open_mode = DOS_OPEN_RDONLY;
+			break;
+		case FILE_WRITE_DATA:
+		case FILE_APPEND_DATA:
+		case FILE_WRITE_DATA|FILE_APPEND_DATA:
+			smb_open_mode = DOS_OPEN_WRONLY;
+			break;
+		case FILE_READ_DATA|FILE_WRITE_DATA:
+		case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
+		case FILE_READ_DATA|FILE_APPEND_DATA:
+			smb_open_mode = DOS_OPEN_RDWR;
+			break;
+	}
 
-  switch( desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA) ) {
-  case FILE_READ_DATA:
-    smb_open_mode = DOS_OPEN_RDONLY;
-    break;
-  case FILE_WRITE_DATA:
-  case FILE_APPEND_DATA:
-  case FILE_WRITE_DATA|FILE_APPEND_DATA:
-    smb_open_mode = DOS_OPEN_WRONLY;
-    break;
-  case FILE_READ_DATA|FILE_WRITE_DATA:
-  case FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA:
-  case FILE_READ_DATA|FILE_APPEND_DATA:
-    smb_open_mode = DOS_OPEN_RDWR;
-    break;
-  }
+	/*
+	 * NB. For DELETE_ACCESS we should really check the
+	 * directory permissions, as that is what controls
+	 * delete, and for WRITE_DAC_ACCESS we should really
+	 * check the ownership, as that is what controls the
+	 * chmod. Note that this is *NOT* a security hole (this
+	 * note is for you, Andrew) as we are not *allowing*
+	 * the access at this point, the actual unlink or
+	 * chown or chmod call would do this. We are just helping
+	 * clients out by telling them if they have a hope
+	 * of any of this succeeding. POSIX acls may still
+	 * deny the real call. JRA.
+	 */
 
-  /*
-   * NB. For DELETE_ACCESS we should really check the
-   * directory permissions, as that is what controls
-   * delete, and for WRITE_DAC_ACCESS we should really
-   * check the ownership, as that is what controls the
-   * chmod. Note that this is *NOT* a security hole (this
-   * note is for you, Andrew) as we are not *allowing*
-   * the access at this point, the actual unlink or
-   * chown or chmod call would do this. We are just helping
-   * clients out by telling them if they have a hope
-   * of any of this succeeding. POSIX acls may still
-   * deny the real call. JRA.
-   */
+	if (smb_open_mode == -1) {
 
-  if (smb_open_mode == -1) {
+		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+				FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+				FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
+				FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
+			smb_open_mode = DOS_OPEN_RDONLY;
+		} else if(*desired_access == 0) {
 
-	if(desired_access == WRITE_DAC_ACCESS || desired_access == READ_CONTROL_ACCESS)
-		*pstat_open_only = True;
+			/* 
+			 * JRA - NT seems to sometimes send desired_access as zero. play it safe
+			 * and map to a stat open.
+			 */
 
-    if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
-                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|
-                              FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
-                              FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
-      smb_open_mode = DOS_OPEN_RDONLY;
-	} else if(desired_access == 0) {
+			smb_open_mode = DOS_OPEN_RDONLY;
 
-		/* 
-		 * JRA - NT seems to sometimes send desired_access as zero. play it safe
-		 * and map to a stat open.
-		 */
+		} else {
+			DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
+				(unsigned long)*desired_access, fname));
+			return -1;
+		}
+	}
 
-		*pstat_open_only = True;
-		smb_open_mode = DOS_OPEN_RDONLY;
+	/*
+	 * Set the special bit that means allow share delete.
+	 * This is held outside the normal share mode bits at 1<<15.
+	 * JRA.
+	 */
 
-	} else {
-      DEBUG(0,("map_share_mode: Incorrect value 0x%lx for desired_access to file %s\n",
-             (unsigned long)desired_access, fname));
-      return -1;
-    }
-  }
+	if(share_access & FILE_SHARE_DELETE) {
+		smb_open_mode |= ALLOW_SHARE_DELETE;
+		DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  /*
-   * Set the special bit that means allow share delete.
-   * This is held outside the normal share mode bits at 1<<15.
-   * JRA.
-   */
+	/*
+	 * We need to store the intent to open for Delete. This
+	 * is what determines if a delete on close flag can be set.
+	 * This is the wrong way (and place) to store this, but for 2.2 this
+	 * is the only practical way. JRA.
+	 */
 
-  if(share_access & FILE_SHARE_DELETE) {
-    smb_open_mode |= ALLOW_SHARE_DELETE;
-    DEBUG(10,("map_share_mode: FILE_SHARE_DELETE requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	if(*desired_access & DELETE_ACCESS) {
+		DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  /*
-   * We need to store the intent to open for Delete. This
-   * is what determines if a delete on close flag can be set.
-   * This is the wrong way (and place) to store this, but for 2.2 this
-   * is the only practical way. JRA.
-   */
+	if (create_options & FILE_DELETE_ON_CLOSE) {
+		/* Implicit delete access is *NOT* requested... */
+		smb_open_mode |= DELETE_ON_CLOSE_FLAG;
+		DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
+	}
 
-  if(desired_access & DELETE_ACCESS) {
-    smb_open_mode |= DELETE_ACCESS_REQUESTED;
-    DEBUG(10,("map_share_mode: DELETE_ACCESS requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	/* Add in the requested share mode. */
+	switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
+		case FILE_SHARE_READ:
+			smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
+			break;
+		case FILE_SHARE_WRITE:
+			smb_open_mode |= SET_DENY_MODE(DENY_READ);
+			break;
+		case (FILE_SHARE_READ|FILE_SHARE_WRITE):
+			smb_open_mode |= SET_DENY_MODE(DENY_NONE);
+			break;
+		case FILE_SHARE_NONE:
+			smb_open_mode |= SET_DENY_MODE(DENY_ALL);
+			break;
+	}
 
-  if (create_options & FILE_DELETE_ON_CLOSE) {
-    /* Implicit delete access requested... */
-    smb_open_mode |= DELETE_ACCESS_REQUESTED;
-	smb_open_mode |= DELETE_ON_CLOSE_FLAG;
-    DEBUG(10,("map_share_mode: FILE_DELETE_ON_CLOSE requested. open_mode = 0x%x\n", smb_open_mode));
-  }
+	/*
+	 * Handle an O_SYNC request.
+	 */
 
-  /* Add in the requested share mode. */
-  switch( share_access & (FILE_SHARE_READ|FILE_SHARE_WRITE)) {
-  case FILE_SHARE_READ:
-    smb_open_mode |= SET_DENY_MODE(DENY_WRITE);
-    break;
-  case FILE_SHARE_WRITE:
-    smb_open_mode |= SET_DENY_MODE(DENY_READ);
-    break;
-  case (FILE_SHARE_READ|FILE_SHARE_WRITE):
-    smb_open_mode |= SET_DENY_MODE(DENY_NONE);
-    break;
-  case FILE_SHARE_NONE:
-    smb_open_mode |= SET_DENY_MODE(DENY_ALL);
-    break;
-  }
+	if(file_attributes & FILE_FLAG_WRITE_THROUGH)
+		smb_open_mode |= FILE_SYNC_OPENMODE;
 
-  /*
-   * Handle an O_SYNC request.
-   */
-
-  if(file_attributes & FILE_FLAG_WRITE_THROUGH)
-    smb_open_mode |= FILE_SYNC_OPENMODE;
-
-  DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
-to open_mode 0x%x\n", (unsigned long)desired_access, (unsigned long)share_access,
-                    (unsigned long)file_attributes, smb_open_mode ));
+	DEBUG(10,("map_share_mode: Mapped desired access 0x%lx, share access 0x%lx, file attributes 0x%lx \
+to open_mode 0x%x\n", (unsigned long)*desired_access, (unsigned long)share_access,
+		(unsigned long)file_attributes, smb_open_mode ));
  
-  return smb_open_mode;
+	return smb_open_mode;
 }
 
 /****************************************************************************
  Reply to an NT create and X call on a pipe.
 ****************************************************************************/
+
 static int nt_open_pipe(char *fname, connection_struct *conn,
 			char *inbuf, char *outbuf, int *ppnum)
 {
@@ -551,7 +544,7 @@ static int nt_open_pipe(char *fname, connection_struct *conn,
 	/* See if it is one we want to handle. */
 
 	if (lp_disable_spoolss() && strequal(fname, "\\spoolss"))
-		return(ERROR_DOS(ERRSRV,ERRaccess));
+		return(ERROR_BOTH(NT_STATUS_OBJECT_NAME_NOT_FOUND,ERRDOS,ERRbadpipe));
 
 	for( i = 0; known_nt_pipes[i]; i++ )
 		if( strequal(fname,known_nt_pipes[i]))
@@ -650,7 +643,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
-	BOOL stat_open_only = False;
 	time_t c_time;
 	START_PROFILE(SMBntcreateX);
 
@@ -694,12 +686,13 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		}
 
 		if(!dir_fsp->is_directory) {
+
+			get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
+				smb_buflen(inbuf),fname_len);
+
 			/* 
 			 * Check to see if this is a mac fork of some kind.
 			 */
-
-			get_filename(&fname[0], inbuf, smb_buf(inbuf)-inbuf, 
-			smb_buflen(inbuf),fname_len);
 
 			if( strchr(fname, ':')) {
 				END_PROFILE(SMBntcreateX);
@@ -742,6 +735,15 @@ int reply_ntcreate_and_X(connection_struct *conn,
       
 		get_filename(fname, inbuf, smb_buf(inbuf)-inbuf, 
 			smb_buflen(inbuf),fname_len);
+
+		/* 
+		 * Check to see if this is a mac fork of some kind.
+		 */
+
+		if( strchr(fname, ':')) {
+			END_PROFILE(SMBntcreateX);
+			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+		}
 	}
 	
 	/*
@@ -750,7 +752,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, desired_access, 
+	if((smb_open_mode = map_share_mode(fname, create_options, &desired_access, 
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
@@ -758,7 +760,9 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	if (oplock_request) {
+		oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	}
 
 	/*
 	 * Ordinary file or directory.
@@ -781,7 +785,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(create_options & FILE_DIRECTORY_FILE) {
 		oplock_request = 0;
 		
-		fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 			
 		restore_case_semantics(file_attributes);
 
@@ -808,8 +812,11 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,
-				 smb_ofun,unixmode, oplock_request,&rmode,&smb_action);
+		fsp = open_file_shared1(conn,fname,&sbuf,
+					desired_access,
+					smb_open_mode,
+					smb_ofun, unixmode, oplock_request,
+					&rmode,&smb_action);
 
 		if (!fsp) { 
 			/* We cheat here. There are two cases we
@@ -846,7 +853,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 				}
 	
 				oplock_request = 0;
-				fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 				
 				if(!fsp) {
 					restore_case_semantics(file_attributes);
@@ -854,26 +861,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					END_PROFILE(SMBntcreateX);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
-#ifdef EROFS
-			} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
-#else /* !EROFS */
-			} else if (errno == EACCES && stat_open_only) {
-#endif
-				/*
-				 * We couldn't open normally and all we want
-				 * are the permissions. Try and do a stat open.
-				 */
-
-				oplock_request = 0;
-
-				fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
-
-				if(!fsp) {
-					restore_case_semantics(file_attributes);
-					END_PROFILE(SMBntcreateX);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
-				}
-
 			} else {
 
 				restore_case_semantics(file_attributes);
@@ -909,8 +896,8 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
 		smb_action |= EXTENDED_OPLOCK_GRANTED;
 
-#if 1 /* JRATEST */
-	/* W2K sends back 42 words here ! */
+#if 0 
+	/* W2K sends back 42 words here ! If we do the same it breaks offline sync. Go figure... ? JRA. */
 	set_message(outbuf,42,0,True);
 #else
 	set_message(outbuf,34,0,True);
@@ -923,12 +910,17 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 * exclusive & batch here.
 	 */
 
-	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
-		SCVAL(p,0, BATCH_OPLOCK_RETURN);
-	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+	if (smb_action & EXTENDED_OPLOCK_GRANTED) {
+		if (flags & REQUEST_BATCH_OPLOCK) {
+			SCVAL(p,0, BATCH_OPLOCK_RETURN);
+		} else {
+			SCVAL(p,0, EXCLUSIVE_OPLOCK_RETURN);
+		}
+	} else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type)) {
 		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-	else
+	} else {
 		SCVAL(p,0,NO_OPLOCK_RETURN);
+	}
 	
 	p++;
 	SSVAL(p,0,fsp->fnum);
@@ -956,7 +948,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	p += 8;
 	SIVAL(p,0,fmode); /* File Attributes. */
 	p += 4;
-	SOFF_T(p, 0, file_len);
+	SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
 	p += 8;
 	SOFF_T(p,0,file_len);
 	p += 12;
@@ -1000,8 +992,8 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 	get_filename_transact(&fname[0], params, 53,
 			total_parameter_count - 53 - fname_len, fname_len);
 
-    if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
-      return ret;
+	if ((ret = nt_open_pipe(fname, conn, inbuf, outbuf, &pnum)) != 0)
+		return ret;
 
 	/* Realloc the size of parameters and data we will return */
 	params = Realloc(*ppparams, 69);
@@ -1123,337 +1115,321 @@ static int call_nt_transact_create(connection_struct *conn,
 					int bufsize, char **ppsetup, char **ppparams, 
 					char **ppdata)
 {
-  pstring fname;
-  char *params = *ppparams;
-  char *data = *ppdata;
-  int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
-  /* Breakout the oplock request bits so we can set the
-     reply bits separately. */
-  int oplock_request = 0;
-  mode_t unixmode;
-  int fmode=0,rmode=0;
-  SMB_OFF_T file_len = 0;
-  SMB_STRUCT_STAT sbuf;
-  int smb_action = 0;
-  BOOL bad_path = False;
-  files_struct *fsp = NULL;
-  char *p = NULL;
-  BOOL stat_open_only = False;
-  uint32 flags;
-  uint32 desired_access;
-  uint32 file_attributes;
-  uint32 share_access;
-  uint32 create_disposition;
-  uint32 create_options;
-  uint32 fname_len;
-  uint32 sd_len;
-  uint16 root_dir_fid;
-  int smb_ofun;
-  int smb_open_mode;
-  int smb_attr;
-  int error_class;
-  uint32 error_code;
-  time_t c_time;
+	pstring fname;
+	char *params = *ppparams;
+	char *data = *ppdata;
+	int total_parameter_count = (int)IVAL(inbuf, smb_nt_TotalParameterCount);
+	/* Breakout the oplock request bits so we can set the reply bits separately. */
+	int oplock_request = 0;
+	mode_t unixmode;
+	int fmode=0,rmode=0;
+	SMB_OFF_T file_len = 0;
+	SMB_STRUCT_STAT sbuf;
+	int smb_action = 0;
+	BOOL bad_path = False;
+	files_struct *fsp = NULL;
+	char *p = NULL;
+	uint32 flags;
+	uint32 desired_access;
+	uint32 file_attributes;
+	uint32 share_access;
+	uint32 create_disposition;
+	uint32 create_options;
+	uint32 fname_len;
+	uint32 sd_len;
+	uint16 root_dir_fid;
+	int smb_ofun;
+	int smb_open_mode;
+	int smb_attr;
+	int error_class;
+	uint32 error_code;
+	time_t c_time;
 
-  DEBUG(5,("call_nt_transact_create\n"));
+	DEBUG(5,("call_nt_transact_create\n"));
 
-  /*
-   * If it's an IPC, use the pipe handler.
-   */
+	/*
+	 * If it's an IPC, use the pipe handler.
+	 */
 
-  if (IS_IPC(conn)) {
+	if (IS_IPC(conn)) {
 		if (lp_nt_pipe_support())
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
 					bufsize, ppsetup, ppparams, ppdata);
 		else
 			return ERROR_DOS(ERRDOS,ERRbadaccess);
-  }
+	}
 
-  /*
-   * Ensure minimum number of parameters sent.
-   */
+	/*
+	 * Ensure minimum number of parameters sent.
+	 */
 
-  if(total_parameter_count < 54) {
-    DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-    return ERROR_DOS(ERRDOS,ERRbadaccess);
-  }
+	if(total_parameter_count < 54) {
+		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
+		return ERROR_DOS(ERRDOS,ERRbadaccess);
+	}
 
-  flags = IVAL(params,0);
-  desired_access = IVAL(params,8);
-  file_attributes = IVAL(params,20);
-  share_access = IVAL(params,24);
-  create_disposition = IVAL(params,28);
-  create_options = IVAL(params,32);
-  sd_len = IVAL(params,36);
-  fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
-  root_dir_fid = (uint16)IVAL(params,4);
-  smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
+	flags = IVAL(params,0);
+	desired_access = IVAL(params,8);
+	file_attributes = IVAL(params,20);
+	share_access = IVAL(params,24);
+	create_disposition = IVAL(params,28);
+	create_options = IVAL(params,32);
+	sd_len = IVAL(params,36);
+	fname_len = MIN(((uint32)IVAL(params,44)),((uint32)sizeof(fname)-1));
+	root_dir_fid = (uint16)IVAL(params,4);
+	smb_attr = (file_attributes & SAMBA_ATTRIBUTES_MASK);
 
-  /* 
-   * We need to construct the open_and_X ofun value from the
-   * NT values, as that's what our code is structured to accept.
-   */    
+	/* 
+	 * We need to construct the open_and_X ofun value from the
+	 * NT values, as that's what our code is structured to accept.
+	 */    
 
-  if((smb_ofun = map_create_disposition( create_disposition )) == -1)
-    return ERROR_DOS(ERRDOS,ERRbadmem);
+	if((smb_ofun = map_create_disposition( create_disposition )) == -1)
+		return ERROR_DOS(ERRDOS,ERRbadmem);
 
-  /*
-   * Get the file name.
-   */
+	/*
+	 * Get the file name.
+	 */
 
-  if(root_dir_fid != 0) {
-    /*
-     * This filename is relative to a directory fid.
-     */
+	if(root_dir_fid != 0) {
+		/*
+		 * This filename is relative to a directory fid.
+		 */
 
-    files_struct *dir_fsp = file_fsp(params,4);
-    size_t dir_name_len;
+		files_struct *dir_fsp = file_fsp(params,4);
+		size_t dir_name_len;
 
-    if(!dir_fsp)
-        return ERROR_DOS(ERRDOS,ERRbadfid);
+		if(!dir_fsp)
+			return ERROR_DOS(ERRDOS,ERRbadfid);
 
-    if(!dir_fsp->is_directory) {
-      /*
-       * Check to see if this is a mac fork of some kind.
-       */
+		if(!dir_fsp->is_directory) {
+			get_filename_transact(&fname[0], params, 53,
+					total_parameter_count - 53 - fname_len, fname_len);
 
-      get_filename_transact(&fname[0], params, 53,
-                            total_parameter_count - 53 - fname_len, fname_len);
+			/*
+			 * Check to see if this is a mac fork of some kind.
+			 */
 
-      if( strchr(fname, ':')) {
-        return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
-      }
+			if( strchr(fname, ':'))
+				return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
 
-      return(ERROR_DOS(ERRDOS,ERRbadfid));
-    }
+			return(ERROR_DOS(ERRDOS,ERRbadfid));
+		}
 
-    /*
-     * Copy in the base directory name.
-     */
+		/*
+		 * Copy in the base directory name.
+		 */
 
-    pstrcpy( fname, dir_fsp->fsp_name );
-    dir_name_len = strlen(fname);
+		pstrcpy( fname, dir_fsp->fsp_name );
+		dir_name_len = strlen(fname);
 
-    /*
-     * Ensure it ends in a '\'.
-     */
+		/*
+		 * Ensure it ends in a '\'.
+		 */
 
-    if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
-      pstrcat(fname, "\\");
-      dir_name_len++;
-    }
+		if((fname[dir_name_len-1] != '\\') && (fname[dir_name_len-1] != '/')) {
+			pstrcat(fname, "\\");
+			dir_name_len++;
+		}
 
-    /*
-     * This next calculation can refuse a correct filename if we're dealing
-     * with the Win2k unicode bug, but that would be rare. JRA.
-     */
+		/*
+		 * This next calculation can refuse a correct filename if we're dealing
+		 * with the Win2k unicode bug, but that would be rare. JRA.
+		 */
 
-    if(fname_len + dir_name_len >= sizeof(pstring))
-      return(ERROR_DOS(ERRSRV,ERRfilespecs));
+		if(fname_len + dir_name_len >= sizeof(pstring))
+			return(ERROR_DOS(ERRSRV,ERRfilespecs));
 
-    get_filename_transact(&fname[dir_name_len], params, 53,
-                 total_parameter_count - 53 - fname_len, fname_len);
+		get_filename_transact(&fname[dir_name_len], params, 53,
+				total_parameter_count - 53 - fname_len, fname_len);
 
-  } else {
-    get_filename_transact(&fname[0], params, 53,
-                 total_parameter_count - 53 - fname_len, fname_len);
-  }
+	} else {
+		get_filename_transact(&fname[0], params, 53,
+				total_parameter_count - 53 - fname_len, fname_len);
 
-  /*
-   * Now contruct the smb_open_mode value from the desired access
-   * and the share access.
-   */
+		/*
+		 * Check to see if this is a mac fork of some kind.
+		 */
 
-  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, desired_access,
-                                      share_access, file_attributes)) == -1)
-    return ERROR_DOS(ERRDOS,ERRbadaccess);
+		if( strchr(fname, ':'))
+			return(ERROR_BOTH(NT_STATUS_OBJECT_PATH_NOT_FOUND,ERRDOS,ERRbadpath));
+	}
 
-  oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
-  oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+	/*
+	 * Now contruct the smb_open_mode value from the desired access
+	 * and the share access.
+	 */
 
-  /*
-   * Check if POSIX semantics are wanted.
-   */
+	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
+					share_access, file_attributes)) == -1)
+		return ERROR_DOS(ERRDOS,ERRbadaccess);
 
-  set_posix_case_semantics(file_attributes);
+	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
+	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
+
+	/*
+	 * Check if POSIX semantics are wanted.
+	 */
+
+	set_posix_case_semantics(file_attributes);
     
-  RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
+	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-  unix_convert(fname,conn,0,&bad_path,&sbuf);
+	unix_convert(fname,conn,0,&bad_path,&sbuf);
     
-  unixmode = unix_mode(conn,smb_attr | aARCH, fname);
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
    
-  /*
-   * If it's a request for a directory open, deal with it separately.
-   */
+	/*
+	 * If it's a request for a directory open, deal with it separately.
+	 */
 
-  if(create_options & FILE_DIRECTORY_FILE) {
+	if(create_options & FILE_DIRECTORY_FILE) {
 
-    oplock_request = 0;
+		oplock_request = 0;
 
-    /*
-     * We will get a create directory here if the Win32
-     * app specified a security descriptor in the 
-     * CreateDirectory() call.
-     */
+		/*
+		 * We will get a create directory here if the Win32
+		 * app specified a security descriptor in the 
+		 * CreateDirectory() call.
+		 */
 
-    fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
+		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
-    if(!fsp) {
-      restore_case_semantics(file_attributes);
-      set_bad_path_error(errno, bad_path);
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    }
-
-  } else {
-
-    /*
-     * Ordinary file case.
-     */
-
-    fsp = open_file_shared(conn,fname,&sbuf,smb_open_mode,smb_ofun,unixmode,
-                     oplock_request,&rmode,&smb_action);
-
-    if (!fsp) { 
-
-		if(errno == EISDIR) {
-
-			/*
-			 * Fail the open if it was explicitly a non-directory file.
-			 */
-
-			if (create_options & FILE_NON_DIRECTORY_FILE) {
-				restore_case_semantics(file_attributes);
-				SSVAL(outbuf, smb_flg2, 
-				      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
-				return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
-			}
-	
-			oplock_request = 0;
-			fsp = open_directory(conn, fname, &sbuf, smb_open_mode, smb_ofun, unixmode, &smb_action);
-				
-			if(!fsp) {
-				restore_case_semantics(file_attributes);
-				set_bad_path_error(errno, bad_path);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-#ifdef EROFS
-		} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
-#else /* !EROFS */
-		} else if (errno == EACCES && stat_open_only) {
-#endif
-
-			/*
-			 * We couldn't open normally and all we want
-			 * are the permissions. Try and do a stat open.
-			 */
-
-			oplock_request = 0;
-
-			fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
-
-			if(!fsp) {
-				restore_case_semantics(file_attributes);
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-		} else {
-
+		if(!fsp) {
 			restore_case_semantics(file_attributes);
 			set_bad_path_error(errno, bad_path);
-
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
-      } 
-  
-      file_len = sbuf.st_size;
-      fmode = dos_mode(conn,fname,&sbuf);
-      if(fmode == 0)
-        fmode = FILE_ATTRIBUTE_NORMAL;
 
-      if (fmode & aDIR) {
-        close_file(fsp,False);
-        restore_case_semantics(file_attributes);
-        return ERROR_DOS(ERRDOS,ERRnoaccess);
-      } 
+	} else {
 
-      /* 
-       * If the caller set the extended oplock request bit
-       * and we granted one (by whatever means) - set the
-       * correct bit for extended oplock reply.
-       */
-    
-      if (oplock_request && lp_fake_oplocks(SNUM(conn)))
-        smb_action |= EXTENDED_OPLOCK_GRANTED;
-  
-      if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
-        smb_action |= EXTENDED_OPLOCK_GRANTED;
-  }
+		/*
+		 * Ordinary file case.
+		 */
 
-  /*
-   * Now try and apply the desired SD.
-   */
+		fsp = open_file_shared1(conn,fname,&sbuf,desired_access,smb_open_mode,smb_ofun,unixmode,
+				oplock_request,&rmode,&smb_action);
 
-  if (!set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
-    close_file(fsp,False);
-    restore_case_semantics(file_attributes);
-    return ERROR_DOS(error_class, error_code);
-  }
+		if (!fsp) { 
 
-  restore_case_semantics(file_attributes);
+			if(errno == EISDIR) {
 
-  /* Realloc the size of parameters and data we will return */
-  params = Realloc(*ppparams, 69);
-  if(params == NULL)
-    return ERROR_DOS(ERRDOS,ERRnomem);
+				/*
+				 * Fail the open if it was explicitly a non-directory file.
+				 */
 
-  *ppparams = params;
-
-  memset((char *)params,'\0',69);
-
-  p = params;
-  if (smb_action & EXTENDED_OPLOCK_GRANTED)	
-  	SCVAL(p,0, BATCH_OPLOCK_RETURN);
-  else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
-    SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
-  else
-	SCVAL(p,0,NO_OPLOCK_RETURN);
+				if (create_options & FILE_NON_DIRECTORY_FILE) {
+					restore_case_semantics(file_attributes);
+					SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
+					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
+				}
 	
-  p += 2;
-  SSVAL(p,0,fsp->fnum);
-  p += 2;
-  SIVAL(p,0,smb_action);
-  p += 8;
+				oplock_request = 0;
+				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, unixmode, &smb_action);
 
-  /* Create time. */
-  c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+				if(!fsp) {
+					restore_case_semantics(file_attributes);
+					set_bad_path_error(errno, bad_path);
+					return(UNIXERROR(ERRDOS,ERRnoaccess));
+				}
+			} else {
 
-  if (lp_dos_filetime_resolution(SNUM(conn))) {
-    c_time &= ~1;
-    sbuf.st_atime &= ~1;
-    sbuf.st_mtime &= ~1;
-    sbuf.st_mtime &= ~1;
-  }
+				restore_case_semantics(file_attributes);
+				set_bad_path_error(errno, bad_path);
 
-  put_long_date(p,c_time);
-  p += 8;
-  put_long_date(p,sbuf.st_atime); /* access time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* write time */
-  p += 8;
-  put_long_date(p,sbuf.st_mtime); /* change time */
-  p += 8;
-  SIVAL(p,0,fmode); /* File Attributes. */
-  p += 4;
-  SOFF_T(p,0,file_len);
-  p += 8;
-  SOFF_T(p,0,file_len);
+				return(UNIXERROR(ERRDOS,ERRnoaccess));
+			}
+		} 
+  
+		file_len = sbuf.st_size;
+		fmode = dos_mode(conn,fname,&sbuf);
+		if(fmode == 0)
+			fmode = FILE_ATTRIBUTE_NORMAL;
 
-  DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
+		if (fmode & aDIR) {
+			close_file(fsp,False);
+			restore_case_semantics(file_attributes);
+			return ERROR_DOS(ERRDOS,ERRnoaccess);
+		} 
 
-  /* Send the required number of replies */
-  send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+		/* 
+		 * If the caller set the extended oplock request bit
+		 * and we granted one (by whatever means) - set the
+		 * correct bit for extended oplock reply.
+		 */
+    
+		if (oplock_request && lp_fake_oplocks(SNUM(conn)))
+			smb_action |= EXTENDED_OPLOCK_GRANTED;
+  
+		if(oplock_request && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
+			smb_action |= EXTENDED_OPLOCK_GRANTED;
+	}
 
-  return -1;
+	/*
+	 * Now try and apply the desired SD.
+	 */
+
+	if (!set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION, &error_class, &error_code)) {
+		close_file(fsp,False);
+		restore_case_semantics(file_attributes);
+		return ERROR_DOS(error_class, error_code);
+	}
+
+	restore_case_semantics(file_attributes);
+
+	/* Realloc the size of parameters and data we will return */
+	params = Realloc(*ppparams, 69);
+	if(params == NULL)
+		return ERROR_DOS(ERRDOS,ERRnomem);
+
+	*ppparams = params;
+
+	memset((char *)params,'\0',69);
+
+	p = params;
+	if (smb_action & EXTENDED_OPLOCK_GRANTED)	
+		SCVAL(p,0, BATCH_OPLOCK_RETURN);
+	else if (LEVEL_II_OPLOCK_TYPE(fsp->oplock_type))
+		SCVAL(p,0, LEVEL_II_OPLOCK_RETURN);
+	else
+		SCVAL(p,0,NO_OPLOCK_RETURN);
+	
+	p += 2;
+	SSVAL(p,0,fsp->fnum);
+	p += 2;
+	SIVAL(p,0,smb_action);
+	p += 8;
+
+	/* Create time. */
+	c_time = get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn)));
+
+	if (lp_dos_filetime_resolution(SNUM(conn))) {
+		c_time &= ~1;
+		sbuf.st_atime &= ~1;
+		sbuf.st_mtime &= ~1;
+		sbuf.st_mtime &= ~1;
+	}
+
+	put_long_date(p,c_time);
+	p += 8;
+	put_long_date(p,sbuf.st_atime); /* access time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* write time */
+	p += 8;
+	put_long_date(p,sbuf.st_mtime); /* change time */
+	p += 8;
+	SIVAL(p,0,fmode); /* File Attributes. */
+	p += 4;
+	SOFF_T(p, 0, SMB_ROUNDUP_ALLOCATION(file_len));
+	p += 8;
+	SOFF_T(p,0,file_len);
+
+	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
+
+	/* Send the required number of replies */
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, 69, *ppdata, 0);
+
+	return -1;
 }
 
 /****************************************************************************
@@ -1499,29 +1475,28 @@ static int call_nt_transact_notify_change(connection_struct *conn,
 				   char **ppsetup, 
 				   char **ppparams, char **ppdata)
 {
-  char *setup = *ppsetup;
-  files_struct *fsp;
-  uint32 flags;
+	char *setup = *ppsetup;
+	files_struct *fsp;
+	uint32 flags;
 
-  fsp = file_fsp(setup,4);
-  flags = IVAL(setup, 0);
+	fsp = file_fsp(setup,4);
+	flags = IVAL(setup, 0);
 
-  DEBUG(3,("call_nt_transact_notify_change\n"));
+	DEBUG(3,("call_nt_transact_notify_change\n"));
 
-  if(!fsp)
-    return ERROR_DOS(ERRDOS,ERRbadfid);
+	if(!fsp)
+		return ERROR_DOS(ERRDOS,ERRbadfid);
 
-  if((!fsp->is_directory) || (conn != fsp->conn))
-    return ERROR_DOS(ERRDOS,ERRbadfid);
+	if((!fsp->is_directory) || (conn != fsp->conn))
+		return ERROR_DOS(ERRDOS,ERRbadfid);
 
-  if (!change_notify_set(inbuf, fsp, conn, flags)) {
-	  return(UNIXERROR(ERRDOS,ERRbadfid));
-  }
+	if (!change_notify_set(inbuf, fsp, conn, flags))
+		return(UNIXERROR(ERRDOS,ERRbadfid));
 
-  DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
+	DEBUG(3,("call_nt_transact_notify_change: notify change called on directory \
 name = %s\n", fsp->fsp_name ));
 
-  return -1;
+	return -1;
 }
 
 /****************************************************************************
@@ -1749,13 +1724,13 @@ static int call_nt_transact_ioctl(connection_struct *conn,
                                   int bufsize, 
                                   char **ppsetup, char **ppparams, char **ppdata)
 {
-  static BOOL logged_message = False;
+	static BOOL logged_message = False;
 
-  if(!logged_message) {
-    DEBUG(2,("call_nt_transact_ioctl: Currently not implemented.\n"));
-    logged_message = True; /* Only print this once... */
-  }
-  return ERROR_DOS(ERRSRV,ERRnosupport);
+	if(!logged_message) {
+		DEBUG(2,("call_nt_transact_ioctl: Currently not implemented.\n"));
+		logged_message = True; /* Only print this once... */
+	}
+	return ERROR_DOS(ERRSRV,ERRnosupport);
 }
    
 /****************************************************************************
@@ -1899,9 +1874,8 @@ due to being in oplock break state.\n" ));
     }
   }
 
-  if (Protocol >= PROTOCOL_NT1) {
-    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
-  }
+  if (Protocol >= PROTOCOL_NT1)
+    SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | FLAGS2_IS_LONG_NAME);
 
   /* Now we must call the relevant NT_TRANS function */
   switch(function_code) {

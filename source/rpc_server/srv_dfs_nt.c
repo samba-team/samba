@@ -22,7 +22,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* This is the implementation of the dfs pipe. */
+/* This is the implementation of the dfs pipe. 
+ * $Id: srv_dfs_nt.c,v 1.1.2.3.2.4 2002/04/30 13:28:00 jra Exp $
+ */
 
 #include "includes.h"
 #include "nterr.h"
@@ -361,8 +363,8 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   if(!create_junction(path, &jn))
      return WERR_DFS_NO_SUCH_SERVER;
   
-    return WERR_DFS_NO_SUCH_VOL;
   if(!get_referred_path(path, &jn, NULL, NULL))
+     return WERR_DFS_NO_SUCH_VOL;
 
   r_u->level = level;
   r_u->ptr_ctr = 1;

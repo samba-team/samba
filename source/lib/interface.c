@@ -24,7 +24,6 @@
 static struct iface_struct *probed_ifaces;
 static int total_probed;
 
-struct in_addr ipzero;
 struct in_addr allones_ip;
 struct in_addr loopback_ip;
 
@@ -40,7 +39,8 @@ Try and find an interface that matches an ip. If we cannot, return NULL
 static struct interface *iface_find(struct in_addr ip, BOOL CheckMask)
 {
 	struct interface *i;
-	if (zero_ip(ip)) return local_interfaces;
+	if (is_zero_ip(ip))
+		return local_interfaces;
 
 	for (i=local_interfaces;i;i=i->next)
 		if (CheckMask) {
@@ -102,8 +102,8 @@ static void interpret_interface(char *token)
 	char *p;
 	int i, added=0;
 
-	ip = ipzero;
-	nmask = ipzero;
+	zero_ip(&ip);
+	zero_ip(&nmask);
 	
 	/* first check if it is an interface name */
 	for (i=0;i<total_probed;i++) {
@@ -171,7 +171,6 @@ void load_interfaces(void)
 
 	ptr = lp_interfaces();
 
-	ipzero = *interpret_addr2("0.0.0.0");
 	allones_ip = *interpret_addr2("255.255.255.255");
 	loopback_ip = *interpret_addr2("127.0.0.1");
 

@@ -165,12 +165,10 @@ void conn_free(connection_struct *conn)
 {
 	/* Free vfs_connection_struct */
 	    
-#ifdef HAVE_LIBDL
 	if (conn->dl_handle != NULL) {
 		/* Close dlopen() handle */
 		sys_dlclose(conn->dl_handle);
 	}
-#endif /* HAVE_LIBDL */
 
 	DLIST_REMOVE(Connections, conn);
 

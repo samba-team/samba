@@ -67,7 +67,7 @@ typedef struct net_srv_disk_enum {
 	uint32 preferred_len;        /* preferred maximum length (0xffff ffff) */
 	uint32 total_entries;        /* total number of entries */
 	ENUM_HND enum_hnd;
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 } SRV_Q_NET_DISK_ENUM, SRV_R_NET_DISK_ENUM;
 
 typedef struct net_name_validate {
@@ -76,7 +76,7 @@ typedef struct net_name_validate {
 	UNISTR2 uni_name; /*name to validate*/
 	uint32 type;
 	uint32 flags;
-	NTSTATUS status;
+	WERROR status;
 } SRV_Q_NET_NAME_VALIDATE, SRV_R_NET_NAME_VALIDATE;
 
 /* SESS_INFO_0 (pointers to level 0 session info strings) */
@@ -185,7 +185,7 @@ typedef struct r_net_sess_enum_info
 	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SESS_ENUM;
 
@@ -288,7 +288,7 @@ typedef struct r_net_conn_enum_info
 	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_CONN_ENUM;
 
@@ -349,6 +349,27 @@ typedef struct share_info_2_info
 
 } SRV_SHARE_INFO_2;
 
+typedef struct ptr_share_info501
+{
+	uint32 ptr_netname; /* pointer to net name */
+	uint32 type;     /* ipc, print, disk */
+	uint32 ptr_remark;  /* pointer to comment */
+	uint32 csc_policy;  /* client-side offline caching policy << 4 */
+} SH_INFO_501;
+
+typedef struct str_share_info501
+{
+	UNISTR2 uni_netname; /* unicode string of net name */
+	UNISTR2 uni_remark;  /* unicode string of comment */
+} SH_INFO_501_STR;
+
+/* SRV_SHARE_INFO_501 */
+typedef struct share_info_501_info
+{
+	SH_INFO_501 info_501;
+	SH_INFO_501_STR info_501_str;
+} SRV_SHARE_INFO_501;
+
 /* SH_INFO_502 (pointers to level 502 share info strings) */
 typedef struct ptr_share_info502
 {
@@ -391,7 +412,7 @@ typedef struct share_info_502_info
 /* SRV_SHARE_INFO_1005 */
 typedef struct share_info_1005_info
 {
-  uint32 dfs_root_flag; 
+	uint32 misc_flags;
 } SRV_SHARE_INFO_1005;
 
 /* SRV_SHARE_INFO_1501 */
@@ -414,6 +435,7 @@ typedef struct srv_share_info_ctr_info
 	union {
 		SRV_SHARE_INFO_1 *info1; /* share info level 1 */
 		SRV_SHARE_INFO_2 *info2; /* share info level 2 */
+		SRV_SHARE_INFO_501 *info501; /* share info level 501 */
 		SRV_SHARE_INFO_502 *info502; /* share info level 502 */
 		void *info;
 
@@ -444,7 +466,7 @@ typedef struct r_net_share_enum_info
 	uint32 total_entries;                    /* total number of entries */
 	ENUM_HND enum_hnd;
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SHARE_ENUM;
 
@@ -470,9 +492,10 @@ typedef struct srv_share_info {
 	union {
 		SRV_SHARE_INFO_1 info1;
 		SRV_SHARE_INFO_2 info2;
+		SRV_SHARE_INFO_501 info501;
 		SRV_SHARE_INFO_502 info502;
-        SRV_SHARE_INFO_1005 info1005;
-        SRV_SHARE_INFO_1501 info1501;
+		SRV_SHARE_INFO_1005 info1005;
+		SRV_SHARE_INFO_1501 info1501;
 	} share;
 } SRV_SHARE_INFO;
 
@@ -480,7 +503,7 @@ typedef struct srv_share_info {
 typedef struct r_net_share_get_info_info
 {
 	SRV_SHARE_INFO info;
-	NTSTATUS status;
+	WERROR status;
 
 } SRV_R_NET_SHARE_GET_INFO;
 
@@ -502,7 +525,7 @@ typedef struct r_net_share_set_info
 {
 	uint32 switch_value;         /* switch value */
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SHARE_SET_INFO;
 
@@ -523,7 +546,7 @@ typedef struct r_net_share_add
 {
 	uint32 switch_value;         /* switch value */
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SHARE_ADD;
 
@@ -539,7 +562,7 @@ typedef struct q_net_share_del
 /* SRV_R_NET_SHARE_DEL */
 typedef struct r_net_share_del
 {
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SHARE_DEL;
 
@@ -622,7 +645,7 @@ typedef struct r_net_file_enum_info
 	uint32 total_entries;                    /* total number of files */
 	ENUM_HND enum_hnd;
 
-	NTSTATUS status;        /* return status */
+	WERROR status;        /* return status */
 
 } SRV_R_NET_FILE_ENUM;
 
@@ -704,7 +727,7 @@ typedef struct r_net_srv_get_info
 {
 	SRV_INFO_CTR *ctr;
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SRV_GET_INFO;
 
@@ -725,7 +748,7 @@ typedef struct r_net_srv_set_info
 {
 	uint32 switch_value;         /* switch value */
 
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_SRV_SET_INFO;
 
@@ -761,7 +784,7 @@ typedef struct r_net_remote_tod
 	uint32 ptr_srv_tod;         /* pointer to TOD */
 	TIME_OF_DAY_INFO *tod;
 	
-	NTSTATUS status;               /* return status */
+	WERROR status;               /* return status */
 
 } SRV_R_NET_REMOTE_TOD;
 
@@ -786,7 +809,7 @@ typedef struct r_net_file_query_secdesc
 	uint32 ptr_secdesc;
 	uint32 size_secdesc;
 	SEC_DESC *sec_desc;
-	NTSTATUS status;
+	WERROR status;
 } SRV_R_NET_FILE_QUERY_SECDESC;
 
 /* SRV_Q_NET_FILE_SET_SECDESC */
@@ -807,6 +830,6 @@ typedef struct q_net_file_set_secdesc
 /* SRV_R_NET_FILE_SET_SECDESC */
 typedef struct r_net_file_set_secdesc
 {
-	NTSTATUS status;
+	WERROR status;
 } SRV_R_NET_FILE_SET_SECDESC;
 #endif /* _RPC_SRVSVC_H */

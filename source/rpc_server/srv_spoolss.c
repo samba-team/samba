@@ -25,6 +25,36 @@
 #include "includes.h"
 
 /********************************************************************
+ * api_spoolss_open_printer_ex (rarely seen - older call)
+ ********************************************************************/
+
+static BOOL api_spoolss_open_printer(pipes_struct *p)
+{
+	SPOOL_Q_OPEN_PRINTER q_u;
+	SPOOL_R_OPEN_PRINTER r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if (!spoolss_io_q_open_printer("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_open_printer: unable to unmarshall SPOOL_Q_OPEN_PRINTER.\n"));
+		return False;
+	}
+
+	r_u.status = _spoolss_open_printer( p, &q_u, &r_u);
+	
+	if (!spoolss_io_r_open_printer("",&r_u,rdata,0)){
+		DEBUG(0,("spoolss_io_r_open_printer: unable to marshall SPOOL_R_OPEN_PRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+
+/********************************************************************
  * api_spoolss_open_printer_ex
  ********************************************************************/
 
@@ -976,7 +1006,33 @@ static BOOL api_spoolss_setprinterdata(pipes_struct *p)
 
 /****************************************************************************
 ****************************************************************************/
+static BOOL api_spoolss_reset_printer(pipes_struct *p)
+{
+	SPOOL_Q_RESETPRINTER q_u;
+	SPOOL_R_RESETPRINTER r_u;
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
 
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!spoolss_io_q_resetprinter("", &q_u, data, 0)) {
+		DEBUG(0,("spoolss_io_q_setprinterdata: unable to unmarshall SPOOL_Q_SETPRINTERDATA.\n"));
+		return False;
+	}
+	
+	r_u.status = _spoolss_resetprinter(p, &q_u, &r_u);
+				
+	if(!spoolss_io_r_resetprinter("", &r_u, rdata, 0)) {
+		DEBUG(0,("spoolss_io_r_setprinterdata: unable to marshall SPOOL_R_RESETPRINTER.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/****************************************************************************
+****************************************************************************/
 static BOOL api_spoolss_addform(pipes_struct *p)
 {
 	SPOOL_Q_ADDFORM q_u;
@@ -1319,11 +1375,6 @@ static BOOL api_spoolss_enumprinterdataex(pipes_struct *p)
 /****************************************************************************
 ****************************************************************************/
 
-/* Disabled because it doesn't fix the bug I am looking at but it would be
-   a shame to throw away the code. -tpot */
-
-#if 0
-
 static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 {
 	SPOOL_Q_GETPRINTPROCESSORDIRECTORY q_u;
@@ -1349,14 +1400,13 @@ static BOOL api_spoolss_getprintprocessordirectory(pipes_struct *p)
 	return True;
 }
 
-#endif
-
 /*******************************************************************
 \pipe\spoolss commands
 ********************************************************************/
 
 struct api_struct api_spoolss_cmds[] = 
 {
+ {"SPOOLSS_OPENPRINTER",               SPOOLSS_OPENPRINTER,               api_spoolss_open_printer              },
  {"SPOOLSS_OPENPRINTEREX",             SPOOLSS_OPENPRINTEREX,             api_spoolss_open_printer_ex           },
  {"SPOOLSS_GETPRINTERDATA",            SPOOLSS_GETPRINTERDATA,            api_spoolss_getprinterdata            },
  {"SPOOLSS_CLOSEPRINTER",              SPOOLSS_CLOSEPRINTER,              api_spoolss_closeprinter              },
@@ -1387,6 +1437,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_GETPRINTERDRIVERDIRECTORY", SPOOLSS_GETPRINTERDRIVERDIRECTORY, api_spoolss_getprinterdriverdirectory },
  {"SPOOLSS_ENUMPRINTERDATA",           SPOOLSS_ENUMPRINTERDATA,           api_spoolss_enumprinterdata           },
  {"SPOOLSS_SETPRINTERDATA",            SPOOLSS_SETPRINTERDATA,            api_spoolss_setprinterdata            },
+ {"SPOOLSS_RESETPRINTER",              SPOOLSS_RESETPRINTER,              api_spoolss_reset_printer             },
  {"SPOOLSS_DELETEPRINTERDATA",         SPOOLSS_DELETEPRINTERDATA,         api_spoolss_deleteprinterdata         },
  {"SPOOLSS_ADDFORM",                   SPOOLSS_ADDFORM,                   api_spoolss_addform                   },
  {"SPOOLSS_DELETEFORM",                SPOOLSS_DELETEFORM,                api_spoolss_deleteform                },
@@ -1401,11 +1452,7 @@ struct api_struct api_spoolss_cmds[] =
  {"SPOOLSS_SETPRINTERDATAEX",          SPOOLSS_SETPRINTERDATAEX,          api_spoolss_setprinterdataex          },
  {"SPOOLSS_ENUMPRINTERKEY",            SPOOLSS_ENUMPRINTERKEY,            api_spoolss_enumprinterkey            },
  {"SPOOLSS_ENUMPRINTERDATAEX",         SPOOLSS_ENUMPRINTERDATAEX,         api_spoolss_enumprinterdataex         },
-#if 0
- /* Disabled because it doesn't fix the bug I am looking at but it would be
-    a shame to throw away the code. -tpot */
  {"SPOOLSS_GETPRINTPROCESSORDIRECTORY",SPOOLSS_GETPRINTPROCESSORDIRECTORY,api_spoolss_getprintprocessordirectory},
-#endif
  { NULL,                               0,                                 NULL                                  }
 };
 

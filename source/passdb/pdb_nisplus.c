@@ -299,14 +299,14 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
   /* pdb_set_nt_username() -- cant set it here... */
 
   get_single_attribute(obj, NPF_FULL_NAME, full_name, sizeof(pstring));
-  unix_to_dos(full_name, True);
+  unix_to_dos(full_name);
   pdb_set_fullname(pw_buf, full_name);
 
   pdb_set_acct_ctrl(pw_buf, pdb_decode_acct_ctrl(ENTRY_VAL(obj,
 							   NPF_ACB)));
 
   get_single_attribute(obj, NPF_ACCT_DESC, acct_desc, sizeof(pstring));
-  unix_to_dos(acct_desc, True);
+  unix_to_dos(acct_desc);
   pdb_set_acct_desc(pw_buf, acct_desc);
 
   pdb_set_workstations(pw_buf, ENTRY_VAL(obj, NPF_WORKSTATIONS));
@@ -343,7 +343,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     get_single_attribute(obj, NPF_LOGON_SCRIPT, logon_script,
 			 sizeof(pstring));
     if( !(logon_script && *logon_script) ) {
-      pstrcpy(logon_script, lp_logon_script(), False);
+      pstrcpy(logon_script, lp_logon_script());
     }
     else
       pdb_set_logon_script(pw_buf, logon_script, True);
@@ -532,9 +532,9 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
   slprintf(pwdmchg_t, 13, "MCT-%08X",
 	   (uint32)pdb_get_pass_must_change_time(sampass));
   safe_strcpy(full_name, pdb_get_fullname(sampass), sizeof(full_name)-1);
-  dos_to_unix(full_name, True);
+  dos_to_unix(full_name);
   safe_strcpy(acct_desc, pdb_get_acct_desc(sampass), sizeof(acct_desc)-1);
-  dos_to_unix(acct_desc, True);
+  dos_to_unix(acct_desc);
   
   if( old ) {
     /* name */
@@ -858,7 +858,7 @@ static BOOL init_nisp_from_sam(nis_object *obj, SAM_ACCOUNT *sampass,
 /***************************************************************
  calls nis_list, returns results.
  ****************************************************************/
-static nis_result *nisp_get_nis_list(char *nis_name, uint_t flags)
+static nis_result *nisp_get_nis_list(char *nis_name, unsigned int flags)
 {
 	nis_result *result;
 	int i;

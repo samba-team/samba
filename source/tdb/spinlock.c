@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    Samba database functions
    Copyright (C) Anton Blanchard                   2001
    
@@ -384,11 +383,11 @@ int tdb_create_rwlocks(int fd, unsigned int hash_size)
 
 	/* Write it out (appending to end) */
 	if (write(fd, rwlocks, size) != size) {
-		SAFE_FREE(rwlocks);
+		free(rwlocks);
 		return -1;
 	}
 	smp_machine = this_is_smp();
-	SAFE_FREE(rwlocks);
+	free(rwlocks);
 	return 0;
 }
 

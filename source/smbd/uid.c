@@ -116,7 +116,6 @@ BOOL change_to_user(connection_struct *conn, uint16 vuid)
 		   (vuser != 0) && (current_user.vuid == vuid) && 
 		   (current_user.uid == vuser->uid)) {
 		DEBUG(4,("change_to_user: Skipping user change - already user\n"));
-		return(True);
 	}
 
 	snum = SNUM(conn);
@@ -450,7 +449,7 @@ BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 	*name_type = SID_NAME_UNKNOWN;
 
-	if (!winbind_lookup_name(name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
+	if (!winbind_lookup_name(NULL, name, psid, name_type) || (*name_type != SID_NAME_USER) ) {
 		BOOL ret = False;
 
 		DEBUG(10, ("lookup_name: winbind lookup for %s failed - trying local\n", name));
@@ -611,6 +610,11 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	fstring dom_name, name, sid_str;
 	enum SID_NAME_USE name_type;
 
+
+	/* if we know its local then don't try winbindd */
+	if (sid_compare_domain(&global_sam_sid, psid) == 0)
+		return local_sid_to_uid(puid, psid, sidtype);
+
 	*sidtype = SID_NAME_UNKNOWN;
 
 	/*
@@ -643,7 +647,7 @@ BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 	if (!winbind_sid_to_uid(puid, psid)) {
 		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed.\n",
 				sid_to_string(sid_str, psid) ));
-		return False;
+		return local_sid_to_uid(puid, psid, sidtype);;
 	}
 
 	DEBUG(10,("sid_to_uid: winbindd %s -> %u\n",

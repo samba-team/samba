@@ -295,9 +295,7 @@ CLASS="FILENAME"
 		<B
 CLASS="COMMAND"
 >nmbd</B
-> server.</P
-><P
->The default log directory is compiled into Samba
+> server. The default log directory is compiled into Samba
 		as part of the build process. Common defaults are <TT
 CLASS="FILENAME"
 >		/usr/local/samba/var/log.nmb</TT
@@ -308,7 +306,15 @@ CLASS="FILENAME"
 		<TT
 CLASS="FILENAME"
 >/var/log/log.nmb</TT
->.</P
+>.  <EM
+>Beware:</EM
+>
+                If the directory specified does not exist, <B
+CLASS="COMMAND"
+>nmbd</B
+>
+                will log to the default debug log location defined at compile time.
+		</P
 ></DD
 ><DT
 >-n &#60;primary NetBIOS name&#62;</DT
@@ -376,7 +382,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN130"
+NAME="AEN131"
 ></A
 ><H2
 >FILES</H2
@@ -531,7 +537,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN177"
+NAME="AEN178"
 ></A
 ><H2
 >SIGNALS</H2
@@ -592,7 +598,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN193"
+NAME="AEN194"
 ></A
 ><H2
 >VERSION</H2
@@ -603,7 +609,7 @@ NAME="AEN193"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN196"
+NAME="AEN197"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -668,7 +674,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN213"
+NAME="AEN214"
 ></A
 ><H2
 >AUTHOR</H2

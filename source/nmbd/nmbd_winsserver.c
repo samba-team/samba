@@ -26,12 +26,10 @@
 #define WINS_LIST "wins.dat"
 #define WINS_VERSION 1
 
-extern struct in_addr ipzero;
-
-
 /****************************************************************************
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
+
 static void wins_hook(char *operation, struct name_record *namerec, int ttl)
 {
 	pstring command;

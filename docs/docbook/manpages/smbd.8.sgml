@@ -169,7 +169,9 @@
 		its size may be controlled by the <ulink 
 		url="smb.conf.5.html#maxlogsize">max log size</ulink>
 		option in the <ulink url="smb.conf.5.html"><filename>
-		smb.conf(5)</filename></ulink> file.
+		smb.conf(5)</filename></ulink> file. <emphasis>Beware:</emphasis>
+		If the directory specified does not exist, <command>smbd</command>
+		will log to the default debug log location defined at compile time.
 		</para>
 
 		<para>The default log directory is specified at

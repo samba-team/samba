@@ -1718,7 +1718,7 @@ int tar_parseargs(int argc, char *argv[], char *Optarg, int Optind)
 	SMB_STRUCT_STAT stbuf;
 	extern time_t newer_than;
 	
-	if (sys_stat(dos_to_unix(argv[Optind],False), &stbuf) == 0) {
+	if (sys_stat(dos_to_unix_static(argv[Optind]), &stbuf) == 0) {
 	  newer_than = stbuf.st_mtime;
 	  DEBUG(1,("Getting files newer than %s",
 		   asctime(LocalTime(&newer_than))));

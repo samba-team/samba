@@ -168,6 +168,7 @@ static char *automount_server(char *user_name)
 
 void standard_sub_basic(char *str)
 {
+	extern pstring global_myname;
 	char *p, *s;
 	fstring pidstr;
 	struct passwd *pass;
@@ -197,7 +198,21 @@ void standard_sub_basic(char *str)
 			string_sub(p,"%D", tmp_str,l);
 			break;
 		case 'I' : string_sub(p,"%I", client_addr(),l); break;
-		case 'L' : string_sub(p,"%L", local_machine,l); break;
+		case 'L' : 
+			if (*local_machine)
+				string_sub(p,"%L", local_machine,l); 
+			else {
+				char *ns = p;
+
+				string_sub(p,"%L", global_myname,l); 
+				while (*ns)
+				{
+					if (isupper(*ns))
+						*ns = tolower(*ns);
+					ns++;
+				}
+			}
+			break;
 		case 'M' : string_sub(p,"%M", client_name(),l); break;
 		case 'R' : string_sub(p,"%R", remote_proto,l); break;
 		case 'T' : string_sub(p,"%T", timestring(False),l); break;

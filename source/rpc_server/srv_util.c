@@ -76,6 +76,8 @@ rid_name domain_group_rids[] =
     { 0                             , NULL }
 };
 
+#define LSA_MAX_GROUPS 96
+
 int make_dom_gids(TALLOC_CTX *ctx, char *gids_str, DOM_GID **ppgids)
 {
   char *ptr;

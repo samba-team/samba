@@ -40,13 +40,13 @@ static int fd_open(struct connection_struct *conn, char *fname,
 		flags |= O_NOFOLLOW;
 #endif
 
-	fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+	fd = conn->vfs_ops.open(conn,dos_to_unix_static(fname),flags,mode);
 
 	/* Fix for files ending in '.' */
 	if((fd == -1) && (errno == ENOENT) &&
 	   (strchr(fname,'.')==NULL)) {
 		pstrcat(fname,".");
-		fd = conn->vfs_ops.open(conn,dos_to_unix(fname,False),flags,mode);
+		fd = conn->vfs_ops.open(conn,dos_to_unix_static(fname),flags,mode);
 	}
 
 	DEBUG(10,("fd_open: name %s, flags = 0%o mode = 0%o, fd = %d. %s\n", fname,
@@ -62,7 +62,7 @@ static int fd_open(struct connection_struct *conn, char *fname,
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
 	if (fsp->fd == -1)
-		return -1;
+		return 0; /* what we used to call a stat open. */
 	return fd_close_posix(conn, fsp);
 }
 
@@ -89,7 +89,7 @@ static void check_for_pipe(char *fname)
 ****************************************************************************/
 
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode)
+		      const char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
 	extern struct current_user current_user;
 	pstring fname;
@@ -152,18 +152,35 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	local_flags &= ~O_TRUNC;
 
 	/* actually do the open */
-	fsp->fd = fd_open(conn, fname, local_flags, mode);
 
-	if (fsp->fd == -1)  {
-		DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
-			 fname,strerror(errno),local_flags,flags));
-		check_for_pipe(fname);
-		return False;
-	}
+	if ((desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
+			(local_flags & O_CREAT)) {
+
+		fsp->fd = fd_open(conn, fname, local_flags, mode);
+
+		if (fsp->fd == -1)  {
+			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
+				 fname,strerror(errno),local_flags,flags));
+			check_for_pipe(fname);
+			return False;
+		}
+	} else
+		fsp->fd = -1; /* What we used to call a stat open. */
 
 	if (!VALID_STAT(*psbuf)) {
-		if (vfs_fstat(fsp,fsp->fd,psbuf) == -1) {
-			DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+		int ret;
+
+		if (fsp->fd == -1)
+			ret = vfs_stat(conn, fname, psbuf);
+		else {
+			ret = vfs_fstat(fsp,fsp->fd,psbuf);
+			/* If we have an fd, this stat should succeed. */
+			if (ret == -1)
+				DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
+		}
+
+		/* For a non-io open, this stat failing means file not found. JRA */
+		if (ret == -1) {
 			fd_close(conn, fsp);
 			return False;
 		}
@@ -191,12 +208,12 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->can_read = ((flags & O_WRONLY)==0);
 	fsp->can_write = ((flags & (O_WRONLY|O_RDWR))!=0);
 	fsp->share_mode = 0;
+	fsp->desired_access = desired_access;
 	fsp->print_file = False;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	/*
@@ -353,7 +370,7 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 check if we can open a file with a share mode
 ****************************************************************************/
 
-static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, int share_mode, 
+static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, int share_mode, uint32 desired_access,
 			     const char *fname, BOOL fcbopen, int *flags)
 {
 	int deny_mode = GET_DENY_MODE(share_mode);
@@ -381,12 +398,61 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 		return False;
 	}
 
+	/* this is a nasty hack, but necessary until we rewrite our open
+	   handling to use a NTCreateX call as the basic call.
+	   NT may open a file with neither read nor write access, and in
+		   this case it expects the open not to conflict with any
+		   existing deny modes. This happens (for example) during a
+		   "xcopy /o" where the second file descriptor is used for
+		   ACL sets
+		   (tridge)
+	*/
+
+	/*
+	 * This is a bit wierd - the test for desired access not having the
+	 * critical bits seems seems odd. Firstly, if both opens have no
+	 * critical bits then always ignore. Then check the "allow delete"
+	 * then check for either. This probably isn't quite right yet but
+	 * gets us much closer. JRA.
+	 */
+
+	/*
+	 * If desired_access doesn't contain READ_DATA,WRITE_DATA,APPEND_DATA or EXECUTE
+	 * and the existing desired_acces then share modes don't conflict.
+	 */
+
+	if ( !(desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) &&
+		!(share->desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ) {
+
+		/*
+		 * Wrinkle discovered by smbtorture....
+		 * If both are non-io open and requester is asking for delete and current open has delete access
+		 * but neither open has allowed file share delete then deny.... this is very strange and
+		 * seems to be the only case in which non-io opens conflict. JRA.
+		 */
+
+		if ((desired_access & DELETE_ACCESS) && (share->desired_access & DELETE_ACCESS) && 
+				(!GET_ALLOW_SHARE_DELETE(share->share_mode) || !GET_ALLOW_SHARE_DELETE(share_mode))) {
+			DEBUG(5,("check_share_mode: Failing open on file %s as delete access requests conflict.\n",
+				fname ));
+			unix_ERR_class = ERRDOS;
+			unix_ERR_code = ERRbadshare;
+
+			return False;
+		}
+
+		DEBUG(5,("check_share_mode: Allowing open on file %s as both desired access (0x%x) \
+and existing desired access (0x%x) are non-data opens\n", 
+			fname, (unsigned int)desired_access, (unsigned int)share->desired_access ));
+		return True;
+	}
+
 	/*
 	 * If delete access was requested and the existing share mode doesn't have
 	 * ALLOW_SHARE_DELETE then deny.
 	 */
 
-	if (GET_DELETE_ACCESS_REQUESTED(share_mode) && !GET_ALLOW_SHARE_DELETE(share->share_mode)) {
+	if ((desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share->share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access requested and allow share delete not set.\n",
 			fname ));
 		unix_ERR_class = ERRDOS;
@@ -401,7 +467,7 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 	 * ALLOW_SHARE_DELETE then deny.
 	 */
 
-	if (GET_DELETE_ACCESS_REQUESTED(share->share_mode) && !GET_ALLOW_SHARE_DELETE(share_mode)) {
+	if ((share->desired_access & DELETE_ACCESS) && !GET_ALLOW_SHARE_DELETE(share_mode)) {
 		DEBUG(5,("check_share_mode: Failing open on file %s as delete access granted and allow share delete not requested.\n",
 			fname ));
 		unix_ERR_class = ERRDOS;
@@ -410,9 +476,21 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 		return False;
 	}
 
+	/*
+	 * If desired_access doesn't contain READ_DATA,WRITE_DATA,APPEND_DATA or EXECUTE
+	 * then share modes don't conflict. Likewise with existing desired access.
+	 */
+
+	if ( !(desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
+		!(share->desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ) {
+		DEBUG(5,("check_share_mode: Allowing open on file %s as desired access (0x%x) doesn't conflict with\
+existing desired access (0x%x).\n", fname, (unsigned int)desired_access, (unsigned int)share->desired_access ));
+		return True;
+	}
+
 	{
 		int access_allowed = access_table(deny_mode,old_deny_mode,old_open_mode,
-										(share->pid == sys_getpid()),is_executable(fname));
+						(share->pid == sys_getpid()),is_executable(fname));
 
 		if ((access_allowed == AFAIL) ||
 			(!fcbopen && (access_allowed == AREAD && *flags == O_RDWR)) ||
@@ -447,8 +525,10 @@ static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, i
 ****************************************************************************/
 
 static int open_mode_check(connection_struct *conn, const char *fname, SMB_DEV_T dev,
-							SMB_INO_T inode, int share_mode, int *p_flags, int *p_oplock_request,
-							BOOL *p_all_current_opens_are_level_II)
+			SMB_INO_T inode,
+			uint32 desired_access,
+			int share_mode, int *p_flags, int *p_oplock_request,
+			BOOL *p_all_current_opens_are_level_II)
 {
 	int i;
 	int num_share_modes;
@@ -520,10 +600,9 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 				*p_all_current_opens_are_level_II = False;
 			}
 
-			/* someone else has a share lock on it, check to see 
-				if we can too */
-
-			if(check_share_mode(conn, share_entry, share_mode, fname, fcbopen, p_flags) == False) {
+			/* someone else has a share lock on it, check to see if we can too */
+			if (!check_share_mode(conn, share_entry, share_mode, desired_access, 
+						fname, fcbopen, p_flags)) {
 				SAFE_FREE(old_shares);
 				errno = EACCES;
 				return -1;
@@ -611,20 +690,33 @@ static void kernel_flock(files_struct *fsp, int deny_mode)
 
 
 /****************************************************************************
- Open a file with a share mode. On output from this open we are guarenteeing
- that 
+ Open a file with a share mode - old method.
 ****************************************************************************/
+
 files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
-				int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action)
+		int share_mode,int ofun, mode_t mode,int oplock_request, int *Access,int *action)
+{
+	return open_file_shared1(conn, fname, psbuf, 0, share_mode, ofun, mode,
+			oplock_request, Access, action);
+}
+
+/****************************************************************************
+ Open a file with a share mode - called from NTCreateAndX.
+****************************************************************************/
+
+files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_STAT *psbuf, 
+				uint32 desired_access,
+				int share_mode,int ofun, mode_t mode,int oplock_request,
+				int *Access,int *action)
 {
 	int flags=0;
 	int flags2=0;
 	int deny_mode = GET_DENY_MODE(share_mode);
 	BOOL allow_share_delete = GET_ALLOW_SHARE_DELETE(share_mode);
-	BOOL delete_access_requested = GET_DELETE_ACCESS_REQUESTED(share_mode);
 	BOOL delete_on_close = GET_DELETE_ON_CLOSE_FLAG(share_mode);
 	BOOL file_existed = VALID_STAT(*psbuf);
 	BOOL fcbopen = False;
+	BOOL def_acl = False;
 	SMB_DEV_T dev = 0;
 	SMB_INO_T inode = 0;
 	int num_share_modes = 0;
@@ -637,8 +729,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	if (conn->printer) {
 		/* printers are handled completely differently. Most
 			of the passed parameters are ignored */
-		*Access = DOS_OPEN_WRONLY;
-		*action = FILE_WAS_CREATED;
+		if (Access)
+			*Access = DOS_OPEN_WRONLY;
+		if (action)
+			*action = FILE_WAS_CREATED;
 		return print_fsp_open(conn, fname);
 	}
 
@@ -697,16 +791,24 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	switch (GET_OPEN_MODE(share_mode)) {
 		case DOS_OPEN_WRONLY: 
 			flags = O_WRONLY; 
+			if (desired_access == 0)
+				desired_access = FILE_WRITE_DATA;
 			break;
 		case DOS_OPEN_FCB: 
 			fcbopen = True;
 			flags = O_RDWR; 
+			if (desired_access == 0)
+				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		case DOS_OPEN_RDWR: 
 			flags = O_RDWR; 
+			if (desired_access == 0)
+				desired_access = FILE_READ_DATA|FILE_WRITE_DATA;
 			break;
 		default:
 			flags = O_RDONLY;
+			if (desired_access == 0)
+				desired_access = FILE_READ_DATA;
 			break;
 	}
 
@@ -742,8 +844,10 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 
 		lock_share_entry(conn, dev, inode);
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
-								&flags, &oplock_request, &all_current_opens_are_level_II);
+		num_share_modes = open_mode_check(conn, fname, dev, inode,
+						desired_access, share_mode,
+						&flags, &oplock_request, &all_current_opens_are_level_II);
+
 		if(num_share_modes == -1) {
 
 			/*
@@ -757,7 +861,8 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 			 * we can do. We also ensure we're not going to create or tuncate
 			 * the file as we only want an access decision at this stage. JRA.
 			 */
-			fsp_open = open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC|O_CREAT)),mode);
+			fsp_open = open_file(fsp,conn,fname,psbuf,
+						flags|(flags2&~(O_TRUNC|O_CREAT)),mode,desired_access);
 
 			DEBUG(4,("open_file_shared : share_mode deny - calling open_file with \
 flags=0x%X flags2=0x%X mode=0%o returned %d\n",
@@ -775,6 +880,14 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		 */
 	}
 
+	/*
+	 * Ensure we pay attention to default ACLs on directories if required.
+	 */
+
+        if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
+			(def_acl = directory_has_default_acl(conn, dos_to_unix_static(parent_dirname(fname)))))
+                mode = 0777;
+
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
 			flags,flags2,(int)mode));
 
@@ -782,10 +895,10 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,mode);
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,mode,desired_access);
 
 	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
-		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode)) == True)
+		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode,desired_access)) == True)
 			flags = O_RDONLY;
 	}
 
@@ -807,8 +920,9 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 		lock_share_entry_fsp(fsp);
 
-		num_share_modes = open_mode_check(conn, fname, dev, inode, share_mode,
-								&flags, &oplock_request, &all_current_opens_are_level_II);
+		num_share_modes = open_mode_check(conn, fname, dev, inode,
+						desired_access, share_mode,
+						&flags, &oplock_request, &all_current_opens_are_level_II);
 
 		if(num_share_modes == -1) {
 			unlock_share_entry_fsp(fsp);
@@ -874,8 +988,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 
 	fsp->share_mode = SET_DENY_MODE(deny_mode) | 
 						SET_OPEN_MODE(open_mode) | 
-						SET_ALLOW_SHARE_DELETE(allow_share_delete) |
-						SET_DELETE_ACCESS_REQUESTED(delete_access_requested);
+						SET_ALLOW_SHARE_DELETE(allow_share_delete);
 
 	DEBUG(10,("open_file_shared : share_mode = %x\n", fsp->share_mode ));
 
@@ -914,6 +1027,8 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 		NTSTATUS result = set_delete_on_close_internal(fsp, delete_on_close);
 
 		if (NT_STATUS_V(result) !=  NT_STATUS_V(NT_STATUS_OK)) {
+			/* Remember to delete the mode we just added. */
+			del_share_mode(fsp, NULL);
 			unlock_share_entry_fsp(fsp);
 			fd_close(conn,fsp);
 			file_free(fsp);
@@ -922,10 +1037,11 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	}
 	
 	/*
-	 * Take care of inherited ACLs on created files. JRA.
+	 * Take care of inherited ACLs on created files - if default ACL not
+	 * selected.
 	 */
 
-	if (!file_existed && (conn->vfs_ops.fchmod_acl != NULL)) {
+	if (!file_existed && !def_acl && (conn->vfs_ops.fchmod_acl != NULL)) {
 		int saved_errno = errno; /* We might get ENOSYS in the next call.. */
 		if (conn->vfs_ops.fchmod_acl(fsp, fsp->fd, mode) == -1 && errno == ENOSYS)
 			errno = saved_errno; /* Ignore ENOSYS */
@@ -939,77 +1055,10 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 }
 
 /****************************************************************************
- Open a file for permissions read only. Return a pseudo file entry
- with the 'stat_open' flag set 
-****************************************************************************/
-
-files_struct *open_file_stat(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action)
-{
-	extern struct current_user current_user;
-	files_struct *fsp = NULL;
-
-	if (!VALID_STAT(*psbuf)) {
-		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n", fname, strerror(errno) ));
-		return NULL;
-	}
-
-	if(S_ISDIR(psbuf->st_mode)) {
-		DEBUG(0,("open_file_stat: %s is a directory !\n", fname ));
-		return NULL;
-	}
-
-	fsp = file_new(conn);
-	if(!fsp)
-		return NULL;
-
-	*action = FILE_WAS_OPENED;
-	
-	DEBUG(5,("open_file_stat: opening file %s as a stat entry\n", fname));
-
-	/*
-	 * Setup the files_struct for it.
-	 */
-	
-	fsp->mode = psbuf->st_mode;
-	fsp->inode = psbuf->st_ino;
-	fsp->dev = psbuf->st_dev;
-	fsp->size = psbuf->st_size;
-	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
-	fsp->can_lock = False;
-	fsp->can_read = False;
-	fsp->can_write = False;
-	fsp->share_mode = 0;
-	fsp->print_file = False;
-	fsp->modified = False;
-	fsp->oplock_type = NO_OPLOCK;
-	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
-	fsp->stat_open = True;
-	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
-	/*
-	 * Note that the file name here is the *untranslated* name
-	 * ie. it is still in the DOS codepage sent from the client.
-	 * All use of this filename will pass though the sys_xxxx
-	 * functions which will do the dos_to_unix translation before
-	 * mapping into a UNIX filename. JRA.
-	 */
-	string_set(&fsp->fsp_name,fname);
-	fsp->wbmpx_ptr = NULL;
-	fsp->wcp = NULL; /* Write cache pointer. */
-
-	conn->num_files_open++;
-
-	return fsp;
-}
-
-/****************************************************************************
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
-files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
+files_struct *open_file_fchmod(connection_struct *conn, const char *fname, SMB_STRUCT_STAT *psbuf)
 {
 	files_struct *fsp = NULL;
 	BOOL fsp_open;
@@ -1021,7 +1070,9 @@ files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_
 	if(!fsp)
 		return NULL;
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0);
+	/* note! we must use a non-zero desired access or we don't get
+           a real file descriptor. Oh what a twisted web we weave. */
+	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,FILE_WRITE_DATA);
 
 	/* 
 	 * This is not a user visible file open.
@@ -1052,8 +1103,8 @@ int close_file_fchmod(files_struct *fsp)
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
-files_struct *open_directory(connection_struct *conn, char *fname,
-		SMB_STRUCT_STAT *psbuf, int share_mode, int smb_ofun, mode_t unixmode, int *action)
+files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf,
+			uint32 desired_access, int share_mode, int smb_ofun, mode_t unixmode, int *action)
 {
 	extern struct current_user current_user;
 	BOOL got_stat = False;
@@ -1152,6 +1203,7 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 	fsp->can_read = False;
 	fsp->can_write = False;
 	fsp->share_mode = share_mode;
+	fsp->desired_access = desired_access;
 	fsp->print_file = False;
 	fsp->modified = False;
 	fsp->oplock_type = NO_OPLOCK;
@@ -1183,6 +1235,9 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 
 	return fsp;
 }
+#if 0
+
+Old code - I have replaced with correct desired_access checking. JRA.
 
 /*******************************************************************
  Check if the share mode on a file allows it to be deleted or unlinked.
@@ -1191,149 +1246,107 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 
 BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
 {
-  int i;
-  int ret = False;
-  share_mode_entry *old_shares = 0;
-  int num_share_modes;
-  SMB_STRUCT_STAT sbuf;
-  pid_t pid = sys_getpid();
-  SMB_DEV_T dev;
-  SMB_INO_T inode;
+	int i;
+	int ret = False;
+	share_mode_entry *old_shares = 0;
+	int num_share_modes;
+	SMB_STRUCT_STAT sbuf;
+	pid_t pid = sys_getpid();
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 
-  if (vfs_stat(conn,fname,&sbuf) == -1)
-    return(True);
+	if (vfs_stat(conn,fname,&sbuf) == -1)
+		return(True);
 
-  dev = sbuf.st_dev;
-  inode = sbuf.st_ino;
+	dev = sbuf.st_dev;
+	inode = sbuf.st_ino;
 
-  lock_share_entry(conn, dev, inode);
-  num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+	lock_share_entry(conn, dev, inode);
+	num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
 
-  /*
-   * Check if the share modes will give us access.
-   */
+	/*
+	 * Check if the share modes will give us access.
+	 */
 
-  if(num_share_modes != 0)
-  {
-    BOOL broke_oplock;
+	if(num_share_modes != 0) {
+		BOOL broke_oplock;
 
-    do
-    {
+		do {
 
-      broke_oplock = False;
-      for(i = 0; i < num_share_modes; i++)
-      {
-        share_mode_entry *share_entry = &old_shares[i];
+			broke_oplock = False;
+			for(i = 0; i < num_share_modes; i++) {
+				share_mode_entry *share_entry = &old_shares[i];
 
-        /* 
-         * Break oplocks before checking share modes. See comment in
-         * open_file_shared for details. 
-         * Check if someone has an oplock on this file. If so we must 
-         * break it before continuing. 
-         */
-        if(BATCH_OPLOCK_TYPE(share_entry->op_type))
-        {
+				/* 
+				 * Break oplocks before checking share modes. See comment in
+				 * open_file_shared for details. 
+				 * Check if someone has an oplock on this file. If so we must 
+				 * break it before continuing. 
+				 */
+				if(BATCH_OPLOCK_TYPE(share_entry->op_type)) {
 
-#if 0
-
-/* JRA. Try removing this code to see if the new oplock changes
-   fix the problem. I'm dubious, but Andrew is recommending we
-   try this....
-*/
-
-          /*
-           * It appears that the NT redirector may have a bug, in that
-           * it tries to do an SMBmv on a file that it has open with a
-           * batch oplock, and then fails to respond to the oplock break
-           * request. This only seems to occur when the client is doing an
-           * SMBmv to the smbd it is using - thus we try and detect this
-           * condition by checking if the file being moved is open and oplocked by
-           * this smbd process, and then not sending the oplock break in this
-           * special case. If the file was open with a deny mode that 
-           * prevents the move the SMBmv will fail anyway with a share
-           * violation error. JRA.
-           */
-          if(rename_op && (share_entry->pid == pid))
-          {
-
-            DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
-batch oplocked file %s, dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (double)inode));
-
-            /* 
-             * This next line is a test that allows the deny-mode
-             * processing to be skipped. This seems to be needed as
-             * NT insists on the rename succeeding (in Office 9x no less !).
-             * This should be removed as soon as (a) MS fix the redirector
-             * bug or (b) NT SMB support in Samba makes NT not issue the
-             * call (as is my fervent hope). JRA.
-             */ 
-            continue;
-          }
-          else
-#endif /* 0 */
-          {
-
-            DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
+					DEBUG(5,("check_file_sharing: breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", share_entry->op_type, fname, (unsigned int)dev, (double)inode));
 
-            /* Oplock break.... */
-            unlock_share_entry(conn, dev, inode);
-            if(request_oplock_break(share_entry) == False)
-            {
-              DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
+					/* Oplock break.... */
+					unlock_share_entry(conn, dev, inode);
+
+					if(request_oplock_break(share_entry) == False) {
+						DEBUG(0,("check_file_sharing: FAILED when breaking oplock (%x) on file %s, \
 dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (double)inode));
 
-              SAFE_FREE(old_shares);
-              return False;
-            }
-            lock_share_entry(conn, dev, inode);
-            broke_oplock = True;
-            break;
-          }
-        }
+						SAFE_FREE(old_shares);
+						return False;
+					}
+					lock_share_entry(conn, dev, inode);
+					broke_oplock = True;
+					break;
+				}
 
-        /* 
-         * If this is a delete request and ALLOW_SHARE_DELETE is set then allow 
-         * this to proceed. This takes precedence over share modes.
-         */
+				/* 
+				 * If this is a delete request and ALLOW_SHARE_DELETE is set then allow 
+				 * this to proceed. This takes precedence over share modes.
+				 */
 
-        if(!rename_op && GET_ALLOW_SHARE_DELETE(share_entry->share_mode))
-          continue;
+				if(!rename_op && GET_ALLOW_SHARE_DELETE(share_entry->share_mode))
+					continue;
 
-        /* 
-         * Someone else has a share lock on it, check to see 
-         * if we can too.
-         */
+				/* 
+				 * Someone else has a share lock on it, check to see 
+				 * if we can too.
+				 */
+       			 	if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || 
+							(share_entry->pid != pid))
+					goto free_and_exit;
+	
+			} /* end for */
 
-        if ((GET_DENY_MODE(share_entry->share_mode) != DENY_DOS) || 
-	    (share_entry->pid != pid))
-          goto free_and_exit;
+			if(broke_oplock) {
+				SAFE_FREE(old_shares);
+				num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+			}
+		} while(broke_oplock);
+	}
 
-      } /* end for */
+	/*
+	 * XXXX exactly what share mode combinations should be allowed for
+	 * deleting/renaming?
+	 */
 
-      if(broke_oplock)
-      {
-        SAFE_FREE(old_shares);
-        num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
-      }
-    } while(broke_oplock);
-  }
+	/* 
+	 * If we got here then either there were no share modes or
+	 * all share modes were DENY_DOS and the pid == getpid() or
+	 * delete access was requested and all share modes had the
+	 * ALLOW_SHARE_DELETE bit set (takes precedence over other
+	 * share modes).
+	 */
 
-  /* XXXX exactly what share mode combinations should be allowed for
-     deleting/renaming? */
-  /* 
-   * If we got here then either there were no share modes or
-   * all share modes were DENY_DOS and the pid == getpid() or
-   * delete access was requested and all share modes had the
-   * ALLOW_SHARE_DELETE bit set (takes precedence over other
-   * share modes).
-   */
-
-  ret = True;
+	ret = True;
 
 free_and_exit:
 
-  unlock_share_entry(conn, dev, inode);
-  SAFE_FREE(old_shares);
-  return(ret);
+	unlock_share_entry(conn, dev, inode);
+	SAFE_FREE(old_shares);
+	return(ret);
 }
+#endif

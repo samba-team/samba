@@ -79,7 +79,7 @@ static pstring smbc_user;
  * We accept smb://[[[domain;]user[:password@]]server[/share[/path[/file]]]]
  * 
  * smb://       means show all the workgroups
- * smb://name/  means, if name<1D> exists, list servers in workgroup,
+ * smb://name/  means, if name<1D> or name<1B> exists, list servers in workgroup,
  *              else, if name<20> exists, list all shares for server ...
  */
 
@@ -245,9 +245,9 @@ struct smbc_server *smbc_server(char *server, char *share,
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
+	int tried_reverse = 0;
   
-	ip = ipzero;
+	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
 	/* try to use an existing connection */
@@ -305,7 +305,7 @@ struct smbc_server *smbc_server(char *server, char *share,
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!cli_initialise(&c) || !cli_connect(&c, server_n, &ip)) {
@@ -319,6 +319,30 @@ struct smbc_server *smbc_server(char *server, char *share,
 		if (strcmp(called.name, "*SMBSERVER")) {
 			make_nmb_name(&called , "*SMBSERVER", 0x20);
 			goto again;
+		}
+		else {  /* Try one more time, but ensure we don't loop */
+
+		  /* Only try this if server is an IP address ... */
+
+		  if (is_ipaddress(server) && !tried_reverse) {
+		    fstring remote_name;
+		    struct in_addr rem_ip;
+
+		    if (!inet_aton(server, &rem_ip)) {
+		      DEBUG(4, ("Could not convert IP address %s to struct in_addr\n", server));
+		      errno = ENOENT;
+		      return NULL;
+		    }
+
+		    tried_reverse++; /* Yuck */
+
+		    if (name_status_find("*", 0, 0, rem_ip, remote_name)) {
+		      make_nmb_name(&called, remote_name, 0x20);
+		      goto again;
+		    }
+
+
+		  }
 		}
 		errno = ENOENT;
 		return NULL;
@@ -1590,8 +1614,11 @@ int smbc_opendir(const char *fname)
 		}
 
 		/* We have server and share and path empty ... so list the workgroups */
+                /* first try to get the LMB for our workgroup, and if that fails,     */
+                /* try the DMB                                                        */
 
-		if (!resolve_name(lp_workgroup(), &rem_ip, 0x1d)) {
+		if (!(resolve_name(lp_workgroup(), &rem_ip, 0x1d) ||
+                      resolve_name(lp_workgroup(), &rem_ip, 0x1b))) {
       
 			errno = EINVAL;  /* Something wrong with smb.conf? */
 			return -1;
@@ -1604,7 +1631,7 @@ int smbc_opendir(const char *fname)
 
 		if (!name_status_find("*", 0, 0, rem_ip, server)) {
 
-			DEBUG(0,("Could not get the name of local master browser for server %s\n", server));
+			DEBUG(0,("Could not get the name of local/domain master browser for server %s\n", server));
 			errno = EINVAL;
 			return -1;
 
@@ -1659,11 +1686,12 @@ int smbc_opendir(const char *fname)
 	
 			}
 
-			/* Check to see if <server><1D> translates, or <server><20> translates */
+			/* Check to see if <server><1D>, <server><1B>, or <server><20> translates */
 			/* However, we check to see if <server> is an IP address first */
 
 			if (!is_ipaddress(server) &&  /* Not an IP addr so check next */
-			    resolve_name(server, &rem_ip, 0x1d)) { /* Found LMB */
+			    (resolve_name(server, &rem_ip, 0x1d) ||   /* Found LMB */
+                                    resolve_name(server, &rem_ip, 0x1b) )) { /* Found DMB */
 				pstring buserver;
 
 				smbc_file_table[slot]->dir_type = SMBC_SERVER;
@@ -1675,7 +1703,7 @@ int smbc_opendir(const char *fname)
 
 				if (!name_status_find("*", 0, 0, rem_ip, buserver)) {
 
-					DEBUG(0, ("Could not get name of local master browser for server %s\n", server));
+					DEBUG(0, ("Could not get name of local/domain master browser for server %s\n", server));
 					errno = EPERM;  /* FIXME, is this correct */
 					return -1;
 
@@ -1912,7 +1940,7 @@ struct smbc_dirent *smbc_readdir(unsigned int fd)
 
 		/* Hmmm, do I even need to copy it? */
 
-		bcopy(dirent, smbc_local_dirent, dirent->dirlen); /* Copy the dirent */
+		memcpy(smbc_local_dirent, dirent, dirent->dirlen); /* Copy the dirent */
 		dirp = (struct smbc_dirent *)smbc_local_dirent;
 		dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
 		fe->dir_next = fe->dir_next->next;
@@ -2001,7 +2029,7 @@ int smbc_getdents(unsigned int fd, struct smbc_dirent *dirp, int count)
 
 		dirent = dir->dirent;
 
-		bcopy(dirent, ndir, reqd); /* Copy the data in ... */
+		memcpy(ndir, dirent, reqd); /* Copy the data in ... */
     
 		((struct smbc_dirent *)ndir)->comment = 
 			(char *)(&((struct smbc_dirent *)ndir)->name + dirent->namelen + 1);
@@ -2244,6 +2272,10 @@ off_t smbc_telldir(int fd)
 
 	}
 
+	/*
+	 * This causes problems on some UNIXens ... wonder who is using
+	 * it ... FIXME.
+	 */
 	return (off_t) fe->dir_next;
 
 }

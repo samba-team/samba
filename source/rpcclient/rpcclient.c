@@ -207,7 +207,7 @@ void fetch_machine_sid(struct cli_state *cli)
 
 	if (!(mem_ctx=talloc_init()))
 	{
-		DEBUG(0,("fetch_domain_sid: talloc_init returned NULL!\n"));
+		DEBUG(0,("fetch_machine_sid: talloc_init returned NULL!\n"));
 		goto error;
 	}
 
@@ -248,27 +248,50 @@ void fetch_machine_sid(struct cli_state *cli)
 	exit(1);
 }
 
-/* Initialise client credentials for authenticated pipe access */
+/* List the available commands on a given pipe */
 
-void init_rpcclient_creds(struct ntuser_creds *creds, char* username,
-			  char* domain, char* password)
+static NTSTATUS cmd_listcommands(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+                         int argc, char **argv)
 {
-	ZERO_STRUCTP(creds);
+	struct cmd_list *tmp;
+        struct cmd_set *tmp_set;
+	int i;
 
-	if (lp_encrypted_passwords()) {
-		pwd_make_lm_nt_16(&creds->pwd, password);
-	} else {
-		pwd_set_cleartext(&creds->pwd, password);
-	}
+        /* Usage */
 
-	fstrcpy(creds->user_name, username);
-	fstrcpy(creds->domain, domain);
+        if (argc != 2) {
+                printf("Usage: %s <pipe>\n", argv[0]);
+                return NT_STATUS_OK;
+        }
 
-	if (! *username) {
-		creds->pwd.null_pwd = True;
-	}
+        /* Help on one command */
+
+	for (tmp = cmd_list; tmp; tmp = tmp->next) 
+	{
+		tmp_set = tmp->cmd_set;
+		
+		if (!StrCaseCmp(argv[1], tmp_set->name))
+		{
+			printf("Available commands on the %s pipe:\n\n", tmp_set->name);
+
+			i = 0;
+			tmp_set++;
+			while(tmp_set->name) {
+				printf("%20s", tmp_set->name);
+                                tmp_set++;
+				i++;
+				if (i%4 == 0)
+					printf("\n");
+			}
+			
+			/* drop out of the loop */
+			break;
+		}
+        }
+	printf("\n\n");
+
+	return NT_STATUS_OK;
 }
-
 
 /* Display help on commands */
 
@@ -365,6 +388,7 @@ static struct cmd_set rpcclient_commands[] = {
 	{ "help", 	cmd_help, 	NULL,	"Get help on commands", "[command]" },
 	{ "?", 		cmd_help, 	NULL,	"Get help on commands", "[command]" },
 	{ "debuglevel", cmd_debuglevel, NULL,	"Set debug level", "level" },
+	{ "list",	cmd_listcommands, NULL,	"List available commands on <pipe>", "pipe" },
 	{ "exit", 	cmd_quit, 	NULL,	"Exit program", "" },
 	{ "quit", 	cmd_quit, 	NULL,	"Exit program", "" },
 
@@ -439,14 +463,14 @@ static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry,
 		/* Create argument list */
 
 		argv = (char **)malloc(sizeof(char *) * argc);
+                memset(argv, 0, sizeof(char *) * argc);
+
 		if (!argv) {
 			fprintf(stderr, "out of memory\n");
 			result = NT_STATUS_NO_MEMORY;
                         goto done;
 		}
 					
-                memset(argv, 0, sizeof(char *) * argc);
-
 		p = cmd;
 		argc = 0;
 					
@@ -556,47 +580,6 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	return result;
 }
 
-/************************************************************************/
-struct cli_state *setup_connection(struct cli_state *cli, char *system_name,
-				   struct ntuser_creds *creds)
-{
-	struct in_addr dest_ip;
-	struct nmb_name calling, called;
-	fstring dest_host;
-	extern pstring global_myname;
-	struct ntuser_creds anon;
-
-	/* Initialise cli_state information */
-	if (!cli_initialise(cli)) {
-		return NULL;
-	}
-
-	if (!creds) {
-		ZERO_STRUCT(anon);
-		anon.pwd.null_pwd = 1;
-		creds = &anon;
-	}
-
-	cli_init_creds(cli, creds);
-
-	/* Establish a SMB connection */
-	if (!resolve_srv_name(system_name, dest_host, &dest_ip)) {
-                fprintf(stderr, "Could not resolve %s\n", dest_host);
-		return NULL;
-	}
-
-	make_nmb_name(&called, dns_to_netbios_name(dest_host), 0x20);
-	make_nmb_name(&calling, dns_to_netbios_name(global_myname), 0);
-
-	if (!cli_establish_connection(cli, dest_host, &dest_ip, &calling, 
-				      &called, "IPC$", "IPC", False, True)) {
-                fprintf(stderr, "Error establishing IPC$ connection\n");
-		return NULL;
-	}
-	
-	return cli;
-}
-
 
 /* Print usage information */
 static void usage(void)
@@ -617,7 +600,7 @@ static void usage(void)
 
 /* Main function */
 
- int main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 	extern char 		*optarg;
 	extern int 		optind;
@@ -628,86 +611,109 @@ static void usage(void)
 	int 			olddebug;
 	pstring 		cmdstr = "", 
 				servicesf = CONFIGFILE;
-	struct ntuser_creds	creds;
-	struct cli_state	cli;
 	fstring 		password,
 				username,
 				domain,
 				server;
+	struct cli_state	*cli;
 	pstring			logfile;
 	struct cmd_set **cmd_set;
+	struct in_addr 		server_ip;
+	NTSTATUS 		nt_status;
+	extern BOOL AllowDebugChange;
 
 	setlinebuf(stdout);
 
 	DEBUGLEVEL = 1;
-
-	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
-		switch (opt) {
-		case 'A':
-			/* only get the username, password, and domain from the file */
-			read_authfile (optarg, username, password, domain);
-			if (strlen (password))
-				got_pass = True;
-			break;
-
-		case 'c':
-			pstrcpy(cmdstr, optarg);
-			break;
-
-		case 'd':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
-			lp_set_logfile(logfile);
-			interactive = False;
-			break;
-
-		case 'N':
-			got_pass = True;
-			break;
-			
-		case 's':
-			pstrcpy(servicesf, optarg);
-			break;
-
-		case 'U': {
-			char *lp;
-			pstrcpy(username,optarg);
-			if ((lp=strchr(username,'%'))) {
-				*lp = 0;
-				pstrcpy(password,lp+1);
-				got_pass = True;
-				memset(strchr(optarg,'%')+1,'X',strlen(password));
-			}
-			break;
-		}
-		
-		case 'W':
-			pstrcpy(domain, optarg);
-			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
-		}
-	}
-
-	argv += optind;
-	argc -= optind;
+	AllowDebugChange = False;
 
 	/* Parse options */
-	if (argc == 0) {
+
+	if (argc == 1) {
 		usage();
 		return 0;
 	}
-	
-	if (strncmp("//", argv[0], 2) == 0 || strncmp("\\\\", argv[0], 2) == 0)
-		argv[0] += 2;
 
-	pstrcpy(server, argv[0]);
+        /*
+	 * M. Sweet: getopt() behaves slightly differently on various
+	 * platforms.  The following loop ensures that the System V,
+	 * BSD, and Linux (glibc) implementations work similarly to
+	 * allow the server name anywhere on the command-line.
+	 */
+
+	pstrcpy(server, "");
+
+        while (argc > optind) {
+		while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
+			switch (opt) {
+			case 'A':
+				/* only get the username, password, and domain from the file */
+				read_authfile (optarg, username, password, domain);
+				if (strlen (password))
+					got_pass = True;
+				break;
+
+			case 'c':
+				pstrcpy(cmdstr, optarg);
+				break;
+
+			case 'd':
+				DEBUGLEVEL = atoi(optarg);
+				break;
+
+			case 'l':
+				slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
+				lp_set_logfile(logfile);
+				interactive = False;
+				break;
+
+			case 'N':
+				got_pass = True;
+				break;
+
+			case 's':
+				pstrcpy(servicesf, optarg);
+				break;
+
+			case 'U': {
+				char *lp;
+				pstrcpy(username,optarg);
+				if ((lp=strchr(username,'%'))) {
+					*lp = 0;
+					pstrcpy(password,lp+1);
+					got_pass = True;
+					memset(strchr(optarg,'%')+1,'X',strlen(password));
+				}
+				break;
+			}
+
+			case 'W':
+				pstrcpy(domain, optarg);
+				break;
+
+			case 'h':
+			default:
+				usage();
+				return 1;
+			}
+		}
+
+		if (argc > optind) {
+			if (strncmp("//", argv[optind], 2) == 0 ||
+			    strncmp("\\\\", argv[optind], 2) == 0)
+			{
+				argv[optind] += 2;
+			}
+
+			pstrcpy(server, argv[optind]);
+			optind ++;
+		}
+	}
+
+	if (!server[0]) {
+		usage();
+		return 1;
+	}
 
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
@@ -733,31 +739,40 @@ static void usage(void)
 	get_myname((*global_myname)?NULL:global_myname);
 	strupper(global_myname);
 	
-	/*
-	 * initialize the credentials struct.  Get password
-	 * from stdin if necessary
-	 */
-	if (!strlen(username) && !got_pass)
-		get_username(username);
-		
-	if (!got_pass) {
-		init_rpcclient_creds (&creds, username, domain, "");
-		pwd_read(&creds.pwd, "Enter Password: ", lp_encrypted_passwords());
-	}
-	else {
-		init_rpcclient_creds (&creds, username, domain, password);
-	}
-	memset(password,'X',sizeof(password));
+	/* Resolve the IP address */
 
-	/* open a connection to the specified server */
-	ZERO_STRUCTP (&cli);
-	if (!setup_connection (&cli, server, &creds)) {
+	if (!resolve_name(server, &server_ip, 0x20))  {
+		DEBUG(1,("Unable to resolve %s\n", server));
 		return 1;
 	}
 	
-	/* There are no pointers in ntuser_creds struct so zero it out */
+	/*
+	 * Get password
+	 * from stdin if necessary
+	 */
+		
+	if (!got_pass) {
+		char *pass = getpass("Password:");
+		if (pass) {
+			fstrcpy(password, pass);
+	}
+	}
 
-	ZERO_STRUCTP (&creds);
+	if (!strlen(username) && !got_pass)
+		get_username(username);
+		
+	nt_status = cli_full_connection(&cli, global_myname, server, 
+					&server_ip, 0,
+					"IPC$", "IPC",  
+					username, domain,
+					password, strlen(password));
+	
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		DEBUG(1,("Cannot connect to server.  Error was %s\n", nt_errstr(nt_status)));
+		return 1;
+	}
+	
+	memset(password,'X',sizeof(password));
 	
 	/* Load command lists */
 
@@ -769,7 +784,7 @@ static void usage(void)
 		cmd_set++;
 	}
 
-	fetch_machine_sid(&cli);
+	fetch_machine_sid(cli);
  
        /* Do anything specified with -c */
         if (cmdstr[0]) {
@@ -777,10 +792,10 @@ static void usage(void)
                 char    *p = cmdstr;
  
                 while((cmd=next_command(&p)) != NULL) {
-			printf("%s\n", cmd);
-                        process_cmd(&cli, cmd);
+                        process_cmd(cli, cmd);
                 }
  
+		cli_shutdown(cli);
                 return 0;
         }
 
@@ -798,8 +813,9 @@ static void usage(void)
 			break;
 
 		if (line[0] != '\n')
-			process_cmd(&cli, line);
+			process_cmd(cli, line);
 	}
 
+	cli_shutdown(cli);
 	return 0;
 }

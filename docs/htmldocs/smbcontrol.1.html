@@ -24,7 +24,7 @@ NAME="AEN5"
 ></A
 ><H2
 >Name</H2
->smbcontrol&nbsp;--&nbsp;send messages to smbd or nmbd processes</DIV
+>smbcontrol&nbsp;--&nbsp;send messages to smbd, nmbd or winbindd processes</DIV
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
@@ -65,18 +65,23 @@ CLASS="COMMAND"
 HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
-> or 
+>, 
 	an <A
 HREF="nmbd.8.html"
 TARGET="_top"
 >nmbd(8)</A
-> daemon running on the 
-	system.</P
+>
+	or a <A
+HREF="winbindd.8.html"
+TARGET="_top"
+>winbindd(8)</A
+> 
+	daemon running on the system.</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN25"
+NAME="AEN26"
 ></A
 ><H2
 >OPTIONS</H2
@@ -175,8 +180,9 @@ CLASS="CONSTANT"
 		message to smbd which will then close the client connections to
 		the named share. Note that this doesn't affect client connections
 		to any other shares. This message-type takes an argument of the
-		share name for which client connections will be close, or the
+		share name for which client connections will be closed, or the
 		"*" character which will close all currently open shares.
+		This may be useful if you made changes to the access controls on the share.
 		This message can only be sent to <TT
 CLASS="CONSTANT"
 >smbd</TT
@@ -220,7 +226,7 @@ CLASS="CONSTANT"
 		collection, "off" to turn off profile stats collection, "count"
 		to enable only collection of count stats (time stats are 
 		disabled), and "flush" to zero the current profile stats. This can 
-		be sent to any of the destinations.</P
+		be sent to any smbd or nmbd destinations.</P
 ><P
 >The <TT
 CLASS="CONSTANT"
@@ -236,7 +242,7 @@ CLASS="CONSTANT"
 > message-type sends 
 		a "request profile level" message.  The current profile level 
 		setting is returned by a  "profilelevel" message. This can be sent 
-		to any of the destinations.</P
+		to any smbd or nmbd destinations.</P
 ><P
 >The <TT
 CLASS="CONSTANT"
@@ -249,14 +255,6 @@ CLASS="CONSTANT"
 CLASS="CONSTANT"
 >smbd</TT
 >.</P
-><P
->The <TT
-CLASS="CONSTANT"
->close-share</TT
-> message-type sends a
-		message to smbd which forces smbd to close the share that was
-		specified as an argument. This may be useful if you made changes
-		to the access controls on the share.  </P
 ></DD
 ><DT
 >parameters</DT
@@ -270,7 +268,7 @@ CLASS="CONSTANT"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN82"
+NAME="AEN81"
 ></A
 ><H2
 >VERSION</H2
@@ -281,7 +279,7 @@ NAME="AEN82"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN85"
+NAME="AEN84"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -307,7 +305,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN92"
+NAME="AEN91"
 ></A
 ><H2
 >AUTHOR</H2

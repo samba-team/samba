@@ -118,7 +118,7 @@ void sysv_printer_fn(void (*fn)(char *, char *))
 	if (printers == NULL)
 		populate_printers();
 	for (tmp = printers; tmp != NULL; tmp = tmp->next)
-		(fn)(unix_to_dos(tmp->name,False), "");
+		(fn)(unix_to_dos_static(tmp->name), "");
 }
 
 

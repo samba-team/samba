@@ -74,7 +74,7 @@ static BOOL fname_equal(char *name1, char *name2)
 /****************************************************************************
  Mangle the 2nd name and check if it is then equal to the first name.
 ****************************************************************************/
-static BOOL mangled_equal(char *name1, char *name2)
+static BOOL mangled_equal(char *name1, char *name2, int snum)
 {
   pstring tmpname;
 
@@ -82,7 +82,11 @@ static BOOL mangled_equal(char *name1, char *name2)
     return(False);
 
   pstrcpy(tmpname,name2);
+#if 1
   mangle_name_83(tmpname);
+#else
+  name_map_mangle(tmpname,True,False,snum);
+#endif
 
   return(strequal(name1,tmpname));
 }
@@ -438,7 +442,7 @@ BOOL check_name(char *name,connection_struct *conn)
 #ifdef S_ISLNK
   if (!lp_symlinks(SNUM(conn))) {
       SMB_STRUCT_STAT statbuf;
-      if ( (conn->vfs_ops.lstat(conn,dos_to_unix(name,False),&statbuf) != -1) &&
+      if ( (conn->vfs_ops.lstat(conn,dos_to_unix_static(name),&statbuf) != -1) &&
                 (S_ISLNK(statbuf.st_mode)) ) {
           DEBUG(3,("check_name: denied: file path name %s is a symlink\n",name));
           ret=0; 
@@ -515,7 +519,7 @@ static BOOL scan_directory(char *path, char *name,connection_struct *conn,BOOL d
        * against unmangled name.
        */
 
-      if ((mangled && mangled_equal(name,name2)) || fname_equal(name, dname)) {
+      if ((mangled && mangled_equal(name,name2,SNUM(conn))) || fname_equal(name, dname)) {
         /* we've found the file, change it's name and return */
         if (docache)
           DirCacheAdd(path,name,dname,SNUM(conn));

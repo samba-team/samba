@@ -449,9 +449,8 @@ struct smbw_server *smbw_server(char *server, char *share)
 	fstring group;
 	pstring ipenv;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 
-	ip = ipzero;
+	zero_ip(&ip);
 	ZERO_STRUCT(c);
 
 	get_auth_data_fn(server, share, &workgroup, &username, &password);
@@ -502,7 +501,7 @@ struct smbw_server *smbw_server(char *server, char *share)
  again:
 	slprintf(ipenv,sizeof(ipenv)-1,"HOST_%s", server_n);
 
-	ip = ipzero;
+	zero_ip(&ip);
 	if ((p=smbw_getshared(ipenv))) {
 		ip = *(interpret_addr2(p));
 	}

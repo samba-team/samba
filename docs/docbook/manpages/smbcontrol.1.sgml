@@ -9,7 +9,7 @@
 
 <refnamediv>
 	<refname>smbcontrol</refname>
-	<refpurpose>send messages to smbd or nmbd processes</refpurpose>
+	<refpurpose>send messages to smbd, nmbd or winbindd processes</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
@@ -33,9 +33,10 @@
 	Samba</ulink> suite.</para>
 
 	<para><command>smbcontrol</command> is a very small program, which 
-	sends messages to an <ulink url="smbd.8.html">smbd(8)</ulink> or 
-	an <ulink url="nmbd.8.html">nmbd(8)</ulink> daemon running on the 
-	system.</para>
+	sends messages to an <ulink url="smbd.8.html">smbd(8)</ulink>, 
+	an <ulink url="nmbd.8.html">nmbd(8)</ulink>
+	or a <ulink url="winbindd.8.html">winbindd(8)</ulink> 
+	daemon running on the system.</para>
 </refsect1>
 
 
@@ -81,8 +82,9 @@
 		message to smbd which will then close the client connections to
 		the named share. Note that this doesn't affect client connections
 		to any other shares. This message-type takes an argument of the
-		share name for which client connections will be close, or the
+		share name for which client connections will be closed, or the
 		"*" character which will close all currently open shares.
+		This may be useful if you made changes to the access controls on the share.
 		This message can only be sent to <constant>smbd</constant>.</para>
 
 		<para>The <constant>debug</constant> message-type allows 
@@ -105,7 +107,7 @@
 		collection, "off" to turn off profile stats collection, "count"
 		to enable only collection of count stats (time stats are 
 		disabled), and "flush" to zero the current profile stats. This can 
-		be sent to any of the destinations.</para>
+		be sent to any smbd or nmbd destinations.</para>
 
 		<para>The <constant>debuglevel</constant> message-type sends 
 		a "request debug level" message. The current debug level setting 
@@ -115,18 +117,13 @@
 		<para>The <constant>profilelevel</constant> message-type sends 
 		a "request profile level" message.  The current profile level 
 		setting is returned by a  "profilelevel" message. This can be sent 
-		to any of the destinations.</para>
+		to any smbd or nmbd destinations.</para>
 
 		<para>The <constant>printer-notify</constant> message-type sends a 
 		message to smbd which in turn sends a printer notify message to 
 		any Windows NT clients connected to  a printer.  This message-type 
 		takes an argument of the printer name to  send notify messages to.   
 		This message can only be sent to <constant>smbd</constant>.</para>
-
-		<para>The <constant>close-share</constant> message-type sends a
-		message to smbd which forces smbd to close the share that was
-		specified as an argument. This may be useful if you made changes
-		to the access controls on the share.  </para>
 		</listitem>
 		</varlistentry>
 

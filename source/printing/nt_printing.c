@@ -43,11 +43,34 @@ static TDB_CONTEXT *tdb_printers; /* used for printers files */
 
 /* Map generic permissions to printer object specific permissions */
 
-struct generic_mapping printer_generic_mapping = {
+GENERIC_MAPPING printer_generic_mapping = {
 	PRINTER_READ,
 	PRINTER_WRITE,
 	PRINTER_EXECUTE,
 	PRINTER_ALL_ACCESS
+};
+
+STANDARD_MAPPING printer_std_mapping = {
+	PRINTER_READ,
+	PRINTER_WRITE,
+	PRINTER_EXECUTE,
+	PRINTER_ALL_ACCESS
+};
+
+/* Map generic permissions to print server object specific permissions */
+
+GENERIC_MAPPING printserver_generic_mapping = {
+	SERVER_READ,
+	SERVER_WRITE,
+	SERVER_EXECUTE,
+	SERVER_ALL_ACCESS
+};
+
+STANDARD_MAPPING printserver_std_mapping = {
+	SERVER_READ,
+	SERVER_WRITE,
+	SERVER_EXECUTE,
+	SERVER_ALL_ACCESS
 };
 
 /* We need one default form to support our default printer. Msoft adds the
@@ -292,6 +315,12 @@ BOOL nt_printing_init(void)
 
 	update_c_setprinter(True);
 
+	/* 
+	 * register callback to handle updating printers as new
+  	 * drivers are installed
+	 */
+	message_register(MSG_PRINTER_DRVUPGRADE, do_drv_upgrade_printer);
+
 	return True;
 }
 
@@ -452,7 +481,7 @@ int write_ntforms(nt_forms_struct **list, int number)
 			       (*list)[i].bottom);
 		if (len > sizeof(buf)) break;
 		slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[i].name);
-        dos_to_unix(key, True);            /* Convert key to unix-codepage */
+        dos_to_unix(key);            /* Convert key to unix-codepage */
 		kbuf.dsize = strlen(key)+1;
 		kbuf.dptr = key;
 		dbuf.dsize = len;
@@ -539,7 +568,7 @@ BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, WERROR
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", FORMS_PREFIX, (*list)[n].name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	kbuf.dsize = strlen(key)+1;
 	kbuf.dptr = key;
 	if (tdb_delete(tdb_forms, kbuf) != 0) {
@@ -1606,7 +1635,7 @@ static uint32 add_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s/%d/%s", DRIVERS_PREFIX, architecture, driver->cversion, driver->name);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	DEBUG(5,("add_a_printer_driver_3: Adding driver with key %s\n", key ));
 
@@ -1817,8 +1846,8 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
 
 	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
-	trim_string(info3->configfile, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->configfile);
+	trim_string(info3->driverpath, "\\print$\\WIN40\\0\\", 0);
+	pstrcat(line, info3->driverpath);
 	pstrcat(line, ":");
 	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->datafile);
@@ -1987,7 +2016,7 @@ uint32 del_a_printer(char *sharename)
 	TDB_DATA kbuf;
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr=key;
 	kbuf.dsize=strlen(key)+1;
@@ -2083,7 +2112,7 @@ static WERROR update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, info->sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2194,10 +2223,6 @@ void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
-/*
- * should I init this ones ???
-	nt_devmode->devicename
-*/
 
 	char adevice[32];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
@@ -2600,7 +2625,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key)-1, "%s%s", PRINTERS_PREFIX, sharename);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -2641,7 +2666,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
 			info.printername);
 	fstrcpy(info.printername, printername);
-
+	
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
@@ -2770,8 +2795,17 @@ static uint32 rev_changeid(void)
 
 	get_process_uptime(&tv);
 
+#if 1	/* JERRY */
 	/* Return changeid as msec since spooler restart */
 	return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+#else
+	/*
+	 * This setting seems to work well but is too untested
+	 * to replace the above calculation.  Left in for experiementation
+	 * of the reader            --jerry (Tue Mar 12 09:15:05 CST 2002)
+	 */
+	return tv.tv_sec * 10 + tv.tv_usec / 100000;
+#endif
 }
 
 /*
@@ -2840,7 +2874,7 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  Initialize printer devmode & data with previously saved driver init values.
 ****************************************************************************/
 
-static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
+static BOOL set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 {
 	int                     len = 0;
 	pstring                 key;
@@ -2862,13 +2896,13 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info);
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info_ptr->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb_drivers, kbuf);
-    if (!dbuf.dptr) {
+	if (!dbuf.dptr) {
 		/*
 		 * When changing to a driver that has no init info in the tdb, remove
 		 * the previous drivers init info and leave the new on blank.
@@ -2889,11 +2923,49 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
 	ZERO_STRUCT(info.devmode->devicename);
 	fstrcpy(info.devmode->devicename, info_ptr->printername);
 
+
+	/*
+	 * NT/2k does not change out the entire DeviceMode of a printer
+	 * when changing the driver.  Only the driverextra, private, & 
+	 * driverversion fields.   --jerry  (Thu Mar 14 08:58:43 CST 2002)
+	 *
+	 * Later e4xamination revealed that Windows NT/2k does reset the
+	 * the printer's device mode, bit **only** when you change a 
+	 * property of the device mode such as the page orientation.
+	 * --jerry
+	 */
+
+#if 1	/* JERRY */
+
 	/* 
 	 * 	Bind the saved DEVMODE to the new the printer.
 	 */
 	free_nt_devicemode(&info_ptr->devmode);
 	info_ptr->devmode = info.devmode;
+#else
+	/* copy the entire devmode if we currently don't have one */
+
+	if (!info_ptr->devmode) {
+		DEBUG(10,("set_driver_init_2: Current Devmode is NULL.  Copying entire Device Mode\n"));
+		info_ptr->devmode = info.devmode;
+	}
+	else {
+		/* only set the necessary fields */
+
+		DEBUG(10,("set_driver_init_2: Setting driverversion [0x%x] and private data [0x%x]\n",
+			info.devmode->driverversion, info.devmode->driverextra));
+
+		info_ptr->devmode->driverversion = info.devmode->driverversion;
+
+		SAFE_FREE(info_ptr->devmode->private);
+		info_ptr->devmode->private = NULL;
+
+		if (info.devmode->driverversion)
+			info_ptr->devmode->private = memdup(info.devmode->private, info.devmode->driverversion);
+
+		free_nt_devicemode(&info.devmode);
+	}
+#endif
 
 	DEBUG(10,("set_driver_init_2: Set printer [%s] init DEVMODE for driver [%s]\n",
 			info_ptr->printername, info_ptr->drivername));
@@ -2915,19 +2987,19 @@ static uint32 set_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info_ptr)
  is bound to the new printer.
 ****************************************************************************/
 
-uint32 set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
+BOOL set_driver_init(NT_PRINTER_INFO_LEVEL *printer, uint32 level)
 {
-	uint32 result;
+	BOOL result = False;
 	
-	switch (level)
+	switch (level) 
 	{
 		case 2:
-		{
-			result=set_driver_init_2(printer->info_2);
+			result = set_driver_init_2(printer->info_2);
 			break;
-		}
+			
 		default:
-			result=1;
+			DEBUG(0,("set_driver_init: Programmer's error!  Unknown driver_init level [%d]\n",
+				level));
 			break;
 	}
 	
@@ -2973,7 +3045,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	}
 
 	slprintf(key, sizeof(key)-1, "%s%s", DRIVER_INIT_PREFIX, info->drivername);
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 
 	kbuf.dptr = key;
 	kbuf.dsize = strlen(key)+1;
@@ -3078,7 +3150,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 	 * When the DEVMODE is already set on the printer, don't try to unpack it.
 	 */
 
-	if (!printer->info_2->devmode) {
+	if (!printer->info_2->devmode && param->data_len) {
 		/*
 		 * Set devmode on printer info, so entire printer initialization can be
 		 * saved to tdb.
@@ -3091,7 +3163,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, NT_PRINTER_PARA
 			status = WERR_NOMEM;
 			goto done;
 		}
-	
+		
 		ZERO_STRUCTP(nt_devmode);
 
 		/*
@@ -3203,7 +3275,7 @@ WERROR get_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level, fstring s
 			break;
 	}
 	
-	DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", sharename, (unsigned int)level, werror_str(result)));
+	DEBUG(10,("get_a_printer: [%s] level %u returning %s\n", sharename, (unsigned int)level, dos_errstr(result)));
 
 	return result;
 }
@@ -3639,7 +3711,8 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	DOM_SID owner_sid;
 	size_t sd_size;
 	enum SID_NAME_USE name_type;
-
+	fstring dos_domain;
+	
 	/* Create an ACE where Everyone is allowed to print */
 
 	init_sec_access(&sa, PRINTER_ACE_PRINT);
@@ -3649,7 +3722,14 @@ static SEC_DESC_BUF *construct_default_printer_sdb(TALLOC_CTX *ctx)
 	/* Make the security descriptor owned by the Administrators group
 	   on the PDC of the domain. */
 
-	if (winbind_lookup_name(lp_workgroup(), &owner_sid, &name_type)) {
+	/* Note that for hysterical raisins, the argument to
+	   secrets_fetch_domain_sid() must be in dos codepage format.  
+	   Aargh! */
+
+	fstrcpy(dos_domain, lp_workgroup());
+	unix_to_dos(dos_domain);
+
+	if (secrets_fetch_domain_sid(dos_domain, &owner_sid)) {
 		sid_append_rid(&owner_sid, DOMAIN_USER_RID_ADMIN);
 	} else {
 
@@ -3746,7 +3826,7 @@ BOOL nt_printing_getsec(TALLOC_CTX *ctx, char *printername, SEC_DESC_BUF **secde
 
 		/* Change sd owner to workgroup administrator */
 
-		if (winbind_lookup_name(lp_workgroup(), &owner_sid,
+		if (winbind_lookup_name(NULL, lp_workgroup(), &owner_sid,
 					&name_type)) {
 			SEC_DESC_BUF *new_secdesc_ctr = NULL;
 			SEC_DESC *psd = NULL;
@@ -3972,6 +4052,7 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
+#if 0	/* JERRY - not used */
 /****************************************************************************
  Attempt to write a default device.
 *****************************************************************************/
@@ -4043,3 +4124,4 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
+#endif	/* JERRY */

@@ -16,7 +16,6 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>rpcclient</command>
-		<arg choice="req">server</arg>
 		<arg choice="opt">-A authfile</arg>
 		<arg choice="opt">-c &lt;command string&gt;</arg>
 		<arg choice="opt">-d debuglevel</arg>
@@ -27,6 +26,7 @@
 		<arg choice="opt">-U username[%password]</arg>
 		<arg choice="opt">-W workgroup</arg>
 		<arg choice="opt">-N</arg>
+		<arg choice="req">server</arg>
 	</cmdsynopsis>
 </refsynopsisdiv>
 

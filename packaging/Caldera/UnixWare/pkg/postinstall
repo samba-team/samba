@@ -3,13 +3,13 @@
 # Create /var/spool/samba, setup swat to be run out of inetd on port 901,
 # initialize the lmhosts file and create the codepage load files
 #
-# Written 10-Aug-1999 by Ronald Joe Record (rr@sco.com)
+# Written 10-Aug-1999 by Ronald Joe Record (rr@caldera.com)
 #
 
 SPOOL=/var/spool/samba
 SVCS=/etc/services
 INET=/etc/inetd.conf
-PREFIX=/usr/local/samba
+PREFIX=/usr/lib/samba
 LMHOST=/etc/lmhosts
 
 [ -d $SPOOL ] || {
@@ -22,7 +22,7 @@ grep swat $SVCS > /dev/null || {
 }
 
 grep swat $INET > /dev/null || {
-     echo "swat stream tcp nowait root /usr/local/samba/bin/swat swat " >> $INET
+     echo "swat stream tcp nowait root /usr/lib/samba/sbin/swat swat " >> $INET
 }
 
 if [ -f $LMHOST ]

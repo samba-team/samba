@@ -205,7 +205,9 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <sys/file.h>
 
 #ifdef HAVE_NETINET_TCP_H
@@ -655,7 +657,6 @@ extern int errno;
 #include "nterr.h"
 #include "secrets.h"
 #include "messages.h"
-#include "util_list.h"
 
 #include "util_getent.h"
 
@@ -684,6 +685,8 @@ extern int errno;
 #include "mapping.h"
 
 #include "rap.h"
+
+#include "popt.h"
 
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
@@ -860,6 +863,14 @@ int rename(const char *zfrom, const char *zto);
 time_t mktime(struct tm *t);
 #endif
 
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t bufsize);
+#endif
+
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t bufsize);
+#endif
+
 #ifndef HAVE_FTRUNCATE
 int ftruncate(int f,long l);
 #endif
@@ -917,7 +928,7 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 
 /* Load header file for libdl stuff */
 
-#ifdef HAVE_LIBDL
+#ifdef HAVE_DLFCN_H
 #include <dlfcn.h>
 #endif
 
@@ -964,6 +975,39 @@ int vasprintf(char **ptr, const char *format, va_list ap);
 #endif
 #ifndef S_IXOTH
 #define S_IXOTH 00001           /* execute permission: other */
+#endif
+
+/* For sys_adminlog(). */
+#ifndef LOG_EMERG
+#define LOG_EMERG       0       /* system is unusable */
+#endif
+
+#ifndef LOG_ALERT
+#define LOG_ALERT       1       /* action must be taken immediately */
+#endif
+
+#ifndef LOG_CRIT
+#define LOG_CRIT        2       /* critical conditions */
+#endif
+
+#ifndef LOG_ERR
+#define LOG_ERR         3       /* error conditions */
+#endif
+
+#ifndef LOG_WARNING
+#define LOG_WARNING     4       /* warning conditions */
+#endif
+
+#ifndef LOG_NOTICE
+#define LOG_NOTICE      5       /* normal but significant condition */
+#endif
+
+#ifndef LOG_INFO
+#define LOG_INFO        6       /* informational */
+#endif
+
+#ifndef LOG_DEBUG
+#define LOG_DEBUG       7       /* debug-level messages */
 #endif
 
 /* NetBSD doesn't have these */

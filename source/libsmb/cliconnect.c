@@ -730,7 +730,6 @@ open the client sockets
 ****************************************************************************/
 BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 {
-	extern struct in_addr ipzero;
 	extern pstring user_socket_options;
 	int name_type = 0x20;
 	char *p;
@@ -747,7 +746,7 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 		*p = 0;
 	}
 	
-	if (!ip || ip_equal(*ip, ipzero)) {
+	if (!ip || is_zero_ip(*ip)) {
 		if (!resolve_name(cli->desthost, &cli->dest_ip, name_type)) {
 			return False;
 		}
@@ -924,6 +923,120 @@ BOOL cli_establish_connection(struct cli_state *cli,
 	return True;
 }
 
+/* Initialise client credentials for authenticated pipe access */
+
+static void init_creds(struct ntuser_creds *creds, char* username,
+		       char* domain, char* password, int pass_len)
+{
+	ZERO_STRUCTP(creds);
+
+	pwd_set_cleartext(&creds->pwd, password);
+
+	fstrcpy(creds->user_name, username);
+	fstrcpy(creds->domain, domain);
+
+	if (!*username) {
+		creds->pwd.null_pwd = True;
+	}
+}
+
+/****************************************************************************
+establishes a connection right up to doing tconX, password specified.
+****************************************************************************/
+NTSTATUS cli_full_connection(struct cli_state **output_cli, 
+			     const char *my_name, const char *dest_host, 
+			     struct in_addr *dest_ip, int port,
+			     char *service, char *service_type,
+			     char *user, char *domain, 
+			     char *password, int pass_len) 
+{
+	struct ntuser_creds creds;
+	NTSTATUS nt_status;
+	struct nmb_name calling;
+	struct nmb_name called;
+	struct cli_state *cli;
+	struct in_addr ip;
+	
+	if (!output_cli)
+		DEBUG(0, ("output_cli is NULL!?!"));
+
+	*output_cli = NULL;
+	
+	make_nmb_name(&calling, my_name, 0x0);
+	make_nmb_name(&called , dest_host, 0x20);
+
+again:
+
+	if (!(cli = cli_initialise(NULL)))
+		return NT_STATUS_NO_MEMORY;
+	
+	if (cli_set_port(cli, port) != port) {
+		cli_shutdown(cli);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	ip = *dest_ip;
+	
+	DEBUG(3,("Connecting to host=%s share=%s\n", dest_host, service));
+	
+	if (!cli_connect(cli, dest_host, &ip)) {
+		DEBUG(1,("cli_establish_connection: failed to connect to %s (%s)\n",
+			 nmb_namestr(&called), inet_ntoa(*dest_ip)));
+		cli_shutdown(cli);
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!cli_session_request(cli, &calling, &called)) {
+		char *p;
+		DEBUG(1,("session request to %s failed (%s)\n", 
+			 called.name, cli_errstr(cli)));
+		cli_shutdown(cli);
+		if ((p=strchr(called.name, '.'))) {
+			*p = 0;
+			goto again;
+		}
+		if (strcmp(called.name, "*SMBSERVER")) {
+			make_nmb_name(&called , "*SMBSERVER", 0x20);
+			goto again;
+		}
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (!cli_negprot(cli)) {
+		DEBUG(1,("failed negprot\n"));
+		nt_status = NT_STATUS_UNSUCCESSFUL;
+		cli_shutdown(cli);
+		return nt_status;
+	}
+
+	if (!cli_session_setup(cli, user, password, pass_len, password, pass_len, 
+			       domain)) {
+		DEBUG(1,("failed session setup\n"));
+		nt_status = cli_nt_error(cli);
+		cli_shutdown(cli);
+		if (NT_STATUS_IS_OK(nt_status)) 
+			nt_status = NT_STATUS_UNSUCCESSFUL;
+		return nt_status;
+	} 
+
+	if (service) {
+		if (!cli_send_tconX(cli, service, service_type,
+				    (char*)password, pass_len)) {
+			DEBUG(1,("failed tcon_X\n"));
+			nt_status = cli_nt_error(cli);
+			cli_shutdown(cli);
+			if (NT_STATUS_IS_OK(nt_status)) 
+				nt_status = NT_STATUS_UNSUCCESSFUL;
+			return nt_status;
+		}
+	}
+
+	init_creds(&creds, user, domain, password, pass_len);
+	cli_init_creds(cli, &creds);
+
+	*output_cli = cli;
+	return NT_STATUS_OK;
+}
 
 /****************************************************************************
  Attempt a NetBIOS session request, falling back to *SMBSERVER if needed.
@@ -932,53 +1045,54 @@ BOOL cli_establish_connection(struct cli_state *cli,
 BOOL attempt_netbios_session_request(struct cli_state *cli, char *srchost, char *desthost,
                                      struct in_addr *pdest_ip)
 {
-  struct nmb_name calling, called;
+	struct nmb_name calling, called;
 
-  make_nmb_name(&calling, srchost, 0x0);
+	make_nmb_name(&calling, srchost, 0x0);
 
-  /*
-   * If the called name is an IP address
-   * then use *SMBSERVER immediately.
-   */
+	/*
+	 * If the called name is an IP address
+	 * then use *SMBSERVER immediately.
+	 */
 
-  if(is_ipaddress(desthost))
-    make_nmb_name(&called, "*SMBSERVER", 0x20);
-  else
-    make_nmb_name(&called, desthost, 0x20);
+	if(is_ipaddress(desthost))
+		make_nmb_name(&called, "*SMBSERVER", 0x20);
+	else
+		make_nmb_name(&called, desthost, 0x20);
 
-  if (!cli_session_request(cli, &calling, &called)) {
-    struct nmb_name smbservername;
+	if (!cli_session_request(cli, &calling, &called)) {
+	
+		struct nmb_name smbservername;
 
-    make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
+		make_nmb_name(&smbservername , "*SMBSERVER", 0x20);
 
-    /*
-     * If the name wasn't *SMBSERVER then
-     * try with *SMBSERVER if the first name fails.
-     */
+		/*
+		 * If the name wasn't *SMBSERVER then
+		 * try with *SMBSERVER if the first name fails.
+		 */
 
-    if (nmb_name_equal(&called, &smbservername)) {
+		if (nmb_name_equal(&called, &smbservername)) {
 
-        /*
-         * The name used was *SMBSERVER, don't bother with another name.
-         */
+			/*
+			 * The name used was *SMBSERVER, don't bother with another name.
+			 */
 
-        DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER \
-with error %s.\n", desthost, cli_errstr(cli) ));
-	    cli_shutdown(cli);
-		return False;
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s.\n", 
+				desthost, cli_errstr(cli) ));
+			cli_shutdown(cli);
+			return False;
+		}
+
+		cli_shutdown(cli);
+
+		if (!cli_initialise(cli) || !cli_connect(cli, desthost, pdest_ip) ||
+       			!cli_session_request(cli, &calling, &smbservername)) 
+		{
+			DEBUG(0,("attempt_netbios_session_request: %s rejected the session for name *SMBSERVER with error %s\n", 
+				desthost, cli_errstr(cli) ));
+			cli_shutdown(cli);
+			return False;
+		}
 	}
 
-    cli_shutdown(cli);
-
-    if (!cli_initialise(cli) ||
-        !cli_connect(cli, desthost, pdest_ip) ||
-        !cli_session_request(cli, &calling, &smbservername)) {
-          DEBUG(0,("attempt_netbios_session_request: %s rejected the session for \
-name *SMBSERVER with error %s\n", desthost, cli_errstr(cli) ));
-          cli_shutdown(cli);
-          return False;
-    }
-  }
-
-  return True;
+	return True;
 }

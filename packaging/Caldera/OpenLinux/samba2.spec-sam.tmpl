@@ -270,6 +270,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--libdir='$(DESTDIR)%{EtcSamba}' \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
+	--with-piddir='$(DESTDIR)/var/run/samba' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
@@ -290,13 +291,22 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 
 make LOGFILEBASE=/var/log/samba.d everything nsswitch/libnss_wins.so
 
+# Now build the VFS modules
+cd ../examples/VFS
+make
+cd block
+mv block.c block.c.old
+sed 's/etc\/samba/etc\/samba\.d/g' < block.c.old > block.c
+make
+
+
 
 %Install
 %{mkDESTDIR}
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{logrotate,pam}.d,sysconfig/daemons}
-mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
+mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba,run/samba}
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
@@ -342,12 +352,19 @@ install -m 755 source/bin/smbsh $DESTDIR/usr/bin
 install -m 755 source/bin/smbwrapper.so $DESTDIR/usr/bin
 install -m 755 source/bin/smbtorture $DESTDIR/usr/sbin
 
+# Adding VFS modules
+install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
+
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
+cp -p $VVS/winbind.daemon $DESTDIR/etc/sysconfig/daemons/winbind
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
@@ -357,6 +374,7 @@ cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
 install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
+#lsb: cp -p $VVS/winbind.init $DESTDIR/etc/rc.d/init.d/winbind
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 
@@ -423,6 +441,7 @@ done
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
 /lib/$					base
+/usr/lib/samba/$			base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
@@ -441,6 +460,8 @@ Samba/README.txt			base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 libnss_*				base
 pam_*					base
+winbind*				base
+/usr/lib/samba/$			base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
@@ -486,7 +507,9 @@ test "$1" = "0" || exit 0
 %Files -f files-samba-base
 %defattr(-,root,root)
 %config %attr(0755,root,root) %{SVIdir}/samba
+%config %attr(0755,root,root) %{SVIdir}/winbind
 %config %attr(644,root,root) /etc/sysconfig/daemons/samba
+%config %attr(644,root,root) /etc/sysconfig/daemons/winbind
 %config %attr(644,root,root) /etc/pam.d/samba
 %config %attr(644,root,root) /etc/logrotate.d/samba
 %config %attr(-,root,root) %{EtcSamba}

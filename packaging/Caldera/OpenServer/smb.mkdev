@@ -36,10 +36,12 @@ while true ; do
         prompt || exit 1
         case $cmd in
         1)      /usr/lib/samba/bin/initconfig
-		cp -f /etc/init.d/samba /etc/rc2.d/S92samba
+		/etc/init.d/samba enable
+		/etc/init.d/samba start
 		exit 0
 		;;
-	2)	rm -f /etc/rc2.d/S92samba
+	2)	/etc/init.d/samba disable
+		/etc/init.d/samba stop
 		exit 0
 		;;
 	esac

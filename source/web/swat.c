@@ -49,6 +49,19 @@ static int iNumNonAutoPrintServices = 0;
 #define ENABLE_USER_FLAG "enable_user_flag"
 #define RHOST "remote_host"
 
+typedef struct html_conversion {
+	char src;
+	char *dest;
+} html_conversion;
+
+static const html_conversion entities[] = {
+	{ '"', "&quot;" },
+	{ '&', "&amp;"  },
+	{ '<', "&lt;"   },
+	{ '>', "&gt;"   },
+	{ '\0', NULL },
+};
+
 /* we need these because we link to locking*.o */
  void become_root(void) {}
  void unbecome_root(void) {}
@@ -75,6 +88,51 @@ static char *fix_backslash(char *str)
         }
 	*p = '\0';
 	return newstring;
+}
+
+static char *htmlentities(char *str)
+{
+	int i,j, destlen = 0;
+	int length = strlen(str);
+	/* Feel free to use a pstring if appropriate -- I haven't 
+	   checked if it's guaranteed to be long enough, and suspect it 
+	   isn't. -SRL */
+	char *dststr = NULL;
+	char *p;
+
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				destlen += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			destlen++;
+		}
+	}
+	if (length == destlen) {
+		return(strdup(str));
+	}
+	p = dststr = malloc(destlen + 1);
+	if (!dststr) {
+		return(NULL);
+	}
+	dststr[destlen] = '\0';
+	for (i = 0; i < length; i++) {
+		for (j = 0; entities[j].src; j++) {
+			if (str[i] == entities[j].src) {
+				strncpy(p, entities[j].dest,
+				        strlen(entities[j].dest));
+				p += strlen(entities[j].dest);
+				break;
+			}
+		}
+		if (!entities[j].src) {
+			*p++ = str[i];
+		}
+	}
+	return(dststr);
 }
 
 static char *stripspace(char *str)
@@ -182,8 +240,12 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_STRING:
 	case P_USTRING:
-		printf("<input type=text size=40 name=\"parm_%s\" value=\"%s\">",
-		       make_parm_name(parm->label), *(char **)ptr);
+		str = htmlentities(*(char **)ptr);
+		printf("<input type=\"text\" size=\"40\" name=\"parm_%s\" value=\"%s\">",
+			make_parm_name(parm->label), str);
+		if (str != NULL) {
+			free(str);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
 			make_parm_name(parm->label),fix_backslash((char *)(parm->def.svalue)));
 		break;
@@ -215,7 +277,18 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_INTEGER:
-		printf("<input type=text size=8 name=\"parm_%s\" value=%d>", make_parm_name(parm->label), *(int *)ptr);
+		if (strequal(parm->label,"log level")) {
+			printf("<input type=text size=40 name=\"parm_%s\" value=%d", 
+				make_parm_name(parm->label),*(int *)ptr);
+			for (i = 1; i < DBGC_LAST; i ++) {
+				if (((int *)ptr)[i])
+				printf(",%s:%d",debug_classname_from_index(i),((int *)ptr)[i]);
+			}
+			printf(">");
+		}  else {
+			printf("<input type=text size=8 name=\"parm_%s\" value=%d>", 
+				make_parm_name(parm->label), *(int *)ptr);
+		}
 		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%d\'\">",
 			make_parm_name(parm->label),(int)(parm->def.ivalue));
 		break;
@@ -296,6 +369,8 @@ static void show_parameters(int snum, int allparameters, int advanced, int print
 
 				case P_INTEGER:
 				case P_OCTAL:
+					if (strequal(parm->label,"log level")) 
+						break;
 					if (*(int *)ptr == (int)(parm->def.ivalue)) continue;
 					break;
 
@@ -329,7 +404,8 @@ static BOOL load_config(BOOL save_def)
 /****************************************************************************
   write a config file 
 ****************************************************************************/
-static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(char *, BOOL))
+
+static void write_config(FILE *f, BOOL show_defaults, char *(*dos_to_ext)(const char *))
 {
 	fprintf(f, "# Samba config file created using SWAT\n");
 	fprintf(f, "# from %s (%s)\n", cgi_remote_host(), cgi_remote_addr());
@@ -358,9 +434,9 @@ static int save_reload(int snum)
 		fchmod(fileno(f), S_IWUSR | S_IRUSR | S_IRGRP | S_IROTH);
 	}
 
-	write_config(f, False, _dos_to_unix);
+	write_config(f, False, _dos_to_unix_static);
 	if (snum)
-		lp_dump_one(f, False, snum, _dos_to_unix);
+		lp_dump_one(f, False, snum, _dos_to_unix_static);
 	fclose(f);
 
 	lp_killunused(NULL);
@@ -385,7 +461,7 @@ static void commit_parameter(int snum, struct parm_struct *parm, char *v)
 
 	/* lp_do_parameter() will do unix_to_dos(v). */
 	if(parm->flags & FLAG_DOS_STRING)
-		dos_to_unix(v, True);
+		dos_to_unix(v);
 
 	if (snum < 0 && parm->class == P_LOCAL) {
 		/* this handles the case where we are changing a local
@@ -486,7 +562,7 @@ static void viewconfig_page(void)
 	}
 
 	printf("<p><pre>");
-	write_config(stdout, full_view, _dos_to_dos);
+	write_config(stdout, full_view, _dos_to_dos_static);
 	printf("</pre>");
 	printf("</form>\n");
 }
@@ -569,7 +645,7 @@ static void shares_page(void)
 		/* add_a_service() which is called by lp_copy_service()
 			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
 		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix(share, False));
+		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, unix_share);
 		iNumNonAutoPrintServices = lp_numservices();
@@ -908,7 +984,7 @@ static void printers_page(void)
 		/* add_a_service() which is called by lp_copy_service()
 			will do unix_to_dos() conversion, so we need dos_to_unix() before the lp_copy_service(). */
 		pstring unix_share;
-		pstrcpy(unix_share, dos_to_unix(share, False));
+		pstrcpy(unix_share, dos_to_unix_static(share));
 		load_config(False);
 		lp_copy_service(GLOBALS_SNUM, unix_share);
 		iNumNonAutoPrintServices = lp_numservices();

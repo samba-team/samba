@@ -2,8 +2,7 @@
 #define _HP_NSS_COMMON_H
  
 /*
-   Unix SMB/Netbios implementation.
-   Version 2.2
+   Unix SMB/CIFS implementation.
  
    Donated by HP to enable Winbindd to build on HPUX 11.x.
    Copyright (C) Jeremy Allison 2002.
@@ -24,12 +23,8 @@
    Boston, MA  02111-1307, USA.
 */
  
-#ifdef HAVE_SYNCH_H
 #include <synch.h>
-#endif
-#ifdef HAVE_PTHREAD_H
 #include <pthread.h>
-#endif
  
 typedef enum {
 	NSS_SUCCESS,

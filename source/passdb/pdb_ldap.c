@@ -56,6 +56,7 @@ struct ldap_enum_info {
 	LDAP *ldap_struct;
 	LDAPMessage *result;
 	LDAPMessage *entry;
+	int index;
 };
 
 static struct ldap_enum_info global_ldap_ent;
@@ -580,7 +581,6 @@ Initialize SAM_ACCOUNT from an LDAP query
 static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
 {
 	pstring temp;
-	uint32  i; 
 
 	*mods = NULL;
 
@@ -706,6 +706,7 @@ BOOL pdb_setsampwent(BOOL update)
 
 	global_ldap_ent.entry = ldap_first_entry(global_ldap_ent.ldap_struct,
 				 global_ldap_ent.result);
+	global_ldap_ent.index = -1;
 
 	return True;
 }
@@ -732,8 +733,11 @@ BOOL pdb_getsampwent(SAM_ACCOUNT * user)
 	if (!global_ldap_ent.entry)
 		return False;
 
-	global_ldap_ent.entry =	ldap_next_entry(global_ldap_ent.ldap_struct,
-				global_ldap_ent.entry);
+	global_ldap_ent.index++;
+	if (global_ldap_ent.index > 0)
+	{
+		global_ldap_ent.entry =	ldap_next_entry(global_ldap_ent.ldap_struct, global_ldap_ent.entry);
+	}
 
 	if (global_ldap_ent.entry != NULL)
 	{

@@ -40,10 +40,13 @@ static int pipes_open;
  * writers more than I hate the Windows spooler service driver
  * writers. This gets around a combination of bugs in the spooler
  * and the HP 8500 PCL driver that causes a spooler spin. JRA.
+ *
+ * bumped up from 20 -> 64 after viewing traffic from WordPerfect 
+ * 2002 running on NT 4.- SP6
  */
 
 #ifndef MAX_OPEN_SPOOLSS_PIPES
-#define MAX_OPEN_SPOOLSS_PIPES 20
+#define MAX_OPEN_SPOOLSS_PIPES 64
 #endif
 static int current_spoolss_pipes_open;
 
@@ -266,6 +269,9 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 
 	if (is_spoolss_pipe)
 		current_spoolss_pipes_open++;
+
+	/* Ensure the connection isn't idled whilst this pipe is open. */
+	conn->num_files_open++;
 
 	return chain_p;
 }
@@ -497,13 +503,13 @@ authentication failed. Denying the request.\n", p->name));
     }
 
 	/*
-	 * Check the data length doesn't go over the 10Mb limit.
+	 * Check the data length doesn't go over the 15Mb limit.
 	 * increased after observing a bug in the Windows NT 4.0 SP6a
 	 * spoolsv.exe when the response to a GETPRINTERDRIVER2 RPC
 	 * will not fit in the initial buffer of size 0x1068   --jerry 22/01/2002
 	 */
 	
-	if(prs_data_size(&p->in_data.data) + data_len > 15*1024*1024) {
+	if(prs_offset(&p->in_data.data) + data_len > 15*1024*1024) {
 		DEBUG(0,("process_request_pdu: rpc data buffer too large (%u) + (%u)\n",
 				(unsigned int)prs_data_size(&p->in_data.data), (unsigned int)data_len ));
 		set_incoming_fault(p);
@@ -957,7 +963,9 @@ BOOL close_rpc_pipe_hnd(pipes_struct *p, connection_struct *conn)
 	ZERO_STRUCTP(p);
 
 	SAFE_FREE(p);
-	
+
+	conn->num_files_open--;
+
 	return True;
 }
 

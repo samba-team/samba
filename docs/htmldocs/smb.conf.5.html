@@ -89,7 +89,7 @@ CLASS="REPLACEABLE"
 >Section and parameter names are not case sensitive.</P
 ><P
 >Only the first equals sign in a parameter is significant. 
-	Whitespace before or after the first equals sign is discarded. 
+	Whitespace before or after the first equals sign is discarded.
 	Leading, trailing and internal whitespace in section and parameter 
 	names is irrelevant. Leading and trailing whitespace in a parameter 
 	value is discarded. Internal whitespace within a parameter value 
@@ -140,7 +140,7 @@ NAME="AEN28"
 ><P
 >Sections may be designated <EM
 >guest</EM
-> services, 
+> services,
 	in which case no password is required to access them. A specified 
 	UNIX <EM
 >guest account</EM
@@ -629,7 +629,7 @@ CLASS="VARIABLELIST"
 >%d</DT
 ><DD
 ><P
->The process id of the current server 
+>The process id of the current server
 		process.</P
 ></DD
 ><DT
@@ -753,7 +753,7 @@ CLASS="VARIABLELIST"
 >short preserve case = yes/no</DT
 ><DD
 ><P
->controls if new files which conform to 8.3 syntax, 
+>controls if new files which conform to 8.3 syntax,
 		that is all in upper case and of suitable length, are created 
 		upper case, or if they are forced to be the "default" 
 		case. This option can be use with "preserve case = yes" 
@@ -1605,6 +1605,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#PIDDIRECTORY"
+><TT
+CLASS="PARAMETER"
+><I
+>pid directory</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#LOGFILE"
 ><TT
 CLASS="PARAMETER"
@@ -1970,6 +1982,18 @@ HREF="#NTSMBSUPPORT"
 CLASS="PARAMETER"
 ><I
 >nt smb support</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#NTSTATUSSUPPORT"
+><TT
+CLASS="PARAMETER"
+><I
+>nt status support</I
 ></TT
 ></A
 ></P
@@ -3011,7 +3035,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN974"
+NAME="AEN982"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -3161,6 +3185,18 @@ HREF="#CREATEMODE"
 CLASS="PARAMETER"
 ><I
 >create mode</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
+HREF="#CSCPOLICY"
+><TT
+CLASS="PARAMETER"
+><I
+>csc policy</I
 ></TT
 ></A
 ></P
@@ -4188,6 +4224,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#SHAREMODES"
+><TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#SHORTPRESERVECASE"
 ><TT
 CLASS="PARAMETER"
@@ -4454,7 +4502,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1454"
+NAME="AEN1470"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -4877,17 +4925,15 @@ HREF="smbd.8.html"
 TARGET="_top"
 >smbd</A
 > 
-		must be set to <TT
+		must <EM
+>NOT</EM
+> be set to <TT
 CLASS="PARAMETER"
 ><I
->security = server</I
+>security = share</I
 ></TT
-> or <TT
-CLASS="PARAMETER"
-><I
->		security = domain</I
-></TT
-> and <TT
+>
+		and <TT
 CLASS="PARAMETER"
 ><I
 >add user script</I
@@ -6399,6 +6445,40 @@ CLASS="PARAMETER"
 ></DD
 ><DT
 ><A
+NAME="CSCPOLICY"
+></A
+>csc policy (S)</DT
+><DD
+><P
+>This stands for <EM
+>client-side caching 
+		policy</EM
+>, and specifies how clients capable of offline
+		caching will cache the files in the share. The valid values
+		are: manual, documents, programs, disable.</P
+><P
+>These values correspond to those used on Windows
+		servers.</P
+><P
+>For example, shares containing roaming profiles can have
+		offline caching disabled using <B
+CLASS="COMMAND"
+>csc policy = disable
+		</B
+>.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>csc policy = manual</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>csc policy = programs</B
+></P
+></DD
+><DT
+><A
 NAME="DEADTIME"
 ></A
 >deadtime (G)</DT
@@ -7000,53 +7080,26 @@ CLASS="PARAMETER"
 ><I
 >security = domain</I
 ></TT
+> or <TT
+CLASS="PARAMETER"
+><I
+>security =
+		user</I
+></TT
 > and <TT
 CLASS="PARAMETER"
 ><I
->delete 
-		user script</I
+>delete user script</I
 ></TT
-> must be set to a full pathname for a script 
+> 
+		must be set to a full pathname for a script 
 		that will delete a UNIX user given one argument of <TT
 CLASS="PARAMETER"
 ><I
->%u
-		</I
+>%u</I
 ></TT
->, which expands into the UNIX user name to delete.
-		<EM
->NOTE</EM
-> that this is different to the <A
-HREF="#ADDUSERSCRIPT"
-><TT
-CLASS="PARAMETER"
-><I
->add user script</I
-></TT
-></A
->
-		which will work with the <TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> option 
-		as well as <TT
-CLASS="PARAMETER"
-><I
->security = domain</I
-></TT
->. The reason for this
-		is only when Samba is a domain member does it get the information
-		on an attempted user logon that a user no longer exists. In the
-		<TT
-CLASS="PARAMETER"
-><I
->security = server</I
-></TT
-> mode a missing user
-		is treated the same as an invalid password logon attempt. Deleting
-		the user in this circumstance would not be a good idea.</P
+>, 
+		which expands into the UNIX user name to delete.</P
 ><P
 >When the Windows user attempts to access the Samba server, 
 		at <EM
@@ -12707,20 +12760,20 @@ NAME="NTSMBSUPPORT"
 HREF="smbd.8.html"
 TARGET="_top"
 >smbd(8)</A
-> will negotiate NT specific SMB 
-		support with Windows NT clients. Although this is a developer 
-		debugging option and should be left alone, benchmarking has discovered 
-		that Windows NT clients give faster performance with this option 
+> will negotiate NT specific SMB
+		support with Windows NT/2k/XP clients. Although this is a developer
+		debugging option and should be left alone, benchmarking has discovered
+		that Windows NT clients give faster performance with this option
 		set to <TT
 CLASS="CONSTANT"
 >no</TT
->. This is still being investigated. 
+>. This is still being investigated.
 	 	If this option is set to <TT
 CLASS="CONSTANT"
 >no</TT
-> then Samba offers 
-		exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-		This information may be of use if any users are having problems 
+> then Samba offers
+		exactly the same SMB calls that versions prior to Samba 2.0 offered.
+		This information may be of use if any users are having problems
 		with NT SMB support.</P
 ><P
 >You should not need to ever disable this parameter.</P
@@ -12728,6 +12781,34 @@ CLASS="CONSTANT"
 >Default: <B
 CLASS="COMMAND"
 >nt smb support = yes</B
+></P
+></DD
+><DT
+><A
+NAME="NTSTATUSSUPPORT"
+></A
+>nt status support (G)</DT
+><DD
+><P
+>This boolean parameter controls whether <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+> will negotiate NT specific status
+		support with Windows NT/2k/XP clients. This is a developer
+		debugging option and should be left alone.
+	 	If this option is set to <TT
+CLASS="CONSTANT"
+>no</TT
+> then Samba offers
+		exactly the same DOS error codes that versions prior to Samba 2.2.3
+		reported.</P
+><P
+>You should not need to ever disable this parameter.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>nt status support = yes</B
 ></P
 ></DD
 ><DT
@@ -13800,6 +13881,27 @@ CLASS="COMMAND"
 ></DD
 ><DT
 ><A
+NAME="PIDDIRECTORY"
+></A
+>pid directory (G)</DT
+><DD
+><P
+>This option specifies the directory where pid 
+		files will be placed.  </P
+><P
+>Default: <B
+CLASS="COMMAND"
+>pid directory = ${prefix}/var/locks</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>pid directory = /var/run/</B
+>
+		</P
+></DD
+><DT
+><A
 NAME="POSIXLOCKING"
 ></A
 >posix locking (S)</DT
@@ -14351,6 +14453,12 @@ HREF="#AEN79"
 >[printers]</A
 > section above for reasons 
 		why you might want to do this.</P
+><P
+>To use the CUPS printing interface set <B
+CLASS="COMMAND"
+>printcap name = cups
+		</B
+>.</P
 ><P
 >On System V systems that use <B
 CLASS="COMMAND"
@@ -16166,6 +16274,64 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >set directory = no</B
+></P
+></DD
+><DT
+><A
+NAME="SHAREMODES"
+></A
+>share modes (S)</DT
+><DD
+><P
+>This enables or disables the honoring of 
+		the <TT
+CLASS="PARAMETER"
+><I
+>share modes</I
+></TT
+> during a file open. These 
+		modes are used by clients to gain exclusive read or write access 
+		to a file.</P
+><P
+>These open modes are not directly supported by UNIX, so
+		they are simulated using shared memory, or lock files if your 
+		UNIX doesn't support shared memory (almost all do).</P
+><P
+>The share modes that are enabled by this option are 
+		<TT
+CLASS="CONSTANT"
+>DENY_DOS</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_ALL</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_READ</TT
+>, <TT
+CLASS="CONSTANT"
+>DENY_WRITE</TT
+>,
+		<TT
+CLASS="CONSTANT"
+>DENY_NONE</TT
+> and <TT
+CLASS="CONSTANT"
+>DENY_FCB</TT
+>.
+		</P
+><P
+>This option gives full share compatibility and enabled 
+		by default.</P
+><P
+>You should <EM
+>NEVER</EM
+> turn this parameter 
+		off as many Windows applications will break if you do so.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>share modes = yes</B
 ></P
 ></DD
 ><DT
@@ -18881,14 +19047,18 @@ CLASS="FILENAME"
 > modules for UNIX services.
 		</P
 ><P
+>Please note that setting this parameter to + causes problems
+		with group membership at least on glibc systems, as the character +
+		is used as a special character for NIS in /etc/group.</P
+><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = \</B
+>winbind separator = \\</B
 ></P
 ><P
 >Example: <B
 CLASS="COMMAND"
->winbind separator = +</B
+>winbind separator = /</B
 ></P
 ></DD
 ><DT
@@ -19287,7 +19457,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6082"
+NAME="AEN6147"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19317,7 +19487,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6088"
+NAME="AEN6153"
 ></A
 ><H2
 >VERSION</H2
@@ -19328,7 +19498,7 @@ NAME="AEN6088"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6091"
+NAME="AEN6156"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19407,7 +19577,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6111"
+NAME="AEN6176"
 ></A
 ><H2
 >AUTHOR</H2

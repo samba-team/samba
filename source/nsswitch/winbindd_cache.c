@@ -1,10 +1,9 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
-   Winbind daemon - caching related functions
+   Winbind cache backend functions
 
-   Copyright (C) Tim Potter 2000
+   Copyright (C) Andrew Tridgell 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,642 +22,859 @@
 
 #include "winbindd.h"
 
-#define CACHE_TYPE_USER "USR"
-#define CACHE_TYPE_GROUP "GRP"
-#define CACHE_TYPE_NAME "NAM"      /* Stores mapping from SID to name. */
-#define CACHE_TYPE_SID "SID"       /* Stores mapping from name to SID. */
-
-/* Initialise caching system */
-
-static TDB_CONTEXT *cache_tdb;
-
-struct cache_rec {
-	uint32 seq_num;
-	time_t mod_time;
+struct winbind_cache {
+	struct winbindd_methods *backend;
+	TDB_CONTEXT *tdb;
 };
 
-void winbindd_cache_init(void)
-{
-	/* Open tdb cache */
+struct cache_entry {
+	NTSTATUS status;
+	uint32 sequence_number;
+	uint8 *data;
+	uint32 len, ofs;
+};
 
-	if (!(cache_tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 0, 
-				   TDB_NOLOCK, O_RDWR | O_CREAT | O_TRUNC, 
-				   0600)))
-		DEBUG(0, ("Unable to open tdb cache - user and group caching disabled\n"));
+#define WINBINDD_MAX_CACHE_SIZE (50*1024*1024)
+
+static struct winbind_cache *wcache;
+
+/* flush the cache */
+void wcache_flush_cache(void)
+{
+	extern BOOL opt_nocache;
+
+	if (!wcache) return;
+	if (wcache->tdb) {
+		tdb_close(wcache->tdb);
+		wcache->tdb = NULL;
+	}
+	if (opt_nocache) return;
+
+	wcache->tdb = tdb_open_log(lock_path("winbindd_cache.tdb"), 5000, 
+				   TDB_DEFAULT, O_RDWR | O_CREAT | O_TRUNC, 0600);
+
+	if (!wcache->tdb) {
+		DEBUG(0,("Failed to open winbindd_cache.tdb!\n"));
+	}
 }
 
-/* find the sequence number for a domain */
-
-static uint32 domain_sequence_number(struct winbindd_domain *domain)
+void winbindd_check_cache_size(time_t t)
 {
-	TALLOC_CTX *mem_ctx;
-	CLI_POLICY_HND *hnd;
-	SAM_UNK_CTR ctr;
-	uint16 switch_value = 2;
-	NTSTATUS result;
-	uint32 seqnum = DOM_SEQUENCE_NONE;
-	POLICY_HND dom_pol;
-	BOOL got_dom_pol = False;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	static time_t last_check_time;
+	struct stat st;
 
-	if (!(mem_ctx = talloc_init()))
-		return DOM_SEQUENCE_NONE;
+	if (last_check_time == (time_t)0)
+		last_check_time = t;
 
-	/* Get sam handle */
+	if (t - last_check_time < 60 && t - last_check_time > 0)
+		return;
 
-	if (!(hnd = cm_get_sam_handle(domain->name)))
-		goto done;
-
-	/* Get domain handle */
-
-	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol, 
-							des_access, &domain->sid, &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_dom_pol = True;
-
-	/* Query domain info */
-
-	result = cli_samr_query_dom_info(hnd->cli, mem_ctx, &dom_pol,
-							switch_value, &ctr);
-
-	if (NT_STATUS_IS_OK(result)) {
-		seqnum = ctr.info.inf2.seq_num;
-		DEBUG(10,("domain_sequence_number: for domain %s is %u\n", domain->name, (unsigned)seqnum ));
-	} else {
-		DEBUG(10,("domain_sequence_number: failed to get sequence number (%u) for domain %s\n",
-			(unsigned)seqnum, domain->name ));
+	if (wcache == NULL || wcache->tdb == NULL) {
+		DEBUG(0, ("Unable to check size of tdb cache - cache not open !\n"));
+		return;
 	}
 
-  done:
-
-	if (got_dom_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-	talloc_destroy(mem_ctx);
-
-	return seqnum;
-}
-
-/* get the domain sequence number, possibly re-fetching */
-
-static uint32 cached_sequence_number(struct winbindd_domain *domain)
-{
-	fstring keystr;
-	TDB_DATA dbuf;
-	struct cache_rec rec;
-	time_t t = time(NULL);
-
-	snprintf(keystr, sizeof(keystr), "CACHESEQ/%s", domain->name);
-	dbuf = tdb_fetch_by_string(cache_tdb, keystr);
-
-	if (!dbuf.dptr || dbuf.dsize != sizeof(rec))
-		goto refetch;
-
-	memcpy(&rec, dbuf.dptr, sizeof(rec));
-	SAFE_FREE(dbuf.dptr);
-
-	if (t < (rec.mod_time + lp_winbind_cache_time())) {
-		DEBUG(3,("cached sequence number for %s is %u\n",
-			 domain->name, (unsigned)rec.seq_num));
-		return rec.seq_num;
+	if (fstat(wcache->tdb->fd, &st) == -1) {
+		DEBUG(0, ("Unable to check size of tdb cache %s!\n", strerror(errno) ));
+		return;
 	}
 
- refetch:	
-	rec.seq_num = domain_sequence_number(domain);
-	rec.mod_time = t;
-
-	tdb_store_by_string(cache_tdb, keystr, &rec, sizeof(rec));
-
-	return rec.seq_num;
+	if (st.st_size > WINBINDD_MAX_CACHE_SIZE) {
+		DEBUG(10,("flushing cache due to size (%lu) > (%lu)\n",
+			(unsigned long)st.st_size,
+			(unsigned long)WINBINDD_MAX_CACHE_SIZE));
+		wcache_flush_cache();
+	}
 }
 
-/* Check whether a seq_num for a cached item has expired */
-static BOOL cache_domain_expired(struct winbindd_domain *domain, 
-                                 uint32 seq_num)
+/* get the winbind_cache structure */
+static struct winbind_cache *get_cache(struct winbindd_domain *domain)
 {
-	uint32 cache_seq = cached_sequence_number(domain);
-	if (cache_seq != seq_num) {
-		DEBUG(3,("seq %u for %s has expired (not == %u)\n", (unsigned)seq_num, 
-			 domain->name, (unsigned)cache_seq ));
+	extern struct winbindd_methods msrpc_methods;
+	struct winbind_cache *ret = wcache;
+
+	if (ret) return ret;
+	
+	ret = smb_xmalloc(sizeof(*ret));
+	ZERO_STRUCTP(ret);
+	switch (lp_security()) {
+#ifdef HAVE_ADS
+	case SEC_ADS: {
+		extern struct winbindd_methods ads_methods;
+		ret->backend = &ads_methods;
+		break;
+	}
+#endif
+	default:
+		ret->backend = &msrpc_methods;
+	}
+
+	wcache = ret;
+	wcache_flush_cache();
+
+	return ret;
+}
+
+/*
+  free a centry structure
+*/
+static void centry_free(struct cache_entry *centry)
+{
+	if (!centry) return;
+	SAFE_FREE(centry->data);
+	free(centry);
+}
+
+
+/*
+  pull a uint32 from a cache entry 
+*/
+static uint32 centry_uint32(struct cache_entry *centry)
+{
+	uint32 ret;
+	if (centry->len - centry->ofs < 4) {
+		DEBUG(0,("centry corruption? needed 4 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_uint32");
+	}
+	ret = IVAL(centry->data, centry->ofs);
+	centry->ofs += 4;
+	return ret;
+}
+
+/*
+  pull a uint8 from a cache entry 
+*/
+static uint8 centry_uint8(struct cache_entry *centry)
+{
+	uint8 ret;
+	if (centry->len - centry->ofs < 1) {
+		DEBUG(0,("centry corruption? needed 1 bytes, have %d\n", 
+			 centry->len - centry->ofs));
+		smb_panic("centry_uint32");
+	}
+	ret = CVAL(centry->data, centry->ofs);
+	centry->ofs += 1;
+	return ret;
+}
+
+/* pull a string from a cache entry, using the supplied
+   talloc context 
+*/
+static char *centry_string(struct cache_entry *centry, TALLOC_CTX *mem_ctx)
+{
+	uint32 len;
+	char *ret;
+
+	len = centry_uint8(centry);
+
+	if (len == 0xFF) {
+		/* a deliberate NULL string */
+		return NULL;
+	}
+
+	if (centry->len - centry->ofs < len) {
+		DEBUG(0,("centry corruption? needed %d bytes, have %d\n", 
+			 len, centry->len - centry->ofs));
+		smb_panic("centry_string");
+	}
+
+	ret = talloc(mem_ctx, len+1);
+	if (!ret) {
+		smb_panic("centry_string out of memory\n");
+	}
+	memcpy(ret,centry->data + centry->ofs, len);
+	ret[len] = 0;
+	centry->ofs += len;
+	return ret;
+}
+
+/* the server is considered down if it can't give us a sequence number */
+static BOOL wcache_server_down(struct winbindd_domain *domain)
+{
+	if (!wcache->tdb) return False;
+	return (domain->sequence_number == DOM_SEQUENCE_NONE);
+}
+
+
+/*
+  refresh the domain sequence number. If force is True
+  then always refresh it, no matter how recently we fetched it
+*/
+static void refresh_sequence_number(struct winbindd_domain *domain, BOOL force)
+{
+	NTSTATUS status;
+	unsigned time_diff;
+
+	time_diff = time(NULL) - domain->last_seq_check;
+
+	/* see if we have to refetch the domain sequence number */
+	if (!force && (time_diff < lp_winbind_cache_time())) {
+		return;
+	}
+
+	status = wcache->backend->sequence_number(domain, &domain->sequence_number);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		domain->sequence_number = DOM_SEQUENCE_NONE;
+	}
+
+	domain->last_seq_check = time(NULL);
+}
+
+/*
+  decide if a cache entry has expired
+*/
+static BOOL centry_expired(struct winbindd_domain *domain, struct cache_entry *centry)
+{
+	/* if the server is OK and our cache entry came from when it was down then
+	   the entry is invalid */
+	if (domain->sequence_number != DOM_SEQUENCE_NONE && 
+	    centry->sequence_number == DOM_SEQUENCE_NONE) {
 		return True;
 	}
 
-	return False;
-}
-
-static void set_cache_sequence_number(struct winbindd_domain *domain, 
-                                      char *cache_type, char *subkey)
-{
-	fstring keystr;
-
-	snprintf(keystr, sizeof(keystr),"CACHESEQ %s/%s/%s",
-		 domain->name, cache_type, subkey?subkey:"");
-
-	tdb_store_int(cache_tdb, keystr, cached_sequence_number(domain));
-}
-
-static uint32 get_cache_sequence_number(struct winbindd_domain *domain, 
-                                        char *cache_type, char *subkey)
-{
-	fstring keystr;
-	uint32 seq_num;
-
-	snprintf(keystr, sizeof(keystr), "CACHESEQ %s/%s/%s",
-		 domain->name, cache_type, subkey ? subkey : "");
-
-	seq_num = (uint32)tdb_fetch_int(cache_tdb, keystr);
-
-	DEBUG(3,("%s is %u\n", keystr, (unsigned)seq_num));
-
-	return seq_num;
-}
-
-/* Fill the user or group cache with supplied data */
-
-static void store_cache(struct winbindd_domain *domain, char *cache_type,
-			void *sam_entries, int buflen)
-{
-	fstring keystr;
-
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	/* Error check */
-
-	if (!sam_entries || buflen == 0) 
-		return;
-
-	/* Store data as a mega-huge chunk in the tdb */
-
-	snprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
-		 domain->name);
-
-	tdb_store_by_string(cache_tdb, keystr, sam_entries, buflen);
-
-	/* Stamp cache with current seq number */
-
-	set_cache_sequence_number(domain, cache_type, NULL);
-}
-
-/* Fill the user cache with supplied data */
-
-void winbindd_store_user_cache(struct winbindd_domain *domain, 
-			       struct getpwent_user *sam_entries,
-			       int num_sam_entries)
-{
-	DEBUG(3, ("storing user cache %s/%d entries\n", domain->name,
-		  num_sam_entries));
-
-	store_cache(domain, CACHE_TYPE_USER, sam_entries,
-		    num_sam_entries * sizeof(struct getpwent_user));
-}
-
-/* Fill the group cache with supplied data */
-
-void winbindd_store_group_cache(struct winbindd_domain *domain,
-				struct acct_info *sam_entries,
-				int num_sam_entries)
-{
-	DEBUG(0, ("storing group cache %s/%d entries\n", domain->name,
-		  num_sam_entries));		  
-
-	store_cache(domain, CACHE_TYPE_GROUP, sam_entries, 
-		    num_sam_entries * sizeof(struct acct_info));
-}
-
-static void store_cache_entry(struct winbindd_domain *domain, char *cache_type,
-                              char *name, void *buf, int len)
-{
-	fstring keystr;
-
-	/* Create key for store */
-
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, 
-                 domain->name, name);
-
-	/* Store it */
-
-	tdb_store_by_string(cache_tdb, keystr, buf, len);
-}
-
-/* Fill a name cache entry */
-
-void winbindd_store_name_cache_entry(struct winbindd_domain *domain, 
-                                     char *sid, struct winbindd_name *name)
-{
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	store_cache_entry(domain, CACHE_TYPE_NAME, sid, name, 
-		sizeof(struct winbindd_name));
-
-	set_cache_sequence_number(domain, CACHE_TYPE_NAME, sid);
-}
-
-/* Fill a SID cache entry */
-
-void winbindd_store_sid_cache_entry(struct winbindd_domain *domain, 
-                                     char *name, struct winbindd_sid *sid)
-{
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	store_cache_entry(domain, CACHE_TYPE_SID, name, sid, 
-		sizeof(struct winbindd_sid));
-
-	set_cache_sequence_number(domain, CACHE_TYPE_SID, name);
-}
-
-/* Fill a user info cache entry */
-
-void winbindd_store_user_cache_entry(struct winbindd_domain *domain, 
-                                     char *user_name, struct winbindd_pw *pw)
-{
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	store_cache_entry(domain, CACHE_TYPE_USER, user_name, pw, 
-		sizeof(struct winbindd_pw));
-
-	set_cache_sequence_number(domain, CACHE_TYPE_USER, user_name);
-}
-
-/* Fill a user uid cache entry */
-
-void winbindd_store_uid_cache_entry(struct winbindd_domain *domain, uid_t uid, 
-                                    struct winbindd_pw *pw)
-{
-	fstring uidstr;
-
-	if (lp_winbind_cache_time() == 0)
-		return;
-
-	snprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
-
-	DEBUG(3, ("storing uid cache entry %s/%s\n", domain->name, uidstr));
-
-	store_cache_entry(domain, CACHE_TYPE_USER, uidstr, pw, 
-		sizeof(struct winbindd_pw));
-
-	set_cache_sequence_number(domain, CACHE_TYPE_USER, uidstr);
-}
-
-/* Fill a group info cache entry */
-
-void winbindd_store_group_cache_entry(struct winbindd_domain *domain, 
-                                      char *group_name, struct winbindd_gr *gr,
-                                      void *extra_data, int extra_data_len)
-{
-	fstring keystr;
-
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	DEBUG(3, ("storing group cache entry %s/%s\n", domain->name, 
-		group_name));
-
-	/* Fill group data */
-
-	store_cache_entry(domain, CACHE_TYPE_GROUP, group_name, gr, 
-				sizeof(struct winbindd_gr));
-
-	/* Fill extra data */
-
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, 
-				domain->name, group_name);
-
-	tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
-
-	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, group_name);
-}
-
-/* Fill a group info cache entry */
-
-void winbindd_store_gid_cache_entry(struct winbindd_domain *domain, gid_t gid, 
-				    struct winbindd_gr *gr, void *extra_data,
-				    int extra_data_len)
-{
-	fstring keystr;
-	fstring gidstr;
-
-	snprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
-
-	if (lp_winbind_cache_time() == 0) 
-		return;
-
-	DEBUG(3, ("storing gid cache entry %s/%s\n", domain->name, gidstr));
-
-	/* Fill group data */
-
-	store_cache_entry(domain, CACHE_TYPE_GROUP, gidstr, gr, 
-					sizeof(struct winbindd_gr));
-
-	/* Fill extra data */
-
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, 
-				domain->name, gidstr);
-
-	tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
-
-	set_cache_sequence_number(domain, CACHE_TYPE_GROUP, gidstr);
-}
-
-/* Fetch some cached user or group data */
-
-static BOOL fetch_cache(struct winbindd_domain *domain, char *cache_type,
-                        void **sam_entries, int *buflen)
-{
-	TDB_DATA data;
-	fstring keystr;
-
-	if (lp_winbind_cache_time() == 0) 
+	/* if the server is down or the cache entry is not older than the
+	   current sequence number then it is OK */
+	if (wcache_server_down(domain) || 
+	    centry->sequence_number == domain->sequence_number) {
 		return False;
+	}
 
-	/* Parameter check */
-
-	if (!sam_entries || !buflen)
-		return False;
-
-	/* Check cache data is current */
-
-	if (cache_domain_expired(domain, get_cache_sequence_number(domain, cache_type, NULL)))
-		return False;
-	
-	/* Create key */        
-
-	snprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type, domain->name);
-	
-	/* Fetch cache information */
-
-	data = tdb_fetch_by_string(cache_tdb, keystr);
-	
-	if (!data.dptr) 
-		return False;
-
-	/* Copy across cached data.  We can save a memcpy() by directly
-	   assigning the data.dptr to the sam_entries pointer.  It will
-	   be freed by the end{pw,gr}ent() function. */
-	
-	*sam_entries = (struct acct_info *)data.dptr;
-	*buflen = data.dsize;
-	
+	/* it's expired */
 	return True;
 }
 
-/* Return cached entries for a domain.  Return false if there are no cached
-   entries, or the cached information has expired for the domain. */
-
-BOOL winbindd_fetch_user_cache(struct winbindd_domain *domain, 
-			       struct getpwent_user **sam_entries,
-                               int *num_entries)
+/*
+  fetch an entry from the cache, with a varargs key. auto-fetch the sequence
+  number and return status
+*/
+static struct cache_entry *wcache_fetch(struct winbind_cache *cache, 
+					struct winbindd_domain *domain,
+					const char *format, ...)
 {
-	BOOL result;
-	int buflen;
-
-	result = fetch_cache(domain, CACHE_TYPE_USER, 
-			     (void **)sam_entries, &buflen);
-
-	*num_entries = buflen / sizeof(struct getpwent_user);
-
-	DEBUG(3, ("fetched %d cache entries for %s\n", *num_entries,
-		  domain->name));
-
-	return result;
-}
-
-/* Return cached entries for a domain.  Return false if there are no cached
-   entries, or the cached information has expired for the domain. */
-
-BOOL winbindd_fetch_group_cache(struct winbindd_domain *domain, 
-				struct acct_info **sam_entries,
-                                int *num_entries)
-{
-	BOOL result;
-	int buflen;
-
-	result = fetch_cache(domain, CACHE_TYPE_GROUP, 
-			     (void **)sam_entries, &buflen);
-
-	*num_entries = buflen / sizeof(struct acct_info);
-
-	DEBUG(3, ("fetched %d cache entries for %s\n", *num_entries,
-		  domain->name));
-
-	return result;
-}
-
-static BOOL fetch_cache_entry(struct winbindd_domain *domain, 
-                              char *cache_type, char *name, void *buf, int len)
-{
+	va_list ap;
+	char *kstr;
 	TDB_DATA data;
-	fstring keystr;
-    
-	/* Create key for lookup */
+	struct cache_entry *centry;
+	TDB_DATA key;
 
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain->name, name);
-    
-	/* Look up cache entry */
+	refresh_sequence_number(domain, False);
 
-	data = tdb_fetch_by_string(cache_tdb, keystr);
-
-	if (!data.dptr) 
-		return False;
-        
-	/* Copy found entry into buffer */        
-
-	memcpy((char *)buf, data.dptr, len < data.dsize ? len : data.dsize);
-	SAFE_FREE(data.dptr);
-
-	return True;
-}
-
-/* Fetch an individual SID cache entry */
-
-BOOL winbindd_fetch_sid_cache_entry(struct winbindd_domain *domain, 
-                                     char *name, struct winbindd_sid *sid)
-{
-	uint32 seq_num;
-
-	if (lp_winbind_cache_time() == 0) 
-		return False;
-
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_SID, name);
-
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
-
-	return fetch_cache_entry(domain, CACHE_TYPE_SID, name, sid,
-				sizeof(struct winbindd_sid));
-}
-
-/* Fetch an individual name cache entry */
-
-BOOL winbindd_fetch_name_cache_entry(struct winbindd_domain *domain, 
-                                     char *sid, struct winbindd_name *name)
-{
-	uint32 seq_num;
-
-	if (lp_winbind_cache_time() == 0) 
-		return False;
-
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_NAME, sid);
-
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
-
-	return fetch_cache_entry(domain, CACHE_TYPE_NAME, sid, name,
-				sizeof(struct winbindd_name));
-}
-
-/* Fetch an individual user cache entry */
-
-BOOL winbindd_fetch_user_cache_entry(struct winbindd_domain *domain, 
-                                     char *user, struct winbindd_pw *pw)
-{
-	uint32 seq_num;
-
-	if (lp_winbind_cache_time() == 0) 
-		return False;
-
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_USER, user);
-
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
-
-	return fetch_cache_entry(domain, CACHE_TYPE_USER, user, pw, 
-				sizeof(struct winbindd_pw));
-}
-
-/* Fetch an individual uid cache entry */
-
-BOOL winbindd_fetch_uid_cache_entry(struct winbindd_domain *domain, uid_t uid, 
-				    struct winbindd_pw *pw)
-{
-	fstring uidstr;
-	uint32 seq_num;
-
-	if (lp_winbind_cache_time() == 0) 
-		return False;
-
-	snprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
-
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_USER, uidstr);
-
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
-
-	return fetch_cache_entry(domain, CACHE_TYPE_USER, uidstr, pw, 
-				 sizeof(struct winbindd_pw));
-}
-
-/* Fetch an individual group cache entry.  This function differs from the
-   user cache code as we need to store the group membership data. */
-
-BOOL winbindd_fetch_group_cache_entry(struct winbindd_domain *domain, 
-                                      char *group, struct winbindd_gr *gr,
-                                      void **extra_data, int *extra_data_len)
-{
-	TDB_DATA data;
-	fstring keystr;
-	uint32 seq_num;
-
-	if (lp_winbind_cache_time() == 0) 
-		return False;
-
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_GROUP, group);
-
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
-
-	/* Fetch group data */
-
-	if (!fetch_cache_entry(domain, CACHE_TYPE_GROUP, group, gr, sizeof(struct winbindd_gr)))
-		return False;
+	va_start(ap, format);
+	smb_xvasprintf(&kstr, format, ap);
+	va_end(ap);
 	
-	/* Fetch extra data */
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data = tdb_fetch(wcache->tdb, key);
+	free(kstr);
+	if (!data.dptr) {
+		/* a cache miss */
+		return NULL;
+	}
 
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, 
-				domain->name, group);
+	centry = smb_xmalloc(sizeof(*centry));
+	centry->data = data.dptr;
+	centry->len = data.dsize;
+	centry->ofs = 0;
 
-	data = tdb_fetch_by_string(cache_tdb, keystr);
-
-	if (!data.dptr) 
-		return False;
-
-	/* Extra data freed when data has been sent */
-
-	if (extra_data) 
-		*extra_data = data.dptr;
-
-	if (extra_data_len) 
-		*extra_data_len = data.dsize;
+	if (centry->len < 8) {
+		/* huh? corrupt cache? */
+		centry_free(centry);
+		return NULL;
+	}
 	
-	return True;
+	centry->status = NT_STATUS(centry_uint32(centry));
+	centry->sequence_number = centry_uint32(centry);
+
+	if (centry_expired(domain, centry)) {
+		centry_free(centry);
+		return NULL;
+	}
+
+	return centry;
+}
+
+/*
+  make sure we have at least len bytes available in a centry 
+*/
+static void centry_expand(struct cache_entry *centry, uint32 len)
+{
+	uint8 *p;
+	if (centry->len - centry->ofs >= len) return;
+	centry->len *= 2;
+	p = realloc(centry->data, centry->len);
+	if (!p) {
+		DEBUG(0,("out of memory: needed %d bytes in centry_expand\n", centry->len));
+		smb_panic("out of memory in centry_expand");
+	}
+	centry->data = p;
+}
+
+/*
+  push a uint32 into a centry 
+*/
+static void centry_put_uint32(struct cache_entry *centry, uint32 v)
+{
+	centry_expand(centry, 4);
+	SIVAL(centry->data, centry->ofs, v);
+	centry->ofs += 4;
+}
+
+/*
+  push a uint8 into a centry 
+*/
+static void centry_put_uint8(struct cache_entry *centry, uint8 v)
+{
+	centry_expand(centry, 1);
+	SCVAL(centry->data, centry->ofs, v);
+	centry->ofs += 1;
+}
+
+/* 
+   push a string into a centry 
+ */
+static void centry_put_string(struct cache_entry *centry, const char *s)
+{
+	int len;
+
+	if (!s) {
+		/* null strings are marked as len 0xFFFF */
+		centry_put_uint8(centry, 0xFF);
+		return;
+	}
+
+	len = strlen(s);
+	/* can't handle more than 254 char strings. Truncating is probably best */
+	if (len > 254) len = 254;
+	centry_put_uint8(centry, len);
+	centry_expand(centry, len);
+	memcpy(centry->data + centry->ofs, s, len);
+	centry->ofs += len;
+}
+
+/*
+  start a centry for output. When finished, call centry_end()
+*/
+struct cache_entry *centry_start(struct winbindd_domain *domain, NTSTATUS status)
+{
+	struct cache_entry *centry;
+
+	if (!wcache->tdb) return NULL;
+
+	centry = smb_xmalloc(sizeof(*centry));
+
+	centry->len = 8192; /* reasonable default */
+	centry->data = smb_xmalloc(centry->len);
+	centry->ofs = 0;
+	centry->sequence_number = domain->sequence_number;
+	centry_put_uint32(centry, NT_STATUS_V(status));
+	centry_put_uint32(centry, centry->sequence_number);
+	return centry;
+}
+
+/*
+  finish a centry and write it to the tdb
+*/
+static void centry_end(struct cache_entry *centry, const char *format, ...)
+{
+	va_list ap;
+	char *kstr;
+	TDB_DATA key, data;
+
+	va_start(ap, format);
+	smb_xvasprintf(&kstr, format, ap);
+	va_end(ap);
+
+	key.dptr = kstr;
+	key.dsize = strlen(kstr);
+	data.dptr = centry->data;
+	data.dsize = centry->ofs;
+
+	tdb_store(wcache->tdb, key, data, TDB_REPLACE);
+	free(kstr);
+}
+
+/* form a sid from the domain plus rid */
+static DOM_SID *form_sid(struct winbindd_domain *domain, uint32 rid)
+{
+	static DOM_SID sid;
+	sid_copy(&sid, &domain->sid);
+	sid_append_rid(&sid, rid);
+	return &sid;
+}
+
+static void wcache_save_name_to_sid(struct winbindd_domain *domain, NTSTATUS status, 
+				    const char *name, DOM_SID *sid, enum SID_NAME_USE type)
+{
+	struct cache_entry *centry;
+	uint32 len;
+
+	centry = centry_start(domain, status);
+	if (!centry) return;
+	len = sid_size(sid);
+	centry_expand(centry, len);
+	centry_put_uint32(centry, type);
+	sid_linearize(centry->data + centry->ofs, len, sid);
+	centry->ofs += len;
+	centry_end(centry, "NS/%s/%s", domain->name, name);
+	centry_free(centry);
+}
+
+static void wcache_save_sid_to_name(struct winbindd_domain *domain, NTSTATUS status, 
+				    DOM_SID *sid, const char *name, enum SID_NAME_USE type, uint32 rid)
+{
+	struct cache_entry *centry;
+
+	centry = centry_start(domain, status);
+	if (!centry) return;
+	if (NT_STATUS_IS_OK(status)) {
+		centry_put_uint32(centry, type);
+		centry_put_string(centry, name);
+	}
+	centry_end(centry, "SN/%s/%d", domain->name, rid);
+	centry_free(centry);
 }
 
 
-/* Fetch an individual gid cache entry.  This function differs from the
-   user cache code as we need to store the group membership data. */
-
-BOOL winbindd_fetch_gid_cache_entry(struct winbindd_domain *domain, gid_t gid,
-				    struct winbindd_gr *gr,
-				    void **extra_data, int *extra_data_len)
+static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WINBIND_USERINFO *info)
 {
-	TDB_DATA data;
-	fstring keystr;
-	fstring gidstr;
-	uint32 seq_num;
+	struct cache_entry *centry;
 
-	snprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
+	centry = centry_start(domain, status);
+	if (!centry) return;
+	centry_put_string(centry, info->acct_name);
+	centry_put_string(centry, info->full_name);
+	centry_put_uint32(centry, info->user_rid);
+	centry_put_uint32(centry, info->group_rid);
+	centry_end(centry, "U/%s/%x", domain->name, info->user_rid);
+	centry_free(centry);
+}
+
+
+/* Query display info. This is the basic user list fn */
+static NTSTATUS query_user_list(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				WINBIND_USERINFO **info)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "UL/%s", domain->name);
+	if (!centry) goto do_query;
+
+	*num_entries = centry_uint32(centry);
 	
-	if (lp_winbind_cache_time() == 0) 
-		return False;
+	if (*num_entries == 0) goto do_cached;
 
-	seq_num = get_cache_sequence_number(domain, CACHE_TYPE_GROUP, gidstr);
+	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	if (! (*info)) smb_panic("query_user_list out of memory");
+	for (i=0; i<(*num_entries); i++) {
+		(*info)[i].acct_name = centry_string(centry, mem_ctx);
+		(*info)[i].full_name = centry_string(centry, mem_ctx);
+		(*info)[i].user_rid = centry_uint32(centry);
+		(*info)[i].group_rid = centry_uint32(centry);
+	}
 
-	if (cache_domain_expired(domain, seq_num)) 
-		return False;
+do_cached:	
+	status = centry->status;
+	centry_free(centry);
+	return status;
 
-	/* Fetch group data */
+do_query:
+	*num_entries = 0;
+	*info = NULL;
 
-	if (!fetch_cache_entry(domain, CACHE_TYPE_GROUP, 
-				gidstr, gr, sizeof(struct winbindd_gr)))
-		return False;
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
 
-	/* Fetch extra data */
+	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
 
-	snprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, 
-				domain->name, gidstr);
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	centry = centry_start(domain, status);
+	if (!centry) goto skip_save;
+	centry_put_uint32(centry, *num_entries);
+	for (i=0; i<(*num_entries); i++) {
+		centry_put_string(centry, (*info)[i].acct_name);
+		centry_put_string(centry, (*info)[i].full_name);
+		centry_put_uint32(centry, (*info)[i].user_rid);
+		centry_put_uint32(centry, (*info)[i].group_rid);
+		if (cache->backend->consistent) {
+			/* when the backend is consistent we can pre-prime some mappings */
+			wcache_save_name_to_sid(domain, NT_STATUS_OK, 
+						(*info)[i].acct_name, 
+						form_sid(domain, (*info)[i].user_rid),
+						SID_NAME_USER);
+			wcache_save_sid_to_name(domain, NT_STATUS_OK, 
+						form_sid(domain, (*info)[i].user_rid),
+						(*info)[i].acct_name, 
+						SID_NAME_USER, (*info)[i].user_rid);
+			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
+		}
+	}	
+	centry_end(centry, "UL/%s", domain->name);
+	centry_free(centry);
 
-	data = tdb_fetch_by_string(cache_tdb, keystr);
-
-	if (!data.dptr) 
-		return False;
-
-	/* Extra data freed when data has been sent */
-
-	if (extra_data) 
-		*extra_data = data.dptr;
-
-	if (extra_data_len) 
-		*extra_data_len = data.dsize;
-
-	return True;
+skip_save:
+	return status;
 }
 
-/* Flush cache data - easiest to just reopen the tdb */
-
-void winbindd_flush_cache(void)
+/* list all domain groups */
+static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
 {
-	tdb_close(cache_tdb);
-	winbindd_cache_init();
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "GL/%s", domain->name);
+	if (!centry) goto do_query;
+
+	*num_entries = centry_uint32(centry);
+	
+	if (*num_entries == 0) goto do_cached;
+
+	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	if (! (*info)) smb_panic("enum_dom_groups out of memory");
+	for (i=0; i<(*num_entries); i++) {
+		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
+		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
+		(*info)[i].rid = centry_uint32(centry);
+	}
+
+do_cached:	
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	*num_entries = 0;
+	*info = NULL;
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+
+	status = cache->backend->enum_dom_groups(domain, mem_ctx, num_entries, info);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	centry = centry_start(domain, status);
+	if (!centry) goto skip_save;
+	centry_put_uint32(centry, *num_entries);
+	for (i=0; i<(*num_entries); i++) {
+		centry_put_string(centry, (*info)[i].acct_name);
+		centry_put_string(centry, (*info)[i].acct_desc);
+		centry_put_uint32(centry, (*info)[i].rid);
+	}	
+	centry_end(centry, "GL/%s", domain->name);
+	centry_free(centry);
+
+skip_save:
+	return status;
 }
 
-/* Print cache status information */
 
-void winbindd_cache_status(void)
+/* convert a single name to a sid in a domain */
+static NTSTATUS name_to_sid(struct winbindd_domain *domain,
+			    const char *name,
+			    DOM_SID *sid,
+			    enum SID_NAME_USE *type)
 {
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "NS/%s/%s", domain->name, name);
+	if (!centry) goto do_query;
+	*type = centry_uint32(centry);
+	sid_parse(centry->data + centry->ofs, centry->len - centry->ofs, sid);
+
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	ZERO_STRUCTP(sid);
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+	status = cache->backend->name_to_sid(domain, name, sid, type);
+
+	/* and save it */
+	wcache_save_name_to_sid(domain, status, name, sid, *type);
+
+	return status;
 }
+
+/* convert a sid to a user or group name. The sid is guaranteed to be in the domain
+   given */
+static NTSTATUS sid_to_name(struct winbindd_domain *domain,
+			    TALLOC_CTX *mem_ctx,
+			    DOM_SID *sid,
+			    char **name,
+			    enum SID_NAME_USE *type)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	uint32 rid = 0;
+
+	sid_peek_rid(sid, &rid);
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "SN/%s/%d", domain->name, rid);
+	if (!centry) goto do_query;
+	if (NT_STATUS_IS_OK(centry->status)) {
+		*type = centry_uint32(centry);
+		*name = centry_string(centry, mem_ctx);
+	}
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	*name = NULL;
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+	status = cache->backend->sid_to_name(domain, mem_ctx, sid, name, type);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	wcache_save_sid_to_name(domain, status, sid, *name, *type, rid);
+
+	return status;
+}
+
+
+/* Lookup user information from a rid */
+static NTSTATUS query_user(struct winbindd_domain *domain, 
+			   TALLOC_CTX *mem_ctx, 
+			   uint32 user_rid, 
+			   WINBIND_USERINFO *info)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "U/%s/%x", domain->name, user_rid);
+	if (!centry) goto do_query;
+
+	info->acct_name = centry_string(centry, mem_ctx);
+	info->full_name = centry_string(centry, mem_ctx);
+	info->user_rid = centry_uint32(centry);
+	info->group_rid = centry_uint32(centry);
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	ZERO_STRUCTP(info);
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+	
+	status = cache->backend->query_user(domain, mem_ctx, user_rid, info);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	wcache_save_user(domain, status, info);
+
+	return status;
+}
+
+
+/* Lookup groups a user is a member of. */
+static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
+				  TALLOC_CTX *mem_ctx,
+				  uint32 user_rid, 
+				  uint32 *num_groups, uint32 **user_gids)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "UG/%s/%x", domain->name, user_rid);
+	if (!centry) goto do_query;
+
+	*num_groups = centry_uint32(centry);
+	
+	if (*num_groups == 0) goto do_cached;
+
+	(*user_gids) = talloc(mem_ctx, sizeof(**user_gids) * (*num_groups));
+	if (! (*user_gids)) smb_panic("lookup_usergroups out of memory");
+	for (i=0; i<(*num_groups); i++) {
+		(*user_gids)[i] = centry_uint32(centry);
+	}
+
+do_cached:	
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	(*num_groups) = 0;
+	(*user_gids) = NULL;
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+	status = cache->backend->lookup_usergroups(domain, mem_ctx, user_rid, num_groups, user_gids);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	centry = centry_start(domain, status);
+	if (!centry) goto skip_save;
+	centry_put_uint32(centry, *num_groups);
+	for (i=0; i<(*num_groups); i++) {
+		centry_put_uint32(centry, (*user_gids)[i]);
+	}	
+	centry_end(centry, "UG/%s/%x", domain->name, user_rid);
+	centry_free(centry);
+
+skip_save:
+	return status;
+}
+
+
+static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 group_rid, uint32 *num_names, 
+				uint32 **rid_mem, char ***names, 
+				uint32 **name_types)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "GM/%s/%x", domain->name, group_rid);
+	if (!centry) goto do_query;
+
+	*num_names = centry_uint32(centry);
+	
+	if (*num_names == 0) goto do_cached;
+
+	(*rid_mem) = talloc(mem_ctx, sizeof(**rid_mem) * (*num_names));
+	(*names) = talloc(mem_ctx, sizeof(**names) * (*num_names));
+	(*name_types) = talloc(mem_ctx, sizeof(**name_types) * (*num_names));
+
+	if (! (*rid_mem) || ! (*names) || ! (*name_types)) {
+		smb_panic("lookup_groupmem out of memory");
+	}
+
+	for (i=0; i<(*num_names); i++) {
+		(*rid_mem)[i] = centry_uint32(centry);
+		(*names)[i] = centry_string(centry, mem_ctx);
+		(*name_types)[i] = centry_uint32(centry);
+	}
+
+do_cached:	
+	status = centry->status;
+	centry_free(centry);
+	return status;
+
+do_query:
+	(*num_names) = 0;
+	(*rid_mem) = NULL;
+	(*names) = NULL;
+	(*name_types) = NULL;
+	
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+	status = cache->backend->lookup_groupmem(domain, mem_ctx, group_rid, num_names, 
+						 rid_mem, names, name_types);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	centry = centry_start(domain, status);
+	if (!centry) goto skip_save;
+	centry_put_uint32(centry, *num_names);
+	for (i=0; i<(*num_names); i++) {
+		centry_put_uint32(centry, (*rid_mem)[i]);
+		centry_put_string(centry, (*names)[i]);
+		centry_put_uint32(centry, (*name_types)[i]);
+	}	
+	centry_end(centry, "GM/%s/%x", domain->name, group_rid);
+	centry_free(centry);
+
+skip_save:
+	return status;
+}
+
+/* find the sequence number for a domain */
+static NTSTATUS sequence_number(struct winbindd_domain *domain, uint32 *seq)
+{
+	refresh_sequence_number(domain, False);
+
+	*seq = domain->sequence_number;
+
+	return NT_STATUS_OK;
+}
+
+/* enumerate trusted domains */
+static NTSTATUS trusted_domains(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_domains,
+				char ***names,
+				DOM_SID **dom_sids)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	/* we don't cache this call */
+	return cache->backend->trusted_domains(domain, mem_ctx, num_domains, 
+					       names, dom_sids);
+}
+
+/* find the domain sid */
+static NTSTATUS domain_sid(struct winbindd_domain *domain, DOM_SID *sid)
+{
+	struct winbind_cache *cache = get_cache(domain);
+
+	/* we don't cache this call */
+	return cache->backend->domain_sid(domain, sid);
+}
+
+/* the ADS backend methods are exposed via this structure */
+struct winbindd_methods cache_methods = {
+	True,
+	query_user_list,
+	enum_dom_groups,
+	name_to_sid,
+	sid_to_name,
+	query_user,
+	lookup_usergroups,
+	lookup_groupmem,
+	sequence_number,
+	trusted_domains,
+	domain_sid
+};

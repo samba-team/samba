@@ -8,6 +8,7 @@ Source: ftp://samba.org/pub/samba/samba-%{version}.tar.gz
 Packager: John H Terpstra [Samba-Team] <jht@samba.org>
 Requires: pam >= 0.72 kernel >= 2.2.1 glibc >= 2.1.2
 Prereq: chkconfig fileutils
+Provides: samba = %{version}, samba-common = %{version}, samba-client = %{version}, samba-swat = %{version}
 BuildRoot: /var/tmp/samba
 Prefix: /usr
 
@@ -187,7 +188,7 @@ mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/cache/samba
-mkdir -p $RPM_BUILD_ROOT/var/log/samba
+mkdir -p $RPM_BUILD_ROOT/var/{log,run}/samba
 mkdir -p $RPM_BUILD_ROOT/var/spool/samba
 mkdir -p $RPM_BUILD_ROOT/lib/security
 
@@ -515,6 +516,7 @@ MANDIR_MACRO/man8/*
 %dir /etc/codepages/*
 %attr(755,root,root) %dir /var/cache/samba
 %dir /var/log/samba
+%dir /var/run/samba
 %attr(1777,root,root) %dir /var/spool/samba
 %attr(-,root,root) /lib/libnss_winbind.so
 %attr(-,root,root) /lib/security/pam_winbind.so

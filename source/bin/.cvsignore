@@ -1,9 +1,13 @@
 .dummy
 .libs
 debug2html
+locktest
+locktest2
 make_printerdef
 make_smbcodepage
 make_unicodemap
+masktest
+msgtest
 nmbd
 nmblookup
 nsstest
@@ -24,6 +28,7 @@ smbstatus
 smbtorture
 smbumount
 swat
+tdbbackup
 testparm
 testprns
 wbinfo

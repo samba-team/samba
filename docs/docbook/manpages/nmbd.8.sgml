@@ -177,13 +177,14 @@
 		<listitem><para>The -l parameter specifies a directory 
 		into which the "log.nmbd" log file will be created
 		for operational data from the running
-		<command>nmbd</command> server.</para>
-
-		<para>The default log directory is compiled into Samba
+		<command>nmbd</command> server. The default log directory is compiled into Samba
 		as part of the build process. Common defaults are <filename>
 		/usr/local/samba/var/log.nmb</filename>, <filename>
 		/usr/samba/var/log.nmb</filename> or
-		<filename>/var/log/log.nmb</filename>.</para></listitem>
+		<filename>/var/log/log.nmb</filename>.  <emphasis>Beware:</emphasis>
+                If the directory specified does not exist, <command>nmbd</command>
+                will log to the default debug log location defined at compile time.
+		</para></listitem>
 		</varlistentry>
 		
 		

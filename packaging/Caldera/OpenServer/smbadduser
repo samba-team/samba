@@ -5,8 +5,8 @@
 unalias *
 set path = ($path)
 
-set smbpasswd = /etc/smbpasswd
-set user_map  = /etc/smbusers
+set smbpasswd = /etc/samba.d/smbpasswd
+set user_map  = /etc/samba.d/smbusers
 #
 # Set to site specific passwd command
 #

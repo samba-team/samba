@@ -122,7 +122,7 @@ int cli_get_response(int dgram_sock, BOOL unique, char *mailslot, char *buf, int
 
     /* Copy the data to buffer, respecting sizes ... */
 
-    bcopy(&dgram->data[92], buf, MIN(bufsiz, (dgram->datasize - 92)));
+    memcpy(buf, &dgram->data[92], MIN(bufsiz, (dgram->datasize - 92)));
 
   }
   else 

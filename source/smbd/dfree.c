@@ -158,8 +158,8 @@ static SMB_BIG_UINT disk_free(char *path, BOOL small_query,
 /****************************************************************************
 wrap it to get filenames right
 ****************************************************************************/
-SMB_BIG_UINT sys_disk_free(char *path, BOOL small_query, 
+SMB_BIG_UINT sys_disk_free(const char *path, BOOL small_query, 
                            SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize)
 {
-	return(disk_free(dos_to_unix(path,False),small_query, bsize,dfree,dsize));
+	return(disk_free(dos_to_unix_static(path),small_query, bsize,dfree,dsize));
 }

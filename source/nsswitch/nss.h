@@ -1,8 +1,7 @@
 #ifndef _NSSWITCH_NSS_H
 #define _NSSWITCH_NSS_H
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    a common place to work out how to define NSS_STATUS on various
    platforms
@@ -73,7 +72,7 @@ typedef enum
 #define NSD_MEM_VOLATILE 1
 #define NSD_MEM_DYNAMIC 2
 
-#elif defined(HPUX) && defined(HAVE_NSSWITCH_H)
+#elif defined(HPUX)
 /* HP-UX 11 */
 
 #include "nsswitch/hp_nss_common.h"

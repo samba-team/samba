@@ -7,7 +7,7 @@
 V=
 [ "$1" = "-n" ] && V=echo
 
-PREFIX=/usr/local/samba
+PREFIX=/usr/lib/samba
 HERE=`pwd`
 PKGDIR=packaging/Caldera/UnixWare
 
@@ -39,8 +39,7 @@ cd ../../..
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbsh smbwrapper.so 
+      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/bin
 done

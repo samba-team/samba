@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 3.0
+   Unix SMB/CIFS implementation.
    tdb utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    
@@ -50,64 +49,6 @@ void tdb_unlock_bystring(TDB_CONTEXT *tdb, char *keyval)
 	key.dsize = strlen(keyval)+1;
 	
 	tdb_chainunlock(tdb, key);
-}
-
-/****************************************************************************
- Fetch a value by a arbitrary blob key, return -1 if not found.
- JRA. DEPRECATED ! Use tdb_fetch_int32_byblob instead.
-****************************************************************************/
-
-int tdb_fetch_int_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len)
-{
-	TDB_DATA key, data;
-	int ret;
-
-	key.dptr = keyval;
-	key.dsize = len;
-	data = tdb_fetch(tdb, key);
-	if (!data.dptr || data.dsize != sizeof(int))
-		return -1;
-	
-	memcpy(&ret, data.dptr, sizeof(int));
-	SAFE_FREE(data.dptr);
-	return ret;
-}
-
-/****************************************************************************
- Fetch a value by string key, return -1 if not found.
- JRA. DEPRECATED ! Use tdb_fetch_int32 instead.
-****************************************************************************/
-
-int tdb_fetch_int(TDB_CONTEXT *tdb, char *keystr)
-{
-	return tdb_fetch_int_byblob(tdb, keystr, strlen(keystr) + 1);
-}
-
-/****************************************************************************
- Store a value by an arbitary blob key, return 0 on success, -1 on failure.
- JRA. DEPRECATED ! Use tdb_store_int32_byblob instead.
-****************************************************************************/
-
-int tdb_store_int_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, int v)
-{
-	TDB_DATA key, data;
-
-	key.dptr = keystr;
-	key.dsize = len;
-	data.dptr = (void *)&v;
-	data.dsize = sizeof(int);
-
-	return tdb_store(tdb, key, data, TDB_REPLACE);
-}
-
-/****************************************************************************
- Store a value by string key, return 0 on success, -1 on failure.
- JRA. DEPRECATED ! Use tdb_store_int32 instead.
-****************************************************************************/
-
-int tdb_store_int(TDB_CONTEXT *tdb, char *keystr, int v)
-{
-	return tdb_store_int_byblob(tdb, keystr, strlen(keystr) + 1, v);
 }
 
 /****************************************************************************
@@ -171,6 +112,68 @@ int tdb_store_int32(TDB_CONTEXT *tdb, char *keystr, int32 v)
 }
 
 /****************************************************************************
+ Fetch a uint32 value by a arbitrary blob key, return -1 if not found.
+ Output is uint32 in native byte order.
+****************************************************************************/
+
+BOOL tdb_fetch_uint32_byblob(TDB_CONTEXT *tdb, char *keyval, size_t len, uint32 *value)
+{
+	TDB_DATA key, data;
+
+	key.dptr = keyval;
+	key.dsize = len;
+	data = tdb_fetch(tdb, key);
+	if (!data.dptr || data.dsize != sizeof(uint32))
+		return False;
+	
+	*value = IVAL(data.dptr,0);
+	SAFE_FREE(data.dptr);
+	return True;
+}
+
+/****************************************************************************
+ Fetch a uint32 value by string key, return -1 if not found.
+ Output is uint32 in native byte order.
+****************************************************************************/
+
+BOOL tdb_fetch_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 *value)
+{
+	return tdb_fetch_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+}
+
+/****************************************************************************
+ Store a uint32 value by an arbitary blob key, return 0 on success, -1 on failure.
+ Input is uint32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+BOOL tdb_store_uint32_byblob(TDB_CONTEXT *tdb, char *keystr, size_t len, uint32 value)
+{
+	TDB_DATA key, data;
+	uint32 v_store;
+	BOOL ret = True;
+
+	key.dptr = keystr;
+	key.dsize = len;
+	SIVAL(&v_store, 0, value);
+	data.dptr = (void *)&v_store;
+	data.dsize = sizeof(uint32);
+
+	if (tdb_store(tdb, key, data, TDB_REPLACE) == -1)
+		ret = False;
+
+	return ret;
+}
+
+/****************************************************************************
+ Store a uint32 value by string key, return 0 on success, -1 on failure.
+ Input is uint32 in native byte order. Output in tdb is in little-endian.
+****************************************************************************/
+
+BOOL tdb_store_uint32(TDB_CONTEXT *tdb, char *keystr, uint32 value)
+{
+	return tdb_store_uint32_byblob(tdb, keystr, strlen(keystr) + 1, value);
+}
+/****************************************************************************
  Store a buffer by a null terminated string key.  Return 0 on success, -1
  on failure.
 ****************************************************************************/
@@ -205,41 +208,6 @@ TDB_DATA tdb_fetch_by_string(TDB_CONTEXT *tdb, char *keystr)
 
 /****************************************************************************
  Atomic integer change. Returns old value. To create, set initial value in *oldval. 
- Deprecated. Use int32 version. JRA.
-****************************************************************************/
-
-int tdb_change_int_atomic(TDB_CONTEXT *tdb, char *keystr, int *oldval, int change_val)
-{
-	int val;
-	int ret = -1;
-
-	if (tdb_lock_bystring(tdb, keystr) == -1)
-		return -1;
-
-	if ((val = tdb_fetch_int(tdb, keystr)) == -1) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
-			goto err_out;
-
-		val = *oldval;
-
-	} else {
-		*oldval = val;
-		val += change_val;
-	}
-		
-	if (tdb_store_int(tdb, keystr, val) == -1)
-		goto err_out;
-
-	ret = 0;
-
-  err_out:
-
-	tdb_unlock_bystring(tdb, keystr);
-	return ret;
-}
-
-/****************************************************************************
- Atomic integer change. Returns old value. To create, set initial value in *oldval. 
 ****************************************************************************/
 
 int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int32 change_val)
@@ -251,16 +219,23 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 		return -1;
 
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
-		if (tdb_error(tdb) != TDB_ERR_NOEXIST)
+		/* The lookup failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
+			/* but not becouse it didn't exist */
 			goto err_out;
+		}
 
+		/* Start with 'old' value */
 		val = *oldval;
 
 	} else {
+		/* It worked, set return value (oldval) to tdb data */
 		*oldval = val;
-		val += change_val;
 	}
 		
+	/* Increment value for storage and return next time */
+	val += change_val;
+
 	if (tdb_store_int32(tdb, keystr, val) == -1)
 		goto err_out;
 
@@ -268,6 +243,48 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, char *keystr, int32 *oldval, int
 
   err_out:
 
+	tdb_unlock_bystring(tdb, keystr);
+	return ret;
+}
+
+/****************************************************************************
+ Atomic unsigned integer change. Returns old value. To create, set initial value in *oldval. 
+****************************************************************************/
+
+BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, char *keystr, uint32 *oldval, uint32 change_val)
+{
+	uint32 val;
+	BOOL ret = False;
+ 
+	if (tdb_lock_bystring(tdb, keystr) == -1)
+		return False;
+ 
+	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
+		/* It failed */
+		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
+			/* and not becouse it didn't exist */
+			goto err_out;
+		}
+ 
+		/* Start with 'old' value */
+		val = *oldval;
+ 
+	} else {
+		/* it worked, set return value (oldval) to tdb data */
+		*oldval = val;
+ 
+	}
+ 
+	/* get a new value to store */
+	val += change_val;
+ 
+	if (!tdb_store_uint32(tdb, keystr, val))
+		goto err_out;
+ 
+	ret = True;
+ 
+  err_out:
+ 
 	tdb_unlock_bystring(tdb, keystr);
 	return ret;
 }
@@ -472,7 +489,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 	if (!ptr || !*ptr)
 		return;
 
-	DEBUG(level, ("tdb(%s): %s", tdb->name, ptr));
+	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unknown", ptr));
 	SAFE_FREE(ptr);
 }
 
@@ -481,7 +498,7 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
  the samba DEBUG() system.
 ****************************************************************************/
 
-TDB_CONTEXT *tdb_open_log(char *name, int hash_size, int tdb_flags,
+TDB_CONTEXT *tdb_open_log(const char *name, int hash_size, int tdb_flags,
 			  int open_flags, mode_t mode)
 {
 	TDB_CONTEXT *tdb;

@@ -29,6 +29,30 @@ owner = root
 group = sys
 flags = 
 
+DIR:Control:SHARED:cntl/packages/Samba:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:Control:SHARED:cntl/packages/Samba/ccs:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+DIR:Control:SHARED:cntl/packages/SambaSWAT:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
+FILE:Control:SHARED:cntl/packages/SambaSWAT/ccs:
+mode  = 0755
+owner = root
+group = sys
+flags = 
+
 DIR:Control:SHARED:cntl/packages/SambaDOC:
 mode  = 0755
 owner = root
@@ -187,13 +211,6 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/bin/smbspool
 
-FILE:Samba:SHARED:usr/lib/samba/bin/smbsh:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/bin/smbsh
-
 FILE:Samba:SHARED:usr/lib/samba/bin/mksmbpasswd.sh:
 mode  = 0755
 owner = root
@@ -256,33 +273,12 @@ group = sys
 flags = 
 exportPath = /usr/lib/samba/sbin/debug2html
 
-FILE:Samba:SHARED:usr/lib/samba/sbin/smbtorture:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/smbtorture
-
 FILE:Samba:SHARED:usr/lib/samba/sbin/smbfilter:
 mode  = 0755
 owner = root
 group = sys
 flags = 
 exportPath = /usr/lib/samba/sbin/smbfilter
-
-FILE:Samba:SHARED:usr/lib/samba/sbin/locktest2:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/locktest2
-
-FILE:Samba:SHARED:usr/lib/samba/sbin/masktest:
-mode  = 0755
-owner = root
-group = sys
-flags = 
-exportPath = /usr/lib/samba/sbin/masktest
 
 DIR:Samba:SHARED:usr/lib/samba/lib:
 mode  = 0755
@@ -505,6 +501,13 @@ group = sys
 flags = 
 exportPath = /etc/samba.d/smbusers
 
+FILE:Samba:CLIENT:etc/samba.d/lmhosts:
+mode  = 0644
+owner = root
+group = sys
+flags = 
+exportPath = /etc/samba.d/lmhosts
+
 DIR:Samba:CLIENT:usr/lib/samba/var:
 mode  = 0755
 owner = root
@@ -517,10 +520,20 @@ owner = root
 group = sys
 flags = 
 exportPath = /var/log/samba.d
+exportPath = /usr/lib/samba/var/log
 
 DIR:Samba:CLIENT:usr/lib/samba/var/locks:
+mode  = 1777
+owner = root
+group = sys
+flags = 
+exportPath = /var/locks/samba.d
+exportPath = /usr/lib/samba/var/locks
+
+DIR:Samba:CLIENT:usr/lib/samba/var/spool:
 mode  = 0755
 owner = root
 group = sys
 flags = 
-exportPath = /var/locks/samba
+exportPath = /var/spool/samba
+exportPath = /usr/lib/samba/var/spool

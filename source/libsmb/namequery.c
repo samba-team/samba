@@ -26,25 +26,25 @@
 BOOL global_in_nmbd = False;
 
 /****************************************************************************
-generate a random trn_id
+ Generate a random trn_id.
 ****************************************************************************/
+
 static int generate_trn_id(void)
 {
 	static int trn_id;
 
-	if (trn_id == 0) {
+	if (trn_id == 0)
 		sys_srandom(sys_getpid());
-	}
 
 	trn_id = sys_random();
 
 	return trn_id % (unsigned)0x7FFF;
 }
 
-
 /****************************************************************************
- parse a node status response into an array of structures
+ Parse a node status response into an array of structures.
 ****************************************************************************/
+
 static struct node_status *parse_node_status(char *p, int *num_names)
 {
 	struct node_status *ret;
@@ -68,11 +68,11 @@ static struct node_status *parse_node_status(char *p, int *num_names)
 	return ret;
 }
 
-
 /****************************************************************************
-do a NBT node status query on an open socket and return an array of
-structures holding the returned names or NULL if the query failed
+ Do a NBT node status query on an open socket and return an array of
+ structures holding the returned names or NULL if the query failed.
 **************************************************************************/
+
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names)
 {
@@ -188,7 +188,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 
 	StrnCpy(name, status[i].name, 15);
 
-	dos_to_unix(name, True);
+	dos_to_unix(name);
 
 	SAFE_FREE(status);
 	return True;
@@ -822,6 +822,10 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   BOOL allones = (strcmp(name,"255.255.255.255") == 0);
   BOOL allzeros = (strcmp(name,"0.0.0.0") == 0);
   BOOL is_address = is_ipaddress(name);
+  BOOL result = False;
+  struct in_addr *nodupes_iplist;
+  int i;
+
   *return_iplist = NULL;
   *return_count = 0;
 
@@ -849,29 +853,89 @@ static BOOL internal_resolve_name(const char *name, int name_type,
   while (next_token(&ptr, tok, LIST_SEP, sizeof(tok))) {
 	  if((strequal(tok, "host") || strequal(tok, "hosts"))) {
 		  if (name_type == 0x20 && resolve_hosts(name, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "lmhosts")) {
 		  if (resolve_lmhosts(name, name_type, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "wins")) {
 		  /* don't resolve 1D via WINS */
 		  if (name_type != 0x1D &&
-		      resolve_wins(name, name_type, return_iplist, return_count)) {
-			  return True;
+		        resolve_wins(name, name_type, return_iplist, return_count)) {
+			  result = True;
+              goto done;
 		  }
 	  } else if(strequal( tok, "bcast")) {
 		  if (name_resolve_bcast(name, name_type, return_iplist, return_count)) {
-			  return True;
+			  result = True;
+              goto done;
 		  }
 	  } else {
 		  DEBUG(0,("resolve_name: unknown name switch type %s\n", tok));
 	  }
   }
 
+  /* All of the resolve_* functions above have returned false. */
+
   SAFE_FREE(*return_iplist);
   return False;
+
+  done:
+
+  /* Remove duplicate entries.  Some queries, notably #1c (domain
+     controllers) return the PDC in iplist[0] and then all domain
+     controllers including the PDC in iplist[1..n].  Iterating over
+     the iplist when the PDC is down will cause two sets of timeouts. */
+
+  if (*return_count && (nodupes_iplist =
+			(struct in_addr *)malloc(sizeof(struct in_addr) * (*return_count)))) {
+      int nodupes_count = 0;
+ 
+      /* Iterate over return_iplist looking for duplicates */
+ 
+      for (i = 0; i < *return_count; i++) {
+          BOOL is_dupe = False;
+          int j;
+ 
+          for (j = i + 1; j < *return_count; j++) {
+              if (ip_equal((*return_iplist)[i],
+                       (*return_iplist)[j])) {
+                  is_dupe = True;
+                  break;
+              }
+          }
+ 
+          if (!is_dupe) {
+ 
+              /* This one not a duplicate */
+ 
+              nodupes_iplist[nodupes_count] = (*return_iplist)[i];
+              nodupes_count++;
+          }
+      }
+ 
+      /* Switcheroo with original list */
+ 
+      free(*return_iplist);
+ 
+      *return_iplist = nodupes_iplist;
+      *return_count = nodupes_count;
+  }
+ 
+  /* Display some debugging info */
+ 
+  DEBUG(10, ("internal_resolve_name: returning %d addresses: ",
+         *return_count));
+ 
+  for (i = 0; i < *return_count; i++)
+      DEBUGADD(10, ("%s ", inet_ntoa((*return_iplist)[i])));
+ 
+  DEBUG(10, ("\n"));
+ 
+  return result;
 }
 
 /********************************************************
@@ -1190,7 +1254,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
 
-BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
+BOOL get_dc_list(BOOL pdc_only, const char *group, struct in_addr **ip_list, int *count)
 {
 	int name_type = pdc_only ? 0x1B : 0x1C;
 
@@ -1211,8 +1275,15 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 
 		p = pserver;
 		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
-			if (strequal(name, "*"))
-				return internal_resolve_name(group, name_type, ip_list, count);
+			if (strequal(name, "*")) {
+				/*
+				 * Use 1C followed by 1B. This shouldn't work but with
+				 * broken WINS servers it might. JRA.
+				 */
+				if (!pdc_only && internal_resolve_name(group, 0x1C, ip_list, count))
+					return True;
+				return internal_resolve_name(group, 0x1B, ip_list, count);
+			}
 			num_adresses++;
 		}
 		if (num_adresses == 0)
@@ -1240,6 +1311,7 @@ BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *coun
 /********************************************************
  Get the IP address list of the Local Master Browsers
 ********************************************************/
+
 BOOL get_lmb_list(struct in_addr **ip_list, int *count)
 {
 	return internal_resolve_name( MSBROWSE, 0x1, ip_list, count);

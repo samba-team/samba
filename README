@@ -90,7 +90,7 @@ CONTRIBUTIONS
 
 If you want to contribute to the development of the software then
 please join the mailing list. The Samba team accepts patches
-(preferably in "diff -u" format, see docs/BUGS.txt for more details)
+(preferably in "diff -u" format, see docs/textdocs/BUGS.txt for more details)
 and are always glad to receive feedback or suggestions to the address
 samba@samba.org. We have recently put a new bug tracking
 system into place which should help the throughput quite a lot. You

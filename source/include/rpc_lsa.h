@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 1.9.
+   Unix SMB/CIFS implementation.
    SMB parameters and setup
    Copyright (C) Andrew Tridgell 1992-1997
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997
@@ -39,7 +38,7 @@ enum SID_NAME_USE
 	SID_NAME_UNKNOWN = 8  /* oops. */
 };
 
-/* Opcodes available on this pipe */
+/* Opcodes available on PIPE_LSARPC */
 
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
@@ -91,9 +90,6 @@ enum SID_NAME_USE
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
 
-#define LSA_MAX_GROUPS 96
-#define LSA_MAX_SIDS 128
-
 /* DOM_QUERY - info class 3 and 5 LSA Query response */
 typedef struct dom_query_info
 {
@@ -106,7 +102,7 @@ typedef struct dom_query_info
 
 } DOM_QUERY;
 
-/* level 5 is same as level 3.  we hope. */
+/* level 5 is same as level 3. */
 typedef DOM_QUERY DOM_QUERY_3;
 typedef DOM_QUERY DOM_QUERY_5;
 
@@ -131,7 +127,6 @@ typedef struct seq_qos_info
 	uint16 sec_imp_level; /* 0x02 - impersonation level */
 	uint8  sec_ctxt_mode; /* 0x01 - context tracking mode */
 	uint8  effective_only; /* 0x00 - effective only */
-	uint32 unknown;        /* 0x2000 0000 - not known */
 
 } LSA_SEC_QOS;
 
@@ -184,6 +179,53 @@ typedef struct lsa_r_open_pol2_info
 	NTSTATUS status; /* return code */
 
 } LSA_R_OPEN_POL2;
+
+
+#define POLICY_VIEW_LOCAL_INFORMATION    0x00000001
+#define POLICY_VIEW_AUDIT_INFORMATION    0x00000002
+#define POLICY_GET_PRIVATE_INFORMATION   0x00000004
+#define POLICY_TRUST_ADMIN               0x00000008
+#define POLICY_CREATE_ACCOUNT            0x00000010
+#define POLICY_CREATE_SECRET             0x00000020
+#define POLICY_CREATE_PRIVILEGE          0x00000040
+#define POLICY_SET_DEFAULT_QUOTA_LIMITS  0x00000080
+#define POLICY_SET_AUDIT_REQUIREMENTS    0x00000100
+#define POLICY_AUDIT_LOG_ADMIN           0x00000200
+#define POLICY_SERVER_ADMIN              0x00000400
+#define POLICY_LOOKUP_NAMES              0x00000800
+
+#define POLICY_ALL_ACCESS ( STANDARD_RIGHTS_REQUIRED_ACCESS  |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION   |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN              |\
+                            POLICY_LOOKUP_NAMES )
+
+
+#define POLICY_READ       ( STANDARD_RIGHTS_READ_ACCESS      |\
+                            POLICY_VIEW_AUDIT_INFORMATION    |\
+                            POLICY_GET_PRIVATE_INFORMATION)
+
+#define POLICY_WRITE      ( STANDARD_RIGHTS_WRITE_ACCESS     |\
+                            POLICY_TRUST_ADMIN               |\
+                            POLICY_CREATE_ACCOUNT            |\
+                            POLICY_CREATE_SECRET             |\
+                            POLICY_CREATE_PRIVILEGE          |\
+                            POLICY_SET_DEFAULT_QUOTA_LIMITS  |\
+                            POLICY_SET_AUDIT_REQUIREMENTS    |\
+                            POLICY_AUDIT_LOG_ADMIN           |\
+                            POLICY_SERVER_ADMIN)
+
+#define POLICY_EXECUTE    ( STANDARD_RIGHTS_EXECUTE_ACCESS   |\
+                            POLICY_VIEW_LOCAL_INFORMATION    |\
+                            POLICY_LOOKUP_NAMES )
 
 /* LSA_Q_QUERY_SEC_OBJ - LSA query security */
 typedef struct lsa_query_sec_obj_info
@@ -317,7 +359,8 @@ typedef struct lsa_trans_name_info
 
 } LSA_TRANS_NAME;
 
-#define MAX_LOOKUP_SIDS 30
+/* This number purly arbitary - just to prevent a client from requesting large amounts of memory */
+#define MAX_LOOKUP_SIDS 256
 
 /* LSA_TRANS_NAME_ENUM - LSA Translated Name Enumeration container */
 typedef struct lsa_trans_name_enum_info
@@ -570,21 +613,60 @@ typedef struct lsa_r_getsystemaccount
 } LSA_R_GETSYSTEMACCOUNT;
 
 
+typedef struct lsa_q_setsystemaccount
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 access;
+} LSA_Q_SETSYSTEMACCOUNT;
+
+typedef struct lsa_r_setsystemaccount
+{
+	NTSTATUS status;
+} LSA_R_SETSYSTEMACCOUNT;
+
+
+typedef struct lsa_q_lookupprivvalue
+{
+	POLICY_HND pol; /* policy handle */
+	UNIHDR hdr_right;
+	UNISTR2 uni2_right;
+} LSA_Q_LOOKUPPRIVVALUE;
+
+typedef struct lsa_r_lookupprivvalue
+{
+	LUID luid;
+	NTSTATUS status;
+} LSA_R_LOOKUPPRIVVALUE;
+
+
+typedef struct lsa_q_addprivs
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 count;
+	PRIVILEGE_SET set;
+} LSA_Q_ADDPRIVS;
+
+typedef struct lsa_r_addprivs
+{
+	NTSTATUS status;
+} LSA_R_ADDPRIVS;
+
+
+typedef struct lsa_q_removeprivs
+{
+	POLICY_HND pol; /* policy handle */
+	uint32 allrights;
+	uint32 ptr;
+	uint32 count;
+	PRIVILEGE_SET set;
+} LSA_Q_REMOVEPRIVS;
+
+typedef struct lsa_r_removeprivs
+{
+	NTSTATUS status;
+} LSA_R_REMOVEPRIVS;
+
+
 #endif /* _RPC_LSA_H */
-/*
-
-opnum 11: opensid: query: handle du domaine, sid du user
-reply: handle, status
-
-opnum 12: getlistofprivs: query: handle du user
-reply: ptr, nombre, nombre, tableau de 3 uint32: flag+priv.low+priv.high
-uint32 0, status 
-
-opnum 17: ?? query: handle
-reply: uint32 + status
-
-
-*/
-
 
 

@@ -274,6 +274,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--libdir='$(DESTDIR)%{EtcSamba}' \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
+	--with-piddir='$(DESTDIR)/var/run/samba' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
 	--with-sambabook='$(DESTDIR)/usr/share/swat/using_samba' \
 	--with-configdir='$(DESTDIR)'%{EtcSamba} \
@@ -291,6 +292,14 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 #	--with-tdbsam
 
 make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smbspool
+
+# Now build the VFS modules
+cd ../examples/VFS
+make
+cd block
+mv block.c block.c.old
+sed 's/etc\/samba/etc\/samba\.d/g' < block.c.old > block.c
+make
  
 
 %Install
@@ -298,14 +307,14 @@ make LOGFILEBASE=/var/log/samba.d all nsswitch/libnss_wins.so debug2html bin/smb
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{logrotate,pam}.d,sysconfig/daemons}
-mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
+mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba,run/samba}
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/lib/security
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/usr/share/samba/codepages/src $DESTDIR/sbin
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/{include,lib}
+mkdir -p $DESTDIR/usr/{include,lib/samba}
 
 make LOGFILEBASE=/var/log/samba.d -C source  install
 
@@ -327,6 +336,12 @@ install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.
 # Make link for winbind resolver
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
 ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
+
+# Adding VFS modules
+install -m 755 examples/VFS/audit.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/recycle.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/skel.so $DESTDIR/usr/lib/samba
+install -m 755 examples/VFS/block/block.so $DESTDIR/usr/lib/samba
 
 install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
@@ -350,6 +365,7 @@ cp -p $VVS/smbadduser $DESTDIR/usr/bin/smbadduser
 
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
+cp -p $VVS/winbind.daemon $DESTDIR/etc/sysconfig/daemons/winbind
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
@@ -358,7 +374,8 @@ cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
 
 #lsb: cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
-install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/%{Name}
+install -m 755 $VVS/samba.init-lsb $DESTDIR/%{SVIdir}/samba
+install -m 755 $VVS/winbind.init $DESTDIR/%{SVIdir}/winbind
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 for f in testparm testprns; do
@@ -431,6 +448,7 @@ done
 cat << 'EOF' | %{mkLists} -d samba
 Samba					base
 /lib/$					base
+/usr/lib/samba/$				base
 %{LSBservedir}				config-IGNORED
 ^/(etc|var|home|tmp)			config-IGNORED
 swat					swat
@@ -449,6 +467,8 @@ Samba/README.txt			base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 libnss_*				base
 pam_*					base
+winbind*				base
+/usr/lib/samba/*			base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
@@ -500,13 +520,16 @@ test "$1" = "0" || exit 0
 %Files -f files-samba-base
 %defattr(-,root,root)
 %config %attr(0755,root,root) %{SVIdir}/samba
+%config %attr(0755,root,root) %{SVIdir}/winbind
 %config %attr(644,root,root) /etc/sysconfig/daemons/samba
+%config %attr(644,root,root) /etc/sysconfig/daemons/winbind
 %config %attr(644,root,root) /etc/pam.d/samba
 %config %attr(644,root,root) /etc/logrotate.d/samba
 %config %attr(-,root,root) %{EtcSamba}
 %dir %attr(755,root,root) /var/lock/samba.d
 %dir %attr(755,root,root) /var/log/samba.d
 %dir %attr(1777,root,root) /var/spool/samba
+%dir %attr(755,root,root) /var/run/samba
 %dir %attr(755,root,root) %{LSBservedir}
 %dir %attr(755,root,root) %{LSBservedir}/netlogon
 %dir %attr(755,root,root) %{LSBservedir}/profiles

@@ -146,6 +146,13 @@ print IDB "l 0000 root sys etc/rc2.d/S81samba $SRCPFX/packaging/SGI $PKG.sw.base
 print IDB "l 0000 root sys etc/rc2.d/S82winbind $SRCPFX/packaging/SGI $PKG.sw.base symval(../init.d/winbind)\n";
 
 if ($PKG eq "samba_irix") {
+  print IDB "d 0755 root sys usr/include/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/include/samba/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+
+  print IDB "d 0755 root sys usr/lib32/samba $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/lib32/samba/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/lib32/samba/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
+
   print IDB "d 0755 root sys usr/relnotes/samba_irix $SRCPFX/packaging/SGI $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/TC build/TC $PKG.man.relnotes\n";
   print IDB "f 0644 root sys usr/relnotes/samba_irix/ch1.z build/ch1.z $PKG.man.relnotes\n";
@@ -175,7 +182,7 @@ while(@bins) {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
     }
     elsif ($filename eq "swat") {
-      print IDB "f 4755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base preop(\"chroot \$rbase /etc/init.d/samba stop\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true\")\n";
+      print IDB "f 4755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base preop(\"chroot \$rbase /etc/init.d/samba stop; exit 0\") exitop(\"chroot \$rbase /usr/samba/scripts/startswat.sh; exit 0\") removeop(\"chroot \$rbase /sbin/cp /etc/inetd.conf /etc/inetd.conf.O ; chroot \$rbase /sbin/sed -e '/^swat/D' -e '/^#SWAT/D' /etc/inetd.conf.O >/etc/inetd.conf; /etc/killall -HUP inetd || true; exit 0\")\n";
     }
     elsif ($filename eq "sambalp") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base \n";
@@ -219,11 +226,20 @@ while (@docs) {
   }
 }
 
+if ($PKG ne "samba_irix") {
+  print IDB "d 0755 root sys usr/samba/include $SRCPFX/packaging/SGI $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/samba/include/libsmbclient.h $SRCPFX/source/include/libsmbclient.h $PKG.sw.base\n";
+}
+
 print IDB "d 0755 root sys usr/samba/lib $SRCPFX/packaging/SGI $PKG.sw.base\n";
 print IDB "d 0755 root sys usr/samba/lib/codepages $SRCPFX/packaging/SGI $PKG.sw.base\n";
 while (@codepage) {
   $nextpage = shift @codepage;
   print IDB "f 0644 root sys usr/samba/lib/codepages/$nextpage $SRCPFX/packaging/SGI/codepages/$nextpage $PKG.sw.base nostrip \n";
+}
+if ($PKG ne "samba_irix") {
+  print IDB "f 0644 root sys usr/samba/lib/libsmbclient.a $SRCPFX/source/bin/libsmbclient.a $PKG.sw.base\n";
+  print IDB "f 0644 root sys usr/samba/lib/libsmbclient.so $SRCPFX/source/bin/libsmbclient.so $PKG.sw.base\n";
 }
 print IDB "f 0644 root sys usr/samba/lib/smb.conf $SRCPFX/packaging/SGI/smb.conf $PKG.sw.base config(suggest)\n";
 
@@ -239,7 +255,7 @@ print IDB "f 0600 root sys usr/samba/private/smbpasswd $SRCPFX/packaging/SGI/smb
 
 print IDB "d 0755 root sys usr/samba/scripts $SRCPFX/packaging/SGI $PKG.src.samba\n";
 print IDB "f 0755 root sys usr/samba/scripts/inetd.sh $SRCPFX/packaging/SGI/inetd.sh $PKG.sw.base\n";
-print IDB "f 0755 root sys usr/samba/scripts/inst.msg $SRCPFX/packaging/SGI/inst.msg $PKG.sw.base exitop(\"chroot \$rbase /usr/samba/scripts/inst.msg\")\n";
+print IDB "f 0755 root sys usr/samba/scripts/inst.msg $SRCPFX/packaging/SGI/inst.msg $PKG.sw.base exitop(\"chroot \$rbase /usr/samba/scripts/inst.msg; exit 0\")\n";
 print IDB "f 0755 root sys usr/samba/scripts/mkprintcap.sh $SRCPFX/packaging/SGI/mkprintcap.sh $PKG.sw.base\n";
 print IDB "f 0755 root sys usr/samba/scripts/removeswat.sh $SRCPFX/packaging/SGI/removeswat.sh $PKG.sw.base\n";
 print IDB "f 0755 root sys usr/samba/scripts/startswat.sh $SRCPFX/packaging/SGI/startswat.sh $PKG.sw.base\n";
@@ -309,8 +325,7 @@ if (@nsswitch) {
   while(@nsswitch) {
     $nextfile = shift @nsswitch;
     ($filename = $nextfile) =~ s/^.*\///;
-    $filename =~ s/libnss/libns/;
-    print IDB "f 0644 root sys var/ns/lib/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+    print IDB "f 0644 root sys var/ns/lib/$filename $SRCPFX/source/nsswitch/$filename $PKG.sw.base \n";
   }
 }
 

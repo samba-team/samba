@@ -20,6 +20,7 @@ BUILD_ROOT=${HERE}/dist
 BLDFIX=${BUILD_ROOT}/${PREFIX}
 $V rm -rf $BUILD_ROOT
 $V mkdir -p $BUILD_ROOT/etc/init.d
+$V mkdir -p $BUILD_ROOT/etc/samba.d
 $V mkdir -p $BUILD_ROOT/usr/lib/mkdev
 $V mkdir -p $BUILD_ROOT/doc
 $V mkdir -p ${BLDFIX}/bin
@@ -51,8 +52,7 @@ cd ../../..
 
 # Install standard binary files
 for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
-      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool \
-      smbsh
+      make_smbcodepage make_unicodemap make_printerdef rpcclient smbspool
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/bin
 done
@@ -62,7 +62,7 @@ $V    install -m755 source/script/$i ${BLDFIX}/bin
 done
 
 # Install secure binary files
-for i in smbd nmbd swat debug2html smbtorture smbfilter locktest2 masktest
+for i in smbd nmbd swat debug2html smbfilter
 do
 $V    install -m755 -s source/bin/$i ${BLDFIX}/sbin
 done
@@ -126,6 +126,7 @@ $V install -m644 docs/manpages/smbmnt.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbumount.8 ${BLDFIX}/man/man.8
 $V install -m644 ${PKGDIR}/smb.conf $BUILD_ROOT/etc/samba.d/smb.conf.default
 $V install -m644 ${PKGDIR}/smbusers $BUILD_ROOT/etc/samba.d/smbusers
+$V install -m644 ${PKGDIR}/lmhosts $BUILD_ROOT/etc/samba.d/lmhosts
 $V install -m755 ${PKGDIR}/smbprint ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/findsmb ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/smbadduser ${BLDFIX}/bin
@@ -133,6 +134,9 @@ $V install -m755 ${PKGDIR}/initconfig ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/smb.init $BUILD_ROOT/etc/init.d/samba
 $V install -m755 ${PKGDIR}/smb.mkdev $BUILD_ROOT/usr/lib/mkdev/samba
 $V install -m644 ${PKGDIR}/docview.html $BUILD_ROOT/doc/index.html
+$V install -m644 ${PKGDIR}/osr5config.html $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/callogo.gif $BUILD_ROOT/doc
+$V install -m644 ${PKGDIR}/samba.desktop $BUILD_ROOT/doc
 $V install -m644 ${PKGDIR}/swat.readme ${BLDFIX}/swat/README
 
 # The following is now done in the postinstall script

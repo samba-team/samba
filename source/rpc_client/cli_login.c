@@ -169,13 +169,13 @@ NTSTATUS cli_nt_login_network(struct cli_state *cli, char *domain, char *usernam
 	ctr->switch_value = NET_LOGON_TYPE;
 
 	fstrcpy(dos_wksta_name, cli->clnt_name_slash);
-	unix_to_dos(dos_wksta_name, True);
+	unix_to_dos(dos_wksta_name);
 
 	fstrcpy(dos_username, username);
-	unix_to_dos(dos_username, True);
+	unix_to_dos(dos_username);
 
 	fstrcpy(dos_domain, domain);
-	unix_to_dos(dos_domain, True);
+	unix_to_dos(dos_domain);
 
 	/* Create the structure needed for SAM logon. */
 	init_id_info2(&ctr->auth.id2, dos_domain, 0, smb_userid_low, 0,

@@ -33,6 +33,7 @@ static char *maskchars = "<>\"?*abc.";
 static char *filechars = "abcdefghijklm.";
 static int verbose;
 static int die_on_error;
+static int NumLoops = 0;
 
 /* a test fn for LANMAN mask support */
 int ms_fnmatch_lanman_core(char *pattern, char *string)
@@ -165,7 +166,6 @@ struct cli_state *connect_one(char *share)
 	char *server_n;
 	char *server;
 	struct in_addr ip;
-	extern struct in_addr ipzero;
 
 	server = share+2;
 	share = strchr(server,'\\');
@@ -175,13 +175,13 @@ struct cli_state *connect_one(char *share)
 
 	server_n = server;
 	
-	ip = ipzero;
+	zero_ip(&ip);
 
 	make_nmb_name(&calling, "masktest", 0x0);
 	make_nmb_name(&called , server, 0x20);
 
  again:
-	ip = ipzero;
+	zero_ip(&ip);
 
 	/* have to open a new connection */
 	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, 139) == 0) ||
@@ -383,6 +383,8 @@ static void test_mask(int argc, char *argv[],
 		if (strspn(file+l, ".") == strlen(file+l)) continue;
 
 		testpair(cli, mask, file);
+		if (NumLoops && (--NumLoops == 0))
+		break;
 	}
 
  finished:
@@ -396,11 +398,16 @@ static void usage(void)
 "Usage:\n\
   masktest //server/share [options..]\n\
   options:\n\
+	-d debuglevel\n\
+	-n numloops\n\
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
+	-M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
+        -v                             verbose mode\n\
+        -E                             die on error\n\
         -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
@@ -420,16 +427,20 @@ static void usage(void)
 	extern char *optarg;
 	extern int optind;
 	extern FILE *dbf;
+	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;
 	static pstring servicesf = CONFIGFILE;
+	extern int Protocol;
 
 	setlinebuf(stdout);
 
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
 	dbf = stderr;
 
-	if (argv[1][0] == '-' || argc < 2) {
+	if (argc < 2 || argv[1][0] == '-') {
 		usage();
 		exit(1);
 	}
@@ -445,10 +456,6 @@ static void usage(void)
 
 	TimeInit();
 	charset_initialise();
-	codepage_initialise(lp_client_code_page());
-
-	lp_load(servicesf,True,False,False);
-	load_interfaces();
 
 	if (getenv("USER")) {
 		pstrcpy(username,getenv("USER"));
@@ -456,8 +463,14 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'n':
+			NumLoops = atoi(optarg);
+			break;
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 		case 'E':
 			die_on_error = 1;
 			break;
@@ -503,12 +516,16 @@ static void usage(void)
 	argc -= optind;
 	argv += optind;
 
+	lp_load(servicesf,True,False,False);
+	load_interfaces();
+	codepage_initialise(lp_client_code_page());
 
 	cli = connect_one(share);
 	if (!cli) {
 		DEBUG(0,("Failed to connect to %s\n", share));
 		exit(1);
 	}
+	Protocol = cli->protocol;
 
 	/* need to init seed after connect as clientgen uses random numbers */
 	DEBUG(0,("seed=%d\n", seed));

@@ -53,11 +53,12 @@ BOOL print_backend_init(void)
 {
 	char *sversion = "INFO/version";
 
-	if (tdb && local_pid == sys_getpid()) return True;
+	if (tdb && local_pid == sys_getpid())
+		return True;
 	tdb = tdb_open_log(lock_path("printing.tdb"), 0, TDB_DEFAULT, O_RDWR|O_CREAT, 0600);
 	if (!tdb) {
-		DEBUG(0,("print_backend_init: Failed to open printing backend database. Error = [%s]\n",
-				 tdb_errorstr(tdb)));
+		DEBUG(0,("print_backend_init: Failed to open printing backend database %s.\n",
+					lock_path("printing.tdb") ));
 		return False;
 	}
 	local_pid = sys_getpid();
@@ -109,6 +110,7 @@ static struct printjob *print_job_find(int jobid)
 
 	memcpy(&pjob, ret.dptr, sizeof(pjob));
 	SAFE_FREE(ret.dptr);
+	unix_to_dos(pjob.queuename);
 	return &pjob;
 }
 
@@ -119,10 +121,14 @@ static struct printjob *print_job_find(int jobid)
 static BOOL print_job_store(int jobid, struct printjob *pjob)
 {
 	TDB_DATA d;
+	BOOL ret;
+
+	dos_to_unix(pjob->queuename);
 	d.dptr = (void *)pjob;
 	d.dsize = sizeof(*pjob);
-
-	return (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	ret = (tdb_store(tdb, print_key(jobid), d, TDB_REPLACE) == 0);
+	unix_to_dos(pjob->queuename);
+	return ret;
 }
 
 /****************************************************************************
@@ -166,9 +172,9 @@ static void print_unix_job(int snum, print_queue_struct *q)
 	pj.spooled = True;
 	pj.smbjob = False;
 	fstrcpy(pj.filename, "");
-	fstrcpy(pj.jobname, q->file);
-	fstrcpy(pj.user, q->user);
-	fstrcpy(pj.qname, lp_servicename(snum));
+	fstrcpy(pj.jobname, q->fs_file);
+	fstrcpy(pj.user, q->fs_user);
+	fstrcpy(pj.queuename, lp_servicename(snum));
 
 	print_job_store(jobid, &pj);
 }
@@ -189,8 +195,9 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
-	if (strcmp(lp_servicename(ts->snum), pjob.qname)) {
+	if (ts->snum != lp_servicenumber(pjob.queuename)) {
 		/* this isn't for the queue we are looking at */
 		ts->total_jobs++;
 		return 0;
@@ -222,7 +229,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	}
 
 	for (i=0;i<ts->qcount;i++) {
-		int qid = print_parse_jobid(ts->queue[i].file);
+		int qid = print_parse_jobid(ts->queue[i].fs_file);
 		if (jobid == qid) break;
 	}
 	
@@ -259,7 +266,7 @@ static void print_cache_flush(int snum)
 {
 	fstring key;
 	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
+	dos_to_unix(key);                /* Convert key to unix-codepage */
 	tdb_store_int32(tdb, key, -1);
 }
 
@@ -318,6 +325,20 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 }
 
 /****************************************************************************
+ Send a message saying the queue changed.
+****************************************************************************/
+
+static void send_queue_message(const char *printer_name, uint32 high, uint32 low)
+{
+	char msg[8 + sizeof(fstring)];
+	SIVAL(msg,0,low);
+	SIVAL(msg,4,high);
+	fstrcpy(&msg[8], printer_name);
+
+	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, 8 + strlen(printer_name) + 1, False, NULL);
+}
+
+/****************************************************************************
 update the internal database from the system print queue for a queue
 ****************************************************************************/
 
@@ -335,7 +356,7 @@ static void print_queue_update(int snum)
 	/* Convert printer name (i.e. share name) to unix-codepage for all of the 
 	 * following tdb key generation */
 	fstrcpy(printer_name, lp_servicename(snum));
-	dos_to_unix(printer_name, True);
+	dos_to_unix(printer_name);
 	
 	/*
 	 * Check to see if someone else is doing this update.
@@ -406,7 +427,7 @@ static void print_queue_update(int snum)
 	  fill in any system job numbers as we go
 	*/
 	for (i=0; i<qcount; i++) {
-		int jobid = print_parse_jobid(queue[i].file);
+		int jobid = print_parse_jobid(queue[i].fs_file);
 
 		if (jobid == -1) {
 			/* assume its a unix print job */
@@ -452,7 +473,7 @@ static void print_queue_update(int snum)
 	if( qcount != get_queue_status(snum, &old_status)) {
 		DEBUG(10,("print_queue_update: queue status change %d jobs -> %d jobs for printer %s\n",
 				old_status.qcount, qcount, printer_name ));
-		message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+		send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 	}
 
 	/* store the new queue status structure */
@@ -497,7 +518,7 @@ int print_job_snum(int jobid)
 	struct printjob *pjob = print_job_find(jobid);
 	if (!pjob) return -1;
 
-	return lp_servicenumber(pjob->qname);
+	return find_service(pjob->queuename);
 }
 
 /****************************************************************************
@@ -568,6 +589,10 @@ static BOOL print_job_delete1(int jobid)
 		return True;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_delete1: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	/* Hrm - we need to be able to cope with deleting a job before it
 	   has reached the spooler. */
@@ -608,10 +633,10 @@ static BOOL is_owner(struct current_user *user, int jobid)
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
 		return strequal(pjob->user, 
-				unix_to_dos(vuser->user.smb_name,False));
+				unix_to_dos_static(vuser->user.smb_name));
 	} else {
 		return strequal(pjob->user, 
-				unix_to_dos(uidtoname(user->uid),False));
+				unix_to_dos_static(uidtoname(user->uid)));
 	}
 }
 
@@ -624,7 +649,12 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 	int snum = print_job_snum(jobid);
 	char *printer_name;
 	BOOL owner;
-	
+
+	if (snum == -1) {
+		DEBUG(5,("print_job_delete: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
+
 	owner = is_owner(user, jobid);
 	
 	/* Check access against security descriptor or whether the user
@@ -648,7 +678,7 @@ BOOL print_job_delete(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	return !print_job_exists(jobid);
 }
@@ -668,6 +698,10 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_pause: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
@@ -691,7 +725,7 @@ BOOL print_job_pause(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	/* how do we tell if this succeeded? */
 
@@ -713,6 +747,10 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_resume: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
@@ -735,7 +773,7 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	return True;
 }
@@ -746,12 +784,21 @@ BOOL print_job_resume(struct current_user *user, int jobid, WERROR *errcode)
 
 int print_job_write(int jobid, const char *buf, int size)
 {
-	int fd;
+	int return_code;
+	struct printjob *pjob = print_job_find(jobid);
 
-	fd = print_job_fd(jobid);
-	if (fd == -1) return -1;
+	if (!pjob)
+		return -1;
+	/* don't allow another process to get this info - it is meaningless */
+	if (pjob->pid != local_pid)
+		return -1;
 
-	return write(fd, buf, size);
+	return_code = write(pjob->fd, buf, size);
+	if (return_code>0) {
+		pjob->size += size;
+		print_job_store(jobid, pjob);
+	}
+	return return_code;
 }
 
 /****************************************************************************
@@ -761,15 +808,27 @@ int print_job_write(int jobid, const char *buf, int size)
 static BOOL print_cache_expired(int snum)
 {
 	fstring key;
-	time_t t2, t = time(NULL);
+	time_t last_qscan_time, time_now = time(NULL);
 
-	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
-	dos_to_unix(key, True);                /* Convert key to unix-codepage */
-	t2 = (time_t)tdb_fetch_int32(tdb, key);
-	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
+	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	dos_to_unix(key);                /* Convert key to unix-codepage */
+	last_qscan_time = (time_t)tdb_fetch_int32(tdb, key);
+
+	/*
+	 * Invalidate the queue for 3 reasons.
+	 * (1). last queue scan time == -1.
+	 * (2). Current time - last queue scan time > allowed cache time.
+	 * (3). last queue scan time > current time + MAX_CACHE_VALID_TIME (1 hour by default).
+	 * This last test picks up machines for which the clock has been moved
+	 * forward, an lpq scan done and then the clock moved back. Otherwise
+	 * that last lpq scan would stay around for a loooong loooong time... :-). JRA.
+	 */
+
+	if (last_qscan_time == ((time_t)-1) || (time_now - last_qscan_time) >= lp_lpqcachetime() ||
+			last_qscan_time > (time_now + MAX_CACHE_VALID_TIME)) {
 		DEBUG(3, ("print cache expired for queue %s \
-(last_cache = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
-			(int)t2, (int)t, (int)lp_lpqcachetime() ));
+(last_qscan_time = %d, time now = %d, qcachetime = %d)\n", lp_servicename(snum),
+			(int)last_qscan_time, (int)time_now, (int)lp_lpqcachetime() ));
 		return True;
 	}
 	return False;
@@ -786,7 +845,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
-	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
+	dos_to_unix(keystr);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);
@@ -913,12 +972,12 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	fstrcpy(pjob.jobname, jobname);
 
 	if ((vuser = get_valid_user_struct(user->vuid)) != NULL) {
-		fstrcpy(pjob.user, unix_to_dos(vuser->user.smb_name,False));
+		fstrcpy(pjob.user, unix_to_dos_static(vuser->user.smb_name));
 	} else {
-		fstrcpy(pjob.user, unix_to_dos(uidtoname(user->uid),False));
+		fstrcpy(pjob.user, unix_to_dos_static(uidtoname(user->uid)));
 	}
 
-	fstrcpy(pjob.qname, lp_servicename(snum));
+	fstrcpy(pjob.queuename, lp_servicename(snum));
 
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
@@ -987,6 +1046,23 @@ to open spool file %s.\n", pjob.filename));
 }
 
 /****************************************************************************
+ Update the number of pages spooled to jobid
+****************************************************************************/
+
+void print_job_endpage(int jobid)
+{
+	struct printjob *pjob = print_job_find(jobid);
+	if (!pjob)
+		return;
+	/* don't allow another process to get this info - it is meaningless */
+	if (pjob->pid != local_pid)
+		return;
+
+	pjob->page_count++;
+	print_job_store(jobid, pjob);
+}
+
+/****************************************************************************
  Print a file - called on closing the file. This spools the job.
  If normal close is false then we're tearing down the jobs - treat as an
  error.
@@ -1005,6 +1081,10 @@ BOOL print_job_end(int jobid, BOOL normal_close)
 		return False;
 
 	snum = print_job_snum(jobid);
+	if (snum == -1) {
+		DEBUG(5,("print_job_end: unknown service number for jobid %d\n", jobid));
+		return False;
+	}
 
 	if (normal_close && (sys_fstat(pjob->fd, &sbuf) == 0)) {
 		pjob->size = sbuf.st_size;
@@ -1070,9 +1150,11 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
+	if (ts->snum != lp_servicenumber(pjob.queuename))
+		return 0;
 
 	if (ts->qcount >= ts->maxcount) return 0;
 
@@ -1080,11 +1162,12 @@ static int traverse_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void *
 
 	ts->queue[i].job = jobid;
 	ts->queue[i].size = pjob.size;
+	ts->queue[i].page_count = pjob.page_count;
 	ts->queue[i].status = pjob.status;
 	ts->queue[i].priority = 1;
 	ts->queue[i].time = pjob.starttime;
-	fstrcpy(ts->queue[i].user, pjob.user);
-	fstrcpy(ts->queue[i].file, pjob.jobname);
+	fstrcpy(ts->queue[i].fs_user, pjob.user);
+	fstrcpy(ts->queue[i].fs_file, pjob.jobname);
 
 	ts->qcount++;
 
@@ -1105,9 +1188,11 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	if (data.dsize != sizeof(pjob) || key.dsize != sizeof(int)) return 0;
 	memcpy(&jobid, key.dptr, sizeof(jobid));
 	memcpy(&pjob,  data.dptr, sizeof(pjob));
+	unix_to_dos(pjob.queuename);
 
 	/* maybe it isn't for this queue */
-	if (ts->snum != print_queue_snum(pjob.qname)) return 0;
+	if (ts->snum != lp_servicenumber(pjob.queuename))
+		return 0;
 
 	ts->count++;
 
@@ -1154,7 +1239,7 @@ int print_queue_status(int snum,
 	 */
 	ZERO_STRUCTP(status);
 	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
-	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
+	dos_to_unix(keystr);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 	data = tdb_fetch(tdb, key);
@@ -1243,7 +1328,7 @@ BOOL print_queue_pause(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	return True;
 }
@@ -1276,7 +1361,7 @@ BOOL print_queue_resume(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	return True;
 }
@@ -1313,7 +1398,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, WERROR *errcode)
 
 	printer_name = PRINTERNAME(snum);
 
-	message_send_all(conn_tdb_ctx(),MSG_PRINTER_NOTIFY, printer_name, strlen(printer_name) + 1, False);
+	send_queue_message(printer_name, 0, PRINTER_CHANGE_JOB);
 
 	return True;
 }

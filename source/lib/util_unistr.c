@@ -348,6 +348,20 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 	*p = 0;
 }
 
+/*******************************************************************
+ duplicate a UNISTR2 string into a null terminated char*
+ using a talloc context
+********************************************************************/
+char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s;
+	int maxlen = (str->uni_str_len+1)*4;
+	if (!str->buffer) return NULL;
+	s = (char *)talloc(ctx, maxlen); /* convervative */
+	if (!s) return NULL;
+	unistr2_to_ascii(s, str, maxlen);
+	return s;
+}
 
 /*******************************************************************
 Return a number stored in a buffer
@@ -492,20 +506,33 @@ char *dos_unistr(char *buf)
 }
 
 /*******************************************************************
+ returns the length in number of wide characters 
+ ******************************************************************/
+int unistrlen(uint16 *s)
+{
+	int len;
+	
+	if (!s)
+		return -1;
+	
+	for (len=0; *s; s++,len++);
+	
+	return len;
+}
+
+/*******************************************************************
  Strcpy for unicode strings.  returns length (in num of wide chars)
 ********************************************************************/
 
-int unistrcpy(char *dst, char *src)
+int unistrcpy(uint16 *dst, uint16 *src)
 {
 	int num_wchars = 0;
-	uint16 *wsrc = (uint16 *)src;
-	uint16 *wdst = (uint16 *)dst;
 
-	while (*wsrc) {
-		*wdst++ = *wsrc++;
+	while (*src) {
+		*dst++ = *src++;
 		num_wchars++;
 	}
-	*wdst = 0;
+	*dst = 0;
 
 	return num_wchars;
 }
@@ -2053,6 +2080,11 @@ int rpcstr_pull(char* dest, void *src, int dest_len, int src_len, int flags)
 {
 	if(dest_len==-1)
 		dest_len=MAXUNI-3;
-	unistr_to_ascii(dest, src, dest_len - 1);
+
+	if (flags & STR_TERMINATE) 
+		src_len = strlen_w(src)*2+2;
+
+	dest_len = MIN((src_len/2), (dest_len-1));
+	unistr_to_ascii(dest, src, dest_len);
 	return src_len;
 }

@@ -11,92 +11,7 @@ pkglist="$3"
 # Source in the standard functions library, ccsSetup.sh
 . ccsSetup.sh
 
-SPOOL=/var/spool/samba
-SVCS=/etc/services
-INET=/etc/inetd.conf
-LMHOST=/etc/lmhosts
-PREFIX=/usr/lib/samba
-
 PKG_DIR=${SSO_SHARED_ROOT}/cntl/packages
-
-#
-# Create /var/spool/samba, create an initial /etc/lmhosts, build the
-# codepages and setup swat to be run out of inetd on port 901
-#
-PostExport()
-{
-    [ -d $SPOOL ] || {
-         mkdir -p $SPOOL
-         chmod 1777 $SPOOL
-    }
-    if [ -f $LMHOST ]
-    then
-        grep localhost $LMHOST > /dev/null || {
-            echo 127.0.0.1 localhost >> $LMHOST
-        }
-    else
-        echo 127.0.0.1 localhost > $LMHOST
-    fi
-
-    cd ${PREFIX}/lib/codepages
-    for i in 437 737 775 850 852 861 866 932 936 949 950 1251
-    do
-        ${PREFIX}/bin/make_smbcodepage c $i \
-            ${PREFIX}/lib/codepages/src/codepage_def.$i \
-            ${PREFIX}/lib/codepages/codepage.$i
-    done
-    for i in 437 737 850 852 861 866 932 936 949 950 \
-         ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
-    do
-        ${PREFIX}/bin/make_unicodemap $i \
-            ${PREFIX}/lib/codepages/src/CP$i.TXT \
-            ${PREFIX}/lib/codepages/unicode_map.$i
-    done
-    
-    grep swat $SVCS > /dev/null || {
-         echo "swat    901/tcp    # Samba Web Administration Tool " >> $SVCS
-    }
-    
-    grep swat $INET > /dev/null || {
-     echo "swat stream tcp nowait root /usr/lib/samba/bin/swat swat " >> $INET
-    }
-    
-    kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
-}
-
-DisableStop()
-{
-    /etc/init.d/samba disable > /dev/null 2>&1
-    /etc/init.d/samba stop > /dev/null 2>&1
-}
-
-#
-# Remove /var/spool/samba and delete inetd entries for swat
-#
-PostUnexport()
-{
-    [ -d $SPOOL ] && {
-         rm -rf $SPOOL
-    }
-
-    grep swat $SVCS > /dev/null && {
-         B=`basename $SVCS`
-         T=$B$$
-         grep -v swat $SVCS > /tmp/$T
-         cp /tmp/$T $SVCS
-         rm -f /tmp/$T
-    }
-    
-    grep swat $INET > /dev/null || {
-         B=`basename $INET`
-         T=$B$$
-         grep -v swat $INET > /tmp/$T
-         cp /tmp/$T $INET
-         rm -f /tmp/$T
-    }
-    
-    kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
-}
 
 # call ccs in subsidiary packages with same arguments we were called with
 pkgCodes=`getPackageCode $pkglist`
@@ -114,11 +29,5 @@ for pkg in $pkgCodes; do
     fi
 done
     
-case "$step" in
-        POST_EXPORT) PostExport ;;
-        PRE_UNEXPORT) DisableStop ;;
-        POST_UNEXPORT) PostUnexport ;;
-esac
-
 exit $returnCode
 

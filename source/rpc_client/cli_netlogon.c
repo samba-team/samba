@@ -68,7 +68,7 @@ BOOL cli_net_logon_ctrl2(struct cli_state *cli, NTSTATUS status_level)
            global_myname, status_level));
 
   /* store the parameters */
-  init_q_logon_ctrl2(&q_l, unix_to_dos(cli->srv_name_slash,False), 
+  init_q_logon_ctrl2(&q_l, unix_to_dos_static(cli->srv_name_slash), 
 		     status_level);
 
   /* turn parameters into data stream */
@@ -132,7 +132,7 @@ NTSTATUS cli_net_auth2(struct cli_state *cli, uint16 sec_chan,
 	   credstr(cli->clnt_cred.challenge.data), neg_flags));
 
   /* store the parameters */
-  init_q_auth_2(&q_a, unix_to_dos(cli->srv_name_slash,False), cli->mach_acct, 
+  init_q_auth_2(&q_a, unix_to_dos_static(cli->srv_name_slash), cli->mach_acct, 
 		sec_chan, global_myname, &cli->clnt_cred.challenge, neg_flags);
 
   /* turn parameters into data stream */
@@ -221,7 +221,7 @@ BOOL cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal, DOM_CHAL *srv_
          cli->desthost, global_myname, credstr(clnt_chal->data)));
 
   /* store the parameters */
-  init_q_req_chal(&q_c, unix_to_dos(cli->srv_name_slash,False), 
+  init_q_req_chal(&q_c, unix_to_dos_static(cli->srv_name_slash), 
 		  global_myname, clnt_chal);
 
   /* turn parameters into data stream */
@@ -286,7 +286,7 @@ BOOL cli_net_srv_pwset(struct cli_state *cli, uint8 hashed_mach_pwd[16])
            credstr(new_clnt_cred.challenge.data), new_clnt_cred.timestamp.time));
 
   /* store the parameters */
-  init_q_srv_pwset(&q_s, unix_to_dos(cli->srv_name_slash,False), 
+  init_q_srv_pwset(&q_s, unix_to_dos_static(cli->srv_name_slash), 
 		   cli->mach_acct, sec_chan_type, global_myname, 
 		   &new_clnt_cred, (char *)hashed_mach_pwd);
 
@@ -364,7 +364,7 @@ static NTSTATUS cli_net_sam_logon_internal(struct cli_state *cli, NET_ID_INFO_CT
 
 	/* store the parameters */
 	q_s.validation_level = validation_level;
-	init_sam_info(&q_s.sam_id, unix_to_dos(cli->srv_name_slash,False), 
+	init_sam_info(&q_s.sam_id, unix_to_dos_static(cli->srv_name_slash), 
 		global_myname, &new_clnt_cred, &dummy_rtn_creds, 
 		ctr->switch_value, ctr);
 
@@ -496,7 +496,7 @@ BOOL cli_net_sam_logoff(struct cli_state *cli, NET_ID_INFO_CTR *ctr)
 
   memset(&dummy_rtn_creds, '\0', sizeof(dummy_rtn_creds));
 
-  init_sam_info(&q_s.sam_id, unix_to_dos(cli->srv_name_slash,False), 
+  init_sam_info(&q_s.sam_id, unix_to_dos_static(cli->srv_name_slash), 
 		global_myname, &new_clnt_cred, &dummy_rtn_creds, 
 		ctr->switch_value, ctr);
 

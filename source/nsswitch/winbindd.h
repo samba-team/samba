@@ -1,6 +1,5 @@
 /* 
-   Unix SMB/Netbios implementation.
-   Version 2.0
+   Unix SMB/CIFS implementation.
 
    Winbind daemon for ntdom nss module
 
@@ -51,11 +50,8 @@ struct getent_state {
 	struct getent_state *prev, *next;
 	void *sam_entries;
 	uint32 sam_entry_index, num_sam_entries;
-	uint32 dispinfo_ndx;
-	uint32 grp_query_start_ndx;
-	BOOL got_all_sam_entries, got_sam_entries;
-	struct winbindd_domain *domain;
-	POLICY_HND dom_pol; /* Cached SAMR domain handle. */
+	BOOL got_sam_entries;
+	fstring domain_name;
 };
 
 /* Storage for cached getpwent() user entries */
@@ -78,15 +74,105 @@ struct winbindd_state {
 
 extern struct winbindd_state server_state;  /* Server information */
 
+typedef struct {
+	char *acct_name;
+	char *full_name;
+	uint32 user_rid;
+	uint32 group_rid; /* primary group */
+} WINBIND_USERINFO;
+
 /* Structures to hold per domain information */
 
 struct winbindd_domain {
 	fstring name;                          /* Domain name */	
+	fstring full_name;                     /* full Domain name (realm) */	
 	DOM_SID sid;                           /* SID for this domain */
-	struct winbindd_domain *prev, *next;   /* Linked list info */
+
+	/* Lookup methods for this domain (LDAP or RPC) */
+
+	struct winbindd_methods *methods;
+
+        /* Private data for the backends (used for connection cache) */
+
+	void *private; 
+
+	/* Sequence number stuff */
+
+	time_t last_seq_check;
+	uint32 sequence_number;
+
+	/* Linked list info */
+
+	struct winbindd_domain *prev, *next;
 };
 
-extern struct winbindd_domain *domain_list;  /* List of domains we know */
+/* per-domain methods. This is how LDAP vs RPC is selected
+ */
+struct winbindd_methods {
+	/* does this backend provide a consistent view of the data? (ie. is the primary group
+	   always correct) */
+	BOOL consistent;
+
+	/* get a list of users, returning a WINBIND_USERINFO for each one */
+	NTSTATUS (*query_user_list)(struct winbindd_domain *domain,
+				   TALLOC_CTX *mem_ctx,
+				   uint32 *num_entries, 
+				   WINBIND_USERINFO **info);
+
+	/* get a list of groups */
+	NTSTATUS (*enum_dom_groups)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 *num_entries, 
+				    struct acct_info **info);
+
+	/* convert one user or group name to a sid */
+	NTSTATUS (*name_to_sid)(struct winbindd_domain *domain,
+				const char *name,
+				DOM_SID *sid,
+				enum SID_NAME_USE *type);
+
+	/* convert a sid to a user or group name */
+	NTSTATUS (*sid_to_name)(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				DOM_SID *sid,
+				char **name,
+				enum SID_NAME_USE *type);
+
+	/* lookup user info for a given rid */
+	NTSTATUS (*query_user)(struct winbindd_domain *domain, 
+			       TALLOC_CTX *mem_ctx, 
+			       uint32 user_rid, 
+			       WINBIND_USERINFO *user_info);
+
+	/* lookup all groups that a user is a member of. The backend
+	   can also choose to lookup by username or rid for this
+	   function */
+	NTSTATUS (*lookup_usergroups)(struct winbindd_domain *domain,
+				      TALLOC_CTX *mem_ctx,
+				      uint32 user_rid, 
+				      uint32 *num_groups, uint32 **user_gids);
+
+	/* find all members of the group with the specified group_rid */
+	NTSTATUS (*lookup_groupmem)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 group_rid, uint32 *num_names, 
+				    uint32 **rid_mem, char ***names, 
+				    uint32 **name_types);
+
+	/* return the current global sequence number */
+	NTSTATUS (*sequence_number)(struct winbindd_domain *domain, uint32 *seq);
+
+	/* enumerate trusted domains */
+	NTSTATUS (*trusted_domains)(struct winbindd_domain *domain,
+				    TALLOC_CTX *mem_ctx,
+				    uint32 *num_domains,
+				    char ***names,
+				    DOM_SID **dom_sids);
+
+	/* find the domain sid */
+	NTSTATUS (*domain_sid)(struct winbindd_domain *domain,
+			       DOM_SID *sid);
+};
 
 /* Used to glue a policy handle and cli_state together */
 
@@ -116,10 +202,5 @@ typedef struct {
 #else
 #define SETENV(name, value, overwrite) ;
 #endif
-
-/* Authenticated user info is stored in secrets.tdb under these keys */
-
-#define SECRETS_AUTH_USER      "SECRETS/AUTH_USER"
-#define SECRETS_AUTH_PASSWORD  "SECRETS/AUTH_PASSWORD"
 
 #endif /* _WINBINDD_H */

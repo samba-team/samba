@@ -74,6 +74,104 @@ int sys_usleep(long usecs)
 }
 
 /*******************************************************************
+A read wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_read(int fd, void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = read(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A write wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_write(int fd, const void *buf, size_t count)
+{
+	ssize_t ret;
+
+	do {
+		ret = write(fd, buf, count);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A send wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_send(int s, const void *msg, size_t len, int flags)
+{
+	ssize_t ret;
+
+	do {
+		ret = send(s, msg, len, flags);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A sendto wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_sendto(int s,  const void *msg, size_t len, int flags, const struct sockaddr *to, socklen_t tolen)
+{
+	ssize_t ret;
+
+	do {
+		ret = sendto(s, msg, len, flags, to, tolen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A recvfrom wrapper that will deal with EINTR.
+********************************************************************/
+
+ssize_t sys_recvfrom(int s, void *buf, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
+{
+	ssize_t ret;
+
+	do {
+		ret = recvfrom(s, buf, len, flags, from, fromlen);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A fcntl wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_fcntl_ptr(int fd, int cmd, void *arg)
+{
+	int ret;
+
+	do {
+		ret = fcntl(fd, cmd, arg);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
+A fcntl wrapper that will deal with EINTR.
+********************************************************************/
+
+int sys_fcntl_long(int fd, int cmd, long arg)
+{
+	int ret;
+
+	do {
+		ret = fcntl(fd, cmd, arg);
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+
+/*******************************************************************
 A stat() wrapper that will deal with 64 bit filesizes.
 ********************************************************************/
 
@@ -1172,7 +1270,7 @@ int sys_pclose(int fd)
 
 void *sys_dlopen(const char *name, int flags)
 {
-#ifdef HAVE_LIBDL
+#if defined(HAVE_DLOPEN)
 	return dlopen(name, flags);
 #else
 	return NULL;
@@ -1181,7 +1279,7 @@ void *sys_dlopen(const char *name, int flags)
 
 void *sys_dlsym(void *handle, char *symbol)
 {
-#ifdef HAVE_LIBDL
+#if defined(HAVE_DLSYM)
     return dlsym(handle, symbol);
 #else
     return NULL;
@@ -1190,7 +1288,7 @@ void *sys_dlsym(void *handle, char *symbol)
 
 int sys_dlclose (void *handle)
 {
-#ifdef HAVE_LIBDL
+#if defined(HAVE_DLCLOSE)
 	return dlclose(handle);
 #else
 	return 0;
@@ -1199,9 +1297,37 @@ int sys_dlclose (void *handle)
 
 const char *sys_dlerror(void)
 {
-#ifdef HAVE_LIBDL
+#if defined(HAVE_DLERROR)
 	return dlerror();
 #else
 	return NULL;
 #endif
+}
+
+/**************************************************************************
+ Wrapper for Admin Logs.
+****************************************************************************/
+
+void sys_adminlog(int priority, const char *format_str, ...)
+{
+	va_list ap;
+	int ret;
+	char **msgbuf = NULL;
+
+	if (!lp_admin_log())
+		return;
+
+	va_start( ap, format_str );
+	ret = vasprintf( msgbuf, format_str, ap );
+	va_end( ap );
+
+	if (ret == -1)
+		return;
+
+#if defined(HAVE_SYSLOG)
+	syslog( priority, "%s", *msgbuf );
+#else
+	DEBUG(0,("%s", *msgbuf ));
+#endif
+	SAFE_FREE(*msgbuf);
 }

@@ -124,14 +124,14 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	int fd;
 	unsigned long kernel_flags;
 	
-	fd = sys_open(dos_to_unix(path,False),O_RDONLY, 0);
+	fd = sys_open(dos_to_unix_static(path),O_RDONLY, 0);
 
 	if (fd == -1) {
 		DEBUG(3,("Failed to open directory %s for change notify\n", path));
 		return NULL;
 	}
 
-	if (fcntl(fd, F_SETSIG, RT_SIGNAL_NOTIFY) == -1) {
+	if (sys_fcntl_long(fd, F_SETSIG, RT_SIGNAL_NOTIFY) == -1) {
 		DEBUG(3,("Failed to set signal handler for change notify\n"));
 		return NULL;
 	}
@@ -148,7 +148,7 @@ static void *kernel_register_notify(connection_struct *conn, char *path, uint32 
 	if (flags & FILE_NOTIFY_CHANGE_EA)          kernel_flags |= DN_ATTRIB;
 	if (flags & FILE_NOTIFY_CHANGE_FILE_NAME)   kernel_flags |= DN_RENAME|DN_DELETE;
 
-	if (fcntl(fd, F_NOTIFY, kernel_flags) == -1) {
+	if (sys_fcntl_long(fd, F_NOTIFY, kernel_flags) == -1) {
 		DEBUG(3,("Failed to set async flag for change notify\n"));
 		return NULL;
 	}
@@ -169,7 +169,7 @@ static BOOL kernel_notify_available(void)
 	int fd, ret;
 	fd = open("/tmp", O_RDONLY);
 	if (fd == -1) return False; /* uggh! */
-	ret = fcntl(fd, F_NOTIFY, 0);
+	ret = sys_fcntl_long(fd, F_NOTIFY, 0);
 	close(fd);
 	return ret == 0;
 }

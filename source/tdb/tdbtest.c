@@ -71,9 +71,9 @@ static void compare_db(void)
 		}
 
 		nextkey = tdb_nextkey(db, key);
-		SAFE_FREE(key.dptr);
-		SAFE_FREE(d.dptr);
-		SAFE_FREE(gd.dptr);
+		free(key.dptr);
+		free(d.dptr);
+		free(gd.dptr);
 		key = nextkey;
 	}
 
@@ -92,9 +92,9 @@ static void compare_db(void)
 		}
 
 		gnextkey = gdbm_nextkey(gdbm, gkey);
-		SAFE_FREE(gkey.dptr);
-		SAFE_FREE(gd.dptr);
-		SAFE_FREE(d.dptr);
+		free(gkey.dptr);
+		free(gd.dptr);
+		free(d.dptr);
 		gkey = gnextkey;
 	}
 }
@@ -138,11 +138,11 @@ static void addrec_db(void)
 		}
 	} else {
 		data = tdb_fetch(db, key);
-		SAFE_FREE(data.dptr);
+		if (data.dptr) free(data.dptr);
 	}
 
-	SAFE_FREE(k);
-	SAFE_FREE(d);
+	free(k);
+	free(d);
 }
 
 static void addrec_gdbm(void)
@@ -171,11 +171,11 @@ static void addrec_gdbm(void)
 		}
 	} else {
 		data = gdbm_fetch(gdbm, key);
-		SAFE_FREE(data.dptr);
+		if (data.dptr) free(data.dptr);
 	}
 
-	SAFE_FREE(k);
-	SAFE_FREE(d);
+	free(k);
+	free(d);
 }
 
 static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)

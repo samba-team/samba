@@ -8,11 +8,11 @@
 CC = gcc
 LIBTOOL = libtool
 
-SAMBA_SRC = /usr/local/src/samba/samba-2.2.0-ron/source
+SAMBA_SRC = ../../../source
 SAMBA_INCL = ${SAMBA_SRC}/include
 UBIQX_SRC = ${SAMBA_SRC}/ubiqx
 SMBWR_SRC = ${SAMBA_SRC}/smbwrapper
-CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g -D_LARGEFILE63_SOURCE -D_GNU_SOURCE -fno-builtin  
+CFLAGS = -I$(SAMBA_SRC) -I$(SAMBA_INCL) -I$(UBIQX_SRC) -I$(SMBWR_SRC) -Wall -g
  
 
 VFS_OBJS = block.so

@@ -495,13 +495,13 @@ int set_blocking(int fd, BOOL set)
 #endif
 #endif
 
-  if((val = fcntl(fd, F_GETFL, 0)) == -1)
+  if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
 	return -1;
   if(set) /* Turn blocking on - ie. clear nonblock flag */
 	val &= ~FLAG_TO_SET;
   else
     val |= FLAG_TO_SET;
-  return fcntl( fd, F_SETFL, val);
+  return sys_fcntl_long( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
 
@@ -563,16 +563,16 @@ ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)
 
 SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
 {
-	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, read, write);
+	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, sys_read, sys_write);
 }
 
 /*******************************************************************
  Sleep for a specified number of milliseconds.
 ********************************************************************/
 
-void msleep(int t)
+void msleep(unsigned int t)
 {
-	int tdiff=0;
+	unsigned int tdiff=0;
 	struct timeval tval,t1,t2;  
 	fd_set fds;
 
@@ -582,12 +582,23 @@ void msleep(int t)
 	while (tdiff < t) {
 		tval.tv_sec = (t-tdiff)/1000;
 		tval.tv_usec = 1000*((t-tdiff)%1000);
- 
+
+		/* Never wait for more than 1 sec. */
+		if (tval.tv_sec > 1) {
+			tval.tv_sec = 1; 
+			tval.tv_usec = 0;
+		}
+
 		FD_ZERO(&fds);
 		errno = 0;
 		sys_select_intr(0,&fds,NULL,NULL,&tval);
 
 		GetTimeOfDay(&t2);
+		if (t2.tv_sec < t1.tv_sec) {
+			/* Someone adjusted time... */
+			t1 = t2;
+		}
+
 		tdiff = TvalDiff(&t1,&t2);
 	}
 }
@@ -793,15 +804,32 @@ struct in_addr *interpret_addr2(const char *str)
 }
 
 /*******************************************************************
-  check if an IP is the 0.0.0.0
-  ******************************************************************/
-BOOL zero_ip(struct in_addr ip)
+ Check if an IP is the 0.0.0.0
+ ******************************************************************/
+
+BOOL is_zero_ip(struct in_addr ip)
 {
-  uint32 a;
-  putip((char *)&a,(char *)&ip);
-  return(a == 0);
+	uint32 a;
+	putip((char *)&a,(char *)&ip);
+	return(a == 0);
 }
 
+/*******************************************************************
+ Set an IP to 0.0.0.0
+ ******************************************************************/
+
+void zero_ip(struct in_addr *ip)
+{
+	static BOOL init;
+	static struct in_addr ipzero;
+
+	if (!init) {
+		ipzero = *interpret_addr2("0.0.0.0");
+		init = True;
+	}
+
+	*ip = ipzero;
+}
 
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
 /******************************************************************
@@ -1279,11 +1307,9 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   lock.l_len = count;
   lock.l_pid = 0;
 
-  errno = 0;
+  ret = sys_fcntl_ptr(fd,op,&lock);
 
-  ret = fcntl(fd,op,&lock);
-
-  if (errno != 0)
+  if (ret == -1 && errno != 0)
     DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
   /* a lock query */
@@ -1332,6 +1358,25 @@ BOOL is_myname(char *s)
   DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
   return(ret);
 }
+
+/********************************************************************
+ Return only the first IP address of our configured interfaces
+ as a string
+ *******************************************************************/
+
+const char* get_my_primary_ip (void)
+{
+	static fstring ip_string;
+	int n;
+	struct iface_struct nics[MAX_INTERFACES];
+
+	if ((n=get_interfaces(nics, MAX_INTERFACES)) <= 0)
+		return NULL;
+
+	fstrcpy(ip_string, inet_ntoa(nics[0].ip));
+	return ip_string;
+}
+
 
 BOOL is_myname_or_ipaddr(char *s)
 {
@@ -1710,11 +1755,10 @@ void *smb_xmalloc(size_t size)
 	return p;
 }
 
-/*****************************************************************
+/**
  Memdup with smb_panic on fail.
- *****************************************************************/  
-
-void *xmemdup(const void *p, size_t size)
+**/
+void *smb_xmemdup(const void *p, size_t size)
 {
 	void *p2;
 	p2 = smb_xmalloc(size);
@@ -1722,16 +1766,28 @@ void *xmemdup(const void *p, size_t size)
 	return p2;
 }
 
-/*****************************************************************
+/**
  strdup that aborts on malloc fail.
- *****************************************************************/  
-
-char *xstrdup(const char *s)
+**/
+char *smb_xstrdup(const char *s)
 {
 	char *s1 = strdup(s);
 	if (!s1)
-		smb_panic("xstrdup: malloc fail\n");
+		smb_panic("smb_xstrdup: malloc fail\n");
 	return s1;
+}
+
+/*
+  vasprintf that aborts on malloc fail
+*/
+int smb_xvasprintf(char **ptr, const char *format, va_list ap)
+{
+	int n;
+	n = vasprintf(ptr, format, ap);
+	if (n == -1 || ! *ptr) {
+		smb_panic("smb_xvasprintf: out of memory");
+	}
+	return n;
 }
 
 /*****************************************************************
@@ -1768,6 +1824,26 @@ char *lock_path(char *name)
 	static pstring fname;
 
 	pstrcpy(fname,lp_lockdir());
+	trim_string(fname,"","/");
+	
+	if (!directory_exist(fname,NULL)) {
+		mkdir(fname,0755);
+	}
+	
+	pstrcat(fname,"/");
+	pstrcat(fname,name);
+
+	return fname;
+}
+
+/*****************************************************************
+a useful function for returning a path in the Samba pid directory
+ *****************************************************************/  
+char *pid_path(char *name)
+{
+	static pstring fname;
+
+	pstrcpy(fname,lp_piddir());
 	trim_string(fname,"","/");
 	
 	if (!directory_exist(fname,NULL)) {
@@ -1973,6 +2049,86 @@ BOOL unix_wild_match(char *pattern, char *string)
 		return True;
 
 	return unix_do_match(p2, s2) == 0;	
+}
+
+/*******************************************************************
+ free() a data blob
+*******************************************************************/
+
+static void free_data_blob(DATA_BLOB *d)
+{
+	if ((d) && (d->free)) {
+		SAFE_FREE(d->data);
+	}
+}
+
+/*******************************************************************
+ construct a data blob, must be freed with data_blob_free()
+ you can pass NULL for p and get a blank data blob
+*******************************************************************/
+
+DATA_BLOB data_blob(const void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!length) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	if (p) {
+		ret.data = smb_xmemdup(p, length);
+	} else {
+		ret.data = smb_xmalloc(length);
+	}
+	ret.length = length;
+	ret.free = free_data_blob;
+	return ret;
+}
+
+/*******************************************************************
+ construct a data blob, using supplied TALLOC_CTX
+*******************************************************************/
+
+DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
+{
+	DATA_BLOB ret;
+
+	if (!p || !length) {
+		ZERO_STRUCT(ret);
+		return ret;
+	}
+
+	ret.data = talloc_memdup(mem_ctx, p, length);
+	if (ret.data == NULL)
+		smb_panic("data_blob_talloc: talloc_memdup failed.\n");
+
+	ret.length = length;
+	ret.free = NULL;
+	return ret;
+}
+
+/*******************************************************************
+free a data blob
+*******************************************************************/
+void data_blob_free(DATA_BLOB *d)
+{
+	if (d) {
+		if (d->free) {
+			(d->free)(d);
+		}
+		ZERO_STRUCTP(d);
+	}
+}
+
+/*******************************************************************
+clear a DATA_BLOB's contents
+*******************************************************************/
+void data_blob_clear(DATA_BLOB *d)
+{
+	if (d->data) {
+		memset(d->data, 0, d->length);
+	}
 }
 
 #ifdef __INSURE__

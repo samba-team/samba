@@ -263,8 +263,8 @@ static void init_lsa_trans_names(TALLOC_CTX *ctx, DOM_R_REF *ref, LSA_TRANS_NAME
 
 		/* unistr routines take dos codepage strings */
 
-		unix_to_dos(dom_name, True);
-		unix_to_dos(name, True);
+		unix_to_dos(dom_name);
+		unix_to_dos(name);
 
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 
@@ -371,10 +371,10 @@ NTSTATUS _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INF
 		return NT_STATUS_INVALID_HANDLE;
 
 	fstrcpy(dos_myname, global_myname);
-	unix_to_dos(dos_myname, True);
+	unix_to_dos(dos_myname);
 
 	fstrcpy(dos_domain, global_myworkgroup);
-	unix_to_dos(dos_domain, True);
+	unix_to_dos(dos_domain);
 
 	switch (q_u->info_class) {
 	case 0x02:
@@ -481,14 +481,14 @@ NTSTATUS _lsa_lookup_sids(pipes_struct *p, LSA_Q_LOOKUP_SIDS *q_u, LSA_R_LOOKUP_
 	LSA_TRANS_NAME_ENUM *names = NULL;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	names = (LSA_TRANS_NAME_ENUM *)talloc_zero(p->mem_ctx, sizeof(LSA_TRANS_NAME_ENUM));
 
-	if (!ref || !names)
-		return NT_STATUS_NO_MEMORY;
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+
+	if ((!ref || !names) && NT_STATUS_IS_OK(r_u->status))
+		r_u->status = NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup SIDs response */
 	init_lsa_trans_names(p->mem_ctx, ref, names, num_entries, sid, &mapped_count);
@@ -509,14 +509,14 @@ NTSTATUS _lsa_lookup_names(pipes_struct *p,LSA_Q_LOOKUP_NAMES *q_u, LSA_R_LOOKUP
 	DOM_RID2 *rids;
 	uint32 mapped_count = 0;
 
-	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
-		return NT_STATUS_INVALID_HANDLE;
-
 	ref = (DOM_R_REF *)talloc_zero(p->mem_ctx, sizeof(DOM_R_REF));
 	rids = (DOM_RID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_RID2)*MAX_LOOKUP_SIDS);
 
-	if (!ref || !rids)
-		return NT_STATUS_NO_MEMORY;
+	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
+		r_u->status = NT_STATUS_INVALID_HANDLE;
+
+	if ((!ref || !rids) && NT_STATUS_IS_OK(r_u->status))
+		r_u->status = NT_STATUS_NO_MEMORY;
 
 	/* set up the LSA Lookup RIDs response */
 	init_lsa_rid2s(ref, rids, num_entries, names, &mapped_count, p->endian);

@@ -1,7 +1,7 @@
 !===========================================================================================
 !==
 !==	Allocated Arcs from the Samba Team Private Enterprise Number
-!==	ISO(1) org(3) dod(6) internet(1) experimental(3) private(4) enterprise(1) Samba(7165)
+!==	ISO(1) org(3) dod(6) internet(1) private(4) enterprise(1) Samba(7165)
 !==	
 !==	Arc allocation is maintained by jerry carter <jerry@samba.org>.  Please notify
 !==	me if you need an OID and update this file.
@@ -15,3 +15,5 @@ ARC	Owner			Contact				Purpose
 .1	Plainjoe.org		Jerry Carter <jerry@samba.org>	Use for Plainjoe.org domain
 								and examples in O'Reilly LDAP book
 .2	Samba 2.2. Release	jerry@samba.org			schema for representing smbpasswd
+.3	Jean-Francois.Micouleau@dalalu.fr			Experiemental SNMP fun
+

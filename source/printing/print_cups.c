@@ -195,9 +195,9 @@ cups_printer_fn(void (*fn)(char *, char *))	/* I - Function to call */
 			break;
 
  		if (info == NULL || !info[0])
-			(*fn)(unix_to_dos(name,False), make_model);
+			(*fn)(unix_to_dos_static(name), make_model);
 		else
-			(*fn)(unix_to_dos(name,False), info);
+			(*fn)(unix_to_dos_static(name), info);
 	}
 
 	ippDelete(response);
@@ -266,7 +266,7 @@ cups_printername_ok(char *name)		/* I - Name of printer */
                      "requested-attributes", NULL, "printer-uri");
 
 	slprintf(uri, sizeof(uri) - 1, "ipp://localhost/printers/%s",
-	         dos_to_unix(name, False));
+	         dos_to_unix_static(name));
 
 	ippAddString(request, IPP_TAG_OPERATION, IPP_TAG_URI,
                      "printer-uri", NULL, uri);
@@ -904,8 +904,8 @@ cups_queue_get(int snum, print_queue_struct **q, print_status_struct *status)
 			         LPQ_PRINTING;
 		temp->priority = job_priority;
 		temp->time     = job_time;
-		strncpy(temp->user, user_name, sizeof(temp->user) - 1);
-		strncpy(temp->file, job_name, sizeof(temp->file) - 1);
+		strncpy(temp->fs_user, user_name, sizeof(temp->fs_user) - 1);
+		strncpy(temp->fs_file, job_name, sizeof(temp->fs_file) - 1);
 
 		qcount ++;
 

@@ -179,8 +179,8 @@ int cli_RNetShareEnum(struct cli_state *cli, void (*fn)(const char *, uint32, co
 					char *cmnt = comment_offset?(rdata+comment_offset-converter):"";
 					pstring s1, s2;
 
-					pstrcpy(s1, dos_to_unix(sname, False));
-					pstrcpy(s2, dos_to_unix(cmnt, False));
+					pstrcpy(s1, dos_to_unix_static(sname));
+					pstrcpy(s2, dos_to_unix_static(cmnt));
 
 					fn(s1, type, s2, state);
 				}
@@ -261,8 +261,8 @@ BOOL cli_NetServerEnum(struct cli_state *cli, char *workgroup, uint32 stype,
 
 				stype = IVAL(p,18) & ~SV_TYPE_LOCAL_LIST_ONLY;
 
-				pstrcpy(s1, dos_to_unix(sname, False));
-				pstrcpy(s2, dos_to_unix(cmnt, False));
+				pstrcpy(s1, dos_to_unix_static(sname));
+				pstrcpy(s2, dos_to_unix_static(cmnt));
 				fn(s1, stype, s2, state);
 			}
 		}

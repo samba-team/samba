@@ -1645,7 +1645,6 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_en
 	uint32 len_sam_name, len_sam_desc;
 	uint32 i;
 
-	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
 	DEBUG(5, ("init_sam_dispinfo_3: num_entries: %d\n", num_entries));
@@ -1663,16 +1662,17 @@ NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries; i++) {
+		DOMAIN_GRP *grp = disp_group_info[i+start_idx].grp;
+
 		DEBUG(11, ("init_sam_dispinfo_3: entry: %d\n",i));
-		grp=disp_group_info[i+start_idx].grp;
 
-		len_sam_name = strlen(grp[i].name);
-		len_sam_desc = strlen(grp[i].comment);
+		len_sam_name = strlen(grp->name);
+		len_sam_desc = strlen(grp->comment);
 
-		init_sam_entry3(&sam->sam[i], start_idx + i + 1, len_sam_name, len_sam_desc, grp[i].rid);
+		init_sam_entry3(&sam->sam[i], start_idx + i + 1, len_sam_name, len_sam_desc, grp->rid);
 	  
-		init_unistr2(&sam->str[i].uni_grp_name, grp[i].name, len_sam_name);
-		init_unistr2(&sam->str[i].uni_grp_desc, grp[i].comment, len_sam_desc);
+		init_unistr2(&sam->str[i].uni_grp_name, grp->name, len_sam_name);
+		init_unistr2(&sam->str[i].uni_grp_desc, grp->comment, len_sam_desc);
 	}
 
 	return NT_STATUS_OK;
@@ -1830,7 +1830,6 @@ NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_en
 	uint32 len_sam_name;
 	uint32 i;
 
-	DOMAIN_GRP *grp;
 	ZERO_STRUCTP(sam);
 
 	DEBUG(5, ("init_sam_dispinfo_5: num_entries: %d\n", num_entries));
@@ -1848,13 +1847,14 @@ NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 num_en
 	ZERO_STRUCTP(sam->str);
 
 	for (i = 0; i < num_entries; i++) {
-		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
-		grp=disp_group_info[i+start_idx].grp;
+		DOMAIN_GRP *grp = disp_group_info[i+start_idx].grp;
 
-		len_sam_name = strlen(grp[i].name);
+		DEBUG(11, ("init_sam_dispinfo_5: entry: %d\n",i));
+
+		len_sam_name = strlen(grp->name);
 	  
 		init_sam_entry5(&sam->sam[i], start_idx + i + 1, len_sam_name);
-		init_string2(&sam->str[i].grp_name, grp[i].name, len_sam_name+1, len_sam_name);
+		init_string2(&sam->str[i].grp_name, grp->name, len_sam_name+1, len_sam_name);
 	}
 
 	return NT_STATUS_OK;
@@ -5611,7 +5611,7 @@ static BOOL sam_io_user_info25(char *desc, SAM_USER_INFO_25 * usr, prs_struct *p
 	if (usr == NULL)
 		return False;
 
-	prs_debug(ps, depth, desc, "sam_io_user_info23");
+	prs_debug(ps, depth, desc, "sam_io_user_info25");
 	depth++;
 
 	if(!prs_align(ps))

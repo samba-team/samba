@@ -122,7 +122,10 @@
 #undef USE_SETRESUID
 #undef USE_SETREUID
 #undef USE_SETUIDX
-#undef HAVE_LIBDL
+#undef HAVE_DLOPEN
+#undef HAVE_DLCLOSE
+#undef HAVE_DLSYM
+#undef HAVE_DLERROR
 #undef SYSCONF_SC_NGROUPS_MAX
 #undef HAVE_UT_UT_NAME
 #undef HAVE_UT_UT_USER
@@ -173,3 +176,32 @@
 #undef HAVE_DEVICE_MAJOR_FN
 #undef HAVE_DEVICE_MINOR_FN
 #undef HAVE_MAKEDEV_FN
+#undef HAVE_GETGROUPS_TOO_MANY_EGIDS
+/*
+ * Add these definitions to allow VFS modules to
+ * see the CPPFLAGS defines.
+ */
+#ifndef _HPUX_SOURCE
+#undef _HPUX_SOURCE
+#endif
+#ifndef _POSIX_SOURCE
+#undef _POSIX_SOURCE
+#endif
+#ifndef _LARGEFILE64_SOURCE
+#undef _LARGEFILE64_SOURCE
+#endif
+#ifndef _ALIGNMENT_REQUIRED
+#undef _ALIGNMENT_REQUIRED
+#endif
+#ifndef _MAX_ALIGNMENT
+#undef _MAX_ALIGNMENT
+#endif
+#ifndef _LARGE_FILES
+#undef _LARGE_FILES
+#endif
+#ifndef _FILE_OFFSET_BITS
+#undef _FILE_OFFSET_BITS
+#endif
+#ifndef _GNU_SOURCE
+#undef _GNU_SOURCE
+#endif

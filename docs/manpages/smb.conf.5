@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "01 February 2002" "" ""
+.TH "SMB.CONF" "5" "26 April 2002" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -30,7 +30,7 @@ line represents either a comment, a section name or a parameter.
 Section and parameter names are not case sensitive.
 .PP
 Only the first equals sign in a parameter is significant. 
-Whitespace before or after the first equals sign is discarded. 
+Whitespace before or after the first equals sign is discarded.
 Leading, trailing and internal whitespace in section and parameter 
 names is irrelevant. Leading and trailing whitespace in a parameter 
 value is discarded. Internal whitespace within a parameter value 
@@ -70,7 +70,7 @@ client as an extension of their native file systems) or
 printable services (used by the client to access print services 
 on the host running the server).
 .PP
-Sections may be designated \fBguest\fR services, 
+Sections may be designated \fBguest\fR services,
 in which case no password is required to access them. A specified 
 UNIX \fBguest account\fR is used to define access
 privileges in this case.
@@ -381,7 +381,7 @@ protocol negotiation. It can be one of CORE, COREPLUS,
 LANMAN1, LANMAN2 or NT1.
 .TP
 \fB%d\fR
-The process id of the current server 
+The process id of the current server
 process.
 .TP
 \fB%a\fR
@@ -442,7 +442,7 @@ case that the client passes, or if they are forced to be the
 "default" case. Default \fByes\fR.
 .TP
 \fBshort preserve case = yes/no\fR
-controls if new files which conform to 8.3 syntax, 
+controls if new files which conform to 8.3 syntax,
 that is all in upper case and of suitable length, are created 
 upper case, or if they are forced to be the "default" 
 case. This option can be use with "preserve case = yes" 
@@ -689,6 +689,9 @@ each parameter for details. Note that some are synonyms.
 \fIlock directory\fR
 .TP 0.2i
 \(bu
+\fIpid directory\fR
+.TP 0.2i
+\(bu
 \fIlog file\fR
 .TP 0.2i
 \(bu
@@ -780,6 +783,9 @@ each parameter for details. Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fInt smb support\fR
+.TP 0.2i
+\(bu
+\fInt status support\fR
 .TP 0.2i
 \(bu
 \fInull passwords\fR
@@ -1080,6 +1086,9 @@ each parameter for details. Note that some are synonyms.
 \fIcreate mode\fR
 .TP 0.2i
 \(bu
+\fIcsc policy\fR
+.TP 0.2i
+\(bu
 \fIdefault case\fR
 .TP 0.2i
 \(bu
@@ -1335,6 +1344,9 @@ each parameter for details. Note that some are synonyms.
 \fIset directory\fR
 .TP 0.2i
 \(bu
+\fIshare modes\fR
+.TP 0.2i
+\(bu
 \fIshort preserve case\fR
 .TP 0.2i
 \(bu
@@ -1551,7 +1563,8 @@ Windows NT PDC is an onerous task. This option allows smbdto create the required
 \fBON DEMAND\fR when a user accesses the Samba server.
 
 In order to use this option, smbd
-must be set to \fIsecurity = server\fR or \fI security = domain\fR and \fIadd user script\fR
+must \fBNOT\fR be set to \fIsecurity = share\fR
+and \fIadd user script\fR
 must be set to a full pathname for a script that will create a UNIX 
 user given one argument of \fI%u\fR, which expands into 
 the UNIX user name to create.
@@ -2102,6 +2115,23 @@ Example: \fBcreate mask = 0775\fR
 \fBcreate mode (S)\fR
 This is a synonym for \fI create mask\fR.
 .TP
+\fBcsc policy (S)\fR
+This stands for \fBclient-side caching 
+policy\fR, and specifies how clients capable of offline
+caching will cache the files in the share. The valid values
+are: manual, documents, programs, disable.
+
+These values correspond to those used on Windows
+servers.
+
+For example, shares containing roaming profiles can have
+offline caching disabled using \fBcsc policy = disable
+\fR\&.
+
+Default: \fBcsc policy = manual\fR
+
+Example: \fBcsc policy = programs\fR
+.TP
 \fBdeadtime (G)\fR
 The value of the parameter (a decimal integer) 
 represents the number of minutes of inactivity before a connection 
@@ -2329,18 +2359,11 @@ DEMAND\fR when a user accesses the Samba server and the
 Windows NT user no longer exists.
 
 In order to use this option, \fBsmbd\fR must be 
-set to \fIsecurity = domain\fR and \fIdelete 
-user script\fR must be set to a full pathname for a script 
-that will delete a UNIX user given one argument of \fI%u
-\fR, which expands into the UNIX user name to delete.
-\fBNOTE\fR that this is different to the \fIadd user script\fR
-which will work with the \fIsecurity = server\fR option 
-as well as \fIsecurity = domain\fR. The reason for this
-is only when Samba is a domain member does it get the information
-on an attempted user logon that a user no longer exists. In the
-\fIsecurity = server\fR mode a missing user
-is treated the same as an invalid password logon attempt. Deleting
-the user in this circumstance would not be a good idea.
+set to \fIsecurity = domain\fR or \fIsecurity =
+user\fR and \fIdelete user script\fR 
+must be set to a full pathname for a script 
+that will delete a UNIX user given one argument of \fI%u\fR, 
+which expands into the UNIX user name to delete.
 
 When the Windows user attempts to access the Samba server, 
 at \fBlogin\fR (session setup in the SMB protocol) 
@@ -2879,7 +2902,7 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 .TP
-\fBforce directory\fR
+\fBforce directory  security mode (S)\fR
 This parameter controls what UNIX permission bits 
 can be modified when a Windows NT client is manipulating the UNIX 
 permission on a directory using the native NT security dialog box.
@@ -4649,19 +4672,31 @@ alone.
 Default: \fBnt pipe support = yes\fR
 .TP
 \fBnt smb support (G)\fR
-This boolean parameter controls whether smbd(8)will negotiate NT specific SMB 
-support with Windows NT clients. Although this is a developer 
-debugging option and should be left alone, benchmarking has discovered 
-that Windows NT clients give faster performance with this option 
-set to no. This is still being investigated. 
-If this option is set to no then Samba offers 
-exactly the same SMB calls that versions prior to Samba 2.0 offered. 
-This information may be of use if any users are having problems 
+This boolean parameter controls whether smbd(8)will negotiate NT specific SMB
+support with Windows NT/2k/XP clients. Although this is a developer
+debugging option and should be left alone, benchmarking has discovered
+that Windows NT clients give faster performance with this option
+set to no. This is still being investigated.
+If this option is set to no then Samba offers
+exactly the same SMB calls that versions prior to Samba 2.0 offered.
+This information may be of use if any users are having problems
 with NT SMB support.
 
 You should not need to ever disable this parameter.
 
 Default: \fBnt smb support = yes\fR
+.TP
+\fBnt status support (G)\fR
+This boolean parameter controls whether smbd(8)will negotiate NT specific status
+support with Windows NT/2k/XP clients. This is a developer
+debugging option and should be left alone.
+If this option is set to no then Samba offers
+exactly the same DOS error codes that versions prior to Samba 2.2.3
+reported.
+
+You should not need to ever disable this parameter.
+
+Default: \fBnt status support = yes\fR
 .TP
 \fBnull passwords (G)\fR
 Allow or disallow client access to accounts 
@@ -5076,6 +5111,14 @@ Default: \fBnone\fR
 
 Example: \fBpath = /home/fred\fR
 .TP
+\fBpid directory (G)\fR
+This option specifies the directory where pid 
+files will be placed. 
+
+Default: \fBpid directory = ${prefix}/var/locks\fR
+
+Example: \fBpid directory = /var/run/\fR
+.TP
 \fBposix locking (S)\fR
 The \fBsmbd(8)\fR
 daemon maintains an database of file locks obtained by SMB clients.
@@ -5283,6 +5326,9 @@ Synonym for \fI printcap name\fR.
 This parameter may be used to override the 
 compiled-in default printcap name used by the server (usually \fI /etc/printcap\fR). See the discussion of the [printers] section above for reasons 
 why you might want to do this.
+
+To use the CUPS printing interface set \fBprintcap name = cups
+\fR\&.
 
 On System V systems that use \fBlpstat\fR to 
 list available printers you can use \fBprintcap name = lpstat
@@ -6006,6 +6052,29 @@ in the Digital Pathworks client. See the Pathworks documentation
 for details.
 
 Default: \fBset directory = no\fR
+.TP
+\fBshare modes (S)\fR
+This enables or disables the honoring of 
+the \fIshare modes\fR during a file open. These 
+modes are used by clients to gain exclusive read or write access 
+to a file.
+
+These open modes are not directly supported by UNIX, so
+they are simulated using shared memory, or lock files if your 
+UNIX doesn't support shared memory (almost all do).
+
+The share modes that are enabled by this option are 
+DENY_DOS, DENY_ALL,
+DENY_READ, DENY_WRITE,
+DENY_NONE and DENY_FCB.
+
+This option gives full share compatibility and enabled 
+by default.
+
+You should \fBNEVER\fR turn this parameter 
+off as many Windows applications will break if you do so.
+
+Default: \fBshare modes = yes\fR
 .TP
 \fBshort preserve case (S)\fR
 This boolean parameter controls if new files 
@@ -7143,7 +7212,7 @@ again.
 
 Default: \fBwinbind cache type = 15\fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum users\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of users through the
@@ -7162,7 +7231,7 @@ usernames.
 
 Default: \fBwinbind enum users = yes \fR
 .TP
-\fBwinbind enum\fR
+\fBwinbind enum groups\fR
 On large installations using
 winbindd(8)it may be
 necessary to suppress the enumeration of groups through the
@@ -7195,9 +7264,13 @@ used when listing a username of the form of \fIDOMAIN
 is only applicable when using the \fIpam_winbind.so\fR
 and \fInss_winbind.so\fR modules for UNIX services.
 
-Example: \fBwinbind separator = \\\fR
+Please note that setting this parameter to + causes problems
+with group membership at least on glibc systems, as the character +
+is used as a special character for NIS in /etc/group.
 
-Example: \fBwinbind separator = +\fR
+Example: \fBwinbind separator = \\\\\fR
+
+Example: \fBwinbind separator = /\fR
 .TP
 \fBwinbind uid\fR
 The winbind gid parameter specifies the range of group 

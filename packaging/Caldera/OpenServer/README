@@ -1,25 +1,10 @@
-Preparation Date: April 13, 2001
-Preparer:	  Ronald Joe Record <rr@sco.com>
+Preparation Date: January 24, 2002
+Preparer:	  Evan Hunt <evanh@caldera.com>
 
 Instructions:	Preparing Samba Packages for SCO OpenServer
 ===============================================================
 
 We provide support only for current versions of SCO OpenServer
-
-The file samba-2.2.3-osr5.patch is a patch file suitable for use
-with the patch command as follows:
-
-        # cd ../../../source
-        # patch -p 0 -i ../packaging/Caldera/OpenServer/samba-2.2-osr5.patch
-
-The files modified by this patch are:
-    utils/torture.c
-    utils/locktest.c
-    utils/locktest2.c
-
-This patch should only be necessary until these changes are accepted
-back into the 2.2 source tree. Until then, this patch must be applied
-prior to building Samba 2.2 on SCO OpenServer 5. 
 
 To produce the custom installable media images simply type (in this directory):
 	# ./Makevol

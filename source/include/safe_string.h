@@ -22,6 +22,11 @@
 #ifndef _SAFE_STRING_H
 #define _SAFE_STRING_H
 
+#ifdef bcopy
+#undef bcopy
+#endif /* bcopy */
+#define bcopy(src,dest,size) __ERROR__XX__NEVER_USE_BCOPY___;
+
 #ifdef strcpy
 #undef strcpy
 #endif /* strcpy */
@@ -41,6 +46,9 @@
 #define pstrcat(d,s) safe_strcat((d),(s),sizeof(pstring)-1)
 #define fstrcpy(d,s) safe_strcpy((d),(s),sizeof(fstring)-1)
 #define fstrcat(d,s) safe_strcat((d),(s),sizeof(fstring)-1)
+
+#define fstrterminate(d) (((d)[sizeof(fstring)-1]) = '\0')
+#define pstrterminate(d) (((d)[sizeof(pstring)-1]) = '\0')
 
 #define wpstrcpy(d,s) safe_strcpy_w((d),(s),sizeof(wpstring))
 #define wpstrcat(d,s) safe_strcat_w((d),(s),sizeof(wpstring))
