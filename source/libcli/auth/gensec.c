@@ -314,6 +314,10 @@ NTSTATUS gensec_unseal_packet(struct gensec_security *gensec_security,
 	if (!gensec_security->ops->unseal_packet) {
 		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+	if (!(gensec_security->want_features & GENSEC_WANT_SEAL)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
 	return gensec_security->ops->unseal_packet(gensec_security, mem_ctx, 
 						   data, length, 
 						   whole_pdu, pdu_length, 

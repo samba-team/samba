@@ -108,7 +108,6 @@ static NTSTATUS gensec_spnego_check_packet(struct gensec_security *gensec_securi
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
-	return NT_STATUS_NOT_IMPLEMENTED;
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
@@ -129,7 +128,6 @@ static NTSTATUS gensec_spnego_seal_packet(struct gensec_security *gensec_securit
 {
 	struct spnego_state *spnego_state = gensec_security->private_data;
 
-	return NT_STATUS_NOT_IMPLEMENTED;
 	if (spnego_state->state_position != SPNEGO_DONE 
 	    && spnego_state->state_position != SPNEGO_FALLBACK) {
 		return NT_STATUS_INVALID_PARAMETER;
