@@ -18,6 +18,8 @@ domain: builtinDomain
 person: organizationalPerson
 organizationalPerson: user
 user: computer
+template: userTemplate
+template: groupTemplate
 
 dn: ${BASEDN}
 objectClass: top
@@ -771,3 +773,11 @@ primaryGroupID: 513
 accountExpires: -1
 logonCount: 0
 sAMAccountType: 0x30000000
+
+dn: CN=TemplateGroup,CN=Templates,${BASEDN}
+objectClass: top
+objectClass: groupTemplate
+cn: TemplateGroup
+name: TemplateGroup
+instanceType: 4
+sAMAccountType: 0x10000000

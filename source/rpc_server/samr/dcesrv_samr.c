@@ -431,6 +431,15 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/*
+  destroy an open account context
+*/
+static void samr_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
+{
+	struct samr_account_state *state = h->data;
+	samr_Domain_close(conn, state->domain_state);
+	talloc_destroy(state->mem_ctx);
+}
 
 /* 
   samr_CreateDomainGroup 
@@ -438,7 +447,129 @@ static NTSTATUS samr_SetDomainInfo(struct dcesrv_call_state *dce_call, TALLOC_CT
 static NTSTATUS samr_CreateDomainGroup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct samr_CreateDomainGroup *r)
 {
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct samr_domain_state *d_state;
+	struct samr_account_state *state;
+	struct dcesrv_handle *h;
+	const char *name;
+	struct ldb_message msg;
+	uint32 rid;
+	const char *groupname, *sidstr;
+	time_t now = time(NULL);
+	TALLOC_CTX *mem_ctx2;
+	struct dcesrv_handle *g_handle;
+	int ret;
+	NTSTATUS status;
+
+	ZERO_STRUCTP(r->out.group_handle);
+	*r->out.rid = 0;
+
+	DCESRV_PULL_HANDLE(h, r->in.handle, SAMR_HANDLE_DOMAIN);
+
+	d_state = h->data;
+
+	groupname = r->in.name->name;
+
+	if (groupname == NULL) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* check if the group already exists */
+	name = samdb_search_string(d_state->sam_ctx, mem_ctx, d_state->basedn, 
+				   "name",
+				   "(&(sAMAccountName=%s)(objectclass=group))",
+				   groupname);
+	if (name != NULL) {
+		return NT_STATUS_GROUP_EXISTS;
+	}
+
+	ZERO_STRUCT(msg);
+
+	/* pull in all the template attributes */
+	ret = samdb_copy_template(d_state->sam_ctx, mem_ctx, &msg, 
+				  "(&(name=TemplateGroup)(objectclass=groupTemplate))");
+	if (ret != 0) {
+		DEBUG(1,("Failed to load TemplateUser from samdb\n"));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* allocate a rid */
+	status = samdb_allocate_next_id(d_state->sam_ctx, mem_ctx, 
+					d_state->basedn, "nextRid", &rid);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* and the group SID */
+	sidstr = talloc_asprintf(mem_ctx, "%s-%u", d_state->domain_sid, rid);
+	if (!sidstr) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* add core elements to the ldb_message for the user */
+	msg.dn = talloc_asprintf(mem_ctx, "CN=%s,CN=Users,%s", groupname,
+				 d_state->basedn);
+	if (!msg.dn) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+			     "name", groupname);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+			     "cn", groupname);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+			     "sAMAccountName", groupname);
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+			     "objectClass", "group");
+	samdb_msg_add_string(d_state->sam_ctx, mem_ctx, &msg,
+			     "objectSid", sidstr);
+	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg,
+			       "whenCreated", now);
+	samdb_msg_set_ldaptime(d_state->sam_ctx, mem_ctx, &msg,
+			       "whenChanged", now);
+			     
+	/* create the group */
+	ret = samdb_add(d_state->sam_ctx, mem_ctx, &msg);
+	if (ret != 0) {
+		DEBUG(1,("Failed to create group record %s\n", msg.dn));
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	/* create user state and new policy handle */
+	mem_ctx2 = talloc_init("CreateDomainGroup(%s)", groupname);
+	if (!mem_ctx2) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	state = talloc_p(mem_ctx2, struct samr_account_state);
+	if (!state) {
+		return NT_STATUS_NO_MEMORY;
+	}
+	state->mem_ctx = mem_ctx2;
+	state->sam_ctx = d_state->sam_ctx;
+	state->access_mask = r->in.access_mask;
+	state->domain_state = d_state;
+	state->basedn = talloc_steal(mem_ctx, mem_ctx2, msg.dn);
+	state->account_sid = talloc_strdup(mem_ctx2, sidstr);
+	state->account_name = talloc_strdup(mem_ctx2, groupname);
+	if (!state->account_name || !state->account_sid) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* create the policy handle */
+	g_handle = dcesrv_handle_new(dce_call->conn, SAMR_HANDLE_GROUP);
+	if (!g_handle) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	g_handle->data = state;
+	g_handle->destroy = samr_Account_destroy;
+
+	/* the domain state is in use one more time */
+	d_state->reference_count++;
+
+	*r->out.group_handle = g_handle->wire_handle;
+	*r->out.rid = rid;	
+
+	return NT_STATUS_OK;
 }
 
 
@@ -449,17 +580,6 @@ static NTSTATUS samr_EnumDomainGroups(struct dcesrv_call_state *dce_call, TALLOC
 				      struct samr_EnumDomainGroups *r)
 {
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
-}
-
-
-/*
-  destroy an open account context
-*/
-static void samr_Account_destroy(struct dcesrv_connection *conn, struct dcesrv_handle *h)
-{
-	struct samr_account_state *state = h->data;
-	samr_Domain_close(conn, state->domain_state);
-	talloc_destroy(state->mem_ctx);
 }
 
 
