@@ -114,9 +114,10 @@ OM_uint32 gss_inquire_cred
     }
     ret = GSS_S_COMPLETE;
  out:
+    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
+
     if (cred_handle == GSS_C_NO_CREDENTIAL)
 	ret = gss_release_cred(minor_status, &cred);
 
-    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     return ret;
 }
