@@ -252,7 +252,7 @@ if test "x$enable_developer" = xyes; then
 fi
 
 dnl These are preferably build shared, and static if dlopen() is not available
-default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk"
+default_shared_modules="vfs_recycle vfs_audit vfs_extd_audit vfs_netatalk vfs_fake_perms"
 
 #
 # Config CPPFLAG settings for strange OS's that must be set
