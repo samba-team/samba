@@ -6,6 +6,7 @@
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
  *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Jeremy Allison					2001.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -22,55 +23,55 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* This is the interface to the wks pipe. */
+/* This is the implementation of the wks interface. */
 
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
 
 /*******************************************************************
- api_wks_query_info
+ create_wks_info_100
  ********************************************************************/
 
-static BOOL api_wks_query_info(pipes_struct *p)
+static void create_wks_info_100(WKS_INFO_100 *inf)
 {
-	WKS_Q_QUERY_INFO q_u;
-	WKS_R_QUERY_INFO r_u;
-	prs_struct *data = &p->in_data.data;
-	prs_struct *rdata = &p->out_data.rdata;
+	pstring my_name;
+	pstring domain;
 
-	ZERO_STRUCT(q_u);
-	ZERO_STRUCT(r_u);
+	DEBUG(5,("create_wks_info_100: %d\n", __LINE__));
 
-	/* grab the net share enum */
-	if(!wks_io_q_query_info("", &q_u, data, 0))
-		return False;
+	pstrcpy (my_name, global_myname);
+	strupper(my_name);
 
-	r_u.status = _wks_query_info(p, &q_u, &r_u);
+	pstrcpy (domain, lp_workgroup());
+	strupper(domain);
 
-	/* store the response in the SMB stream */
-	if(!wks_io_r_query_info("", &r_u, rdata, 0))
-		return False;
-
-	return True;
+	init_wks_info_100(inf,
+	                  0x000001f4, /* platform id info */
+	                  lp_major_announce_version(),
+	                  lp_minor_announce_version(),
+	                  my_name, unix_to_dos(domain,False));
 }
 
-
 /*******************************************************************
- \PIPE\wkssvc commands
- ********************************************************************/
-struct api_struct api_wks_cmds[] =
-{
-	{ "WKS_Q_QUERY_INFO", WKS_QUERY_INFO, api_wks_query_info },
-	{ NULL             , 0            , NULL }
-};
+ wks_reply_query_info
+ 
+ only supports info level 100 at the moment.
 
-/*******************************************************************
- receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(pipes_struct *p)
+
+uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u)
 {
-	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds);
+	WKS_INFO_100 wks100;
+
+	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
+
+	create_wks_info_100(&wks100);
+	init_wks_r_query_info(r_u, q_u->switch_value, &wks100, NT_STATUS_NOPROBLEMO);
+
+	DEBUG(5,("_wks_query_info: %d\n", __LINE__));
+
+	return r_u->status;
 }
-
 #undef OLD_NTDOMAIN
