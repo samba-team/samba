@@ -325,7 +325,7 @@ uint32 _lsa_enum_trust_dom(pipes_struct *p, LSA_Q_ENUM_TRUST_DOM *q_u, LSA_R_ENU
 }
 
 /***************************************************************************
- _lsa_query_info
+ _lsa_query_info. See the POLICY_INFOMATION_CLASS docs at msdn.
  ***************************************************************************/
 
 uint32 _lsa_query_info(pipes_struct *p, LSA_Q_QUERY_INFO *q_u, LSA_R_QUERY_INFO *r_u)
