@@ -737,7 +737,7 @@ static NTSTATUS mysqlsam_replace_sam_account(struct pdb_methods *methods,
 	if (pdb_get_pass_last_set_time(newpwd)) {
 		pdb_mysql_int_field(methods, &query,
 							config_value_write(data,
-											   "pass must change time column",
+											   "pass last set time column",
 											   CONFIG_PASS_LAST_SET_TIME_DEFAULT),
 							pdb_get_pass_last_set_time(newpwd));
 	}
