@@ -752,7 +752,7 @@ int main(int argc, char ** argv)
 #ifndef CIFS_ALLOW_USR_SUID
 			/* Do not allow user mounts to control suid flag
 			for mount unless explicitly built that way */
-			flags |= MS_NOSUID;
+			flags |= MS_NOSUID | MS_NODEV;
 #endif						
 		} else {
 			printf("mount error: permission denied or not superuser and cifs.mount not installed SUID\n"); 
