@@ -199,9 +199,9 @@ REG_KEY *process_cmd(REG_KEY *k, char *line)
 int main (int argc, char **argv)
 {
 	int opt;
-	char *backend = "dir";
-	char *credentials = NULL;
-	REG_KEY *curkey = NULL;;
+	const char *backend = "dir";
+	const char *credentials = NULL;
+	REG_KEY *curkey = NULL;
 	poptContext pc;
 	WERROR error;
 	REG_HANDLE *h;

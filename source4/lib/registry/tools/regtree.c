@@ -58,10 +58,11 @@ void print_tree(int l, REG_KEY *p, int fullpath, int novals)
 	}
 }
 
-int main (int argc, char **argv)
+ int main(int argc, char **argv)
 {
 	int opt;
-	char *backend = "dir", *credentials = NULL;
+	const char *backend = "dir";
+	const char *credentials = NULL;
 	poptContext pc;
 	REG_KEY *root;
 	REG_HANDLE *h;
