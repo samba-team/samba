@@ -20,7 +20,8 @@ list=""
 
 for f in librpc/idl/*.idl; do
     basename=`basename $f .idl`
-    if [ "$f" -nt librpc/gen_ndr/ndr_$basename.c ]; then
+    ndr="librpc/gen_ndr/ndr_$basename.c"
+    if [ "$f" -nt $ndr -o ! -f $ndr ]; then
 	list="$list $f"
     fi
 done
