@@ -326,8 +326,8 @@
 	</para>
 
 	<image id="chap05net">
-		<description>Network Topology &smbmdash; 500 User Network Using tdbsam passdb backend.</description>
-		<imagefile scale="80">chap5-net.png</imagefile>
+		<imagedescription>Network Topology &smbmdash; 500 User Network Using tdbsam passdb backend.</imagedescription>
+		<imagefile scale="80">chap5-net</imagefile>
 	</image>
 
 	<sect2 id="ch5-dnshcp-setup">
