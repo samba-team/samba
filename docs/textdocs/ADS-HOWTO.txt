@@ -17,8 +17,24 @@ Pieces you need before you begin:
 - the MIT kerberos development libraries (either install from the
   above sources or use a package). Under debian you need "libkrb5-dev"
   and "krb5-user". The heimdal libraries will not work.
+- Cyrys SASL, including the gssapi mechanism.
 - the OpenLDAP development libraries. These must be compiled
   with Cyrus SASL enabled.
+
+On RedHat this means you should have at least: 
+
+krb5-workstation (for kinit)
+krb5-libs (for linking with)
+krb5-devel (because you are compiling from source)
+cyrus
+cyrus-sasl
+cyrus-sasl-devel
+cyrus-sasl-gssapi
+
+in addition to the standard development environment.
+
+Note that these are not standard on a RedHat install, and you may need 
+to get them off CD2.
 
 Also check that you have the latest copy of this HOWTO. It is
 available from http://samba.org/ftp/tridge/kerberos/HOWTO
@@ -89,6 +105,23 @@ Step 3: Create the computer account
   (usually root) run:
 
      net ads join
+
+  Possible errors:
+    - "bash: kinit: command not found":
+       - kinit is in the krb5-workstation RPM on RedHat systems, and is
+         in /usr/kerberos/bin, so it won't be in the path until 
+         you log in again (or open a new terminal)
+    - "ADS support not compiled in"
+       - Samba must be reconfigured (remove config.cache) and
+         recompiled (make clean all install) after the kerberos libs
+         and headers are installed.
+    - "Unknown authentication method"
+       - the cyrus-sasl-gssapi package is not installed.  
+         The RPM (assuming RedHat 7.2) is on CD2
+
+    - "ads_add_machine_acct: Invalid DN syntax"
+       - The 'realm' paramater has not been added to your smb.conf
+    
 
 Step 4: Test your server setup
 
