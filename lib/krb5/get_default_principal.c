@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,8 @@ get_logname(void)
 	return p;
     if((p = getenv("LOGNAME")))
 	return p;
+    if((p = getenv("USERNAME")))
+	return p;
 #if defined(HAVE_GETLOGIN) && !defined(POSIX_GETLOGIN)
     if((p = getlogin()))
 	return p;
@@ -73,7 +75,7 @@ krb5_get_default_principal (krb5_context context,
     }
 
     pw = getpwuid(getuid());
-    if(pw == NULL){
+    if(pw == NULL) {
 	p = get_logname();
 	if(p == NULL)
 	    return ENOTTY;
