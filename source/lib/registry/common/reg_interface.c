@@ -64,8 +64,12 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 
 	if(reg_first_init) {
 		status = register_subsystem("registry", registry_register);
-		if (!NT_STATUS_IS_OK(status)) 
+		if (NT_STATUS_IS_ERR(status)) {
+			DEBUG(0, ("Error registering registry subsystem: %s\n", nt_errstr(status)));
+			/* Don't try the initialisation again */
+			reg_first_init = False;
 			return NULL;
+		}
 
 		static_init_registry;
 		reg_first_init = False;
@@ -83,7 +87,7 @@ static struct reg_init_function_entry *reg_find_backend_entry(const char *name)
 
 BOOL reg_has_backend(const char *backend)
 {
-	return reg_find_backend_entry(backend)?True:False;
+	return reg_find_backend_entry(backend) != NULL?True:False;
 }
 
 /* Open a registry file/host/etc */

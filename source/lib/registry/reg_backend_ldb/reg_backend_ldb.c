@@ -39,6 +39,7 @@ static char *reg_path_to_ldb(TALLOC_CTX *mem_ctx, const char *path)
 	}
 
 	ret[strlen(ret)-1] = ')';
+	printf("Doing search for : %s\n", ret);
 	return ret;
 }
 
@@ -85,9 +86,12 @@ static WERROR ldb_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***subkeys)
 	return WERR_OK;
 }
 
+static WERROR ldb_get_hive(REG_HANDLE *h, int num, REG_KEY **key)
+{
+	/* FIXME */	
+}
 
-
-static WERROR ldb_open_key(REG_HANDLE *h, const char *name, REG_KEY **key)
+static WERROR ldb_open_key(REG_HANDLE *h, int num, const char *name, REG_KEY **key)
 {
 	struct ldb_context *c = h->backend_data;
 	char *path;

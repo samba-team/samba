@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    module loading system
 
-   Copyright (C) Jelmer Vernooij 2002-2003
+   Copyright (C) Jelmer Vernooij 2002-2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -133,7 +133,7 @@ NTSTATUS register_subsystem(const char *name, register_backend_function callback
 	while(t) {
 		if(!strcmp(name, t->name)) {
 			/* its already registered! */
-			DEBUG(0,("SUBSYSTEM '%s' for type already registered\n", name));
+			DEBUG(0,("Subsystem '%s' already registered\n", name));
 			return NT_STATUS_OBJECT_NAME_COLLISION;
 		}
 		t = t->next;

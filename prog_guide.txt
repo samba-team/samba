@@ -757,6 +757,3 @@ docs
 svn instructions
 
 test commit
-
-
-
