@@ -663,7 +663,7 @@ static void usage(char *pname)
 		exit(1);
 	}
 
-	if (lp_security() == SEC_DOMAIN && !get_member_domain_sid())
+	if (!get_member_domain_sid())
 	{
 		DEBUG(0,("ERROR: Samba cannot obtain PDC SID from PDC(s) %s.\n",
 		          lp_passwordserver()));

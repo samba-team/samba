@@ -162,6 +162,25 @@ BOOL get_member_domain_sid(void)
 	fstring dom3;
 	fstring dom5;
 
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_NONE:
+		{
+			ZERO_STRUCT(global_member_sid);
+			return True;
+		}
+		case ROLE_DOMAIN_PDC:
+		{
+			sid_copy(&global_member_sid, &global_sam_sid);
+			return True;
+		}
+		default:
+		{
+			/* member or BDC, we're going for connection to PDC */
+			break;
+		}
+	}
+
 	if (!cli_connect_serverlist(&cli, lp_passwordserver()))
 	{
 		DEBUG(0,("get_member_domain_sid: unable to initialise client connection.\n"));
