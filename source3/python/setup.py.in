@@ -1,0 +1,93 @@
+# -*- mode: python -*-
+#
+# Unix SMB/CIFS implementation.
+# Module packaging setup for Samba python extensions
+#
+# Copyright (C) Tim Potter, 2002
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#   
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#   
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#
+
+from distutils.core import setup
+from distutils.extension import Extension
+
+import sys, string, os
+
+# The Makefile passes in environment variable $PYTHON_OBJ as being the
+# list of Samba objects.  This kind of goes against the distutils.cmd
+# method of adding setup commands and will also confuse people who are
+# familiar with the python Distutils module.
+
+samba_objs = ""
+if os.environ.has_key("PYTHON_OBJS"):
+    samba_objs = os.environ.get("PYTHON_OBJS")
+
+samba_cflags = ""
+if os.environ.has_key("PYTHON_CFLAGS"):
+    samba_cflags = os.environ.get("PYTHON_CFLAGS")
+
+# These variables are filled in by configure
+
+samba_libs = "@LIBS@"
+
+# Convert libs and objs from space separated strings to lists of strings
+# for distutils to digest.  Split "-l" prefix off library list.
+
+obj_list = string.split(samba_objs)
+
+lib_list = []
+
+for lib in string.split(samba_libs):
+    lib_list.append(string.replace(lib, "-l", ""))
+
+# Invoke distutils.setup
+
+setup(
+
+    # Overview information
+    
+    name = "Samba Python Extensions",
+    version = "0.1",
+    author = "Tim Potter",
+    author_email = "tpot@samba.org",
+    license = "GPL",
+
+    # Build info
+    
+    include_dirs = [".", "include", "ubiqx", "nsswitch", "smbwrapper",
+                    "popt", "/usr/kerberos/include"],
+    
+    # Module list
+    
+    ext_modules = [Extension(name = "spoolss",
+                             sources = ["python/py_spoolss.c",
+                                        "python/py_spoolss_forms.c",
+                                        "python/py_common.c"],
+                             libraries = lib_list,
+                             library_dirs = ["/usr/kerberos/lib"],
+                             extra_objects = obj_list),
+                   Extension(name = "lsa",
+                             sources = ["python/py_lsa.c",
+                                        "python/py_common.c"],
+                             libraries = lib_list,
+                             library_dirs = ["/usr/kerberos/lib"],
+                             extra_objects = obj_list),
+                   Extension(name = "winbind",
+                             sources = ["python/py_winbind.c"],
+                             libraries = lib_list,
+                             library_dirs = ["/usr/kerberos/lib"],
+                             extra_objects = obj_list),
+                   ]
+)
