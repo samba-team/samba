@@ -465,7 +465,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 
 static BOOL get_sam_group_entries(struct getent_state *ent)
 {
-	uint32 status, num_entries, start_ndx = 0;
+	uint32 status, num_entries;
 	struct acct_info *name_list = NULL;
         
 	if (ent->got_all_sam_entries) {
@@ -501,43 +501,33 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 		num_entries = 0;
 
-		status =
-			wb_samr_enum_dom_groups(&ent->domain->
-						sam_dom_handle,
-						&start_ndx,
-						0x8000, /* buffer size? */
-						(struct acct_info **)
-						&sam_grp_entries,
-						&num_entries);
+		status = samr_enum_dom_groups(&ent->domain->sam_dom_handle,
+					     &ent->grp_query_start_ndx,
+					     0x8000, /* buffer size? */
+					     (struct acct_info **)
+					     &sam_grp_entries,
+					     &num_entries);
 
 		/* Copy entries into return buffer */
 
 		if (num_entries) {
-			struct acct_info *tnl;
 
-			tnl = (struct acct_info *)Realloc(name_list,
+			name_list = Realloc(name_list,
 					    sizeof(struct acct_info) *
 					    (ent->num_sam_entries +
 					     num_entries));
 
-			if (!tnl) {
-				DEBUG(0,("get_sam_group_entries: Realloc fail.\n"));
-				if (name_list)
-					free(name_list);
-				return False;
-			} else
-				name_list = tnl;
-
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
 			       num_entries * sizeof(struct acct_info));
+
+			safe_free(sam_grp_entries);
 		}
 
 		ent->num_sam_entries += num_entries;
-
-		if (status != STATUS_MORE_ENTRIES) {
+		
+		if (status != STATUS_MORE_ENTRIES)
 			break;
-		}
 
 	} while (ent->num_sam_entries < MAX_FETCH_SAM_ENTRIES);
 		
@@ -615,7 +605,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				struct getent_state *next_ent;
 
 				DEBUG(10, ("getgrent(): freeing state info for "
-					   "domain %s\n", ent->domain->name));
+					   "domain %s\n", ent->domain->name)); 
 
 				/* Free state information for this domain */
 
@@ -683,7 +673,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				gr_mem_list,
 				gr_mem_list_len + gr_mem_len);
 
-			if (!new_gr_mem_list) {
+			if (!new_gr_mem_list && (group_list[group_list_ndx].num_gr_mem != 0)) {
 				DEBUG(0, ("getgrent(): out of memory\n"));
 				free(gr_mem_list);
 				gr_mem_list_len = 0;
@@ -770,16 +760,19 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 
 enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 {
-	uint32 total_entries = 0;
-	struct winbindd_domain *domain;
+        uint32 total_entries = 0;
+	uint32 num_domain_entries;
+        struct winbindd_domain *domain;
 	struct getent_state groups;
-	char *ted, *extra_data = NULL;
+	char *extra_data = NULL;
+	char *ted = NULL;
 	int extra_data_len = 0, i;
+	void *sam_entries = NULL;
 
 	DEBUG(3, ("[%5d]: list groups\n", state->pid));
 
         /* Enumerate over trusted domains */
-
+	ZERO_STRUCT(groups);
         for (domain = domain_list; domain; domain = domain->next) {
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
@@ -795,17 +788,54 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		ZERO_STRUCT(groups);
 		groups.domain = domain;
 
-		get_sam_group_entries(&groups);
+		/* 
+		 * iterate through all groups 
+		 * total_entries          :  maintains a total count over **all domains**
+		 * num_domain_entries :  is the running count for this domain
+		 */
+		 
+		num_domain_entries = 0;
+		while (get_sam_group_entries(&groups))
+		{
+			int new_size;
+			int offset;
+			
+			offset = sizeof(struct acct_info) * num_domain_entries;
+			new_size = sizeof(struct acct_info) 
+			 	* (groups.num_sam_entries + num_domain_entries);
+			sam_entries = Realloc(sam_entries, new_size);
+			
+			if (!sam_entries)
+				return WINBINDD_ERROR;
+			
+			num_domain_entries += groups.num_sam_entries;
+			memcpy (sam_entries+offset, groups.sam_entries, 
+				sizeof(struct acct_info) * groups.num_sam_entries);
+			
+			groups.sam_entries = NULL;
+			groups.num_sam_entries = 0;
+		}
 
-		if (groups.num_sam_entries == 0) continue;
+		/* skip remainder of loop if we idn;t retrieve any groups */
+		
+		if (num_domain_entries == 0) 
+			continue;
 
-		/* Allocate some memory for extra data.  Note that we limit
-		   account names to sizeof(fstring) = 128 characters.  */
+		/* setup the groups struct to contain all the groups 
+		   retrieved for this domain */
+		  
+		groups.num_sam_entries = num_domain_entries;
+		groups.sam_entries = sam_entries;
+
+		/* keep track the of the total number of groups seen so 
+		   far over all domains */
 
 		total_entries += groups.num_sam_entries;
-
-		ted = Realloc(extra_data,
-					sizeof(fstring) * total_entries);
+		
+		/* Allocate some memory for extra data.  Note that we limit
+		   account names to sizeof(fstring) = 128 characters.  */
+		
+                ted = Realloc(extra_data, sizeof(fstring) * total_entries);
  
 		if (!ted) {
 			DEBUG(0,("winbindd_list_groups: failed to enlarge buffer!\n"));
@@ -824,14 +854,12 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 			/* Convert unistring to ascii */
 
-			snprintf(name, sizeof(name), "%s%s%s",
-				 domain->name, lp_winbind_separator(),
-				 group_name);
+			snprintf(name, sizeof(name), "%s%s%s", domain->name, 
+				lp_winbind_separator(), group_name);
 
 			/* Append to extra data */
 			
-			memcpy(&extra_data[extra_data_len], name, 
-			       strlen(name));
+			memcpy(&extra_data[extra_data_len], name, strlen(name));
 			extra_data_len += strlen(name);
 
 			extra_data[extra_data_len++] = ',';
