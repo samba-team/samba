@@ -1,5 +1,7 @@
 1999-09-24  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kuser/klist.c: add a `--cache' flag
+
 	* kuser/kinit.c (main): only get default value for `get_v4_tgt' if
 	it's explicitly set in krb5.conf
 
