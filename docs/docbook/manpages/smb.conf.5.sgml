@@ -1132,7 +1132,7 @@
 		is 4.2.  Do not change this parameter unless you have a specific 
 		need to set a Samba server to be a downlevel server.</para>
 
-		<para>Default: <command>announce version = 4.2</command></para>
+		<para>Default: <command>announce version = 4.5</command></para>
 
 		<para>Example: <command>announce version = 2.0</command></para>
 		</listitem>
@@ -1522,7 +1522,7 @@
 
 		
 		<varlistentry>
-		<term><anchor id="CODINGSYSTEM">codingsystem (G)</term>
+		<term><anchor id="CODINGSYSTEM">coding system (G)</term>
 		<listitem><para>This parameter is used to determine how incoming 
 		Shift-JIS Japanese characters are mapped from the incoming <link 
 		linkend="CLIENTCODEPAGE"><parameter>client code page</parameter>
