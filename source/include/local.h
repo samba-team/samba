@@ -85,11 +85,7 @@
 
 /* what type of filesystem do we want this to show up as in a NT file
    manager window? */
-#ifdef HAVE_NT_SMBS
-#define FSTYPE_STRING "NTFS"
-#else /* HAVE_NT_SMBS */
 #define FSTYPE_STRING "Samba"
-#endif /* HAVE_NT_SMBS */
 
 /* the default guest account - normally set in the Makefile or smb.conf */
 #ifndef GUEST_ACCOUNT

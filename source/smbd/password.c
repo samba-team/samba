@@ -134,17 +134,15 @@ void invalidate_vuid(uint16 vuid)
 
   vuser->n_sids = 0;
 
-  /* same number of igroups as groups as attrs */
+  /* same number of igroups as groups */
   vuser->n_groups = 0;
 
   if (vuser->groups && (vuser->groups != (gid_t *)vuser->igroups))
        free(vuser->groups);
 
   if (vuser->igroups) free(vuser->igroups);
-  if (vuser->attrs  ) free(vuser->attrs);
   if (vuser->sids   ) free(vuser->sids);
 
-  vuser->attrs   = NULL;
   vuser->sids    = NULL;
   vuser->igroups = NULL;
   vuser->groups  = NULL;
@@ -167,8 +165,7 @@ char *validated_username(uint16 vuid)
 Setup the groups a user belongs to.
 ****************************************************************************/
 int setup_groups(char *user, int uid, int gid, int *p_ngroups, 
-		 int **p_igroups, gid_t **p_groups,
-         int **p_attrs)
+		 int **p_igroups, gid_t **p_groups)
 {
   if (-1 == initgroups(user,gid))
     {
@@ -183,25 +180,19 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups,
     {
       int i,ngroups;
       int *igroups;
-      int *attrs;
       gid_t grp = 0;
       ngroups = getgroups(0,&grp);
       if (ngroups <= 0)
         ngroups = 32;
       igroups = (int *)malloc(sizeof(int)*ngroups);
-      attrs   = (int *)malloc(sizeof(int)*ngroups);
       for (i=0;i<ngroups;i++)
-      {
-        attrs  [i] = 0x7; /* XXXX don't know what NT user attributes are yet! */
         igroups[i] = 0x42424242;
-      }
       ngroups = getgroups(ngroups,(gid_t *)igroups);
 
       if (igroups[0] == 0x42424242)
         ngroups = 0;
 
       *p_ngroups = ngroups;
-      *p_attrs   = attrs;
 
       /* The following bit of code is very strange. It is due to the
          fact that some OSes use int* and some use gid_t* for
@@ -309,15 +300,13 @@ uint16 register_vuid(int uid,int gid, char *unix_name, char *requested_name, BOO
   vuser->n_groups = 0;
   vuser->groups  = NULL;
   vuser->igroups = NULL;
-  vuser->attrs    = NULL;
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
   setup_groups(unix_name,uid,gid,
 	       &vuser->n_groups,
 	       &vuser->igroups,
-	       &vuser->groups,
-	       &vuser->attrs);
+	       &vuser->groups);
 
   DEBUG(3,("uid %d registered to name %s\n",uid,unix_name));
 
