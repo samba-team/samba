@@ -209,7 +209,8 @@ done
 # Install codepage source files
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/srcdone
+install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
+done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
 install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
