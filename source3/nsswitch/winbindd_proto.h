@@ -145,9 +145,6 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
 BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 				 fstring name,
 				 enum SID_NAME_USE *type);
-BOOL winbindd_lookup_userinfo(struct winbindd_domain *domain, 
-                              TALLOC_CTX *mem_ctx, uint32 user_rid, 
-                              SAM_USERINFO_CTR **user_info);
 BOOL winbindd_lookup_usergroups(struct winbindd_domain *domain,
                                 TALLOC_CTX *mem_ctx,
 				uint32 user_rid, uint32 *num_groups,
