@@ -48,19 +48,23 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	enum ldb_scope scope = LDB_SCOPE_DEFAULT;
 	const char **attrs = NULL;
 
-	DEBUG(0, ("sldb_Search: %s\n", r->filter));
+	DEBUG(10, ("sldb_Search: basedn: [%s]\n", r->basedn));
+	DEBUG(10, ("sldb_Search: filter: [%s]\n", r->filter));
 
 	samdb = samdb_connect(call);
 	ldb = samdb->ldb;
 
 	switch (r->scope) {
 		case LDAP_SEARCH_SCOPE_BASE:
+			DEBUG(10,("sldb_Search: scope: [BASE]\n"));
 			scope = LDB_SCOPE_BASE;
 			break;
 		case LDAP_SEARCH_SCOPE_SINGLE:
+			DEBUG(10,("sldb_Search: scope: [ONE]\n"));
 			scope = LDB_SCOPE_ONELEVEL;
 			break;
 		case LDAP_SEARCH_SCOPE_SUB:
+			DEBUG(10,("sldb_Search: scope: [SUB]\n"));
 			scope = LDB_SCOPE_SUBTREE;
 			break;
 	}
@@ -70,6 +74,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		ALLOC_CHECK(attrs);
 
 		for (i=0; i < r->num_attributes; i++) {
+			DEBUG(10,("sldb_Search: attrs: [%s]\n",r->attributes[i]));
 			attrs[i] = r->attributes[i];
 		}
 		attrs[i] = NULL;
@@ -79,10 +84,13 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	count = ldb_search(ldb, r->basedn, scope, r->filter, attrs, &res);
 
 	if (count > 0) {
+		DEBUG(10,("sldb_Search: results: [%d]\n",count));
 		result = 0;
 	} else if (count == 0) {
+		DEBUG(10,("sldb_Search: no results\n"));
 		result = 32;
 	} else if (count == -1) {
+		DEBUG(10,("sldb_Search: error\n"));
 		result = 1;
 	}
 
@@ -95,7 +103,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 		ent->num_attributes = 0;
 		ent->attributes = NULL;
 		if (res[i]->num_elements == 0) {
-			continue;
+			goto queue_reply;
 		}
 		ent->num_attributes = res[i]->num_elements;
 		ent->attributes = talloc_array_p(ent_r, struct ldap_attribute, ent->num_attributes);
@@ -117,7 +125,7 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 									res[i]->elements[j].values[y].data);
 			}
 		}
-
+queue_reply:
 		status = ldapsrv_queue_reply(call, ent_r);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
