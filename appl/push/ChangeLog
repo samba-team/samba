@@ -1,3 +1,8 @@
+2000-12-26  Assar Westerlund  <assar@sics.se>
+
+	* push.c: support several headers, from <mattiasa@e.kth.se> use
+	estrdup, emalloc, erealloc
+
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* pfrom.1: work around bug in grog that makes it think it needs
