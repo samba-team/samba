@@ -321,6 +321,8 @@ telrcv(void)
 
 	case TS_WONT:
 	    wontoption(c);
+	    if (c==TELOPT_ENCRYPT && his_do_dont_is_changing(TELOPT_ENCRYPT) )
+                dontoption(c);
 	    state = TS_DATA;
 	    continue;
 
