@@ -1,3 +1,8 @@
+2000-03-28  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (tn): clean-up a tiny little bit.  give-up if
+	we do not manage to connect to any address
+
 2000-03-26  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/sys_term.c (*): make sure to always call time, ctime,
