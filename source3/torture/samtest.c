@@ -43,8 +43,6 @@ static struct cmd_list {
 	struct cmd_set *cmd_set;
 } *cmd_list;
 
-TALLOC_CTX *global_ctx;
-
 static char* next_command (char** cmdstr)
 {
 	static pstring 		command;
@@ -140,7 +138,7 @@ static NTSTATUS cmd_debuglevel(struct sam_context *sam, TALLOC_CTX *mem_ctx, int
 static NTSTATUS cmd_quit(struct sam_context *sam, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
-	talloc_destroy(global_ctx);
+	talloc_destroy(mem_ctx);
 
 	exit(0);
 	return NT_STATUS_OK; /* NOTREACHED */
@@ -229,16 +227,16 @@ static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char 
 
 	if (cmd_entry->fn) {
 
-		if (global_ctx == NULL) {
+		if (mem_ctx == NULL) {
 			/* Create mem_ctx */
-			if (!(global_ctx = talloc_init())) {
+			if (!(mem_ctx = talloc_init())) {
 		       		DEBUG(0, ("talloc_init() failed\n"));
 				goto done;
 			}
 		}
 
 		/* Run command */
-		result = cmd_entry->fn(sam, global_ctx, argc, argv);
+		result = cmd_entry->fn(sam, mem_ctx, argc, argv);
 
 	} else {
 		fprintf (stderr, "Invalid command\n");
@@ -361,16 +359,12 @@ int main(int argc, char *argv[])
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
-/*		{"conf",	's', POPT_ARG_STRING, 	&opt_configfile, 's'},*/
-		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-/*		{"user",	'U', POPT_ARG_STRING,	&opt_username, 'U'},*/
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
-		{"help",	'h', POPT_ARG_NONE,	0, 'h'},
+		POPT_AUTOHELP
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 'c', "Execute semicolon seperated cmds"},
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
 		{ 0, 0, 0, 0}
 	};
-
 
 	setlinebuf(stdout);
 

@@ -470,19 +470,6 @@ BOOL reload_services(BOOL test)
 	return (ret);
 }
 
-/* Print usage information */
-static void usage(void)
-{
-	printf("Usage: vfstest [options]\n");
-
-	printf("\t-c or --command \"command string\"   execute semicolon separated cmds\n");
-	printf("\t-f or --file filename  execute a set of operations as described in the file\n");
-	printf("\t-d or --debug debuglevel	   set the debuglevel\n");
-	printf("\t-l or --logfile logfile	    logfile to use instead of stdout\n");
-	printf("\t-h or --help		       Print this help message.\n");
-	printf("\n");
-}
-
 /* Main function */
 
 int main(int argc, char *argv[])
@@ -503,12 +490,11 @@ int main(int argc, char *argv[])
 	   a fixed location or certain compilers complain */
 	poptContext pc;
 	struct poptOption long_options[] = {
-		{"file",	'f', POPT_ARG_STRING,	&filename},
-		{"debug",       'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-		{"debuglevel",  'd', POPT_ARG_INT,	&opt_debuglevel, 'd'},
-		{"command",	'c', POPT_ARG_STRING,	&cmdstr},
-		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l'},
-		{"help",	'h', POPT_ARG_NONE,	0, 'h'},
+		POPT_AUTOHELP
+		{"file",	'f', POPT_ARG_STRING,	&filename, 0, },
+		{"command",	'c', POPT_ARG_STRING,	&cmdstr, 0, "Execute specified list of commands" },
+		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', 0, "Write output to specified logfile" },
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ 0, 0, 0, 0}
 	};
 
@@ -533,11 +519,6 @@ int main(int argc, char *argv[])
 		case 'd':
 			DEBUGLEVEL = opt_debuglevel;
 			break;
-			
-		case 'h':
-		default:
-			usage();
-			exit(1);
 		}
 	}
 
