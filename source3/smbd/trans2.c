@@ -471,8 +471,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SSVAL(p,l1_attrFile,mode);
       p += l1_achName;
       nameptr = p;
+      p += align_string(outbuf, p, 0);
       len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
-      SCVAL(p, -1, len);
+      SCVAL(nameptr, -1, len);
       p += len;
       break;
 
@@ -492,46 +493,9 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       p += l2_achName;
       nameptr = p;
       len = srvstr_push(outbuf, p, fname, -1, 
-			STR_TERMINATE);
+			STR_NOALIGN);
       SCVAL(p, -1, len);
       p += len;
-      break;
-
-    case 3:
-      SIVAL(p,0,reskey);
-      put_dos_date2(p,4,cdate);
-      put_dos_date2(p,8,adate);
-      put_dos_date2(p,12,mdate);
-      SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,SMB_ROUNDUP(size,1024));
-      SSVAL(p,24,mode);
-      SIVAL(p,26,4);
-      p += 31;
-      nameptr = p;
-      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
-      SCVAL(p, -1, len);
-      p += len;
-      break;
-
-    case 4:
-      if(requires_resume_key) {
-        SIVAL(p,0,reskey);
-        p += 4;
-      }
-      q = p;
-      put_dos_date2(p,4,cdate);
-      put_dos_date2(p,8,adate);
-      put_dos_date2(p,12,mdate);
-      SIVAL(p,16,(uint32)size);
-      SIVAL(p,20,SMB_ROUNDUP(size,1024));
-      SSVAL(p,24,mode);
-      p += 33;
-      nameptr = p;
-      len = srvstr_push(outbuf, p, fname, -1, STR_TERMINATE);
-      SCVAL(p, -1, len);
-      p += len;
-      SIVAL(q,4,PTR_DIFF(p, q));
-
       break;
 
     case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
