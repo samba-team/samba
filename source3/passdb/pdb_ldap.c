@@ -182,6 +182,7 @@ static void smbldap_delete_state(struct smbldap_state *smbldap_state)
 		if (t->smbldap_state == smbldap_state) {
 			DLIST_REMOVE(smbldap_state_lookup_list, t);
 			SAFE_FREE(t);
+			return;
 		}
 	}
 }
@@ -3427,10 +3428,8 @@ static NTSTATUS pdb_init_ldapsam_compat(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	NTSTATUS nt_status;
 	struct ldapsam_privates *ldap_state;
 
-#ifndef WITH_LDAP_SAMCONFIG
-	location = "ldap://localhost";
-#else
-	{
+#ifdef WITH_LDAP_SAMCONFIG
+	if (!location) {
 		int ldap_port = lp_ldap_port();
 			
 		/* remap default port if not using SSL (ie clear or TLS) */
