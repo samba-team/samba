@@ -98,8 +98,8 @@ uint32 cli_lsa_open_policy(struct cli_state *cli, BOOL sec_qos,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Initialise input parameters */
 
@@ -152,8 +152,8 @@ uint32 cli_lsa_close(struct cli_state *cli, POLICY_HND *pol)
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -204,8 +204,8 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -310,8 +310,8 @@ uint32 cli_lsa_lookup_names(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -409,8 +409,8 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
@@ -494,8 +494,8 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, POLICY_HND *pol,
 
 	/* Initialise parse structures */
 
-	prs_init(&qbuf, MAX_PDU_FRAG_LEN, 4, cli->mem_ctx, False);
-	prs_init(&rbuf, 0, 4, cli->mem_ctx, True);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, cli->mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, cli->mem_ctx, UNMARSHALL);
 
 	/* Marshall data and send request */
 
