@@ -463,9 +463,8 @@ Other new object classes and their uses include:
   
   * sambaDomain - domain information used to allocate rids 
     for users and groups as necessary.  The attributes are added
-    in 'ldap suffix' directory entry automatically if 
-    an idmap uid/gid range has been set and the 'ldapsam'
-    passdb backend has been selected.
+    in 'ldap suffix' directory entry automatically apon first
+    connection to the directory.
       
   * sambaGroupMapping - an object representing the 
     relationship between a posixGroup and a Windows
@@ -479,6 +478,9 @@ Other new object classes and their uses include:
   * sambaIdmapEntry - object storing a mapping between a 
     SID and a UNIX uid/gid.  These objects are created by the 
     idmap_ldap module as needed.
+
+  * sambaSidEntry - object representing a SID alone, as a Structural
+    class on which to build the sambaIdmapEntry.
 
     
 New Suffix for Searching
