@@ -533,6 +533,7 @@ static service sDefault = {
 	True,			/* bNTAclSupport */
 	False,			/* bUseSendfile */
 	False,			/* bProfileAcls */
+	False,			/* bMap_acl_inherit */
 	
 	NULL,			/* Parametric options */
 
