@@ -1983,6 +1983,19 @@ static void dump_globals(FILE *f)
 }
 
 /***************************************************************************
+return True if a local parameter is currently set to the global default
+***************************************************************************/
+BOOL lp_is_default(int snum, struct parm_struct *parm)
+{
+	int pdiff = PTR_DIFF(parm->ptr,&sDefault);
+			
+	return equal_parameter(parm->type,
+			       ((char *)pSERVICE(snum)) + pdiff,
+			       ((char *)&sDefault) + pdiff);
+}
+
+
+/***************************************************************************
 Display the contents of a single services record.
 ***************************************************************************/
 static void dump_a_service(service *pService, FILE *f)
