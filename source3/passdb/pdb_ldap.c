@@ -636,16 +636,16 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, const SAM_ACCO
 	make_a_mod(mods, ldap_state, "profilePath", pdb_get_profile_path(sampass));
 
 
-	if ( !sampass->user_rid)
+	if ( !pdb_get_user_rid(sampass))
 		slprintf(temp, sizeof(temp) - 1, "%i", pdb_uid_to_user_rid(pdb_get_uid(sampass)));
 	else
-		slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
+		slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_user_rid(sampass));
 	make_a_mod(mods, ldap_state, "rid", temp);
 
-	if ( !sampass->group_rid)
+	if ( !pdb_get_group_rid(sampass))
 		slprintf(temp, sizeof(temp) - 1, "%i", pdb_gid_to_group_rid(pdb_get_gid(sampass)));
 	else
-		slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
+		slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_group_rid(sampass));
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
 	/* FIXME: Hours stuff goes in LDAP  */
