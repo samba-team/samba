@@ -92,15 +92,16 @@ EXTRA_libroken_la_SOURCES =	\
 	geteuid.c		\
 	getgid.c		\
 	gethostname.c		\
+	getifaddrs.c		\
 	getipnodebyaddr.c	\
 	getipnodebyname.c	\
-	getnameinfo.c		\
 	getopt.c		\
 	gettimeofday.c		\
 	getuid.c		\
 	getusershell.c		\
 	glob.h			\
 	hstrerror.c		\
+	ifaddrs.h		\
 	inet_aton.c		\
 	inet_ntop.c		\
 	inet_pton.c		\
