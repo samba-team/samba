@@ -84,7 +84,7 @@ int unix_error_packet(char *outbuf,int def_class,uint32 def_code,int line)
 		}
 	}
 
-	return error_packet(outbuf,NT_STATUS_OK,eclass,ecode,line);
+	return error_packet(outbuf,NT_STATUS(0),eclass,ecode,line);
 }
 
 
@@ -119,7 +119,7 @@ int error_packet(char *outbuf,NTSTATUS ntstatus,
 	}
 
 	SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2)&~FLAGS2_32_BIT_ERROR_CODES);
-	SVAL(outbuf,smb_rcls) = eclass;
+	SSVAL(outbuf,smb_rcls,eclass);
 	SSVAL(outbuf,smb_err,ecode);  
 
 	DEBUG(3,("error packet at line %d cmd=%d (%s) eclass=%d ecode=%d\n",

@@ -161,7 +161,7 @@ typedef struct rpc_hdr_resp_info
 /* RPC_HDR_FAULT - fault rpc header */
 typedef struct rpc_hdr_fault_info
 {
-  uint32 status;
+  NTSTATUS status;
   uint32 reserved; /* 0x0000 0000 */
 } RPC_HDR_FAULT;
 

@@ -135,8 +135,8 @@ static BOOL wks_io_wks_info_100(char *desc, WKS_INFO_100 *inf, prs_struct *ps, i
  ********************************************************************/
 
 void init_wks_r_query_info(WKS_R_QUERY_INFO *r_u,
-				uint32 switch_value, WKS_INFO_100 *wks100,
-				int status)  
+			   uint32 switch_value, WKS_INFO_100 *wks100,
+			   NTSTATUS status)  
 {
 	DEBUG(5,("init_wks_r_unknown_0: %d\n", __LINE__));
 

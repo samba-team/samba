@@ -106,7 +106,7 @@ uint32 _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
   if(!create_msdfs_link(&jn, exists))
     return NERR_DfsCantCreateJunctionPoint;
 
-  return NT_STATUS_NOPROBLEMO;
+  return NT_STATUS_OK;
 }
 
 uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u)
@@ -185,7 +185,7 @@ uint32 _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u, DFS_R_DFS_REMOVE *r_u
 	}
     }
 
-  return NT_STATUS_NOPROBLEMO;
+  return NT_STATUS_OK;
 }
 
 static BOOL init_reply_dfs_info_1(struct junction_map* j, DFS_INFO_1* dfs1, int num_j)
@@ -309,7 +309,7 @@ static uint32 init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level, DFS_INFO_CTR* ct
 	default:
 		return NT_STATUS_INVALID_LEVEL;
     }
-  return NT_STATUS_NOPROBLEMO;
+  return NT_STATUS_OK;
 }
       
 uint32 _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)

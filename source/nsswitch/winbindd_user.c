@@ -356,7 +356,7 @@ enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state)
 
 static BOOL get_sam_user_entries(struct getent_state *ent)
 {
-	uint32 status, num_entries;
+	NTSTATUS status, num_entries;
 	SAM_DISPINFO_1 info1;
 	SAM_DISPINFO_CTR ctr;
 	struct getpwent_user *name_list = NULL;
@@ -614,7 +614,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	ctr.sam.info1 = &info1;
 
 	for (domain = domain_list; domain; domain = domain->next) {
-		uint32 status, start_ndx = 0;
+		NTSTATUS status, start_ndx = 0;
 
 		/* Skip domains other than WINBINDD_DOMAIN environment
 		   variable */ 

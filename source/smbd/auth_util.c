@@ -105,7 +105,7 @@ void smb_user_control(char *unix_user, uint32 nt_status)
 {
 	struct passwd *pwd=NULL;
 
-	if(nt_status == NT_STATUS_NOPROBLEMO) {
+	if(nt_status == NT_STATUS_OK) {
 		/*
 		 * User validated ok against Domain controller.
 		 * If the admin wants us to try and create a UNIX

@@ -212,7 +212,7 @@ static uint32 cmd_srvsvc_srv_query_info(struct cli_state *cli, int argc,
 
 	if ((result = cli_srvsvc_net_srv_get_info(cli, mem_ctx, info_level,
 						  &ctr)
-	     != NT_STATUS_NOPROBLEMO)) {
+	     != NT_STATUS_OK)) {
 		goto done;
 	}
 

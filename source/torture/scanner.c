@@ -30,7 +30,7 @@
 /****************************************************************************
 look for a partial hit
 ****************************************************************************/
-static void trans2_check_hit(char *format, int op, int level, uint32 status)
+static void trans2_check_hit(char *format, int op, int level, NTSTATUS status)
 {
 	switch (status) {
 	case NT_STATUS_INVALID_LEVEL:
@@ -103,7 +103,7 @@ static uint32 try_trans2_len(struct cli_state *cli,
 		if (ret == 0) break;
 		*data_len += 2;
 	}
-	if (ret == NT_STATUS_NOPROBLEMO) {
+	if (ret == NT_STATUS_OK) {
 		printf("found %s level=%d data_len=%d rparam_len=%d rdata_len=%d\n",
 		       format, level, *data_len, *rparam_len, *rdata_len);
 	} else {
@@ -122,7 +122,7 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 	int param_len = 0;
 	int rparam_len, rdata_len;
 	pstring param, data;
-	uint32 status;
+	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
 	data_len = 4;
@@ -236,7 +236,7 @@ BOOL torture_trans2_scan(int dummy)
 /****************************************************************************
 look for a partial hit
 ****************************************************************************/
-static void nttrans_check_hit(char *format, int op, int level, uint32 status)
+static void nttrans_check_hit(char *format, int op, int level, NTSTATUS status)
 {
 	switch (status) {
 	case NT_STATUS_INVALID_LEVEL:
@@ -307,7 +307,7 @@ static uint32 try_nttrans_len(struct cli_state *cli,
 		if (ret == 0) break;
 		*data_len += 2;
 	}
-	if (ret == NT_STATUS_NOPROBLEMO) {
+	if (ret == NT_STATUS_OK) {
 		printf("found %s level=%d data_len=%d rparam_len=%d rdata_len=%d\n",
 		       format, level, *data_len, *rparam_len, *rdata_len);
 	} else {
@@ -326,7 +326,7 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 	int param_len = 0;
 	int rparam_len, rdata_len;
 	pstring param, data;
-	uint32 status;
+	NTSTATUS status;
 
 	memset(data, 0, sizeof(data));
 	data_len = 4;

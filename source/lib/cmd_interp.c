@@ -314,7 +314,7 @@ static uint32 cmd_set_options = 0xffffffff;
 ****************************************************************************/
 static uint32 do_command(struct client_info *info, char *line)
 {
-	uint32 status = 0x0;
+	NTSTATUS status = 0x0;
 	int i;
 
 	if (!get_cmd_args(line))
@@ -355,7 +355,7 @@ static uint32 do_command(struct client_info *info, char *line)
 ****************************************************************************/
 static uint32 process(struct client_info *info, char *cmd_str)
 {
-	uint32 status = 0;
+	NTSTATUS status = 0;
 	pstring line;
 	char *cmd = cmd_str;
 
@@ -1286,7 +1286,7 @@ static void readline_init(void)
 ****************************************************************************/
 int command_main(int argc, char *argv[])
 {
-	uint32 status;
+	NTSTATUS status;
 	mode_t myumask = 0755;
 	char progname[255], path[255], *s;
 	pstring msg;

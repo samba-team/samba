@@ -465,7 +465,7 @@ enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state)
 
 static BOOL get_sam_group_entries(struct getent_state *ent)
 {
-	uint32 status, num_entries, start_ndx = 0;
+	NTSTATUS status, num_entries, start_ndx = 0;
 	struct acct_info *name_list = NULL;
         
 	if (ent->got_all_sam_entries) {

@@ -891,7 +891,7 @@ makes a structure.
 ********************************************************************/
  void init_reg_r_get_key_sec(REG_R_GET_KEY_SEC *r_i, POLICY_HND *pol, 
 				uint32 buf_len, uint8 *buf,
-				uint32 status)
+				NTSTATUS status)
 {
 	r_i->ptr = 1;
 	init_buf_hdr(&r_i->hdr_sec, buf_len, buf_len);
@@ -1028,7 +1028,7 @@ BOOL reg_io_q_info(char *desc,  REG_Q_INFO *r_q, prs_struct *ps, int depth)
 ********************************************************************/
 
 BOOL init_reg_r_info(uint32 include_keyval, REG_R_INFO *r_r,
-		     BUFFER2* buf, uint32 type, uint32 status)
+		     BUFFER2* buf, uint32 type, NTSTATUS status)
 {
   if(r_r == NULL)
     return False;
@@ -1519,7 +1519,7 @@ BOOL reg_io_q_open_entry(char *desc,  REG_Q_OPEN_ENTRY *r_q, prs_struct *ps, int
 ********************************************************************/
 
 void init_reg_r_open_entry(REG_R_OPEN_ENTRY *r_r,
-				POLICY_HND *pol, uint32 status)
+			   POLICY_HND *pol, NTSTATUS status)
 {
 	memcpy(&r_r->pol, pol, sizeof(r_r->pol));
 	r_r->status = status;

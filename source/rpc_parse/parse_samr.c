@@ -133,7 +133,7 @@ inits a SAMR_R_LOOKUP_DOMAIN structure.
 ********************************************************************/
 
 void init_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN * r_u,
-			       DOM_SID *dom_sid, uint32 status)
+			       DOM_SID *dom_sid, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_lookup_domain\n"));
 
@@ -342,7 +342,7 @@ BOOL samr_io_q_get_usrdom_pwinfo(char *desc, SAMR_Q_GET_USRDOM_PWINFO * q_u,
  Init.
 ********************************************************************/
 
-void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, uint32 status)
+void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_get_usrdom_pwinfo\n"));
 	
@@ -762,7 +762,7 @@ inits a SAMR_R_QUERY_DOMAIN_INFO structure.
 
 void init_samr_r_query_dom_info(SAMR_R_QUERY_DOMAIN_INFO * r_u,
 				uint16 switch_value, SAM_UNK_CTR * ctr,
-				uint32 status)
+				NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_dom_info\n"));
 
@@ -1424,7 +1424,7 @@ BOOL samr_io_q_query_dispinfo(char *desc, SAMR_Q_QUERY_DISPINFO * q_e,
 inits a SAM_DISPINFO_1 structure.
 ********************************************************************/
 
-uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
+NTSTATUS init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
@@ -1442,7 +1442,7 @@ uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_ent
 		  max_entries, max_data_size));
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	sam->sam=(SAM_ENTRY1 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY1));
 	if (!sam->sam)
@@ -1480,7 +1480,7 @@ uint32 init_sam_dispinfo_1(TALLOC_CTX *ctx, SAM_DISPINFO_1 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1536,7 +1536,7 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 * sam,
 inits a SAM_DISPINFO_2 structure.
 ********************************************************************/
 
-uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
+NTSTATUS init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
@@ -1553,7 +1553,7 @@ uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY2 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY2))))
 		return NT_STATUS_NO_MEMORY;
@@ -1585,7 +1585,7 @@ uint32 init_sam_dispinfo_2(TALLOC_CTX *ctx, SAM_DISPINFO_2 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1643,7 +1643,7 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 * sam,
 inits a SAM_DISPINFO_3 structure.
 ********************************************************************/
 
-uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
+NTSTATUS init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp)
 {
@@ -1660,7 +1660,7 @@ uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY3 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY3))))
 		return NT_STATUS_NO_MEMORY;
@@ -1688,7 +1688,7 @@ uint32 init_sam_dispinfo_3(TALLOC_CTX *ctx, SAM_DISPINFO_3 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1746,7 +1746,7 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 * sam,
 inits a SAM_DISPINFO_4 structure.
 ********************************************************************/
 
-uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
+NTSTATUS init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
@@ -1764,7 +1764,7 @@ uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY4 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY4))))
 		return NT_STATUS_NO_MEMORY;
@@ -1790,7 +1790,7 @@ uint32 init_sam_dispinfo_4(TALLOC_CTX *ctx, SAM_DISPINFO_4 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1849,7 +1849,7 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 * sam,
 inits a SAM_DISPINFO_5 structure.
 ********************************************************************/
 
-uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
+NTSTATUS init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_entries,
 			 uint32 *data_size, uint32 start_idx,
 			 DOMAIN_GRP * grp)
 {
@@ -1866,7 +1866,7 @@ uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_ent
 	max_data_size = *data_size;
 
 	if (max_entries==0)
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if (!(sam->sam=(SAM_ENTRY5 *)talloc(ctx, max_entries*sizeof(SAM_ENTRY5))))
 		return NT_STATUS_NO_MEMORY;
@@ -1890,7 +1890,7 @@ uint32 init_sam_dispinfo_5(TALLOC_CTX *ctx, SAM_DISPINFO_5 *sam, uint32 *num_ent
 	*num_entries = i;
 	*data_size = dsize;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1952,7 +1952,7 @@ inits a SAMR_R_QUERY_DISPINFO structure.
 void init_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO * r_u,
 				uint32 num_entries, uint32 data_size,
 				uint16 switch_level, SAM_DISPINFO_CTR * ctr,
-				uint32 status)
+				NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_dispinfo: level %d\n", switch_level));
 
@@ -2443,7 +2443,7 @@ inits a SAMR_R_DEL_GROUPMEM structure.
 ********************************************************************/
 
 void init_samr_r_del_groupmem(SAMR_R_DEL_GROUPMEM * r_u, POLICY_HND *pol,
-			      uint32 status)
+			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_del_groupmem\n"));
 
@@ -2518,7 +2518,7 @@ inits a SAMR_R_ADD_GROUPMEM structure.
 ********************************************************************/
 
 void init_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND *pol,
-			      uint32 status)
+			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_add_groupmem\n"));
 
@@ -2589,7 +2589,7 @@ BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
 inits a SAMR_R_SET_GROUPINFO structure.
 ********************************************************************/
 
-void init_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO * r_u, uint32 status)
+void init_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO * r_u, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_set_groupinfo\n"));
 
@@ -2662,7 +2662,7 @@ inits a SAMR_R_QUERY_GROUPINFO structure.
 ********************************************************************/
 
 void init_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
-				 GROUP_INFO_CTR * ctr, uint32 status)
+				 GROUP_INFO_CTR * ctr, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_groupinfo\n"));
 
@@ -2742,7 +2742,7 @@ inits a SAMR_R_QUERY_GROUPMEM structure.
 
 void init_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 				uint32 num_entries, uint32 *rid,
-				uint32 *attr, uint32 status)
+				uint32 *attr, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_groupmem\n"));
 
@@ -2876,7 +2876,7 @@ inits a SAMR_R_QUERY_USERGROUPS structure.
 
 void init_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 				  uint32 num_gids, DOM_GID * gid,
-				  uint32 status)
+				  NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_usergroups\n"));
 
@@ -3495,7 +3495,7 @@ inits a SAMR_R_QUERY_ALIASINFO structure.
 ********************************************************************/
 
 void init_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO * r_u,
-				 ALIAS_INFO_CTR * ctr, uint32 status)
+				 ALIAS_INFO_CTR * ctr, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_aliasinfo\n"));
 
@@ -3681,7 +3681,7 @@ inits a SAMR_R_QUERY_USERALIASES structure.
 
 void init_samr_r_query_useraliases(SAMR_R_QUERY_USERALIASES * r_u,
 				   uint32 num_rids, uint32 *rid,
-				   uint32 status)
+				   NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_useraliases\n"));
 
@@ -4327,7 +4327,7 @@ inits a SAMR_R_DELETE_DOM_ALIAS structure.
 ********************************************************************/
 
 void init_samr_r_delete_dom_alias(SAMR_R_DELETE_DOM_ALIAS * r_u,
-				  uint32 status)
+				  NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_delete_dom_alias\n"));
 
@@ -4396,7 +4396,7 @@ inits a SAMR_R_QUERY_ALIASMEM structure.
 
 void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 				uint32 num_sids, DOM_SID2 * sid,
-				uint32 status)
+				NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_aliasmem\n"));
 
@@ -4472,7 +4472,7 @@ BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 inits a SAMR_Q_LOOKUP_NAMES structure.
 ********************************************************************/
 
-uint32 init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
+NTSTATUS init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name)
 {
@@ -4499,7 +4499,7 @@ uint32 init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 		init_unistr2(&q_u->uni_name[i], name[i], len_name);	/* unicode string for machine account */
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -4561,10 +4561,10 @@ BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
 inits a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
 
-uint32 init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
+NTSTATUS init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 			      uint32 num_rids,
 			      uint32 *rid, uint32 *type,
-			      uint32 status)
+			      NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_lookup_names\n"));
 
@@ -4608,7 +4608,7 @@ uint32 init_samr_r_lookup_names(TALLOC_CTX *ctx, SAMR_R_LOOKUP_NAMES * r_u,
 
 	r_u->status = status;
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -6013,7 +6013,7 @@ static BOOL sam_io_user_info20(char *desc, SAM_USER_INFO_20 *usr,
 inits a SAM_USERINFO_CTR structure.
 ********************************************************************/
 
-uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
+NTSTATUS make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 				    uint16 switch_value,
 				    SAM_USER_INFO_21 * usr)
 {
@@ -6074,7 +6074,7 @@ uint32 make_samr_userinfo_ctr_usr21(TALLOC_CTX *ctx, SAM_USERINFO_CTR * ctr,
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -6230,7 +6230,7 @@ inits a SAMR_R_QUERY_USERINFO structure.
 ********************************************************************/
 
 void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO * r_u,
-				SAM_USERINFO_CTR * ctr, uint32 status)
+				SAM_USERINFO_CTR * ctr, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_query_userinfo\n"));
 
@@ -6322,7 +6322,7 @@ BOOL samr_io_q_set_userinfo(char *desc, SAMR_Q_SET_USERINFO * q_u,
 inits a SAMR_R_SET_USERINFO structure.
 ********************************************************************/
 
-void init_samr_r_set_userinfo(SAMR_R_SET_USERINFO * r_u, uint32 status)
+void init_samr_r_set_userinfo(SAMR_R_SET_USERINFO * r_u, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_set_userinfo\n"));
 
@@ -6410,7 +6410,7 @@ BOOL samr_io_q_set_userinfo2(char *desc, SAMR_Q_SET_USERINFO2 * q_u,
 inits a SAMR_R_SET_USERINFO2 structure.
 ********************************************************************/
 
-void init_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 * r_u, uint32 status)
+void init_samr_r_set_userinfo2(SAMR_R_SET_USERINFO2 * r_u, NTSTATUS status)
 {
 	DEBUG(5, ("init_samr_r_set_userinfo2\n"));
 
@@ -6825,7 +6825,7 @@ BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER * q_u,
 inits a SAMR_R_CHGPASSWD_USER structure.
 ********************************************************************/
 
-void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, uint32 status)
+void init_samr_r_chgpasswd_user(SAMR_R_CHGPASSWD_USER * r_u, NTSTATUS status)
 {
 	DEBUG(5, ("init_r_chgpasswd_user\n"));
 

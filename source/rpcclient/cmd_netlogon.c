@@ -49,7 +49,7 @@ static uint32 cmd_netlogon_logon_ctrl2(struct cli_state *cli, int argc,
 	}
 
 	if ((result = cli_netlogon_logon_ctrl2(cli, mem_ctx, query_level))
-	     != NT_STATUS_NOPROBLEMO) {
+	     != NT_STATUS_OK) {
 		goto done;
 	}
 
@@ -87,7 +87,7 @@ static uint32 cmd_netlogon_logon_ctrl(struct cli_state *cli, int argc,
 
 #if 0
 	if ((result = cli_netlogon_logon_ctrl(cli, mem_ctx, query_level))
-	     != NT_STATUS_NOPROBLEMO) {
+	     != NT_STATUS_OK) {
 		goto done;
 	}
 #endif

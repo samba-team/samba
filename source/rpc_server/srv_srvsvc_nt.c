@@ -303,7 +303,8 @@ void map_generic_share_sd_bits(SEC_DESC *psd)
 
 BOOL share_access_check(connection_struct *conn, int snum, uint16 vuid, uint32 desired_access)
 {
-	uint32 granted, status;
+	uint32 granted;
+	NTSTATUS status;
 	TALLOC_CTX *mem_ctx = NULL;
 	SEC_DESC *psd = NULL;
 	size_t sd_size;
@@ -530,7 +531,7 @@ static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n
 
 	if (init_srv_share_info_ctr(p, &r_n->ctr, info_level,
 				    &resume_hnd, &r_n->total_entries, all)) {
-		r_n->status = NT_STATUS_NOPROBLEMO;
+		r_n->status = NT_STATUS_OK;
 	} else {
 		r_n->status = NT_STATUS_INVALID_INFO_CLASS;
 	}
@@ -545,7 +546,7 @@ static void init_srv_r_net_share_enum(pipes_struct *p, SRV_R_NET_SHARE_ENUM *r_n
 static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_INFO *r_n,
 				  char *share_name, uint32 info_level)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	int snum;
 
 	DEBUG(5,("init_srv_r_net_share_get_info: %d\n", __LINE__));
@@ -577,7 +578,7 @@ static void init_srv_r_net_share_get_info(pipes_struct *p, SRV_R_NET_SHARE_GET_I
 		status = NT_STATUS_BAD_NETWORK_NAME;
 	}
 
-	r_n->info.ptr_share_ctr = (status == NT_STATUS_NOPROBLEMO) ? 1 : 0;
+	r_n->info.ptr_share_ctr = NT_STATUS_IS_OK(status) ? 1 : 0;
 	r_n->status = status;
 }
 
@@ -694,10 +695,10 @@ static void init_srv_sess_info_1(SRV_SESS_INFO_1 *ss1, uint32 *snum, uint32 *sto
  makes a SRV_R_NET_SESS_ENUM structure.
 ********************************************************************/
 
-static uint32 init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
+static NTSTATUS init_srv_sess_info_ctr(SRV_SESS_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_sess_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -739,7 +740,7 @@ static void init_srv_r_net_sess_enum(SRV_R_NET_SESS_ENUM *r_n,
 	else
 		r_n->status = init_srv_sess_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (NT_STATUS_IS_ERR(r_n->status))
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -850,10 +851,10 @@ static void init_srv_conn_info_1(SRV_CONN_INFO_1 *ss1, uint32 *snum, uint32 *sto
  makes a SRV_R_NET_CONN_ENUM structure.
 ********************************************************************/
 
-static uint32 init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
+static NTSTATUS init_srv_conn_info_ctr(SRV_CONN_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_conn_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -894,7 +895,7 @@ static void init_srv_r_net_conn_enum(SRV_R_NET_CONN_ENUM *r_n,
 	else
 		r_n->status = init_srv_conn_info_ctr(r_n->ctr, switch_value, &resume_hnd, &r_n->total_entries);
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (NT_STATUS_IS_ERR(r_n->status))
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -950,10 +951,10 @@ static void init_srv_file_info_3(SRV_FILE_INFO_3 *fl3, uint32 *fnum, uint32 *fto
  makes a SRV_R_NET_FILE_ENUM structure.
 ********************************************************************/
 
-static uint32 init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
+static NTSTATUS init_srv_file_info_ctr(SRV_FILE_INFO_CTR *ctr,
 				int switch_value, uint32 *resume_hnd, uint32 *total_entries)  
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	DEBUG(5,("init_srv_file_info_ctr: %d\n", __LINE__));
 
 	ctr->switch_value = switch_value;
@@ -990,7 +991,7 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 	else
 		r_n->status = init_srv_file_info_ctr(r_n->ctr, switch_value, &resume_hnd, &(r_n->total_entries));
 
-	if (r_n->status != NT_STATUS_NOPROBLEMO)
+	if (NT_STATUS_IS_ERR(r_n->status))
 		resume_hnd = 0;
 
 	init_enum_hnd(&r_n->enum_hnd, resume_hnd);
@@ -1000,9 +1001,9 @@ static void init_srv_r_net_file_enum(SRV_R_NET_FILE_ENUM *r_n,
 net server get info
 ********************************************************************/
 
-uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u)
+NTSTATUS _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R_NET_SRV_GET_INFO *r_u)
 {
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 	SRV_INFO_CTR *ctr = (SRV_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_INFO_CTR));
 
 	if (!ctr)
@@ -1054,12 +1055,12 @@ uint32 _srv_net_srv_get_info(pipes_struct *p, SRV_Q_NET_SRV_GET_INFO *q_u, SRV_R
 net server set info
 ********************************************************************/
 
-uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u)
+NTSTATUS _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R_NET_SRV_SET_INFO *r_u)
 {
 	/* NT gives "Windows NT error 0xc00000022" if we return
 	   NT_STATUS_ACCESS_DENIED here so just pretend everything is OK. */
 
-	uint32 status = NT_STATUS_NOPROBLEMO;
+	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(5,("srv_net_srv_set_info: %d\n", __LINE__));
 
@@ -1076,7 +1077,7 @@ uint32 _srv_net_srv_set_info(pipes_struct *p, SRV_Q_NET_SRV_SET_INFO *q_u, SRV_R
 net file enum
 ********************************************************************/
 
-uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
+NTSTATUS _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_FILE_ENUM *r_u)
 {
 	r_u->ctr = (SRV_FILE_INFO_CTR *)talloc(p->mem_ctx, sizeof(SRV_FILE_INFO_CTR));
 	if (!r_u->ctr)
@@ -1101,7 +1102,7 @@ uint32 _srv_net_file_enum(pipes_struct *p, SRV_Q_NET_FILE_ENUM *q_u, SRV_R_NET_F
 net conn enum
 ********************************************************************/
 
-uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u)
+NTSTATUS _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_CONN_ENUM *r_u)
 {
 	DEBUG(5,("srv_net_conn_enum: %d\n", __LINE__));
 
@@ -1126,7 +1127,7 @@ uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_C
 net sess enum
 ********************************************************************/
 
-uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u)
+NTSTATUS _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u)
 {
 	DEBUG(5,("_srv_net_sess_enum: %d\n", __LINE__));
 
@@ -1151,7 +1152,7 @@ uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_S
  Net share enum all.
 ********************************************************************/
 
-uint32 _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
+NTSTATUS _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
@@ -1169,7 +1170,7 @@ uint32 _srv_net_share_enum_all(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R
  Net share enum.
 ********************************************************************/
 
-uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
+NTSTATUS _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u)
 {
 	DEBUG(5,("_srv_net_share_enum: %d\n", __LINE__));
 
@@ -1187,7 +1188,7 @@ uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET
  Net share get info.
 ********************************************************************/
 
-uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, SRV_R_NET_SHARE_GET_INFO *r_u)
+NTSTATUS _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, SRV_R_NET_SHARE_GET_INFO *r_u)
 {
 	fstring share_name;
 
@@ -1247,7 +1248,7 @@ static char *valid_share_pathname(char *dos_pathname)
  Net share set info. Modify share details.
 ********************************************************************/
 
-uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
+NTSTATUS _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u)
 {
 	struct current_user user;
 	pstring command;
@@ -1267,27 +1268,27 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 	r_u->switch_value = 0;
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	snum = find_service(share_name);
 
 	/* Does this share exist ? */
 	if (snum < 0)
-		return ERRnosuchshare;
+		return NT_STATUS_BAD_NETWORK_NAME;
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	get_current_user(&user,p);
 
 	if (user.uid != 0)
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	switch (q_u->info_level) {
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	case 2:
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
 		unistr2_to_ascii(pathname, &q_u->info.share.info2.info_2_str.uni_path, sizeof(share_name));
@@ -1302,7 +1303,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		map_generic_share_sd_bits(psd);
 		break;
 	case 1005:
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	case 1501:
 		fstrcpy(pathname, lp_pathname(snum));
 		fstrcpy(comment, lp_comment(snum));
@@ -1317,11 +1318,11 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	/* We can only modify disk shares. */
 	if (type != STYPE_DISKTREE)
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
 	if (!(ptr = valid_share_pathname( pathname )))
-		return ERRbadpath;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
@@ -1335,7 +1336,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	if (strcmp(ptr, lp_pathname(snum)) || strcmp(comment, lp_comment(snum)) ) {
 		if (!lp_change_share_cmd() || !*lp_change_share_cmd())
-			return ERRnoaccess;
+			return NT_STATUS_ACCESS_DENIED;
 
 		slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\" \"%s\" \"%s\"",
 				lp_change_share_cmd(), CONFIGFILE, share_name, ptr, comment);
@@ -1343,7 +1344,7 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 		DEBUG(10,("_srv_net_share_set_info: Running [%s]\n", command ));
 		if ((ret = smbrun(command, NULL)) != 0) {
 			DEBUG(0,("_srv_net_share_set_info: Running [%s] returned (%d)\n", command, ret ));
-			return ERRnoaccess;
+			return NT_STATUS_ACCESS_DENIED;
 		}
 
 		/* Tell everyone we updated smb.conf. */
@@ -1369,14 +1370,14 @@ uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, S
 
 	DEBUG(5,("_srv_net_share_set_info: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
  Net share add. Call 'add_share_command "sharename" "pathname" "comment" "read only = xxx"'
 ********************************************************************/
 
-uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
+NTSTATUS _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_SHARE_ADD *r_u)
 {
 	struct current_user user;
 	pstring command;
@@ -1397,18 +1398,18 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	if (user.uid != 0) {
 		DEBUG(10,("_srv_net_share_add: uid != 0. Access denied.\n"));
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (!lp_add_share_cmd() || !*lp_add_share_cmd()) {
 		DEBUG(10,("_srv_net_share_add: No add share command\n"));
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	switch (q_u->info_level) {
 	case 1:
 		/* Not enough info in a level 1 to do anything. */
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	case 2:
 		unistr2_to_ascii(share_name, &q_u->info.share.info2.info_2_str.uni_netname, sizeof(share_name));
 		unistr2_to_ascii(comment, &q_u->info.share.info2.info_2_str.uni_remark, sizeof(share_name));
@@ -1425,28 +1426,28 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 		break;
 	case 1005:
 		/* DFS only level. */
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	default:
 		DEBUG(5,("_srv_net_share_add: unsupported switch value %d\n", q_u->info_level));
 		return NT_STATUS_INVALID_INFO_CLASS;
 	}
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	snum = find_service(share_name);
 
 	/* Share already exists. */
 	if (snum >= 0)
-		return ERRfilexists;
+		return NT_STATUS_OBJECT_NAME_COLLISION;
 
 	/* We can only add disk shares. */
 	if (type != STYPE_DISKTREE)
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 		
 	/* Check if the pathname is valid. */
 	if (!(ptr = valid_share_pathname( pathname )))
-		return ERRbadpath;
+		return NT_STATUS_OBJECT_PATH_INVALID;
 
 	/* Ensure share name, pathname and comment don't contain '"' characters. */
 	string_replace(share_name, '"', ' ');
@@ -1459,7 +1460,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 	DEBUG(10,("_srv_net_share_add: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_add: Running [%s] returned (%d)\n", command, ret ));
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	if (psd) {
@@ -1479,7 +1480,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
 
 	DEBUG(5,("_srv_net_share_add: %d\n", __LINE__));
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
@@ -1487,7 +1488,7 @@ uint32 _srv_net_share_add(pipes_struct *p, SRV_Q_NET_SHARE_ADD *q_u, SRV_R_NET_S
  a parameter.
 ********************************************************************/
 
-uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
+NTSTATUS _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_SHARE_DEL *r_u)
 {
 	struct current_user user;
 	pstring command;
@@ -1500,24 +1501,24 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	unistr2_to_ascii(share_name, &q_u->uni_share_name, sizeof(share_name));
 
 	if (strequal(share_name,"IPC$") || strequal(share_name,"ADMIN$") || strequal(share_name,"global"))
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	snum = find_service(share_name);
 
 	if (snum < 0)
-		return ERRnosuchshare;
+		return NT_STATUS_BAD_NETWORK_NAME;
 
 	/* No change to printer shares. */
 	if (lp_print_ok(snum))
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	get_current_user(&user,p);
 
 	if (user.uid != 0)
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	if (!lp_delete_share_cmd() || !*lp_delete_share_cmd())
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 
 	slprintf(command, sizeof(command)-1, "%s \"%s\" \"%s\"",
 			lp_delete_share_cmd(), CONFIGFILE, lp_servicename(snum));
@@ -1525,7 +1526,7 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 	DEBUG(10,("_srv_net_share_del: Running [%s]\n", command ));
 	if ((ret = smbrun(command, NULL)) != 0) {
 		DEBUG(0,("_srv_net_share_del: Running [%s] returned (%d)\n", command, ret ));
-		return ERRnoaccess;
+		return NT_STATUS_ACCESS_DENIED;
 	}
 
 	/* Delete the SD in the database. */
@@ -1536,14 +1537,14 @@ uint32 _srv_net_share_del(pipes_struct *p, SRV_Q_NET_SHARE_DEL *q_u, SRV_R_NET_S
 
 	lp_killservice(snum);
 
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /*******************************************************************
 time of day
 ********************************************************************/
 
-uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u)
+NTSTATUS _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u)
 {
 	TIME_OF_DAY_INFO *tod;
 	struct tm *t;
@@ -1557,7 +1558,7 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
  
 	r_u->tod = tod;
 	r_u->ptr_srv_tod = 0x1;
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	DEBUG(5,("_srv_net_remote_tod: %d\n", __LINE__));
 
@@ -1587,7 +1588,7 @@ uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET
  Win9x NT tools get security descriptor.
 ***********************************************************************************/
 
-uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
+NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC *q_u,
 			SRV_R_NET_FILE_QUERY_SECDESC *r_u)
 {
 	SEC_DESC *psd = NULL;
@@ -1600,14 +1601,14 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 	BOOL bad_path;
 	int access_mode;
 	int action;
-	int ecode;
+	NTSTATUS ecode;
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
 
 	ZERO_STRUCT(st);
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
@@ -1621,7 +1622,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = (uint32)ecode;
+		r_u->status = ecode;
 		goto error_exit;
 	}
 
@@ -1638,7 +1639,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_query_secdesc: Unable to open file %s\n", filename));
-			r_u->status = ERRnoaccess;
+			r_u->status = NT_STATUS_ACCESS_DENIED;
 			goto error_exit;
 		}
 	}
@@ -1647,7 +1648,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
 
 	if (sd_size == 0) {
 		DEBUG(3,("_srv_net_file_query_secdesc: Unable to get NT ACL for file %s\n", filename));
-		r_u->status = ERRnoaccess;
+		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -1680,7 +1681,7 @@ uint32 _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDESC
  Win9x NT tools set security descriptor.
 ***********************************************************************************/
 
-uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
+NTSTATUS _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_u,
 									SRV_R_NET_FILE_SET_SECDESC *r_u)
 {
 	BOOL ret;
@@ -1692,7 +1693,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 	BOOL bad_path;
 	int access_mode;
 	int action;
-	int ecode;
+	NTSTATUS ecode;
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
@@ -1700,7 +1701,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	ZERO_STRUCT(st);
 
-	r_u->status = NT_STATUS_NOPROBLEMO;
+	r_u->status = NT_STATUS_OK;
 
 	unistr2_to_ascii(qualname, &q_u->uni_qual_name, sizeof(qualname));
 
@@ -1714,13 +1715,13 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	if (conn == NULL) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to connect to %s\n", qualname));
-		r_u->status = (uint32)ecode;
+		r_u->status = ecode;
 		goto error_exit;
 	}
 
 	if (!become_user(conn, conn->vuid)) {
 		DEBUG(0,("_srv_net_file_set_secdesc: Can't become connected user!\n"));
-		r_u->status = ERRnoaccess;
+		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto error_exit;
 	}
 	became_user = True;
@@ -1739,7 +1740,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 		if (!fsp) {
 			DEBUG(3,("_srv_net_file_set_secdesc: Unable to open file %s\n", filename));
-			r_u->status = ERRnoaccess;
+			r_u->status = NT_STATUS_ACCESS_DENIED;
 			goto error_exit;
 		}
 	}
@@ -1748,7 +1749,7 @@ uint32 _srv_net_file_set_secdesc(pipes_struct *p, SRV_Q_NET_FILE_SET_SECDESC *q_
 
 	if (ret == False) {
 		DEBUG(3,("_srv_net_file_set_secdesc: Unable to set NT ACL on file %s\n", filename));
-		r_u->status = ERRnoaccess;
+		r_u->status = NT_STATUS_ACCESS_DENIED;
 		goto error_exit;
 	}
 
@@ -1818,13 +1819,13 @@ static const char *next_server_disk_enum(uint32 *resume)
 	return disk;
 }
 
-uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u)
+NTSTATUS _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_DISK_ENUM *r_u)
 {
 	uint32 i;
 	const char *disk_name;
 	uint32 resume=get_enum_hnd(&q_u->enum_hnd);
 
-	r_u->status=NT_STATUS_NOPROBLEMO;
+	r_u->status=NT_STATUS_OK;
 
 	r_u->total_entries = init_server_disk_enum(&resume);
 
@@ -1854,12 +1855,12 @@ uint32 _srv_net_disk_enum(pipes_struct *p, SRV_Q_NET_DISK_ENUM *q_u, SRV_R_NET_D
 	return r_u->status;
 }
 
-uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
+NTSTATUS _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV_R_NET_NAME_VALIDATE *r_u)
 {
 	int snum;
 	fstring share_name;
 
-	r_u->status=NT_STATUS_NOPROBLEMO;
+	r_u->status=NT_STATUS_OK;
 
 	switch(q_u->type) {
 
@@ -1878,7 +1879,7 @@ uint32 _srv_net_name_validate(pipes_struct *p, SRV_Q_NET_NAME_VALIDATE *q_u, SRV
 
 	default:
 		/*unsupported type*/
-		r_u->status = ERRunknownlevel;
+		r_u->status = NT_STATUS_INVALID_LEVEL;
 		break;
 	}
 

@@ -88,7 +88,7 @@ static BOOL smb_pam_nt_status_error_handler(pam_handle_t *pamh, int pam_error,
 	if (smb_pam_error_handler(pamh, pam_error, msg, dbglvl))
 		return True;
 
-	if (*nt_status == NT_STATUS_NOPROBLEMO) {
+	if (*nt_status == NT_STATUS_OK) {
 		/* Complain LOUDLY */
 		DEBUG(0, ("smb_pam_nt_status_error_handler: PAM: BUG: PAM and NT_STATUS \
 error MISMATCH, forcing to NT_STATUS_LOGON_FAILURE"));
@@ -533,7 +533,7 @@ static uint32 smb_pam_auth(pam_handle_t *pamh, char *user)
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_auth: PAM: User %s Authenticated OK\n", user));
-			nt_status = NT_STATUS_NOPROBLEMO;
+			nt_status = NT_STATUS_OK;
 			break;
 		default:
 			DEBUG(0, ("smb_pam_auth: PAM: UNKNOWN ERROR while authenticating user %s\n", user));
@@ -578,7 +578,7 @@ static uint32 smb_pam_account(pam_handle_t *pamh, char * user)
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_account: PAM: Account OK for User: %s\n", user));
-			nt_status = NT_STATUS_NOPROBLEMO;
+			nt_status = NT_STATUS_OK;
 			break;
 		default:
 			nt_status = NT_STATUS_ACCOUNT_DISABLED;
@@ -625,7 +625,7 @@ static uint32 smb_pam_setcred(pam_handle_t *pamh, char * user)
 			break;
 		case PAM_SUCCESS:
 			DEBUG(4, ("smb_pam_setcred: PAM: SetCredentials OK for User: %s\n", user));
-			nt_status = NT_STATUS_NOPROBLEMO;
+			nt_status = NT_STATUS_OK;
 			break;
 		default:
 			DEBUG(0, ("smb_pam_setcred: PAM: UNKNOWN PAM ERROR (%d) during SetCredentials for User: %s\n", pam_error, user));
@@ -787,7 +787,7 @@ uint32 smb_pam_accountcheck(char * user)
 	/* Ignore PAM if told to. */
 
 	if (!lp_obey_pam_restrictions())
-		return NT_STATUS_NOPROBLEMO;
+		return NT_STATUS_OK;
 
 	if ((pconv = smb_setup_pam_conv(smb_pam_conv, user, NULL, NULL)) == NULL)
 		return False;
@@ -795,7 +795,7 @@ uint32 smb_pam_accountcheck(char * user)
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_ACCOUNT_DISABLED;
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_NOPROBLEMO)
+	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK)
 		DEBUG(0, ("smb_pam_accountcheck: PAM: Account Validation Failed - Rejecting User %s!\n", user));
 
 	smb_pam_end(pamh, pconv);
@@ -824,19 +824,19 @@ uint32 smb_pam_passcheck(char * user, char * password)
 	if (!smb_pam_start(&pamh, user, NULL, pconv))
 		return NT_STATUS_LOGON_FAILURE;
 
-	if ((nt_status = smb_pam_auth(pamh, user)) != NT_STATUS_NOPROBLEMO) {
+	if ((nt_status = smb_pam_auth(pamh, user)) != NT_STATUS_OK) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_auth failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_NOPROBLEMO) {
+	if ((nt_status = smb_pam_account(pamh, user)) != NT_STATUS_OK) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_account failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
 	}
 
-	if ((nt_status = smb_pam_setcred(pamh, user)) != NT_STATUS_NOPROBLEMO) {
+	if ((nt_status = smb_pam_setcred(pamh, user)) != NT_STATUS_OK) {
 		DEBUG(0, ("smb_pam_passcheck: PAM: smb_pam_setcred failed - Rejecting User %s !\n", user));
 		smb_pam_end(pamh, pconv);
 		return nt_status;
@@ -876,7 +876,7 @@ BOOL smb_pam_passchange(char * user, char * oldpassword, char * newpassword)
 /* If PAM not used, no PAM restrictions on accounts. */
  uint32 smb_pam_accountcheck(char * user)
 {
-	return NT_STATUS_NOPROBLEMO;
+	return NT_STATUS_OK;
 }
 
 /* If PAM not used, also no PAM restrictions on sessions. */

@@ -68,15 +68,15 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	if (nt_status != NT_STATUS_NOPROBLEMO) {
+	if (nt_status != NT_STATUS_OK) {
 		nt_status = check_rhosts_security(user_info, server_info);
 	}
 	
-	if ((lp_security() == SEC_DOMAIN) && (nt_status != NT_STATUS_NOPROBLEMO)) {
+	if ((lp_security() == SEC_DOMAIN) && (nt_status != NT_STATUS_OK)) {
 		nt_status = check_domain_security(user_info, server_info);
 	}
 	
-	if ((lp_security() == SEC_SERVER) && (nt_status != NT_STATUS_NOPROBLEMO)) {
+	if ((lp_security() == SEC_SERVER) && (nt_status != NT_STATUS_OK)) {
 		nt_status = check_server_security(user_info, server_info);
 	}
 
@@ -84,7 +84,7 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		smb_user_control(user_info->smb_username.str, nt_status);
 	}
 
-	if (nt_status != NT_STATUS_NOPROBLEMO) {
+	if (nt_status != NT_STATUS_OK) {
 		if ((user_info->plaintext_password.len > 0) 
 		    && (!lp_plaintext_to_smbpasswd())) {
 			nt_status = check_unix_security(user_info, server_info);
@@ -94,14 +94,14 @@ NTSTATUS check_password(const auth_usersupplied_info *user_info,
 		}
 	}
 
-	if ((nt_status == NT_STATUS_NOPROBLEMO) && !done_pam) {
+	if ((nt_status == NT_STATUS_OK) && !done_pam) {
 		/* We might not be root if we are an RPC call */
 		become_root();
 		nt_status = smb_pam_accountcheck(user_info->smb_username.str);
 		unbecome_root();
 	}
 	
-	if (nt_status == NT_STATUS_NOPROBLEMO) {
+	if (nt_status == NT_STATUS_OK) {
 		DEBUG(5, ("check_password:  Password for user %s suceeded\n", user_info->smb_username.str));
 	} else {
 		DEBUG(3, ("check_password:  Password for user %s FAILED with error %s\n", user_info->smb_username.str, get_nt_error_msg(nt_status)));
@@ -233,11 +233,11 @@ BOOL password_ok(char *user, char *password, int pwlen)
 	
 	/* The password could be either NTLM or plain LM.  Try NTLM first, but fall-through as
 	   required. */
-	if (pass_check_smb(user, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen) == NT_STATUS_NOPROBLEMO) {
+	if (pass_check_smb(user, lp_workgroup(), NULL, 0, (unsigned char *)password, pwlen) == NT_STATUS_OK) {
 		return True;
 	}
 
-	if (pass_check_smb(user, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0) == NT_STATUS_NOPROBLEMO) {
+	if (pass_check_smb(user, lp_workgroup(), (unsigned char *)password, pwlen, NULL, 0) == NT_STATUS_OK) {
 		return True;
 	}
 

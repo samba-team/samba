@@ -1110,7 +1110,7 @@ static BOOL api_spoolss_addprintprocessor(pipes_struct *p)
 	   automatically set the winprint processor for printer
 	   entries later.  Used to debug the LexMark Optra S 1855 PCL
 	   driver --jerry */
-	r_u.status = NT_STATUS_NOPROBLEMO;
+	r_u.status = NT_STATUS_OK;
 
 	if(!spoolss_io_r_addprintprocessor("", &r_u, rdata, 0)) {
 		DEBUG(0,("spoolss_io_r_addprintprocessor: unable to marshall SPOOL_R_ADDPRINTPROCESSOR.\n"));

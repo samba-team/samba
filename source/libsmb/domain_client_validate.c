@@ -269,7 +269,7 @@ static BOOL find_connect_pdc(struct cli_state *pcli,
  use it, otherwise figure out a server from the 'password server' param.
 ************************************************************************/
 
-uint32 domain_client_validate(const auth_usersupplied_info *user_info, 
+NTSTATUS domain_client_validate(const auth_usersupplied_info *user_info, 
 			      auth_serversupplied_info *server_info, 
 			      char *server, unsigned char *trust_passwd,
 			      time_t last_change_time)
@@ -280,7 +280,7 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 	struct cli_state cli;
 	uint32 smb_uid_low;
 	BOOL connected_ok = False;
-	uint32 status;
+	NTSTATUS status;
 
 	/* 
 	 * Check that the requested domain is not our own machine name.
@@ -325,14 +325,14 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 
 	if ((status = cli_nt_login_network(&cli, user_info, smb_uid_low, 
                                            &ctr, &info3))
-            != NT_STATUS_NOPROBLEMO) {
+            != NT_STATUS_OK) {
 		DEBUG(0,("domain_client_validate: unable to validate password "
                          "for user %s in domain %s to Domain controller %s. "
                          "Error was %s.\n", user_info->smb_username.str,
                          user_info->domain.str, remote_machine, 
                          get_nt_error_msg(status)));
 	} else {
-		status = NT_STATUS_NOPROBLEMO;
+		status = NT_STATUS_OK;
 	}
 
 	/*
@@ -346,7 +346,7 @@ uint32 domain_client_validate(const auth_usersupplied_info *user_info,
 	 * send here. JRA.
 	 */
 
-	if (status == NT_STATUS_NOPROBLMO) {
+	if (NT_STATUS_IS_OK(status)) {
 		if(cli_nt_logoff(&cli, &ctr) == False) {
 			DEBUG(0,("domain_client_validate: unable to log off user %s in domain \
 %s to Domain controller %s. Error was %s.\n", user, domain, remote_machine, cli_errstr(&cli)));        

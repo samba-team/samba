@@ -66,7 +66,7 @@ uint32 cli_dfs_exist(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	*dfs_exists = (r.status == 1);
 
-	result = NT_STATUS_NOPROBLEMO;
+	result = NT_STATUS_OK;
 
  done:
 	prs_mem_free(&qbuf);

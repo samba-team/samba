@@ -53,7 +53,7 @@ static uint32 cmd_dfs_exist(struct cli_state *cli, int argc, char **argv)
 
 	result = cli_dfs_exist(cli, mem_ctx, &dfs_exists);
 
-	if (result == NT_STATUS_NOPROBLEMO)
+	if (result == NT_STATUS_OK)
 		printf("dfs is %spresent\n", dfs_exists ? "" : "not ");
 
 	cli_nt_session_close(cli);
@@ -252,7 +252,7 @@ static uint32 cmd_dfs_enum(struct cli_state *cli, int argc, char **argv)
 	/* Call RPC function */
 
 	if ((result = cli_dfs_enum(cli, mem_ctx, info_level, &ctr)) 
-	    == NT_STATUS_NOPROBLEMO) {
+	    == NT_STATUS_OK) {
 	    
 		/* Print results */
 		display_dfs_info_ctr(&ctr);
@@ -302,7 +302,7 @@ static uint32 cmd_dfs_getinfo(struct cli_state *cli, int argc, char **argv)
 
 	if ((result = cli_dfs_get_info(cli, mem_ctx, entrypath, servername, 
 				       sharename, info_level, &ctr))
-	    == NT_STATUS_NOPROBLEMO) {
+	    == NT_STATUS_OK) {
 
 		/* Print results */
 
