@@ -357,6 +357,10 @@ log file
 
 log level
 
+logon script
+
+logon path
+
 lpq cache time
 
 mangled stack
@@ -1217,6 +1221,51 @@ separate log files for each user or machine.
 
 .SS log level (G)
 see "debug level"
+
+.SS logon script (G)
+
+This parameter specifies the batch file (.bat) or NT command file (.cmd)
+to be downloaded and run on a machine when a user successfully logs in.
+The file must contain the DOS style cr/lf line endings.  Using a DOS-style
+editor to create the file is recommended.
+
+The script must be a relative path to the [netlogon] service.  If the
+[netlogon] service specifies a path of /usr/local/samba/netlogon, and
+logon script = STARTUP.BAT, then file that will be downloaded is:
+
+.B /usr/local/samba/netlogon/STARTUP.BAT
+
+The contents of the batch file is entirely your choice.  A suggested
+command would be to add NET TIME \\\\SERVER /SET /YES, to force every
+machine to synchronise clocks with the same time server.  Another use
+would be to add NET USE U: \\\\SERVER\\UTILS for commonly used utilities,
+or NET USE Q: \\\\SERVER\\ISO9001_QA.
+
+Note that it is particularly important not to allow write access to
+the [netlogon] share, or to grant users write permission on the
+batch files in a secure environment, as this would allow the batch
+files to be arbitrarily modified.
+
+.B
+This option takes the standard substitutions, allowing you to have
+separate logon scripts for each user or machine.
+
+.B Example:
+	logon script = scripts/%U.bat
+
+.SS logon path (G)
+
+This parameter specifies the home directory where roaming profiles 
+(USER.DAT / USER.MAN files) are stored.
+
+This option takes the standard substitutions, allowing you to have
+separate logon scripts for each user or machine.
+
+.B Default:
+ 	logon path = \\\\%L\\HOMES
+
+.B Example:
+	logon path = \\\\PROFILESERVER\\HOME_DIR\\%U
 
 .SS lppause command (S)
 This parameter specifies the command to be executed on the server host in
