@@ -1740,9 +1740,8 @@ typedef struct r_samr_get_dom_pwinfo
 	 * turned out to 12.  3 uint32's + NT_STATUS == 16 bytes.  Tested
 	 * using NT and 2k.  --jerry
 	 */
-	uint32 unk_0;
+	uint16 unk_0;
 	uint32 unk_1;
-	uint32 unk_2;
 	NTSTATUS status;
 
 } SAMR_R_GET_DOM_PWINFO;
