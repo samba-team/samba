@@ -322,7 +322,7 @@ drwsrwsrwx    2 maryo   gnomes       48 2003-05-12 22:29 muchado08
 	</para>
 
 	<para>
-		An overview of the permissions field can be found in <link linkend="access1"/>.
+		An overview of the permissions field can be found in <link linkend="access1">the image below</link>.
 	</para>
 
 	<image scale="40"><imagedescription>Overview of unix permissions field</imagedescription><imagefile>access1</imagefile></image>

@@ -20,7 +20,7 @@
 	</para>
 
 	<para>If you need to compile samba from source, check 
-	<link linkend="compiling"></link>.</para>
+		<link linkend="compiling">the chapter about compiling samba from scratch</link>.</para>
 
 	<para>If you have already installed samba, or if your operating system
 	was pre-installed with samba, then you may not need to bother with this
@@ -80,7 +80,7 @@
 	<para>
 	For more information about security settings for the 
 	<smbconfsection>[homes]</smbconfsection> share please refer to 
-	<link linkend="securing-samba"></link>.
+	<link linkend="securing-samba">"Securing Samba"</link>.
 	</para>
 
 <sect3>
@@ -199,8 +199,8 @@
 <sect1>
 	<title>What If Things Don't Work?</title>
 	
-	<para>Then you might read the file chapter <link linkend="diagnosis"></link>
-	and the FAQ. If you are still stuck then refer to <link linkend="problems"></link>.
+	<para>Then you might read the file chapter <link linkend="diagnosis">diagnosis</link>
+	and the FAQ. If you are still stuck then refer to <link linkend="problems">"Analysing and solving problems"</link>.
 	Samba has been successfully installed at thousands of sites worldwide,
 	so maybe someone else has hit your problem and has overcome it.</para>
 

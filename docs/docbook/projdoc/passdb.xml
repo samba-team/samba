@@ -1532,7 +1532,7 @@ Refer to the <command>logon home</command> parameter in the &smb.conf; man page 
 
 		<para><quote>I've installed samba, but now I can't log on with my unix account!</quote></para>
 
-		<para>Make sure your user has been added to the current samba <smbconfoption><name>passdb backend</name></smbconfoption>. Read the section <link linkend="acctmgmttools"/> for details.</para>
+		<para>Make sure your user has been added to the current samba <smbconfoption><name>passdb backend</name></smbconfoption>. Read the section <link linkend="acctmgmttools">Account Management Tools</link> for details.</para>
 
 	</sect2>
 

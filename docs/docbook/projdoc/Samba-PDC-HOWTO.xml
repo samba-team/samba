@@ -98,7 +98,7 @@ Network clients of an MS Windows Domain security environment must be Domain memb
 able to gain access to the advanced features provided. Domain membership involves more than just
 setting the workgroup name to the Domain name. It requires the creation of a Domain trust account
 for the workstation (called a machine account). Please refer to the chapter on 
-<link linkend="domain-member"></link> for more information.
+<link linkend="domain-member">setting up samba as a domain member</link> for more information.
 </para></note>
 
 <para>
@@ -165,15 +165,15 @@ in Samba since approximately the Samba-1.9.15 series.
 <para>
 Samba-3 has an implementation of group mapping between Windows NT groups
 and UNIX groups (this is really quite complicated to explain in a short space). This is 
-discussed more fully in <link linkend="groupmapping"></link>.
+discussed more fully in <link linkend="groupmapping">the chapter on group mapping</link>.
 </para>
 
 <para>
 Samba-3, like an MS Windows NT4 PDC or a Windows 200x Active Directory, needs to store
 user and machine trust account information in a suitable backend data store. 
-Refer <link linkend="machine-trust-accounts"></link>. With Samba-3 there can be multiple
+Refer <link linkend="machine-trust-accounts">to the section on machine trust accounts</link>. With Samba-3 there can be multiple
 back-ends for this. A complete discussion of account database backends can be found in
-<link linkend="passdb"></link>.
+<link linkend="passdb">the chapter on Account Information Databases</link>.
 </para>
 
 </sect1>
@@ -224,7 +224,7 @@ LDAP based user and machine account back end.
 <para>
 New to Samba-3 is the ability to use a back-end database that holds the same type of data as
 the NT4 style SAM (Security Account Manager) database (one of the registry files).
-<footnote><para>See also <link linkend="passdb"/>.</para></footnote>
+<footnote><para>See also <link linkend="passdb">the chapter on Account Information Databases</link>.</para></footnote>
 </para>
 
 <para>
@@ -315,7 +315,7 @@ Domain it triggers a machine password change.
 When running a Domain all MS Windows NT / 200x / XP Professional clients should be configured
 as full Domain Members - IF A SECURE NETWORK IS WANTED. If the machine is NOT made a member of the
 Domain, then it will operate like a workgroup (stand-alone) machine. Please refer to 
-<link linkend="domain-member"></link> for information regarding HOW to make your MS Windows clients Domain members.
+<link linkend="domain-member">the chapter on domain membership</link> for information regarding HOW to make your MS Windows clients Domain members.
 </para></note>
 
 <para>
@@ -326,8 +326,8 @@ NT4 / 200x / XP clients.
 <itemizedlist>
 	<listitem><para>Configuration of basic TCP/IP and MS Windows Networking</para></listitem>
 	<listitem><para>Correct designation of the Server Role (<smbconfoption><name>security</name><value>user</value></smbconfoption>)</para></listitem>
-	<listitem><para>Consistent configuration of Name Resolution (See chapter on <link linkend="NetworkBrowsing"></link> and on
-	<link linkend="integrate-ms-networks"></link>)</para></listitem>
+	<listitem><para>Consistent configuration of Name Resolution (See chapter on <link linkend="NetworkBrowsing">Network Browsing</link> and on
+	<link linkend="integrate-ms-networks">Integrating Unix into Windows networks</link>)</para></listitem>
 	<listitem><para>Domain logons for Windows NT4 / 200x / XP Professional clients</para></listitem>
 	<listitem><para>Configuration of Roaming Profiles or explicit configuration to force local profile usage</para></listitem>
 	<listitem><para>Configuration of Network/System Policies</para></listitem>
@@ -355,8 +355,8 @@ The following provisions are required to serve MS Windows 9x / Me Clients:
 
 <note><para>
 Roaming Profiles and System/Network policies are advanced network administration topics
-that are covered in the <link linkend="ProfileMgmt"></link> and 
-<link linkend="PolicyMgmt"></link> chapters of this document.  However, these are not
+that are covered in the <link linkend="ProfileMgmt">Profile Management</link> and 
+<link linkend="PolicyMgmt">Policy Management</link> chapters of this document.  However, these are not
 necessarily specific to a Samba PDC as much as they are related to Windows NT networking concepts.
 </para></note>
 
@@ -388,7 +388,7 @@ A Domain Controller is an SMB/CIFS server that:
 For Samba to provide these is rather easy to configure. Each Samba Domain Controller must provide
 the NETLOGON service which Samba calls the <smbconfoption><name>domain logons</name></smbconfoption> functionality
 (after the name of the parameter in the &smb.conf; file). Additionally, one (1) server in a Samba-3
-Domain must advertise itself as the domain master browser<footnote><para>See also <link linkend="NetworkBrowsing"/></para></footnote>. This causes the Primary Domain Controller
+Domain must advertise itself as the domain master browser<footnote><para>See also <link linkend="NetworkBrowsing">the chapter about network browsing</link></para></footnote>. This causes the Primary Domain Controller
 to claim domain specific NetBIOS name that identifies it as a domain master browser for its given
 domain/workgroup. Local master browsers in the same domain/workgroup on broadcast-isolated subnets
 then ask for a complete copy of the browse list for the whole wide area network. Browser clients
@@ -404,8 +404,8 @@ instead of just the list for their broadcast-isolated subnet.
 
 <para>
 The first step in creating a working Samba PDC is to understand the parameters necessary
-in &smb.conf;.  An example &smb.conf; for acting as a PDC can be found in example
-<link linkend="pdc-example"/>. 
+in &smb.conf;.  An example &smb.conf; for acting as a PDC can be found in the example
+<link linkend="pdc-example">for being a PDC</link>. 
 </para>
 
 <para>
@@ -468,7 +468,7 @@ The basic options shown above are explained as follows:
 		must be the domain master browser, must be set in <emphasis>user</emphasis> mode security,
 		must support Microsoft compatible encrypted passwords, and must provide the network logon
 		service (domain logons). Encrypted passwords must be enabled, for more details on how 
-		to do this, refer to <link linkend="passdb"></link>.
+		to do this, refer to <link linkend="passdb">the chapter on account information databases</link>.
 		</para></listitem>
 	</varlistentry>
 	<varlistentry><term>Environment Parameters</term>
@@ -771,7 +771,7 @@ are two distinctly different functions), it is not a good idea to do
 so.  You should remember that the DC must register the DOMAIN&lt;#1b&gt; NetBIOS 
 name.  This is the name used by Windows clients to locate the DC.
 Windows clients do not distinguish between the DC and the DMB.
-A DMB is a Domain Master Browser - see <link linkend="DMB"></link>.
+A DMB is a Domain Master Browser - see <link linkend="DMB">Domain Master Browser</link>.
 For this reason, it is very wise to configure the Samba DC as the DMB.
 </para>
 

@@ -85,10 +85,10 @@ ps: $(PSDIR) $(PSDIR)/Samba-HOWTO-Collection.ps $(PSDIR)/Samba-Developers-Guide.
 txt: $(TXTDIR) $(TXTDIR)/Samba-HOWTO-Collection.txt $(TXTDIR)/Samba-Developers-Guide.txt
 htmlman: $(HTMLDIR) $(MANPAGES_HTML) CSS
 htmlfaq: $(HTMLDIR) CSS
-	@$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
+	$(XSLTPROC) --stringparam base.dir "$(FAQDIR)/" --stringparam root.filename samba-faq xslt/html-chunk.xsl $(FAQPROJDOC)/sambafaq.xml
 html-single: $(HTMLDIR) CSS $(HTMLDIR)/Samba-HOWTO-Collection.html  $(HTMLDIR)/Samba-Developers-Guide.html
 html: $(HTMLDIR) CSS Samba-HOWTO-Collection.xml
-	@$(XSLTPROC) -o $(HTMLDIR) xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
+	$(XSLTPROC) -o $(HTMLDIR) xslt/html-chunk.xsl Samba-HOWTO-Collection.xml
 manpages: $(MANDIR) $(MANPAGES)
 tex: Samba-HOWTO-Collection.tex Samba-Developers-Guide.tex
 
@@ -100,32 +100,28 @@ Samba-Developers-Guide.xml: $(DEVDOC)/dev-doc.xml $(DEVDOC_DEPS)
 
 $(PROJDOC)/attributions.xml: $(PROJDOC)/samba-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
-	@echo "Generating attributions page"
-	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 $(DEVDOC)/attributions.xml: $(DEVDOC)/dev-doc.xml
 	@echo > $@ # Make sure we don't get recursive dependencies, etc!
-	@echo "Generating attributions page"
-	@$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
+	$(XSLTPROC) --output $@ xslt/generate-attributions.xsl $<
 
 clean: 
 	@rm -f *.xml $(MANPAGES) $(TXTDIR)/*.txt $(PSDIR)/*.ps $(PDFDIR)/*.pdf 
 	@rm -f $(SMBDOTCONFDOC)/parameters.*.xml $(DVIDIR)/*.dvi
 	@rm -f samba-doc.* dev-doc.* $(PROJDOC)/attributions.xml $(DEVDOC)/attributions.xml
-	@rm -f $(IMAGEPROJDIR)/*.eps $(MANPROJDIR)/smb.conf.5.xml
+	@rm -f $(IMAGEPROJDIR)/*.eps $(MANPROJDOC)/smb.conf.5.xml
 
 # Text files
 $(TXTDIR):
 	mkdir $(TXTDIR)
 
 $(TXTDIR)/%.txt: %.xml
-	@echo "Converting $< to plain text..."
-	@$(XMLTO) txt -o $(TXTDIR) $< > $@
+	$(XMLTO) txt -o $(TXTDIR) $< > $@
 
 # Tex files
 %.tex: %.xml
-	@echo "Converting $< to LaTeX..."
-	@$(XSLTPROC) --output $@ xslt/latex.xsl $<
+	$(XSLTPROC) --output $@ xslt/latex.xsl $<
 	
 # Adobe PDF files
 $(PDFDIR)/%.pdf: %.tex
@@ -144,7 +140,7 @@ $(DVIDIR)/%.dvi: %.tex epsimages
 	mv $(patsubst %.tex,%.dvi,$<) $@
 
 %.eps: %.png
-	@$(PNGTOPNM) $< | $(PNMTOPS) > $@
+	$(PNGTOPNM) $< | $(PNMTOPS) > $@
 
 # PostScript files
 $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
@@ -153,20 +149,20 @@ $(PSDIR)/%.ps: $(DVIDIR)/%.dvi
 # Single large HTML files
 
 $(HTMLDIR):
-	@mkdir $(HTMLDIR)
+	mkdir $(HTMLDIR)
 
 CSS: $(HTMLDIR) xslt/html/samba.css
-	@cp xslt/html/samba.css $(HTMLDIR)/
+	cp xslt/html/samba.css $(HTMLDIR)/
 
 $(HTMLDIR)/Samba-HOWTO-Collection.html: Samba-HOWTO-Collection.xml $(PROJDOC_DEPS) $(PROJDOC_IMAGES_PNG)
-	@$(XSLTPROC) --output $@ xslt/html.xsl $<
+	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 $(HTMLDIR)/Samba-Developers-Guide.html: Samba-Developers-Guide.xml $(DEVDOC_DEPS)
-	@$(XSLTPROC) --output $@ xslt/html.xsl $<
+	$(XSLTPROC) --output $@ xslt/html.xsl $<
 
 
 $(HTMLDIR)/%.html: $(MANPROJDOC)/%.xml
-	@$(XSLTPROC) --output $@ xslt/html.xsl $<
+	$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) --output $@ xslt/html.xsl -
 
 # Manpages
 $(SMBDOTCONFDOC)/parameters.all.xml: $(SMBDOTCONFDOC)/generate-file-list.sh
@@ -190,21 +186,16 @@ $(SMBDOTCONFDOC)/parameters.service.xml: $(SMBDOTCONFDOC)/parameters.all.xml $(S
 	generate-context.xsl parameters.all.xml && \
 	cd ..
 
-smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
+$(MANPROJDOC)/smb.conf.5.xml: $(SMBDOTCONFDOC)/smb.conf.5.xml $(SMBDOTCONFDOC)/parameters.all.xml \
  			$(SMBDOTCONFDOC)/parameters.global.xml $(SMBDOTCONFDOC)/parameters.service.xml 
-	@$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
-
-$(MANPROJDIR)/smb.conf.5.xml: smb.conf.5.xml
-	@cp $< $@
+	$(XSLTPROC) --xinclude --output $@ xslt/expand-sambadoc.xsl $<
+	-ln -s global.ent $(MANPROJDOC)/global.ent
 
 $(MANDIR): 
 	mkdir $(MANDIR)
 
 $(MANDIR)/%: $(MANPROJDOC)/%.xml
-	@$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) xslt/man.xsl - > $@
-
-$(MANDIR)/smb.conf.5: smb.conf.5.xml
-	@$(XSLTPROC) xslt/man.xsl $< > $@
+	$(XSLTPROC) xslt/expand-sambadoc.xsl $< | $(XSLTPROC) xslt/man.xsl - > $@
 
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml
 	$(PERL) scripts/find_missing_doc.pl ../..
