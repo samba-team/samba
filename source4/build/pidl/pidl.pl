@@ -145,7 +145,7 @@ sub process_file($)
 
 	if ($opt_eparser) {
 		my($parser) = dirname($output) . "/packet-dcerpc-$basename.c";
-		util::FileSave($parser, IdlEParser::Parse($pidl));
+		IdlEParser::Parse($pidl, $parser);
 	}
 
 	if ($opt_diff) {
