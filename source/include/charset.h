@@ -63,7 +63,7 @@ extern void charset_initialise(void);
 
 /* this is used to determine if a character is safe to use in
    something that may be put on a command line */
-#define issafe(c) (isalnum((c&0xff)) || strchr("-._",c))
+#define issafe(c) (isalnum((c&0xff)) || strchr_m("-._",c))
 #endif
 
 /* Dynamic codepage files defines. */

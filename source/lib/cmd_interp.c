@@ -895,7 +895,7 @@ static void read_authfile (char *filename, char* username, char* password)
 		/* break up the line into parameter & value.
 		   will need to eat a little whitespace possibly */
 		param = buf;
-		if (!(ptr = strchr (buf, '=')))
+		if (!(ptr = strchr_m(buf, '=')))
 			continue;
 		val = ptr+1;
 		*ptr = '\0';
