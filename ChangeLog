@@ -1,5 +1,7 @@
 2003-09-10  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* appl/test/http_client.c: print both source and target
+	
 	* appl/test/Makefile.am: build http_client
 	
 2003-09-09  Love Hörnquist Åstrand  <lha@it.su.se>
