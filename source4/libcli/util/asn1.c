@@ -23,7 +23,7 @@
 /* free an asn1 structure */
 void asn1_free(ASN1_DATA *data)
 {
-	SAFE_FREE(data->data);
+	talloc_free(data->data);
 }
 
 /* write to the ASN1 buffer, advancing the buffer pointer */
@@ -32,9 +32,9 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
 		uint8_t *newp;
-		newp = Realloc(data->data, data->ofs+len);
+		newp = talloc_realloc(data->data, data->ofs+len);
 		if (!newp) {
-			SAFE_FREE(data->data);
+			asn1_free(data);
 			data->has_error = True;
 			return False;
 		}
@@ -58,7 +58,7 @@ BOOL asn1_push_tag(ASN1_DATA *data, uint8_t tag)
 	struct nesting *nesting;
 
 	asn1_write_uint8(data, tag);
-	nesting = (struct nesting *)malloc(sizeof(struct nesting));
+	nesting = talloc_p(NULL, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -103,7 +103,7 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 	}
 
 	data->nesting = nesting->next;
-	free(nesting);
+	talloc_free(nesting);
 	return True;
 }
 
@@ -223,7 +223,7 @@ BOOL asn1_check_BOOLEAN(ASN1_DATA *data, BOOL v)
 BOOL asn1_load(ASN1_DATA *data, DATA_BLOB blob)
 {
 	ZERO_STRUCTP(data);
-	data->data = memdup(blob.data, blob.length);
+	data->data = talloc_memdup(NULL, blob.data, blob.length);
 	if (!data->data) {
 		data->has_error = True;
 		return False;
@@ -295,7 +295,7 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8_t tag)
 		data->has_error = True;
 		return False;
 	}
-	nesting = (struct nesting *)malloc(sizeof(struct nesting));
+	nesting = talloc_p(NULL, struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -370,7 +370,7 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 		len = b;
 	}
 
-	buf = malloc(len);
+	buf = talloc(NULL, len);
 	if (buf == NULL)
 		return False;
 
@@ -380,7 +380,7 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 	if (!asn1_write(data, buf, len))
 		return False;
 
-	free(buf);
+	talloc_free(buf);
 
 	data->ofs = 0;
 	
@@ -403,7 +403,7 @@ BOOL asn1_object_length(uint8_t *buf, size_t buf_length,
 	*result = asn1_tag_remaining(&data)+data.ofs;
 	/* We can't use asn1_end_tag here, as we did not consume the complete
 	 * tag, so asn1_end_tag would flag an error and not free nesting */
-	free(data.nesting);
+	talloc_free(data.nesting);
 	return True;
 }
 
@@ -426,7 +426,7 @@ BOOL asn1_end_tag(ASN1_DATA *data)
 	}
 
 	data->nesting = nesting->next;
-	free(nesting);
+	talloc_free(nesting);
 	return True;
 }
 
@@ -445,15 +445,11 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 {
 	uint8_t b;
 	char *tmp_oid = NULL;
-	TALLOC_CTX *mem_ctx = talloc_init("asn1_read_OID");
-	if (!mem_ctx) {
-		return False;
-	}
 
 	if (!asn1_start_tag(data, ASN1_OID)) return False;
 	asn1_read_uint8(data, &b);
 
-	tmp_oid = talloc_asprintf(mem_ctx, "%u",  b/40);
+	tmp_oid = talloc_asprintf(NULL, "%u",  b/40);
 	tmp_oid = talloc_asprintf_append(tmp_oid, " %u",  b%40);
 
 	while (!data->has_error && asn1_tag_remaining(data) > 0) {
@@ -467,8 +463,8 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 
 	asn1_end_tag(data);
 
-	*OID = strdup(tmp_oid);
-	talloc_destroy(mem_ctx);
+	*OID = talloc_strdup(NULL, tmp_oid);
+	talloc_free(tmp_oid);
 
 	return (*OID && !data->has_error);
 }
@@ -484,7 +480,7 @@ BOOL asn1_check_OID(ASN1_DATA *data, const char *OID)
 		data->has_error = True;
 		return False;
 	}
-	free(id);
+	talloc_free(id);
 	return True;
 }
 
@@ -498,7 +494,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 		data->has_error = True;
 		return False;
 	}
-	*s = malloc(len+1);
+	*s = talloc(NULL, len+1);
 	if (! *s) {
 		data->has_error = True;
 		return False;
