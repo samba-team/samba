@@ -2008,18 +2008,40 @@ sub FunctionTable($)
 	pidl "";
 
 	pidl "static const struct dcerpc_endpoint_list $interface->{NAME}\_endpoints = {";
-	pidl "\t$endpoint_count, $interface->{NAME}\_endpoint_strings";
+	pidl "\t.count\t= $endpoint_count,";
+	pidl "\t.names\t= $interface->{NAME}\_endpoint_strings";
+	pidl "};";
+	pidl "";
+
+	if (! defined $interface->{PROPERTIES}->{authservice}) {
+		$interface->{PROPERTIES}->{authservice} = "\"host\"";
+	}
+
+	my @a = split / /, $interface->{PROPERTIES}->{authservice};
+	my $authservice_count = $#a + 1;
+
+	pidl "static const char * const $interface->{NAME}\_authservice_strings[] = {";
+	foreach my $ap (@a) {
+		pidl "\t$ap, ";
+	}
+	pidl "};";
+	pidl "";
+
+	pidl "static const struct dcerpc_authservice_list $interface->{NAME}\_authservices = {";
+	pidl "\t.count\t= $endpoint_count,";
+	pidl "\t.names\t= $interface->{NAME}\_authservice_strings";
 	pidl "};";
 	pidl "";
 
 	pidl "\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {";
-	pidl "\t\"$interface->{NAME}\",";
-	pidl "\tDCERPC_$uname\_UUID,";
-	pidl "\tDCERPC_$uname\_VERSION,";
-	pidl "\tDCERPC_$uname\_HELPSTRING,";
-	pidl "\t$count,";
-	pidl "\t$interface->{NAME}\_calls,";
-	pidl "\t&$interface->{NAME}\_endpoints";
+	pidl "\t.name\t\t= \"$interface->{NAME}\",";
+	pidl "\t.uuid\t\t= DCERPC_$uname\_UUID,";
+	pidl "\t.if_version\t= DCERPC_$uname\_VERSION,";
+	pidl "\t.helpstring\t= DCERPC_$uname\_HELPSTRING,";
+	pidl "\t.num_calls\t= $count,";
+	pidl "\t.calls\t\t= $interface->{NAME}\_calls,";
+	pidl "\t.endpoints\t= &$interface->{NAME}\_endpoints,";
+	pidl "\t.authservices\t= &$interface->{NAME}\_authservices";
 	pidl "};";
 	pidl "";
 
