@@ -515,7 +515,9 @@ dnl
 AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 #include <sys/socket.h>])
 
-AC_CONFIG_FILES($1/Makefile) dnl breaks automake
+dnl won't work with automake
+dnl moved to AC_OUTPUT in configure.in
+dnl AC_CONFIG_FILES($1/Makefile)
 
 LIB_roken="${LIB_roken} \$(LIB_crypt) \$(LIB_dbopen)"
 
