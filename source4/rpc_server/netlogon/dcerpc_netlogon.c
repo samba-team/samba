@@ -187,7 +187,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -195,8 +195,6 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
 				   r->in.account_name);
-
-	samdb_close(sam_ctx);
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
@@ -375,7 +373,7 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -387,20 +385,17 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
 			 pipe_state->account_name));
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records > 1) {
 		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
 			 pipe_state->account_name));
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
-		samdb_close(sam_ctx);
 		DEBUG(0,("no objectSid in user record\n"));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
@@ -414,14 +409,12 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	if (num_records_domain == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
 			 domain_sid));
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records_domain > 1) {
 		DEBUG(0,("Found %d records matching domain [%s]\n", 
 			 num_records_domain, domain_sid));
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -429,7 +422,6 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	
 	mod.dn = talloc_strdup(mem_ctx, msgs[0]->dn);
 	if (!mod.dn) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	
@@ -446,19 +438,15 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 				       NULL);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		samdb_close(sam_ctx);
 		return nt_status;
 	}
 
 	ret = samdb_replace(sam_ctx, mem_ctx, msg_set_pw);
 	if (ret != 0) {
 		/* we really need samdb.c to return NTSTATUS */
-
-		samdb_close(sam_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	samdb_close(sam_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -963,7 +951,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -975,18 +963,13 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	   well */
 	ret1 = samdb_search(sam_ctx, mem_ctx, NULL, &res1, attrs, "(objectClass=domainDNS)");
 	if (ret1 != 1) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
 	ret2 = samdb_search(sam_ctx, mem_ctx, NULL, &res2, attrs, "(objectClass=trustedDomain)");
 	if (ret2 == -1) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
-
-	/* we don't need the db link any more */
-	samdb_close(sam_ctx);
 
 	info1 = talloc_p(mem_ctx, struct netr_DomainInfo1);
 	if (info1 == NULL) {
@@ -1139,14 +1122,13 @@ static WERROR netr_DsrEnumerateDomainTrusts(struct dcesrv_call_state *dce_call, 
 
 	ZERO_STRUCT(r->out);
 
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return WERR_GENERAL_FAILURE;
 	}
 
 	ret = samdb_search(sam_ctx, mem_ctx, NULL, &res, attrs, "(objectClass=domainDNS)");
 	if (ret == -1) {
-		samdb_close(sam_ctx);
 		return WERR_GENERAL_FAILURE;		
 	}
 

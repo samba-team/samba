@@ -145,7 +145,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 
 	/* this call doesn't take a policy handle, so we need to open
 	   the sam db from scratch */
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -158,7 +158,6 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 			   "(&(sAMAccountName=%s)(objectclass=user))",
 			   r->in.account->name);
 	if (ret != 1) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
@@ -177,21 +176,18 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_ASCII)) {
 		DEBUG(3,("samr: failed to decode password buffer\n"));
-		samdb_close(sam_ctx);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* work out the domain dn */
 	domain_sid = samdb_result_sid_prefix(mem_ctx, res[0], "objectSid");
 	if (domain_sid == NULL) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	domain_dn = samdb_search_string(sam_ctx, mem_ctx, NULL, "dn",
 					"(objectSid=%s)", domain_sid);
 	if (!domain_dn) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -199,7 +195,6 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	ZERO_STRUCT(mod);
 	mod.dn = talloc_strdup(mem_ctx, user_dn);
 	if (!mod.dn) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
@@ -211,18 +206,15 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 				    NULL, NULL,
 				    True, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
-		samdb_close(sam_ctx);
 		return status;
 	}
 
 	/* modify the samdb record */
 	ret = samdb_replace(sam_ctx, mem_ctx, &mod);
 	if (ret != 0) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	samdb_close(sam_ctx);
 	return NT_STATUS_OK;
 }
 
@@ -262,7 +254,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 
 	/* this call doesn't take a policy handle, so we need to open
 	   the sam db from scratch */
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		status = NT_STATUS_INVALID_SYSTEM_SERVICE;
 		goto failed;
@@ -344,16 +336,12 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 		goto failed;
 	}
 
-	samdb_close(sam_ctx);
 	return NT_STATUS_OK;
 
 failed:
 	ret = samdb_search(sam_ctx, 
 			   mem_ctx, NULL, &res, dom_attrs,
 			   "dn=%s", domain_dn);
-	if (sam_ctx) {
-		samdb_close(sam_ctx);
-	}
 
 	if (ret != 1) {
 		return status;
