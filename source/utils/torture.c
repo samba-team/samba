@@ -926,12 +926,12 @@ static void run_browsetest(void)
 	}
 
 	printf("domain list:\n");
-	cli_NetServerEnum(&cli, cli->server_domain, 
+	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_DOMAIN_ENUM,
 			  browse_callback);
 
 	printf("machine list:\n");
-	cli_NetServerEnum(&cli, cli->server_domain, 
+	cli_NetServerEnum(&cli, cli.server_domain, 
 			  SV_TYPE_ALL,
 			  browse_callback);
 
