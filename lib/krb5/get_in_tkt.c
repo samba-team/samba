@@ -123,7 +123,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_decrypt_proc decrypt_proc,
 		     krb5_const_pointer decryptarg)
 {
-    krb5_error_code err;
+    krb5_error_code ret;
     krb5_principal tmp_principal;
     int tmp;
     time_t tmp_time;
@@ -131,15 +131,15 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare client */
 
-    err = principalname2krb5_principal (&tmp_principal,
+    ret = principalname2krb5_principal (&tmp_principal,
 					rep->kdc_rep.cname,
 					rep->kdc_rep.crealm);
-    if (err)
+    if (ret)
 	goto out;
     tmp = krb5_principal_compare (context, tmp_principal, creds->client);
     krb5_free_principal (context, tmp_principal);
     if (!tmp) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
     
@@ -158,10 +158,10 @@ _krb5_extract_ticket(krb5_context context,
 
     /* compare server */
 
-    err = principalname2krb5_principal (&tmp_principal,
+    ret = principalname2krb5_principal (&tmp_principal,
 					rep->kdc_rep.ticket.sname,
 					rep->kdc_rep.ticket.realm);
-    if (err)
+    if (ret)
 	goto out;
     if(allow_server_mismatch){
 	krb5_free_principal(context, creds->server);
@@ -171,7 +171,7 @@ _krb5_extract_ticket(krb5_context context,
 	tmp = krb5_principal_compare (context, tmp_principal, creds->server);
 	krb5_free_principal (context, tmp_principal);
 	if (!tmp) {
-	    err = KRB5KRB_AP_ERR_MODIFIED;
+	    ret = KRB5KRB_AP_ERR_MODIFIED;
 	    goto out;
 	}
     }
@@ -181,14 +181,14 @@ _krb5_extract_ticket(krb5_context context,
     if (decrypt_proc == NULL)
 	decrypt_proc = decrypt_tkt;
     
-    err = (*decrypt_proc)(context, key, decryptarg, rep);
-    if (err)
+    ret = (*decrypt_proc)(context, key, decryptarg, rep);
+    if (ret)
 	goto out;
 
     /* compare nonces */
 
     if (nonce != rep->enc_part.nonce) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
@@ -213,13 +213,13 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.starttime == 0
 	&& abs(tmp_time - sec_now) > context->max_skew) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
     if (creds->times.starttime != 0
 	&& tmp_time != creds->times.starttime) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
@@ -232,7 +232,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.renew_till != 0
 	&& tmp_time > creds->times.renew_till) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
@@ -242,7 +242,7 @@ _krb5_extract_ticket(krb5_context context,
 
     if (creds->times.endtime != 0
 	&& rep->enc_part.endtime > creds->times.endtime) {
-	err = KRB5KRB_AP_ERR_MODIFIED;
+	ret = KRB5KRB_AP_ERR_MODIFIED;
 	goto out;
     }
 
@@ -263,14 +263,14 @@ _krb5_extract_ticket(krb5_context context,
     creds->session.keyvalue.length = 0;
     creds->session.keyvalue.data   = NULL;
     creds->session.keytype = rep->enc_part.key.keytype;
-    err = krb5_data_copy (&creds->session.keyvalue,
+    ret = krb5_data_copy (&creds->session.keyvalue,
 			  rep->enc_part.key.keyvalue.data,
 			  rep->enc_part.key.keyvalue.length);
 
 out:
     memset (rep->enc_part.key.keyvalue.data, 0,
 	    rep->enc_part.key.keyvalue.length);
-    return err;
+    return ret;
 }
 
 
