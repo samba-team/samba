@@ -118,3 +118,19 @@ free to contact me if you have any questions or if you can correct any one
 of the many mistakes I must have made above.
 
 David
+
+==========================================================================
+
+This directory now contains a ./configure script and Makefile to 
+support the automated building of man pages (including HTML versions).
+The DocBook V4.1 DTD and ISO entity files have also been included in CVS
+to make sure we are all working from the same plate.
+
+The SGML_CATALOG_FILES environment variable should be set as follows
+(this assumes you have a working local installation of jade and
+Norman's Walsh's DSSSL stylesheets):
+
+  export SGML_CATALOG_FILES=$SGML_CATALOG_FILES:./dbsgml/catalog
+
+
+--jerry
