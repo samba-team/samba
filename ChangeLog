@@ -1,3 +1,7 @@
+2004-09-14  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kuser/kinit.c: make sure we don't always get renewable creds
+	
 2004-09-08  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/pkinit.c: make variable shorter, make error messages
