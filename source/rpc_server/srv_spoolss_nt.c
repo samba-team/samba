@@ -6176,7 +6176,7 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("security descriptor change denied by existing "
 			  "security descriptor\n"));
-		status = ERROR_ACCESS_DENIED;
+		status = ERRnoaccess;
 		goto done;
 	}
 
