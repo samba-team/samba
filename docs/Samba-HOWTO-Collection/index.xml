@@ -155,6 +155,7 @@ Samba has several features that you might want or might not want to use. The cha
 <xi:include href="Unicode.xml"/>
 <xi:include href="Backup.xml"/>
 <xi:include href="HighAvailability.xml"/>
+<xi:include href="LargeFile.xml"/>
 </part>
 
 <part id="migration">
