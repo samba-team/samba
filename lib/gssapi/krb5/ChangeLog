@@ -1,3 +1,8 @@
+2003-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* delete_sec_context.c (gss_delete_sec_context): don't free
+	ticket, krb5_free_ticket does that now
+
 2003-11-06  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: checksum the header last in MIC token, update to -03
