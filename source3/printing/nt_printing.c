@@ -1609,10 +1609,12 @@ static SEC_DESC_BUF *construct_default_printer_sdb(void)
 	   on the PDC of the domain. */
 
 	if (!winbind_lookup_name("Administrator", &owner_sid, &name_type)) {
-		return NULL;  /* Doh */
+		/*
+		 * Backup - make owner the everyone sid. This may be a security
+		 * hole for print control .... check. JRA.
+		 */
+		sid_copy( &owner_sid, &global_sid_World);
 	}
-
-	
 
 	/* The ACL revision number in rpc_secdesc.h differs from the one
 	   created by NT when setting ACE entries in printer
