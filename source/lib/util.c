@@ -1349,7 +1349,6 @@ BOOL is_myname(char *s)
 
 BOOL is_myname_or_ipaddr(char *s)
 {
-	fstring temp;
 	char *ptr;
 	pstring nbname;
 	
