@@ -295,7 +295,7 @@ typedef struct vfs_handle_struct {
 
 <varlistentry><term>vfs_next</term>
 <listitem><para>This vfs_ops struct contains the information for calling the next module operations.
-Use the vfs_next_* macros to call a next module operations and
+Use the SMB_VFS_NEXT_* macros to call a next module operations and
 don't access handle-&gt;vfs_next.ops.* directly!</para></listitem>
 </varlistentry>
 
@@ -442,13 +442,13 @@ e.g. default_vfs_ops.connect(conn, service, user);
 </para></listitem>
 
 <listitem><para>
-Uppercase all &quot;vfs_next_*&quot; functions.
+Uppercase all &quot;smb_vfs_next_*&quot; functions.
 e.g. smb_vfs_next_connect(conn, service, user);
 -&gt;   SMB_VFS_NEXT_CONNECT(conn, service, user);
 </para></listitem>
 
 <listitem><para>
-Add &quot;handle, &quot; as first parameter to all VFS_NEXT_*() calls.
+Add &quot;handle, &quot; as first parameter to all SMB_VFS_NEXT_*() calls.
 e.g. SMB_VFS_NEXT_CONNECT(conn, service, user);
 -&gt;   SMB_VFS_NEXT_CONNECT(handle, conn, service, user);
 </para></listitem>
@@ -700,7 +700,7 @@ static int example_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 	/* do something here...*/
 	DEBUG(0,(&quot;some_string: %s\n&quot;,data-&gt;some_string));
 	
-	return VFS_NEXT_CLOSE(handle, fsp, fd);
+	return SMB_VFS_NEXT_CLOSE(handle, fsp, fd);
 }
 </programlisting>
 </para></listitem>
