@@ -1161,7 +1161,16 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 	if (strcmp(cli_info.dest_host, "*") == 0) {
 		/* special case - we want the PDC */
 		struct in_addr ip;
-		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host, &ip)) {
+		fstring workgroup;
+
+		if (usr.ntc.domain[0]) {
+			fstrcpy(workgroup, usr.ntc.domain);
+		} else {
+			fstrcpy(workgroup, lp_workgroup());
+		}
+
+		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host,
+				      workgroup, &ip)) {
 			report(out_hnd, "ERROR: Failed to find the PDC\n");
 			return 1;
 		}

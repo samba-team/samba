@@ -751,7 +751,7 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 *********************************************************/
 
 BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
-                                struct in_addr *ip)
+		      char *workgroup, struct in_addr *ip)
 {
         BOOL ret;
         const char *sv_name = srv_name;
@@ -775,8 +775,8 @@ BOOL resolve_srv_name(const char* srv_name, fstring dest_host,
         /* treat the '*' name specially - it is a magic name for the PDC */
         if (strcmp(dest_host,"*") == 0) {
                 extern pstring global_myname;
-                ret = resolve_name(lp_workgroup(), ip, 0x1B);
-                lookup_pdc_name(global_myname, lp_workgroup(), ip, dest_host);
+                ret = resolve_name(workgroup, ip, 0x1B);
+                lookup_pdc_name(global_myname, workgroup, ip, dest_host);
         } else {
                 ret = resolve_name(dest_host, ip, 0x20);
         }

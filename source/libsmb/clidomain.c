@@ -149,7 +149,8 @@ BOOL cli_connect_servers_auth(struct cli_state *cli,
 		struct in_addr dest_ip;
 		strupper(remote_host);
 
-		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
+		if (!resolve_srv_name(remote_host, desthost, lp_workgroup(),
+				      &dest_ip))
 		{
 			DEBUG(1,("Can't resolve address for %s\n", remote_host));
 			continue;
@@ -214,7 +215,8 @@ BOOL cli_connect_serverlist(struct cli_state *cli, char *p)
 		standard_sub_basic(remote_host);
 		strupper(remote_host);
 
-		if (!resolve_srv_name( remote_host, desthost, &dest_ip))
+		if (!resolve_srv_name(remote_host, desthost, lp_workgroup(),
+				      &dest_ip))
 		{
 			DEBUG(1,("cli_connect_serverlist: Can't resolve address for %s\n", remote_host));
 			continue;

@@ -256,7 +256,7 @@ struct cli_state *cli_net_use_add(const char *srv_name,
 
 	cli = cli_use_get(srv_name, usr_creds);
 
-	if (resolve_srv_name(srv_name, dest_host, &ip))
+	if (resolve_srv_name(srv_name, dest_host, lp_workgroup(), &ip))
 	{
 		dest_ip = &ip;
 	}
