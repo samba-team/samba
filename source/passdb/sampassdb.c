@@ -678,7 +678,7 @@ struct sam_passwd *pwdb_sam_map_names(struct sam_passwd *sam)
 
 	if (sam->unix_gid == (gid_t)-1 && sam->group_rid == 0xffffffff)
 	{
-		struct passwd *pass = getpwnam(unix_name);
+		struct passwd *pass = hashed_getpwnam(unix_name);
 		if (pass != NULL)
 		{
 			sam->unix_gid = pass->pw_gid;
