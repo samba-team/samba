@@ -481,7 +481,6 @@ typedef struct file_fd_struct
 	SMB_DEV_T dev;
 	SMB_INO_T inode;
 	int fd;
-	int fdnum;
 	int fd_readonly;
 	int fd_writeonly;
 	int real_open_flags;

@@ -31,10 +31,13 @@ extern int DEBUGLEVEL;
 #define FILE_HANDLE_OFFSET 0x1000
 
 static struct bitmap *file_bmap;
-static struct bitmap *fd_bmap;
 
+#ifdef USE_FILES_ARRAY
+static files_struct *Files[MAX_FNUMS];
+#else
 static files_struct *Files;
-
+#endif
+ 
 /* a fsp to use when chaining */
 static files_struct *chain_fsp = NULL;
 /* a fsp to use to save when breaking an oplock. */
@@ -77,12 +80,21 @@ files_struct *file_new(void )
 		 * files batch oplocked for quite a long time
 		 * after they have finished with them.
 		 */
+#ifdef USE_FILES_ARRAY
+                for(i = 0; i < MAX_FNUMS; i++) {
+                  if((fsp = Files[i]) == NULL)
+                    continue;
+                  if (attempt_close_oplocked_file(fsp)) 
+                    return file_new();
+                }
+#else
 		for (fsp=Files;fsp;fsp=next) {
 			next=fsp->next;
 			if (attempt_close_oplocked_file(fsp)) {
 				return file_new();
 			}
 		}
+#endif
 
 		DEBUG(0,("ERROR! Out of file structures\n"));
 		return NULL;
@@ -101,10 +113,14 @@ files_struct *file_new(void )
 	fsp->fnum = i + FILE_HANDLE_OFFSET;
 	string_init(&fsp->fsp_name,"");
 	
+#ifdef USE_FILES_ARRAY
+        Files[i] = fsp;
+#else
 	DLIST_ADD(Files, fsp);
+#endif
 
-	DEBUG(5,("allocated file structure %d (%d used)\n",
-		 i, files_used));
+	DEBUG(5,("allocated file structure %d, fnum = %d (%d used)\n",
+		 i, fsp->fnum, files_used));
 
 	chain_fsp = fsp;
 	
@@ -128,16 +144,11 @@ file_fd_struct *fd_get_already_open(SMB_STRUCT_STAT *sbuf)
 		    (sbuf->st_dev == fd_ptr->dev) &&
 		    (sbuf->st_ino == fd_ptr->inode)) {
 			fd_ptr->ref_count++;
-#ifdef LARGE_SMB_INO_T
+
 			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %.0f, ref_count = %d\n",
 				 (unsigned int)fd_ptr->dev, (double)fd_ptr->inode, 
 				 fd_ptr->ref_count));
-#else /* LARGE_SMB_INO_T */
-			DEBUG(3,("Re-used file_fd_struct dev = %x, inode = %x, ref_count = %d\n",
-				 (unsigned int)fd_ptr->dev, 
-				 (unsigned int)fd_ptr->inode, 
-				 fd_ptr->ref_count));
-#endif /* LARGE_SMB_INO_T */
+
 			return fd_ptr;
 		}
 	}
@@ -154,21 +165,16 @@ Increments the ref_count of the returned entry.
 file_fd_struct *fd_get_new(void)
 {
 	extern struct current_user current_user;
-	int i;
 	file_fd_struct *fd_ptr;
 
-	i = bitmap_find(fd_bmap, 1);
-	if (i == -1) {
-		DEBUG(0,("ERROR! Out of file_fd structures\n"));
-		return NULL;
-	}
-
 	fd_ptr = (file_fd_struct *)malloc(sizeof(*fd_ptr));
-	if (!fd_ptr) return NULL;
+	if (!fd_ptr) {
+          DEBUG(0,("ERROR! malloc fail for file_fd struct.\n"));
+          return NULL;
+	}
 	
 	ZERO_STRUCTP(fd_ptr);
 	
-	fd_ptr->fdnum = i;
 	fd_ptr->dev = (SMB_DEV_T)-1;
 	fd_ptr->inode = (SMB_INO_T)-1;
 	fd_ptr->fd = -1;
@@ -178,13 +184,11 @@ file_fd_struct *fd_get_new(void)
 	fd_add_to_uid_cache(fd_ptr, (uid_t)current_user.uid);
 	fd_ptr->ref_count++;
 
-	bitmap_set(fd_bmap, i);
 	fd_ptr_used++;
 
 	DLIST_ADD(FileFd, fd_ptr);
 
-	DEBUG(5,("allocated fd_ptr structure %d (%d used)\n",
-		 i, fd_ptr_used));
+	DEBUG(5,("allocated fd_ptr structure (%d used)\n", fd_ptr_used));
 
 	return fd_ptr;
 }
@@ -197,6 +201,19 @@ void file_close_conn(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 	
+#ifdef USE_FILES_ARRAY
+        int i;
+        for (i = 0; i < MAX_FNUMS; i++) {
+          if((fsp = Files[i]) == NULL)
+            continue;
+          if(fsp->conn == conn && fsp->open) {
+            if (fsp->is_directory)
+              close_directory(fsp);
+            else
+              close_file(fsp,False);
+          }
+        }
+#else
 	for (fsp=Files;fsp;fsp=next) {
 		next = fsp->next;
 		if (fsp->conn == conn && fsp->open) {
@@ -206,6 +223,7 @@ void file_close_conn(connection_struct *conn)
 				close_file(fsp,False); 
 		}
 	}
+#endif
 }
 
 /****************************************************************************
@@ -214,9 +232,8 @@ initialise file structures
 void file_init(void)
 {
 	file_bmap = bitmap_allocate(MAX_FNUMS);
-	fd_bmap = bitmap_allocate(MAX_FNUMS);
 
-	if (!file_bmap || !fd_bmap) {
+	if (!file_bmap) {
 		exit_server("out of memory in file_init");
 	}
 
@@ -246,6 +263,19 @@ void file_close_user(int vuid)
 {
 	files_struct *fsp, *next;
 
+#ifdef USE_FILES_ARRAY
+        int i;
+        for(i = 0; i < MAX_FNUMS; i++) {
+          if((fsp = Files[i]) == NULL)
+            continue;
+          if((fsp->vuid == vuid) && fsp->open) {
+            if(!fsp->is_directory)
+              close_file(fsp,False);
+            else
+              close_directory(fsp);
+          }
+        }
+#else
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if ((fsp->vuid == vuid) && fsp->open) {
@@ -255,6 +285,7 @@ void file_close_user(int vuid)
 				close_directory(fsp);
 		}
 	}
+#endif
 }
 
 
@@ -266,6 +297,18 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 	int count=0;
 	files_struct *fsp;
 
+#ifdef USE_FILES_ARRAY
+        for(count = 0; count < MAX_FNUMS; count++) {
+          if((fsp = Files[count]) == NULL)
+            continue;
+          if (fsp->open &&
+              fsp->fd_ptr->dev == dev &&
+              fsp->fd_ptr->inode == inode &&
+              fsp->open_time.tv_sec == tval->tv_sec &&
+              fsp->open_time.tv_usec == tval->tv_usec) 
+            return fsp;
+        }
+#else
 	for (fsp=Files;fsp;fsp=fsp->next,count++) {
 		if (fsp->open && 
 		    fsp->fd_ptr->dev == dev && 
@@ -278,6 +321,7 @@ files_struct *file_find_dit(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval
 			return fsp;
 		}
 	}
+#endif
 
 	return NULL;
 }
@@ -290,9 +334,19 @@ files_struct *file_find_print(void)
 {
 	files_struct *fsp;
 
+#ifdef USE_FILES_ARRAY
+        int i;
+        for(i = 0; i < MAX_FNUMS; i++) {
+          if((fsp = Files[i]) == NULL)
+            continue;
+          if (fsp->open && fsp->print_file) return fsp;
+        }
+#else
 	for (fsp=Files;fsp;fsp=fsp->next) {
 		if (fsp->open && fsp->print_file) return fsp;
 	} 
+#endif
+
 	return NULL;
 }
 
@@ -304,12 +358,22 @@ void file_sync_all(connection_struct *conn)
 {
 	files_struct *fsp, *next;
 
+#ifdef USE_FILES_ARRAY
+        int i;
+        for(i = 0; i < MAX_FNUMS; i++) {
+          if((fsp = Files[i]) == NULL)
+            continue;
+          if (fsp->open && conn == fsp->conn)
+            sync_file(conn,fsp);
+        }
+#else
 	for (fsp=Files;fsp;fsp=next) {
 		next=fsp->next;
 		if (fsp->open && conn == fsp->conn) {
 			sync_file(conn,fsp);
 		}
 	}
+#endif
 }
 
 
@@ -320,11 +384,9 @@ void fd_ptr_free(file_fd_struct *fd_ptr)
 {
 	DLIST_REMOVE(FileFd, fd_ptr);
 
-	bitmap_clear(fd_bmap, fd_ptr->fdnum);
 	fd_ptr_used--;
 
-	DEBUG(5,("freed fd_ptr structure %d (%d used)\n",
-		 fd_ptr->fdnum, fd_ptr_used));
+	DEBUG(5,("freed fd_ptr structure (%d used)\n", fd_ptr_used));
 
 	/* paranoia */
 	ZERO_STRUCTP(fd_ptr);
@@ -338,7 +400,16 @@ free up a fsp
 ****************************************************************************/
 void file_free(files_struct *fsp)
 {
+#ifdef USE_FILES_ARRAY
+    files_struct *fsp1 = Files[fsp->fnum - FILE_HANDLE_OFFSET];
+    if(fsp != fsp1)
+      DEBUG(0,("file_free: fnum = %d (array offset %d) <> fsp = %x, fnum = %d!\n",
+            fsp->fnum, fsp->fnum - FILE_HANDLE_OFFSET, fsp1, fsp1->fnum));
+    SMB_ASSERT(fsp == fsp1);
+    Files[fsp->fnum - FILE_HANDLE_OFFSET] = NULL;
+#else
 	DLIST_REMOVE(Files, fsp);
+#endif
 
 	string_free(&fsp->fsp_name);
 
@@ -374,6 +445,15 @@ files_struct *file_fsp(char *buf, int where)
 
 	fnum = SVAL(buf, where);
 
+#ifdef USE_FILES_ARRAY
+        fsp = Files[fnum - FILE_HANDLE_OFFSET];
+        if(!fsp)
+          DEBUG(0,("file_fsp: fnum = %d (array offset %d) gave null fsp !\n",
+                fnum, fnum - FILE_HANDLE_OFFSET));
+        SMB_ASSERT(fsp != NULL);
+
+        return (chain_fsp = fsp);
+#else
 	for (fsp=Files;fsp;fsp=fsp->next, count++) {
 		if (fsp->fnum == fnum) {
 			chain_fsp = fsp;
@@ -383,8 +463,8 @@ files_struct *file_fsp(char *buf, int where)
 			return fsp;
 		}
 	}
-
 	return NULL;
+#endif
 }
 
 /****************************************************************************
