@@ -10,6 +10,10 @@ smbd
 smbpasswd
 smbspool
 smbstatus
+smbcacls
+smbmount
+smbmnt
+smbumount
 swat
 testparm
 testprns

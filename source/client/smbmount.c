@@ -641,6 +641,7 @@ static void usage(void)
 "Options:
       username=<arg>                  SMB username
       password=<arg>                  SMB password
+      credentials=<filename>          file with username/password
       netbiosname=<arg>               source NetBIOS name
       uid=<arg>                       mount uid or username
       gid=<arg>                       mount gid or groupname
@@ -652,7 +653,9 @@ static void usage(void)
       workgroup=<arg>                 workgroup on destination
       sockopt=<arg>                   TCP socket options
       scope=<arg>                     NetBIOS scope
-      credentials=<filename>          file with username/password
+      iocharset=<arg>                 Linux charset (iso8859-1, utf8)
+      codepage=<arg>                  server codepage (cp850)
+      ttl=<arg>                       dircache time to live
       guest                           don't prompt for a password
       ro                              mount read-only
       rw                              mount read-write
