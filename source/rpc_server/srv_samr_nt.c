@@ -389,10 +389,10 @@ uint32 _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN_D
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
 	/* associate the domain SID with the (unique) handle. */
-	if (!set_lsa_policy_samr_sid(&r_u->domain_pol, &q_u->dom_sid.sid))
+	if (!set_lsa_policy_samr_sid(&r_u->domain_pol, &q_u->dom_sid.sid)) {
+		close_lsa_policy_hnd(&r_u->domain_pol);
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-	close_lsa_policy_hnd(&r_u->domain_pol);
+	}
 
 	DEBUG(5,("samr_open_domain: %d\n", __LINE__));
 
@@ -1671,10 +1671,10 @@ uint32 _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CONN
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
     /* associate the domain SID with the (unique) handle. */
-    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->unknown_0))
+    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->unknown_0)) {
+        close_lsa_policy_hnd(&r_u->connect_pol);
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-    close_lsa_policy_hnd(&r_u->connect_pol);
+    }
 
     return r_u->status;
 }
@@ -1694,10 +1694,10 @@ uint32 _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u)
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
     /* associate the domain SID with the (unique) handle. */
-    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->access_mask))
+    if (!set_lsa_policy_samr_pol_status(&r_u->connect_pol, q_u->access_mask)) {
+        close_lsa_policy_hnd(&r_u->connect_pol);
         return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-
-    close_lsa_policy_hnd(&r_u->connect_pol);
+    }
 
     DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
