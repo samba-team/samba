@@ -1170,7 +1170,7 @@ uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *val
 	
 	unistr2_to_ascii(value, valuename, sizeof(value)-1);
 	
-	if (Printer->printer_type != PRINTER_HANDLE_IS_PRINTSERVER)
+	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 		found=getprinterdata_printer_server(value, type, data, needed, *out_size);
 	else
 		found= getprinterdata_printer(p, handle, value, type, data, needed, *out_size);
