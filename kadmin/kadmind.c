@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 static char *config_file;
 static char *keyfile;
-static char *keytab_str;
+static char *keytab_str = "HDB:";
 static int help_flag;
 static int version_flag;
 static int debug_flag;
@@ -119,6 +119,10 @@ main(int argc, char **argv)
     argc -= optind;
     argv += optind;
 
+    ret = krb5_kt_register(context, &hdb_kt_ops);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_register");
+
     if (config_file == NULL)
 	config_file = HDB_DB_DIR "/kdc.conf";
 
@@ -129,13 +133,9 @@ main(int argc, char **argv)
 	    keyfile = strdup(p);
     }
 
-    if(keytab_str == NULL)
-	keytab = NULL;
-    else {
-	ret = krb5_kt_resolve(context, keytab_str, &keytab);
-	if(ret)
-	    krb5_err(context, 1, ret, "krb5_kt_resolve");
-    }
+    ret = krb5_kt_resolve(context, keytab_str, &keytab);
+    if(ret)
+	krb5_err(context, 1, ret, "krb5_kt_resolve");
 
     {
 	int fd = 0;
