@@ -69,11 +69,11 @@ static char *strdup_x(const char *s)
 **********************************************************/
 static void usage(void)
 {
-	if (getuid() == 0) {
-		printf("smbpasswd [options] [username] [password]\n");
-	} else {
-		printf("smbpasswd [options] [password]\n");
-	}
+	printf("When run by root:\n");
+	printf("    smbpasswd [options] [username] [password]\n");
+	printf("otherwise:\n");
+	printf("    smbpasswd [options] [password]\n\n");
+
 	printf("options:\n");
 	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
 	printf("  -s                   use stdin for password prompt\n");
@@ -81,20 +81,20 @@ static void usage(void)
 	printf("  -U USER              remote username\n");
 	printf("  -r MACHINE           remote machine\n");
 
-	if (getuid() == 0 || local_mode) {
-		printf("  -L                   local mode\n");
-		printf("  -R ORDER             name resolve order\n");
-		printf("  -j DOMAIN            join domain name\n");
-		printf("  -a                   add user\n");
-		printf("  -x                   delete user\n");
-		printf("  -d                   disable user\n");
-		printf("  -e                   enable user\n");
-		printf("  -n                   set no password\n");
-		printf("  -m                   machine trust account\n");
+	printf("extra options when run by root or in local mode:\n");
+	printf("  -L                   local mode\n");
+	printf("  -R ORDER             name resolve order\n");
+	printf("  -j DOMAIN            join domain name\n");
+	printf("  -a                   add user\n");
+	printf("  -x                   delete user\n");
+	printf("  -d                   disable user\n");
+	printf("  -e                   enable user\n");
+	printf("  -n                   set no password\n");
+	printf("  -m                   machine trust account\n");
 #ifdef WITH_LDAP_SAM
-		printf("  -w                   ldap admin password\n");
+	printf("  -w                   ldap admin password\n");
 #endif
-	}
+
 	exit(1);
 }
 
