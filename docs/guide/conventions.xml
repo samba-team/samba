@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="iso-8859-1"?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.2//EN"
+		"http://www.oasis-open.org/docbook/xml/4.2/docbookx.dtd" [
+
+  <!-- Stuff for xincludes -->
+  <!ENTITY % xinclude SYSTEM "../entities/xinclude.dtd">
+  %xinclude;
+
+  <!-- entities files to use -->
+  <!ENTITY % global_entities SYSTEM '../entities/global.entities'>
+  %global_entities;
+
+]>
+
+  <sect1>
+    <title>Conventions Used</title>
+
+    <para>
+    The following notation conventions are used throughout this book:
+    </para>
+
+    <itemizedlist>
+      <listitem>
+	<para>
+	TOSHARG is used as an abbreviation for the book, <quote>The Official Samba-3
+	HOWTO and Reference Guide,</quote> Editors: John H. Terpstra and Jelmer R. Vernooij,
+	Publisher: Prentice Hall, ISBN: 0131453556.
+	</para>
+      </listitem>
+
+      <listitem>
+        <para>
+	Directories and filenames appear in mono-font. For example,
+        <filename>/etc/pam.conf</filename>.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+	Executable names are bolded. For example, <command>smbd</command>.
+	</para>
+      </listitem>
+
+      <listitem>
+        <para>
+	Menu items and buttons appear in bold. For example, click <guibutton>Next</guibutton>.
+        </para>
+      </listitem>
+
+      <listitem>
+        <para>
+	Selecting a menu item is indicated as:
+	<menuchoice>
+		<guimenu>Start</guimenu>
+		<guimenuitem>Control Panel</guimenuitem>
+		<guimenuitem>Administrative Tools</guimenuitem>
+		<guimenuitem>Active Directory Users and Computers</guimenuitem>
+	</menuchoice>
+       </para>
+      </listitem>
+    </itemizedlist>
+
+  </sect1>
+

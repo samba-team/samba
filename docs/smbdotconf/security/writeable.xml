@@ -1,0 +1,10 @@
+<samba:parameter name="writeable"
+                 context="S"
+				 type="boolean"
+                 xmlns:samba="http://samba.org/common">
+<synonym>writable</synonym>
+<description>
+    <para>Inverted synonym for <link linkend="READONLY">
+    <parameter moreinfo="none">read only</parameter></link>.</para>
+</description>
+</samba:parameter>

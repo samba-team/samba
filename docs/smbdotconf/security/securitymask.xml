@@ -1,0 +1,34 @@
+<samba:parameter name="security mask"
+                 context="S"
+				 type="string"
+                 xmlns:samba="http://samba.org/common">
+<description>
+    <para>This parameter controls what UNIX permission 
+    bits can be modified when a Windows NT client is manipulating 
+    the UNIX permission on a file using the native NT security 
+    dialog box.</para>
+
+    <para>This parameter is applied as a mask (AND'ed with) to 
+    the changed permission bits, thus preventing any bits not in 
+    this mask from being modified. Essentially, zero bits in this 
+    mask may be treated as a set of bits the user is not allowed 
+    to change.</para>
+
+    <para>If not set explicitly this parameter is 0777, allowing
+    a user to modify all the user/group/world permissions on a file.
+    </para>
+
+    <para><emphasis>Note</emphasis> that users who can access the 
+    Samba server through other means can easily bypass this 
+    restriction, so it is primarily useful for standalone 
+    &quot;appliance&quot; systems.  Administrators of most normal systems will 
+	probably want to leave it set to <constant>0777</constant>.</para>
+</description>
+
+<related>force directory security mode</related>
+<related>directory security mask</related>
+<related>force security mode</related>
+
+<value type="default">0777</value>
+<value type="example">0770</value>
+</samba:parameter>

@@ -1,0 +1,17 @@
+<samba:parameter name="ldap port"
+				 type="integer"
+                 context="G"
+                 xmlns:samba="http://samba.org/common">
+<description>
+	<para>This parameter is only available if Samba has been
+	configure to include the <command moreinfo="none">--with-ldapsam</command> option
+	at compile time.</para>
+
+	<para>This option is used to control the tcp port number used to contact
+	the <link linkend="LDAPSERVER"><parameter moreinfo="none">ldap server</parameter></link>.
+	The default is to use the stand LDAPS port 636.</para>
+</description>
+<related>ldap ssl</related>
+<value type="default">636<comment>if ldap ssl = on</comment></value>
+<value type="default">389<comment>if ldap ssl = off</comment></value>
+</samba:parameter>

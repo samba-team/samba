@@ -1,0 +1,467 @@
+<chapter id="ClientConfig">
+<chapterinfo>
+	&author.jht;
+</chapterinfo>
+
+<title>MS Windows Network Configuration Guide</title>
+
+<sect1>
+<title>Features and Benefits</title>
+
+<para>
+Occasionally network administrators will report difficulty getting Microsoft Windows clients to interoperate
+correctly with Samba servers. It would appear that some folks just can not accept the fact that the right way
+to configure MS Windows network client is precisely as one would do when using Microsoft Windows NT4 or 200x
+servers. Yet there is repetitious need to provide detailed Windows client configuration instructions.
+</para>
+
+<para>
+The purpose of this chapter is to graphically illustrate MS Windows client configuration for the most common
+critical aspects of such configuration. An experienced network administrator will not be interested in the
+details of this chapter.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Technical Details</title>
+
+<para>
+This chapter discusses TCP/IP protocol configuration as well as network membership for the platforms
+that are in common use today. These are:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Microsoft Windows XP Professional.
+	</para></listitem>
+	<listitem><para>
+	Windows 2000 Professional.
+	</para></listitem>
+	<listitem><para>
+	Windows Millennium edition (Me).
+	</para></listitem>
+</itemizedlist>
+
+	<sect2>
+	<title>TCP/IP Configuration</title>
+
+	<para>
+	The builder of a house must ensure that all construction takes place on a firm foundation.
+	The same is true of TCP/IP-based networking. Fundamental network configuration problems
+	will plague all network users until they are resolved. 
+	</para>
+
+	<para>
+	Microsoft Windows workstations and servers can be configured either with fixed
+	IP addresses or via DHCP. The examples that follow demonstrate the use of DHCP
+	and make only passing reference to those situations where fixed IP configuration
+	settings can be effected.
+	</para>
+
+	<para>
+	It is possible to use shortcuts or abbreviated keystrokes to arrive at a
+	particular configuration screen. The decision was made to base all examples in this
+	chapter on use of the <guibutton>Start</guibutton> button.
+	</para>
+
+		<sect3>
+		<title>MS Windows XP Professional</title>
+
+		<para>
+		There are two paths to the Windows XP TCP/IP configuration panel. Choose the access method that you prefer:
+		</para>
+
+		<para>
+		Click <guimenu>Start -> Control Panel -> Network Connections</guimenu>
+		</para>
+
+		<para>
+		<emphasis>Alternately,</emphasis> click <guimenu>Start -></guimenu>, and right click <guimenu>My Network Places</guimenu>
+		then select <guimenuitem>Properties</guimenuitem>
+		</para>
+
+		<para>
+		The following procedure steps through the Windows XP Professional TCP/IP configuration process:
+		</para>
+
+		<procedure>
+			<step><para>
+			On some installations the interface will be called <guimenu>Local Area Connection</guimenu> and
+			on others it will be called <guimenu>Network Bridge</guimenu>. On our system it is called <guimenu>Network Bridge</guimenu>.
+			Right click on <guimenu>Network Bridge -> Properties</guimenu>. See <link linkend="WXPP002"/>.
+			<image id="WXPP002"><imagedescription>Network Bridge Configuration.</imagedescription><imagefile>WXPP002</imagefile></image>
+			</para>
+			</step>
+
+			<step><para>
+			The Network Bridge Configuration, or Local Area Connection, panel is used to set TCP/IP protocol settings.
+			In <guimenuitem>This connection uses the following items:</guimenuitem> box,
+			click on <guimenu>Internet Protocol (TCP/IP)</guimenu>, then click the on <guibutton>Properties</guibutton>.
+			</para>
+
+			<para>
+			The default setting is DHCP enabled operation.
+			(i.e., <quote>Obtain an IP address automatically</quote>). See <link linkend="WXPP003"/>.
+			<image id="WXPP003"><imagefile>WXPP003</imagefile><imagedescription>Internet Protocol (TCP/IP) Properties.</imagedescription></image>
+			</para>
+
+			<para>
+			Many network administrators will want to use DHCP to configure all client TCP/IP
+			protocol stack settings. (For information on how to configure the ISC DHCP server
+			for Microsoft Windows client support see, <link linkend="DHCP"></link>.
+			</para>
+
+			<para>
+			If it is necessary to provide a fixed IP address, click on <quote>Use the following IP address</quote> and proceed to enter the
+			IP Address, the subnet mask, and the default gateway address in the boxes provided.
+			</para></step>
+
+			<step><para>
+			Click the <guibutton>Advanced</guibutton> button to proceed with TCP/IP configuration.
+			This opens a panel in which it is possible to create additional IP Addresses for this interface.
+			The technical name for the additional addresses is <emphasis>IP Aliases</emphasis>, and additionally this
+			panel permits the setting of more default gateways (routers). In most cases where DHCP is used, it will not be
+			necessary to create additional settings. See <link linkend="WXPP005"></link> to see the appearance of this panel.
+			<image id="WXPP005"><imagefile>WXPP005</imagefile><imagedescription>Advanced Network Settings</imagedescription></image>
+			</para>
+
+			<para>
+			Fixed settings may be required for DNS and WINS if these settings are not provided automatically via DHCP.
+			</para></step>
+
+			<step><para>
+			Click the <guimenu>DNS</guimenu> tab to add DNS server settings. 
+			The example system uses manually configured DNS settings. When finished making changes, click the <guibutton>OK</guibutton> to commit
+			the settings. See <link linkend="WXPP014"/>.
+			<image id="WXPP014"><imagefile>WXPP014</imagefile><imagedescription>DNS Configuration.</imagedescription></image>
+			</para></step>
+
+			<step><para>
+			Click the <guibutton>WINS</guibutton> tab to add manual WINS server entries. 
+			This step demonstrates an example system that uses manually configured WINS settings. 
+			When finished making, changes click the <guibutton>OK</guibutton> to commit
+                        the settings. See <link linkend="WXPP009"></link>.
+						<image id="WXPP009"><imagefile>WXPP009</imagefile><imagedescription>WINS Configuration</imagedescription></image>
+			</para></step>
+		</procedure>
+
+		</sect3>
+
+		<sect3>
+		<title>MS Windows 2000</title>
+
+		<para>
+		There are two paths to the Windows 2000 Professional TCP/IP configuration panel. Choose the access method that you prefer:
+		</para>
+
+		<para>
+		Click <guimenu>Start -> Control Panel -> Network and Dial-up Connections</guimenu>
+		</para>
+
+		<para>
+		<emphasis>Alternately,</emphasis> click on <guimenu>Start</guimenu>, then right click <guimenu>My Network Places</guimenu> and
+		select <guimenuitem>Properties</guimenuitem>.
+		</para>
+
+		<para>
+		The following procedure steps through the Windows XP Professional TCP/IP configuration process:
+		</para>
+
+		<procedure>
+			<step><para>
+			Right click on <guimenu>Local Area Connection</guimenu>, now click the
+			<guimenuitem>Properties</guimenuitem>. See <link linkend="w2kp001"></link>.
+			<image id="w2kp001"><imagefile>w2kp001</imagefile><imagedescription>Local Area Connection Properties.</imagedescription></image>
+			</para></step>
+
+			<step><para>
+			The Local Area Connection Properties is used to set TCP/IP protocol settings. Click on <guimenu>Internet Protocol (TCP/IP)</guimenu> in the
+			<guimenuitem>Components checked are used by this connection:</guimenuitem> box, then click the <guibutton>Properties</guibutton> button.
+			</para></step>
+
+			<step><para>
+			The default setting is DHCP enabled operation.
+			(i.e., <quote>Obtain an IP address automatically</quote>). See <link linkend="w2kp002"/>.
+			<image id="w2kp002"><imagefile>w2kp002</imagefile><imagedescription>Internet Protocol (TCP/IP) Properties.</imagedescription></image>
+			</para>
+
+			<para>
+			Many network administrators will want to use DHCP to configure all client TCP/IP
+			protocol stack settings. (For information on how to configure the ISC DHCP server
+			for Microsoft Windows client support, see <link linkend="DHCP"></link>.
+			</para>
+
+			<para>
+			If it is necessary to provide a fixed IP address, click on <quote>Use the following IP address</quote> and proceed to enter the
+			IP Address, the subnet mask, and the default gateway address in the boxes provided.
+			For this example we are assuming that all network clients will be configured using DHCP.
+			</para></step>
+
+			<step><para>
+			Click the <guimenu>Advanced</guimenu> button to proceed with TCP/IP configuration.
+			Refer to <link linkend="w2kp003"></link>.
+			<image id="w2kp003"><imagefile>w2kp003</imagefile><imagedescription>Advanced Network Settings.</imagedescription></image>
+			</para>
+
+			<para>
+			Fixed settings may be required for DNS and WINS if these settings are not provided automatically via DHCP.
+			</para></step>
+
+			<step><para>
+			Click the <guimenu>DNS</guimenu> tab to add DNS server settings. 
+			The example system uses manually configured DNS settings. When finished making changes,
+			click on <guibutton>OK</guibutton> to commit the settings. See <link linkend="w2kp004"></link>.
+			<image id="w2kp004"><imagefile>w2kp004</imagefile><imagedescription>DNS Configuration.</imagedescription></image>
+			</para></step>
+
+			<step><para>
+			Click the <guibutton>WINS</guibutton> tab to add manual WINS server entries. 
+			This step demonstrates an example system that uses manually configured WINS settings. 
+			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
+			See <link linkend="w2kp005"></link>.
+			<image id="w2kp005"><imagefile>w2kp005</imagefile><imagedescription>WINS Configuration.</imagedescription></image>
+			</para></step>
+
+		</procedure>
+
+		</sect3>
+
+		<sect3>
+		<title>MS Windows Me</title>
+
+		<para>
+		There are two paths to the Windows Millennium edition (Me) TCP/IP configuration panel. Choose the access method that you prefer:
+		</para>
+
+		<para>
+		Click <guimenu>Start -> Control Panel -> Network Connections</guimenu>
+		</para>
+
+		<para>
+		<emphasis>Alternately,</emphasis> click on <guimenu>Start -></guimenu>, and right click on <guimenu>My Network Places</guimenu>
+		then select <guimenuitem>Properties</guimenuitem>.
+		</para>
+
+		<para>
+		The following procedure steps through the Windows Me TCP/IP configuration process:
+		</para>
+
+		<procedure>
+			<step><para>
+			In the box labeled <guimenuitem>The following network components are installed:</guimenuitem>,
+			click on <guimenu>Internet Protocol TCP/IP</guimenu>, now click on the <guibutton>Properties</guibutton> button. See <link linkend="WME001"></link>.
+			<image id="WME001"><imagefile>WME001</imagefile><imagedescription>The Windows Me Network Configuration Panel.</imagedescription></image>
+			</para></step>
+
+			<step><para>
+			Many network administrators will want to use DHCP to configure all client TCP/IP
+			protocol stack settings. (For information on how to configure the ISC DHCP server
+			for Microsoft Windows client support see, <link linkend="DHCP"></link>.
+			The default setting on Microsoft Windows Me workstations is for DHCP enabled operation,
+			i.e., <guimenu>Obtain IP address automatically</guimenu> is enabled. See <link linkend="WME002"></link>.
+			<image id="WME002"><imagefile>WME002</imagefile><imagedescription>IP Address.</imagedescription></image>
+			</para>
+
+			<para>
+			If it is necessary to provide a fixed IP address, click on <guimenuitem>Specify an IP address</guimenuitem> and proceed to enter the
+			IP Address and the subnet mask in the boxes provided. For this example we are assuming that all network clients will be configured using DHCP.
+			</para></step>
+
+			<step><para>
+			Fixed settings may be required for DNS and WINS if these settings are not provided automatically via DHCP.
+			</para></step>
+
+			<step><para>
+			If necessary, click the <guimenu>DNS Configuration</guimenu> tab to add DNS server settings. 
+			Click the <guibutton>WINS Configuration</guibutton> tab to add WINS server settings. 
+			The <guimenu>Gateway</guimenu> tab allows additional gateways (router addresses) to be added to the network
+			interface settings. In most cases where DHCP is used, it will not be necessary to
+			create these manual settings.
+			</para></step>
+
+			<step><para>
+			The following example uses manually configured WINS settings. See <link linkend="WME005"></link>.
+			When finished making changes, click on <guibutton>OK</guibutton> to commit the settings.
+			<image id="WME005"><imagefile>WME005</imagefile><imagedescription>DNS Configuration.</imagedescription></image>
+			</para>
+
+			<para>
+			This is an example of a system that uses manually configured WINS settings. One situation where
+			this might apply is on a network that has a single DHCP server that provides settings for multiple
+			Windows workgroups or domains. See <link linkend="WME003"></link>.
+			<image id="WME003"><imagefile>WME003</imagefile><imagedescription>WINS Configuration.</imagedescription></image>
+			</para></step>
+		</procedure>
+
+
+		</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>Joining a Domain: Windows 2000/XP Professional</title>
+
+	<para>
+	Microsoft Windows NT/200x/XP Professional platforms can participate in Domain Security.
+	This section steps through the process for making a Windows 200x/XP Professional machine a
+	member of a Domain Security environment. It should be noted that this process is identical
+	when joining a domain that is controlled by Windows NT4/200x as well as a Samba PDC.
+	</para>
+
+	<procedure>
+		<step><para>
+		Click <guimenu>Start</guimenu>.
+		</para></step>
+
+		<step><para>
+		Right click <guimenu>My Computer</guimenu>, then select <guimenuitem>Properties</guimenuitem>.
+		</para></step>
+
+		<step><para>
+		The opening panel is the same one that can be reached by clicking <guimenu>System</guimenu> on the Control Panel.
+		See <link linkend="wxpp001"></link>.
+		<image id="wxpp001"><imagefile>wxpp001</imagefile><imagedescription>The General Panel.</imagedescription></image>
+		</para></step>
+
+		<step><para>
+		Click the <guimenu>Computer Name</guimenu> tab.
+		This panel shows the <guimenuitem>Computer Description</guimenuitem>, the <guimenuitem>Full computer name</guimenuitem>,
+		and the <guimenuitem>Workgroup</guimenuitem> or <guimenuitem>Domain name</guimenuitem>.
+		</para>
+
+		<para>
+		Clicking the <guimenu>Network ID</guimenu> button will launch the configuration wizard. Do not use this with
+		Samba-3. If you wish to change the computer name, join or leave the domain, click the <guimenu>Change</guimenu> button.
+		See <link linkend="wxpp004"></link>.
+		<image id="wxpp004"><imagefile>wxpp004</imagefile><imagedescription>The Computer Name Panel.</imagedescription></image>
+                </para></step>
+
+		<step><para>
+		Click on <guimenu>Change</guimenu>. This panel shows that our example machine (TEMPTATION) is in a workgroup called WORKGROUP.
+		We will join the domain called MIDEARTH. See <link linkend="wxpp006"></link>.
+		<image id="wxpp006"><imagefile>wxpp006</imagefile><imagedescription>The Computer Name Changes Panel.</imagedescription></image>
+                </para></step>
+
+		<step><para>
+		Enter the name <guimenu>MIDEARTH</guimenu> in the field below the Domain radio button.
+		</para>
+
+                <para>
+		This panel shows that our example machine (TEMPTATION) is set to join the domain called MIDEARTH. See <link linkend="wxpp007"></link>.
+		<image id="wxpp007"><imagefile>wxpp007</imagefile><imagedescription>The Computer Name Changes Panel &smbmdash; Domain MIDEARTH.</imagedescription></image>
+                </para></step>
+
+		<step><para>
+		Now click the <guimenu>OK</guimenu> button. A dialog box should appear to allow you to provide the credentials (username and password)
+		of a Domain administrative account that has the rights to add machines to the Domain.
+		</para>
+
+                <para>
+		Enter the name <quote>root</quote> and the root password from your Samba-3 server. See <link linkend="wxpp008"></link>.
+		<image id="wxpp008"><imagefile>wxpp008</imagefile><imagedescription>Computer Name Changes &smbmdash; User name and Password Panel.</imagedescription></image>
+                </para></step>
+
+		<step><para>
+		Click on <guimenu>OK</guimenu>.
+                </para>
+
+		<para>
+		The <quote>Welcome to the MIDEARTH domain.</quote> dialog box should appear. At this point the machine must be rebooted.
+		Joining the domain is now complete.
+                </para></step>
+
+	</procedure>
+
+	</sect2>
+
+	<sect2>
+	<title>Domain Logon Configuration: Windows 9x/Me</title>
+
+	<para>
+	We follow the convention used by most in saying that Windows 9x/Me machines can participate in Domain logons. The truth is
+	that these platforms can use only the LanManager network logon protocols.
+	</para>
+
+	<note><para>
+	Windows XP Home edition cannot participate in Domain or LanManager network logons.
+	</para></note>
+
+	<procedure>
+		<step><para>
+		Right click on the <guimenu>Network Neighborhood</guimenu> icon.
+		</para></step>
+
+		<step><para>
+		The Network Configuration Panel allows all common network settings to be changed.
+                See <link linkend="WME009"></link>.
+		<image id="WME009"><imagefile>WME009</imagefile><imagedescription>The Network Panel.</imagedescription></image>
+                </para>
+
+		<para>
+		Make sure that the <guimenu>Client for Microsoft Networks</guimenu> driver is installed as shown.
+		Click on the <guimenu>Client for Microsoft Networks</guimenu> entry in <guimenu>The following network
+		components are installed:</guimenu> box. Then click the <guibutton>Properties</guibutton> button.
+		</para></step>
+
+		<step><para>
+		The Client for Microsoft Networks Properties panel is the correct location to configure network logon
+		settings. See <link linkend="WME010"></link>.
+		<image id="WME010"><imagefile>WME010</imagefile><imagedescription>Client for Microsoft Networks Properties Panel.</imagedescription></image>
+                </para>
+
+		<para>
+		Enter the Windows NT domain name, check the <guimenu>Log on to Windows NT domain</guimenu> box,
+		click <guimenu>OK</guimenu>.
+		</para></step>
+
+		<step><para>
+		Click on the <guimenu>Identification</guimenu> button. This is the location at which the workgroup
+		(domain) name and the machine name (computer name) need to be set. See <link linkend="WME013"></link>.
+		<image id="WME013"><imagefile>WME013</imagefile><imagedescription>Identification Panel.</imagedescription></image>
+                </para></step>
+
+		<step><para>
+		Now click the <guimenu>Access Control</guimenu> button. If you want to be able to assign share access
+		permissions using domain user and group accounts, it is necessary to enable
+		<guimenu>User-level access control</guimenu> as shown in this panel.  See <link linkend="WME014"></link>.
+		<image id="WME014"><imagefile>WME014</imagefile><imagedescription>Identification Panel.</imagedescription></image>
+                </para></step>
+
+	</procedure>
+
+	</sect2>
+
+</sect1>
+
+<sect1>
+<title>Common Errors</title>
+
+<para>
+The most common errors that can afflict Windows networking systems include:
+</para>
+
+<itemizedlist>
+	<listitem><para>Incorrect IP address.</para></listitem>
+	<listitem><para>Incorrect or inconsistent netmasks.</para></listitem>
+	<listitem><para>Incorrect router address.</para></listitem>
+	<listitem><para>Incorrect DNS server address.</para></listitem>
+	<listitem><para>Incorrect WINS server address.</para></listitem>
+	<listitem><para>Use of a Network Scope setting &smbmdash; watch out for this one!</para></listitem>
+</itemizedlist>
+
+<para>
+The most common reasons for which a Windows NT/200x/XP Professional client cannot join the Samba controlled domain are:
+</para>
+
+<itemizedlist>
+	<listitem><para>&smb.conf; does not have correct <smbconfoption><name>add machine script</name></smbconfoption> settings.</para></listitem>
+	<listitem><para><quote>root</quote> account is not in password backend database.</para></listitem>
+	<listitem><para>Attempt to use a user account instead of the <quote>root</quote> account to join a machine to the domain.</para></listitem>
+	<listitem><para>Open connections from the workstation to the server.</para></listitem>
+	<listitem><para>Firewall or filter configurations in place on either the client or on the Samba server.</para></listitem>
+</itemizedlist>
+
+</sect1>
+
+</chapter>

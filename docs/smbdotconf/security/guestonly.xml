@@ -1,0 +1,17 @@
+<samba:parameter name="guest only"
+                 context="S"
+				 type="boolean"
+                 xmlns:samba="http://samba.org/common">
+<synonym>only guest</synonym>
+<description>
+    <para>If this parameter is <constant>yes</constant> for 
+    a service, then only guest connections to the service are permitted. 
+    This parameter will have no effect if <link linkend="GUESTOK">
+    <parameter moreinfo="none">guest ok</parameter></link> is not set for the service.</para>
+
+    <para>See the section below on <link linkend="SECURITY"><parameter moreinfo="none">
+    security</parameter></link> for more information about this option.
+	</para>
+</description>
+<value type="default">no</value>
+</samba:parameter>

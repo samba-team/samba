@@ -1,0 +1,15 @@
+<samba:parameter name="template primary group"
+                 context="G"
+				 type="string"
+                 advanced="1" developer="1"
+                 xmlns:samba="http://samba.org/common">
+<description>
+	<para>This option defines the default primary group for 
+	each user created by <citerefentry><refentrytitle>winbindd</refentrytitle>
+        <manvolnum>8</manvolnum></citerefentry>'s local account management
+	functions (similar to the 'add user script').
+	</para>
+</description>
+
+<value type="default">nobody</value>
+</samba:parameter>

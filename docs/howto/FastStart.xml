@@ -1,0 +1,1261 @@
+<chapter id="FastStart">
+<chapterinfo>
+	&author.jht;
+</chapterinfo>
+
+<title>Fast Start: Cure for Impatience</title>
+
+<para>
+When we first asked for suggestions for inclusion in the Samba HOWTO documentation,
+someone wrote asking for example configurations &smbmdash; and lots of them. That is remarkably
+difficult to do, without losing a lot of value that can be derived from presenting
+many extracts from working systems. That is what the rest of this document does.
+It does so with extensive descriptions of the configuration possibilities within the
+context of the chapter that covers it. We hope that this chapter is the medicine 
+that has been requested.
+</para>
+
+<sect1>
+<title>Features and Benefits</title>
+
+<para>
+Samba needs very little configuration to create a basic working system.
+In this chapter we progress from the simple to the complex, for each providing
+all steps and configuration file changes needed to make each work. Please note
+that a comprehensively configured system will likely employ additional smart
+features. The additional features are covered in the remainder of this document.
+</para>
+
+<para>
+The examples used here have been obtained from a number of people who made
+requests for example configurations. All identities have been obscured to protect
+the guilty and any resemblance to unreal non-existent sites is deliberate.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Description of Example Sites</title>
+
+<para>
+In the first set of configuration examples we consider the case of exceptionally simple
+system requirements. There is a real temptation to make something that should require
+little effort much too complex.
+</para>
+
+<para>
+<link linkend="anon-ro"></link> documents the type of server that might be sufficient to serve CD-ROM
+images, or reference document files for network client use. This configuration is also discussed in 
+<link linkend="StandAloneServer"></link>, <link linkend="RefDocServer"></link>.
+The purpose for this configuration is to provide a shared volume that is read-only that anyone, even guests, can access.
+</para>
+
+<para>
+The second example shows a minimal configuration for a print server that anyone can print
+to as long as they have the correct printer drivers installed on their computer. This is a
+mirror of the system described in <link linkend="StandAloneServer"></link>, <link linkend="SimplePrintServer"></link>.
+</para>
+
+<para>
+The next example is of a secure office file and print server that will be accessible only
+to users who have an account on the system. This server is meant to closely resemble a
+Workgroup file and print server, but has to be more secure than an anonymous access machine.
+This type of system will typically suit the needs of a small office. The server does not
+provide network logon facilities, offers no Domain Control, instead it is just a network
+attached storage (NAS) device and a print server.
+</para>
+
+<para>
+Finally, we start looking at more complex systems that will either integrate into existing
+Microsoft Windows networks, or replace them entirely. The examples provided covers domain
+member servers as well as Samba Domain Control (PDC/BDC) and finally describes in detail
+a large distributed network with branch offices in remote locations.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Worked Examples</title>
+
+<para>
+The configuration examples are designed to cover everything necessary to get Samba 
+running. They do not cover basic operating system platform configuration, which is
+clearly beyond the scope of this text.
+</para>
+
+<para>
+It is also assumed that Samba has been correctly installed, either by way of installation
+of the packages that are provided by the operating system vendor, or through other means.
+</para>
+
+	<sect2>
+	<title>Stand-alone Server</title>
+
+	<para>
+	<indexterm><primary>Server Type</primary><secondary>Stand-alone</secondary></indexterm>
+	A Stand-alone Server implies no more than the fact that it is not a Domain Controller
+	and it does not participate in Domain Control. It can be a simple workgroup-like
+	server, or it may be a complex server that is a member of a domain security context.
+	</para>
+
+		<sect3 id="anon-ro">
+		<title>Anonymous Read-Only Document Server</title>
+
+		<para>
+		<indexterm><primary>read only</primary><secondary>server</secondary></indexterm>
+		The purpose of this type of server is to make available to any user
+		any documents or files that are placed on the shared resource. The
+		shared resource could be a CD-ROM drive, a CD-ROM image, or a file
+		storage area.
+		</para>
+
+		<para>
+		As the examples are developed, every attempt is made to progress the
+		system toward greater capability, just as one might expect would happen
+		in a real business office as that office grows in size and its needs
+		change.
+		</para>
+
+		<para>The configuration file is:</para>
+
+		<para><smbconfexample id="anon-example">
+				<title>Anonymous Read-Only Server Configuration</title>
+		<smbconfcomment>Global parameters</smbconfcomment>
+		<smbconfsection>[global]</smbconfsection>
+		<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+		<smbconfoption><name>netbios name</name><value>HOBBIT</value></smbconfoption>
+		<smbconfoption><name>security</name><value>share</value></smbconfoption>
+
+		<smbconfsection>[data]</smbconfsection>
+		<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
+		<smbconfoption><name>path</name><value>/export</value></smbconfoption>
+		<smbconfoption><name>read only</name><value>Yes</value></smbconfoption>
+		<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+		</smbconfexample>
+		</para>
+
+		<itemizedlist>
+			<listitem><para>
+			The file system share point will be <filename>/export</filename>.
+			</para></listitem>
+
+			<listitem><para>
+			All files will be owned by a user called Jack Baumbach.
+			Jack's login name will be <emphasis>jackb</emphasis>. His password will be
+			<emphasis>m0r3pa1n</emphasis> &smbmdash; of course, that's just the example we are
+			using; do not use this in a production environment because
+			all readers of this document will know it.
+			</para></listitem>
+		</itemizedlist>
+
+		<procedure>
+		<title>Installation Procedure &smbmdash; Read-Only Server</title>
+			<step><para>
+			Add user to system (with creation of the users' home directory):
+<screen>
+&rootprompt;<userinput>useradd -c "Jack Baumbach" -m -g users -p m0r3pa1n jackb</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Create directory, and set permissions and ownership:
+<screen>
+&rootprompt;<userinput>mkdir /export</userinput>
+&rootprompt;<userinput>chmod u+rwx,g+rx,o+rx /export</userinput>
+&rootprompt;<userinput>chown jackb.users /export</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Copy the files that should be shared to the <filename>/export</filename>
+			directory.
+			</para></step>
+
+			<step><para>
+			Install the Samba configuration file (<filename>/etc/samba/smb.conf</filename>)
+			as shown.
+			</para></step>
+
+			<step><para>
+			Test the configuration file:
+<screen>
+&rootprompt;<userinput>testparm</userinput>
+</screen>
+			Note any error messages that might be produced. Do not proceed until you
+			obtain error-free output. An example of the output with the following file
+			will list the file.
+<screen>
+Load smb config files from /etc/samba/smb.conf
+Processing section "[data]"
+Loaded services file OK.
+Server role: ROLE_STANDALONE
+Press enter to see a dump of your service definitions
+<userinput>[Press enter]</userinput>
+
+# Global parameters
+[global]
+	workgroup = MIDEARTH
+	netbios name = HOBBIT
+	security = share
+
+[data]
+	comment = Data
+	path = /export
+	read only = No
+	guest only = Yes
+</screen>
+			</para></step>
+
+			<step><para>
+			Start Samba using the method applicable to your operating system
+			platform.
+			</para></step>
+
+			<step><para>
+			Configure your Microsoft Windows client for workgroup <emphasis>MIDEARTH</emphasis>,
+			set the machine name to ROBBINS, reboot, wait a few (2 - 5) minutes,
+			then open Windows Explorer and visit the network neighborhood.
+			The machine HOBBIT should be visible. When you click this machine
+			icon, it should open up to reveal the <emphasis>data</emphasis> share. After
+			clicking the share it, should open up to revel the files previously
+			placed in the <filename>/export</filename> directory.
+			</para></step>
+		</procedure>
+
+		<para>
+		The information above (following # Global parameters) provides the complete
+		contents of the <filename>/etc/samba/smb.conf</filename> file.
+		</para>
+
+		</sect3>
+
+		<sect3>
+		<title>Anonymous Read-Write Document Server</title>
+
+		<para>
+		<indexterm><primary>anonymous</primary><secondary>read-write server</secondary></indexterm>
+		We should view this configuration as a progression from the previous example.
+		The difference is that shared access is now forced to the user identity of jackb
+		and to the primary group jackb belongs to. One other refinement we can make is to
+		add the user <emphasis>jackb</emphasis> to the <filename>smbpasswd</filename> file.
+		To do this execute:
+<screen>
+&rootprompt;<userinput>smbpasswd -a jackb</userinput>
+New SMB password: <userinput>m0r3pa1n</userinput>
+Retype new SMB password: <userinput>m0r3pa1n</userinput>
+Added user jackb.
+</screen>
+		Addition of this user to the <filename>smbpasswd</filename> file allows all files
+		to be displayed in the Explorer Properties boxes as belonging to <emphasis>jackb</emphasis>
+		instead of to <emphasis>User Unknown</emphasis>.
+		</para>
+
+		<para>
+		The complete, modified &smb.conf; file is as shown in <link linkend="anon-rw"/>.
+		</para>
+
+		<para>
+<smbconfexample id="anon-rw"><title>Modified Anonymous Read-Write smb.conf</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>HOBBIT</value></smbconfoption>
+<smbconfoption><name>security</name><value>SHARE</value></smbconfoption>
+
+<smbconfsection>[data]</smbconfsection>
+<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
+<smbconfoption><name>path</name><value>/export</value></smbconfoption>
+<smbconfoption><name>force user</name><value>jackb</value></smbconfoption>
+<smbconfoption><name>force group</name><value>users</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+</smbconfexample>
+		</para>
+
+		</sect3>
+
+		<sect3>
+		<title>Anonymous Print Server</title>
+
+		<para>
+		<indexterm><primary>anonymous</primary><secondary>print server</secondary></indexterm>
+		An anonymous print server serves two purposes:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>
+			It allows printing to all printers from a single location.
+			</para></listitem>
+
+			<listitem><para>
+			It reduces network traffic congestion due to many users trying
+			to access a limited number of printers.
+			</para></listitem>
+		</itemizedlist>
+
+		<para>
+		In the simplest of anonymous print servers, it is common to require the installation
+		of the correct printer drivers on the Windows workstation. In this case the print
+		server will be designed to just pass print jobs through to the spooler, and the spooler
+		should be configured to do raw pass-through to the printer. In other words, the print
+		spooler should not filter or process the data stream being passed to the printer.
+		</para>
+
+		<para>
+		In this configuration it is undesirable to present the Add Printer Wizard and we do
+		not want to have automatic driver download, so we will disable it in the following
+		configuration. <link linkend="anon-print"></link> is the resulting &smb.conf; file.
+		</para>
+
+		<para>
+<smbconfexample id="anon-print"><title>Anonymous Print Server smb.conf</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>LUTHIEN</value></smbconfoption>
+<smbconfoption><name>security</name><value>share</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+</smbconfexample>
+		</para>
+
+		<para>
+		The above configuration is not ideal. It uses no smart features, and it deliberately
+		presents a less than elegant solution. But it is basic, and it does print.
+		</para>
+
+		<note><para>
+		Windows users will need to install a local printer and then change the print
+		to device after installation of the drivers. The print to device can then be set to
+		the network printer on this machine.
+		</para></note>
+
+		<para>
+		Make sure that the directory <filename>/var/spool/samba</filename> is capable of being used
+		as intended. The following steps must be taken to achieve this:
+		</para>
+
+		<itemizedlist>
+			<listitem><para>
+			The directory must be owned by the superuser (root) user and group:
+<screen>
+&rootprompt;<userinput>chown root.root /var/spool/samba</userinput>
+</screen>
+			</para></listitem>
+
+			<listitem><para>
+			Directory permissions should be set for public read-write with the
+			sticky-bit set as shown:
+<screen>
+&rootprompt;<userinput>chmod a+rw TX /var/spool/samba</userinput>
+</screen>
+			</para></listitem>
+		</itemizedlist>
+
+
+		<note><para>
+		<indexterm><primary>MIME</primary><secondary>raw</secondary></indexterm>
+		<indexterm><primary>raw printing</primary></indexterm>
+		On CUPS enabled systems there is a facility to pass raw data directly to the printer without
+		intermediate processing via CUPS print filters. Where use of this mode of operation is desired
+		it is necessary to configure a raw printing device. It is also necessary to enable the raw mime
+		handler in the <filename>/etc/mime.conv</filename> and <filename>/etc/mime.types</filename>
+		files. Refer to <link linkend="cups-raw"></link>.
+		</para></note>
+
+		</sect3>
+
+		<sect3>
+		<title>Secure Read-Write File and Print Server</title>
+
+		<para>
+		We progress now from simple systems to a server that is slightly more complex.
+		</para>
+
+		<para>
+		Our new server will require a public data storage area in which only authenticated
+		users (i.e., those with a local account) can store files, as well as a home directory.
+		There will be one printer that should be available for everyone to use.
+		</para>
+
+		<para>
+		In this hypothetical environment (no espionage was conducted to obtain this data),
+		the site is demanding a simple environment that is <emphasis>secure enough</emphasis>
+		but not too difficult to use. 
+		</para>
+
+		<para>
+		Site users will be: Jack Baumbach, Mary Orville and Amed Sehkah. Each will have
+		a password (not shown in further examples). Mary will be the printer administrator and will
+		own all files in the public share.
+		</para>
+
+		<para>
+		This configuration will be based on <emphasis>User Level Security</emphasis> that
+		is the default, and for which the default is to store Microsoft Windows-compatible
+		encrypted passwords in a file called <filename>/etc/samba/smbpasswd</filename>.
+		The default &smb.conf; entry that makes this happen is:
+		<smbconfoption><name>passdb backend</name><value>smbpasswd, guest</value></smbconfoption>. Since this is the default
+		it is not necessary to enter it into the configuration file. Note that guest backend is
+		added to the list of active passdb backends not matter was it specified directly in Samba configuration
+		file or not.
+		</para>
+
+
+		<procedure>
+		<title>Installing the Secure Office Server</title>
+			<step><para>
+		<indexterm><primary>office server</primary></indexterm>
+			Add all users to the Operating System:
+<screen>
+&rootprompt;<userinput>useradd -c "Jack Baumbach" -m -g users -p m0r3pa1n jackb</userinput>
+&rootprompt;<userinput>useradd -c "Mary Orville" -m -g users -p secret maryo</userinput>
+&rootprompt;<userinput>useradd -c "Amed Sehkah" -m -g users -p secret ameds</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Configure the Samba &smb.conf; file as shown in <link linkend="OfficeServer"/>.
+<smbconfexample id="OfficeServer">
+<title>Secure Office Server smb.conf</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>OLORIN</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+
+<smbconfsection>[homes]</smbconfsection>
+<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[public]</smbconfsection>
+<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
+<smbconfoption><name>path</name><value>/export</value></smbconfoption>
+<smbconfoption><name>force user</name><value>maryo</value></smbconfoption>
+<smbconfoption><name>force group</name><value>users</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+			</smbconfexample>
+			</para></step>
+
+			<step><para>
+			Initialize the Microsoft Windows password database with the new users:
+<screen>
+&rootprompt;<userinput>smbpasswd -a root</userinput>
+New SMB password: <userinput>bigsecret</userinput>
+Reenter smb password: <userinput>bigsecret</userinput>
+Added user root.
+
+&rootprompt;<userinput>smbpasswd -a jackb</userinput>
+New SMB password: <userinput>m0r3pa1n</userinput>
+Retype new SMB password: <userinput>m0r3pa1n</userinput>
+Added user jackb.
+
+&rootprompt;<userinput>smbpasswd -a maryo</userinput>
+New SMB password: <userinput>secret</userinput>
+Reenter smb password: <userinput>secret</userinput>
+Added user maryo.
+
+&rootprompt;<userinput>smbpasswd -a ameds</userinput>
+New SMB password: <userinput>mysecret</userinput>
+Reenter smb password: <userinput>mysecret</userinput>
+Added user ameds.
+</screen>
+			</para></step>
+
+			<step><para>
+			Install printer using the CUPS Web interface. Make certain that all
+			printers that will be shared with Microsoft Windows clients are installed
+			as raw printing devices.
+			</para></step>
+
+			<step><para>
+			Start Samba using the operating system administrative interface.
+			Alternately, this can be done manually by running:
+			<indexterm><primary>smbd</primary></indexterm>
+			<indexterm><primary>nmbd</primary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>smbd</secondary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>nmbd</secondary></indexterm>
+<screen>
+&rootprompt;<userinput> nmbd; smbd;</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Configure the <filename>/export</filename> directory:
+<screen>
+&rootprompt;<userinput>mkdir /export</userinput>
+&rootprompt;<userinput>chown maryo.users /export</userinput>
+&rootprompt;<userinput>chmod u=rwx,g=rwx,o-rwx /export</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Check that Samba is running correctly:
+<screen>
+&rootprompt;<userinput>smbclient -L localhost -U%</userinput>
+Domain=[MIDEARTH] OS=[UNIX] Server=[Samba-3.0.0]
+
+Sharename      Type      Comment
+---------      ----      -------
+public         Disk      Data
+IPC$           IPC       IPC Service (Samba-3.0.0)
+ADMIN$         IPC       IPC Service (Samba-3.0.0)
+hplj4          Printer   hplj4
+
+Server               Comment
+---------            -------
+OLORIN               Samba-3.0.0
+
+Workgroup            Master
+---------            -------
+MIDEARTH             OLORIN
+</screen>
+			</para></step>
+
+			<step><para>
+			Connect to OLORIN as maryo:
+<screen>
+&rootprompt;<userinput>smbclient //olorin/maryo -Umaryo%secret</userinput>
+OS=[UNIX] Server=[Samba-3.0.0]
+smb: \> <userinput>dir</userinput>
+.                             D        0  Sat Jun 21 10:58:16 2003
+..                            D        0  Sat Jun 21 10:54:32 2003
+Documents                      D        0  Fri Apr 25 13:23:58 2003
+DOCWORK                        D        0  Sat Jun 14 15:40:34 2003
+OpenOffice.org                 D        0  Fri Apr 25 13:55:16 2003
+.bashrc                        H     1286  Fri Apr 25 13:23:58 2003
+.netscape6                    DH        0  Fri Apr 25 13:55:13 2003
+.mozilla                      DH        0  Wed Mar  5 11:50:50 2003
+.kermrc                        H      164  Fri Apr 25 13:23:58 2003
+.acrobat                      DH        0  Fri Apr 25 15:41:02 2003
+
+		55817 blocks of size 524288. 34725 blocks available
+smb: \> <userinput>q</userinput>
+</screen>
+			</para></step>
+		</procedure>
+
+		</sect3>
+
+	<para>
+	By now you should be getting the hang of configuration basics. Clearly, it is time to
+	explore slightly more complex examples. For the remainder of this chapter we will abbreviate
+	instructions since there are previous examples.
+	</para>
+
+	</sect2>
+
+	<sect2>
+	<title>Domain Member Server</title>
+
+
+	<para>
+	<indexterm><primary>Server Type</primary><secondary>Domain Member</secondary></indexterm>
+	In this instance we will consider the simplest server configuration we can get away with
+	to make an accounting department happy. Let's be warned, the users are accountants and they
+	do have some nasty demands. There is a budget for only one server for this department.
+	</para>
+
+	<para>
+	The network is managed by an internal Information Services Group (ISG), to which we belong.
+	Internal politics are typical of a medium-sized organization; Human Resources is of the
+	opinion that they run the ISG because they are always adding and disabling users. Also,
+	departmental managers have to fight tooth and nail to gain basic network resources access for
+	their staff. Accounting is different though, they get exactly what they want. So this should
+	set the scene.
+	</para>
+
+	<para>
+	We will use the users from the last example. The accounting department
+	has a general printer that all departmental users may. There is also a check printer
+	that may be used only by the person who has authority to print checks. The Chief Financial
+	Officer (CFO) wants that printer to be completely restricted and for it to be located in the
+	private storage area in her office. It therefore must be a network printer.
+	</para>
+
+	<para>
+	Accounting department uses an accounting application called <emphasis>SpytFull</emphasis>
+	that must be run from a central application server. The software is licensed to run only off
+	one server, there are no workstation components, and it is run off a mapped share. The data
+	store is in a UNIX-based SQL backend. The UNIX gurus look after that, so is not our
+	problem.
+	</para>
+
+	<para>
+	The accounting department manager (maryo) wants a general filing system as well as a separate
+	file storage area for form letters (nastygrams). The form letter area should be read-only to
+	all accounting staff except the manager. The general filing system has to have a structured
+	layout with a general area for all staff to store general documents, as well as a separate
+	file area for each member of her team that is private to that person, but she wants full
+	access to all areas. Users must have a private home share for personal work-related files
+	and for materials not related to departmental operations.
+	</para>
+	
+		<sect3>
+		<title>Example Configuration</title>
+		
+		<para>
+		The server <emphasis>valinor</emphasis> will be a member server of the company domain.
+		Accounting will have only a local server. User accounts will be on the Domain Controllers
+		as will desktop profiles and all network policy files.
+		</para>
+
+		<procedure>
+			<step><para>
+			Do not add users to the UNIX/Linux server; all of this will run off the
+			central domain.
+			</para></step>
+
+			<step><para>
+			Configure &smb.conf; according to <link linkend="fast-member-server"/>
+			and <link linkend="fast-memberserver-shares"></link>.
+			</para>
+
+			<para>
+			<smbconfexample id="fast-member-server">
+			<title>Member server smb.conf (globals)</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>VALINOR</value></smbconfoption>
+<smbconfoption><name>security</name><value>DOMAIN</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>disable spoolss</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>show add printer wizard</name><value>No</value></smbconfoption>
+<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
+<smbconfoption><name>winbind use default domain</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use sendfile</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+			</smbconfexample></para>
+
+			<para>
+			<smbconfexample id="fast-memberserver-shares">
+			<title>Member server smb.conf (shares and services)</title>
+<smbconfsection>[homes]</smbconfsection>
+<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[spytfull]</smbconfsection>
+<smbconfoption><name>comment</name><value>Accounting Application Only</value></smbconfoption>
+<smbconfoption><name>path</name><value>/export/spytfull</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>@Accounts</value></smbconfoption>
+<smbconfoption><name>admin users</name><value>maryo</value></smbconfoption>
+<smbconfoption><name>read only</name><value>Yes</value></smbconfoption>
+
+<smbconfsection>[public]</smbconfsection>
+<smbconfoption><name>comment</name><value>Data</value></smbconfoption>
+<smbconfoption><name>path</name><value>/export/public</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>use client driver</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+			</smbconfexample>
+			</para></step>
+
+
+			<step><para>
+<indexterm><primary>net</primary><secondary>rpc</secondary></indexterm>
+			Join the domain. Note: Do not start Samba until this step has been completed!
+<screen>
+&rootprompt;<userinput>net rpc join -Uroot%'bigsecret'</userinput>
+Joined domain MIDEARTH.
+</screen>
+			</para></step>
+
+			<step><para>
+			Make absolutely certain that you disable (shut down) the <command>nscd</command>
+			daemon on any system on which <command>winbind</command> is configured to run.
+			</para></step>
+
+			<step><para>
+			Start Samba following the normal method for your operating system platform.
+			If you wish to this manually execute as root:
+			<indexterm><primary>smbd</primary></indexterm>
+			<indexterm><primary>nmbd</primary></indexterm>
+			<indexterm><primary>winbindd</primary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>smbd</secondary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>nmbd</secondary></indexterm>
+			<indexterm><primary>starting samba</primary><secondary>winbindd</secondary></indexterm>
+<screen>
+&rootprompt;<userinput>nmbd; smbd; winbindd;</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Configure the name service switch control file on your system to resolve user and group names
+			via winbind. Edit the following lines in <filename>/etc/nsswitch.conf</filename>:
+<programlisting>
+passwd: files winbind
+group:  files winbind
+hosts:  files dns winbind
+</programlisting>
+			</para></step>
+
+			<step><para>
+			Set the password for <command>wbinfo</command> to use:
+<screen>
+&rootprompt;<userinput>wbinfo --set-auth-user=root%'bigsecret'</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Validate that domain user and group credentials can be correctly resolved by executing:
+<screen>
+&rootprompt;<userinput>wbinfo -u</userinput>
+MIDEARTH+maryo
+MIDEARTH+jackb
+MIDEARTH+ameds
+...
+MIDEARTH+root
+
+&rootprompt;<userinput>wbinfo -g</userinput>
+MIDEARTH+Domain Users
+MIDEARTH+Domain Admins
+MIDEARTH+Domain Guests
+...
+MIDEARTH+Accounts
+</screen>
+			</para></step>
+
+			<step><para>
+			Check that <command>winbind</command> is working. The following demonstrates correct
+			username resolution via the <command>getent</command> system utility:
+<screen>
+&rootprompt;<userinput>getent passwd maryo</userinput>
+maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
+</screen>
+			</para></step>
+
+			<step><para>
+			A final test that we have this under control might be reassuring:
+<screen>
+&rootprompt;<userinput>touch /export/a_file</userinput>
+&rootprompt;<userinput>chown maryo /export/a_file</userinput>
+&rootprompt;<userinput>ls -al /export/a_file</userinput>
+...
+-rw-r--r--    1 maryo    users       11234 Jun 21 15:32 a_file
+...
+
+&rootprompt;<userinput>rm /export/a_file</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Configuration is now mostly complete, so this is an opportune time
+			to configure the directory structure for this site:
+<screen>
+&rootprompt;<userinput>mkdir -p /export/{spytfull,public}</userinput>
+&rootprompt;<userinput>chmod ug=rwxS,o=x /export/{spytfull,public}</userinput>
+&rootprompt;<userinput>chown maryo.Accounts /export/{spytfull,public}</userinput>
+</screen>
+			</para></step>
+		</procedure>
+
+		</sect3>
+
+	</sect2>
+
+	<sect2>
+	<title>Domain Controller</title>
+
+
+	<para>
+	<indexterm><primary>Server Type</primary><secondary>Domain Controller</secondary></indexterm>
+	For the remainder of this chapter the focus is on the configuration of Domain Control.
+	The examples that follow are for two implementation strategies. Remember, our objective is
+	to create a simple but working solution. The remainder of this book should help to highlight
+	opportunity for greater functionality and the complexity that goes with it.
+	</para>
+
+	<para>
+	A Domain Controller configuration can be achieved with a simple configuration using the new
+	tdbsam password backend. This type of configuration is good for small
+	offices, but has limited scalability (cannot be replicated) and performance can be expected
+	to fall as the size and complexity of the domain increases.
+	</para>
+
+	<para>
+	The use of tdbsam is best limited to sites that do not need
+	more than a primary Domain Controller (PDC). As the size of a domain grows the need
+	for additional Domain Controllers becomes apparent. Do not attempt to under-resource
+	a Microsoft Windows network environment; Domain Controllers provide essential
+	authentication services. The following are symptoms of an under-resourced Domain Control
+	environment:
+	</para>
+
+	<itemizedlist>	
+		<listitem><para>
+		 Domain logons intermittently fail.
+		</para></listitem>
+
+		<listitem><para>
+		File access on a Domain Member server intermittently fails, giving a permission denied
+		error message.
+		</para></listitem>
+	</itemizedlist>
+
+	<para>
+	A more scalable Domain Control authentication backend option might use
+	Microsoft Active Directory, or an LDAP-based backend. Samba-3 provides
+	for both options as a Domain Member server. As a PDC Samba-3 is not able to provide
+	an exact alternative to the functionality that is available with Active Directory.
+	Samba-3 can provide a scalable LDAP-based PDC/BDC solution.
+	</para>
+
+	<para>
+	The tdbsam authentication backend provides no facility to replicate
+	the contents of the database, except by external means. (i.e., there is no self-contained protocol
+	in Samba-3 for Security Account Manager database [SAM] replication.)
+	</para>
+
+	<note><para>
+	If you need more than one Domain Controller, do not use a tdbsam authentication backend.
+	</para></note>
+
+		<sect3>
+		<title>Example: Engineering Office</title>
+
+		<para>
+		The engineering office network server we present here is designed to demonstrate use
+		of the new tdbsam password backend. The tdbsam
+		facility is new to Samba-3. It is designed to provide many user and machine account controls
+		that are possible with Microsoft Windows NT4. It is safe to use this in smaller networks.
+		</para>
+
+		<procedure>
+			<step><para>
+			A working PDC configuration using the tdbsam
+			password backend can be found in <link linkend="fast-engoffice-global"></link> together with
+			<link linkend="fast-engoffice-shares"></link>:
+			</para>
+			
+			<para>
+<indexterm><primary>pdbedit</primary></indexterm>
+			<smbconfexample id="fast-engoffice-global">
+			<title>Engineering Office smb.conf (globals)</title>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>FRODO</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>tdbsam</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>add user script</name><value>/usr/sbin/useradd -m %u</value></smbconfoption>
+<smbconfoption><name>delete user script</name><value>/usr/sbin/userdel -r %u</value></smbconfoption>
+<smbconfoption><name>add group script</name><value>/usr/sbin/groupadd %g</value></smbconfoption>
+<smbconfoption><name>delete group script</name><value>/usr/sbin/groupdel %g</value></smbconfoption>
+<smbconfoption><name>add user to group script</name><value>/usr/sbin/usermod -G %g %u</value></smbconfoption>
+<smbconfoption><name>add machine script</name><value>/usr/sbin/useradd -s /bin/false \</value></smbconfoption>
+<member><parameter>        -d /dev/null %u</parameter></member>
+<smbconfcomment>Note: The following specifies the default logon script.</smbconfcomment>
+<smbconfcomment>Per user logon scripts can be specified in the user account using pdbedit </smbconfcomment>
+<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
+<smbconfcomment>This sets the default profile path. Set per user paths with pdbedit</smbconfcomment>
+<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
+<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>os level</name><value>35</value></smbconfoption>
+<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+			</smbconfexample>
+
+			<smbconfexample id="fast-engoffice-shares">
+			<title>Engineering Office smb.conf (shares and services)</title>
+<smbconfsection>[homes]</smbconfsection>
+<smbconfoption><name>comment</name><value>Home Directories</value></smbconfoption>
+<smbconfoption><name>valid users</name><value>%S</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfcomment>Printing auto-share (makes printers available thru CUPS)</smbconfcomment>
+<smbconfsection>[printers]</smbconfsection>
+<smbconfoption><name>comment</name><value>All Printers</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/spool/samba</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>root, maryo</value></smbconfoption>
+<smbconfoption><name>create mask</name><value>0600</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>printable</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfsection>[print$]</smbconfsection>
+<smbconfoption><name>comment</name><value>Printer Drivers Share</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/lib/samba/drivers</value></smbconfoption>
+<smbconfoption><name>write list</name><value>maryo, root</value></smbconfoption>
+<smbconfoption><name>printer admin</name><value>maryo, root</value></smbconfoption>
+
+<smbconfcomment>Needed to support domain logons</smbconfcomment>
+<smbconfsection>[netlogon]</smbconfsection>
+<smbconfoption><name>comment</name><value>Network Logon Service</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/lib/samba/netlogon</value></smbconfoption>
+<smbconfoption><name>admin users</name><value>root, maryo</value></smbconfoption>
+<smbconfoption><name>guest ok</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>browseable</name><value>No</value></smbconfoption>
+
+<smbconfcomment>For profiles to work, create a user directory under the path</smbconfcomment>
+<smbconfcomment> shown. i.e., mkdir -p /var/lib/samba/profiles/maryo</smbconfcomment>
+<smbconfsection>[Profiles]</smbconfsection>
+<smbconfoption><name>comment</name><value>Roaming Profile Share</value></smbconfoption>
+<smbconfoption><name>path</name><value>/var/lib/samba/profiles</value></smbconfoption>
+<smbconfoption><name>read only</name><value>No</value></smbconfoption>
+<smbconfoption><name>profile acls</name><value>Yes</value></smbconfoption>
+
+<smbconfcomment>Other resource (share/printer) definitions would follow below.</smbconfcomment>
+<member>...</member>
+			</smbconfexample>
+			</para></step>
+
+			<step><para>
+			Create UNIX group accounts as needed using a suitable operating system tool:
+<screen>
+&rootprompt;<userinput>groupadd ntadmins</userinput>
+&rootprompt;<userinput>groupadd designers</userinput>
+&rootprompt;<userinput>groupadd engineers</userinput>
+&rootprompt;<userinput>groupadd qateam</userinput>
+</screen>
+			</para></step>
+
+			<step><para>
+			Create user accounts on the system using the appropriate tool
+			provided with the operating system. Make sure all user home directories
+			are created also. Add users to groups as required for access control
+			on files, directories, printers, and as required for use in the Samba
+			environment.
+			</para></step>
+
+
+			<step><para>
+<indexterm><primary>net</primary><secondary>groupmap</secondary></indexterm>
+<indexterm><primary>initGroups.sh</primary></indexterm>
+			Assign each of the UNIX groups to NT groups:
+			(It may be useful to copy this text to a shell script called
+			<filename>initGroups.sh</filename>.)
+			<smbfile name="initGroups.sh">
+				<title>Shell script for initializing group mappings</title>
+			<programlisting>
+#!/bin/bash
+#### Keep this as a shell script for future re-use
+			
+# First assign well known groups
+net groupmap modify ntgroup="Domain Admins" unixgroup=ntadmins rid=512
+net groupmap modify ntgroup="Domain Users"  unixgroup=users    rid=513
+net groupmap modify ntgroup="Domain Guests" unixgroup=nobody   rid=514
+
+# Now for our added Domain Groups
+net groupmap add ntgroup="Designers" unixgroup=designers type=d rid=1112
+net groupmap add ntgroup="Engineers" unixgroup=engineers type=d rid=1113
+net groupmap add ntgroup="QA Team"   unixgroup=qateam    type=d rid=1114
+</programlisting>
+</smbfile>
+			</para></step>
+
+			<step><para>
+			Create the <filename>scripts</filename> directory for use in the 
+			<smbconfsection>[NETLOGON]</smbconfsection> share:
+<screen>
+&rootprompt;<userinput>mkdir -p /var/lib/samba/netlogon/scripts</userinput>
+</screen>
+			Place the logon scripts that will be used (batch or cmd scripts)
+			in this directory.
+			</para></step>
+		</procedure>
+
+		<para>
+		The above configuration provides a functional Primary Domain Control (PDC)
+		system to which must be added file shares and printers as required.
+		</para>
+
+		</sect3>
+
+		<sect3>
+		<title>A Big Organization</title>
+
+		<para>
+		In this section we finally get to review in brief a Samba-3 configuration that
+		uses a Light Weight Directory Access (LDAP)-based authentication backend. The
+		main reasons for this choice are to provide the ability to host primary
+		and Backup Domain Control (BDC), as well as to enable a higher degree of
+		scalability to meet the needs of a very distributed environment.
+		</para>
+
+			<sect4>
+			<title>The Primary Domain Controller</title>
+
+			<para>
+			This is an example of a minimal configuration to run a Samba-3 PDC
+			using an LDAP authentication backend. It is assumed that the operating system
+			has been correctly configured.
+			</para>
+
+			<para>
+			The Idealx scripts (or equivalent) are needed to manage LDAP based Posix and/or
+			SambaSamAccounts. The Idealx scripts may be downloaded from the <ulink url="http://www.idealx.org">
+			Idealx</ulink> Web site. They may also be obtained from the Samba tarball. Linux
+			distributions tend to install the Idealx scripts in the 
+			<filename>/usr/share/doc/packages/sambaXXXXXX/examples/LDAP/smbldap-tools</filename> directory.
+			Idealx scripts version <constant>smbldap-tools-0.8.2</constant> are known to work well.
+			</para>
+
+			<procedure>
+				<step><para>
+				Obtain from the Samba sources <filename>~/examples/LDAP/samba.schema</filename>
+				and copy it to the <filename>/etc/openldap/schema/</filename> directory.
+				</para></step>
+
+				<step><para>
+				Set up the LDAP server. This example is suitable for OpenLDAP 2.1.x.
+				The <filename>/etc/openldap/slapd.conf</filename> file:
+<indexterm><primary>/etc/openldap/slapd.conf</primary></indexterm>
+<smbfile name="slapd.conf"><title>Example slapd.conf file</title>
+<programlisting>
+# Note commented out lines have been removed
+include         /etc/openldap/schema/core.schema
+include         /etc/openldap/schema/cosine.schema
+include         /etc/openldap/schema/inetorgperson.schema
+include         /etc/openldap/schema/nis.schema
+include         /etc/openldap/schema/samba.schema
+
+pidfile         /var/run/slapd/slapd.pid
+argsfile        /var/run/slapd/slapd.args
+
+database        bdb
+suffix          "dc=quenya,dc=org"
+rootdn          "cn=Manager,dc=quenya,dc=org"
+rootpw          {SSHA}06qDkonA8hk6W6SSnRzWj0/pBcU3m0/P
+# The password for the above is 'nastyon3'
+
+directory     /var/lib/ldap
+
+index   objectClass     eq
+index cn                      pres,sub,eq
+index sn                      pres,sub,eq
+index uid                     pres,sub,eq
+index displayName             pres,sub,eq
+index uidNumber               eq
+index gidNumber               eq
+index memberUid               eq
+index   sambaSID              eq
+index   sambaPrimaryGroupSID  eq
+index   sambaDomainName       eq
+index   default               sub
+</programlisting>
+</smbfile>
+				</para></step>
+
+				<step><para>
+				Create the following file <filename>samba-ldap-init.ldif</filename>:
+				<indexterm><primary>samba-ldap-init.ldif</primary></indexterm>
+				<smbfile name="samba-ldap-init.ldif">
+<programlisting>
+# Organization for SambaXP Demo
+dn: dc=quenya,dc=org
+objectclass: dcObject
+objectclass: organization
+dc: quenya
+o: SambaXP Demo
+description: The SambaXP Demo LDAP Tree
+
+# Organizational Role for Directory Management
+dn: cn=Manager,dc=quenya,dc=org
+objectclass: organizationalRole
+cn: Manager
+description: Directory Manager
+
+# Setting up the container for users
+dn: ou=People, dc=quenya, dc=org
+objectclass: top
+objectclass: organizationalUnit
+ou: People
+
+# Set up an admin handle for People OU
+dn: cn=admin, ou=People, dc=quenya, dc=org
+cn: admin
+objectclass: top
+objectclass: organizationalRole
+objectclass: simpleSecurityObject
+userPassword: {SSHA}0jBHgQ1vp4EDX2rEMMfIudvRMJoGwjVb
+# The password for above is 'mordonL8'
+</programlisting>
+</smbfile>
+				</para></step>
+
+				<step><para>
+				Load the initial data above into the LDAP database:
+<screen>
+&rootprompt;<userinput>slapadd -v -l initdb.ldif</userinput>
+</screen>
+				</para></step>
+
+				<step><para>
+				Start the LDAP server using the appropriate tool or method for
+				the operating system platform on which it is installed.
+				</para></step>
+
+				<step><para>
+				Install the Idealx script files in the <filename>/usr/local/sbin</filename> directory,
+				then configure the smbldap_conf.pm file to match your system configuration.
+				</para></step>
+
+				<step><para>
+				The &smb.conf; file that drives this backend can be found in example <link linkend="fast-ldap"/>.
+				</para>
+
+				<para>
+<smbconfexample id="fast-ldap">
+<title>LDAP backend smb.conf for PDC</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>FRODO</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://localhost</value></smbconfoption>
+<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>add user script</name><value>/usr/local/sbin/smbldap-useradd.pl -m '%u'</value></smbconfoption>
+<smbconfoption><name>delete user script</name><value>/usr/local/sbin/smbldap-userdel.pl %u</value></smbconfoption>
+<smbconfoption><name>add group script</name><value>/usr/local/sbin/smbldap-groupadd.pl -p '%g'</value></smbconfoption>
+<smbconfoption><name>delete group script</name><value>/usr/local/sbin/smbldap-groupdel.pl '%g'</value></smbconfoption>
+<smbconfoption><name>add user to group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<member><parameter>smbldap-groupmod.pl -m '%g' '%u'</parameter></member>
+<smbconfoption><name>delete user from group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<member><parameter>smbldap-groupmod.pl -x '%g' '%u'</parameter></member>
+<smbconfoption><name>set primary group script</name><value>/usr/local/sbin/ \</value></smbconfoption>
+<member><parameter>smbldap-usermod.pl -g '%g' '%u'</parameter></member>
+<smbconfoption><name>add machine script</name><value>/usr/local/sbin/smbldap-useradd.pl -w '%u'</value></smbconfoption>
+<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
+<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
+<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>os level</name><value>35</value></smbconfoption>
+<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>domain master</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
+<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap group suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap admin dn</name><value>cn=Manager</value></smbconfoption>
+<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
+<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<member>...</member>
+</smbconfexample>
+				</para></step>
+
+				<step><para>
+				Add the LDAP password to the <filename>secrets.tdc</filename> file so Samba can update
+				the LDAP database:
+<screen>
+&rootprompt;<userinput>smbpasswd -w mordonL8</userinput>
+</screen>
+				</para></step>
+
+				<step><para>
+				Add users and groups as required. Users and groups added using Samba tools
+				will automatically be added to both the LDAP backend as well as to the operating
+				system as required.
+				</para></step>
+
+			</procedure>
+
+			</sect4>
+
+			<sect4>
+			<title>Backup Domain Controller</title>
+
+			<para>
+			<link linkend="fast-bdc"/> shows the example configuration for the BDC.
+			</para>
+
+			<procedure>
+				<step><para>
+				Decide if the BDC should have its own LDAP server or not. If the BDC is to be
+				the LDAP server change the following &smb.conf; as indicated. The default
+				configuration in <link linkend="fast-bdc"/> uses a central LDAP server.
+<smbconfexample id="fast-bdc">
+<title>Remote LDAP BDC smb.conf</title>
+<smbconfcomment>Global parameters</smbconfcomment>
+<smbconfsection>[global]</smbconfsection>
+<smbconfoption><name>workgroup</name><value>MIDEARTH</value></smbconfoption>
+<smbconfoption><name>netbios name</name><value>GANDALF</value></smbconfoption>
+<smbconfoption><name>passdb backend</name><value>ldapsam:ldap://frodo.quenya.org</value></smbconfoption>
+<smbconfoption><name>username map</name><value>/etc/samba/smbusers</value></smbconfoption>
+<smbconfoption><name>printcap name</name><value>cups</value></smbconfoption>
+<smbconfoption><name>logon script</name><value>scripts\logon.bat</value></smbconfoption>
+<smbconfoption><name>logon path</name><value>\\%L\Profiles\%U</value></smbconfoption>
+<smbconfoption><name>logon drive</name><value>H:</value></smbconfoption>
+<smbconfoption><name>logon home</name><value>\\%L\%U</value></smbconfoption>
+<smbconfoption><name>domain logons</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>os level</name><value>33</value></smbconfoption>
+<smbconfoption><name>preferred master</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>domain master</name><value>No</value></smbconfoption>
+<smbconfoption><name>ldap suffix</name><value>dc=quenya,dc=org</value></smbconfoption>
+<smbconfoption><name>ldap machine suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap user suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap group suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap idmap suffix</name><value>ou=People</value></smbconfoption>
+<smbconfoption><name>ldap admin dn</name><value>cn=Manager</value></smbconfoption>
+<smbconfoption><name>ldap ssl</name><value>no</value></smbconfoption>
+<smbconfoption><name>ldap passwd sync</name><value>Yes</value></smbconfoption>
+<smbconfoption><name>idmap uid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>idmap gid</name><value>15000-20000</value></smbconfoption>
+<smbconfoption><name>winbind separator</name><value>+</value></smbconfoption>
+<smbconfoption><name>printing</name><value>cups</value></smbconfoption>
+<member>...</member>
+</smbconfexample>
+				</para></step>
+
+				<step><para>
+				Configure the NETLOGON and PROFILES directory as for the PDC in <link linkend="fast-bdc"/>.
+				</para></step>
+			</procedure>
+
+			</sect4>
+
+		</sect3>
+
+	</sect2>
+
+</sect1>
+
+</chapter>
