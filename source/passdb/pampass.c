@@ -301,14 +301,13 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_ON:
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: PAM said: %s\n", msg[replies]->msg));
 			fstrcpy(current_prompt, msg[replies]->msg);
-			strlower(current_prompt);
 			trim_string(current_prompt, " ", " ");
 			for (t=pw_chat; t; t=t->next) {
 
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: trying to match |%s| to |%s|\n",
 						t->prompt, current_prompt ));
 
-				if (ms_fnmatch(t->prompt, current_prompt) == 0) {
+				if (wild_match(t->prompt, current_prompt) == 0) {
 					fstrcpy(current_reply, t->reply);
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_ON: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);
@@ -334,14 +333,13 @@ static int smb_pam_passchange_conv(int num_msg,
 		case PAM_PROMPT_ECHO_OFF:
 			DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: PAM said: %s\n", msg[replies]->msg));
 			fstrcpy(current_prompt, msg[replies]->msg);
-			strlower(current_prompt);
 			trim_string(current_prompt, " ", " ");
 			for (t=pw_chat; t; t=t->next) {
 
 				DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: trying to match |%s| to |%s|\n",
 						t->prompt, current_prompt ));
 
-				if (ms_fnmatch(t->prompt, current_prompt) == 0) {
+				if (wild_match(t->prompt, current_prompt) == 0) {
 					fstrcpy(current_reply, t->reply);
 					DEBUG(10,("smb_pam_passchange_conv: PAM_PROMPT_ECHO_OFF: We sent: %s\n", current_reply));
 					pwd_sub(current_reply, udp->PAM_username, udp->PAM_password, udp->PAM_newpassword);

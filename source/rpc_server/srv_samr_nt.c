@@ -673,9 +673,9 @@ static void make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNISTR
 	if (num_sam_entries == 0)
 		return;
 
-	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
 
-	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
 
 	if (sam == NULL || uni_name == NULL) {
 		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
@@ -763,9 +763,9 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 	if (num_sam_entries == 0)
 		return;
 
-	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
 
-	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
 
 	if (sam == NULL || uni_name == NULL) {
 		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
@@ -809,7 +809,7 @@ static BOOL get_group_alias_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_SID
 		
 		enum_group_mapping(SID_NAME_WKN_GRP, &map, &num_entries, ENUM_ALL_MAPPED);
 	
-		*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
+		*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
 		if (*d_grp==NULL)
 			return NT_STATUS_NO_MEMORY;
 		
@@ -928,7 +928,7 @@ static uint32 get_group_domain_entries(TALLOC_CTX *ctx, DOMAIN_GRP **d_grp, DOM_
 		num_entries=max_entries;
 	}
 
-	*d_grp=(DOMAIN_GRP *)talloc(ctx, num_entries*sizeof(DOMAIN_GRP));
+	*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
 	if (num_entries!=0 && *d_grp==NULL){
 		safe_free(map);
 		return NT_STATUS_NO_MEMORY;
@@ -1102,7 +1102,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 
 	data_size = q_u->max_size;
 
-	if (!(ctr = (SAM_DISPINFO_CTR *)talloc(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
+	if (!(ctr = (SAM_DISPINFO_CTR *)talloc_zero(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(ctr);
@@ -1111,7 +1111,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 	switch (q_u->switch_level) {
 	case 0x1:
 		if (num_entries) {
-			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
+			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_1))))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, &num_entries, &data_size, q_u->start_idx, pass);
@@ -1120,7 +1120,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x2:
 		if (num_entries) {
-			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
+			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_2))))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, &num_entries, &data_size, q_u->start_idx, pass);
@@ -1129,7 +1129,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x3:
 		if (num_entries) {
-			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
+			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_3))))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, &num_entries, &data_size, q_u->start_idx, grps);
@@ -1138,7 +1138,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x4:
 		if (num_entries) {
-			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
+			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_4))))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, &num_entries, &data_size, q_u->start_idx, pass);
@@ -1147,7 +1147,7 @@ uint32 _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_R_
 		break;
 	case 0x5:
 		if (num_entries) {
-			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
+			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc_zero(p->mem_ctx,num_entries*sizeof(SAM_DISPINFO_5))))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, &num_entries, &data_size, q_u->start_idx, grps);
@@ -1382,11 +1382,11 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	*pp_hdr_name = NULL;
 
 	if (num_names != 0) {
-		hdr_name = (UNIHDR *)talloc(ctx, sizeof(UNIHDR)*num_names);
+		hdr_name = (UNIHDR *)talloc_zero(ctx, sizeof(UNIHDR)*num_names);
 		if (hdr_name == NULL)
 			return False;
 
-		uni_name = (UNISTR2 *)talloc(ctx,sizeof(UNISTR2)*num_names);
+		uni_name = (UNISTR2 *)talloc_zero(ctx,sizeof(UNISTR2)*num_names);
 		if (uni_name == NULL)
 			return False;
 	}
@@ -1432,7 +1432,7 @@ uint32 _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOKUP
 	}
 
 	if (num_rids) {
-		if ((group_attrs = (uint32 *)talloc(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
+		if ((group_attrs = (uint32 *)talloc_zero(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
 			return NT_STATUS_NO_MEMORY;
  	}
  
@@ -1707,7 +1707,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 
 	DEBUG(5,("_samr_query_userinfo: rid:0x%x\n", rid));
 
-	ctr = (SAM_USERINFO_CTR *)talloc(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
+	ctr = (SAM_USERINFO_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
 	if (!ctr)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1718,7 +1718,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 
 	switch (q_u->switch_value) {
 	case 0x10:
-		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc(p->mem_ctx, sizeof(SAM_USER_INFO_10));
+		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc_zero(p->mem_ctx, sizeof(SAM_USER_INFO_10));
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -1736,7 +1736,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
             expire.low = 0xffffffff;
             expire.high = 0x7fffffff;
 
-            ctr->info.id = (SAM_USER_INFO_11 *)talloc(p->mem_ctx,
+            ctr->info.id = (SAM_USER_INFO_11 *)talloc_zero(p->mem_ctx,
                                     sizeof
                                     (*ctr->
                                      info.
@@ -1753,7 +1753,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 #endif
 
 	case 0x12:
-		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc(p->mem_ctx, sizeof(SAM_USER_INFO_12));
+		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc_zero(p->mem_ctx, sizeof(SAM_USER_INFO_12));
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -1762,7 +1762,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 		break;
 
 	case 20:
-		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc(p->mem_ctx,sizeof(SAM_USER_INFO_20));
+		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_20));
 		if (ctr->info.id20 == NULL)
 			return NT_STATUS_NO_MEMORY;
 		if (!get_user_info_20(ctr->info.id20, rid))
@@ -1770,7 +1770,7 @@ uint32 _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_R_
 		break;
 
 	case 21:
-		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc(p->mem_ctx,sizeof(SAM_USER_INFO_21));
+		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_21));
 		if (ctr->info.id21 == NULL)
 			return NT_STATUS_NO_MEMORY;
 		if (!get_user_info_21(ctr->info.id21, rid))
@@ -1847,7 +1847,7 @@ uint32 _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SAMR
 {
     SAM_UNK_CTR *ctr;
 
-	if ((ctr = (SAM_UNK_CTR *)talloc(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
+	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
     ZERO_STRUCTP(ctr);
@@ -2115,8 +2115,8 @@ static BOOL make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
 	if (num_sam_entries == 0)
 		return True;
 
-	sam = (SAM_ENTRY *)talloc(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
-	uni_name = (UNISTR2 *)talloc(ctx, sizeof(UNISTR2)*num_sam_entries);
+	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
+	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
 
 	if (sam == NULL || uni_name == NULL)
 		return False;
@@ -2625,7 +2625,7 @@ uint32 _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u, S
 	int num_rids;
 	
 	num_rids = 1;
-	rid=(uint32 *)talloc(p->mem_ctx, num_rids*sizeof(uint32));
+	rid=(uint32 *)talloc_zero(p->mem_ctx, num_rids*sizeof(uint32));
 	if (rid==NULL)
 		return NT_STATUS_NO_MEMORY;
 	
@@ -2685,7 +2685,7 @@ uint32 _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_R_
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	DEBUG(10, ("sid is %s\n", alias_sid_str));
-	sid = (DOM_SID2 *)talloc(p->mem_ctx, sizeof(DOM_SID2) * num_uids);	
+	sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_SID2) * num_uids);	
 	if (num_uids!=0 && sid == NULL) 
 		return NT_STATUS_NO_MEMORY;
 
@@ -2744,8 +2744,8 @@ uint32 _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_R_
 	if(!get_uid_list_of_group(map.gid, &uid, &num_uids))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	rid=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
-	attr=talloc(p->mem_ctx, sizeof(uint32)*num_uids);
+	rid=talloc_zero(p->mem_ctx, sizeof(uint32)*num_uids);
+	attr=talloc_zero(p->mem_ctx, sizeof(uint32)*num_uids);
 	
 	if (num_uids!=0 && (rid==NULL || attr==NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -3160,7 +3160,7 @@ uint32 _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAMR_
 	if (!get_domain_group_from_sid(group_sid, &map))
 		return NT_STATUS_INVALID_HANDLE;
 	
-	ctr=(GROUP_INFO_CTR *)talloc(p->mem_ctx, sizeof(GROUP_INFO_CTR));
+	ctr=(GROUP_INFO_CTR *)talloc_zero(p->mem_ctx, sizeof(GROUP_INFO_CTR));
 	if (ctr==NULL)
 		return NT_STATUS_NO_MEMORY;
 
