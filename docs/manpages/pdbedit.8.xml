@@ -13,7 +13,7 @@
 
 <refnamediv>
 	<refname>pdbedit</refname>
-	<refpurpose>manage the SAM database</refpurpose>
+	<refpurpose>manage the SAM database (Database of Samba Users)</refpurpose>
 </refnamediv>
 
 <refsynopsisdiv>
