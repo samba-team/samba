@@ -64,8 +64,8 @@ struct smbpasswd_privates
 
 	BOOL permit_non_unix_accounts;
 
-	uint32 low_nua_userid; 
-	uint32 high_nua_userid; 
+	uid_t low_nua_userid; 
+	uid_t high_nua_userid; 
 
 };
 
