@@ -1809,6 +1809,81 @@ done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+/* enumerate subkeys */
+
+static NTSTATUS cmd_spoolss_enum_printerkey( struct cli_state *cli, 
+					     TALLOC_CTX *mem_ctx, int argc, 
+					     char **argv)
+{
+	WERROR result;
+	uint32 needed, returned;
+	BOOL got_hnd = False;
+	pstring printername;
+	fstring servername, user;
+	char *keyname = NULL;
+	POLICY_HND hnd;
+	uint16 *keylist = NULL, *curkey;
+
+	if (argc < 2 || argc > 3) {
+		printf("Usage: %s printername [keyname]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	if (argc == 3)
+		keyname = argv[2];
+	else
+		keyname = "";
+
+	/* Open printer handle */
+
+	slprintf(servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper(servername);
+	fstrcpy(user, cli->user_name);
+	fstrcpy(printername, argv[1]);
+	slprintf(printername, sizeof(pstring)-1, "\\\\%s\\", cli->desthost);
+	strupper(printername);
+	pstrcat(printername, argv[1]);
+
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &hnd);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+ 
+	got_hnd = True;
+
+	/* Enumerate ports */
+
+	result = cli_spoolss_enumprinterkey(
+		cli, mem_ctx, 0, &needed, &hnd, keyname, NULL, NULL);
+
+	if (W_ERROR_V(result) == ERRmoredata)
+		result = cli_spoolss_enumprinterkey(
+			cli, mem_ctx, needed, NULL, &hnd, keyname, &keylist,
+			&returned);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	curkey = keylist;
+	while (*curkey != 0) {
+		pstring subkey;
+		rpcstr_pull(subkey, curkey, sizeof(subkey), -1, 
+			    STR_TERMINATE);
+		printf("%s\n", subkey);
+		curkey += strlen(subkey) + 1;
+	}
+
+	safe_free(keylist);
+
+done:
+	if (got_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
 static NTSTATUS cmd_spoolss_rffpcnex(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
 				     char **argv)
@@ -1897,6 +1972,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "addprinter",		cmd_spoolss_addprinterex,	PI_SPOOLSS, "Add a printer",                       "" },
 	{ "deldriver",		cmd_spoolss_deletedriver,	PI_SPOOLSS, "Delete a printer driver",             "" },
 	{ "enumdata",		cmd_spoolss_not_implemented,	PI_SPOOLSS, "Enumerate printer data (*)",          "" },
+	{ "enumkey",		cmd_spoolss_enum_printerkey,	PI_SPOOLSS, "Enumerate printer keys",              "" },
 	{ "enumjobs",		cmd_spoolss_enum_jobs,          PI_SPOOLSS, "Enumerate print jobs",                "" },
 	{ "enumports", 		cmd_spoolss_enum_ports, 	PI_SPOOLSS, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	PI_SPOOLSS, "Enumerate installed printer drivers", "" },
