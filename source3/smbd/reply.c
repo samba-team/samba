@@ -605,7 +605,7 @@ user %s attempted down-level SMB connection\n", user));
           setting passlen2 to some random value which really stuffs
           things up. we need to fix that one.  */
 
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 <= 24 && passlen2 != 1)
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 1)
         passlen2 = 0;
     }
 
