@@ -1,0 +1,123 @@
+.\" Things to fix:
+.\"   * correct section, and operating system
+.\"   * remove Op from mandatory flags
+.\"   * use better macros for arguments (like .Pa for files)
+.\"
+.Dd June  7, 2000
+.Dt KADMIND 8
+.Os HEIMDAL
+.Sh NAME
+.Nm kadmind
+.Nd
+server for administrative access to kerberos database
+.Sh SYNOPSIS
+.Nm
+.Oo Fl c Ar file \*(Ba Xo
+.Fl -config-file= Ns Ar file Oc
+.Xc
+.Oo Fl k Ar file \*(Ba Xo
+.Fl -key-file= Ns Ar file Oc
+.Xc
+.Op Fl -keytab= Ns Ar keytab
+.Oo Fl r Ar realm \*(Ba Xo
+.Fl -realm= Ns Ar realm Oc
+.Xc
+.Op Fl d | Fl -debug
+.Oo Fl p Ar port \*(Ba Xo
+.Fl -debug-port= Ns Ar port Oc
+.Xc
+.Sh DESCRIPTION
+.Nm
+listens for requests for changes to the Kerberos database and performs
+these, subject to permissions.  By default, it assumes it has been
+started by
+.Nm inetd ,
+except when started with
+.Fl -debug .
+If built with krb4 support, it implements both the heimdal v5
+administrative protocol and the v4 protocol.  Password changes via the
+v4 protocol are also performed by the
+.Nm ,
+but the changes performed with v5
+.Nm kpasswd
+requests are processed by
+.Nm kpasswdd .
+.Pp
+This daemon should of course also be run on the master and not on any
+slaves.
+.Pp
+Principals are always allowed to change their own password and list
+their own principals.  Apart from that, doing any operation requires
+permission explicitly added in the ACL file
+.Pa /var/heimdal/kadmind.acl .
+The format of this file is:
+.Bd -ragged
+.Va principal
+.Va rights
+.Op Va principal-pattern
+.Ed
+.Pp
+Where rights is any combination of:
+.Bl -bullet
+.It
+change-password | cpw
+.It
+list
+.It
+delete
+.It
+modify
+.It
+add
+.It
+get
+.It
+all
+.El
+.Pp
+And the optional
+.Ar principal-pattern
+restricts the rights to principals that match the glob-style pattern.
+.Pp
+Supported options:
+.Bl -tag -width Ds
+.It Xo
+.Fl c Ar file Ns ,
+.Fl -config-file= Ns Ar file
+.Xc
+location of config file
+.It Xo
+.Fl k Ar file Ns ,
+.Fl -key-file= Ns Ar file
+.Xc
+location of master key file
+.It Xo
+.Fl -keytab= Ns Ar keytab
+.Xc
+what keytab to use
+.It Xo
+.Fl r Ar realm Ns ,
+.Fl -realm= Ns Ar realm
+.Xc
+realm to use
+.It Xo
+.Fl d Ns ,
+.Fl -debug
+.Xc
+enable debugging
+.It Xo
+.Fl p Ar port Ns ,
+.Fl -debug-port= Ns Ar port
+.Xc
+port to use with debug
+.El
+.\".Sh ENVIRONMENT
+.Sh FILES
+.Pa /var/heimdal/kadmind.acl
+.\".Sh EXAMPLES
+.\".Sh DIAGNOSTICS
+.Sh SEE ALSO
+.Xr kdc 8 ,
+.Xr kadmin 1 ,
+.Xr kpasswdd 8 ,
+.Xr kpasswd 1
