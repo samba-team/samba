@@ -22,6 +22,13 @@
 
 #include "includes.h"
 
+#ifdef HAVE_NEW_LIBREADLINE
+#  define RL_COMPLETION_CAST (rl_completion_func_t *)
+#else
+/* This type is missing from libreadline<4.0  (approximately) */
+#  define RL_COMPLETION_FUNC_T 
+#endif /* HAVE_NEW_LIBREADLINE */
+
 
 /****************************************************************************
 display the prompt and wait for input. Call callback() regularly
@@ -76,11 +83,9 @@ char *smb_readline(char *prompt, void (*callback)(void),
 		/* The callback prototype has changed slightly between
                    different versions of Readline, so the same function
                    works in all of them to date, but we get compiler
-                   warnings in some.  NOTE: that not all versions of
-                   readline have rl_completion_func_t so attempting to cast
-                   the statement below to get rid of the warning will not
-                   compile for everyone. */
-		rl_attempted_completion_function = completion_fn;
+                   warnings in some.  */
+		rl_attempted_completion_function = RL_COMPLETION_CAST
+			completion_fn;
 	}
 
 	if (callback) rl_event_hook = (Function *)callback;
