@@ -1,3 +1,10 @@
+2001-01-29  Assar Westerlund  <assar@sics.se>
+
+	* use the openssl api for md4/md5/sha and handle openssl/*.h
+
+	* kdc/kaserver.c (do_getticket): check length of ticket.  noted by
+ 	<lha@stacken.kth.se>
+
 2001-01-28  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: send -R instead of -rpath to libtool to set
