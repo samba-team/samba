@@ -3,13 +3,13 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCONTROL" "1" "24 March 2003" "" ""
+.TH "SMBCONTROL" "1" "03 april 2003" "" ""
 
 .SH NAME
 smbcontrol \- send messages to smbd, nmbd or winbindd processes
 .SH SYNOPSIS
 
-\fBsmbcontrol\fR [ \fB-i\fR ]
+\fBsmbcontrol\fR [ \fB-i\fR ] [ \fB-s\fR ]
 
 
 \fBsmbcontrol\fR [ \fBdestination\fR ] [ \fBmessage-type\fR ] [ \fBparameter\fR ]
@@ -21,6 +21,19 @@ This tool is part of the \fBSamba\fR(7) suite.
 \fBsmbcontrol\fR is a very small program, which 
 sends messages to a \fBsmbd\fR(8), a \fBnmbd\fR(8), or a \fBwinbindd\fR(8) daemon running on the system.
 .SH "OPTIONS"
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
+.TP
+\fB-s <configuration file>\fR
+The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See \fIsmb.conf(5)\fR for more information.
+The default configuration file name is determined at 
+compile time.
 .TP
 \fB-i\fR
 Run interactively. Individual commands 
@@ -42,57 +55,56 @@ If a single process ID is given, the message is sent
 to only that process.
 .TP
 \fBmessage-type\fR
-One of: close-share,
-debug, 
-force-election, ping
-, profile,   debuglevel, profilelevel, 
-or printnotify.
-
-The close-share message-type sends a 
-message to smbd which will then close the client connections to
-the named share. Note that this doesn't affect client connections
-to any other shares. This message-type takes an argument of the
+Type of message to send. See 
+the section MESSAGE-TYPES for details.
+.TP
+\fBparameters\fR
+any parameters required for the message-type
+.SH "MESSAGE-TYPES"
+.PP
+Available message types are:
+.TP
+\fBclose-share\fR
+Order smbd to close the client 
+connections to the named share. Note that this doesn't affect client 
+connections to any other shares. This message-type takes an argument of the
 share name for which client connections will be closed, or the
 "*" character which will close all currently open shares.
 This may be useful if you made changes to the access controls on the share.
 This message can only be sent to smbd.
-
-The debug message-type allows 
-the debug level to be set to the value specified by the 
+.TP
+\fBdebug\fR
+Set debug level to the value specified by the 
 parameter. This can be sent to any of the destinations.
-
-The force-election message-type can only be 
-sent to the nmbd destination. This message 
-causes the \fBnmbd\fR daemon to force a new browse
-master election.
-
-The ping message-type sends the 
-number of "ping" messages specified by the parameter and waits 
-for the same number of  reply "pong" messages. This can be sent to 
+.TP
+\fBforce-election\fR
+This message causes the \fBnmbd\fR daemon to 
+force a new browse master election. 
+.TP
+\fBping\fR
+Send specified number of "ping" messages and 
+wait for the same number of  reply "pong" messages. This can be sent to 
 any of the destinations.
-
-The profile message-type sends a 
-message to an smbd to change the profile settings based on the 
+.TP
+\fBprofile\fR
+Change profile settings of a daemon, based on the 
 parameter. The parameter can be "on" to turn on profile stats 
 collection, "off" to turn off profile stats collection, "count"
 to enable only collection of count stats (time stats are 
 disabled), and "flush" to zero the current profile stats. This can 
 be sent to any smbd or nmbd destinations.
-
-The debuglevel message-type sends 
-a "request debug level" message. The current debug level setting 
-is returned by a  "debuglevel" message. This can be 
-sent to any of the destinations.
-
-The profilelevel message-type sends 
-a "request profile level" message.  The current profile level 
-setting is returned by a  "profilelevel" message. This can be sent 
-to any smbd or nmbd destinations.
-
-The printnotify message-type sends a 
-message to smbd which in turn sends a printer notify message to 
-any Windows NT clients connected to a printer. This message-type
-takes the following arguments:
+.TP
+\fBdebuglevel\fR
+Request debuglevel of a certain daemon and write it to stdout. This 
+can be sent to any of the destinations.
+.TP
+\fBprofilelevel\fR
+Request profilelevel of a certain daemon and write it to stdout. 
+This can be sent to any smbd or nmbd destinations.
+.TP
+\fBprintnotify\fR
+Order smbd to send a printer notify message to any Windows NT clients 
+connected to a printer. This message-type takes the following arguments:
 .RS
 .TP
 \fBqueuepause printername\fR
@@ -118,16 +130,46 @@ Send a job delete change notify
 message for the printer and unix jobid
 specified.
 .RE
+
 Note that this message only sends notification that an
 event has occured.  It doesn't actually cause the
 event to happen.
+
 This message can only be sent to smbd. 
 .TP
-\fBparameters\fR
-any parameters required for the message-type
+\fBsamsync\fR
+Order smbd to synchronise sam database from PDC (being BDC). Can only be sent to smbd. 
+.sp
+.RS
+.B "Note:"
+Not working at the moment
+.RE
+.TP
+\fBsamrepl\fR
+Send sam replication message, with specified serial. Can only be sent to smbd. Should not be used manually.
+.TP
+\fBdmalloc-mark\fR
+Set a mark for dmalloc. Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. 
+.TP
+\fBdmalloc-log-changed\fR
+Dump the pointers that have changed since the mark set by dmalloc-mark. 
+Can be sent to both smbd and nmbd. Only available if samba is built with dmalloc support. 
+.TP
+\fBshutdown\fR
+Shut down specified daemon. Can be sent to both smbd and nmbd.
+.TP
+\fBtallocdump and pool-usage\fR
+Print a human-readable description of all 
+talloc(pool) memory usage by the specified daemon/process. Available 
+for both smbd and nmbd.
+.TP
+\fBdrvupgrade\fR
+Force clients of printers using specified driver 
+to update their local version of the driver. Can only be 
+sent to smbd.
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP

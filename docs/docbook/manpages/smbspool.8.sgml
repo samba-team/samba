@@ -15,12 +15,12 @@
 <refsynopsisdiv>
 	<cmdsynopsis>
 		<command>smbspool</command>
-		<arg>job</arg> 
-		<arg>user</arg> 
-		<arg>title</arg> 
-		<arg>copies</arg> 
-		<arg>options</arg> 
-		<arg>filename</arg> 
+		<arg choice="req">job</arg> 
+		<arg choice="req">user</arg> 
+		<arg choice="req">title</arg> 
+		<arg choice="req">copies</arg> 
+		<arg choice="req">options</arg> 
+		<arg choice="opt">filename</arg> 
 	</cmdsynopsis>
 </refsynopsisdiv>
 
@@ -95,7 +95,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of the Samba suite.</para>
+	<para>This man page is correct for version 3.0 of the Samba suite.</para>
 </refsect1>
 
 <refsect1>

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "WINBINDD" "8" "30 March 2003" "" ""
+.TH "WINBINDD" "8" "03 april 2003" "" ""
 
 .SH NAME
 winbindd \- Name Service Switch daemon for resolving names  from NT servers
@@ -241,7 +241,7 @@ Now replace the account lines with this:
 \fR
 .PP
 The next step is to join the domain. To do that use the 
-\fBsmbpasswd\fR program like this:  
+\fBnet\fR program like this:  
 .PP
 \fBnet join -S PDC -U Administrator\fR
 .PP
@@ -290,11 +290,6 @@ the list of trusted domains for the Windows NT server
 on startup and when a SIGHUP is received.  Thus, for a running \fB winbindd\fR to become aware of new trust relationships between 
 servers, it must be sent a SIGHUP signal. 
 .PP
-Client processes resolving names through the \fBwinbindd\fR
-nsswitch module read an environment variable named \fB $WINBINDD_DOMAIN\fR.  If this variable contains a comma separated
-list of Windows NT domain names, then winbindd will only resolve users
-and groups within those Windows NT domains. 
-.PP
 PAM is really easy to misconfigure.  Make sure you know what 
 you are doing when modifying PAM configuration files.  It is possible 
 to set up PAM such that you can no longer log into your system. 
@@ -336,6 +331,19 @@ the \fBwinbindd\fR program.  For security reasons, the
 winbind client will only attempt to connect to the winbindd daemon 
 if both the \fI/tmp/.winbindd\fR directory
 and \fI/tmp/.winbindd/pipe\fR file are owned by 
+root. 
+.TP
+\fB$LOCKDIR/winbindd_privilaged/pipe\fR
+The UNIX pipe over which 'privilaged' clients 
+communicate with the \fBwinbindd\fR program.  For security 
+reasons, access to some winbindd functions - like those needed by 
+the \fBntlm_auth\fR utility - is restricted.  By default,
+only users in the 'root' group will get this access, however the administrator
+may change the group permissions on $LOCKDIR/winbindd_privilaged to allow
+programs like 'squid' to use ntlm_auth.
+Note that the winbind client will only attempt to connect to the winbindd daemon 
+if both the \fI$LOCKDIR/winbindd_privilaged\fR directory
+and \fI$LOCKDIR/winbindd_privilaged/pipe\fR file are owned by 
 root. 
 .TP
 \fB/lib/libnss_winbind.so.X\fR

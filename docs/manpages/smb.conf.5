@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "30 March 2003" "" ""
+.TH "SMB.CONF" "5" "03 april 2003" "" ""
 
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
@@ -256,12 +256,15 @@ An alias, by the way, is defined as any component of the
 first entry of a printcap record. Records are separated by newlines,
 components (if there are more than one) are separated by vertical 
 bar symbols ('|').
-.PP
-NOTE: On SYSV systems which use lpstat to determine what 
+.sp
+.RS
+.B "Note:"
+On SYSV systems which use lpstat to determine what 
 printers are defined on the system you may be able to use
 "printcap name = lpstat" to automatically obtain a list 
 of printers. See the "printcap name" option 
 for more details.
+.RE
 .SH "PARAMETERS"
 .PP
 parameters define the specific attributes of sections.
@@ -664,9 +667,6 @@ each parameter for details.  Note that some are synonyms.
 \fIldap delete dn\fR
 .TP 0.2i
 \(bu
-\fIldap del only sam attr\fR
-.TP 0.2i
-\(bu
 \fIldap filter\fR
 .TP 0.2i
 \(bu
@@ -926,6 +926,9 @@ each parameter for details.  Note that some are synonyms.
 .TP 0.2i
 \(bu
 \fIserver string\fR
+.TP 0.2i
+\(bu
+\fIset primary group script\fR
 .TP 0.2i
 \(bu
 \fIshow add printer wizard\fR
@@ -3027,9 +3030,12 @@ and the program will extract the servername from before
 the first ':'.  There should probably be a better parsing system 
 that copes with different map formats and also Amd (another 
 automounter) maps.
-
-\fBNOTE :\fRA working NIS client is required on 
+.sp
+.RS
+.B "Note:"
+A working NIS client is required on 
 the system for this option to work.
+.RE
 
 See also \fInis homedir\fR
 , \fIdomain logons\fR
@@ -3139,8 +3145,10 @@ and users who will be allowed access without specifying a password.
 This is not be confused with   \fIhosts allow\fR which is about hosts 
 access to services and is more useful for guest services. \fI  hosts equiv\fR may be useful for NT clients which will 
 not supply passwords to Samba.
-
-\fBNOTE :\fR The use of \fIhosts equiv
+.sp
+.RS
+.B "Note:"
+The use of \fIhosts equiv
 \fR can be a major security hole. This is because you are 
 trusting the PC to supply the correct username. It is very easy to 
 get a PC to supply a false username. I recommend that the 
@@ -3148,6 +3156,7 @@ get a PC to supply a false username. I recommend that the
 know what you are doing, or perhaps on a home network where you trust 
 your spouse and kids. And only if you \fBreally\fR trust 
 them :-).
+.RE
 
 Default: \fBno host equivalences\fR
 
@@ -3354,15 +3363,12 @@ stored in the \fIprivate/secrets.tdb\fR file.  See the
 \fBsmbpasswd\fR(8) man page for more information on how 
 to accmplish this.
 .TP
-\fB>ldap del only sam attr (G)\fR
+\fB>ldap delete dn (G)\fR
 This parameter specifies whether a delete
 operation in the ldapsam deletes the complete entry or only the attributes
 specific to Samba.
 
 Default : \fBldap delete dn = no\fR
-.TP
-\fB>ldap del only sam attr (G)\fR
-Inverted synonym for \fI  ldap delete dn\fR.
 .TP
 \fB>ldap filter (G)\fR
 This parameter specifies the RFC 2254 compliant LDAP search filter.
@@ -4667,10 +4673,13 @@ the storage of passwords for users who don't exist in /etc/passwd.
 This is most often used for machine account creation. 
 This range of ids should have no existing local or NIS users within 
 it as strange conflicts can occur otherwise.
-
-NOTE: These userids never appear on the system and Samba will never
+.sp
+.RS
+.B "Note:"
+These userids never appear on the system and Samba will never
 \&'become' these users. They are used only to ensure that the algorithmic 
 RID mapping does not conflict with normal users.
+.RE
 
 Default: \fBnon unix account range = <empty string>
 \fR
@@ -5139,11 +5148,14 @@ by any method and order described in that parameter.
 The password server must be a machine capable of using 
 the "LM1.2X002" or the "NT LM 0.12" protocol, and it must be in 
 user level security mode.
-
-\fBNOTE:\fR Using a password server 
+.sp
+.RS
+.B "Note:"
+Using a password server 
 means your UNIX box (running Samba) is only as secure as your 
 password server. \fBDO NOT CHOOSE A PASSWORD SERVER THAT 
 YOU DON'T COMPLETELY TRUST\fR.
+.RE
 
 Never point a Samba server at itself for password 
 serving. This will cause a loop and could lock up your Samba 
@@ -5500,11 +5512,14 @@ print5|My Printer 5
 where the '|' separates aliases of a printer. The fact 
 that the second alias has a space in it gives a hint to Samba 
 that it's a comment.
-
-\fBNOTE\fR: Under AIX the default printcap 
+.sp
+.RS
+.B "Note:"
+Under AIX the default printcap 
 name is \fI/etc/qconfig\fR. Samba will assume the 
 file is in AIX \fIqconfig\fR format if the string
 \fIqconfig\fR appears in the printcap filename.
+.RE
 
 Default: \fBprintcap name = /etc/printcap\fR
 
@@ -6109,6 +6124,22 @@ Default: \fBserver string = Samba %v\fR
 
 Example: \fBserver string = University of GNUs Samba 
 Server\fR
+.TP
+\fB>set primary group script (G)\fR
+Thanks to the Posix subsystem in NT a
+Windows User has a primary group in addition to the
+auxiliary groups.  This script sets the primary group
+in the unix userdatase when an administrator sets the
+primary group from the windows user manager or when
+fetching a SAM with \fBnet rpc
+vampire\fR. \fI%u\fR will be
+replaced with the user whose primary group is to be
+set.  \fI%g\fR will be replaced with
+the group to set.
+
+Default: \fBNo default value\fR
+
+Example: \fBset primary group script = /usr/sbin/usermod -g '%g' '%u'\fR
 .TP
 \fB>set directory (S)\fR
 If \fBset directory = no\fR, then 
@@ -7163,16 +7194,29 @@ your network then you should set this to the WINS server's IP.
 You should point this at your WINS server if you have a
 multi-subnetted network.
 
-\fBNOTE\fR. You need to set up Samba to point 
+If you want to work in multiple namespaces, you can 
+give every wins server a 'tag'. For each tag, only one 
+(working) server will be queried for a name. The tag should be 
+seperated from the ip address by a colon.
+.sp
+.RS
+.B "Note:"
+You need to set up Samba to point 
 to a WINS server if you have multiple subnets and wish cross-subnet 
 browsing to work correctly.
+.RE
 
-See the documentation file BROWSING 
-in the docs/ directory of your Samba source distribution.
+See the documentation file Browsing in the samba howto collection.
 
 Default: \fBnot enabled\fR
 
-Example: \fBwins server = 192.9.200.1\fR
+Example: \fBwins server = mary:192.9.200.1 fred:192.168.3.199 mary:192.168.2.61\fR
+
+For this example when querying a certain name, 192.19.200.1 will 
+be asked first and if that doesn't respond 192.168.2.61. If either 
+of those doesn't know the name 192.168.3.199 will be queried.
+
+Example: \fBwins server = 192.9.200.1 192.168.2.61\fR
 .TP
 \fB>wins support (G)\fR
 This boolean controls if the \fBnmbd\fR(8) process in Samba will act as a WINS server. You should 
