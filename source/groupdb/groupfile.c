@@ -131,8 +131,9 @@ static char *get_group_members(char *p, int *num_mem, DOMAIN_GRP_MEMBER **member
 		DOMAIN_GRP_MEMBER *mbrs;
 		
 		mbrs = Realloc((*members), ((*num_mem)+1) * sizeof(DOMAIN_GRP_MEMBER));
-		if (mbrs == NULL)
-		{
+		if (mbrs == NULL) {
+			if (*members)
+				free(*members);
 			return NULL;
 		}
 		else (*members) = mbrs;
