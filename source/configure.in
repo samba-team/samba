@@ -2215,11 +2215,14 @@ if test x"$with_ads_support" != x"no"; then
 
     CFLAGS="$ac_save_CFLAGS"
     LIBS="$ac_save_LIBS"
+
+  else
+
+    # Get rid of case where $with_ads_support=auto
+
+    with_ads_support="yes"
+
   fi
-
-  # Get rid of case where $with_ads_support=auto
-
-  with_ads_support="yes"
 fi
 
 # Now we have determined whether we really want ADS support
