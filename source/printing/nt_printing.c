@@ -3473,7 +3473,8 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 	/*
 	 * When the DEVMODE is already set on the printer, don't try to unpack it.
 	 */
-
+	DEBUG(8,("save_driver_init_2: Enter...\n"));
+	
 	if ( !printer->info_2->devmode && data_len ) 
 	{
 		/*

@@ -36,6 +36,7 @@ static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
 	char 		*string;
 	char 		*list = NULL;
 	char 		*list2 = NULL;
+	int		len = 0;
 	
 	if ( !buf2 || !val )
 		return 0;
@@ -45,10 +46,13 @@ static uint32 reg_init_buffer2( BUFFER2 *buf2, REGISTRY_VALUE *val )
 	switch (val->type )
 	{
 		case REG_SZ:
-			string = (char*)val->data_p;
+			string = (char*)regval_data_p( val );
 			DEBUG(10,("reg_init_buffer2: REG_SZ string => [%s]\n", string));
 			
-			init_unistr2( &unistr, (char*)val->data_p, strlen((char*)val->data_p)+1 );
+			if ( string )
+				len = strlen(string)+1;
+	
+			init_unistr2( &unistr, (char*)val->data_p, len );
 			init_buffer2( buf2, (char*)unistr.buffer, unistr.uni_str_len*2 );
 			real_size = unistr.uni_str_len*2;
 			break;

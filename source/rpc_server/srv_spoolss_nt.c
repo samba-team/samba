@@ -6588,9 +6588,12 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 	 * bound to the new printer, simulating what happens in the Windows arch.
 	 */
 
-	if (!devmode)
+	if (!devmode) 
+	{
 		set_driver_init(printer, 2);
-	else {
+	}
+	else 
+	{
 		/* A valid devmode was included, convert and link it
 		*/
 		DEBUGADD(10, ("spoolss_addprinterex_level_2: devmode included, converting\n"));
@@ -6599,8 +6602,6 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 				&printer->info_2->devmode))
 			return  WERR_NOMEM;
 	}
-
-	set_driver_init(printer, 2);
 	
 	/* write the ASCII on disk */
 	err = mod_a_printer(*printer, 2);
