@@ -551,7 +551,7 @@ static int traverse_sessionid(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, vo
 		{"brief",	'b', POPT_ARG_NONE, 	&brief},
 		{"profile",	'P', POPT_ARG_NONE,	&profile_only},
 		{"byterange",	'B', POPT_ARG_NONE,	&show_brl},
-		{"debug",	'd', POPT_ARG_STRING,	&new_debuglevel},
+		{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_debug },
 		{ 0, 0, 0, 0}
 	};
 
