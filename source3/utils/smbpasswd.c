@@ -727,7 +727,7 @@ int main(int argc, char **argv)
     smb_pwent->smb_nt_passwd = new_nt_p16;
   }
 
-  if(mod_smbpwd_entry(smb_pwent) == False) {
+  if(mod_smbpwd_entry(smb_pwent,True) == False) {
     fprintf(stderr, "%s: Failed to modify entry for user %s.\n",
             prog_name, pwd->pw_name);
     endsmbpwent(vp);

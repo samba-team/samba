@@ -34,6 +34,8 @@ static pstring servicesf = CONFIGFILE;
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
  void unbecome_root(BOOL restore_dir) {}
+/* We need this because we link to password.o */
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override) {return False;}
 connection_struct Connections[MAX_CONNECTIONS];
 files_struct Files[MAX_OPEN_FILES];
 struct current_user current_user;

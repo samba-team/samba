@@ -731,9 +731,11 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
  and then modify its password entry. We can't use the startsmbpwent()/
  getsmbpwent()/endsmbpwent() interfaces here as we depend on looking
  in the actual file to decide how much room we have to write data.
+ override = False, normal
+ override = True, override XXXXXXXX'd out password or NO PASS
 ************************************************************************/
 
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override)
 {
   /* Static buffers we will return. */
   static pstring  user_name;
@@ -895,9 +897,9 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   /* Record exact password position */
   pwd_seekpos += PTR_DIFF(p, linebuf);
 
-  if (*p == '*' || *p == 'X') {
+  if (!override && (*p == '*' || *p == 'X')) {
     /* Password deliberately invalid - end here. */
-    DEBUG(10, ("get_smbpwd_entry: entry invalidated for user %s\n", user_name));
+    DEBUG(10, ("mod_smbpwd_entry: entry invalidated for user %s\n", user_name));
     pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
     return False;
@@ -917,7 +919,7 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
     return False;
   }
 
-  if (*p == '*' || *p == 'X') {
+  if (!override && (*p == '*' || *p == 'X')) {
     pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
     return False;

@@ -41,7 +41,7 @@ BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsi
 BOOL check_oem_password(char *user, unsigned char *data,
                         struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd);
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL flag);
 
 /*The following definitions come from  client.c  */
 
@@ -971,6 +971,7 @@ BOOL lp_writeraw(void);
 BOOL lp_null_passwords(void);
 BOOL lp_strip_dot(void);
 BOOL lp_encrypted_passwords(void);
+BOOL lp_update_encrypted(void);
 BOOL lp_syslog_only(void);
 BOOL lp_browse_list(void);
 BOOL lp_unix_realname(void);
@@ -1555,6 +1556,7 @@ int setup_groups(char *user, int uid, int gid, int *p_ngroups,
          int **p_attrs);
 uint16 register_vuid(int uid,int gid, char *name,BOOL guest);
 void add_session_user(char *user);
+BOOL update_smbpassword_file( char *user, fstring password);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
@@ -1770,7 +1772,7 @@ struct smb_passwd *getsmbpwnam(char *name);
 struct smb_passwd *getsmbpwuid(unsigned int uid);
 char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
 void *machine_password_lock( char *domain, char *name, BOOL update);
 BOOL machine_password_unlock( void *token );
 BOOL machine_password_delete( char *domain, char *name );

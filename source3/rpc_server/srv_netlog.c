@@ -410,7 +410,7 @@ static void api_net_srv_pwset( int uid,
                   smb_pass->acct_ctrl     = ACB_WSTRUST;
 
                   become_root(True);
-                  ret = mod_smbpwd_entry(smb_pass);
+                  ret = mod_smbpwd_entry(smb_pass,False);
                   unbecome_root(True);
 
                   if (ret)
