@@ -132,11 +132,11 @@ extern "C" {
 int putenv(const char *string);
 #endif
 
-#ifndef HAVE_SETENV
+#if !defined(HAVE_SETENV) || defined(NEED_SETENV_PROTO)
 int setenv(const char *var, const char *val, int rewrite);
 #endif
 
-#ifndef HAVE_UNSETENV
+#if !defined(HAVE_UNSETENV) || defined(NEED_UNSETENV_PROTO)
 void unsetenv(const char *name);
 #endif
 
