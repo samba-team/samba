@@ -548,6 +548,10 @@ properly. Samba needs to be able to switch uids on the connection and
 it can't if your OS has a trapdoor uid system. You'll know this
 because Samba will note it in your logs.
 
+Also note that you should not use the magic "homes" share name with
+products like these, as otherwise all users will end up with the same
+home directory. Use \\server\username instead.
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 * 5: Problem with printers under NT
 
