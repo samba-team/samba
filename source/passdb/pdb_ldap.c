@@ -529,7 +529,7 @@ static int ldapsam_search(struct ldapsam_privates *ldap_state,
 			continue;
 		
 		rc = ldap_search_s(ldap_state->ldap_struct, base, scope, 
-				   filter, attrs, attrsonly, res);
+				   filter, (char **)attrs, attrsonly, res);
 	}
 	
 	if (rc == LDAP_SERVER_DOWN) {
@@ -612,6 +612,7 @@ static int ldapsam_delete(struct ldapsam_privates *ldap_state, char *dn)
 	return rc;
 }
 
+#ifdef LDAP_EXOP_X_MODIFY_PASSWD
 static int ldapsam_extended_operation(struct ldapsam_privates *ldap_state, LDAP_CONST char *reqoid, struct berval *reqdata, LDAPControl **serverctrls, LDAPControl **clientctrls, char **retoidp, struct berval **retdatap)
 {
 	int 		rc = LDAP_SERVER_DOWN;
@@ -635,6 +636,7 @@ static int ldapsam_extended_operation(struct ldapsam_privates *ldap_state, LDAP_
 		
 	return rc;
 }
+#endif
 
 /*******************************************************************
  run the search by name.
@@ -1287,6 +1289,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
   * If we are updating the record AND the attribute is CHANGED.
   * If we are adding   the record AND it is SET or CHANGED (ie not default)
 *********************************************************************/
+#ifdef LDAP_EXOP_X_MODIFY_PASSWD
 static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_elements element) {
 	if (pdb_add) {
 		return (!IS_SAM_DEFAULT(sampass, element));
@@ -1294,6 +1297,7 @@ static BOOL need_ldap_mod(BOOL pdb_add, const SAM_ACCOUNT * sampass, enum pdb_el
 		return IS_SAM_CHANGED(sampass, element);
 	}
 }
+#endif
 
 /**********************************************************************
   Set attribute to newval in LDAP, regardless of what value the
