@@ -2355,6 +2355,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
+    if (fsp) {
+		/* the pending modtime overrides the current modtime */
+		sbuf.st_mtime = fsp->pending_modtime;
+    }
+
 	size = sbuf.st_size;
 	tvs.modtime = sbuf.st_mtime;
 	tvs.actime = sbuf.st_atime;
@@ -2431,6 +2436,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 			changed_time = interpret_long_date(pdata+24);
 
 			tvs.modtime = MIN(write_time, changed_time);
+
+			if (write_time > tvs.modtime && write_time != 0xffffffff) {
+				tvs.modtime = write_time;
+			}
 
 			/* Prefer a defined time to an undefined one. */
 			if (tvs.modtime == (time_t)0 || tvs.modtime == (time_t)-1)
@@ -2779,7 +2788,7 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			 * NT does this a lot. It's actually pointless
 			 * setting the time here, as it will be overwritten
 			 * on the next write, so we save the request
-			 * away and will set it on file code. JRA.
+			 * away and will set it on file close. JRA.
 			 */
 
 			if (tvs.modtime != (time_t)0 && tvs.modtime != (time_t)-1) {
