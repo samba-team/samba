@@ -365,7 +365,7 @@ void write_browse_list(time_t t, BOOL force_write)
   sprintf(tmp, "\"%s\"", work->work_group);
   fprintf(fp, "%-25s ", tmp);
   fprintf(fp, "%08x ", SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY);
-  sprintf(tmp, "\"%s\" ", *work->local_master_browser_name ? work->local_master_browser_name : "Unknown");
+  sprintf(tmp, "\"%s\" ", work->local_master_browser_name);
   fprintf(fp, "%-30s", tmp);
   fprintf(fp, "\"%s\"\n", work->work_group);
 
@@ -414,8 +414,7 @@ void write_browse_list(time_t t, BOOL force_write)
         fprintf(fp, "%-25s ", tmp);
 
         fprintf(fp, "%08x ", wg_type);
-        sprintf(tmp, "\"%s\" ", *work->local_master_browser_name ? 
-                                     work->local_master_browser_name : "Unknown" );
+        sprintf(tmp, "\"%s\" ", work->local_master_browser_name);
         fprintf(fp, "%-30s", tmp);
         fprintf(fp, "\"%s\"\n", work->work_group);
       }
