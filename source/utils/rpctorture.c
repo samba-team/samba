@@ -91,7 +91,6 @@ void rpcclient_init(void)
 	smb_cli->capabilities |= CAP_STATUS32;
 
 	pstrcpy(smb_cli->user_name, user_name);
-	smb_cli->nt_pipe_fnum   = 0xffff;
 
 	get_passwd();
 
@@ -223,7 +222,7 @@ static void rand_buf(char *buf, int len)
 /****************************************************************************
 do a random rpc command
 ****************************************************************************/
-BOOL do_random_rpc(struct cli_state *cli, int max_len)
+BOOL do_random_rpc(struct cli_state *cli, uint16 nt_pipe_fnum, int max_len)
 {
 	prs_struct rbuf;
 	prs_struct buf; 
@@ -250,7 +249,7 @@ BOOL do_random_rpc(struct cli_state *cli, int max_len)
 	buf.offset = param_len;
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, opcode, &buf, &rbuf))
+	if (rpc_api_pipe_req(cli, nt_pipe_fnum, opcode, &buf, &rbuf))
 	{
 		response = rbuf.offset != 0;
 
@@ -303,7 +302,7 @@ static void random_rpc_pipe_enc(char *pipe_name, struct client_info *cli_info,
 		/* open session.  */
 		cli_nt_session_open(smb_cli, pipe_name, &nt_pipe_fnum);
 
-		do_random_rpc(smb_cli, 1024);
+		do_random_rpc(smb_cli, nt_pipe_fnum, 1024);
 		if (i % 500 == 0)
 		{
 			DEBUG(0,("calls: %i\n", i));
@@ -344,7 +343,7 @@ static void random_rpc_pipe(char *pipe_name, struct client_info *cli_info,
 
 	for (i = 1; i <= numops * 100; i++)
 	{
-		do_random_rpc(smb_cli, 8192);
+		do_random_rpc(smb_cli, nt_pipe_fnum, 8192);
 		if (i % 500 == 0)
 		{
 			DEBUG(0,("calls: %i\n", i));
@@ -425,12 +424,12 @@ static void run_samhandles(int numops, struct client_info *cli_info)
 	{
 		POLICY_HND pol;
 		POLICY_HND dom;
-		if (!do_samr_connect(smb_cli, srv_name, 0x20, &pol))
+		if (!samr_connect(smb_cli, nt_pipe_fnum, srv_name, 0x20, &pol))
 		{
 			failed++;
 		}
 /*
-		if (!do_samr_open_domain(smb_cli, srv_name, 0x00000020, &pol))
+		if (!samr_open_domain(smb_cli, nt_pipe_fnum, srv_name, 0x00000020, &pol))
 		{
 			DEBUG(0,("samhandle domain open test (%i): failed\n", i));
 		}
@@ -487,7 +486,7 @@ static void run_lsahandles(int numops, struct client_info *cli_info)
 	for (i = 1; i <= numops * 100; i++)
 	{
 		POLICY_HND pol;
-		if (!do_lsa_open_policy(smb_cli, srv_name, &pol, False))
+		if (!lsa_open_policy(smb_cli, nt_pipe_fnum, srv_name, &pol, False))
 		{
 			failed++;
 		}
@@ -957,11 +956,11 @@ enum client_action
 	}
 */
 
-	create_procs(nprocs, numops, &cli_info, run_pipegobbler);
+	create_procs(nprocs, numops, &cli_info, run_randomrpc);
 /*
+	create_procs(nprocs, numops, &cli_info, run_pipegobbler);
 	create_procs(nprocs, numops, &cli_info, run_tcpconnect);
 	create_procs(nprocs, numops, &cli_info, run_handles);
-	create_procs(nprocs, numops, &cli_info, run_randomrpc);
 */
 
 	fflush(out_hnd);
