@@ -20,7 +20,7 @@ krb5_cc_resolve(krb5_context context,
     krb5_fcache *f;
 
     if(strncmp(residual, "FILE:", 5)){
-	return -1;
+	return KRB5_CC_UNKNOWN_TYPE;
     }
 
     p = ALLOC(1, krb5_ccache_data);
@@ -107,7 +107,7 @@ store_int32(int fd,
     value = htonl(value);
     ret = write(fd, &value, sizeof(value));
     if (ret != sizeof(value))
-	return (ret<0)?errno:-1;
+	return (ret<0)?errno:KRB5_CC_END;
     return 0;
 }
 
@@ -119,7 +119,7 @@ ret_int32(int fd,
     int ret;
     ret = read(fd, &v, sizeof(v));
     if(ret != sizeof(v))
-	return (ret<0)?errno:-1; /* XXX */
+	return (ret<0)?errno:KRB5_CC_END;
 
     *value = ntohl(v);
     return 0;
@@ -134,7 +134,7 @@ store_int16(int fd,
     value = htons(value);
     ret = write(fd, &value, sizeof(value));
     if (ret != sizeof(value))
-	return (ret<0)?errno:-1;
+	return (ret<0)?errno:KRB5_CC_END;
     return 0;
 }
 
@@ -146,7 +146,7 @@ ret_int16(int fd,
     int ret;
     ret = read(fd, &v, sizeof(v));
     if(ret != sizeof(v))
-	return (ret<0)?errno:-1; /* XXX */
+	return (ret<0)?errno:KRB5_CC_END; /* XXX */
   
     *value = ntohs(v);
     return 0;
@@ -160,7 +160,7 @@ store_int8(int fd,
 
     ret = write(fd, &value, sizeof(value));
     if (ret != sizeof(value))
-	return (ret<0)?errno:-1;
+	return (ret<0)?errno:KRB5_CC_END;
     return 0;
 }
 
@@ -172,7 +172,7 @@ ret_int8(int fd,
 
     ret = read (fd, value, sizeof(*value));
     if (ret != sizeof(*value))
-	return (ret<0)?errno:-1;
+	return (ret<0)?errno:KRB5_CC_END;
     return 0;
 }
 
@@ -184,7 +184,13 @@ store_data(int fd,
     ret = store_int32(fd, data.length);
     if(ret < 0)
 	return ret;
-    return write(fd, data.data, data.length);
+    ret = write(fd, data.data, data.length);
+    if(ret != data.length){
+	if(ret < 0)
+	    return errno;
+	return KRB5_CC_END;
+    }
+    return 0;
 }
 
 static krb5_error_code
@@ -194,11 +200,13 @@ ret_data(int fd,
     int ret;
     int size;
     ret = ret_int32(fd, &size);
+    if(ret)
+	return ret;
     data->length = size;
     data->data = malloc(size);
     ret = read(fd, data->data, size);
     if(ret != size)
-	return (ret < 0)? errno : -1; /* XXX */
+	return (ret < 0)? errno : KRB5_CC_END;
     return 0;
 }
 
@@ -207,11 +215,17 @@ store_principal(int fd,
 		krb5_principal p)
 {
     int i;
-    store_int32(fd, p->type);
-    store_int32(fd, p->ncomp);
-    store_data(fd, p->realm);
-    for(i = 0; i < p->ncomp; i++)
-	store_data(fd, p->comp[i]);
+    int ret;
+    ret = store_int32(fd, p->type);
+    if(ret) return ret;
+    ret = store_int32(fd, p->ncomp);
+    if(ret) return ret;
+    ret = store_data(fd, p->realm);
+    if(ret) return ret;
+    for(i = 0; i < p->ncomp; i++){
+	ret = store_data(fd, p->comp[i]);
+	if(ret) return ret;
+    }
     return 0;
 }
 
@@ -220,17 +234,27 @@ ret_principal(int fd,
 	      krb5_principal *princ)
 {
     int i;
+    int ret;
     krb5_principal p;
 
     p = ALLOC(1, krb5_principal_data);
+    if(p == NULL)
+	return ENOMEM;
 
-    if(ret_int32(fd, &p->type))
-	return -1;
-    ret_int32(fd, &p->ncomp);
-    ret_data(fd, &p->realm);
+    if((ret = ret_int32(fd, &p->type)))
+	return ret;
+    ret = ret_int32(fd, &p->ncomp);
+    if(ret) return ret;
+    ret = ret_data(fd, &p->realm);
+    if(ret) return ret;
     p->comp = ALLOC(p->ncomp, krb5_data);
-    for(i = 0; i < p->ncomp; i++)
-	ret_data(fd, &p->comp[i]);
+    if(p->comp == NULL){
+	return ENOMEM;
+    }
+    for(i = 0; i < p->ncomp; i++){
+	ret = ret_data(fd, &p->comp[i]);
+	if(ret) return ret;
+    }
     *princ = p;
     return 0;
 }
@@ -238,90 +262,112 @@ ret_principal(int fd,
 static krb5_error_code
 store_keyblock(int fd, krb5_keyblock p)
 {
-    store_int32(fd, p.keytype);
-    store_data(fd, p.contents);
-    return 0;
+    int ret;
+    ret =store_int32(fd, p.keytype);
+    if(ret) return ret;
+    ret = store_data(fd, p.contents);
+    return ret;
 }
 
 static krb5_error_code
 ret_keyblock(int fd, krb5_keyblock *p)
 {
-    ret_int32(fd, (int32_t*)&p->keytype); /* keytype + etype */
-    ret_data(fd, &p->contents);
-    return 0;
+    int ret;
+    ret = ret_int32(fd, (int32_t*)&p->keytype); /* keytype + etype */
+    if(ret) return ret;
+    ret = ret_data(fd, &p->contents);
+    return ret;
 }
 
 static krb5_error_code
 store_times(int fd, krb5_times times)
 {
-    store_int32(fd, times.authtime);
-    store_int32(fd, times.starttime);
-    store_int32(fd, times.endtime);
-    store_int32(fd, times.renew_till);
-    return 0;
+    int ret;
+    ret = store_int32(fd, times.authtime);
+    if(ret) return ret;
+    ret = store_int32(fd, times.starttime);
+    if(ret) return ret;
+    ret = store_int32(fd, times.endtime);
+    if(ret) return ret;
+    ret = store_int32(fd, times.renew_till);
+    return ret;
 }
 
 static krb5_error_code
 ret_times(int fd, krb5_times *times)
 {
-    ret_int32(fd, &times->authtime);
-    ret_int32(fd, &times->starttime);
-    ret_int32(fd, &times->endtime);
-    ret_int32(fd, &times->renew_till);
-    return 0;
+    int ret;
+    ret = ret_int32(fd, &times->authtime);
+    if(ret) return ret;
+    ret = ret_int32(fd, &times->starttime);
+    if(ret) return ret;
+    ret = ret_int32(fd, &times->endtime);
+    if(ret) return ret;
+    ret = ret_int32(fd, &times->renew_till);
+    return ret;
 }
 
 static krb5_error_code
 store_address(int fd, krb5_address p)
 {
-    store_int16(fd, p.type);
-    store_data(fd, p.address);
-    return 0;
+    int ret;
+    ret = store_int16(fd, p.type);
+    if(ret) return ret;
+    ret = store_data(fd, p.address);
+    return ret;
 }
 
 static krb5_error_code
 ret_address(int fd, krb5_address *adr)
 {
     int16_t t;
-    ret_int16(fd, &t);
+    int ret;
+    ret = ret_int16(fd, &t);
+    if(ret) return ret;
     adr->type = t;
-    ret_data(fd, &adr->address);
-    return 0;
+    ret = ret_data(fd, &adr->address);
+    return ret;
 }
 
 static krb5_error_code
 store_addrs(int fd, krb5_addresses p)
 {
     int i;
-    store_int32(fd, p.number);
-    for(i = 0; i<p.number; i++)
-	store_address(fd, p.addrs[i]);
-    return 0;
+    int ret;
+    ret = store_int32(fd, p.number);
+    if(ret) return ret;
+    for(i = 0; i<p.number; i++){
+	ret = store_address(fd, p.addrs[i]);
+	if(ret) break;
+    }
+    return ret;
 }
 
 static krb5_error_code
 ret_addrs(int fd, krb5_addresses *adr)
 {
     int i;
-    ret_int32(fd, &adr->number);
+    int ret;
+    ret = ret_int32(fd, &adr->number);
+    if(ret) return ret;
     adr->addrs = ALLOC(adr->number, krb5_address);
-    for(i = 0; i < adr->number; i++)
-	ret_address(fd, &adr->addrs[i]);
-    return 0;
+    for(i = 0; i < adr->number; i++){
+	ret = ret_address(fd, &adr->addrs[i]);
+	if(ret) break;
+    }
+    return ret;
 }
 
 static krb5_error_code
 store_authdata(int fd, krb5_data p)
 {
-    store_data(fd, p);
-    return 0;
+    return store_data(fd, p);
 }
 
 static krb5_error_code
 ret_authdata(int fd, krb5_data *auth)
 {
-    ret_data(fd, auth);
-    return 0;
+    return ret_data(fd, auth);
 }
 
 krb5_error_code
