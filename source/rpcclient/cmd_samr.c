@@ -626,6 +626,80 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 	return result;
 }
 
+/* Enumerate domain users */
+
+static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli, 
+					TALLOC_CTX *mem_ctx,
+					int argc, char **argv) 
+{
+	POLICY_HND connect_pol, domain_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	uint32 start_idx, size, num_dom_users, i;
+	char **dom_users;
+	uint32 *dom_rids;
+	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
+	uint16 acb_mask = ACB_NORMAL;
+	BOOL got_connect_pol = False, got_domain_pol = False;
+
+	if ((argc < 1) || (argc > 2)) {
+		printf("Usage: %s [access_mask]\n", argv[0]);
+		return NT_STATUS_OK;
+	}
+	
+	if (argc > 1)
+		sscanf(argv[1], "%x", &access_mask);
+
+	/* Get sam policy handle */
+
+	result = try_samr_connects(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+				   &connect_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_connect_pol = True;
+
+	/* Get domain policy handle */
+
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      access_mask,
+				      &domain_sid, &domain_pol);
+
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_domain_pol = True;
+
+	/* Enumerate domain users */
+
+	start_idx = 0;
+	size = 0xffff;
+
+	do {
+		result = cli_samr_enum_dom_users(
+			cli, mem_ctx, &domain_pol, &start_idx, acb_mask,
+			size, &dom_users, &dom_rids, &num_dom_users);
+
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+
+			for (i = 0; i < num_dom_users; i++)
+				printf("group:[%s] rid:[0x%x]\n", 
+				       dom_users[i], dom_rids[i]);
+		}
+
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
+
+ done:
+	if (got_domain_pol)
+		cli_samr_close(cli, mem_ctx, &domain_pol);
+
+	if (got_connect_pol)
+		cli_samr_close(cli, mem_ctx, &connect_pol);
+
+	return result;
+}
+
 /* Enumerate domain groups */
 
 static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, 
@@ -1428,6 +1502,7 @@ struct cmd_set samr_commands[] = {
 	{ "queryaliasmem", 	cmd_samr_query_aliasmem, 	PI_SAMR,	"Query alias membership",  "" },
 	{ "querydispinfo", 	cmd_samr_query_dispinfo, 	PI_SAMR,	"Query display info",      "" },
 	{ "querydominfo", 	cmd_samr_query_dominfo, 	PI_SAMR,	"Query domain info",       "" },
+	{ "enumdomusers",      cmd_samr_enum_dom_users,       PI_SAMR,	"Enumerate domain users", "" },
 	{ "enumdomgroups",      cmd_samr_enum_dom_groups,       PI_SAMR,	"Enumerate domain groups", "" },
 	{ "enumalsgroups",      cmd_samr_enum_als_groups,       PI_SAMR,	"Enumerate alias groups",  "" },
 
