@@ -288,7 +288,6 @@ if test x"$with_krb5_support" != x"no"; then
 	AC_CHECK_LIB_EXT(k5crypto, KRB5_LIBS, krb5_encrypt_data)
 
 	# Heimdal checks.
-	AC_CHECK_LIB_EXT(crypto, KRB5_LIBS, des_set_key)
 	AC_CHECK_LIB_EXT(asn1, KRB5_LIBS, copy_Authenticator)
 	AC_CHECK_LIB_EXT(roken, KRB5_LIBS, roken_getaddrinfo_hostspec)
 
