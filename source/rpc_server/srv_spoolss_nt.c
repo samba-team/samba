@@ -1056,8 +1056,8 @@ static BOOL notify2_unpack_msg( SPOOLSS_NOTIFY_MSG *msg, struct timeval *tv, voi
 		tdb_unpack((char *)buf + offset, len - offset, NULL, "B", 
 			   &msg->len, &msg->notify.data);
 			   
-	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message for printer %s, type %d, field 0x%02x, flags 0x%04x\n",
-		  msg->printer, msg->type, msg->field, msg->flags));
+	DEBUG(3, ("notify2_unpack_msg: got NOTIFY2 message for printer %s, jobid %u, type %d, field 0x%02x, flags 0x%04x\n",
+		  msg->printer, (unsigned int)msg->id, msg->type, msg->field, msg->flags));
 
 	/* msg->printer is in unix charset. Convert ! */
 	unix_to_dos(msg->printer);
