@@ -2672,7 +2672,7 @@ AC_ARG_WITH(sendfile-support,
 
 	case "$host_os" in
 	*linux*)
-		AC_CACHE_CHECK([for sendfile64 support],samba_cv_HAVE_SENDFILE64,[
+		AC_CACHE_CHECK([for linux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
 		AC_TRY_LINK([#include <sys/sendfile.h>],
 [\
 int tofd, fromfd;
@@ -2682,7 +2682,7 @@ ssize_t nwritten = sendfile64(tofd, fromfd, &offset, total);
 ],
 samba_cv_HAVE_SENDFILE64=yes,samba_cv_HAVE_SENDFILE64=no)])
 
-		AC_CACHE_CHECK([for sendfile support],samba_cv_HAVE_SENDFILE,[
+		AC_CACHE_CHECK([for linux sendfile support],samba_cv_HAVE_SENDFILE,[
 		AC_TRY_LINK([#include <sys/sendfile.h>],
 [\
 int tofd, fromfd;
@@ -2722,6 +2722,35 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 		AC_MSG_RESULT(no);
 	fi
 
+	;;
+	*freebsd*)
+		AC_CACHE_CHECK([for freebsd sendfile support],samba_cv_HAVE_SENDFILE,[
+		AC_TRY_LINK([\
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/uio.h>],
+[\
+	int fromfd, tofd;
+	off_t offset, nwritten;
+	struct sf_hdtr hdr;
+	struct iovec hdtrl;
+	hdr->headers = &hdtrl;
+	hdr->hdr_cnt = 1;
+	hdr->trailers = NULL;
+	hdr->trl_cnt = 0;
+	hdtrl.iov_base = NULL;
+	hdtrl.iov_len = 0;
+	int ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+],
+samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
+
+	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE)
+		AC_DEFINE(FREEBSD_SENDFILE_API)
+		AC_DEFINE(WITH_SENDFILE)
+	else
+		AC_MSG_RESULT(no);
+	fi
 	;;
         *)
 	;;

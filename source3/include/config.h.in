@@ -293,6 +293,7 @@
 #undef LINUX_SENDFILE_API
 #undef LINUX_BROKEN_SENDFILE_API
 #undef WITH_SENDFILE
+#undef FREEBSD_SENDFILE_API
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
