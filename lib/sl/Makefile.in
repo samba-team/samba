@@ -113,7 +113,8 @@ $(mk_cmds_OBJECTS): parse.h
 mk_cmds$(EXECSUFFIX): $(mk_cmds_OBJECTS)
 	$(CC) $(CFLAGS) -o $@ $(mk_cmds_OBJECTS) -L../roken -lroken
 
-parse.c parse.h: $(srcdir)/parse.y
+parse.c: parse.h
+parse.h: $(srcdir)/parse.y
 	$(YACC) -d $(srcdir)/parse.y
 	mv -f y.tab.h parse.h
 	mv -f y.tab.c parse.c
