@@ -1,6 +1,6 @@
 #ifndef DEBUGPARSE_H
 #define DEBUGPARSE_H
-/* ========================================================================== **
+/* ************************************************************************== **
  *                                debugparse.c
  *
  * Copyright (C) 1998 by Christopher R. Hertel
@@ -28,7 +28,7 @@
  * -------------------------------------------------------------------------- **
  * The important function in this module is dbg_char2token().  The rest is
  * basically fluff.  (Potentially useful fluff, but still fluff.)
- * ========================================================================== **
+ * ************************************************************************== **
  */
 
 #include "sys_include.h"

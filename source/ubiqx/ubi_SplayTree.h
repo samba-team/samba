@@ -1,6 +1,6 @@
 #ifndef UBI_SPLAYTREE_H
 #define UBI_SPLAYTREE_H
-/* ========================================================================== **
+/* ************************************************************************== **
  *                              ubi_SplayTree.h
  *
  *  Copyright (C) 1993-1998 by Christopher R. Hertel
@@ -148,12 +148,12 @@
  * Initial version, written by Christopher R. Hertel.
  * This module implements Splay Trees using the ubi_BinTree module as a basis.
  *
- * ========================================================================== **
+ * ************************************************************************== **
  */
 
 #include "ubi_BinTree.h" /* Base binary tree functions, types, etc.  */
 
-/* ========================================================================== **
+/* ************************************************************************== **
  * Function prototypes...
  */
 
@@ -367,5 +367,5 @@ int ubi_sptModuleID( int size, char *list[] );
 
 #define ubi_trModuleID( s, l ) ubi_sptModuleID( s, l )
 
-/* ================================ The End ================================= */
+/* ******************************** The End ********************************= */
 #endif /* UBI_SPLAYTREE_H */

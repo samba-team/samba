@@ -1,6 +1,6 @@
 #ifndef UBI_SLINKLIST_H
 #define UBI_SLINKLIST_H
-/* ========================================================================== **
+/* ************************************************************************== **
  *                              ubi_sLinkList.h
  *
  *  Copyright (C) 1997, 1998 by Christopher R. Hertel
@@ -94,12 +94,12 @@
  *            node.  In ubi_dLinkList, the ubi_dlRemove() function removes
  *            the 'current' node.
  *
- * ========================================================================== **
+ * ************************************************************************== **
  */
 
 #include "sys_include.h"    /* System-specific includes. */
 
-/* ========================================================================== **
+/* ************************************************************************== **
  * Typedefs...
  *
  *  ubi_slNode    - This is the basic node structure.
@@ -126,7 +126,7 @@ typedef struct
 typedef ubi_slList *ubi_slListPtr;
 
 
-/* ========================================================================== **
+/* ************************************************************************** **
  * Macros...
  * 
  *  ubi_slNewList - Macro used to declare and initialize a list header in
@@ -192,7 +192,7 @@ typedef ubi_slList *ubi_slListPtr;
 #define ubi_slEnqueue ubi_slAddTail
 #define ubi_slDequeue ubi_slRemHead
 
-/* ========================================================================== **
+/* ************************************************************************** **
  * Function prototypes...
  */
 
@@ -244,5 +244,5 @@ ubi_slNodePtr ubi_slRemove( ubi_slListPtr ListPtr, ubi_slNodePtr After );
    * ------------------------------------------------------------------------ **
    */
 
-/* ================================ The End ================================= */
+/* ******************************** The End ********************************* */
 #endif /* UBI_SLINKLIST_H */
