@@ -3,6 +3,7 @@
    Version 3.0
    Samba temporary memory allocation functions
    Copyright (C) Andrew Tridgell 2000
+   Copyright (C) 2001 by Martin Pool <mbp@samba.org>
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,7 +36,7 @@
 
 #include "includes.h"
 
-/* initialise talloc context. */
+/** Create a new talloc context. **/
 TALLOC_CTX *talloc_init(void)
 {
 	TALLOC_CTX *t;
@@ -49,7 +50,27 @@ TALLOC_CTX *talloc_init(void)
 	return t;
 }
 
-/* allocate a bit of memory from the specified pool */
+
+
+/**
+ * Create a new talloc context, with a name specifying its purpose.
+ * Please call this in preference to talloc_init().
+ **/
+TALLOC_CTX *talloc_init_named(char const *fmt, ...)
+{
+	TALLOC_CTX *t;
+	va_list ap;
+
+	t = talloc_init();
+	va_start(ap, fmt);
+	t->name = talloc_vasprintf(t, fmt, ap);
+	va_end(ap);
+
+	return t;
+}
+
+
+/** Allocate a bit of memory from the specified pool **/
 void *talloc(TALLOC_CTX *t, size_t size)
 {
 	void *p;
@@ -166,24 +187,34 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
 	return talloc_memdup(t, p, strlen(p) + 1);
 }
 
-/* allocate a bit of memory from the specified pool */
+/**
+ * Perform string formatting, and return a pointer to newly allocated
+ * memory holding the result, inside a memory pool.
+ **/
 char *talloc_asprintf(TALLOC_CTX *t, const char *fmt, ...)
 {
 	va_list ap;
-	int len;
 	char *ret;
 
 	/* work out how long it will be */
 	va_start(ap, fmt);
-	len = vsnprintf(NULL, 0, fmt, ap);
+	ret = talloc_vasprintf(t, fmt, ap);
 	va_end(ap);
+	return ret;
+}
+
+
+char *talloc_vasprintf(TALLOC_CTX *t, const char *fmt, va_list ap)
+{	
+	int len;
+	char *ret;
 	
+	len = vsnprintf(NULL, 0, fmt, ap);
+
 	ret = talloc(t, len+1);
 	if (!ret) return NULL;
 
-	va_start(ap, fmt);
 	vsnprintf(ret, len+1, fmt, ap);
-	va_end(ap);
 
 	return ret;
 }
