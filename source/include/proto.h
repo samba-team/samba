@@ -184,8 +184,6 @@ char *complete_regenum(char *text, int state);
 char *complete_samenum_usr(char *text, int state);
 char *complete_samenum_als(char *text, int state);
 char *complete_samenum_grp(char *text, int state);
-char *complete_printersenum(char *text, int state);
-char *complete_printersenum(char *text, int state);
 char *complete_samenum_usr(char *text, int state);
 char *complete_samenum_als(char *text, int state);
 char *complete_samenum_grp(char *text, int state);
@@ -2421,10 +2419,13 @@ BOOL samr_open_group(  const POLICY_HND *domain_pol,
 				POLICY_HND *group_pol);
 BOOL samr_del_groupmem(  POLICY_HND *group_pol, uint32 rid);
 BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid);
+BOOL samr_delete_dom_user(  POLICY_HND *user_pol);
 BOOL samr_delete_dom_group(  POLICY_HND *group_pol);
 BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 				POLICY_HND *group_pol, uint32 *rid);
 BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
+BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,
+				const DOM_SID *sid);
 BOOL samr_open_domain(  const POLICY_HND *connect_pol,
 				uint32 ace_perms,
 				const DOM_SID *sid,
@@ -3396,6 +3397,7 @@ void cmd_sam_create_dom_trusting(struct client_info *info, int argc, char *argv[
 void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[]);

@@ -704,7 +704,7 @@ void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[])
 
 	/* connect to the domain */
 	res1 = res1 ? samr_open_alias( &pol_dom,
-	            0x000f001f, alias_rid, &alias_pol) : False;
+	            0x010000, alias_rid, &alias_pol) : False;
 
 	res2 = res1 ? samr_delete_dom_alias(&alias_pol) : False;
 
@@ -1359,6 +1359,113 @@ void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[])
 	{
 		DEBUG(5,("cmd_sam_del_groupmem: failed\n"));
 		report(out_hnd, "Add Domain Group Member: FAILED\n");
+	}
+}
+
+
+/****************************************************************************
+SAM delete user.
+****************************************************************************/
+void cmd_sam_delete_dom_user(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	fstring domain;
+	char *name;
+	fstring sid;
+	DOM_SID sid1;
+	DOM_SID sid_usr;
+	POLICY_HND pol_usr;
+	BOOL res = True;
+	BOOL res1 = True;
+	BOOL res2 = True;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	uint32 user_rid = 0;
+	const char *names[1];
+	uint32 *rids;
+	uint32 *types;
+	uint32 num_rids;
+	POLICY_HND sam_pol;
+	POLICY_HND pol_dom;
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	sid_copy(&sid1, &info->dom.level5_sid);
+	sid_to_string(sid, &sid1);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid1.num_auths == 0)
+	{
+		if (msrpc_sam_get_first_domain(srv_name, domain, &sid1) != 0x0)
+		{
+			report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+			return;
+		}
+	}
+
+	if (argc < 2)
+	{
+		report(out_hnd, "deluser <user name>\n");
+		return;
+	}
+
+	name = argv[1];
+
+	report(out_hnd, "SAM Delete Domain User\n");
+
+	/* establish a connection. */
+	res = res ? samr_connect( srv_name, 0x02000000,
+				&sam_pol) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain( &sam_pol, ace_perms, &sid1,
+	            &pol_dom) : False;
+
+	names[0] = name;
+
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
+	            1, names,
+	            &num_rids, &rids, &types) : False;
+
+	if (res1 && num_rids == 1 && rids)
+	{
+		user_rid = rids[0];
+		sid_copy(&sid_usr, &sid1);
+		if (!sid_append_rid(&sid_usr, user_rid))
+		{
+			res1 = False;
+		}
+
+	}
+	else
+	{
+		res1 = False;
+	}
+	safe_free(rids);
+	safe_free(types);
+
+	/* connect to the domain */
+	res1 = res1 ? samr_open_user( &pol_dom,
+	            0x0000001f, user_rid, &pol_usr) : False;
+
+	res2 = res1 ? samr_unknown_2d(&pol_dom, &sid_usr) : False;
+	res2 = res2 ? samr_delete_dom_user(&pol_usr) : False;
+	res2 = res2 ? samr_unknown_2d(&pol_dom, &sid_usr) : False;
+
+	res1 = res1 ? samr_close(&pol_usr) : False;
+	res  = res  ? samr_close(&pol_dom) : False;
+	res  = res  ? samr_close(&sam_pol) : False;
+
+	if (res && res1 && res2)
+	{
+		DEBUG(5,("cmd_sam_delete_dom_user: succeeded\n"));
+		report(out_hnd, "Delete Domain User: OK\n");
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_delete_dom_user: failed\n"));
+		report(out_hnd, "Delete Domain User: FAILED\n");
 	}
 }
 

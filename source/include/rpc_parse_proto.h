@@ -283,6 +283,11 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *
 BOOL make_samr_r_lookup_domain(SAMR_R_LOOKUP_DOMAIN *r_u,
 		DOM_SID *dom_sid, uint32 status);
 BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth);
+BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D *q_u,
+				const POLICY_HND *dom_pol, 
+				const DOM_SID *sid);
+BOOL samr_io_q_unknown_2d(char *desc,  SAMR_Q_UNKNOWN_2D *q_u, prs_struct *ps, int depth);
+BOOL samr_io_r_unknown_2d(char *desc,  SAMR_R_UNKNOWN_2D *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				const POLICY_HND *connect_pol, uint32 flags,
 				const DOM_SID *sid);

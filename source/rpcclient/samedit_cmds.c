@@ -100,6 +100,12 @@ static const struct command_set sam_commands[] = {
 	 {NULL, NULL}
 	 },
 	{
+	 "deluser",
+	 cmd_sam_delete_dom_user,
+	 "SAM Delete Domain User",
+	 {complete_samenum_usr, NULL}
+	 },
+	{
 	 "delgroup",
 	 cmd_sam_delete_dom_group,
 	 "SAM Delete Domain Group",

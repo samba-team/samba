@@ -173,6 +173,62 @@ BOOL samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+BOOL make_samr_q_unknown_2d(SAMR_Q_UNKNOWN_2D *q_u,
+				const POLICY_HND *dom_pol, 
+				const DOM_SID *sid)
+{
+	if (q_u == NULL) return False;
+
+	DEBUG(5,("samr_make_samr_q_unknown_2d\n"));
+
+	memcpy(&q_u->dom_pol, dom_pol, sizeof(q_u->dom_pol));
+	make_dom_sid2(&(q_u->sid), sid);
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_q_unknown_2d(char *desc,  SAMR_Q_UNKNOWN_2D *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_q_unknown_2d");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("domain_pol", &(q_u->dom_pol), ps, depth); 
+	prs_align(ps);
+
+	smb_io_dom_sid2("sid", &(q_u->sid), ps, depth); 
+	prs_align(ps);
+
+	return True;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+BOOL samr_io_r_unknown_2d(char *desc,  SAMR_R_UNKNOWN_2D *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return False;
+
+	prs_debug(ps, depth, desc, "samr_io_r_unknown_2d");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+
+	return True;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
 BOOL make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				const POLICY_HND *connect_pol, uint32 flags,
 				const DOM_SID *sid)

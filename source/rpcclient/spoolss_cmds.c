@@ -23,6 +23,54 @@
 #include "includes.h"
 #include "ntdomain.h"
 #include "rpcclient.h"
+#include "rpc_parse.h"
+
+extern struct client_info cli_info;
+
+static char *complete_printersenum(char *text, int state)
+{
+	static uint32 i = 0;
+	static uint32 num = 0;
+	static PRINTER_INFO_1 **ctr = NULL;
+
+	if (state == 0)
+	{
+		fstring srv_name;
+		fstrcpy(srv_name, "\\\\");
+		fstrcat(srv_name, cli_info.dest_host);
+		strupper(srv_name);
+
+		free_print1_array(num, ctr);
+		ctr = NULL;
+		num = 0;
+
+		/* Iterate all users */
+		if (!msrpc_spoolss_enum_printers(srv_name,
+						 1, &num, (void ***)&ctr,
+						 NULL))
+		{
+			return NULL;
+		}
+
+		i = 0;
+	}
+
+	for (; i < num; i++)
+	{
+		fstring name;
+		unistr_to_ascii(name, ctr[i]->name.buffer, sizeof(name) - 1);
+
+		if (text == NULL || text[0] == 0 ||
+		    strnequal(text, name, strlen(text)))
+		{
+			char *copy = strdup(name);
+			i++;
+			return copy;
+		}
+	}
+
+	return NULL;
+}
 
 /****************************************************************************
  This defines the commands supported by this client

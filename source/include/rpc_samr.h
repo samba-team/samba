@@ -116,7 +116,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_ALIASMEM    0x21
 
 #define SAMR_OPEN_USER         0x22
-#define SAMR_DELETE_USER       0x23
+#define SAMR_DELETE_DOM_USER   0x23
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_SET_USERINFO2     0x25
 #define SAMR_QUERY_USERGROUPS  0x27
@@ -126,7 +126,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_2a        0x2a
 #define SAMR_UNKNOWN_2b        0x2b
 #define SAMR_GET_USRDOM_PWINFO 0x2c
-#define SAMR_UNKNOWN_2d        0x2d
+#define SAMR_UNKNOWN_2D        0x2d
 #define SAMR_UNKNOWN_2e        0x2e
 #define SAMR_UNKNOWN_2f        0x2f
 #define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
@@ -1636,6 +1636,23 @@ typedef struct r_samr_chgpasswd_user_info
 	uint32 status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
+
+
+/* SAMR_Q_UNKNOWN_2D */
+typedef struct q_samr_unknown_2d_info
+{
+	POLICY_HND dom_pol;   /* policy handle */
+	DOM_SID2 sid;         /* SID */
+
+} SAMR_Q_UNKNOWN_2D;
+
+
+/* SAMR_R_UNKNOWN_2D - probably an open */
+typedef struct r_samr_unknown_2d_info
+{
+	uint32 status;         /* return status */
+
+} SAMR_R_UNKNOWN_2D;
 
 #endif /* _RPC_SAMR_H */
 

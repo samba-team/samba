@@ -2,8 +2,8 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NT Domain Authentication SMB / MSRPC client
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1996-1997
+   Copyright (C) Andrew Tridgell              1994-2000
+   Copyright (C) Luke Kenneth Casson Leighton 1996-2000
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1373,6 +1373,58 @@ BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid)
 }
 
 /****************************************************************************
+do a SAMR Delete Domain User
+****************************************************************************/
+BOOL samr_delete_dom_user(  POLICY_HND *user_pol)
+{
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_DELETE_DOM_USER q_o;
+	BOOL valid_pol = False;
+
+	if (user_pol == NULL) return False;
+
+	/* delete and send a MSRPC command with api SAMR_DELETE_DOM_USER */
+
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
+
+	DEBUG(4,("SAMR Delete Domain User.\n"));
+
+	/* store the parameters */
+	make_samr_q_delete_dom_user(&q_o, user_pol);
+
+	/* turn parameters into data stream */
+	if (samr_io_q_delete_dom_user("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(user_pol, SAMR_DELETE_DOM_USER, &data, &rdata))
+	{
+		SAMR_R_DELETE_DOM_USER r_o;
+		BOOL p;
+
+		samr_io_r_delete_dom_user("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SAMR_R_DELETE_DOM_USER: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_free_data(&data   );
+	prs_free_data(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
 do a SAMR Delete Domain Group
 ****************************************************************************/
 BOOL samr_delete_dom_group(  POLICY_HND *group_pol)
@@ -1516,6 +1568,64 @@ BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr)
 		{
 			/* report error code */
 			DEBUG(4,("SAMR_R_SET_GROUPINFO: %s\n", get_nt_error_msg(r_o.status)));
+			p = False;
+		}
+
+		if (p)
+		{
+			valid_pol = True;
+		}
+	}
+
+	prs_free_data(&data   );
+	prs_free_data(&rdata  );
+
+	return valid_pol;
+}
+
+/****************************************************************************
+do a SAMR Unknown 2d
+****************************************************************************/
+BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,
+				const DOM_SID *sid)
+{
+	pstring sid_str;
+	prs_struct data;
+	prs_struct rdata;
+
+	SAMR_Q_UNKNOWN_2D q_o;
+	BOOL valid_pol = False;
+
+	if (DEBUGLEVEL >= 4)
+	{
+		sid_to_string(sid_str, sid);
+		DEBUG(4,("SAMR Unknown 0x2d.  SID:%s\n", sid_str));
+	}
+
+	if (sid == NULL || domain_pol == NULL) return False;
+
+	/* create and send a MSRPC command with api SAMR_UNKNOWN_2D */
+
+	prs_init(&data , 0, 4, False);
+	prs_init(&rdata, 0, 4, True );
+
+	/* store the parameters */
+	make_samr_q_unknown_2d(&q_o, domain_pol, sid);
+
+	/* turn parameters into data stream */
+	if (samr_io_q_unknown_2d("", &q_o,  &data, 0) &&
+	    rpc_hnd_pipe_req(domain_pol, SAMR_UNKNOWN_2D, &data, &rdata))
+	{
+		SAMR_R_UNKNOWN_2D r_o;
+		BOOL p;
+
+		samr_io_r_unknown_2d("", &r_o, &rdata, 0);
+		p = rdata.offset != 0;
+
+		if (p && r_o.status != 0)
+		{
+			/* report error code */
+			DEBUG(4,("SAMR_R_UNKNOWN_2D: %s\n", get_nt_error_msg(r_o.status)));
 			p = False;
 		}
 
