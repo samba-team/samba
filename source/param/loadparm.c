@@ -186,6 +186,7 @@ typedef struct
   int stat_cache_size;
   int map_to_guest;
   int min_passwd_length;
+  int oplock_break_wait_time;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -745,6 +746,7 @@ static struct parm_struct parm_table[] =
   {"mangle locks",     P_BOOL,    P_LOCAL,  &sDefault.bMangleLocks,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"oplock break wait time",P_INTEGER,P_GLOBAL,&Globals.oplock_break_wait_time,NULL,NULL,FLAG_GLOBAL},
   {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -924,6 +926,7 @@ static void init_globals(void)
   Globals.bRestrictAnonymous = False;
   Globals.map_to_guest = 0; /* By Default, "Never" */
   Globals.min_passwd_length = MINPASSWDLENGTH; /* By Default, 5. */
+  Globals.oplock_break_wait_time = 10; /* By Default, 10 msecs. */
 
 #ifdef WITH_LDAP
   /* default values for ldap */
@@ -1252,6 +1255,7 @@ FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
 FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
 FN_GLOBAL_INTEGER(lp_map_to_guest,&Globals.map_to_guest)
 FN_GLOBAL_INTEGER(lp_min_passwd_length,&Globals.min_passwd_length)
+FN_GLOBAL_INTEGER(lp_oplock_break_wait_time,&Globals.oplock_break_wait_time)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)

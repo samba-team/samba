@@ -722,6 +722,9 @@ parameter for details\&.  Note that some are synonyms\&.
 \fBole locking compatibility\fP
 .IP 
 .IP o 
+\fBoplock break wait time\fP
+.IP 
+.IP o 
 \fBos level\fP
 .IP 
 .IP o 
@@ -4039,6 +4042,20 @@ for details\&.
 \fBExample:\fP
 \f(CW	oplocks = False\fP
 .IP 
+.IP "\fBoplock break wait time (G)\fP.YODLTAGSTART. roffcmd .IP 
+This is a tuning parameter added due to bugs in both Windows 9x and WinNT\&.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request\&. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients\&.
+.IP 
+\fIDO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE\fP\&.
+.IP 
+\fBDefault:\fP
+\f(CW	oplock break wait time = 10\fP
+.IP 
 .IP "\fBoplock contention limit (S)\fP" 
 .IP 
 This is a \fIvery\fP advanced \fBsmbd\fP tuning option to improve
@@ -4053,7 +4070,7 @@ behave in a similar way to Windows NT\&.
 OPLOCK CODE\fP\&.
 .IP 
 \fBDefault:\fP
-\f(CW	oplock contention limit = 2\fP
+\f(CW oplock contention limit = 2\fP
 .IP 
 .IP "\fBos level (G)\fP" 
 .IP 
@@ -4392,7 +4409,7 @@ time they log in\&. Maybe a message of the day? Here is an example:
  
 
 .IP 
-Of course, this could get annoying after a while :-)
+Of course, this could get annoying after a while :-" .YODLTAGEND. 
 .IP 
 See also \fBpostexec\fP\&.
 .IP 

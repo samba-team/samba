@@ -23,7 +23,7 @@
 
 extern int DEBUGLEVEL;
 
-time_t smb_last_time=(time_t)0;
+struct timeval smb_last_time;
 
 char *InBuffer = NULL;
 char *OutBuffer = NULL;
@@ -558,7 +558,7 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int msg_type = CVAL(inbuf,0);
   extern int chain_size;
 
-  smb_last_time = time(NULL);
+  GetTimeOfDay(&smb_last_time);
 
   chain_size = 0;
   file_chain_reset();

@@ -478,6 +478,7 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#ntsmbsupport"><strong>nt smb support</strong></a>
 <p><br><li > <a href="smb.conf.5.html#nullpasswords"><strong>null passwords</strong></a>
 <p><br><li > <a href="smb.conf.5.html#olelockingcompatibility"><strong>ole locking compatibility</strong></a>
+<p><br><li > <a href="smb.conf.5.html#oplockbreakwaittime"><strong>oplock break wait time</strong></a>
 <p><br><li > <a href="smb.conf.5.html#oslevel"><strong>os level</strong></a>
 <p><br><li > <a href="smb.conf.5.html#packetsize"><strong>packet size</strong></a>
 <p><br><li > <a href="smb.conf.5.html#panicaction"><strong>panic action</strong></a>
@@ -2785,6 +2786,18 @@ for details.
 <code>	oplocks = True</code>
 <p><br><strong>Example:</strong>
 <code>	oplocks = False</code>
+<p><br><a name="oplockbreakwaittime"></a>
+<li><strong><strong>oplock break wait time (G)</strong>
+<p><br>This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients.
+<p><br><em>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE</em>.
+<p><br><strong>Default:</strong>
+<code>	oplock break wait time = 10</code>
 <p><br><a name="oplockcontentionlimit"></a>
 <li><strong><strong>oplock contention limit (S)</strong></strong>
 <p><br>This is a <em>very</em> advanced <a href="smbd.8.html"><strong>smbd</strong></a> tuning option to improve
@@ -2796,7 +2809,7 @@ behave in a similar way to Windows NT.
 <p><br><em>DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
 OPLOCK CODE</em>.
 <p><br><strong>Default:</strong>
-<code>	oplock contention limit = 2</code>
+<code> oplock contention limit = 2</code>
 <p><br><a name="oslevel"></a>
 <li><strong><strong>os level (G)</strong></strong>
 <p><br>This integer value controls what level Samba advertises itself as for
@@ -3052,7 +3065,7 @@ time they log in. Maybe a message of the day? Here is an example:
 
 </pre>
 
-<p><br>Of course, this could get annoying after a while :-)
+<p><br>Of course, this could get annoying after a while :-</strong>
 <p><br>See also <a href="smb.conf.5.html#postexec"><strong>postexec</strong></a>.
 <p><br><strong>Default:</strong>
 <code>	none (no command executed)</code>

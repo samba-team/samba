@@ -7,7 +7,7 @@ Quickly scrabbled together from odd bits of mail and memory. Please update.
 This document gives a general overview of how Samba works
 internally. The Samba Team has tried to come up with a model which is
 the best possible compromise between elegance, portability, security
-and the constraints imposed by the very message SMB and CIFS
+and the constraints imposed by the very messy SMB and CIFS
 protocol. 
 
 It also tries to answer some of the frequently asked questions such as:

@@ -645,6 +645,9 @@
 /* Define if you have the syscall function.  */
 #undef HAVE_SYSCALL
 
+/* Define if you have the usleep function.  */
+#undef HAVE_USLEEP
+
 /* Define if you have the utime function.  */
 #undef HAVE_UTIME
 

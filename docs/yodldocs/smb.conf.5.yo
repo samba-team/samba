@@ -633,6 +633,8 @@ it() link(bf(null passwords))(nullpasswords)
 
 it() link(bf(ole locking compatibility))(olelockingcompatibility)
 
+it() link(bf(oplock break wait time))(oplockbreakwaittime)
+
 it() link(bf(os level))(oslevel)
 
 it() link(bf(packet size))(packetsize)
@@ -3886,6 +3888,22 @@ tt(	oplocks = True)
   bf(Example:)
 tt(	oplocks = False)
 
+label(oplockbreakwaittime)
+dit(bf(oplock break wait time (G))
+
+This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
+If Samba responds to a client too quickly when that client issues an SMB that
+can cause an oplock break request, then the client redirector can fail and
+not respond to the break request. This tuning parameter (which is set in
+milliseconds) is the amount of time Samba will wait before sending an
+oplock break request to such (broken) clients.
+
+em(DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
+OPLOCK CODE).
+
+  bf(Default:)
+tt(	oplock break wait time = 10)
+
 label(oplockcontentionlimit)
 dit(bf(oplock contention limit (S)))
 
@@ -3901,7 +3919,7 @@ em(DO NOT CHANGE THIS PARAMETER UNLESS YOU HAVE READ AND UNDERSTOOD THE SAMBA
 OPLOCK CODE).
 
   bf(Default:)
-tt(	oplock contention limit = 2)
+tt( oplock contention limit = 2)
 
 label(oslevel)
 dit(bf(os level (G)))

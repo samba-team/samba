@@ -286,7 +286,7 @@ nothing before or nothing after the percent symbol will cause an empty
 username or an empty password to be used, respectively.
 
 The password may also be specified by setting up an environment
-variable called tt(PASSWORD) that contains the users password. Note
+variable called tt(PASSWD) that contains the users password. Note
 that this may be very insecure on some systems but on others allows
 users to script smbclient commands without having a password appear in
 the command line of a process listing.
@@ -296,7 +296,7 @@ on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 
 Be cautious about including passwords in scripts or in the
-tt(PASSWORD) environment variable. Also, on many systems the command
+tt(PASSWD) environment variable. Also, on many systems the command
 line of a running process may be seen via the tt(ps) command to be
 safe always allow smbclient to prompt for a password and type it in
 directly.
@@ -683,7 +683,7 @@ The variable bf(USER) may contain the username of the person using the
 client.  This information is used only if the protocol level is high
 enough to support session-level passwords.
 
-The variable bf(PASSWORD) may contain the password of the person using
+The variable bf(PASSWD) may contain the password of the person using
 the client.  This information is used only if the protocol level is
 high enough to support session-level passwords.
 

@@ -23,7 +23,7 @@
 
 extern int DEBUGLEVEL;
 
-extern time_t smb_last_time;
+extern struct timeval smb_last_time;
 extern int case_default;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
@@ -49,7 +49,7 @@ BOOL become_service(connection_struct *conn,BOOL do_chdir)
 		return(False);
 	}
 
-	conn->lastused = smb_last_time;
+	conn->lastused = smb_last_time.tv_sec;
 
 	snum = SNUM(conn);
   

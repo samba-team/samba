@@ -151,6 +151,7 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_usleep(long usecs);
 int sys_stat(const char *fname,SMB_STRUCT_STAT *sbuf);
 int sys_fstat(int fd,SMB_STRUCT_STAT *sbuf);
 int sys_lstat(const char *fname,SMB_STRUCT_STAT *sbuf);
@@ -1074,6 +1075,7 @@ int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_min_passwd_length(void);
+int lp_oplock_break_wait_time(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );

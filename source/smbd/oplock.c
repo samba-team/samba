@@ -37,7 +37,7 @@ BOOL global_oplock_break = False;
 
 extern int smb_read_error;
 
-static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval);
+static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, BOOL local);
 
 /****************************************************************************
  Get the number of current oplocks.
@@ -525,7 +525,7 @@ pid %d, port %d, dev = %x, inode = %.0f\n", remotepid, from_port, (unsigned int)
 
   if(global_oplocks_open != 0)
   {
-    if(oplock_break(dev, inode, ptval) == False)
+    if(oplock_break(dev, inode, ptval, False) == False)
     {
       DEBUG(0,("process_local_message: oplock break failed.\n"));
       return False;
@@ -599,9 +599,10 @@ static void prepare_break_message(char *outbuf, files_struct *fsp, BOOL level2)
  Process an oplock break directly.
 ****************************************************************************/
 
-static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
+static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, BOOL local_request)
 {
   extern struct current_user current_user;
+  extern struct timeval smb_last_time;
   extern int Client;
   char *inbuf = NULL;
   char *outbuf = NULL;
@@ -701,6 +702,29 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
     free(inbuf);
     inbuf = NULL;
     return False;
+  }
+
+  /*
+   * If we are sending an oplock break due to an SMB sent
+   * by our own client we ensure that we wait at leat
+   * lp_oplock_break_wait_time() milliseconds before sending
+   * the packet. Sending the packet sooner can break Win9x
+   * and has reported to cause problems on NT. JRA.
+   */
+
+  if(local_request) {
+    struct timeval cur_tv;
+    long wait_left = (long)lp_oplock_break_wait_time();
+
+	GetTimeOfDay(&cur_tv);
+
+	wait_left -= ((cur_tv.tv_sec - smb_last_time.tv_sec)*1000) +
+                ((cur_tv.tv_usec - smb_last_time.tv_usec)/1000);
+
+    if(wait_left > 0) {
+      wait_left = MIN(wait_left, 1000);
+      sys_usleep(wait_left * 1000);
+    }
   }
 
   /* Prepare the SMBlockingX message. */
@@ -902,7 +926,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
     DEBUG(5,("request_oplock_break: breaking our own oplock\n"));
 
     /* Call oplock break direct. */
-    return oplock_break(dev, inode, &share_entry->time);
+    return oplock_break(dev, inode, &share_entry->time, True);
   }
 
   /* We need to send a OPLOCK_BREAK_CMD message to the
@@ -1096,7 +1120,7 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 
     /* Try and break the oplock. */
     file_fd_struct *fd_ptr = fsp->fd_ptr;
-    if(oplock_break( fd_ptr->dev, fd_ptr->inode, &fsp->open_time)) {
+    if(oplock_break( fd_ptr->dev, fd_ptr->inode, &fsp->open_time, True)) {
       if(!fsp->open) /* Did the oplock break close the file ? */
         return True;
     }
