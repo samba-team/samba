@@ -1,3 +1,10 @@
+2002-07-04  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ipropd_master.c: handle slaves that come and go; add status
+	reporting (both from Love)
+
+	* iprop.h: KADM5_SLAVE_STATS
+
 2002-03-25  Jacques Vidrine  <n@nectar.com>
 
 	* init_c.c (get_cred_cache): bug fix: the default credentials
