@@ -2220,8 +2220,8 @@ static int call_trans2ioctl(connection_struct *conn, char* inbuf,
 	   CAN ACCEPT THIS IN UNICODE. JRA. */
 
     SSVAL(pdata,0,fsp->print_jobid);                     /* Job number */
-    StrnCpy(pdata+2, global_myname, 15);           /* Our NetBIOS name */
-    StrnCpy(pdata+18, lp_servicename(SNUM(conn)), 13); /* Service name */
+	srvstr_push( outbuf, pdata + 2, global_myname, 15, STR_CONVERT|STR_ASCII|STR_TERMINATE); /* Our NetBIOS name */
+    srvstr_push( outbuf, pdata+18, lp_servicename(SNUM(conn)), 13, STR_CONVERT|STR_ASCII|STR_TERMINATE); /* Service name */
     send_trans2_replies(outbuf,bufsize,*pparams,0,*ppdata,32);
     return(-1);
   } else {
