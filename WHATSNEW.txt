@@ -1,20 +1,136 @@
-              WHATS NEW IN Samba 2.2.2: 13th October 2001
-              ===========================================
+              WHATS NEW IN Samba 2.2.3  - 2nd February 2002
+              =============================================
 
 This is the latest stable release of Samba. This is the version that all
 production Samba servers should be running for all current bug-fixes.
 
-There are several important oplock logic bugs that have been fixed in
-this release, so an upgrade is recommended.
+There are several important scaling bugs that have been fixed in this release
+for large server systems so an upgrade is recommended.
 
-New daemon included - winbindd
-------------------------------
+LDAP update
+-----------
 
-Samba 2.2.2 is the first release to include the winbind daemon.
+Much work has been done on the LDAP backend code. The configure
+option --with-ldapsam is now considered to be stable. The schema
+used has changed, see the file examples/LDAP/samba.schema for the
+new schema.
+
+New documentation explaining how to set up a Samba only PDC/BDC
+setup has been added in the files Samba-LDAP-HOWTO and Samba-BDC-HOWTO
+in the documentation tree.
+
+winbindd daemon extended
+------------------------
+
+Samba 2.2.2 was the first release to include the winbind daemon.
 This code allows UNIX systems that implement the name service
 switch (nss) to be entered into a Windows NT/2000 domain and
 use the Domain controller for all user and group enumeration.
 
+Samba 2.2.3 fixes the known memory leaks in winbindd and has
+been extended to work with SGI IRIX and HPUX (11.x) in addition
+to the earlier targets of Linux and Solaris.
+
+For more information on using winbind, see the man pages for 
+winbindd and wbinfo.
+
+Note that winbindd is not installed by default.
+
+New/Changed parameters in 2.2.3
+-------------------------------
+
+For more information on these parameters, see the man pages for
+smb.conf.
+
+Added/changed parameters.
+-------------------------
+
+unix extensions
+
+Enables the experimental UNIX CIFS extensions in smbd. See the manpage
+for more details.
+
+default devmode
+
+Some printer drivers will crash the Windows NT/2000 spooler service
+if they are given a default devmode, some require it. This parameter
+allows the administrator a choice of whether smbd returns such a 
+default devmode for a driver.
+
+share modes
+
+This parameter has been restored to allow people who wish smbd to ignore
+client share modes. This is *very dangerous* and should not be set without
+full knowledge of what this is designed for.
+
+Changes in 2.2.3
+-----------------
+
+1). Fixed shared library compile for Solaris with native compiler.
+2). UNIX CIFS extensions code added (donated by HP).
+3). Changed to using NT status codes on the wire if the client can support
+this.
+4). altname command to show 8.3 name added to smbclient.
+5). const-safe endian macros now used.
+6). client code now uses UNICODE on the wire.
+7). Correctly return fault PDU's on bad handle.
+8). Improved NT error code mapping table.
+9). Many new point and print RPC calls added.
+10). Win9x clients can now see full user list.
+11). fileid added to identify simultaneous open files (no longer
+use dev/inode/time as unique value).
+12). HPUX ACL code added (donated by HP).
+13). vfs interfaces updated (again !).
+14). MSDOS Code Page 866 -> 1251 mapping added.
+15). winbindd now processes quit/hup signals correctly.
+16). No tdb traversal done on startup/shutdown - ensures scalability.
+17). Fix bug with paths for homes share.
+18). Fixed copyfile for OS/2.
+19). Fix group membership when groups are on more than one line.
+20). Fixed core dumps in posix ACL mapping code.
+21). Tidyup of UNICODE functions (put/get).
+22). Move rpcclient to the new libsmb code.
+23). Add missing Windows 2000 passthough trans2 calls.
+24). Return check all tdb calls.
+25). Make local name lookup work even if wins server is down.
+26). pam session code added to winbind.
+27). Added winbindd cache to all lookups.
+28). Fix allocate bugs that caused file sizes to be incorrect.
+29). Fixed write cache code - now safe to use.
+30). Fixed winbindd memory leaks.
+31). winbindd will now do name lookups (to allow non Open Source
+systems to do the nsswitch WINS lookup). Fixed by SGI.
+32). passdb memory leaks fixed.
+33). LDAP code updates and now properly maintained.
+34). Finally figured out how changeid is meant to work.
+35). Downlevel printing now looks as NT does in print monitor window.
+36). Many fixups in spoolss printing RPC parsing.
+37). Speed up password enumeration as a PDC.
+38). Fix printer changed notify messages (work from HP).
+39). Fix modify timestamp on close code.
+40). Fix long standing mangled names bug.
+41). Fix delete on close semantics.
+42). Stop opening all files with O_NONBLOCK !
+43). Use O_NOFOLLOW for systems that have it and don't want symlinks.
+44). Ensure NT suplementary groups get added to user token.
+45). Try and mitigate effects of DNS timeout (do less lookups).
+46). Added current user connection context stack.
+47). Fixes to utmp code.
+48). smbw code tidyups.
+49). Added tdb open log code. Several tdb fixes.
+
+Older release notes for Samba 2.2.x follow.
+
+-----------------------------------------------------------------------------
+
+New daemon included - winbindd
+------------------------------
+ 
+Samba 2.2.2 is the first release to include the winbind daemon.
+This code allows UNIX systems that implement the name service
+switch (nss) to be entered into a Windows NT/2000 domain and
+use the Domain controller for all user and group enumeration.
+ 
 This allows a Samba server added to a Windows domain to serve
 file and print services with *NO* local users needed in /etc/passwd
 and /etc/group - all users and groups are read directly from the
@@ -22,7 +138,7 @@ Windows domain controller. In addition with pam_winbind which allows
 a PAM enabled UNIX system to use a Windows domain for authentication
 service this allows single sign on and account control across
 UNIX and Windows systems.
-
+ 
 The current version of winbindd shipped in 2.2.2 does have some
 memory leaks, which will be addressed for the next Samba release,
 so it is advisable to monitor the winbind process. This code is
@@ -32,10 +148,10 @@ correctly against a Samba PDC, due to some missing calls on the
 PDC side. These problems are being addressed for the next Samba
 release, but it was thought better to release the code now rather
 than delay the main Samba code to match the winbind release schedule.
-
-For more information on using winbind, see the man pages for 
+ 
+For more information on using winbind, see the man pages for
 winbindd and wbinfo.
-
+ 
 Note that winbindd is not installed by default.
 
 New/Changed parameters in 2.2.2
