@@ -108,7 +108,6 @@ struct dcesrv_state {
 
 	/* current rpc handles - this is really the wrong scope for
 	   them, but it will do for now */
-	uint32 next_handle;
 	struct dcesrv_handle *handles;
 
 	DATA_BLOB partial_input;

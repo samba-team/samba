@@ -43,15 +43,9 @@ struct dcesrv_handle *dcesrv_handle_new(struct dcesrv_state *dce,
 	h->mem_ctx = mem_ctx;
 	h->data = NULL;
 
-	memset(h->wire_handle.data, 'H', sizeof(h->wire_handle.data));
-	strncpy(h->wire_handle.data, dce->ndr->name, 11);
-	h->wire_handle.data[11] = handle_type;
+	h->wire_handle.handle_type = handle_type;
+	uuid_generate_random(&h->wire_handle.uuid);
 	
-	/* TODO: check for wraparound here */
-	SIVAL(&h->wire_handle.data, 12, random());
-	dce->next_handle++;	
-	SIVAL(&h->wire_handle.data, 16, dce->next_handle);
-
 	DLIST_ADD(dce->handles, h);
 
 	return h;
@@ -78,12 +72,18 @@ struct dcesrv_handle *dcesrv_handle_fetch(struct dcesrv_state *dce,
 {
 	struct dcesrv_handle *h;
 
-	if (all_zero(p->data, sizeof(p->data))) {
+	if (p->handle_type == 0 && uuid_all_zero(&p->uuid)) {
 		return dcesrv_handle_new(dce, handle_type);
 	}
 
 	for (h=dce->handles; h; h=h->next) {
-		if (memcmp(h->wire_handle.data, p->data, sizeof(p->data)) == 0) {
+		if (h->wire_handle.handle_type == p->handle_type &&
+		    uuid_equal(&p->uuid, &h->wire_handle.uuid)) {
+			if (p->handle_type != handle_type) {
+				DEBUG(0,("client gave us the wrong handle type (%d should be %d)\n",
+					 p->handle_type, handle_type));
+				return NULL;
+			}
 			return h;
 		}
 	}

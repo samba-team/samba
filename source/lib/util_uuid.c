@@ -28,3 +28,29 @@ void uuid_generate_random(struct GUID *out)
 	out->clock_seq[0] = (out->clock_seq[0] & 0x3F) | 0x80;
 	out->time_hi_and_version = (out->time_hi_and_version & 0x0FFF) | 0x4000;
 }
+
+BOOL uuid_all_zero(const struct GUID *u)
+{
+	if (u->time_low != 0 ||
+	    u->time_mid != 0 ||
+	    u->time_hi_and_version != 0 ||
+	    u->clock_seq[0] != 0 ||
+	    u->clock_seq[1] != 0 ||
+	    !all_zero(u->node, 6)) {
+		return False;
+	}
+	return True;
+}
+
+BOOL uuid_equal(const struct GUID *u1, const struct GUID *u2)
+{
+	if (u1->time_low != u2->time_low ||
+	    u1->time_mid != u2->time_mid ||
+	    u1->time_hi_and_version != u2->time_hi_and_version ||
+	    u1->clock_seq[0] != u2->clock_seq[0] ||
+	    u1->clock_seq[1] != u2->clock_seq[1] ||
+	    memcmp(u1->node, u2->node, 6) != 0) {
+		return False;
+	}
+	return True;
+}
