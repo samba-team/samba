@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,11 +42,11 @@ struct addr_operations {
     krb5_error_code (*sockaddr2addr)(const struct sockaddr *, krb5_address *);
     krb5_error_code (*sockaddr2port)(const struct sockaddr *, int16_t *);
     void (*addr2sockaddr)(const krb5_address *, struct sockaddr *,
-			  int *sa_size, int port);
-    void (*h_addr2sockaddr)(const char *, struct sockaddr *, int *, int);
+			  socklen_t *sa_size, int port);
+    void (*h_addr2sockaddr)(const char *, struct sockaddr *, socklen_t *, int);
     krb5_error_code (*h_addr2addr)(const char *, krb5_address *);
     krb5_boolean (*uninteresting)(const struct sockaddr *);
-    void (*anyaddr)(struct sockaddr *, int *, int);
+    void (*anyaddr)(struct sockaddr *, socklen_t *, int);
     int (*print_addr)(const krb5_address *, char *, size_t);
     int (*parse_addr)(krb5_context, const char*, krb5_address *);
     int (*order_addr)(krb5_context, const krb5_address*, const krb5_address*);
@@ -81,29 +81,33 @@ ipv4_sockaddr2port (const struct sockaddr *sa, int16_t *port)
 static void
 ipv4_addr2sockaddr (const krb5_address *a,
 		    struct sockaddr *sa,
-		    int *sa_size,
+		    socklen_t *sa_size,
 		    int port)
 {
-    struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+    struct sockaddr_in tmp;
 
-    memset (sin, 0, sizeof(*sin));
-    sin->sin_family = AF_INET;
-    memcpy (&sin->sin_addr, a->address.data, 4);
-    sin->sin_port = port;
-    *sa_size = sizeof(*sin);
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin_family = AF_INET;
+    memcpy (&tmp.sin_addr, a->address.data, 4);
+    tmp.sin_port = port;
+    memcpy(sa, &tmp, min(sizeof(tmp), *sa_size));
+    *sa_size = sizeof(tmp);
 }
 
 static void
 ipv4_h_addr2sockaddr(const char *addr,
-		     struct sockaddr *sa, int *sa_size, int port)
+		     struct sockaddr *sa,
+		     socklen_t *sa_size,
+		     int port)
 {
-    struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+    struct sockaddr_in tmp;
 
-    memset (sin, 0, sizeof(*sin));
-    *sa_size = sizeof(*sin);
-    sin->sin_family = AF_INET;
-    sin->sin_port   = port;
-    sin->sin_addr   = *((const struct in_addr *)addr);
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin_family = AF_INET;
+    tmp.sin_port   = port;
+    tmp.sin_addr   = *((const struct in_addr *)addr);
+    memcpy(sa, &tmp, min(sizeof(tmp), *sa_size));
+    *sa_size = sizeof(tmp);
 }
 
 static krb5_error_code
@@ -133,15 +137,16 @@ ipv4_uninteresting (const struct sockaddr *sa)
 }
 
 static void
-ipv4_anyaddr (struct sockaddr *sa, int *sa_size, int port)
+ipv4_anyaddr (struct sockaddr *sa, socklen_t *sa_size, int port)
 {
-    struct sockaddr_in *sin = (struct sockaddr_in *)sa;
+    struct sockaddr_in tmp;
 
-    memset (sin, 0, sizeof(*sin));
-    *sa_size = sizeof(*sin);
-    sin->sin_family = AF_INET;
-    sin->sin_port   = port;
-    sin->sin_addr.s_addr = INADDR_ANY;
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin_family = AF_INET;
+    tmp.sin_port   = port;
+    tmp.sin_addr.s_addr = INADDR_ANY;
+    memcpy(sa, &tmp, min(sizeof(tmp), *sa_size));
+    *sa_size = sizeof(tmp);
 }
 
 static int
@@ -231,31 +236,33 @@ ipv6_sockaddr2port (const struct sockaddr *sa, int16_t *port)
 static void
 ipv6_addr2sockaddr (const krb5_address *a,
 		    struct sockaddr *sa,
-		    int *sa_size,
+		    socklen_t *sa_size,
 		    int port)
 {
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+    struct sockaddr_in6 tmp;
 
-    memset (sin6, 0, sizeof(*sin6));
-    sin6->sin6_family = AF_INET6;
-    memcpy (&sin6->sin6_addr, a->address.data, sizeof(sin6->sin6_addr));
-    sin6->sin6_port = port;
-    *sa_size = sizeof(*sin6);
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin6_family = AF_INET6;
+    memcpy (&tmp.sin6_addr, a->address.data, sizeof(tmp.sin6_addr));
+    tmp.sin6_port = port;
+    memcpy(sa, &tmp, min(sizeof(tmp), *sa_size));
+    *sa_size = sizeof(tmp);
 }
 
 static void
 ipv6_h_addr2sockaddr(const char *addr,
 		     struct sockaddr *sa,
-		     int *sa_size,
+		     socklen_t *sa_size,
 		     int port)
 {
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+    struct sockaddr_in6 tmp;
 
-    memset (sin6, 0, sizeof(*sin6));
-    *sa_size = sizeof(*sin6);
-    sin6->sin6_family = AF_INET6;
-    sin6->sin6_port   = port;
-    sin6->sin6_addr   = *((const struct in6_addr *)addr);
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin6_family = AF_INET6;
+    tmp.sin6_port   = port;
+    tmp.sin6_addr   = *((const struct in6_addr *)addr);
+    memcpy(sa, &tmp, min(sizeof(tmp), *sa_size));
+    *sa_size = sizeof(tmp);
 }
 
 static krb5_error_code
@@ -282,15 +289,15 @@ ipv6_uninteresting (const struct sockaddr *sa)
 }
 
 static void
-ipv6_anyaddr (struct sockaddr *sa, int *sa_size, int port)
+ipv6_anyaddr (struct sockaddr *sa, socklen_t *sa_size, int port)
 {
-    struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)sa;
+    struct sockaddr_in6 tmp;
 
-    memset (sin6, 0, sizeof(*sin6));
-    *sa_size = sizeof(*sin6);
-    sin6->sin6_family = AF_INET6;
-    sin6->sin6_port   = port;
-    sin6->sin6_addr   = in6addr_any;
+    memset (&tmp, 0, sizeof(tmp));
+    tmp.sin6_family = AF_INET6;
+    tmp.sin6_port   = port;
+    tmp.sin6_addr   = in6addr_any;
+    *sa_size = sizeof(tmp);
 }
 
 static int
@@ -358,7 +365,7 @@ struct arange {
 
 static int
 arange_parse_addr (krb5_context context, 
-			  const char *address, krb5_address *addr)
+		   const char *address, krb5_address *addr)
 {
     char buf[1024];
     krb5_addresses low, high;
@@ -471,8 +478,8 @@ arange_print_addr (const krb5_address *addr, char *str, size_t len)
 
 static int
 arange_order_addr(krb5_context context, 
-			 const krb5_address *addr1, 
-			 const krb5_address *addr2)
+		  const krb5_address *addr1, 
+		  const krb5_address *addr2)
 {
     int tmp1, tmp2, sign;
     struct arange *a;
@@ -594,7 +601,7 @@ krb5_error_code
 krb5_addr2sockaddr (krb5_context context,
 		    const krb5_address *addr,
 		    struct sockaddr *sa,
-		    int *sa_size,
+		    socklen_t *sa_size,
 		    int port)
 {
     struct addr_operations *a = find_atype(addr->addr_type);
@@ -637,7 +644,8 @@ krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 krb5_error_code
 krb5_h_addr2sockaddr (krb5_context context,
 		      int af,
-		      const char *addr, struct sockaddr *sa, int *sa_size,
+		      const char *addr, struct sockaddr *sa,
+		      socklen_t *sa_size,
 		      int port)
 {
     struct addr_operations *a = find_af(af);
@@ -666,7 +674,7 @@ krb5_error_code
 krb5_anyaddr (krb5_context context,
 	      int af,
 	      struct sockaddr *sa,
-	      int *sa_size,
+	      socklen_t *sa_size,
 	      int port)
 {
     struct addr_operations *a = find_af (af);
