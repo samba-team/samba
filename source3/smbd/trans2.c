@@ -55,6 +55,7 @@ SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 
 static const char *prohibited_ea_names[] = {
 	SAMBA_POSIX_INHERITANCE_EA_NAME,
+	SAMBA_XATTR_DOS_ATTRIB,
 	NULL
 };
 
@@ -538,7 +539,6 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 	int32 open_size;
 	char *pname;
 	pstring fname;
-	mode_t unixmode;
 	SMB_OFF_T size=0;
 	int fmode=0,mtime=0,rmode;
 	SMB_INO_T inode = 0;
@@ -586,9 +586,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf, i
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 	}
 
-	unixmode = unix_mode(conn,open_attr | aARCH, fname);
-      
-	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,unixmode,
+	fsp = open_file_shared(conn,fname,&sbuf,open_mode,open_ofun,(uint32)open_attr,
 		oplock_request, &rmode,&smb_action);
       
 	if (!fsp) {
@@ -3133,7 +3131,8 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					new_fsp = open_file_shared1(conn, fname, &sbuf,FILE_WRITE_DATA,
 									SET_OPEN_MODE(DOS_OPEN_RDWR),
 									(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-									0, 0, &access_mode, &action);
+									FILE_ATTRIBUTE_NORMAL,
+									0, &access_mode, &action);
  
 					if (new_fsp == NULL)
 						return(UNIXERROR(ERRDOS,ERRbadpath));
@@ -3528,8 +3527,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 
 		DEBUG(10,("call_trans2setfilepathinfo: file %s : setting dos mode %x\n", fname, dosmode ));
 
-		if(file_chmod(conn, fname, dosmode, NULL)) {
-			DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
+		if(file_set_dosmode(conn, fname, dosmode, NULL)) {
+			DEBUG(2,("file_set_dosmode of %s failed (%s)\n", fname, strerror(errno)));
 			return(UNIXERROR(ERRDOS,ERRnoaccess));
 		}
 	}
@@ -3559,7 +3558,8 @@ size = %.0f, uid = %u, gid = %u, raw perms = 0%o\n",
 			new_fsp = open_file_shared(conn, fname, &sbuf,
 						SET_OPEN_MODE(DOS_OPEN_RDWR),
 						(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						0, 0, &access_mode, &action);
+						FILE_ATTRIBUTE_NORMAL,
+						0, &access_mode, &action);
 	
 			if (new_fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadpath));
