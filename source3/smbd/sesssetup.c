@@ -165,13 +165,15 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	ret = ads_verify_ticket(lp_realm(), &ticket, &client, &auth_data, &ap_rep, session_key);
+
+	data_blob_free(&ticket);
+
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
 	data_blob_free(&auth_data);
-	data_blob_free(&ticket);
 
 	DEBUG(3,("Ticket name is [%s]\n", client));
 
