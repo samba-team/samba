@@ -79,7 +79,7 @@ struct nbtd_iface_name *nbtd_find_iname(struct nbtd_interface *iface,
 	struct nbtd_iface_name *iname;
 	for (iname=iface->names;iname;iname=iname->next) {
 		if (iname->name.type == name->type &&
-		    StrCaseCmp(name->name, iname->name.name) == 0 &&
+		    strcmp(name->name, iname->name.name) == 0 &&
 		    ((iname->nb_flags & nb_flags) == nb_flags)) {
 			return iname;
 		}
