@@ -24,7 +24,6 @@
 #include "libcli/nbt/libnbt.h"
 #include "libcli/raw/libcliraw.h"
 #include "libcli/composite/composite.h"
-#include "system/network.h"
 
 /*
   send a nbt name refresh request

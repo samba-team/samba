@@ -23,8 +23,6 @@
 
 #include "includes.h"
 #include "system/kerberos.h"
-#include "system/time.h"
-#include "libcli/auth/kerberos.h"
 #include "auth/auth.h"
 
 #undef DBGC_CLASS
