@@ -675,7 +675,7 @@ static void notify_system_time(struct spoolss_notify_msg *msg,
 		return;
 	}
 
-	if (!make_systemtime(&systime, localtime((time_t *)msg->notify.data))) {
+	if (!make_systemtime(&systime, gmtime((time_t *)msg->notify.data))) {
 		DEBUG(5, ("notify_system_time: unable to make systemtime\n"));
 		return;
 	}
