@@ -24,8 +24,6 @@
 
 #include "includes.h"
 
-#undef HAVE_KRB5
-
 #undef DBGC_CLASS
 #define DBGC_CLASS DBGC_WINBIND
 
@@ -35,7 +33,7 @@ enum stdio_helper_mode {
 	SQUID_2_4_BASIC,
 	SQUID_2_5_BASIC,
 	SQUID_2_5_NTLMSSP,
-	CLIENT_NTLMSSP_1,
+	NTLMSSP_CLIENT_1,
 	GSS_SPNEGO,
 	GSS_SPNEGO_CLIENT,
 	NUM_HELPER_MODES
@@ -75,7 +73,7 @@ static const struct {
 	{ SQUID_2_4_BASIC, "squid-2.4-basic", manage_squid_basic_request},
 	{ SQUID_2_5_BASIC, "squid-2.5-basic", manage_squid_basic_request},
 	{ SQUID_2_5_NTLMSSP, "squid-2.5-ntlmssp", manage_squid_ntlmssp_request},
-	{ CLIENT_NTLMSSP_1, "client-ntlmssp-1", manage_client_ntlmssp_request},
+	{ NTLMSSP_CLIENT_1, "ntlmssp-client-1", manage_client_ntlmssp_request},
 	{ GSS_SPNEGO, "gss-spnego", manage_gss_spnego_request},
 	{ GSS_SPNEGO_CLIENT, "gss-spnego-client", manage_gss_spnego_client_request},
 	{ NUM_HELPER_MODES, NULL, NULL}
