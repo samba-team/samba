@@ -110,7 +110,7 @@ BOOL cm_get_dc_name(char *domain, fstring srv_name)
 	   of our interfaces. */
 	
 	for (i = 0; i < count; i++) {
-		if(!is_local_net(ip_list[i]))
+		if(is_local_net(ip_list[i]))
 			goto got_ip;
 	}
 	
