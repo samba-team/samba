@@ -203,7 +203,7 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
 {
 	if (str->buf_len == 4)
 	{
-		const char *src = (const char*)str->buffer;
+		const char *src = str->buffer;
 		return IVAL(src, 0);
 	}
 	else
@@ -220,7 +220,7 @@ uint32 buffer2_to_uint32(const BUFFER2 *str)
 void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen)
 {
 	char *destend;
-	const uint16 *src;
+	const char *src;
 	int len;
 	register uint16 c;
 
@@ -232,6 +232,7 @@ void buffer2_to_multistr(char *dest, const BUFFER2 *str, int maxlen)
 	{
 		c = *(src++);
 		*(dest++) = (c == 0) ? ' ' : (char)c;
+		src++;
 	}
 
 	*dest = 0;
