@@ -1091,6 +1091,99 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return (*async_counter) == ASYNC_COUNT;
 }
 
+static BOOL test_ManyGetDCName(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+{
+	NTSTATUS status;
+	struct dcerpc_pipe *p2;
+	struct lsa_ObjectAttribute attr;
+	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 o;
+	struct policy_handle lsa_handle;
+	struct lsa_DomainList domains;
+
+	struct lsa_EnumTrustDom t;
+	uint32_t resume_handle = 0;
+	struct netr_GetAnyDCName d;
+
+	int i;
+	BOOL ret = True;
+
+	if (p->transport.transport != NCACN_NP) {
+		return True;
+	}
+
+	printf("Torturing GetDCName\n");
+
+	status = dcerpc_secondary_connection(p, &p2, 
+					     DCERPC_LSARPC_NAME, 
+					     DCERPC_LSARPC_UUID, 
+					     DCERPC_LSARPC_VERSION);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("Failed to create secondary connection\n");
+		return False;
+	}
+
+	qos.len = 0;
+	qos.impersonation_level = 2;
+	qos.context_mode = 1;
+	qos.effective_only = 0;
+
+	attr.len = 0;
+	attr.root_dir = NULL;
+	attr.object_name = NULL;
+	attr.attributes = 0;
+	attr.sec_desc = NULL;
+	attr.sec_qos = &qos;
+
+	o.in.system_name = "\\";
+	o.in.attr = &attr;
+	o.in.access_mask = SEC_FLAG_MAXIMUM_ALLOWED;
+	o.out.handle = &lsa_handle;
+
+	status = dcerpc_lsa_OpenPolicy2(p2, mem_ctx, &o);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	t.in.handle = &lsa_handle;
+	t.in.resume_handle = &resume_handle;
+	t.in.num_entries = 1000;
+	t.out.domains = &domains;
+	t.out.resume_handle = &resume_handle;
+
+	status = dcerpc_lsa_EnumTrustDom(p2, mem_ctx, &t);
+
+	if ((!NT_STATUS_IS_OK(status) &&
+	     (!NT_STATUS_EQUAL(status, NT_STATUS_NO_MORE_ENTRIES)))) {
+		printf("Could not list domains\n");
+		return False;
+	}
+
+	dcerpc_pipe_close(p2);
+
+	d.in.logon_server = talloc_asprintf(mem_ctx, "\\\\%s",
+					    dcerpc_server_name(p));
+
+	for (i=0; i<domains.count * 4; i++) {
+		struct lsa_DomainInformation *info =
+			&domains.domains[rand()%domains.count];
+
+		d.in.domainname = info->name.string;
+
+		status = dcerpc_netr_GetAnyDCName(p, mem_ctx, &d);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("GetAnyDCName - %s\n", nt_errstr(status));
+			continue;
+		}
+
+		printf("\tDC for domain %s is %s\n", info->name.string,
+		       d.out.dcname ? d.out.dcname : "unknown");
+	}
+
+	return ret;
+}
+
 
 BOOL torture_rpc_netlogon(void)
 {
@@ -1127,6 +1220,7 @@ BOOL torture_rpc_netlogon(void)
 	ret &= test_AccountDeltas(p, mem_ctx);
 	ret &= test_AccountSync(p, mem_ctx);
 	ret &= test_GetDcName(p, mem_ctx);
+	ret &= test_ManyGetDCName(p, mem_ctx);
 	ret &= test_LogonControl(p, mem_ctx);
 	ret &= test_GetAnyDCName(p, mem_ctx);
 	ret &= test_LogonControl2(p, mem_ctx);
