@@ -44,7 +44,7 @@ at http://www.docbook.org/
 
 The Output
 ----------
-The current Samba CVS tree contains the XML/DocBook source files.
+The current Samba Subversion tree contains the XML/DocBook source files.
 
 A regularly generated version can be found at http://samba.org/samba/docs/.
 
@@ -63,13 +63,14 @@ For generating PDF (thru LaTeX):
    dated 20030622 -- it works best. Versions previous to 20030425 are known
    to have problems, as well as current (as of 20031210) snapshots.
  * pdflatex
+ * thumbpdf
 
 For generating PostScript (thru LaTeX):
  * latex
  * dvips 
 
 For generating ASCII:
- * xmlto 
+ * html2text
 
 This directory now contains a ./configure script and Makefile to 
 support the automated building of man pages (including HTML versions), and 
@@ -78,3 +79,21 @@ Samba Developers Guide (HTML,DVI,TeX,PDF,PS,Text versions).
 
 The configure script detects which of the required utilities are installed 
 and builds as much docs as it can using these tools.
+
+Help! Building the docs generates a lot of HTTP traffic...
+-------------
+To be able to build the docs without an internet connection (or faster with 
+a slow internet connection), you need to set up "catalogs".
+
+A catalog contains a list of mappings to locally cached documents. E.g. :
+http://db2latex.sf.net/xsl/ -> /usr/share/sgml/docbook/db2latex/xsl/
+
+Add the following two lines to /etc/xml/catalog for db2latex:
+<rewriteURI uriStartString="http://db2latex.sourceforge.net/xsl/" rewritePrefix="/export/user/me/source/docbook/db2latex/xsl/"/>
+<rewriteURI uriStartString="http://docbook.sourceforge.net/release/xsl/current/" rewritePrefix="/export/user/me/source/docbook/docbook-xsl/"/>
+
+(of course, adapt /export/user/me/source/ to whatever path db2latex is 
+ installed in...)
+
+catalog entries for the other DTD's and XSL scripts should be present on your 
+system already.
