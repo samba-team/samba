@@ -1,0 +1,165 @@
+.TH "ldb" "3" "May 2004" "" "" 
+.SH "NAME" 
+ldb \- A light-weight database library
+.PP 
+.SH "SYNOPSIS" 
+.PP 
+\fB#include <ldb\&.h>\fP
+.PP 
+.SH "DESCRIPTION" 
+.PP 
+ldb is a light weight embedded database library and API\&. With a
+programming interface that is very similar to LDAP, ldb can store its
+data either in a tdb(3) database or in a real LDAP database\&.
+.PP 
+When used with the tdb backend ldb does not require any database
+daemon\&. Instead, ldb function calls are processed immediately by the
+ldb library, which does IO directly on the database, while allowing
+multiple readers/writers using operating system byte range locks\&. This
+leads to an API with very low overheads, often resulting in speeds of
+more than 10x what can be achieved with a more traditional LDAP
+architecture\&.
+.PP 
+It a taxonomy of databases ldb would sit half way between key/value
+pair databases (such as berkley db or tdb) and a full LDAP
+database\&. With a structured attribute oriented API like LDAP and good
+indexing capabilities, ldb can be used for quite sophisticated
+applications that need a light weight database, without the
+administrative overhead of a full LDAP installation\&.
+.PP 
+Included with ldb are a number of useful command line tools for
+manipulating a ldb database\&. These tools are similar in style to the
+equivalent ldap command line tools\&.
+.PP 
+In its default mode of operation with a tdb backend, ldb can also be
+seen as a "schema-less LDAP"\&. By default ldb does not require a
+schema, which greatly reduces the complexity of getting started with
+ldb databases\&. As the complexity of you application grows you can take
+advantage of some of the optional schema-like attributes that ldb
+offers, or you can migrate to using the full LDAP api while keeping
+your exiting ldb code\&.
+.PP 
+If you are new to ldb, then I suggest starting with the manual pages
+for ldbsearch(1) and ldbedit(1), and experimenting with a local
+database\&. Then I suggest you look at the ldb_connect(3) and
+ldb_search(3) manual pages\&.
+.PP 
+.SH "INDEX" 
+.PP 
+.IP 
+.IP "\fBldbsearch(1)\fP" 
+command line ldb search utility
+.IP 
+.IP "\fBldbedit(1)\fP" 
+edit all or part of a ldb databse using your
+favourite editor
+.IP 
+.IP "\fBldbedit(1)\fP" 
+edit all or part of a ldb databse using your
+favourite editor
+.IP 
+.IP "\fBldbadd(1)\fP" 
+add records to a ldb database using LDIF formatted input
+.IP 
+.IP "\fBldbdel(1)\fP" 
+delete records from a ldb database
+.IP 
+.IP "\fBldbmodify(1)\fP" 
+modify records in a ldb database using LDIF
+formatted input
+.IP 
+.IP "\fBldb_connect(3)\fP" 
+connect to a ldb backend
+.IP 
+.IP "\fBldb_close(3)\fP" 
+close a connection to a ldb backend
+.IP 
+.IP "\fBldb_search(3)\fP" 
+perform a database search
+.IP 
+.IP "\fBldb_search_free(3)\fP" 
+free the results of a ldb_search
+.IP 
+.IP "\fBldb_add(3)\fP" 
+add a record to the database
+.IP 
+.IP "\fBldb_delete(3)\fP" 
+delete a record from the database
+.IP 
+.IP "\fBldb_modify(3)\fP" 
+modify a record in the database
+.IP 
+.IP "\fBldb_errstring(3)\fP" 
+retrieve extended error information from the
+last operation
+.IP 
+.IP "\fBldb_ldif_write(3)\fP" 
+write a LDIF formatted message
+.IP 
+.IP "\fBldb_ldif_write_\fB3\fP\fP" 
+write a LDIF formatted message to a file
+.IP 
+.IP "\fBldb_ldif_read(3)\fP" 
+read a LDIF formatted message
+.IP 
+.IP "\fBldb_ldif_read_free(3)\fP" 
+free the result of a ldb_ldif_read()
+.IP 
+.IP "\fBldb_ldif_read_\fB3\fP\fP" 
+read a LDIF message from a file
+.IP 
+.IP "\fBldb_ldif_read_string(3)\fP" 
+read a LDIF message from a string
+.IP 
+.IP "\fBldb_msg_find_element(3)\fP" 
+find an element in a ldb_message
+.IP 
+.IP "\fBldb_val_equal_exact(3)\fP" 
+compare two ldb_val structures
+.IP 
+.IP "\fBldb_msg_find_val(3)\fP" 
+find an element by value
+.IP 
+.IP "\fBldb_msg_add_empty(3)\fP" 
+add an empty message element to a ldb_message
+.IP 
+.IP "\fBldb_msg_add(3)\fP" 
+add a non-empty message element to a ldb_message
+.IP 
+.IP "\fBldb_msg_element_compare(3)\fP" 
+compare two ldb_message_element structures
+.IP 
+.IP "\fBldb_msg_find_int(3)\fP" 
+return an integer value from a ldb_message
+.IP 
+.IP "\fBldb_msg_find_uint(3)\fP" 
+return an unsigned integer value from a ldb_message
+.IP 
+.IP "\fBldb_msg_find_double(3)\fP" 
+return a double value from a ldb_message
+.IP 
+.IP "\fBldb_msg_find_string(3)\fP" 
+return a string value from a ldb_message
+.IP 
+.IP "\fBldb_set_alloc(3)\fP" 
+set the memory allocation function to be used by ldb
+.IP 
+.IP "\fBldb_set_debug(3)\fP" 
+set a debug handler to be used by ldb
+.IP 
+.IP "\fBldb_set_debug_stderr(3)\fP" 
+set a debug handler for stderr output
+.IP 
+.PP 
+.SH "AUTHOR" 
+.PP 
+ldb was written by Andrew Tridgell
+http://samba\&.org/~tridge/
+.PP 
+If you wish to report a problem or make a suggestion then please see
+the http://ldb\&.samba\&.org/ web site for
+current contact and maintainer information\&.
+.PP 
+ldb is released under the GNU Lesser General Public License version 2
+or later\&. Please see the file COPYING for license details\&.
+.PP 
