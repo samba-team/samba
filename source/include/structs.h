@@ -122,10 +122,9 @@ struct netr_LMSessionKey;
 
 struct ldb_message;
 
+struct dom_sid;
 struct security_token;
 struct security_acl;
 struct security_ace;
-
-typedef struct security_descriptor SEC_DESC;
 
 struct lsa_RightSet;
