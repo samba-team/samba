@@ -49,7 +49,6 @@ struct ndr_pull {
 	struct ndr_token_list *relative_list;
 	struct ndr_token_list *array_size_list;
 	struct ndr_token_list *array_length_list;
-	struct ndr_token_list *switch_list;
 
 	/* this is used to ensure we generate unique reference IDs
 	   between request and reply */
@@ -69,7 +68,6 @@ struct ndr_push {
 	uint32_t alloc_size;
 	uint32_t offset;
 
-	struct ndr_token_list *switch_list;
 	struct ndr_token_list *relative_list;
 
 	/* this is used to ensure we generate unique reference IDs */
