@@ -4918,8 +4918,8 @@
 		this parameter, it is possible to use PAM's password change control 
 		flag for Samba.  If enabled, then PAM will be used for password
 		changes when requested by an SMB client, and  the <link 
-		linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link> string will 
-		be ignored.
+		linkend="PASSWDCHAT"><parameter>passwd chat</parameter></link> must be
+		be changed to work with the pam prompts.
 		</para>
 		
 		<para>Default: <command>pam password change = no</command></para>
@@ -4982,10 +4982,21 @@
 		password cleartext. In this case the old password cleartext is set 
 		to "" (the empty string).</para>
 
+		<para>Also, if the <link linkend="PAMPASSWORDCHANGE"><parameter>pam
+		password change</parameter></link> parameter is set to true, then the
+		chat sequence should consist of three elements. The first element should
+		match the pam prompt for the old password, the second element should match
+		the pam prompt for the first request for the new password, and the final
+		element should match the pam prompt for the second request for the new password.
+		These matches are done case insentively. Under most conditions this change
+		is done as root so the prompt for the old password will never be matched.
+		</para>
+
 		<para>See also <link linkend="UNIXPASSWORDSYNC"><parameter>unix password 
 		sync</parameter></link>, <link linkend="PASSWDPROGRAM"><parameter>
-		passwd program</parameter></link> and <link linkend="PASSWDCHATDEBUG">
-		<parameter>passwd chat debug</parameter></link>.</para>
+		passwd program</parameter></link> ,<link linkend="PASSWDCHATDEBUG">
+		<parameter>passwd chat debug</parameter></link> and <link linkend="PAMPASSWORDCHANGE">
+		<parameter>pam password change</parameter></link>.</para>
 
 		<para>Default: <command>passwd chat = *new*password* %n\n 
 		*new*password* %n\n *changed*</command></para>
