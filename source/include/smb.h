@@ -1486,9 +1486,9 @@ struct cnotify_fns {
 
 /* A netbios name structure. */
 struct nmb_name {
-  char         name[17];
-  char         scope[64];
-  unsigned int name_type;
+	char         name[16];
+	char         scope[64];
+	unsigned int name_type;
 };
 
 
