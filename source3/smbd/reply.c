@@ -3610,11 +3610,31 @@ int reply_setattrE(char *inbuf,char *outbuf)
   unix_times.actime = make_unix_date2(inbuf+smb_vwv3);
   unix_times.modtime = make_unix_date2(inbuf+smb_vwv5);
   
+  /* 
+   * Patch from Ray Frush <frush@engr.colostate.edu>
+   * Sometimes times are sent as zero - ignore them.
+   */
+
+  if ((unix_times.actime == 0) && (unix_times.modtime == 0)) 
+  {
+    /* Ignore request */
+    DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d ignoring zero request - \
+not setting timestamps of 0\n",
+          timestring(), fnum,cnum,unix_times.actime,unix_times.modtime));
+    return(outsize);
+  }
+  else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) 
+  {
+    /* set modify time = to access time if modify time was 0 */
+    unix_times.modtime = unix_times.actime;
+  }
+
   /* Set the date on this file */
   if(sys_utime(Files[fnum].name, &unix_times))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d\n",timestring(),fnum,cnum));
+  DEBUG(3,("%s reply_setattrE fnum=%d cnum=%d actime=%d modtime=%d\n",
+    timestring(), fnum,cnum,unix_times.actime,unix_times.modtime));
 
   return(outsize);
 }

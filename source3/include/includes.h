@@ -217,6 +217,14 @@ Here come some platform specific sections
 #ifndef NO_ASMSIGNALH
 #include <asm/signal.h>
 #endif
+#ifdef GLIBC2
+#define _LINUX_C_LIB_VERSION_MAJOR     6
+#include <termios.h>
+#include <rpcsvc/ypclnt.h>
+#include <crypt.h>
+#include <netinet/tcp.h>
+#include <netinet/ip.h>
+#endif
 #define SIGNAL_CAST (__sighandler_t)
 #define USE_GETCWD
 #define USE_SETSID

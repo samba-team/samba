@@ -2270,7 +2270,7 @@ int read_smb_length(int fd,char *inbuf,int timeout)
 
 
 /****************************************************************************
-  read an smb from a fd and return it's length
+  read an smb from a fd.
 The timeout is in milli seconds
 ****************************************************************************/
 BOOL receive_smb(int fd,char *buffer,int timeout)
@@ -2300,6 +2300,88 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
   return(True);
 }
 
+#ifdef USE_OPLOCKS
+/****************************************************************************
+  Do a select on an two fd's - with timeout. 
+
+  If the first smbfd is ready then read an smb from it.
+  if the second (loopback UDP) fd is ready then read a message
+  from it and setup the buffer header to identify the length
+  and from address.
+  Returns False on timeout or error.
+  Else returns True.
+
+The timeout is in milli seconds
+****************************************************************************/
+BOOL receive_message_or_smb(int smbfd, int oplock_fd, 
+                           char *buffer, int buffer_len, 
+                           int timeout, BOOL *got_smb)
+{
+  fd_set fds;
+  int selrtn;
+  struct timeval to;
+
+  *got_smb = False;
+ 
+  FD_ZERO(&fds);
+  FD_SET(smbfd,&fds);
+  FD_SET(oplock_fd,&fds);
+
+  to.tv_sec = timeout / 1000;
+  to.tv_usec = (timeout % 1000) * 1000;
+
+  selrtn = sys_select(&fds,timeout>0?&to:NULL);
+
+  /* Check if error */
+  if(selrtn == -1) {
+    /* something is wrong. Maybe the socket is dead? */
+    smb_read_error = READ_ERROR;
+    return False;
+  } 
+    
+  /* Did we timeout ? */
+  if (selrtn == 0) {
+    smb_read_error = READ_TIMEOUT;
+    return False;
+  }
+
+  if (FD_ISSET(smbfd,&fds))
+  {
+    *got_smb = True;
+    return receive_smb(smbfd, buffer, 0);
+  }
+  else
+  {
+    /*
+     * Read a udp message.
+     */
+    struct sockaddr_in from;
+    int fromlen = sizeof(from);
+    int32 msg_len = 0;
+    uint16 port = 0;
+
+    msg_len = recvfrom(oplock_fd, &buffer[6+sizeof(struct in_addr)],
+              buffer_len - (6 + sizeof(struct in_addr)), 0,
+              (struct sockaddr *)&from, &fromlen);
+
+    if(msg_len < 0)
+    {
+      DEBUG(0,("Invalid loopback packet ! (%s).\n",strerror(errno)));
+      return False;
+    }
+
+    port = ntohs(from.sin_port);
+
+    /* Setup the message header */
+    SIVAL(buffer,0,msg_len);
+    SSVAL(buffer,4,port);
+    memcpy(&buffer[6],(char *)&from.sin_addr,sizeof(struct in_addr));
+
+  }
+
+  return True;
+}
+#endif /* USE_OPLOCKS */
 
 /****************************************************************************
   send an smb to a fd 
