@@ -60,7 +60,8 @@ void	cdup (int, char **);
 void	changetype (int, int);
 void	cmdabort (int);
 void	cmdscanner (int);
-int	command (char *fmt, ...);
+int	command (char *fmt, ...)
+    __attribute__ ((format (printf, 1,2)));
 int	confirm (char *, char *);
 FILE   *dataconn (const char *);
 void	delete (int, char **);
