@@ -123,7 +123,7 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_REMOVE q;
 	DFS_R_DFS_REMOVE r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_BADFUNC;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -156,7 +156,7 @@ NTSTATUS cli_dfs_remove(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return result;
+	return NT_STATUS_OK;
 }
 
 NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -167,7 +167,7 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_GET_INFO q;
 	DFS_R_DFS_GET_INFO r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_BADFUNC;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -202,7 +202,7 @@ NTSTATUS cli_dfs_get_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return result;
+	return NT_STATUS_OK;    /* Should return a WERROR */
 }
 
 /* Enumerate dfs shares */
@@ -213,7 +213,7 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_struct qbuf, rbuf;
 	DFS_Q_DFS_ENUM q;
 	DFS_R_DFS_ENUM r;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_BADFUNC;
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -248,5 +248,5 @@ NTSTATUS cli_dfs_enum(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	prs_mem_free(&qbuf);
 	prs_mem_free(&rbuf);
 
-	return result;
+	return NT_STATUS_OK;
 }
