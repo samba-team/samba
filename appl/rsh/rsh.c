@@ -1,18 +1,10 @@
 #include "rsh_locl.h"
 RCSID("$Id$");
 
-/*
- *
- */
-
-enum auth_method { AUTH_KRB4, AUTH_KRB5 } auth_method;
+static enum auth_method auth_method;
 
 /*
  *
- */
-
-/*
- * Encryption with krb5 should probably use des-cbc-crc
  */
 
 #define RSH_BUFSIZ 10240
@@ -80,7 +72,7 @@ do_write (int fd, void *buf, size_t sz)
 	if(auth_method == AUTH_KRB4) {
 	    return des_enc_write (fd, buf, sz, schedule, &iv);
 	} else if(auth_method == AUTH_KRB5) {
-	    int status;
+	    krb5_error_code status;
 	    krb5_data data;
 	    u_int32_t len;
 	    int ret;
@@ -187,7 +179,7 @@ send_krb4_auth(int s, struct sockaddr_in thisaddr,
 			   s, &text, "rcmd",
 			   hostname, krb_realmofhost (hostname),
 			   getpid(), &msg, &cred, schedule,
-			   &thisaddr, &thataddr, "KCMDV0.1");
+			   &thisaddr, &thataddr, KCMD_VERSION);
     if (status != KSUCCESS)
 	errx ("%s: %s", hostname, krb_get_err_text(status));
     memcpy (iv, cred.session, sizeof(iv));
@@ -197,7 +189,6 @@ send_krb4_auth(int s, struct sockaddr_in thisaddr,
 	err (1, "write");
     if (krb_net_write (s, cmd, cmd_len) != cmd_len)
 	err (1, "write");
-    free (cmd);
 }
 
 static void
@@ -241,7 +232,7 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
     status = krb5_sendauth (context,
 			    &auth_context,
 			    &s,
-			    "KCMDV0.1",
+			    KCMD_VERSION,
 			    NULL,
 			    server,
 			    do_encrypt ? AP_OPTS_MUTUAL_REQUIRED : 0,
@@ -253,8 +244,6 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 			    NULL);
     if (status)
 	errx ("%s: %s", hostname, krb5_get_err_text(context, status));
-
-    free (buf);
 
     keyblock = auth_context->key;
 
@@ -341,6 +330,8 @@ proto (int s, char *hostname, char *local_user, char *remote_user,
 			cmd_len, cmd);
     else
 	abort ();
+
+    free (cmd);
 
     if (krb_net_read (s, &reply, 1) != 1)
 	err (1, "read");
