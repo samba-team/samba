@@ -619,7 +619,7 @@ extern int errno;
 #ifdef HAVE_FNMATCH
 #include <fnmatch.h>
 #else
-#include "lib/fnmatch.h"
+#include "fnmatch.h"
 #endif
 
 #ifndef UBI_BINTREE_H
