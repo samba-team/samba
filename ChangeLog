@@ -1,3 +1,7 @@
+2000-02-22  Assar Westerlund  <assar@sics.se>
+
+	* kdc/connect.c: initialize `descr' uniformly and correctly
+
 2000-02-20  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2p
