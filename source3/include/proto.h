@@ -629,7 +629,8 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 /*The following definitions come from  ntclient.c  */
 
 BOOL wksta_trust_account_check(struct in_addr dest_ip, char *dest_host,
-				char *myhostname, char *domain);
+				char *myhostname, char *domain,
+				fstring mach_pwd, fstring new_mach_pwd);
 BOOL do_nt_login(struct in_addr dest_ip, char *dest_host,
 				char *myhostname,
 				int Client, int cnum);
@@ -820,6 +821,9 @@ void make_q_auth_2(LSA_Q_AUTH_2 *q_a,
 		DOM_CHAL *clnt_chal, uint32 clnt_flgs);
 char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
 char* lsa_io_r_auth_2(BOOL io, LSA_R_AUTH_2 *r_a, char *q, char *base, int align, int depth);
+void make_q_srv_pwset(LSA_Q_SRV_PWSET *q_s, char sess_key[8],
+		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
+		DOM_CRED *cred, char nt_cypher[16]);
 char* lsa_io_q_srv_pwset(BOOL io, LSA_Q_SRV_PWSET *q_s, char *q, char *base, int align, int depth);
 char* lsa_io_r_srv_pwset(BOOL io, LSA_R_SRV_PWSET *r_s, char *q, char *base, int align, int depth);
 char* lsa_io_user_info(BOOL io, LSA_USER_INFO *usr, char *q, char *base, int align, int depth);
@@ -846,6 +850,11 @@ BOOL do_lsa_req_chal(uint16 fnum, uint32 call_id,
 BOOL do_lsa_auth2(uint16 fnum, uint32 call_id,
 		char *logon_srv, char *acct_name, uint16 sec_chan, char *comp_name,
         DOM_CHAL *clnt_chal, uint32 neg_flags, DOM_CHAL *srv_chal);
+BOOL do_lsa_srv_pwset(uint16 fnum, uint32 call_id,
+		uchar sess_key[8], 
+		char *logon_srv, char *mach_acct, uint16 sec_chan_type, char *comp_name,
+        DOM_CRED *clnt_cred, DOM_CRED *srv_cred,
+		char nt_owf_new_mach_pwd[16]);
 BOOL do_lsa_sam_logon(uint16 fnum, uint32 call_id,
 		uchar sess_key[8], DOM_CRED *sto_clnt_cred,
 		char *logon_srv, char *comp_name,
@@ -976,6 +985,10 @@ void make_clnt_info2(DOM_CLNT_INFO2 *clnt,
 				char *logon_srv, char *comp_name,
 				DOM_CRED *clnt_cred);
 char* smb_io_clnt_info2(BOOL io, DOM_CLNT_INFO2 *clnt, char *q, char *base, int align, int depth);
+char* make_clnt_info(DOM_CLNT_INFO *clnt,
+		char *logon_srv, char *acct_name,
+		uint16 sec_chan, char *comp_name,
+				DOM_CRED *cred);
 char* smb_io_clnt_info(BOOL io, DOM_CLNT_INFO *clnt, char *q, char *base, int align, int depth);
 void make_logon_id(DOM_LOGON_ID *log, uint32 log_id_low, uint32 log_id_high);
 char* smb_io_logon_id(BOOL io, DOM_LOGON_ID *log, char *q, char *base, int align, int depth);
