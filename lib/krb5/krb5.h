@@ -533,8 +533,8 @@ typedef EncAPRepPart krb5_ap_rep_enc_part;
 
 /* variables */
 
-extern const char krb5_config_file[];
-extern const char krb5_defkeyname[];
+extern const char *krb5_config_file;
+extern const char *krb5_defkeyname;
 
 typedef enum {
     KRB5_PROMPT_TYPE_PASSWORD		= 0x1,
