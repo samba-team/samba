@@ -41,6 +41,8 @@ ENABLED_SECTIONS       =
 MAX_INITIALIZER_LINES  = 30
 OPTIMIZE_OUTPUT_FOR_C  = YES
 SHOW_USED_FILES        = YES
+REFERENCED_RELATION    = YES
+REFERENCED_BY_RELATION = YES
 #---------------------------------------------------------------------------
 # configuration options related to warning and progress messages
 #---------------------------------------------------------------------------
@@ -52,7 +54,8 @@ WARN_LOGFILE           =
 #---------------------------------------------------------------------------
 # configuration options related to the input files
 #---------------------------------------------------------------------------
-INPUT                  = .
+INPUT                  = . \
+                         CodingSuggestions mainpage.dox
 FILE_PATTERNS          = *.c \
                          *.h \
                          *.idl
@@ -79,7 +82,7 @@ HTML_OUTPUT            = html
 HTML_HEADER            = 
 HTML_FOOTER            = 
 HTML_STYLESHEET        = 
-HTML_ALIGN_MEMBERS     = NO
+HTML_ALIGN_MEMBERS     = YE
 GENERATE_HTMLHELP      = NO
 GENERATE_CHI           = NO
 BINARY_TOC             = NO
@@ -123,7 +126,7 @@ GENERATE_XML           = NO
 #---------------------------------------------------------------------------
 # Configuration options related to the preprocessor   
 #---------------------------------------------------------------------------
-ENABLE_PREPROCESSING   = YES
+ENABLE_PREPROCESSING   = NO
 MACRO_EXPANSION        = NO
 EXPAND_ONLY_PREDEF     = NO
 SEARCH_INCLUDES        = YES

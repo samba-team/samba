@@ -1,3 +1,7 @@
+/**
+
+@page CodingSuggestions Coding suggestions
+
 So you want to add code to Samba ...
 
 One of the daunting tasks facing a programmer attempting to write code for
@@ -101,14 +105,22 @@ Here are some other suggestions:
 
 20) Try to use asprintf rather than pstrings and fstrings where possible
 
-21) Use normal C comments /* like this */ instead of C++ comments // like
-    this.  Although the C++ comment format is part of the C99 standard,
-    some older vendor C compilers do not accept it.
+21) Use normal C comments / * instead of C++ comments // like
+    this.  Although the C++ comment format is part of the C99
+    standard, some older vendor C compilers do not accept it.
+
+22) Try to write documentation for API functions and structures
+    explaining the point of the code, the way it should be used, and
+    any special conditions or results.  Mark these with a double-star
+    comment start / ** so that they can be picked up by Doxygen, as in
+    this file.
 
 The suggestions above are simply that, suggestions, but the information may
 help in reducing the routine rework done on new code.  The preceeding list
 is expected to change routinely as new support routines and macros are
 added.
 
-Written by Steve French, with contributions from Simo Sorce and Andrew
-Bartlett.
+Written by Steve French, with contributions from Simo Sorce, Andrew
+Bartlett, Tim Potter and Martin Pool.
+
+**/
