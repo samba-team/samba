@@ -3512,6 +3512,7 @@ void trim_leading_spaces(struct cmd_line *cl)
 /* 
  * trim trailing spaces
  */
+static
 void trim_trailing_spaces(struct cmd_line *cl)
 {
   int i;
@@ -3537,6 +3538,7 @@ void trim_trailing_spaces(struct cmd_line *cl)
  * We alctually look for the next key to terminate a previous key
  * if <value-type> == '-', then it is a delete type.
  */
+static
 CMD *regedit4_get_cmd(int fd)
 {
   struct command_s *cmd = NULL;
@@ -3625,12 +3627,14 @@ CMD *regedit4_get_cmd(int fd)
   return NULL;
 }
 
+static
 int regedit4_exec_cmd(CMD *cmd)
 {
 
   return 0;
 }
 
+static
 int editreg_1_0_file_type(int fd)
 {
   int cur_ofs = 0;
@@ -3661,11 +3665,13 @@ int editreg_1_0_file_type(int fd)
   return FMT_UNREC;
 }
 
+static
 CMD *editreg_1_0_get_cmd(int fd)
 {
   return NULL;
 }
 
+static
 int editreg_1_0_exec_cmd(CMD *cmd)
 {
 
@@ -3695,6 +3701,7 @@ typedef struct command_file_s {
  * Create a new command file structure
  */
 
+static
 CMD_FILE *cmd_file_create(char *file)
 {
   CMD_FILE *tmp;
@@ -3762,6 +3769,7 @@ CMD_FILE *cmd_file_create(char *file)
  * key print function here ...
  */
 
+static
 int print_key(const char *path, char *name, char *class_name, int root, 
 	      int terminal, int vals)
 {
@@ -3775,6 +3783,7 @@ int print_key(const char *path, char *name, char *class_name, int root,
  * Sec Desc print functions 
  */
 
+static
 void print_type(unsigned char type)
 {
   switch (type) {
@@ -3804,6 +3813,7 @@ void print_type(unsigned char type)
   }
 }
 
+static
 void print_flags(unsigned char flags)
 {
   char flg_output[21];
@@ -3847,11 +3857,13 @@ void print_flags(unsigned char flags)
   fprintf(stdout, " %s", flg_output);
 }
 
+static
 void print_perms(int perms)
 {
   fprintf(stdout, " %8X", perms);
 }
 
+static
 void print_sid(DOM_SID *sid)
 {
   int i, comps = sid->auths;
@@ -3865,6 +3877,7 @@ void print_sid(DOM_SID *sid)
   fprintf(stdout, "\n");
 }
 
+static
 void print_acl(ACL *acl, const char *prefix)
 {
   int i;
@@ -3879,6 +3892,7 @@ void print_acl(ACL *acl, const char *prefix)
   }
 }
 
+static
 int print_sec(SEC_DESC *sec_desc)
 {
   if (!print_security) return 1;
@@ -3901,6 +3915,7 @@ int print_sec(SEC_DESC *sec_desc)
 /*
  * Value print function here ...
  */
+static
 int print_val(const char *path, char *val_name, int val_type, int data_len, 
 	      void *data_blk, int terminal, int first, int last)
 {
@@ -3916,6 +3931,7 @@ int print_val(const char *path, char *val_name, int val_type, int data_len,
   return 1;
 }
 
+static
 void usage(void)
 {
   fprintf(stderr, "Usage: editreg [-f] [-v] [-p] [-k] [-s] [-c <command-file>] <registryfile>\n");
