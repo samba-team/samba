@@ -44,7 +44,7 @@ Samba-HOWTO-Collection/index.xml: $(subst Samba-HOWTO-Collection/index.xml,,$(wi
 Samba-Developers-Guide/index.xml: $(subst Samba-Developers-Guide/index.xml,,$(wildcard Samba-Developers-Guide/*.xml)) Samba-Developers-Guide-attributions.xml
 
 # Pseudo targets 
-all: @TARGETS@
+all: $(TARGETS)
 everything: manpages pdf html-single html htmlman txt ps fo htmlhelp pearson verify
 release: manpages htmlman html pdf 
 
