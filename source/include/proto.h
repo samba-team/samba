@@ -509,6 +509,7 @@ void out_ascii(FILE *f, unsigned char *buf,int len);
 void out_data(FILE *f,char *buf1,int len, int per_line);
 void print_asc(int level, unsigned char *buf,int len);
 void dump_data(int level,char *buf1,int len);
+void dump_datac(int class, int level, char *buf1, int len);
 char *tab_depth(int depth);
 int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
@@ -775,6 +776,12 @@ struct in_addr wins_srv_ip( void );
 void wins_srv_died( struct in_addr boothill_ip );
 unsigned long wins_srv_count( void );
 
+/* The following definitions come from libsmb/cli_dfs.c  */
+
+struct cli_state *cli_dfs_initialise(struct cli_state *cli, char *system_name,
+				     struct ntuser_creds *creds);
+void cli_dfs_shutdown(struct cli_state *cli);
+
 /* The following definitions come from libsmb/cli_lsarpc.c  */
 
 struct cli_state *cli_lsa_initialise(struct cli_state *cli, char *system_name,
@@ -813,8 +820,7 @@ struct cli_state *cli_samr_initialise(struct cli_state *cli, char *system_name,
 				      struct ntuser_creds *creds);
 void cli_samr_shutdown(struct cli_state *cli);
 uint32 cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
-			char *srv_name, uint32 access_mask, 
-			POLICY_HND *connect_pol);
+			uint32 access_mask, POLICY_HND *connect_pol);
 uint32 cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		      POLICY_HND *connect_pol);
 uint32 cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
@@ -860,6 +866,21 @@ uint32 cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 			    uint32 num_rids, uint32 *rids, 
 			    uint32 *num_names, char ***names,
 			    uint32 **name_types);
+uint32 cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *domain_pol, uint32 flags,
+			     uint32 num_names, char **names,
+			     uint32 *num_rids, uint32 **rids,
+			     uint32 **rid_types);
+uint32 cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+				POLICY_HND *domain_pol, char *acct_name,
+				uint32 acb_info, uint32 unknown, 
+				POLICY_HND *user_pol, uint32 *rid);
+uint32 cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			     POLICY_HND *user_pol, uint16 switch_value,
+			     uchar sess_key[16], SAM_USERINFO_CTR *ctr);
+uint32 cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+			      POLICY_HND *user_pol, uint16 switch_value,
+			      uchar sess_key[16], SAM_USERINFO_CTR *ctr);
 
 /* The following definitions come from libsmb/cli_spoolss.c  */
 
@@ -1251,6 +1272,8 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[16], BOOL unicode);
+BOOL encode_pw_buffer(char buffer[516], const char *new_pass,
+		      int new_pw_len, BOOL nt_pass_set);
 BOOL decode_pw_buffer(char in_buffer[516], char *new_pwrd,
 		      int new_pwrd_size, uint32 *new_pw_len,
 		      uchar nt_p16[16], uchar p16[16]);
@@ -3120,7 +3143,7 @@ void init_samr_r_query_aliasmem(SAMR_R_QUERY_ALIASMEM * r_u,
 				uint32 status);
 BOOL samr_io_r_query_aliasmem(char *desc, SAMR_R_QUERY_ALIASMEM * r_u,
 			      prs_struct *ps, int depth);
-void init_samr_q_lookup_names(SAMR_Q_LOOKUP_NAMES * q_u,
+void init_samr_q_lookup_names(TALLOC_CTX *ctx, SAMR_Q_LOOKUP_NAMES * q_u,
 			      POLICY_HND *pol, uint32 flags,
 			      uint32 num_names, char **name);
 BOOL samr_io_q_lookup_names(char *desc, SAMR_Q_LOOKUP_NAMES * q_u,
@@ -3916,6 +3939,9 @@ BOOL api_wkssvc_rpc(pipes_struct *p);
 /* The following definitions come from rpc_server/srv_wkssvc_nt.c  */
 
 uint32 _wks_query_info(pipes_struct *p, WKS_Q_QUERY_INFO *q_u, WKS_R_QUERY_INFO *r_u);
+
+/* The following definitions come from rpcclient/cmd_dfs.c  */
+
 
 /* The following definitions come from rpcclient/cmd_lsarpc.c  */
 
