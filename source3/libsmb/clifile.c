@@ -805,7 +805,7 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 ****************************************************************************/
 
 BOOL cli_getattrE(struct cli_state *cli, int fd, 
-		  uint16 *attr, size_t *size, 
+		  uint16 *attr, SMB_BIG_UINT *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
 {
 	memset(cli->outbuf,'\0',smb_size);
