@@ -50,7 +50,7 @@ krb5_mk_safe(krb5_context context,
   u_char *buf = NULL;
   size_t buf_size;
   size_t len;
-  int tmp_seq;
+  u_int32_t tmp_seq;
   krb5_crypto crypto;
 
   s.pvno = 5;
