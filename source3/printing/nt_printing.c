@@ -1777,17 +1777,17 @@ static uint32 update_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 /****************************************************************************
 ****************************************************************************/
-BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param)
+void add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM **param)
 {
 	NT_PRINTER_PARAM *current;
 	
 	DEBUG(108,("add_a_specific_param\n"));	
 
-	param->next=NULL;
+	(*param)->next=NULL;
 	
 	if (info_2->specific == NULL)
 	{
-		info_2->specific=param;
+		info_2->specific=*param;
 	}
 	else
 	{
@@ -1795,9 +1795,10 @@ BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *par
 		while (current->next != NULL) {
 			current=current->next;
 		}		
-		current->next=param;
+		current->next=*param;
 	}
-	return (True);
+
+	*param = NULL;
 }
 
 /****************************************************************************
@@ -1844,7 +1845,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 /****************************************************************************
  Clean up and deallocate a (maybe partially) allocated NT_PRINTER_PARAM.
 ****************************************************************************/
-static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
+void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 {
 	NT_PRINTER_PARAM *param = *param_ptr;
 
