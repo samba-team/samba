@@ -4452,6 +4452,112 @@ static int rpc_trustdom_add(int argc, const char **argv)
 	}
 }
 
+/**
+ * Add interdomain trust account to the RPC server.
+ * All parameters (except for argc and argv) are passed by run_rpc_command
+ * function.
+ *
+ * @param domain_sid The domain sid acquired from the server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argc  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return normal NTSTATUS return code
+ */
+
+static NTSTATUS rpc_trustdom_del_internals(const DOM_SID *domain_sid, 
+					   const char *domain_name, 
+					   struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+                                           int argc, const char **argv) {
+
+	POLICY_HND connect_pol, domain_pol, user_pol;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	char *acct_name;
+	DOM_SID trust_acct_sid;
+	uint32 *user_rids, num_rids, *name_types;
+	uint32 flags = 0x000003e8; /* Unknown */
+
+	if (argc != 1) {
+		d_printf("Usage: net rpc trustdom del <domain_name>\n");
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	/* 
+	 * Make valid trusting domain account (ie. uppercased and with '$' appended)
+	 */
+	 
+	if (asprintf(&acct_name, "%s$", argv[0]) < 0) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	strupper_m(acct_name);
+
+	/* Get samr policy handle */
+	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+				  &connect_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+	
+	/* Get domain policy handle */
+	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+				      MAXIMUM_ALLOWED_ACCESS,
+				      domain_sid, &domain_pol);
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol, flags, 1,
+				       &acct_name, &num_rids, &user_rids,
+				       &name_types);
+	
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+				    MAXIMUM_ALLOWED_ACCESS,
+				    user_rids[0], &user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* append the rid to the domain sid */
+	sid_copy(&trust_acct_sid, domain_sid);
+	if (!sid_append_rid(&trust_acct_sid, user_rids[0])) {
+		goto done;
+	}
+
+	/* remove the sid */
+
+	result = cli_samr_remove_sid_foreign_domain(cli, mem_ctx, &user_pol,
+						    &trust_acct_sid);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	/* Delete user */
+
+	result = cli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
+
+	if (!NT_STATUS_IS_OK(result)) {
+		goto done;
+	}
+
+	if (!NT_STATUS_IS_OK(result)) {
+	  DEBUG(0,("Could not set trust account password: %s\n",
+		   nt_errstr(result)));
+	  goto done;
+	}
+
+ done:
+	SAFE_FREE(acct_name);
+	return result;
+}
 
 /**
  * Delete interdomain trust account for a remote domain.
@@ -4461,15 +4567,18 @@ static int rpc_trustdom_add(int argc, const char **argv)
  *
  * @return Integer status (0 means success)
  **/
- 
+
 static int rpc_trustdom_del(int argc, const char **argv)
 {
-	d_printf("Sorry, not yet implemented.\n");
-	d_printf("Use 'smbpasswd -x -i' instead.\n");
-	return -1;
+	if (argc > 0) {
+		return run_rpc_command(NULL, PI_SAMR, 0, rpc_trustdom_del_internals,
+		                       argc, argv);
+	} else {
+		d_printf("Usage: net rpc trustdom del <domain>\n");
+		return -1;
+	}
 }
 
- 
 /**
  * Establish trust relationship to a trusting domain.
  * Interdomain account must already be created on remote PDC.

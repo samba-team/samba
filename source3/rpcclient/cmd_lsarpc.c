@@ -192,6 +192,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	char **names;
 	uint32 *types;
 	int i;
+	int nsids = atoi(argv[2]);
 
 	if (argc == 1) {
 		printf("Usage: %s [sid1 [sid2 [...]]]\n", argv[0]);
@@ -207,22 +208,22 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Convert arguments to sids */
 
-	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, argc - 1);
+	sids = TALLOC_ARRAY(mem_ctx, DOM_SID, nsids);
 
 	if (!sids) {
 		printf("could not allocate memory for %d sids\n", argc - 1);
 		goto done;
 	}
 
-	for (i = 0; i < argc - 1; i++) 
-		if (!string_to_sid(&sids[i], argv[i + 1])) {
+	for (i = 0; i < nsids; i++) 
+		if (!string_to_sid(&sids[i], argv[1])) {
 			result = NT_STATUS_INVALID_SID;
 			goto done;
 		}
 
 	/* Lookup the SIDs */
 
-	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, argc - 1, sids, 
+	result = cli_lsa_lookup_sids(cli, mem_ctx, &pol, nsids, sids, 
 				     &domains, &names, &types);
 
 	if (!NT_STATUS_IS_OK(result) && NT_STATUS_V(result) != 
@@ -233,7 +234,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Print results */
 
-	for (i = 0; i < (argc - 1); i++) {
+	for (i = 0; i < nsids; i++) {
 		fstring sid_str;
 
 		sid_to_string(sid_str, &sids[i]);
