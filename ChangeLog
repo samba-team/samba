@@ -1,3 +1,7 @@
+1999-10-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* lib/krb5/crypto.c (krb5_enctype_to_keytype): remove warning
+
 1999-10-10  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (krb5_ccache_data): make `ops' const
