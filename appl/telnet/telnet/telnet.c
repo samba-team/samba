@@ -2063,7 +2063,7 @@ my_telnet(char *user)
      * is necessary so that authentication fails, we don't spin
      * forever. 
      */
-    if (wantencryption) {
+    if (telnetport && wantencryption) {
 	extern int auth_has_failed;
 	time_t timeout = time(0) + 60;
 
