@@ -422,26 +422,6 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 }
 
 /***************************************************************************
- Make a auth_info struct with a random challenge
-***************************************************************************/
-
-NTSTATUS make_auth_context_random(struct auth_context **auth_context) 
-{
-	uchar chal[8];
-	NTSTATUS nt_status;
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {
-		return nt_status;
-	}
-	
-	generate_random_buffer(chal, sizeof(chal), False);
-	(*auth_context)->challenge = data_blob(chal, sizeof(chal));
-
-	(*auth_context)->challenge_set_by = "random";
-
-	return nt_status;
-}
-
-/***************************************************************************
  Make a auth_info struct with a fixed challenge
 ***************************************************************************/
 
