@@ -21,12 +21,16 @@
 */
 
 struct creds_CredentialState {
-	uint8_t session_key[8];
+	uint32_t negotiate_flags;
+	uint8_t session_key[16];
 	uint32_t sequence;
 	struct netr_Credential seed;
 	struct netr_Credential client;
 	struct netr_Credential server;
 };
+
+
+#define NETLOGON_NEG_128BIT 0x4000
 
 
 /* for the timebeing, use the same neg flags as Samba3. */

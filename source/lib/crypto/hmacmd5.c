@@ -28,7 +28,7 @@
 /***********************************************************************
  the rfc 2104 version of hmac_md5 initialisation.
 ***********************************************************************/
-void hmac_md5_init_rfc2104(uint8_t *key, int key_len, HMACMD5Context *ctx)
+void hmac_md5_init_rfc2104(const uint8_t *key, int key_len, HMACMD5Context *ctx)
 {
         int i;
 

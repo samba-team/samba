@@ -222,10 +222,10 @@ BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info,
 #endif
 	
 	if (lm_interactive_pwd)
-		SamOEMhash((uint8_t *)lm_pwd, key, sizeof(lm_pwd));
+		arcfour_crypt((uint8_t *)lm_pwd, key, sizeof(lm_pwd));
 	
 	if (nt_interactive_pwd)
-		SamOEMhash((uint8_t *)nt_pwd, key, sizeof(nt_pwd));
+		arcfour_crypt((uint8_t *)nt_pwd, key, sizeof(nt_pwd));
 	
 #ifdef DEBUG_PASSWORD
 	DEBUG(100,("decrypt of lm owf password:"));

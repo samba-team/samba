@@ -273,8 +273,10 @@ static void str_to_key(const uint8_t *str,uint8_t *key)
 	}
 }
 
-
-void smbhash(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
+/*
+  basic des crypt using a 56 bit (7 byte) key
+*/
+void des_crypt56(uint8_t out[8], const uint8_t in[8], const uint8_t key[7], int forw)
 {
 	int i;
 	char outb[64];
@@ -305,58 +307,67 @@ void smbhash(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
 void E_P16(const uint8_t *p14,uint8_t *p16)
 {
 	const uint8_t sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
-	smbhash(p16, sp8, p14, 1);
-	smbhash(p16+8, sp8, p14+7, 1);
+	des_crypt56(p16, sp8, p14, 1);
+	des_crypt56(p16+8, sp8, p14+7, 1);
 }
 
 void E_P24(const uint8_t *p21, const uint8_t *c8, uint8_t *p24)
 {
-	smbhash(p24, c8, p21, 1);
-	smbhash(p24+8, c8, p21+7, 1);
-	smbhash(p24+16, c8, p21+14, 1);
+	des_crypt56(p24, c8, p21, 1);
+	des_crypt56(p24+8, c8, p21+7, 1);
+	des_crypt56(p24+16, c8, p21+14, 1);
 }
 
 void D_P16(const uint8_t *p14, const uint8_t *in, uint8_t *out)
 {
-	smbhash(out, in, p14, 0);
-        smbhash(out+8, in+8, p14+7, 0);
+	des_crypt56(out, in, p14, 0);
+        des_crypt56(out+8, in+8, p14+7, 0);
 }
 
 void E_old_pw_hash( uint8_t *p14, const uint8_t *in, uint8_t *out)
 {
-        smbhash(out, in, p14, 1);
-        smbhash(out+8, in+8, p14+7, 1);
+        des_crypt56(out, in, p14, 1);
+        des_crypt56(out+8, in+8, p14+7, 1);
 }
 
-void cred_hash1(uint8_t *out, const uint8_t *in, const uint8_t *key)
+/* des encryption with a 128 bit key */
+void des_crypt128(uint8_t out[8], const uint8_t in[8], const uint8_t key[16])
 {
 	uint8_t buf[8];
-
-	smbhash(buf, in, key, 1);
-	smbhash(out, buf, key+9, 1);
+	des_crypt56(buf, in, key, 1);
+	des_crypt56(out, buf, key+9, 1);
 }
 
-void cred_hash2(uint8_t *out, const uint8_t *in, const uint8_t *key, int forw)
+/* des encryption with a 64 bit key */
+void des_crypt64(uint8_t out[8], const uint8_t in[8], const uint8_t key[8], int forw)
 {
 	uint8_t buf[8];
 	uint8_t key2[8];
 	ZERO_STRUCT(key2);
-	smbhash(buf, in, key, forw);
+	des_crypt56(buf, in, key, forw);
 	key2[0] = key[7];
-	smbhash(out, buf, key2, forw);
+	des_crypt56(out, buf, key2, forw);
 }
 
-void cred_hash3(uint8_t *out, uint8_t *in, const uint8_t *key, int forw)
+/* des encryption with a 112 bit (14 byte) key */
+void des_crypt112(uint8_t out[8], const uint8_t in[8], const uint8_t key[14], int forw)
 {
-        uint8_t key2[8];
-	ZERO_STRUCT(key2);
-        smbhash(out, in, key, forw);
-        key2[0] = key[7];
-        smbhash(out + 8, in + 8, key2, forw);
+	uint8_t buf[8];
+	des_crypt56(buf, in, key, forw);
+	des_crypt56(out, buf, key+7, forw);
 }
 
+/* des encryption of a 16 byte lump of data with a 112 bit key */
+void des_crypt112_16(uint8_t out[16], uint8_t in[16], const uint8_t key[14], int forw)
+{
+        des_crypt56(out, in, key, forw);
+        des_crypt56(out + 8, in + 8, key+7, forw);
+}
 
-void SamOEMhashBlob(uint8_t *data, int len, const DATA_BLOB *key)
+/*
+  arcfour encryption with a blob key
+*/
+void arcfour_crypt_blob(uint8_t *data, int len, const DATA_BLOB *key)
 {
 	uint8_t s_box[256];
 	uint8_t index_i = 0;
@@ -397,11 +408,11 @@ void SamOEMhashBlob(uint8_t *data, int len, const DATA_BLOB *key)
   a varient that assumes a 16 byte key. This should be removed
   when the last user is gone
 */
-void SamOEMhash(uint8_t *data, const uint8_t keystr[16], int len)
+void arcfour_crypt(uint8_t *data, const uint8_t keystr[16], int len)
 {
 	DATA_BLOB key = data_blob(keystr, 16);
 	
-	SamOEMhashBlob(data, len, &key);
+	arcfour_crypt_blob(data, len, &key);
 
 	data_blob_free(&key);
 }
@@ -419,6 +430,6 @@ void sam_pwd_hash(uint_t rid, const uint8_t *in, uint8_t *out, int forw)
 	s[2] = s[6] = s[10]        = (uint8_t)((rid >> 16) & 0xFF);
 	s[3] = s[7] = s[11]        = (uint8_t)((rid >> 24) & 0xFF);
 
-	smbhash(out, in, s, forw);
-	smbhash(out+8, in+8, s+7, forw);
+	des_crypt56(out, in, s, forw);
+	des_crypt56(out+8, in+8, s+7, forw);
 }

@@ -24,22 +24,17 @@
 #include "includes.h"
 
 /*
-  initialise the credentials state 
+  initialise the credentials state for old-style 64 bit session keys
 
   this call is made after the netr_ServerReqChallenge call
 */
-static void creds_init(struct creds_CredentialState *creds,
-		       const struct netr_Credential *client_challenge,
-		       const struct netr_Credential *server_challenge,
-		       const uint8_t machine_password[16])
+static void creds_init_64bit(struct creds_CredentialState *creds,
+			     const struct netr_Credential *client_challenge,
+			     const struct netr_Credential *server_challenge,
+			     const uint8_t machine_password[16])
 {
-	struct netr_Credential time_cred;
 	uint32_t sum[2];
 	uint8_t sum2[8];
-
-	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
-	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
-	dump_data_pw("Machine Pass", machine_password, 16);
 
 	sum[0] = IVAL(client_challenge->data, 0) + IVAL(server_challenge->data, 0);
 	sum[1] = IVAL(client_challenge->data, 4) + IVAL(server_challenge->data, 4);
@@ -47,15 +42,48 @@ static void creds_init(struct creds_CredentialState *creds,
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	cred_hash1(creds->session_key, sum2, machine_password);
+	ZERO_STRUCT(creds->session_key);
 
-	SIVAL(time_cred.data, 0, IVAL(client_challenge->data, 0));
-	SIVAL(time_cred.data, 4, IVAL(client_challenge->data, 4));
-	cred_hash2(creds->client.data, time_cred.data, creds->session_key, 1);
+	des_crypt128(creds->session_key, sum2, machine_password);
 
-	SIVAL(time_cred.data, 0, IVAL(server_challenge->data, 0));
-	SIVAL(time_cred.data, 4, IVAL(server_challenge->data, 4));
-	cred_hash2(creds->server.data, time_cred.data, creds->session_key, 1);
+	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
+	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
+
+	creds->seed = creds->client;
+}
+
+/*
+  initialise the credentials state for ADS-style 128 bit session keys
+
+  this call is made after the netr_ServerReqChallenge call
+*/
+static void creds_init_128bit(struct creds_CredentialState *creds,
+			      const struct netr_Credential *client_challenge,
+			      const struct netr_Credential *server_challenge,
+			      const uint8_t machine_password[16])
+{
+	unsigned char zero[4], tmp[16];
+	HMACMD5Context ctx;
+	struct MD5Context md5;
+
+	ZERO_STRUCT(creds->session_key);
+
+	memset(zero, 0, sizeof(zero));
+
+	hmac_md5_init_rfc2104(machine_password, 16, &ctx);	
+	MD5Init(&md5);
+	MD5Update(&md5, zero, sizeof(zero));
+	MD5Update(&md5, client_challenge->data, 8);
+	MD5Update(&md5, server_challenge->data, 8);
+	MD5Final(tmp, &md5);
+	hmac_md5_update(tmp, 16, &ctx);
+	hmac_md5_final(creds->session_key, &ctx);
+
+	creds->client = *client_challenge;
+	creds->server = *server_challenge;
+
+	des_crypt112(creds->client.data, client_challenge->data, creds->session_key, 1);
+	des_crypt112(creds->server.data, server_challenge->data, creds->session_key, 1);
 
 	creds->seed = creds->client;
 }
@@ -77,7 +105,7 @@ static void creds_step(struct creds_CredentialState *creds)
 
 	DEBUG(5,("\tseed+time   %08x:%08x\n", IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	cred_hash2(creds->client.data, time_cred.data, creds->session_key, 1);
+	des_crypt112(creds->client.data, time_cred.data, creds->session_key, 1);
 
 	DEBUG(5,("\tCLIENT      %08x:%08x\n", 
 		 IVAL(creds->client.data, 0), IVAL(creds->client.data, 4)));
@@ -88,7 +116,7 @@ static void creds_step(struct creds_CredentialState *creds)
 	DEBUG(5,("\tseed+time+1 %08x:%08x\n", 
 		 IVAL(time_cred.data, 0), IVAL(time_cred.data, 4)));
 
-	cred_hash2(creds->server.data, time_cred.data, creds->session_key, 1);
+	des_crypt112(creds->server.data, time_cred.data, creds->session_key, 1);
 
 	DEBUG(5,("\tSERVER      %08x:%08x\n", 
 		 IVAL(creds->server.data, 0), IVAL(creds->server.data, 4)));
@@ -103,7 +131,7 @@ static void creds_step(struct creds_CredentialState *creds)
 void creds_des_encrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
 {
 	struct netr_Password tmp;
-	cred_hash3(tmp.data, pass->data, creds->session_key, 1);
+	des_crypt112_16(tmp.data, pass->data, creds->session_key, 1);
 	*pass = tmp;
 }
 
@@ -113,7 +141,7 @@ void creds_des_encrypt(struct creds_CredentialState *creds, struct netr_Password
 void creds_des_decrypt(struct creds_CredentialState *creds, struct netr_Password *pass)
 {
 	struct netr_Password tmp;
-	cred_hash3(tmp.data, pass->data, creds->session_key, 0);
+	des_crypt112_16(tmp.data, pass->data, creds->session_key, 0);
 	*pass = tmp;
 }
 
@@ -122,12 +150,9 @@ void creds_des_decrypt(struct creds_CredentialState *creds, struct netr_Password
 */
 void creds_arcfour_crypt(struct creds_CredentialState *creds, char *data, size_t len)
 {
-	DATA_BLOB session_key = data_blob(NULL, 16);
-	
-	memcpy(&session_key.data[0], creds->session_key, 8);
-	memset(&session_key.data[8], '\0', 8);
+	DATA_BLOB session_key = data_blob(creds->session_key, 16);
 
-	SamOEMhashBlob(data, len, &session_key);
+	arcfour_crypt_blob(data, len, &session_key);
 
 	data_blob_free(&session_key);
 }
@@ -145,10 +170,24 @@ void creds_client_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
 		       const uint8_t machine_password[16],
-		       struct netr_Credential *initial_credential)
+		       struct netr_Credential *initial_credential,
+		       uint32_t negotiate_flags)
 {
 	creds->sequence = time(NULL);
-	creds_init(creds, client_challenge, server_challenge, machine_password);
+	creds->negotiate_flags = negotiate_flags;
+
+	dump_data_pw("Client chall", client_challenge->data, sizeof(client_challenge->data));
+	dump_data_pw("Server chall", server_challenge->data, sizeof(server_challenge->data));
+	dump_data_pw("Machine Pass", machine_password, 16);
+
+	if (negotiate_flags & NETLOGON_NEG_128BIT) {
+		creds_init_128bit(creds, client_challenge, server_challenge, machine_password);
+	} else {
+		creds_init_64bit(creds, client_challenge, server_challenge, machine_password);
+	}
+
+	dump_data_pw("Session key", creds->session_key, 16);
+	dump_data_pw("Credential ", creds->client.data, 8);
 
 	*initial_credential = creds->client;
 }
@@ -198,9 +237,16 @@ void creds_server_init(struct creds_CredentialState *creds,
 		       const struct netr_Credential *client_challenge,
 		       const struct netr_Credential *server_challenge,
 		       const uint8_t machine_password[16],
-		       struct netr_Credential *initial_credential)
+		       struct netr_Credential *initial_credential,
+		       uint32_t negotiate_flags)
 {
-	creds_init(creds, client_challenge, server_challenge, machine_password);
+	if (negotiate_flags & NETLOGON_NEG_128BIT) {
+		creds_init_128bit(creds, client_challenge, server_challenge, 
+				  machine_password);
+	} else {
+		creds_init_64bit(creds, client_challenge, server_challenge, 
+				 machine_password);
+	}
 
 	*initial_credential = creds->server;
 }

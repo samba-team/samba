@@ -169,7 +169,7 @@ NTSTATUS samr_OemChangePasswordUser2(struct dcesrv_call_state *dce_call, TALLOC_
 	}
 
 	/* decrypt the password we have been given */
-	SamOEMhash(pwbuf->data, lm_pwd, 516);
+	arcfour_crypt(pwbuf->data, lm_pwd, 516);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_ASCII)) {
@@ -284,7 +284,7 @@ NTSTATUS samr_ChangePasswordUser3(struct dcesrv_call_state *dce_call,
 	}
 
 	/* decrypt the password we have been given */
-	SamOEMhash(r->in.nt_password->data, nt_pwd, 516);
+	arcfour_crypt(r->in.nt_password->data, nt_pwd, 516);
 
 	if (!decode_pw_buffer(r->in.nt_password->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_UNICODE)) {
@@ -684,7 +684,7 @@ NTSTATUS samr_set_password(struct dcesrv_call_state *dce_call,
 	uint32_t new_pass_len;
 	DATA_BLOB session_key = dce_call->conn->session_key;
 
-	SamOEMhashBlob(pwbuf->data, 516, &session_key);
+	arcfour_crypt_blob(pwbuf->data, 516, &session_key);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_UNICODE)) {
@@ -731,7 +731,7 @@ NTSTATUS samr_set_password_ex(struct dcesrv_call_state *dce_call,
 	MD5Update(&ctx, session_key.data, session_key.length);
 	MD5Final(co_session_key.data, &ctx);
 	
-	SamOEMhashBlob(pwbuf->data, 516, &co_session_key);
+	arcfour_crypt_blob(pwbuf->data, 516, &co_session_key);
 
 	if (!decode_pw_buffer(pwbuf->data, new_pass, sizeof(new_pass),
 			      &new_pass_len, STR_UNICODE)) {

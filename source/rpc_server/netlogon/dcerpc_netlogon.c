@@ -148,7 +148,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 
 	ZERO_STRUCTP(r->out.credentials);
 	*r->out.rid = 0;
-	*r->out.negotiate_flags = *r->in.negotiate_flags & NETLOGON_NEG_AUTH2_FLAGS;
+	*r->out.negotiate_flags = *r->in.negotiate_flags;
 
 	if (!pipe_state) {
 		DEBUG(1, ("No challange requested by client, cannot authenticate\n"));
@@ -228,8 +228,9 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 
 	creds_server_init(pipe_state->creds, &pipe_state->client_challenge, 
 			  &pipe_state->server_challenge, mach_pwd,
-			  r->out.credentials);
-
+			  r->out.credentials,
+			  *r->in.negotiate_flags);
+	
 	if (!creds_server_check(pipe_state->creds, r->in.credentials)) {
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -249,8 +250,6 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	}
 
 	pipe_state->computer_name = talloc_strdup(pipe_state->mem_ctx, r->in.computer_name);
-	
-	*r->out.negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 
 	return NT_STATUS_OK;
 }

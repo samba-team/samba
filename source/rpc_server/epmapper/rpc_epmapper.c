@@ -102,6 +102,8 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
 		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[4].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 4);
+		/* TODO: we should fill in our IP address here as a hint to the 
+		   client */
 		break;
 	}
 
@@ -247,7 +249,7 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 
 	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
-	ZERO_STRUCTP(r->out.entry_handle);
+	ZERO_STRUCT(*r->out.entry_handle);
 	r->out.num_towers = 1;
 	r->out.status = 0;
 	r->out.towers = talloc_p(mem_ctx, struct epm_twr_p_t);

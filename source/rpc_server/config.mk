@@ -122,6 +122,7 @@ INIT_OBJ_FILES = \
 ADD_OBJ_FILES = \
 		rpc_server/dcerpc_tcp.o \
 		rpc_server/dcesrv_auth.o \
+		rpc_server/dcesrv_crypto.o \
 		rpc_server/handles.o
 #
 # End SUBSYSTEM DCERPC

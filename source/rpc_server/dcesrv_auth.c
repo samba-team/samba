@@ -22,7 +22,6 @@
 
 #include "includes.h"
 
-
 /*
   parse any auth information from a dcerpc bind request
   return False if we can't handle the auth request for some 
@@ -52,24 +51,11 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	if (dce_conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
-		/* only do NTLMSSP for now */
-		DEBUG(2,("auth_type %d not supported\n", dce_conn->auth_state.auth_info->auth_type));
-		return False;
-	}
-
-	if (dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		DEBUG(2,("auth_level %d not supported\n", dce_conn->auth_state.auth_info->auth_level));
-		return False;
-	}
-
-	status = auth_ntlmssp_start(&dce_conn->auth_state.ntlmssp_state);
+	status = dcesrv_crypto_startup(dce_conn, &dce_conn->auth_state);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(2, ("Failed to start NTLMSSP subsystem!\n"));
 		return False;
 	}
-
+	
 	return True;
 }
 
@@ -81,17 +67,17 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	if (!call->conn->auth_state.ntlmssp_state) {
+	if (!call->conn->auth_state.crypto_state) {
 		return True;
 	}
 
-	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
-				     call->mem_ctx,
-				     dce_conn->auth_state.auth_info->credentials, 
-				     &dce_conn->auth_state.auth_info->credentials);
+	status = dcesrv_crypto_update(&dce_conn->auth_state,
+				      call->mem_ctx,
+				      dce_conn->auth_state.auth_info->credentials, 
+				      &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
-		DEBUG(2, ("Failed to start NTLMSSP process NTLMSSP negotiate: %s\n", nt_errstr(status)));
+		DEBUG(2, ("Failed to start dcesrv auth negotiate: %s\n", nt_errstr(status)));
 		return False;
 	}
 
@@ -103,7 +89,7 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 
 
 /*
-  process the final stage of a NTLMSSP auth request
+  process the final stage of a auth request
 */
 BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 {
@@ -112,7 +98,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.ntlmssp_state ||
+	    !dce_conn->auth_state.crypto_state ||
 	    pkt->u.auth.auth_info.length == 0) {
 		return False;
 	}
@@ -125,20 +111,13 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	if (dce_conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
-		return False;
-	}
-	if (dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		return False;
-	}
-
-	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
-				     call->mem_ctx,
-				     dce_conn->auth_state.auth_info->credentials, 
-				     &dce_conn->auth_state.auth_info->credentials);
+	status = dcesrv_crypto_update(&dce_conn->auth_state,
+				      call->mem_ctx,
+				      dce_conn->auth_state.auth_info->credentials, 
+				      &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(4, ("User failed to authenticated with NTLMSSP: %s\n", nt_errstr(status)));
+		DEBUG(4, ("dcesrv_auth_auth3: failed to authenticate: %s\n", 
+			  nt_errstr(status)));
 		return False;
 	}
 
@@ -159,7 +138,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.ntlmssp_state) {
+	    !dce_conn->auth_state.crypto_state) {
 		return True;
 	}
 
@@ -193,19 +172,19 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	/* check signature or unseal the packet */
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = ntlmssp_unseal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
-					       call->mem_ctx,
-					       pkt->u.request.stub_and_verifier.data, 
-					       pkt->u.request.stub_and_verifier.length, 
-					       &auth.credentials);
-		break;
-
-	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = ntlmssp_check_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
+		status = dcesrv_crypto_unseal(&dce_conn->auth_state,
 					      call->mem_ctx,
 					      pkt->u.request.stub_and_verifier.data, 
 					      pkt->u.request.stub_and_verifier.length, 
 					      &auth.credentials);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = dcesrv_crypto_check_sig(&dce_conn->auth_state,
+						 call->mem_ctx,
+						 pkt->u.request.stub_and_verifier.data, 
+						 pkt->u.request.stub_and_verifier.length,
+						 &auth.credentials);
 		break;
 
 	default:
@@ -234,7 +213,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simple */
-	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.ntlmssp_state) {
+	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.crypto_state) {
 		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
@@ -260,19 +239,19 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	/* sign or seal the packet */
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = ntlmssp_seal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
-					     call->mem_ctx,
-					     ndr->data + DCERPC_REQUEST_LENGTH, 
-					     ndr->offset - DCERPC_REQUEST_LENGTH,
-					     &dce_conn->auth_state.auth_info->credentials);
+		status = dcesrv_crypto_seal(&dce_conn->auth_state, 
+					    call->mem_ctx,
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    &dce_conn->auth_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = ntlmssp_sign_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
-					     call->mem_ctx,
-					     ndr->data + DCERPC_REQUEST_LENGTH, 
-					     ndr->offset - DCERPC_REQUEST_LENGTH,
-					     &dce_conn->auth_state.auth_info->credentials);
+		status = dcesrv_crypto_sign(&dce_conn->auth_state, 
+					    call->mem_ctx,
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    &dce_conn->auth_state.auth_info->credentials);
 		break;
 	default:
 		status = NT_STATUS_INVALID_LEVEL;
