@@ -541,6 +541,12 @@ typedef struct q_net_share_del
 
 } SRV_Q_NET_SHARE_DEL;
 
+/* SRV_R_NET_SHARE_DEL */
+typedef struct r_net_share_del
+{
+	uint32 status;
+} SRV_R_NET_SHARE_DEL;
+
 
 /* SRV_Q_NET_SHARE_GET_INFO */
 typedef struct q_net_share_get_info
