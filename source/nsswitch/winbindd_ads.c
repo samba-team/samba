@@ -346,10 +346,17 @@ static BOOL dn_lookup(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	ADS_STATUS rc;
 	uint32 atype;
 	DOM_SID sid;
+	char *escaped_dn = escape_ldap_string_alloc(dn);
+
+	if (!escaped_dn) {
+		return False;
+	}
 
 	asprintf(&exp, "(distinguishedName=%s)", dn);
 	rc = ads_search_retry(ads, &res, exp, attrs);
-	free(exp);
+	SAFE_FREE(exp);
+	SAFE_FREE(escaped_dn);
+
 	if (!ADS_ERR_OK(rc)) {
 		goto failed;
 	}

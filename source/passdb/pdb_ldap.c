@@ -666,7 +666,12 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 			     LDAPMessage ** result)
 {
 	pstring filter;
-	
+	char *escape_user = escape_ldap_string_alloc(user);
+
+	if (!escape_user) {
+		return LDAP_NO_MEMORY;
+	}
+
 	/*
 	 * in the filter expression, replace %u with the real name
 	 * so in ldap filter, %u MUST exist :-)
@@ -677,7 +682,10 @@ static int ldapsam_search_one_user_by_name (struct ldapsam_privates *ldap_state,
 	 * have to use this here because $ is filtered out
 	   * in pstring_sub
 	 */
-	all_string_sub(filter, "%u", user, sizeof(pstring));
+	
+
+	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
+	SAFE_FREE(escape_user);
 
 	return ldapsam_search_one_user(ldap_state, filter, result);
 }
@@ -691,6 +699,7 @@ static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state,
 {
 	struct passwd *user;
 	pstring filter;
+	char *escape_user;
 
 	/* Get the username from the system and look that up in the LDAP */
 	
@@ -701,9 +710,16 @@ static int ldapsam_search_one_user_by_uid(struct ldapsam_privates *ldap_state,
 	
 	pstrcpy(filter, lp_ldap_filter());
 	
-	all_string_sub(filter, "%u", user->pw_name, sizeof(pstring));
+	escape_user = escape_ldap_string_alloc(user->pw_name);
+	if (!escape_user) {
+		passwd_free(&user);
+		return LDAP_NO_MEMORY;
+	}
+
+	all_string_sub(filter, "%u", escape_user, sizeof(pstring));
 
 	passwd_free(&user);
+	SAFE_FREE(escape_user);
 
 	return ldapsam_search_one_user(ldap_state, filter, result);
 }

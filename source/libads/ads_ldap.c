@@ -37,9 +37,16 @@ NTSTATUS ads_name_to_sid(ADS_STRUCT *ads,
 	char *exp;
 	uint32 t;
 	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *escaped_name = escape_ldap_string_alloc(name);
+	char *escaped_realm = escape_ldap_string_alloc(ads->config.realm);
+
+	if (!escaped_name || !escaped_realm) {
+		status = NT_STATUS_NO_MEMORY;
+		goto done;
+	}
 
 	if (asprintf(&exp, "(|(sAMAccountName=%s)(userPrincipalName=%s@%s))", 
-		     name, name, ads->config.realm) == -1) {
+		     escaped_name, escaped_name, escaped_realm) == -1) {
 		DEBUG(1,("ads_name_to_sid: asprintf failed!\n"));
 		status = NT_STATUS_NO_MEMORY;
 		goto done;
@@ -76,6 +83,9 @@ NTSTATUS ads_name_to_sid(ADS_STRUCT *ads,
 
 done:
 	if (res) ads_msgfree(ads, res);
+
+	SAFE_FREE(escaped_name);
+	SAFE_FREE(escaped_realm);
 
 	return status;
 }
