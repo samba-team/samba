@@ -199,6 +199,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	BOOL force = False;
 	connection_struct *conn;
 	int ret;
+	fstring dos_username;
 
 	strlower(service);
 
@@ -218,7 +219,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (strequal(service,HOMES_NAME)) {
 		if (*user && Get_Pwnam(user,True)) {
-			fstring dos_username;
 			fstrcpy(dos_username, user);
 			unix_to_dos(dos_username, True);
 			return(make_connection(dos_username,user,password,
@@ -227,7 +227,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 		if(lp_security() != SEC_SHARE) {
 			if (validated_username(vuid)) {
-				fstring dos_username;
 				fstrcpy(user,validated_username(vuid));
 				fstrcpy(dos_username, user);
 				unix_to_dos(dos_username, True);
@@ -237,7 +236,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
 			if(*current_user_info.smb_name) {
-				fstring dos_username;
 				fstrcpy(user,current_user_info.smb_name);
 				fstrcpy(dos_username, user);
 				unix_to_dos(dos_username, True);
@@ -312,6 +310,9 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		return NULL;
 	}
 
+	fstrcpy(dos_username, user);
+	unix_to_dos(dos_username, True);
+
 	conn->read_only = lp_readonly(snum);
 
 	{
@@ -319,13 +320,13 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		StrnCpy(list,lp_readlist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 
-		if (user_in_list(user,list))
+		if (user_in_list(dos_username,list))
 			conn->read_only = True;
 		
 		StrnCpy(list,lp_writelist(snum),sizeof(pstring)-1);
 		pstring_sub(list,"%S",service);
 		
-		if (user_in_list(user,list))
+		if (user_in_list(dos_username,list))
 			conn->read_only = False;    
 	}
 
@@ -335,7 +336,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	   marked read_only. Changed as I don't think this is needed,
 	   but old code left in case there is a problem here.
 	*/
-	if (user_in_list(user,lp_admin_users(snum)) 
+	if (user_in_list(dos_username,lp_admin_users(snum)) 
 #if 0
 	    && !conn->read_only
 #endif
@@ -429,7 +430,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			 * Otherwise, the meaning of the '+' would be ignored.
 			 */
 			if (conn->force_user && user_must_be_member) {
-				if (user_in_group_list( user, gname )) {
+				if (user_in_group_list( dos_username, gname )) {
 						conn->gid = gid;
 						DEBUG(3,("Forced group %s for member %s\n",gname,user));
 				}

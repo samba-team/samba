@@ -1390,6 +1390,8 @@ static char *lp_string(const char *s)
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
  char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+#define FN_GLOBAL_STRING_DOS(fn_name,ptr) \
+ char *fn_name(void) {return(unix_to_dos(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""),True));}
 #define FN_GLOBAL_BOOL(fn_name,ptr) \
  BOOL fn_name(void) {return(*(BOOL *)(ptr));}
 #define FN_GLOBAL_CHAR(fn_name,ptr) \
@@ -1399,6 +1401,8 @@ static char *lp_string(const char *s)
 
 #define FN_LOCAL_STRING(fn_name,val) \
  char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val));}
+#define FN_LOCAL_STRING_DOS(fn_name,val) \
+ char *fn_name(int i) {return(unix_to_dos(lp_string((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val),True));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  const char *fn_name(int i) {return((LP_SNUM_OK(i)&&pSERVICE(i)->val)?pSERVICE(i)->val : sDefault.val);}
 #define FN_LOCAL_BOOL(fn_name,val) \
@@ -1470,6 +1474,7 @@ FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
 FN_GLOBAL_STRING(lp_codepagedir,&Globals.szCodePageDir)
+FN_GLOBAL_STRING_DOS(lp_printer_admin,&Globals.szPrinterAdmin)
 #ifdef WITH_LDAP
 FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer);
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix);
@@ -1574,11 +1579,11 @@ FN_LOCAL_STRING(lp_servicename, szService)
 FN_LOCAL_CONST_STRING(lp_const_servicename, szService)
 FN_LOCAL_STRING(lp_pathname, szPath)
 FN_LOCAL_STRING(lp_dontdescend, szDontdescend)
-FN_LOCAL_STRING(lp_username, szUsername)
+FN_LOCAL_STRING_DOS(lp_username, szUsername)
 FN_LOCAL_STRING(lp_guestaccount, szGuestaccount)
-FN_LOCAL_STRING(lp_invalid_users, szInvalidUsers)
-FN_LOCAL_STRING(lp_valid_users, szValidUsers)
-FN_LOCAL_STRING(lp_admin_users, szAdminUsers)
+FN_LOCAL_STRING_DOS(lp_invalid_users, szInvalidUsers)
+FN_LOCAL_STRING_DOS(lp_valid_users, szValidUsers)
+FN_LOCAL_STRING_DOS(lp_admin_users, szAdminUsers)
 FN_LOCAL_STRING(lp_printcommand, szPrintcommand)
 FN_LOCAL_STRING(lp_lpqcommand, szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand, szLprmcommand)
@@ -1594,10 +1599,10 @@ FN_LOCAL_STRING(lp_hostsdeny, szHostsdeny)
 FN_LOCAL_STRING(lp_magicscript, szMagicScript)
 FN_LOCAL_STRING(lp_magicoutput, szMagicOutput)
 FN_LOCAL_STRING(lp_comment, comment)
-FN_LOCAL_STRING(lp_force_user, force_user)
-FN_LOCAL_STRING(lp_force_group, force_group)
-FN_LOCAL_STRING(lp_readlist, readlist)
-FN_LOCAL_STRING(lp_writelist, writelist)
+FN_LOCAL_STRING_DOS(lp_force_user, force_user)
+FN_LOCAL_STRING_DOS(lp_force_group, force_group)
+FN_LOCAL_STRING_DOS(lp_readlist, readlist)
+FN_LOCAL_STRING_DOS(lp_writelist, writelist)
 FN_LOCAL_STRING(lp_fstype, fstype)
 FN_LOCAL_STRING(lp_vfsobj, szVfsObjectFile)
 static FN_LOCAL_STRING(lp_volume, volume)
@@ -3701,6 +3706,7 @@ const char *get_called_name(void)
         return local_machine;
 }
 
+#if 0
 /* Return the value of the 'printer admin' parameter in dos codepage at
    call time rather than at smb.conf parsing time.  This is a horrible hack
    for CR593 to avoid having to re-order the smb.conf parameter and risk
@@ -3714,3 +3720,4 @@ char *lp_printer_admin(void)
 
 	return printer_admin;
 }
+#endif
