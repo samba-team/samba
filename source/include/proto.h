@@ -86,6 +86,7 @@ void fault_setup(void (*fn)(void *));
 
 /*The following definitions come from  lib/fnmatch.c  */
 
+int fnmatch (const char *pattern, const char *string, int flags);
 
 /*The following definitions come from  lib/genrand.c  */
 
@@ -250,8 +251,9 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,
 int name_extract(char *buf,int ofs,char *name);
 int name_len(char *s1);
 void msleep(int t);
-BOOL unix_do_match(char *str, char *regexp, int case_sig);
-BOOL mask_match(char *str, char *regexp, int case_sig,BOOL trans2);
+BOOL unix_do_match(char *str, char *regexp, BOOL case_sig);
+BOOL exact_match(char *str, char *regexp, BOOL case_sig);
+BOOL mask_match(char *str, char *regexp, BOOL case_sig, BOOL trans2);
 void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
@@ -1321,6 +1323,11 @@ BOOL trust_get_passwd( unsigned char trust_passwd[16], char *domain, char *mynam
 
 BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
+
+/*The following definitions come from  printing/print_cups.c  */
+
+void cups_printer_fn(void (*fn)(char *, char *));
+int cups_printername_ok(char *name);
 
 /*The following definitions come from  printing/print_svid.c  */
 
@@ -2579,7 +2586,7 @@ void process_smb(char *inbuf, char *outbuf);
 char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
-void check_reload(int time);
+void check_reload(int t);
 void smbd_process(void);
 
 /*The following definitions come from  smbd/reply.c  */

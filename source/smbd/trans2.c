@@ -298,7 +298,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
 				 char *base_data, int space_remaining, 
-				 BOOL *out_of_space,
+				 BOOL *out_of_space, BOOL *got_exact_match,
 				 int *last_name_off)
 {
   char *dname;
@@ -324,6 +324,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
   *fname = 0;
   *out_of_space = False;
+  *got_exact_match = False;
 
   if (!conn->dirptr)
     return(False);
@@ -364,7 +365,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
 
     pstrcpy(fname,dname);      
 
-    got_match = mask_match(fname, mask, case_sensitive, True);
+    if(!(got_match = *got_exact_match = exact_match(fname, mask, case_sensitive)))
+      got_match = mask_match(fname, mask, case_sensitive, True);
 
     if(!got_match && !is_8_3(fname, False)) {
 
@@ -378,7 +380,8 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       pstring newname;
       pstrcpy( newname, fname);
       name_map_mangle( newname, True, False, SNUM(conn));
-      got_match = mask_match(newname, mask, case_sensitive, True);
+      if(!(got_match = *got_exact_match = exact_match(newname, mask, case_sensitive)))
+        got_match = mask_match(newname, mask, case_sensitive, True);
     }
 
     if(got_match)
@@ -593,6 +596,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
   *last_name_off = PTR_DIFF(nameptr,base_data);
   /* Advance the data pointer to the next slot */
   *ppdata = p;
+
   return(found);
 }
   
@@ -760,6 +764,7 @@ static int call_trans2findfirst(connection_struct *conn,
 
   for (i=0;(i<maxentries) && !finished && !out_of_space;i++)
   {
+    BOOL got_exact_match;
 
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
@@ -772,7 +777,7 @@ static int call_trans2findfirst(connection_struct *conn,
     {
       finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
                    requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space,
+                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
                    &last_name_off);
     }
 
@@ -781,6 +786,17 @@ static int call_trans2findfirst(connection_struct *conn,
 
     if (!finished && !out_of_space)
       numentries++;
+
+    /*
+     * As an optimisation if we know we aren't looking
+     * for a wildcard name (ie. the name matches the wildcard exactly)
+     * then we can finish on any (first) match.
+     * This speeds up large directory searches. JRA.
+     */
+
+    if(got_exact_match)
+      finished = True;
+
     space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
   }
   
@@ -1018,6 +1034,8 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
   for (i=0;(i<(int)maxentries) && !finished && !out_of_space ;i++)
   {
+    BOOL got_exact_match;
+
     /* this is a heuristic to avoid seeking the dirptr except when 
        absolutely necessary. It allows for a filename of about 40 chars */
     if (space_remaining < DIRLEN_GUESS && numentries > 0)
@@ -1029,7 +1047,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
     {
       finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
                    requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space,
+                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
                    &last_name_off);
     }
 
@@ -1038,6 +1056,17 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 
     if (!finished && !out_of_space)
       numentries++;
+
+    /*
+     * As an optimisation if we know we aren't looking
+     * for a wildcard name (ie. the name matches the wildcard exactly)
+     * then we can finish on any (first) match.
+     * This speeds up large directory searches. JRA.
+     */
+
+    if(got_exact_match)
+      finished = True;
+
     space_remaining = max_data_bytes - PTR_DIFF(p,pdata);
   }
   
