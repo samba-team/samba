@@ -6,10 +6,10 @@ idl: cpp_prefix(s?) module_header interface
    { [$item{module_header}, $item{interface}] }
    | <error>
 
-module_header: '[' <commit> module_param(s /,/) ']' 
+module_header: '[' <commit> module_param(s? /,/) ']' 
           {{ 
               "TYPE" => "MODULEHEADER", 
-              "DATA" => util::FlattenHash($item[3])
+              "PROPERTIES" => util::FlattenHash($item[3])
           }}
 	      | <error?>
 
