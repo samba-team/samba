@@ -15,10 +15,10 @@ use Getopt::Long;
 use File::Basename;
 use idl;
 use dump;
+use ndr_client;
 use ndr_header;
 use ndr;
 use server;
-use client;
 use dcom_proxy;
 use dcom_stub;
 use com_header;
@@ -75,9 +75,9 @@ sub ShowHelp()
          --output OUTNAME      put output in OUTNAME.*
          --parse               parse a idl file to a .pidl file
          --dump                dump a pidl file back to idl
-         --header              create a C header file
+         --header              create a C NDR header file
          --parser              create a C NDR parser
-         --client              create a C client
+         --client              create a C NDR client
          --server              create server boilerplate
          --template            print a template for a pipe
          --eparser             create an ethereal parser
@@ -213,7 +213,7 @@ sub process_file($)
 		$res .= "#include \"$h_filename\"\n\n";
 
 		foreach my $x (@{$pidl}) {
-			$res .= IdlClient::ParseInterface($x);
+			$res .= NdrClient::ParseInterface($x);
 		}
 
 		util::FileSave($client, $res);
