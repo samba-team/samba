@@ -36,18 +36,18 @@
 RCSID("$Id$");
 
 OM_uint32
-gss_krb5_getsomekey(const gss_ctx_id_t context_handle,
-		    krb5_keyblock **key)
+gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
+		       krb5_keyblock **key)
 {
-    /* XXX this is ugly, and probably incorrect... */
     krb5_keyblock *skey;
-    krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
-				 context_handle->auth_context, 
-				 &skey);
+
+    krb5_auth_con_getremotesubkey(gssapi_krb5_context,
+				  context_handle->auth_context, 
+				  &skey);
     if(skey == NULL)
-	krb5_auth_con_getremotesubkey(gssapi_krb5_context,
-				      context_handle->auth_context, 
-				      &skey);
+	krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
+				     context_handle->auth_context, 
+				     &skey);
     if(skey == NULL)
 	krb5_auth_con_getkey(gssapi_krb5_context,
 			     context_handle->auth_context, 
@@ -176,7 +176,7 @@ unwrap_des
     return GSS_S_BAD_MIC;
   }
 
-  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
 
@@ -327,7 +327,7 @@ unwrap_des3
       return GSS_S_BAD_MIC;
   }
 
-  krb5_auth_setremoteseqnumber (gssapi_krb5_context,
+  krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
 
@@ -386,7 +386,7 @@ OM_uint32 gss_unwrap
   OM_uint32 ret;
   krb5_keytype keytype;
 
-  ret = gss_krb5_getsomekey(context_handle, &key);
+  ret = gss_krb5_get_remotekey(context_handle, &key);
   if (ret) {
       gssapi_krb5_set_error_string ();
       *minor_status = ret;
