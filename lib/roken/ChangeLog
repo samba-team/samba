@@ -1,3 +1,10 @@
+Tue Nov 11 21:12:09 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* parse_units.c: Change the list of separating characters (between
+ 	units) to comma, space, and tab, removing digits. Having digits in
+ 	this list makes a flag like `T42 generate a parse error. This
+ 	change makes `17m3s' an invalid time-spec (you need a space).
+
 Tue Nov 11 02:38:44 1997  Assar Westerlund  <assar@sics.se>
 
 	* roken.h: add <sys/socket.h>
