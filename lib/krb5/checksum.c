@@ -2,6 +2,31 @@
 
 RCSID("$Id$");
 
+struct checksum_type {
+    int type;
+    size_t checksumsize;
+    void (*checksum)(void *, size_t, void *);
+};
+
+static struct checksum_type cm[] = {
+  { CKSUMTYPE_NONE,		 0,	krb5_NULL_checksum},
+  { CKSUMTYPE_CRC32,		 4,	krb5_CRC_checksum},
+  { CKSUMTYPE_RSA_MD4,		16,	krb5_MD4_checksum},
+  { CKSUMTYPE_RSA_MD5,		16,	krb5_MD5_checksum}
+};
+
+static int num_ctypes = sizeof(cm) / sizeof(cm[0]);
+
+static struct checksum_type *
+find_checksum_type(int ctype)
+{
+    struct checksum_type *c;
+    for(c = cm; c < cm + num_ctypes; c++)
+	if(ctype == c->type)
+	    return c;
+    return NULL;
+}
+
 krb5_error_code
 krb5_create_checksum (krb5_context context,
 		      krb5_cksumtype type,
@@ -9,21 +34,19 @@ krb5_create_checksum (krb5_context context,
 		      size_t len,
 		      Checksum *result)
 {
-  struct md4 m;
+    struct checksum_type *c;
 
-  if (type != CKSUMTYPE_RSA_MD4)
-    abort ();
+    c = find_checksum_type (type);
+    if (c == NULL)
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    result->cksumtype = type;
+    result->checksum.length = c->checksumsize;
+    result->checksum.data   = malloc(result->checksum.length);
+    if(result->checksum.data == NULL)
+	return ENOMEM;
 
-  result->cksumtype = CKSUMTYPE_RSA_MD4;
-  result->checksum.length = 16;
-  result->checksum.data   = malloc(16);
-  if (result->checksum.data == NULL)
-    return ENOMEM;
-
-  md4_init(&m);
-  md4_update(&m, ptr, len);
-  md4_finito (&m, result->checksum.data);
-  return 0;
+    (*c->checksum)(ptr, len, result->checksum.data);
+    return 0;
 }
 
 krb5_error_code
@@ -32,19 +55,23 @@ krb5_verify_checksum (krb5_context context,
 		      size_t len,
 		      Checksum *cksum)
 {
-  struct md4 m;
-  u_char csum[16];
+    void *tmp;
+    struct checksum_type *c;
+    int ret;
 
-  if (cksum->cksumtype != CKSUMTYPE_RSA_MD4)
-    return KRB5KRB_AP_ERR_INAPP_CKSUM;
-  if (cksum->checksum.length != 16)
-    return KRB5KRB_AP_ERR_MODIFIED;
-
-  md4_init (&m);
-  md4_update (&m, ptr, len);
-  md4_finito (&m, csum);
-  if (memcmp (cksum->checksum.data, csum, 16) == 0)
-    return 0;
-  else
-    return KRB5KRB_AP_ERR_MODIFIED;
+    c = find_checksum_type (cksum->cksumtype);
+    if (c == NULL)
+	return KRB5_PROG_SUMTYPE_NOSUPP;
+    if (cksum->checksum.length != c->checksumsize)
+	return KRB5KRB_AP_ERR_MODIFIED;
+    tmp = malloc (c->checksumsize);
+    if (tmp == NULL)
+	return ENOMEM;
+    (*c->checksum)(ptr, len, tmp);
+    ret = memcmp (cksum->checksum.data, tmp, c->checksumsize);
+    free (tmp);
+    if (ret == 0)
+	return 0;
+    else
+	return KRB5KRB_AP_ERR_MODIFIED;
 }
