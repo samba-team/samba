@@ -498,7 +498,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* Find all the groups this uid is in and
 	   store them. Used by change_to_user() */
 	initialise_groups(conn->user, conn->uid, conn->gid); 
-	get_current_groups(&conn->ngroups,&conn->groups);
+	get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
 
 #ifdef HAVE_GETGROUPS_TOO_MANY_EGIDS
 	/*
