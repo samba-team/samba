@@ -38,8 +38,8 @@ static int tdbgumm_debug_level = DBGC_ALL;
 
 #define TDB_FORMAT_STRING	"ddB"
 
-#define TALLOC_CHECK(ptr, err, label) do { if ((ptr) == NULL) { DEBUG(0, ("%s: Out of memory!\n", __FUNCTION__)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
-#define SET_OR_FAIL(func, label) do { if (NT_STATUS_IS_ERR(func)) { DEBUG(0, ("%s: Setting gums object data failed!\n", __FUNCTION__)); goto label; } } while(0)
+#define TALLOC_CHECK(ptr, err, label) do { if ((ptr) == NULL) { DEBUG(0, ("%s: Out of memory!\n", FUNCTION_MACRO)); err = NT_STATUS_NO_MEMORY; goto label; } } while(0)
+#define SET_OR_FAIL(func, label) do { if (NT_STATUS_IS_ERR(func)) { DEBUG(0, ("%s: Setting gums object data failed!\n", FUNCTION_MACRO)); goto label; } } while(0)
 
 struct tdbsam2_enum_objs {
 	uint32 type;
