@@ -1,5 +1,8 @@
 2001-07-06  Assar Westerlund  <assar@sics.se>
 
+	* configure.in (LIB_des_a, LIB_des_so): add these so that they can
+	be used by lib/auth/sia
+
 	* kuser/kinit.c: re-do some of the v4 fallbacks: look at
 	get-tokens flag do not print extra errors do not try to do 524 if
 	we got tickets from a v4 server
