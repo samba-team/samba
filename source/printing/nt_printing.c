@@ -2201,10 +2201,6 @@ void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
-/*
- * should I init this ones ???
-	nt_devmode->devicename
-*/
 
 	char adevice[32];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
