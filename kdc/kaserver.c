@@ -469,6 +469,11 @@ do_authenticate (struct rx_header *hdr,
     krb5_ret_int32 (reply_sp, &chal);
     krb5_storage_free (reply_sp);
 
+    if (abs(chal - kdc_time) > context->max_skew) {
+	make_error_reply (hdr, KACLOCKSKEW, reply);
+	goto out;
+    }
+
     /* life */
     max_life = end_time - kdc_time;
     if (client_entry->max_life)
