@@ -41,42 +41,6 @@ static TDB_CONTEXT *tdb;
 int global_smbpid;
 
 /****************************************************************************
- Remove any locks on this fd.
-****************************************************************************/
-
-void locking_close_file(files_struct *fsp)
-{
-	if (!lp_locking(SNUM(fsp->conn)))
-		return;
-
-	if(lp_posix_locking(SNUM(fsp->conn))) {
-		/*
-		 * We need to release all POSIX locks we have on this
-		 * fd.
-		 */
-	}
-
-	/*
-	 * Now release all the tdb locks.
-	 */
-
-	/* Placeholder for code here.... */
-#if 0
-	brl_close(fsp->dev, fsp->inode, getpid(), fsp->conn->cnum, fsp->fnum);
-
-	/*
-	 * We now need to search our open file list for any other
-	 * fd open on this file with outstanding POSIX locks. If we
-	 * don't find one, great, just return. If we do find one then
-	 * we have to add this file descriptor to the 'pending close'
-	 * list of that fd, to stop the POSIX problem where the locks
-	 * on *that* fd will get lost when we close this one. POSIX
-	 * braindamage... JRA.
-	 */
-#endif
-}
-
-/****************************************************************************
  Debugging aid :-).
 ****************************************************************************/
 
@@ -414,6 +378,29 @@ static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG
 		fsp->num_posix_locks--;
 
 	return True;
+}
+
+/****************************************************************************
+ Remove any locks on this fd. Called from file_close().
+****************************************************************************/
+
+void locking_close_file(files_struct *fsp)
+{
+	if (!lp_locking(SNUM(fsp->conn)))
+		return;
+
+	if(lp_posix_locking(SNUM(fsp->conn))) {
+		/*
+		 * We need to release all POSIX locks we have on this
+		 * fd.
+		 */
+	}
+
+	/*
+	 * Now release all the tdb locks.
+	 */
+
+	brl_close(fsp->dev, fsp->inode, getpid(), fsp->conn->cnum, fsp->fnum);
 }
 
 /****************************************************************************

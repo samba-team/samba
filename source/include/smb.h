@@ -490,6 +490,8 @@ typedef struct files_struct
 	int oplock_type;
 	int sent_oplock_break;
 	unsigned int num_posix_locks;
+	unsigned int num_posix_pending_closes;
+	int *posix_pending_close_fds;
 	BOOL can_lock;
 	BOOL can_read;
 	BOOL can_write;
