@@ -312,9 +312,10 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 			if (printers & !(parm->flags & FLAG_PRINT)) continue;
 			if (!printers & !(parm->flags & FLAG_SHARE)) continue;
 		}
-		if (parm_filter == FLAG_BASIC) {
+
+		if (!( parm_filter & FLAG_ADVANCED )) {
 			if (!(parm->flags & FLAG_BASIC)) {
-				void *ptr = parm->ptr;
+					void *ptr = parm->ptr;
 
 				if (parm->class == P_LOCAL && snum >= 0) {
 					ptr = lp_local_ptr(snum, ptr);
@@ -355,16 +356,15 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 					break;
 				case P_SEP:
 					continue;
-				}
+					}
 			}
 			if (printers && !(parm->flags & FLAG_PRINT)) continue;
 		}
-		if (parm_filter == FLAG_WIZARD) {
-			if (!((parm->flags & FLAG_WIZARD))) continue;
-		}
-		if (parm_filter == FLAG_ADVANCED) {
-			if (!((parm->flags & FLAG_ADVANCED))) continue;
-		}
+
+		if ((parm_filter & FLAG_WIZARD) && !(parm->flags & FLAG_WIZARD)) continue;
+		
+		if ((parm_filter & FLAG_ADVANCED) && !(parm->flags & FLAG_ADVANCED)) continue;
+		
 		if (heading && heading != last_heading) {
 			d_printf("<tr><td></td></tr><tr><td><b><u>%s</u></b></td></tr>\n", _(heading));
 			last_heading = heading;
@@ -522,11 +522,9 @@ static void ViewModeBoxes(int mode)
 	d_printf("<p>%s\n", _("Current View Is:&nbsp \n"));
 	d_printf("<input type=radio name=\"ViewMode\" value=0 %s>Basic\n", (mode == 0) ? "checked" : "");
 	d_printf("<input type=radio name=\"ViewMode\" value=1 %s>Advanced\n", (mode == 1) ? "checked" : "");
-	d_printf("<input type=radio name=\"ViewMode\" value=2 %s>Developer\n", (mode == 2) ? "checked" : "");
 	d_printf("<br>%s\n", _("Change View To:&nbsp"));
 	d_printf("<input type=submit name=\"BasicMode\" value=\"%s\">\n", _("Basic"));
 	d_printf("<input type=submit name=\"AdvMode\" value=\"%s\">\n", _("Advanced"));
-	d_printf("<input type=submit name=\"DevMode\" value=\"%s\">\n", _("Developer"));
 	d_printf("</p><br>\n");
 }
 
@@ -786,8 +784,6 @@ static void globals_page(void)
 		mode = 0;
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
-	if ( cgi_variable("DevMode"))
-		mode = 2;
 
 	d_printf("<form name=\"swatform\" method=post action=globals>\n");
 
@@ -798,9 +794,6 @@ static void globals_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<br>\n");
@@ -867,8 +860,6 @@ static void shares_page(void)
 		mode = 0;
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
-	if ( cgi_variable("DevMode"))
-		mode = 2;
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
@@ -877,9 +868,6 @@ static void shares_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<br><tr>\n");
@@ -1214,8 +1202,6 @@ static void printers_page(void)
                 mode = 0;
         if ( cgi_variable("AdvMode"))
                 mode = 1;
-        if ( cgi_variable("DevMode"))
-                mode = 2;
 
 	ViewModeBoxes( mode );
 	switch ( mode ) {
@@ -1224,9 +1210,6 @@ static void printers_page(void)
 			break;
 		case 1:
 			parm_filter = FLAG_ADVANCED;
-			break;
-		case 2:
-			parm_filter = FLAG_DEVELOPER;
 			break;
 	}
 	d_printf("<table>\n");
