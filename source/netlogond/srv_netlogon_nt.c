@@ -243,8 +243,7 @@ static uint32 remote_interactive(const NET_ID_INFO_1 * id1,
 	DEBUG(5, ("BEGIN remote_interactive: %s\\%s\n", domain, user));
 
 	status = check_domain_security(user, domain,
-				       NULL, lm_pwd, 16,
-				       nt_pwd, 16, usr);
+				       NULL, lm_pwd, 16, nt_pwd, 16, usr);
 
 	DEBUG(5, ("END remote_interactive: %x\n", status));
 
@@ -382,10 +381,10 @@ static uint32 remote_network(const NET_ID_INFO_2 * id2,
 
 	status = check_domain_security(user, domain,
 				       id2->lm_chal,
-				       (const uchar *)id2->lm_chal_resp.
-				       buffer, lm_pw_len,
-				       (const uchar *)id2->nt_chal_resp.
-				       buffer, nt_pw_len, usr);
+				       (const uchar *)id2->
+				       lm_chal_resp.buffer, lm_pw_len,
+				       (const uchar *)id2->
+				       nt_chal_resp.buffer, nt_pw_len, usr);
 
 	DEBUG(5, ("END remote_network: %x\n", status));
 
@@ -849,6 +848,27 @@ uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
 	return NT_STATUS_NOPROBLEMO;
 }
 
+static uint32 TooMuchInformation(uint32 status)
+{
+#ifdef SANITISE_FOR_SECURITY_REASONS
+	switch (status)
+	{
+		case NT_STATUS_INVALID_INFO_CLASS:
+		case NT_STATUS_INVALID_PARAMETER:
+		case NT_STATUS_ACCESS_DENIED:
+		case NT_STATUS_NOPROBLEMO:
+		{
+			return status;
+		}
+	}
+	DEBUG(10,("TooMuchInformation: sanitising status %x\n", status));
+	return NT_STATUS_ACCESS_DENIED;
+
+#else /* oh well, who cares, anyway */
+	return status;
+#endif
+}
+
 /*************************************************************************
  _net_sam_logon
  *************************************************************************/
@@ -894,13 +914,16 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	UNISTR2 uni_sam_name;
 	uint32 status = NT_STATUS_NOPROBLEMO;
 
+	/*
+	 * checks and updates credentials.  creates reply credentials
+	 */
+
 	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 	if (!cred_get(global_sam_name, trust_name, &dc))
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds(dc.sess_key, &dc.clnt_cred,
 			     clnt_cred, srv_creds))
 	{
@@ -913,7 +936,9 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	/* find the username */
+	/*
+	 * find the username and domain name
+	 */
 
 	switch (logon_level)
 	{
@@ -945,18 +970,43 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		}
 	}
 
-	/* check username exists */
-
 	unistr2_to_ascii(nt_username, uni_samusr, sizeof(nt_username) - 1);
 	unistr2_to_ascii(nt_samname, uni_domain, sizeof(nt_samname) - 1);
 
 	DEBUG(3, ("Domain:[%s] User:[%s]\n", nt_samname, nt_username));
 
 	/*
+	 * check if we should remote-auth to a PDC.
+	 */
+
+	if (lp_server_role() == ROLE_STANDALONE &&
+			!strequal(nt_samname, global_myname))
+	{
+		DEBUG(1,("_net_sam_logon: stand-alone server cannot remote-auth domain users!\n"));
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	/*
 	 * call up to a PDC if it's not our own SAM database.
 	 */
-	if (!strequal(nt_samname, global_sam_name))
+
+	if (!strequal(nt_samname, global_sam_name) &&
+	    !strequal(nt_samname, global_myname))
 	{
+		if (validation_level != 3)
+		{
+			/*
+			 * see the g_new of the container, below?  well,
+			 * that need to be id2 for AS/U, right.
+			 * and i haven't the inclination to do it, right
+			 * now.  needs to make a copy-level-two-to-three
+			 * function.  lkclXXXX
+			 */
+
+			DEBUG(0, ("remote-auth, level %d not supported yet\n",
+				  validation_level));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		uctr->usr.id3 = g_new(NET_USER_INFO_3, 1);
 		if (uctr->usr.id3 == NULL)
 		{
@@ -968,13 +1018,15 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		{
 			case NETWORK_LOGON_TYPE:
 			{
-				return remote_network(&id_ctr->auth.id2, &dc,
+				status = remote_network(&id_ctr->auth.id2, &dc,
 						      uctr->usr.id3);
+				return TooMuchInformation(status);
 			}
 			case INTERACTIVE_LOGON_TYPE:
 			{
-				return remote_interactive(&id_ctr->auth.id1,
+				status = remote_interactive(&id_ctr->auth.id1,
 							  &dc, uctr->usr.id3);
+				return TooMuchInformation(status);
 			}
 			case GENERAL_LOGON_TYPE:
 			default:
@@ -997,36 +1049,45 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	if (logon_level == GENERAL_LOGON_TYPE)
 	{
 		/* general login.  cleartext password */
-		status = NT_STATUS_NOPROBLEMO;
-		status =
-			net_login_general(&id_ctr->auth.id4, &dc,
+		status = net_login_general(&id_ctr->auth.id4, &dc,
 					  usr_sess_key);
 		enc_user_sess_key = usr_sess_key;
 		if (status != NT_STATUS_NOPROBLEMO)
 		{
-			return status;
+			return TooMuchInformation(status);
 		}
 		(*auth_resp) = 1;
 	}
 
 	/*
 	 * now obtain smb passwd entry, which MAY have just been
-	 * added by "update encrypted" in general login
+	 * added by "update encrypted" in general login.
+	 * 
+	 * this also obtains the user's groups.  all this is
+	 * needed for the user profile.
 	 */
+
 	become_root(True);
 	status_pwd = direct_samr_userinfo(uni_samusr, 21, &ctr,
 					  &gids, &num_gids, False);
 	unbecome_root(True);
+
 	if (status_pwd != NT_STATUS_NOPROBLEMO)
 	{
 		free_samr_userinfo_ctr(&ctr);
-		return status_pwd;
+
+		return TooMuchInformation(status_pwd);
 	}
 
+	/*
+	 * check the Account Control Bits
+	 */
+
 	acb_info = ctr.info.id21->acb_info;
+
 	if (IS_BITS_SET_ALL(acb_info, ACB_DISABLED))
 	{
-		return NT_STATUS_ACCOUNT_DISABLED;
+		return TooMuchInformation(NT_STATUS_ACCOUNT_DISABLED);
 	}
 
 	if (IS_BITS_SET_ALL(acb_info, ACB_DOMTRUST))
@@ -1044,6 +1105,10 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		return NT_STATUS_NOLOGON_WORKSTATION_TRUST_ACCOUNT;
 	}
 
+	/*
+	 * get some user profile info
+	 */
+
 	logon_time = ctr.info.id21->logon_time;
 	logoff_time = ctr.info.id21->logoff_time;
 	kickoff_time = ctr.info.id21->kickoff_time;
@@ -1059,7 +1124,10 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	user_rid = ctr.info.id21->user_rid;
 	group_rid = ctr.info.id21->group_rid;
 
-	/* validate password - if required */
+	/*
+	 * validate password - if required
+	 */
+
 	if (!(IS_BITS_SET_ALL(acb_info, ACB_PWNOTREQ)))
 	{
 		switch (logon_level)
@@ -1067,17 +1135,15 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status =
-					net_login_interactive(&id_ctr->
-							      auth.id1, &dc);
+				status = net_login_interactive(&id_ctr->auth.
+							      id1, &dc);
 				(*auth_resp) = 1;
 				break;
 			}
 			case NETWORK_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status =
-					net_login_network(&id_ctr->auth.id2,
+				status = net_login_network(&id_ctr->auth.id2,
 							  acb_info, &dc,
 							  usr_sess_key,
 							  lm_pw8);
@@ -1096,7 +1162,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 		{
 			safe_free(gids);
 			free_samr_userinfo_ctr(&ctr);
-			return status;
+			return TooMuchInformation(status);
 		}
 	}
 
@@ -1168,7 +1234,7 @@ uint32 _net_sam_logon(const UNISTR2 *uni_logon_srv,
 	free_samr_userinfo_ctr(&ctr);
 	if (status != NT_STATUS_NOPROBLEMO)
 	{
-		return status;
+		return TooMuchInformation(status);
 	}
 
 	return NT_STATUS_NOPROBLEMO;
