@@ -33,6 +33,151 @@ extern int optind;
 
 /* forced running in root-mode */
 static BOOL local_mode;
+static BOOL joining_domain = False, got_pass = False, got_username = False;
+static int local_flags = 0;
+static BOOL stdin_passwd_get = False;
+static fstring user_name, user_password;
+static char *new_domain = NULL;
+static char *new_passwd = NULL;
+static char *old_passwd = NULL;
+static char *remote_machine = NULL;
+static pstring servicesf = CONFIGFILE;
+
+#ifdef WITH_LDAP_SAM
+static fstring ldap_secret;
+#endif
+
+
+/*******************************************************************
+ Process command line options
+ ******************************************************************/
+static void process_options(int argc, char **argv, BOOL amroot)
+{
+	int ch;
+
+	user_name[0] = '\0';
+
+	while ((ch = getopt(argc, argv, "c:axdehmnj:r:sw:R:D:U:L")) != EOF) {
+		switch(ch) {
+		case 'L':
+			local_mode = True;
+			break;
+		case 'c':
+			pstrcpy(servicesf,optarg);
+			break;
+		case 'a':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_ADD_USER;
+			break;
+		case 'x':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_DELETE_USER;
+			new_passwd = strdup_x("XXXXXX");
+			break;
+		case 'd':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_DISABLE_USER;
+			new_passwd = strdup_x("XXXXXX");
+			break;
+		case 'e':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_ENABLE_USER;
+			break;
+		case 'm':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_TRUST_ACCOUNT;
+			break;
+		case 'n':
+			if (!amroot) goto bad_args;
+			local_flags |= LOCAL_SET_NO_PASSWORD;
+			new_passwd = strdup_x("NO PASSWORD");
+			break;
+		case 'j':
+			if (!amroot) goto bad_args;
+			new_domain = optarg;
+			strupper(new_domain);
+			joining_domain = True;
+			break;
+		case 'r':
+			remote_machine = optarg;
+			break;
+		case 's':
+			set_line_buffering(stdin);
+			set_line_buffering(stdout);
+			set_line_buffering(stderr);
+			stdin_passwd_get = True;
+			break;
+		case 'w':
+			if (!amroot) goto bad_args;
+#ifdef WITH_LDAP_SAM
+			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
+			fstrcpy(ldap_secret, optarg);
+			break;
+#else
+			printf("-w not available unless configured --with-ldap\n");
+			goto bad_args;
+#endif			
+		case 'R':
+			if (!amroot) goto bad_args;
+			lp_set_name_resolve_order(optarg);
+			break;
+		case 'D':
+			DEBUGLEVEL = atoi(optarg);
+			break;
+		case 'U': {
+			char *lp;
+
+			got_username = True;
+			fstrcpy(user_name, optarg);
+
+			if ((lp = strchr(user_name, '%'))) {
+				*lp = 0;
+				fstrcpy(user_password, lp + 1);
+				got_pass = True;
+				memset(strchr(optarg, '%') + 1, 'X',
+				       strlen(user_password));
+			}
+
+			break;
+		}
+		case 'h':
+		default:
+bad_args:
+			usage();
+		}
+	}
+	
+	argc -= optind;
+	argv += optind;
+
+	if (joining_domain && (argc != 0))
+		usage();
+
+	switch(argc) {
+	case 0:
+		if (!got_username)
+			fstrcpy(user_name, "");
+		break;
+	case 1:
+		if (!amroot == 1) {
+			new_passwd = argv[0];
+			break;
+		}
+		if (got_username)
+			usage();
+		fstrcpy(user_name, argv[0]);
+		break;
+	case 2:
+		if (!amroot || got_username || got_pass)
+			usage();
+		fstrcpy(user_name, argv[0]);
+		new_passwd = strdup_x(argv[1]);
+		break;
+	default:
+		usage();
+	}
+
+}
 
 /*********************************************************
  A strdup with exit
@@ -60,13 +205,14 @@ static void usage(void)
 		printf("smbpasswd [options] [password]\n");
 	}
 	printf("options:\n");
+	printf("  -c smb.conf file     Use the given path to the smb.conf file\n");
 	printf("  -s                   use stdin for password prompt\n");
 	printf("  -D LEVEL             debug level\n");
 	printf("  -U USER              remote username\n");
 	printf("  -r MACHINE           remote machine\n");
 
 	if (getuid() == 0 || local_mode) {
-		printf("  -L                   local mode (must be first option)\n");
+		printf("  -L                   local mode\n");
 		printf("  -R ORDER             name resolve order\n");
 		printf("  -j DOMAIN            join domain name\n");
 		printf("  -a                   add user\n");
@@ -570,107 +716,15 @@ static BOOL store_ldap_admin_pw (char* pw)
 }
 #endif
 
+
 /*************************************************************
  Handle password changing for root.
 *************************************************************/
 
-static int process_root(int argc, char *argv[])
+static int process_root()
 {
 	struct passwd  *pwd;
-	int result = 0, ch;
-	BOOL joining_domain = False, got_pass = False, got_username = False;
-	int local_flags = 0;
-	BOOL stdin_passwd_get = False;
-	fstring user_name, user_password;
-#ifdef WITH_LDAP_SAM
-	fstring ldap_secret;
-#endif
-	char *new_domain = NULL;
-	char *new_passwd = NULL;
-	char *old_passwd = NULL;
-	char *remote_machine = NULL;
-
-	user_name[0] = '\0';
-
-	while ((ch = getopt(argc, argv, "axdehmnj:r:sw:R:D:U:L")) != EOF) {
-		switch(ch) {
-		case 'L':
-			local_mode = True;
-			break;
-		case 'a':
-			local_flags |= LOCAL_ADD_USER;
-			break;
-		case 'x':
-			local_flags |= LOCAL_DELETE_USER;
-			new_passwd = strdup_x("XXXXXX");
-			break;
-		case 'd':
-			local_flags |= LOCAL_DISABLE_USER;
-			new_passwd = strdup_x("XXXXXX");
-			break;
-		case 'e':
-			local_flags |= LOCAL_ENABLE_USER;
-			break;
-		case 'm':
-			local_flags |= LOCAL_TRUST_ACCOUNT;
-			break;
-		case 'n':
-			local_flags |= LOCAL_SET_NO_PASSWORD;
-			new_passwd = strdup_x("NO PASSWORD");
-			break;
-		case 'j':
-			new_domain = optarg;
-			strupper(new_domain);
-			joining_domain = True;
-			break;
-		case 'r':
-			remote_machine = optarg;
-			break;
-		case 's':
-			set_line_buffering(stdin);
-			set_line_buffering(stdout);
-			set_line_buffering(stderr);
-			stdin_passwd_get = True;
-			break;
-		case 'w':
-#ifdef WITH_LDAP_SAM
-			local_flags |= LOCAL_SET_LDAP_ADMIN_PW;
-			fstrcpy(ldap_secret, optarg);
-			break;
-#else
-			printf("-w not available unless configured --with-ldap\n");
-			goto done;
-#endif			
-		case 'R':
-			lp_set_name_resolve_order(optarg);
-			break;
-		case 'D':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'U': {
-			char *lp;
-
-			got_username = True;
-			fstrcpy(user_name, optarg);
-
-			if ((lp = strchr(user_name, '%'))) {
-				*lp = 0;
-				fstrcpy(user_password, lp + 1);
-				got_pass = True;
-				memset(strchr(optarg, '%') + 1, 'X',
-				       strlen(user_password));
-			}
-
-			break;
-		}
-		case 'h':
-		default:
-			usage();
-		}
-	}
-	
-	argc -= optind;
-	argv += optind;
+	int result = 0;
 
 #ifdef WITH_LDAP_SAM
 	if (local_flags & LOCAL_SET_LDAP_ADMIN_PW)
@@ -704,9 +758,6 @@ static int process_root(int argc, char *argv[])
 
 	if (joining_domain) {
 
-		if (argc != 0)
-			usage();
-
 		/* Are we joining by specifing an admin username and
 		   password? */
 
@@ -734,26 +785,6 @@ static int process_root(int argc, char *argv[])
 	/*
 	 * Deal with root - can add a user, but only locally.
 	 */
-
-	switch(argc) {
-	case 0:
-		if (!got_username)
-			fstrcpy(user_name, "");
-		break;
-	case 1:
-		if (got_username)
-			usage();
-		fstrcpy(user_name, argv[0]);
-		break;
-	case 2:
-		if (got_username || got_pass)
-			usage();
-		fstrcpy(user_name, argv[0]);
-		new_passwd = strdup_x(argv[1]);
-		break;
-	default:
-		usage();
-	}
 
 	if (!user_name[0] && (pwd = sys_getpwuid(0))) {
 		fstrcpy(user_name, pwd->pw_name);
@@ -873,53 +904,15 @@ static int process_root(int argc, char *argv[])
 /*************************************************************
 handle password changing for non-root
 *************************************************************/
-static int process_nonroot(int argc, char *argv[])
+static int process_nonroot()
 {
 	struct passwd  *pwd = NULL;
-	int result = 0, ch;
-	BOOL stdin_passwd_get = False;
-	char *old_passwd = NULL;
-	char *remote_machine = NULL;
-	char *user_name = NULL;
-	char *new_passwd = NULL;
+	int result = 0;
 
-	while ((ch = getopt(argc, argv, "hD:r:sU:")) != EOF) {
-		switch(ch) {
-		case 'D':
-			DEBUGLEVEL = atoi(optarg);
-			break;
-		case 'r':
-			remote_machine = optarg;
-			break;
-		case 's':
-			set_line_buffering(stdin);
-			set_line_buffering(stdout);
-			set_line_buffering(stderr);
-			stdin_passwd_get = True;
-			break;
-		case 'U':
-			user_name = optarg;
-			break;
-		default:
-			usage();
-		}
-	}
-	
-	argc -= optind;
-	argv += optind;
-
-	if(argc > 1) {
-		usage();
-	}
-	
-	if (argc == 1) {
-		new_passwd = argv[0];
-	}
-	
-	if (!user_name) {
+	if (!user_name[0]) {
 		pwd = sys_getpwuid(getuid());
 		if (pwd) {
-			user_name = strdup_x(pwd->pw_name);
+			fstrcpy(user_name,pwd->pw_name);
 		} else {
 			fprintf(stderr,"you don't exist - go away\n");
 			exit(1);
@@ -973,7 +966,7 @@ static int process_nonroot(int argc, char *argv[])
 **********************************************************/
 int main(int argc, char **argv)
 {	
-	static pstring servicesf = CONFIGFILE;
+	BOOL amroot = getuid() == 0;
 
 	AllowDebugChange = False;
 
@@ -981,6 +974,7 @@ int main(int argc, char **argv)
 	set_auth_parameters(argc, argv);
 #endif /* HAVE_SET_AUTH_PARAMETERS */
 
+	process_options(argc, argv, amroot);
 	TimeInit();
 	
 	setup_logging("smbpasswd", True);
@@ -1019,17 +1013,10 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* pre-check for local mode option as first option. We can't
-	   do this via normal getopt as getopt can't be called
-	   twice. */
-	if (argc > 1 && strcmp(argv[1], "-L") == 0) {
-		local_mode = True;
-	}
-
-	if (local_mode || getuid() == 0) {
+	if (local_mode || amroot) {
 		secrets_init();
-		return process_root(argc, argv);
+		return process_root();
 	} 
 
-	return process_nonroot(argc, argv);
+	return process_nonroot();
 }
