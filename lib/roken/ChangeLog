@@ -1,3 +1,7 @@
+Sun Nov  9 04:48:46 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* fnmatch.c: Add fnmatch from NetBSD
+
 Sun Nov  9 02:00:08 1997  Assar Westerlund  <assar@sics.se>
 
 	* parse_units.c (parse_something): ignore white-space and ','
