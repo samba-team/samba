@@ -181,6 +181,7 @@ typedef struct _kadm5_policy_ent_t {
 #define KADM5_ACL_CHPASS	(1 << 3)
 #define KADM5_ACL_DELETE	(1 << 4)
 #define KADM5_ACL_LIST		(1 << 5)
+#define KADM5_ACL_ALL		(0x7fffffff) /* XXX ~0 breaks in parse_flags */
 
 typedef struct {
     int XXX;
