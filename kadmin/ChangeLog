@@ -1,3 +1,7 @@
+1999-09-10  Assar Westerlund  <assar@sics.se>
+
+	* version4.c (kadm_ser_cpw): add password quality functions
+
 1999-08-26  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kadmind.c: use HDB keytabs
