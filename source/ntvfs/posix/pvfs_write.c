@@ -48,6 +48,10 @@ NTSTATUS pvfs_write(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_FILE_IS_A_DIRECTORY;
 	}
 
+	if (!(f->access_mask & SA_RIGHT_FILE_WRITE_DATA)) {
+		return NT_STATUS_ACCESS_VIOLATION;
+	}
+
 	status = pvfs_check_lock(pvfs, f, req->smbpid, 
 				 wr->writex.in.offset,
 				 wr->writex.in.count,

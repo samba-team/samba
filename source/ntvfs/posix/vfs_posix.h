@@ -121,6 +121,10 @@ struct pvfs_file {
 	/* a count of active locks - used to avoid calling brl_close on
 	   file close */
 	uint64_t lock_count;
+
+	uint32_t create_options;
+	uint32_t share_access;
+	uint32_t access_mask;
 };
 
 
