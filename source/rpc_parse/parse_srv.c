@@ -2755,6 +2755,9 @@ BOOL srv_io_q_net_file_set_secdesc(char *desc, SRV_Q_NET_FILE_SET_SECDESC *q_n, 
 	if(!smb_io_unistr2("", &q_n->uni_file_name, True, ps, depth))
 		return False;
 
+	if(!prs_align(ps))
+		return False;
+
 	if(!prs_uint32("sec_info", ps, depth, &q_n->sec_info))
 		return False;
 
