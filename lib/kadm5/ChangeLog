@@ -1,52 +1,58 @@
-2003-08-15  Love Hörnquist Åstrand <lha@it.su.se>
+2003-08-17  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* set_keys.c (_kadm5_set_keys_randomly): remove dup return
+	
+	* ipropd_master.c (main): make sure current_version is initialized
+	
+2003-08-15  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c: use default_keys for the both random keys and
 	password derived keys if its defined
 	
-2003-07-24  Love Hörnquist Åstrand <lha@it.su.se>
+2003-07-24  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ipropd_slave.c (receive_everything): switch close and rename
 	From: Alf Wachsmann <alfw@SLAC.Stanford.EDU>
 	
-2003-07-03  Love Hörnquist Åstrand <lha@it.su.se>
+2003-07-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* iprop.h, ipropd_master.c, ipropd_slave.c:
 	Add probing from the server that the client is still there, also
 	make the client check that the server is probing.
 
-2003-07-02  Love Hörnquist Åstrand <lha@it.su.se>
+2003-07-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* truncate_log.c (main): add missing ``if (ret)''
 	
-2003-06-26  Love Hörnquist Åstrand <lha@it.su.se>
+2003-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c (make_keys): add AES support
 	
 	* set_keys.c: fix off by one in the aes case, pointed out by Ken
 	Raeburn
 
-2003-04-30  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c (_kadm5_set_keys_randomly): add
 	ETYPE_AES256_CTS_HMAC_SHA1_96 key when configuried with aes
 	support
 
-2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* send_recv.c: check return values from krb5_data_alloc
 	* log.c: check return values from krb5_data_alloc
 	
-2003-04-16  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* dump_log.c (print_entry): check return values from
 	krb5_data_alloc
 
-2003-04-01  Love Hörnquist Åstrand <lha@it.su.se>
+2003-04-01  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* init_c.c (kadm_connect): if a context realm was passed in, use
 	that to form the kadmin/admin principal
 	
-2003-03-19  Love Hörnquist Åstrand <lha@it.su.se>
+2003-03-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ipropd_master.c (main): make sure we don't consider dead slave
 	for select processing
