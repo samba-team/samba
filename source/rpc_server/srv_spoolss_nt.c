@@ -2288,8 +2288,22 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		status = get_a_printer(&printer, 2, lp_const_servicename_dos(snum));
 		if ( !W_ERROR_IS_OK(status) )
 			goto done;
-
-		status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
+			
+		/* XP sends this and wants to change id value from the PRINTER_INFO_0 */
+		
+		if ( strequal(value, "ChangeId") ) {
+			*type = REG_DWORD;
+			*needed = sizeof(uint32);
+			if ( (*data = (uint8*)talloc(p->mem_ctx, sizeof(uint32))) == NULL) {
+				status = WERR_NOMEM;
+				goto done;
+			}
+			**data = printer->info_2->changeid;
+			
+			status = WERR_OK;
+		}
+		else
+			status = get_printer_dataex( p->mem_ctx, printer, SPOOL_PRINTERDATA_KEY, value, type, data, needed, *out_size );
 	}
 
 	if (*needed > *out_size)
