@@ -2349,16 +2349,16 @@ int reply_close(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
   /* try and set the date */
   set_filetime(cnum, Files[fnum].name,mtime);
 
+  DEBUG(3,("%s close fd=%d fnum=%d cnum=%d (numopen=%d)\n",
+	   timestring(),Files[fnum].fd_ptr->fd,fnum,cnum,
+	   Connections[cnum].num_files_open));
+  
   close_file(fnum,True);
 
   /* We have a cached error */
   if(eclass || err)
     return(ERROR(eclass,err));
 
-  DEBUG(3,("%s close fd=%d fnum=%d cnum=%d (numopen=%d)\n",
-	   timestring(),Files[fnum].fd_ptr->fd,fnum,cnum,
-	   Connections[cnum].num_files_open));
-  
   return(outsize);
 }
 
@@ -2396,12 +2396,12 @@ int reply_writeclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
 
   set_filetime(cnum, Files[fnum].name,mtime);
   
-  close_file(fnum,True);
-
   DEBUG(3,("%s writeclose fnum=%d cnum=%d num=%d wrote=%d (numopen=%d)\n",
 	   timestring(),fnum,cnum,numtowrite,nwritten,
 	   Connections[cnum].num_files_open));
   
+  close_file(fnum,True);
+
   if (nwritten <= 0)
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   
@@ -2632,9 +2632,9 @@ int reply_printclose(char *inbuf,char *outbuf,int dum_size, int dum_buffsize)
   if (!CAN_PRINT(cnum))
     return(ERROR(ERRDOS,ERRnoaccess));
   
-  close_file(fnum,True);
-  
   DEBUG(3,("%s printclose fd=%d fnum=%d cnum=%d\n",timestring(),Files[fnum].fd_ptr->fd,fnum,cnum));
+  
+  close_file(fnum,True);
   
   return(outsize);
 }
