@@ -85,6 +85,7 @@ ADD_OBJ_FILES = \
 		torture/rpc/eventlog.o \
 		torture/rpc/epmapper.o \
 		torture/rpc/winreg.o \
+		torture/rpc/initshutdown.o \
 		torture/rpc/oxidresolve.o \
 		torture/rpc/remact.o \
 		torture/rpc/mgmt.o \
@@ -102,8 +103,8 @@ ADD_OBJ_FILES = \
 		torture/rpc/dssetup.o \
 		torture/rpc/alter_context.o
 REQUIRED_SUBSYSTEMS = \
-		NDR_ALL RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_OXIDRESOLVER \
-		RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
+		NDR_ALL RPC_NDR_SAMR RPC_NDR_WINREG RPC_NDR_INITSHUTDOWN \
+		RPC_NDR_OXIDRESOLVER RPC_NDR_EVENTLOG RPC_NDR_ECHO RPC_NDR_SVCCTL \
 		RPC_NDR_MGMT RPC_NDR_NETLOGON RPC_NDR_ATSVC RPC_NDR_DRSUAPI \
 		RPC_NDR_LSA RPC_NDR_EPMAPPER RPC_NDR_DFS RPC_NDR_SPOOLSS \
 		RPC_NDR_SRVSVC RPC_NDR_WKSSVC RPC_NDR_ROT RPC_NDR_DSSETUP \
