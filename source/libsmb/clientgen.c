@@ -70,10 +70,8 @@ BOOL cli_receive_smb(struct cli_state *cli)
 
 	if (!ret) {
 		cli->smb_read_error = smb_read_error;
-		if (cli->timeout > 0) {
-	                close(cli->fd);
-			cli->fd = -1;
-		}
+                close(cli->fd);
+		cli->fd = -1;
         }
 
 	return ret;
@@ -256,6 +254,7 @@ void cli_close_connection(struct cli_state *cli)
 	if (cli->fd != -1) 
 		close(cli->fd);
 	cli->fd = -1;
+	cli->smb_read_error = 0;
 }
 
 /****************************************************************************
@@ -267,9 +266,8 @@ void cli_shutdown(struct cli_state *cli)
 	BOOL allocated = cli->allocated;
 	cli_close_connection(cli);
 	ZERO_STRUCTP(cli);
-	if (allocated) {
+	if (allocated)
 		SAFE_FREE(cli);
-	} 
 }
 
 /****************************************************************************
