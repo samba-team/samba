@@ -359,13 +359,16 @@
 		<title>Printing from UNIX to a Client PC</title>
 
 		<para>To use a printer that is available via a smb-based 
-		server from a unix host you will need to compile the 
+		server from a unix host with LPR you will need to compile the 
 		smbclient program. You then need to install the script 
 		"smbprint". Read the instruction in smbprint for more details.
 		</para>
 
 		<para>There is also a SYSV style script that does much 
 		the same thing called smbprint.sysv. It contains instructions.</para>
+
+		<para>See the CUPS manual for information about setting up 
+		printing from a unix host with CUPS to a smb-based server. </para>
 	</sect2>
 
 	<sect2>
