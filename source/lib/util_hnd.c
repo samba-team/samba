@@ -37,31 +37,6 @@ extern int DEBUGLEVEL;
 #define POL_CLI_INFO 3
 #define POL_SVC_INFO 4
 
-struct svc_info
-{
-    /* for use by \PIPE\svcctl */
-	fstring name; /* name of service */
-};
-
-struct reg_info
-{
-    /* for use by \PIPE\winreg */
-	fstring name; /* name of registry key */
-};
-
-struct samr_info
-{
-    /* for use by the \PIPE\samr policy */
-	DOM_SID sid;
-    uint32 rid; /* relative id associated with the pol_hnd */
-    uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
-};
-
-struct con_info
-{
-	struct cli_connection *con;
-	void (*free_con)(struct cli_connection*);
-};
 
 struct policy
 {
@@ -69,15 +44,10 @@ struct policy
 	int pnum;
 	BOOL open;
 	POLICY_HND pol_hnd;
-	int type;
+	uint32 access_mask;
 
-	union {
-		struct samr_info *samr;
-		struct reg_info *reg;
-		struct svc_info *svc;
-		struct con_info *con;
-
-	} dev;
+	void (*free_fn)(void*);
+	void *dev;
 };
 
 /****************************************************************************
@@ -140,21 +110,23 @@ void free_policy_cache(struct policy_cache *cache)
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL register_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd)
+BOOL register_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 access_mask)
 {
 	int i;
 	struct policy *p;
 
 	i = bitmap_find(cache->bmap, 1);
 
-	if (i == -1) {
+	if (i == -1)
+	{
 		DEBUG(0,("ERROR: out of cache->Policy Handles!\n"));
 		return False;
 	}
 
 	p = (struct policy *)malloc(sizeof(*p));
-	if (!p) {
+	if (!p)
+	{
 		DEBUG(0,("ERROR: out of memory!\n"));
 		return False;
 	}
@@ -163,7 +135,7 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 
 	p->open = True;				
 	p->pnum = i;
-	p->type = POL_NO_INFO;
+	p->access_mask = access_mask;
 
 	memcpy(&p->pol_hnd, hnd, sizeof(*hnd));
 
@@ -180,11 +152,11 @@ BOOL register_policy_hnd(struct policy_cache *cache,
 /****************************************************************************
   find first available policy slot.  creates a policy handle for you.
 ****************************************************************************/
-BOOL open_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd)
+BOOL open_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 access_mask)
 {
 	create_pol_hnd(hnd);
-	return register_policy_hnd(cache, hnd);
+	return register_policy_hnd(cache, hnd, access_mask);
 }
 
 /****************************************************************************
@@ -213,313 +185,58 @@ static struct policy *find_policy(struct policy_cache *cache,
 /****************************************************************************
   find policy index by handle
 ****************************************************************************/
-int find_policy_by_hnd(struct policy_cache *cache,
-				const POLICY_HND *hnd)
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
 	return p?p->pnum:-1;
 }
 
+
 /****************************************************************************
-  set samr rid
+  set pol state.
 ****************************************************************************/
-BOOL set_policy_samr_rid(struct policy_cache *cache,
-				POLICY_HND *hnd, uint32 rid)
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
+				void(*fn)(void*), void *dev)
 {
 	struct policy *p = find_policy(cache, hnd);
 
 	if (p && p->open)
 	{
-		DEBUG(3,("Setting policy device rid=%x pnum=%x\n",
-			 rid, p->pnum));
+		DEBUG(3,("Setting policy state pnum=%x\n", p->pnum));
 
-		if (p->dev.samr == NULL)
-		{
-			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
-		}
-		if (p->dev.samr == NULL)
-		{
-			return False;
-		}
-		p->dev.samr->rid = rid;
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy rid=%x\n",rid));
-	return False;
-}
-
-
-/****************************************************************************
-  set samr pol status.  absolutely no idea what this is.
-****************************************************************************/
-BOOL set_policy_samr_pol_status(struct policy_cache *cache,
-				POLICY_HND *hnd, uint32 pol_status)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Setting policy status=%x pnum=%x\n",
-		          pol_status, p->pnum));
-
-		if (p->dev.samr == NULL)
-		{
-			p->type = POL_SAMR_INFO;
-			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
-		}
-		if (p->dev.samr == NULL)
-		{
-			return False;
-		}
-		p->dev.samr->status = pol_status;
+		p->dev = dev;
+		p->free_fn = fn;
 		return True;
 	} 
 
-	DEBUG(3,("Error setting policy status=%x\n",
-		 pol_status));
+	DEBUG(3,("Error setting policy state\n"));
+
 	return False;
 }
 
 /****************************************************************************
-  set samr sid
+  get pol state.
 ****************************************************************************/
-BOOL set_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, const DOM_SID *sid)
-{
-	pstring sidstr;
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open) {
-		DEBUG(3,("Setting policy sid=%s pnum=%x\n",
-			 sid_to_string(sidstr, sid), p->pnum));
-
-		if (p->dev.samr == NULL)
-		{
-			p->type = POL_SAMR_INFO;
-			p->dev.samr = (struct samr_info*)malloc(sizeof(*p->dev.samr));
-		}
-		if (p->dev.samr == NULL)
-		{
-			return False;
-		}
-		memcpy(&p->dev.samr->sid, sid, sizeof(*sid));
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy sid=%s\n",
-		  sid_to_string(sidstr, sid)));
-	return False;
-}
-
-/****************************************************************************
-  get samr sid
-****************************************************************************/
-BOOL get_policy_samr_sid(struct policy_cache *cache,
-				const POLICY_HND *hnd, DOM_SID *sid)
+void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
 	if (p != NULL && p->open)
 	{
-		pstring sidstr;
-		memcpy(sid, &p->dev.samr->sid, sizeof(*sid));
-		DEBUG(3,("Getting policy sid=%s pnum=%x\n",
-			 sid_to_string(sidstr, sid), p->pnum));
-
-		return True;
+		DEBUG(3,("Getting policy state pnum=%x\n", p->pnum));
+		return p->dev;
 	}
 
-	DEBUG(3,("Error getting policy\n"));
-	return False;
+	DEBUG(3,("Error getting policy state\n"));
+	return NULL;
 }
 
-/****************************************************************************
-  get samr rid
-****************************************************************************/
-uint32 get_policy_samr_rid(struct policy_cache *cache,
-				const POLICY_HND *hnd)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open) {
-		uint32 rid = p->dev.samr->rid;
-		DEBUG(3,("Getting policy device rid=%x pnum=%x\n",
-		          rid, p->pnum));
-
-		return rid;
-	}
-
-	DEBUG(3,("Error getting policy\n"));
-	return 0xffffffff;
-}
-
-/****************************************************************************
-  get svc name 
-****************************************************************************/
-BOOL get_policy_svc_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Setting policy pnum=%x name=%s\n",
-			 p->pnum, name));
-
-		fstrcpy(name, p->dev.svc->name);
-		DEBUG(5,("getting policy svc name=%s\n", name));
-		return True;
-	}
-
-	DEBUG(3,("Error getting policy svc name\n"));
-	return False;
-}
-
-/****************************************************************************
-  set svc name 
-****************************************************************************/
-BOOL set_policy_svc_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Getting policy pnum=%x\n",
-			 p->pnum));
-
-		if (p->dev.svc == NULL)
-		{
-			p->type = POL_SVC_INFO;
-			p->dev.svc = (struct svc_info*)malloc(sizeof(*p->dev.svc));
-		}
-		if (p->dev.svc == NULL)
-		{
-			return False;
-		}
-		fstrcpy(p->dev.svc->name, name);
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy name=%s\n", name));
-	return False;
-}
-
-/****************************************************************************
-  set reg name 
-****************************************************************************/
-BOOL set_policy_reg_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Getting policy pnum=%x\n",
-			 p->pnum));
-
-		if (p->dev.reg == NULL)
-		{
-			p->type = POL_REG_INFO;
-			p->dev.reg = (struct reg_info*)malloc(sizeof(*p->dev.reg));
-		}
-		if (p->dev.reg == NULL)
-		{
-			return False;
-		}
-		fstrcpy(p->dev.reg->name, name);
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy name=%s\n", name));
-	return False;
-}
-
-/****************************************************************************
-  get reg name 
-****************************************************************************/
-BOOL get_policy_reg_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Setting policy pnum=%x name=%s\n",
-			 p->pnum, name));
-
-		fstrcpy(name, p->dev.reg->name);
-		DEBUG(5,("getting policy reg name=%s\n", name));
-		return True;
-	}
-
-	DEBUG(3,("Error getting policy reg name\n"));
-	return False;
-}
-
-/****************************************************************************
-  set con state
-****************************************************************************/
-BOOL set_policy_con(struct policy_cache *cache,
-				POLICY_HND *hnd, struct cli_connection *con,
-				void (*free_fn)(struct cli_connection *))
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p && p->open)
-	{
-		DEBUG(3,("Setting policy con state pnum=%x\n", p->pnum));
-
-		if (p->dev.con == NULL)
-		{
-			p->type = POL_CLI_INFO;
-			p->dev.con = (struct con_info*)malloc(sizeof(*p->dev.con));
-		}
-		if (p->dev.con == NULL)
-		{
-			return False;
-		}
-		p->dev.con->con      = con;
-		p->dev.con->free_con = free_fn;
-		return True;
-	}
-
-	DEBUG(3,("Error setting policy con state\n"));
-
-	return False;
-}
-
-/****************************************************************************
-  get con state
-****************************************************************************/
-BOOL get_policy_con(struct policy_cache *cache,
-				const POLICY_HND *hnd, struct cli_connection **con)
-{
-	struct policy *p = find_policy(cache, hnd);
-
-	if (p != NULL && p->open)
-	{
-		DEBUG(3,("Getting con state pnum=%x\n", p->pnum));
-
-		if (con != NULL)
-		{
-			(*con ) = p->dev.con->con;
-		}
-
-		return True;
-	}
-
-	DEBUG(3,("Error getting policy\n"));
-	return False;
-}
 
 /****************************************************************************
   close an lsa policy
 ****************************************************************************/
-BOOL close_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd)
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd)
 {
 	struct policy *p = find_policy(cache, hnd);
 
@@ -535,33 +252,13 @@ BOOL close_policy_hnd(struct policy_cache *cache,
 
 	bitmap_clear(cache->bmap, p->pnum);
 
-	switch (p->type)
+	if (p->free_fn != NULL)
 	{
-		case POL_SVC_INFO:
-		{
-			free(p->dev.svc);
-			break;
-		}
-		case POL_REG_INFO:
-		{
-			free(p->dev.reg);
-			break;
-		}
-		case POL_SAMR_INFO:
-		{
-			free(p->dev.samr);
-			break;
-		}
-		case POL_CLI_INFO:
-		{
-			DEBUG(10,("policy connection\n"));
-			if (p->dev.con->free_con != NULL)
-			{
-				p->dev.con->free_con(p->dev.con->con);
-			}
-			free(p->dev.con);
-			break;
-		}
+		p->free_fn(p->dev);
+	}
+	else
+	{
+		free(p->dev);
 	}
 
 	ZERO_STRUCTP(p);

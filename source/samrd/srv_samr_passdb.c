@@ -24,14 +24,97 @@
 
 #include "includes.h"
 #include "nterr.h"
+#include "sids.h"
 
 extern int DEBUGLEVEL;
 
-extern fstring global_sam_name;
-extern pstring global_myname;
-extern DOM_SID global_sam_sid;
-extern DOM_SID global_sid_S_1_1;
-extern DOM_SID global_sid_S_1_5_20;
+/****************************************************************************
+  set samr rid
+****************************************************************************/
+static BOOL set_policy_samr_rid(struct policy_cache *cache,
+				POLICY_HND *hnd, uint32 rid)
+{
+	uint32 *dev;
+	dev = (struct uint32 *)malloc(sizeof(uint32));
+	if (dev != NULL)
+	{
+		(*dev) = rid;
+		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		{
+			DEBUG(3,("Service setting policy rid=%x\n", rid));
+			return True;
+		}
+		free(dev);
+		return True;
+	}
+
+	DEBUG(3,("Error setting policy rid=%x\n",rid));
+	return False;
+}
+
+
+/****************************************************************************
+  set samr sid
+****************************************************************************/
+static BOOL set_policy_samr_sid(struct policy_cache *cache, POLICY_HND *hnd,
+				const DOM_SID *sid)
+{
+	pstring sidstr;
+	DOM_SID *dev = sid_dup(sid);
+
+	DEBUG(3,("Setting policy sid=%s\n", sid_to_string(sidstr, sid)));
+
+	if (dev != NULL)
+	{
+		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		{
+			DEBUG(3,("Service setting policy sid=%s\n", sidstr));
+			return True;
+		}
+		free(dev);
+		return True;
+	}
+	DEBUG(3,("Error setting policy sid\n"));
+	return False;
+}
+
+/****************************************************************************
+  get samr sid
+****************************************************************************/
+static BOOL get_policy_samr_sid(struct policy_cache *cache,
+				const POLICY_HND *hnd, DOM_SID *sid)
+{
+	DOM_SID *dev = (DOM_SID*)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		pstring tmp;
+		sid_copy(sid, dev);
+		DEBUG(3,("Getting policy sid=%s\n", sid_to_string(tmp, sid)));
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy sid\n"));
+	return False;
+}
+
+/****************************************************************************
+  get samr rid
+****************************************************************************/
+static uint32 get_policy_samr_rid(struct policy_cache *cache, const POLICY_HND *hnd)
+{
+	uint32 *dev;
+	dev = (uint32*)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		DEBUG(3,("Getting policy device rid=%x\n", (*dev)));
+		return (*dev);
+	}
+
+	DEBUG(3,("Error getting policy rid\n"));
+	return 0xffffffff;
+}
 
 /*******************************************************************
   This next function should be replaced with something that
@@ -114,7 +197,9 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 /*******************************************************************
  opens a samr group by rid, returns a policy handle.
  ********************************************************************/
-static uint32 samr_open_group_by_rid(DOM_SID *dom_sid, POLICY_HND *group_pol,
+static uint32 samr_open_group_by_rid(const DOM_SID *dom_sid,
+				POLICY_HND *group_pol,
+				uint32 access_mask,
 				uint32 group_rid)
 {
 	/* get a (unique) handle.  open a policy on it. */
@@ -2220,8 +2305,10 @@ uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol, const UNISTR2 *uni_a
 /*******************************************************************
  _samr_create_dom_group
  ********************************************************************/
-uint32 _samr_create_dom_group(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
-						POLICY_HND *group_pol, uint32 *rid)
+uint32 _samr_create_dom_group(const POLICY_HND *domain_pol,
+				const UNISTR2 *uni_acct_name,
+				uint32 access_mask,
+				POLICY_HND *group_pol, uint32 *rid)
 {
 	DOM_SID dom_sid;
 	DOMAIN_GRP grp;
@@ -2256,7 +2343,8 @@ uint32 _samr_create_dom_group(const POLICY_HND *domain_pol, const UNISTR2 *uni_a
 	}
 
 	*rid = grp.rid;
-	return samr_open_group_by_rid(&dom_sid, group_pol, grp.rid);
+	return samr_open_group_by_rid(&dom_sid, group_pol,
+	                              access_mask, grp.rid);
 }
 
 /*******************************************************************
@@ -2404,17 +2492,8 @@ uint32 _samr_connect_anon(uint16 unknown_0, uint16 unknown_1, uint32 unknown_2, 
 	/* set up the SAMR connect_anon response */
 
 	/* get a (unique) handle.  open a policy on it. */
-	if (!open_policy_hnd(get_global_hnd_cache(), connect_pol))
+	if (!open_policy_hnd(get_global_hnd_cache(), connect_pol, unknown_0))
 	{
-		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
-	}
-
-	/* associate the domain SID with the (unique) handle. */
-	if (!set_policy_samr_pol_status(get_global_hnd_cache(), connect_pol, unknown_0))
-	{
-		close_policy_hnd(get_global_hnd_cache(), connect_pol);
-
-		/* oh, whoops.  don't know what error message to return, here */
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 

@@ -3,9 +3,8 @@
  *  Unix SMB/Netbios implementation.
  *  Version 1.9.
  *  RPC Pipe client / server routines
- *  Copyright (C) Andrew Tridgell              1992-1997,
- *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
- *  Copyright (C) Paul Ashton                       1997.
+ *  Copyright (C) Andrew Tridgell              1992-2000,
+ *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -28,6 +27,47 @@
 
 extern int DEBUGLEVEL;
 
+/****************************************************************************
+  get svc name 
+****************************************************************************/
+static BOOL get_policy_svc_name(struct policy_cache *cache, POLICY_HND *hnd,
+				fstring name)
+{
+	char *dev;
+	dev = (char *)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		fstrcpy(name, dev);
+		DEBUG(5,("getting policy svc name=%s\n", name));
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy svc name\n"));
+	return False;
+}
+
+/****************************************************************************
+  set svc name 
+****************************************************************************/
+static BOOL set_policy_svc_name(struct policy_cache *cache, POLICY_HND *hnd,
+				fstring name)
+{
+	char *dev = strdup(name);
+	if (dev != NULL)
+	{
+		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		{
+			DEBUG(3,("Service setting policy name=%s\n", name));
+			return True;
+		}
+		free(dev);
+		return True;
+	}
+
+	DEBUG(3,("Error setting policy name=%s\n", name));
+	return False;
+}
 
 /*******************************************************************
  svc_reply_unknown_1

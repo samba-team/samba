@@ -598,37 +598,15 @@ void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodifi
 struct policy_cache *get_global_hnd_cache(void);
 struct policy_cache *init_policy_cache(int num_pol_hnds);
 void free_policy_cache(struct policy_cache *cache);
-BOOL register_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd);
-BOOL open_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd);
-int find_policy_by_hnd(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL set_policy_samr_rid(struct policy_cache *cache,
-				POLICY_HND *hnd, uint32 rid);
-BOOL set_policy_samr_pol_status(struct policy_cache *cache,
-				POLICY_HND *hnd, uint32 pol_status);
-BOOL set_policy_samr_sid(struct policy_cache *cache,
-				POLICY_HND *hnd, const DOM_SID *sid);
-BOOL get_policy_samr_sid(struct policy_cache *cache,
-				const POLICY_HND *hnd, DOM_SID *sid);
-uint32 get_policy_samr_rid(struct policy_cache *cache,
-				const POLICY_HND *hnd);
-BOOL get_policy_svc_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name);
-BOOL set_policy_svc_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name);
-BOOL set_policy_reg_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name);
-BOOL get_policy_reg_name(struct policy_cache *cache,
-				POLICY_HND *hnd, fstring name);
-BOOL set_policy_con(struct policy_cache *cache,
-				POLICY_HND *hnd, struct cli_connection *con,
-				void (*free_fn)(struct cli_connection *));
-BOOL get_policy_con(struct policy_cache *cache,
-				const POLICY_HND *hnd, struct cli_connection **con);
-BOOL close_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd);
+BOOL register_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd,
+				uint32 access_mask);
+int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
+				void(*fn)(void*), void *dev);
+void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
+BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
 
 /*The following definitions come from  lib/util_pwdb.c  */
 
@@ -1962,6 +1940,11 @@ BOOL rpc_api_write(struct cli_connection *con, prs_struct *data);
 BOOL rpc_api_rcv_pdu(struct cli_connection *con, prs_struct *rdata);
 BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 				prs_struct *rdata);
+BOOL set_policy_con(struct policy_cache *cache, POLICY_HND *hnd,
+				struct cli_connection *con,
+				void (*free_fn)(struct cli_connection *));
+BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND *hnd,
+				struct cli_connection **con);
 
 /*The following definitions come from  rpc_client/cli_eventlog.c  */
 
@@ -3193,8 +3176,6 @@ BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
 				POLICY_HND *pol,
 				const char *acct_desc);
 BOOL samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_struct *ps, int depth);
-BOOL make_samr_r_create_dom_group(SAMR_R_CREATE_DOM_GROUP *r_u, POLICY_HND *pol,
-		uint32 rid, uint32 status);
 BOOL samr_io_r_create_dom_group(char *desc,  SAMR_R_CREATE_DOM_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_delete_dom_group(SAMR_Q_DELETE_DOM_GROUP *q_c, POLICY_HND *hnd);
 BOOL samr_io_q_delete_dom_group(char *desc,  SAMR_Q_DELETE_DOM_GROUP *q_u, prs_struct *ps, int depth);
@@ -3301,8 +3282,6 @@ BOOL samr_io_r_delete_alias(char *desc,  SAMR_R_DELETE_DOM_ALIAS *r_u, prs_struc
 BOOL make_samr_q_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u, POLICY_HND *hnd,
 				const char *acct_desc);
 BOOL samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_create_dom_alias(SAMR_R_CREATE_DOM_ALIAS *r_u, POLICY_HND *pol,
-		uint32 rid, uint32 status);
 BOOL samr_io_r_create_dom_alias(char *desc,  SAMR_R_CREATE_DOM_ALIAS *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_add_aliasmem(SAMR_Q_ADD_ALIASMEM *q_u, POLICY_HND *hnd,
 				DOM_SID *sid);
@@ -3344,10 +3323,6 @@ BOOL make_samr_q_create_user(SAMR_Q_CREATE_USER *q_u,
 				const char *name,
 				uint16 acb_info, uint32 unk_1);
 BOOL samr_io_q_create_user(char *desc,  SAMR_Q_CREATE_USER *q_u, prs_struct *ps, int depth);
-BOOL make_samr_r_create_user(SAMR_R_CREATE_USER *r_u,
-				POLICY_HND *user_pol,
-				uint32 unk_0, uint32 user_rid,
-				uint32 status);
 BOOL samr_io_r_create_user(char *desc,  SAMR_R_CREATE_USER *r_u, prs_struct *ps, int depth);
 BOOL make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 				POLICY_HND *hnd, uint16 switch_value);
@@ -4336,16 +4311,15 @@ uint32 _samr_set_userinfo2(POLICY_HND *pol, uint16 switch_value,
 uint32 _samr_query_usergroups(const POLICY_HND *pol,
 				uint32 *num_groups,
 				DOM_GID **gids);
-uint32 _samr_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
-				prs_struct *rdata);
-uint32 _samr_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
-				prs_struct *rdata);
-uint32 _samr_query_dom_info(SAMR_Q_QUERY_DOMAIN_INFO *q_u,
-				prs_struct *rdata);
-uint32 _samr_create_user(SAMR_Q_CREATE_USER *q_u,
-				prs_struct *rdata);
-uint32 _samr_connect_anon(SAMR_Q_CONNECT_ANON *q_u,
-				prs_struct *rdata);
+uint32 _samr_create_dom_alias(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
+						POLICY_HND *alias_pol, uint32 *rid);
+uint32 _samr_create_dom_group(const POLICY_HND *domain_pol, const UNISTR2 *uni_acct_name,
+						POLICY_HND *group_pol, uint32 *rid);
+uint32 _samr_query_dom_info(const POLICY_HND *domain_pol, uint16 switch_value, SAM_UNK_CTR *ctr);
+uint32 _samr_create_user(const POLICY_HND *domain_pol, const UNISTR2 *uni_username,
+					uint16 acb_info, uint32 unknown_1, 
+					POLICY_HND *user_pol, uint32 *unknown_0, uint32 *user_rid);
+uint32 _samr_connect_anon(uint16 unknown_0, uint16 unknown_1, uint32 unknown_2, POLICY_HND *connect_pol);
 uint32 _samr_connect(const UNISTR2 *srv_name, uint32 unknown_0, POLICY_HND *connect_pol);
 uint32 _samr_open_alias(const POLICY_HND *domain_pol,
 					uint32 flags, uint32 alias_rid,

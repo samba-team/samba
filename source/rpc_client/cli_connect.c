@@ -804,3 +804,68 @@ BOOL rpc_api_send_rcv_pdu(struct cli_connection *con, prs_struct *data,
 	}
 	return False;
 }
+
+/* connection policy state-info */
+
+struct con_info
+{
+	struct cli_connection *con;
+	void (*free_con)(struct cli_connection*);
+};
+
+static void free_policy_con(void *dev)
+{
+	struct con_info *con = (struct con_info *)dev;
+	DEBUG(10,("free policy connection\n"));
+	if (con->free_con != NULL)
+	{
+		con->free_con(con->con);
+	}
+	free(dev);
+}
+
+/****************************************************************************
+  set con state
+****************************************************************************/
+BOOL set_policy_con(struct policy_cache *cache, POLICY_HND *hnd,
+				struct cli_connection *con,
+				void (*free_fn)(struct cli_connection *))
+{
+	struct con_info *dev = (struct con_info*)malloc(sizeof(*dev));
+
+	if (dev != NULL)
+	{
+		dev->con      = con;
+		dev->free_con = free_fn;
+		if (set_policy_state(cache, hnd, free_policy_con, (void*)dev))
+		{
+			DEBUG(3,("setting policy con\n"));
+			return True;
+		}
+		free(dev);
+	}
+
+	DEBUG(3,("Error setting policy con state\n"));
+	return False;
+}
+
+/****************************************************************************
+  get con state
+****************************************************************************/
+BOOL get_policy_con(struct policy_cache *cache, const POLICY_HND *hnd,
+				struct cli_connection **con)
+{
+	struct con_info *dev;
+	dev = (struct con_info *)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		DEBUG(3,("Getting policy con state\n"));
+		(*con) = dev->con;
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy con state\n"));
+	return False;
+}
+

@@ -2009,8 +2009,7 @@ BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_e,
 	make_uni_hdr(&(q_e->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_e->uni_acct_desc), acct_desc, acct_len);
 
-	q_e->unknown_1 = 0x0002;
-	q_e->unknown_2 = 0x0001;
+	q_e->access_mask = 0x00020001;
 
 	return True;
 }
@@ -2035,8 +2034,7 @@ BOOL samr_io_q_create_dom_group(char *desc,  SAMR_Q_CREATE_DOM_GROUP *q_e, prs_s
 	smb_io_unistr2("uni_acct_desc", &(q_e->uni_acct_desc), q_e->hdr_acct_desc.buffer, ps, depth);
 	prs_align(ps);
 
-	prs_uint16("unknown_1", ps, depth, &(q_e->unknown_1));
-	prs_uint16("unknown_2", ps, depth, &(q_e->unknown_2));
+	prs_uint32("access", ps, depth, &(q_e->access_mask));
 
 	return True;
 }

@@ -752,7 +752,10 @@ static void api_samr_create_dom_group( rpcsrv_struct *p, prs_struct *data, prs_s
 	ZERO_STRUCT(r_u);
 
 	samr_io_q_create_dom_group("", &q_u, data, 0);
-	r_u.status = _samr_create_dom_group(&q_u.pol, &q_u.uni_acct_desc, &r_u.pol, &r_u.rid);
+	r_u.status = _samr_create_dom_group(&q_u.pol,
+	                                    &q_u.uni_acct_desc,
+	                                    &q_u.access_mask,
+	                                    &r_u.pol, &r_u.rid);
 
 	/* store the response in the SMB stream */
 	samr_io_r_create_dom_group("", &r_u, rdata, 0);

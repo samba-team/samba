@@ -956,8 +956,7 @@ typedef struct q_samr_create_dom_group_info
 	UNIHDR hdr_acct_desc;
 	UNISTR2 uni_acct_desc;
 
-	uint16 unknown_1;    /* 0x0002 */
-	uint16 unknown_2;    /* 0x0001 */
+	uint32 access_mask;    
 
 } SAMR_Q_CREATE_DOM_GROUP;
 

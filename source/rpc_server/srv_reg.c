@@ -29,6 +29,46 @@
 extern int DEBUGLEVEL;
 
 
+/****************************************************************************
+  set reg name 
+****************************************************************************/
+static BOOL set_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
+				fstring name)
+{
+	char *dev = strdup(name);
+	if (dev != NULL)
+	{
+		if (set_policy_state(cache, hnd, NULL, (void*)dev))
+		{
+			DEBUG(3,("Registry setting policy name=%s\n", name));
+			return True;
+		}
+		free(dev);
+	}
+
+	DEBUG(3,("Error setting policy name=%s\n", name));
+	return False;
+}
+
+/****************************************************************************
+  get reg name 
+****************************************************************************/
+static BOOL get_policy_reg_name(struct policy_cache *cache, POLICY_HND *hnd,
+				fstring name)
+{
+	char *dev = (char*)get_policy_state_info(cache, hnd);
+
+	if (dev != NULL)
+	{
+		fstrcpy(name, dev);
+		DEBUG(5,("getting policy reg name=%s\n", name));
+		return True;
+	}
+
+	DEBUG(3,("Error getting policy reg name\n"));
+	return False;
+}
+
 /*******************************************************************
  reg_reply_unknown_1
  ********************************************************************/
