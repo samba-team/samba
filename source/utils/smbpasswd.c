@@ -232,7 +232,7 @@ static void usage(char *name)
   
   TimeInit();
 
-  setup_logging(argv[0],True);
+  setup_logging(argv[0],True, False);
   
   charset_initialise();
   

@@ -28,6 +28,7 @@
 extern pstring debugf;
 extern int DEBUGLEVEL;
 
+extern FILE* out_hnd;
 
 static struct cli_state ipccli;
 struct cli_state *ipc_cli = &ipccli;
@@ -91,7 +92,7 @@ static void print_server(char *sname, uint32 type, char *comment)
 
 	}
 
-	printf("\t%-15.15s%-20s %s\n", sname, typestr, comment);
+	fprintf(out_hnd, "\t%-15.15s%-20s %s\n", sname, typestr, comment);
 }
 
 
@@ -112,7 +113,7 @@ static void print_share(char *sname, uint32 type, char *comment)
 		default            : strcpy(typestr,"????"); break;      
 	}
 
-	printf("\t%-15.15s%-10.10s%s\n", sname, typestr, comment);
+	fprintf(out_hnd, "\t%-15.15s%-10.10s%s\n", sname, typestr, comment);
 }
 
 
@@ -124,30 +125,30 @@ void client_browse_host(struct cli_state *cli, int t_idx, char *workgroup, BOOL 
 	int count = 0;
 	BOOL long_share_name = False;
 	
-	printf("\n\tSharename      Type      Comment\n");
-	printf(  "\t---------      ----      -------\n");
+	fprintf(out_hnd, "\n\tSharename      Type      Comment\n");
+	fprintf(out_hnd,   "\t---------      ----      -------\n");
 
 	count = cli_NetShareEnum(cli, t_idx, sort, &long_share_name, print_share);
 
 	if (count == 0)
 	{
-		printf("\tNo shares available on this host\n");
+		fprintf(out_hnd, "\tNo shares available on this host\n");
 	}
 
 	if (long_share_name)
 	{
-		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
+		fprintf(out_hnd, "\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
 	}
 
-	printf("\n");
-	printf("\tWorkgroup      Type                 Master\n");
-	printf("\t---------      ----                 ------\n");
+	fprintf(out_hnd, "\n");
+	fprintf(out_hnd, "\tWorkgroup      Type                 Master\n");
+	fprintf(out_hnd, "\t---------      ----                 ------\n");
 
 	cli_NetServerEnum(cli, t_idx, workgroup, SV_TYPE_DOMAIN_ENUM, print_server);
 
-	printf("\n");
-	printf("\tServer         Type                 Comment\n");
-	printf("\t------         ----                 -------\n");
+	fprintf(out_hnd, "\n");
+	fprintf(out_hnd, "\tServer         Type                 Comment\n");
+	fprintf(out_hnd, "\t------         ----                 -------\n");
 	
 	cli_NetServerEnum(cli, t_idx, workgroup, SV_TYPE_ALL, print_server);
 }
@@ -161,19 +162,19 @@ void cmd_list_shares(struct client_info *info)
 	int count = 0;
 	BOOL long_share_name = False;
 	
-	printf("\n\tSharename      Type      Comment\n");
-	printf(  "\t---------      ----      -------\n");
+	fprintf(out_hnd, "\n\tSharename      Type      Comment\n");
+	fprintf(out_hnd,   "\t---------      ----      -------\n");
 
 	count = cli_NetShareEnum(ipc_cli, ipc_tidx, True, &long_share_name, print_share);
 
 	if (count == 0)
 	{
-		printf("\tNo shares available on this host\n");
+		fprintf(out_hnd, "\tNo shares available on this host\n");
 	}
 
 	if (long_share_name)
 	{
-		printf("\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
+		fprintf(out_hnd, "\nNOTE: There were share names longer than 8 chars.\nOn older clients these may not be accessible or may give browsing errors\n");
 	}
 }
 
@@ -201,9 +202,9 @@ void cmd_list_wgps(struct client_info *info)
 		svc_type = SV_TYPE_ALL;
 	}
 
-	printf("\n");
-	printf("\tServer         Type                 Comment\n");
-	printf("\t------         ----                 -------\n");
+	fprintf(out_hnd, "\n");
+	fprintf(out_hnd, "\tServer         Type                 Comment\n");
+	fprintf(out_hnd, "\t------         ----                 -------\n");
 
 	cli_NetServerEnum(ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
 }
@@ -232,9 +233,9 @@ void cmd_list_servers(struct client_info *info)
 		svc_type = SV_TYPE_DOMAIN_ENUM;
 	}
 
-	printf("\n");
-	printf("\tWorkgroup      Type                 Master\n");
-	printf("\t---------      ----                 ------\n");
+	fprintf(out_hnd, "\n");
+	fprintf(out_hnd, "\tWorkgroup      Type                 Master\n");
+	fprintf(out_hnd, "\t---------      ----                 ------\n");
 
 	cli_NetServerEnum(ipc_cli, ipc_tidx, workgroup, svc_type, print_server);
 }

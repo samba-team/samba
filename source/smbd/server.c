@@ -5034,7 +5034,7 @@ static void usage(char *pname)
 
   strcpy(debugf,SMBLOGFILE);  
 
-  setup_logging(argv[0],False);
+  setup_logging(argv[0],False, False);
 
   charset_initialise();
 

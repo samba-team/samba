@@ -96,7 +96,7 @@ static char *filename_dos(char *path,char *buf);
 /*******************************************************************
   get ready for syslog stuff
   ******************************************************************/
-void setup_logging(char *pname,BOOL interactive)
+void setup_logging(char *pname,BOOL interactive, BOOL stderr_logging)
 {
 #ifdef SYSLOG
   if (!interactive) {
@@ -109,9 +109,17 @@ void setup_logging(char *pname,BOOL interactive)
 #endif /* LOG_DAEMON */
   }
 #endif
-  if (interactive) {
+  if (interactive)
+  {
     stdout_logging = True;
-    dbf = stdout;
+    if (stderr_logging)
+    {
+      dbf = stderr;
+    }
+    else
+    {
+      dbf = stdout;
+    }
   }
 }
 

@@ -29,6 +29,8 @@
 extern pstring debugf;
 extern int DEBUGLEVEL;
 
+extern FILE* out_hnd;
+
 extern file_info def_finfo;
 
 static pstring cd_path="";
@@ -121,7 +123,7 @@ void cmd_send_message(struct client_info *info)
 
 	if (!next_token(NULL,username,NULL))
 	{
-		DEBUG(0,("message <username/workgroup>\n"));
+		fprintf(out_hnd, "message <username/workgroup>\n");
 	}
 
 	client_send_message(smb_cli, smb_tidx, username, info->dest_host);
@@ -143,8 +145,8 @@ static void do_dskattr(struct cli_state *cli, int t_idx)
 	}
 	else
 	{
-  		DEBUG(0,("\n\t\t%d blocks of size %d. %d blocks available\n",
-		          num_blocks, block_size, free_blocks));
+  		fprintf(out_hnd, "\n\t\t%d blocks of size %d. %d blocks available\n",
+		          num_blocks, block_size, free_blocks);
 	}
 }
 
@@ -193,7 +195,7 @@ void cmd_cd(struct client_info*info)
   if (next_token(NULL,buf,NULL))
     do_cd(smb_cli, smb_tidx, info, buf);
   else
-    DEBUG(0,("Current directory is %s\n", CNV_LANG(info->cur_dir)));
+    fprintf(out_hnd, "Current directory is %s\n", CNV_LANG(info->cur_dir));
 }
 
 
@@ -228,7 +230,7 @@ void cmd_dir(struct client_info*info)
 
   do_dskattr(smb_cli, smb_tidx);
 
-  DEBUG(3, ("Total bytes listed: %d\n", info->dir_total));
+  fprintf(out_hnd, "Total bytes listed: %d\n", info->dir_total);
 }
 
 
@@ -252,7 +254,7 @@ void cmd_get(struct client_info*info)
   p = rname + strlen(rname);
 
   if (!next_token(NULL,p,NULL)) {
-    DEBUG(0,("get <filename>\n"));
+    fprintf(out_hnd, "get <filename>\n");
     return;
   }
   strcpy(lname,p);
@@ -302,7 +304,7 @@ static void do_mget(struct cli_state *cli, int t_idx, struct client_info*info,
 
   if (info->abort_mget)
     {
-      DEBUG(0,("mget aborted\n"));
+      fprintf(out_hnd, "mget aborted\n");
       return;
     }
 
@@ -384,7 +386,7 @@ void cmd_more(struct client_info*info)
   strcpy(lname,tmpname);
 
   if (!next_token(NULL,rname+strlen(rname),NULL)) {
-    DEBUG(0,("more <filename>\n"));
+    fprintf(out_hnd, "more <filename>\n");
     return;
   }
   dos_clean_name(rname);
@@ -462,7 +464,7 @@ void cmd_mkdir(struct client_info*info)
   if (!next_token(NULL,p,NULL))
     {
       if (!info->recurse_dir)
-	DEBUG(0,("mkdir <dirname>\n"));
+	fprintf(out_hnd, "mkdir <dirname>\n");
       return;
     }
   strcat(mask,p);
@@ -513,7 +515,7 @@ void cmd_put(struct client_info*info)
   
   if (!next_token(NULL,p,NULL))
     {
-      DEBUG(0,("put <filename>\n"));
+      fprintf(out_hnd, "put <filename>\n");
       return;
     }
   strcpy(lname,p);
@@ -555,9 +557,9 @@ void cmd_put(struct client_info*info)
     info->get_total_time_ms += this_time;
     info->get_total_size += finfo.size;
 
-    DEBUG(1,("(%g kb/s) (average %g kb/s)\n",
+    fprintf(out_hnd, "(%g kb/s) (average %g kb/s)\n",
 	     finfo.size           / (1.024*this_time + 1.0e-4),
-	     info->get_total_size / (1.024*info->get_total_time_ms)));
+	     info->get_total_size / (1.024*info->get_total_time_ms));
   }
 }
 
@@ -726,7 +728,7 @@ void cmd_del(struct client_info*info)
     
   if (!next_token(NULL,buf,NULL))
     {
-      DEBUG(0,("del <filename>\n"));
+      fprintf(out_hnd, "del <filename>\n");
       return;
     }
   strcat(mask,buf);
@@ -747,7 +749,7 @@ void cmd_rmdir(struct client_info*info)
 
 	if (!next_token(NULL,buf,NULL))
 	{
-		DEBUG(0,("rmdir <dirname>\n"));
+		fprintf(out_hnd, "rmdir <dirname>\n");
 		return;
 	}
 	strcat(mask,buf);
@@ -772,7 +774,7 @@ void cmd_rename(struct client_info*info)
   
   if (!next_token(NULL,buf,NULL) || !next_token(NULL,buf2,NULL))
     {
-      DEBUG(0,("rename <src> <dest>\n"));
+      fprintf(out_hnd, "rename <src> <dest>\n");
       return;
     }
   strcat(src,buf);
@@ -787,9 +789,9 @@ show cd/pwd
 ****************************************************************************/
 void cmd_pwd(struct client_info *info)
 {
-  DEBUG(0,("Current directory for SMB connection %d is %s",
-		CNV_LANG(smb_cli->con[smb_tidx].full_share)));
-  DEBUG(0,("%s\n", CNV_LANG(info->cur_dir)));
+  fprintf(out_hnd, "Current directory for SMB connection %s",
+		CNV_LANG(smb_cli->con[smb_tidx].full_share));
+  fprintf(out_hnd, "%s\n", CNV_LANG(info->cur_dir));
 }
 
 

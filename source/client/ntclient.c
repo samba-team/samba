@@ -31,6 +31,7 @@
 
 extern int DEBUGLEVEL;
 
+#define DEBUG_TESTING
 
 extern struct cli_state *smb_cli;
 extern int smb_tidx;
@@ -38,6 +39,7 @@ extern int smb_tidx;
 extern struct cli_state *ipc_cli;
 extern int ipc_tidx;
 
+extern FILE* out_hnd;
 
 /****************************************************************************
 nt lsa query
@@ -91,14 +93,28 @@ void cmd_lsa_query_info(struct client_info *info)
 
 	if (res)
 	{
+		BOOL domain_something = False;
 		DEBUG(5,("cmd_lsa_query_info: query succeeded\n"));
 
-		DEBUG(0,("LSA Query Info Policy\n"));
+		fprintf(out_hnd, "LSA Query Info Policy\n");
 
-		DEBUG(0,("Domain Member     - Domain: %s SID: %s\n",
-				info->dom.level3_dom, info->dom.level3_sid));
-		DEBUG(0,("Domain Controller - Domain: %s SID: %s\n",
-				info->dom.level5_dom, info->dom.level5_sid));
+		if (info->dom.level3_sid[0] != 0)
+		{
+			fprintf(out_hnd, "Domain Member     - Domain: %s SID: %s\n",
+				info->dom.level3_dom, info->dom.level3_sid);
+			domain_something = True;
+		}
+		if (info->dom.level5_sid[0] != 0)
+		{
+			fprintf(out_hnd, "Domain Controller - Domain: %s SID: %s\n",
+				info->dom.level5_dom, info->dom.level5_sid);
+			domain_something = True;
+		}
+		if (!domain_something)
+		{
+			fprintf(out_hnd, "%s is not a Domain Member or Controller\n",
+			    info->dest_host);
+		}
 	}
 	else
 	{
@@ -116,6 +132,7 @@ void cmd_sam_query_users(struct client_info *info)
 {
 	fstring srv_name;
 	fstring sid;
+	fstring domain;
 	int user_idx;
 	BOOL res = True;
 	uint16 num_entries = 0;
@@ -125,11 +142,12 @@ void cmd_sam_query_users(struct client_info *info)
 	uint32 admin_rid = 0x304; /* absolutely no idea. */
 	fstring tmp;
 
-	fstrcpy(sid, info->dom.level5_sid);
+	fstrcpy(sid   , info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
 
 	if (strlen(sid) == 0)
 	{
-		DEBUG(0,("please use 'lsaquery' first, to ascertain the SID\n"));
+		fprintf(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
 		return;
 	}
 
@@ -137,6 +155,7 @@ void cmd_sam_query_users(struct client_info *info)
 	strcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
+#ifdef DEBUG_TESTING
 	if (next_token(NULL, tmp, NULL))
 	{
 		num_entries = strtoul(tmp, (char**)NULL, 16);
@@ -156,10 +175,16 @@ void cmd_sam_query_users(struct client_info *info)
 	{
 		unk_1 = strtoul(tmp, (char**)NULL, 16);
 	}
+#endif
 
-	DEBUG(0,("SAM Query Information for %s, SID: %s\n", srv_name, sid));
-	DEBUG(1,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
+	fprintf(out_hnd, "SAM Enumerate Users\n");
+	fprintf(out_hnd, "From: %s To: %s Domain: %s SID: %s\n",
+	                  info->myhostname, srv_name, domain, sid);
+
+#ifdef DEBUG_TESTING
+	DEBUG(5,("Number of entries:%d unk_0:%04x acb_mask:%04x unk_1:%04x\n",
 	          num_entries, unk_0, acb_mask, unk_1));
+#endif
 
 	/* open SAMR session.  negotiate credentials */
 	res = res ? do_samr_session_open(smb_cli, smb_tidx, info) : False;
@@ -182,7 +207,7 @@ void cmd_sam_query_users(struct client_info *info)
 
 	if (res && info->dom.num_sam_entries == 0)
 	{
-		DEBUG(0,("No users\n"));
+		fprintf(out_hnd, "No users\n");
 	}
 
 	/* query all the users */
@@ -190,23 +215,36 @@ void cmd_sam_query_users(struct client_info *info)
 
 	while (res && user_idx < info->dom.num_sam_entries)
 	{
-		DEBUG(0,("User-rid: %8x  User name: %s\n",
-		          info->dom.sam[user_idx].smb_userid,
-		          info->dom.sam[user_idx].acct_name));
+		uint32 user_rid = info->dom.sam[user_idx].smb_userid;
+		fprintf(out_hnd, "User RID: %8x  User Name: %s\n",
+		          user_rid,
+		          info->dom.sam[user_idx].acct_name);
 
-#if 0
-		/* send open user; receive a client policy handle */
-		res = res ? do_samr_open_user_or_something(smb_cli, smb_tidx, info->dom.samr_fnum,
+		/* send open domain (on user sid) */
+		res = res ? do_samr_open_user(smb_cli, smb_tidx, info->dom.samr_fnum,
+					&info->dom.samr_pol_open_domain,
+		            0x02011b, user_rid,
+					&info->dom.samr_pol_open_user) : False;
+
+		if (res)
+		{
+			USER_INFO_15 usr;
+			bzero(&usr, sizeof(usr));
+
+			/* send user info query, level 0x15 */
+			if (do_samr_query_userinfo(smb_cli, smb_tidx, info->dom.samr_fnum,
 					&info->dom.samr_pol_open_user,
-					info->dom.sam[user_idx].smb_userid, sid,
-					&(info->dom.sam[user_idx].acct_pol)) : False;
+		            0x15, (void*)(&usr)))
+			{
+				fprintf(out_hnd, "\tgot SAM info level 0x15\n");
+			}
+		}
 
 		res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
 	            &info->dom.samr_pol_open_user) : False;
 
-#endif
 
-		if (res) user_idx++;
+		user_idx++;
 	}
 
 	res = res ? do_samr_close(smb_cli, smb_tidx, info->dom.samr_fnum,
@@ -248,7 +286,7 @@ void cmd_nt_login_test(struct client_info *info)
 
 	if (!next_token(NULL, username,NULL))
 	{
-		DEBUG(0,("cmd_nt_login: <username>\n"));
+		fprintf(out_hnd, "cmd_nt_login: <username>\n");
 		return;
 	}
 
@@ -285,7 +323,7 @@ void cmd_nt_login_test(struct client_info *info)
 	/* do an NT login */
 	res = res ? do_nt_login(ipc_cli, ipc_tidx, info->dom.lsarpc_fnum,
 	                        info->dom.sess_key, &info->dom.clnt_cred, &info->dom.rtn_cred,
-	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info1) : False;
+	                        &info->dom.id1, info->dest_host, info->myhostname, &info->dom.user_info3) : False;
 
 	/* ok!  you're logged in!  do anything you like, then... */
 	   
@@ -319,7 +357,7 @@ void cmd_nltest(struct client_info *info)
 
 	if (!next_token(NULL, username,NULL))
 	{
-		DEBUG(0,("cmd_nltest: <username>\n"));
+		fprintf(out_hnd, "cmd_nltest: <username>\n");
 		return;
 	}
 

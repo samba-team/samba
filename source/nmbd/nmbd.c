@@ -475,7 +475,7 @@ static void usage(char *pname)
 
   strcpy(debugf,NMBLOGFILE);
 
-  setup_logging(argv[0],False);
+  setup_logging(argv[0],False, False);
 
   charset_initialise();
 

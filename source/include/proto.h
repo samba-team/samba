@@ -1053,9 +1053,14 @@ BOOL do_samr_enum_dom_users(struct cli_state *cli, int t_idx, uint16 fnum,
 BOOL do_samr_connect(struct cli_state *cli, int t_idx, uint16 fnum, 
 				char *srv_name, uint32 unknown_0,
 				POLICY_HND *rtn_pol);
+BOOL do_samr_open_user(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol, uint32 unk_0, uint32 rid, 
+				POLICY_HND *rtn_pol);
 BOOL do_samr_open_domain(struct cli_state *cli, int t_idx, uint16 fnum, 
 				POLICY_HND *pol, uint32 rid, char *sid,
 				POLICY_HND *rtn_pol);
+BOOL do_samr_query_userinfo(struct cli_state *cli, int t_idx, uint16 fnum, 
+				POLICY_HND *pol, uint16 switch_value, void* usr);
 BOOL do_samr_close(struct cli_state *cli, int t_idx, uint16 fnum, POLICY_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclienttrust.c  */
@@ -1200,18 +1205,23 @@ void make_samr_q_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_e,
 				uint16 switch_level);
 char* samr_io_q_query_aliasinfo(BOOL io, SAMR_Q_QUERY_ALIASINFO *q_e, char *q, char *base, int align, int depth);
 void make_samr_r_query_aliasinfo(SAMR_R_QUERY_ALIASINFO *r_u,
-		uint16 switch_level, char *acct_desc,
+		uint16 switch_value, char *acct_desc,
 		uint32 status);
 char* samr_io_r_query_aliasinfo(BOOL io, SAMR_R_QUERY_ALIASINFO *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_lookup_rids(BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, char *q, char *base, int align, int depth);
 void make_samr_r_lookup_rids(SAMR_R_LOOKUP_RIDS *r_u,
 		uint32 num_rids, uint32 rid, uint32 status);
 char* samr_io_r_lookup_rids(BOOL io, SAMR_R_LOOKUP_RIDS *r_u, char *q, char *base, int align, int depth);
-char* samr_io_q_unknown_22(BOOL io, SAMR_Q_UNKNOWN_22 *q_u, char *q, char *base, int align, int depth);
-char* samr_io_r_unknown_22(BOOL io, SAMR_R_UNKNOWN_22 *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
+				POLICY_HND *pol,
+				uint32 unk_0, uint32 rid);
+char* samr_io_q_open_user(BOOL io, SAMR_Q_OPEN_USER *q_u, char *q, char *base, int align, int depth);
+char* samr_io_r_open_user(BOOL io, SAMR_R_OPEN_USER *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
+				POLICY_HND *hnd, uint16 switch_value);
 char* samr_io_q_query_userinfo(BOOL io, SAMR_Q_QUERY_USERINFO *q_u, char *q, char *base, int align, int depth);
 void make_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
-				uint16 switch_level, void *info, uint32 status);
+				uint16 switch_value, void *info, uint32 status);
 char* samr_io_r_query_userinfo(BOOL io, SAMR_R_QUERY_USERINFO *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
@@ -1365,7 +1375,7 @@ void make_user_info3(USER_INFO_3 *usr,
 
 	char *dom_sid,
 	char *other_sids);
-char* sam_io_user_info3(BOOL io, USER_INFO_3 *usr, char *q, char *base, int align, int depth);
+char* smb_io_user_info3(BOOL io, USER_INFO_3 *usr, char *q, char *base, int align, int depth);
 void make_user_info11(USER_INFO_11 *usr,
 				NTTIME *expiry,
 				char *mach_acct,
@@ -1373,6 +1383,40 @@ void make_user_info11(USER_INFO_11 *usr,
 				uint32 rid_group,
 				uint16 acct_ctrl);
 char* smb_io_user_info11(BOOL io, USER_INFO_11 *usr, char *q, char *base, int align, int depth);
+void make_user_info15(USER_INFO_15 *usr,
+
+	NTTIME *logon_time,
+	NTTIME *logoff_time,
+	NTTIME *kickoff_time,
+	NTTIME *pass_last_set_time,
+	NTTIME *pass_can_change_time,
+	NTTIME *pass_must_change_time,
+
+	char *user_name,
+	char *full_name,
+	char *home_dir,
+	char *dir_drive,
+	char *profile_path,
+	char *logon_script,
+	char *description,
+
+	uint16 logon_count,
+	uint16 bad_pw_count,
+
+	uint32 unknown_0,
+	uint32 unknown_1,
+	char unknown_2[32],
+
+	uint32 user_id,
+	uint32 group_id,
+	uint32 num_groups,
+	uint32 other_groups[LSA_MAX_GROUPS],
+
+	uint32 unknown_4,
+	uint32 unknown_5,
+	uint32 unknown_6,
+	LOGON_HRS *hrs);
+char* smb_io_user_info15(BOOL io, USER_INFO_15 *usr, char *q, char *base, int align, int depth);
 
 /*The following definitions come from  rpc_pipes/srvparse.c  */
 
@@ -1558,7 +1602,7 @@ BOOL user_in_list(char *user,char *list);
 
 /*The following definitions come from  util.c  */
 
-void setup_logging(char *pname,BOOL interactive);
+void setup_logging(char *pname,BOOL interactive, BOOL stderr_logging);
 void reopen_logs(void);
 char *tmpdir(void);
 BOOL is_a_socket(int fd);

@@ -85,7 +85,7 @@ SamrLookupNamesInDomain
 x SamrOpenAlias
 x SamrOpenDomain
 SamrOpenGroup
-SamrOpenUser
+x SamrOpenUser
 x SamrQueryDisplayInformation
 x SamrQueryInformationAlias
 SamrQueryInformationDomain
@@ -112,7 +112,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_LOOKUP_RIDS       0x11
 #define SAMR_UNKNOWN_3         0x03
 #define SAMR_QUERY_DISPINFO    0x28
-#define SAMR_UNKNOWN_22        0x22
+#define SAMR_OPEN_USER         0x22
 #define SAMR_QUERY_USERINFO    0x24
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
@@ -431,13 +431,13 @@ typedef struct user_info_15
 	uint16 logon_count;  /* logon count */
 	uint16 bad_pw_count; /* bad password count */
 
-	uint32 ptr_0;         /* unknown pointer 0 */
+	uint32 ptr_padding2;         /* unknown pointer 0 */
 	uint32 unknown_0;
 
-	uint32 ptr_1;         /* unknown pointer 1 */
+	uint32 ptr_padding3;         /* unknown pointer 1 */
 	uint32 unknown_1;
 
-	uint32 ptr_2;         /* unknown pointer 3 */
+	uint32 ptr_unknown6;         /* unknown pointer 3 */
 	char unknown_2[32];    /* user passwords? */
 
 	uint32 user_rid;      /* User ID */
@@ -445,7 +445,7 @@ typedef struct user_info_15
 	uint32 other_grp_rids[LSA_MAX_GROUPS]; /* Other Group RIDs, terminated by 0x00ff ffff */
 	uint32 unknown_4; /* 0x0000 00a8 */
 
-	uint32 ptr_3; /* undocumented buffer pointer to groups. */
+	uint32 ptr_logon_hrs; /* unknown pointer */
 	uint32 unknown_5;     /* 0x0002 0000 */
 
 	char padding1[8];
@@ -461,10 +461,10 @@ typedef struct user_info_15
 	char padding2[32];
 	uint32 padding3;
 
-	uint32 unknown_rid; /* 0x0000 04ec */
+	uint32 unknown_6; /* 0x0000 04ec */
 	uint32 padding4;
 
-	LOGON_HRS logon_hdrs;
+	LOGON_HRS logon_hrs;
 
 } USER_INFO_15;
 
@@ -1471,6 +1471,7 @@ typedef struct r_samr_query_user_info
 		USER_INFO_10 *id10; /* auth-level 10 */
 		USER_INFO_11 *id11; /* auth-level 11 */
 		USER_INFO_15 *id15; /* auth-level 15 */
+		void* id; /* to make typecasting easy */
 
 	} info;
 
@@ -1518,22 +1519,23 @@ typedef struct r_samr_lookup_names_info
 } SAMR_R_LOOKUP_RIDS;
 
 
-/* SAMR_Q_UNKNOWN_22 - probably an open */
-typedef struct q_samr_unknown_22_info
+/* SAMR_Q_OPEN_USER - probably an open */
+typedef struct q_samr_open_user_info
 {
-    POLICY_HND pol;          /* policy handle */
-	uint32 unknown_id_0;      /* 0x0000 03E8 - 32 bit unknown id */
+    POLICY_HND pol;       /* policy handle */
+	uint32 unknown_0;     /* 16 bit unknown - 0x011b */
+	uint32 user_rid;      /* user RID */
 
-} SAMR_Q_UNKNOWN_22;
+} SAMR_Q_OPEN_USER;
 
 
-/* SAMR_R_UNKNOWN_22 - probably an open */
-typedef struct r_samr_unknown_22_info
+/* SAMR_R_OPEN_USER - probably an open */
+typedef struct r_samr_open_user_info
 {
     POLICY_HND pol;       /* policy handle associated with unknown id */
 	uint32 status;         /* return status */
 
-} SAMR_R_UNKNOWN_22;
+} SAMR_R_OPEN_USER;
 
 
 

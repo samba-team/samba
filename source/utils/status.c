@@ -115,7 +115,7 @@ static void print_share_mode(share_mode_entry *e, char *fname)
 
 
   TimeInit();
-  setup_logging(argv[0],True);
+  setup_logging(argv[0],True, False);
 
   charset_initialise();
 

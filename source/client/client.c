@@ -56,6 +56,8 @@ extern int smb_tidx;
 extern struct cli_state *ipc_cli;
 extern int ipc_tidx;
 
+FILE *out_hnd = stdout;
+
 static BOOL setup_term_code (char *code)
 {
     int new;
@@ -69,7 +71,6 @@ static BOOL setup_term_code (char *code)
 
 }
 
-
 /****************************************************************************
  This defines the commands supported by this client
  ****************************************************************************/
@@ -82,8 +83,11 @@ struct
 {
   {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login test"},
   {"nltest",     cmd_nltest,           "<server> Net Logon Test"},
-  {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
-  {"samquery",   cmd_sam_query_users,  "SAM User Database Query"},
+  {"lsaquery",   cmd_lsa_query_info,   "Query Info Policy (domain member or server)"},
+  {"samusers",   cmd_sam_query_users,  "SAM User Database Query"},
+#if 0
+  {"samgroups",  cmd_sam_query_group,  "SAM Groups Database Query"},
+#endif
   {"message",    cmd_send_message,"<username/workgroup> Send a message"},
   {"shares",     cmd_list_shares, "List shares on a server"},
   {"servers",    cmd_list_servers,"[<workgroup>] [<type, hex>] List known browse servers"},
@@ -120,6 +124,7 @@ struct
   {"quit",       cmd_quit,        "logoff the server"},
   {"q",          cmd_quit,        "logoff the server"},
   {"exit",       cmd_quit,        "logoff the server"},
+  {"bye",        cmd_quit,        "logoff the server"},
   {"newer",      cmd_newer,       "<file> only mget files newer than the specified local file"},
   {"archive",    cmd_archive,     "<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit"},
   {"tar",        cmd_tar,         "tar <c|x>[IXbgNa] current directory to/from <file name>" },
@@ -158,16 +163,16 @@ static void cmd_help(struct client_info *info)
   if (next_token(NULL,buf,NULL))
     {
       if ((i = process_tok(buf)) >= 0)
-	DEBUG(0,("HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description));		    
+	fprintf(out_hnd, "HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description);		    
     }
   else
     while (commands[i].description)
       {
 	for (j=0; commands[i].description && (j<5); j++) {
-	  DEBUG(0,("%-15s",commands[i].name));
+	  fprintf(out_hnd, "%-15s",commands[i].name);
 	  i++;
 	}
-	DEBUG(0,("\n"));
+	fprintf(out_hnd, "\n");
       }
 }
 
@@ -269,99 +274,114 @@ static void wait_keyboard(struct cli_state *cli, int t_idx)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
+static void do_command(struct client_info *info, char *tok, char *line)
+{
+	int i;
+
+	if ((i = process_tok(tok)) >= 0)
+	{
+		commands[i].fn(info);
+	}
+	else if (i == -2)
+	{
+		fprintf(out_hnd, "%s: command abbreviation ambiguous\n", CNV_LANG(tok));
+	}
+	else
+	{
+		fprintf(out_hnd, "%s: command not found\n", CNV_LANG(tok));
+	}
+}
+
+/****************************************************************************
+  process commands from the client
+****************************************************************************/
 static BOOL process( struct client_info *info, char *cmd_str)
 {
-  extern FILE *dbf;
-  pstring line;
-  char *cmd = cmd_str;
+	extern FILE *dbf;
+	pstring line;
+	char *cmd = cmd_str;
 
-  if (cmd[0] != '\0') while (cmd[0] != '\0')
-    {
-      char *p;
-      fstring tok;
-      int i;
-
-      if ((p = strchr(cmd, ';')) == 0)
+	if (cmd[0] != '\0') while (cmd[0] != '\0')
 	{
-	  strncpy(line, cmd, 999);
-	  line[1000] = '\0';
-	  cmd += strlen(cmd);
+		char *p;
+		fstring tok;
+
+		if ((p = strchr(cmd, ';')) == 0)
+		{
+			strncpy(line, cmd, 999);
+			line[1000] = '\0';
+			cmd += strlen(cmd);
+		}
+		else
+		{
+			if (p - cmd > 999) p = cmd + 999;
+			strncpy(line, cmd, p - cmd);
+			line[p - cmd] = '\0';
+			cmd = p + 1;
+		}
+
+		/* input language code to internal one */
+		CNV_INPUT (line);
+
+		/* get the first part of the command */
+		{
+			char *ptr = line;
+			if (!next_token(&ptr,tok,NULL)) continue;
+		}
+
+		do_command(info, tok, line);
 	}
-      else
+	else while (!feof(stdin))
 	{
-	  if (p - cmd > 999) p = cmd + 999;
-	  strncpy(line, cmd, p - cmd);
-	  line[p - cmd] = '\0';
-	  cmd = p + 1;
-	}
+		fstring tok;
 
-      /* input language code to internal one */
-      CNV_INPUT (line);
-      
-      /* and get the first part of the command */
-      {
-	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
-      }
-
-      if ((i = process_tok(tok)) >= 0)
-	commands[i].fn(info);
-      else if (i == -2)
-	DEBUG(0,("%s: command abbreviation ambiguous\n", CNV_LANG(tok)));
-      else
-	DEBUG(0,("%s: command not found\n", CNV_LANG(tok)));
-    }
-  else while (!feof(stdin))
-    {
-      fstring tok;
-      int i;
-
-      /* display a prompt */
-      DEBUG(0,("smb: %s> ", CNV_LANG(info->cur_dir)));
-      fflush(dbf);
+		/* display a prompt */
+		fprintf(out_hnd, "smb: %s> ", CNV_LANG(info->cur_dir));
+		fflush(dbf);
 
 #ifdef CLIX
-      line[0] = wait_keyboard(&smb_cli, smb_tidx);
-      /* this might not be such a good idea... */
-      if ( line[0] == EOF)
-	break;
+		line[0] = wait_keyboard(&smb_cli, smb_tidx);
+		/* this might not be such a good idea... */
+		if ( line[0] == EOF)
+		{
+			break;
+		}
 #else
-      wait_keyboard(smb_cli, smb_tidx);
+		wait_keyboard(smb_cli, smb_tidx);
 #endif
-  
-      /* and get a response */
+
+		/* and get a response */
 #ifdef CLIX
-      fgets( &line[1],999, stdin);
+		fgets( &line[1],999, stdin);
 #else
-      if (!fgets(line,1000,stdin))
-	break;
+		if (!fgets(line,1000,stdin))
+		{
+			break;
+		}
 #endif
 
-      /* input language code to internal one */
-      CNV_INPUT (line);
+		/* input language code to internal one */
+		CNV_INPUT (line);
 
-      /* special case - first char is ! */
-      if (*line == '!')
-	{
-	  system(line + 1);
-	  continue;
+		/* special case - first char is ! */
+		if (*line == '!')
+		{
+			system(line + 1);
+			continue;
+		}
+
+		fprintf(out_hnd, "%s\n", line);
+
+		/* get the first part of the command */
+		{
+			char *ptr = line;
+			if (!next_token(&ptr,tok,NULL)) continue;
+		}
+
+		do_command(info, tok, line);
 	}
-      
-      /* and get the first part of the command */
-      {
-	char *ptr = line;
-	if (!next_token(&ptr,tok,NULL)) continue;
-      }
 
-      if ((i = process_tok(tok)) >= 0)
-	commands[i].fn(info);
-      else if (i == -2)
-	DEBUG(0,("%s: command abbreviation ambiguous\n", CNV_LANG(tok)));
-      else
-	DEBUG(0,("%s: command not found\n", CNV_LANG(tok)));
-    }
-  
-  return(True);
+	return(True);
 }
 
 /****************************************************************************
@@ -369,28 +389,28 @@ usage on the program
 ****************************************************************************/
 static void usage(char *pname)
 {
-  DEBUG(0,("Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
-	   pname));
+  fprintf(out_hnd, "Usage: %s service <password> [-p port] [-d debuglevel] [-l log] ",
+	   pname);
 
-  DEBUG(0,("\nVersion %s\n",VERSION));
-  DEBUG(0,("\t-p port               listen on the specified port\n"));
-  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
-  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
-  DEBUG(0,("\t-n netbios name.      Use this name as my netbios name\n"));
-  DEBUG(0,("\t-N                    don't ask for a password\n"));
-  DEBUG(0,("\t-P                    connect to service as a printer\n"));
-  DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
-  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
-  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
-  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
-  DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
-  DEBUG(0,("\t-U username           set the network username\n"));
-  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
-  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
-  DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-T<c|x>IXgbNa          command line tar\n"));
-  DEBUG(0,("\t-D directory          start from directory\n"));
-  DEBUG(0,("\n"));
+  fprintf(out_hnd, "\nVersion %s\n",VERSION);
+  fprintf(out_hnd, "\t-p port               listen on the specified port\n");
+  fprintf(out_hnd, "\t-d debuglevel         set the debuglevel\n");
+  fprintf(out_hnd, "\t-l log basename.      Basename for log/debug files\n");
+  fprintf(out_hnd, "\t-n netbios name.      Use this name as my netbios name\n");
+  fprintf(out_hnd, "\t-N                    don't ask for a password\n");
+  fprintf(out_hnd, "\t-P                    connect to service as a printer\n");
+  fprintf(out_hnd, "\t-M host               send a winpopup message to the host\n");
+  fprintf(out_hnd, "\t-m max protocol       set the max protocol level\n");
+  fprintf(out_hnd, "\t-L host               get a list of shares available on a host\n");
+  fprintf(out_hnd, "\t-I dest IP            use this IP to connect to\n");
+  fprintf(out_hnd, "\t-E                    write messages to stderr instead of stdout\n");
+  fprintf(out_hnd, "\t-U username           set the network username\n");
+  fprintf(out_hnd, "\t-W workgroup          set the workgroup name\n");
+  fprintf(out_hnd, "\t-c command string     execute semicolon separated commands\n");
+  fprintf(out_hnd, "\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n");
+  fprintf(out_hnd, "\t-T<c|x>IXgbNa          command line tar\n");
+  fprintf(out_hnd, "\t-D directory          start from directory\n");
+  fprintf(out_hnd, "\n");
 }
 
 enum client_action
@@ -497,7 +517,7 @@ enum client_action
 	cli_info.tar.buf = NULL;
 	cli_info.tar.handle = 0;
 
-	setup_logging(pname,True);
+	setup_logging(pname, True, True);
 
 	TimeInit();
 	charset_initialise();
@@ -585,7 +605,7 @@ enum client_action
 			case 'm':
 			{
 				int max_protocol = interpret_protocol(optarg,max_protocol);
-				DEBUG(0,("max protocol not currently supported\n"));
+				fprintf(stderr, "max protocol not currently supported\n");
 				break;
 			}
 
@@ -766,7 +786,7 @@ enum client_action
 
 	if(!get_myname(cli_info.myhostname, NULL))
 	{
-		DEBUG(0,("Failed to get my hostname.\n"));
+		fprintf(stderr, "Failed to get my hostname.\n");
 	}
 
 	if (!lp_load(servicesf,True))
@@ -780,7 +800,7 @@ enum client_action
 	{
 		if (!setup_term_code (term_code))
 		{
-			DEBUG(0, ("%s: unknown terminal code name\n", optarg));
+			fprintf(out_hnd, "%s: unknown terminal code name\n", optarg);
 			usage (pname);
 			exit (1);
 		}
@@ -811,13 +831,13 @@ enum client_action
 
 		if (cli_info.dest_host[0] == 0)
 		{
-			DEBUG(0,("Could not get host name from service %s\n", cli_info.service));
+			fprintf(stderr, "Could not get host name from service %s\n", cli_info.service);
 			return 1;
 		}
 
 		if (cli_info.share[0] == 0)
 		{
-			DEBUG(0,("Could not get share name from service %s\n", cli_info.service));
+			fprintf(stderr, "Could not get share name from service %s\n", cli_info.service);
 			return 1;
 		}
 	}
@@ -879,7 +899,7 @@ enum client_action
 
 		default:
 		{
-			DEBUG(0,("unknown client action requested\n"));
+			fprintf(stderr, "unknown client action requested\n");
 			ret = 1;
 			break;
 		}
