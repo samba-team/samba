@@ -2073,4 +2073,53 @@ WERROR cli_spoolss_enumprinterdata(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
+/* Write data to printer */
+
+WERROR cli_spoolss_writeprinter(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				POLICY_HND *hnd, uint32 data_size, char *data,
+				uint32 *num_written)
+{
+	prs_struct qbuf, rbuf;
+	SPOOL_Q_WRITEPRINTER q;
+	SPOOL_R_WRITEPRINTER r;
+	WERROR result = W_ERROR(ERRgeneral);
+
+	ZERO_STRUCT(q);
+	ZERO_STRUCT(r);
+
+	/* Initialise parse structures */
+
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Initialise input parameters */
+
+        make_spoolss_q_writeprinter(&q, hnd, data_size, data);
+
+	/* Marshall data and send request */
+
+	if (!spoolss_io_q_writeprinter("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_WRITEPRINTER, &qbuf, &rbuf))
+		goto done;
+
+	/* Unmarshall response */
+
+	if (!spoolss_io_r_writeprinter("", &r, &rbuf, 0))
+		goto done;
+	
+	result = r.status;
+
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;	
+
+	if (num_written)
+		*num_written = r.buffer_written;
+
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+
+	return result;
+}
+
 /** @} **/

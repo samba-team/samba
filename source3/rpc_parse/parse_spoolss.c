@@ -7215,3 +7215,17 @@ BOOL make_spoolss_q_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u,
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, 
+				 POLICY_HND *handle, uint32 data_size,
+				 char *data)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->buffer_size = q_u->buffer_size2 = data_size;
+	q_u->buffer = data;
+	return True;
+}
