@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -63,10 +63,12 @@ gss_krb5_get_remotekey(const gss_ctx_id_t context_handle,
 	    krb5_auth_con_getkey(gssapi_krb5_context,
 				 context_handle->auth_context, 
 				 &skey);
-	HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
-	if(skey == NULL)
+	if(skey == NULL) {
+	    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 	    return GSS_KRB5_S_KG_NO_SUBKEY; /* XXX */
+	}
     }
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     *key = skey;
     return 0;
 }

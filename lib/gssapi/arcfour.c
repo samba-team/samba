@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -317,7 +317,7 @@ _gssapi_verify_mic_arcfour(OM_uint32 * minor_status,
     
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     omret = gssapi_msg_order_check(context_handle->order, seq_number);
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (omret)
 	return omret;
 
@@ -624,7 +624,7 @@ OM_uint32 _gssapi_unwrap_arcfour(OM_uint32 *minor_status,
 
     HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     omret = gssapi_msg_order_check(context_handle->order, seq_number);
-    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if (omret)
 	return omret;
 
