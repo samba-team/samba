@@ -34,6 +34,7 @@ void kauth(int argc, char **argv)
 
     ret = command("SITE KAUTH %s", name);
     if(ret != CONTINUE){
+	verbose = overbose;
 	code = -1;
 	return;
     }
@@ -56,6 +57,7 @@ void kauth(int argc, char **argv)
     p = strstr(reply_string, "P=");
     if(!p){
 	printf("Bad reply from server.\n");
+	verbose = overbose;
 	code = -1;
 	return;
     }
