@@ -312,13 +312,22 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 			*password = 0;
 		passlen = strlen(password);
 	}
-	
-	p = strchr(path+2,'\\');
-	if (!p) {
-		END_PROFILE(SMBtconX);
-		return(ERROR(ERRDOS,ERRnosuchshare));
+
+	/*
+	 * the service name can be either: \\server\share
+	 * or share directly like on the DELL PowerVault 705
+	 */
+	if (*path=='\\') {	
+		p = strchr(path+2,'\\');
+		if (!p) {
+			END_PROFILE(SMBtconX);
+			return(ERROR(ERRDOS,ERRnosuchshare));
+		}
+		fstrcpy(service,p+1);
 	}
-	fstrcpy(service,p+1);
+	else
+		fstrcpy(service,path);
+		
 	p = strchr(service,'%');
 	if (p) {
 		*p++ = 0;
