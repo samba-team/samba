@@ -278,6 +278,7 @@ DATA_BLOB krb5_get_ticket(const char *principal, time_t time_offset)
 		ENCTYPE_ARCFOUR_HMAC, 
 #endif
 				    ENCTYPE_DES_CBC_MD5, 
+				    ENCTYPE_DES_CBC_CRC, 
 				    ENCTYPE_NULL};
 
 	retval = krb5_init_context(&context);
@@ -323,7 +324,6 @@ failed:
 		
 	return data_blob(NULL, 0);
 }
-
 
 #else /* HAVE_KRB5 */
  /* this saves a few linking headaches */
