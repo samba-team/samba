@@ -137,8 +137,7 @@ static char *get_alias_members(char *p, int *num_mem, LOCAL_GRP_MEMBER **members
 			continue;
 		}
 		if (mbrs == NULL) {
-			if (*members)
-				free(*members);
+			SAFE_FREE(*members);
 			return NULL;
         } else
             (*members) = mbrs;
