@@ -425,8 +425,13 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 				return False;
 		}
 	}
+#if 0	/* JERRY */
+
+	/* Win2k does not seem to put this parse align here */
+
 	if(!prs_align(ps))
 		return False;
+#endif
 
 	return True;
 }
