@@ -10,5 +10,6 @@
 #endif
 main()
 {
+	fclose(stdin);
 	readline("");
 }
