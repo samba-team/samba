@@ -99,6 +99,127 @@ static void agent_request(char *buf)
 
 }
 
+#define AGENT_CMD_CON       0
+#define AGENT_CMD_CON_REUSE 1
+
+static struct cli_state *init_client_connection(int c)
+{
+	pstring buf;
+	uchar ntpw[16];
+	uchar lmpw[16];
+	fstring srv_name;
+	struct user_credentials usr;
+	char *p = buf;
+	int rl;
+	uint32 len;
+	uint16 version;
+	uint16 command;
+	BOOL new_con = False;
+
+	ZERO_STRUCT(usr);
+
+	DEBUG(10,("first request\n"));
+
+	rl = read(c, &buf, sizeof(len));
+
+	if (rl != sizeof(len))
+	{
+		DEBUG(0,("Unable to read length\n"));
+		dump_data(0, buf, sizeof(len));
+		return NULL;
+	}
+
+	len = IVAL(buf, 0);
+
+	if (len > sizeof(buf))
+	{
+		DEBUG(0,("length %d too long\n", len));
+		return NULL;
+	}
+
+	rl = read(c, buf, len);
+
+	if (rl < 0)
+	{
+		DEBUG(0,("Unable to read from connection\n"));
+		exit(1);
+	}
+	
+#ifdef DEBUG_PASSWORD
+	dump_data(100, buf, rl);
+#endif
+	version = SVAL(p, 0);
+	p += 2;
+	command = SVAL(p, 0);
+	p += 2;
+
+	fstrcpy(srv_name, p);
+	p = skip_string(p, 1);
+	fstrcpy(usr.user_name, p);
+	p = skip_string(p, 1);
+	fstrcpy(usr.domain, p);
+	p = skip_string(p, 1);
+
+	if (PTR_DIFF(p, buf) < rl)
+	{
+		memcpy(ntpw, p, 16);
+		p += 16;
+		memcpy(lmpw, p, 16);
+		p += 16;
+		pwd_set_lm_nt_16(&usr.pwd, lmpw, ntpw);
+	}
+	else
+	{
+		pwd_set_nullpwd(&usr.pwd);
+	}
+
+	if (PTR_DIFF(p, buf) != rl)
+	{
+		DEBUG(0,("Buffer size %d %d!\n",
+			PTR_DIFF(p, buf), rl));
+		exit(1);
+	}
+
+	switch (command)
+	{
+		case AGENT_CMD_CON:
+		{
+			new_con = True;
+			break;
+		}
+		case AGENT_CMD_CON_REUSE:
+		{
+			new_con = True;
+			usr.reuse = True;
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("unknown command %d\n", command));
+			return NULL;
+		}
+	}
+
+	if (new_con)
+	{
+		struct cli_state *s;
+		s = cli_net_use_add(srv_name, &usr, False);
+
+		if (s == NULL)
+		{
+			DEBUG(0,("Unable to connect to %s\n", srv_name));
+			return NULL;
+		}
+		if (write(c, s, sizeof(*s)) < 0)
+		{
+			DEBUG(0,("Could not write connection down pipe.\n"));
+			cli_net_use_del(srv_name, &usr, False, NULL);
+			return NULL;
+		}
+		return s;
+	}
+	return NULL;
+}
 
 static void agent_child(int c)
 {
@@ -132,82 +253,9 @@ static void agent_child(int c)
 		{
 			if (s == NULL)
 			{
-				pstring buf;
-				uchar ntpw[16];
-				uchar lmpw[16];
-				fstring srv_name;
-				struct user_credentials usr;
-				char *p = buf;
-				int rl;
-				uint32 len;
-
-				DEBUG(10,("first request\n"));
-
-				rl = read(c, &buf, sizeof(len));
-
-				if (rl != sizeof(len))
-				{
-					DEBUG(0,("Unable to read length\n"));
-					dump_data(0, buf, sizeof(len));
-					exit(1);
-				}
-
-				len = IVAL(buf, 0);
-
-				if (len > sizeof(buf))
-				{
-					DEBUG(0,("length %d too long\n", len));
-					exit(1);
-				}
-
-				rl = read(c, buf, len);
-
-				if (rl < 0)
-				{
-					DEBUG(0,("Unable to read from connection\n"));
-					exit(1);
-				}
-				
-#ifdef DEBUG_PASSWORD
-				dump_data(100, buf, rl);
-#endif
-				fstrcpy(srv_name, p);
-				p = skip_string(p, 1);
-				fstrcpy(usr.user_name, p);
-				p = skip_string(p, 1);
-				fstrcpy(usr.domain, p);
-				p = skip_string(p, 1);
-
-				if (PTR_DIFF(p, buf) < rl)
-				{
-					memcpy(ntpw, p, 16);
-					p += 16;
-					memcpy(lmpw, p, 16);
-					p += 16;
-					pwd_set_lm_nt_16(&usr.pwd, lmpw, ntpw);
-				}
-				else
-				{
-					pwd_set_nullpwd(&usr.pwd);
-				}
-
-				if (PTR_DIFF(p, buf) != rl)
-				{
-					DEBUG(0,("Buffer size %d %d!\n",
-					        PTR_DIFF(p, buf), rl));
-					exit(1);
-				}
-
-				s = cli_net_use_add(srv_name, &usr, False);
-
+				s = init_client_connection(c);
 				if (s == NULL)
 				{
-					DEBUG(0,("Unable to connect to %s\n", srv_name));
-					exit(1);
-				}
-				if (write(c, s, sizeof(*s)) < 0)
-				{
-					DEBUG(0,("Could not write ack\n"));
 					exit(1);
 				}
 			}

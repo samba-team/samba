@@ -85,6 +85,7 @@ struct user_credentials
 	struct pwd_info pwd;
 
 	uint32 ntlmssp_flags;
+	BOOL reuse;
 };
 
 struct cli_state

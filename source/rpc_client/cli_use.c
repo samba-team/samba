@@ -156,7 +156,8 @@ static struct cli_use *cli_find(const char* srv_name,
 		{
 			continue;
 		}
-		if (!pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
+		if (!usr_creds->reuse &&
+		    !pwd_compare(&usr_creds->pwd, &c->cli->usr.pwd))
 		{
 			continue;
 		}
@@ -219,6 +220,12 @@ struct cli_state *cli_net_use_add(const char* srv_name,
 	{
 		cli->num_users++;
 		return cli->cli;
+	}
+
+	/* reuse an existing connection requested, and one was not found */
+	if (usr_creds != NULL && usr_creds->reuse)
+	{
+		return False;
 	}
 
 	/*
