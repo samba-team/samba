@@ -707,9 +707,9 @@ void make_rpc_auth_ntlmssp_resp(RPC_AUTH_NTLMSSP_RESP *rsp,
 
 	if (IS_BITS_SET_ALL(neg_flags, NTLMSSP_NEGOTIATE_UNICODE))
 	{
-		ascii_to_unibuf(rsp->domain, domain, sizeof(rsp->domain));
-		ascii_to_unibuf(rsp->user  , user  , sizeof(rsp->user  ));
-		ascii_to_unibuf(rsp->wks   , wks   , sizeof(rsp->wks   ));
+		ascii_to_unibuf(rsp->domain, domain, sizeof(rsp->domain)-2);
+		ascii_to_unibuf(rsp->user  , user  , sizeof(rsp->user  )-2);
+		ascii_to_unibuf(rsp->wks   , wks   , sizeof(rsp->wks   )-2);
 	}
 	else
 	{

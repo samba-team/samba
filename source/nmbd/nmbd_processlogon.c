@@ -140,8 +140,8 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
         q = align2(q, buf);
 
 	/* PDC and domain name */
-        q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q);
-        q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q);
+        q = ascii_to_unibuf(q, my_name, outbuf+sizeof(outbuf)-q-2);
+        q = ascii_to_unibuf(q, global_myworkgroup, outbuf+sizeof(outbuf)-q-2);
 
         SIVAL(q, 0, ntversion);
         q += 4;
@@ -204,8 +204,8 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	      fstring ascuser;
 	      fstring asccomp;
 
-	      unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser));
-	      unibuf_to_ascii(asccomp, unicomp, sizeof(asccomp));
+	      unibuf_to_ascii(ascuser, uniuser, sizeof(ascuser)-1);
+	      unibuf_to_ascii(asccomp, unicomp, sizeof(asccomp)-1);
 
 	      DEBUGADD(3,("process_logon_packet: SAMLOGON request from %s(%s) for %s, returning logon svr %s domain %s code %x token=%x\n",
 			  asccomp,inet_ntoa(p->ip), ascuser, reply_name,
@@ -219,9 +219,9 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       q += 2;
 
       /* Logon server, trust account, domain */
-      q = ascii_to_unibuf(q, reply_name, outbuf+sizeof(outbuf)-q);
-      q = uni_strncpy(q, uniuser, outbuf+sizeof(outbuf)-q);
-      q = ascii_to_unibuf(q, lp_workgroup(), outbuf+sizeof(outbuf)-q);
+      q = ascii_to_unibuf(q, reply_name, outbuf+sizeof(outbuf)-q-2);
+      q = uni_strncpy(q, uniuser, outbuf+sizeof(outbuf)-q-2);
+      q = ascii_to_unibuf(q, lp_workgroup(), outbuf+sizeof(outbuf)-q-2);
 
       SIVAL(q, 0, ntversion);
       q += 4;

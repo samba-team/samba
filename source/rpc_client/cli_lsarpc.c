@@ -331,8 +331,8 @@ BOOL lsa_lookup_sids(struct cli_state *cli, uint16 fnum,
 
 				if (dom_idx != 0xffffffff)
 				{
-					unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name));
-					unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name));
+					unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)-1);
+					unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name)-1);
 					
 					memset(full_name, 0, sizeof(full_name));
 
@@ -427,7 +427,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 				{
 					if (r_q.dom.id3.buffer_dom_name != 0)
 					{
-						unistr2_to_ascii(domain_name, &r_q.dom.id3.uni_domain_name, sizeof(domain_name));
+						unistr2_to_ascii(domain_name, &r_q.dom.id3.uni_domain_name, sizeof(fstring)-1);
 					}
 					if (r_q.dom.id3.buffer_dom_sid != 0)
 					{
@@ -441,7 +441,7 @@ BOOL lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 				{
 					if (r_q.dom.id5.buffer_dom_name != 0)
 					{
-						unistr2_to_ascii(domain_name, &r_q.dom.id5.uni_domain_name, sizeof(domain_name));
+						unistr2_to_ascii(domain_name, &r_q.dom.id5.uni_domain_name, sizeof(fstring)-1);
 					}
 					if (r_q.dom.id5.buffer_dom_sid != 0)
 					{

@@ -328,7 +328,7 @@ creates a UNISTR structure.
 ********************************************************************/
 void make_unistr(UNISTR *str, char *buf)
 {
-	ascii_to_unistr(str->buffer, buf, sizeof(str->buffer));
+	ascii_to_unistr(str->buffer, buf, sizeof(str->buffer)-1);
 }
 
 /*******************************************************************

@@ -771,7 +771,7 @@ void make_reg_r_info(REG_R_INFO *r_r,
 	char buf[512];
 	int len;
 
-	len = ascii_to_unibuf(buf, os_type, sizeof(buf)) - buf;
+	len = ascii_to_unibuf(buf, os_type, sizeof(buf)-2) - buf;
 
 	r_r->ptr1 = 1;
 	r_r->level = level;

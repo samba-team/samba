@@ -105,7 +105,7 @@ void cmd_svc_enum(struct client_info *info)
 		uint32 svc_buf_size = 0x800;
 
 		unistr_to_ascii(svc_name, svcs[i].uni_srvc_name.buffer,
-				sizeof(svc_name));
+				sizeof(svc_name)-1);
 
 		res2 = res2 ? svc_open_service(smb_cli, fnum,
 		                               &sc_man_pol,

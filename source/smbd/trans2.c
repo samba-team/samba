@@ -1121,7 +1121,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 #endif /* Old code. */
       SIVAL(pdata,4,128); /* Max filename component length */
       SIVAL(pdata,8,2*strlen(fstype));
-      ascii_to_unibuf(pdata+12, fstype, 1024-12);
+      ascii_to_unibuf(pdata+12, fstype, 1024-2-12);
       SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       break;
     case SMB_QUERY_FS_LABEL_INFO:
@@ -1148,7 +1148,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       } else {
 	      data_len = 18 + 2*strlen(vname);
 	      SIVAL(pdata,12,strlen(vname)*2);
-	      ascii_to_unibuf(pdata+18, vname, 1024-18);
+	      ascii_to_unibuf(pdata+18, vname, 1024-2-18);
       }
 
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
@@ -1405,7 +1405,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
             *short_name = '\0';
         }
         strupper(short_name);
-        data_end = ascii_to_unibuf(pdata + 4, short_name, 1024-4);
+        data_end = ascii_to_unibuf(pdata + 4, short_name, 1024-2-4);
         data_size = data_end - pdata;
         SIVAL(pdata,0,2*(data_size-4));
       }

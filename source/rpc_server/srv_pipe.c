@@ -227,13 +227,13 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 	{
 		unibuf_to_ascii(p->user_name, p->ntlmssp_resp.user,
 				MIN(p->ntlmssp_resp.hdr_usr   .str_str_len/2,
-				    sizeof(p->user_name)));
+				    sizeof(p->user_name)-1));
 		unibuf_to_ascii(p->domain   , p->ntlmssp_resp.domain,
 				MIN(p->ntlmssp_resp.hdr_domain.str_str_len/2,
-				    sizeof(p->domain   )));
+				    sizeof(p->domain   )-1));
 		unibuf_to_ascii(p->wks      , p->ntlmssp_resp.wks,
 				MIN(p->ntlmssp_resp.hdr_wks   .str_str_len/2,
-				    sizeof(p->wks      )));
+				    sizeof(p->wks      )-1));
 	}
 	else
 	{

@@ -1440,7 +1440,7 @@ static void samr_reply_lookup_names(SAMR_Q_LOOKUP_NAMES *q_u,
 	{
 		DOM_SID sid;
 		fstring name;
-		unistr2_to_ascii(name, &q_u->uni_name[i], sizeof(name));
+		unistr2_to_ascii(name, &q_u->uni_name[i], sizeof(name)-1);
 
 		status = lookup_name(name, &sid, &(type[i]));
 		if (status == 0x0)
@@ -1489,8 +1489,8 @@ static void samr_reply_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
 	fstring user_name;
 	fstring wks;
 
-	unistr2_to_ascii(user_name, &q_u->uni_user_name, sizeof(user_name));
-	unistr2_to_ascii(wks, &q_u->uni_dest_host, sizeof(wks));
+	unistr2_to_ascii(user_name, &q_u->uni_user_name, sizeof(user_name)-1);
+	unistr2_to_ascii(wks, &q_u->uni_dest_host, sizeof(wks)-1);
 
 	DEBUG(5,("samr_chgpasswd_user: user: %s wks: %s\n", user_name, wks));
 
@@ -2024,7 +2024,7 @@ static void samr_reply_create_dom_alias(SAMR_Q_CREATE_DOM_ALIAS *q_u,
 
 	if (status == 0x0)
 	{
-		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name));
+		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name)-1);
 		fstrcpy(grp.comment, "");
 		grp.rid = 0xffffffff;
 
@@ -2135,7 +2135,7 @@ static void samr_reply_create_dom_group(SAMR_Q_CREATE_DOM_GROUP *q_u,
 
 	if (status == 0x0)
 	{
-		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name));
+		unistr2_to_ascii(grp.name, &q_u->uni_acct_desc, sizeof(grp.name)-1);
 		fstrcpy(grp.comment, "");
 		grp.rid = 0xffffffff;
 		grp.attr = 0x07;
@@ -2302,7 +2302,7 @@ static void api_samr_unknown_32( uint16 vuid, prs_struct *data, prs_struct *rdat
 	   reply if the account already exists...
 	 */
 
-	unistr2_to_ascii(mach_acct, &q_u.uni_mach_acct, sizeof(mach_acct));
+	unistr2_to_ascii(mach_acct, &q_u.uni_mach_acct, sizeof(mach_acct)-1);
 
 	become_root(True);
 	sam_pass = getsam21pwntnam(mach_acct);

@@ -585,12 +585,12 @@ BOOL samr_enum_dom_groups(struct cli_state *cli, uint16 fnum,
 				(*sam)[i].acct_desc[0] = 0;
 				if (r_e.sam[i].hdr_grp_name.buffer)
 				{
-					unistr2_to_ascii((*sam)[i].acct_name, &r_e.str[name_idx].uni_grp_name, sizeof((*sam)[i].acct_name));
+					unistr2_to_ascii((*sam)[i].acct_name, &r_e.str[name_idx].uni_grp_name, sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
 				}
 				if (r_e.sam[i].hdr_grp_desc.buffer)
 				{
-					unistr2_to_ascii((*sam)[i].acct_desc, &r_e.str[name_idx].uni_grp_desc, sizeof((*sam)[i].acct_desc));
+					unistr2_to_ascii((*sam)[i].acct_desc, &r_e.str[name_idx].uni_grp_desc, sizeof((*sam)[i].acct_desc)-1);
 					desc_idx++;
 				}
 				DEBUG(5,("samr_enum_dom_groups: idx: %4d rid: %8x acct: %s desc: %s\n",
@@ -678,7 +678,7 @@ BOOL samr_enum_dom_aliases(struct cli_state *cli, uint16 fnum,
 				(*sam)[i].acct_desc[0] = 0;
 				if (r_e.sam[i].hdr_name.buffer)
 				{
-					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_grp_name[name_idx], sizeof((*sam)[i].acct_name));
+					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_grp_name[name_idx], sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
 				}
 				DEBUG(5,("samr_enum_dom_aliases: idx: %4d rid: %8x acct: %s\n",
@@ -767,7 +767,7 @@ BOOL samr_enum_dom_users(struct cli_state *cli, uint16 fnum,
 				(*sam)[i].acct_desc[0] = 0;
 				if (r_e.sam[i].hdr_name.buffer)
 				{
-					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_acct_name[name_idx], sizeof((*sam)[i].acct_name));
+					unistr2_to_ascii((*sam)[i].acct_name, &r_e.uni_acct_name[name_idx], sizeof((*sam)[i].acct_name)-1);
 					name_idx++;
 				}
 				DEBUG(5,("samr_enum_dom_users: idx: %4d rid: %8x acct: %s\n",
@@ -1774,7 +1774,7 @@ BOOL samr_query_lookup_rids(struct cli_state *cli, uint16 fnum,
 
 				for (i = 0; i < r_o.num_names1; i++)
 				{
-					unistr2_to_ascii(names[i], &r_o.uni_name[i], sizeof(names[i]));
+					unistr2_to_ascii(names[i], &r_o.uni_name[i], sizeof(fstring)-1);
 				}
 				for (i = 0; i < r_o.num_types1; i++)
 				{
