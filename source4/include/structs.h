@@ -23,11 +23,11 @@
   "scope is only this definition or declaration" warning
 */
 
-union spoolss_PrinterInfo;
-union spoolss_FormInfo;
-union spoolss_JobInfo;
-union spoolss_DriverInfo;
-union spoolss_PortInfo;
+struct spoolss_EnumPrinters;
+struct spoolss_EnumForms;
+struct spoolss_EnumJobs;
+struct spoolss_EnumPrinterDrivers;
+struct spoolss_EnumPorts;
 
 struct MULTI_QI;
 struct COSERVERINFO;
