@@ -2221,7 +2221,7 @@ NTSTATUS _samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_CREA
 	uint32 new_rid = 0;
 	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
-	BOOL can_add_account;
+	BOOL can_add_account = False;
 	SE_PRIV se_rights;
 
 	/* Get the domain SID stored in the domain policy */
@@ -3006,7 +3006,7 @@ NTSTATUS _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SE
 	uint32 acc_granted;
 	uint32 acc_required;
 	BOOL ret;
-	BOOL has_enough_rights;
+	BOOL has_enough_rights = False;
 	uint32 acb_info;
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
@@ -3147,7 +3147,7 @@ NTSTATUS _samr_set_userinfo2(pipes_struct *p, SAMR_Q_SET_USERINFO2 *q_u, SAMR_R_
 	uint32 acc_granted;
 	uint32 acc_required;
 	BOOL ret;
-	BOOL has_enough_rights;
+	BOOL has_enough_rights = False;
 	uint32 acb_info;
 
 	DEBUG(5, ("samr_reply_set_userinfo2: %d\n", __LINE__));
