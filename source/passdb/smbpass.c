@@ -83,105 +83,7 @@ static void endsmbfilepwent(void *vp)
 
 /*************************************************************************
  Routine to return the next entry in the smbpasswd list.
- this function is a nice, messy combination of reading:
- - the smbpasswd file
- - the unix password database
- - smb.conf options (not done at present).
  *************************************************************************/
-
-static struct sam_passwd *getsmbfile21pwent(void *vp)
-{
-	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
-	static struct sam_passwd user;
-	struct passwd *pwfile;
-
-	static pstring full_name;
-	static pstring home_dir;
-	static pstring home_drive;
-	static pstring logon_script;
-	static pstring profile_path;
-	static pstring acct_desc;
-	static pstring workstations;
-	
-	if (pw_buf == NULL) return NULL;
-
-	pwfile = getpwnam(pw_buf->smb_name);
-	if (pwfile == NULL) return NULL;
-
-	pdb_init_sam(&user);
-
-	pstrcpy(samlogon_user, pw_buf->smb_name);
-
-	if (samlogon_user[strlen(samlogon_user)-1] != '$')
-	{
-		/* XXXX hack to get standard_sub_basic() to use sam logon username */
-		/* possibly a better way would be to do a become_user() call */
-		sam_logon_in_ssb = True;
-
-		user.smb_userid    = pw_buf->smb_userid;
-		user.smb_grpid     = pwfile->pw_gid;
-
-		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
-		user.group_rid = pdb_gid_to_group_rid(user.smb_grpid );
-
-		pstrcpy(full_name    , pwfile->pw_gecos        );
-		pstrcpy(logon_script , lp_logon_script       ());
-		pstrcpy(profile_path , lp_logon_path         ());
-		pstrcpy(home_drive   , lp_logon_drive        ());
-		pstrcpy(home_dir     , lp_logon_home         ());
-		pstrcpy(acct_desc    , "");
-		pstrcpy(workstations , "");
-
-		sam_logon_in_ssb = False;
-	}
-	else
-	{
-		user.smb_userid    = pw_buf->smb_userid;
-		user.smb_grpid     = pwfile->pw_gid;
-
-		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
-		user.group_rid = DOMAIN_GROUP_RID_USERS; /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
-
-		pstrcpy(full_name    , "");
-		pstrcpy(logon_script , "");
-		pstrcpy(profile_path , "");
-		pstrcpy(home_drive   , "");
-		pstrcpy(home_dir     , "");
-		pstrcpy(acct_desc    , "");
-		pstrcpy(workstations , "");
-	}
-
-	user.smb_name     = pw_buf->smb_name;
-	user.full_name    = full_name;
-	user.home_dir     = home_dir;
-	user.dir_drive    = home_drive;
-	user.logon_script = logon_script;
-	user.profile_path = profile_path;
-	user.acct_desc    = acct_desc;
-	user.workstations = workstations;
-
-	user.unknown_str = NULL; /* don't know, yet! */
-	user.munged_dial = NULL; /* "munged" dial-back telephone number */
-
-	user.smb_nt_passwd = pw_buf->smb_nt_passwd;
-	user.smb_passwd    = pw_buf->smb_passwd;
-			
-	user.acct_ctrl = pw_buf->acct_ctrl;
-
-	user.unknown_3 = 0xffffff; /* don't know */
-	user.logon_divs = 168; /* hours per week */
-	user.hours_len = 21; /* 21 times 8 bits = 168 */
-	memset(user.hours, 0xff, user.hours_len); /* available at all hours */
-	user.unknown_5 = 0x00020000; /* don't know */
-	user.unknown_5 = 0x000004ec; /* don't know */
-
-	return &user;
-}
-
-/*************************************************************************
- Routine to return the next entry in the smbpasswd list.
- *************************************************************************/
-
 static struct smb_passwd *getsmbfilepwent(void *vp)
 {
   /* Static buffers we will return. */
@@ -397,6 +299,103 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
   DEBUG(5,("getsmbfilepwent: end of file reached.\n"));
   return NULL;
+}
+
+/*************************************************************************
+ Routine to return the next entry in the smbpasswd list.
+ this function is a nice, messy combination of reading:
+ - the smbpasswd file
+ - the unix password database
+ - smb.conf options (not done at present).
+ *************************************************************************/
+
+static struct sam_passwd *getsmbfile21pwent(void *vp)
+{
+	struct smb_passwd *pw_buf = getsmbfilepwent(vp);
+	static struct sam_passwd user;
+	struct passwd *pwfile;
+
+	static pstring full_name;
+	static pstring home_dir;
+	static pstring home_drive;
+	static pstring logon_script;
+	static pstring profile_path;
+	static pstring acct_desc;
+	static pstring workstations;
+	
+	if (pw_buf == NULL) return NULL;
+
+	pwfile = getpwnam(pw_buf->smb_name);
+	if (pwfile == NULL) return NULL;
+
+	pdb_init_sam(&user);
+
+	pstrcpy(samlogon_user, pw_buf->smb_name);
+
+	if (samlogon_user[strlen(samlogon_user)-1] != '$')
+	{
+		/* XXXX hack to get standard_sub_basic() to use sam logon username */
+		/* possibly a better way would be to do a become_user() call */
+		sam_logon_in_ssb = True;
+
+		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_grpid     = pwfile->pw_gid;
+
+		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
+		user.group_rid = pdb_gid_to_group_rid(user.smb_grpid );
+
+		pstrcpy(full_name    , pwfile->pw_gecos        );
+		pstrcpy(logon_script , lp_logon_script       ());
+		pstrcpy(profile_path , lp_logon_path         ());
+		pstrcpy(home_drive   , lp_logon_drive        ());
+		pstrcpy(home_dir     , lp_logon_home         ());
+		pstrcpy(acct_desc    , "");
+		pstrcpy(workstations , "");
+
+		sam_logon_in_ssb = False;
+	}
+	else
+	{
+		user.smb_userid    = pw_buf->smb_userid;
+		user.smb_grpid     = pwfile->pw_gid;
+
+		user.user_rid  = pdb_uid_to_user_rid (user.smb_userid);
+		user.group_rid = DOMAIN_GROUP_RID_USERS; /* lkclXXXX this is OBSERVED behaviour by NT PDCs, enforced here. */
+
+		pstrcpy(full_name    , "");
+		pstrcpy(logon_script , "");
+		pstrcpy(profile_path , "");
+		pstrcpy(home_drive   , "");
+		pstrcpy(home_dir     , "");
+		pstrcpy(acct_desc    , "");
+		pstrcpy(workstations , "");
+	}
+
+	user.smb_name     = pw_buf->smb_name;
+	user.full_name    = full_name;
+	user.home_dir     = home_dir;
+	user.dir_drive    = home_drive;
+	user.logon_script = logon_script;
+	user.profile_path = profile_path;
+	user.acct_desc    = acct_desc;
+	user.workstations = workstations;
+
+	user.unknown_str = NULL; /* don't know, yet! */
+	user.munged_dial = NULL; /* "munged" dial-back telephone number */
+
+	user.smb_nt_passwd = pw_buf->smb_nt_passwd;
+	user.smb_passwd    = pw_buf->smb_passwd;
+			
+	user.acct_ctrl = pw_buf->acct_ctrl;
+
+	user.unknown_3 = 0xffffff; /* don't know */
+	user.logon_divs = 168; /* hours per week */
+	user.hours_len = 21; /* 21 times 8 bits = 168 */
+	memset(user.hours, 0xff, user.hours_len); /* available at all hours */
+	user.unknown_5 = 0x00020000; /* don't know */
+	user.unknown_5 = 0x000004ec; /* don't know */
+
+	return &user;
 }
 
 /*************************************************************************
