@@ -683,7 +683,6 @@ BOOL check_name(char *name,int cnum);
 int fd_attempt_open(char *fname, int flags, int mode);
 void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr);
 int fd_attempt_close(file_fd_struct *fd_ptr);
-void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf);
 void sync_file(int fnum);
 void close_file(int fnum);
 BOOL check_file_sharing(int cnum,char *fname);
