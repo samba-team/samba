@@ -1085,6 +1085,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   delete_nt_token(&ptok);
   
   if (sess_vuid == -1) {
+  	  END_PROFILE(SMBsesssetupX);
 	  return(ERROR_DOS(ERRDOS,ERRnoaccess));
   }
 
