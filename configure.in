@@ -50,9 +50,10 @@ if test "$with_krb4"; then
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
 fi
-AM_CONDITIONAL(KRB4, test "$with_krb4")
-AC_SUBST(LIB_krb4)
-AC_SUBST(INCLUDE_krb4)
+AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
+AC_SUBST(LIB_krb4)dnl
+AC_SUBST(INCLUDE_krb4)dnl
+AM_CONDITIONAL(AIX, test `uname` = AIX)dnl
 
 AC_ARG_ENABLE(kaserver,
 [  --enable-kaserver	  if you want the KDC to try to emulate a kaserver],
