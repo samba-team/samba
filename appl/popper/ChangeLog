@@ -1,5 +1,7 @@
 Thu Apr 23 00:54:38 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* Add support for maildir spoolfiles.
+
 	* popper.h (MsgInfoList): replace `del_flag' and `retr_flag' with
 	single `flags'
 
