@@ -304,7 +304,7 @@ kadm5_c_init_with_context(krb5_context context,
     if(ret)
 	return ret;
 
-    snprintf (portstr, sizeof(portstr), "%u", ctx->kadmind_port);
+    snprintf (portstr, sizeof(portstr), "%u", ntohs(ctx->kadmind_port));
 
     error = getaddrinfo (ctx->admin_server, portstr,
 			 &hints, &ai);
@@ -312,8 +312,6 @@ kadm5_c_init_with_context(krb5_context context,
 	return KADM5_BAD_SERVER_NAME;
     
     for (a = ai; a != NULL; a = a->ai_next) {
-	int s;
-
 	s = socket (a->ai_family, a->ai_socktype, a->ai_protocol);
 	if (s < 0)
 	    continue;
@@ -374,6 +372,7 @@ kadm5_c_init_with_context(krb5_context context,
 	    return errno;
 	}
 	if (connect (s, a->ai_addr, a->ai_addrlen) < 0) {
+	    close (s);
 	    freeaddrinfo (ai);
 	    return errno;
 	}
