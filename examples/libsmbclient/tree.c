@@ -706,9 +706,9 @@ int main( int   argc,
 
   /* Now, build the top level display ... */
 
-  if ((dh = smbc_opendir("smb:///")) < 0) {
+  if ((dh = smbc_opendir("smb://")) < 0) {
 
-    fprintf(stderr, "Could not list default workgroup: smb:///: %s\n",
+    fprintf(stderr, "Could not list workgroups: smb://: %s\n",
 	    strerror(errno));
 
     exit(1);
