@@ -1,13 +1,8 @@
 
-
-
-
-
-
 INTERNET-DRAFT                               Clifford Neuman
                                                    John Kohl
                                                Theodore Ts'o
-                                                 4 July 1997
+                                                11 July 1997
 
 
 
@@ -35,9 +30,10 @@ the Internet-Drafts Shadow  Directories  on  ds.internic.net
 West Coast), or munnari.oz.au (Pacific Rim).
 
      The distribution of this  memo  is  unlimited.   It  is
-filed  as  draft-ietf-cat-kerberos-r-00.txt,  and expires 4
-Januay   1998.    Please    send    comments    to    "krb-
-protocol@MIT.EDU."
+filed  as  draft-ietf-cat-kerberos-revisions-00.txt,  and expires 
+11 January 1998.  Please send comments to:
+
+   krb-protocol@MIT.EDU
 
 ABSTRACT
 
@@ -45,7 +41,7 @@ ABSTRACT
      This document provides an overview and specification of
 Version  5  of the Kerberos protocol, and updates RFC1510 to
 clarify aspects of the protocol and its  intended  use  that
-require  more  detailed  or clearer exlanation than was pro-
+require  more  detailed or clearer explanation than was pro-
 vided in RFC1510.  This document is intended  to  provide  a
 detailed description of the protocol, suitable for implemen-
 tation, together with descriptions of the appropriate use of
@@ -60,7 +56,8 @@ prior written permission of MIT.
 
 
 
-Overview                   - 1 -     Expires 4 January 1998
+Overview                   - 1 -     Expires 11 January 1998
+
 
 
 
@@ -72,8 +69,8 @@ Overview                   - 1 -     Expires 4 January 1998
 
 the  end  user,   system   administrator,   or   application
 developer.   Higher level papers describing Version 5 of the
-Kerberos system and documenting version 4  [12], are  avail-
-able eleswhere.
+Kerberos system [1] and documenting  version  4   [23],  are
+available elsewhere.
 
 OVERVIEW
 
@@ -85,8 +82,8 @@ col.
      The  motivations,  goals,  assumptions,  and  rationale
 behind most design decisions are treated cursorily; they are
 more fully described in a paper available in IEEE communica-
-tions  and  earlier  in  the  Kerberos portion of the Athena
-Technical Plan [1].  The  protocols  have  been  a  proposed
+tions  [1] and earlier in the Kerberos portion of the Athena
+Technical Plan [2].  The  protocols  have  been  a  proposed
 standard  and are being considered for advancement for draft
 standard through the IETF standard  process.   Comments  are
 encouraged  on  the presentation, but only minor refinements
@@ -99,12 +96,12 @@ to kerberos-request@MIT.EDU.  This mailing list is gatewayed
 onto   the  Usenet  as  the  group  comp.protocols.kerberos.
 Requests for further information,  including  documents  and
 code availability, may be sent to info-kerberos@MIT.EDU.
-8
+
 BACKGROUND
 
      The Kerberos model is based  in  part  on  Needham  and
-Schroeder's  trusted third-party authentication protocol [3]
-and on modifications suggested by  Denning  and  Sacco  [4].
+Schroeder's  trusted third-party authentication protocol [4]
+and on modifications suggested by  Denning  and  Sacco  [5].
 The  original design and implementation of Kerberos Versions
 1 through 4 was the work of two former Project Athena  staff
 members,  Steve  Miller of Digital Equipment Corporation and
@@ -115,18 +112,19 @@ Schiller, MIT Campus Network Manager.  Many other members of
 Project Athena have also contributed to  the  work  on  Ker-
 beros.
 
-     Version 5 of the Kerberos  protol  (described  in  this
+     Version 5 of the Kerberos protocol (described  in  this
 document)  has  evolved from Version 4 based on new require-
 ments and desires for features not available in  Version  4.
 The  design of Version 5 of the Kerberos protocol was led by
-Cifford Neuman and John Kohl with much input from  the  com-
+Clifford Neuman and John Kohl with much input from the  com-
 munity.  The development of the MIT reference implementation
 was led at MIT by John Kohl and Theodore T'so, with help and
 contributed  code  from  many others.  Reference implementa-
 tions of both version 4 and version 5 of Kerberos  are  pub-
 licly  available  and  commercial  implementations have been
 
-Overview                   - 2 -     Expires 4 January 1998
+Overview                   - 2 -     Expires 11 January 1998
+
 
 
 
@@ -139,7 +137,7 @@ Overview                   - 2 -     Expires 4 January 1998
 developed and are widely used.
 
      Details on the differences between Kerberos Versions  4
-and 5 can be found in [5].
+and 5 can be found in [6].
 
 1.  Introduction
 
@@ -155,11 +153,11 @@ forms  authentication  under  these  conditions as a trusted
 third-party authentication  service  by  using  conventional
 (shared secret key[2])  cryptography.   Kerberos  extensions
 have  been proposed and implemented that provide for the use
-of public  key  crtography  during  certain  phases  of  the
+of public key cryptography  during  certain  phases  of  the
 authentication   protocol.   These  extensions  provide  for
 authentication of users registered with public key  certifi-
 cation  authorities, and allow the system to provide certain
-benefits of public key crytography in situations where  they
+benefits of public key cryptography in situations where they
 are needed.
 
      The basic Kerberos authentication process  proceeds  as
@@ -191,7 +189,8 @@ one has a public and a private key.
 
 
 
-Section 1.                 - 3 -     Expires 4 January 1998
+Section 1.                 - 3 -     Expires 11 January 1998
+
 
 
 
@@ -257,7 +256,8 @@ proves  that it was generated by a party possessing the ses-
 sion key.  Since no one except the requesting principal  and
 
 
-Section 1.                 - 4 -     Expires 4 January 1998
+Section 1.                 - 4 -     Expires 11 January 1998
+
 
 
 
@@ -322,7 +322,8 @@ numbers of clients this becomes  cumbersome,  and  more
 automatic methods as described here are necessary.
 
 
-Section 1.1.               - 5 -     Expires 4 January 1998
+Section 1.1.               - 5 -     Expires 11 January 1998
+
 
 
 
@@ -383,12 +384,13 @@ service.
 as  application specific access control functions and may be
 based on  files  such  as  the  application  server,  or  on
 separately  issued  authorization  credentials such as those
-based on proxies [6] , or on other authorization services.
+based on proxies [7] , or on other authorization services.
 
      Applications should  not  be  modified  to  accept  the
 issuance of a service ticket by the Kerberos server (even by
 
-Section 1.2.               - 6 -     Expires 4 January 1998
+Section 1.2.               - 6 -     Expires 11 January 1998
+
 
 
 
@@ -454,7 +456,8 @@ which it can properly function:
 
 
 
-Section 1.3.               - 7 -     Expires 4 January 1998
+Section 1.3.               - 7 -     Expires 11 January 1998
+
 
 
 
@@ -520,7 +523,8 @@ Client              A process that makes use  of  a  network
 
 
 
-Section 1.4.               - 8 -     Expires 4 January 1998
+Section 1.4.               - 8 -     Expires 11 January 1998
+
 
 
 
@@ -586,7 +590,8 @@ Secret key          An encryption key shared by a  principal
                     principal, the  secret  key  is  derived
 
 
-Section 1.4.               - 9 -     Expires 4 January 1998
+Section 1.4.               - 9 -     Expires 11 January 1998
+
 
 
 
@@ -652,7 +657,8 @@ password-changing program) can insist that this flag be  set
 in  any  tickets  they  accept, and thus be assured that the
 
 
-Section 2.1.               - 10 -    Expires 4 January 1998
+Section 2.1.               - 10 -    Expires 11 January 1998
+
 
 
 
@@ -718,7 +724,8 @@ section 3.3).  It can  usually  be  ignored  by  application
 servers.   However,  some  particularly  careful application
 
 
-Section 2.3.               - 11 -    Expires 4 January 1998
+Section 2.3.               - 11 -    Expires 11 January 1998
+
 
 
 
@@ -784,7 +791,8 @@ ticket to the KDC to be validated before use.
 service  to perform an operation on its behalf.  The service
 
 
-Section 2.5.               - 12 -    Expires 4 January 1998
+Section 2.5.               - 12 -    Expires 11 January 1998
+
 
 
 
@@ -849,7 +857,8 @@ __________________________
 ets with no network addresses specified.
 
 
-Section 2.6.               - 13 -    Expires 4 January 1998
+Section 2.6.               - 13 -    Expires 11 January 1998
+
 
 
 
@@ -914,8 +923,8 @@ tem,  the  credentials  obtained in the AS exchange may
 first be used in a TGS exchange to  obtain  credentials
 
 
-Section 3.1.               - 14 -    Expires 4 January 1998
-
+Section 3.1.               - 14 -    Expires 11 January 1998
+
 
 
 
@@ -980,7 +989,8 @@ tion of the Client/Server exchange.
 
 
 
-Section 3.1.               - 15 -    Expires 4 January 1998
+Section 3.1.               - 15 -    Expires 11 January 1998
+
 
 
 
@@ -1046,7 +1056,8 @@ generates a "random" session key[7].
 __________________________
 
 
-Section 3.1.3.             - 16 -    Expires 4 January 1998
+Section 3.1.3.             - 16 -    Expires 11 January 1998
+
 
 
 
@@ -1112,7 +1123,8 @@ one based on measurements of random physical phenomena.
 
 
 
-Section 3.1.3.             - 17 -    Expires 4 January 1998
+Section 3.1.3.             - 17 -    Expires 11 January 1998
+
 
 
 
@@ -1178,7 +1190,8 @@ of the response, and encrypts the  ciphertext  part  in  the
 client's  key  using  the  requested  encryption method, and
 
 
-Section 3.1.3.             - 18 -    Expires 4 January 1998
+Section 3.1.3.             - 18 -    Expires 11 January 1998
+
 
 
 
@@ -1244,7 +1257,8 @@ Client to Application server              KRB_AP_REQ      5.5.1
 
 
 
-Section 3.2.               - 19 -    Expires 4 January 1998
+Section 3.2.               - 19 -    Expires 11 January 1998
+
 
 
 
@@ -1309,7 +1323,8 @@ duplicate.
 
 
 
-Section 3.2.2.             - 20 -    Expires 4 January 1998
+Section 3.2.2.             - 20 -    Expires 11 January 1998
+
 
 
 
@@ -1371,10 +1386,11 @@ extracted from the decrypted ticket.  If decryption shows it
 to have been modified, the KRB_AP_ERR_BAD_INTEGRITY error is
 __________________________
 [10] This is used for  user-to-user  authentication  as
-described in  [7].
+described in  [8].
 
 
-Section 3.2.3.             - 21 -    Expires 4 January 1998
+Section 3.2.3.             - 21 -    Expires 11 January 1998
+
 
 
 
@@ -1439,7 +1455,8 @@ ticators rejected if the time  and  microsecond  fields
 happen to match some other client's authenticator.
 
 
-Section 3.2.3.             - 22 -    Expires 4 January 1998
+Section 3.2.3.             - 22 -    Expires 11 January 1998
+
 
 
 
@@ -1504,7 +1521,8 @@ the sub-session key is not used, even if present in the
 Authenticator.
 
 
-Section 3.2.5.             - 23 -    Expires 4 January 1998
+Section 3.2.5.             - 23 -    Expires 11 January 1998
+
 
 
 
@@ -1569,7 +1587,8 @@ and random numbers and to generate a negotiated key  to
 be returned in the KRB_AP_REP message.
 
 
-Section 3.2.6.             - 24 -    Expires 4 January 1998
+Section 3.2.6.             - 24 -    Expires 11 January 1998
+
 
 
 
@@ -1635,7 +1654,8 @@ session key from the Authenticator (part of the  authentica-
 tion  header).  The KRB_ERROR message contains an error code
 
 
-Section 3.3.               - 25 -    Expires 4 January 1998
+Section 3.3.               - 25 -    Expires 11 January 1998
+
 
 
 
@@ -1700,7 +1720,8 @@ cation server to the client.
 
 
 
-Section 3.3.1.             - 26 -    Expires 4 January 1998
+Section 3.3.1.             - 26 -    Expires 11 January 1998
+
 
 
 
@@ -1765,7 +1786,8 @@ dom  number  and  XOR  it with the session key from the
 ticket-granting ticket.
 
 
-Section 3.3.2.             - 27 -    Expires 4 January 1998
+Section 3.3.2.             - 27 -    Expires 11 January 1998
+
 
 
 
@@ -1831,7 +1853,8 @@ flag  is  set in the TGT.  The PROXY option is similar;  the
 resulting ticket will contain the addresses specified by the
 
 
-Section 3.3.3.             - 28 -    Expires 4 January 1998
+Section 3.3.3.             - 28 -    Expires 11 January 1998
+
 
 
 
@@ -1890,13 +1913,14 @@ the ticket, and that the renew_till time  is  still  in  the
 future.   If  the VALIDATE option is rqeuested, the KDC will
 __________________________
 [17] This allows easy  implementation  of  user-to-user
-authentication  [7],  which uses ticket-granting ticket
+authentication  [8],  which uses ticket-granting ticket
 session keys in lieu of secret server  keys  in  situa-
 tions  where  such secret keys could be easily comprom-
 ised.
 
 
-Section 3.3.3.             - 29 -    Expires 4 January 1998
+Section 3.3.3.             - 29 -    Expires 11 January 1998
+
 
 
 
@@ -1962,7 +1986,8 @@ of the existing encoding).
 
 
 
-Section 3.3.3.2.           - 30 -    Expires 4 January 1998
+Section 3.3.3.2.           - 30 -    Expires 11 January 1998
+
 
 
 
@@ -2027,7 +2052,8 @@ the  first  listed  realm  is considered to be the null
 realm ("").
 
 
-Section 3.3.3.2.           - 31 -    Expires 4 January 1998
+Section 3.3.3.2.           - 31 -    Expires 11 January 1998
+
 
 
 
@@ -2092,7 +2118,8 @@ the transited field, and the  server's  realm  is  con-
 sidered to follow them.
 
 
-Section 3.4.1.             - 32 -    Expires 4 January 1998
+Section 3.4.1.             - 32 -    Expires 11 January 1998
+
 
 
 
@@ -2158,7 +2185,7 @@ the  Authenticator  match   any   recently-seen   (sent   or
 received[20] ) such tuples, the KRB_AP_ERR_REPEAT  error  is
 __________________________
 [20] This means that a client and server running on the
-
+
 
 
 
@@ -2223,7 +2250,8 @@ cache to detect KRB_SAFE replays.
 
 
 
-Section 3.5.2.             - 34 -    Expires 4 January 1998
+Section 3.5.2.             - 34 -    Expires 11 January 1998
+
 
 
 
@@ -2289,7 +2317,8 @@ negotiation has occured).
 When an application receives a KRB_CRED message, it verifies
 
 
-Section 3.6.2.             - 35 -    Expires 4 January 1998
+Section 3.6.2.             - 35 -    Expires 11 January 1998
+
 
 
 
@@ -2354,7 +2383,8 @@ recommend against such strategies,  as  they  can  make
 system management and threat analysis quite complex.
 
 
-Section 4.1.               - 36 -    Expires 4 January 1998
+Section 4.1.               - 36 -    Expires 11 January 1998
+
 
 
 
@@ -2420,7 +2450,8 @@ attributes   Bit field of attributes
 mod_date     Timestamp of last modification
 
 
-Section 4.2.               - 37 -    Expires 4 January 1998
+Section 4.2.               - 37 -    Expires 11 January 1998
+
 
 
 
@@ -2453,7 +2484,7 @@ operations  involving  the  principal.   This field might be
 useful in conjunction with user registration procedures, for
 site-specific   policy   implementations   (Project   Athena
 currently uses it for their user registration  process  con-
-trolled  by the system-wide database service, Moira [8]), to
+trolled  by the system-wide database service, Moira [9]), to
 identify whether a principal can play the role of  a  client
 or  server  or both, to note whether a server is appropriate
 trusted to recieve credentials delegated by a client, or  to
@@ -2485,7 +2516,8 @@ __________________________
 5.4.2 for details on why this can be useful.
 
 
-Section 4.3.               - 38 -    Expires 4 January 1998
+Section 4.3.               - 38 -    Expires 11 January 1998
+
 
 
 
@@ -2545,13 +2577,14 @@ them, appear in section 6.
 
      All uses of  ASN.1  in  Kerberos  shall  use  the  Dis-
 tinguished  Encoding  Representation of the data elements as
-described in the X.509 specification, section 8.7  [9].
+described in the X.509 specification, section 8.7  [10].
 
 
 
 
 
-Section 5.1.               - 39 -    Expires 4 January 1998
+Section 5.1.               - 39 -    Expires 11 January 1998
+
 
 
 
@@ -2617,7 +2650,8 @@ seconds after 9 pm on 6 November 1985 is 19851106210627Z.
                      address[1]               OCTET STRING
 
 
-Section 5.2.               - 40 -    Expires 4 January 1998
+Section 5.2.               - 40 -    Expires 11 January 1998
+
 
 
 
@@ -2684,7 +2718,8 @@ ad-type   This field specifies the format  for  the  ad-data
                             initial(9),
 
 
-Section 5.2.               - 41 -    Expires 4 January 1998
+Section 5.2.               - 41 -    Expires 11 January 1998
+
 
 
 
@@ -2736,10 +2771,10 @@ Section 5.2.               - 41 -    Expires 4 January 1998
           bit strings of different length should  treat  the
           smaller  string  as  if  it were padded with zeros
           beyond the high order bits to the  length  of  the
-          longer string
+          longer string[23].
 
 __________________________
-[22] Warning for implementations that unpack and repack
+[23] Warning for implementations that unpack and repack
 data  structures during the generation and verification
 of embedded checksums: Because any checksums applied to
 data  structures  must  be checked against the original
@@ -2750,7 +2785,8 @@ checksum is verified.
 
 
 
-Section 5.2.               - 42 -    Expires 4 January 1998
+Section 5.2.               - 42 -    Expires 11 January 1998
+
 
 
 
@@ -2816,7 +2852,8 @@ Ticket ::=                    [APPLICATION 1] SEQUENCE {
 }
 
 
-Section 5.3.1.             - 43 -    Expires 4 January 1998
+Section 5.3.1.             - 43 -    Expires 11 January 1998
+
 
 
 
@@ -2827,23 +2864,23 @@ Section 5.3.1.             - 43 -    Expires 4 January 1998
 
 
 -- Encrypted part of ticket
-EncTicketPart ::=             [APPLICATION 3] SEQUENCE {
-                              flags[0]                     TicketFlags,
-                              key[1]                       EncryptionKey,
-                              crealm[2]                    Realm,
-                              cname[3]                     PrincipalName,
-                              transited[4]                 TransitedEncoding,
-                              authtime[5]                  KerberosTime,
-                              starttime[6]                 KerberosTime OPTIONAL,
-                              endtime[7]                   KerberosTime,
-                              renew-till[8]                KerberosTime OPTIONAL,
-                              caddr[9]                     HostAddresses OPTIONAL,
-                              authorization-data[10]       AuthorizationData OPTIONAL
+EncTicketPart ::= [APPLICATION 3] SEQUENCE {
+                  flags[0]                     TicketFlags,
+                  key[1]                       EncryptionKey,
+                  crealm[2]                    Realm,
+                  cname[3]                     PrincipalName,
+                  transited[4]                 TransitedEncoding,
+                  authtime[5]                  KerberosTime,
+                  starttime[6]                 KerberosTime OPTIONAL,
+                  endtime[7]                   KerberosTime,
+                  renew-till[8]                KerberosTime OPTIONAL,
+                  caddr[9]                     HostAddresses OPTIONAL,
+                  authorization-data[10]       AuthorizationData OPTIONAL
 }
 -- encoded Transited field
-TransitedEncoding ::=         SEQUENCE {
-                              tr-type[0]                   INTEGER, -- must be registered
-                              contents[1]                  OCTET STRING
+TransitedEncoding ::=   SEQUENCE {
+                        tr-type[0]             INTEGER, -- must be registered
+                        contents[1]            OCTET STRING
 }
 
 The encoding of EncTicketPart is encrypted in the key shared
@@ -2882,7 +2919,81 @@ flags     This field indicates which of various options were
           section 2.  The meanings of the flags are:
 
 
-Section 5.3.1.             - 44 -    Expires 4 January 1998
+Section 5.3.1.             - 44 -    Expires 11 January 1998
+
+
+
+
+
+            Version 5 - Specification Revision 6
+
+
+     Bit(s)      Name         Description
+
+     0           RESERVED
+                              Reserved for future  expansion  of  this
+                              field.
+
+     1           FORWARDABLE 
+                              The FORWARDABLE flag  is  normally  only
+                              interpreted  by  the  TGS,  and  can  be
+                              ignored by end servers.  When set,  this
+                              flag  tells  the  ticket-granting server
+                              that it is OK to  issue  a  new  ticket-
+                              granting ticket with a different network
+                              address based on the presented ticket.
+
+     2           FORWARDED   
+                              When set, this flag indicates  that  the
+                              ticket  has either been forwarded or was
+                              issued based on authentication involving
+                              a forwarded ticket-granting ticket.
+
+     3           PROXIABLE   
+                              The  PROXIABLE  flag  is  normally  only
+                              interpreted  by  the  TGS,  and  can  be
+                              ignored by end servers.   The  PROXIABLE
+                              flag  has an interpretation identical to
+                              that of  the  FORWARDABLE  flag,  except
+                              that   the   PROXIABLE  flag  tells  the
+                              ticket-granting server  that  only  non-
+                              ticket-granting  tickets  may  be issued
+                              with different network addresses.
+
+     4           PROXY       
+                              When set, this  flag  indicates  that  a
+                              ticket is a proxy.
+
+     5           MAY-POSTDATE 
+                              The MAY-POSTDATE flag is  normally  only
+                              interpreted  by  the  TGS,  and  can  be
+                              ignored by end servers.  This flag tells
+                              the  ticket-granting server that a post-
+                              dated ticket may be issued based on this
+                              ticket-granting ticket.
+
+     6           POSTDATED    
+                              This flag indicates that this ticket has
+                              been  postdated.   The  end-service  can
+                              check the authtime field to see when the
+                              original authentication occurred.
+
+     7           INVALID      
+                              This flag indicates  that  a  ticket  is
+                              invalid, and it must be validated by the
+                              KDC  before  use.   Application  servers
+                              must reject tickets which have this flag
+                              set.
+
+
+
+
+
+
+
+
+Section 5.3.1.             - 45 -    Expires 11 January 1998
+
 
 
 
@@ -2892,71 +3003,44 @@ Section 5.3.1.             - 44 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          Bit(s)           Name              Description
+     8           RENEWABLE                        
+                              The  RENEWABLE  flag  is  normally  only
+                              interpreted  by the TGS, and can usually
+                              be ignored by end servers (some particu-
+                              larly careful servers may wish to disal-
+                              low  renewable  tickets).   A  renewable
+                              ticket  can be used to obtain a replace-
+                              ment ticket  that  expires  at  a  later
+                              date.
 
-          0                RESERVED
-                                             Reserved for future  expansion  of  this
-                                             field.
+     9           INITIAL                    
+                              This flag indicates that this ticket was
+                              issued  using  the  AS protocol, and not
+                              issued  based   on   a   ticket-granting
+                              ticket.
 
-          1                FORWARDABLE
-                                             The FORWARDABLE flag  is  normally  only
-                                             interpreted  by  the  TGS,  and  can  be
-                                             ignored by end servers.  When set,  this
-                                             flag  tells  the  ticket-granting server
-                                             that it is OK to  issue  a  new  ticket-
-                                             granting ticket with a different network
-                                             address based on the presented ticket.
+     10          PRE-AUTHENT              
+                              This flag indicates that during  initial
+                              authentication, the client was authenti-
+                              cated by the KDC  before  a  ticket  was
+                              issued.    The   strength  of  the  pre-
+                              authentication method is not  indicated,
+                              but is acceptable to the KDC.
 
-          2                FORWARDED
-                                             When set, this flag indicates  that  the
-                                             ticket  has either been forwarded or was
-                                             issued based on authentication involving
-                                             a forwarded ticket-granting ticket.
-
-          3                PROXIABLE
-                                             The  PROXIABLE  flag  is  normally  only
-                                             interpreted  by  the  TGS,  and  can  be
-                                             ignored by end servers.   The  PROXIABLE
-                                             flag  has an interpretation identical to
-                                             that of  the  FORWARDABLE  flag,  except
-                                             that   the   PROXIABLE  flag  tells  the
-                                             ticket-granting server  that  only  non-
-                                             ticket-granting  tickets  may  be issued
-                                             with different network addresses.
-
-          4                PROXY
-                                             When set, this  flag  indicates  that  a
-                                             ticket is a proxy.
-
-          5                MAY-POSTDATE
-                                             The MAY-POSTDATE flag is  normally  only
-                                             interpreted  by  the  TGS,  and  can  be
-                                             ignored by end servers.  This flag tells
-                                             the  ticket-granting server that a post-
-                                             dated ticket may be issued based on this
-                                             ticket-granting ticket.
-
-          6                POSTDATED
-                                             This flag indicates that this ticket has
-                                             been  postdated.   The  end-service  can
-                                             check the authtime field to see when the
-                                             original authentication occurred.
-
-          7                INVALID
-                                             This flag indicates  that  a  ticket  is
-                                             invalid, and it must be validated by the
-                                             KDC  before  use.   Application  servers
-                                             must reject tickets which have this flag
-                                             set.
+     11          HW-AUTHENT                    
+                              This flag indicates  that  the  protocol
+                              employed   for   initial  authentication
+                              required the use of hardware expected to
+                              be possessed solely by the named client.
+                              The hardware  authentication  method  is
+                              selected  by the KDC and the strength of
+                              the method is not indicated.
 
 
 
 
-
-
-
-
-Section 5.3.1.             - 45 -    Expires 4 January 1998
+Section 5.3.1.             - 46 -    Expires 11 January 1998
+
 
 
 
@@ -2966,41 +3050,24 @@ Section 5.3.1.             - 45 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          8                RENEWABLE
-                                             The  RENEWABLE  flag  is  normally  only
-                                             interpreted  by the TGS, and can usually
-                                             be ignored by end servers (some particu-
-                                             larly careful servers may wish to disal-
-                                             low  renewable  tickets).   A  renewable
-                                             ticket  can be used to obtain a replace-
-                                             ment ticket  that  expires  at  a  later
-                                             date.
+     12           TRANSITED   This flag indicates that the KDC for the
+             POLICY-CHECKED   realm has checked the transited field
+			      against a realm defined policy for
+			      trusted certifiers.  If this flag is
+			      reset (0), then the application server
+			      must check the transited field itself,
+			      and if unable to do so it must reject
+			      the authentication.  If the flag is set
+			      (1) then the application server may skip
+			      its own validation of the transited
+			      field, relying on the validation
+			      performed by the KDC.  At its option the
+			      application server may still apply its
+			      own validation based on a separate
+			      policy for acceptance.
 
-          9                INITIAL
-                                             This flag indicates that this ticket was
-                                             issued  using  the  AS protocol, and not
-                                             issued  based   on   a   ticket-granting
-                                             ticket.
-
-          10               PRE-AUTHENT
-                                             This flag indicates that during  initial
-                                             authentication, the client was authenti-
-                                             cated by the KDC  before  a  ticket  was
-                                             issued.    The   strength  of  the  pre-
-                                             authentication method is not  indicated,
-                                             but is acceptable to the KDC.
-
-          11               HW-AUTHENT
-                                             This flag indicates  that  the  protocol
-                                             employed   for   initial  authentication
-                                             required the use of hardware expected to
-                                             be possessed solely by the named client.
-                                             The hardware  authentication  method  is
-                                             selected  by the KDC and the strength of
-                                             the method is not indicated.
-
-
-Section 5.3.1.             - 46 -    Expires 4 January 1998
+Section 5.3.1.             - 47 -    Expires 11 January 1998
+
 
 
 
@@ -3010,42 +3077,28 @@ Section 5.3.1.             - 46 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          12               TRANSITED-POLICY-CHECKED
-
-		  This flag indicates that the KDC for the realm has checked the
-		  transited field against a realm defined policy for trusted certifiers.
-		  If this flag is reset (0), then the application server must check the
-		  transited field itself, and if unable to do so it must reject the
-		  authentication.  If the flag is set (1) then the application
-		  server may skip its own validation of the tran- sited field, relying
-		  on the validation performed by the KDC.  At its option the
-		  application server may still apply its own validation based on a
-		  separate policy for acceptance.
-
-Section 5.3.1.             - 47 -    Expires 4 January 1998
-
-
-
-
-
-
-            Version 5 - Specification Revision 6
+     13      OK-AS-DELEGATE   This flag indicates that the server (not
+			      the client) specified in the ticket has
+			      been determined by policy of the realm
+			      to be a suitable recipient of
+			      delegation.  A client can use the
+			      presence of this flag to help it make a
+			      decision whether to delegate credentials
+			      (either grant a proxy or a forwarded
+			      ticket granting ticket) to this server.
+			      The client is free to ignore the value
+			      of this flag.  When setting this flag,
+			      an administrator should consider the
+			      security and placement of the server on
+			      which the service will run, as well as
+			      whether the service requires the use of
+			      delegated credentials.
 
 
-          13               OK-AS-DELEGATE
-
-		 This flag indicates that the server (not the client) speci- fied in
-		 the ticket has been determined by policy of the realm to be a suitable
-		 recipient of delegation.  A client can use the presence of this
-		 flag to help it make a decision whether to delegate credentials
-		 (either grant a proxy or a forwarded ticket granting ticket) to this
-		 server.  The client is free to ignore the value of this flag.  When
-		 setting this flag, an administrator should consider the security and
-		 placement of the server on which the service will run, as well as
-		 whether the service requires the use of delegated credentials.
 
 
-Section 5.3.1.             - 48 -    Expires 4 January 1998
+Section 5.3.1.             - 48 -    Expires 11 January 1998
+
 
 
 
@@ -3055,23 +3108,23 @@ Section 5.3.1.             - 48 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          14               ANONYMOUS
-                                             This flag indicates that  the  principal
-                                             named in the ticket is a generic princi-
-                                             pal for the realm and does not  identify
-                                             the  individual  using  the ticket.  The
-                                             purpose  of  the  ticket  is   only   to
-                                             securely  distribute  a session key, and
-                                             not to identify  the  user.   Subsequent
-                                             requests  using the same ticket and ses-
-                                             sion may be  considered  as  originating
-                                             from  the  same  user, but requests with
-                                             the same username but a different ticket
-                                             are  likely  to originate from different
-                                             users.
+     14          ANONYMOUS                
+                              This flag indicates that  the  principal
+                              named in the ticket is a generic princi-
+                              pal for the realm and does not  identify
+                              the  individual  using  the ticket.  The
+                              purpose  of  the  ticket  is   only   to
+                              securely  distribute  a session key, and
+                              not to identify  the  user.   Subsequent
+                              requests  using the same ticket and ses-
+                              sion may be  considered  as  originating
+                              from  the  same  user, but requests with
+                              the same username but a different ticket
+                              are  likely  to originate from different
+                              users.
 
-          15-31            RESERVED
-                                             Reserved for future use.
+     15-31       RESERVED                
+                              Reserved for future use.
 
 
 
@@ -3113,7 +3166,8 @@ authtime  This field indicates the time of initial authenti-
           the    response    to    initial    authentication
 
 
-Section 5.3.1.             - 49 -    Expires 4 January 1998
+Section 5.3.1.             - 49 -    Expires 11 January 1998
+
 
 
 
@@ -3124,7 +3178,7 @@ Section 5.3.1.             - 49 -    Expires 4 January 1998
 
 
           (KRB_AS_REP), this is the current time on the Ker-
-          beros server[23].
+          beros server[24].
 
 
 starttime This field in the ticket specifies the time  after
@@ -3172,13 +3226,14 @@ caddr     This field in a ticket contains zero (if  omitted)
           credentials.  Because the session key is not  sent
           over  the  network in cleartext, credentials can't
 __________________________
-[23] It is NOT recommended that this time value be used
+[24] It is NOT recommended that this time value be used
 to adjust the workstation's clock since the workstation
 cannot reliably determine that such a KRB_AS_REP  actu-
 ally came from the proper KDC in a timely manner.
 
 
-Section 5.3.1.             - 50 -    Expires 4 January 1998
+Section 5.3.1.             - 50 -    Expires 11 January 1998
+
 
 
 
@@ -3244,7 +3299,8 @@ authorization-data
 
 
 
-Section 5.3.1.             - 51 -    Expires 4 January 1998
+Section 5.3.1.             - 51 -    Expires 11 January 1998
+
 
 
 
@@ -3280,11 +3336,12 @@ Section 5.3.1.             - 51 -    Expires 4 January 1998
           Similarly, if one specifies the authorization-data
           field  of  a  proxy  and leaves the host addresses
           blank, the resulting ticket and session key can be
-          treated  as  a  capability.  See [6] for some sug-
+          treated  as  a  capability.  See [7] for some sug-
           gested uses of this field.
 
           The authorization-data field is optional and  does
           not have to be included in a ticket.
+
 
 5.3.2.  Authenticators
 
@@ -3296,21 +3353,22 @@ session.  The encoding is encrypted in the ticket's  session
 key shared by the client and the server:
 
 -- Unencrypted authenticator
-Authenticator ::=              [APPLICATION 2] SEQUENCE  {
-                               authenticator-vno[0]          INTEGER,
-                               crealm[1]                     Realm,
-                               cname[2]                      PrincipalName,
-                               cksum[3]                      Checksum OPTIONAL,
-                               cusec[4]                      INTEGER,
-                               ctime[5]                      KerberosTime,
-                               subkey[6]                     EncryptionKey OPTIONAL,
-                               seq-number[7]                 INTEGER OPTIONAL,
-                               authorization-data[8]         AuthorizationData OPTIONAL
+Authenticator ::= [APPLICATION 2] SEQUENCE  {
+                  authenticator-vno[0]          INTEGER,
+                  crealm[1]                     Realm,
+                  cname[2]                      PrincipalName,
+                  cksum[3]                      Checksum OPTIONAL,
+                  cusec[4]                      INTEGER,
+                  ctime[5]                      KerberosTime,
+                  subkey[6]                     EncryptionKey OPTIONAL,
+                  seq-number[7]                 INTEGER OPTIONAL,
+                  authorization-data[8]         AuthorizationData OPTIONAL
 }
 
 
 
-Section 5.3.2.             - 52 -    Expires 4 January 1998
+Section 5.3.2.             - 52 -    Expires 11 January 1998
+
 
 
 
@@ -3376,7 +3434,8 @@ seq-numberThis optional field includes the initial  sequence
 
 
 
-Section 5.3.2.             - 53 -    Expires 4 January 1998
+Section 5.3.2.             - 53 -    Expires 11 January 1998
+
 
 
 
@@ -3415,34 +3474,36 @@ AS-REQ ::=         [APPLICATION 10] KDC-REQ
 TGS-REQ ::=        [APPLICATION 12] KDC-REQ
 
 KDC-REQ ::=        SEQUENCE {
-                   pvno[1]                       INTEGER,
-                   msg-type[2]                   INTEGER,
-                   padata[3]                     SEQUENCE OF PA-DATA OPTIONAL,
-                   req-body[4]                   KDC-REQ-BODY
+                   pvno[1]            INTEGER,
+                   msg-type[2]        INTEGER,
+                   padata[3]          SEQUENCE OF PA-DATA OPTIONAL,
+                   req-body[4]        KDC-REQ-BODY
 }
 
 PA-DATA ::=        SEQUENCE {
-                   padata-type[1]                INTEGER,
-                   padata-value[2]               OCTET STRING,
-                                                 -- might be encoded AP-REQ
+                   padata-type[1]     INTEGER,
+                   padata-value[2]    OCTET STRING,
+                                      -- might be encoded AP-REQ
 }
 
 KDC-REQ-BODY ::=   SEQUENCE {
-                    kdc-options[0]               KDCOptions,
-                    cname[1]                     PrincipalName OPTIONAL,
-                                                 -- Used only in AS-REQ
-                    realm[2]                     Realm, -- Server's realm
-                                                 -- Also client's in AS-REQ
-                    sname[3]                     PrincipalName OPTIONAL,
-                    from[4]                      KerberosTime OPTIONAL,
-                    till[5]                      KerberosTime OPTIONAL,
-                    rtime[6]                     KerberosTime OPTIONAL,
-                    nonce[7]                     INTEGER,
-                    etype[8]                     SEQUENCE OF INTEGER, -- EncryptionType,
-                                                 -- in preference order
+                    kdc-options[0]         KDCOptions,
+                    cname[1]               PrincipalName OPTIONAL,
+                                           -- Used only in AS-REQ
+                    realm[2]               Realm, -- Server's realm
+                                           -- Also client's in AS-REQ
+                    sname[3]               PrincipalName OPTIONAL,
+                    from[4]                KerberosTime OPTIONAL,
+                    till[5]                KerberosTime OPTIONAL,
+                    rtime[6]               KerberosTime OPTIONAL,
+                    nonce[7]               INTEGER,
+                    etype[8]               SEQUENCE OF INTEGER, 
+                                           -- EncryptionType,
+                                           -- in preference order
 
 
-Section 5.4.1.             - 54 -    Expires 4 January 1998
+Section 5.4.1.             - 54 -    Expires 11 January 1998
+
 
 
 
@@ -3452,10 +3513,11 @@ Section 5.4.1.             - 54 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-                    addresses[9]                 HostAddresses OPTIONAL,
-                    enc-authorization-data[10]   EncryptedData OPTIONAL,
-                                                 -- Encrypted AuthorizationData encoding
-                    additional-tickets[11]       SEQUENCE OF Ticket OPTIONAL
+                    addresses[9]           HostAddresses OPTIONAL,
+                enc-authorization-data[10] EncryptedData OPTIONAL,
+                                           -- Encrypted AuthorizationData 
+                                           -- encoding
+                    additional-tickets[11] SEQUENCE OF Ticket OPTIONAL
 }
 
 The fields in this message are:
@@ -3501,14 +3563,15 @@ padata-type     ::= PA-ENC-TIMESTAMP
 padata-value    ::= EncryptedData -- PA-ENC-TS-ENC
 
 PA-ENC-TS-ENC   ::= SEQUENCE {
-                patimestamp[0]                       KerberosTime, -- client's time
-                pausec[1]                            INTEGER OPTIONAL
+                patimestamp[0]     KerberosTime, -- client's time
+                pausec[1]          INTEGER OPTIONAL
 }
 
           with patimestamp containing the client's time  and
 
 
-Section 5.4.1.             - 55 -    Expires 4 January 1998
+Section 5.4.1.             - 55 -    Expires 11 January 1998
+
 
 
 
@@ -3530,7 +3593,7 @@ Section 5.4.1.             - 55 -    Expires 4 January 1998
           response.   This  form of the padata is useful for
           supporting the use of  certain  token  cards  with
           Kerberos.   The  details  of  such  extensions are
-          specified in separate  documents.   See  [10]  for
+          specified in separate  documents.   See  [11]  for
           additional uses of this field.
 
 padata-type
@@ -3574,7 +3637,75 @@ kdc-options
 
 
 
-Section 5.4.1.             - 56 -    Expires 4 January 1998
+Section 5.4.1.             - 56 -    Expires 11 January 1998
+
+
+
+
+            Version 5 - Specification Revision 6
+
+
+   Bit(s)    Name                Description
+    0        RESERVED
+                                 Reserved for future  expansion  of  this
+                                 field.
+
+    1        FORWARDABLE
+                                 The FORWARDABLE  option  indicates  that
+                                 the  ticket  to be issued is to have its
+                                 forwardable flag set.  It  may  only  be
+                                 set on the initial request, or in a sub-
+                                 sequent request if  the  ticket-granting
+                                 ticket on which it is based is also for-
+                                 wardable.
+
+    2        FORWARDED
+                                 The FORWARDED option is  only  specified
+                                 in  a  request  to  the  ticket-granting
+                                 server and will only be honored  if  the
+                                 ticket-granting  ticket  in  the request
+                                 has  its  FORWARDABLE  bit  set.    This
+                                 option  indicates that this is a request
+                                 for forwarding.  The address(es) of  the
+                                 host  from which the resulting ticket is
+                                 to  be  valid  are   included   in   the
+                                 addresses field of the request.
+
+    3        PROXIABLE
+                                 The PROXIABLE option indicates that  the
+                                 ticket to be issued is to have its prox-
+                                 iable flag set.  It may only be  set  on
+                                 the  initial request, or in a subsequent
+                                 request if the ticket-granting ticket on
+                                 which it is based is also proxiable.
+
+    4        PROXY
+                                 The PROXY option indicates that this  is
+                                 a request for a proxy.  This option will
+                                 only be honored if  the  ticket-granting
+                                 ticket  in the request has its PROXIABLE
+                                 bit set.  The address(es)  of  the  host
+                                 from which the resulting ticket is to be
+                                  valid  are  included  in  the  addresses
+                                 field of the request.
+
+    5        ALLOW-POSTDATE
+                                 The ALLOW-POSTDATE option indicates that
+                                 the  ticket  to be issued is to have its
+                                 MAY-POSTDATE flag set.  It may  only  be
+                                 set on the initial request, or in a sub-
+                                 sequent request if  the  ticket-granting
+                                 ticket on which it is based also has its
+                                 MAY-POSTDATE flag set.
+
+
+
+
+
+
+
+Section 5.4.1.             - 57 -    Expires 11 January 1998
+
 
 
 
@@ -3584,141 +3715,77 @@ Section 5.4.1.             - 56 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          Bit(s)      Name                Description
+    6        POSTDATED
+                                 The POSTDATED option indicates that this
+                                 is  a  request  for  a postdated ticket.
+                                 This option will only be honored if  the
+                                 ticket-granting  ticket  on  which it is
+                                 based has  its  MAY-POSTDATE  flag  set.
+                                 The  resulting ticket will also have its
+                                 INVALID flag set, and that flag  may  be
+                                 reset by a subsequent request to the KDC
+                                 after the starttime in  the  ticket  has
+                                 been reached.
 
-          0           RESERVED
-                                          Reserved for future  expansion  of  this
-                                          field.
+    7        UNUSED
+                                 This option is presently unused.
 
-          1           FORWARDABLE
-                                          The FORWARDABLE  option  indicates  that
-                                          the  ticket  to be issued is to have its
-                                          forwardable flag set.  It  may  only  be
-                                          set on the initial request, or in a sub-
-                                          sequent request if  the  ticket-granting
-                                          ticket on which it is based is also for-
-                                          wardable.
+    8        RENEWABLE
+                                 The RENEWABLE option indicates that  the
+                                 ticket  to  be  issued  is  to  have its
+                                 RENEWABLE flag set.  It may only be  set
+                                 on  the  initial  request,  or  when the
+                                 ticket-granting  ticket  on  which   the
+                                 request  is based is also renewable.  If
+                                 this option is requested, then the rtime
+                                 field   in   the  request  contains  the
+                                 desired absolute expiration time for the
+                                 ticket.
 
-          2           FORWARDED
-                                          The FORWARDED option is  only  specified
-                                          in  a  request  to  the  ticket-granting
-                                          server and will only be honored  if  the
-                                          ticket-granting  ticket  in  the request
-                                          has  its  FORWARDABLE  bit  set.    This
-                                          option  indicates that this is a request
-                                          for forwarding.  The address(es) of  the
-                                          host  from which the resulting ticket is
-                                          to  be  valid  are   included   in   the
-                                          addresses field of the request.
+    9-13     UNUSED
+                                 These options are presently unused.
 
-          3           PROXIABLE
-                                          The PROXIABLE option indicates that  the
-                                          ticket to be issued is to have its prox-
-                                          iable flag set.  It may only be  set  on
-                                          the  initial request, or in a subsequent
-                                          request if the ticket-granting ticket on
-                                          which it is based is also proxiable.
+    14       REQUEST-ANONYMOUS
+                                 The REQUEST-ANONYMOUS  option  indicates
+                                 that  the  ticket to be issued is not to
+                                 identify  the  user  to  which  it   was
+                                 issued.  Instead, the principal identif-
+                                 ier is to be generic,  as  specified  by
+                                 the  policy  of  the realm (e.g. usually
+                                 anonymous@realm).  The  purpose  of  the
+                                 ticket  is only to securely distribute a
+                                 session key, and  not  to  identify  the
+                                 user.   The ANONYMOUS flag on the ticket
+                                 to be returned should be  set.   If  the
+                                 local  realms  policy  does  not  permit
+                                 anonymous credentials, the request is to
+                                 be rejected.
 
-          4           PROXY
-                                          The PROXY option indicates that this  is
-                                          a request for a proxy.  This option will
-                                          only be honored if  the  ticket-granting
-                                          ticket  in the request has its PROXIABLE
-                                          bit set.  The address(es)  of  the  host
-                                          from which the resulting ticket is to be
-                                          valid  are  included  in  the  addresses
-                                          field of the request.
+    15-25    RESERVED
+                                 Reserved for future use.
 
-          5           ALLOW-POSTDATE
-                                          The ALLOW-POSTDATE option indicates that
-                                          the  ticket  to be issued is to have its
-                                          MAY-POSTDATE flag set.  It may  only  be
-                                          set on the initial request, or in a sub-
-                                          sequent request if  the  ticket-granting
-                                          ticket on which it is based also has its
-                                          MAY-POSTDATE flag set.
-
-
-
-
-
-
-
-
-
-Section 5.4.1.             - 57 -    Expires 4 January 1998
-
-
-
-
-
-
-            Version 5 - Specification Revision 6
-
-
-          6           POSTDATED
-                                          The POSTDATED option indicates that this
-                                          is  a  request  for  a postdated ticket.
-                                          This option will only be honored if  the
-                                          ticket-granting  ticket  on  which it is
-                                          based has  its  MAY-POSTDATE  flag  set.
-                                          The  resulting ticket will also have its
-                                          INVALID flag set, and that flag  may  be
-                                          reset by a subsequent request to the KDC
-                                          after the starttime in  the  ticket  has
-                                          been reached.
-
-          7           UNUSED
-                                          This option is presently unused.
-
-          8           RENEWABLE
-                                          The RENEWABLE option indicates that  the
-                                          ticket  to  be  issued  is  to  have its
-                                          RENEWABLE flag set.  It may only be  set
-                                          on  the  initial  request,  or  when the
-                                          ticket-granting  ticket  on  which   the
-                                          request  is based is also renewable.  If
-                                          this option is requested, then the rtime
-                                          field   in   the  request  contains  the
-                                          desired absolute expiration time for the
-                                          ticket.
-
-          9-13        UNUSED
-                                          These options are presently unused.
-
-          14          REQUEST-ANONYMOUS
-                                          The REQUEST-ANONYMOUS  option  indicates
-                                          that  the  ticket to be issued is not to
-                                          identify  the  user  to  which  it   was
-                                          issued.  Instead, the principal identif-
-                                          ier is to be generic,  as  specified  by
-                                          the  policy  of  the realm (e.g. usually
-                                          anonymous@realm).  The  purpose  of  the
-                                          ticket  is only to securely distribute a
-                                          session key, and  not  to  identify  the
-                                          user.   The ANONYMOUS flag on the ticket
-                                          to be returned should be  set.   If  the
-                                          local  realms  policy  does  not  permit
-                                          anonymous credentials, the request is to
-                                          be rejected.
-
-          15-25       RESERVED
-                                          Reserved for future use.
-
-          26 DISABLE-TRANSITED-CHECK 
-		By default the KDC will check the transited field of a
-		ticket-granting-ticket against the policy of the local realm before it
-		will issue derivative tickets based on the ticket granting ticket.  If
-		this flag is set in the request, checking of the transited field is
-		disabled.  Tickets issued without the performance of this check will
-		be noted by the reset (0) value of the TRANSITED-POLICY-CHECKED flag,
-		indicating to the application server that the tranisted field must be
-		checked locally.  KDC's are encouraged but not required to honor the
-		DISABLE-TRANSITED-CHECK option.
+    26       DISABLE-TRANSITED-CHECK
+				 By default the KDC will check the
+				 transited field of a ticket-granting-
+				 ticket against the policy of the local
+				 realm before it will issue derivative
+				 tickets based on the ticket granting
+				 ticket.  If this flag is set in the
+				 request, checking of the transited field
+				 is disabled.  Tickets issued without the
+				 performance of this check will be noted
+				 by the reset (0) value of the
+				 TRANSITED-POLICY-CHECKED flag,
+				 indicating to the application server
+				 that the tranisted field must be checked
+				 locally.  KDC's are encouraged but not
+				 required to honor the
+				 DISABLE-TRANSITED-CHECK option.
 
 
 
-Section 5.4.1.             - 58 -    Expires 4 January 1998
+Section 5.4.1.             - 58 -    Expires 11 January 1998
+
 
 
 
@@ -3728,68 +3795,67 @@ Section 5.4.1.             - 58 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-          27          RENEWABLE-OK
-                                          The RENEWABLE-OK option indicates that a
-                                          renewable ticket will be acceptable if a
-                                          ticket with the  requested  life  cannot
-                                          otherwise be provided.  If a ticket with
-                                          the requested life cannot  be  provided,
-                                          then  a  renewable  ticket may be issued
-                                          with  a  renew-till  equal  to  the  the
-                                          requested  endtime.   The  value  of the
-                                          renew-till field may still be limited by
-                                          local  limits, or limits selected by the
-                                          individual principal or server.
+    27       RENEWABLE-OK
+                                 The RENEWABLE-OK option indicates that a
+                                 renewable ticket will be acceptable if a
+                                 ticket with the  requested  life  cannot
+                                 otherwise be provided.  If a ticket with
+                                 the requested life cannot  be  provided,
+                                 then  a  renewable  ticket may be issued
+                                 with  a  renew-till  equal  to  the  the
+                                 requested  endtime.   The  value  of the
+                                 renew-till field may still be limited by
+                                 local  limits, or limits selected by the
+                                 individual principal or server.
 
-          28          ENC-TKT-IN-SKEY
-                                          This option is used only by the  ticket-
-                                          granting  service.   The ENC-TKT-IN-SKEY
-                                          option indicates that the ticket for the
-                                          end  server  is  to  be encrypted in the
-                                          session key from the additional  ticket-
-                                          granting ticket provided.
+    28       ENC-TKT-IN-SKEY
+                                 This option is used only by the  ticket-
+                                 granting  service.   The ENC-TKT-IN-SKEY
+                                 option indicates that the ticket for the
+                                 end  server  is  to  be encrypted in the
+                                 session key from the additional  ticket-
+                                 granting ticket provided.
 
-          29          RESERVED
-                                          Reserved for future use.
+    29       RESERVED
+                                 Reserved for future use.
 
-          30          RENEW
-                                          This option is used only by the  ticket-
-                                          granting   service.   The  RENEW  option
-                                          indicates that the  present  request  is
-                                          for  a  renewal.  The ticket provided is
-                                          encrypted in  the  secret  key  for  the
-                                          server  on  which  it  is  valid.   This
-                                          option  will  only  be  honored  if  the
-                                          ticket  to  be renewed has its RENEWABLE
-                                          flag set and if the time in  its  renew-
-                                          till  field  has not passed.  The ticket
-                                          to be renewed is passed  in  the  padata
-                                          field  as  part  of  the  authentication
-                                          header.
+    30       RENEW
+                                 This option is used only by the  ticket-
+                                 granting   service.   The  RENEW  option
+                                 indicates that the  present  request  is
+                                 for  a  renewal.  The ticket provided is
+                                 encrypted in  the  secret  key  for  the
+                                 server  on  which  it  is  valid.   This
+                                 option  will  only  be  honored  if  the
+                                 ticket  to  be renewed has its RENEWABLE
+                                 flag set and if the time in  its  renew-
+                                 till  field  has not passed.  The ticket
+                                 to be renewed is passed  in  the  padata
+                                 field  as  part  of  the  authentication
+                                 header.
 
-          31          VALIDATE
-                                          This option is used only by the  ticket-
-                                          granting  service.   The VALIDATE option
-                                          indicates that the request is  to  vali-
-                                          date  a  postdated ticket.  It will only
-                                          be honored if the  ticket  presented  is
-                                          postdated,  presently  has  its  INVALID
-                                          flag set, and would be otherwise  usable
-                                          at  this time.  A ticket cannot be vali-
-                                          dated before its starttime.  The  ticket
-                                          presented for validation is encrypted in
-                                          the key of the server for  which  it  is
-                                          valid  and is passed in the padata field
-                                          as part of the authentication header.
-
-
+    31       VALIDATE
+                                 This option is used only by the  ticket-
+                                 granting  service.   The VALIDATE option
+                                 indicates that the request is  to  vali-
+                                 date  a  postdated ticket.  It will only
+                                 be honored if the  ticket  presented  is
+                                 postdated,  presently  has  its  INVALID
+                                 flag set, and would be otherwise  usable
+                                 at  this time.  A ticket cannot be vali-
+                                 dated before its starttime.  The  ticket
+                                 presented for validation is encrypted in
+                                 the key of the server for  which  it  is
+                                 valid  and is passed in the padata field
+                                 as part of the authentication header.
 
 cname and sname
           These fields are the same as those  described  for
           the  ticket  in  section 5.3.1.  sname may only be
 
 
-Section 5.4.1.             - 59 -    Expires 4 January 1998
+Section 5.4.1.             - 59 -    Expires 11 January 1998
+
 
 
 
@@ -3850,11 +3916,12 @@ nonce     This  field  is  part  of  the  KDC  request   and
           and  has not been replayed by an attacker.  Nonces
           must never be re-used.  Ideally, it should be gen-
           erated randomly, but if the correct time is known,
-          it may suffice[24].
+          it may suffice[25].
 __________________________
-[24] Note, however, that if the time  is  used  as  the
+[25] Note, however, that if the time  is  used  as  the
 
-Section 5.4.1.             - 60 -    Expires 4 January 1998
+Section 5.4.1.             - 60 -    Expires 11 January 1998
+
 
 
 
@@ -3920,7 +3987,8 @@ that a nonce will be reused.
 
 
 
-Section 5.4.2.             - 61 -    Expires 4 January 1998
+Section 5.4.2.             - 61 -    Expires 11 January 1998
+
 
 
 
@@ -3957,22 +4025,24 @@ KDC-REP ::=   SEQUENCE {
 }
 
 
-EncASRepPart ::=    [APPLICATION 25[26]] EncKDCRepPart
+EncASRepPart ::=    [APPLICATION 25[27]] EncKDCRepPart
 EncTGSRepPart ::=   [APPLICATION 26] EncKDCRepPart
 
+
+
 EncKDCRepPart ::=   SEQUENCE {
-                    key[0]                               EncryptionKey,
-                    last-req[1]                          LastReq,
-                    nonce[2]                             INTEGER,
-                    key-expiration[3]                    KerberosTime OPTIONAL,
-                    flags[4]                             TicketFlags,
-                    authtime[5]                          KerberosTime,
-                    starttime[6]                         KerberosTime OPTIONAL,
-                    endtime[7]                           KerberosTime,
-                    renew-till[8]                        KerberosTime OPTIONAL,
-                    srealm[9]                            Realm,
-                    sname[10]                            PrincipalName,
-                    caddr[11]                            HostAddresses OPTIONAL
+                    key[0]               EncryptionKey,
+                    last-req[1]          LastReq,
+                    nonce[2]             INTEGER,
+                    key-expiration[3]    KerberosTime OPTIONAL,
+                    flags[4]             TicketFlags,
+                    authtime[5]          KerberosTime,
+                    starttime[6]         KerberosTime OPTIONAL,
+                    endtime[7]           KerberosTime,
+                    renew-till[8]        KerberosTime OPTIONAL,
+                    srealm[9]            Realm,
+                    sname[10]            PrincipalName,
+                    caddr[11]            HostAddresses OPTIONAL
 }
 
 
@@ -3980,12 +4050,13 @@ pvno and msg-type
           These fields are described above in section 5.4.1.
           msg-type is either KRB_AS_REP or KRB_TGS_REP.
 __________________________
-[26] An application code in the  encrypted  part  of  a
+[27] An application code in the  encrypted  part  of  a
 message  provides  an additional check that the message
 was decrypted properly.
 
 
-Section 5.4.2.             - 62 -    Expires 4 January 1998
+Section 5.4.2.             - 62 -    Expires 11 January 1998
+
 
 
 
@@ -4051,7 +4122,8 @@ key-expiration
           from  the  KDC  and  specifies  the  time that the
 
 
-Section 5.4.2.             - 63 -    Expires 4 January 1998
+Section 5.4.2.             - 63 -    Expires 11 January 1998
+
 
 
 
@@ -4117,7 +4189,8 @@ APOptions ::=   BIT STRING {
                 mutual-required(2)
 
 
-Section 5.5.1.             - 64 -    Expires 4 January 1998
+Section 5.5.1.             - 64 -    Expires 11 January 1998
+
 
 
 
@@ -4187,7 +4260,8 @@ stamp.  The message is sent in in response to an application
 request  (KRB_AP_REQ) where the mutual authentication option
 
 
-Section 5.5.2.             - 65 -    Expires 4 January 1998
+Section 5.5.2.             - 65 -    Expires 11 January 1998
+
 
 
 
@@ -4205,7 +4279,7 @@ AP-REP ::=         [APPLICATION 15] SEQUENCE {
                    enc-part[2]                       EncryptedData
 }
 
-EncAPRepPart ::=   [APPLICATION 27[28]] SEQUENCE {
+EncAPRepPart ::=   [APPLICATION 27[29]] SEQUENCE {
                    ctime[0]                          KerberosTime,
                    cusec[1]                          INTEGER,
                    subkey[2]                         EncryptionKey OPTIONAL,
@@ -4246,13 +4320,14 @@ subkey    This field contains an encryption key which is  to
 
 
 __________________________
-[28] An application code in the  encrypted  part  of  a
+[29] An application code in the  encrypted  part  of  a
 message  provides  an additional check that the message
 was decrypted properly.
 
 
 
-Section 5.5.2.             - 66 -    Expires 4 January 1998
+Section 5.5.2.             - 66 -    Expires 11 January 1998
+
 
 
 
@@ -4318,7 +4393,8 @@ safe-body This field is a placeholder for the  body  of  the
 
 
 
-Section 5.6.1.             - 67 -    Expires 4 January 1998
+Section 5.6.1.             - 67 -    Expires 11 January 1998
+
 
 
 
@@ -4383,10 +4459,10 @@ presumes  that  a  session key has previously been exchanged
 the Session Key.  The message fields are:
 
 __________________________
-[30] An application code in the  encrypted  part  of  a
+[31] An application code in the  encrypted  part  of  a
 
 
-
+
 
 
 
@@ -4400,13 +4476,13 @@ KRB-PRIV ::=         [APPLICATION 21] SEQUENCE {
                      enc-part[3]                       EncryptedData
 }
 
-EncKrbPrivPart ::=   [APPLICATION 28[30]] SEQUENCE {
-                     user-data[0]                      OCTET STRING,
-                     timestamp[1]                      KerberosTime OPTIONAL,
-                     usec[2]                           INTEGER OPTIONAL,
-                     seq-number[3]                     INTEGER OPTIONAL,
-                     s-address[4]                      HostAddress OPTIONAL, -- sender's addr
-                     r-address[5]                      HostAddress OPTIONAL -- recip's addr
+EncKrbPrivPart ::=   [APPLICATION 28[31]] SEQUENCE {
+                     user-data[0]        OCTET STRING,
+                     timestamp[1]        KerberosTime OPTIONAL,
+                     usec[2]             INTEGER OPTIONAL,
+                     seq-number[3]       INTEGER OPTIONAL,
+                     s-address[4]        HostAddress OPTIONAL, -- sender's addr
+                     r-address[5]        HostAddress OPTIONAL -- recip's addr
 }
 
 
@@ -4417,7 +4493,7 @@ pvno and msg-type
 
 
 enc-part  This field holds an encoding of the EncKrbPrivPart
-          sequence  encrypted  under  the  session  key[31].
+          sequence  encrypted  under  the  session  key[32].
           This  encrypted  encoding is used for the enc-part
           field of the KRB-PRIV message.  See section 6  for
           the format of the ciphertext.
@@ -4437,7 +4513,7 @@ be  used  to send Kerberos credentials from one principal to
 __________________________
 message  provides  an additional check that the message
 was decrypted properly.
-[31] If  supported  by the encryption method in use, an
+[32] If  supported  by the encryption method in use, an
 initialization vector may be passed to  the  encryption
 procedure,  in order to achieve proper cipher chaining.
 The initialization vector  might  come  from  the  last
@@ -4448,7 +4524,8 @@ default initialization vector for the encryption  algo-
 rithm will be used.
 
 
-Section 5.8.               - 69 -    Expires 4 January 1998
+Section 5.8.               - 69 -    Expires 11 January 1998
+
 
 
 
@@ -4514,7 +4591,8 @@ pvno and msg-type
 
 
 
-Section 5.8.1.             - 70 -    Expires 4 January 1998
+Section 5.8.1.             - 70 -    Expires 11 January 1998
+
 
 
 
@@ -4580,7 +4658,8 @@ the credentials already knows their value.
 prealm and pname
 
 
-Section 5.8.1.             - 71 -    Expires 4 January 1998
+Section 5.8.1.             - 71 -    Expires 11 January 1998
+
 
 
 
@@ -4646,7 +4725,8 @@ KRB-ERROR ::=   [APPLICATION 30] SEQUENCE {
 
 
 
-Section 5.9.1.             - 72 -    Expires 4 January 1998
+Section 5.9.1.             - 72 -    Expires 11 January 1998
+
 
 
 
@@ -4712,7 +4792,8 @@ e-cksum   This field contains an optional checksum  for  the
           over the Kerberos ASN.1 encoding of the  KRB-ERROR
 
 
-Section 5.9.1.             - 73 -    Expires 4 January 1998
+Section 5.9.1.             - 73 -    Expires 11 January 1998
+
 
 
 
@@ -4734,9 +4815,9 @@ Section 5.9.1.             - 73 -    Expires 4 January 1998
           checksum should be calulated  using  the  client's
           secret  key ONLY if there has been suitable preau-
           thentication to prove knowledge of the secret  key
-          by the client If a checksum can  not  be  computed
-          because  the  key  to be used is not available, no
-          checksum will be included.
+          by the client[33].  If a checksum can not be  com-
+          puted because the key to be used is not available,
+          no checksum will be included.
 
                METHOD-DATA ::=   SEQUENCE of PA-DATA
 
@@ -4761,8 +4842,8 @@ Section 5.9.1.             - 73 -    Expires 4 January 1998
 The  Kerberos  protocols  described  in  this  document  are
 designed  to  use  stream  encryption  ciphers, which can be
 simulated using commonly available block encryption ciphers,
-such  as  the  Data Encryption Standard, [11] in conjunction
-with block chaining and checksum methods  [12].   Encryption
+such  as  the  Data Encryption Standard, [12] in conjunction
+with block chaining and checksum methods  [13].   Encryption
 is used to prove the identities of the network entities par-
 ticipating  in  message  exchanges.   The  Key  Distribution
 Center   for   each  realm  is  trusted  by  all  principals
@@ -4772,12 +4853,13 @@ verify the authenticity of a principal.
 
      The KDC uses the principal's  secret  key  (in  the  AS
 __________________________
-[31] This prevents an attacker  who  generates  an  in-
+[33] This prevents an attacker  who  generates  an  in-
 correct  AS request from obtaining verifiable plaintext
 for use in an off-line password guessing attack.
 
 
-Section 6.                 - 74 -    Expires 4 January 1998
+Section 6.                 - 74 -    Expires 11 January 1998
+
 
 
 
@@ -4843,7 +4925,8 @@ realm not obtain or derive the user's key in another.
 
 
 
-Section 6.                 - 75 -    Expires 4 January 1998
+Section 6.                 - 75 -    Expires 11 January 1998
+
 
 
 
@@ -4855,7 +4938,7 @@ Section 6.                 - 75 -    Expires 4 January 1998
 
      For an discussion of the integrity  characteristics  of
 the candidate encryption and checksum methods considered for
-Kerberos, the the reader is referred to [13].
+Kerberos, the the reader is referred to [14].
 
 6.1.  Encryption Specifications
 
@@ -4909,7 +4992,8 @@ cient to hold the appropriate item.  The type and length  is
 implicit  and  specified  by  the particular encryption type
 
 
-Section 6.1.               - 76 -    Expires 4 January 1998
+Section 6.1.               - 76 -    Expires 11 January 1998
+
 
 
 
@@ -4930,10 +5014,10 @@ The format cannot be described in ASN.1, but for  those  who
 prefer an ASN.1-like notation:
 
 CipherText ::=   ENCRYPTED       SEQUENCE {
-                 confounder[0]   UNTAGGED[33] OCTET STRING(conf_length) OPTIONAL,
-                 check[1]        UNTAGGED OCTET STRING(checksum_length) OPTIONAL,
-                 msg-seq[2]      MsgSequence,
-                 pad             UNTAGGED OCTET STRING(pad_length) OPTIONAL
+            confounder[0]   UNTAGGED[35] OCTET STRING(conf_length) OPTIONAL,
+            check[1]        UNTAGGED OCTET STRING(checksum_length) OPTIONAL,
+            msg-seq[2]      MsgSequence,
+            pad             UNTAGGED OCTET STRING(pad_length) OPTIONAL
 }
 
 
@@ -4947,12 +5031,12 @@ and the appropriate key.
      Unless otherwise specified, a definition of an  encryp-
 tion  algorithm  that specifies a checksum, a length for the
 confounder field, or an octet boundary for padding uses this
-ciphertext format[34].  Those fields which are not specified
+ciphertext format[36].  Those fields which are not specified
 will be omitted.
 
      In the interest of allowing all implementations using a
 __________________________
-[33] In  the  above   specification,   UNTAGGED   OCTET
+[35] In  the  above   specification,   UNTAGGED   OCTET
 STRING(length) is the notation for an octet string with
 its tag and length removed.  It is not  a  valid  ASN.1
 type.  The tag bits and length must be removed from the
@@ -4961,7 +5045,7 @@ that  the  message starts with random data, but the tag
 and its length are fixed.  For other fields, the length
 and  tag  would  be redundant if they were included be-
 cause they are specified by the encryption type.
-[34] The  ordering  of  the fields in the CipherText is
+[36] The  ordering  of  the fields in the CipherText is
 important.  Additionally, messages encoded in this for-
 mat must include a length as part of the msg-seq field.
 This allows the recipient to verify  that  the  message
@@ -4974,7 +5058,8 @@ part of that encoding.
 
 
 
-Section 6.1.               - 77 -    Expires 4 January 1998
+Section 6.1.               - 77 -    Expires 11 January 1998
+
 
 
 
@@ -5040,7 +5125,8 @@ length, with keytype zero (0).
 
 
 
-Section 6.3.1.             - 78 -    Expires 4 January 1998
+Section 6.3.1.             - 78 -    Expires 11 January 1998
+
 
 
 
@@ -5053,9 +5139,9 @@ Section 6.3.1.             - 78 -    Expires 4 January 1998
 6.3.2.  DES in CBC mode with a CRC-32 checksum (des-cbc-crc)
 
      The des-cbc-crc encryption  mode  encrypts  information
-under  the  Data  Encryption Standard  [11] using the cipher
-block chaining mode [12].  A CRC-32 checksum  (described  in
-ISO  3309  [14])  is  applied  to the confounder and message
+under  the  Data  Encryption Standard  [12] using the cipher
+block chaining mode [13].  A CRC-32 checksum  (described  in
+ISO  3309  [15])  is  applied  to the confounder and message
 sequence (msg-seq) and  placed  in  the  cksum  field.   DES
 blocks  are  8 bytes.  As a result, the data to be encrypted
 (the concatenation of  confounder,  checksum,  and  message)
@@ -5066,7 +5152,7 @@ those for the des-cbc-md5 encryption mode.
      Note that, since the CRC-32 checksum is not  collision-
 proof,   an  attacker  could  use  a  probabilistic  chosen-
 plaintext attack to generate a valid message even if a  con-
-founder is used  [13].  The use of collision-proof checksums
+founder is used  [14].  The use of collision-proof checksums
 is recommended for environments where such attacks represent
 a significant threat.  The use of the CRC-32 as the checksum
 for ticket or authenticator is  no  longer  mandated  as  an
@@ -5077,9 +5163,9 @@ cation 1 (See section 9.1 for specific details).
 6.3.3.  DES in CBC mode with an MD4 checksum (des-cbc-md4)
 
      The des-cbc-md4 encryption  mode  encrypts  information
-under  the  Data  Encryption Standard  [11] using the cipher
-block chaining mode [12].  An  MD4  checksum  (described  in
-[15])  is  applied  to  the  confounder and message sequence
+under  the  Data  Encryption Standard  [12] using the cipher
+block chaining mode [13].  An  MD4  checksum  (described  in
+[16])  is  applied  to  the  confounder and message sequence
 (msg-seq) and placed in the cksum field.  DES blocks  are  8
 bytes.   As a result, the data to be encrypted (the concate-
 nation of confounder, checksum, and message) must be  padded
@@ -5091,9 +5177,9 @@ cbc-md5 encryption mode.
 6.3.4.  DES in CBC mode with an MD5 checksum (des-cbc-md5)
 
      The des-cbc-md5 encryption  mode  encrypts  information
-under  the  Data  Encryption Standard  [11] using the cipher
-block chaining mode [12].  An MD5  checksum   (described  in
-[16].)  is  applied  to  the confounder and message sequence
+under  the  Data  Encryption Standard  [12] using the cipher
+block chaining mode [13].  An MD5  checksum   (described  in
+[17].)  is  applied  to  the confounder and message sequence
 (msg-seq) and placed in the cksum field.  DES blocks  are  8
 bytes.   As a result, the data to be encrypted (the concate-
 nation of confounder, checksum, and message) must be  padded
@@ -5106,7 +5192,8 @@ significant  bits  (with  the  octet's MSbit used as the DES
 input block's MSbit, etc.), the  second  octet  the  next  8
 
 
-Section 6.3.4.             - 79 -    Expires 4 January 1998
+Section 6.3.4.             - 79 -    Expires 11 January 1998
+
 
 
 
@@ -5145,7 +5232,7 @@ FIPS 81 introduction for reference.]
 
      To generate a DES key from a  text  string  (password),
 the  text  string normally must have the realm and each com-
-ponent of the principal's  name  appended[35],  then  padded
+ponent of the principal's  name  appended[37],  then  padded
 with ASCII nulls to an 8 byte boundary.  This string is then
 fan-folded and eXclusive-ORed with itself to form an 8  byte
 DES key.  The parity is corrected on the key, and it is used
@@ -5166,12 +5253,13 @@ the result is returned as the key.  Pseudocode follows:
           pad(s); /* with nulls to 8 byte boundary */
           for(8byteblock in s) {
 __________________________
-[35] In some cases, it may be necessary to use  a  dif-
+[37] In some cases, it may be necessary to use  a  dif-
 ferent  "mix-in"  string for compatibility reasons; see
 the discussion of padata in section 5.4.2.
 
 
-Section 6.3.4.             - 80 -    Expires 4 January 1998
+Section 6.3.4.             - 80 -    Expires 11 January 1998
+
 
 
 
@@ -5217,7 +5305,7 @@ Subsequent blocks of 8 octets are  exclusive-ored  with  the
 ciphertext  produced by the encryption on the previous block
 before ECB encryption.
 
-     An HMAC-SHA1 checksum  (described in  [17].) is applied
+     An HMAC-SHA1 checksum  (described in  [18].) is applied
 to  the confounder and message sequence (msg-seq) and placed
 in the cksum field.
 
@@ -5237,7 +5325,8 @@ requires an 8-octet confounder.
      The DES specifications identify some "weak" and  "semi-
 
 
-Section 6.3.5.             - 81 -    Expires 4 January 1998
+Section 6.3.5.             - 81 -    Expires 11 January 1998
+
 
 
 
@@ -5269,7 +5358,7 @@ FIPS 81 introduction for reference.]
 
      To generate a DES key from a  text  string  (password),
 the  text  string normally must have the realm and each com-
-ponent of the principal's name appended[36],
+ponent of the principal's name appended[38],
 
      The input string (with any salt data appended to it) is
 n-folded  into  a  24  octet  (192 bit) string.  To n-fold a
@@ -5297,12 +5386,13 @@ octet key.
 
      string_to_key(string,realm,name) {
 __________________________
-[36] In some cases, it may be necessary to use  a  dif-
+[38] In some cases, it may be necessary to use  a  dif-
 ferent  "mix-in"  string for compatibility reasons; see
 the discussion of padata in section 5.4.2.
 
 
-Section 6.3.5.             - 82 -    Expires 4 January 1998
+Section 6.3.5.             - 82 -    Expires 11 January 1998
+
 
 
 
@@ -5368,7 +5458,8 @@ the  checksum  value is encrypted before inclusion in a mes-
 sage.  In such cases, the composition of  the  checksum  and
 
 
-Section 6.4.               - 83 -    Expires 4 January 1998
+Section 6.4.               - 83 -    Expires 11 January 1998
+
 
 
 
@@ -5388,11 +5479,11 @@ before the checksum is calculated.
 6.4.1.  The CRC-32 Checksum (crc32)
 
      The CRC-32 checksum calculates a checksum  based  on  a
-cyclic  redundancy check as described in ISO 3309 [14].  The
+cyclic  redundancy check as described in ISO 3309 [15].  The
 resulting checksum is four (4) octets in length.  The CRC-32
 is  neither  keyed  nor  collision-proof.   The  use of this
 checksum is not recommended.  An  attacker  using  a  proba-
-bilistic  chosen-plaintext attack as described in [13] might
+bilistic  chosen-plaintext attack as described in [14] might
 be able to generate an alternative  message  that  satisfies
 the  checksum.   The  use  of  collision-proof  checksums is
 recommended for environments where such attacks represent  a
@@ -5401,7 +5492,7 @@ significant threat.
 6.4.2.  The RSA MD4 Checksum (rsa-md4)
 
      The RSA-MD4 checksum calculates a  checksum  using  the
-RSA  MD4  algorithm  [15].   The algorithm takes as input an
+RSA  MD4  algorithm  [16].   The algorithm takes as input an
 input message of arbitrary length and produces as  output  a
 128-bit  (16  octet)  checksum.   RSA-MD4  is believed to be
 collision-proof.
@@ -5415,14 +5506,14 @@ the text, applying  the  RSA  MD4  checksum  algorithm,  and
 encrypting  the  confounder  and  the  checksum using DES in
 cipher-block-chaining (CBC) mode using a variant of the key,
 where  the  variant  is  computed by eXclusive-ORing the key
-with the constant F0F0F0F0F0F0F0F0[37].  The  initialization
+with the constant F0F0F0F0F0F0F0F0[39].  The  initialization
 vector  should be zero.  The resulting checksum is 24 octets
 long (8 octets of which are redundant).   This  checksum  is
 tamper-proof and believed to be collision-proof.
 
      The DES specifications identify some  "weak  keys"  and
 __________________________
-[37] A variant of the key is used to limit the use of a
+[39] A variant of the key is used to limit the use of a
 key  to a particular function, separating the functions
 of generating a checksum  from  other  encryption  per-
 formed   using   the   session   key.    The   constant
@@ -5433,7 +5524,8 @@ pose  in  the  Message  Integrity  Check in the Privacy
 Enhanced Mail standard.
 
 
-Section 6.4.3.             - 84 -    Expires 4 January 1998
+Section 6.4.3.             - 84 -    Expires 11 January 1998
+
 
 
 
@@ -5466,7 +5558,7 @@ rsa-md4-des-checksum ::=   ENCRYPTED       UNTAGGED SEQUENCE {
 6.4.4.  The RSA MD5 Checksum (rsa-md5)
 
      The RSA-MD5 checksum calculates a  checksum  using  the
-RSA  MD5  algorithm.  [16].  The algorithm takes as input an
+RSA  MD5  algorithm.  [17].  The algorithm takes as input an
 input message of arbitrary length and produces as  output  a
 128-bit  (16  octet)  checksum.   RSA-MD5  is believed to be
 collision-proof.
@@ -5499,7 +5591,8 @@ ing diagram:
 The format cannot be described in ASN.1, but for  those  who
 
 
-Section 6.4.5.             - 85 -    Expires 4 January 1998
+Section 6.4.5.             - 85 -    Expires 11 January 1998
+
 
 
 
@@ -5565,7 +5658,8 @@ collision-proof.  Note that this checksum type  is  the  old
 method  for  encoding  the RSA-MD4-DES checksum and it is no
 
 
-Section 6.4.7.             - 86 -    Expires 4 January 1998
+Section 6.4.7.             - 86 -    Expires 11 January 1998
+
 
 
 
@@ -5631,7 +5725,8 @@ to upper case when used as realm names.
      X.500 names contain an equal (=) and cannot  contain  a
 
 
-Section 7.1.               - 87 -    Expires 4 January 1998
+Section 7.1.               - 87 -    Expires 11 January 1998
+
 
 
 
@@ -5697,7 +5792,8 @@ The following name types are defined:
                     name-type      value   meaning
 
 
-Section 7.2.               - 88 -    Expires 4 January 1998
+Section 7.2.               - 88 -    Expires 11 January 1998
+
 
 
 
@@ -5707,13 +5803,12 @@ Section 7.2.               - 88 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-                    NT-UNKNOWN       0     Name type not known
-                    NT-PRINCIPAL     1     General principal name (e.g. username,
-or DCE principal)
-                    NT-SRV-INST      2     Service and other unique instance (krbtgt)
-                    NT-SRV-HST       3     Service with host name as instance (telnet, rcommands)
-                    NT-SRV-XHST      4     Service with slash-separated host name components
-                    NT-UID           5     Unique ID
+   NT-UNKNOWN     0   Name type not known
+   NT-PRINCIPAL   1   General principal name (e.g. username, or DCE principal)
+   NT-SRV-INST    2   Service and other unique instance (krbtgt)
+   NT-SRV-HST     3   Service with host name as instance (telnet, rcommands)
+   NT-SRV-XHST    4   Service with slash-separated host name components
+   NT-UID         5   Unique ID
 
 
 When a name implies no information other than its uniqueness
@@ -5763,7 +5858,8 @@ generally be composed of two parts: (1) the realm of the KDC
 with which the server is registered, and (2) a two-component
 
 
-Section 7.2.1.             - 89 -    Expires 4 January 1998
+Section 7.2.1.             - 89 -    Expires 11 January 1998
+
 
 
 
@@ -5829,7 +5925,8 @@ Xerox Network Services (XNS) addresses
 in MSB order.  The type of XNS addresses is six (6).
 
 
-Section 8.1.               - 90 -    Expires 4 January 1998
+Section 8.1.               - 90 -    Expires 11 January 1998
+
 
 
 
@@ -5888,14 +5985,16 @@ checked messages, Kerberos protocol messages may be  treated
 as opaque objects and the type of the authentication mechan-
 ism will be:
 
-OBJECT IDENTIFIER ::= {iso (1), org(3), dod(6),internet(1), security(5), kerberosv5(2)}
+OBJECT IDENTIFIER ::= {iso (1), org(3), dod(6),internet(1), security(5),
+                       kerberosv5(2)} 
 
 Depending on the situation, the opaque  object  will  be  an
 authentication  header (KRB_AP_REQ), an authentication reply
 (KRB_AP_REP), a safe message (KRB_SAFE), a  private  message
 
 
-Section 8.2.2.             - 91 -    Expires 4 January 1998
+Section 8.2.2.             - 91 -    Expires 11 January 1998
+
 
 
 
@@ -5926,42 +6025,42 @@ ATHENA.MIT.EDU realm to be used  to  get  tickets  from  the
 MIT.EDU realm has a principal identifier of "ATHENA.MIT.EDU"
 (realm), ("krbtgt", "MIT.EDU") (name).
 
+
 8.3.  Protocol constants and associated values
 
-     The following tables list constants used in the  proto-
-col and defines their meanings.
+The following tables list constants used in the protocol and defines their
+meanings.
 
-Encryption type  etype value    block size      minimum pad size   confounder size
-NULL              0              1                   0                  0
-des-cbc-crc       1              8                   4                  8
-des-cbc-md4       2              8                   0                  8
-des-cbc-md5       3              8                   0                  8
+Encryption type  etype value  block size    minimum pad size  confounder size
+NULL              0            1                 0                 0
+des-cbc-crc       1            8                 4                 8
+des-cbc-md4       2            8                 0                 8
+des-cbc-md5       3            8                 0                 8
 <reserved>        4
-des3-cbc-md5      5              8                   0                  8
+des3-cbc-md5      5            8                 0                 8
 <reserved>        6
-des3-cbc-sha1     7              8                   0                  8
-sign-dsa-generate 8                                             (pkinit)
-encrypt-rsa-priv  9                                             (pkinit)
-encrypt-rsa-pub  10                                             (pkinit)
-ENCTYPE_PK_CROSS 48                                             (reserved for pkcross)
+des3-cbc-sha1     7            8                 0                 8
+sign-dsa-generate 8                                   (pkinit)
+encrypt-rsa-priv  9                                   (pkinit)
+encrypt-rsa-pub  10                                   (pkinit)
+ENCTYPE_PK_CROSS 48                                   (reserved for pkcross)
 <reserved>       0x8003
 
-Checksum type                   sumtype value       checksum size
-CRC32                           1                   4
-rsa-md4                         2                   16
-rsa-md4-des                     3                   24
-des-mac                         4                   16
-des-mac-k                       5                   8
-rsa-md4-des-k                   6                   16
-rsa-md5                         7                   16
-rsa-md5-des                     8                   24
-rsa-md5-des3                    9                   24
-hmac-sha1-des3                  10                  20  (I had this as 10, is it 12)
-
-padata type                     padata-type value
+Checksum type              sumtype value       checksum size
+CRC32                      1                   4
+rsa-md4                    2                   16
+rsa-md4-des                3                   24
+des-mac                    4                   16
+des-mac-k                  5                   8
+rsa-md4-des-k              6                   16
+rsa-md5                    7                   16
+rsa-md5-des                8                   24
+rsa-md5-des3               9                   24
+hmac-sha1-des3             10                  20  (I had this as 10, is it 12)
 
 
-Section 8.3.               - 92 -    Expires 4 January 1998
+Section 8.3.               - 92 -    Expires 11 January 1998
+
 
 
 
@@ -5970,6 +6069,8 @@ Section 8.3.               - 92 -    Expires 4 January 1998
 
             Version 5 - Specification Revision 6
 
+
+padata type                     padata-type value
 
 PA-TGS-REQ                      1
 PA-ENC-TIMESTAMP                2
@@ -6004,96 +6105,99 @@ DOMAIN-X500-COMPRESS            1
 reserved values                 all others
 
 
-Label                          Value   Meaning or MIT code
 
-pvno                               5   current Kerberos protocol version number
+Label               Value   Meaning or MIT code
+
+pvno                    5   current Kerberos protocol version number
 
 message types
 
-KRB_AS_REQ                        10   Request for initial authentication
-KRB_AS_REP                        11   Response to KRB_AS_REQ request
-KRB_TGS_REQ                       12   Request for authentication based on TGT
-KRB_TGS_REP                       13   Response to KRB_TGS_REQ request
-KRB_AP_REQ                        14   application request to server
-KRB_AP_REP                        15   Response to KRB_AP_REQ_MUTUAL
-KRB_SAFE                          20   Safe (checksummed) application message
-KRB_PRIV                          21   Private (encrypted) application message
-KRB_CRED                          22   Private (encrypted) message to forward credentials
-KRB_ERROR                         30   Error response
+KRB_AS_REQ             10   Request for initial authentication
+KRB_AS_REP             11   Response to KRB_AS_REQ request
+KRB_TGS_REQ            12   Request for authentication based on TGT
+KRB_TGS_REP            13   Response to KRB_TGS_REQ request
+KRB_AP_REQ             14   application request to server
+KRB_AP_REP             15   Response to KRB_AP_REQ_MUTUAL
+KRB_SAFE               20   Safe (checksummed) application message
+KRB_PRIV               21   Private (encrypted) application message
+KRB_CRED               22   Private (encrypted) message to forward credentials
+KRB_ERROR              30   Error response
+
+
+Section 8.3.               - 93 -    Expires 11 January 1998
+
+
+
+
+
+
+
+            Version 5 - Specification Revision 6
+
 
 name types
 
-KRB_NT_UNKNOWN                     0   Name type not known
-KRB_NT_PRINCIPAL                   1   Just the name of the principal as in DCE, or for users
-
-
-Section 8.3.               - 93 -    Expires 4 January 1998
-
-
-
-
-
-
-            Version 5 - Specification Revision 6
-
-
-KRB_NT_SRV_INST                    2   Service and other unique instance (krbtgt)
-KRB_NT_SRV_HST                     3   Service with host name as instance (telnet, rcommands)
-KRB_NT_SRV_XHST                    4   Service with host as remaining components
-KRB_NT_UID                         5   Unique ID
+KRB_NT_UNKNOWN       0   Name type not known
+KRB_NT_PRINCIPAL     1   Just the name of the principal as in DCE, or for users
+KRB_NT_SRV_INST      2   Service and other unique instance (krbtgt)
+KRB_NT_SRV_HST       3   Service with host name as instance (telnet, rcommands)
+KRB_NT_SRV_XHST      4   Service with host as remaining components
+KRB_NT_UID           5   Unique ID
 
 error codes
 
-KDC_ERR_NONE                       0   No error
-KDC_ERR_NAME_EXP                   1   Client's entry in database has expired
-KDC_ERR_SERVICE_EXP                2   Server's entry in database has expired
-KDC_ERR_BAD_PVNO                   3   Requested protocol version number not supported
-KDC_ERR_C_OLD_MAST_KVNO            4   Client's key encrypted in old master key
-KDC_ERR_S_OLD_MAST_KVNO            5   Server's key encrypted in old master key
-KDC_ERR_C_PRINCIPAL_UNKNOWN        6   Client not found in Kerberos database
-KDC_ERR_S_PRINCIPAL_UNKNOWN        7   Server not found in Kerberos database
-KDC_ERR_PRINCIPAL_NOT_UNIQUE       8   Multiple principal entries in database
-KDC_ERR_NULL_KEY                   9   The client or server has a null key
-KDC_ERR_CANNOT_POSTDATE           10   Ticket not eligible for postdating
-KDC_ERR_NEVER_VALID               11   Requested start time is later than end time
-KDC_ERR_POLICY                    12   KDC policy rejects request
-KDC_ERR_BADOPTION                 13   KDC cannot accommodate requested option
-KDC_ERR_ETYPE_NOSUPP              14   KDC has no support for encryption type
-KDC_ERR_SUMTYPE_NOSUPP            15   KDC has no support for checksum type
-KDC_ERR_PADATA_TYPE_NOSUPP        16   KDC has no support for padata type
-KDC_ERR_TRTYPE_NOSUPP             17   KDC has no support for transited type
-KDC_ERR_CLIENT_REVOKED            18   Clients credentials have been revoked
-KDC_ERR_SERVICE_REVOKED           19   Credentials for server have been revoked
-KDC_ERR_TGT_REVOKED               20   TGT has been revoked
-KDC_ERR_CLIENT_NOTYET             21   Client not yet valid - try again later
-KDC_ERR_SERVICE_NOTYET            22   Server not yet valid - try again later
-KDC_ERR_KEY_EXPIRED               23   Password has expired - change password to reset
-KDC_ERR_PREAUTH_FAILED            24   Pre-authentication information was invalid
--
-KDC_ERR_SERVER_NOMATCH            26   Requested server and ticket don't match
-KDC_ERR_MUST_USE_USER2USER        27   Server principal valid for user2user only
-KDC_ERR_PATH_NOT_ACCPETED         28   KDC Policy rejects transited path
-KRB_AP_ERR_BAD_INTEGRITY          31   Integrity check on decrypted field failed
-KRB_AP_ERR_TKT_EXPIRED            32   Ticket expired
-KRB_AP_ERR_TKT_NYV                33   Ticket not yet valid
-KRB_AP_ERR_REPEAT                 34   Request is a replay
-KRB_AP_ERR_NOT_US                 35   The ticket isn't for us
-KRB_AP_ERR_BADMATCH               36   Ticket and authenticator don't match
-KRB_AP_ERR_SKEW                   37   Clock skew too great
-KRB_AP_ERR_BADADDR                38   Incorrect net address
-KRB_AP_ERR_BADVERSION             39   Protocol version mismatch
-KRB_AP_ERR_MSG_TYPE               40   Invalid msg type
-KRB_AP_ERR_MODIFIED               41   Message stream modified
-KRB_AP_ERR_BADORDER               42   Message out of order
-KRB_AP_ERR_BADKEYVER              44   Specified version of key is not available
-KRB_AP_ERR_NOKEY                  45   Service key not available
-KRB_AP_ERR_MUT_FAIL               46   Mutual authentication failed
-KRB_AP_ERR_BADDIRECTION           47   Incorrect message direction
+KDC_ERR_NONE                    0   No error
+KDC_ERR_NAME_EXP                1   Client's entry in database has expired
+KDC_ERR_SERVICE_EXP             2   Server's entry in database has expired
+KDC_ERR_BAD_PVNO                3   Requested protocol version number not supported
+KDC_ERR_C_OLD_MAST_KVNO         4   Client's key encrypted in old master key
+KDC_ERR_S_OLD_MAST_KVNO         5   Server's key encrypted in old master key
+KDC_ERR_C_PRINCIPAL_UNKNOWN     6   Client not found in Kerberos database
+KDC_ERR_S_PRINCIPAL_UNKNOWN     7   Server not found in Kerberos database
+KDC_ERR_PRINCIPAL_NOT_UNIQUE    8   Multiple principal entries in database
+KDC_ERR_NULL_KEY                9   The client or server has a null key
+KDC_ERR_CANNOT_POSTDATE        10   Ticket not eligible for postdating
+KDC_ERR_NEVER_VALID            11   Requested start time is later than end time
+KDC_ERR_POLICY                 12   KDC policy rejects request
+KDC_ERR_BADOPTION              13   KDC cannot accommodate requested option
+KDC_ERR_ETYPE_NOSUPP           14   KDC has no support for encryption type
+KDC_ERR_SUMTYPE_NOSUPP         15   KDC has no support for checksum type
+KDC_ERR_PADATA_TYPE_NOSUPP     16   KDC has no support for padata type
+KDC_ERR_TRTYPE_NOSUPP          17   KDC has no support for transited type
+KDC_ERR_CLIENT_REVOKED         18   Clients credentials have been revoked
+KDC_ERR_SERVICE_REVOKED        19   Credentials for server have been revoked
+KDC_ERR_TGT_REVOKED            20   TGT has been revoked
+KDC_ERR_CLIENT_NOTYET          21   Client not yet valid - try again later
+KDC_ERR_SERVICE_NOTYET         22   Server not yet valid - try again later
+KDC_ERR_KEY_EXPIRED            23   Password has expired - change password to reset
+KDC_ERR_PREAUTH_FAILED         24   Pre-authentication information was invalid
+KDC_ERR_PREAUTH_REQUIRED       25   Additional pre-authenticationrequired-
+KDC_ERR_SERVER_NOMATCH         26   Requested server and ticket don't match
+KDC_ERR_MUST_USE_USER2USER     27   Server principal valid for user2user only
+KDC_ERR_PATH_NOT_ACCPETED      28   KDC Policy rejects transited path
+KRB_AP_ERR_BAD_INTEGRITY       31   Integrity check on decrypted field failed
+KRB_AP_ERR_TKT_EXPIRED         32   Ticket expired
+KRB_AP_ERR_TKT_NYV             33   Ticket not yet valid
+KRB_AP_ERR_REPEAT              34   Request is a replay
+KRB_AP_ERR_NOT_US              35   The ticket isn't for us
+KRB_AP_ERR_BADMATCH            36   Ticket and authenticator don't match
+KRB_AP_ERR_SKEW                37   Clock skew too great
+KRB_AP_ERR_BADADDR             38   Incorrect net address
+KRB_AP_ERR_BADVERSION          39   Protocol version mismatch
+KRB_AP_ERR_MSG_TYPE            40   Invalid msg type
+KRB_AP_ERR_MODIFIED            41   Message stream modified
+KRB_AP_ERR_BADORDER            42   Message out of order
+KRB_AP_ERR_BADKEYVER           44   Specified version of key is not available
+KRB_AP_ERR_NOKEY               45   Service key not available
+KRB_AP_ERR_MUT_FAIL            46   Mutual authentication failed
+KRB_AP_ERR_BADDIRECTION        47   Incorrect message direction
+KRB_AP_ERR_METHOD              48   Alternative authentication method required
+KRB_AP_ERR_BADSEQ              49   Incorrect sequence number in message
 
-KRB_AP_ERR_BADSEQ                 49   Incorrect sequence number in message
 
 
-Section 8.3.               - 94 -    Expires 4 January 1998
+Section 8.3.               - 94 -    Expires 11 January 1998
+
 
 
 
@@ -6103,15 +6207,13 @@ Section 8.3.               - 94 -    Expires 4 January 1998
             Version 5 - Specification Revision 6
 
 
-KRB_AP_ERR_INAPP_CKSUM            50   Inappropriate type of checksum in message
-
-KRB_ERR_GENERIC                   60   Generic error (description in e-text)
-KRB_ERR_FIELD_TOOLONG             61   Field is too long for this implementation
-KDC_ERROR_CLIENT_NOT_TRUSTED      62   (pkinit)
-KDC_ERROR_KDC_NOT_TRUSTED         63   (pkinit)
-KDC_ERROR_INVALID_SIG             64   (pkinit)
-KDC_ERR_KEY_TOO_WEAK              65   (pkinit)
-
+KRB_AP_ERR_INAPP_CKSUM         50   Inappropriate type of checksum in message
+KRB_ERR_GENERIC                60   Generic error (description in e-text)
+KRB_ERR_FIELD_TOOLONG          61   Field is too long for this implementation
+KDC_ERROR_CLIENT_NOT_TRUSTED   62   (pkinit)
+KDC_ERROR_KDC_NOT_TRUSTED      63   (pkinit)
+KDC_ERROR_INVALID_SIG          64   (pkinit)
+KDC_ERR_KEY_TOO_WEAK           65   (pkinit)
 
 
 9.  Interoperability requirements
@@ -6158,7 +6260,8 @@ message is described in section 5.9.1.
 
 
 
-Section 9.1.               - 95 -    Expires 4 January 1998
+Section 9.1.               - 95 -    Expires 11 January 1998
+
 
 
 
@@ -6224,7 +6327,8 @@ When a postdated ticket is decoded by a server,  all  imple-
 mentations  shall  make  the  presence of the postdated flag
 
 
-Section 9.1.               - 96 -    Expires 4 January 1998
+Section 9.1.               - 96 -    Expires 11 January 1998
+
 
 
 
@@ -6290,7 +6394,8 @@ proxiable, etc.     Allowed.
 
 
 
-Section 9.2.               - 97 -    Expires 4 January 1998
+Section 9.2.               - 97 -    Expires 11 January 1998
+
 
 
 
@@ -6304,59 +6409,60 @@ Section 9.2.               - 97 -    Expires 4 January 1998
 
 
 
-1.   S. P. Miller, B. C. Neuman, J. I. Schiller, and  J.  H.
+1.   B. Clifford Neuman and Theodore Y. Ts'o, "An  Authenti-
+     cation  Service for Computer Networks," IEEE Communica-
+     tions Magazine, Vol. 32(9), pp. 33-38 (September 1994).
+
+2.   S. P. Miller, B. C. Neuman, J. I. Schiller, and  J.  H.
      Saltzer,  Section  E.2.1:  Kerberos  Authentication and
      Authorization System, M.I.T. Project Athena, Cambridge,
      Massachusetts (December 21, 1987).
 
-2.   J. G. Steiner, B. C. Neuman, and J. I. Schiller,  "Ker-
+3.   J. G. Steiner, B. C. Neuman, and J. I. Schiller,  "Ker-
      beros:  An Authentication Service for Open Network Sys-
      tems," pp. 191-202 in  Usenix  Conference  Proceedings,
      Dallas, Texas (February, 1988).
 
-3.   Roger M.  Needham  and  Michael  D.  Schroeder,  "Using
+4.   Roger M.  Needham  and  Michael  D.  Schroeder,  "Using
      Encryption for Authentication in Large Networks of Com-
      puters,"  Communications  of  the  ACM,  Vol.   21(12),
      pp. 993-999 (December, 1978).
 
-4.   Dorothy E. Denning and  Giovanni  Maria  Sacco,  "Time-
+5.   Dorothy E. Denning and  Giovanni  Maria  Sacco,  "Time-
      stamps  in  Key Distribution Protocols," Communications
      of the ACM, Vol. 24(8), pp. 533-536 (August 1981).
 
-5.   John T. Kohl, B. Clifford Neuman, and Theodore Y. Ts'o,
+6.   John T. Kohl, B. Clifford Neuman, and Theodore Y. Ts'o,
      "The Evolution of the Kerberos Authentication Service,"
      in an IEEE Computer Society Text soon to  be  published
      (June 1992).
 
-6.   B.  Clifford  Neuman,  "Proxy-Based  Authorization  and
+7.   B.  Clifford  Neuman,  "Proxy-Based  Authorization  and
      Accounting  for Distributed Systems," in Proceedings of
      the 13th International Conference on  Distributed  Com-
      puting Systems, Pittsburgh, PA (May, 1993).
 
-7.   Don Davis and Ralph Swick,  "Workstation  Services  and
+8.   Don Davis and Ralph Swick,  "Workstation  Services  and
      Kerberos  Authentication  at Project Athena," Technical
      Memorandum TM-424,  MIT Laboratory for Computer Science
      (February 1990).
 
-8.   P. J. Levine, M. R. Gretzinger, J. M. Diaz, W. E.  Som-
+9.   P. J. Levine, M. R. Gretzinger, J. M. Diaz, W. E.  Som-
      merfeld,  and  K. Raeburn, Section E.1: Service Manage-
      ment System, M.I.T.  Project  Athena,  Cambridge,  Mas-
      sachusetts (1987).
 
-9.   CCITT, Recommendation X.509: The Directory  Authentica-
+10.  CCITT, Recommendation X.509: The Directory  Authentica-
      tion Framework, December 1988.
 
-10.  J. Pato, Using  Pre-Authentication  to  Avoid  Password
+11.  J. Pato, Using  Pre-Authentication  to  Avoid  Password
      Guessing  Attacks, Open Software Foundation DCE Request
      for Comments 26 (December 1992).
 
-11.  National Bureau of Standards, U.S. Department  of  Com-
-     merce,  "Data Encryption Standard," Federal Information
-     Processing Standards Publication  46,   Washington,  DC
-     (1977).
 
 
-Section 10.                - 98 -    Expires 4 January 1998
+Section 10.                - 98 -    Expires 11 January 1998
+
 
 
 
@@ -6367,29 +6473,34 @@ Section 10.                - 98 -    Expires 4 January 1998
 
 
 12.  National Bureau of Standards, U.S. Department  of  Com-
+     merce,  "Data Encryption Standard," Federal Information
+     Processing Standards Publication  46,   Washington,  DC
+     (1977).
+
+13.  National Bureau of Standards, U.S. Department  of  Com-
      merce,  "DES  Modes  of Operation," Federal Information
      Processing Standards Publication 81,   Springfield,  VA
      (December 1980).
 
-13.  Stuart G. Stubblebine and Virgil D. Gligor, "On Message
+14.  Stuart G. Stubblebine and Virgil D. Gligor, "On Message
      Integrity  in  Cryptographic Protocols," in Proceedings
      of the IEEE  Symposium  on  Research  in  Security  and
      Privacy, Oakland, California (May 1992).
 
-14.  International Organization  for  Standardization,  "ISO
+15.  International Organization  for  Standardization,  "ISO
      Information  Processing  Systems - Data Communication -
      High-Level Data Link Control Procedure -  Frame  Struc-
      ture," IS 3309 (October 1984).  3rd Edition.
 
-15.  R. Rivest, "The  MD4  Message  Digest  Algorithm,"  RFC
+16.  R. Rivest, "The  MD4  Message  Digest  Algorithm,"  RFC
      1320,   MIT  Laboratory  for  Computer  Science  (April
      1992).
 
-16.  R. Rivest, "The  MD5  Message  Digest  Algorithm,"  RFC
+17.  R. Rivest, "The  MD5  Message  Digest  Algorithm,"  RFC
      1321,   MIT  Laboratory  for  Computer  Science  (April
      1992).
 
-17.  H. Krawczyk, M. Bellare, and R. Canetti, "HMAC:  Keyed-
+18.  H. Krawczyk, M. Bellare, and R. Canetti, "HMAC:  Keyed-
      Hashing  for  Message  Authentication,"  Working  Draft
      draft-ietf-ipsec-hmac-md5-01.txt,   (August 1996).
 
@@ -6417,12 +6528,8 @@ Section 10.                - 98 -    Expires 4 January 1998
 
 
 
-
-
-
-
-
-Section 10.                - 99 -    Expires 4 January 1998
+Section 10.                - 99 -    Expires 11 January 1998
+
 
 
 
@@ -6488,7 +6595,8 @@ A.2.  KRB_AS_REQ verification and KRB_AS_REP generation
         server := lookup(req.sname,req.realm);
 
 
-Section A.2.              - 100 -    Expires 4 January 1998
+Section A.2.              - 100 -    Expires 11 January 1998
+
 
 
 
@@ -6554,7 +6662,8 @@ Section A.2.              - 100 -    Expires 4 January 1998
         endif
 
 
-Section A.2.              - 101 -    Expires 4 January 1998
+Section A.2.              - 101 -    Expires 11 January 1998
+
 
 
 
@@ -6620,7 +6729,8 @@ Section A.2.              - 101 -    Expires 4 January 1998
                 set new_tkt.flags.RENEWABLE;
 
 
-Section A.2.              - 102 -    Expires 4 January 1998
+Section A.2.              - 102 -    Expires 11 January 1998
+
 
 
 
@@ -6686,7 +6796,8 @@ Section A.2.              - 102 -    Expires 4 January 1998
 
 
 
-Section A.2.              - 103 -    Expires 4 January 1998
+Section A.2.              - 103 -    Expires 11 January 1998
+
 
 
 
@@ -6752,7 +6863,8 @@ A.4.  KRB_AS_REP and KRB_TGS_REP common checks
                 return KRB_AP_ERR_SKEW;
 
 
-Section A.4.              - 104 -    Expires 4 January 1998
+Section A.4.              - 104 -    Expires 11 January 1998
+
 
 
 
@@ -6818,7 +6930,8 @@ A.5.  KRB_TGS_REQ generation
                 omit body.addresses;
 
 
-Section A.5.              - 105 -    Expires 4 January 1998
+Section A.5.              - 105 -    Expires 11 January 1998
+
 
 
 
@@ -6884,7 +6997,8 @@ A.6.  KRB_TGS_REQ verification and KRB_TGS_REP generation
         endif
 
 
-Section A.6.              - 106 -    Expires 4 January 1998
+Section A.6.              - 106 -    Expires 11 January 1998
+
 
 
 
@@ -6950,7 +7064,8 @@ Section A.6.              - 106 -    Expires 4 January 1998
                 set new_tkt.flags.FORWARDED;
 
 
-Section A.6.              - 107 -    Expires 4 January 1998
+Section A.6.              - 107 -    Expires 11 January 1998
+
 
 
 
@@ -7016,7 +7131,8 @@ Section A.6.              - 107 -    Expires 4 January 1998
         endif
 
 
-Section A.6.              - 108 -    Expires 4 January 1998
+Section A.6.              - 108 -    Expires 11 January 1998
+
 
 
 
@@ -7082,7 +7198,8 @@ Section A.6.              - 108 -    Expires 4 January 1998
                 new_tkt.renew-till := min(rtime,
 
 
-Section A.6.              - 109 -    Expires 4 January 1998
+Section A.6.              - 109 -    Expires 11 January 1998
+
 
 
 
@@ -7148,7 +7265,8 @@ Section A.6.              - 109 -    Expires 4 January 1998
 
 
 
-Section A.6.              - 110 -    Expires 4 January 1998
+Section A.6.              - 110 -    Expires 11 January 1998
+
 
 
 
@@ -7214,7 +7332,8 @@ A.7.  KRB_TGS_REP verification
 
 
 
-Section A.7.              - 111 -    Expires 4 January 1998
+Section A.7.              - 111 -    Expires 11 January 1998
+
 
 
 
@@ -7280,7 +7399,8 @@ A.10.  KRB_AP_REQ verification
                  packet.ticket.{sname,srealm,enc-part.etype};
 
 
-Section A.10.             - 112 -    Expires 4 January 1998
+Section A.10.             - 112 -    Expires 11 January 1998
+
 
 
 
@@ -7346,7 +7466,8 @@ A.11.  KRB_AP_REP generation
         packet.msg-type := message type; /* KRB_AP_REP */
 
 
-Section A.11.             - 113 -    Expires 4 January 1998
+Section A.11.             - 113 -    Expires 11 January 1998
+
 
 
 
@@ -7412,7 +7533,8 @@ A.13.  KRB_SAFE generation
                 body.timestamp, body.usec := system_time;
 
 
-Section A.13.             - 114 -    Expires 4 January 1998
+Section A.13.             - 114 -    Expires 11 January 1998
+
 
 
 
@@ -7478,7 +7600,8 @@ A.15.  KRB_SAFE and KRB_PRIV common checks
         endif
 
 
-Section A.15.             - 115 -    Expires 4 January 1998
+Section A.15.             - 115 -    Expires 11 January 1998
+
 
 
 
@@ -7544,7 +7667,8 @@ A.17.  KRB_PRIV verification
         if (decryption_error()) then
 
 
-Section A.17.             - 116 -    Expires 4 January 1998
+Section A.17.             - 116 -    Expires 11 January 1998
+
 
 
 
@@ -7610,7 +7734,8 @@ A.18.  KRB_CRED generation
         encrypt OCTET STRING into packet.enc-part.cipher
 
 
-Section A.18.             - 117 -    Expires 4 January 1998
+Section A.18.             - 117 -    Expires 11 January 1998
+
 
 
 
@@ -7676,7 +7801,8 @@ A.20.  KRB_ERROR generation
         if (client time available) then
 
 
-Section A.20.             - 118 -    Expires 4 January 1998
+Section A.20.             - 118 -    Expires 11 January 1998
+
 
 
 
@@ -7742,7 +7868,8 @@ Section A.20.             - 118 -    Expires 4 January 1998
 
 
 
-                          - 119 -    Expires 4 January 1998
+                          - 119 -    Expires 11 January 1998
+
 
 
 
@@ -7808,7 +7935,8 @@ Section A.20.             - 118 -    Expires 4 January 1998
 
 
 
-                          - cxx -    Expires 4 January 1998
+                          - cxx -    Expires 11 January 1998
+
 
 
 
@@ -7874,7 +8002,8 @@ Background ............................................    2
 3.2.1. The KRB_AP_REQ message .........................   20
 
 
-                           - i -     Expires 4 January 1998
+                           - i -     Expires 11 January 1998
+
 
 
 
@@ -7940,7 +8069,8 @@ Background ............................................    2
 
 
 
-                           - ii -    Expires 4 January 1998
+                           - ii -    Expires 11 January 1998
+
 
 
 
@@ -8006,7 +8136,8 @@ cbc-crc) ..............................................   79
 6.3.3. DES in CBC mode with an MD4 checksum (des-
 
 
-                          - iii -    Expires 4 January 1998
+                          - iii -    Expires 11 January 1998
+
 
 
 
@@ -8072,7 +8203,8 @@ alternative (rsa-md4-des-k) ...........................   86
 
 
 
-                           - iv -    Expires 4 January 1998
+                           - iv -    Expires 11 January 1998
+
 
 
 
@@ -8138,7 +8270,8 @@ A.20. KRB_ERROR generation ............................  118
 
 
 
-                           - v -     Expires 4 January 1998
+                           - v -     Expires 11 January 1998
+
 
 
 
