@@ -884,7 +884,7 @@ BOOL make_sam_info(DOM_SAM_INFO *sam,
 				const char *logon_srv, const char *comp_name,
 				DOM_CRED *clnt_cred,
 				DOM_CRED *rtn_cred, uint16 logon_level,
-				NET_ID_INFO_CTR *ctr, uint16 validation_level)
+				NET_ID_INFO_CTR *ctr)
 {
 	if (sam == NULL) return False;
 
@@ -904,7 +904,6 @@ BOOL make_sam_info(DOM_SAM_INFO *sam,
 
 	sam->logon_level  = logon_level;
 	sam->ctr          = ctr;
-	sam->validation_level = validation_level;
 
 	return True;
 }
@@ -969,8 +968,6 @@ static BOOL smb_io_sam_info(char *desc,  DOM_SAM_INFO *sam, prs_struct *ps, int 
 	{
 		net_io_id_info_ctr("logon_info", sam->ctr, ps, depth);
 	}
-
-	prs_uint16("validation_level", ps, depth, &(sam->validation_level));
 
 	return True;
 }
@@ -1194,6 +1191,8 @@ BOOL net_io_q_sam_logon(char *desc,  NET_Q_SAM_LOGON *q_l, prs_struct *ps, int d
 	prs_align(ps);
 	
 	smb_io_sam_info("", &(q_l->sam_id), ps, depth);           /* domain SID */
+	prs_uint16("validation_level", ps, depth, &(q_l->validation_level));
+
 
 	return True;
 }
