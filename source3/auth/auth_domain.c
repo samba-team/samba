@@ -242,7 +242,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	fstring remote_machine;
 	NET_USER_INFO_3 info3;
 	struct cli_state *cli;
-	NTSTATUS nt_status;
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
 	struct passwd *pass;
 
 	/*
