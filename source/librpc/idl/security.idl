@@ -214,27 +214,54 @@ interface security
 		SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT	= 8
 	} security_ace_type;
 
+	typedef bitmap {
+		SEC_ACE_OBJECT_TYPE_PRESENT		= 0x00000001,
+		SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT	= 0x00000002
+	} security_ace_object_flags;
+
+	typedef [nodiscriminant] union {
+		/* this is the 'schemaIDGUID' attribute of the attribute object in the schema naming context */
+		[case(SEC_ACE_OBJECT_TYPE_PRESENT)] GUID type;
+		[default];
+	} security_ace_object_type;
+
+	typedef [nodiscriminant] union {
+		/* this is the 'schemaIDGUID' attribute of the objectclass object in the schema naming context
+		 * (of the parent container)
+		 */
+		[case(SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)] GUID inherited_type;
+		[default];
+	} security_ace_object_inherited_type;
+
+	typedef struct {
+		security_ace_object_flags flags;
+		[switch_is(flags & SEC_ACE_OBJECT_TYPE_PRESENT)] security_ace_object_type type;
+		[switch_is(flags & SEC_ACE_INHERITED_OBJECT_TYPE_PRESENT)] security_ace_object_inherited_type inherited_type;
+	} security_ace_object;
+
+	typedef [nodiscriminant] union {
+		[case(SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT)] security_ace_object object;
+		[case(SEC_ACE_TYPE_ACCESS_DENIED_OBJECT)] security_ace_object object;
+		[case(SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT)] security_ace_object object;
+		[case(SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT)] security_ace_object object;
+		[default];
+	} security_ace_object_ctr;
+
 	typedef [public] struct {
 		security_ace_type type;  /* SEC_ACE_TYPE_* */
 		security_ace_flags flags; /* SEC_ACE_FLAG_* */
 		[value(ndr_size_security_ace(r))] uint16 size;
 		uint32 access_mask;
-
-#if 0
-		/* the 'obj' part is present when type is XXXX_TYPE_XXXX_OBJECT */
-		struct {
-			uint32 flags;
-			GUID object_guid;
-			GUID inherit_guid;
-		} *obj;
-#endif
-
+		[switch_is(type)] security_ace_object_ctr object;
 		dom_sid trustee;
 	} security_ace;
 
 	typedef enum {
-		NT4_ACL_REVISION  = 2
+		SECURITY_ACL_REVISION_NT4	= 2,
+		SECURITY_ACL_REVISION_ADS	= 4
 	} security_acl_revision;
+
+	const uint NT4_ACL_REVISION	= SECURITY_ACL_REVISION_NT4;
 
 	typedef [public] struct {
 		security_acl_revision revision;
@@ -245,10 +272,10 @@ interface security
 
 	/* default revision for new ACLs */
 	typedef [enum8bit] enum {
-		SEC_DESC_REVISION_1 = 1
+		SECURITY_DESCRIPTOR_REVISION_1 = 1
 	} security_descriptor_revision;
 
-	const int SD_REVISION                    = SEC_DESC_REVISION_1;
+	const int SD_REVISION                    = SECURITY_DESCRIPTOR_REVISION_1;
 
 	/* security_descriptor->type bits */
 	typedef [bitmap16bit] bitmap {
@@ -276,7 +303,6 @@ interface security
 	const int SECINFO_GROUP                = 0x00000002;
 	const int SECINFO_DACL                 = 0x00000004;
 	const int SECINFO_SACL                 = 0x00000008;
-
 
 	typedef [public,flag(NDR_LITTLE_ENDIAN)] struct {
 		security_descriptor_revision revision;
