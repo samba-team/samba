@@ -774,8 +774,6 @@ static NTSTATUS ntlmssp_client_initial(struct ntlmssp_state *ntlmssp_state,
 		ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	}
 
-	ntlmssp_state->neg_flags |= NTLMSSP_NEGOTIATE_NTLM2;
-	
 	/* generate the ntlmssp negotiate packet */
 	msrpc_gen(next_request, "CddAA",
 		  "NTLMSSP",
@@ -812,6 +810,7 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	DATA_BLOB nt_response = data_blob(NULL, 0);
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB encrypted_session_key = data_blob(NULL, 0);
+	NTSTATUS nt_status;
 
 	if (!msrpc_parse(&reply, "CdBd",
 			 "NTLMSSP",
@@ -1001,6 +1000,11 @@ static NTSTATUS ntlmssp_client_challenge(struct ntlmssp_state *ntlmssp_state,
 	ntlmssp_state->session_key = session_key;
 
 	ntlmssp_state->expected_state = NTLMSSP_UNKNOWN;
+
+	if (!NT_STATUS_IS_OK(nt_status = ntlmssp_sign_init(ntlmssp_state))) {
+		DEBUG(1, ("Could not setup NTLMSSP signing/sealing system (error was: %s)\n", nt_errstr(nt_status)));
+		return nt_status;
+	}
 
 	return NT_STATUS_MORE_PROCESSING_REQUIRED;
 }

@@ -822,14 +822,6 @@ static NTSTATUS create_rpc_bind_resp(struct cli_state *cli,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (cli->pipe_auth_flags & AUTH_PIPE_SIGN) {
-		nt_status = ntlmssp_sign_init(cli->ntlmssp_pipe_state);
-		
-		if (!NT_STATUS_IS_OK(nt_status)) {
-			return nt_status;
-		}
-	}
-
 	data_blob_free(&ntlmssp_reply);
 	return NT_STATUS_OK;
 }
@@ -1335,6 +1327,10 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, int pipe_idx, const char *my_na
 		
 		if (!NT_STATUS_IS_OK(nt_status))
 			return False;
+
+		/* Currently the NTLMSSP code does not implement NTLM2 correctly for signing or sealing */
+
+		cli->ntlmssp_pipe_state->neg_flags &= ~NTLMSSP_NEGOTIATE_NTLM2;
 
 		nt_status = ntlmssp_set_username(cli->ntlmssp_pipe_state, 
 						 cli->user_name);
