@@ -210,9 +210,40 @@ static void process_options(int argc, char **argv, BOOL amroot)
 				       strlen(user_password));
 			}
 
-			break;
 		}
+		break;
 
+		case 'W': /* Take the SID on the command line and make it ours */
+			if (!lp_load(servicesf,True,False,False)) {
+				fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
+					servicesf);
+				exit(1);
+			}
+
+			if (!string_to_sid(&dom_sid, optarg)) {
+				fprintf(stderr, "Invalid SID: %s\n", optarg);
+				exit(1);
+			}
+		  	if (!secrets_init()) {
+				fprintf(stderr, "Unable to open secrets database!\n");
+				exit(1);	
+		  	}
+			if (!secrets_store_domain_sid(global_myname, &dom_sid)) {
+				fprintf(stderr, "Unable to write the new SID %s as the server SID for %s\n", optarg, global_myname);
+				exit(1);
+			}
+			/*
+			 * Now, write it to the workgroup as well, to make
+			 * things consistent. This is a risk however.
+			 */
+			if (!secrets_store_domain_sid(lp_workgroup(), &dom_sid)) {
+				fprintf(stderr, "Unable to write the new SID %s as the domain SID for %s\n", optarg, lp_workgroup());
+				exit(1);
+			}
+
+	        	exit(0);	
+		break;
+	
 		case 'X': /* Extract the SID for a domain from secrets */
 			if (!lp_load(servicesf,True,False,False)) {
 				fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
