@@ -186,6 +186,23 @@ krb5_etype_to_keytype(krb5_context context,
     return 0;
 }
 
+krb5_error_code
+krb5_convert_etype(krb5_context context,
+		   krb5_keytype *keytype)
+{
+#ifdef KTYPE_IS_ETYPE
+    krb5_error_code ret;
+    krb5_keytype kt;
+    ret = krb5_etype_to_keytype(context, 
+				(krb5_enctype)*keytype, 
+				&kt);
+    if(ret)
+	return ret;
+    *keytype = kt;
+#endif
+    return 0;
+}
+
 void
 krb5_generate_random_block(void *buf, size_t len)
 {
