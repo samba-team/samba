@@ -1,3 +1,10 @@
+2004-12-08  Love Hörquist Åstrand  <lha@it.su.se>
+
+	* kadmind.8: use keeps around options, from OpenBSD
+	
+	* kadmin.8: use keeps around options, "improve" spelling, from
+	openbsd
+
 2004-11-01  Love Hörquist Åstrand  <lha@it.su.se>
 
 	* get.c (getit): always free columns
