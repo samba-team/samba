@@ -1,3 +1,7 @@
+2001-06-04  Assar Westerlund  <assar@sics.se>
+
+	* update copyright messages on Wietse Venema's code.
+
 2001-05-31  Assar Westerlund  <assar@sics.se>
 
 	* login.c (krb5_to4): look for [realms]<realm>krb4_get_tickets to
