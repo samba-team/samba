@@ -808,7 +808,7 @@ BOOL print_job_end(int jobid)
 	SMB_STRUCT_STAT sbuf;
 	pstring current_directory;
 	pstring print_directory;
-	char *wd, *p;
+	char *wd, *p, *printer_name;
 	pstring jobname;
 
 	if (!pjob)
@@ -866,6 +866,13 @@ BOOL print_job_end(int jobid)
 	/* force update the database */
 	print_cache_flush(snum);
 	
+	/* Send a printer notify message */
+
+	printer_name = PRINTERNAME(snum);
+
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
+
 	return True;
 }
 
@@ -923,6 +930,22 @@ static int traverse_count_fn_queue(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, 
 	return 0;
 }
 
+/* Sort print jobs by submittal time */
+
+static int printjob_comp(print_queue_struct *j1, print_queue_struct *j2)
+{
+	/* Silly cases */
+
+	if (!j1 && !j2) return 0;
+	if (!j1) return -1;
+	if (!j2) return 1;
+
+	/* Sort on job start time */
+
+	if (j1->time == j2->time) return 0;
+	return (j1->time > j2->time) ? 1 : -1;
+}
+
 /****************************************************************************
 get a printer queue listing
 ****************************************************************************/
@@ -974,6 +997,12 @@ int print_queue_status(int snum,
 		free(data.dptr);
 	}
 
+	/* Sort the queue by submission time otherwise they are displayed
+	   in hash order. */
+
+	qsort(tstruct.queue, tstruct.qcount, sizeof(print_queue_struct),
+	      QSORT_CAST(printjob_comp));
+
 	*queue = tstruct.queue;
 	return tstruct.qcount;
 }
@@ -1008,6 +1037,17 @@ BOOL print_queue_pause(struct current_user *user, int snum, int *errcode)
 	/* force update the database */
 	print_cache_flush(snum);
 
+	/* Send a printer notify message */
+
+	if (ret == 0) {
+		char *printer_name;
+
+		printer_name = PRINTERNAME(snum);
+
+		message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+				 strlen(printer_name) + 1);
+	}
+
 	return ret == 0;
 }
 
@@ -1029,6 +1069,17 @@ BOOL print_queue_resume(struct current_user *user, int snum, int *errcode)
 	/* force update the database */
 	print_cache_flush(snum);
 
+	/* Send a printer notify message */
+
+	if (ret == 0) {
+		char *printer_name;
+
+		printer_name = PRINTERNAME(snum);
+
+		message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+				 strlen(printer_name) + 1);
+	}
+
 	return ret == 0;
 }
 
@@ -1039,6 +1090,7 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 {
 	print_queue_struct *queue;
 	print_status_struct status;
+	char *printer_name;
 	int njobs, i;
 
 	njobs = print_queue_status(snum, &queue, &status);
@@ -1050,6 +1102,13 @@ BOOL print_queue_purge(struct current_user *user, int snum, int *errcode)
 
 	print_cache_flush(snum);
 	safe_free(queue);
+
+	/* Send a printer notify message */
+
+	printer_name = PRINTERNAME(snum);
+
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
 
 	return True;
 }
