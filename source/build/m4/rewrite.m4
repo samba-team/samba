@@ -662,14 +662,6 @@ if test $ac_cv_shlib_works = no; then
 fi
 fi
 
-SMB_INFO_BUILD_ENV="$SMB_INFO_BUILD_ENV
-#############################################
-# Start Tell the Linker to export all symbols
-@{\$SMB_BUILD_CTX->{BUILD_ENV}{LD}{DYNEXP}} = input::str2array(\"$DYNEXP\");
-# End Tell the Linker to export all symbols
-#############################################
-"
-
 #
 # Check if the compiler supports the LL prefix on long long integers.
 # AIX needs this.

@@ -411,8 +411,7 @@ sub _do_depend_binaries($)
 
 		foreach my $subkey (@SUBSYSTEMS_LIST)
 		{
-			push (@INIT_FUNCTIONS, $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION}) if $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION} ne "";
-			
+			push (@INIT_FUNCTIONS, $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION}) if defined ($CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION}) and $CTX->{INPUT}{SUBSYSTEMS}{$subkey}{INIT_FUNCTION} ne "";
 		}
 
 		#
