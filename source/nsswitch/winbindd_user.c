@@ -360,6 +360,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	/* Call query_user_list to get a list of usernames and user rids */
 
 	num_entries = 0;
+	info = NULL;
 
 	status = methods->query_user_list(domain, mem_ctx, &num_entries, 
 					  &info);
