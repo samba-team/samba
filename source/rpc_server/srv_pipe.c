@@ -496,6 +496,56 @@ static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 }
 
 /*******************************************************************
+ Marshall a bind_nak pdu.
+*******************************************************************/
+
+static BOOL setup_bind_nak(pipes_struct *p, prs_struct *pd)
+{
+	prs_struct outgoing_rpc;
+	RPC_HDR nak_hdr;
+	uint16 zero = 0;
+
+	/*
+	 * Marshall directly into the outgoing PDU space. We
+	 * must do this as we need to set to the bind response
+	 * header and are never sending more than one PDU here.
+	 */
+
+	prs_init( &outgoing_rpc, 0, 4, MARSHALL);
+	prs_give_memory( &outgoing_rpc, (char *)p->current_pdu, sizeof(p->current_pdu), False);
+
+
+	/*
+	 * Initialize a bind_nak header.
+	 */
+
+	init_rpc_hdr(&nak_hdr, RPC_BINDNACK, RPC_FLG_FIRST | RPC_FLG_LAST,
+            p->hdr.call_id, RPC_HEADER_LEN + sizeof(uint16), 0);
+
+	/*
+	 * Marshall the header into the outgoing PDU.
+	 */
+
+	if(!smb_io_rpc_hdr("", &nak_hdr, &outgoing_rpc, 0)) {
+		DEBUG(0,("setup_bind_nak: marshalling of RPC_HDR failed.\n"));
+		return False;
+	}
+
+	/*
+	 * Now add the reject reason.
+	 */
+
+	if(!prs_uint16("reject code", &outgoing_rpc, 0, &zero))
+        return False;
+
+	p->data_sent_length = 0;
+	p->current_pdu_len = prs_offset(&outgoing_rpc);
+	p->current_pdu_sent = 0;
+
+	return True;
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -533,9 +583,11 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	}
 
 	if (api_fd_commands[i].fn == NULL) {
-		DEBUG(0,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
+		DEBUG(3,("api_pipe_bind_req: Unknown pipe name %s in bind request.\n",
 			p->name ));
-		return False;
+		if(!setup_bind_nak(p, pd))
+			return False;
+		return True;
 	}
 
 	/* decode the bind request */

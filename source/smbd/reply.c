@@ -3888,7 +3888,7 @@ int reply_setdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
  Get a lock count, dealing with large count requests.
 ****************************************************************************/
 
-SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL truncate_locks, BOOL *err)
+SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, BOOL mangle_locks, BOOL *err)
 {
   SMB_OFF_T count = 0;
 
@@ -3905,10 +3905,10 @@ SMB_OFF_T get_lock_count( char *data, int data_offset, BOOL large_file_format, B
      * NT4.x seems to be broken in that it sends large file
      * lockingX calls even if the CAP_LARGE_FILES was *not*
      * negotiated. For boxes without large file locks truncate the
-     * lock count by dropping the top 32 bits if truncate_locks is set.
+     * lock count by dropping the top 32 bits if mangle_locks is set.
      */
 
-    if(truncate_locks && (IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0)) {
+    if(mangle_locks && (IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)) != 0)) {
       DEBUG(3,("get_lock_count: truncating lock count (high)0x%x (low)0x%x to just low count.\n",
             (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_HIGH(data_offset)),
             (unsigned int)IVAL(data,SMB_LARGE_LKLEN_OFFSET_LOW(data_offset)) ));
@@ -3981,7 +3981,7 @@ uint32 map_lock_offset(uint32 high, uint32 low)
  Get a lock offset, dealing with large offset requests.
 ****************************************************************************/
 
-SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL truncate_locks, BOOL *err)
+SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, BOOL mangle_locks, BOOL *err)
 {
   SMB_OFF_T offset = 0;
 
@@ -3999,10 +3999,10 @@ SMB_OFF_T get_lock_offset( char *data, int data_offset, BOOL large_file_format, 
      * lockingX calls even if the CAP_LARGE_FILES was *not*
      * negotiated. For boxes without large file locks mangle the
      * lock offset by mapping the top 32 bits onto the lower 32 if
-     * truncate_locks is set.
+     * mangle_locks is set.
      */
       
-    if(truncate_locks && (IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0)) {
+    if(mangle_locks && (IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset)) != 0)) {
       uint32 low = IVAL(data,SMB_LARGE_LKOFF_OFFSET_LOW(data_offset));
       uint32 high = IVAL(data,SMB_LARGE_LKOFF_OFFSET_HIGH(data_offset));
       uint32 new_low = 0;
@@ -4068,7 +4068,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
   uint32 ecode=0, dummy2;
   int eclass=0, dummy1;
   BOOL large_file_format = (locktype & LOCKING_ANDX_LARGE_FILES);
-  BOOL truncate_locks = False;
+  BOOL mangle_locks = False;
   BOOL err1, err2;
 
   CHECK_FSP(fsp,conn);
@@ -4129,14 +4129,14 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
    * We only look at this parameter if we're on a small file
    * offset platform. JRA.
    */
-  truncate_locks = lp_truncate_locks(SNUM(conn));
+  mangle_locks = lp_mangle_locks(SNUM(conn));
 #endif
 
   /* Data now points at the beginning of the list
      of smb_unlkrng structs */
   for(i = 0; i < (int)num_ulocks; i++) {
-    count = get_lock_count( data, i, large_file_format, truncate_locks, &err1);
-    offset = get_lock_offset( data, i, large_file_format, truncate_locks, &err2);
+    count = get_lock_count( data, i, large_file_format, mangle_locks, &err1);
+    offset = get_lock_offset( data, i, large_file_format, mangle_locks, &err2);
 
     /*
      * There is no error code marked "stupid client bug".... :-).
@@ -4161,8 +4161,8 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      of smb_lkrng structs */
 
   for(i = 0; i < (int)num_locks; i++) {
-    count = get_lock_count( data, i, large_file_format, truncate_locks, &err1);
-    offset = get_lock_offset( data, i, large_file_format, truncate_locks, &err2);
+    count = get_lock_count( data, i, large_file_format, mangle_locks, &err1);
+    offset = get_lock_offset( data, i, large_file_format, mangle_locks, &err2);
 
     /*
      * There is no error code marked "stupid client bug".... :-).
@@ -4192,8 +4192,8 @@ dev = %x, inode = %.0f\n", fsp->fnum, (unsigned int)dev, (double)inode));
      all of the previous locks (X/Open spec). */
   if(i != num_locks && num_locks != 0) {
     for(; i >= 0; i--) {
-      count = get_lock_count( data, i, large_file_format, truncate_locks, &err1);
-      offset = get_lock_offset( data, i, large_file_format, truncate_locks, &err2);
+      count = get_lock_count( data, i, large_file_format, mangle_locks, &err1);
+      offset = get_lock_offset( data, i, large_file_format, mangle_locks, &err2);
 
       /*
        * There is no error code marked "stupid client bug".... :-).

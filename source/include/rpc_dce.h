@@ -36,6 +36,7 @@ enum RPC_PKT_TYPE
 	RPC_FAULT    = 0x03,
 	RPC_BIND     = 0x0B,
 	RPC_BINDACK  = 0x0C,
+	RPC_BINDNACK = 0x0D,
 	RPC_BINDRESP = 0x10 /* not the real name!  this is undocumented! */
 };
 

@@ -73,13 +73,13 @@ BOOL local_password_change(char *user_name, BOOL trust_account, BOOL add_user,
 	pwd = getpwnam(user_name);
 	
 	/*
-	 * Check for a machine account.
+	 * Check for a local account.
 	 */
 	
-	if(trust_account && !pwd) {
+	if(!pwd) {
 		slprintf(err_str, err_str_len - 1, "User %s does not \
-exist in system password file (usually /etc/passwd). Cannot add machine \
-account without a valid system user.\n", user_name);
+exist in system password file (usually /etc/passwd). Cannot add \
+account without a valid local system user.\n", user_name);
 		return False;
 	}
 

@@ -201,13 +201,13 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
   char *data;
   int i;
 #ifdef LARGE_SMB_OFF_T
-  BOOL truncate_locks = False;
+  BOOL mangle_locks = False;
 #else
   /*
    * We only look at this parameter if we're on a small file
    * offset platform. JRA.
    */
-  BOOL truncate_locks = lp_truncate_locks(SNUM(conn));
+  BOOL mangle_locks = lp_mangle_locks(SNUM(conn));
 #endif
 
   data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
@@ -222,8 +222,8 @@ static void reply_lockingX_error(blocking_lock_record *blr, int eclass, int32 ec
     uint32 dummy2;
     BOOL err;
 
-    count = get_lock_count( data, i, large_file_format, truncate_locks, &err);
-    offset = get_lock_offset( data, i, large_file_format, truncate_locks, &err);
+    count = get_lock_count( data, i, large_file_format, mangle_locks, &err);
+    offset = get_lock_offset( data, i, large_file_format, mangle_locks, &err);
 
     /*
      * We know err cannot be set as if it was the lock
@@ -400,13 +400,13 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   int eclass=0;
   uint32 ecode=0;
 #ifdef LARGE_SMB_OFF_T
-  BOOL truncate_locks = False;
+  BOOL mangle_locks = False;
 #else
   /*
    * We only look at this parameter if we're on a small file
    * offset platform. JRA.
    */
-  BOOL truncate_locks = lp_truncate_locks(SNUM(conn));
+  BOOL mangle_locks = lp_mangle_locks(SNUM(conn));
 #endif
 
   data = smb_buf(inbuf) + ((large_file_format ? 20 : 10)*num_ulocks);
@@ -419,8 +419,8 @@ static BOOL process_lockingX(blocking_lock_record *blr)
   for(; blr->lock_num < num_locks; blr->lock_num++) {
     BOOL err;
 
-    count = get_lock_count( data, blr->lock_num, large_file_format, truncate_locks, &err);
-    offset = get_lock_offset( data, blr->lock_num, large_file_format, truncate_locks, &err);
+    count = get_lock_count( data, blr->lock_num, large_file_format, mangle_locks, &err);
+    offset = get_lock_offset( data, blr->lock_num, large_file_format, mangle_locks, &err);
 
     /*
      * We know err cannot be set as if it was the lock

@@ -337,7 +337,7 @@ typedef struct
   BOOL bDosFiletimeResolution;
   BOOL bFakeDirCreateTimes;
   BOOL bBlockingLocks;
-  BOOL bTruncateLocks;
+  BOOL bMangleLocks;
   char dummy[3]; /* for alignment */
 } service;
 
@@ -432,7 +432,7 @@ static service sDefault =
   False, /* bDosFiletimeResolution */
   False, /* bFakeDirCreateTimes */
   True,  /* bBlockingLocks */
-  True,  /* bTruncateLocks */
+  True,  /* bMangleLocks */
   ""     /* dummy */
 };
 
@@ -738,16 +738,16 @@ static struct parm_struct parm_table[] =
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
-  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  FLAG_SHARE},
+  {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"fake oplocks",     P_BOOL,    P_LOCAL,  &sDefault.bFakeOplocks,     NULL,   NULL,  FLAG_SHARE},
   {"kernel oplocks",   P_BOOL,    P_GLOBAL, &Globals.bKernelOplocks,    NULL,   NULL,  FLAG_GLOBAL},
   {"locking",          P_BOOL,    P_LOCAL,  &sDefault.bLocking,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"mangle locks",     P_BOOL,    P_LOCAL,  &sDefault.bMangleLocks,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"ole locking compatibility",   P_BOOL,    P_GLOBAL,  &Globals.bOleLockingCompat,   NULL,   NULL,  FLAG_GLOBAL},
   {"oplocks",          P_BOOL,    P_LOCAL,  &sDefault.bOpLocks,         NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"oplock contention limit",P_INTEGER,P_LOCAL,&sDefault.iOplockContentionLimit,NULL,NULL,FLAG_SHARE|FLAG_GLOBAL},
   {"strict locking",   P_BOOL,    P_LOCAL,  &sDefault.bStrictLocking,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"share modes",      P_BOOL,    P_LOCAL,  &sDefault.bShareModes,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
-  {"truncate locks",   P_BOOL,    P_LOCAL,  &sDefault.bTruncateLocks,   NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
 
 #ifdef WITH_LDAP
   {"Ldap Options", P_SEP, P_SEPARATOR},
@@ -1329,7 +1329,7 @@ FN_LOCAL_BOOL(lp_dos_filetimes,bDosFiletimes)
 FN_LOCAL_BOOL(lp_dos_filetime_resolution,bDosFiletimeResolution)
 FN_LOCAL_BOOL(lp_fake_dir_create_times,bFakeDirCreateTimes)
 FN_LOCAL_BOOL(lp_blocking_locks,bBlockingLocks)
-FN_LOCAL_BOOL(lp_truncate_locks,bTruncateLocks)
+FN_LOCAL_BOOL(lp_mangle_locks,bMangleLocks)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mask)
 FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
