@@ -341,7 +341,11 @@ sub ParseFunction($)
 
     $result .= ");\n\n";
 
-    $result .= "\tPyDict_SetItemString(temp, \"result\", resultobj);\n";
+    if ($fn->{RETURN_TYPE} eq "NTSTATUS") {
+	$result .= "\tPyDict_SetItemString(temp, \"result\", resultobj);\n";
+    } else {
+	$result .= "\tPyDict_SetItemString(temp, \"result\", PyLong_FromLong(W_ERROR_V(arg3->out.result)));\n";
+    }
     $result .= "\tresultobj = temp;\n";
 
     $result .= "\ttalloc_free(mem_ctx);\n";
@@ -350,7 +354,7 @@ sub ParseFunction($)
     # Function definitions
 
     $result .= "%rename($fn->{NAME}) dcerpc_$fn->{NAME};\n";
-    $result .= "$fn->{RETURN_TYPE} dcerpc_$fn->{NAME}(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $fn->{NAME} *r);\n\n";
+    $result .= "NTSTATUS dcerpc_$fn->{NAME}(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct $fn->{NAME} *r);\n\n";
 
     return $result;
 }
@@ -442,6 +446,19 @@ sub ParseStruct($)
     $result .= "\n";
     $result .= "\treturn obj;\n";
     $result .= "}\n";
+
+    # Generate function to convert DATA_BLOB to Python dict
+
+    if (util::has_property($s, "public")) {
+	$result .= "/* Convert DATA_BLOB to python dict of struct $s->{NAME} */\n\n";
+
+	$result .= "NTSTATUS DATA_BLOB_to_python_$s->{NAME}(TALLOC_CTX *mem_ctx, DATA_BLOB *blob, PyObject **obj)\n";
+	$result .= "{\n";
+	$result .= "\tstruct $s->{NAME} s;\n";
+	$result .= "\tNTSTATUS result = ndr_pull_struct_blob(blob, mem_ctx, &s, ndr_pull_$s->{NAME});\n\n";
+	$result .= "\treturn NT_STATUS_OK;\n";
+	$result .= "}\n";
+    }
 
     $result .= "\n%}\n\n";    
 

@@ -352,6 +352,7 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 %exception {
 	$action
+
 	if (NT_STATUS_IS_ERR(result)) {
 		set_ntstatus_exception(NT_STATUS_V(result));
 		return NULL;
@@ -365,10 +366,14 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 %exception {
 	$action
+
 	if (NT_STATUS_IS_ERR(result)) {
 		set_ntstatus_exception(NT_STATUS_V(result));
 		return NULL;
 	}
+
+	/* Emulate NT_STATUS_IS_ERR() */
+
 	if (!W_ERROR_IS_OK(arg3->out.result) && 
 	    !(W_ERROR_EQUAL(arg3->out.result, WERR_INSUFFICIENT_BUFFER))) {
 		set_werror_exception(W_ERROR_V(arg3->out.result));
@@ -378,5 +383,8 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 %include "librpc/gen_ndr/winreg.i"
 %include "librpc/gen_ndr/spoolss.i"
+
+/* The status codes must be included last otherwise the automatically
+   generated .i files get confused.  This is kind of yucky. */
 
 %include "status_codes.i"
