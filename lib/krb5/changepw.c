@@ -52,7 +52,7 @@ get_kdc_address (krb5_context context,
 	return ret;
 
     port = ntohs(krb5_getportbyname (context, "kpasswd", "udp", KPASSWD_PORT));
-    error = roken_getaddrinfo_hostspec(*hostlist, port, ai);
+    error = roken_getaddrinfo_hostspec2(*hostlist, SOCK_STREAM, port, ai);
 
     krb5_free_krbhst (context, hostlist);
     if(error)
