@@ -202,12 +202,12 @@ pop_pass (POP *p)
     if(stat(p->drop_name, &st) < 0 || !S_ISDIR(st.st_mode)){
 	/*  Make a temporary copy of the user's maildrop */
 	/*    and set the group and user id */
-	if (pop_dropcopy(p,pw) != POP_SUCCESS) return (POP_FAILURE);
+	if (pop_dropcopy(p, pw) != POP_SUCCESS) return (POP_FAILURE);
 	
 	/*  Get information about the maildrop */
 	if (pop_dropinfo(p) != POP_SUCCESS) return(POP_FAILURE);
     } else {
-	changeuser(p, pw);
+	if(changeuser(p, pw) != POP_SUCCESS) return POP_FAILURE;
 	if(pop_maildir_info(p) != POP_SUCCESS) return POP_FAILURE;
     }
     /*  Initialize the last-message-accessed number */
