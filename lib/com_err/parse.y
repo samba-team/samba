@@ -135,7 +135,7 @@ statement	: INDEX NUMBER
 		}
 		| END
 		{
-			return;
+			YYACCEPT;
 		}
 		;
 
