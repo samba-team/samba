@@ -565,7 +565,7 @@ get_response(const char *prompt, const char *def, char *buf, size_t len)
     if(fgets(buf, len, stdin) == NULL) {
 	int save_errno = errno;
 	if(ferror(stdin))
-	    krb5_err(context, save_errno, "<stdin>");
+	    krb5_err(context, 1, save_errno, "<stdin>");
 	signal(SIGINT, osig);
 	return 1;
     }
