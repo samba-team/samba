@@ -230,7 +230,7 @@ LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_samr.o \
 	       rpc_client/cli_wkssvc.o rpc_client/cli_dfs.o \
 	       rpc_client/cli_reg.o rpc_client/cli_pipe.o \
 	       rpc_client/cli_spoolss.o rpc_client/cli_spoolss_notify.o  \
-	       rpc_client/cli_ds.o rpc_client/cli_echo.o libsmb/namequery_dc.o
+	       rpc_client/cli_ds.o rpc_client/cli_echo.o 
 
 LIBMSRPC_SERVER_OBJ = libsmb/trusts_util.o
 
@@ -309,7 +309,7 @@ VFS_NETATALK_OBJ = modules/vfs_netatalk.o
 
 PLAINTEXT_AUTH_OBJ = auth/pampass.o auth/pass_check.o
 
-UNIGRP_OBJ = libsmb/samlogon_cache.o
+SLCACHE_OBJ = libsmb/samlogon_cache.o
 
 AUTH_BUILTIN_OBJ = auth/auth_builtin.o
 AUTH_DOMAIN_OBJ = auth/auth_domain.o
@@ -320,8 +320,8 @@ AUTH_UNIX_OBJ = auth/auth_unix.o
 AUTH_WINBIND_OBJ = auth/auth_winbind.o
 
 AUTH_OBJ = auth/auth.o @AUTH_STATIC@ auth/auth_util.o auth/auth_compat.o \
-		   auth/auth_ntlmssp.o \
-	   $(PLAINTEXT_AUTH_OBJ) $(UNIGRP_OBJ)
+	   auth/auth_ntlmssp.o libsmb/namequery_dc.o \
+	   $(PLAINTEXT_AUTH_OBJ) $(SLCACHE_OBJ)
 
 MANGLE_OBJ = smbd/mangle.o smbd/mangle_hash.o smbd/mangle_map.o smbd/mangle_hash2.o
 
@@ -595,13 +595,14 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_rpc.o \
 		nsswitch/winbindd_ads.o \
 		nsswitch/winbindd_dual.o \
-		nsswitch/winbindd_passdb.o 
+		nsswitch/winbindd_passdb.o \
+		libsmb/namequery_dc.o
 
 WINBINDD_OBJ = \
 		$(WINBINDD_OBJ1) $(PASSDB_OBJ) $(GROUPDB_OBJ) \
 		$(PARAM_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
 		$(LIBSMB_OBJ) $(LIBMSRPC_OBJ) $(RPC_PARSE_OBJ) \
-		$(PROFILE_OBJ) $(UNIGRP_OBJ) $(IDMAP_OBJ) $(SMBLDAP_OBJ) \
+		$(PROFILE_OBJ) $(SLCACHE_OBJ) $(IDMAP_OBJ) $(SMBLDAP_OBJ) \
 		$(SECRETS_OBJ) $(LIBADS_OBJ) $(KRBCLIENT_OBJ) $(POPT_LIB_OBJ) 
 
 WBINFO_OBJ = nsswitch/wbinfo.o $(LIBSAMBA_OBJ) $(PARAM_OBJ) $(LIB_OBJ) \

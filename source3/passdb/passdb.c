@@ -29,10 +29,13 @@
 
 const char *get_global_sam_name(void) 
 {
-	if ((lp_server_role() == ROLE_DOMAIN_PDC) || (lp_server_role() == ROLE_DOMAIN_BDC)) {
-		return lp_workgroup();
-	}
-	return global_myname();
+	/* standalone servers can only use the local netbios name */
+	if ( lp_server_role() == ROLE_STANDALONE )
+		return global_myname();
+
+	/* Windows domain members default to the DOMAIN 
+	   name when not specified */
+	return lp_workgroup();
 }
 
 /************************************************************

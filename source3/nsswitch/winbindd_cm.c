@@ -76,72 +76,6 @@ struct winbindd_cm_conn {
 
 static struct winbindd_cm_conn *cm_conns = NULL;
 
-/*
-  find the DC for a domain using methods appropriate for a ADS domain
-*/
-static BOOL ads_dc_name(const char *domain, struct in_addr *dc_ip, fstring srv_name)
-{
-	ADS_STRUCT *ads;
-	const char *realm = domain;
-
-	if (strcasecmp(realm, lp_workgroup()) == 0)
-		realm = lp_realm();
-
-	ads = ads_init(realm, domain, NULL);
-	if (!ads)
-		return False;
-
-	/* we don't need to bind, just connect */
-	ads->auth.flags |= ADS_AUTH_NO_BIND;
-
-	DEBUG(4,("ads_dc_name: domain=%s\n", domain));
-
-#ifdef HAVE_ADS
-	/* a full ads_connect() is actually overkill, as we don't srictly need
-	   to do the SASL auth in order to get the info we need, but libads
-	   doesn't offer a better way right now */
-	ads_connect(ads);
-#endif
-
-	if (!ads->config.realm)
-		return False;
-
-	fstrcpy(srv_name, ads->config.ldap_server_name);
-	strupper(srv_name);
-	*dc_ip = ads->ldap_ip;
-	ads_destroy(&ads);
-	
-	DEBUG(4,("ads_dc_name: using server='%s' IP=%s\n",
-		 srv_name, inet_ntoa(*dc_ip)));
-	
-	return True;
-}
-
-/**********************************************************************
- wrapper around ads and rpc methods of finds DC's
-**********************************************************************/
-
-static BOOL cm_get_dc_name(const char *domain, fstring srv_name, 
-                           struct in_addr *ip_out)
-{
-	struct in_addr dc_ip;
-	BOOL ret;
-
-	zero_ip(&dc_ip);
-
-	ret = False;
-	if (lp_security() == SEC_ADS)
-		ret = ads_dc_name(domain, &dc_ip, srv_name);
-
-	if (!ret) {
-		/* fall back on rpc methods if the ADS methods fail */
-		ret = rpc_dc_name(domain, srv_name, &dc_ip);
-	}
-
-	*ip_out = dc_ip;
-
-	return ret;
-}
 
 /* Choose between anonymous or authenticated connections.  We need to use
    an authenticated connection if DCs have the RestrictAnonymous registry
@@ -192,10 +126,10 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 	fstrcpy(new_conn->domain, domain);
 	fstrcpy(new_conn->pipe_name, get_pipe_name_from_index(pipe_index));
 	
-	/* connection failure cache has been moved inside of rpc_dc_name
+	/* connection failure cache has been moved inside of get_dc_name
 	   so we can deal with half dead DC's   --jerry */
 
-	if (!cm_get_dc_name(domain, new_conn->controller, &dc_ip)) {
+	if (!get_dc_name(domain, new_conn->controller, &dc_ip)) {
 		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		add_failed_connection_entry(domain, "", result);
 		return result;

@@ -216,6 +216,9 @@ NTSTATUS make_user_info_map(auth_usersupplied_info **user_info,
 	/* do what win2k does.  Always map unknown domains to our own
 	   and let the "passdb backend" handle unknown users */
 
+	/* FIXME!!!! grr...this is a broken check currently since is_trusted_domain()
+	   is useless without winbindd   --jerry */
+
 	if ( !is_trusted_domain(domain) ) 
 		domain = get_global_sam_name();
 	
@@ -869,10 +872,12 @@ static NTSTATUS fill_sam_account(const char *domain,
 
 	passwd = Get_Pwnam(dom_user);
 
-	if ( (passwd == NULL) && is_myworkgroup(domain) ) {
-		/* For our own domain also try unqualified */
+	/* if the lookup for DOMAIN\username failed, try again 
+	   with just 'username'.  This is need for accessing the server
+	   as a trust user that actually maps to a local account */
+
+	if ( !passwd ) 
 		passwd = Get_Pwnam(username);
-	}
 
 	if (passwd == NULL)
 		return NT_STATUS_NO_SUCH_USER;
