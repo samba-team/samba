@@ -21,8 +21,8 @@
 	<author>
 		<firstname>John</firstname><surname>Trostel</surname>
 		<affiliation>
-			<address><email>jtrostel@snapserver.com</email></address>
 			<orgname>SNAP</orgname>
+			<address><email>jtrostel@snapserver.com</email></address>
 		</affiliation>
 	</author>
 
@@ -575,10 +575,11 @@ are described in more detail in the <citerefentry><refentrytitle>winbindd</refen
 linkend="winbindcfg">the next example</link>, was modified to include the necessary entries in the [global] section.
 </para>
 
-<para><smbconfexample id="winbindcfg">
+<para>
+<smbconfexample id="winbindcfg">
 		<title>smb.conf for Winbind set-up</title>
 <smbconfsection>[global]</smbconfsection>
-     &lt;...&gt;
+<member>&lt;...&gt;</member>
 <smbconfcomment> separate domain and username with '\', like DOMAIN\username</smbconfcomment>
 <smbconfoption name="winbind separator">\</smbconfoption>
 <smbconfcomment> use uids from 10000 to 20000 for domain users</smbconfcomment>
@@ -1237,10 +1238,12 @@ maryo:x:15000:15003:Mary Orville:/home/MIDEARTH/maryo:/bin/false
 
 <para><quote>
 But the following command just fails:
+</quote>
 <screen>
 &rootprompt;<userinput>chown maryo a_file</userinput>
 chown: `maryo': invalid user
 </screen>
+<quote>
 This is driving me nuts! What can be wrong?
 </quote></para>
 

@@ -999,9 +999,9 @@ per-user settings using the Domain User Manager (as with MS Windows NT4/ Win 200
 <para> In any case, you can configure only one profile per user. That profile can be either: </para>
 
 <itemizedlist>
-	<listitem>A profile unique to that user.</listitem>
-	<listitem>A mandatory profile (one the user cannot change).</listitem>
-	<listitem>A group profile (really should be mandatory, that is unchangable).</listitem>
+	<listitem><para>A profile unique to that user.</para></listitem>
+	<listitem><para>A mandatory profile (one the user cannot change).</para></listitem>
+	<listitem><para>A group profile (really should be mandatory, that is unchangable).</para></listitem>
 </itemizedlist>
 
 </sect2>
