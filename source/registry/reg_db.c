@@ -248,7 +248,7 @@ int regdb_fetch_reg_keys( char* key, REGSUBKEY_CTR *ctr )
 	
 	/* convert to key format */
 	pstring_sub( path, "\\", "/" ); 
-	strupper_m( path );
+	/*strupper_m( path );*/
 	
 	dbuf = tdb_fetch_by_string( tdb_reg, path );
 	
