@@ -51,6 +51,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
+#include <sys/time.h>
 
 #ifdef HAVE_STDINT_H
 #include <stdint.h>
