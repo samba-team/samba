@@ -52,7 +52,6 @@ libroken_la_SOURCES =		\
 	simple_exec.c		\
 	snprintf.c		\
 	socket.c		\
-	timeval.c		\
 	tm2time.c		\
 	verify.c		\
 	warnerr.c		\
@@ -140,7 +139,7 @@ $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
 include_HEADERS = $(err_h) base64.h getarg.h \
 	parse_bytes.h parse_time.h parse_units.h \
-	resolve.h roken.h roken-common.h timeval.h
+	resolve.h roken.h roken-common.h
 
 build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
 
