@@ -1,4 +1,10 @@
+2000-08-09  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/mit_dump.c: handle all sorts of weird MIT salt types
+
 2000-08-08  Johan Danielsson  <joda@pdc.kth.se>
+
+	* doc/setup.texi: port 212 -> 2121
 
 	* lib/krb5/principal.c: krb5_principal_match
 
