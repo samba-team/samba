@@ -1,5 +1,11 @@
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
+	* load.c: check for (un-)encrypted keys
+
+	* dump.c: use hdb_print_entry
+	
+	* version4.c: version 4 support
+
 	* Makefile.am: link with krb4
 
 	* kadmin_locl.h: include <sys/un.h>

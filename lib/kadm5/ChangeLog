@@ -1,5 +1,36 @@
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
+	* chpass_s.c: fix arguments to _kadm5_set_keys2
+
+	* private.h: proto
+
+	* set_keys.c: clear mkvno
+
+	* rename_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* randkey_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* modify_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* log.c: add flags to fetch and store; seal keys before logging
+
+	* get_s.c: add flags to fetch and store; seal keys before logging
+
+	* get_princs_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* delete_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* create_s.c: add flags to fetch and store; seal keys before
+	logging
+
+	* chpass_s.c: add flags to fetch and store; seal keys before
+	logging
+
 	* Makefile.am: remove server.c
 
 	* admin.h: add prototypes

@@ -1,5 +1,40 @@
 1999-05-03  Johan Danielsson  <joda@pdc.kth.se>
 
+	* lib/hdb/convert_db.c: add support for upgrading database
+	versions
+
+	* kdc/misc.c: add flags to fetch
+
+	* kdc/kstash.c: unlink keyfile on failure, chmod to 400
+
+	* kdc/hpropd.c: add --print option
+
+	* kdc/hprop.c: pass flags to hdb_foreach
+
+	* lib/hdb/convert_db.c: add some flags
+
+	* lib/hdb/Makefile.am: remove extra LDFLAGS, update version to 2;
+	build prototype headers
+	
+	* lib/hdb/hdb_locl.h: update prototypes
+
+	* lib/hdb/print.c: move printable version of entry from kadmin
+
+	* lib/hdb/hdb.c: change hdb_{seal,unseal}_* to check if the key is
+	sealed or not; add flags to hdb_foreach
+
+	* lib/hdb/ndbm.c: add flags to NDBM_seq, NDBM_firstkey, and
+	NDBM_nextkey
+
+	* lib/hdb/db.c: add flags to DB_seq, DB_firstkey, and DB_nextkey
+
+	* lib/hdb/common.c: add flags to _hdb_{fetch,store}
+
+	* lib/hdb/hdb.h: add master_key_version to struct hdb, update
+	prototypes
+
+	* lib/hdb/hdb.asn1: make mkvno optional, update version to 2
+
 	* configure.in: --enable-netinfo
 
 	* lib/krb5/config_file.c: HAVE_NETINFO_NI_H -> HAVE_NETINFO
