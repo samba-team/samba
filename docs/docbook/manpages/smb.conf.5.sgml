@@ -608,6 +608,7 @@
 	each parameter for details.  Note that some are synonyms.</para>
 
 	<itemizedlist>
+		<listitem><para><link linkend="ACLCOMPATIBILITY"><parameter>acl compatibility</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
@@ -941,6 +942,23 @@
 	
 	<variablelist>
 
+
+		<varlistentry>
+		<term><anchor id="ACLCOMPATIBILITY">acl compatibility (G)</term>
+		<listitem><para>New in Samba 2.2.8 and above, this string parameter tells
+		smbd if it should modify any Windows access control lists created
+		from POSIX access control lists to remove features which are not
+		supported by Windows 2000 but not supported by the Windows NT ACL edit.
+		control.</para>
+
+		<para>By default this parameter is set automatically by detecting the
+		client type and is set to "true" if the client is Windows NT.</para>
+
+		<para>Default: <emphasis>client detected</emphasis></para>
+		<para>Example: <command>acl compatibility = Win2k</command></para>
+		<para>Example: <command>acl compatibility = winnt</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="ADDPRINTERCOMMAND">add printer command (G)</term>
