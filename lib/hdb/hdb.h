@@ -43,6 +43,9 @@ krb5_error_code hdb_db_open(krb5_context, HDB**, const char*, int, mode_t);
 krb5_error_code hdb_ndbm_open(krb5_context, HDB**, const char*, int, mode_t);
 krb5_error_code hdb_open(krb5_context, HDB**, const char*, int, mode_t);
 
+krb5_error_code hdb_etype2key(krb5_context, hdb_entry*, 
+			      krb5_enctype, krb5_keyblock**);
+
 #define HDB_DEFAULT_DB "heimdal"
 
 #endif /* __HDB_H__ */
