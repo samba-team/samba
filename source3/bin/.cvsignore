@@ -29,6 +29,7 @@ smbtorture
 smbtree
 smbumount
 swat
+talloctort
 testparm
 testprns
 wbinfo
