@@ -1,3 +1,8 @@
+1999-11-15  Assar Westerlund  <assar@sics.se>
+
+	* */lib/Makefile.in: set LIBNAME.  From Enrico Scholz
+ 	<Enrico.Scholz@informatik.tu-chemnitz.de>
+
 1999-10-17  Assar Westerlund  <assar@sics.se>
 
 	* afskauthlib/verify.c (verify_krb5): need realm for v5 -> v4
