@@ -171,7 +171,7 @@ find_all_addresses (krb5_context context,
 	 sz = max(sz, sizeof(ifr->ifr_name) + sa->sa_len);
 #endif
 #ifdef SA_LEN
-	 sz = max(sz, SA_LEN(sa));
+	 sz = max(sz, sizeof(ifr->ifr_name) + SA_LEN(sa));
 #endif
 	 memcpy (ifreq.ifr_name, ifr->ifr_name, sizeof(ifr->ifr_name));
 
