@@ -334,7 +334,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
 	/* Push domain components */
 	dc = domain;
 	q1 = q;
-	while ((component = strsep(&dc, "."))) {
+	while ((component = strtok(dc, "."))) {
 	  size = push_ascii(&q[1], component, -1, 0);
 	  SCVAL(q, 0, size);
 	  q += (size + 1);
