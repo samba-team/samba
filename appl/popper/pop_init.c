@@ -151,7 +151,8 @@ pop_init(POP *p,int argcount,char **argmessage)
 
     /*  Save the dotted decimal form of the client's IP address 
         in the POP parameter block */
-    p->ipaddr = inet_ntoa(cs.sin_addr);
+    strncpy (p->ipaddr, inet_ntoa(cs.sin_addr), sizeof(p->ipaddr));
+    p->ipaddr[sizeof(p->ipaddr) - 1] = '\0';
 
     /*  Save the client's port */
     p->ipport = ntohs(cs.sin_port);
@@ -161,7 +162,7 @@ pop_init(POP *p,int argcount,char **argmessage)
     if (ch == NULL){
         pop_log(p,POP_PRIORITY,
             "Unable to get canonical name of client, err = %d",errno);
-        p->client = p->ipaddr;
+	strcpy (p->client, p->ipaddr);
     }
     /*  Save the cannonical name of the client host in 
         the POP parameter block */
@@ -176,12 +177,13 @@ pop_init(POP *p,int argcount,char **argmessage)
             pop_log(p,POP_PRIORITY,
                 "Client at \"%s\" resolves to an unknown host name \"%s\"",
                     p->ipaddr,ch->h_name);
-            p->client = p->ipaddr;
+	    strcpy (p->client, p->ipaddr);
         }
         else {
             /*  Save the host name (the previous value was 
                 destroyed by gethostbyname) */
-            p->client = ch_again->h_name;
+	    strncpy (p->client, ch_again->h_name, sizeof(p->client));
+	    p->client[sizeof(p->client) - 1] = '\0';
 
             /*  Look for the client's IP address in the list returned 
                 for its name */
@@ -194,7 +196,7 @@ pop_init(POP *p,int argcount,char **argmessage)
                 pop_log (p,POP_PRIORITY,
                     "Client address \"%s\" not listed for its host name \"%s\"",
                         p->ipaddr,ch->h_name);
-                p->client = p->ipaddr;
+		strcpy (p->client, p->ipaddr);
             }
         }
     }
