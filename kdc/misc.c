@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -37,8 +37,8 @@ RCSID("$Id$");
 
 struct timeval now;
 
-hdb_entry*
-db_fetch(krb5_principal principal)
+krb5_error_code
+db_fetch(krb5_principal principal, hdb_entry **h)
 {
     hdb_entry *ent;
     krb5_error_code ret;
@@ -46,7 +46,7 @@ db_fetch(krb5_principal principal)
 
     ent = malloc (sizeof (*ent));
     if (ent == NULL)
-	return NULL;
+	return ENOMEM;
     ent->principal = principal;
 
     for(i = 0; i < num_db; i++) {
@@ -58,11 +58,13 @@ db_fetch(krb5_principal principal)
 	}
 	ret = db[i]->fetch(context, db[i], HDB_F_DECRYPT, ent);
 	db[i]->close(context, db[i]);
-	if(ret == 0)
-	    return ent;
+	if(ret == 0) {
+	    *h = ent;
+	    return 0;
+	}
     }
     free(ent);
-    return NULL;
+    return ENOENT;
 }
 
 void
