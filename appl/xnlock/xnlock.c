@@ -250,7 +250,7 @@ zrefresh()
   case 0:
       /* Child */
       execlp("zrefresh", "zrefresh", 0);
-      execl("/usr/athena/bin/zrefresh", "zrefresh", 0);
+      execl(BINDIR "/zrefresh", "zrefresh", 0);
 #if 0
       fprintf(stderr, "Warning %s: Failed to exec zrefresh\n", ProgName);
 #endif
