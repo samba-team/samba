@@ -525,10 +525,8 @@ BOOL parse_domain_user(const char *domuser, fstring domain, fstring user)
 		
 		if ( assume_domain(lp_workgroup())) {
 			fstrcpy(domain, lp_workgroup());
-		} else if (assume_domain(get_global_sam_name())) {
-			fstrcpy( domain, get_global_sam_name() ); 
 		} else {
-			fstrcpy( domain, "");
+			fstrcpy( domain, get_global_sam_name() ); 
 		}
 	} 
 	else {
