@@ -123,7 +123,8 @@ enum state_type
 	NAME_QUERY_DOM_SRV_CHK,
 	NAME_QUERY_SRV_CHK,
 	NAME_QUERY_FIND_MST,
-	NAME_QUERY_MST_CHK
+	NAME_QUERY_MST_CHK,
+	NAME_QUERY_DOMAIN,
 };
 
 /* a netbios name structure */
