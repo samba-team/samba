@@ -511,10 +511,10 @@ sub RewriteC($$$)
 	# of adding a couple of parameters to each function call.
         #
 
-	# Add proto tree and hf argument to ndr_pull_ptr() calls.
+	# Add proto tree and name argument to ndr_pull_ptr() calls.
 
-	s/(ndr_pull_ptr\(ndr,\ ([^\)]*?)\);)
-	    /ndr_pull_ptr(ndr, tree, hf_ptr, $2);/smgx;
+	s/(ndr_pull_ptr\(ndr,\ (&_ptr_([^\)]*?))\);)
+	    /ndr_pull_ptr(ndr, tree, "$3", $2);/smgx;
 
 	# Wrap ndr_pull_array_size() and ndr_pull_array_length()
 	# functions.  Add leading space in front of first parameter so
