@@ -1,24 +1,23 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-XINCS = @X_CFLAGS@
-XLIBS = @X_LIBS@ -lXt @X_PRE_LIBS@ -lX11 @X_EXTRA_LIBS@
+INCLUDES += $(INCLUDE_krb4) $(X_CFLAGS) -DBINDIR=\"$(bindir)\"
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) $(X_CFLAGS) -DBINDIR=\"$(bindir)\"
+WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
 bin_PROGRAMS = xnlock
-if KRB4
-AFSLIB=$(top_builddir)/lib/kafs/libkafs.a 
-else
-AFSLIB=
-endif
+xnlock_SOURCES = xnlock.c
+
+man1_MANS = xnlock.man
+
+EXTRA_DIST = $(man1_MANS) nose.0.left nose.0.right nose.1.left nose.1.right \
+	nose.down nose.front nose.left.front nose.right.front
 
 LDADD = \
-	$(top_builddir)/lib/kafs/libkafs.a \
-	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_kafs) \
+	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la \
-	$(XLIBS)
+	$(X_LIBS) -lXt $(X_PRE_LIBS) -lX11 $(X_EXTRA_LIBS)

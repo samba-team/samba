@@ -9,22 +9,25 @@ INCLUDES = -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
 libexec_PROGRAMS = ftpd
 
 if KRB4
-krb4_sources = $(EXTRA_ftpd_SOURCES)
-else
-krb4_sources = 
+krb4_sources = krb4.c kauth.c
+endif
+if KRB5
+krb5_sources = gssapi.c gss_userok.c
 endif
 
 ftpd_SOURCES =		\
-	ftpd.c		\
+	extern.h	\
 	ftpcmd.y	\
+	ftpd.c		\
+	ftpd_locl.h	\
 	logwtmp.c	\
+	pathnames.h	\
 	popen.c		\
 	security.c	\
 	$(krb4_sources) \
-	gssapi.c	\
-	gss_userok.c
+	$(krb5_sources)
 
-EXTRA_ftpd_SOURCES = krb4.c kauth.c
+EXTRA_ftpd_SOURCES = krb4.c kauth.c gssapi.c gss_userok.c
 
 $(ftpd_OBJECTS): security.h
 
@@ -39,19 +42,12 @@ gssapi.c:
 
 CLEANFILES = security.c security.h krb4.c gssapi.c
 
-if KRB4
-afslib = $(top_builddir)/lib/kafs/libkafs.a $(AIX_EXTRA_KAFS)
-else
-afslib =
-endif
-
 LDADD = ../common/libcommon.a \
-	$(top_builddir)/lib/gssapi/libgssapi.la \
-	$(afslib) \
-	$(top_builddir)/lib/krb5/libkrb5.la \
+	$(LIB_kafs) \
+	$(LIB_gssapi) \
+	$(LIB_krb5) \
 	$(LIB_krb4) \
-	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/otp/libotp.la \
+	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/roken/libroken.la \
 	@LIB_crypt@ $(DBLIB)

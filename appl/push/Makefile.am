@@ -1,22 +1,25 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) @HESIODINCLUDE@
+INCLUDES += $(INCLUDE_krb4) $(HESIODINCLUDE)
 
 bin_SCRIPTS		= pfrom
 
 libexec_PROGRAMS	= push
 
-push_SOURCES		= push.c
+push_SOURCES = push.c push_locl.h
 
 pfrom: pfrom.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/pfrom.in > $@
 	chmod +x $@
 
-LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
+man_MANS = push.8
+
+EXTRA_DIST = pfrom.in $(man_MANS)
+
+LDADD = $(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la
-	@HESIODLIB@
+	$(HESIODLIB)

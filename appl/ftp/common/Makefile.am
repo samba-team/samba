@@ -1,13 +1,12 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = foreign no-dependencies
+include $(top_srcdir)/Makefile.am.common
 
-CFLAGS = $(WFLAGS) @CFLAGS@
-
-INCLUDES = $(INCLUDE_krb4) 
+INCLUDES += $(INCLUDE_krb4) 
 
 noinst_LIBRARIES = libcommon.a
 
 libcommon_a_SOURCES = \
 	sockbuf.c \
-	buffer.c
+	buffer.c \
+	common.h

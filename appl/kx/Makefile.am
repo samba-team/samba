@@ -1,29 +1,39 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-XINCS = @X_CFLAGS@
-XLIBS = @X_XLIBS@ @LIB_XauReadAuth@ @X_PRE_LIBS@ @X_EXTRA_LIBS@
+INCLUDES += $(INCLUDE_krb4) $(X_CFLAGS)
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4) $(XINCS)
+WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
-bin_PROGRAMS = kx rxterm rxtelnet tenletxr
+bin_PROGRAMS = kx
+bin_SCRIPTS = rxterm rxtelnet tenletxr
 
 libexec_PROGRAMS = kxd
 
-encdata.c:
-	$(LN_S) $(srcdir)/../kauth/encdata.c .
+if NEED_WRITEAUTH
+XauWriteAuth_c = writeauth.c
+endif
 
-common_SOURCES = \
+kx_SOURCES = \
+	kx.c \
+	kx.h \
 	common.c \
 	encdata.c \
-	@XauWriteAuth_c@
+	$(XauWriteAuth_c)
 
-kx_SOURCES = kx.c \
-	$(common_SOURCES)
+EXTRA_kx_SOURCES = writeauth.c
 
-kxd_SOURCES = kxd.c \
-	$(common_SOURCES)
+kxd_SOURCES = \
+	kxd.c \
+	kx.h \
+	common.c \
+	encdata.c \
+	$(XauWriteAuth_c)
+
+EXTRA_kxd_SOURCES = writeauth.c
+
+EXTRA_DIST = rxterm.in rxtelnet.in tenletxr.in
 
 rxterm: rxterm.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/rxterm.in > $@
@@ -37,4 +47,16 @@ tenletxr: tenletxr.in
 	sed -e "s!%bindir%!$(bindir)!" $(srcdir)/tenletxr.in > $@
 	chmod +x $@
 
-LDADD = -L$(top_builddir)/lib/krb5 -lkrb5 $(LIB_otp) -L$(top_builddir)/lib/des -ldes $(LIB_krb4) -L$(top_builddir)/lib/asn1 -lasn1 -L$(top_builddir)/lib/roken -lroken $(XLIBS)
+encdata.c:
+	$(LN_S) $(srcdir)/../kauth/encdata.c .
+kauth.h:
+	$(LN_S) $(srcdir)/../kauth/kauth.h .
+
+$(OBJECTS): kauth.h
+
+LDADD = \
+	$(LIB_kafs)				\
+	$(LIB_krb4)				\
+	$(top_builddir)/lib/des/libdes.la	\
+	$(top_builddir)/lib/roken/libroken.la	\
+	$(LIB_XauReadAuth) $(X_PRE_LIBS) $(X_EXTRA_LIBS)

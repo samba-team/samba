@@ -1,15 +1,11 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = \
-	-I$(top_builddir)/include	\
-	$(INCLUDE_krb4)			\
-	-DLIBDIR=\"$(libdir)\"		\
-	$(AFS_EXTRA_DEFS)
+INCLUDES += $(INCLUDE_krb4) -DLIBDIR=\"$(libdir)\" $(AFS_EXTRA_DEFS)
 
 if KRB4
-AFSLIBS = libkafs.a
+AFSLIBS = libkafs.la
 else
 AFSLIBS = 
 endif
@@ -43,15 +39,25 @@ AIX_SRC =
 endif # AIX
 
 
-lib_LIBRARIES = $(AFSLIBS)
+lib_LTLIBRARIES = $(AFSLIBS)
 foodir = $(libdir)
 foo_DATA = $(AFS_EXTRA_LIBS)
 # EXTRA_DATA = afslib.so
 
 CLEANFILES= $(AFS_EXTRA_LIBS)
 
-libkafs_a_SOURCES = afssys.c afskrb.c afskrb5.c common.c $(AIX_SRC)
+include_HEADERS = kafs.h
+
+if KRB5
+afskrb5_c = afskrb5.c
+endif
+
+libkafs_la_SOURCES = afssys.c afskrb.c $(afskrb5_c) common.c $(AIX_SRC) kafs_locl.h afssysdefs.h
 #afslib_so_SOURCES = afslib.c
+
+EXTRA_libkafs_la_SOURCES = afskrb5.c dlfcn.c afslib.c dlfcn.h
+
+EXTRA_DIST = README.dlfcn afsl.exp afslib.exp
 
 
 # AIX: this almost works with gcc, but somehow it fails to use the

@@ -1,22 +1,31 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
+
+INCLUDES += -DROKEN_RENAME
 
 YFLAGS = -d
 
-INCLUDES = -I$(top_builddir)/include
+include_HEADERS = sl.h
 
-lib_LIBRARIES = libsl.a
+lib_LTLIBRARIES = libsl.la
 
-libsl_a_SOURCES = sl.c ss.c
+libsl_la_SOURCES = sl_locl.h sl.c ss.c ss.h roken_rename.h strtok_r.c snprintf.c
 
 # install these?
-noinst_PROGRAMS = mk_cmds
-#incdir = $(includedir)/ss
-#inc_DATA = ss.h
 
-mk_cmds_SOURCES = make_cmds.c parse.y lex.l
+noinst_PROGRAMS = mk_cmds
+
+mk_cmds_SOURCES = make_cmds.c make_cmds.h parse.y lex.l snprintf.c
+
+ssincludedir = $(includedir)/ss
+#ssinclude_DATA = ss.h
 
 $(mk_cmds_OBJECTS): parse.h
 
-LDADD = ../roken/libroken.la @LEXLIB@
+LDADD = ../roken/libroken.la $(LEXLIB)
+
+strtok_r.c:
+	$(LN_S) $(srcdir)/../roken/strtok_r.c .
+snprintf.c:
+	$(LN_S) $(srcdir)/../roken/snprintf.c .

@@ -1,8 +1,8 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include
+man_MANS = editline.3
 
 lib_LIBRARIES = libeditline.a
 if el_compat
@@ -11,5 +11,9 @@ else
 noinst_LIBRARIES =
 endif
 
-libeditline_a_SOURCES = complete.c editline.c sysunix.c
+include_HEADERS = editline.h
+
+libeditline_a_SOURCES = complete.c editline.c sysunix.c editline.h roken_rename.h unix.h
 libel_compat_a_SOURCES = edit_compat.c
+
+EXTRA_DIST = $(man_MANS) testit.c

@@ -1,16 +1,17 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include
-
-#lib_LIBRARIES = libdes.a
 lib_LTLIBRARIES = libdes.la
-include_HEADERS = des.h
+include_HEADERS = des.h md4.h md5.h sha.h
+
+build_HEADERZ = $(include_HEADERS)
 
 noinst_PROGRAMS = destest mdtest
 
 bin_PROGRAMS = des rpw speed
+
+des_SOURCES = des.c des_ver.h
 
 LDADD = $(lib_LTLIBRARIES)
 
@@ -21,4 +22,61 @@ libdes_la_SOURCES = \
 	enc_writ.c fcrypt.c key_par.c md4.c md5.c \
 	ncbc_enc.c ofb64ede.c ofb64enc.c ofb_enc.c \
 	pcbc_enc.c qud_cksm.c read_pwd.c rnd_keys.c \
-	set_key.c sha.c str2key.c xcbc_enc.c
+	set_key.c sha.c str2key.c xcbc_enc.c des_locl.h podd.h sk.h spr.h
+
+EXTRA_libdes_la_SOURCES = dllmain.c passwd_dialog.aps passwd_dialog.clw \
+	passwd_dialog.rc passwd_dialog.res passwd_dlg.c passwd_dlg.h resource.h
+
+## this is an awful lot of junk, but it's just as well to include everything
+EXTRA_DIST =		\
+	COPYRIGHT	\
+	DES.pm		\
+	DES.pod		\
+	DES.xs		\
+	FILES		\
+	Imakefile	\
+	KERBEROS	\
+	MODES.DES	\
+	Makefile.PL	\
+	Makefile.ssl	\
+	Makefile.uni	\
+	PC1		\
+	PC2		\
+	VERSION		\
+	des.def		\
+	des.dsp		\
+	des.doc		\
+	des.mak		\
+	des.man		\
+	des.org		\
+	des.pl		\
+	des_crypt.man	\
+	des_locl.org	\
+	des_opts.c	\
+	doIP		\
+	doPC1		\
+	doPC2		\
+	makefile.bc	\
+	rand_key.c	\
+	rpc_des.h	\
+	rpc_enc.c	\
+	shifts.pl	\
+	supp.c		\
+	testdes.pl	\
+	times		\
+	typemap		\
+	version.h	\
+	vms.com
+
+asm_files = des-som2.pl des-som3.pl des586.pl des686.pl desboth.pl \
+	dx86-cpp.s dx86unix.cpp readme win32.asm win32.obj win32.uu x86ms.pl \
+	x86unix.pl
+
+dist-hook:
+	$(mkinstalldirs) $(distdir)/t
+	$(INSTALL_DATA) $(srcdir)/t/perl $(distdir)/t
+	$(INSTALL_DATA) $(srcdir)/t/test $(distdir)/t
+	$(mkinstalldirs) $(distdir)/asm
+	(cd $(srcdir)/asm && tar cf - $(asm_files)) \
+		| (cd $(distdir)/asm; tar xf -)
+	

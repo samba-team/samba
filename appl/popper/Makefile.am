@@ -1,10 +1,8 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_krb4)
-
-CFLAGS = @CFLAGS@ $(WFLAGS)
+INCLUDES += $(INCLUDE_krb4)
 
 noinst_PROGRAMS = pop_debug
 
@@ -17,12 +15,15 @@ popper_SOURCES = \
 	pop_msg.c pop_parse.c pop_pass.c pop_quit.c \
 	pop_rset.c pop_send.c pop_stat.c pop_updt.c \
 	pop_user.c pop_uidl.c pop_xover.c popper.c \
-	maildir.c
+	maildir.c popper.h version.h
 
-LDADD = $(top_builddir)/lib/krb5/libkrb5.la \
+EXTRA_DIST = pop3.rfc1081 pop3e.rfc1082 \
+	popper.README.release README-FIRST README-KRB4
+
+LDADD = \
 	$(LIB_otp) \
+	$(LIB_krb5) \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la \
 	$(DBLIB)

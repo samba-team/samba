@@ -1,8 +1,6 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
-
-INCLUDES = -I$(top_builddir)/include
+include $(top_srcdir)/Makefile.am.common
 
 CLEANFILES = roken.h make-roken.c print_version.h
 
@@ -10,7 +8,9 @@ lib_LTLIBRARIES = libroken.la
 
 noinst_PROGRAMS = make-roken make-print-version
 
-make_print_version_LDADD = $(LIB_krb4)
+if KRB5
+make_print_version_LDADD += $(LIB_krb4)
+endif
 
 libroken_la_SOURCES =		\
 	base64.c		\
@@ -29,31 +29,109 @@ libroken_la_SOURCES =		\
 	net_write.c		\
 	parse_time.c		\
 	parse_units.c		\
+	parse_units.h		\
 	print_version.c		\
 	resolve.c		\
 	roken_gethostby.c	\
 	signal.c		\
+	simple_exec.c		\
 	snprintf.c		\
 	strcat_truncate.c	\
 	strcpy_truncate.c	\
+	tm2time.c		\
 	verify.c		\
-	warnerr.c
+	warnerr.c		\
+	xdbm.h
+
+EXTRA_libroken_la_SOURCES =	\
+	chown.c			\
+	daemon.c		\
+	err.c			\
+	err.h			\
+	errx.c			\
+	fchown.c		\
+	flock.c			\
+	fnmatch.c		\
+	fnmatch.h		\
+	getdtablesize.c		\
+	getegid.c		\
+	geteuid.c		\
+	getgid.c		\
+	gethostname.c		\
+	getopt.c		\
+	gettimeofday.c		\
+	getuid.c		\
+	getusershell.c		\
+	glob.h			\
+	hstrerror.c		\
+	inet_aton.c		\
+	initgroups.c		\
+	innetgr.c		\
+	iruserok.c		\
+	lstat.c			\
+	memmove.c		\
+	mkstemp.c		\
+	putenv.c		\
+	rcmd.c			\
+	readv.c			\
+	recvmsg.c		\
+	sendmsg.c		\
+	setegid.c		\
+	setenv.c		\
+	seteuid.c		\
+	strcasecmp.c		\
+	strdup.c		\
+	strerror.c		\
+	strftime.c		\
+	strlwr.c		\
+	strncasecmp.c		\
+	strnlen.c		\
+	strsep.c		\
+	strtok_r.c		\
+	strupr.c		\
+	swab.c			\
+	unsetenv.c		\
+	verr.c			\
+	verrx.c			\
+	vsyslog.c		\
+	vwarn.c			\
+	vwarnx.c		\
+	warn.c			\
+	warnx.c			\
+	writev.c
+
+EXTRA_DIST = resource.h roken.awk roken.def roken.dsp roken.h.in \
+	roken.mak roken.rc
+
+
 
 libroken_la_LIBADD = @LTLIBOBJS@
 
 $(LTLIBOBJS) $(libroken_la_OBJECTS): roken.h
 
-incdir = $(includedir)
-inc_DATA = roken.h
-idir = $(top_builddir)/include
+include_HEADERS = base64.h getarg.h parse_time.h resolve.h roken-common.h
 
-all-local: $(inc_DATA)
-	@for i in $(inc_DATA); do \
-		if cmp -s  $$i $(idir)/$$i 2> /dev/null ; then :; else\
-			echo " $(INSTALL_DATA) $$i $(idir)/$$i"; \
-			$(INSTALL_DATA) $$i $(idir)/$$i; \
-		fi ; \
-	done
+include__DATA = roken.h
+
+build_HEADERZ = $(err_h) $(fnmatch_h) $(glob_h) xdbm.h
+
+if have_err_h
+err_h =
+else
+err_h = err.h
+endif
+
+if have_fnmatch_h
+fnmatch_h =
+else
+fnmatch_h = fnmatch.h
+endif
+
+if have_glob_h
+glob_h =
+else
+glob_h = glob.h
+endif
 
 roken.h: make-roken
 	@./make-roken > tmp.h ;\

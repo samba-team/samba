@@ -1,10 +1,24 @@
 # $Id$
 
-AUTOMAKE_OPTIONS = no-dependencies foreign
+include $(top_srcdir)/Makefile.am.common
 
-INCLUDES = -I$(top_builddir)/include -I$(srcdir)/.. $(INCLUDE_krb4)
+INCLUDES += -I$(srcdir)/.. $(INCLUDE_krb4)
 
 noinst_LIBRARIES = libtelnet.a
 
-libtelnet_a_SOURCES = auth.c encrypt.c genget.c enc_des.c misc.c kerberos.c \
-		      kerberos5.c
+libtelnet_a_SOURCES = \
+	auth-proto.h	\
+	auth.c		\
+	auth.h		\
+	enc-proto.h	\
+	enc_des.c	\
+	encrypt.c	\
+	encrypt.h	\
+	genget.c	\
+	kerberos.c	\
+	kerberos5.c	\
+	misc-proto.h	\
+	misc.c		\
+	misc.h
+
+EXTRA_DIST = krb4encpwd.c rsaencpwd.c spx.c
