@@ -1,5 +1,17 @@
-2005-04-04  Love Hörnquist Åstrand  <lha@it.su.se>
+2005-04-04 Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/acache.c: Argument to create_new_ccache is a principal,
+	not a credential cache name.  Clean up lossage related to this
+	problem.
+
+	* lib/hdb/Makefile.am: CHECK_SYMBOLS += HDBFlags2int
+	
+	* lib/krb5/addr_families.c
+	(krb5_address_prefixlen_boundary,krb5_free_address):
+	use find_atype when we are dealing with a kerberos address type
+
+	* lib/krb5/aes-test.c: size_t vs int + fix printf
+	
 	* lib/krb5/pkinit.c: Since the decode can't make out the diffrence
 	between PA-PK-AS-REP-19 and PA-PK-AS-REQ-Win2k, try harder to
 	verify both cases
