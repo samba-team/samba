@@ -266,10 +266,10 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
         username = argv[1];
         password = argv[2];
 
-        if (argc == 4)
+        if (argc >= 4)
                 sscanf(argv[3], "%i", &logon_type);
 
-	if (argc == 5)
+	if (argc >= 5)
                 sscanf(argv[4], "%i", &neg_flags);
 
 	if (argc == 6)
@@ -283,10 +283,6 @@ static NTSTATUS cmd_netlogon_sam_logon(struct cli_state *cli,
 
 	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
 	
-        result = cli_netlogon_sam_logon(cli, mem_ctx, &ret_creds, username, password, logon_type);
-
-	clnt_deal_with_creds(cli->sess_key, &(cli->clnt_cred), &ret_creds);
-
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
 
@@ -339,7 +335,7 @@ struct cmd_set netlogon_commands[] = {
 	{ "samsync",    RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_sync,    NULL, PI_NETLOGON, "Sam Synchronisation", "" },
 	{ "samdeltas",  RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_deltas,  NULL, PI_NETLOGON, "Query Sam Deltas",    "" },
 	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_sam_logon,   NULL, PI_NETLOGON, "Sam Logon",           "" },
-	{ "samlogon",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, "Change Trust Account Password",           "" },
+	{ "change_trust_pw",   RPC_RTYPE_NTSTATUS, cmd_netlogon_change_trust_pw,   NULL, PI_NETLOGON, "Change Trust Account Password",           "" },
 
 	{ NULL }
 };
