@@ -41,51 +41,6 @@
 
 RCSID("$Id$");
 
-/*
- * the environment we will send to execle and the shell.
- */
-
-static char **env;
-static int num_env;
-
-static int login_timeout = 60;
-
-static void
-extend_env(char *str)
-{
-    env = realloc(env, (num_env + 1) * sizeof(*env));
-    if(env == NULL)
-	errx(1, "Out of memory!");
-    env[num_env++] = str;
-}
-
-static void
-add_env(const char *var, const char *value)
-{
-    int i;
-    char *str;
-    asprintf(&str, "%s=%s", var, value);
-    if(str == NULL)
-	errx(1, "Out of memory!");
-    for(i = 0; i < num_env; i++)
-	if(strncmp(env[i], var, strlen(var)) == 0 && 
-	   env[i][strlen(var)] == '='){
-	    free(env[i]);
-	    env[i] = str;
-	    return;
-	}
-    
-    extend_env(str);
-}
-
-static void
-copy_env(void)
-{
-    char **p;
-    for(p = environ; *p; p++)
-	extend_env(*p);
-}
-
 static int
 start_login_process(void)
 {
@@ -607,18 +562,17 @@ do_login(const struct passwd *pwd, char *tty, char *ttyn)
 #endif /* KRB4 */
 
     {
-	char **newenv;
-	char *p;
-	int i, j;
+	char *str = login_conf_get_string("environment");
+	char buf[MAXPATHLEN];
 
-	newenv = NULL;
-	i = read_environment(_PATH_ETC_ENVIRONMENT, &newenv);
-	for (j = 0; j < i; j++) {
-	    p = strchr(newenv[j], '=');
-	    *p++ = 0;
-	    add_env(newenv[j], p);
-	    *--p = '=';
-	    free(newenv[j]);
+	if(str == NULL) {
+	    login_read_env(_PATH_ETC_ENVIRONMENT);
+	} else {
+	    while(strsep_copy(&str, ",", buf, sizeof(buf)) != -1) {
+		if(buf[0] == '\0')
+		    continue;
+		login_read_env(buf);
+	    }
 	}
     }
     add_env("HOME", home_dir);
