@@ -113,10 +113,8 @@ _kadm5_set_keys2(hdb_entry *ent,
 	if(key_data[i].key_data_ver == 2) {
 	    Salt *salt;
 	    salt = malloc(sizeof(*salt));
-	    if(salt == NULL) {
-		free_EncryptionKey(&ent->keys);
+	    if(salt == NULL)
 		return ENOMEM;
-	    }
 	    ent->keys.val[i].salt = salt;
 	    salt->type = key_data[i].key_data_type[1];
 	    krb5_data_copy(&salt->salt, 
