@@ -1648,6 +1648,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 	if (!p) {
 		ldap_value_free(values);
 		ldap_msgfree(res);
+		DEBUG(1, ("ads_server_info: returned ldap server name did not contain a ':' so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 
@@ -1659,6 +1660,7 @@ ADS_STATUS ads_server_info(ADS_STRUCT *ads)
 		ldap_value_free(values);
 		ldap_msgfree(res);
 		SAFE_FREE(ads->config.ldap_server_name);
+		DEBUG(1, ("ads_server_info: returned ldap server name did not contain '$@' so was deemed invalid\n"));
 		return ADS_ERROR(LDAP_DECODING_ERROR);
 	}
 

@@ -313,6 +313,9 @@ static int reply_spnego_negotiate(connection_struct *conn,
 		NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_CHAL_TARGET_INFO;
+
+	if (neg_flags & NTLMSSP_NEGOTIATE_NTLM2) 
+		chal_flags |= NTLMSSP_NEGOTIATE_NTLM2;
 	
 	{
 		DATA_BLOB domain_blob, struct_blob;
