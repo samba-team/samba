@@ -11,13 +11,13 @@ pkglist="$3"
 # Source in the standard functions library, ccsSetup.sh
 . ccsSetup.sh
 
-ccs_return_value=0
-
 SPOOL=/var/spool/samba
 SVCS=/etc/services
 INET=/etc/inetd.conf
 LMHOST=/etc/lmhosts
-PREFIX=/usr/local/samba
+PREFIX=/usr/lib/samba
+
+PKG_DIR=${SSO_SHARED_ROOT}/cntl/packages
 
 #
 # Create /var/spool/samba, create an initial /etc/lmhosts, build the
@@ -58,7 +58,7 @@ PostExport()
     }
     
     grep swat $INET > /dev/null || {
-     echo "swat stream tcp nowait root /usr/local/samba/bin/swat swat " >> $INET
+     echo "swat stream tcp nowait root /usr/lib/samba/bin/swat swat " >> $INET
     }
     
     kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
@@ -97,6 +97,22 @@ PostUnexport()
     
     kill -1 `ps -e | grep inetd | awk ' { print $1 } '`
 }
+
+# call ccs in subsidiary packages with same arguments we were called with
+pkgCodes=`getPackageCode $pkglist`
+returnCode=$OK
+for pkg in $pkgCodes; do
+    pkgscript=${PKG_DIR}/${pkg}/ccs
+    if [ -f "$pkgscript" ]; then
+        ${pkgscript} "${step}" "${keywords}" "${pkglist}"
+
+        # exit with the most severe exit code of subsidiary package scripts
+        case "$?" in
+            $FAIL) returnCode=$FAIL ;;
+            $WARN) [ "$returnCode" -eq "$OK" ] && returnCode=$WARN ;;
+        esac
+    fi
+done
     
 case "$step" in
         POST_EXPORT) PostExport ;;
@@ -104,5 +120,5 @@ case "$step" in
         POST_UNEXPORT) PostUnexport ;;
 esac
 
-exit $ccs_return_value
+exit $returnCode
 

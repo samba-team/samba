@@ -31,7 +31,7 @@ Source: ftp://ftp.samba.org/pub/samba/%{Name}-%{Version}.tar.gz
 #Patch0: %{Name}-%{Version}-smbmount.patch
 #Patch1: %{Name}-%{Version}-install.patch
 #Patch2: %{Name}-%{Version}-smbconf.patch
-#Patch6: %{Name}-2.2.2-libsmbclient.patch
+Patch6: %{Name}-2.2.2-libsmbclient.patch
 
 %Package doc
 Group       	: Server/Network
@@ -246,10 +246,8 @@ done
   s:/usr/local/samba:/usr/bin/:g;
 '
 for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
-         htmldocs/samba-pdc-faq.html htmldocs/samba-pdc-howto.html \
          htmldocs/smbclient.1.html htmldocs/smbd.8.html \
          docbook/projdoc/DOMAIN_MEMBER.sgml docbook/projdoc/DOMAIN_MEMBER.sgml \
-         docbook/faq/samba-pdc-faq.sgml docbook/howto/samba-pdc-howto.sgml \
          docbook/manpages/smbclient.1.sgml docbook/manpages/smbd.8.sgml \
 	 docbook/projdoc/ENCRYPTION.sgml manpages/smbclient.1 manpages/smbd.8 ; do
 %{fixUP} -vT docs/$i -e '
@@ -261,9 +259,6 @@ for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
 done
 %{fixUP} -vT docs/docbook/manpages/make_smbcodepage.1.sgml -e '
   s:/usr/local/samba:/usr/bin:g ;
-'
-%{fixUP} -vT docs/htmldocs/samba-pdc-faq.html -e '
-  s:/usr/local/src:/usr/src:g ;
 '
 # End of DirtyHack(TM)
 
@@ -348,7 +343,7 @@ cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
 
-#cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
+cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
 #cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/bin/make_smbpasswd
 #cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/bin/convertsmbpasswd
 #cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/bin/updatesmbpasswd

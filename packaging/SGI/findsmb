@@ -47,7 +47,9 @@ open(NMBLOOKUP,"$SAMBABIN/nmblookup $BCAST '*'|") ||
 
 # print header info
 
-print "\nIP ADDR         NETBIOS NAME   WORKGROUP/OS/VERSION $BCAST\n";
+print "\n                                *=DMB\n";
+print "                                +=LMB\n";
+print "IP ADDR         NETBIOS NAME     WORKGROUP/OS/VERSION $BCAST\n";
 print "---------------------------------------------------------------------\n";
 
 foreach $ip (@ipaddrs)		# loop through each IP address found
@@ -61,29 +63,48 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
   @nmblookup = <NMBLOOKUP>;
   close NMBLOOKUP;
 
-# get the first <00> name
+# get the first non group <00> name
 
-  @name = grep(/<00> - /,@nmblookup);
+  @name = grep(/<00> -        /,@nmblookup);
   $_ = @name[0];
-  if ($_) {                     # we have a netbios name
-    if (/GROUP/) {		# is it a group name
-	($name, $aliases, $type, $length, @addresses) = 
-	gethostbyaddr(pack('C4',split('\.',$ip)),2);
-	if (! $name) {			# could not get name
-	    $name = "unknown nis name";
-	}
-    } else {
-	/(\S+)/;
-	$name = $1;
+  if (not $_) {
+# try without the -r option
+    open(NMBLOOKUP,"$SAMBABIN/nmblookup -A $ip|") ||
+        die("Can't get nmb name list.\n");
+    @nmblookup = <NMBLOOKUP>;
+    close NMBLOOKUP;
+    @name = grep(/<00> - /,@nmblookup);
+    $_ = @name[0];
+  }
+  /(\S+)/;
+  $name = $1;
+
+  if (not $name) {                     # no netbios name found
+# try getting the host name
+    ($name, $aliases, $type, $length, @addresses) = 
+      gethostbyaddr(pack('C4',split('\.',$ip)),2);
+    if (! $name) {			# could not get name
+      $name = "unknown name";
     }
+    if (length($name) > 15) {
+	$name = substr($name,0,15);
+    }
+# do an smbclient command on the ip address
 
-# do an smbclient command on the netbios name.
-
-    open(SMB,"$SAMBABIN/smbclient -N -L $name -I $ip -U% |") ||
+    open(SMB,"$SAMBABIN/smbclient -N -L '$ip' -I $ip -U% |") ||
 	die("Can't do smbclient command.\n");
     @smb = <SMB>;
     close SMB;
+  } else {				# netbios name found
 
+# do an smbclient command on the netbios name.
+
+    open(SMB,"$SAMBABIN/smbclient -N -L '$name' -I $ip -U% |") ||
+	die("Can't do smbclient command.\n");
+    @smb = <SMB>;
+    close SMB;
+  }
+  {
     if ($DEBUG) {		# if -d flag print results of nmblookup and smbclient
       print "===============================================================\n";
       print @nmblookup;
@@ -122,20 +143,8 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
 
 # line up info in 3 columns
 
-    print "$ip".' 'x(16-length($ip))."$name".' 'x(14-length($name))."$master"."$_\n";
+    print "$ip".' 'x(16-length($ip))."$name".' 'x(16-length($name))."$master"."$_\n";
 
-  } else {				# no netbios name found
-# try getting the host name
-    ($name, $aliases, $type, $length, @addresses) = 
-      gethostbyaddr(pack('C4',split('\.',$ip)),2);
-    if (! $name) {			# could not get name
-      $name = "unknown nis name";
-    }
-    if ($DEBUG) {			# if -d flag print results of nmblookup
-      print "===============================================================\n";
-      print @nmblookup;
-    }
-    print "$ip".' 'x(16-length($ip))."$name\n";
-  }
+  } 
 } 
 

@@ -12,8 +12,6 @@ for FILE in  $FILES ; do
    if [ "$FILE" = "smbmnt.8" ]; then continue; fi;
    if [ "$FILE" = "smbmount.8" -o "$FILE" = "smbumount.8" ]; then continue; fi;
    if [ "$FILE" = "smbrun.1" ]; then continue; fi;
-   if [ "$FILE" = "wbinfo.1" ]; then continue; fi;
-   if [ "$FILE" = "winbindd.8" ]; then continue; fi;
    neqn $FILE | tbl | nroff -man > ../../packaging/SGI/catman/`basename $FILE`
    pack -f ../../packaging/SGI/catman/`basename $FILE`
 done

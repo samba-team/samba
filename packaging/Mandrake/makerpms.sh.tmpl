@@ -8,7 +8,8 @@ GRPID=`id -g`
 VERSION='PVERSION'
 
 ( cd ../../.. ; mv samba samba-$VERSION; chown -R ${USERID}.${GRPID} ${SRCDIR}/samba-$VERSION )
-( cd ../../.. ; tar --exclude=CVS -czvf ${SRCDIR}/samba-$VERSION.tar.gz samba-$VERSION )
+( cd ../../.. ; tar --exclude=CVS -cvf ${SRCDIR}/samba-$VERSION.tar samba-$VERSION )
+( cd ${SRCDIR}; bzip2 samba-$VERSION.tar )
 ( cd ../../.. ; mv samba-$VERSION samba )
 cp -a *.spec $SPECDIR
 cp -a *.patch smb.* samba.log $SRCDIR

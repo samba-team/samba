@@ -43,6 +43,10 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
+ - Set SBINDIR for codepage/manpage install, cope with 
+    broken Makefile
+
 * Mon Aug 1 2001 Tim Potter <tpot@samba.org>
  - Install winbind daemon, client programs, nss and pam libraries
 
@@ -214,6 +218,7 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 cd source
 make BASEDIR=$RPM_BUILD_ROOT/usr \
 	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
 	CODEPAGEDIR=$RPM_BUILD_ROOT/etc/codepages \
@@ -274,31 +279,31 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/chkconfig smb off
 
 echo "Looking for old /etc/smb.conf..."
-if [ -f /etc/smb.conf ]; then
+if [ -f /etc/smb.conf -a ! -f /etc/samba/smb.conf ]; then
 	echo "Moving old /etc/smb.conf to /etc/samba/smb.conf"
 	mv /etc/smb.conf /etc/samba/smb.conf
 fi
 
 echo "Looking for old /etc/smbusers..."
-if [ -f /etc/smbusers ]; then
+if [ -f /etc/smbusers -a ! -f /etc/samba/smbusers ]; then
 	echo "Moving old /etc/smbusers to /etc/samba/smbusers"
 	mv /etc/smbusers /etc/samba/smbusers
 fi
 
 echo "Looking for old /etc/lmhosts..."
-if [ -f /etc/lmhosts ]; then
+if [ -f /etc/lmhosts -a ! -f /etc/samba/lmhosts ]; then
 	echo "Moving old /etc/lmhosts to /etc/samba/lmhosts"
 	mv /etc/lmhosts /etc/samba/lmhosts
 fi
 
 echo "Looking for old /etc/MACHINE.SID..."
-if [ -f /etc/MACHINE.SID ]; then
+if [ -f /etc/MACHINE.SID -a ! -f /etc/samba/MACHINE.SID ]; then
 	echo "Moving old /etc/MACHINE.SID to /etc/samba/MACHINE.SID"
 	mv /etc/MACHINE.SID /etc/samba/MACHINE.SID
 fi
 
 echo "Looking for old /etc/smbpasswd..."
-if [ -f /etc/smbpasswd ]; then
+if [ -f /etc/smbpasswd -a ! -f /etc/samba/smbpasswd ]; then
 	echo "Moving old /etc/smbpasswd to /etc/samba/smbpasswd"
 	mv /etc/smbpasswd /etc/samba/smbpasswd
 fi

@@ -239,10 +239,8 @@ done
   s:/usr/local/samba:/usr/bin/:g;
 '
 for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
-         htmldocs/samba-pdc-faq.html htmldocs/samba-pdc-howto.html \
          htmldocs/smbclient.1.html htmldocs/smbd.8.html \
          docbook/projdoc/DOMAIN_MEMBER.sgml htmldocs/DOMAIN_MEMBER.html \
-         docbook/faq/samba-pdc-faq.sgml docbook/howto/samba-pdc-howto.sgml \
          docbook/manpages/smbclient.1.sgml docbook/manpages/smbd.8.sgml \
 	 docbook/projdoc/ENCRYPTION.sgml manpages/smbclient.1 manpages/smbd.8 ; do
 %{fixUP} -vT docs/$i -e '
@@ -254,9 +252,6 @@ for i in htmldocs/DOMAIN_MEMBER.html htmldocs/Samba-HOWTO-Collection.html \
 done
 %{fixUP} -vT docs/docbook/manpages/make_smbcodepage.1.sgml -e '
   s:/usr/local/samba:/usr/bin:g ;
-'
-%{fixUP} -vT docs/htmldocs/samba-pdc-faq.html -e '
-  s:/usr/local/src:/usr/src:g ;
 '
 # End of DirtyHack(TM)
 
@@ -279,10 +274,11 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--without-smbwrapper \
 	--with-smbmount \
 	--with-pam \
-       --with-pam_smbpass \
+	--with-pam_smbpass \
 	--with-quotas \
 	--with-syslog \
-	--with-utmp 
+	--win_winbind \
+	--with-utmp
 
 make LOGFILEBASE=/var/log/samba.d all
 make LOGFILEBASE=/var/log/samba.d nsswitch/libnss_wins.so
@@ -315,30 +311,28 @@ install -m 755 source/nsswitch/libnss_wins.so $DESTDIR/lib/libnss_wins.so.2.0
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so.2
 ln -s libnss_wins.so.2.0 $DESTDIR/lib/libnss_wins.so
 
-# install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
-# # Make link for winbind resolver
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
-# ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
+# Add PAM smbpass and winbind facilities
+install -m 755 source/bin/pam_smbpass.so $DESTDIR/lib/security
+install -m 755 source/nsswitch/libnss_winbind.so $DESTDIR/lib/libnss_winbind.so.2.0
 
-# install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+# Make link for winbind resolver
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so.2
+ln -s libnss_winbind.so.2.0 $DESTDIR/lib/libnss_winbind.so
 
-# install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
-
-for f in debug2html smbfilter smbspool; do
-       install -m 755 source/bin/$f $DESTDIR/usr/sbin/$f
-done
-
-cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
-ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
+install -m 755 source/nsswitch/pam_winbind.so $DESTDIR/lib/security
+install -m 755 source/bin/wbinfo $DESTDIR/usr/bin
+install -m 755 source/bin/debug2html $DESTDIR/usr/sbin/debug2html
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smb.conf $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
 cp -p $VVS/smbprint $DESTDIR/usr/bin
-#cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
+
+cp -p $VVS/smbadduser.perl $DESTDIR/usr/bin/smbadduser
 #cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/bin/make_smbpasswd
 #cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/bin/convertsmbpasswd
 #cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/bin/updatesmbpasswd
+
 cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
@@ -347,16 +341,18 @@ cp -p $VVS/README.home $DESTDIR/etc/skel/Samba/README.txt
 cp -p $VVS/README.Public $DESTDIR/%{LSBservedir}/Public/README.txt
 cp -p $VVS/README.profiles $DESTDIR/%{LSBservedir}/profiles/README.txt
 
-# Add PAM smbpass facility
-mv $DESTDIR/usr/bin/pam_smbpass.so $DESTDIR/lib/security
+install -m 755 $VVS/samba.init-lsb $DESTDIR/etc/rc.d/init.d/samba
+ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 for f in testparm testprns; do
   ln -s $f $DESTDIR/usr/bin/smb$f
   ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
 done
-ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
+
+#ln -s make_smbcodepage  $DESTDIR/usr/bin/mksmbcodepage
 #ln -s make_smbpasswd $DESTDIR/usr/bin/mksmbpasswd
 #ln -sf convert_smbpasswd $DESTDIR/usr/bin/convertsmbpasswd
+
 ln -s ../usr/bin/smbmount $DESTDIR/sbin/mount.smbfs
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
@@ -364,9 +360,13 @@ cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
 EoH
 
 
+# -------------------- Documentation -------------------------------
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
 ln -sf ../Copyrights/GPL-2.0  $DOCD/COPYING
-cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
+
+#cp -p README README-smbmount Manifest Read-Manifest-Now $DOCD
+
+cp -p README Manifest Read-Manifest-Now $DOCD
 cp -p WHATSNEW.txt Roadmap $DOCD
 cp -a docs examples $DOCD
 
@@ -405,8 +405,12 @@ Samba					base
 swat					swat
 %{_defaultdocdir}/samba-[^/]+/$		base
 %{_defaultdocdir}/samba- 		doc
+/lib/$					IGNORED
+/srv/$					IGNORED
 tmp					IGNORED
 man					IGNORED
+/src/$					IGNORED
+/usr/private/$				IGNORED
 @default@
 EOF
 cat << 'EOF' | %{mkLists} -f -a samba
@@ -415,11 +419,13 @@ Samba/README.txt			base
 ^/etc					config-IGNORED
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 libnss_wins.so				base
+pam_*					base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$)	base
 %{_defaultdocdir}/samba- 		doc
 smb(mount|mnt|umount)			smbfs
 mount.smbfs				smbfs
 swat					swat
+libsmbclient				libsmbclient
 @default@
 EOF
 
@@ -430,6 +436,7 @@ EOF
 
 %Post
 lisa --SysV-init install samba S91 3:4:5 K09 0:1:2:6
+/sbin/ldconfig
 
 
 %Post -n swat
@@ -440,9 +447,19 @@ perl -pi -e '$s=1 if /^swat/;
 
 %PostUn
 lisa --SysV-init remove samba $1
+/sbin/ldconfig
 # We want to remove the browse.dat and wins.dat files so they can not
 # interfer with a new version of samba!
-rm -f /var/lock/samba/{browse,wins}.dat 
+rm -f /var/lock/samba/browse.dat
+rm -f /var/lock/samba/{brlock,connections,locking,messages}.tdb
+if [ -e /var/lock/samba.d/namelist.debug ]; then
+	rm -f /var/lock/samba.d/namelist.debug
+fi
+rm -f /var/lock/samba/unexpected.tdb
+rm -f /var/lock/samba/{smbd,nmbd}.pid
+
+# Note: We MUST keep:
+#	winbindd_*, sshare_info*, printing*, ntdrivers*
 
 
 %PostUn -n swat

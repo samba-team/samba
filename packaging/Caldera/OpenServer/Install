@@ -12,7 +12,7 @@ V=
 PATH=/usr/local/bin:$PATH
 export PATH
 
-PREFIX=/usr/local/samba
+PREFIX=/usr/lib/samba
 HERE=`pwd`
 PKGDIR=packaging/Caldera/OpenServer
 
@@ -20,6 +20,8 @@ BUILD_ROOT=${HERE}/dist
 BLDFIX=${BUILD_ROOT}/${PREFIX}
 $V rm -rf $BUILD_ROOT
 $V mkdir -p $BUILD_ROOT/etc/init.d
+$V mkdir -p $BUILD_ROOT/usr/lib/mkdev
+$V mkdir -p $BUILD_ROOT/doc
 $V mkdir -p ${BLDFIX}/bin
 $V mkdir -p ${BLDFIX}/sbin
 $V mkdir -p ${BLDFIX}/swat/using_samba/gifs
@@ -111,7 +113,6 @@ $V    install -m644 $i ${BLDFIX}/swat/using_samba/gifs
 done
 
 # Install the miscellany
-$V install -m644 swat/README ${BLDFIX}/swat
 $V install -m644 docs/manpages/smb.conf.5 ${BLDFIX}/man/man.5
 $V install -m644 docs/manpages/lmhosts.5 ${BLDFIX}/man/man.5
 $V install -m644 docs/manpages/smbpasswd.5 ${BLDFIX}/man/man.5
@@ -123,12 +124,16 @@ $V install -m644 docs/manpages/swat.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbmount.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbmnt.8 ${BLDFIX}/man/man.8
 $V install -m644 docs/manpages/smbumount.8 ${BLDFIX}/man/man.8
-$V install -m644 ${PKGDIR}/smb.conf ${BLDFIX}/lib/smb.conf
-$V install -m644 ${PKGDIR}/smbusers $BUILD_ROOT/etc/smbusers
+$V install -m644 ${PKGDIR}/smb.conf $BUILD_ROOT/etc/samba.d/smb.conf.default
+$V install -m644 ${PKGDIR}/smbusers $BUILD_ROOT/etc/samba.d/smbusers
 $V install -m755 ${PKGDIR}/smbprint ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/findsmb ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/smbadduser ${BLDFIX}/bin
+$V install -m755 ${PKGDIR}/initconfig ${BLDFIX}/bin
 $V install -m755 ${PKGDIR}/smb.init $BUILD_ROOT/etc/init.d/samba
+$V install -m755 ${PKGDIR}/smb.mkdev $BUILD_ROOT/usr/lib/mkdev/samba
+$V install -m644 ${PKGDIR}/docview.html $BUILD_ROOT/doc/index.html
+$V install -m644 ${PKGDIR}/swat.readme ${BLDFIX}/swat/README
 
 # The following is now done in the postinstall script
 #

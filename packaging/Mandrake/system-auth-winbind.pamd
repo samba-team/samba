@@ -5,7 +5,7 @@ auth        sufficient    /lib/security/pam_winbind.so
 auth        sufficient    /lib/security/pam_unix.so likeauth nullok use_first_pass
 auth        required      /lib/security/pam_deny.so
 
-account     sufficient    /lib/secutiry/pam_winbind.so
+account     sufficient    /lib/security/pam_winbind.so
 account     required      /lib/security/pam_unix.so
 
 password    required      /lib/security/pam_cracklib.so retry=3
