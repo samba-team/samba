@@ -3212,6 +3212,26 @@ uint32 spoolss_size_printprocdatatype_info_1(PRINTPROCDATATYPE_1 *info)
 /*******************************************************************
 return the size required by a struct in the stream
 ********************************************************************/  
+uint32 spoolss_size_printer_enum_values(PRINTER_ENUM_VALUES *p)
+{
+	uint32 	size = 0; 
+	uint32	data_len;
+	
+	if (!p)
+		return 0;
+	
+	/* uint32(offset) + uint32(length) + length) */
+	size += (size_of_uint32(&p->value_len)*2) + p->value_len;
+	size += (size_of_uint32(&p->data_len)*2) + p->data_len;
+	
+	size += size_of_uint32(&p->type);
+		       
+	return size;
+}
+
+/*******************************************************************
+return the size required by a struct in the stream
+********************************************************************/  
 
 uint32 spoolss_size_printmonitor_info_1(PRINTMONITOR_1 *info)
 {
@@ -4729,9 +4749,12 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
 		n++;
 	}
 	fstrcpy((*ar)[n], "");
-
+ 
 	return True;
 }
+
+
+
 
 /*******************************************************************
  read a UNICODE array with null terminated strings 
@@ -6171,7 +6194,6 @@ BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, pr
 
 /*******************************************************************
  * read a structure.
- * called from spoolss_q_setprinterdataex (srv_spoolss.c)
  ********************************************************************/  
 
 BOOL spoolss_io_q_setprinterdataex(char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
@@ -6207,14 +6229,14 @@ BOOL spoolss_io_q_setprinterdataex(char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, pr
 		case 0x3:
 		case 0x4:
 		case 0x7:
-            if (q_u->max_len) {
-                if (UNMARSHALLING(ps))
-    				q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
-    			if(q_u->data == NULL)
-    				return False;
-    			if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
-    				return False;
-            }
+			if (q_u->max_len) {
+				if (UNMARSHALLING(ps))
+    					q_u->data=(uint8 *)prs_alloc_mem(ps, q_u->max_len * sizeof(uint8));
+    				if(q_u->data == NULL)
+    					return False;
+    				if(!prs_uint8s(False,"data", ps, depth, q_u->data, q_u->max_len))
+    					return False;
+			}
 			if(!prs_align(ps))
 				return False;
 			break;
@@ -6228,7 +6250,6 @@ BOOL spoolss_io_q_setprinterdataex(char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, pr
 
 /*******************************************************************
  * write a structure.
- * called from spoolss_q_setprinterdataex (srv_spoolss.c)
  ********************************************************************/  
 
 BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
@@ -6243,3 +6264,179 @@ BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, pr
 
 	return True;
 }
+
+
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_q_enumprinterkey(char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->key, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("size", ps, depth, &q_u->size))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterkey");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if (!smb_io_buffer5("", &r_u->keys, ps, depth))
+		return False;
+	
+	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
+		return False;
+
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
+/*******************************************************************
+ * read a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_q_enumprinterdataex(char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdataex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+	if(!smb_io_pol_hnd("printer handle", &q_u->handle, ps, depth))
+		return False;
+		
+	if(!smb_io_unistr2("", &q_u->key, True, ps, depth))
+		return False;
+
+	if(!prs_align(ps))
+		return False;
+	
+	if(!prs_uint32("size", ps, depth, &q_u->size))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
+********************************************************************/  
+static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps, 
+				PRINTER_ENUM_VALUES_CTR *ctr, int depth)
+{
+	int 	i;
+	uint32	valuename_offset,
+		data_offset,
+		current_offset;
+	
+	prs_debug(ps, depth, desc, "spoolss_io_printer_enum_values_ctr");
+	depth++;	
+	
+	if (!prs_uint32("size", ps, depth, &ctr->size))
+		return False;
+	
+	/* offset data begins at 20 bytes per structure * size_of_array.
+	   Don't forget the uint32 at the beginning */
+	
+	current_offset = 4 + (20*ctr->size_of_array);
+	
+	/* first loop to write basic enum_value information */
+	
+	for (i=0; i<ctr->size_of_array; i++) 
+	{
+		valuename_offset = current_offset;
+		if (!prs_uint32("valuename_offset", ps, depth, &valuename_offset))
+			return False;
+
+		if (!prs_uint32("value_len", ps, depth, &ctr->values[i].value_len))
+			return False;
+	
+		if (!prs_uint32("type", ps, depth, &ctr->values[i].type))
+			return False;
+	
+		data_offset = ctr->values[i].value_len + valuename_offset;
+		if (!prs_uint32("data_offset", ps, depth, &data_offset))
+			return False;
+
+		if (!prs_uint32("data_len", ps, depth, &ctr->values[i].data_len))
+			return False;
+			
+		current_offset = data_offset + ctr->values[i].data_len;
+	
+	}
+
+	/* loop #2 for writing the dynamically size objects
+	   while viewing oncversations between Win2k -> Win2k,
+	   4-byte alignment does not seem to matter here   --jerrty */
+	
+	for (i=0; i<ctr->size_of_array; i++) 
+	{
+	
+		if (!prs_unistr("valuename", ps, depth, &ctr->values[i].valuename))
+			return False;
+		
+		if (!prs_uint8s(False, "data", ps, depth, ctr->values[i].data, ctr->values[i].data_len))
+			return False;
+	}
+
+		
+
+	return True;	
+}
+
+
+/*******************************************************************
+ * write a structure.
+ ********************************************************************/  
+
+BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+{
+	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdataex");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+		
+	if (!spoolss_io_printer_enum_values_ctr("", ps, &r_u->ctr, depth ))
+		return False;
+	
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("needed",     ps, depth, &r_u->needed))
+		return False;
+		
+	if(!prs_uint32("returned",   ps, depth, &r_u->returned))
+		return False;
+
+	if(!prs_werror("status",     ps, depth, &r_u->status))
+		return False;
+
+	return True;
+}
+
+
