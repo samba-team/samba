@@ -127,7 +127,7 @@ static BOOL connect_servers_fast(void)
 	for (h=0;h<options.max_open_handles;h++) {
 		if (!open_handles[h].active) continue;
 		for (i=0;i<NSERVERS;i++) {
-			if (!cli_close(servers[i].cli[open_handles[h].instance],
+			if (!cli_close(servers[i].cli[open_handles[h].instance]->tree,
 				       open_handles[h].server_fnum[i])) {
 				return False;
 			}
@@ -234,10 +234,10 @@ static void gen_add_handle(int instance, const char *name, uint16 fnums[NSERVERS
 		/* we have to force close a random handle */
 		h = random() % options.max_open_handles;
 		for (i=0;i<NSERVERS;i++) {
-			if (!cli_close(servers[i].cli[open_handles[h].instance], 
+			if (!cli_close(servers[i].cli[open_handles[h].instance]->tree, 
 				       open_handles[h].server_fnum[i])) {
 				printf("INTERNAL ERROR: Close failed when recovering handle! - %s\n",
-				       cli_errstr(servers[i].cli[open_handles[h].instance]));
+				       cli_errstr(servers[i].cli[open_handles[h].instance]->tree));
 			}
 		}
 		printf("Recovered handle %d\n", h);
@@ -1806,14 +1806,14 @@ static void wipe_files(void)
 {
 	int i;
 	for (i=0;i<NSERVERS;i++) {
-		int n = cli_deltree(servers[i].cli[0], "\\gentest");
+		int n = cli_deltree(servers[i].cli[0]->tree, "\\gentest");
 		if (n == -1) {
 			printf("Failed to wipe tree on server %d\n", i);
 			exit(1);
 		}
-		if (!cli_mkdir(servers[i].cli[0], "\\gentest")) {
+		if (!cli_mkdir(servers[i].cli[0]->tree, "\\gentest")) {
 			printf("Failed to create \\gentest - %s\n",
-			       cli_errstr(servers[i].cli[0]));
+			       cli_errstr(servers[i].cli[0]->tree));
 			exit(1);
 		}
 		if (n > 0) {

@@ -24,7 +24,8 @@
 /****************************************************************************
   Read size bytes at offset offset using SMBreadX.
 ****************************************************************************/
-ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_t size)
+ssize_t cli_read(struct cli_tree *tree, int fnum, char *buf, off_t offset, 
+		 size_t size)
 {
 	union smb_read parms;
 	int readsize;
@@ -41,7 +42,8 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * Set readsize to the maximum size we can handle in one readX,
 	 * rounded down to a multiple of 1024.
 	 */
-	readsize = (cli->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
+	readsize = (tree->session->transport->negotiate.max_xmit - 
+		    (MIN_SMB_SIZE+32)) & ~1023;
 	if (readsize > 0xFFFF) readsize = 0xFFFF;
 
 	while (total < size) {
@@ -55,7 +57,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 		parms.readx.in.remaining = size - total;
 		parms.readx.out.data     = buf + total;
 		
-		status = smb_raw_read(cli->tree, &parms);
+		status = smb_raw_read(tree, &parms);
 		
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
@@ -80,12 +82,12 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
               0x0004 use raw named pipe protocol
               0x0008 start of message mode named pipe protocol
 ****************************************************************************/
-ssize_t cli_write(struct cli_state *cli,
+ssize_t cli_write(struct cli_tree *tree,
 		  int fnum, uint16 write_mode,
 		  const char *buf, off_t offset, size_t size)
 {
 	union smb_write parms;
-	int block = (cli->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
+	int block = (tree->session->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
 	ssize_t total = 0;
 
 	if (size == 0) {
@@ -109,7 +111,7 @@ ssize_t cli_write(struct cli_state *cli,
 		parms.writex.in.count = block;
 		parms.writex.in.data = buf;
 
-		status = smb_raw_write(cli->tree, &parms);
+		status = smb_raw_write(tree, &parms);
 
 		if (!NT_STATUS_IS_OK(status)) {
 			return -1;
@@ -126,7 +128,7 @@ ssize_t cli_write(struct cli_state *cli,
 /****************************************************************************
   write to a file using a SMBwrite and not bypassing 0 byte writes
 ****************************************************************************/
-ssize_t cli_smbwrite(struct cli_state *cli,
+ssize_t cli_smbwrite(struct cli_tree *tree,
 		     int fnum, char *buf, off_t offset, size_t size1)
 {
 	union smb_write parms;
@@ -136,7 +138,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 	parms.write.in.remaining = 0;
 	
 	do {
-		size_t size = MIN(size1, cli->transport->negotiate.max_xmit - 48);
+		size_t size = MIN(size1, tree->session->transport->negotiate.max_xmit - 48);
 		if (size > 0xFFFF) size = 0xFFFF;
 		
 		parms.write.in.fnum = fnum;
@@ -144,7 +146,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		parms.write.in.count = size;
 		parms.write.in.data = buf + total;
 
-		if (NT_STATUS_IS_ERR(smb_raw_write(cli->tree, &parms)))
+		if (NT_STATUS_IS_ERR(smb_raw_write(tree, &parms)))
 			return -1;
 
 		size = parms.write.out.nwritten;

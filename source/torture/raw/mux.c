@@ -74,13 +74,13 @@ static BOOL test_mux_open(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	req = smb_raw_open_send(cli->tree, &io);
 	
 	/* and close the file */
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 	/* see if the async open succeeded */
 	status = smb_raw_open_recv(req, mem_ctx, &io);
 	CHECK_STATUS(status, NT_STATUS_OK);
 
-	cli_close(cli, io.ntcreatex.out.fnum);
+	cli_close(cli->tree, io.ntcreatex.out.fnum);
 
 done:
 	return ret;
@@ -100,9 +100,9 @@ static BOOL test_mux_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("testing multiplexed lock/write/close\n");
 
-	fnum = cli_open(cli, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("open failed in mux_write - %s\n", cli_errstr(cli));
+		printf("open failed in mux_write - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -110,8 +110,8 @@ static BOOL test_mux_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	cli->session->pid = 1;
 
 	/* lock a range */
-	if (!cli_lock(cli, fnum, 0, 4, 0, WRITE_LOCK)) {
-		printf("lock failed in mux_write - %s\n", cli_errstr(cli));
+	if (!cli_lock(cli->tree, fnum, 0, 4, 0, WRITE_LOCK)) {
+		printf("lock failed in mux_write - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -130,13 +130,13 @@ static BOOL test_mux_write(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	/* unlock the range */
 	cli->session->pid = 1;
-	cli_unlock(cli, fnum, 0, 4);
+	cli_unlock(cli->tree, fnum, 0, 4);
 
 	/* and recv the async write reply */
 	status = smb_raw_write_recv(req, &io);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);
 
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 done:
 	return ret;
@@ -157,9 +157,9 @@ static BOOL test_mux_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("TESTING MULTIPLEXED LOCK/LOCK/UNLOCK\n");
 
-	fnum = cli_open(cli, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 	if (fnum == -1) {
-		printf("open failed in mux_write - %s\n", cli_errstr(cli));
+		printf("open failed in mux_write - %s\n", cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -202,7 +202,7 @@ static BOOL test_mux_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("reopening with an exit\n");
 	smb_raw_exit(cli->session);
-	fnum = cli_open(cli, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
+	fnum = cli_open(cli->tree, BASEDIR "\\write.dat", O_RDWR | O_CREAT, DENY_NONE);
 
 	printf("Now trying with a cancel\n");
 
@@ -240,7 +240,7 @@ static BOOL test_mux_lock(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = cli_request_simple_recv(req);
 	CHECK_STATUS(status, NT_STATUS_FILE_LOCK_CONFLICT);	
 
-	cli_close(cli, fnum);
+	cli_close(cli->tree, fnum);
 
 done:
 	return ret;
@@ -264,14 +264,14 @@ BOOL torture_raw_mux(int dummy)
 	mem_ctx = talloc_init("torture_raw_mux");
 
 	/* cleanup */
-	if (cli_deltree(cli, BASEDIR) == -1) {
+	if (cli_deltree(cli->tree, BASEDIR) == -1) {
 		printf("Failed to cleanup " BASEDIR "\n");
 		ret = False;
 		goto done;
 	}
 
 
-	if (!cli_mkdir(cli, BASEDIR)) {
+	if (!cli_mkdir(cli->tree, BASEDIR)) {
 		printf("Failed to create %s\n", BASEDIR);
 		ret = False;
 		goto done;
@@ -291,7 +291,7 @@ BOOL torture_raw_mux(int dummy)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
 	return ret;

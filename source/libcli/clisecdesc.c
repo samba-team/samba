@@ -24,7 +24,7 @@
 /****************************************************************************
   query the security descriptor for a open file
  ****************************************************************************/
-SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum, 
+SEC_DESC *cli_query_secdesc(struct cli_tree *tree, int fnum, 
 			    TALLOC_CTX *mem_ctx)
 {
 	struct smb_nttrans parms;
@@ -48,7 +48,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 	parms.in.params = param_blob;
 	parms.in.data = data_blob(NULL, 0);
 	
-	status = smb_raw_nttrans(cli->tree, mem_ctx, &parms);
+	status = smb_raw_nttrans(tree, mem_ctx, &parms);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_QUERY_SECURITY_DESC\n"));
@@ -72,7 +72,7 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 /****************************************************************************
   set the security descriptor for a open file
  ****************************************************************************/
-BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
+BOOL cli_set_secdesc(struct cli_tree *tree, int fnum, SEC_DESC *sd)
 {
 	struct smb_nttrans parms;
 	char param[8];
@@ -106,7 +106,7 @@ BOOL cli_set_secdesc(struct cli_state *cli, int fnum, SEC_DESC *sd)
 	parms.in.params = param_blob;
 	parms.in.data = data_blob(NULL, 0);
 	
-	status = smb_raw_nttrans(cli->tree, mem_ctx, &parms);
+	status = smb_raw_nttrans(tree, mem_ctx, &parms);
 	
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(1,("Failed to send NT_TRANSACT_SET_SECURITY_DESC\n"));

@@ -193,8 +193,8 @@ static void send_message(void)
 	int total_len = 0;
 	int grp_id;
 
-	if (!cli_message_start(cli, desthost, username, &grp_id)) {
-		d_printf("message start: %s\n", cli_errstr(cli));
+	if (!cli_message_start(cli->tree, desthost, username, &grp_id)) {
+		d_printf("message start: %s\n", cli_errstr(cli->tree));
 		return;
 	}
 
@@ -215,8 +215,8 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
-		if (!cli_message_text(cli, msg, l, grp_id)) {
-			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli));
+		if (!cli_message_text(cli->tree, msg, l, grp_id)) {
+			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli->tree));
 			return;
 		}      
 		
@@ -228,8 +228,8 @@ static void send_message(void)
 	else
 		d_printf("sent %d bytes\n",total_len);
 
-	if (!cli_message_end(cli, grp_id)) {
-		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli));
+	if (!cli_message_end(cli->tree, grp_id)) {
+		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli->tree));
 		return;
 	}      
 }
@@ -243,8 +243,8 @@ static int do_dskattr(void)
 {
 	int total, bsize, avail;
 
-	if (!cli_dskattr(cli, &bsize, &total, &avail)) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli)); 
+	if (!cli_dskattr(cli->tree, &bsize, &total, &avail)) {
+		d_printf("Error in dskattr: %s\n",cli_errstr(cli->tree)); 
 		return 1;
 	}
 
@@ -292,8 +292,8 @@ static int do_cd(char *newdir)
 	dos_clean_name(cur_dir);
 	
 	if (!strequal(cur_dir,"\\")) {
-		if (!cli_chkpath(cli, dname)) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli));
+		if (!cli_chkpath(cli->tree, dname)) {
+			d_printf("cd %s: %s\n", dname, cli_errstr(cli->tree));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
@@ -600,7 +600,7 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli, head, attribute, do_list_helper, NULL);
+			cli_list(cli->tree, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo))
 			{
@@ -624,9 +624,9 @@ void do_list(const char *mask,uint16 attribute,void (*fn)(file_info *),BOOL rec,
 	}
 	else
 	{
-		if (cli_list(cli, mask, attribute, do_list_helper, NULL) == -1)
+		if (cli_list(cli->tree, mask, attribute, do_list_helper, NULL) == -1)
 		{
-			d_printf("%s listing %s\n", cli_errstr(cli), mask);
+			d_printf("%s listing %s\n", cli_errstr(cli->tree), mask);
 		}
 	}
 
@@ -729,10 +729,10 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 		strlower(lname);
 	}
 
-	fnum = cli_open(cli, rname, O_RDONLY, DENY_NONE);
+	fnum = cli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -759,11 +759,11 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 
-	if (!cli_qfileinfo(cli, fnum, 
+	if (!cli_qfileinfo(cli->tree, fnum, 
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL) &&
-	    !cli_getattrE(cli, fnum, 
+	    !cli_getattrE(cli->tree, fnum, 
 			  &attr, &size, NULL, NULL, NULL)) {
-		d_printf("getattrib: %s\n",cli_errstr(cli));
+		d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 		return 1;
 	}
 
@@ -772,12 +772,12 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 
 	if(!(data = (char *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
-		cli_close(cli, fnum);
+		cli_close(cli->tree, fnum);
 		return 1;
 	}
 
 	while (1) {
-		int n = cli_read(cli, fnum, data, nread + start, read_size);
+		int n = cli_read(cli->tree, fnum, data, nread + start, read_size);
 
 		if (n <= 0) break;
  
@@ -799,8 +799,8 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (!cli_close(cli, fnum)) {
-		d_printf("Error %s closing remote file\n",cli_errstr(cli));
+	if (!cli_close(cli->tree, fnum)) {
+		d_printf("Error %s closing remote file\n",cli_errstr(cli->tree));
 		rc = 1;
 	}
 
@@ -809,7 +809,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
-		cli_setatr(cli, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
+		cli_setatr(cli->tree, rname, attr & ~(uint16)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -1013,9 +1013,9 @@ make a directory of name "name"
 ****************************************************************************/
 static BOOL do_mkdir(char *name)
 {
-	if (!cli_mkdir(cli, name)) {
+	if (!cli_mkdir(cli->tree, name)) {
 		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli),name);
+			 cli_errstr(cli->tree),name);
 		return(False);
 	}
 
@@ -1028,9 +1028,9 @@ show 8.3 name of a file
 static BOOL do_altname(char *name)
 {
 	const char *altname;
-	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli, name, &altname))) {
+	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli->tree, name, &altname))) {
 		d_printf("%s getting alt name for %s\n",
-			 cli_errstr(cli),name);
+			 cli_errstr(cli->tree),name);
 		return(False);
 	}
 	d_printf("%s\n", altname);
@@ -1079,7 +1079,7 @@ static int cmd_mkdir(void)
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
-			if (!cli_chkpath(cli, ddir2)) { 
+			if (!cli_chkpath(cli->tree, ddir2)) { 
 				do_mkdir(ddir2);
 			}
 			pstrcat(ddir2,"\\");
@@ -1133,20 +1133,21 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT, DENY_NONE);
+		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (!cli_qfileinfo(cli, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
-			    !cli_getattrE(cli, fnum, NULL, &start, NULL, NULL, NULL)) {
-				d_printf("getattrib: %s\n",cli_errstr(cli));
+			if (!cli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL) &&
+			    !cli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL)) {
+				d_printf("getattrib: %s\n",cli_errstr(cli->tree));
 				return 1;
 			}
 		}
 	} else {
-		fnum = cli_open(cli, rname, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE);
+		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT|O_TRUNC, 
+				DENY_NONE);
 	}
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli),rname);
+		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -1195,10 +1196,10 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			break;
 		}
 
-		ret = cli_write(cli, fnum, 0, buf, nread + start, n);
+		ret = cli_write(cli->tree, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
-			d_printf("Error writing file: %s\n", cli_errstr(cli));
+			d_printf("Error writing file: %s\n", cli_errstr(cli->tree));
 			rc = 1;
 			break;
 		} 
@@ -1206,8 +1207,8 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (!cli_close(cli, fnum)) {
-		d_printf("%s closing remote file %s\n",cli_errstr(cli),rname);
+	if (!cli_close(cli->tree, fnum)) {
+		d_printf("%s closing remote file %s\n",cli_errstr(cli->tree),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
 		return 1;
@@ -1452,7 +1453,7 @@ static int cmd_mput(void)
 	      				SAFE_FREE(rname);
 					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
-					if (!cli_chkpath(cli, rname) && 
+					if (!cli_chkpath(cli->tree, rname) && 
 					    !do_mkdir(rname)) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
 						/* Skip the directory */
@@ -1569,8 +1570,8 @@ static void do_del(file_info *finfo)
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) 
 		return;
 
-	if (!cli_unlink(cli, mask)) {
-		d_printf("%s deleting remote file %s\n",cli_errstr(cli),mask);
+	if (!cli_unlink(cli->tree, mask)) {
+		d_printf("%s deleting remote file %s\n",cli_errstr(cli->tree),mask);
 	}
 }
 
@@ -1617,10 +1618,10 @@ static int cmd_deltree(void)
 	}
 	pstrcat(dname,buf);
 
-	ret = cli_deltree(cli, dname);
+	ret = cli_deltree(cli->tree, dname);
 
 	if (ret == -1) {
-		printf("Failed to delete tree %s - %s\n", dname, cli_errstr(cli));
+		printf("Failed to delete tree %s - %s\n", dname, cli_errstr(cli->tree));
 		return -1;
 	}
 
@@ -1759,9 +1760,9 @@ static int cmd_acl(void)
 	}
 	pstrcat(fname,buf);
 
-	fnum = cli_open(cli, fname, O_RDONLY, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("%s - %s\n", fname, cli_errstr(cli));
+		d_printf("%s - %s\n", fname, cli_errstr(cli->tree));
 		return -1;
 	}
 
@@ -1799,7 +1800,7 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_open(cli, mask, O_RDWR, DENY_ALL);
+	cli_open(cli->tree, mask, O_RDWR, DENY_ALL);
 
 	return 0;
 }
@@ -1821,9 +1822,9 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (!cli_rmdir(cli, mask)) {
+	if (!cli_rmdir(cli->tree, mask)) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli),mask);
+			 cli_errstr(cli->tree),mask);
 	}
 	
 	return 0;
@@ -1854,8 +1855,8 @@ static int cmd_link(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_hardlink(cli, src, dest)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), src, dest);
+	if (!cli_unix_hardlink(cli->tree, src, dest)) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli->tree), src, dest);
 		return 1;
 	}  
 
@@ -1888,9 +1889,9 @@ static int cmd_symlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_unix_symlink(cli, src, dest)) {
+	if (!cli_unix_symlink(cli->tree, src, dest)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli), src, dest);
+			cli_errstr(cli->tree), src, dest);
 		return 1;
 	} 
 
@@ -1923,9 +1924,9 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (!cli_unix_chmod(cli, src, mode)) {
+	if (!cli_unix_chmod(cli->tree, src, mode)) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli), src, (unsigned int)mode);
+			cli_errstr(cli->tree), src, (unsigned int)mode);
 		return 1;
 	} 
 
@@ -1961,9 +1962,9 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (!cli_unix_chown(cli, src, uid, gid)) {
+	if (!cli_unix_chown(cli->tree, src, uid, gid)) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli), src, (int)uid, (int)gid);
+			cli_errstr(cli->tree), src, (int)uid, (int)gid);
 		return 1;
 	} 
 
@@ -1990,8 +1991,8 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (!cli_rename(cli, src, dest)) {
-		d_printf("%s renaming files\n",cli_errstr(cli));
+	if (!cli_rename(cli->tree, src, dest)) {
+		d_printf("%s renaming files\n",cli_errstr(cli->tree));
 		return 1;
 	}
 	
@@ -2474,7 +2475,7 @@ static char **remote_completion(const char *text, int len)
 	} else
 		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
 
-	if (cli_list(cli, dirmask, 
+	if (cli_list(cli->tree, dirmask, 
 		     FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN, 
 		     completion_remote_filter, &info) < 0)
 		goto cleanup;
@@ -2623,7 +2624,7 @@ static void readline_callback(void)
 	}
 
 	if (cli->tree) {
-		cli_chkpath(cli, "\\");
+		cli_chkpath(cli->tree, "\\");
 	}
 }
 
@@ -2716,7 +2717,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	if (!cli_transport_establish(c, &calling, &called)) {
 		char *p;
 		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c));
+			 called.name, cli_errstr(c->tree));
 		cli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
@@ -2749,7 +2750,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos ||
 		    !cli_session_setup(c, "", "", lp_workgroup())) { 
-			d_printf("session setup failed: %s\n", cli_errstr(c));
+			d_printf("session setup failed: %s\n", cli_errstr(c->tree));
 			cli_shutdown(c);
 			return NULL;
 		}
@@ -2759,7 +2760,7 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	DEBUG(4,(" session setup ok\n"));
 
 	if (!cli_send_tconX(c, sharename, "?????", password)) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c));
+		d_printf("tree connect failed: %s\n", cli_errstr(c->tree));
 		cli_shutdown(c);
 		return NULL;
 	}

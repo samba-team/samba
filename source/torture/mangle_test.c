@@ -36,48 +36,48 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 
 	total++;
 
-	fnum = cli_open(cli, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum = cli_open(cli->tree, name, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		printf("open of %s failed (%s)\n", name, cli_errstr(cli));
+		printf("open of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
 
-	if (!cli_close(cli, fnum)) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+	if (!cli_close(cli->tree, fnum)) {
+		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
 
 	/* get the short name */
-	status = cli_qpathinfo_alt_name(cli, name, &shortname);
+	status = cli_qpathinfo_alt_name(cli->tree, name, &shortname);
 	if (!NT_STATUS_IS_OK(status)) {
-		printf("query altname of %s failed (%s)\n", name, cli_errstr(cli));
+		printf("query altname of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
 
 	snprintf(name2, sizeof(name2), "\\mangle_test\\%s", shortname);
-	if (!cli_unlink(cli, name2)) {
+	if (!cli_unlink(cli->tree, name2)) {
 		printf("unlink of %s  (%s) failed (%s)\n", 
-		       name2, name, cli_errstr(cli));
+		       name2, name, cli_errstr(cli->tree));
 		return False;
 	}
 
 	/* recreate by short name */
-	fnum = cli_open(cli, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	fnum = cli_open(cli->tree, name2, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
 	if (fnum == -1) {
-		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli));
+		printf("open2 of %s failed (%s)\n", name2, cli_errstr(cli->tree));
 		return False;
 	}
-	if (!cli_close(cli, fnum)) {
-		printf("close of %s failed (%s)\n", name, cli_errstr(cli));
+	if (!cli_close(cli->tree, fnum)) {
+		printf("close of %s failed (%s)\n", name, cli_errstr(cli->tree));
 		return False;
 	}
 
 	/* and unlink by long name */
-	if (!cli_unlink(cli, name)) {
+	if (!cli_unlink(cli->tree, name)) {
 		printf("unlink2 of %s  (%s) failed (%s)\n", 
-		       name, name2, cli_errstr(cli));
+		       name, name2, cli_errstr(cli->tree));
 		failures++;
-		cli_unlink(cli, name2);
+		cli_unlink(cli->tree, name2);
 		return True;
 	}
 
@@ -167,10 +167,10 @@ BOOL torture_mangle(int dummy)
 		return False;
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*");
-	cli_rmdir(cli, "\\mangle_test");
+	cli_unlink(cli->tree, "\\mangle_test\\*");
+	cli_rmdir(cli->tree, "\\mangle_test");
 
-	if (!cli_mkdir(cli, "\\mangle_test")) {
+	if (!cli_mkdir(cli->tree, "\\mangle_test")) {
 		printf("ERROR: Failed to make directory\n");
 		return False;
 	}
@@ -189,8 +189,8 @@ BOOL torture_mangle(int dummy)
 		}
 	}
 
-	cli_unlink(cli, "\\mangle_test\\*");
-	if (!cli_rmdir(cli, "\\mangle_test")) {
+	cli_unlink(cli->tree, "\\mangle_test\\*");
+	if (!cli_rmdir(cli->tree, "\\mangle_test")) {
 		printf("ERROR: Failed to remove directory\n");
 		return False;
 	}

@@ -217,19 +217,19 @@ static BOOL scan_trans2(struct cli_state *cli, int op, int level,
 
 	status = try_trans2_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli, "\\newfile.dat");
-	cli_rmdir(cli, "\\newfile.dat");
+	cli_unlink(cli->tree, "\\newfile.dat");
+	cli_rmdir(cli->tree, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
-	cli_mkdir(cli, "\\testdir");
+	cli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
 	param_len += push_string(NULL, &param[2], "\\testdir", sizeof(pstring)-3, STR_TERMINATE|STR_UNICODE);
 
 	status = try_trans2_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_rmdir(cli, "\\testdir");
+	cli_rmdir(cli->tree, "\\testdir");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
@@ -249,19 +249,19 @@ BOOL torture_trans2_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
+	fnum = cli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, DENY_NONE);
 	if (fnum == -1) {
-		printf("file open failed - %s\n", cli_errstr(cli));
+		printf("file open failed - %s\n", cli_errstr(cli->tree));
 	}
-	dnum = cli_nt_create_full(cli, "\\", 
+	dnum = cli_nt_create_full(cli->tree, "\\", 
 				  0, GENERIC_RIGHTS_FILE_READ, FILE_ATTRIBUTE_NORMAL,
 				  NTCREATEX_SHARE_ACCESS_READ | NTCREATEX_SHARE_ACCESS_WRITE, 
 				  NTCREATEX_DISP_OPEN, 
 				  NTCREATEX_OPTIONS_DIRECTORY, 0);
 	if (dnum == -1) {
-		printf("directory open failed - %s\n", cli_errstr(cli));
+		printf("directory open failed - %s\n", cli_errstr(cli->tree));
 	}
-	qfnum = cli_nt_create_full(cli, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
+	qfnum = cli_nt_create_full(cli->tree, "\\$Extend\\$Quota:$Q:$INDEX_ALLOCATION", 
 				   NTCREATEX_FLAGS_EXTENDED, 
 				   SEC_RIGHTS_MAXIMUM_ALLOWED, 
 				   0,
@@ -269,7 +269,7 @@ BOOL torture_trans2_scan(int dummy)
 				   NTCREATEX_DISP_OPEN, 
 				   0, 0);
 	if (qfnum == -1) {
-		printf("quota open failed - %s\n", cli_errstr(cli));
+		printf("quota open failed - %s\n", cli_errstr(cli->tree));
 	}
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
@@ -456,19 +456,19 @@ static BOOL scan_nttrans(struct cli_state *cli, int op, int level,
 
 	status = try_nttrans_len(cli, "newfile", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_unlink(cli, "\\newfile.dat");
-	cli_rmdir(cli, "\\newfile.dat");
+	cli_unlink(cli->tree, "\\newfile.dat");
+	cli_rmdir(cli->tree, "\\newfile.dat");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	/* try dfs style  */
-	cli_mkdir(cli, "\\testdir");
+	cli_mkdir(cli->tree, "\\testdir");
 	param_len = 2;
 	SSVAL(param, 0, level);
 	param_len += push_string(NULL, &param[2], "\\testdir", -1, STR_TERMINATE | STR_UNICODE);
 
 	status = try_nttrans_len(cli, "dfs", op, level, param, data, param_len, &data_len, 
 				&rparam_len, &rdata_len);
-	cli_rmdir(cli, "\\testdir");
+	cli_rmdir(cli->tree, "\\testdir");
 	if (NT_STATUS_IS_OK(status)) return True;
 
 	return False;
@@ -488,9 +488,9 @@ BOOL torture_nttrans_scan(int dummy)
 		return False;
 	}
 
-	fnum = cli_open(cli, fname, O_RDWR | O_CREAT | O_TRUNC, 
+	fnum = cli_open(cli->tree, fname, O_RDWR | O_CREAT | O_TRUNC, 
 			 DENY_NONE);
-	dnum = cli_open(cli, "\\", O_RDONLY, DENY_NONE);
+	dnum = cli_open(cli->tree, "\\", O_RDONLY, DENY_NONE);
 
 	for (op=OP_MIN; op<=OP_MAX; op++) {
 		printf("Scanning op=%d\n", op);

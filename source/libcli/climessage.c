@@ -25,17 +25,17 @@
 /****************************************************************************
 start a message sequence
 ****************************************************************************/
-BOOL cli_message_start(struct cli_state *cli, char *host, char *username, 
-			      int *grp)
+BOOL cli_message_start(struct cli_tree *tree, char *host, char *username, 
+		       int *grp)
 {
 	struct cli_request *req; 
 	
-	req = cli_request_setup(cli->tree, SMBsendstrt, 0, 0);
+	req = cli_request_setup(tree, SMBsendstrt, 0, 0);
 	cli_req_append_string(req, username, STR_TERMINATE);
 	cli_req_append_string(req, host, STR_TERMINATE);
 	if (!cli_request_send(req) || 
 	    !cli_request_receive(req) ||
-	    cli_is_error(cli)) {
+	    cli_is_error(tree)) {
 		cli_request_destroy(req);
 		return False;
 	}
@@ -50,18 +50,18 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 /****************************************************************************
 send a message 
 ****************************************************************************/
-BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
+BOOL cli_message_text(struct cli_tree *tree, char *msg, int len, int grp)
 {
 	struct cli_request *req; 
 	
-	req = cli_request_setup(cli->tree, SMBsendtxt, 1, 0);
+	req = cli_request_setup(tree, SMBsendtxt, 1, 0);
 	SSVAL(req->out.vwv, VWV(0), grp);
 
 	cli_req_append_bytes(req, msg, len);
 
 	if (!cli_request_send(req) || 
 	    !cli_request_receive(req) ||
-	    cli_is_error(cli)) {
+	    cli_is_error(tree)) {
 		cli_request_destroy(req);
 		return False;
 	}
@@ -73,16 +73,16 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 /****************************************************************************
 end a message 
 ****************************************************************************/
-BOOL cli_message_end(struct cli_state *cli, int grp)
+BOOL cli_message_end(struct cli_tree *tree, int grp)
 {
 	struct cli_request *req; 
 	
-	req = cli_request_setup(cli->tree, SMBsendend, 1, 0);
+	req = cli_request_setup(tree, SMBsendend, 1, 0);
 	SSVAL(req->out.vwv, VWV(0), grp);
 
 	if (!cli_request_send(req) || 
 	    !cli_request_receive(req) ||
-	    cli_is_error(cli)) {
+	    cli_is_error(tree)) {
 		cli_request_destroy(req);
 		return False;
 	}

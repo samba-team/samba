@@ -23,7 +23,7 @@
 /****************************************************************************
 send a qpathinfo call
 ****************************************************************************/
-BOOL cli_qpathinfo(struct cli_state *cli, const char *fname, 
+BOOL cli_qpathinfo(struct cli_tree *tree, const char *fname, 
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   size_t *size, uint16 *mode)
 {
@@ -37,7 +37,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 	parms.standard.level = RAW_FILEINFO_STANDARD;
 	parms.standard.in.fname = fname;
 
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &parms);
+	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	talloc_destroy(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -65,7 +65,7 @@ BOOL cli_qpathinfo(struct cli_state *cli, const char *fname,
 /****************************************************************************
 send a qpathinfo call with the SMB_QUERY_FILE_ALL_INFO info level
 ****************************************************************************/
-BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname, 
+BOOL cli_qpathinfo2(struct cli_tree *tree, const char *fname, 
 		    time_t *c_time, time_t *a_time, time_t *m_time, 
 		    time_t *w_time, size_t *size, uint16 *mode,
 		    SMB_INO_T *ino)
@@ -80,7 +80,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 	parms.all_info.level = RAW_FILEINFO_ALL_INFO;
 	parms.all_info.in.fname = fname;
 
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &parms);
+	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	talloc_destroy(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -112,7 +112,7 @@ BOOL cli_qpathinfo2(struct cli_state *cli, const char *fname,
 /****************************************************************************
 send a qfileinfo QUERY_FILE_NAME_INFO call
 ****************************************************************************/
-BOOL cli_qfilename(struct cli_state *cli, int fnum, 
+BOOL cli_qfilename(struct cli_tree *tree, int fnum, 
 		   const char **name)
 {
 	union smb_fileinfo parms;
@@ -125,7 +125,7 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
 	parms.name_info.level = RAW_FILEINFO_NAME_INFO;
 	parms.name_info.in.fnum = fnum;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &parms);
+	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		*name = NULL;
@@ -143,7 +143,7 @@ BOOL cli_qfilename(struct cli_state *cli, int fnum,
 /****************************************************************************
 send a qfileinfo call
 ****************************************************************************/
-BOOL cli_qfileinfo(struct cli_state *cli, int fnum, 
+BOOL cli_qfileinfo(struct cli_tree *tree, int fnum, 
 		   uint16 *mode, size_t *size,
 		   time_t *c_time, time_t *a_time, time_t *m_time, 
 		   time_t *w_time, SMB_INO_T *ino)
@@ -158,7 +158,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 	parms.all_info.level = RAW_FILEINFO_ALL_INFO;
 	parms.all_info.in.fnum = fnum;
 
-	status = smb_raw_fileinfo(cli->tree, mem_ctx, &parms);
+	status = smb_raw_fileinfo(tree, mem_ctx, &parms);
 	talloc_destroy(mem_ctx);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -193,7 +193,7 @@ BOOL cli_qfileinfo(struct cli_state *cli, int fnum,
 /****************************************************************************
 send a qpathinfo SMB_QUERY_FILE_ALT_NAME_INFO call
 ****************************************************************************/
-NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname, 
+NTSTATUS cli_qpathinfo_alt_name(struct cli_tree *tree, const char *fname, 
 				const char **alt_name)
 {
 	union smb_fileinfo parms;
@@ -206,11 +206,11 @@ NTSTATUS cli_qpathinfo_alt_name(struct cli_state *cli, const char *fname,
 	mem_ctx = talloc_init("cli_qpathinfo_alt_name");
 	if (!mem_ctx) return NT_STATUS_NO_MEMORY;
 
-	status = smb_raw_pathinfo(cli->tree, mem_ctx, &parms);
+	status = smb_raw_pathinfo(tree, mem_ctx, &parms);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_destroy(mem_ctx);
 		*alt_name = NULL;
-		return cli_nt_error(cli);
+		return cli_nt_error(tree);
 	}
 
 	if (!parms.alt_name_info.out.fname.s) {

@@ -40,8 +40,8 @@ static BOOL test_mkdir(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 
 	/* cleanup */
-	cli_rmdir(cli, path);
-	cli_unlink(cli, path);
+	cli_rmdir(cli->tree, path);
+	cli_unlink(cli->tree, path);
 
 	/* 
 	   basic mkdir
@@ -69,7 +69,7 @@ static BOOL test_mkdir(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	printf("testing mkdir collision with file\n");
 
 	/* name collision with a file */
-	cli_close(cli, create_complex_file(cli, mem_ctx, path));
+	cli_close(cli->tree, create_complex_file(cli, mem_ctx, path));
 	status = smb_raw_mkdir(cli->tree, &md);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_COLLISION);
 
@@ -79,7 +79,7 @@ static BOOL test_mkdir(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_rmdir(cli->tree, &rd);
 	CHECK_STATUS(status, NT_STATUS_NOT_A_DIRECTORY);
 
-	cli_unlink(cli, path);
+	cli_unlink(cli->tree, path);
 
 	printf("testing invalid dir\n");
 
@@ -110,8 +110,8 @@ static BOOL test_mkdir(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 done:
-	cli_rmdir(cli, path);
-	cli_unlink(cli, path);
+	cli_rmdir(cli->tree, path);
+	cli_unlink(cli->tree, path);
 	return ret;
 }
 

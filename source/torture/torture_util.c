@@ -83,8 +83,8 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 	time_t t = (time(NULL) & ~1);
 	NTSTATUS status;
 
-	cli_unlink(cli, fname);
-	fnum = cli_nt_create_full(cli, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+	cli_unlink(cli->tree, fname);
+	fnum = cli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
 				  FILE_ATTRIBUTE_NORMAL,
 				  NTCREATEX_SHARE_ACCESS_DELETE|
 				  NTCREATEX_SHARE_ACCESS_READ|
@@ -93,7 +93,7 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 				  0, 0);
 	if (fnum == -1) return -1;
 
-	cli_write(cli, fnum, 0, buf, 0, sizeof(buf));
+	cli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 
 	/* setup some EAs */
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;

@@ -26,7 +26,7 @@
  Hard/Symlink a file (UNIX extensions).
 ****************************************************************************/
 
-static BOOL cli_link_internal(struct cli_state *cli, 
+static BOOL cli_link_internal(struct cli_tree *tree, 
 			      const char *fname_src, 
 			      const char *fname_dst, BOOL hard_link)
 {
@@ -43,7 +43,7 @@ static BOOL cli_link_internal(struct cli_state *cli,
 		parms.unix_link.in.link_dest = fname_dst;
 	}
 	
-	status = smb_raw_setpathinfo(cli->tree, &parms);
+	status = smb_raw_setpathinfo(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -79,24 +79,27 @@ static uint32  unix_perms_to_wire(mode_t perms)
 /****************************************************************************
  Symlink a file (UNIX extensions).
 ****************************************************************************/
-BOOL cli_unix_symlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+BOOL cli_unix_symlink(struct cli_tree *tree, const char *fname_src, 
+		      const char *fname_dst)
 {
-	return cli_link_internal(cli, fname_src, fname_dst, False);
+	return cli_link_internal(tree, fname_src, fname_dst, False);
 }
 
 /****************************************************************************
  Hard a file (UNIX extensions).
 ****************************************************************************/
-BOOL cli_unix_hardlink(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+BOOL cli_unix_hardlink(struct cli_tree *tree, const char *fname_src, 
+		       const char *fname_dst)
 {
-	return cli_link_internal(cli, fname_src, fname_dst, True);
+	return cli_link_internal(tree, fname_src, fname_dst, True);
 }
 
 
 /****************************************************************************
  Chmod or chown a file internal (UNIX extensions).
 ****************************************************************************/
-static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fname, 
+static BOOL cli_unix_chmod_chown_internal(struct cli_tree *tree, 
+					  const char *fname, 
 					  uint32 mode, uint32 uid, uint32 gid)
 {
 	union smb_setfileinfo parms;
@@ -108,7 +111,7 @@ static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
 	parms.unix_basic.in.gid = gid;
 	parms.unix_basic.in.mode = mode;
 	
-	status = smb_raw_setpathinfo(cli->tree, &parms);
+	status = smb_raw_setpathinfo(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -117,25 +120,30 @@ static BOOL cli_unix_chmod_chown_internal(struct cli_state *cli, const char *fna
  chmod a file (UNIX extensions).
 ****************************************************************************/
 
-BOOL cli_unix_chmod(struct cli_state *cli, const char *fname, mode_t mode)
+BOOL cli_unix_chmod(struct cli_tree *tree, const char *fname, mode_t mode)
 {
-	return cli_unix_chmod_chown_internal(cli, fname, 
-		unix_perms_to_wire(mode), SMB_UID_NO_CHANGE, SMB_GID_NO_CHANGE);
+	return cli_unix_chmod_chown_internal(tree, fname, 
+					     unix_perms_to_wire(mode), 
+					     SMB_UID_NO_CHANGE, 
+					     SMB_GID_NO_CHANGE);
 }
 
 /****************************************************************************
  chown a file (UNIX extensions).
 ****************************************************************************/
-BOOL cli_unix_chown(struct cli_state *cli, const char *fname, uid_t uid, gid_t gid)
+BOOL cli_unix_chown(struct cli_tree *tree, const char *fname, uid_t uid, 
+		    gid_t gid)
 {
-	return cli_unix_chmod_chown_internal(cli, fname, SMB_MODE_NO_CHANGE, (uint32)uid, (uint32)gid);
+	return cli_unix_chmod_chown_internal(tree, fname, SMB_MODE_NO_CHANGE, 
+					     (uint32)uid, (uint32)gid);
 }
 
 
 /****************************************************************************
  Rename a file.
 ****************************************************************************/
-BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_dst)
+BOOL cli_rename(struct cli_tree *tree, const char *fname_src, 
+		const char *fname_dst)
 {
 	union smb_rename parms;
 
@@ -143,14 +151,14 @@ BOOL cli_rename(struct cli_state *cli, const char *fname_src, const char *fname_
 	parms.rename.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 	parms.rename.in.pattern1 = fname_src;
 	parms.rename.in.pattern2 = fname_dst;
-	return NT_STATUS_IS_OK(smb_raw_rename(cli->tree, &parms));
+	return NT_STATUS_IS_OK(smb_raw_rename(tree, &parms));
 }
 
 
 /****************************************************************************
  Delete a file.
 ****************************************************************************/
-BOOL cli_unlink(struct cli_state *cli, const char *fname)
+BOOL cli_unlink(struct cli_tree *tree, const char *fname)
 {
 	struct smb_unlink parms;
 
@@ -160,39 +168,39 @@ BOOL cli_unlink(struct cli_state *cli, const char *fname)
 	} else {
 		parms.in.attrib = FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY;
 	}
-	return NT_STATUS_IS_OK(smb_raw_unlink(cli->tree, &parms));
+	return NT_STATUS_IS_OK(smb_raw_unlink(tree, &parms));
 }
 
 /****************************************************************************
  Create a directory.
 ****************************************************************************/
-BOOL cli_mkdir(struct cli_state *cli, const char *dname)
+BOOL cli_mkdir(struct cli_tree *tree, const char *dname)
 {
 	union smb_mkdir parms;
 
 	parms.mkdir.level = RAW_MKDIR_MKDIR;
 	parms.mkdir.in.path = dname;
 
-	return NT_STATUS_IS_OK(smb_raw_mkdir(cli->tree, &parms));
+	return NT_STATUS_IS_OK(smb_raw_mkdir(tree, &parms));
 }
 
 
 /****************************************************************************
  Remove a directory.
 ****************************************************************************/
-BOOL cli_rmdir(struct cli_state *cli, const char *dname)
+BOOL cli_rmdir(struct cli_tree *tree, const char *dname)
 {
 	struct smb_rmdir parms;
 
 	parms.in.path = dname;
-	return NT_STATUS_IS_OK(smb_raw_rmdir(cli->tree, &parms));
+	return NT_STATUS_IS_OK(smb_raw_rmdir(tree, &parms));
 }
 
 
 /****************************************************************************
  Set or clear the delete on close flag.
 ****************************************************************************/
-BOOL cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
+BOOL cli_nt_delete_on_close(struct cli_tree *tree, int fnum, BOOL flag)
 {
 	union smb_setfileinfo parms;
 	NTSTATUS status;
@@ -201,7 +209,7 @@ BOOL cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
 	parms.disposition_info.file.fnum = fnum;
 	parms.disposition_info.in.delete_on_close = flag;
 	
-	status = smb_raw_setfileinfo(cli->tree, &parms);
+	status = smb_raw_setfileinfo(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -211,11 +219,11 @@ BOOL cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
  Create/open a file - exposing the full horror of the NT API :-).
  Used in CIFS-on-CIFS NTVFS.
 ****************************************************************************/
-int cli_nt_create_full(struct cli_state *cli, const char *fname,
-		 uint32 CreatFlags, uint32 DesiredAccess,
-		 uint32 FileAttributes, uint32 ShareAccess,
-		 uint32 CreateDisposition, uint32 CreateOptions,
-		 uint8 SecurityFlags)
+int cli_nt_create_full(struct cli_tree *tree, const char *fname,
+		       uint32 CreatFlags, uint32 DesiredAccess,
+		       uint32 FileAttributes, uint32 ShareAccess,
+		       uint32 CreateDisposition, uint32 CreateOptions,
+		       uint8 SecurityFlags)
 {
 	union smb_open open_parms;
 	TALLOC_CTX *mem_ctx;
@@ -237,7 +245,7 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
 	open_parms.ntcreatex.in.security_flags = SecurityFlags;
 	open_parms.ntcreatex.in.fname = fname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	talloc_destroy(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -252,7 +260,8 @@ int cli_nt_create_full(struct cli_state *cli, const char *fname,
  Open a file (using SMBopenx)
  WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
-int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode)
+int cli_open(struct cli_tree *tree, const char *fname, int flags, 
+	     int share_mode)
 {
 	union smb_open open_parms;
 	unsigned openfn=0;
@@ -303,7 +312,7 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
 	open_parms.openx.in.timeout = 0;
 	open_parms.openx.in.fname = fname;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	talloc_destroy(mem_ctx);
 
 	if (NT_STATUS_IS_OK(status)) {
@@ -317,7 +326,7 @@ int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode
 /****************************************************************************
  Close a file.
 ****************************************************************************/
-BOOL cli_close(struct cli_state *cli, int fnum)
+BOOL cli_close(struct cli_tree *tree, int fnum)
 {
 	union smb_close close_parms;
 	NTSTATUS status;
@@ -325,7 +334,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 	close_parms.close.level = RAW_CLOSE_CLOSE;
 	close_parms.close.in.fnum = fnum;
 	close_parms.close.in.write_time = 0;
-	status = smb_raw_close(cli->tree, &close_parms);
+	status = smb_raw_close(tree, &close_parms);
 	return NT_STATUS_IS_OK(status);
 }
 
@@ -333,7 +342,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
  send a lock with a specified locktype 
  this is used for testing LOCKING_ANDX_CANCEL_LOCK
 ****************************************************************************/
-NTSTATUS cli_locktype(struct cli_state *cli, int fnum, 
+NTSTATUS cli_locktype(struct cli_tree *tree, int fnum, 
 		      uint32 offset, uint32 len, int timeout, unsigned char locktype)
 {
 	union smb_lock parms;
@@ -346,12 +355,12 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
 	parms.lockx.in.timeout = timeout;
 	parms.lockx.in.ulock_cnt = 0;
 	parms.lockx.in.lock_cnt = 1;
-	lock[0].pid = cli->session->pid;
+	lock[0].pid = tree->session->pid;
 	lock[0].offset = offset;
 	lock[0].count = len;
 	parms.lockx.in.locks = &lock[0];
 
-	status = smb_raw_lock(cli->tree, &parms);
+	status = smb_raw_lock(tree, &parms);
 	
 	return status;
 }
@@ -360,7 +369,7 @@ NTSTATUS cli_locktype(struct cli_state *cli, int fnum,
 /****************************************************************************
  Lock a file.
 ****************************************************************************/
-BOOL cli_lock(struct cli_state *cli, int fnum, 
+BOOL cli_lock(struct cli_tree *tree, int fnum, 
 	      uint32 offset, uint32 len, int timeout, enum brl_type lock_type)
 {
 	union smb_lock parms;
@@ -373,12 +382,12 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 	parms.lockx.in.timeout = timeout;
 	parms.lockx.in.ulock_cnt = 0;
 	parms.lockx.in.lock_cnt = 1;
-	lock[0].pid = cli->session->pid;
+	lock[0].pid = tree->session->pid;
 	lock[0].offset = offset;
 	lock[0].count = len;
 	parms.lockx.in.locks = &lock[0];
 
-	status = smb_raw_lock(cli->tree, &parms);
+	status = smb_raw_lock(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -387,7 +396,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 /****************************************************************************
  Unlock a file.
 ****************************************************************************/
-BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
+BOOL cli_unlock(struct cli_tree *tree, int fnum, uint32 offset, uint32 len)
 {
 	union smb_lock parms;
 	struct smb_lock_entry lock[1];
@@ -399,12 +408,12 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 	parms.lockx.in.timeout = 0;
 	parms.lockx.in.ulock_cnt = 1;
 	parms.lockx.in.lock_cnt = 0;
-	lock[0].pid = cli->session->pid;
+	lock[0].pid = tree->session->pid;
 	lock[0].offset = offset;
 	lock[0].count = len;
 	parms.lockx.in.locks = &lock[0];
 	
-	status = smb_raw_lock(cli->tree, &parms);
+	status = smb_raw_lock(tree, &parms);
 	return NT_STATUS_IS_OK(status);
 }
 	
@@ -412,7 +421,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 /****************************************************************************
  Lock a file with 64 bit offsets.
 ****************************************************************************/
-BOOL cli_lock64(struct cli_state *cli, int fnum, 
+BOOL cli_lock64(struct cli_tree *tree, int fnum, 
 		SMB_OFF_T offset, SMB_OFF_T len, int timeout, enum brl_type lock_type)
 {
 	union smb_lock parms;
@@ -420,8 +429,8 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	struct smb_lock_entry lock[1];
 	NTSTATUS status;
 
-	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		return cli_lock(cli, fnum, offset, len, timeout, lock_type);
+	if (!(tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		return cli_lock(tree, fnum, offset, len, timeout, lock_type);
 	}
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
@@ -433,12 +442,12 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 	parms.lockx.in.timeout = timeout;
 	parms.lockx.in.ulock_cnt = 0;
 	parms.lockx.in.lock_cnt = 1;
-	lock[0].pid = cli->session->pid;
+	lock[0].pid = tree->session->pid;
 	lock[0].offset = offset;
 	lock[0].count = len;
 	parms.lockx.in.locks = &lock[0];
 
-	status = smb_raw_lock(cli->tree, &parms);
+	status = smb_raw_lock(tree, &parms);
 	
 	return NT_STATUS_IS_OK(status);
 }
@@ -447,14 +456,14 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 /****************************************************************************
  Unlock a file with 64 bit offsets.
 ****************************************************************************/
-BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_OFF_T offset, SMB_OFF_T len)
+BOOL cli_unlock64(struct cli_tree *tree, int fnum, SMB_OFF_T offset, SMB_OFF_T len)
 {
 	union smb_lock parms;
 	struct smb_lock_entry lock[1];
 	NTSTATUS status;
 
-	if (!(cli->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
-		return cli_unlock(cli, fnum, offset, len);
+	if (!(tree->session->transport->negotiate.capabilities & CAP_LARGE_FILES)) {
+		return cli_unlock(tree, fnum, offset, len);
 	}
 
 	parms.lockx.level = RAW_LOCK_LOCKX;
@@ -463,12 +472,12 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_OFF_T offset, SMB_OFF_T l
 	parms.lockx.in.timeout = 0;
 	parms.lockx.in.ulock_cnt = 1;
 	parms.lockx.in.lock_cnt = 0;
-	lock[0].pid = cli->session->pid;
+	lock[0].pid = tree->session->pid;
 	lock[0].offset = offset;
 	lock[0].count = len;
 	parms.lockx.in.locks = &lock[0];
 
-	status = smb_raw_lock(cli->tree, &parms);
+	status = smb_raw_lock(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -477,9 +486,9 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_OFF_T offset, SMB_OFF_T l
 /****************************************************************************
  Do a SMBgetattrE call.
 ****************************************************************************/
-BOOL cli_getattrE(struct cli_state *cli, int fd,
-		uint16 *attr, size_t *size,
-		time_t *c_time, time_t *a_time, time_t *m_time)
+BOOL cli_getattrE(struct cli_tree *tree, int fd,
+		  uint16 *attr, size_t *size,
+		  time_t *c_time, time_t *a_time, time_t *m_time)
 {		
 	union smb_fileinfo parms;
 	NTSTATUS status;
@@ -487,7 +496,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 	parms.getattre.level = RAW_FILEINFO_GETATTRE;
 	parms.getattre.in.fnum = fd;
 
-	status = smb_raw_fileinfo(cli->tree, NULL, &parms);
+	status = smb_raw_fileinfo(tree, NULL, &parms);
 
 	if (!NT_STATUS_IS_OK(status))
 		return False;
@@ -518,7 +527,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 /****************************************************************************
  Do a SMBgetatr call
 ****************************************************************************/
-BOOL cli_getatr(struct cli_state *cli, const char *fname, 
+BOOL cli_getatr(struct cli_tree *tree, const char *fname, 
 		uint16 *attr, size_t *size, time_t *t)
 {
 	union smb_fileinfo parms;
@@ -527,7 +536,7 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 	parms.getattr.level = RAW_FILEINFO_GETATTR;
 	parms.getattr.in.fname = fname;
 
-	status = smb_raw_pathinfo(cli->tree, NULL, &parms);
+	status = smb_raw_pathinfo(tree, NULL, &parms);
 	
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
@@ -552,7 +561,7 @@ BOOL cli_getatr(struct cli_state *cli, const char *fname,
 /****************************************************************************
  Do a SMBsetatr call.
 ****************************************************************************/
-BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 mode, time_t t)
+BOOL cli_setatr(struct cli_tree *tree, const char *fname, uint16 mode, time_t t)
 {
 	union smb_setfileinfo parms;
 	NTSTATUS status;
@@ -562,7 +571,7 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 mode, time_t t)
 	parms.setattr.in.write_time = t;
 	parms.setattr.file.fname = fname;
 	
-	status = smb_raw_setpathinfo(cli->tree, &parms);
+	status = smb_raw_setpathinfo(tree, &parms);
 
 	return NT_STATUS_IS_OK(status);
 }
@@ -571,7 +580,7 @@ BOOL cli_setatr(struct cli_state *cli, const char *fname, uint16 mode, time_t t)
 /****************************************************************************
  Check for existence of a dir.
 ****************************************************************************/
-BOOL cli_chkpath(struct cli_state *cli, const char *path)
+BOOL cli_chkpath(struct cli_tree *tree, const char *path)
 {
 	struct smb_chkpath parms;
 	char *path2;
@@ -586,7 +595,7 @@ BOOL cli_chkpath(struct cli_state *cli, const char *path)
 
 	parms.in.path = path2;
 	
-	status = smb_raw_chkpath(cli->tree, &parms);
+	status = smb_raw_chkpath(tree, &parms);
 
 	free(path2);
 
@@ -597,7 +606,7 @@ BOOL cli_chkpath(struct cli_state *cli, const char *path)
 /****************************************************************************
  Query disk space.
 ****************************************************************************/
-BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
+BOOL cli_dskattr(struct cli_tree *tree, int *bsize, int *total, int *avail)
 {
 	union smb_fsinfo fsinfo_parms;
 	TALLOC_CTX *mem_ctx;
@@ -606,7 +615,7 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	mem_ctx = talloc_init("cli_dskattr");
 
 	fsinfo_parms.dskattr.level = RAW_QFS_DSKATTR;
-	status = smb_raw_fsinfo(cli->tree, mem_ctx, &fsinfo_parms);
+	status = smb_raw_fsinfo(tree, mem_ctx, &fsinfo_parms);
 	if (NT_STATUS_IS_OK(status)) {
 		*bsize = fsinfo_parms.dskattr.out.block_size;
 		*total = fsinfo_parms.dskattr.out.units_total;
@@ -622,7 +631,7 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 /****************************************************************************
  Create and open a temporary file.
 ****************************************************************************/
-int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
+int cli_ctemp(struct cli_tree *tree, const char *path, char **tmp_path)
 {
 	union smb_open open_parms;
 	TALLOC_CTX *mem_ctx;
@@ -635,7 +644,7 @@ int cli_ctemp(struct cli_state *cli, const char *path, char **tmp_path)
 	open_parms.ctemp.in.attrib = 0;
 	open_parms.ctemp.in.directory = path;
 
-	status = smb_raw_open(cli->tree, mem_ctx, &open_parms);
+	status = smb_raw_open(tree, mem_ctx, &open_parms);
 	if (tmp_path) {
 		*tmp_path = strdup(open_parms.ctemp.out.name);
 	}

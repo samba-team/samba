@@ -116,7 +116,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli));
+		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -338,7 +338,7 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_unlink(cli, fname);
+	cli_unlink(cli->tree, fname);
 
 	return ret;
 }
@@ -550,9 +550,9 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 		{"SEARCH",              "ID",    RAW_SEARCH_SEARCH,              CONT_RESUME_KEY}
 	};
 
-	if (cli_deltree(cli, BASEDIR) == -1 || 
-	    !cli_mkdir(cli, BASEDIR)) {
-		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli));
+	if (cli_deltree(cli->tree, BASEDIR) == -1 || 
+	    !cli_mkdir(cli->tree, BASEDIR)) {
+		printf("Failed to create " BASEDIR " - %s\n", cli_errstr(cli->tree));
 		return False;
 	}
 
@@ -560,14 +560,14 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 	for (i=0;i<num_files;i++) {
 		asprintf(&fname, BASEDIR "\\t%03d-%d.txt", i, i);
-		fnum = cli_open(cli, fname, O_CREAT|O_RDWR, DENY_NONE);
+		fnum = cli_open(cli->tree, fname, O_CREAT|O_RDWR, DENY_NONE);
 		if (fnum == -1) {
-			printf("Failed to create %s - %s\n", fname, cli_errstr(cli));
+			printf("Failed to create %s - %s\n", fname, cli_errstr(cli->tree));
 			ret = False;
 			goto done;
 		}
 		free(fname);
-		cli_close(cli, fnum);
+		cli_close(cli->tree, fnum);
 	}
 
 
@@ -627,7 +627,7 @@ static BOOL test_many_files(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli, BASEDIR);
+	cli_deltree(cli->tree, BASEDIR);
 
 	return ret;
 }
