@@ -401,8 +401,9 @@ protocol [LANMAN2.1]
 #define ARCH_WIN2K    0xC      /* Win2K is like NT */
 #define ARCH_OS2      0x14     /* Again OS/2 is like NT */
 #define ARCH_SAMBA    0x20
+#define ARCH_CIFSFS   0x40
  
-#define ARCH_ALL      0x3F
+#define ARCH_ALL      0x7F
  
 /* List of supported protocols, most desired first */
 static const struct {
@@ -413,6 +414,7 @@ static const struct {
 } supported_protocols[] = {
 	{"NT LANMAN 1.0",           "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"NT LM 0.12",              "NT1",      reply_nt1,      PROTOCOL_NT1},
+	{"POSIX 2",                 "NT1",      reply_nt1,      PROTOCOL_NT1},
 	{"LM1.2X002",               "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"Samba",                   "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
 	{"DOS LM1.2X002",           "LANMAN2",  reply_lanman2,  PROTOCOL_LANMAN2},
@@ -460,7 +462,7 @@ int reply_negprot(connection_struct *conn,
 		else if (strcsequal(p,"DOS LANMAN2.1"))
 			arch &= ( ARCH_WFWG | ARCH_WIN95 );
 		else if (strcsequal(p,"NT LM 0.12"))
-			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K );
+			arch &= ( ARCH_WIN95 | ARCH_WINNT | ARCH_WIN2K | ARCH_CIFSFS);
 		else if (strcsequal(p,"LANMAN2.1"))
 			arch &= ( ARCH_WINNT | ARCH_WIN2K | ARCH_OS2 );
 		else if (strcsequal(p,"LM1.2X002"))
@@ -472,12 +474,23 @@ int reply_negprot(connection_struct *conn,
 		else if (strcsequal(p,"Samba")) {
 			arch = ARCH_SAMBA;
 			break;
+		} else if (strcsequal(p,"POSIX 2")) {
+			arch = ARCH_CIFSFS;
+			break;
 		}
  
 		p += strlen(p) + 2;
 	}
-    
+
+	/* CIFSFS can send one arch only, NT LM 0.12. */
+	if (Index == 1 && (arch & ARCH_CIFSFS)) {
+		arch = ARCH_CIFSFS;
+	}
+
 	switch ( arch ) {
+		case ARCH_CIFSFS:
+			set_remote_arch(RA_CIFSFS);
+			break;
 		case ARCH_SAMBA:
 			set_remote_arch(RA_SAMBA);
 			break;

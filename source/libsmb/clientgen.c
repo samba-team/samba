@@ -176,7 +176,12 @@ void cli_setup_packet(struct cli_state *cli)
 	SSVAL(cli->outbuf,smb_mid,cli->mid);
 	if (cli->protocol > PROTOCOL_CORE) {
 		uint16 flags2;
-		SCVAL(cli->outbuf,smb_flg,0x8);
+		if (cli->case_sensitive) {
+			SCVAL(cli->outbuf,smb_flg,0x0);
+		} else {
+			/* Default setting, case insensitive. */
+			SCVAL(cli->outbuf,smb_flg,0x8);
+		}
 		flags2 = FLAGS2_LONG_PATH_COMPONENTS;
 		if (cli->capabilities & CAP_UNICODE)
 			flags2 |= FLAGS2_UNICODE_STRINGS;
@@ -273,6 +278,7 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 	cli->outbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
 	cli->inbuf = (char *)malloc(cli->bufsize+SAFETY_MARGIN);
 	cli->oplock_handler = cli_oplock_ack;
+	cli->case_sensitive = False;
 
 	cli->use_spnego = lp_client_use_spnego();
 
@@ -437,6 +443,17 @@ uint16 cli_setpid(struct cli_state *cli, uint16 pid)
 {
 	uint16 ret = cli->pid;
 	cli->pid = pid;
+	return ret;
+}
+
+/****************************************************************************
+ Set the case sensitivity flag on the packets. Returns old state.
+****************************************************************************/
+
+BOOL cli_set_case_sensitive(struct cli_state *cli, BOOL case_sensitive)
+{
+	BOOL ret = cli->case_sensitive;
+	cli->case_sensitive = case_sensitive;
 	return ret;
 }
 
