@@ -177,7 +177,7 @@ exit:
 }
 
 static const char quotable_chars[] = " \n\t\b\\/@";
-static const char replace_chars[] = "ntb\\/@";
+static const char replace_chars[] = " ntb\\/@";
 
 #define add_char(BASE, INDEX, LEN, C) do { if((INDEX) < (LEN)) (BASE)[(INDEX)++] = (C); }while(0);
 
