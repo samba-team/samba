@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -468,7 +468,7 @@ do_authenticate (struct rx_header *hdr,
 
     create_reply_ticket (hdr, skey,
 			 name, instance, v4_realm,
-			 addr, life, client_entry->kvno,
+			 addr, life, server_entry->kvno,
 			 max_seq_len,
 			 "krbtgt", v4_realm,
 			 chal + 1, "tgsT",
