@@ -114,12 +114,30 @@ retry:
 			second_time = True;
 			goto retry;
 		} else {
-			d_printf("ads_connect: %s\n", ads_errstr(status));
+			DEBUG(1,("ads_connect: %s\n", ads_errstr(status)));
 			return NULL;
 		}
 	}
 	return ads;
 }
+
+
+/*
+  Check to see if connection can be made via ads.
+  ads_startup() stores the password in opt_password if it needs to so
+  that rpc or rap can use it without re-prompting.
+*/
+int net_ads_check(void)
+{
+	ADS_STRUCT *ads;
+
+	ads = ads_startup();
+	if (!ads)
+		return -1;
+	ads_destroy(&ads);
+	return 0;
+}
+
 
 static void usergrp_display(char *field, void **values, void *data_area)
 {
@@ -268,7 +286,7 @@ static int ads_user_delete(int argc, const char **argv)
 	return -1;
 }
 
-static int net_ads_user(int argc, const char **argv)
+int net_ads_user(int argc, const char **argv)
 {
 	struct functable func[] = {
 		{"ADD", ads_user_add},
@@ -762,19 +780,34 @@ int net_ads(int argc, const char **argv)
 
 #else
 
-int net_ads_usage(int argc, const char **argv)
+static int net_ads_noads(void)
 {
 	d_printf("ADS support not compiled in\n");
 	return -1;
+}
+
+int net_ads_usage(int argc, const char **argv)
+{
+	return net_ads_noads();
 }
 
 int net_ads_help(int argc, const char **argv)
 {
-	d_printf("ADS support not compiled in\n");
-	return -1;
+	return net_ads_noads();
 }
 
 int net_ads_join(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+int net_ads_user(int argc, const char **argv)
+{
+	return net_ads_noads();
+}
+
+/* this one shouldn't display a message */
+int net_ads_check(void)
 {
 	return -1;
 }
