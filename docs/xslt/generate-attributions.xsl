@@ -35,7 +35,7 @@
 	</xsl:choose>
 </xsl:template>
 
-<xsl:template match="author">
+<xsl:template match="chapterinfo/author">
 	<xsl:choose>
 	<xsl:when test="firstname != ''">
 	<xsl:text>&#9;</xsl:text>
