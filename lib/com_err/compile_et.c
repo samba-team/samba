@@ -156,7 +156,8 @@ generate_h(void)
     fprintf(h_file, "typedef enum %s_error_number{\n", name);
 
     for(ec = codes; ec; ec = ec->next) {
-	fprintf(h_file, "\t%s = %ld,\n", ec->name, base + ec->number);
+	fprintf(h_file, "\t%s = %ld%s\n", ec->name, base + ec->number, 
+		(ec->next != NULL) ? "," : "");
     }
 
     fprintf(h_file, "} %s_error_number;\n", name);
