@@ -7,4 +7,4 @@ lib_LTLIBRARIES = libkdfs.la
 libkdfs_la_SOURCES = \
 	k5dfspag.c
 
-libkdfs_la_LDFLAGS = -version-info 0:1:0
+libkdfs_la_LDFLAGS = -version-info 0:2:0
