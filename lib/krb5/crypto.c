@@ -3664,7 +3664,25 @@ krb5_crypto_getenctype(krb5_context context,
 {
     *enctype = crypto->et->type;
      return 0;
- }
+}
+
+krb5_error_code
+krb5_crypto_getpadsize(krb5_context context,
+                       krb5_crypto crypto,
+                       size_t *padsize)      
+{
+    *padsize = crypto->et->padsize;
+    return 0;
+}
+
+krb5_error_code
+krb5_crypto_getconfoundersize(krb5_context context,
+                              krb5_crypto crypto,
+                              size_t *confoundersize)
+{
+    *confoundersize = crypto->et->confoundersize;
+    return 0;
+}
 
 krb5_error_code
 krb5_string_to_key_derived(krb5_context context,
