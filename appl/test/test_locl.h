@@ -68,8 +68,13 @@
 #endif
 #include <errno.h>
 #include <roken.h>
+#include <getarg.h>
 #include <krb5.h>
 
 #define SERVICE "test"
 
 #define PORT "test"
+
+extern char *service;
+int server_setup(krb5_context*, int, char**);
+int client_setup(krb5_context*, int*, char**);
