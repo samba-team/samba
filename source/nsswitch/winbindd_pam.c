@@ -209,6 +209,7 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	fstring domain, user;
 	uchar nt_oldhash[16];
 	uchar lm_oldhash[16];
+	CLI_POLICY_HND *hnd;
 
 	DEBUG(3, ("[%5d]: pam chauthtok %s\n", state->pid,
 		state->request.data.chauthtok.user));
@@ -218,26 +219,25 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	if (state == NULL)
 		return WINBINDD_ERROR;
 
-	if (!parse_domain_user(state->request.data.chauthtok.user, domain, user))
+	if (!parse_domain_user(state->request.data.chauthtok.user, domain, 
+			       user))
 		return WINBINDD_ERROR;
+
+	/* Change password */
 
 	oldpass = state->request.data.chauthtok.oldpass;
 	newpass = state->request.data.chauthtok.newpass;
 
-	nt_lm_owf_gen(oldpass, nt_oldhash, lm_oldhash);
+	/* Get sam handle */
 
-	/* Change password */
+	if (!(hnd = cm_get_sam_handle(domain)))
+		return WINBINDD_ERROR;
 
-#if 0
-
-	/* XXX */
-
-	if (!msrpc_sam_ntchange_pwd(server_state.controller, domain, user,
-		lm_oldhash, nt_oldhash, newpass)) {
-		DEBUG(0, ("password change failed for user %s/%s\n", domain, user));
+	if (!cli_oem_change_password(hnd->cli, user, newpass, oldpass)) {
+		DEBUG(0, ("password change failed for user %s/%s\n", domain, 
+			  user));
 		return WINBINDD_ERROR;
 	}
-#endif
     
 	return WINBINDD_OK;
 }
