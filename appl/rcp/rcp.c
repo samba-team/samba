@@ -185,7 +185,7 @@ toremote(targ, argc, argv)
 			    strlen(src) + (tuser ? strlen(tuser) : 0) +
 			    strlen(thost) + strlen(targ) + CMDNEEDS + 20;
 			if (!(bp = malloc(len)))
-				err(1, NULL);
+				err(1, "malloc");
 			if (host) {
 				*host++ = 0;
 				suser = argv[i];
@@ -210,7 +210,7 @@ toremote(targ, argc, argv)
 			if (remin == -1) {
 				len = strlen(targ) + CMDNEEDS + 20;
 				if (!(bp = malloc(len)))
-					err(1, NULL);
+					err(1, "malloc");
 				(void)snprintf(bp, len, "%s -t %s", cmd, targ);
 				host = thost;
 
@@ -240,7 +240,7 @@ tolocal(argc, argv)
 			len = strlen(_PATH_CP) + strlen(argv[i]) +
 			    strlen(argv[argc - 1]) + 20;
 			if (!(bp = malloc(len)))
-				err(1, NULL);
+				err(1, "malloc");
 			(void)snprintf(bp, len, "exec %s%s%s %s %s", _PATH_CP,
 			    iamrecursive ? " -PR" : "", pflag ? " -p" : "",
 			    argv[i], argv[argc - 1]);
@@ -265,7 +265,7 @@ tolocal(argc, argv)
 		}
 		len = strlen(src) + CMDNEEDS + 20;
 		if ((bp = malloc(len)) == NULL)
-			err(1, NULL);
+			err(1, "malloc");
 		(void)snprintf(bp, len, "%s -f %s", cmd, src);
 		if (do_cmd(host, suser, bp, &remin, &remout) < 0) {
 			(void)free(bp);
