@@ -280,3 +280,34 @@ int read_reply(struct winbindd_response *response)
     return result1 + result2;
 }
 
+/* Handle simple types of requests */
+
+enum nss_status generic_request(int req_type, 
+				struct winbindd_request *request,
+				struct winbindd_response *response)
+{
+	struct winbindd_request lrequest;
+	struct winbindd_response lresponse;
+
+	if (!response) response = &lresponse;
+	if (!request) request = &lrequest;
+	
+	/* Fill in request and send down pipe */
+	init_request(request, req_type);
+	
+	if (write_sock(request, sizeof(*request)) == -1) {
+		return NSS_STATUS_UNAVAIL;
+	}
+	
+	/* Wait for reply */
+	if (read_reply(response) == -1) {
+		return NSS_STATUS_UNAVAIL;
+	}
+
+	/* Copy reply data from socket */
+	if (response->result != WINBINDD_OK) {
+		return NSS_STATUS_NOTFOUND;
+	}
+	
+	return NSS_STATUS_SUCCESS;
+}
