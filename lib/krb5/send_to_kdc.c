@@ -10,7 +10,7 @@ send_and_recv (int fd,
      struct fd_set fdset;
      struct timeval timeout;
      int ret;
-     long nbytes;
+     int nbytes;
 
      if (sendto (fd, send->data, send->length, 0,
 		 (struct sockaddr *)addr, sizeof(*addr)) < 0)

@@ -1,5 +1,11 @@
 #include "krb5_locl.h"
 
+/* XXX */
+
+#ifdef sun
+#define memmove(a,b,c) bcopy(b,a,c)
+#endif
+
 krb5_error_code
 krb5_init_context(krb5_context *context)
 {

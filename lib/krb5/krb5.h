@@ -22,17 +22,17 @@
 #endif
 
 /* types */
-typedef int32_t	krb5_int32;
-typedef int16_t	krb5_int16;
-typedef int8_t	krb5_int8;
+typedef int	int32_t;
+typedef short	int16_t;
+typedef char	int8_t;
 
-typedef unsigned int krb5_uint32;
-typedef unsigned short krb5_uint16;
-typedef unsigned char krb5_uint8;
+typedef unsigned int u_int32_t;
+typedef unsigned short u_int16_t;
+typedef unsigned char u_int8_t;
 
 typedef int krb5_boolean;
 
-typedef krb5_int32 krb5_error_code;
+typedef int32_t krb5_error_code;
 
 
 
@@ -196,7 +196,7 @@ typedef struct krb5_keytab{
 
 
 typedef struct krb5_auth_context{
-  krb5_int32 flags;
+  int32_t flags;
   krb5_cksumtype cksumtype;
 
   krb5_address local_address;
@@ -205,8 +205,8 @@ typedef struct krb5_auth_context{
   krb5_keyblock local_subkey;
   krb5_keyblock remote_subkey;
 
-  krb5_int32 local_seqnumber;
-  krb5_int32 remote_seqnumber;
+  int32_t local_seqnumber;
+  int32_t remote_seqnumber;
 
   krb5_authenticator authenticator;
   
@@ -217,7 +217,7 @@ typedef struct krb5_auth_context{
 }krb5_auth_context;
 
 
-typedef krb5_uint32 krb5_flags;
+typedef u_int32_t krb5_flags;
 
 #include <foo.h>
 

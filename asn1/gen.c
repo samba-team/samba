@@ -19,6 +19,7 @@ init_generate (char *filename)
   fprintf (codefile, 
 	   "/* Generated from %s */\n"
 	   "/* Do not edit */\n\n"
+	   "#include <stdio.h>\n"
 	   "#include <stdlib.h>\n"
 	   "#include <time.h>\n"
 	   "#include <der.h>\n"
@@ -222,7 +223,7 @@ encode_type (char *name, Type *t)
       break;
 
     for (m = t->members->prev; m && tag != m->val; m = m->prev) {
-      char *s = malloc(1 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+      char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
 
       sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
       if (m->optional)
@@ -424,7 +425,7 @@ decode_type (char *name, Type *t)
 	     "len = reallen;\n");
 
     for (m = t->members; m && tag != m->val; m = m->next) {
-      char *s = malloc(1 + strlen(name) + 1 + strlen(m->gen_name) + 3);
+      char *s = malloc(2 + strlen(name) + 1 + strlen(m->gen_name) + 3);
 
       sprintf (s, "%s(%s)->%s", m->optional ? "" : "&", name, m->gen_name);
       fprintf (codefile, "{\n"

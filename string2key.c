@@ -1,5 +1,11 @@
 #include "krb5_locl.h"
 
+/* XXX */
+
+#ifdef sun
+#define memmove(a,b,c) bcopy(b,a,c)
+#endif
+
 static void reverse(unsigned char *p)
 {
   unsigned char tmp[8];

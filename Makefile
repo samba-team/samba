@@ -1,32 +1,28 @@
-# $Id$
+# Generated automatically from Makefile.in by configure.
+CC	= cc -std1
+CFLAGS	= -g
 
-SHELL = /bin/sh
 
-srcdir = @srcdir@
-VPATH  = @srcdir@
-
-CC = @CC@
-DEFS = @DEFS@
-YACC = @YACC@
-
-CFLAGS = -g -I$(srcdir) -Iasn1 -I. -I/usr/athena/include
-
-LIBS = -L/usr/athena/lib -ldes
+#YACC=bison -y
+YACC	= yacc
 
 SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
-	  krbhst.c get_port.c send_to_kdc.c str2key.c \
-	  get_in_tkt.c get_in_tkt_pw.c constants.c get_addrs.c \
-	  get_cred.c
+	  krbhst.c get_port.c send_to_kdc.c der.c e.c d.c str2key.c \
+	  get_in_tkt.c get_in_tkt_pw.c der_put.c constants.c get_addrs.c \
+	  k5_der.c
 
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 
 all: kinit klist
 
+%.o: %.c
+	$(CC) -c $(CFLAGS) -I. -I/usr/athena/include $< -o $@
+
 kinit: kinit.o libkrb5.a
-	$(CC) -o kinit kinit.o libkrb5.a -Lasn1 -lasn1 $(LIBS)
+	$(CC) -o kinit kinit.o libkrb5.a -L/usr/athena/lib -ldes
 
 klist: klist.o libkrb5.a
-	$(CC) -o klist klist.o libkrb5.a $(LIBS)
+	$(CC) -o klist klist.o libkrb5.a -L/usr/athena/lib -ldes
 
 tt: test.o libkrb5.a
 	$(CC) -o tt test.o libkrb5.a

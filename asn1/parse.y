@@ -12,6 +12,8 @@
 
 static Type *new_type (Typetype t);
 void yyerror (char *);
+
+char *strdup(char *);
 %}
 
 %union {
@@ -167,6 +169,7 @@ new_type (Typetype tt)
   t->members = NULL;
   t->subtype = NULL;
   t->symbol  = NULL;
+  return t;
 }
 
 static void

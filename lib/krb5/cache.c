@@ -442,16 +442,16 @@ krb5_cc_read_cred (int fd,
   int8_t dummy8;
   int32_t dummy32;
 
-  return ret_principal (fd, &creds->client)
-    || ret_principal (fd, &creds->server)
-    || ret_keyblock (fd, &creds->session)
-    ||  ret_times (fd, &creds->times)
-    ||  ret_int8 (fd, &dummy8)
-    ||  ret_int32 (fd, &dummy32)
-    ||  ret_addrs (fd, &creds->addresses)
-    ||  ret_authdata (fd, &creds->authdata)
-    ||  ret_ticket (fd, &creds->ticket)
-    ||  ret_ticket (fd, &creds->second_ticket);
+  return ret_principal (fd, &creds->client) || 
+      ret_principal (fd, &creds->server) ||
+      ret_keyblock (fd, &creds->session) || 
+      ret_times (fd, &creds->times) || 
+      ret_int8 (fd, &dummy8) || 
+      ret_int32 (fd, &dummy32) || 
+      ret_addrs (fd, &creds->addresses) || 
+      ret_authdata (fd, &creds->authdata) || 
+      ret_ticket (fd, &creds->ticket) || 
+      ret_ticket (fd, &creds->second_ticket);
 }
 
 krb5_error_code
