@@ -9,6 +9,7 @@ AC_SUBST(SHELL)
 AC_SUBST(MPROGS)
 AC_SUBST(LDSHFLAGS)
 AC_SUBST(HOST_OS)
+AC_SUBST(WRAP)
 AC_SUBST(WRAP32)
 AC_SUBST(PICFLAG)
 AC_PROG_AWK
@@ -70,6 +71,13 @@ if test x$PICFLAG = x; then
   fi 
 fi
 
+# we can only support smbsh and smbwrapper if we can produce PIC code
+if test x$PICFLAG = x; then
+   echo No support for PIC code - disabling smbwrapper and smbsh
+   WRAP=""
+else
+   WRAP="bin/smbsh bin/smbwrapper.so"
+fi
 
 AC_INLINE
 AC_HEADER_STDC
