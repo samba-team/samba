@@ -9,5 +9,4 @@ noinst_LIBRARIES = libcommon.a
 libcommon_a_SOURCES = \
 	sockbuf.c \
 	buffer.c \
-	socket.c \
 	common.h
