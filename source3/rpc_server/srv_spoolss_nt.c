@@ -947,8 +947,12 @@ static void spoolss_notify_driver_name(int snum, SPOOL_NOTIFY_INFO_DATA *data, p
  ********************************************************************/
 static void spoolss_notify_comment(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer)
 {
-	data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
+	if (*printer->info_2->comment == '\0')
+		data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
 			lp_comment(snum), sizeof(data->notify_data.data.string)-1, True)  - sizeof(uint16))/sizeof(uint16));
+	else
+		data->notify_data.data.length=(uint32)((dos_PutUniCode((char *)data->notify_data.data.string,
+			printer->info_2->comment, sizeof(data->notify_data.data.string)-1, True)  - sizeof(uint16))/sizeof(uint16));
 }
 
 /*******************************************************************
@@ -1729,14 +1733,21 @@ static BOOL construct_printer_info_1(fstring server, uint32 flags, PRINTER_INFO_
 
 	printer->flags=flags;
 
-	snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",server, ntprinter->info_2->printername,
-		ntprinter->info_2->drivername, lp_comment(snum));
+	if (*ntprinter->info_2->comment == '\0') {
+		init_unistr(&printer->comment, lp_comment(snum));
+		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",server, ntprinter->info_2->printername,
+			ntprinter->info_2->drivername, lp_comment(snum));
+	}
+	else {
+		init_unistr(&printer->comment, ntprinter->info_2->comment); /* saved comment. */
+		snprintf(chaine,sizeof(chaine)-1,"%s%s,%s,%s",server, ntprinter->info_2->printername,
+			ntprinter->info_2->drivername, ntprinter->info_2->comment);
+	}
 		
 	snprintf(chaine2,sizeof(chaine)-1,"%s%s", server, ntprinter->info_2->printername);
 
 	init_unistr(&printer->description, chaine);
 	init_unistr(&printer->name, chaine2);	
-	init_unistr(&printer->comment, lp_comment(snum));
 	
 	free_a_printer(&ntprinter,2);
 
