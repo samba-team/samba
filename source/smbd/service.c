@@ -645,7 +645,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 #else
 	/* the alternative is just to check the directory exists */
 	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
-		DEBUG(0,("%s is not a directory\n", conn->connectpath));
+		DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
