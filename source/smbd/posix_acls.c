@@ -480,7 +480,7 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
  Ensure the enforced permissions for this share apply.
 ****************************************************************************/
 
-static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
+static void apply_default_perms(files_struct *fsp, canon_ace *pace, mode_t type)
 {
 	int snum = SNUM(fsp->conn);
 	mode_t and_bits = (mode_t)0;
@@ -499,6 +499,10 @@ static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
 	/* Now bounce them into the S_USR space. */	
 	switch(type) {
 	case S_IRUSR:
+		/* Ensure owner has read access. */
+		pace->perms |= S_IRUSR;
+		if (fsp->is_directory)
+			pace->perms |= (S_IWUSR|S_IXUSR);
 		and_bits = unix_perms_to_acl_perms(and_bits, S_IRUSR, S_IWUSR, S_IXUSR);
 		or_bits = unix_perms_to_acl_perms(or_bits, S_IRUSR, S_IWUSR, S_IXUSR);
 		break;
@@ -512,7 +516,34 @@ static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
 		break;
 	}
 
-	return ((perms & and_bits)|or_bits);
+	pace->perms = ((pace->perms & and_bits)|or_bits);
+}
+
+/****************************************************************************
+ Check if a given uid/SID is in a group gid/SID. This is probably very
+ expensive and will need optimisation. A *lot* of optimisation :-). JRA.
+****************************************************************************/
+
+static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
+{
+	extern DOM_SID global_sid_World;
+	fstring u_name;
+	fstring g_name;
+
+	/* "Everyone" always matches every uid. */
+
+	if (sid_equal(&group_ace->trustee, &global_sid_World))
+		return True;
+
+	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
+	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
+
+	/*
+	 * Due to the winbind interfaces we need to do this via names,
+	 * not uids/gids.
+	 */
+
+	return user_in_group_list(u_name, g_name );
 }
 
 /****************************************************************************
@@ -537,24 +568,16 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	BOOL got_user = False;
 	BOOL got_grp = False;
 	BOOL got_other = False;
+	canon_ace *pace_other = NULL;
+	canon_ace *pace_group = NULL;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
 		if (pace->type == SMB_ACL_USER_OBJ) {
 
-			if (setting_acl) {
-				/* Ensure owner has read access. */
-				pace->perms |= S_IRUSR;
-				if (fsp->is_directory)
-					pace->perms |= (S_IWUSR|S_IXUSR);
-
-				/*
-				 * Ensure create mask/force create mode is respected on set.
-				 */
-
-				pace->perms = apply_default_perms(fsp, pace->perms, S_IRUSR);
-			}
-
+			if (setting_acl)
+				apply_default_perms(fsp, pace, S_IRUSR);
 			got_user = True;
+
 		} else if (pace->type == SMB_ACL_GROUP_OBJ) {
 
 			/*
@@ -562,8 +585,10 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				pace->perms = apply_default_perms(fsp, pace->perms, S_IRGRP);
+				apply_default_perms(fsp, pace, S_IRGRP);
 			got_grp = True;
+			pace_group = pace;
+
 		} else if (pace->type == SMB_ACL_OTHER) {
 
 			/*
@@ -571,8 +596,9 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 			 */
 
 			if (setting_acl)
-				pace->perms = apply_default_perms(fsp, pace->perms, S_IROTH);
+				apply_default_perms(fsp, pace, S_IROTH);
 			got_other = True;
+			pace_other = pace;
 		}
 	}
 
@@ -587,8 +613,20 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = UID_ACE;
 		pace->unix_ug.uid = pst->st_uid;
 		pace->trustee = *pfile_owner_sid;
-		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
 		pace->attr = ALLOW_ACE;
+
+		if (setting_acl) {
+			/* If we only got an "everyone" perm, just use that. */
+			if (!got_grp && got_other)
+				pace->perms = pace_other->perms;
+			else if (got_grp && uid_entry_in_group(pace, pace_group))
+				pace->perms = pace_group->perms;
+			else
+				pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+			apply_default_perms(fsp, pace, S_IRUSR);
+		} else {
+			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRUSR, S_IWUSR, S_IXUSR);
+		}
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -604,8 +642,17 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = GID_ACE;
 		pace->unix_ug.uid = pst->st_gid;
 		pace->trustee = *pfile_grp_sid;
-		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
 		pace->attr = ALLOW_ACE;
+		if (setting_acl) {
+			/* If we only got an "everyone" perm, just use that. */
+			if (got_other)
+				pace->perms = pace_other->perms;
+			else
+				pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+			apply_default_perms(fsp, pace, S_IRGRP);
+		} else {
+			pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IRGRP, S_IWGRP, S_IXGRP);
+		}
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -621,8 +668,9 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->owner_type = WORLD_ACE;
 		pace->unix_ug.world = -1;
 		pace->trustee = global_sid_World;
-		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
 		pace->attr = ALLOW_ACE;
+		pace->perms = unix_perms_to_acl_perms(pst->st_mode, S_IROTH, S_IWOTH, S_IXOTH);
+		apply_default_perms(fsp, pace, S_IROTH);
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -929,33 +977,6 @@ Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
 	*ppdir_ace = dir_ace;
 
 	return True;
-}
-
-/****************************************************************************
- Check if a given uid/SID is in a group gid/SID. This is probably very
- expensive and will need optimisation. A *lot* of optimisation :-). JRA.
-****************************************************************************/
-
-static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
-{
-	extern DOM_SID global_sid_World;
-	fstring u_name;
-	fstring g_name;
-
-	/* "Everyone" always matches every uid. */
-
-	if (sid_equal(&group_ace->trustee, &global_sid_World))
-		return True;
-
-	fstrcpy(u_name, uidtoname(uid_ace->unix_ug.uid));
-	fstrcpy(g_name, gidtoname(group_ace->unix_ug.gid));
-
-	/*
-	 * Due to the winbind interfaces we need to do this via names,
-	 * not uids/gids.
-	 */
-
-	return user_in_group_list(u_name, g_name );
 }
 
 /****************************************************************************
