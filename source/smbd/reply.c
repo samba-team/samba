@@ -719,7 +719,7 @@ int reply_setatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 			mode &= ~aDIR;
 
 		if (check_name(fname,conn)) {
-			ok = (file_set_dosmode(conn,fname,mode,NULL) == 0);
+			ok = (file_set_dosmode(conn,fname,mode,&sbuf,False) == 0);
 		}
 	} else {
 		ok = True;
@@ -3286,7 +3286,7 @@ NTSTATUS mkdir_internal(connection_struct *conn, pstring directory)
 	}
 
 	if (check_name(directory, conn))
-		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory));
+		ret = vfs_MkDir(conn,directory,unix_mode(conn,aDIR,directory,True));
 	
 	if (ret == -1) {
 	        if(errno == ENOENT) {
