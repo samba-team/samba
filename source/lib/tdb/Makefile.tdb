@@ -2,13 +2,13 @@
 # Makefile for tdb directory
 #
 
-CFLAGS = -DSTANDALONE -DTDB_DEBUG -g -DHAVE_MMAP=1 -Iinclude
+CFLAGS = -DTDB_DEBUG -g -DHAVE_MMAP=1 -Iinclude
 CC = gcc
 
 PROGS = bin/tdbtest bin/tdbtool bin/tdbtorture
 TDB_OBJ = common/tdb.o common/spinlock.o
 
-default: $(PROGS)
+all: $(PROGS)
 
 bin/tdbtest: tools/tdbtest.o $(TDB_OBJ)
 	$(CC) $(CFLAGS) -o bin/tdbtest tools/tdbtest.o $(TDB_OBJ) -lgdbm
