@@ -119,7 +119,7 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	uint32 flags = 0x0;
+	NTSTATUS result;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -166,8 +166,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 			
 			/* But first check and see if we don't already have a mapping */
 			   
-			flags = ID_QUERY_ONLY;
-			if ( NT_STATUS_IS_OK(idmap_sid_to_uid(&sid, &(state->response.data.uid), flags)) )
+			if ( NT_STATUS_IS_OK(idmap_sid_to_uid(&sid, &(state->response.data.uid), ID_QUERY_ONLY)) )
 				return WINBINDD_OK;
 				
 			/* now fall back to the hard way */
@@ -191,17 +190,37 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 
 	}
 	
-	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
-		flags = ID_QUERY_ONLY;
-	
 	/* Find uid for this sid and return it */
-	
-	if ( !NT_STATUS_IS_OK(idmap_sid_to_uid(&sid, &(state->response.data.uid), flags)) ) {
-		DEBUG(1, ("Could not get uid for sid %s\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
 
-	return WINBINDD_OK;
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid),
+				  ID_QUERY_ONLY);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	if (state->request.flags & WBFLAG_QUERY_ONLY)
+		return WINBINDD_ERROR;
+
+	/* The query-only did not work, allocate a new uid *if* it's a user */
+
+	{
+		fstring dom_name, name;
+		enum SID_NAME_USE type;
+
+		if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type))
+			return WINBINDD_ERROR;
+
+		if ((type != SID_NAME_USER) && (type != SID_NAME_COMPUTER))
+			return WINBINDD_ERROR;
+	}
+	
+	result = idmap_sid_to_uid(&sid, &(state->response.data.uid), 0);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	DEBUG(1, ("Could not get uid for sid %s\n", state->request.data.sid));
+	return WINBINDD_ERROR;
 }
 
 /* Convert a sid to a gid.  We assume we only have one rid attached to the
@@ -210,7 +229,7 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
-	uint32 flags = 0x0;
+	NTSTATUS result;
 
 	/* Ensure null termination */
 	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
@@ -256,8 +275,7 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 			
 			/* But first check and see if we don't already have a mapping */
 			   
-			flags = ID_QUERY_ONLY;
-			if ( NT_STATUS_IS_OK(idmap_sid_to_gid(&sid, &(state->response.data.gid), flags)) )
+			if ( NT_STATUS_IS_OK(idmap_sid_to_gid(&sid, &(state->response.data.gid), ID_QUERY_ONLY)) )
 				return WINBINDD_OK;
 				
 			/* now fall back to the hard way */
@@ -281,16 +299,38 @@ enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 
 	}
 	
-	if ( state->request.flags & WBFLAG_QUERY_ONLY ) 
-		flags = ID_QUERY_ONLY;
-		
 	/* Find gid for this sid and return it */
-	if ( !NT_STATUS_IS_OK(idmap_sid_to_gid(&sid, &(state->response.data.gid), flags)) ) {
-		DEBUG(1, ("Could not get gid for sid %s\n", state->request.data.sid));
-		return WINBINDD_ERROR;
-	}
 
-	return WINBINDD_OK;
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid),
+				  ID_QUERY_ONLY);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	if (state->request.flags & WBFLAG_QUERY_ONLY)
+		return WINBINDD_ERROR;
+
+	/* The query-only did not work, allocate a new gid *if* it's a group */
+
+	{
+		fstring dom_name, name;
+		enum SID_NAME_USE type;
+
+		if (!winbindd_lookup_name_by_sid(&sid, dom_name, name, &type))
+			return WINBINDD_ERROR;
+
+		if ((type != SID_NAME_DOM_GRP) && (type != SID_NAME_ALIAS) &&
+		    (type != SID_NAME_WKN_GRP))
+			return WINBINDD_ERROR;
+	}
+	
+	result = idmap_sid_to_gid(&sid, &(state->response.data.gid), 0);
+
+	if (NT_STATUS_IS_OK(result))
+		return WINBINDD_OK;
+
+	DEBUG(1, ("Could not get gid for sid %s\n", state->request.data.sid));
+	return WINBINDD_ERROR;
 }
 
 /* Convert a uid to a sid */
