@@ -74,10 +74,9 @@ S_SOURCES =		\
 	privs_s.c	\
 	randkey_s.c	\
 	rename_s.c	\
-	server.c	\
 	set_keys.c	\
 	set_modifier.c
-	
+
 libkadm5srv_la_SOURCES = $(S_SOURCES) server_glue.c
 libkadm5clnt_la_SOURCES = $(C_SOURCES) client_glue.c
 
