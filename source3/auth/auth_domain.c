@@ -175,6 +175,11 @@ static NTSTATUS connect_to_domain_password_server(struct cli_state **cli,
 				     &dest_ip, 0, "IPC$", "IPC", "", "", "",0, retry);
 
 	if (!NT_STATUS_IS_OK(result)) {
+		/* map to something more useful */
+		if (NT_STATUS_EQUAL(result, NT_STATUS_UNSUCCESSFUL)) {
+			result = NT_STATUS_NO_LOGON_SERVERS;
+		}
+
 		release_server_mutex();
 		return result;
 	}
