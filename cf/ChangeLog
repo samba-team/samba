@@ -1,3 +1,9 @@
+2000-11-30  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am.common: use install-catman.sh
+
+	* install-catman.sh: script to install preformatted manual pages
+
 2000-11-29  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: don't use AC_CONFIG_FILES here, since it doesn't

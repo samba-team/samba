@@ -1,5 +1,7 @@
 2000-11-30  Johan Danielsson  <joda@pdc.kth.se>
 
+	* afskauthlib/Makefile.am: use libtool
+
 	* afskauthlib/Makefile.am: work with krb4 only
 
 2000-07-30  Johan Danielsson  <joda@pdc.kth.se>
