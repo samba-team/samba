@@ -191,9 +191,12 @@ static BOOL srv_spoolss_replycloseprinter(POLICY_HND *handle)
 		return False;
 
 	/* if it's the last connection, deconnect the IPC$ share */
-	if (smb_connections==1)
+	if (smb_connections==1) {
 		if(!spoolss_disconnect_from_client(&cli))
 			return False;
+
+		message_deregister(MSG_PRINTER_NOTIFY);
+	}
 
 	smb_connections--;
 
@@ -579,10 +582,13 @@ static BOOL alloc_buffer_size(NEW_BUFFER *buffer, uint32 buffer_size)
 /***************************************************************************
  receive the notify message
 ****************************************************************************/
-static BOOL srv_spoolss_receive_message(char *printer)
+void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size_t len)
 {      
+	char printer[256];
 	uint32 status;
 	Printer_entry *find_printer;
+
+	memcpy(printer, buf, len);
 
 	find_printer = (Printer_entry *)ubi_dlFirst(&Printer_list);
 
@@ -599,12 +605,9 @@ static BOOL srv_spoolss_receive_message(char *printer)
 				continue;
 
 		if (find_printer->notify.client_connected==True)
-			if( !cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status))
-				return False;
+			cli_spoolss_reply_rrpcn(&cli, &find_printer->notify.client_hnd, PRINTER_CHANGE_ALL, 0x0, &status);
 
 	}
-
-	return True;
 }
 
 /***************************************************************************
@@ -626,7 +629,8 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
 	else
 		fstrcpy(printer, "");
 
-	srv_spoolss_receive_message(printer);
+	/*srv_spoolss_receive_message(printer);*/
+	message_send_all(MSG_PRINTER_NOTIFY, printer, strlen(printer));
 
 	return True;
 }	
@@ -1011,9 +1015,12 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 	 * If it's the first connection, contact the client 
 	 * and connect to the IPC$ share anonumously
 	 */
-	if (smb_connections==0)
+	if (smb_connections==0) {
 		if(!spoolss_connect_to_client(&cli, printer+2)) /* the +2 is to strip the leading 2 backslashs */
 			return False;
+		message_register(MSG_PRINTER_NOTIFY, srv_spoolss_receive_message);
+
+	}
 
 	smb_connections++;
 
