@@ -980,7 +980,7 @@ pk_principal_from_X509(krb5_context context,
 	
     gens = X509_get_ext_d2i(client_cert->cert, NID_subject_alt_name, 
 			    NULL, NULL);
-    if (gens)
+    if (gens == NULL)
 	return 1;
 
     for (i = 0; i < sk_GENERAL_NAME_num(gens); i++) {
