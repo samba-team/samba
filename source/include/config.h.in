@@ -1,4 +1,4 @@
-/* include/config.h.in.  Generated automatically from configure.in by autoheader.  */
+/* include/config.h.in.  Generated automatically from configure.in by autoheader 2.13.  */
 
 /* Define if on AIX 3.
    System headers sometimes define this.
@@ -988,6 +988,9 @@
 
 /* Define if you have the gen library (-lgen).  */
 #undef HAVE_LIBGEN
+
+/* Define if you have the iconv library (-liconv).  */
+#undef HAVE_LIBICONV
 
 /* Define if you have the inet library (-linet).  */
 #undef HAVE_LIBINET
