@@ -92,12 +92,13 @@ krb5_rd_safe(krb5_context context,
 
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-      struct timeval tv;
+      int32_t sec;
 
-      gettimeofday (&tv, NULL);
+      krb5_timeofday (context, &sec);
+
       if (safe.safe_body.timestamp == NULL ||
 	  safe.safe_body.usec      == NULL ||
-	  abs(*safe.safe_body.timestamp - tv.tv_sec) > context->max_skew) {
+	  abs(*safe.safe_body.timestamp - sec) > context->max_skew) {
 	  r = KRB5KRB_AP_ERR_SKEW;
 	  goto failure;
       }

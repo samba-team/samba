@@ -62,7 +62,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     size_t len;
     u_char buf[1024];
     krb5_data enc_data;
-    struct timeval tv;
+    int32_t sec, usec;
 
     out_creds = malloc(sizeof(*out_creds));
     if (out_creds == NULL)
@@ -127,11 +127,12 @@ krb5_get_forwarded_creds (krb5_context	    context,
     enc_krb_cred_part.ticket_info.len = 1;
     ALLOC(enc_krb_cred_part.ticket_info.val, 1);
     
-    gettimeofday (&tv, NULL);
+    krb5_us_timeofday (context, &sec, &usec);
+
     ALLOC(enc_krb_cred_part.timestamp, 1);
-    *enc_krb_cred_part.timestamp = tv.tv_sec;
+    *enc_krb_cred_part.timestamp = sec;
     ALLOC(enc_krb_cred_part.usec, 1);
-    *enc_krb_cred_part.usec      = tv.tv_usec;
+    *enc_krb_cred_part.usec      = usec;
 
     enc_krb_cred_part.s_address = NULL;	/* XXX */
     enc_krb_cred_part.r_address = NULL;	/* XXX */

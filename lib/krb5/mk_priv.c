@@ -50,17 +50,16 @@ krb5_mk_priv(krb5_context context,
   krb5_error_code r;
   KRB_PRIV s;
   EncKrbPrivPart part;
-  struct timeval tv;
-  unsigned usec;
   u_char buf[1024];
   size_t len;
   unsigned tmp_seq;
   krb5_keyblock *key;
+  int32_t sec, usec;
+
+  krb5_us_timeofday (context, &sec, &usec);
 
   part.user_data = *userdata;
-  gettimeofday (&tv, NULL);
-  usec = tv.tv_usec;
-  part.timestamp  = &tv.tv_sec;
+  part.timestamp  = &sec;
   part.usec       = &usec;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     tmp_seq = ++auth_context->local_seqnumber;

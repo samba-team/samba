@@ -86,6 +86,9 @@ init_cred (krb5_context context,
     krb5_error_code ret;
     krb5_realm *client_realm;
     int tmp;
+    int32_t now;
+
+    krb5_timeofday (context, &now);
 
     memset (cred, 0, sizeof(*cred));
     
@@ -101,7 +104,7 @@ init_cred (krb5_context context,
     client_realm = krb5_princ_realm (context, cred->client);
 
     if (start_time)
-	cred->times.starttime  = time(NULL) + start_time;
+	cred->times.starttime  = now + start_time;
 
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_TKT_LIFE)
 	tmp = options->tkt_life;
@@ -111,7 +114,7 @@ init_cred (krb5_context context,
 					    "ticket_lifetime",
 					    "10h"),
 			 NULL);
-    cred->times.endtime = time(NULL) + tmp;
+    cred->times.endtime = now + tmp;
 
     tmp = 0;
     if (options->flags & KRB5_GET_INIT_CREDS_OPT_RENEW_LIFE)
@@ -123,7 +126,7 @@ init_cred (krb5_context context,
 					    "0"),
 			 NULL);
     if (tmp)
-	cred->times.renew_till = time(NULL) + tmp;
+	cred->times.renew_till = now + tmp;
 
     if (in_tkt_service) {
 	krb5_realm server_realm;
@@ -160,11 +163,16 @@ print_expire (krb5_context context,
 {
     int i;
     LastReq *lr = &rep->part2.last_req;
-    time_t t = time(0) + parse_time(get_config_string (context,
-						       *realm,
-						       "warn_pwexpire",
-						       "1 week"),
-				    NULL);
+    int32_t sec;
+    time_t t;
+
+    krb5_timeofday (context, &sec);
+
+    t = sec + parse_time(get_config_string (context,
+					    *realm,
+					    "warn_pwexpire",
+					    "1 week"),
+			 NULL);
 
     for (i = 0; i < lr->len; ++i) {
 	if (lr->val[i].lr_type == 6

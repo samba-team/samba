@@ -58,9 +58,13 @@ krb5_build_authenticator (krb5_context context,
   copy_Realm(&cred->client->realm, &auth->crealm);
   copy_PrincipalName(&cred->client->name, &auth->cname);
 
-  gettimeofday(&tv, NULL);
-  auth->cusec = tv.tv_usec;
-  auth->ctime = tv.tv_sec;
+  {
+      int32_t sec, usec;
+
+      krb5_us_timeofday (context, &sec, &usec);
+      auth->ctime = sec;
+      auth->cusec = usec;
+  }
 #if 0
   auth->subkey = NULL;
 #else

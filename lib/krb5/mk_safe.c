@@ -49,8 +49,7 @@ krb5_mk_safe(krb5_context context,
 {
   krb5_error_code r;
   KRB_SAFE s;
-  struct timeval tv;
-  unsigned usec;
+  int32_t sec, usec;
   u_char buf[1024];
   size_t len;
   unsigned tmp_seq;
@@ -59,9 +58,9 @@ krb5_mk_safe(krb5_context context,
   s.msg_type = krb_safe;
 
   s.safe_body.user_data = *userdata;
-  gettimeofday (&tv, NULL);
-  usec = tv.tv_usec;
-  s.safe_body.timestamp  = &tv.tv_sec;
+  krb5_us_timeofday (context, &sec, &usec);
+
+  s.safe_body.timestamp  = &sec;
   s.safe_body.usec       = &usec;
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
       tmp_seq = ++auth_context->local_seqnumber;

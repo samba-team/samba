@@ -113,12 +113,12 @@ krb5_rd_priv(krb5_context context,
 
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-    struct timeval tv;
+      int32_t sec;
 
-    gettimeofday (&tv, NULL);
+      krb5_timeofday (context, &sec);
     if (part.timestamp == NULL ||
 	part.usec      == NULL ||
-	abs(*part.timestamp - tv.tv_sec) > context->max_skew) {
+	abs(*part.timestamp - sec) > context->max_skew) {
 	r = KRB5KRB_AP_ERR_SKEW;
 	goto failure_part;
     }

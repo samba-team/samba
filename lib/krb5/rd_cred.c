@@ -108,12 +108,13 @@ krb5_rd_cred (krb5_context      context,
 
     /* check timestamp */
     if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-	struct timeval tv;
+	int32_t sec;
 
-	gettimeofday (&tv, NULL);
+	krb5_timeofday (context, &sec);
+
 	if (enc_krb_cred_part.timestamp == NULL ||
 	    enc_krb_cred_part.usec      == NULL ||
-	    abs(*enc_krb_cred_part.timestamp - tv.tv_sec)
+	    abs(*enc_krb_cred_part.timestamp - sec)
 	    > context->max_skew) {
 	    ret = KRB5KRB_AP_ERR_SKEW;
 	    goto out;

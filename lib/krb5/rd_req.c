@@ -214,8 +214,10 @@ krb5_verify_ap_req(krb5_context context,
     }
 
     {
-	time_t now = time (NULL);
+	int32_t now;
 	time_t start = t.ticket.authtime;
+
+	krb5_timeofday (context, &now);
 	if(t.ticket.starttime)
 	    start = *t.ticket.starttime;
 	if(start - now > context->max_skew || t.ticket.flags.invalid)
@@ -245,7 +247,6 @@ krb5_rd_req_with_keyblock(krb5_context context,
     krb5_error_code ret;
     krb5_ap_req ap_req;
     size_t len;
-    struct timeval now;
 
     if (*auth_context == NULL) {
 	ret = krb5_auth_con_init(context, auth_context);
