@@ -28,7 +28,7 @@
  *  
  *  this ugly hack needs to die, but not quite yet, I think people still use it...
  **/
-static BOOL update_smbpassword_file(char *user, char *password)
+static BOOL update_smbpassword_file(const char *user, const char *password)
 {
 	SAM_ACCOUNT 	*sampass = NULL;
 	BOOL            ret;
@@ -69,8 +69,6 @@ static BOOL update_smbpassword_file(char *user, char *password)
 	if (ret) {
 		DEBUG(3,("pdb_update_sam_account returned %d\n",ret));
 	}
-
-	memset(password, '\0', strlen(password));
 
 	pdb_free_sam(&sampass);
 	return ret;

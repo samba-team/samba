@@ -436,7 +436,7 @@ try all combinations with N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (char *),
+static NTSTATUS string_combinations2(char *s, int offset, NTSTATUS (*fn) (const char *),
 				 int N)
 {
 	int len = strlen(s);
@@ -470,7 +470,7 @@ try all combinations with up to N uppercase letters.
 offset is the first char to try and change (start with 0)
 it assumes the string starts lowercased
 ****************************************************************************/
-static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (char *), int N)
+static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (const char *), int N)
 {
 	int n;
 	NTSTATUS nt_status;
@@ -484,7 +484,7 @@ static NTSTATUS string_combinations(char *s, NTSTATUS (*fn) (char *), int N)
 /****************************************************************************
 core of password checking routine
 ****************************************************************************/
-static NTSTATUS password_check(char *password)
+static NTSTATUS password_check(const char *password)
 {
 #ifdef WITH_PAM
 	return smb_pam_passcheck(this_user, password);
@@ -591,16 +591,13 @@ match is found and is used to update the encrypted password file
 return NT_STATUS_OK on correct match, appropriate error otherwise
 ****************************************************************************/
 
-NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password, 
-		    int pwlen, BOOL (*fn) (char *, char *), BOOL run_cracker)
+NTSTATUS pass_check(const struct passwd *pass, const char *user, const char *password, 
+		    int pwlen, BOOL (*fn) (const char *, const char *), BOOL run_cracker)
 {
-	struct passwd *pass;
 	pstring pass2;
 	int level = lp_passwordlevel();
 
 	NTSTATUS nt_status;
-	if (password)
-		password[pwlen] = 0;
 
 #if DEBUG_PASSWORD
 	DEBUG(100, ("checking user=[%s] pass=[%s]\n", user, password));
@@ -627,12 +624,16 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 
 	DEBUG(4, ("pass_check: Checking password for user %s (l=%d)\n", user, pwlen));
 
-	if (!input_pass) {
+	if (!pass) {
 		DEBUG(3, ("Couldn't find user %s\n", user));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
-	pass = make_modifyable_passwd(input_pass);
+
+	/* Copy into global for the convenience of looping code */
+	/* Also the place to keep the 'password' no matter what
+	   crazy struct it started in... */
+	fstrcpy(this_crypted, pass->pw_passwd);
 
 #ifdef HAVE_GETSPNAM
 	{
@@ -645,7 +646,7 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 
 		spass = getspnam(pass->pw_name);
 		if (spass && spass->sp_pwdp)
-			pstrcpy(pass->pw_passwd, spass->sp_pwdp);
+			fstrcpy(this_crypted, spass->sp_pwdp);
 	}
 #elif defined(IA_UINFO)
 	{
@@ -663,7 +664,7 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 	{
 		struct pr_passwd *pr_pw = getprpwnam(pass->pw_name);
 		if (pr_pw && pr_pw->ufld.fd_encrypt)
-			pstrcpy(pass->pw_passwd, pr_pw->ufld.fd_encrypt);
+			fstrcpy(this_crypted, pr_pw->ufld.fd_encrypt);
 	}
 #endif
 
@@ -672,7 +673,7 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 		struct passwd_adjunct *pwret;
 		pwret = getpwanam(s);
 		if (pwret && pwret->pwa_passwd)
-			pstrcpy(pass->pw_passwd,pwret->pwa_passwd);
+			fstrcpy(this_crypted, pwret->pwa_passwd);
 	}
 #endif
 
@@ -683,8 +684,8 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 			  user));
 		mypasswd = getprpwnam(user);
 		if (mypasswd) {
-			fstrcpy(pass->pw_name, mypasswd->ufld.fd_name);
-			fstrcpy(pass->pw_passwd, mypasswd->ufld.fd_encrypt);
+			fstrcpy(this_user, mypasswd->ufld.fd_name);
+			fstrcpy(this_crypted, mypasswd->ufld.fd_encrypt);
 		} else {
 			DEBUG(5,
 			      ("OSF1_ENH_SEC: No entry for user %s in protected database !\n",
@@ -697,7 +698,7 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 	{
 		AUTHORIZATION *ap = getauthuid(pass->pw_uid);
 		if (ap) {
-			fstrcpy(pass->pw_passwd, ap->a_password);
+			fstrcpy(this_crypted, ap->a_password);
 			endauthent();
 		}
 	}
@@ -712,26 +713,19 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 	this_salt[2] = 0;
 #endif
 
-	/* Copy into global for the convenience of looping code */
-	fstrcpy(this_crypted, pass->pw_passwd);
-
 	if (!*this_crypted) {
 		if (!lp_null_passwords()) {
 			DEBUG(2, ("Disallowing %s with null password\n",
 				  this_user));
-			passwd_free(&pass);
 			return NT_STATUS_LOGON_FAILURE;
 		}
 		if (!*password) {
 			DEBUG(3,
 			      ("Allowing access to %s with null password\n",
 			       this_user));
-			passwd_free(&pass);
 			return NT_STATUS_OK;
 		}
 	}
-
-	passwd_free(&pass);
 
 #endif /* defined(WITH_PAM) */
 
@@ -755,42 +749,36 @@ NTSTATUS pass_check(const struct passwd *input_pass, char *user, char *password,
 	 * need to proceed as we know it hasn't been case modified by the
 	 * client */
 	if (strhasupper(password) && strhaslower(password)) {
-		passwd_free(&pass);
 		return nt_status;
 	}
 
 	/* make a copy of it */
-	StrnCpy(pass2, password, sizeof(pstring) - 1);
+	pstrcpy(pass2, password);
 
 	/* try all lowercase if it's currently all uppercase */
-	if (strhasupper(password)) {
-		strlower(password);
-		if NT_STATUS_IS_OK(nt_status = password_check(password)) {
+	if (strhasupper(pass2)) {
+		strlower(pass2);
+		if NT_STATUS_IS_OK(nt_status = password_check(pass2)) {
 		        if (fn)
-				fn(user, password);
+				fn(user, pass2);
 			return (nt_status);
 		}
 	}
 
 	/* give up? */
 	if (level < 1) {
-		/* restore it */
-		fstrcpy(password, pass2);
 		return NT_STATUS_WRONG_PASSWORD;
 	}
 
 	/* last chance - all combinations of up to level chars upper! */
-	strlower(password);
+	strlower(pass2);
 
  
-        if NT_STATUS_IS_OK(nt_status = string_combinations(password, password_check, level)) {
+        if (NT_STATUS_IS_OK(nt_status = string_combinations(pass2, password_check, level))) {
                 if (fn)
-			fn(user, password);
+			fn(user, pass2);
 		return nt_status;
 	}
         
-	/* restore it */
-	fstrcpy(password, pass2);
-
 	return NT_STATUS_WRONG_PASSWORD;
 }
