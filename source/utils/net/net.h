@@ -24,12 +24,18 @@
 
 struct net_context {
 	TALLOC_CTX *mem_ctx;
+	struct {
+		const char *account_name;
+		const char *domain_name;
+		const char *password;
+	} user;
 };
 
 struct net_functable {
 	const char *name;
 	int (*fn)(struct net_context *ctx, int argc, const char **argv);
-	int (*help)(struct net_context *ctx, int argc, const char **argv);	
+	int (*usage)(struct net_context *ctx, int argc, const char **argv);
+	int (*help)(struct net_context *ctx, int argc, const char **argv);
 };
 
 #endif /* _UTIL_NET_H */
