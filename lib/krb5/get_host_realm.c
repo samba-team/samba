@@ -42,24 +42,62 @@
 RCSID("$Id$");
 
 /* To automagically find the correct realm of a host (without
- * krb.realms) add a text record for your domain with the name of your
- * realm, like this:
+ * [domain_realm] in krb5.conf) add a text record for your domain with
+ * the name of your realm, like this:
  *
  * krb5-realm	IN	TXT	FOO.SE
  *
  * The search is recursive, so you can add entries for specific
  * hosts. To find the realm of host a.b.c, it first tries
- * krb5-realm.a.b.c, then krb5-realm.b.c and so on.
- */
+ * krb5-realm.a.b.c, then krb5-realm.b.c and so on.  */
+
+static int
+copy_txt_to_realms (struct resource_record *head,
+		    krb5_realm **realms)
+{
+    struct resource_record *rr;
+    int n, i;
+
+    for(n = 0, rr = head; rr; rr = rr->next)
+	if (rr->type == T_TXT)
+	    ++n;
+
+    if (n == 0)
+	return -1;
+
+    *realms = malloc ((n + 1) * sizeof(krb5_realm));
+    if (*realms == NULL)
+	return -1;
+
+    for (i = 0; i < n + 1; ++i)
+	(*realms)[i] = NULL;
+
+    for (i = 0, rr = head; rr; rr = rr->next) {
+	if (rr->type == T_TXT) {
+	    char *tmp;
+
+	    tmp = strdup(rr->u.txt);
+	    if (tmp == NULL) {
+		for (i = 0; i < n; ++i)
+		    free ((*realms)[i]);
+		free (*realms);
+		return -1;
+	    }
+	    (*realms)[i] = tmp;
+	    ++i;
+	}
+    }
+    return 0;
+}
 
 static int
 dns_find_realm(krb5_context context,
 	       const char *domain,
-	       krb5_realm *realm)
+	       krb5_realm **realms)
 {
     char dom[MAXHOSTNAMELEN];
     struct dns_reply *r;
-    struct resource_record *rr;
+    int ret;
     
     if(*domain == '.')
 	domain++;
@@ -67,36 +105,35 @@ dns_find_realm(krb5_context context,
     r = dns_lookup(dom, "TXT");
     if(r == NULL)
 	return -1;
-    for(rr = r->head; rr; rr = rr->next) {
-	if(rr->type != T_TXT)
-	    continue;
-	*realm = strdup(rr->u.txt);
-	dns_free_data(r);
-	if(*realm == NULL)
-	    return ENOMEM;
-	return 0;
-    }
-    /* this shouldn't happen */
+
+    ret = copy_txt_to_realms (r->head, realms);
     dns_free_data(r);
-    return -1;
+    return ret;
 }
+
+/*
+ * Try to figure out what realms host in `domain' belong to from the
+ * configuration file.
+ */
 
 static int
 config_find_realm(krb5_context context, 
 		  const char *domain, 
-		  krb5_realm *realm)
+		  krb5_realm **realms)
 {
-    const char *s = krb5_config_get_string(context, NULL, 
-					   "domain_realm",
-					   domain,
-					   NULL);
-    if(s == NULL)
+    char **tmp = krb5_config_get_strings (context, NULL,
+					  "domain_realm",
+					  domain,
+					  NULL);
+
+    if (tmp == NULL)
 	return -1;
-    *realm = strdup(s);
-    if(*realm == NULL)
-	return ENOMEM;
+    *realms = tmp;
     return 0;
 }
+
+/*
+ * Return the realm(s) of `host' as a NULL-terminated list in `realms'.  */
 
 krb5_error_code
 krb5_get_host_realm(krb5_context context,
@@ -126,17 +163,11 @@ krb5_get_host_realm(krb5_context context,
     if (hostent != NULL)
 	host = hostent->h_name;
 
-    *realms = malloc(2 * sizeof(krb5_realm));
-    if (*realms == NULL)
-	return ENOMEM;
-    (*realms)[0] = NULL;
-    (*realms)[1] = NULL;
-
     p = host;
     while(p) {
-	if(config_find_realm(context, p, *realms) == 0)
+	if(config_find_realm(context, p, realms) == 0)
 	    return 0;
-	else if(dns_find_realm(context, p, *realms) == 0)
+	else if(dns_find_realm(context, p, realms) == 0)
 	    return 0;
 	p = strchr(p + 1, '.');
     }
@@ -145,10 +176,17 @@ krb5_get_host_realm(krb5_context context,
 	p = strchr(orig_host, '.');
     if(p) {
 	p++;
-	(*realms)[0] = strdup(p);
-	if((*realms)[0] == NULL)
+	*realms = malloc(2 * sizeof(krb5_realm));
+	if (*realms == NULL)
 	    return ENOMEM;
+
+	(*realms)[0] = strdup(p);
+	if((*realms)[0] == NULL) {
+	    free(*realms);
+	    return ENOMEM;
+	}
 	strupr((*realms)[0]);
+	(*realms)[1] = NULL;
 	return 0;
     }
     free(*realms);
