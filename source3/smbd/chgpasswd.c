@@ -199,7 +199,7 @@ static int dochild(int master, char *slavedev, char *name,
 	}
 	stermios.c_lflag &= ~(ECHO | ECHOE | ECHOK | ECHONL);
 	stermios.c_lflag |= ICANON;
-	stermios.c_oflag &= ~(ONLCR);
+ 	stermios.c_oflag &= ~(ONLCR);
 	if (tcsetattr(0, TCSANOW, &stermios) < 0)
 	{
 		DEBUG(3, ("could not set attributes of pty\n"));
@@ -231,14 +231,15 @@ static int expect(int master, char *issue, char *expected)
 	int attempts, timeout, nread, len;
 	BOOL match = False;
 
-	for (attempts = 0; attempts < 2; attempts++)
-	{
-		if (!strequal(issue, "."))
-		{
+	for (attempts = 0; attempts < 2; attempts++) {
+		if (!strequal(issue, ".")) {
 			if (lp_passwd_chat_debug())
 				DEBUG(100, ("expect: sending [%s]\n", issue));
 
-			write(master, issue, strlen(issue));
+			if ((len = write(master, issue, strlen(issue))) != strlen(issue)) {
+				DEBUG(2,("expect: (short) write returned %d\n", len ));
+				return False;
+			}
 		}
 
 		if (strequal(expected, "."))
@@ -250,29 +251,35 @@ static int expect(int master, char *issue, char *expected)
 
 		while ((len = read_with_timeout(master, buffer + nread, 1,
 						sizeof(buffer) - nread - 1,
-						timeout)) > 0)
-		{
+						timeout)) > 0) {
 			nread += len;
 			buffer[nread] = 0;
 
-			if ((match = (wild_match(expected, buffer) == 0)))
-				timeout = 200;
+			{
+				/* Eat leading/trailing whitespace before match. */
+				pstring str;
+				pstrcpy( str, buffer);
+				trim_string( str, " ", " ");
+
+				if ((match = (unix_wild_match(expected, str) == 0)))
+					timeout = 200;
+			}
 		}
 
 		if (lp_passwd_chat_debug())
-			DEBUG(100, ("expect: expected [%s] received [%s]\n",
-				    expected, buffer));
+			DEBUG(100, ("expect: expected [%s] received [%s] match %s\n",
+				    expected, buffer, match ? "yes" : "no" ));
 
 		if (match)
 			break;
 
-		if (len < 0)
-		{
+		if (len < 0) {
 			DEBUG(2, ("expect: %s\n", strerror(errno)));
 			return False;
 		}
 	}
 
+	DEBUG(10,("expect: returning %s\n", match ? "True" : "False" ));
 	return match;
 }
 
@@ -519,13 +526,22 @@ BOOL chgpasswd(char *name, char *oldpass, char *newpass, BOOL as_root)
 	pstrcpy(chatsequence, lp_passwd_chat());
 
 	if (!*chatsequence) {
-		DEBUG(2, ("Null chat sequence - no password changing\n"));
+		DEBUG(2, ("chgpasswd: Null chat sequence - no password changing\n"));
 		return (False);
 	}
 
 	if (!*passwordprogram) {
-		DEBUG(2, ("Null password program - no password changing\n"));
+		DEBUG(2, ("chgpasswd: Null password program - no password changing\n"));
 		return (False);
+	}
+
+	if (as_root) {
+		/* The password program *must* contain the user name to work. Fail if not. */
+		if (strstr(passwordprogram, "%u") == NULL) {
+			DEBUG(0,("chgpasswd: Running as root the 'passwd program' parameter *MUST* contain \
+the string %%u, and the given string %s does not.\n", passwordprogram ));
+			return False;
+		}
 	}
 
 	pstring_sub(passwordprogram, "%u", name);
