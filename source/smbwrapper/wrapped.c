@@ -19,7 +19,11 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-/* NOTE: This file WILL produce compiler warnings. They are unavoidable */
+/* NOTE: This file WILL produce compiler warnings. They are unavoidable 
+
+   Do not try and get rid of them by including other include files or
+   by including includes.h or proto.h or you will break portability. 
+  */
 
 #include "config.h"
 #include <sys/types.h>
