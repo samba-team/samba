@@ -320,6 +320,13 @@ sub HeaderInterface($)
     $res .= "#ifndef _HEADER_NDR_$interface->{NAME}\n";
     $res .= "#define _HEADER_NDR_$interface->{NAME}\n\n";
 
+    if (defined $interface->{PROPERTIES}->{depends}) {
+	    my @d = split / /, $interface->{PROPERTIES}->{depends};
+	    foreach my $i (@d) {
+		    $res .= "#include \"librpc/gen_ndr/ndr_$i\.h\"\n";
+	    }
+    }
+
     if (defined $interface->{PROPERTIES}->{uuid}) {
 	    my $name = uc $interface->{NAME};
 	    $res .= "#define DCERPC_$name\_UUID " . 

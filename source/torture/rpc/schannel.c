@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 
 #define TEST_MACHINE_NAME "schanneltest"
 

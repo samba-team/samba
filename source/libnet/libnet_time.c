@@ -19,6 +19,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 
 /*
  * get the remote time of a server via srvsvc_NetRemoteTOD

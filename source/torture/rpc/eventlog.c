@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_eventlog.h"
 
 static void init_eventlog_String(struct eventlog_String *name, const char *s)
 {

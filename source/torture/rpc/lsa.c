@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
 
 static void init_lsa_Name(struct lsa_Name *name, const char *s)
 {

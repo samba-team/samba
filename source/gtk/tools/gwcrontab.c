@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_atsvc.h"
 #include "gtk/common/gtk-smb.h"
 
 struct dcerpc_pipe *at_pipe = NULL;

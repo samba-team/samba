@@ -37,7 +37,16 @@ interface misc
 	const string SID_BUILTIN_BACKUP_OPERATORS  = "S-1-5-32-551";
 	const string SID_BUILTIN_REPLICATOR        = "S-1-5-32-552";
 
-	typedef [public,noprint] struct {
+	/* server roles */
+	typedef enum {
+		ROLE_STANDALONE    = 0,
+		ROLE_DOMAIN_MEMBER = 1,
+		ROLE_DOMAIN_BDC    = 2,
+		ROLE_DOMAIN_PDC    = 3
+	} samr_Role;
+
+
+	typedef [public,noprint,gensize] struct {
 		uint32 time_low;
 		uint16 time_mid;
 		uint16 time_hi_and_version;
@@ -123,4 +132,22 @@ interface misc
 	typedef [public, flag(NDR_PAHEX)] struct {
 		uint8 hash[16];
 	} samr_Password;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 key[16];
+	} netr_UserSessionKey;
+
+	typedef [public,flag(NDR_PAHEX)] struct {
+		uint8 key[8];
+	} netr_LMSessionKey;
+
+	typedef [public, flag(NDR_PAHEX)] struct {
+		uint8 data[8];
+	} netr_Credential;
+
+	typedef [public] struct {
+		netr_Credential cred;
+		time_t timestamp;
+	} netr_Authenticator;
+
 }

@@ -8,7 +8,8 @@
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\winreg]","ncacn_ip_tcp:","ncalrpc:"),
   pointer_default(unique),
-  helpstring("Remote Registry Service")
+  helpstring("Remote Registry Service"),
+  depends(lsa)
 ] interface winreg
 {
 	typedef struct {

@@ -23,6 +23,7 @@
 
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
 
 NTSTATUS pull_spoolss_PrinterInfoArray(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 				       uint32_t level, uint32_t count,

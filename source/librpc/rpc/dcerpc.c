@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_epmapper.h"
 
 /* initialise a dcerpc pipe. */
 struct dcerpc_pipe *dcerpc_pipe_init(void)

@@ -22,6 +22,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/raw/libcliraw.h"
 
 #ifndef REGISTER

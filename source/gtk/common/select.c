@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_samr.h"
 #include "gtk-smb.h"
 
 /* GtkSelectDomainDialog */

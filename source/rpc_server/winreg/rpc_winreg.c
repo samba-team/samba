@@ -21,6 +21,7 @@
 */
 
 #include "includes.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
 #include "rpc_server/common/common.h"
 
 enum handle_types { HTYPE_REGVAL, HTYPE_REGKEY };

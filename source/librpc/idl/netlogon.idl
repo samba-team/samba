@@ -10,12 +10,18 @@
   uuid("12345678-1234-abcd-ef00-01234567cffb"),
   version(1.0),
   endpoint("ncacn_np:[\\pipe\\netlogon]","ncacn_ip_tcp:","ncalrpc:"),
-  pointer_default(unique)
+  pointer_default(unique),
+  depends(lsa,samr)
 ]
 
 interface netlogon
 {
-
+	typedef [public] struct {
+		[value(strlen_m(r->string)*2)]  uint16 size;
+		[value(r->size)]                uint16 length;
+		unistr_noterm *string;
+	} netr_String;
+	
 	/*****************/
 	/* Function 0x00 */
 
@@ -65,16 +71,6 @@ interface netlogon
 	/*****************/
 	/* Function 0x02 */
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[8];
-	} netr_Credential;
-
-	typedef struct {
-		[value(strlen_m(r->string)*2)]  uint16 size;
-		[value(r->size)]                uint16 length;
-		unistr_noterm *string;
-	} netr_String;
-	
 	/* in netr_AcctLockStr size seems to be be 24, and rrenard thinks 
 	   that the structure of the bindata looks like this:
 
@@ -128,25 +124,12 @@ interface netlogon
 		[case(6)] netr_NetworkInfo  *network;
 	} netr_LogonLevel;
 
-	typedef struct {
-		netr_Credential cred;
-		time_t timestamp;
-	} netr_Authenticator;
-
-	typedef struct {
+	typedef [public] struct {
 		uint32 rid;
 		uint32 attributes;
 	} netr_GroupMembership;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 key[16];
-	} netr_UserSessionKey;
-
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 key[8];
-	} netr_LMSessionKey;
-
-	typedef struct {
+	typedef [public] struct {
 		NTTIME last_logon;
 		NTTIME last_logoff;
 		NTTIME acct_expiry;
@@ -175,11 +158,11 @@ interface netlogon
 		uint32 unknown[7];
 	} netr_SamBaseInfo;
 
-	typedef struct {
+	typedef [public] struct {
 		netr_SamBaseInfo base;
 	} netr_SamInfo2;
 
-	typedef struct {
+	typedef [public] struct {
 		dom_sid2 *sid;
 		uint32 attribute;
 	} netr_SidAttr;
