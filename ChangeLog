@@ -1,3 +1,19 @@
+Sun Nov 16 02:52:20 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/keytab.c (krb5_kt_copy_entry_contents): new function
+	(krb5_kt_get_entry): retrieve the latest version if kvno == 0
+
+	* lib/krb5/krb5.h: define KRB5_TC_MATCH_KEYTYPE
+
+	* lib/krb5/creds.c (krb5_compare_creds): check for
+ 	KRB5_TC_MATCH_KEYTYPE
+
+	* lib/gssapi/8003.c (gssapi_krb5_create_8003_checksum): remove
+ 	unused variable
+
+	* lib/krb5/creds.c (krb5_copy_creds_contents): only free the
+ 	contents if we fail.
+
 Sun Nov 16 00:32:48 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kpasswd/kpasswdd.c: Get password expiration time from config
