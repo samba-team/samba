@@ -1,10 +1,12 @@
-<samba:parameter xmlns:samba="http://samba.org/common">
-		<term><anchor id="HIDEUNWRITEABLEFILES"/>hide unwriteable files (G)</term>
-		<listitem><para>This parameter prevents clients from seeing
-		the existance of files that cannot be written to. Defaults to off.
-		Note that unwriteable directories are shown as usual.
-		</para>
+<samba:parameter name="hide unwriteable files"
+                 context="S"
+                 xmlns:samba="http://samba.org/common">
+<listitem>
+	<para>This parameter prevents clients from seeing
+	the existance of files that cannot be written to. Defaults to off.
+	Note that unwriteable directories are shown as usual.
+	</para>
 
-		<para>Default: <command moreinfo="none">hide unwriteable = no</command></para>
-		</listitem>
-		</samba:parameter>
+	<para>Default: <command moreinfo="none">hide unwriteable = no</command></para>
+</listitem>
+</samba:parameter>
