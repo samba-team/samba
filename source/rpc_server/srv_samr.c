@@ -771,38 +771,35 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 			num_entries++;
 		}
 	}
-	else if (strequal(sid_str, sam_sid_str))
+	else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users())
 	{
-		char *name;
-		char *sep;
+	    char *name;
+	    char *sep;
 
-		if (lp_hide_local_users()) goto done;
+	    sep = lp_winbind_separator();
 
-		sep = lp_winbind_separator();
+	    /* local aliases */
+	    /* we return the UNIX groups here.  This seems to be the right */
+	    /* thing to do, since NT member servers return their local     */
+	    /* groups in the same situation.                               */
+	    setgrent();
 
-		/* local aliases */
-		/* we return the UNIX groups here.  This seems to be the right */
-		/* thing to do, since NT member servers return their local     */
-                /* groups in the same situation.                               */
-		setgrent();
+	    while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
+	    {
+		    name = grp->gr_name;
 
-		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
-		{
-			name = grp->gr_name;
+		    /* Don't return winbind groups as they are not local! */
 
-			/* Don't return winbind groups as they are not local! */
+		    if (strchr(name, *sep) != NULL) {
+			    continue;
+		    }
 
-			if (strchr(name, *sep) != NULL) {
-				continue;
-			}
+		    init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
+		    pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
+		    num_entries++;
+	    }
 
-			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
-			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
-			num_entries++;
-		}
-
-		endgrent();
-	done: ;
+	    endgrent();
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
