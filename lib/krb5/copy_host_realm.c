@@ -60,7 +60,12 @@ krb5_copy_host_realm(krb5_context context,
 	return ENOMEM;
     for (i = 0; i < n; ++i)
 	(*to)[i] = NULL;
-    for (i = 0, p = from; *p != NULL; ++p, ++i)
-	(*to)[i] = *p;
+    for (i = 0, p = from; *p != NULL; ++p, ++i) {
+	(*to)[i] = strdup(*p);
+	if ((*to)[i] == NULL) {
+	    krb5_free_host_realm (context, *to);
+	    return ENOMEM;
+	}
+    }
     return 0;
 }
