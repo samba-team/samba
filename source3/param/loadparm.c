@@ -509,6 +509,7 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
 static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
+static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -863,7 +864,7 @@ static struct parm_struct parm_table[] = {
 	{"dns proxy", P_BOOL, P_GLOBAL, &Globals.bDNSproxy, NULL, NULL, 0},
 	{"wins proxy", P_BOOL, P_GLOBAL, &Globals.bWINSproxy, NULL, NULL, 0},
 	
-	{"wins server", P_STRING, P_GLOBAL, &Globals.szWINSserver, NULL, NULL, FLAG_BASIC},
+	{"wins server", P_STRING, P_GLOBAL, &Globals.szWINSserver, handle_wins_server_list, NULL, FLAG_BASIC},
 	{"wins support", P_BOOL, P_GLOBAL, &Globals.bWINSsupport, NULL, NULL, FLAG_BASIC},
 	{"wins hook", P_STRING, P_GLOBAL, &Globals.szWINSHook, NULL, NULL, 0},
 
@@ -2371,6 +2372,19 @@ static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
 
 	return True;
 }
+
+/***************************************************************************
+ Handle the WINS SERVER list
+***************************************************************************/
+static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
+  {
+  if( !wins_srv_load_list( pszParmValue ) )
+    return( False );  /* Parse failed. */
+
+  string_set( ptr, pszParmValue );
+  return( True );
+  }
+
 
 /***************************************************************************
 initialise a copymap

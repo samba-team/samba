@@ -271,12 +271,16 @@ BOOL create_subnets(void)
    * get the ip address of it here. If we are the WINS server then
    * set the unicast subnet address to be the first of our own real
    * addresses.
+   *
+   * NOTE: I'm not sure of the implications of WINS server failover
+   *       on this bit of code.  Because of failover, the WINS
+   *       server address can change.
    */
 
   if(*lp_wins_server())
   {
     struct in_addr real_wins_ip;
-    real_wins_ip = *interpret_addr2(lp_wins_server());
+    real_wins_ip = *interpret_addr2( wins_srv() );
 
     if (!zero_ip(real_wins_ip))
     {

@@ -410,16 +410,6 @@ char **file_lines_pload(char *syscmd, int *numlines);
 void file_lines_free(char **lines);
 void file_lines_slashcont(char **lines);
 
-/*The following definitions come from  lib/util_list.c  */
-
-BOOL copy_policy_hnd (POLICY_HND *dest, const POLICY_HND *src);
-BOOL compare_rpc_hnd_node(const RPC_HND_NODE *x, 
-			  const RPC_HND_NODE *y);
-BOOL RpcHndList_set_connection(const POLICY_HND *hnd, 
-		  	       struct cli_connection *con);
-BOOL RpcHndList_del_connection(const POLICY_HND *hnd);
-struct cli_connection* RpcHndList_get_connection(const POLICY_HND *hnd);
-
 /*The following definitions come from  lib/util_seaccess.c  */
 
 BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
@@ -602,6 +592,13 @@ void all_string_sub_w(smb_ucs2_t *s,const smb_ucs2_t *pattern,const smb_ucs2_t *
 void split_at_last_component_w(smb_ucs2_t *path, smb_ucs2_t *front, smb_ucs2_t sep, smb_ucs2_t *back);
 smb_ucs2_t *octal_string_w(int i);
 smb_ucs2_t *string_truncate_w(smb_ucs2_t *s, size_t length);
+
+/*The following definitions come from  lib/wins_srv.c  */
+
+BOOL wins_srv_load_list( char *src );
+char *wins_srv( void );
+void wins_srv_died( char *boothill );
+unsigned long wins_srv_count( void );
 
 /*The following definitions come from  libsmb/cliconnect.c  */
 
