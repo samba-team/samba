@@ -518,7 +518,6 @@ typedef uint64_t HYPER_T;
 #define NEGOTIATE_SECURITY_SIGNATURES_REQUIRED	0x08
 
 /* NT Flags2 bits - cifs6.txt section 3.1.2 */
-   
 #define FLAGS2_LONG_PATH_COMPONENTS    0x0001
 #define FLAGS2_EXTENDED_ATTRIBUTES     0x0002
 #define FLAGS2_SMB_SECURITY_SIGNATURES 0x0004
@@ -529,10 +528,8 @@ typedef uint64_t HYPER_T;
 #define FLAGS2_32_BIT_ERROR_CODES      0x4000 
 #define FLAGS2_UNICODE_STRINGS         0x8000
 
-#define FLAGS2_WIN2K_SIGNATURE         0xC852 /* Hack alert ! For now... JRA. */
 
-/* Capabilities.  see ftp.microsoft.com/developr/drg/cifs/cifs/cifs4.txt */
-
+/* CIFS protocol capabilities */
 #define CAP_RAW_MODE		0x00000001
 #define CAP_MPX_MODE		0x00000002
 #define CAP_UNICODE		0x00000004
@@ -551,7 +548,7 @@ typedef uint64_t HYPER_T;
 #define CAP_EXTENDED_SECURITY	0x80000000
 
 /*
- * Global value meaing that the smb_uid field should be
+ * Global value meaning that the smb_uid field should be
  * ingored (in share level security and protocol level == CORE)
  */
 
@@ -559,24 +556,20 @@ typedef uint64_t HYPER_T;
 #define VUID_OFFSET 100 /* Amount to bias returned vuid numbers */
 
 /* Lock types. */
-#define LOCKING_ANDX_SHARED_LOCK 0x1
-#define LOCKING_ANDX_OPLOCK_RELEASE 0x2
-#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x4
-#define LOCKING_ANDX_CANCEL_LOCK 0x8
-#define LOCKING_ANDX_LARGE_FILES 0x10
-
-/* Oplock levels */
-#define OPLOCKLEVEL_NONE 0
-#define OPLOCKLEVEL_II 1
+#define LOCKING_ANDX_SHARED_LOCK     0x01
+#define LOCKING_ANDX_OPLOCK_RELEASE  0x02
+#define LOCKING_ANDX_CHANGE_LOCKTYPE 0x04
+#define LOCKING_ANDX_CANCEL_LOCK     0x08
+#define LOCKING_ANDX_LARGE_FILES     0x10
 
 /*
  * Bits we test with.
  */
 
-#define NO_OPLOCK 0
-#define EXCLUSIVE_OPLOCK 1
-#define BATCH_OPLOCK 2
-#define LEVEL_II_OPLOCK 4
+#define OPLOCK_NONE      0
+#define OPLOCK_EXCLUSIVE 1
+#define OPLOCK_BATCH     2
+#define OPLOCK_LEVEL_II  4
 
 #define CORE_OPLOCK_GRANTED (1<<5)
 #define EXTENDED_OPLOCK_GRANTED (1<<15)

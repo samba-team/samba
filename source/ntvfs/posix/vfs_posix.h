@@ -58,7 +58,6 @@ struct pvfs_state {
 	uint32_t fs_attribs;
 };
 
-
 /* this is the basic information needed about a file from the filesystem */
 struct pvfs_dos_fileinfo {
 	NTTIME create_time;
@@ -70,6 +69,7 @@ struct pvfs_dos_fileinfo {
 	uint32_t nlink;
 	uint32_t ea_size;
 	uint64_t file_id;
+	uint32_t flags;
 };
 
 /*
@@ -120,6 +120,9 @@ struct pvfs_file_handle {
 
 	/* we need this hook back to our parent for lock destruction */
 	struct pvfs_state *pvfs;
+
+	/* have we set a sticky write time that we should remove on close */
+	BOOL sticky_write_time;
 };
 
 /* open file state */
@@ -189,6 +192,7 @@ struct pvfs_mangle_context {
 #define PVFS_FLAG_STRICT_SYNC    (1<<5)
 #define PVFS_FLAG_STRICT_LOCKING (1<<6)
 #define PVFS_FLAG_XATTR_ENABLE   (1<<7)
+#define PVFS_FLAG_FAKE_OPLOCKS   (1<<8)
 
 /* forward declare some anonymous structures */
 struct pvfs_dir;

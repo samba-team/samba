@@ -26,6 +26,7 @@
 #include "system/filesys.h"
 #include "dlinklist.h"
 #include "messages.h"
+#include "librpc/gen_ndr/ndr_xattr.h"
 
 /*
   create file handles with convenient numbers for sniffers
@@ -160,15 +161,16 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->share_access  = io->generic.in.share_access;
 	f->impersonation = io->generic.in.impersonation;
 
-	f->handle->pvfs           = pvfs;
-	f->handle->name           = talloc_steal(f->handle, name);
-	f->handle->fd             = -1;
-	f->handle->odb_locking_key    = data_blob(NULL, 0);
-	f->handle->brl_locking_key    = data_blob(NULL, 0);
-	f->handle->create_options = io->generic.in.create_options;
-	f->handle->seek_offset    = 0;
-	f->handle->position       = 0;
-	f->handle->mode           = 0;
+	f->handle->pvfs              = pvfs;
+	f->handle->name              = talloc_steal(f->handle, name);
+	f->handle->fd                = -1;
+	f->handle->odb_locking_key   = data_blob(NULL, 0);
+	f->handle->brl_locking_key   = data_blob(NULL, 0);
+	f->handle->create_options    = io->generic.in.create_options;
+	f->handle->seek_offset       = 0;
+	f->handle->position          = 0;
+	f->handle->mode              = 0;
+	f->handle->sticky_write_time = False;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -201,7 +203,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	/* the open succeeded, keep this handle permanently */
 	talloc_steal(pvfs, f);
 
-	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.oplock_level  = OPLOCK_NONE;
 	io->generic.out.fnum          = f->fnum;
 	io->generic.out.create_action = create_action;
 	io->generic.out.create_time   = name->dos.create_time;
@@ -225,6 +227,16 @@ static int pvfs_handle_destructor(void *p)
 {
 	struct pvfs_file_handle *h = p;
 
+	/* the write time is no longer sticky */
+	if (h->sticky_write_time) {
+		NTSTATUS status;
+		status = pvfs_dosattrib_load(h->pvfs, h->name, h->fd);
+		if (NT_STATUS_IS_OK(status)) {
+			h->name->dos.flags &= ~XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME;
+			pvfs_dosattrib_save(h->pvfs, h->name, h->fd);
+		}
+	}
+	
 	if ((h->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
 	    h->name->stream_name) {
 		NTSTATUS status;
@@ -515,6 +527,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	f->handle->position          = 0;
 	f->handle->mode              = 0;
 	f->handle->have_opendb_entry = True;
+	f->handle->sticky_write_time = False;
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -523,7 +536,12 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	talloc_set_destructor(f, pvfs_fnum_destructor);
 	talloc_set_destructor(f->handle, pvfs_handle_destructor);
 
-	io->generic.out.oplock_level  = NO_OPLOCK;
+	
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		io->generic.out.oplock_level  = OPLOCK_EXCLUSIVE;
+	} else {
+		io->generic.out.oplock_level  = OPLOCK_NONE;
+	}
 	io->generic.out.fnum          = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_CREATED;
 	io->generic.out.create_time   = name->dos.create_time;
@@ -685,7 +703,7 @@ static NTSTATUS pvfs_open_deny_dos(struct ntvfs_module_context *ntvfs,
 
 	name = f->handle->name;
 
-	io->generic.out.oplock_level  = NO_OPLOCK;
+	io->generic.out.oplock_level  = OPLOCK_NONE;
 	io->generic.out.fnum	      = f->fnum;
 	io->generic.out.create_action = NTCREATEX_ACTION_EXISTED;
 	io->generic.out.create_time   = name->dos.create_time;
@@ -963,7 +981,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	f->handle->create_options    = io->generic.in.create_options;
 	f->handle->seek_offset       = 0;
 	f->handle->position          = 0;
+	f->handle->mode              = 0;
 	f->handle->have_opendb_entry = False;
+	f->handle->sticky_write_time = False;
 
 	/* form the lock context used for byte range locking and
 	   opendb locking */
@@ -1063,7 +1083,11 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	    
 	talloc_free(lck);
 
-	io->generic.out.oplock_level  = NO_OPLOCK;
+	if (pvfs->flags & PVFS_FLAG_FAKE_OPLOCKS) {
+		io->generic.out.oplock_level  = OPLOCK_EXCLUSIVE;
+	} else {
+		io->generic.out.oplock_level  = OPLOCK_NONE;
+	}
 	io->generic.out.fnum	      = f->fnum;
 	io->generic.out.create_action = stream_existed?
 		NTCREATEX_ACTION_EXISTED:NTCREATEX_ACTION_CREATED;
@@ -1112,8 +1136,12 @@ NTSTATUS pvfs_close(struct ntvfs_module_context *ntvfs,
 		unix_times.actime = 0;
 		unix_times.modtime = io->close.in.write_time;
 		utime(f->handle->name->full_name, &unix_times);
+	} else if (f->handle->sticky_write_time) {
+		unix_times.actime = 0;
+		unix_times.modtime = nt_time_to_unix(f->handle->name->dos.write_time);
+		utime(f->handle->name->full_name, &unix_times);
 	}
-	
+
 	talloc_free(f);
 
 	return NT_STATUS_OK;

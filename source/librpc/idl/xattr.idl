@@ -19,6 +19,7 @@ interface xattr
 	/* we store basic dos attributes in a DosAttrib xattr. By
 	   using a union we can cope with new version of this
 	   structure more easily */
+
 	typedef struct {
 		uint32 attrib;
 		uint32 ea_size;
@@ -28,8 +29,23 @@ interface xattr
 		NTTIME change_time;
 	} xattr_DosInfo1;
 
+	const int XATTR_ATTRIB_FLAG_STICKY_WRITE_TIME = 0x1;
+
+	typedef struct {
+		uint32     flags;
+		uint32     attrib;
+		uint32     ea_size;
+		uint64     size;
+		uint64     alloc_size;
+		NTTIME     create_time;
+		NTTIME     change_time;
+		NTTIME     write_time; /* only used when sticky write time is set */
+		utf8string name;       /* will be used for case-insensitive speedup */
+	} xattr_DosInfo2;
+
 	typedef union {
 		[case(1)] xattr_DosInfo1 info1;
+		[case(2)] xattr_DosInfo2 info2;
 	} xattr_DosInfo;
 
 	typedef [public] struct {
@@ -77,7 +93,7 @@ interface xattr
 	} xattr_DosStreams;
 
 
-	/* we store the NT ACL a NTAcl xattr. It is versioned so we
+	/* we store the NT ACL a NTACL xattr. It is versioned so we
 	   can later add other acl attribs (such as posix acl mapping)
 	   
 	   we put this xattr in the security namespace to ensure that
