@@ -42,8 +42,9 @@ BOOL torture_utable(void)
 
 	memset(valid, 0, sizeof(valid));
 
-	smbcli_mkdir(cli->tree, "\\utable");
-	smbcli_unlink(cli->tree, "\\utable\\*");
+	if (!torture_setup_dir(cli, "\\utable")) {
+		return False;
+	}
 
 	for (c=1; c < 0x10000; c++) {
 		char *p;
@@ -133,9 +134,7 @@ BOOL torture_casetable(void)
 
 	memset(equiv, 0, sizeof(equiv));
 
-	smbcli_deltree(cli->tree, "\\utable");
-	if (NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, "\\utable"))) {
-		printf("Failed to create utable directory!\n");
+	if (!torture_setup_dir(cli, "\\utable")) {
 		return False;
 	}
 

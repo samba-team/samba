@@ -56,8 +56,9 @@ BOOL torture_raw_sfileinfo(void)
 
 	mem_ctx = talloc_init("torture_sfileinfo");
 
-	smbcli_deltree(cli->tree, BASEDIR);
-	smbcli_mkdir(cli->tree, BASEDIR);
+	if (!torture_setup_dir(cli, BASEDIR)) {
+		return False;
+	}
 
 #define RECREATE_FILE(fname) do { \
 	if (fnum != -1) smbcli_close(cli->tree, fnum); \

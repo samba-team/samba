@@ -2391,6 +2391,7 @@ static struct {
 	{"BASE-CHKPATH",  torture_chkpath_test, 0},
 	{"BASE-SECLEAK",  torture_sec_leak, 0},
 	{"BASE-DISCONNECT",  torture_disconnect, 0},
+	{"BASE-DELAYWRITE", torture_delay_write, 0},
 
 	/* benchmarking tests */
 	{"BENCH-HOLDCON",  torture_holdcon, 0},
