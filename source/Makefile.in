@@ -574,9 +574,9 @@ bin/swat: $(SWAT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SWAT_OBJ) $(LDFLAGS) $(DYNEXP) $(LIBS) 
 
-bin/rpcclient: $(RPCCLIENT_OBJ) bin/.dummy
+bin/rpcclient: $(RPCCLIENT_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LDFLAGS) $(DYNEXP) $(TERMLDFLAGS) $(TERMLIBS) $(LIBS) @BUILD_POPT@
 
 bin/samsync: $(SAMSYNC_OBJ) bin/.dummy
 	@echo Linking $@
