@@ -2003,6 +2003,11 @@ static BOOL test_EnumDomainUsers_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ct
 #define ASYNC_COUNT 100
 	struct rpc_request *req[ASYNC_COUNT];
 
+	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
+		printf("samr async test disabled - enable dangerous tests to use\n");
+		return True;
+	}
+
 	printf("Testing EnumDomainUsers_async\n");
 
 	r.in.handle = handle;
