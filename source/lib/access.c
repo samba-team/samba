@@ -33,7 +33,7 @@ static BOOL masked_match(const char *tok, const char *slash, const char *s)
         if (strlen(slash + 1) > 2) {
                 mask = interpret_addr(slash + 1);
         } else {
-		mask = (uint32)((ALLONES << atoi(slash + 1)) ^ ALLONES);
+		mask = (uint32)((ALLONES >> atoi(slash + 1)) ^ ALLONES);
         }
 
 	if (net == INADDR_NONE || mask == INADDR_NONE) {
