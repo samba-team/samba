@@ -896,7 +896,14 @@ case "$host_os" in
 			SONAMEFLAG="-Wl,-h,"
 			PICFLAG="-KPIC"   # Is this correct for SunOS
 		;;
-		*bsd*)  BLDSHARED="true"
+		*freebsd*)  BLDSHARED="true"
+			LDSHFLAGS="-shared"
+			DYNEXP="-Wl,--export-dynamic"
+			SONAMEFLAG="-Wl,-soname,"
+			PICFLAG="-fPIC -DPIC"
+			AC_DEFINE(STAT_ST_BLOCKSIZE,512)
+		;;
+		*openbsd*)  BLDSHARED="true"
 			LDSHFLAGS="-shared"
 			DYNEXP="-Wl,-Bdynamic"
 			SONAMEFLAG="-Wl,-soname,"
@@ -924,12 +931,10 @@ case "$host_os" in
 			BLDSHARED="true"
 			LDSHFLAGS="-Wl,-bexpall,-bM:SRE,-bnoentry"
 			DYNEXP="-Wl,-brtl,-bexpall"
-			if test "${GCC}" = "yes"; then
-				PICFLAG="-O2"
-			else
-			PICFLAG="-O2 -qmaxmem=6000"
+			PICFLAG="-O2"
+			if test "${GCC}" != "yes"; then
 				## for funky AIX compiler using strncpy()
-				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT"
+				CFLAGS="$CFLAGS -D_LINUX_SOURCE_COMPAT -qmaxmem=32000"
 			fi
 
 			AC_DEFINE(STAT_ST_BLOCKSIZE,DEV_BSIZE)
@@ -1974,7 +1979,7 @@ FOUND_KRB5=0
       CFLAGS="$CFLAGS -I$withval/include"
       CPPFLAGS="$CPPFLAGS -I$withval/include"
       LDFLAGS="$LDFLAGS -L$withval/lib"
-    FOUND_KRB5=1
+      FOUND_KRB5=1
       ;;
     esac ],
     AC_MSG_RESULT(no)
@@ -2777,23 +2782,17 @@ samba_cv_HAVE_BROKEN_LINUX_SENDFILE=yes,samba_cv_HAVE_BROKEN_LINUX_SENDFILE=no)]
 #include <sys/socket.h>
 #include <sys/uio.h>],
 [\
-#define NULL (void *)0
-	int fromfd, tofd, ret, total;
+	int fromfd, tofd;
 	off_t offset, nwritten;
-	struct sf_hdtr {
-		struct iovec *headers;
-		int hdr_cnt;
-		struct iovec *trailers;
-		int trl_cnt;
-	} hdr;
+	struct sf_hdtr hdr;
 	struct iovec hdtrl;
-	hdr.headers = &hdtrl;
-	hdr.hdr_cnt = 1;
-	hdr.trailers = NULL;
-	hdr.trl_cnt = 0;
+	hdr->headers = &hdtrl;
+	hdr->hdr_cnt = 1;
+	hdr->trailers = NULL;
+	hdr->trl_cnt = 0;
 	hdtrl.iov_base = NULL;
 	hdtrl.iov_len = 0;
-	ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
+	int ret = sendfile(fromfd, tofd, offset, total, &hdr, &nwritten, 0);
 ],
 samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 
