@@ -189,8 +189,10 @@ typedef enum krb5_key_usage {
     /* initiator seal in GSSAPI CFX krb5 mechanism */
     KRB5_KU_SAM_CHECKSUM = 25,
     /* Checksum for the SAM-CHECKSUM field */
-    KRB5_KU_SAM_ENC_TRACK_ID = 26
+    KRB5_KU_SAM_ENC_TRACK_ID = 26,
     /* Encryption of the SAM-TRACK-ID field */
+    KRB5_KU_SAM_ENC_NONCE_SAD = 27
+    /* Encryption of the SAM-NONCE-OR-SAD field */
 } krb5_key_usage;
 
 typedef krb5_key_usage krb5_keyusage;
