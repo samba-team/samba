@@ -101,7 +101,7 @@ static void registry_load_root()
 		gtk_tree_store_set (store_keys,
 					    &iter, 
 						0,
-						root->hive->name,
+						root->hive->name?root->hive->name:"",
 						1,
 						root,
 						-1);
