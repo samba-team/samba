@@ -1348,6 +1348,7 @@ sub ParseFunctionElementPull($$)
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
 			pidl "\tNDR_CHECK(ndr_pull_ptr(ndr, &_ptr_$e->{NAME}));\n";
+			pidl "\tr->$inout.$e->{NAME} = NULL;\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
