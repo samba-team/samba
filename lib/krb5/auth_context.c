@@ -161,8 +161,8 @@ void
 krb5_free_keyblock(krb5_context context,
 		   krb5_keyblock *keyblock)
 {
-  krb5_data_free (&keyblock->contents);
-  free (keyblock);
+    memset(keyblock->contents.data, 0, keyblock->contents.length);
+    krb5_data_free (&keyblock->contents);
 }
 
 krb5_error_code
