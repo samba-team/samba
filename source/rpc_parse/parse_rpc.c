@@ -86,21 +86,21 @@ interface/version dce/rpc pipe identification
 	}, 0x00                             \
 }
 
-#define SYNT_NETLOGON_V1                    \
-{                                           \
-	{                                   \
-		0x12345678, 0x1234, 0xabcd, \
-		{ 0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0xcf, 0xfb }    \
-	}, 0x01                             \
-}
-
 #define SYNT_SAMR_V1                        \
 {                                           \
 	{                                   \
 		0x12345778, 0x1234, 0xabcd, \
 		{ 0xef, 0x00, 0x01, 0x23,   \
 		0x45, 0x67, 0x89, 0xac }    \
+	}, 0x01                             \
+}
+
+#define SYNT_NETLOGON_V1                    \
+{                                           \
+	{                                   \
+		0x12345678, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0xcf, 0xfb }    \
 	}, 0x01                             \
 }
 
@@ -200,7 +200,7 @@ BOOL make_rpc_hdr(RPC_HDR * hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 }
 
 /*******************************************************************
-reads or writes an RPC_HDR structure.
+ Reads or writes an RPC_HDR structure.
 ********************************************************************/
 BOOL smb_io_rpc_hdr(char *desc, RPC_HDR * rpc, prs_struct * ps, int depth)
 {
@@ -417,24 +417,23 @@ creates an RPC_HDR_RB structure.
 ********************************************************************/
 BOOL make_rpc_hdr_rb(RPC_HDR_RB * rpc,
 		     uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-		     uint8 num_elements, uint16 context_id,
-		     uint8 num_syntaxes, RPC_IFACE * abstract,
-		     RPC_IFACE * transfer)
+		     uint8 num_elements, uint16 context_id, uint8 num_syntaxes,
+		     RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	if (rpc == NULL)
 		return False;
 
-	make_rpc_hdr_bba(&(rpc->bba), max_tsize, max_rsize, assoc_gid);
+	make_rpc_hdr_bba(&rpc->bba, max_tsize, max_rsize, assoc_gid);
 
 	rpc->num_elements = num_elements;	/* the number of elements (0x1) */
 	rpc->context_id = context_id;	/* presentation context identifier (0x0) */
 	rpc->num_syntaxes = num_syntaxes;	/* the number of syntaxes (has always been 1?)(0x1) */
 
 	/* num and vers. of interface client is using */
-	memcpy(&(rpc->abstract), abstract, sizeof(rpc->abstract));
+	rpc->abstract = *abstract;
 
 	/* num and vers. of interface to use for replies */
-	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
+	rpc->transfer = *transfer;
 
 	return True;
 }
@@ -451,15 +450,18 @@ BOOL smb_io_rpc_hdr_rb(char *desc, RPC_HDR_RB * rpc, prs_struct * ps,
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_rb");
 	depth++;
 
-	smb_io_rpc_hdr_bba("", &(rpc->bba), ps, depth);
+	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
+		return False;
 
 	prs_uint8("num_elements", ps, depth, &rpc->num_elements);
 	prs_align(ps);
 	prs_uint16("context_id  ", ps, depth, &rpc->context_id);
 	prs_uint8("num_syntaxes", ps, depth, &rpc->num_syntaxes);
 
-	smb_io_rpc_iface("", &(rpc->abstract), ps, depth);
-	smb_io_rpc_iface("", &(rpc->transfer), ps, depth);
+	if(!smb_io_rpc_iface("", &rpc->abstract, ps, depth))
+		return False;
+	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
+		return False;
 
 	return True;
 }
@@ -531,7 +533,7 @@ BOOL make_rpc_hdr_ba(RPC_HDR_BA * rpc,
 	make_rpc_results(&(rpc->res), num_results, result, reason);
 
 	/* the transfer syntax from the request */
-	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
+	rpc->transfer = *transfer;
 
 	return True;
 }
@@ -548,10 +550,14 @@ BOOL smb_io_rpc_hdr_ba(char *desc, RPC_HDR_BA * rpc, prs_struct * ps,
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_ba");
 	depth++;
 
-	smb_io_rpc_hdr_bba("", &(rpc->bba), ps, depth);
-	smb_io_rpc_addr_str("", &(rpc->addr), ps, depth);
-	smb_io_rpc_results("", &(rpc->res), ps, depth);
-	smb_io_rpc_iface("", &(rpc->transfer), ps, depth);
+	if(!smb_io_rpc_hdr_bba("", &rpc->bba, ps, depth))
+		return False;
+	if(!smb_io_rpc_addr_str("", &rpc->addr, ps, depth))
+		return False;
+	if(!smb_io_rpc_results("", &rpc->res, ps, depth))
+		return False;
+	if(!smb_io_rpc_iface("", &rpc->transfer, ps, depth))
+		return False;
 
 	return True;
 }
