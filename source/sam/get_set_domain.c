@@ -30,16 +30,16 @@ NTSTATUS sam_get_domain_sid(SAM_DOMAIN_HANDLE *domain, DOM_SID **sid)
 {
 	if (!domain || !sid) return NT_STATUS_UNSUCCESSFUL;
 
-	*sid = &domain->private.sid;
+	*sid = &(domain->private.sid);
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_get_domain_num_users(SAM_DOMAIN_HANDLE *domain, uint32 *num_users)
+NTSTATUS sam_get_domain_num_accounts(SAM_DOMAIN_HANDLE *domain, uint32 *num_accounts)
 {
-	if (!domain || !num_users) return NT_STATUS_UNSUCCESSFUL;
+	if (!domain || !num_accounts) return NT_STATUS_UNSUCCESSFUL;
 
-	*num_users = domain->private.num_users;
+	*num_accounts = domain->private.num_accounts;
 
 	return NT_STATUS_OK;
 }
@@ -71,29 +71,11 @@ NTSTATUS sam_get_domain_name(SAM_DOMAIN_HANDLE *domain, char **domain_name)
 	return NT_STATUS_OK;
 }
 
-NTSTATUS sam_set_domain_name(SAM_DOMAIN_HANDLE *domain, char *domain_name)
-{
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
-
-	domain->private.name = talloc_strdup(domain->mem_ctx, domain_name);
-
-	return NT_STATUS_OK;
-}
-
 NTSTATUS sam_get_domain_server(SAM_DOMAIN_HANDLE *domain, char **server_name)
 {
 	if (!domain || !server_name) return NT_STATUS_UNSUCCESSFUL;
 
 	*server_name = domain->private.servername;
-
-	return NT_STATUS_OK;
-}
-
-NTSTATUS sam_set_domain_server(SAM_DOMAIN_HANDLE *domain, char *server_name)
-{
-	if (!domain) return NT_STATUS_UNSUCCESSFUL;
-
-	domain->private.servername = talloc_strdup(domain->mem_ctx, server_name);
 
 	return NT_STATUS_OK;
 }
@@ -182,6 +164,16 @@ NTSTATUS sam_get_domain_login_pwdchange(SAM_DOMAIN_HANDLE *domain, BOOL *login_p
 
 /* Set */
 
+NTSTATUS sam_set_domain_name(SAM_DOMAIN_HANDLE *domain, char *domain_name)
+{
+	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+
+	domain->private.name = talloc_strdup(domain->mem_ctx, domain_name);
+
+	return NT_STATUS_OK;
+}
+
+
 NTSTATUS sam_set_domain_max_pwdage(SAM_DOMAIN_HANDLE *domain, NTTIME max_passwordage)
 {
 	if (!domain) return NT_STATUS_UNSUCCESSFUL;
@@ -258,6 +250,15 @@ NTSTATUS sam_set_domain_login_pwdchange(SAM_DOMAIN_HANDLE *domain, BOOL login_pw
 	if (!domain) return NT_STATUS_UNSUCCESSFUL;
 
 	domain->private.login_pwdchange = login_pwdchange;
+
+	return NT_STATUS_OK;
+}
+
+NTSTATUS sam_set_domain_server(SAM_DOMAIN_HANDLE *domain, char *server_name)
+{
+	if (!domain) return NT_STATUS_UNSUCCESSFUL;
+
+	domain->private.servername = talloc_strdup(domain->mem_ctx, server_name);
 
 	return NT_STATUS_OK;
 }

@@ -27,65 +27,70 @@
 #define DBGC_CLASS DBGC_SAM
 
 /************************************************************
- Fill the SAM_USER_HANDLE with default values.
+ Fill the SAM_ACCOUNT_HANDLE with default values.
  ***********************************************************/
 
-static void sam_fill_default_user(SAM_USER_HANDLE *user)
+static void sam_fill_default_account(SAM_ACCOUNT_HANDLE *account)
 {
-	ZERO_STRUCT(user->private); /* Don't touch the talloc context */
+	ZERO_STRUCT(account->private); /* Don't touch the talloc context */
 
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
-	user->private.init_flag		    = FLAG_SAM_UNINIT;
+	account->private.init_flag		    = FLAG_SAM_UNINIT;
 
 	/* FIXME: We should actually call get_nt_time_max() or sthng 
 	 * here */
-	unix_to_nt_time(&(user->private.logoff_time),get_time_t_max());
-	unix_to_nt_time(&(user->private.kickoff_time),get_time_t_max());
-	unix_to_nt_time(&(user->private.pass_must_change_time),get_time_t_max());
-	user->private.unknown_1 = 0x00ffffff; 	/* don't know */
-	user->private.logon_divs = 168; 	/* hours per week */
-	user->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
-	memset(user->private.hours, 0xff, user->private.hours_len); /* available at all hours */
-	user->private.unknown_2 = 0x00000000; /* don't know */
-	user->private.unknown_3 = 0x000004ec; /* don't know */
+	unix_to_nt_time(&(account->private.logoff_time),get_time_t_max());
+	unix_to_nt_time(&(account->private.kickoff_time),get_time_t_max());
+	unix_to_nt_time(&(account->private.pass_must_change_time),get_time_t_max());
+	account->private.unknown_1 = 0x00ffffff; 	/* don't know */
+	account->private.logon_divs = 168; 	/* hours per week */
+	account->private.hours_len = 21; 		/* 21 times 8 bits = 168 */
+	memset(account->private.hours, 0xff, account->private.hours_len); /* available at all hours */
+	account->private.unknown_2 = 0x00000000; /* don't know */
+	account->private.unknown_3 = 0x000004ec; /* don't know */
 }	
 
-static void destroy_sam_talloc(SAM_USER_HANDLE **user) 
+static void destroy_sam_talloc(SAM_ACCOUNT_HANDLE **account) 
 {
-	if (*user) {
-		talloc_destroy((*user)->mem_ctx);
-		*user = NULL;
+	if (*account) {
+		data_blob_clear_free(&((*account)->private.lm_pw));
+		data_blob_clear_free(&((*account)->private.nt_pw));
+		if((*account)->private.plaintext_pw!=NULL)
+			memset((*account)->private.plaintext_pw,'\0',strlen((*account)->private.plaintext_pw));
+
+		talloc_destroy((*account)->mem_ctx);
+		*account = NULL;
 	}
 }
 
 
 /**********************************************************************
- Alloc memory and initialises a SAM_USER_HANDLE on supplied mem_ctx.
+ Alloc memory and initialises a SAM_ACCOUNT_HANDLE on supplied mem_ctx.
 ***********************************************************************/
 
-NTSTATUS sam_init_user_talloc(TALLOC_CTX *mem_ctx, SAM_USER_HANDLE **user)
+NTSTATUS sam_init_account_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT_HANDLE **account)
 {
-	SMB_ASSERT(*user != NULL);
+	SMB_ASSERT(*account != NULL);
 
 	if (!mem_ctx) {
-		DEBUG(0,("sam_init_user_talloc: mem_ctx was NULL!\n"));
+		DEBUG(0,("sam_init_account_talloc: mem_ctx was NULL!\n"));
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	*user=(SAM_USER_HANDLE *)talloc(mem_ctx, sizeof(SAM_USER_HANDLE));
+	*account=(SAM_ACCOUNT_HANDLE *)talloc(mem_ctx, sizeof(SAM_ACCOUNT_HANDLE));
 
-	if (*user==NULL) {
-		DEBUG(0,("sam_init_user_talloc: error while allocating memory\n"));
+	if (*account==NULL) {
+		DEBUG(0,("sam_init_account_talloc: error while allocating memory\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	(*user)->mem_ctx = mem_ctx;
+	(*account)->mem_ctx = mem_ctx;
 
-	(*user)->free_fn = NULL;
+	(*account)->free_fn = NULL;
 
-	sam_fill_default_user(*user);
+	sam_fill_default_account(*account);
 	
 	return NT_STATUS_OK;
 }
@@ -95,77 +100,78 @@ NTSTATUS sam_init_user_talloc(TALLOC_CTX *mem_ctx, SAM_USER_HANDLE **user)
  Alloc memory and initialises a struct sam_passwd.
  ************************************************************/
 
-NTSTATUS sam_init_user(SAM_USER_HANDLE **user)
+NTSTATUS sam_init_account(SAM_ACCOUNT_HANDLE **account)
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	
-	mem_ctx = talloc_init_named("passdb internal SAM_USER_HANDLE allocation");
+	mem_ctx = talloc_init_named("passdb internal SAM_ACCOUNT_HANDLE allocation");
 
 	if (!mem_ctx) {
-		DEBUG(0,("sam_init_user: error while doing talloc_init()\n"));
+		DEBUG(0,("sam_init_account: error while doing talloc_init()\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (!NT_STATUS_IS_OK(nt_status = sam_init_user_talloc(mem_ctx, user))) {
+	if (!NT_STATUS_IS_OK(nt_status = sam_init_account_talloc(mem_ctx, account))) {
 		talloc_destroy(mem_ctx);
 		return nt_status;
 	}
 	
-	(*user)->free_fn = destroy_sam_talloc;
+	(*account)->free_fn = destroy_sam_talloc;
 
 	return NT_STATUS_OK;
 }
 
 /**
- * Free the contents of the SAM_USER_HANDLE, but not the structure.
+ * Free the contents of the SAM_ACCOUNT_HANDLE, but not the structure.
  *
  * Also wipes the LM and NT hashes and plaintext password from 
  * memory.
  *
- * @param user SAM_USER_HANDLE to free members of.
+ * @param account SAM_ACCOUNT_HANDLE to free members of.
  **/
 
-static void sam_free_user_contents(SAM_USER_HANDLE *user)
+static void sam_free_account_contents(SAM_ACCOUNT_HANDLE *account)
 {
 
 	/* Kill off sensitive data.  Free()ed by the
 	   talloc mechinism */
 
-	data_blob_clear_free(&(user->private.lm_pw));
-	data_blob_clear_free(&(user->private.nt_pw));
-	data_blob_clear_free(&(user->private.plaintext_pw));
+	data_blob_clear_free(&(account->private.lm_pw));
+	data_blob_clear_free(&(account->private.nt_pw));
+	if (account->private.plaintext_pw)
+		memset(account->private.plaintext_pw,'\0',strlen(account->private.plaintext_pw));
 }
 
 
 /************************************************************
- Reset the SAM_USER_HANDLE and free the NT/LM hashes.
+ Reset the SAM_ACCOUNT_HANDLE and free the NT/LM hashes.
  ***********************************************************/
 
-NTSTATUS sam_reset_sam(SAM_USER_HANDLE *user)
+NTSTATUS sam_reset_sam(SAM_ACCOUNT_HANDLE *account)
 {
-	SMB_ASSERT(user != NULL);
+	SMB_ASSERT(account != NULL);
 	
-	sam_free_user_contents(user);
+	sam_free_account_contents(account);
 
-	sam_fill_default_user(user);
+	sam_fill_default_account(account);
 
 	return NT_STATUS_OK;
 }
 
 
 /************************************************************
- Free the SAM_USER_HANDLE and the member pointers.
+ Free the SAM_ACCOUNT_HANDLE and the member pointers.
  ***********************************************************/
 
-NTSTATUS sam_free_user(SAM_USER_HANDLE **user)
+NTSTATUS sam_free_account(SAM_ACCOUNT_HANDLE **account)
 {
-	SMB_ASSERT(*user != NULL);
+	SMB_ASSERT(*account != NULL);
 
-	sam_free_user_contents(*user);
+	sam_free_account_contents(*account);
 	
-	if ((*user)->free_fn) {
-		(*user)->free_fn(user);
+	if ((*account)->free_fn) {
+		(*account)->free_fn(account);
 	}
 
 	return NT_STATUS_OK;	

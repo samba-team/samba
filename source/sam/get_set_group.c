@@ -31,7 +31,7 @@ NTSTATUS sam_get_group_sid(const SAM_GROUP_HANDLE *group, DOM_SID **sid)
 {
 	if (!group || !sid) return NT_STATUS_UNSUCCESSFUL;
 
-	*sid = &group->private.sid;
+	*sid = &(group->private.sid);
 
 	return NT_STATUS_OK;
 }
