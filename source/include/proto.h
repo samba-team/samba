@@ -1985,6 +1985,10 @@ BOOL do_wks_query_info(struct cli_state *cli,
 
 /*The following definitions come from  rpc_client/msrpc_spoolss.c  */
 
+void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
+			PORT_INFO_2 **info);
+void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned, 
+			PORT_INFO_1 **info);
 BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, 
 				 uint32 level, PRINTER_INFO_CTR ctr);
 BOOL msrpc_spoolss_enum_ports(char* srv_name, 
@@ -3188,6 +3192,7 @@ uint32 cmd_spoolss_getprinterdata(struct client_info *info, int argc, char *argv
 uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_enumprinterdrivers(struct client_info *info, int argc, char *argv[]);
 uint32 cmd_spoolss_getprinterdriverdir(struct client_info *info, int argc, char *argv[]);
+uint32 cmd_spoolss_addprinterex(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/display_sec.c  */
 
