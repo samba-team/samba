@@ -21,9 +21,11 @@
 */
 
 #include "includes.h"
+#include "events.h"
 #include "dlinklist.h"
 #include "smb_server/smb_server.h"
 #include "process_model.h"
+#include "include/system/wait.h"
 #include "pthread.h"
 #ifdef HAVE_BACKTRACE
 #include "execinfo.h"
@@ -50,7 +52,7 @@ static int thread_get_id(struct smbsrv_request *req)
   called when a listening socket becomes readable
 */
 static void thread_accept_connection(struct event_context *ev, struct fd_event *srv_fde, 
-			      time_t t, uint16_t flags)
+			      struct timeval t, uint16_t flags)
 {		
 	NTSTATUS status;
 	struct socket_context *sock;
