@@ -2,9 +2,7 @@
 
 # This file goes through all the necessary steps to build a release package.
 # syntax:
-#     mkrelease.sh [5] [clean] [targets ....]
-#
-# You may specify 5 to build for IRIX 5.3
+#     mkrelease.sh [clean]
 #
 # You can specify clean to do a make clean before building. Make clean
 # will also run configure and generate the required Makefile.
@@ -23,21 +21,6 @@ fi
 
 if [ "$1" = "clean" ]; then
   doclean=$1
-  shift
-elif [ "$1" = "5" ]; then
-  SGI_ABI=-32
-  ISA=""
-  shift
-fi
-
-# check again in case they put the args in the wrong order
-
-if [ "$1" = "clean" ]; then
-  doclean=$1
-  shift
-elif [ "$1" = "5" ]; then
-  SGI_ABI=-32
-  ISA=""
   shift
 fi
 
@@ -80,7 +63,17 @@ fi
 #
 echo Making binaries
 
-make "CFLAGS=-O -g3" $*
+make clean
+make "CFLAGS=-O -g3 -D WITH_PROFILE" CHECK bin/smbd bin/nmbd
+errstat=$?
+if [ $errstat -ne 0 ]; then
+  echo "Error $errstat building profile sources\n";
+  exit $errstat;
+fi
+mv  bin/smbd bin/smbd.profile
+mv  bin/nmbd bin/nmbd.profile
+make clean
+make "CFLAGS=-O -g3" all
 errstat=$?
 if [ $errstat -ne 0 ]; then
   echo "Error $errstat building sources\n";

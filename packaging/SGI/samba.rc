@@ -23,9 +23,18 @@ else		# For a quiet startup and shutdown
 fi
 
 case $1 in
+'profile')
+	if $IS_ON samba && test -x $SAMBAD; then
+	    $KILLALL -15 smbd nmbd smbd.profile nmbd.profile
+	    $ECHO "Samba:\c"
+	    $SAMBAD.profile $SAMBA_OPTS -D; $ECHO " smbd.profile\c"
+	    $NMBD.profile $NMBD_OPTS -D; $ECHO " nmbd.profile\c"
+	    $ECHO "."
+	fi
+	;;
 'start')
 	if $IS_ON samba && test -x $SAMBAD; then
-	    $KILLALL -15 smbd nmbd
+	    $KILLALL -15 smbd nmbd smbd.profile nmbd.profile
 	    $ECHO "Samba:\c"
 	    $SAMBAD $SAMBA_OPTS -D; $ECHO " smbd\c"
 	    $NMBD $NMBD_OPTS -D; $ECHO " nmbd\c"
@@ -34,7 +43,7 @@ case $1 in
 	;;
 'stop')
 	$ECHO "Stopping Samba Servers."
-	$KILLALL -15 smbd nmbd
+	$KILLALL -15 smbd nmbd smbd.profile nmbd.profile
 	exit 0
 	;;
 *)
