@@ -1,3 +1,15 @@
+2004-05-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb-ldap.c (LDAP_message2entry): fix [] test From:
+	Andrew Bartlett <abartlet@samba.org>
+	
+	* lib/hdb/hdb-ldap.c (LDAP_message2entry): remove bogus length
+	check From: Andrew Bartlett <abartlet@samba.org>
+	
+	* lib/hdb/hdb-ldap.c (LDAP_message2entry): in the sambaNTPassword
+	case, make sure ent->etypes are allocated, From: Andrew Bartlett
+	<abartlet@samba.org>
+
 2004-05-14  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: move "setpag if (argc < 1)" to common path
