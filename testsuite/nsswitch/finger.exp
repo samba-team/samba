@@ -1,0 +1,27 @@
+#
+# @(#) Test default domain users resolve using the finger command
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+# Look up domain users using finger.  This should test getpwnam()
+
+foreach { user } $domain_users {
+    if {[util_test "finger" "-m $user" "" "no such user"] < 1} {
+        fail "finger -m $user"
+    } else {
+        pass "finger -m $user"
+    }
+}
+
+# Run finger without the -m to also test set/get/endpwent()
+
+foreach { user } $domain_users {
+    if {[util_test "finger" "$user" "" "no such user"] < 1} {
+        fail "finger $user"
+    } else {
+        pass "finger $user"
+    }
+}

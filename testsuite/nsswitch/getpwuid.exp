@@ -1,0 +1,54 @@
+#
+# @(#) Test reverse lookup of user ids from getent match getpwuid() output
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+# Compile getpwuid.c
+
+set output [target_compile "$srcdir/$subdir/getpwuid.c" \
+        "$srcdir/$subdir/getpwuid" executable {additional_flags="-g"}]
+
+if {$output != ""} {
+    perror "compile getpwuid"
+    puts $output
+    return
+}
+
+# Get list of uids using getent
+
+set output [util_start "getent" "passwd" ""]
+set got_entries 0
+
+foreach {line} [split $output "\n"] {
+
+    # Process user
+
+    set pwd_entry [split $line ":"]
+    set user [lindex $pwd_entry 0]
+
+    if {[regexp "^($domain)/" $user]} {
+
+        set got_entries 1
+
+        # Only lookup winbindd users
+
+        set uid [lindex $pwd_entry 2]
+        set gid [lindex $pwd_entry 3]
+
+        # Test lookup of uid succeeds
+
+        set output [util_start "$srcdir/$subdir/getpwuid" "$uid" ""]
+        if {[regexp "PASS:" $output]} {
+            pass "getpwuid $uid ($user)"
+        } else {
+            fail "getpwuid $uid ($user)"
+        }            
+    }
+}
+
+if {!$got_entries} {
+    perror "No domain users returned from getent"
+}
