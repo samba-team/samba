@@ -212,8 +212,8 @@ hdb_init_db(krb5_context context, HDB *db)
 #ifdef HAVE_DLOPEN
 
  /*
- * Load a dynamic backend from /usr/heimdal/lib/hdb_XXX.so,
- * looking for the hdb_XXX_create symbol.
+ * Load a dynamic backend from /usr/heimdal/lib/hdb_NAME.so,
+ * looking for the hdb_NAME_create symbol.
  */
 
 static const struct hdb_method *
