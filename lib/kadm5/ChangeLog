@@ -1,3 +1,11 @@
+2002-08-26  Assar Westerlund  <assar@kth.se>
+
+	* ipropd_slave.c (receive_everything): type-correctness calling
+	_krb5_get_int
+
+	* context_s.c (find_db_spec): const-correctness in parameters to
+	krb5_config_get_next
+
 2002-08-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* private.h: rename header file flag macro

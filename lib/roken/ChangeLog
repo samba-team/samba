@@ -1,3 +1,8 @@
+2002-08-26  Assar Westerlund  <assar@kth.se>
+
+	* roken.h.in: add prototypes for str, unvis functions
+	* resolve.h: add fallback definition for T_AAAA
+
 2002-08-22  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken.h.in: we may need a prototype for strndup

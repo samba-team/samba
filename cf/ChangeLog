@@ -1,3 +1,8 @@
+2002-08-26  Assar Westerlund  <assar@kth.se>
+
+	* roken-frag.m4: test for the vis, strvis functions requiring
+	prototypes
+
 2002-08-20  Johan Danielsson  <joda@pdc.kth.se>
 
 	* roken-frag.m4: HAVE_TYPE instead of CHECK_TYPE ssize_t
