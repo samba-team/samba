@@ -90,7 +90,6 @@ struct get_dc_name_cache {
 	struct get_dc_name_cache *prev, *next;
 };
 
-
 /*
   find the DC for a domain using methods appropriate for a ADS domain
 */
@@ -99,14 +98,12 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	ADS_STRUCT *ads;
 	const char *realm = domain;
 
-	if (strcasecmp(realm, lp_workgroup()) == 0) {
+	if (strcasecmp(realm, lp_workgroup()) == 0)
 		realm = lp_realm();
-	}
 
 	ads = ads_init(realm, domain, NULL);
-	if (!ads) {
+	if (!ads)
 		return False;
-	}
 
 	/* we don't need to bind, just connect */
 	ads->auth.flags |= ADS_AUTH_NO_BIND;
@@ -120,9 +117,8 @@ static BOOL cm_ads_find_dc(const char *domain, struct in_addr *dc_ip, fstring sr
 	ads_connect(ads);
 #endif
 
-	if (!ads->config.realm) {
+	if (!ads->config.realm)
 		return False;
-	}
 
 	fstrcpy(srv_name, ads->config.ldap_server_name);
 	strupper(srv_name);
@@ -194,17 +190,16 @@ static BOOL cm_get_dc_name(const char *domain, fstring srv_name, struct in_addr 
 	zero_ip(&dc_ip);
 
 	ret = False;
-	if (lp_security() == SEC_ADS) {
+	if (lp_security() == SEC_ADS)
 		ret = cm_ads_find_dc(domain, &dc_ip, srv_name);
-	}
+
 	if (!ret) {
 		/* fall back on rpc methods if the ADS methods fail */
 		ret = rpc_find_dc(domain, srv_name, &dc_ip);
 	}
 
-	if (!ret) {
+	if (!ret)
 		return False;
-	}
 
 	/* We have a name so make the cache entry positive now */
 	fstrcpy(dcc->srv_name, srv_name);
@@ -370,16 +365,9 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 
 	for (i = 0; retry && (i < 3); i++) {
 		
-		if (!secrets_named_mutex(new_conn->controller, 10)) {
-			DEBUG(0,("cm_open_connection: mutex grab failed for %s\n", new_conn->controller));
-			continue;
-		}
-
 		result = cli_full_connection(&new_conn->cli, global_myname(), new_conn->controller, 
 			&dc_ip, 0, "IPC$", "IPC", ipc_username, ipc_domain, 
 			ipc_password, 0, &retry);
-
-		secrets_named_mutex_release(new_conn->controller);
 
 		if (NT_STATUS_IS_OK(result))
 			break;
@@ -405,7 +393,7 @@ static NTSTATUS cm_open_connection(const char *domain, const int pipe_index,
 		 * specific UUID right now, i'm not going to bother.  --jerry
 		 */
 		if ( !is_win2k_pipe(pipe_index) )
-		add_failed_connection_entry(new_conn, result);
+			add_failed_connection_entry(new_conn, result);
 		cli_shutdown(new_conn->cli);
 		return result;
 	}
@@ -456,9 +444,8 @@ static NTSTATUS get_connection_from_cache(const char *domain, const char *pipe_n
 		if (strequal(conn->domain, domain) && 
 		    strequal(conn->pipe_name, pipe_name)) {
 			if (!connection_ok(conn)) {
-				if (conn->cli) {
+				if (conn->cli)
 					cli_shutdown(conn->cli);
-				}
 				ZERO_STRUCT(conn_temp);
 				conn_temp.next = conn->next;
 				DLIST_REMOVE(cm_conns, conn);
@@ -504,8 +491,7 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	ZERO_STRUCT( ctr );
 	
 	
-	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) 
-	{
+	if ( !NT_STATUS_IS_OK(result = cm_open_connection(domain, PI_LSARPC_DS, &conn)) ) {
 		DEBUG(5, ("cm_check_for_native_mode_win2k: Could not open a connection to %s for PIPE_LSARPC (%s)\n", 
 			  domain, nt_errstr(result)));
 		return False;
@@ -513,18 +499,15 @@ BOOL cm_check_for_native_mode_win2k( const char *domain )
 	
 	if ( conn.cli ) {
 		if ( !NT_STATUS_IS_OK(cli_ds_getprimarydominfo( conn.cli, 
-			conn.cli->mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr)) ) 
-		{
+				conn.cli->mem_ctx, DsRolePrimaryDomainInfoBasic, &ctr)) ) {
 			ret = False;
 			goto done;
 		}
 	}
 				
 	if ( (ctr.basic->flags & DSROLE_PRIMARY_DS_RUNNING) 
-		&& !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
-	{
+			&& !(ctr.basic->flags & DSROLE_PRIMARY_DS_MIXED_MODE) )
 		ret = True;
-	}
 
 done:
 	if ( conn.cli )
@@ -546,9 +529,8 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
 		return NULL;
-	}
 
 	/* This *shitty* code needs scrapping ! JRA */
 	if (policy_handle_is_valid(&conn->pol)) {
@@ -563,9 +545,8 @@ CLI_POLICY_HND *cm_get_lsa_handle(const char *domain)
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn))) {
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_LSARPC, &conn)))
 				return NULL;
-			}
 
 			result = cli_lsa_open_policy(conn->cli, conn->cli->mem_ctx, False, 
 						     des_access, &conn->pol);
@@ -596,9 +577,8 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 
 	/* Look for existing connections */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
 		return NULL;
-	}
 	
 	/* This *shitty* code needs scrapping ! JRA */
 	if (policy_handle_is_valid(&conn->pol)) {
@@ -612,9 +592,8 @@ CLI_POLICY_HND *cm_get_sam_handle(char *domain)
 	if (!NT_STATUS_IS_OK(result)) {
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) { /* Try again, if the remote host disapeared */
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn))) {
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_SAMR, &conn)))
 				return NULL;
-			}
 
 			result = cli_samr_connect(conn->cli, conn->cli->mem_ctx,
 						  des_access, &conn->pol);
@@ -870,18 +849,28 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 	NTSTATUS result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 	struct winbindd_cm_conn *conn;
 	uint32 neg_flags = 0x000001ff;
+	fstring srv_name;
+	struct in_addr dc_ip;
 
-	if (!cli) {
+	if (!cli)
 		return NT_STATUS_INVALID_PARAMETER;
+
+	if (!cm_get_dc_name(domain, srv_name, &dc_ip))
+		return NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+
+	if (!secrets_named_mutex(srv_name, 10)) {
+		DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", srv_name));
+		return NT_STATUS_POSSIBLE_DEADLOCK;
 	}
 
 	/* Open an initial conection */
 
-	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn))) {
+	if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
 		return result;
-	}
 	
 	result = cli_nt_setup_creds(conn->cli, get_sec_chan(), trust_passwd, &neg_flags, 2);
+
+	secrets_named_mutex_release(srv_name);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		DEBUG(0, ("error connecting to domain password server: %s\n",
@@ -889,12 +878,19 @@ NTSTATUS cm_get_netlogon_cli(const char *domain, const unsigned char *trust_pass
 		
 		/* Hit the cache code again.  This cleans out the old connection and gets a new one */
 		if (conn->cli->fd == -1) {
-			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn))) {
-				return result;
+
+			if (!secrets_named_mutex(srv_name, 10)) {
+				DEBUG(0,("cm_get_netlogon_cli: mutex grab failed for %s\n", srv_name));
+				return NT_STATUS_POSSIBLE_DEADLOCK;
 			}
+
+			if (!NT_STATUS_IS_OK(result = get_connection_from_cache(domain, PIPE_NETLOGON, &conn)))
+				return result;
 			
 			/* Try again */
 			result = cli_nt_setup_creds( conn->cli, get_sec_chan(),trust_passwd, &neg_flags, 2);
+
+			secrets_named_mutex_release(srv_name);
 		}
 		
 		if (!NT_STATUS_IS_OK(result)) {
