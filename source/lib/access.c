@@ -201,8 +201,14 @@ BOOL allow_access(char *deny_list,char *allow_list,
 
 	/* if it is loopback then always allow unless specifically denied */
 	if (strcmp(caddr, "127.0.0.1") == 0) {
+		/*
+		 * If 127.0.0.1 matches both allow and deny then allow.
+		 * Patch from Steve Langasek vorlon@netexpress.net.
+		 */
 		if (deny_list && 
-		    list_match(deny_list,(char *)client,client_match)) {
+			list_match(deny_list,(char *)client,client_match) &&
+				(!allow_list ||
+				!list_match(allow_list,(char *)client, client_match))) {
 			return False;
 		}
 		return True;
