@@ -24,6 +24,7 @@
 #include "rpc_parse.h"
 
 extern int DEBUGLEVEL;
+extern pstring global_myname;
 
 static TDB_CONTEXT *tdb; /* used for driver files */
 
@@ -35,6 +36,10 @@ static TDB_CONTEXT *tdb; /* used for driver files */
 
 /* we need to have a small set of default forms to support our
    default printer */
+static nt_forms_struct default_forms[] = {
+	{"Letter", 0x2, 0x34b5b, 0x44367, 0x0, 0x0, 0x34b5b, 0x44367},
+	{"A4", 0x2, 0x3354f, 0x4884e, 0x0, 0x0, 0x3354f, 0x4884e}
+};
 
 
 /****************************************************************************
@@ -77,7 +82,7 @@ int get_ntforms(nt_forms_struct **list)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, FORMS_PREFIX, strlen(FORMS_PREFIX)) != 0) continue;
 		
 		dbuf = tdb_fetch(tdb, kbuf);
@@ -96,6 +101,10 @@ int get_ntforms(nt_forms_struct **list)
 	}
 
 	/* we should never return a null forms list or NT gets unhappy */
+	if (n == 0) {
+		*list = (nt_forms_struct *)memdup(&default_forms[0], sizeof(default_forms));
+		n = sizeof(default_forms) / sizeof(default_forms[0]);
+	}
 	
 
 	return n;
@@ -219,7 +228,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 
 	for (kbuf = tdb_firstkey(tdb); 
 	     kbuf.dptr; 
-	     newkey = tdb_nextkey(tdb, kbuf), free(kbuf.dptr), kbuf=newkey) {
+	     newkey = tdb_nextkey(tdb, kbuf), safe_free(kbuf.dptr), kbuf=newkey) {
 		if (strncmp(kbuf.dptr, key, strlen(key)) != 0) continue;
 		
 		if((*list = Realloc(*list, sizeof(fstring)*(total+1))) == NULL)
@@ -236,7 +245,7 @@ int get_ntdrivers(fstring **list, char *architecture)
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-void get_short_archi(char *short_archi, char *long_archi)
+BOOL get_short_archi(char *short_archi, char *long_archi)
 {
 	struct table {
 		char *long_archi;
@@ -258,11 +267,12 @@ void get_short_archi(char *short_archi, char *long_archi)
 	DEBUG(107,("Getting architecture dependant directory\n"));
 	do {
 		i++;
-	} while ( (archi_table[i].long_archi!=NULL ) && strncmp(long_archi, archi_table[i].long_archi, strlen(long_archi)) );
+	} while ( (archi_table[i].long_archi!=NULL ) &&
+	          StrCaseCmp(long_archi, archi_table[i].long_archi) );
 
-	if (archi_table[i].long_archi==NULL)
-	{
+	if (archi_table[i].long_archi==NULL) {
 		DEBUGADD(107,("Unknown architecture [%s] !\n", long_archi));
+		return FALSE;
 	}
 
 	StrnCpy (short_archi, archi_table[i].short_archi, strlen(archi_table[i].short_archi));
@@ -270,7 +280,47 @@ void get_short_archi(char *short_archi, char *long_archi)
 	DEBUGADD(108,("index: [%d]\n", i));
 	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
 	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
+	
+	return TRUE;
 }
+
+/****************************************************************************
+****************************************************************************/
+static void clean_up_driver_struct_level_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver)
+{
+}
+
+/****************************************************************************
+****************************************************************************/
+static void clean_up_driver_struct_level_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
+{
+
+}
+
+/****************************************************************************
+****************************************************************************/
+void clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, uint32 level)
+{
+	switch (level) {
+		case 3:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *driver;
+			driver=driver_abstract.info_3;
+			clean_up_driver_struct_level_3(driver);
+			break;
+		}
+		case 6:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver;
+			driver=driver_abstract.info_6;
+			clean_up_driver_struct_level_6(driver);
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+****************************************************************************/
 
 /****************************************************************************
 ****************************************************************************/
@@ -394,6 +444,8 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	ZERO_STRUCT(driver);
 
 	get_short_archi(architecture, in_arch);
+
+
 	slprintf(key, sizeof(key), "%s/%s/%s", DRIVERS_PREFIX, architecture, in_prt);
 
 	kbuf.dptr = key;
@@ -417,6 +469,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	while (len < dbuf.dsize) {
 		driver.dependentfiles = (fstring *)Realloc(driver.dependentfiles,
 							 sizeof(fstring)*(i+2));
+
 		len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "f", 
 				  driver.dependentfiles[i]);
 		i++;
@@ -424,6 +477,7 @@ static uint32 get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 	fstrcpy(driver.dependentfiles[i], "");
 
 	safe_free(dbuf.dptr);
+
 
 
 	return 0;
@@ -491,6 +545,7 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 
 	len += tdb_pack(buf+len, buflen-len, "fddddddddddddddddddddddp",
 		       nt_devmode->formname,
+
 		       nt_devmode->specversion,
 		       nt_devmode->driverversion,
 		       nt_devmode->size,
@@ -515,12 +570,14 @@ static int pack_devicemode(NT_DEVICEMODE *nt_devmode, char *buf, int buflen)
 		       nt_devmode->dithertype,
 		       nt_devmode->private);
 	
+	
 	if (nt_devmode->private) {
 		len += tdb_pack(buf+len, buflen-len, "B",
 				nt_devmode->driverextra,
 				nt_devmode->private);
 	}
 
+	DEBUG(8,("Packed devicemode [%s]\n", nt_devmode->formname));
 
 	return len;
 }
@@ -574,6 +631,8 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	char *buf;
 	int buflen, len, ret;
 	TDB_DATA kbuf, dbuf;
+	NTTIME time_nt;
+	time_t time_unix = time(NULL);
 	
 	/* 
 	 * in addprinter: no servername and the printer is the name
@@ -583,8 +642,8 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * Samba manages only local printers.
 	 * we currently don't support things like path=\\other_server\printer
 	 */
-	if (info->servername[0]!='\0')
-	{
+
+	if (info->servername[0]!='\0') {
 		trim_string(info->printername, info->servername, NULL);
 		trim_string(info->printername, "\\", NULL);
 		info->servername[0]='\0';
@@ -600,6 +659,9 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 	 * behind a SAMBA share.
 	 */
 
+	unix_to_nt_time(&time_nt, time_unix);
+	info->changeid=time_nt.low;
+	info->c_setprinter++;
 
 	buf = NULL;
 	buflen = 0;
@@ -649,7 +711,13 @@ static uint32 add_a_printer_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	ret = tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
 
+	if (ret == -1)
+		DEBUG(8, ("error updating printer to tdb on disk\n"));
+
 	safe_free(buf);
+
+	DEBUG(8,("packed printer [%s] with driver [%s] portname=[%s] len=%d\n", 
+		 info->sharename, info->drivername, info->portname, len));
 
 	return ret;
 }
@@ -693,8 +761,7 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 	if (current==NULL) return (False);
 	
 	if ( !strcmp(current->value, param->value) && 
-	    (strlen(current->value)==strlen(param->value)) )
-	{
+	    (strlen(current->value)==strlen(param->value)) ) {
 		DEBUG(109,("deleting first value\n"));
 		info_2->specific=current->next;
 		safe_free(current->data);
@@ -705,11 +772,9 @@ BOOL unlink_specific_param_if_exist(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_
 
 	current=previous->next;
 		
-	while ( current!=NULL )
-	{
+	while ( current!=NULL ) {
 		if (!strcmp(current->value, param->value) &&
-		    strlen(current->value)==strlen(param->value) )
-		{
+		    strlen(current->value)==strlen(param->value) ) {
 			DEBUG(109,("deleting current value\n"));
 			previous->next=current->next;
 			safe_free(current);
@@ -746,16 +811,91 @@ static void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
  Malloc and return an NT devicemode.
 ****************************************************************************/
 
+NT_DEVICEMODE *init_devicemode(NT_DEVICEMODE *nt_devmode)
+{
+/*
+ * should I init this ones ???
+	nt_devmode->devicename
+*/
+
+
+
+
+
+	fstrcpy(nt_devmode->formname, "A4");
+
+	nt_devmode->specversion      = 0x0401;
+	nt_devmode->driverversion    = 0x0400;
+	nt_devmode->size             = 0x00DC;
+	nt_devmode->driverextra      = 0x0000;
+	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY | 
+				       DEFAULTSOURCE | COPIES | SCALE | 
+				       PAPERSIZE | ORIENTATION;
+	nt_devmode->orientation      = 1;
+	nt_devmode->papersize        = PAPER_A4;
+	nt_devmode->paperlength      = 0;
+	nt_devmode->paperwidth       = 0;
+	nt_devmode->scale            = 0x64;
+	nt_devmode->copies           = 01;
+	nt_devmode->defaultsource    = BIN_FORMSOURCE;
+	nt_devmode->printquality     = 0x0258;
+	nt_devmode->color            = COLOR_MONOCHROME;
+	nt_devmode->duplex           = DUP_SIMPLEX;
+	nt_devmode->yresolution      = 0;
+	nt_devmode->ttoption         = TT_SUBDEV;
+	nt_devmode->collate          = COLLATE_FALSE;
+	nt_devmode->icmmethod        = 0;
+	nt_devmode->icmintent        = 0;
+	nt_devmode->mediatype        = 0;
+	nt_devmode->dithertype       = 0;
+
+	/* non utilisés par un driver d'imprimante */
+	nt_devmode->logpixels        = 0;
+	nt_devmode->bitsperpel       = 0;
+	nt_devmode->pelswidth        = 0;
+	nt_devmode->pelsheight       = 0;
+	nt_devmode->displayflags     = 0;
+	nt_devmode->displayfrequency = 0;
+	nt_devmode->reserved1        = 0;
+	nt_devmode->reserved2        = 0;
+	nt_devmode->panningwidth     = 0;
+	nt_devmode->panningheight    = 0;
+
+	nt_devmode->private=NULL;
+
+	return nt_devmode;
+}
 
 /****************************************************************************
  Deepcopy an NT devicemode.
 ****************************************************************************/
 
+NT_DEVICEMODE *dup_nt_devicemode(NT_DEVICEMODE *nt_devicemode)
+{
+	NT_DEVICEMODE *new_nt_devicemode = NULL;
+
+	if ((new_nt_devicemode = (NT_DEVICEMODE *)memdup(nt_devicemode, sizeof(NT_DEVICEMODE))) == NULL) {
+		DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
+		return NULL;
+	}
+
+	new_nt_devicemode->private = NULL;
+	if (nt_devicemode->private != NULL) {
+		if ((new_nt_devicemode->private = memdup(nt_devicemode->private, nt_devicemode->driverextra)) == NULL) {
+			safe_free(new_nt_devicemode);
+			DEBUG(0,("dup_nt_devicemode: malloc fail.\n"));
+			return NULL;
+        }
+	}
+
+	return new_nt_devicemode;
+}
 
 /****************************************************************************
  Clean up and deallocate a (maybe partially) allocated NT_DEVICEMODE.
 ****************************************************************************/
-static void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
+
+void free_nt_devicemode(NT_DEVICEMODE **devmode_ptr)
 {
 	NT_DEVICEMODE *nt_devmode = *devmode_ptr;
 
@@ -848,6 +988,9 @@ static int unpack_devicemode(NT_DEVICEMODE **nt_devmode, char *buf, int buflen)
 
 	*nt_devmode = (NT_DEVICEMODE *)memdup(&devmode, sizeof(devmode));
 
+	DEBUG(8,("Unpacked devicemode [%s](%s)\n", devmode.devicename, devmode.formname));
+	if (devmode.private)
+		DEBUG(8,("with a private section of %d bytes\n", devmode.driverextra));
 
 	return len;
 }
@@ -873,6 +1016,7 @@ static int unpack_specifics(NT_PRINTER_PARAM **list, char *buf, int buflen)
 		param.next = *list;
 		*list = memdup(&param, sizeof(param));
 
+		DEBUG(8,("specific: [%s], len: %d\n", param.value, param.data_len));
 	}
 
 	return len;
@@ -908,10 +1052,16 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	nt_printing_getsec(sharename, &info.secdesc);
 
 	*info_ptr = (NT_PRINTER_INFO_LEVEL_2 *)memdup(&info, sizeof(info));
-	if (! *info_ptr) return 2;
+	if (! *info_ptr) {
+		DEBUG(0,("get_a_printer_2_default: malloc fail.\n"));
+		goto fail;
+	}
 
 	return (0);	
 
+  fail:
+
+	return 2;
 }
 
 /****************************************************************************
@@ -932,7 +1082,12 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	kbuf.dsize = strlen(key)+1;
 
 	dbuf = tdb_fetch(tdb, kbuf);
-	if (!dbuf.dptr) return get_a_printer_2_default(info_ptr, sharename);
+#if 1 /* JRATEST */
+	if (!dbuf.dptr)
+		return get_a_printer_2_default(info_ptr, sharename);
+#else
+	if (!dbuf.dptr) return 1;
+#endif
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddffffffffff",
 			&info.attributes,
@@ -957,13 +1112,18 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 			info.datatype,
 			info.parameters);
 
+
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
+#if 1 /* JRATEST */
 	nt_printing_getsec(sharename, &info.secdesc);
+#endif /* JRATEST */
 
 	*info_ptr=memdup(&info, sizeof(info));
 	
+	DEBUG(9,("Unpacked printer [%s] running driver [%s]\n",
+		 sharename, info.drivername));
 
 	
 	return 0;	
@@ -1006,6 +1166,7 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 				DEBUGADD(106,("sharename:[%s]\n", info2->sharename));
 				DEBUGADD(106,("portname:[%s]\n", info2->portname));
 				DEBUGADD(106,("drivername:[%s]\n", info2->drivername));
+				DEBUGADD(106,("comment:[%s]\n", info2->comment));
 				DEBUGADD(106,("location:[%s]\n", info2->location));
 				DEBUGADD(106,("sepfile:[%s]\n", info2->sepfile));
 				DEBUGADD(106,("printprocessor:[%s]\n", info2->printprocessor));
@@ -1028,6 +1189,12 @@ static uint32 dump_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
  Get the parameters we can substitute in an NT print job.
 ****************************************************************************/
 
+void get_printer_subst_params(int snum, fstring *printername, fstring *sharename, fstring *portname)
+{
+
+	**printername = **sharename = **portname = '\0';
+
+}
 
 /*
  * The function below are the high level ones.
@@ -1072,8 +1239,15 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 	{
 		case 2: 
 		{
+			if (printer == NULL) {
+				DEBUG(0,("get_a_printer: malloc fail.\n"));
+				return 1;
+			}
 			printer->info_2=NULL;
-			success=get_a_printer_2(&(printer->info_2), sharename);
+			success=get_a_printer_2(&printer->info_2, sharename);
+			if (success == 0) {
+				dump_a_printer(*printer, level);
+			}
 			break;
 		}
 		default:
@@ -1081,8 +1255,6 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 			break;
 	}
 	
-	dump_a_printer(*printer, level);
-
 	DEBUG(10,("get_a_printer: [%s] level %u returning %u\n", sharename, (unsigned int)level, (unsigned int)success));
 
 	return (success);
@@ -1091,19 +1263,24 @@ uint32 get_a_printer(NT_PRINTER_INFO_LEVEL *printer, uint32 level, fstring share
 /****************************************************************************
  Deletes a NT_PRINTER_INFO_LEVEL struct.
 ****************************************************************************/
-uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
+
+uint32 free_a_printer(NT_PRINTER_INFO_LEVEL **pp_printer, uint32 level)
 {
 	uint32 success;
+	NT_PRINTER_INFO_LEVEL *printer = *pp_printer;
+
 	DEBUG(104,("freeing a printer at level [%d]\n", level));
 	
+	if (printer == NULL)
+		return 0;
 	
 	switch (level)
 	{
 		case 2: 
 		{
-			if (printer.info_2 != NULL)
+			if (printer->info_2 != NULL)
 			{
-				free_nt_printer_info_level_2(&printer.info_2);
+				free_nt_printer_info_level_2(&printer->info_2);
 				success=0;
 			}
 			else
@@ -1116,6 +1293,9 @@ uint32 free_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 			success=1;
 			break;
 	}
+
+	safe_free(printer);
+	*pp_printer = NULL;
 	return (success);
 }
 
@@ -1177,19 +1357,36 @@ uint32 get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
 uint32 free_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 {
 	uint32 success;
-	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	
 	switch (level)
 	{
 		case 3: 
 		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 			if (driver.info_3 != NULL)
 			{
 				info3=driver.info_3;
-				if (info3->dependentfiles)
-					free(info3->dependentfiles);
-				free(info3);
+				safe_free(info3->dependentfiles);
 				ZERO_STRUCTP(info3);
+				safe_free(info3);
+				success=0;
+			}
+			else
+			{
+				success=4;
+			}
+			break;
+		}
+		case 6:
+		{
+			NT_PRINTER_DRIVER_INFO_LEVEL_6 *info6;
+			if (driver.info_6 != NULL)
+			{
+				info6=driver.info_6;
+				safe_free(info6->dependentfiles);
+				safe_free(info6->previousnames);
+				ZERO_STRUCTP(info6);
+				safe_free(info6);
 				success=0;
 			}
 			else
@@ -1216,8 +1413,7 @@ BOOL get_specific_param_by_index(NT_PRINTER_INFO_LEVEL printer, uint32 level, ui
 	
 	param=printer.info_2->specific;
 	
-	while (param != NULL && i <= param_index)
-	{
+	while (param != NULL && i <= param_index) {
 		param=param->next;
 		i++;
 	}
@@ -1277,60 +1473,9 @@ BOOL get_specific_param(NT_PRINTER_INFO_LEVEL printer, uint32 level,
 }
 
 /****************************************************************************
+ Store a security desc for a printer.
 ****************************************************************************/
-void init_devicemode(NT_DEVICEMODE *nt_devmode)
-{
-/*
- * should I init this ones ???
-	nt_devmode->devicename
-*/
-	fstrcpy(nt_devmode->formname, "A4");
 
-	nt_devmode->specversion      = 0x0401;
-	nt_devmode->driverversion    = 0x0400;
-	nt_devmode->size             = 0x00DC;
-	nt_devmode->driverextra      = 0x0000;
-	nt_devmode->fields           = FORMNAME | TTOPTION | PRINTQUALITY | 
-				       DEFAULTSOURCE | COPIES | SCALE | 
-				       PAPERSIZE | ORIENTATION;
-	nt_devmode->orientation      = 1;
-	nt_devmode->papersize        = PAPER_A4;
-	nt_devmode->paperlength      = 0;
-	nt_devmode->paperwidth       = 0;
-	nt_devmode->scale            = 0x64;
-	nt_devmode->copies           = 01;
-	nt_devmode->defaultsource    = BIN_FORMSOURCE;
-	nt_devmode->printquality     = 0x0258;
-	nt_devmode->color            = COLOR_MONOCHROME;
-	nt_devmode->duplex           = DUP_SIMPLEX;
-	nt_devmode->yresolution      = 0;
-	nt_devmode->ttoption         = TT_SUBDEV;
-	nt_devmode->collate          = COLLATE_FALSE;
-	nt_devmode->icmmethod        = 0;
-	nt_devmode->icmintent        = 0;
-	nt_devmode->mediatype        = 0;
-	nt_devmode->dithertype       = 0;
-
-	/* non utilisés par un driver d'imprimante */
-	nt_devmode->logpixels        = 0;
-	nt_devmode->bitsperpel       = 0;
-	nt_devmode->pelswidth        = 0;
-	nt_devmode->pelsheight       = 0;
-	nt_devmode->displayflags     = 0;
-	nt_devmode->displayfrequency = 0;
-	nt_devmode->reserved1        = 0;
-	nt_devmode->reserved2        = 0;
-	nt_devmode->panningwidth     = 0;
-	nt_devmode->panningheight    = 0;
-	
-	nt_devmode->private=NULL;
-}
-
-
-
-/****************************************************************************
-store a security desc for a printer
-****************************************************************************/
 uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	prs_struct ps;
@@ -1360,17 +1505,25 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 }
 
 /****************************************************************************
-get a security desc for a printer
+ Construct a default security descriptor buffer for a printer.
+****************************************************************************/
+
+
+/****************************************************************************
+ Get a security desc for a printer.
 ****************************************************************************/
 uint32 nt_printing_getsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 {
 	prs_struct ps;
 	fstring key;
 
+	/* Fetch security descriptor from tdb */
+
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
 
 	if (tdb_prs_fetch(tdb, key, &ps)!=0 ||
 	    !sec_io_desc_buf("nt_printing_getsec", secdesc_ctr, &ps, 1)) {
+
 		DEBUG(4,("using default secdesc for %s\n", printername));
 		secdesc_ctr->len = convertperms_unix_to_sd(NULL, False,
 							   0007,
@@ -1419,11 +1572,39 @@ jfm: I should use this comment for the text file to explain
 
 */
 
-/* Check a user has permissions to perform the given operation */
+/****************************************************************************
+ Check a user has permissions to perform the given operation 
 
+   if user is NULL then use the current_user structure
+ ****************************************************************************/
 
 
 /****************************************************************************
  Check the time parameters allow a print operation.
 *****************************************************************************/
 
+BOOL print_time_access_check(int snum)
+{
+	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	BOOL ok = False;
+	time_t now = time(NULL);
+	struct tm *t;
+	uint32 mins;
+
+	printer = g_new(NT_PRINTER_INFO_LEVEL, 1);
+	if (get_a_printer(printer, 2, lp_servicename(snum))!=0)
+		return False;
+
+	if (printer->info_2->starttime == 0 && printer->info_2->untiltime == 0)
+		ok = True;
+
+	t = gmtime(&now);
+	mins = (uint32)t->tm_hour*60 + (uint32)t->tm_min;
+
+	if (mins >= printer->info_2->starttime && mins <= printer->info_2->untiltime)
+		ok = True;
+
+	free_a_printer(&printer, 2);
+
+	return ok;
+}
