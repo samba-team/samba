@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -222,7 +222,7 @@ define_type (int level, char *name, Type *t, int typedefp)
 	break;
     case TInteger:
 	space(level);
-	fprintf (headerfile, "unsigned %s;\n", name);
+	fprintf (headerfile, "int %s;\n", name);
 	break;
     case TOctetString:
 	space(level);
