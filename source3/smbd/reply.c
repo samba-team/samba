@@ -348,7 +348,6 @@ int reply_ioctl(connection_struct *conn,
 	uint32 ioctl_code = (device << 16) + function;
 	int replysize, outsize;
 	char *p;
-	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
 	START_PROFILE(SMBioctl);
 
 	DEBUG(4, ("Received IOCTL (code 0x%x)\n", ioctl_code));
@@ -371,6 +370,11 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code) {
 		case IOCTL_QUERY_JOB_INFO:		    
 		{
+			files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+			if (!fsp) {
+				END_PROFILE(SMBioctl);
+				return(UNIXERROR(ERRDOS,ERRbadfid));
+			}
 			SSVAL(p,0,fsp->rap_print_jobid);             /* Job number */
 			srvstr_push(outbuf, p+2, global_myname(), 15, STR_TERMINATE|STR_ASCII);
 			srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
