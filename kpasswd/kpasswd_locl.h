@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -89,6 +89,7 @@
 #include <err.h>
 #include <roken.h>
 #include <getarg.h>
+#include <des.h>
 #include <krb5.h>
 
 #endif /* __KPASSWD_LOCL_H__ */
