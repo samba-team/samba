@@ -99,9 +99,16 @@ struct ndr_print {
 #define LIBNDR_FLAG_STR_SIZE4    (1<<4)
 #define LIBNDR_FLAG_STR_NOTERM   (1<<5)
 #define LIBNDR_FLAG_STR_NULLTERM (1<<6)
-#define LIBNDR_STRING_FLAGS      (0x7C)
+#define LIBNDR_FLAG_STR_SIZE2    (1<<7)
+#define LIBNDR_STRING_FLAGS      (0xFC)
 
 #define LIBNDR_FLAG_REF_ALLOC    (1<<10)
+#define LIBNDR_FLAG_REMAINING    (1<<11)
+#define LIBNDR_FLAG_ALIGN2       (1<<12)
+#define LIBNDR_FLAG_ALIGN4       (1<<13)
+#define LIBNDR_FLAG_ALIGN8       (1<<14)
+
+#define LIBNDR_ALIGN_FLAGS (LIBNDR_FLAG_ALIGN2|LIBNDR_FLAG_ALIGN4|LIBNDR_FLAG_ALIGN8)
 
 /* useful macro for debugging */
 #define NDR_PRINT_DEBUG(type, p) ndr_print_debug((ndr_print_fn_t)ndr_print_ ##type, #p, p)
@@ -146,6 +153,8 @@ enum ndr_err_code {
 	} \
 } while(0)
 
+#define NDR_ALIGN(ndr, n) ndr_align_size(ndr->offset, n)
+
 #define NDR_PULL_ALIGN(ndr, n) do { \
 	if (!(ndr->flags & LIBNDR_FLAG_NOALIGN)) { \
 		ndr->offset = (ndr->offset + (n-1)) & ~(n-1); \
@@ -176,7 +185,7 @@ enum ndr_err_code {
 
 #define NDR_ALLOC_SIZE(ndr, s, size) do { \
 	                       (s) = talloc(ndr->mem_ctx, size); \
-                               if (!(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
+                               if ((size) && !(s)) return ndr_pull_error(ndr, NDR_ERR_ALLOC, \
 							       "Alloc %u failed\n", \
 							       size); \
                            } while (0)
@@ -201,7 +210,7 @@ enum ndr_err_code {
 
 #define NDR_PUSH_ALLOC_SIZE(ndr, s, size) do { \
 	                       (s) = talloc(ndr->mem_ctx, size); \
-                               if (!(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, \
+                               if ((size) && !(s)) return ndr_push_error(ndr, NDR_ERR_ALLOC, \
 							       "push alloc %u failed\n",\
 							       size); \
                            } while (0)
@@ -225,6 +234,7 @@ typedef void (*ndr_print_union_fn_t)(struct ndr_print *, const char *, uint32, v
 /* now pull in the individual parsers */
 #include "librpc/ndr/ndr_basic.h"
 #include "librpc/ndr/ndr_sec.h"
+#include "librpc/gen_ndr/ndr_dcerpc.h"
 #include "librpc/gen_ndr/ndr_misc.h"
 #include "librpc/gen_ndr/ndr_echo.h"
 #include "librpc/gen_ndr/ndr_lsa.h"
