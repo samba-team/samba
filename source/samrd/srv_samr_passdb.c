@@ -1813,6 +1813,33 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 }
 
 /*******************************************************************
+ set_user_info_12
+ ********************************************************************/
+static BOOL set_user_info_12(const SAM_USER_INFO_12 *id12, uint32 rid)
+{
+	struct sam_passwd *pwd = getsam21pwrid(rid);
+	struct sam_passwd new_pwd;
+	static uchar nt_hash[16];
+	static uchar lm_hash[16];
+
+	if (pwd == NULL)
+	{
+		return False;
+	}
+
+	pwdb_init_sam(&new_pwd);
+	copy_sam_passwd(&new_pwd, pwd);
+
+	memcpy(nt_hash, id12->nt_pwd, sizeof(nt_hash));
+	memcpy(lm_hash, id12->lm_pwd, sizeof(lm_hash));
+
+	new_pwd.smb_passwd    = lm_hash;
+	new_pwd.smb_nt_passwd = nt_hash;
+
+	return mod_sam21pwd_entry(&new_pwd, True);
+}
+
+/*******************************************************************
  set_user_info_24
  ********************************************************************/
 static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
@@ -1932,6 +1959,16 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value)
 	{
+		case 0x12:
+		{
+			SAM_USER_INFO_12 *id12 = ctr->info.id12;
+			if (!set_user_info_12(id12, rid))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+
 		case 24:
 		{
 			SAM_USER_INFO_24 *id24 = ctr->info.id24;

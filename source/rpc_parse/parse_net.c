@@ -46,22 +46,6 @@ static BOOL net_io_neg_flags(char *desc,  NEG_FLAGS *neg, prs_struct *ps, int de
 }
 
 /*******************************************************************
-creates a NETLOGON_INFO_3 structure.
-********************************************************************/
-static BOOL make_netinfo_3(NETLOGON_INFO_3 *info, uint32 flags, uint32 logon_attempts)
-{
-	info->flags          = flags;
-	info->logon_attempts = logon_attempts;
-	info->reserved_1     = 0x0;
-	info->reserved_2     = 0x0;
-	info->reserved_3     = 0x0;
-	info->reserved_4     = 0x0;
-	info->reserved_5     = 0x0;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a NETLOGON_INFO_3 structure.
 ********************************************************************/
 static BOOL net_io_netinfo_3(char *desc,  NETLOGON_INFO_3 *info, prs_struct *ps, int depth)
@@ -86,17 +70,6 @@ static BOOL net_io_netinfo_3(char *desc,  NETLOGON_INFO_3 *info, prs_struct *ps,
 
 
 /*******************************************************************
-creates a NETLOGON_INFO_1 structure.
-********************************************************************/
-static BOOL make_netinfo_1(NETLOGON_INFO_1 *info, uint32 flags, uint32 pdc_status)
-{
-	info->flags      = flags;
-	info->pdc_status = pdc_status;
-
-	return True;
-}
-
-/*******************************************************************
 reads or writes a NETLOGON_INFO_1 structure.
 ********************************************************************/
 static BOOL net_io_netinfo_1(char *desc,  NETLOGON_INFO_1 *info, prs_struct *ps, int depth)
@@ -110,30 +83,6 @@ static BOOL net_io_netinfo_1(char *desc,  NETLOGON_INFO_1 *info, prs_struct *ps,
 	
 	prs_uint32("flags     ", ps, depth, &(info->flags     ));
 	prs_uint32("pdc_status", ps, depth, &(info->pdc_status));
-
-	return True;
-}
-
-/*******************************************************************
-creates a NETLOGON_INFO_2 structure.
-********************************************************************/
-static BOOL make_netinfo_2(NETLOGON_INFO_2 *info, uint32 flags, uint32 pdc_status,
-				uint32 tc_status, char *trusted_dc_name)
-{
-	int len_dc_name = strlen(trusted_dc_name);
-	info->flags      = flags;
-	info->pdc_status = pdc_status;
-	info->ptr_trusted_dc_name = 1;
-	info->tc_status  = tc_status;
-
-	if (trusted_dc_name != NULL)
-	{
-		make_unistr2(&(info->uni_trusted_dc_name), trusted_dc_name, len_dc_name+1);
-	}
-	else
-	{
-		make_unistr2(&(info->uni_trusted_dc_name), "", 1);
-	}
 
 	return True;
 }

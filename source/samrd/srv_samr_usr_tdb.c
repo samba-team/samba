@@ -109,7 +109,7 @@ static BOOL tdb_set_userinfo_10(TDB_CONTEXT *tdb, uint32 rid,
 	return True;
 }
 
-static BOOL tdb_set_userinfo_24(TDB_CONTEXT *tdb, uint32 rid,
+static BOOL tdb_set_userinfo_pwds(TDB_CONTEXT *tdb, uint32 rid,
 				const uchar lm_pwd[16], const uchar nt_pwd[16])
 {
 	SAM_USER_INFO_21 usr;
@@ -463,6 +463,8 @@ uint32 _samr_query_userinfo(const POLICY_HND *pol, uint16 switch_value,
 			{
 				return NT_STATUS_NO_MEMORY;
 			}
+			memset(usr.lm_pwd, 0, sizeof(usr.lm_pwd));
+			memset(usr.nt_pwd, 0, sizeof(usr.nt_pwd));
 			memcpy(ctr->info.id21, &usr, sizeof(usr));
 			break;
 		}
@@ -497,7 +499,16 @@ static BOOL set_user_info_24(TDB_CONTEXT *usr_tdb, uint32 rid,
 
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
 
-	return tdb_set_userinfo_24(usr_tdb, rid, lm_hash, nt_hash);
+	return tdb_set_userinfo_pwds(usr_tdb, rid, lm_hash, nt_hash);
+}
+
+/*******************************************************************
+ set_user_info_12
+ ********************************************************************/
+static BOOL set_user_info_12(TDB_CONTEXT *usr_tdb, uint32 rid,
+				const SAM_USER_INFO_12 *id12)
+{
+	return tdb_set_userinfo_pwds(usr_tdb, rid, id12->lm_pwd, id12->nt_pwd);
 }
 
 /*******************************************************************
@@ -564,6 +575,16 @@ uint32 _samr_set_userinfo(const POLICY_HND *pol, uint16 switch_value,
 	/* ok!  user info levels (lots: see MSDEV help), off we go... */
 	switch (switch_value)
 	{
+		case 0x12:
+		{
+			SAM_USER_INFO_12 *id12 = ctr->info.id12;
+			if (!set_user_info_12(tdb_usr, rid, id12))
+			{
+				return NT_STATUS_ACCESS_DENIED;
+			}
+			break;
+		}
+
 		case 24:
 		{
 			SAM_USER_INFO_24 *id24 = ctr->info.id24;
