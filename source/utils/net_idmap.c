@@ -116,7 +116,6 @@ static NTSTATUS net_idmap_fixup_hwm(void)
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	TDB_CONTEXT *idmap_tdb;
 	char *tdbfile = NULL;
-	int dummy;
 
 	struct hwms hwms;
 	struct hwms highest;
