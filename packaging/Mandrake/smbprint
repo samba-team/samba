@@ -74,4 +74,4 @@ echo "server $server, service $service" >> $logfile
 #       echo translate
 	echo "print -"
 	cat
-) | /usr/bin/smbclient "//$server/$service" $password -U $server -N -P >> $logfile
+) | /usr/bin/smbclient "//$server/$service" $password -U $server -N >> $logfile
