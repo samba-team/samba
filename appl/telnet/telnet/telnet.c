@@ -583,7 +583,7 @@ mklist(char *buf, char *name)
 		if ((c == ' ') || !ISASCII(c))
 			n = 1;
 		else if (islower((unsigned char)c))
-			*cp = toupper(c);
+			*cp = toupper((unsigned char)c);
 	}
 
 	/*
