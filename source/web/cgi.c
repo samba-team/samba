@@ -21,6 +21,9 @@
 #include "includes.h"
 #include "smb.h"
 
+#include <libintl.h>
+#define _(String)   gettext(String)
+
 #define MAX_VARIABLES 10000
 
 /* set the expiry on fixed pages */
@@ -286,8 +289,12 @@ static void cgi_auth_error(void)
 		printf("Content-Type: text/html\r\n");
 
 		printf("\r\n<HTML><HEAD><TITLE>SWAT</TITLE></HEAD>\n");
+		/*
 		printf("<BODY><H1>Installation Error</H1>\n");
 		printf("SWAT must be installed via inetd. It cannot be run as a CGI script<p>\n");
+		*/
+		printf("<BODY><H1>%s</H1>\n", _("Installation Error"));
+		printf("%s<p>\n", _("SWAT must be installed via inetd. It cannot be run as a CGI script"));
 		printf("</BODY></HTML>\r\n");
 	}
 	exit(0);
@@ -643,3 +650,6 @@ BOOL cgi_waspost(void)
 	}
 	return strequal(getenv("REQUEST_METHOD"), "POST");
 }
+
+
+
