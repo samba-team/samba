@@ -143,7 +143,7 @@ subnet 172.16.1.0 netmask 255.255.255.0 {
 	option domain-name "bestnet.com.au";
 	option time-offset 39600;
 	option ip-forwarding off;
-	option netbios-name-servers 172.16.0.1;
+	option netbios-name-servers 172.16.0.1, 172.16.0.1;
 	option netbios-dd-server 172.16.0.1;
 	option netbios-node-type 8;
 }
@@ -153,7 +153,7 @@ group {
 	option subnet-mask 255.255.255.0;
 	option domain-name "bestnet.com.au";
 	option domain-name-servers 172.16.1.1, 172.16.0.2;
-	option netbios-name-servers 172.16.0.1;
+	option netbios-name-servers 172.16.0.1, 172.16.0.1;
 	option netbios-dd-server 172.16.0.1;
 	option netbios-node-type 8;
 	option routers 172.16.1.240;
@@ -177,7 +177,7 @@ You can do this by typing:	cp /dev/null /etc/dhcpd.leases
 
 Setting up a route table for all-ones addresses:
 ================================================
-Quoting from the README file that comes with th eISC DHCPD Server:
+Quoting from the README file that comes with the ISC DHCPD Server:
 
                               BROADCAST
 
