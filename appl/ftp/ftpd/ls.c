@@ -118,6 +118,7 @@ free_fileinfo(struct fileinfo *f)
 #define LS_RECURSIVE	(1 << 11)
 #define LS_EXTRA_BLANK	(1 << 12)
 #define LS_SHOW_DIRNAME	(1 << 13)
+#define LS_DIR_FLAG	(1 << 14)	/* these files come via list_dir */
 
 #ifndef S_ISTXT
 #define S_ISTXT S_ISVTX
@@ -460,6 +461,9 @@ lstat_file (const char *file, struct stat *sb)
     return lstat (file, sb);
 }
 
+#define IS_DOT_DOTDOT(X) ((X)[0] == '.' && ((X)[1] == '\0' || \
+				((X)[1] == '.' && (X)[2] == '\0')))
+
 static void
 list_files(FILE *out, const char **files, int n_files, int flags)
 {
@@ -656,19 +660,27 @@ list_files(FILE *out, const char **files, int n_files, int flags)
 	    sec_fprintf2(out, "%s\r\n", fi[i].filename);
 	}
     }
-  next:
+ next:
     if(((flags & LS_DIRS) == 0 || (flags & LS_RECURSIVE)) && dirs != NULL) {
-	for(i = 0; i < n_files; i++)
+	for(i = 0; i < n_files; i++) {
 	    if(dirs[i]) {
-		if((flags & LS_SHOW_DIRNAME)) {
-		    if ((flags & LS_EXTRA_BLANK))
-			sec_fprintf2(out, "\r\n");
-		    sec_fprintf2(out, "%s:\r\n", files[i]);
+		const char *p = strrchr(files[i], '/');
+		if(p == NULL)
+		    p = files[i];
+		else 
+		    p++;
+		if(!(flags & LS_DIR_FLAG) || !IS_DOT_DOTDOT(p)) {
+		    if((flags & LS_SHOW_DIRNAME)) {
+			if ((flags & LS_EXTRA_BLANK))
+			    sec_fprintf2(out, "\r\n");
+			sec_fprintf2(out, "%s:\r\n", files[i]);
+		    }
+		    list_dir(out, files[i], flags | LS_DIRS | LS_EXTRA_BLANK);
 		}
-		list_dir(out, files[i], flags | LS_DIRS | LS_EXTRA_BLANK);
 	    }
+	}
     }
-  out:
+ out:
     for(i = 0; i < n_files; i++)
 	free_fileinfo(&fi[i]);
     free(fi);
@@ -737,7 +749,7 @@ list_dir(FILE *out, const char *directory, int flags)
 	++n_files;
     }
     closedir(d);
-    list_files(out, (const char**)files, n_files, flags);
+    list_files(out, (const char**)files, n_files, flags | LS_DIR_FLAG);
 }
 
 static int
@@ -781,8 +793,11 @@ parse_flags(const char *options)
 	case 'l':
 	    flags = (flags & ~LS_DISP_MODE) | LS_DISP_LONG;
 	    break;
-	case 't':
-	    flags = (flags & ~LS_SORT_MODE) | LS_SORT_MTIME;
+	case 'r':
+	    flags |= LS_SORT_REVERSE;
+	    break;
+	case 'R':
+	    flags |= LS_RECURSIVE;
 	    break;
 	case 's':
 	    flags |= LS_SIZE;
@@ -790,14 +805,23 @@ parse_flags(const char *options)
 	case 'S':
 	    flags = (flags & ~LS_SORT_MODE) | LS_SORT_SIZE;
 	    break;
-	case 'r':
-	    flags |= LS_SORT_REVERSE;
-	    break;
-	case 'R':
-	    flags |= LS_RECURSIVE;
+	case 't':
+	    flags = (flags & ~LS_SORT_MODE) | LS_SORT_MTIME;
 	    break;
 	case 'x':
 	    flags = (flags & ~LS_DISP_MODE) | LS_DISP_CROSS;
+	    break;
+	    /* these are a bunch of unimplemented flags from BSD ls */
+	case 'k': /* display sizes in kB */
+	case 'c': /* last change time */
+	case 'L': /* list symlink target */
+	case 'm': /* stream output */
+	case 'o': /* BSD file flags */
+	case 'p': /* display / after directories */
+	case 'q': /* print non-graphic characters */
+	case 'u': /* use last access time */
+	case 'T': /* display complete time */
+	case 'W': /* include whiteouts */
 	    break;
 	}
     }
