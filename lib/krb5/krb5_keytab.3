@@ -338,7 +338,7 @@ releases all resources associated with
 .Fn krb5_kt_get_entry
 retrieves the keytab entry for
 .Fa principal ,
-.Fa kvno,
+.Fa kvno ,
 .Fa enctype
 into
 .Fa entry
@@ -348,7 +348,7 @@ Returns 0 or an error.
 .Pp
 .Fn krb5_kt_read_service_key
 reads the key identified by
-.Ns ( Fa principal ,
+.Fa ( principal ,
 .Fa vno ,
 .Fa enctype )
 from the keytab in
@@ -368,7 +368,7 @@ Returns 0 or an error.
 registers a new keytab type
 .Fa ops .
 Returns 0 or an error.
-.Sh EXAMPLE
+.Sh EXAMPLES
 This is a minimalistic version of
 .Nm ktutil .
 .Pp
