@@ -260,17 +260,20 @@ main(int argc, char **argv)
 
     set_progname (argv[0]);
 
-#ifdef KRB4
     /* detach from any tickets and tokens */
     {
+#ifdef KRB4
 	char tkfile[1024];
 	snprintf(tkfile, sizeof(tkfile),
 		 "/tmp/ftp_%u", (unsigned)getpid());
 	krb_set_tkt_string(tkfile);
+#endif
+#if defined(KRB4) && defined(KRB5)
 	if(k_hasafs())
 	    k_setpag();
-    }
 #endif
+    }
+
     if(getarg(args, num_args, argc, argv, &optind))
 	usage(1);
 
@@ -829,6 +832,47 @@ end_login(void)
 	dochroot = 0;
 }
 
+int
+krb5_verify(struct passwd *pwd, char *passwd)
+{
+   krb5_context context;  
+   krb5_ccache  id;
+   krb5_principal princ;
+   krb5_error_code ret;
+  
+   ret = krb5_init_context(&context);
+   if(ret)
+        return ret;
+
+  ret = krb5_parse_name(context, pwd->pw_name, &princ);
+  if(ret){
+        krb5_free_context(context);
+        return ret;
+  }
+  ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+  if(ret){
+        krb5_free_principal(context, princ);
+        krb5_free_context(context);
+        return ret;
+  }
+  ret = krb5_verify_user(context,
+                         princ,
+                         id,
+                         passwd,
+                         1,
+                         NULL);
+  krb5_free_principal(context, princ);
+  if (k_hasafs()) {
+      k_setpag();
+      krb5_afslog_uid_home(context, id,NULL, NULL,pwd->pw_uid, pwd->pw_dir);
+  }
+  krb5_cc_destroy(context, id);
+  krb5_free_context (context);
+  if(ret) 
+      return ret;
+  return 0;
+}
+
 void
 pass(char *passwd)
 {
@@ -855,19 +899,25 @@ pass(char *passwd)
 		}
 #endif
 		else if((auth_level & AUTH_OTP) == 0) {
-#ifdef KRB4
-		    char realm[REALM_SZ];
-		    if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
-			rval = krb_verify_user(pw->pw_name,
-					       "", realm, 
-					       passwd, 
-					       KRB_VERIFY_SECURE, NULL);
-		    if (rval == KSUCCESS ) {
-			chown (tkt_string(), pw->pw_uid, pw->pw_gid);
-			if(k_hasafs())
-			    krb_afslog(0, 0);
-		    } else 
+#ifdef KRB5
+		    rval = krb5_verify(pw, passwd);
 #endif
+#ifdef KRB4
+		    if (rval) {
+			char realm[REALM_SZ];
+			if((rval = krb_get_lrealm(realm, 1)) == KSUCCESS)
+			    rval = krb_verify_user(pw->pw_name,
+						   "", realm, 
+						   passwd, 
+						   KRB_VERIFY_SECURE, NULL);
+			if (rval == KSUCCESS ) {
+			    chown (tkt_string(), pw->pw_uid, pw->pw_gid);
+			    if(k_hasafs())
+				krb_afslog(0, 0);
+			}
+		    }
+#endif
+		    if (rval)
 			rval = unix_verify_user(pw->pw_name, passwd);
 		} else {
 		    char *s;
@@ -1797,7 +1847,6 @@ dologout(int status)
 	ftpd_logwtmp(ttyline, "", "");
 #ifdef KRB4
 	cond_kdestroy();
-#endif
     }
     /* beware of flushing buffers after a SIGPIPE */
 #ifdef XXX
