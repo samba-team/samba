@@ -1170,6 +1170,8 @@ static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_t
      * password needs changing.
      */
 
+    DEBUG(10,("timeout_processing: checking to see if machine account password need changing.\n"));
+
     /*
      * First, open the machine password file with an exclusive lock.
      */
@@ -1196,6 +1198,9 @@ machine %s in domain %s.\n", global_myname, global_myworkgroup ));
       secrets_lock_trust_account_password(global_myworkgroup, False);
       return True;
     }
+
+    DEBUG(10,("timeout_processing: machine account password last change time = (%u) %s.\n",
+			    (unsigned int)lct, http_timestring(lct)));
 
     pstrcpy(remote_machine_list, lp_passwordserver());
 
