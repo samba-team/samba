@@ -650,8 +650,16 @@ get_cred_from_kdc_flags(krb5_context context,
     if(ret)
 	return ret;
 
-    try_realm = krb5_config_get_string(context, NULL, "libdefaults", 
-				       "capath", server_realm, NULL);
+    try_realm = krb5_config_get_string(context, NULL, "capaths", 
+				       client_realm, server_realm, NULL);
+    
+#if 1
+    /* XXX remove in future release */
+    if(try_realm == NULL)
+	try_realm = krb5_config_get_string(context, NULL, "libdefaults", 
+					   "capath", server_realm, NULL);
+#endif
+
     if (try_realm == NULL)
 	try_realm = client_realm;
 
