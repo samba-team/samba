@@ -150,9 +150,8 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 	*num_entries = 0;
 	*info = NULL;
 
-	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd))) {
-		return NT_STATUS_UNSUCCESSFUL;
-	}
+	if (!NT_STATUS_IS_OK(result = cm_get_sam_handle(domain->name, &hnd)))
+		return result;
 
 	result = cli_samr_open_domain(hnd->cli, mem_ctx,
 				      &hnd->pol, des_access, &domain->sid, &dom_pol);
