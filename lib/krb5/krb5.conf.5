@@ -44,6 +44,22 @@ name:
 .Ed
 .Li STRINGs
 consists of one or more non-whitespace characters.
+.Pp
+STRINGs that are specified later in this man-page uses the following
+notation.
+.Bl -tag -width "xxx" -offset indent
+.It boolean
+values can be either yes/true or no/false.
+.It time
+values can be a list of year, month, day, hour, min, second. Example:
+1 month 2 days 30 min.
+.It etypes
+valid encryption types are: des-cbc-crc, des-cbc-md4, des-cbc-md5,
+des3-cbc-sha1.
+.It address
+an address can be either a IPv4 or a IPv6 address.
+.El
+.Pp
 Currently recognised sections and bindings are:
 .Bl -tag -width "xxx" -offset indent
 .It Li [appdefaults]
@@ -111,9 +127,9 @@ This configuration should preferably be done on the KDC where it will
 help all its clients but can also be done on the client itself.
 .It Li }
 .It Li default_etypes = Va etypes...
-A list of default etypes to use.
+A list of default encryption types to use.
 .It Li default_etypes_des = Va etypes...
-A list of default etypes to use when requesting a DES credential.
+A list of default encryption types to use when requesting a DES credential.
 .It Li default_keytab_name = Va keytab
 The keytab to use if no other is specified, default is
 .Dq FILE:/etc/krb5.keytab .
@@ -219,7 +235,7 @@ to the database are performed.
 Points to the server where all the password changes are performed.
 If there is no such entry, the kpasswd port on the admin_server host
 will be tried.
-.It Li krb524_server = Va Host[:port]
+.It Li krb524_server = Va host[:port]
 Points to the server that does 524 conversions.  If it is not
 mentioned, the krb524 port on the kdcs will be tried.
 .It Li v4_instance_convert
