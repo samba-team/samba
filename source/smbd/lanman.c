@@ -499,10 +499,10 @@ static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
 	char *p;
 	char **lines, *line;
 	
-	lines = file_lines_load(lp_driverfile(),NULL);
+	lines = file_lines_load(lp_driverfile(snum),NULL);
 	if (!lines) {
 		DEBUG(3,("fill_printq_info: Can't open %s - %s\n",
-			 lp_driverfile(),strerror(errno)));
+			 lp_driverfile(snum),strerror(errno)));
 		desc->errcode=NERR_notsupported;
 		return;
 	}
@@ -668,10 +668,10 @@ static int get_printerdrivernumber(int snum)
 	char *p;
 	char **lines, *line;
 
-	lines = file_lines_load(lp_driverfile(), NULL);
+	lines = file_lines_load(lp_driverfile(snum), NULL);
 	if (!lines) {
 		DEBUG(3,("get_printerdrivernumber: Can't open %s - %s\n",
-			 lp_driverfile(),strerror(errno)));
+			 lp_driverfile(snum),strerror(errno)));
 		return(0);
 	}
 	

@@ -148,7 +148,6 @@ typedef struct
 	char *szNetbiosAliases;
 	char *szDomainOtherSIDs;
 	char *szDomainGroups;
-	char *szDriverFile;
 	char *szNameResolveOrder;
 	char *szLdapServer;
 	char *szLdapSuffix;
@@ -292,6 +291,7 @@ typedef struct
 	char *szPrintername;
 	char *szPrinterDriver;
 	char *szPrinterDriverLocation;
+	char *szDriverFile;
 	char *szDontdescend;
 	char *szHostsallow;
 	char *szHostsdeny;
@@ -403,6 +403,7 @@ static service sDefault = {
 	NULL,			/* szPrintername */
 	NULL,			/* szPrinterDriver - this is set in init_globals() */
 	NULL,			/* szPrinterDriverLocation */
+	NULL,			/* szDriverFile */
 	NULL,			/* szDontdescend */
 	NULL,			/* szHostsallow */
 	NULL,			/* szHostsdeny */
@@ -781,7 +782,6 @@ static struct parm_struct parm_table[] = {
 	{"load printers", P_BOOL, P_GLOBAL, &Globals.bLoadPrinters, NULL, NULL, FLAG_PRINT},
 	{"printcap name", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, FLAG_PRINT},
 	{"printcap", P_STRING, P_GLOBAL, &Globals.szPrintcapname, NULL, NULL, 0},
-	{"printer driver file", P_STRING, P_GLOBAL, &Globals.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printable", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, FLAG_PRINT},
 	{"print ok", P_BOOL, P_LOCAL, &sDefault.bPrint_ok, NULL, NULL, 0},
 	{"postscript", P_BOOL, P_LOCAL, &sDefault.bPostscript, NULL, NULL, FLAG_PRINT},
@@ -797,6 +797,7 @@ static struct parm_struct parm_table[] = {
 	{"printer name", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, FLAG_PRINT},
 	{"printer", P_STRING, P_LOCAL, &sDefault.szPrintername, NULL, NULL, 0},
 	{"printer driver", P_STRING, P_LOCAL, &sDefault.szPrinterDriver, NULL, NULL, FLAG_PRINT},
+	{"printer driver file", P_STRING, P_LOCAL, &sDefault.szDriverFile, NULL, NULL, FLAG_PRINT},
 	{"printer driver location", P_STRING, P_LOCAL, &sDefault.szPrinterDriverLocation, NULL, NULL, FLAG_PRINT | FLAG_GLOBAL},
 
 	{"Filename Handling", P_SEP, P_SEPARATOR},
@@ -1012,7 +1013,6 @@ static void init_globals(void)
 	string_set(&Globals.szWorkGroup, WORKGROUP);
 	string_set(&Globals.szPasswdProgram, PASSWD_PROGRAM);
 	string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
-	string_set(&Globals.szDriverFile, DRIVERFILE);
 	string_set(&Globals.szLockDir, LOCKDIR);
 	string_set(&Globals.szRootdir, "/");
 #ifdef WITH_UTMP
@@ -1170,6 +1170,8 @@ Initialise the sDefault parameter structure.
 ***************************************************************************/
 static void init_locals(void)
 {
+	string_set(&sDefault.szDriverFile, DRIVERFILE);
+
 	/* choose defaults depending on the type of printing */
 	switch (sDefault.iPrinting)
 	{
@@ -1353,7 +1355,6 @@ FN_GLOBAL_STRING(lp_socket_address, &Globals.szSocketAddress)
 FN_GLOBAL_STRING(lp_nis_home_map_name, &Globals.szNISHomeMapName)
 static FN_GLOBAL_STRING(lp_announce_version, &Globals.szAnnounceVersion)
 FN_GLOBAL_STRING(lp_netbios_aliases, &Globals.szNetbiosAliases)
-FN_GLOBAL_STRING(lp_driverfile, &Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action, &Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script, &Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script, &Globals.szDelUserScript)
@@ -1479,6 +1480,7 @@ FN_LOCAL_STRING(lp_lpresumecommand, szLpresumecommand)
 FN_LOCAL_STRING(lp_queuepausecommand, szQueuepausecommand)
 FN_LOCAL_STRING(lp_queueresumecommand, szQueueresumecommand)
 FN_LOCAL_STRING(lp_printername, szPrintername)
+FN_LOCAL_STRING(lp_driverfile, szDriverFile)
 FN_LOCAL_STRING(lp_printerdriver, szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow, szHostsallow)
 FN_LOCAL_STRING(lp_hostsdeny, szHostsdeny)
