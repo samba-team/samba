@@ -38,7 +38,7 @@ struct ClearToken {
 
 int k_hasafs __P((void));
 
-int k_afsklog __P((char *realm));
+int k_afsklog __P((char *cell, char *realm));
 int k_pioctl __P((char *a_path,
 		  int o_opcode,
 		  struct ViceIoctl *a_paramsP,
