@@ -79,7 +79,7 @@ struct dom_sid *dom_sid_parse_talloc(TALLOC_CTX *mem_ctx, const char *sidstr)
 			return NULL;
 		}
 		sidstr++;
-		ret->sub_auths[i] = strtol(sidstr, &p, 10);
+		ret->sub_auths[i] = strtoul(sidstr, &p, 10);
 		if (p == sidstr) {
 			return NULL;
 		}
