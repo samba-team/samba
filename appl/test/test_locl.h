@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -79,6 +79,7 @@
 #define PORT "test"
 
 extern char *service;
+extern int fork_flag;
 int server_setup(krb5_context*, int, char**);
 int client_setup(krb5_context*, int*, char**);
 int client_doit (const char *hostname, int port, const char *service,
