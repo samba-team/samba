@@ -240,7 +240,8 @@
 		<listitem><para>If the server is to be run by the 
 		<command>inetd</command> meta-daemon, this file 
 		must contain suitable startup information for the 
-		meta-daemon. See the section INSTALLATION below.
+		meta-daemon. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.
 		</para></listitem>
 		</varlistentry>
 		
@@ -251,8 +252,8 @@
 
 		<para>If running the server as a daemon at startup, 
 		this file will need to contain an appropriate startup 
-		sequence for the server. See the section INSTALLATION 
-		below.</para></listitem>
+		sequence for the server. See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -261,7 +262,8 @@
 		meta-daemon <command>inetd</command>, this file 
 		must contain a mapping of service name (e.g., netbios-ssn) 
 		to service port (e.g., 139) and protocol type (e.g., tcp). 
-		See the section INSTALLATION below.</para></listitem>
+		See the <ulink url="UNIX_INSTALL.html">UNIX_INSTALL.html</ulink>
+		document for details.</para></listitem>
 		</varlistentry>
 		
 		<varlistentry>
@@ -306,184 +308,6 @@
 	</variablelist>
 </refsect1>
 
-<refsect1>
-	<title>INSTALLATION</title>
-	
-	<para>The location of the server and its support files 
-	is a matter for individual system administrators. The following 
-	are thus suggestions only.</para>
-
-	<para>It is recommended that the server software be installed 
-	under the <filename>/usr/local/samba/</filename> hierarchy, 
-	in a directory readable by all, writeable only by root. The server 
-	program itself should be executable by all, as users may wish to 
-	run the server themselves (in which case it will of course run 
-	with their privileges).  The server should NOT be setuid. On some 
-	systems it may be worthwhile to make <command>smbd</command> setgid to an empty group. 
-	This is because some systems may have a security hole where daemon 
-	processes that become a user can be attached to with a debugger. 
-	Making the <command>smbd</command> file setgid to an empty group may prevent
-	this hole from being exploited. This security hole and the suggested
-	fix has only been confirmed on old versions (pre-kernel 2.0) of Linux
-	at the time this was written. It is possible that this hole only
-	exists in Linux, as testing on other systems has thus far shown them
-	to be immune.</para>
-
-	<para>The server log files should be put in a directory readable and
-	writeable only by root, as the log files may contain sensitive
-	information.</para>
-
-	<para>The configuration file should be placed in a directory 
-	readable and writeable only by root, as the configuration file 
-	controls security for the services offered by the server. The 
-	configuration file can be made readable by all if desired, but 
-	this is not necessary for correct operation of the server and is 
-	not recommended. A sample configuration file <filename>smb.conf.sample
-	</filename> is supplied with the source to the server - this may 
-	be renamed to <filename>smb.conf</filename> and modified to suit 
-	your needs.</para>
-	
-	<para>The remaining notes will assume the following:</para>
-
-	<itemizedlist>
-		<listitem><para><command>smbd</command> (the server program) 
-		installed in <filename>/usr/local/samba/bin</filename></para>
-		</listitem>
-
-		<listitem><para><filename>smb.conf</filename> (the configuration 
-		file) installed in <filename>/usr/local/samba/lib</filename></para>
-		</listitem>
-
-		<listitem><para>log files stored in <filename>/var/adm/smblogs
-		</filename></para></listitem>
-	</itemizedlist>
-
-	<para>The server may be run either as a daemon by users 
-	or at startup, or it may be run from a meta-daemon such as 
-	<command>inetd</command> upon request. If run as a daemon, 
-	the server will always be ready, so starting sessions will be
-	faster. If run from a meta-daemon some memory will be saved and
-	utilities such as the tcpd TCP-wrapper may be used for extra 
-	security.  For serious use as file server it is recommended 
-	that <command>smbd</command> be run as a daemon.</para>
-
-	<para>When you've decided, continue with either</para>
-	
-	<itemizedlist>
-		<listitem><para>RUNNING THE SERVER AS A DAEMON or</para></listitem>
-		<listitem><para>RUNNING THE SERVER ON REQUEST.</para></listitem>
-	</itemizedlist>
-</refsect1>
-
-<refsect1>
-	<title>RUNNING THE SERVER AS A DAEMON</title>
-
-	<para>To run the server as a daemon from the command 
-	line, simply put the <emphasis>-D</emphasis> option on the 
-	command line. There is no need to place an ampersand at 
-	the end of the command line - the <emphasis>-D</emphasis> 
-	option causes the server to detach itself from the tty 
-	anyway.</para>
-
-	<para>Any user can run the server as a daemon (execute 
-	permissions permitting, of course). This is useful for 
-	testing purposes, and may even be useful as a temporary 
-	substitute for something like ftp. When run this way, however, 
-	the server will only have the privileges of the user who ran 
-	it.</para>
-
-	<para>To ensure that the server is run as a daemon whenever 
-	the machine is started, and to ensure that it runs as root 
-	so that it can serve multiple clients, you will need to modify 
-	the system startup files. Wherever appropriate (for example, in 
-	<filename>/etc/rc</filename>), insert the following line, 
-	substituting port number, log file location, configuration file 
-	location and debug level as desired:</para>
-
-	<para><command>/usr/local/samba/bin/smbd -D -l /var/adm/smblogs/log 
-	-s /usr/local/samba/lib/smb.conf</command></para>
-
-	<para>(The above should appear in your initialization script 
-	as a single line.  Depending on your terminal characteristics, 
-	it may not appear that way in this man page. If the above appears 
-	as more than one line, please treat any newlines or indentation 
-	as a single space or TAB character.)</para>
-
-	<para>If the options used at compile time are appropriate for 
-	your system, all parameters except <emphasis>-D</emphasis> may 
-	be omitted. See the section OPTIONS above.</para>
-</refsect1>
-
-<refsect1>
-	<title>RUNNING THE SERVER ON REQUEST</title>
-
-	<para>If your system uses a meta-daemon such as <command>inetd
-	</command>, you can arrange to have the <command>smbd</command> server started 
-	whenever a process attempts to connect to it. This requires several 
-	changes to the startup files on the host machine. If you are 
-	experimenting as an ordinary user rather than as root, you will 
-	need the assistance of your system administrator to modify the 
-	system files.</para>
-
-	<para>You will probably want to set up the NetBIOS name server 
-	<ulink url="nmbd.8.html"><command>nmbd</command></ulink> at
-	the same time as <command>smbd</command>. To do this refer to the 
-	man page for <ulink url="nmbd.8.html"><command>nmbd(8)</command>
-	</ulink>.</para>
-
-	<para>First, ensure that a port is configured in the file 
-	<filename>/etc/services</filename>. The well-known port 139 
-	should be used if possible, though any port may be used.</para>
-
-	<para>Ensure that a line similar to the following is in 
-	<filename>/etc/services</filename>:</para>
-
-	<para><command>netbios-ssn	139/tcp</command></para>
-
-	<para>Note for NIS/YP users - you may need to rebuild the 
-	NIS service maps rather than alter your local <filename>/etc/services
-	</filename> file.</para>
-
-	<para>Next, put a suitable line in the file <filename>/etc/inetd.conf
-	</filename> (in the unlikely event that you are using a meta-daemon 
-	other than inetd, you are on your own). Note that the first item 
-	in this line matches the service name in <filename>/etc/services
-	</filename>.  Substitute appropriate values for your system
-	in this line (see <command>inetd(8)</command>):</para>
-
-	<para><command>netbios-ssn stream tcp nowait root /usr/local/samba/bin/smbd 
-	-d1 -l/var/adm/smblogs/log -s/usr/local/samba/lib/smb.conf</command></para>
-
-	<para>(The above should appear in <filename>/etc/inetd.conf</filename> 
-	as a single line. Depending on your terminal characteristics, it may 
-	not appear that way in this man page.  If the above appears as more 
-	than one line, please treat any newlines or indentation as a single 
-	space or TAB character.)</para>
-
-	<para>Note that there is no need to specify a port number here, 
-	even if you are using a non-standard port number.</para>
-
-	<para>Lastly, edit the configuration file to provide suitable 
-	services. To start with, the following two services should be 
-	all you need:</para>
-	
-	<screen>
-	<computeroutput>
-	[homes]
-		writeable = yes
-
-	[printers]
-		writeable = no
-		printable = yes
-		path = /tmp
-		public = yes
-	</computeroutput>
-	</screen>
-
-	<para>This will allow you to connect to your home directory 
-	and print to any printer supported by the host (user privileges 
-	permitting).</para>
-</refsect1>
 
 <refsect1>
         <title>PAM INTERACTION</title>
@@ -509,28 +333,6 @@
 	added for session support. 
 	</para></listitem>
 	</itemizedlist>
-</refsect1>
-
-<refsect1>
-	<title>TESTING THE INSTALLATION</title>
-
-	<para>If running the server as a daemon, execute it before 
-	proceeding. If using a meta-daemon, either restart the system 
-	or kill and restart the meta-daemon. Some versions of 
-	<command>inetd</command> will reread their configuration
-	tables if they receive a HUP signal.</para>
-
-	<para>If your machine's name is <replaceable>fred</replaceable> and your 
-	name is <replaceable>mary</replaceable>, you should now be able to connect 
-	to the service <filename>\\fred\mary</filename>.
-	</para>
-
-	<para>To properly test and experiment with the server, we 
-	recommend using the <command>smbclient</command> program (see 
-	<ulink url="smbclient.1.html"><command>smbclient(1)</command></ulink>) 
-	and also going through the steps outlined in the file 
-	<filename>DIAGNOSIS.txt</filename> in the <filename>docs/</filename>
-	directory of your Samba installation.</para>
 </refsect1>
 
 <refsect1>

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "NMBD" "8" "04 January 2002" "" ""
+.TH "NMBD" "8" "24 January 2002" "" ""
 .SH NAME
 nmbd \- NetBIOS name server to provide NetBIOS  over IP naming services to clients
 .SH SYNOPSIS
@@ -161,7 +161,8 @@ required by the server. See
 If the server is to be run by the 
 \fBinetd\fR meta-daemon, this file 
 must contain suitable startup information for the 
-meta-daemon. See the section INSTALLATION below.
+meta-daemon. See the UNIX_INSTALL.htmldocument
+for details.
 .TP
 \fB\fI/etc/rc\fB\fR
 or whatever initialization script your 
@@ -169,15 +170,16 @@ system uses).
 
 If running the server as a daemon at startup, 
 this file will need to contain an appropriate startup 
-sequence for the server. See the section INSTALLATION 
-below.
+sequence for the server. See the UNIX_INSTALL.htmldocument
+for details.
 .TP
 \fB\fI/etc/services\fB\fR
 If running the server via the 
 meta-daemon \fBinetd\fR, this file 
 must contain a mapping of service name (e.g., netbios-ssn) 
 to service port (e.g., 139) and protocol type (e.g., tcp). 
-See the section INSTALLATION below.
+See the UNIX_INSTALL.html
+document for details.
 .TP
 \fB\fI/usr/local/samba/lib/smb.conf\fB\fR
 This is the default location of the 
@@ -188,13 +190,15 @@ and \fI/etc/smb.conf\fR.
 
 When run as a WINS server (see the 
 wins support
-parameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
+parameter in the \fIsmb.conf(5)\fR man page),
+\fBnmbd\fR
 will store the WINS database in the file \fIwins.dat\fR 
 in the \fIvar/locks\fR directory configured under 
 wherever Samba was configured to install itself.
 
 If \fBnmbd\fR is acting as a \fB browse master\fR (see the local master
-parameter in the \fI smb.conf(5)\fRman page), \fBnmbd\fR 
+parameter in the \fIsmb.conf(5)\fR man page,
+\fBnmbd\fR
 will store the browsing database in the file \fIbrowse.dat
 \fRin the \fIvar/locks\fR directory
 configured under wherever Samba was configured to install itself.

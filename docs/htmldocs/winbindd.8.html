@@ -502,13 +502,37 @@ CLASS="COMMAND"
 >
 		</P
 ></DD
+><DT
+>winbind use default domain</DT
+><DD
+><P
+>This parameter specifies whether the <B
+CLASS="COMMAND"
+>winbindd</B
+>
+		daemon should operate on users without domain component in their username.  
+                Users without a domain component are treated as is part of the winbindd server's 
+                own domain.  While this does not benifit Windows users, it makes SSH, FTP and e-mail 
+                function in a way much closer to the way they would in a native unix system.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>winbind use default domain = &#60;falseg&#62; 
+		</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>winbind use default domain = true</B
+></P
+></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN149"
+NAME="AEN158"
 ></A
 ><H2
 >EXAMPLE SETUP</H2
@@ -686,7 +710,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN188"
+NAME="AEN197"
 ></A
 ><H2
 >NOTES</H2
@@ -744,7 +768,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN204"
+NAME="AEN213"
 ></A
 ><H2
 >SIGNALS</H2
@@ -795,7 +819,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN221"
+NAME="AEN230"
 ></A
 ><H2
 >FILES</H2
@@ -871,7 +895,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN250"
+NAME="AEN259"
 ></A
 ><H2
 >VERSION</H2
@@ -882,7 +906,7 @@ NAME="AEN250"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN253"
+NAME="AEN262"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -910,7 +934,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN260"
+NAME="AEN269"
 ></A
 ><H2
 >AUTHOR</H2

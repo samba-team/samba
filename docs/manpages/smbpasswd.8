@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBPASSWD" "8" "04 January 2002" "" ""
+.TH "SMBPASSWD" "8" "24 January 2002" "" ""
 .SH NAME
 smbpasswd \- change a user's SMB password
 .SH SYNOPSIS
@@ -56,9 +56,10 @@ following should be added to the local smbpasswd file, with the
 new password typed (type <Enter> for the old password). This 
 option is ignored if the username following already exists in 
 the smbpasswd file and it is treated like a regular change 
-password command. Note that the user to be added must already exist 
-in the system password file (usually \fI/etc/passwd\fR)
-else the request to add the user will fail. 
+password command. Note that the default passdb backends require 
+the user to already exist in the system password file (usually 
+\fI/etc/passwd\fR), else the request to add the 
+user will fail. 
 
 This option is only available when running smbpasswd 
 as root. 
@@ -80,8 +81,7 @@ will fail.
 
 If the smbpasswd file is in the 'old' format (pre-Samba 2.0 
 format) there is no space in the user's password entry to write
-this information and so the user is disabled by writing 'X' characters 
-into the password space in the smbpasswd file. See \fBsmbpasswd(5)
+this information and the command will FAIL. See \fBsmbpasswd(5)
 \fRfor details on the 'old' and new password file formats.
 
 This option is only available when running smbpasswd as 
@@ -94,9 +94,8 @@ if the account was previously disabled. If the account was not
 disabled this option has no effect. Once the account is enabled then 
 the user will be able to authenticate via SMB once again. 
 
-If the smbpasswd file is in the 'old' format, then \fB smbpasswd\fR will prompt for a new password for this user, 
-otherwise the account will be enabled by removing the 'D'
-flag from account control space in the \fI smbpasswd\fR file. See \fBsmbpasswd (5)\fR for 
+If the smbpasswd file is in the 'old' format, then \fB smbpasswd\fR will FAIL to enable the account. 
+See \fBsmbpasswd (5)\fR for 
 details on the 'old' and new password file formats. 
 
 This option is only available when running smbpasswd as root. 
@@ -210,36 +209,6 @@ when Samba is being used as an NT Primary Domain Controller.
 
 This option is only available when running smbpasswd as root. 
 .TP
-\fB-j DOMAIN\fR
-This option is used to add a Samba server 
-into a Windows NT Domain, as a Domain member capable of authenticating 
-user accounts to any Domain Controller in the same way as a Windows 
-NT Server. See the \fBsecurity = domain\fR option in 
-the \fIsmb.conf(5)\fR man page. 
-
-In order to be used in this way, the Administrator for 
-the Windows NT Domain must have used the program "Server Manager 
-for Domains" to add the primary NetBIOS name of the Samba server 
-as a member of the Domain. 
-
-After this has been done, to join the Domain invoke \fB smbpasswd\fR with this parameter. smbpasswd will then 
-look up the Primary Domain Controller for the Domain (found in 
-the \fIsmb.conf\fR file in the parameter 
-\fIpassword server\fR and change the machine account 
-password used to create the secure Domain communication. This 
-password is then stored by smbpasswd in a TDB, writeable only by root, 
-called \fIsecrets.tdb\fR 
-
-Once this operation has been performed the \fI smb.conf\fR file may be updated to set the \fB security = domain\fR option and all future logins
-to the Samba server will be authenticated to the Windows NT 
-PDC. 
-
-Note that even though the authentication is being 
-done to the PDC all users accessing the Samba server must still 
-have a valid UNIX account on that machine. 
-
-This option is only available when running smbpasswd as root. 
-.TP
 \fB-U username\fR
 This option may only be used in conjunction 
 with the \fI-r\fR option. When changing
@@ -292,7 +261,7 @@ has been set up to use encrypted passwords. See the file
 on how to do this. 
 .SH "VERSION"
 .PP
-This man page is correct for version 2.2 of 
+This man page is correct for version 3.0 of 
 the Samba suite.
 .SH "SEE ALSO"
 .PP
