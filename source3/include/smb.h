@@ -53,7 +53,6 @@ typedef int BOOL;
 #define SMB_SECONDARY_WAIT (60*1000)
 
 /* Debugging stuff */
-
 #include "debug.h"
 
 /* this defines the error codes that receive_smb can put in smb_read_error */
@@ -267,7 +266,7 @@ typedef smb_ucs2_t wfstring[128];
 #define PIPE_NTSVCS   "\\PIPE\\ntsvcs"
 #define PIPE_LSASS    "\\PIPE\\lsass"
 #define PIPE_LSARPC   "\\PIPE\\lsarpc"
-
+#define PIPE_SPOOLSS  "\\PIPE\\spoolss"
 
 /* 64 bit time (100usec) since ????? - cifs6.txt, section 3.5, page 30 */
 typedef struct nttime_info
@@ -1604,6 +1603,7 @@ extern int chain_size;
 
 #include "smb_macros.h"
 
+#include "nt_printing.h"
 #include "ntdomain.h"
 
 /* A netbios name structure. */

@@ -1,7 +1,18 @@
+
+/* Win32 Status codes. */
+
+#define STATUS_BUFFER_OVERFLOW            (5)
+#define STATUS_MORE_ENTRIES           (0x105)
+#define ERROR_INVALID_HANDLE		  (6)
+#define ERROR_INVALID_PARAMETER		 (87)
+#define ERROR_INSUFFICIENT_BUFFER	(122)
+#define STATUS_1804	               (1804)
+
 /* these are the NT error codes less than 1000. They are here for when
    we start supporting NT error codes in Samba. They were extracted
    using a loop in smbclient then printing a netmon sniff to a file */
 
+#define NT_STATUS_NO_PROBLEMO (0)
 #define NT_STATUS_UNSUCCESSFUL (1)
 #define NT_STATUS_NOT_IMPLEMENTED (2)
 #define NT_STATUS_INVALID_INFO_CLASS (3)
