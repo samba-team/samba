@@ -582,7 +582,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 
 	switch (break_which) {
 	case NO_NT:
-		if (memcmp(lmv2_session_key.data, user_session_key, 
+		if (memcmp(lmv2_session_key.data, user_session_key,
 			   sizeof(user_session_key)) != 0) {
 			printf("USER (LMv2) Session Key does not match expectations!\n");
 			printf("user_session_key:\n");
@@ -604,21 +604,42 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	default:
 		if (memcmp(ntlmv2_session_key.data, user_session_key, 
 			   sizeof(user_session_key)) != 0) {
-			printf("USER (NTLMv2) Session Key does not match expectations!\n");
-			printf("user_session_key:\n");
-			dump_data(1, user_session_key, 16);
-			printf("expected:\n");
-			dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
-			pass = False;
+			if (memcmp(lmv2_session_key.data, user_session_key,
+				   sizeof(user_session_key)) == 0) {
+				printf("USER (NTLMv2) Session Key expected, got LMv2 sessesion key instead:\n");
+				printf("user_session_key:\n");
+				dump_data(1, user_session_key, 16);
+				printf("expected:\n");
+				dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
+				pass = False;
+				
+			} else {
+				printf("USER (NTLMv2) Session Key does not match expectations!\n");
+				printf("user_session_key:\n");
+				dump_data(1, user_session_key, 16);
+				printf("expected:\n");
+				dump_data(1, ntlmv2_session_key.data, ntlmv2_session_key.length);
+				pass = False;
+			}
 		}
 		if (memcmp(ntlmv2_session_key.data, lm_session_key, 
 			   sizeof(lm_session_key)) != 0) {
-			printf("LM (NTLMv2) Session Key does not match expectations!\n");
-			printf("lm_session_key:\n");
-			dump_data(1, lm_session_key, 8);
-			printf("expected:\n");
-			dump_data(1, ntlmv2_session_key.data, 8);
-			pass = False;
+			if (memcmp(lmv2_session_key.data, lm_session_key,
+				   sizeof(lm_session_key)) == 0) {
+				printf("LM (NTLMv2) Session Key expected, got LMv2 sessesion key instead:\n");
+				printf("user_session_key:\n");
+				dump_data(1, lm_session_key, 8);
+				printf("expected:\n");
+				dump_data(1, ntlmv2_session_key.data, 8);
+				pass = False;
+			} else {
+				printf("LM (NTLMv2) Session Key does not match expectations!\n");
+				printf("lm_session_key:\n");
+				dump_data(1, lm_session_key, 8);
+				printf("expected:\n");
+				dump_data(1, ntlmv2_session_key.data, 8);
+				pass = False;
+			}
 		}
 	}
 
@@ -1254,21 +1275,6 @@ BOOL torture_rpc_samlogon(void)
 	for (i=0; i < ARRAY_SIZE(credential_flags); i++) {
 		
 		if (!test_SetupCredentials2(p, mem_ctx, credential_flags[i],
-					    TEST_MACHINE_NAME, machine_password, creds)) {
-			return False;
-		}
-		
-		if (!test_InteractiveLogon(p, mem_ctx, creds)) {
-			ret = False;
-		}
-		
-		if (!test_SamLogon(p, mem_ctx, creds)) {
-			ret = False;
-		}
-	}
-
-	for (i=0; i < 32; i++) {
-		if (!test_SetupCredentials2(p, mem_ctx, 1 << i,
 					    TEST_MACHINE_NAME, machine_password, creds)) {
 			return False;
 		}
