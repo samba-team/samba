@@ -14,8 +14,6 @@ kauth_SOURCES = kinit.c kauth_options.c
 
 noinst_PROGRAMS = kverify kdecode_ticket generate-requests
 
-CHECK_LOCAL = $(bin_PROGRAMS)
-
 kauth_LDADD = \
 	$(LIB_kafs) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
