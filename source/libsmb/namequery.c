@@ -169,7 +169,8 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
 	int sock;
 	BOOL result = False;
 
-	DEBUG(10, ("name_status_find: looking up %s#%x\n", q_name, q_type));
+	DEBUG(10, ("name_status_find: looking up %s#%02x at %s\n", q_name, 
+		   q_type, inet_ntoa(to_ip)));
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
 	if (sock == -1)
