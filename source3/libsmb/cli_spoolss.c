@@ -385,24 +385,35 @@ static void decode_printerdriverdir_1 (
 	*info=inf;
 }
 
+/** Enumerate printers on a print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         may be NULL.
+ *
+ * @param flags            Selected from PRINTER_ENUM_* flags.
+ * @param level            Request information level.
+ *
+ * @param num_printers     Pointer to number of printers returned.  May be
+ *                         NULL.
+ * @param ctr              Return structure for printer information.  May
+ *                         be NULL.
+ */
 
-/* Enumerate printers */
-
-NTSTATUS cli_spoolss_enum_printers(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	uint32 flags,
-	uint32 level, 
-	int *returned, 
-	PRINTER_INFO_CTR *ctr
-)
+WERROR cli_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				 uint32 offered, uint32 *needed,
+				 uint32 flags, uint32 level,
+				 uint32 *num_printers, PRINTER_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPRINTERS q;
         SPOOL_R_ENUMPRINTERS r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -411,79 +422,90 @@ NTSTATUS cli_spoolss_enum_printers(
 	fstrcpy (server, cli->desthost);
 	strupper (server);
 	
-	do {
-		/* Initialise input parameters */
+	/* Initialise input parameters */
 
-		init_buffer(&buffer, needed, mem_ctx);
+	init_buffer(&buffer, offered, mem_ctx);
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
 
-		make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
-					    needed);
+	make_spoolss_q_enumprinters(&q, flags, server, level, &buffer, 
+				    offered);
 
-		/* Marshall data and send request */
+	/* Marshall data and send request */
+	
+	if (!spoolss_io_q_enumprinters("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf))
+		goto done;
 
-		if (!spoolss_io_q_enumprinters("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPRINTERS, &qbuf, &rbuf)) {
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
+	/* Unmarshall response */
 
-		/* Unmarshall response */
-		if (spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
-			needed = r.needed;
-		}
-		
-		/* Return output parameters */
-		if (!W_ERROR_IS_OK(r.status)) {
-			result = werror_to_ntstatus(r.status);
-			goto done;
-		}
+	if (spoolss_io_r_enumprinters("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
+	
+	result = r.status;
 
-		result = NT_STATUS_OK;
+	/* Return output parameters */
 
-		if ((*returned = r.returned)) {
-			switch (level) {
-			case 1:
-				decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
-						      &ctr->printers_1);
-				break;
-			case 2:
-				decode_printer_info_2(mem_ctx, r.buffer, r.returned, 
-						      &ctr->printers_2);
-				break;
-			case 3:
-				decode_printer_info_3(mem_ctx, r.buffer, r.returned, 
-						      &ctr->printers_3);
-				break;
-			}			
-		}
+	if (!W_ERROR_IS_OK(r.status))
+		goto done;
 
-	done:
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
+	if (num_printers)
+		*num_printers = r.returned;
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
+	if (!ctr)
+		goto done;
+
+	switch (level) {
+	case 1:
+		decode_printer_info_1(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_1);
+		break;
+	case 2:
+		decode_printer_info_2(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_2);
+		break;
+	case 3:
+		decode_printer_info_3(mem_ctx, r.buffer, r.returned, 
+				      &ctr->printers_3);
+		break;
+	}			
+	
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
 	return result;	
 }
 
-/* Enumerate printer ports */
-NTSTATUS cli_spoolss_enum_ports(
-	struct cli_state *cli, 
-	TALLOC_CTX *mem_ctx,
-	uint32 level, 
-	int *returned, 
-	PORT_INFO_CTR *ctr
-)
+/** Enumerate printer ports on a print server.
+ *
+ * @param cli              Pointer to client state structure which is open
+ *                         on the SPOOLSS pipe.
+ * @param mem_ctx          Pointer to an initialised talloc context.
+ *
+ * @param offered          Buffer size offered in the request.
+ * @param needed           Number of bytes needed to complete the request.
+ *                         May be NULL.
+ *
+ * @param level            Requested information level.
+ *
+ * @param num_ports        Pointer to number of ports returned.  May be NULL.
+ * @param ctr              Pointer to structure holding port information.
+ *                         May be NULL.
+ */
+
+WERROR cli_spoolss_enum_ports(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+			      uint32 offered, uint32 *needed,
+			      uint32 level, int *num_ports, PORT_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SPOOL_Q_ENUMPORTS q;
         SPOOL_R_ENUMPORTS r;
 	NEW_BUFFER buffer;
-	uint32 needed = 100;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 	fstring server;
 
 	ZERO_STRUCT(q);
@@ -492,55 +514,56 @@ NTSTATUS cli_spoolss_enum_ports(
         slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
-	do {
-		/* Initialise input parameters */
+	/* Initialise input parameters */
+	
+	init_buffer(&buffer, offered, mem_ctx);
+	
+	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	
+	make_spoolss_q_enumports(&q, server, level, &buffer, offered);
+	
+	/* Marshall data and send request */
 
-		init_buffer(&buffer, needed, mem_ctx);
+	if (!spoolss_io_q_enumports("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf, &rbuf))
+		goto done;
 
-		prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
-		prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+	/* Unmarshall response */
 
-		make_spoolss_q_enumports(&q, server, level, &buffer, needed);
-
-		/* Marshall data and send request */
-
-		if (!spoolss_io_q_enumports("", &q, &qbuf, 0) ||
-		    !rpc_api_pipe_req(cli, SPOOLSS_ENUMPORTS, &qbuf, &rbuf)) {
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-
-		/* Unmarshall response */
-		if (spoolss_io_r_enumports("", &r, &rbuf, 0)) {
-			needed = r.needed;
-		}
+	if (spoolss_io_r_enumports("", &r, &rbuf, 0)) {
+		if (needed)
+			*needed = r.needed;
+	}
 		
-		/* Return output parameters */
-		result = werror_to_ntstatus(r.status);
+	result = r.status;
 
-		if (NT_STATUS_IS_OK(result) &&
-		    r.returned > 0) {
+	/* Return output parameters */
 
-			*returned = r.returned;
+	if (!W_ERROR_IS_OK(result))
+		goto done;
 
-			switch (level) {
-			case 1:
-				decode_port_info_1(mem_ctx, r.buffer, r.returned, 
-						   &ctr->port.info_1);
-				break;
-			case 2:
-				decode_port_info_2(mem_ctx, r.buffer, r.returned, 
-						   &ctr->port.info_2);
-				break;
-			}			
-		}
+	if (num_ports)
+		*num_ports = r.returned;
 
-	done:
-		prs_mem_free(&qbuf);
-		prs_mem_free(&rbuf);
+	if (!ctr)
+		goto done;
+	
+	switch (level) {
+	case 1:
+		decode_port_info_1(mem_ctx, r.buffer, r.returned, 
+				   &ctr->port.info_1);
+		break;
+	case 2:
+		decode_port_info_2(mem_ctx, r.buffer, r.returned, 
+				   &ctr->port.info_2);
+		break;
+	}			
 
-	} while (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_BUFFER_TOO_SMALL));
-
+ done:
+	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
+	
 	return result;	
 }
 
