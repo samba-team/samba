@@ -25,7 +25,7 @@ extern int DEBUGLEVEL;
 
 struct timeval smb_last_time;
 
-char *InBuffer = NULL;
+static char *InBuffer = NULL;
 char *OutBuffer = NULL;
 char *last_inbuf = NULL;
 
@@ -420,6 +420,7 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
     sizeof(smb_messages) / sizeof(struct smb_message_struct);
   int match;
   extern int Client;
+  extern int global_smbpid;
 
   if (pid == (pid_t)-1)
     pid = getpid();
@@ -437,6 +438,10 @@ static int switch_message(int type,char *inbuf,char *outbuf,int size,int bufsize
   for (match=0;match<num_smb_messages;match++)
     if (smb_messages[match].code == type)
       break;
+
+  /* yuck! this is an interim measure before we get rid of our
+     current inbuf/outbuf system */
+  global_smbpid = SVAL(inbuf,smb_pid);
 
   if (match == num_smb_messages)
   {
@@ -841,7 +846,7 @@ void check_reload(int t)
 }
 
 /****************************************************************************
- Process any timeout housekeeping. Return False if the caler should exit.
+ Process any timeout housekeeping. Return False if the caller should exit.
 ****************************************************************************/
 
 static BOOL timeout_processing(int deadtime, int *select_timeout, time_t *last_timeout_processing_time)
