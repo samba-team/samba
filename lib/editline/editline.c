@@ -217,7 +217,7 @@ static void
 TTYinfo()
 {
     static int		init;
-    char		*term;
+    const char		*term;
     char		buff[2048];
     char		*bp;
     char		*tmp;
@@ -250,8 +250,6 @@ TTYinfo()
     tmp = tgetstr("le", &bp);
     if (tmp != NULL)
 	backspace = strdup(tmp);
-    else
-	backspace = "\b";
     TTYwidth = tgetnum("co");
     TTYrows = tgetnum("li");
 
@@ -1077,7 +1075,7 @@ c_possible()
     int		ac;
 
     word = find_word();
-    ac = rl_list_possib((char *)word, (char ***)&av);
+    ac = rl_list_possib((char *)word, (void *)&av);
     if (word)
 	free(word);
     if (ac) {
