@@ -46,7 +46,16 @@ void cmd_sam_test(struct client_info *info)
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
+	char *new_passwd;
 	BOOL res = True;
+	char nt_newpass[516];
+	char nt_hshhash[16];
+	char nt_newhash[16];
+	char nt_oldhash[16];
+	char lm_newpass[516];
+	char lm_newhash[16];
+	char lm_hshhash[16];
+	char lm_oldhash[16];
 
 	fstrcpy(sid   , info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -58,16 +67,35 @@ void cmd_sam_test(struct client_info *info)
 	}
 
 	fstrcpy(srv_name, "\\\\");
-	fstrcat(srv_name, info->myhostname);
+	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
 	fprintf(out_hnd, "SAM Encryption Test\n");
 
+#if 0
+	struct pwd_info new_pwd;
+	pwd_read(&new_pwd, "New Password (ONCE: this is test code!):", True);
+#endif
+	new_passwd = (char*)getpass("New Password (ONCE: this is test code!):");
+
+	nt_lm_owf_gen(new_passwd, lm_newhash, nt_newhash);
+	pwd_get_lm_nt_16(&(smb_cli->pwd), lm_oldhash , nt_oldhash );
+	make_oem_passwd_hash(nt_newpass, new_passwd, nt_oldhash);
+	make_oem_passwd_hash(lm_newpass, new_passwd, lm_oldhash);
+	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
+	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
+
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, True) : False;
+	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, False) : False;
 
 	/* establish a connection. */
 	res = res ? do_samr_unknown_38(smb_cli, srv_name) : False;
+
+	/* establish a connection. */
+	res = res ? do_samr_chgpasswd_user(smb_cli,
+	                                   srv_name, smb_cli->user_name,
+	                                   nt_newpass, nt_hshhash,
+	                                   lm_newpass, lm_hshhash) : False;
 
 	/* close the session */
 	cli_nt_session_close(smb_cli);

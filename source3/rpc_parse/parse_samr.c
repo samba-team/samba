@@ -2452,37 +2452,64 @@ void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, i
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
-
-#if 0
-/* SAMR_Q_CHGPASSWD_USER */
-typedef struct q_samr_chgpasswd_user_info
+/*******************************************************************
+makes a SAMR_Q_UNKNOWN_12 structure.
+********************************************************************/
+void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
+		POLICY_HND *pol, uint32 rid,
+		uint32 num_gids, uint32 *gid)
 {
-	uint32 ptr_0;
+	int i;
+	if (q_u == NULL) return;
 
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
+	DEBUG(5,("make_samr_r_unknwon_12\n"));
 
-	UNIHDR hdr_user_name;    /* username unicode string header */
-	UNISTR2 uni_user_name;    /* username unicode string */
+	memcpy(&(q_u->pol), pol, sizeof(*pol));
 
-	SAMR_ENC_PASSWD nt_newpass;
-	SAMR_ENC_HASH nt_oldhash;
+	q_u->num_gids1 = num_gids;
+	q_u->rid       = rid;
+	q_u->ptr       = 0;
+	q_u->num_gids2 = num_gids;
 
-	uint32 unknown_1; /* seems to always contain 0001 */
+	for (i = 0; i < num_gids; i++)
+	{
+		q_u->gid[i] = gid[i];
+	}
+}
 
-	SAMR_ENC_PASSWD lm_newpass;
-	SAMR_ENC_HASH lm_oldhash;
 
-} SAMR_Q_CHGPASSWD_USER;
 
-/* SAMR_R_CHGPASSWD_USER */
-typedef struct r_samr_chgpasswd_user_info
+
+/*******************************************************************
+makes a SAMR_Q_UNKNOWN_21 structure.
+********************************************************************/
+void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2)
 {
-	uint32 result; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
+	if (q_c == NULL || hnd == NULL) return;
 
-} SAMR_R_CHGPASSWD_USER;
+	DEBUG(5,("make_samr_q_unknown_21\n"));
 
-#endif /* 0 */
+	memcpy(&(q_c->group_pol), hnd, sizeof(q_c->group_pol));
+	q_c->unknown_1 = unk_1;
+	q_c->unknown_2 = unk_2;
+}
+
+
+/*******************************************************************
+makes a SAMR_Q_UNKNOWN_13 structure.
+********************************************************************/
+void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
+				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2)
+{
+	if (q_c == NULL || hnd == NULL) return;
+
+	DEBUG(5,("make_samr_q_unknown_13\n"));
+
+	memcpy(&(q_c->alias_pol), hnd, sizeof(q_c->alias_pol));
+	q_c->unknown_1 = unk_1;
+	q_c->unknown_2 = unk_2;
+}
 
 
 /*******************************************************************
@@ -2555,6 +2582,17 @@ void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, i
 }
 
 /*******************************************************************
+make a SAMR_ENC_PASSWD structure.
+********************************************************************/
+void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512])
+{
+	if (pwd == NULL) return;
+
+	pwd->ptr = 1;
+	memcpy(&(pwd->pass), pass, sizeof(pwd->pass)); 
+}
+
+/*******************************************************************
 reads or writes a SAMR_ENC_PASSWD structure.
 ********************************************************************/
 void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth)
@@ -2568,6 +2606,17 @@ void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int de
 
 	prs_uint32("ptr", ps, depth, &(pwd->ptr));
 	prs_uint8s(False, "pwd", ps, depth, pwd->pass, sizeof(pwd->pass)); 
+}
+
+/*******************************************************************
+makes a SAMR_ENC_HASH structure.
+********************************************************************/
+void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16])
+{
+	if (hsh == NULL) return;
+
+	hsh->ptr = 1;
+	memcpy(&(hsh->hash), hash, sizeof(hsh->hash));
 }
 
 /*******************************************************************
@@ -2586,95 +2635,77 @@ void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth)
 	prs_uint8s(False, "hash", ps, depth, hsh->hash, sizeof(hsh->hash)); 
 }
 
-#if 0
-/* SAMR_Q_CHGPASSWD_USER */
-typedef struct q_samr_chgpasswd_user_info
-{
-	uint32 ptr_0;
-
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
-
-	UNIHDR hdr_user_name;    /* username unicode string header */
-	UNISTR2 uni_user_name;    /* username unicode string */
-
-	SAMR_ENC_PASSWD nt_newpass;
-	SAMR_ENC_HASH nt_oldhash;
-
-	uint32 unknown_1; /* seems to always contain 0001 */
-
-	SAMR_ENC_PASSWD lm_newpass;
-	SAMR_ENC_HASH lm_oldhash;
-
-} SAMR_Q_CHGPASSWD_USER;
-
-/* SAMR_R_CHGPASSWD_USER */
-typedef struct r_samr_chgpasswd_user_info
-{
-	uint32 result; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
-
-} SAMR_R_CHGPASSWD_USER;
-
-#endif /* 0 */
-
-
 /*******************************************************************
-makes a SAMR_Q_UNKNOWN_12 structure.
+makes a SAMR_R_UNKNOWN_38 structure.
 ********************************************************************/
-void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
-		POLICY_HND *pol, uint32 rid,
-		uint32 num_gids, uint32 *gid)
+void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+				char *dest_host, char *user_name,
+				char nt_newpass[516], char nt_oldhash[16],
+				char lm_newpass[516], char lm_oldhash[16])
 {
-	int i;
+	int len_dest_host = strlen(dest_host);
+	int len_user_name = strlen(user_name);
+
 	if (q_u == NULL) return;
 
-	DEBUG(5,("make_samr_r_unknwon_12\n"));
+	DEBUG(5,("make_samr_q_chgpasswd_user\n"));
 
-	memcpy(&(q_u->pol), pol, sizeof(*pol));
+	q_u->ptr_0 = 1;
+	make_uni_hdr(&(q_u->hdr_dest_host), len_dest_host, len_dest_host, len_dest_host != 0);
+	make_unistr2(&(q_u->uni_dest_host), dest_host, len_dest_host);  
+	make_uni_hdr(&(q_u->hdr_user_name), len_user_name, len_user_name, len_user_name != 0);
+	make_unistr2(&(q_u->uni_user_name), user_name, len_user_name);  
 
-	q_u->num_gids1 = num_gids;
-	q_u->rid       = rid;
-	q_u->ptr       = 0;
-	q_u->num_gids2 = num_gids;
+	make_enc_passwd(&(q_u->nt_newpass), nt_newpass);
+	make_enc_hash  (&(q_u->nt_oldhash), nt_oldhash);
 
-	for (i = 0; i < num_gids; i++)
-	{
-		q_u->gid[i] = gid[i];
-	}
-}
+	q_u->unknown = 0x01;
 
-
-
-
-/*******************************************************************
-makes a SAMR_Q_UNKNOWN_21 structure.
-********************************************************************/
-void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
-				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2)
-{
-	if (q_c == NULL || hnd == NULL) return;
-
-	DEBUG(5,("make_samr_q_unknown_21\n"));
-
-	memcpy(&(q_c->group_pol), hnd, sizeof(q_c->group_pol));
-	q_c->unknown_1 = unk_1;
-	q_c->unknown_2 = unk_2;
-}
-
+	make_enc_passwd(&(q_u->lm_newpass), lm_newpass);
+	make_enc_hash  (&(q_u->lm_oldhash), lm_oldhash);
+};
 
 /*******************************************************************
-makes a SAMR_Q_UNKNOWN_13 structure.
+reads or writes a structure.
 ********************************************************************/
-void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
-				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2)
+void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth)
 {
-	if (q_c == NULL || hnd == NULL) return;
+	if (q_u == NULL) return;
 
-	DEBUG(5,("make_samr_q_unknown_13\n"));
+	prs_debug(ps, depth, desc, "samr_io_q_chgpasswd_user");
+	depth++;
 
-	memcpy(&(q_c->alias_pol), hnd, sizeof(q_c->alias_pol));
-	q_c->unknown_1 = unk_1;
-	q_c->unknown_2 = unk_2;
+	prs_align(ps);
+
+	prs_uint32("ptr_0", ps, depth, &(q_u->ptr_0));
+
+	smb_io_unihdr ("", &(q_u->hdr_dest_host), ps, depth); 
+	smb_io_unistr2("", &(q_u->uni_dest_host), q_u->hdr_dest_host.buffer, ps, depth); 
+	smb_io_unihdr ("", &(q_u->hdr_user_name), ps, depth); 
+	smb_io_unistr2("", &(q_u->uni_user_name), q_u->hdr_user_name.buffer, ps, depth); 
+
+	samr_io_enc_passwd("nt_newpass", &(q_u->nt_newpass), ps, depth); 
+	samr_io_enc_hash  ("nt_oldhash", &(q_u->nt_oldhash), ps, depth); 
+
+	prs_uint32("unknown", ps, depth, &(q_u->unknown));
+
+	samr_io_enc_passwd("lm_newpass", &(q_u->lm_newpass), ps, depth); 
+	samr_io_enc_hash  ("lm_oldhash", &(q_u->lm_oldhash), ps, depth); 
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_chgpasswd_user");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
 

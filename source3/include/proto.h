@@ -511,6 +511,7 @@ void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16]);
 void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24]);
 void NTLMSSPOWFencrypt(uchar passwd[8], uchar *ntlmchalresp, uchar p24[24]);
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
+BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16]);
 
 /*The following definitions come from  libsmb/smberr.c  */
 
@@ -1270,6 +1271,10 @@ BOOL get_samr_query_userinfo(struct cli_state *cli,
 				POLICY_HND *pol_open_domain,
 				uint32 info_level,
 				uint32 user_rid, SAM_USER_INFO_21 *usr);
+BOOL do_samr_chgpasswd_user(struct cli_state *cli,
+		char *srv_name, char *user_name,
+		char nt_newpass[516], char nt_oldhash[16],
+		char lm_newpass[516], char lm_oldhash[16]);
 BOOL do_samr_unknown_38(struct cli_state *cli, char *srv_name);
 BOOL do_samr_unknown_8(struct cli_state *cli, 
 				POLICY_HND *domain_pol, uint16 switch_value);
@@ -1709,13 +1714,6 @@ void make_samr_q_open_alias(SAMR_Q_OPEN_ALIAS *q_u,
 				uint32 unknown_0, uint32 rid);
 void samr_io_q_open_alias(char *desc,  SAMR_Q_OPEN_ALIAS *q_u, prs_struct *ps, int depth);
 void samr_io_r_open_alias(char *desc,  SAMR_R_OPEN_ALIAS *r_u, prs_struct *ps, int depth);
-void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
-void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
-void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u,
-				uint16 level, uint32 status);
-void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
-void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
-void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
 void make_samr_q_unknown_12(SAMR_Q_UNKNOWN_12 *q_u,
 		POLICY_HND *pol, uint32 rid,
 		uint32 num_gids, uint32 *gid);
@@ -1723,6 +1721,21 @@ void make_samr_q_unknown_21(SAMR_Q_UNKNOWN_21 *q_c,
 				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
 void make_samr_q_unknown_13(SAMR_Q_UNKNOWN_13 *q_c,
 				POLICY_HND *hnd, uint16 unk_1, uint16 unk_2);
+void make_samr_q_unknown_38(SAMR_Q_UNKNOWN_38 *q_u, char *srv_name);
+void samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, int depth);
+void make_samr_r_unknown_38(SAMR_R_UNKNOWN_38 *r_u,
+				uint16 level, uint32 status);
+void samr_io_r_unknown_38(char *desc,  SAMR_R_UNKNOWN_38 *r_u, prs_struct *ps, int depth);
+void make_enc_passwd(SAMR_ENC_PASSWD *pwd, char pass[512]);
+void samr_io_enc_passwd(char *desc, SAMR_ENC_PASSWD *pwd, prs_struct *ps, int depth);
+void make_enc_hash(SAMR_ENC_HASH *hsh, char hash[16]);
+void samr_io_enc_hash(char *desc, SAMR_ENC_HASH *hsh, prs_struct *ps, int depth);
+void make_samr_q_chgpasswd_user(SAMR_Q_CHGPASSWD_USER *q_u,
+				char *dest_host, char *user_name,
+				char nt_newpass[516], char nt_oldhash[16],
+				char lm_newpass[516], char lm_oldhash[16]);
+void samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct *ps, int depth);
+void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct *ps, int depth);
 
 /*The following definitions come from  rpc_parse/parse_srv.c  */
 

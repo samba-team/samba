@@ -2021,18 +2021,12 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   unsigned char new_pw_hash[16];
   int data_len;
   int param_len = 0;
-  int new_pw_len = strlen(new_password);
   char *rparam = NULL;
   char *rdata = NULL;
   int rprcnt, rdrcnt;
 
   if (strlen(user) >= sizeof(fstring)-1) {
     DEBUG(0,("cli_oem_change_password: user name %s is too long.\n", user));
-    return False;
-  }
-
-  if (new_pw_len > 512) {
-    DEBUG(0,("cli_oem_change_password: new password for user %s is too long.\n", user));
     return False;
   }
 
@@ -2050,25 +2044,18 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
   param_len = PTR_DIFF(p,param);
 
   /*
-   * Now setup the data area.
-   * We need to generate a random fill
-   * for this area to make it harder to
-   * decrypt. JRA.
-   */
-  generate_random_buffer((unsigned char *)data, sizeof(data), False);
-  fstrcpy( &data[512 - new_pw_len], new_password);
-  SIVAL(data, 512, new_pw_len);
-
-  /*
    * Get the Lanman hash of the old password, we
-   * use this as the key to SamOEMHash().
+   * use this as the key to make_oem_passwd_hash().
    */
   memset(upper_case_old_pw, '\0', sizeof(upper_case_old_pw));
   fstrcpy(upper_case_old_pw, old_password);
   strupper(upper_case_old_pw);
   E_P16((uchar *)upper_case_old_pw, old_pw_hash);
 
-  SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
+	if (!make_oem_passwd_hash( data, new_password, old_pw_hash))
+	{
+		return False;
+	}
 
   /* 
    * Now place the old password hash in the data.

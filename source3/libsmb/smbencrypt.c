@@ -191,3 +191,26 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)
 }
 
 
+BOOL make_oem_passwd_hash(char data[516], char *passwd, char old_pw_hash[16])
+{
+	int new_pw_len = strlen(passwd);
+
+	if (new_pw_len > 512)
+	{
+		DEBUG(0,("make_oem_passwd_hash: new password is too long.\n"));
+		return False;
+	}
+
+	/*
+	 * Now setup the data area.
+	 * We need to generate a random fill
+	 * for this area to make it harder to
+	 * decrypt. JRA.
+	 */
+	generate_random_buffer((unsigned char *)data, 516, False);
+	fstrcpy( &data[512 - new_pw_len], passwd);
+	SIVAL(data, 512, new_pw_len);
+
+	SamOEMhash( (unsigned char *)data, (unsigned char *)old_pw_hash, True);
+}
+

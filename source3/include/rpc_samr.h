@@ -91,6 +91,7 @@ SamrTestPrivateFunctionsUser
 #define SAMR_UNKNOWN_21        0x21
 #define SAMR_UNKNOWN_32        0x32
 #define SAMR_UNKNOWN_34        0x34
+#define SAMR_CHGPASSWD_USER    0x37
 #define SAMR_UNKNOWN_38        0x38
 #define SAMR_CONNECT           0x39
 #define SAMR_OPEN_ALIAS        0x1b
@@ -997,8 +998,8 @@ typedef struct q_samr_chgpasswd_user_info
 {
 	uint32 ptr_0;
 
-	UNIHDR hdr_server; /* server name unicode header */
-	UNISTR2 uni_server; /* server name unicode string */
+	UNIHDR hdr_dest_host; /* server name unicode header */
+	UNISTR2 uni_dest_host; /* server name unicode string */
 
 	UNIHDR hdr_user_name;    /* username unicode string header */
 	UNISTR2 uni_user_name;    /* username unicode string */
@@ -1006,7 +1007,7 @@ typedef struct q_samr_chgpasswd_user_info
 	SAMR_ENC_PASSWD nt_newpass;
 	SAMR_ENC_HASH nt_oldhash;
 
-	uint32 unknown_1; /* seems to always contain 0001 */
+	uint32 unknown; /* 0x0000 0001 */
 
 	SAMR_ENC_PASSWD lm_newpass;
 	SAMR_ENC_HASH lm_oldhash;
@@ -1016,7 +1017,7 @@ typedef struct q_samr_chgpasswd_user_info
 /* SAMR_R_CHGPASSWD_USER */
 typedef struct r_samr_chgpasswd_user_info
 {
-	uint32 result; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
+	uint32 status; /* 0 == OK, C000006A (NT_STATUS_WRONG_PASSWORD) */
 
 } SAMR_R_CHGPASSWD_USER;
 
