@@ -41,14 +41,6 @@ INIT_OBJ_FILES = \
 ################################################
 
 ##############################
-# Start SUBSYSTEM SOCKET_WRAPPER
-[SUBSYSTEM::SOCKET_WRAPPER]
-NOPROTO = YES
-INIT_OBJ_FILES = lib/socket_wrapper.o
-# End SUBSYSTEM SOCKET_WRAPPER
-##############################
-
-##############################
 # Start SUBSYSTEM LIBBASIC
 [SUBSYSTEM::LIBBASIC]
 INIT_OBJ_FILES = lib/version.o
