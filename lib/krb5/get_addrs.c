@@ -130,7 +130,7 @@ find_all_addresses (krb5_addresses *res, int loop)
 
 	  /* This is somewhat kludgy, but it seems to work. */
 
-	  size_t sz = sizeof(*ifr);
+	  sz = sizeof(*ifr);
 #ifdef SOCKADDR_HAS_SA_LEN
 	  if(ifr->ifr_addr.sa_len)
 	      sz = sizeof(ifr->ifr_name) + ifr->ifr_addr.sa_len;
