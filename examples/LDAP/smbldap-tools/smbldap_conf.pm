@@ -29,7 +29,7 @@ package smbldap_conf;
 
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 $UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
-$with_smbpasswd $mk_ntpasswd
+$slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
 $ldap_path $ldap_opts $ldapsearch $ldapsearchnobind
 $ldapmodify $ldappasswd $ldapadd $ldapdelete $ldapmodrdn
 $suffix $usersdn $computersdn
@@ -48,7 +48,7 @@ $VERSION = 1.00;
 
 @EXPORT = qw(
 $UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
-$with_smbpasswd $mk_ntpasswd
+$slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
 $ldap_path $ldap_opts $ldapsearch $ldapsearchnobind $ldapmodify $ldappasswd
 $ldapadd $ldapdelete $ldapmodrdn $suffix $usersdn
 $computersdn $groupsdn $scope $binddn $bindpasswd
@@ -73,6 +73,10 @@ $usersou $computersou $groupsou
 $UID_START = 1000;
 $GID_START = 1000;
 
+# Put your own SID
+# to obtain this number do: # net getlocalsid
+our $SID='S-1-5-21-636805976-1992644568-3666589737';
+
 ##############################################################################
 #
 # LDAP Configuration
@@ -86,19 +90,34 @@ $GID_START = 1000;
 # Slave LDAP : needed for read operations
 #
 # Ex: $slaveLDAP = "127.0.0.1";
-$slaveLDAP = "_SLAVELDAP_";
+$slaveLDAP = "127.0.0.1";
+
+$slavePort = "389";
 
 # 
 # Master LDAP : needed for write operations
 #
 # Ex: $masterLDAP = "127.0.0.1";
-$masterLDAP = "_MASTERLDAP_";
+$masterLDAP = "127.0.0.1";
+
+
+#
+# Master Port
+# 389 636
+# Ex: $masterPort = "
+$masterPort = "389";
+
+#
+# Use SSL for LDAP
+#
+$ldapSSL = "0";
 
 #
 # LDAP Suffix
 #
 # Ex: $suffix = "dc=IDEALX,dc=ORG";
-$suffix = "_SUFFIX_";
+$suffix = "dc=IDEALX,dc=ORG";
+
 
 # 
 # Where are stored Users
@@ -134,11 +153,11 @@ $scope = "sub";
 #
 # Bind DN used 
 # Ex: $binddn = "cn=Manager,$suffix"; for cn=Manager,dc=IDEALX,dc=org
-$binddn = "_BINDDN_";
+$binddn = "cn=Manager,$suffix";
 #
 # Bind DN passwd used
 # Ex: $bindpasswd = 'secret'; for 'secret'
-$bindpasswd = "_BINDPW_";
+$bindpasswd = "secret";
 
 #
 # Notes: if using dual ldap patch, you can specify to different configuration
@@ -167,7 +186,7 @@ $_userLoginShell = q(_LOGINSHELL_);
 # Home directory prefix (without username)
 #
 #Ex: $_userHomePrefix = q(/home/);
-$_userHomePrefix = q(_USERHOMEPREFIX_);
+$_userHomePrefix = q(_HOMEPREFIX_);
 
 #
 # Gecos
@@ -211,7 +230,7 @@ $_userProfile = q(\\\\_PDCNAME_\\profiles\\);
 # The default Home Drive Letter mapping
 # (will be automatically mapped at logon time if home directory exist)
 # Ex: q(U:) for U:
-$_userHomeDrive = q(_HOMEDRIVE_:);
+$_userHomeDrive = q(_HOMEDRIVE_);
 
 #
 # The default user netlogon script name
@@ -232,15 +251,28 @@ $with_smbpasswd = 0;
 $smbpasswd = "/usr/bin/smbpasswd";
 $mk_ntpasswd = "/usr/local/sbin/mkntpwd";
 
+if ( $ldapSSL eq "0" ) {
+	$slaveURI = "ldap://$slaveLDAP:$slavePort";
+	$masterURI = "ldap://$masterLDAP:$masterPort";
+}
+elsif ( $ldapSSL eq "1" ) {
+	$slaveURI = "ldaps://$slaveLDAP:$slavePort";
+	$masterURI = "ldaps://$masterLDAP:$masterPort";
+}
+else {
+	die "ldapSSL option must be either 0 or 1.\n";
+}
+	
+
 $ldap_path = "/usr/bin";
 $ldap_opts = "-x";
-$ldapsearch = "$ldap_path/ldapsearch $ldap_opts -h $slaveLDAP -D '$slaveDN' -w '$slavePw'";
-$ldapsearchnobind = "$ldap_path/ldapsearch $ldap_opts -h $slaveLDAP";
-$ldapmodify = "$ldap_path/ldapmodify $ldap_opts -h $masterLDAP -D '$masterDN' -w '$masterPw'";
-$ldappasswd = "$ldap_path/ldappasswd $ldap_opts -h $masterLDAP -D '$masterDN' -w '$masterPw'";
-$ldapadd = "$ldap_path/ldapadd $ldap_opts -h $masterLDAP -D '$masterDN' -w '$masterPw'";
-$ldapdelete = "$ldap_path/ldapdelete $ldap_opts -h $masterLDAP -D '$masterDN' -w '$masterPw'";
-$ldapmodrdn = "$ldap_path/ldapmodrdn $ldap_opts -h $masterLDAP -D '$masterDN' -w '$masterPw'";
+$ldapsearch = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI -D '$slaveDN' -w '$slavePw'";
+$ldapsearchnobind = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI";
+$ldapmodify = "$ldap_path/ldapmodify $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+$ldappasswd = "$ldap_path/ldappasswd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+$ldapadd = "$ldap_path/ldapadd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+$ldapdelete = "$ldap_path/ldapdelete $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+$ldapmodrdn = "$ldap_path/ldapmodrdn $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
 
 
 

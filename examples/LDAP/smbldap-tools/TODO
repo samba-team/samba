@@ -4,6 +4,7 @@
 ## (BF: Bug Report / FR: Feature Request)
 
 
+FR * add 'LDAP port' for both slave and master LDAP server in smbldap_conf.pm
 FR * use RFC2307 best practices (Luke, next time you visit Paris, have a 
      beer at IDEALX'cantina ;-)
 FR * add mail (sendmail/postfix/qmail/courier) support

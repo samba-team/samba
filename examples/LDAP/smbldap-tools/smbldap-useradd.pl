@@ -26,7 +26,6 @@ use strict;
 use smbldap_tools;
 use smbldap_conf;
 
-
 #####################
 
 use Getopt::Std;
@@ -51,11 +50,11 @@ if ( (!$ok) || (@ARGV < 1) || ($Options{'?'}) ) {
 	print "  -P     ends by invoking smbldap-passwd.pl\n";
 	print "  -A	can change password ? 0 if no, 1 if yes\n";
 	print "  -B	must change password ? 0 if no, 1 if yes\n";
-	print "  -C	smbHome (SMB home share, like '\\\\PDC-SRV\\homes')\n";
-	print "  -D	homeDrive (letter associated with home share, like 'H:')\n";
-	print "  -E	scriptPath (DOS script to execute on login)\n";
-	print "  -F	profilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
-	print "  -H	acctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
+	print "  -C	sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')\n";
+	print "  -D	sambaHomeDrive (letter associated with home share, like 'H:')\n";
+	print "  -E	sambaLogonScript (DOS script to execute on login)\n";
+	print "  -F	sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')\n";
+	print "  -H	sambaAcctFlags (samba account control bits like '[NDHTUMWSLKI]')\n";
 	print "  -?	show this help message\n";
 	exit (1);
 }
@@ -141,7 +140,7 @@ my $userHomeDirectory;
 my $tmp;
 if (!defined($userHomeDirectory = $Options{'d'}))
 {
-    $userHomeDirectory = $_userHomePrefix.$userName;
+    $userHomeDirectory = $_userHomePrefix."/".$userName;
 }
 $_userLoginShell = $tmp if (defined($tmp = $Options{'s'}));
 $_userGecos = $tmp if (defined($tmp = $Options{'c'}));
@@ -175,7 +174,7 @@ if (defined($tmp = $Options{'w'})) {
 	my $tmpldif =
 "dn: uid=$userName,$computersdn
 changetype: modify
-acctFlags: [W          ]
+sambaAcctFlags: [W          ]
 
 ";
 	die "$0: error while modifying accountflags of $userName\n"
@@ -194,10 +193,10 @@ acctFlags: [W          ]
 
 my $tmpldif =
 "dn: uid=$userName,$usersdn
-objectclass: top
-objectclass: account
+objectclass: inetOrgPerson
 objectclass: posixAccount
 cn: $userName
+sn: $userName
 uid: $userName
 uidNumber: $userUidNumber
 gidNumber: $userGidNumber
@@ -228,12 +227,14 @@ if (defined($grouplist = $Options{'G'})) {
 
 # If user was created successfully then we should create his/her home dir
 if (defined($tmp = $Options{'m'})) {
+   unless ( $userName =~ /\$$/ ) {
     if ( !(-e $userHomeDirectory) ) {
 	system "mkdir $userHomeDirectory 2>/dev/null";
 	system "cp -a $_skeletonDir/.[a-z,A-Z]* $_skeletonDir/* $userHomeDirectory 2>/dev/null";
 	system "chown -R $userUidNumber:$userGidNumber $userHomeDirectory 2>/dev/null";
 	system "chmod 700 $userHomeDirectory 2>/dev/null"; 
     }
+   }
 }
 
 
@@ -269,19 +270,18 @@ if (defined($Options{'a'})) {
 	my $tmpldif =
 "dn: uid=$userName,$usersdn
 changetype: modify
-objectclass: top
-objectclass: account
+objectClass: inetOrgPerson
 objectclass: posixAccount
-objectClass: sambaAccount
-pwdLastSet: 0
-logonTime: 0
-logoffTime: 2147483647
-kickoffTime: 2147483647
-pwdCanChange: $valpwdcanchange
-pwdMustChange: $valpwdmustchange
+objectClass: sambaSAMAccount
+sambaPwdLastSet: 0
+sambaLogonTime: 0
+sambaLogoffTime: 2147483647
+sambaKickoffTime: 2147483647
+sambaPwdCanChange: $valpwdcanchange
+sambaPwdMustChange: $valpwdmustchange
 displayName: $_userGecos
-acctFlags: $valacctflags
-rid: $userRid
+sambaAcctFlags: $valacctflags
+sambaSID: $smbldap_conf::SID-$userRid
 
 ";
 	
@@ -329,14 +329,14 @@ if (defined($tmp = $Options{'F'})) {
     my $tmpldif =
 "dn: uid=$userName,$usersdn
 changetype: modify
-rid: $userRid
-primaryGroupID: $userGroupRid
-homeDrive: $valhomedrive
-smbHome: $valsmbhome
-profilePath: $valprofilepath
-scriptPath: $valscriptpath
-lmPassword: XXX
-ntPassword: XXX
+sambaSID: $smbldap_conf::SID-$userRid
+sambaPrimaryGroupSID: $smbldap_conf::SID-$userGroupRid
+sambaHomeDrive: $valhomedrive
+sambaHomePath: $valsmbhome
+sambaProfilePath: $valprofilepath
+sambaLogonScript: $valscriptpath
+sambaLMPassword: XXX
+sambaNTPassword: XXX
 
 ";
 
@@ -382,7 +382,7 @@ exit 0;
        For Samba users, rid is 2*uidNumber+1000, and primaryGroupID
        is 2*gidNumber+1001. Thus you may want to use
        smbldap-useradd.pl -a -g "Domain Admins" -u 500 Administrator
-       to create a domain administrator (admin rid is 0x1F4 = 500 and
+       to create a sambaDomainName administrator (admin rid is 0x1F4 = 500 and
        grouprid is 0x200 = 512)
 
        Without any option, the account created will be an Unix (Posix)
@@ -391,7 +391,7 @@ exit 0;
        -a     The user will have a Samba account (and Unix).
 
        -w     Creates an account for a Samba machine (Workstation), so that 
-              it can join a domain.
+              it can join a sambaDomainName.
 
        -x     Creates rid and primaryGroupID in hex (for Samba 2.2.2 bug). Else
               decimal (2.2.2 patched from cvs or 2.2.x, x > 2)
@@ -441,15 +441,15 @@ exit 0;
 
        -B     must change password ? 0 if no, 1 if yes
 
-       -C     smbHome (SMB home share, like '\\\\PDC-SRV\\homes')
+       -C     sambaHomePath (SMB home share, like '\\\\PDC-SRV\\homes')
 
-       -D     homeDrive (letter associated with home share, like 'H:')
+       -D     sambaHomeDrive (letter associated with home share, like 'H:')
 
-       -E     scriptPath, relative to the [netlogon] share (DOS script to execute on login, like 'foo.bat')
+       -E     sambaLogonScript, relative to the [netlogon] share (DOS script to execute on login, like 'foo.bat')
 
-       -F     profilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')
+       -F     sambaProfilePath (profile directory, like '\\\\PDC-SRV\\profiles\\foo')
 
-       -H     acctFlags, spaces and trailing bracket are ignored (samba account control bits like '[NDHTUMWSLKI]')
+       -H     sambaAcctFlags, spaces and trailing bracket are ignored (samba account control bits like '[NDHTUMWSLKI]')
 
 =head1 SEE ALSO
 

@@ -1,6 +1,7 @@
 #!/usr/bin/perl
 
 # LDAP to unix password sync script for samba
+#
 #  This code was developped by IDEALX (http://IDEALX.org/) and
 #  contributors (their names can be found in the CONTRIBUTORS file).
 #
@@ -113,19 +114,19 @@ if ($samba == 1) {
 	    exit(1);
 	}
 	my $ntpwd = `$mk_ntpasswd '$pass'`;
-        chomp(my $lmpassword = substr($ntpwd, 0, index($ntpwd, ':')));
-        chomp(my $ntpassword = substr($ntpwd, index($ntpwd, ':')+1));
+        chomp(my $sambaLMPassword = substr($ntpwd, 0, index($ntpwd, ':')));
+        chomp(my $sambaNTPassword = substr($ntpwd, index($ntpwd, ':')+1));
 
 # change nt/lm passwords
 	my $tmpldif =
 "$dn_line
 changetype: modify
-replace: lmpassword
-lmpassword: $lmpassword
+replace: sambaLMPassword
+sambaLMPassword: $sambaLMPassword
 -
 changetype: modify
-replace: ntpassword
-ntpassword: $ntpassword
+replace: sambaNTPassword
+sambaNTPassword: $sambaNTPassword
 -
 
 ";

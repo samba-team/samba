@@ -2,6 +2,7 @@
 #
 ## ChangeLog for SMBLDAP-TOOLS
 
+* 2002-07-24: top and account objectclasses replaced with inetorgperson
 * 2002-06-03: notes to webmin.idealx.org (idxldapaccounts)
 * 2002-06-01: release 0.7. tested with 2.2.4
 * 2002-05-31: fixed smbldap-populate compliance to smbldap_conf 

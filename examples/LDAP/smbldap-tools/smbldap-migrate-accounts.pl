@@ -45,7 +45,7 @@ changetype: modify
 lmpassword: $lmpwd
 ntpassword: $ntpwd
 gecos: $gecos
-smbHome: $homedir
+sambaHomePath: $homedir
 
 ";
 
