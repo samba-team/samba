@@ -43,14 +43,16 @@ extern int DEBUGLEVEL;
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
 static int process_tok(fstring tok);
-static void cmd_help(struct client_info *info);
-static void cmd_quit(struct client_info *info);
+static void cmd_help(struct client_info *info, int argc, char *argv[]);
+static void cmd_quit(struct client_info *info, int argc, char *argv[]);
 
 static struct cli_state smbcli;
 struct cli_state *smb_cli = &smbcli;
 
 static struct client_info cli_info;
 
+static char  **cmd_argv = NULL;
+static uint32 cmd_argc = 0;
 
 FILE *out_hnd;
 
@@ -113,7 +115,7 @@ static void rpcclient_stop(void)
 struct
 {
 	char *name;
-	void (*fn)(struct client_info*);
+	void (*fn)(struct client_info*, int, char*[]);
 	char *description;
 	char compl_args[2];
 }
@@ -605,7 +607,7 @@ commands[] =
 /****************************************************************************
 do a (presumably graceful) quit...
 ****************************************************************************/
-static void cmd_quit(struct client_info *info)
+static void cmd_quit(struct client_info *info, int argc, char *argv[])
 {
 	rpcclient_stop();
 #ifdef MEM_MAN
@@ -623,14 +625,13 @@ static void cmd_quit(struct client_info *info)
 /****************************************************************************
 help
 ****************************************************************************/
-static void cmd_help(struct client_info *info)
+static void cmd_help(struct client_info *info, int argc, char *argv[])
 {
   int i=0,j;
-  fstring buf;
 
-  if (next_token(NULL,buf,NULL, sizeof(buf)))
+  if (argc > 1)
     {
-      if ((i = process_tok(buf)) >= 0)
+      if ((i = process_tok(argv[1])) >= 0)
 	fprintf(out_hnd, "HELP %s:\n\t%s\n\n",commands[i].name,commands[i].description);		    
     }
   else
@@ -648,7 +649,7 @@ static void cmd_help(struct client_info *info)
   lookup a command string in the list of commands, including 
   abbreviations
   ******************************************************************/
-static int process_tok(fstring tok)
+static int process_tok(char *tok)
 {
   int i = 0, matches = 0;
   int cmd=0;
@@ -681,13 +682,33 @@ static int process_tok(fstring tok)
 /****************************************************************************
   process commands from the client
 ****************************************************************************/
-static void do_command(struct client_info *info, char *tok, char *line)
+static BOOL do_command(struct client_info *info, char *line)
 {
 	int i;
+	char *ptr = line;
+	pstring tok;
 
-	if ((i = process_tok(tok)) >= 0)
+	/* get the first part of the command */
+	if (!next_token(&ptr,tok,NULL, sizeof(tok)))
 	{
-		commands[i].fn(info);
+		return False;
+	}
+
+	do
+	{
+		add_chars_to_array(&cmd_argc, &cmd_argv, tok);
+
+	} while (next_token(NULL, tok, NULL, sizeof(tok)));
+
+	if (cmd_argc == 0)
+	{
+		return False;
+	}
+
+	if ((i = process_tok(cmd_argv[0])) >= 0)
+	{
+		optind = -1;
+		commands[i].fn(info, (uint32)cmd_argc, cmd_argv);
 	}
 	else if (i == -2)
 	{
@@ -697,6 +718,12 @@ static void do_command(struct client_info *info, char *tok, char *line)
 	{
 		fprintf(out_hnd, "%s: command not found\n", CNV_LANG(tok));
 	}
+
+	free_char_array(cmd_argc, cmd_argv);
+	cmd_argc = 0;
+	cmd_argv = NULL;
+
+	return True;
 }
 
 #ifndef HAVE_LIBREADLINE
@@ -741,7 +768,6 @@ static BOOL process( struct client_info *info, char *cmd_str)
 	if (cmd[0] != '\0') while (cmd[0] != '\0')
 	{
 		char *p;
-		fstring tok;
 
 		if ((p = strchr(cmd, ';')) == 0)
 		{
@@ -760,20 +786,13 @@ static BOOL process( struct client_info *info, char *cmd_str)
 		/* input language code to internal one */
 		CNV_INPUT (line);
 
-		/* get the first part of the command */
-		{
-			char *ptr = line;
-			if (!next_token(&ptr,tok,NULL, sizeof(tok))) continue;
-		}
-
-		do_command(info, tok, line);
+		if (!do_command(info, line)) continue;
 	}
 	else while (!feof(stdin))
 	{
 #ifdef HAVE_LIBREADLINE
 	        pstring promptline;
 #endif
-		fstring tok;
 
 #ifndef HAVE_LIBREADLINE
 
@@ -831,13 +850,7 @@ static BOOL process( struct client_info *info, char *cmd_str)
 
 		fprintf(out_hnd, "%s\n", line);
 
-		/* get the first part of the command */
-		{
-			char *ptr = line;
-			if (!next_token(&ptr,tok,NULL, sizeof(tok))) continue;
-		}
-
-		do_command(info, tok, line);
+		if (!do_command(info, line)) continue;
 	}
 
 	return(True);
@@ -919,9 +932,6 @@ static void reg_val_list(const char *full_name,
 {
 	add_chars_to_array(&reg_list_len, &reg_name, name);
 }
-
-static char **cmd_argv;
-static uint32 cmd_argc;
 
 static char *complete_regenum(char *text, int state)
 {
@@ -1248,26 +1258,15 @@ static char *complete_cmd(char *text, int state)
 
 static char **completion_fn(char *text, int start, int end)
 {
-	pstring tmp;
 	pstring cmd_partial;
 	int cmd_index;
 	int num_words;
-	char *ptr = cmd_partial;
 
     int i;
     char lastch = ' ';
 
-	free_char_array(cmd_argc, cmd_argv);
-	cmd_argc = 0;
-	cmd_argv = NULL;
-
 	safe_strcpy(cmd_partial, rl_line_buffer,
 	            MAX(sizeof(cmd_partial),end)-1);
-
-	if (next_token(&ptr, tmp, NULL, sizeof(tmp)))
-	{
-		add_chars_to_array(&cmd_argc, &cmd_argv, tmp);
-	}
 
     /* Complete rpcclient command */
 
@@ -1282,10 +1281,6 @@ static char **completion_fn(char *text, int start, int end)
     for (i = 0; i <= end; i++) {
 	if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
 	{
-		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
-		{
-			add_chars_to_array(&cmd_argc, &cmd_argv, tmp);
-		}
 		num_words++;
 	}
 	lastch = rl_line_buffer[i];

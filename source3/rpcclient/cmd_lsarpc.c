@@ -40,7 +40,7 @@ extern int smb_tidx;
 /****************************************************************************
 nt enumerate trusted domains
 ****************************************************************************/
-void cmd_lsa_enum_trust_dom(struct client_info *info)
+void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
@@ -106,7 +106,7 @@ void cmd_lsa_enum_trust_dom(struct client_info *info)
 /****************************************************************************
 nt lsa query
 ****************************************************************************/
-void cmd_lsa_query_info(struct client_info *info)
+void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;
@@ -188,7 +188,7 @@ void cmd_lsa_query_info(struct client_info *info)
 /****************************************************************************
 lookup names
 ****************************************************************************/
-void cmd_lsa_lookup_names(struct client_info *info)
+void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring temp;
@@ -279,7 +279,7 @@ void cmd_lsa_lookup_names(struct client_info *info)
 /****************************************************************************
 lookup sids
 ****************************************************************************/
-void cmd_lsa_lookup_sids(struct client_info *info)
+void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring temp;
@@ -376,7 +376,7 @@ void cmd_lsa_lookup_sids(struct client_info *info)
 /****************************************************************************
 nt lsa query
 ****************************************************************************/
-void cmd_lsa_query_secret(struct client_info *info)
+void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	fstring srv_name;

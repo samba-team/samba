@@ -3531,29 +3531,29 @@ BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpcclient/cmd_atsvc.c  */
 
-void cmd_at(struct client_info *info);
+void cmd_at(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_brs.c  */
 
-void cmd_brs_query_info(struct client_info *info);
+void cmd_brs_query_info(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_eventlog.c  */
 
-void cmd_eventlog(struct client_info *info);
+void cmd_eventlog(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_lsarpc.c  */
 
-void cmd_lsa_enum_trust_dom(struct client_info *info);
-void cmd_lsa_query_info(struct client_info *info);
-void cmd_lsa_lookup_names(struct client_info *info);
-void cmd_lsa_lookup_sids(struct client_info *info);
-void cmd_lsa_query_secret(struct client_info *info);
+void cmd_lsa_enum_trust_dom(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_query_info(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_lookup_names(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_lookup_sids(struct client_info *info, int argc, char *argv[]);
+void cmd_lsa_query_secret(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_netlogon.c  */
 
-void cmd_netlogon_login_test(struct client_info *info);
-void cmd_netlogon_domain_test(struct client_info *info);
-void cmd_sam_sync(struct client_info *info);
+void cmd_netlogon_login_test(struct client_info *info, int argc, char *argv[]);
+void cmd_netlogon_domain_test(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_sync(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_reg.c  */
 
@@ -3561,44 +3561,44 @@ BOOL msrpc_reg_enum_key(struct cli_state *cli, const char* full_keyname,
 				REG_FN(reg_fn),
 				REG_KEY_FN(reg_key_fn),
 				REG_VAL_FN(reg_val_fn));
-void cmd_reg_enum(struct client_info *info);
-void cmd_reg_query_info(struct client_info *info);
-void cmd_reg_query_key(struct client_info *info);
-void cmd_reg_create_val(struct client_info *info);
-void cmd_reg_delete_val(struct client_info *info);
-void cmd_reg_delete_key(struct client_info *info);
-void cmd_reg_create_key(struct client_info *info);
-void cmd_reg_test_key_sec(struct client_info *info);
-void cmd_reg_get_key_sec(struct client_info *info);
-void cmd_reg_shutdown(struct client_info *info);
+void cmd_reg_enum(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_query_info(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_query_key(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_create_val(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_delete_val(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_delete_key(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_create_key(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_test_key_sec(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_get_key_sec(struct client_info *info, int argc, char *argv[]);
+void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_samr.c  */
 
-void cmd_sam_ntchange_pwd(struct client_info *info);
-void cmd_sam_test(struct client_info *info);
-void cmd_sam_lookup_domain(struct client_info *info);
-void cmd_sam_del_aliasmem(struct client_info *info);
-void cmd_sam_delete_dom_alias(struct client_info *info);
-void cmd_sam_add_aliasmem(struct client_info *info);
-void cmd_sam_create_dom_user(struct client_info *info);
-void cmd_sam_create_dom_alias(struct client_info *info);
-void cmd_sam_del_groupmem(struct client_info *info);
-void cmd_sam_delete_dom_group(struct client_info *info);
-void cmd_sam_add_groupmem(struct client_info *info);
-void cmd_sam_create_dom_group(struct client_info *info);
-void cmd_sam_enum_users(struct client_info *info);
-void cmd_sam_query_groupmem(struct client_info *info);
-void cmd_sam_query_group(struct client_info *info);
-void cmd_sam_query_user(struct client_info *info);
-void cmd_sam_set_userinfo2(struct client_info *info);
-void cmd_sam_set_userinfo(struct client_info *info);
-void cmd_sam_query_dispinfo(struct client_info *info);
-void cmd_sam_query_dominfo(struct client_info *info);
-void cmd_sam_query_aliasmem(struct client_info *info);
-void cmd_sam_query_alias(struct client_info *info);
-void cmd_sam_enum_aliases(struct client_info *info);
-void cmd_sam_enum_groups(struct client_info *info);
-void cmd_sam_enum_domains(struct client_info *info);
+void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_test(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_create_dom_alias(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_del_groupmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_delete_dom_group(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_add_groupmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_create_dom_group(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_enum_users(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_groupmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_group(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_user(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_set_userinfo2(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_set_userinfo(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_dispinfo(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_query_alias(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_enum_aliases(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_enum_groups(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_spoolss.c  */
 
@@ -3608,8 +3608,8 @@ BOOL msrpc_spoolss_enum_printers(struct cli_state *cli,
 				uint32 *num,
 				void ***ctr,
 				PRINT_INFO_FN(fn));
-void cmd_spoolss_enum_printers(struct client_info *info);
-void cmd_spoolss_open_printer_ex(struct client_info *info);
+void cmd_spoolss_enum_printers(struct client_info *info, int argc, char *argv[]);
+void cmd_spoolss_open_printer_ex(struct client_info *info, int argc, char *argv[]);
 BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
 				const char* srv_name,
 				const char* user_name,
@@ -3618,25 +3618,25 @@ BOOL msrpc_spoolss_enum_jobs(struct cli_state *cli,
 				uint32 *num,
 				void ***ctr,
 				JOB_INFO_FN(fn));
-void cmd_spoolss_enum_jobs(struct client_info *info);
+void cmd_spoolss_enum_jobs(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
 
 BOOL net_srv_get_info(struct client_info *info,
 		uint32 info_level,
 		SRV_INFO_CTR *ctr);
-void cmd_srv_query_info(struct client_info *info);
+void cmd_srv_query_info(struct client_info *info, int argc, char *argv[]);
 BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
 				const char* dest_srv,
 				uint32 info_level,
 				SRV_TPRT_INFO_CTR *ctr,
 				TPRT_INFO_FN(tprt_fn));
-void cmd_srv_enum_tprt(struct client_info *info);
-void cmd_srv_enum_conn(struct client_info *info);
-void cmd_srv_enum_shares(struct client_info *info);
-void cmd_srv_enum_sess(struct client_info *info);
-void cmd_srv_enum_files(struct client_info *info);
-void cmd_time(struct client_info *info);
+void cmd_srv_enum_tprt(struct client_info *info, int argc, char *argv[]);
+void cmd_srv_enum_conn(struct client_info *info, int argc, char *argv[]);
+void cmd_srv_enum_shares(struct client_info *info, int argc, char *argv[]);
+void cmd_srv_enum_sess(struct client_info *info, int argc, char *argv[]);
+void cmd_srv_enum_files(struct client_info *info, int argc, char *argv[]);
+void cmd_time(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_svcctl.c  */
 
@@ -3645,19 +3645,19 @@ BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
 				POLICY_HND *pol_scm,
 				const char *svc_name,
 				SVC_QUERY_FN(svc_query_fn));
-void cmd_svc_info(struct client_info *info);
+void cmd_svc_info(struct client_info *info, int argc, char *argv[]);
 BOOL msrpc_svc_enum(struct client_info *info,
 				ENUM_SRVC_STATUS **svcs,
 				uint32 *num_svcs,
 				SVC_INFO_FN(info_fn),
 				SVC_QUERY_FN(query_fn));
-void cmd_svc_enum(struct client_info *info);
-void cmd_svc_stop(struct client_info *info);
-void cmd_svc_start(struct client_info *info);
+void cmd_svc_enum(struct client_info *info, int argc, char *argv[]);
+void cmd_svc_stop(struct client_info *info, int argc, char *argv[]);
+void cmd_svc_start(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/cmd_wkssvc.c  */
 
-void cmd_wks_query_info(struct client_info *info);
+void cmd_wks_query_info(struct client_info *info, int argc, char *argv[]);
 
 /*The following definitions come from  rpcclient/display.c  */
 

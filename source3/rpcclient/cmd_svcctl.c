@@ -75,7 +75,7 @@ BOOL svc_query_service(struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 nt service info
 ****************************************************************************/
-void cmd_svc_info(struct client_info *info)
+void cmd_svc_info(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -216,7 +216,7 @@ BOOL msrpc_svc_enum(struct client_info *info,
 /****************************************************************************
 nt service enum
 ****************************************************************************/
-void cmd_svc_enum(struct client_info *info)
+void cmd_svc_enum(struct client_info *info, int argc, char *argv[])
 {
 	ENUM_SRVC_STATUS *svcs = NULL;
 	uint32 num_svcs = 0;
@@ -244,7 +244,7 @@ void cmd_svc_enum(struct client_info *info)
 /****************************************************************************
 nt stop service 
 ****************************************************************************/
-void cmd_svc_stop(struct client_info *info)
+void cmd_svc_stop(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;
@@ -303,7 +303,7 @@ void cmd_svc_stop(struct client_info *info)
 /****************************************************************************
 nt start service 
 ****************************************************************************/
-void cmd_svc_start(struct client_info *info)
+void cmd_svc_start(struct client_info *info, int argc, char *argv[])
 {
 	uint16 fnum;
 	BOOL res = True;

@@ -166,7 +166,7 @@ static BOOL at_soon(char *dest_srv, uint32 *hours, uint32 *minutes, uint32 *seco
 /****************************************************************************
 scheduler add job
 ****************************************************************************/
-void cmd_at(struct client_info *info)
+void cmd_at(struct client_info *info, int argc, char *argv[])
 {
 	uint16 nt_pipe_fnum;
 	pstring temp;
