@@ -297,6 +297,18 @@ static void display_print_info_3(PRINTER_INFO_3 *i3)
 	printf("\n");
 }
 
+/****************************************************************************
+printer info level 7 display function
+****************************************************************************/
+static void display_print_info_7(PRINTER_INFO_7 *i7)
+{
+	fstring guid = "";
+	rpcstr_pull(guid, i7->guid.buffer,sizeof(guid), -1, STR_TERMINATE);
+	printf("\tguid:[%s]\n", guid);
+	printf("\taction:[0x%x]\n", i7->action);
+}
+
+
 /* Enumerate printers */
 
 static WERROR cmd_spoolss_enum_printers(struct cli_state *cli, 
@@ -686,6 +698,9 @@ static WERROR cmd_spoolss_getprinter(struct cli_state *cli,
 		break;
 	case 3:
 		display_print_info_3(ctr.printers_3);
+		break;
+	case 7:
+		display_print_info_7(ctr.printers_7);
 		break;
 	default:
 		printf("unknown info level %d\n", info_level);

@@ -1025,6 +1025,7 @@ typedef struct printer_info_ctr_info
 	PRINTER_INFO_3 *printers_3;
 	PRINTER_INFO_4 *printers_4;
 	PRINTER_INFO_5 *printers_5;
+	PRINTER_INFO_7 *printers_7;
 }
 PRINTER_INFO_CTR;
 
