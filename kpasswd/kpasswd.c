@@ -37,9 +37,11 @@ RCSID("$Id$");
 static int version_flag;
 static int help_flag;
 static char *admin_principal_str;
+static char *cred_cache_str;
 
 static struct getargs args[] = {
     { "admin-principal",	0,   arg_string, &admin_principal_str },
+    { "cache",			'c', arg_string, &cred_cache_str },
     { "version", 		0,   arg_flag, &version_flag },
     { "help",			0,   arg_flag, &help_flag }
 };
@@ -115,11 +117,9 @@ main (int argc, char **argv)
     krb5_error_code ret;
     krb5_context context;
     krb5_principal principal;
-    krb5_principal admin_principal;
     int optind = 0;
     krb5_get_init_creds_opt *opt;
-    krb5_creds cred;
-    krb5_ccache id;
+    krb5_ccache id = NULL;
     int exit_value;
 
     optind = krb5_program_setup(&context, argc, argv,
@@ -132,8 +132,6 @@ main (int argc, char **argv)
 	print_version (NULL);
 	exit(0);
     }
-
-    admin_principal = NULL;
 
     argc -= optind;
     argv += optind;
@@ -150,55 +148,70 @@ main (int argc, char **argv)
     krb5_get_init_creds_opt_set_forwardable (opt, FALSE);
     krb5_get_init_creds_opt_set_proxiable (opt, FALSE);
 
-    if (admin_principal_str) {
-	ret = krb5_parse_name (context, admin_principal_str, &admin_principal);
+    if (cred_cache_str) {
+	ret = krb5_cc_resolve(context, cred_cache_str, &id);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
-    } else if (argc == 1) {
-	ret = krb5_parse_name (context, argv[0], &admin_principal);
-	if (ret)
-	    krb5_err (context, 1, ret, "krb5_parse_name");
+	    krb5_err (context, 1, ret, "krb5_cc_resolve");
     } else {
-	ret = krb5_get_default_principal (context, &admin_principal);
+	ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
 	if (ret)
-	    krb5_err (context, 1, ret, "krb5_get_default_principal");
+	    krb5_err (context, 1, ret, "krb5_cc_gen_new");
     }
 
-    ret = krb5_cc_gen_new(context, &krb5_mcc_ops, &id);
+    if (cred_cache_str == NULL) {
+	krb5_principal admin_principal = NULL;
+	krb5_creds cred;
 
-    ret = krb5_get_init_creds_password (context,
-					&cred,
-					admin_principal,
-					NULL,
-					krb5_prompter_posix,
-					NULL,
-					0,
-					"kadmin/changepw",
-					opt);
-    switch (ret) {
-    case 0:
-	break;
-    case KRB5_LIBOS_PWDINTR :
-	return 1;
-    case KRB5KRB_AP_ERR_BAD_INTEGRITY :
-    case KRB5KRB_AP_ERR_MODIFIED :
-	krb5_errx(context, 1, "Password incorrect");
-	break;
-    default:
-	krb5_err(context, 1, ret, "krb5_get_init_creds");
+	if (admin_principal_str) {
+	    ret = krb5_parse_name (context, admin_principal_str,
+				   &admin_principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_parse_name");
+	} else if (argc == 1) {
+	    ret = krb5_parse_name (context, argv[0], &admin_principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_parse_name");
+	} else {
+	    ret = krb5_get_default_principal (context, &admin_principal);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_get_default_principal");
+	}
+
+	ret = krb5_get_init_creds_password (context,
+					    &cred,
+					    admin_principal,
+					    NULL,
+					    krb5_prompter_posix,
+					    NULL,
+					    0,
+					    "kadmin/changepw",
+					    opt);
+	switch (ret) {
+	case 0:
+	    break;
+	case KRB5_LIBOS_PWDINTR :
+	    return 1;
+	case KRB5KRB_AP_ERR_BAD_INTEGRITY :
+	case KRB5KRB_AP_ERR_MODIFIED :
+	    krb5_errx(context, 1, "Password incorrect");
+	    break;
+	default:
+	    krb5_err(context, 1, ret, "krb5_get_init_creds");
+	}
+	
+	krb5_get_init_creds_opt_free(opt);
+	
+	ret = krb5_cc_initialize(context, id, admin_principal);
+	krb5_free_principal(context, admin_principal);
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_initialize");
+
+	ret = krb5_cc_store_cred(context, id, &cred);    
+	if (ret)
+	    krb5_err(context, 1, ret, "krb5_cc_store_cred");
+	
+	krb5_free_cred_contents (context, &cred);
     }
-
-    krb5_get_init_creds_opt_free(opt);
-
-    ret = krb5_cc_initialize(context, id, admin_principal);
-    if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_initialize");
-
-    ret = krb5_cc_store_cred(context, id, &cred);    
-    if (ret)
-	krb5_err(context, 1, ret, "krb5_cc_store_cred");
-
-    krb5_free_cred_contents (context, &cred);
 
     if (argc == 0) {
 	exit_value = change_password(context, NULL, id);
@@ -219,9 +232,15 @@ main (int argc, char **argv)
 	}
     }
 
-    ret = krb5_cc_destroy(context, id);
-    if (ret)
-	krb5_err (context, 1, ret, "krb5_cc_destroy");
+    if (cred_cache_str == NULL) {
+	ret = krb5_cc_destroy(context, id);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_cc_destroy");
+    } else {
+	ret = krb5_cc_close(context, id);
+	if (ret)
+	    krb5_err (context, 1, ret, "krb5_cc_close");
+    }
 
     krb5_free_context (context);
     return ret;
