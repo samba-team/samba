@@ -1,5 +1,39 @@
 2000-12-31  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/test_get_addrs.c (main): handle krb5_init_context
+	failure consistently
+	* lib/krb5/string-to-key-test.c (main): handle krb5_init_context
+	failure consistently
+	* lib/krb5/prog_setup.c (krb5_program_setup): handle
+	krb5_init_context failure consistently
+	* lib/hdb/convert_db.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/kverify.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/klist.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/kinit.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/kgetcred.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/kdestroy.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/kdecode_ticket.c (main): handle krb5_init_context failure
+	consistently
+	* kuser/generate-requests.c (generate_requests): handle
+	krb5_init_context failure consistently
+	* kpasswd/kpasswd.c (main): handle krb5_init_context failure
+	consistently
+	* kpasswd/kpasswd-generator.c (generate_requests): handle
+	krb5_init_context failure consistently
+	* kdc/main.c (main): handle krb5_init_context failure consistently
+	* appl/test/uu_client.c (proto): handle krb5_init_context failure
+	consistently
+	* appl/kf/kf.c (main): handle krb5_init_context failure
+	consistently
+	* admin/ktutil.c (main): handle krb5_init_context failure
+	consistently
+
 	* admin/get.c (kt_get): more error checking
 
 2000-12-29  Assar Westerlund  <assar@sics.se>

@@ -1,3 +1,7 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* xnlock.c (main): handle krb5_init_context failure consistently
+
 2000-04-09  Assar Westerlund  <assar@sics.se>
 
 	* xnlock.c (verfiy_krb5): get the v4-realm from the v5-ticket and

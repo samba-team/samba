@@ -1,3 +1,8 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* krb5.c (krb5_make_context): handle krb5_init_context failure
+	consistently
+
 2000-10-08  Assar Westerlund  <assar@sics.se>
 
 	* kxd.c (doit_passive): check that fds are not too large to select

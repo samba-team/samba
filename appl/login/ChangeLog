@@ -1,3 +1,7 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* login.c (main): handle krb5_init_context failure consistently
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* login.c (do_login): set the group on the tty.

@@ -1,3 +1,10 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* sia/sia.c (siad_ses_init): handle krb5_init_context failure
+	consistently
+	* afskauthlib/verify.c (verify_krb5): handle krb5_init_context
+	failure consistently
+
 2000-11-30  Johan Danielsson  <joda@pdc.kth.se>
 
 	* afskauthlib/Makefile.am: use libtool

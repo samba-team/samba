@@ -1,3 +1,9 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* telnet/main.c (krb5_init): check krb5_init_context for success
+	* libtelnet/kerberos5.c (kerberos5_init): check krb5_init_context
+	for success
+
 2000-12-11  Assar Westerlund  <assar@sics.se>
 
 	* telnet/commands.c (sourceroute): make it not break if the

@@ -1,5 +1,10 @@
 2000-12-31  Assar Westerlund  <assar@sics.se>
 
+	* kadmind.c (main): handle krb5_init_context failure consistently
+	* kadmin.c (main): handle krb5_init_context failure consistently
+	* add-random-users.c (add_user): handle krb5_init_context failure
+	consistently
+
 	* kadm_conn.c (spawn_child): use a struct sockaddr_storage
 
 2000-12-15  Johan Danielsson  <joda@pdc.kth.se>

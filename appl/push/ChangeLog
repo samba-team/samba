@@ -1,3 +1,7 @@
+2000-12-31  Assar Westerlund  <assar@sics.se>
+
+	* push.c (main): handle krb5_init_context failure consistently
+
 2000-12-26  Assar Westerlund  <assar@sics.se>
 
 	* push.c: support several headers, from <mattiasa@e.kth.se> use
