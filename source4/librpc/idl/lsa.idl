@@ -243,7 +243,7 @@
 	NTSTATUS lsa_EnumAccounts (
 		[in,ref]     policy_handle *handle,
 		[in,out,ref] uint32 *resume_handle,
-		[in,range(0,1000)] uint32 num_entries,
+		[in,range(0,8192)] uint32 num_entries,
 		[out,ref]    lsa_SidArray *sids
 		);
 
