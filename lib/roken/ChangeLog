@@ -1,3 +1,16 @@
+2005-03-06  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* hex-test.c: hex encoding/decoding test
+	
+	* hex.c: fix decodeing, it processed to much data and thus
+	returned the wrong length
+
+2005-03-04  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* Makefile.am: add hex.[ch]
+
+	* hex.c: add hex encoder/decoder
+
 2005-03-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* daemon.c fnmatch.c fnmatch.hin getcap.c getopt.c getusershell.c
