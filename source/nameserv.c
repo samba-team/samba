@@ -121,26 +121,28 @@ void remove_name(struct subnet_record *d, struct name_record *n)
 
 
 /****************************************************************************
-  find a name in a namelist 
+  find a name in a namelist.
   **************************************************************************/
 static struct name_record *find_name(struct name_record *n,
 			struct nmb_name *name,
 			int search, struct in_addr ip)
 {
-  struct name_record *ret;
+	struct name_record *ret;
   
 	for (ret = n; ret; ret = ret->next)
-    {
+	{
 		if (name_equal(&ret->name,name))
 		{
 			/* self search: self names only */
 			if ((search&FIND_SELF) == FIND_SELF && ret->source != SELF)
 				continue;
-      
+	  
+			/* zero ip is either samba's ip or a way of finding a
+			   name without needing to know the ip address */
 			if (zero_ip(ip) || ip_equal(ip, ret->ip))
 			{
-      return ret;
-    }
+				return ret;
+			}
 		}
 	}
     return NULL;
@@ -159,7 +161,7 @@ static struct name_record *find_name_search(struct subnet_record **d,
 			int search, struct in_addr ip)
 {
 	if (d == NULL) return NULL; /* bad error! */
-  
+	
     if ((search & FIND_LOCAL) == FIND_LOCAL)
 	{
 		if (*d != NULL)
@@ -169,8 +171,8 @@ static struct name_record *find_name_search(struct subnet_record **d,
         else
         {
 			DEBUG(4,("local find_name_search with a NULL subnet pointer\n"));
-  return NULL;
-}
+            return NULL;
+		}
 	}
 
 	if ((search & FIND_WINS) != FIND_WINS) return NULL;
@@ -223,7 +225,7 @@ void dump_names(void)
         fstring data;
 
       /* XXXX i have little imagination as to how to output nb_flags as
-         anything other than a hexadecimal number :-) */
+         anything other than as a hexadecimal number :-) */
 
         sprintf(data, "%s#%02x %s %ld %2x",
 	       n->name.name,n->name.name_type, /* XXXX ignore the scope for now */
@@ -238,7 +240,7 @@ void dump_names(void)
       DEBUG(3,("%s %15s TTL=%15d NBFLAGS=%2x\n",
 	       namestr(&n->name),
 	       inet_ntoa(n->ip),
-	       n->death_time?n->death_time-t:0,
+           n->death_time?n->death_time-t:0,
 	       n->nb_flags));
     }
 
@@ -366,7 +368,7 @@ void remove_netbios_name(struct subnet_record *d,
   /* if it's not a special browser name, search the WINS database */
   if (type != 0x01 && type != 0x1d && type != 0x1e)
     search |= FIND_WINS;
-  
+
   make_nmb_name(&nn, name, type, scope);
   n = find_name_search(&d, &nn, search, ip);
   
@@ -434,7 +436,10 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
     n = n2;
   }
 
-  if (ttl) n->death_time = time(NULL)+ttl*3;
+  if (ttl)
+     n->death_time = time(NULL)+ttl*3;
+  n->refresh_time = time(NULL)+GET_TTL(ttl);
+
   n->ip = ip;
   n->nb_flags = nb_flags;
   n->source = source;
@@ -453,6 +458,10 @@ struct name_record *add_netbios_entry(struct subnet_record *d,
   ****************************************************************************/
 void remove_name_entry(struct subnet_record *d, char *name,int type)
 {
+  /* XXXX BUG: if samba is offering WINS support, it should still broadcast
+      a de-registration packet to the local subnet before removing the
+      name from its local-subnet name database. */
+
   if (lp_wins_support())
     {
       /* we are a WINS server. */
@@ -466,7 +475,7 @@ void remove_name_entry(struct subnet_record *d, char *name,int type)
       /* not a WINS server: cannot just remove our own names: we have to
          ask permission from the WINS server, or if no reply is received,
 		 _then_ we can remove the name */
-      
+
   	  struct name_record n;
   	  struct name_record *n2=NULL;
       
@@ -508,16 +517,23 @@ void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags)
   /* always add our own entries */
   add_netbios_entry(d,name,type,nb_flags,0,SELF,ipzero,False,lp_wins_support());
 
+  /* XXXX BUG: if samba is offering WINS support, it should still add the
+     name entry to a local-subnet name database. see rfc1001.txt 15.1.1 p28
+     regarding the point about M-nodes. */
+
   if (!lp_wins_support())
-    {
-      /* we aren't supporting WINS: register name using broadcast or
-         contact WINS server */
+  {
+    /* samba isn't supporting WINS itself: register the name using broadcast
+       or with another WINS server.
+       XXXX note: we may support WINS and also know about other WINS servers
+       in the future.
+     */
       
-      queue_netbios_pkt_wins(d,ClientNMB,
+    queue_netbios_pkt_wins(d,ClientNMB,
 				 re_reg ? NMB_REG_REFRESH : NMB_REG, NAME_REGISTER,
 			     name, type, nb_flags, GET_TTL(0),
 			     False, True, ipzero);
-    }
+  }
 }
 
 
@@ -530,12 +546,13 @@ void add_my_names(void)
   struct subnet_record *d;
 
   struct in_addr ip = ipzero;
-  
-  /* each subnet entry, including the WINS one, must have its own
-     netbios name. */
-  /* XXXX if there was a transport layer added to samba (ipx/spx, netbeui
-     etc) then there would be yet _another_ for-loop, this time on the
-     transport type */
+
+  /* each subnet entry, including WINS pseudo-subnet, has SELF names */
+
+  /* XXXX if there was a transport layer added to samba (ipx/spx etc) then
+     there would be yet _another_ for-loop, this time on the transport type
+   */
+
   for (d = subnetlist; d; d = d->next)
   {
 	add_my_name_entry(d, myname,0x20,NB_ACTIVE);
@@ -548,10 +565,10 @@ void add_my_names(void)
 	add_netbios_entry(d,"__SAMBA__",0x00,NB_ACTIVE,0,SELF,ip,False,wins);
 
     if (wins) {
-    /* the 0x1c name gets added by any WINS server it seems */
+	/* the 0x1c name gets added by any WINS server it seems */
 	  add_my_name_entry(d, my_workgroup(),0x1c,NB_ACTIVE|NB_GROUP);
+    }
   }
-}
 }
 
 
@@ -560,21 +577,24 @@ void add_my_names(void)
   **************************************************************************/
 void remove_my_names()
 {
-  struct subnet_record *d;
+	struct subnet_record *d;
 
-  for (d = subnetlist; d; d = d->next)
-  {
-  struct name_record *n;
-  
-	  for (n = d->namelist; n; n = n->next)
-    {
-      if (n->source == SELF)
+	for (d = subnetlist; d; d = d->next)
 	{
-	  /* get all SELF names removed from the WINS server's database */
-		  remove_name_entry(d,n->name.name, n->name.name_type);
+		struct name_record *n, *next;
+
+		for (n = d->namelist; n; n = next)
+		{
+			next = n->next;
+			if (n->source == SELF)
+			{
+				/* get all SELF names removed from the WINS server's database */
+				/* XXXX note: problem occurs if this removes the wrong one! */
+
+				remove_name_entry(d,n->name.name, n->name.name_type);
+			}
 		}
 	}
-    }
 }
 
 
@@ -583,17 +603,31 @@ void remove_my_names()
   ******************************************************************/
 void refresh_my_names(time_t t)
 {
-  static time_t lasttime = 0;
+  struct subnet_record *d;
 
-  if (t - lasttime < REFRESH_TIME) 
-    return;
-  lasttime = t;
-
-  add_my_names();
+  for (d = subnetlist; d; d = d->next)
+  {
+    struct name_record *n;
+	  
+	for (n = d->namelist; n; n = n->next)
+    {
+      /* each SELF name has an individual time to be refreshed */
+      if (n->source == SELF && n->refresh_time < time(NULL))
+      {
+        add_my_name_entry(d,n->name.name,n->name.name_type,n->nb_flags);
+      }
+    }
+  }
 }
 
 /*******************************************************************
   queries names occasionally. an over-cautious, non-trusting WINS server!
+
+  this function has been added because nmbd could be restarted. it
+  is generally a good idea to check all the names that have been
+  reloaded from file.
+
+  XXXX which names to poll and which not can be refined at a later date.
   ******************************************************************/
 void query_refresh_names(void)
 {
@@ -652,34 +686,34 @@ void query_refresh_names(void)
   ******************************************************************/
 void expire_names(time_t t)
 {
-  struct name_record *n;
-  struct name_record *next;
+	struct name_record *n;
+	struct name_record *next;
 	struct subnet_record *d;
-  
-  /* expire old names */
+
+	/* expire old names */
 	for (d = subnetlist; d; d = d->next)
 	{
 	  for (n = d->namelist; n; n = next)
-    {
-      if (n->death_time && n->death_time < t)
-	{
-	  DEBUG(3,("Removing dead name %s\n", namestr(&n->name)));
-	  
-	  next = n->next;
-	  
-	  if (n->prev) n->prev->next = n->next;
-	  if (n->next) n->next->prev = n->prev;
-	  
+		{
+		  if (n->death_time && n->death_time < t)
+		{
+		  DEBUG(3,("Removing dead name %s\n", namestr(&n->name)));
+		  
+		  next = n->next;
+		  
+		  if (n->prev) n->prev->next = n->next;
+		  if (n->next) n->next->prev = n->prev;
+		  
 		  if (d->namelist == n) d->namelist = n->next; 
-	  
-	  free(n);
+		  
+		  free(n);
+		}
+		  else
+		{
+		  next = n->next;
+		}
+		}
 	}
-      else
-	{
-	  next = n->next;
-	}
-    }
-}
 }
 
 
@@ -703,9 +737,9 @@ void response_name_release(struct subnet_record *d, struct packet_struct *p)
       putip((char*)&found_ip,&nmb->answers->rdata[2]);
       
       if (ismyip(found_ip))
-	{
+      {
 	    remove_netbios_name(d,name,type,SELF,found_ip);
-	}
+	  }
     }
   else
     {
@@ -720,8 +754,8 @@ void response_name_release(struct subnet_record *d, struct packet_struct *p)
 
 
 /****************************************************************************
-  reply to a name release
-  ****************************************************************************/
+reply to a name release
+****************************************************************************/
 void reply_name_release(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -738,7 +772,7 @@ void reply_name_release(struct packet_struct *p)
   putip((char *)&ip,&nmb->additional->rdata[2]);  
   
   DEBUG(3,("Name release on name %s rcode=%d\n",
- 	   namestr(&nmb->question.question_name),rcode));
+	   namestr(&nmb->question.question_name),rcode));
   
   if (!(d = find_req_subnet(p->ip, bcast)))
   {
@@ -773,7 +807,7 @@ void reply_name_release(struct packet_struct *p)
   
   /* Send a NAME RELEASE RESPONSE */
   reply_netbios_packet(p,nmb->header.name_trn_id,
-		       rcode,opcode,True,
+			   rcode,opcode,True,
 		       &nmb->question.question_name,
 		       nmb->question.question_type,
 		       nmb->question.question_class,
@@ -783,8 +817,8 @@ void reply_name_release(struct packet_struct *p)
 
 
 /****************************************************************************
-  response for a reg request received
-  **************************************************************************/
+response for a reg request received
+**************************************************************************/
 void response_name_reg(struct subnet_record *d, struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -820,9 +854,9 @@ void response_name_reg(struct subnet_record *d, struct packet_struct *p)
          been rejected: e.g if it was our GROUP(1d) name, we must unbecome
          a master browser. */
 	
-		if (!(work = find_workgroupstruct(d, name, False))) return;
+        remove_netbios_name(d,name,type,SELF,ipzero);
 
-        /* remove_netbios_name(d,name,type,SELF,ipzero); */
+		if (!(work = find_workgroupstruct(d, name, False))) return;
 
 		if (AM_MASTER(work) && (type == 0x1d || type == 0x1b))
 		{
@@ -837,8 +871,8 @@ void response_name_reg(struct subnet_record *d, struct packet_struct *p)
 
 
 /****************************************************************************
-  reply to a reg request
-  **************************************************************************/
+reply to a reg request
+**************************************************************************/
 void reply_name_reg(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -848,7 +882,7 @@ void reply_name_reg(struct packet_struct *p)
   char *qname = question->name;
   int name_type  = question->name_type;
   int name_class = nmb->question.question_class;
-  
+ 
   BOOL bcast = nmb->header.nm_flags.bcast;
   
   int ttl = GET_TTL(nmb->additional->ttl);
@@ -856,7 +890,7 @@ void reply_name_reg(struct packet_struct *p)
   BOOL group = NAME_GROUP(nb_flags);
   int rcode = 0;  
   int opcode = nmb->header.opcode;  
-  
+
   struct subnet_record *d = NULL;
   struct name_record *n = NULL;
   BOOL success = True;
@@ -895,19 +929,19 @@ void reply_name_reg(struct packet_struct *p)
   n = find_name_search(&d, question, search, from_ip);
   
   if (n)
-    {
-      if (!group) /* unique names */
+  {
+    if (!group) /* unique names */
 	{
 	  if (n->source == SELF || NAME_GROUP(n->nb_flags))
-	    {
+	  {
 	      /* no-one can register one of samba's names, nor can they
 		 register a name that's a group name as a unique name */
 	      
 	      rcode = 6;
 	      success = False;
-	    }
+	  }
 	  else if(!ip_equal(ip, n->ip))
-	    {
+	  {
 	      /* hm. this unique name doesn't belong to them. */
 	      
 	      /* XXXX rfc1001.txt says:
@@ -931,6 +965,11 @@ void reply_name_reg(struct packet_struct *p)
 		 for checking with current owner of name, then getting back
 		 to us... IF current owner no longer owns the unique name */
 	      
+           /* XXXX please note also that samba cannot cope with 
+              _receiving_ such redirecting, non-secured registration
+              packets. code to do this needs to be added.
+            */
+
 	      rcode = 0;
 	      success = False;
 	      recurse = False;
@@ -944,21 +983,21 @@ void reply_name_reg(struct packet_struct *p)
 		 name_class = ?;
 		 XXXX sorry, guys: i really can't see what name_type
 		 and name_class should be set to according to rfc1001 */
-	    }
+	  }
 	  else
-	    {
+	  {
 	      n->ip = ip;
 	      n->death_time = ttl?p->timestamp+ttl*3:0;
 	      DEBUG(3,("%s owner: %s\n",namestr(&n->name),inet_ntoa(n->ip)));
-	    }
+	  }
 	}
-      else
+    else
 	{
 	  /* refresh the name */
 	  if (n->source != SELF)
-	    {
+	  {
 	      n->death_time = ttl?p->timestamp + ttl*3:0;
-	    }
+	  }
 	}
 
     /* XXXX bug reported by terryt@ren.pc.athabascau.ca */
@@ -968,15 +1007,21 @@ void reply_name_reg(struct packet_struct *p)
     if (n->source == DNSFAIL)
       n->source = REGISTER;
 
-    }
+  }
   else
-    {
+  {
       /* add the name to our name/subnet, or WINS, database */
       n = add_netbios_entry(d,qname,name_type,nb_flags,ttl,REGISTER,ip,
 				True,!bcast);
-    }
+  }
   
-  if (bcast) return;
+  /* if samba owns a unique name on a subnet, then it must respond and
+     disallow the attempted registration. if the registration is
+     successful by broadcast, only then is there no need to respond
+     (implicit registration: see rfc1001.txt 15.2.1).
+   */
+
+  if (bcast || !success) return;
   
   rdata[0] = nb_flags;
   rdata[1] = 0;
@@ -993,8 +1038,8 @@ void reply_name_reg(struct packet_struct *p)
 
 
 /****************************************************************************
-  reply to a name status query
-  ****************************************************************************/
+reply to a name status query
+****************************************************************************/
 void reply_name_status(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -1014,16 +1059,16 @@ void reply_name_status(struct packet_struct *p)
 			inet_ntoa(p->ip)));
     return;
   }
-  
+
   DEBUG(3,("Name status for name %s %s\n",
- 	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
+	   namestr(&nmb->question.question_name), inet_ntoa(p->ip)));
   
   n = find_name_search(&d, &nmb->question.question_name,
 				FIND_SELF|FIND_LOCAL,
 				p->ip);
   
   if (!n) return;
-    
+  
   /* XXXX hack, we should calculate exactly how many will fit */
   bufend = &rdata[MAX_DGRAM_SIZE] - 18;
   countptr = buf = rdata;
@@ -1040,7 +1085,7 @@ void reply_name_status(struct packet_struct *p)
       /* start with first bit of putting info in buffer: the name */
       
       bzero(buf,18);
-      sprintf(buf,"%-15.15s",n->name.name);
+	  sprintf(buf,"%-15.15s",n->name.name);
       strupper(buf);
       
       /* now check if we want to exclude other workgroup names
@@ -1062,7 +1107,7 @@ void reply_name_status(struct packet_struct *p)
       
       names_added++;
     }
-    
+  
   SCVAL(countptr,0,names_added);
   
   /* XXXXXXX we should fill in more fields of the statistics structure */
@@ -1079,7 +1124,7 @@ void reply_name_status(struct packet_struct *p)
   
   /* Send a POSITIVE NAME STATUS RESPONSE */
   reply_netbios_packet(p,nmb->header.name_trn_id,
-		       0,0,True,
+			   0,0,True,
 		       &nmb->question.question_name,
 		       nmb->question.question_type,
 		       nmb->question.question_class,
@@ -1107,7 +1152,7 @@ struct name_record *search_for_name(struct subnet_record **d,
   n = find_name_search(d,question,search,ip);
   
   if (*d == NULL) return NULL;
-  
+
   /* now try DNS lookup. */
   if (!n)
     {
@@ -1186,7 +1231,7 @@ with directed name queries:
       a negative response, a positive response, or a wait-for-acknowledgement
       packet, and then later on a pos/neg response.
 
-  ****************************************************************************/
+****************************************************************************/
 void reply_name_query(struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
@@ -1253,55 +1298,59 @@ void reply_name_query(struct packet_struct *p)
   }
 
   if (success && (n = search_for_name(&d,question,p->ip,p->timestamp, search)))
-    {
+  {
       /* don't respond to broadcast queries unless the query is for
-	 a name we own or it is for a Primary Domain Controller name */
+         a name we own or it is for a Primary Domain Controller name */
 
       if (bcast && n->source != SELF && name_type != 0x1b) {
-	  if (!lp_wins_proxy() || same_net(p->ip,n->ip,*iface_nmask(p->ip))) {
-	    /* never reply with a negative response to broadcast queries */
-	    return;
+	    if (!lp_wins_proxy() || same_net(p->ip,n->ip,*iface_nmask(p->ip))) {
+	      /* never reply with a negative response to broadcast queries */
+	      return;
+	    }
 	  }
-	}
-
+      
       /* name is directed query, or it's self, or it's a PDC type name, or
 	     we're replying on behalf of a caller because they are on a different
          subnet and cannot hear the broadcast. XXXX lp_wins_proxy should be
 		 switched off in environments where broadcasts are forwarded */
 
+      /* XXXX note: for proxy servers, we should forward the query on to
+         another WINS server if the name is not in our database, or we are
+         not a WINS server ourselves
+       */
       ttl = n->death_time - p->timestamp;
       retip = n->ip;
       nb_flags = n->nb_flags;
-    }
+  }
   else
-    {
+  {
       if (bcast) return; /* never reply negative response to bcasts */
       success = False;
-    }
-
+  }
+  
   /* if the IP is 0 then substitute my IP */
   if (zero_ip(retip)) retip = *iface_ip(p->ip);
-  
+
   if (success)
-    {
+  {
       rcode = 0;
       DEBUG(3,("OK %s\n",inet_ntoa(retip)));      
-    }
+  }
   else
-    {
+  {
       rcode = 3;
       DEBUG(3,("UNKNOWN\n"));      
-    }
+  }
   
   if (success)
-    {
+  {
       rdata[0] = nb_flags;
       rdata[1] = 0;
       putip(&rdata[2],(char *)&retip);
-    }
+  }
   
   reply_netbios_packet(p,nmb->header.name_trn_id,
-		       rcode,0,True,
+			   rcode,0,True,
 		       &nmb->question.question_name,
 		       nmb->question.question_type,
 		       nmb->question.question_class,
@@ -1332,7 +1381,7 @@ static void response_server_check(struct nmb_name *ans_name,
 /****************************************************************************
   response from a name status check. commands of type NAME_STATUS_MASTER_CHECK
   and NAME_STATUS_CHECK dealt with here.
-****************************************************************************/
+  ****************************************************************************/
 static void response_name_status_check(struct in_addr ip,
 		struct nmb_packet *nmb, BOOL bcast,
 		struct response_record *n, struct subnet_record *d)
@@ -1345,18 +1394,18 @@ static void response_name_status_check(struct in_addr ip,
 
 	if (interpret_node_status(d,nmb->answers->rdata,
 	                          &name,0x1d,serv_name,ip,bcast))
-    {
+	{
 		if (*serv_name)
 		{
 			sync_server(n->cmd_type,serv_name,
 			            name.name,name.name_type, n->to_ip);
-    }
-  }
+		}
+	}
 	else
 	{
 		DEBUG(1,("No 0x1d name type in interpret_node_status()\n"));
-  }
-  }
+	}
+}
 
 
 /****************************************************************************
@@ -1369,13 +1418,28 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 {
 	DEBUG(4, ("Name query at %s ip %s - ",
 		  namestr(&n->name), inet_ntoa(n->to_ip)));
-  
+
+	if (!name_equal(n->name, ans_name))
+	{
+		/* someone gave us the wrong name as a reply. oops. */
+		DEBUG(4,("unexpected name received: %s\n", namestr(ans_name)));
+		return;
+	}
+
 	if (nmb->header.rcode == 0 && nmb->answers->rdata)
     {
 		int nb_flags = nmb->answers->rdata[0];
 		struct in_addr found_ip;
 
 		putip((char*)&found_ip,&nmb->answers->rdata[2]);
+
+		if (!ip_equal(n->ip, found_ip))
+		{
+			/* someone gave us the wrong ip as a reply. oops. */
+			DEBUG(4,("expected ip: %s\n", inet_ntoa(n->ip)));
+			DEBUG(4,("unexpected ip: %s\n", inet_ntoa(found_ip)));
+			return;
+		}
 
 		DEBUG(4, (" OK: %s\n", inet_ntoa(found_ip)));
 
@@ -1388,12 +1452,12 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 				sync_browse_lists(d, work, ans_name->name, ans_name->name_type,
 							found_ip);
 			}
-  }
+		}
 		else
 		{
-			/* update our netbios name list */
+			/* update our netbios name list (re-register it if necessary) */
 			add_netbios_entry(d, ans_name->name, ans_name->name_type,
-								nb_flags,GET_TTL(0),STATUS_QUERY,
+								nb_flags,GET_TTL(0),REGISTER,
 								found_ip,False,!bcast);
 		}
 	}
@@ -1408,6 +1472,8 @@ static void response_name_query_sync(struct nmb_packet *nmb,
 			   then we're in a mess: our name database doesn't match
 			   reality. sort it out
              */
+      		remove_netbios_name(d,n->name.name, n->name.name_type,
+								REGISTER,n->ip);
 		}
 	}
 }
@@ -1416,7 +1482,7 @@ static void response_name_query_sync(struct nmb_packet *nmb,
   report the response record type
   ****************************************************************************/
 static void debug_rr_type(int rr_type)
-    {
+{
   switch (rr_type)
   {
       case NMB_STATUS: DEBUG(3,("Name status ")); break;
@@ -1446,7 +1512,7 @@ static void debug_cmd_type(int cmd_type)
     case NAME_QUERY_CONFIRM      : DEBUG(4,("NAME_QUERY_CONFIRM\n")); break;
     case NAME_QUERY_SYNC         : DEBUG(4,("NAME_QUERY_SYNC\n")); break;
     default: break;
-    }
+  }
 }
 
 /****************************************************************************
@@ -1456,39 +1522,39 @@ static void debug_cmd_type(int cmd_type)
   ****************************************************************************/
 static BOOL response_problem_check(struct response_record *n,
 			struct nmb_packet *nmb, char *qname)
-    {
+{
   switch (nmb->answers->rr_type)
-	      {
+  {
     case NMB_REL:
     {
         if (n->num_msgs > 1)
         {
             DEBUG(1,("more than one release name response received!\n"));
             return True;
-	      }
+        }
         break;
-	  }
+    }
 
     case NMB_REG:
-	  {
+    {
         if (n->num_msgs > 1)
         {
             DEBUG(1,("more than one register name response received!\n"));
             return True;
-	  }
-	break;
-      }
-      
+        }
+        break;
+    }
+
     case NMB_QUERY:
-      {
+    { 
       if (n->num_msgs > 1)
-	  {
+      {
 		  if (nmb->header.rcode == 0 && nmb->answers->rdata)
 		  {
 			int nb_flags = nmb->answers->rdata[0];
-	    
+
 			if ((!NAME_GROUP(nb_flags)))
-	      {
+			{
 			   /* oh dear. more than one person responded to a unique name.
 				  there is either a network problem, a configuration problem
 				  or a server is mis-behaving */
@@ -1501,7 +1567,7 @@ static BOOL response_problem_check(struct response_record *n,
                /* this may cause problems for some early versions of nmbd */
 
                switch (n->cmd_type)
-		  {
+               {
     			case NAME_QUERY_MST_SRV_CHK:
                 case NAME_QUERY_SRV_CHK:
                 case NAME_QUERY_MST_CHK:
@@ -1521,17 +1587,17 @@ static BOOL response_problem_check(struct response_record *n,
                }
                DEBUG(3,("Unique Name conflict detected!\n"));
 			   return True;
+			}
 		  }
-	      }
-	    else
-	      {
+		  else
+		  {
              /* we have received a negative reply, having already received
                 at least one response (pos/neg). something's really wrong! */
 
 	         DEBUG(3,("wierd name query problem detected!\n"));
 		     return True;
-	      }
-	  }
+		  }
+       }
     }
   }
   return False;
@@ -1542,7 +1608,7 @@ static BOOL response_problem_check(struct response_record *n,
   ****************************************************************************/
 static BOOL response_compatible(struct response_record *n,
 			struct nmb_packet *nmb)
-	  {
+{
   switch (n->cmd_type)
   {
     case NAME_RELEASE:
@@ -1551,19 +1617,19 @@ static BOOL response_compatible(struct response_record *n,
 		{
 			DEBUG(1,("Name release reply has wrong answer rr_type\n"));
 			return False;
-	  }
-	break;
-      }
-      
+		}
+        break;
+    }
+
     case NAME_REGISTER:
-      {
+    {
   		if (nmb->answers->rr_type != NMB_REG)
-	  {
+		{
 			DEBUG(1,("Name register reply has wrong answer rr_type\n"));
 			return False;
 		}
         break;
-	  }
+    }
 
     case NAME_QUERY_CONFIRM:
     case NAME_QUERY_SYNC:
@@ -1572,30 +1638,30 @@ static BOOL response_compatible(struct response_record *n,
     case NAME_QUERY_FIND_MST:
     case NAME_QUERY_MST_CHK:
     {
-	if (nmb->answers->rr_type != NMB_QUERY)
-	  {
-	    DEBUG(1,("Name query reply has wrong answer rr_type\n"));
+		if (nmb->answers->rr_type != NMB_QUERY)
+		{
+			DEBUG(1,("Name query reply has wrong answer rr_type\n"));
 			return False;
-	  }
-	break;
-      }
+		}
+		break;
+    }
       
     case NAME_STATUS_MASTER_CHECK:
     case NAME_STATUS_CHECK:
-      {
+    {
 		if (nmb->answers->rr_type != NMB_STATUS)
-	  {
+		{
 			DEBUG(1,("Name status reply has wrong answer rr_type\n"));
 			return False;
 		}
 		break;
     }
-	    
+      
     default:
     {
 		DEBUG(0,("unknown command received in response_netbios_packet\n"));
 		break;
-	  }
+    }
   }
   return True;
 }
@@ -1609,7 +1675,7 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
 				BOOL bcast, struct nmb_name *ans_name)
 {
   switch (n->cmd_type)
-	  {
+  {
     case NAME_RELEASE:
     {
         response_name_release(d, p);
@@ -1620,15 +1686,15 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
     {
        	response_name_reg(d, p);
         break;
-	  }
-	
+    }
+
     case NAME_QUERY_MST_SRV_CHK:
     case NAME_QUERY_SRV_CHK:
     case NAME_QUERY_FIND_MST:
     {
 		response_server_check(ans_name, n, d);
-	break;
-      }
+		break;
+    }
       
     case NAME_STATUS_MASTER_CHECK:
     case NAME_STATUS_CHECK:
@@ -1654,11 +1720,11 @@ static void response_process(struct subnet_record *d, struct packet_struct *p,
     }
 
     default:
-      {
-	DEBUG(0,("unknown command received in response_netbios_packet\n"));
-	break;
-      }
+    {
+		DEBUG(0,("unknown command received in response_netbios_packet\n"));
+		break;
     }
+  }
 }
 
 
@@ -1675,9 +1741,21 @@ static void response_netbios_packet(struct packet_struct *p)
   struct response_record *n;
   struct subnet_record *d = NULL;
 
-  if (!(d = find_req_subnet(p->ip, bcast)))
+  if (!(n = find_response_record(&d,nmb->header.name_trn_id))) {
+    DEBUG(2,("unknown netbios response (received late or from nmblookup?)\n"));
+    return;
+  }
+
+  if (!d)
   {
-    DEBUG(3,("response packet: bcast %s not known\n", inet_ntoa(p->ip)));
+    DEBUG(2,("response packet: subnet %s not known\n", inet_ntoa(p->ip)));
+    return;
+  }
+
+  if (!same_net(d->bcast_ip, d->mask_ip, p->ip)) /* copes with WINS 'subnet' */
+  {
+    DEBUG(2,("response from %s. ", inet_ntoa(p->ip)));
+    DEBUG(2,("expected on subnet %s. hmm.\n", inet_ntoa(d->bcast_ip)));
     return;
   }
 
@@ -1693,11 +1771,6 @@ static void response_netbios_packet(struct packet_struct *p)
   DEBUG(3,("response for %s from %s (bcast=%s)\n",
 	   namestr(ans_name), inet_ntoa(p->ip), BOOLSTR(bcast)));
   
-  if (!(n = find_response_record(d,nmb->header.name_trn_id))) {
-    DEBUG(2,("unknown netbios response (received late or from nmblookup?)\n"));
-    return;
-  }
-
   debug_rr_type(nmb->answers->rr_type);
 
   n->num_msgs++; /* count number of responses received */
@@ -1728,22 +1801,22 @@ void process_nmb(struct packet_struct *p)
   debug_nmb_packet(p);
 
   switch (nmb->header.opcode) 
-    {
+  {
     case 8: /* what is this?? */
     case NMB_REG:
     case NMB_REG_REFRESH:
-      {
+    {
 	if (nmb->header.qdcount==0 || nmb->header.arcount==0) break;
 	if (nmb->header.response)
 	  response_netbios_packet(p); /* response to registration dealt with here */
 	else
 	  reply_name_reg(p);
 	break;
-      }
+    }
       
     case 0:
-      {
-	if (nmb->header.response)
+    {
+	  if (nmb->header.response)
 	  {
 	    switch (nmb->question.question_type)
 	      {
@@ -1755,7 +1828,7 @@ void process_nmb(struct packet_struct *p)
 	      }
 	    return;
 	  }
-	else if (nmb->header.qdcount>0) 
+      else if (nmb->header.qdcount>0) 
 	  {
 	    switch (nmb->question.question_type)
 	      {
@@ -1776,8 +1849,8 @@ void process_nmb(struct packet_struct *p)
       }
       
     case NMB_REL:
-      {
-	if (nmb->header.qdcount==0 || nmb->header.arcount==0)
+    {
+      if (nmb->header.qdcount==0 || nmb->header.arcount==0)
 	  {
 	    DEBUG(2,("netbios release packet rejected\n"));
 	    break;
@@ -1787,8 +1860,8 @@ void process_nmb(struct packet_struct *p)
 	  response_netbios_packet(p); /* response to reply dealt with in here */
 	else
 	  reply_name_release(p);
-	break;
-      }
+      break;
     }
+  }
 }
 
