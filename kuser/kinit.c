@@ -480,15 +480,15 @@ get_new_tickets(krb5_context context,
 	krb5_get_init_creds_opt_set_address_list (opt, &no_addrs);
     }
 
+    if (renew_life == NULL && renewable_flag)
+	renew_life = "1 month";
     if(renew_life) {
 	renew = parse_time (renew_life, "s");
 	if (renew < 0)
 	    errx (1, "unparsable time: %s", renew_life);
 
 	krb5_get_init_creds_opt_set_renew_life (opt, renew);
-    } else if (renewable_flag == 1)
-	krb5_get_init_creds_opt_set_renew_life (opt, 1 << 30);
-
+    }
 
     if(ticket_life != 0)
 	krb5_get_init_creds_opt_set_tkt_life (opt, ticket_life);
