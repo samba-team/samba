@@ -33,6 +33,12 @@ mkdir -p `dirname $header`
 
 ${perl} script/mkproto.pl $headeropt $proto_src > $headertmp
 
+RET=$?
+
+if test x"$RET" != x"0";then
+	exit $RET
+fi
+
 if cmp -s $header $headertmp 2>/dev/null
 then
   echo "$header unchanged"
