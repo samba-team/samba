@@ -135,6 +135,12 @@ size_t __unsafe_string_function_usage_here_char__(void);
  * a clobbering into a static buffer.  If the program crashes at
  * address 0xf1f1f1f1 then this function is probably, but not
  * necessarily, to blame. */
+
+/* overmalloc_safe_strcpy: DEPRECATED!  Used when you know the
+ * destination buffer is longer than maxlength, but you don't know how
+ * long.  This is not a good situation, because we can't do the normal
+ * sanity checks. Don't use in new code! */
+
 #ifdef DEVELOPER
 #define overmalloc_safe_strcpy(dest,src,maxlength)	safe_strcpy_fn(__FUNCTION__,__LINE__,dest,src,maxlength)
 #define safe_strcpy(dest,src,maxlength)	safe_strcpy_fn2(__FUNCTION__,__LINE__,dest,src,maxlength)
