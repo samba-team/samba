@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -49,8 +49,7 @@ krb5_sock_to_principal (krb5_context context,
     socklen_t len = sizeof(__ss);
     struct hostent *hostent;
     int family;
-    char hname[256];
-    char *tmp;
+    char *hname = NULL;
 
     if (getsockname (sock, sa, &len) < 0)
 	return errno;
@@ -64,20 +63,19 @@ krb5_sock_to_principal (krb5_context context,
 				   address.address.length,
 				   family);
 
-    if (hostent == NULL)
-	return h_errno;
-    tmp = hostent->h_name;
-    if (strchr(tmp, '.') == NULL) {
+    if (hostent == NULL) 
+	return krb5_h_errno_to_heim_errno(h_errno);
+    hname = hostent->h_name;
+    if (strchr(hname, '.') == NULL) {
 	char **a;
 
 	for (a = hostent->h_aliases; a != NULL && *a != NULL; ++a)
 	    if (strchr(*a, '.') != NULL) {
-		tmp = *a;
+		hname = *a;
 		break;
 	    }
     }
 
-    strlcpy(hname, tmp, sizeof(hname));
     return krb5_sname_to_principal (context,
 				    hname,
 				    sname,
