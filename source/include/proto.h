@@ -1790,9 +1790,9 @@ int print_job_fd(int jobid);
 char *print_job_fname(int jobid);
 BOOL print_job_set_place(int jobid, int place);
 BOOL print_job_set_name(int jobid, char *name);
-BOOL print_job_delete(struct current_user *user, int jobid);
-BOOL print_job_pause(struct current_user *user, int jobid);
-BOOL print_job_resume(struct current_user *user, int jobid);
+BOOL print_job_delete(struct current_user *user, int jobid, int *errcode);
+BOOL print_job_pause(struct current_user *user, int jobid, int *errcode);
+BOOL print_job_resume(struct current_user *user, int jobid, int *errcode);
 int print_job_write(int jobid, const char *buf, int size);
 int print_job_start(struct current_user *user, int snum, char *jobname);
 BOOL print_job_end(int jobid);
@@ -3233,12 +3233,8 @@ uint32 _spoolss_enumjobs( POLICY_HND *handle, uint32 firstjob, uint32 numofjobs,
 			  NEW_BUFFER *buffer, uint32 offered,
 			  uint32 *needed, uint32 *returned);
 uint32 _spoolss_schedulejob( POLICY_HND *handle, uint32 jobid);
-uint32 _spoolss_setjob( POLICY_HND *handle,
-				uint32 jobid,
-				uint32 level,
-                pipes_struct *p,
-				JOB_INFO *ctr,
-				uint32 command);
+uint32 _spoolss_setjob(POLICY_HND *handle, uint32 jobid, uint32 level,
+		       pipes_struct *p, JOB_INFO *ctr, uint32 command);
 uint32 _spoolss_enumprinterdrivers( UNISTR2 *name, UNISTR2 *environment, uint32 level,
 				    NEW_BUFFER *buffer, uint32 offered,
 				    uint32 *needed, uint32 *returned);
@@ -3951,6 +3947,9 @@ void clean_fname(char *name);
 char *smbw_parse_path(const char *fname, char *server, char *share, char *path);
 int smbw_path(const char *path);
 int smbw_errno(struct cli_state *c);
+void get_envvar_auth_data(char *server, char *share, char **workgroup,
+			  char **username, char **password);
+void smbw_set_auth_data_fn(smbw_get_auth_data_fn fn);
 struct smbw_server *smbw_server(char *server, char *share);
 struct smbw_file *smbw_file(int fd);
 int smbw_open(const char *fname, int flags, mode_t mode);

@@ -197,21 +197,18 @@ list a unix job in the print database
 static void print_unix_job(int snum, print_queue_struct *q)
 {
 	int jobid = q->job + UNIX_JOB_START;
-	struct printjob pj;
+	struct printjob pj, *old_pj;
 
-	/* Don't re-insert a unix job if it already exists as it mucks
-	   up the timestamp. */
+	/* Preserve the timestamp on an existing unix print job */
 
-	if (tdb_exists(tdb, print_key(jobid))) {
-		return;
-	}
+	old_pj = print_job_find(jobid);
 
 	ZERO_STRUCT(pj);
 
 	pj.pid = (pid_t)-1;
 	pj.sysjob = q->job;
 	pj.fd = -1;
-	pj.starttime = q->time;
+	pj.starttime = old_pj ? old_pj->starttime : q->time;
 	pj.status = q->status;
 	pj.size = q->size;
 	pj.spooled = True;
@@ -523,9 +520,10 @@ static BOOL is_owner(struct current_user *user, int jobid)
 /****************************************************************************
 delete a print job
 ****************************************************************************/
-BOOL print_job_delete(struct current_user *user, int jobid)
+BOOL print_job_delete(struct current_user *user, int jobid, int *errcode)
 {
 	int snum = print_job_snum(jobid);
+	char *printer_name;
 	BOOL owner;
 	
 	owner = is_owner(user, jobid);
@@ -536,6 +534,7 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 	if (!owner && 
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("delete denied by security descriptor\n"));
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -546,6 +545,13 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 
 	print_queue_update(snum);
 
+	/* Send a printer notify message */
+
+	printer_name = PRINTERNAME(snum);
+
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
+
 	return !print_job_exists(jobid);
 }
 
@@ -553,14 +559,14 @@ BOOL print_job_delete(struct current_user *user, int jobid)
 /****************************************************************************
 pause a job
 ****************************************************************************/
-BOOL print_job_pause(struct current_user *user, int jobid)
+BOOL print_job_pause(struct current_user *user, int jobid, int *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
 	int snum, ret = -1;
+	char *printer_name;
 	fstring jobstr;
 	BOOL owner;
 	
-
 	if (!pjob || !user) return False;
 
 	if (!pjob->spooled || pjob->sysjob == -1) return False;
@@ -571,6 +577,7 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 	if (!owner &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("pause denied by security descriptor\n"));
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -581,19 +588,33 @@ BOOL print_job_pause(struct current_user *user, int jobid)
 				"%j", jobstr,
 				NULL);
 
+	if (ret != 0) {
+		*errcode = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
 	/* force update the database */
 	print_cache_flush(snum);
 
+	/* Send a printer notify message */
+
+	printer_name = PRINTERNAME(snum);
+
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
+
 	/* how do we tell if this succeeded? */
-	return ret == 0;
+
+	return True;
 }
 
 /****************************************************************************
 resume a job
 ****************************************************************************/
-BOOL print_job_resume(struct current_user *user, int jobid)
+BOOL print_job_resume(struct current_user *user, int jobid, int *errcode)
 {
 	struct printjob *pjob = print_job_find(jobid);
+	char *printer_name;
 	int snum, ret;
 	fstring jobstr;
 	BOOL owner;
@@ -608,6 +629,7 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 	if (!is_owner(user, jobid) &&
 	    !print_access_check(user, snum, JOB_ACCESS_ADMINISTER)) {
 		DEBUG(3, ("resume denied by security descriptor\n"));
+		*errcode = ERROR_ACCESS_DENIED;
 		return False;
 	}
 
@@ -617,11 +639,22 @@ BOOL print_job_resume(struct current_user *user, int jobid)
 				"%j", jobstr,
 				NULL);
 
+	if (ret != 0) {
+		*errcode = ERROR_INVALID_PARAMETER;
+		return False;
+	}
+
 	/* force update the database */
 	print_cache_flush(snum);
 
-	/* how do we tell if this succeeded? */
-	return ret == 0;
+	/* Send a printer notify message */
+
+	printer_name = PRINTERNAME(snum);
+
+	message_send_all(MSG_PRINTER_NOTIFY, printer_name, 
+			 strlen(printer_name) + 1);
+
+	return True;
 }
 
 /****************************************************************************
@@ -970,6 +1003,8 @@ int print_queue_status(int snum,
 
 	/* make sure the database is up to date */
 	if (print_cache_expired(snum)) print_queue_update(snum);
+
+	*queue = NULL;
 	
 	/*
 	 * Count the number of entries.
@@ -977,6 +1012,9 @@ int print_queue_status(int snum,
 	tsc.count = 0;
 	tsc.snum = snum;
 	tdb_traverse(tdb, traverse_count_fn_queue, (void *)&tsc);
+
+	if (tsc.count == 0)
+		return 0;
 
 	/* Allocate the queue size. */
 	if (( tstruct.queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*tsc.count))

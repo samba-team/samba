@@ -640,7 +640,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	connection_struct *conn;
 	pstring inbuf;
 	pstring outbuf;
-	struct smb_passwd *smb_pass;
+	struct passwd *pass;
 	int ecode;
 	int outsize = 0;
 	int i;
@@ -662,9 +662,9 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	get_short_archi(architecture, driver->environment);
 
 	become_root();
-	smb_pass = getsmbpwuid(user->uid);
-	if(smb_pass == NULL) {
-		DEBUG(0,("move_driver_to_download_area: Unable to get smbpasswd entry for uid %u\n",
+	pass = getpwuid(user->uid);
+	if(pass == NULL) {
+		DEBUG(0,("move_driver_to_download_area: Unable to get passwd entry for uid %u\n",
 				(unsigned int)user->uid ));
 		unbecome_root();
 		return False;
@@ -672,7 +672,7 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	unbecome_root();
 
 	/* connect to the print$ share under the same account as the user connected to the rpc pipe */	
-	fstrcpy(user_name, smb_pass->smb_name );
+	fstrcpy(user_name, pass->pw_name );
 	DEBUG(10,("move_driver_to_download_area: uid %d -> user %s\n", (int)user->uid, user_name));
 
 	/* Null password is ok - we are already an authenticated user... */
@@ -1431,9 +1431,8 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	snprintf(adevice, sizeof(adevice), "\\\\%s\\%s", global_myname, default_devicename);
-	fstrcpy(nt_devmode->devicename, adevice);
-	
+	safe_strcpy(adevice, default_devicename, sizeof(adevice));
+	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
 
@@ -1663,8 +1662,10 @@ static uint32 get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 
 	snum = lp_servicenumber(sharename);
 
-	fstrcpy(info.servername, global_myname);
-	fstrcpy(info.printername, sharename);
+	slprintf(info.servername, sizeof(info.servername), "\\\\%s", global_myname);
+	slprintf(info.printername, sizeof(info.printername), "\\\\%s\\%s", 
+		 global_myname, sharename);
+	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 	pstrcpy(info.comment, "");
@@ -1713,6 +1714,7 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	NT_PRINTER_INFO_LEVEL_2 info;
 	int len = 0;
 	TDB_DATA kbuf, dbuf;
+	fstring printername;
 		
 	ZERO_STRUCT(info);
 
@@ -1752,6 +1754,12 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	/* Samba has to have shared raw drivers. */
 	info.attributes |= (PRINTER_ATTRIBUTE_SHARED|PRINTER_ATTRIBUTE_RAW_ONLY);
 
+	/* Restore the stripped strings. */
+	slprintf(info.servername, sizeof(info.servername), "\\\\%s", global_myname);
+	slprintf(printername, sizeof(printername), "\\\\%s\\%s", global_myname,
+			info.printername);
+	fstrcpy(info.printername, printername);
+
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 	len += unpack_specifics(&info.specific,dbuf.dptr+len, dbuf.dsize-len);
 
@@ -1760,8 +1768,8 @@ static uint32 get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	safe_free(dbuf.dptr);
 	*info_ptr=memdup(&info, sizeof(info));
 
-	DEBUG(9,("Unpacked printer [%s] running driver [%s]\n",
-		 sharename, info.drivername));
+	DEBUG(9,("Unpacked printer [%s] name [%s] running driver [%s]\n",
+		 sharename, info.printername, info.drivername));
 
 	
 	return 0;	
