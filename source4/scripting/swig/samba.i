@@ -33,7 +33,7 @@
 }
 
 %typemap(out) uint32 {
-	$1 = PyLong_FromLong($input);
+	$result = PyLong_FromLong($1);
 }
 
 %typemap(out) NTSTATUS {
