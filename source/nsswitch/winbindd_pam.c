@@ -133,8 +133,10 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	status = domain_client_validate_backend
           (server, name_user, name_domain, global_myname, SEC_CHAN_WKSTA,
            trust_passwd, state->request.data.auth_crap.chal,
-           state->request.data.auth_crap.lm_resp, 24,
-           state->request.data.auth_crap.nt_resp, 24,
+           state->request.data.auth_crap.lm_resp, 
+	   state->request.data.auth_crap.lm_resp_len,
+           state->request.data.auth_crap.nt_resp, 
+	   state->request.data.auth_crap.nt_resp_len,
            &info3);
 
 	if (status != NT_STATUS_NOPROBLEMO) {
