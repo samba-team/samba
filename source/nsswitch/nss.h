@@ -69,6 +69,10 @@ typedef enum
   NSS_STATUS_TRYAGAIN=NS_TRYAGAIN
 } NSS_STATUS;
 
+#define NSD_MEM_STATIC 0
+#define NSD_MEM_VOLATILE 1
+#define NSD_MEM_DYNAMIC 2
+
 #else /* Nothing's defined. Neither gnu nor sun */
 
 typedef enum
