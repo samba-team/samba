@@ -56,7 +56,8 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->rap_print_jobid = pjobid_to_rap(SNUM(conn), jobid);
 	if (fsp->rap_print_jobid == 0) {
 		/* We need to delete the entry in the tdb. */
-		pjob_delete(SNUM(conn), jobid);
+		pjob_delete(SNUM(conn, lp_const_servicename(SNUM(conn)),
+				 jobid);
 		file_free(fsp);
 		return NULL;
 	}

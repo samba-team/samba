@@ -575,12 +575,11 @@ done:
  Remove a job structure from the database.
 ****************************************************************************/
 
-void pjob_delete(int snum, uint32 jobid)
+void pjob_delete(int snum, const char *sharename, uint32 jobid)
 {
-	struct printjob *pjob = print_job_find(lp_const_servicename(snum),
-					       jobid);
+	struct printjob *pjob = print_job_find(sharename, jobid);
 	uint32 job_status = 0;
-	struct tdb_print_db *pdb = get_print_db_byname(lp_const_servicename(snum));
+	struct tdb_print_db *pdb = get_print_db_byname(sharename);
 
 	if (!pdb)
 		return;
@@ -601,10 +600,10 @@ void pjob_delete(int snum, uint32 jobid)
            properly. */
 	
 	job_status |= JOB_STATUS_DELETING;
-	notify_job_status(snum, jobid, job_status);
+	notify_job_status_byname(sharename, jobid, job_status, 0);
 	
 	job_status |= JOB_STATUS_DELETED;
-	notify_job_status(snum, jobid, job_status);
+	notify_job_status_byname(sharename, jobid, job_status, 0);
 
 	/* Remove from printing.tdb */
 
@@ -675,6 +674,7 @@ static void print_unix_job(const char *printer_name, print_queue_struct *q,
 struct traverse_struct {
 	print_queue_struct *queue;
 	int qcount, snum, maxcount, total_jobs;
+	const char *sharename;
 	time_t lpq_time;
 };
 
@@ -698,11 +698,6 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 	free_nt_devicemode( &pjob.nt_devmode );
 
 
-	if (ts->snum != lp_servicenumber(pjob.queuename)) {
-		/* this isn't for the queue we are looking at - this cannot happen with the split tdb's. JRA */
-		return 0;
-	}
-
 	if (!pjob.smbjob) {
 		/* remove a unix job if it isn't in the system queue any more */
 
@@ -714,7 +709,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (i == ts->qcount) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !smbjob\n",
 						(unsigned int)jobid ));
-			pjob_delete(ts->snum, jobid);
+			pjob_delete(ts->snum, ts->sharename, jobid);
 			return 0;
 		} 
 
@@ -730,7 +725,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		if (!process_exists(pjob.pid)) {
 			DEBUG(10,("traverse_fn_delete: pjob %u deleted due to !process_exists (%u)\n",
 						(unsigned int)jobid, (unsigned int)pjob.pid ));
-			pjob_delete(ts->snum, jobid);
+			pjob_delete(ts->snum, ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
 		return 0;
@@ -763,7 +758,7 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 						(unsigned int)jobid,
 						(unsigned int)pjob.starttime,
 						(unsigned int)ts->lpq_time ));
-			pjob_delete(ts->snum, jobid);
+			pjob_delete(ts->snum, ts->sharename, jobid);
 		} else
 			ts->total_jobs++;
 		return 0;
@@ -984,7 +979,6 @@ static void check_job_changed(const char *printer_name, TDB_DATA data,
 }
 
 struct print_queue_update_context {
-	int snum;		/* This can not be relied upon, to be removed */
 	fstring printer_name;
 	enum printing_types printing_type;
 	fstring lpqcommand;
@@ -1134,7 +1128,8 @@ static void print_queue_update_internal(struct print_queue_update_context *ctx)
            system queue */
 	tstruct.queue = queue;
 	tstruct.qcount = qcount;
-	tstruct.snum = ctx->snum;
+	tstruct.snum = -1;
+	tstruct.sharename = ctx->printer_name;
 	tstruct.total_jobs = 0;
 	tstruct.lpq_time = time(NULL);
 
@@ -1259,7 +1254,6 @@ static void print_queue_update(int snum)
 {
 	struct print_queue_update_context ctx;
 
-	ctx.snum = snum;
 	fstrcpy(ctx.printer_name, lp_const_servicename(snum));
 	ctx.printing_type = lp_printing(snum);
 	fstrcpy(ctx.lpqcommand, lp_lpqcommand(snum));
@@ -1653,7 +1647,7 @@ static BOOL print_job_delete1(int snum, uint32 jobid)
 
 		if (!pdb)
 			return False;
-		pjob_delete(snum, jobid);
+		pjob_delete(snum, printername, jobid);
 		/* Ensure we keep a rough count of the number of total jobs... */
 		tdb_change_int32_atomic(pdb->tdb, "INFO/total_jobs", &njobs, -1);
 		release_print_db(pdb);
@@ -2177,7 +2171,7 @@ to open spool file %s.\n", pjob.filename));
 
  fail:
 	if (jobid != -1)
-		pjob_delete(snum, jobid);
+		pjob_delete(snum, lp_const_servicename(snum), jobid);
 
 	release_print_db(pdb);
 
@@ -2247,7 +2241,7 @@ BOOL print_job_end(int snum, uint32 jobid, BOOL normal_close)
 		DEBUG(5,("print_job_end: canceling spool of %s (%s)\n",
 			pjob->filename, pjob->size ? "deleted" : "zero length" ));
 		unlink(pjob->filename);
-		pjob_delete(snum, jobid);
+		pjob_delete(snum, lp_const_servicename(snum), jobid);
 		return True;
 	}
 
@@ -2275,7 +2269,7 @@ fail:
 	/* The print job was not succesfully started. Cleanup */
 	/* Still need to add proper error return propagation! 010122:JRR */
 	unlink(pjob->filename);
-	pjob_delete(snum, jobid);
+	pjob_delete(snum, lp_const_servicename(snum), jobid);
 	remove_from_jobs_changed(lp_const_servicename(snum), jobid);
 	return False;
 }
