@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -180,6 +180,7 @@ init_context_from_config_file(krb5_context context)
     /* prefer dns_lookup_kdc over srv_lookup. */
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
     INIT_FIELD(context, bool, srv_lookup, context->srv_lookup, "dns_lookup_kdc");
+    INIT_FIELD(context, int, large_msg_size, 6000, "large_message_size");
     context->default_cc_name = NULL;
     return 0;
 }
