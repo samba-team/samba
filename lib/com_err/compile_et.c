@@ -1,0 +1,172 @@
+/*
+ * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * (Royal Institute of Technology, Stockholm, Sweden). 
+ * All rights reserved. 
+ *
+ * Redistribution and use in source and binary forms, with or without 
+ * modification, are permitted provided that the following conditions 
+ * are met: 
+ *
+ * 1. Redistributions of source code must retain the above copyright 
+ *    notice, this list of conditions and the following disclaimer. 
+ *
+ * 2. Redistributions in binary form must reproduce the above copyright 
+ *    notice, this list of conditions and the following disclaimer in the 
+ *    documentation and/or other materials provided with the distribution. 
+ *
+ * 3. All advertising materials mentioning features or use of this software 
+ *    must display the following acknowledgement: 
+ *      This product includes software developed by Kungliga Tekniska 
+ *      Högskolan and its contributors. 
+ *
+ * 4. Neither the name of the Institute nor the names of its contributors 
+ *    may be used to endorse or promote products derived from this software 
+ *    without specific prior written permission. 
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE INSTITUTE AND CONTRIBUTORS ``AS IS'' AND 
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE 
+ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE 
+ * ARE DISCLAIMED.  IN NO EVENT SHALL THE INSTITUTE OR CONTRIBUTORS BE LIABLE 
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL 
+ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS 
+ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) 
+ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT 
+ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY 
+ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF 
+ * SUCH DAMAGE. 
+ */
+
+#include "compile_et.h"
+
+RCSID("$Id$");
+
+#include <roken.h>
+#include "parse.h"
+
+int numerror;
+extern FILE *yyin;
+FILE *c_file, *h_file;
+
+extern void yyparse(void);
+
+long base;
+int number;
+char *prefix;
+char *id_str;
+
+char name[128];
+char Basename[128];
+
+#ifdef YYDEBUG
+extern int yydebug = 1;
+#endif
+
+char *filename;
+char hfn[128];
+char cfn[128];
+char fn[128];
+
+void prologue()
+{
+    char *p;
+    snprintf(fn, sizeof(fn), "__%s__", hfn);
+    for(p = fn; *p; p++)
+	if(!isalnum(*p))
+	    *p = '_';
+    
+    fprintf(c_file, "/* Generated from %s */\n", filename);
+    if(id_str) 
+	fprintf(c_file, "/* %s */\n", id_str);
+    fprintf(c_file, "\n");
+    fprintf(c_file, "#include <stddef.h>\n");
+    fprintf(c_file, "#include <com_right.h>\n");
+    fprintf(c_file, "#include <%s>\n", hfn);
+    fprintf(c_file, "\n");
+
+    fprintf(c_file, "static const char *text[] = {\n");
+
+    fprintf(h_file, "/* Generated from %s */\n", filename);
+    if(id_str) 
+	fprintf(h_file, "/* %s */\n", id_str);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "#ifndef %s\n", fn);
+    fprintf(h_file, "#define %s\n", fn);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "#include <com_right.h>\n");
+    fprintf(h_file, "\n");
+    fprintf(h_file, 
+	    "void initialize_%s_error_table_r(struct error_table**);\n",
+	    name);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "void initialize_%s_error_table(void);\n", name);
+    fprintf(h_file, "#define init_%s_err_tbl initialize_%s_error_table\n", 
+	    name, name);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "typedef enum %s_error_number{\n", name);
+    fprintf(h_file, "\tERROR_TABLE_BASE_%s = %ld,\n", name, base);
+    fprintf(h_file, "\t%s_err_base = %ld,\n", name, base);
+}
+
+int
+main(int argc, char **argv)
+{
+    char *p;
+    set_progname(argv[0]);
+
+    if(argc != 2) {
+	fprintf(stderr, "Usage: %s error_table\n", __progname);
+	exit(1);
+    }
+    filename = argv[1];
+    yyin = fopen(filename, "r");
+    if(yyin == NULL)
+	err(1, "%s", filename);
+	
+    
+    p = strrchr(argv[1], '/');
+    if(p)
+	p++;
+    else
+	p = argv[1];
+    strncpy(Basename, p, sizeof(Basename));
+    Basename[sizeof(Basename) - 1] = '\0';
+    
+    Basename[strcspn(Basename, "._")] = '\0';
+    
+    snprintf(hfn, sizeof(hfn), "%s_err.h", Basename);
+    h_file = fopen(hfn, "w");
+    snprintf(cfn, sizeof(cfn), "%s_err.c", Basename);
+    c_file = fopen(cfn, "w");
+    
+    yyparse();
+    
+    fprintf(c_file, "\tNULL\n");
+    fprintf(c_file, "};\n");
+    fprintf(c_file, "\n");
+    fprintf(c_file, 
+	    "void initialize_%s_error_table_r(struct error_table **list)\n", 
+	    name);
+    fprintf(c_file, "{\n");
+    fprintf(c_file, 
+	    "    initialize_error_table_r(list, text, "
+	    "%s_num_errors, ERROR_TABLE_BASE_%s);\n", name, name);
+    fprintf(c_file, "}\n");
+    fprintf(c_file, "\n");
+    fprintf(c_file, "void initialize_%s_error_table(void)\n", name);
+    fprintf(c_file, "{\n");
+    fprintf(c_file,
+	    "    init_error_table(text, ERROR_TABLE_BASE_%s, "
+	    "%s_num_errors);\n", name, name);
+    fprintf(c_file, "}\n");
+    
+    fprintf(h_file, "\t%s_num_errors = %d\n", name, number);
+    fprintf(h_file, "} %s_error_number;\n", name);
+    fprintf(h_file, "\n");
+    fprintf(h_file, "#endif /* %s */\n", fn);
+
+    fclose(h_file);
+    fclose(c_file);
+    if(numerror)
+	return 1;
+    return 0;
+}
