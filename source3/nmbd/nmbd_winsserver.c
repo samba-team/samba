@@ -744,7 +744,7 @@ querying for name %s in order to replace it and this reply.\n", nmb_namestr(ques
 void wins_process_name_registration_request(struct subnet_record *subrec,
                                             struct packet_struct *p)
 {
-	fstring name;
+	unstring name;
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	BOOL bcast = nmb->header.nm_flags.bcast;
@@ -1119,7 +1119,7 @@ void wins_process_multihomed_name_registration_request( struct subnet_record *su
 	struct in_addr from_ip;
 	BOOL group = (nb_flags & NB_GROUP) ? True : False;
 	struct in_addr our_fake_ip = *interpret_addr2("0.0.0.0");
-	fstring qname;
+	unstring qname;
 
 	putip((char *)&from_ip,&nmb->additional->rdata[2]);
 
@@ -1479,7 +1479,7 @@ void wins_process_name_query_request(struct subnet_record *subrec,
 	struct nmb_packet *nmb = &p->packet.nmb;
 	struct nmb_name *question = &nmb->question.question_name;
 	struct name_record *namerec = NULL;
-	fstring qname;
+	unstring qname;
 
 	DEBUG(3,("wins_process_name_query: name query for name %s from IP %s\n", 
 		nmb_namestr(question), inet_ntoa(p->ip) ));
@@ -1845,7 +1845,7 @@ void wins_write_database(BOOL background)
 		DEBUGADD(4,("%2x\n", namerec->data.nb_flags ));
 
 		if( namerec->data.source == REGISTER_NAME ) {
-			fstring name;
+			unstring name;
 			pull_ascii_nstring(name, sizeof(name), namerec->name.name);
 			x_fprintf(fp, "\"%s#%02x\" %d ", name,namerec->name.name_type, /* Ignore scope. */
 				(int)namerec->data.death_time);

@@ -97,13 +97,13 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	fstring announce_name;
+	unstring announce_name;
 	uint32 servertype = IVAL(buf,23);
 	fstring comment;
 	struct work_record *work;
 	struct server_record *servrec;
-	fstring work_name;
-	fstring source_name;
+	unstring work_name;
+	unstring source_name;
 
 	START_PROFILE(host_announce);
 
@@ -144,7 +144,7 @@ void process_host_announce(struct subnet_record *subrec, struct packet_struct *p
 	 */
 
 	if(strequal(work_name, global_myname()))
-		fstrcpy(work_name,lp_workgroup());
+		unstrcpy(work_name,lp_workgroup());
 
 	/*
 	 * We are being very agressive here in adding a workgroup
@@ -198,12 +198,12 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	fstring workgroup_announce_name;
-	fstring master_name;
+	unstring workgroup_announce_name;
+	unstring master_name;
 	uint32 servertype = IVAL(buf,23);
 	struct work_record *work;
-	fstring source_name;
-	fstring dest_name;
+	unstring source_name;
+	unstring dest_name;
 
 	START_PROFILE(workgroup_announce);
 
@@ -255,13 +255,13 @@ void process_local_master_announce(struct subnet_record *subrec, struct packet_s
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	int ttl = IVAL(buf,1)/1000;
-	fstring server_name;
+	unstring server_name;
 	uint32 servertype = IVAL(buf,23);
 	fstring comment;
-	fstring work_name;
+	unstring work_name;
 	struct work_record *work;
 	struct server_record *servrec;
-	fstring source_name;
+	unstring source_name;
 
 	START_PROFILE(local_master_announce);
 
@@ -369,7 +369,7 @@ done:
 void process_master_browser_announce(struct subnet_record *subrec, 
                                      struct packet_struct *p,char *buf)
 {
-	fstring local_master_name;
+	unstring local_master_name;
 	struct work_record *work;
 	struct browse_cache_record *browrec;
 
@@ -425,11 +425,11 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 	int osmajor=CVAL(buf,5);           /* major version of node software */
 	int osminor=CVAL(buf,6);           /* minor version of node software */
 	int ttl = SVAL(buf,7);
-	fstring announce_name;
+	unstring announce_name;
 	struct work_record *work;
 	struct server_record *servrec;
-	fstring work_name;
-	fstring source_name;
+	unstring work_name;
+	unstring source_name;
 	fstring comment;
 	char *s = buf+9;
 
@@ -479,7 +479,7 @@ originate from OS/2 Warp client. Ignoring packet.\n"));
 	 */
 
 	if(strequal(work_name, global_myname()))
-		fstrcpy(work_name,lp_workgroup());
+		unstrcpy(work_name,lp_workgroup());
 
 	/*
 	 * We are being very agressive here in adding a workgroup
@@ -541,11 +541,11 @@ static void send_backup_list_response(struct subnet_record *subrec,
 	char outbuf[1024];
 	char *p, *countptr;
 	unsigned int count = 0;
-	fstring send_to_namestr;
+	unstring send_to_namestr;
 #if 0
   struct server_record *servrec;
 #endif
-	fstring myname;
+	unstring myname;
 
 	memset(outbuf,'\0',sizeof(outbuf));
 
@@ -565,7 +565,7 @@ static void send_backup_list_response(struct subnet_record *subrec,
   
 	/* We always return at least one name - our own. */
 	count = 1;
-	fstrcpy(myname, global_myname());
+	unstrcpy(myname, global_myname());
 	strupper_m(myname);
 	myname[15]='\0';
 	push_pstring_base(p, myname, outbuf);
@@ -642,7 +642,7 @@ void process_get_backup_list_request(struct subnet_record *subrec,
 	unsigned char max_number_requested = CVAL(buf,0);
 	uint32 token = IVAL(buf,1); /* Sender's key index for the workgroup. */
 	int name_type = dgram->dest_name.name_type;
-	fstring workgroup_name;
+	unstring workgroup_name;
 	struct subnet_record *search_subrec = subrec;
 
 	START_PROFILE(get_backup_list);
@@ -774,7 +774,7 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
 	struct work_record *work;
-	fstring workgroup_name;
+	unstring workgroup_name;
  
 	START_PROFILE(announce_request);
 
@@ -814,7 +814,7 @@ done:
 void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
 	struct dgram_packet *dgram = &p->packet.dgram;
-	fstring workgroup_name;
+	unstring workgroup_name;
 
 	START_PROFILE(lm_announce_request);
 

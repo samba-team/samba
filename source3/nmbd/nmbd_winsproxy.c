@@ -30,7 +30,7 @@ static void wins_proxy_name_query_request_success( struct subnet_record *subrec,
                         struct userdata_struct *userdata,
                         struct nmb_name *nmbname, struct in_addr ip, struct res_rec *rrec)
 {
-	fstring name;
+	unstring name;
 	struct packet_struct *original_packet;
 	struct subnet_record *orig_broadcast_subnet;
 	struct name_record *namerec;
@@ -193,7 +193,7 @@ void make_wins_proxy_name_query_request( struct subnet_record *subrec,
 	long *ud[(sizeof(struct userdata_struct) + sizeof(struct subrec *) + 
 		sizeof(struct packet_struct *))/sizeof(long *) + 1];
 	struct userdata_struct *userdata = (struct userdata_struct *)ud;
-	fstring qname;
+	unstring qname;
 
 	memset(ud, '\0', sizeof(ud));
  

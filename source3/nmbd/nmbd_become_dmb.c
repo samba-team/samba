@@ -37,7 +37,7 @@ static void become_domain_master_fail(struct subnet_record *subrec,
                                       struct response_record *rrec,
                                       struct nmb_name *fail_name)
 {
-	fstring failname;
+	unstring failname;
 	struct work_record *work;
 	struct server_record *servrec;
 
@@ -80,7 +80,7 @@ static void become_domain_master_stage2(struct subnet_record *subrec,
                                         uint16 nb_flags,
                                         int ttl, struct in_addr registered_ip)
 {
-	fstring regname;
+	unstring regname;
 	struct work_record *work;
 	struct server_record *servrec;
 
@@ -200,7 +200,7 @@ static void become_domain_master_query_success(struct subnet_record *subrec,
                         struct nmb_name *nmbname, struct in_addr ip, 
                         struct res_rec *rrec)
 {
-	fstring name;
+	unstring name;
 	pull_ascii_nstring(name, sizeof(name), nmbname->name);
 
 	/* If the given ip is not ours, then we can't become a domain
@@ -241,7 +241,7 @@ static void become_domain_master_query_fail(struct subnet_record *subrec,
                                     struct response_record *rrec,
                                     struct nmb_name *question_name, int fail_code)
 {
-	fstring name;
+	unstring name;
 
 	/* If the query was unicast, and the error is not NAM_ERR (name didn't exist),
 		then this is a failure. Otherwise, not finding the name is what we want. */
