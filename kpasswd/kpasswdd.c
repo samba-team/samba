@@ -496,11 +496,12 @@ doit (int port)
 	fd_set fdset = real_fdset;
 
 	ret = select (maxfd + 1, &fdset, NULL, NULL, NULL);
-	if (ret < 0)
+	if (ret < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		krb5_err (context, 1, errno, "select");
+	}
 	for (i = 0; i < n; ++i)
 	    if (FD_ISSET(sockets[i], &fdset)) {
 		u_char buf[BUFSIZ];
@@ -508,11 +509,12 @@ doit (int port)
 
 		ret = recvfrom (sockets[i], buf, sizeof(buf), 0,
 				sa, &addrlen);
-		if (ret < 0)
+		if (ret < 0) {
 		    if(errno == EINTR)
 			break;
 		    else
 			krb5_err (context, 1, errno, "recvfrom");
+		}
 
 		process (server, sockets[i],
 			 &addrs.val[i],
