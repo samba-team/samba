@@ -244,7 +244,7 @@ Options recognized by this module are as follows:
                                 password used for successful authentication.
         smbconf=&lt file &gt  -     specify an alternate path to the smb.conf
                                 file.
-</programlisting><para>
+</programlisting></para>
 
 <para><programlisting>
 Thanks go to the following people:
