@@ -43,6 +43,10 @@ for Shadow passwords and quotas. Do NOT recompile with the
 SHADOW_PWD option enabled
 
 %changelog
+* Sun Oct 14 2001 Andrew Bartlett <abartlet@samba.org>
+ - Set SBINDIR for codepage/manpage install, cope with 
+    broken Makefile
+
 * Mon Aug 1 2001 Tim Potter <tpot@samba.org>
  - Install winbind daemon, client programs, nss and pam libraries
 
@@ -214,6 +218,7 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 cd source
 make BASEDIR=$RPM_BUILD_ROOT/usr \
 	LIBDIR=$RPM_BUILD_ROOT/etc/samba \
+	SBINDIR=$RPM_BUILD_ROOT%{prefix}/sbin \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
 	CODEPAGEDIR=$RPM_BUILD_ROOT/etc/codepages \
