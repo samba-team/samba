@@ -295,14 +295,21 @@ int pam_sm_chauthtok(pam_handle_t *pamh, int flags,
 
         retval = smb_update_db(pamh, ctrl, user, pass_new);
         if (retval == PAM_SUCCESS) {
+	    uid_t uid;
+	    
             /* password updated */
-            _log_err( LOG_NOTICE, "password for (%s/%d) changed by (%s/%d)"
-                      , user, pdb_get_uid(sampass), uidtoname( getuid() )
-                      , getuid() );
-        } else {
-            _log_err( LOG_ERR, "password change failed for user %s"
-                      , user );
-        }
+		if (!sid_to_uid(sampass, &uid)) {
+			_log_err( LOG_NOTICE "Unable to get uid for user %s",
+				pdb_get_username(sampass));
+			_log_err( LOG_NOTICE, "password for (%s) changed by (%s/%d)",
+				user, uidtoname(getuid()), getuid());
+		} else {
+			_log_err( LOG_NOTICE, "password for (%s/%d) changed by (%s/%d)",
+				user, uid, uidtoname(getuid()), getuid());
+		}
+	} else {
+		_log_err( LOG_ERR, "password change failed for user %s", user);
+	}
 
         pass_old = pass_new = NULL;
 	if (sampass) {

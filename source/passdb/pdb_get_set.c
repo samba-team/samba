@@ -202,22 +202,6 @@ enum pdb_value_state pdb_get_init_flags (const SAM_ACCOUNT *sampass, enum pdb_el
         return ret;
 }
 
-uid_t pdb_get_uid (const SAM_ACCOUNT *sampass)
-{
-	if (sampass)
-		return (sampass->private.uid);
-	else
-		return (-1);
-}
-
-gid_t pdb_get_gid (const SAM_ACCOUNT *sampass)
-{
-	if (sampass)
-		return (sampass->private.gid);
-	else
-		return (-1);
-}
-
 const char* pdb_get_username (const SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -507,32 +491,6 @@ BOOL pdb_set_init_flags (SAM_ACCOUNT *sampass, enum pdb_elements element, enum p
 	}
 
         return True;
-}
-
-BOOL pdb_set_uid (SAM_ACCOUNT *sampass, const uid_t uid, enum pdb_value_state flag)
-{	
-	if (!sampass)
-		return False;
-	
-	DEBUG(10, ("pdb_set_uid: setting uid %d, was %d\n", 
-		   (int)uid, (int)sampass->private.uid));
- 
-	sampass->private.uid = uid;
-	
-	return pdb_set_init_flags(sampass, PDB_UID, flag);
-}
-
-BOOL pdb_set_gid (SAM_ACCOUNT *sampass, const gid_t gid, enum pdb_value_state flag)
-{
-	if (!sampass)
-		return False;
-		
-	DEBUG(10, ("pdb_set_gid: setting gid %d, was %d\n", 
-		   (int)gid, (int)sampass->private.gid));
- 
-	sampass->private.gid = gid; 
-
-	return pdb_set_init_flags(sampass, PDB_GID, flag);
 }
 
 BOOL pdb_set_user_sid (SAM_ACCOUNT *sampass, DOM_SID *u_sid, enum pdb_value_state flag)

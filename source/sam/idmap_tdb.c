@@ -252,8 +252,9 @@ static NTSTATUS db_set_mapping(const DOM_SID *sid, unid_t id, int id_type)
 static NTSTATUS db_idmap_init(void)
 {
 	SMB_STRUCT_STAT stbuf;
-	char *tdbfile;
+	char *tdbfile = NULL;
 	int32 version;
+	BOOL tdb_is_new = False;
 
 	/* use the old database if present */
 	if (!file_exist(lock_path("idmap.tdb"), &stbuf)) {
@@ -264,8 +265,11 @@ static NTSTATUS db_idmap_init(void)
 				DEBUG(0, ("idmap_init: out of memory!\n"));
 				return NT_STATUS_NO_MEMORY;
 			}
+		} else {
+			tdb_is_new = True;
 		}
-	} else {
+	}
+	if (!tdbfile) {
 		tdbfile = strdup(lock_path("idmap.tdb"));
 		if (!tdbfile) {
 			DEBUG(0, ("idmap_init: out of memory!\n"));
@@ -285,10 +289,15 @@ static NTSTATUS db_idmap_init(void)
 	SAFE_FREE(tdbfile);
 
 	/* check against earlier versions */
-	version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
-	if (version != IDMAP_VERSION) {
-		DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
-		return NT_STATUS_INTERNAL_DB_ERROR;
+	if (tdb_is_new) {
+		/* TODO: delete the file if this fail */
+		tdb_store_int32(idmap_tdb, "IDMAP_VERSION", IDMAP_VERSION);
+	} else {
+		version = tdb_fetch_int32(idmap_tdb, "IDMAP_VERSION");
+		if (version != IDMAP_VERSION) {
+			DEBUG(0, ("idmap_init: Unable to open idmap database, it's in an old format!\n"));
+			return NT_STATUS_INTERNAL_DB_ERROR;
+		}
 	}
 
 	/* Create high water marks for group and user id */

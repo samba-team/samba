@@ -1134,28 +1134,23 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
 static BOOL build_smb_pass (struct smb_passwd *smb_pw, const SAM_ACCOUNT *sampass)
 {
 	uid_t uid;
+	uint32 rid;
 
 	if (sampass == NULL) 
 		return False;
 
+	rid = pdb_get_user_rid(sampass);
+
+	/* If the user specified a RID, make sure its able to be both stored and retreived */
+	if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
+		DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
+		return False;
+	}
+
 	ZERO_STRUCTP(smb_pw);
- 
-        if (!IS_SAM_UNIX_USER(sampass)) {
-		smb_pw->smb_userid_set = False;
-		DEBUG(5,("build_smb_pass: storing user without a UNIX uid or gid. \n"));
-	} else {
-		uint32 rid = pdb_get_user_rid(sampass);
-		smb_pw->smb_userid_set = True;
-		uid = pdb_get_uid(sampass);
 
-		/* If the user specified a RID, make sure its able to be both stored and retreived */
-		if (rid && rid != DOMAIN_USER_RID_GUEST && uid != fallback_pdb_user_rid_to_uid(rid)) {
-			DEBUG(0,("build_sam_pass: Failing attempt to store user with non-uid based user RID. \n"));
-			return False;
-		}
-
-		smb_pw->smb_userid=uid;
-        }
+	smb_pw->smb_userid_set = True;
+	smb_pw->smb_userid=uid;
 
 	smb_pw->smb_name=(const char*)pdb_get_username(sampass);
 

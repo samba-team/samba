@@ -5,6 +5,7 @@
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
    Copyright (C) Andrew Bartlett		2001-2002
+   Copyright (C) Simo Sorce			2003
       
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -45,8 +46,6 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
-
-	user->private.uid = user->private.gid	    = -1;
 
 	user->private.logon_time            = (time_t)0;
 	user->private.pass_last_set_time    = (time_t)0;
@@ -177,9 +176,6 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	pdb_set_unix_homedir(sam_account, pwd->pw_dir, PDB_SET);
 
 	pdb_set_domain (sam_account, lp_workgroup(), PDB_DEFAULT);
-
-	pdb_set_uid(sam_account, pwd->pw_uid, PDB_SET);
-	pdb_set_gid(sam_account, pwd->pw_gid, PDB_SET);
 	
 	/* When we get a proper uid -> SID and SID -> uid allocation
 	   mechinism, we should call it here.  
@@ -697,7 +693,7 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
  Decides if a RID is a user or group RID.
  ********************************************************************/
 
-BOOL pdb_rid_is_user(uint32 rid)
+BOOL fallback_pdb_rid_is_user(uint32 rid)
 {
   /* lkcl i understand that NT attaches an enumeration to a RID
    * such that it can be identified as either a user, group etc
@@ -787,7 +783,7 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
 		return True;
 	}
 
-	if (pdb_rid_is_user(rid)) {
+	if (fallback_pdb_rid_is_user(rid)) {
 		uid_t uid;
 
 		DEBUG(5, ("assuming RID %u is a user\n", (unsigned)rid));

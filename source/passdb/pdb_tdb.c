@@ -101,7 +101,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	BOOL ret = True;
 	struct passwd *pw;
 	uid_t uid = -1;
-	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
+	gid_t gid = -1;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -148,6 +148,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	/* validate the account and fill in UNIX uid and gid. Standard
 	 * getpwnam() is used instead of Get_Pwnam() as we do not need
 	 * to try case permutations
+	 *
+	 * FIXME: are we sure we do not need ?
 	 */
 	if (!username || !(pw = getpwnam_alloc(username))) {
 		if (!(tdb_state->permit_non_unix_accounts)) {
@@ -158,15 +160,9 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	}
 		
 	if (pw) {
-		uid = pw->pw_uid;
-		gid = pw->pw_gid;
-		
 		pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
 
 		passwd_free(&pw);
-
-		pdb_set_uid(sampass, uid, PDB_SET);
-		pdb_set_gid(sampass, gid, PDB_SET);
 	}
 
 	pdb_set_logon_time(sampass, logon_time, PDB_SET);
@@ -768,54 +764,35 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 		return False;
 	}
 
+	if (!pdb_get_group_rid(newpwd)) {
+		DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
+		ret = False;
+		goto done;
+	}
+
 	/* if flag == TDB_INSERT then make up a new RID else throw an error. */
 	if (!(user_rid = pdb_get_user_rid(newpwd))) {
-		if (flag & TDB_INSERT) {
-			if (IS_SAM_UNIX_USER(newpwd)) {
-				if (tdb_state->algorithmic_rids) {
-					user_rid = fallback_pdb_uid_to_user_rid(pdb_get_uid(newpwd));
-				} else {
-					user_rid = BASE_RID;
-					tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
-					if (!tdb_ret) {
-						ret = False;
-						goto done;
-					}
-				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
-			} else {
-				user_rid = tdb_state->low_nua_rid;
-				tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "NUA_RID_COUNTER", &user_rid, RID_MULTIPLIER);
-				if (!tdb_ret) {
-					ret = False;
-					goto done;
-				}
-				if (user_rid > tdb_state->high_nua_rid) {
-					DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
-					ret = False;
-					goto done;
-				}
-				pdb_set_user_sid_from_rid(newpwd, user_rid, PDB_CHANGED);
+		if ((flag & TDB_INSERT) && tdb_state->permit_non_unix_accounts) {
+			uint32 lowrid, highrid;
+			if (!pdb_get_free_rid_range(&lowrid, &highrid)) {
+				/* should never happen */
+				DEBUG(0, ("tdbsam: something messed up, no high/low rids but nua enabled ?!\n"));
+				ret = False;
+				goto done;
+			}
+			user_rid = lowrid;
+			tdb_ret = tdb_change_uint32_atomic(pwd_tdb, "RID_COUNTER", &user_rid, RID_MULTIPLIER);
+			if (!tdb_ret) {
+				ret = False;
+				goto done;
+			}
+			if (user_rid > highrid) {
+				DEBUG(0, ("tdbsam: no NUA rids available, cannot add user %s!\n", pdb_get_username(newpwd)));
+				ret = False;
+				goto done;
 			}
 		} else {
 			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a RID\n",pdb_get_username(newpwd)));
-			ret = False;
-			goto done;
-		}
-	}
-
-	if (!pdb_get_group_rid(newpwd)) {
-		if (flag & TDB_INSERT) {
-			if (!tdb_state->permit_non_unix_accounts) {
-				DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
-				ret = False;
-				goto done;
-			} else {
-				/* This seems like a good default choice for non-unix users */
-				pdb_set_group_sid_from_rid(newpwd, DOMAIN_GROUP_RID_USERS, PDB_DEFAULT);
-			}
-		} else {
-			DEBUG (0,("tdb_update_sam: Failing to store a SAM_ACCOUNT for [%s] without a primary group RID\n",pdb_get_username(newpwd)));
 			ret = False;
 			goto done;
 		}

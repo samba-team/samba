@@ -1533,12 +1533,11 @@ Initialize SAM_ACCOUNT from an LDAP query (unix attributes only)
 *********************************************************************/
 static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state, 
 				SAM_ACCOUNT * sampass,
-				LDAPMessage * entry)
+				LDAPMessage * entry,
+				gid_t *gid)
 {
 	pstring  homedir;
 	pstring  temp;
-	uid_t uid;
-	gid_t gid;
 	char **ldap_values;
 	char **values;
 
@@ -1563,19 +1562,12 @@ static BOOL get_unix_attributes (struct ldapsam_privates *ldap_state,
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "homeDirectory", homedir)) 
 		return False;
 	
-	if (!get_single_attribute(ldap_state->ldap_struct, entry, "uidNumber", temp))
-		return False;
-	
-	uid = (uid_t)atol(temp);
-	
 	if (!get_single_attribute(ldap_state->ldap_struct, entry, "gidNumber", temp))
 		return False;
 	
 	gid = (gid_t)atol(temp);
 
 	pdb_set_unix_homedir(sampass, homedir, PDB_SET);
-	pdb_set_uid(sampass, uid, PDB_SET);
-	pdb_set_gid(sampass, gid, PDB_SET);
 	
 	DEBUG(10, ("user has posixAcccount attributes\n"));
 	return True;
@@ -1617,8 +1609,7 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	uint8 		hours[MAX_HOURS_LEN];
 	pstring temp;
 	uid_t		uid = -1;
-	gid_t 		gid = getegid();
-
+	gid_t		gid = getegid();
 
 	/*
 	 * do a little initialization
@@ -1690,40 +1681,17 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	 * If so configured, try and get the values from LDAP 
 	 */
 
-	if (!lp_ldap_trust_ids() || (!get_unix_attributes(ldap_state, sampass, entry))) {
+	if (!lp_ldap_trust_ids() && (get_unix_attributes(ldap_state, sampass, entry, &gid))) {
 		
-		/* 
-		 * Otherwise just ask the system getpw() calls.
-		 */
-	
-		pw = getpwnam_alloc(username);
-		if (pw == NULL) {
-			if (! ldap_state->permit_non_unix_accounts) {
-				DEBUG (2,("init_sam_from_ldap: User [%s] does not exist via system getpwnam!\n", username));
-				return False;
+		if (pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) {
+			GROUP_MAP map;
+			/* call the mapping code here */
+			if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
+				pdb_set_group_sid(sampass, &map.sid, PDB_SET);
+			} 
+			else {
+				pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 			}
-		} else {
-			uid = pw->pw_uid;
-			pdb_set_uid(sampass, uid, PDB_SET);
-			gid = pw->pw_gid;
-			pdb_set_gid(sampass, gid, PDB_SET);
-			
-			pdb_set_unix_homedir(sampass, pw->pw_dir, PDB_SET);
-
-			passwd_free(&pw);
-		}
-	}
-
-	if ((pdb_get_init_flags(sampass,PDB_GROUPSID) == PDB_DEFAULT) 
-		&& (pdb_get_init_flags(sampass,PDB_GID) != PDB_DEFAULT)) {
-		GROUP_MAP map;
-		gid = pdb_get_gid(sampass);
-		/* call the mapping code here */
-		if(pdb_getgrgid(&map, gid, MAPPING_WITHOUT_PRIV)) {
-			pdb_set_group_sid(sampass, &map.sid, PDB_SET);
-		} 
-		else {
-			pdb_set_group_sid_from_rid(sampass, pdb_gid_to_group_rid(gid), PDB_SET);
 		}
 	}
 

@@ -135,17 +135,20 @@ check for a possible hosts equiv or rhosts entry for the user
 
 static BOOL check_hosts_equiv(SAM_ACCOUNT *account)
 {
-  char *fname = NULL;
+	uid_t uid;
+	char *fname = NULL;
 
-  fname = lp_hosts_equiv();
+	fname = lp_hosts_equiv();
+	if (!sid_to_uid(pdb_get_user_sid(account), &uid))
+		return False;
 
-  /* note: don't allow hosts.equiv on root */
-  if (IS_SAM_UNIX_USER(account) && fname && *fname && (pdb_get_uid(account) != 0)) {
-	  if (check_user_equiv(pdb_get_username(account),client_name(),fname))
-		  return(True);
-  }
+	/* note: don't allow hosts.equiv on root */
+	if (fname && *fname && uid != 0) {
+		if (check_user_equiv(pdb_get_username(account),client_name(),fname))
+			return True;
+	}
   
-  return(False);
+	return False;
 }
 
 
