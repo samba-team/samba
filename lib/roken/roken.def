@@ -1,4 +1,4 @@
-LIBRARY roken
+LIBRARY roken BASE=0x68f0000
 EXPORTS
 	gettimeofday
 	strcasecmp
@@ -8,3 +8,10 @@ EXPORTS
 	vsnprintf
 	base64_decode
 	base64_encode
+	roken_concat
+	roken_vconcat
+	roken_vmconcat
+	roken_mconcat
+	getuid
+	dns_free_data
+	dns_lookup
