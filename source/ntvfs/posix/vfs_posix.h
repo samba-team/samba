@@ -152,5 +152,6 @@ struct pvfs_mangle_context {
 #define PVFS_FLAG_MAP_SYSTEM    (1<<2)
 #define PVFS_FLAG_MAP_HIDDEN    (1<<3)
 #define PVFS_FLAG_READONLY      (1<<4)
+#define PVFS_FLAG_STRICT_SYNC   (1<<5)
 
 #endif /* _VFS_POSIX_H_ */

@@ -270,6 +270,7 @@ typedef struct
 	BOOL *copymap;
 	BOOL bMSDfsRoot;
 	BOOL bShareModes;
+	BOOL bStrictSync;
 	struct param_opt *param_opt;
 
 	char dummy[3];		/* for alignment */
@@ -327,6 +328,7 @@ static service sDefault = {
 	NULL,			/* copymap */
 	False,			/* bMSDfsRoot */
 	True,			/* bShareModes */
+	False,			/* bStrictSync */
 	NULL,			/* Parametric options */
 
 	""			/* dummy */
@@ -618,6 +620,7 @@ static struct parm_struct parm_table[] = {
 	{"hostname lookups", P_BOOL, P_GLOBAL, &Globals.bHostnameLookups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{"name cache timeout", P_INTEGER, P_GLOBAL, &Globals.name_cache_timeout, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"strict sync", P_BOOL, P_LOCAL, &sDefault.bStrictSync, NULL, NULL, FLAG_ADVANCED | FLAG_SHARE}, 
 
 	{"Printing Options", P_SEP, P_SEPARATOR},
 	
@@ -1244,6 +1247,7 @@ FN_LOCAL_BOOL(lp_map_archive, bMap_archive)
 FN_LOCAL_BOOL(lp_locking, bLocking)
 FN_LOCAL_BOOL(lp_strict_locking, bStrictLocking)
 FN_LOCAL_BOOL(lp_posix_locking, bPosixLocking)
+FN_LOCAL_BOOL(lp_strict_sync, bStrictSync)
 FN_LOCAL_BOOL(lp_share_modes, bShareModes)
 FN_LOCAL_BOOL(lp_oplocks, bOpLocks)
 FN_LOCAL_BOOL(lp_level2_oplocks, bLevel2OpLocks)
