@@ -87,7 +87,7 @@ ADS_STRUCT *ads_init(const char *realm,
 {
 	ADS_STRUCT *ads;
 	
-	ads = (ADS_STRUCT *)smb_xmalloc(sizeof(*ads));
+	ads = smb_xmalloc_p(ADS_STRUCT);
 	ZERO_STRUCTP(ads);
 	
 	ads->server.realm = realm? strdup(realm) : NULL;
