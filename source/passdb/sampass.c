@@ -88,6 +88,14 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	DEBUG(5,("getsamfile21pwent\n"));
 
+	user->full_name    = NULL;
+	user->home_dir     = NULL;
+	user->dir_drive    = NULL;
+	user->logon_script = NULL;
+	user->profile_path = NULL;
+	user->acct_desc    = NULL;
+	user->workstations = NULL;
+
 	user = pwdb_smb_to_sam(getsmbfilepwent(vp));
 	if (user == NULL)
 	{
@@ -122,13 +130,25 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 
 	sam_logon_in_ssb = False;
 
-	user->full_name    = full_name;
-	user->home_dir     = home_dir;
-	user->dir_drive    = home_drive;
-	user->logon_script = logon_script;
-	user->profile_path = profile_path;
-	user->acct_desc    = acct_desc;
-	user->workstations = workstations;
+	/* 
+	   only overwrite values with defaults IIF specific backend
+	   didn't filled the values
+	*/ 
+
+	if (user->full_name == NULL)
+		user->full_name    = full_name;
+	if (user->home_dir == NULL)
+		user->home_dir     = home_dir;
+	if (user->dir_drive == NULL)
+		user->dir_drive    = home_drive;
+	if (user->logon_script == NULL)
+		user->logon_script = logon_script;
+	if (user->profile_path == NULL)
+		user->profile_path = profile_path;
+	if (user->acct_desc == NULL)
+		user->acct_desc    = acct_desc;
+	if (user->workstations == NULL)
+		user->workstations = workstations;
 
 	user->unknown_str = NULL; /* don't know, yet! */
 	user->munged_dial = NULL; /* "munged" dial-back telephone number */

@@ -576,8 +576,10 @@ struct smb_passwd *pwdb_sam_to_smb(struct sam_passwd *user)
 struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 {
 	static struct sam_passwd pw_buf;
+	struct passwd *pass=NULL;
 	static fstring nt_name;
 	static fstring unix_name;
+	static pstring unix_gecos;
 
 	if (user == NULL) return NULL;
 
@@ -598,6 +600,13 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	pw_buf.smb_passwd         = user->smb_passwd;
 	pw_buf.smb_nt_passwd      = user->smb_nt_passwd;
 	pw_buf.acct_ctrl          = user->acct_ctrl;
+		
+	pass = hashed_getpwnam(unix_name);
+	if (pass != NULL)
+	{
+		pstrcpy(unix_gecos, pass->pw_gecos);
+		pw_buf.full_name=unix_gecos;
+	}
 
         if ( user->pass_last_set_time != (time_t)-1 )
         {
