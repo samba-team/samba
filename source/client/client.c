@@ -224,7 +224,9 @@ struct
 } commands[] = 
 {
 #ifdef NTDOMAIN
-  {"ntlogin",    cmd_nt_login_test, "<username> test NT login"},
+  {"ntlogin",    cmd_nt_login_test,    "<username> NT Domain login"},
+  {"lsaquery",   cmd_lsa_query_info,   "<server> Query Info Policy"},
+  {"samrid",     cmd_sam_lookup_rid,   "<server> <hex RID> SAM rid lookup"},
 #endif
   {"ls",         cmd_dir,         "<mask> list the contents of the current directory"},
   {"dir",        cmd_dir,         "<mask> list the contents of the current directory"},
@@ -608,6 +610,15 @@ static void usage(char *pname)
 	strcpy(cli_info.username, "");
 	strcpy(cli_info.myhostname, "");
 	strcpy(cli_info.dest_host, "");
+
+	strcpy(cli_info.dom.level3_sid, "");
+	strcpy(cli_info.dom.level3_dom, "");
+	strcpy(cli_info.dom.level5_sid, "");
+	strcpy(cli_info.dom.level5_dom, "");
+
+	cli_info.dom.lsarpc_fnum   = 0xffff;
+	cli_info.dom.samr_fnum     = 0xffff;
+	cli_info.dom.netlogon_fnum = 0xffff;
 
 	cli_info.tar.blocksize = 20;
 	cli_info.tar.attrib = aDIR | aSYSTEM | aHIDDEN;

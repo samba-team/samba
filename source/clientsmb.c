@@ -49,21 +49,6 @@ extern file_info def_finfo;
 #define CNV_LANG(s) dos2unix_format(s,False)
 #define CNV_INPUT(s) unix2dos_format(s,True)
 
-extern int coding_system;
-
-static BOOL setup_term_code (char *code)
-{
-    int new;
-    new = interpret_coding_system (code, UNKNOWN_CODE);
-    if (new != UNKNOWN_CODE)
-	{
-		coding_system = new;
-		return True;
-    }
-    return False;
-
-}
-
 
 /***************************************************************************
   write a file

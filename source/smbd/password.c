@@ -847,11 +847,11 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass,
 #if DEBUG_PASSWORD
 	DEBUG(100,("checking user=[%s]\n", smb_pass->smb_name));
 	DEBUG(100,("lm:"));
-	dump_data(100, lm_pass, sizeof(lm_pass));
+	dump_data(100, lm_pass, 24);
 	if (nt_pass)
 	{
 		DEBUG(100,("nt:"));
-		dump_data(100, nt_pass, sizeof(nt_pass));
+		dump_data(100, nt_pass, 24);
 	}
 #endif
 

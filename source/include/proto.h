@@ -141,6 +141,7 @@ char *cli_errstr(struct cli_state *cli);
 BOOL cli_error(struct cli_state *cli, uint8 *eclass, uint32 *num);
 void cli_sockopt(struct cli_state *cli, char *options);
 int cli_setpid(struct cli_state *cli, int pid);
+int cli_setmid(struct cli_state *cli, int mid);
 BOOL cli_establish_connection(struct cli_state *cli,
 				char *dest_host, uint8 name_type, struct in_addr *dest_ip,
 				char *my_hostname,
@@ -716,6 +717,8 @@ void sync_browse_lists(struct subnet_record *d, struct work_record *work,
 
 /*The following definitions come from  ntclient.c  */
 
+void cmd_lsa_query_info(struct cli_state *cli, struct client_info *info);
+void cmd_sam_lookup_rid(struct cli_state *cli, struct client_info *info);
 void cmd_nt_login_test(struct cli_state *cli, struct client_info *info);
 
 /*The following definitions come from  nterr.c  */
@@ -869,6 +872,7 @@ int reply_getattrE(char *inbuf,char *outbuf);
 
 /*The following definitions come from  rpc_pipes/lsa_hnd.c  */
 
+void create_pol_hnd(LSA_POL_HND *hnd);
 void init_lsa_policy_hnd(void);
 BOOL open_lsa_policy_hnd(LSA_POL_HND *hnd);
 BOOL set_lsa_policy_samr_rid(LSA_POL_HND *hnd, uint32 rid);
@@ -960,11 +964,13 @@ void do_nt_session_close(struct cli_state *cli, uint16 fnum);
 
 /*The following definitions come from  rpc_pipes/ntclientlsa.c  */
 
+BOOL do_lsa_session_open(struct cli_state *cli, struct client_info *info);
+void do_lsa_session_close(struct cli_state *cli, struct client_info *info);
 BOOL do_lsa_open_policy(struct cli_state *cli, uint16 fnum,
 			char *server_name, LSA_POL_HND *hnd);
 BOOL do_lsa_query_info_pol(struct cli_state *cli, uint16 fnum,
 			LSA_POL_HND *hnd, uint16 info_class,
-			fstring domain_name, pstring domain_sid);
+			fstring domain_name, fstring domain_sid);
 BOOL do_lsa_close(struct cli_state *cli, uint16 fnum, LSA_POL_HND *hnd);
 
 /*The following definitions come from  rpc_pipes/ntclientnet.c  */
@@ -1004,6 +1010,17 @@ BOOL rpc_pipe_set_hnd_state(struct cli_state *cli,
 				char *pipe_name, uint16 fnum, uint16 device_state);
 BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, uint16 fnum, 
 				RPC_IFACE *abstract, RPC_IFACE *transfer);
+
+/*The following definitions come from  rpc_pipes/ntclientsamr.c  */
+
+BOOL do_samr_session_open(struct cli_state *cli, struct client_info *info);
+void do_samr_session_close(struct cli_state *cli, struct client_info *info);
+BOOL do_samr_open_policy(struct cli_state *cli, uint16 fnum, 
+				char *srv_name, uint32 unknown_0,
+				LSA_POL_HND *rtn_pol);
+BOOL do_samr_open_secret(struct cli_state *cli, uint16 fnum, 
+				LSA_POL_HND *query_pol, uint32 unknown_0,
+				char *sid, LSA_POL_HND *rtn_pol);
 
 /*The following definitions come from  rpc_pipes/ntclientstatus.c  */
 
@@ -1076,6 +1093,8 @@ BOOL api_wkssvcTNP(int cnum,int uid, char *param,char *data,
 
 char* samr_io_q_close(BOOL io, SAMR_Q_CLOSE *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_close(BOOL io, SAMR_R_CLOSE *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_open_secret(SAMR_Q_OPEN_SECRET *q_u,
+				LSA_POL_HND *pol, uint32 unknown_0, char *sid);
 char* samr_io_q_open_secret(BOOL io, SAMR_Q_OPEN_SECRET *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_secret(BOOL io, SAMR_R_OPEN_SECRET *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_lookup_rids(BOOL io, SAMR_Q_LOOKUP_RIDS *q_u, char *q, char *base, int align, int depth);
@@ -1092,6 +1111,8 @@ void make_samr_r_unknown_24(SAMR_R_UNKNOWN_24 *r_u,
 char* samr_io_r_unknown_24(BOOL io, SAMR_R_UNKNOWN_24 *r_u, char *q, char *base, int align, int depth);
 char* samr_io_q_unknown_32(BOOL io, SAMR_Q_UNKNOWN_32 *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_unknown_32(BOOL io, SAMR_R_UNKNOWN_32 *r_u, char *q, char *base, int align, int depth);
+void make_samr_q_open_policy(SAMR_Q_OPEN_POLICY *q_u,
+				char *srv_name, uint32 unknown_0);
 char* samr_io_q_open_policy(BOOL io, SAMR_Q_OPEN_POLICY *q_u, char *q, char *base, int align, int depth);
 char* samr_io_r_open_policy(BOOL io, SAMR_R_OPEN_POLICY *r_u, char *q, char *base, int align, int depth);
 

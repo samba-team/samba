@@ -116,7 +116,7 @@ void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
  
 	memset(p21,'\0',21);
  
-	memcpy(p21, passwd, sizeof(passwd));    
+	memcpy(p21, passwd, 16);    
 	E_P24(p21, c8, p24);
 }
 

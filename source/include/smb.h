@@ -358,6 +358,10 @@ struct dcinfo
 
 struct nt_client_info
 {
+	/************* \PIPE\NETLOGON stuff ******************/
+
+	uint16 netlogon_fnum;
+
 	fstring mach_acct;
 
 	char sess_key[8];
@@ -367,7 +371,26 @@ struct nt_client_info
 	DOM_ID_INFO_1 id1;
 	LSA_USER_INFO user_info1;
 
-	uint16 netlogon_fnum;
+	/************** \PIPE\lsarpc stuff ********************/
+
+	uint16 lsarpc_fnum;
+
+	LSA_POL_HND lsa_info_pol;
+
+	/* domain member */
+	fstring level3_dom;
+	fstring level3_sid;
+
+	/* domain controller */
+	fstring level5_dom;
+	fstring level5_sid;
+
+	/************** \PIPE\samr stuff  ********************/
+
+	uint16 samr_fnum;
+
+	LSA_POL_HND samr_pol_open;
+	LSA_POL_HND samr_pol_secret;
 };
 
 struct tar_client_info

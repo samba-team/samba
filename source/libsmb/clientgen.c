@@ -590,6 +590,8 @@ BOOL cli_session_setup(struct cli_state *cli,
 		/* detect if two 16 byte hashes have been handed to us */
 		if (pass && ntpass && passlen == 16 && ntpasslen == 16)
 		{
+			DEBUG(6,("cli_session_setup: OWF both lm and nt passwords\n"));
+
 			passlen = 24;
 			SMBOWFencrypt((uchar *)pass  ,(uchar *)cli->cryptkey,(uchar *)pword);
 			ntpasslen = 24;
@@ -671,7 +673,10 @@ BOOL cli_session_setup(struct cli_state *cli,
 		p += passlen;
 		strcpy(p,user);
 		strupper(p);
-	} else {
+	}
+	else
+	{
+		cli_setpid(cli, 0xcafe);
 		set_message(cli->outbuf,13,0,True);
 		CVAL(cli->outbuf,smb_com) = SMBsesssetupX;
 		cli_setup_packet(cli);
@@ -679,10 +684,11 @@ BOOL cli_session_setup(struct cli_state *cli,
 		CVAL(cli->outbuf,smb_vwv0) = 0xFF;
 		SSVAL(cli->outbuf,smb_vwv2,BUFFER_SIZE);
 		SSVAL(cli->outbuf,smb_vwv3,2);
-		SSVAL(cli->outbuf,smb_vwv4,cli->pid);
+		SSVAL(cli->outbuf,smb_vwv4,1);
 		SIVAL(cli->outbuf,smb_vwv5,cli->sesskey);
 		SSVAL(cli->outbuf,smb_vwv7,passlen);
 		SSVAL(cli->outbuf,smb_vwv8,ntpasslen);
+		SSVAL(cli->outbuf,smb_vwv11,CAP_STATUS32);
 		p = smb_buf(cli->outbuf);
 		memcpy(p,pword,passlen); 
 		p += SVAL(cli->outbuf,smb_vwv7);
@@ -692,13 +698,15 @@ BOOL cli_session_setup(struct cli_state *cli,
 			p += SVAL(cli->outbuf,smb_vwv8);
 		}
 		strcpy(p,user);
+#if 0
 		strupper(p);
+#endif
 		p = skip_string(p,1);
 		strcpy(p,workgroup);
 		strupper(p);
 		p = skip_string(p,1);
-		strcpy(p,"Unix");p = skip_string(p,1);
-		strcpy(p,"Samba");p = skip_string(p,1);
+		strcpy(p,"Windows NT 1381");p = skip_string(p,1);
+		strcpy(p,"Windows NT 4.0");p = skip_string(p,1);
 		set_message(cli->outbuf,13,PTR_DIFF(p,smb_buf(cli->outbuf)),False);
 	}
 
@@ -3189,6 +3197,16 @@ set socket options on a open connection
 void cli_sockopt(struct cli_state *cli, char *options)
 {
 	set_socket_options(cli->fd, options);
+}
+
+/****************************************************************************
+set the MID to use for smb messages. Return the old MID.
+****************************************************************************/
+int cli_setmid(struct cli_state *cli, int mid)
+{
+	int ret = cli->mid;
+	cli->mid = mid;
+	return ret;
 }
 
 /****************************************************************************
