@@ -399,6 +399,9 @@ If the LDAP backend is used for storing principals, this is the
 structural object that will be used when creating and when reading
 objects.
 The default value is account .
+.It Li hdb-ldap-create-base Va creation dn
+is the dn that will be appended to the principal when creating entries.
+Default value is the search dn.
 .El
 .It Li [kadmin]
 .Bl -tag -width "xxx" -offset indent
