@@ -239,10 +239,12 @@ BOOL se_access_check(SEC_DESC *sd, struct current_user *user,
 		for (i = 0; i < token->num_sids; i++) {
 			if (sid_equal(&token->user_sids[i], sd->owner_sid)) {
 				/*
-				 * The owner always has SEC_RIGHTS_WRITE_DAC.
+				 * The owner always has SEC_RIGHTS_WRITE_DAC & READ_CONTROL.
 				 */
 				if (tmp_acc_desired & WRITE_DAC_ACCESS)
 					tmp_acc_desired &= ~WRITE_DAC_ACCESS;
+				if (tmp_acc_desired & READ_CONTROL_ACCESS)
+					tmp_acc_desired &= ~READ_CONTROL_ACCESS;
 			}
 		}
 	}
