@@ -58,7 +58,7 @@ static struct
 ****************************************************************************/
 static char *cli_smb_errstr(struct cli_state *cli)
 {
-	return smb_errstr(cli->inbuf);
+	return smb_dos_errstr(cli->inbuf);
 }
 
 /***************************************************************************

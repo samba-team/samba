@@ -188,7 +188,7 @@ BOOL cli_session_setup(struct cli_state *cli,
 
       show_msg(cli->inbuf);
 
-      if (CVAL(cli->inbuf,smb_rcls) != 0) {
+      if (cli_is_error(cli)) {
 	      return False;
       }
 
@@ -228,7 +228,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
         if (!cli_receive_smb(cli))
                 return False;
 
-        return CVAL(cli->inbuf,smb_rcls) == 0;
+        return !cli_is_error(cli);
 }
 
 /****************************************************************************
@@ -292,13 +292,11 @@ BOOL cli_send_tconX(struct cli_state *cli,
 
 	cli_setup_bcc(cli, p);
 
-	SCVAL(cli->inbuf,smb_rcls, 1);
-
 	cli_send_smb(cli);
 	if (!cli_receive_smb(cli))
 		return False;
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -339,7 +337,7 @@ BOOL cli_tdis(struct cli_state *cli)
 	if (!cli_receive_smb(cli))
 		return False;
 	
-	return CVAL(cli->inbuf,smb_rcls) == 0;
+	return !cli_is_error(cli);
 }
 
 
@@ -412,7 +410,7 @@ BOOL cli_negprot(struct cli_state *cli)
 
 	show_msg(cli->inbuf);
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0 || 
+	if (cli_is_error(cli) ||
 	    ((int)SVAL(cli->inbuf,smb_vwv0) >= numprots)) {
 		return(False);
 	}

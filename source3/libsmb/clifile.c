@@ -56,7 +56,7 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
                 return False;
         }
 
-        if (CVAL(cli->inbuf,smb_rcls) != 0) {
+        if (cli_is_error(cli)) {
                 return False;
         }
 
@@ -91,7 +91,7 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -125,7 +125,7 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -159,7 +159,7 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -257,7 +257,7 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return -1;
 	}
 
@@ -345,7 +345,7 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return -1;
 	}
 
@@ -377,11 +377,7 @@ BOOL cli_close(struct cli_state *cli, int fnum)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
-		return False;
-	}
-
-	return True;
+	return !cli_is_error(cli);
 }
 
 
@@ -430,7 +426,7 @@ BOOL cli_lock(struct cli_state *cli, int fnum,
 
 	cli->timeout = saved_timeout;
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -471,7 +467,7 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len)
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -530,7 +526,7 @@ BOOL cli_lock64(struct cli_state *cli, int fnum,
 
 	cli->timeout = saved_timeout;
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -575,7 +571,7 @@ BOOL cli_unlock64(struct cli_state *cli, int fnum, SMB_BIG_UINT offset, SMB_BIG_
 		return False;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -609,7 +605,7 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 		return False;
 	}
 	
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -665,7 +661,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 		return False;
 	}
 	
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -717,7 +713,7 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 		return False;
 	}
 	
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return False;
 	}
 
@@ -813,7 +809,7 @@ int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
 		return -1;
 	}
 
-	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+	if (cli_is_error(cli)) {
 		return -1;
 	}
 

@@ -297,7 +297,7 @@ ssize_t cli_write(struct cli_state *cli,
 
 		received++;
 
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			break;
 
 		bwritten += SVAL(cli->inbuf, smb_vwv2);
@@ -349,7 +349,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 		if (!cli_receive_smb(cli))
 			return -1;
 		
-		if (CVAL(cli->inbuf,smb_rcls) != 0)
+		if (cli_is_error(cli))
 			return -1;
 
 		size = SVAL(cli->inbuf,smb_vwv0);
