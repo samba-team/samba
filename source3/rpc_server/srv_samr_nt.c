@@ -2205,6 +2205,7 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
 	uint32 acc_granted;
 	SEC_DESC *psd;
 	size_t    sd_size;
+	/* check this, when giving away 'add computer to domain' privs */
 	uint32    des_access = GENERIC_RIGHTS_USER_ALL_ACCESS;
 
 	/* Get the domain SID stored in the domain policy */
@@ -2290,50 +2291,26 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
  		DEBUG(3,("_api_samr_create_user: Running the command `%s' gave %d\n", add_script, add_ret));
   	}
 	
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sam_pass))) {
-		return nt_status;
-	}
-		
 	pw = getpwnam_alloc(account);
 
 	if (pw) {
-		DOM_SID user_sid;
-		DOM_SID group_sid;
-		if (!uid_to_sid(&user_sid, pw->pw_uid)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			DEBUG(1, ("_api_samr_create_user: uid_to_sid failed, cannot add user.\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (!pdb_set_user_sid(sam_pass, &user_sid, PDB_CHANGED)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
-		if (!gid_to_sid(&group_sid, pw->pw_gid)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			DEBUG(1, ("_api_samr_create_user: gid_to_sid failed, cannot add user.\n"));
-			return NT_STATUS_ACCESS_DENIED;
-		}
-
-		if (!pdb_set_group_sid(sam_pass, &group_sid, PDB_CHANGED)) {
-			passwd_free(&pw); /* done with this now */
-			pdb_free_sam(&sam_pass);
-			return NT_STATUS_NO_MEMORY;
-		}
-
+		nt_status = pdb_init_sam_pw(&sam_pass, pw);
 		passwd_free(&pw); /* done with this now */
+		if (!NT_STATUS_IS_OK(nt_status)) {
+			pdb_free_sam(&sam_pass);
+			return nt_status;
+		}
 	} else {
 		DEBUG(3,("attempting to create non-unix account %s\n", account));
 		
+		if (!NT_STATUS_IS_OK(nt_status = pdb_init_sam(&sam_pass))) {
+			return nt_status;
 		}
 		
 		if (!pdb_set_username(sam_pass, account, PDB_CHANGED)) {
 			pdb_free_sam(&sam_pass);
 			return NT_STATUS_NO_MEMORY;
+		}
 	}
 
  	pdb_set_acct_ctrl(sam_pass, acb_info, PDB_CHANGED);
@@ -2341,15 +2318,6 @@ NTSTATUS _api_samr_create_user(pipes_struct *p, SAMR_Q_CREATE_USER *q_u, SAMR_R_
  	if (!pdb_add_sam_account(sam_pass)) {
  		pdb_free_sam(&sam_pass);
  		DEBUG(0, ("could not add user/computer %s to passdb.  Check permissions?\n", 
- 			  account));
- 		return NT_STATUS_ACCESS_DENIED;		
- 	}
-
-	pdb_reset_sam(sam_pass);
-	
-	if (!pdb_getsampwnam(sam_pass, account)) {
- 		pdb_free_sam(&sam_pass);
- 		DEBUG(0, ("could not find user/computer %s just added to passdb?!?\n", 
  			  account));
  		return NT_STATUS_ACCESS_DENIED;		
  	}
