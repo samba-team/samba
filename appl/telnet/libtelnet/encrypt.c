@@ -938,6 +938,18 @@ void encrypt_wait(void)
 	    return;
 }
 
+int
+encrypt_delay(void)
+{
+    if(!havesessionkey ||
+       (I_SUPPORT_ENCRYPT & remote_supports_decrypt) == 0 ||
+       (I_SUPPORT_DECRYPT & remote_supports_encrypt) == 0)
+	return 0;
+    if(!(encrypt_output && decrypt_input))
+	return 1;
+    return 0;
+}
+
 void
 encrypt_debug(int mode)
 {
