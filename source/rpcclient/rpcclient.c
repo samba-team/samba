@@ -1264,7 +1264,7 @@ static char **completion_fn(char *text, int start, int end)
     for (i = 0; i <= end; i++) {
 	if ((rl_line_buffer[i] != ' ') && (lastch == ' '))
 	{
-		if (next_token(&ptr, tmp, NULL, sizeof(tmp)))
+		if (next_token(NULL, tmp, NULL, sizeof(tmp)))
 		{
 			add_chars_to_array(&cmd_argc, &cmd_argv, tmp);
 		}
