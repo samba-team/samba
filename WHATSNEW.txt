@@ -1,15 +1,10 @@
-                    WHATS NEW IN Samba 3.0.0RC4 
-                        September 11, 2003
+                    WHATS NEW IN Samba 3.0.0
+                        September 24, 2003
                   ==============================
 
-This is the fourth release candidate snapshot of Samba 3.0.0. A release 
-candidate implies that the code is very close to a final release, remember 
-that this is still a non-production release intended for testing purposes.  
-Use at your own risk. 
-
-The purpose of this release candidate is to get wider testing of the major
-new pieces of code in the current Samba 3.0 development tree. 
-Please refer to the section on "Known Issues" for more details.
+This is the first official release of Samba 3.0.0 code base.  Work
+on the SAMBA_3_0 CVS branch continues.  Please refer to the section 
+on "Known Issues" for more details.
 
 
 Major new features:
@@ -82,11 +77,38 @@ License.
 
 
 ######################################################################
-Changes since 3.0rc3
+Changes since 3.0rc4
 ####################
 
 Please refer to the CVS log for the SAMBA_3_0 branch for complete 
 details:
+
+1)  Fix bug that preventing restoring filenames of length
+    >100 characters.
+2)  Fix bug that prevented fast path code in strchr_m 
+    from being used.
+3)  Make sure we store the desired access flag on incoming 
+    SAMR rpc calls.
+4)  Fix smbd crash when dealing with mangled file names.
+5)  Ensure that the group comment field is not overwritten
+    if it already exists.
+6)  Fix bug that prevented 'net rpc join' from working
+    with mixed mode AD domains (bug 442).
+7)  Fix crash in smbd when a Samba PDC is not able to 
+    enumerate trusted domains (bug 450).
+8)  Fix crash bug found by the Samba4 testsuite.
+9)  Fix bug that prevented smbd from returning an ACL list
+    if one of the SIDs could not be resolved (bug 470).
+10) Remove -P option from smbclient printing scripts since it
+    has a different meaning in Samba 3.0 (bug 473).
+11) Sync smbldap-tools with latest version 
+12) Cleanup some warnings produced by the Sun C compiler.
+13) Several fixes for SWAT relating to international character 
+    sets.
+
+
+Changes since 3.0rc3
+####################
 
 1)  Fix incorrect error message in testparm.c regarding 'map system'.
 2)  Protect against core dump if ioctl for print job sends invalid 
