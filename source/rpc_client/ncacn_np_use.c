@@ -132,11 +132,11 @@ static void ncacn_np_use_free(struct ncacn_np_use *cli)
 		{
 			ncacn_np_shutdown(cli->cli);
 		}
-	no_shutdown:
-
 		ZERO_STRUCTP(cli->cli);
 		free(cli->cli);
 	}
+
+no_shutdown:
 
 	ZERO_STRUCTP(cli);
 	free(cli);
