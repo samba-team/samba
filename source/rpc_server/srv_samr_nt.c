@@ -3954,7 +3954,6 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 {
 	DOM_SID group_sid;
 	fstring grp_name;
-	struct group *grp;
 	uint32 acc_granted;
 	SE_PRIV se_rights;
 	BOOL can_add_accounts;
@@ -3987,7 +3986,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	/* delete mapping first */
 	
 	if ( (ret = pdb_delete_group_mapping_entry(group_sid)) == True ) {
-		smb_delete_group( grp->gr_name );
+		smb_delete_group( grp_name );
 	}
 
 	if ( can_add_accounts )
