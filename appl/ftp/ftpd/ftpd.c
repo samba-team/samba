@@ -164,7 +164,7 @@ jmp_buf	errcatch, urgcatch;
 int	oobflag;
 int	logged_in;
 struct	passwd *pw;
-int	debug;
+int	debug = 0;
 int	ftpd_timeout = 900;    /* timeout after 15 minutes of inactivity */
 int	maxtimeout = 7200;/* don't allow idle time to be set beyond 2 hours */
 int	logging;
@@ -426,7 +426,6 @@ main(int argc, char **argv)
 		syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 #endif
 	data_source.sin_port = htons(ntohs(ctrl_addr.sin_port) - 1);
-	debug = 0;
 
 	/* set this here so it can be put in wtmp */
 	snprintf(ttyline, sizeof(ttyline), "ftp%u", (unsigned)getpid());
