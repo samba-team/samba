@@ -1,3 +1,9 @@
+1999-09-23  Assar Westerlund  <assar@sics.se>
+
+	* lib/asn1/asn1_print.c (tag_names); add another univeral tag
+
+	* lib/asn1/der.h: update universal tags
+
 1999-09-21  Johan Danielsson  <joda@pdc.kth.se>
 
 	* admin/ktutil.c (kt_get): add `--help'
