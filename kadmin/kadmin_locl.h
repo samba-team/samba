@@ -145,6 +145,8 @@ int  edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit);
 
 int edit_entry(kadm5_principal_ent_t ent, int *mask,
 	       kadm5_principal_ent_t default_ent, int default_mask);
+void set_defaults(kadm5_principal_ent_t ent, int *mask,
+		  kadm5_principal_ent_t default_ent, int default_mask);
 int set_entry(krb5_context context,
 	      kadm5_principal_ent_t ent,
 	      int *mask,
