@@ -449,8 +449,8 @@ void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct
 
   if ((osmajor < 36) || (osmajor > 38) || (osminor !=0))
   {
-    DEBUG(5,("process_lm_host_announce: LM Announcement packet does not " \
-             "originate from OS/2 Warp client. Ignoring packet.\n"));
+    DEBUG(5,("process_lm_host_announce: LM Announcement packet does not \
+originate from OS/2 Warp client. Ignoring packet.\n"));
     /* Could have been from a Windows machine (with its LM Announce enabled),
        or a Samba server. Then don't disrupt the current browse list. */
     return;

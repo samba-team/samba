@@ -529,7 +529,7 @@ void announce_remote(time_t t)
 
       send_announcement(FIRST_SUBNET, ANN_HostAnnouncement,
                     name,                      /* From nbt name. */
-                    wgroup, 0x1e,              /* To nbt name. */
+                    wgroup, 0x1d,              /* To nbt name. */
                     addr,                      /* To ip. */
                     REMOTE_ANNOUNCE_INTERVAL,  /* Time until next announce. */
                     name,                      /* Name to announce. */
