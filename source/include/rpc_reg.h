@@ -59,7 +59,6 @@
 #define HKEY_LOCAL_MACHINE 	0x80000002
 #define HKEY_USERS         	0x80000003
 
-uint32 type;       /* 1 = UNISTR, 3 = BYTES, 4 = DWORD, 7 = MULTI_UNISTR */ 
 #define REG_SZ		1
 #define REG_BINARY	3
 #define REG_DWORD	4
