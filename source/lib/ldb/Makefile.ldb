@@ -22,7 +22,8 @@ LDB_TDB_OBJ=ldb_tdb/ldb_match.o ldb_tdb/ldb_tdb.o \
 
 
 COMMON_OBJ=common/ldb.o common/ldb_ldif.o common/util.o \
-	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o
+	   common/ldb_parse.o common/ldb_msg.o common/ldb_utf8.o \
+	   common/ldb_alloc.o
 
 OBJS =  $(COMMON_OBJ) $(LDB_TDB_OBJ) $(TDB_OBJ) $(LDB_LDAP_OBJ)
 

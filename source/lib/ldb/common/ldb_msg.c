@@ -87,11 +87,13 @@ struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el,
 /*
   add an empty element to a message
 */
-int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
+int ldb_msg_add_empty(struct ldb_context *ldb,
+		      struct ldb_message *msg, const char *attr_name, int flags)
 {
 	struct ldb_message_element *els;
 
-	els = realloc_p(msg->elements, struct ldb_message_element, msg->num_elements+1);
+	els = ldb_realloc_p(ldb, msg->elements, 
+			    struct ldb_message_element, msg->num_elements+1);
 	if (!els) {
 		errno = ENOMEM;
 		return -1;
@@ -100,7 +102,7 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 	els[msg->num_elements].values = NULL;
 	els[msg->num_elements].num_values = 0;
 	els[msg->num_elements].flags = flags;
-	els[msg->num_elements].name = strdup(attr_name);
+	els[msg->num_elements].name = ldb_strdup(ldb, attr_name);
 	if (!els[msg->num_elements].name) {
 		return -1;
 	}
@@ -114,11 +116,12 @@ int ldb_msg_add_empty(struct ldb_message *msg, const char *attr_name, int flags)
 /*
   add an empty element to a message
 */
-int ldb_msg_add(struct ldb_message *msg, 
+int ldb_msg_add(struct ldb_context *ldb,
+		struct ldb_message *msg, 
 		const struct ldb_message_element *el, 
 		int flags)
 {
-	if (ldb_msg_add_empty(msg, el->name, flags) != 0) {
+	if (ldb_msg_add_empty(ldb, msg, el->name, flags) != 0) {
 		return -1;
 	}
 

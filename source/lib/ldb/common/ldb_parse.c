@@ -59,7 +59,7 @@ a filter is defined by:
 /*
   return next token element. Caller frees
 */
-static char *ldb_parse_lex(const char **s)
+static char *ldb_parse_lex(struct ldb_context *ldb, const char **s)
 {
 	const char *p = *s;
 	char *ret;
@@ -75,7 +75,7 @@ static char *ldb_parse_lex(const char **s)
 
 	if (strchr("()&|=!", *p)) {
 		(*s) = p+1;
-		ret = strndup(p, 1);
+		ret = ldb_strndup(ldb, p, 1);
 		if (!ret) {
 			errno = ENOMEM;
 		}
@@ -90,7 +90,7 @@ static char *ldb_parse_lex(const char **s)
 		return NULL;
 	}
 
-	ret = strndup(*s, p - *s);
+	ret = ldb_strndup(ldb, *s, p - *s);
 	if (!ret) {
 		errno = ENOMEM;
 	}
@@ -122,46 +122,42 @@ static const char *match_brace(const char *s)
 }
 
 
-static struct ldb_parse_tree *ldb_parse_filter(const char **s);
+static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const char **s);
 
 /*
   <simple> ::= <attributetype> <filtertype> <attributevalue>
 */
-static struct ldb_parse_tree *ldb_parse_simple(const char *s)
+static struct ldb_parse_tree *ldb_parse_simple(struct ldb_context *ldb, const char *s)
 {
 	char *eq, *val, *l;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(&s);
+	l = ldb_parse_lex(ldb, &s);
 	if (!l) {
-		fprintf(stderr, "Unexpected end of expression\n");
 		return NULL;
 	}
 
 	if (strchr("()&|=", *l)) {
-		fprintf(stderr, "Unexpected token '%s'\n", l);
-		free(l);
+		ldb_free(ldb, l);
 		return NULL;
 	}
 
-	eq = ldb_parse_lex(&s);
+	eq = ldb_parse_lex(ldb, &s);
 	if (!eq || strcmp(eq, "=") != 0) {
-		fprintf(stderr, "Expected '='\n");
-		free(l);
-		if (eq) free(eq);
+		ldb_free(ldb, l);
+		if (eq) ldb_free(ldb, eq);
 		return NULL;
 	}
-	free(eq);
+	ldb_free(ldb, eq);
 
-	val = ldb_parse_lex(&s);
+	val = ldb_parse_lex(ldb, &s);
 	if (val && strchr("()&|=", *val)) {
-		fprintf(stderr, "Unexpected token '%s'\n", val);
-		free(l);
-		if (val) free(val);
+		ldb_free(ldb, l);
+		if (val) ldb_free(ldb, val);
 		return NULL;
 	}
 	
-	ret = malloc_p(struct ldb_parse_tree);
+	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -182,11 +178,12 @@ static struct ldb_parse_tree *ldb_parse_simple(const char *s)
   <or> ::= '|' <filterlist>
   <filterlist> ::= <filter> | <filter> <filterlist>
 */
-static struct ldb_parse_tree *ldb_parse_filterlist(enum ldb_parse_op op, const char *s)
+static struct ldb_parse_tree *ldb_parse_filterlist(struct ldb_context *ldb,
+						   enum ldb_parse_op op, const char *s)
 {
 	struct ldb_parse_tree *ret, *next;
 
-	ret = malloc_p(struct ldb_parse_tree);
+	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -194,31 +191,31 @@ static struct ldb_parse_tree *ldb_parse_filterlist(enum ldb_parse_op op, const c
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = malloc_p(struct ldb_parse_tree *);
+	ret->u.list.elements = ldb_malloc_p(ldb, struct ldb_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
-		free(ret);
+		ldb_free(ldb, ret);
 		return NULL;
 	}
 
-	ret->u.list.elements[0] = ldb_parse_filter(&s);
+	ret->u.list.elements[0] = ldb_parse_filter(ldb, &s);
 	if (!ret->u.list.elements[0]) {
-		free(ret->u.list.elements);
-		free(ret);
+		ldb_free(ldb, ret->u.list.elements);
+		ldb_free(ldb, ret);
 		return NULL;
 	}
 
 	while (isspace(*s)) s++;
 
-	while (*s && (next = ldb_parse_filter(&s))) {
+	while (*s && (next = ldb_parse_filter(ldb, &s))) {
 		struct ldb_parse_tree **e;
-		e = realloc_p(ret->u.list.elements, 
-			      struct ldb_parse_tree *, 
-			      ret->u.list.num_elements+1);
+		e = ldb_realloc_p(ldb, ret->u.list.elements, 
+				  struct ldb_parse_tree *, 
+				  ret->u.list.num_elements+1);
 		if (!e) {
 			errno = ENOMEM;
-			ldb_parse_tree_free(next);
-			ldb_parse_tree_free(ret);
+			ldb_parse_tree_free(ldb, next);
+			ldb_parse_tree_free(ldb, ret);
 			return NULL;
 		}
 		ret->u.list.elements = e;
@@ -234,20 +231,20 @@ static struct ldb_parse_tree *ldb_parse_filterlist(enum ldb_parse_op op, const c
 /*
   <not> ::= '!' <filter>
 */
-static struct ldb_parse_tree *ldb_parse_not(const char *s)
+static struct ldb_parse_tree *ldb_parse_not(struct ldb_context *ldb, const char *s)
 {
 	struct ldb_parse_tree *ret;
 
-	ret = malloc_p(struct ldb_parse_tree);
+	ret = ldb_malloc_p(ldb, struct ldb_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ret->operation = LDB_OP_NOT;
-	ret->u.not.child = ldb_parse_filter(&s);
+	ret->u.not.child = ldb_parse_filter(ldb, &s);
 	if (!ret->u.not.child) {
-		free(ret);
+		ldb_free(ldb, ret);
 		return NULL;
 	}
 
@@ -258,67 +255,64 @@ static struct ldb_parse_tree *ldb_parse_not(const char *s)
   parse a filtercomp
   <filtercomp> ::= <and> | <or> | <not> | <simple>
 */
-static struct ldb_parse_tree *ldb_parse_filtercomp(const char *s)
+static struct ldb_parse_tree *ldb_parse_filtercomp(struct ldb_context *ldb, 
+						   const char *s)
 {
 	while (isspace(*s)) s++;
 
 	switch (*s) {
 	case '&':
-		return ldb_parse_filterlist(LDB_OP_AND, s+1);
+		return ldb_parse_filterlist(ldb, LDB_OP_AND, s+1);
 
 	case '|':
-		return ldb_parse_filterlist(LDB_OP_OR, s+1);
+		return ldb_parse_filterlist(ldb, LDB_OP_OR, s+1);
 
 	case '!':
-		return ldb_parse_not(s+1);
+		return ldb_parse_not(ldb, s+1);
 
 	case '(':
 	case ')':
-		fprintf(stderr, "Unexpected token '%c'\n", *s);
 		return NULL;
 	}
 
-	return ldb_parse_simple(s);
+	return ldb_parse_simple(ldb, s);
 }
 
 
 /*
   <filter> ::= '(' <filtercomp> ')'
 */
-static struct ldb_parse_tree *ldb_parse_filter(const char **s)
+static struct ldb_parse_tree *ldb_parse_filter(struct ldb_context *ldb, const char **s)
 {
 	char *l, *s2;
 	const char *p, *p2;
 	struct ldb_parse_tree *ret;
 
-	l = ldb_parse_lex(s);
+	l = ldb_parse_lex(ldb, s);
 	if (!l) {
-		fprintf(stderr, "Unexpected end of expression\n");
 		return NULL;
 	}
 
 	if (strcmp(l, "(") != 0) {
-		free(l);
-		fprintf(stderr, "Expected '('\n");
+		ldb_free(ldb, l);
 		return NULL;
 	}
-	free(l);
+	ldb_free(ldb, l);
 
 	p = match_brace(*s);
 	if (!p) {
-		fprintf(stderr, "Parse error - mismatched braces\n");
 		return NULL;
 	}
 	p2 = p + 1;
 
-	s2 = strndup(*s, p - *s);
+	s2 = ldb_strndup(ldb, *s, p - *s);
 	if (!s2) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
-	ret = ldb_parse_filtercomp(s2);
-	free(s2);
+	ret = ldb_parse_filtercomp(ldb, s2);
+	ldb_free(ldb, s2);
 
 	*s = p2;
 
@@ -331,130 +325,43 @@ static struct ldb_parse_tree *ldb_parse_filter(const char **s)
 
   expression ::= <simple> | <filter>
 */
-struct ldb_parse_tree *ldb_parse_tree(const char *s)
+struct ldb_parse_tree *ldb_parse_tree(struct ldb_context *ldb, const char *s)
 {
 	while (isspace(*s)) s++;
 
 	if (*s == '(') {
-		return ldb_parse_filter(&s);
+		return ldb_parse_filter(ldb, &s);
 	}
 
-	return ldb_parse_simple(s);
+	return ldb_parse_simple(ldb, s);
 }
 
 /*
   free a parse tree returned from ldb_parse_tree()
 */
-void ldb_parse_tree_free(struct ldb_parse_tree *tree)
+void ldb_parse_tree_free(struct ldb_context *ldb, struct ldb_parse_tree *tree)
 {
 	int i;
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
-		free(tree->u.simple.attr);
-		if (tree->u.simple.value.data) free(tree->u.simple.value.data);
+		ldb_free(ldb, tree->u.simple.attr);
+		if (tree->u.simple.value.data) ldb_free(ldb, tree->u.simple.value.data);
 		break;
 
 	case LDB_OP_AND:
 	case LDB_OP_OR:
 		for (i=0;i<tree->u.list.num_elements;i++) {
-			ldb_parse_tree_free(tree->u.list.elements[i]);
+			ldb_parse_tree_free(ldb, tree->u.list.elements[i]);
 		}
-		if (tree->u.list.elements) free(tree->u.list.elements);
+		if (tree->u.list.elements) ldb_free(ldb, tree->u.list.elements);
 		break;
 
 	case LDB_OP_NOT:
-		ldb_parse_tree_free(tree->u.not.child);
+		ldb_parse_tree_free(ldb, tree->u.not.child);
 		break;
 	}
 
-	free(tree);
+	ldb_free(ldb, tree);
 }
-
-#if TEST_PROGRAM
-/*
-  return a string representation of a parse tree
-  used for debugging
-*/
-static char *tree_string(struct ldb_parse_tree *tree)
-{
-	char *s = NULL;
-	char *s1, *s2;
-	int i;
-
-	switch (tree->operation) {
-	case LDB_OP_SIMPLE:
-		asprintf(&s, "( %s = \"%s\" )", tree->u.simple.attr, 
-			 (char *)tree->u.simple.value.data);
-		break;
-
-	case LDB_OP_AND:
-	case LDB_OP_OR:
-		asprintf(&s, "( %c", tree->operation==LDB_OP_AND?'&':'|');
-		if (!s) return NULL;
-
-		for (i=0;i<tree->u.list.num_elements;i++) {
-			s1 = tree_string(tree->u.list.elements[i]);
-			if (!s1) {
-				free(s);
-				return NULL;
-			}
-			asprintf(&s2, "%s %s", s, s1);
-			free(s);
-			free(s1);
-			s = s2;
-		}
-		if (!s) {
-			return NULL;
-		}
-		asprintf(&s2, "%s )", s);
-		free(s);
-		s = s2;
-		break;
-
-	case LDB_OP_NOT:
-		s1 = tree_string(tree->u.not.child);
-		asprintf(&s, "( ! %s )", s1);
-		free(s1);
-		break;
-	}
-	return s;
-}
-
-
-/*
-  print a tree
- */
-static void print_tree(struct ldb_parse_tree *tree)
-{
-	char *s = tree_string(tree);
-	printf("%s\n", s);
-	free(s);
-}
-
-
- int main(void)
-{
-	char line[1000];
-	int ret = 0;
-
-	while (fgets(line, sizeof(line)-1, stdin)) {
-		struct ldb_parse_tree *tree;
-
-		if (line[strlen(line)-1] == '\n') {
-			line[strlen(line)-1] = 0;
-		}
-		tree = ldb_parse_tree(line);
-		if (!tree) {
-			fprintf(stderr, "Failed to parse\n");
-			ret = 1;
-			continue;
-		}
-		print_tree(tree);
-		ldb_parse_tree_free(tree);
-	}
-	
-	return ret;
-}
-#endif /* TEST_PROGRAM */
 

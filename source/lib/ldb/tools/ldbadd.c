@@ -55,7 +55,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 	struct ldb_ldif *ldif;
 	int ret, count=0;
 
-	while ((ldif = ldif_read_file(f))) {
+	while ((ldif = ldif_read_file(ldb, f))) {
 		if (ldif->changetype != LDB_CHANGETYPE_ADD &&
 		    ldif->changetype != LDB_CHANGETYPE_NONE) {
 			fprintf(stderr, "Only CHANGETYPE_ADD records allowed\n");
@@ -70,7 +70,7 @@ static int process_file(struct ldb_context *ldb, FILE *f)
 		} else {
 			count++;
 		}
-		ldif_read_free(ldif);
+		ldif_read_free(ldb, ldif);
 	}
 
 	return count;

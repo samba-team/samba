@@ -45,11 +45,11 @@ static void usage(void)
 	exit(1);
 }
 
-static void do_search(struct ldb_context *ldb,
-		      const char *basedn,
-		      int scope,
-		      const char *expression,
-		      char * const *attrs)
+static int do_search(struct ldb_context *ldb,
+		     const char *basedn,
+		     int scope,
+		     const char *expression,
+		     char * const *attrs)
 {
 	int ret, i;
 	struct ldb_message **msgs;
@@ -57,7 +57,7 @@ static void do_search(struct ldb_context *ldb,
 	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
-		return;
+		return -1;
 	}
 
 	printf("# returned %d records\n", ret);
@@ -69,7 +69,7 @@ static void do_search(struct ldb_context *ldb,
 		ldif.changetype = LDB_CHANGETYPE_NONE;
 		ldif.msg = *msgs[i];
 
-		ldif_write_file(stdout, &ldif);
+		ldif_write_file(ldb, stdout, &ldif);
 	}
 
 	if (ret > 0) {
@@ -79,6 +79,8 @@ static void do_search(struct ldb_context *ldb,
 			exit(1);
 		}
 	}
+
+	return 0;
 }
 
  int main(int argc, char * const argv[])
@@ -89,7 +91,7 @@ static void do_search(struct ldb_context *ldb,
 	const char *basedn = NULL;
 	int opt;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
-	int interactive = 0;
+	int interactive = 0, ret=0;
 
 	ldb_url = getenv("LDB_URL");
 
@@ -150,12 +152,14 @@ static void do_search(struct ldb_context *ldb,
 	if (interactive) {
 		char line[1024];
 		while (fgets(line, sizeof(line), stdin)) {
-			do_search(ldb, basedn, scope, line, attrs);
+			if (do_search(ldb, basedn, scope, line, attrs) == -1) {
+				ret = -1;
+			}
 		}
 	} else {
-		do_search(ldb, basedn, scope, argv[0], attrs);
+		ret = do_search(ldb, basedn, scope, argv[0], attrs);
 	}
 
 	ldb_close(ldb);
-	return 0;
+	return ret;
 }

@@ -35,24 +35,6 @@
 #include "includes.h"
 
 
-#define MAX_MALLOC_SIZE 0x7fffffff
-
-/*
-  realloc an array, checking for integer overflow in the array size
-*/
-void *realloc_array(void *ptr, size_t el_size, unsigned count)
-{
-	if (count == 0 ||
-	    count >= MAX_MALLOC_SIZE/el_size) {
-		return NULL;
-	}
-	if (!ptr) {
-		return malloc(el_size * count);
-	}
-	return realloc(ptr, el_size * count);
-}
-
-
 /*
   find an element in a list, using the given comparison function and
   assuming that the list is already sorted using comp_fn

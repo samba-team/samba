@@ -19,6 +19,9 @@ struct ltdb_private {
 			int flags;
 		} last_attribute;
 	} cache;
+
+	/* error if an internal ldb+tdb error */
+	const char *last_err_string;
 };
 
 /* special record types */

@@ -43,32 +43,33 @@ struct dn_list {
 /*
   free a struct dn_list
 */
-static void dn_list_free(struct dn_list *list)
+static void dn_list_free(struct ldb_context *ldb, struct dn_list *list)
 {
 	int i;
 	for (i=0;i<list->count;i++) {
-		free(list->dn[i]);
+		ldb_free(ldb, list->dn[i]);
 	}
-	if (list->dn) free(list->dn);
+	ldb_free(ldb, list->dn);
 }
 
 /*
   return the dn key to be used for an index
   caller frees
 */
-static char *ldb_dn_key(const char *attr, const struct ldb_val *value)
+static char *ldb_dn_key(struct ldb_context *ldb,
+			const char *attr, const struct ldb_val *value)
 {
 	char *ret = NULL;
 
 	if (ldb_should_b64_encode(value)) {
-		char *vstr = ldb_base64_encode(value->data, value->length);
+		char *vstr = ldb_base64_encode(ldb, value->data, value->length);
 		if (!vstr) return NULL;
-		asprintf(&ret, "%s:%s::%s", LTDB_INDEX, attr, vstr);
-		free(vstr);
+		ldb_asprintf(ldb, &ret, "%s:%s::%s", LTDB_INDEX, attr, vstr);
+		ldb_free(ldb, vstr);
 		return ret;
 	}
 
-	asprintf(&ret, "%s:%s:%s", LTDB_INDEX, attr, (char *)value->data);
+	ldb_asprintf(ldb, &ret, "%s:%s:%s", LTDB_INDEX, attr, (char *)value->data);
 	return ret;
 }
 
@@ -132,11 +133,11 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 
 	/* the attribute is indexed. Pull the list of DNs that match the 
 	   search criterion */
-	dn = ldb_dn_key(tree->u.simple.attr, &tree->u.simple.value);
+	dn = ldb_dn_key(ldb, tree->u.simple.attr, &tree->u.simple.value);
 	if (!dn) return -1;
 
 	ret = ltdb_search_dn1(ldb, dn, &msg);
-	free(dn);
+	ldb_free(ldb, dn);
 	if (ret == 0 || ret == -1) {
 		return ret;
 	}
@@ -150,16 +151,16 @@ static int ltdb_index_dn_simple(struct ldb_context *ldb,
 
 		el = &msg.elements[i];
 
-		list->dn = malloc_array_p(char *, el->num_values);
+		list->dn = ldb_malloc_array_p(ldb, char *, el->num_values);
 		if (!list->dn) {
 			break;		
 		}
 
 		for (j=0;j<el->num_values;j++) {
 			list->dn[list->count] = 
-				strdup((char *)el->values[j].data);
+				ldb_strdup(ldb, (char *)el->values[j].data);
 			if (!list->dn[list->count]) {
-				dn_list_free(list);
+				dn_list_free(ldb, list);
 				ltdb_search_dn1_free(ldb, &msg);
 				return -1;
 			}
@@ -202,7 +203,7 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 				struct ldb_parse_tree tree2;
 				struct dn_list list2;
 				tree2.operation = LDB_OP_SIMPLE;
-				tree2.u.simple.attr = strdup(LTDB_OBJECTCLASS);
+				tree2.u.simple.attr = ldb_strdup(ldb, LTDB_OBJECTCLASS);
 				if (!tree2.u.simple.attr) {
 					return -1;
 				}
@@ -214,10 +215,10 @@ static int ltdb_index_dn_objectclass(struct ldb_context *ldb,
 						ret = 1;
 					} else {
 						list_union(list, &list2);
-						dn_list_free(&list2);
+						dn_list_free(ldb, &list2);
 					}
 				}
-				free(tree2.u.simple.attr);
+				ldb_free(ldb, tree2.u.simple.attr);
 			}
 		}
 	}
@@ -245,20 +246,21 @@ static int ltdb_index_dn_leaf(struct ldb_context *ldb,
   list = list & list2
   relies on the lists being sorted
 */
-static int list_intersect(struct dn_list *list, const struct dn_list *list2)
+static int list_intersect(struct ldb_context *ldb,
+			  struct dn_list *list, const struct dn_list *list2)
 {
 	struct dn_list list3;
 	int i;
 
 	if (list->count == 0 || list2->count == 0) {
 		/* 0 & X == 0 */
-		dn_list_free(list);
+		dn_list_free(ldb, list);
 		return 0;
 	}
 
-	list3.dn = malloc_array_p(char *, list->count);
+	list3.dn = ldb_malloc_array_p(ldb, char *, list->count);
 	if (!list3.dn) {
-		dn_list_free(list);
+		dn_list_free(ldb, list);
 		return -1;
 	}
 	list3.count = 0;
@@ -269,11 +271,11 @@ static int list_intersect(struct dn_list *list, const struct dn_list *list2)
 			list3.dn[list3.count] = list->dn[i];
 			list3.count++;
 		} else {
-			free(list->dn[i]);
+			ldb_free(ldb, list->dn[i]);
 		}		
 	}
 
-	free(list->dn);
+	ldb_free(ldb, list->dn);
 	list->dn = list3.dn;
 	list->count = list3.count;
 
@@ -286,7 +288,8 @@ static int list_intersect(struct dn_list *list, const struct dn_list *list2)
   list = list | list2
   relies on the lists being sorted
 */
-static int list_union(struct dn_list *list, const struct dn_list *list2)
+static int list_union(struct ldb_context *ldb, 
+		      struct dn_list *list, const struct dn_list *list2)
 {
 	int i;
 	char **d;
@@ -294,13 +297,13 @@ static int list_union(struct dn_list *list, const struct dn_list *list2)
 
 	if (list->count == 0 && list2->count == 0) {
 		/* 0 | 0 == 0 */
-		dn_list_free(list);
+		dn_list_free(ldb, list);
 		return 0;
 	}
 
-	d = realloc_p(list->dn, char *, list->count + list2->count);
+	d = ldb_realloc_p(ldb, list->dn, char *, list->count + list2->count);
 	if (!d) {
-		dn_list_free(list);
+		dn_list_free(ldb, list);
 		return -1;
 	}
 	list->dn = d;
@@ -308,9 +311,9 @@ static int list_union(struct dn_list *list, const struct dn_list *list2)
 	for (i=0;i<list2->count;i++) {
 		if (list_find(list2->dn[i], list->dn, count, 
 			      sizeof(char *), (comparison_fn_t)strcmp) == -1) {
-			list->dn[list->count] = strdup(list2->dn[i]);
+			list->dn[list->count] = ldb_strdup(ldb, list2->dn[i]);
 			if (!list->dn[list->count]) {
-				dn_list_free(list);
+				dn_list_free(ldb, list);
 				return -1;
 			}
 			list->count++;
@@ -359,7 +362,7 @@ static int ltdb_index_dn_or(struct ldb_context *ldb,
 
 		if (v == -1) {
 			/* 1 || X == 1 */
-			dn_list_free(list);
+			dn_list_free(ldb, list);
 			return -1;
 		}
 
@@ -367,16 +370,16 @@ static int ltdb_index_dn_or(struct ldb_context *ldb,
 			ret = 1;
 			*list = list2;
 		} else {
-			if (list_union(list, &list2) == -1) {
-				dn_list_free(&list2);
+			if (list_union(ldb, list, &list2) == -1) {
+				dn_list_free(ldb, &list2);
 				return -1;
 			}
-			dn_list_free(&list2);
+			dn_list_free(ldb, &list2);
 		}
 	}
 
 	if (list->count == 0) {
-		dn_list_free(list);
+		dn_list_free(ldb, list);
 		return 0;
 	}
 
@@ -424,7 +427,7 @@ static int ltdb_index_dn_and(struct ldb_context *ldb,
 
 		if (v == 0) {
 			/* 0 && X == 0 */
-			dn_list_free(list);
+			dn_list_free(ldb, list);
 			return 0;
 		}
 
@@ -436,15 +439,15 @@ static int ltdb_index_dn_and(struct ldb_context *ldb,
 			ret = 1;
 			*list = list2;
 		} else {
-			if (list_intersect(list, &list2) == -1) {
-				dn_list_free(&list2);
+			if (list_intersect(ldb, list, &list2) == -1) {
+				dn_list_free(ldb, &list2);
 				return -1;
 			}
-			dn_list_free(&list2);
+			dn_list_free(ldb, &list2);
 		}
 
 		if (list->count == 0) {
-			if (list->dn) free(list->dn);
+			if (list->dn) ldb_free(ldb, list->dn);
 			return 0;
 		}
 	}
@@ -550,7 +553,7 @@ int ltdb_search_indexed(struct ldb_context *ldb,
 		   and extract the needed attributes */
 		ret = ldb_index_filter(ldb, tree, base, scope, &dn_list, 
 				       attrs, res);
-		dn_list_free(&dn_list);
+		dn_list_free(ldb, &dn_list);
 	}
 
 	return ret;
@@ -567,18 +570,19 @@ static int ltdb_index_add1_new(struct ldb_context *ldb,
 	struct ldb_message_element *el2;
 
 	/* add another entry */
-	el2 = realloc_p(msg->elements, struct ldb_message_element, msg->num_elements+1);
+	el2 = ldb_realloc_p(ldb, msg->elements, 
+			    struct ldb_message_element, msg->num_elements+1);
 	if (!el2) {
 		return -1;
 	}
 
 	msg->elements = el2;
-	msg->elements[msg->num_elements].name = strdup(LTDB_IDX);
+	msg->elements[msg->num_elements].name = ldb_strdup(ldb, LTDB_IDX);
 	if (!msg->elements[msg->num_elements].name) {
 		return -1;
 	}
 	msg->elements[msg->num_elements].num_values = 0;
-	msg->elements[msg->num_elements].values = malloc_p(struct ldb_val);
+	msg->elements[msg->num_elements].values = ldb_malloc_p(ldb, struct ldb_val);
 	if (!msg->elements[msg->num_elements].values) {
 		return -1;
 	}
@@ -611,9 +615,9 @@ static int ltdb_index_add1_add(struct ldb_context *ldb,
 		}
 	}
 
-	v2 = realloc_p(msg->elements[idx].values,
-		       struct ldb_val, 
-		       msg->elements[idx].num_values+1);
+	v2 = ldb_realloc_p(ldb, msg->elements[idx].values,
+			   struct ldb_val, 
+			   msg->elements[idx].num_values+1);
 	if (!v2) {
 		return -1;
 	}
@@ -634,23 +638,24 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 {
 	struct ldb_message msg;
 	char *dn_key;
-	int ret, i, added=0;
+	int ret, i, added=0, added_dn=0;
 
-	dn_key = ldb_dn_key(el->name, &el->values[v_idx]);
+	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
 		return -1;
 	}
 
 	ret = ltdb_search_dn1(ldb, dn_key, &msg);
 	if (ret == -1) {
-		free(dn_key);
+		ldb_free(ldb, dn_key);
 		return -1;
 	}
 
 	if (ret == 0) {
-		msg.dn = strdup(dn_key);
+		added_dn = 1;
+		msg.dn = ldb_strdup(ldb, dn_key);
 		if (!msg.dn) {
-			free(dn_key);
+			ldb_free(ldb, dn_key);
 			errno = ENOMEM;
 			return -1;
 		}
@@ -659,7 +664,7 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 		msg.private_data = NULL;
 	}
 
-	free(dn_key);
+	ldb_free(ldb, dn_key);
 
 	for (i=0;i<msg.num_elements;i++) {
 		if (strcmp(LTDB_IDX, msg.elements[i].name) == 0) {
@@ -679,7 +684,10 @@ static int ltdb_index_add1(struct ldb_context *ldb, char *dn,
 	}
 
 	if (added) {
-		free(msg.elements[i].name);
+		ldb_free(ldb, msg.elements[i].name);
+	}
+	if (added_dn) {
+		ldb_free(ldb, msg.dn);
 	}
 
 	ltdb_search_dn1_free(ldb, &msg);
@@ -728,14 +736,14 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	char *dn_key;
 	int ret, i, j;
 
-	dn_key = ldb_dn_key(el->name, &el->values[v_idx]);
+	dn_key = ldb_dn_key(ldb, el->name, &el->values[v_idx]);
 	if (!dn_key) {
 		return -1;
 	}
 
 	ret = ltdb_search_dn1(ldb, dn_key, &msg);
 	if (ret == -1) {
-		free(dn_key);
+		ldb_free(ldb, dn_key);
 		return -1;
 	}
 
@@ -743,6 +751,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 		/* it wasn't indexed. Did we have an earlier error? If we did then
 		   its gone now */
 		ltdb_search_dn1_free(ldb, &msg);
+		ldb_free(ldb, dn_key);
 		return 0;
 	}
 
@@ -750,6 +759,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	if (i == -1) {
 		/* it ain't there. hmmm */
 		ltdb_search_dn1_free(ldb, &msg);
+		ldb_free(ldb, dn_key);
 		return 0;
 	}
 
@@ -768,6 +778,7 @@ static int ltdb_index_del1(struct ldb_context *ldb, const char *dn,
 	}
 
 	ltdb_search_dn1_free(ldb, &msg);
+	ldb_free(ldb, dn_key);
 
 	return ret;
 }
@@ -841,7 +852,7 @@ static int re_index(struct tdb_context *tdb, TDB_DATA key, TDB_DATA data, void *
 
 	ret = ltdb_index_add(ldb, &msg);
 
-	ltdb_unpack_data_free(&msg);
+	ltdb_unpack_data_free(ldb, &msg);
 
 	return ret;
 }

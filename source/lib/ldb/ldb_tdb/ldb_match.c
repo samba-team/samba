@@ -71,7 +71,8 @@ static int ldb_val_equal_case_insensitive(const struct ldb_val *v1,
   and case insensitive
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_wildcard_ci(const struct ldb_val *v1, 
+static int ldb_val_equal_wildcard_ci(struct ldb_context *ldb,
+				     const struct ldb_val *v1, 
 				     const struct ldb_val *v2)
 {
 	char *s1, *s2;
@@ -81,20 +82,20 @@ static int ldb_val_equal_wildcard_ci(const struct ldb_val *v1,
 		return v1->data == v2->data;
 	}
 
-	s1 = ldb_casefold(v1->data);
+	s1 = ldb_casefold(ldb, v1->data);
 	if (!s1) {
 		return -1;
 	}
 
-	s2 = ldb_casefold(v2->data);
+	s2 = ldb_casefold(ldb, v2->data);
 	if (!s2) {
 		return -1;
 	}
 
 	ret = fnmatch(s2, s1, 0);
 
-	free(s1);
-	free(s2);
+	ldb_free(ldb, s1);
+	ldb_free(ldb, s2);
 
 	if (ret == 0) {
 		return 1;
@@ -107,12 +108,13 @@ static int ldb_val_equal_wildcard_ci(const struct ldb_val *v1,
   see if two ldb_val structures contain the same data with wildcards
   return 1 for a match, 0 for a mis-match
 */
-static int ldb_val_equal_wildcard(const struct ldb_val *v1, 
+static int ldb_val_equal_wildcard(struct ldb_context *ldb,
+				  const struct ldb_val *v1, 
 				  const struct ldb_val *v2,
 				  int flags)
 {
 	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
-		return ldb_val_equal_wildcard_ci(v1, v2);
+		return ldb_val_equal_wildcard_ci(ldb, v1, v2);
 	}
 	if (!v1->data || !v2->data) {
 		return v1->data == v2->data;
@@ -182,7 +184,7 @@ int ldb_val_equal(struct ldb_context *ldb,
 	}
 
 	if (flags & LTDB_FLAG_WILDCARD) {
-		return ldb_val_equal_wildcard(v1, v2, flags);
+		return ldb_val_equal_wildcard(ldb, v1, v2, flags);
 	}
 
 	if (flags & LTDB_FLAG_CASE_INSENSITIVE) {

@@ -67,35 +67,35 @@ struct TDB_DATA ltdb_key(struct ldb_context *ldb, const char *dn)
 	if (strncmp(dn, prefix, strlen(prefix)) == 0 &&
 	    (s = strchr(dn+strlen(prefix), ':'))) {
 		char *attr_name, *attr_name_folded;
-		attr_name = strndup(dn+strlen(prefix), (s-(dn+strlen(prefix))));
+		attr_name = ldb_strndup(ldb, dn+strlen(prefix), (s-(dn+strlen(prefix))));
 		if (!attr_name) {
 			goto failed;
 		}
 		flags = ltdb_attribute_flags(ldb, attr_name);
 		
 		if (flags & LTDB_FLAG_CASE_INSENSITIVE) {
-			dn_folded = ldb_casefold(dn);
+			dn_folded = ldb_casefold(ldb, dn);
 		} else {
-			attr_name_folded = ldb_casefold(attr_name);
+			attr_name_folded = ldb_casefold(ldb, attr_name);
 			if (!attr_name_folded) {
 				goto failed;
 			}
-			asprintf(&dn_folded, "%s:%s:%s",
+			ldb_asprintf(ldb, &dn_folded, "%s:%s:%s",
 				 prefix, attr_name_folded,
 				 s+1);
-			free(attr_name_folded);
+			ldb_free(ldb, attr_name_folded);
 		}
-		free(attr_name);
+		ldb_free(ldb, attr_name);
 	} else {
-		dn_folded = ldb_casefold(dn);
+		dn_folded = ldb_casefold(ldb, dn);
 	}
 
 	if (!dn_folded) {
 		goto failed;
 	}
 
-	asprintf(&key_str, "DN=%s", dn_folded);
-	free(dn_folded);
+	ldb_asprintf(ldb, &key_str, "DN=%s", dn_folded);
+	ldb_free(ldb, dn_folded);
 
 	if (!key_str) {
 		goto failed;
@@ -129,7 +129,7 @@ static int ltdb_lock(struct ldb_context *ldb)
 
 	ret = tdb_chainlock(ltdb->tdb, key);
 
-	free(key.dptr);
+	ldb_free(ldb, key.dptr);
 
 	return ret;
 }
@@ -149,7 +149,7 @@ static void ltdb_unlock(struct ldb_context *ldb)
 
 	tdb_chainunlock(ltdb->tdb, key);
 
-	free(key.dptr);
+	ldb_free(ldb, key.dptr);
 }
 
 
@@ -190,7 +190,7 @@ int ltdb_store(struct ldb_context *ldb, const struct ldb_message *msg, int flgs)
 
 	ret = ltdb_pack_data(ldb, msg, &tdb_data);
 	if (ret == -1) {
-		free(tdb_key.dptr);
+		ldb_free(ldb, tdb_key.dptr);
 		return -1;
 	}
 
@@ -205,8 +205,8 @@ int ltdb_store(struct ldb_context *ldb, const struct ldb_message *msg, int flgs)
 	}
 
 done:
-	free(tdb_key.dptr);
-	free(tdb_data.dptr);
+	ldb_free(ldb, tdb_key.dptr);
+	ldb_free(ldb, tdb_data.dptr);
 
 	return ret;
 }
@@ -217,7 +217,10 @@ done:
 */
 static int ltdb_add(struct ldb_context *ldb, const struct ldb_message *msg)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
+
+	ltdb->last_err_string = NULL;
 
 	if (ltdb_lock(ldb) != 0) {
 		return -1;
@@ -255,7 +258,7 @@ int ltdb_delete_noindex(struct ldb_context *ldb, const char *dn)
 	}
 
 	ret = tdb_delete(ltdb->tdb, tdb_key);
-	free(tdb_key.dptr);
+	ldb_free(ldb, tdb_key.dptr);
 
 	return ret;
 }
@@ -265,8 +268,11 @@ int ltdb_delete_noindex(struct ldb_context *ldb, const char *dn)
 */
 static int ltdb_delete(struct ldb_context *ldb, const char *dn)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 	struct ldb_message msg;
+
+	ltdb->last_err_string = NULL;
 
 	if (ltdb_lock(ldb) != 0) {
 		return -1;
@@ -335,12 +341,13 @@ static int find_element(const struct ldb_message *msg, const char *name)
 
   returns 0 on success, -1 on failure (and sets errno)
 */
-static int msg_add_element(struct ldb_message *msg, struct ldb_message_element *el)
+static int msg_add_element(struct ldb_context *ldb,
+			   struct ldb_message *msg, struct ldb_message_element *el)
 {
 	struct ldb_message_element *e2;
 	int i;
 
-	e2 = realloc_p(msg->elements, struct ldb_message_element, 
+	e2 = ldb_realloc_p(ldb, msg->elements, struct ldb_message_element, 
 		       msg->num_elements+1);
 	if (!e2) {
 		errno = ENOMEM;
@@ -355,7 +362,7 @@ static int msg_add_element(struct ldb_message *msg, struct ldb_message_element *
 	e2->flags = el->flags;
 	e2->values = NULL;
 	if (el->num_values != 0) {
-		e2->values = malloc_array_p(struct ldb_val, el->num_values);
+		e2->values = ldb_malloc_array_p(ldb, struct ldb_val, el->num_values);
 		if (!e2->values) {
 			free(e2->name);
 			errno = ENOMEM;
@@ -375,12 +382,13 @@ static int msg_add_element(struct ldb_message *msg, struct ldb_message_element *
 /*
   delete all elements having a specified attribute name
 */
-static int msg_delete_attribute(struct ldb_message *msg, const char *name)
+static int msg_delete_attribute(struct ldb_context *ldb,
+				struct ldb_message *msg, const char *name)
 {
 	int i, count=0;
 	struct ldb_message_element *el2;
 
-	el2 = malloc_array_p(struct ldb_message_element, msg->num_elements);
+	el2 = ldb_malloc_array_p(ldb, struct ldb_message_element, msg->num_elements);
 	if (!el2) {
 		errno = ENOMEM;
 		return -1;
@@ -390,12 +398,12 @@ static int msg_delete_attribute(struct ldb_message *msg, const char *name)
 		if (ldb_attr_cmp(msg->elements[i].name, name) != 0) {
 			el2[count++] = msg->elements[i];
 		} else {
-			if (msg->elements[i].values) free(msg->elements[i].values);
+			ldb_free(ldb, msg->elements[i].values);
 		}
 	}
 
 	msg->num_elements = count;
-	if (msg->elements) free(msg->elements);
+	ldb_free(ldb, msg->elements);
 	msg->elements = el2;
 
 	return 0;
@@ -425,7 +433,7 @@ static int msg_delete_element(struct ldb_context *ldb,
 		if (ldb_val_equal(ldb, msg->elements[i].name, &el->values[i], val)) {
 			if (i<el->num_values-1) {
 				memmove(&el->values[i], &el->values[i+1],
-					sizeof(el->values[i])*el->num_values-(i+1));
+					sizeof(el->values[i])*(el->num_values-(i+1)));
 			}
 			el->num_values--;
 			return 0;
@@ -463,7 +471,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 
 	ret = ltdb_unpack_data(ldb, &tdb_data, &msg2);
 	if (ret == -1) {
-		free(tdb_key.dptr);
+		ldb_free(ldb, tdb_key.dptr);
 		free(tdb_data.dptr);
 		return -1;
 	}
@@ -483,7 +491,7 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 				errno = EEXIST;
 				goto failed;
 			}
-			if (msg_add_element(&msg2, &msg->elements[i]) != 0) {
+			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
 				goto failed;
 			}
 			break;
@@ -491,11 +499,11 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 		case LDB_FLAG_MOD_REPLACE:
 			/* replace all elements of this attribute name with the elements
 			   listed */
-			if (msg_delete_attribute(&msg2, msg->elements[i].name) != 0) {
+			if (msg_delete_attribute(ldb, &msg2, msg->elements[i].name) != 0) {
 				goto failed;
 			}
 			/* add the replacement element */
-			if (msg_add_element(&msg2, &msg->elements[i]) != 0) {
+			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
 				goto failed;
 			}
 			break;
@@ -504,8 +512,8 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 			/* we could be being asked to delete all
 			   values or just some values */
 			if (msg->elements[i].num_values == 0) {
-				if (msg_delete_attribute(&msg2, 
-							  msg->elements[i].name) != 0) {
+				if (msg_delete_attribute(ldb, &msg2, 
+							 msg->elements[i].name) != 0) {
 					goto failed;
 				}
 				break;
@@ -525,15 +533,15 @@ int ltdb_modify_internal(struct ldb_context *ldb, const struct ldb_message *msg)
 	/* we've made all the mods - save the modified record back into the database */
 	ret = ltdb_store(ldb, &msg2, TDB_MODIFY);
 
-	free(tdb_key.dptr);
+	ldb_free(ldb, tdb_key.dptr);
 	free(tdb_data.dptr);
-	ltdb_unpack_data_free(&msg2);
+	ltdb_unpack_data_free(ldb, &msg2);
 	return ret;
 
 failed:
-	free(tdb_key.dptr);
+	ldb_free(ldb, tdb_key.dptr);
 	free(tdb_data.dptr);
-	ltdb_unpack_data_free(&msg2);
+	ltdb_unpack_data_free(ldb, &msg2);
 	return -1;
 }
 
@@ -542,7 +550,10 @@ failed:
 */
 static int ltdb_modify(struct ldb_context *ldb, const struct ldb_message *msg)
 {
+	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
+
+	ltdb->last_err_string = NULL;
 
 	if (ltdb_lock(ldb) != 0) {
 		return -1;
@@ -572,10 +583,13 @@ static int ltdb_close(struct ldb_context *ldb)
 	struct ltdb_private *ltdb = ldb->private_data;
 	int ret;
 
+	ltdb->last_err_string = NULL;
+
 	ltdb_cache_free(ldb);
+	ldb_set_alloc(ldb, NULL, NULL);
 
 	ret = tdb_close(ltdb->tdb);
-	free(ltdb);
+	ldb_free(ldb, ltdb);
 	free(ldb);
 	return ret;
 }
@@ -587,6 +601,9 @@ static int ltdb_close(struct ldb_context *ldb)
 static const char *ltdb_errstring(struct ldb_context *ldb)
 {
 	struct ltdb_private *ltdb = ldb->private_data;
+	if (ltdb->last_err_string) {
+		return ltdb->last_err_string;
+	}
 	return tdb_errorstr(ltdb->tdb);
 }
 
@@ -598,7 +615,8 @@ static const struct ldb_backend_ops ltdb_ops = {
 	ltdb_add,
 	ltdb_modify,
 	ltdb_delete,
-	ltdb_errstring
+	ltdb_errstring,
+	ltdb_cache_free
 };
 
 
@@ -614,6 +632,12 @@ struct ldb_context *ltdb_connect(const char *url,
 	struct ltdb_private *ltdb;
 	TDB_CONTEXT *tdb;
 	struct ldb_context *ldb;
+
+	ldb = calloc(1, sizeof(struct ldb_context));
+	if (!ldb) {
+		errno = ENOMEM;
+		return NULL;
+	}
 
 	/* parse the url */
 	if (strchr(url, ':')) {
@@ -637,12 +661,14 @@ struct ldb_context *ltdb_connect(const char *url,
 	/* note that we use quite a large default hash size */
 	tdb = tdb_open(path, 10000, tdb_flags, open_flags, 0666);
 	if (!tdb) {
+		free(ldb);
 		return NULL;
 	}
 
-	ltdb = malloc_p(struct ltdb_private);
+	ltdb = ldb_malloc_p(ldb, struct ltdb_private);
 	if (!ltdb) {
 		tdb_close(tdb);
+		free(ldb);
 		errno = ENOMEM;
 		return NULL;
 	}
@@ -651,14 +677,6 @@ struct ldb_context *ltdb_connect(const char *url,
 	ltdb->sequence_number = 0;
 
 	memset(&ltdb->cache, 0, sizeof(ltdb->cache));
-
-	ldb = malloc_p(struct ldb_context);
-	if (!ldb) {
-		tdb_close(tdb);
-		free(ltdb);
-		errno = ENOMEM;
-		return NULL;
-	}
 
 	ldb->private_data = ltdb;
 	ldb->ops = &ltdb_ops;
