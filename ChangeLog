@@ -1,3 +1,15 @@
+2000-06-07  Assar Westerlund  <assar@sics.se>
+
+	* configure.in: add db3 detection stuff do not use streamsptys on
+	HP-UX 11
+	* lib/hdb/hdb.h (HDB): add dbc for db3
+	* kdc/connect.c (add_standard_ports): also listen on krb524 aka
+	4444
+	* etc/services.append (krb524): add
+	* lib/hdb/db3.c: add berkeley db3 interface.  contributed by
+	Derrick J Brashear <shadow@dementia.org>
+	* lib/hdb/hdb.h (struct HDB): add
+
 2000-06-07  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/524.c: if 524 is not enabled, just generate error reply and
@@ -14,6 +26,12 @@
 
 	* kdc/524.c: handle non-existant server principals (from Daniel
 	Kouril)
+
+2000-06-03  Assar Westerlund  <assar@sics.se>
+
+	* admin/ktutil.c: print name when failing to open keytab
+
+	* kuser/kinit.c: try also to fallback to v4 when no KDC is found
 
 2000-05-28  Assar Westerlund  <assar@sics.se>
 
