@@ -44,10 +44,10 @@ void vfswrap_dummy_disconnect(vfs_handle_struct *handle, connection_struct *conn
 SMB_BIG_UINT vfswrap_disk_free(vfs_handle_struct *handle, connection_struct *conn, const char *path, BOOL small_query, SMB_BIG_UINT *bsize, 
 			       SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
-    SMB_BIG_UINT result;
+	SMB_BIG_UINT result;
 
-    result = sys_disk_free(path, small_query, bsize, dfree, dsize);
-    return result;
+	result = sys_disk_free(path, small_query, bsize, dfree, dsize);
+	return result;
 }
 
 int vfswrap_get_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
@@ -90,22 +90,22 @@ int vfswrap_get_shadow_copy_data(struct vfs_handle_struct *handle, struct files_
 
 DIR *vfswrap_opendir(vfs_handle_struct *handle, connection_struct *conn, const char *fname)
 {
-    DIR *result;
+	DIR *result;
 
-    START_PROFILE(syscall_opendir);
-    result = opendir(fname);
-    END_PROFILE(syscall_opendir);
-    return result;
+	START_PROFILE(syscall_opendir);
+	result = opendir(fname);
+	END_PROFILE(syscall_opendir);
+	return result;
 }
 
 struct dirent *vfswrap_readdir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
-    struct dirent *result;
+	struct dirent *result;
 
-    START_PROFILE(syscall_readdir);
-    result = readdir(dirp);
-    END_PROFILE(syscall_readdir);
-    return result;
+	START_PROFILE(syscall_readdir);
+	result = readdir(dirp);
+	END_PROFILE(syscall_readdir);
+	return result;
 }
 
 int vfswrap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
@@ -133,71 +133,154 @@ int vfswrap_mkdir(vfs_handle_struct *handle, connection_struct *conn, const char
 			errno = saved_errno;
 	}
 
-    END_PROFILE(syscall_mkdir);
-    return result;
+	END_PROFILE(syscall_mkdir);
+	return result;
 }
 
 int vfswrap_rmdir(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_rmdir);
-    result = rmdir(path);
-    END_PROFILE(syscall_rmdir);
-    return result;
+	START_PROFILE(syscall_rmdir);
+	result = rmdir(path);
+	END_PROFILE(syscall_rmdir);
+	return result;
 }
 
 int vfswrap_closedir(vfs_handle_struct *handle, connection_struct *conn, DIR *dirp)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_closedir);
-    result = closedir(dirp);
-    END_PROFILE(syscall_closedir);
-    return result;
+	START_PROFILE(syscall_closedir);
+	result = closedir(dirp);
+	END_PROFILE(syscall_closedir);
+	return result;
 }
 
 /* File operations */
     
 int vfswrap_open(vfs_handle_struct *handle, connection_struct *conn, const char *fname, int flags, mode_t mode)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_open);
-    result = sys_open(fname, flags, mode);
-    END_PROFILE(syscall_open);
-    return result;
+	START_PROFILE(syscall_open);
+	result = sys_open(fname, flags, mode);
+	END_PROFILE(syscall_open);
+	return result;
 }
 
 int vfswrap_close(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_close);
+	START_PROFILE(syscall_close);
 
-    result = close(fd);
-    END_PROFILE(syscall_close);
-    return result;
+	result = close(fd);
+	END_PROFILE(syscall_close);
+	return result;
 }
 
 ssize_t vfswrap_read(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data, size_t n)
 {
-    ssize_t result;
+	ssize_t result;
 
-    START_PROFILE_BYTES(syscall_read, n);
-    result = sys_read(fd, data, n);
-    END_PROFILE(syscall_read);
-    return result;
+	START_PROFILE_BYTES(syscall_read, n);
+	result = sys_read(fd, data, n);
+	END_PROFILE(syscall_read);
+	return result;
+}
+
+ssize_t vfswrap_pread(vfs_handle_struct *handle, files_struct *fsp, int fd, void *data,
+			size_t n, SMB_OFF_T offset)
+{
+	ssize_t result;
+
+#if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
+	START_PROFILE_BYTES(syscall_pread, n);
+	result = sys_pread(fd, data, n, offset);
+	END_PROFILE(syscall_pread);
+ 
+	if (result == -1 && errno == ESPIPE) {
+		/* Maintain the fiction that pipes can be seeked (sought?) on. */
+		result = SMB_VFS_READ(fsp, fd, data, n);
+		fsp->pos = 0;
+	}
+
+#else /* HAVE_PREAD */
+	SMB_OFF_T   curr;
+	int lerrno;
+   
+	curr = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	if (curr == -1 && errno == ESPIPE) {
+		/* Maintain the fiction that pipes can be seeked (sought?) on. */
+		result = SMB_VFS_READ(fsp, fd, data, n);
+		fsp->pos = 0;
+		return result;
+	}
+
+	if (SMB_VFS_LSEEK(fsp, fd, offset, SEEK_SET) == -1) {
+		return -1;
+	}
+
+	errno = 0;
+	result = SMB_VFS_READ(fsp, fd, data, n);
+	lerrno = errno;
+
+	SMB_VFS_LSEEK(fsp, fd, curr, SEEK_SET);
+	errno = lerrno;
+
+#endif /* HAVE_PREAD */
+
+	return result;
 }
 
 ssize_t vfswrap_write(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data, size_t n)
 {
-    ssize_t result;
+	ssize_t result;
 
-    START_PROFILE_BYTES(syscall_write, n);
-    result = sys_write(fd, data, n);
-    END_PROFILE(syscall_write);
-    return result;
+	START_PROFILE_BYTES(syscall_write, n);
+	result = sys_write(fd, data, n);
+	END_PROFILE(syscall_write);
+	return result;
+}
+
+ssize_t vfswrap_pwrite(vfs_handle_struct *handle, files_struct *fsp, int fd, const void *data,
+			size_t n, SMB_OFF_T offset)
+{
+	ssize_t result;
+
+#if defined(HAVE_PWRITE) || defined(HAVE_PRWITE64)
+	START_PROFILE_BYTES(syscall_pwrite, n);
+	result = sys_pwrite(fd, data, n, offset);
+	END_PROFILE(syscall_pwrite);
+
+	if (result == -1 && errno == ESPIPE) {
+		/* Maintain the fiction that pipes can be sought on. */
+		result = SMB_VFS_WRITE(fsp, fd, data, n);
+	}
+
+#else /* HAVE_PWRITE */
+	SMB_OFF_T   curr;
+	int         lerrno;
+
+	curr = SMB_VFS_LSEEK(fsp, fd, 0, SEEK_CUR);
+	if (curr == -1) {
+		return -1;
+	}
+
+	if (SMB_VFS_LSEEK(fsp, fd, offset, SEEK_SET) == -1) {
+		return -1;
+	}
+
+	result = SMB_VFS_WRITE(fsp, fd, data, n);
+	lerrno = errno;
+
+	SMB_VFS_LSEEK(fsp, fd, curr, SEEK_SET);
+	errno = lerrno;
+
+#endif /* HAVE_PWRITE */
+
+	return result;
 }
 
 SMB_OFF_T vfswrap_lseek(vfs_handle_struct *handle, files_struct *fsp, int filedes, SMB_OFF_T offset, int whence)
@@ -340,13 +423,12 @@ int vfswrap_rename(vfs_handle_struct *handle, connection_struct *conn, const cha
 int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
 {
 #ifdef HAVE_FSYNC
-    int result;
+	int result;
 
-    START_PROFILE(syscall_fsync);
-
-    result = fsync(fd);
-    END_PROFILE(syscall_fsync);
-    return result;
+	START_PROFILE(syscall_fsync);
+	result = fsync(fd);
+	END_PROFILE(syscall_fsync);
+	return result;
 #else
 	return 0;
 #endif
@@ -354,49 +436,49 @@ int vfswrap_fsync(vfs_handle_struct *handle, files_struct *fsp, int fd)
 
 int vfswrap_stat(vfs_handle_struct *handle, connection_struct *conn, const char *fname, SMB_STRUCT_STAT *sbuf)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_stat);
-    result = sys_stat(fname, sbuf);
-    END_PROFILE(syscall_stat);
-    return result;
+	START_PROFILE(syscall_stat);
+	result = sys_stat(fname, sbuf);
+	END_PROFILE(syscall_stat);
+	return result;
 }
 
 int vfswrap_fstat(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_STRUCT_STAT *sbuf)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_fstat);
-    result = sys_fstat(fd, sbuf);
-    END_PROFILE(syscall_fstat);
-    return result;
+	START_PROFILE(syscall_fstat);
+	result = sys_fstat(fd, sbuf);
+	END_PROFILE(syscall_fstat);
+	return result;
 }
 
 int vfswrap_lstat(vfs_handle_struct *handle, connection_struct *conn, const char *path, SMB_STRUCT_STAT *sbuf)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_lstat);
-    result = sys_lstat(path, sbuf);
-    END_PROFILE(syscall_lstat);
-    return result;
+	START_PROFILE(syscall_lstat);
+	result = sys_lstat(path, sbuf);
+	END_PROFILE(syscall_lstat);
+	return result;
 }
 
 int vfswrap_unlink(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_unlink);
-    result = unlink(path);
-    END_PROFILE(syscall_unlink);
-    return result;
+	START_PROFILE(syscall_unlink);
+	result = unlink(path);
+	END_PROFILE(syscall_unlink);
+	return result;
 }
 
 int vfswrap_chmod(vfs_handle_struct *handle, connection_struct *conn, const char *path, mode_t mode)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_chmod);
+	START_PROFILE(syscall_chmod);
 
 	/*
 	 * We need to do this due to the fact that the default POSIX ACL
@@ -415,9 +497,9 @@ int vfswrap_chmod(vfs_handle_struct *handle, connection_struct *conn, const char
 		errno = saved_errno;
 	}
 
-    result = chmod(path, mode);
-    END_PROFILE(syscall_chmod);
-    return result;
+	result = chmod(path, mode);
+	END_PROFILE(syscall_chmod);
+	return result;
 }
 
 int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t mode)
@@ -455,58 +537,57 @@ int vfswrap_fchmod(vfs_handle_struct *handle, files_struct *fsp, int fd, mode_t 
 
 int vfswrap_chown(vfs_handle_struct *handle, connection_struct *conn, const char *path, uid_t uid, gid_t gid)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_chown);
-    result = sys_chown(path, uid, gid);
-    END_PROFILE(syscall_chown);
-    return result;
+	START_PROFILE(syscall_chown);
+	result = sys_chown(path, uid, gid);
+	END_PROFILE(syscall_chown);
+	return result;
 }
 
 int vfswrap_fchown(vfs_handle_struct *handle, files_struct *fsp, int fd, uid_t uid, gid_t gid)
 {
 #ifdef HAVE_FCHOWN
-    int result;
+	int result;
 
-    START_PROFILE(syscall_fchown);
-
-    result = fchown(fd, uid, gid);
-    END_PROFILE(syscall_fchown);
-    return result;
+	START_PROFILE(syscall_fchown);
+	result = fchown(fd, uid, gid);
+	END_PROFILE(syscall_fchown);
+	return result;
 #else
-    errno = ENOSYS;
-    return -1;
+	errno = ENOSYS;
+	return -1;
 #endif
 }
 
 int vfswrap_chdir(vfs_handle_struct *handle, connection_struct *conn, const char *path)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_chdir);
-    result = chdir(path);
-    END_PROFILE(syscall_chdir);
-    return result;
+	START_PROFILE(syscall_chdir);
+	result = chdir(path);
+	END_PROFILE(syscall_chdir);
+	return result;
 }
 
 char *vfswrap_getwd(vfs_handle_struct *handle, connection_struct *conn, char *path)
 {
-    char *result;
+	char *result;
 
-    START_PROFILE(syscall_getwd);
-    result = sys_getwd(path);
-    END_PROFILE(syscall_getwd);
-    return result;
+	START_PROFILE(syscall_getwd);
+	result = sys_getwd(path);
+	END_PROFILE(syscall_getwd);
+	return result;
 }
 
 int vfswrap_utime(vfs_handle_struct *handle, connection_struct *conn, const char *path, struct utimbuf *times)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_utime);
-    result = utime(path, times);
-    END_PROFILE(syscall_utime);
-    return result;
+	START_PROFILE(syscall_utime);
+	result = utime(path, times);
+	END_PROFILE(syscall_utime);
+	return result;
 }
 
 /*********************************************************************
@@ -643,33 +724,32 @@ int vfswrap_ftruncate(vfs_handle_struct *handle, files_struct *fsp, int fd, SMB_
 
 BOOL vfswrap_lock(vfs_handle_struct *handle, files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
-    BOOL result;
+	BOOL result;
 
-    START_PROFILE(syscall_fcntl_lock);
-
-    result =  fcntl_lock(fd, op, offset, count,type);
-    END_PROFILE(syscall_fcntl_lock);
-    return result;
+	START_PROFILE(syscall_fcntl_lock);
+	result =  fcntl_lock(fd, op, offset, count,type);
+	END_PROFILE(syscall_fcntl_lock);
+	return result;
 }
 
 int vfswrap_symlink(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_symlink);
-    result = sys_symlink(oldpath, newpath);
-    END_PROFILE(syscall_symlink);
-    return result;
+	START_PROFILE(syscall_symlink);
+	result = sys_symlink(oldpath, newpath);
+	END_PROFILE(syscall_symlink);
+	return result;
 }
 
 int vfswrap_readlink(vfs_handle_struct *handle, connection_struct *conn, const char *path, char *buf, size_t bufsiz)
 {
-    int result;
+	int result;
 
-    START_PROFILE(syscall_readlink);
-    result = sys_readlink(path, buf, bufsiz);
-    END_PROFILE(syscall_readlink);
-    return result;
+	START_PROFILE(syscall_readlink);
+	result = sys_readlink(path, buf, bufsiz);
+	END_PROFILE(syscall_readlink);
+	return result;
 }
 
 int vfswrap_link(vfs_handle_struct *handle, connection_struct *conn, const char *oldpath, const char *newpath)

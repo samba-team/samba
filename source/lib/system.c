@@ -100,6 +100,47 @@ ssize_t sys_write(int fd, const void *buf, size_t count)
 	return ret;
 }
 
+
+/*******************************************************************
+A pread wrapper that will deal with EINTR and 64-bit file offsets.
+********************************************************************/
+
+#if defined(HAVE_PREAD) || defined(HAVE_PREAD64)
+ssize_t sys_pread(int fd, void *buf, size_t count, SMB_OFF_T off)
+{
+	ssize_t ret;
+
+	do {
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PREAD64)
+		ret = pread64(fd, buf, count, off);
+#else
+		ret = pread(fd, buf, count, off);
+#endif
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+#endif
+
+/*******************************************************************
+A write wrapper that will deal with EINTR and 64-bit file offsets.
+********************************************************************/
+
+#if defined(HAVE_PWRITE) || defined(HAVE_PWRITE64)
+ssize_t sys_pwrite(int fd, const void *buf, size_t count, SMB_OFF_T off)
+{
+	ssize_t ret;
+
+	do {
+#if defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT) && defined(HAVE_OFF64_T) && defined(HAVE_PWRITE64)
+		ret = pwrite64(fd, buf, count, off);
+#else
+		ret = pwrite(fd, buf, count, off);
+#endif
+	} while (ret == -1 && errno == EINTR);
+	return ret;
+}
+#endif
+
 /*******************************************************************
 A send wrapper that will deal with EINTR.
 ********************************************************************/
