@@ -257,6 +257,14 @@ int get_window_size(int fd, struct winsize *);
 #define min(a,b) (((a)<(b))?(a):(b))
 #endif
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 /* Misc definitions for old syslogs */
