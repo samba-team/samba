@@ -316,4 +316,5 @@ AC_OUTPUT(Makefile 			\
 	appl/telnet/libtelnet/Makefile	\
 	appl/telnet/telnet/Makefile	\
 	appl/telnet/telnetd/Makefile	\
+	doc/Makefile			\
 )
