@@ -138,8 +138,51 @@ static NTSTATUS sldb_Search(struct ldapsrv_partition *partition, struct ldapsrv_
 	return ldapsrv_queue_reply(call, done_r);
 }
 
+static NTSTATUS sldb_Delete(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
+				     struct ldap_DeleteRequest *r)
+{
+	struct ldap_Result *delete_result;
+	struct ldapsrv_reply *delete_reply;
+	int ldb_ret;
+	struct samdb_context *samdb;
+	struct ldb_context *ldb;
+
+	DEBUG(0, ("sldb_Delete: %s\n", r->dn));
+
+	samdb = samdb_connect(call);
+	ldb = samdb->ldb;
+
+	ldb_set_alloc(ldb, talloc_ldb_alloc, samdb);
+	ldb_ret = ldb_delete(ldb, r->dn);
+
+	delete_reply = ldapsrv_init_reply(call, LDAP_TAG_DeleteResponse);
+
+	delete_result = &delete_reply->msg.r.DeleteResponse;
+	delete_result->dn = talloc_steal(delete_reply, r->dn);
+
+	if (ldb_ret != 0) {
+		/* currently we have no way to tell if there was an internal ldb error
+		 * or if the object was not found, return the most probable error
+		 */
+		delete_result->resultcode = LDAP_NO_SUCH_OBJECT;
+		delete_result->errormessage = ldb_errstring(ldb);
+		delete_result->referral = NULL;
+	} else {	
+		delete_result->resultcode = LDAP_SUCCESS;
+		delete_result->errormessage = NULL;
+		delete_result->referral = NULL;
+	}
+
+	ldapsrv_queue_reply(call, delete_reply);
+
+	talloc_free(samdb);
+
+	return NT_STATUS_OK;
+}
+
 static const struct ldapsrv_partition_ops sldb_ops = {
-	.Search		= sldb_Search
+	.Search		= sldb_Search,
+	.Delete		= sldb_Delete
 };
 
 const struct ldapsrv_partition_ops *ldapsrv_get_sldb_partition_ops(void)

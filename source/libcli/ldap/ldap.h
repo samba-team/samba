@@ -33,8 +33,8 @@ enum ldap_request_tag {
 	LDAP_TAG_ModifyResponse = 7,
 	LDAP_TAG_AddRequest = 8,
 	LDAP_TAG_AddResponse = 9,
-	LDAP_TAG_DelRequest = 10,
-	LDAP_TAG_DelResponse = 11,
+	LDAP_TAG_DeleteRequest = 10,
+	LDAP_TAG_DeleteResponse = 11,
 	LDAP_TAG_ModifyDNRequest = 12,
 	LDAP_TAG_ModifyDNResponse = 13,
 	LDAP_TAG_CompareRequest = 14,
@@ -53,6 +53,7 @@ enum ldap_auth_mechanism {
 enum ldap_result_code {
 	LDAP_SUCCESS = 0,
 	LDAP_SASL_BIND_IN_PROGRESS = 0x0e,
+	LDAP_NO_SUCH_OBJECT = 0x20,
 	LDAP_INVALID_CREDENTIALS = 0x31,
 	LDAP_OTHER = 0x50
 };
@@ -154,7 +155,7 @@ struct ldap_AddRequest {
 	struct ldap_attribute *attributes;
 };
 
-struct ldap_DelRequest {
+struct ldap_DeleteRequest {
 	const char *dn;
 };
 
@@ -198,8 +199,8 @@ union ldap_Request {
 	struct ldap_Result 		ModifyResponse;
 	struct ldap_AddRequest 		AddRequest;
 	struct ldap_Result 		AddResponse;
-	struct ldap_DelRequest 		DelRequest;
-	struct ldap_Result 		DelResponse;
+	struct ldap_DeleteRequest 	DeleteRequest;
+	struct ldap_Result 		DeleteResponse;
 	struct ldap_ModifyDNRequest 	ModifyDNRequest;
 	struct ldap_Result 		ModifyDNResponse;
 	struct ldap_CompareRequest 	CompareRequest;
