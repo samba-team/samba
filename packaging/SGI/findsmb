@@ -95,7 +95,7 @@ foreach $ip (@ipaddrs)		# loop through each IP address found
     @info = grep(/OS=/,@smb);
     $_ = @info[0];
     if ($_) {				# we found response
-      s/Domain=|OS=|Server=|\n//g;	# strip out descriptions to make line shorter
+      s/.*Domain=|OS=|Server=|\n//g;	# strip out descriptions to make line shorter
 
     } else {				# no OS= string in response (WIN95 client)
 
