@@ -24,7 +24,7 @@ The Microsoft Windows operating system has a number of features that impose spec
 to interoperability with operating system on which Samba is implemented. This chapter deals
 explicitly with the mechanisms Samba-3 (version 3.0.8 and later) uses to overcome one of the
 key challenges in the integration of Samba servers into an MS Windows networking environment.
-This chapter deals with IDentity MAPping (IDMAP) of Windows Security IDentifiers (SIDs)
+This chapter deals with Identify Mapping (IDMAP) of Windows Security Identifers (SIDs)
 to UNIX UIDs and GIDs.
 </para>
 
@@ -114,7 +114,7 @@ on Server Types and Security Modes</link>.
 				<para>
 				For example, if an incoming SessionSetupAndX request is owned by the user
 				<constant>BERYLIUM\WambatW</constant>, a system call will be made to look up
-				the user <constant>WambatW</constant> in the <filename>/etc/paswwd</filename>
+				the user <constant>WambatW</constant> in the <filename>/etc/passwd</filename>
 				file.
 				</para>
 
@@ -157,7 +157,7 @@ on Server Types and Security Modes</link>.
 				<para>
 				Winbind is a great convenience in this situation. All that is needed is a range of
 				UID numbers and GID numbers that can be defined in the &smb.conf; file, the
-				<filename>/etc/nsswitch.conf</filename> file is configued to use <command>winbind</command>
+				<filename>/etc/nsswitch.conf</filename> file is configured to use <command>winbind</command>
 				which does all the difficult work of mapping incoming SIDs to appropriate UIDs and GIDs.
 				The SIDs are allocated a UID/GID in the order in which winbind receives them.
 				</para>
@@ -216,7 +216,7 @@ on Server Types and Security Modes</link>.
 				version 3.5 of later to extend the ADS schema so it maintains UNIX account credentials.
 				Where the ADS schema is extended a Microsoft Management Console (MMC) snap-in in also
 				installed to permit the UNIX credentials to be set and managed from the ADS User and Computer
-				managment tool. Each account must be separately UNIX enabled before the UID and GID data can
+				management tool. Each account must be separately UNIX enabled before the UID and GID data can
 				be used by Samba.`
 				</para>
 			</listitem>
@@ -229,7 +229,7 @@ on Server Types and Security Modes</link>.
 				for a number of sites that are committed to use of MS ADS, who do not want to apply
 				an ADS schema extension, and who do not wish to install an LDAP directory server just for
 				the purpose of maintaining an IDMAP table. If you have a single ADS domain (not a forest of
-				domains, and not mutiple domain trees) and you want a simple cookie-cutter solution to the
+				domains, and not multiple domain trees) and you want a simple cookie-cutter solution to the
 				IDMAP table problem, then IDMAP_RID is an obvious choice.
 				</para>
 
@@ -255,12 +255,38 @@ on Server Types and Security Modes</link>.
 
 	<para>
 	Microsoft Windows domain security systems generate the user and group security identifier (SID) as part
-	of the process of creation of an account. Windows does not have a concept of a UID or a GID.
+	of the process of creation of an account. Windows does not have a concept of the UNIX UID or a GID, rather
+	it has its own type of security descriptor. When Samba is used as a Domain Controller, it provides a method
+	of producing a unique SID for each user and group. Samba generates a machine and a domain SID to which it
+	adds a relative identifier (RID) that is calculated algorithmically from a base value that can be specified
+	in the &smb.conf; file, plus twice (2X) the UID or GID.
+	</para>
+
+	<para>
+	For example, a user has a UID of 4321, and the algorithmic RID base has a value of 1000, the RID will
+	be <constant>1000 + (2 x 4321) = 9642</constant>. Thus, if the domain SID is
+	<constant>S-1-5-21-89238497-92787123-12341112</constant>, the resulting SID is
+	<constant>S-1-5-21-89238497-92787123-12341112-9642</constant>.
+	</para>
+
+	<para>
+	The foregoing type SID is produced by Samba as an automatic function and is either produced on-the-fly
+	(as in the case when using a <parameter>passdb backend = [tdbsam | smbpasswd]</parameter>, or may be stored
+	as a permanent part of an account in an LDAP based ldapsam.
 	</para>
 
 	<para>
 	MS Active Directory Server (ADS) uses a directory schema that can be extended to accommodate additional
-	account attributes such as UIDs and GIDs.
+	account attributes such as UIDs and GIDs. The installation of Microsoft Service for UNIX 3.5 will expand
+	the normal ADS schema to include UNIX account attributes. These must of course be managed separately
+	through a snap-in module to the normal ADS account management MMC interface.
+	</para>
+
+	<para>
+	Security identifiers used within a domain must be managed to avoid conflict and to preserve itegrity.
+	In an NT4 domain context that PDC manages the distribution of all security credentials to the backup
+	domain controllers. At this time the only passdb backend for a Samba domain controller that is suitable
+	for such information is an LDAP backend.
 	</para>
 
 	</sect2>
@@ -269,6 +295,16 @@ on Server Types and Security Modes</link>.
 	<title>Backup Domain Controller</title>
 
 	<para>
+	Backup Domain Controllers (BDCs) have read-only access to security credentials that are stored in LDAP.
+	Changes in user or group account information are passed by the BDC to the PDC. Only the PDC can write
+	changes to the directory.
+	</para>
+
+	<para>
+	IDMAP information can however be written directly to the LDAP server so long as all domain controllers
+	have access to the master (writable) LDAP server. Samba-3 at this time does not handle LDAP redirects
+	in the IDMAP backend. This means that it is is unsafe to use a slave (replicate) LDAP server with
+	the IDMAP facility.
 	</para>
 
 	</sect2>
