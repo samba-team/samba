@@ -94,8 +94,11 @@ static BOOL test_one(struct cli_state *cli, const char *name)
 		}
 		free(data.dptr);
 	} else {
+		TDB_DATA namedata;
 		/* store it for later */
-		tdb_store_by_string(tdb, shortname, name, strlen(name)+1);
+		namedata.dptr = name;
+		namedata.dsize = strlen(name)+1;
+		tdb_store_by_string(tdb, shortname, namedata, TDB_REPLACE);
 	}
 
 	return True;
