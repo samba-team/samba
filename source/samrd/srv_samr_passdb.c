@@ -2473,3 +2473,12 @@ uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 	return NT_STATUS_NO_SUCH_DOMAIN;
 }
 
+BOOL pwdbsam_initialise(void)
+{
+	return	initialise_password_db() &&
+		initialise_sam_password_db() &&
+		initialise_passgrp_db() &&
+		initialise_group_db() &&
+		initialise_alias_db() &&
+		initialise_builtin_db();
+}

@@ -43,36 +43,15 @@ static void auth_init(rpcsrv_struct *l)
 static void service_init(char* service_name)
 {
 	add_msrpc_command_processor( pipe_name, service_name, api_netlog_rpc );
-	if (!pwdb_initialise(True) || !initialise_password_db())
+	if (!pwdb_initialise(True))
 	{
 		exit(-1);
 	}
 
-	if(!initialise_sam_password_db())
+	if(!pwdbsam_initialise())
 	{
 		exit(-1);
 	}
-
-	if(!initialise_passgrp_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_group_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_alias_db())
-	{
-		exit(-1);
-	}
-
-	if(!initialise_builtin_db())
-	{
-		exit(-1);
-	}
-
 	if (!cred_init_db())
 	{
 		exit(-1);

@@ -78,7 +78,7 @@ BOOL initialise_password_db(void)
   pwdb_ops = file_initialise_password_db();
 #endif 
 
-  return (pwdb_ops != NULL);
+	return pwdb_ops != NULL;
 }
 
 /*

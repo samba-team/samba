@@ -3513,14 +3513,6 @@ void readline_init(void);
 
 msrpc_service_fns *get_service_fns(void);
 
-/*The following definitions come from  samrd/samrnt5ldapd.c  */
-
-msrpc_service_fns *get_service_fns(void);
-
-/*The following definitions come from  samrd/samrtdbd.c  */
-
-msrpc_service_fns *get_service_fns(void);
-
 /*The following definitions come from  samrd/srv_samr_als_tdb.c  */
 
 uint32 _samr_add_aliasmem(const POLICY_HND *alias_pol, const DOM_SID *sid);
@@ -3679,6 +3671,7 @@ BOOL get_nt5ldapsid(struct policy_cache *cache, const POLICY_HND *hnd,
 				LDAPDB **hds, DOM_SID *sid);
 uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
 				POLICY_HND *pol, uint32 access_mask, uint32 rid);
+BOOL pwdbsam_initialise(void);
 
 /*The following definitions come from  samrd/srv_samr_passdb.c  */
 
@@ -3805,6 +3798,7 @@ uint32 _samr_open_group(const POLICY_HND *domain_pol, uint32 access_mask,
 uint32 _samr_lookup_domain(const POLICY_HND *connect_pol,
 				const UNISTR2 *uni_domain,
 				DOM_SID *dom_sid);
+BOOL pwdbsam_initialise(void);
 
 /*The following definitions come from  samrd/srv_samr_sam_tdb.c  */
 
@@ -3862,6 +3856,7 @@ uint32 samr_open_by_tdbrid( TDB_CONTEXT *tdb,
 
 uint32 initialise_dom_tdb(const DOM_SID *sid);
 uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid);
+BOOL pwdbsam_initialise(void);
 
 /*The following definitions come from  samrd/srv_samr_usr_nt5ldap.c  */
 

@@ -243,6 +243,17 @@ BOOL smb_safe_err_msg(uint8 class, uint32 num, char *ret, size_t len);
 BOOL smb_safe_errstr(char *inbuf, char *msg, size_t len);
 char *smb_errstr(char *inbuf);
 
+/*The following definitions come from  passdb/smbpassfile.c  */
+
+BOOL trust_password_lock( char *domain, char *name, BOOL update);
+BOOL trust_password_unlock(void);
+BOOL trust_password_delete( char *domain, char *name );
+BOOL get_trust_account_password( uchar *ret_pwd, time_t *pass_last_set_time);
+BOOL set_trust_account_password( uchar *md4_new_pwd);
+BOOL trust_get_passwd( uchar trust_passwd[16],
+				const char *domain, const char *myname);
+BOOL create_trust_account_file(char *domain, char *name, uchar pass[16]);
+
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
 BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,

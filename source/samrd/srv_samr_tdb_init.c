@@ -134,3 +134,8 @@ uint32 initialise_sam_tdb( const char* sam_name, const DOM_SID *sam_sid)
 	return init_dom_tdbs(sam_sid);
 }
 
+BOOL pwdbsam_initialise(void)
+{
+	return initialise_sam_tdb(global_sam_name, &global_sam_sid) ==
+	       NT_STATUS_NOPROBLEMO;
+}

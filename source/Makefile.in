@@ -131,6 +131,9 @@ SMBLIB = bin/libsmb.la
 NMBLIB = bin/libnmb.la
 MSRPCLIB = bin/libmsrpc.la
 SMBPWLIB = bin/libsmbpw.la
+SAMRPASSLIB = bin/libsamrpass.la
+SAMRTDBLIB = bin/libsamrtdb.la
+SAMRNT5LDAPLIB = bin/libsamrnt5ldap.la
 
 SAMBA_LIBS = $(MSRPCLIB) $(SMBLIB) $(NMBLIB) $(SAMBALIB)
 
@@ -169,6 +172,7 @@ LIBSMB_OBJ = libsmb/clientgen.o \
              libsmb/smberr.o libsmb/credentials.o \
 		libsmb/pwd_cache.o \
 	     lib/crc32.o lib/md5.o lib/hmacmd5.o \
+		passdb/smbpassfile.o \
                  rpc_parse/parse_creds.o \
                 rpc_parse/parse_net.o \
 		 rpc_parse/parse_ntlmssp.o rpc_parse/parse_prs.o \
@@ -236,7 +240,7 @@ GROUPDB_OBJ = groupdb/groupdb.o groupdb/aliasdb.o groupdb/builtindb.o \
 
 SAMPASSDB_OBJ = passdb/sampassdb.o passdb/sampass.o passdb/sampassldap.o passdb/mysqlsampass.o passdb/sampassnt5ldap.o
 
-PASSDB_OBJ = passdb/passdb.o passdb/smbpassfile.o passdb/smbpass.o \
+PASSDB_OBJ = passdb/passdb.o passdb/smbpass.o \
              passdb/pass_check.o passdb/ldap.o passdb/ldapdb.o passdb/nt5ldap.o passdb/nispass.o \
              passdb/smbpasschange.o passdb/mysqlpass.o passdb/smbpassnt5ldap.o \
              lib/util_pwdb.o lib/domain_namemap.o 
@@ -255,7 +259,6 @@ SMBD_OBJ1 = smbd/server.o smbd/files.o smbd/connection.o \
 	    smbd/process.o smbd/oplock.o smbd/service.o smbd/error.o smbd/vfs.o \
 	    smbd/vfs-wrap.o smbd/dfs.o \
 		smbd/challenge.o \
-		passdb/smbpassfile.o \
 		passdb/pass_check.o \
 		lib/util_pwdb.o
 
@@ -267,21 +270,17 @@ MSRPCD_OBJ = msrpc/msrpcd.o \
 		lib/set_uid.o
 
 BROWSERD_OBJ1 = browserd/browserd.o \
-		passdb/smbpassfile.o \
 		rpc_server/srv_brs.o
 
 WKSSVCD_OBJ1 = wkssvcd/wkssvcd.o \
-		passdb/smbpassfile.o \
 		rpc_server/srv_wkssvc.o \
 		wkssvcd/srv_wkssvc_nt.o
 
 SRVSVCD_OBJ1 = srvsvcd/srvsvcd.o \
 		srvsvcd/srv_srvsvc_nt.o \
-		passdb/smbpassfile.o \
 		rpc_server/srv_srvsvc.o
 
 WINREGD_OBJ1 = winregd/winregd.o \
-		passdb/smbpassfile.o \
 		rpc_server/srv_reg.o
 
 NETLOGOND_OBJ1 = netlogond/netlogond.o \
@@ -290,15 +289,9 @@ NETLOGOND_OBJ1 = netlogond/netlogond.o \
 		rpc_server/srv_netlog.o \
 		rpc_server/srv_pipe_netsec.o \
 		rpc_server/srv_lookup.o \
-		samrd/srv_samr_passdb.o \
-		lib/passcheck.o \
-		smbd/chgpasswd.o
+		lib/passcheck.o
 
-SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
-		rpc_server/srv_pipe_ntlmssp.o \
-		rpc_server/srv_samr.o \
-		passdb/smbpassfile.o \
-		lib/sursalgdomonly.o \
+SAMRTDBLIB_OBJ = lib/sursalgdomonly.o \
 		lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_tdb_init.o \
 		samrd/srv_samr_dom_tdb.o \
@@ -308,28 +301,7 @@ SAMRTDBD_OBJ1 = samrd/samrtdbd.o \
 		samrd/srv_samr_als_tdb.o \
 		samrd/srv_samr_tdb.o
 
-NETLOGONTDBD_OBJ1 = netlogond/netlogond.o \
-		netlogond/creds_db.o \
-		netlogond/srv_netlogon_nt.o \
-		rpc_server/srv_netlog.o \
-		rpc_server/srv_pipe_netsec.o \
-		rpc_server/srv_lookup.o \
-		lib/passcheck.o \
-		smbd/chgpasswd.o \
-		samrd/srv_samr_tdb_init.o \
-		samrd/srv_samr_dom_tdb.o \
-		samrd/srv_samr_sam_tdb.o \
-		samrd/srv_samr_usr_tdb.o \
-		samrd/srv_samr_grp_tdb.o \
-		samrd/srv_samr_als_tdb.o \
-		samrd/srv_samr_tdb.o
-
-
-SAMRNT5LDAPD_OBJ1 = samrd/samrnt5ldapd.o \
-		rpc_server/srv_pipe_ntlmssp.o \
-		rpc_server/srv_samr.o \
-		passdb/smbpassfile.o \
-		lib/sursalgdomonly.o \
+SAMRNT5LDAPLIB_OBJ = lib/sursalgdomonly.o \
 		lib/sursalgnt5ldap.o \
 		lib/util_pwdb.o lib/domain_namemap.o \
 		samrd/srv_samr_usr_nt5ldap.o \
@@ -339,27 +311,25 @@ SAMRNT5LDAPD_OBJ1 = samrd/samrnt5ldapd.o \
 #		samrd/srv_samr_grp_nt5ldap.o \
 #		samrd/srv_samr_als_nt5ldap.o \
 
-SAMRD_OBJ1 = samrd/samrd.o \
-		rpc_server/srv_lookup.o \
-		rpc_server/srv_pipe_ntlmssp.o \
-		rpc_server/srv_samr.o \
+SAMRPASSLIB_OBJ = rpc_server/srv_lookup.o \
 		samrd/srv_samr_passdb.o \
 		smbd/chgpasswd.o
 
+SAMRD_OBJ1 = samrd/samrd.o \
+		rpc_server/srv_pipe_ntlmssp.o \
+		rpc_server/srv_samr.o
+
 SVCCTLD_OBJ1 = svcctld/svcctld.o \
-		passdb/smbpassfile.o \
 		rpc_server/srv_svcctl.o
 
 LSARPCD_OBJ1 = lsarpcd/lsarpcd.o \
 		lsarpcd/srv_lsa.o \
 		lsarpcd/srv_lsa_samdb.o \
-		rpc_server/srv_lookup.o \
-		passdb/smbpassfile.o
+		rpc_server/srv_lookup.o
 
 SPOOLSSD_OBJ1 = spoolssd/spoolssd.o \
 		rpc_server/srv_spoolss.o \
 		spoolssd/srv_spoolss_nt.o \
-		passdb/smbpassfile.o \
 		printing/nt_printing.o 
 
 SMBD_OBJ = $(SMBD_OBJ1) \
@@ -409,7 +379,12 @@ NETLOGOND_OBJ = $(MSRPCD_OBJ) $(NETLOGOND_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(LIBSTATUS_OBJ) $(PROFILE_OBJ) 
-NETLOGOND_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+
+NETLOGOND_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRPASSLIB)
+
+NETLOGONTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SIDDB_OBJ) $(SAMRTDBLIB)  
+
+NETLOGONNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)  
 
 SAMRTDBD_OBJ = $(MSRPCD_OBJ) $(SAMRTDBD_OBJ1) \
            $(RPC_SRVUTIL_OBJ) \
@@ -428,7 +403,12 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
            $(LOCKING_OBJ) \
            $(SIDDB_OBJ) \
 		$(PROFILE_OBJ) 
-SAMRD_LIBS = $(SAMBA_LIBS) $(SMBPWLIB) $(UBIQXLIB)
+
+SAMRD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRPASSLIB)
+
+SAMRTDBD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBLIB)
+
+SAMRNT5LDAPD_LIBS = $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRNT5LDAPLIB)
 
 NMBD_OBJ1 = nmbd/asyncdns.o nmbd/nmbd.o nmbd/nmbd_become_dmb.o \
             nmbd/nmbd_become_lmb.o nmbd/nmbd_browserdb.o \
@@ -549,6 +529,9 @@ RPCTORTURE_OBJ = utils/rpctorture.o \
 PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(MSRPCD_OBJ) $(SVCCTLD_OBJ1) $(WINREGD_OBJ1) \
 		$(SAMRD_OBJ1) \
+		$(SAMRTDBLIB_OBJ) \
+		$(SAMRNT5LDAPLIB_OBJ) \
+		$(SAMRPASSLIB_OBJ) \
 		$(SAMRTDBD_OBJ1) \
 		$(SAMRNT5LDAPD_OBJ1) \
 		$(SRVSVCD_OBJ1) $(WKSSVCD_OBJ1) $(BROWSERD_OBJ1) \
@@ -559,11 +542,16 @@ PROTO_OBJ =  $(LIB_OBJ) $(LIBNMB_OBJ) $(PARAM_OBJ) \
 		$(GROUPDB_OBJ) $(PASSDB_OBJ) $(SAMPASSDB_OBJ) \
 		$(SMBPASSWD_OBJ) $(SIDDB_OBJ) \
 		$(RPC_SRVUTIL_OBJ) \
-		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ2) \
-		$(PASSDB_OBJ) $(SAMPASSDB_OBJ) $(GROUPDB_OBJ)
+		$(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ2)
 
 SMBWRAPPERPICOBJS = $(SMBWRAPPER_OBJ:.o=.po)
 SMBWRAPPERPICOBJS32 = $(SMBWRAPPER_OBJ:.o=.po32)
+
+LIBSAMRTDB_LTOBJS = $(SAMRTDBLIB_OBJ:.o=.lo) 
+
+LIBSAMRPASS_LTOBJS = $(SAMRPASSLIB_OBJ:.o=.lo) 
+
+LIBSAMRNT5LDAP_LTOBJS = $(SAMRNT5LDAPLIB_OBJ:.o=.lo) 
 
 LIBSMBPW_LTOBJS = $(GROUPDB_OBJ:.o=.lo) $(SAMPASSDB_OBJ:.o=.lo) \
 		$(PASSDB_OBJ:.o=.lo)
@@ -583,6 +571,12 @@ LIBMSRPC_LTOBJS = $(RPC_CLIENT_OBJ:.o=.lo) $(RPC_PARSE_OBJ:.o=.lo)
 ######################################################################
 
 all : CHECK $(SPROGS) $(PROGS) 
+
+libsamrpass : CHECK $(SAMRPASSLIB)
+
+libsamrtdb : CHECK $(SAMRTDBLIB)
+
+libsamrnt5ldap : CHECK $(SAMRNT5LDAPLIB)
 
 libnmb : CHECK $(NMBLIB)
 
@@ -714,6 +708,21 @@ bin/libsamba.la: $(LIBSAMBA_LTOBJS) bin/.dummy
 	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
 	  $(LIBSAMBA_LTOBJS)
 
+bin/libsamrpass.la: $(LIBSAMRPASS_LTOBJS) bin/.dummy
+	@echo Linking shared library $@
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSAMRPASS_LTOBJS)
+
+bin/libsamrnt5ldap.la: $(LIBSAMRNT5LDAP_LTOBJS) bin/.dummy
+	@echo Linking shared library $@
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSAMRNT5LDAP_LTOBJS)
+
+bin/libsamrtdb.la: $(LIBSAMRTDB_LTOBJS) bin/.dummy
+	@echo Linking shared library $@
+	@$(LINK) -o $@ -rpath $(LIBDIR) -version-info 0:1:0 \
+	  $(LIBSAMRTDB_LTOBJS)
+
 bin/smbd: $(SMBD_LIBS) $(SMBD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SMBD_OBJ) $(SMBD_LIBS) $(LIBS)
@@ -750,17 +759,25 @@ bin/netlogond: $(NETLOGOND_LIBS) $(NETLOGOND_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(NETLOGOND_LIBS) $(LIBS)
 
+bin/netlogontdbd: $(NETLOGONTDBD_LIBS) $(NETLOGOND_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(NETLOGONTDBD_LIBS) $(LIBS)
+
+bin/netlogonnt5ldapd: $(NETLOGONNT5LDAPD_LIBS) $(NETLOGOND_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(LINK) -o $@ $(NETLOGOND_OBJ) $(NETLOGONNT5LDAPD_LIBS) $(LIBS)
+
 bin/samrd: $(SAMRD_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMRD_LIBS) $(LIBS)
 
-bin/samrtdbd: $(SAMBA_LIBS) $(UBIQXLIB) $(SAMRTDBD_OBJ) bin/.dummy
+bin/samrtdbd: $(SAMRTDBD_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMRTDBD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(LIBS)
+	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMRTDBD_LIBS) $(LIBS)
 
-bin/samrnt5ldapd: $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(SAMRNT5LDAPD_OBJ) bin/.dummy
+bin/samrnt5ldapd: $(SAMRNT5LDAPD_LIBS) $(SAMRD_OBJ) bin/.dummy
 	@echo Linking $@
-	@$(LINK) -o $@ $(SAMRNT5LDAPD_OBJ) $(SAMBA_LIBS) $(UBIQXLIB) $(SMBPWLIB) $(LIBS)
+	@$(LINK) -o $@ $(SAMRD_OBJ) $(SAMRNT5LDAPD_LIBS) $(LIBS)
 
 bin/nmbd: $(NMBD_LIBS) $(NMBD_OBJ) bin/.dummy
 	@echo Linking $@

@@ -323,3 +323,8 @@ uint32 samr_open_by_nt5ldaprid( LDAPDB *hds,
 	return 0x0;
 }
 
+BOOL pwdbsam_initialise(void)
+{
+	DEBUG(0,("TODO: initialise SAM NT5 LDAP Database\n"));
+	return True;
+}
