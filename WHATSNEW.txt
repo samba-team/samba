@@ -113,8 +113,8 @@ details
     groups (bug #109).
 13) Remove idmap_XX_to_XX calls from smbd.  Move back to the the
     winbind_XXX and local_XXX calls used in 2.2.
-14) All uid/gid allocation must involve winbindd now
-    (we no attempt to map unknown SIDs to a UNIX identify).
+14) All uid/gid allocation must involve winbindd now (we do not 
+    attempt to map unknown SIDs to a UNIX identify).
 15) Add 'winbind trusted domains only' parameter to force a domain
     member.  The server to use matching users names from /etc/passwd 
     for its domain   (needed for domain member of a Samba domain).
@@ -259,27 +259,27 @@ to winbindd_idmap.tdb.  To do this:
     once)
 2)  build tdbtool by executing 'make tdbtool' in the source/tdb/ 
     directory
-3)  run:
+3)  run: (note that 'tdb>' is the tool's prompt for input)
 
        root# ./tdbtool /usr/local/samba/private/passdb.tdb
-       tdb > show RID_COUNTER
+       tdb> show RID_COUNTER
        key 12 bytes
        RID_COUNTER
        data 4 bytes
        [000] 0A 52 00 00                                       .R.
 
-       tdb > move RID_COUNTER /usr/local/samba/var/locks/winbindd_idmap.tdb
+       tdb> move RID_COUNTER /usr/local/samba/var/locks/winbindd_idmap.tdb
        ....
        record moved
-
-If the RID_COUNTER record does not exist, then these instructions are
-unneccessary and the new RID_COUNTER record will be correctly generated
-if needed.  
 
 If you are using 'passdb backend = ldapsam', it will be necessary to 
 store idmap entries in the LDAP directory as well (i.e. idmap backend 
 = ldap).  Refer to the 'net idmap' command for more information on 
 migrating SID<->UNIX id mappings from one backend to another.
+
+If the RID_COUNTER record does not exist, then these instructions are
+unneccessary and the new RID_COUNTER record will be correctly generated
+if needed.  
 
 
 
