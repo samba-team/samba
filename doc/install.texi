@@ -80,4 +80,7 @@ Enables hesiod support in push.
 Add support for using netinfo to lookup configuration information.
 Probably only useful (and working) on NextStep/Mac OS X.
 
+@item @kbd{--without-ipv6}
+Disable the IPv6 support.
+
 @end table
