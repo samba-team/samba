@@ -70,8 +70,8 @@ static NTSTATUS print_ioctl(struct smbsrv_request *req, union smb_ioctl *io)
 
 		p = io->ioctl.out.blob.data;
 		SSVAL(p,0, 1 /* REWRITE: fsp->rap_print_jobid */);
-		push_string(NULL, p+2, lp_netbios_name(), 15, STR_TERMINATE|STR_ASCII);
-		push_string(NULL, p+18, lp_servicename(req->tcon->service), 13, STR_TERMINATE|STR_ASCII);
+		push_string(p+2, lp_netbios_name(), 15, STR_TERMINATE|STR_ASCII);
+		push_string(p+18, lp_servicename(req->tcon->service), 13, STR_TERMINATE|STR_ASCII);
 		return NT_STATUS_OK;
 	}
 

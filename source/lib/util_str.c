@@ -1,8 +1,10 @@
 /* 
    Unix SMB/CIFS implementation.
    Samba utility functions
+   
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Simo Sorce      2001-2002
+   Copyright (C) Martin Pool     2003
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,6 +22,11 @@
 */
 
 #include "includes.h"
+
+/**
+ * @file
+ * @brief String utilities.
+ **/
 
 /**
  * Get the next token from a string, return False if none found.
@@ -120,19 +127,20 @@ char **toktocliplist(const char *ptr, int *ctok, const char *sep)
 **/
 static int StrCaseCmp_slow(const char *s1, const char *s2)
 {
-	smb_ucs2_t *u1, *u2;
+	smb_ucs2_t *u1 = NULL;
+	smb_ucs2_t *u2;
 	int ret;
 
-	if (convert_string_allocate(CH_UNIX, CH_UTF16, s1, strlen(s1)+1, &u1) == -1 ||
-	    convert_string_allocate(CH_UNIX, CH_UTF16, s2, strlen(s2)+1, &u2) == -1) {
+	if (convert_string_talloc(NULL, CH_UNIX, CH_UTF16, s1, strlen(s1)+1, (void **)&u1) == -1 ||
+	    convert_string_talloc(u1, CH_UNIX, CH_UTF16, s2, strlen(s2)+1, (void **)&u2) == -1) {
+		talloc_free(u1);
 		/* fallback to a simple comparison */
 		return strcasecmp(s1, s2);
 	}
 
 	ret = strcasecmp_w(u1, u2);
 
-	free(u1);
-	free(u2);
+	talloc_free(u1);
 
 	return ret;
 }
@@ -221,21 +229,6 @@ int strwicmp(const char *psz1, const char *psz2)
 }
 
 /**
- Convert a string to upper case, but don't modify it.
-**/
-
-char *strupper_talloc(TALLOC_CTX *mem_ctx, const char *s)
-{
-	char *str;
-
-	str = talloc_strdup(mem_ctx, s);
-	strupper(str);
-
-	return str;
-}
-
-
-/**
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
@@ -243,36 +236,10 @@ char *strupper_talloc(TALLOC_CTX *mem_ctx, const char *s)
 void string_replace(char *s,char oldc,char newc)
 {
 	if (strchr(s, oldc)) {
-		push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+		push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 		string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-		pull_ucs2(NULL, s, tmpbuf, strlen(s)+1, sizeof(tmpbuf), STR_TERMINATE);
+		pull_ucs2(s, tmpbuf, strlen(s)+1, sizeof(tmpbuf), STR_TERMINATE);
 	}
-}
-
-/**
- Count the number of characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
-
-size_t str_charnum(const char *s)
-{
-	uint16_t tmpbuf2[sizeof(pstring)];
-	push_ucs2(NULL, tmpbuf2,s, sizeof(tmpbuf2), STR_TERMINATE);
-	return strlen_w(tmpbuf2);
-}
-
-/**
- Count the number of characters in a string. Normally this will
- be the same as the number of bytes in a string for single byte strings,
- but will be different for multibyte.
-**/
-
-size_t str_ascii_charnum(const char *s)
-{
-	pstring tmpbuf2;
-	push_ascii(tmpbuf2, s, sizeof(tmpbuf2), STR_TERMINATE);
-	return strlen(tmpbuf2);
 }
 
 /**
@@ -297,7 +264,9 @@ BOOL trim_string(char *s,const char *front,const char *back)
 
 	if (front_len) {
 		while (len && strncmp(s, front, front_len)==0) {
-			memcpy(s, s+front_len, (len-front_len)+1);
+			/* Must use memmove here as src & dest can
+			 * easily overlap. Found by valgrind. JRA. */
+			memmove(s, s+front_len, (len-front_len)+1);
 			len -= front_len;
 			ret=True;
 		}
@@ -320,7 +289,7 @@ BOOL trim_string(char *s,const char *front,const char *back)
 BOOL strhasupper(const char *s)
 {
 	smb_ucs2_t *ptr;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	for(ptr=tmpbuf;*ptr;ptr++)
 		if(isupper_w(*ptr))
 			return True;
@@ -334,7 +303,7 @@ BOOL strhasupper(const char *s)
 BOOL strhaslower(const char *s)
 {
 	smb_ucs2_t *ptr;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
+	push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
 	for(ptr=tmpbuf;*ptr;ptr++)
 		if(islower_w(*ptr))
 			return True;
@@ -349,10 +318,17 @@ size_t count_chars(const char *s,char c)
 {
 	smb_ucs2_t *ptr;
 	int count;
-	push_ucs2(NULL, tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(count=0,ptr=tmpbuf;*ptr;ptr++)
+	smb_ucs2_t *alloc_tmpbuf = NULL;
+
+	if (push_ucs2_talloc(NULL, &alloc_tmpbuf, s) == (size_t)-1) {
+		return 0;
+	}
+
+	for(count=0,ptr=alloc_tmpbuf;*ptr;ptr++)
 		if(*ptr==UCS2_CHAR(c))
 			count++;
+
+	talloc_free(alloc_tmpbuf);
 	return(count);
 }
 
@@ -505,6 +481,78 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 	return(dest);
 }
 
+
+/**
+ Routine to get hex characters and turn them into a 16 byte array.
+ the array can be variable length, and any non-hex-numeric
+ characters are skipped.  "0xnn" or "0Xnn" is specially catered
+ for.
+
+ valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
+
+**/
+
+size_t strhex_to_str(char *p, size_t len, const char *strhex)
+{
+	size_t i;
+	size_t num_chars = 0;
+	uint8_t   lonybble, hinybble;
+	const char     *hexchars = "0123456789ABCDEF";
+	char           *p1 = NULL, *p2 = NULL;
+
+	for (i = 0; i < len && strhex[i] != 0; i++) {
+		if (strncasecmp(hexchars, "0x", 2) == 0) {
+			i++; /* skip two chars */
+			continue;
+		}
+
+		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
+			break;
+
+		i++; /* next hex digit */
+
+		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
+			break;
+
+		/* get the two nybbles */
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		p[num_chars] = (hinybble << 4) | lonybble;
+		num_chars++;
+
+		p1 = NULL;
+		p2 = NULL;
+	}
+	return num_chars;
+}
+
+DATA_BLOB strhex_to_data_blob(const char *strhex) 
+{
+	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
+
+	ret_blob.length = strhex_to_str(ret_blob.data, 	
+					strlen(strhex), 
+					strhex);
+
+	return ret_blob;
+}
+
+/**
+ * Routine to print a buffer as HEX digits, into an allocated string.
+ */
+
+void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
+{
+	int i;
+	char *hex_buffer;
+
+	*out_hex_buffer = smb_xmalloc((len*2)+1);
+	hex_buffer = *out_hex_buffer;
+
+	for (i = 0; i < len; i++)
+		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
+}
 
 /**
  Check if a string is part of a list.
@@ -688,7 +736,7 @@ char *strchr_m(const char *s, char c)
 	pstring s2;
 	smb_ucs2_t *p;
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
 	p = strchr_w(ws, UCS2_CHAR(c));
 	if (!p)
 		return NULL;
@@ -703,7 +751,7 @@ char *strrchr_m(const char *s, char c)
 	pstring s2;
 	smb_ucs2_t *p;
 
-	push_ucs2(NULL, ws, s, sizeof(ws), STR_TERMINATE);
+	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
 	p = strrchr_w(ws, UCS2_CHAR(c));
 	if (!p)
 		return NULL;
@@ -713,11 +761,54 @@ char *strrchr_m(const char *s, char c)
 }
 
 /**
+ Convert a string to lower case, allocated with talloc
+**/
+
+char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
+{
+	size_t size;
+	smb_ucs2_t *buffer;
+	char *dest;
+
+	size = push_ucs2_talloc(ctx, &buffer, src);
+	if (size == -1) {
+		return NULL;
+	}
+	strlower_w(buffer);
+
+	size = pull_ucs2_talloc(ctx, &dest, buffer);
+	talloc_free(buffer);
+	return dest;
+}
+
+/**
+ Convert a string to UPPER case, allocated with talloc
+**/
+
+char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
+{
+	size_t size;
+	smb_ucs2_t *buffer;
+	char *dest;
+
+	size = push_ucs2_talloc(ctx, &buffer, src);
+	if (size == -1) {
+		return NULL;
+	}
+	strupper_w(buffer);
+
+	size = pull_ucs2_talloc(ctx, &dest, buffer);
+	talloc_free(buffer);
+	return dest;
+}
+
+/**
  Convert a string to lower case.
 **/
 
 void strlower_m(char *s)
 {
+	char *lower;
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -733,15 +824,20 @@ void strlower_m(char *s)
 
 	/* I assume that lowercased string takes the same number of bytes
 	 * as source string even in UTF-8 encoding. (VIV) */
-	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
+	lower = strlower_talloc(NULL, s);
+	if (lower) {
+		safe_strcpy(s, lower, strlen(s));
+	}
+	talloc_free(lower);
 }
 
 /**
- Convert a string to upper case.
+ Convert a string to UPPER case.
 **/
 
 void strupper_m(char *s)
 {
+	char *upper;
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
@@ -755,18 +851,27 @@ void strupper_m(char *s)
 	if (!*s)
 		return;
 
-	/* I assume that lowercased string takes the same number of bytes
-	 * as source string even in multibyte encoding. (VIV) */
-	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
+	/* I assume that uppercased string takes the same number of bytes
+	 * as source string even in UTF-8 encoding. (VIV) */
+	upper = strupper_talloc(NULL, s);
+	if (upper) {
+		safe_strcpy(s, upper, strlen(s));
+	}
+	talloc_free(upper);
 }
 
-
 /**
-   work out the number of multibyte chars in a string
+ Count the number of UCS2 characters in a string. Normally this will
+ be the same as the number of bytes in a string for single byte strings,
+ but will be different for multibyte.
 **/
+
 size_t strlen_m(const char *s)
 {
 	size_t count = 0;
+	smb_ucs2_t *tmp;
+
+	size_t len;
 
 	if (!s) {
 		return 0;
@@ -781,8 +886,12 @@ size_t strlen_m(const char *s)
 		return count;
 	}
 
-	push_ucs2(NULL,tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	return count + strlen_w(tmpbuf);
+	SMB_ASSERT(push_ucs2_talloc(NULL, &tmp, s) != -1);
+
+	len = count + strlen_w(tmp);
+	talloc_free(tmp);
+
+	return len;
 }
 
 /**
@@ -796,21 +905,6 @@ size_t strlen_m_term(const char *s)
 	}
 
 	return strlen_m(s) + 1;
-}
-
-/**
- Convert a string to upper case.
-**/
-
-char *strdup_upper(const char *s)
-{
-	char *t = strdup(s);
-	if (t == NULL) {
-		DEBUG(0, ("strdup_upper: Out of memory!\n"));
-		return NULL;
-	}
-	strupper_m(t);
-	return t;
 }
 
 /**
@@ -1183,79 +1277,6 @@ void ipstr_list_free(char* ipstr_list)
 {
 	SAFE_FREE(ipstr_list);
 }
-
-/**
- Routine to get hex characters and turn them into a 16 byte array.
- the array can be variable length, and any non-hex-numeric
- characters are skipped.  "0xnn" or "0Xnn" is specially catered
- for.
-
- valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
-
-**/
-
-size_t strhex_to_str(char *p, size_t len, const char *strhex)
-{
-	size_t i;
-	size_t num_chars = 0;
-	uint8_t   lonybble, hinybble;
-	const char     *hexchars = "0123456789ABCDEF";
-	char           *p1 = NULL, *p2 = NULL;
-
-	for (i = 0; i < len && strhex[i] != 0; i++) {
-		if (strncasecmp(hexchars, "0x", 2) == 0) {
-			i++; /* skip two chars */
-			continue;
-		}
-
-		if (!(p1 = strchr_m(hexchars, toupper(strhex[i]))))
-			break;
-
-		i++; /* next hex digit */
-
-		if (!(p2 = strchr_m(hexchars, toupper(strhex[i]))))
-			break;
-
-		/* get the two nybbles */
-		hinybble = PTR_DIFF(p1, hexchars);
-		lonybble = PTR_DIFF(p2, hexchars);
-
-		p[num_chars] = (hinybble << 4) | lonybble;
-		num_chars++;
-
-		p1 = NULL;
-		p2 = NULL;
-	}
-	return num_chars;
-}
-
-DATA_BLOB strhex_to_data_blob(const char *strhex) 
-{
-	DATA_BLOB ret_blob = data_blob(NULL, strlen(strhex)/2+1);
-
-	ret_blob.length = strhex_to_str(ret_blob.data, 	
-					strlen(strhex), 
-					strhex);
-
-	return ret_blob;
-}
-
-/**
- * Routine to print a buffer as HEX digits, into an allocated string.
- */
-
-void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
-{
-	int i;
-	char *hex_buffer;
-
-	*out_hex_buffer = smb_xmalloc((len*2)+1);
-	hex_buffer = *out_hex_buffer;
-
-	for (i = 0; i < len; i++)
-		slprintf(&hex_buffer[i*2], 3, "%02X", buff_in[i]);
-}
-
 
 /**
  Unescape a URL encoded string, in place.
