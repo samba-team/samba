@@ -91,9 +91,13 @@ gsskrb5_is_cfx(gss_ctx_id_t context_handle, int *is_cfx)
 	return;
 	    
     switch (key->keytype) {
-    case KEYTYPE_DES :
-    case KEYTYPE_ARCFOUR:
-    case KEYTYPE_DES3 :
+    case ETYPE_DES_CBC_CRC:
+    case ETYPE_DES_CBC_MD4:
+    case ETYPE_DES_CBC_MD5:
+    case ETYPE_DES3_CBC_MD5:
+    case ETYPE_DES3_CBC_SHA1:
+    case ETYPE_ARCFOUR_HMAC_MD5:
+    case ETYPE_ARCFOUR_HMAC_MD5_56:
 	break;
     default :
 	*is_cfx = 1;
