@@ -706,9 +706,10 @@ To modify the registry directly, launch the Registry Editor (regedit.exe), selec
 "User Profiles", to enable user profiles set the value to 1, to disable user profiles set it to 0.
 </para>
 
-<para>
+<sect3>
 <title>How User Profiles Are Handled in Windows 9x / Me?</title>
 
+<para>
 When a user logs on to a Windows 9x / Me machine, the local profile path, 
 <filename>HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\ProfileList</filename>, is checked
 for an existing entry for that user:
@@ -730,6 +731,7 @@ changes that the user made are written to the user's local profile. If the user 
 profile, the changes are written to the user's profile on the server.
 </para>
 
+</sect3>
 </sect2>
 
 <sect2>
