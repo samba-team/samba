@@ -2532,8 +2532,8 @@ void new_spoolss_move_buffer(NEW_BUFFER *src, NEW_BUFFER **dest)
 	prs_switch_type(&src->prs, MARSHALL);
 	if(!prs_set_offset(&src->prs, 0))
 		return;
-	prs_force_dynamic(&(src->prs));
-
+	prs_force_dynamic(&src->prs);
+	prs_mem_clear(&src->prs);
 	*dest=src;
 }
 
