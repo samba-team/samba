@@ -141,6 +141,14 @@ int net_rpc_join(int argc, const char **argv)
 	if (!NT_STATUS_IS_OK(result) && 
 	    !NT_STATUS_EQUAL(result, NT_STATUS_USER_EXISTS)) {
 		d_printf("Create of workstation account failed\n");
+
+		/* If NT_STATUS_ACCESS_DENIED then we have a valid
+		   username/password combo but the user does not have
+		   administrator access. */
+
+		if (NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED))
+			d_printf("User specified does not have administrator privileges\n");
+
 		goto done;
 	}
 
@@ -286,5 +294,3 @@ done:
 
 	return retval;
 }
-
-
