@@ -719,7 +719,6 @@
 #ifdef real_opendir
  DIR *opendir(const char *name)
 {
-	DIR *ret;
 	if (smbw_path(name)) {
 		return smbw_opendir(name);
 	}
