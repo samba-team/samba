@@ -609,15 +609,6 @@ done:
 	return True;
 }
 
-/* Lookup group information from a rid */
-
-BOOL winbindd_lookup_groupinfo(struct winbindd_domain *domain,
-                              uint32 group_rid, GROUP_INFO_CTR *info)
-{
-	return wb_get_samr_query_groupinfo(&domain->sam_dom_handle, 1, 
-					   group_rid, info);
-}
-
 /* Lookup group membership given a rid */
 
 BOOL winbindd_lookup_groupmem(struct winbindd_domain *domain,

@@ -44,8 +44,8 @@ static char *trust_keystr(char *domain)
 /************************************************************************
  Routine to get the trust account password for a domain
 ************************************************************************/
-BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-				 time_t *pass_last_set_time)
+static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+					time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
 	size_t size;
