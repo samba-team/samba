@@ -35,12 +35,6 @@ BOOL init_change_notify(void)
 BOOL pcap_printername_ok(const char *service, char *foo)
 { return True; }
 
-void become_root(void)
-{}
-
-void unbecome_root(void)
-{}
-
 BOOL namecache_enable(void)
 { return True; }
 
