@@ -44,9 +44,11 @@ struct smb_passwd
 };
 
 
+extern int DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 extern struct passdb_ops pdb_ops;
+
 
 /* used for maintain locks on the smbpasswd file */
 static int 	pw_file_lock_depth;
@@ -336,7 +338,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       DEBUG(6, ("getsmbfilepwent: skipping comment or blank line\n"));
       continue;
     }
-    p = (unsigned char *) strchr_m(linebuf, ':');
+    p = (unsigned char *) strchr(linebuf, ':');
     if (p == NULL) {
       DEBUG(0, ("getsmbfilepwent: malformed password entry (no :)\n"));
       continue;
@@ -436,7 +438,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
 
     if (*p == '[')
 	{
-      unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
+      unsigned char *end_p = (unsigned char *)strchr((char *)p, ']');
       pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 
       /* Must have some account type set. */
@@ -761,7 +763,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
       continue;
     }
 
-    p = (unsigned char *) strchr_m(linebuf, ':');
+    p = (unsigned char *) strchr(linebuf, ':');
 
     if (p == NULL) {
       DEBUG(0, ("mod_smbfilepwd_entry: malformed password entry (no :)\n"));
@@ -1206,8 +1208,14 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	pdb_set_group_rid(sam_pass, pdb_gid_to_group_rid(pwfile->pw_gid)); 
 	
 	pdb_set_username (sam_pass, pw_buf->smb_name);
-	pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd);
-	pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd);			
+	if (!pdb_set_nt_passwd (sam_pass, pw_buf->smb_nt_passwd)) {
+		if (pw_buf->smb_nt_passwd)
+			return False;
+	}
+	if (!pdb_set_lanman_passwd (sam_pass, pw_buf->smb_passwd)) {
+		if (pw_buf->smb_passwd)
+			return False;
+	}
 	pdb_set_acct_ctrl (sam_pass, pw_buf->acct_ctrl);
 	pdb_set_pass_last_set_time (sam_pass, pw_buf->pass_last_set_time);
 	pdb_set_pass_can_change_time (sam_pass, pw_buf->pass_last_set_time);
@@ -1215,11 +1223,10 @@ static BOOL build_sam_account(SAM_ACCOUNT *sam_pass, struct smb_passwd *pw_buf)
 	
 	pdb_set_dir_drive     (sam_pass, lp_logon_drive());
 
-	/* the smbpasswd format doesn't have a must change time field, so
-	   we can't get this right. The best we can do is to set this to 
-	   some time in the future. 21 days seems as reasonable as any other value :) 
-	*/
-	pdb_set_pass_must_change_time (sam_pass, pw_buf->pass_last_set_time + MAX_PASSWORD_AGE);
+	/* FIXME!!  What should this be set to?  New smb.conf parameter maybe?
+	   max password age?   For now, we'll use the current time + 21 days. 
+	   --jerry */
+	pdb_set_pass_must_change_time (sam_pass, time(NULL)+1814400);
 
 	/* check if this is a user account or a machine account */
 	if (samlogon_user[strlen(samlogon_user)-1] != '$')
@@ -1341,7 +1348,7 @@ BOOL pdb_getsampwnam(SAM_ACCOUNT *sam_acct, char *username)
 	/* break the username from the domain if we have 
 	   been given a string in the form 'DOMAIN\user' */
 	fstrcpy (name, username);
-	if ((user=strchr_m(name, '\\')) != NULL) {
+	if ((user=strchr(name, '\\')) != NULL) {
 		domain = name;
 		*user = '\0';
 		user++;

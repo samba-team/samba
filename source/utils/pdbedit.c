@@ -32,6 +32,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
+extern int DEBUGLEVEL;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -127,12 +128,12 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
 	
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
-	pdb_free_sam(&sam_pwent);
+	pdb_free_sam(sam_pwent);
 	
 	return ret;
 }
@@ -150,7 +151,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	ret = pdb_setsampwent(False);
 	if (ret && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
-		pdb_free_sam(&sam_pwent);
+		pdb_free_sam(sam_pwent);
 		exit(1);
 	}
 
@@ -162,7 +163,7 @@ static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 	}
 	
 	pdb_endsampwent ();
-	pdb_free_sam(&sam_pwent);
+	pdb_free_sam(sam_pwent);
 	return 0;
 }
 
@@ -180,7 +181,7 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 	ret = pdb_getsampwnam (sam_pwent, username);
 	if (ret==False) {
 		fprintf (stderr, "Username not found!\n");
-		pdb_free_sam(&sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
 	
@@ -199,10 +200,10 @@ static int set_user_info (char *username, char *fullname, char *homedir, char *d
 		print_user_info (username, True, False);
 	else {
 		fprintf (stderr, "Unable to modify entry!\n");
-		pdb_free_sam(&sam_pwent);
+		pdb_free_sam(sam_pwent);
 		return -1;
 	}
-	pdb_free_sam(&sam_pwent);
+	pdb_free_sam(sam_pwent);
 	return 0;
 }
 
@@ -221,7 +222,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 
 	if (!(pwd = sys_getpwnam(username))) {
 		fprintf (stderr, "User %s does not exist in system passwd!\n", username);
-		pdb_free_sam (&sam_pwent);
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
 	
@@ -229,7 +230,7 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 	password2 = getpass("retype new password:");
 	if (strcmp (password1, password2)) {
 		 fprintf (stderr, "Passwords does not match!\n");
-		 pdb_free_sam (&sam_pwent);
+		 pdb_free_sam (sam_pwent);
 		 return -1;
 	}
 
@@ -259,10 +260,10 @@ static int new_user (char *username, char *fullname, char *homedir, char *drive,
 		print_user_info (username, True, False);
 	} else {
 		fprintf (stderr, "Unable to add user! (does it alredy exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	pdb_free_sam (sam_pwent);
 	return 0;
 }
 
@@ -287,7 +288,7 @@ static int new_machine (char *machinename)
 	safe_strcat (name, "$", 16);
 	
 	string_set (&password, machinename);
-	strlower_m(password);
+	strlower(password);
 	
 	pdb_set_plaintext_passwd (sam_pwent, password);
 
@@ -296,7 +297,7 @@ static int new_machine (char *machinename)
 	for (uid=BASE_MACHINE_UID; uid<=MAX_MACHINE_UID; uid++) {
 		pdb_init_sam (&sam_trust);
 		if (pdb_getsampwuid (sam_trust, uid)) {
-			pdb_free_sam (&sam_trust);
+			pdb_free_sam (sam_trust);
 		} else {
 			break;
 		}
@@ -304,7 +305,7 @@ static int new_machine (char *machinename)
 
 	if (uid>MAX_MACHINE_UID) {
 		fprintf (stderr, "No more free UIDs available to Machine accounts!\n");
-		pdb_free_sam(&sam_pwent);		
+		pdb_free_sam(sam_pwent);		
 		return -1;
 	}
 
@@ -318,10 +319,10 @@ static int new_machine (char *machinename)
 		print_user_info (name, True, False);
 	} else {
 		fprintf (stderr, "Unable to add machine! (does it already exist?)\n");
-		pdb_free_sam (&sam_pwent);
+		pdb_free_sam (sam_pwent);
 		return -1;
 	}
-	pdb_free_sam (&sam_pwent);
+	pdb_free_sam (sam_pwent);
 	return 0;
 }
 
@@ -382,7 +383,7 @@ static int import_users (char *filename)
 		fgets(linebuf, 256, fp);
 		if (ferror(fp)) {
 			fprintf (stderr, "%s\n", strerror (ferror (fp)));
-			pdb_free_sam(&sam_pwent);
+			pdb_free_sam(sam_pwent);
 			return -1;
 		}
 		if ((linebuf_len = strlen(linebuf)) == 0) {
@@ -400,7 +401,7 @@ static int import_users (char *filename)
 		linebuf[linebuf_len] = '\0';
 		if ((linebuf[0] == 0) && feof(fp)) {
 			/*end of file!!*/
-			pdb_free_sam(&sam_pwent);
+			pdb_free_sam(sam_pwent);
 			return 0;
 		}
 		line++;
@@ -410,7 +411,7 @@ static int import_users (char *filename)
 		pdb_set_acct_ctrl (sam_pwent,ACB_NORMAL);
 		
 		/* Get user name */
-		p = (unsigned char *) strchr_m(linebuf, ':');
+		p = (unsigned char *) strchr(linebuf, ':');
 		if (p == NULL) {
 			fprintf (stderr, "Error: malformed password entry at line %d !!\n", line);
 			pdb_reset_sam (sam_pwent);
@@ -473,6 +474,7 @@ static int import_users (char *filename)
 				pdb_set_lanman_passwd(sam_pwent, smbpwd);
 			}
 			/* NT password */
+			pdb_set_nt_passwd(sam_pwent, smbpwd);
 			p += 33;
 			if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
 				if (*p != '*' && *p != 'X') {
@@ -487,7 +489,7 @@ static int import_users (char *filename)
 		/* Get ACCT_CTRL field if any */
 		if (*p == '[') {
 			uint16 acct_ctrl;
-			unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
+			unsigned char *end_p = (unsigned char *)strchr((char *)p, ']');
 			
 			acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 			if (acct_ctrl)
@@ -556,7 +558,7 @@ static int import_users (char *filename)
 		pdb_reset_sam (sam_pwent);
 	}
 	printf ("%d lines read.\n%d entryes imported\n", line, good);
-	pdb_free_sam(&sam_pwent);	
+	pdb_free_sam(sam_pwent);	
 	return 0;
 }
 

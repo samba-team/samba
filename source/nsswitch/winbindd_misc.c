@@ -44,8 +44,8 @@ static char *trust_keystr(char *domain)
 /************************************************************************
  Routine to get the trust account password for a domain
 ************************************************************************/
-static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
-					time_t *pass_last_set_time)
+BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd, 
+				 time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
 	size_t size;
@@ -55,19 +55,19 @@ static BOOL _get_trust_account_password(char *domain, unsigned char *ret_pwd,
 
 	if (pass_last_set_time) *pass_last_set_time = pass->mod_time;
 	memcpy(ret_pwd, pass->hash, 16);
-	SAFE_FREE(pass);
+	free(pass);
 	return True;
 }
 
 /* Check the machine account password is valid */
 
-enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *state)
+enum winbindd_result winbindd_check_machine_acct(
+	struct winbindd_cli_state *state)
 {
-	NTSTATUS status;
+	int result = WINBINDD_ERROR;
 	uchar trust_passwd[16];
 	struct in_addr *ip_list = NULL;
 	int count;
-	uint16 validation_level;
 	fstring controller, trust_account;
         int num_retries = 0;
 
@@ -78,7 +78,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
  again:
 	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, 
                                          NULL)) {
-		status = NT_STATUS_INTERNAL_ERROR;
+		result = NT_STATUS_INTERNAL_ERROR;
 		goto done;
 	}
 
@@ -89,7 +89,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 			     controller)) {
 		DEBUG(0, ("could not find domain controller for "
 			  "domain %s\n", lp_workgroup()));		  
-		status = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
+		result = NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND;
 		goto done;
 	}
 
@@ -101,9 +101,12 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
                  global_myname);
 
 #if 0 /* XXX */
-        status = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
+	{
+		uint16 validation_level;
+        result = cli_nt_setup_creds(controller, lp_workgroup(), global_myname,
                                     trust_account, trust_passwd, 
                                     SEC_CHAN_WKSTA, &validation_level);	
+	}
 #endif
 
         /* There is a race condition between fetching the trust account
@@ -114,7 +117,7 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 #define MAX_RETRIES 8
 
         if ((num_retries < MAX_RETRIES) && 
-            NT_STATUS_V(status) == NT_STATUS_V(NT_STATUS_ACCESS_DENIED)) {
+            result == NT_STATUS_ACCESS_DENIED) {
                 num_retries++;
                 goto again;
         }
@@ -122,10 +125,11 @@ enum winbindd_result winbindd_check_machine_acct(struct winbindd_cli_state *stat
 	/* Pass back result code - zero for success, other values for
 	   specific failures. */
 
-	DEBUG(3, ("secret is %s\n", NT_STATUS_IS_OK(status) ?  "good" : "bad"));
+	DEBUG(3, ("secret is %s\n", (result == NT_STATUS_OK) ?
+		  "good" : "bad"));
 
  done:
-	state->response.data.num_entries = NT_STATUS_V(status);
+	state->response.data.num_entries = result;
 	return WINBINDD_OK;
 }
 
@@ -147,15 +151,16 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 		/* Add domain to list */
 
 		total_entries++;
-		ted = Realloc(extra_data, sizeof(fstring) * 
+		ted = Realloc(extra_data, sizeof(fstring) *
 				     total_entries);
 
 		if (!ted) {
 			DEBUG(0,("winbindd_list_trusted_domains: failed to enlarge buffer!\n"));
-			SAFE_FREE(extra_data);
+			if (extra_data)
+				free(extra_data);
 			return WINBINDD_ERROR;
-		}
-		else extra_data = ted;
+        } else
+			extra_data = ted;
 
 		memcpy(&extra_data[extra_data_len], domain->name,
 		       strlen(domain->name));

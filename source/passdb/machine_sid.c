@@ -68,7 +68,7 @@ BOOL pdb_generate_sam_sid(void)
 
 	generate_wellknown_sids();
 
-	pstrcpy(sid_file, lp_private_dir());
+	get_private_directory(sid_file);
 
 	if (!directory_exist(sid_file, NULL)) {
 		if (mkdir(sid_file, 0700) != 0) {

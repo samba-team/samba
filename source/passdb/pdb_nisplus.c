@@ -209,9 +209,6 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
    * time values. note: this code assumes 32bit time_t!
    */
 
-  /* Don't change these timestamp settings without a good reason.  They are
-     important for NT member server compatibility. */
-
   pdb_set_logon_time(pw_buf, (time_t)0);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGON_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LNT-", 4)==0)) {
@@ -355,7 +352,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 
   /* Check the lanman password column. */
   ptr = (char *)ENTRY_VAL(obj, NPF_LMPWD);
-  pdb_set_lanman_passwd(pw_buf, NULL);
+  if (!pdb_set_lanman_passwd(pw_buf, NULL))
+	return False;
 
   if (!strncasecmp(ptr, "NO PASSWORD", 11)) {
     pdb_set_acct_ctrl(pw_buf, pdb_get_acct_ctrl(pw_buf) | ACB_PWNOTREQ);
@@ -365,12 +363,14 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 		pdb_get_username(pw_buf)));
       return False;
     } 
-    pdb_set_lanman_passwd(pw_buf, smbpwd);
+    if (!pdb_set_lanman_passwd(pw_buf, smbpwd))
+		return False;
   }
   
   /* Check the NT password column. */
   ptr = ENTRY_VAL(obj, NPF_NTPWD);
-  pdb_set_nt_passwd(pw_buf, NULL);
+  if (!pdb_set_nt_passwd(pw_buf, NULL))
+	return False;
   
   if (!(pdb_get_acct_ctrl(pw_buf) & ACB_PWNOTREQ) &&
       strncasecmp(ptr, "NO PASSWORD", 11)) {
@@ -380,7 +380,8 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
 		pdb_get_uid(pw_buf)));
       return False;
     }
-    pdb_set_nt_passwd(pw_buf, smbntpwd);
+    if (!pdb_set_nt_passwd(pw_buf, smbntpwd))
+		return False;
   }
   
   pdb_set_unknown_3(pw_buf, 0xffffff); /* don't know */

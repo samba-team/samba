@@ -138,8 +138,14 @@ static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, uint32 bufle
 	pdb_set_acct_desc    (sampass, acct_desc_len?acct_desc:NULL);
 	pdb_set_workstations (sampass, workstations_len?workstations:NULL);
 	pdb_set_munged_dial  (sampass, munged_dial_len?munged_dial:NULL);
-	pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL);
-	pdb_set_nt_passwd    (sampass, ntpwlen?nt_pw_ptr:NULL);
+	if (!pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL)) {
+		ret = False;
+		goto done;
+	}
+	if (!pdb_set_nt_passwd(sampass, ntpwlen?nt_pw_ptr:NULL)) {
+		ret = False;
+		goto done;
+	}
 
 	/*pdb_set_uid(sampass, uid);
 	pdb_set_gid(sampass, gid);*/
@@ -466,6 +472,9 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 	pdb_set_uid (user, uid);
 	pdb_set_gid (user, gid);
 
+	/* 21 days from present */
+	pdb_set_pass_must_change_time(user, time(NULL)+1814400);	
+
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_logon_script(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_profile_path(user));
 	standard_sub_advanced(-1, pdb_get_username(user), "", gid, pdb_get_homedir(user));
@@ -498,7 +507,8 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 	}
 
 	/* Data is stored in all lower-case */
-	unix_strlower(sname, -1, name, sizeof(name));
+	fstrcpy(name, sname);
+	strlower(name);
 
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -645,7 +655,8 @@ BOOL pdb_delete_sam_account(char *sname)
 	uint32		rid;
 	fstring		name;
 	
-	unix_strlower(sname, -1, name, sizeof(name));
+	fstrcpy(name, sname);
+	strlower(name);
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -686,7 +697,7 @@ BOOL pdb_delete_sam_account(char *sname)
 
 	rid = pdb_get_user_rid(sam_pass);
 
-	pdb_free_sam (&sam_pass);
+	pdb_free_sam (sam_pass);
 	
 	/* it's outaa here!  8^) */
 	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS) {
@@ -729,6 +740,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	pstring		tdbfile;
 	fstring		name;
 	BOOL		ret = True;
+	int		newtdb = FALSE;
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -751,7 +763,8 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 	data.dptr = buf;
 
-	unix_strlower(pdb_get_username(newpwd), -1, name, sizeof(name));
+	fstrcpy(name,pdb_get_username(newpwd));
+	strlower(name);
 	
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
