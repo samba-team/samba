@@ -118,7 +118,7 @@ OM_uint32 gss_wrap
   memset (&zero, 0, sizeof(zero));
   gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
-  des_cbc_cksum ((const void *)hash, (void *)hash, sizeof(hash),
+  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 schedule, &zero);
   memcpy (p - 8, hash, 8);
 
@@ -137,7 +137,7 @@ OM_uint32 gss_wrap
 	  4);
 
   des_set_key (&key, schedule);
-  des_cbc_encrypt ((const void *)p, (void *)p, 8,
+  des_cbc_encrypt ((void *)p, (void *)p, 8,
 		   schedule, (des_cblock *)(p + 8), DES_ENCRYPT);
 
   krb5_auth_setlocalseqnumber (gssapi_krb5_context,
@@ -153,7 +153,7 @@ OM_uint32 gss_wrap
 	  key[i] ^= 0xf0;
       des_set_key (&key, schedule);
       memset (&zero, 0, sizeof(zero));
-      des_cbc_encrypt ((const void *)p,
+      des_cbc_encrypt ((void *)p,
 		       (void *)p,
 		       8 + input_message_buffer->length + padlength,
 		       schedule,

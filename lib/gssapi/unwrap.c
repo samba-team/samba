@@ -114,7 +114,7 @@ OM_uint32 gss_unwrap
 	  key[i] ^= 0xf0;
       des_set_key (&key, schedule);
       memset (&zero, 0, sizeof(zero));
-      des_cbc_encrypt ((const void *)p,
+      des_cbc_encrypt ((void *)p,
 		       (void *)p,
 		       input_message_buffer->length - len,
 		       schedule,
@@ -142,7 +142,7 @@ OM_uint32 gss_unwrap
   memset (&zero, 0, sizeof(zero));
   gss_krb5_getsomekey(context_handle, &key);
   des_set_key (&key, schedule);
-  des_cbc_cksum ((const void *)hash, (void *)hash, sizeof(hash),
+  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 schedule, &zero);
   if (memcmp (p - 8, hash, 8) != 0)
     return GSS_S_BAD_MIC;
@@ -162,7 +162,7 @@ OM_uint32 gss_unwrap
 
   p -= 16;
   des_set_key (&key, schedule);
-  des_cbc_encrypt ((const void *)p, (void *)p, 8,
+  des_cbc_encrypt ((void *)p, (void *)p, 8,
 		   schedule, (des_cblock *)hash, DES_DECRYPT);
 
   memset (key, 0, sizeof(key));

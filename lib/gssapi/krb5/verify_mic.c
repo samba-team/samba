@@ -83,7 +83,7 @@ OM_uint32 gss_verify_mic
 	  sizeof(key));
 
   des_set_key (&key, schedule);
-  des_cbc_cksum ((const void *)hash, (void *)hash, sizeof(hash),
+  des_cbc_cksum ((void *)hash, (void *)hash, sizeof(hash),
 		 schedule, &zero);
   if (memcmp (p - 8, hash, 8) != 0) {
     memset (key, 0, sizeof(key));
@@ -106,7 +106,7 @@ OM_uint32 gss_verify_mic
 
   p -= 16;
   des_set_key (&key, schedule);
-  des_cbc_encrypt ((const void *)p, (void *)p, 8,
+  des_cbc_encrypt ((void *)p, (void *)p, 8,
 		   schedule, (des_cblock *)hash, DES_DECRYPT);
 
   memset (key, 0, sizeof(key));
