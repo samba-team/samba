@@ -1955,7 +1955,7 @@ static BOOL test_plaintext_lm_only(void) {
    
 */
 
-struct ntlm_tests {
+static const struct ntlm_tests {
 	BOOL (*fn)(void);
 	const char *name;
 } test_table[] = {
