@@ -6680,6 +6680,28 @@ WERROR _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 WERROR _spoolss_resetprinter(pipes_struct *p, SPOOL_Q_RESETPRINTER *q_u, SPOOL_R_RESETPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	Printer_entry *Printer=find_printer_index_by_hnd(p, handle);
+	int snum;
+	
+	DEBUG(5,("_spoolss_resetprinter\n"));
+
+	/*
+	 * All we do is to check to see if the handle and queue is valid.
+	 * This call really doesn't mean anything to us because we only
+	 * support RAW printing.   --jerry
+	 */
+	 
+	if (!Printer) {
+		DEBUG(2,("_spoolss_resetprinter: Invalid handle (%s:%u:%u).\n", OUR_HANDLE(handle)));
+		return WERR_BADFID;
+	}
+
+	if (!get_printer_snum(p,handle, &snum))
+		return WERR_BADFID;
+
+
+	/* blindly return success */	
 	return WERR_OK;
 }
 
