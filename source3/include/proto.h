@@ -1351,6 +1351,11 @@ int lp_defaultcase(int );
 int lp_minprintspace(int );
 int lp_printing(int );
 char lp_magicchar(int );
+char *lp_mysql_host(void);
+char *lp_mysql_user(void);
+char *lp_mysql_passfile(void);
+char *lp_mysql_db(void);
+char *lp_mysql_table(void);
 BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
@@ -1395,6 +1400,32 @@ BOOL ldap_get_attribute(char *attribute, char *value);
 struct smb_passwd *ldap_getpw(void);
 BOOL ldap_allocaterid(uint32 *rid);
 struct smb_passdb_ops *ldap_initialise_password_db(void);
+
+/*The following definitions come from  passdb/mysqlpass.c  */
+
+void *mysql_startpwent( BOOL update );
+void mysql_endpwent( void *ptr );
+SMB_BIG_UINT mysql_getpwpos(void *vp);
+BOOL mysql_setpwpos(void *vp, SMB_BIG_UINT pos);
+struct smb_passwd *mysql_getsmbpwent(void *vp);
+struct smb_passwd *mysql_getsmbpwuid(uid_t uid);
+struct smb_passwd *mysql_getsmbpwnam(const char *unix_name);
+BOOL mysql_add_smbpwd_entry(struct smb_passwd *smb);
+BOOL mysql_mod_smbpwd_entry(struct smb_passwd *smb, BOOL override);
+struct smb_passdb_ops *mysql_initialise_password_db(void);
+
+/*The following definitions come from  passdb/mysqlsampass.c  */
+
+struct sam_passwd *mysql_getsampwent(void *vp);
+struct sam_passwd *mysql_getsampwrid(uint32 rid);
+struct sam_passwd *mysql_getsampwuid(uid_t uid);
+struct sam_passwd *mysql_getsampwntnam(const char *nt_name);
+struct sam_disp_info *mysql_getsamdispntnam(const char *nt_name);
+struct sam_disp_info *mysql_getsamdisprid(uint32 rid);
+struct sam_disp_info *mysql_getsamdispent(void *vp);
+BOOL mysql_add_sampwd_entry(struct sam_passwd *sam);
+BOOL mysql_mod_sampwd_entry(struct sam_passwd *sam, BOOL override);
+struct sam_passdb_ops *mysql_initialise_sam_password_db(void);
 
 /*The following definitions come from  passdb/nispass.c  */
 
