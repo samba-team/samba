@@ -3939,78 +3939,78 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, in
 }
 
 /*******************************************************************
-  copy a file as part of a reply_copy
-  ******************************************************************/
+ Copy a file as part of a reply_copy.
+******************************************************************/
 
 static BOOL copy_file(char *src,char *dest1,connection_struct *conn, int ofun,
 		      int count,BOOL target_is_directory, int *err_ret)
 {
-  int Access,action;
-  SMB_STRUCT_STAT src_sbuf, sbuf2;
-  SMB_OFF_T ret=-1;
-  files_struct *fsp1,*fsp2;
-  pstring dest;
+	int Access,action;
+	SMB_STRUCT_STAT src_sbuf, sbuf2;
+	SMB_OFF_T ret=-1;
+	files_struct *fsp1,*fsp2;
+	pstring dest;
   
-  *err_ret = 0;
+	*err_ret = 0;
 
-  pstrcpy(dest,dest1);
-  if (target_is_directory) {
-    char *p = strrchr(src,'/');
-    if (p) 
-      p++;
-    else
-      p = src;
-    pstrcat(dest,"/");
-    pstrcat(dest,p);
-  }
+	pstrcpy(dest,dest1);
+	if (target_is_directory) {
+		char *p = strrchr(src,'/');
+		if (p) 
+			p++;
+		else
+			p = src;
+		pstrcat(dest,"/");
+		pstrcat(dest,p);
+	}
 
-  if (!vfs_file_exist(conn,src,&src_sbuf))
-    return(False);
+	if (!vfs_file_exist(conn,src,&src_sbuf))
+		return(False);
 
-  fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
-		   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
+	fsp1 = open_file_shared(conn,src,&src_sbuf,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_RDONLY),
+					(FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),0,0,&Access,&action);
 
-  if (!fsp1) {
-	  return(False);
-  }
+	if (!fsp1)
+		return(False);
 
-  if (!target_is_directory && count)
-    ofun = FILE_EXISTS_OPEN;
+	if (!target_is_directory && count)
+		ofun = FILE_EXISTS_OPEN;
 
-  vfs_stat(conn,dest,&sbuf2);
-  fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
-		   ofun,src_sbuf.st_mode,0,&Access,&action);
+	if (vfs_stat(conn,dest,&sbuf2) == -1)
+		ZERO_STRUCTP(&sbuf2);
 
-  if (!fsp2) {
-    close_file(fsp1,False);
-    return(False);
-  }
+	fsp2 = open_file_shared(conn,dest,&sbuf2,SET_DENY_MODE(DENY_NONE)|SET_OPEN_MODE(DOS_OPEN_WRONLY),
+			ofun,src_sbuf.st_mode,0,&Access,&action);
 
-  if ((ofun&3) == 1) {
-    if(conn->vfs_ops.lseek(fsp2,fsp2->fd,0,SEEK_END) == -1) {
-      DEBUG(0,("copy_file: error - sys_lseek returned error %s\n",
-               strerror(errno) ));
-      /*
-       * Stop the copy from occurring.
-       */
-      ret = -1;
-      src_sbuf.st_size = 0;
-    }
-  }
+	if (!fsp2) {
+		close_file(fsp1,False);
+		return(False);
+	}
+
+	if ((ofun&3) == 1) {
+		if(conn->vfs_ops.lseek(fsp2,fsp2->fd,0,SEEK_END) == -1) {
+			DEBUG(0,("copy_file: error - vfs lseek returned error %s\n", strerror(errno) ));
+			/*
+			 * Stop the copy from occurring.
+			 */
+			ret = -1;
+			src_sbuf.st_size = 0;
+		}
+	}
   
-  if (src_sbuf.st_size)
-    ret = vfs_transfer_file(-1, fsp1, -1, fsp2, src_sbuf.st_size, NULL, 0, 0);
+	if (src_sbuf.st_size)
+		ret = vfs_transfer_file(fsp1, fsp2, src_sbuf.st_size);
 
-  close_file(fsp1,False);
-  /*
-   * As we are opening fsp1 read-only we only expect
-   * an error on close on fsp2 if we are out of space.
-   * Thus we don't look at the error return from the
-   * close of fsp1.
-   */
-  *err_ret = close_file(fsp2,False);
+	close_file(fsp1,False);
+	/*
+	 * As we are opening fsp1 read-only we only expect
+	 * an error on close on fsp2 if we are out of space.
+	 * Thus we don't look at the error return from the
+	 * close of fsp1.
+	 */
+	*err_ret = close_file(fsp2,False);
 
-  return(ret == (SMB_OFF_T)src_sbuf.st_size);
+	return(ret == (SMB_OFF_T)src_sbuf.st_size);
 }
 
 

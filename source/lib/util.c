@@ -92,27 +92,28 @@ char **my_netbios_names;
 
 
 /****************************************************************************
-  find a suitable temporary directory. The result should be copied immediately
-  as it may be overwritten by a subsequent call
-  ****************************************************************************/
+ Find a suitable temporary directory. The result should be copied immediately
+ as it may be overwritten by a subsequent call.
+****************************************************************************/
+
 char *tmpdir(void)
 {
-  char *p;
-  if ((p = getenv("TMPDIR"))) {
-    return p;
-  }
-  return "/tmp";
+	char *p;
+	if ((p = getenv("TMPDIR")))
+		return p;
+	return "/tmp";
 }
 
 /****************************************************************************
-determine whether we are in the specified group
+ Determine whether we are in the specified group.
 ****************************************************************************/
 
 BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 {
 	int i;
 
-	if (group == current_gid) return(True);
+	if (group == current_gid)
+		return(True);
 
 	for (i=0;i<ngroups;i++)
 		if (group == groups[i])
@@ -121,14 +122,13 @@ BOOL in_group(gid_t group, gid_t current_gid, int ngroups, gid_t *groups)
 	return(False);
 }
 
-
 /****************************************************************************
-like atoi but gets the value up to the separater character
+ Like atoi but gets the value up to the separater character.
 ****************************************************************************/
+
 char *Atoic(char *p, int *n, char *c)
 {
-	if (!isdigit((int)*p))
-	{
+	if (!isdigit((int)*p)) {
 		DEBUG(5, ("Atoic: malformed number\n"));
 		return NULL;
 	}
@@ -136,12 +136,9 @@ char *Atoic(char *p, int *n, char *c)
 	(*n) = atoi(p);
 
 	while ((*p) && isdigit((int)*p))
-	{
 		p++;
-	}
 
-	if (strchr(c, *p) == NULL)
-	{
+	if (strchr(c, *p) == NULL) {
 		DEBUG(5, ("Atoic: no separator characters (%s) not found\n", c));
 		return NULL;
 	}
@@ -150,8 +147,9 @@ char *Atoic(char *p, int *n, char *c)
 }
 
 /*************************************************************************
- reads a list of numbers
+ Reads a list of numbers.
  *************************************************************************/
+
 char *get_numlist(char *p, uint32 **num, int *count)
 {
 	int val;
@@ -180,30 +178,31 @@ char *get_numlist(char *p, uint32 **num, int *count)
 	return p;
 }
 
-
 /*******************************************************************
-  check if a file exists - call vfs_file_exist for samba files
+ Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
+
 BOOL file_exist(char *fname,SMB_STRUCT_STAT *sbuf)
 {
-  SMB_STRUCT_STAT st;
-  if (!sbuf) sbuf = &st;
+	SMB_STRUCT_STAT st;
+	if (!sbuf)
+		sbuf = &st;
   
-  if (sys_stat(fname,sbuf) != 0) 
-    return(False);
+	if (sys_stat(fname,sbuf) != 0) 
+		return(False);
 
-  return(S_ISREG(sbuf->st_mode));
+	return(S_ISREG(sbuf->st_mode));
 }
 
 /*******************************************************************
-  rename a unix file
+ Rename a unix file.
 ********************************************************************/
+
 int file_rename(char *from, char *to)
 {
 	int rcode = rename (from, to);
 
-	if (errno == EXDEV) 
-	{
+	if (errno == EXDEV) {
 		/* Rename across filesystems needed. */
 		rcode = copy_reg (from, to);        
 	}
@@ -211,21 +210,23 @@ int file_rename(char *from, char *to)
 }
 
 /*******************************************************************
-check a files mod time
+ Check a files mod time.
 ********************************************************************/
+
 time_t file_modtime(char *fname)
 {
-  SMB_STRUCT_STAT st;
+	SMB_STRUCT_STAT st;
   
-  if (sys_stat(fname,&st) != 0) 
-    return(0);
+	if (sys_stat(fname,&st) != 0) 
+		return(0);
 
-  return(st.st_mtime);
+	return(st.st_mtime);
 }
 
 /*******************************************************************
-  check if a directory exists
+ Check if a directory exists.
 ********************************************************************/
+
 BOOL directory_exist(char *dname,SMB_STRUCT_STAT *st)
 {
   SMB_STRUCT_STAT st2;
@@ -526,112 +527,82 @@ int set_blocking(int fd, BOOL set)
  Transfer some data between two fd's.
 ****************************************************************************/
 
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align)
+ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
+						ssize_t (*write_fn)(int, const void *, size_t))
 {
-	static char *buf=NULL;  
-	static int size=0;
-	char *buf1,*abuf;
-	SMB_OFF_T total = 0;
+	static char buf[16384];
+	size_t total = 0;
+	ssize_t read_ret;
+	size_t write_total = 0;
+    ssize_t write_ret;
 
-	DEBUG(4,("transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+	while (total < n) {
+		size_t num_to_read_thistime = MIN((n - total), sizeof(buf));
 
-	if (size == 0) {
-		size = lp_readsize();
-		size = MAX(size,1024);
-	}
+		read_ret = (*read_fn)(infd, buf + total, num_to_read_thistime);
+		if (read_ret == -1) {
+			DEBUG(0,("transfer_file_internal: read failure. Error = %s\n", strerror(errno) ));
+			return -1;
+		}
+		if (read_ret == 0)
+			break;
 
-	while (!buf && size>0) {
-		buf = (char *)malloc(size+8);
-		if (!buf)
-			size /= 2;
-	}
-
-	if (!buf) {
-		DEBUG(0,("Can't allocate transfer buffer!\n"));
-		exit(1);
-	}
-
-	abuf = buf + (align%8);
-
-	if (header)
-		n += headlen;
-
-	while (n > 0) {
-		int s = (int)MIN(n,(SMB_OFF_T)size);
-		int ret,ret2=0;
-
-		ret = 0;
-
-		if (header && (headlen >= MIN(s,1024))) {
-			buf1 = header;
-			s = headlen;
-			ret = headlen;
-			headlen = 0;
-			header = NULL;
-		} else {
-			buf1 = abuf;
+		write_total = 0;
+ 
+		while (write_total < read_ret) {
+			write_ret = (*write_fn)(outfd,buf + total, read_ret);
+ 
+			if (write_ret == -1) {
+				DEBUG(0,("transfer_file_internal: write failure. Error = %s\n", strerror(errno) ));
+				return -1;
+			}
+			if (write_ret == 0)
+				return (ssize_t)total;
+ 
+			write_total += (size_t)write_ret;
 		}
 
-		if (header && headlen > 0) {
-			ret = MIN(headlen,size);
-			memcpy(buf1,header,ret);
-			headlen -= ret;
-			header += ret;
-
-			if (headlen <= 0)
-				header = NULL;
-		}
-
-		if (s > ret)
-			ret += read(infd,buf1+ret,s-ret);
-
-		if (ret > 0) {
-			ret2 = (outfd>=0?write_data(outfd,buf1,ret):ret);
-			if (ret2 > 0)
-				total += ret2;
-
-			/* if we can't write then dump excess data */
-			if (ret2 != ret)
-				transfer_file(infd,-1,n-(ret+headlen),NULL,0,0);
-		}
-		if (ret <= 0 || ret2 != ret)
-			return(total);
-		n -= ret;
+		total += (size_t)read_ret;
 	}
 
-	return(total);
+	return (ssize_t)total;		
 }
 
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
+{
+	return (SMB_OFF_T)transfer_file_internal(infd, outfd, (size_t)n, read, write);
+}
 
 /*******************************************************************
-sleep for a specified number of milliseconds
+ Sleep for a specified number of milliseconds.
 ********************************************************************/
+
 void msleep(int t)
 {
-  int tdiff=0;
-  struct timeval tval,t1,t2;  
-  fd_set fds;
+	int tdiff=0;
+	struct timeval tval,t1,t2;  
+	fd_set fds;
 
-  GetTimeOfDay(&t1);
-  GetTimeOfDay(&t2);
+	GetTimeOfDay(&t1);
+	GetTimeOfDay(&t2);
   
-  while (tdiff < t) {
-    tval.tv_sec = (t-tdiff)/1000;
-    tval.tv_usec = 1000*((t-tdiff)%1000);
+	while (tdiff < t) {
+		tval.tv_sec = (t-tdiff)/1000;
+		tval.tv_usec = 1000*((t-tdiff)%1000);
  
-    FD_ZERO(&fds);
-    errno = 0;
-    sys_select_intr(0,&fds,&tval);
+		FD_ZERO(&fds);
+		errno = 0;
+		sys_select_intr(0,&fds,&tval);
 
-    GetTimeOfDay(&t2);
-    tdiff = TvalDiff(&t1,&t2);
-  }
+		GetTimeOfDay(&t2);
+		tdiff = TvalDiff(&t1,&t2);
+	}
 }
 
-
 /****************************************************************************
-become a daemon, discarding the controlling terminal
+ Become a daemon, discarding the controlling terminal.
 ****************************************************************************/
+
 void become_daemon(void)
 {
 	if (sys_fork()) {
@@ -655,74 +626,64 @@ void become_daemon(void)
 	close_low_fds();
 }
 
-
 /****************************************************************************
-put up a yes/no prompt
+ Put up a yes/no prompt
 ****************************************************************************/
+
 BOOL yesno(char *p)
 {
-  pstring ans;
-  printf("%s",p);
+	pstring ans;
+	printf("%s",p);
 
-  if (!fgets(ans,sizeof(ans)-1,stdin))
-    return(False);
+	if (!fgets(ans,sizeof(ans)-1,stdin))
+		return(False);
 
-  if (*ans == 'y' || *ans == 'Y')
-    return(True);
+	if (*ans == 'y' || *ans == 'Y')
+		return(True);
 
-  return(False);
+	return(False);
 }
 
-#ifdef HPUX
 /****************************************************************************
-this is a version of setbuffer() for those machines that only have setvbuf
+ Expand a pointer to be a particular size.
 ****************************************************************************/
- void setbuffer(FILE *f,char *buf,int bufsize)
-{
-  setvbuf(f,buf,_IOFBF,bufsize);
-}
-#endif
 
-/****************************************************************************
-expand a pointer to be a particular size
-****************************************************************************/
 void *Realloc(void *p,size_t size)
 {
-  void *ret=NULL;
+	void *ret=NULL;
 
-  if (size == 0) {
-    if (p) free(p);
-    DEBUG(5,("Realloc asked for 0 bytes\n"));
-    return NULL;
-  }
+	if (size == 0) {
+		if (p)
+			free(p);
+		DEBUG(5,("Realloc asked for 0 bytes\n"));
+		return NULL;
+	}
 
-  if (!p)
-    ret = (void *)malloc(size);
-  else
-    ret = (void *)realloc(p,size);
+	if (!p)
+		ret = (void *)malloc(size);
+	else
+		ret = (void *)realloc(p,size);
 
-  if (!ret)
-    DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
+	if (!ret)
+		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
 
-  return(ret);
+	return(ret);
 }
 
-
 /****************************************************************************
-free memory, checks for NULL
+ Free memory, checks for NULL.
 ****************************************************************************/
+
 void safe_free(void *p)
 {
 	if (p != NULL)
-	{
 		free(p);
-	}
 }
 
-
 /****************************************************************************
-get my own name and IP
+ Get my own name and IP.
 ****************************************************************************/
+
 BOOL get_myname(char *my_name)
 {
 	pstring hostname;
@@ -741,7 +702,8 @@ BOOL get_myname(char *my_name)
 	if (my_name) {
 		/* split off any parts after an initial . */
 		char *p = strchr(hostname,'.');
-		if (p) *p = 0;
+		if (p)
+			*p = 0;
 		
 		fstrcpy(my_name,hostname);
 	}
@@ -750,8 +712,9 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
-interpret a protocol description string, with a default
+ Interpret a protocol description string, with a default.
 ****************************************************************************/
+
 int interpret_protocol(char *str,int def)
 {
   if (strequal(str,"NT1"))

@@ -512,92 +512,28 @@ int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len)
 }
 
 /****************************************************************************
- Transfer some data between two file_struct's.
+ Transfer some data (n bytes) between two file_struct's.
 ****************************************************************************/
 
-SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
-			    int out_fd, files_struct *out_fsp,
-			    SMB_OFF_T n, char *header, int headlen, int align)
+static files_struct *in_fsp;
+static files_struct *out_fsp;
+
+static ssize_t read_fn(int fd, void *buf, size_t len)
 {
-  static char *buf=NULL;
-  static int size=0;
-  char *buf1,*abuf;
-  SMB_OFF_T total = 0;
+	return in_fsp->conn->vfs_ops.read(in_fsp, fd, buf, len);
+}
 
-  DEBUG(4,("vfs_transfer_file n=%.0f  (head=%d) called\n",(double)n,headlen));
+static ssize_t write_fn(int fd, const void *buf, size_t len)
+{
+	return out_fsp->conn->vfs_ops.write(out_fsp, fd, buf, len);
+}
 
-  /* Check we have at least somewhere to read from */
+SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n)
+{
+	in_fsp = in;
+	out_fsp = out;
 
-  SMB_ASSERT((in_fd != -1) || (in_fsp != NULL));
-
-  if (size == 0) {
-    size = lp_readsize();
-    size = MAX(size,1024);
-  }
-
-  while (!buf && size>0) {
-    buf = (char *)Realloc(buf,size+8);
-    if (!buf) size /= 2;
-  }
-
-  if (!buf) {
-    DEBUG(0,("Can't allocate transfer buffer!\n"));
-    exit(1);
-  }
-
-  abuf = buf + (align%8);
-
-  if (header)
-    n += headlen;
-
-  while (n > 0)
-  {
-    int s = (int)MIN(n,(SMB_OFF_T)size);
-    int ret,ret2=0;
-
-    ret = 0;
-
-    if (header && (headlen >= MIN(s,1024))) {
-      buf1 = header;
-      s = headlen;
-      ret = headlen;
-      headlen = 0;
-      header = NULL;
-    } else {
-      buf1 = abuf;
-    }
-
-    if (header && headlen > 0)
-    {
-      ret = MIN(headlen,size);
-      memcpy(buf1,header,ret);
-      headlen -= ret;
-      header += ret;
-      if (headlen <= 0) header = NULL;
-    }
-
-    if (s > ret) {
-      ret += in_fsp ?
-	  in_fsp->conn->vfs_ops.read(in_fsp,in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
-    }
-
-    if (ret > 0) {
-		if (out_fsp)
-		    ret2 = out_fsp->conn->vfs_ops.write(out_fsp,out_fsp->fd,buf1,ret);
-		else
-		    ret2= (out_fd != -1) ? write_data(out_fd,buf1,ret) : ret;
-    }
-
-      if (ret2 > 0) total += ret2;
-      /* if we can't write then dump excess data */
-      if (ret2 != ret)
-        vfs_transfer_file(in_fd, in_fsp, -1,NULL,n-(ret+headlen),NULL,0,0);
-
-    if (ret <= 0 || ret2 != ret)
-      return(total);
-    n -= ret;
-  }
-  return(total);
+	return transfer_file_internal(in_fsp->fd, out_fsp->fd, n, read_fn, write_fn);
 }
 
 /*******************************************************************

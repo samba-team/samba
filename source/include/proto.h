@@ -974,7 +974,9 @@ void unix_clean_name(char *s);
 void make_dir_struct(char *buf,char *mask,char *fname,SMB_OFF_T size,int mode,time_t date);
 void close_low_fds(void);
 int set_blocking(int fd, BOOL set);
-SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n,char *header,int headlen,int align);
+ssize_t transfer_file_internal(int infd, int outfd, size_t n, ssize_t (*read_fn)(int, void *, size_t),
+						ssize_t (*write_fn)(int, const void *, size_t));
+SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n);
 void msleep(int t);
 void become_daemon(void);
 BOOL yesno(char *p);
@@ -4436,9 +4438,7 @@ ssize_t vfs_read_data(files_struct *fsp, char *buf, size_t byte_count);
 ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N);
 int vfs_allocate_file_space(files_struct *fsp, SMB_OFF_T len);
 int vfs_set_filelen(files_struct *fsp, SMB_OFF_T len);
-SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
-			    int out_fd, files_struct *out_fsp,
-			    SMB_OFF_T n, char *header, int headlen, int align);
+SMB_OFF_T vfs_transfer_file(files_struct *in, files_struct *out, SMB_OFF_T n);
 char *vfs_readdirname(connection_struct *conn, void *p);
 int vfs_ChDir(connection_struct *conn, char *path);
 char *vfs_GetWd(connection_struct *conn, char *path);
@@ -4457,8 +4457,8 @@ int vfswrap_rmdir(connection_struct *conn, char *path);
 int vfswrap_closedir(connection_struct *conn, DIR *dirp);
 int vfswrap_open(connection_struct *conn, char *fname, int flags, mode_t mode);
 int vfswrap_close(files_struct *fsp, int fd);
-ssize_t vfswrap_read(files_struct *fsp, int fd, char *data, size_t n);
-ssize_t vfswrap_write(files_struct *fsp, int fd, char *data, size_t n);
+ssize_t vfswrap_read(files_struct *fsp, int fd, void *data, size_t n);
+ssize_t vfswrap_write(files_struct *fsp, int fd, const void *data, size_t n);
 SMB_OFF_T vfswrap_lseek(files_struct *fsp, int filedes, SMB_OFF_T offset, int whence);
 int vfswrap_rename(connection_struct *conn, char *old, char *new);
 int vfswrap_fsync(files_struct *fsp, int fd);
