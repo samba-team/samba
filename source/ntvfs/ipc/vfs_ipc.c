@@ -667,6 +667,9 @@ static NTSTATUS ipc_trans(struct smbsrv_request *req, struct smb_trans2 *trans)
 {
 	NTSTATUS status;
 
+	if (strequal(trans->in.trans_name, "\\PIPE\\LANMAN"))
+		return ipc_rap_call(req, trans);
+
        	if (trans->in.setup_count != 2) {
 		return NT_STATUS_INVALID_PARAMETER;
 	}

@@ -1275,7 +1275,7 @@ void reply_trans_generic(struct smbsrv_request *req, uint8_t command)
 
 	/* parse out the setup words */
 	trans.in.setup = talloc(req->mem_ctx, trans.in.setup_count * sizeof(uint16_t));
-	if (!trans.in.setup) {
+	if (trans.in.setup_count && !trans.in.setup) {
 		req_reply_error(req, NT_STATUS_NO_MEMORY);
 		return;
 	}
