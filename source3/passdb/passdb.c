@@ -42,6 +42,9 @@ static void pdb_fill_default_sam(SAM_ACCOUNT *user)
 {
 	ZERO_STRUCT(user->private); /* Don't touch the talloc context */
 
+	/* no initial methods */
+	user->methods = NULL;
+
         /* Don't change these timestamp settings without a good reason.
            They are important for NT member server compatibility. */
 
