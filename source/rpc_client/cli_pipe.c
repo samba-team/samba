@@ -755,10 +755,8 @@ static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *tra
 			          sizeof(pipe_names[pipe_idx].trans_syntax));
 
 			/* copy the required syntaxes out so we can do the right bind */
-			memcpy(transfer, &(pipe_names[pipe_idx].trans_syntax),
-			       sizeof(pipe_names[pipe_idx].trans_syntax));
-			memcpy(abstract, &(pipe_names[pipe_idx].abstr_syntax),
-			       sizeof(pipe_names[pipe_idx].abstr_syntax));
+			*transfer = pipe_names[pipe_idx].trans_syntax;
+			*abstract = pipe_names[pipe_idx].abstr_syntax;
 
 			return True;
 		}
@@ -811,9 +809,8 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 	}
 
 	/* check the transfer syntax */
-	if (!((hdr_ba->transfer.version == transfer->version) &&
-	     (memcmp(hdr_ba->transfer.data, transfer->data,
-	             sizeof(transfer->version)) ==0)))
+	if ((hdr_ba->transfer.version != transfer->version) ||
+	     (memcmp(&hdr_ba->transfer.uuid, &transfer->uuid, sizeof(transfer->uuid)) !=0))
 	{
 		DEBUG(0,("bind_rpc_pipe: transfer syntax differs\n"));
 		return False;
@@ -834,10 +831,10 @@ static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *
 do an rpc bind
 ****************************************************************************/
 
-static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
-				RPC_IFACE *abstract, RPC_IFACE *transfer, 
-				char *my_name)
+static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
 {
+	RPC_IFACE abstract;
+	RPC_IFACE transfer;
 	prs_struct hdr;
 	prs_struct hdr_rb;
 	prs_struct hdr_auth;
@@ -851,14 +848,14 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	BOOL ntlmssp_auth = cli->ntlmssp_cli_flgs != 0;
 	uint32 rpc_call_id;
 
-	if (pipe_name == NULL || abstract == NULL || transfer == NULL)
+	if (pipe_name == NULL )
 	{
 		return False;
 	}
 
 	DEBUG(5,("Bind RPC Pipe[%x]: %s\n", cli->nt_pipe_fnum, pipe_name));
 
-	if (!valid_pipe_name(pipe_name, abstract, transfer)) return False;
+	if (!valid_pipe_name(pipe_name, &abstract, &transfer)) return False;
 
 	prs_init(&hdr      , 0x10                     , 4, 0x0          , False);
 	prs_init(&hdr_rb   , 1024                     , 4, SAFETY_MARGIN, False);
@@ -875,7 +872,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 	                    ntlmssp_auth ? &auth_req : NULL,
 	                    ntlmssp_auth ? &auth_ntlm : NULL,
 	                    rpc_call_id,
-	                    abstract, transfer,
+	                    &abstract, &transfer,
 	                    global_myname, cli->domain, cli->ntlmssp_cli_flgs);
 
 	/* this is a hack due to limitations in rpc_api_pipe */
@@ -896,7 +893,7 @@ static BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name,
 
 		if (rdata.offset != 0)
 		{
-			valid_ack = check_bind_response(&hdr_ba, pipe_name, transfer);
+			valid_ack = check_bind_response(&hdr_ba, pipe_name, &transfer);
 		}
 
 		if (valid_ack)
@@ -1032,8 +1029,6 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
 
 BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 {
-	RPC_IFACE abstract;
-	RPC_IFACE transfer;
 	int fnum;
 
 	/******************* open the pipe *****************/
@@ -1072,9 +1067,7 @@ BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
 
 	/******************* bind request on pipe *****************/
 
-	if (!rpc_pipe_bind(cli, pipe_name,
-	                   &abstract, &transfer,
-	                   global_myname))
+	if (!rpc_pipe_bind(cli, pipe_name, global_myname))
 	{
 		DEBUG(0,("cli_nt_session_open: rpc bind failed. Error was %s\n",
 		          cli_errstr(cli)));

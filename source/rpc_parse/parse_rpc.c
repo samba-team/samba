@@ -32,95 +32,86 @@ extern int DEBUGLEVEL;
 interface/version dce/rpc pipe identification
 ********************************************************************/
 
-#define TRANS_SYNT_V2             \
-{                                 \
-	{                             \
-		0x04, 0x5d, 0x88, 0x8a,   \
-		0xeb, 0x1c, 0xc9, 0x11,   \
-		0x9f, 0xe8, 0x08, 0x00,   \
-		0x2b, 0x10, 0x48, 0x60    \
-	}, 0x02                       \
-}                                 \
+#define TRANS_SYNT_V2                       \
+{                                           \
+	{                                   \
+		0x8a885d04, 0x1ceb, 0x11c9, \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
+	}, 0x02                             \
+}
 
-#define SYNT_NETLOGON_V2          \
-{                                 \
-	{                             \
-		0x04, 0x5d, 0x88, 0x8a,   \
-		0xeb, 0x1c, 0xc9, 0x11,   \
-		0x9f, 0xe8, 0x08, 0x00,   \
-		0x2b, 0x10, 0x48, 0x60    \
-	}, 0x02                       \
-}                                 \
+#define SYNT_NETLOGON_V2                    \
+{                                           \
+	{                                   \
+		0x8a885d04, 0x1ceb, 0x11c9, \
+		{ 0x9f, 0xe8, 0x08, 0x00,   \
+		0x2b, 0x10, 0x48, 0x60 }    \
+	}, 0x02                             \
+}
 
-#define SYNT_WKSSVC_V1            \
-{                                 \
-	{                             \
-		0x98, 0xd0, 0xff, 0x6b,   \
-		0x12, 0xa1, 0x10, 0x36,   \
-		0x98, 0x33, 0x46, 0xc3,   \
-		0xf8, 0x7e, 0x34, 0x5a    \
-	}, 0x01                       \
-}                                 \
+#define SYNT_WKSSVC_V1                      \
+{                                           \
+	{                                   \
+		0x6bffd098, 0xa112, 0x3610, \
+		{ 0x98, 0x33, 0x46, 0xc3,   \
+		0xf8, 0x7e, 0x34, 0x5a }    \
+	}, 0x01                             \
+}
 
-#define SYNT_SRVSVC_V3            \
-{                                 \
-	{                             \
-		0xc8, 0x4f, 0x32, 0x4b,   \
-		0x70, 0x16, 0xd3, 0x01,   \
-		0x12, 0x78, 0x5a, 0x47,   \
-		0xbf, 0x6e, 0xe1, 0x88    \
-	}, 0x03                       \
-}                                 \
+#define SYNT_SRVSVC_V3                      \
+{                                           \
+	{                                   \
+		0x4b324fc8, 0x1670, 0x01d3, \
+		{ 0x12, 0x78, 0x5a, 0x47,   \
+		0xbf, 0x6e, 0xe1, 0x88 }    \
+	}, 0x03                             \
+}
 
-#define SYNT_LSARPC_V0            \
-{                                 \
-	{                             \
-		0x78, 0x57, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0x89, 0xab    \
-	}, 0x00                       \
-}                                 \
+#define SYNT_LSARPC_V0                      \
+{                                           \
+	{                                   \
+		0x12345778, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xab }    \
+	}, 0x00                             \
+}
 
-#define SYNT_SAMR_V1              \
-{                                 \
-	{                             \
-		0x78, 0x57, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0x89, 0xac    \
-	}, 0x01                       \
-}                                 \
+#define SYNT_SAMR_V1                        \
+{                                           \
+	{                                   \
+		0x12345778, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0x89, 0xac }    \
+	}, 0x01                             \
+}
 
-#define SYNT_NETLOGON_V1          \
-{                                 \
-	{                             \
-		0x78, 0x56, 0x34, 0x12,   \
-		0x34, 0x12, 0xcd, 0xab,   \
-		0xef, 0x00, 0x01, 0x23,   \
-		0x45, 0x67, 0xcf, 0xfb    \
-	}, 0x01                       \
-}                                 \
+#define SYNT_NETLOGON_V1                    \
+{                                           \
+	{                                   \
+		0x12345678, 0x1234, 0xabcd, \
+		{ 0xef, 0x00, 0x01, 0x23,   \
+		0x45, 0x67, 0xcf, 0xfb }    \
+	}, 0x01                             \
+}
 
-#define SYNT_WINREG_V1            \
-{                                 \
-	{                             \
-		0x01, 0xd0, 0x8c, 0x33,   \
-		0x44, 0x22, 0xf1, 0x31,   \
-		0xaa, 0xaa, 0x90, 0x00,   \
-		0x38, 0x00, 0x10, 0x03    \
-	}, 0x01                       \
-}                                 \
+#define SYNT_WINREG_V1                      \
+{                                           \
+	{                                   \
+		0x338cd001, 0x2244, 0x31f1, \
+		{ 0xaa, 0xaa, 0x90, 0x00,   \
+		0x38, 0x00, 0x10, 0x03 }    \
+	}, 0x01                             \
+}
 
-#define SYNT_NONE_V0              \
-{                                 \
-	{                             \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00,   \
-		0x00, 0x00, 0x00, 0x00    \
-	}, 0x00                       \
-}                                 \
+#define SYNT_NONE_V0                        \
+{                                           \
+	{                                   \
+		0x0, 0x0, 0x0,              \
+		{ 0x00, 0x00, 0x00, 0x00,   \
+		0x00, 0x00, 0x00, 0x00 }    \
+	}, 0x00                             \
+}
 
 /* pipe string names */
 #define PIPE_SRVSVC   "\\PIPE\\srvsvc"
@@ -211,8 +202,11 @@ static void smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int de
 
 	prs_align(ps);
 
-	prs_uint8s (False, "data   ", ps, depth, ifc->data, sizeof(ifc->data));
-	prs_uint32 (       "version", ps, depth, &(ifc->version));
+	prs_uint32 ("data   ", ps, depth, &ifc->uuid.time_low);
+	prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_mid);
+	prs_uint16 ("data   ", ps, depth, &ifc->uuid.time_hi_and_version);
+	prs_uint8s (True, "data   ", ps, depth, ifc->uuid.remaining, sizeof(ifc->uuid.remaining));
+	prs_uint32 ("version", ps, depth, &ifc->version);
 }
 
 /*******************************************************************
@@ -285,10 +279,10 @@ void make_rpc_hdr_rb(RPC_HDR_RB *rpc,
 	rpc->num_syntaxes = num_syntaxes ; /* the number of syntaxes (has always been 1?)(0x1) */
 
 	/* num and vers. of interface client is using */
-	memcpy(&(rpc->abstract), abstract, sizeof(rpc->abstract));
+	rpc->abstract = *abstract;
 
 	/* num and vers. of interface to use for replies */
-	memcpy(&(rpc->transfer), transfer, sizeof(rpc->transfer));
+	rpc->transfer = *transfer;
 }
 
 /*******************************************************************
