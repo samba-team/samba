@@ -24,16 +24,17 @@ e swat /etc/inet/inetd.conf=scripts/inetd.conf ? ? ?
 #
 # Create the samba subtree.
 #
-d none $DOCDIR 755 root other
+d none docs 755 root other
+d none man 755 root other
 d none $CONFIGDIR 755 root sys
 d none $PRIVATE_DIR 700 root sys
-d none $SBINDIR 0755 root other
-d none $BINDIR 0755 root other
-d none $LIBDIR 0755 root other
-d none $LIBDIR/charset 0755 root other
-d none $LIBDIR/vfs 0755 root other
+d none sbin 0755 root other
+d none bin 0755 root other
+d none lib 0755 root other
+d none lib/charset 0755 root other
+d none lib/vfs 0755 root other
 d none include 0755 root other
-d none $SWATDIR 0755 root other
+d none swat 0755 root other
 d none $LOGFILEBASE 0755 root other
 d none $PIDDIR 0755 root other
 #
