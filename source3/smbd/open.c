@@ -166,8 +166,8 @@ int fd_attempt_close(file_fd_struct *fd_ptr)
       fd_ptr->fd_readonly = -1;
       fd_ptr->fd_writeonly = -1;
       fd_ptr->real_open_flags = -1;
-      fd_ptr->dev = (uint32)-1;
-      fd_ptr->inode = (uint32)-1;
+      fd_ptr->dev = (SMB_DEV_T)-1;
+      fd_ptr->inode = (SMB_INO_T)-1;
       fd_ptr->uid_cache_count = 0;
     } else {
       fd_remove_from_uid_cache(fd_ptr, (uid_t)current_user.uid);
@@ -484,8 +484,8 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     }
 
     /* Set the correct entries in fd_ptr. */
-    fd_ptr->dev = (uint32)sbuf->st_dev;
-    fd_ptr->inode = (uint32)sbuf->st_ino;
+    fd_ptr->dev = sbuf->st_dev;
+    fd_ptr->inode = sbuf->st_ino;
 
     fsp->fd_ptr = fd_ptr;
     conn->num_files_open++;
@@ -596,8 +596,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
   BOOL share_locked = False;
   BOOL fcbopen = False;
   int token;
-  uint32 dev = 0;
-  uint32 inode = 0;
+  SMB_DEV_T dev = 0;
+  SMB_INO_T inode = 0;
   int num_share_modes = 0;
 
   fsp->open = False;
@@ -681,8 +681,8 @@ void open_file_shared(files_struct *fsp,connection_struct *conn,char *fname,int 
 
     if (file_existed)
     {
-      dev = (uint32)sbuf.st_dev;
-      inode = (uint32)sbuf.st_ino;
+      dev = sbuf.st_dev;
+      inode = sbuf.st_ino;
       lock_share_entry(conn, dev, inode, &token);
       share_locked = True;
       num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);
@@ -994,15 +994,16 @@ BOOL check_file_sharing(connection_struct *conn,char *fname, BOOL rename_op)
   struct stat sbuf;
   int token;
   int pid = getpid();
-  uint32 dev, inode;
+  SMB_DEV_T dev;
+  SMB_INO_T inode;
 
   if(!lp_share_modes(SNUM(conn)))
     return True;
 
   if (sys_stat(fname,&sbuf) == -1) return(True);
 
-  dev = (uint32)sbuf.st_dev;
-  inode = (uint32)sbuf.st_ino;
+  dev = sbuf.st_dev;
+  inode = sbuf.st_ino;
 
   lock_share_entry(conn, dev, inode, &token);
   num_share_modes = get_share_modes(conn, token, dev, inode, &old_shares);

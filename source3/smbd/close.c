@@ -99,8 +99,8 @@ static void close_filestruct(files_struct *fsp)
 ****************************************************************************/
 void close_file(files_struct *fsp, BOOL normal_close)
 {
-	uint32 dev = fsp->fd_ptr->dev;
-	uint32 inode = fsp->fd_ptr->inode;
+	SMB_DEV_T dev = fsp->fd_ptr->dev;
+	SMB_INO_T inode = fsp->fd_ptr->inode;
 	int token;
 	connection_struct *conn = fsp->conn;
 

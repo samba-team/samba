@@ -48,35 +48,6 @@ typedef int BOOL;
 /* limiting size of ipc replies */
 #define REALLOC(ptr,size) Realloc(ptr,MAX((size),4*1024))
 
-/*
-   Samba needs type definitions for int16, int32, uint16 and uint32.
-   
-   Normally these are signed and unsigned 16 and 32 bit integers, but
-   they actually only need to be at least 16 and 32 bits
-   respectively. Thus if your word size is 8 bytes just defining them
-   as signed and unsigned int will work.
-*/
-
-#ifndef uint8
-typedef unsigned char uint8;
-#endif
-
-#ifndef uint16
-typedef unsigned short uint16;
-#endif
-
-#ifndef uchar
-#define uchar unsigned char
-#endif
-
-#ifndef int16
-#define int16 short
-#endif
-
-#ifndef uint16
-#define uint16 unsigned short
-#endif
-
 #define SIZEOFWORD 2
 
 #ifndef DEF_CREATE_MASK
@@ -507,8 +478,8 @@ typedef struct file_fd_struct
 	uint16 ref_count;
 	uint16 uid_cache_count;
 	uid_t uid_users_cache[10];
-	uint32 dev;
-	uint32 inode;
+	SMB_DEV_T dev;
+	SMB_INO_T inode;
 	int fd;
 	int fdnum;
 	int fd_readonly;
@@ -701,9 +672,9 @@ typedef struct
    to support the following operations */
 struct share_ops {
 	BOOL (*stop_mgmt)(void);
-	BOOL (*lock_entry)(connection_struct *, uint32 , uint32 , int *);
-	BOOL (*unlock_entry)(connection_struct *, uint32 , uint32 , int );
-	int (*get_entries)(connection_struct *, int , uint32 , uint32 , share_mode_entry **);
+	BOOL (*lock_entry)(connection_struct *, SMB_DEV_T , SMB_INO_T , int *);
+	BOOL (*unlock_entry)(connection_struct *, SMB_DEV_T , SMB_INO_T , int );
+	int (*get_entries)(connection_struct *, int , SMB_DEV_T , SMB_INO_T , share_mode_entry **);
 	void (*del_entry)(int , files_struct *);
 	BOOL (*set_entry)(int, files_struct *, uint16 , uint16 );
 	BOOL (*remove_oplock)(files_struct *, int);
@@ -1551,19 +1522,19 @@ extern int unix_ERR_code;
  * 
  * Form of this is :
  *
- *  0     2       6        10       14      18       22
+ *  0     2       6        10       14    14+devsize 14+devsize+inodesize
  *  +----+--------+--------+--------+-------+--------+
- *  | cmd| pid    | dev    | inode  | sec   |  usec  |
+ *  | cmd| pid    | sec    | usec   | dev   |  inode |
  *  +----+--------+--------+--------+-------+--------+
  */
 
 #define OPLOCK_BREAK_CMD 0x1
 #define OPLOCK_BREAK_PID_OFFSET 2
-#define OPLOCK_BREAK_DEV_OFFSET 6
-#define OPLOCK_BREAK_INODE_OFFSET 10
-#define OPLOCK_BREAK_SEC_OFFSET 14
-#define OPLOCK_BREAK_USEC_OFFSET 18
-#define OPLOCK_BREAK_MSG_LEN 22
+#define OPLOCK_BREAK_SEC_OFFSET 6
+#define OPLOCK_BREAK_USEC_OFFSET 10
+#define OPLOCK_BREAK_DEV_OFFSET 14
+#define OPLOCK_BREAK_INODE_OFFSET (OPLOCK_BREAK_DEV_OFFSET + sizeof(SMB_DEV_T))
+#define OPLOCK_BREAK_MSG_LEN (OPLOCK_BREAK_INODE_OFFSET + sizeof(SMB_INO_T))
 
 
 #define CMD_REPLY 0x8000

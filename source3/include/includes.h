@@ -260,6 +260,14 @@
 #include <compat.h>
 #endif
 
+#ifdef HAVE_STROPTS_H
+#include <stropts.h>
+#endif
+
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif
+
 #ifndef uchar
 #define uchar unsigned char
 #endif
@@ -268,6 +276,31 @@
 #define schar signed char
 #else
 #define schar char
+#endif
+
+/*
+   Samba needs type definitions for int16, int32, uint16 and uint32.
+
+   Normally these are signed and unsigned 16 and 32 bit integers, but
+   they actually only need to be at least 16 and 32 bits
+   respectively. Thus if your word size is 8 bytes just defining them
+   as signed and unsigned int will work.
+*/
+
+#ifndef uint8
+#define uint8 unsigned char
+#endif
+
+#ifndef int16
+#if (SIZEOF_SHORT == 4)
+#define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
+#else /* SIZEOF_SHORT != 4 */
+#define int16 short
+#endif /* SIZEOF_SHORT != 4 */
+#endif
+
+#ifndef uint16
+#define uint16 unsigned int16
 #endif
 
 #ifndef int32
@@ -282,6 +315,18 @@
 
 #ifndef uint32
 #define uint32 unsigned int32
+#endif
+
+/*
+ * Type for device and inodes.
+ */
+
+#ifndef SMB_DEV_T
+#define SMB_DEV_T uint32
+#endif
+
+#ifndef SMB_INO_T
+#define SMB_INO_T uint32
 #endif
 
 #ifndef MIN

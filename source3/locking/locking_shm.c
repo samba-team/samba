@@ -45,8 +45,8 @@ typedef struct
 {
   int next_offset; /* offset of next record in chain from hash bucket */
   int locking_version;
-  int32 st_dev;
-  int32 st_ino;
+  SMB_DEV_T st_dev;
+  SMB_INO_T st_ino;
   int num_share_mode_entries;
   int share_mode_entries; /* Chain of share mode entries for this file */
   char file_name[1];
@@ -63,7 +63,7 @@ static int read_only;
 
 
 /* Conversion to hash entry index from device and inode numbers. */
-#define HASH_ENTRY(dev,ino) ((((uint32)(dev)) ^ ((uint32)(ino))) % shmops->hash_size())
+#define HASH_ENTRY(dev,ino) ((unsigned int)(((dev) ^ (ino)) % shmops->hash_size()))
 
 
 /*******************************************************************
@@ -78,7 +78,7 @@ static BOOL shm_stop_share_mode_mgmt(void)
   lock a hash bucket entry in shared memory for share_mode management 
   ******************************************************************/
 static BOOL shm_lock_share_entry(connection_struct *conn,
-				 uint32 dev, uint32 inode, int *ptok)
+				 SMB_DEV_T dev, SMB_INO_T inode, int *ptok)
 {
 	return shmops->lock_hash_entry(HASH_ENTRY(dev, inode));
 }
@@ -87,7 +87,7 @@ static BOOL shm_lock_share_entry(connection_struct *conn,
   unlock a hash bucket entry in shared memory for share_mode management 
   ******************************************************************/
 static BOOL shm_unlock_share_entry(connection_struct *conn,
-				   uint32 dev, uint32 inode, int token)
+				   SMB_DEV_T dev, SMB_INO_T inode, int token)
 {
   return shmops->unlock_hash_entry(HASH_ENTRY(dev, inode));
 }
@@ -96,7 +96,7 @@ static BOOL shm_unlock_share_entry(connection_struct *conn,
 get all share mode entries in shared memory for a dev/inode pair.
 ********************************************************************/
 static int shm_get_share_modes(connection_struct *conn,
-			       int token, uint32 dev, uint32 inode, 
+			       int token, SMB_DEV_T dev, SMB_INO_T inode, 
 			       share_mode_entry **old_shares)
 {
   int *mode_array;
@@ -259,7 +259,8 @@ del the share mode of a file.
 ********************************************************************/
 static void shm_del_share_mode(int token, files_struct *fsp)
 {
-  uint32 dev, inode;
+  SMB_DEV_T dev;
+  SMB_INO_T inode;
   int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
@@ -387,7 +388,8 @@ set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
 static BOOL shm_set_share_mode(int token, files_struct *fsp, uint16 port, uint16 op_type)
 {
-  int32 dev, inode;
+  SMB_DEV_T dev;
+  SMB_INO_T inode;
   int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
@@ -495,7 +497,8 @@ Remove an oplock port and mode entry from a share mode.
 ********************************************************************/
 static BOOL shm_remove_share_oplock(files_struct *fsp, int token)
 {
-  uint32 dev, inode;
+  SMB_DEV_T dev;
+  SMB_INO_T inode;
   int *mode_array;
   unsigned int hash_entry;
   share_mode_record *file_scanner_p;
@@ -696,6 +699,3 @@ struct share_ops *locking_shm_init(int ronly)
  int locking_shm_dummy_procedure(void)
 {return 0;}
 #endif /* FAST_SHARE_MODES */
-
-
-
