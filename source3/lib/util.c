@@ -1099,42 +1099,57 @@ BOOL process_exists(pid_t pid)
 
 
 /*******************************************************************
-turn a uid into a user name
+ Convert a uid into a user name.
 ********************************************************************/
+
 char *uidtoname(uid_t uid)
 {
-  static char name[40];
-  struct passwd *pass = sys_getpwuid(uid);
-  if (pass) return(pass->pw_name);
-  slprintf(name, sizeof(name) - 1, "%d",(int)uid);
-  return(name);
+	static fstring name;
+	struct passwd *pass;
+
+	if (winbind_uidtoname(name, uid))
+		return name;
+
+	pass = sys_getpwuid(uid);
+	if (pass) return(pass->pw_name);
+	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
+	return(name);
 }
 
 
 /*******************************************************************
-turn a gid into a group name
+ Convert a gid into a group name.
 ********************************************************************/
 
 char *gidtoname(gid_t gid)
 {
-	static char name[40];
-	struct group *grp = getgrgid(gid);
+	static fstring name;
+	struct group *grp;
+
+	if (winbind_gidtoname(name, gid))
+		return name;
+
+	grp = getgrgid(gid);
 	if (grp) return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
 
 /*******************************************************************
-turn a user name into a uid
+ Convert a user name into a uid. If winbindd is present uses this.
 ********************************************************************/
-uid_t nametouid(const char *name)
+
+uid_t nametouid(char *name)
 {
 	struct passwd *pass;
 	char *p;
 	uid_t u;
 
-	u = strtol(name, &p, 0);
+	u = (uid_t)strtol(name, &p, 0);
 	if (p != name) return u;
+
+	if (winbind_nametouid(&u, name))
+		return u;
 
 	pass = sys_getpwnam(name);
 	if (pass) return(pass->pw_uid);
@@ -1142,16 +1157,21 @@ uid_t nametouid(const char *name)
 }
 
 /*******************************************************************
-turn a group name into a gid
+ Convert a name to a gid_t if possible. Return -1 if not a group. If winbindd
+ is present does a shortcut lookup...
 ********************************************************************/
-gid_t nametogid(const char *name)
+
+gid_t nametogid(char *name)
 {
 	struct group *grp;
 	char *p;
 	gid_t g;
 
-	g = strtol(name, &p, 0);
+	g = (gid_t)strtol(name, &p, 0);
 	if (p != name) return g;
+
+	if (winbind_nametogid(&g, name))
+		return g;
 
 	grp = getgrnam(name);
 	if (grp) return(grp->gr_gid);

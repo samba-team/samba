@@ -257,4 +257,230 @@ void unbecome_root(void)
 	pop_sec_ctx();
 }
 
+/*****************************************************************
+ *THE CANONICAL* convert name to SID function.
+ Tries winbind first - then uses local lookup.
+*****************************************************************/  
+
+BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type)
+{
+	extern pstring global_myname;
+	fstring sid;
+
+	if (!winbind_lookup_name(name, psid, name_type)) {
+		BOOL ret;
+
+		DEBUG(10,("lookup_name: winbind lookup for %s failed - trying local\n", name ));
+
+		ret = local_lookup_name(global_myname, name, psid, name_type);
+		if (ret)
+			DEBUG(10,("lookup_name : (local) %s -> SID %s (type %u)\n",
+				name, sid_to_string(sid,psid),
+				(unsigned int)*name_type ));
+		else
+			DEBUG(10,("lookup name : (local) %s failed.\n",
+					name ));
+		return ret;
+	}
+
+	DEBUG(10,("lookup_name (winbindd): %s -> SID %s (type %u)\n",
+		name, sid_to_string(sid,psid), (unsigned int)*name_type ));
+	return True;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to name function.
+ Tries winbind first - then uses local lookup.
+*****************************************************************/  
+
+BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type)
+{
+	if (!name_type)
+		return False;
+
+	/* Check if this is our own sid.  This should perhaps be done by
+		winbind?  For the moment handle it here. */
+
+	if (sid->num_auths == 5) {
+		DOM_SID tmp_sid;
+		uint32 rid;
+
+		sid_copy(&tmp_sid, sid);
+		sid_split_rid(&tmp_sid, &rid);
+
+		if (sid_equal(&global_sam_sid, &tmp_sid)) {
+
+			return map_domain_sid_to_name(&tmp_sid, dom_name) &&
+				local_lookup_rid(rid, name, name_type);
+		}
+	}
+
+	if (!winbind_lookup_sid(sid, dom_name, name, name_type)) {
+		fstring sid_str;
+		DOM_SID tmp_sid;
+		uint32 rid;
+
+		DEBUG(10,("lookup_sid: winbind lookup for SID %s failed - trying local.\n", sid_to_string(sid_str, sid) ));
+
+		sid_copy(&tmp_sid, sid);
+		sid_split_rid(&tmp_sid, &rid);
+		return map_domain_sid_to_name(&tmp_sid, dom_name) &&
+				lookup_known_rid(&tmp_sid, rid, name, name_type);
+	}
+	return True;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert uid_t to SID function.
+ Tries winbind first - then uses local lookup.
+ Returns SID pointer.
+*****************************************************************/  
+
+DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid)
+{
+	fstring sid;
+
+	if (!winbind_uid_to_sid(psid, uid)) {
+		DEBUG(10,("uid_to_sid: winbind lookup for uid %u failed - trying local.\n", (unsigned int)uid ));
+
+		return local_uid_to_sid(psid, uid);
+	}
+
+	DEBUG(10,("uid_to_sid: winbindd %u -> %s\n",
+		(unsigned int)uid, sid_to_string(sid, psid) ));
+
+	return psid;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert gid_t to SID function.
+ Tries winbind first - then uses local lookup.
+ Returns SID pointer.
+*****************************************************************/  
+
+DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
+{
+	fstring sid;
+
+	if (!winbind_gid_to_sid(psid, gid)) {
+		DEBUG(10,("gid_to_sid: winbind lookup for gid %u failed - trying local.\n", (unsigned int)gid ));
+
+		return local_gid_to_sid(psid, gid);
+	}
+
+	DEBUG(10,("gid_to_sid: winbindd %u -> %s\n",
+		(unsigned int)gid, sid_to_string(sid,psid) ));
+
+	return psid;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to uid function.
+ Tries winbind first - then uses local lookup.
+ Returns True if this name is a user sid and the conversion
+ was done correctly, False if not.
+*****************************************************************/  
+
+BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
+{
+	fstring dom_name, name, sid_str;
+	enum SID_NAME_USE name_type;
+
+	*sidtype = SID_NAME_UNKNOWN;
+
+	/*
+	 * First we must look up the name and decide if this is a user sid.
+	 */
+
+	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
+		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed - trying local.\n",
+				sid_to_string(sid_str, psid) ));
+
+		return local_sid_to_uid(puid, psid, sidtype);
+	}
+
+	/*
+	 * Ensure this is a user sid.
+	 */
+
+	if (name_type != SID_NAME_USER) {
+		DEBUG(10,("sid_to_uid: winbind lookup succeeded but SID is not a uid (%u)\n",
+				(unsigned int)name_type ));
+		return False;
+	}
+
+	*sidtype = SID_NAME_USER;
+
+	/*
+	 * Get the uid for this SID.
+	 */
+
+	if (!winbind_sid_to_uid(puid, psid)) {
+		DEBUG(10,("sid_to_uid: winbind lookup for sid %s failed.\n",
+				sid_to_string(sid_str, psid) ));
+		return False;
+	}
+
+	DEBUG(10,("sid_to_uid: winbindd %s -> %u\n",
+		sid_to_string(sid_str, psid),
+		(unsigned int)*puid ));
+
+	return True;
+}
+
+/*****************************************************************
+ *THE CANONICAL* convert SID to gid function.
+ Tries winbind first - then uses local lookup.
+ Returns True if this name is a user sid and the conversion
+ was done correctly, False if not.
+*****************************************************************/  
+
+BOOL sid_to_gid(DOM_SID *psid, gid_t *pgid, enum SID_NAME_USE *sidtype)
+{
+	fstring dom_name, name, sid_str;
+	enum SID_NAME_USE name_type;
+
+	*sidtype = SID_NAME_UNKNOWN;
+
+	/*
+	 * First we must look up the name and decide if this is a group sid.
+	 */
+
+	if (!winbind_lookup_sid(psid, dom_name, name, &name_type)) {
+		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed - trying local.\n",
+				sid_to_string(sid_str, psid) ));
+
+		return local_sid_to_gid(pgid, psid, sidtype);
+	}
+
+	/*
+	 * Ensure this is a group sid.
+	 */
+
+	if ((name_type != SID_NAME_DOM_GRP) && (name_type != SID_NAME_ALIAS) && (name_type != SID_NAME_WKN_GRP)) {
+		DEBUG(10,("sid_to_gid: winbind lookup succeeded but SID is not a know group (%u)\n",
+				(unsigned int)name_type ));
+
+		return local_sid_to_gid(pgid, psid, sidtype);
+	}
+
+	*sidtype = name_type;
+
+	/*
+	 * Get the gid for this SID.
+	 */
+
+	if (!winbind_sid_to_gid(pgid, psid)) {
+		DEBUG(10,("sid_to_gid: winbind lookup for sid %s failed.\n",
+				sid_to_string(sid_str, psid) ));
+		return False;
+	}
+
+	DEBUG(10,("gid_to_uid: winbindd %s -> %u\n",
+		sid_to_string(sid_str, psid),
+		(unsigned int)*pgid ));
+
+	return True;
+}
+
 #undef OLD_NTDOMAIN
