@@ -3,6 +3,14 @@ Wed Aug 20 21:26:58 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 	* lib/kafs/afskrb5.c (get_cred): Check cached afs tickets for
  	expiration.
 
+Wed Aug 20 17:40:31 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/recvauth.c (krb5_recvauth): Send a KRB-ERROR iff
+ 	there's an error.
+
+	* lib/krb5/sendauth.c (krb5_sendauth): correct the protocol
+ 	documentation and process KRB-ERROR's
+
 Tue Aug 19 20:41:30 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos4.c: Fix memory leak in v4 protocol handler.
