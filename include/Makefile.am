@@ -29,7 +29,6 @@ foo_DATA =					\
 	parse_units.h				\
 	roken-common.h				\
 	sha.h					\
-	sch.h					\
 	sl.h					\
 	xdbm.h					\
 	@EXTRA_HDRS@
@@ -84,8 +83,6 @@ parse_units.h:
 	$(LN_S) $(top_srcdir)/lib/roken/parse_units.h .
 roken-common.h:
 	$(LN_S) $(top_srcdir)/lib/roken/roken-common.h .
-sch.h:
-	$(LN_S) $(top_srcdir)/lib/sch/sch.h .
 sha.h:
 	$(LN_S) $(top_srcdir)/lib/des/sha.h .
 sl.h:
