@@ -101,6 +101,8 @@ int main(int argc,char *argv[])
   BOOL find_status=False;
   int i;
   static pstring servicesf = CONFIGFILE;
+  struct in_addr bcast_addr;
+  BOOL got_bcast = False;
   
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -116,6 +118,8 @@ int main(int argc,char *argv[])
       {
       case 'B':
 	iface_set_default(NULL,optarg,NULL);
+	bcast_addr = *interpret_addr2(optarg);
+	got_bcast = True;
 	break;
       case 'i':
 	strcpy(scope,optarg);
@@ -149,14 +153,16 @@ int main(int argc,char *argv[])
 
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
-    return (-1);
   }
 
   load_interfaces();
   init_structs();
   if (!open_sockets()) return(1);
 
-  DEBUG(1,("Sending queries to %s\n",inet_ntoa(*iface_bcast(ipzero))));
+  if (!got_bcast)
+    bcast_addr = *iface_bcast(ipzero);
+
+  DEBUG(1,("Sending queries to %s\n",inet_ntoa(bcast_addr)));
 
 
   for (i=optind;i<argc;i++)
@@ -187,7 +193,7 @@ int main(int argc,char *argv[])
       }
 
     if (name_query(ServerFD,lookup,lookup_type,bcast,True,
-		     *iface_bcast(ipzero),&ip,NULL)) 
+		   bcast_addr,&ip,NULL)) 
 	{
 	  printf("%s %s\n",inet_ntoa(ip),lookup);
     }

@@ -302,7 +302,7 @@ int reply_unknown(char *inbuf,char *outbuf)
 int reply_ioctl(char *inbuf,char *outbuf)
 {
   DEBUG(3,("ignoring ioctl\n"));
-#if 1
+#if 0
   /* we just say it succeeds and hope its all OK. 
      some day it would be nice to interpret them individually */
   return set_message(outbuf,1,0,True); 

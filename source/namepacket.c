@@ -252,7 +252,7 @@ void reply_netbios_packet(struct packet_struct *p1,int trn_id,
   nmb->header.ancount = 1;
   nmb->header.nscount = 0;
   nmb->header.arcount = 0;
-  nmb->header.rcode = 0;
+  nmb->header.rcode = rcode;
   
   bzero((char*)&nmb->question,sizeof(nmb->question));
   

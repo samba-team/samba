@@ -4500,7 +4500,6 @@ static void usage(char *pname)
 
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
-    return (-1);
   }
 
   if (*workgroup == 0)
