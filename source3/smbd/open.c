@@ -1305,6 +1305,15 @@ files_struct *open_directory(connection_struct *conn, char *fname, SMB_STRUCT_ST
 				return NULL;
 			}
 
+			if( strchr_m(fname, ':')) {
+				file_free(fsp);
+				DEBUG(5,("open_directory: failing create on filename %s with colon in name\n", fname));
+				unix_ERR_class = ERRDOS;
+				unix_ERR_code = ERRinvalidname;
+				unix_ERR_ntstatus = NT_STATUS_NOT_A_DIRECTORY;
+				return NULL;
+			}
+
 			if(vfs_MkDir(conn,fname, unix_mode(conn,aDIR, fname)) < 0) {
 				DEBUG(2,("open_directory: unable to create %s. Error was %s\n",
 					 fname, strerror(errno) ));
