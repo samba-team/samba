@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2005 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -254,7 +254,7 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     if (flags & O_EXCL)
       myflags |= DB_EXCL;
 
-    if (flags & O_RDONLY)
+    if((flags & O_ACCMODE) == O_RDONLY)
       myflags |= DB_RDONLY;
 
     if (flags & O_TRUNC)
