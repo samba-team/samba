@@ -2361,6 +2361,12 @@ void unbecome_root(BOOL restore_dir);
 int real_utime(const char *name, struct utimbuf *buf);
 int real_utimes(const char *name, struct timeval tv[2]);
 
+/*The following definitions come from  smbwrapper/shared.c  */
+
+void smbw_setup_shared(void);
+char *smbw_getshared(const char *name);
+void smbw_setshared(const char *name, const char *val);
+
 /*The following definitions come from  smbwrapper/smbw.c  */
 
 void smbw_init(void);
