@@ -72,18 +72,21 @@ kt_list(int argc, char **argv)
     }
     printf("%s", "Version");
     printf("  ");
-    printf("%s", "Type");
+    printf("%-6s", "Type");
     printf("  ");
     printf("%s", "Principal");
     printf("\n");
     while((ret = krb5_kt_next_entry(context, kt, &entry, &cursor)) == 0){
 	char *p;
-	krb5_unparse_name(context, entry.principal, &p);
 	printf("   %3d ", entry.vno);
 	printf("  ");
-	printf(" %2d ", entry.keyblock.keytype);
+	krb5_keytype_to_string(context, entry.keyblock.keytype, &p);
+	printf("%-6s", p);
+	free(p);
 	printf("  ");
+	krb5_unparse_name(context, entry.principal, &p);
 	printf("%s ", p);
+	free(p);
 	printf("\n");
 	krb5_kt_free_entry(context, &entry);
     }
