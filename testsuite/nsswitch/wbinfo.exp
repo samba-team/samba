@@ -221,7 +221,8 @@ foreach { group } $groupname_gid_sid {
 
     set test_desc "lookup sid by gid [lindex $group 1]"
 
-    if { $sid != [lindex $group 2] } {
+    if { $sid != [lindex [split [lindex $group 2] " "] 0] ||
+         [lindex [split [lindex $group 2] " " ] 1] != 2 } {
 	fail $test_desc
     } else {
 	pass $test_desc
