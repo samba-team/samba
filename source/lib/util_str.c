@@ -430,6 +430,27 @@ BOOL str_is_all(const char *s,char c)
 	return True;
 }
 
+
+/**
+ * In developer builds, clobber a region of memory.
+ *
+ * If we think a string buffer is longer than it really is, this ought
+ * to make the failure obvious, by segfaulting (if in the heap) or by
+ * killing the return address (on the stack), or by trapping under a
+ * memory debugger.
+ *
+ * This is meant to catch possible string overflows, even if the
+ * actual string copied is not big enough to cause an overflow.
+ **/
+void clobber_region(char *dest, size_t len)
+{
+#ifdef DEVELOPER
+	/* F1 is odd and 0xf1f1f1f1 shouldn't be a valid pointer */
+	memset(dest, 0xF1, len);
+#endif
+}
+
+
 /**
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
@@ -444,13 +465,7 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 		return NULL;
 	}
 
-#ifdef DEVELOPER
-	/* We intentionally write out at the extremity of the destination
-	 * string.  If the destination is too short (e.g. pstrcpy into mallocd
-	 * or fstring) then this should cause an error under a memory
-	 * checker. */
-	dest[maxlength] = '\0';
-#endif
+	clobber_region(dest, maxlength+1);
 
 	if (!src) {
 		*dest = 0;
@@ -490,6 +505,8 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	src_len = strlen(src);
 	dest_len = strlen(dest);
 
+	clobber_region(dest + dest_len, maxlength + 1 - dest_len);
+	
 	if (src_len + dest_len > maxlength) {
 		DEBUG(0,("ERROR: string overflow by %d in safe_strcat [%.50s]\n",
 			 (int)(src_len + dest_len - maxlength), src));
@@ -499,7 +516,7 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 		dest[maxlength] = 0;
 		return NULL;
 	}
-	
+
 	memcpy(&dest[dest_len], src, src_len);
 	dest[dest_len + src_len] = 0;
 	return dest;
@@ -515,6 +532,8 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
 	size_t len, i;
+
+	clobber_region(dest, maxlength);
 
 	if (!dest) {
 		DEBUG(0,("ERROR: NULL dest in alpha_strcpy\n"));
@@ -554,8 +573,12 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
 char *StrnCpy(char *dest,const char *src,size_t n)
 {
 	char *d = dest;
+
+	clobber_region(dest, n+1);
+	
 	if (!dest)
 		return(NULL);
+	
 	if (!src) {
 		*dest = 0;
 		return(dest);
@@ -575,6 +598,8 @@ char *strncpyn(char *dest, const char *src, size_t n, char c)
 {
 	char *p;
 	size_t str_len;
+
+	clobber_region(dest, n+1);
 
 	p = strchr_m(src, c);
 	if (p == NULL) {
