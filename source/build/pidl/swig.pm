@@ -599,7 +599,7 @@ sub ParseUnion($)
 	$result .= "\tfor (i=0;i<count;i++) {\n";
 	$result .= "\t\tndr->data += ndr->offset;\n";
 	$result .= "\t\tndr->offset = 0;\n";
-	$result .= "\t\tNDR_CHECK(ndr_pull_spoolss_PrinterInfo(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));\n";
+	$result .= "\t\tNDR_CHECK(ndr_pull_$u->{NAME}(ndr, NDR_SCALARS|NDR_BUFFERS, level, &(*info)[i]));\n";
 	$result .= "\t}\n\n";
 	$result .= "\treturn NT_STATUS_OK;\n";
 	$result .= "\t}\n";
