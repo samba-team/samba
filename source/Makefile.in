@@ -111,7 +111,7 @@ SPROGS = bin/smbd bin/lsarpcd bin/svcctld bin/spoolssd bin/samrd \
          bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
 PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage bin/debug2html 
-PROGS3 = bin/regedit bin/samedit bin/net bin/svccontrol bin/cmdat bin/ntprint
+PROGS3 = bin/regedit bin/samedit bin/net bin/svccontrol bin/cmdat bin/ntspool
 PROGS4 = @WRAP@ @WRAP32@
 #MPROGS = @MPROGS@
 PROGS = $(PROGS1) $(PROGS2) $(PROGS3) $(PROGS4) $(MPROGS) bin/nmblookup bin/make_printerdef 
@@ -983,7 +983,7 @@ bin/rpctorture: $(RPCTORTURE_LIBS) $(RPCTORTURE_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(RPCTORTURE_OBJ) $(RPCTORTURE_LIBS) $(LIBS)
 
-bin/ntprint: $(SPOOLCLIENT_LIBS) $(SPOOLCLIENT_OBJ) bin/.dummy
+bin/ntspool: $(SPOOLCLIENT_LIBS) $(SPOOLCLIENT_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(LINK) -o $@ $(SPOOLCLIENT_OBJ) $(SPOOLCLIENT_LIBS) $(LIBS)
 

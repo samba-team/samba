@@ -161,8 +161,7 @@ const char *get_nt_error_msg(uint32 nt_code);
 
 void pwd_init(struct pwd_info *pwd);
 BOOL pwd_is_nullpwd(const struct pwd_info *pwd);
-void pwd_obfuscate_key(struct pwd_info *pwd, uint32 int_key, char *str_key);
-BOOL pwd_compare(const struct pwd_info *_pwd1, const struct pwd_info *_pwd2);
+BOOL pwd_compare(const struct pwd_info *pwd1, const struct pwd_info *pwd2);
 void pwd_read(struct pwd_info *pwd, char *passwd_report, BOOL do_encrypt);
 void pwd_set_nullpwd(struct pwd_info *pwd);
 void pwd_set_cleartext(struct pwd_info *pwd, char *clr);
@@ -191,7 +190,7 @@ void cred_hash1(uchar *out, const uchar *in, const uchar *key);
 void cred_hash2(uchar *out,uchar *in,uchar *key);
 void cred_hash3(uchar *out, const uchar *in,uchar *key, int forw);
 void SamOEMhash( uchar *data, const uchar *key, int val);
-void sam_pwd_hash(uint32 rid, const uchar *in, uchar *out, int forw);
+void sam_pwd_hash(unsigned int rid, const uchar *in, uchar *out, int forw);
 
 /*The following definitions come from  libsmb/smbencrypt.c  */
 
