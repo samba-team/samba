@@ -308,8 +308,8 @@ if [ -f /etc/inetd.conf ]; then
 fi
 
 # Add swat entry to xinetd.d if needed.
-if [ -d $RPM_BUILD_ROOT/etc/xinetd.d ]; then
-    mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
+if [ -d $RPM_BUILD_ROOT/etc/xinetd.d -a ! -f /etc/xinetd.d/swat ]; then
+        mv /etc/samba/samba.xinetd /etc/xinetd.d/swat
 else
 	rm -f /etc/samba/samba.xinetd
 fi
