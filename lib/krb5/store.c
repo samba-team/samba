@@ -193,7 +193,7 @@ krb5_ret_stringz(krb5_storage *sp,
 {
     char c;
     char *s = NULL;
-    len = 0;
+    size_t len = 0;
     size_t ret;
     while((ret = sp->fetch(sp, &c, 1)) == 1){
 	len++;
