@@ -2188,7 +2188,7 @@ int send_file_readX(connection_struct *conn, char *inbuf,char *outbuf,int length
 					exit_server("send_file_readX: fake_sendfile failed");
 				}
 				DEBUG( 3, ( "send_file_readX: fake_sendfile fnum=%d max=%d nread=%d\n",
-					fsp->fnum, (int)smb_maxcnt, (int)(nread + (data - outbuf)) ) );
+					fsp->fnum, (int)smb_maxcnt, (int)nread ) );
 				/* Returning -1 here means successful sendfile. */
 				return -1;
 			}
