@@ -2281,7 +2281,9 @@ BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info,
 BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
-
+	uint32 dm_offset, sd_offset, current_offset;
+	uint32 dummy_value = 0;
+	
 	prs_debug(ps, depth, desc, "smb_io_printer_info_2");
 	depth++;	
 	
@@ -2302,10 +2304,11 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!smb_io_relstr("location", buffer, depth, &info->location))
 		return False;
 
-	/* NT parses the DEVMODE at the end of the struct */
-	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+	/* save current offset and wind forwared by a uint32 */
+	dm_offset = prs_offset(ps);
+	if (!prs_uint32("devmode", ps, depth, &dummy_value))
 		return False;
-	
+
 	if (!smb_io_relstr("sepfile", buffer, depth, &info->sepfile))
 		return False;
 	if (!smb_io_relstr("printprocessor", buffer, depth, &info->printprocessor))
@@ -2315,7 +2318,29 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
 	if (!smb_io_relstr("parameters", buffer, depth, &info->parameters))
 		return False;
 
+	/* save current offset for the sec_desc */
+	sd_offset = prs_offset(ps);
+	if (!prs_uint32("sec_desc", ps, depth, &dummy_value))
+		return False;
+
+	
+	/* save current location so we can pick back up here */
+	current_offset = prs_offset(ps);
+	
+	/* parse the devmode */
+	if (!prs_set_offset(ps, dm_offset))
+		return False;
+	if (!smb_io_reldevmode("devmode", buffer, depth, &info->devmode))
+		return False;
+	
+	/* parse the sec_desc */
+	if (!prs_set_offset(ps, sd_offset))
+		return False;
 	if (!smb_io_relsecdesc("secdesc", buffer, depth, &info->secdesc))
+		return False;
+		
+	/* pick up where we left off */
+	if (!prs_set_offset(ps, current_offset))
 		return False;
 
 	if (!prs_uint32("attributes", ps, depth, &info->attributes))
@@ -3090,10 +3115,10 @@ return the size required by a struct in the stream
 
 uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 {
-	uint32 size=0;
+	uint32 size=0;	 
 		
 	size += 4;
-	/* JRA !!!! TESTME - WHAT ABOUT prs_align.... !!! */
+	
 	size += sec_desc_size( info->secdesc );
 
 	size+=size_of_device_mode( info->devmode );
@@ -3119,6 +3144,16 @@ uint32 spoolss_size_printer_info_2(PRINTER_INFO_2 *info)
 	size+=size_of_uint32( &info->status );
 	size+=size_of_uint32( &info->cjobs );
 	size+=size_of_uint32( &info->averageppm );	
+		
+	/* 
+	 * add any adjustments for alignment.  This is
+	 * not optimal since we could be calling this
+	 * function from a loop (e.g. enumprinters), but 
+	 * it is easier to maintain the calculation here and
+	 * not place the burden on the caller to remember.   --jerry
+	 */
+	size += size % 4;
+	
 	return size;
 }
 

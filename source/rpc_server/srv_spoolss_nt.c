@@ -1508,7 +1508,11 @@ static BOOL getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint32
 		*type = 0x4;
 		if((*data = (uint8 *)talloc(ctx, 4*sizeof(uint8) )) == NULL)
 			return False;
+#ifndef EMULATE_WIN2K_HACK /* JERRY */
 		SIVAL(*data, 0, 2);
+#else
+		SIVAL(*data, 0, 3);
+#endif
 		*needed = 0x4;
 		return True;
 	}
@@ -3016,7 +3020,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer, int snum)
 
 	printer->global_counter = global_counter;
 	printer->total_pages = 0;
-#if 0	/* JERRY */
+#ifndef EMULATE_WIN2K_HACK	/* JERRY */
 	printer->major_version = 0x0004; 	/* NT 4 */
 	printer->build_version = 0x0565; 	/* build 1381 */
 #else
@@ -3548,9 +3552,9 @@ static WERROR enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint3
 	}
 	
 	/* check the required size. */	
-	for (i=0; i<*returned; i++)
+	for (i=0; i<*returned; i++) 
 		(*needed) += spoolss_size_printer_info_2(&printers[i]);
-
+	
 	if (!alloc_buffer_size(buffer, *needed)) {
 		for (i=0; i<*returned; i++) {
 			free_devmode(printers[i].devmode);
@@ -3780,7 +3784,7 @@ static WERROR getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 	
 	/* check the required size. */	
 	*needed += spoolss_size_printer_info_2(printer);
-
+	
 	if (!alloc_buffer_size(buffer, *needed)) {
 		free_printer_info_2(printer);
 		return WERR_INSUFFICIENT_BUFFER;
@@ -5285,8 +5289,6 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 	if (!strequal(printer->info_2->location, old_printer->info_2->location))
 		msg.flags |= PRINTER_MESSAGE_LOCATION;
 
-	ZERO_STRUCT(msg);
-	
 	msg.low = PRINTER_CHANGE_ADD_PRINTER;
 	fstrcpy(msg.printer_name, printer->info_2->printername);
 
