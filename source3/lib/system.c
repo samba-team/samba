@@ -378,6 +378,7 @@ apparent reason.
 ****************************************************************************/
 struct hostent *sys_gethostbyname(char *name)
 {
+#ifdef REDUCE_ROOT_DNS_LOOKUPS
   char query[256], hostname[256];
   char *domain;
 
@@ -406,5 +407,8 @@ struct hostent *sys_gethostbyname(char *name)
 
   sprintf(query, "%s%s", name, domain);
   return(gethostbyname(query));
+#else /* REDUCE_ROOT_DNS_LOOKUPS */
+  return(gethostbyname(name));
+#endif /* REDUCE_ROOT_DNS_LOOKUPS */
 }
 

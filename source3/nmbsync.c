@@ -75,7 +75,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   
   p = skip_string(p,1);
   SSVAL(p,0,uLevel);
-  SSVAL(p,2,0x2000); /* buf length */
+  SSVAL(p,2,BUFFER_SIZE - SAFETY_MARGIN); /* buf length */
   p += 4;
   SIVAL(p,0,servertype);
   p += 4;
@@ -83,7 +83,7 @@ static BOOL add_info(struct subnet_record *d, struct work_record *work, int serv
   strcpy(p, work->work_group);
   p = skip_string(p,1);
   
-  if (cli_call_api(PTR_DIFF(p,param),0, 8,10000,
+  if (cli_call_api(PTR_DIFF(p,param),0, 8,BUFFER_SIZE - SAFETY_MARGIN,
 		   &rprcnt,&rdrcnt, param,NULL,
 		   &rparam,&rdata))
     {

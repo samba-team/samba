@@ -157,6 +157,11 @@ unsigned char cp_437[][4] = {
   {0xEF,0,0,0},
   {0,0,0,0}
 };
+
+/* lower->upper mapping for IBM Code Page 932 - MS-DOS Japanese SJIS */
+unsigned char cp_932[][4] = {
+  {0,0,0,0}
+};
  
 char xx_dos_char_map[256];
 char xx_upper_char_map[256];
@@ -255,11 +260,21 @@ void codepage_initialise(int client_codepage)
     case 437:
       cp = cp_437;
       break;
+    case 932:
+      cp = cp_932;
+      break;
     default:
+#ifdef KANJI
+      /* Use default codepage - currently 932 */
+      DEBUG(6,("codepage_initialise: Using default client codepage %d\n", 
+               932));
+      cp = cp_932;
+#else /* KANJI */
       /* Use default codepage - currently 850 */
       DEBUG(6,("codepage_initialise: Using default client codepage %d\n", 
                850));
       cp = cp_850;
+#endif /* KANJI */
       break;
   }
 
