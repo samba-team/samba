@@ -443,7 +443,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
 			break;
 		case SEC_ADS:
 			DEBUG(5,("Making default auth method list for security=ADS\n"));
-			auth_method_list = str_list_make("guest sam ads winbind ntdomain", NULL);
+			auth_method_list = str_list_make("guest sam winbind ntdomain", NULL);
 			break;
 		default:
 			DEBUG(5,("Unknown auth method!\n"));
