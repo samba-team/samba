@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -139,6 +139,7 @@ mic_des3
   krb5_error_code kret;
   krb5_data encdata;
   char *tmp;
+  char ivec[8];
 
   gssapi_krb5_encap_length (36, &len, &total_len);
 
@@ -219,10 +220,15 @@ mic_des3
       return GSS_S_FAILURE;
   }
 
-  kret = krb5_encrypt (gssapi_krb5_context,
-		       crypto,
-		       KRB5_KU_USAGE_SEQ,
-		       seq, 8, &encdata);
+  if (context_handle->more_flags & COMPAT_OLD_DES3)
+      memset(ivec, 0, 8);
+  else
+      memcpy(ivec, p + 8, 8);
+
+  kret = krb5_encrypt_ivec (gssapi_krb5_context,
+			    crypto,
+			    KRB5_KU_USAGE_SEQ,
+			    seq, 8, &encdata, ivec);
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   if (kret) {
       free (message_token->value);
