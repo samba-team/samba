@@ -968,7 +968,7 @@ NTSTATUS _lsa_create_account(pipes_struct *p, LSA_Q_CREATEACCOUNT *q_u, LSA_R_CR
 	if ( !nt_token_check_domain_rid( p->pipe_user.nt_user_token, DOMAIN_GROUP_RID_ADMINS ) )
 		return NT_STATUS_ACCESS_DENIED;
 		
-	if ( is_privileged_sid( &info->sid ) )
+	if ( is_privileged_sid( &q_u->sid.sid ) )
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 
 	/* associate the user/group SID with the (unique) handle. */
