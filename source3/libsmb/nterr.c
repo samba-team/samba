@@ -568,6 +568,7 @@ nt_err_code_struct nt_err_desc[] =
 	{ "Memory allocation error", 		NT_STATUS_NO_MEMORY },
 	{ "No domain controllers located", 	NT_STATUS_DOMAIN_CONTROLLER_NOT_FOUND },
 	{ "Account locked out", 		NT_STATUS_ACCOUNT_LOCKED_OUT },
+	{ "Named pipe note available", 		NT_STATUS_PIPE_NOT_AVAILABLE },
 	{ NULL, NT_STATUS(0) }
 };
 
