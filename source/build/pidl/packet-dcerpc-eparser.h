@@ -1,3 +1,6 @@
+#ifndef _packet_dcerpc_eparser_h
+#define _packet_dcerpc_eparser_h
+
 #define NDR_SCALARS 1
 #define NDR_BUFFERS 2
 
@@ -45,6 +48,8 @@ struct ndr_ofs_list {
 	struct ndr_ofs_list *next;
 };
 
+#include "packet-dcerpc-proto.h"
+
 /* Create a ndr_pull structure from data stored in a tvb at a given offset. */
 
 struct e_ndr_pull *ndr_pull_init(tvbuff_t *tvb, int offset, packet_info *pinfo,
@@ -75,6 +80,4 @@ void ndr_pull_string(struct e_ndr_pull *e_ndr, int hf);
 void ndr_pull_dom_sid2(struct e_ndr_pull *e_ndr, int hf);
 void ndr_pull_security_descriptor(struct e_ndr_pull *e_ndr, int hf);
 
-void ndr_pull_lsa_SidArray(struct e_ndr_pull *ndr, int ndr_flags);
-void ndr_pull_samr_LogonHours(struct e_ndr_pull *ndr, int ndr_flags);
-void ndr_pull_samr_Password(struct e_ndr_pull *ndr, int ndr_flags);
+#endif /* _packet_dcerpc_eparser_h */
