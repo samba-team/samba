@@ -14,7 +14,7 @@ eval "ac_cv_var_$3_declaration=yes")
 ])
 
 changequote(, )dnl
-eval "ac_tr_var=NEED_`echo $3 | tr '[a-z]' '[A-Z]'`_DECLARATION"
+eval "ac_tr_var=NEED_[]upcase($3)[]_DECLARATION"
 changequote([, ])dnl
 
 define([foo], [NEED_]translit($3, [a-z], [A-Z])[_DECLARATION])

@@ -14,7 +14,7 @@ eval "ac_cv_struct_$2_$4=yes",
 eval "ac_cv_struct_$2_$4=no")
 ])
 changequote(, )dnl
-eval "ac_tr_var=HAVE_STRUCT_`echo $2 | tr '[a-z]' '[A-Z]'`_`echo $4 | tr '[a-z]' '[A-Z]'`"
+eval "ac_tr_var=HAVE_STRUCT_[]upcase($2)_[]upcase($4)"
 changequote([, ])dnl
 
 define([foo], [[HAVE_STRUCT_]translit($2, [a-z], [A-Z])[_]translit($4, [a-z], [A-Z])])
