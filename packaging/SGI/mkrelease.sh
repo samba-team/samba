@@ -67,11 +67,6 @@ fi
 cd ../../source
 if [ "$doclean" = "clean" ]; then
   echo Create SGI specific Makefile
-  chmod +x configure
-  chmod +x configure.developer
-  chmod +x config.guess
-  chmod +x config.status
-  chmod +x config.sub
   ./configure --prefix=/usr/samba --mandir=/usr/share/catman --with-smbwrapper
   errstat=$?
   if [ $errstat -ne 0 ]; then

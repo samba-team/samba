@@ -177,7 +177,7 @@ while (@sorted) {
     print IDB "d 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
   }
   else {
-    if (grep((/\.sh$/ | /\.pl$/ | /mkman$/),$nextfile)) {
+    if (grep((/\.sh$/ | /configure$/ | /configure\.developer/ | /config\.guess/ | /config\.sub/ | /\.pl$/ | /mkman$/),$nextfile)) {
 	print IDB "f 0755 root sys usr/samba/src/$nextfile $nextfile samba.src.samba\n";
     }
     else {
