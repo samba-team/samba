@@ -89,7 +89,7 @@ sub DumpUnionElement($)
 	$res .= "[default] ;\n";
     } else {
 	$res .= "[case($element->{CASE})] ";
-	$res .= DumpElement($element->{DATA});
+	$res .= DumpElement($element->{DATA}), if defined($element->{DATA});
 	$res .= ";\n";
     }
 
