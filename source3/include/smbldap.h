@@ -154,6 +154,6 @@ struct smbldap_state {
 
 struct smbldap_state;
 
-#define LDAP_CONNECT_DEFAULT_TIMEOUT   5
+#define LDAP_CONNECT_DEFAULT_TIMEOUT   15
 
 #endif	/* _SMBLDAP_H */
