@@ -254,6 +254,8 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 	SMB_STRUCT_STAT sbuf;
 	uint32 attributes;
 	
+	*targetcli = NULL;
+	
 	if ( !rootcli || !path || !targetcli )
 		return False;
 		
@@ -264,7 +266,7 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 
 	/* don't bother continuing if this is not a dfs root */
 	
-	if ( !rootcli->dfsroot || cli_qpathinfo_basic( rootcli, fullpath, &sbuf, &attributes ) ) {
+	if ( !rootcli->dfsroot || cli_qpathinfo_basic( rootcli, cleanpath, &sbuf, &attributes ) ) {
 		*targetcli = rootcli;
 		pstrcpy( targetpath, path );
 		return True;
@@ -309,9 +311,11 @@ BOOL cli_resolve_path( struct cli_state *rootcli, const char *path,
 	/* check for another dfs refeerrali, note that we are not 
 	   checking for loops here */
 
-	if ( cli_resolve_path( *targetcli, targetpath, &newcli, newpath ) ) {
-		*targetcli = newcli;
-		pstrcpy( targetpath, newpath );
+	if ( !strequal( targetpath, "\\" ) ) {
+		if ( cli_resolve_path( *targetcli, targetpath, &newcli, newpath ) ) {
+			*targetcli = newcli;
+			pstrcpy( targetpath, newpath );
+		}
 	}
 	
 	return True;
