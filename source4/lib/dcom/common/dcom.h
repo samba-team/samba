@@ -26,6 +26,7 @@
 struct IUnknown_AddRef;
 struct IUnknown_Release;
 struct IUnknown_QueryInterface;
+struct dcom_interface_p;
 
 struct dcom_context 
 {
@@ -53,7 +54,9 @@ struct dcom_class
 {
 	const char *prog_id;
 	struct GUID clsid;
-	void (*get_class_object) (struct GUID *iid, void **vtable);
+
+	/* IUnknown */
+	struct dcom_interface_p *class_object;
 };
 
 struct dcom_interface

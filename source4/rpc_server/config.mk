@@ -19,6 +19,7 @@ SUBSYSTEM = DCERPC
 INIT_OBJ_FILES = \
 		rpc_server/dcom/oxidresolver.o \
 		rpc_server/dcom/rot.o \
+		rpc_server/dcom/rodb.o \
 		rpc_server/dcom/remact.o \
 		librpc/gen_ndr/ndr_dcom_d.o
 REQUIRED_SUBSYSTEMS = \
