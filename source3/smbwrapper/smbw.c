@@ -38,6 +38,7 @@ int smbw_busy=0;
 /* needs to be here because of dumb include files on some systems */
 int creat_bits = O_WRONLY|O_CREAT|O_TRUNC;
 
+
 /***************************************************** 
 initialise structures
 *******************************************************/
