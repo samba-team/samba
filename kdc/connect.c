@@ -312,9 +312,17 @@ do_request(void *buf, size_t len, int sendlength,
 	    len[1] = (reply.length >> 16) & 0xff;
 	    len[2] = (reply.length >> 8) & 0xff;
 	    len[3] = reply.length & 0xff;
-	    sendto(socket, len, sizeof(len), 0, from, from_len);
+	    if(sendto(socket, len, sizeof(len), 0, from, from_len) < 0) {
+		kdc_log (0, "sendto(%s): %s", addr, strerror(errno));
+		krb5_data_free(&reply);
+		return;
+	    }
 	}
-	sendto(socket, reply.data, reply.length, 0, from, from_len);
+	if(sendto(socket, reply.data, reply.length, 0, from, from_len) < 0) {
+	    kdc_log (0, "sendto(%s): %s", addr, strerror(errno));
+	    krb5_data_free(&reply);
+	    return;
+	}
 	krb5_data_free(&reply);
     }
     if(ret)
