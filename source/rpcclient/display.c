@@ -1138,14 +1138,15 @@ void display_sec_acl(FILE *out_hnd, enum action_type action, SEC_ACL *acl)
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tACL\tNum ACEs: %d\tunk 1: %x\n", acl->num_aces, acl->unknown_1); 
+			fprintf(out_hnd, "\tACL\tNum ACEs:\t%d\trevision:\t%x\n",
+			                 acl->num_aces, acl->revision); 
 			fprintf(out_hnd, "\t---\n");
 
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
-			if (acl->acl_size != 0 && acl->num_aces != 0)
+			if (acl->size != 0 && acl->num_aces != 0)
 			{
 				int i;
 				for (i = 0; i < acl->num_aces; i++)
@@ -1175,7 +1176,8 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSecurity Descriptor\tunk 1: %x\n", sec->unknown_1); 
+			fprintf(out_hnd, "\tSecurity Descriptor\trevision:\t%x\ttype:\t%x\n",
+			                 sec->revision, sec->type); 
 			fprintf(out_hnd, "\t-------------------\n");
 
 			break;
@@ -1184,21 +1186,21 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
 		{
 			fstring sid_str;
 
-			if (sec->off_acl != 0)
+			if (sec->off_dacl != 0)
 			{
-				display_sec_acl(out_hnd, ACTION_HEADER   , &sec->acl);
-				display_sec_acl(out_hnd, ACTION_ENUMERATE, &sec->acl);
-				display_sec_acl(out_hnd, ACTION_FOOTER   , &sec->acl);
+				display_sec_acl(out_hnd, ACTION_HEADER   , &sec->dacl);
+				display_sec_acl(out_hnd, ACTION_ENUMERATE, &sec->dacl);
+				display_sec_acl(out_hnd, ACTION_FOOTER   , &sec->dacl);
 			}
 			if (sec->off_owner_sid != 0)
 			{
 				sid_to_string(sid_str, &sec->owner_sid);
-				fprintf(out_hnd, "\tOwner SID: %s\n", sid_str);
+				fprintf(out_hnd, "\tOwner SID:\t%s\n", sid_str);
 			}
-			if (sec->off_pnt_sid != 0)
+			if (sec->off_grp_sid != 0)
 			{
-				sid_to_string(sid_str, &sec->parent_sid);
-				fprintf(out_hnd, "\tParent SID: %s\n", sid_str);
+				sid_to_string(sid_str, &sec->grp_sid);
+				fprintf(out_hnd, "\tParent SID:\t%s\n", sid_str);
 			}
 				
 			break;
