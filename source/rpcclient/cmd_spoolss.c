@@ -341,7 +341,10 @@ uint32 cmd_spoolss_getprinter(struct client_info *info, int argc, char *argv[])
 		printer_name = srv_name;
 	}
 
-	level=2;
+	if (argc < 3)
+		level=2;
+	else
+		level = atoi(argv[2]);
 
 	if (msrpc_spoolss_getprinter(printer_name, level, station, "Administrator", ctr))
 		DEBUG(5,("cmd_spoolss_getprinter: query succeeded\n"));

@@ -1198,20 +1198,20 @@ static char *automount_lookup(char *user_name)
 				if (object->zo_data.zo_type == ENTRY_OBJ)
 				{
 					entry =
-						&object->zo_data.
-						objdata_u.en_data;
+						&object->zo_data.objdata_u.
+						en_data;
 					DEBUG(5,
 					      ("NIS+ entry type: %s\n",
 					       entry->en_type));
 					DEBUG(3,
 					      ("NIS+ result: %s\n",
-					       entry->en_cols.
-					       en_cols_val[1].ec_value.
-					       ec_value_val));
+					       entry->en_cols.en_cols_val[1].
+					       ec_value.ec_value_val));
 
 					pstrcpy(last_value,
-						entry->en_cols.en_cols_val[1].
-						ec_value.ec_value_val);
+						entry->en_cols.
+						en_cols_val[1].ec_value.
+						ec_value_val);
 					pstring_sub(last_value, "&",
 						    user_name);
 					fstrcpy(last_key, user_name);

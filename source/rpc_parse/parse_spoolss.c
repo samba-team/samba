@@ -1692,6 +1692,26 @@ BOOL new_smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *i
 }
 
 /*******************************************************************
+ Parse a PRINTER_INFO_3 structure.
+********************************************************************/  
+BOOL new_smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
+{
+	prs_struct *ps=&(buffer->prs);
+
+	prs_debug(ps, depth, desc, "new_smb_io_printer_info_3");
+	depth++;	
+	
+	buffer->struct_start=prs_offset(ps);
+	
+	if (!prs_uint32("flags", ps, depth, &info->flags))
+		return False;
+	if (!sec_io_desc("sec_desc", &info->sec, ps, depth))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Parse a DRIVER_INFO_1 structure.
 ********************************************************************/
 BOOL new_smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
@@ -4414,6 +4434,14 @@ void free_devmode(DEVICEMODE *devmode)
 		if (devmode->private!=NULL)
 			free(devmode->private);
 		free(devmode);
+	}
+}
+
+void free_printer_info_3(PRINTER_INFO_3 *printer)
+{
+	if (printer!=NULL)
+	{
+		free(printer);
 	}
 }
 

@@ -94,6 +94,22 @@ static void decode_printer_info_2(NEW_BUFFER *buffer, uint32 returned, PRINTER_I
 	*info=inf;
 }
 
+static void decode_printer_info_3(NEW_BUFFER *buffer, uint32 returned, PRINTER_INFO_3 **info)
+{
+	uint32 i;
+	PRINTER_INFO_3	*inf;
+
+	inf=(PRINTER_INFO_3 *)malloc(returned*sizeof(PRINTER_INFO_3));
+
+	buffer->prs.offset=0;
+	
+	for (i=0; i<returned; i++) {
+		new_smb_io_printer_info_3("", buffer, &(inf[i]), 0);
+	}
+	
+	*info=inf;
+}
+
 static void decode_printer_driver_1(NEW_BUFFER *buffer, uint32 returned, DRIVER_INFO_1 **info)
 {
 	uint32 i;
@@ -173,6 +189,9 @@ BOOL msrpc_spoolss_enum_printers(char* srv_name, uint32 flags, uint32 level, PRI
 		break;
 	case 2:
 		decode_printer_info_2(&buffer, returned, &(ctr.printers_2));
+		break;
+	case 3:
+		decode_printer_info_3(&buffer, returned, &(ctr.printers_3));
 		break;
 	}		
 
@@ -373,6 +392,9 @@ BOOL msrpc_spoolss_getprinter( const char* printer_name, const uint32 level,
 		break;
 	case 2:
 		decode_printer_info_2(&buffer, 1, &(ctr.printers_2));
+		break;
+	case 3:
+		decode_printer_info_3(&buffer, 1, &(ctr.printers_3));
 		break;
 	}		
 

@@ -791,6 +791,13 @@ typedef struct printer_info_2
 }
 PRINTER_INFO_2;
 
+typedef struct printer_info_3
+{
+	uint32 flags;
+	SEC_DESC sec;
+}
+PRINTER_INFO_3;
+
 typedef struct spool_q_enumprinters
 {
 	uint32 flags;
@@ -807,6 +814,7 @@ typedef struct printer_info_ctr_info
 	PRINTER_INFO_0 *printers_0;
 	PRINTER_INFO_1 *printers_1;
 	PRINTER_INFO_2 *printers_2;
+	PRINTER_INFO_3 *printers_3;
 }
 PRINTER_INFO_CTR;
 

@@ -149,6 +149,21 @@ static void display_print_info_2(FILE *out_hnd, PRINTER_INFO_2 *i1)
 }
 
 /****************************************************************************
+printer info level 3 display function
+****************************************************************************/
+static void display_print_info_3(FILE *out_hnd, PRINTER_INFO_3 *i3)
+{
+	if (i3 == NULL)
+		return;
+
+	report(out_hnd, "\tflags:[%x]\n", i3->flags);
+
+	display_sec_desc(out_hnd, ACTION_HEADER   , &i3->sec);
+	display_sec_desc(out_hnd, ACTION_ENUMERATE, &i3->sec);
+	display_sec_desc(out_hnd, ACTION_FOOTER   , &i3->sec);
+}
+
+/****************************************************************************
 connection info level 0 container display function
 ****************************************************************************/
 static void display_printer_info_0_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
@@ -224,6 +239,31 @@ static void display_printer_info_2_ctr(FILE *out_hnd, enum action_type action, u
 }
 
 /****************************************************************************
+connection info level 3 container display function
+****************************************************************************/
+static void display_printer_info_3_ctr(FILE *out_hnd, enum action_type action, uint32 count,  PRINTER_INFO_CTR ctr)
+{
+	int i;
+	PRINTER_INFO_3 *in;
+
+	switch (action)
+	{
+		case ACTION_HEADER:
+			report(out_hnd, "Printer Info Level 3:\n");
+			break;
+		case ACTION_ENUMERATE:
+			for (i = 0; i < count; i++) {
+				in=ctr.printers_3;
+				display_print_info_3(out_hnd, &(in[i]) );
+			}
+			break;
+		case ACTION_FOOTER:
+			report(out_hnd, "\n");
+			break;
+	}
+}
+
+/****************************************************************************
 connection info container display function
 ****************************************************************************/
 void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 level,
@@ -238,6 +278,9 @@ void display_printer_info_ctr(FILE *out_hnd, enum action_type action, uint32 lev
 			break;
 		case 2:
 			display_printer_info_2_ctr(out_hnd, action, count, ctr);
+			break;
+		case 3:
+			display_printer_info_3_ctr(out_hnd, action, count, ctr);
 			break;
 		default:
 			report(out_hnd, "display_printer_info_ctr: Unknown Info Level\n");
