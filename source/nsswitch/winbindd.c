@@ -168,6 +168,7 @@ static BOOL do_sigterm;
 static void termination_handler(int signum)
 {
 	do_sigterm = True;
+	sys_select_signal();
 }
 
 static BOOL do_sigusr2;
@@ -175,6 +176,7 @@ static BOOL do_sigusr2;
 static void sigusr2_handler(int signum)
 {
 	do_sigusr2 = True;
+	sys_select_signal();
 }
 
 static BOOL do_sighup;
@@ -182,6 +184,7 @@ static BOOL do_sighup;
 static void sighup_handler(int signum)
 {
 	do_sighup = True;
+	sys_select_signal();
 }
 
 /* Create winbindd socket */
@@ -553,7 +556,7 @@ static void process_loop(int accept_sock)
 
 		/* Call select */
         
-		selret = select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
+		selret = sys_select(maxfd + 1, &r_fds, &w_fds, NULL, &timeout);
 
 		if (selret == 0)
 			continue;

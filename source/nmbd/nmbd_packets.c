@@ -1817,7 +1817,7 @@ BOOL listen_for_packets(BOOL run_election)
 
   BlockSignals(False, SIGTERM);
 
-  selrtn = sys_select(FD_SETSIZE,&fds,&timeout);
+  selrtn = sys_select(FD_SETSIZE,&fds,NULL,NULL,&timeout);
 
   /* We can only take signals when we are in the select - block them again here. */
 

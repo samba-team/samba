@@ -51,7 +51,7 @@ static char *smb_readline_replacement(char *prompt, void (*callback)(void),
 		FD_ZERO(&fds);
 		FD_SET(fd,&fds);
 	
-		if (sys_select_intr(fd+1,&fds,&timeout) == 1) {
+		if (sys_select_intr(fd+1,&fds,NULL,NULL,&timeout) == 1) {
 			ret = fgets(line, sizeof(line), stdin);
 			return ret;
 		}
