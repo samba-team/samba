@@ -379,8 +379,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL computer_id=False;
   static BOOL done_sesssetup = False;
   BOOL doencrypt = SMBENCRYPT();
+  char *domain = "";
 
   *smb_apasswd = 0;
+  *smb_ntpasswd = 0;
   
   smb_bufsize = SVAL(inbuf,smb_vwv2);
   smb_mpxmax = SVAL(inbuf,smb_vwv3);
@@ -469,8 +471,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     
     p += passlen1 + passlen2;
     fstrcpy(user,p); p = skip_string(p,1);
+    domain = p;
+
     DEBUG(3,("Domain=[%s]  NativeOS=[%s] NativeLanMan=[%s]\n",
-	     p,skip_string(p,1),skip_string(p,2)));
+	     domain,skip_string(p,1),skip_string(p,2)));
   }
 
 
@@ -533,7 +537,10 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
     guest = True;
 
-  if (!guest && !(lp_security() == SEC_SERVER && server_validate(inbuf)) &&
+  if (!guest && !(lp_security() == SEC_SERVER && 
+		  server_validate(user, domain, 
+				  smb_apasswd, smb_apasslen, 
+				  smb_ntpasswd, smb_ntpasslen)) &&
       !check_hosts_equiv(user))
     {
 
