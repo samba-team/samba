@@ -448,6 +448,8 @@ static void find_cm_connection(const char *domain, const char *pipe_name,
 {
 	struct winbindd_cm_conn *conn, conn_temp;
 
+	*conn_out = NULL;
+
 	for (conn = cm_conns; conn; conn = conn->next) {
 		if (strequal(conn->domain, domain) && 
 		    strequal(conn->pipe_name, pipe_name)) {
