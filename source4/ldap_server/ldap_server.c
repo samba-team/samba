@@ -24,7 +24,7 @@
 /*
   close the socket and shutdown a server_context
 */
-void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
+static void ldapsrv_terminate_connection(struct ldapsrv_connection *ldap_conn, const char *reason)
 {
 	server_terminate_connection(ldap_conn->connection, reason);
 }
@@ -121,7 +121,7 @@ static BOOL read_into_buf(struct socket_context *sock, struct rw_buffer *buf)
 
 	status = socket_recv(sock, sock, &tmp_blob, 1024, 0);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("socket_recv: %s\n",nt_errstr(status)));
+		DEBUG(1,("socket_recv: %s\n",nt_errstr(status)));
 		return False;
 	}
 
@@ -191,21 +191,26 @@ struct ldapsrv_reply *ldapsrv_init_reply(struct ldapsrv_call *call, enum ldap_re
 	return reply;
 }
 
-void ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
+NTSTATUS ldapsrv_queue_reply(struct ldapsrv_call *call, struct ldapsrv_reply *reply)
 {
 	DLIST_ADD_END(call->replies, reply, struct ldapsrv_reply *);
+	return NT_STATUS_OK;
 }
 
 struct ldapsrv_partition *ldapsrv_get_partition(struct ldapsrv_connection *conn, const char *dn)
 {
 	static struct ldapsrv_partition null_part;
 
-	null_part.ops = ldapsrv_get_sldb_partition_ops();
+	if (strcasecmp("", dn) == 0) {
+		null_part.ops = ldapsrv_get_rootdse_partition_ops();
+	} else {
+		null_part.ops = ldapsrv_get_sldb_partition_ops();
+	}
 
 	return &null_part;
 }
 
-void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
+NTSTATUS ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 {
 	struct ldapsrv_reply *reply;
 	struct ldap_ExtendedResponse *r;
@@ -214,8 +219,7 @@ void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
 	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	r = &reply->msg.r.ExtendedResponse;
@@ -227,10 +231,10 @@ void ldapsrv_unwilling(struct ldapsrv_call *call, int error)
 	r->value.data = NULL;
 	r->value.length = 0;
 
-	ldapsrv_queue_reply(call, reply);
+	return ldapsrv_queue_reply(call, reply);
 }
 
-static void ldapsrv_BindRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_BindRequest(struct ldapsrv_call *call)
 {
 	struct ldap_BindRequest *req = &call->request.r.BindRequest;
 	struct ldapsrv_reply *reply;
@@ -240,8 +244,7 @@ static void ldapsrv_BindRequest(struct ldapsrv_call *call)
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_BindResponse);
 	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	resp = &reply->msg.r.BindResponse;
@@ -251,16 +254,17 @@ static void ldapsrv_BindRequest(struct ldapsrv_call *call)
 	resp->response.referral = NULL;
 	resp->SASL.secblob = data_blob(NULL, 0);
 
-	ldapsrv_queue_reply(call, reply);
+	return ldapsrv_queue_reply(call, reply);
 }
 
-static void ldapsrv_UnbindRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_UnbindRequest(struct ldapsrv_call *call)
 {
 /*	struct ldap_UnbindRequest *req = &call->request->r.UnbindRequest;*/
 	DEBUG(10, ("UnbindRequest\n"));
+	return NT_STATUS_OK;
 }
 
-static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_SearchRequest(struct ldapsrv_call *call)
 {
 	struct ldap_SearchRequest *req = &call->request.r.SearchRequest;
 	struct ldapsrv_partition *part;
@@ -268,11 +272,6 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 	DEBUG(10, ("SearchRequest"));
 	DEBUGADD(10, (" basedn: %s", req->basedn));
 	DEBUGADD(10, (" filter: %s\n", req->filter));
-
-	if (strcasecmp("", req->basedn) == 0) {
-		ldapsrv_RootDSE_Search(call, req);
-		return;
-	}
 
 	part = ldapsrv_get_partition(call->conn, req->basedn);
 
@@ -282,8 +281,7 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 
 		done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 		if (!done_r) {
-			ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 
 		done = &done_r->msg.r.SearchResultDone;
@@ -292,14 +290,13 @@ static void ldapsrv_SearchRequest(struct ldapsrv_call *call)
 		done->errormessage = NULL;
 		done->referral = NULL;
 
-		ldapsrv_queue_reply(call, done_r);
-		return;
+		return ldapsrv_queue_reply(call, done_r);
 	}
 
-	part->ops->Search(part, call, req);
+	return part->ops->Search(part, call, req);
 }
 
-static void ldapsrv_ModifyRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 {
 	struct ldap_ModifyRequest *req = &call->request.r.ModifyRequest;
 	struct ldapsrv_partition *part;
@@ -310,14 +307,13 @@ static void ldapsrv_ModifyRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Modify) {
-		ldapsrv_unwilling(call, 53);
-		return;
+		return ldapsrv_unwilling(call, 53);
 	}
 
-	part->ops->Modify(part, call, req);
+	return part->ops->Modify(part, call, req);
 }
 
-static void ldapsrv_AddRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_AddRequest(struct ldapsrv_call *call)
 {
 	struct ldap_AddRequest *req = &call->request.r.AddRequest;
 	struct ldapsrv_partition *part;
@@ -328,14 +324,13 @@ static void ldapsrv_AddRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Add) {
-		ldapsrv_unwilling(call, 53);
-		return;
+		return ldapsrv_unwilling(call, 53);
 	}
 
-	part->ops->Add(part, call, req);
+	return part->ops->Add(part, call, req);
 }
 
-static void ldapsrv_DelRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_DelRequest(struct ldapsrv_call *call)
 {
 	struct ldap_DelRequest *req = &call->request.r.DelRequest;
 	struct ldapsrv_partition *part;
@@ -346,14 +341,13 @@ static void ldapsrv_DelRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Del) {
-		ldapsrv_unwilling(call, 53);
-		return;
+		return ldapsrv_unwilling(call, 53);
 	}
 
-	part->ops->Del(part, call, req);
+	return part->ops->Del(part, call, req);
 }
 
-static void ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 {
 	struct ldap_ModifyDNRequest *req = &call->request.r.ModifyDNRequest;
 	struct ldapsrv_partition *part;
@@ -365,14 +359,13 @@ static void ldapsrv_ModifyDNRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->ModifyDN) {
-		ldapsrv_unwilling(call, 53);
-		return;
+		return ldapsrv_unwilling(call, 53);
 	}
 
-	part->ops->ModifyDN(part, call, req);
+	return part->ops->ModifyDN(part, call, req);
 }
 
-static void ldapsrv_CompareRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_CompareRequest(struct ldapsrv_call *call)
 {
 	struct ldap_CompareRequest *req = &call->request.r.CompareRequest;
 	struct ldapsrv_partition *part;
@@ -383,20 +376,20 @@ static void ldapsrv_CompareRequest(struct ldapsrv_call *call)
 	part = ldapsrv_get_partition(call->conn, req->dn);
 
 	if (!part->ops->Compare) {
-		ldapsrv_unwilling(call, 53);
-		return;
+		return ldapsrv_unwilling(call, 53);
 	}
 
-	part->ops->Compare(part, call, req);
+	return part->ops->Compare(part, call, req);
 }
 
-static void ldapsrv_AbandonRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_AbandonRequest(struct ldapsrv_call *call)
 {
 /*	struct ldap_AbandonRequest *req = &call->request.r.AbandonRequest;*/
 	DEBUG(10, ("AbandonRequest\n"));
+	return NT_STATUS_OK;
 }
 
-static void ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 {
 /*	struct ldap_ExtendedRequest *req = &call->request.r.ExtendedRequest;*/
 	struct ldapsrv_reply *reply;
@@ -405,55 +398,43 @@ static void ldapsrv_ExtendedRequest(struct ldapsrv_call *call)
 
 	reply = ldapsrv_init_reply(call, LDAP_TAG_ExtendedResponse);
 	if (!reply) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ZERO_STRUCT(reply->msg.r);
 
-	ldapsrv_queue_reply(call, reply);
+	return ldapsrv_queue_reply(call, reply);
 }
 
-static void ldapsrv_do_call(struct ldapsrv_call *call)
+static NTSTATUS ldapsrv_do_call(struct ldapsrv_call *call)
 {
 	switch(call->request.type) {
 	case LDAP_TAG_BindRequest:
-		ldapsrv_BindRequest(call);
-		break;
+		return ldapsrv_BindRequest(call);
 	case LDAP_TAG_UnbindRequest:
-		ldapsrv_UnbindRequest(call);
-		break;
+		return ldapsrv_UnbindRequest(call);
 	case LDAP_TAG_SearchRequest:
-		ldapsrv_SearchRequest(call);
-		break;
+		return ldapsrv_SearchRequest(call);
 	case LDAP_TAG_ModifyRequest:
-		ldapsrv_ModifyRequest(call);
-		break;
+		return ldapsrv_ModifyRequest(call);
 	case LDAP_TAG_AddRequest:
-		ldapsrv_AddRequest(call);
-		break;
+		return ldapsrv_AddRequest(call);
 	case LDAP_TAG_DelRequest:
-		ldapsrv_DelRequest(call);
-		break;
+		return ldapsrv_DelRequest(call);
 	case LDAP_TAG_ModifyDNRequest:
-		ldapsrv_ModifyDNRequest(call);
-		break;
+		return ldapsrv_ModifyDNRequest(call);
 	case LDAP_TAG_CompareRequest:
-		ldapsrv_CompareRequest(call);
-		break;
+		return ldapsrv_CompareRequest(call);
 	case LDAP_TAG_AbandonRequest:
-		ldapsrv_AbandonRequest(call);
-		break;
+		return ldapsrv_AbandonRequest(call);
 	case LDAP_TAG_ExtendedRequest:
-		ldapsrv_ExtendedRequest(call);
-		break;
+		return ldapsrv_ExtendedRequest(call);
 	default:
-		ldapsrv_unwilling(call, 2);
-		break;
+		return ldapsrv_unwilling(call, 2);
 	}
 }
 
-static void ldapsrv_do_responses(struct ldapsrv_connection *conn)
+static NTSTATUS ldapsrv_do_responses(struct ldapsrv_connection *conn)
 {
 	struct ldapsrv_call *call, *next_call = NULL;
 	struct ldapsrv_reply *reply, *next_reply = NULL;
@@ -461,8 +442,7 @@ static void ldapsrv_do_responses(struct ldapsrv_connection *conn)
 	for (call=conn->calls; call; call=next_call) {
 		for (reply=call->replies; reply; reply=next_reply) {
 			if (!ldap_append_to_buf(&reply->msg, &conn->out_buffer)) {
-				ldapsrv_terminate_connection(conn, "append_to_buf() failed");
-				return;
+				return NT_STATUS_FOOBAR;
 			}
 			next_reply = reply->next;
 			DLIST_REMOVE(call->replies, reply);
@@ -474,6 +454,8 @@ static void ldapsrv_do_responses(struct ldapsrv_connection *conn)
 		call->state = LDAPSRV_CALL_STATE_COMPLETE;
 		talloc_free(call);
 	}
+
+	return NT_STATUS_OK;
 }
 
 /*
@@ -488,6 +470,7 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 	DATA_BLOB blob;
 	ASN1_DATA data;
 	struct ldapsrv_call *call;
+	NTSTATUS status;
 
 	DEBUG(10,("ldapsrv_recv\n"));
 
@@ -535,6 +518,8 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 		ZERO_STRUCTP(call);
 		call->state = LDAPSRV_CALL_STATE_NEW;
 		call->conn = ldap_conn;
+		/* TODO: we should use talloc_reference() here */
+		call->session_info = ldap_conn->session_info;
 		call->request.mem_ctx = call;
 
 		if (!ldap_decode(&data, &call->request)) {
@@ -548,12 +533,20 @@ static void ldapsrv_recv(struct server_connection *conn, time_t t,
 
 		consumed_from_buf(&ldap_conn->in_buffer, msg_length);
 
-		ldapsrv_do_call(call);
+		status = ldapsrv_do_call(call);
+		if (!NT_STATUS_IS_OK(status)) {
+			ldapsrv_terminate_connection(ldap_conn, "ldapsrv_do_call() failed");
+			return;
+		}
 
 		peek_into_read_buf(&ldap_conn->in_buffer, &buf, &buf_length);
 	}
 
-	ldapsrv_do_responses(ldap_conn);
+	status = ldapsrv_do_responses(ldap_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		ldapsrv_terminate_connection(ldap_conn, "ldapsrv_do_responses() failed");
+		return;
+	}
 
 	if (ldap_conn->out_buffer.length > 0) {
 		conn->event.fde->flags |= EVENT_FD_WRITE;
@@ -595,10 +588,6 @@ static void ldapsrv_idle(struct server_connection *conn, time_t t)
 
 static void ldapsrv_close(struct server_connection *conn, const char *reason)
 {
-	struct ldapsrv_connection *ldap_conn = conn->private_data;
-
-	talloc_free(ldap_conn);
-
 	return;
 }
 

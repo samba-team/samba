@@ -23,11 +23,14 @@
 #define ATTR_BLOB_CONST(val) data_blob_talloc(attrs, val, sizeof(val)-1)
 #define ATTR_SINGLE_NOVAL(attr, blob, num, nam) do { \
 	attr.name = talloc_strdup(attrs, nam);\
+	if (!attr.name) {\
+		return NT_STATUS_NO_MEMORY;\
+	}\
 	attr.num_values = num; \
 	attr.values = blob;\
 } while(0)
 
-void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
+static NTSTATUS rootdse_Search(struct ldapsrv_partition *partition, struct ldapsrv_call *call,
 				     struct ldap_SearchRequest *r)
 {
 	struct ldap_SearchResEntry *ent;
@@ -46,8 +49,7 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 
 	attrs = talloc_array_p(call, struct ldap_attribute, num_attrs); 
 	if (!attrs) {
-		ldapsrv_terminate_connection(call->conn, "no memory");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	/* 
@@ -59,8 +61,7 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 		DATA_BLOB *currentTime = talloc_array_p(attrs, DATA_BLOB, num_currentTime);
 		char *str = ldap_timestring(call, time(NULL));
 		if (!str) {
-			ldapsrv_terminate_connection(call->conn, "no memory");
-			return;
+			return NT_STATUS_NO_MEMORY;
 		}
 		currentTime[0].data = str;
 		currentTime[0].length = strlen(str);
@@ -228,8 +229,7 @@ void ldapsrv_RootDSE_Search(struct ldapsrv_call *call,
 
 	ent_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultEntry);
 	if (!ent_r) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	ent = &ent_r->msg.r.SearchResultEntry;
@@ -243,8 +243,7 @@ no_base_scope:
 
 	done_r = ldapsrv_init_reply(call, LDAP_TAG_SearchResultDone);
 	if (!done_r) {
-		ldapsrv_terminate_connection(call->conn, "ldapsrv_init_reply() failed");
-		return;
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	done = &done_r->msg.r.SearchResultDone;
@@ -253,5 +252,14 @@ no_base_scope:
 	done->errormessage = NULL;
 	done->referral = NULL;
 
-	ldapsrv_queue_reply(call, done_r);
+	return ldapsrv_queue_reply(call, done_r);
+}
+
+static const struct ldapsrv_partition_ops rootdse_ops = {
+	.Search		= rootdse_Search
+};
+
+const struct ldapsrv_partition_ops *ldapsrv_get_rootdse_partition_ops(void)
+{
+	return &rootdse_ops;
 }
