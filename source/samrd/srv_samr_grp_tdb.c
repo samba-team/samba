@@ -329,7 +329,9 @@ uint32 _samr_set_groupinfo(const POLICY_HND *pol,
 	{
 		case 1:
 		{
-			if (!tdb_store_group(tdb, group_rid, &ctr->group.info1))
+			GROUP_INFO1 grp;
+			memcpy(&grp, &ctr->group.info1, sizeof(grp));
+			if (!tdb_store_group(tdb, group_rid, &grp))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}
@@ -338,7 +340,7 @@ uint32 _samr_set_groupinfo(const POLICY_HND *pol,
 		case 4:
 		{
 			if (!tdb_set_groupinfo_4(tdb, group_rid,
-			                     &ctr->group.info1.uni_acct_desc))
+			                     &ctr->group.info4.uni_acct_desc))
 			{
 				return NT_STATUS_ACCESS_DENIED;
 			}
