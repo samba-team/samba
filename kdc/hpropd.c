@@ -169,6 +169,7 @@ static char *local_realm=NULL;
 #ifdef KRB4
 static int v4dump;
 #endif
+static char *ktname = NULL;
 
 struct getargs args[] = {
     { "database", 'd', arg_string, &database, "database", "file" },
@@ -176,6 +177,7 @@ struct getargs args[] = {
     { "print",	    0, arg_flag, &print_dump, "print dump to stdout" },
     { "inetd",	   'i',	arg_negative_flag,	&inetd_flag,
       "Not started from inetd" },
+    { "keytab",   'k',	arg_string, &ktname,	"keytab to use for authentication", "keytab" },
 #ifdef KRB4
     { "v4dump",       '4',  arg_flag, &v4dump, "create v4 type DB" },
 #endif
@@ -295,10 +297,20 @@ main(int argc, char **argv)
            krb5_princ_set_realm(context,server,&my_realm);
         }
 
-	ret = krb5_kt_default(context, &keytab);
+	ret = krb5_kt_register(context, &hdb_kt_ops);
 	if(ret)
-	    krb5_err(context, 1, ret, "krb5_kt_default");
-	
+	    krb5_err(context, 1, ret, "krb5_kt_register");
+
+	if (ktname != NULL) {
+	    ret = krb5_kt_resolve(context, ktname, &keytab);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_kt_resolve %s", ktname);
+	} else {
+	    ret = krb5_kt_default (context, &keytab);
+	    if (ret)
+		krb5_err (context, 1, ret, "krb5_kt_default");
+	}
+
 	ret = krb5_recvauth(context, &ac, &fd, HPROP_VERSION,
 			    server, 0, keytab, NULL);
 	if(ret)
@@ -359,11 +371,11 @@ main(int argc, char **argv)
 	krb5_data data;
 	hdb_entry entry;
 
-	if(from_stdin){
+	if(from_stdin) {
 	    ret = recv_clear(context, fd, &data);
 	    if(ret)
 		krb5_err(context, 1, ret, "recv_clear");
-	}else{
+	} else {
 	    ret = recv_priv(context, ac, fd, &data);
 	    if(ret)
 		krb5_err(context, 1, ret, "recv_priv");
