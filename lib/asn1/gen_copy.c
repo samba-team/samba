@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -105,8 +105,8 @@ copy_type (char *from, char *to, Type *t)
       char *T;
 
       fprintf (codefile, "if(((%s)->val = "
-	       "malloc((%s)->len * sizeof(*(%s)->val))) == NULL)\n", 
-	       to, from, to);
+	       "malloc((%s)->len * sizeof(*(%s)->val))) == NULL && (%s)->len != 0)\n", 
+	       to, from, to, from);
       fprintf (codefile, "return ENOMEM;\n");
       fprintf(codefile,
 	      "for((%s)->len = 0; (%s)->len < (%s)->len; (%s)->len++){\n",
