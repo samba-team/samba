@@ -36,8 +36,6 @@ static pstring desthost;
 static pstring username;
 static pstring domain;
 static pstring password;
-static BOOL use_kerberos;
-static BOOL got_pass;
 static char *cmdstr = NULL;
 
 static int io_bufsize = 64512;
@@ -2799,18 +2797,11 @@ static struct smbcli_state *do_connect(const char *server, const char *share)
 		return NULL;
 	}
 
-	if (!got_pass) {
-		const char *pass = getpass("Password: ");
-		if (pass) {
-			pstrcpy(password, pass);
-		}
-	}
-
 	status = smbcli_session_setup(c, username, password, domain);
 	if (NT_STATUS_IS_ERR(status)) {
 		d_printf("authenticated session setup failed: %s\n", nt_errstr(status));
 		/* if a password was not supplied then try again with a null username */
-		if (password[0] || !username[0] || use_kerberos) {
+		if (password[0] || !username[0]) {
 			status = smbcli_session_setup(c, "", "", lp_workgroup());
 		}
 		if (NT_STATUS_IS_ERR(status)) {
@@ -3064,8 +3055,7 @@ static void remember_query_host(const char *arg,
 	}
 
 	if (poptPeekArg(pc)) { 
-		cmdline_auth_info.got_pass = True;
-		pstrcpy(cmdline_auth_info.password,poptGetArg(pc));  
+		cmdline_set_userpassword(poptGetArg(pc));
 	}
 
 	/*init_names(); */
@@ -3077,15 +3067,9 @@ static void remember_query_host(const char *arg,
 
 	poptFreeContext(pc);
 
-	pstrcpy(username, cmdline_auth_info.username);
-	if (cmdline_auth_info.domain[0]) {
-		pstrcpy(domain, cmdline_auth_info.domain);
-	} else {
-		pstrcpy(domain, lp_workgroup());
-	}
-	pstrcpy(password, cmdline_auth_info.password);
-	use_kerberos = cmdline_auth_info.use_kerberos;
-	got_pass = cmdline_auth_info.got_pass;
+	pstrcpy(username, cmdline_get_username());
+	pstrcpy(domain, cmdline_get_userdomain());
+	pstrcpy(password, cmdline_get_userpassword());
 
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
