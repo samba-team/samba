@@ -275,6 +275,7 @@ PAM_WINBIND_OBJ = nsswitch/pam_winbind.po nsswitch/wb_common.po
 SMBW_OBJ = smbwrapper/smbw.o \
 		smbwrapper/smbw_dir.o smbwrapper/smbw_stat.o \
 		smbwrapper/realcalls.o smbwrapper/shared.o \
+		smbwrapper/smbw_cache.o \
 		$(LIBSMB_OBJ) $(PARAM_OBJ) \
                 $(UBIQX_OBJ) $(LIB_OBJ)
 
