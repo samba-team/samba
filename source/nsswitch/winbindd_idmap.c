@@ -374,8 +374,8 @@ static BOOL idmap_convert(const char *idmap_name)
 		return False;
 #endif
 
-	if (IREV(vers) == IDMAP_VERSION) {
-		/* Arrggghh ! Bytereversed - make order independent ! */
+	if ((vers == -1) || (IREV(vers) == IDMAP_VERSION)) {
+		/* Arrggghh ! Bytereversed or missing - make order independent ! */
 		int32 wm;
 
 		wm = tdb_fetch_int32(idmap_tdb, HWM_USER);
@@ -385,7 +385,7 @@ static BOOL idmap_convert(const char *idmap_name)
 		else
 			wm = server_state.uid_low;
 
-		if (tdb_store_int32(idmap_tdb, HWM_USER, server_state.uid_low) == -1) {
+		if (tdb_store_int32(idmap_tdb, HWM_USER, wm) == -1) {
 			DEBUG(0, ("idmap_convert: Unable to byteswap user hwm in idmap database\n"));
 			return False;
 		}
@@ -395,7 +395,7 @@ static BOOL idmap_convert(const char *idmap_name)
 			wm = IREV(wm);
 		else
 			wm = server_state.gid_low;
-		if (tdb_store_int32(idmap_tdb, HWM_GROUP, server_state.gid_low) == -1) {
+		if (tdb_store_int32(idmap_tdb, HWM_GROUP, wm) == -1) {
 			DEBUG(0, ("idmap_convert: Unable to byteswap group hwm in idmap database\n"));
 			return False;
 		}
