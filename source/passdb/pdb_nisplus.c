@@ -209,7 +209,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
    * time values. note: this code assumes 32bit time_t!
    */
 
-  pdb_set_logon_time(pw_buf, get_time_t_max());
+  pdb_set_logon_time(pw_buf, (time_t)0);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_LOGON_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LNT-", 4)==0)) {
     int i;
@@ -251,7 +251,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     }
   }
 
-  pdb_set_pass_last_set_time(pw_buf, get_time_t_max());
+  pdb_set_pass_last_set_time(pw_buf, (time_t)0);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDLSET_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "LCT-", 4)==0)) {
     int i;
@@ -265,7 +265,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     }
   }
   
-  pdb_set_pass_can_change_time(pw_buf, get_time_t_max());
+  pdb_set_pass_can_change_time(pw_buf, (time_t)0);
   ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDCCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "CCT-", 4)==0)) {
     int i;
@@ -279,7 +279,7 @@ static BOOL make_sam_from_nisp_object(SAM_ACCOUNT *pw_buf, nis_object *obj)
     }
   }
   
-  pdb_set_pass_must_change_time(pw_buf, get_time_t_max());
+  pdb_set_pass_must_change_time(pw_buf, get_time_t_max()); /* Password never expires. */
   ptr = (uchar *)ENTRY_VAL(obj, NPF_PWDMCHG_T);
   if(ptr && *ptr && (StrnCaseCmp(ptr, "MCT-", 4)==0)) {
     int i;

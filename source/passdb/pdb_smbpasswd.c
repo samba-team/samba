@@ -110,7 +110,7 @@ static void pdb_init_smb(struct smb_passwd *user)
 		return;
 	ZERO_STRUCTP (user);
 	
-	user->pass_last_set_time = get_time_t_max();
+	user->pass_last_set_time = (time_t)0;
 }
 
 /***************************************************************

@@ -79,11 +79,11 @@ static BOOL pdb_fill_default_sam(SAM_ACCOUNT *user)
 	
 	ZERO_STRUCTP(user);
 	user->logon_time            = (time_t)0;
+	user->pass_last_set_time    = (time_t)0;
+	user->pass_can_change_time  = (time_t)0;
 	user->logoff_time           = 
-	user->kickoff_time          =
-	user->pass_last_set_time    =
-	user->pass_can_change_time  = 
-	user->pass_must_change_time = get_time_t_max();
+	user->kickoff_time          = 
+	user->pass_must_change_time = get_time_t_max(); /* Password never expires. */
 
 	user->unknown_3 = 0x00ffffff; 	/* don't know */
 	user->logon_divs = 168; 	/* hours per week */
@@ -879,8 +879,8 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 
-		/* set account flags */
-		pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) );
+		/* Set account flags. Note that the default is non-expiring accounts */
+		pdb_set_acct_ctrl(sam_pass,(local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL|ACB_PWNOEXP);
 
 		if (local_flags & LOCAL_DISABLE_USER)
 			pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
