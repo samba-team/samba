@@ -371,6 +371,14 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 
 const char *dcerpc_server_name(struct dcerpc_pipe *p);
 
+%{
+#include "librpc/gen_ndr/ndr_misc.h"
+#include "librpc/gen_ndr/ndr_lsa.h"
+#include "librpc/gen_ndr/ndr_samr.h"
+#include "librpc/gen_ndr/ndr_winreg.h"
+#include "librpc/gen_ndr/ndr_spoolss.h"
+%}
+
 %include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
