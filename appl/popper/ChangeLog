@@ -1,3 +1,9 @@
+2003-10-10  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pop_init.c (pop_init): change call to authentication function,
+	from a ?: construct (which toubles some versions of gcc) to if;
+	from Björn Grönvall
+
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* pop_pass.c: use
