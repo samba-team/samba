@@ -164,7 +164,7 @@ static int
 passive_session (int xserver, int fd, des_cblock *iv,
 		 des_key_schedule schedule)
 {
-    if (replace_cookie (xserver, fd, XauFileName()))
+    if (replace_cookie (xserver, fd, XauFileName(), 1))
 	return 1;
     else
 	return copy_encrypted (xserver, fd, iv, schedule);
@@ -174,7 +174,7 @@ static int
 active_session (int xserver, int fd, des_cblock *iv,
 		des_key_schedule schedule)
 {
-    if (verify_and_remove_cookies (xserver, fd))
+    if (verify_and_remove_cookies (xserver, fd, 1))
 	return 1;
     else
 	return copy_encrypted (xserver, fd, iv, schedule);

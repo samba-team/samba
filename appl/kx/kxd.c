@@ -233,29 +233,29 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
  */
 
 static int
-passive_session (int fd, int sock, des_cblock *key,
+passive_session (int fd, int sock, int cookiesp, des_cblock *key,
 		 des_key_schedule schedule)
 {
-    if (verify_and_remove_cookies (fd, sock))
+    if (verify_and_remove_cookies (fd, sock, cookiesp))
 	return 1;
     else
 	return copy_encrypted (fd, sock, key, schedule);
 }
 
 static int
-active_session (int fd, int sock, des_cblock *key,
+active_session (int fd, int sock, int cookiesp, des_cblock *key,
 		des_key_schedule schedule)
 {
     fd = connect_local_xsocket(0);
 
-    if (replace_cookie (fd, sock, xauthfile))
+    if (replace_cookie (fd, sock, xauthfile, cookiesp))
 	return 1;
     else
 	return copy_encrypted (fd, sock, key, schedule);
 }
 
 static int
-doit_conn (int fd, int meta_sock, int flags,
+doit_conn (int fd, int meta_sock, int flags, int cookiesp,
 	   des_cblock *key, des_key_schedule schedule,
 	   struct sockaddr_in *thisaddr,
 	   struct sockaddr_in *thataddr)
@@ -319,9 +319,9 @@ doit_conn (int fd, int meta_sock, int flags,
     close (meta_sock);
 
     if (flags & PASSIVE)
-	return passive_session (fd, sock2, key, schedule);
+	return passive_session (fd, sock2, cookiesp, key, schedule);
     else
-	return active_session (fd, sock2, key, schedule);
+	return active_session (fd, sock2, cookiesp, key, schedule);
 }
 
 /*
@@ -344,6 +344,232 @@ check_user_console (int fd, des_cblock *key, des_key_schedule schedule,
 }
 
 /*
+ * Handle a passive session on `sock'
+ */
+
+static int
+doit_passive (int sock, des_cblock *key, des_key_schedule schedule,
+	      struct sockaddr_in *me, struct sockaddr_in *him,
+	      int flags, int tcpp)
+{
+    int tmp;
+    int len;
+    size_t rem;
+    u_char msg[1024], *p;
+    struct x_socket *sockets;
+    int nsockets;
+
+    tmp = get_xsockets (&nsockets, &sockets, tcpp);
+    if (tmp < 0) {
+	fatal (sock, key, schedule, me, him,
+	       "Cannot create X socket(s): %s",
+	       strerror(errno));
+	return 1;
+    }
+    display_num = tmp;
+    if (tcpp)
+	snprintf (display, display_size, "localhost:%u", display_num);
+    else
+	snprintf (display, display_size, ":%u", display_num);
+    if(create_and_write_cookie (xauthfile, xauthfile_size, 
+				cookie, cookie_len)) {
+	cleanup(nsockets, sockets);
+	fatal (sock, key, schedule, me, him,
+	       "Cookie-creation failed with: %s",
+	       strerror(errno));
+	return 1;
+    }
+
+    p = msg;
+    rem = sizeof(msg);
+    *p++ = ACK;
+    --rem;
+
+    len = strlen (display);
+    tmp = krb_put_int (len, p, rem, 4);
+    if (tmp < 0 || rem < len + 4) {
+	syslog (LOG_ERR, "doit: buffer too small");
+	cleanup(nsockets, sockets);
+	return 1;
+    }
+    p += tmp;
+    rem -= tmp;
+
+    memcpy (p, display, len);
+    p += len;
+    rem -= len;
+
+    len = strlen (xauthfile);
+    tmp = krb_put_int (len, p, rem, 4);
+    if (tmp < 0 || rem < len + 4) {
+	syslog (LOG_ERR, "doit: buffer too small");
+	cleanup(nsockets, sockets);
+	return 1;
+    }
+    p += tmp;
+    rem -= tmp;
+
+    memcpy (p, xauthfile, len);
+    p += len;
+    rem -= len;
+	  
+    if(write_encrypted (sock, msg, p - msg, schedule, key,
+			me, him) < 0) {
+	syslog (LOG_ERR, "write: %m");
+	cleanup(nsockets, sockets);
+	return 1;
+    }
+    for (;;) {
+	pid_t child;
+	int fd;
+	fd_set fds;
+	int i;
+	int ret;
+	int cookiesp = TRUE;
+	       
+	FD_ZERO(&fds);
+	FD_SET(sock, &fds);
+	for (i = 0; i < nsockets; ++i)
+	    FD_SET(sockets[i].fd, &fds);
+	ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
+	if(ret <= 0)
+	    continue;
+	if(FD_ISSET(sock, &fds)){
+	    /* there are no processes left on the remote side
+	     */
+	    cleanup(nsockets, sockets);
+	    exit(0);
+	} else if(ret) {
+	    for (i = 0; i < nsockets; ++i) {
+		if (FD_ISSET(sockets[i].fd, &fds)) {
+		    if (sockets[i].flags == TCP) {
+			struct sockaddr_in peer;
+			int len = sizeof(peer);
+
+			fd = accept (sockets[i].fd,
+				     (struct sockaddr *)&peer,
+				     &len);
+			if (fd < 0 && errno != EINTR)
+			    syslog (LOG_ERR, "accept: %m");
+
+			/* XXX */
+			if (fd >= 0 && suspicious_address (fd, peer)) {
+			    close (fd);
+			    fd = -1;
+			    errno = EINTR;
+			}
+		    } else if(sockets[i].flags == UNIX_SOCKET) {
+			int zero = 0;
+
+			fd = accept (sockets[i].fd, NULL, &zero);
+
+			if (fd < 0 && errno != EINTR)
+			    syslog (LOG_ERR, "accept: %m");
+		    } else if(sockets[i].flags == STREAM_PIPE) {
+			/*
+			 * this code tries to handle the
+			 * send fd-over-pipe stuff for
+			 * solaris
+			 */
+
+			struct strrecvfd strrecvfd;
+
+			ret = ioctl (sockets[i].fd,
+				     I_RECVFD, &strrecvfd);
+			if (ret < 0 && errno != EINTR) {
+			    syslog (LOG_ERR, "ioctl I_RECVFD: %m");
+			}
+
+			/* XXX */
+			if (ret == 0) {
+			    if (strrecvfd.uid != getuid()) {
+				close (strrecvfd.fd);
+				fd = -1;
+				errno = EINTR;
+			    } else {
+				fd = strrecvfd.fd;
+				cookiesp = FALSE;
+			    }
+			}
+		    } else
+			abort ();
+		    break;
+		}
+	    }
+	}
+	if (fd < 0)
+	    if (errno == EINTR)
+		continue;
+	    else
+		return 1;
+
+	child = fork ();
+	if (child < 0) {
+	    syslog (LOG_ERR, "fork: %m");
+	    return 1;
+	} else if (child != 0) {
+	    for (i = 0; i < nsockets; ++i)
+		close (sockets[i].fd);
+	    return doit_conn (fd, sock, flags, cookiesp,
+			      key, schedule, me, him);
+	} else {
+	    close (fd);
+	}
+    }
+}
+
+/*
+ * Handle an active session on `sock'
+ */
+
+static int
+doit_active (int sock, des_cblock *key, des_key_schedule schedule,
+	     struct sockaddr_in *me, struct sockaddr_in *him,
+	     int flags, int tcpp)
+{
+    u_char msg[1024], *p;
+
+    check_user_console (sock, key, schedule, me, him);
+
+    p = msg;
+    *p++ = ACK;
+	  
+    if(write_encrypted (sock, msg, p - msg, schedule, key,
+			me, him) < 0) {
+	syslog (LOG_ERR, "write: %m");
+	return 1;
+    }
+    for (;;) {
+	pid_t child;
+	int len;
+	void *ret;
+	      
+	len = read_encrypted (sock, msg, sizeof(msg), &ret,
+			      schedule, key,
+			      him, me);
+	if (len < 0) {
+	    syslog (LOG_ERR, "read: %m");
+	    return 1;
+	}
+	p = (u_char *)ret;
+	if (*p != NEW_CONN) {
+	    syslog (LOG_ERR, "bad_message: %d", *p);
+	    return 1;
+	}
+
+	child = fork ();
+	if (child < 0) {
+	    syslog (LOG_ERR, "fork: %m");
+	    return 1;
+	} else if (child == 0) {
+	    return doit_conn (sock, sock, flags, 1,
+			      key, schedule, me, him);
+	} else {
+	}
+    }
+}
+
+/*
  * Receive a connection on `sock' and process it.
  */
 
@@ -360,176 +586,10 @@ doit(int sock, int tcpp)
 
      flags = recv_conn (sock, &key, schedule, &me, &him);
 
-     if (flags & PASSIVE) {
-	  int tmp;
-	  int len;
-	  size_t rem;
-
-	  tmp = get_xsockets (&nsockets, &sockets, tcpp);
-	  if (tmp < 0) {
-             fatal (sock, &key, schedule, &me, &him,
-		    "Cannot create X socket(s): %s",
-		    strerror(errno));
-	     return 1;
-	  }
-	  display_num = tmp;
-	  if (tcpp)
-	       snprintf (display, display_size, "localhost:%u", display_num);
-	  else
-	       snprintf (display, display_size, ":%u", display_num);
-	  if(create_and_write_cookie (xauthfile, xauthfile_size, 
-				      cookie, cookie_len)) {
-             cleanup(nsockets, sockets);
-             fatal (sock, &key, schedule, &me, &him,
-                    "Cookie-creation failed with: %s",
-		    strerror(errno));
-	     return 1;
-	  }
-
-	  p = msg;
-	  rem = sizeof(msg);
-	  *p++ = ACK;
-	  --rem;
-
-	  len = strlen (display);
-	  tmp = krb_put_int (len, p, rem, 4);
-	  if (tmp < 0 || rem < len + 4) {
-	      syslog (LOG_ERR, "doit: buffer too small");
-	      cleanup(nsockets, sockets);
-	      return 1;
-	  }
-	  p += tmp;
-	  rem -= tmp;
-
-	  memcpy (p, display, len);
-	  p += len;
-	  rem -= len;
-
-	  len = strlen (xauthfile);
-	  tmp = krb_put_int (len, p, rem, 4);
-	  if (tmp < 0 || rem < len + 4) {
-	      syslog (LOG_ERR, "doit: buffer too small");
-	      cleanup(nsockets, sockets);
-	      return 1;
-	  }
-	  p += tmp;
-	  rem -= tmp;
-
-	  memcpy (p, xauthfile, len);
-	  p += len;
-	  rem -= len;
-	  
-	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
-			      &me, &him) < 0) {
-	      syslog (LOG_ERR, "write: %m");
-	      cleanup(nsockets, sockets);
-	      return 1;
-	  }
-	  for (;;) {
-	       pid_t child;
-	       int fd;
-	       fd_set fds;
-	       int i;
-	       int ret;
-	       
-	       FD_ZERO(&fds);
-	       FD_SET(sock, &fds);
-	       for (i = 0; i < nsockets; ++i)
-		   FD_SET(sockets[i].fd, &fds);
-	       ret = select(FD_SETSIZE, &fds, NULL, NULL, NULL);
-	       if(ret <= 0)
-		   continue;
-	       if(FD_ISSET(sock, &fds)){
-		   /* there are no processes left on the remote side
-		    */
-		   cleanup(nsockets, sockets);
-		   exit(0);
-	       } else if(ret) {
-		   for (i = 0; i < nsockets; ++i) {
-		       if (FD_ISSET(sockets[i].fd, &fds)) {
-			   if (sockets[i].pathname == NULL) {
-			       struct sockaddr_in peer;
-			       int len = sizeof(peer);
-
-			       fd = accept (sockets[i].fd,
-					    (struct sockaddr *)&peer,
-					    &len);
-			       /* XXX */
-			       if (fd >= 0 && suspicious_address (fd, peer)) {
-				   close (fd);
-				   fd = -1;
-				   errno = EINTR;
-			       }
-			   } else {
-			       int zero = 0;
-
-			       fd = accept (sockets[i].fd, NULL, &zero);
-			   }
-			   break;
-		       }
-		   }
-	       }
-	       if (fd < 0)
-		    if (errno == EINTR)
-			 continue;
-		    else {
-			syslog (LOG_ERR, "accept: %m");
-			return 1;
-		    }
-
-	       child = fork ();
-	       if (child < 0) {
-		   syslog (LOG_ERR, "fork: %m");
-		   return 1;
-	       } else if (child == 0) {
-		    for (i = 0; i < nsockets; ++i)
-			close (sockets[i].fd);
-		    return doit_conn (fd, sock, flags,
-				      &key, schedule, &me, &him);
-	       } else {
-		    close (fd);
-	       }
-	  }
-     } else {
-	  check_user_console (sock, &key, schedule, &me, &him);
-
-	  p = msg;
-	  *p++ = ACK;
-	  
-	  if(write_encrypted (sock, msg, p - msg, schedule, &key,
-			      &me, &him) < 0) {
-	      syslog (LOG_ERR, "write: %m");
-	      return 1;
-	  }
-	  for (;;) {
-	      pid_t child;
-	      int len;
-	      void *ret;
-	      
-	      len = read_encrypted (sock, msg, sizeof(msg), &ret,
-				    schedule, &key,
-				    &him, &me);
-	      if (len < 0) {
-		  syslog (LOG_ERR, "read: %m");
-		  return 1;
-	      }
-	      p = (u_char *)ret;
-	      if (*p != NEW_CONN) {
-		  syslog (LOG_ERR, "bad_message: %d", *p);
-		  return 1;
-	      }
-
-	      child = fork ();
-	      if (child < 0) {
-		  syslog (LOG_ERR, "fork: %m");
-		  return 1;
-	      } else if (child == 0) {
-		  return doit_conn (sock, sock, flags,
-				    &key, schedule, &me, &him);
-	      } else {
-	      }
-	  }
-     }
+     if (flags & PASSIVE)
+	 return doit_passive (sock, &key, schedule, &me, &him, flags, tcpp);
+     else
+	 return doit_active (sock, &key, schedule, &me, &him, flags, tcpp);
 }
 
 static void

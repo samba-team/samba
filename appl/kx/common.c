@@ -120,18 +120,24 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 #define X_UNIX_PATH "/tmp/.X11-unix/X"
 #endif
 
+#ifndef X_PIPE_PATH
+#define X_PIPE_PATH "/tmp/.X11-pipe/X"
+#endif
+
 #ifndef INADDR_LOOPBACK
 #define INADDR_LOOPBACK 0x7f000001
 #endif
 
 /*
+ * Allocate a unix domain socket.
+ *
  * 0 if all is OK
  * -1 if bind failed badly
  * 1 if dpy is already used
  */
 
 static int
-try_one (struct x_socket *s, int dpy, const char *pattern)
+try_socket (struct x_socket *s, int dpy, const char *pattern)
 {
     struct sockaddr_un addr;
     int fd;
@@ -160,29 +166,137 @@ try_one (struct x_socket *s, int dpy, const char *pattern)
     s->pathname = strdup (addr.sun_path);
     if (s->pathname == NULL)
 	errx (1, "strdup: out of memory");
+    s->flags = UNIX_SOCKET;
+    return 0;
+}
+
+#ifdef MAY_HAVE_X11_PIPES
+/*
+ * Allocate a stream (masqueraded as a named pipe)
+ *
+ * 0 if all is OK
+ * -1 if bind failed badly
+ * 1 if dpy is already used
+ */
+
+static int
+try_pipe (struct x_socket *s, int dpy, const char *pattern)
+{
+    char path[MAXPATHLEN];
+    int ret;
+    int fd;
+    int pipefd[2];
+
+    snprintf (path, sizeof(path), pattern, dpy);
+    fd = open (path, O_WRONLY | O_CREAT | O_EXCL, 0600);
+    if (fd < 0)
+	if (errno == EEXIST)
+	    return 1;
+	else
+	    return -1;
+
+    close (fd);
+
+    ret = pipe (pipefd);
+    if (ret < 0)
+	err (1, "pipe");
+
+    ret = ioctl (pipefd[1], I_PUSH, "connld");
+    if (ret < 0)
+	err (1, "ioctl I_PUSH");
+
+    ret = fattach (pipefd[1], path);
+    if (ret < 0)
+	err (1, "fattach %s", path);
+
+    s->fd  = pipefd[0];
+    close (pipefd[1]);
+    s->pathname = strdup (path);
+    if (s->pathname == NULL)
+	errx (1, "strdup: out of memory");
+    s->flags = STREAM_PIPE;
+    return 0;
+}
+#endif /* MAY_HAVE_X11_PIPES */
+
+static int
+try_tcp (struct x_socket *s, int dpy)
+{
+    struct sockaddr_in tcpaddr;
+    struct in_addr local;
+    int one = 1;
+    int fd;
+
+    memset(&local, 0, sizeof(local));
+    local.s_addr = htonl(INADDR_LOOPBACK);
+
+    fd = socket (AF_INET, SOCK_STREAM, 0);
+    if (fd < 0)
+	err (1, "socket AF_INET");
+#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
+    setsockopt (fd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
+		sizeof(one));
+#endif
+    memset (&tcpaddr, 0, sizeof(tcpaddr));
+    tcpaddr.sin_family = AF_INET;
+    tcpaddr.sin_addr = local;
+    tcpaddr.sin_port = htons(6000 + dpy);
+    if (bind (fd, (struct sockaddr *)&tcpaddr,
+	      sizeof(tcpaddr)) < 0) {
+	close (fd);
+	if (errno == EADDRINUSE)
+	    return 1;
+	else
+	    return -1;
+    }
+    s->fd = fd;
+    s->pathname = NULL;
+    s->flags = TCP;
     return 0;
 }
 
 /*
- * Allocate and listen on a number of local X server socket and a TCP
- * socket.  Return the display number.
+ * Allocate and listen on a number of local X server sockets, pipes,
+ * and a TCP socket.  Return the display number.
  */
 
-static char *x_paths[] = {
+static char *x_sockets[] = {
 X_UNIX_PATH "%u",
-"/var/X/.X11-pipe/X" "%u",
 "/var/X/.X11-unix/X" "%u",
 "/usr/spool/sockets/X11/" "%u",
 NULL
 };
 
+static char *x_pipes[] = {
+X_PIPE_PATH "%u",
+"/var/X/.X11-pipe/X" "%u",
+NULL
+};
+
+static void
+try_mkdir (const char *path)
+{
+    char *dir;
+    char *p;
+    int oldmask;
+
+    if((dir = strdup (path)) == NULL)
+	errx (1, "strdup: out of memory");
+    p = strrchr (dir, '/');
+    if (p)
+	*p = '\0';
+
+    oldmask = umask(0);
+    mkdir (dir, 01777);
+    chmod (dir, 01777);
+    umask (oldmask);
+    free (dir);
+}
+
 int
 get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 {
      int dpy;
-     int oldmask;
-     struct in_addr local;
-     char *dir, *p;
      struct x_socket *s;
      int n;
      int i;
@@ -191,20 +305,8 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
      if (s == NULL)
 	 errx (1, "malloc: out of memory");
 
-     if((dir = strdup (X_UNIX_PATH)) == NULL)
-	 errx (1, "strdup: out of memory");
-     p = strrchr (dir, '/');
-     if (p)
-       *p = '\0';
-
-     oldmask = umask(0);
-     mkdir (dir, 01777);
-     chmod (dir, 01777);
-     umask (oldmask);
-     free (dir);
-
-     memset(&local, 0, sizeof(local));
-     local.s_addr = htonl(INADDR_LOOPBACK);
+     try_mkdir (X_UNIX_PATH);
+     try_mkdir (X_PIPE_PATH);
 
      for(dpy = 4; dpy < 256; ++dpy) {
 	 int tcpfd;
@@ -212,8 +314,8 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 	 int tmp;
 
 	 n = 0;
-	 for (path = x_paths; *path; ++path) {
-	     tmp = try_one (&s[n], dpy, *path);
+	 for (path = x_sockets; *path; ++path) {
+	     tmp = try_socket (&s[n], dpy, *path);
 	     if (tmp == -1) {
 		 if (errno != ENOTDIR && errno != ENOENT)
 		     return -1;
@@ -229,43 +331,46 @@ get_xsockets (int *number, struct x_socket **sockets, int tcp_socket)
 	 if (tmp == 1)
 	     continue;
 
-	 if (tcp_socket) {
-	     struct sockaddr_in tcpaddr;
-	     int one = 1;
-
-	     tcpfd = socket (AF_INET, SOCK_STREAM, 0);
-	     if (tcpfd < 0)
-		 err (1, "socket AF_INET");
-#if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
-	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
-			 sizeof(one));
-#endif
-	     memset (&tcpaddr, 0, sizeof(tcpaddr));
-	     tcpaddr.sin_family = AF_INET;
-	     tcpaddr.sin_addr = local;
-	     tcpaddr.sin_port = htons(6000 + dpy);
-	     if (bind (tcpfd, (struct sockaddr *)&tcpaddr,
-		       sizeof(tcpaddr)) < 0) {
-		 close (tcpfd);
-		 while(--n >= 0) {
+#ifdef MAY_HAVE_X11_PIPES
+	 for (path = x_pipes; *path; ++path) {
+	     tmp = try_pipe (&s[n], dpy, *path);
+	     if (tmp == -1) {
+		 if (errno != ENOTDIR && errno != ENOENT)
+		     return -1;
+	     } else if (tmp == 1) {
+		 while (--n >= 0) {
 		     close (s[n].fd);
 		     free (s[n].pathname);
 		 }
-		 if (errno == EADDRINUSE)
-		     continue;
-		 else
-		     return -1;
-	     }
-	     s[n].fd = tcpfd;
-	     s[n].pathname = NULL;
-	     ++n;
+		 break;
+	     } else if (tmp == 0)
+		 ++n;
+	 }
+
+	 if (tmp == 1)
+	     continue;
+#endif
+
+	 if (tcp_socket) {
+	     tmp = try_tcp (&s[n], dpy);
+	     if (tmp == -1)
+		 return -1;
+	     else if (tmp == 1) {
+		 while (--n >= 0) {
+		     close (s[n].fd);
+		     free (s[n].pathname);
+		 }
+		 break;
+	     } else if (tmp == 0)
+		 ++n;
 	 }
 	 break;
      }
      if (dpy == 256)
 	 errx (1, "no free x-servers");
      for (i = 0; i < n; ++i)
-	 if (listen (s[i].fd, SOMAXCONN) < 0)
+	 if (s[i].flags & LISTENP
+	     && listen (s[i].fd, SOMAXCONN) < 0)
 	     err (1, "listen %s", s[i].pathname ? s[i].pathname : "tcp");
      *number = n;
      *sockets = s;
@@ -283,7 +388,7 @@ connect_local_xsocket (unsigned dnr)
      struct sockaddr_un addr;
      char **path;
 
-     for (path = x_paths; *path; ++path) {
+     for (path = x_sockets; *path; ++path) {
 	 fd = socket (AF_UNIX, SOCK_STREAM, 0);
 	 if (fd < 0)
 	     err (1, "socket AF_UNIX");
@@ -375,11 +480,12 @@ create_and_write_cookie (char *xauthfile,
  * Verify and remove cookies.  Read and parse a X-connection from
  * `fd'. Check the cookie used is the same as in `cookie'.  Remove the
  * cookie and copy the rest of it to `sock'.
+ * Expect cookies iff cookiesp.
  * Return 0 iff ok.
  */
 
 int
-verify_and_remove_cookies (int fd, int sock)
+verify_and_remove_cookies (int fd, int sock, int cookiesp)
 {
      u_char beg[12];
      int bigendianp;
@@ -402,20 +508,24 @@ verify_and_remove_cookies (int fd, int sock)
      npad = (4 - (n % 4)) % 4;
      dpad = (4 - (d % 4)) % 4;
      protocol_name = malloc(n + npad);
-     if (protocol_name == NULL)
+     if (n + npad != 0 && protocol_name == NULL)
 	 return 1;
      protocol_data = malloc(d + dpad);
-     if (protocol_data == NULL)
+     if (d + dpad != 0 && protocol_data == NULL) {
+	 free (protocol_name);
 	 goto fail;
+     }
      if (krb_net_read (fd, protocol_name, n + npad) != n + npad)
 	 goto fail;
      if (krb_net_read (fd, protocol_data, d + dpad) != d + dpad)
 	 goto fail;
-     if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
-	 goto fail;
-     if (d != cookie_len ||
-	 memcmp (protocol_data, cookie, cookie_len) != 0)
-	 goto fail;
+     if (cookiesp) {
+	 if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
+	     goto fail;
+	 if (d != cookie_len ||
+	     memcmp (protocol_data, cookie, cookie_len) != 0)
+	     goto fail;
+     }
      free (protocol_name);
      free (protocol_data);
      if (krb_net_write (sock, zeros, 6) != 6)
@@ -433,7 +543,7 @@ fail:
  */
 
 int
-replace_cookie(int xserver, int fd, char *filename)
+replace_cookie(int xserver, int fd, char *filename, int cookiesp) /* XXX */
 {
      u_char beg[12];
      int bigendianp;

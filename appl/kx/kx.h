@@ -105,6 +105,17 @@
 #include <X11/Xlib.h>
 #include <X11/Xauth.h>
 
+#ifdef HAVE_SYS_STREAM_H
+#include <sys/stream.h>
+#endif
+#ifdef HAVE_SYS_STROPTS_H
+#include <sys/stropts.h>
+#endif
+
+#if defined(HAVE_SYS_STROPTS_H) && defined(HAVE_FATTACH) && defined(I_PUSH)
+#define MAY_HAVE_X11_PIPES
+#endif
+
 #ifdef SOCKS
 #include <socks.h>
 /* This doesn't belong here. */
@@ -117,15 +128,16 @@ struct hostent  *gethostbyname(const char *);
 #include <err.h>
 #include <roken.h>
 
-int copy_encrypted (int fd1, int fd2, des_cblock *iv,
-		    des_key_schedule schedule);
-
 struct x_socket {
     char *pathname;
     int fd;
+    enum {
+	LISTENP     = 0x80,
+	TCP         = LISTENP | 1,
+	UNIX_SOCKET = LISTENP | 2,
+	STREAM_PIPE = 3
+    } flags;
 };
-
-int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
 
 extern char x_socket[];
 extern u_int32_t display_num;
@@ -136,13 +148,18 @@ extern int xauthfile_size;
 extern u_char cookie[];
 extern size_t cookie_len;
 
+int copy_encrypted (int fd1, int fd2, des_cblock *iv,
+		    des_key_schedule schedule);
+
+int get_xsockets (int *number, struct x_socket **sockets, int tcpp);
+
 int connect_local_xsocket (unsigned dnr);
 int create_and_write_cookie (char *xauthfile,
 			     size_t size,
 			     u_char *cookie,
 			     size_t sz);
-int verify_and_remove_cookies (int fd, int sock);
-int replace_cookie(int xserver, int fd, char *filename);
+int verify_and_remove_cookies (int fd, int sock, int cookiesp);
+int replace_cookie(int xserver, int fd, char *filename, int cookiesp);
 
 int suspicious_address (int sock, struct sockaddr_in addr);
 
