@@ -1,3 +1,7 @@
+1999-07-26  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: bump version number (changes to md*, sha)
+
 1999-06-15  Assar Westerlund  <assar@sics.se>
 
 	* sha.c (swap_u_int32_t): add _CRAY
