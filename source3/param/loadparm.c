@@ -145,6 +145,7 @@ typedef struct
 	char *szAddUserToGroupScript;
 	char *szDelUserToGroupScript;
 	char *szAddMachineScript;
+	char *szShutdownScript;
 	char *szWINSHook;
 #ifdef WITH_UTMP
 	char *szUtmpDir;
@@ -887,6 +888,7 @@ static struct parm_struct parm_table[] = {
 	{"add user to group script", P_STRING, P_GLOBAL, &Globals.szAddUserToGroupScript, NULL, NULL, 0},
 	{"delete user from group script", P_STRING, P_GLOBAL, &Globals.szDelUserToGroupScript, NULL, NULL, 0},
 	{"add machine script", P_STRING, P_GLOBAL, &Globals.szAddMachineScript, NULL, NULL, 0},
+	{"shutdown script", P_STRING, P_GLOBAL, &Globals.szShutdownScript, NULL, NULL, 0},
 
 	{"logon script", P_STRING, P_GLOBAL, &Globals.szLogonScript, NULL, NULL, 0},
 	{"logon path", P_STRING, P_GLOBAL, &Globals.szLogonPath, NULL, NULL, 0},
@@ -1469,6 +1471,8 @@ FN_GLOBAL_STRING(lp_addusertogroup_script, &Globals.szAddUserToGroupScript)
 FN_GLOBAL_STRING(lp_deluserfromgroup_script, &Globals.szDelUserToGroupScript)
 
 FN_GLOBAL_STRING(lp_addmachine_script, &Globals.szAddMachineScript)
+
+FN_GLOBAL_STRING(lp_shutdown_script, &Globals.szShutdownScript)
 
 FN_GLOBAL_STRING(lp_wins_hook, &Globals.szWINSHook)
 FN_GLOBAL_LIST(lp_domain_admin_group, &Globals.szDomainAdminGroup)
