@@ -120,7 +120,7 @@ BOOL cli_send_smb(struct cli_state *cli)
 	if (cli->fd == -1)
 		return False;
 
-	if (SVAL(cli->outbuf,smb_flg2) & FLAGS2_SMB_SECUIRTY_SIGNITURES)
+	if (SVAL(cli->outbuf,smb_flg2) & FLAGS2_SMB_SECURITY_SIGNATURES)
 		cli_caclulate_sign_mac(cli);
 
 	len = smb_len(cli->outbuf) + 4;
@@ -162,7 +162,7 @@ void cli_setup_packet(struct cli_state *cli)
 			flags2 |= FLAGS2_EXTENDED_SECURITY;
 		}
 		if (cli->sign_info.use_smb_signing)
-			flags2 |= FLAGS2_SMB_SECUIRTY_SIGNITURES;
+			flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 		SSVAL(cli->outbuf,smb_flg2, flags2);
 	}
 }
