@@ -102,6 +102,9 @@ static NTSTATUS libnet_ChangePassword_rpc(struct libnet_context *ctx, TALLOC_CTX
 						r->rpc.in.domain_name, r->rpc.in.account_name, 
 						nt_errstr(status));
 						/* TODO: give the reason of the reject */
+		if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
+			goto disconnect;
+		}
 		goto ChangePasswordUser2;
 	}
 
