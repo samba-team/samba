@@ -1283,7 +1283,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  wrapper for strtok to get the next parameter from a delimited list.
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
-static char* get_driver_3_param (const char* str, const char* delim, UNISTR* dest)
+static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
 
@@ -1310,11 +1310,8 @@ static char* get_driver_3_param (const char* str, const char* delim, UNISTR* des
 	     <Config File Name>:<Help File Name>:<Language Monitor Name>:\
 	     <Default Data Type>:<Comma Separated list of Files> 
  *******************************************************************************/
-static BOOL init_drv_info_3_members (
-	TALLOC_CTX *mem_ctx, 
-	DRIVER_INFO_3 *info, 
-	const char *args
-)
+static BOOL init_drv_info_3_members ( TALLOC_CTX *mem_ctx, DRIVER_INFO_3 *info, 
+                                      char *args )
 {
 	char	*str, *str2;
 	uint32	len, i;
@@ -1370,6 +1367,7 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	DRIVER_INFO_3		info3;
 	const char		*arch;
 	fstring			driver_name;
+	char 			*driver_args;
 
 	/* parse the command arguements */
 	if (argc != 3 && argc != 4)
@@ -1393,7 +1391,8 @@ static WERROR cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	else
 		set_drv_info_3_env(&info3, arch);
 
-	if (!init_drv_info_3_members(mem_ctx, &info3, argv[2]))
+	driver_args = talloc_strdup( mem_ctx, argv[2] );
+	if (!init_drv_info_3_members(mem_ctx, &info3, driver_args ))
 	{
 		printf ("Error Invalid parameter list - %s.\n", argv[2]);
 		return WERR_INVALID_PARAM;

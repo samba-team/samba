@@ -24,7 +24,6 @@
 #include "rpcclient.h"
 
 DOM_SID domain_sid;
-static int pipe_idx;
 
 
 /* List to hold groups of commands.
@@ -559,7 +558,6 @@ static NTSTATUS do_cmd(struct cli_state *cli,
 
      /* Run command */
 
-	pipe_idx = cmd_entry->pipe_idx;
      if ( cmd_entry->returntype == RPC_RTYPE_NTSTATUS ) {
           ntresult = cmd_entry->ntfn(cli, mem_ctx, argc, (const char **) argv);
           if (!NT_STATUS_IS_OK(ntresult)) {
