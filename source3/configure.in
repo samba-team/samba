@@ -1687,10 +1687,9 @@ AC_CHECK_LIB(lber, ber_scanf, [LIBS="$LIBS -llber"])
 ########################################################
 # now see if we can find the ldap libs in standard paths
 if test x$have_ldap != xyes; then
-AC_CHECK_LIB(ldap, ldap_open, [LIBS="$LIBS -lldap";
+AC_CHECK_LIB(ldap, ldap_domain2hostlist, [LIBS="$LIBS -lldap";
 	AC_DEFINE(HAVE_LDAP)])
 fi
-
 
 #################################################
 # check for automount support
