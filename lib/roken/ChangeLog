@@ -1,5 +1,8 @@
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
+	* roken.h.in (struct sockaddr_storage): redefine with the example
+ 	code from rfc2553
+
 	* getaddrinfo.c (get_null): set loopback with correct endianess
 	for v4.  dunno about v6.
 
