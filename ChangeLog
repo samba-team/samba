@@ -1,3 +1,8 @@
+Wed Aug 20 21:26:58 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/kafs/afskrb5.c (get_cred): Check cached afs tickets for
+ 	expiration.
+
 Tue Aug 19 20:41:30 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/kerberos4.c: Fix memory leak in v4 protocol handler.
