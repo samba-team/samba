@@ -4055,13 +4055,13 @@ WERROR _spoolss_startpageprinter(pipes_struct *p, SPOOL_Q_STARTPAGEPRINTER *q_u,
 
 	Printer_entry *Printer = find_printer_index_by_hnd(p, handle);
 
-	if (Printer) {
-		Printer->page_started=True;
-		return WERR_OK;
+	if (!Printer) {
+		DEBUG(3,("Error in startpageprinter printer handle\n"));
+		return WERR_BADFID;
 	}
 
-	DEBUG(3,("Error in startpageprinter printer handle\n"));
-	return WERR_BADFID;
+	Printer->page_started=True;
+	return WERR_OK;
 }
 
 /****************************************************************************
