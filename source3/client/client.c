@@ -40,6 +40,7 @@ extern pstring username;
 extern pstring workgroup;
 char *cmdstr="";
 extern BOOL got_pass;
+extern BOOL no_pass;
 extern BOOL connect_as_printer;
 extern BOOL connect_as_ipc;
 extern struct in_addr ipzero;
@@ -3699,6 +3700,7 @@ static void usage(char *pname)
 	break;
       case 'N':
 	got_pass = True;
+	no_pass = True;
 	break;
       case 'P':
 	connect_as_printer = True;
