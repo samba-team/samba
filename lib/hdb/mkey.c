@@ -50,7 +50,8 @@ hdb_free_master_key(krb5_context context, hdb_master_key mkey)
     struct hdb_master_key_data *ptr;
     while(mkey) {
 	krb5_kt_free_entry(context, &mkey->keytab);
-	krb5_crypto_destroy(context, mkey->crypto);
+	if (mkey->crypto)
+	    krb5_crypto_destroy(context, mkey->crypto);
 	ptr = mkey;
 	mkey = mkey->next;
 	free(ptr);

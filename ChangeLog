@@ -1,3 +1,8 @@
+2001-12-05  Jacques Vidrine <n@nectar.cc>
+
+        * lib/hdb/mkey.c: fix a bug in which kstash would crash if
+        there were no /etc/krb5.conf
+
 2001-10-29  Jacques Vidrine <n@nectar.com>
 
 	* admin/get.c: fix a bug in which a reference to a data
