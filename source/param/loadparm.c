@@ -157,6 +157,7 @@ typedef struct
   char *szPanicAction;
   char *szAddUserScript;
   char *szDelUserScript;
+  char *szWINSHook;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -750,6 +751,7 @@ static struct parm_struct parm_table[] =
   {"wins proxy",       P_BOOL,    P_GLOBAL, &Globals.bWINSproxy,        NULL,   NULL,  0},
   {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL,   NULL,  FLAG_BASIC},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL,   NULL,  FLAG_BASIC},
+  {"wins hook",        P_STRING,  P_GLOBAL, &Globals.szWINSHook, NULL,   NULL,  0},
 
   {"Locking Options", P_SEP, P_SEPARATOR},
   {"blocking locks",   P_BOOL,    P_LOCAL,  &sDefault.bBlockingLocks,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -905,7 +907,6 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.bTimestampLogs = True;
-  Globals.os_level = 0;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default. */
@@ -976,6 +977,7 @@ static void init_globals(void)
 
 */
 
+  Globals.os_level = 20;
   Globals.bPreferredMaster = False;
   Globals.bLocalMaster = True;
   Globals.bDomainMaster = False;
@@ -1175,6 +1177,7 @@ FN_GLOBAL_STRING(lp_driverfile,&Globals.szDriverFile)
 FN_GLOBAL_STRING(lp_panic_action,&Globals.szPanicAction)
 FN_GLOBAL_STRING(lp_adduser_script,&Globals.szAddUserScript)
 FN_GLOBAL_STRING(lp_deluser_script,&Globals.szDelUserScript)
+FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
 
 FN_GLOBAL_STRING(lp_domain_groups,&Globals.szDomainGroups)
 FN_GLOBAL_STRING(lp_domain_admin_group,&Globals.szDomainAdminGroup)
