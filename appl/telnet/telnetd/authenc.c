@@ -63,8 +63,7 @@ net_encrypt(void)
 int
 telnet_spin(void)
 {
-    ttloop();
-    return(0);
+    return ttloop();
 }
 
 char *
