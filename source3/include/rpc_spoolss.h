@@ -1680,9 +1680,37 @@ typedef struct spool_r_getjob
 	NEW_BUFFER *buffer;
 	uint32 needed;
 	uint32 status;
-
 }
 SPOOL_R_GETJOB;
+
+typedef struct spool_q_replyopenprinter
+{
+	UNISTR2 string;
+	uint32 printer;
+	uint32 type;
+	NEW_BUFFER *buffer;
+}
+SPOOL_Q_REPLYOPENPRINTER;
+
+typedef struct spool_r_replyopenprinter
+{
+	POLICY_HND handle;
+	uint32 status;
+}
+SPOOL_R_REPLYOPENPRINTER;
+
+typedef struct spool_q_replycloseprinter
+{
+	POLICY_HND handle;
+}
+SPOOL_Q_REPLYCLOSEPRINTER;
+
+typedef struct spool_r_replycloseprinter
+{
+	POLICY_HND handle;
+	uint32 status;
+}
+SPOOL_R_REPLYCLOSEPRINTER;
 
 #define PRINTER_DRIVER_VERSION 2
 #define PRINTER_DRIVER_ARCHITECTURE "Windows NT x86"
