@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -48,6 +48,16 @@ des_key_schedule schedule;
 des_cblock iv;
 
 int do_encrypt = 0;
+
+static int do_inetd = 1;
+static char *port_str;
+static int do_rhosts;
+static int do_kerberos = 0;
+static int do_vacuous = 0;
+static int do_log = 1;
+static int do_newpag = 1;
+static int do_version;
+static int do_help = 0;
 
 static void
 syslog_and_die (const char *m, ...)
@@ -346,11 +356,12 @@ loop (int from0, int to0,
 	char buf[RSH_BUFSIZ];
 
 	ret = select (max_fd, &readset, NULL, NULL, NULL);
-	if (ret < 0)
+	if (ret < 0) {
 	    if (errno == EINTR)
 		continue;
 	    else
 		syslog_and_die ("select: %m");
+	}
 	if (FD_ISSET(from0, &readset)) {
 	    ret = do_read (from0, buf, sizeof(buf));
 	    if (ret < 0)
@@ -522,9 +533,13 @@ doit (int do_kerberos, int check_rhosts)
 	if(recv_bsd_auth (s, buf, thisaddr, thataddr,
 			  client_user,
 			  server_user,
-			  cmd) == 0)
+			  cmd) == 0) {
 	    auth_method = AUTH_BROKEN;
-	else
+	    if(do_vacuous) {
+		printf("Remote host requires Kerberos authentication\n");
+		exit(0);
+	    }
+	} else
 	    syslog_and_die("recv_bsd_auth failed");
     }
 
@@ -575,54 +590,51 @@ doit (int do_kerberos, int check_rhosts)
 	    fatal (s, "write failed");
     }
 
+#ifdef KRB4
+    if(k_hasafs()) {
+	if(do_newpag)
+	    k_setpag();
+	krb_afslog(NULL, NULL);
+    }
+#endif
     execle (pwd->pw_shell, pwd->pw_shell, "-c", cmd, NULL, env);
     err(1, "exec %s", pwd->pw_shell);
 }
 
-static void
-usage (int ret)
-{
-    syslog (LOG_ERR, "Usage: %s [-ixkl] [-p port]", __progname);
-    exit (ret);
-}
-
-static int do_inetd = 1;
-static char *port_str;
-static int do_rhosts;
-static int do_kerberos = 0;
-static int do_version;
-static int do_help = 0;
-
 struct getargs args[] = {
-    { "inetd",  'i', arg_negative_flag,	&do_inetd,
-      "Expect to be started by inetd",	NULL },
-    { "kerberos", 'k', arg_flag,	&do_kerberos,
-      "Implement kerberised services",	NULL },
-    { "encrypt", 'x', arg_flag,		&do_encrypt,
-      "Implement encrypted service",	NULL },
-    { "rhosts",	'l',	arg_negative_flag, &do_rhosts,
-      "Check users .rhosts",		NULL },
-    { "port",	'p', arg_string,	&port_str,	"Use this port",
-      "number-or-service" },
-    { "version", 0,  arg_flag,		&do_version,	"Print version",
-      NULL },
-    { "help",	 0,  arg_flag,		&do_help,	NULL,
-      NULL }
+    { "inetd",		'i',	arg_negative_flag,	&do_inetd,
+      "Not started from inetd" },
+    { "kerberos",	'k',	arg_flag,	&do_kerberos,
+      "Implement kerberised services" },
+    { "encrypt",	'x',	arg_flag,		&do_encrypt,
+      "Implement encrypted service" },
+    { "rhosts",		'l',	arg_flag, &do_rhosts,
+      "Check users .rhosts" },
+    { "port",		'p',	arg_string,	&port_str,	"Use this port",
+      "port" },
+    { "vacuous",	'v',	arg_flag, &do_vacuous,
+      "Don't accept non-kerberised connections" },
+    { NULL,		'P',	arg_negative_flag, &do_newpag,
+      "Don't put process in new PAG" },
+    /* compatibility flag: */
+    { NULL,		'L',	arg_flag, &do_log },
+    { "version",	0, 	arg_flag,		&do_version },
+    { "help",		0, 	arg_flag,		&do_help }
 };
 
-#if 0
-
 static void
 usage (int ret)
 {
-    arg_printusage (args,
-		    sizeof(args) / sizeof(args[0]),
-		    NULL,
-		    "host command");
+    if(isatty(STDIN_FILENO))
+	arg_printusage (args,
+			sizeof(args) / sizeof(args[0]),
+			NULL,
+			"host command");
+    else
+	syslog (LOG_ERR, "Usage: %s [-ixklv] [-p port]", __progname);
     exit (ret);
 }
 
-#endif
 
 int
 main(int argc, char **argv)
@@ -641,8 +653,8 @@ main(int argc, char **argv)
 	usage (0);
 
     if (do_version) {
-	printf ("%s (%s-%s)\n", __progname, PACKAGE, VERSION);
-	return 0;
+	print_version(NULL);
+	exit(0);
     }
 
     if(port_str) {
