@@ -33,7 +33,6 @@ void exit_server(char *reason)
 	if (!firsttime) exit(0);
 	firsttime = 0;
 
-	unbecome_vuser();
 	DEBUG(0,("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% AARGH\n"));
 
 	if (!reason) {   
