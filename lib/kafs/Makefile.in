@@ -80,7 +80,7 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
 
-$(AFS_EXTRA_LIBS): afslib.o
+afslib.so: afslib.o
 	$(CC) -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
 
 $(OBJECTS): ../../config.h
