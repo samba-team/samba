@@ -375,7 +375,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 
 	  size = sbuf.st_size;
 	  mdate = sbuf.st_mtime;
-	  adate = sbuf.st_atime;
+	  adate = get_access_time(&sbuf);
 	  cdate = get_create_time(&sbuf);
 	  if(mode & aDIR)
 	    size = 0;
@@ -1129,7 +1129,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_INFO_QUERY_EA_SIZE:
       data_size = (info_level==1?22:26);
       put_dos_date2(pdata,l1_fdateCreation,get_create_time(&sbuf));
-      put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime); /* access time */
+      put_dos_date2(pdata,l1_fdateLastAccess,get_access_time(&sbuf));
       put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
       SIVAL(pdata,l1_cbFile,size);
       SIVAL(pdata,l1_cbFileAlloc,ROUNDUP(size,1024));
@@ -1140,7 +1140,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_INFO_QUERY_EAS_FROM_LIST:
       data_size = 24;
       put_dos_date2(pdata,0,get_create_time(&sbuf));
-      put_dos_date2(pdata,4,sbuf.st_atime);
+      put_dos_date2(pdata,4,get_access_time(&sbuf));
       put_dos_date2(pdata,8,sbuf.st_mtime);
       SIVAL(pdata,12,size);
       SIVAL(pdata,16,ROUNDUP(size,1024));
@@ -1158,7 +1158,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
     case SMB_QUERY_FILE_BASIC_INFO:
       data_size = 36; /* w95 returns 40 bytes not 36 - why ?. */
       put_long_date(pdata,get_create_time(&sbuf));
-      put_long_date(pdata+8,sbuf.st_atime); /* access time */
+      put_long_date(pdata+8,get_access_time(&sbuf));
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
       put_long_date(pdata+24,sbuf.st_mtime); /* change time */
       SIVAL(pdata,32,mode);
@@ -1167,8 +1167,9 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       {
         time_t create_time = get_create_time(&sbuf);
         DEBUG(5,("create: %s ", ctime(&create_time)));
+        create_time = get_access_time(&sbuf);
+        DEBUG(5,("access: %s ", ctime(&create_time)));
       }
-      DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
       DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
       DEBUG(5,("change: %s ", ctime(&sbuf.st_mtime)));
       DEBUG(5,("mode: %x\n", mode));
@@ -1222,7 +1223,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
 
     case SMB_QUERY_FILE_ALL_INFO:
       put_long_date(pdata,get_create_time(&sbuf));
-      put_long_date(pdata+8,sbuf.st_atime); /* access time */
+      put_long_date(pdata+8,get_access_time(&sbuf));
       put_long_date(pdata+16,sbuf.st_mtime); /* write time */
       put_long_date(pdata+24,sbuf.st_mtime); /* change time */
       SIVAL(pdata,32,mode);

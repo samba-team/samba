@@ -514,9 +514,14 @@ static BOOL dfs_auth(char *this_user,char *password)
    * Assumes local passwd file is kept in sync w/ DCE RGY!
    */
 
-  if (!strcmp((char *)crypt(password,this_salt),this_crypted) ||
-      dcelogin_atmost_once)
-    return(False);
+  /* Fix for original (broken) code from Brett Wooldridge <brettw@austin.ibm.com> */
+  if (dce_login_atmost_once)
+    return (False);
+  /* This can be ifdefed as the DCE check below is stricter... */
+#ifndef NO_CRYPT
+  if ( strcmp((char *)crypt(password,this_salt),this_crypted) )
+    return (False);
+#endif
 
   if (sec_login_setup_identity(
 			       (unsigned char *)this_user,
@@ -1597,28 +1602,40 @@ BOOL server_validate(char *user, char *domain,
 		return False;
 	}
 
+        /*
+         * This patch from Rob Nielsen <ran@adc.com> makes doing
+         * the NetWksaUserLogon a dynamic, rather than compile-time
+         * parameter, defaulting to on. This is somewhat dangerous
+         * as it allows people to turn off this neccessary check,
+         * but so many people have had problems with this that I
+         * think it is a neccessary change. JRA.
+         */
 
-#if USE_NETWKSTAUSERLOGON
-	if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
-		DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
-		cli_tdis(&cli);
-		return False;
-	}
+	if (lp_net_wksta_user_logon()) {
+		DEBUG(3,("trying NetWkstaUserLogon with password server %s\n", cli.desthost));
+		if (!cli_NetWkstaUserLogon(&cli,user,local_machine)) {
+			DEBUG(1,("password server %s failed NetWkstaUserLogon\n", cli.desthost));
+			cli_tdis(&cli);
+			return False;
+		}
 
-	if (cli.privilages == 0) {
-		DEBUG(1,("password server %s gave guest privilages\n", cli.desthost));
-		cli_tdis(&cli);
-		return False;
-	}
+		if (cli.privilages == 0) {
+			DEBUG(1,("password server %s gave guest privilages\n", cli.desthost));
+			cli_tdis(&cli);
+			return False;
+		}
 
-	if (!strequal(cli.eff_name, user)) {
-		DEBUG(1,("password server %s gave different username %s\n", 
-			 cli.desthost,
-			 cli.eff_name));
-		cli_tdis(&cli);
-		return False;
+		if (!strequal(cli.eff_name, user)) {
+			DEBUG(1,("password server %s gave different username %s\n", 
+			 	cli.desthost,
+			 	cli.eff_name));
+			cli_tdis(&cli);
+			return False;
+		}
 	}
-#endif
+        else {
+		DEBUG(3,("skipping NetWkstaUserLogon with password server %s\n", cli.desthost));
+        }
 
 	DEBUG(3,("password server %s accepted the password\n", cli.desthost));
 

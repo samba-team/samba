@@ -499,3 +499,14 @@ time_t get_create_time(struct stat *st)
    */
   return ret;
 }
+
+/****************************************************************************
+  return the 'access time' under UNIX from a stat structure. 
+  This function exists to allow modifications to be done depending
+  on what we want to return. Just return the normal atime (for now).
+****************************************************************************/
+    
+time_t get_access_time(struct stat *st)
+{
+  return st->st_atime;
+}

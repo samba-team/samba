@@ -1990,6 +1990,10 @@ int write_socket(int fd,char *buf,int len)
   ret = write_data(fd,buf,len);
       
   DEBUG(6,("write_socket(%d,%d) wrote %d\n",fd,len,ret));
+  if(ret <= 0)
+    DEBUG(0,("write_socket: Error writing %d bytes to socket %d: ERRNO = %s\n", 
+       len, fd, strerror(errno) ));
+
   return(ret);
 }
 

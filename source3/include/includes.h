@@ -552,9 +552,12 @@ char *mktemp(char *); /* No standard include */
 #include <sys/vfs.h>
 #include <sys/id.h>
 #include <sys/priv.h>
+/* According to AIX 4.1 man pages, inet_ntoa needs the following headers */
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netinet/tcp.h>
 #include <locale.h>
-#include <arpa/inet.h>    /* needed for inet_ntoa proto */
 #define SYSV
 #define USE_WAITPID
 #define USE_SIGBLOCK

@@ -3917,7 +3917,7 @@ int reply_getattrE(char *inbuf,char *outbuf)
      date to be last modify date as UNIX doesn't save
      this */
   put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf));
-  put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+  put_dos_date2(outbuf,smb_vwv2,get_access_time(&sbuf));
   put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
   if (mode & aDIR)
     {
