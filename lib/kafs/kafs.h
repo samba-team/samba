@@ -1,3 +1,5 @@
+/* $Id$ */
+
 #ifndef __KAFS_H
 #define __KAFS_H
 
