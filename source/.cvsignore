@@ -14,3 +14,4 @@ so_locations
 testdir
 testtmp
 *.po
+*.po32
