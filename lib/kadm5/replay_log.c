@@ -79,7 +79,7 @@ main(int argc, char **argv)
     void *kadm_handle;
     kadm5_config_params conf;
 
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
     if(help_flag)
 	krb5_std_usage(0, args, num_args);

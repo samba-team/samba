@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -84,9 +84,7 @@ main(int argc, char **argv)
     kadm5_server_context *server_context;
     kadm5_config_params conf;
 
-    int optind;
-    
-    optind = krb5_program_setup(&context, argc, argv, args, num_args, NULL);
+    krb5_program_setup(&context, argc, argv, args, num_args, NULL);
     
     if(help_flag)
 	krb5_std_usage(0, args, num_args);
