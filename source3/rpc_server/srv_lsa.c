@@ -642,7 +642,69 @@ static BOOL api_lsa_query_secobj(pipes_struct *p)
 }
 
 /***************************************************************************
- api_lsa_query_dnsdomainfo
+ api_lsa_add_acct_rights
+ ***************************************************************************/
+
+static BOOL api_lsa_add_acct_rights(pipes_struct *p)
+{
+	LSA_Q_ADD_ACCT_RIGHTS q_u;
+	LSA_R_ADD_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_add_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: failed to unmarshall LSA_Q_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_add_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_add_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_add_acct_rights: Failed to marshall LSA_R_ADD_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_remove_acct_rights
+ ***************************************************************************/
+
+static BOOL api_lsa_remove_acct_rights(pipes_struct *p)
+{
+	LSA_Q_REMOVE_ACCT_RIGHTS q_u;
+	LSA_R_REMOVE_ACCT_RIGHTS r_u;
+	
+	prs_struct *data = &p->in_data.data;
+	prs_struct *rdata = &p->out_data.rdata;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
+
+	if(!lsa_io_q_remove_acct_rights("", &q_u, data, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: failed to unmarshall LSA_Q_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	r_u.status = _lsa_remove_acct_rights(p, &q_u, &r_u);
+
+	/* store the response in the SMB stream */
+	if(!lsa_io_r_remove_acct_rights("", &r_u, rdata, 0)) {
+		DEBUG(0,("api_lsa_remove_acct_rights: Failed to marshall LSA_R_REMOVE_ACCT_RIGHTS.\n"));
+		return False;
+	}
+
+	return True;
+}
+
+/***************************************************************************
+ api_lsa_query_info2
  ***************************************************************************/
 
 static BOOL api_lsa_query_info2(pipes_struct *p)
@@ -697,6 +759,8 @@ static struct api_struct api_lsa_cmds[] =
 	{ "LSA_SETSYSTEMACCOUNT", LSA_SETSYSTEMACCOUNT, api_lsa_setsystemaccount },
 	{ "LSA_ADDPRIVS"        , LSA_ADDPRIVS        , api_lsa_addprivs         },
 	{ "LSA_REMOVEPRIVS"     , LSA_REMOVEPRIVS     , api_lsa_removeprivs      },
+	{ "LSA_ADDACCTRIGHTS"   , LSA_ADDACCTRIGHTS   , api_lsa_add_acct_rights    },
+	{ "LSA_REMOVEACCTRIGHTS", LSA_REMOVEACCTRIGHTS, api_lsa_remove_acct_rights },
 	{ "LSA_QUERYSECOBJ"     , LSA_QUERYSECOBJ     , api_lsa_query_secobj     },
 	/* be careful of the adding of new RPC's.  See commentrs below about
 	   ADS DC capabilities                                               */

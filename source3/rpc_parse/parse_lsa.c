@@ -2359,7 +2359,7 @@ void init_q_add_acct_rights(LSA_Q_ADD_ACCT_RIGHTS *q_q,
 	q_q->pol = *hnd;
 	init_dom_sid2(&q_q->sid, sid);
 	init_unistr2_array(&q_q->rights, count, rights);
-	q_q->count = 5;
+	q_q->count = count;
 }
 
 
@@ -2377,7 +2377,7 @@ BOOL lsa_io_q_add_acct_rights(const char *desc, LSA_Q_ADD_ACCT_RIGHTS *q_q, prs_
 	if(!smb_io_dom_sid2("sid", &q_q->sid, ps, depth))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &q_q->rights.count))
+	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
 	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
@@ -2417,7 +2417,7 @@ void init_q_remove_acct_rights(LSA_Q_REMOVE_ACCT_RIGHTS *q_q,
 	init_dom_sid2(&q_q->sid, sid);
 	q_q->removeall = removeall;
 	init_unistr2_array(&q_q->rights, count, rights);
-	q_q->count = 5;
+	q_q->count = count;
 }
 
 
@@ -2438,7 +2438,7 @@ BOOL lsa_io_q_remove_acct_rights(const char *desc, LSA_Q_REMOVE_ACCT_RIGHTS *q_q
 	if(!prs_uint32("removeall", ps, depth, &q_q->removeall))
 		return False;
 
-	if(!prs_uint32("count", ps, depth, &q_q->rights.count))
+	if(!prs_uint32("count", ps, depth, &q_q->count))
 		return False;
 
 	if(!smb_io_unistr2_array("rights", &q_q->rights, ps, depth))
