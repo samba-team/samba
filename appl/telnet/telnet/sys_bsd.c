@@ -64,8 +64,13 @@ RCSID("$Id$");
 #ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
 #endif
-#ifdef HAVE_SYS_TERMIO_H
-#include <sys/termio.h>
+
+#ifdef HAVE_TERMIOS_H
+#include <termios.h>
+#else
+#ifdef HAVE_TERMIO_H
+#include <termio.h>
+#endif
 #endif
 
 #include <roken.h>
