@@ -1576,6 +1576,26 @@ static BOOL list_servers(char *wk_grp)
 	return True;
 }
 
+#if defined(HAVE_LIBREADLINE)
+#  if defined(HAVE_READLINE_HISTORY_H) || defined(HAVE_HISTORY_H)
+/****************************************************************************
+history
+****************************************************************************/
+static void cmd_history(void)
+{
+	HIST_ENTRY **hlist;
+	register int i;
+
+	hlist = history_list ();	/* Get pointer to history list */
+	
+	if (hlist)			/* If list not empty */
+	{
+		for (i = 0; hlist[i]; i++)	/* then display it */
+			DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+}
+#  endif 
+#endif
 
 /* Some constants for completing filename arguments */
 
@@ -1632,6 +1652,9 @@ struct
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+#ifdef HAVE_LIBREADLINE
+  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+#endif
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
@@ -1769,10 +1792,36 @@ static void process_stdin(void)
 	pstring line;
 	char *ptr;
 
+#ifdef HAVE_LIBREADLINE
+/* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
+	const int PromptSize = 2048;
+	char prompt[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
+	
+        char *temp;			/* Gets the buffer from readline() */
+	temp = (char *)NULL;
+#endif
 	while (!feof(stdin)) {
 		fstring tok;
 		int i;
+#ifdef HAVE_LIBREADLINE
+		if ( temp != (char *)NULL )
+		{
+			free( temp );	/* Free memory allocated every time by readline() */
+			temp = (char *)NULL;
+		}
 
+		snprintf( prompt, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+
+		temp = readline( prompt );		/* We read the line here */
+
+		if ( !temp )
+			break;		/* EOF occured */
+
+		if ( *temp )		/* If non-empty line, save to history */
+			add_history (temp);
+	
+		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
+#else 
 		/* display a prompt */
 		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
 		dbgflush( );
@@ -1782,6 +1831,7 @@ static void process_stdin(void)
 		/* and get a response */
 		if (!fgets(line,1000,stdin))
 			break;
+#endif
 
 		/* input language code to internal one */
 		CNV_INPUT (line);
@@ -2128,6 +2178,10 @@ static int do_message_op(void)
 
 	DEBUGLEVEL = 2;
 
+#ifdef HAVE_LIBREADLINE
+	/* Allow conditional parsing of the ~/.inputrc file. */
+	rl_readline_name = "smbclient";
+#endif    
 	setup_logging(pname,True);
 
 	/*
