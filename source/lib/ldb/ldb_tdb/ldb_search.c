@@ -41,7 +41,7 @@
 */
 static void msg_free_all_parts(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	int i, j;
+	unsigned int i, j;
 	ldb_free(ldb, msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
 		ldb_free(ldb, msg->elements[i].name);
@@ -89,7 +89,7 @@ struct ldb_val ldb_val_dup(struct ldb_context *ldb,
 static int msg_add_element(struct ldb_context *ldb, 
 			   struct ldb_message *ret, const struct ldb_message_element *el)
 {
-	int i;
+	unsigned int i;
 	struct ldb_message_element *e2, *elnew;
 
 	e2 = ldb_realloc_p(ldb, ret->elements, struct ldb_message_element, ret->num_elements+1);
@@ -134,7 +134,7 @@ static int msg_add_element(struct ldb_context *ldb,
 static int msg_add_all_elements(struct ldb_context *ldb, struct ldb_message *ret,
 				const struct ldb_message *msg)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<msg->num_elements;i++) {
 		int flags = ltdb_attribute_flags(ldb, msg->elements[i].name);
 		if ((msg->dn[0] != '@') && (flags & LTDB_FLAG_HIDDEN)) {
@@ -265,7 +265,7 @@ int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name,
 */
 void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	int i;
+	unsigned int i;
 	ldb_free(ldb, msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
 		ldb_free(ldb, msg->elements[i].values);

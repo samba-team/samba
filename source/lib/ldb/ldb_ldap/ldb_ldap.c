@@ -117,7 +117,7 @@ static int lldb_delete(struct ldb_context *ldb, const char *dn)
 */
 static int lldb_msg_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
-	int i, j;
+	unsigned int i, j;
 	ldb_free(ldb, msg->dn);
 	for (i=0;i<msg->num_elements;i++) {
 		ldb_free(ldb, msg->elements[i].name);
@@ -333,7 +333,8 @@ static LDAPMod **lldb_msg_to_mods(struct ldb_context *ldb,
 				  const struct ldb_message *msg, int use_flags)
 {
 	LDAPMod **mods;
-	int i, j, num_mods = 0;
+	unsigned int i, j;
+	int num_mods = 0;
 
 	/* allocate maximum number of elements needed */
 	mods = ldb_malloc_array_p(ldb, LDAPMod *, msg->num_elements+1);

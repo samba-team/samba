@@ -41,7 +41,7 @@
 struct ldb_message_element *ldb_msg_find_element(const struct ldb_message *msg, 
 						 const char *attr_name)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<msg->num_elements;i++) {
 		if (ldb_attr_cmp(msg->elements[i].name, attr_name) == 0) {
 			return &msg->elements[i];
@@ -74,7 +74,7 @@ int ldb_val_equal_exact(const struct ldb_val *v1, const struct ldb_val *v2)
 struct ldb_val *ldb_msg_find_val(const struct ldb_message_element *el, 
 				 struct ldb_val *val)
 {
-	int i;
+	unsigned int i;
 	for (i=0;i<el->num_values;i++) {
 		if (ldb_val_equal_exact(val, &el->values[i])) {
 			return &el->values[i];
@@ -185,7 +185,7 @@ int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg,
 int ldb_msg_element_compare(struct ldb_message_element *el1, 
 			    struct ldb_message_element *el2)
 {
-	int i;
+	unsigned int i;
 
 	if (el1->num_values != el2->num_values) {
 		return el1->num_values - el2->num_values;

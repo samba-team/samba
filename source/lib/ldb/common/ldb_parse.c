@@ -344,7 +344,7 @@ struct ldb_parse_tree *ldb_parse_tree(struct ldb_context *ldb, const char *s)
 */
 void ldb_parse_tree_free(struct ldb_context *ldb, struct ldb_parse_tree *tree)
 {
-	int i;
+	unsigned int i;
 
 	switch (tree->operation) {
 	case LDB_OP_SIMPLE:
