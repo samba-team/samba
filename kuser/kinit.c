@@ -48,15 +48,15 @@ int help_flag = 0;
 
 struct getargs args[] = {
     { "forwardable",		'f', arg_flag, &forwardable, 
-      "get forwardable tickets" },
+      "get forwardable tickets", NULL },
     { "preauthentication",	'p', arg_negative_flag, &preauth, 
-      "disable preauthentication" },
+      "disable preauthentication", NULL },
     { "renewable",		'r', arg_flag, &renewable, 
-      "get renewable tickets" },
+      "get renewable tickets", NULL },
     { "version", 		0,   arg_flag, &version_flag, 
-      "print version" },
+      "print version", NULL },
     { "help",			0,   arg_flag, &help_flag, 
-      "112" }
+      NULL, NULL}
 };
 
 static void
