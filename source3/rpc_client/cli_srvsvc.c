@@ -23,14 +23,14 @@
 
 #include "includes.h"
 
-NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
-                                     TALLOC_CTX *mem_ctx,
-                                     uint32 switch_value, SRV_INFO_CTR *ctr)
+WERROR cli_srvsvc_net_srv_get_info(struct cli_state *cli, 
+				   TALLOC_CTX *mem_ctx,
+				   uint32 switch_value, SRV_INFO_CTR *ctr)
 {
 	prs_struct qbuf, rbuf;
 	SRV_Q_NET_SRV_GET_INFO q;
 	SRV_R_NET_SRV_GET_INFO r;
-	NTSTATUS result;
+	WERROR result = W_ERROR(ERRgeneral);
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -47,21 +47,17 @@ NTSTATUS cli_srvsvc_net_srv_get_info(struct cli_state *cli,
 	/* Marshall data and send request */
 
 	if (!srv_io_q_net_srv_get_info("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	    !rpc_api_pipe_req(cli, SRV_NET_SRV_GET_INFO, &qbuf, &rbuf))
 		goto done;
-	}
 
 	/* Unmarshall response */
 
 	r.ctr = ctr;
 
-	if (!srv_io_r_net_srv_get_info("", &r, &rbuf, 0)) {
-		result = NT_STATUS_UNSUCCESSFUL;
+	if (!srv_io_r_net_srv_get_info("", &r, &rbuf, 0))
 		goto done;
-	}
 
-	result = werror_to_ntstatus(r.status);
+	result = r.status;
 
  done:
 	prs_mem_free(&qbuf);
