@@ -212,7 +212,8 @@ kadm5_log_end (kadm5_server_context *context);
 
 kadm5_ret_t
 kadm5_log_foreach (kadm5_server_context *context,
-		   void (*func)(u_int32_t ver,
+		   void (*func)(krb5_context context,
+				u_int32_t ver,
 				time_t timestamp,
 				enum kadm_ops op,
 				u_int32_t len,
