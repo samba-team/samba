@@ -1608,7 +1608,7 @@ static int cmd_rmdir(void)
 
 static int cmd_link(void)
 {
-	pstring src,dest;
+	pstring oldname,newname;
 	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
@@ -1616,20 +1616,20 @@ static int cmd_link(void)
 		return 1;
 	}
 
-	pstrcpy(src,cur_dir);
-	pstrcpy(dest,cur_dir);
+	pstrcpy(oldname,cur_dir);
+	pstrcpy(newname,cur_dir);
   
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
 	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("link <src> <dest>\n");
+		d_printf("link <oldname> <newname>\n");
 		return 1;
 	}
 
-	pstrcat(src,buf);
-	pstrcat(dest,buf2);
+	pstrcat(oldname,buf);
+	pstrcat(newname,buf2);
 
-	if (!cli_unix_hardlink(cli, src, dest)) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), src, dest);
+	if (!cli_unix_hardlink(cli, oldname, newname)) {
+		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli), newname, oldname);
 		return 1;
 	}  
 
@@ -1642,7 +1642,7 @@ static int cmd_link(void)
 
 static int cmd_symlink(void)
 {
-	pstring src,dest;
+	pstring oldname,newname;
 	pstring buf,buf2;
   
 	if (!SERVER_HAS_UNIX_CIFS(cli)) {
@@ -1650,21 +1650,21 @@ static int cmd_symlink(void)
 		return 1;
 	}
 
-	pstrcpy(src,cur_dir);
-	pstrcpy(dest,cur_dir);
+	pstrcpy(oldname,cur_dir);
+	pstrcpy(newname,cur_dir);
 	
 	if (!next_token_nr(NULL,buf,NULL,sizeof(buf)) || 
 	    !next_token_nr(NULL,buf2,NULL, sizeof(buf2))) {
-		d_printf("symlink <src> <dest>\n");
+		d_printf("symlink <oldname> <newname>\n");
 		return 1;
 	}
 
-	pstrcat(src,buf);
-	pstrcat(dest,buf2);
+	pstrcat(oldname,buf);
+	pstrcat(newname,buf2);
 
-	if (!cli_unix_symlink(cli, src, dest)) {
+	if (!cli_unix_symlink(cli, oldname, newname)) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli), src, dest);
+			cli_errstr(cli), newname, oldname);
 		return 1;
 	} 
 
@@ -2192,7 +2192,7 @@ static struct
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
-  {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"link",cmd_link,"<oldname> <newname> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
@@ -2219,7 +2219,7 @@ static struct
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
-  {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
+  {"symlink",cmd_symlink,"<oldname> <newname> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
   {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
   {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
