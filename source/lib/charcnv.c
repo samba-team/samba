@@ -140,7 +140,7 @@ int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
-	strupper_w(buffer);
+	if (!strupper_w(buffer) && (dest == src)) return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
@@ -150,7 +150,7 @@ int unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
 	size=convert_string(CH_UNIX, CH_UCS2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
-	strlower_w(buffer);
+	if (!strlower_w(buffer) && (dest == src)) return srclen;
 	return convert_string(CH_UCS2, CH_UNIX, buffer, size, dest, destlen);
 }
 
