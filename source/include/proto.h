@@ -1015,6 +1015,7 @@ char *lp_driverfile(void);
 char *lp_panic_action(void);
 char *lp_adduser_script(void);
 char *lp_deluser_script(void);
+char *lp_wins_hook(void);
 char *lp_domain_groups(void);
 char *lp_domain_admin_group(void);
 char *lp_domain_guest_group(void);
