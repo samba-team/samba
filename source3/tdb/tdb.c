@@ -1422,6 +1422,11 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 	tdb->flags = tdb_flags;
 	tdb->open_flags = open_flags;
 	tdb->log_fn = log_fn;
+	
+	if (!(tdb->name = (char *)strdup(name))) {
+		errno = ENOMEM;
+		goto fail;
+	}
 
 	if ((open_flags & O_ACCMODE) == O_WRONLY) {
 		TDB_LOG((tdb, 0, "tdb_open_ex: can't open tdb %s write-only\n",
@@ -1497,12 +1502,6 @@ TDB_CONTEXT *tdb_open_ex(char *name, int hash_size, int tdb_flags,
 		goto fail;
 	}
 
-	/* map the database and fill in the return structure */
-	tdb->name = (char *)strdup(name);
-	if (!tdb->name) {
-		errno = ENOMEM;
-		goto fail;
-	}
 	tdb->map_size = st.st_size;
 	tdb->device = st.st_dev;
 	tdb->inode = st.st_ino;
