@@ -249,6 +249,27 @@ done:
 	return NT_STATUS_OK;
 }
 
+/*
+  pull a constant size array of structures
+*/
+NTSTATUS ndr_pull_struct_array(struct ndr_pull *ndr, uint32_t count,
+			       size_t elsize, void **info,
+			       NTSTATUS (*pull_fn)(struct ndr_pull *, int, void *))
+{
+	int i;
+	char *base;
+
+	NDR_ALLOC_N_SIZE(ndr, *info, count, elsize);
+	base = (char *)*info;
+
+	for (i = 0; i < count; i++) {
+		ndr->data += ndr->offset;
+		ndr->offset = 0;
+		NDR_CHECK(pull_fn(ndr, NDR_SCALARS|NDR_BUFFERS, &base[count * elsize]));
+	}
+
+	return NT_STATUS_OK;
+}
 
 /*
   print a generic array
