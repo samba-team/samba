@@ -377,7 +377,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 {
 	NTSTATUS status;
 	uint32 num_entries;
-	WINBIND_DISPINFO *info;
+	WINBIND_USERINFO *info;
 	struct getpwent_user *name_list = NULL;
 	BOOL result = False;
 	TALLOC_CTX *mem_ctx;
@@ -407,14 +407,14 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	SAFE_FREE(ent->sam_entries);
 	ent->num_sam_entries = 0;
 	
-	/* Call query_dispinfo to get a list of usernames and user rids */
+	/* Call query_user_list to get a list of usernames and user rids */
 
 	do {
 		int i;
 					
 		num_entries = 0;
 
-		status = methods->query_dispinfo(ent->domain, mem_ctx,
+		status = methods->query_user_list(ent->domain, mem_ctx,
 						 &ent->dispinfo_ndx, 
 						 &num_entries, &info);
 		
@@ -600,7 +600,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 {
 	struct winbindd_domain *domain;
-	WINBIND_DISPINFO *info;
+	WINBIND_USERINFO *info;
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
@@ -636,7 +636,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		do {
 			int i;
 
-			status = methods->query_dispinfo(domain, mem_ctx, &start_ndx, 
+			status = methods->query_user_list(domain, mem_ctx, &start_ndx, 
 							 &num_entries, &info);
 
 			if (num_entries == 0)
