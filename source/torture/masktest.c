@@ -393,12 +393,15 @@ static void usage(void)
 "Usage:\n\
   masktest //server/share [options..]\n\
   options:\n\
+	-d debuglevel\n\
         -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
         -M max protocol\n\
         -f filechars (default %s)\n\
         -m maskchars (default %s)\n\
+	-v                             verbose mode\n\
+	-E                             die on error\n\
         -a                             show all tests\n\
 \n\
   This program tests wildcard matching between two servers. It generates\n\
@@ -417,6 +420,7 @@ static void usage(void)
 	struct cli_state *cli;	
 	extern char *optarg;
 	extern int optind;
+	extern BOOL AllowDebugChange;
 	int opt;
 	char *p;
 	int seed;
@@ -424,6 +428,9 @@ static void usage(void)
 	setlinebuf(stdout);
 
 	dbf = x_stderr;
+
+	DEBUGLEVEL = 0;
+	AllowDebugChange = False;
 
 	if (argv[1][0] == '-' || argc < 2) {
 		usage();
@@ -448,8 +455,11 @@ static void usage(void)
 
 	seed = time(NULL);
 
-	while ((opt = getopt(argc, argv, "U:s:hm:f:aoW:M:vE")) != EOF) {
+	while ((opt = getopt(argc, argv, "d:U:s:hm:f:aoW:M:vE")) != EOF) {
 		switch (opt) {
+		case 'd':
+			DEBUGLEVEL = atoi(optarg);
+			break;
 		case 'E':
 			die_on_error = 1;
 			break;
