@@ -259,7 +259,7 @@ static struct smbcli_request *smb_raw_nttrans_create_send(struct smbcli_tree *tr
 {
 	struct smb_nttrans nt;
 	uint8_t *params;
-	TALLOC_CTX *mem_ctx = talloc(tree, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(tree);
 	uint16_t fname_len;
 	DATA_BLOB sd_blob, ea_blob;
 	struct smbcli_request *req;

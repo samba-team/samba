@@ -145,7 +145,7 @@ static NTSTATUS unixuid_setup_security(struct ntvfs_module_context *ntvfs,
 {
 	struct unixuid_private *private = ntvfs->private_data;
 	struct security_token *token = req->session->session_info->security_token;
-	void *ctx = talloc(req, 0);
+	void *ctx = talloc_new(req);
 	struct unix_sec_ctx *newsec;
 	NTSTATUS status;
 

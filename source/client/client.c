@@ -1899,7 +1899,7 @@ lookup a name or sid
 static int cmd_lookup(const char **cmd_ptr)
 {
 	fstring buf;
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	struct dom_sid *sid;
 
@@ -1943,7 +1943,7 @@ show privileges for a user
 static int cmd_privileges(const char **cmd_ptr)
 {
 	fstring buf;
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	struct lsa_RightSet rights;
@@ -1990,7 +1990,7 @@ add privileges for a user
 static int cmd_addprivileges(const char **cmd_ptr)
 {
 	fstring buf;
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	struct lsa_RightSet rights;
@@ -2040,7 +2040,7 @@ delete privileges for a user
 static int cmd_delprivileges(const char **cmd_ptr)
 {
 	fstring buf;
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	NTSTATUS status;
 	struct dom_sid *sid;
 	struct lsa_RightSet rights;

@@ -363,7 +363,7 @@ NTSTATUS torture_check_ea(struct smbcli_state *cli,
 	union smb_fileinfo info;
 	NTSTATUS status;
 	struct ea_name ea;
-	TALLOC_CTX *mem_ctx = talloc(cli, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(cli);
 
 	info.ea_list.level = RAW_FILEINFO_EA_LIST;
 	info.ea_list.file.fname = fname;

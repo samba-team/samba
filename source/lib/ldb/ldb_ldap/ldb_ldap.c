@@ -86,7 +86,7 @@ static int lldb_rename(struct ldb_module *module, const char *olddn, const char 
 	int ret = 0;
 	char *newrdn, *p;
 	const char *parentdn = "";
-	TALLOC_CTX *mem_ctx = talloc(lldb, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(lldb);
 
 	/* ignore ltdb specials */
 	if (olddn[0] == '@' ||newdn[0] == '@') {

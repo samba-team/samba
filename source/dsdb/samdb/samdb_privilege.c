@@ -78,7 +78,7 @@ static NTSTATUS samdb_privilege_setup_sid(void *samctx, TALLOC_CTX *mem_ctx,
 NTSTATUS samdb_privilege_setup(struct security_token *token)
 {
 	void *samctx;
-	TALLOC_CTX *mem_ctx = talloc(token, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(token);
 	int i;
 	NTSTATUS status;
 

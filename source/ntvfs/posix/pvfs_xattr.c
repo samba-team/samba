@@ -127,7 +127,7 @@ static NTSTATUS pvfs_xattr_ndr_save(struct pvfs_state *pvfs,
 				    const char *fname, int fd, const char *attr_name, 
 				    void *p, ndr_push_flags_fn_t push_fn)
 {
-	TALLOC_CTX *mem_ctx = talloc(NULL, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	DATA_BLOB blob;
 	NTSTATUS status;
 
@@ -151,7 +151,7 @@ NTSTATUS pvfs_dosattrib_load(struct pvfs_state *pvfs, struct pvfs_filename *name
 {
 	NTSTATUS status;
 	struct xattr_DosAttrib attrib;
-	TALLOC_CTX *mem_ctx = talloc(name, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(name);
 	struct xattr_DosInfo1 *info1;
 	struct xattr_DosInfo2 *info2;
 

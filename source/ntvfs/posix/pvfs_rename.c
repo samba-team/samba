@@ -128,7 +128,7 @@ static NTSTATUS pvfs_rename_one(struct pvfs_state *pvfs,
 				uint16_t attrib)
 {
 	struct pvfs_filename *name1, *name2;
-	TALLOC_CTX *mem_ctx = talloc(req, 0);
+	TALLOC_CTX *mem_ctx = talloc_new(req);
 	NTSTATUS status;
 
 	/* resolve the wildcard pattern for this name */
