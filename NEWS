@@ -1,5 +1,7 @@
 Changes in release 0.2o:
 
+ * gss_{import,export}_sec_context added to libgssapi
+
  * new option --addresses to kdc (for listening on an explicit set of
    addresses)
 
