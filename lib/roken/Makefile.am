@@ -4,7 +4,8 @@ AUTOMAKE_OPTIONS = foreign no-dependencies
 
 AM_CFLAGS += $(WFLAGS)
 
-ACLOCAL = @ACLOCAL@ -I cf
+## ACLOCAL = @ACLOCAL@ -I cf
+ACLOCAL_AMFLAGS = -I ../../cf
 
 CLEANFILES = roken.h make-roken.c
 
