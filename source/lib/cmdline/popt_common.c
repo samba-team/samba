@@ -33,10 +33,7 @@
  *		-i,--scope
  */
 
-extern pstring user_socket_options;
-extern BOOL AllowDebugChange;
-
-struct user_auth_info cmdline_auth_info;
+struct cmdline_auth_info cmdline_auth_info;
 
 static void popt_common_callback(poptContext con, 
 			   enum poptCallbackReason reason,
@@ -70,6 +67,12 @@ static void popt_common_callback(poptContext con,
 		exit(0);
 		break;
 
+	case 'O':
+		if (arg) {
+			lp_set_cmdline("socket options", arg);
+		}
+		break;
+
 	case 's':
 		if (arg) {
 			pstrcpy(dyn_CONFIGFILE, arg);
@@ -98,13 +101,17 @@ static void popt_common_callback(poptContext con,
 	case 'm':
 		lp_set_cmdline("max protocol", arg);
 		break;
+
+	case 'R':
+		lp_set_cmdline("name resolve order", arg);
+		break;
 	}
 }
 
 struct poptOption popt_common_connection[] = {
 	{ NULL, 0, POPT_ARG_CALLBACK, popt_common_callback },
-	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use",
-	  "SOCKETOPTIONS" },
+	{ "name-resolve", 'R', POPT_ARG_STRING, NULL, 'R', "Use these name resolution services only", "NAME-RESOLVE-ORDER" },
+	{ "socket-options", 'O', POPT_ARG_STRING, NULL, 'O', "socket options to use", "SOCKETOPTIONS" },
 	{ "netbiosname", 'n', POPT_ARG_STRING, NULL, 'n', "Primary netbios name", "NETBIOSNAME" },
 	{ "workgroup", 'W', POPT_ARG_STRING, NULL, 'W', "Set the workgroup name", "WORKGROUP" },
 	{ "scope", 'i', POPT_ARG_STRING, NULL, 'i', "Use this Netbios scope", "SCOPE" },
@@ -117,7 +124,6 @@ struct poptOption popt_common_samba[] = {
 	{ "debuglevel", 'd', POPT_ARG_STRING, NULL, 'd', "Set debug level", "DEBUGLEVEL" },
 	{ "configfile", 's', POPT_ARG_STRING, NULL, 's', "Use alternative configuration file", "CONFIGFILE" },
 	{ "log-basename", 'l', POPT_ARG_STRING, NULL, 'l', "Basename for log/debug files", "LOGFILEBASE" },
-	{ "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version" },
 	POPT_TABLEEND
 };
 
@@ -133,7 +139,7 @@ struct poptOption popt_common_version[] = {
  * get a password from a a file or file descriptor
  * exit on failure
  * ****************************************************************************/
-static void get_password_file(struct user_auth_info *a)
+static void get_password_file(struct cmdline_auth_info *a)
 {
 	int fd = -1;
 	char *p;
@@ -187,7 +193,7 @@ static void get_password_file(struct user_auth_info *a)
 		close(fd);
 }
 
-static void get_credentials_file(const char *file, struct user_auth_info *info) 
+static void get_credentials_file(const char *file, struct cmdline_auth_info *info) 
 {
 	XFILE *auth;
 	fstring buf;
@@ -236,10 +242,8 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
 		}
 		else if (strwicmp("username", param) == 0)
 			pstrcpy(info->username, val);
-#if 0
 		else if (strwicmp("domain", param) == 0)
-			set_global_myworkgroup(val);
-#endif
+			pstrcpy(info->domain,val);
 		memset(buf, 0, sizeof(buf));
 	}
 	x_fclose(auth);
@@ -250,13 +254,15 @@ static void get_credentials_file(const char *file, struct user_auth_info *info)
  *		-A,--authentication-file
  *		-k,--use-kerberos
  *		-N,--no-pass
+ *		-S,--signing
+ *              -P --machine-pass
  */
 
 
 static void popt_common_credentials_callback(poptContext con, 
-											 enum poptCallbackReason reason,
-											 const struct poptOption *opt,
-											 const char *arg, const void *data)
+						enum poptCallbackReason reason,
+						const struct poptOption *opt,
+						const char *arg, const void *data)
 {
 	char *p;
 
@@ -268,7 +274,16 @@ static void popt_common_credentials_callback(poptContext con,
 		if (getenv("LOGNAME"))pstrcpy(cmdline_auth_info.username,getenv("LOGNAME"));
 
 		if (getenv("USER")) {
+			pstring tmp;
+
 			pstrcpy(cmdline_auth_info.username,getenv("USER"));
+
+			pstrcpy(tmp,cmdline_auth_info.username);
+			if ((p = strchr_m(tmp,'\\'))) {
+				*p = 0;
+				pstrcpy(cmdline_auth_info.domain,tmp);
+				pstrcpy(cmdline_auth_info.username,p+1);
+			}
 
 			if ((p = strchr_m(cmdline_auth_info.username,'%'))) {
 				*p = 0;
@@ -276,6 +291,10 @@ static void popt_common_credentials_callback(poptContext con,
 				cmdline_auth_info.got_pass = True;
 				memset(strchr_m(getenv("USER"),'%')+1,'X',strlen(cmdline_auth_info.password));
 			}
+		}
+
+		if (getenv("DOMAIN")) {
+			pstrcpy(cmdline_auth_info.domain,getenv("DOMAIN"));
 		}
 
 		if (getenv("PASSWD")) {
@@ -295,8 +314,17 @@ static void popt_common_credentials_callback(poptContext con,
 	case 'U':
 		{
 			char *lp;
+			pstring tmp;
 
 			pstrcpy(cmdline_auth_info.username,arg);
+
+			pstrcpy(tmp,cmdline_auth_info.username);
+			if ((p = strchr_m(tmp,'\\'))) {
+				*p = 0;
+				pstrcpy(cmdline_auth_info.domain,tmp);
+				pstrcpy(cmdline_auth_info.username,p+1);
+			}
+
 			if ((lp=strchr_m(cmdline_auth_info.username,'%'))) {
 				*lp = 0;
 				pstrcpy(cmdline_auth_info.password,lp+1);
@@ -319,6 +347,40 @@ static void popt_common_credentials_callback(poptContext con,
 		cmdline_auth_info.got_pass = True;
 #endif
 		break;
+
+	case 'S':
+		lp_set_cmdline("client signing", arg);
+		break;
+
+	case 'P':
+	        {
+			char *opt_password = NULL;
+			/* it is very useful to be able to make ads queries as the
+			   machine account for testing purposes and for domain leave */
+			
+			if (!secrets_init()) {
+				d_printf("ERROR: Unable to open secrets database\n");
+				exit(1);
+			}
+			
+			opt_password = secrets_fetch_machine_password(lp_workgroup());
+			
+			if (!opt_password) {
+				d_printf("ERROR: Unable to fetch machine password\n");
+				exit(1);
+			}
+			pstr_sprintf(cmdline_auth_info.username, "%s$", 
+				     lp_netbios_name());
+			pstrcpy(cmdline_auth_info.password,opt_password);
+			SAFE_FREE(opt_password);
+
+			pstrcpy(cmdline_auth_info.password, lp_workgroup());
+
+			/* machine accounts only work with kerberos */
+			cmdline_auth_info.use_kerberos = True;
+			cmdline_auth_info.got_pass = True;
+		}
+		break;
 	}
 }
 
@@ -330,5 +392,7 @@ struct poptOption popt_common_credentials[] = {
 	{ "no-pass", 'N', POPT_ARG_NONE, &cmdline_auth_info.got_pass, True, "Don't ask for a password" },
 	{ "kerberos", 'k', POPT_ARG_NONE, &cmdline_auth_info.use_kerberos, True, "Use kerberos (active directory) authentication" },
 	{ "authentication-file", 'A', POPT_ARG_STRING, NULL, 'A', "Get the credentials from a file", "FILE" },
+	{ "signing", 'S', POPT_ARG_STRING, NULL, 'S', "Set the client signing state", "on|off|required" },
+	{ "machine-pass", 'P', POPT_ARG_NONE, NULL, 'P', "Use stored machine account password" },
 	POPT_TABLEEND
 };
