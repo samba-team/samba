@@ -24,8 +24,7 @@
 #ifdef WITH_TDBPWD
 
 #define PASSDB_FILE_NAME	"/passdb.tdb"
-#define RIDDB_FILE_NAME		"/riddb.tdb"
-#define TDB_FORMAT_STRING	"ddddddfffPPfPPPPffddBBwdwdBdd"
+#define TDB_FORMAT_STRING	"BBBBBBBBBBBBBBBBBBddBBwdwdBdd"
 #define USERPREFIX		"USER_"
 #define RIDPREFIX		"RID_"
 
@@ -49,97 +48,108 @@ static SAM_ACCOUNT 		global_sam_pass;
 static BOOL init_sam_from_buffer (SAM_ACCOUNT *sampass, uint8 *buf, 
 				  uint32 buflen)
 {
-	static fstring	username,
-			domain,
-			nt_username,
-			dir_drive,
-			unknown_str,
-			munged_dial;
-	static pstring	full_name,
-			home_dir,
-			logon_script,
-			profile_path,
-			acct_desc,
-			workstations;
+	time_t	logon_time,
+		logoff_time,
+		kickoff_time,
+		pass_last_set_time,
+		pass_can_change_time,
+		pass_must_change_time;
+	uint32	time_t_len;
+	char *username;
+	char *domain;
+	char *nt_username;
+	char *dir_drive;
+	char *unknown_str;
+	char *munged_dial;
+	char *fullname;
+	char *homedir;
+	char *logon_script;
+	char *profile_path;
+	char *acct_desc;
+	char *workstations;
+	uint32	username_len, domain_len, nt_username_len,
+		dir_drive_len, unknown_str_len, munged_dial_len,
+		fullname_len, homedir_len, logon_script_len,
+		profile_path_len, acct_desc_len, workstations_len;
+		
+	uint32	/* uid, gid,*/ user_rid, group_rid, unknown_3, hours_len, unknown_5, unknown_6;
+	uint16	acct_ctrl, logon_divs;
+	uint8	*hours;
 	static uint8	*lm_pw_ptr,
-			*nt_pw_ptr,
-			lm_pw[16],
-			nt_pw[16];
+			*nt_pw_ptr;
 	uint32		len = 0;
 	uint32		lmpwlen, ntpwlen, hourslen;
-
-	/* using static memory for strings */
-	/* you set it now or you will delete any fields retrieved by tdb_unpack */
-	pdb_set_mem_ownership(sampass, False);
-
+	
 									
 	/* unpack the buffer into variables */
 	len = tdb_unpack (buf, buflen, TDB_FORMAT_STRING,
-		&sampass->logon_time,
-		&sampass->logoff_time,
-		&sampass->kickoff_time,
-		&sampass->pass_last_set_time,
-		&sampass->pass_can_change_time,
-		&sampass->pass_must_change_time,
-		username,
-		domain,
-		nt_username,
-		full_name,
-		home_dir,
-		dir_drive,
-		logon_script,
-		profile_path,
-		acct_desc,
-		workstations,
-		unknown_str,
-		munged_dial,
-		&sampass->user_rid,
-		&sampass->group_rid,
+		&time_t_len, &logon_time,
+		&time_t_len, &logoff_time,
+		&time_t_len, &kickoff_time,
+		&time_t_len, &pass_last_set_time,
+		&time_t_len, &pass_can_change_time,
+		&time_t_len, &pass_must_change_time,
+		&username_len, &username,
+		&domain_len, &domain,
+		&nt_username_len, &nt_username,
+		&fullname_len, &fullname,
+		&homedir_len, &homedir,
+		&dir_drive_len, &dir_drive,
+		&logon_script_len, &logon_script,
+		&profile_path_len, &profile_path,
+		&acct_desc_len, &acct_desc,
+		&workstations_len, &workstations,
+		&unknown_str_len, &unknown_str,
+		&munged_dial_len, &munged_dial,
+		&user_rid,
+		&group_rid,
 		&lmpwlen, &lm_pw_ptr,
 		&ntpwlen, &nt_pw_ptr,
-		&sampass->acct_ctrl,
-		&sampass->unknown_3,
-		&sampass->logon_divs,
-		&sampass->hours_len,
-		&hourslen, &sampass->hours,
-		&sampass->unknown_5,
-		&sampass->unknown_6);
+		&acct_ctrl,
+		&unknown_3,
+		&logon_divs,
+		&hours_len,
+		&hourslen, &hours,
+		&unknown_5,
+		&unknown_6);
 		
 	if (len == -1) 
 		return False;
 
-	/*
-	 * We have to copy the password hashes into static memory
-	 * and free the memory allocated by tdb_unpack.  This is because
-	 * the sampass->own_memory flag is for all pointer members.
-	 * The remaining members are using static memory and so
-	 * the password hashes must as well.     --jerry
-	 */
-	if (lm_pw_ptr)
-	{
-		memcpy(lm_pw, lm_pw_ptr, 16);
-		free (lm_pw_ptr);
-	}
-	if (nt_pw_ptr)
-	{
-		memcpy(nt_pw, nt_pw_ptr, 16);
-		free (nt_pw_ptr);
-	}
-	
-	pdb_set_username     (sampass, username);
-	pdb_set_domain       (sampass, domain);
-	pdb_set_nt_username  (sampass, nt_username);
-	pdb_set_fullname     (sampass, full_name);
-	pdb_set_homedir      (sampass, home_dir);
-	pdb_set_dir_drive    (sampass, dir_drive);
-	pdb_set_logon_script (sampass, logon_script);
-	pdb_set_profile_path (sampass, profile_path);
-	pdb_set_acct_desc    (sampass, acct_desc);
-	pdb_set_workstations (sampass, workstations);
-	pdb_set_munged_dial  (sampass, munged_dial);
-	pdb_set_lanman_passwd(sampass, lm_pw);
-	pdb_set_nt_passwd    (sampass, nt_pw);
-	
+	pdb_set_logon_time(sampass, logon_time);
+	pdb_set_logoff_time(sampass, logoff_time);
+	pdb_set_kickoff_time(sampass, kickoff_time);
+	pdb_set_pass_can_change_time(sampass, pass_can_change_time);
+	pdb_set_pass_must_change_time(sampass, pass_must_change_time);
+	pdb_set_pass_last_set_time(sampass, pass_last_set_time);
+
+	pdb_set_username     (sampass, username_len?username:NULL);
+	pdb_set_domain       (sampass, domain_len?domain:NULL);
+	pdb_set_nt_username  (sampass, nt_username_len?nt_username:NULL);
+	pdb_set_fullname     (sampass, fullname_len?fullname:NULL);
+	pdb_set_homedir      (sampass, homedir_len?homedir:NULL);
+	pdb_set_dir_drive    (sampass, dir_drive_len?dir_drive:NULL);
+	pdb_set_logon_script (sampass, logon_script_len?logon_script:NULL);
+	pdb_set_profile_path (sampass, profile_path_len?profile_path:NULL);
+	pdb_set_acct_desc    (sampass, acct_desc_len?acct_desc:NULL);
+	pdb_set_workstations (sampass, workstations_len?workstations:NULL);
+	pdb_set_munged_dial  (sampass, munged_dial_len?munged_dial:NULL);
+	pdb_set_lanman_passwd(sampass, lmpwlen?lm_pw_ptr:NULL);
+	pdb_set_nt_passwd    (sampass, ntpwlen?nt_pw_ptr:NULL);
+
+	/*pdb_set_uid(sampass, uid);
+	pdb_set_gid(sampass, gid);*/
+	pdb_set_user_rid(sampass, user_rid);
+	pdb_set_group_rid(sampass, group_rid);
+	pdb_set_unknown_3(sampass, unknown_3);
+	pdb_set_hours_len(sampass, hours_len);
+	pdb_set_unknown_5(sampass, unknown_5);
+	pdb_set_unknown_6(sampass, unknown_6);
+	pdb_set_acct_ctrl(sampass, acct_ctrl);
+	pdb_set_logons_divs(sampass, logon_divs);
+	pdb_set_hours(sampass, hours);
+
+		
 	return True;
 }
 
@@ -150,20 +160,32 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 {
 	size_t		len, buflen;
 
-	fstring		username,
-			domain,
-			nt_username,
-			dir_drive,
-			unknown_str,
-			munged_dial;
-	pstring		full_name,
-			home_dir,
-			logon_script,
-			profile_path,
-			acct_desc,
-			workstations;
-	uint8		lm_pw[16],
-			nt_pw[16];
+	time_t	logon_time,
+		logoff_time,
+		kickoff_time,
+		pass_last_set_time,
+		pass_can_change_time,
+		pass_must_change_time;
+	char *username;
+	char *domain;
+	char *nt_username;
+	char *dir_drive;
+	char *unknown_str;
+	char *munged_dial;
+	char *fullname;
+	char *homedir;
+	char *logon_script;
+	char *profile_path;
+	char *acct_desc;
+	char *workstations;
+	uint32	username_len, domain_len, nt_username_len,
+		dir_drive_len, unknown_str_len, munged_dial_len,
+		fullname_len, homedir_len, logon_script_len,
+		profile_path_len, acct_desc_len, workstations_len;
+
+	uint8		*lm_pw;
+	uint8		*nt_pw;
+	uint32	time_t_len = sizeof (time_t);
 	char		null_pw[] = "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX";
 
 	/* do we have a valid SAM_ACCOUNT pointer? */
@@ -173,62 +195,89 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	*buf = NULL;
 	buflen = 0;
 
-	fstrcpy(username, sampass->username);
-	fstrcpy(domain,   sampass->domain);
-	fstrcpy(nt_username, sampass->nt_username);
-	fstrcpy(dir_drive, sampass->dir_drive);
-	fstrcpy(unknown_str, sampass->unknown_str);
-	fstrcpy(munged_dial, sampass->munged_dial);
-	
-	pstrcpy(full_name, sampass->full_name);
-	pstrcpy(home_dir, sampass->home_dir);
-	pstrcpy(logon_script, sampass->logon_script);
-	pstrcpy(profile_path, sampass->profile_path);
-	pstrcpy(acct_desc, sampass->acct_desc);
-	pstrcpy(workstations, sampass->workstations);
-	
-	if (sampass->lm_pw)
-		memcpy(lm_pw, sampass->lm_pw, 16);
-	else
-		pdb_gethexpwd (null_pw, lm_pw);
+	logon_time = pdb_get_logon_time(sampass);
+	logoff_time = pdb_get_logoff_time(sampass);
+	kickoff_time = pdb_get_kickoff_time(sampass);
+	pass_can_change_time = pdb_get_pass_can_change_time(sampass);
+	pass_must_change_time = pdb_get_pass_must_change_time(sampass);
+	pass_last_set_time = pdb_get_pass_last_set_time(sampass);
+
+
+	username = pdb_get_username(sampass);
+	if (username) username_len = strlen(username) +1;
+	else username_len = 0;
+	domain = pdb_get_domain(sampass);
+	if (domain) domain_len = strlen(domain) +1;
+	else domain_len = 0;
+	nt_username = pdb_get_nt_username(sampass);
+	if (nt_username) nt_username_len = strlen(nt_username) +1;
+	else nt_username_len = 0;
+	dir_drive = pdb_get_dirdrive(sampass);
+	if (dir_drive) dir_drive_len = strlen(dir_drive) +1;
+	else dir_drive_len = 0;
+	unknown_str = NULL;
+	unknown_str_len = 0;
+	munged_dial = pdb_get_munged_dial(sampass);
+	if (munged_dial) munged_dial_len = strlen(munged_dial) +1;
+	else munged_dial_len = 0;
 		
-	if (sampass->nt_pw)
-		memcpy(nt_pw, sampass->nt_pw, 16);
-	else
-		pdb_gethexpwd (null_pw, nt_pw);
+	fullname = pdb_get_fullname(sampass);
+	if (fullname) fullname_len = strlen(fullname) +1;
+	else fullname_len = 0;
+	homedir = pdb_get_homedir(sampass);
+	if (homedir) homedir_len = strlen(homedir) +1;
+	else homedir_len = 0;
+	logon_script = pdb_get_logon_script(sampass);
+	if (logon_script) logon_script_len = strlen(logon_script) +1;
+	else logon_script_len = 0;
+	profile_path = pdb_get_profile_path(sampass);
+	if (profile_path) profile_path_len = strlen(profile_path) +1;
+	else profile_path_len = 0;
+	acct_desc = pdb_get_acct_desc(sampass);
+	if (acct_desc) acct_desc_len = strlen(acct_desc) +1;
+	else acct_desc_len = 0;
+	workstations = pdb_get_workstations(sampass);
+	if (workstations) workstations_len = strlen(workstations) +1;
+	else workstations_len = 0;
+	
+	lm_pw = pdb_get_lanman_passwd(sampass);
+	if (!lm_pw) pdb_gethexpwd (null_pw, lm_pw);
+	
+	nt_pw = pdb_get_nt_passwd(sampass);
+	if (!nt_pw) pdb_gethexpwd (null_pw, nt_pw);
 		
 			
 	/* one time to get the size needed */
 	len = tdb_pack(NULL, 0,  TDB_FORMAT_STRING,
-		sampass->logon_time,
-		sampass->logoff_time,
-		sampass->kickoff_time,
-		sampass->pass_last_set_time,
-		sampass->pass_can_change_time,
-		sampass->pass_must_change_time,
-		username,
-		domain,
-		nt_username,
-		full_name,
-		home_dir,
-		dir_drive,
-		logon_script,
-		profile_path,
-		acct_desc,
-		workstations,
-		unknown_str,
-		munged_dial,
-		sampass->user_rid,
-		sampass->group_rid,
+		time_t_len, &logon_time,
+		time_t_len, &logoff_time,
+		time_t_len, &kickoff_time,
+		time_t_len, &pass_last_set_time,
+		time_t_len, &pass_can_change_time,
+		time_t_len, &pass_must_change_time,
+		username_len, username,
+		domain_len, domain,
+		nt_username_len, nt_username,
+		fullname_len, fullname,
+		homedir_len, homedir,
+		dir_drive_len, dir_drive,
+		logon_script_len, logon_script,
+		profile_path_len, profile_path,
+		acct_desc_len, acct_desc,
+		workstations_len, workstations,
+		unknown_str_len, unknown_str,
+		munged_dial_len, munged_dial,
+		pdb_get_user_rid(sampass),
+		pdb_get_group_rid(sampass),
 		16, lm_pw,
 		16, nt_pw,
-		sampass->acct_ctrl,
-		sampass->unknown_3,
-		sampass->logon_divs,
-		sampass->hours_len,
-		MAX_HOURS_LEN, sampass->hours,
-		sampass->unknown_5,
-		sampass->unknown_6);
+		pdb_get_acct_ctrl(sampass),
+		pdb_get_unknown3(sampass),
+		pdb_get_logon_divs(sampass),
+		pdb_get_hours_len(sampass),
+		MAX_HOURS_LEN, pdb_get_hours(sampass),
+		pdb_get_unknown5(sampass),
+		pdb_get_unknown6(sampass));
 
 
 	/* malloc the space needed */
@@ -241,35 +290,35 @@ static uint32 init_buffer_from_sam (uint8 **buf, SAM_ACCOUNT *sampass)
 	/* now for the real call to tdb_pack() */
 	/* one time to get the size needed */
 	buflen = tdb_pack(*buf, len,  TDB_FORMAT_STRING,
-		sampass->logon_time,
-		sampass->logoff_time,
-		sampass->kickoff_time,
-		sampass->pass_last_set_time,
-		sampass->pass_can_change_time,
-		sampass->pass_must_change_time,
-		username,
-		domain,
-		nt_username,
-		full_name,
-		home_dir,
-		dir_drive,
-		logon_script,
-		profile_path,
-		acct_desc,
-		workstations,
-		unknown_str,
-		munged_dial,
-		sampass->user_rid,
-		sampass->group_rid,
+		time_t_len, &logon_time,
+		time_t_len, &logoff_time,
+		time_t_len, &kickoff_time,
+		time_t_len, &pass_last_set_time,
+		time_t_len, &pass_can_change_time,
+		time_t_len, &pass_must_change_time,
+		username_len, username,
+		domain_len, domain,
+		nt_username_len, nt_username,
+		fullname_len, fullname,
+		homedir_len, homedir,
+		dir_drive_len, dir_drive,
+		logon_script_len, logon_script,
+		profile_path_len, profile_path,
+		acct_desc_len, acct_desc,
+		workstations_len, workstations,
+		unknown_str_len, unknown_str,
+		munged_dial_len, munged_dial,
+		pdb_get_user_rid(sampass),
+		pdb_get_group_rid(sampass),
 		16, lm_pw,
 		16, nt_pw,
-		sampass->acct_ctrl,
-		sampass->unknown_3,
-		sampass->logon_divs,
-		sampass->hours_len,
-		MAX_HOURS_LEN, sampass->hours,
-		sampass->unknown_5,
-		sampass->unknown_6);
+		pdb_get_acct_ctrl(sampass),
+		pdb_get_unknown3(sampass),
+		pdb_get_logon_divs(sampass),
+		pdb_get_hours_len(sampass),
+		MAX_HOURS_LEN, pdb_get_hours(sampass),
+		pdb_get_unknown5(sampass),
+		pdb_get_unknown6(sampass));
 	
 	
 	/* check to make sure we got it correct */
@@ -333,6 +382,13 @@ SAM_ACCOUNT* pdb_getsampwent(void)
 	struct passwd	*pw;
 	uid_t		uid;
 	gid_t		gid;
+	char *prefix = USERPREFIX;
+	int  prefixlen = strlen (prefix);
+
+	/* skip all RID entries */
+	while ((global_tdb_ent.key.dsize != 0) && (strncmp (global_tdb_ent.key.dptr, prefix, prefixlen)))
+		/* increment to next in line */
+		global_tdb_ent.key = tdb_nextkey (global_tdb_ent.passwd_tdb, global_tdb_ent.key);
 
 	/* do we have an valid interation pointer? */
 	if(global_tdb_ent.passwd_tdb == NULL) 
@@ -493,7 +549,7 @@ SAM_ACCOUNT* pdb_getsampwrid (uint32 rid)
 	fstring			name;
 	
 	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, RIDDB_FILE_NAME);
+	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
 	/* set search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
@@ -535,7 +591,6 @@ BOOL pdb_delete_sam_account(char *sname)
 	TDB_DATA 	key, data;
 	fstring 	keystr;
 	pstring		tdbfile;
-	uid_t		uid;
 	uint32		rid;
 	fstring		name;
 	
@@ -576,7 +631,8 @@ BOOL pdb_delete_sam_account(char *sname)
 	}
 
 	pwd = sys_getpwnam(global_sam_pass.username);
-	rid = pdb_uid_to_user_rid (uid);
+	
+	rid = pdb_uid_to_user_rid (pwd->pw_uid);
 
 	/* it's outaa here!  8^) */
 	if (tdb_delete(pwd_tdb, key) != TDB_SUCCESS)
@@ -586,17 +642,8 @@ BOOL pdb_delete_sam_account(char *sname)
 		tdb_close(pwd_tdb); 
 		return False;
 	}	
-	tdb_close(pwd_tdb);
-	
-	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, RIDDB_FILE_NAME);	
-	
-	/* open the RID TDB */
-	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
-	{
-		DEBUG(0, ("Unable to open TDB rid file!"));
-		return False;
-	}	
+
+	/* delete also the RID key */
 
   	/* set the search key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, rid);
@@ -636,13 +683,14 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	if ( (!newpwd->uid) || (!newpwd->gid) )
 		DEBUG (0,("tdb_update_sam: Storing a SAM_ACCOUNT for [%s] with uid %d and gid %d!\n",
 			newpwd->username, newpwd->uid, newpwd->gid));
-		
+				
 	/* if we don't have a RID, then generate one */
 	if (!newpwd->user_rid)
 		pdb_set_user_rid (newpwd, pdb_uid_to_user_rid (newpwd->uid));
 	if (!newpwd->group_rid)
 		pdb_set_group_rid (newpwd, pdb_gid_to_group_rid (newpwd->gid));
-    
+
+	    
 	/* copy the SAM_ACCOUNT struct into a BYTE buffer for storage */
 	if ((data.dsize=init_buffer_from_sam (&buf, newpwd)) == -1)
 	{
@@ -665,7 +713,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 		tdb_close(global_tdb_ent.passwd_tdb);
 		global_tdb_ent.passwd_tdb = NULL;
 	}
- 
+
  	/* open the account TDB passwd*/
   	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
 	{
@@ -685,48 +733,25 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	/* add the account */
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
 	{
-		DEBUG(0, ("Unable to modify TDB passwd!"));
+		DEBUG(0, ("Unable to modify passwd TDB!"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return False;
 	}
-
-	/* cleanup */
-	tdb_close (pwd_tdb);
 	
 	/* setup RID data */
 	data.dsize = sizeof(fstring);
 	data.dptr = name;
-
-	pstrcpy (tdbfile, lp_private_dir());
-	pstrcat (tdbfile, RIDDB_FILE_NAME);
 
 	/* setup the RID index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%.8x", RIDPREFIX, pdb_get_user_rid(newpwd));
 	key.dptr = keystr;
 	key.dsize = strlen (keystr) + 1;
 	
-	/* open the account TDB rid file*/
-  	if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR, 0600)))
-	{
-     		DEBUG(0, ("tdb_update_sam: Unable to open TDB rid database!\n"));
-		if (newtdb == FALSE)
-			DEBUG(0, ("WARNING: rid database missing and passdb exist, check references integrity!\n"));
-		if (flag == TDB_INSERT)
-		{
-			DEBUG(0, ("Unable to open TDB rid file, trying create new!\n"));
-			if (!(pwd_tdb = tdb_open(tdbfile, 0, 0, O_RDWR | O_CREAT | O_EXCL, 0600)))
-			{
-				DEBUG(0, ("Unable to create TDB rid (riddb.tdb) !!!\n"));
-				/* return False; */
-			}
-		}
-	}
-		
 	/* add the reference */
 	if (tdb_store(pwd_tdb, key, data, flag) != TDB_SUCCESS)
 	{
-		DEBUG(0, ("Unable to modify TDB rid database!"));
+		DEBUG(0, ("Unable to modify TDB passwd !"));
 		DEBUGADD(0, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return False;
