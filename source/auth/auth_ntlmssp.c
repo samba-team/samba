@@ -48,7 +48,7 @@ static BOOL auth_ntlmssp_may_set_challenge(const struct ntlmssp_state *ntlmssp_s
 }
 
 /**
- * NTLM2 authentication modifies the effective challange, 
+ * NTLM2 authentication modifies the effective challenge, 
  * @param challenge The new challenge value
  */
 static NTSTATUS auth_ntlmssp_set_challenge(struct ntlmssp_state *ntlmssp_state, DATA_BLOB *challenge)
