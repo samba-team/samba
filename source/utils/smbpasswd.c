@@ -29,9 +29,9 @@ extern char *optarg;
 extern int optind;
 
 /* forced running in root-mode */
-static BOOL got_pass = False, got_username = False;
+static BOOL got_username = False;
 static BOOL stdin_passwd_get = False;
-static fstring user_name, user_password;
+static fstring user_name;
 static char *new_passwd = NULL;
 static const char *remote_machine = NULL;
 
@@ -44,9 +44,9 @@ static fstring ldap_secret;
 static void usage(void)
 {
 	printf("When run by root:\n");
-	printf("    smbpasswd [options] [username] [password]\n");
+	printf("    smbpasswd [options] [username]\n");
 	printf("otherwise:\n");
-	printf("    smbpasswd [options] [password]\n\n");
+	printf("    smbpasswd [options]\n\n");
 
 	printf("options:\n");
 	printf("  -L                   local mode (must be first option)\n");
@@ -79,6 +79,7 @@ static void set_line_buffering(FILE *f)
 /*******************************************************************
  Process command line options
  ******************************************************************/
+
 static int process_options(int argc, char **argv, int local_flags)
 {
 	int ch;
@@ -88,7 +89,6 @@ static int process_options(int argc, char **argv, int local_flags)
 	local_flags |= LOCAL_SET_PASSWORD;
 
 	ZERO_STRUCT(user_name);
-	ZERO_STRUCT(user_password);
 
 	user_name[0] = '\0';
 
@@ -150,19 +150,8 @@ static int process_options(int argc, char **argv, int local_flags)
 			DEBUGLEVEL = atoi(optarg);
 			break;
 		case 'U': {
-			char *lp;
-
 			got_username = True;
 			fstrcpy(user_name, optarg);
-
-			if ((lp = strchr(user_name, '%'))) {
-				*lp = 0;
-				fstrcpy(user_password, lp + 1);
-				got_pass = True;
-				memset(strchr_m(optarg, '%') + 1, 'X',
-				       strlen(user_password));
-			}
-
 			break;
 		}
 		case 'h':
@@ -181,7 +170,7 @@ static int process_options(int argc, char **argv, int local_flags)
 		break;
 	case 1:
 		if (!(local_flags & LOCAL_AM_ROOT)) {
-			new_passwd = argv[0];
+			usage();
 		} else {
 			if (got_username) {
 				usage();
@@ -189,14 +178,6 @@ static int process_options(int argc, char **argv, int local_flags)
 				fstrcpy(user_name, argv[0]);
 			}
 		}
-		break;
-	case 2:
-		if (!(local_flags & LOCAL_AM_ROOT) || got_username || got_pass) {
-			usage();
-		}
-
-		fstrcpy(user_name, argv[0]);
-		new_passwd = smb_xstrdup(argv[1]);
 		break;
 	default:
 		usage();

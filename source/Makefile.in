@@ -307,7 +307,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_net.o \
 
 RPC_CLIENT_OBJ = rpc_client/cli_pipe.o
 
-LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o smbd/tdbutil.o
+LOCKING_OBJ = locking/locking.o locking/brlock.o locking/posix.o
 
 PASSDB_GET_SET_OBJ = passdb/pdb_get_set.o
 

@@ -643,7 +643,7 @@ AC_CHECK_HEADERS(sys/param.h ctype.h sys/wait.h sys/resource.h sys/ioctl.h sys/i
 AC_CHECK_HEADERS(sys/mman.h sys/filio.h sys/priv.h sys/shm.h string.h strings.h stdlib.h sys/socket.h)
 AC_CHECK_HEADERS(sys/mount.h sys/vfs.h sys/fs/s5param.h sys/filsys.h termios.h termio.h)
 AC_CHECK_HEADERS(sys/termio.h sys/statfs.h sys/dustat.h sys/statvfs.h stdarg.h sys/sockio.h)
-AC_CHECK_HEADERS(security/pam_modules.h security/_pam_macros.h dlfcn.h)
+AC_CHECK_HEADERS(sys/sysmacros.h security/pam_modules.h security/_pam_macros.h dlfcn.h)
 AC_CHECK_HEADERS(sys/syslog.h syslog.h execinfo.h)
 AC_CHECK_HEADERS(langinfo.h locale.h)
 
@@ -1130,7 +1130,7 @@ if test "$enable_shared" = "yes"; then
   case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
-			LDSHFLAGS="-shared" 
+			LDSHFLAGS="-shared -Bsymbolic" 
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
@@ -1429,6 +1429,18 @@ if test x"$samba_cv_HAVE_DEVICE_MINOR_FN" = x"yes"; then
     AC_DEFINE(HAVE_DEVICE_MINOR_FN,1,[Whether the minor macro for dev_t is available])
 fi
 
+AC_CACHE_CHECK([for makedev macro],samba_cv_HAVE_MAKEDEV,[
+AC_TRY_RUN([
+#if defined(HAVE_UNISTD_H)
+#include <unistd.h>
+#endif
+#include <sys/types.h>
+main() { dev_t dev = makedev(1,2); return 0; }],
+samba_cv_HAVE_MAKEDEV=yes,samba_cv_HAVE_MAKEDEV=no,samba_cv_HAVE_MAKEDEV=cross)])
+if test x"$samba_cv_HAVE_MAKEDEV" = x"yes"; then
+    AC_DEFINE(HAVE_MAKEDEV,1,[Whether the macro for makedev is available])
+fi
+
 AC_CACHE_CHECK([for unsigned char],samba_cv_HAVE_UNSIGNED_CHAR,[
 AC_TRY_RUN([#include <stdio.h>
 main() { char c; c=250; exit((c > 0)?0:1); }],
@@ -1680,31 +1692,37 @@ AC_ARG_WITH(libiconv,
   fi
 ])
 
-ICONV_FOUND="no"
-libext=""
 for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
     save_CPPFLAGS=$CPPFLAGS
+    ICONV_FOUND="no"
+    unset libext
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
 dnl Perhaps we should always add a -L
 
 dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
-dnl installation paths.
-    for l in "lib" "lib32" ; do
-        LDFLAGS="$LDFLAGS -L$i/$l"
-        LIBS=
-        export LDFLAGS LIBS CPPFLAGS
+dnl installation paths. This gets a little tricky since we might have iconv
+dnl in both libiconv and in libc. In this case the jm_ICONV test will always
+dnl succeed when the header is found. To counter this, make sure the 
+dnl library directory is there and check the ABI directory first (which
+dnl should be harmless on other systems.
+    for l in "lib32" "lib" ; do
+        if test -d "$i/$l" ; then
+                LDFLAGS="$save_LDFLAGS -L$i/$l"
+                LIBS=
+                export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
-        jm_ICONV($i)
-        if test "$ICONV_FOUND" = yes; then
-            libext="$l"
-            break;
+                jm_ICONV($i/$l)
+                if test x"$ICONV_FOUND" = "xyes" ; then
+                    libext="$l"
+                    break;
+                fi
         fi
     done
 
-    if test "$ICONV_FOUND" = yes; then
+    if test x"$ICONV_FOUND" = "xyes" ; then
 	LDFLAGS=$save_LDFLAGS
         LIB_ADD_DIR(LDFLAGS, "$i/$libext")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
@@ -1718,7 +1736,7 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         # check for iconv in libc
         ic_save_LIBS="$LIBS"
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
-           LIBS="$LIBS -L$ICONV_LOCATION/lib"
+           LIBS="$LIBS -L$ICONV_LOCATION/$libext"
         fi
         if test x"$jm_cv_lib_iconv" != x; then
            LIBS="$LIBS -l$jm_cv_lib_iconv"

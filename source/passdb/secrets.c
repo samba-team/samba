@@ -30,10 +30,27 @@
 
 static TDB_CONTEXT *tdb;
 
+/**
+ * Use a TDB to store an incrementing random seed.
+ *
+ * Initialised to the current pid, the very first time Samba starts,
+ * and incremented by one each time it is needed.  
+ * 
+ * @note Not called by systems with a working /dev/urandom.
+ */
+static void get_rand_seed(int *new_seed) 
+{
+	*new_seed = sys_getpid();
+	if (tdb) {
+		tdb_change_int32_atomic(tdb, "INFO/random_seed", new_seed, 1);
+	}
+}
+
 /* open up the secrets database */
 BOOL secrets_init(void)
 {
 	pstring fname;
+	char dummy;
 
 	if (tdb)
 		return True;
@@ -47,6 +64,18 @@ BOOL secrets_init(void)
 		DEBUG(0,("Failed to open %s\n", fname));
 		return False;
 	}
+
+	/**
+	 * Set a reseed function for the crypto random generator 
+	 * 
+	 * This avoids a problem where systems without /dev/urandom
+	 * could send the same challenge to multiple clients
+	 */
+	set_rand_reseed_callback(get_rand_seed);
+
+	/* Ensure that the reseed is done now, while we are root, etc */
+	generate_random_buffer(&dummy, sizeof(dummy));
+
 	return True;
 }
 
@@ -503,37 +532,6 @@ BOOL trusted_domain_password_delete(const char *domain)
 	return secrets_delete(trustdom_keystr(domain));
 }
 
-
-/*******************************************************************
- Reset the 'done' variables so after a client process is created
- from a fork call these calls will be re-done. This should be
- expanded if more variables need reseting.
- ******************************************************************/
-
-void reset_globals_after_fork(void)
-{
-	unsigned char dummy;
-
-	secrets_init();
-
-	/*
-	 * Increment the global seed value to ensure every smbd starts
-	 * with a new random seed.
-	 */
-
-	if (tdb) {
-		uint32 initial_val = sys_getpid();
-		tdb_change_int32_atomic(tdb, "INFO/random_seed", (int *)&initial_val, 1);
-		set_rand_reseed_data((unsigned char *)&initial_val, sizeof(initial_val));
-	}
-
-	/*
-	 * Re-seed the random crypto generator, so all smbd's
-	 * started from the same parent won't generate the same
-	 * sequence.
-	 */
-	generate_random_buffer( &dummy, 1, True);
-}
 
 BOOL secrets_store_ldap_pw(const char* dn, char* pw)
 {

@@ -90,7 +90,7 @@ static struct in_addr *lookup_byname_backend(const char *name, int *count)
 {
 	int fd = -1;
 	struct ip_service *address = NULL;
-	struct in_addr *ret;
+	struct in_addr *ret = NULL;
 	int j, flags = 0;
 
 	if (!initialised) {

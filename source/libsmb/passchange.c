@@ -144,6 +144,8 @@ BOOL remote_password_change(const char *remote_machine, const char *user_name,
 	init_creds(&creds, "", "", NULL);
 	cli_init_creds(&cli, &creds);
 	
+	cli.pipe_auth_flags = 0;
+
 	result = NT_STATUS_UNSUCCESSFUL;
 	
 	/* OK, this is ugly, but... */

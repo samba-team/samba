@@ -93,8 +93,9 @@
 #define LDAP_ATTR_LOGON_COUNT		36
 #define LDAP_ATTR_MUNGED_DIAL		37
 #define LDAP_ATTR_BAD_PASSWORD_TIME	38
-
-#define LDAP_ATTR_SID_LIST              40
+#define LDAP_ATTR_PWD_HISTORY		39
+#define LDAP_ATTR_SID_LIST		40
+#define LDAP_ATTR_MOD_TIMESTAMP		41
 
 typedef struct _attrib_map_entry {
 	int		attrib;
@@ -153,6 +154,6 @@ struct smbldap_state {
 
 struct smbldap_state;
 
-#define LDAP_CONNECT_DEFAULT_TIMEOUT   5
+#define LDAP_CONNECT_DEFAULT_TIMEOUT   15
 
 #endif	/* _SMBLDAP_H */

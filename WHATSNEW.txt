@@ -1,6 +1,6 @@
                 ================================
-                Release Notes for Samba 3.0.5rc1
-                            July 8, 2004
+                Release Notes for Samba 3.0.6rc2
+                            Aug 3, 2004
                 ================================
 
 This is a release candidate snapshot of the Samba 3.0.5 code
@@ -14,6 +14,120 @@ There have been several bug fixes since the 3.0.4 release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
+
+Common bugs fixed in 3.0.6rc2 include:
+
+  o 
+
+New features introduced in this release include:
+
+  o Support for maintaining user password history.
+
+  
+######################################################################
+Changes
+#######
+
+Changes since 3.0.6rc1
+(formally referred to as 3.0.5rc1)
+----------------------------------
+
+smb.conf changes
+----------------
+
+    Parameter Name              Action
+    --------------              ------
+
+    
+commits
+-------
+o   Jeremy Allison <jra@samba.org> 
+    * Add support for storing a user's password history.
+      LDAP portion of the code was based on a patch from 
+      Jianliang Lu <j.lu@tiesse.com>.
+      
+      
+
+Changes for older versions follow below:
+
+      --------------------------------------------------
+    
+                 =============================
+                 Release Notes for Samba 3.0.5
+                         July 20, 2004
+                 =============================
+
+Please note that Samba 3.0.5 is identical to Samba 3.0.4 with 
+the exception of correcting the two security issues outlined 
+below.
+
+######################## SECURITY RELEASE ########################
+
+Summary:       Multiple Potential Buffer Overruns in Samba 3.0.x
+CVE ID:        CAN-2004-0600, CAN-2004-0686
+               (http://cve.mitre.org/)
+
+
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.
+
+It has been confirmed that versions of Samba 3 prior to v3.0.4
+are vulnerable to two potential buffer overruns.  The individual
+details are given below.
+
+-------------
+CAN-2004-0600
+-------------
+
+Affected Versions:      Samba 3.0.2 and later
+
+The internal routine used by the Samba Web Administration
+Tool (SWAT v3.0.2 and later) to decode the base64 data
+during HTTP basic authentication is subject to a buffer
+overrun caused by an invalid base64 character.  It is
+recommended that all Samba v3.0.2 or later installations
+running SWAT either (a) upgrade to v3.0.5, or (b) disable
+the swat administration service as a temporary workaround.
+
+This same code is used internally to decode the
+sambaMungedDial attribute value when using the ldapsam
+passdb backend. While we do not believe that the base64
+decoding routines used by the ldapsam passdb backend can
+be exploited, sites using an LDAP directory service with
+Samba are strongly encouraged to verify that the DIT only
+allows write access to sambaSamAccount attributes by a
+sufficiently authorized user.
+
+The Samba Team would like to heartily thank Evgeny Demidov
+for analyzing and reporting this bug.
+
+-------------
+CAN-2004-0686
+-------------
+
+Affected Versions:      Samba 3.0.0 and later
+
+A buffer overrun has been located in the code used to support
+the 'mangling method = hash' smb.conf option.  Please be aware
+that the default setting for this parameter is 'mangling method
+= hash2' and therefore not vulnerable.
+
+Affected Samba 3 installations can avoid this possible security
+bug by using the default hash2 mangling method.  Server
+installations requiring the hash mangling method are encouraged
+to upgrade to Samba 3.0.5.
+
+
+##################################################################
+
+    
+     --------------------------------------------------
+    
+                ================================
+                Release Notes for Samba 3.0.5rc1
+                            July 8, 2004
+                ================================
 
 Common bugs fixed in this 3.0.5rc1 include:
 
@@ -50,10 +164,8 @@ New features introduced in this release include:
 Changes
 #######
 
-
-
-Changes since 3.0.4
---------------------
+Changes since 3.0.5pre1
+-----------------------
 
 smb.conf changes
 ----------------
@@ -266,9 +378,6 @@ o   Jelmer Vernooij <jelmer@samba.org>
      fails in smbclient.
    * Prepare for better error checking in tar.
    
-
-
-Changes for older versions follow below:
 
     --------------------------------------------------
 

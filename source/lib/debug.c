@@ -239,8 +239,9 @@ done:
 }
 
 /****************************************************************************
-utility access to debug class names's
+ Utility access to debug class names's.
 ****************************************************************************/
+
 const char *debug_classname_from_index(int ndx)
 {
 	if (ndx < 0 || ndx >= debug_num_classes)
@@ -250,8 +251,9 @@ const char *debug_classname_from_index(int ndx)
 }
 
 /****************************************************************************
-utility to translate names to debug class index's (internal version)
+ Utility to translate names to debug class index's (internal version).
 ****************************************************************************/
+
 static int debug_lookup_classname_int(const char* classname)
 {
 	int i;
@@ -266,8 +268,9 @@ static int debug_lookup_classname_int(const char* classname)
 }
 
 /****************************************************************************
-Add a new debug class to the system
+ Add a new debug class to the system.
 ****************************************************************************/
+
 int debug_add_class(const char *classname)
 {
 	int ndx;
@@ -285,33 +288,28 @@ int debug_add_class(const char *classname)
 	ndx = debug_num_classes;
 
 	new_ptr = DEBUGLEVEL_CLASS;
-	if (DEBUGLEVEL_CLASS == &debug_all_class_hack)
-	{
+	if (DEBUGLEVEL_CLASS == &debug_all_class_hack) {
 		/* Initial loading... */
 		new_ptr = NULL;
 	}
-	new_ptr = Realloc(new_ptr,
-			  sizeof(int) * (debug_num_classes + 1));
+	new_ptr = Realloc(new_ptr, sizeof(int) * (debug_num_classes + 1));
 	if (!new_ptr)
 		return -1;
 	DEBUGLEVEL_CLASS = new_ptr;
 	DEBUGLEVEL_CLASS[ndx] = 0;
 
 	/* debug_level is the pointer used for the DEBUGLEVEL-thingy */
-	if (ndx==0)
-	{
+	if (ndx==0) {
 		/* Transfer the initial level from debug_all_class_hack */
 		DEBUGLEVEL_CLASS[ndx] = DEBUGLEVEL;
 	}
 	debug_level = DEBUGLEVEL_CLASS;
 
 	new_ptr = DEBUGLEVEL_CLASS_ISSET;
-	if (new_ptr == &debug_all_class_isset_hack)
-	{
+	if (new_ptr == &debug_all_class_isset_hack) {
 		new_ptr = NULL;
 	}
-	new_ptr = Realloc(new_ptr,
-			  sizeof(BOOL) * (debug_num_classes + 1));
+	new_ptr = Realloc(new_ptr, sizeof(BOOL) * (debug_num_classes + 1));
 	if (!new_ptr)
 		return -1;
 	DEBUGLEVEL_CLASS_ISSET = new_ptr;
@@ -333,42 +331,41 @@ int debug_add_class(const char *classname)
 }
 
 /****************************************************************************
-utility to translate names to debug class index's (public version)
+ Utility to translate names to debug class index's (public version).
 ****************************************************************************/
+
 int debug_lookup_classname(const char *classname)
 {
 	int ndx;
        
-	if (!classname || !*classname) return -1;
+	if (!classname || !*classname)
+		return -1;
 
 	ndx = debug_lookup_classname_int(classname);
 
 	if (ndx != -1)
 		return ndx;
 
-	if (debug_warn_unknown_class)
-	{
+	if (debug_warn_unknown_class) {
 		DEBUG(0, ("debug_lookup_classname(%s): Unknown class\n",
 			  classname));
 	}
-	if (debug_auto_add_unknown_class)
-	{
+	if (debug_auto_add_unknown_class) {
 		return debug_add_class(classname);
 	}
 	return -1;
 }
 
-
 /****************************************************************************
-dump the current registered debug levels
+ Dump the current registered debug levels.
 ****************************************************************************/
+
 static void debug_dump_status(int level)
 {
 	int q;
 
 	DEBUG(level, ("INFO: Current debug levels:\n"));
-	for (q = 0; q < debug_num_classes; q++)
-	{
+	for (q = 0; q < debug_num_classes; q++) {
 		DEBUGADD(level, ("  %s: %s/%d\n",
 				 classname_table[q],
 				 (DEBUGLEVEL_CLASS_ISSET[q]
@@ -378,9 +375,10 @@ static void debug_dump_status(int level)
 }
 
 /****************************************************************************
-parse the debug levels from smbcontrol. Example debug level parameter:
-  printdrivers:7
+ parse the debug levels from smbcontrol. Example debug level parameter:
+ printdrivers:7
 ****************************************************************************/
+
 static BOOL debug_parse_params(char **params)
 {
 	int   i, ndx;
@@ -397,9 +395,9 @@ static BOOL debug_parse_params(char **params)
 		DEBUGLEVEL_CLASS[DBGC_ALL] = atoi(params[0]);
 		DEBUGLEVEL_CLASS_ISSET[DBGC_ALL] = True;
 		i = 1; /* start processing at the next params */
-	}
-	else
+	} else {
 		i = 0; /* DBGC_ALL not specified OR class name was included */
+	}
 
 	/* Fill in new debug class levels */
 	for (; i < debug_num_classes && params[i]; i++) {
@@ -418,10 +416,11 @@ static BOOL debug_parse_params(char **params)
 }
 
 /****************************************************************************
-parse the debug levels from smb.conf. Example debug level string:
+ Parse the debug levels from smb.conf. Example debug level string:
   3 tdb:5 printdrivers:7
-Note: the 1st param has no "name:" preceeding it.
+ Note: the 1st param has no "name:" preceeding it.
 ****************************************************************************/
+
 BOOL debug_parse_levels(const char *params_str)
 {
 	char **params;
@@ -434,8 +433,7 @@ BOOL debug_parse_levels(const char *params_str)
 
 	params = str_list_make(params_str, NULL);
 
-	if (debug_parse_params(params))
-	{
+	if (debug_parse_params(params)) {
 		debug_dump_status(5);
 		str_list_free(&params);
 		return True;
@@ -446,15 +444,15 @@ BOOL debug_parse_levels(const char *params_str)
 }
 
 /****************************************************************************
-receive a "set debug level" message
+ Receive a "set debug level" message.
 ****************************************************************************/
+
 static void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	const char *params_str = buf;
 
 	/* Check, it's a proper string! */
-	if (params_str[len-1] != '\0')
-	{
+	if (params_str[len-1] != '\0') {
 		DEBUG(1, ("Invalid debug message from pid %u to pid %u\n",
 			  (unsigned int)src, (unsigned int)getpid()));
 		return;
@@ -466,10 +464,10 @@ static void debug_message(int msg_type, pid_t src, void *buf, size_t len)
 	debug_parse_levels(params_str);
 }
 
-
 /****************************************************************************
-send a "set debug level" message
+ Send a "set debug level" message.
 ****************************************************************************/
+
 void debug_message_send(pid_t pid, const char *params_str)
 {
 	if (!params_str)
@@ -495,6 +493,7 @@ static void debuglevel_message(int msg_type, pid_t src, void *buf, size_t len)
 /****************************************************************************
 Init debugging (one time stuff)
 ****************************************************************************/
+
 void debug_init(void)
 {
 	static BOOL initialised = False;
@@ -508,17 +507,15 @@ void debug_init(void)
 	message_register(MSG_DEBUG, debug_message);
 	message_register(MSG_REQ_DEBUGLEVEL, debuglevel_message);
 
-	for(p = default_classname_table; *p; p++)
-	{
+	for(p = default_classname_table; *p; p++) {
 		debug_add_class(*p);
 	}
 }
 
+/***************************************************************************
+ Get ready for syslog stuff
+**************************************************************************/
 
-/* ************************************************************************** **
- * get ready for syslog stuff
- * ************************************************************************** **
- */
 void setup_logging(const char *pname, BOOL interactive)
 {
 	debug_init();
@@ -526,6 +523,11 @@ void setup_logging(const char *pname, BOOL interactive)
 	/* reset to allow multiple setup calls, going from interactive to
 	   non-interactive */
 	stdout_logging = False;
+	if (dbf) {
+		x_fflush(dbf);
+		(void) x_fclose(dbf);
+	}
+
 	dbf = NULL;
 
 	if (interactive) {
@@ -546,16 +548,15 @@ void setup_logging(const char *pname, BOOL interactive)
 #endif
 	}
 #endif
-} /* setup_logging */
+}
 
-/* ************************************************************************** **
- * reopen the log files
- * note that we now do this unconditionally
- * We attempt to open the new debug fp before closing the old. This means
- * if we run out of fd's we just keep using the old fd rather than aborting.
- * Fix from dgibson@linuxcare.com.
- * ************************************************************************** **
- */
+/**************************************************************************
+ reopen the log files
+ note that we now do this unconditionally
+ We attempt to open the new debug fp before closing the old. This means
+ if we run out of fd's we just keep using the old fd rather than aborting.
+ Fix from dgibson@linuxcare.com.
+**************************************************************************/
 
 BOOL reopen_logs( void )
 {
@@ -614,13 +615,13 @@ BOOL reopen_logs( void )
 	return ret;
 }
 
-/* ************************************************************************** **
- * Force a check of the log size.
- * ************************************************************************** **
- */
+/**************************************************************************
+ Force a check of the log size.
+ ***************************************************************************/
+
 void force_check_log_size( void )
 {
-  debug_count = 100;
+	debug_count = 100;
 }
 
 /***************************************************************************
@@ -642,10 +643,9 @@ BOOL need_to_check_log_size( void )
 	return( True );
 }
 
-/* ************************************************************************** **
- * Check to see if the log has grown to be too big.
- * ************************************************************************** **
- */
+/**************************************************************************
+ Check to see if the log has grown to be too big.
+ **************************************************************************/
 
 void check_log_size( void )
 {
@@ -704,293 +704,273 @@ void check_log_size( void )
 		}
 	}
 	debug_count = 0;
-} /* check_log_size */
+}
 
-/* ************************************************************************** **
- * Write an debug message on the debugfile.
- * This is called by dbghdr() and format_debug_text().
- * ************************************************************************** **
- */
+/*************************************************************************
+ Write an debug message on the debugfile.
+ This is called by dbghdr() and format_debug_text().
+************************************************************************/
+
  int Debug1( const char *format_str, ... )
 {
-  va_list ap;  
-  int old_errno = errno;
+	va_list ap;  
+	int old_errno = errno;
 
-  debug_count++;
+	debug_count++;
 
-  if( stdout_logging )
-    {
-    va_start( ap, format_str );
-    if(dbf)
-      (void)x_vfprintf( dbf, format_str, ap );
-    va_end( ap );
-    errno = old_errno;
-    return( 0 );
-    }
+	if( stdout_logging ) {
+		va_start( ap, format_str );
+		if(dbf)
+			(void)x_vfprintf( dbf, format_str, ap );
+		va_end( ap );
+		errno = old_errno;
+		return( 0 );
+	}
   
 #ifdef WITH_SYSLOG
-  if( !lp_syslog_only() )
+	if( !lp_syslog_only() )
 #endif
-    {
-    if( !dbf )
-      {
-      mode_t oldumask = umask( 022 );
+	{
+		if( !dbf ) {
+			mode_t oldumask = umask( 022 );
 
-      dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
-      (void)umask( oldumask );
-      if( dbf )
-        {
-        x_setbuf( dbf, NULL );
-        }
-      else
-        {
-        errno = old_errno;
-        return(0);
-        }
-      }
-    }
+			dbf = x_fopen( debugf, O_WRONLY|O_APPEND|O_CREAT, 0644 );
+			(void)umask( oldumask );
+			if( dbf ) {
+				x_setbuf( dbf, NULL );
+			} else {
+				errno = old_errno;
+				return(0);
+			}
+		}
+	}
 
 #ifdef WITH_SYSLOG
-  if( syslog_level < lp_syslog() )
-    {
-    /* map debug levels to syslog() priorities
-     * note that not all DEBUG(0, ...) calls are
-     * necessarily errors
-     */
-    static int priority_map[] = { 
-      LOG_ERR,     /* 0 */
-      LOG_WARNING, /* 1 */
-      LOG_NOTICE,  /* 2 */
-      LOG_INFO,    /* 3 */
-      };
-    int     priority;
-    pstring msgbuf;
+	if( syslog_level < lp_syslog() ) {
+		/* map debug levels to syslog() priorities
+		 * note that not all DEBUG(0, ...) calls are
+		 * necessarily errors */
+		static int priority_map[] = { 
+			LOG_ERR,     /* 0 */
+			LOG_WARNING, /* 1 */
+			LOG_NOTICE,  /* 2 */
+			LOG_INFO,    /* 3 */
+		};
+		int     priority;
+		pstring msgbuf;
 
-    if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) )
-     || syslog_level < 0)
-      priority = LOG_DEBUG;
-    else
-      priority = priority_map[syslog_level];
-      
-    va_start( ap, format_str );
-    vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-    va_end( ap );
-      
-    msgbuf[255] = '\0';
-    syslog( priority, "%s", msgbuf );
-    }
+		if( syslog_level >= ( sizeof(priority_map) / sizeof(priority_map[0]) ) || syslog_level < 0)
+			priority = LOG_DEBUG;
+		else
+			priority = priority_map[syslog_level];
+
+		va_start( ap, format_str );
+		vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
+		va_end( ap );
+
+		msgbuf[255] = '\0';
+		syslog( priority, "%s", msgbuf );
+	}
 #endif
   
-  check_log_size();
+	check_log_size();
 
 #ifdef WITH_SYSLOG
-  if( !lp_syslog_only() )
+	if( !lp_syslog_only() )
 #endif
-    {
-    va_start( ap, format_str );
-    if(dbf)
-      (void)x_vfprintf( dbf, format_str, ap );
-    va_end( ap );
-    if(dbf)
-      (void)x_fflush( dbf );
-    }
+	{
+		va_start( ap, format_str );
+		if(dbf)
+			(void)x_vfprintf( dbf, format_str, ap );
+		va_end( ap );
+		if(dbf)
+			(void)x_fflush( dbf );
+	}
 
-  errno = old_errno;
+	errno = old_errno;
 
-  return( 0 );
-  } /* Debug1 */
+	return( 0 );
+}
 
 
-/* ************************************************************************** **
- * Print the buffer content via Debug1(), then reset the buffer.
- *
- *  Input:  none
- *  Output: none
- *
- * ************************************************************************** **
- */
+/**************************************************************************
+ Print the buffer content via Debug1(), then reset the buffer.
+ Input:  none
+ Output: none
+****************************************************************************/
+
 static void bufr_print( void )
-  {
-  format_bufr[format_pos] = '\0';
-  (void)Debug1( "%s", format_bufr );
-  format_pos = 0;
-  } /* bufr_print */
+{
+	format_bufr[format_pos] = '\0';
+	(void)Debug1( "%s", format_bufr );
+	format_pos = 0;
+}
 
-/* ************************************************************************** **
- * Format the debug message text.
- *
- *  Input:  msg - Text to be added to the "current" debug message text.
- *
- *  Output: none.
- *
- *  Notes:  The purpose of this is two-fold.  First, each call to syslog()
- *          (used by Debug1(), see above) generates a new line of syslog
- *          output.  This is fixed by storing the partial lines until the
- *          newline character is encountered.  Second, printing the debug
- *          message lines when a newline is encountered allows us to add
- *          spaces, thus indenting the body of the message and making it
- *          more readable.
- *
- * ************************************************************************** **
- */
-static void format_debug_text( char *msg )
-  {
-  size_t i;
-  BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || 
-					!(lp_loaded())));
+/***************************************************************************
+ Format the debug message text.
 
-  for( i = 0; msg[i]; i++ )
-    {
-    /* Indent two spaces at each new line. */
-    if(timestamp && 0 == format_pos)
-      {
-      format_bufr[0] = format_bufr[1] = ' ';
-      format_pos = 2;
-      }
+ Input:  msg - Text to be added to the "current" debug message text.
 
-    /* If there's room, copy the character to the format buffer. */
-    if( format_pos < FORMAT_BUFR_MAX )
-      format_bufr[format_pos++] = msg[i];
+ Output: none.
 
-    /* If a newline is encountered, print & restart. */
-    if( '\n' == msg[i] )
-      bufr_print();
+ Notes:  The purpose of this is two-fold.  First, each call to syslog()
+         (used by Debug1(), see above) generates a new line of syslog
+         output.  This is fixed by storing the partial lines until the
+         newline character is encountered.  Second, printing the debug
+         message lines when a newline is encountered allows us to add
+         spaces, thus indenting the body of the message and making it
+         more readable.
+**************************************************************************/
 
-    /* If the buffer is full dump it out, reset it, and put out a line
-     * continuation indicator.
-     */
-    if( format_pos >= FORMAT_BUFR_MAX )
-      {
-      bufr_print();
-      (void)Debug1( " +>\n" );
-      }
-    }
+static void format_debug_text( const char *msg )
+{
+	size_t i;
+	BOOL timestamp = (!stdout_logging && (lp_timestamp_logs() || !(lp_loaded())));
 
-  /* Just to be safe... */
-  format_bufr[format_pos] = '\0';
-  } /* format_debug_text */
+	for( i = 0; msg[i]; i++ ) {
+		/* Indent two spaces at each new line. */
+		if(timestamp && 0 == format_pos) {
+			format_bufr[0] = format_bufr[1] = ' ';
+			format_pos = 2;
+		}
 
-/* ************************************************************************** **
- * Flush debug output, including the format buffer content.
- *
- *  Input:  none
- *  Output: none
- *
- * ************************************************************************** **
- */
+		/* If there's room, copy the character to the format buffer. */
+		if( format_pos < FORMAT_BUFR_MAX )
+			format_bufr[format_pos++] = msg[i];
+
+		/* If a newline is encountered, print & restart. */
+		if( '\n' == msg[i] )
+			bufr_print();
+
+		/* If the buffer is full dump it out, reset it, and put out a line
+		 * continuation indicator.
+		 */
+		if( format_pos >= FORMAT_BUFR_MAX ) {
+			bufr_print();
+			(void)Debug1( " +>\n" );
+		}
+	}
+
+	/* Just to be safe... */
+	format_bufr[format_pos] = '\0';
+}
+
+/***************************************************************************
+ Flush debug output, including the format buffer content.
+
+ Input:  none
+ Output: none
+***************************************************************************/
+
 void dbgflush( void )
-  {
-  bufr_print();
-  if(dbf)
-    (void)x_fflush( dbf );
-  } /* dbgflush */
+{
+	bufr_print();
+	if(dbf)
+		(void)x_fflush( dbf );
+}
 
-/* ************************************************************************** **
- * Print a Debug Header.
- *
- *  Input:  level - Debug level of the message (not the system-wide debug
- *                  level. )
- *          file  - Pointer to a string containing the name of the file
- *                  from which this function was called, or an empty string
- *                  if the __FILE__ macro is not implemented.
- *          func  - Pointer to a string containing the name of the function
- *                  from which this function was called, or an empty string
- *                  if the __FUNCTION__ macro is not implemented.
- *          line  - line number of the call to dbghdr, assuming __LINE__
- *                  works.
- *
- *  Output: Always True.  This makes it easy to fudge a call to dbghdr()
- *          in a macro, since the function can be called as part of a test.
- *          Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
- *
- *  Notes:  This function takes care of setting syslog_level.
- *
- * ************************************************************************** **
- */
+/***************************************************************************
+ Print a Debug Header.
+
+ Input:  level - Debug level of the message (not the system-wide debug
+                  level. )
+          file  - Pointer to a string containing the name of the file
+                  from which this function was called, or an empty string
+                  if the __FILE__ macro is not implemented.
+          func  - Pointer to a string containing the name of the function
+                  from which this function was called, or an empty string
+                  if the __FUNCTION__ macro is not implemented.
+         line  - line number of the call to dbghdr, assuming __LINE__
+                 works.
+
+  Output: Always True.  This makes it easy to fudge a call to dbghdr()
+          in a macro, since the function can be called as part of a test.
+          Eg: ( (level <= DEBUGLEVEL) && (dbghdr(level,"",line)) )
+
+  Notes:  This function takes care of setting syslog_level.
+
+****************************************************************************/
 
 BOOL dbghdr( int level, const char *file, const char *func, int line )
 {
-  /* Ensure we don't lose any real errno value. */
-  int old_errno = errno;
+	/* Ensure we don't lose any real errno value. */
+	int old_errno = errno;
 
-  if( format_pos ) {
-    /* This is a fudge.  If there is stuff sitting in the format_bufr, then
-     * the *right* thing to do is to call
-     *   format_debug_text( "\n" );
-     * to write the remainder, and then proceed with the new header.
-     * Unfortunately, there are several places in the code at which
-     * the DEBUG() macro is used to build partial lines.  That in mind,
-     * we'll work under the assumption that an incomplete line indicates
-     * that a new header is *not* desired.
-     */
-    return( True );
-  }
+	if( format_pos ) {
+		/* This is a fudge.  If there is stuff sitting in the format_bufr, then
+		 * the *right* thing to do is to call
+		 *   format_debug_text( "\n" );
+		 * to write the remainder, and then proceed with the new header.
+		 * Unfortunately, there are several places in the code at which
+		 * the DEBUG() macro is used to build partial lines.  That in mind,
+		 * we'll work under the assumption that an incomplete line indicates
+		 * that a new header is *not* desired.
+		 */
+		return( True );
+	}
 
 #ifdef WITH_SYSLOG
-  /* Set syslog_level. */
-  syslog_level = level;
+	/* Set syslog_level. */
+	syslog_level = level;
 #endif
 
-  /* Don't print a header if we're logging to stdout. */
-  if( stdout_logging )
-    return( True );
+	/* Don't print a header if we're logging to stdout. */
+	if( stdout_logging )
+		return( True );
 
-  /* Print the header if timestamps are turned on.  If parameters are
-   * not yet loaded, then default to timestamps on.
-   */
-  if( lp_timestamp_logs() || !(lp_loaded()) ) {
-    char header_str[200];
+	/* Print the header if timestamps are turned on.  If parameters are
+	 * not yet loaded, then default to timestamps on.
+	 */
+	if( lp_timestamp_logs() || !(lp_loaded()) ) {
+		char header_str[200];
 
-	header_str[0] = '\0';
+		header_str[0] = '\0';
 
-	if( lp_debug_pid())
-	  slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)sys_getpid());
+		if( lp_debug_pid())
+			slprintf(header_str,sizeof(header_str)-1,", pid=%u",(unsigned int)sys_getpid());
 
-	if( lp_debug_uid()) {
-      size_t hs_len = strlen(header_str);
-	  slprintf(header_str + hs_len,
-               sizeof(header_str) - 1 - hs_len,
-			   ", effective(%u, %u), real(%u, %u)",
-               (unsigned int)geteuid(), (unsigned int)getegid(),
-			   (unsigned int)getuid(), (unsigned int)getgid()); 
-	}
+		if( lp_debug_uid()) {
+			size_t hs_len = strlen(header_str);
+			slprintf(header_str + hs_len,
+			sizeof(header_str) - 1 - hs_len,
+				", effective(%u, %u), real(%u, %u)",
+				(unsigned int)geteuid(), (unsigned int)getegid(),
+				(unsigned int)getuid(), (unsigned int)getgid()); 
+		}
   
-    /* Print it all out at once to prevent split syslog output. */
-    (void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
-                  timestring(lp_debug_hires_timestamp()), level,
-				  header_str, file, func, line );
-  }
+		/* Print it all out at once to prevent split syslog output. */
+		(void)Debug1( "[%s, %d%s] %s:%s(%d)\n",
+			timestring(lp_debug_hires_timestamp()), level,
+			header_str, file, func, line );
+	}
 
-  errno = old_errno;
-  return( True );
+	errno = old_errno;
+	return( True );
 }
 
-/* ************************************************************************** **
- * Add text to the body of the "current" debug message via the format buffer.
- *
- *  Input:  format_str  - Format string, as used in printf(), et. al.
- *          ...         - Variable argument list.
- *
- *  ..or..  va_alist    - Old style variable parameter list starting point.
- *
- *  Output: Always True.  See dbghdr() for more info, though this is not
- *          likely to be used in the same way.
- *
- * ************************************************************************** **
- */
+/***************************************************************************
+ Add text to the body of the "current" debug message via the format buffer.
+
+  Input:  format_str  - Format string, as used in printf(), et. al.
+          ...         - Variable argument list.
+
+  ..or..  va_alist    - Old style variable parameter list starting point.
+
+  Output: Always True.  See dbghdr() for more info, though this is not
+          likely to be used in the same way.
+
+***************************************************************************/
+
  BOOL dbgtext( const char *format_str, ... )
-  {
-  va_list ap;
-  pstring msgbuf;
+{
+	va_list ap;
+	pstring msgbuf;
 
-  va_start( ap, format_str ); 
-  vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
-  va_end( ap );
+	va_start( ap, format_str ); 
+	vslprintf( msgbuf, sizeof(msgbuf)-1, format_str, ap );
+	va_end( ap );
 
-  format_debug_text( msgbuf );
+	format_debug_text( msgbuf );
 
   return( True );
-  } /* dbgtext */
-
-
-/* ************************************************************************** */
+}

@@ -24,21 +24,32 @@
 
 static unsigned char hash[258];
 static uint32 counter;
-static unsigned char *reseed_data;
-static size_t reseed_data_size;
+
+static BOOL done_reseed = False;
+static void (*reseed_callback)(int *newseed);
 
 /**************************************************************** 
  Copy any user given reseed data.
 *****************************************************************/
 
-void set_rand_reseed_data(unsigned char *data, size_t len)
+void set_rand_reseed_callback(void (*fn)(int *))
 {
-	SAFE_FREE(reseed_data);
-	reseed_data_size = 0;
+	reseed_callback = fn;
+	set_need_random_reseed();
+}
 
-	reseed_data = (unsigned char *)memdup(data, len);
-	if (reseed_data)
-		reseed_data_size = len;
+void set_need_random_reseed(void)
+{
+	done_reseed = False;
+}
+
+static void get_rand_reseed_data(int *reseed_data)
+{
+	if (reseed_callback) {
+		reseed_callback(reseed_data);
+	} else {
+		*reseed_data = 0;
+	}
 }
 
 /**************************************************************** 
@@ -136,6 +147,7 @@ static int do_reseed(BOOL use_fd, int fd)
 	unsigned char seed_inbuf[40];
 	uint32 v1, v2; struct timeval tval; pid_t mypid;
 	struct passwd *pw;
+	int reseed_data = 0;
 
 	if (use_fd) {
 		if (fd != -1)
@@ -183,10 +195,11 @@ static int do_reseed(BOOL use_fd, int fd)
 	 * Add any user-given reseed data.
 	 */
 
+	get_rand_reseed_data(&reseed_data);
 	if (reseed_data) {
 		size_t i;
 		for (i = 0; i < sizeof(seed_inbuf); i++)
-			seed_inbuf[i] ^= reseed_data[i % reseed_data_size];
+			seed_inbuf[i] ^= ((char *)(&reseed_data))[i % sizeof(reseed_data)];
 	}
 
 	seed_random_stream(seed_inbuf, sizeof(seed_inbuf));
@@ -198,15 +211,14 @@ static int do_reseed(BOOL use_fd, int fd)
  Interface to the (hopefully) good crypto random number generator.
 ********************************************************************/
 
-void generate_random_buffer( unsigned char *out, int len, BOOL do_reseed_now)
+void generate_random_buffer( unsigned char *out, int len)
 {
-	static BOOL done_reseed = False;
 	static int urand_fd = -1;
 	unsigned char md4_buf[64];
 	unsigned char tmp_buf[16];
 	unsigned char *p;
 
-	if(!done_reseed || do_reseed_now) {
+	if(!done_reseed) {
 		urand_fd = do_reseed(True, urand_fd);
 		done_reseed = True;
 	}
@@ -257,7 +269,7 @@ char *generate_random_str(size_t len)
 
 	if (len > sizeof(retstr)-1)
 		len = sizeof(retstr) -1;
-	generate_random_buffer( retstr, len, False);
+	generate_random_buffer( retstr, len);
 	for (i = 0; i < len; i++)
 		retstr[i] = c_list[ retstr[i] % (sizeof(c_list)-1) ];
 

@@ -81,6 +81,30 @@ static const struct {
 	{0, NULL}
 };
 
+char *account_policy_names_list(void)
+{
+	char *nl, *p;
+	int i;
+	size_t len = 0;
+
+	for (i=0; account_policy_names[i].string; i++) {
+		len += strlen(account_policy_names[i].string) + 1;
+	}
+	len++;
+	nl = malloc(len);
+	if (!nl) {
+		return NULL;
+	}
+	p = nl;
+	for (i=0; account_policy_names[i].string; i++) {
+		memcpy(p, account_policy_names[i].string, strlen(account_policy_names[i].string) + 1);
+		p[strlen(account_policy_names[i].string)] = '\n';
+		p += strlen(account_policy_names[i].string) + 1;
+	}
+	*p = '\0';
+	return nl;
+}
+
 /****************************************************************************
 Get the account policy name as a string from its #define'ed number
 ****************************************************************************/
@@ -111,9 +135,9 @@ int account_policy_name_to_fieldnum(const char *name)
 
 }
 
-
 /****************************************************************************
 ****************************************************************************/
+
 BOOL account_policy_get(int field, uint32 *value)
 {
 	fstring name;
@@ -159,4 +183,3 @@ BOOL account_policy_set(int field, uint32 value)
 	
 	return True;
 }
-

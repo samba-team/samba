@@ -671,7 +671,11 @@ static BOOL is_monitoring_event(Printer_entry *p, uint16 notify_type,
 	 * might use the flags though instead of the NOTIFY_OPTION_INFO 
 	 * --jerry
 	 */
-	 
+
+	if (!option) {
+		return False;
+	}
+
 	if (p->notify.flags)
 		return is_monitoring_event_flags(
 			p->notify.flags, notify_type, notify_field);
@@ -3725,6 +3729,12 @@ static WERROR printserver_notify_info(pipes_struct *p, POLICY_HND *hnd,
 	info->data=NULL;
 	info->count=0;
 
+	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without 
+	   sending a ffpcn() request first */
+
+	if ( !option )
+		return WERR_BADFID;
+
 	for (i=0; i<option->count; i++) {
 		option_type=&(option->ctr.type[i]);
 		
@@ -3786,6 +3796,12 @@ static WERROR printer_notify_info(pipes_struct *p, POLICY_HND *hnd, SPOOL_NOTIFY
 	info->version=2;
 	info->data=NULL;
 	info->count=0;
+
+	/* a bug in xp sp2 rc2 causes it to send a fnpcn request without 
+	   sending a ffpcn() request first */
+
+	if ( !option )
+		return WERR_BADFID;
 
 	get_printer_snum(p, hnd, &snum);
 

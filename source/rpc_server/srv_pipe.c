@@ -52,28 +52,28 @@ struct dcinfo last_dcinfo;
 
 static void NTLMSSPcalc_p( pipes_struct *p, unsigned char *data, int len)
 {
-    unsigned char *hash = p->ntlmssp_hash;
-    unsigned char index_i = hash[256];
-    unsigned char index_j = hash[257];
-    int ind;
+	unsigned char *hash = p->ntlmssp_hash;
+	unsigned char index_i = hash[256];
+	unsigned char index_j = hash[257];
+	int ind;
 
-    for( ind = 0; ind < len; ind++) {
-        unsigned char tc;
-        unsigned char t;
+	for( ind = 0; ind < len; ind++) {
+		unsigned char tc;
+		unsigned char t;
 
-        index_i++;
-        index_j += hash[index_i];
+		index_i++;
+		index_j += hash[index_i];
 
-        tc = hash[index_i];
-        hash[index_i] = hash[index_j];
-        hash[index_j] = tc;
+		tc = hash[index_i];
+		hash[index_i] = hash[index_j];
+		hash[index_j] = tc;
 
-        t = hash[index_i] + hash[index_j];
-        data[ind] = data[ind] ^ hash[t];
-    }
+		t = hash[index_i] + hash[index_j];
+		data[ind] = data[ind] ^ hash[t];
+	}
 
-    hash[256] = index_i;
-    hash[257] = index_j;
+	hash[256] = index_i;
+	hash[257] = index_j;
 }
 
 /*******************************************************************
@@ -501,6 +501,9 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
+	if (p->session_key.data) {
+		data_blob_free(&p->session_key);
+	}
 	p->session_key = data_blob(server_info->lm_session_key.data, server_info->lm_session_key.length);
 
 	p->pipe_user.uid = server_info->uid;
@@ -1094,7 +1097,7 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 		RPC_AUTH_VERIFIER auth_verifier;
 		RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
 
-		generate_random_buffer(p->challenge, 8, False);
+		generate_random_buffer(p->challenge, 8);
 
 		/*** Authentication info ***/
 

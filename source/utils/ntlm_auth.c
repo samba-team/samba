@@ -181,7 +181,7 @@ DATA_BLOB get_challenge(void)
 	
 	chal = data_blob(NULL, 8);
 
-	generate_random_buffer(chal.data, chal.length, False);
+	generate_random_buffer(chal.data, chal.length);
 	return chal;
 }
 
@@ -1557,7 +1557,7 @@ static void manage_ntlm_server_1_request(enum stdio_helper_mode stdio_helper_mod
 		if (nt_response.length < 24) {
 			x_fprintf(x_stdout, "Error: hex decode of %s failed! (only got %d bytes, needed at least 24)\n.\n", 
 				  parameter,
-				  (int)opt_nt_response.length);
+				  (int)nt_response.length);
 			nt_response = data_blob(NULL, 0);
 		}
 	} else if (strequal(request, "LANMAN-Response")) {

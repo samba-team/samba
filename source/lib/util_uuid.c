@@ -57,7 +57,7 @@ void smb_uuid_generate_random(struct uuid *uu)
 {
 	UUID_FLAT tmp;
 
-	generate_random_buffer(tmp.info, sizeof(tmp.info), True);
+	generate_random_buffer(tmp.info, sizeof(tmp.info));
 	smb_uuid_unpack(tmp, uu);
 
 	uu->clock_seq[0] = (uu->clock_seq[0] & 0x3F) | 0x80;

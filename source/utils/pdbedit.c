@@ -57,8 +57,11 @@
  Add all currently available users to another db
  ********************************************************/
 
-static int export_database (struct pdb_context *in, struct pdb_context *out) {
+static int export_database (struct pdb_context *in, struct pdb_context
+			    *out, const char *username) {
 	SAM_ACCOUNT *user = NULL;
+
+	DEBUG(3, ("called with username=\"%s\"\n", username));
 
 	if (NT_STATUS_IS_ERR(in->pdb_setsampwent(in, 0))) {
 		fprintf(stderr, "Can't sampwent!\n");
@@ -71,10 +74,17 @@ static int export_database (struct pdb_context *in, struct pdb_context *out) {
 	}
 
 	while (NT_STATUS_IS_OK(in->pdb_getsampwent(in, user))) {
-		out->pdb_add_sam_account(out, user);
-		if (!NT_STATUS_IS_OK(pdb_reset_sam(user))){
-			fprintf(stderr, "Can't reset SAM_ACCOUNT!\n");
-			return 1;
+		DEBUG(4, ("Processing account %s\n",
+			  user->private.username));
+		if (!username || 
+		    (strcmp(username, user->private.username)
+		     == 0)) {
+			out->pdb_add_sam_account(out, user);
+			if (!NT_STATUS_IS_OK(pdb_reset_sam(user))) {
+				fprintf(stderr,
+					"Can't reset SAM_ACCOUNT!\n");
+				return 1;
+			}
 		}
 	}
 
@@ -192,7 +202,6 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
-	BOOL updated_autolock = False, updated_badpw = False;
 
 	if (!NT_STATUS_IS_OK(pdb_init_sam (&sam_pwent))) {
 		return -1;
@@ -204,19 +213,6 @@ static int print_user_info (struct pdb_context *in, const char *username, BOOL v
 		fprintf (stderr, "Username not found!\n");
 		pdb_free_sam(&sam_pwent);
 		return -1;
-	}
-
-	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock))
-		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
-
-	if (!pdb_update_bad_password_count(sam_pwent, &updated_badpw))
-		DEBUG(2,("pdb_update_bad_password_count failed.\n"));
-
-	if (updated_autolock || updated_badpw) {
-		become_root();
-		if(!pdb_update_sam_account(sam_pwent))
-			DEBUG(1, ("Failed to modify entry.\n"));
-		unbecome_root();
 	}
 
 	ret=print_sam_info (sam_pwent, verbosity, smbpwdstyle);
@@ -300,6 +296,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 			  const char *user_sid, const char *group_sid,
 			  const BOOL badpw)
 {
+	BOOL updated_autolock = False, updated_badpw = False;
 	SAM_ACCOUNT *sam_pwent=NULL;
 	BOOL ret;
 	
@@ -312,6 +309,14 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		return -1;
 	}
 	
+	if (!pdb_update_autolock_flag(sam_pwent, &updated_autolock)) {
+		DEBUG(2,("pdb_update_autolock_flag failed.\n"));
+	}
+
+	if (!pdb_update_bad_password_count(sam_pwent, &updated_badpw)) {
+		DEBUG(2,("pdb_update_bad_password_count failed.\n"));
+	}
+
 	if (fullname)
 		pdb_set_fullname(sam_pwent, fullname, PDB_CHANGED);
 	if (homedir)
@@ -374,7 +379,7 @@ static int set_user_info (struct pdb_context *in, const char *username,
 		pdb_set_bad_password_count(sam_pwent, 0, PDB_CHANGED);
 		pdb_set_bad_password_time(sam_pwent, 0, PDB_CHANGED);
 	}
-	
+
 	if (NT_STATUS_IS_OK(in->pdb_update_sam_account (in, sam_pwent)))
 		print_user_info (in, username, True, False);
 	else {
@@ -736,7 +741,12 @@ int main (int argc, char **argv)
 		uint32 value;
 		int field = account_policy_name_to_fieldnum(account_policy);
 		if (field == 0) {
+			char *apn = account_policy_names_list();
 			fprintf(stderr, "No account policy by that name\n");
+			if (apn) {
+				fprintf(stderr, "Account policy names are :\n%s\n", apn);
+			}
+			SAFE_FREE(apn);
 			exit(1);
 		}
 		if (!account_policy_get(field, &value)) {
@@ -759,7 +769,7 @@ int main (int argc, char **argv)
 
 	/* import and export operations */
 	if (((checkparms & BIT_IMPORT) || (checkparms & BIT_EXPORT))
-			&& !(checkparms & ~(BIT_IMPORT +BIT_EXPORT))) {
+	    && !(checkparms & ~(BIT_IMPORT +BIT_EXPORT +BIT_USER))) {
 		if (backend_in) {
 			if (!NT_STATUS_IS_OK(make_pdb_context_string(&bin, backend_in))) {
 				fprintf(stderr, "Can't initialize passdb backend.\n");
@@ -777,9 +787,15 @@ int main (int argc, char **argv)
 			bout = bdef;
 		}
 		if (transfer_groups) {
-			return export_groups(bin, bout);
+			if (!(checkparms & BIT_USER))
+				return export_groups(bin, bout);
 		} else {
-			return export_database(bin, bout);
+			if (checkparms & BIT_USER)
+				return export_database(bin, bout,
+						       user_name);
+			else
+				return export_database(bin, bout,
+						       NULL);
 		}
 	}
 

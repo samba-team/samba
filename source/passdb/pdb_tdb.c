@@ -37,7 +37,7 @@ static int tdbsam_debug_level = DBGC_ALL;
 
 #endif
 
-#define TDBSAM_VERSION	1	/* Most recent TDBSAM version */
+#define TDBSAM_VERSION	2	/* Most recent TDBSAM version */
 #define TDBSAM_VERSION_STRING	"INFO/version"
 #define PASSDB_FILE_NAME	"passdb.tdb"
 #define USERPREFIX		"USER_"
@@ -125,6 +125,9 @@ static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from)
 				case 1:
 					ret = init_sam_from_buffer_v1(user, (uint8 *)data.dptr, data.dsize);
 					break;
+				case 2:
+					ret = init_sam_from_buffer_v2(user, (uint8 *)data.dptr, data.dsize);
+					break;
 				default:
 					/* unknown tdbsam version */
 					ret = False;
@@ -135,6 +138,9 @@ static BOOL tdbsam_convert(TDB_CONTEXT *pdb_tdb, tdbsamver_t from)
 				return False;
 			}
 	
+			/* We're finished with the old data. */
+			SAFE_FREE(data.dptr);
+
 			/* pack from the buffer into the new format */
 			DEBUG(10,("tdbsam_convert: Try packing a record (key:%s) (version:%d)\n", key.dptr, from));
 			if ((data.dsize=init_buffer_from_sam (&buf, user, False)) == -1) {
@@ -746,4 +752,3 @@ NTSTATUS pdb_tdbsam_init(void)
 {
 	return smb_register_passdb(PASSDB_INTERFACE_VERSION, "tdbsam", pdb_init_tdbsam);
 }
-

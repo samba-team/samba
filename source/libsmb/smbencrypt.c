@@ -352,7 +352,7 @@ static DATA_BLOB NTLMv2_generate_client_data(const DATA_BLOB *names_blob)
 	DATA_BLOB response = data_blob(NULL, 0);
 	char long_date[8];
 
-	generate_random_buffer(client_chal, sizeof(client_chal), False);
+	generate_random_buffer(client_chal, sizeof(client_chal));
 
 	put_long_date(long_date, time(NULL));
 
@@ -406,7 +406,7 @@ static DATA_BLOB LMv2_generate_response(const uchar ntlm_v2_hash[16],
 	
 	/* LMv2 */
 	/* client-supplied random data */
-	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length, False);	
+	generate_random_buffer(lmv2_client_data.data, lmv2_client_data.length);	
 
 	/* Given that data, and the challenge from the server, generate a response */
 	SMBOWFencrypt_ntv2(ntlm_v2_hash, server_chal, &lmv2_client_data, lmv2_response);
@@ -476,7 +476,7 @@ BOOL encode_pw_buffer(char buffer[516], const char *password, int string_flags)
 	
 	memcpy(&buffer[512 - new_pw_len], new_pw, new_pw_len);
 
-	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len, True);
+	generate_random_buffer((unsigned char *)buffer, 512 - new_pw_len);
 
 	/* 
 	 * The length of the new password is in the last 4 bytes of

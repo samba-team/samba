@@ -1092,6 +1092,22 @@ BOOL close_rpc_pipe_hnd(smb_np_struct *p)
 }
 
 /****************************************************************************
+ Close all pipes on a connection.
+****************************************************************************/
+
+void pipe_close_conn(connection_struct *conn)
+{
+	smb_np_struct *p, *next;
+
+	for (p=Pipes;p;p=next) {
+		next = p->next;
+		if (p->conn == conn) {
+			close_rpc_pipe_hnd(p);
+		}
+	}
+}
+
+/****************************************************************************
  Close an rpc pipe.
 ****************************************************************************/
 
@@ -1113,9 +1129,6 @@ static BOOL close_internal_rpc_pipe_hnd(void *np_conn)
 
 	/* Free the handles database. */
 	close_policy_by_pipe(p);
-
-	if (p->session_key.data != NULL)
-		data_blob_free(&p->session_key);
 
 	delete_nt_token(&p->pipe_user.nt_user_token);
 	data_blob_free(&p->session_key);
