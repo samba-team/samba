@@ -79,12 +79,14 @@ static int dom_sid_compare(struct dom_sid *sid1, struct dom_sid *sid2)
 	return 0;
 }
 
-static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
+static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct lsa_ObjectAttribute attr;
 	struct policy_handle handle;
 	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy r;
 	NTSTATUS status;
+	uint16 system_name = '\\';
 
 	printf("\ntesting OpenPolicy\n");
 
@@ -98,11 +100,12 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
 	attr.sec_desc = NULL;
 	attr.sec_qos = &qos;
 
-	status = dcerpc_lsa_OpenPolicy(p, 
-				       "\\",
-				       &attr,
-				       SEC_RIGHTS_MAXIMUM_ALLOWED,
-				       &handle);
+	r.in.system_name = &system_name;
+	r.in.attr = &attr;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = &handle;
+
+	status = dcerpc_lsa_OpenPolicy(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenPolicy failed - %s\n", nt_errstr(status));
 		return False;
@@ -112,10 +115,12 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p)
 }
 
 
-static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, struct policy_handle *handle)
+static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle)
 {
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
+	struct lsa_OpenPolicy2 r;
 	NTSTATUS status;
 
 	printf("\ntesting OpenPolicy2\n");
@@ -130,11 +135,12 @@ static BOOL test_OpenPolicy2(struct dcerpc_pipe *p, struct policy_handle *handle
 	attr.sec_desc = NULL;
 	attr.sec_qos = &qos;
 
-	status = dcerpc_lsa_OpenPolicy2(p, 
-					"\\",
-					&attr,
-					SEC_RIGHTS_MAXIMUM_ALLOWED,
-					handle);
+	r.in.system_name = "\\";
+	r.in.attr = &attr;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	status = dcerpc_lsa_OpenPolicy2(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("OpenPolicy2 failed - %s\n", nt_errstr(status));
 		return False;
@@ -270,14 +276,21 @@ static BOOL test_EnumSids(struct dcerpc_pipe *p,
 			  struct policy_handle *handle)
 {
 	NTSTATUS status;
+	struct lsa_EnumSids r;
 	struct lsa_SidArray sids1, sids2;
-	uint32 resume_handle;
+	uint32 resume_handle = 0;
 	int i;
 
 	printf("\ntesting EnumSids\n");
 
+	r.in.handle = handle;
+	r.in.resume_handle = &resume_handle;
+	r.in.num_entries = 100;
+	r.out.resume_handle = &resume_handle;
+	r.out.sids = &sids1;
+
 	resume_handle = 0;
-	status = dcerpc_lsa_EnumSids(p, mem_ctx, handle, &resume_handle, 100, &sids1);
+	status = dcerpc_lsa_EnumSids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumSids failed - %s\n", nt_errstr(status));
 		return False;
@@ -299,7 +312,10 @@ static BOOL test_EnumSids(struct dcerpc_pipe *p,
 	
 	printf("trying EnumSids partial listing (asking for 1 at 2)\n");
 	resume_handle = 2;
-	status = dcerpc_lsa_EnumSids(p, mem_ctx, handle, &resume_handle, 1, &sids2);
+	r.in.num_entries = 1;
+	r.out.sids = &sids2;
+
+	status = dcerpc_lsa_EnumSids(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("EnumSids failed - %s\n", nt_errstr(status));
 		return False;
@@ -328,11 +344,11 @@ BOOL torture_rpc_lsa(int dummy)
 		return False;
 	}
 	
-	if (!test_OpenPolicy(p)) {
+	if (!test_OpenPolicy(p, mem_ctx)) {
 		ret = False;
 	}
 
-	if (!test_OpenPolicy2(p, &handle)) {
+	if (!test_OpenPolicy2(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 

@@ -27,43 +27,20 @@
   OpenPolicy interface
 */
 NTSTATUS dcerpc_lsa_OpenPolicy(struct dcerpc_pipe *p,
-			       const char *server,
-			       struct lsa_ObjectAttribute *attr,
-			       uint32 access_mask,
-			       struct policy_handle *handle)
+			       TALLOC_CTX *mem_ctx,
+			       struct lsa_OpenPolicy *r)
 {
-	struct lsa_OpenPolicy r;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
-	uint16 s;
 
-	mem_ctx = talloc_init("dcerpc_lsa_openpolicy");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* fill the .in side of the call */
-	s = server[0];
-	r.in.system_name = &s;
-	r.in.attr = attr;
-	r.in.desired_access = access_mask;
-	r.out.handle = handle;
-
-	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_OPENPOLICY, mem_ctx,
 				    (ndr_push_fn_t) ndr_push_lsa_OpenPolicy,
 				    (ndr_pull_fn_t) ndr_pull_lsa_OpenPolicy,
-				    &r);
+				    r);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 	
-	/* and extract the .out parameters */
-	status = r.out.result;
-
-done:
-	talloc_destroy(mem_ctx);
-	return status;
+	return r->out.result;
 }
 
 
@@ -71,41 +48,20 @@ done:
   OpenPolicy2 interface
 */
 NTSTATUS dcerpc_lsa_OpenPolicy2(struct dcerpc_pipe *p,
-				const char *server,
-				struct lsa_ObjectAttribute *attr,
-				uint32 access_mask,
-				struct policy_handle *handle)
+				TALLOC_CTX *mem_ctx,
+				struct lsa_OpenPolicy2 *r)
 {
-	struct lsa_OpenPolicy2 r;
 	NTSTATUS status;
-	TALLOC_CTX *mem_ctx;
 
-	mem_ctx = talloc_init("dcerpc_lsa_openpolicy2");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	/* fill the .in side of the call */
-	r.in.system_name = server;
-	r.in.attr = attr;
-	r.in.desired_access = access_mask;
-	r.out.handle = handle;
-
-	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_OPENPOLICY2, mem_ctx,
 				    (ndr_push_fn_t) ndr_push_lsa_OpenPolicy2,
 				    (ndr_pull_fn_t) ndr_pull_lsa_OpenPolicy2,
-				    &r);
+				    r);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		return status;
 	}
-	
-	/* and extract the .out parameters */
-	status = r.out.result;
 
-done:
-	talloc_destroy(mem_ctx);
-	return status;
+	return r->out.result;
 }
 
 /*
@@ -113,36 +69,20 @@ done:
 */
 NTSTATUS dcerpc_lsa_EnumSids(struct dcerpc_pipe *p,
 			     TALLOC_CTX *mem_ctx,
-			     struct policy_handle *handle,
-			     uint32 *resume_handle,
-			     uint32 num_entries,
-			     struct lsa_SidArray *sids)
+			     struct lsa_EnumSids *r)
 {
-	struct lsa_EnumSids r;
 	NTSTATUS status;
-
-	/* fill the .in side of the call */
-	r.in.handle = handle;
-	r.in.resume_handle = resume_handle;
-	r.in.num_entries = num_entries;
-
-	r.out.resume_handle = resume_handle;
-	r.out.sids = sids;
 
 	/* make the call */
 	status = dcerpc_ndr_request(p, LSA_ENUM_ACCOUNTS, mem_ctx,
 				    (ndr_push_fn_t) ndr_push_lsa_EnumSids,
 				    (ndr_pull_fn_t) ndr_pull_lsa_EnumSids,
-				    &r);
+				    r);
 	if (!NT_STATUS_IS_OK(status)) {
-		goto done;
+		return status;
 	}
 	
-	/* and extract the .out parameters */
-	status = r.out.result;
-
-done:
-	return status;
+	return r->out.result;
 }
 
 /*
