@@ -23,12 +23,12 @@ static GDBM_FILE gdbm;
 
 struct timeval tp1,tp2;
 
-static void start_timer()
+static void start_timer(void)
 {
 	gettimeofday(&tp1,NULL);
 }
 
-static double end_timer()
+static double end_timer(void)
 {
 	gettimeofday(&tp2,NULL);
 	return((tp2.tv_sec - tp1.tv_sec) + 
@@ -178,18 +178,17 @@ static void addrec_gdbm(void)
 	free(d);
 }
 
-static int traverse_fn(TDB_CONTEXT *db, TDB_DATA key, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA key, TDB_DATA dbuf, void *state)
 {
 #if 0
 	printf("[%s] [%s]\n", key.dptr, dbuf.dptr);
 #endif
-	tdb_delete(db, key);
+	tdb_delete(tdb, key);
 	return 0;
 }
 
-static void merge_test()
+static void merge_test(void)
 {
-	int klen, dlen;
 	int i;
 	char keys[5][2];
 	TDB_DATA key, data;
