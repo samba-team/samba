@@ -154,6 +154,8 @@ static void lookup_strings(FILE *fichier)
   temp2=(char *)malloc(sizeof(pstring));
   
   if(temp == NULL || temp2 == NULL) {
+	  safe_free(temp);
+	  safe_free(temp2);
     fprintf(stderr,"lookup_strings: malloc fail !\n");
     exit(1);
   }
@@ -216,6 +218,8 @@ static void lookup_entry(FILE *fichier,char *chaine)
   temp2=(char *)malloc(sizeof(pstring));
   
   if(temp == NULL || temp2 == NULL) {
+	  safe_free(temp);
+	  safe_free(temp2);
     fprintf(stderr,"lookup_entry: malloc fail !\n");
     exit(1);
   }
@@ -272,6 +276,9 @@ static char *find_desc(FILE *fichier,char *text)
   long_desc=(char *)malloc(sizeof(pstring));
   short_desc=(char *)malloc(sizeof(pstring));
   if (!chaine || !long_desc || !short_desc) {
+	  safe_free(chaine);
+	  safe_free(long_desc);
+	  safe_free(short_desc);
     fprintf(stderr,"find_desc: Unable to malloc memory\n");
     exit(1);
   }
