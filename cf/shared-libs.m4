@@ -65,7 +65,7 @@ case "${host}" in
 	install_symlink_command2='$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so.'"${SHLIB_SONAME}"';$(LN_S) -f $(LIB2) $(DESTDIR)$(libdir)/$(LIBNAME2).so'
 	;;
 changequote(,)dnl
-*-*-freebsd[34]*)
+*-*-freebsd[345]* | *-*-freebsdelf[345]*)
 changequote([,])dnl
 	REAL_SHLIBEXT=so.$SHLIB_VERSION
 	REAL_LD_FLAGS='-Wl,-R$(libdir)'
