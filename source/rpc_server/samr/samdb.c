@@ -42,11 +42,20 @@ void samdb_debug(void *context, enum ldb_debug_level level, const char *fmt, va_
 	free(s);
 }
 
+/* close a connection to the sam */
+int samdb_destructor(void *ctx)
+{
+	struct samdb_context *sam_ctx = ctx;
+	/* we don't actually close due to broken posix locking semantics */
+	sam_ctx->ldb = NULL;
+	return 0;
+}				 
+
 /*
   connect to the SAM database
   return an opaque context pointer on success, or NULL on failure
  */
-void *samdb_connect(void)
+void *samdb_connect(TALLOC_CTX *mem_ctx)
 {
 	struct samdb_context *ctx;
 	/*
@@ -68,25 +77,17 @@ void *samdb_connect(void)
 
 	ldb_set_debug(static_sam_db, samdb_debug, NULL);
 
-	ctx = malloc_p(struct samdb_context);
+	ctx = talloc_p(NULL, struct samdb_context);
 	if (!ctx) {
 		errno = ENOMEM;
 		return NULL;
 	}
 
 	ctx->ldb = static_sam_db;
+	talloc_set_destructor(ctx, samdb_destructor);
 
 	return ctx;
 }
-
-/* close a connection to the sam */
-void samdb_close(void *ctx)
-{
-	struct samdb_context *sam_ctx = ctx;
-	/* we don't actually close due to broken posix locking semantics */
-	sam_ctx->ldb = NULL;
-	free(sam_ctx);
-}				 
 
 /*
   search the sam for the specified attributes - varargs variant

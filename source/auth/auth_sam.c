@@ -218,7 +218,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 	
-	sam_ctx = samdb_connect();
+	sam_ctx = samdb_connect(mem_ctx);
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
 	}
@@ -230,19 +230,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	if (ret == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find user [%s] in passdb file.\n", 
 			 username));
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ret > 1) {
 		DEBUG(0,("Found %d records matching user [%s]\n", ret, username));
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 	
 	domain_sid = samdb_result_sid_prefix(mem_ctx, msgs[0], "objectSid");
 	if (!domain_sid) {
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -254,14 +251,12 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	if (ret_domain == 0) {
 		DEBUG(3,("check_sam_security: Couldn't find domain [%s] in passdb file.\n", 
 			 domain_sid));
-		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (ret_domain > 1) {
 		DEBUG(0,("Found %d records matching domain [%s]\n", 
 			 ret_domain, domain_sid));
-		samdb_close(sam_ctx);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -273,7 +268,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	if (acct_flags & ACB_AUTOLOCK) {
 		DEBUG(3,("check_sam_security: Account for user %s was locked out.\n", 
 			 username));
-		samdb_close(sam_ctx);
 		return NT_STATUS_ACCOUNT_LOCKED_OUT;
 	}
 
@@ -288,7 +282,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				    user_info, &user_sess_key, &lm_sess_key);
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		samdb_close(sam_ctx);
 		return nt_status;
 	}
 
@@ -308,13 +301,11 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 				   user_info);
 
 	if (!NT_STATUS_IS_OK(nt_status)) {
-		samdb_close(sam_ctx);
 		return nt_status;
 	}
 
 	if (!NT_STATUS_IS_OK(nt_status = make_server_info(server_info, username))) {		
 		DEBUG(0,("check_sam_security: make_server_info_sam() failed with '%s'\n", nt_errstr(nt_status)));
-		samdb_close(sam_ctx);
 		return nt_status;
 	}
 
@@ -342,7 +333,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		    !(groupSIDs = talloc_realloc_p(groupSIDs, 
 						   struct dom_sid *, group_ret))) {
 			talloc_destroy((*server_info)->mem_ctx);
-			samdb_close(sam_ctx);
 			return NT_STATUS_NO_MEMORY;
 		}
 
@@ -421,8 +411,6 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		talloc_destroy((*server_info)->mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
-
-	samdb_close(sam_ctx);
 
 	return nt_status;
 }

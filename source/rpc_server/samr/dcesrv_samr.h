@@ -36,9 +36,7 @@ enum samr_handle {
   state asscoiated with a samr_Connect*() operation
 */
 struct samr_connect_state {
-	int reference_count;
 	void *sam_ctx;
-	TALLOC_CTX *mem_ctx;
 	uint32_t access_mask;
 };
 
@@ -47,9 +45,7 @@ struct samr_connect_state {
 */
 struct samr_domain_state {
 	struct samr_connect_state *connect_state;
-	int reference_count;
 	void *sam_ctx;
-	TALLOC_CTX *mem_ctx;
 	uint32_t access_mask;
 	const char *domain_sid;
 	const char *domain_name;
@@ -62,7 +58,6 @@ struct samr_domain_state {
 struct samr_account_state {
 	struct samr_domain_state *domain_state;
 	void *sam_ctx;
-	TALLOC_CTX *mem_ctx;
 	uint32_t access_mask;
 	const char *account_sid;
 	const char *account_name;
