@@ -233,10 +233,10 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 	struct iovec hdtrl;
 	size_t hdr_len = 0;
 
-	hdr->headers = &hdtrl;
-	hdr->hdr_cnt = 1;
-	hdr->trailers = NULL;
-	hdr->trl_cnt = 0;
+	hdr.headers = &hdtrl;
+	hdr.hdr_cnt = 1;
+	hdr.trailers = NULL;
+	hdr.trl_cnt = 0;
 
 	/* Set up the header iovec. */
 	if (header) {
@@ -274,7 +274,7 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 		 * We change nwritten to be the number of file bytes written.
 		 */
 
-		if (hdtrl[0].iov_base && hdtrl.iov_len) {
+		if (hdtrl.iov_base && hdtrl.iov_len) {
 			if (nwritten >= hdtrl.iov_len) {
 				nwritten -= hdtrl.iov_len;
 				hdtrl.iov_base = NULL;
