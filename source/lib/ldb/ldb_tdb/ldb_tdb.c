@@ -513,24 +513,51 @@ int ltdb_modify_internal(struct ldb_module *module, const struct ldb_message *ms
 	}
 
 	for (i=0;i<msg->num_elements;i++) {
+		struct ldb_message_element *el = &msg->elements[i];
+		struct ldb_message_element *el2;
+		struct ldb_val *vals;
+
 		switch (msg->elements[i].flags & LDB_FLAG_MOD_MASK) {
 
 		case LDB_FLAG_MOD_ADD:
 			/* add this element to the message. fail if it
 			   already exists */
-			ret = find_element(&msg2, msg->elements[i].name);
-			if (ret != -1) {
-				for (j=0;j<msg->elements[i].num_values;j++) {
-					if (ldb_msg_find_val(&msg2.elements[ret], 
-							     &msg->elements[i].values[j])) {
-						ltdb->last_err_string = "Type or value exists";
-						goto failed;
-					}
+			ret = find_element(&msg2, el->name);
+
+			if (ret == -1) {
+				if (msg_add_element(ldb, &msg2, el) != 0) {
+					goto failed;
+				}
+				continue;
+			}
+
+			el2 = &msg2.elements[ret];
+
+			/* An attribute with this name already exists, add all
+			 * values if they don't already exist. */
+
+			for (j=0;j<el->num_values;j++) {
+				if (ldb_msg_find_val(el2, &el->values[j])) {
+					ltdb->last_err_string =
+						"Type or value exists";
+					goto failed;
 				}
 			}
-			if (msg_add_element(ldb, &msg2, &msg->elements[i]) != 0) {
+
+		        vals = ldb_realloc_p(ldb, el2->values, struct ldb_val,
+					     el2->num_values + el->num_values);
+
+			if (vals == NULL)
 				goto failed;
+
+			for (j=0;j<el->num_values;j++) {
+				vals[el2->num_values + j] =
+					ldb_val_dup(ldb, &el->values[j]);
 			}
+
+			el2->values = vals;
+			el2->num_values += el->num_values;
+
 			break;
 
 		case LDB_FLAG_MOD_REPLACE:
