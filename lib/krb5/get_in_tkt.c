@@ -707,20 +707,29 @@ krb5_get_in_cred(krb5_context context,
 		if (error.e_text != NULL) {
 		    krb5_set_error_string(context, "%s", *error.e_text);
 		} else {
-		    char princname[256];
+		    char clientname[256], servername[256];
+
+		    krb5_unparse_name_fixed(context, creds->client,
+					    clientname, sizeof(clientname));
+		    krb5_unparse_name_fixed(context, creds->server,
+					    servername, sizeof(servername));
 
 		    switch (ret) {
+		    case KRB5KDC_ERR_NAME_EXP :
+			krb5_set_error_string(context, "Client (%s) expired",
+					      clientname);
+			break;
+		    case KRB5KDC_ERR_SERVICE_EXP :
+			krb5_set_error_string(context, "Server (%s) expired",
+					      servername);
+			break;
 		    case KRB5KDC_ERR_C_PRINCIPAL_UNKNOWN :
-			krb5_unparse_name_fixed(context, creds->client,
-						princname, sizeof(princname));
 			krb5_set_error_string(context, "Client (%s) unknown",
-					      princname);
+					      clientname);
 			break;
 		    case KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN :
-			krb5_unparse_name_fixed(context, creds->server,
-						princname, sizeof(princname));
 			krb5_set_error_string(context, "Server (%s) unknown",
-					      princname);
+					      servername);
 			break;
 		    default :
 			;
