@@ -54,5 +54,7 @@
 
 krb5_error_code send_priv(krb5_context, krb5_auth_context, krb5_data*, int);
 krb5_error_code recv_priv(krb5_context, krb5_auth_context, int, krb5_data*);
+krb5_error_code send_clear(krb5_context context, int fd, krb5_data data);
+krb5_error_code recv_clear(krb5_context context, int fd, krb5_data *out);
 
 #endif /* __HPROP_H__ */

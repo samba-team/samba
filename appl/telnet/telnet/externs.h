@@ -346,7 +346,11 @@ int getconnmode(void);
 /* utilities.c */
 
 int SetSockOpt(int fd, int level, int option, int yesno);
+void SetNetTrace(char *file);
+void Dump(char direction, unsigned char *buffer, int length);
+void printoption(char *direction, int cmd, int option);
 void optionstatus(void);
+void printsub(char direction, unsigned char *pointer, int length);
 void EmptyTerminal(void);
 void SetForExit(void);
 void Exit(int returnCode);

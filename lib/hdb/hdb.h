@@ -102,11 +102,23 @@ krb5_error_code hdb_set_master_key (krb5_context context,
 krb5_error_code hdb_clear_master_key (krb5_context context,
 				      HDB *db);
 
+krb5_error_code
+hdb_process_master_key(krb5_context context, EncryptionKey key, 
+		       krb5_data *schedule);
+
+krb5_error_code
+hdb_read_master_key(krb5_context context, const char *filename, 
+		    EncryptionKey *key);
+
 Key *hdb_unseal_key(Key*, krb5_data);
 void hdb_seal_key(Key*, krb5_data);
 void hdb_unseal_keys(hdb_entry*, krb5_data);
 void hdb_seal_keys(hdb_entry*, krb5_data);
 void hdb_free_key(Key*);
+
+int hdb_entry2value(krb5_context context, hdb_entry *ent, krb5_data *value);
+int hdb_value2entry(krb5_context context, krb5_data *value, hdb_entry *ent);
+
 
 #define HDB_DB_DIR "/var/heimdal"
 #define HDB_DEFAULT_DB HDB_DB_DIR "/heimdal"
