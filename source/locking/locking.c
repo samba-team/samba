@@ -229,7 +229,7 @@ BOOL locking_init(int read_only)
 		       0644);
 
 	if (!tdb) {
-		DEBUG(0,("ERROR: Failed to initialise share modes\n"));
+		DEBUG(0,("ERROR: Failed to initialise locking database\n"));
 		return False;
 	}
 	

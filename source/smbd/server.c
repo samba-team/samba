@@ -685,20 +685,6 @@ static void usage(char *pname)
 
 	CatchSignal(SIGHUP,SIGNAL_CAST sig_hup);
 	
-	/* Setup the signals that allow the debug log level
-	   to by dynamically changed. */
- 
-	/* If we are using the malloc debug code we can't use
-	   SIGUSR1 and SIGUSR2 to do debug level changes. */
-	
-#if defined(SIGUSR1)
-	CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
-#endif /* SIGUSR1 */
-   
-#if defined(SIGUSR2)
-	CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
-#endif /* SIGUSR2 */
-
 	DEBUG(3,( "loaded services\n"));
 
 	if (!is_daemon && !is_a_socket(0)) {
@@ -725,6 +711,10 @@ static void usage(char *pname)
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
+
+	if (!message_init()) {
+		exit(1);
+	}
 
 	if (!locking_init(0)) {
 		exit(1);

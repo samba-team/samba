@@ -119,51 +119,24 @@ static size_t     format_pos     = 0;
  * Functions...
  */
 
-#if defined(SIGUSR2)
-/* ************************************************************************** **
- * catch a sigusr2 - decrease the debug log level.
- * ************************************************************************** **
- */
-void sig_usr2( int sig )
-  {
-  DEBUGLEVEL--;
-  if( DEBUGLEVEL < 0 )
-    DEBUGLEVEL = 0;
+/****************************************************************************
+receive a "set debug level" message
+****************************************************************************/
+void debug_message(pid_t src, void *buf, int len)
+{
+	int level;
+	memcpy(&level, buf, sizeof(int));
+	DEBUGLEVEL = level;
+	DEBUG(1,("Debug level set to %d from pid %d\n", level, (int)src));
+}
 
-  DEBUG( 0, ( "Got SIGUSR2; set debug level to %d.\n", DEBUGLEVEL ) );
-
-  sys_select_signal();
-
-#if !defined(HAVE_SIGACTION)
-  CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
-#endif
-
-  } /* sig_usr2 */
-#endif /* SIGUSR2 */
-
-#if defined(SIGUSR1)
-/* ************************************************************************** **
- * catch a sigusr1 - increase the debug log level. 
- * ************************************************************************** **
- */
-void sig_usr1( int sig )
-  {
-
-  DEBUGLEVEL++;
-
-  if( DEBUGLEVEL > 10 )
-    DEBUGLEVEL = 10;
-
-  DEBUG( 0, ( "Got SIGUSR1; set debug level to %d.\n", DEBUGLEVEL ) );
-
-  sys_select_signal();
-
-#if !defined(HAVE_SIGACTION)
-  CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
-#endif
-
-  } /* sig_usr1 */
-#endif /* SIGUSR1 */
+/****************************************************************************
+send a "set debug level" message
+****************************************************************************/
+void debug_message_send(pid_t pid, int level)
+{
+	message_send_pid(pid, MSG_DEBUG, &level, sizeof(int));
+}
 
 
 /* ************************************************************************** **

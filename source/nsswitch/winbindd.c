@@ -91,13 +91,6 @@ static void termination_handler(int signum)
 
 static BOOL print_client_info;
 
-static void sigusr1_handler(int signum)
-{
-    BlockSignals(True, SIGUSR1);
-    print_client_info = True;
-    BlockSignals(False, SIGUSR1);
-}
-
 static BOOL flush_cache;
 
 static void sighup_handler(int signum)
@@ -645,7 +638,6 @@ int main(int argc, char **argv)
 
     CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
 
-    CatchSignal(SIGUSR1, sigusr1_handler);            /* Debugging sigs */
     CatchSignal(SIGHUP, sighup_handler);
 
     /* Create UNIX domain socket */

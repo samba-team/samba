@@ -1,0 +1,237 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 3.0
+   Samba internal messaging functions
+   Copyright (C) Andrew Tridgell 2000
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+/* this module is used for internal messaging between Samba daemons. */
+
+#include "includes.h"
+
+/* the locking database handle */
+static TDB_CONTEXT *tdb;
+static int received_signal;
+
+/* change the message version with any incompatible changes in the protocol */
+#define MESSAGE_VERSION 1
+
+struct message_rec {
+	int msg_version;
+	enum message_type msg_type;
+	pid_t dest;
+	pid_t src;
+	size_t len;
+};
+
+/****************************************************************************
+notifications come in as signals
+****************************************************************************/
+static void sig_usr1(void)
+{
+	received_signal = 1;
+	sys_select_signal();
+}
+
+/****************************************************************************
+ Initialise the messaging functions. 
+****************************************************************************/
+BOOL message_init(void)
+{
+	if (tdb) return True;
+
+	tdb = tdb_open(lock_path("messages.tdb"), 
+		       0, TDB_CLEAR_IF_FIRST, 
+		       O_RDWR|O_CREAT,0600);
+
+	if (!tdb) {
+		DEBUG(0,("ERROR: Failed to initialise messages database\n"));
+		return False;
+	}
+
+	CatchSignal(SIGUSR1, sig_usr1);
+
+	return True;
+}
+
+
+/*******************************************************************
+ form a static tdb key from a pid
+******************************************************************/
+static TDB_DATA message_key_pid(pid_t pid)
+{
+	static char key[20];
+	TDB_DATA kbuf;
+
+	slprintf(key, sizeof(key), "PID/%d", (int)pid);
+
+	kbuf.dptr = (char *)key;
+	kbuf.dsize = sizeof(key);
+	return kbuf;
+}
+
+
+/****************************************************************************
+notify a process that it has a message. If the process doesn't exist 
+then delete its record in the database
+****************************************************************************/
+static BOOL message_notify(pid_t pid)
+{
+	if (kill(pid, SIGUSR1) == -1) {
+		if (errno == ESRCH) {
+			DEBUG(2,("pid %d doesn't exist - deleting messages record\n", (int)pid));
+			tdb_delete(tdb, message_key_pid(pid));
+		} else {
+			DEBUG(2,("message to process %d failed - %s\n", (int)pid, strerror(errno)));
+		}
+		return False;
+	}
+	return True;
+}
+
+/****************************************************************************
+send a message to a particular pid
+****************************************************************************/
+BOOL message_send_pid(pid_t pid, enum message_type msg_type, void *buf, size_t len)
+{
+	TDB_DATA kbuf;
+	TDB_DATA dbuf;
+	struct message_rec rec;
+	void *p;
+
+	rec.msg_version = MESSAGE_VERSION;
+	rec.msg_type = msg_type;
+	rec.dest = pid;
+	rec.src = sys_getpid();
+	rec.len = len;
+
+	kbuf = message_key_pid(pid);
+
+	/* lock the record for the destination */
+	tdb_lockchain(tdb, kbuf);
+
+	dbuf = tdb_fetch(tdb, kbuf);
+
+	if (!dbuf.dptr) {
+		/* its a new record */
+		p = (void *)malloc(len + sizeof(rec));
+		if (!p) goto failed;
+
+		memcpy(p, &rec, sizeof(rec));
+		memcpy(p+sizeof(rec), buf, len);
+
+		dbuf.dptr = p;
+		dbuf.dsize = len + sizeof(rec);
+		tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+		free(p);
+		goto ok;
+	}
+
+	/* we're adding to an existing entry */
+	p = (void *)malloc(dbuf.dsize + len + sizeof(rec));
+	if (!p) goto failed;
+
+	memcpy(p, dbuf.dptr, dbuf.dsize);
+	memcpy(p+dbuf.dsize, &rec, sizeof(rec));
+	memcpy(p+dbuf.dsize+sizeof(rec), buf, len);
+
+	dbuf.dptr = p;
+	dbuf.dsize += len + sizeof(rec);
+	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+	free(dbuf.dptr);
+	free(p);
+
+ ok:
+	tdb_unlockchain(tdb, kbuf);
+	return message_notify(pid);
+
+ failed:
+	tdb_unlockchain(tdb, kbuf);
+	return False;
+}
+
+
+
+/****************************************************************************
+retrieve the next message for the current process
+****************************************************************************/
+static BOOL message_recv(enum message_type *msg_type, pid_t *src, void **buf, size_t *len)
+{
+	TDB_DATA kbuf;
+	TDB_DATA dbuf;
+	struct message_rec rec;
+
+	kbuf = message_key_pid(sys_getpid());
+
+	tdb_lockchain(tdb, kbuf);
+	
+	dbuf = tdb_fetch(tdb, kbuf);
+	if (dbuf.dptr == NULL || dbuf.dsize == 0) goto failed;
+
+	memcpy(&rec, dbuf.dptr, sizeof(rec));
+
+	if (rec.msg_version != MESSAGE_VERSION) {
+		DEBUG(0,("message version %d received (expected %d)\n", rec.msg_version, MESSAGE_VERSION));
+		goto failed;
+	}
+
+	(*buf) = (void *)malloc(rec.len);
+	if (!(*buf)) goto failed;
+
+	memcpy(*buf, dbuf.dptr+sizeof(rec), rec.len);
+	*len = rec.len;
+	*msg_type = rec.msg_type;
+	*src = rec.src;
+
+	memmove(dbuf.dptr, dbuf.dptr+sizeof(rec)+rec.len, dbuf.dsize - (sizeof(rec)+rec.len));
+	dbuf.dsize -= sizeof(rec)+rec.len;
+	tdb_store(tdb, kbuf, dbuf, TDB_REPLACE);
+
+	free(dbuf.dptr);
+	tdb_unlockchain(tdb, kbuf);
+	return True;
+
+ failed:
+	tdb_unlockchain(tdb, kbuf);
+	return False;
+}
+
+
+/****************************************************************************
+receive and dispatch any messages pending for this process
+****************************************************************************/
+void message_dispatch(void)
+{
+	enum message_type msg_type;
+	pid_t src;
+	void *buf;
+	size_t len;
+
+	if (!received_signal) return;
+	received_signal = 0;
+
+	while (message_recv(&msg_type, &src, &buf, &len)) {
+		switch (msg_type) {
+		case MSG_DEBUG:
+			debug_message(src, buf, len);
+			break;
+		default:
+			DEBUG(0,("Unknown message type %d from %d\n", msg_type, (int)src));
+			break;
+		}
+	}
+}

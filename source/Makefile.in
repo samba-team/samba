@@ -108,7 +108,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
 	  lib/util_unistr.o lib/util_file.o \
 	  lib/util.o lib/util_sock.o lib/util_sec.o smbd/ssl.o \
 	  lib/talloc.o lib/hash.o lib/substitute.o lib/fsusage.o \
-	  lib/ms_fnmatch.o lib/select.o lib/error.o \
+	  lib/ms_fnmatch.o lib/select.o lib/error.o lib/messages.o \
 	  $(TDB_OBJ)
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
@@ -224,6 +224,9 @@ MAKE_PRINTERDEF_OBJ = utils/make_printerdef.o $(PARAM_OBJ) \
                       $(UBIQX_OBJ) $(LIB_OBJ)
 
 STATUS_OBJ = utils/status.o $(LOCKING_OBJ) $(PARAM_OBJ) \
+             $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
+
+MSGTEST_OBJ = utils/msgtest.o $(LOCKING_OBJ) $(PARAM_OBJ) \
              $(UBIQX_OBJ) $(PROFILE_OBJ) $(LIB_OBJ)
 
 TESTPARM_OBJ = utils/testparm.o \
@@ -466,6 +469,10 @@ bin/testprns: $(TESTPRNS_OBJ) bin/.dummy
 bin/smbstatus: $(STATUS_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(STATUS_OBJ) $(LDFLAGS) $(LIBS)
+
+bin/msgtest: $(MSGTEST_OBJ) bin/.dummy
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(MSGTEST_OBJ) $(LDFLAGS) $(LIBS)
 
 bin/smbpasswd: $(SMBPASSWD_OBJ) bin/.dummy
 	@echo Linking $@
