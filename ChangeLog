@@ -1,3 +1,8 @@
+2003-01-22  Love  <lha@it.su.se>
+
+	* lib/krb5/krb5.conf.5: spelling, from Jason McIntyre
+	<jmc@cvs.openbsd.org>
+	
 2003-01-21  Jacques Vidrine  <nectar@kth.se>
 
 	* kuser/kuser_locl.h: include crypto-headers.h for
