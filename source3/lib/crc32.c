@@ -65,7 +65,7 @@ uint32 crc32_calc_buffer( uint32 count, char *buffer)
                 crc = (crc>>8) ^ CRCTable[(buffer[i] ^ crc) & 0xff];
 	}
         crc^=0xffffffff;
-	DEBUG(10,("crc_32_calc_buffer: %x\n", crc));
+	DEBUG(10,("crc32_calc_buffer: %x\n", crc));
 	dump_data(100, buffer, count);
         return crc;
 }

@@ -559,6 +559,9 @@ void make_rpc_auth_ntlmssp_neg(RPC_AUTH_NTLMSSP_NEG *neg,
 
 /*******************************************************************
 reads or writes an RPC_AUTH_NTLMSSP_NEG structure.
+
+*** lkclXXXX HACK ALERT! ***
+
 ********************************************************************/
 void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_struct *ps, int depth)
 {
@@ -582,11 +585,11 @@ void smb_io_rpc_auth_ntlmssp_neg(char *desc, RPC_AUTH_NTLMSSP_NEG *neg, prs_stru
 
 		old_offset = ps->offset;
 
-		ps->offset = neg->hdr_myname  .buffer + 0x1c;
+		ps->offset = neg->hdr_myname  .buffer + 0x50; /* lkclXXXX HACK! */
 		prs_uint8s(True , "myname", ps, depth, (uint8*)neg->myname  , MIN(neg->hdr_myname  .str_str_len, sizeof(neg->myname  ))); 
 		old_offset += neg->hdr_myname  .str_str_len;
 
-		ps->offset = neg->hdr_domain  .buffer + 0x1c;
+		ps->offset = neg->hdr_domain  .buffer + 0x50; /* lkclXXXX HACK! */
 		prs_uint8s(True , "domain", ps, depth, (uint8*)neg->domain  , MIN(neg->hdr_domain  .str_str_len, sizeof(neg->domain  ))); 
 		old_offset += neg->hdr_domain  .str_str_len;
 
@@ -803,24 +806,23 @@ void smb_io_rpc_auth_ntlmssp_resp(char *desc, RPC_AUTH_NTLMSSP_RESP *rsp, prs_st
 /*******************************************************************
 checks an RPC_AUTH_NTLMSSP_CHK structure.
 ********************************************************************/
-BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 *seq_num)
+BOOL rpc_auth_ntlmssp_chk(RPC_AUTH_NTLMSSP_CHK *chk, uint32 crc32, uint32 seq_num)
 {
-	if (chk == NULL || seq_num == NULL)
+	if (chk == NULL)
 	{
 		return False;
 	}
 
 	if (chk->crc32 != crc32 ||
 	    chk->ver   != NTLMSSP_SIGN_VERSION ||
-	    chk->seq_num != (*seq_num))
+	    chk->seq_num != seq_num)
 	{
 		DEBUG(5,("verify failed - crc %x ver %x seq %d\n",
-			crc32, NTLMSSP_SIGN_VERSION, (*seq_num)-1));
+			crc32, NTLMSSP_SIGN_VERSION, seq_num));
 		DEBUG(5,("verify expect - crc %x ver %x seq %d\n",
 			chk->crc32, chk->ver, chk->seq_num));
 		return False;
 	}
-	(*seq_num)++;
 	return True;
 }
 
