@@ -46,7 +46,7 @@ static pstring options;
 
 static struct in_addr dest_ip;
 static BOOL have_ip;
-static int smb_port = 139;
+static int smb_port = 0;
 static BOOL got_pass;
 static uid_t mount_uid;
 static gid_t mount_gid;
@@ -148,7 +148,7 @@ static struct cli_state *do_connection(char *service)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) == 0) ||
+	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) != port) ||
 	    !cli_connect(c, server_n, &ip)) {
 		DEBUG(0,("%d: Connection to %s failed\n", getpid(), server_n));
 		if (c) {
