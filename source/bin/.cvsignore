@@ -41,6 +41,7 @@ swat
 t_push_ucs2
 t_snprintf
 t_strcmp
+t_stringoverflow
 talloctort
 tdbbackup
 testparm
