@@ -796,7 +796,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 	/* Optionally capture for use in debugging */
 	slprintf(dump_name, sizeof(dump_name) - 1, "call_%s",
 		 cli_pipe_get_name(cli));
-	prs_dump(dump_name, op_num, data);
+	prs_dump_before(dump_name, op_num, data);
 
 	/*
 	 * The auth_len doesn't include the RPC_HDR_AUTH_LEN.
