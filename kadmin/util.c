@@ -338,42 +338,56 @@ edit_deltat (const char *prompt, krb5_deltat *value, int *mask, int bit)
  * allow the user to edit `ent'
  */
 
-int
-edit_entry(kadm5_principal_ent_t ent, int *mask,
-	   kadm5_principal_ent_t default_ent, int default_mask)
+void
+set_defaults(kadm5_principal_ent_t ent, int *mask,
+	     kadm5_principal_ent_t default_ent, int default_mask)
 {
     if (default_ent
 	&& (default_mask & KADM5_MAX_LIFE)
 	&& !(*mask & KADM5_MAX_LIFE))
 	ent->max_life = default_ent->max_life;
-    edit_deltat ("Max ticket life", &ent->max_life, mask,
-		 KADM5_MAX_LIFE);
 
     if (default_ent
 	&& (default_mask & KADM5_MAX_RLIFE)
 	&& !(*mask & KADM5_MAX_RLIFE))
 	ent->max_renewable_life = default_ent->max_renewable_life;
-    edit_deltat ("Max renewable life", &ent->max_renewable_life, mask,
-		 KADM5_MAX_RLIFE);
 
     if (default_ent
 	&& (default_mask & KADM5_PRINC_EXPIRE_TIME)
 	&& !(*mask & KADM5_PRINC_EXPIRE_TIME))
 	ent->princ_expire_time = default_ent->princ_expire_time;
-    edit_timet ("Principal expiration time", &ent->princ_expire_time, mask,
-	       KADM5_PRINC_EXPIRE_TIME);
 
     if (default_ent
 	&& (default_mask & KADM5_PW_EXPIRATION)
 	&& !(*mask & KADM5_PW_EXPIRATION))
 	ent->pw_expiration = default_ent->pw_expiration;
-    edit_timet ("Password expiration time", &ent->pw_expiration, mask,
-	       KADM5_PW_EXPIRATION);
 
     if (default_ent
 	&& (default_mask & KADM5_ATTRIBUTES)
 	&& !(*mask & KADM5_ATTRIBUTES))
 	ent->attributes = default_ent->attributes & ~KRB5_KDB_DISALLOW_ALL_TIX;
+    return 0;
+}
+
+int
+edit_entry(kadm5_principal_ent_t ent, int *mask,
+	   kadm5_principal_ent_t default_ent, int default_mask)
+{
+
+    set_defaults(ent, mask, default_ent, default_mask);
+
+    edit_deltat ("Max ticket life", &ent->max_life, mask,
+		 KADM5_MAX_LIFE);
+
+    edit_deltat ("Max renewable life", &ent->max_renewable_life, mask,
+		 KADM5_MAX_RLIFE);
+
+    edit_timet ("Principal expiration time", &ent->princ_expire_time, mask,
+	       KADM5_PRINC_EXPIRE_TIME);
+
+    edit_timet ("Password expiration time", &ent->pw_expiration, mask,
+	       KADM5_PW_EXPIRATION);
+
     edit_attributes ("Attributes", &ent->attributes, mask,
 		     KADM5_ATTRIBUTES);
     return 0;
