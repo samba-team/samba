@@ -1643,6 +1643,39 @@ struct connection_options {
   uint16 serverzone;
 };
 
+/* the following are used by loadparm for option lists */
+typedef enum
+{
+  P_BOOL,P_BOOLREV,P_CHAR,P_INTEGER,P_OCTAL,
+  P_STRING,P_USTRING,P_GSTRING,P_UGSTRING,P_ENUM
+} parm_type;
+
+typedef enum
+{
+  P_LOCAL,P_GLOBAL,P_NONE
+} parm_class;
+
+struct enum_list {
+	int value;
+	char *name;
+};
+
+struct parm_struct
+{
+	char *label;
+	parm_type type;
+	parm_class class;
+	void *ptr;
+	BOOL (*special)();
+	struct enum_list *enum_list;
+	unsigned flags;
+};
+
+
+#define FLAG_BASIC 1
+#define FLAG_HIDE  2
+#define FLAG_PRINT 4
+
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
 #endif /* LOCKING_VERSION */

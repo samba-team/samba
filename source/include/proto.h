@@ -29,6 +29,7 @@ char *urlquote(char *s);
 char *quotequotes(char *s);
 void quote_spaces(char *buf);
 void cgi_setup(char *rootdir);
+char *cgi_baseurl(void);
 
 /*The following definitions come from  charcnv.c  */
 
@@ -382,9 +383,9 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir);
 int lp_add_service(char *pszService, int iDefaultService);
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService);
 BOOL lp_file_list_changed(void);
+void *lp_local_ptr(int snum, void *ptr);
 BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue);
-int lp_next_parameter(int snum, int *i, char *label, 
-			   char *value, int allparameters);
+struct parm_struct *lp_next_parameter(int snum, int *i, int allparameters);
 BOOL lp_snum_ok(int iService);
 BOOL lp_loaded(void);
 void lp_killunused(BOOL (*snumused)(int ));
