@@ -65,7 +65,7 @@ htmlman: $(patsubst $(MANPAGEDIR)/%.xml,$(HTMLDIR)/%.html,$(MANPAGES)) $(HTMLDIR
 html-single: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%.html,$(MAIN_DOCS))
 html: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLDIR)/%/index.html,$(MAIN_DOCS)) $(HTMLDIR)/index.html
 htmlhelp: $(patsubst $(DOCBOOKDIR)/%.xml,$(HTMLHELPDIR)/%,$(MAIN_DOCS))
-validate: $(patsubst $(DOCBOOKDIR)/%.xml,$(VALIDATEDIR)/%.report,$(MAIN_DOCS))
+validate: $(patsubst $(DOCBOOKDIR)/%.xml,%-validate,$(MAIN_DOCS))
 
 # Intermediate docbook docs
 
@@ -225,9 +225,8 @@ $(PEARSONDIR)/%.report.html: $(PEARSONDIR)/%.xml
 	-$(XMLLINT) --valid --noout $< 2> $@
 
 # Validation verification
-$(VALIDATEDIR)/%.report: %/index.xml
-	mkdir -p $(@D)
-	-$(XMLLINT) --xinclude --postvalid --noout $< 2> $@
+%-validate: %/index.xml
+	-$(XMLLINT) --xinclude --noent --postvalid --noout $<
 
 # Find undocumented parameters
 undocumented: $(SMBDOTCONFDOC)/parameters.all.xml scripts/find_missing_doc.pl scripts/find_missing_manpages.pl

@@ -33,8 +33,9 @@ network environment. Workstations A, B and C are representative of many physical
 network clients.
 </para>
 
-<image id="domain-example"><description>An Example Domain.</description>
-<imagefile scale="50">domain</imagefile>
+<image id="domain-example">
+	<imagedescription>An Example Domain.</imagedescription>
+	<imagefile scale="50">domain</imagefile>
 </image>
 
 <?latex \newpage ?>

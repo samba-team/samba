@@ -57,11 +57,12 @@
 	</para>
 
 	<image id="idmap-sid2gid">
-		<description>IDMAP: group SID to GID resolution.</description>
+		<imagedescription>IDMAP: group SID to GID resolution.</imagedescription>
 		<imagefile scale="50">idmap-sid2gid</imagefile>
 	</image>
 
-	<image id="idmap-gid2sid"><description>IDMAP: GID resolution to matching SID.</description>
+	<image id="idmap-gid2sid">
+		<imagedescription>IDMAP: GID resolution to matching SID.</imagedescription>
 	<imagefile scale="50">idmap-gid2sid</imagefile>
 	</image>
 
@@ -73,8 +74,9 @@
 	used to establish UNIX group to NT SID mappings as shown in <link linkend="idmap-store-gid2sid">IDMAP: storing group mappings</link>.
 	</para>
 
-	<image id="idmap-store-gid2sid"><description>IDMAP storing group mappings.</description>
-	<imagefile scale="50">idmap-store-gid2sid</imagefile>
+	<image id="idmap-store-gid2sid">
+		<imagedescription>IDMAP storing group mappings.</imagedescription>
+		<imagefile scale="50">idmap-store-gid2sid</imagefile>
 	</image>
 
 	<para>
