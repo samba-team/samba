@@ -76,7 +76,6 @@ ss_create_invocation(const char *subsystem,
 void
 ss_error (int index, long code, const char *fmt, ...)
 {
-    char *whoami;
     va_list ap;
     va_start(ap, fmt);
     com_err_va (subsystems[index].name, code, fmt, ap);
