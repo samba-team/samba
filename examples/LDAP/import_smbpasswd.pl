@@ -1,32 +1,30 @@
 #!/usr/bin/perl
 ##
-## Example script og how you could import and smbpasswd file into an LDAP
+## Example script of how you could import and smbpasswd file into an LDAP
 ## directory using the Mozilla PerLDAP module.
 ##
-## wrriten by jerry@samba.org
+## writen by jerry@samba.org
 ##
 
 use Mozilla::LDAP::Conn;
 use Mozilla::LDAP::Entry;
+
+#################################################
+## set these to a value appropriate for your site
+##
 
 $DN="ou=people,dc=plainjoe,dc=org";
 $ROOTDN="cn=Manager,dc=plainjoe,dc=org";
 $rootpw = "secret";
 $LDAPSERVER="localhost";
 
+##
+## end local site variables
+#################################################
 
-print "Connecting to $LDAPSERVER...";
 $conn = new Mozilla::LDAP::Conn ("$LDAPSERVER", "389", $ROOTDN, $rootpw );
 die "Unable to connect to LDAP server $LDAPSERVER" unless $conn;
-print "connected!\n";
 
-if ("$ARGV[0]") {
-	open (SMBPASSFILE, "$ARGV[0]") || die $!;
-	$infile = SMBPASSFILE;
-}
-else {
-	$infile = STDIN;
-}
 
 while ( $string = <$infile> ) {
 	chop ($string);
@@ -34,7 +32,11 @@ while ( $string = <$infile> ) {
 	## get the account information
 	@smbentry = split (/:/, $string);
 
-	## scheck for the existence of the posixAccount first
+	## check for the existence of the posixAccount first
+
+	## FIXME!!  Should do a getownam() and let the NSS modules lookup the account
+	## This way you can have a UNIX account in /etc/passwd and the smbpasswd i
+	## entry in LDAP.
 	$result = $conn->search ("$DN", "sub", "(&(uid=$smbentry[0])(objectclass=posixAccount))");
 	if ( ! $result ) {
 		print STDERR "uid=$smbentry[0] does not have a posixAccount entry in the directory!\n";
@@ -57,10 +59,7 @@ while ( $string = <$infile> ) {
 	if (! $conn->update($result)) {
 		print "Error updating!\n";
 	}
-
-	## $result->printLDIF();
 }
 
-close ($infile);
 $conn->close();
 exit 0;
