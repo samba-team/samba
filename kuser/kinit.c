@@ -206,7 +206,7 @@ main (int argc, char **argv)
     int optind = 0;
     krb5_get_init_creds_opt opt;
     krb5_deltat start_time = 0;
-    krb5_deltat ticket_life;
+    krb5_deltat ticket_life = 0;
 
     set_progname (argv[0]);
     memset(&cred, 0, sizeof(cred));
