@@ -64,10 +64,49 @@ struct wkssvc_Info102 {
 	uint32 logged_on_users;
 };
 
+struct wkssvc_Info502 {
+	uint32 char_wait;
+	uint32 collection_time;
+	uint32 maximum_collection_count;
+	uint32 keep_connection;
+	uint32 max_commands;
+	uint32 session_timeout;
+	uint32 size_char_buf;
+	uint32 max_threads;
+	uint32 lock_quota;
+	uint32 lock_increment;
+	uint32 lock_maximum;
+	uint32 pipe_increment;
+	uint32 pipe_maximum;
+	uint32 cache_file_timeout;
+	uint32 dormant_file_limit;
+	uint32 read_ahead_throughput;
+	uint32 num_mailslot_buffers;
+	uint32 num_srv_announce_buffers;
+	uint32 max_illegal_dgram_events;
+	uint32 dgram_event_reset_freq;
+	uint32 log_election_packets;
+	uint32 use_opportunistic_locking;
+	uint32 use_unlock_behind;
+	uint32 use_close_behind;
+	uint32 buf_named_pipes;
+	uint32 use_lock_read_unlock;
+	uint32 utilize_nt_caching;
+	uint32 use_raw_read;
+	uint32 use_raw_write;
+	uint32 use_write_raw_data;
+	uint32 use_encryption;
+	uint32 buf_files_deny_write;
+	uint32 buf_read_only_files;
+	uint32 force_core_create_mode;
+	uint32 use_512_byte_max_transfer;
+};
+
 union wkssvc_Info {
 /* [case(100)] */ struct wkssvc_Info100 *info100;
 /* [case(101)] */ struct wkssvc_Info101 *info101;
 /* [case(102)] */ struct wkssvc_Info102 *info102;
+/* [case(502)] */ struct wkssvc_Info502 *info502;
 };
 
 struct wkssvc_QueryInfo {
