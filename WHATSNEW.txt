@@ -4,10 +4,13 @@
 New stable release of Samba.
 ----------------------------
 
-This is the new stable release of Samba, superceeding
+This is the new stable release of Samba, superceding
 the last stable release 1.9.16p11. All users are
 encouraged to upgrade to this new release as there have
 been many improvements to the code since that time.
+See the Frequently Asked Questions (under docs/faq) for
+an explanation of how the version numbering scheme works,
+distinguishing between stable and development releases.
 
 Changes since 1.9.16p11.
 ------------------------
@@ -63,6 +66,10 @@ Updated documentation
 All options are now documented in the smb.conf man page
 we believe. Much work has been done by Samba Team members
 to improve the quality and quantity of the Samba documentation.
+
+A draft new structure for documentation is being worked on: see
+docs/faq/Samba-meta-FAQ for details. This will soon be a master
+reference to all Samba documentation.
 
 Many bugfixes and improvements
 ------------------------------
