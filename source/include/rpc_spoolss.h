@@ -53,7 +53,6 @@
 #define SPOOLSS_FINDFIRSTPRINTERCHANGENOTIFICATION	0x36
 #define SPOOLSS_FINDNEXTPRINTERCHANGENOTIFICATION	0x37
 #define SPOOLSS_ROUTERFINDFIRSTPRINTERNOTIFICATIONOLD	0x39
-#define SPOOLSS_REPLYOPENPRINTER			0x3a
 #define SPOOLSS_ROUTERREPLYPRINTER			0x3b
 #define SPOOLSS_REPLYCLOSEPRINTER			0x3c
 #define SPOOLSS_ADDPORTEX				0x3d
@@ -99,6 +98,7 @@
 #define SPOOLSS_GETPRINTERDRIVER2			0x35
 /* find close printer notification */
 #define SPOOLSS_FCPN					0x38
+#define SPOOLSS_REPLYOPENPRINTER			0x3a
 /* remote find first printer change notifyEx */
 #define SPOOLSS_RFFPCNEX				0x41
 /* remote find next printer change notifyEx */
@@ -918,7 +918,9 @@ typedef struct driver_info_6
 	UNISTR defaultdatatype;
 	uint16* previousdrivernames;
 	NTTIME driver_date;
-	uint32 driver_version;
+	uint32 padding;
+	uint32 driver_version_low;
+	uint32 driver_version_high;
 	UNISTR mfgname;
 	UNISTR oem_url;
 	UNISTR hardware_id;
