@@ -508,6 +508,7 @@ char *mktemp(char *); /* No standard include */
 #include <netinet/tcp.h>
 #define SIGNAL_CAST (void (*)())
 #define USE_DIRECT
+#define QSORT_CAST (int (*)(const void *, const void *))
 #endif
 
 
@@ -521,6 +522,8 @@ char *mktemp(char *); /* No standard include */
 #include <strings.h>  
 #endif /* NetBSD1_3 */  
 #include <netinet/tcp.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
 /* you may not need this */
 #define NO_GETSPNAM 
 #define SIGNAL_CAST (void (*)())

@@ -475,7 +475,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
 
   new_entry_length = strlen(newpwd->smb_name) + 1 + 15 + 1 + 32 + 1 + 32 + 1 + 5 + 1 + 13 + 2;
 
-  if((new_entry = (unsigned char *)malloc( new_entry_length )) == NULL) {
+  if((new_entry = (char *)malloc( new_entry_length )) == NULL) {
     DEBUG(0, ("add_smbfilepwd_entry(malloc): Failed to add entry for user %s to file %s. \
 Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
     endsmbfilepwent(fp);
@@ -483,7 +483,7 @@ Error was %s\n", newpwd->smb_name, pfile, strerror(errno)));
   }
 
   slprintf(new_entry, new_entry_length - 1, "%s:%u:", newpwd->smb_name, (unsigned)newpwd->smb_userid);
-  p = (unsigned char *)&new_entry[strlen(new_entry)];
+  p = &new_entry[strlen(new_entry)];
 
   if(newpwd->smb_passwd != NULL) {
     for( i = 0; i < 16; i++) {
