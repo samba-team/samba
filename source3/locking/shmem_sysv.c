@@ -39,6 +39,7 @@ extern int DEBUGLEVEL;
 #define IPC_PERMS 0644
 #endif
 
+
 #ifdef SECURE_SEMAPHORES
 /* secure semaphores are slow because we have to do a become_root()
    on every call! */
