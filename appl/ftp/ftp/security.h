@@ -125,6 +125,9 @@ void sec_prot (int, char **);
 int sec_request_prot (char *);
 void sec_set_protection_level (void);
 void sec_status (void);
+
+enum protection_level set_command_prot(enum protection_level);
+
 #endif
 
 #endif /* __security_h__ */  
