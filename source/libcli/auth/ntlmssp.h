@@ -71,6 +71,8 @@ enum ntlmssp_message_type
 
 #define NTLMSSP_SIGN_VERSION 1
 
+#define NTLMSSP_SIG_SIZE 16
+
 struct ntlmssp_state 
 {
 	TALLOC_CTX *mem_ctx;
@@ -162,8 +164,9 @@ struct ntlmssp_state
 	const char *(*get_domain)(void);
 
 	/* SMB Signing */
-	
-	uint32_t ntlmssp_seq_num;
+	uint32_t ntlm_seq_num;
+	uint32_t ntlm2_send_seq_num;
+	uint32_t ntlm2_recv_seq_num;
 
 	/* ntlmv2 */
 	DATA_BLOB send_sign_key;

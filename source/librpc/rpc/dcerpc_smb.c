@@ -359,7 +359,6 @@ NTSTATUS smb_session_key(struct dcerpc_pipe *p, DATA_BLOB *session_key)
 		*session_key = smb->tree->session->user_session_key;
 		return NT_STATUS_OK;
 	}
-
 	return NT_STATUS_NO_USER_SESSION_KEY;
 }
 
@@ -425,13 +424,15 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 	(*p)->transport.private = NULL;
 	(*p)->transport.shutdown_pipe = smb_shutdown_pipe;
 	(*p)->transport.peer_name = smb_peer_name;
-	(*p)->transport.session_key = smb_session_key;
 
 	(*p)->transport.send_request = smb_send_request;
 	(*p)->transport.send_read = send_read_request;
 	(*p)->transport.event_context = smb_event_context;
 	(*p)->transport.recv_data = NULL;
 	
+	/* Over-ride the default session key with the SMB session key */
+	(*p)->security_state.session_key = smb_session_key;
+
 	smb = talloc((*p), sizeof(*smb));
 	if (!smb) {
 		dcerpc_pipe_close(*p);

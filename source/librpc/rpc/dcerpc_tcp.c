@@ -87,6 +87,10 @@ static void tcp_process_send(struct dcerpc_pipe *p)
 			}
 			break;
 		}
+		if (ret == 0) {
+			tcp_sock_dead(p, NT_STATUS_NET_WRITE_FAULT);
+			break;
+		}
 
 		blob->data.data += ret;
 		blob->data.length -= ret;
@@ -271,19 +275,6 @@ static const char *tcp_peer_name(struct dcerpc_pipe *p)
 	return tcp->server_name;
 }
 
-
-/*
-  fetch the user session key 
-*/
-NTSTATUS tcp_session_key(struct dcerpc_pipe *p, DATA_BLOB *session_key)
-{
-	/* this took quite a few CPU cycles to find ... */
-	session_key->data = "SystemLibraryDTC";
-	session_key->length = 16;
-
-	return NT_STATUS_OK;
-}
-
 /* 
    open a rpc connection to a named pipe 
 */
@@ -331,7 +322,6 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 
 	(*p)->transport.shutdown_pipe = tcp_shutdown_pipe;
 	(*p)->transport.peer_name = tcp_peer_name;
-	(*p)->transport.session_key = tcp_session_key;
 	
 	tcp = talloc((*p), sizeof(*tcp));
 	if (!tcp) {
@@ -355,6 +345,9 @@ NTSTATUS dcerpc_pipe_open_tcp(struct dcerpc_pipe **p,
 	tcp->fde = event_add_fd(tcp->event_ctx, &fde);
 
 	(*p)->transport.private = tcp;
+
+	/* ensure we don't get SIGPIPE */
+	BlockSignals(True,SIGPIPE);
 
         return NT_STATUS_OK;
 }

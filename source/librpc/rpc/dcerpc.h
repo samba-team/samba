@@ -29,6 +29,9 @@ struct dcerpc_pipe;
 struct dcerpc_security {
 	struct dcerpc_auth *auth_info;
 	struct gensec_security *generic_state;
+
+	/* get the session key */
+	NTSTATUS (*session_key)(struct dcerpc_pipe *, DATA_BLOB *);
 };
 
 struct dcerpc_pipe {
@@ -64,8 +67,6 @@ struct dcerpc_pipe {
 		   has been received */
 		void (*recv_data)(struct dcerpc_pipe *, DATA_BLOB *, NTSTATUS status);
 
-		/* get the transport level session key */
-		NTSTATUS (*session_key)(struct dcerpc_pipe *, DATA_BLOB *);
 	} transport;
 
 	/* the last fault code from a DCERPC fault */

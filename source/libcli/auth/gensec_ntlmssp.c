@@ -287,42 +287,52 @@ static NTSTATUS gensec_ntlmssp_client_start(struct gensec_security *gensec_secur
   wrappers for the ntlmssp_*() functions
 */
 static NTSTATUS gensec_ntlmssp_unseal_packet(struct gensec_security *gensec_security, 
-				      TALLOC_CTX *mem_ctx, 
-				      uint8_t *data, size_t length, DATA_BLOB *sig)
+					     TALLOC_CTX *mem_ctx, 
+					     uint8_t *data, size_t length, 
+					     const uint8_t *whole_pdu, size_t pdu_length, 
+					     DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
-	return ntlmssp_unseal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, sig);
+	return ntlmssp_unseal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 static NTSTATUS gensec_ntlmssp_check_packet(struct gensec_security *gensec_security, 
-				     TALLOC_CTX *mem_ctx, 
-				     const uint8_t *data, size_t length, 
-				     const DATA_BLOB *sig)
+					    TALLOC_CTX *mem_ctx, 
+					    const uint8_t *data, size_t length, 
+					    const uint8_t *whole_pdu, size_t pdu_length, 
+					    const DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
-	return ntlmssp_check_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, sig);
+	return ntlmssp_check_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 static NTSTATUS gensec_ntlmssp_seal_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx, 
-				    uint8_t *data, size_t length, 
-				    DATA_BLOB *sig)
+					   TALLOC_CTX *mem_ctx, 
+					   uint8_t *data, size_t length, 
+					   const uint8_t *whole_pdu, size_t pdu_length, 
+					   DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
-	return ntlmssp_seal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, sig);
+	return ntlmssp_seal_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, whole_pdu, pdu_length, sig);
 }
 
 static NTSTATUS gensec_ntlmssp_sign_packet(struct gensec_security *gensec_security, 
-				    TALLOC_CTX *mem_ctx, 
-				    const uint8_t *data, size_t length, 
-				    DATA_BLOB *sig)
+					   TALLOC_CTX *mem_ctx, 
+					   const uint8_t *data, size_t length, 
+					   const uint8_t *whole_pdu, size_t pdu_length, 
+					   DATA_BLOB *sig)
 {
 	struct gensec_ntlmssp_state *gensec_ntlmssp_state = gensec_security->private_data;
 
-	return ntlmssp_sign_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, sig);
+	return ntlmssp_sign_packet(gensec_ntlmssp_state->ntlmssp_state, mem_ctx, data, length, whole_pdu, pdu_length, sig);
+}
+
+static size_t gensec_ntlmssp_sig_size(struct gensec_security *gensec_security) 
+{
+	return NTLMSSP_SIG_SIZE;
 }
 
 static NTSTATUS gensec_ntlmssp_session_key(struct gensec_security *gensec_security, 
@@ -413,6 +423,7 @@ static const struct gensec_security_ops gensec_ntlmssp_security_ops = {
 	.server_start   = gensec_ntlmssp_server_start,
 	.update 	= gensec_ntlmssp_update,
 	.seal_packet	= gensec_ntlmssp_seal_packet,
+	.sig_size	= gensec_ntlmssp_sig_size,
 	.sign_packet	= gensec_ntlmssp_sign_packet,
 	.check_packet	= gensec_ntlmssp_check_packet,
 	.unseal_packet	= gensec_ntlmssp_unseal_packet,

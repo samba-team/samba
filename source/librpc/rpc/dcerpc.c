@@ -36,6 +36,7 @@ struct dcerpc_pipe *dcerpc_pipe_init(void)
 	p->reference_count = 0;
 	p->call_id = 1;
 	p->security_state.auth_info = NULL;
+	p->security_state.session_key = dcerpc_generic_session_key;
 	p->security_state.generic_state = NULL;
 	p->binding_string = NULL;
 	p->flags = 0;
@@ -206,8 +207,8 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
-
-
+	
+	
 	/* check signature or unseal the packet */
 	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
@@ -215,6 +216,8 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 					      mem_ctx, 
 					      pkt->u.response.stub_and_verifier.data, 
 					      pkt->u.response.stub_and_verifier.length, 
+					      blob->data,
+					      blob->length - auth.credentials.length,
 					      &auth.credentials);
 		break;
 		
@@ -223,9 +226,11 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 					     mem_ctx, 
 					     pkt->u.response.stub_and_verifier.data, 
 					     pkt->u.response.stub_and_verifier.length, 
+					     blob->data,
+					     blob->length - auth.credentials.length,
 					     &auth.credentials);
 		break;
-
+		
 	case DCERPC_AUTH_LEVEL_NONE:
 		break;
 
@@ -233,7 +238,7 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		status = NT_STATUS_INVALID_LEVEL;
 		break;
 	}
-
+	
 	/* remove the indicated amount of paddiing */
 	if (pkt->u.response.stub_and_verifier.length < auth.auth_pad_length) {
 		return NT_STATUS_INFO_LENGTH_MISMATCH;
@@ -253,6 +258,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct ndr_push *ndr;
+	DATA_BLOB creds2;
 
 	/* non-signed packets are simpler */
 	if (!p->security_state.auth_info || !p->security_state.generic_state) {
@@ -282,30 +288,21 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	/* sign or seal the packet */
 	switch (p->security_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = gensec_seal_packet(p->security_state.generic_state, 
-					    mem_ctx, 
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
-					    &p->security_state.auth_info->credentials);
-		break;
-
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = gensec_sign_packet(p->security_state.generic_state, 
-					    mem_ctx, 
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
-					    &p->security_state.auth_info->credentials);
+		p->security_state.auth_info->credentials
+			= data_blob_talloc(mem_ctx, NULL, gensec_sig_size(p->security_state.generic_state));
+		data_blob_clear(&p->security_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_NONE:
 		p->security_state.auth_info->credentials = data_blob(NULL, 0);
 		break;
-
+		
 	default:
 		status = NT_STATUS_INVALID_LEVEL;
 		break;
 	}
-
+	
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}	
@@ -324,6 +321,41 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
 	dcerpc_set_auth_length(blob, p->security_state.auth_info->credentials.length);
+
+	/* sign or seal the packet */
+	switch (p->security_state.auth_info->auth_level) {
+	case DCERPC_AUTH_LEVEL_PRIVACY:
+		status = gensec_seal_packet(p->security_state.generic_state, 
+					    mem_ctx, 
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data,
+					    blob->length - 
+					    p->security_state.auth_info->credentials.length,
+					    &creds2);
+		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
+		break;
+
+	case DCERPC_AUTH_LEVEL_INTEGRITY:
+		status = gensec_sign_packet(p->security_state.generic_state, 
+					    mem_ctx, 
+					    ndr->data + DCERPC_REQUEST_LENGTH, 
+					    ndr->offset - DCERPC_REQUEST_LENGTH,
+					    blob->data,
+					    blob->length - 
+					    p->security_state.auth_info->credentials.length,
+					    &creds2);
+		memcpy(blob->data + blob->length - creds2.length, creds2.data, creds2.length);
+		break;
+
+	case DCERPC_AUTH_LEVEL_NONE:
+		p->security_state.auth_info->credentials = data_blob(NULL, 0);
+		break;
+
+	default:
+		status = NT_STATUS_INVALID_LEVEL;
+		break;
+	}
 
 	data_blob_free(&p->security_state.auth_info->credentials);
 
@@ -433,8 +465,8 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.call_id = p->call_id;
 	pkt.auth_length = 0;
 
-	pkt.u.bind.max_xmit_frag = 0x2000;
-	pkt.u.bind.max_recv_frag = 0x2000;
+	pkt.u.bind.max_xmit_frag = 5840;
+	pkt.u.bind.max_recv_frag = 5840;
 	pkt.u.bind.assoc_group_id = 0;
 	pkt.u.bind.num_contexts = 1;
 	pkt.u.bind.ctx_list = talloc(mem_ctx, sizeof(pkt.u.bind.ctx_list[0]));
@@ -782,59 +814,43 @@ struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p,
 	pkt.u.request.context_id = 0;
 	pkt.u.request.opnum = opnum;
 
-	/* we send a series of pdus without waiting for a reply until
-	   the last pdu */
-	while (remaining > chunk_size) {
+	DLIST_ADD(p->pending, req);
+
+	/* we send a series of pdus without waiting for a reply */
+	while (remaining > 0) {
+		uint32_t chunk = MIN(chunk_size, remaining);
+		BOOL last_frag = False;
+
+		pkt.pfc_flags = 0;
+
 		if (remaining == stub_data->length) {
-			pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST;
-		} else {
-			pkt.pfc_flags = 0;
+			pkt.pfc_flags |= DCERPC_PFC_FLAG_FIRST;
+		}
+		if (chunk == remaining) {
+			pkt.pfc_flags |= DCERPC_PFC_FLAG_LAST;
+			last_frag = True;
 		}
 
 		pkt.u.request.stub_and_verifier.data = stub_data->data + 
 			(stub_data->length - remaining);
-		pkt.u.request.stub_and_verifier.length = chunk_size;
+		pkt.u.request.stub_and_verifier.length = chunk;
 
 		req->status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
+			DLIST_REMOVE(p->pending, req);
 			return req;
 		}
 		
-		req->status = p->transport.send_request(p, &blob, False);
+		req->status = p->transport.send_request(p, &blob, last_frag);
 		if (!NT_STATUS_IS_OK(req->status)) {
 			req->state = RPC_REQUEST_DONE;
+			DLIST_REMOVE(p->pending, req);
 			return req;
 		}		
 
-		remaining -= chunk_size;
+		remaining -= chunk;
 	}
-
-	/* now we send a pdu with LAST_FRAG sent and get the first
-	   part of the reply */
-	if (remaining == stub_data->length) {
-		pkt.pfc_flags = DCERPC_PFC_FLAG_FIRST | DCERPC_PFC_FLAG_LAST;
-	} else {
-		pkt.pfc_flags = DCERPC_PFC_FLAG_LAST;
-	}
-	pkt.u.request.stub_and_verifier.data = stub_data->data + 
-		(stub_data->length - remaining);
-	pkt.u.request.stub_and_verifier.length = remaining;
-
-	req->status = dcerpc_push_request_sign(p, &blob, mem_ctx, &pkt);
-	if (!NT_STATUS_IS_OK(req->status)) {
-		req->state = RPC_REQUEST_DONE;
-		return req;
-	}
-
-	/* send the final pdu */
-	req->status = p->transport.send_request(p, &blob, True);
-
-	if (!NT_STATUS_IS_OK(req->status)) {
-		req->state = RPC_REQUEST_DONE;
-	}
-
-	DLIST_ADD(p->pending, req);
 
 	return req;
 }
