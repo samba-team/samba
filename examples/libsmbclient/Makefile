@@ -10,7 +10,7 @@ CFLAGS = -I$(SAMBA_INCL) $(EXTLIB_INCL)
 
 LDFLAGS = -L/usr/lib
 
-all: testsmbc tree testacl testbrowse
+all: testsmbc tree testacl testbrowse smbsh
 
 testsmbc: testsmbc.o 
 	@echo Linking testsmbc
@@ -32,5 +32,9 @@ testbrowse: testbrowse.o
 	@echo Linking testbrowse
 	@$(CC) $(CFLAGS) $(LDFLAGS) -o $@ -lsmbclient -lpopt $<
 
+smbsh:
+	make -C smbwrapper
+
 clean:
-	@rm -f *.o *~
+	@rm -f *.o *~ testsmbc tree testacl testbrowse
+	@make -C smbwrapper clean
