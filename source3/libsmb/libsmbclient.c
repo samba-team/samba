@@ -65,7 +65,7 @@ hex2int( unsigned int _char )
 }
 
 static void 
-decode_urlpart(char *segment)
+decode_urlpart(char *segment, size_t sizeof_segment)
 {
     int old_length = strlen(segment);
     int new_length = 0;
@@ -121,9 +121,14 @@ decode_urlpart(char *segment)
     }
     new_segment [ new_length ] = 0;
 
+    free(new_usegment);
+
+    /* realloc it with unix charset */
+    pull_utf8_allocate((void**)&new_usegment, new_segment);
+
     /* this assumes (very safely) that removing %aa sequences
        only shortens the string */
-    strncpy(segment, new_segment, old_length);
+    strncpy(segment, new_usegment, sizeof_segment);
 
     free(new_usegment);
 }
@@ -243,15 +248,15 @@ smbc_parse_path(SMBCCTX *context, const char *fname, char *server, char *share, 
 	}
 
 	pstrcpy(path, p);
-  
+
 	all_string_sub(path, "/", "\\", 0);
 
  decoding:
-	decode_urlpart(path);
-	decode_urlpart(server);
-	decode_urlpart(share);
-	decode_urlpart(user);
-	decode_urlpart(password);
+	decode_urlpart(path, sizeof(pstring));
+	decode_urlpart(server, sizeof(fstring));
+	decode_urlpart(share, sizeof(fstring));
+	decode_urlpart(user, sizeof(fstring));
+	decode_urlpart(password, sizeof(fstring));
 
 	return 0;
 }
@@ -1334,6 +1339,13 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 {
 	struct smbc_dirent *dirent;
 	int size;
+	char *u_name = NULL, *u_comment = NULL;
+	size_t u_name_len = 0, u_comment_len = 0;
+
+	if (name)
+	    u_name_len = push_utf8_allocate(&u_name, name);
+	if (comment)
+	    u_comment_len = push_utf8_allocate(&u_comment, comment);
 
 	/*
 	 * Allocate space for the dirent, which must be increased by the 
@@ -1341,8 +1353,7 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 	 * The null on the name is already accounted for.
 	 */
 
-	size = sizeof(struct smbc_dirent) + (name?strlen(name):0) +
-		(comment?strlen(comment):0) + 1; 
+	size = sizeof(struct smbc_dirent) + u_name_len + u_comment_len + 1;
     
 	dirent = malloc(size);
 
@@ -1391,14 +1402,17 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 	dir->dir_end->dirent = dirent;
 	
 	dirent->smbc_type = type;
-	dirent->namelen = (name?strlen(name):0);
-	dirent->commentlen = (comment?strlen(comment):0);
+	dirent->namelen = u_name_len;
+	dirent->commentlen = u_comment_len;
 	dirent->dirlen = size;
   
-	strncpy(dirent->name, (name?name:""), dirent->namelen + 1);
+	strncpy(dirent->name, (u_name?u_name:""), dirent->namelen + 1);
 
 	dirent->comment = (char *)(&dirent->name + dirent->namelen + 1);
-	strncpy(dirent->comment, (comment?comment:""), dirent->commentlen + 1);
+	strncpy(dirent->comment, (u_comment?u_comment:""), dirent->commentlen + 1);
+	
+	SAFE_FREE(u_comment);
+	SAFE_FREE(u_name);
 
 	return 0;
 
@@ -2158,6 +2172,7 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 
 static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
+	off_t ret_val; /* Squash warnings about cast */
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -2181,7 +2196,11 @@ static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 	}
 
-	return (off_t) dir->dir_next;
+	/*
+	 * We return the pointer here as the offset
+	 */
+	ret_val = (int)dir->dir_next;
+	return ret_val;
 
 }
 
@@ -2221,8 +2240,9 @@ struct smbc_dir_list *smbc_check_dir_ent(struct smbc_dir_list *list,
 
 static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
 {
-	struct smbc_dirent *dirent = (struct smbc_dirent *)offset;
-	struct smbc_dir_list *list_ent = NULL;
+	long int l_offset = offset;  /* Handle problems of size */
+	struct smbc_dirent *dirent = (struct smbc_dirent *)l_offset;
+	struct smbc_dir_list *list_ent = (struct smbc_dir_list *)NULL;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
