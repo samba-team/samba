@@ -204,9 +204,13 @@ BOOL dcesrv_auth_alter(struct dcesrv_call_state *call)
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	/* We can't work without an existing gensec state, and an new blob to feed it */
-	if (!dce_conn->auth_state.gensec_security ||
-	    pkt->u.alter.auth_info.length == 0) {
+	/* on a pure interface change there is no auth blob */
+	if (pkt->u.alter.auth_info.length == 0) {
+		return True;
+	}
+
+	/* We can't work without an existing gensec state */
+	if (!dce_conn->auth_state.gensec_security) {
 		return False;
 	}
 
@@ -234,6 +238,11 @@ BOOL dcesrv_auth_alter_ack(struct dcesrv_call_state *call, struct dcerpc_packet 
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
+
+	/* on a pure interface change there is no auth blob */
+	if (pkt->u.alter.auth_info.length == 0) {
+		return True;
+	}
 
 	if (!call->conn->auth_state.gensec_security) {
 		return False;
