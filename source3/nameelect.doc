@@ -21,6 +21,20 @@ wide area network).
 (a wide area network is created when one or more servers on a
 broadcast-isolated subnet point to the same WINS server).
 
+--------
+NOTE FROM TRIDGE:
+
+I'd say "domain master browser" not "WINS server" here. WINS doesn't
+have much to do with browsing, it is the WAN varient of name
+resolution. The name resolution and browsing functions of a netbios
+network are almost entirely separate. Both grew out of systems that
+could only be used on local networks. 
+
+To adapt them to WANs, WINS was added for name resolution, and "domain
+master browsers" were added for browse lists. It would be perfectly
+possible to have a WINS server that doesn't even listen to UDP port
+138. 
+--------
 
 /*************************************************************************
   check_elections()

@@ -27,6 +27,41 @@ a primary domain controller for its workgroup (either by directed
 packet or by broadcast if it cannot resolve the domain controller
 name using DNS), which results in the same action as listed above.
 
+------------
+NOTE FROM TRIDGE: 
+
+PDC in the above should really be DMB (domain master browser). They
+might be separate entities.
+
+I also propose a simpler scheme :-)
+
+If a DMB is not configured with lp_domain_controller() (perhaps
+renamed to lp_domain_master()?) then just don't do master
+announcements. Remember that most peoples networks are very simple and
+don't need DMB capabilities. Those that do need them will have more
+complex network topologies and they really need to choose themselves
+which box will act as the "hub" for netbios name resolution. Doing it
+via name queries will just lead to lag and propogation delays, because
+if two parts of the net choose different DMBs then the data will be
+very slow to propoogate.
+
+If a DMB is configured then just sent the master announcemnt to that
+box! Thats all that needs to be done. Just send a udp 138 packet and
+forget it. If the recipient is indeed a DMB (as it should be if the
+config file is correct) then it should initiate a browse list sync
+with us at some later time, but that is take care of by smbd and nmbd
+doesn't even need to know it happened.
+
+Additionally, if a DMB is configured we need to sync our workgroup
+list and server list with them occasionally. Note that this is only
+time a non-DMB should do a browse sync, and it should only do it with
+a DMB. Essentially WAN based netbios is just a simple star. There is a
+DMB in the centre, and the individual master browsers for each subnet
+talk to it, but never talk to each other. If they start talking to
+each other then the network load will go as the square of the number
+of machines, which will result in meltdown :-)
+-------------
+
 
 /*************************************************************************
   announce_host()
@@ -103,6 +138,19 @@ the master browser, or primary domain controller, should respond
 with an ANN_GetBackupListResp browse mailslot containing the list
 of backup servers.
 
+--------------
+NOTE FROM TRIDGE: I don't see why nmbd should ever send one of
+these. The only reason I can see for any part of Samba sending one of
+these is if we implement it in smbclient. 
+
+This packet is used to request a list of backup master browsers from
+the master browser. It is used by clients (not servers!) to spread the
+browse load over more than one server. The only server that needs to
+know what the list of backups is is the master browser, and as it is
+also responsible for generating this list it will never ask anyone
+else for it.
+--------------
+
 
 /*************************************************************************
   sync_server()
@@ -134,4 +182,26 @@ if the announce request is sent to ^1^2__MSBROWSE__^2(0x1) then
 (and this is pure speculation), all backup browsers and master
 browsers should respond with ANN_DomainAnnounce packets.
 this is untested.
+
+-----------
+NOTE FROM TRIDGE:
+
+I had great trouble getting machines to actually respond to this
+packet. Either we have the format wrong or MS chose not to implement
+it.
+
+Not implementing it doesn't break anything, it just means a new master
+browser won't get a complete server list as quickly.
+
+Also note that this packet should be used as little as possible as it
+could easily cause meltdown if too many servers used it. Imagine a
+dozen samba servers on a net all sending this packet! You will get 244
+responses all within 30 seconds. now imagine 50 samba servers ....
+
+So I think we should restrict ourselves to sending this packet only if
+we are already the master browser for a workgroup. We could send a
+single "announce request" when we become the master, just to prime our
+server lists. From then on the normal announce cycles should take care
+of keeping it uptodate.
+-----------
 
