@@ -456,7 +456,6 @@ static void usage(void)
 "Usage:\n\
   locktest //server1/share1 //server2/share2 [options..]\n\
   options:\n\
-        -W workgroup\n\
         -U user%%pass\n\
         -s seed\n\
         -o numops\n\
@@ -541,9 +540,6 @@ static void usage(void)
 		case 'h':
 			usage();
 			exit(1);
-		case 'W':
-			pstrcpy(workgroup, optarg);
-			break;
 		default:
 			printf("Unknown option %c (%d)\n", (char)opt, opt);
 			exit(1);
