@@ -85,6 +85,7 @@ BOOL prs_init(prs_struct *ps, uint32 size, uint8 align, TALLOC_CTX *ctx, BOOL io
 			DEBUG(0,("prs_init: malloc fail for %u bytes.\n", (unsigned int)size));
 			return False;
 		}
+		memset(ps->data_p, '\0', (size_t)size);
 		ps->is_dynamic = True; /* We own this memory. */
 	}
 
