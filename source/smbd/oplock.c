@@ -545,6 +545,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   connection_struct *saved_conn;
   int saved_vuid;
   pstring saved_dir; 
+  int break_counter = OPLOCK_BREAK_RESENDS;
 
   if( DEBUGLVL( 3 ) )
   {
@@ -671,8 +672,20 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 
   while(OPEN_FSP(fsp) && fsp->granted_oplock)
   {
-    if(receive_smb(Client,inbuf,OPLOCK_BREAK_TIMEOUT * 1000) == False)
+    if(receive_smb(Client,inbuf,
+		   (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000) == False)
     {
+
+	    /* Isaac suggestd that if a MS client doesn't respond to a
+	       oplock break request then we might try resending
+	       it. Certainly it's no worse than just dropping the
+	       socket! */
+	    if (smb_read_error == READ_TIMEOUT && break_counter--) {
+		    DEBUG(2, ( "oplock_break resend\n" ) );
+		    send_smb(Client, outbuf);
+		    continue;
+	    }
+
       /*
        * Die if we got an error.
        */
