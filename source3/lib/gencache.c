@@ -233,7 +233,9 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	TDB_DATA keybuf, databuf;
 
 	/* fail completely if get null pointers passed */
+#if 0	/* JERRY */
 	SMB_ASSERT(keystr && valstr && timeout);
+#endif
 
 	if (!gencache_init())
 		return False;
@@ -241,6 +243,15 @@ BOOL gencache_get(const char *keystr, char **valstr, time_t *timeout)
 	keybuf.dptr = strdup(keystr);
 	keybuf.dsize = strlen(keystr);
 	databuf = tdb_fetch(cache, keybuf);
+	
+	/* special case for tpot */
+	if ( !valstr && !timeout ) {
+		BOOL result = False;
+		
+		result = (databuf.dptr == NULL);
+		SAFE_FREE(databuf.dptr);
+		return result;
+	}
 	
 	if (databuf.dptr && databuf.dsize > TIMEOUT_LEN) {
 		char* entry_buf = strndup(databuf.dptr, databuf.dsize);
