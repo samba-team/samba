@@ -166,6 +166,7 @@ extern char *(*multibyte_strstr)(const char *s1, const char *s2);
 extern char *(*multibyte_strtok)(char *s1, const char *s2);
 extern char *(*_dos_to_unix)(char *str, BOOL overwrite);
 extern char *(*_unix_to_dos)(char *str, BOOL overwrite);
+extern char *(*_dos_to_dos)(char *str, BOOL overwrite);
 extern BOOL (*is_multibyte_char)(char c);
 extern int (*_skip_multibyte_char)(char c);
 
@@ -175,6 +176,7 @@ extern int (*_skip_multibyte_char)(char c);
 #define strtok(s1, s2) ((*multibyte_strtok)((s1), (s2)))
 #define dos_to_unix(x,y) ((*_dos_to_unix)((x), (y)))
 #define unix_to_dos(x,y) ((*_unix_to_dos)((x), (y)))
+#define dos_to_dos(x,y) ((*_dos_to_dos)((x), (y)))
 #define skip_multibyte_char(c) ((*_skip_multibyte_char)((c)))
 
 #endif /* _KANJI_C_ */

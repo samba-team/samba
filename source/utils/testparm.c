@@ -146,6 +146,7 @@ static void usage(char *pname)
 	printf("\t-s                  Suppress prompt for enter\n");
 	printf("\t-h                  Print usage\n");
 	printf("\t-L servername       Set %%L macro to servername\n");
+	printf("\t-t encoding         Print parameters with encoding\n");
 	printf("\tconfigfilename      Configuration file to test\n");
 	printf("\thostname hostIP.    Hostname and Host IP address to test\n");
 	printf("\t                    against \"host allow\" and \"host deny\"\n");
@@ -163,6 +164,9 @@ int main(int argc, char *argv[])
   int s;
   BOOL silent_mode = False;
   int ret = 0;
+  pstring term_code;
+
+  *term_code = 0;
 
   TimeInit();
 
@@ -170,7 +174,7 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"shL:")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:t:")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
@@ -181,6 +185,9 @@ int main(int argc, char *argv[])
     case 'h':
       usage(argv[0]);
       exit(0);
+      break;
+    case 't':
+      pstrcpy(term_code,optarg);
       break;
     default:
       printf("Incorrect program usage\n");
@@ -250,13 +257,16 @@ Level II oplocks can only be set if oplocks are also set.\n",
     }
   }
 
+  if (*term_code)
+    interpret_coding_system(term_code);
+
   if (argc < 3) {
     if (!silent_mode) {
       printf("Press enter to see a dump of your service definitions\n");
       fflush(stdout);
       getc(stdin);
     }
-    lp_dump(stdout,True, lp_numservices());
+    lp_dump(stdout,True, lp_numservices(), _dos_to_unix);
   }
   
   if (argc >= 3) {
