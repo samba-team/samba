@@ -94,11 +94,47 @@ hdb_etype2key(krb5_context context,
     return hdb_next_etype2key(context,e, etype, key);
 }
 
-/* this is really ugly, bus has to be this way until the crypto
-   framework gets fixed */
+/* this is a bit ugly, but will get better when the crypto framework
+   gets fixed */
+
+krb5_error_code
+hdb_process_master_key(krb5_context context, EncryptionKey key, 
+		       krb5_data *schedule)
+{
+    if(key.keytype != KEYTYPE_DES)
+	return KRB5_PROG_KEYTYPE_NOSUPP;
+    schedule->length = sizeof(des_key_schedule);
+    schedule->data = malloc(schedule->length);
+    
+    des_set_key((des_cblock*)key.keyvalue.data, schedule->data);
+    return 0;
+}
+
+krb5_error_code
+hdb_read_master_key(krb5_context context, const char *filename, 
+		    EncryptionKey *key)
+{
+    FILE *f;
+    unsigned char buf[256];
+    size_t len;
+    krb5_error_code ret;
+    if(filename == NULL)
+	filename = HDB_DB_DIR "/m-key";
+    f = fopen(filename, "r");
+    if(f == NULL)
+	return errno;
+    len = fread(buf, 1, sizeof(buf), f);
+    if(ferror(f))
+	ret = errno;
+    else
+	ret = decode_EncryptionKey(buf, len, key, &len);
+    fclose(f);
+    memset(buf, 0, sizeof(buf));
+    return ret;
+}
 
 Key *
-hdb_unseal_key(Key *key, des_key_schedule master_key)
+hdb_unseal_key(Key *key, krb5_data schedule)
 {
     des_cblock iv;
     int num = 0;
@@ -110,12 +146,12 @@ hdb_unseal_key(Key *key, des_key_schedule master_key)
     des_cfb64_encrypt(key->key.keyvalue.data, 
 		      new_key->key.keyvalue.data, 
 		      key->key.keyvalue.length, 
-		      master_key, &iv, &num, 0);
+		      schedule.data, &iv, &num, 0);
     return new_key;
 }
 
 void
-hdb_seal_key(Key *key, des_key_schedule master_key)
+hdb_seal_key(Key *key, krb5_data schedule)
 {
     des_cblock iv;
     int num = 0;
@@ -124,7 +160,7 @@ hdb_seal_key(Key *key, des_key_schedule master_key)
     des_cfb64_encrypt(key->key.keyvalue.data, 
 		      key->key.keyvalue.data, 
 		      key->key.keyvalue.length, 
-		      master_key, &iv, &num, 1);
+		      schedule.data, &iv, &num, 1);
 }
 
 void
