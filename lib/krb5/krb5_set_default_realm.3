@@ -31,20 +31,27 @@
 .\"
 .\" $Id$
 .\"
-.Dd March 16, 2003
+.Dd March 21, 2004
 .Dt KRB5_SET_DEFAULT_REALM 3
 .Os HEIMDAL
 .Sh NAME
-.Nm krb5_free_host_realm
-.Nm krb5_get_default_realm
-.Nm krb5_get_default_realms
-.Nm krb5_get_host_realm
+.Nm krb5_copy_host_realm ,
+.Nm krb5_free_host_realm ,
+.Nm krb5_get_default_realm ,
+.Nm krb5_get_default_realms ,
+.Nm krb5_get_host_realm ,
 .Nm krb5_set_default_realm
 .Nd default and host realm read and manipulation routines
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
 .In krb5.h
+.Ft krb5_error_code
+.Fo krb5_copy_host_realm
+.Fa "krb5_context context"
+.Fa "const krb5_realm *from"
+.Fa "krb5_realm **to"
+.Fc
 .Ft krb5_error_code
 .Fo krb5_free_host_realm
 .Fa "krb5_context context"
@@ -72,6 +79,15 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fa "const char *realm"
 .Fc
 .Sh DESCRIPTION
+.Fn krb5_copy_host_realm
+copies the list of realms from
+.Fa from
+to
+.Fa to .
+.Fa to
+should be freed by the caller using
+.Fa krb5_free_host_realm .
+.Pp
 .Fn krb5_free_host_realm
 frees all memory allocated by
 .Fa realmlist .
