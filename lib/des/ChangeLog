@@ -1,5 +1,7 @@
 2005-03-20  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* destest.c: include config.h and protect some headers
+	
 	* rnd_keys.c: move <des.h> to after include <krb5-types.h> so the
 	C99 integer types exists
 
