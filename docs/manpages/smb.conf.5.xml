@@ -386,6 +386,7 @@ alias|alias|alias|alias...
 		Windows 2000 (<constant>Win2K</constant>), Windows XP (<constant>WinXP</constant>),
 		and Windows 2003 (<constant>Win2K3</constant>).  Anything else will be known as 
 		<constant>UNKNOWN</constant>.</para> 
+		</listitem>
 		</varlistentry>
 		
 		<varlistentry>
