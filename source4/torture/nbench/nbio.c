@@ -215,7 +215,9 @@ void nb_createx(const char *fname,
 
 	talloc_destroy(mem_ctx);
 
-	check_status("NTCreateX", status, ret);
+	if (strcmp(fname, "\\clients") != 0) {
+		check_status("NTCreateX", status, ret);
+	}
 
 	if (!NT_STATUS_IS_OK(ret)) return;
 
