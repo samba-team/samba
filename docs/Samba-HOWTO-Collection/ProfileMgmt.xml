@@ -850,7 +850,8 @@ under the Windows login name of the user. </para>
 
 <note> <para> This path translates, in Samba parlance, to the &smb.conf;
 <smbconfsection>[NETLOGON]</smbconfsection> share. The directory should be created at the root
-of this share and must be called <filename>Default Profile</filename>.	</para> </note>
+of this share and must be called <filename>Default User</filename>.
+</para> </note>
 
 <para> If a default profile does not exist in this location, then MS Windows 200x/XP will use the local
 default profile. </para>
