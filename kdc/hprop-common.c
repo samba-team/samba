@@ -78,7 +78,7 @@ recv_priv(krb5_context context, krb5_auth_context ac, int fd, krb5_data *out)
     unsigned char *buf;
     size_t len;
     krb5_data data;
-    hdb_entry entry;
+
     if(krb5_net_read(context, &fd, tmp, 4) != 4)
 	return errno;
     len = (tmp[0] << 24) | (tmp[1] << 16) | (tmp[2] << 8) | tmp[3];
