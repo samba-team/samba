@@ -325,7 +325,7 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
-struct smb_message_struct
+static struct smb_message_struct
 {
   char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
