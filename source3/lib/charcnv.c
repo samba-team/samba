@@ -65,7 +65,7 @@ void init_iconv(char *unix_charset, char *dos_charset)
 	destlen - maximal length allowed for string
 return the number of bytes occupied in the destination
 ****************************************************************************/
-static size_t convert_string(smb_iconv_t descriptor, 
+static size_t convert_string(smb_iconv_t *descriptor, 
 			     void const *src, size_t srclen, 
 			     void *dest, size_t destlen)
 {
@@ -80,7 +80,7 @@ static size_t convert_string(smb_iconv_t descriptor,
 		init_iconv(NULL, NULL);
 	}
 
-	if (descriptor == (smb_iconv_t)-1) {
+	if (*descriptor == (smb_iconv_t)-1) {
 		/* conversion not supported, use as is */
 		int len = MIN(srclen,destlen);
 		memcpy(dest,src,len);
@@ -89,7 +89,7 @@ static size_t convert_string(smb_iconv_t descriptor,
 
 	i_len=srclen;
 	o_len=destlen;
-	retval=smb_iconv(descriptor,&inbuf, &i_len, &outbuf, &o_len);
+	retval=smb_iconv(*descriptor,&inbuf, &i_len, &outbuf, &o_len);
 	if(retval==-1) 		
 	{    	char *reason="unknown error";
 		switch(errno)
@@ -112,20 +112,20 @@ int unix_strupper(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	int size,len;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
+	size=convert_string(&unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
 	strupper_w(buffer);
-	return convert_string(ucs2_to_unix, buffer, size, dest, destlen);
+	return convert_string(&ucs2_to_unix, buffer, size, dest, destlen);
 }
 
 int unix_strlower(const char *src, size_t srclen, char *dest, size_t destlen)
 {
 	int size,len;
 	smb_ucs2_t *buffer=(smb_ucs2_t*)cvtbuf;
-	size=convert_string(unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
+	size=convert_string(&unix_to_ucs2, src, srclen, buffer, sizeof(cvtbuf));
 	len=size/2;
 	strlower_w(buffer);
-	return convert_string(ucs2_to_unix, buffer, size, dest, destlen);
+	return convert_string(&ucs2_to_unix, buffer, size, dest, destlen);
 }
 
 
@@ -165,7 +165,7 @@ int push_ascii(void *dest, const char *src, int dest_len, int flags)
 		src_len++;
 	}
 
-	return convert_string(unix_to_dos, src, src_len, dest, dest_len);
+	return convert_string(&unix_to_dos, src, src_len, dest, dest_len);
 }
 
 int push_ascii_fstring(void *dest, const char *src)
@@ -203,7 +203,7 @@ int pull_ascii(char *dest, const void *src, int dest_len, int src_len, int flags
 
 	if (flags & STR_TERMINATE) src_len = strlen(src)+1;
 
-	ret = convert_string(dos_to_unix, src, src_len, dest, dest_len);
+	ret = convert_string(&dos_to_unix, src, src_len, dest, dest_len);
 
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
@@ -258,7 +258,7 @@ int push_ucs2(const void *base_ptr, void *dest, const char *src, int dest_len, i
 		len++;
 	}
 
-	len += convert_string(unix_to_ucs2, src, src_len, dest, dest_len);
+	len += convert_string(&unix_to_ucs2, src, src_len, dest, dest_len);
 	return len;
 }
 
@@ -288,7 +288,7 @@ int pull_ucs2(const void *base_ptr, char *dest, const void *src, int dest_len, i
 
 	if (flags & STR_TERMINATE) src_len = strlen_w(src)*2+2;
 
-	ret = convert_string(ucs2_to_unix, src, src_len, dest, dest_len);
+	ret = convert_string(&ucs2_to_unix, src, src_len, dest, dest_len);
 	if (dest_len) dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
