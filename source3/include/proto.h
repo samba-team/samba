@@ -162,8 +162,8 @@ int smbrun(char *cmd,char *outfile,BOOL shared);
 
 /*The following definitions come from  lib/system.c  */
 
-int sys_select(fd_set *fds,struct timeval *tval);
-int sys_select(fd_set *fds,struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
+int sys_select(int maxfd, fd_set *fds,struct timeval *tval);
 int sys_unlink(char *fname);
 int sys_open(char *fname,int flags,int mode);
 DIR *sys_opendir(char *dname);
@@ -992,6 +992,7 @@ int lp_lm_announce(void);
 int lp_lm_interval(void);
 int lp_machine_password_timeout(void);
 int lp_change_notify_timeout(void);
+int lp_stat_cache_size(void);
 int lp_ldap_port(void);
 char *lp_preexec(int );
 char *lp_postexec(int );

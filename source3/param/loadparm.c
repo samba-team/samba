@@ -178,6 +178,7 @@ typedef struct
   int announce_as;   /* This is initialised in init_globals */
   int machine_password_timeout;
   int change_notify_timeout;
+  int stat_cache_size;
 #ifdef WITH_LDAP
   int ldap_port;
 #endif /* WITH_LDAP */
@@ -579,19 +580,20 @@ static struct parm_struct parm_table[] =
 
   {"Tuning Options", P_SEP, P_SEPARATOR},
   {"change notify timeout", P_INTEGER, P_GLOBAL, &Globals.change_notify_timeout, NULL,   NULL,  0},
-  {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
-  {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
-  {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
-  {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL,  0},
-  {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL,   NULL,  0},
-  {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL,   NULL,  0},
   {"deadtime",         P_INTEGER, P_GLOBAL, &Globals.deadtime,          NULL,   NULL,  0},
+  {"getwd cache",      P_BOOL,    P_GLOBAL, &use_getwd_cache,           NULL,   NULL,  0},
+  {"keepalive",        P_INTEGER, P_GLOBAL, &keepalive,                 NULL,   NULL,  0},
+  {"lpq cache time",   P_INTEGER, P_GLOBAL, &Globals.lpqcachetime,      NULL,   NULL,  0},
+  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
+  {"max disk size",    P_INTEGER, P_GLOBAL, &Globals.maxdisksize,       NULL,   NULL,  0},
+  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
+  {"read prediction",  P_BOOL,    P_GLOBAL, &Globals.bReadPrediction,   NULL,   NULL,  0},
   {"read size",        P_INTEGER, P_GLOBAL, &Globals.ReadSize,          NULL,   NULL,  0},
   {"shared mem size",  P_INTEGER, P_GLOBAL, &Globals.shmem_size,        NULL,   NULL,  0},
-  {"max connections",  P_INTEGER, P_LOCAL,  &sDefault.iMaxConnections,  NULL,   NULL,  0},
-  {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL,   NULL,  0},
-  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
+  {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL,   NULL,  0},
+  {"stat cache size",  P_INTEGER, P_GLOBAL, &Globals.stat_cache_size,   NULL,   NULL,  0},
   {"strict sync",      P_BOOL,    P_LOCAL,  &sDefault.bStrictSync,      NULL,   NULL,  0},
+  {"sync always",      P_BOOL,    P_LOCAL,  &sDefault.bSyncAlways,      NULL,   NULL,  0},
 
   {"Printing Options", P_SEP, P_SEPARATOR},
   {"load printers",    P_BOOL,    P_GLOBAL, &Globals.bLoadPrinters,     NULL,   NULL,  0},
@@ -827,6 +829,7 @@ static void init_globals(void)
   Globals.lm_announce = 2;   /* = Auto: send only if LM clients found */
   Globals.lm_interval = 60;
   Globals.shmem_size = SHMEM_SIZE;
+  Globals.stat_cache_size = 50; /* Number of stat translations we'll keep */
   Globals.announce_as = ANNOUNCE_AS_NT;
   Globals.bUnixRealname = False;
 #if (defined(HAVE_NETGROUP) && defined(WITH_AUTOMOUNT))
@@ -1163,6 +1166,7 @@ FN_GLOBAL_INTEGER(lp_lm_announce,&Globals.lm_announce)
 FN_GLOBAL_INTEGER(lp_lm_interval,&Globals.lm_interval)
 FN_GLOBAL_INTEGER(lp_machine_password_timeout,&Globals.machine_password_timeout)
 FN_GLOBAL_INTEGER(lp_change_notify_timeout,&Globals.change_notify_timeout)
+FN_GLOBAL_INTEGER(lp_stat_cache_size,&Globals.stat_cache_size)
 
 #ifdef WITH_LDAP
 FN_GLOBAL_INTEGER(lp_ldap_port,&Globals.ldap_port)

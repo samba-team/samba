@@ -115,7 +115,8 @@ typedef struct {
 static ubi_dlList stat_cache = { NULL, (ubi_dlNodePtr)&stat_cache, 0};
 
 /****************************************************************************
- Compare two names in the stat cache.
+ Compare two names in the stat cache - to check if we already have such an
+ entry.
 *****************************************************************************/
 
 static BOOL stat_name_equal( char *s1, char *s2)
@@ -124,13 +125,20 @@ static BOOL stat_name_equal( char *s1, char *s2)
 }
 
 /****************************************************************************
- Compare two names in the stat cache.
+ Compare a pathname to a name in the stat cache - of a given length.
+ Note - this code always checks that the next character in the pathname
+ is either a '/' character, or a '\0' character - to ensure we only
+ match *full* pathname components.
 *****************************************************************************/
 
-static BOOL stat_name_equal_len( char *s1, char *s2, int len)
+static BOOL stat_name_equal_len( char *stat_name, char *orig_name, int len)
 {
-  return (case_sensitive ? (strncmp( s1, s2, len) == 0) : 
-                           (StrnCaseCmp(s1, s2, len) == 0));
+  BOOL matched = (case_sensitive ? (strncmp( stat_name, orig_name, len) == 0) :
+                           (StrnCaseCmp(stat_name, orig_name, len) == 0));
+  if(orig_name[len] != '/' && orig_name[len] != '\0')
+    return False;
+
+  return matched;
 }
 
 /****************************************************************************
@@ -211,7 +219,7 @@ static void stat_cache_add( char *full_orig_name, char *orig_translated_path)
 
   DEBUG(10,("stat_cache_add: Added entry %s -> %s\n", scp->orig_name, scp->translated_name ));
 
-  if(ubi_dlCount(&stat_cache) > MAX_STAT_CACHE_SIZE) {
+  if(ubi_dlCount(&stat_cache) > lp_stat_cache_size()) {
     scp = (stat_cache_entry *)ubi_dlRemTail( &stat_cache );
     free((char *)scp);
     return;
