@@ -880,7 +880,17 @@ static int net_ads_change_localhost_pass(int argc, const char **argv)
     char *hostname;
     ADS_STATUS ret;
 
-    if (!(ads = ads_init_simple())) return -1;
+    if (!secrets_init()) {
+	    DEBUG(1,("Failed to initialise secrets database\n"));
+	    return -1;
+    }
+
+    asprintf(&opt_user_name, "%s$", global_myname);
+    opt_password = secrets_fetch_machine_password();
+
+    if (!(ads = ads_startup())) {
+	    return -1;
+    }
 
     hostname = strdup(global_myname);
     strlower(hostname);
