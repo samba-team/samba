@@ -482,11 +482,11 @@ NTTIME samdb_result_force_pwd_change(void *ctx, TALLOC_CTX *mem_ctx,
 }
 
 /*
-  pull a samr_Hash structutre from a result set. 
+  pull a samr_Password structutre from a result set. 
 */
-struct samr_Hash samdb_result_hash(struct ldb_message *msg, const char *attr)
+struct samr_Password samdb_result_hash(struct ldb_message *msg, const char *attr)
 {
-	struct samr_Hash hash;
+	struct samr_Password hash;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
 	ZERO_STRUCT(hash);
 	if (val) {
@@ -496,10 +496,10 @@ struct samr_Hash samdb_result_hash(struct ldb_message *msg, const char *attr)
 }
 
 /*
-  pull an array of samr_Hash structutres from a result set. 
+  pull an array of samr_Password structutres from a result set. 
 */
 uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-			   const char *attr, struct samr_Hash **hashes)
+			   const char *attr, struct samr_Password **hashes)
 {
 	uint_t count = 0;
 	const struct ldb_val *val = ldb_msg_find_ldb_val(msg, attr);
@@ -514,7 +514,7 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 		return 0;
 	}
 
-	*hashes = talloc_array_p(mem_ctx, struct samr_Hash, count);
+	*hashes = talloc_array_p(mem_ctx, struct samr_Password, count);
 	if (! *hashes) {
 		return 0;
 	}
@@ -527,27 +527,27 @@ uint_t samdb_result_hashes(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg, 
-				uint8_t **lm_pwd, uint8_t **nt_pwd) 
+				struct samr_Password **lm_pwd, struct samr_Password **nt_pwd) 
 {
 
 	const char *unicodePwd = samdb_result_string(msg, "unicodePwd", NULL);
 	
-	struct samr_Hash *lmPwdHash, *ntPwdHash;
+	struct samr_Password *lmPwdHash, *ntPwdHash;
 	if (unicodePwd) {
 		if (nt_pwd) {
-			ntPwdHash = talloc_p(mem_ctx, struct samr_Hash);
+			ntPwdHash = talloc_p(mem_ctx, struct samr_Password);
 			if (!ntPwdHash) {
 				return NT_STATUS_NO_MEMORY;
 			}
 			
 			E_md4hash(unicodePwd, ntPwdHash->hash);
-			*nt_pwd = ntPwdHash->hash;
+			*nt_pwd = ntPwdHash;
 		}
 
 		if (lm_pwd) {
 			BOOL lm_hash_ok;
 		
-			lmPwdHash = talloc_p(mem_ctx, struct samr_Hash);
+			lmPwdHash = talloc_p(mem_ctx, struct samr_Password);
 			if (!lmPwdHash) {
 				return NT_STATUS_NO_MEMORY;
 			}
@@ -556,7 +556,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			lm_hash_ok = E_deshash(unicodePwd, lmPwdHash->hash);
 			
 			if (lm_hash_ok) {
-				*lm_pwd = lmPwdHash->hash;
+				*lm_pwd = lmPwdHash;
 			} else {
 				*lm_pwd = NULL;
 			}
@@ -570,7 +570,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			} else if (num_nt > 1) {
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			} else {
-				*nt_pwd = ntPwdHash[0].hash;
+				*nt_pwd = &ntPwdHash[0];
 			}
 		}
 		if (lm_pwd) {
@@ -581,7 +581,7 @@ NTSTATUS samdb_result_passwords(TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 			} else if (num_lm > 1) {
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 			} else {
-				*lm_pwd = lmPwdHash[0].hash;
+				*lm_pwd = &lmPwdHash[0];
 			}
 		}
 		
@@ -824,10 +824,10 @@ int samdb_msg_add_uint64(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg
 }
 
 /*
-  add a samr_Hash element to a message
+  add a samr_Password element to a message
 */
 int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-		       const char *attr_name, struct samr_Hash hash)
+		       const char *attr_name, struct samr_Password hash)
 {
 	struct samdb_context *sam_ctx = ctx;
 	struct ldb_val val;
@@ -842,10 +842,10 @@ int samdb_msg_add_hash(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
 }
 
 /*
-  add a samr_Hash array to a message
+  add a samr_Password array to a message
 */
 int samdb_msg_add_hashes(void *ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
-			 const char *attr_name, struct samr_Hash *hashes, uint_t count)
+			 const char *attr_name, struct samr_Password *hashes, uint_t count)
 {
 	struct samdb_context *sam_ctx = ctx;
 	struct ldb_val val;

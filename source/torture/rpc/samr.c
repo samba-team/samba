@@ -91,7 +91,7 @@ static BOOL test_SetDsrmPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_SetDsrmPassword r;
 	struct samr_Name name;
-	struct samr_Hash hash;
+	struct samr_Password hash;
 
 	if (lp_parm_int(-1, "torture", "dangerous") != 1) {
 		printf("samr_SetDsrmPassword disabled - enable dangerous tests to use\n");
@@ -734,7 +734,7 @@ static BOOL test_ChangePasswordUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_ChangePasswordUser r;
 	BOOL ret = True;
-	struct samr_Hash hash1, hash2, hash3, hash4, hash5, hash6;
+	struct samr_Password hash1, hash2, hash3, hash4, hash5, hash6;
 	struct policy_handle user_handle;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
@@ -794,7 +794,7 @@ static BOOL test_OemChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_c
 	NTSTATUS status;
 	struct samr_OemChangePasswordUser2 r;
 	BOOL ret = True;
-	struct samr_Hash lm_verifier;
+	struct samr_Password lm_verifier;
 	struct samr_CryptPassword lm_pass;
 	struct samr_AsciiName server, account;
 	char *oldpass = *password;
@@ -838,7 +838,7 @@ static BOOL test_ChangePasswordUser2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	struct samr_Name server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
-	struct samr_Hash nt_verifier, lm_verifier;
+	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8_t old_nt_hash[16], new_nt_hash[16];
@@ -891,7 +891,7 @@ static BOOL test_ChangePasswordUser3(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	BOOL ret = True;
 	struct samr_Name server, account;
 	struct samr_CryptPassword nt_pass, lm_pass;
-	struct samr_Hash nt_verifier, lm_verifier;
+	struct samr_Password nt_verifier, lm_verifier;
 	char *oldpass = *password;
 	char *newpass = samr_rand_pass(mem_ctx);	
 	uint8_t old_nt_hash[16], new_nt_hash[16];

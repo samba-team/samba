@@ -332,7 +332,6 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	struct ldb_message **msgs;
 	struct ldb_message **msgs_domain;
 	NTSTATUS nt_status;
-	struct samr_Hash newNtHash;
 	struct ldb_message mod, *msg_set_pw = &mod;
 	const char *domain_dn;
 	const char *domain_sid;
@@ -410,15 +409,13 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	
 	creds_des_decrypt(pipe_state->creds, &r->in.new_password);
 
-	memcpy(newNtHash.hash, r->in.new_password.data, sizeof(newNtHash.hash));
-
 	/* set the password - samdb needs to know both the domain and user DNs,
 	   so the domain password policy can be used */
 	nt_status = samdb_set_password(sam_ctx, mem_ctx,
 				       msgs[0]->dn, domain_dn,
 				       msg_set_pw, 
 				       NULL, /* Don't have plaintext */
-				       NULL, &newNtHash,
+				       NULL, &r->in.new_password,
 				       False /* This is not considered a password change */,
 				       NULL);
 	

@@ -101,14 +101,10 @@ interface netlogon
 		netr_String workstation;
 	} netr_IdentityInfo;
 
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 data[16];
-	} netr_Password;
-
 	typedef struct {
 		netr_IdentityInfo identity_info;
-		netr_Password lmpassword;
-		netr_Password ntpassword;
+		samr_Password lmpassword;
+		samr_Password ntpassword;
 	} netr_PasswordInfo;
 
 	typedef [flag(NDR_PAHEX)] struct {
@@ -300,7 +296,7 @@ interface netlogon
 		[in]  uint16 secure_channel_type,
 		[in]  unistr computer_name,
 		[in]  netr_Authenticator credential,
-		[in]  netr_Password new_password,
+		[in]  samr_Password new_password,
 		[out] netr_Authenticator return_authenticator
 		);
 
@@ -344,8 +340,8 @@ interface netlogon
 		NTTIME PwLastSet;
 		NTTIME AccountExpires;
 		uint32 AccountControl;
-		netr_Password lmpw;
-		netr_Password ntpw;
+		samr_Password lmpw;
+		samr_Password ntpw;
 		bool8 NTPwPresent;
 		bool8 LMPwPresent;
 		bool8 PwExpired;

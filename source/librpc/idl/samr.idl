@@ -808,10 +808,6 @@
 	/************************/
 	/* Function    0x26     */
 	
-	typedef [flag(NDR_PAHEX)] struct {
-		uint8 hash[16];
-	} samr_Hash;
-
 	/*
 	  this is a password change interface that doesn't give
 	  the server the plaintext password. Depricated.
@@ -819,15 +815,15 @@
 	NTSTATUS samr_ChangePasswordUser(
 		[in,ref]    policy_handle *handle,
 		[in]        bool8 lm_present,
-		[in]        samr_Hash *old_lm_crypted,
-		[in]        samr_Hash *new_lm_crypted,
+		[in]        samr_Password *old_lm_crypted,
+		[in]        samr_Password *new_lm_crypted,
 		[in]        bool8 nt_present,
-		[in]        samr_Hash *old_nt_crypted,
-		[in]        samr_Hash *new_nt_crypted,
+		[in]        samr_Password *old_nt_crypted,
+		[in]        samr_Password *new_nt_crypted,
 		[in]        bool8 cross1_present,
-		[in]        samr_Hash *nt_cross,
+		[in]        samr_Password *nt_cross,
 		[in]        bool8 cross2_present,
-		[in]        samr_Hash *lm_cross
+		[in]        samr_Password *lm_cross
 		);
 
 	/************************/
@@ -1090,7 +1086,7 @@
 		[in]              samr_AsciiName *server,
 		[in,ref]          samr_AsciiName *account,
 		[in]              samr_CryptPassword *password,
-		[in]              samr_Hash *hash
+		[in]              samr_Password *hash
 		);
 
 	/************************/
@@ -1099,10 +1095,10 @@
 		[in]              samr_Name *server,
 		[in,ref]          samr_Name *account,
 		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Hash *nt_verifier,
+		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
 		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Hash *lm_verifier
+		[in]              samr_Password *lm_verifier
 		);
 
 	/************************/
@@ -1186,10 +1182,10 @@
 		[in]              samr_Name *server,
 		[in,ref]          samr_Name *account,
 		[in]              samr_CryptPassword *nt_password,
-		[in]              samr_Hash *nt_verifier,
+		[in]              samr_Password *nt_verifier,
 		[in]              bool8 lm_change,
 		[in]              samr_CryptPassword *lm_password,
-		[in]              samr_Hash *lm_verifier,
+		[in]              samr_Password *lm_verifier,
 		[in]              samr_CryptPassword *password3,
 		[out]             samr_DomInfo1 *dominfo,
 		[out]             samr_ChangeReject *reject
@@ -1236,7 +1232,7 @@
 	NTSTATUS samr_SetDsrmPassword(
 		[in]       samr_Name *name,
 		[in]       uint32 unknown,
-		[in]       samr_Hash *hash
+		[in]       samr_Password *hash
 		);
 
 

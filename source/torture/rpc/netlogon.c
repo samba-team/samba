@@ -1119,7 +1119,7 @@ static BOOL test_SetPassword(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	r.in.computer_name = TEST_MACHINE_NAME;
 
 	password = generate_random_str(mem_ctx, 8);
-	E_md4hash(password, r.in.new_password.data);
+	E_md4hash(password, r.in.new_password.hash);
 
 	creds_des_encrypt(&creds, &r.in.new_password);
 
