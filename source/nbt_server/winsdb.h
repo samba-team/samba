@@ -35,6 +35,7 @@ struct winsdb_record {
 	time_t expire_time;
 	const char *registered_by;
 	const char **addresses;
+	uint64_t version;
 };
 
 struct wins_server {
@@ -43,4 +44,9 @@ struct wins_server {
 
 	uint32_t min_ttl;
 	uint32_t max_ttl;
+
+	/* these are the minimum and maximum record version IDs in the
+	   database. They are needed for replication */
+	uint64_t min_version;
+	uint64_t max_version;
 };
