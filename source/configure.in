@@ -1101,7 +1101,7 @@ AC_ARG_WITH(pam,
   yes)
     AC_MSG_RESULT(yes)
     AC_DEFINE(WITH_PAM)
-    LIBS="$LIBS -lpam"
+    LIBS="$LIBS -lpam -ldl"
     ;;
   *)
     AC_MSG_RESULT(no)
