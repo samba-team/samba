@@ -382,7 +382,7 @@ BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SA
  done:
 	*pgids=gids;
 	*numgroups=cur_gid;
-	safe_free(map);
+	SAFE_FREE(map);
 
 	return True;
 }
