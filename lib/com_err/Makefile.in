@@ -38,6 +38,7 @@ build_symlink_command   = @build_symlink_command@
 install_symlink_command = @install_symlink_command@
 
 LIBNAME = $(LIBPREFIX)com_err
+#LIBEXT = a Always build archive library!
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
 LIBPREFIX = @LIBPREFIX@
@@ -49,8 +50,8 @@ include_HEADERS = com_right.h com_err.h
 
 SOURCES = error.c com_err.c compile_et.c
 OBJECTS = error.o com_err.o $(LIBADD)
-EXTRA_SOURCES = snprintf.c strcpy_truncate.c strcat_truncate.c
-LIBADD = snprintf.o strcpy_truncate.o strcat_truncate.o
+EXTRA_SOURCES =
+LIBADD =
 
 all: $(lib_LIBRARIES) $(bin_PROGRAMS) $(include_HEADERS)
 

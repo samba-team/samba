@@ -54,11 +54,12 @@ error_message (long code)
 {
     static char msg[128];
     const char *p = com_right(_et_list, code);
-    if(p == NULL)
+    if (p == NULL)
 	p = strerror(code);
-    if(p != NULL && *p != '\0')
-	strcpy_truncate(msg, p, sizeof(msg));
-    else 
+    if (p != NULL && *p != '\0') {
+	strncpy(msg, p, sizeof(msg));
+	msg[sizeof(msg)] = 0;
+    } else 
 	sprintf(msg, "Unknown error %ld", code);
     return msg;
 }

@@ -41,23 +41,4 @@
 #ifndef __roken_rename_h__
 #define __roken_rename_h__
 
-#ifndef HAVE_ASNPRINTF
-#define asnprintf _com_err_asnprintf
-#endif
-#ifndef HAVE_ASPRINTF
-#define asprintf _com_err_asprintf
-#endif
-#ifndef HAVE_SNPRINTF
-#define snprintf _com_err_snprintf
-#endif
-#ifndef HAVE_VASNPRINTF
-#define vasnprintf _com_err_vasnprintf
-#endif
-#ifndef HAVE_VASPRINTF
-#define vasprintf _com_err_vasprintf
-#endif
-#ifndef HAVE_VSNPRINTF
-#define vsnprintf _com_err_vsnprintf
-#endif
-
 #endif /* __roken_rename_h__ */
