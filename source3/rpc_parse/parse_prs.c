@@ -23,10 +23,29 @@
 
 #include "includes.h"
 
-/*******************************************************************
-dump a prs to a file
- ********************************************************************/
+/**
+ * Dump a prs to a file: from the current location through to the end.
+ **/
 void prs_dump(char *name, int v, prs_struct *ps)
+{
+	prs_dump_region(name, v, ps, ps->data_offset, ps->buffer_size);
+}
+
+
+/**
+ * Dump from the start of the prs to the current location.
+ **/
+void prs_dump_before(char *name, int v, prs_struct *ps)
+{
+	prs_dump_region(name, v, ps, 0, ps->data_offset);
+}
+
+
+/**
+ * Dump everything from the start of the prs up to the current location.
+ **/
+void prs_dump_region(char *name, int v, prs_struct *ps,
+		     int from_off, int to_off)
 {
 	int fd, i;
 	pstring fname;
@@ -41,7 +60,7 @@ void prs_dump(char *name, int v, prs_struct *ps)
 		if (fd != -1 || errno != EEXIST) break;
 	}
 	if (fd != -1) {
-		write(fd, ps->data_p + ps->data_offset, ps->buffer_size - ps->data_offset);
+		write(fd, ps->data_p + from_off, to_off - from_off);
 		close(fd);
 		DEBUG(0,("created %s\n", fname));
 	}
