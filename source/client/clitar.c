@@ -800,7 +800,7 @@ static void do_tar(file_info *finfo)
 #ifdef HAVE_REGEX_H
 				(tar_re_search && !regexec(preg, exclaim, 0, NULL, 0))) {
 #else
-				(tar_re_search && mask_match(exclaim, cliplist[0], True))) {
+				(tar_re_search && mask_match_list(exclaim, cliplist, clipn, True))) {
 #endif
 			DEBUG(3,("Skipping file %s\n", exclaim));
 			return;
@@ -1153,7 +1153,7 @@ static void do_tarput(void)
 #ifdef HAVE_REGEX_H
 					(tar_re_search && !regexec(preg, finfo.name, 0, NULL, 0)));
 #else
-					(tar_re_search && mask_match(finfo.name, cliplist[0], True)));
+					(tar_re_search && mask_match_list(finfo.name, cliplist, clipn, True)));
 #endif
 
 		DEBUG(5, ("Skip = %i, cliplist=%s, file=%s\n", skip, (cliplist?cliplist[0]:NULL), finfo.name));

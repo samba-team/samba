@@ -2320,6 +2320,20 @@ BOOL mask_match(const char *string, char *pattern, BOOL is_case_sensitive)
 	return ms_fnmatch(pattern, string, Protocol, is_case_sensitive) == 0;
 }
 
+/*******************************************************************
+ A wrapper that handles a list of patters and calls mask_match()
+ on each.  Returns True if any of the patterns match.
+*******************************************************************/
+
+BOOL mask_match_list(const char *string, char **list, int listLen, BOOL is_case_sensitive)
+{
+       while (listLen-- > 0) {
+               if (mask_match(string, *list++, is_case_sensitive))
+                       return True;
+       }
+       return False;
+}
+
 /*********************************************************
  Recursive routine that is called by unix_wild_match.
 *********************************************************/
