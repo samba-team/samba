@@ -1,3 +1,11 @@
+2002-08-29  Assar Westerlund  <assar@kth.se>
+
+	* lib/krb5/parse-name-test.c: also test unparse_short functions
+	* lib/asn1/asn1_print.c: use com_err/error_message API
+	* lib/krb5/Makefile.am: add parse-name-test
+	* lib/krb5/parse-name-test.c: add a program for testing parsing
+	and unparsing principal names
+
 2002-08-28  Assar Westerlund  <assar@kth.se>
 
 	* kdc/config.c: add missing ifdef DAEMON
