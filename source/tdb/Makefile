@@ -19,5 +19,8 @@ tdbtool: tdbtool.o $(TDB_OBJ)
 tdbtorture: tdbtorture.o $(TDB_OBJ)
 	$(CC) $(CFLAGS) -o tdbtorture tdbtorture.o $(TDB_OBJ)
 
+tdbdump: tdbdump.o $(TDB_OBJ)
+	$(CC) $(CFLAGS) -o tdbdump tdbdump.o $(TDB_OBJ)
+
 clean:
 	rm -f $(PROGS) *.o *~ *% core test.db test.tdb test.gdbm
