@@ -1814,5 +1814,225 @@ static NTSTATUS lsa_CreateTrustedDomainEx2(struct dcesrv_call_state *dce_call,
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
+/* 
+  lsa_CREDRWRITE 
+*/
+static NTSTATUS lsa_CREDRWRITE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRWRITE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRREAD 
+*/
+static NTSTATUS lsa_CREDRREAD(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRREAD *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRENUMERATE 
+*/
+static NTSTATUS lsa_CREDRENUMERATE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRENUMERATE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRWRITEDOMAINCREDENTIALS 
+*/
+static NTSTATUS lsa_CREDRWRITEDOMAINCREDENTIALS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRWRITEDOMAINCREDENTIALS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRREADDOMAINCREDENTIALS 
+*/
+static NTSTATUS lsa_CREDRREADDOMAINCREDENTIALS(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRREADDOMAINCREDENTIALS *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRDELETE 
+*/
+static NTSTATUS lsa_CREDRDELETE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRDELETE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRGETTARGETINFO 
+*/
+static NTSTATUS lsa_CREDRGETTARGETINFO(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRGETTARGETINFO *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRPROFILELOADED 
+*/
+static NTSTATUS lsa_CREDRPROFILELOADED(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRPROFILELOADED *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARLOOKUPNAMES3 
+*/
+static NTSTATUS lsa_LSARLOOKUPNAMES3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARLOOKUPNAMES3 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRGETSESSIONTYPES 
+*/
+static NTSTATUS lsa_CREDRGETSESSIONTYPES(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRGETSESSIONTYPES *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARREGISTERAUDITEVENT 
+*/
+static NTSTATUS lsa_LSARREGISTERAUDITEVENT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARREGISTERAUDITEVENT *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARGENAUDITEVENT 
+*/
+static NTSTATUS lsa_LSARGENAUDITEVENT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARGENAUDITEVENT *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARUNREGISTERAUDITEVENT 
+*/
+static NTSTATUS lsa_LSARUNREGISTERAUDITEVENT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARUNREGISTERAUDITEVENT *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARQUERYFORESTTRUSTINFORMATION 
+*/
+static NTSTATUS lsa_LSARQUERYFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARQUERYFORESTTRUSTINFORMATION *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARSETFORESTTRUSTINFORMATION 
+*/
+static NTSTATUS lsa_LSARSETFORESTTRUSTINFORMATION(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARSETFORESTTRUSTINFORMATION *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_CREDRRENAME 
+*/
+static NTSTATUS lsa_CREDRRENAME(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_CREDRRENAME *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARLOOKUPSIDS3 
+*/
+static NTSTATUS lsa_LSARLOOKUPSIDS3(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARLOOKUPSIDS3 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARLOOKUPNAMES4 
+*/
+static NTSTATUS lsa_LSARLOOKUPNAMES4(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARLOOKUPNAMES4 *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSAROPENPOLICYSCE 
+*/
+static NTSTATUS lsa_LSAROPENPOLICYSCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSAROPENPOLICYSCE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARADTREGISTERSECURITYEVENTSOURCE 
+*/
+static NTSTATUS lsa_LSARADTREGISTERSECURITYEVENTSOURCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARADTREGISTERSECURITYEVENTSOURCE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE 
+*/
+static NTSTATUS lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARADTUNREGISTERSECURITYEVENTSOURCE *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
+/* 
+  lsa_LSARADTREPORTSECURITYEVENT 
+*/
+static NTSTATUS lsa_LSARADTREPORTSECURITYEVENT(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		       struct lsa_LSARADTREPORTSECURITYEVENT *r)
+{
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+}
+
+
 /* include the generated boilerplate */
 #include "librpc/gen_ndr/ndr_lsa_s.c"
