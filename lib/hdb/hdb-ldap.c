@@ -421,12 +421,10 @@ LDAP_entry2mods(krb5_context context, HDB * db, hdb_entry * ent,
 	}
     }
 
-    memset(&oflags, 0, sizeof(oflags));
-    memcpy(&oflags, &orig.flags, sizeof(HDBFlags));
-    memset(&nflags, 0, sizeof(nflags));
-    memcpy(&nflags, &ent->flags, sizeof(HDBFlags));
+    oflags = HDBFlags2int(orig.flags);
+    nflags = HDBFlags2int(ent->flags);
 
-    if (memcmp(&oflags, &nflags, sizeof(HDBFlags))) {
+    if (oflags != nflags) {
 	rc = asprintf(&tmp, "%lu", nflags);
 	if (rc < 0) {
 	    krb5_set_error_string(context, "asprintf: out of memory");
@@ -629,7 +627,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     char **values;
 
     memset(ent, 0, sizeof(*ent));
-    memset(&ent->flags, 0, sizeof(HDBFlags));
+    ent->flags = int2HDBFlags(0);
 
     ret =
 	LDAP_get_string_value(db, msg, "krb5PrincipalName",
@@ -801,7 +799,7 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
     } else {
 	tmp = 0;
     }
-    memcpy(&ent->flags, &tmp, sizeof(HDBFlags));
+    ent->flags = int2HDBFlags(tmp);
 
     values = ldap_get_values((LDAP *) db->db, msg, "krb5EncryptionType");
     if (values != NULL) {
