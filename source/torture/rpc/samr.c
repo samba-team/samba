@@ -1708,9 +1708,15 @@ static BOOL test_SetGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		s.in.level = levels[i];
 		s.in.info = r.out.info;
 
+#if 0
+		/* disabled this, as it changes the name only from the point of view of samr, 
+		   but leaves the name from the point of view of w2k3 internals (and ldap). This means
+		   the name is still reserved, so creating the old name fails, but deleting by the old name
+		   also fails */
 		if (s.in.level == 2) {
 			init_samr_Name(&s.in.info->name, "NewName");
 		}
+#endif
 
 		if (s.in.level == 4) {
 			init_samr_Name(&s.in.info->description, "test description");
