@@ -89,7 +89,7 @@ char *secrets_fetch_machine_password(void)
  between smbd instances.
 *******************************************************************************/
 
-BOOL secrets_named_mutex(const char *name, unsigned int timeout, size_t *p_ref_count)
+BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
 {
 	size_t ref_count = *p_ref_count;
 	int ret = 0;
@@ -105,7 +105,7 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout, size_t *p_ref_c
 
 	if (ret == 0) {
 		*p_ref_count = ++ref_count;
-		DEBUG(10,("secrets_named_mutex: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
+		DEBUG(10,("secrets_named_mutex: ref_count for mutex %s = %u\n", name, (uint_t)ref_count ));
 	}
 	return (ret == 0);
 }
@@ -126,6 +126,6 @@ void secrets_named_mutex_release(const char *name, size_t *p_ref_count)
 	}
 
 	*p_ref_count = --ref_count;
-	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (unsigned int)ref_count ));
+	DEBUG(10,("secrets_named_mutex_release: ref_count for mutex %s = %u\n", name, (uint_t)ref_count ));
 }
 

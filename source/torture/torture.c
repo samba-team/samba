@@ -321,7 +321,7 @@ static BOOL run_torture(struct cli_state *cli, int dummy)
 static BOOL rw_torture3(struct cli_state *c, const char *lockfname)
 {
 	int fnum = -1;
-	unsigned int i = 0;
+	uint_t i = 0;
 	char buf[131072];
 	char buf_rd[131072];
 	unsigned count;
@@ -613,7 +613,7 @@ static BOOL run_locktest1(int dummy)
 		printf("error: This server appears not to support timed lock requests\n");
 	}
 	printf("server slept for %u seconds for a %u second timeout\n",
-	       (unsigned int)(t2-t1), lock_timeout);
+	       (uint_t)(t2-t1), lock_timeout);
 
 	if (NT_STATUS_IS_ERR(cli_close(cli1->tree, fnum2))) {
 		printf("close1 failed (%s)\n", cli_errstr(cli1->tree));
@@ -3363,7 +3363,7 @@ static uint32_t open_attrs_table[] = {
 };
 
 struct trunc_open_results {
-	unsigned int num;
+	uint_t num;
 	uint32_t init_attr;
 	uint32_t trunc_attr;
 	uint32_t result_attr;
@@ -3405,7 +3405,7 @@ static BOOL run_openattrtest(int dummy)
 	int fnum1;
 	BOOL correct = True;
 	uint16_t attr;
-	unsigned int i, j, k, l;
+	uint_t i, j, k, l;
 	int failures = 0;
 
 	printf("starting open attr test\n");
@@ -3485,7 +3485,7 @@ static BOOL run_openattrtest(int dummy)
 						printf("[%d] getatr check failed. [0x%x] trunc [0x%x] got attr 0x%x, should be 0x%x\n",
 							k, open_attrs_table[i],
 							open_attrs_table[j],
-							(unsigned int)attr,
+							(uint_t)attr,
 							attr_results[l].result_attr);
 						correct = False;
 						CHECK_MAX_FAILURES(error_exit);

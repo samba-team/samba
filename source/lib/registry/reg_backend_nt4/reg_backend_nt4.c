@@ -338,7 +338,7 @@ const char *def_owner_sid_str = NULL;
 
 #define BLK_SIZE(b) ((int)*(int *)(((int *)b)-1))
 
-typedef unsigned int DWORD;
+typedef uint_t DWORD;
 typedef unsigned short WORD;
 
 typedef struct sk_struct SK_HDR;
@@ -358,7 +358,7 @@ typedef struct regf_block {
 	DWORD uk5;             /* 0 */
 	DWORD uk6;             /* 1 */
 	DWORD first_key;       /* offset */
-	unsigned int dblk_size;
+	uint_t dblk_size;
     DWORD uk7[116];        /* 1 */
     DWORD chksum;
 } REGF_HDR;
@@ -462,9 +462,9 @@ typedef struct hbin_blk_s {
   int type, size;
   struct hbin_blk_s *next;
   char *data;                /* The data block                */
-  unsigned int file_offset;  /* Offset in file                */
-  unsigned int free_space;   /* Amount of free space in block */
-  unsigned int fsp_off;      /* Start of free space in block  */
+  uint_t file_offset;  /* Offset in file                */
+  uint_t free_space;   /* Amount of free space in block */
+  uint_t fsp_off;      /* Start of free space in block  */
   int complete, stored;
 } HBIN_BLK;
 
@@ -1023,7 +1023,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	REGF *regf = h->backend_data;
 	REG_KEY *tmp = NULL, *own;
 	int namlen, clsname_len, sk_off, own_off;
-	unsigned int nk_id;
+	uint_t nk_id;
 	SK_HDR *sk_hdr;
 	int type;
 	char key_name[1024], cls_name[1024];
@@ -1104,7 +1104,7 @@ static WERROR nk_to_key(REG_HANDLE *h, NK_HDR *nk_hdr, int size, REG_KEY *parent
 	DEBUG(2, ("Owner Offset: %0X\n", own_off));
 
 	DEBUGADD(2, ("  Owner locn: %0X, Our locn: %0X\n", 
-				 (unsigned int)own, (unsigned int)nk_hdr));
+				 (uint_t)own, (uint_t)nk_hdr));
 
 	/* 
 	 * We should verify that the owner field is correct ...
@@ -1185,7 +1185,7 @@ static HBIN_BLK *nt_create_hbin_blk(REG_HANDLE *h, int size)
  * Allocate a unit of space ... and return a pointer as function param
  * and the block's offset as a side effect
  */
-static void *nt_alloc_regf_space(REG_HANDLE *h, int size, unsigned int *off)
+static void *nt_alloc_regf_space(REG_HANDLE *h, int size, uint_t *off)
 {
 	REGF *regf = h->backend_data;
 	int tmp = 0;
@@ -1357,10 +1357,10 @@ static int nt_store_acl(REG_HANDLE *regf, SEC_ACL *acl, uint8_t *locn) {
  * that first, then the owner, then the group SID. So, we do it that way
  * too.
  */
-static unsigned int nt_store_sec_desc(REG_HANDLE *regf, SEC_DESC *sd, char *locn)
+static uint_t nt_store_sec_desc(REG_HANDLE *regf, SEC_DESC *sd, char *locn)
 {
 	SEC_DESC *rsd = (SEC_DESC *)locn;
-	unsigned int size = 0, off = 0;
+	uint_t size = 0, off = 0;
 
 	if (!regf || !sd || !locn) return 0;
 
@@ -1424,10 +1424,10 @@ static unsigned int nt_store_sec_desc(REG_HANDLE *regf, SEC_DESC *sd, char *locn
  * If it has already been stored, just get its offset from record
  * otherwise, store it and record its offset
  */
-static unsigned int nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
+static uint_t nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
 {
 	int size = 0;
-	unsigned int sk_off;
+	uint_t sk_off;
 	SK_HDR *sk_hdr;
 
 	if (sec->offset) return sec->offset;
@@ -1483,7 +1483,7 @@ static unsigned int nt_store_security(REG_HANDLE *regf, KEY_SEC_DESC *sec)
 static int nt_store_reg_key(REG_HANDLE *regf, REG_KEY *key)
 {
 	NK_HDR *nk_hdr; 
-	unsigned int nk_off, sk_off, size;
+	uint_t nk_off, sk_off, size;
 
 	if (!regf || !key) return 0;
 
@@ -1581,7 +1581,7 @@ static WERROR nt_open_registry (REG_HANDLE *h, const char *location, const char 
 {
 	REGF *regf;
 	REGF_HDR *regf_hdr;
-	unsigned int regf_id, hbin_id;
+	uint_t regf_id, hbin_id;
 	HBIN_HDR *hbin_hdr;
 
 	regf = (REGF *)talloc_p(h->mem_ctx, REGF);

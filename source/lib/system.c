@@ -507,7 +507,7 @@ long sys_random(void)
  Wrapper for srandom().
 ****************************************************************************/
 
-void sys_srandom(unsigned int seed)
+void sys_srandom(uint_t seed)
 {
 #if defined(HAVE_SRANDOM)
 	srandom(seed);

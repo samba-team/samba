@@ -1121,8 +1121,8 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 			buf -= 4;
 
 			if (CVAL(buf,smb_com) != SMBtrans) {
-				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (unsigned int)
-					 CVAL(buf,smb_com), (unsigned int)SMBtrans ));
+				DEBUG(0,("lookup_pdc_name: datagram type %u != SMBtrans(%u)\n", (uint_t)
+					 CVAL(buf,smb_com), (uint_t)SMBtrans ));
 				free_packet(p_ret);
 				continue;
 			}
@@ -1142,7 +1142,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 
 			if(SVAL(buf2,0) != QUERYFORPDC_R) {
 				DEBUG(0,("lookup_pdc_name: datagram type (%u) != QUERYFORPDC_R(%u)\n",
-					 (unsigned int)SVAL(buf,0), (unsigned int)QUERYFORPDC_R ));
+					 (uint_t)SVAL(buf,0), (uint_t)QUERYFORPDC_R ));
 				free_packet(p_ret);
 				continue;
 			}

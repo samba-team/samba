@@ -86,7 +86,7 @@ static void sig_usr1(void)
 static void ping_message(int msg_type, pid_t src, void *buf, size_t len)
 {
 	const char *msg = buf ? buf : "none";
-	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(unsigned int)src, msg));
+	DEBUG(1,("INFO: Received PING message from PID %u [%s]\n",(uint_t)src, msg));
 	message_send_pid(src, MSG_PONG, buf, len, True);
 }
 
@@ -169,7 +169,7 @@ static BOOL message_notify(pid_t pid)
 ****************************************************************************/
 
 static BOOL message_send_pid_internal(pid_t pid, int msg_type, const void *buf, size_t len,
-		      BOOL duplicates_allowed, unsigned int timeout)
+		      BOOL duplicates_allowed, uint_t timeout)
 {
 	TDB_DATA kbuf;
 	TDB_DATA dbuf;
@@ -301,7 +301,7 @@ BOOL message_send_pid(pid_t pid, int msg_type, const void *buf, size_t len, BOOL
 ****************************************************************************/
 
 BOOL message_send_pid_with_timeout(pid_t pid, int msg_type, const void *buf, size_t len,
-		BOOL duplicates_allowed, unsigned int timeout)
+		BOOL duplicates_allowed, uint_t timeout)
 {
 	return message_send_pid_internal(pid, msg_type, buf, len, duplicates_allowed, timeout);
 }
@@ -409,7 +409,7 @@ void message_dispatch(void)
 
 	for (buf = msgs_buf; message_recv(msgs_buf, total_len, &msg_type, &src, &buf, &len); buf += len) {
 		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%u\n",
-			  msg_type, (unsigned int) src));
+			  msg_type, (uint_t) src));
 		n_handled = 0;
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
@@ -421,7 +421,7 @@ void message_dispatch(void)
 		if (!n_handled) {
 			DEBUG(5,("message_dispatch: warning: no handlers registed for "
 				 "msg_type %d in pid %u\n",
-				 msg_type, (unsigned int)getpid()));
+				 msg_type, (uint_t)getpid()));
 		}
 	}
 	SAFE_FREE(msgs_buf);
@@ -514,7 +514,7 @@ static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void 
 
 		if (errno == ESRCH) {
 			DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
-					(unsigned int)crec.pid, crec.cnum, crec.name));
+					(uint_t)crec.pid, crec.cnum, crec.name));
 			tdb_delete(the_tdb, kbuf);
 		}
 	}

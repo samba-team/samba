@@ -494,7 +494,7 @@ static void enum_queue(const char *queuename, uint16_t pri, uint16_t start,
 static void enum_jobs(uint16_t jobid, const char *ownername, 
 		      const char *notifyname, const char *datatype,
 		      const char *jparms, uint16_t pos, uint16_t status, 
-		      const char *jstatus, unsigned int submitted, unsigned int jobsize, 
+		      const char *jstatus, uint_t submitted, uint_t jobsize, 
 		      const char *comment)
 {
 	d_printf("     %-23.23s %5d %9d            ",

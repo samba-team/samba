@@ -313,14 +313,14 @@ NTSTATUS ads_verify_ticket(const char *realm, const DATA_BLOB *ticket,
 #endif
 					keytab, NULL, &tkt))) {
 			DEBUG(10,("ads_verify_ticket: enc type [%u] decrypted message !\n",
-				(unsigned int)enctypes[i] ));
+				(uint_t)enctypes[i] ));
 			auth_ok = True;
 			break;
 		}
 	
 		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
-				(unsigned int)enctypes[i], error_message(ret)));
+				(uint_t)enctypes[i], error_message(ret)));
 	}
 
 	release_server_mutex();

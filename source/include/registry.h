@@ -52,7 +52,7 @@ typedef struct reg_ops_s REG_OPS;
 //FIXME
 typedef struct ace_struct_s {
   uint8_t type, flags;
-  unsigned int perms;   /* Perhaps a better def is in order */
+  uint_t perms;   /* Perhaps a better def is in order */
   DOM_SID *trustee;
 } ACE;
 #endif

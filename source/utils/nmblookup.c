@@ -148,7 +148,7 @@ static void do_node_status(int fd, const char *name, int type, struct in_addr ip
 /****************************************************************************
 send out one query
 ****************************************************************************/
-static BOOL query_one(const char *lookup, unsigned int lookup_type)
+static BOOL query_one(const char *lookup, uint_t lookup_type)
 {
 	int j, count, flags = 0;
 	struct in_addr *ip_list=NULL;
@@ -207,7 +207,7 @@ static BOOL query_one(const char *lookup, unsigned int lookup_type)
 int main(int argc,char *argv[])
 {
   int opt;
-  unsigned int lookup_type = 0x0;
+  uint_t lookup_type = 0x0;
   fstring lookup;
   extern int optind;
   extern char *optarg;

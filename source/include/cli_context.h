@@ -62,8 +62,8 @@ struct cli_negotiate {
 	
 	int server_zone;
 	time_t server_time;
-	unsigned int readbraw_supported:1;
-	unsigned int writebraw_supported:1;
+	uint_t readbraw_supported:1;
+	uint_t writebraw_supported:1;
 
 	const char *server_domain;
 };
@@ -99,9 +99,9 @@ struct cli_socket {
   client library
 */
 struct cli_options {
-	unsigned int use_oplocks:1;
-	unsigned int use_level2_oplocks:1;
-	unsigned int use_spnego:1;
+	uint_t use_oplocks:1;
+	uint_t use_level2_oplocks:1;
+	uint_t use_spnego:1;
 };
 
 /* this is the context for the client transport layer */
@@ -126,7 +126,7 @@ struct cli_transport {
 
 	/* is a readbraw pending? we need to handle that case
 	   specially on receiving packets */
-	unsigned int readbraw_pending:1;
+	uint_t readbraw_pending:1;
 	
 	/* an idle function - if this is defined then it will be
 	   called once every period milliseconds while we are waiting
@@ -236,7 +236,7 @@ struct cli_request {
 
 	/* set if this is a one-way request, meaning we are not
 	   expecting a reply from the server. */
-	unsigned int one_way_request:1;
+	uint_t one_way_request:1;
 
 	/* the mid of this packet - used to match replies */
 	uint16_t mid;

@@ -84,9 +84,9 @@ static pstring fileselection = "";
 
 /* timing globals */
 uint64_t get_total_size = 0;
-unsigned int get_total_time_ms = 0;
+uint_t get_total_time_ms = 0;
 static uint64_t put_total_size = 0;
-static unsigned int put_total_time_ms = 0;
+static uint_t put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
@@ -1926,7 +1926,7 @@ static int cmd_chmod(void)
 
 	if (NT_STATUS_IS_ERR(cli_unix_chmod(cli->tree, src, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli->tree), src, (unsigned int)mode);
+			cli_errstr(cli->tree), src, (uint_t)mode);
 		return 1;
 	} 
 

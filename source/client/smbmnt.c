@@ -139,7 +139,7 @@ static int mount_ok(char *mount_point)
 /* Tries to mount using the appropriate format. For 2.2 the struct,
    for 2.4 the ascii version. */
 static int
-do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
+do_mount(char *share_name, uint_t flags, struct smb_mount_data *data)
 {
 	pstring opts;
 	struct utsname uts;
@@ -173,7 +173,7 @@ do_mount(char *share_name, unsigned int flags, struct smb_mount_data *data)
 	char *mount_point, *share_name = NULL;
 	FILE *mtab;
 	int fd;
-	unsigned int flags;
+	uint_t flags;
 	struct smb_mount_data data;
 	struct mntent ment;
 

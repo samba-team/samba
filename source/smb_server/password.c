@@ -131,7 +131,7 @@ int register_vuid(struct server_context *smb,
 	}
 
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", 
-		  (unsigned int)smb->users.next_vuid));
+		  (uint_t)smb->users.next_vuid));
 
 	vuser->vuid = smb->users.next_vuid;
 

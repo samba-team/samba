@@ -129,7 +129,7 @@ clear a vuid out of the validity cache, and as the 'owner' of a connection.
 void conn_clear_vuid_cache(struct server_context *smb, uint16_t vuid)
 {
 	struct tcon_context *conn;
-	unsigned int i;
+	uint_t i;
 
 	for (conn=smb->tree.connections;conn;conn=conn->next) {
 		for (i=0;i<conn->vuid_cache.entries && i< VUID_CACHE_SIZE;i++) {
