@@ -1518,7 +1518,6 @@ krb5_enctype_to_keytype(krb5_context context,
 			krb5_keytype *keytype)
 {
     struct encryption_type *e = _find_enctype(etype);
-    krb5_warnx(context, "krb5_enctype_to_keytype(%u)", etype);
     if(e == NULL)
 	return KRB5_PROG_ETYPE_NOSUPP;
     *keytype = e->keytype->type; /* XXX */
