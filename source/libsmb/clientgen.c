@@ -247,10 +247,6 @@ void cli_shutdown(struct cli_state *cli)
 	if (cli->mem_ctx)
 		talloc_destroy(cli->mem_ctx);
 
-#ifdef WITH_SSL
-	if (cli->fd != -1)
-		sslutil_disconnect(cli->fd);
-#endif /* WITH_SSL */
 	if (cli->fd != -1) 
 		close(cli->fd);
 	allocated = cli->allocated;

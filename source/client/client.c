@@ -2635,10 +2635,6 @@ static void remember_query_host(const char *arg,
 	}
 	DEBUGLEVEL = old_debug;
 	
-#ifdef WITH_SSL
-	sslutil_init(0);
-#endif
-
 	pstrcpy(workgroup,lp_workgroup());
 
 	load_interfaces();
