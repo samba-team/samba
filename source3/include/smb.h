@@ -444,6 +444,15 @@ typedef struct
 #include "smb_acls.h"
 #include "vfs.h"
 
+typedef struct smb_vfs_handle_struct
+{
+    void *data;
+    /* Handle on dlopen() call */
+    void *handle;
+    struct smb_vfs_handle_struct  *next, *prev;
+    
+} smb_vfs_handle_struct;
+
 typedef struct connection_struct
 {
 	struct connection_struct *next, *prev;
@@ -461,9 +470,7 @@ typedef struct connection_struct
 	char *origpath;
 
 	struct vfs_ops vfs_ops;                   /* Filesystem operations */
-	/* Handle on dlopen() call */
-	void *dl_handle;
-	void *vfs_private;
+	struct smb_vfs_handle_struct *vfs_private;
 
 	char *user; /* name of user who *opened* this connection */
 	uid_t uid; /* uid of user who *opened* this connection */

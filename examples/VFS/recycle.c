@@ -4,6 +4,7 @@
  *
  * Copyright (C) 2001, Brandon Stone, Amherst College, <bbstone@amherst.edu>.
  * Copyright (C) 2002, Jeremy Allison - modified to make a VFS module.
+ * Copyright (C) 2002, Alexander Bokovoy - cascaded VFS adoption,
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,139 +41,67 @@
  
 /* VFS operations */
 
-extern struct vfs_ops default_vfs_ops;   /* For passthrough operation */
-
+static struct vfs_ops default_vfs_ops;   /* For passthrough operation */
+static struct smb_vfs_handle_struct *recycle_handle;
 static int recycle_unlink(connection_struct *, const char *);
 static int recycle_connect(struct connection_struct *conn, const char *service, const char *user);
 static void recycle_disconnect(struct connection_struct *conn);
 
-struct vfs_ops recycle_ops = {
-    
+static vfs_op_tuple recycle_ops[] = {
+
 	/* Disk operations */
 
-	recycle_connect,		/* connect */
-	recycle_disconnect,		/* disconnect */
-	NULL,				/* disk free */
-
-	/* Directory operations */
-
-	NULL,				/* opendir */
-	NULL,				/* readdir */
-	NULL,				/* mkdir */
-	NULL,				/* rmdir */
-	NULL,				/* closedir */
+	{recycle_connect,	SMB_VFS_OP_CONNECT,	SMB_VFS_LAYER_OPAQUE},
+	{recycle_disconnect,	SMB_VFS_OP_DISCONNECT,	SMB_VFS_LAYER_OPAQUE},
 
 	/* File operations */
-
-	NULL,				/* open */
-	NULL,				/* close */
-	NULL,				/* read  */
-	NULL,				/* write */
-	NULL,				/* lseek */
-	NULL,				/* rename */
-	NULL,				/* fsync */
-	NULL,				/* stat  */
-	NULL,				/* fstat */
-	NULL,				/* lstat */
-	recycle_unlink,
-	NULL,				/* chmod */
-	NULL,				/* fchmod */
-	NULL,				/* chown */
-	NULL,				/* fchown */
-	NULL,				/* chdir */
-	NULL,				/* getwd */
-	NULL,				/* utime */
-	NULL,				/* ftruncate */
-	NULL,				/* lock */
-	NULL,				/* symlink */
-	NULL,				/* readlink */
-	NULL,				/* link */
-	NULL,				/* mknod */
-	NULL,				/* realpath */
-	NULL,				/* fget_nt_acl */
-	NULL,				/* get_nt_acl */
-	NULL,				/* fset_nt_acl */
-	NULL,				/* set_nt_acl */
-
-	NULL,				/* chmod_acl */
-	NULL,				/* fchmod_acl */
-
-	NULL,				/* sys_acl_get_entry */
-	NULL,				/* sys_acl_get_tag_type */
-	NULL,				/* sys_acl_get_permset */
-	NULL,				/* sys_acl_get_qualifier */
-	NULL,				/* sys_acl_get_file */
-	NULL,				/* sys_acl_get_fd */
-	NULL,				/* sys_acl_clear_perms */
-	NULL,				/* sys_acl_add_perm */
-	NULL,				/* sys_acl_to_text */
-	NULL,				/* sys_acl_init */
-	NULL,				/* sys_acl_create_entry */
-	NULL,				/* sys_acl_set_tag_type */
-	NULL,				/* sys_acl_set_qualifier */
-	NULL,				/* sys_acl_set_permset */
-	NULL,				/* sys_acl_valid */
-	NULL,				/* sys_acl_set_file */
-	NULL,				/* sys_acl_set_fd */
-	NULL,				/* sys_acl_delete_def_file */
-	NULL,				/* sys_acl_get_perm */
-	NULL,				/* sys_acl_free_text */
-	NULL,				/* sys_acl_free_acl */
-	NULL				/* sys_acl_free_qualifier */
+	
+	{recycle_unlink,	SMB_VFS_OP_UNLINK,	SMB_VFS_LAYER_OPAQUE},
+	
+	{NULL,			SMB_VFS_OP_NOOP,	SMB_VFS_LAYER_NOOP}
 };
 
-/* VFS initialisation function.  Return initialised vfs_ops structure
-   back to SAMBA. */
+/* VFS initialisation function.  Return initialised vfs_op_tuple array back to SAMBA. */
 
-struct vfs_ops *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops)
+vfs_op_tuple *vfs_init(int *vfs_version, struct vfs_ops *def_vfs_ops,
+			struct smb_vfs_handle_struct *vfs_handle)
 {
-	struct vfs_ops tmp_ops;
-
 	*vfs_version = SMB_VFS_INTERFACE_VERSION;
-	memcpy(&tmp_ops, def_vfs_ops, sizeof(struct vfs_ops));
-	tmp_ops.unlink = recycle_unlink;
-	tmp_ops.connect = recycle_connect;
-	tmp_ops.disconnect = recycle_disconnect;
-	memcpy(&recycle_ops, &tmp_ops, sizeof(struct vfs_ops));
-	return &recycle_ops;
+	memcpy(&default_vfs_ops, def_vfs_ops, sizeof(struct vfs_ops));
+	
+	/* Remember vfs_id for storing private information at connect */
+	recycle_handle = vfs_handle;
+
+	return recycle_ops;
+}
+
+/* VFS finalization function. */
+void vfs_done(connection_struct *conn)
+{
+	DEBUG(3,("vfs_done_recycle: called for connection %p\n",conn));
 }
 
 static int recycle_connect(struct connection_struct *conn, const char *service, const char *user)
 {
-	pstring opts_str;
 	fstring recycle_bin;
-	char *p;
 
 	DEBUG(3,("recycle_connect: called for service %s as user %s\n", service, user));
 
-	pstrcpy(opts_str, (const char *)lp_vfs_options(SNUM(conn)));
-	if (!*opts_str) {
-		DEBUG(3,("recycle_connect: No options listed (%s).\n", lp_vfs_options(SNUM(conn)) ));
+	fstrcpy(recycle_bin, (const char *)lp_parm_string(lp_servicename(SNUM(conn)),"vfs","recycle bin"));
+	if (!*recycle_bin) {
+		DEBUG(3,("recycle_connect: No options listed (vfs:recycle bin).\n" ));
 		return 0; /* No options. */
 	}
 
-	p = opts_str;
-	if (next_token(&p,recycle_bin,"=",sizeof(recycle_bin))) {
-		if (!strequal("recycle", recycle_bin)) {
-			DEBUG(3,("recycle_connect: option %s is not recycle\n", recycle_bin ));
-			return -1;
-		}
-	}
+	DEBUG(3,("recycle_connect: recycle name is %s\n", recycle_bin ));
 
-	if (!next_token(&p,recycle_bin," \n",sizeof(recycle_bin))) {
-		DEBUG(3,("recycle_connect: no option after recycle=\n"));
-		return -1;
-	}
-
-	DEBUG(10,("recycle_connect: recycle name is %s\n", recycle_bin ));
-
-	conn->vfs_private = (void *)strdup(recycle_bin);
+	recycle_handle->data = (void *)strdup(recycle_bin);
 	return 0;
 }
 
 static void recycle_disconnect(struct connection_struct *conn)
 {
-	SAFE_FREE(conn->vfs_private);
+	SAFE_FREE(recycle_handle->data);
 }
 
 static BOOL recycle_XXX_exist(connection_struct *conn, const char *dname, BOOL isdir)
@@ -225,8 +154,8 @@ static int recycle_unlink(connection_struct *conn, const char *inname)
 	*recycle_bin = '\0';
 	pstrcpy(fname, inname);
 
-	if (conn->vfs_private)
-		fstrcpy(recycle_bin, (const char *)conn->vfs_private);
+	if (recycle_handle->data)
+		fstrcpy(recycle_bin, (const char *)recycle_handle->data);
 
 	if(!*recycle_bin) {
 		DEBUG(3, ("recycle bin: share parameter not set, purging %s...\n", fname));
