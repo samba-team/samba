@@ -632,8 +632,8 @@ static void long_user_fn(const char *user_name, const char *comment,
 			 const char * home_dir, const char * logon_script, 
 			 void *state)
 {
-	d_printf("%-21.21s %-47.47s %-35.35s %35.35s\n",
-		 user_name, comment, home_dir, logon_script);
+	d_printf("%-21.21s %-50.50s\n",
+		 user_name, comment);
 }
 
 static void group_member_fn(const char *user_name, void *state)
@@ -721,12 +721,8 @@ int net_rap_user(int argc, const char **argv)
 		if (!(cli = net_make_ipc_connection(0)))
                         return -1;
 		if (opt_long_list_entries) {
-			d_printf(
-   "\nListing users on remote server:\n\n"\
-   "\nUser name             Description                                     "\
-   "Home Directory                          Profile Directory"\
-   "\n---------             -----------                                     "\
-   "--------------                          -----------------\n");
+			d_printf("\nUser name             Comment"\
+				 "\n-----------------------------\n");
 			ret = cli_RNetUserEnum(cli, long_user_fn, NULL);
 			cli_shutdown(cli);
 			return ret;
