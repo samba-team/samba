@@ -45,6 +45,10 @@ enum {
 };
 
 enum {
+    ccapi_version_3 = 3
+};
+
+enum {
     ccNoError						= 0,
     
     ccIteratorEnd					= 201,
@@ -52,7 +56,7 @@ enum {
     ccErrNoMem,
     ccErrInvalidContext,
     ccErrInvalidCCache,
-    
+
     ccErrInvalidString,					/* 206 */
     ccErrInvalidCredentials,
     ccErrInvalidCCacheIterator,
@@ -477,7 +481,7 @@ acc_alloc(krb5_context context, krb5_ccache *id)
     
     a = ACACHE(*id);
 
-    error = (*init_func)(&a->context, 3, NULL, NULL);
+    error = (*init_func)(&a->context, ccapi_version_3, NULL, NULL);
     if (error) {
 	krb5_data_free(&(*id)->data);
 	return error;
