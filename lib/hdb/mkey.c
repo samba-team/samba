@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 2000, 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -213,6 +213,39 @@ read_master_encryptionkey(krb5_context context, const char *filename,
 	key.keytype = ETYPE_DES_CFB64_NONE;
     
     ret = hdb_process_master_key(context, 0, &key, 0, mkey);
+    krb5_free_keyblock_contents(context, &key);
+    return ret;
+}
+
+/* read a krb4 /.k style file */
+static krb5_error_code
+read_master_krb4(krb5_context context, const char *filename, 
+		 hdb_master_key *mkey)
+{
+    int fd;
+    krb5_keyblock key;
+    krb5_error_code ret;
+    unsigned char buf[256];
+    ssize_t len;
+	       
+    fd = open(filename, O_RDONLY | O_BINARY);
+    if(fd < 0)
+	return errno;
+    
+    len = read(fd, buf, sizeof(buf));
+    close(fd);
+    if(len < 0)
+	return errno;
+
+    memset(&key, 0, sizeof(key));
+    key.keytype = ETYPE_DES_PCBC_NONE;
+    ret = krb5_data_copy(&key.keyvalue, buf, len);
+    memset(buf, 0, sizeof(buf));
+    if(ret) 
+	return ret;
+
+    ret = hdb_process_master_key(context, 0, &key, 0, mkey);
+    krb5_free_keyblock_contents(context, &key);
     return ret;
 }
 
@@ -249,7 +282,9 @@ hdb_read_master_key(krb5_context context, const char *filename,
     if(len < 0)
 	return errno;
     
-    if(buf[0] == 0x30 && len <= 127 && buf[1] == len - 2) {
+    if(len == 8) {
+	ret = read_master_krb4(context, filename, mkey);
+    } else if(buf[0] == 0x30 && len <= 127 && buf[1] == len - 2) {
 	ret = read_master_encryptionkey(context, filename, mkey);
     } else if(buf[0] == 5 && buf[1] >= 1 && buf[1] <= 2) {
 	ret = read_master_keytab(context, filename, mkey);
