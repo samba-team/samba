@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: book-article.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $												
 |														
 |   PURPOSE:
 |	This template matches a book / article
@@ -18,6 +20,7 @@
     <doc:reference id="book-article" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: book-article.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -111,12 +114,7 @@
 			<xsl:apply-templates select="bookinfo/authorgroup"/>
 	    </xsl:when>
 	    <xsl:otherwise>
-		        <xsl:for-each select="bookinfo/author">
-            			<xsl:apply-templates select="."/>
-            			<xsl:if test="not(position()=last())">
-                			<xsl:text> \and </xsl:text>
-            			</xsl:if>
-        		</xsl:for-each>
+			<xsl:apply-templates select="bookinfo/author"/>
 	    </xsl:otherwise>
 	</xsl:choose>
 	<xsl:text>}&#10;</xsl:text>
@@ -136,11 +134,14 @@
 			<xsl:text>}}</xsl:text>
 	</xsl:if>
 
-	<!-- book:7b: maketitle and set up pagestyle -->
-	<xsl:value-of select="$latex.maketitle"/>
-	<!-- book:8: - APPLY TEMPLATES -->
+	<!-- book:7b: maketitle -->
+	<xsl:text>{\pagestyle{empty}\maketitle</xsl:text>
+	<!-- book:8: page Style ? fancyheaders or plain ? -->
+	<xsl:call-template name="generate.latex.pagestyle"/>
+	<xsl:text>}&#10;</xsl:text>
+	<!-- book:9: - APPLY TEMPLATES -->
 	<xsl:apply-templates/>
-	<!-- book:9:  call map.end -->
+	<!-- book:10:  call map.end -->
 	<xsl:call-template name="map.end"/>
     </xsl:template>
 
@@ -185,7 +186,7 @@
 	    <formalpara><title>Tasks</title>
 		<itemizedlist>
 		    <listitem><para>Calls <literal>generate.latex.article.preamble</literal>.</para></listitem>
-		    <listitem><para>Outputs \title, \author, \date, getting the information from its children.</para></listitem>
+		    <listitem><para>Outputs \title, \author, getting the information from its children.</para></listitem>
 		    <listitem><para>Calls <literal>latex.article.begindocument</literal>.</para></listitem>
 		    <listitem><para>Calls <literal>latex.article.maketitle.</literal></para></listitem>
 		    <listitem><para>Applies templates.</para></listitem>
@@ -224,31 +225,26 @@
 	<xsl:variable name="article.title">
 	    <xsl:choose>
 			<xsl:when test="./title"> 
-				<xsl:apply-templates select="./title"/>
+				<xsl:value-of select="./title"/>
 			</xsl:when>
 			<xsl:when test="./articleinfo/title">
-				<xsl:apply-templates select="./articleinfo/title"/>
+				<xsl:value-of select="./articleinfo/title"/>
 			</xsl:when>
 			<xsl:otherwise>
-				<xsl:apply-templates select="./artheader/title"/>
+				<xsl:value-of select="./artheader/title"/>
 			</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
-	<xsl:text>\begin{center}{</xsl:text>
-	<xsl:value-of select="$latex.book.article.title.style"/>
-	<xsl:text>{</xsl:text>
-	<xsl:value-of select="$article.title"/>
+	<xsl:text>\begin{center}\textsf{\textbf{\Large </xsl:text>
+	<xsl:call-template name="normalize-scape"> 
+	    <xsl:with-param name="string" select="$article.title"/>
+	</xsl:call-template>
 	<xsl:text>}}\par&#10;</xsl:text>
 	<!-- Display author information --> 
 	<xsl:choose>
 	    <xsl:when test="artheader/author">		
 			<xsl:text>\textsf{</xsl:text>
-			<xsl:for-each select="artheader/author">
-				<xsl:apply-templates select="."/>
-				<xsl:if test="not(position()=last())">
-					<xsl:text> \and </xsl:text>
-				</xsl:if>
-			</xsl:for-each>
+			<xsl:apply-templates select="artheader/author"/>	
 			<xsl:text>}\par&#10;</xsl:text>
 		</xsl:when>
 	    <xsl:when test="artheader/authorgroup">
@@ -258,12 +254,7 @@
 		</xsl:when>
 	    <xsl:when test="articleinfo/author">
 			<xsl:text>\textsf{</xsl:text>
-			<xsl:for-each select="articleinfo/author">
-				<xsl:apply-templates select="."/>
-				<xsl:if test="not(position()=last())">
-					<xsl:text> \and </xsl:text>
-				</xsl:if>
-			</xsl:for-each>
+			<xsl:apply-templates select="articleinfo/author"/>
 			<xsl:text>}\par&#10;</xsl:text>
 		</xsl:when>
 	    <xsl:when test="articleinfo/authorgroup">
@@ -273,21 +264,16 @@
 		</xsl:when>
 	    <xsl:when test="author">
 			<xsl:text>\textsf{</xsl:text>
-			<xsl:for-each select="author">
-				<xsl:apply-templates select="."/>
-				<xsl:if test="not(position()=last())">
-					<xsl:text> \and </xsl:text>
-				</xsl:if>
-			</xsl:for-each>
+			<xsl:apply-templates select="author"/>
 			<xsl:text>}\par&#10;</xsl:text>
 		</xsl:when>
 	</xsl:choose>
-	<xsl:apply-templates select="artheader|articleinfo" mode="article.within.book"/>
+	<xsl:apply-templates select="artheader" mode="article.within.book"/>
 	<xsl:text>\end{center}&#10;</xsl:text>
-	<xsl:apply-templates select="*[not(self::title)]"/>
+	<xsl:apply-templates/>
 	</xsl:template>
 
-	<xsl:template match="artheader|articleinfo" mode="article.within.book">
+	<xsl:template match="artheader" mode="article.within.book">
 		<xsl:value-of select="."/>
 	</xsl:template>
 
@@ -301,82 +287,54 @@
 	<xsl:variable name="article.title">
 	    <xsl:choose>
 			<xsl:when test="./title"> 
-				<xsl:apply-templates select="./title"/>
+				<xsl:value-of select="./title"/>
 			</xsl:when>
 			<xsl:when test="./articleinfo/title">
-				<xsl:apply-templates select="./articleinfo/title"/>
+				<xsl:value-of select="./articleinfo/title"/>
 			</xsl:when>
 			<xsl:otherwise>
-				<xsl:apply-templates select="./artheader/title"/>
+				<xsl:value-of select="./artheader/title"/>
 			</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
 	<xsl:text>\title{</xsl:text>
-	<xsl:value-of select="$latex.article.title.style"/>
-	<xsl:text>{</xsl:text>
-	<xsl:value-of select="$article.title"/>
-	<xsl:text>}}&#10;</xsl:text>
-	<!-- Display date and author information --> 
-	<xsl:variable name="article.date">
-		<xsl:apply-templates select="./artheader/date|./articleinfo/date"/>
-	</xsl:variable>
-	<xsl:if test="$article.date!=''">
-		<xsl:text>\date{</xsl:text>
-		<xsl:value-of select="$article.date"/>
-		<xsl:text>}&#10;</xsl:text>
-	</xsl:if>
+	<xsl:call-template name="normalize-scape"> 
+	    <xsl:with-param name="string" select="$article.title"/>
+	</xsl:call-template>
+	<xsl:text>}&#10;</xsl:text>
+	<!-- Display author information --> 
 	<xsl:text>\author{</xsl:text>
 	<xsl:choose>
+	    <xsl:when test="artheader/author">		
+			<xsl:apply-templates select="artheader/author"/>	
+		</xsl:when>
 	    <xsl:when test="artheader/authorgroup">
 			<xsl:apply-templates select="artheader/authorgroup"/>
+		</xsl:when>
+	    <xsl:when test="articleinfo/author">
+			<xsl:apply-templates select="articleinfo/author"/>
 		</xsl:when>
 	    <xsl:when test="articleinfo/authorgroup">
 			<xsl:apply-templates select="articleinfo/authorgroup"/>
 		</xsl:when>
-	    <xsl:when test="artheader/author">		
-		<xsl:for-each select="artheader/author">
-			<xsl:apply-templates select="."/>
-			<xsl:if test="not(position()=last())">
-				<xsl:text> \and </xsl:text>
-			</xsl:if>
-		</xsl:for-each>
-		</xsl:when>
-	    <xsl:when test="articleinfo/author">
-		<xsl:for-each select="articleinfo/author">
-			<xsl:apply-templates select="."/>
-			<xsl:if test="not(position()=last())">
-				<xsl:text> \and </xsl:text>
-			</xsl:if>
-		</xsl:for-each>
-		</xsl:when>
-	    <xsl:otherwise>
-		<xsl:for-each select="author">
-			<xsl:apply-templates select="."/>
-			<xsl:if test="not(position()=last())">
-				<xsl:text> \and </xsl:text>
-			</xsl:if>
-		</xsl:for-each>
-	    </xsl:otherwise>
+	    <xsl:otherwise><xsl:apply-templates select="author"/></xsl:otherwise>
 	</xsl:choose>
 	<xsl:text>}&#10;</xsl:text>
 	<!-- Display  begindocument command -->
 	<xsl:value-of select="$latex.article.begindocument"/>
-	<xsl:value-of select="$latex.maketitle"/>
-	<xsl:apply-templates select="*[not(self::title)]"/>
+	<xsl:value-of select="$latex.article.maketitle"/>
+	<xsl:apply-templates/>
 	<xsl:value-of select="$latex.article.end"/>
     </xsl:template>
 
 
-    <xsl:template match="article/title|articleinfo/title|articleinfo/date|artheader/date">
-	<xsl:apply-templates/>
-    </xsl:template>
 
     <xsl:template match="article/artheader|article/articleinfo">
-	<xsl:apply-templates select="legalnotice" />
 	<xsl:apply-templates select="abstract"/>
     </xsl:template>
 
     <!-- EMPTY TEMPLATES -->
+    <xsl:template match="article/title"/>
     <xsl:template match="article/subtitle"/>
 
 
@@ -439,7 +397,7 @@
     <!--############################################################################# 
     |   Template: legalnotice 
     |-  ############################################################################# -->
-<xsl:template match="legalnotice">
+	<xsl:template match="legalnotice">
  	<!-- Support for legalnotice. -->
     <xsl:text>\vspace{-.3em}&#10;</xsl:text>
     <xsl:text>\if@twocolumn&#10;</xsl:text>
@@ -454,7 +412,7 @@
 	<xsl:apply-templates select="*[not(self::title)]"/>
     <xsl:text>\vspace{0.6em}\par\if@twocolumn\else\endquotation\fi&#10;</xsl:text>
     <xsl:text>\normalsize\rmfamily&#10;</xsl:text>
-</xsl:template>
+	</xsl:template>
 
 
 	<xsl:template match="legalnotice/title">
@@ -464,7 +422,9 @@
 
 
     <!--############################################################################# 
+    |	$Id: book-article.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
     |- #############################################################################
+    |	$Author: jelmer $
     |														
     |   PURPOSE: Table of Contents, Figures, ...
     + ############################################################################## -->
@@ -504,37 +464,5 @@
     <xsl:template match="lotentry"/>
     <xsl:template match="tocpart|tocchap|tocfront|tocback|tocentry"/>
     <xsl:template match="toclevel1|toclevel2|toclevel3|toclevel4|toclevel5"/>
-
-    <doc:template name="generate.latex.pagestyle" xmlns="">
-	<refpurpose> Choose the preferred page style for document body </refpurpose>
-	<refdescription>
-		<para>
-			If no page style is preferred by the user, the defaults will be
-			"empty" for articles, "plain" for books, or "fancy" (if the
-			fancyhdr packages is permitted).
-		</para>
-		<formalpara><title>Pertinent Variables</title>
-		<itemizedlist>
-			<listitem><simpara><xref linkend="param.pagestyle"/></simpara></listitem>
-			<listitem><simpara><xref linkend="param.use.fancyhdr"/></simpara></listitem>
-		</itemizedlist>
-		</formalpara>
-	</refdescription>
-    </doc:template>
-	<xsl:template name="generate.latex.pagestyle">
-		<xsl:text>\pagestyle{</xsl:text>
-		<xsl:choose>
-			<xsl:when test="$latex.pagestyle!=''"><xsl:value-of select="$latex.pagestyle"/></xsl:when>
-			<xsl:when test="count(//book)&gt;0">
-				<xsl:choose>
-					<xsl:when test="$latex.use.fancyhdr=1"><xsl:text>fancy</xsl:text></xsl:when>
-					<xsl:otherwise><xsl:text>plain</xsl:text></xsl:otherwise>
-				</xsl:choose>
-			</xsl:when>
-			<xsl:otherwise><xsl:text>empty</xsl:text></xsl:otherwise>
-		</xsl:choose>
-		<xsl:text>}</xsl:text>
-	</xsl:template>
-	
 </xsl:stylesheet>
 

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: biblio.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $												
 |														
 |   PURPOSE: Manage Bibliography.
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="biblio" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: biblio.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -223,7 +226,7 @@
     </xsl:template>
 
     <xsl:template name="biblioentry.output">
-	<xsl:variable name="biblioentry.label">
+	<xsl:variable name="biblioentry.tag">
 	    <xsl:choose>
 		<xsl:when test="@xreflabel">
 		    <xsl:value-of select="normalize-space(@xreflabel)"/> 
@@ -235,49 +238,23 @@
 		    <xsl:value-of select="normalize-space(@id)"/> 
 		</xsl:when>
 		<xsl:otherwise>
-		</xsl:otherwise>
-	    </xsl:choose>
-	</xsl:variable>
-	<xsl:variable name="biblioentry.id">
-	    <xsl:choose>
-		<xsl:when test="abbrev">
-		    <xsl:apply-templates select="abbrev" mode="bibliography.mode"/> 
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:call-template name="generate.label.id"/>
+		    <xsl:text>UNKNOWN</xsl:text>
 		</xsl:otherwise>
 	    </xsl:choose>
 	</xsl:variable>
 	<xsl:text>&#10;</xsl:text>
 	<xsl:text>% -------------- biblioentry &#10;</xsl:text>
-	<xsl:choose>
-		<xsl:when test="$biblioentry.label=''">
-			<xsl:text>\bibitem</xsl:text> 
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:text>\bibitem[</xsl:text>
-			<xsl:call-template name="normalize-scape">
-				<xsl:with-param name="string" select="$biblioentry.label"/>
-			</xsl:call-template>
-			<xsl:text>]</xsl:text> 
-		</xsl:otherwise>
-	</xsl:choose>
-	<xsl:text>{</xsl:text>
-	<xsl:value-of select="$biblioentry.id"/>
-	<xsl:text>}\docbooktolatexbibaux{</xsl:text> 
-	<xsl:call-template name="generate.label.id"/> 
-	<xsl:text>}{</xsl:text> 
-	<xsl:value-of select="$biblioentry.id"/>
-	<xsl:text>}&#10;\hypertarget{</xsl:text> 
-	<xsl:call-template name="generate.label.id"/> 
-	<xsl:text>}{\emph{</xsl:text> <xsl:apply-templates select="title" mode="bibliography.mode"/> <xsl:text>}}</xsl:text>
+	<xsl:text>\bibitem[</xsl:text><xsl:value-of select="$biblioentry.tag"/><xsl:text>]</xsl:text> 
+	<xsl:text>{</xsl:text><xsl:value-of select="$biblioentry.tag"/><xsl:text>}&#10;</xsl:text> 
+	<xsl:text>\emph{</xsl:text> <xsl:apply-templates select="title" mode="bibliography.mode"/><xsl:text>} </xsl:text>
 	<xsl:value-of select="$biblioentry.item.separator"/>
 	<xsl:apply-templates select="author|authorgroup" mode="bibliography.mode"/>
 	<xsl:for-each select="child::copyright|child::publisher|child::pubdate|child::pagenums|child::isbn|child::editor|child::releaseinfo">
 	    <xsl:value-of select="$biblioentry.item.separator"/>
 	    <xsl:apply-templates select="." mode="bibliography.mode"/> 
 	</xsl:for-each>
-	<xsl:text>.</xsl:text>
+	<xsl:text>. </xsl:text>
+	<xsl:call-template name="label.id"/> 
 	<xsl:text>&#10;&#10;</xsl:text>
     </xsl:template>
 

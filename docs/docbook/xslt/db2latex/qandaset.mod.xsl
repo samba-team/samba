@@ -1,6 +1,8 @@
 <?xml version="1.0"?>
 <!--############################################################################# 
+|	$Id: qandaset.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 |   Portions (c) Norman Walsh, official DocBook XSL stylesheets.
@@ -17,6 +19,7 @@
 <!-- DOCUMENTATION                                                                -->
   <doc:reference xmlns="" id="qandaset">
     <referenceinfo>
+      <releaseinfo role="meta"> $Id: qandaset.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $ </releaseinfo>
 	<authorgroup>
       	<author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
       	<author> <firstname>James</firstname> <surname>Devenish</surname> </author>
@@ -125,8 +128,6 @@
 		<xsl:text>% -----------&#10;</xsl:text>
 		<xsl:text>% QandADiv   &#10;</xsl:text>
 		<xsl:text>% -----------&#10;</xsl:text>
-		<xsl:text>\noindent\begin{minipage}{\linewidth}&#10;</xsl:text>
-		<xsl:text>\vspace{0.25em}\hrule\vspace{0.25em}&#10;</xsl:text>
 		<xsl:choose>
       		<xsl:when test="ancestor::sect2">
 	    		<xsl:text>\paragraph*{</xsl:text>
@@ -149,11 +150,9 @@
 				<xsl:text>F.A.Q. Part</xsl:text>
 			</xsl:otherwise>
 		</xsl:choose>
-		<xsl:text>}</xsl:text>
+		<xsl:text>}&#10;</xsl:text>
 		<xsl:call-template name="label.id"/>
 		<xsl:text>&#10;</xsl:text>
-		<xsl:text>\hrule\vspace{0.25em}&#10;</xsl:text>
-		<xsl:text>\end{minipage}&#10;</xsl:text>
 
 <!--
   <xsl:variable name="toc.params">
@@ -176,7 +175,18 @@
 -->
 
 <!-- pseudo table of contents -->
-	<!--
+	<xsl:text>\floatstyle{ruled}&#10;</xsl:text>
+	<xsl:text>\newfloat{qandadivtoc}{H}{qdtoc}&#10;</xsl:text>
+	<!-- Either this one : -->
+	<xsl:text>\floatname{qandadivtoc}{</xsl:text>
+	<xsl:call-template name="gentext">
+		<xsl:with-param name="key">TableofContents</xsl:with-param>
+	</xsl:call-template>
+	<xsl:text>}&#10;</xsl:text>
+	<!-- or this one : 
+	<xsl:text>\floatname{qandadivtoc}{}&#10;</xsl:text>
+	-->
+	<xsl:text>\begin{qandadivtoc}&#10;</xsl:text>
 	<xsl:choose>
 		<xsl:when test="title">
 			<xsl:text>\caption{</xsl:text>
@@ -189,28 +199,23 @@
 			<xsl:text>}&#10;</xsl:text>
 		</xsl:otherwise>
 	</xsl:choose>
-	-->
 	<xsl:for-each select="qandaentry">
-	<xsl:text>\noindent{}</xsl:text>
+	<xsl:text>\noindent</xsl:text>
 	<xsl:value-of select="position()"/>
 	<xsl:text>.~</xsl:text>
 	<xsl:apply-templates select="question"/>
-	<xsl:if test="position()!=last()"><xsl:text>\newline&#10;</xsl:text></xsl:if>
 	</xsl:for-each>
-	<xsl:text>\vspace{0.25em}\hrule&#10;</xsl:text>
+	<xsl:text>\end{qandadivtoc}&#10;</xsl:text>
+	<xsl:text>\vspace{0.25cm}&#10;</xsl:text>
 
 	<xsl:for-each select="qandaentry">
-	<xsl:text>\vspace{1em}&#10;</xsl:text>
-	<xsl:text>\noindent{}</xsl:text>
+	<xsl:text>\noindent</xsl:text>
 	<xsl:value-of select="position()"/>
 	<xsl:text>.~</xsl:text>
-	<xsl:apply-templates select="question"/>
-	<xsl:text>\newline&#10;</xsl:text>
-	<xsl:apply-templates select="answer"/>
+	<xsl:apply-templates select="question|answer"/>
 	</xsl:for-each>
 <!--  <xsl:apply-templates select="qandadiv|qandaentry"/> -->
 <!--  <xsl:apply-templates/> -->
-	<xsl:text>\vspace{1em}&#10;</xsl:text>
 </xsl:template>
 
 
@@ -263,9 +268,9 @@
 	</xsl:otherwise>
 </xsl:choose>
 -->
-<xsl:text>\textbf{Q:}~\textit{</xsl:text>
+<xsl:text>{\textbf {Q : }}{\em </xsl:text>
 <xsl:apply-templates/>
-<xsl:text>}&#10;</xsl:text>
+<xsl:text>} \newline&#10;</xsl:text>
 </xsl:template>
 
 
@@ -282,8 +287,10 @@
 +   ############################################################################# -->
 
 <xsl:template match="answer">
-<xsl:text>\noindent\textbf{A:}~</xsl:text>
+<xsl:text>\noindent{\textbf{A :}}</xsl:text>
 <xsl:apply-templates/>
+<xsl:text>\newline&#10;</xsl:text>
+<xsl:text>\vspace{0.25cm}&#10;</xsl:text>
 <xsl:text>&#10;&#10;</xsl:text>
 </xsl:template>
 

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: figure.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $												
 |														
 |   PURPOSE: Template for figure tag.
 + ############################################################################## -->
@@ -15,6 +17,7 @@
     <doc:reference id="figure" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: figure.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>

@@ -5,7 +5,9 @@
  <!ENTITY % mmlextra PUBLIC "MathML extra" "ent/mmlextra.ent">  %mmlextra;
 ]>
 <!--############################################################################# 
+ |	$Id: mathml.content.constsymb.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
  |- #############################################################################
+ |	$Author: jelmer $												
  |														
  |   PURPOSE: MathML content markup, constants and symbols, 4.4.12.
  |	MathML namespace used -> mml

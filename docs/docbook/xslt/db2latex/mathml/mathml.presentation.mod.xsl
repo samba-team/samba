@@ -5,7 +5,9 @@
  <!ENTITY % mmlextra PUBLIC "MathML extra" "ent/mmlextra.ent">  %mmlextra;
 ]>
 <!--############################################################################# 
+ |	$Id: mathml.presentation.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $		
  |- #############################################################################
+ |	$Author: jelmer $												
  |														
  |   PURPOSE: MathML presentation markup.
  |	Note: these elements are not part of the DocBook DTD. I have extended
@@ -23,19 +25,12 @@
 	<xsl:text>{</xsl:text> <xsl:apply-templates/> <xsl:text>}</xsl:text>
 </xsl:template>
 
-<xsl:variable name="latex.entities.xml" select="document('latex.entities.xml')"/>
-
 
 <!-- TOKENS -->
 <!-- Math Identifier -->
 <xsl:template match="mml:mi">
 	<xsl:variable name="fontstyle" select="@fontstyle"/>
 	<xsl:variable name="identifier" select="normalize-space(.)"/>
-	<xsl:variable name="equivalent">
-		<xsl:if test="string-length($identifier)=1">
-			<xsl:value-of select="$latex.entities.xml/latex/character[@entity=$identifier]"/>
-		</xsl:if>
-	</xsl:variable>
 	<xsl:choose>
 		<xsl:when test="$identifier='&ExponentialE;'">
 			<xsl:text>\textrm{e}</xsl:text>
@@ -46,19 +41,8 @@
 		<xsl:when test="$identifier='&#x0221E;'"><!--/infty infinity -->
 			<xsl:text>\infty</xsl:text>
 		</xsl:when>
-		<!-- currently tries to map single-character identifiers only -->
-		<xsl:when test="$equivalent!=''">
-			<xsl:text>{</xsl:text>
-			<xsl:copy-of select="$equivalent"/>
-			<xsl:text>}</xsl:text>
-		</xsl:when>
 		<xsl:otherwise>
-			<xsl:if test="$fontstyle='normal' or string-length($identifier)&gt;1">
-				<xsl:text>\textrm</xsl:text>
-			</xsl:if>
-			<xsl:text>{</xsl:text>
-			<xsl:copy-of select="$identifier"/>
-			<xsl:text>}</xsl:text>
+			<xsl:text>\textrm{</xsl:text> <xsl:copy-of select="$identifier"/> <xsl:text>}</xsl:text>
 		</xsl:otherwise>
 	</xsl:choose>
 </xsl:template>
@@ -73,30 +57,9 @@
 	<xsl:apply-templates/>
 </xsl:template>
 
-<!-- Empty unless $character is a single character -->
-<xsl:template name="generate.equivalent">
-	<xsl:param name="arguments" select="0"/>
-	<xsl:param name="character"/>
-	<xsl:if test="string-length($character)=1">
-		<xsl:choose>
-			<xsl:when test="$arguments&gt;0">
-				<xsl:value-of select="$latex.entities.xml/latex/character[@entity=$character and @arguments=$arguments]"/>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:value-of select="$latex.entities.xml/latex/character[@entity=$character and @arguments='']"/>
-			</xsl:otherwise>
-		</xsl:choose>
-	</xsl:if>
-</xsl:template>
-
 <!-- Math Operator -->
 <xsl:template match="mml:mo">
 	<xsl:variable name="operator" select="normalize-space(.)"/>
-	<xsl:variable name="equivalent">
-		<xsl:call-template name="generate.equivalent">
-			<xsl:with-param name="character" select="$operator"/>
-		</xsl:call-template>
-	</xsl:variable>
 	<xsl:choose>
 		<xsl:when test="$operator='&ApplyFunction;'">
 			<xsl:text></xsl:text>
@@ -158,9 +121,6 @@
 		<xsl:when test="$operator='+' or $operator='-' or $operator='/' or $operator='*'">
 			<xsl:value-of select="$operator"/>
 		</xsl:when>
-		<xsl:when test="$equivalent">
-			<xsl:value-of select="$equivalent"/>
-		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text>\operatorname{</xsl:text>
 			<xsl:value-of select="$operator" />
@@ -186,14 +146,6 @@
 
 <!-- Math Space -->
 <xsl:template match="mml:mspace">
-	<xsl:if test="@width!='' and not(contains(@width,'%'))">
-		<xsl:text>\textrm{\hspace{</xsl:text><!-- kludge! -->
-		<xsl:value-of select="@width"/>
-		<xsl:text>}}</xsl:text>
-	</xsl:if>
-	<xsl:if test="@height!='' or @depth!=''">
-		<xsl:message>Warning: mspace support does not include height or depth.</xsl:message>
-	</xsl:if>
 </xsl:template>
 
 
@@ -233,8 +185,8 @@
 <xsl:template match="mml:mmultiscripts">
 </xsl:template>
 
-<xsl:template match="mml:munder">
 <!--
+<xsl:template match="mml:munder">
 <xsl:choose>
 	<xsl:when test="*[2] = &#818;">
 		<xsl:text>\underline{</xsl:text><xsl:apply-templates select="*[1]"/><xsl:text>}</xsl:text>
@@ -251,17 +203,10 @@
 	<xsl:text>}{</xsl:text>
 		<xsl:apply-templates select="*[1]"/>
 	<xsl:text>}</xsl:text>
--->
-	<xsl:text>{</xsl:text>
-	<xsl:apply-templates select="*[1]"/>
-	<xsl:text>_{</xsl:text>
-	<xsl:apply-templates select="*[2]"/>
-	<xsl:text>}}</xsl:text>
-<!--
 	</xsl:otherwise>
 </xsl:choose>
--->
 </xsl:template>
+-->
 <xsl:template match="mml:mover">
 <!--<xsl:choose>
 	<xsl:when test="normalize-space(*[2]) = &#175;">
@@ -276,57 +221,20 @@
 	<xsl:when test="normalize-space(*[2]) = &#9140;">
 		<xsl:text>\widehat{</xsl:text><xsl:apply-templates select="*[1]"/><xsl:text>}</xsl:text>
 	</xsl:when>
-	<xsl:otherwise>
-	</xsl:otherwise>
+	<xsl:otherwise>-->
+	<xsl:text>\overset{</xsl:text>
+		<xsl:apply-templates select="*[2]"/>
+	<xsl:text>}{</xsl:text>
+		<xsl:apply-templates select="*[1]"/>
+	<xsl:text>}</xsl:text>
+<!--	</xsl:otherwise>
 </xsl:choose>-->
-	<xsl:choose>
-		<xsl:when test="@accent='true' or ( local-name(*[2])='mo' and not(@accent='false'))">
-			<xsl:variable name="equivalent">
-				<xsl:call-template name="generate.equivalent">
-					<xsl:with-param name="arguments" select="1"/>
-					<xsl:with-param name="character" select="normalize-space(*[2])"/>
-				</xsl:call-template>
-			</xsl:variable>
-			<xsl:choose>
-				<xsl:when test="$equivalent!=''">
-					<xsl:text>{</xsl:text>
-					<xsl:value-of select="$equivalent"/>
-					<xsl:text>{</xsl:text>
-					<xsl:apply-templates select="*[1]"/>
-					<xsl:text>}}</xsl:text>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:text>{</xsl:text>
-					<xsl:apply-templates select="*[1]"/>
-					<xsl:text>^{</xsl:text>
-					<xsl:apply-templates select="*[2]"/>
-					<xsl:text>}}</xsl:text>
-				</xsl:otherwise>
-			</xsl:choose>
-		</xsl:when>
-		<xsl:otherwise>
-			<xsl:text>{</xsl:text>
-			<xsl:apply-templates select="*[1]"/>
-			<xsl:text>^{</xsl:text>
-			<xsl:apply-templates select="*[2]"/>
-			<xsl:text>}}</xsl:text>
-		</xsl:otherwise>
-	</xsl:choose>
 </xsl:template>
 
 
 
 <!-- Math UnderOver -->
 <xsl:template match="mml:munderover">
-	<xsl:text>{</xsl:text>
-	<xsl:apply-templates select="*[1]"/>
-	<xsl:text>_{</xsl:text>
-	<xsl:apply-templates select="*[2]"/>
-	<xsl:text>}</xsl:text>
-	<xsl:text>^{</xsl:text>
-	<xsl:apply-templates select="*[3]"/>
-	<xsl:text>}}</xsl:text>
-	<!--
 	<xsl:text>\overset{</xsl:text>
 			<xsl:apply-templates select="*[3]"/>
 		<xsl:text>}{\underset{</xsl:text>
@@ -334,7 +242,6 @@
 					<xsl:text>}{</xsl:text>
 				<xsl:apply-templates select="*[1]"/>
 	<xsl:text>}}</xsl:text>
-	-->
 </xsl:template>
 
 
@@ -350,7 +257,7 @@
 			<xsl:text> {\left\{ </xsl:text>
 		</xsl:when>
 		<xsl:when test="@open='['">
-			<xsl:text> {\left[\, </xsl:text>
+			<xsl:text> {\left[ </xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text> {\left( </xsl:text>
@@ -365,7 +272,7 @@
 			<xsl:text> \right\}} </xsl:text>
 		</xsl:when>
 		<xsl:when test="@close=']'">
-			<xsl:text> \,\right]} </xsl:text>
+			<xsl:text> \right]} </xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text> \right)} </xsl:text>
@@ -448,7 +355,7 @@
 <xsl:call-template name="mtable.format.tabular"><xsl:with-param name="cols" select="count($rows)"/></xsl:call-template>
 <xsl:text>}\hline&#10;</xsl:text>
 	<xsl:apply-templates/>
-<xsl:text>\end{array} </xsl:text>
+\end{array}&#10;
 </xsl:template>
 
 <xsl:template match="mml:mtr">

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: para.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -15,6 +17,7 @@
     <doc:reference id="para" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: para.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -67,5 +70,7 @@
     <xsl:template match="step/para"> <xsl:apply-templates/> </xsl:template>
     <xsl:template match="entry/para"> <xsl:apply-templates/> </xsl:template>
     <xsl:template match="question/para"> <xsl:apply-templates/> </xsl:template>
+    <xsl:template match="answer/para"> <xsl:apply-templates/> </xsl:template>
+
 
 </xsl:stylesheet>

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: sgmltag.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="sgmltag" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: sgmltag.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authogroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -66,9 +69,9 @@
 	    <xsl:when test="$class='endtag'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;/</xsl:text>
+			<xsl:text>\textless{}/</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>&gt;</xsl:text>
+			<xsl:text>\textgreater{}</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>
@@ -102,45 +105,45 @@
 	    <xsl:when test="$class='pi'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;?</xsl:text>
+			<xsl:text>\textless{}?</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>?&gt;</xsl:text>
+			<xsl:text>?\textgreater{}</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>
 	    <xsl:when test="$class='xmlpi'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;?</xsl:text>
+			<xsl:text>\textless{}?</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>?&gt;</xsl:text>
+			<xsl:text>?\textgreater{}</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>
 	    <xsl:when test="$class='starttag'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;</xsl:text>
+			<xsl:text>\textless{}</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>&gt;</xsl:text>
+			<xsl:text>\textgreater{}</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>
 	    <xsl:when test="$class='emptytag'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;</xsl:text>
+			<xsl:text>\textless{}</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>/&gt;</xsl:text>
+			<xsl:text>/\textgreater{}</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>
 	    <xsl:when test="$class='sgmlcomment'">
 		<xsl:call-template name="inline.monoseq">
 		    <xsl:with-param name="content">
-			<xsl:text>&lt;!--</xsl:text>
+			<xsl:text>$&lt;$!$--$</xsl:text>
 			<xsl:apply-templates/>
-			<xsl:text>--&gt;</xsl:text>
+			<xsl:text>$--&gt;$</xsl:text>
 		    </xsl:with-param>
 		</xsl:call-template>
 	    </xsl:when>

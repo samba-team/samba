@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: admonition.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $		
 |- #############################################################################
+|	$Author: jelmer $
 |
 |   PURPOSE: Admonition templates. 
 + ############################################################################## -->
@@ -15,6 +17,7 @@
     <doc:reference name="admonition" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: admonition.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 		<authorgroup>
 		<author><firstname>Ramon</firstname> <surname>Casellas</surname></author>
@@ -74,72 +77,46 @@
 		</example>
 	</refdescription>
     </doc:param>
+    <!--############################################################################# -->
 
-<!--############################################################################# -->
-<xsl:variable name="latex.admonition.environment">
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>% Define a new LaTeX environment (adminipage)    &#10;</xsl:text>
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>\newenvironment{admminipage}%&#10;</xsl:text>
-<xsl:text>{ % this code corresponds to the \begin{adminipage} command&#10;</xsl:text>
-<xsl:text> \begin{Sbox}%&#10;</xsl:text>
-<xsl:text> \begin{minipage}%&#10;</xsl:text>
-<xsl:text>} %done&#10;</xsl:text>
-<xsl:text>{ % this code corresponds to the \end{adminipage} command&#10;</xsl:text>
-<xsl:text> \end{minipage}&#10;</xsl:text>
-<xsl:text> \end{Sbox}&#10;</xsl:text>
-<xsl:text> \fbox{\TheSbox}&#10;</xsl:text>
-<xsl:text>} %done&#10;</xsl:text>
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>% Define a new LaTeX length (admlength)          &#10;</xsl:text>
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>\newlength{\admlength}&#10;</xsl:text>
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>% Define a new LaTeX environment (admonition)    &#10;</xsl:text>
-<xsl:text>% With 2 parameters:                             &#10;</xsl:text>
-<xsl:text>% #1 The file (e.g. note.pdf)                    &#10;</xsl:text>
-<xsl:text>% #2 The caption                                 &#10;</xsl:text>
-<xsl:text>% ---------------------------------------------- &#10;</xsl:text>
-<xsl:text>\newenvironment{admonition}[2] &#10;</xsl:text>
-<xsl:text>{ % this code corresponds to the \begin{admonition} command&#10;</xsl:text>
-<xsl:text> \hspace{0mm}\newline\hspace*\fill\newline&#10;</xsl:text>
-<xsl:text> \noindent&#10;</xsl:text>
-<xsl:text> \setlength{\fboxsep}{5pt}&#10;</xsl:text>
-<xsl:text> \setlength{\admlength}{\linewidth}&#10;</xsl:text>
-<xsl:text> \addtolength{\admlength}{-10\fboxsep}&#10;</xsl:text>
-<xsl:text> \addtolength{\admlength}{-10\fboxrule}&#10;</xsl:text>
-<xsl:text> \admminipage{\admlength}&#10;</xsl:text>
-<xsl:text> {\bfseries \sc\large{#2}}</xsl:text>
-<xsl:text> \newline&#10;</xsl:text>
-<xsl:text> \\[1mm]&#10;</xsl:text>
-<xsl:text> \sffamily&#10;</xsl:text>
-<!--
-If we cannot find the latex.admonition.path;
-Comment out the next line (\includegraphics).
-This tactic is to avoid deleting the \includegraphics
-altogether, as that could confuse a person trying to
-find the use of parameter #1 in the environment.
--->
-<xsl:if test="$latex.admonition.path=''">
-	<xsl:text>%</xsl:text>
-</xsl:if>
-<xsl:text> \includegraphics[</xsl:text> <xsl:value-of select="$latex.admonition.imagesize" /> <xsl:text>]{#1}&#10;</xsl:text>
-<xsl:text> \addtolength{\admlength}{-1cm}&#10;</xsl:text>
-<xsl:text> \addtolength{\admlength}{-20pt}&#10;</xsl:text>
-<xsl:text> \begin{minipage}[lt]{\admlength}&#10;</xsl:text>
-<xsl:text> \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt&#10;</xsl:text>
-<xsl:text>} %done&#10;</xsl:text>
-<xsl:text>{ % this code corresponds to the \end{admonition} command&#10;</xsl:text>
-<xsl:text> \vspace{5mm} &#10;</xsl:text>
-<xsl:text> \end{minipage}&#10;</xsl:text>
-<xsl:text> \endadmminipage&#10;</xsl:text>
-<xsl:text> \vspace{.5em}&#10;</xsl:text>
-<xsl:text> \par&#10;</xsl:text>
-<xsl:text>}&#10;</xsl:text>
-</xsl:variable>
-
-
-
+    <xsl:variable name="latex.admonition.environment">
+	<xsl:text>\newenvironment{admminipage}{\begin{Sbox}\begin{minipage}}{\end{minipage}\end{Sbox}\fbox{\TheSbox}}&#10;</xsl:text>
+	<xsl:text>\newlength{\admlength}&#10;</xsl:text>
+	<xsl:text>\newenvironment{admonition}[2] {&#10;</xsl:text>
+	<xsl:text> \hspace{0mm}\newline\hspace*\fill\newline&#10;</xsl:text>
+	<xsl:text> \noindent&#10;</xsl:text>
+	<xsl:text> \setlength{\fboxsep}{5pt}&#10;</xsl:text>
+	<xsl:text> \setlength{\admlength}{\linewidth}&#10;</xsl:text>
+	<xsl:text> \addtolength{\admlength}{-10\fboxsep}&#10;</xsl:text>
+	<xsl:text> \addtolength{\admlength}{-10\fboxrule}&#10;</xsl:text>
+	<xsl:text> \admminipage{\admlength}&#10;</xsl:text>
+	<xsl:text> {\bfseries \sc\large{#2}} \newline&#10;</xsl:text>
+	<xsl:text> \\[1mm]&#10;</xsl:text>
+	<xsl:text> \sffamily&#10;</xsl:text>
+	<xsl:if test="$latex.admonition.path=''">
+		<xsl:text>%</xsl:text>
+		<!--
+			Comment out the next line (\includegraphics).
+			This tactic is to avoid deleting the \includegraphics
+			altogether, as that could confuse a person trying to
+			find the use of parameter #1 in the environment.
+		-->
+	</xsl:if>
+	<xsl:text> \includegraphics[</xsl:text>
+	<xsl:value-of select="$latex.admonition.imagesize" />
+	<xsl:text>]{#1}&#10;</xsl:text>
+	<xsl:text> \addtolength{\admlength}{-1cm}&#10;</xsl:text>
+	<xsl:text> \addtolength{\admlength}{-20pt}&#10;</xsl:text>
+	<xsl:text> \begin{minipage}[lt]{\admlength}&#10;</xsl:text>
+	<xsl:text> \parskip=0.5\baselineskip \advance\parskip by 0pt plus 2pt&#10;</xsl:text>
+	<xsl:text>}{&#10;</xsl:text>
+	<xsl:text> \vspace{5mm} &#10;</xsl:text>
+	<xsl:text> \end{minipage}&#10;</xsl:text>
+	<xsl:text> \endadmminipage&#10;</xsl:text>
+	<xsl:text> \vspace{.5em}&#10;</xsl:text>
+	<xsl:text> \par&#10;</xsl:text>
+	<xsl:text>}&#10;</xsl:text>
+    </xsl:variable>
 
     <!--############################################################################# -->
     <!-- DOCUMENTATION                                                                -->

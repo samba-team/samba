@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: table.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -16,6 +18,7 @@
     <doc:reference id="table" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: table.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	    <authorgroup>
 		<firstname>Ramon</firstname> <surname>Casellas</surname>
@@ -98,22 +101,7 @@
 	    <xsl:when test="$i > $cols"></xsl:when>
 	    <!-- There are still columns to count -->
 	    <xsl:otherwise>
-		<xsl:variable name="width">
-			<xsl:variable name="userchoice" select="colspec[@colnum=$i]/@colwidth"/>
-			<xsl:variable name="cells" select="thead/row/entry[$i]|tbody/row/entry[$i]"/>
-			<xsl:choose>
-				<xsl:when test="string-length($userchoice)=0 and count($cells//itemizedlist|$cells//orderedlist|$cells//variablelist)&gt;0">
-					<!-- In these specific circumstances, we MUST use a line-wrapped column
-					     and yet the user hasn't specified one. -->
-					<xsl:value-of select="'1*'"/>
-				</xsl:when>
-				<xsl:otherwise>
-					<!-- In the general case, we just do what the user wants (may even
-					     have no pre-specified width). -->
-					<xsl:value-of select="$userchoice"/>
-				</xsl:otherwise>
-			</xsl:choose>
-		</xsl:variable>
+		<xsl:variable name="width" select="colspec[@colnum=$i]/@colwidth"/>
 		<!-- Try to take heed of colspecs -->
 		<xsl:choose>
 			<xsl:when test="$width!=''">
@@ -226,56 +214,25 @@
 	     the hsizes for each column are (1/(1+3)*2) and (3/(1+3)*2).
 		 The ratio of these to the star values (star values being 1 and 3)
 		 is 2/(1+3).
-		 BUT it is now very complicated because it takes into account columns
-		 where the user has not specified a width but LaTeX requires a
-		 fixed-width column (i.e. specialcols may vary).
-		 Relies on there being (a) colspecs for every column or (b) no
-		 colspecs.
 	 -->
 	<xsl:template name="generate.starfactor">
 		<xsl:param name="i" select="1"/>
-		<xsl:param name="cols" select="count(colspec)"/>
 		<xsl:param name="sum" select="0"/>
-		<xsl:param name="specialcols" select="count(colspec[contains(@colwidth,'*')])"/>
+		<xsl:param name="nodes" select="colspec[contains(@colwidth,'*')]"/>
 		<xsl:choose>
-			<xsl:when test="$i&lt;=$cols and colspec[position()=$i and contains(@colwidth,'*')]">
-				<!-- a * column -->
+			<xsl:when test="$i&lt;=count($nodes)">
 				<xsl:call-template name="generate.starfactor">
 					<xsl:with-param name="i" select="$i+1"/>
-					<xsl:with-param name="cols" select="$cols"/>
-					<xsl:with-param name="sum" select="$sum+substring-before(colspec[$i]/@colwidth,'*')"/>
-					<xsl:with-param name="specialcols" select="$specialcols"/>
+					<xsl:with-param name="sum" select="$sum+substring-before($nodes[$i]/@colwidth,'*')"/>
+					<xsl:with-param name="nodes" select="$nodes"/>
 				</xsl:call-template>
 			</xsl:when>
-			<xsl:when test="$i&lt;=$cols">
-				<!-- not a * column, but we are going to pretend that it is -->
-				<xsl:variable name="cells" select="thead/row/entry[$i]|tbody/row/entry[$i]"/>
-				<xsl:variable name="problems" select="count($cells//itemizedlist|$cells//orderedlist|$cells//variablelist)"/>
-				<xsl:choose>
-					<xsl:when test="$problems &gt; 0">
-						<xsl:call-template name="generate.starfactor">
-							<xsl:with-param name="i" select="$i+1"/>
-							<xsl:with-param name="cols" select="$cols"/>
-							<xsl:with-param name="sum" select="$sum+1"/>
-							<xsl:with-param name="specialcols" select="$specialcols+1"/>
-						</xsl:call-template>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:call-template name="generate.starfactor">
-							<xsl:with-param name="i" select="$i+1"/>
-							<xsl:with-param name="cols" select="$cols"/>
-							<xsl:with-param name="sum" select="$sum"/>
-							<xsl:with-param name="specialcols" select="$specialcols"/>
-						</xsl:call-template>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:when>
 			<xsl:otherwise>
-				<xsl:value-of select="$specialcols div $sum"/>
+				<xsl:value-of select="count($nodes) div $sum"/>
 			</xsl:otherwise>
 		</xsl:choose>
 	</xsl:template>
-	
+
 
     <xsl:template match="tgroup">
 	<xsl:variable name="align" select="@align"/>
@@ -290,10 +247,6 @@
 	<xsl:variable name="colspecs" select="./colspec"/>
 	<xsl:variable name="usex">
 		<xsl:choose>
-			<!-- if there are lists within cells, we need tabularx -->
-			<xsl:when test="$latex.use.tabularx=1 and (descendant::itemizedlist|descendant::orderedlist|descendant::variablelist)">
-				<xsl:text>1</xsl:text>
-			</xsl:when>
 			<!-- if there are instances of 1*-style colwidths, we need tabularx -->
 			<xsl:when test="$latex.use.tabularx=1 and contains(colspec/@colwidth,'*')">
 				<xsl:text>1</xsl:text>
@@ -315,7 +268,7 @@
 	</xsl:variable>
 	<xsl:choose>
 		<xsl:when test="$usex='1'">
-			<xsl:text>\begin{tabularx}{\linewidth}{</xsl:text>
+			<xsl:text>\begin{tabularx}{\columnwidth}{</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:if test="$useminipage='1'"><xsl:text>\begin{minipage}{\linewidth}&#10;</xsl:text></xsl:if>
@@ -329,11 +282,7 @@
 		<xsl:when test="$usex=1">
 			<xsl:call-template name="table.format.tabularx">
 				<xsl:with-param name="cols" select="@cols"/>
-				<xsl:with-param name="starfactor">
-					<xsl:call-template name="generate.starfactor">
-						<xsl:with-param name="cols" select="@cols"/>
-					</xsl:call-template>
-				</xsl:with-param>
+				<xsl:with-param name="starfactor"><xsl:call-template name="generate.starfactor"/></xsl:with-param>
 			</xsl:call-template>
 		</xsl:when>
 		<xsl:otherwise>
@@ -410,7 +359,7 @@
 	<xsl:call-template name="latex.entry.postalign"/>
 	<xsl:choose>
 		<xsl:when test="position()=last()"><xsl:text> \tabularnewline&#10;</xsl:text></xsl:when>
-		<xsl:otherwise><xsl:call-template name="generate.latex.cell.separator"/></xsl:otherwise>
+		<xsl:otherwise><xsl:text> &amp; </xsl:text></xsl:otherwise>
 	</xsl:choose> 
     </xsl:template>
 
@@ -442,69 +391,32 @@
 	<xsl:call-template name="latex.entry.postalign"/>
 	<xsl:choose>
 		<xsl:when test="position()=last()"><xsl:text> \tabularnewline&#10;</xsl:text></xsl:when>
-		<xsl:otherwise><xsl:call-template name="generate.latex.cell.separator"/></xsl:otherwise>
+		<xsl:otherwise><xsl:text> &amp; </xsl:text></xsl:otherwise>
 	</xsl:choose> 
     </xsl:template>
 
 
 	<xsl:template name="latex.entry.prealign">
-	<xsl:variable name="span">
-		<xsl:choose>
-			<xsl:when test="@spanname!=''">
-				<xsl:call-template name="calculate.colspan">
-					<xsl:with-param name="namest" select="../../../spanspec[@spanname=@spanname]/@namest"/>
-					<xsl:with-param name="nameend" select="../../../spanspec[@spanname=@spanname]/@nameend"/>
-				</xsl:call-template>
-			</xsl:when>
-			<xsl:when test="@namest!=''">
-				<xsl:call-template name="calculate.colspan"/>
-			</xsl:when>
-			<xsl:otherwise>-1</xsl:otherwise>
-		</xsl:choose>
-	</xsl:variable>
-	<xsl:if test="$span &gt; 1">
-		<xsl:text>\multicolumn{</xsl:text>
-		<xsl:value-of select="$span"/>
-		<xsl:text>|}{</xsl:text><!-- TODO take heed of @colsep -->
-		<xsl:choose>
-			<xsl:when test="@align='left'"><xsl:text>l</xsl:text></xsl:when>
-			<xsl:when test="@align='right'"><xsl:text>r</xsl:text></xsl:when>
-			<xsl:when test="@align='center'"><xsl:text>c</xsl:text></xsl:when>
-			<xsl:when test="@align='char'">c<xsl:message>Table entry char alignment is not supported.</xsl:message></xsl:when>
-			<xsl:otherwise>c</xsl:otherwise>
-		</xsl:choose>
-	<!-- use this as a hook for some general warnings -->
-		<xsl:text>}</xsl:text>
-	</xsl:if>
 	<!-- this is used when the entry's align spec wants to override the column default -->
-	<xsl:if test="$span &lt; 1">
-		<xsl:choose>
-			<xsl:when test="@align='left'"><xsl:text>\docbooktolatexalignll </xsl:text></xsl:when>
-			<xsl:when test="@align='right'"><xsl:text>\docbooktolatexalignrl </xsl:text></xsl:when>
-			<xsl:when test="@align='center'"><xsl:text>\docbooktolatexaligncl </xsl:text></xsl:when>
-			<xsl:when test="@align='char'"><xsl:message>Table entry char alignment is not supported.</xsl:message></xsl:when>
-		</xsl:choose>
-	</xsl:if>
-	<xsl:text>{</xsl:text>
-	<xsl:if test="@rotate='1'">
-		<xsl:text>\rotatebox{90}</xsl:text>
-		<xsl:if test="@align!=''"><xsl:message>entry[@rotate='1' and @align!=''] probably doesn't work.</xsl:message></xsl:if>
-	</xsl:if>
-	<xsl:text>{</xsl:text>
+	<xsl:choose>
+		<xsl:when test="@align='left'"><xsl:text>\docbooktolatexalignll </xsl:text></xsl:when>
+		<xsl:when test="@align='right'"><xsl:text>\docbooktolatexalignrl </xsl:text></xsl:when>
+		<xsl:when test="@align='center'"><xsl:text>\docbooktolatexaligncl </xsl:text></xsl:when>
+		<xsl:when test="@align='char'"><xsl:message>Table entry char alignment is not supported.</xsl:message></xsl:when>
+	</xsl:choose>
 	<!-- use this as a hook for some general warnings -->
 	<xsl:if test="@morerows!=''"><xsl:message>The morerows attribute is not supported.</xsl:message></xsl:if>
+	<xsl:if test="@spanname!=''"><xsl:message>The spanname attribute is not supported.</xsl:message></xsl:if>
+	<xsl:if test="@namest!=''"><xsl:message>The namest and nameend attributes are not supported.</xsl:message></xsl:if>
 	</xsl:template>
 
 	<xsl:template name="latex.entry.postalign">
-	<xsl:text>}}</xsl:text>
 	<!-- this is used when the entry's align spec wants to override the column default -->
-	<xsl:if test="@namest='' and @spanspec=''"><!-- TODO improve -->
-		<xsl:choose>
-			<xsl:when test="@align='left'"><xsl:text>\docbooktolatexalignlr </xsl:text></xsl:when>
-			<xsl:when test="@align='right'"><xsl:text>\docbooktolatexalignrr </xsl:text></xsl:when>
-			<xsl:when test="@align='center'"><xsl:text>\docbooktolatexaligncr </xsl:text></xsl:when>
-		</xsl:choose>
-	</xsl:if>
+	<xsl:choose>
+		<xsl:when test="@align='left'"><xsl:text>\docbooktolatexalignlr </xsl:text></xsl:when>
+		<xsl:when test="@align='right'"><xsl:text>\docbooktolatexalignrr </xsl:text></xsl:when>
+		<xsl:when test="@align='center'"><xsl:text>\docbooktolatexaligncr </xsl:text></xsl:when>
+	</xsl:choose>
 	</xsl:template>
 
 
@@ -725,16 +637,14 @@
     </xsl:template>
 
     <xsl:template name="calculate.colspan">
-	<xsl:param name="namest" select="@namest"/>
-	<xsl:param name="nameend" select="@nameend"/>
 	<xsl:variable name="scol">
 	    <xsl:call-template name="colspec.colnum">
-		<xsl:with-param name="colname" select="$namest"/>
+		<xsl:with-param name="colname" select="@namest"/>
 	    </xsl:call-template>
 	</xsl:variable>
 	<xsl:variable name="ecol">
 	    <xsl:call-template name="colspec.colnum">
-		<xsl:with-param name="colname" select="$nameend"/>
+		<xsl:with-param name="colname" select="@nameend"/>
 	    </xsl:call-template>
 	</xsl:variable>
 	<xsl:value-of select="$ecol - $scol + 1"/>

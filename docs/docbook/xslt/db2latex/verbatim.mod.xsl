@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: verbatim.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -16,6 +18,7 @@
     <doc:reference id="verbatim" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: verbatim.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -59,63 +62,57 @@
     <!--############################################################################# -->
     <!-- DOCUMENTATION                                                                -->
     <doc:template name="verbatim.apply.templates" xmlns="">
-	<refpurpose> Auxiliary template to output verbatim LaTeX code in verbatim mode </refpurpose>
+	<refpurpose> Auxiliary template to output verbatim LaTeX code (in verbatim mode)
+	that takes into account whether the user is using fancyverb or not. It allows
+	veratim line numbering and other fancy stuff. </refpurpose>
 	<refdescription>
-	<para> Takes into account whether the user is using fancyvrb or not. It allows
-	veratim line numbering and other fancy stuff. </para>
-	<para> In order to use a small or large font, you may also wanto to use 
-	the <literal>role</literal> attribute : </para>
-	<screen><![CDATA[
-	<programlisting role="small">
-	</programlisting>
-	<programlisting role="large">
-	</programlisting>
-	]]></screen>
+	<programlisting><![CDATA[
+	<xsl:template name="verbatim.apply.templates">
+	<xsl:choose>
+		<xsl:when test="$latex.use.fancyvrb='1'">
+			<xsl:text>&#10;\begin{Verbatim}[</xsl:text>
+			<xsl:if test="@linenumbering='numbered'">
+				<xsl:text>,numbers=left</xsl:text>
+			</xsl:if>
+			<xsl:if test="local-name(.)='literallayout' and @format!='monospaced'">
+				<xsl:text>,fontfamily=default</xsl:text>
+			</xsl:if>
+			<xsl:text>]&#10;</xsl:text>
+			<xsl:apply-templates mode="latex.verbatim"/>
+			<xsl:text>&#10;\end{Verbatim}&#10;</xsl:text>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:text>&#10;\begin{verbatim}&#10;</xsl:text>
+			<!-- RCAS: Experimental code 
+			<xsl:apply-templates/>-->
+			<xsl:apply-templates mode="latex.verbatim"/>
+			<xsl:text>&#10;\end{verbatim}&#10;</xsl:text>
+		</xsl:otherwise>
+	</xsl:choose>
+	</xsl:template>
+	]]></programlisting>
 	</refdescription>
     </doc:template>
     <!--############################################################################# -->
 
 	<xsl:template name="verbatim.apply.templates">
 	<xsl:choose>
-		<xsl:when test="ancestor::entry">
-			<xsl:message>Problem with <xsl:value-of select="local-name(.)"/> inside table entries.</xsl:message>
-			<xsl:text>\texttt{</xsl:text>
-			<xsl:apply-templates mode="latex.verbatim"/>
-			<xsl:text>}</xsl:text>
-		</xsl:when>
 		<xsl:when test="$latex.use.fancyvrb='1'">
-			<xsl:variable name="not_monospaced" select="local-name(.)='literallayout' and @format!='monospaced'"/>
 			<xsl:text>&#10;\begin{Verbatim}[</xsl:text>
 			<xsl:if test="@linenumbering='numbered'">
 				<xsl:text>,numbers=left</xsl:text>
 			</xsl:if>
-			<xsl:if test="$not_monospaced">
+			<xsl:if test="local-name(.)='literallayout' and @format!='monospaced'">
 				<xsl:text>,fontfamily=default</xsl:text>
 			</xsl:if>
-			<xsl:if test="@role">
-				<xsl:choose>
-					<xsl:when test="@role='small'">
-						<xsl:text>,fontsize=\small</xsl:text>
-					</xsl:when>
-					<xsl:when test="@role='large'">
-						<xsl:text>,fontsize=\large</xsl:text>
-					</xsl:when>
-				</xsl:choose>
-			</xsl:if>
 			<xsl:text>]&#10;</xsl:text>
-			<xsl:choose>
-				<xsl:when test="$not_monospaced">
-					<!-- Needs to be changed to cope with regular characterset! -->
-					<xsl:apply-templates mode="latex.verbatim"/>
-				</xsl:when>
-				<xsl:otherwise>
-					<xsl:apply-templates mode="latex.verbatim"/>
-				</xsl:otherwise>
-			</xsl:choose>
+			<xsl:apply-templates mode="latex.verbatim"/>
 			<xsl:text>&#10;\end{Verbatim}&#10;</xsl:text>
 		</xsl:when>
 		<xsl:otherwise>
 			<xsl:text>&#10;\begin{verbatim}&#10;</xsl:text>
+			<!-- RCAS: Experimental code 
+			<xsl:apply-templates/>-->
 			<xsl:apply-templates mode="latex.verbatim"/>
 			<xsl:text>&#10;\end{verbatim}&#10;</xsl:text>
 		</xsl:otherwise>

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: normalize-scape.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 |	Escape LaTeX and normalize-space templates.
@@ -18,6 +20,7 @@
     <doc:reference id="normalize-scape" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: normalize-scape.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -46,86 +49,33 @@
     <!--############################################################################# -->
 
     <xsl:template match="text()">
-		<xsl:call-template name="trim-outer">
-			<xsl:with-param name="string">
-				<xsl:choose>
-					<xsl:when test="ancestor::literal|ancestor::email|ancestor::sgmltag">
-						<xsl:call-template name="scape-verbatim">
-							<xsl:with-param name="string" select="."/>
-						</xsl:call-template>
-					</xsl:when>
-					<xsl:otherwise>
-						<xsl:call-template name="scape">
-							<xsl:with-param name="string" select="."/>
-						</xsl:call-template>
-					</xsl:otherwise>
-				</xsl:choose>
-			</xsl:with-param>
-		</xsl:call-template>
+	<xsl:call-template name="scape">
+	    <xsl:with-param name="string" select="."/>
+	</xsl:call-template>
     </xsl:template>
 
     <xsl:template match="text()" mode="xref.text">
-		<xsl:call-template name="trim-outer">
-			<xsl:with-param name="string">
-				<xsl:call-template name="scape">
-					<xsl:with-param name="string" select="."/>
-				</xsl:call-template>
-			</xsl:with-param>
-		</xsl:call-template>
+	<xsl:call-template name="scape">
+	    <xsl:with-param name="string" select="."/>
+	</xsl:call-template>
     </xsl:template>
 
     <xsl:template match="text()" mode="xref-to">
-		<xsl:call-template name="trim-outer">
-			<xsl:with-param name="string">
-				<xsl:call-template name="scape">
-					<xsl:with-param name="string" select="."/>
-				</xsl:call-template>
-			</xsl:with-param>
-		</xsl:call-template>
+	<xsl:call-template name="scape">
+	    <xsl:with-param name="string" select="."/>
+	</xsl:call-template>
     </xsl:template>
 
     <xsl:template match="text()" mode="latex.verbatim">
-		<!--
-		<xsl:call-template name="trim-outer">
-			<xsl:with-param name="string">
-			-->
-				<xsl:value-of select="."/> 
-			<!--
-			</xsl:with-param>
-		</xsl:call-template>
-		-->
+	<xsl:value-of select="."/> 
     </xsl:template>
 
 	<!-- this template is noly used by xref.mod.xsl and only when
 	     $latex.hyphenation.tttricks != 1. -->
     <xsl:template match="text()" mode="slash.hyphen">
-		<xsl:call-template name="trim-outer">
-			<xsl:with-param name="string">
-				<xsl:call-template name="scape.slash.hyphen">
-					<xsl:with-param name="string" select="." />
-				</xsl:call-template>
-			</xsl:with-param>
+		<xsl:call-template name="scape.slash.hyphen">
+			<xsl:with-param name="string" select="." />
 		</xsl:call-template>
-	</xsl:template>
-
-	<xsl:template name="trim-outer">
-		<xsl:param name="string"/>
-		<xsl:variable name="trimleft" select="position()=1"/>
-		<xsl:variable name="trimright" select="position()=last()"/>
-		<xsl:choose>
-			<xsl:when test="$trimleft and not($trimright)">
-				<xsl:value-of select="substring-before(normalize-space(concat($string,'$$')),'$$')"/>
-			</xsl:when>
-			<xsl:when test="$trimright and not($trimleft)">
-				<xsl:value-of select="substring-after(normalize-space(concat('$$',$string)),'$$')"/>
-			</xsl:when>
-			<xsl:when test="$trimleft and $trimright">
-				<xsl:value-of select="normalize-space($string)"/>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:value-of select="$string"/>
-			</xsl:otherwise>
-		</xsl:choose>
 	</xsl:template>
 
 	<xsl:template name="scape.slash.hyphen">
@@ -176,12 +126,12 @@
 			    <xsl:with-param name="from">&gt;</xsl:with-param>
 			    <xsl:with-param name="string">
 				<xsl:call-template name="string-replace">
-					<xsl:with-param name="to">\textasciitilde{}</xsl:with-param>
-					<xsl:with-param name="from">~</xsl:with-param>
+				    <xsl:with-param name="to">\{</xsl:with-param>
+				    <xsl:with-param name="from">{</xsl:with-param>
 				    <xsl:with-param name="string">
 					<xsl:call-template name="string-replace">
-						<xsl:with-param name="to">\^{}</xsl:with-param>
-						<xsl:with-param name="from">^</xsl:with-param>
+					    <xsl:with-param name="to">\}</xsl:with-param>
+					    <xsl:with-param name="from">}</xsl:with-param>
 					    <xsl:with-param name="string">
 						<xsl:call-template name="string-replace">
 						    <xsl:with-param name="to">\&amp;</xsl:with-param>
@@ -204,24 +154,19 @@
 										    <xsl:with-param name="from">%</xsl:with-param>
 										    <xsl:with-param name="string">
 											<xsl:call-template name="string-replace">
-												<xsl:with-param name="to">\{</xsl:with-param>
-												<xsl:with-param name="from">{</xsl:with-param>
+												<xsl:with-param name="to">\^</xsl:with-param>
+												<xsl:with-param name="from">^</xsl:with-param>
 												<xsl:with-param name="string">
 												<xsl:call-template name="string-replace">
-													<xsl:with-param name="to">\}</xsl:with-param>
-													<xsl:with-param name="from">}</xsl:with-param>
+													<xsl:with-param name="to">\textasciitilde{}</xsl:with-param>
+													<xsl:with-param name="from">~</xsl:with-param>
 													<xsl:with-param name="string">
 													<xsl:call-template name="string-replace">
-														<xsl:with-param name="to">\textbackslash \ </xsl:with-param>
-														<xsl:with-param name="from">\textbackslash  </xsl:with-param>
-														<xsl:with-param name="string">
-														<xsl:call-template name="string-replace">
-															<xsl:with-param name="to">\textbackslash </xsl:with-param>
-															<xsl:with-param name="from">\</xsl:with-param>
-															<xsl:with-param name="string" select="$string"></xsl:with-param>
-														</xsl:call-template>
-													</xsl:with-param>
-												</xsl:call-template></xsl:with-param>
+														<xsl:with-param name="to">\textbackslash{}</xsl:with-param>
+														<xsl:with-param name="from">\</xsl:with-param>
+														<xsl:with-param name="string" select="$string"></xsl:with-param>
+													</xsl:call-template>
+												</xsl:with-param>
 											</xsl:call-template></xsl:with-param>
 										</xsl:call-template></xsl:with-param>
 								    </xsl:call-template></xsl:with-param>
@@ -232,109 +177,6 @@
 			    </xsl:call-template></xsl:with-param>
 		    </xsl:call-template></xsl:with-param>
 	    </xsl:call-template></xsl:with-param>
-	</xsl:call-template>
-    </xsl:template>
-
-	<xsl:template name="scape-verbatim" >
-	<xsl:param name="string"/>
-		<xsl:call-template name="string-replace">
-			<xsl:with-param name="to">\textasciitilde{}</xsl:with-param>
-			<xsl:with-param name="from">~</xsl:with-param>
-			<xsl:with-param name="string">
-			<xsl:call-template name="string-replace">
-				<xsl:with-param name="to">\^{}</xsl:with-param>
-				<xsl:with-param name="from">^</xsl:with-param>
-				<xsl:with-param name="string">
-				<xsl:call-template name="string-replace">
-					<xsl:with-param name="to">\&amp;</xsl:with-param>
-					<xsl:with-param name="from">&amp;</xsl:with-param>
-					<xsl:with-param name="string">
-					<xsl:call-template name="string-replace">
-						<xsl:with-param name="to">\#</xsl:with-param>
-						<xsl:with-param name="from">#</xsl:with-param>
-						<xsl:with-param name="string">
-						<xsl:call-template name="string-replace">
-							<xsl:with-param name="to">\_</xsl:with-param>
-							<xsl:with-param name="from">_</xsl:with-param>
-							<xsl:with-param name="string">
-							<xsl:call-template name="string-replace">
-								<xsl:with-param name="to">\$</xsl:with-param>
-								<xsl:with-param name="from">$</xsl:with-param>
-								<xsl:with-param name="string">
-								<xsl:call-template name="string-replace">
-									<xsl:with-param name="to">\%</xsl:with-param>
-									<xsl:with-param name="from">%</xsl:with-param>
-									<xsl:with-param name="string">
-									<xsl:call-template name="string-replace">
-										<xsl:with-param name="to">\docbooktolatexgobble\string\{</xsl:with-param>
-										<xsl:with-param name="from">{</xsl:with-param>
-										<xsl:with-param name="string">
-										<xsl:call-template name="string-replace">
-											<xsl:with-param name="to">\docbooktolatexgobble\string\}</xsl:with-param>
-											<xsl:with-param name="from">}</xsl:with-param>
-											<xsl:with-param name="string">
-											<xsl:call-template name="string-replace">
-												<xsl:with-param name="to">\docbooktolatexgobble\string\\</xsl:with-param>
-												<xsl:with-param name="from">\</xsl:with-param>
-												<xsl:with-param name="string" select="$string"/>
-											</xsl:call-template>
-										</xsl:with-param>
-									</xsl:call-template></xsl:with-param>
-								</xsl:call-template></xsl:with-param>
-							</xsl:call-template></xsl:with-param>
-						</xsl:call-template></xsl:with-param>
-					</xsl:call-template></xsl:with-param>
-				</xsl:call-template></xsl:with-param>
-			</xsl:call-template></xsl:with-param>
-		</xsl:call-template></xsl:with-param>
-	</xsl:call-template>
-    </xsl:template>
-
-	<xsl:template name="scape-href" >
-	<xsl:param name="string"/>
-	<!-- maybe we should warn when there are invalid characters -->
-	<xsl:call-template name="string-replace">
-		<xsl:with-param name="to">\&amp;</xsl:with-param>
-		<xsl:with-param name="from">&amp;</xsl:with-param>
-		<xsl:with-param name="string">
-			<xsl:call-template name="string-replace">
-				<xsl:with-param name="to">\%</xsl:with-param>
-				<xsl:with-param name="from">%</xsl:with-param>
-				<xsl:with-param name="string">
-					<xsl:call-template name="string-replace">
-						<xsl:with-param name="to">\{</xsl:with-param>
-						<xsl:with-param name="from">{</xsl:with-param>
-						<xsl:with-param name="string">
-							<xsl:call-template name="string-replace">
-								<xsl:with-param name="to">\{</xsl:with-param>
-								<xsl:with-param name="from">{</xsl:with-param>
-								<xsl:with-param name="string">
-									<xsl:call-template name="string-replace">
-										<xsl:with-param name="to">\docbooktolatexgobble\string\\</xsl:with-param>
-										<xsl:with-param name="from">\</xsl:with-param>
-										<xsl:with-param name="string" select="$string"/>
-									</xsl:call-template>
-								</xsl:with-param>
-							</xsl:call-template>
-						</xsl:with-param>
-					</xsl:call-template>
-				</xsl:with-param>
-			</xsl:call-template>
-		</xsl:with-param>
-	</xsl:call-template>
-    </xsl:template>
-
-    <doc:template name="scape-optionalarg" xmlns="">
-	<refpurpose> Escape the ] character in LaTeX optional arguments (experimental)  </refpurpose>
-	<refdescription>
-	</refdescription>
-    </doc:template>
-	<xsl:template name="scape-optionalarg" >
-	<xsl:param name="string"/>
-	<xsl:call-template name="string-replace">
-		<xsl:with-param name="to">{\rbrack}</xsl:with-param>
-		<xsl:with-param name="from">]</xsl:with-param>
-		<xsl:with-param name="string" select="$string"/>
 	</xsl:call-template>
     </xsl:template>
 

@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: formal.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -16,6 +18,7 @@
     <doc:reference id="formal" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: formal.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -86,6 +89,8 @@
 <!-- 2003/07/04 Applied patches from J.Pavlovic -->
 <!-- ========================================  -->
 <xsl:template match="equation">
+<!-- Get LaTeX content if available -->
+<xsl:variable name="tex" select=" mediaobject/textobject[@role='tex' or @role='latex'] | mediaobject/textobject/phrase[@role='tex' or @role='latex']"/>
 <!-- Equation title placement -->
 <xsl:variable name="placement">
 	<xsl:call-template name="generate.formal.title.placement">
@@ -105,28 +110,11 @@
 	<xsl:text>\captionswapskip{}</xsl:text>
 </xsl:if>
 <xsl:choose>
-	<xsl:when test="informalequation">
-		<xsl:apply-templates select="informalequation"/>
+	<xsl:when test="$tex">
+		<xsl:apply-templates select="$tex"/>
 	</xsl:when>
 	<xsl:otherwise>
-		<xsl:variable name="tex" select="alt[@role='tex' or @role='latex']|mediaobject/textobject[@role='tex' or @role='latex']|mediaobject/textobject/phrase[@role='tex' or @role='latex']"/>
-		<xsl:choose>
-			<xsl:when test="$tex">
-				<xsl:apply-templates select="$tex"/>
-			</xsl:when>
-			<xsl:when test="alt and $latex.alt.is.preferred='1'">
-				<xsl:apply-templates select="alt"/>
-			</xsl:when>
-			<xsl:when test="mediaobject">
-				<xsl:apply-templates select="mediaobject"/>
-			</xsl:when>
-			<xsl:when test="alt">
-				<xsl:apply-templates select="alt"/>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:apply-templates select="graphic"/>
-			</xsl:otherwise>
-		</xsl:choose>
+		<xsl:apply-templates/>
 	</xsl:otherwise>
 </xsl:choose>
 <xsl:if test="$placement!='before'"><xsl:value-of select="$caption" /></xsl:if>
@@ -141,26 +129,16 @@
 
 
 <xsl:template match="informalequation">
-<xsl:variable name="tex" select="alt[@role='tex' or @role='latex']|mediaobject/textobject[@role='tex' or @role='latex']|mediaobject/textobject/phrase[@role='tex' or @role='latex']"/>
-<xsl:text>&#10;</xsl:text>
+<xsl:variable name="tex" select=" mediaobject/textobject[@role='tex'] | mediaobject/textobject[@role='latex']"/>
+<xsl:call-template name="informal.object"/>
 <xsl:choose>
 	<xsl:when test="$tex">
-		<xsl:apply-templates select="$tex"/>
-	</xsl:when>
-	<xsl:when test="alt and $latex.alt.is.preferred='1'">
-		<xsl:apply-templates select="alt"/>
-	</xsl:when>
-	<xsl:when test="mediaobject">
-		<xsl:apply-templates select="mediaobject"/>
-	</xsl:when>
-	<xsl:when test="alt">
-		<xsl:apply-templates select="alt"/>
+		<xsl:text>$</xsl:text><xsl:value-of select="mediaobject/textobject/phrase"/><xsl:text>$&#10;</xsl:text>
 	</xsl:when>
 	<xsl:otherwise>
-		<xsl:apply-templates select="graphic"/>
+		<xsl:apply-templates/>
 	</xsl:otherwise>
 </xsl:choose>
-<xsl:text>&#10;&#10;</xsl:text>
 </xsl:template>
 
 

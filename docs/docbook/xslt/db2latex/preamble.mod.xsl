@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: preamble.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $		
 |- #############################################################################
+|	$Author: jelmer $
 |
 |   PURPOSE: Variables and templates to manage LaTeX preamble. 
 + ############################################################################## -->
@@ -13,6 +15,7 @@
     <doc:reference id="preamble" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: preamble.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -79,12 +82,10 @@
 		<xsl:value-of select="$latex.article.preamble.pre"/>
 		<xsl:call-template name="label.id"/>
 		<xsl:call-template name="generate.latex.common.preamble"/>
-		<xsl:call-template name="generate.latex.essential.preamble"/>
 		<xsl:value-of select="$latex.article.preamble.post"/>
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:value-of select="$latex.override"/>
-		<xsl:call-template name="generate.latex.essential.preamble"/>
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:template>
@@ -115,12 +116,10 @@
 		<xsl:value-of select="$latex.book.preamble.pre"/>
 		<xsl:call-template name="label.id"/>
 		<xsl:call-template name="generate.latex.common.preamble"/>
-		<xsl:call-template name="generate.latex.essential.preamble"/>
 		<xsl:value-of select="$latex.book.preamble.post"/>
 	    </xsl:when>
 	    <xsl:otherwise>
 		<xsl:value-of select="$latex.override"/>
-		<xsl:call-template name="generate.latex.essential.preamble"/>
 	    </xsl:otherwise>
 	</xsl:choose>
     </xsl:template>
@@ -293,7 +292,6 @@
 	<xsl:text>\usepackage{latexsym}         &#10;</xsl:text>
 	<xsl:text>\usepackage{enumerate}         &#10;</xsl:text>
 	<xsl:if test="$latex.use.fancybox=1">
-		<!-- must be before \usepackage{fancyvrb} -->
 		<xsl:text>\usepackage{fancybox}      &#10;</xsl:text>
 	</xsl:if>
 	<xsl:text>\usepackage{float}       &#10;</xsl:text>
@@ -302,7 +300,6 @@
 		<xsl:text>\usepackage[</xsl:text><xsl:value-of select="$latex.babel.language" /><xsl:text>]{babel} &#10;</xsl:text>
 	</xsl:if>
 	<xsl:if test="$latex.use.fancyvrb=1">
-		<!-- must be after \usepackage{fancybox} -->
 		<xsl:text>\usepackage{fancyvrb}         &#10;</xsl:text>
 		<xsl:text>\makeatletter\@namedef{FV@fontfamily@default}{\def\FV@FontScanPrep{}\def\FV@FontFamily{}}\makeatother&#10;</xsl:text>
 		<xsl:if test="$latex.fancyvrb.tabsize!=''">
@@ -345,12 +342,46 @@
 	<xsl:text> \normalsize\rmfamily}&#10;</xsl:text>
 
 	<xsl:if test="$latex.math.support=1"><xsl:value-of select="$latex.math.preamble"/></xsl:if>
-	<xsl:if test="$latex.use.hyperref=1">
-		<xsl:call-template name="latex.hyperref.preamble"/>
-	</xsl:if>
+	<xsl:choose>
+		<xsl:when test="$latex.use.hyperref=1">
+			<xsl:call-template name="latex.hyperref.preamble"/>
+		</xsl:when>
+		<xsl:otherwise>
+			<xsl:text>\newcommand{\href}[1]{{}}&#10;</xsl:text>
+			<xsl:text>\newcommand{\hyperlink}[1]{{}}&#10;</xsl:text>
+			<xsl:text>\newcommand{\hypertarget}[2]{#2}&#10;</xsl:text>
+		</xsl:otherwise>
+	</xsl:choose>
 	<xsl:value-of select="$latex.admonition.environment"/>
 	<xsl:call-template name="latex.float.preamble"/>
 	<xsl:call-template name="latex.graphicext"/>
+	<xsl:text>% --------------------------------------------&#10;</xsl:text>
+	<xsl:text>% A way to honour &lt;footnoteref&gt;s&#10;</xsl:text>
+	<xsl:text>% Blame j-devenish (at) users.sourceforge.net&#10;</xsl:text>
+	<xsl:text><![CDATA[% In any other LaTeX context, this would probably go into a style file.
+\makeatletter
+\newcommand{\docbooktolatexusefootnoteref}[1]{\@ifundefined{@fn@label@#1}%
+  {\hbox{\@textsuperscript{\normalfont ?}}%
+    \@latex@warning{Footnote label `#1' was not defined}}%
+  {\@nameuse{@fn@label@#1}}}
+\newcommand{\docbooktolatexmakefootnoteref}[1]{%
+  \protected@write\@auxout{}%
+    {\global\string\@namedef{@fn@label@#1}{\@makefnmark}}%
+  \@namedef{@fn@label@#1}{\hbox{\@textsuperscript{\normalfont ?}}}%
+  }
+\makeatother]]></xsl:text>
+	<xsl:text>% --------------------------------------------&#10;</xsl:text>
+	<xsl:text>% Hacks for honouring row/entry/@align&#10;</xsl:text>
+	<xsl:text>% (\hspace not effective when in paragraph mode)&#10;</xsl:text>
+	<xsl:text>% Naming convention for these macros is:&#10;</xsl:text>
+	<xsl:text>% 'docbooktolatex' 'align' {alignment-type} {position-within-entry}&#10;</xsl:text>
+	<xsl:text>% where r = right, l = left, c = centre&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexalignrl}{\protect\ifvmode\raggedleft\else\hfill\fi}&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexalignrr}{\protect}&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexalignll}{\protect\ifvmode\raggedright\else\fi}&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexalignlr}{\protect\ifvmode\else\hspace*\fill\fi}&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexaligncl}{\protect\ifvmode\centering\else\hfill\fi}&#10;</xsl:text>
+	<xsl:text>\newcommand{\docbooktolatexaligncr}{\protect\ifvmode\else\hspace*\fill\fi}&#10;</xsl:text>
 	<xsl:choose>
 		<xsl:when test='$latex.caption.swapskip=1'>
 			<xsl:text>% --------------------------------------------&#10;</xsl:text>
@@ -372,99 +403,6 @@
 		<xsl:text>\newcommand{\docbookhyphenateurl}[1]{{\hyphenchar\font=`\/\relax #1\hyphenchar\font=`\-}}&#10;</xsl:text>
 	</xsl:if>
     </xsl:template>
-
-    <doc:variable name="generate.latex.essential.preamble" xmlns="">
-	<refpurpose> Unavoidable LaTeX preamble shared by articles and books </refpurpose>
-	<refdescription>
-	    <para>Contains custom commands <emphasis>that you just can't get rid of!</emphasis></para>
-	</refdescription>
-    </doc:variable>
-	<xsl:template name="generate.latex.essential.preamble">
-	<xsl:text>% --------------------------------------------&#10;</xsl:text>
-	<xsl:text>\makeatletter&#10;</xsl:text>
-	<xsl:if test="$latex.use.hyperref!='1'">
-		<xsl:text>\newcommand{\href}[1]{{}}&#10;</xsl:text>
-		<xsl:text>\newcommand{\hyperlink}[1]{{}}&#10;</xsl:text>
-		<xsl:text>\newcommand{\hypertarget}[2]{#2}&#10;</xsl:text>
-	</xsl:if>
-	<xsl:if test="$latex.use.ucs='1'">
-		<xsl:text>\usepackage[</xsl:text>
-		<xsl:value-of select="$latex.ucs.options"/>
-		<xsl:text>]{ucs}&#10;</xsl:text>
-	</xsl:if>
-	<xsl:if test="$latex.entities='catcode'">
-		<xsl:text>\catcode`\&amp;=\active\def&amp;{\@ifnextchar##{\@docbooktolatexunicode\@gobble}{\&amp;}}&#10;</xsl:text>
-		<xsl:if test="$latex.use.ucs!='1'">
-			<xsl:text><![CDATA[
-% A few example Unicode characters.
-% For full support, use the unicode pacakge from Dominique Unruh/CTAN.
-\newcommand{\unichar}[1]{%
-	\ifnum#1=8212---%
-	\else\&\##1;\fi%
-}
-]]></xsl:text>
-		</xsl:if>
-		<xsl:text>\def\@docbooktolatexunicode#1;{\edef\@dbtemp{#1}\unichar{\@dbtemp}}&#10;</xsl:text>
-	</xsl:if>
-	<xsl:if test="$latex.entities='unicode'">
-      <xsl:text>\usepackage[utf8]{inputenc}&#10;</xsl:text>
-	</xsl:if>
-	<xsl:text><![CDATA[
-\def\docbooktolatexgobble{\expandafter\@gobble}
-% Facilitate use of \cite with \label
-\newcommand{\docbooktolatexbibaux}[2]{%
-  \protected@write\@auxout{}{\string\global\string\@namedef{docbooktolatexcite@#1}{#2}}
-}
-\newcommand{\docbooktolatexcite}[2]{%
-  \@ifundefined{docbooktolatexcite@#1}%
-  {\cite{#1}}%
-  {\def\@docbooktolatextemp{#2}\ifx\@docbooktolatextemp\@empty%
-   \cite{\@nameuse{docbooktolatexcite@#1}}%
-   \else\cite[#2]{\@nameuse{docbooktolatexcite@#1}}%
-   \fi%
-  }%
-}
-\newcommand{\docbooktolatexbackcite}[1]{%
-  \ifx\Hy@backout\@undefined\else%
-    \@ifundefined{docbooktolatexcite@#1}{%
-      % emit warning?
-    }{%
-      \ifBR@verbose%
-        \PackageInfo{backref}{back cite \string`#1\string' as \string`\@nameuse{docbooktolatexcite@#1}\string'}%
-      \fi%
-      \Hy@backout{\@nameuse{docbooktolatexcite@#1}}%
-    }%
-  \fi%
-}
-% --------------------------------------------
-% A way to honour <footnoteref>s
-% Blame j-devenish (at) users.sourceforge.net
-% In any other LaTeX context, this would probably go into a style file.
-\newcommand{\docbooktolatexusefootnoteref}[1]{\@ifundefined{@fn@label@#1}%
-  {\hbox{\@textsuperscript{\normalfont ?}}%
-    \@latex@warning{Footnote label `#1' was not defined}}%
-  {\@nameuse{@fn@label@#1}}}
-\newcommand{\docbooktolatexmakefootnoteref}[1]{%
-  \protected@write\@auxout{}%
-    {\global\string\@namedef{@fn@label@#1}{\@makefnmark}}%
-  \@namedef{@fn@label@#1}{\hbox{\@textsuperscript{\normalfont ?}}}%
-  }
-% --------------------------------------------
-% Hacks for honouring row/entry/@align
-% (\hspace not effective when in paragraph mode)
-% Naming convention for these macros is:
-% 'docbooktolatex' 'align' {alignment-type} {position-within-entry}
-% where r = right, l = left, c = centre
-\newcommand{\docbooktolatexalignrl}{\protect\ifvmode\raggedleft\else\hfill\fi}
-\newcommand{\docbooktolatexalignrr}{\protect}
-\newcommand{\docbooktolatexalignll}{\protect\ifvmode\raggedright\else\fi}
-\newcommand{\docbooktolatexalignlr}{\protect\ifvmode\else\hspace*\fill\fi}
-\newcommand{\docbooktolatexaligncl}{\protect\ifvmode\centering\else\hfill\fi}
-\newcommand{\docbooktolatexaligncr}{\protect\ifvmode\else\hspace*\fill\fi}
-\ifx\captionswapskip\@undefined\newcommand{\captionswapskip}{}\fi
-\makeatother
-]]></xsl:text>
-	</xsl:template>
 
 
 
@@ -796,15 +734,25 @@ Otherwise, declares .pdf, .png, .jpg if using pdflatex and .eps if using latex.
 </xsl:choose>
 </xsl:template>
 
-	<xsl:template name="generate.latex.cell.separator">
+    <doc:template name="generate.latex.pagestyle" xmlns="">
+	<refpurpose> Choose the preferred page style for document body </refpurpose>
+	<refdescription>
+		<formalpara><title>Pertinent Variables</title>
+		<itemizedlist>
+			<listitem><simpara><xref linkend="param.pagestyle"/></simpara></listitem>
+			<listitem><simpara><xref linkend="param.use.fancyhdr"/></simpara></listitem>
+		</itemizedlist>
+		</formalpara>
+	</refdescription>
+    </doc:template>
+	<xsl:template name="generate.latex.pagestyle">
+		<xsl:text>\pagestyle{</xsl:text>
 		<xsl:choose>
-			<xsl:when test="$latex.entities='catcode'">
-				<xsl:text> \catcode`\&amp;=4 &amp;\catcode`\&amp;=\active </xsl:text>
-			</xsl:when>
-			<xsl:otherwise>
-				<xsl:text> &amp; </xsl:text>
-			</xsl:otherwise>
+			<xsl:when test="$latex.pagestyle!=''"><xsl:value-of select="$latex.pagestyle"/></xsl:when>
+			<xsl:when test="$latex.use.fancyhdr=1"><xsl:text>fancy</xsl:text></xsl:when>
+			<xsl:otherwise><xsl:text>plain</xsl:text></xsl:otherwise>
 		</xsl:choose>
+		<xsl:text>}</xsl:text>
 	</xsl:template>
 </xsl:stylesheet>
 

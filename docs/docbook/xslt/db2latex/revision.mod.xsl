@@ -1,6 +1,8 @@
 <?xml version='1.0'?>
 <!--############################################################################# 
+|	$Id: revision.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 |- #############################################################################
+|	$Author: jelmer $
 |														
 |   PURPOSE:
 + ############################################################################## -->
@@ -17,6 +19,7 @@
     <doc:reference id="revision" xmlns="">
 	<referenceinfo>
 	    <releaseinfo role="meta">
+		$Id: revision.mod.xsl,v 1.1.2.3 2003/08/12 18:22:39 jelmer Exp $
 	    </releaseinfo>
 	<authorgroup>
 	    <author> <firstname>Ramon</firstname> <surname>Casellas</surname> </author>
@@ -88,7 +91,7 @@
 	<xsl:variable name="revnumber" select=".//revnumber"/>
 	<xsl:variable name="revdate"   select=".//date"/>
 	<xsl:variable name="revauthor" select=".//authorinitials"/>
-	<xsl:variable name="revremark" select=".//revremark|.//revdescription"/>
+	<xsl:variable name="revremark" select=".//revremark|../revdescription"/>
 	<!-- Row starts here -->
 	<xsl:if test="$revnumber">
 	    <xsl:call-template name="gentext.element.name"/>
@@ -112,7 +115,7 @@
 	<xsl:text> \\ \hline&#10;</xsl:text>
 	<!-- Add Remark Row if exists-->
 	<xsl:if test="$revremark"> 
-	    <xsl:text>\multicolumn{3}{|l|}{</xsl:text>
+	    <xsl:text>\multicolumn{3}{l}{</xsl:text>
 	    <xsl:apply-templates select="$revremark"/> 
 	    <!-- End Row here -->
 	    <xsl:text>} \\ \hline&#10;</xsl:text>
