@@ -1,3 +1,7 @@
+2001-07-19  Assar Westerlund  <assar@assaris.sics.se>
+
+	* Release 0.4c
+
 2001-07-19  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/Makefile.am (libkrb5_la_LDFLAGS): bump version to
