@@ -112,6 +112,12 @@ static void	 sizecmd (char *);
 static void	 toolong (int);
 static int	 yylex (void);
 
+/* This is for bison */
+
+#if !defined(alloca) && !defined(HAVE_ALLOCA)
+#define alloca(x) malloc(x)
+#endif
+
 %}
 
 %union {
