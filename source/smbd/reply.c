@@ -934,8 +934,8 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 						make_dir_struct(p,mask,fname,size,mode,date,conn->case_sensitive);
 						dptr_fill(p+12,dptr_num);
 						numentries++;
+						p += DIR_STRUCT_SIZE;
 					}
-					p += DIR_STRUCT_SIZE;
 				}
 			}
 		} /* if (ok ) */
@@ -949,18 +949,12 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		(X/Open spec) */
 
 	if(ok && expect_close && numentries == 0 && status_len == 0) {
-		if (Protocol < PROTOCOL_NT1) {
-			SCVAL(outbuf,smb_rcls,ERRDOS);
-			SSVAL(outbuf,smb_err,ERRnofiles);
-		}
-		/* Also close the dptr - we know it's gone */
+		/* Close the dptr - we know it's gone */
 		dptr_close(&dptr_num);
+		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
 	} else if (numentries == 0 || !ok) {
-		if (Protocol < PROTOCOL_NT1) {
-			SCVAL(outbuf,smb_rcls,ERRDOS);
-			SSVAL(outbuf,smb_err,ERRnofiles);
-		}
 		dptr_close(&dptr_num);
+		return ERROR_BOTH(STATUS_NO_MORE_FILES,ERRDOS,ERRnofiles);
 	}
 
 	/* If we were called as SMBfunique, then we can close the dirptr now ! */
