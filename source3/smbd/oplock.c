@@ -82,7 +82,7 @@ BOOL receive_local_message( char *buffer, int buffer_len, int timeout)
 
 	smb_read_error = 0;
 
-	while (timeout > 0) {
+	while (timeout > 0 && selrtn == -1) {
 		struct timeval to;
 		int maxfd = oplock_sock;
 		time_t starttime = time(NULL);
