@@ -2276,9 +2276,7 @@ static int add_a_service(const service *pservice, const char *name)
 	if (i == iNumServices) {
 		service **tsp;
 		
-		tsp = (service **) Realloc(ServicePtrs,
-					   sizeof(service *) *
-					   num_to_alloc);
+		tsp = SMB_REALLOC_ARRAY(ServicePtrs, service *, num_to_alloc);
 					   
 		if (!tsp) {
 			DEBUG(0,("add_a_service: failed to enlarge ServicePtrs!\n"));
@@ -2286,8 +2284,7 @@ static int add_a_service(const service *pservice, const char *name)
 		}
 		else {
 			ServicePtrs = tsp;
-			ServicePtrs[iNumServices] =
-				(service *) malloc(sizeof(service));
+			ServicePtrs[iNumServices] = SMB_MALLOC_P(service);
 		}
 		if (!ServicePtrs[iNumServices]) {
 			DEBUG(0,("add_a_service: out of memory!\n"));
@@ -2579,16 +2576,16 @@ static void copy_service(service * pserviceDest, service * pserviceSource, BOOL 
 			if (strcmp(pdata->key, data->key) == 0) {
 				string_free(&pdata->value);
 				str_list_free(&data->list);
-				pdata->value = strdup(data->value);
+				pdata->value = SMB_STRDUP(data->value);
 				not_added = False;
 				break;
 			}
 			pdata = pdata->next;
 		}
 		if (not_added) {
-		    paramo = smb_xmalloc(sizeof(param_opt_struct));
-		    paramo->key = strdup(data->key);
-		    paramo->value = strdup(data->value);
+		    paramo = SMB_XMALLOC_P(param_opt_struct);
+		    paramo->key = SMB_STRDUP(data->key);
+		    paramo->value = SMB_STRDUP(data->value);
 		    paramo->list = NULL;
 		    DLIST_ADD(pserviceDest->param_opt, paramo);
 		}
@@ -2663,16 +2660,16 @@ static void add_to_file_list(const char *fname, const char *subfname)
 	}
 
 	if (!f) {
-		f = (struct file_lists *)malloc(sizeof(file_lists[0]));
+		f = SMB_MALLOC_P(struct file_lists);
 		if (!f)
 			return;
 		f->next = file_lists;
-		f->name = strdup(fname);
+		f->name = SMB_STRDUP(fname);
 		if (!f->name) {
 			SAFE_FREE(f);
 			return;
 		}
-		f->subfname = strdup(subfname);
+		f->subfname = SMB_STRDUP(subfname);
 		if (!f->subfname) {
 			SAFE_FREE(f);
 			return;
@@ -2722,7 +2719,7 @@ BOOL lp_file_list_changed(void)
 				  ctime(&mod_time)));
 			f->modtime = mod_time;
 			SAFE_FREE(f->subfname);
-			f->subfname = strdup(n2);
+			f->subfname = SMB_STRDUP(n2);
 			return (True);
 		}
 		f = f->next;
@@ -3064,7 +3061,7 @@ static void init_copymap(service * pservice)
 {
 	int i;
 	SAFE_FREE(pservice->copymap);
-	pservice->copymap = (BOOL *)malloc(sizeof(BOOL) * NUMPARAMETERS);
+	pservice->copymap = SMB_MALLOC_ARRAY(BOOL,NUMPARAMETERS);
 	if (!pservice->copymap)
 		DEBUG(0,
 		      ("Couldn't allocate copymap!! (size %d)\n",
@@ -3118,16 +3115,16 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 				if (strcmp(data->key, param_key) == 0) {
 					string_free(&data->value);
 					str_list_free(&data->list);
-					data->value = strdup(pszParmValue);
+					data->value = SMB_STRDUP(pszParmValue);
 					not_added = False;
 					break;
 				}
 				data = data->next;
 			}
 			if (not_added) {
-				paramo = smb_xmalloc(sizeof(param_opt_struct));
-				paramo->key = strdup(param_key);
-				paramo->value = strdup(pszParmValue);
+				paramo = SMB_XMALLOC_P(param_opt_struct);
+				paramo->key = SMB_STRDUP(param_key);
+				paramo->value = SMB_STRDUP(pszParmValue);
 				paramo->list = NULL;
 				if (snum < 0) {
 					DLIST_ADD(Globals.param_opt, paramo);
@@ -3670,7 +3667,7 @@ static void lp_add_auto_services(char *str)
 	if (!str)
 		return;
 
-	s = strdup(str);
+	s = SMB_STRDUP(str);
 	if (!s)
 		return;
 
@@ -3769,7 +3766,7 @@ static void lp_save_defaults(void)
 			case P_STRING:
 			case P_USTRING:
 				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = strdup(*(char **)parm_table[i].ptr);
+					parm_table[i].def.svalue = SMB_STRDUP(*(char **)parm_table[i].ptr);
 				} else {
 					parm_table[i].def.svalue = NULL;
 				}
@@ -3777,7 +3774,7 @@ static void lp_save_defaults(void)
 			case P_GSTRING:
 			case P_UGSTRING:
 				if (parm_table[i].ptr) {
-					parm_table[i].def.svalue = strdup((char *)parm_table[i].ptr);
+					parm_table[i].def.svalue = SMB_STRDUP((char *)parm_table[i].ptr);
 				} else {
 					parm_table[i].def.svalue = NULL;
 				}

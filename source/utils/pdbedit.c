@@ -265,11 +265,11 @@ static char* trustpw_flag_name(const int val)
 	
 	for (i = 0; i < flag_num; i++) {
 		if (flags[i].val == val) {
-			return strdup(flags[i].name);
+			return SMB_STRDUP(flags[i].name);
 		}
 	}
 	
-	return strdup("unknown flag");
+	return SMB_STRDUP("unknown flag");
 }
 
 
@@ -576,10 +576,10 @@ static int new_user (struct pdb_context *in, const char *username,
 	}
 
 	staticpass = getpass("new password:");
-	password1 = strdup(staticpass);
+	password1 = SMB_STRDUP(staticpass);
 	memset(staticpass, 0, strlen(staticpass));
 	staticpass = getpass("retype new password:");
-	password2 = strdup(staticpass);
+	password2 = SMB_STRDUP(staticpass);
 	memset(staticpass, 0, strlen(staticpass));
 	if (strcmp (password1, password2)) {
 		fprintf (stderr, "Passwords does not match!\n");
@@ -794,14 +794,12 @@ static int new_trustpw(struct pdb_context *in, const char *dom_name,
 	if (trust.private.flags & PASS_TRUST_NT) {
 		E_md4hash(password, nthash);
 		trust.private.pass.length = sizeof(nthash);
-		trust.private.pass.data = talloc(mem_ctx,
-						 sizeof(uint8) * sizeof(nthash));
+		trust.private.pass.data = TALLOC(mem_ctx, sizeof(nthash));
 		memcpy(trust.private.pass.data, nthash, trust.private.pass.length);
 
 	} else if (trust.private.flags & PASS_TRUST_ADS) {
 		trust.private.pass.length = strlen(password);
-		trust.private.pass.data = talloc(mem_ctx,
-						 sizeof(uint8) * (strlen(password) + 1));
+		trust.private.pass.data = TALLOC(mem_ctx, strlen(password) + 1);
 		strncpy(trust.private.pass.data, password, trust.private.pass.length);
 		trust.private.pass.data[trust.private.pass.length] = '\0';
 	}	
@@ -881,14 +879,12 @@ static int update_trustpw(struct pdb_context *in, const char *dom_name,
 	if (trust.private.flags & PASS_TRUST_NT) {
 		E_md4hash(password, nthash);
 		trust.private.pass.length = sizeof(nthash);
-		trust.private.pass.data = talloc(mem_ctx,
-						 sizeof(uint8) * sizeof(nthash));
+		trust.private.pass.data = TALLOC(mem_ctx, sizeof(nthash));
 		memcpy(trust.private.pass.data, nthash, trust.private.pass.length);
 
 	} else if (trust.private.flags & PASS_TRUST_ADS) {
 		trust.private.pass.length = strlen(password);
-		trust.private.pass.data = talloc(mem_ctx,
-						 sizeof(uint8) * (strlen(password) + 1));
+		trust.private.pass.data = TALLOC(mem_ctx, strlen(password) + 1);
 		strncpy(trust.private.pass.data, password, trust.private.pass.length);
 		trust.private.pass.data[trust.private.pass.length] = '\0';
 	}	

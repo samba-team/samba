@@ -31,7 +31,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 	char *ret;
 	int len;
 	
-	r = strdup(realm);
+	r = SMB_STRDUP(realm);
 
 	if (!r || !*r)
 		return r;
@@ -42,7 +42,7 @@ char *ads_build_path(const char *realm, const char *sep, const char *field, int 
 
 	len = (numbits+1)*(strlen(field)+1) + strlen(r) + 1;
 
-	ret = malloc(len);
+	ret = SMB_MALLOC(len);
 	if (!ret)
 		return NULL;
 
@@ -87,12 +87,12 @@ ADS_STRUCT *ads_init(const char *realm,
 {
 	ADS_STRUCT *ads;
 	
-	ads = (ADS_STRUCT *)smb_xmalloc(sizeof(*ads));
+	ads = SMB_XMALLOC_P(ADS_STRUCT);
 	ZERO_STRUCTP(ads);
 	
-	ads->server.realm = realm? strdup(realm) : NULL;
-	ads->server.workgroup = workgroup ? strdup(workgroup) : NULL;
-	ads->server.ldap_server = ldap_server? strdup(ldap_server) : NULL;
+	ads->server.realm = realm? SMB_STRDUP(realm) : NULL;
+	ads->server.workgroup = workgroup ? SMB_STRDUP(workgroup) : NULL;
+	ads->server.ldap_server = ldap_server? SMB_STRDUP(ldap_server) : NULL;
 
 	/* we need to know if this is a foreign realm */
 	if (realm && *realm && !strequal(lp_realm(), realm)) {

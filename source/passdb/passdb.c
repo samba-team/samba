@@ -133,7 +133,7 @@ NTSTATUS pdb_init_sam_talloc(TALLOC_CTX *mem_ctx, SAM_ACCOUNT **user)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	*user=(SAM_ACCOUNT *)talloc(mem_ctx, sizeof(SAM_ACCOUNT));
+	*user=TALLOC_P(mem_ctx, SAM_ACCOUNT);
 
 	if (*user==NULL) {
 		DEBUG(0,("pdb_init_sam_talloc: error while allocating memory\n"));
@@ -1886,7 +1886,7 @@ BOOL init_sam_from_buffer_v2(SAM_ACCOUNT *sampass, uint8 *buf, uint32 buflen)
 	/* Change from V1 is addition of password history field. */
 	account_policy_get(AP_PASSWORD_HISTORY, &pwHistLen);
 	if (pwHistLen) {
-		char *pw_hist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN);
+		char *pw_hist = SMB_MALLOC(pwHistLen * PW_HISTORY_ENTRY_LEN);
 		if (!pw_hist) {
 			ret = False;
 			goto done;
@@ -2167,7 +2167,7 @@ uint32 init_buffer_from_sam_v2 (uint8 **buf, const SAM_ACCOUNT *sampass, BOOL si
 	}
 
 	/* malloc the space needed */
-	if ( (*buf=(uint8*)malloc(len)) == NULL) {
+	if ( (*buf=(uint8*)SMB_MALLOC(len)) == NULL) {
 		DEBUG(0,("init_buffer_from_sam_v2: Unable to malloc() memory for buffer!\n"));
 		return (-1);
 	}
@@ -2462,7 +2462,7 @@ size_t pdb_init_buffer_from_trustpw(TALLOC_CTX *mem_ctx, char** buf, const SAM_T
 	/* calculate length of the storage buffer */
 	len = tdb_trustpw_pack(trust, NULL, 0);
 
-	*buf = (char*)talloc(mem_ctx, len);
+	*buf = TALLOC(mem_ctx, len);
 	if (!(*buf)) {
 		return 0;
 	}
@@ -2534,7 +2534,7 @@ NTSTATUS pdb_init_trustpw_talloc(TALLOC_CTX *mem_ctx, SAM_TRUST_PASSWD **trust)
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	*trust = (SAM_TRUST_PASSWD*) talloc(mem_ctx, sizeof(SAM_TRUST_PASSWD));
+	*trust = TALLOC_P(mem_ctx, SAM_TRUST_PASSWD);
 	if (!(*trust)) {
 		DEBUG(0, ("unable to allocate SAM_TRUST_PASSWD from talloc context\n"));
 		return NT_STATUS_NO_MEMORY;

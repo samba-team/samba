@@ -158,7 +158,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 
 	mem_ctx = talloc_init("samr_info for domain sid %s", sid_str);
 
-	if ((info = (struct samr_info *)talloc(mem_ctx, sizeof(struct samr_info))) == NULL)
+	if ((info = TALLOC_P(mem_ctx, struct samr_info)) == NULL)
 		return NULL;
 
 	ZERO_STRUCTP(info);
@@ -276,8 +276,8 @@ static NTSTATUS load_sampwd_entries(struct samr_info *info, uint16 acb_mask, BOO
 		if (info->disp_info.num_user_account % MAX_SAM_ENTRIES == 0) {
 		
 			DEBUG(10,("load_sampwd_entries: allocating more memory\n"));
-			pwd_array=(SAM_ACCOUNT *)talloc_realloc(mem_ctx, info->disp_info.disp_user_info, 
-			                  (info->disp_info.num_user_account+MAX_SAM_ENTRIES)*sizeof(SAM_ACCOUNT));
+			pwd_array=TALLOC_REALLOC_ARRAY(mem_ctx, info->disp_info.disp_user_info, SAM_ACCOUNT,
+			                  info->disp_info.num_user_account+MAX_SAM_ENTRIES);
 
 			if (pwd_array==NULL)
 				return NT_STATUS_NO_MEMORY;
@@ -343,7 +343,7 @@ static NTSTATUS load_group_domain_entries(struct samr_info *info, DOM_SID *sid)
 
 	info->disp_info.num_group_account=group_entries;
 
-	grp_array=(DOMAIN_GRP *)talloc(mem_ctx, info->disp_info.num_group_account*sizeof(DOMAIN_GRP));
+	grp_array=TALLOC_ARRAY(mem_ctx, DOMAIN_GRP, info->disp_info.num_group_account);
 	if (group_entries!=0 && grp_array==NULL) {
 		DEBUG(1, ("load_group_domain_entries: talloc() failed for grp_array!\n"));
 		SAFE_FREE(map);
@@ -738,9 +738,9 @@ static NTSTATUS make_user_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UN
 	if (num_entries == 0)
 		return NT_STATUS_OK;
 
-	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_entries);
+	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_entries);
 
-	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_entries);
+	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_entries);
 
 	if (sam == NULL || uni_name == NULL) {
 		DEBUG(0, ("make_user_sam_entry_list: talloc_zero failed!\n"));
@@ -893,9 +893,8 @@ static void make_group_sam_entry_list(TALLOC_CTX *ctx, SAM_ENTRY **sam_pp, UNIST
 	if (num_sam_entries == 0)
 		return;
 
-	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
-
-	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
+	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_sam_entries);
+	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_sam_entries);
 
 	if (sam == NULL || uni_name == NULL) {
 		DEBUG(0, ("NULL pointers in SAMR_R_QUERY_DISPINFO\n"));
@@ -945,7 +944,7 @@ static NTSTATUS get_group_domain_entries( TALLOC_CTX *ctx,
 		num_entries=max_entries;
 	}
 
-	*d_grp=(DOMAIN_GRP *)talloc_zero(ctx, num_entries*sizeof(DOMAIN_GRP));
+	*d_grp=TALLOC_ZERO_ARRAY(ctx, DOMAIN_GRP, num_entries);
 	if (num_entries!=0 && *d_grp==NULL){
 		SAFE_FREE(map);
 		return NT_STATUS_NO_MEMORY;
@@ -991,7 +990,7 @@ static NTSTATUS get_alias_entries( TALLOC_CTX *ctx, DOMAIN_GRP **d_grp,
 	if (*p_num_entries == 0)
 		return NT_STATUS_OK;
 
-	*d_grp = talloc(ctx, sizeof(DOMAIN_GRP) * (*p_num_entries));
+	*d_grp = TALLOC_ARRAY(ctx, DOMAIN_GRP, *p_num_entries);
 
 	if (*d_grp == NULL) {
 		SAFE_FREE(info);
@@ -1209,7 +1208,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 		DEBUG(5, ("samr_reply_query_dispinfo: buffer size limits to only %d entries\n", max_entries));
 	}
 
-	if (!(ctr = (SAM_DISPINFO_CTR *)talloc_zero(p->mem_ctx,sizeof(SAM_DISPINFO_CTR))))
+	if (!(ctr = TALLOC_ZERO_P(p->mem_ctx,SAM_DISPINFO_CTR)))
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(ctr);
@@ -1218,7 +1217,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 	switch (q_u->switch_level) {
 	case 0x1:
 		if (max_entries) {
-			if (!(ctr->sam.info1 = (SAM_DISPINFO_1 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_1))))
+			if (!(ctr->sam.info1 = TALLOC_ZERO_ARRAY(p->mem_ctx,SAM_DISPINFO_1,max_entries)))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_1(p->mem_ctx, ctr->sam.info1, max_entries, enum_context, 
@@ -1228,7 +1227,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 		break;
 	case 0x2:
 		if (max_entries) {
-			if (!(ctr->sam.info2 = (SAM_DISPINFO_2 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_2))))
+			if (!(ctr->sam.info2 = TALLOC_ZERO_ARRAY(p->mem_ctx,SAM_DISPINFO_2,max_entries)))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_2(p->mem_ctx, ctr->sam.info2, max_entries, enum_context, 
@@ -1238,7 +1237,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 		break;
 	case 0x3:
 		if (max_entries) {
-			if (!(ctr->sam.info3 = (SAM_DISPINFO_3 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_3))))
+			if (!(ctr->sam.info3 = TALLOC_ZERO_ARRAY(p->mem_ctx,SAM_DISPINFO_3,max_entries)))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_3(p->mem_ctx, ctr->sam.info3, max_entries, enum_context, info->disp_info.disp_group_info);
@@ -1247,7 +1246,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 		break;
 	case 0x4:
 		if (max_entries) {
-			if (!(ctr->sam.info4 = (SAM_DISPINFO_4 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_4))))
+			if (!(ctr->sam.info4 = TALLOC_ZERO_ARRAY(p->mem_ctx,SAM_DISPINFO_4,max_entries)))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_4(p->mem_ctx, ctr->sam.info4, max_entries, enum_context, info->disp_info.disp_user_info);
@@ -1256,7 +1255,7 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u,
 		break;
 	case 0x5:
 		if (max_entries) {
-			if (!(ctr->sam.info5 = (SAM_DISPINFO_5 *)talloc_zero(p->mem_ctx,max_entries*sizeof(SAM_DISPINFO_5))))
+			if (!(ctr->sam.info5 = TALLOC_ZERO_ARRAY(p->mem_ctx,SAM_DISPINFO_5,max_entries)))
 				return NT_STATUS_NO_MEMORY;
 		}
 		disp_ret = init_sam_dispinfo_5(p->mem_ctx, ctr->sam.info5, max_entries, enum_context, info->disp_info.disp_group_info);
@@ -1534,11 +1533,11 @@ static BOOL make_samr_lookup_rids(TALLOC_CTX *ctx, uint32 num_names, fstring nam
 	*pp_hdr_name = NULL;
 
 	if (num_names != 0) {
-		hdr_name = (UNIHDR *)talloc_zero(ctx, sizeof(UNIHDR)*num_names);
+		hdr_name = TALLOC_ZERO_ARRAY(ctx, UNIHDR, num_names);
 		if (hdr_name == NULL)
 			return False;
 
-		uni_name = (UNISTR2 *)talloc_zero(ctx,sizeof(UNISTR2)*num_names);
+		uni_name = TALLOC_ZERO_ARRAY(ctx,UNISTR2, num_names);
 		if (uni_name == NULL)
 			return False;
 	}
@@ -1584,7 +1583,7 @@ NTSTATUS _samr_lookup_rids(pipes_struct *p, SAMR_Q_LOOKUP_RIDS *q_u, SAMR_R_LOOK
 	}
 
 	if (num_rids) {
-		if ((group_attrs = (uint32 *)talloc_zero(p->mem_ctx, num_rids * sizeof(uint32))) == NULL)
+		if ((group_attrs = TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num_rids )) == NULL)
 			return NT_STATUS_NO_MEMORY;
  	}
  
@@ -1877,7 +1876,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 
 	DEBUG(5,("_samr_query_userinfo: sid:%s\n", sid_string_static(&info->sid)));
 
-	ctr = (SAM_USERINFO_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_USERINFO_CTR));
+	ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_USERINFO_CTR);
 	if (!ctr)
 		return NT_STATUS_NO_MEMORY;
 
@@ -1888,7 +1887,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 
 	switch (q_u->switch_value) {
 	case 0x10:
-		ctr->info.id10 = (SAM_USER_INFO_10 *)talloc_zero(p->mem_ctx, sizeof(SAM_USER_INFO_10));
+		ctr->info.id10 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_10);
 		if (ctr->info.id10 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -1906,11 +1905,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
             expire.low = 0xffffffff;
             expire.high = 0x7fffffff;
 
-            ctr->info.id = (SAM_USER_INFO_11 *)talloc_zero(p->mem_ctx,
-                                    sizeof
-                                    (*ctr->
-                                     info.
-                                     id11));
+            ctr->info.id = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_11));
 	    ZERO_STRUCTP(ctr->info.id11);
             init_sam_user_info11(ctr->info.id11, &expire,
                          "BROOKFIELDS$",    /* name */
@@ -1923,7 +1918,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 #endif
 
 	case 0x12:
-		ctr->info.id12 = (SAM_USER_INFO_12 *)talloc_zero(p->mem_ctx, sizeof(SAM_USER_INFO_12));
+		ctr->info.id12 = TALLOC_ZERO_P(p->mem_ctx, SAM_USER_INFO_12);
 		if (ctr->info.id12 == NULL)
 			return NT_STATUS_NO_MEMORY;
 
@@ -1932,7 +1927,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		break;
 		
 	case 20:
-		ctr->info.id20 = (SAM_USER_INFO_20 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_20));
+		ctr->info.id20 = TALLOC_ZERO_P(p->mem_ctx,SAM_USER_INFO_20);
 		if (ctr->info.id20 == NULL)
 			return NT_STATUS_NO_MEMORY;
 		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_20(p->mem_ctx, ctr->info.id20, &info->sid)))
@@ -1940,7 +1935,7 @@ NTSTATUS _samr_query_userinfo(pipes_struct *p, SAMR_Q_QUERY_USERINFO *q_u, SAMR_
 		break;
 
 	case 21:
-		ctr->info.id21 = (SAM_USER_INFO_21 *)talloc_zero(p->mem_ctx,sizeof(SAM_USER_INFO_21));
+		ctr->info.id21 = TALLOC_ZERO_P(p->mem_ctx,SAM_USER_INFO_21);
 		if (ctr->info.id21 == NULL)
 			return NT_STATUS_NO_MEMORY;
 		if (!NT_STATUS_IS_OK(r_u->status = get_user_info_21(p->mem_ctx, ctr->info.id21, 
@@ -2048,8 +2043,7 @@ NTSTATUS _samr_query_usergroups(pipes_struct *p, SAMR_Q_QUERY_USERGROUPS *q_u, S
 					&(sids[i]), &rid))
 			continue;
 
-		gids = talloc_realloc(p->mem_ctx, gids,
-				      sizeof(*gids) * (num_gids+1));
+		gids = TALLOC_REALLOC_ARRAY(p->mem_ctx, gids, DOM_GID, num_gids+1);
 		gids[num_gids].attr=7;
 		gids[num_gids].g_rid = rid;
 		num_gids += 1;
@@ -2087,7 +2081,7 @@ NTSTATUS _samr_query_dom_info(pipes_struct *p, SAMR_Q_QUERY_DOMAIN_INFO *q_u, SA
 
 	uint32 num_users=0, num_groups=0, num_aliases=0;
 
-	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
+	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(ctr);
@@ -2596,8 +2590,8 @@ static BOOL make_enum_domains(TALLOC_CTX *ctx, SAM_ENTRY **pp_sam,
 	if (num_sam_entries == 0)
 		return True;
 
-	sam = (SAM_ENTRY *)talloc_zero(ctx, sizeof(SAM_ENTRY)*num_sam_entries);
-	uni_name = (UNISTR2 *)talloc_zero(ctx, sizeof(UNISTR2)*num_sam_entries);
+	sam = TALLOC_ZERO_ARRAY(ctx, SAM_ENTRY, num_sam_entries);
+	uni_name = TALLOC_ZERO_ARRAY(ctx, UNISTR2, num_sam_entries);
 
 	if (sam == NULL || uni_name == NULL)
 		return False;
@@ -3317,7 +3311,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 	    !sid_check_is_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	members = talloc(p->mem_ctx, sizeof(DOM_SID) * q_u->num_sids1);
+	members = TALLOC_ARRAY(p->mem_ctx, DOM_SID, q_u->num_sids1);
 
 	if (members == NULL)
 		return NT_STATUS_NO_MEMORY;
@@ -3343,8 +3337,7 @@ NTSTATUS _samr_query_useraliases(pipes_struct *p, SAMR_Q_QUERY_USERALIASES *q_u,
 		if (!sid_peek_check_rid(&info->sid, &aliases[i], &rid))
 			continue;
 
-		rids = talloc_realloc(p->mem_ctx, rids,
-				      sizeof(*rids) * (num_groups+1));
+		rids = TALLOC_REALLOC_ARRAY(p->mem_ctx, rids, uint32, num_groups+1);
 
 		if (rids == NULL)
 			return NT_STATUS_NO_MEMORY;
@@ -3388,7 +3381,7 @@ NTSTATUS _samr_query_aliasmem(pipes_struct *p, SAMR_Q_QUERY_ALIASMEM *q_u, SAMR_
 	if (!pdb_enum_aliasmem(&alias_sid, &sids, &num_sids))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
-	sid = (DOM_SID2 *)talloc_zero(p->mem_ctx, sizeof(DOM_SID2) * num_sids);	
+	sid = TALLOC_ZERO_ARRAY(p->mem_ctx, DOM_SID2, num_sids);	
 	if (num_sids!=0 && sid == NULL) {
 		SAFE_FREE(sids);
 		return NT_STATUS_NO_MEMORY;
@@ -3414,7 +3407,7 @@ static void add_uid_to_array_unique(uid_t uid, uid_t **uids, int *num)
 			return;
 	}
 	
-	*uids = Realloc(*uids, (*num+1) * sizeof(uid_t));
+	*uids = SMB_REALLOC_ARRAY(*uids, uid_t, *num+1);
 
 	if (*uids == NULL)
 		return;
@@ -3511,8 +3504,8 @@ NTSTATUS _samr_query_groupmem(pipes_struct *p, SAMR_Q_QUERY_GROUPMEM *q_u, SAMR_
 	if(!get_memberuids(gid, &uids, &num))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	rid=talloc_zero(p->mem_ctx, sizeof(uint32)*num);
-	attr=talloc_zero(p->mem_ctx, sizeof(uint32)*num);
+	rid=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
+	attr=TALLOC_ZERO_ARRAY(p->mem_ctx, uint32, num);
 	
 	if (num!=0 && (rid==NULL || attr==NULL))
 		return NT_STATUS_NO_MEMORY;
@@ -4025,7 +4018,7 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 	if (!NT_STATUS_IS_OK(sid_to_gid(&group_sid, &gid)))
 		return NT_STATUS_INVALID_HANDLE;
 
-	ctr=(GROUP_INFO_CTR *)talloc_zero(p->mem_ctx, sizeof(GROUP_INFO_CTR));
+	ctr=TALLOC_ZERO_P(p->mem_ctx, GROUP_INFO_CTR);
 	if (ctr==NULL)
 		return NT_STATUS_NO_MEMORY;
 
@@ -4356,7 +4349,7 @@ NTSTATUS _samr_unknown_2e(pipes_struct *p, SAMR_Q_UNKNOWN_2E *q_u, SAMR_R_UNKNOW
 
 	uint32 account_policy_temp;
 
-	if ((ctr = (SAM_UNK_CTR *)talloc_zero(p->mem_ctx, sizeof(SAM_UNK_CTR))) == NULL)
+	if ((ctr = TALLOC_ZERO_P(p->mem_ctx, SAM_UNK_CTR)) == NULL)
 		return NT_STATUS_NO_MEMORY;
 
 	ZERO_STRUCTP(ctr);

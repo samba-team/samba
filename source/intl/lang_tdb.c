@@ -148,7 +148,7 @@ BOOL lang_tdb_init(const char *lang)
 				   strerror(errno)));
 			goto done;
 		}
-		current_lang = strdup(lang);
+		current_lang = SMB_STRDUP(lang);
 		result = True;
 		goto done;
 	}
@@ -160,7 +160,7 @@ BOOL lang_tdb_init(const char *lang)
 		tdb_store_int32(tdb, "/LOADTIME/", (int)time(NULL));
 	}
 
-	current_lang = strdup(lang);
+	current_lang = SMB_STRDUP(lang);
 	result = True;
 
  done:
@@ -194,7 +194,7 @@ const char *lang_msg(const char *msgid)
 			count++;
 	}
 
-	if (!(msgid_quoted = malloc(strlen(msgid) + count + 1)))
+	if (!(msgid_quoted = SMB_MALLOC(strlen(msgid) + count + 1)))
 		return msgid;
 
 	/* string_sub() is unsuitable here as it replaces some punctuation
@@ -221,7 +221,7 @@ const char *lang_msg(const char *msgid)
 	/* if the message isn't found then we still need to return a pointer
 	   that can be freed. Pity. */
 	if (!data.dptr)
-		return strdup(msgid);
+		return SMB_STRDUP(msgid);
 
 	return (const char *)data.dptr;
 }

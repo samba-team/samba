@@ -554,7 +554,7 @@ int tdb_unpack(char *buf, int bufsize, const char *fmt, ...)
 			len += *i;
 			if (bufsize < len)
 				goto no_space;
-			*b = (char *)malloc(*i);
+			*b = (char *)SMB_MALLOC(*i);
 			if (! *b)
 				goto no_space;
 			memcpy(*b, buf+4, *i);
@@ -630,7 +630,7 @@ size_t tdb_sid_unpack(const char* pack_buf, int bufsize, DOM_SID* sid)
 
 	if (!sid || !pack_buf) return -1;
 
-	buf = (char*)malloc(bufsize);
+	buf = (char*)SMB_MALLOC(bufsize);
 	memcpy((void*)buf, pack_buf, bufsize);
 
 	len += tdb_unpack(buf + len, bufsize - len, "bb",
@@ -734,7 +734,7 @@ size_t tdb_trustpw_unpack(SAM_TRUST_PASSWD* trustpw, const char* pack_buf, int b
 	mem_ctx = trustpw->mem_ctx;
 
 	/* allocating pack buffer to satisfy const argument */
-	p_buf = (char*) talloc(mem_ctx, bufsize);
+	p_buf = TALLOC(mem_ctx, bufsize);
 	if (!p_buf) return -1;
 
 	memcpy((void*)p_buf, (const void*)pack_buf, bufsize);
@@ -884,7 +884,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 	
 	for (key = tdb_firstkey(tdb); key.dptr; key = next) {
 		/* duplicate key string to ensure null-termination */
-		char *key_str = (char*) strndup(key.dptr, key.dsize);
+		char *key_str = (char*) SMB_STRNDUP(key.dptr, key.dsize);
 		if (!key_str) {
 			DEBUG(0, ("tdb_search_keys: strndup() failed!\n"));
 			smb_panic("strndup failed!\n");
@@ -896,7 +896,7 @@ TDB_LIST_NODE *tdb_search_keys(TDB_CONTEXT *tdb, const char* pattern)
 
 		/* do the pattern checking */
 		if (fnmatch(pattern, key_str, 0) == 0) {
-			rec = (TDB_LIST_NODE*) malloc(sizeof(*rec));
+			rec = SMB_MALLOC_P(TDB_LIST_NODE);
 			ZERO_STRUCTP(rec);
 
 			rec->node_key = key;

@@ -178,7 +178,7 @@ BOOL change_notify_set(char *inbuf, files_struct *fsp, connection_struct *conn, 
 {
 	struct change_notify *cnbp;
 
-	if((cnbp = (struct change_notify *)malloc(sizeof(*cnbp))) == NULL) {
+	if((cnbp = SMB_MALLOC_P(struct change_notify)) == NULL) {
 		DEBUG(0,("change_notify_set: malloc fail !\n" ));
 		return -1;
 	}

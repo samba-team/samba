@@ -106,12 +106,12 @@ BOOL push_blocking_lock_request( char *inbuf, int length, int lock_timeout,
 	 * the expiration time here.
 	 */
 
-	if((blr = (blocking_lock_record *)malloc(sizeof(blocking_lock_record))) == NULL) {
+	if((blr = SMB_MALLOC_P(blocking_lock_record)) == NULL) {
 		DEBUG(0,("push_blocking_lock_request: Malloc fail !\n" ));
 		return False;
 	}
 
-	if((blr->inbuf = (char *)malloc(length)) == NULL) {
+	if((blr->inbuf = (char *)SMB_MALLOC(length)) == NULL) {
 		DEBUG(0,("push_blocking_lock_request: Malloc fail (2)!\n" ));
 		SAFE_FREE(blr);
 		return False;

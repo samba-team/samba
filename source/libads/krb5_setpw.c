@@ -54,7 +54,7 @@ static DATA_BLOB encode_krb5_setpw(const char *principal, const char *password)
 	DATA_BLOB ret;
 
 
-	princ = strdup(principal);
+	princ = SMB_STRDUP(principal);
 
 	if ((c = strchr_m(princ, '/')) == NULL) {
 	    c = princ; 
@@ -156,7 +156,7 @@ static krb5_error_code build_kpasswd_request(uint16 pversion,
 		return ret;
 	}
 
-	packet->data = (char *)malloc(ap_req->length + cipherpw.length + 6);
+	packet->data = (char *)SMB_MALLOC(ap_req->length + cipherpw.length + 6);
 	if (!packet->data)
 		return -1;
 
@@ -407,7 +407,7 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	free(chpw_req.data);
 
 	chpw_rep.length = 1500;
-	chpw_rep.data = (char *) malloc(chpw_rep.length);
+	chpw_rep.data = (char *) SMB_MALLOC(chpw_rep.length);
 	if (!chpw_rep.data) {
 	        close(sock);
 	        free(ap_req.data);
@@ -631,7 +631,7 @@ static ADS_STATUS ads_krb5_chg_password(const char *kdc_host,
     /* We have to obtain an INITIAL changepw ticket for changing password */
     asprintf(&chpw_princ, "kadmin/changepw@%s",
 				(char *) krb5_princ_realm(context, princ));
-    password = strdup(oldpw);
+    password = SMB_STRDUP(oldpw);
     ret = krb5_get_init_creds_password(context, &creds, princ, password,
 					   kerb_prompter, NULL, 
 					   0, chpw_princ, &opts);

@@ -228,7 +228,7 @@ NTSTATUS init_epm_tower(TALLOC_CTX *ctx, EPM_TOWER *tower,
 
 	tower->max_length = tower->length = size;
 	tower->num_floors = num_floors;
-	tower->floors = talloc(ctx, sizeof(EPM_FLOOR) * num_floors);
+	tower->floors = TALLOC_ARRAY(ctx, EPM_FLOOR, num_floors);
 	if (!tower->floors) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -260,8 +260,7 @@ BOOL epm_io_tower(const char *desc, EPM_TOWER *tower,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		tower->floors = talloc(ps->mem_ctx,
-				       sizeof(EPM_FLOOR) * tower->num_floors);
+		tower->floors = TALLOC_ARRAY(ps->mem_ctx, EPM_FLOOR, tower->num_floors);
 		if (!tower->floors)
 			return False;
 	}
@@ -285,14 +284,14 @@ NTSTATUS init_epm_tower_array(TALLOC_CTX *ctx, EPM_TOWER_ARRAY *array,
 	array->max_count = num_towers;
 	array->offset = 0;
 	array->count = num_towers;
-	array->tower_ref_ids = talloc(ctx, sizeof(uint32) * num_towers);
+	array->tower_ref_ids = TALLOC_ARRAY(ctx, uint32, num_towers);
 	if (!array->tower_ref_ids) {
 		return NT_STATUS_NO_MEMORY;
 	}
 	for (i=0;i<num_towers;i++)
 		array->tower_ref_ids[i] = ++internal_referent_id;
 
-	array->towers = talloc(ctx, sizeof(EPM_TOWER) * num_towers);
+	array->towers = TALLOC_ARRAY(ctx, EPM_TOWER, num_towers);
 	if (!array->towers) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -321,8 +320,7 @@ BOOL epm_io_tower_array(const char *desc, EPM_TOWER_ARRAY *array,
 
 
 	if (UNMARSHALLING(ps)) {
-		array->tower_ref_ids = talloc(ps->mem_ctx,
-					      sizeof(uint32) * array->count);
+		array->tower_ref_ids = TALLOC_ARRAY(ps->mem_ctx, uint32, array->count);
 		if (!array->tower_ref_ids) {
 			return False;
 		}
@@ -343,8 +341,7 @@ BOOL epm_io_tower_array(const char *desc, EPM_TOWER_ARRAY *array,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		array->towers = talloc(ps->mem_ctx,
-				       sizeof(EPM_TOWER) * array->count);
+		array->towers = TALLOC_ARRAY(ps->mem_ctx, EPM_TOWER, array->count);
 		if (!array->towers) {
 			return False;
 		}
@@ -367,7 +364,7 @@ NTSTATUS init_epm_r_map(TALLOC_CTX *ctx, EPM_R_MAP *r_map,
 {
 	memcpy(&r_map->handle, handle, sizeof(*handle));
 	r_map->num_results = num_elements;
-	r_map->results = talloc(ctx, sizeof(EPM_TOWER_ARRAY) * num_elements);
+	r_map->results = TALLOC_ARRAY(ctx, EPM_TOWER_ARRAY, num_elements);
 	if (!r_map->results) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -395,7 +392,7 @@ NTSTATUS init_epm_q_map(TALLOC_CTX *ctx, EPM_Q_MAP *q_map,
 	q_map->handle.data[2] = (handle >> 16) & 0xFF;
 	q_map->handle.data[3] = (handle >> 24) & 0xFF;
 
-	q_map->tower = talloc(ctx, sizeof(EPM_TOWER) * (num_towers + 1));
+	q_map->tower = TALLOC_ARRAY(ctx, EPM_TOWER, num_towers + 1);
 	if (!q_map->tower) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -433,7 +430,7 @@ BOOL epm_io_q_map(const char *desc, EPM_Q_MAP *io_map, prs_struct *ps,
 
 	/* HACK: We need a more elegant way of doing this */
 	if (UNMARSHALLING(ps)) {
-		io_map->tower = talloc(ps->mem_ctx, sizeof(EPM_TOWER));
+		io_map->tower = TALLOC_P(ps->mem_ctx, EPM_TOWER);
 		if (!io_map->tower)
 			return False;
 	}		
@@ -463,9 +460,7 @@ BOOL epm_io_r_map(const char *desc, EPM_R_MAP *io_map,
 		return False;
 
 	if (UNMARSHALLING(ps)) {
-		io_map->results = talloc(ps->mem_ctx,
-					 sizeof(EPM_TOWER_ARRAY) * 
-					 io_map->num_results);
+		io_map->results = TALLOC_ARRAY(ps->mem_ctx, EPM_TOWER_ARRAY, io_map->num_results);
 		if (!io_map->results)
 			return False;
 	}

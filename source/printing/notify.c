@@ -99,7 +99,7 @@ again:
 				msg->len, msg->notify.data);
 
 	if (buflen != len) {
-		buf = talloc_realloc(send_ctx, buf, len);
+		buf = TALLOC_REALLOC(send_ctx, buf, len);
 		if (!buf)
 			return False;
 		buflen = len;
@@ -140,7 +140,7 @@ static void print_notify_send_messages_to_printer(const char *printer, unsigned 
 	}
 	offset += 4; /* For count. */
 
-	buf = talloc(send_ctx, offset);
+	buf = TALLOC(send_ctx, offset);
 	if (!buf) {
 		DEBUG(0,("print_notify_send_messages: Out of memory\n"));
 		talloc_destroy_pool(send_ctx);
@@ -218,7 +218,7 @@ static BOOL copy_notify2_msg( SPOOLSS_NOTIFY_MSG *to, SPOOLSS_NOTIFY_MSG *from )
 	memcpy( to, from, sizeof(SPOOLSS_NOTIFY_MSG) );
 	
 	if ( from->len ) {
-		to->notify.data = talloc_memdup(send_ctx, from->notify.data, from->len );
+		to->notify.data = TALLOC_MEMDUP(send_ctx, from->notify.data, from->len );
 		if ( !to->notify.data ) {
 			DEBUG(0,("copy_notify2_msg: talloc_memdup() of size [%d] failed!\n", from->len ));
 			return False;
@@ -267,7 +267,7 @@ static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 
 	/* Store the message on the pending queue. */
 
-	pnqueue = talloc(send_ctx, sizeof(*pnqueue));
+	pnqueue = TALLOC_P(send_ctx, struct notify_queue);
 	if (!pnqueue) {
 		DEBUG(0,("send_spoolss_notify2_msg: Out of memory.\n"));
 		return;
@@ -275,7 +275,7 @@ static void send_spoolss_notify2_msg(SPOOLSS_NOTIFY_MSG *msg)
 
 	/* allocate a new msg structure and copy the fields */
 	
-	if ( !(pnqueue->msg = (SPOOLSS_NOTIFY_MSG*)talloc(send_ctx, sizeof(SPOOLSS_NOTIFY_MSG))) ) {
+	if ( !(pnqueue->msg = TALLOC_P(send_ctx, SPOOLSS_NOTIFY_MSG)) ) {
 		DEBUG(0,("send_spoolss_notify2_msg: talloc() of size [%lu] failed!\n", 
 			(unsigned long)sizeof(SPOOLSS_NOTIFY_MSG)));
 		return;
@@ -309,7 +309,7 @@ static void send_notify_field_values(const char *sharename, uint32 type,
 	if (!create_send_ctx())
 		return;
 
-	msg = (struct spoolss_notify_msg *)talloc(send_ctx, sizeof(struct spoolss_notify_msg));
+	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 
@@ -338,7 +338,7 @@ static void send_notify_field_buffer(const char *sharename, uint32 type,
 	if (!create_send_ctx())
 		return;
 
-	msg = (struct spoolss_notify_msg *)talloc(send_ctx, sizeof(struct spoolss_notify_msg));
+	msg = TALLOC_P(send_ctx, struct spoolss_notify_msg);
 	if (!msg)
 		return;
 
@@ -535,7 +535,7 @@ BOOL print_notify_pid_list(const char *printername, TALLOC_CTX *mem_ctx, size_t 
 
 	num_pids = data.dsize / 8;
 
-	if ((pid_list = (pid_t *)talloc(mem_ctx, sizeof(pid_t) * num_pids)) == NULL) {
+	if ((pid_list = TALLOC_ARRAY(mem_ctx, pid_t, num_pids)) == NULL) {
 		ret = False;
 		goto done;
 	}

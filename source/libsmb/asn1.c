@@ -32,7 +32,7 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
 		uint8 *newp;
-		newp = Realloc(data->data, data->ofs+len);
+		newp = SMB_REALLOC(data->data, data->ofs+len);
 		if (!newp) {
 			SAFE_FREE(data->data);
 			data->has_error = True;
@@ -58,7 +58,7 @@ BOOL asn1_push_tag(ASN1_DATA *data, uint8 tag)
 	struct nesting *nesting;
 
 	asn1_write_uint8(data, tag);
-	nesting = (struct nesting *)malloc(sizeof(struct nesting));
+	nesting = SMB_MALLOC_P(struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -359,7 +359,7 @@ BOOL asn1_start_tag(ASN1_DATA *data, uint8 tag)
 		data->has_error = True;
 		return False;
 	}
-	nesting = (struct nesting *)malloc(sizeof(struct nesting));
+	nesting = SMB_MALLOC_P(struct nesting);
 	if (!nesting) {
 		data->has_error = True;
 		return False;
@@ -434,7 +434,7 @@ BOOL asn1_read_sequence_until(int sock, ASN1_DATA *data,
 		len = b;
 	}
 
-	buf = malloc(len);
+	buf = SMB_MALLOC(len);
 	if (buf == NULL)
 		return False;
 
@@ -535,7 +535,7 @@ BOOL asn1_read_OID(ASN1_DATA *data, char **OID)
 
 	asn1_end_tag(data);
 
-	*OID = strdup(oid_str);
+	*OID = SMB_STRDUP(oid_str);
 
 	return (*OID && !data->has_error);
 }
@@ -565,7 +565,7 @@ BOOL asn1_read_GeneralString(ASN1_DATA *data, char **s)
 		data->has_error = True;
 		return False;
 	}
-	*s = malloc(len+1);
+	*s = SMB_MALLOC(len+1);
 	if (! *s) {
 		data->has_error = True;
 		return False;

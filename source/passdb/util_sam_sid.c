@@ -106,16 +106,16 @@ static void init_sid_name_map (void)
 		/* This is not lp_workgroup() for good reason:
 		   it must stay around longer than the lp_*() 
 		   strings do */
-		sid_name_map[i].name = strdup(lp_workgroup());
+		sid_name_map[i].name = SMB_STRDUP(lp_workgroup());
 		sid_name_map[i].known_users = NULL;
 		i++;
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = strdup(global_myname());
+		sid_name_map[i].name = SMB_STRDUP(global_myname());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	} else {
 		sid_name_map[i].sid = get_global_sam_sid();
-		sid_name_map[i].name = strdup(global_myname());
+		sid_name_map[i].name = SMB_STRDUP(global_myname());
 		sid_name_map[i].known_users = NULL;
 		i++;
 	}
@@ -319,7 +319,7 @@ void add_sid_to_array(const DOM_SID *sid, DOM_SID **sids, int *num)
 {
 	DOM_SID *list;
 
-	list = Realloc(*sids, ((*num)+1) * sizeof(DOM_SID));
+	list = SMB_REALLOC_ARRAY(*sids, DOM_SID, (*num)+1);
 
 	if (list == NULL) {
 		DEBUG(0, ("Realloc failed in add_sid_to_array!!\n"));

@@ -209,15 +209,15 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	from = charsets;
 	to = charsets;
 
-	ret = (smb_iconv_t)malloc(sizeof(*ret));
+	ret = SMB_MALLOC_P(struct _smb_iconv_t);
 	if (!ret) {
 		errno = ENOMEM;
 		return (smb_iconv_t)-1;
 	}
-	memset(ret, 0, sizeof(*ret));
+	memset(ret, 0, sizeof(struct _smb_iconv_t));
 
-	ret->from_name = strdup(fromcode);
-	ret->to_name = strdup(tocode);
+	ret->from_name = SMB_STRDUP(fromcode);
+	ret->to_name = SMB_STRDUP(tocode);
 
 	/* check for the simplest null conversion */
 	if (strcasecmp(fromcode, tocode) == 0) {

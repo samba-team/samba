@@ -132,7 +132,7 @@ struct _FAKE_FILE_HANDLE *init_fake_file_handle(enum FAKE_FILE_TYPE type)
 				return NULL;	
 			}
 
-			if ((fh =(FAKE_FILE_HANDLE *)talloc_zero(mem_ctx, sizeof(FAKE_FILE_HANDLE)))==NULL) {
+			if ((fh =TALLOC_ZERO_P(mem_ctx, FAKE_FILE_HANDLE))==NULL) {
 				DEBUG(0,("talloc_zero() failed.\n"));
 				talloc_destroy(mem_ctx);
 				return NULL;

@@ -69,7 +69,7 @@ int gen_parse_GUID(TALLOC_CTX *mem_ctx, char *ptr, const char *str)
        	char *p;
 	char *m;
 
-	m = strdup(str);
+	m = SMB_STRDUP(str);
 	if (!m) return -1;
 	sc = m;
 	

@@ -271,7 +271,7 @@ static int tdbsam_traverse_setpwent(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data,
 	struct pwent_list *ptr;
 	
 	if ( strncmp(key.dptr, prefix, prefixlen) == 0 ) {
-		if ( !(ptr=(struct pwent_list*)malloc(sizeof(struct pwent_list))) ) {
+		if ( !(ptr=SMB_MALLOC_P(struct pwent_list)) ) {
 			DEBUG(0,("tdbsam_traverse_setpwent: Failed to malloc new entry for list\n"));
 			
 			/* just return 0 and let the traversal continue */
@@ -1121,7 +1121,7 @@ static NTSTATUS tdbsam_lsa_create_account(struct pdb_methods *my_methods, const 
 		goto done;
 	}
 
-	data.dptr = strdup("");
+	data.dptr = SMB_STRDUP("");
 	data.dsize = 1;
 
 	/* add the account */
@@ -1192,7 +1192,7 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 
 		/* check the list is not empty */
 		if (*(data.dptr)) {
-			priv_list = strdup(data.dptr);
+			priv_list = SMB_STRDUP(data.dptr);
 			if (!priv_list) {
 				DEBUG(0, ("tdbsam_add_privilege_to_sid: Out of Memory!\n"));
 				goto done;
@@ -1225,7 +1225,7 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 	if (priv_list) {
 		int priv_list_len = strlen(priv_list);
 		str_size = priv_list_len + priv_name_len + 2;
-		s = realloc(priv_list, str_size);
+		s = SMB_REALLOC(priv_list, str_size);
 		if (!s) {
 			DEBUG(0, ("tdbsam_add_privilege_to_sid: Out of Memory!\n"));
 			ret = NT_STATUS_NO_MEMORY;
@@ -1236,7 +1236,7 @@ static NTSTATUS tdbsam_add_privilege_to_sid(struct pdb_methods *my_methods, cons
 		snprintf(s, priv_name_len + 2, ",%s", priv_name);
 
 	} else {
-		priv_list = strdup(priv_name);
+		priv_list = SMB_STRDUP(priv_name);
 		if (!priv_list) {
 			DEBUG(0, ("tdbsam_add_sid_to_privilege: Out of Memory!\n"));
 			ret = NT_STATUS_NO_MEMORY;
@@ -1321,7 +1321,7 @@ static NTSTATUS tdbsam_remove_privilege_from_sid(struct pdb_methods *my_methods,
 		goto done;
 	}
 
-	priv_list = strdup(data.dptr);
+	priv_list = SMB_STRDUP(data.dptr);
 	SAFE_FREE(data.dptr);
 	if (!priv_list) {
 		DEBUG(0, ("tdbsam_remove_sid_from_privilege: Out of Memory!\n"));
@@ -1543,10 +1543,10 @@ static NTSTATUS tdbsam_get_privilege_set(struct pdb_methods *my_methods, DOM_SID
 	if (!(pwd_tdb = tdbsam_tdbopen(tdb_state->tdbsam_location, O_RDONLY ))) 
 		return NT_STATUS_UNSUCCESSFUL;
 
-	sid_list = (char **)malloc(sizeof(char *) * (num_sids + 1));
+	sid_list = SMB_MALLOC_ARRAY(char *, num_sids + 1);
 	for (i = 0; i < num_sids; i++) {
 		sid_to_string(sid_str, &user_sids[i]);
-		sid_list[i] = strdup(sid_str);
+		sid_list[i] = SMB_STRDUP(sid_str);
 		if ( ! sid_list[i]) {
 			ret = NT_STATUS_NO_MEMORY;
 			goto done;
@@ -1671,7 +1671,7 @@ static NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 	(*pdb_method)->get_privilege_set = tdbsam_get_privilege_set;
 	(*pdb_method)->get_privilege_entry = tdbsam_get_privilege_entry;
 
-	tdb_state = talloc_zero(pdb_context->mem_ctx, sizeof(struct tdbsam_privates));
+	tdb_state = TALLOC_ZERO_P(pdb_context->mem_ctx, struct tdbsam_privates);
 
 	if (!tdb_state) {
 		DEBUG(0, ("talloc() failed for tdbsam private_data!\n"));

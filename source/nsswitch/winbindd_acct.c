@@ -219,7 +219,7 @@ static WINBINDD_GR* string2group( char *string )
 		if ( num_gr_members ) {
 			fstring buffer;
 			
-			gr_members = (char**)smb_xmalloc(sizeof(char*)*(num_gr_members+1));
+			gr_members = SMB_XMALLOC_ARRAY(char*, num_gr_members+1);
 			
 			i = 0;
 			while ( next_token(&str, buffer, ",", sizeof(buffer)) && i<num_gr_members ) {
@@ -284,7 +284,7 @@ static char* group2string( const WINBINDD_GR *grp )
 			member = grp->gr_mem[num_members];
 		}
 		
-		gr_mem_str = smb_xmalloc(size);
+		gr_mem_str = SMB_XMALLOC_ARRAY(char, size);
 	
 		for ( i=0; i<num_members; i++ ) {
 			snprintf( &gr_mem_str[idx], size-idx, "%s,", grp->gr_mem[i] );
@@ -295,7 +295,7 @@ static char* group2string( const WINBINDD_GR *grp )
 	}
 	else {
 		/* no members */
-		gr_mem_str = smb_xmalloc(sizeof(fstring));
+		gr_mem_str = SMB_XMALLOC_ARRAY(char, sizeof(fstring));
 		fstrcpy( gr_mem_str, "" );
 	}
 
@@ -639,7 +639,7 @@ static BOOL wb_addgrpmember( WINBINDD_GR *grp, const char *user )
 	}
 	
 	/* add one new slot and keep an extra for the terminating NULL */
-	members = Realloc( grp->gr_mem, (grp->num_gr_mem+2)*sizeof(char*) );
+	members = SMB_REALLOC_ARRAY( grp->gr_mem, char *, grp->num_gr_mem+2);
 	if ( !members )
 		return False;
 		

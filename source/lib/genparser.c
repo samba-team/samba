@@ -39,7 +39,7 @@ static char *encode_bytes(TALLOC_CTX *mem_ctx, const char *ptr, unsigned len)
 	const char *hexdig = "0123456789abcdef";
 	char *ret, *p;
 	unsigned i;
-	ret = talloc(mem_ctx, len*3 + 1); /* worst case size */
+	ret = TALLOC(mem_ctx, len*3 + 1); /* worst case size */
 	if (!ret) return NULL;
 	for (p=ret,i=0;i<len;i++) {
 		if (isalnum(ptr[i]) || isspace(ptr[i]) ||
@@ -67,7 +67,7 @@ static char *decode_bytes(TALLOC_CTX *mem_ctx, const char *s, unsigned *len)
 	unsigned i;
 	int slen = strlen(s) + 1;
 
-	ret = talloc(mem_ctx, slen); /* worst case length */
+	ret = TALLOC(mem_ctx, slen); /* worst case length */
 	if (!ret)
 		return NULL;
 	memset(ret, 0, slen);
@@ -104,7 +104,7 @@ static int addgen_alloc(TALLOC_CTX *mem_ctx, struct parse_string *p, int n)
 {
 	if (p->length + n <= p->allocated) return 0;
 	p->allocated = p->length + n + 200;
-	p->s = talloc_realloc(mem_ctx, p->s, p->allocated);
+	p->s = TALLOC_REALLOC(mem_ctx, p->s, p->allocated);
 	if (!p->s) {
 		errno = ENOMEM;
 		return -1;
@@ -545,7 +545,7 @@ static int gen_parse_base(TALLOC_CTX *mem_ctx,
 	if (pinfo->ptr_count) {
 		unsigned size = pinfo->ptr_count>1?sizeof(void *):pinfo->size;
 		struct parse_struct p2 = *pinfo;
-		*(void **)ptr = talloc(mem_ctx, size);
+		*(void **)ptr = TALLOC(mem_ctx, size);
 		if (! *(void **)ptr) {
 			return -1;
 		}
@@ -645,7 +645,7 @@ static int gen_parse_one(TALLOC_CTX *mem_ctx,
 			struct parse_struct p2 = pinfo[i];
 			char *ptr;
 			unsigned size = pinfo[i].ptr_count>1?sizeof(void*):pinfo[i].size;
-			ptr = talloc(mem_ctx, len*size);
+			ptr = TALLOC(mem_ctx, len*size);
 			if (!ptr) {
 				errno = ENOMEM;
 				return -1;

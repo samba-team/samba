@@ -41,7 +41,7 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 
 	DEBUG(10,("fill_dsrole_dominfo_basic: enter\n"));
 
-	if ( !(basic = talloc_zero(ctx, sizeof(DSROLE_PRIMARY_DOMAIN_INFO_BASIC))) ) {
+	if ( !(basic = TALLOC_ZERO_P(ctx, DSROLE_PRIMARY_DOMAIN_INFO_BASIC)) ) {
 		DEBUG(0,("fill_dsrole_dominfo_basic: FATAL error!  talloc_xero() failed\n"));
 		return NT_STATUS_NO_MEMORY;
 	}

@@ -238,7 +238,7 @@ static BOOL get_require_membership_sid(void) {
 		return False;
 	}
 
-	require_membership_of_sid = strdup(response.data.sid.sid);
+	require_membership_of_sid = SMB_STRDUP(response.data.sid.sid);
 
 	if (require_membership_of_sid)
 		return True;
@@ -378,7 +378,7 @@ NTSTATUS contact_winbind_auth_crap(const char *username,
 	}
 
 	if (flags & WBFLAG_PAM_UNIX_NAME) {
-		*unix_name = strdup((char *)response.extra_data);
+		*unix_name = SMB_STRDUP((char *)response.extra_data);
 		if (!*unix_name) {
 			free_response(&response);
 			return NT_STATUS_NO_MEMORY;
@@ -552,7 +552,7 @@ static void manage_squid_ntlmssp_request(enum stdio_helper_mode stdio_helper_mod
 	if ((strncmp(buf, "PW ", 3) == 0)) {
 		/* The calling application wants us to use a local password (rather than winbindd) */
 
-		opt_password = strndup((const char *)request.data, request.length);
+		opt_password = SMB_STRNDUP((const char *)request.data, request.length);
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
@@ -634,7 +634,7 @@ static void manage_client_ntlmssp_request(enum stdio_helper_mode stdio_helper_mo
 	if (strncmp(buf, "PW ", 3) == 0) {
 		/* We asked for a password and obviously got it :-) */
 
-		opt_password = strndup((const char *)request.data, request.length);
+		opt_password = SMB_STRNDUP((const char *)request.data, request.length);
 
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));
@@ -753,7 +753,7 @@ static void offer_gss_spnego_mechs(void) {
 
 	/* Server negTokenInit (mech offerings) */
 	spnego.type = SPNEGO_NEG_TOKEN_INIT;
-	spnego.negTokenInit.mechTypes = smb_xmalloc(sizeof(char *) * 3);
+	spnego.negTokenInit.mechTypes = SMB_XMALLOC_ARRAY(char *, 3);
 #ifdef HAVE_KRB5
 	spnego.negTokenInit.mechTypes[0] = smb_xstrdup(OID_KERBEROS5_OLD);
 	spnego.negTokenInit.mechTypes[1] = smb_xstrdup(OID_NTLMSSP);
@@ -883,7 +883,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				  request.negTokenInit.mechToken.length);
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 
 			status = ntlmssp_update(ntlmssp_state,
@@ -906,7 +906,7 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 			}
 
 			response.type = SPNEGO_NEG_TOKEN_TARG;
-			response.negTokenTarg.supportedMech = strdup(OID_KERBEROS5_OLD);
+			response.negTokenTarg.supportedMech = SMB_STRDUP(OID_KERBEROS5_OLD);
 			response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 			response.negTokenTarg.responseToken = data_blob(NULL, 0);
 
@@ -930,8 +930,8 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 				}
 
 				*domain++ = '\0';
-				domain = strdup(domain);
-				user = strdup(principal);
+				domain = SMB_STRDUP(domain);
+				user = SMB_STRDUP(principal);
 
 				data_blob_free(&ap_rep);
 				data_blob_free(&auth_data);
@@ -964,12 +964,12 @@ static void manage_gss_spnego_request(enum stdio_helper_mode stdio_helper_mode,
 					       &response.negTokenTarg.responseToken);
 
 		response.type = SPNEGO_NEG_TOKEN_TARG;
-		response.negTokenTarg.supportedMech = strdup(OID_NTLMSSP);
+		response.negTokenTarg.supportedMech = SMB_STRDUP(OID_NTLMSSP);
 		response.negTokenTarg.mechListMIC = data_blob(NULL, 0);
 
 		if (NT_STATUS_IS_OK(status)) {
-			user = strdup(ntlmssp_state->user);
-			domain = strdup(ntlmssp_state->domain);
+			user = SMB_STRDUP(ntlmssp_state->user);
+			domain = SMB_STRDUP(ntlmssp_state->domain);
 			ntlmssp_end(&ntlmssp_state);
 		}
 	}
@@ -1155,7 +1155,7 @@ static BOOL manage_client_krb5_init(SPNEGO_DATA spnego)
 		return False;
 	}
 
-	principal = malloc(spnego.negTokenInit.mechListMIC.length+1);
+	principal = SMB_MALLOC(spnego.negTokenInit.mechListMIC.length+1);
 
 	if (principal == NULL) {
 		DEBUG(1, ("Could not malloc principal\n"));
@@ -1266,7 +1266,7 @@ static void manage_gss_spnego_client_request(enum stdio_helper_mode stdio_helper
 
 		/* We asked for a password and obviously got it :-) */
 
-		opt_password = strndup((const char *)request.data, request.length);
+		opt_password = SMB_STRNDUP((const char *)request.data, request.length);
 		
 		if (opt_password == NULL) {
 			DEBUG(1, ("Out of memory\n"));

@@ -42,12 +42,11 @@ static BOOL read_negTokenInit(ASN1_DATA *asn1, negTokenInit_t *token)
 			asn1_start_tag(asn1, ASN1_CONTEXT(0));
 			asn1_start_tag(asn1, ASN1_SEQUENCE(0));
 
-			token->mechTypes = malloc(sizeof(*token->mechTypes));
+			token->mechTypes = SMB_MALLOC_P(char *);
 			for (i = 0; !asn1->has_error &&
 				     0 < asn1_tag_remaining(asn1); i++) {
 				token->mechTypes = 
-					realloc(token->mechTypes, (i + 2) *
-						sizeof(*token->mechTypes));
+					SMB_REALLOC_ARRAY(token->mechTypes, char *, i + 2);
 				asn1_read_OID(asn1, token->mechTypes + i);
 			}
 			token->mechTypes[i] = NULL;

@@ -211,7 +211,7 @@ struct winbindd_child *claim_child(BOOL need_netlogon_child)
 		return child;
 	}
 
-	child = malloc(sizeof(*winbindd_children));
+	child = SMB_MALLOC_P(struct winbindd_child);
 	ZERO_STRUCTP(child);
 
 	if (!do_dual_daemon(child)) {

@@ -324,7 +324,7 @@ static void find_domain_master_name_query_success(struct subnet_record *subrec,
 	/* Setup the userdata_struct - this is copied so we can use
 	a stack variable for this. */
 
-	if((userdata = (struct userdata_struct *)malloc(size)) == NULL) {
+	if((userdata = (struct userdata_struct *)SMB_MALLOC(size)) == NULL) {
 		DEBUG(0, ("find_domain_master_name_query_success: malloc fail.\n"));
 		return;
 	}

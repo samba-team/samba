@@ -217,8 +217,7 @@ static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
 		return NT_STATUS_OK;
 	}
 
-	talloced_info =	(struct acct_info *)
-		talloc_memdup(mem_ctx, *info,
+	talloced_info =	(struct acct_info *)TALLOC_MEMDUP(mem_ctx, *info,
 			      *num_entries * sizeof(struct acct_info));
 
 	SAFE_FREE(*info);
@@ -346,12 +345,9 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	       NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES)) {
 
 		(*num_domains)++;
-		*names = talloc_realloc(mem_ctx, *names,
-					sizeof(*names) * (*num_domains));
-		*alt_names = talloc_realloc(mem_ctx, *alt_names,
-					    sizeof(*alt_names) * (*num_domains));
-		*dom_sids = talloc_realloc(mem_ctx, *dom_sids,
-					   sizeof(**dom_sids) * (*num_domains));
+		*names = TALLOC_REALLOC_ARRAY(mem_ctx, *names, char *, *num_domains);
+		*alt_names = TALLOC_REALLOC_ARRAY(mem_ctx, *alt_names, char *, *num_domains);
+		*dom_sids = TALLOC_REALLOC_ARRAY(mem_ctx, *dom_sids, DOM_SID, *num_domains);
 		
 		(*names)[i] = smb_xstrdup(pdb_get_tp_domain_name_c(trust));
 		sid_copy(&(*dom_sids)[i], pdb_get_tp_domain_sid(trust));

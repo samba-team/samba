@@ -194,7 +194,7 @@ static int generic_queue_get(const char *printer_name,
 	qcount = 0;
 	ZERO_STRUCTP(status);
 	if (numlines)
-		queue = (print_queue_struct *)malloc(sizeof(print_queue_struct)*(numlines+1));
+		queue = SMB_MALLOC_ARRAY(print_queue_struct, numlines+1);
 
 	if (queue) {
 		memset(queue, '\0', sizeof(print_queue_struct)*(numlines+1));

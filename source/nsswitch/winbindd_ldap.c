@@ -69,7 +69,7 @@ struct pending_ldap_message *pending_messages;
 
 static BOOL append_to_buf(struct rw_buffer *buf, uint8_t *data, size_t length)
 {
-	buf->data = realloc(buf->data, buf->length+length);
+	buf->data = SMB_REALLOC(buf->data, buf->length+length);
 
 	if (buf->data == NULL)
 		return False;
@@ -160,7 +160,7 @@ static void new_ldap_client(int listen_sock)
 	
 	/* Create new connection structure */
 
-	client = (struct winbind_ldap_client *)malloc(sizeof(*client));
+	client = SMB_MALLOC_P(struct winbind_ldap_client);
 
 	if (client == NULL)
 		return;
@@ -344,7 +344,7 @@ static void client_has_data(struct winbind_ldap_client *client)
 			break;
 		}
 
-		pending = malloc(sizeof(*pending));
+		pending = SMB_MALLOC_P(struct pending_ldap_message);
 		if (pending == NULL)
 			continue;
 
@@ -570,7 +570,7 @@ static BOOL setup_ldap_serverconn(void)
 	struct ldap_message *msg;
 	char *dn, *pw;
 
-	ldap_servers = malloc(sizeof(*ldap_servers));
+	ldap_servers = SMB_MALLOC_P(struct winbind_ldap_server);
 
 	if ((ldap_servers == NULL) || (mem_ctx == NULL))
 		return False;

@@ -53,7 +53,7 @@ static int getgrouplist_internals(const char *user, gid_t gid, gid_t *groups, in
 		return -1;
 	}
 	
-	gids_saved = (gid_t *)malloc(sizeof(gid_t) * (ngrp_saved+1));
+	gids_saved = SMB_MALLOC_ARRAY(gid_t, ngrp_saved+1);
 	if (!gids_saved) {
 		errno = ENOMEM;
 		return -1;
@@ -149,7 +149,7 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 	int i;
 
 	max_grp = groups_max();
-	temp_groups = (gid_t *)malloc(sizeof(gid_t) * max_grp);
+	temp_groups = SMB_MALLOC_ARRAY(gid_t, max_grp);
 	if (! temp_groups) {
 		return False;
 	}
@@ -158,7 +158,7 @@ BOOL getgroups_user(const char *user, gid_t primary_gid,
 		
 		gid_t *groups_tmp;
 		
-		groups_tmp = Realloc(temp_groups, sizeof(gid_t) * max_grp);
+		groups_tmp = SMB_REALLOC_ARRAY(temp_groups, gid_t, max_grp);
 		
 		if (!groups_tmp) {
 			SAFE_FREE(temp_groups);
@@ -207,7 +207,7 @@ NTSTATUS pdb_default_enum_group_memberships(struct pdb_methods *methods,
 		smb_panic("primary group missing");
 	}
 
-	*sids = malloc(sizeof(**sids) * *num_groups);
+	*sids = SMB_MALLOC_ARRAY(DOM_SID, *num_groups);
 
 	if (*sids == NULL) {
 		SAFE_FREE(gids);

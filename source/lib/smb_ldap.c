@@ -158,7 +158,7 @@ static struct ldap_parse_tree *ldap_parse_simple(TALLOC_CTX *mem_ctx,
 	if (val && strchr("()&|", *val))
 		return NULL;
 	
-	ret = talloc(mem_ctx, sizeof(*ret));
+	ret = TALLOC_P(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -185,7 +185,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 {
 	struct ldap_parse_tree *ret, *next;
 
-	ret = talloc(mem_ctx, sizeof(*ret));
+	ret = TALLOC_P(mem_ctx, struct ldap_parse_tree);
 
 	if (!ret) {
 		errno = ENOMEM;
@@ -194,7 +194,7 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	ret->operation = op;
 	ret->u.list.num_elements = 1;
-	ret->u.list.elements = talloc(mem_ctx, sizeof(*ret->u.list.elements));
+	ret->u.list.elements = TALLOC_P(mem_ctx, struct ldap_parse_tree *);
 	if (!ret->u.list.elements) {
 		errno = ENOMEM;
 		return NULL;
@@ -209,9 +209,8 @@ static struct ldap_parse_tree *ldap_parse_filterlist(TALLOC_CTX *mem_ctx,
 
 	while (*s && (next = ldap_parse_filter(mem_ctx, &s))) {
 		struct ldap_parse_tree **e;
-		e = talloc_realloc(mem_ctx, ret->u.list.elements,
-				   sizeof(struct ldap_parse_tree) *
-				   (ret->u.list.num_elements+1));
+		e = TALLOC_REALLOC_ARRAY(mem_ctx, ret->u.list.elements, struct ldap_parse_tree,
+				   ret->u.list.num_elements+1);
 		if (!e) {
 			errno = ENOMEM;
 			return NULL;
@@ -233,7 +232,7 @@ static struct ldap_parse_tree *ldap_parse_not(TALLOC_CTX *mem_ctx, const char *s
 {
 	struct ldap_parse_tree *ret;
 
-	ret = talloc(mem_ctx, sizeof(*ret));
+	ret = TALLOC_P(mem_ctx, struct ldap_parse_tree);
 	if (!ret) {
 		errno = ENOMEM;
 		return NULL;
@@ -406,7 +405,7 @@ static char *next_chunk(TALLOC_CTX *mem_ctx,
 		if (chunk_size+1 >= alloc_size) {
 			char *c2;
 			alloc_size += 1024;
-			c2 = talloc_realloc(mem_ctx, chunk, alloc_size);
+			c2 = TALLOC_REALLOC(mem_ctx, chunk, alloc_size);
 			if (!c2) {
 				errno = ENOMEM;
 				return NULL;
@@ -513,9 +512,7 @@ static int next_attr(char **s, const char **attr, struct ldap_val *value)
 static BOOL add_value_to_attrib(TALLOC_CTX *mem_ctx, struct ldap_val *value,
 				struct ldap_attribute *attrib)
 {
-	attrib->values = talloc_realloc(mem_ctx, attrib->values,
-					sizeof(*attrib->values) *
-					(attrib->num_values+1));
+	attrib->values = TALLOC_REALLOC_ARRAY(mem_ctx, attrib->values, DATA_BLOB, attrib->num_values+1);
 	if (attrib->values == NULL)
 		return False;
 
@@ -546,10 +543,8 @@ static BOOL fill_add_attributes(struct ldap_message *msg, char **chunk)
 		}
 
 		if (attrib == NULL) {
-			r->attributes = talloc_realloc(msg->mem_ctx,
-						       r->attributes,
-						       sizeof(*r->attributes) *
-						       (r->num_attributes+1));
+			r->attributes = TALLOC_REALLOC_ARRAY(msg->mem_ctx, r->attributes, struct ldap_attribute,
+						       r->num_attributes+1);
 			if (r->attributes == NULL)
 				return False;
 
@@ -571,8 +566,7 @@ static BOOL add_mod_to_array_talloc(TALLOC_CTX *mem_ctx,
 				    struct ldap_mod **mods,
 				    int *num_mods)
 {
-	*mods = talloc_realloc(mem_ctx, *mods,
-			       sizeof(**mods) * ((*num_mods)+1));
+	*mods = TALLOC_REALLOC_ARRAY(mem_ctx, *mods, struct ldap_mod, (*num_mods)+1);
 
 	if (*mods == NULL)
 		return False;
@@ -1036,7 +1030,7 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 static const char *blob2string_talloc(TALLOC_CTX *mem_ctx,
 				      DATA_BLOB blob)
 {
-	char *result = talloc(mem_ctx, blob.length+1);
+	char *result = TALLOC(mem_ctx, blob.length+1);
 	memcpy(result, blob.data, blob.length);
 	result[blob.length] = '\0';
 	return result;
@@ -1078,8 +1072,7 @@ static BOOL add_attrib_to_array_talloc(TALLOC_CTX *mem_ctx,
 				       struct ldap_attribute **attribs,
 				       int *num_attribs)
 {
-	*attribs = talloc_realloc(mem_ctx, *attribs,
-				  sizeof(**attribs) * (*num_attribs+1));
+	*attribs = TALLOC_REALLOC_ARRAY(mem_ctx, *attribs, struct ldap_attribute, *num_attribs+1);
 
 	if (*attribs == NULL)
 		return False;
@@ -1176,7 +1169,7 @@ static BOOL ldap_decode_filter(TALLOC_CTX *mem_ctx, ASN1_DATA *data,
 		if (!asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(7)))
 			return False;
 		attr_len = asn1_tag_remaining(data);
-		attr_name = malloc(attr_len+1);
+		attr_name = SMB_MALLOC(attr_len+1);
 		if (attr_name == NULL)
 			return False;
 		asn1_read(data, attr_name, attr_len);
@@ -1254,7 +1247,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 			asn1_start_tag(data, 0x80);
 			pwlen = asn1_tag_remaining(data);
 			if (pwlen != 0) {
-				char *pw = talloc(msg->mem_ctx, pwlen+1);
+				char *pw = TALLOC(msg->mem_ctx, pwlen+1);
 				asn1_read(data, pw, pwlen);
 				pw[pwlen] = '\0';
 				r->creds.password = pw;
@@ -1426,7 +1419,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		asn1_start_tag(data,
 			       ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
 		len = asn1_tag_remaining(data);
-		dn = talloc(msg->mem_ctx, len+1);
+		dn = TALLOC(msg->mem_ctx, len+1);
 		if (dn == NULL)
 			break;
 		asn1_read(data, dn, len);
@@ -1458,7 +1451,7 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 			char *newsup;
 			asn1_start_tag(data, ASN1_CONTEXT_SIMPLE(0));
 			len = asn1_tag_remaining(data);
-			newsup = talloc(msg->mem_ctx, len+1);
+			newsup = TALLOC(msg->mem_ctx, len+1);
 			if (newsup == NULL)
 				break;
 			asn1_read(data, newsup, len);
@@ -1569,7 +1562,7 @@ struct ldap_connection *new_ldap_connection(void)
 	if (mem_ctx == NULL)
 		return NULL;
 
-	result = talloc(mem_ctx, sizeof(*result));
+	result = TALLOC_P(mem_ctx, struct ldap_connection);
 
 	if (result == NULL)
 		return NULL;
@@ -1623,7 +1616,7 @@ struct ldap_message *new_ldap_message(void)
 	if (mem_ctx == NULL)
 		return NULL;
 
-	result = talloc(mem_ctx, sizeof(*result));
+	result = TALLOC_P(mem_ctx, struct ldap_message);
 
 	if (result == NULL)
 		return NULL;
@@ -1664,7 +1657,7 @@ BOOL ldap_send_msg(struct ldap_connection *conn, struct ldap_message *msg,
 	    (msg->type == LDAP_TAG_UnbindRequest))
 		return True;
 
-	entry = malloc(sizeof(*entry));	
+	entry = SMB_MALLOC_P(struct ldap_queue_entry);
 
 	if (entry == NULL)
 		return False;
@@ -1712,7 +1705,7 @@ static struct ldap_message *recv_from_queue(struct ldap_connection *conn,
 static void add_search_entry(struct ldap_connection *conn,
 			     struct ldap_message *msg)
 {
-	struct ldap_queue_entry *e = malloc(sizeof *e);
+	struct ldap_queue_entry *e = SMB_MALLOC_P(struct ldap_queue_entry);
 	struct ldap_queue_entry *tmp;
 
 	if (e == NULL)
@@ -2018,7 +2011,7 @@ BOOL ldap_find_single_string(struct ldap_message *msg, const char *attr,
 	if (!ldap_find_single_value(msg, attr, &blob))
 		return False;
 
-	*value = talloc(mem_ctx, blob.length+1);
+	*value = TALLOC(mem_ctx, blob.length+1);
 
 	if (*value == NULL)
 		return False;
@@ -2039,7 +2032,7 @@ BOOL ldap_find_single_int(struct ldap_message *msg, const char *attr,
 	if (!ldap_find_single_value(msg, attr, &blob))
 		return False;
 
-	val = malloc(blob.length+1);
+	val = SMB_MALLOC(blob.length+1);
 	if (val == NULL)
 		return False;
 

@@ -81,9 +81,7 @@ WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 
 	vfs_ChDir(p->conn,p->conn->connectpath);
 
-	jn.referral_list = (struct referral*) talloc(p->mem_ctx, jn.referral_count 
-				* sizeof(struct referral));
-
+	jn.referral_list = TALLOC_ARRAY(p->mem_ctx, struct referral, jn.referral_count);
 	if(jn.referral_list == NULL) {
 		DEBUG(0,("init_reply_dfs_add: talloc failed for referral list!\n"));
 		return WERR_DFS_INTERNAL_ERROR;
@@ -245,8 +243,7 @@ static BOOL init_reply_dfs_info_3(TALLOC_CTX *ctx, struct junction_map* j, DFS_I
 		dfs3[i].ptr_storages = 1;
      
 		/* also enumerate the storages */
-		dfs3[i].storages = (DFS_STORAGE_INFO*) talloc(ctx, j[i].referral_count * 
-						sizeof(DFS_STORAGE_INFO));
+		dfs3[i].storages = TALLOC_ARRAY(ctx, DFS_STORAGE_INFO, j[i].referral_count);
 		if (!dfs3[i].storages)
 			return False;
 
@@ -285,7 +282,7 @@ static WERROR init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level,
 	case 1:
 		{
 		DFS_INFO_1* dfs1;
-		dfs1 = (DFS_INFO_1*) talloc(ctx, num_jn * sizeof(DFS_INFO_1));
+		dfs1 = TALLOC_ARRAY(ctx, DFS_INFO_1, num_jn);
 		if (!dfs1)
 			return WERR_NOMEM;
 		init_reply_dfs_info_1(jn, dfs1, num_jn);
@@ -295,7 +292,7 @@ static WERROR init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level,
 	case 2:
 		{
 		DFS_INFO_2* dfs2;
-		dfs2 = (DFS_INFO_2*) talloc(ctx, num_jn * sizeof(DFS_INFO_2));
+		dfs2 = TALLOC_ARRAY(ctx, DFS_INFO_2, num_jn);
 		if (!dfs2)
 			return WERR_NOMEM;
 		init_reply_dfs_info_2(jn, dfs2, num_jn);
@@ -305,7 +302,7 @@ static WERROR init_reply_dfs_ctr(TALLOC_CTX *ctx, uint32 level,
 	case 3:
 		{
 		DFS_INFO_3* dfs3;
-		dfs3 = (DFS_INFO_3*) talloc(ctx, num_jn * sizeof(DFS_INFO_3));
+		dfs3 = TALLOC_ARRAY(ctx, DFS_INFO_3, num_jn);
 		if (!dfs3)
 			return WERR_NOMEM;
 		init_reply_dfs_info_3(ctx, jn, dfs3, num_jn);
@@ -336,7 +333,7 @@ WERROR _dfs_enum(pipes_struct *p, DFS_Q_DFS_ENUM *q_u, DFS_R_DFS_ENUM *r_u)
 	r_u->reshnd.ptr_hnd = 1;
 	r_u->reshnd.handle = num_jn;
   
-	r_u->ctr = (DFS_INFO_CTR*)talloc(p->mem_ctx, sizeof(DFS_INFO_CTR));
+	r_u->ctr = TALLOC_P(p->mem_ctx, DFS_INFO_CTR);
 	if (!r_u->ctr)
 		return WERR_NOMEM;
 	ZERO_STRUCTP(r_u->ctr);

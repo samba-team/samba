@@ -476,7 +476,7 @@ static BOOL check_cache( char *s, size_t maxlen )
 	if(data_val.dptr == NULL || data_val.dsize == 0) {
 		ext_start = strrchr( s, '.' );
 		if( ext_start ) {
-			if((saved_ext = strdup(ext_start)) == NULL)
+			if((saved_ext = SMB_STRDUP(ext_start)) == NULL)
 				return False;
 
 			*ext_start = '\0';
@@ -624,7 +624,7 @@ static void name_map(char *OutName, BOOL need83, BOOL cache83, int default_case)
 
 		/* mangle it into 8.3 */
 		if (cache83)
-			tmp = strdup(OutName);
+			tmp = SMB_STRDUP(OutName);
 
 		to_8_3(OutName, default_case);
 

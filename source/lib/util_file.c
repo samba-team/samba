@@ -282,7 +282,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 
 	if (!s2) {
 		maxlen = MIN(maxlen,8);
-		s = (char *)malloc(maxlen);
+		s = (char *)SMB_MALLOC(maxlen);
 	}
 
 	if (!s) {
@@ -325,7 +325,7 @@ char *fgets_slash(char *s2,int maxlen,XFILE *f)
 			char *t;
 	  
 			maxlen *= 2;
-			t = (char *)Realloc(s,maxlen);
+			t = (char *)SMB_REALLOC(s,maxlen);
 			if (!t) {
 				DEBUG(0,("fgets_slash: failed to expand buffer!\n"));
 				SAFE_FREE(s);
@@ -358,7 +358,7 @@ char *file_pload(char *syscmd, size_t *size)
 	total = 0;
 
 	while ((n = read(fd, buf, sizeof(buf))) > 0) {
-		tp = Realloc(p, total + n + 1);
+		tp = SMB_REALLOC(p, total + n + 1);
 		if (!tp) {
 		        DEBUG(0,("file_pload: failed to expand buffer!\n"));
 			close(fd);
@@ -397,7 +397,7 @@ char *fd_load(int fd, size_t *size)
 		return NULL;
 	}
 
-	p = (char *)malloc(sbuf.st_size+1);
+	p = (char *)SMB_MALLOC(sbuf.st_size+1);
 	if (!p) {
 		return NULL;
 	}
@@ -492,7 +492,7 @@ static char **file_lines_parse(char *p, size_t size, int *numlines)
 		if (s[0] == '\n') i++;
 	}
 
-	ret = (char **)malloc(sizeof(ret[0])*(i+2));
+	ret = SMB_MALLOC_ARRAY(char *, i+2);
 	if (!ret) {
 		SAFE_FREE(p);
 		return NULL;

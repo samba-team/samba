@@ -57,7 +57,7 @@ static NTSTATUS cmd_epm_map(struct cli_state *cli,
 	*/
 	init_epm_floor_tcp(&floors[3], 135);
 	init_epm_floor_ip(&floors[4], addr);
-	towers = talloc(mem_ctx, sizeof(EPM_TOWER));
+	towers = TALLOC_P(mem_ctx, EPM_TOWER);
 	init_epm_tower(mem_ctx, towers, floors, 5);
 
 	result = cli_epm_map(cli, mem_ctx, &handle, &towers, &entry_handle, &numtowers);

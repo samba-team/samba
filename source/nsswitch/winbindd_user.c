@@ -351,8 +351,7 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
 						
 		/* Create a state record for this domain */
                 
-		if ((domain_state = (struct getent_state *)
-		     malloc(sizeof(struct getent_state))) == NULL)
+		if ((domain_state = SMB_MALLOC_P(struct getent_state)) == NULL)
 			return WINBINDD_ERROR;
                 
 		ZERO_STRUCTP(domain_state);
@@ -429,10 +428,7 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 	if (num_entries) {
 		struct getpwent_user *tnl;
 		
-		tnl = (struct getpwent_user *)Realloc(name_list, 
-						      sizeof(struct getpwent_user) *
-						      (ent->num_sam_entries + 
-						       num_entries));
+		tnl = SMB_REALLOC_ARRAY(name_list, struct getpwent_user, ent->num_sam_entries + num_entries);
 		
 		if (!tnl) {
 			DEBUG(0,("get_sam_user_entries realloc failed.\n"));
@@ -498,8 +494,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
 	num_users = MIN(MAX_GETPWENT_USERS, state->request.data.num_entries);
 	
-	if ((state->response.extra_data = 
-	     malloc(num_users * sizeof(struct winbindd_pw))) == NULL)
+	if ((state->response.extra_data = SMB_MALLOC_ARRAY(struct winbindd_pw, num_users)) == NULL)
 		return WINBINDD_ERROR;
 
 	memset(state->response.extra_data, 0, num_users * 
@@ -624,7 +619,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 		/* Allocate some memory for extra data */
 		total_entries += num_entries;
 			
-		ted = Realloc(extra_data, sizeof(fstring) * total_entries);
+		ted = SMB_REALLOC(extra_data, sizeof(fstring) * total_entries);
 			
 		if (!ted) {
 			DEBUG(0,("failed to enlarge buffer!\n"));
