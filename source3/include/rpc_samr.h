@@ -81,11 +81,13 @@ SamrTestPrivateFunctionsUser
 #define SAMR_CLOSE_HND         0x01
 
 #define SAMR_UNKNOWN_3         0x03
+#define SAMR_LOOKUP_DOMAIN     0x05
 #define SAMR_OPEN_DOMAIN       0x07
 
 #define SAMR_QUERY_DOMAIN_INFO 0x08
 
 #define SAMR_CREATE_DOM_GROUP  0x0a
+#define SAMR_ENUM_DOM_GROUPS   0x0b
 #define SAMR_ENUM_DOM_USERS    0x0d
 #define SAMR_CREATE_DOM_ALIAS  0x0e
 #define SAMR_ENUM_DOM_ALIASES  0x0f
@@ -117,8 +119,11 @@ SamrTestPrivateFunctionsUser
 #define SAMR_QUERY_DISPINFO    0x28
 
 #define SAMR_UNKNOWN_2C        0x2c
-#define SAMR_ENUM_DOM_GROUPS   0x30
+#define SAMR_QUERY_DISPINFO3   0x30 /* Alias for SAMR_QUERY_DISPINFO
+				       with info level 3 */
 #define SAMR_UNKNOWN_32        0x32
+#define SAMR_QUERY_DISPINFO4   0x33 /* Alias for SAMR_QUERY_DISPINFO
+				       with info level 4 */
 #define SAMR_UNKNOWN_34        0x34
 
 #define SAMR_CHGPASSWD_USER    0x37
@@ -446,6 +451,28 @@ typedef struct r_samr_query_domain_info
 } SAMR_R_QUERY_DOMAIN_INFO;
 
 
+/* SAMR_Q_LOOKUP_DOMAIN - obtain SID for a local domain */
+typedef struct q_samr_lookup_domain_info
+{
+	POLICY_HND connect_pol;
+
+	UNIHDR  hdr_domain;
+	UNISTR2 uni_domain;
+
+} SAMR_Q_LOOKUP_DOMAIN;
+
+
+/* SAMR_R_LOOKUP_DOMAIN */
+typedef struct r_samr_lookup_domain_info
+{
+	uint32   ptr_sid;
+	DOM_SID2 dom_sid;
+
+	uint32 status;
+
+} SAMR_R_LOOKUP_DOMAIN;
+
+
 /****************************************************************************
 SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 
@@ -480,6 +507,7 @@ typedef struct samr_entry_info
 	UNIHDR hdr_name;
 
 } SAM_ENTRY;
+
 
 /* SAMR_Q_ENUM_DOM_USERS - SAM rids and names */
 typedef struct q_samr_enum_dom_users_info
@@ -516,37 +544,15 @@ typedef struct r_samr_enum_dom_users_info
 } SAMR_R_ENUM_DOM_USERS;
 
 
-typedef struct samr_entry_info3
-{
-	uint32 grp_idx;
-
-	uint32 rid_grp;
-	uint32 attr;
-
-	UNIHDR hdr_grp_name;
-	UNIHDR hdr_grp_desc;
-
-} SAM_ENTRY3;
-
-typedef struct samr_str_entry_info3
-{
-	UNISTR2 uni_grp_name;
-	UNISTR2 uni_grp_desc;
-
-} SAM_STR3;
-
 /* SAMR_Q_ENUM_DOM_GROUPS - SAM rids and names */
 typedef struct q_samr_enum_dom_groups_info
 {
 	POLICY_HND pol;          /* policy handle */
 
-	/* these are possibly an enumeration context handle... */
-	uint16 switch_level;      /* 0x0003 */
-	uint16 unknown_0;         /* 0x0000 */
-	uint32 start_idx;       /* presumably the start enumeration index */
-	uint32 unknown_1;       /* 0x0000 07d0 */
+	/* this is possibly an enumeration context handle... */
+	uint32 unknown_0;         /* 0x0000 0000 */
 
-	uint32 max_size;        /* 0x0000 7fff */
+	uint32 max_size;              /* 0x0000 ffff */
 
 } SAMR_Q_ENUM_DOM_GROUPS;
 
@@ -554,22 +560,22 @@ typedef struct q_samr_enum_dom_groups_info
 /* SAMR_R_ENUM_DOM_GROUPS - SAM rids and names */
 typedef struct r_samr_enum_dom_groups_info
 {
-	uint32 unknown_0;        /* 0x0000 0492 or 0x0000 00be */
-	uint32 unknown_1;        /* 0x0000 049a or 0x0000 00be */
-	uint32 switch_level;     /* 0x0000 0003 */
-
 	uint32 num_entries;
 	uint32 ptr_entries;
 
 	uint32 num_entries2;
+	uint32 ptr_entries2;
 
-	SAM_ENTRY3 sam[MAX_SAM_ENTRIES];
-	SAM_STR3   str[MAX_SAM_ENTRIES];
+	uint32 num_entries3;
+
+	SAM_ENTRY sam[MAX_SAM_ENTRIES];
+	UNISTR2 uni_grp_name[MAX_SAM_ENTRIES];
+
+	uint32 num_entries4;
 
 	uint32 status;
 
 } SAMR_R_ENUM_DOM_GROUPS;
-
 
 
 /* SAMR_Q_ENUM_DOM_ALIASES - SAM rids and names */
@@ -583,6 +589,7 @@ typedef struct q_samr_enum_dom_aliases_info
 	uint32 max_size;              /* 0x0000 ffff */
 
 } SAMR_Q_ENUM_DOM_ALIASES;
+
 
 /* SAMR_R_ENUM_DOM_ALIASES - SAM rids and names */
 typedef struct r_samr_enum_dom_aliases_info
@@ -605,20 +612,7 @@ typedef struct r_samr_enum_dom_aliases_info
 } SAMR_R_ENUM_DOM_ALIASES;
 
 
-
-/* SAMR_Q_QUERY_DISPINFO - SAM rids, names and descriptions */
-typedef struct q_samr_query_disp_info
-{
-	POLICY_HND pol;        /* policy handle */
-
-	uint16 switch_level;    /* 0x0001 and 0x0002 seen */
-	uint16 unknown_0;       /* 0x0000 and 0x2000 seen */
-	uint32 start_idx;       /* presumably the start enumeration index */
-	uint32 unknown_1;       /* 0x0000 07d0, 0x0000 0400 and 0x0000 0200 seen */
-
-	uint32 max_size;        /* 0x0000 7fff, 0x0000 7ffe and 0x0000 3fff seen*/
-
-} SAMR_Q_QUERY_DISPINFO;
+/* -- Level 1 Display Info - User Information -- */
 
 typedef struct samr_entry_info1
 {
@@ -644,15 +638,13 @@ typedef struct samr_str_entry_info1
 
 typedef struct sam_entry_info_1
 {
-	uint32 num_entries;
-	uint32 ptr_entries;
-	uint32 num_entries2;
-
 	SAM_ENTRY1 sam[MAX_SAM_ENTRIES];
 	SAM_STR1   str[MAX_SAM_ENTRIES];
 
+} SAM_DISPINFO_1;
 
-} SAM_INFO_1;
+
+/* -- Level 2 Display Info - Trust Account Information -- */
 
 typedef struct samr_entry_info2
 {
@@ -676,36 +668,135 @@ typedef struct samr_str_entry_info2
 
 typedef struct sam_entry_info_2
 {
-	uint32 num_entries;
-	uint32 ptr_entries;
-	uint32 num_entries2;
-
 	SAM_ENTRY2 sam[MAX_SAM_ENTRIES];
 	SAM_STR2   str[MAX_SAM_ENTRIES];
 
-} SAM_INFO_2;
+} SAM_DISPINFO_2;
 
-typedef struct sam_info_ctr_info
+
+/* -- Level 3 Display Info - Domain Group Information -- */
+
+typedef struct samr_entry_info3
+{
+	uint32 grp_idx;
+
+	uint32 rid_grp;
+	uint32 attr;     /* SE_GROUP_xxx, usually 7 */
+
+	UNIHDR hdr_grp_name;
+	UNIHDR hdr_grp_desc;
+
+} SAM_ENTRY3;
+
+typedef struct samr_str_entry_info3
+{
+	UNISTR2 uni_grp_name;
+	UNISTR2 uni_grp_desc;
+
+} SAM_STR3;
+
+typedef struct sam_entry_info_3
+{
+	SAM_ENTRY3 sam[MAX_SAM_ENTRIES];
+	SAM_STR3   str[MAX_SAM_ENTRIES];
+
+} SAM_DISPINFO_3;
+
+
+/* -- Level 4 Display Info - User List (ASCII) -- */
+
+typedef struct samr_entry_info4
+{
+	uint32 user_idx;
+	STRHDR hdr_acct_name;
+
+} SAM_ENTRY4;
+
+typedef struct samr_str_entry_info4
+{
+	STRING2 acct_name;
+
+} SAM_STR4;
+
+typedef struct sam_entry_info_4
+{
+	SAM_ENTRY4 sam[MAX_SAM_ENTRIES];
+	SAM_STR4   str[MAX_SAM_ENTRIES];
+
+} SAM_DISPINFO_4;
+
+
+/* -- Level 5 Display Info - Group List (ASCII) -- */
+
+typedef struct samr_entry_info5
+{
+	uint32 grp_idx;
+	STRHDR hdr_grp_name;
+
+} SAM_ENTRY5;
+
+typedef struct samr_str_entry_info5
+{
+	STRING2 grp_name;
+
+} SAM_STR5;
+
+typedef struct sam_entry_info_5
+{
+	SAM_ENTRY5 sam[MAX_SAM_ENTRIES];
+	SAM_STR5   str[MAX_SAM_ENTRIES];
+
+} SAM_DISPINFO_5;
+
+
+typedef struct sam_dispinfo_ctr_info
 {
 	union
 	{
-		SAM_INFO_1 *info1; /* server info */
-		SAM_INFO_2 *info2; /* user info */
+		SAM_DISPINFO_1 *info1; /* users/names/descriptions */
+		SAM_DISPINFO_2 *info2; /* trust accounts */
+		SAM_DISPINFO_3 *info3; /* domain groups/descriptions */
+		SAM_DISPINFO_4 *info4; /* user list (ASCII) - used by Win95 */
+		SAM_DISPINFO_5 *info5; /* group list (ASCII) */
 		void       *info; /* allows assignment without typecasting, */
 
 	} sam;
 
-} SAM_INFO_CTR;
+} SAM_DISPINFO_CTR;
 
-/* SAMR_R_QUERY_DISPINFO - SAM rids, names and descriptions */
+
+/* SAMR_Q_QUERY_DISPINFO - SAM rids, names and descriptions */
+typedef struct q_samr_query_disp_info
+{
+	POLICY_HND domain_pol;
+
+	uint16 switch_level;    /* see SAM_DISPINFO_CTR above */
+	/* align */
+
+	uint32 start_idx;       /* start enumeration index */
+	uint32 max_entries;     /* maximum number of entries to return */
+	uint32 max_size;        /* recommended data size; if exceeded server
+				   should return STATUS_MORE_ENTRIES */
+
+} SAMR_Q_QUERY_DISPINFO;
+
+
+/* SAMR_R_QUERY_DISPINFO  */
 typedef struct r_samr_query_dispinfo_info
 {
-	uint32 unknown_0;        /* container length? 0x0000 0492 or 0x0000 00be */
-	uint32 unknown_1;        /* container length? 0x0000 049a or 0x0000 00be */
-	uint16 switch_level;     /* 0x0001 or 0x0002 */
-	/*uint8 pad[2] */
+	uint32 total_size;     /* total data size for all matching entries
+				  (0 = uncalculated) */
+	uint32 data_size;      /* actual data size returned = size of SAM_ENTRY
+				  structures + total length of strings */
 
-	SAM_INFO_CTR *ctr;
+	uint16 switch_level;   /* see SAM_DISPINFO_CTR above */
+	/* align */
+
+	uint32 num_entries;    /* number of entries returned */
+	uint32 ptr_entries;
+	uint32 num_entries2;
+
+	SAM_DISPINFO_CTR *ctr;
 
 	uint32 status;
 

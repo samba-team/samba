@@ -187,9 +187,13 @@ static void send_trans_reply(char *outbuf,
 
 	if (buffer_too_large)
 	{
+#if 0
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
 		SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
 		SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_ACCESS_VIOLATION);
+#endif
+		SCVAL(outbuf, smb_rcls, ERRDOS);
+		SSVAL(outbuf, smb_err, ERRmoredata);
 	}
 
 	copy_trans_params_and_data(outbuf, align,

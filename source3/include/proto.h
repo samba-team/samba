@@ -1731,6 +1731,9 @@ BOOL samr_set_groupinfo(struct cli_state *cli, uint16 fnum,
 BOOL samr_open_domain(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *connect_pol, uint32 flags, DOM_SID *sid,
 				POLICY_HND *domain_pol);
+BOOL samr_query_lookup_domain(struct cli_state *cli, uint16 fnum, 
+			      POLICY_HND *pol, const char *dom_name,
+			      DOM_SID *dom_sid);
 BOOL samr_query_lookup_names(struct cli_state *cli, uint16 fnum, 
 				POLICY_HND *pol, uint32 flags,
 				uint32 num_names, const char **names,
@@ -2160,6 +2163,10 @@ void smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 void make_samr_q_close_hnd(SAMR_Q_CLOSE_HND *q_c, POLICY_HND *hnd);
 void samr_io_q_close_hnd(char *desc,  SAMR_Q_CLOSE_HND *q_u, prs_struct *ps, int depth);
 void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int depth);
+void make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
+		POLICY_HND *pol, const char *dom_name);
+void samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *ps, int depth);
+void samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 				POLICY_HND *connect_pol, uint32 flags,
 				DOM_SID *sid);
@@ -2201,17 +2208,29 @@ void make_samr_r_enum_dom_users(SAMR_R_ENUM_DOM_USERS *r_u,
 		uint32 num_sam_entries, SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES], uint32 status);
 void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
-				uint16 switch_level, uint32 start_idx, uint32 size);
+				uint16 switch_level, uint32 start_idx,
+				uint32 max_entries);
 void samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struct *ps, int depth);
-void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
-		uint32 start_idx, uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
-void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
-		uint32 start_idx, uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_sam_dispinfo_1(SAM_DISPINFO_1 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_sam_dispinfo_2(SAM_DISPINFO_2 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 DOMAIN_GRP *grp);
+void make_sam_dispinfo_4(SAM_DISPINFO_4 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES]);
+void make_sam_dispinfo_5(SAM_DISPINFO_5 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 DOMAIN_GRP *grp);
 void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
-		uint16 switch_level, SAM_INFO_CTR *ctr, uint32 status);
-void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
+				uint32 num_entries, uint32 data_size,
+				uint16 switch_level, SAM_DISPINFO_CTR *ctr,
+				uint32 status);
+void samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth);
 void make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
 				POLICY_HND *hnd, uint32 unk, uint32 rid);
 void samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, int depth);
@@ -2266,20 +2285,18 @@ void samr_io_q_query_groupmem(char *desc,  SAMR_Q_QUERY_GROUPMEM *q_u, prs_struc
 void make_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM *r_u,
 		uint32 num_entries, uint32 *rid, uint32 *attr, uint32 status);
 void samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struct *ps, int depth);
-void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
-				uint16 switch_level, uint32 start_idx, uint32 size);
-void samr_io_q_enum_dom_groups(char *desc,  SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
-void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
-		uint32 start_idx, uint32 num_sam_entries,
-		DOMAIN_GRP *grp,
-		uint32 status);
-void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth);
 void make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
 void samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
 void make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
 		uint32 num_gids, DOM_GID *gid, uint32 status);
 void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol, uint32 size);
+void samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth);
+void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
+		uint32 num_sam_entries, DOMAIN_GRP *grps,
+		uint32 status);
+void samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth);
 void make_samr_q_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_e, POLICY_HND *pol, uint32 size);
 void samr_io_q_enum_dom_aliases(char *desc,  SAMR_Q_ENUM_DOM_ALIASES *q_e, prs_struct *ps, int depth);
 void make_samr_r_enum_dom_aliases(SAMR_R_ENUM_DOM_ALIASES *r_u,
@@ -2432,7 +2449,8 @@ void samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
 
 void init_sec_access(SEC_ACCESS *t, uint32 mask);
 BOOL sec_io_access(char *desc, SEC_ACCESS *t, prs_struct *ps, int depth);
-void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask, uint8 flag);
+void init_sec_ace(SEC_ACE *t, DOM_SID *sid, uint8 type, SEC_ACCESS mask,
+				uint8 flag);
 BOOL sec_io_ace(char *desc, SEC_ACE *psa, prs_struct *ps, int depth);
 void free_sec_acl(SEC_ACL **ppsa);
 BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth);
@@ -2696,6 +2714,7 @@ void cmd_reg_shutdown(struct client_info *info);
 
 void cmd_sam_ntchange_pwd(struct client_info *info);
 void cmd_sam_test(struct client_info *info);
+void cmd_sam_lookup_domain(struct client_info *info);
 void cmd_sam_del_aliasmem(struct client_info *info);
 void cmd_sam_delete_dom_alias(struct client_info *info);
 void cmd_sam_add_aliasmem(struct client_info *info);

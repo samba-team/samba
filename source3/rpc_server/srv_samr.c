@@ -618,7 +618,7 @@ static void api_samr_del_aliasmem( uint16 vuid, prs_struct *data, prs_struct *rd
 }
 
 /*******************************************************************
- samr_reply_add_groupmem
+ samr_reply_enum_dom_groups
  ********************************************************************/
 static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 				prs_struct *rdata)
@@ -626,7 +626,6 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	SAMR_R_ENUM_DOM_GROUPS r_e;
 	DOMAIN_GRP *grps = NULL;
 	int num_entries = 0;
-	BOOL got_grps = False;
 	DOM_SID sid;
 	fstring sid_str;
 
@@ -646,21 +645,19 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 	if (sid_equal(&sid, &global_sam_sid))
 	{
 		BOOL ret;
-		got_grps = True;
 
 		become_root(True);
 		ret = enumdomgroups(&grps, &num_entries);
 		unbecome_root(True);
-
 		if (!ret)
 		{
 			r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
 		}
 	}
 
-	if (r_e.status == 0 && got_grps)
+	if (r_e.status == 0x0)
 	{
-		make_samr_r_enum_dom_groups(&r_e, q_u->start_idx, num_entries, grps, r_e.status);
+		make_samr_r_enum_dom_groups(&r_e, num_entries, grps, r_e.status);
 	}
 
 	/* store the response in the SMB stream */
@@ -675,12 +672,16 @@ static void samr_reply_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_u,
 }
 
 /*******************************************************************
- api_samr_enum_dom_groups
+ api_samr_enum_dom_aliases
  ********************************************************************/
 static void api_samr_enum_dom_groups( uint16 vuid, prs_struct *data, prs_struct *rdata)
 {
 	SAMR_Q_ENUM_DOM_GROUPS q_e;
+
+	/* grab the samr open */
 	samr_io_q_enum_dom_groups("", &q_e, data, 0);
+
+	/* construct reply. */
 	samr_reply_enum_dom_groups(&q_e, rdata);
 }
 
@@ -777,72 +778,154 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 				prs_struct *rdata)
 {
 	SAMR_R_QUERY_DISPINFO r_e;
-	SAM_INFO_CTR ctr;
-	SAM_INFO_1 info1;
-	SAM_INFO_2 info2;
+	SAM_DISPINFO_CTR ctr;
 	SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES];
+	DOMAIN_GRP *grps = NULL;
+	DOMAIN_GRP *sam_grps = NULL;
+	uint32 data_size = 0;
+	uint32 status = 0x0;
+	uint16 acb_mask = ACB_NORMAL;
+	int num_sam_entries = 0;
 	int num_entries = 0;
-	int total_entries = 0;
-	BOOL got_pwds;
-	uint16 switch_level = 0x0;
-
-	ZERO_STRUCT(r_e);
-
-	r_e.status = 0x0;
+	int total_entries;
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
 	/* find the policy handle.  open a policy on it. */
-	if (r_e.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
+	if (find_lsa_policy_by_hnd(&(q_u->domain_pol)) == -1)
 	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+		status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 		DEBUG(5,("samr_reply_query_dispinfo: invalid handle\n"));
 	}
 
-	if (r_e.status == 0x0)
+	if (status == 0x0)
 	{
 		become_root(True);
-		got_pwds = get_sampwd_entries(pass, q_u->start_idx, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
+
+		/* Get what we need from the password database */
+		switch (q_u->switch_level)
+		{
+			case 0x2:
+			{
+				acb_mask = ACB_WSTRUST;
+				/* Fall through */
+			}
+			case 0x1:
+			case 0x4:
+			{
+				get_sampwd_entries(pass, q_u->start_idx,
+					      &total_entries, &num_sam_entries,
+					      MAX_SAM_ENTRIES, acb_mask);
+				break;
+			}
+			case 0x3:
+			case 0x5:
+			{
+				enumdomgroups(&sam_grps, &num_sam_entries);
+
+				if (q_u->start_idx < num_sam_entries) {
+					grps = sam_grps + q_u->start_idx;
+					num_sam_entries -= q_u->start_idx;
+				} else {
+					num_sam_entries = 0;
+				}
+				break;
+			}
+		}
+
 		unbecome_root(True);
 
+		num_entries = num_sam_entries;
+
+		if (num_entries > q_u->max_entries)
+		{
+			num_entries = q_u->max_entries;
+		}
+
+		if (num_entries > MAX_SAM_ENTRIES)
+		{
+			num_entries = MAX_SAM_ENTRIES;
+			DEBUG(5,("limiting number of entries to %d\n", 
+				 num_entries));
+		}
+
+		data_size = q_u->max_size;
+
+		/* Now create reply structure */
 		switch (q_u->switch_level)
 		{
 			case 0x1:
 			{
-			
-				/* query disp info is for users */
-				switch_level = 0x1;
-				make_sam_info_1(&info1, ACB_NORMAL,
-					q_u->start_idx, num_entries, pass);
-
-				ctr.sam.info1 = &info1;
-
+				ctr.sam.info1 = malloc(sizeof(SAM_DISPINFO_1));
+				make_sam_dispinfo_1(ctr.sam.info1,
+						    &num_entries, &data_size,
+						    q_u->start_idx, pass);
 				break;
 			}
 			case 0x2:
 			{
-				/* query disp info is for servers */
-				switch_level = 0x2;
-				make_sam_info_2(&info2, ACB_WSTRUST,
-					q_u->start_idx, num_entries, pass);
-
-				ctr.sam.info2 = &info2;
-
+				ctr.sam.info2 = malloc(sizeof(SAM_DISPINFO_2));
+				make_sam_dispinfo_2(ctr.sam.info2,
+						    &num_entries, &data_size,
+						    q_u->start_idx, pass);
+				break;
+			}
+			case 0x3:
+			{
+				ctr.sam.info3 = malloc(sizeof(SAM_DISPINFO_3));
+				make_sam_dispinfo_3(ctr.sam.info3,
+						    &num_entries, &data_size,
+						    q_u->start_idx, grps);
+				break;
+			}
+	  		case 0x4:
+			{
+				ctr.sam.info4 = malloc(sizeof(SAM_DISPINFO_4));
+				make_sam_dispinfo_4(ctr.sam.info4,
+						    &num_entries, &data_size,
+						    q_u->start_idx, pass);
+				break;
+			}
+			case 0x5:
+			{
+				ctr.sam.info5 = malloc(sizeof(SAM_DISPINFO_5));
+				make_sam_dispinfo_5(ctr.sam.info5,
+						    &num_entries, &data_size,
+						    q_u->start_idx, grps);
+				break;
+			}
+			default:
+			{
+				ctr.sam.info = NULL;
+				status = 0xC0000000 | NT_STATUS_INVALID_INFO_CLASS;
 				break;
 			}
 		}
 	}
 
-	if (r_e.status == 0 && got_pwds)
+	if ((status == 0) && (num_entries < num_sam_entries))
 	{
-		make_samr_r_query_dispinfo(&r_e, switch_level, &ctr, r_e.status);
+		status = 0x105; /* STATUS_MORE_ENTRIES */
 	}
+
+	make_samr_r_query_dispinfo(&r_e, num_entries, data_size,
+				   q_u->switch_level, &ctr, status);
 
 	/* store the response in the SMB stream */
 	samr_io_r_query_dispinfo("", &r_e, rdata, 0);
 
-	DEBUG(5,("samr_query_dispinfo: %d\n", __LINE__));
+	/* free malloc'd areas */
+	if (sam_grps != NULL)
+	{
+		free(sam_grps);
+	}
 
+	if (ctr.sam.info != NULL)
+	{
+		free(ctr.sam.info);
+	}
+
+	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 }
 
 /*******************************************************************
@@ -852,10 +935,7 @@ static void api_samr_query_dispinfo( uint16 vuid, prs_struct *data, prs_struct *
 {
 	SAMR_Q_QUERY_DISPINFO q_e;
 
-	/* grab the samr open */
 	samr_io_q_query_dispinfo("", &q_e, data, 0);
-
-	/* construct reply. */
 	samr_reply_query_dispinfo(&q_e, rdata);
 }
 
@@ -2538,6 +2618,64 @@ static void api_samr_open_group( uint16 vuid, prs_struct *data, prs_struct *rdat
 }
 
 /*******************************************************************
+ samr_reply_lookup_domain
+ ********************************************************************/
+static void samr_reply_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
+				prs_struct *rdata)
+{
+	SAMR_R_LOOKUP_DOMAIN r_u;
+	fstring domain;
+
+	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
+
+	r_u.ptr_sid = 0;
+	r_u.status = 0x0;
+
+	/* find the connection policy handle */
+	if (find_lsa_policy_by_hnd(&(q_u->connect_pol)) == -1)
+	{
+		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
+	}
+
+	if (r_u.status == 0x0)
+        {
+		unistr2_to_ascii(domain, &(q_u->uni_domain), sizeof(domain));
+		DEBUG(5, ("Lookup Domain: %s\n", domain));
+
+		/* check it's one of ours */
+		if (strequal(domain, global_sam_name))
+		{
+			make_dom_sid2(&(r_u.dom_sid), &global_sam_sid);
+			r_u.ptr_sid = 1;
+		}
+		else if (strequal(domain, "BUILTIN"))
+		{
+			make_dom_sid2(&(r_u.dom_sid), &global_sid_S_1_5_20);
+			r_u.ptr_sid = 1;
+		}
+		else
+		{
+			r_u.status = 0xC0000000 | NT_STATUS_NO_SUCH_DOMAIN;
+		}
+	}
+
+	/* store the response in the SMB stream */
+	samr_io_r_lookup_domain("", &r_u, rdata, 0);
+
+	DEBUG(5,("samr_lookup_domain: %d\n", __LINE__));
+}
+
+/*******************************************************************
+ api_samr_lookup_domain
+ ********************************************************************/
+static void api_samr_lookup_domain( uint16 vuid, prs_struct *data, prs_struct *rdata)
+{
+	SAMR_Q_LOOKUP_DOMAIN q_u;
+	samr_io_q_lookup_domain("", &q_u, data, 0);
+	samr_reply_lookup_domain(&q_u, rdata);
+}
+
+/*******************************************************************
  array of \PIPE\samr operations
  ********************************************************************/
 static struct api_struct api_samr_cmds [] =
@@ -2565,6 +2703,8 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_QUERY_DOMAIN_INFO", SAMR_QUERY_DOMAIN_INFO, api_samr_query_dom_info   },
 	{ "SAMR_QUERY_USERGROUPS" , SAMR_QUERY_USERGROUPS , api_samr_query_usergroups },
 	{ "SAMR_QUERY_DISPINFO"   , SAMR_QUERY_DISPINFO   , api_samr_query_dispinfo   },
+	{ "SAMR_QUERY_DISPINFO3"  , SAMR_QUERY_DISPINFO3  , api_samr_query_dispinfo   },
+	{ "SAMR_QUERY_DISPINFO4"  , SAMR_QUERY_DISPINFO4  , api_samr_query_dispinfo   },
 	{ "SAMR_QUERY_ALIASINFO"  , SAMR_QUERY_ALIASINFO  , api_samr_query_aliasinfo  },
 	{ "SAMR_QUERY_GROUPINFO"  , SAMR_QUERY_GROUPINFO  , api_samr_query_groupinfo  },
 	{ "SAMR_0x32"             , SAMR_UNKNOWN_32       , api_samr_unknown_32       },
@@ -2574,6 +2714,7 @@ static struct api_struct api_samr_cmds [] =
 	{ "SAMR_OPEN_ALIAS"       , SAMR_OPEN_ALIAS       , api_samr_open_alias       },
 	{ "SAMR_OPEN_GROUP"       , SAMR_OPEN_GROUP       , api_samr_open_group       },
 	{ "SAMR_OPEN_DOMAIN"      , SAMR_OPEN_DOMAIN      , api_samr_open_domain      },
+	{ "SAMR_LOOKUP_DOMAIN"    , SAMR_LOOKUP_DOMAIN    , api_samr_lookup_domain    },
 	{ "SAMR_UNKNOWN_3"        , SAMR_UNKNOWN_3        , api_samr_unknown_3        },
 	{ "SAMR_UNKNOWN_2C"       , SAMR_UNKNOWN_2C       , api_samr_unknown_2c       },
 	{ NULL                    , 0                     , NULL                      }

@@ -73,6 +73,66 @@ void samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
+/*******************************************************************
+makes a SAMR_Q_LOOKUP_DOMAIN structure.
+********************************************************************/
+void make_samr_q_lookup_domain(SAMR_Q_LOOKUP_DOMAIN *q_u,
+		POLICY_HND *pol, const char *dom_name)
+{
+	int len_name = strlen(dom_name);
+
+	if (q_u == NULL) return;
+
+	DEBUG(5,("make_samr_q_lookup_domain\n"));
+
+	memcpy(&(q_u->connect_pol), pol, sizeof(*pol));
+
+	make_uni_hdr(&(q_u->hdr_domain), len_name, len_name, 1);
+	make_unistr2(&(q_u->uni_domain), dom_name, len_name);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *ps, int depth)
+{
+	if (q_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_lookup_domain");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth);
+	prs_align(ps);
+
+	smb_io_unihdr("hdr_domain", &(q_u->hdr_domain), ps, depth);
+	smb_io_unistr2("uni_domain", &(q_u->uni_domain),
+		       q_u->hdr_domain.buffer, ps, depth);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_lookup_domain(char *desc, SAMR_R_LOOKUP_DOMAIN *r_u, prs_struct *ps, int depth)
+{
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_lookup_domain");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("ptr", ps, depth, &(r_u->ptr_sid));
+
+	if (r_u->ptr_sid != 0)
+	{
+		smb_io_dom_sid2("sid", &(r_u->dom_sid), ps, depth);
+		prs_align(ps);
+	}
+
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
 
 /*******************************************************************
 reads or writes a structure.
@@ -257,6 +317,7 @@ void samr_io_q_query_dom_info(char *desc,  SAMR_Q_QUERY_DOMAIN_INFO *q_u, prs_st
 	prs_uint16("switch_value", ps, depth, &(q_u->switch_value));
 	prs_align(ps);
 }
+
 
 /*******************************************************************
 makes a structure.
@@ -839,6 +900,68 @@ static void sam_io_sam_entry3(char *desc,  SAM_ENTRY3 *sam, prs_struct *ps, int 
 }
 
 /*******************************************************************
+makes a SAM_ENTRY4 structure.
+********************************************************************/
+static void make_sam_entry4(SAM_ENTRY4 *sam, uint32 user_idx, 
+				uint32 len_acct_name)
+{
+	if (sam == NULL) return;
+
+	DEBUG(5,("make_sam_entry4\n"));
+
+	sam->user_idx = user_idx;
+	make_str_hdr(&(sam->hdr_acct_name), len_acct_name, len_acct_name,
+		     len_acct_name != 0);
+}
+
+/*******************************************************************
+reads or writes a SAM_ENTRY4 structure.
+********************************************************************/
+static void sam_io_sam_entry4(char *desc, SAM_ENTRY4 *sam, prs_struct *ps, int depth)
+{
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_entry4");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("user_idx", ps, depth, &(sam->user_idx));
+	smb_io_strhdr("strhdr", &(sam->hdr_acct_name), ps, depth);
+}
+
+/*******************************************************************
+makes a SAM_ENTRY5 structure.
+********************************************************************/
+static void make_sam_entry5(SAM_ENTRY5 *sam, uint32 grp_idx, 
+				uint32 len_grp_name)
+{
+	if (sam == NULL) return;
+
+	DEBUG(5,("make_sam_entry5\n"));
+
+	sam->grp_idx = grp_idx;
+	make_str_hdr(&(sam->hdr_grp_name), len_grp_name, len_grp_name,
+		     len_grp_name != 0);
+}
+
+/*******************************************************************
+reads or writes a SAM_ENTRY5 structure.
+********************************************************************/
+static void sam_io_sam_entry5(char *desc, SAM_ENTRY5 *sam, prs_struct *ps, int depth)
+{
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_entry5");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("grp_idx", ps, depth, &(sam->grp_idx));
+	smb_io_strhdr("strhdr", &(sam->hdr_grp_name), ps, depth);
+}
+
+/*******************************************************************
 makes a SAM_ENTRY structure.
 ********************************************************************/
 static void make_sam_entry(SAM_ENTRY *sam, uint32 len_sam_name, uint32 rid)
@@ -1015,20 +1138,20 @@ void samr_io_r_enum_dom_users(char *desc,  SAMR_R_ENUM_DOM_USERS *r_u, prs_struc
 makes a SAMR_Q_QUERY_DISPINFO structure.
 ********************************************************************/
 void make_samr_q_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_e, POLICY_HND *pol,
-				uint16 switch_level, uint32 start_idx, uint32 size)
+				uint16 switch_level, uint32 start_idx,
+				uint32 max_entries)
 {
 	if (q_e == NULL || pol == NULL) return;
 
 	DEBUG(5,("make_samr_q_query_dispinfo\n"));
 
-	memcpy(&(q_e->pol), pol, sizeof(*pol));
+	memcpy(&(q_e->domain_pol), pol, sizeof(*pol));
 
 	q_e->switch_level = switch_level;
 
-	q_e->unknown_0 = 0;
 	q_e->start_idx = start_idx;
-	q_e->unknown_1 = 0x000007d0;
-	q_e->max_size  = size;
+	q_e->max_entries = max_entries;
+	q_e->max_size = 0xffff; /* Not especially useful */
 }
 
 /*******************************************************************
@@ -1043,183 +1166,370 @@ void samr_io_q_query_dispinfo(char *desc,  SAMR_Q_QUERY_DISPINFO *q_e, prs_struc
 
 	prs_align(ps);
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	smb_io_pol_hnd("domain_pol", &(q_e->domain_pol), ps, depth); 
 	prs_align(ps);
 
 	prs_uint16("switch_level", ps, depth, &(q_e->switch_level));
-	prs_uint16("unknown_0   ", ps, depth, &(q_e->unknown_0   ));
+	prs_align(ps);
+
 	prs_uint32("start_idx   ", ps, depth, &(q_e->start_idx   ));
-	prs_uint32("unknown_1   ", ps, depth, &(q_e->unknown_1   ));
+	prs_uint32("max_entries ", ps, depth, &(q_e->max_entries ));
 	prs_uint32("max_size    ", ps, depth, &(q_e->max_size    ));
-
-	prs_align(ps);
 }
 
 
 /*******************************************************************
-makes a SAM_INFO_2 structure.
+makes a SAM_DISPINFO_1 structure.
 ********************************************************************/
-void make_sam_info_2(SAM_INFO_2 *sam, uint32 acb_mask,
-		uint32 start_idx, uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+void make_sam_dispinfo_1(SAM_DISPINFO_1 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
 {
+	uint32 len_sam_name, len_sam_full, len_sam_desc;
+	uint32 max_entries, max_data_size;
+	uint32 dsize = 0;
 	int i;
-	int entries_added;
 
-	if (sam == NULL) return;
+	if (sam == NULL || num_entries == NULL || data_size == NULL) return;
 
-	DEBUG(5,("make_sam_info_2\n"));
+	DEBUG(5,("make_sam_dispinfo_1\n"));
 
-	if (num_sam_entries >= MAX_SAM_ENTRIES)
+	max_entries = *num_entries;
+	max_data_size = *data_size;
+
+	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
 	{
-		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d\n", 
-			 num_sam_entries));
+		len_sam_name = pass[i].uni_user_name.uni_str_len;
+		len_sam_full = pass[i].uni_full_name.uni_str_len;
+		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+
+		make_sam_entry1(&(sam->sam[i]), start_idx + i + 1,
+				len_sam_name, len_sam_full, len_sam_desc,
+				pass[i].user_rid, pass[i].acb_info);
+
+		copy_unistr2(&(sam->str[i].uni_acct_name), &(pass[i].uni_user_name));
+		copy_unistr2(&(sam->str[i].uni_full_name), &(pass[i].uni_full_name));
+		copy_unistr2(&(sam->str[i].uni_acct_desc), &(pass[i].uni_acct_desc));
+
+		dsize += sizeof(SAM_ENTRY1);
+		dsize += len_sam_name + len_sam_full + len_sam_desc;
 	}
 
-	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
-	{
-		if (IS_BITS_SET_ALL(pass[i].acb_info, acb_mask))
-		{
-			make_sam_entry2(&(sam->sam[entries_added]),
-			                start_idx + entries_added + 1,
-			                pass[i].uni_user_name.uni_str_len,
-			                pass[i].uni_acct_desc.uni_str_len,
-			                pass[i].user_rid,
-			                pass[i].acb_info);
-
-			copy_unistr2(&(sam->str[entries_added].uni_srv_name), &(pass[i].uni_user_name));
-			copy_unistr2(&(sam->str[entries_added].uni_srv_desc), &(pass[i].uni_acct_desc));
-
-			entries_added++;
-		}
-
-		sam->num_entries   = entries_added;
-		sam->ptr_entries   = 1;
-		sam->num_entries2  = entries_added;
-	}
+	*num_entries = i;
+        *data_size = dsize;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-static void sam_io_sam_info_2(char *desc,  SAM_INFO_2 *sam, prs_struct *ps, int depth)
+static void sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 *sam, uint32 num_entries, prs_struct *ps, int depth)
 {
 	int i;
 
 	if (sam == NULL) return;
 
-	prs_debug(ps, depth, desc, "sam_io_sam_info_2");
+	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_1");
 	depth++;
 
 	prs_align(ps);
 
-	prs_uint32("num_entries  ", ps, depth, &(sam->num_entries  ));
-	prs_uint32("ptr_entries  ", ps, depth, &(sam->ptr_entries  ));
+	SMB_ASSERT_ARRAY(sam->sam, num_entries);
 
-	prs_uint32("num_entries2 ", ps, depth, &(sam->num_entries2 ));
-
-	SMB_ASSERT_ARRAY(sam->sam, sam->num_entries);
-
-	for (i = 0; i < sam->num_entries; i++)
-	{
-		prs_grow(ps);
-		sam_io_sam_entry2("", &(sam->sam[i]), ps, depth);
-	}
-
-	for (i = 0; i < sam->num_entries; i++)
-	{
-		prs_grow(ps);
-		sam_io_sam_str2 ("", &(sam->str[i]),
-							 sam->sam[i].hdr_srv_name.buffer,
-							 sam->sam[i].hdr_srv_desc.buffer,
-							 ps, depth);
-	}
-}
-
-
-/*******************************************************************
-makes a SAM_INFO_1 structure.
-********************************************************************/
-void make_sam_info_1(SAM_INFO_1 *sam, uint32 acb_mask,
-		uint32 start_idx, uint32 num_sam_entries,
-		SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
-{
-	int i;
-	int entries_added;
-
-	if (sam == NULL) return;
-
-	DEBUG(5,("make_sam_info_1\n"));
-
-	if (num_sam_entries >= MAX_SAM_ENTRIES)
-	{
-		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d\n", 
-			 num_sam_entries));
-	}
-
-	for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
-	{
-		if (IS_BITS_SET_ALL(pass[i].acb_info, acb_mask))
-		{
-			make_sam_entry1(&(sam->sam[entries_added]),
-						start_idx + entries_added + 1,
-						pass[i].uni_user_name.uni_str_len,
-						pass[i].uni_full_name.uni_str_len, 
-						pass[i].uni_acct_desc.uni_str_len,
-						pass[i].user_rid,
-						pass[i].acb_info);
-
-			copy_unistr2(&(sam->str[entries_added].uni_acct_name), &(pass[i].uni_user_name));
-			copy_unistr2(&(sam->str[entries_added].uni_full_name), &(pass[i].uni_full_name));
-			copy_unistr2(&(sam->str[entries_added].uni_acct_desc), &(pass[i].uni_acct_desc));
-
-			entries_added++;
-		}
-	}
-
-	sam->num_entries   = entries_added;
-	sam->ptr_entries   = 1;
-	sam->num_entries2  = entries_added;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-static void sam_io_sam_info_1(char *desc,  SAM_INFO_1 *sam, prs_struct *ps, int depth)
-{
-	int i;
-
-	if (sam == NULL) return;
-
-	prs_debug(ps, depth, desc, "sam_io_sam_info_1");
-	depth++;
-
-	prs_align(ps);
-
-	prs_uint32("num_entries  ", ps, depth, &(sam->num_entries  ));
-	prs_uint32("ptr_entries  ", ps, depth, &(sam->ptr_entries  ));
-
-	prs_uint32("num_entries2 ", ps, depth, &(sam->num_entries2 ));
-
-	SMB_ASSERT_ARRAY(sam->sam, sam->num_entries);
-
-	for (i = 0; i < sam->num_entries; i++)
+	for (i = 0; i < num_entries; i++)
 	{
 		prs_grow(ps);
 		sam_io_sam_entry1("", &(sam->sam[i]), ps, depth);
 	}
 
-	for (i = 0; i < sam->num_entries; i++)
+	for (i = 0; i < num_entries; i++)
 	{
 		prs_grow(ps);
 		sam_io_sam_str1 ("", &(sam->str[i]),
-							 sam->sam[i].hdr_acct_name.buffer,
-							 sam->sam[i].hdr_user_name.buffer,
-							 sam->sam[i].hdr_user_desc.buffer,
-							 ps, depth);
+				 sam->sam[i].hdr_acct_name.buffer,
+				 sam->sam[i].hdr_user_name.buffer,
+				 sam->sam[i].hdr_user_desc.buffer,
+				 ps, depth);
+	}
+}
+
+
+/*******************************************************************
+makes a SAM_DISPINFO_2 structure.
+********************************************************************/
+void make_sam_dispinfo_2(SAM_DISPINFO_2 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+{
+	uint32 len_sam_name, len_sam_desc;
+	uint32 max_entries, max_data_size;
+	uint32 dsize = 0;
+	int i;
+
+	if (sam == NULL || num_entries == NULL || data_size == NULL) return;
+
+	DEBUG(5,("make_sam_dispinfo_2\n"));
+
+	max_entries = *num_entries;
+	max_data_size = *data_size;
+
+	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
+	{
+		len_sam_name = pass[i].uni_user_name.uni_str_len;
+		len_sam_desc = pass[i].uni_acct_desc.uni_str_len;
+
+		make_sam_entry2(&(sam->sam[i]), start_idx + i + 1,
+				len_sam_name, len_sam_desc,
+				pass[i].user_rid, pass[i].acb_info);
+
+		copy_unistr2(&(sam->str[i].uni_srv_name), &(pass[i].uni_user_name));
+		copy_unistr2(&(sam->str[i].uni_srv_desc), &(pass[i].uni_acct_desc));
+
+		dsize += sizeof(SAM_ENTRY2);
+		dsize += len_sam_name + len_sam_desc;
+	}
+
+	*num_entries = i;
+        *data_size = dsize;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 *sam, uint32 num_entries, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_2");
+	depth++;
+
+	prs_align(ps);
+
+	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_entry2("", &(sam->sam[i]), ps, depth);
+	}
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_str2 ("", &(sam->str[i]),
+				 sam->sam[i].hdr_srv_name.buffer,
+				 sam->sam[i].hdr_srv_desc.buffer,
+				 ps, depth);
+	}
+}
+
+
+/*******************************************************************
+makes a SAM_DISPINFO_3 structure.
+********************************************************************/
+void make_sam_dispinfo_3(SAM_DISPINFO_3 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 DOMAIN_GRP *grp)
+{
+	uint32 len_sam_name, len_sam_desc;
+	uint32 max_entries, max_data_size;
+	uint32 dsize = 0;
+	int i;
+
+	if (sam == NULL || num_entries == NULL || data_size == NULL) return;
+
+	DEBUG(5,("make_sam_dispinfo_3\n"));
+
+	max_entries = *num_entries;
+	max_data_size = *data_size;
+
+	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
+	{
+		len_sam_name = strlen(grp[i].name);
+		len_sam_desc = strlen(grp[i].comment);
+
+		make_sam_entry3(&(sam->sam[i]), start_idx + i + 1,
+				len_sam_name, len_sam_desc,
+				grp[i].rid);
+
+		make_unistr2(&(sam->str[i].uni_grp_name), grp[i].name   , len_sam_name);
+		make_unistr2(&(sam->str[i].uni_grp_desc), grp[i].comment, len_sam_desc);
+
+		dsize += sizeof(SAM_ENTRY3);
+		dsize += (len_sam_name + len_sam_desc) * 2;
+	}
+
+	*num_entries = i;
+        *data_size = dsize;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 *sam, int num_entries, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_3");
+	depth++;
+
+	prs_align(ps);
+
+	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_entry3("", &(sam->sam[i]), ps, depth);
+	}
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_str3 ("", &(sam->str[i]),
+				 sam->sam[i].hdr_grp_name.buffer,
+				 sam->sam[i].hdr_grp_desc.buffer,
+				 ps, depth);
+	}
+}
+
+
+/*******************************************************************
+makes a SAM_DISPINFO_4 structure.
+********************************************************************/
+void make_sam_dispinfo_4(SAM_DISPINFO_4 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 SAM_USER_INFO_21 pass[MAX_SAM_ENTRIES])
+{
+	fstring sam_name;
+	uint32 len_sam_name;
+	uint32 max_entries, max_data_size;
+	uint32 dsize = 0;
+	int i;
+
+	if (sam == NULL || num_entries == NULL || data_size == NULL) return;
+
+	DEBUG(5,("make_sam_dispinfo_4\n"));
+
+	max_entries = *num_entries;
+	max_data_size = *data_size;
+
+	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
+	{
+		len_sam_name = pass[i].uni_user_name.uni_str_len;
+
+		make_sam_entry4(&(sam->sam[i]), start_idx + i + 1,
+				len_sam_name);
+
+		unistr2_to_ascii(sam_name, &(pass[i].uni_user_name), sizeof(sam_name));
+		make_string2(&(sam->str[i].acct_name), sam_name, len_sam_name);
+
+		dsize += sizeof(SAM_ENTRY4);
+		dsize += len_sam_name;
+	}
+
+	*num_entries = i;
+        *data_size = dsize;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 *sam, int num_entries, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_4");
+	depth++;
+
+	prs_align(ps);
+
+	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_entry4("", &(sam->sam[i]), ps, depth);
+	}
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		smb_io_string2("acct_name", &(sam->str[i].acct_name),
+			       sam->sam[i].hdr_acct_name.buffer, ps, depth);
+	}
+}
+
+
+/*******************************************************************
+makes a SAM_DISPINFO_5 structure.
+********************************************************************/
+void make_sam_dispinfo_5(SAM_DISPINFO_5 *sam, uint32 *num_entries,
+			 uint32 *data_size, uint32 start_idx,
+			 DOMAIN_GRP *grp)
+{
+	uint32 len_sam_name;
+	uint32 max_entries, max_data_size;
+	uint32 dsize = 0;
+	int i;
+
+	if (sam == NULL || num_entries == NULL || data_size == NULL) return;
+
+	DEBUG(5,("make_sam_dispinfo_5\n"));
+
+	max_entries = *num_entries;
+	max_data_size = *data_size;
+
+	for (i = 0; (i < max_entries) && (dsize < max_data_size); i++)
+	{
+		len_sam_name = strlen(grp[i].name);
+
+		make_sam_entry5(&(sam->sam[i]), start_idx + i + 1,
+				len_sam_name);
+
+		make_string2(&(sam->str[i].grp_name), grp[i].name,
+			     len_sam_name);
+
+		dsize += sizeof(SAM_ENTRY5);
+		dsize += len_sam_name;
+	}
+
+	*num_entries = i;
+        *data_size = dsize;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+static void sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 *sam, int num_entries, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (sam == NULL) return;
+
+	prs_debug(ps, depth, desc, "sam_io_sam_dispinfo_5");
+	depth++;
+
+	prs_align(ps);
+
+	SMB_ASSERT_ARRAY(sam->sam, num_entries);
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		sam_io_sam_entry5("", &(sam->sam[i]), ps, depth);
+	}
+
+	for (i = 0; i < num_entries; i++)
+	{
+		prs_grow(ps);
+		smb_io_string2("grp_name", &(sam->str[i].grp_name),
+			       sam->sam[i].hdr_grp_name.buffer, ps, depth);
 	}
 }
 
@@ -1228,25 +1538,23 @@ static void sam_io_sam_info_1(char *desc,  SAM_INFO_1 *sam, prs_struct *ps, int 
 makes a SAMR_R_QUERY_DISPINFO structure.
 ********************************************************************/
 void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
-		uint16 switch_level, SAM_INFO_CTR *ctr, uint32 status)
+				uint32 num_entries, uint32 data_size,
+				uint16 switch_level, SAM_DISPINFO_CTR *ctr,
+				uint32 status)
 {
 	if (r_u == NULL) return;
 
 	DEBUG(5,("make_samr_r_query_dispinfo: level %d\n", switch_level));
 
-	if (status == 0x0)
-	{
-		r_u->unknown_0 = 0x0000001;
-		r_u->unknown_1 = 0x0000001;
-	}
-	else
-	{
-		r_u->unknown_0 = 0x0;
-		r_u->unknown_1 = 0x0;
-	}
+	r_u->total_size = 0; /* not calculated */
+	r_u->data_size = data_size;
 
 	r_u->switch_level = switch_level;
+	r_u->num_entries = num_entries;
+	r_u->ptr_entries = 1;
+	r_u->num_entries2 = num_entries;
 	r_u->ctr = ctr;
+
 	r_u->status = status;
 }
 
@@ -1254,7 +1562,7 @@ void make_samr_r_query_dispinfo(SAMR_R_QUERY_DISPINFO *r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
-void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth)
+void samr_io_r_query_dispinfo(char *desc, SAMR_R_QUERY_DISPINFO *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return;
 
@@ -1263,22 +1571,40 @@ void samr_io_r_query_dispinfo(char *desc,  SAMR_R_QUERY_DISPINFO *r_u, prs_struc
 
 	prs_align(ps);
 
-	prs_uint32("unknown_0    ", ps, depth, &(r_u->unknown_0    ));
-	prs_uint32("unknown_1    ", ps, depth, &(r_u->unknown_1    ));
-	prs_uint16("switch_level ", ps, depth, &(r_u->switch_level ));
-
+	prs_uint32("total_size  ", ps, depth, &(r_u->total_size  ));
+	prs_uint32("data_size   ", ps, depth, &(r_u->data_size   ));
+	prs_uint16("switch_level", ps, depth, &(r_u->switch_level));
 	prs_align(ps);
+
+	prs_uint32("num_entries ", ps, depth, &(r_u->num_entries ));
+	prs_uint32("ptr_entries ", ps, depth, &(r_u->ptr_entries ));
+	prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
 
 	switch (r_u->switch_level)
 	{
 		case 0x1:
 		{
-			sam_io_sam_info_1("users", r_u->ctr->sam.info1, ps, depth);
+			sam_io_sam_dispinfo_1("users", r_u->ctr->sam.info1, r_u->num_entries, ps, depth);
 			break;
 		}
 		case 0x2:
 		{
-			sam_io_sam_info_2("servers", r_u->ctr->sam.info2, ps, depth);
+			sam_io_sam_dispinfo_2("servers", r_u->ctr->sam.info2, r_u->num_entries, ps, depth);
+			break;
+		}
+		case 0x3:
+		{
+			sam_io_sam_dispinfo_3("groups", r_u->ctr->sam.info3, r_u->num_entries, ps, depth);
+			break;
+		}
+		case 0x4:
+		{
+			sam_io_sam_dispinfo_4("user list", r_u->ctr->sam.info4,r_u->num_entries, ps, depth);
+			break;
+		}
+		case 0x5:
+		{
+			sam_io_sam_dispinfo_5("group list", r_u->ctr->sam.info5, r_u->num_entries, ps, depth);
 			break;
 		}
 		default:
@@ -1979,162 +2305,6 @@ void samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 
 
 /*******************************************************************
-makes a SAMR_Q_ENUM_DOM_GROUPS structure.
-********************************************************************/
-void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol,
-				uint16 switch_level, uint32 start_idx, uint32 size)
-{
-	if (q_e == NULL || pol == NULL) return;
-
-	DEBUG(5,("make_samr_q_enum_dom_groups\n"));
-
-	memcpy(&(q_e->pol), pol, sizeof(*pol));
-
-	q_e->switch_level = switch_level;
-
-	q_e->unknown_0 = 0;
-	q_e->start_idx = start_idx;
-	q_e->unknown_1 = 0x000007d0;
-	q_e->max_size  = size;
-}
-
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-void samr_io_q_enum_dom_groups(char *desc,  SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth)
-{
-	if (q_e == NULL) return;
-
-	prs_debug(ps, depth, desc, "samr_io_q_enum_dom_groups");
-	depth++;
-
-	prs_align(ps);
-
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
-	prs_align(ps);
-
-	prs_uint16("switch_level", ps, depth, &(q_e->switch_level));
-	prs_uint16("unknown_0   ", ps, depth, &(q_e->unknown_0   ));
-	prs_uint32("start_idx   ", ps, depth, &(q_e->start_idx   ));
-	prs_uint32("unknown_1   ", ps, depth, &(q_e->unknown_1   ));
-	prs_uint32("max_size    ", ps, depth, &(q_e->max_size    ));
-
-	prs_align(ps);
-}
-
-
-/*******************************************************************
-makes a SAMR_R_ENUM_DOM_GROUPS structure.
-********************************************************************/
-void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
-		uint32 start_idx, uint32 num_sam_entries,
-		DOMAIN_GRP *grp,
-		uint32 status)
-{
-	int i;
-	int entries_added;
-
-	if (r_u == NULL) return;
-
-	DEBUG(5,("make_samr_r_enum_dom_groups\n"));
-
-	if (num_sam_entries >= MAX_SAM_ENTRIES)
-	{
-		num_sam_entries = MAX_SAM_ENTRIES;
-		DEBUG(5,("limiting number of entries to %d\n", 
-			 num_sam_entries));
-	}
-
-	if (status == 0x0)
-	{
-		for (i = start_idx, entries_added = 0; i < num_sam_entries; i++)
-		{
-			int acct_name_len = strlen(grp[i].name);
-			int acct_desc_len = strlen(grp[i].comment);
-
-			make_sam_entry3(&(r_u->sam[entries_added]),
-			                start_idx + entries_added + 1,
-			                acct_name_len,
-			                acct_desc_len,
-			                grp[i].rid);
-
-			make_unistr2(&(r_u->str[entries_added].uni_grp_name), grp[i].name   , acct_name_len);
-			make_unistr2(&(r_u->str[entries_added].uni_grp_desc), grp[i].comment, acct_desc_len);
-
-			entries_added++;
-		}
-
-		if (entries_added > 0)
-		{
-			r_u->unknown_0 = 0x0000492;
-			r_u->unknown_1 = 0x000049a;
-		}
-		else
-		{
-			r_u->unknown_0 = 0x0;
-			r_u->unknown_1 = 0x0;
-		}
-		r_u->switch_level  = 3;
-		r_u->num_entries   = entries_added;
-		r_u->ptr_entries   = 1;
-		r_u->num_entries2  = entries_added;
-	}
-	else
-	{
-		r_u->switch_level = 0;
-	}
-
-	r_u->status = status;
-}
-
-/*******************************************************************
-reads or writes a structure.
-********************************************************************/
-void samr_io_r_enum_dom_groups(char *desc,  SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth)
-{
-	int i;
-
-	if (r_u == NULL) return;
-
-	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_groups");
-	depth++;
-
-	prs_align(ps);
-
-	prs_uint32("unknown_0    ", ps, depth, &(r_u->unknown_0    ));
-	prs_uint32("unknown_1    ", ps, depth, &(r_u->unknown_1    ));
-	prs_uint32("switch_level ", ps, depth, &(r_u->switch_level ));
-
-	if (r_u->switch_level != 0)
-	{
-		prs_uint32("num_entries  ", ps, depth, &(r_u->num_entries  ));
-		prs_uint32("ptr_entries  ", ps, depth, &(r_u->ptr_entries  ));
-
-		prs_uint32("num_entries2 ", ps, depth, &(r_u->num_entries2 ));
-
-		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries);
-
-		for (i = 0; i < r_u->num_entries; i++)
-		{
-			prs_grow(ps);
-			sam_io_sam_entry3("", &(r_u->sam[i]), ps, depth);
-		}
-
-		for (i = 0; i < r_u->num_entries; i++)
-		{
-			prs_grow(ps);
-			sam_io_sam_str3 ("", &(r_u->str[i]),
-			                     r_u->sam[i].hdr_grp_name.buffer,
-			                     r_u->sam[i].hdr_grp_desc.buffer,
-			                     ps, depth);
-		}
-	}
-
-	prs_uint32("status", ps, depth, &(r_u->status));
-}
-
-/*******************************************************************
 makes a SAMR_Q_QUERY_USERGROUPS structure.
 ********************************************************************/
 void make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
@@ -2224,6 +2394,140 @@ void samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 			}
 		}
 	}
+	prs_uint32("status", ps, depth, &(r_u->status));
+}
+
+
+/*******************************************************************
+makes a SAMR_Q_ENUM_DOM_GROUPS structure.
+********************************************************************/
+void make_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS *q_e, POLICY_HND *pol, uint32 size)
+{
+	if (q_e == NULL || pol == NULL) return;
+
+	DEBUG(5,("make_samr_q_enum_dom_groups\n"));
+
+	memcpy(&(q_e->pol), pol, sizeof(*pol));
+
+	q_e->unknown_0 = 0;
+	q_e->max_size = size;
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS *q_e, prs_struct *ps, int depth)
+{
+	if (q_e == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_q_enum_dom_groups");
+	depth++;
+
+	prs_align(ps);
+
+	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth); 
+	prs_align(ps);
+
+	prs_uint32("unknown_0", ps, depth, &(q_e->unknown_0));
+	prs_uint32("max_size ", ps, depth, &(q_e->max_size ));
+
+	prs_align(ps);
+}
+
+
+/*******************************************************************
+makes a SAMR_R_ENUM_DOM_GROUPS structure.
+********************************************************************/
+void make_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS *r_u,
+		uint32 num_sam_entries, DOMAIN_GRP *grps,
+		uint32 status)
+{
+	int i;
+
+	if (r_u == NULL) return;
+
+	DEBUG(5,("make_samr_r_enum_dom_groups\n"));
+
+	if (num_sam_entries >= MAX_SAM_ENTRIES)
+	{
+		num_sam_entries = MAX_SAM_ENTRIES;
+		DEBUG(5,("limiting number of entries to %d\n", 
+			 num_sam_entries));
+	}
+
+	r_u->num_entries  = num_sam_entries;
+
+	if (num_sam_entries > 0)
+	{
+		r_u->ptr_entries  = 1;
+		r_u->num_entries2 = num_sam_entries;
+		r_u->ptr_entries2 = 1;
+		r_u->num_entries3 = num_sam_entries;
+
+		SMB_ASSERT_ARRAY(r_u->sam, num_sam_entries);
+
+		for (i = 0; i < num_sam_entries; i++)
+		{
+			int acct_name_len = strlen(grps[i].name);
+
+			make_sam_entry(&(r_u->sam[i]),
+			                acct_name_len,
+			                grps[i].rid);
+
+			make_unistr2(&(r_u->uni_grp_name[i]), grps[i].name, acct_name_len);
+		}
+
+		r_u->num_entries4 = num_sam_entries;
+	}
+	else
+	{
+		r_u->ptr_entries = 0;
+	}
+
+	r_u->status = status;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_struct *ps, int depth)
+{
+	int i;
+
+	if (r_u == NULL) return;
+
+	prs_debug(ps, depth, desc, "samr_io_r_enum_dom_groups");
+	depth++;
+
+	prs_align(ps);
+
+	prs_uint32("num_entries", ps, depth, &(r_u->num_entries));
+	prs_uint32("ptr_entries", ps, depth, &(r_u->ptr_entries));
+	
+	if (r_u->num_entries != 0 && r_u->ptr_entries != 0)
+	{
+		prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2));
+		prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2));
+		prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3));
+
+		SMB_ASSERT_ARRAY(r_u->sam, r_u->num_entries);
+
+		for (i = 0; i < r_u->num_entries; i++)
+		{
+			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
+		}
+
+		for (i = 0; i < r_u->num_entries; i++)
+		{
+			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+		}
+
+		prs_align(ps);
+
+		prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4));
+	}
+
 	prs_uint32("status", ps, depth, &(r_u->status));
 }
 
@@ -3385,10 +3689,10 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	prs_uint32("num_rids1", ps, depth, &(r_u->num_rids1));
 	prs_uint32("ptr_rids ", ps, depth, &(r_u->ptr_rids ));
+	prs_uint32("num_rids2", ps, depth, &(r_u->num_rids2));
 
 	if (r_u->ptr_rids != 0 && r_u->num_rids1 != 0)
 	{
-		prs_uint32("num_rids2", ps, depth, &(r_u->num_rids2));
 		for (i = 0; i < r_u->num_rids2; i++)
 		{
 			prs_grow(ps);
@@ -3399,10 +3703,10 @@ void samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 	prs_uint32("num_types1", ps, depth, &(r_u->num_types1));
 	prs_uint32("ptr_types ", ps, depth, &(r_u->ptr_types ));
+	prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
 
 	if (r_u->ptr_types != 0 && r_u->num_types1 != 0)
 	{
-		prs_uint32("num_types2", ps, depth, &(r_u->num_types2));
 		for (i = 0; i < r_u->num_types2; i++)
 		{
 			prs_grow(ps);
