@@ -185,6 +185,8 @@ static size_t get_posix_lock_entries(files_struct *fsp, struct posix_lock **entr
 
 /****************************************************************************
  Deal with pending closes needed by POSIX locking support.
+ Note that posix_locking_close_file() is expected to have been called
+ to delete all locks on this fsp before this function is called.
 ****************************************************************************/
 
 int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
@@ -194,6 +196,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	size_t count, i;
 	struct posix_lock *entries = NULL;
 	int *fd_array = NULL;
+	BOOL locks_on_other_fds = False;
 
 	if (!lp_posix_locking(SNUM(conn))) {
 		/*
@@ -209,8 +212,21 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	 */
 
 	count = get_posix_lock_entries(fsp, &entries);
-	
-	if (count) {
+
+	/*
+	 * Check if there are any outstanding locks belonging to
+	 * other fd's. This should never be the case if posix_locking_close_file()
+	 * has been called first, but it never hurts to be *sure*.
+	 */
+
+	for (i = 0; i < count; i++) {
+		if (entries[i].fd != fsp->fd) {
+			locks_on_other_fds = True;
+			break;
+		}
+	}
+
+	if (locks_on_other_fds) {
 
 		/*
 		 * There are outstanding locks on this dev/inode pair on other fds.
@@ -421,13 +437,13 @@ static int delete_posix_lock_entry(files_struct *fsp, SMB_OFF_T start, SMB_OFF_T
 
 			num_records--; /* We're deleting one. */
 
-			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
-					posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
-					(unsigned int)num_records ));
-
 			/* Make a copy if requested. */
 			if (pl)
 				*pl = *entry;
+
+			DEBUG(10,("delete_posix_lock_entry: type = %s: start=%.0f size=%.0f, num_records = %d\n",
+					posix_lock_type_name(pl->lock_type), (double)pl->start, (double)pl->size,
+					(unsigned int)num_records ));
 
 			/* Found it - delete it. */
 			if (count == 1) {
@@ -1298,7 +1314,8 @@ void posix_locking_close_file(files_struct *fsp)
 
 	for (i = 0; i < count; i++) {
 		struct posix_lock *pl = &entries[i];
-		release_posix_lock(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
+		if (pl->fd == fsp->fd)
+			release_posix_lock(fsp, (SMB_BIG_UINT)pl->start, (SMB_BIG_UINT)pl->size );
 	}
 	free((char *)entries);
 }
