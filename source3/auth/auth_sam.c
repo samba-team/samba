@@ -92,12 +92,12 @@ static BOOL logon_hours_ok(SAM_ACCOUNT *sampass)
 	bitmask = 1 << (bitpos % 8);
 
 	if (! (hours[bitpos/8] & bitmask)) {
-		DEBUG(1,("logon_hours_ok: Account for user %s not allowed to logon at this time (UTC %s).\n",
+		DEBUG(1,("logon_hours_ok: Account for user %s not allowed to logon at this time (%s).\n",
 			pdb_get_username(sampass), asctime(utctime) ));
 		return False;
 	}
 
-	DEBUG(5,("logon_hours_ok: user %s allowed to logon at this time (UTC %s)\n",
+	DEBUG(5,("logon_hours_ok: user %s allowed to logon at this time (%s)\n",
 		pdb_get_username(sampass), asctime(utctime) ));
 
 	return True;
