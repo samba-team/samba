@@ -4,6 +4,13 @@ RCSID("$Id$");
 
 char *prog;
 
+static u_int32_t display_num;
+static char xauthfile[MaxPathLen];
+static u_char cookie[32];
+static size_t cookie_len;
+
+#define COOKIE_TYPE "MIT-MAGIC-COOKIE-1"
+
 static int
 fatal (int fd, char *s)
 {
@@ -61,12 +68,53 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 	 setuid(passwd->pw_uid)) {
 	  return fatal (sock, "Cannot set uid");
      }
+     umask(077);
      if (write (sock, &ok, sizeof(ok)) != sizeof(ok))
 	  return 1;
 
      memcpy(key, &auth.session, sizeof(des_cblock));
      *retaddr = thataddr;
      return 0;
+}
+
+static int
+start_session (int fd, int sock, des_cblock *key,
+	       des_key_schedule schedule)
+{
+     u_char beg[12];
+     int bigendianp;
+     unsigned n, d, npad, dpad;
+     char *protocol_name, *protocol_data;
+     u_char zeros[6] = {0, 0, 0, 0, 0, 0};
+
+     if (read (fd, beg, sizeof(beg)) != sizeof(beg))
+	  return 1;
+     if (write (sock, beg, 6) != 6)
+	  return 1;
+     bigendianp = beg[0] == 'B';
+     if (bigendianp) {
+	  n = (beg[6] << 8) | beg[7];
+	  d = (beg[8] << 8) | beg[9];
+     } else {
+	  n = (beg[7] << 8) | beg[6];
+	  d = (beg[9] << 8) | beg[8];
+     }
+     npad = (4 - (n % 4)) % 4;
+     dpad = (4 - (d % 4)) % 4;
+     protocol_name = malloc(n + npad);
+     protocol_data = malloc(d + dpad);
+     if (read (fd, protocol_name, n + npad) != n + npad)
+	  return 1;
+     if (read (fd, protocol_data, d + dpad) != d + dpad)
+	  return 1;
+     if (strncmp (protocol_name, COOKIE_TYPE, strlen(COOKIE_TYPE)) != 0)
+	  return 1;
+     if (d != cookie_len ||
+	 memcmp (protocol_data, cookie, cookie_len) != 0)
+	  return 1;
+     if (write (sock, zeros, 6) != 6)
+	  return 1;
+     return copy_encrypted (fd, sock, key, schedule);
 }
 
 static int
@@ -85,7 +133,7 @@ doit_conn (int fd, struct sockaddr_in *thataddr,
 	       sizeof(*thataddr)) < 0) {
     abort ();
   }
-  return copy_encrypted (fd, sock, key, schedule);
+  return start_session (fd, sock, key, schedule);
 }
 
 /*
@@ -105,6 +153,40 @@ check_user_console ()
 }
 
 static int
+create_and_write_cookie (char *xauthfile,
+			 u_char *cookie,
+			 size_t sz)
+{
+     Xauth auth;
+     char tmp[64];
+     FILE *f;
+     char hostname[MaxHostNameLen];
+
+     auth.family = FamilyLocal;
+     k_gethostname (hostname, sizeof(hostname));
+     auth.address = hostname;
+     auth.address_length = strlen(auth.address);
+     sprintf (tmp, "%d", display_num);
+     auth.number_length = strlen(tmp);
+     auth.number = tmp;
+     auth.name = COOKIE_TYPE;
+     auth.name_length = strlen(auth.name);
+     auth.data_length = sz;
+     auth.data = cookie;
+     des_rand_data (cookie, sz);
+     cookie_len = sz;
+
+     f = fopen(xauthfile, "w");
+     if(XauWriteAuth(f, &auth) == 0) {
+	  fclose(f);
+	  return 1;
+     }
+     if(fclose(f))
+	  return 1;
+     return 0;
+}
+
+static int
 doit(int sock)
 {
      u_char passivep;
@@ -118,11 +200,22 @@ doit(int sock)
      if (read (sock, &passivep, sizeof(passivep)) != sizeof(passivep))
 	  return 1;
      if (passivep) {
+	  localx = get_local_xsocket (&display_num);
+	  if (localx < 0)
+	       return 1;
+	  display_num = htonl(display_num);
+	  if (write (sock, &display_num, sizeof(display_num)) !=
+	      sizeof(display_num))
+	       return 1;
+	  strncpy(xauthfile, tempnam("/tmp", NULL), sizeof(xauthfile));
+	  if (write (sock, xauthfile, sizeof(xauthfile)) !=
+	      sizeof(xauthfile))
+	       return 1;
+	  if(create_and_write_cookie (xauthfile, cookie,
+				      sizeof(cookie)))
+	       return 1;
 	  if (read (sock, &thataddr.sin_port, sizeof(thataddr.sin_port))
 	      != sizeof(thataddr.sin_port))
-	       return 1;
-	  localx = get_local_xsocket (1);
-	  if (localx < 0)
 	       return 1;
 	  for (;;) {
 	       pid_t child;
