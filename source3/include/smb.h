@@ -693,7 +693,7 @@ struct passdb_ops {
    * password checking functions
    */
   struct smb_passwd *(*smb_password_chal  )(char *username, char lm_pass[24], char nt_pass[24], char chal[8]);
-  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16],
+  struct smb_passwd *(*smb_password_check )(char *username, char lm_hash[16], char nt_hash[16]);
   struct passwd     *(*unix_password_check)(char *username, char *pass, int pass_len);
 #endif
 };
