@@ -156,8 +156,10 @@ renew_validate(krb5_context context,
 	}
     }
     flags.i = 0;
-    flags.b.renewable = flags.b.renew = renew;
-    flags.b.validate = validate;
+    flags.b.renewable   = flags.b.renew = renew;
+    flags.b.validate    = validate;
+    flags.b.forwardable = forwardable;
+    flags.b.proxiable   = proxiable;
     if(life)
 	in.times.endtime = time(NULL) + life;
 
@@ -258,7 +260,7 @@ main (int argc, char **argv)
 	krb5_get_init_creds_opt_set_tkt_life (&opt, ticket_life);
 
     if(start_str) {
-	int tmp = parse_time (lifetime, "s");
+	int tmp = parse_time (start_str, "s");
 	if (tmp < 0)
 	    errx (1, "unparsable time: %s", start_str);
 
