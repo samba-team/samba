@@ -1,3 +1,9 @@
+2004-04-13  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/cache.c: add krb5_cc_get_prefix_ops
+	
+	* lib/krb5/krb5_ccache.3: add krb5_cc_get_prefix_ops
+	
 2004-04-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* appl/test/http_client.c: support GSS_C_DELEG_FLAG and
