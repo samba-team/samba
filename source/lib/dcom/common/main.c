@@ -341,41 +341,54 @@ WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const
 	return WERR_OK;
 }
 
-NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
+NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **pp)
 {
 	struct dcerpc_binding binding;
 	struct GUID iid;
 	HYPER_T oxid;
 	NTSTATUS status;
 	int i;
+	struct dcerpc_pipe *p;
+	TALLOC_CTX *tmp_ctx;
+	const char *uuid;
 
-	*p = NULL;
+	tmp_ctx = talloc_new(NULL);
+
+	p = iface->ox->pipe;
 	
 	oxid = iface->ox->oxid;
 	iid = iface->interface->iid;
 
-#warning "dcerpc_alter needed"
-#if 0
-	if (iface->ox->pipe) {
-		if (!GUID_equal(&iface->ox->pipe->syntax.uuid, &iid)) {
+	uuid = GUID_string(tmp_ctx, &iid);
+	
+	if (p) {
+		if (!GUID_equal(&p->syntax.uuid, &iid)) {
+			struct dcerpc_pipe *p2;
 			iface->ox->pipe->syntax.uuid = iid;
-			status = dcerpc_alter(iface->ox->pipe, iface->ctx);
-			if (NT_STATUS_IS_ERR(status)) {
-				return status;
+			status = dcerpc_secondary_context(p, &p2, uuid, 0);
+			if (NT_STATUS_IS_OK(status)) {
+				p = p2;
 			}
+		} else {
+			p = talloc_reference(NULL, p);
 		}
-		*p = iface->ox->pipe;
-		return NT_STATUS_OK;
+		*pp = p;
+		talloc_free(tmp_ctx);
+		return status;
 	}
-#endif
+
 	i = 0;
 	do {
-		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, iface->ox->bindings.stringbindings[i]);
-		if (NT_STATUS_IS_ERR(status)) {
+		status = dcerpc_binding_from_STRINGBINDING(iface->ctx, &binding, 
+							   iface->ox->bindings.stringbindings[i]);
+		if (!NT_STATUS_IS_OK(status)) {
 			DEBUG(1, ("Error parsing string binding"));
 		} else {
 			binding.flags = iface->ctx->dcerpc_flags;
-			status = dcerpc_pipe_connect_b(&iface->ox->pipe, &binding, GUID_string(iface->ctx, &iid) , 0.0, iface->ctx->domain, iface->ctx->user, iface->ctx->password);
+			status = dcerpc_pipe_connect_b(&p, &binding, 
+						       uuid, 0.0, 
+						       iface->ctx->domain, iface->ctx->user, 
+						       iface->ctx->password);
 		}
 
 		i++;
@@ -383,12 +396,15 @@ NTSTATUS dcom_get_pipe (struct dcom_interface_p *iface, struct dcerpc_pipe **p)
 
 	if (NT_STATUS_IS_ERR(status)) {
 		DEBUG(0, ("Unable to connect to remote host - %s\n", nt_errstr(status)));
+		talloc_free(tmp_ctx);
 		return status;
 	}
 
 	DEBUG(2, ("Successfully connected to OXID %llx\n", oxid));
 	
-	*p = iface->ox->pipe;
+	*pp = p;
+	talloc_free(tmp_ctx);
+
 	return NT_STATUS_OK;
 }
 

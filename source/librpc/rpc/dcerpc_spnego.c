@@ -24,8 +24,11 @@
 
 #include "includes.h"
 
-#warning "this needs dcerpc_alter"
 #if 0
+/*
+  metze, can you tell me what you're trying to do with this?
+*/
+
 /*
   do spnego style authentication on a gensec pipe
 */
