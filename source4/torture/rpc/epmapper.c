@@ -78,7 +78,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 			break;
 
 		case EPM_PROTOCOL_UNIX_DS:
-			printf(" Unix Domain Socket:%s", rhs->unix_ds.path);
+			printf(" Unix:%s", rhs->unix_ds.path);
 			break;
 
 		case EPM_PROTOCOL_NETBIOS:

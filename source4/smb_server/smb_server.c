@@ -693,7 +693,7 @@ static void add_socket(struct server_service *service,
 	for (i=0;ports[i];i++) {
 		uint16_t port = atoi(ports[i]);
 		if (port == 0) continue;
-		service_setup_socket(service, model_ops, ip_str, &port);
+		service_setup_socket(service, model_ops, "ipv4", ip_str, &port);
 	}
 
 	talloc_free(ip_str);

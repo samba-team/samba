@@ -88,6 +88,7 @@ struct server_context *server_service_startup(const char *model)
  */
 struct server_socket *service_setup_socket(struct server_service *service,
 					   const struct model_ops *model_ops,
+					   const char *family,
 					   const char *sock_addr,
 					   uint16_t *port)
 {
@@ -97,7 +98,7 @@ struct server_socket *service_setup_socket(struct server_service *service,
 	struct fd_event fde;
 	int i;
 
-	status = socket_create("ipv4", SOCKET_TYPE_STREAM, &socket_ctx, 0);
+	status = socket_create(family, SOCKET_TYPE_STREAM, &socket_ctx, 0);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to open socket on %s:%u - %s\n",
 			sock_addr, *port, nt_errstr(status)));
