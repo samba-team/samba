@@ -703,6 +703,8 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 	       [group_list_ndx * sizeof(struct winbindd_gr)], 
 	       gr_mem_list, gr_mem_list_len);
 
+	safe_free(gr_mem_list);
+
 	state->response.length += gr_mem_list_len;
 
 	/* Out of domains */
