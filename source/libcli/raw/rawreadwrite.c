@@ -77,9 +77,9 @@ struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_rea
 		SSVAL(req->out.vwv, VWV(1), 0);
 		SSVAL(req->out.vwv, VWV(2), parms->readx.in.fnum);
 		SIVAL(req->out.vwv, VWV(3), parms->readx.in.offset);
-		SSVAL(req->out.vwv, VWV(5), parms->readx.in.maxcnt);
+		SSVAL(req->out.vwv, VWV(5), parms->readx.in.maxcnt & 0xFFFF);
 		SSVAL(req->out.vwv, VWV(6), parms->readx.in.mincnt);
-		SIVAL(req->out.vwv, VWV(7), 0); /* reserved */
+		SIVAL(req->out.vwv, VWV(7), parms->readx.in.maxcnt >> 16);
 		SSVAL(req->out.vwv, VWV(9), parms->readx.in.remaining);
 		if (bigoffset) {
 			SIVAL(req->out.vwv, VWV(10),parms->readx.in.offset>>32);
