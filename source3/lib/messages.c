@@ -322,6 +322,8 @@ void message_dispatch(void)
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
+		DEBUG(10,("message_dispatch: received msg_type=%d src_pid=%d\n",
+			  msg_type, (int) src));
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
 				DEBUG(10,("message_dispatch: processing message of type %d.\n", msg_type));
