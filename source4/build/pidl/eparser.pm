@@ -22,6 +22,13 @@ sub pidl($)
 }
 
 #####################################################################
+# a list of annotations 
+
+my $nopull_typedefs = {
+#    "policy_handle" => "1",
+};
+
+#####################################################################
 # work out is a parse function should be declared static or not
 sub fn_prefix($)
 {
@@ -462,7 +469,7 @@ sub RewriteC($$$)
 
     # Read through file
 
-    my $cur_fn;
+    my $cur_fn = "";
 
     while(<IN>) {
 
@@ -504,6 +511,18 @@ sub RewriteC($$$)
         #
 
         $cur_fn = $1, if /NTSTATUS ndr_pull_(.*?)\(struct/;
+
+        # Skip functions we have marked as nopull
+
+        my $skip_fn = 0;
+
+        foreach my $f (keys(%{$nopull_typedefs})) {
+	    $skip_fn = 1, if $cur_fn eq $f;
+	}
+
+        $cur_fn = "", if /^}/;
+
+        next, if $skip_fn;
 
 	#
 	# OK start wrapping the ndr_pull functions that actually
