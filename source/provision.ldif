@@ -9,9 +9,14 @@ realm: CASE_INSENSITIVE
 userPrincipalName: CASE_INSENSITIVE
 servicePrincipalName: CASE_INSENSITIVE
 name: CASE_INSENSITIVE WILDCARD
+dn: CASE_INSENSITIVE WILDCARD
 sAMAccountName: CASE_INSENSITIVE WILDCARD
 objectClass: CASE_INSENSITIVE
-numMembers: HIDDEN
+unicodePwd: HIDDEN
+ntPwdHash: HIDDEN
+ntPwdHistory: HIDDEN
+lmPwdHash: HIDDEN
+lmPwdHistory: HIDDEN
 
 dn: @SUBCLASSES
 top: domain
