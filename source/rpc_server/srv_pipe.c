@@ -501,6 +501,9 @@ succeeded authentication on named pipe %s, but session key was of incorrect leng
 	 * Store the UNIX credential data (uid/gid pair) in the pipe structure.
 	 */
 
+	if (p->session_key.data) {
+		data_blob_free(&p->session_key);
+	}
 	p->session_key = data_blob(server_info->lm_session_key.data, server_info->lm_session_key.length);
 
 	p->pipe_user.uid = server_info->uid;
