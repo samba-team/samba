@@ -581,7 +581,7 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 	return (True);
 }
 
-static int algorithmic_rid_base(void)
+int algorithmic_rid_base(void)
 {
 	static int rid_offset = 0;
 

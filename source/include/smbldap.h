@@ -37,6 +37,7 @@
 #define LDAP_OBJ_DOMINFO		"sambaDomain"
 #define LDAP_OBJ_IDPOOL			"sambaUnixIdPool"
 #define LDAP_OBJ_IDMAP_ENTRY		"sambaIdmapEntry"
+#define LDAP_OBJ_SID_ENTRY		"sambaSidEntry"
 
 #define LDAP_OBJ_ACCOUNT		"account"
 #define LDAP_OBJ_POSIXACCOUNT		"posixAccount"
@@ -85,7 +86,8 @@
 #define LDAP_ATTR_GROUP_SID		30
 #define LDAP_ATTR_GROUP_TYPE		31
 #define LDAP_ATTR_SID			32
-
+#define LDAP_ATTR_ALGORITHMIC_RID_BASE  33
+#define LDAP_ATTR_NEXT_RID              34
 
 typedef struct _attrib_map_entry {
 	int		attrib;
@@ -113,6 +115,8 @@ void smbldap_set_mod (LDAPMod *** modlist, int modop, const char *attribute, con
 void smbldap_make_mod(LDAP *ldap_struct, LDAPMessage *existing,
 		      LDAPMod ***mods,
 		      const char *attribute, const char *newval);
+BOOL smbldap_get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
+				   const char *attribute, pstring value);
 
 /**
  * Struct to keep the state for all the ldap stuff 

@@ -606,6 +606,12 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 
+	/* Initialise the password backed before idmap and the global_sam_sid
+	   to ensure that we fetch from ldap before we make a domain sid up */
+	
+	if(!initialize_password_db(False))
+		exit(1);
+
 	if (!init_names())
 		exit(1);
 
