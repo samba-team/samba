@@ -341,6 +341,7 @@ main (int argc, char **argv)
     krb5_deltat ticket_life = 0;
     krb5_addresses no_addrs;
     char passwd[256];
+    char *errstr;
 
     setprogname (argv[0]);
     memset(&cred, 0, sizeof(cred));
@@ -565,6 +566,12 @@ main (int argc, char **argv)
 	krb5_errx(context, 1, "Password incorrect");
 	break;
     default:
+	errstr = krb5_get_error_string(context);
+
+	if (errstr != NULL) {
+	    krb5_warnx (context, "krb5_get_init_creds: %s", errstr);
+	    krb5_free_error_string(context, errstr);
+	}
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
     }
 
