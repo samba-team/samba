@@ -1089,7 +1089,7 @@ WERROR cli_spoolss_addprinterex (struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx, const char *arch,
-                                         const char *driver)
+                                         const char *driver, uint32 version)
 {
 	prs_struct    qbuf, rbuf;
 	SPOOL_Q_DELETEPRINTERDRIVEREX q;
@@ -1109,7 +1109,7 @@ WERROR cli_spoolss_deleteprinterdriverex(struct cli_state *cli,
 	strupper_m(server);
 
 	/* Write the request */
-	make_spoolss_q_deleteprinterdriverex(mem_ctx, &q, server, arch, driver);
+	make_spoolss_q_deleteprinterdriverex(mem_ctx, &q, server, arch, driver, version);
 
 	/* Marshall data and send request */
 

@@ -1551,7 +1551,6 @@ static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli,
 {
 	WERROR result, ret = WERR_UNKNOWN_PRINTER_DRIVER;
  
-	fstring   servername;
 	int   i;
 	int vers = -1;
  
@@ -1569,13 +1568,10 @@ static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli,
 		vers = atoi (argv[3]);
  
  
-	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
-	strupper_m(servername);
- 
 	/* delete the driver for all architectures */
 	for (i=0; archi_table[i].long_archi; i++) {
 
-		if (arch &&  strcmp ( archi_table[i].long_archi, arch)) 
+		if (arch &&  !strequal( archi_table[i].long_archi, arch)) 
 			continue;
 
 		if (vers >= 0 && archi_table[i].version != vers)
@@ -1583,19 +1579,19 @@ static WERROR cmd_spoolss_deletedriverex(struct cli_state *cli,
 
 		/* make the call to remove the driver */
 		result = cli_spoolss_deleteprinterdriverex(
-			cli, mem_ctx, archi_table[i].long_archi, argv[1]);
+			cli, mem_ctx, archi_table[i].long_archi, argv[1], archi_table[i].version); 
 
 		if ( !W_ERROR_IS_OK(result) ) 
 		{
 			if ( !W_ERROR_EQUAL(result, WERR_UNKNOWN_PRINTER_DRIVER) ) {
-				printf ("Failed to remove driver %s for arch [%s] - error 0x%x!\n", 
-					argv[1], archi_table[i].long_archi, W_ERROR_V(result));
+				printf ("Failed to remove driver %s for arch [%s] (version: %d): %s\n", 
+					argv[1], archi_table[i].long_archi, archi_table[i].version, dos_errstr(result));
 			}
 		} 
 		else 
 		{
-			printf ("Driver %s and files removed for arch [%s].\n", argv[1], 
-			archi_table[i].long_archi);
+			printf ("Driver %s and files removed for arch [%s] (version: %d).\n", argv[1], 
+			archi_table[i].long_archi, archi_table[i].version);
 			ret = WERR_OK;
 		}
 	}
@@ -2464,7 +2460,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "adddriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addprinterdriver,	PI_SPOOLSS, "Add a print driver",                  "" },
 	{ "addprinter",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_addprinterex,	PI_SPOOLSS, "Add a printer",                       "" },
 	{ "deldriver",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_deletedriver,	PI_SPOOLSS, "Delete a printer driver",             "" },
-	{ "deldriverex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_deletedriverex, PI_SPOOLSS, "Delete a printer driver with files",      "" },
+	{ "deldriverex",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_deletedriverex,	PI_SPOOLSS, "Delete a printer driver with files",  "" },
 	{ "enumdata",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data,		PI_SPOOLSS, "Enumerate printer data",              "" },
 	{ "enumdataex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_data_ex,	PI_SPOOLSS, "Enumerate printer data for a key",    "" },
 	{ "enumkey",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_printerkey,	PI_SPOOLSS, "Enumerate printer keys",              "" },
@@ -2486,7 +2482,7 @@ struct cmd_set spoolss_commands[] = {
 	{ "deleteform",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_deleteform,         PI_SPOOLSS, "Delete form",                         "" },
 	{ "enumforms",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_enum_forms,         PI_SPOOLSS, "Enumerate forms",                     "" },
 	{ "setprinter",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinter,         PI_SPOOLSS, "Set printer comment",                 "" },
-	{ "setprintername",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprintername,         PI_SPOOLSS, "Set printername",                 "" },
+	{ "setprintername",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprintername,	PI_SPOOLSS, "Set printername",                 "" },
 	{ "setprinterdata",	RPC_RTYPE_WERROR, NULL, cmd_spoolss_setprinterdata,     PI_SPOOLSS, "Set REG_SZ printer data",             "" },
 	{ "rffpcnex",		RPC_RTYPE_WERROR, NULL, cmd_spoolss_rffpcnex,           PI_SPOOLSS, "Rffpcnex test", "" },
 

@@ -1225,7 +1225,8 @@ BOOL make_spoolss_q_deleteprinterdriverex( TALLOC_CTX *mem_ctx,
                                            SPOOL_Q_DELETEPRINTERDRIVEREX *q_u, 
                                            const char *server,
                                            const char* arch, 
-                                           const char* driver )
+                                           const char* driver,
+                                           uint32 version)
 {
 	DEBUG(5,("make_spoolss_q_deleteprinterdriverex\n"));
  
@@ -1237,7 +1238,12 @@ BOOL make_spoolss_q_deleteprinterdriverex( TALLOC_CTX *mem_ctx,
 	init_unistr2(&q_u->server, server, UNI_STR_TERMINATE);
 	init_unistr2(&q_u->arch, arch, UNI_STR_TERMINATE);
 	init_unistr2(&q_u->driver, driver, UNI_STR_TERMINATE);
- 
+
+	if (version >= 0) { 
+		q_u->delete_flags |= DPD_DELETE_SPECIFIC_VERSION;
+		q_u->version = version;
+	}
+
 	return True;
 }
 
