@@ -34,6 +34,7 @@ enum connect_stage {CONNECT_RESOLVE,
 		    CONNECT_TCON};
 
 struct connect_state {
+	enum connect_stage stage;
 	struct smbcli_socket *sock;
 	struct smbcli_transport *transport;
 	struct smbcli_session *session;
@@ -61,7 +62,7 @@ static NTSTATUS connect_send_negprot(struct smbcli_composite *c,
 
 	state->req->async.fn = request_handler;
 	state->req->async.private = c;
-	c->stage = CONNECT_NEGPROT;
+	state->stage = CONNECT_NEGPROT;
 	
 	return NT_STATUS_OK;
 }
@@ -141,7 +142,7 @@ static NTSTATUS connect_session_setup(struct smbcli_composite *c,
 
 	state->req->async.fn = request_handler;
 	state->req->async.private = c;
-	c->stage = CONNECT_TCON;
+	state->stage = CONNECT_TCON;
 
 	return NT_STATUS_OK;
 }
@@ -180,7 +181,7 @@ static NTSTATUS connect_negprot(struct smbcli_composite *c,
 
 	state->creq->async.fn = composite_handler;
 	state->creq->async.private = c;
-	c->stage = CONNECT_SESSION_SETUP;
+	state->stage = CONNECT_SESSION_SETUP;
 	
 	return NT_STATUS_OK;
 }
@@ -240,7 +241,7 @@ static NTSTATUS connect_socket(struct smbcli_composite *c,
 
 	state->req->async.fn = request_handler;
 	state->req->async.private = c;
-	c->stage = CONNECT_SESSION_REQUEST;
+	state->stage = CONNECT_SESSION_REQUEST;
 
 	return NT_STATUS_OK;
 }
@@ -262,7 +263,7 @@ static NTSTATUS connect_resolve(struct smbcli_composite *c,
 	state->creq = smbcli_sock_connect_send(state->sock, address, state->io->in.port);
 	NT_STATUS_HAVE_NO_MEMORY(state->creq);
 
-	c->stage = CONNECT_SOCKET;
+	state->stage = CONNECT_SOCKET;
 	state->creq->async.private = c;
 	state->creq->async.fn = composite_handler;
 
@@ -277,7 +278,7 @@ static void state_handler(struct smbcli_composite *c)
 {
 	struct connect_state *state = talloc_get_type(c->private, struct connect_state);
 
-	switch (c->stage) {
+	switch (state->stage) {
 	case CONNECT_RESOLVE:
 		c->status = connect_resolve(c, state->io);
 		break;
@@ -346,9 +347,9 @@ struct smbcli_composite *smb_composite_connect_send(struct smb_composite_connect
 	if (state->sock == NULL) goto failed;
 
 	state->io = io;
+	state->stage = CONNECT_RESOLVE;
 
 	c->state = SMBCLI_REQUEST_SEND;
-	c->stage = CONNECT_RESOLVE;
 	c->event_ctx = state->sock->event.ctx;
 	c->private = state;
 

@@ -30,6 +30,7 @@
   this private structure is used during async connection handling
 */
 struct clisocket_connect {
+	int port_num;
 	int *iports;
 	struct smbcli_socket *sock;
 	const char *dest_host;
@@ -95,8 +96,8 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
 	}
 
 	/* that port failed - try the next port */
-	for (i=c->stage+1;conn->iports[i];i++) {
-		c->stage = i;
+	for (i=conn->port_num+1;conn->iports[i];i++) {
+		conn->port_num = i;
 		c->status = smbcli_sock_connect_one(conn->sock, 
 						    conn->dest_host, 
 						    conn->iports[i]);
@@ -204,7 +205,7 @@ struct smbcli_composite *smbcli_sock_connect_send(struct smbcli_socket *sock,
 	/* startup the connect process for each port in turn until one
 	   succeeds or tells us that it is pending */
 	for (i=0;conn->iports[i];i++) {
-		c->stage = i;
+		conn->port_num = i;
 		conn->sock->port = conn->iports[i];
 		c->status = smbcli_sock_connect_one(sock, 
 						    conn->dest_host, 
