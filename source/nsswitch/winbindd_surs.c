@@ -46,7 +46,8 @@ BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
         if (name_type == SID_NAME_USER) {
 
             if ((domain->uid_low + rid) > domain->uid_high) {
-                DEBUG(0, ("uid range to small for rid %d\n", rid));
+                DEBUG(0, ("uid range (%d-%d) too small for rid %d\n", 
+                          domain->uid_low, domain->uid_high, rid));
                 return False;
             }
             
@@ -62,7 +63,8 @@ BOOL winbindd_surs_sam_sid_to_unixid(struct winbindd_domain *domain,
             (name_type == SID_NAME_ALIAS)) {
             
             if ((domain->gid_low + rid) > domain->gid_high) {
-                DEBUG(0, ("gid range too small for rid %d\n", rid));
+                DEBUG(0, ("gid range (%d-%d) too small for rid %d\n", 
+                          domain->gid_low, domain->gid_high, rid));
                 return False;
             }
             

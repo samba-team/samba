@@ -58,6 +58,8 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
     struct grent_mem_group *temp;
     pstring groupmem_list;
     
+    fprintf(stderr, "*** looking up membership for group rid %d\n", group_rid);
+
     /* Initialise group membership information */
 
     gr->num_gr_mem = 0;
@@ -110,8 +112,8 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                                           &num_names, &rid_mem, &names, 
                                           &name_types)) {
 
-                DEBUG(1, ("fill_grent_mem(): group rid %d not a domain "
-                          "group\n", current_group->group_rid));
+                DEBUG(1, ("fill_grent_mem(): could not lookup membership "
+                          "for group rid %d\n", current_group->group_rid));
 
                 /* Exit if we cannot lookup the membership for the group
                    this function was called to look at */
@@ -149,24 +151,51 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
     
         for (i = 0; i < num_names; i++) {
             enum SID_NAME_USE name_type;
+            fstring name_part1, name_part2;
+            char *name_dom, *name_user, *the_name;
+            struct winbindd_domain *name_domain;
         
             /* Lookup name */
 
-            if (winbindd_lookup_sid_by_name(domain, names[i], NULL, 
+            ZERO_STRUCT(name_part1);
+            ZERO_STRUCT(name_part2);
+
+            the_name = names[i];
+            next_token(&the_name, name_part1, "/\\", sizeof(fstring));
+            next_token(NULL, name_part2, "", sizeof(fstring));
+
+            if (strcmp(name_part2, "") != 0) {
+                name_dom = name_part1;
+                name_user = name_part2;
+
+                if ((name_domain = find_domain_from_name(name_dom)) == NULL) {
+                    DEBUG(0, ("unable to look up domain record for domain "
+                              "%s\n", name_dom));
+                    continue;
+                }
+
+            } else {
+                name_dom = domain->name;
+                name_user = name_part1;
+                name_domain = domain;
+            }
+
+            fprintf(stderr, "*** got name %s/%s\n", name_dom, name_user);
+
+            if (winbindd_lookup_sid_by_name(name_domain, name_user, NULL, 
                                             &name_type) == WINBINDD_OK) {
 
                 /* Check name type */
 
                 if (name_type == SID_NAME_USER) {
         
+                    fprintf(stderr, "*** name is user\n");
+
                     /* Add to group membership list */
                 
-                    if (current_group->group_name_type != SID_NAME_ALIAS) {
-                        pstrcat(groupmem_list, current_group->domain_name);
-                        pstrcat(groupmem_list, "/");
-                    }
-
-                    pstrcat(groupmem_list, names[i]);
+                    pstrcat(groupmem_list, name_dom);
+                    pstrcat(groupmem_list, "/");
+                    pstrcat(groupmem_list, name_user);
                     pstrcat(groupmem_list, ",");
 
                     gr->num_gr_mem++;
@@ -177,10 +206,12 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                     uint32 todo_rid;
                     char *todo_domain;
 
+                    fprintf(stderr, "*** name is group\n");
+
                     /* Add group to todo list */
 
                     if ((winbindd_lookup_sid_by_name(domain, names[i], 
-                                                     &todo_sid, &name_type)
+                                                     &todo_sid, &name_type) 
                          == WINBINDD_OK) && 
                         (todo_domain = strtok(names[i], "/\\"))) {
                         
@@ -280,14 +311,15 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_state *state)
     struct winbindd_domain *domain;
     enum SID_NAME_USE name_type;
     uint32 group_rid;
-    fstring name_domain, name_group, temp_name;
+    fstring name_domain, name_group;
     POSIX_ID surs_gid;
+    char *the_name;
 
     /* Look for group domain name */
 
-    fstrcpy(temp_name, state->request.data.groupname);
-    fstrcpy(name_domain, strtok(temp_name, "/\\"));
-    fstrcpy(name_group, strtok(NULL, ""));
+    the_name = state->request.data.groupname;
+    next_token(&the_name, name_domain, "/\\", sizeof(fstring));
+    next_token(NULL, name_group, "", sizeof(fstring));
 
     /* Get domain sid for the domain */
 
@@ -300,7 +332,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_state *state)
     /* Get rid and name type from NT server */
         
     if (!winbindd_lookup_sid_by_name(domain, name_group, &domain_group_sid, 
-                                 &name_type)) {
+                                     &name_type)) {
         DEBUG(1, ("group %s in domain %s does not exist\n", name_group,
                   name_domain));
         return WINBINDD_ERROR;

@@ -154,6 +154,17 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
         return False;
     }
 
+    fprintf(stderr, "*** looking up name %s in domain %s\n", name,
+            domain->name);
+
+    {
+        fstring sid_str;
+
+        sid_to_string(sid_str, &domain->sid);
+        fprintf(stderr, "*** sid for domain %s is %s\n", domain->name,
+                sid_str);
+    }
+
     /* Open handles */
 
     if (!open_lsa_handle(domain)) return False;
@@ -163,6 +174,8 @@ BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
     res = domain->lsa_handle_open ? 
         lsa_lookup_names(&domain->lsa_handle, num_names, (char **)&name,
                          &sids, &types, &num_sids) : False;
+
+    if (!res) fprintf(stderr, "*** lookup FAILED\n");
 
     /* Return rid and type if lookup successful */
 
@@ -353,8 +366,6 @@ int winbindd_lookup_aliasinfo(struct winbindd_domain *domain,
 /* Globals for domain list stuff */
 
 struct winbindd_domain *domain_list = NULL;
-struct winbindd_domain_uid *domain_uid_list = NULL;
-struct winbindd_domain_gid *domain_gid_list = NULL;
 
 /* Given a domain name, return the struct winbindd domain info for it */
 
@@ -439,6 +450,26 @@ struct winbindd_domain *find_domain_from_gid(gid_t gid)
 
     for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
         if ((gid >= tmp->gid_low) && (gid <= tmp->gid_high)) {
+
+            /* Get domain info for this domain */
+
+            if (!tmp->got_domain_info && !get_domain_info(tmp)) {
+                return NULL;
+            }
+
+            return tmp;
+        }
+    }
+
+    return NULL;
+}
+
+struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
+{
+    struct winbindd_domain *tmp;
+
+    for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
+        if(sid_equal(sid, &tmp->sid)) {
 
             /* Get domain info for this domain */
 

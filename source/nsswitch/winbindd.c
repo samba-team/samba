@@ -33,15 +33,47 @@
 
 static struct winbindd_state *client_list;
 
-/*
- * Signal handlers
- */
+/* Print client information */
+
+void do_print_client_info(void)
+{
+    struct winbindd_state *client;
+    int i;
+
+    if (client_list == NULL) {
+        DEBUG(0, ("no clients in list\n"));
+        return;
+    }
+
+    DEBUG(0, ("client list is:\n"));
+
+    for (client = client_list, i = 0; client; client = client->next) {
+        DEBUG(0, ("client %3d: pid = %5d fd = %d read = %4d write = %4d\n", 
+                  i, client->pid, client->sock, client->read_buf_len, 
+                  client->write_buf_len));
+        i++;
+    }
+}
+
+/* Flush client cache */
+
+void do_flush_cache(void)
+{
+}
+
+/* Handle the signal by unlinking socket and exiting */
 
 static void termination_handler(int signum)
 {
+    pstring path;
+
     /* Remove socket file */
 
-    unlink(WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME);
+    pstrcpy(path, WINBINDD_SOCKET_DIR);
+    pstrcat(path, "/");
+    pstrcat(path, WINBINDD_SOCKET_NAME);
+
+    unlink(path);
 
     exit(0);
 }
@@ -50,14 +82,18 @@ static BOOL print_client_info;
 
 static void siguser1_handler(int signum)
 {
+    BlockSignals(True, SIGUSR1);
     print_client_info = True;
+    BlockSignals(False, SIGUSR1);
 }
 
 static BOOL flush_cache;
 
 static void sighup_handler(int signum)
 {
+    BlockSignals(True, SIGHUP);
     flush_cache = True;
+    BlockSignals(False, SIGHUP);
 }
 
 /* Create winbindd socket */
@@ -68,7 +104,7 @@ static int create_sock(void)
     struct stat st;
     int sock;
     mode_t old_umask;
-    char *path = WINBINDD_SOCKET_DIR "/" WINBINDD_SOCKET_NAME;
+    pstring path;
 
     /* Create the socket directory or reuse the existing one */
 
@@ -116,6 +152,10 @@ static int create_sock(void)
         return -1;
     }
     
+    pstrcpy(path, WINBINDD_SOCKET_DIR);
+    pstrcat(path, "/");
+    pstrcat(path, WINBINDD_SOCKET_NAME);
+
     unlink(path);
     memset(&sunaddr, 0, sizeof(sunaddr));
     sunaddr.sun_family = AF_UNIX;
@@ -145,12 +185,14 @@ static int create_sock(void)
     return sock;
 }
 
-
 static void process_request(struct winbindd_state *state)
 {
     /* Process command */
 
     state->response.result = WINBINDD_ERROR;
+
+    fprintf(stderr, "processing command %d from pid %d\n", 
+            state->request.cmd, state->pid);
 
     switch(state->request.cmd) {
         
@@ -204,6 +246,8 @@ static void process_request(struct winbindd_state *state)
         DEBUG(0, ("oops - unknown winbindd command %d\n", state->request.cmd));
         break;
     }
+
+    fprintf(stderr, "done\n");
 }
 
 /* Process a new connection by adding it to the client connection list */
@@ -245,10 +289,22 @@ static void remove_client(struct winbindd_state *state)
 {
     /* It's a dead client - hold a funeral */
 
-    close(state->sock);
-//    free_state_info(state);
-    DLIST_REMOVE(client_list, state);
-    free(state);
+    if (state != NULL) {
+
+        /* Close socket */
+
+        close(state->sock);
+
+        /* Free any getent state */
+
+        free_getent_state(state->getpwent_state);
+        free_getent_state(state->getgrent_state);
+
+        /* Remove from list and free */
+
+        DLIST_REMOVE(client_list, state);
+        free(state);
+    }
 }
 
 /* Process a complete received packet from a client */
@@ -256,6 +312,8 @@ static void remove_client(struct winbindd_state *state)
 static void process_packet(struct winbindd_state *state)
 {
     /* Process request */
+
+    state->pid = state->request.pid;
 
     process_request(state);
 
@@ -276,12 +334,14 @@ static void client_read(struct winbindd_state *state)
     n = read(state->sock, state->read_buf_len + (char *)&state->request, 
              sizeof(state->request) - state->read_buf_len);
 
-    fprintf(stderr, "read returned %d on sock %d\n", n, state->sock);
-
     /* Read failed, kill client */
 
-    if ((n == -1) || (n == 0)) {
-        fprintf(stderr, "finished reading, n = %d\n", n);
+    if (n == -1 || n == 0) {
+
+        fprintf(stderr, "read failed on sock %d, pid %d: %s\n",
+                state->sock, state->pid, 
+                (n == -1) ? sys_errlist[errno] : "EOF");
+
         state->finished = True;
         return;
     }
@@ -303,12 +363,14 @@ static void client_write(struct winbindd_state *state)
               (char *)&state->response,
               state->write_buf_len);
 
-    fprintf(stderr, "write returned %d on sock %d\n", n, state->sock);
-
     /* Write failed, kill cilent */
 
     if (n == -1 || n == 0) {
-        fprintf(stderr, "finished writing\n");
+
+        fprintf(stderr, "write failed on sock %d, pid %d: %s\n",
+                state->sock, state->pid, 
+                (n == -1) ? sys_errlist[errno] : "EOF");
+
         state->finished = True;
         return;
     }
@@ -349,7 +411,8 @@ static void process_loop(int accept_sock)
             if (state->finished) {
                 struct winbindd_state *next = state->next;
 
-                fprintf(stderr, "removing client sock %d\n", state->sock);
+                fprintf(stderr, "removing client sock %d, pid %d\n", 
+                        state->sock, state->pid);
                 remove_client(state);
                 state = next;
                 continue;
@@ -362,77 +425,74 @@ static void process_loop(int accept_sock)
             /* Add fd for reading */
 
             if (state->read_buf_len != sizeof(state->request)) {
-
-                fprintf(stderr, "adding sock %d for reading\n", state->sock);
                 FD_SET(state->sock, &r_fds);
             }
 
             /* Add fd for writing */
 
             if (state->write_buf_len) {
-
-                fprintf(stderr, "adding sock %d for writing\n", state->sock);
                 FD_SET(state->sock, &w_fds);
             }
 
             state = state->next;
         }
 
-        /* Check signal handling */
+        /* Check signal handling things */
 
         if (flush_cache) {
-            fprintf(stderr, "flush cache request\n");
+            do_flush_cache();
             flush_cache = False;
         }
 
         if (print_client_info) {
-            fprintf(stderr, "print client info requet\n");
+            do_print_client_info();
             print_client_info = False;
         }
 
         /* Call select */
         
-        fprintf(stderr, "calling select\n");
         selret = select(maxfd + 1, &r_fds, &w_fds, NULL, NULL);
-        
-        if (selret == -1 || selret == 0) {
+
+        if ((selret == -1 && errno != EINTR) || selret == 0) {
 
             /* Select error, something is badly wrong */
 
-            exit(2);
-            DEBUG(0, ("select returned %d", selret));
-            return;
+            perror("select");
+            exit(1);
         }
 
         /* Create a new connection if accept_sock readable */
 
-        if (FD_ISSET(accept_sock, &r_fds)) {
-            new_connection(accept_sock);
-        }
+        if (selret > 0) {
 
-        /* Process activity on client connections */
-
-        for (state = client_list; state ; state = state->next) {
-
-            /* Data available for reading */
-
-            if (FD_ISSET(state->sock, &r_fds)) {
-
-                /* Read data */
-
-                client_read(state);
-
-                /* A request packet might be complete */
-
-                if (state->read_buf_len == sizeof(state->request)) {
-                    process_packet(state);
-                }
+            if (FD_ISSET(accept_sock, &r_fds)) {
+                new_connection(accept_sock);
             }
-
-            /* Data available for writing */
-
-            if (FD_ISSET(state->sock, &w_fds)) {
-                client_write(state);
+            
+            /* Process activity on client connections */
+            
+            for (state = client_list; state ; state = state->next) {
+                
+                /* Data available for reading */
+                
+                if (FD_ISSET(state->sock, &r_fds)) {
+                    
+                    /* Read data */
+                    
+                    client_read(state);
+                    
+                    /* A request packet might be complete */
+                    
+                    if (state->read_buf_len == sizeof(state->request)) {
+                        process_packet(state);
+                    }
+                }
+                
+                /* Data available for writing */
+                
+                if (FD_ISSET(state->sock, &w_fds)) {
+                    client_write(state);
+                }
             }
         }
     }
@@ -479,12 +539,14 @@ int main(int argc, char **argv)
 
     /* Setup signal handlers */
 
-    signal(SIGINT, termination_handler);
-    signal(SIGQUIT, termination_handler);
-    signal(SIGTERM, termination_handler);
-    signal(SIGPIPE, SIG_IGN);
-    signal(SIGUSR1, siguser1_handler);
-    signal(SIGHUP, sighup_handler);
+//    CatchSignal(SIGINT, termination_handler);         /* Exit on these sigs */
+    CatchSignal(SIGQUIT, termination_handler);
+    CatchSignal(SIGTERM, termination_handler);
+
+    CatchSignal(SIGPIPE, SIG_IGN);                    /* Ignore sigpipe */
+
+    CatchSignal(SIGUSR1, siguser1_handler);           /* Debugging sigs */
+    CatchSignal(SIGHUP, sighup_handler);
 
     /* Create UNIX domain socket */
 
