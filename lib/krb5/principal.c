@@ -876,23 +876,21 @@ krb5_sname_to_principal (krb5_context context,
 	sname = "host";
     if(type == KRB5_NT_SRV_HST) {
 	int error;
+	struct addrinfo hints, *res;
+	char *host;
 
-#ifdef HAVE_IPV6
-	if (hp == NULL)
-	    hp = getipnodebyname (hostname, AF_INET6, 0, &error);
-#endif
-	if (hp == NULL)
-	    hp = getipnodebyname (hostname, AF_INET, 0, &error);
-	if(hp != NULL)
-	    hostname = hp->h_name;
-    }
-    if(type == KRB5_NT_SRV_HST) {
-	host = strdup(hostname);
-	if(host == NULL){
-	    if (hp != NULL)
-		freehostent (hp);
-	    return ENOMEM;
+	memset (&hints, 0, sizeof(hints));
+	hints.ai_flags = AI_CANONNAME;
+
+	error = getaddrinfo (hostname, NULL, &hints, &res);
+	if (error == 0) {
+	    host = strdup (res->ai_canonname);
+	    freeaddrinfo (res);
+	} else {
+	    host = strdup (hostname);
 	}
+	if (host == NULL)
+	    return ENOMEM;
 	strlwr(host);
 	hostname = host;
     }
