@@ -26,6 +26,11 @@ static NTSTATUS libnet_find_pdc_generic(struct libnet_context *ctx, TALLOC_CTX *
 	BOOL ret;
 	struct in_addr ip;
 
+	if (is_ipaddress(r->generic.in.domain_name)) {
+		r->generic.out.pdc_name = r->generic.in.domain_name;
+		return NT_STATUS_OK;
+	}
+
 	ret = get_pdc_ip(mem_ctx, r->generic.in.domain_name, &ip);
 	if (!ret) {
 		/* fallback to a workstation name */
