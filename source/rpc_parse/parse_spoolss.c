@@ -1280,6 +1280,12 @@ BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_st
 	if (!prs_uint32("size", ps, depth, &r_u->size))
 		return False;
 	
+	if (UNMARSHALLING(ps) && r_u->size) {
+		r_u->data = prs_alloc_mem(ps, r_u->size);
+		if(r_u->data)
+			return False;
+	}
+
 	if (!prs_uint8s(False,"data", ps, depth, r_u->data, r_u->size))
 		return False;
 		
@@ -5814,6 +5820,14 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 	if(!prs_uint32("valuesize", ps, depth, &r_u->valuesize))
 		return False;
 
+	if (UNMARSHALLING(ps) && r_u->valuesize) {
+		r_u->value = (uint16 *)prs_alloc_mem(ps, r_u->valuesize * 2);
+		if (!r_u->value) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata value\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint16uni(False, "value", ps, depth, r_u->value, r_u->valuesize ))
 		return False;
 
@@ -5828,6 +5842,15 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 
 	if(!prs_uint32("datasize", ps, depth, &r_u->datasize))
 		return False;
+
+	if (UNMARSHALLING(ps) && r_u->datasize) {
+		r_u->data = (uint8 *)prs_alloc_mem(ps, r_u->datasize);
+		if (!r_u->data) {
+			DEBUG(0, ("spoolss_io_r_enumprinterdata: out of memory for printerdata data\n"));
+			return False;
+		}
+	}
+
 	if(!prs_uint8s(False, "data", ps, depth, r_u->data, r_u->datasize))
 		return False;
 	if(!prs_align(ps))
@@ -7177,3 +7200,151 @@ BOOL make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle,
 
 	return True;
 }
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_setjob(SPOOL_Q_SETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, uint32 command)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->jobid = jobid;
+        q_u->level = level;
+
+	/* Hmm - the SPOOL_Q_SETJOB structure has a JOB_INFO ctr in it but
+	   the server side code has it marked as unused. */
+
+        q_u->command = command;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, NEW_BUFFER *buffer,
+			   uint32 offered)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+        q_u->jobid = jobid;
+        q_u->level = level;
+        q_u->buffer = buffer;
+        q_u->offered = offered;
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, 
+				     POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, 
+				   POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, 
+				    POLICY_HND *handle, uint32 level,
+				    char *docname, char *outputfile,
+				    char *datatype)
+{
+	DOC_INFO_CONTAINER *ctr = &q_u->doc_info_container;
+
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	ctr->level = level;
+
+	switch (level) {
+	case 1:
+		ctr->docinfo.switch_value = level;
+
+		ctr->docinfo.doc_info_1.p_docname = docname ? 1 : 0;
+		ctr->docinfo.doc_info_1.p_outputfile = outputfile ? 1 : 0;
+		ctr->docinfo.doc_info_1.p_datatype = datatype ? 1 : 0;
+
+		if (docname)
+			init_unistr2(&ctr->docinfo.doc_info_1.docname, docname,
+				     strlen(docname) + 1);
+
+		if (outputfile)
+			init_unistr2(&ctr->docinfo.doc_info_1.outputfile, outputfile,
+				     strlen(outputfile) + 1);
+
+		if (datatype)
+			init_unistr2(&ctr->docinfo.doc_info_1.datatype, datatype,
+				     strlen(datatype) + 1);
+
+		break;
+	case 2:
+		/* DOC_INFO_2 is only used by Windows 9x and since it
+	           doesn't do printing over RPC we don't have to worry
+  	           about it. */
+	default:
+		DEBUG(3, ("unsupported info level %d\n", level));
+		return False;
+	}
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, 
+				  POLICY_HND *handle)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, 
+				 POLICY_HND *handle, uint32 data_size,
+				 char *data)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	q_u->buffer_size = q_u->buffer_size2 = data_size;
+	q_u->buffer = data;
+	return True;
+}
+
+/*******************************************************************
+ * init a structure.
+ ********************************************************************/
+
+BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u, 
+				 POLICY_HND *handle, char *valuename)
+{
+        memcpy(&q_u->handle, handle, sizeof(POLICY_HND));
+	init_unistr2(&q_u->valuename, valuename, strlen(valuename) + 1);
+
+	return True;
+}
+

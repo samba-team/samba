@@ -2397,7 +2397,10 @@ BOOL parse_lpq_entry(int snum,char *line,
 
 /* The following definitions come from printing/notify.c  */
 
+void notify_printer_status_byname(char *printer_name, uint32 status);
 void notify_printer_status(int snum, uint32 status);
+void notify_job_status_byname(char *printer_name, uint32 jobid, uint32 status,
+			      uint32 flags);
 void notify_job_status(int snum, uint32 jobid, uint32 status);
 void notify_job_total_bytes(int snum, uint32 jobid, uint32 size);
 void notify_job_total_pages(int snum, uint32 jobid, uint32 pages);
@@ -2482,6 +2485,7 @@ void print_fsp_end(files_struct *fsp, BOOL normal_close);
 /* The following definitions come from printing/printing.c  */
 
 BOOL print_backend_init(void);
+int sysjob_to_jobid(int unix_jobid);
 BOOL print_job_exists(int jobid);
 int print_job_snum(int jobid);
 int print_job_fd(int jobid);
@@ -3854,6 +3858,26 @@ BOOL make_spoolss_q_getform(SPOOL_Q_GETFORM *q_u, POLICY_HND *handle,
 BOOL make_spoolss_q_enumforms(SPOOL_Q_ENUMFORMS *q_u, POLICY_HND *handle, 
 			      uint32 level, NEW_BUFFER *buffer,
 			      uint32 offered);
+BOOL make_spoolss_q_setjob(SPOOL_Q_SETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, uint32 command);
+BOOL make_spoolss_q_getjob(SPOOL_Q_GETJOB *q_u, POLICY_HND *handle, 
+			   uint32 jobid, uint32 level, NEW_BUFFER *buffer,
+			   uint32 offered);
+BOOL make_spoolss_q_startpageprinter(SPOOL_Q_STARTPAGEPRINTER *q_u, 
+				     POLICY_HND *handle);
+BOOL make_spoolss_q_endpageprinter(SPOOL_Q_ENDPAGEPRINTER *q_u, 
+				   POLICY_HND *handle);
+BOOL make_spoolss_q_startdocprinter(SPOOL_Q_STARTDOCPRINTER *q_u, 
+				    POLICY_HND *handle, uint32 level,
+				    char *docname, char *outputfile,
+				    char *datatype);
+BOOL make_spoolss_q_enddocprinter(SPOOL_Q_ENDDOCPRINTER *q_u, 
+				  POLICY_HND *handle);
+BOOL make_spoolss_q_writeprinter(SPOOL_Q_WRITEPRINTER *q_u, 
+				 POLICY_HND *handle, uint32 data_size,
+				 char *data);
+BOOL make_spoolss_q_deleteprinterdata(SPOOL_Q_DELETEPRINTERDATA *q_u, 
+				 POLICY_HND *handle, char *valuename);
 
 /* The following definitions come from rpc_parse/parse_srv.c  */
 
