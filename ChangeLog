@@ -1,5 +1,10 @@
 2000-02-22  Assar Westerlund  <assar@sics.se>
 
+	* lib/krb5/expand_hostname.c (krb5_expand_hostname_realms): copy
+	the correct hostname
+
+	* kdc/connect.c (add_new_tcp): use the correct entries in the
+	descriptor table
 	* kdc/connect.c: initialize `descr' uniformly and correctly
 
 2000-02-20  Assar Westerlund  <assar@sics.se>
