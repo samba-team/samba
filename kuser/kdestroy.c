@@ -39,12 +39,18 @@
 #include "kuser_locl.h"
 RCSID("$Id$");
 
-char *cache;
-int help_flag;
-int version_flag;
+static char *cache;
+static int help_flag;
+static int version_flag;
+static int unlog_flag = 1;
+static int dest_tkt_flag = 1;
 
 struct getargs args[] = {
     { "cache",		'c', arg_string, &cache, "cache to destroy", "cache" },
+    { "unlog",		0,   arg_negative_flag, &unlog_flag,
+      "do not destroy tokens", NULL },
+    { "delete-v4",	0,   arg_negative_flag, &dest_tkt_flag,
+      "do not destroy v4 tickets", NULL },
     { "version", 	0,   arg_flag, &version_flag, NULL, NULL },
     { "help",		'h', arg_flag, &help_flag, NULL, NULL}
 };
@@ -65,6 +71,7 @@ main (int argc, char **argv)
     krb5_context context;
     krb5_ccache  ccache;
     int optind = 0;
+    int exit_val = 0;
 
     set_progname (argv[0]);
 
@@ -97,11 +104,22 @@ main (int argc, char **argv)
 			   &ccache);
 
     if (ret)
-	errx (1, "krb5_cc_resolve(%s): %s", cache, krb5_get_err_text(context, ret));
+	errx (1, "krb5_cc_resolve(%s): %s", cache,
+	      krb5_get_err_text(context, ret));
 
     ret = krb5_cc_destroy (context, ccache);
     if (ret)
 	errx (1, "krb5_cc_destroy: %s", krb5_get_err_text(context, ret));
     krb5_free_context (context);
-    return 0;
+
+#if KRB4
+    if(dest_tkt_flag && dest_tkt ())
+	exit_val = 1;
+#endif
+    if (unlog_flag && k_hasafs ()) {
+	if (k_unlog ())
+	    exit_val = 1;
+    }
+
+    return exit_val;
 }
