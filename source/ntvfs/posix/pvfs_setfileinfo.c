@@ -27,6 +27,38 @@
 
 
 /*
+  determine what access bits are needed for a call
+*/
+static uint32_t pvfs_setfileinfo_access(enum smb_setfileinfo_level level)
+{
+	uint32_t needed;
+
+	switch (level) {
+	case RAW_SFILEINFO_EA_SET:
+		needed = SEC_FILE_WRITE_EA;
+		break;
+
+	case RAW_SFILEINFO_DISPOSITION_INFO:
+	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
+		needed = SEC_STD_DELETE;
+		break;
+
+	case RAW_SFILEINFO_END_OF_FILE_INFO:
+		needed = SEC_FILE_WRITE_DATA;
+		break;
+
+	case RAW_SFILEINFO_POSITION_INFORMATION:
+		needed = 0;
+		break;
+
+	default:
+		needed = SEC_FILE_WRITE_ATTRIBUTE;
+		break;
+	}
+	return needed;	
+}
+
+/*
   rename_information level
 */
 static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs, 
@@ -98,6 +130,11 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
+	}
+
+	status = pvfs_access_check_create(pvfs, req, name2);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	if (rename(name->full_name, name2->full_name) == -1) {
@@ -202,6 +239,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	uint32_t create_options;
 	struct pvfs_filename newstats;
 	NTSTATUS status;
+	uint32_t access_needed;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
 	if (!f) {
@@ -209,6 +247,11 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	}
 
 	h = f->handle;
+
+	access_needed = pvfs_setfileinfo_access(info->generic.level);
+	if (!(f->access_mask & access_needed)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* update the file information */
 	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
@@ -272,9 +315,6 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 
 	case RAW_SFILEINFO_DISPOSITION_INFO:
 	case RAW_SFILEINFO_DISPOSITION_INFORMATION:
-		if (!(f->access_mask & SEC_STD_DELETE)) {
-			return NT_STATUS_ACCESS_DENIED;
-		}
 		create_options = h->create_options;
 		if (info->disposition_info.in.delete_on_close) {
 			create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
@@ -389,6 +429,7 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_filename newstats;
 	NTSTATUS status;
 	struct utimbuf unix_times;
+	uint32_t access_needed;
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, info->generic.file.fname, 
@@ -401,6 +442,11 @@ NTSTATUS pvfs_setpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	access_needed = pvfs_setfileinfo_access(info->generic.level);
+	status = pvfs_access_check_simple(pvfs, req, name, access_needed);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	/* we take a copy of the current file stats, then update
 	   newstats in each of the elements below. At the end we

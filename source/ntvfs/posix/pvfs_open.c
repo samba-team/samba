@@ -198,10 +198,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	if (name->exists) {
 		/* check the security descriptor */
 		status = pvfs_access_check(pvfs, req, name, &access_mask);
-		if (!NT_STATUS_IS_OK(status)) {
-			idr_remove(pvfs->idtree_fnum, fnum);
-			return status;
-		}
+	} else {
+		status = pvfs_access_check_create(pvfs, req, name);
+	}
+	if (!NT_STATUS_IS_OK(status)) {
+		idr_remove(pvfs->idtree_fnum, fnum);
+		return status;
 	}
 
 	f->fnum          = fnum;
@@ -449,6 +451,11 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	uint32_t access_mask = io->generic.in.access_mask;
 	mode_t mode;
 	uint32_t attrib;
+
+	status = pvfs_access_check_create(pvfs, req, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
@@ -1065,6 +1072,9 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 
 	/* if this was a stream create then create the stream as well */
 	if (!name->stream_exists) {
+		if (!(access_mask & SEC_FILE_WRITE_ATTRIBUTE)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
 		status = pvfs_stream_create(pvfs, f->handle->name, fd);
 		if (!NT_STATUS_IS_OK(status)) {
 			talloc_free(lck);
