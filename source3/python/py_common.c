@@ -27,7 +27,7 @@
 
 PyObject *py_werror_tuple(WERROR werror)
 {
-	return Py_BuildValue("is", W_ERROR_V(werror), 
+	return Py_BuildValue("[is]", W_ERROR_V(werror), 
 			     dos_errstr(werror));
 }
 
@@ -35,7 +35,7 @@ PyObject *py_werror_tuple(WERROR werror)
 
 PyObject *py_ntstatus_tuple(NTSTATUS ntstatus)
 {
-	return Py_BuildValue("is", NT_STATUS_V(ntstatus), 
+	return Py_BuildValue("[is]", NT_STATUS_V(ntstatus), 
 			     nt_errstr(ntstatus));
 }
 
@@ -189,7 +189,24 @@ struct cli_state *open_pipe_creds(char *system_name, PyObject *creds,
 
 	/* Now try to connect */
 
-	connect_fn(cli, system_name, &nt_creds);
+	if (!connect_fn(cli, system_name, &nt_creds)) {
+		if (cli) {
+			NTSTATUS error = cli_nt_error(cli);
+
+			/* Raise an exception if something went wrong.
+  			   FIXME: This should be a more appropriate
+  			   exception than PyExc_RuntimeError */
+
+			if (!NT_STATUS_IS_OK(error))
+				PyErr_SetObject(PyExc_RuntimeError,
+						py_ntstatus_tuple(error));
+			else
+				PyErr_SetString(PyExc_RuntimeError,
+						"error connecting to pipe");
+		}
+		
+		return NULL;
+	}
 
 	return cli;
 }
