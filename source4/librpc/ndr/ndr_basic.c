@@ -597,6 +597,25 @@ NTSTATUS ndr_pull_NTTIME(struct ndr_pull *ndr, NTTIME *t)
 	return NT_STATUS_OK;
 }
 
+/*
+  push a time_t
+*/
+NTSTATUS ndr_push_time_t(struct ndr_push *ndr, time_t t)
+{
+	return ndr_push_uint32(ndr, t);
+}
+
+/*
+  pull a time_t
+*/
+NTSTATUS ndr_pull_time_t(struct ndr_pull *ndr, time_t *t)
+{
+	uint32 tt;
+	NDR_CHECK(ndr_pull_uint32(ndr, &tt));
+	*t = tt;
+	return NT_STATUS_OK;
+}
+
 
 void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 {
@@ -644,6 +663,15 @@ void ndr_print_string(struct ndr_print *ndr, const char *name, const char *s)
 void ndr_print_NTTIME(struct ndr_print *ndr, const char *name, NTTIME t)
 {
 	ndr->print(ndr, "%-25s: %s", name, nt_time_string(ndr->mem_ctx, &t));
+}
+
+void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
+{
+	if (t == (time_t)-1 || t == 0) {
+		ndr->print(ndr, "%-25s: (time_t)%d", name, (int)t);
+	} else {
+		ndr->print(ndr, "%-25s: %s", name, http_timestring(ndr->mem_ctx, t));
+	}
 }
 
 void ndr_print_union(struct ndr_print *ndr, const char *name, uint16 level, const char *type)
