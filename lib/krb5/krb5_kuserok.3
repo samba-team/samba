@@ -36,7 +36,7 @@
 .Os HEIMDAL
 .Sh NAME
 .Nm krb5_kuserok
-.Nd verifies if a principal can login as a user
+.Nd verifies if a principal can log in as a user
 .Sh LIBRARY
 Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh SYNOPSIS
@@ -50,23 +50,23 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh DESCRIPTION
 This function takes a local user
 .Fa name
-and verify if
+and verifies if
 .Fa principal
-is allowed to login as that user.
+is allowed to log in as that user.
 .Pp
 First
 .Nm
 checks if principal is the same as user@realm in any of the
 default realms.
-After that it read the file (if it exists)
+After that it reads the file
 .Pa .k5login
-in the users home directory and checks if
+(if it exists) in the users home directory and checks if
 .Fa principal
 is in the file.
 .Pp
 The
 .Pa .k5login
-contains one principal per line.
+should contain one principal per line.
 .Sh SEE ALSO
 .Xr krb5_get_default_realms 3 ,
 .Xr krb5_verify_user 3 ,
