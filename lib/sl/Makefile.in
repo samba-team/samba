@@ -1,0 +1,82 @@
+#
+# $Id$
+#
+
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+RANLIB = @RANLIB@
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+
+INSTALL = @INSTALL@
+INSTALL_DATA	= @INSTALL_DATA@
+MKINSTALLDIRS = @top_srcdir@/mkinstalldirs
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+
+PICFLAGS = @PICFLAGS@
+ 
+LIBNAME = libsl
+LIBEXT = @LIBEXT@
+SHLIBEXT = @SHLIBEXT@
+SHARED = @SHARED@
+LIB = $(LIBNAME).$(LIBEXT)
+PROGS =
+
+LIB_SOURCES = sl.c
+
+SOURCES = $(LIB_SOURCES)
+
+LIB_OBJECTS = sl.o
+
+OBJECTS = $(LIB_OBJECTS)
+
+all: $(LIB) $(PROGS)
+
+Wall:
+	make CFLAGS="-g -Wall -Wno-comment -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../des $(CFLAGS) $(PICFLAGS) $<
+
+install: all
+	$(MKINSTALLDIRS) $(libdir)
+	$(INSTALL) -m 0555 $(LIB) $(libdir)
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f $(LIB) $(PROGS) *.o *.a
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *~
+
+realclean: distclean
+	rm -f TAGS
+
+$(LIBNAME).a: $(LIB_OBJECTS)
+	rm -f $@
+	$(AR) cr $@ $(LIB_OBJECTS)
+	-$(RANLIB) $@
+
+$(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
+	rm -f $@
+	$(CC) $(CFLAGS) $(PICFLAGS) $(SHARED) -o $@ $(LIB_OBJECTS)
+
+$(OBJECTS): ../../config.h
+
+.PHONY: all install uninstall check clean mostlyclean distclean realclean
