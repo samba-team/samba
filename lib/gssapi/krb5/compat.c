@@ -38,7 +38,8 @@ RCSID("$Id$");
 
 static krb5_error_code
 check_compat(OM_uint32 *minor_status, gss_name_t name, 
-	     const char *option, krb5_boolean *compat)
+	     const char *option, krb5_boolean *compat, 
+	     krb5_boolean match_val)
 {
     krb5_error_code ret = 0;
     char **p, **q;
@@ -57,7 +58,7 @@ check_compat(OM_uint32 *minor_status, gss_name_t name,
 	    break;
 
 	if (krb5_principal_match(gssapi_krb5_context, name, match)) {
-	    *compat = TRUE;
+	    *compat = match_val;
 	    break;
 	}
 	
@@ -79,12 +80,32 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
     krb5_boolean use_compat = FALSE;
     OM_uint32 ret;
 
-    ret = check_compat(minor_status, ctx->target, 
-		       "broken_3des_mic", &use_compat);
-    if (ret)
-	return ret;
-    if (use_compat)
-	ctx->more_flags |= COMPAT_OLD_DES3;
+    if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
+	ret = check_compat(minor_status, ctx->target, 
+			   "broken_des3_mic", &use_compat, TRUE);
+	if (ret)
+	    return ret;
+	ret = check_compat(minor_status, ctx->target, 
+			   "correct_des3_mic", &use_compat, FALSE);
+	if (ret)
+	    return ret;
 
+	if (use_compat)
+	    ctx->more_flags |= COMPAT_OLD_DES3;
+	ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
+    }
     return 0;
+}
+
+OM_uint32
+gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
+{
+    *minor_status = 0;
+
+    if (on) {
+	ctx->more_flags |= COMPAT_OLD_DES3;
+    } else {
+	ctx->more_flags &= ~COMPAT_OLD_DES3;
+    }
+    ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
 }
