@@ -157,7 +157,7 @@ if test "$with_krb4" != "no"; then
 	CFLAGS="$save_CFLAGS"
 	LIB_kdb="-lkdb -lkrb"
 	if test "$krb4_libdir"; then
-		test_LIB_krb4="-L $krb4_libdir"
+		test_LIB_krb4="-L$krb4_libdir"
 		LIB_krb4="-R $krb4_libdir $LIB_krb4"
 		LIB_kdb="-R $krb4_libdir -L$krb4_libdir $LIB_kdb"
 	fi
@@ -260,6 +260,7 @@ AC_CHECK_HEADERS([\
 	grp.h					\
 	inttypes.h				\
 	io.h					\
+	libutil.h				\
 	limits.h				\
 	maillock.h				\
 	net/if.h				\
