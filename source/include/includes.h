@@ -433,15 +433,19 @@
 #include <com_err.h>
 #endif
 
-#if HAVE_VALGRIND_H
-/* Special macros that are no-ops except when run under Valgrind on x86.  */
+/* Special macros that are no-ops except when run under Valgrind on
+ * x86.  They've moved a little bit from valgrind 1.0.4 to 1.9.4 */
+#if HAVE_VALGRIND_MEMCHECK_H
+        /* memcheck.h includes valgrind.h */
+#include <valgrind/memcheck.h>
+#elif HAVE_VALGRIND_H
 #include <valgrind.h>
 #endif
 
 /* If we have --enable-developer and the valgrind header is present,
  * then we're OK to use it.  Set a macro so this logic can be done only
  * once. */
-#if defined(DEVELOPER) && HAVE_VALGRIND_H
+#if defined(DEVELOPER) && (HAVE_VALGRIND_H || HAVE_VALGRIND_VALGRIND_H)
 #define VALGRIND
 #endif
 
