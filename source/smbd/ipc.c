@@ -102,7 +102,7 @@ void send_trans_reply(char *outbuf,
 	if (buffer_too_large)
 	{
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
-		SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
+		SIVAL(outbuf, smb_flg2, SVAL(outbuf, smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 		SIVAL(outbuf, smb_rcls, 0x80000000 | STATUS_BUFFER_OVERFLOW);
 	}
 
@@ -376,7 +376,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	START_PROFILE(SMBtrans);
 
 	memset(name, '\0',sizeof(name));
-	fstrcpy(name,smb_buf(inbuf));
+	srvstr_pull(inbuf, name, smb_buf(inbuf), sizeof(name), -1, STR_TERMINATE|STR_CONVERT);
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {
 		exit_server("invalid trans parameters\n");

@@ -305,6 +305,7 @@ static BOOL exact_match(char *str,char *mask, BOOL case_sig)
   get a level dependent lanman2 dir entry.
 ****************************************************************************/
 static BOOL get_lanman2_dir_entry(connection_struct *conn,
+				  void *inbuf, void *outbuf,
 				 char *path_mask,int dirtype,int info_level,
 				 int requires_resume_key,
 				 BOOL dont_descend,char **ppdata, 
@@ -318,7 +319,7 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
   pstring mask;
   pstring pathreal;
   pstring fname;
-  char *p, *pdata = *ppdata;
+  char *p, *q, *pdata = *ppdata;
   uint32 reskey=0;
   int prev_dirpos=0;
   int mode=0;
@@ -460,10 +461,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,l1_cbFile,(uint32)size);
       SIVAL(p,l1_cbFileAlloc,SMB_ROUNDUP(size,1024));
       SSVAL(p,l1_attrFile,mode);
-      SCVAL(p,l1_cchName,strlen(fname));
-      pstrcpy(p + l1_achName, fname);
-      nameptr = p + l1_achName;
-      p += l1_achName + strlen(fname) + 1;
+      p += l1_achName;
+      nameptr = p;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SCVAL(p, -1, len);
+      p += len;
       break;
 
     case 2:
@@ -479,10 +482,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,l2_cbFileAlloc,SMB_ROUNDUP(size,1024));
       SSVAL(p,l2_attrFile,mode);
       SIVAL(p,l2_cbList,0); /* No extended attributes */
-      SCVAL(p,l2_cchName,strlen(fname));
-      pstrcpy(p + l2_achName, fname);
-      nameptr = p + l2_achName;
-      p += l2_achName + strlen(fname) + 1;
+      p += l2_achName;
+      nameptr = p;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SCVAL(p, -1, len);
+      p += len;
       break;
 
     case 3:
@@ -494,10 +499,12 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SIVAL(p,20,SMB_ROUNDUP(size,1024));
       SSVAL(p,24,mode);
       SIVAL(p,26,4);
-      CVAL(p,30) = strlen(fname);
-      pstrcpy(p+31, fname);
-      nameptr = p+31;
-      p += 31 + strlen(fname) + 1;
+      p += 31;
+      nameptr = p;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SCVAL(p, -1, len);
+      p += len;
       break;
 
     case 4:
@@ -505,24 +512,26 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
         SIVAL(p,0,reskey);
         p += 4;
       }
-      SIVAL(p,0,33+strlen(fname)+1);
+      q = p;
       put_dos_date2(p,4,cdate);
       put_dos_date2(p,8,adate);
       put_dos_date2(p,12,mdate);
       SIVAL(p,16,(uint32)size);
       SIVAL(p,20,SMB_ROUNDUP(size,1024));
       SSVAL(p,24,mode);
-      CVAL(p,32) = strlen(fname);
-      pstrcpy(p + 33, fname);
-      nameptr = p+33;
-      p += 33 + strlen(fname) + 1;
+      p += 33;
+      nameptr = p;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SCVAL(p, -1, len);
+      p += len;
+      SIVAL(q,4,PTR_DIFF(p, q));
+
       break;
 
     case SMB_FIND_FILE_BOTH_DIRECTORY_INFO:
       was_8_3 = is_8_3(fname, True);
-      len = 94+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
+      p += 4;
       SIVAL(p,0,reskey); p += 4;
       put_long_date(p,cdate); p += 8;
       put_long_date(p,adate); p += 8;
@@ -532,28 +541,33 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
+      q = p; p += 4;
       SIVAL(p,0,0); p += 4;
       if (!was_8_3) {
-	      fstrcpy(p+2,fname);
-	      if(!name_map_mangle(p+2,True,True,SNUM(conn)))
-            (p+2)[12] = 0; 
-	      strupper(p+2);
-	      SSVAL(p, 0, strlen(p+2));
+	      pstring mangled_name;
+	      pstrcpy(mangled_name, fname);
+	      name_map_mangle(mangled_name,True,True,SNUM(conn));
+	      mangled_name[12] = 0;
+	      len = srvstr_push(inbuf, outbuf, p+2, mangled_name, 24, 
+				STR_CONVERT|STR_UPPER);
+	      SSVAL(p, 0, len);
       } else {
 	      SSVAL(p,0,0);
 	      *(p+2) = 0;
       }
       p += 2 + 24;
-      /* nameptr = p;  */
-      pstrcpy(p,fname); p += strlen(p);
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SIVAL(q,0,len);
+      p += len;
+      len = PTR_DIFF(p, pdata);
+      len = (len + 3) & ~3;
+      SIVAL(pdata,0,len);
       p = pdata + len;
       break;
 
     case SMB_FIND_FILE_DIRECTORY_INFO:
-      len = 64+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
+      p += 4;
       SIVAL(p,0,reskey); p += 4;
       put_long_date(p,cdate); p += 8;
       put_long_date(p,adate); p += 8;
@@ -563,16 +577,20 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      pstrcpy(p,fname);
+      p += 4;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SIVAL(p, -4, len);
+      p += len;
+      len = PTR_DIFF(p, pdata);
+      len = (len + 3) & ~3;
+      SIVAL(pdata,0,len);
       p = pdata + len;
       break;
       
       
     case SMB_FIND_FILE_FULL_DIRECTORY_INFO:
-      len = 68+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
+      p += 4;
       SIVAL(p,0,reskey); p += 4;
       put_long_date(p,cdate); p += 8;
       put_long_date(p,adate); p += 8;
@@ -582,19 +600,31 @@ static BOOL get_lanman2_dir_entry(connection_struct *conn,
       SOFF_T(p,8,size);
       p += 16;
       SIVAL(p,0,nt_extmode); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
+      p += 4;
       SIVAL(p,0,0); p += 4;
-      pstrcpy(p,fname);
+
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SIVAL(p, -4, len);
+      p += len;
+
+      len = PTR_DIFF(p, pdata);
+      len = (len + 3) & ~3;
+      SIVAL(pdata,0,len);
       p = pdata + len;
       break;
 
     case SMB_FIND_FILE_NAMES_INFO:
-      len = 12+strlen(fname);
-      len = (len + 3) & ~3;
-      SIVAL(p,0,len); p += 4;
+      p += 4;
       SIVAL(p,0,reskey); p += 4;
-      SIVAL(p,0,strlen(fname)); p += 4;
-      pstrcpy(p,fname);
+      p += 4;
+      len = srvstr_push(inbuf, outbuf, p, fname, -1, 
+			STR_TERMINATE|STR_CONVERT);
+      SIVAL(p, -4, len);
+      p += len;
+      len = PTR_DIFF(p, pdata);
+      len = (len + 3) & ~3;
+      SIVAL(pdata,0,len);
       p = pdata + len;
       break;
 
@@ -677,12 +707,14 @@ static int call_trans2findfirst(connection_struct *conn,
       return(ERROR(ERRDOS,ERRunknownlevel));
     }
 
-  pstrcpy(directory, params + 12); /* Complete directory path with 
-				     wildcard mask appended */
+  srvstr_pull(inbuf, directory, params+12, sizeof(directory), -1, STR_TERMINATE);
+
+  DEBUG(0,("path=%s params=%p inbuf=%p params[0]=%c params[1]=%d params[2]=%c params[3]=%d\n",
+	   directory,
+	   params, inbuf,
+	   params[12], params[13], params[14], params[15]));
 
   RESOLVE_FINDFIRST_DFSPATH(directory, conn, inbuf, outbuf);
-
-  DEBUG(5,("path=%s\n",directory));
 
   unix_convert(directory,conn,0,&bad_path,&sbuf);
   if(!check_name(directory,conn)) {
@@ -772,10 +804,12 @@ static int call_trans2findfirst(connection_struct *conn,
     }
     else
     {
-      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-                   requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
-                   &last_name_off);
+      finished = !get_lanman2_dir_entry(conn,
+					inbuf, outbuf,
+					mask,dirtype,info_level,
+					requires_resume_key,dont_descend,
+					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+					&last_name_off);
     }
 
     if (finished && out_of_space)
@@ -1046,10 +1080,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
     }
     else
     {
-      finished = !get_lanman2_dir_entry(conn,mask,dirtype,info_level,
-                   requires_resume_key,dont_descend,
-                   &p,pdata,space_remaining, &out_of_space, &got_exact_match,
-                   &last_name_off);
+      finished = !get_lanman2_dir_entry(conn,
+					inbuf, outbuf,
+					mask,dirtype,info_level,
+					requires_resume_key,dont_descend,
+					&p,pdata,space_remaining, &out_of_space, &got_exact_match,
+					&last_name_off);
     }
 
     if (finished && out_of_space)
@@ -1208,7 +1244,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
           vnamelen = dos_PutUniCode(pdata+18, vname, sizeof(pstring), False);
 	      data_len = 18 + vnamelen;
 	      SIVAL(pdata,12,vnamelen);
-		  SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+	      SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       }
 
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
@@ -2391,8 +2427,7 @@ int reply_trans2(connection_struct *conn,
 	}
 	
 	if (Protocol >= PROTOCOL_NT1) {
-		uint16 flg2 = SVAL(outbuf,smb_flg2);
-		SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
+		SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2) | 0x40); /* IS_LONG_NAME */
 	}
 
 	/* Now we must call the relevant TRANS2 function */
