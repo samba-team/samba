@@ -393,10 +393,11 @@ NTSTATUS privilege_create_account(const DOM_SID *sid )
 NTSTATUS privilege_set_init(PRIVILEGE_SET *priv_set)
 {
 	NTSTATUS ret;
+	TALLOC_CTX *mem_ctx;
 	
 	ZERO_STRUCTP( priv_set );
 
-	TALLOC_CTX *mem_ctx = talloc_init("privilege set");
+	mem_ctx = talloc_init("privilege set");
 	ALLOC_CHECK(mem_ctx, ret, done, "init_privilege");
 
 	priv_set->mem_ctx = mem_ctx;
