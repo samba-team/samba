@@ -101,7 +101,7 @@ krb5_appdefault_string(krb5_context context, const char *appname,
 						     option, 
 						     NULL);
     }
-    if(def_val == NULL)
+    if(def_val != NULL)
 	*ret_val = strdup(def_val);
     else
 	*ret_val = NULL;
