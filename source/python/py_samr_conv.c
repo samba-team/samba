@@ -22,6 +22,79 @@
 #include "python/py_conv.h"
 
 /*
+ * Convert between SAM_USER_INFO_10 and Python
+ */
+
+struct pyconv py_SAM_USER_INFO_10[] = {
+	{ "acb_info", PY_UINT32, offsetof(SAM_USER_INFO_10, acb_info) },
+	{ NULL }
+};
+
+BOOL py_from_SAM_USER_INFO_10(PyObject **dict, SAM_USER_INFO_10 *info)
+{
+	*dict = from_struct(info, py_SAM_USER_INFO_10);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(0x10));
+	return True;
+}
+
+BOOL py_to_SAM_USER_INFO_10(SAM_USER_INFO_10 *info, PyObject *dict)
+{
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "level")) ||
+	    !PyInt_Check(obj))
+		goto done;
+
+	PyDict_DelItemString(dict_copy, "level");
+
+	if (!to_struct(info, dict_copy, py_SAM_USER_INFO_10))
+		goto done;
+
+	result = True;
+
+done:
+	Py_DECREF(dict_copy);
+	return result;
+}
+
+/*
+ * Convert between SAM_USER_INFO_21 and Python
+ */
+
+struct pyconv py_SAM_USER_INFO_21[] = {
+	{ NULL }
+};
+
+BOOL py_from_SAM_USER_INFO_21(PyObject **dict, SAM_USER_INFO_21 *info)
+{
+	*dict = from_struct(info, py_SAM_USER_INFO_21);
+	PyDict_SetItemString(*dict, "level", PyInt_FromLong(21));
+	return True;
+}
+
+BOOL py_to_SAM_USER_INFO_21(SAM_USER_INFO_21 *info, PyObject *dict)
+{
+	PyObject *obj, *dict_copy = PyDict_Copy(dict);
+	BOOL result = False;
+
+	if (!(obj = PyDict_GetItemString(dict_copy, "level")) ||
+	    !PyInt_Check(obj))
+		goto done;
+
+	PyDict_DelItemString(dict_copy, "level");
+
+	if (!to_struct(info, dict_copy, py_SAM_USER_INFO_21))
+		goto done;
+
+	result = True;
+
+done:
+	Py_DECREF(dict_copy);
+	return result;
+}
+
+/*
  * Convert between acct_info and Python 
  */
 
