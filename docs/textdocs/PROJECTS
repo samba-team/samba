@@ -21,28 +21,32 @@ Documentation and FAQ
 
 Docs and FAQ files for the Samba suite of software.
 
-Contact Karl.Auer@anu.edu.au
+Contact samba-bugs@samba.anu.edu.au with the diffs. These are urgently 
+required. The man pages were last guaranteed up to date as of version
+1.7.07, and although many changes have been made since then there is still
+a lot of work to be done.
 
-Mark Preston is now working on a set of formatted docs for Samba. 
-Contact mpreston@sghms.ac.uk
+The FAQ is being added to on an ad hoc basis, see the web pages for info.
 
-Docs are currently up to date with version, 1.7.07. FAQ being added to
-as questions arise.
+Mark Preston was working on a set of formatted docs for Samba. Is this
+still happening? Contact mpreston@sghms.ac.uk
 
-Status last updated 27th September 1994
+Status last updated 2nd October 1996
 ========================================================================
 
 ========================================================================
 Netbeui support
 
-This aims to produce patches so that Samba can be used with clients
+This aimed to produce patches so that Samba can be used with clients
 that do not have TCP/IP. It will try to remain as portable as possible.
+Contact Brian.Onn@Canada.Sun.COM (Brian Onn) Unfortunately it died, and
+although a lot of people have expressed interest nobody has come forward
+to do it. The Novell port (see Samba web pages) includes NetBEUI 
+functionality in a proprietrary library which should still be helpful as 
+we have the interfaces. Alan Cox (a.cox@li.org) has the information 
+required to write the state machine if someone is going to do the work.
 
-Contact Brian.Onn@Canada.Sun.COM (Brian Onn)
-
-The project is just startup up.
-
-Status last updated 4th October 1994
+Status last updated 2nd October 1996
 ========================================================================
 
 ========================================================================
@@ -52,10 +56,11 @@ A mountable smb filesystem for Linux using the userfs userspace filesystem
 
 Contact lendecke@namu01.gwdg.de (Volker Lendecke)
 
-Currently this is at version 0.2. It works but is really only for
-people with some knowledge and experience of Linux kernel hacking.
+This works really well, and is measurably more efficient than commercial
+client software. It is now part of the Linux kernel. Long filename support
+is in alpha.
 
-Status last updated 23rd August 1994
+Status last updated 2nd October 1996
 ========================================================================
 
 ========================================================================
