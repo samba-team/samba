@@ -11,6 +11,7 @@
 <!ENTITY printing SYSTEM "printing.sgml">
 <!ENTITY wins SYSTEM "wins.sgml">
 <!ENTITY sam SYSTEM "sam.sgml">
+<!ENTITY encryption SYSTEM "encryption.sgml">
 ]>
 
 <book id="Samba-Developers-Guide">
@@ -64,5 +65,6 @@ url="http://www.fsf.org/licenses/gpl.txt">http://www.fsf.org/licenses/gpl.txt</u
 &printing;
 &wins;
 &sam;
+&encryption;
 
 </book>
