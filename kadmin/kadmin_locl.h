@@ -117,6 +117,7 @@ DECL(merge);
 
 void timeval2str(time_t t, char *str, size_t len, int include_time);
 void deltat2str(unsigned t, char *str, size_t len);
+int str2timeval (const char *str, time_t *time);
 int str2deltat(const char *str, unsigned *delta);
 void attr2str(krb5_flags attributes, char *str, size_t len);
 int str2attr(const char *str, krb5_flags *flags);
