@@ -1,3 +1,7 @@
+2001-06-12  Assar Westerlund  <assar@sics.se>
+
+	* ext.c (ext_keytab): use the default modify keytab per default
+
 2001-05-17  Assar Westerlund  <assar@sics.se>
 
 	* kadm_conn.c (start_server): fix krb5_eai_to_heim_errno call
