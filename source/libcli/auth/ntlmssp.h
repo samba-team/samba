@@ -120,7 +120,7 @@ struct ntlmssp_state
 	 * Callback to get the 'challenge' used for NTLM authentication.  
 	 *
 	 * @param ntlmssp_state This structure
-	 * @return 8 bytes of challnege data, determined by the server to be the challenge for NTLM authentication
+	 * @return 8 bytes of challenge data, determined by the server to be the challenge for NTLM authentication
 	 *
 	 */
 	const uint8_t *(*get_challenge)(const struct ntlmssp_state *ntlmssp_state);
