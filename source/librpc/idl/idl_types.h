@@ -4,6 +4,7 @@
 #define STR_SIZE2    LIBNDR_FLAG_STR_SIZE2
 #define STR_NOTERM   LIBNDR_FLAG_STR_NOTERM
 #define STR_NULLTERM LIBNDR_FLAG_STR_NULLTERM
+#define STR_BYTESIZE LIBNDR_FLAG_STR_BYTESIZE
 
 /*
   a UCS2 string prefixed with [size] [offset] [length], all 32 bits
