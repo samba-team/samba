@@ -669,7 +669,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 		if (!conn->dirptr)
 			goto SearchEmpty;
 		string_set(&conn->dirpath,dptr_path(dptr_num));
-		fstrcpy(mask, dptr_wcard(dptr_num));
+		pstrcpy(mask, dptr_wcard(dptr_num));
 	}
 
 	if (can_open) {
