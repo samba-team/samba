@@ -106,8 +106,8 @@ void stat_cache_add( char *full_orig_name, char *orig_translated_path)
         DEBUG(0,("stat_cache_add: Out of memory !\n"));
         return;
       }
-      pstrcpy(scp->names, orig_name);
-      pstrcpy((scp->names+namelen+1), translated_path);
+      safe_strcpy(scp->names, orig_name, namelen);
+      safe_strcpy((scp->names+namelen+1), translated_path, namelen);
       scp->name_len = namelen;
       hash_insert(&stat_cache, (char *)scp, orig_name);
     }
