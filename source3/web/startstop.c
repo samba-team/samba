@@ -75,7 +75,7 @@ void stop_smbd(void)
 
 	if (geteuid() != 0) return;
 
-	if (pid == 0) return;
+	if (pid <= 0) return;
 
 	kill(pid, SIGTERM);
 }
@@ -87,7 +87,7 @@ void stop_nmbd(void)
 
 	if (geteuid() != 0) return;
 
-	if (pid == 0) return;
+	if (pid <= 0) return;
 
 	kill(pid, SIGTERM);
 }

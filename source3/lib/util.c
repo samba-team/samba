@@ -1034,6 +1034,9 @@ check if a process exists. Does this work on all unixes?
 
 BOOL process_exists(pid_t pid)
 {
+	/* Doing kill with a non-positive pid causes messages to be
+	 * sent to places we don't want. */
+	SMB_ASSERT(pid > 0);
 	return(kill(pid,0) == 0 || errno != ESRCH);
 }
 
