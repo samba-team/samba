@@ -7,7 +7,7 @@ This is a preview release of the Samba 3.0.3 code base and is
 provided for testing only.  This release is *not* intended for
 production servers.  Use at your own risk.
 
-There have been several bug fixes since the 3.0.2 release that
+There have been several bug fixes since the 3.0.2a release that
 we feel are important to make available to the Samba community
 for wider testings.  See the "Changes" section for details on
 exact updates.
@@ -20,13 +20,14 @@ Common bugs fixed in this preview release include:
 ######################################################################
 Changes
 #######
-Changes since 3.0.2
--------------------
+Changes since 3.0.2a
+--------------------
 smb.conf changes
 ----------------
 
     Parameter Name              Action
     --------------              ------
+    only user                   Deprecated
     use cracklib                New
 
     
@@ -39,7 +40,37 @@ commits
 o   Jeremy Allison <jra@samba.org>
     * Ensure that Kerberos mutex is always properly unlocked.
     * Removed Heimdal "in-memory keytab" support.
+    * Fixup the 'multiple-vuids' bugs in our server code.
+    * Correct return code from lsa_lookup_sids() on unmapped
+      sids (based on work by vlendecke).
+    * Fix the "too many fcntl locks" scalability problem 
+      raised by tridge.
+    * Fixup correct (as per W2K3) returns for lookupsids 
+      as well as lookupnames.
+    * Fixups for delete-on-close semantics as per Win2k3 behavior.
+    * Make SMB_FILE_ACCESS_INFORMATION call work correctly.
+    * Fix "unable to initialize" bug when smbd hasn't been run with 
+      new system and a user is being added via pdbedit/smbpasswd.
+    * Added NTrename SMB (0xA5).
+    * Fixup correct timeout values for blocking lock timeouts.
+    * Fix various bugs reported by 'gentest'.
+    * More locking fixes in the case where we own the lock.
+    * Fix up regression in IS_NAME_VALID and renames.
+    * Don't set allocation size on directories.
+    * Return correct error code on fail if file exists and target 
+      is a directory.
+    * Added client "hardlink" commant to test doing NT rename with 
+      hard links.  Added hardlink_internals() code - UNIX extensions 
+      now use this as well.
+    * Use a common function to parse all pathnames from the wire for 
+      much closer emulation of Win2k3 error return codes.
+    * More fixes for internal multibyte string handling.
 
+
+o   Timur Bakeyev <timur@com.bat.ru>
+    * BUG 1144: only set --with-fhs when the argumenet is 'yes'
+    
+    
 o   Andrew Bartlet <abartlet@samba.org>
     * Include support for linking with cracklib for enforcing 
       strong password changes.
@@ -48,13 +79,33 @@ o   Andrew Bartlet <abartlet@samba.org>
     * Add 'admin set password' capability to 'net rpc'.
     * Allow 'net rpc samdump' to work with any joined domain 
       regardless of smb.conf settings.
+    * Use an allocated buffer for count_chars.
+    * Add sanity checks for changes in the domain SID in an 
+      LDAP DIT.
 
 
 o   Alexander Bokovoy <ab@samba.org>
 
 
 o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Fix ';make installmodules' bug on True64.
+    * Fix 'make installmodules' bug on True64.
+    * BUG 66: mark 'only user' deprecated.
+    * Remove corrupt tdb and shutdown (only for printing tdbs, 
+      connections, sessionid & locking).
+    * decrement smbd counter in connections.tdb in smb_panic().
+    * RedHat specfile updates.
+    * Fix xattr.h build issue on Debian testing and SuSE 8.2.
+    * BUG 1147; bad pointer case in get_stored_queue_info() 
+      causing seg fault.
+    * BUG 761: read the config file before initialized default 
+      values for printing options; don't default to bsd printing 
+      Linux.
+    * Allow the 'printing' parameter to be set on a per share basis.
+    * BUG 503: RedHat/Fedora packaging fixes regarding logrotate.
+    * BUG 848: don't create winbind local users/groups that already 
+      exist in the tdb.
+    * BUG 1080: fix declaration of SMB_BIG_UINT (broek compile on 
+      LynxOS/ppc).
 
 
 o   Guenther Deschner <gd@suse.com>
@@ -67,23 +118,50 @@ o   Bostjan Golob <golob@gimb.org>
       overwritten by other fields.
 
 
+o   Steve French <sfrench@us.ibm.com>
+    * Update moun.cifs to version 1.1.
+    * Disable dev (MS_NODEV) on user mounts from cifs vfs.
+    * Fixes to minor security bug in the mount helper.
+
+
+o   SATOH Fumiyasu <fumiya@miraclelinux.com>
+    * BUG 1055; formatting fixes for 'net share'.
+    * BUG 692: correct truncation of share names and workgroup 
+      names in smbclient.
+
+
 o   Chris Hertel <crh@samba.org>
     * fix enumeration of shares 12 characters in length via 
       smbclient.
 
       
-o    John Klinger <john.klinger@lmco.com>
-     * Return NSS_SUCCESS once the max number of gids possible 
+o   John Klinger <john.klinger@lmco.com>
+    * Return NSS_SUCCESS once the max number of gids possible 
        has been found in initgroups() on Solaris.
 
 
 o   Volker Lendecke <vl@samba.org>
+    * Fix success message for net groupmap modify.
+    * Fix errors when enumerating members of groups in 'net rpc'.
+    * Match Windows behavior in samr_lookup_names() by returning
+      ALIAS(4) when you search in BUILTIN. 
+    * Fix server SAMR code to be able to set alias info for 
+      builtin as well. 
+    * Fix duplication of logic when creating groups via smbd.
+    * Ensure that the HWM values are set correctly after running 
+      'net idmap'.
+    * Add 'net rpc group add'.
+    * Implement 'net groupmap set' and 'net groupmap cleanup'.
+    * Add 'net rpc group [add|del]mem' for domain groups and aliases.
 
 
 o   Herb Lewis <herb@samba.org>
 
 
 o   Jianliang Lu <j.lu@tiesse.com>
+    * Enforce the 'user must change password at nmext login' flag.
+    * Decode meaning of 'fields present' flags (improves support 
+      for usewrmgr.exe).
 
 
 o   L. Lucius <ib@digicron.com>.
@@ -91,6 +169,13 @@ o   L. Lucius <ib@digicron.com>.
 
 
 o   Jim McDonough <jmcd@us.ibm.com>
+    * Add versioning support to tdbsam.
+    * Update the IBM Directory Server schema with the OpenLDAP 
+      file.
+    * Various decoding fixes to improve usermgr.exe support.
+    * Fix statfs redeclaration of statfs struct on ppc
+    * Implement support for password lockout of Samba domain 
+      controllers and standalone servers.
 
 
 o   Stefan Metzmacher <metze@samba.org>
@@ -99,6 +184,7 @@ o   Stefan Metzmacher <metze@samba.org>
 o   James Peach <jpeach@sgi.com>
     * Correct check for printf() format when using the SGI MIPSPro 
       compiler.
+    * BUG 1038: support backtrace for 'panic action' on IRIX.
 
 
 o   Tim Potter <tpot@samba.org>
@@ -106,19 +192,121 @@ o   Tim Potter <tpot@samba.org>
       errno == EAGAIN.
     * BUG 1025: Include sys/acl.h in check for broken nisplus 
       include files.      
+    * BUG 1066: s/printf/d_printf/g in SWAT.
+    * BUG 1098: rename internal msleep() function to fix build 
+      problems on AIX.
+    * BUG 1112: Fix for writable printerdata problem in python bindings.
+      
+
+o   Simo Source <idra@samba.org>
+    * Replace unknown_3 with fields_present in SAMR code.
+
+
+o   Richard Sharpe <rsharpe@samba.org>
+    * Add support to smbclient for multiple logins on the same 
+      session (based on work by abartlet).
 
 
 o   Andrew Tridgell <tridge@samba.org>
     * Rewrote the AIX UESS backend for winbindd.
+    * Fixed compilation with --enable-dmalloc.
     
     
 o   Jelmer Vernooij <jelmer@samba.org>
+   * Fix ETA Calculation when resuming downloads in smbget.
 
+
+o   TAKEDA yasuma <yasuma@miraclelinux.com>
+    * BUG 900: fix token processing in cmd_symlink, cmd_link, 
+      cmd_chown, cmd_chmod smbclient functions.
+
+
+o    Shiro Yamada <shiro@miraclelinux.com>
+     * BUG 1129: install image files for SWAT.
+      
 
 Changes for older versions follow below:
 
         --------------------------------------------------
 
+                  ==============================
+                  Release Notes for Samba 3.0.2a
+                        February 13, 2004
+                  ==============================
+
+Samba 3.0.2a is a minor patch release for the 3.0.2 code base
+to address, in particular, a problem when using pdbedit to 
+sanitize (--force-initialized-passwords) Samba's tdbsam 
+backend.   This is the latest stable release of Samba. This 
+is the version that all production Samba servers should be 
+running for all current bug-fixes.  
+
+******************* Attention! Achtung! Kree! *********************
+
+Beginning with Samba 3.0.2, passwords for accounts with a last 
+change time (LCT-XXX in smbpasswd, sambaPwdLastSet attribute in
+ldapsam, etc...) of zero (0) will be regarded as uninitialized 
+strings.  This will cause authentication to fail for such
+accounts.  If you have valid passwords that meet this criteria, 
+you must update the last change time to a non-zero value.  If you 
+do not, then  'pdbedit --force-initialized-passwords' will disable 
+these accounts and reset the password hashes to a string of X's.
+
+******************* Attention! Achtung! Kree! *********************
+
+
+######################################################################
+Changes
+#######
+
+Changes since 3.0.2
+-------------------
+
+commits
+-------
+
+Please refer to the CVS log for the SAMBA_3_0 branch for complete
+details.  The list of changes per contributor are as follows:
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Added paranoia checks in parsing code.
+    
+
+o   Andrew Bartlet <abartlet@samba.org>
+    * Ensure that changes to uninitialized passwords in ldapsam 
+      are written to the DIT.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Fixed iterator in tdbsam.
+    * Fix bug that disabled accounts with a valid NT password 
+      hash, but no LanMan hash.
+    
+
+o   Steve French <sfrench@us.ibm.com>
+    * Added missing nosetuid and noexec options.
+
+    
+o   Bostjan Golob <golob@gimb.org>
+    * BUG 1046: Don't overwrite usernames of entries returned 
+      by getpwent_list().
+
+
+o   Sebastian Krahmer <krahmer@suse.de>
+    * Fixed potential crash bug in NTLMSSP parsing code.
+
+
+o   Tim Potter <tpot@samba.org>
+    * Fixed logic in tdb_brlock error checking.
+
+    
+o   Urban Widmark <urban@teststation.com>
+    * Set nosuid,nodev flags in smbmnt by default.
+    
+    
+        --------------------------------------------------
+                  
                   =============================
                   Release Notes for Samba 3.0.2
                         February 9, 2004
@@ -604,7 +792,10 @@ o   Allow winbindd to match local accounts to domain SID when
 o   Remove code in idmap_ldap that searches the user suffix and group 
     suffix.  It's not needed and provides inconsistent functionality 
     from the tdb backend.
-o   Patch to handle munged dial string for Windows 200 TSE.
+o   Patch to handle munged dial string for Windows 2000 TSE.
+    Thanks to Gaz de France, Direction de la Recherche, Service 
+    Informatique Métier for their supporting this work by Aurelien 
+    Degrémont <adegremont@idealx.com>.
 o   Correct the "smbldap_open: cannot access when not root error"
     messages when looking up group information (bug 281).
 o   Skip over the winbind separator when looking up a user.
