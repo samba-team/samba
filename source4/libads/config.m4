@@ -226,22 +226,3 @@ if test x"$with_ldap_support" = x"yes"; then
 	AC_DEFINE_UNQUOTED(LDAP_SET_REBIND_PROC_ARGS, $pam_ldap_cv_ldap_set_rebind_proc, [Number of arguments to ldap_set_rebind_proc])
   fi
 fi
-
-# check for a PAM clear-text auth, accounts, password and session support
-with_pam_for_crypt=no
-AC_MSG_CHECKING(whether to use PAM)
-AC_ARG_WITH(pam,
-[  --with-pam              Include PAM support (default=no)],
-[ case "$withval" in
-  yes)
-    AC_MSG_RESULT(yes)
-    AC_DEFINE(WITH_PAM,1,[Whether to include PAM support])
-    AUTHLIBS="$AUTHLIBS -lpam"
-    with_pam_for_crypt=yes
-    ;;
-  *)
-    AC_MSG_RESULT(no)
-    ;;
-  esac ],
-  AC_MSG_RESULT(no)
-)
