@@ -5,7 +5,7 @@ include $(top_srcdir)/Makefile.am.common
 YFLAGS = -d
 
 lib_LTLIBRARIES = libcom_err.la
-libcom_err_la_LDFLAGS = -version-info 2:0:1
+libcom_err_la_LDFLAGS = -version-info 2:1:1
 
 bin_PROGRAMS = compile_et
 
