@@ -39,6 +39,84 @@ static struct printif *current_printif = &generic_printif;
    jobids are assigned when a job starts spooling. 
 */
 
+/***************************************************************************
+ Nightmare. LANMAN jobid's are 16 bit numbers..... We must map them to 32
+ bit RPC jobids.... JRA.
+***************************************************************************/
+
+static TDB_CONTEXT *rap_tdb;
+static uint16 next_rap_jobid;
+
+uint16 pjobid_to_rap(uint32 jobid)
+{
+	uint16 rap_jobid;
+	TDB_DATA data, key;
+
+	if (!rap_tdb) {
+		/* Create the in-memory tdb. */
+		rap_tdb = tdb_open_log(NULL, 0, TDB_INTERNAL, (O_RDWR|O_CREAT), 0644);
+		if (!rap_tdb)
+			return 0;
+	}
+
+	key.dptr = (char *)&jobid;
+	key.dsize = sizeof(jobid);
+	data = tdb_fetch(rap_tdb, key);
+	if (data.dptr && data.dsize == sizeof(uint16)) {
+		memcpy(&rap_jobid, data.dptr, sizeof(uint16));
+		SAFE_FREE(data.dptr);
+		return rap_jobid;
+	}
+	/* Not found - create and store mapping. */
+	rap_jobid = ++next_rap_jobid;
+	if (rap_jobid == 0)
+		rap_jobid = ++next_rap_jobid;
+	data.dptr = (char *)&rap_jobid;
+	data.dsize = sizeof(rap_jobid);
+	tdb_store(rap_tdb, key, data, TDB_REPLACE);
+	tdb_store(rap_tdb, data, key, TDB_REPLACE);
+	return rap_jobid;
+}
+
+uint32 rap_to_pjobid(uint16 rap_jobid)
+{
+	TDB_DATA data, key;
+	uint32 jobid = 0;
+
+	if (!rap_tdb)
+		return 0;
+
+	key.dptr = (char *)&rap_jobid;
+	key.dsize = sizeof(rap_jobid);
+	data = tdb_fetch(rap_tdb, key);
+	if (data.dptr && data.dsize == sizeof(uint32)) {
+		memcpy(&jobid, data.dptr, sizeof(uint32));
+		SAFE_FREE(data.dptr);
+	}
+	return jobid;
+}
+
+static void rap_jobid_delete(uint32 jobid)
+{
+	TDB_DATA key, data;
+	uint16 rap_jobid;
+
+	if (!rap_tdb)
+		return;
+	key.dptr = (char *)&jobid;
+	key.dsize = sizeof(jobid);
+	data = tdb_fetch(rap_tdb, key);
+	if (!data.dptr || (data.dsize != sizeof(uint16)))
+		return;
+
+	memcpy(&rap_jobid, data.dptr, sizeof(uint16));
+	SAFE_FREE(data.dptr);
+	data.dptr = (char *)&rap_jobid;
+	data.dsize = sizeof(rap_jobid);
+	tdb_delete(rap_tdb, key);
+	tdb_delete(rap_tdb, data);
+}
+
 static pid_t local_pid;
 
 /* Mapping between printer names and queue id's in job id's. */
@@ -501,6 +579,7 @@ static void pjob_delete(uint32 jobid)
 	/* Remove from printing.tdb */
 
 	tdb_delete(pdb->tdb, print_key(jobid));
+	rap_jobid_delete(jobid);
 }
 
 /****************************************************************************

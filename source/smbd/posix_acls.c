@@ -2296,7 +2296,7 @@ static int chmod_acl_internals( connection_struct *conn, SMB_ACL_T posix_acl, mo
 		switch(tagtype) {
 			case SMB_ACL_USER_OBJ:
 				perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
-                break;
+				break;
 			case SMB_ACL_GROUP_OBJ:
 				perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
 				break;
