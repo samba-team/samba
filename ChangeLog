@@ -1,5 +1,8 @@
 2003-09-23  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/rd_req.c (krb5_rd_req): if we have a keyblock in auth
+	context, use that
+
 	* appl/test/uu_client.c: print authorization data if there are any
 	
 	* lib/asn1/asn1_print.c: decode IA5Stringa and UTF8String
