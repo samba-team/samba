@@ -232,6 +232,8 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-smbmount \
 	--with-pam \
 	--with-tdbsam \
+	--with-ldapsam \
+	--with-krb5=/usr/athena \
 	--with-winbind \
 	--with-utmp \
 	--with-quotas \
@@ -239,21 +241,18 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-msdfs \
 	--with-profile \
 	--with-syslog \
-	--with-utmp \
 	--with-netatalk \
 	--with-smbwrapper \
 	--with-libsmbclient \
-	--with-ldapsam \
 	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
 
 # Temp disabled - add later - JHT
 #	--with-pam_smbpass \
-#	--with-ldapsam \
-#	--with-krb5=/usr/athena \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
 make all nsswitch/libnss_wins.so torture nsswitch/pam_winbind.so everything
+make tbp/tdbdump tdb/tdbtest tdb/tdbtorture
 
 
 %Install
@@ -281,8 +280,14 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 ( cd $DESTDIR/sbin; ln -s /usr/bin/smbmount mount.smbfs; \
 	ln -s /usr/bin/smbumount umount.smbfs )
 
-install -m 755 source/bin/smbfilter $DESTDIR/usr/bin
-for i in debug2html talloctort samsync make_printerdef
+# First install /usr/bin progs
+for i in smbfilter make_printerdef debug2html
+do
+	install -m 755 source/bin/$i $DESTDIR/usr/bin
+done
+# Next install /usr/sbin progs
+for i in talloctort samsync locktest locktest2 masktest msgtest smbtorture \
+	tdb/tdbdump tdb/tdbtest tdb/tdbtorture
 do
 	install -m 755 source/bin/$i $DESTDIR/usr/sbin
 done
