@@ -125,7 +125,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/passchange.o libsmb/unexpected.o $(RPC_PARSE_OBJ1)
 
-LIBMSRPC_OBJ = libsmb/cli_lsarpc.o rpc_client/cli_pipe.o
+LIBMSRPC_OBJ = rpc_client/cli_lsarpc.o rpc_client/cli_pipe.o
 
 RPC_SERVER_OBJ = rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \

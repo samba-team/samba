@@ -3887,22 +3887,25 @@ BOOL samr_io_r_chgpasswd_user(char *desc, SAMR_R_CHGPASSWD_USER *r_u, prs_struct
  **********************************************************************/
 BOOL samr_io_q_lookup_domain(char* desc, SAMR_Q_LOOKUP_DOMAIN* q_u, prs_struct *ps, int depth)
 {
-  if (q_u == NULL)
-    return False;
+	if (q_u == NULL)
+		return False;
 
-  prs_debug(ps, depth, desc, "samr_io_q_lookup_domain");
-  depth++;
+	prs_debug(ps, depth, desc, "samr_io_q_lookup_domain");
+	depth++;
 
-  prs_align(ps);
+	if(!prs_align(ps))
+		return False;
 
-  smb_io_pol_hnd("connect_pol", &(q_u->connect_pol), ps, depth);
+	if(!smb_io_pol_hnd("connect_pol", &q_u->connect_pol, ps, depth))
+		return False;
 
-  smb_io_unihdr("hdr_domain", &(q_u->hdr_domain), ps, depth);
-  smb_io_unistr2("uni_domain", &(q_u->uni_domain),
-		 q_u->hdr_domain.buffer, ps, depth);
-  prs_align(ps);
+	if(!smb_io_unihdr("hdr_domain", &q_u->hdr_domain, ps, depth))
+		return False;
 
-  return True;
+	if(!smb_io_unistr2("uni_domain", &q_u->uni_domain, q_u->hdr_domain.buffer, ps, depth))
+		return False;
+
+	return True;
 } 
 
 /*******************************************************************

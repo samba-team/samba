@@ -647,17 +647,14 @@ BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
 
 	if (buf5 == NULL) return False;
 
-	prs_align(ps);
-	prs_uint32("buf_len", ps, depth, &(buf5->buf_len));
+	if(!prs_align(ps))
+		return False;
+	if(!prs_uint32("buf_len", ps, depth, &buf5->buf_len))
+		return False;
 
-	/* reading: alloc the buffer first */
-	if ( UNMARSHALLING(ps) ) {
-		buf5->buffer=(uint16 *)prs_alloc_mem(ps, sizeof(uint16)*buf5->buf_len );
-		if (buf5->buffer == NULL)
-			return False;
-	}
-	
-	prs_uint16s(True, "buffer", ps, depth, buf5->buffer, buf5->buf_len);
+
+	if(!prs_buffer5(True, "buffer" , ps, depth, buf5))
+		return False;
 
 	return True;
 }
