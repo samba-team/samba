@@ -55,7 +55,7 @@ NTSTATUS new_cli_net_req_chal(struct cli_state *cli, DOM_CHAL *clnt_chal,
                  cli->desthost, global_myname, credstr(clnt_chal->data)));
         
         /* store the parameters */
-        init_q_req_chal(&q, cli->srv_name_slash, global_myname, clnt_chal);
+        init_q_req_chal(&q, unix_to_dos_static(cli->desthost), global_myname, clnt_chal);
         
         /* Marshall data and send request */
 
@@ -113,7 +113,7 @@ NTSTATUS new_cli_net_auth2(struct cli_state *cli,
                  credstr(cli->clnt_cred.challenge.data), neg_flags));
 
         /* store the parameters */
-        init_q_auth_2(&q, cli->srv_name_slash, cli->mach_acct, 
+        init_q_auth_2(&q, unix_to_dos_static(cli->srv_name_slash), cli->mach_acct, 
                       sec_chan, global_myname, &cli->clnt_cred.challenge, 
                       neg_flags);
 
