@@ -32,10 +32,10 @@
 /*
   connect to the schannel ldb
 */
-static struct ldb_wrap *schannel_db_connect(TALLOC_CTX *mem_ctx)
+static struct ldb_context *schannel_db_connect(TALLOC_CTX *mem_ctx)
 {
 	char *path;
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 
 	path = smbd_tmp_path(mem_ctx, "schannel.ldb");
 	if (!path) {
@@ -58,7 +58,7 @@ static struct ldb_wrap *schannel_db_connect(TALLOC_CTX *mem_ctx)
 NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 				    struct creds_CredentialState *creds)
 {
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 	struct ldb_message *msg;
 	struct ldb_val val, seed;
 	char *s;
@@ -112,23 +112,23 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 	seed.data = creds->seed.data;
 	seed.length = sizeof(creds->seed.data);
 
-	ldb_msg_add_value(ldb->ldb, msg, "sessionKey", &val);
-	ldb_msg_add_value(ldb->ldb, msg, "seed", &seed);
-	ldb_msg_add_string(ldb->ldb, msg, "expiry", s);
-	ldb_msg_add_string(ldb->ldb, msg, "negotiateFlags", f);
-	ldb_msg_add_string(ldb->ldb, msg, "secureChannelType", sct);
-	ldb_msg_add_string(ldb->ldb, msg, "accountName", creds->account_name);
-	ldb_msg_add_string(ldb->ldb, msg, "computerName", creds->computer_name);
+	ldb_msg_add_value(ldb, msg, "sessionKey", &val);
+	ldb_msg_add_value(ldb, msg, "seed", &seed);
+	ldb_msg_add_string(ldb, msg, "expiry", s);
+	ldb_msg_add_string(ldb, msg, "negotiateFlags", f);
+	ldb_msg_add_string(ldb, msg, "secureChannelType", sct);
+	ldb_msg_add_string(ldb, msg, "accountName", creds->account_name);
+	ldb_msg_add_string(ldb, msg, "computerName", creds->computer_name);
 
-	ldb_delete(ldb->ldb, msg->dn);
+	ldb_delete(ldb, msg->dn);
 
-	ret = ldb_add(ldb->ldb, msg);
+	ret = ldb_add(ldb, msg);
 
 	talloc_free(s);
 
 	if (ret != 0) {
 		DEBUG(0,("Unable to add %s to session key db - %s\n", 
-			 msg->dn, ldb_errstring(ldb->ldb)));
+			 msg->dn, ldb_errstring(ldb)));
 		talloc_free(ldb);
 		talloc_free(msg);
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
@@ -148,7 +148,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    const char *computer_name, 
 				    struct creds_CredentialState **creds)
 {
-	struct ldb_wrap *ldb;
+	struct ldb_context *ldb;
 	time_t expiry;
 	struct ldb_message **res;
 	int ret;
@@ -171,7 +171,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	ret = ldb_search(ldb->ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
+	ret = ldb_search(ldb, NULL, LDB_SCOPE_SUBTREE, expr, NULL, &res);
 	if (ret != 1) {
 		talloc_free(ldb);
 		return NT_STATUS_INVALID_HANDLE;

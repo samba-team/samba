@@ -36,12 +36,6 @@
 #include "ldb/include/ldb.h"
 #include "ldb/include/ldb_private.h"
 
-/* close */
-static int skel_close(struct ldb_module *module)
-{
-	return ldb_next_close(module);
-}
-
 /* search */
 static int skel_search(struct ldb_module *module, const char *base,
 		       enum ldb_scope scope, const char *expression,
@@ -98,9 +92,15 @@ static const char *skel_errstring(struct ldb_module *module)
 	return ldb_next_errstring(module);
 }
 
+static int skel_destructor(void *module_ctx)
+{
+	struct ldb_module *ctx = module_ctx;
+	/* put your clean-up functions here */
+	return 0;
+}
+
 static const struct ldb_module_ops skel_ops = {
 	"skel",
-	skel_close, 
 	skel_search,
 	skel_search_free,
 	skel_add_record,
@@ -128,6 +128,8 @@ struct ldb_module *skel_plugin_init(struct ldb_context *ldb, const char *options
 	ctx->prev = ctx->next = NULL;
 	ctx->private_data = NULL;
 	ctx->ops = &skel_ops;
+
+	talloc_set_destructor (ctx, skel_destructor);
 
 	return ctx;
 }

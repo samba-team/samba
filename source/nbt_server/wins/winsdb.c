@@ -33,7 +33,7 @@
 static BOOL winsdb_save_version(struct wins_server *winssrv)
 {
 	int i, ret = 0;
-	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg = ldb_msg_new(winssrv);
 	if (msg == NULL) goto failed;
 
@@ -101,7 +101,7 @@ struct winsdb_record *winsdb_load(struct wins_server *winssrv,
 	if (expr == NULL) goto failed;
 
 	/* find the record in the WINS database */
-	ret = ldb_search(winssrv->wins_db->ldb, NULL, LDB_SCOPE_ONELEVEL, expr, NULL, &res);
+	ret = ldb_search(winssrv->wins_db, NULL, LDB_SCOPE_ONELEVEL, expr, NULL, &res);
 	if (res != NULL) {
 		talloc_steal(tmp_ctx, res);
 	}
@@ -155,7 +155,7 @@ static struct ldb_message *winsdb_message(struct wins_server *winssrv,
 					  struct winsdb_record *rec, TALLOC_CTX *mem_ctx)
 {
 	int i, ret=0;
-	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg = ldb_msg_new(mem_ctx);
 	if (msg == NULL) goto failed;
 
@@ -183,7 +183,7 @@ failed:
 */
 uint8_t winsdb_add(struct wins_server *winssrv, struct winsdb_record *rec)
 {
-	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
@@ -210,7 +210,7 @@ failed:
 */
 uint8_t winsdb_modify(struct wins_server *winssrv, struct winsdb_record *rec)
 {
-	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_context *ldb = winssrv->wins_db;
 	struct ldb_message *msg;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
@@ -243,7 +243,7 @@ failed:
 */
 uint8_t winsdb_delete(struct wins_server *winssrv, struct winsdb_record *rec)
 {
-	struct ldb_context *ldb = winssrv->wins_db->ldb;
+	struct ldb_context *ldb = winssrv->wins_db;
 	TALLOC_CTX *tmp_ctx = talloc_new(winssrv);
 	int ret;
 	const char *dn;

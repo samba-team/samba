@@ -30,10 +30,10 @@ struct ldb_key_data
 	int subkey_count, value_count;
 };
 
-static int ldb_close_hive (void *_hive)
+static int ldb_free_hive (void *_hive)
 {
 	struct registry_hive *hive = _hive;
-	ldb_close (hive->backend_data);
+	talloc_free(hive->backend_data);
 	return 0;
 }
 
@@ -231,9 +231,8 @@ static WERROR ldb_open_key(TALLOC_CTX *mem_ctx, struct registry_key *h, const ch
 
 static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 {
-	struct ldb_context *c;
 	struct ldb_key_data *kd;
-	struct ldb_wrap *wrap;
+	struct ldb_context *wrap;
 
 	if (!hive->location) return WERR_INVALID_PARAM;
 	wrap = ldb_wrap_connect(hive, hive->location, 0, NULL);
@@ -243,14 +242,12 @@ static WERROR ldb_open_hive(struct registry_hive *hive, struct registry_key **k)
 		return WERR_FOOBAR;
 	}
 
-	c = wrap->ldb;
-
-	ldb_set_debug_stderr(c);
-	hive->backend_data = c;
+	ldb_set_debug_stderr(wrap);
+	hive->backend_data = wrap;
 
 	*k = talloc_zero(hive, struct registry_key);
 	talloc_set_destructor (*k, reg_close_ldb_key);
-	talloc_set_destructor (hive, ldb_close_hive);
+	talloc_set_destructor (hive, ldb_free_hive);
 	(*k)->name = talloc_strdup(*k, "");
 	(*k)->backend_data = kd = talloc_zero(*k, struct ldb_key_data);
 	kd->dn = talloc_strdup(*k, "hive=");
