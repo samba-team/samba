@@ -443,17 +443,3 @@ struct passwd *smb_getpwnam(char *user, BOOL allow_change)
 	return NULL;
 }
 
-int smb_initgroups(char *user, char *domain, gid_t group)
-{
-	fstring userdom;
-	int ret;
-
-	ret = initgroups(user, group);
-	if (ret==0 || !domain || !*domain) return ret;
-
-	slprintf(userdom, sizeof(userdom), "%s/%s", domain, user);
-
-	DEBUG(4,("smb_initgroups trying userdom %s\n", userdom));
-
-	return initgroups(userdom, group);
-}

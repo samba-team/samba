@@ -857,7 +857,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
      that */
   if (!getpwnam(user)) {
 	  pstring user2;
-	  slprintf(user2,sizeof(user2),"%s/%s", domain, user);
+	  slprintf(user2,sizeof(user2),"%s%s%s", domain, lp_winbind_separator(), user);
 	  if (getpwnam(user2)) {
 		  DEBUG(3,("Using unix username %s\n", user2));
 		  pstrcpy(user, user2);

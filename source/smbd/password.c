@@ -167,7 +167,7 @@ int setup_groups(char *user, char *domain,
 	gid_t grp = 0;
 	gid_t *groups = NULL;
 
-	if (-1 == smb_initgroups(user,domain,gid))
+	if (-1 == initgroups(user,gid))
 	{
 		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
 		if (getuid() == 0)
