@@ -79,7 +79,7 @@ void ldb_debug(struct ldb_context *ldb, enum ldb_debug_level level, const char *
 {
 	va_list ap;
 	if (ldb->debug_ops.debug == NULL) {
-		return;
+		ldb_set_debug_stderr(ldb);
 	}
 	va_start(ap, fmt);
 	ldb->debug_ops.debug(ldb->debug_ops.context, level, fmt, ap);
