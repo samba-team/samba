@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,6 +46,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <roken.h>
 
 #ifdef KRB5
 #define SIA_KRB5
@@ -66,8 +67,6 @@
 #ifdef KRB4
 #include <kafs.h>
 #endif
-
-#include <roken.h>
 
 #ifndef POSIX_GETPWNAM_R
 
