@@ -1,3 +1,17 @@
+Sun Jul 13 03:07:44 1997  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/creds.c: new file
+
+	* lib/krb5/get_in_tkt.c: better freeing
+
+	* lib/krb5/context.c (krb5_free_context): more freeing
+
+	* lib/krb5/config_file.c: New function `krb5_config_file_free'
+
+	* lib/error/compile_et.awk: Generate a `destroy_' function.
+
+	* kuser/kinit.c, klist.c: Don't leak memory.
+
 Sun Jul 13 02:46:27 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* kdc/connect.c: Check filedescriptor in select.
