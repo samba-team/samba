@@ -86,5 +86,6 @@ typedef struct ntlmssp_state
 	const char *(*get_domain)(void);
 
 	int server_role;
+	uint32 expected_state;
 } NTLMSSP_STATE;
 
