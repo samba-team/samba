@@ -463,15 +463,23 @@ uint32 cmd_spoolss_getprinterdriver(struct client_info *info, int argc, char *ar
                 printer_name = srv_name;
         }
 
+	report (out_hnd, "Environment = Windows NT x86\n");
         fstrcpy(environment, "Windows NT x86");
         level=3;
-
         if (msrpc_spoolss_getprinterdriver(printer_name, environment, level, station, "Administrator", ctr))
                 DEBUG(5,("cmd_spoolss_getprinterdriver: query succeeded\n"));
         else
                 report(out_hnd, "FAILED\n");
 
-        return NT_STATUS_NOPROBLEMO;
+	report (out_hnd, "Environment = Windows 4.0\n");
+        fstrcpy(environment, "Windows 4.0");
+        level=3;
+        if (msrpc_spoolss_getprinterdriver(printer_name, environment, level, station, "Administrator", ctr))
+                DEBUG(5,("cmd_spoolss_getprinterdriver: query succeeded\n"));
+        else
+                report(out_hnd, "FAILED\n");
+
+	return NT_STATUS_NOPROBLEMO;
 }
 
 /****************************************************************************
