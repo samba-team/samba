@@ -621,7 +621,10 @@ BOOL check_mangled_cache( char *s )
   if( !FoundPtr )
   {
     if(saved_ext)
+    {
+      (void)pstrcat( s, saved_ext );
       free(saved_ext);
+    }
     return( False );
   }
 
