@@ -686,7 +686,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
 	if (context->callbacks.add_cached_srv_fn(context, srv, server, share, workgroup, username)) {
 		int saved_errno = errno;
 		DEBUG(3, (" Failed to add server to cache\n"));
-		saved_errno = errno;
+		errno = saved_errno;
 		if (errno == 0) {
 			errno = ENOMEM;
 		}
