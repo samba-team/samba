@@ -45,58 +45,130 @@ Requires       : setup >= 2.0-2, tcp_wrappers
 
 Summary		: Samba Web Adminsitration Tool.
 
+%Package -n libsmbclient
+Group           : System/Network
+
+Summary         : Samba Client Library.
+
 %Description
-Samba provides an SMB server which can be used to provide
-network services to SMB (sometimes called "Lan Manager")
-clients, including various versions of MS Windows, OS/2,
-and other Linux machines. Samba also provides some SMB
-clients, which complement the built-in SMB filesystem
-in Linux. Samba uses NetBIOS over TCP/IP (NetBT) protocols
-and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
-protocol.
+Samba provides an SMB server which can be used to provide network
+services to SMB (sometimes called "Lan Manager") clients, including
+various versions of MS Windows, OS/2, and other Linux machines.
 
-Samba features working NT Domain Control capability and 
-includes the SWAT (Samba Web Administration Tool) that 
-allows samba's smb.conf file to be remotely managed using your 
-favourite web browser. For the time being this is being
-enabled on TCP port 901 via inetd.
+%Description -l de
+Samba stellt einen SMB Server zur Verfügung, mit dem Netzwerkdienste für SMB
+(auch "Lan Manager" genannt) Clients bereitgestellt werden können. Dies
+schließt verschiedene Versionen von MS Windows, OS/2 und andere Linux
+Maschinen ein.
 
-Users are advised to use Samba-2.2 as a Windows NT4
-Domain Controller only on networks that do NOT have a Windows
-NT Domain Controller. This release does NOT as yet have
-Backup Domain control ability.
+%Description -l es
+Samba dispone de un servidor SMB que puede utilizarse para proporcionar
+servicios de red a clientes SMB (a veces conocido como "Lan Manager"),
+incluyendo varias versiones de MS Windows, OS/2 y otras máquinas Linux.
 
-Please refer to the WHATSNEW.txt document for fixup information.
-This binary release includes encrypted password support.
+%Description -l fr
+Samba fournit un serveur SMB qui peut être utilisé pour fournir des services
+de réseau aux clients SMB (parfois appelés "Lan Manager"), comportant
+diverses versions de MS Windows, OS/2 et d'autres machines Linux.
 
+%Description -l it
+Samba fornisce un server SMB che può essere usato per fornire servizi
+di rete a client SMB (talvolta chiamato "Lan Manager"), comprese varie
+versioni di MS Windows, OS/2 e altre macchine Linux.
 
-NOTE: Caldera OpenLinux uses PAM which has integrated support
-for Shadow passwordsand for quotas. Do NOT recompile with the 
-SHADOW_PWD option enabled.
+%Description -l pt
+O Samba fornece um servidor de SMB que pode ser usado para fornecer serviços de
+rede aos clientes de SMB (denominado por vezes como "Lan Manager"), incluindo
+várias versões do Windows, OS/2 e outras máquinas Linux.
 
 %Description doc
-Documentation on SAMBA.
+This package contains extensive SAMBA documentation, including a FAQ,
+comprehensive usage documentation, and a number of examples.
 
+%Description -l de doc
+Dieses Paket enthält eine ausführliche SAMBA Dokumentation, inklusive
+einer FAQ, umfassender Gebrauchsdokumentation und einer Reihe von
+Beispielen.
+
+%Description -l es doc
+Este paquete contiene una extensa documentación sobre SAMBA, incluyendo
+FAQ (Preguntas de Uso Frecuente), documentación sobre el uso y algunos
+ejemplos.
+
+%Description -l fr doc
+Ce paquetage contient une documentation complète sur Samba, y compris
+une FAQ détaillée de son utilisation et un certain nombre d'exemples.
+
+%Description -l it doc
+Questo pacchetto contiene la documentazione su SAMBA tra cui una FAQ
+una esaustiva documentazione d'uso e un certo numero di esempi.
+
+%Description -l pt doc
+Este pacote contém alguma documentação extensa sobre o SAMBA, incluindo a FAQ,
+alguma documentação compreensiva sobre a utilização e alguns exemplos.
 
 %Description -n smbfs
 This package includes the tools necessary to mount filesystems from
 SMB servers.
 
-Smbmount and smbumount are an interface to the SMB filesystem. Smbfs is
-a filesystem which understands the SMB protocol. This is the protocol
-Windows for Workgroups, Windows NT or Lan Manager use to talk to each
-other. It was inspired by samba, the program by Andrew Tridgell that
-turns any unix site into a file server for DOS or Windows clients. See
-http://samba.org/samba for this interesting program suite and lots of
-more information on SMB and NetBIOS over TCP/IP. There you also find
-explanation for conceps like NetBIOS name or share.
+%Description -l de -n smbfs
+Dieses Paket enthält die nötigen Tools, um Dateisysteme von SMB-Servern
+zu mounten.
 
+%Description -l es -n smbfs
+este paqeute incluye las herramientas necesarias para montar sistemas de
+ficheros de servidores SMB.
+
+%Description -l fr -n smbfs
+Ce paquetage contient les outils nécessaires pour monter des systèmes
+de fichiers sur des serveurs SMB.
+
+%Description -l it -n smbfs
+Questo pacchetto contiene gli strumenti necessari per montare filesystem
+da server SMB.
+
+%Description -l pt -n smbfs
+Este pacote contém as ferramentas necessárias para montar sistema de
+ficheiros de servidores SMB.
 
 %Description -n swat
-swat allows a Samba administrator to configure the complex smb.conf
-file via a Web browser. In addition, a swat configuration page has
-help links to all the configurable options in the smb.conf file
-allowing an administrator to easily look up the effects of any change.
+SWAT allows a Samba administrator to configure the complex smb.conf
+file via a Web browser.  It also provides links to all the configurable
+options in the smb.conf file allowing an administrator to easily look
+up the effects of any change.
+
+%Description -l de -n swat
+Mit SWAT kann ein Samba-Administrator die komplexe smb.conf
+Datei mit Hilfe eines Web-Browsers konfigurieren.  Es stellt auch Links zu
+allen konfigurierbaren Optionen in der smb.conf Datei bereit, wodurch ein
+Administrator die Auswirkungen einer Änderung leicht nachvollziehen kann.
+
+%Description -l es -n swat
+SWAT permite a un administrador de Samba configurar el complejo fichero
+smb.conf mediante una navegador web. También proporciona enlaces a todas las
+opciones configurables en el fichero smb.conf, permitiendo al administrador
+comprobar fácilmente los efectos de cualquier cambio.
+
+%Description -l fr -n swat
+SWAT permet à un administrateur Samba de configurer le fichier smb.conf
+complexe via un navigateur Web. Il fournit également des liens d'aide pour
+toutes les options configurables dans le fichier smb.conf permettant à un
+administrateur de consulter aisément les effets d'une modification.
+
+%Description -l it -n swat
+SWAT permette ad un amministratore Samba di configurare il complesso file
+smb.conf attraverso un browser Web. SWAT ha anche dei link di aiuto per
+tutte le opzioni di configurazione del file smb.conf.
+
+%Description -l pt -n swat
+O SWAT permite a um administrador de Samba configurar o complexo ficheiro
+smb.conf através de uma interface Web. Fornece também referências para
+todas as opções configuraveis no smb.conf, permitindo a um admnistrador
+verificar rapidamente o efeite de qualquer alteração.
+
+%Description -n libsmbclient
+SMB Client Library allows for POSIX like SMB client calls providing developers
+a clean and stable API for SMB client application development.
 
 
 %Prep
@@ -153,6 +225,7 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--prefix='$(DESTDIR)/usr' \
 	--localstatedir='$(DESTDIR)/var' \
 	--libdir='$(DESTDIR)%{EtcSamba}' \
+	--sbindir='$(DESTDIR)/usr/sbin' \
 	--with-privatedir='$(LIBDIR)' \
 	--with-lockdir='$(DESTDIR)/var/lock/samba.d' \
 	--with-swatdir='$(DESTDIR)/usr/share/swat' \
@@ -168,17 +241,17 @@ CFLAGS="$RPM_OPT_FLAGS" LDFLAGS="-s" ./configure \
 	--with-syslog \
 	--with-utmp \
 	--with-netatalk \
+	--without-smbwrapper \
+	--with-libsmbclient \
+	--with-ldapsam \
 	--with-sambabook=$(DESTDIR)/usr/share/swat/using_samba
 
 # Temp disabled - add later - JHT
 #	--with-pam_smbpass \
-#	--without-smbwrapper \
-#	--with-ldapsam \
-#	--with-nisplussam \
 #	--with-nisplus-home \
 #	--with-acl-support \
 
-make all
+make all nsswitch/libnss_wins.so torture
 
 
 %Install
@@ -186,23 +259,37 @@ make all
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons}
+mkdir -p $DESTDIR%{EtcSamba}/codepages/src
+mkdir -p $DESTDIR/etc/skel/Samba
+mkdir -p $DESTDIR/home/samba
+mkdir -p $DESTDIR/lib/security
+mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
+mkdir -p $DESTDIR%{NKinetdir}
+mkdir -p $DESTDIR/{sbin,bin,usr/{sbin,bin}}
+mkdir -p $DESTDIR/%{SVIdir}
+mkdir -p $DESTDIR/usr/include
+mkdir -p $DESTDIR/usr/share/samba/codepages/src
+mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
-mkdir -p $DESTDIR/usr/{share,swat/using_samba}
-mkdir -p $DESTDIR/home/samba $DESTDIR%{EtcSamba}/codepages/src $DESTDIR/sbin
 
-make -C source  install
 
 strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
-mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
+#mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 
 #cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
 
 # Install the nsswitch library extension file
 cp -p source/nsswitch/libnss_wins.so $DESTDIR/lib
+cp -p source/nsswitch/pam_winbind.so $DESTDIR/lib/security
 # Make link for wins resolver
-cd $DESTDIR/lib
-ln -s libnss_wins.so libnss_wins.so.2
-cd $RPM_BUILD_DIR
+( cd $DESTDIR/lib; ln -s libnss_wins.so libnss_wins.so.2; cd $RPM_BUILD_DIR )
+
+# Add libsmbclient support stuff
+install -m 755 source/bin/libsmbclient.so $DESTDIR/usr/lib
+install -m 755 source/bin/libsmbclient.a $DESTDIR/usr/lib
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0
+ln -s libsmbclient.so $DESTDIR/usr/lib/libsmbclient.so.0.1
+install -m 644 source/include/libsmbclient.h $DESTDIR/usr/include
 
 cp -p $VVS/samba.init $DESTDIR/etc/rc.d/init.d/samba
 ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
@@ -210,27 +297,36 @@ ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 #cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
-cp -p $VVS/smbprint $DESTDIR/usr/bin
-cp -p $VVS/smbadduser.perl $DESTDIR/usr/sbin/smbadduser
-cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/sbin/make_smbpasswd
-cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/sbin/convertsmbpasswd
-cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/sbin/updatesmbpasswd
+#cp -p $VVS/smbprint $DESTDIR/usr/bin
+#cp -p $VVS/smbadduser.perl $DESTDIR/usr/sbin/smbadduser
+#cp -p $VVS/make_smbpasswd.perl $DESTDIR/usr/sbin/make_smbpasswd
+#cp -p $VVS/convertsmbpasswd.perl $DESTDIR/usr/sbin/convertsmbpasswd
+#cp -p $VVS/updatesmbpasswd.perl $DESTDIR/usr/sbin/updatesmbpasswd
 cp -p $VVS/findsmb $DESTDIR/usr/sbin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
 
-for f in testparm testprns; do
-  ln -s $f $DESTDIR/usr/bin/smb$f
-  ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
-done
-ln -s make_smbcodepage  $DESTDIR/usr/sbin/mksmbcodepage
-ln -s make_smbpasswd $DESTDIR/usr/sbin/mksmbpasswd
-ln -sf convert_smbpasswd $DESTDIR/usr/sbin/convertsmbpasswd
+#for f in testparm testprns; do
+#  ln -s $f $DESTDIR/usr/bin/smb$f
+#  ln -s $f.1 $DESTDIR/usr/man/man1/smb$f.1
+#done
+#ln -s make_smbcodepage  $DESTDIR/usr/sbin/mksmbcodepage
+#ln -s make_smbpasswd $DESTDIR/usr/sbin/mksmbpasswd
+#ln -sf convert_smbpasswd $DESTDIR/usr/sbin/convertsmbpasswd
 
 cat <<-'EoH' > $DESTDIR%{EtcSamba}/lmhosts
 	127.0.0.1 localhost
 EoH
+
+# lsb has new way of inetd configuration
+cat <<EoI >$DESTDIR%{NKinetdir}/swat
+swat    stream  tcp     nowait.400 root /usr/sbin/tcpd  swat
+EoI
+
+pushd $DESTDIR/usr/sbin
+rm -f *.so
+popd
 
 
 DOCD="$DESTDIR/%{_defaultdocdir}/samba-%{Version}"; mkdir -p $DOCD
@@ -242,28 +338,59 @@ mv $DOCD/docs/htmldocs/wfw_slip.htm $DOCD/docs/wfw_slip.html
 
 rm -rf $DOCD/docs/{htmldocs,manpages,yodldocs}
 rm -rf $DOCD/examples/{svr4-startup,printing}
+rm -rf $DOCD/CVS $DOCD/*/CVS $DOCD/*/*/CVS $DOCD/*/*/*/CVS
 
 cp -p swat/README $DOCD/README.swat
 
+# This is the O'Reily Samba Book - on-line
+for i in docs/htmldocs/using_samba/*.html
+do
+install -m644 $i $DESTDIR/usr/share/swat/using_samba
+done
+for i in docs/htmldocs/using_samba/figs/*.gif
+do
+install -m644 $i $DESTDIR/usr/share/swat/using_samba/figs
+done
+for i in docs/htmldocs/using_samba/gifs/*.gif
+do
+install -m644 $i $DESTDIR/usr/share/swat/using_samba/gifs
+done
+
 %{fixUP} -vT $DOCD/examples -e 's:/usr/local/bin/:/usr/bin/:g;'
+%{fixUP} -T $DESTDIR/%{SVIdir} -e 's:\@SVIdir\@:%{SVIdir}:'
+%{fixUP} -vT $DOCD/examples -e 's:/usr/local/bin/:/usr/bin/:g;'
+%{fixUP} -vT $DESTDIR/%{EtcSamba} -e 's:\@samba_home\@:%{LSBservedir}:'
 
 %{fixManPages}
 
 %{mkLists} -c samba
 cat << 'EOF' | %{mkLists} -d samba
-^/(etc|var|home)			config-IGNORED
-swat					swat
-/usr/doc/samba-[^/]+/$			base
-/doc/samba- 				doc
+Samba                                   base
+/lib/$                                  base
+%{LSBservedir}                          config-IGNORED
+^/(etc|var|home|tmp)                    config-IGNORED
+swat                                    swat
+%{_defaultdocdir}/samba-[^/]+/$         base
+%{_defaultdocdir}/samba-                doc
+tmp                                     IGNORED
+man                                     IGNORED
+/src/$                                  IGNORED
+/usr/private/$                          IGNORED
 @default@
 EOF
 cat << 'EOF' | %{mkLists} -f -a samba
-^/etc					config-IGNORED
-/doc/samba-[^/]+/(COPYING|README$)	base
-/doc/samba- 				doc
-smb(mount|mnt|umount)			smbfs
-mount.smbfs				smbfs
-swat					swat
+\.old$                                  IGNORED
+Samba/README.txt                        base
+^/etc                                   config-IGNORED
+%{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
+libnss_*                                base
+pam_*                                   base
+%{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
+%{_defaultdocdir}/samba-                doc
+smb(mount|mnt|umount)                   smbfs
+mount.smbfs                             smbfs
+swat                                    swat
+libsmbclient*                           libsmbclient
 @default@
 EOF
 
@@ -273,45 +400,55 @@ EOF
 
 
 %Post
-lisa --SysV-init install samba S91 3:4:5 K09 0:1:2:6
-
+/usr/lib/LSB/init-install %{Name}
 
 %Post -n swat
-lisa --inetd install swat stream tcp nowait.400 root /usr/sbin/tcpd swat
+%{NKinetdReload}
 perl -pi -e '$s=1 if /^swat/;
   print "swat:ALL EXCEPT 127.0.0.1\n" if eof && ! $s' /etc/hosts.deny
 
 
 %PostUn
-lisa --SysV-init remove samba $1
+test "$1" = "0" || exit 0
+/usr/lib/LSB/init-remove %{Name}
 # We want to remove the browse.dat and wins.dat files so they can not
 # interfer with a new version of samba!
-rm -f /var/lock/samba/{browse,wins}.dat 
+rm -f /var/lock/samba/browse.dat
+rm -f /var/lock/samba/{brlock,connections,locking,messages}.tdb
+if [ -e /var/lock/samba.d/namelist.debug ]; then
+        rm -f /var/lock/samba.d/namelist.debug
+fi
+rm -f /var/lock/samba/unexpected.tdb
+rm -f /var/lock/samba/{smbd,nmbd}.pid
+
+# Note: We MUST keep:
+#       winbindd_*, sshare_info*, printing*, ntdrivers*
 
 
 %PostUn -n swat
-lisa --inetd disable swat $1
+#$no lsb: lisa --inetd disable swat $1
+test "$1" = "0" || exit 0
+%{SVIdir}/inet reload
 [ -x /usr/sbin/swat ]||perl -ni -e '/^swat\s*\:/||print' /etc/hosts.deny
 
 
 %Files -f files-samba-base
 %defattr(-,root,root)
-%config %attr(755,root,root) /etc/rc.d/init.d/samba
+%config %attr(0755,root,root) %{SVIdir}/samba
 %config %attr(644,root,root) /etc/sysconfig/daemons/samba
 %config %attr(644,root,root) /etc/pam.d/samba
 %config %attr(644,root,root) /etc/logrotate.d/samba
 %config %attr(-,root,root) %{EtcSamba}
-%config %attr(755,root,root) /home/samba
-
 %dir %attr(755,root,root) /var/lock/samba.d
 %dir %attr(755,root,root) /var/log/samba.d
 %dir %attr(1777,root,root) /var/spool/samba
-#%dir %attr(775,root,nobody) /home/samba
-
+%dir %attr(755,root,root) %{LSBservedir}
+%dir %attr(755,root,root) %{LSBservedir}/netlogon
+%dir %attr(755,root,root) %{LSBservedir}/profiles
+%dir %attr(755,root,root) %{LSBservedir}/Public
 
 %Files doc -f files-samba-doc
 %defattr(-,root,root)
-
 
 %Files -n smbfs -f files-samba-smbfs
 %defattr(-,root,root)
@@ -319,7 +456,10 @@ lisa --inetd disable swat $1
 
 %Files -n swat  -f files-samba-swat
 %defattr(-,root,root)
+%config %attr(644,root,root) %{NKinetdir}/swat
 
+%Files -n libsmbclient -f files-samba-libsmbclient
+%defattr(-,root,root)
 
 %ChangeLog
 * Mon Mar 11 2002 John H Terpstra <jht@samba.org>
