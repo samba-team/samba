@@ -658,7 +658,9 @@ void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n,
 	init_buf_unistr2(&q_n->uni_srv_name, &q_n->ptr_srv_name, srv_name);
 
 	q_n->ctr.info_level = q_n->ctr.switch_value = info_level;
-	q_n->ctr.ptr_share_info = 0;
+	q_n->ctr.ptr_share_info = 1;
+	q_n->ctr.num_entries = 0;
+	q_n->ctr.ptr_entries = 0;
 	q_n->preferred_len = preferred_len;
 
 	memcpy(&q_n->enum_hnd, hnd, sizeof(*hnd));
