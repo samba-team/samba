@@ -103,9 +103,8 @@
 
 <refsect1>
 	<title>SEE ALSO</title>
-	<para><ulink url="nmbd.8.html"><command>nmbd(8)</command></ulink>, 
-	<ulink url="samba.7.html">samba(7)</ulink>, and	<ulink 
-	url="smb.conf.5.html">smb.conf(5)</ulink>
+	<para><ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
+	and <ulink url="samba.7.html">samba(7)</ulink>.
 	</para>
 </refsect1>
 
