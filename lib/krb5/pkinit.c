@@ -248,6 +248,24 @@ _krb5_pk_create_sign(krb5_context context,
 	ret = ENOMEM;
 	goto out;
     }
+
+    /* Fill in NULL as argument */ 
+    signer_info->digestAlgorithm.parameters = 
+	malloc(sizeof(*signer_info->digestAlgorithm.parameters));
+    if (signer_info->digestAlgorithm.parameters == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+    signer_info->digestAlgorithm.parameters->data = malloc(2);
+    if (signer_info->digestAlgorithm.parameters->data == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	ret = ENOMEM;
+	goto out;
+    }
+    memcpy(signer_info->digestAlgorithm.parameters->data, "\x05\x00", 2);
+    signer_info->digestAlgorithm.parameters->length = 2;
+
     signer_info->signedAttrs = NULL;
     signer_info->unsignedAttrs = NULL;
 
@@ -1823,6 +1841,7 @@ krb5_get_init_creds_opt_set_pkinit(krb5_context context,
 	    krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
 	}
+	/* XXX generate a new key for each request ? */
 	if (DH_generate_key(dh) != 1) {
 	    krb5_get_init_creds_opt_free_pkinit(opt);
 	    return ENOMEM;
