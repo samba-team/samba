@@ -85,7 +85,6 @@ install -m644 %{head_build_dir}/docs/manpages/nmbd.8 $RPM_BUILD_ROOT%{prefix}/ma
 install -m644 %{head_build_dir}/docs/manpages/winbindd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/swat.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/docs/manpages/smbpasswd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
-install -m644 %{head_build_dir}/docs/manpages/winbindd.8 $RPM_BUILD_ROOT%{prefix}/man/man8
 install -m644 %{head_build_dir}/packaging/RedHat/smb.conf $RPM_BUILD_ROOT/%{prefix}/lib/smb.conf
 
 %post
