@@ -394,24 +394,25 @@ static int delete_machine_entry (struct pdb_context *in, char *machinename)
 
 int main (int argc, char **argv)
 {
-	struct pdb_context *in;
-	BOOL list_users = False;
-	BOOL verbose = False;
-	BOOL spstyle = False;
-	BOOL setparms = False;
-	BOOL machine = False;
-	BOOL add_user = False;
-	BOOL delete_user = False;
-	BOOL import = False;
+	static BOOL list_users = False;
+	static BOOL verbose = False;
+	static BOOL spstyle = False;
+	static BOOL setparms = False;
+	static BOOL machine = False;
+	static BOOL add_user = False;
+	static BOOL delete_user = False;
+	static BOOL import = False;
 	int opt;
-	char *full_name = NULL;
-	char *user_name = NULL;
-	char *home_dir = NULL;
-	char *home_drive = NULL;
-	char *backend_in = NULL;
-	char *backend_out = NULL;
-	char *logon_script = NULL;
-	char *profile_path = NULL;
+	static char *full_name = NULL;
+	static char *user_name = NULL;
+	static char *home_dir = NULL;
+	static char *home_drive = NULL;
+	static char *backend_in = NULL;
+	static char *backend_out = NULL;
+	static char *logon_script = NULL;
+	static char *profile_path = NULL;
+
+	struct pdb_context *in;
 	poptContext pc;
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -432,14 +433,14 @@ int main (int argc, char **argv)
 		{"debuglevel",'D',POPT_ARG_INT,&DEBUGLEVEL,0,"set debuglevel",NULL},
 		{0,0,0,0}
 	};
-	
+
 	DEBUGLEVEL = 1;
 	setup_logging("pdbedit", True);
 	AllowDebugChange = False;
-	
+
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
-			dyn_CONFIGFILE);
+				dyn_CONFIGFILE);
 		exit(1);
 	}
 
@@ -456,7 +457,7 @@ int main (int argc, char **argv)
 		fprintf (stderr, "Incompatible options on command line!\n");
 		exit(1);
 	}
-	
+
 
 	if(!NT_STATUS_IS_OK(make_pdb_context_name(&in, backend_in))){
 		fprintf(stderr, "Can't initialize %s.\n", backend_in);
@@ -471,7 +472,9 @@ int main (int argc, char **argv)
 		if (machine)
 			return new_machine (in, user_name);
 		else
-			return new_user (in, user_name, full_name, home_dir, home_drive, logon_script, profile_path);
+			return new_user (in, user_name, full_name, home_dir, 
+					 home_drive, logon_script, 
+					 profile_path);
 	}
 
 	if (delete_user) {
@@ -484,16 +487,17 @@ int main (int argc, char **argv)
 		else
 			return delete_user_entry (in, user_name);
 	}
-	
+
 	if (user_name) {
 		if (setparms)
-			return set_user_info (in,	user_name, full_name,
-						home_dir,
-						home_drive,
-						logon_script,
-						profile_path);
+			return set_user_info (in, user_name, full_name,
+					      home_dir,
+					      home_drive,
+					      logon_script,
+					      profile_path);
 		else
-			return print_user_info (in, user_name, verbose, spstyle);
+			return print_user_info (in, user_name, verbose, 
+						spstyle);
 	}
 
 	if (list_users) 
@@ -501,8 +505,10 @@ int main (int argc, char **argv)
 
 	if (backend_out)
 		return export_database(in, backend_out);
-	
+
 	poptPrintHelp(pc, stderr, 0);
-	
+
 	return 1;
 }
+
+
