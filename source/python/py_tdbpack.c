@@ -23,9 +23,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-
-
 #include "Python.h"
+
+/* This module is supposed to be standalone, however for portability
+   it would be good to use the FUNCTION_MACRO preprocessor define. */
+
+#ifdef HAVE_FUNCTION_MACRO
+#define FUNCTION_MACRO  (__FUNCTION__)
+#else
+#define FUNCTION_MACRO  (__FILE__)
+#endif
 
 static PyObject * pytdbpack_number(char ch, PyObject *val_iter, PyObject *packed_list);
 static PyObject * pytdbpack_str(char ch,
@@ -247,7 +254,7 @@ pytdbpack_data(const char *format_str,
 		default:
 			PyErr_Format(PyExc_ValueError,
 				     "%s: format character '%c' is not supported",
-				     __FUNCTION__, ch);
+				     FUNCTION_MACRO, ch);
 			return NULL;
 		}
 	}
@@ -477,7 +484,7 @@ pytdbunpack(PyObject *self,
 		if (i == 0) {
 			PyErr_Format(PyExc_ValueError,
 				     "%s: '$' may not be first character in format",
-				     __FUNCTION__);
+				     FUNCTION_MACRO);
 			return NULL;
 		} 
 		while (packed_len > 0)
@@ -511,7 +518,7 @@ static void
 pytdbunpack_err_too_short(void)
 {
 	PyErr_Format(PyExc_IndexError,
-		     __FUNCTION__ ": data too short for unpack format");
+		     "%s: data too short for unpack format", FUNCTION_MACRO);
 }
 
 
@@ -598,7 +605,7 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (slen < 0) { /* surely you jest */
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": buffer seems to have negative length");
+			     "%s: buffer seems to have negative length", FUNCTION_MACRO);
 		return NULL;
 	}
 
@@ -608,8 +615,8 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
 
 	if (*plen < slen) {
 		PyErr_Format(PyExc_IndexError,
-			     __FUNCTION__ ": not enough data to unpack buffer: "
-			     "need %d bytes, have %d",
+			     "%s: not enough data to unpack buffer: "
+			     "need %d bytes, have %d", FUNCTION_MACRO,
 			     (int) slen, *plen);
 		return NULL;
 	}
@@ -647,38 +654,43 @@ pytdbunpack_buffer(char **pbuf, int *plen, PyObject *val_list)
    Returns a reference to None, or NULL for failure.
 */
 static PyObject *pytdbunpack_item(char ch,
-				       char **pbuf,
-				       int *plen,
-				       PyObject *val_list)
+				  char **pbuf,
+				  int *plen,
+				  PyObject *val_list)
 {
-	PyObject *result;
+	PyObject *unpacked;
 	
 	if (ch == 'w') {	/* 16-bit int */
-		result = pytdbunpack_int16(pbuf, plen);
+		unpacked = pytdbunpack_int16(pbuf, plen);
 	}
 	else if (ch == 'd' || ch == 'p') { /* 32-bit int */
 		/* pointers can just come through as integers */
-		result = pytdbunpack_uint32(pbuf, plen);
+		unpacked = pytdbunpack_uint32(pbuf, plen);
 	}
 	else if (ch == 'f' || ch == 'P') { /* nul-term string  */
-		result = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
+		unpacked = pytdbunpack_string(pbuf, plen, pytdb_unix_encoding);
 	}
 	else if (ch == 'B') { /* length, buffer */
 		return pytdbunpack_buffer(pbuf, plen, val_list);
 	}
 	else {
 		PyErr_Format(PyExc_ValueError,
-			     __FUNCTION__ ": format character '%c' is not supported",
-			     ch);
+			     "%s: format character '%c' is not supported", 
+                             FUNCTION_MACRO, ch);
 		
 		return NULL;
 	}
 
 	/* otherwise OK */
-	if (!result)
+	if (!unpacked)
 		return NULL;
-	if (PyList_Append(val_list, result) == -1)
-		return NULL;
+
+	if (PyList_Append(val_list, unpacked) == -1)
+		val_list = NULL;
+
+	/* PyList_Append takes a new reference to the inserted object.
+	   Therefore, we no longer need the original reference. */
+	Py_DECREF(unpacked);
 	
 	return val_list;
 }
