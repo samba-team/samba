@@ -1177,6 +1177,8 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 			fstrcpy(workgroup, lp_workgroup());
 		}
 
+		dos_to_unix(workgroup, True);
+
 		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host,
 				      workgroup, &ip)) {
 			report(out_hnd, "ERROR: Failed to find the PDC\n");
