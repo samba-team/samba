@@ -1,5 +1,4 @@
-#include "krb5_locl.h"
-#include <krb5_error.h>
+#include <krb5_locl.h>
 
 RCSID("$Id$");
 

@@ -1,3 +1,21 @@
+Wed Dec 18 00:53:55 1996  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kuser/kinit.c: Guess principal.
+
+	* lib/krb5/error/compile_et.awk: Don't include krb5.h. Fix some
+ 	warnings.
+
+	* lib/krb5/error/asn1_err.et: Add ASN.1 error messages.
+
+	* lib/krb5/mk_req.c: Get client from cache.
+
+	* lib/krb5/cache.c: Add better error checking some useful return
+ 	values.
+
+	* lib/krb5/krb5.h: Fix krb5_auth_context.
+
+	* lib/asn1/der.h: Make krb5_data compatible with krb5.h
+
 Tue Dec 17 01:32:36 1996  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/error: Add primitive error library.
