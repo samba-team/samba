@@ -561,7 +561,9 @@ void cgi_setup(char *rootdir, int auth_required)
 
 #if CGI_LOGGING
 	f = fopen("/tmp/cgi.log", "a");
-	if (f) fprintf(f,"\n[Date: %s]\n", http_timestring(time(NULL)));
+	if (f) fprintf(f,"\n[Date: %s   %s (%s)]\n", 
+		       http_timestring(time(NULL)),
+		       client_name(1), client_addr(1));
 #endif
 
 	/* we are a mini-web server. We need to read the request from stdin
