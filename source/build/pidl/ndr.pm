@@ -11,7 +11,7 @@ use strict;
 use needed;
 
 # list of known types
-my %typedefs;
+our %typedefs;
 
 my %type_alignments = 
     (
@@ -55,9 +55,11 @@ sub is_scalar_type($)
 {
     my $type = shift;
 
-	return 1 if (defined($typedefs{$type}) and $typedefs{$type}->{DATA}->{TYPE} eq "SCALAR");
-    return 1 if (util::is_enum($type));
-	return 1 if (util::is_bitmap($type));
+	if (my $dt = $typedefs{$type}->{DATA}->{TYPE}) {
+		return 1 if ($dt eq "SCALAR");
+		return 1 if ($dt eq "ENUM");
+		return 1 if ($dt eq "BITMAP");
+	}
 
     return 0;
 }
@@ -355,7 +357,7 @@ sub align_type
 {
 	my $e = shift;
 
-	unless (defined($typedefs{$e})) {
+	unless (defined($typedefs{$e}) && defined($typedefs{$e}->{DATA}->{TYPE})) {
 	    # it must be an external type - all we can do is guess 
 		# print "Warning: assuming alignment of unknown type '$e' is 4\n";
 	    return 4;
@@ -370,9 +372,9 @@ sub align_type
 	} elsif($dt->{TYPE} eq "UNION") {
 		$dt->{ALIGN} = struct_alignment($dt);
 	} elsif ($dt->{TYPE} eq "ENUM") {
-	   	$dt->{ALIGN} = align_type(util::enum_type_fn(util::get_enum($e)));
+	   	$dt->{ALIGN} = align_type(util::enum_type_fn($typedefs{$e}->{DATA}));
 	} elsif ($dt->{TYPE} eq "BITMAP") {
-		$dt->{ALIGN} = align_type(util::bitmap_type_fn(util::get_bitmap($e)));
+		$dt->{ALIGN} = align_type(util::bitmap_type_fn($typedefs{$e}->{DATA}));
 	} 
 
 	if (not defined($dt->{ALIGN})) {
@@ -517,7 +519,6 @@ sub ParseArrayPull($$$)
 	}
 }
 
-
 #####################################################################
 # parse scalars in a structure element
 sub ParseElementPushScalar($$$)
@@ -606,9 +607,9 @@ sub ParseElementPullSwitch($$$$)
 		my $e2 = find_sibling($e, $switch);
 		my $type_decl = util::map_type($e2->{TYPE});
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
-		if (util::is_enum($e2->{TYPE})) {
+		if ($typedefs{$e2->{TYPE}}->{DATA}->{TYPE} eq "ENUM") {
 			$type_decl = util::enum_type_decl($e2);
-		} elsif (util::is_bitmap($e2->{TYPE})) {
+		} elsif ($typedefs{$e2->{TYPE}}->{DATA}->{TYPE} eq "BITMAP") {
 			$type_decl = util::bitmap_type_decl($e2);
 		}
 		pidl "\t\t$type_decl _level;\n";
@@ -1942,7 +1943,7 @@ sub LoadInterface($)
 	}
 
 	foreach my $d (@{$x->{DATA}}) {
-		if ($d->{TYPE} eq "DECLARE" or $d->{TYPE} eq "TYPEDEF") {
+		if (($d->{TYPE} eq "DECLARE") or ($d->{TYPE} eq "TYPEDEF")) {
 		    $typedefs{$d->{NAME}} = $d;
 			if ($d->{DATA}->{TYPE} eq "STRUCT" or $d->{DATA}->{TYPE} eq "UNION") {
 				CheckPointerTypes($d->{DATA}, $x->{PROPERTIES}->{pointer_default});
@@ -1952,6 +1953,33 @@ sub LoadInterface($)
 			CheckPointerTypes($d, 
 				$x->{PROPERTIES}->{pointer_default}  # MIDL defaults to "ref"
 			);
+		}
+	}
+}
+
+# Add ORPC specific bits to an interface.
+sub InterfaceORPC($)
+{
+	my $x = shift;	
+	# Add [in] ORPCTHIS *this, [out] ORPCTHAT *that
+	# for 'object' interfaces
+	if (util::has_property($x, "object")) {
+		foreach my $e (@{$x->{DATA}}) {
+			if($e->{TYPE} eq "FUNCTION") {
+				$e->{PROPERTIES}->{object} = 1;
+				unshift(@{$e->{ELEMENTS}}, 
+                       { 'NAME' => 'ORPCthis',
+                         'POINTERS' => 0,
+                         'PROPERTIES' => { 'in' => '1' },
+                         'TYPE' => 'ORPCTHIS'
+                       });
+				unshift(@{$e->{ELEMENTS}},
+                       { 'NAME' => 'ORPCthat',
+                         'POINTERS' => 0,
+                         'PROPERTIES' => { 'out' => '1' },
+					  'TYPE' => 'ORPCTHAT'
+                       });
+			}
 		}
 	}
 }
