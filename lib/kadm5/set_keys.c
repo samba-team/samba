@@ -35,271 +35,282 @@
 
 RCSID("$Id$");
 
-/*
- * the known and used DES enctypes
+/* 
+ * for each entry in `default_keys' try to parse it as a sequence
+ * of etype:salttype:salt, syntax of this if something like:
+ * [(des|des3|etype):](pw-salt|afs3)[:string], if etype is omitted it
+ *      means all etypes, and if string is omitted is means the default
+ * string (for that principal). Additional special values:
+ *	v5 == pw-salt, and
+ *	v4 == des:pw-salt:
+ *	afs or afs3 == des:afs3-salt
  */
 
-static krb5_enctype des_types[] = { ETYPE_DES_CBC_CRC,
- 				    ETYPE_DES_CBC_MD4,
- 				    ETYPE_DES_CBC_MD5 };
-static unsigned n_des_types = sizeof(des_types) / sizeof(des_types[0]);
-
 static krb5_error_code
-make_keys(krb5_context context, krb5_principal principal, const char *password,
-	  Key **keys_ret, size_t *num_keys_ret)
+parse_key_set(krb5_context context, const char *key, 
+	      krb5_enctype **enctypes, size_t *num_enctypes, 
+	      krb5_salt *salt, krb5_principal principal)
 {
+    const char *p;
+    char buf[3][256];
+    int num_buf = 0;
+    int i;
+    static krb5_enctype e; /* XXX */
+    krb5_error_code ret;
+    
+    /* the 3 DES types must be first */
     krb5_enctype all_etypes[] = { 
+	ETYPE_DES_CBC_MD5,
+	ETYPE_DES_CBC_MD4,
+	ETYPE_DES_CBC_CRC,
 #ifdef ENABLE_AES
 	ETYPE_AES256_CTS_HMAC_SHA1_96,
 #endif
-	ETYPE_DES3_CBC_SHA1,
-	ETYPE_DES_CBC_MD5,
-	ETYPE_DES_CBC_MD4,
-	ETYPE_DES_CBC_CRC
+	ETYPE_ARCFOUR_HMAC_MD5,
+	ETYPE_DES3_CBC_SHA1
     };
 
-    unsigned n_all_etypes = sizeof(all_etypes) / sizeof(all_etypes[0]);
+    p = key;
 
-    krb5_enctype e;
+    *enctypes = NULL;
+    *num_enctypes = 0;
 
-    krb5_error_code ret = 0;
+    /* split p in a list of :-separated strings */
+    for(num_buf = 0; num_buf < 3; num_buf++)
+	if(strsep_copy(&p, ":", buf[num_buf], sizeof(buf[num_buf])) == -1)
+	    break;
+
+    salt->saltvalue.data = NULL;
+    salt->saltvalue.length = 0;
+
+    for(i = 0; i < num_buf; i++) {
+	if(*enctypes == NULL) {
+	    /* this might be a etype specifier */
+	    /* XXX there should be a string_to_etypes handling
+	       special cases like `des' and `all' */
+	    if(strcmp(buf[i], "des") == 0) {
+		*enctypes = all_etypes;
+		*num_enctypes = 3;
+		continue;
+	    } else if(strcmp(buf[i], "des3") == 0) {
+		e = ETYPE_DES3_CBC_SHA1;
+		*enctypes = &e;
+		*num_enctypes = 1;
+		continue;
+	    } else {
+		ret = krb5_string_to_enctype(context, buf[i], &e);
+		if (ret == 0) {
+		    *enctypes = &e;
+		    *num_enctypes = 1;
+		    continue;
+		}
+	    }
+	}
+
+	if(salt->salttype == 0) {
+	    /* interpret string as a salt specifier, if no etype
+	       is set, this sets default values */
+	    /* XXX should perhaps use string_to_salttype, but that
+	       interface sucks */
+	    if(strcmp(buf[i], "pw-salt") == 0) {
+		if(*enctypes == NULL) {
+		    *enctypes = all_etypes;
+		    *num_enctypes = sizeof(all_etypes)/sizeof(all_etypes[0]);
+		}
+		salt->salttype = KRB5_PW_SALT;
+	    } else if(strcmp(buf[i], "afs3-salt") == 0) {
+		if(*enctypes == NULL) {
+		    *enctypes = all_etypes;
+		    *num_enctypes = 3;
+		}
+		salt->salttype = KRB5_AFS3_SALT;
+	    }
+	} else {
+	    /* if there is a final string, use it as the string to
+	       salt with, this is mostly useful with null salt for
+	       v4 compat, and a cell name for afs compat */
+	    salt->saltvalue.data = buf[i];
+	    salt->saltvalue.length = strlen(buf[i]);
+	}
+    }
+    
+    if(*enctypes == NULL || salt->salttype == 0) {
+	krb5_set_error_string(context, "bad value for default_keys `%s'", key);
+	return EINVAL;
+    }
+    
+    /* if no salt was specified make up default salt */
+    if(salt->saltvalue.data == NULL) {
+	if(salt->salttype == KRB5_PW_SALT)
+	    ret = krb5_get_pw_salt(context, principal, salt);
+	else if(salt->salttype == KRB5_AFS3_SALT) {
+	    krb5_realm *realm = krb5_princ_realm(context, principal);
+	    salt->saltvalue.data = strdup(*realm);
+	    if(salt->saltvalue.data == NULL) {
+		krb5_set_error_string(context, "out of memory while "
+				      "parsing salt specifiers");
+		return ENOMEM;
+	    }
+	    strlwr(salt->saltvalue.data);
+	    salt->saltvalue.length = strlen(*realm);
+	}
+    }
+
+    return 0;
+}
+
+static kadm5_ret_t
+add_enctype_to_key_set(Key **key_set, size_t *nkeyset, 
+		       krb5_enctype enctype, krb5_salt *salt)
+{
+    kadm5_ret_t ret;
+    Key key, *tmp;
+
+    memset(&key, 0, sizeof(key));
+
+    tmp = realloc(*key_set, (*nkeyset + 1) * sizeof((*key_set)[0]));
+    if (tmp == NULL)
+	return ENOMEM;
+    
+    *key_set = tmp;
+
+    key.key.keytype = enctype;
+    key.key.keyvalue.length = 0;
+    key.key.keyvalue.data = NULL;
+    
+    if (salt) {
+	key.salt = malloc(sizeof(*key.salt));
+	if (key.salt == NULL) {
+	    free_Key(&key);
+	    return ENOMEM;
+	}
+	
+	key.salt->type = salt->salttype;
+	krb5_data_zero (&key.salt->salt);
+	
+	ret = krb5_data_copy(&key.salt->salt, 
+			     salt->saltvalue.data, 
+			     salt->saltvalue.length);
+	if (ret) {
+	    free_Key(&key);
+	    return ret;
+	}
+    } else
+	key.salt = NULL;
+    
+    (*key_set)[*nkeyset] = key;
+    
+    *nkeyset += 1;
+
+    return 0;
+}
+
+
+/*
+ * Generate the `key_set' from the [kadmin]default_keys statement. If
+ * `no_salt' is set, salt is not important (and will not be set) since
+ * its random keys that is going to be created.
+ */
+
+kadm5_ret_t
+_kadm5_generate_key_set(krb5_context context, krb5_principal principal,
+			Key **ret_key_set, size_t *nkeyset, int no_salt)
+{
     char **ktypes, **kp;
-
-    Key *keys = NULL, *tmp;
-    int num_keys = 0;
-    Key key;
-
-    int i;
-    char *v4_ktypes[] = { 
+    krb5_error_code ret;
+    Key *k, *key_set;
+    int i, j;
+    char *default_keytypes[] = {
+	"des:pw-salt",
 #ifdef ENABLE_AES
-	"aes256-cts-hmac-sha1-96",
+	"aes256-cts-hmac-sha1-96:pw-salt",
 #endif
-	"des3:pw-salt",
-	"v4",
-	NULL};
-
-    ktypes = krb5_config_get_strings(context, NULL, "kadmin", 
+	"des3-cbc-sha1:pw-salt",
+	"arcfour-hmac-md5:pw-salt",
+	NULL
+    };
+    
+    ktypes = krb5_config_get_strings(context, NULL, "kadmin",
 				     "default_keys", NULL);
+    if (ktypes == NULL)
+	ktypes = default_keytypes;
 
-    /* for each entry in `default_keys' try to parse it as a sequence
-       of etype:salttype:salt, syntax of this if something like:
-       [(des|des3|etype):](pw|afs3)[:string], if etype is omitted it
-       means all etypes, and if string is omitted is means the default
-       string (for that principal). Additional special values:
-       v5 == pw-salt, and
-       v4 == des:pw-salt:
-       afs or afs3 == des:afs3-salt
-    */
+    if (ktypes == NULL)
+	abort();
 
-    if (ktypes == NULL
-	&& krb5_config_get_bool (context, NULL, "kadmin",
-				 "use_v4_salt", NULL))
-	ktypes = v4_ktypes;
+    *ret_key_set = key_set = NULL;
+    *nkeyset = 0;
 
+    ret = 0;
+ 
     for(kp = ktypes; kp && *kp; kp++) {
-	krb5_enctype *etypes;
-	int num_etypes;
-	krb5_salt salt;
-	krb5_boolean salt_set;
-
 	const char *p;
-	char buf[3][256];
-	int num_buf = 0;
+	krb5_salt salt;
+	krb5_enctype *enctypes;
+	size_t num_enctypes;
 
 	p = *kp;
+	/* check alias */
 	if(strcmp(p, "v5") == 0)
 	    p = "pw-salt";
 	else if(strcmp(p, "v4") == 0)
 	    p = "des:pw-salt:";
 	else if(strcmp(p, "afs") == 0 || strcmp(p, "afs3") == 0)
 	    p = "des:afs3-salt";
-	
-	/* split p in a list of :-separated strings */
-	for(num_buf = 0; num_buf < 3; num_buf++)
-	    if(strsep_copy(&p, ":", buf[num_buf], sizeof(buf[num_buf])) == -1)
-		break;
 
-	etypes = NULL;
-	num_etypes = 0;
 	memset(&salt, 0, sizeof(salt));
-	salt_set = FALSE;
 
-	for(i = 0; i < num_buf; i++) {
-	    if(etypes == NULL) {
-		/* this might be a etype specifier */
-		/* XXX there should be a string_to_etypes handling
-                   special cases like `des' and `all' */
-		if(strcmp(buf[i], "des") == 0) {
-		    etypes = des_types;
-		    num_etypes = n_des_types;
-		    continue;
-		} else if(strcmp(buf[i], "des3") == 0) {
-		    e = ETYPE_DES3_CBC_SHA1;
-		    etypes = &e;
-		    num_etypes = 1;
-		    continue;
-		} else if(strcmp(buf[i], "aes") == 0) {
-		    e = ETYPE_AES256_CTS_HMAC_SHA1_96;
-		    etypes = &e;
-		    num_etypes = 1;
-		    continue;
-		} else {
-		    ret = krb5_string_to_enctype(context, buf[i], &e);
-		    if(ret == 0) {
-			etypes = &e;
-			num_etypes = 1;
-			continue;
-		    }
-		}
-	    }
-	    if(salt.salttype == 0) {
-		/* interpret string as a salt specifier, if no etype
-                   is set, this sets default values */
-		/* XXX should perhaps use string_to_salttype, but that
-                   interface sucks */
-		if(strcmp(buf[i], "pw-salt") == 0) {
-		    if(etypes == NULL) {
-			etypes = all_etypes;
-			num_etypes = n_all_etypes;
-		    }
-		    salt.salttype = KRB5_PW_SALT;
-		} else if(strcmp(buf[i], "afs3-salt") == 0) {
-		    if(etypes == NULL) {
-			etypes = des_types;
-			num_etypes = n_des_types;
-		    }
-		    salt.salttype = KRB5_AFS3_SALT;
-		}
-	    } else {
-		/* if there is a final string, use it as the string to
-                   salt with, this is mostly useful with null salt for
-                   v4 compat, and a cell name for afs compat */
-		salt.saltvalue.data = buf[i];
-		salt.saltvalue.length = strlen(buf[i]);
-		salt_set = TRUE;
-	    }
-	}
-
-	if(etypes == NULL || salt.salttype == 0) {	    
+	ret = parse_key_set(context, p,
+			    &enctypes, &num_enctypes, &salt, principal);
+	if (ret) {
 	    krb5_warnx(context, "bad value for default_keys `%s'", *kp);
 	    continue;
 	}
 
-	if(!salt_set) {
-	    /* make up default salt */
-	    if(salt.salttype == KRB5_PW_SALT)
-		ret = krb5_get_pw_salt(context, principal, &salt);
-	    else if(salt.salttype == KRB5_AFS3_SALT) {
-		krb5_realm *realm = krb5_princ_realm(context, principal);
-		salt.saltvalue.data = strdup(*realm);
-		if(salt.saltvalue.data == NULL) {
-		    krb5_set_error_string(context, "out of memory while "
-					  "parsinig salt specifiers");
-		    ret = ENOMEM;
+	for (i = 0; i < num_enctypes; i++) {
+	    /* find duplicates */
+	    for (j = 0; j < *nkeyset; j++) {
+
+		k = &key_set[j];
+
+		if (k->key.keytype == enctypes[i]) {
+		    if (no_salt)
+			break;
+		    if (k->salt == NULL && salt.salttype == KRB5_PW_SALT)
+			break;
+		    if (k->salt->type == salt.salttype &&
+			k->salt->salt.length == salt.saltvalue.length &&
+			memcmp(k->salt->salt.data, salt.saltvalue.data, 
+			       salt.saltvalue.length) == 0)
+			break;
+		}
+	    }
+	    /* not a duplicate, lets add it */
+	    if (j == *nkeyset) {
+		ret = add_enctype_to_key_set(&key_set, nkeyset, enctypes[i], 
+					     no_salt ? NULL : &salt);
+		if (ret)
 		    goto out;
-		}
-		strlwr(salt.saltvalue.data);
-		salt.saltvalue.length = strlen(*realm);
-		salt_set = 1;
 	    }
-	}
-	memset(&key, 0, sizeof(key));
-	for(i = 0; i < num_etypes; i++) {
-	    Key *k;
-	    for(k = keys; k < keys + num_keys; k++) {
-		if(k->key.keytype == etypes[i] &&
-		   ((k->salt != NULL && 
-		     k->salt->type == salt.salttype &&
-		     k->salt->salt.length == salt.saltvalue.length &&
-		     memcmp(k->salt->salt.data, salt.saltvalue.data, 
-			    salt.saltvalue.length) == 0) ||
-		    (k->salt == NULL && 
-		     salt.salttype == KRB5_PW_SALT && 
-		     !salt_set)))
-		    goto next_etype;
-	    }
-		       
-	    ret = krb5_string_to_key_salt (context,
-					   etypes[i],
-					   password,
-					   salt,
-					   &key.key);
-
-	    if(ret)
-		goto out;
-
-	    if (salt.salttype != KRB5_PW_SALT || salt_set) {
-		key.salt = malloc (sizeof(*key.salt));
-		if (key.salt == NULL) {
-		    free_Key(&key);
-		    ret = ENOMEM;
-		    goto out;
-		}
-		key.salt->type = salt.salttype;
-		krb5_data_zero (&key.salt->salt);
-
-		/* is the salt has not been set explicitly, it will be
-		   the default salt, so there's no need to explicitly
-		   copy it */
-		if (salt_set) {
-		    ret = krb5_data_copy(&key.salt->salt, 
-					 salt.saltvalue.data, 
-					 salt.saltvalue.length);
-		    if (ret) {
-			free_Key(&key);
-			goto out;
-		    }
-		}
-	    }
-	    tmp = realloc(keys, (num_keys + 1) * sizeof(*keys));
-	    if(tmp == NULL) {
-		free_Key(&key);
-		ret = ENOMEM;
-		goto out;
-	    }
-	    keys = tmp;
-	    keys[num_keys++] = key;
-	  next_etype:;
 	}
     }
+    
+ out:
+    if (ret) {
+	krb5_warn(context, ret, 
+		  "failed to parse the [kadmin]default_keys values");
 
-    if(num_keys == 0) {
-	/* if we didn't manage to find a single valid key, create a
-           default set */
-	/* XXX only do this is there is no `default_keys'? */
-	krb5_salt v5_salt;
-	tmp = realloc(keys, (num_keys + 4) * sizeof(*keys));
-	if(tmp == NULL) {
-	    ret = ENOMEM;
-	    goto out;
-	}
-	keys = tmp;
-	ret = krb5_get_pw_salt(context, principal, &v5_salt);
-	if(ret)
-	    goto out;
-	for(i = 0; i < n_all_etypes; i++) {
-	    memset(&key, 0, sizeof(key));
-	    ret = krb5_string_to_key_salt(context, all_etypes[i], password, 
-					  v5_salt, &key.key);
-	    if(ret) {
-		krb5_free_salt(context, v5_salt);
-		goto out;
-	    }
-	    keys[num_keys++] = key;
-	}
-	krb5_free_salt(context, v5_salt);
+	for (i = 0; i < *nkeyset; i++)
+	    free_Key(&key_set[i]);
+	free(key_set);
+    } else if (*nkeyset == 0) {
+	krb5_warnx(context, 
+		   "failed to parse any of the [kadmin]default_keys values");
+	ret = EINVAL; /* XXX */
     }
 
-  out:
-    if(ret == 0) {
-	*keys_ret = keys;
-	*num_keys_ret = num_keys;
-    } else {
-	for(i = 0; i < num_keys; i++) {
-	    free_Key(&keys[i]);
-	}
-	free(keys);
-    }
+    *ret_key_set = key_set;
+
     return ret;
 }
 
@@ -313,14 +324,36 @@ _kadm5_set_keys(kadm5_server_context *context,
 		const char *password)
 {
     kadm5_ret_t ret;
-    Key *keys;
     size_t num_keys;
+    Key *keys;
+    int i;
 
-    ret = make_keys(context->context, ent->principal, password, 
-		    &keys, &num_keys);
-
-    if(ret)
+    ret = _kadm5_generate_key_set(context->context, ent->principal,
+				  &keys, &num_keys, 0);
+    if (ret)
 	return ret;
+
+    for (i = 0; i < num_keys; i++) {
+	krb5_salt salt;
+
+	salt.salttype = keys[i].salt->type;
+	salt.saltvalue.length = keys[i].salt->salt.length;
+	salt.saltvalue.data = keys[i].salt->salt.data;
+
+	ret = krb5_string_to_key_salt (context->context,
+				       keys[i].key.keytype,
+				       password,
+				       salt,
+				       &keys[i].key);
+
+	if(ret)
+	    break;
+    }
+
+    if(ret) {
+	_kadm5_free_keys (context, num_keys, keys);
+	return ret;
+    }
     
     _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
     ent->keys.val = keys;
@@ -430,18 +463,14 @@ _kadm5_set_keys3(kadm5_server_context *context,
  *
  */
 
-static krb5_error_code
-gen_random_key(krb5_context context, krb5_enctype enctype, 
-	       krb5_keyblock *key, Key *hkey)
+static int
+is_des_key_p(int keytype)
 {
-    krb5_error_code ret;
-
-    ret = krb5_generate_random_keyblock (context, enctype, key);
-    if (ret)
-	return ret;
-
-    return krb5_copy_keyblock_contents (context, key, &hkey->key);
+    return keytype == ETYPE_DES_CBC_CRC ||
+    	keytype == ETYPE_DES_CBC_MD4 ||
+	keytype == ETYPE_DES_CBC_MD5;
 }
+
 
 /*
  * Set the keys of `ent' to random keys and return them in `n_keys'
@@ -454,78 +483,73 @@ _kadm5_set_keys_randomly (kadm5_server_context *context,
 			  krb5_keyblock **new_keys,
 			  int *n_keys)
 {
-    kadm5_ret_t ret = 0;
-    int i;
-    unsigned len;
-    krb5_keyblock *keys;
-    Key *hkeys;
+   krb5_keyblock *kblock = NULL;
+   kadm5_ret_t ret = 0;
+   int i, des_keyblock;
+   size_t num_keys;
+   Key *keys;
 
-#ifdef ENABLE_AES
-    len  = n_des_types + 2;
-#else
-    len  = n_des_types + 1;
-#endif
-    keys = malloc (len * sizeof(*keys));
-    if (keys == NULL)
-	return ENOMEM;
+   ret = _kadm5_generate_key_set(context->context, ent->principal,
+				  &keys, &num_keys, 1);
+   if (ret)
+	return ret;
 
-    for (i = 0; i < len; ++i) {
-	keys[i].keyvalue.length = 0;
-	keys[i].keyvalue.data   = NULL;
-    }
+   kblock = malloc(num_keys * sizeof(kblock[0]));
+   if (kblock == NULL) {
+	ret = ENOMEM;
+	_kadm5_free_keys (context, num_keys, keys);
+	return ret;
+   }
+   memset(kblock, 0, num_keys * sizeof(kblock[0]));
 
-    hkeys = malloc (len * sizeof(*hkeys));
-    if (hkeys == NULL) {
-	free (keys);
-	return ENOMEM;
-    }
+   des_keyblock = -1;
+   for (i = 0; i < num_keys; i++) {
 
-    _kadm5_init_keys (hkeys, len);
+	/* 
+	 * To make sure all des keys are the the same we generate only
+	 * the first one and then copy key to all other des keys.
+	 */
 
-    ret = gen_random_key(context->context, des_types[0], &keys[0], &hkeys[0]);
-    if (ret)
-	goto out;
+	if (des_keyblock != -1 && is_des_key_p(keys[i].key.keytype)) {
+	    ret = krb5_copy_keyblock_contents (context->context,
+					       &kblock[des_keyblock],
+					       &kblock[i]);
+	    if (ret)
+		goto out;
+	} else {
+	    ret = krb5_generate_random_keyblock (context->context,
+						 keys[i].key.keytype,
+						 &kblock[i]);
+	    if (ret)
+		goto out;
 
-    for (i = 1; i < n_des_types; ++i) {
+	    if (is_des_key_p(keys[i].key.keytype))
+		des_keyblock = i;
+	}
+
 	ret = krb5_copy_keyblock_contents (context->context,
-					   &keys[0],
-					   &keys[i]);
+					   &kblock[i],
+					   &keys[i].key);
 	if (ret)
 	    goto out;
-	keys[i].keytype = des_types[i];
-	ret = krb5_copy_keyblock_contents (context->context,
-					   &keys[0],
-					   &hkeys[i].key);
-	if (ret)
-	    goto out;
-	hkeys[i].key.keytype = des_types[i];
-    }
+   }
 
-    ret = gen_random_key(context->context, ETYPE_DES3_CBC_SHA1, 
-			 &keys[n_des_types], 
-			 &hkeys[n_des_types]);
-    if (ret)
-	goto out;
-
-#ifdef ENABLE_AES
-    ret = gen_random_key(context->context, ETYPE_AES256_CTS_HMAC_SHA1_96,
-			 &keys[n_des_types + 1], 
-			 &hkeys[n_des_types + 1]);
-    if (ret)
-	goto out;
-#endif
-
-    _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
-    ent->keys.len = len;
-    ent->keys.val = hkeys;
-    ent->kvno++;
-    *new_keys     = keys;
-    *n_keys       = len;
-    return ret;
 out:
-    for (i = 0; i < len; ++i)
-	krb5_free_keyblock_contents (context->context, &keys[i]);
-    free (keys);
-    _kadm5_free_keys (context, len, hkeys);
-    return ret;
+   if(ret) {
+	for (i = 0; i < num_keys; ++i)
+	    krb5_free_keyblock_contents (context->context, &kblock[i]);
+	free(kblock);
+	_kadm5_free_keys (context, num_keys, keys);
+	return ret;
+   }
+   
+   _kadm5_free_keys (context, ent->keys.len, ent->keys.val);
+   ent->keys.val = keys;
+   ent->keys.len = num_keys;
+   ent->kvno++;
+   *new_keys     = kblock;
+   *n_keys       = num_keys;
+   return 0;
+
+   return ret;
 }
