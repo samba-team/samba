@@ -71,9 +71,9 @@ BOOL local_password_change(char *user_name,
 {
 	struct passwd  *pwd;
 	struct smb_passwd *smb_pwent;
-	struct smb_passwd new_pwent;
-	uchar           new_p16[16];
-	uchar           new_nt_p16[16];
+	static struct smb_passwd new_pwent;
+	static uchar           new_p16[16];
+	static uchar           new_nt_p16[16];
 	fstring unix_name;
 	uid_t unix_uid;
 
