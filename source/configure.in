@@ -883,23 +883,8 @@ AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 #
 case "$host_os" in
     *linux*)
-	# test if user trusts its own glibc version w.r.t. CAN-2003-0689
-	# Some vendors already provided glibc builds with this fix so getgrouplist() is usable 
-	# on those platforms. Unfortunately, we can't get this information from compiling yet.
-	AC_MSG_CHECKING([whether GNU libc has good getgrouplist w.r.t. CAN-2003-0689])
-	AC_ARG_WITH(good-getgrouplist,
-	[  --with-good-getgrouplist[=no]     whether GNU libc has good getgrouplist w.r.t. CAN-2003-0689 ],
-	[  case "$with_good_getgrouplist" in
-	  yes)
-	  AC_MSG_RESULT(yes)
-          AC_DEFINE(HAVE_GETGROUPLIST, 1, [Have good getgrouplist])
-	  ;;
-	  *)
-	  AC_MSG_RESULT(no)
-	  ;;
-	  esac],
-# glibc <= 2.3.2 has a broken getgrouplist
-AC_TRY_RUN([
+       # glibc <= 2.3.2 has a broken getgrouplist
+       AC_TRY_RUN([
 #include <unistd.h>
 #include <sys/utsname.h>
 main() {
@@ -917,12 +902,8 @@ main() {
 }
 ], [linux_getgrouplist_ok=yes], [linux_getgrouplist_ok=no])
        if test x"$linux_getgrouplist_ok" = x"yes"; then
-          AC_MSG_RESULT(yes)
           AC_DEFINE(HAVE_GETGROUPLIST, 1, [Have good getgrouplist])
-       else
-          AC_MSG_RESULT(no)
        fi
-)
        ;;
     *)
        AC_CHECK_FUNCS(getgrouplist)
