@@ -143,6 +143,8 @@ int rpc_samdump(int argc, const char **argv)
 	struct cli_state *cli = NULL;
 	uchar trust_password[16];
 	DOM_CRED ret_creds;
+	uint32 neg_flags = 0x000001ff;
+
 
 	ZERO_STRUCT(ret_creds);
 
@@ -161,7 +163,7 @@ int rpc_samdump(int argc, const char **argv)
 		goto fail;
 	}
 	
-	result = cli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password);
+	result = cli_nt_setup_creds(cli, SEC_CHAN_BDC,  trust_password, &neg_flags, 2);
 	if (!NT_STATUS_IS_OK(result)) {
 		d_printf("Failed to setup BDC creds\n");
 		goto fail;
