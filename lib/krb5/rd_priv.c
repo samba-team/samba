@@ -17,11 +17,15 @@ krb5_rd_priv(krb5_context context,
 
   r = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
   if (r) 
-      return r;
-  if (priv.pvno != 5)
-      return KRB5KRB_AP_ERR_BADVERSION;
-  if (priv.msg_type != krb_safe)
-      return KRB5KRB_AP_ERR_MSG_TYPE;
+      goto failure;
+  if (priv.pvno != 5) {
+      r = KRB5KRB_AP_ERR_BADVERSION;
+      goto failure;
+  }
+  if (priv.msg_type != krb_safe) {
+      r = KRB5KRB_AP_ERR_MSG_TYPE;
+      goto failure;
+  }
 
   r = krb5_decrypt (context,
 		    priv.enc_part.cipher.data,
@@ -30,7 +34,7 @@ krb5_rd_priv(krb5_context context,
 		    &auth_context->key,
 		    &plain);
   if (r) 
-      return r;
+      goto failure;
 
   r = decode_EncKrbPrivPart (plain.data, plain.length, &part, &len);
   if (r) 
@@ -43,8 +47,10 @@ krb5_rd_priv(krb5_context context,
     gettimeofday (&tv, NULL);
     if (part.timestamp == NULL ||
 	part.usec      == NULL ||
-	*part.timestamp - tv.tv_sec > 600)
-      return KRB5KRB_AP_ERR_SKEW;
+	*part.timestamp - tv.tv_sec > 600) {
+	r = KRB5KRB_AP_ERR_SKEW;
+	goto failure_priv;
+    }
   }
 
   /* XXX - check replay cache */
@@ -52,13 +58,24 @@ krb5_rd_priv(krb5_context context,
   /* check sequence number */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
     if (part.seq_number == NULL ||
-	*part.seq_number != ++auth_context->remote_seqnumber)
-      return KRB5KRB_AP_ERR_BADORDER;
+	*part.seq_number != ++auth_context->remote_seqnumber) {
+      r = KRB5KRB_AP_ERR_BADORDER;
+      goto failure_priv;
+    }
   }
 
   r = krb5_data_copy (outbuf, part.user_data.data, part.user_data.length);
   if (r)
-    return r;
+      goto failure_priv;
 
+  free_EncKrbPrivPart (&part);
+  free_KRB_PRIV (&priv);
   return 0;
+
+failure_priv:
+  free_EncKrbPrivPart (&part);
+
+failure:
+  free_KRB_PRIV (&priv);
+  return r;
 }

@@ -15,30 +15,40 @@ krb5_rd_safe(krb5_context context,
 
   r = decode_KRB_SAFE (inbuf->data, inbuf->length, &safe, &len);
   if (r) 
-      return r;
-  if (safe.pvno != 5)
-    return KRB5KRB_AP_ERR_BADVERSION;
-  if (safe.msg_type != krb_safe)
-    return KRB5KRB_AP_ERR_MSG_TYPE;
-  if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4)
-    return KRB5KRB_AP_ERR_INAPP_CKSUM;
+      goto failure;
+  if (safe.pvno != 5) {
+      r = KRB5KRB_AP_ERR_BADVERSION;
+      goto failure;
+  }
+  if (safe.msg_type != krb_safe) {
+      r = KRB5KRB_AP_ERR_MSG_TYPE;
+      goto failure;
+  }
+  if (safe.cksum.cksumtype != CKSUMTYPE_RSA_MD4) {
+      r = KRB5KRB_AP_ERR_INAPP_CKSUM;
+      goto failure;
+  }
   /* check timestamp */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_TIME) {
-    struct timeval tv;
+      struct timeval tv;
 
-    gettimeofday (&tv, NULL);
-    if (safe.safe_body.timestamp == NULL ||
-	safe.safe_body.usec      == NULL ||
-	*(safe.safe_body.timestamp) - tv.tv_sec > 600)
-      return KRB5KRB_AP_ERR_SKEW;
+      gettimeofday (&tv, NULL);
+      if (safe.safe_body.timestamp == NULL ||
+	  safe.safe_body.usec      == NULL ||
+	  *(safe.safe_body.timestamp) - tv.tv_sec > 600) {
+	  r = KRB5KRB_AP_ERR_SKEW;
+	  goto failure;
+      }
   }
   /* XXX - check replay cache */
 
   /* check sequence number */
   if (auth_context->flags & KRB5_AUTH_CONTEXT_DO_SEQUENCE) {
-    if (safe.safe_body.seq_number == NULL ||
-	*safe.safe_body.seq_number != ++auth_context->remote_seqnumber)
-      return KRB5KRB_AP_ERR_BADORDER;
+      if (safe.safe_body.seq_number == NULL ||
+	  *safe.safe_body.seq_number != ++auth_context->remote_seqnumber) {
+	  r = KRB5KRB_AP_ERR_BADORDER;
+	  goto failure;
+      }
   }
 
   r = krb5_verify_checksum (context,
@@ -46,11 +56,17 @@ krb5_rd_safe(krb5_context context,
 			    safe.safe_body.user_data.length,
 			    &safe.cksum);
   if (r)
-    return r;
+      goto failure;
   outbuf->length = safe.safe_body.user_data.length;
   outbuf->data   = malloc(outbuf->length);
-  if (outbuf->data == NULL)
-    return ENOMEM;
+  if (outbuf->data == NULL) {
+      r = ENOMEM;
+      goto failure;
+  }
   memcpy (outbuf->data, safe.safe_body.user_data.data, outbuf->length);
+  free_KRB_SAFE (&safe);
   return 0;
+failure:
+  free_KRB_SAFE (&safe);
+  return r;
 }
