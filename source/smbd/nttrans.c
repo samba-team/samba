@@ -24,9 +24,6 @@
 extern int Protocol;
 extern int smb_read_error;
 extern int global_oplock_break;
-extern BOOL case_sensitive;
-extern BOOL case_preserve;
-extern BOOL short_case_preserve;
 extern struct current_user current_user;
 
 static const char *known_nt_pipes[] = {
@@ -274,33 +271,33 @@ static BOOL saved_short_case_preserve;
  Save case semantics.
 ****************************************************************************/
 
-static void set_posix_case_semantics(uint32 file_attributes)
+static void set_posix_case_semantics(connection_struct *conn, uint32 file_attributes)
 {
 	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
 		return;
 
-	saved_case_sensitive = case_sensitive;
-	saved_case_preserve = case_preserve;
-	saved_short_case_preserve = short_case_preserve;
+	saved_case_sensitive = conn->case_sensitive;
+	saved_case_preserve = conn->case_preserve;
+	saved_short_case_preserve = conn->short_case_preserve;
 
 	/* Set to POSIX. */
-	case_sensitive = True;
-	case_preserve = True;
-	short_case_preserve = True;
+	conn->case_sensitive = True;
+	conn->case_preserve = True;
+	conn->short_case_preserve = True;
 }
 
 /****************************************************************************
  Restore case semantics.
 ****************************************************************************/
 
-static void restore_case_semantics(uint32 file_attributes)
+static void restore_case_semantics(connection_struct *conn, uint32 file_attributes)
 {
 	if(!(file_attributes & FILE_FLAG_POSIX_SEMANTICS))
 		return;
 
-	case_sensitive = saved_case_sensitive;
-	case_preserve = saved_case_preserve;
-	short_case_preserve = saved_short_case_preserve;
+	conn->case_sensitive = saved_case_sensitive;
+	conn->case_preserve = saved_case_preserve;
+	conn->short_case_preserve = saved_short_case_preserve;
 }
 
 /****************************************************************************
@@ -762,7 +759,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	 * Check if POSIX semantics are wanted.
 	 */
 		
-	set_posix_case_semantics(file_attributes);
+	set_posix_case_semantics(conn, file_attributes);
 		
 	unix_convert(fname,conn,0,&bad_path,&sbuf);
 		
@@ -781,7 +778,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 			
-		restore_case_semantics(file_attributes);
+		restore_case_semantics(conn, file_attributes);
 
 		if(!fsp) {
 			END_PROFILE(SMBntcreateX);
@@ -847,7 +844,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					restore_case_semantics(file_attributes);
+					restore_case_semantics(conn, file_attributes);
 					SSVAL(outbuf, smb_flg2, 
 					      SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					END_PROFILE(SMBntcreateX);
@@ -858,20 +855,20 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 				
 				if(!fsp) {
-					restore_case_semantics(file_attributes);
+					restore_case_semantics(conn, file_attributes);
 					END_PROFILE(SMBntcreateX);
 					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
 
-				restore_case_semantics(file_attributes);
+				restore_case_semantics(conn, file_attributes);
 				END_PROFILE(SMBntcreateX);
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
 	}
 		
-	restore_case_semantics(file_attributes);
+	restore_case_semantics(conn, file_attributes);
 		
 	file_len = sbuf.st_size;
 	fmode = dos_mode(conn,fname,&sbuf);
@@ -1285,7 +1282,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	 * Check if POSIX semantics are wanted.
 	 */
 
-	set_posix_case_semantics(file_attributes);
+	set_posix_case_semantics(conn, file_attributes);
     
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
@@ -1313,7 +1310,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 		fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 
 		if(!fsp) {
-			restore_case_semantics(file_attributes);
+			restore_case_semantics(conn, file_attributes);
 			return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 		}
 
@@ -1336,7 +1333,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				 */
 
 				if (create_options & FILE_NON_DIRECTORY_FILE) {
-					restore_case_semantics(file_attributes);
+					restore_case_semantics(conn, file_attributes);
 					SSVAL(outbuf, smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 					return ERROR_NT(NT_STATUS_FILE_IS_A_DIRECTORY);
 				}
@@ -1345,11 +1342,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 				fsp = open_directory(conn, fname, &sbuf, desired_access, smb_open_mode, smb_ofun, &smb_action);
 				
 				if(!fsp) {
-					restore_case_semantics(file_attributes);
+					restore_case_semantics(conn, file_attributes);
 					return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 				}
 			} else {
-				restore_case_semantics(file_attributes);
+				restore_case_semantics(conn, file_attributes);
 				return set_bad_path_error(errno, bad_path, outbuf, ERRDOS,ERRnoaccess);
 			}
 		} 
@@ -1361,7 +1358,7 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 		if (fmode & aDIR) {
 			close_file(fsp,False);
-			restore_case_semantics(file_attributes);
+			restore_case_semantics(conn, file_attributes);
 			return ERROR_DOS(ERRDOS,ERRnoaccess);
 		} 
 
@@ -1384,11 +1381,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 
 	if (sd_len && !NT_STATUS_IS_OK(status = set_sd( fsp, data, sd_len, ALL_SECURITY_INFORMATION))) {
 		close_file(fsp,False);
-		restore_case_semantics(file_attributes);
+		restore_case_semantics(conn, file_attributes);
 		return ERROR_NT(status);
 	}
 	
-	restore_case_semantics(file_attributes);
+	restore_case_semantics(conn, file_attributes);
 
 	/* Save the requested allocation size. */
 	allocation_size = (SMB_BIG_UINT)IVAL(params,12);
