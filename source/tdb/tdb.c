@@ -1811,7 +1811,7 @@ TDB_CONTEXT *tdb_open_ex(const char *name, int hash_size, int tdb_flags,
 	if (tdb_already_open(st.st_dev, st.st_ino)) {
 		TDB_LOG((tdb, 2, "tdb_open_ex: "
 			 "%s (%d,%d) is already open in this process\n",
-			 name, st.st_dev, st.st_ino));
+			 name, (int)st.st_dev, (int)st.st_ino));
 		errno = EBUSY;
 		goto fail;
 	}
@@ -1982,13 +1982,13 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
 	}
 	/* Finally, lock in order */
 	for (i = 0; i < number; i++)
-		if (tdb_lock(tdb, i, F_WRLCK))
+		if (tdb_lock(tdb, BUCKET(tdb->lockedkeys[i+1]), F_WRLCK))
 			break;
 
 	/* If error, release locks we have... */
 	if (i < number) {
 		for ( j = 0; j < i; j++)
-			tdb_unlock(tdb, j, F_WRLCK);
+			tdb_unlock(tdb, BUCKET(tdb->lockedkeys[j+1]), F_WRLCK);
 		SAFE_FREE(tdb->lockedkeys);
 		return TDB_ERRCODE(TDB_ERR_NOLOCK, -1);
 	}
@@ -2002,7 +2002,7 @@ void tdb_unlockkeys(TDB_CONTEXT *tdb)
 	if (!tdb->lockedkeys)
 		return;
 	for (i = 0; i < tdb->lockedkeys[0]; i++)
-		tdb_unlock(tdb, tdb->lockedkeys[i+1], F_WRLCK);
+		tdb_unlock(tdb, BUCKET(tdb->lockedkeys[i+1]), F_WRLCK);
 	SAFE_FREE(tdb->lockedkeys);
 }
 
