@@ -1513,6 +1513,25 @@ static BOOL smbpasswd_getsampwrid(struct pdb_context *context, SAM_ACCOUNT *sam_
 	return True;
 }
 
+/**********************************************************************
+ get rid by uid 
+*********************************************************************/
+
+static uint32 smbpasswd_uid_to_rid(struct pdb_context *context, uid_t uid)
+{
+	return fallback_pdb_uid_to_user_rid(uid);
+}
+
+/**********************************************************************
+ get uid by rid 
+*********************************************************************/
+
+static uid_t smbpasswd_rid_to_uid(struct pdb_context *context, uint32 rid)
+{
+	return fallback_pdb_user_rid_to_uid(rid);
+}
+
+
 static BOOL smbpasswd_add_sam_account(struct pdb_context *context, const SAM_ACCOUNT *sampass)
 {
 	struct smbpasswd_privates *smbpasswd_state = (struct smbpasswd_privates*)context->pdb_selected->private_data;
@@ -1586,6 +1605,8 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 	(*pdb_method)->add_sam_account = smbpasswd_add_sam_account;
 	(*pdb_method)->update_sam_account = smbpasswd_update_sam_account;
 	(*pdb_method)->delete_sam_account = smbpasswd_delete_sam_account;
+	(*pdb_method)->uid_to_user_rid = smbpasswd_uid_to_rid;
+	(*pdb_method)->user_rid_to_uid = smbpasswd_rid_to_uid;
 
 	/* Setup private data and free function */
 
