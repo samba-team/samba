@@ -32,6 +32,7 @@ libroken_la_SOURCES =		\
 	erealloc.c		\
 	estrdup.c		\
 	ewrite.c		\
+	getaddrinfo_hostspec.c	\
 	get_default_username.c	\
 	get_window_size.c	\
 	getarg.c		\
