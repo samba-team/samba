@@ -96,7 +96,7 @@ gss_accept_sec_context
 
     krb5_data_zero (&fwd_data);
     output_token->length = 0;
-    output_token->value   = NULL;
+    output_token->value = NULL;
 
     if (src_name != NULL)
 	*src_name = NULL;
@@ -119,6 +119,7 @@ gss_accept_sec_context
     (*context_handle)->more_flags = 0;
     (*context_handle)->ticket = NULL;
     (*context_handle)->lifetime = GSS_C_INDEFINITE;
+    (*context_handle)->order = NULL;
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -309,7 +310,7 @@ gss_accept_sec_context
 	if (delegated_cred_handle == NULL)
 	    /* XXX Create a new delegated_cred_handle? */
 	    kret = krb5_cc_default (gssapi_krb5_context, &ccache);
-	else if (*delegated_cred_handle == NULL) {
+	else {
 	    if ((*delegated_cred_handle =
 		 calloc(1, sizeof(**delegated_cred_handle))) == NULL) {
 		ret = GSS_S_FAILURE;
@@ -325,12 +326,16 @@ gss_accept_sec_context
 		*delegated_cred_handle = NULL;
 		goto end_fwd;
 	    }
-	}
-	if (delegated_cred_handle != NULL &&
-	    (*delegated_cred_handle)->ccache == NULL) {
             kret = krb5_cc_gen_new (gssapi_krb5_context,
                                     &krb5_mcc_ops,
                                     &(*delegated_cred_handle)->ccache);
+	    if (kret) {
+		gss_release_name(minor_status, 
+				 &(*delegated_cred_handle)->principal);
+		free(*delegated_cred_handle);
+		*delegated_cred_handle = NULL;
+		goto end_fwd;
+	    }
 	    ccache = (*delegated_cred_handle)->ccache;
 	}
 	if (delegated_cred_handle != NULL &&
@@ -410,9 +415,6 @@ gss_accept_sec_context
 	krb5_data_free (&outbuf);
 	if (ret)
 	    goto failure;
-    } else {
-	output_token->length = 0;
-	output_token->value = NULL;
     }
 
     (*context_handle)->ticket = ticket;
@@ -421,6 +423,20 @@ gss_accept_sec_context
 #if 0
     krb5_free_ticket (context, ticket);
 #endif
+
+    {
+	OM_uint32 seq_number;
+	
+	krb5_auth_getremoteseqnumber (gssapi_krb5_context,
+				      (*context_handle)->auth_context,
+				      &seq_number);
+	ret = gssapi_msg_order_create(minor_status,
+				      &(*context_handle)->order,
+				      gssapi_msg_order_f(flags),
+				      seq_number, 0);
+	if (ret)
+	    goto failure;
+    }
 
     *minor_status = 0;
     return GSS_S_COMPLETE;
@@ -438,6 +454,8 @@ gss_accept_sec_context
     if((*context_handle)->target)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
+    if((*context_handle)->order)
+	gssapi_msg_order_destroy(&(*context_handle)->order);
     HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     if (src_name != NULL) {
