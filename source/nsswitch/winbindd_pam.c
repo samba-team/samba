@@ -25,28 +25,6 @@
 
 #include "winbindd.h"
 
-/* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
-   form DOMAIN/user into a domain and a user */
-
-static void parse_domain_user(char *domuser, fstring domain, fstring user)
-{
-        char *p;
-        char *sep = lp_winbind_separator();
-        if (!sep) sep = "\\";
-        p = strchr(domuser,*sep);
-        if (!p) p = strchr(domuser,'\\');
-        if (!p) {
-                fstrcpy(domain,"");
-                fstrcpy(user, domuser);
-                return;
-        }
-        
-        fstrcpy(user, p+1);
-        fstrcpy(domain, domuser);
-        domain[PTR_DIFF(p, domuser)] = 0;
-        strupper(domain);
-}
-
 /* Return a password structure from a username.  Specify whether cached data 
    can be returned. */
 
