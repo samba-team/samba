@@ -252,6 +252,8 @@ typedef struct
   char *szLprmcommand;
   char *szLppausecommand;
   char *szLpresumecommand;
+  char *szQueuepausecommand;
+  char *szQueueresumecommand;
   char *szPrintername;
   char *szPrinterDriver;
   char *szPrinterDriverLocation;
@@ -340,6 +342,8 @@ static service sDefault =
   NULL,    /* szLprmcommand */
   NULL,    /* szLppausecommand */
   NULL,    /* szLpresumecommand */
+  NULL,    /* szQueuepausecommand */
+  NULL,    /* szQueueresumecommand */
   NULL,    /* szPrintername */
   NULL,    /* szPrinterDriver - this is set in init_globals() */
   NULL,    /* szPrinterDriverLocation */
@@ -593,6 +597,9 @@ static struct parm_struct parm_table[] =
   {"lprm command",     P_STRING,  P_LOCAL,  &sDefault.szLprmcommand,    NULL,   NULL,  FLAG_PRINT|FLAG_GLOBAL},
   {"lppause command",  P_STRING,  P_LOCAL,  &sDefault.szLppausecommand, NULL,   NULL,  FLAG_GLOBAL},
   {"lpresume command", P_STRING,  P_LOCAL,  &sDefault.szLpresumecommand,NULL,   NULL,  FLAG_GLOBAL},
+  {"queuepause command", P_STRING, P_LOCAL, &sDefault.szQueuepausecommand, NULL, NULL, FLAG_GLOBAL},
+  {"queueresume command", P_STRING, P_LOCAL, &sDefault.szQueueresumecommand, NULL, NULL, FLAG_GLOBAL},
+
   {"printer name",     P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  FLAG_PRINT},
   {"printer",          P_STRING,  P_LOCAL,  &sDefault.szPrintername,    NULL,   NULL,  0},
   {"printer driver",   P_STRING,  P_LOCAL,  &sDefault.szPrinterDriver,  NULL,   NULL,  0},
@@ -911,7 +918,12 @@ static void init_locals(void)
 #ifdef SVR4
       string_initial(&sDefault.szLppausecommand,"lp -i %p-%j -H hold");
       string_initial(&sDefault.szLpresumecommand,"lp -i %p-%j -H resume");
-#endif
+      string_initial(&sDefault.szQueuepausecommand, "lpc stop %p");
+      string_initial(&sDefault.szQueueresumecommand, "lpc start %p");
+#else /* SVR4 */
+      string_initial(&sDefault.szQueuepausecommand, "disable %p");
+      string_initial(&sDefault.szQueueresumecommand, "enable %p");
+#endif /* SVR4 */
       break;
 
     case PRINT_QNX:
@@ -1153,6 +1165,8 @@ FN_LOCAL_STRING(lp_lpqcommand,szLpqcommand)
 FN_LOCAL_STRING(lp_lprmcommand,szLprmcommand)
 FN_LOCAL_STRING(lp_lppausecommand,szLppausecommand)
 FN_LOCAL_STRING(lp_lpresumecommand,szLpresumecommand)
+FN_LOCAL_STRING(lp_queuepausecommand,szQueuepausecommand)
+FN_LOCAL_STRING(lp_queueresumecommand,szQueueresumecommand)
 FN_LOCAL_STRING(lp_printername,szPrintername)
 FN_LOCAL_STRING(lp_printerdriver,szPrinterDriver)
 FN_LOCAL_STRING(lp_hostsallow,szHostsallow)

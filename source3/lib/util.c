@@ -4038,6 +4038,30 @@ char *client_addr(int fd)
 	return addr_buf;
 }
 
+#if (defined(NETGROUP) && defined(AUTOMOUNT))
+/******************************************************************
+ Remove any mount options such as -rsize=2048,wsize=2048 etc.
+ Based on a fix from <Thomas.Hepper@icem.de>.
+*******************************************************************/
+
+static void strip_mount_options( pstring *str)
+{
+  if (**str == '-')
+  { 
+    char *p = *str;
+    while(*p && !isspace(*p))
+      p++;
+    while(*p && isspace(*p))
+      p++;
+    if(*p) {
+      pstring tmp_str;
+
+      pstrcpy(tmp_str, p);
+      pstrcpy(*str, tmp_str);
+    }
+  }
+}
+
 /*******************************************************************
  Patch from jkf@soton.ac.uk
  Split Luke's automount_server into YP lookup and string splitter
@@ -4045,7 +4069,6 @@ char *client_addr(int fd)
  As we may end up doing both, cache the last YP result. 
 *******************************************************************/
 
-#if (defined(NETGROUP) && defined(AUTOMOUNT))
 #ifdef NISPLUS_HOME
 static char *automount_lookup(char *user_name)
 {
@@ -4094,6 +4117,9 @@ static char *automount_lookup(char *user_name)
     }
     nis_freeresult(result);
   }
+
+  strip_mount_options(&last_value);
+
   DEBUG(4, ("NIS+ Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;
 }
@@ -4140,6 +4166,8 @@ static char *automount_lookup(char *user_name)
     strncpy(last_value, nis_result, nis_result_len);
     last_value[nis_result_len] = '\0';
   }
+
+  strip_mount_options(&last_value);
 
   DEBUG(4, ("YP Lookup: %s resulted in %s\n", user_name, last_value));
   return last_value;

@@ -1062,6 +1062,8 @@ char *lp_lpqcommand(int );
 char *lp_lprmcommand(int );
 char *lp_lppausecommand(int );
 char *lp_lpresumecommand(int );
+char *lp_queuepausecommand(int );
+char *lp_queueresumecommand(int );
 char *lp_printername(int );
 char *lp_printerdriver(int );
 char *lp_hostsallow(int );
@@ -1719,6 +1721,7 @@ void del_printqueue(int cnum,int snum,int jobid);
 void status_printjob(int cnum,int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
+void status_printqueue(int cnum,int snum,int status);
 
 /*The following definitions come from  quotas.c  */
 
