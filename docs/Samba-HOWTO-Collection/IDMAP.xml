@@ -254,10 +254,9 @@ on Server Types and Security Modes</link>.
 		<varlistentry><term>Winbind with NSS to resolve UNIX/Linux user and group IDs: &smbmdash; </term>
 			<listitem>
 				<para>
-				When Samba is being used as the PDC and BDC the of an LDAP passdb backend is a smart
-				solution, certainly for the domain controllers, but also for Domain Member servers.
-				It is a neat method for assuring that UIDs, GIDs and the matching SIDs will be consistent
-				across all servers.
+				The use of LDAP as the passdb backend is a smart solution for PDC, BDC as well as for
+				Domain Member servers. It is a neat method for assuring that UIDs, GIDs and the matching
+				SIDs will be consistent across all servers.
 				</para>
 
 				<para>
