@@ -281,8 +281,12 @@ static int tdb_write(TDB_CONTEXT *tdb, tdb_off off, void *buf, tdb_len len)
 
 	if (tdb->map_ptr)
 		memcpy(off + (char *)tdb->map_ptr, buf, len);
+#ifdef HAVE_PWRITE
+	else if (pwrite(tdb->fd, buf, len, off) != (ssize_t)len) {
+#else
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || write(tdb->fd, buf, len) != (ssize_t)len) {
+#endif
 		TDB_LOG((tdb, 0,"tdb_write failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
@@ -298,8 +302,12 @@ static int tdb_read(TDB_CONTEXT *tdb,tdb_off off,void *buf,tdb_len len,int cv)
 
 	if (tdb->map_ptr)
 		memcpy(buf, off + (char *)tdb->map_ptr, len);
+#ifdef HAVE_PREAD
+	else if (pread(tdb->fd, buf, len, off) != (ssize_t)len) {
+#else
 	else if (lseek(tdb->fd, off, SEEK_SET) != off
 		 || read(tdb->fd, buf, len) != (ssize_t)len) {
+#endif
 		TDB_LOG((tdb, 0,"tdb_read failed at %d len=%d (%s)\n",
 			   off, len, strerror(errno)));
 		return TDB_ERRCODE(TDB_ERR_IO, -1);
