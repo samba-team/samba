@@ -384,6 +384,7 @@ int sys_dlclose (void *handle);
 
 TALLOC_CTX *talloc_init(void);
 void *talloc(TALLOC_CTX *t, size_t size);
+void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size);
 void talloc_destroy_pool(TALLOC_CTX *t);
 void talloc_destroy(TALLOC_CTX *t);
 size_t talloc_pool_size(TALLOC_CTX *t);
@@ -1778,6 +1779,7 @@ BOOL lp_restrict_anonymous(void);
 BOOL lp_lanman_auth(void);
 BOOL lp_host_msdfs(void);
 BOOL lp_kernel_oplocks(void);
+BOOL lp_enhanced_browsing(void);
 int lp_os_level(void);
 int lp_max_ttl(void);
 int lp_max_wins_ttl(void);
@@ -4443,6 +4445,7 @@ int tdb_clear_spinlocks(TDB_CONTEXT *tdb);
 /*The following definitions come from  tdb/tdb.c  */
 
 void tdb_printfreelist(TDB_CONTEXT *tdb);
+enum TDB_ERROR tdb_error(TDB_CONTEXT *tdb);
 const char *tdb_errorstr(TDB_CONTEXT *tdb);
 TDB_DATA tdb_fetch(TDB_CONTEXT *tdb, TDB_DATA key);
 int tdb_exists(TDB_CONTEXT *tdb, TDB_DATA key);
