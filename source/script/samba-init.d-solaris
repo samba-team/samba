@@ -1,0 +1,48 @@
+#!/bin/sh
+#
+# samba
+#
+# This is from a Solaris box.  Proper links need to be made to it from the
+# rcX.d directories.  For Linux, it goes into /etc/rc.d/init.d
+# 
+# Lonnie
+
+SAMBA=/usr/local/samba
+
+case "$1" in
+'start')
+        echo "SMB Service starting."
+        PATH="/usr/bin:/sbin:/usr/sbin"
+        export PATH
+        ${SAMBA}/bin/smbd -D
+        ${SAMBA}/bin/nmbd -D
+        ${SAMBA}/bin/browserd -D
+        ${SAMBA}/bin/lsarpcd -D
+        ${SAMBA}/bin/netlogond -D
+        ${SAMBA}/bin/samrd -D
+        ${SAMBA}/bin/spoolssd -D
+        ${SAMBA}/bin/srvsvcd -D
+        ${SAMBA}/bin/svcctld -D
+        ${SAMBA}/bin/winregd -D
+        ${SAMBA}/bin/wkssvcd -D
+        ;;
+'restart')
+        $0 stop
+        $0 start
+        ;;
+'stop')
+        echo "SMB Service stopping."
+        for file in ${SAMBA}/var/locks/*.pid
+        do
+                if [ -r $file ]
+                then
+                        kill `cat $file`
+                        rm $file
+                fi
+        done
+        ;;
+*)
+        echo "Usage: /etc/init.d/samba { start | stop | restart }"
+        ;;
+esac
+exit 0

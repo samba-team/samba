@@ -1,0 +1,62 @@
+#! /bin/sh
+
+#
+# Samba server control
+#
+
+IS_ON=/etc/chkconfig
+KILLALL=/sbin/killall
+
+SAMBAD=/usr/samba/bin/smbd
+#SAMBA_OPTS=-d2
+NMBD=/usr/samba/bin/nmbd
+BROWSERD=/usr/samba/bin/browserd
+LSARPCD=/usr/samba/bin/lsarpcd
+NETLOGOND=/usr/samba/bin/netlogond
+SAMRD=/usr/samba/bin/samrd
+SPOOLSSD=/usr/samba/bin/spoolssd
+SRVSVCD=/usr/samba/bin/srvsvcd
+SVCCTLD=/usr/samba/bin/svcctld
+WINREGD=/usr/samba/bin/winregd
+WKSSVCD=/usr/samba/bin/wkssvcd
+
+#NMBD_OPTS=-d1
+
+if test ! -x $IS_ON ; then
+    IS_ON=true
+fi
+
+if $IS_ON verbose ; then
+    ECHO=echo
+else		# For a quiet startup and shutdown
+    ECHO=:
+fi
+
+case $1 in
+'start')
+	if $IS_ON samba && test -x $SAMBAD; then
+	    $KILLALL -15 smbd nmbd browserd lsarpcd netlogond samrd spoolssd srvsvcd svcctld winregd wkssvcd
+	    $ECHO "Samba:\c"
+	    $SAMBAD $SAMBA_OPTS -D; $ECHO " smbd\c"
+	    $NMBD $NMBD_OPTS -D; $ECHO " nmbd\c"
+		$LSARPCD; $ECHO " lsarpcd\c"
+		$NETLOGOND; $ECHO " netlogond\c"
+		$SAMRD; $ECHO " samrd\c"
+		$SPOOLSSD; $ECHO " spoolssd\c"
+		$SRVSVCD; $ECHO " srvsvcd\c"
+		$SVCCTLD; $ECHO " svcctld\c"
+		$WINREGD; $ECHO " winregd\c"
+		$WKSSVCD; $ECHO " wkssvcd\c"
+		$BROWSERD; $ECHO " browserd\c"
+	    $ECHO "."
+	fi
+	;;
+'stop')
+	$ECHO "Stopping Samba Servers."
+	$KILLALL -15 smbd nmbd browserd lsarpcd netlogond samrd spoolssd srvsvcd svcctld winregd wkssvcd
+	exit 0
+	;;
+*)
+	echo "usage: /etc/init.d/samba {start|stop}"
+	;;
+esac
