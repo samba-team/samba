@@ -387,15 +387,6 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
 	if(!component_was_mangled && !name_has_wildcard)
 		stat_cache_add(orig_path, name);
 
-	/*
-	 * If we ended up resolving the entire path then return a valid
-	 * stat struct if we got one. Note this doesn't catch mangled paths,
-	 * but the check in the for loop above will do that. JRA.
-	 */
-
-	if (VALID_STAT(st) && (strlen(orig_path) == strlen(name)))
-		*pst = st;
-
 	/* 
 	 * The name has been resolved.
 	 */
