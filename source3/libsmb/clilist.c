@@ -148,7 +148,7 @@ static int interpret_long_filename(int level,char *p,file_info *finfo)
   do a directory listing, calling fn on each file found
   ****************************************************************************/
 int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute, 
-	     void (*fn)(file_info *, const char *))
+	     void (*fn)(file_info *, const char *, void *), void *state)
 {
 	int max_matches = 512;
 	/* NT uses 260, OS/2 uses 2. Both accept 1. */
@@ -300,7 +300,7 @@ int cli_list(struct cli_state *cli,const char *Mask,uint16 attribute,
 
 	for (p=dirlist,i=0;i<total_received;i++) {
 		p += interpret_long_filename(info_level,p,&finfo);
-		fn(&finfo, Mask);
+		fn(&finfo, Mask, state);
 	}
 
 	/* free up the dirlist buffer */
