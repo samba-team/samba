@@ -316,9 +316,10 @@ krb5_cc_next_cred (krb5_context context,
     if (id->type != 1)
 	abort ();
     
-    krb5_storage_from_fd(cursor->fd);
-    err = krb5_cc_read_cred (sp, creds);
+    sp =  krb5_storage_from_fd(cursor->fd);
+    err = krb5_cc_read_cred (cursor->fd, creds);
     krb5_storage_free(sp);
+    return err;
 }
 
 krb5_error_code
