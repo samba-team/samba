@@ -37,16 +37,6 @@ struct clisocket_connect {
 };
 
 
-static int smbcli_sock_destructor(void *ptr)
-{
-	struct smbcli_socket *sock = talloc_get_type(ptr, struct smbcli_socket);
-
-	if (sock->event.fde && sock->event.ctx) {
-		event_remove_fd(sock->event.ctx, sock->event.fde);
-	}
-	return 0;
-}
-
 /*
   create a smbcli_socket context
   The event_ctx is optional - if not supplied one will be created
@@ -70,8 +60,6 @@ struct smbcli_socket *smbcli_sock_init(TALLOC_CTX *mem_ctx,
 		talloc_free(sock);
 		return NULL;
 	}
-
-	talloc_set_destructor(sock, smbcli_sock_destructor);
 
 	return sock;
 }
@@ -134,11 +122,7 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 		talloc_free(sock->sock);
 		sock->sock = NULL;
 	}
-
-	if (sock->event.fde) {
-		event_remove_fd(sock->event.ctx, sock->event.fde);
-		sock->event.fde = NULL;
-	}
+	talloc_free(sock->event.fde);
 
 	status = socket_create("ip", SOCKET_TYPE_STREAM, &sock->sock, 0);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -155,6 +139,8 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
 	fde.private = sock;
 
 	sock->event.fde = event_add_fd(sock->event.ctx, &fde);
+	talloc_steal(sock, sock->event.fde);
+
 	sock->port = port;
 	set_blocking(fde.fd, False);
 

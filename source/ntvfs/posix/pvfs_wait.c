@@ -105,7 +105,6 @@ static int pvfs_wait_destructor(void *ptr)
 {
 	struct pvfs_wait *pwait = ptr;
 	messaging_deregister(pwait->msg_ctx, pwait->msg_type, pwait);
-	event_remove_timed(pwait->ev, pwait->te);
 	DLIST_REMOVE(pwait->pvfs->wait_list, pwait);
 	return 0;
 }
@@ -145,6 +144,7 @@ static int pvfs_wait_destructor(void *ptr)
 	te.handler = pvfs_wait_timeout;
 	te.private = pwait;
 	pwait->te = event_add_timed(pwait->ev, &te);
+	talloc_steal(pwait, pwait->te);
 
 	/* register with the messaging subsystem for this message
 	   type */

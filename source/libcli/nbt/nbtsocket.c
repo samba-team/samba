@@ -29,16 +29,6 @@
 #define NBT_MAX_REPLIES 1000
 
 /*
-  destroy a nbt socket
-*/
-static int nbtsock_destructor(void *ptr)
-{
-	struct nbt_name_socket *nbtsock = talloc_get_type(ptr, struct nbt_name_socket);
-	event_remove_fd(nbtsock->event_ctx, nbtsock->fde);
-	return 0;
-}
-
-/*
   destroy a pending request
 */
 static int nbt_name_request_destructor(void *ptr)
@@ -56,7 +46,6 @@ static int nbt_name_request_destructor(void *ptr)
 		req->request->name_trn_id = 0;
 	}
 	if (req->te) {
-		event_remove_timed(req->nbtsock->event_ctx, req->te);
 		req->te = NULL;
 	}
 	if (req->nbtsock->send_queue == NULL) {
@@ -279,7 +268,7 @@ struct nbt_name_socket *nbt_name_socket_init(TALLOC_CTX *mem_ctx,
 	fde.private = nbtsock;
 	nbtsock->fde = event_add_fd(nbtsock->event_ctx, &fde);
 
-	talloc_set_destructor(nbtsock, nbtsock_destructor);
+	talloc_steal(nbtsock, nbtsock->fde);
 	
 	return nbtsock;
 
@@ -356,6 +345,7 @@ struct nbt_name_request *nbt_name_request_send(struct nbt_name_socket *nbtsock,
 	te.handler = nbt_name_socket_timeout;
 	te.private = req;
 	req->te = event_add_timed(nbtsock->event_ctx, &te);
+	talloc_steal(req, req->te);
 	
 	talloc_set_destructor(req, nbt_name_request_destructor);	
 

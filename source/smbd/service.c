@@ -171,6 +171,7 @@ struct server_stream_socket *service_setup_stream_socket(struct server_service *
 	}
 
 	talloc_steal(stream_socket, sock);
+	talloc_steal(stream_socket, stream_socket->event.fde);
 
 	if (stream_socket->stream.ops->socket_init) {
 		stream_socket->stream.ops->socket_init(stream_socket);
@@ -193,15 +194,6 @@ static int server_connection_destructor(void *ptr)
 		 */
 	        conn->stream_socket->stream.ops->close_connection(conn, "shutdown");
         }
-
-	if (conn->event.fde) {
-		event_remove_fd(conn->event.ctx, conn->event.fde);
-		conn->event.fde = NULL;
-	}
-	if (conn->event.idle) {
-		event_remove_timed(conn->event.ctx, conn->event.idle);
-		conn->event.idle = NULL;
-	}
 
 	return 0;
 }
@@ -249,6 +241,9 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	/* accpect_connection() of the service may changed idle.next_event */
 	srv_conn->event.fde	= event_add_fd(ev,&fde);
 	srv_conn->event.idle	= event_add_timed(ev,&idle);
+
+	talloc_steal(srv_conn, srv_conn->event.fde);
+	talloc_steal(srv_conn, srv_conn->event.idle);
 
 	talloc_set_destructor(srv_conn, server_connection_destructor);
 

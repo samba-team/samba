@@ -189,17 +189,6 @@ static void messaging_recv_handler(struct event_context *ev, struct fd_event *fd
 }
 
 /*
-  destroy a messaging record
-*/
-static int rec_destructor(void *ptr)
-{
-	struct messaging_rec *rec = ptr;
-	struct messaging_context *msg = rec->msg;
-	event_remove_fd(msg->event.ev, rec->fde);
-	return 0;
-}
-
-/*
   handle a new incoming connection
 */
 static void messaging_listen_handler(struct event_context *ev, struct fd_event *fde, 
@@ -233,7 +222,7 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 
 	rec->fde	= event_add_fd(msg->event.ev, &fde2);
 
-	talloc_set_destructor(rec, rec_destructor);
+	talloc_steal(rec, rec->fde);
 }
 
 /*
@@ -370,8 +359,7 @@ static void messaging_backoff_handler(struct event_context *ev, struct timed_eve
 	fde.handler	= messaging_send_handler;
 
 	rec->fde	= event_add_fd(msg->event.ev, &fde);
-
-	talloc_set_destructor(rec, rec_destructor);
+	talloc_steal(rec, rec->fde);
 
 	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 }
@@ -435,8 +423,7 @@ NTSTATUS messaging_send(struct messaging_context *msg, servid_t server, uint32_t
 	fde.handler	= messaging_send_handler;
 
 	rec->fde	= event_add_fd(msg->event.ev, &fde);
-
-	talloc_set_destructor(rec, rec_destructor);
+	talloc_steal(rec, rec->fde);
 
 	messaging_send_handler(msg->event.ev, rec->fde, timeval_zero(), EVENT_FD_WRITE);
 
@@ -464,7 +451,6 @@ NTSTATUS messaging_send_ptr(struct messaging_context *msg, servid_t server,
 static int messaging_destructor(void *ptr)
 {
 	struct messaging_context *msg = ptr;
-	event_remove_fd(msg->event.ev, msg->event.fde);
 	unlink(msg->path);
 	return 0;
 }
@@ -516,6 +502,7 @@ struct messaging_context *messaging_init(TALLOC_CTX *mem_ctx, servid_t server_id
 
 	msg->event.ev   = talloc_reference(msg,ev);
 	msg->event.fde	= event_add_fd(ev, &fde);
+	talloc_steal(msg, msg->event.fde);
 
 	talloc_set_destructor(msg, messaging_destructor);
 	

@@ -55,7 +55,6 @@ static int transport_destructor(void *ptr)
 	struct smbcli_transport *transport = ptr;
 
 	smbcli_transport_dead(transport);
-	event_remove_timed(transport->socket->event.ctx, transport->socket->event.te);
 	return 0;
 }
 
@@ -323,6 +322,7 @@ void smbcli_transport_idle_handler(struct smbcli_transport *transport,
 	te.handler = idle_handler;
 	te.private = transport;
 	transport->socket->event.te = event_add_timed(transport->socket->event.ctx, &te);
+	talloc_steal(transport, transport->socket->event.te);
 }
 
 /*
