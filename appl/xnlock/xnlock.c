@@ -36,13 +36,23 @@ char STRING[] = "****************";
 #define when 		break;case
 #define otherwise 	break;default
 
+#define PROMPT	    "Password: "
+#define FAIL_MSG    "Sorry, try again"
+#define LEFT 	001
+#define RIGHT 	002
+#define DOWN 	004
+#define UP 	010
+#define FRONT	020
+#define X_INCR 3
+#define Y_INCR 2
+
 XtAppContext	app;
 Display        *dpy;
 unsigned short	Width, Height;
 Widget		widget;
 GC		gc;
 XtIntervalId	timeout_id;
-char	       *ProgName, *words, *get_words();
+char	       *ProgName, *words;
 int		x, y;
 Pixel		Black, White;
 XFontStruct    *font;
@@ -50,11 +60,12 @@ struct passwd  *pw;
 char		root_pw[16];
 char           *def_words = DEFAULT_TEXT;
 int		time_left, prompt_x, prompt_y, time_x, time_y;
-void		init_images(), countdown(), post_prompt_box();
-unsigned long	interval, look();
+unsigned long	interval;
 Pixmap		left0, left1, right0, right1, left_front,
 		right_front, front, down;
 int test;
+
+#define MAXLINES 40
 
 #define FROM_ARGV    1
 #define FROM_PROGRAM 2
@@ -65,8 +76,6 @@ int getwordsfrom = FROM_RESRC;
 #define IS_MOVING  1
 #define GET_PASSWD 2
 int state; /* indicates states: walking or getting passwd */
-
-void ClearWindow(), GetPasswd(), Visibility(), move();
 
 struct _resrcs {
     Pixel fg, bg;
@@ -112,171 +121,49 @@ static XrmOptionDescRec options[] = {
     { "-noar", "acceptRootPasswd", XrmoptionNoArg, "False" },
 };
 
-int
-main (argc, argv)
-int argc;
-char *argv[];
+static char *
+get_words(argv)
+char **argv;
 {
-    register int i;
-    int foo;
-    Widget override;
-    XGCValues gcvalues;
-    char **list;
+    FILE *pp;
+    static char buf[BUFSIZ];
+    register char *p = buf;
 
-    if ((ProgName = rindex(*argv, '/')) != 0)
-	ProgName++;
+    if (getwordsfrom == FROM_RESRC)
+	return Resrcs.text;
+    if (getwordsfrom == FROM_PROGRAM) {
+	if (!(pp = popen(Resrcs.text_prog, "r"))) {
+	    perror(Resrcs.text_prog);
+	    return def_words;
+	}
+    } else if (getwordsfrom == FROM_FILE)
+	if (!(pp = fopen(Resrcs.file, "r"))) {
+	    perror(Resrcs.file);
+	    return def_words;
+	}
+    else if (getwordsfrom != FROM_PROGRAM && getwordsfrom != FROM_FILE)
+	return def_words;
+
+    buf[0] = 0;
+    if (getwordsfrom == FROM_ARGV) {
+	while (*argv) {
+	    p += strlen(strcpy(p, *argv));
+	    if (*++argv)
+		strcpy(p++, " ");
+	}
+	return buf;
+    }
+
+    /* BUG Alert: does not check for overflow */
+    while (fgets(p, sizeof buf, pp))
+	p += strlen(p);
+    if (getwordsfrom == FROM_PROGRAM)
+	(void) pclose(pp);
     else
-	ProgName = *argv;
-
-    /* getpwuid() returns static pointer, so get root's passwd first */
-    if (!(pw = getpwuid(0)))
-	printf("%s: can't get root's passwd!\n", ProgName), exit(1);
-    strcpy(root_pw, pw->pw_passwd);
-    if (!(pw = getpwuid(getuid())))
-	printf("%s: Intruder alert!\n", ProgName), exit(1);
-
-    XtToolkitInitialize();
-    app = XtCreateApplicationContext();
-    dpy = XtOpenDisplay(app, NULL,
-	"xnlock", "XNlock", options, XtNumber(options), &argc, argv);
-
-    if (dpy == 0)
-      {
-	fprintf(stderr, "Error: Can't open display:\n");
-	exit(1);
-      }
-
-    Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
-    Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
-    override = XtVaAppCreateShell("xnlock", "XNlock",
-	overrideShellWidgetClass, dpy, XtNx, -1, XtNy, -1, NULL);
-    XtGetApplicationResources(override, &Resrcs,
-	resources, XtNumber(resources), NULL, 0);
-
-    XtAddEventHandler(override, VisibilityChangeMask, FALSE, Visibility, NULL);
-
-    widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
-	XtNwidth,	Width,
-	XtNheight,	Height,
-	NULL);
-
-    init_words(--argc, ++argv);
-    init_images();
-
-    /* the background is black and the little guy is white */
-    Black = Resrcs.do_reverse? Resrcs.fg : Resrcs.bg;
-    White = Resrcs.do_reverse? Resrcs.bg : Resrcs.fg;
-    gcvalues.foreground = Black;
-    gcvalues.background = White;
-
-    if (!(font = Resrcs.font)) {
-	list = XListFonts(dpy, FONT_NAME, 32767, &foo);
-	for (i = 0; i < foo; i++)
-	    if ((font = XLoadQueryFont(dpy, list[i])) != 0)
-		break;
-	if (!font)
-	  {
-	  list = XListFonts(dpy, "fixed", 1, &foo);
-	  font = XLoadQueryFont(dpy, list[0]);
-	  }
-	if (!font)
-	  XtError("Can't find a font (so call me stupid).");
-	XFreeFontNames(list);
-    }
-    gcvalues.font = font->fid;
-    gcvalues.graphics_exposures = False;
-    gc = XCreateGC(dpy, DefaultRootWindow(dpy),
-	GCForeground | GCBackground | GCGraphicsExposures | GCFont,
-	&gcvalues);
-
-    x = Width / 2;
-    y = Height / 2;
-    srand (time(0));
-    state = IS_MOVING;
-
-    {
-	static XtActionsRec actions[] = {
-	    { "ClearWindow",	ClearWindow  },
-	    { "GetPasswd",	GetPasswd    },
-	};
-	XtAppAddActions(app, actions, XtNumber(actions));
-	XtOverrideTranslations(widget,
-	    XtParseTranslationTable(
-		"<Expose>:	ClearWindow()	\n\
-		 <BtnDown>:	GetPasswd()	\n\
-		 <KeyPress>:	GetPasswd()"));
-    }
-
-    XtRealizeWidget(override);
-#if 0
-    XGrabServer(dpy);
-#else
-    XGrabPointer(dpy, XtWindow(widget), TRUE, 0, GrabModeAsync,
-		 GrabModeAsync, XtWindow(widget), None, CurrentTime);
-    XGrabKeyboard(dpy, XtWindow(widget), TRUE, GrabModeAsync,
-		  GrabModeAsync, CurrentTime);
-#endif
-    ScreenSaver(1);
-    XtAppMainLoop(app);
-    exit(0);
-}
-
-static void
-leave()
-{
-#if 0
-    XUngrabServer(dpy);
-#else
-    XUngrabPointer(dpy, CurrentTime);
-    XUngrabKeyboard(dpy, CurrentTime);
-#endif
-    ScreenSaver(0);
-    exit(0);
-}
-
-static void
-ScreenSaver(save)
-{
-    static int timeout, interval, prefer_blank, allow_exp;
-    if (save) {
-	XGetScreenSaver(dpy, &timeout, &interval, &prefer_blank, &allow_exp);
-	XSetScreenSaver(dpy, 0, interval, prefer_blank, allow_exp);
-    } else
-	/* restore state */
-	XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
-}
-
-static void
-ClearWindow(w, event)
-Widget w;
-XExposeEvent *event;
-{
-    if (!XtIsRealized(w))
-	return;
-    XSetForeground(dpy, gc, Black);
-    XFillRectangle(dpy, XtWindow(w), gc,
-	event->x, event->y, event->width, event->height);
-    XSetForeground(dpy, gc, White);
-    XSetBackground(dpy, gc, Black);
-    if (state == GET_PASSWD)
-	post_prompt_box(XtWindow(w));
-    if (timeout_id == 0 && event->count == 0) {
-	timeout_id = XtAppAddTimeOut(app, 1000L, move, NULL);
-	/* first grab the input focus */
-	XSetInputFocus(dpy, XtWindow(w), RevertToPointerRoot, CurrentTime);
-	/* now grab the pointer and keyboard and contrain to this window */
-	XGrabPointer(dpy, XtWindow(w), TRUE, 0, GrabModeAsync,
-	     GrabModeAsync, XtWindow(w), None, CurrentTime);
-    }
-}
-
-static void
-Visibility(w, client_data, event)
-Widget w;
-XtPointer client_data;
-XVisibilityEvent *event;
-{
-    XRaiseWindow(dpy, XtWindow(w));
+	(void) fclose (pp);
+    if (!buf[0])
+	return def_words;
+    return buf;
 }
 
 static void
@@ -331,53 +218,271 @@ char *argv[];
     words = get_words(argv); /* if getwordsfrom != FROM_ARGV, argv is a nop */
 }
 
-static char *
-get_words(argv)
-char **argv;
+static void
+ScreenSaver(save)
+     int save;
 {
-    FILE *pp;
-    static char buf[BUFSIZ];
-    register char *p = buf;
-
-    if (getwordsfrom == FROM_RESRC)
-	return Resrcs.text;
-    if (getwordsfrom == FROM_PROGRAM) {
-	if (!(pp = popen(Resrcs.text_prog, "r"))) {
-	    perror(Resrcs.text_prog);
-	    return def_words;
-	}
-    } else if (getwordsfrom == FROM_FILE)
-	if (!(pp = fopen(Resrcs.file, "r"))) {
-	    perror(Resrcs.file);
-	    return def_words;
-	}
-    else if (getwordsfrom != FROM_PROGRAM && getwordsfrom != FROM_FILE)
-	return def_words;
-
-    buf[0] = 0;
-    if (getwordsfrom == FROM_ARGV) {
-	while (*argv) {
-	    p += strlen(strcpy(p, *argv));
-	    if (*++argv)
-		strcpy(p++, " ");
-	}
-	return buf;
-    }
-
-    /* BUG Alert: does not check for overflow */
-    while (fgets(p, sizeof buf, pp))
-	p += strlen(p);
-    if (getwordsfrom == FROM_PROGRAM)
-	(void) pclose(pp);
-    else
-	(void) fclose (pp);
-    if (!buf[0])
-	return def_words;
-    return buf;
+    static int timeout, interval, prefer_blank, allow_exp;
+    if (save) {
+	XGetScreenSaver(dpy, &timeout, &interval, &prefer_blank, &allow_exp);
+	XSetScreenSaver(dpy, 0, interval, prefer_blank, allow_exp);
+    } else
+	/* restore state */
+	XSetScreenSaver(dpy, timeout, interval, prefer_blank, allow_exp);
 }
 
-#define PROMPT	    "Password: "
-#define FAIL_MSG    "Sorry, try again"
+/* XXX */
+static void talk(int force_erase);
+static unsigned long look();
+
+
+static void
+leave()
+{
+#if 0
+    XUngrabServer(dpy);
+#else
+    XUngrabPointer(dpy, CurrentTime);
+    XUngrabKeyboard(dpy, CurrentTime);
+#endif
+    ScreenSaver(0);
+    exit(0);
+}
+
+static void
+walk(dir)
+register int dir;
+{
+    register int incr = 0;
+    static int lastdir;
+    static int up = 1;
+    static Pixmap frame;
+
+    if (dir & (LEFT|RIGHT)) { /* left/right movement (mabye up/down too) */
+	up = -up; /* bouncing effect (even if hit a wall) */
+	if (dir & LEFT) {
+	    incr = X_INCR;
+	    frame = (up < 0) ? left0 : left1;
+	} else {
+	    incr = -X_INCR;
+	    frame = (up < 0) ? right0 : right1;
+	}
+	if ((lastdir == FRONT || lastdir == DOWN) && dir & UP) {
+	    /* workaround silly bug that leaves screen dust when
+	     * guy is facing forward or down and moves up-left/right.
+	     */
+	    XCopyPlane(dpy, frame, XtWindow(widget), gc, 0, 0, 64,64, x, y, 1L);
+	    XFlush(dpy);
+	}
+	/* note that maybe neither UP nor DOWN is set! */
+	if (dir & UP && y > Y_INCR)
+	    y -= Y_INCR;
+	else if (dir & DOWN && y < Height - 64)
+	    y += Y_INCR;
+    }
+    /* Explicit up/down movement only (no left/right) */
+    else if (dir == UP)
+	XCopyPlane(dpy, front, XtWindow(widget), gc,
+	    0,0, 64,64, x, y -= Y_INCR, 1L);
+    else if (dir == DOWN)
+	XCopyPlane(dpy, down, XtWindow(widget), gc,
+	    0,0, 64,64, x, y += Y_INCR, 1L);
+    else if (dir == FRONT && frame != front) {
+	if (up > 0)
+	    up = -up;
+	if (lastdir & LEFT)
+	    frame = left_front;
+	else if (lastdir & RIGHT)
+	    frame = right_front;
+	else
+	    frame = front;
+	XCopyPlane(dpy, frame, XtWindow(widget), gc, 0, 0, 64,64, x, y, 1L);
+    }
+    if (dir & LEFT)
+	while(--incr >= 0) {
+	    XCopyPlane(dpy, frame, XtWindow(widget), gc,
+		0,0, 64,64, --x, y+up, 1L);
+	    XFlush(dpy);
+	}
+    else if (dir & RIGHT)
+	while(++incr <= 0) {
+	    XCopyPlane(dpy, frame, XtWindow(widget), gc,
+		0,0, 64,64, ++x, y+up, 1L);
+	    XFlush(dpy);
+	}
+    lastdir = dir;
+}
+
+static int
+think()
+{
+    if (rand() & 1)
+	walk(FRONT);
+    if (rand() & 1) {
+	if (getwordsfrom > 1)
+	    words = get_words((char **)NULL);
+	return 1;
+    }
+    return 0;
+}
+
+static void
+move()
+{
+    static int length, dir;
+
+    if (!length) {
+	register int tries = 0;
+	dir = 0;
+	if ((rand() & 1) && think()) {
+	    talk(0); /* sets timeout to itself */
+	    return;
+	}
+	if (!(rand() % 3) && (interval = look())) {
+	    timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
+	    return;
+	}
+	interval = 20 + rand() % 100;
+	do  {
+	    if (!tries)
+		length = Width/100 + rand() % 90, tries = 8;
+	    else
+		tries--;
+	    switch (rand() % 8) {
+		case 0:
+		    if (x - X_INCR*length >= 5)
+			dir = LEFT;
+		case 1:
+		    if (x + X_INCR*length <= Width - 70)
+			dir = RIGHT;
+		case 2:
+		    if (y - (Y_INCR*length) >= 5)
+			dir = UP, interval = 40;
+		case 3:
+		    if (y + Y_INCR*length <= Height - 70)
+			dir = DOWN, interval = 20;
+		case 4:
+		    if (x - X_INCR*length >= 5 && y - (Y_INCR*length) >= 5)
+			dir = (LEFT|UP);
+		case 5:
+		    if (x + X_INCR * length <= Width - 70 &&
+			y-Y_INCR * length >= 5)
+			dir = (RIGHT|UP);
+		case 6:
+		    if (x - X_INCR * length >= 5 &&
+			y + Y_INCR * length <= Height - 70)
+			dir = (LEFT|DOWN);
+		case 7:
+		    if (x + X_INCR*length <= Width - 70 &&
+			y + Y_INCR*length <= Height - 70)
+			dir = (RIGHT|DOWN);
+	    }
+	} while (!dir);
+    }
+    walk(dir);
+    --length;
+    timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
+}
+
+static void
+post_prompt_box(window)
+Window window;
+{
+    char s[32];
+    int width = (Width / 3);
+    int height = font_height(font) * 6;
+    int box_x, box_y;
+
+    /* make sure the entire nose icon fits in the box */
+    if (height < 100)
+	height = 100;
+
+    time_x = prompt_x = Width / 3;
+    time_y = prompt_y = Height / 2;
+    box_x = prompt_x - 105;
+    box_y = prompt_y - 3 * font_height(font);
+
+    sprintf (s, "User: %s", pw->pw_name);
+    /* erase current guy -- text message may still exist */
+    XSetForeground(dpy, gc, Black);
+    XFillRectangle(dpy, window, gc, x, y, 64, 64);
+    talk(1); /* forcefully erase message if one is being displayed */
+    /* Clear area in middle of screen for prompt box */
+    XSetForeground(dpy, gc, White);
+    XFillRectangle(dpy, window, gc, box_x, box_y, width, height);
+    XSetForeground(dpy, gc, Black);
+
+    /* make a box that's 5 pixels thick. Then add a thin box inside it */
+    XSetLineAttributes(dpy, gc, 5, 0, 0, 0);
+    XDrawRectangle(dpy, window, gc, box_x+5, box_y+5, width-10, height-10);
+    XSetLineAttributes(dpy, gc, 0, 0, 0, 0);
+    XDrawRectangle(dpy, window, gc, box_x+12, box_y+12, width-23, height-23);
+
+    XDrawString(dpy, window, gc,
+	prompt_x, prompt_y-font_height(font), s, strlen(s));
+    XDrawString(dpy, window, gc, prompt_x, prompt_y, PROMPT, strlen(PROMPT));
+    /* set background for copyplane and DrawImageString; need reverse video */
+    XSetBackground(dpy, gc, White);
+    XCopyPlane(dpy, right0, window, gc, 0,0, 64,64,
+	box_x + 20, box_y + (height - 64)/2, 1L);
+    prompt_x += XTextWidth(font, PROMPT, strlen(PROMPT));
+    time_y += 2*font_height(font);
+}
+
+static void
+ClearWindow(w, event)
+Widget w;
+XExposeEvent *event;
+{
+    if (!XtIsRealized(w))
+	return;
+    XSetForeground(dpy, gc, Black);
+    XFillRectangle(dpy, XtWindow(w), gc,
+	event->x, event->y, event->width, event->height);
+    XSetForeground(dpy, gc, White);
+    XSetBackground(dpy, gc, Black);
+    if (state == GET_PASSWD)
+	post_prompt_box(XtWindow(w));
+    if (timeout_id == 0 && event->count == 0) {
+	timeout_id = XtAppAddTimeOut(app, 1000L, move, NULL);
+	/* first grab the input focus */
+	XSetInputFocus(dpy, XtWindow(w), RevertToPointerRoot, CurrentTime);
+	/* now grab the pointer and keyboard and contrain to this window */
+	XGrabPointer(dpy, XtWindow(w), TRUE, 0, GrabModeAsync,
+	     GrabModeAsync, XtWindow(w), None, CurrentTime);
+    }
+}
+
+static void
+Visibility(w, client_data, event)
+Widget w;
+XtPointer client_data;
+XVisibilityEvent *event;
+{
+    XRaiseWindow(dpy, XtWindow(w));
+}
+
+static void
+countdown(timeout)
+int *timeout;
+{
+    char buf[16];
+
+    if (--(*timeout) < 0) {
+	XExposeEvent event;
+	XtRemoveTimeOut(timeout_id);
+	state = IS_MOVING;
+	event.x = event.y = 0;
+	event.width = Width, event.height = Height;
+	ClearWindow(widget, &event);
+	timeout_id = XtAppAddTimeOut(app, 200L, move, NULL);
+	return;
+    }
+    sprintf(buf, "Time:  %2d  ", (*timeout)+1);
+    XDrawImageString(dpy, XtWindow(widget), gc,
+	time_x, time_y, buf, strlen(buf));
+    XtAppAddTimeOut(app, 1000L, countdown, timeout);
+}
 
 static void
 GetPasswd(w, event)
@@ -478,73 +583,6 @@ XKeyEvent *event;
 	prompt_y, "           ", 11-cnt);
 }
 
-static void
-post_prompt_box(window)
-Window window;
-{
-    char s[32];
-    int width = (Width / 3);
-    int height = font_height(font) * 6;
-    int box_x, box_y;
-
-    /* make sure the entire nose icon fits in the box */
-    if (height < 100)
-	height = 100;
-
-    time_x = prompt_x = Width / 3;
-    time_y = prompt_y = Height / 2;
-    box_x = prompt_x - 105;
-    box_y = prompt_y - 3 * font_height(font);
-
-    sprintf (s, "User: %s", pw->pw_name);
-    /* erase current guy -- text message may still exist */
-    XSetForeground(dpy, gc, Black);
-    XFillRectangle(dpy, window, gc, x, y, 64, 64);
-    talk(1); /* forcefully erase message if one is being displayed */
-    /* Clear area in middle of screen for prompt box */
-    XSetForeground(dpy, gc, White);
-    XFillRectangle(dpy, window, gc, box_x, box_y, width, height);
-    XSetForeground(dpy, gc, Black);
-
-    /* make a box that's 5 pixels thick. Then add a thin box inside it */
-    XSetLineAttributes(dpy, gc, 5, 0, 0, 0);
-    XDrawRectangle(dpy, window, gc, box_x+5, box_y+5, width-10, height-10);
-    XSetLineAttributes(dpy, gc, 0, 0, 0, 0);
-    XDrawRectangle(dpy, window, gc, box_x+12, box_y+12, width-23, height-23);
-
-    XDrawString(dpy, window, gc,
-	prompt_x, prompt_y-font_height(font), s, strlen(s));
-    XDrawString(dpy, window, gc, prompt_x, prompt_y, PROMPT, strlen(PROMPT));
-    /* set background for copyplane and DrawImageString; need reverse video */
-    XSetBackground(dpy, gc, White);
-    XCopyPlane(dpy, right0, window, gc, 0,0, 64,64,
-	box_x + 20, box_y + (height - 64)/2, 1L);
-    prompt_x += XTextWidth(font, PROMPT, strlen(PROMPT));
-    time_y += 2*font_height(font);
-}
-
-static void
-countdown(timeout)
-int *timeout;
-{
-    char buf[16];
-
-    if (--(*timeout) < 0) {
-	XExposeEvent event;
-	XtRemoveTimeOut(timeout_id);
-	state = IS_MOVING;
-	event.x = event.y = 0;
-	event.width = Width, event.height = Height;
-	ClearWindow(widget, &event);
-	timeout_id = XtAppAddTimeOut(app, 200L, move, NULL);
-	return;
-    }
-    sprintf(buf, "Time:  %2.d  ", (*timeout)+1);
-    XDrawImageString(dpy, XtWindow(widget), gc,
-	time_x, time_y, buf, strlen(buf));
-    XtAppAddTimeOut(app, 1000L, countdown, timeout);
-}
-
 #include "nose.0.left"
 #include "nose.1.left"
 #include "nose.0.right"
@@ -575,150 +613,6 @@ init_images()
 	    XtError("Can't load nose images");
 }
 
-#define LEFT 	001
-#define RIGHT 	002
-#define DOWN 	004
-#define UP 	010
-#define FRONT	020
-#define X_INCR 3
-#define Y_INCR 2
-
-static void
-move()
-{
-    static int length, dir;
-
-    if (!length) {
-	register int tries = 0;
-	dir = 0;
-	if ((rand() & 1) && think()) {
-	    talk(0); /* sets timeout to itself */
-	    return;
-	}
-	if (!(rand() % 3) && (interval = look())) {
-	    timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
-	    return;
-	}
-	interval = 20 + rand() % 100;
-	do  {
-	    if (!tries)
-		length = Width/100 + rand() % 90, tries = 8;
-	    else
-		tries--;
-	    switch (rand() % 8) {
-		case 0:
-		    if (x - X_INCR*length >= 5)
-			dir = LEFT;
-		case 1:
-		    if (x + X_INCR*length <= Width - 70)
-			dir = RIGHT;
-		case 2:
-		    if (y - (Y_INCR*length) >= 5)
-			dir = UP, interval = 40;
-		case 3:
-		    if (y + Y_INCR*length <= Height - 70)
-			dir = DOWN, interval = 20;
-		case 4:
-		    if (x - X_INCR*length >= 5 && y - (Y_INCR*length) >= 5)
-			dir = (LEFT|UP);
-		case 5:
-		    if (x + X_INCR * length <= Width - 70 &&
-			y-Y_INCR * length >= 5)
-			dir = (RIGHT|UP);
-		case 6:
-		    if (x - X_INCR * length >= 5 &&
-			y + Y_INCR * length <= Height - 70)
-			dir = (LEFT|DOWN);
-		case 7:
-		    if (x + X_INCR*length <= Width - 70 &&
-			y + Y_INCR*length <= Height - 70)
-			dir = (RIGHT|DOWN);
-	    }
-	} while (!dir);
-    }
-    walk(dir);
-    --length;
-    timeout_id = XtAppAddTimeOut(app, interval, move, NULL);
-}
-
-static void
-walk(dir)
-register int dir;
-{
-    register int incr = 0;
-    static int lastdir;
-    static int up = 1;
-    static Pixmap frame;
-
-    if (dir & (LEFT|RIGHT)) { /* left/right movement (mabye up/down too) */
-	up = -up; /* bouncing effect (even if hit a wall) */
-	if (dir & LEFT) {
-	    incr = X_INCR;
-	    frame = (up < 0) ? left0 : left1;
-	} else {
-	    incr = -X_INCR;
-	    frame = (up < 0) ? right0 : right1;
-	}
-	if ((lastdir == FRONT || lastdir == DOWN) && dir & UP) {
-	    /* workaround silly bug that leaves screen dust when
-	     * guy is facing forward or down and moves up-left/right.
-	     */
-	    XCopyPlane(dpy, frame, XtWindow(widget), gc, 0, 0, 64,64, x, y, 1L);
-	    XFlush(dpy);
-	}
-	/* note that maybe neither UP nor DOWN is set! */
-	if (dir & UP && y > Y_INCR)
-	    y -= Y_INCR;
-	else if (dir & DOWN && y < Height - 64)
-	    y += Y_INCR;
-    }
-    /* Explicit up/down movement only (no left/right) */
-    else if (dir == UP)
-	XCopyPlane(dpy, front, XtWindow(widget), gc,
-	    0,0, 64,64, x, y -= Y_INCR, 1L);
-    else if (dir == DOWN)
-	XCopyPlane(dpy, down, XtWindow(widget), gc,
-	    0,0, 64,64, x, y += Y_INCR, 1L);
-    else if (dir == FRONT && frame != front) {
-	if (up > 0)
-	    up = -up;
-	if (lastdir & LEFT)
-	    frame = left_front;
-	else if (lastdir & RIGHT)
-	    frame = right_front;
-	else
-	    frame = front;
-	XCopyPlane(dpy, frame, XtWindow(widget), gc, 0, 0, 64,64, x, y, 1L);
-    }
-    if (dir & LEFT)
-	while(--incr >= 0) {
-	    XCopyPlane(dpy, frame, XtWindow(widget), gc,
-		0,0, 64,64, --x, y+up, 1L);
-	    XFlush(dpy);
-	}
-    else if (dir & RIGHT)
-	while(++incr <= 0) {
-	    XCopyPlane(dpy, frame, XtWindow(widget), gc,
-		0,0, 64,64, ++x, y+up, 1L);
-	    XFlush(dpy);
-	}
-    lastdir = dir;
-}
-
-static int
-think()
-{
-    if (rand() & 1)
-	walk(FRONT);
-    if (rand() & 1) {
-	if (getwordsfrom > 1)
-	    words = get_words((char **)NULL);
-	return 1;
-    }
-    return 0;
-}
-
-#define MAXLINES 40
 static void
 talk(force_erase)
 int force_erase;
@@ -857,4 +751,113 @@ look()
     XCopyPlane(dpy, (rand() & 1)? left0 : right0, XtWindow(widget), gc,
 	0, 0, 64,64, x, y, 1L);
     return 1000L;
+}
+
+int
+main (argc, argv)
+int argc;
+char *argv[];
+{
+    register int i;
+    int foo;
+    Widget override;
+    XGCValues gcvalues;
+    char **list;
+
+    if ((ProgName = rindex(*argv, '/')) != 0)
+	ProgName++;
+    else
+	ProgName = *argv;
+
+    /* getpwuid() returns static pointer, so get root's passwd first */
+    if (!(pw = getpwuid(0)))
+	printf("%s: can't get root's passwd!\n", ProgName), exit(1);
+    strcpy(root_pw, pw->pw_passwd);
+    if (!(pw = getpwuid(getuid())))
+	printf("%s: Intruder alert!\n", ProgName), exit(1);
+
+    XtToolkitInitialize();
+    app = XtCreateApplicationContext();
+    dpy = XtOpenDisplay(app, NULL,
+	"xnlock", "XNlock", options, XtNumber(options), &argc, argv);
+
+    if (dpy == 0)
+      {
+	fprintf(stderr, "Error: Can't open display:\n");
+	exit(1);
+      }
+
+    Width = DisplayWidth(dpy, DefaultScreen(dpy)) + 2;
+    Height = DisplayHeight(dpy, DefaultScreen(dpy)) + 2;
+    override = XtVaAppCreateShell("xnlock", "XNlock",
+	overrideShellWidgetClass, dpy, XtNx, -1, XtNy, -1, NULL);
+    XtGetApplicationResources(override, &Resrcs,
+	resources, XtNumber(resources), NULL, 0);
+
+    XtAddEventHandler(override, VisibilityChangeMask, FALSE, Visibility, NULL);
+
+    widget = XtVaCreateManagedWidget("_foo", widgetClass, override,
+	XtNwidth,	Width,
+	XtNheight,	Height,
+	NULL);
+
+    init_words(--argc, ++argv);
+    init_images();
+
+    /* the background is black and the little guy is white */
+    Black = Resrcs.do_reverse? Resrcs.fg : Resrcs.bg;
+    White = Resrcs.do_reverse? Resrcs.bg : Resrcs.fg;
+    gcvalues.foreground = Black;
+    gcvalues.background = White;
+
+    if (!(font = Resrcs.font)) {
+	list = XListFonts(dpy, FONT_NAME, 32767, &foo);
+	for (i = 0; i < foo; i++)
+	    if ((font = XLoadQueryFont(dpy, list[i])) != 0)
+		break;
+	if (!font)
+	  {
+	  list = XListFonts(dpy, "fixed", 1, &foo);
+	  font = XLoadQueryFont(dpy, list[0]);
+	  }
+	if (!font)
+	  XtError("Can't find a font (so call me stupid).");
+	XFreeFontNames(list);
+    }
+    gcvalues.font = font->fid;
+    gcvalues.graphics_exposures = False;
+    gc = XCreateGC(dpy, DefaultRootWindow(dpy),
+	GCForeground | GCBackground | GCGraphicsExposures | GCFont,
+	&gcvalues);
+
+    x = Width / 2;
+    y = Height / 2;
+    srand (time(0));
+    state = IS_MOVING;
+
+    {
+	static XtActionsRec actions[] = {
+	    { "ClearWindow",	ClearWindow  },
+	    { "GetPasswd",	GetPasswd    },
+	};
+	XtAppAddActions(app, actions, XtNumber(actions));
+	XtOverrideTranslations(widget,
+	    XtParseTranslationTable(
+		"<Expose>:	ClearWindow()	\n\
+		 <BtnDown>:	GetPasswd()	\n\
+		 <KeyPress>:	GetPasswd()"));
+    }
+
+    XtRealizeWidget(override);
+#if 0
+    XGrabServer(dpy);
+#else
+    XGrabPointer(dpy, XtWindow(widget), TRUE, 0, GrabModeAsync,
+		 GrabModeAsync, XtWindow(widget), None, CurrentTime);
+    XGrabKeyboard(dpy, XtWindow(widget), TRUE, GrabModeAsync,
+		  GrabModeAsync, CurrentTime);
+#endif
+    ScreenSaver(1);
+    XtAppMainLoop(app);
+    exit(0);
 }
