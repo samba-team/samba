@@ -351,8 +351,9 @@ typedef struct krb5_auth_context_data {
 }krb5_auth_context_data, *krb5_auth_context;
 
 typedef struct {
-    KDC_REP part1;
-    EncKDCRepPart part2;
+    KDC_REP kdc_rep;
+    EncKDCRepPart enc_part;
+    KRB_ERROR error;
 } krb5_kdc_rep;
 
 extern char *heimdal_version, *heimdal_long_version;
