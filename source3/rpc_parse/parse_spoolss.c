@@ -1481,11 +1481,16 @@ static BOOL new_smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth,
 	if (MARSHALLING(ps)) {
 		uint32 struct_offset = prs_offset(ps);
 		uint32 relative_offset;
+
+		if (! *secdesc) {
+			relative_offset = 0;
+			if (!prs_uint32("offset", ps, depth, &relative_offset))
+				return False;
+			return True;
+		}
 		
 		if (*secdesc != NULL) {
-#if 0 /* JRA */
-			buffer->string_at_end -= 256; /* HACK! */ 
-#endif
+			buffer->string_at_end -= sec_desc_size(*secdesc);
 
 			prs_set_offset(ps, buffer->string_at_end);
 			
