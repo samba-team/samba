@@ -29,6 +29,12 @@
 
 #define SQUID_BUFFER_SIZE 2010
 
+enum squid_mode {
+	SQUID_2_5_BASIC,
+	SQUID_2_4_BASIC
+};
+	
+
 extern int winbindd_fd;
 
 static const char *helper_protocol;
@@ -140,7 +146,7 @@ static BOOL check_plaintext_auth(const char *user, const char *pass, BOOL stdout
         return (result == NSS_STATUS_SUCCESS);
 }
 
-static void manage_squid_2_5_basic_request() 
+static void manage_squid_basic_request(enum squid_mode squid_mode) 
 {
 	char buf[SQUID_BUFFER_SIZE+1];
 	int length;
@@ -186,9 +192,11 @@ static void manage_squid_2_5_basic_request()
 	}
 	*pass='\0';
 	pass++;
-
-	rfc1738_unescape(user);
-	rfc1738_unescape(pass);
+	
+	if (squid_mode == SQUID_2_5_BASIC) {
+		rfc1738_unescape(user);
+		rfc1738_unescape(pass);
+	}
 
 	if (check_plaintext_auth(user, pass, False)) {
 		x_fprintf(x_stdout, "OK\n");
@@ -198,12 +206,12 @@ static void manage_squid_2_5_basic_request()
 }
 
 
-static void squid_2_5_basic(void) {
+static void squid_basic(enum squid_mode squid_mode) {
 	/* initialize FDescs */
 	x_setbuf(x_stdout, NULL);
 	x_setbuf(x_stderr, NULL);
 	while(1) {
-		manage_squid_2_5_basic_request();
+		manage_squid_basic_request(squid_mode);
 	}
 }
 
@@ -385,7 +393,12 @@ int main(int argc, const char **argv)
 
 	if (helper_protocol) {
 		if (strcmp(helper_protocol, "squid-2.5-basic")== 0) {
-			squid_2_5_basic();
+			squid_basic(SQUID_2_5_BASIC);
+		} else if (strcmp(helper_protocol, "squid-2.4-basic")== 0) {
+			squid_basic(SQUID_2_4_BASIC);
+		} else {
+			fprintf(stderr, "unknown helper protocol [%s]\n", helper_protocol);
+			exit(1);
 		}
 	}
 
