@@ -587,12 +587,12 @@ pk_mk_pa_reply_enckey(krb5_context context,
     memset(&ed, 0, sizeof(ed));
 
     /* default to DES3 if client doesn't tell us */
-    enveloped_enctype = ETYPE_DES3_CBC_NONE;
+    enveloped_enctype = ETYPE_DES3_CBC_NONE_CMS;
 
     for (i = 0; i < req->req_body.etype.len; i++) {
 	switch(req->req_body.etype.val[i]) {
 	case 15: /* des-ede3-cbc-Env-OID */
-	    enveloped_enctype = ETYPE_DES3_CBC_NONE;	    
+	    enveloped_enctype = ETYPE_DES3_CBC_NONE_CMS;
 	    break;
 	default:
 	    break;
