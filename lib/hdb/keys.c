@@ -69,7 +69,7 @@ hdb_free_keys (krb5_context context, int len, Key *keys)
  */
 
 /* the 3 DES types must be first */
-const krb5_enctype all_etypes[] = { 
+static const krb5_enctype all_etypes[] = { 
     ETYPE_DES_CBC_MD5,
     ETYPE_DES_CBC_MD4,
     ETYPE_DES_CBC_CRC,
