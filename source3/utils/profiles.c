@@ -295,7 +295,6 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <sys/mman.h>
 
 typedef unsigned int DWORD;
 typedef unsigned short WORD;
@@ -610,7 +609,12 @@ int main(int argc, char *argv[])
    * dealing with the records. We are interested in the sk record
    */
   start = 0;
+
+#ifdef HAVE_MMAP
   base = mmap(&start, sbuf.st_size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+#else
+  base = (char *)-1;
+#endif
 
   if ((int)base == -1) {
     fprintf(stderr, "Could not mmap file: %s, %s\n", poptPeekArg(pc),
@@ -726,7 +730,9 @@ int main(int argc, char *argv[])
     sk_hdr = (SK_HDR *)(base + OFF(IVAL(&sk_hdr->prev_off, 0)));
   } while (sk_off != first_sk_off);
 
+#ifdef HAVE_MMAP
   munmap(base, sbuf.st_size); 
+#endif
 
   poptFreeContext(pc);
 
