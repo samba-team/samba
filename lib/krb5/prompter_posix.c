@@ -59,7 +59,16 @@ krb5_prompter_posix (krb5_context context,
 				  0))
 	       return 1;
 	} else {
-	    abort ();
+	    char *s = prompts[i].reply->data;
+
+	    fputs (prompts[i].prompt, stdout);
+	    fflush (stdout);
+	    if(fgets(prompts[i].reply->data,
+		     prompts[i].reply->length,
+		     stdin) == NULL)
+		return 1;
+	    if(s[strlen(s) - 1] == '\n')
+		s[strlen(s) - 1] = '\0';
 	}
     }
     return 0;
