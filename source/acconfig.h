@@ -10,6 +10,7 @@
 #undef ssize_t
 #undef loff_t
 #undef offset_t
+#undef aclent_t
 #undef HAVE_CONNECT
 #undef HAVE_SHORT_INO_T
 #undef WITH_AFS
