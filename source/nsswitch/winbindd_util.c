@@ -128,7 +128,7 @@ static struct winbindd_domain *add_trusted_domain(const char *domain_name, const
 	   
 	if ( strequal( lp_workgroup(), domain_name) ) 	{
 		domain->native_mode = cm_check_for_native_mode_win2k( domain_name );
-		DEBUG(5,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
+		DEBUG(3,("add_trusted_domain: %s is a %s mode domain\n", domain_name,
 					domain->native_mode ? "native" : "mixed" ));
 	}	
 

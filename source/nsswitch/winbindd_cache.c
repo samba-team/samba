@@ -559,7 +559,7 @@ static NTSTATUS enum_dom_groups(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "GL/%s", domain->name);
+	centry = wcache_fetch(cache, domain, "GL/%s/domain", domain->name);
 	if (!centry) goto do_query;
 
 	*num_entries = centry_uint32(centry);
@@ -599,13 +599,83 @@ do_query:
 		centry_put_string(centry, (*info)[i].acct_desc);
 		centry_put_uint32(centry, (*info)[i].rid);
 	}	
-	centry_end(centry, "GL/%s", domain->name);
+	centry_end(centry, "GL/%s/domain", domain->name);
 	centry_free(centry);
 
 skip_save:
 	return status;
 }
 
+/* list all domain groups */
+static NTSTATUS enum_local_groups(struct winbindd_domain *domain,
+				TALLOC_CTX *mem_ctx,
+				uint32 *num_entries, 
+				struct acct_info **info)
+{
+	struct winbind_cache *cache = get_cache(domain);
+	struct cache_entry *centry = NULL;
+	NTSTATUS status;
+	int i;
+
+	if (!cache->tdb) goto do_query;
+
+	centry = wcache_fetch(cache, domain, "GL/%s/local", domain->name);
+	if (!centry) goto do_query;
+
+	*num_entries = centry_uint32(centry);
+	
+	if (*num_entries == 0) goto do_cached;
+
+	(*info) = talloc(mem_ctx, sizeof(**info) * (*num_entries));
+	if (! (*info)) smb_panic("enum_dom_groups out of memory");
+	for (i=0; i<(*num_entries); i++) {
+		fstrcpy((*info)[i].acct_name, centry_string(centry, mem_ctx));
+		fstrcpy((*info)[i].acct_desc, centry_string(centry, mem_ctx));
+		(*info)[i].rid = centry_uint32(centry);
+	}
+
+do_cached:	
+
+	/* If we are returning cached data and the domain controller
+	   is down then we don't know whether the data is up to date
+	   or not.  Return NT_STATUS_MORE_PROCESSING_REQUIRED to
+	   indicate this. */
+
+	if (wcache_server_down(domain)) {
+		DEBUG(10, ("query_user_list: returning cached user list and server was down\n"));
+		status = NT_STATUS_MORE_PROCESSING_REQUIRED;
+	} else
+		status = centry->status;
+
+	centry_free(centry);
+	return status;
+
+do_query:
+	*num_entries = 0;
+	*info = NULL;
+
+	if (wcache_server_down(domain)) {
+		return NT_STATUS_SERVER_DISABLED;
+	}
+
+	status = cache->backend->enum_local_groups(domain, mem_ctx, num_entries, info);
+
+	/* and save it */
+	refresh_sequence_number(domain, True);
+	centry = centry_start(domain, status);
+	if (!centry) goto skip_save;
+	centry_put_uint32(centry, *num_entries);
+	for (i=0; i<(*num_entries); i++) {
+		centry_put_string(centry, (*info)[i].acct_name);
+		centry_put_string(centry, (*info)[i].acct_desc);
+		centry_put_uint32(centry, (*info)[i].rid);
+	}	
+	centry_end(centry, "GL/%s/local", domain->name);
+	centry_free(centry);
+
+skip_save:
+	return status;
+}
 
 /* convert a single name to a sid in a domain */
 static NTSTATUS name_to_sid(struct winbindd_domain *domain,
@@ -906,6 +976,7 @@ struct winbindd_methods cache_methods = {
 	True,
 	query_user_list,
 	enum_dom_groups,
+	enum_local_groups,
 	name_to_sid,
 	sid_to_name,
 	query_user,
