@@ -201,6 +201,8 @@
 #undef INTEL_SPINLOCKS
 #undef MIPS_SPINLOCKS
 #undef POWERPC_SPINLOCKS
+#undef HAVE_POSIX_ACLS
+#undef HAVE_NO_ACLS
 
 /* The number of bytes in a int.  */
 #undef SIZEOF_INT
@@ -924,6 +926,9 @@
 
 /* Define if you have the <utmpx.h> header file.  */
 #undef HAVE_UTMPX_H
+
+/* Define if you have the acl library (-lacl).  */
+#undef HAVE_LIBACL
 
 /* Define if you have the cups library (-lcups).  */
 #undef HAVE_LIBCUPS
