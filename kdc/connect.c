@@ -676,11 +676,19 @@ handle_http_tcp (struct descr *d)
 	    "<H1>404 Not found</H1>\r\n"
 	    "That page doesn't exist, maybe you are looking for "
 	    "<A HREF=\"http://www.pdc.kth.se/heimdal/\">Heimdal</A>?\r\n";
-	write(d->s, proto, strlen(proto));
-	write(d->s, msg, strlen(msg));
 	kdc_log(0, "HTTP request from %s is non KDC request", d->addr_string);
 	kdc_log(5, "HTTP request: %s", t);
 	free(data);
+	if (write(d->s, proto, strlen(proto)) < 0) {
+	    kdc_log(0, "HTTP write failed: %s: %s", 
+		    d->addr_string, strerror(errno));
+	    return -1;
+	}
+	if (write(d->s, msg, strlen(msg)) < 0) {
+	    kdc_log(0, "HTTP write failed: %s: %s", 
+		    d->addr_string, strerror(errno));
+	    return -1;
+	}
 	return -1;
     }
     {
@@ -691,8 +699,16 @@ handle_http_tcp (struct descr *d)
 	    "Pragma: no-cache\r\n"
 	    "Content-type: application/octet-stream\r\n"
 	    "Content-transfer-encoding: binary\r\n\r\n";
-	write(d->s, proto, strlen(proto));
-	write(d->s, msg, strlen(msg));
+	if (write(d->s, proto, strlen(proto)) < 0) {
+	    kdc_log(0, "HTTP write failed: %s: %s", 
+		    d->addr_string, strerror(errno));
+	    return -1;
+	}
+	if (write(d->s, msg, strlen(msg)) < 0) {
+	    kdc_log(0, "HTTP write failed: %s: %s", 
+		    d->addr_string, strerror(errno));
+	    return -1;
+	}
     }
     memcpy(d->buf, data, len);
     d->len = len;
