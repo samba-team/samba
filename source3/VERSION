@@ -54,46 +54,16 @@ SAMBA_VERSION_PRE_RELEASE=3
 SAMBA_VERSION_RC_RELEASE=
 
 ########################################################
-# For 'beta' releases the version will be              #
-#                                                      #
-# <MAJOR>.<MINOR>.<RELEASE>beta<BETA_RELEASE>          #
-#                                                      #
-# e.g. SAMBA_VERSION_BETA_RELEASE=3                    #
-#  ->  "3.0.0beta3"                                    #
-########################################################
-SAMBA_VERSION_BETA_RELEASE=
-
-########################################################
-# For 'alpha' releases the version will be             #
-#                                                      #
-# <MAJOR>.<MINOR>.<RELEASE>alpha<ALPHA_RELEASE>        #
-#                                                      #
-# e.g. SAMBA_VERSION_ALPHA_RELEASE=1                   #
-#  ->  "4.0.0alpha1"                                   #
-########################################################
-SAMBA_VERSION_ALPHA_RELEASE=
-
-########################################################
-# For 'test' releases the version will be              #
-#                                                      #
-# <MAJOR>.<MINOR>.<RELEASE>test<TEST_RELEASE>          #
-#                                                      #
-# e.g. SAMBA_VERSION_TEST_RELEASE=1                    #
-#  ->  "4.0.0test1"                                    #
-########################################################
-SAMBA_VERSION_TEST_RELEASE=
-
-########################################################
-# To mark CVS snapshots this should be set to 'yes'    #
+# To mark SVN snapshots this should be set to 'yes'    #
 # in the development BRANCH, and set to 'no' only in   #
 # the SAMBA_X_X_RELEASE BRANCH                         #
 #                                                      #
 # <MAJOR>.<MINOR>.<RELEASE>[...]cvs                    #
 #                                                      #
-# e.g. SAMBA_VERSION_IS_CVS_SNAPSHOT=yes               #
-#  ->  "CVS 3.0.0rc2"                                  #
+# e.g. SAMBA_VERSION_IS_SVN_SNAPSHOT=yes               #
+#  ->  "3.0.0-SVN-build-199"                           #
 ########################################################
-SAMBA_VERSION_IS_CVS_SNAPSHOT=yes
+SAMBA_VERSION_IS_SVN_SNAPSHOT=yes
 
 ########################################################
 # This can be set by vendors if they want...           #
