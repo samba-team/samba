@@ -1,3 +1,8 @@
+1999-08-19  Assar Westerlund  <assar@sics.se>
+
+	* kxd.c (recv_conn): give better error message
+	(doit_active): don't die if fork gives EAGAIN
+
 1999-07-12  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am: handle not building X programs
