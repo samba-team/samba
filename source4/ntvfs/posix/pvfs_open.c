@@ -199,7 +199,7 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		/* check the security descriptor */
 		status = pvfs_access_check(pvfs, req, name, &access_mask);
 	} else {
-		status = pvfs_access_check_create(pvfs, req, name);
+		status = pvfs_access_check_create(pvfs, req, name, &access_mask);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		idr_remove(pvfs->idtree_fnum, fnum);
@@ -452,22 +452,15 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 	mode_t mode;
 	uint32_t attrib;
 
-	status = pvfs_access_check_create(pvfs, req, name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
-
 	if ((io->ntcreatex.in.file_attr & FILE_ATTRIBUTE_READONLY) &&
 	    (create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
 		return NT_STATUS_CANNOT_DELETE;
 	}
 	
-	if (access_mask & SEC_FLAG_MAXIMUM_ALLOWED) {
-		access_mask = SEC_RIGHTS_FILE_READ | SEC_RIGHTS_FILE_WRITE | 
-			SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+	status = pvfs_access_check_create(pvfs, req, name, &access_mask);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
-
-	access_mask |= SEC_FILE_READ_ATTRIBUTE;
 
 	if (access_mask & (SEC_FILE_WRITE_DATA | SEC_FILE_APPEND_DATA)) {
 		flags = O_RDWR;
