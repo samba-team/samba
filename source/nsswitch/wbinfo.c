@@ -289,60 +289,74 @@ int main(int argc, char **argv)
 
 	/* Parse command line options */
 
+	if (argc == 1) {
+		usage();
+		return 1;
+	}
+
 	while ((opt = getopt(argc, argv, "ugs:n:U:G:S:Y:")) != EOF) {
 		switch (opt) {
 		case 'u':
 			if (!print_domain_users()) {
 				printf("Error looking up domain users\n");
+				return 1;
 			}
-			return 0;
+			break;
 		case 'g':
 			if (!print_domain_groups()) {
 				printf("Error looking up domain groups\n");
+				return 1;
 			}
-			return 0;
+			break;
 		case 's':
 			if (!wbinfo_lookupsid(optarg)) {
 				printf("Could not lookup sid %s\n", optarg);
+				return 1;
 			}
-			return 0;
+			break;
 		case 'n':
 			if (!wbinfo_lookupname(optarg)) {
 				printf("Could not lookup name %s\n", optarg);
+				return 1;
 			}
-			return 0;
+			break;
 		case 'U':
 			if (!wbinfo_uid_to_sid(atoi(optarg))) {
 				printf("Could not convert uid %s to sid\n",
 				       optarg);
+				return 1;
 			}
-			return 0;
+			break;
 		case 'G':
 			if (!wbinfo_gid_to_sid(atoi(optarg))) {
 				printf("Could not convert gid %s to sid\n",
 				       optarg);
+				return 1;
 			}
-			return 0;
+			break;
 		case 'S':
 			if (!wbinfo_sid_to_uid(optarg)) {
 				printf("Could not convert sid %s to uid\n",
 				       optarg);
+				return 1;
 			}
-			return 0;
+			break;
 		case 'Y':
 			if (!wbinfo_sid_to_gid(optarg)) {
 				printf("Could not convert sid %s to gid\n",
 				       optarg);
+				return 1;
 			}
-			return 0;
+			break;
+
+			/* Invalid option */
+
 		default:
 			usage();
 			return 1;
 		}
 	}
-
-	usage();
-
+	
 	/* Clean exit */
 
 	return 0;
