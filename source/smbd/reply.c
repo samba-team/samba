@@ -33,6 +33,7 @@ extern int max_recv;
 extern char magic_char;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
+extern uint32 global_client_caps;
 
 extern BOOL global_encrypted_passwords_negotiated;
 
@@ -2182,6 +2183,10 @@ int reply_read_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 	CHECK_READ(fsp);
 
 	set_message(outbuf,12,0,True);
+
+	if (global_client_caps & CAP_LARGE_READX) {
+		smb_maxcnt |= ((((size_t)SVAL(inbuf,smb_vwv7)) & 1 )<<16);
+	}
 
 	if(CVAL(inbuf,smb_wct) == 12) {
 #ifdef LARGE_SMB_OFF_T
