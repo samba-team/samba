@@ -1089,23 +1089,21 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 
 BOOL local_sid_to_uid(uid_t *puid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	DOM_SID dom_sid;
-	uint32 rid;
 	SAM_ACCOUNT *sampw = NULL;	
 	struct passwd *unix_pw;
 	const char *user_name;
 
 	*name_type = SID_NAME_UNKNOWN;
 
-	sid_copy(&dom_sid, psid);
-	sid_split_rid(&dom_sid, &rid);
-
 	/*
 	 * We can only convert to a uid if this is our local
 	 * Domain SID (ie. we are the controling authority).
 	 */
-	if ( !sid_equal(get_global_sam_sid(), &dom_sid) )
+	if (!sid_check_is_in_our_domain(psid) ) {
+		DEBUG(5,("local_sid_to_uid: this SID (%s) is not from our domain\n", sid_string_static(psid)));
 		return False;
+	}
+
 
 
 	/* lookup the user account */
@@ -1189,7 +1187,6 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-	DOM_SID dom_sid;
 	uint32 rid;
 	GROUP_MAP group;
 
@@ -1206,12 +1203,9 @@ BOOL local_sid_to_gid(gid_t *pgid, const DOM_SID *psid, enum SID_NAME_USE *name_
 		/* fallback to rid mapping if enabled */
 
 		if ( lp_enable_rid_algorithm() ) {
-			sid_copy(&dom_sid, psid);
-			sid_split_rid(&dom_sid, &rid);
 
-			if (!sid_equal(get_global_sam_sid(), &dom_sid) ) {
-				DEBUG(5,("local_sid_to_gid: RID algorithm only supported for our domain (not %s)\n",
-					sid_string_static(&dom_sid)));
+			if (!sid_check_is_in_our_domain(psid) ) {
+				DEBUG(5,("local_sid_to_gid: RID algorithm only supported for our domain (%s is not)\n", sid_string_static(psid)));
 				return False;
 			}
 
