@@ -385,7 +385,7 @@ NTSTATUS ntlmssp_server_update(NTLMSSP_STATE *ntlmssp_state,
 	} else if (ntlmssp_command == NTLMSSP_AUTH) {
 		return ntlmssp_server_auth(ntlmssp_state, request, reply);
 	} else {
-		DEBUG(1, ("unknown NTLMSSP command %u\n", ntlmssp_command, ntlmssp_state->expected_state));
+		DEBUG(1, ("unknown NTLMSSP command %u\n", ntlmssp_command));
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 }
