@@ -422,6 +422,55 @@ case, while short names are lowered. Default em(Yes).
 By default, Samba 2.0 has the same semantics as a Windows NT
 server, in that it is case insensitive but case preserving.
 
+label(NOTEABOUTUSERNAMEPASSWORDVALIDATION)
+manpagesection(NOTE ABOUT USERNAME/PASSWORD VALIDATION)
+
+There are a number of ways in which a user can connect to a
+service. The server follows the following steps in determining if it
+will allow a connection to a specified service. If all the steps fail
+then the connection request is rejected. If one of the steps pass then
+the following steps are not checked.
+
+If the service is marked link(bf("guest only = yes"))(guestonly) then
+steps 1 to 5 are skipped.
+
+starteit()
+
+eit() Step 1: If the client has passed a username/password pair and
+that username/password pair is validated by the UNIX system's password
+programs then the connection is made as that username. Note that this
+includes the tt(\\server\service%username) method of passing a
+username.
+
+eit() Step 2: If the client has previously registered a username with
+the system and now supplies a correct password for that username then
+the connection is allowed.
+
+eit() Step 3: The client's netbios name and any previously used user
+names are checked against the supplied password, if they match then
+the connection is allowed as the corresponding user.
+
+eit() Step 4: If the client has previously validated a
+username/password pair with the server and the client has passed the
+validation token then that username is used. This step is skipped if
+link(bf("revalidate = yes"))(revalidate) for this service.
+
+eit() Step 5: If a link(bf("user = "))(user) field is given in the
+smb.conf file for the service and the client has supplied a password,
+and that password matches (according to the UNIX system's password
+checking) with one of the usernames from the link(bf(user=))(user)
+field then the connection is made as the username in the
+link(bf("user="))(user) line. If one of the username in the
+link(bf(user=))(user) list begins with a tt('@') then that name
+expands to a list of names in the group of the same name.
+
+eit() Step 6: If the service is a guest service then a connection is
+made as the username given in the link(bf("guest account
+="))(guestaccount) for the service, irrespective of the supplied
+password.
+
+endeit()
+
 label(COMPLETELISTOFGLOBALPARAMETERS)
 manpagesection(COMPLETE LIST OF GLOBAL PARAMETERS)
 
@@ -3641,7 +3690,7 @@ Samba code. It is left in the parameter list to prevent breaking
 old bf(smb.conf) files.
 
 label(panicaction)
-dit(bf(panic action (G))
+dit(bf(panic action (G)))
 
 This is a Samba developer option that allows a system command to be
 called when either url(bf(smbd))(smbd.8.html) or
@@ -3851,9 +3900,9 @@ to a password server, and then the password server fails, no more
 users will be able to be authenticated from this
 url(bf(smbd))(smbd.8.html).  This is a restriction of the SMB/CIFS
 protocol when in link(bf("security=server"))(security) mode and cannot
-be fixed.
+be fixed in Samba.
 
-it() If you are using a WindowsNT server as your password server then
+it() If you are using a Windows NT server as your password server then
 you will have to ensure that your users are able to login from the
 Samba server, as when in link(bf("security=server"))(security) mode
 the network logon will appear to come from there rather than from the
@@ -3861,7 +3910,7 @@ users workstation.
 
 endit()
 
-See also the link(bf("security") parameter.
+See also the link(bf("security"))(security) parameter.
 
   bf(Default:)
 tt(	password server = <empty string>)
@@ -4035,7 +4084,7 @@ or tt("%f") - the tt("%p") is optional. At the time a job is
 submitted, if no printer name is supplied the tt("%p") will be
 silently removed from the printer command.
 
-If specified in the link(bf("[global]")(global) section, the print
+If specified in the link(bf("[global]"))(global) section, the print
 command given will be used for any printable service that does not
 have its own print command specified.
 
@@ -4605,7 +4654,7 @@ bf("security=domain").
 em(*****NOTE THAT THIS DEFAULT IS DIFFERENT IN SAMBA2.0 THAN FOR
 PREVIOUS VERSIONS OF SAMBA *******).
 
-In previous versions of Samba the default was "security=share") mainly
+In previous versions of Samba the default was bf("security=share") mainly
 because that was the only option at one stage.
 
 There is a bug in WfWg that has relevence to this setting. When in
@@ -4676,7 +4725,7 @@ as a potential username.
 it() The NetBIOS name of the client is added to the list as a
 potential username.
 
-it() Ant users on the link(bf("user"))(user) list are added
+it() Any users on the link(bf("user"))(user) list are added
 as potential usernames.
 
 endit()
@@ -4692,6 +4741,9 @@ be used, otherwise access is denied.
 
 Note that it can be em(*very*) confusing in share-level security as to
 which UNIX username will eventually be used in granting access.
+
+See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
+VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
 dit(bf("security=user"))
 
@@ -4713,6 +4765,9 @@ level security without allowing the server to automatically map unknown
 users into the link(bf("guest account"))(guestaccount). See the
 link(bf("map to guest"))(maptoguest) parameter for details on
 doing this.
+
+See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
+VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
 dit(bf("security=server"))
 
@@ -4736,6 +4791,9 @@ level security without allowing the server to automatically map unknown
 users into the link(bf("guest account"))(guestaccount). See the
 link(bf("map to guest"))(maptoguest) parameter for details on
 doing this.
+
+See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
+VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
 See also the link(bf("password server"))(passwordserver) parameter.
 and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
@@ -4774,6 +4832,9 @@ must be done in UNICODE and Samba currently does not widen
 multi-byte user names to UNICODE correctly, thus a multi-byte
 username will not be recognised correctly at the Domain Controller.
 This issue will be addressed in a future release.
+
+See also the section link(bf("NOTE ABOUT USERNAME/PASSWORD
+VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION).
 
 See also the link(bf("password server"))(passwordserver) parameter.
 and the link(bf("encrypted passwords"))(encryptpasswords) parameter.
@@ -5259,99 +5320,98 @@ or v3, tt("ssl2") results in SSL v2, tt("ssl3") results in SSL v3 and
   bf(Default:)
 tt(	ssl version = "ssl2or3")
 
-stat cache  G
-stat cache size  G
+label(statcache)
+dit(bf(stat cache (G)))
 
-.SS status (G)
+This parameter determines if url(bf(smbd))(smbd.8.html) will use a
+cache in order to speed up case insensitive name mappings. You should
+never need to change this parameter.
+
+  bf(Default:)
+tt(	stat cache = yes)
+
+label(statcachesize)
+dit(bf(stat cache size (G)))
+
+This parameter determines the number of entries in the link(bf(stat
+cache))(statcache).  You should never need to change this parameter.
+
+  bf(Default:)
+tt(	stat cache size = 50)
+
+label(status)
+dit(bf(status (G)))
+
 This enables or disables logging of connections to a status file that
-.B smbstatus
-can read.
+url(bf(smbstatus))(smbstatus.1.html) can read.
 
-With this disabled
-.B smbstatus
-won't be able to tell you what
-connections are active.
+With this disabled url(bf(smbstatus))(smbstatus.1.html) won't be able
+to tell you what connections are active. You should never need to
+change this parameter.
 
-.B Default:
+  bf(Default:)
 	status = yes
 
-.B Example:
-	status = no
+label(strictlocking)
+dir(bf(strict locking (S)))
 
-.SS strict locking (S)
 This is a boolean that controls the handling of file locking in the
-server. When this is set to yes the server will check every read and
+server. When this is set to tt("yes") the server will check every read and
 write access for file locks, and deny access if locks exist. This can
 be slow on some systems.
 
-When strict locking is "no" the server does file lock checks only when
-the client explicitly asks for them. 
+When strict locking is tt("no") the server does file lock checks only
+when the client explicitly asks for them.
 
 Well behaved clients always ask for lock checks when it is important,
-so in the vast majority of cases "strict locking = no" is preferable.
+so in the vast majority of cases bf("strict locking = no") is
+preferable.
 
-.B Default:
-	strict locking = no
+  bf(Default:)
+tt(	strict locking = no)
 
-.B Example:
-	strict locking = yes
+  bf(Example:)
+tt(	strict locking = yes)
 
-.SS strict sync (S)
-Many Windows applications (including the Windows 98 explorer
-shell) seem to confuse flushing buffer contents to disk with
-doing a sync to disk. Under UNIX, a sync call forces the process
-to be suspended until the kernel has ensured that all outstanding
-data in kernel disk buffers has been safely stored onto stable
-storate. This is very slow and should only be done rarely. Setting
-this parameter to "no" (the default) means that smbd ignores the
-Windows applications requests for a sync call. There is only a
-possibility of losing data if the operating system itself that
-Samba is running on crashes, so there is little danger in this
-default setting. In addition, this fixes many performace problems
-that people have reported with the new Windows98 explorer shell
-file copies.
+label(strctsync)
+dit(bf(strict sync (S)))
 
-See also the "sync always" parameter.
+Many Windows applications (including the Windows 98 explorer shell)
+seem to confuse flushing buffer contents to disk with doing a sync to
+disk. Under UNIX, a sync call forces the process to be suspended until
+the kernel has ensured that all outstanding data in kernel disk
+buffers has been safely stored onto stable storate. This is very slow
+and should only be done rarely. Setting this parameter to "no" (the
+default) means that smbd ignores the Windows applications requests for
+a sync call. There is only a possibility of losing data if the
+operating system itself that Samba is running on crashes, so there is
+little danger in this default setting. In addition, this fixes many
+performance problems that people have reported with the new Windows98
+explorer shell file copies.
 
-.B Default:
-     strict sync = no
+See also the link(bf("sync always"))(syncalways) parameter.
 
-.B Example:
-     strict sync = yes
+  bf(Default:)
+tt(	strict sync = no)
 
+  bf(Example:)
+tt(	strict sync = yes)
 
-.SS strip dot (G)
+label(stripdot)
+dit(bf(strip dot (G)))
+
 This is a boolean that controls whether to strip trailing dots off
-UNIX filenames. This helps with some CDROMs that have filenames ending in a
-single dot.
+UNIX filenames. This helps with some CDROMs that have filenames ending
+in a single dot.
 
-.B Default:
-	strip dot = no
+  bf(Default:)
+tt(	strip dot = no)
 
-.B Example:
-    strip dot = yes
+  bf(Example:)
+tt(	strip dot = yes)
 
-.SS syslog (G)
-This parameter maps how Samba debug messages are logged onto the
-system syslog logging levels. Samba debug level zero maps onto
-syslog LOG_ERR, debug level one maps onto LOG_WARNING, debug
-level two maps to LOG_NOTICE, debug level three maps onto LOG_INFO.
-The paramter sets the threshold for doing the mapping, all Samba
-debug messages above this threashold are mapped to syslog LOG_DEBUG
-messages.
-
-.B Default:
-
-	syslog = 1
-
-.SS syslog only (G)
-If this parameter is set then Samba debug messages are logged into
-the system syslog only, and not to the debug log files.
-
-.B Default:
-	syslog only = no
-
-.SS sync always (S)
+label(syncalways)
+dit(bf(sync always (S)))
 
 This is a boolean parameter that controls whether writes will always
 be written to stable storage before the write call returns. If this is
@@ -5359,113 +5419,186 @@ false then the server will be guided by the client's request in each
 write call (clients can set a bit indicating that a particular write
 should be synchronous). If this is true then every write will be
 followed by a fsync() call to ensure the data is written to disk.
-Note that the "strict sync" parameter must be set to "yes" in
-order for this parameter to have any affect.
+Note that the link(bf("strict sync"))(strictsync) parameter must be
+set to tt("yes") in order for this parameter to have any affect.
 
-See also the "strict sync" parameter.
+See also the link(bf("strict sync"))(strictsync) parameter.
 
-.B Default:
-	sync always = no
+  bf(Default:)
+tt(	sync always = no)
 
-.B Example:
-	sync always = yes
+  bf(xample:)
+tt(	sync always = yes)
 
-.SS time offset (G)
+label(syslog)
+dit(bf(syslog (G)))
+
+This parameter maps how Samba debug messages are logged onto the
+system syslog logging levels. Samba debug level zero maps onto syslog
+LOG_ERR, debug level one maps onto LOG_WARNING, debug level two maps
+to LOG_NOTICE, debug level three maps onto LOG_INFO.  The paramter
+sets the threshold for doing the mapping, all Samba debug messages
+above this threashold are mapped to syslog LOG_DEBUG messages.
+
+  bf(Default:)
+tt(	syslog = 1)
+
+label(syslogonly)
+dit(bf(syslog only (G)))
+
+If this parameter is set then Samba debug messages are logged into the
+system syslog only, and not to the debug log files.
+
+  bf(Default:)
+tt(	syslog only = no)
+
+label(timeoffset)
+dit(bf(time offset (G)))
+
 This parameter is a setting in minutes to add to the normal GMT to
 local time conversion. This is useful if you are serving a lot of PCs
 that have incorrect daylight saving time handling.
 
-.B Default:
-	time offset = 0
+  bf(Default:)
+tt(	time offset = 0)
 
-.B Example:
-	time offset = 60
+  bf(Example:)
+tt(	time offset = 60)
 
-.SS time server (G)
-This parameter determines if nmbd advertises itself as a time server
-to Windows clients. The default is False.
+label(timeserver)
 
-.B Default:
-	time server = False
+dit(bf(time server (G)))
 
-.B Example:
-	time server = True
+This parameter determines if url(bf(nmbd))(nmbd.8.html) advertises
+itself as a time server to Windows clients. The default is False.
 
-.SS unix password sync (G)
+  bf(Default:)
+tt(	time server = False)
+
+  bf(Example:)
+tt(	time server = True)
+
+label(timestamplogs)
+dit(bf(timestamp logs (G)))
+
+Samba2.0 will a timestamps to all log entries by default. This
+can be distracting if you are attempting to debug a problem. This
+parameter allows the timestamping to be turned off.
+
+  bf(Default:)
+tt(	timestamp logs = True)
+
+  bf(Example:)
+tt(	timestamp logs = False)
+
+label(unixpasswordsync)
+dit(bf(unix password sync (G)))
+
 This boolean parameter controlls whether Samba attempts to synchronise
-the UNIX password with the SMB password when the encrypted SMB password
-in the smbpasswd file is changed. If this is set to true the 'passwd program'
-program is called *AS ROOT* - to allow the new UNIX password to be set
-without access to the old UNIX password (as the SMB password has change
-code has no access to the old password cleartext, only the new). By
-default this is set to false.
+the UNIX password with the SMB password when the encrypted SMB
+password in the smbpasswd file is changed. If this is set to true the
+program specified in the link(bf("passwd program"))(passwdprogram)
+parameter is called em(*AS ROOT*) - to allow the new UNIX password to be
+set without access to the old UNIX password (as the SMB password has
+change code has no access to the old password cleartext, only the
+new). By default this is set to tt("false").
 
-See also 'passwd program', 'passwd chat'
+See also link(bf("passwd program"))(passwdprogram), link(bf("passwd
+chat"))(passwdchat).
 
-.B Default:
-         unix password sync = False
+  bf(Default:)
+tt(	unix password sync = False)
 
-.B Example:
-         unix password sync = True
+  bf(Example:)
+tt(	unix password sync = True)
 
-.SS unix realname (G)
-This boolean parameter when set causes samba to supply the real name field
-from the unix password file to the client. This is useful for setting up
-mail clients and WWW browsers on systems used by more than one person.
+label(unixrealname)
+dit(bf(unix realname (G)))
 
-.B Default:
-	unix realname = no
+This boolean parameter when set causes samba to supply the real name
+field from the unix password file to the client. This is useful for
+setting up mail clients and WWW browsers on systems used by more than
+one person.
 
-.B Example:
-	unix realname = yes
+  bf(Default:)
+tt(	unix realname = no)
 
-.SS update encrypted (G)
+  bf(Example:)
+tt(	unix realname = yes)
+
+label(updateencrypted)
+dit(bf(update encrypted (G)))
+
 This boolean parameter allows a user logging on with a plaintext
 password to have their encrypted (hashed) password in the smbpasswd
-file to be updated automatically as they log on. This option allows
-a site to migrate from plaintext password authentication (users 
+file to be updated automatically as they log on. This option allows a
+site to migrate from plaintext password authentication (users
 authenticate with plaintext password over the wire, and are checked
 against a UNIX account database) to encrypted password authentication
 (the SMB challenge/response authentication mechanism) without forcing
-all users to re-enter their passwords via smbpasswd at the time the change
-is made. This is a convenience option to allow the change over to
-encrypted passwords to be made over a longer period. Once all users
+all users to re-enter their passwords via smbpasswd at the time the
+change is made. This is a convenience option to allow the change over
+to encrypted passwords to be made over a longer period. Once all users
 have encrypted representations of their passwords in the smbpasswd
-file this parameter should be set to "off".
+file this parameter should be set to tt("off").
 
-In order for this parameter to work correctly the "encrypt passwords"
-must be set to "no" when this parameter is set to "yes".
+In order for this parameter to work correctly the link(bf("encrypt
+passwords"))(encryptpasswords) parameter must be set to tt("no") when
+this parameter is set to tt("yes").
 
 Note that even when this parameter is set a user authenticating to
 smbd must still enter a valid password in order to connect correctly,
 and to update their hashed (smbpasswd) passwords.
 
-.B Default:
-	update encrypted = no
+  bf(Default:)
+tt(	update encrypted = no)
 
-.B Example:
-	update encrypted = yes
+  bf(Example:)
+tt(	update encrypted = yes)
 
-.SS user (S)
-See
-.B username.
-.SS username (S)
-A synonym for this parameter is 'user'.
+label(userhosts)
+dit(bf(use rhosts (G)))
 
-Multiple users may be specified in a comma-delimited list, in which case the
-supplied password will be tested against each username in turn (left to right).
+If this global parameter is a true, it specifies that the UNIX users
+tt(".rhosts") file in their home directory will be read to find the
+names of hosts and users who will be allowed access without specifying
+a password.
 
-The username= line is needed only when the PC is unable to supply its own
-username. This is the case for the coreplus protocol or where your
-users have different WfWg usernames to UNIX usernames. In both these
-cases you may also be better using the \e\eserver\eshare%user syntax
-instead. 
+NOTE: The use of bf(use rhosts) can be a major security hole. This is
+because you are trusting the PC to supply the correct username. It is
+very easy to get a PC to supply a false username. I recommend that the
+bf(use rhosts) option be only used if you really know what you are
+doing.
 
-The username= line is not a great solution in many cases as it means Samba
-will try to validate the supplied password against each of the
-usernames in the username= line in turn. This is slow and a bad idea for
-lots of users in case of duplicate passwords. You may get timeouts or
-security breaches using this parameter unwisely.
+  bf(Default:)
+tt(	use rhosts = no)
+
+  bf(Example:)
+tt(	use rhosts = yes)
+
+label(user)
+dit(bf(user (S)))
+
+Synonym for link(bf("username"))(username).
+
+label(username)
+dit(bf(username (S)))
+
+Multiple users may be specified in a comma-delimited list, in which
+case the supplied password will be tested against each username in
+turn (left to right).
+
+The bf(username=) line is needed only when the PC is unable to supply
+its own username. This is the case for the COREPLUS protocol or where
+your users have different WfWg usernames to UNIX usernames. In both
+these cases you may also be better using the tt(\\server\share%user)
+syntax instead.
+
+The bf(username=) line is not a great solution in many cases as it
+means Samba will try to validate the supplied password against each of
+the usernames in the username= line in turn. This is slow and a bad
+idea for lots of users in case of duplicate passwords. You may get
+timeouts or security breaches using this parameter unwisely.
 
 Samba relies on the underlying UNIX security. This parameter does not
 restrict who can login, it just offers hints to the Samba server as to
@@ -5476,55 +5609,62 @@ user that they log in as, so they cannot do anything that user cannot
 do.
 
 To restrict a service to a particular set of users you can use the
-"valid users=" line.
+link(bf("valid users="))(validuser) parameter.
 
-If any of the usernames begin with a @ then the name will be looked up
-first in the yp netgroups list (if Samba is compiled with netgroup support),
-followed by a lookup in the UNIX groups database and will expand to a list of
-all users in the group of that name.
+If any of the usernames begin with a tt('@') then the name will be
+looked up first in the yp netgroups list (if Samba is compiled with
+netgroup support), followed by a lookup in the UNIX groups database
+and will expand to a list of all users in the group of that name.
 
-If any of the usernames begin with a + then the name will be looked up only
-in the UNIX groups database and will expand to a list of all users in the 
-group of that name.
+If any of the usernames begin with a tt('+') then the name will be
+looked up only in the UNIX groups database and will expand to a list
+of all users in the group of that name.
 
-If any of the usernames begin with a & then the name will be looked up only
-in the yp netgroups database (if Samba is compiled with netgroup support) and
-will expand to a list of all users in the netgroup group of that name.
+If any of the usernames begin with a tt('&') then the name will be
+looked up only in the yp netgroups database (if Samba is compiled with
+netgroup support) and will expand to a list of all users in the
+netgroup group of that name.
 
-Note that searching though a groups database can take quite
-some time, and some clients may time out during the search.
+Note that searching though a groups database can take quite some time,
+and some clients may time out during the search.
 
-See the section below on username/password validation for more information
-on how this parameter determines access to the services.
+See the section link(bf("NOTE ABOUT USERNAME/PASSWORD
+VALIDATION"))(NOTEABOUTUSERNAMEPASSWORDVALIDATION) for more
+information on how this parameter determines access to the services.
 
-.B Default:
- 	The guest account if a guest service, else the name of the service.
+  bf(Default:)
+tt(	The guest account if a guest service, else the name of the service.)
 
-.B Examples:
+  bf(Examples:)
+verb(
  	username = fred
  	username = fred, mary, jack, jane, @users, @pcgroup
+)
 
-.SS username level (G)
+label(usernamelevel)
+dit(bf(username level (G)))
 
 This option helps Samba to try and 'guess' at the real UNIX username,
 as many DOS clients send an all-uppercase username. By default Samba
 tries all lowercase, followed by the username with the first letter
-capitalized, and fails if the username is not found on the UNIX machine.
+capitalized, and fails if the username is not found on the UNIX
+machine.
 
-If this parameter is set to non-zero the behaviour changes. This 
-parameter is a number that specifies the number of uppercase combinations 
-to try whilst trying to determine the UNIX user name. The higher the number
-the more combinations will be tried, but the slower the discovery
-of usernames will be. Use this parameter when you have strange
-usernames on your UNIX machine, such as 'AstrangeUser'.
+If this parameter is set to non-zero the behaviour changes. This
+parameter is a number that specifies the number of uppercase
+combinations to try whilst trying to determine the UNIX user name. The
+higher the number the more combinations will be tried, but the slower
+the discovery of usernames will be. Use this parameter when you have
+strange usernames on your UNIX machine, such as tt("AstrangeUser").
 
-.B Default:
-    username level = 0
+  bf(Default:)
+tt(	username level = 0)
 
-.B Example:
-    username level = 5
+  bf(Example:)
+tt(	username level = 5)
 
-.SS username map (G)
+label(usernamemap)
+dit(bf(username map (G)))
 
 This option allows you to to specify a file containing a mapping of
 usernames from the clients to the server. This can be used for several
@@ -5534,77 +5674,82 @@ multiple users to a single username so that they can more easily share
 files.
 
 The map file is parsed line by line. Each line should contain a single
-UNIX username on the left then a '=' followed by a list of usernames
-on the right. The list of usernames on the right may contain names of
-the form @group in which case they will match any UNIX username in
-that group. The special client name '*' is a wildcard and matches any
-name. Each line of the map file may be up to 1023 characters long.
+UNIX username on the left then a tt('=') followed by a list of
+usernames on the right. The list of usernames on the right may contain
+names of the form @group in which case they will match any UNIX
+username in that group. The special client name tt('*') is a wildcard
+and matches any name. Each line of the map file may be up to 1023
+characters long.
 
 The file is processed on each line by taking the supplied username and
-comparing it with each username on the right hand side of the '='
-signs. If the supplied name matches any of the names on the right
-hand side then it is replaced with the name on the left. Processing
-then continues with the next line.
+comparing it with each username on the right hand side of the tt('=')
+signs. If the supplied name matches any of the names on the right hand
+side then it is replaced with the name on the left. Processing then
+continues with the next line.
 
-If any line begins with a '#' or a ';' then it is ignored
+If any line begins with a tt('#') or a tt(';') then it is ignored
 
-If any line begins with an ! then the processing will stop after that
-line if a mapping was done by the line. Otherwise mapping continues
-with every line being processed. Using ! is most useful when you have
-a wildcard mapping line later in the file.
+If any line begins with an tt('!') then the processing will stop after
+that line if a mapping was done by the line. Otherwise mapping
+continues with every line being processed. Using tt('!') is most
+useful when you have a wildcard mapping line later in the file.
 
-For example to map from the name "admin" or "administrator" to the UNIX
-name "root" you would use
+For example to map from the name tt("admin") or tt("administrator") to
+the UNIX name tt("root") you would use:
 
-	root = admin administrator
 
-Or to map anyone in the UNIX group "system" to the UNIX name "sys" you
-would use
+tt(	root = admin administrator)
 
-	sys = @system
+Or to map anyone in the UNIX group tt("system") to the UNIX name
+tt("sys") you would use:
+
+tt(	sys = @system)
 
 You can have as many mappings as you like in a username map file.
 
-If Samba has been compiled with the -DNETGROUP compile option
-then the netgroup database is checked before the /etc/group
-database for matching groups.
+If your system supports the NIS NETGROUP option then the netgroup
+database is checked before the tt(/etc/group) database for matching
+groups.
 
 You can map Windows usernames that have spaces in them by using double
 quotes around the name. For example:
 
-	tridge = "Andrew Tridgell"
+tt(	tridge = "Andrew Tridgell")
 
-would map the windows username "Andrew Tridgell" to the unix username
-tridge.
+would map the windows username tt("Andrew Tridgell") to the unix
+username tridge.
 
 The following example would map mary and fred to the unix user sys,
-and map the rest to guest. Note the use of the ! to tell Samba to stop
-processing if it gets a match on that line.
+and map the rest to guest. Note the use of the tt('!') to tell Samba
+to stop processing if it gets a match on that line.
 
+verb(
 	!sys = mary fred
 	guest = *
-
+)
 
 Note that the remapping is applied to all occurrences of
-usernames. Thus if you connect to "\e\eserver\efred" and "fred" is
-remapped to "mary" then you will actually be connecting to
-"\e\eserver\emary" and will need to supply a password suitable for
-"mary" not "fred". The only exception to this is the username passed
-to the "password server" (if you have one). The password server will
-receive whatever username the client supplies without modification.
+usernames. Thus if you connect to tt("\\server\fred") and tt("fred")
+is remapped to tt("mary") then you will actually be connecting to
+tt("\\server\mary") and will need to supply a password suitable for
+tt("mary") not tt("fred"). The only exception to this is the username
+passed to the link(bf("password server"))(passwordserver) (if you have
+one). The password server will receive whatever username the client
+supplies without modification.
 
 Also note that no reverse mapping is done. The main effect this has is
 with printing. Users who have been mapped may have trouble deleting
 print jobs as PrintManager under WfWg will think they don't own the
 print job.
 
-.B Default
-	no username map
+  bf(Default:)
+tt(	no username map)
 
-.B Example
-	username map = /usr/local/samba/lib/users.map
+  bf(Example:)
+tt(	username map = /usr/local/samba/lib/users.map)
 
-.SS valid chars (S)
+label(validchars)
+dit(bf(valid chars (S)))
 
 The option allows you to specify additional characters that should be
 considered valid by the server in filenames. This is particularly
@@ -5619,355 +5764,336 @@ config file then it is probably easiest to use this method. Otherwise
 you can specify the characters in octal, decimal or hexadecimal form
 using the usual C notation.
 
-For example to add the single character 'Z' to the charset (which is a
-pointless thing to do as it's already there) you could do one of the
-following
+For example to add the single character tt('Z') to the charset (which
+is a pointless thing to do as it's already there) you could do one of
+the following
 
-valid chars = Z
-valid chars = z:Z
-valid chars = 0132:0172
+verb(
+	valid chars = Z
+	valid chars = z:Z
+	valid chars = 0132:0172
+)
 
-The last two examples above actually add two characters, and alter
-the uppercase and lowercase mappings appropriately.
+The last two examples above actually add two characters, and alter the
+uppercase and lowercase mappings appropriately.
 
-Note that you MUST specify this parameter after the "client code page"
-parameter if you have both set. If "client code page" is set after
-the "valid chars" parameter the "valid chars" settings will be
+Note that you MUST specify this parameter after the link(bf("client
+code page"))(clientcodepage) parameter if you have both set. If
+link(bf("client code page"))(clientcodepage) is set after the
+bf("valid chars") parameter the bf("valid chars") settings will be
 overwritten.
 
-See also the "client code page" parameter.
+See also the link(bf("client code page"))(clientcodepage) parameter.
 
-.B Default
-.br
+  bf(Default:)
+verb(
 	Samba defaults to using a reasonable set of valid characters
-.br
 	for english systems
+)
 
-.B Example
-        valid chars = 0345:0305 0366:0326 0344:0304
+  bf(Example)
+tt(	valid chars = 0345:0305 0366:0326 0344:0304)
 
 The above example allows filenames to have the swedish characters in
-them. 
+them.
 
-NOTE: It is actually quite difficult to correctly produce a "valid
-chars" line for a particular system. To automate the process
-tino@augsburg.net has written a package called "validchars" which will
-automatically produce a complete "valid chars" line for a given client
-system. Look in the examples subdirectory for this package.
+NOTE: It is actually quite difficult to correctly produce a bf("valid
+chars") line for a particular system. To automate the process
+email(tino@augsburg.net) has written a package called bf("validchars")
+which will automatically produce a complete bf("valid chars") line for
+a given client system. Look in the examples/validchars/ subdirectory
+of your Samba source code distribution for this package.
 
-.SS valid users (S)
+label(validusers)
+dit(bf(valid users (S)))
+
 This is a list of users that should be allowed to login to this
-service. A name starting with @ is interpreted as a UNIX group.
+service. Names starting with tt('@'), tt('+') and tt('&') are
+interpreted using the same rules as described in the link(bf("invalid
+users"))(invalidusers) parameter.
 
 If this is empty (the default) then any user can login. If a username
-is in both this list and the "invalid users" list then access is
-denied for that user.
+is in both this list and the link(bf("invalid users"))(invalidusers)
+list then access is denied for that user.
 
-The current servicename is substituted for %S. This is useful in the
-[homes] section.
+The current servicename is substituted for
+link(bf("%S"))(percentS). This is useful in the
+link(bf([homes]))(homes) section.
 
-See also "invalid users"
+See also link(bf("invalid users"))(invalidusers).
 
-.B Default
-	No valid users list. (anyone can login)
+  bf(Default:)
+tt(	No valid users list. (anyone can login))
 
-.B Example
-	valid users = greg, @pcusers
+  bf(Example:)
+tt(	valid users = greg, @pcusers)
 
+label(vetofiles)
+dit(bf(veto files(S)))
 
-.SS veto files(S)
 This is a list of files and directories that are neither visible nor
-accessible.  Each entry in the list must be separated by a "/", which
-allows spaces to be included in the entry.  '*' and '?' can be used to
-specify multiple files or directories as in DOS wildcards.
+accessible.  Each entry in the list must be separated by a tt('/'),
+which allows spaces to be included in the entry. tt('*') and tt('?') 
+can be used to specify multiple files or directories as in DOS
+wildcards.
 
-Each entry must be a unix path, not a DOS path and must not include the 
-unix directory separator "/".
+Each entry must be a unix path, not a DOS path and must em(*not*) include the 
+unix directory separator tt('/').
 
-Note that the case sensitivity option is applicable in vetoing files.
+Note that the link(bf("case sensitive"))(casesensitive) option is
+applicable in vetoing files.
 
 One feature of the veto files parameter that it is important to be
-aware of, is that if a directory contains nothing but files that
-match the veto files parameter (which means that Windows/DOS clients
-cannot ever see them) is deleted, the veto files within that directory
-*are automatically deleted* along with it, if the user has UNIX permissions
+aware of, is that if a directory contains nothing but files that match
+the veto files parameter (which means that Windows/DOS clients cannot
+ever see them) is deleted, the veto files within that directory *are
+automatically deleted* along with it, if the user has UNIX permissions
 to do so.
  
-Setting this parameter will affect the performance of Samba, as
-it will be forced to check all files and directories for a match
-as they are scanned.
+Setting this parameter will affect the performance of Samba, as it
+will be forced to check all files and directories for a match as they
+are scanned.
 
-See also "hide files" and "case sensitive"
+See also link(bf("hide files"))(hidefiles) and link(bf("case
+sensitive"))(casesensitive).
 
-.B Default
-	No files or directories are vetoed.
+  bf(Default:)
+tt(	No files or directories are vetoed.)
 
-.B Examples
+  bf(Examples:)
+
     Example 1.
+
+verb(
+
     Veto any files containing the word Security, 
     any ending in .tmp, and any directory containing the
     word root.
 
 	veto files = /*Security*/*.tmp/*root*/
+)
 
     Example 2.
+
+verb(
     Veto the Apple specific files that a NetAtalk server
     creates.
 
     veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
+)
 
-.SS veto oplock files (S)
-This parameter is only valid when the 'oplocks' parameter is turned on
-for a share. It allows the Samba administrator to selectively turn off
-the granting of oplocks on selected files that match a wildcarded list,
-similar to the wildcarded list used in the 'veto files' parameter.
+label(vetooplockfiles)
+dit(bf(veto oplock files (S)))
 
-.B Default
-    No files are vetoed for oplock grants.
+This parameter is only valid when the link(bf("oplocks"))(oplocks)
+parameter is turned on for a share. It allows the Samba administrator
+to selectively turn off the granting of oplocks on selected files that
+match a wildcarded list, similar to the wildcarded list used in the
+link(bf("veto files"))(vetofiles) parameter.
 
-.B Examples
+  bf(Default:)
+tt(	No files are vetoed for oplock grants.)
+
+  bf(Examples:)
+
 You might want to do this on files that you know will be heavily
 contended for by clients. A good example of this is in the NetBench
 SMB benchmark program, which causes heavy client contention for files
-ending in .SEM. To cause Samba not to grant oplocks on these files
-you would use the line (either in the [global] section or in the section
-for the particular NetBench share :
+ending in tt(".SEM"). To cause Samba not to grant oplocks on these
+files you would use the line (either in the link(bf([global]))(global)
+section or in the section for the particular NetBench share :
 
-     veto oplock files = /*.SEM/
+tt(     veto oplock files = /*.SEM/)
 
-.SS volume (S)
+label(volume)
+dit(bf(volume (S)))
+
 This allows you to override the volume label returned for a
 share. Useful for CDROMs with installation programs that insist on a
 particular volume label.
 
-The default is the name of the share
+The default is the name of the share.
 
-.SS wide links (S)
-This parameter controls whether or not links in the UNIX file system may be
-followed by the server. Links that point to areas within the directory tree
-exported by the server are always allowed; this parameter controls access 
-only to areas that are outside the directory tree being exported.
+label(widelinks)
+dit(bf(wide links (S)))
 
-.B Default:
- 	wide links = yes
+This parameter controls whether or not links in the UNIX file system
+may be followed by the server. Links that point to areas within the
+directory tree exported by the server are always allowed; this
+parameter controls access only to areas that are outside the directory
+tree being exported.
 
-.B Example:
- 	wide links = no
+  bf(Default:)
+tt( 	wide links = yes)
 
-.SS wins proxy (G)
+  bf(Example:)
+tt( 	wide links = no)
 
-This is a boolean that controls if nmbd will respond to broadcast name
-queries on behalf of other hosts. You may need to set this to no for
-some older clients.
+label(winsproxy)
+dit(bf(wins proxy (G)))
 
-.B Default:
-	wins proxy = no
-.SS wins server (G)
+This is a boolean that controls if url(bf(nmbd))(nmbd.8.html) will
+respond to broadcast name queries on behalf of other hosts. You may
+need to set this to tt("yes") for some older clients.
 
-This specifies the DNS name (or IP address) of the WINS server that Samba 
-should register with. If you have a WINS server on your network then you
-should set this to the WINS servers name.
+  bf(Default:)
+tt(	wins proxy = no)
 
-You should point this at your WINS server if you have a multi-subnetted
+label(winsserver)
+dit(bf(wins server (G)))
+
+This specifies the DNS name (or IP address) of the WINS server that
+url(bf(nmbd))(nmbd.8.html) should register with. If you have a WINS
+server on your network then you should set this to the WINS servers
+name.
+
+You should point this at your WINS server if you have a
+multi-subnetted network.
+
+em(NOTE). You need to set up Samba to point to a WINS server if you
+have multiple subnets and wish cross-subnet browsing to work correctly.
+
+See the documentation file BROWSING.txt in the docs/ directory of your
+Samba source distribution.
+
+  bf(Default:)
+tt(	wins server = )
+
+  bf(Example:)
+tt(	wins server = 192.9.200.1)
+
+label(winssupport)
+dit(bf(wins support (G)))
+
+This boolean controls if the url(bf(nmbd))(nmbd.8.html) process in
+Samba will act as a WINS server. You should not set this to true
+unless you have a multi-subnetted network and you wish a particular
+link(bf(nmbd))(nmbd.8.html) to be your WINS server. Note that you
+should em(*NEVER*) set this to true on more than one machine in your
 network.
-.B Default:
-	wins server = 
 
-.SS wins support (G)
+  bf(Default:)
+link(	wins support = no)
 
-This boolean controls if the nmbd process in Samba will act as a WINS server. 
-You should not set this to true unless you have a multi-subnetted network and
-you wish a particular nmbd to be your WINS server. Note that you
-should *NEVER* set this to true on more than one machine in your
-network.
-
-.B Default:
-	wins support = no
-
-.SS workgroup (G)
+label(workgroup)
+dit(bf(workgroup (G)))
 
 This controls what workgroup your server will appear to be in when
-queried by clients. 
+queried by clients. Note that this parameter also controlls the
+Domain name used with the link(bf("security=domain"))(security)
+setting.
 
-.B Default:
- 	set in the Makefile
+  bf(Default:)
+tt( 	set at compile time to WORKGROUP)
 
 .B Example:
  	workgroup = MYGROUP
 
-.SS writable (S)
-A synonym for this parameter is 'write ok'. An inverted synonym is 'read only'.
+label(writable)
+dit(bf(writable (S)))
 
-If this parameter is 'no', then users of a service may not create or modify
-files in the service's directory.
+An inverted synonym is link(bf("read only"))(readonly).
 
-Note that a printable service ('printable = yes') will ALWAYS allow 
-writing to the directory (user privileges permitting), but only via
-spooling operations.
+If this parameter is tt("no"), then users of a service may not create
+or modify files in the service's directory.
 
-.B Default:
- 	writable = no
+Note that a printable service link(bf(("printable = yes")))(printable)
+will em(*ALWAYS*) allow writing to the directory (user privileges
+permitting), but only via spooling operations.
 
-.B Examples:
+  bf(Default:)
+tt( 	writable = no)
+
+  bf(Examples:)
+verb(
  	read only = no
  	writable = yes
  	write ok = yes
-.SS write list (S)
+)
+
+label(writelist)
+dit(bf(write list (S)))
+
 This is a list of users that are given read-write access to a
 service. If the connecting user is in this list then they will be
-given write access, no matter what the "read only" option is set
-to. The list can include group names using the @group syntax.
+given write access, no matter what the link(bf("read only"))(readonly)
+option is set to. The list can include group names using the @group
+syntax.
 
 Note that if a user is in both the read list and the write list then
 they will be given write access.
 
-See also the "read list" option
+See also the link(bf("read list"))(readlist) option.
 
-.B Default:
-     write list =
+  bf(Default:)
+tt(     write list = <empty string>)
 
-.B Example:
-     write list = admin, root, @staff
+  bf(Example:)
+tt(	write list = admin, root, @staff)
 
-.SS write ok (S)
-See
-.B writable
-and
-.B read only.
-.SS write raw (G)
-This parameter controls whether or not the server will support raw writes when
-transferring data from clients.
+label(writeok)
+dit(bf(write ok (S)))
 
-.B Default:
- 	write raw = yes
+Synonym for link(bf(writable))(writable).
 
-.B Example:
- 	write raw = no
+label(writeraw)
+dit(bf(write raw (G)))
 
-.SH NOTE ABOUT USERNAME/PASSWORD VALIDATION
-There are a number of ways in which a user can connect to a
-service. The server follows the following steps in determining if it
-will allow a connection to a specified service. If all the steps fail
-then the connection request is rejected. If one of the steps pass then
-the following steps are not checked.
+This parameter controls whether or not the server will support raw
+writes SMB's when transferring data from clients. You should never
+need to change this parameter.
 
-If the service is marked "guest only = yes" then steps 1 to 5 are skipped
+ bf(Default:)
+tt( 	write raw = yes)
 
-Step 1: If the client has passed a username/password pair and that
-username/password pair is validated by the UNIX system's password
-programs then the connection is made as that username. Note that this
-includes the \e\eserver\eservice%username method of passing a username.
+label(writeable)
+dit(bf(writeable))
 
-Step 2: If the client has previously registered a username with the
-system and now supplies a correct password for that username then the
-connection is allowed.
+Synonym for link(bf("writable"))(writable) for people who can't spell :-).
 
-Step 3: The client's netbios name and any previously used user names
-are checked against the supplied password, if they match then the
-connection is allowed as the corresponding user.
+label(WARNINGS)
+manpagesection(WARNINGS)
 
-Step 4: If the client has previously validated a username/password
-pair with the server and the client has passed the validation token
-then that username is used. This step is skipped if "revalidate = yes" 
-for this service.
+Although the configuration file permits service names to contain
+spaces, your client software may not. Spaces will be ignored in
+comparisons anyway, so it shouldn't be a problem - but be aware of the
+possibility.
 
-Step 5: If a "user = " field is given in the smb.conf file for the
-service and the client has supplied a password, and that password
-matches (according to the UNIX system's password checking) with one of
-the usernames from the user= field then the connection is made as the
-username in the "user=" line. If one of the username in the user= list
-begins with a @ then that name expands to a list of names in the group
-of the same name.
+On a similar note, many clients - especially DOS clients - limit
+service names to eight characters. url(bf(Smbd))(smbd.8.html) has no
+such limitation, but attempts to connect from such clients will fail
+if they truncate the service names.  For this reason you should
+probably keep your service names down to eight characters in length.
 
-Step 6: If the service is a guest service then a connection is made as
-the username given in the "guest account =" for the service,
-irrespective of the supplied password.
-.SH WARNINGS
-Although the configuration file permits service names to contain spaces, 
-your client software may not. Spaces will be ignored in comparisons anyway,
-so it shouldn't be a problem - but be aware of the possibility.
+Use of the link(bf([homes]))(homes) and link(bf([printers]))(printers)
+special sections make life for an administrator easy, but the various
+combinations of default attributes can be tricky. Take extreme care
+when designing these sections. In particular, ensure that the
+permissions on spool directories are correct.
 
-On a similar note, many clients - especially DOS clients - limit service
-names to eight characters. Smbd has no such limitation, but attempts
-to connect from such clients will fail if they truncate the service names.
-For this reason you should probably keep your service names down to eight 
-characters in length.
+label(VERSION)
+manpagesection(VERSION)
 
-Use of the [homes] and [printers] special sections make life for an 
-administrator easy, but the various combinations of default attributes can be
-tricky. Take extreme care when designing these sections. In particular,
-ensure that the permissions on spool directories are correct.
-.SH VERSION
-This man page is (mostly) correct for version 1.9.18 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the software, so it is possible that your version of 
-the server has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
+This man page is correct for version 2.0 of the Samba suite.
 
-Prior to version 1.5.21 of the Samba suite, the configuration file was
-radically different (more primitive). If you are using a version earlier than
-1.8.05, it is STRONGLY recommended that you upgrade.
-.SH OPTIONS
-Not applicable.
-.SH FILES
-Not applicable.
-.SH ENVIRONMENT VARIABLES
-Not applicable.
-.SH SEE ALSO
-.BR smbd (8),
-.BR smbclient (1),
-.BR nmbd (8),
-.BR testparm (1), 
-.BR testprns (1),
-.BR lpq (1),
-.BR hosts_access (5)
-.SH DIAGNOSTICS
-[This section under construction]
+label(SEEALSO)
+manpagesection(SEE ALSO)
 
-Most diagnostics issued by the server are logged in a specified log file. The
-log file name is specified at compile time, but may be overridden on the
-smbd command line (see
-.BR smbd (8)).
+url(bf(smbd (8)))(smbd.8.html), url(bf(smbclient (1)))(smbclient.1.html),
+url(bf(nmbd (8)))(nmbd.8.html), url(bf(testparm (1)))(testparm.1.html),
+url(bf(testprns (1)))(testprns.1.html), url(bf(Samba))(samba.7.html),
+url(bf(nmblookup (1)))(nmblookup.1.html), url(bf(smbpasswd (5)))(smbpasswd.5.html),
+url(bf(smbpasswd (8)))(smbpasswd.8.html).
 
-The number and nature of diagnostics available depends on the debug level used
-by the server. If you have problems, set the debug level to 3 and peruse the
-log files.
+label(AUTHOR)
+manpageauthor()
 
-Most messages are reasonably self-explanatory. Unfortunately, at time of
-creation of this man page the source code is still too fluid to warrant
-describing each and every diagnostic. At this stage your best bet is still
-to grep the source code and inspect the conditions that gave rise to the 
-diagnostics you are seeing.
-.SH BUGS
-None known.
+The original Samba software and related utilities were created by
+Andrew Tridgell email(samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
 
-Please send bug reports, comments and so on to:
-
-.RS 3
-.B samba-bugs@samba.anu.edu.au (Andrew Tridgell)
-
-.RS 3
-or to the mailing list:
-.RE
-
-.B samba@listproc.anu.edu.au
-
-.RE
-You may also like to subscribe to the announcement channel:
-
-.RS 3
-.B samba-announce@listproc.anu.edu.au
-.RE
-
-To subscribe to these lists send a message to
-listproc@listproc.anu.edu.au with a body of "subscribe samba Your
-Name" or "subscribe samba-announce Your Name".
-
-Errors or suggestions for improvements to the Samba man pages should be 
-mailed to:
-
-.RS 3
-.B samba-bugs@samba.anu.edu.au (Andrew Tridgell)
-.RE
-
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2.0 release by Jeremy
+Allison, email(samba-bugs@samba.anu.edu.au).
