@@ -174,7 +174,7 @@ AC_CHECK_LIB(util, logout)
 
 AC_SUBST(HAVE_LIBTERMCAP)
 
-AC_CHECK_HEADERS(termios.h termio.h sys/select.h utmpx.h sac.h)
+AC_CHECK_HEADERS(termios.h termio.h sys/select.h sys/resource.h utmpx.h sac.h)
 
 if test "$ac_cv_header_sac_h" = yes ; then
 	AC_DEFINE(STREAMSPTY)

@@ -71,6 +71,9 @@
 #endif
 
 #include <sys/socket.h>
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif /* HAVE_SYS_RESOURCE_H */
 #ifndef	CRAY
 #include <sys/wait.h>
 #endif	/* CRAY */
