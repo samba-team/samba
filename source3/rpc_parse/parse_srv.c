@@ -1,5 +1,6 @@
 /* 
- *  Unix SMB/CIFS implementation.
+ *  Unix SMB/Netbios implementation.
+ *  Version 1.9.
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1997,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1997,
@@ -118,33 +119,34 @@ void init_srv_share_info2_str(SH_INFO_2_STR *sh2,
  Reads or writes a structure.
 ********************************************************************/
 
-static BOOL srv_io_share_info2_str(char *desc, SH_INFO_2_STR *sh2, prs_struct *ps, int depth)
+static BOOL srv_io_share_info2_str(char *desc, SH_INFO_2 *sh, SH_INFO_2_STR *sh2, prs_struct *ps, int depth)
 {
 	if (sh2 == NULL)
 		return False;
+
+	if (UNMARSHALLING(ps))
+		ZERO_STRUCTP(sh2);
 
 	prs_debug(ps, depth, desc, "srv_io_share_info2_str");
 	depth++;
 
 	if(!prs_align(ps))
 		return False;
-	if(!smb_io_unistr2("", &sh2->uni_netname, True, ps, depth))
-		return False;
+	if (sh->ptr_netname)
+		if(!smb_io_unistr2("", &sh2->uni_netname, True, ps, depth))
+			return False;
 
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh2->uni_remark, True, ps, depth))
-		return False;
+	if (sh->ptr_remark)
+		if(!smb_io_unistr2("", &sh2->uni_remark, True, ps, depth))
+			return False;
 
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh2->uni_path, True, ps, depth))
-		return False;
+	if (sh->ptr_netname)
+		if(!smb_io_unistr2("", &sh2->uni_path, True, ps, depth))
+			return False;
 
-	if(!prs_align(ps))
-		return False;
-	if(!smb_io_unistr2("", &sh2->uni_passwd, True, ps, depth))
-		return False;
+	if (sh->ptr_passwd)
+		if(!smb_io_unistr2("", &sh2->uni_passwd, True, ps, depth))
+			return False;
 
 	return True;
 }
@@ -494,7 +496,7 @@ static BOOL srv_io_srv_share_ctr(char *desc, SRV_SHARE_INFO_CTR *ctr, prs_struct
 		}
 
 		for (i = 0; i < num_entries; i++) {
-			if(!srv_io_share_info2_str("", &info2[i].info_2_str, ps, depth))
+			if(!srv_io_share_info2_str("", &info2[i].info_2, &info2[i].info_2_str, ps, depth))
 				return False;
 		}
 
@@ -613,7 +615,7 @@ BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
+	if(!prs_werror("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -686,7 +688,7 @@ static BOOL srv_io_srv_share_info(char *desc, prs_struct *ps, int depth, SRV_SHA
 			if(!srv_io_share_info2("", &r_n->share.info2.info_2, ps, depth))
 				return False;
 
-			if(!srv_io_share_info2_str("", &r_n->share.info2.info_2_str, ps, depth))
+			if(!srv_io_share_info2_str("", &r_n->share.info2.info_2, &r_n->share.info2.info_2_str, ps, depth))
 				return False;
 
 			break;
@@ -738,7 +740,7 @@ BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_n->status))
+	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -799,7 +801,7 @@ BOOL srv_io_r_net_share_set_info(char *desc, SRV_R_NET_SHARE_SET_INFO *q_n, prs_
 
 	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
 		return False;
-	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
+	if(!prs_werror("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -857,7 +859,7 @@ BOOL srv_io_r_net_share_add(char *desc, SRV_R_NET_SHARE_ADD *q_n, prs_struct *ps
 
 	if(!prs_uint32("switch_value  ", ps, depth, &q_n->switch_value))
 		return False;
-	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
+	if(!prs_werror("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -904,7 +906,7 @@ BOOL srv_io_r_net_share_del(char *desc, SRV_R_NET_SHARE_DEL *q_n, prs_struct *ps
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status        ", ps, depth, &q_n->status))
+	if(!prs_werror("status        ", ps, depth, &q_n->status))
 		return False;
 
 	return True;
@@ -1307,7 +1309,7 @@ BOOL srv_io_r_net_sess_enum(char *desc, SRV_R_NET_SESS_ENUM *r_n, prs_struct *ps
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
+	if(!prs_werror("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -1672,7 +1674,7 @@ BOOL srv_io_r_net_conn_enum(char *desc,  SRV_R_NET_CONN_ENUM *r_n, prs_struct *p
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
+	if(!prs_werror("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -1950,7 +1952,7 @@ BOOL srv_io_r_net_file_enum(char *desc, SRV_R_NET_FILE_ENUM *r_n, prs_struct *ps
 		return False;
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
-	if(!prs_ntstatus("status     ", ps, depth, &r_n->status))
+	if(!prs_werror("status     ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2236,13 +2238,13 @@ BOOL srv_io_q_net_srv_get_info(char *desc, SRV_Q_NET_SRV_GET_INFO *q_n, prs_stru
  ********************************************************************/
 
 void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
-				uint32 switch_value, SRV_INFO_CTR *ctr, NTSTATUS status)
+				uint32 switch_value, SRV_INFO_CTR *ctr, WERROR status)
 {
 	DEBUG(5,("init_srv_r_net_srv_get_info\n"));
 
 	srv->ctr = ctr;
 
-	if (NT_STATUS_IS_OK(status)) {
+	if (W_ERROR_IS_OK(status)) {
 		srv->ctr->switch_value = switch_value;
 		srv->ctr->ptr_srv_ctr  = 1;
 	} else {
@@ -2258,7 +2260,7 @@ void init_srv_r_net_srv_get_info(SRV_R_NET_SRV_GET_INFO *srv,
  ********************************************************************/
 
 void init_srv_r_net_srv_set_info(SRV_R_NET_SRV_SET_INFO *srv,
-				 uint32 switch_value, NTSTATUS status)
+				 uint32 switch_value, WERROR status)
 {
 	DEBUG(5,("init_srv_r_net_srv_set_info\n"));
 
@@ -2322,7 +2324,7 @@ BOOL srv_io_r_net_srv_get_info(char *desc, SRV_R_NET_SRV_GET_INFO *r_n, prs_stru
 	if(!srv_io_info_ctr("ctr", r_n->ctr, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status      ", ps, depth, &r_n->status))
+	if(!prs_werror("status      ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2344,7 +2346,7 @@ BOOL srv_io_r_net_srv_set_info(char *desc, SRV_R_NET_SRV_SET_INFO *r_n,
 	if(!prs_uint32("switch_value  ", ps, depth, &r_n->switch_value))
 		return False;
 
-	if(!prs_ntstatus("status ", ps, depth, &r_n->status))
+	if(!prs_werror("status ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2463,7 +2465,7 @@ BOOL srv_io_r_net_remote_tod(char *desc, SRV_R_NET_REMOTE_TOD *r_n, prs_struct *
 	if(!srv_io_time_of_day_info("tod", r_n->tod, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status      ", ps, depth, &r_n->status))
+	if(!prs_werror("status      ", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2562,7 +2564,7 @@ BOOL srv_io_r_net_disk_enum(char *desc, SRV_R_NET_DISK_ENUM *r_n, prs_struct *ps
 	if(!smb_io_enum_hnd("enum_hnd", &r_n->enum_hnd, ps, depth))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_n->status))
+	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2622,7 +2624,7 @@ BOOL srv_io_r_net_name_validate(char *desc, SRV_R_NET_NAME_VALIDATE *r_n, prs_st
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_n->status))
+	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2709,7 +2711,7 @@ BOOL srv_io_r_net_file_query_secdesc(char *desc, SRV_R_NET_FILE_QUERY_SECDESC *r
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_n->status))
+	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
@@ -2787,7 +2789,7 @@ BOOL srv_io_r_net_file_set_secdesc(char *desc, SRV_R_NET_FILE_SET_SECDESC *r_n, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_ntstatus("status", ps, depth, &r_n->status))
+	if(!prs_werror("status", ps, depth, &r_n->status))
 		return False;
 
 	return True;
