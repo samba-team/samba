@@ -1409,7 +1409,7 @@ static void remove_pending_change_notify_requests_by_mid(int mid)
 
   while(cnbp != NULL) {
     if(SVAL(cnbp->request_buf,smb_mid) == mid) {
-      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
+      change_notify_reply_packet(cnbp->request_buf,0,0xC0000000 |NT_STATUS_CANCELLED);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;
@@ -1436,7 +1436,7 @@ void remove_pending_change_notify_requests_by_filename(files_struct *fsp)
      * the filename are identical.
      */
     if((cnbp->fsp->conn == fsp->conn) && strequal(cnbp->fsp->fsp_name,fsp->fsp_name)) {
-      change_notify_reply_packet(cnbp->request_buf,0,NT_STATUS_CANCELLED);
+      change_notify_reply_packet(cnbp->request_buf,0,0xC0000000 |NT_STATUS_CANCELLED);
       free((char *)ubi_slRemNext( &change_notify_queue, prev));
       cnbp = (change_notify_buf *)(prev ? ubi_slNext(prev) : ubi_slFirst(&change_notify_queue));
       continue;

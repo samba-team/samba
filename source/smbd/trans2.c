@@ -1438,9 +1438,21 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       break;
 
     case SMB_QUERY_FILE_NAME_INFO:
+      /*
+       * The first part of this code is essential
+       * to get security descriptors to work on mapped
+       * drives. Don't ask how I discovered this unless
+       * you like hearing about me suffering.... :-). JRA.
+       */
+      if(strequal(".", fname) && (get_remote_arch() == RA_WINNT)) {
+        l = l*2;
+        SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
+        PutUniCode(pdata + 4, "\\");
+      } else {
+        pstrcpy(pdata+4,fname);
+      }
       data_size = 4 + l;
       SIVAL(pdata,0,l);
-      pstrcpy(pdata+4,fname);
       break;
 
     case SMB_QUERY_FILE_ALLOCATION_INFO:

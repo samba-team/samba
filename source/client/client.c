@@ -2143,7 +2143,11 @@ static int do_message_op(void)
 			}
 			break;
 		case 'L':
-			pstrcpy(query_host,optarg);
+			p = optarg;
+			while(*p == '\\' || *p == '/')
+				p++;
+			pstrcpy(query_host,p);
+			
 			if(!explicit_user)
 				*username = '\0';
 			break;
