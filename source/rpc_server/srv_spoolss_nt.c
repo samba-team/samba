@@ -882,7 +882,7 @@ uint32 _spoolss_getprinterdata(POLICY_HND *handle, UNISTR2 *valuename,
 	}
 	
 	if (*needed > *out_size)
-		return ERROR_INSUFFICIENT_BUFFER;
+		return ERROR_MORE_DATA;
 	else
 		return NT_STATUS_NO_PROBLEMO;
 }
