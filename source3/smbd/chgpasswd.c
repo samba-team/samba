@@ -691,10 +691,8 @@ BOOL check_oem_password(char *user,
 		 * nt passwords are in unicode
 		 */
 		int uni_pw_len = new_pw_len;
-		char *pw;
 		new_pw_len /= 2;
-		pw = unistrn2(&lmdata[512-uni_pw_len], new_pw_len);
-		memcpy(new_passwd, pw, new_pw_len+1);
+		unibuf_to_ascii(new_passwd, &lmdata[512-uni_pw_len], new_pw_len);
 	}
 	else
 	{

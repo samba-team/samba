@@ -156,7 +156,7 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 		for (num = 0; num < ref->num_ref_doms_1; num++)
 		{
 			fstring domname;
-			fstrcpy(domname, unistr2_to_str(&ref->ref_dom[num].uni_dom_name));
+			unistr2_to_ascii(domname, &ref->ref_dom[num].uni_dom_name, sizeof(domname));
 			if (strequal(domname, dom_name))
 			{	
 				return num;
@@ -217,7 +217,7 @@ static void make_lsa_rid2s(DOM_R_REF *ref,
 		char *dom_name = NULL;
 		uint8 sid_name_use = SID_NAME_UNKNOWN;
 
-		fstrcpy(find_name, unistr2_to_str(&name[i]));
+		unistr2_to_ascii(find_name, &name[i], sizeof(find_name));
 		dom_name = strdup(find_name);
 
 		if (map_domain_name_to_sid(&sid, &dom_name))

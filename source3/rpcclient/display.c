@@ -192,8 +192,8 @@ void display_srv_info_101(FILE *out_hnd, enum action_type action,
 			fstring name;
 			fstring comment;
 
-			fstrcpy(name    , unistr2_to_str(&sv101->uni_name    ));
-			fstrcpy(comment , unistr2_to_str(&sv101->uni_comment ));
+			unistr2_to_ascii(name, &sv101->uni_name, sizeof(name));
+			unistr2_to_ascii(comment, &sv101->uni_comment, sizeof(comment));
 
 			display_server(out_hnd, action, name, sv101->srv_type, comment);
 
@@ -234,9 +234,10 @@ void display_srv_info_102(FILE *out_hnd, enum action_type action,SRV_INFO_102 *s
 			fstring comment;
 			fstring usr_path;
 
-			fstrcpy(name    , unistr2_to_str(&sv102->uni_name    ));
-			fstrcpy(comment , unistr2_to_str(&sv102->uni_comment ));
-			fstrcpy(usr_path, unistr2_to_str(&sv102->uni_usr_path));
+			unistr2_to_ascii(name, &sv102->uni_name, sizeof(name));
+			unistr2_to_ascii(comment, &sv102->uni_comment, sizeof(comment));
+			unistr2_to_ascii(usr_path, &sv102->uni_usr_path,
+					 sizeof(usr_path));
 
 			display_server(out_hnd, action, name, sv102->srv_type, comment);
 
@@ -347,8 +348,8 @@ void display_conn_info_1(FILE *out_hnd, enum action_type action,
 			fstring usr_name;
 			fstring net_name;
 
-			fstrcpy(usr_name, unistr2_to_str(&str1->uni_usr_name));
-			fstrcpy(net_name, unistr2_to_str(&str1->uni_net_name));
+			unistr2_to_ascii(usr_name, &str1->uni_usr_name, sizeof(usr_name));
+			unistr2_to_ascii(net_name, &str1->uni_net_name, sizeof(net_name));
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info1->id);
 			fprintf(out_hnd, "\ttype     :\t%s\n", get_share_type_str(info1->type));
@@ -503,8 +504,8 @@ void display_share_info_1(FILE *out_hnd, enum action_type action,
 			fstring remark  ;
 			fstring net_name;
 
-			fstrcpy(net_name, unistr2_to_str(&str1->uni_netname));
-			fstrcpy(remark  , unistr2_to_str(&str1->uni_remark ));
+			unistr2_to_ascii(net_name, &str1->uni_netname, sizeof(net_name));
+			unistr2_to_ascii(remark, &str1->uni_remark, sizeof(remark));
 
 			display_share(out_hnd, action, net_name, info1->type, remark);
 
@@ -545,10 +546,10 @@ void display_share_info_2(FILE *out_hnd, enum action_type action,
 			fstring path    ;
 			fstring passwd  ;
 
-			fstrcpy(net_name, unistr2_to_str(&str2->uni_netname));
-			fstrcpy(remark  , unistr2_to_str(&str2->uni_remark ));
-			fstrcpy(path    , unistr2_to_str(&str2->uni_path   ));
-			fstrcpy(passwd  , unistr2_to_str(&str2->uni_passwd ));
+			unistr2_to_ascii(net_name, &str2->uni_netname, sizeof(net_name));
+			unistr2_to_ascii(remark, &str2->uni_remark, sizeof(remark));
+			unistr2_to_ascii(path, &str2->uni_path, sizeof(path));
+			unistr2_to_ascii(passwd, &str2->uni_passwd, sizeof(passwd));
 
 			display_share2(out_hnd, action, net_name, info2->type, remark,
 			                                      info2->perms, info2->max_uses, info2->num_uses,
@@ -698,8 +699,10 @@ void display_file_info_3(FILE *out_hnd, enum action_type action,
 			fstring path_name;
 			fstring user_name;
 
-			fstrcpy(path_name, unistr2_to_str(&str3->uni_path_name));
-			fstrcpy(user_name, unistr2_to_str(&str3->uni_user_name));
+			unistr2_to_ascii(path_name, &str3->uni_path_name,
+					 sizeof(path_name));
+			unistr2_to_ascii(user_name, &str3->uni_user_name,
+					 sizeof(user_name));
 
 			fprintf(out_hnd, "\tid       :\t%d\n", info3->id);
 			fprintf(out_hnd, "\tperms    :\t%s\n", get_file_mode_str(info3->perms));
@@ -1148,16 +1151,37 @@ void display_sam_user_info_21(FILE *out_hnd, enum action_type action, SAM_USER_I
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", unistr2_to_str(&usr->uni_user_name   )); /* username unicode string */
-			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", unistr2_to_str(&usr->uni_full_name   )); /* user's full name unicode string */
-			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", unistr2_to_str(&usr->uni_home_dir    )); /* home directory unicode string */
-			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", unistr2_to_str(&usr->uni_dir_drive   )); /* home directory drive unicode string */
-			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", unistr2_to_str(&usr->uni_profile_path)); /* profile path unicode string */
-			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", unistr2_to_str(&usr->uni_logon_script)); /* logon script unicode string */
-			fprintf(out_hnd, "\t\tDescription :\t%s\n", unistr2_to_str(&usr->uni_acct_desc   )); /* user description unicode string */
-			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", unistr2_to_str(&usr->uni_workstations)); /* workstaions unicode string */
-			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", unistr2_to_str(&usr->uni_unknown_str )); /* unknown string unicode string */
-			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", unistr2_to_str(&usr->uni_munged_dial )); /* munged remote access unicode string */
+			fstring temp;
+
+			unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp));
+			fprintf(out_hnd, "\t\tUser Name   :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_full_name, sizeof(temp));
+			fprintf(out_hnd, "\t\tFull Name   :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_home_dir, sizeof(temp));
+			fprintf(out_hnd, "\t\tHome Drive  :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_dir_drive, sizeof(temp));
+			fprintf(out_hnd, "\t\tDir Drive   :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_profile_path, sizeof(temp));
+			fprintf(out_hnd, "\t\tProfile Path:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_logon_script, sizeof(temp));
+			fprintf(out_hnd, "\t\tLogon Script:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_acct_desc, sizeof(temp));
+			fprintf(out_hnd, "\t\tDescription :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_workstations, sizeof(temp));
+			fprintf(out_hnd, "\t\tWorkstations:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_unknown_str, sizeof(temp));
+			fprintf(out_hnd, "\t\tUnknown Str :\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &user->uni_munged_dial, sizeof(temp));
+			fprintf(out_hnd, "\t\tRemote Dial :\t%s\n", temp);
 
 			fprintf(out_hnd, "\t\tLogon Time               :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logon_time           ))));
 			fprintf(out_hnd, "\t\tLogoff Time              :\t%s\n", http_timestring(nt_time_to_unix(&(usr->logoff_time          ))));
@@ -1446,13 +1470,17 @@ char *get_reg_val_type_str(uint32 type)
 static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFFER2 *value)
 {
 	fstring type;
+	fstring valstr;
+
 	fstrcpy(type, get_reg_val_type_str(val_type));
 
 	switch (val_type)
 	{
 		case 0x01: /* unistr */
 		{
-			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, buffer2_to_str(value));
+			unistr_to_ascii(valstr, value->buffer,
+					MIN(value->buf_len, sizeof(valstr)));
+			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
 
@@ -1480,7 +1508,8 @@ static void print_reg_value(FILE *out_hnd, char *val_name, uint32 val_type, BUFF
 
 		case 0x07: /* multiunistr */
 		{
-			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, buffer2_to_multistr(value));
+			buffer2_to_multistr(valstr, value, sizeof(valstr));
+			fprintf(out_hnd,"\t%s:\t%s:\t%s\n", val_name, type, valstr);
 			break;
 		}
 	}
@@ -1566,17 +1595,30 @@ void display_query_svc_cfg(FILE *out_hnd, enum action_type action,
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tService:\t%s\n", unistr2_to_str(&cfg->uni_display_name)); /* service name unicode string */
+			fstring service;
+
+			unistr2_to_ascii(service, &cfg->uni_display_name, sizeof(service));
+			fprintf(out_hnd, "\tService:\t%s\n", service);
 			fprintf(out_hnd, "\t-------\n");
 			break;
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\tPath:\t%s\n"         ,  unistr2_to_str(&cfg->uni_bin_path_name));
-			fprintf(out_hnd, "\tLoad Order:\t%s\n"   ,  unistr2_to_str(&cfg->uni_load_order_grp));
-			fprintf(out_hnd, "\tDependencies:\t%s\n" ,  unistr2_to_str(&cfg->uni_dependencies));
-			fprintf(out_hnd, "\tService Start:\t%s\n",  unistr2_to_str(&cfg->uni_service_start_name));
-			fprintf(out_hnd, "\tService Type:\t%d\n" , cfg->service_type);
+			fstring temp;
+
+			unistr2_to_ascii(temp, &cfg->uni_bin_path_name, sizeof(temp));
+			fprintf(out_hnd, "\tPath:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &cfg->uni_load_order_grp, sizeof(temp));
+			fprintf(out_hnd, "\tLoad Order:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &cfg->uni_dependencies, sizeof(temp));
+			fprintf(out_hnd, "\tDependencies:\t%s\n", temp);
+
+			unistr2_to_ascii(temp, &cfg->uni_service_start_name, sizeof(temp));
+			fprintf(out_hnd, "\tService Start:\t%s\n", temp);
+
+			fprintf(out_hnd, "\tService Type:\t%d\n", cfg->service_type);
 			fprintf(out_hnd, "\tStart Type:\t%s\n" , get_svc_start_type_str(cfg->start_type));
 			fprintf(out_hnd, "\tError Control:\t%d\n" , cfg->error_control);
 			fprintf(out_hnd, "\tTag Id:\t%d\n" , cfg->tag_id);
@@ -1604,8 +1646,15 @@ void display_svc_info(FILE *out_hnd, enum action_type action, ENUM_SRVC_STATUS *
 		}
 		case ACTION_ENUMERATE:
 		{
-			fprintf(out_hnd, "\t%s:",  unistr2(svc->uni_srvc_name   .buffer)); /* service name unicode string */
-			fprintf(out_hnd, "\t%s\n", unistr2(svc->uni_disp_name   .buffer)); /* display name unicode string */
+			fstring name;
+
+			unistr_to_ascii(name, svc->uni_srvc_name.buffer,
+					sizeof(name)); /* service name */
+			fprintf(out_hnd, "\t%s:", name);
+
+			unistr_to_ascii(name, svc->uni_disp_name.buffer,
+					sizeof(name)); /* display name */
+			fprintf(out_hnd, "\t%s\n", name);
 			break;
 		}
 		case ACTION_FOOTER:

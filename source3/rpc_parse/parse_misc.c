@@ -328,8 +328,7 @@ creates a UNISTR structure.
 ********************************************************************/
 void make_unistr(UNISTR *str, char *buf)
 {
-	/* store the string (null-terminated copy) */
-	str_to_unistr16(str->buffer, buf);
+	ascii_to_unistr(str->buffer, buf, sizeof(str->buffer));
 }
 
 /*******************************************************************
@@ -371,8 +370,8 @@ void make_buffer3_str(BUFFER3 *str, char *buf, int len)
 	str->buf_max_len = len * 2;
 	str->buf_len     = len * 2;
 
-	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	str_to_unistr8(str->buffer, buf);
+	/* store the string (little endian buffer) */
+	ascii_to_unibuf(str->buffer, buf, str->buf_len);
 }
 
 /*******************************************************************
@@ -572,8 +571,8 @@ void make_unistr2(UNISTR2 *str, const char *buf, int len)
 	str->undoc       = 0;
 	str->uni_str_len = len;
 
-	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
-	str_to_unistr16((str->buffer), buf);
+	/* store the string (wide chars) */
+	ascii_to_unistr(str->buffer, buf, len);
 }
 
 /*******************************************************************
