@@ -993,18 +993,6 @@ void smbd_process(void)
   InBuffer += SMB_ALIGNMENT;
   OutBuffer += SMB_ALIGNMENT;
 
-#if PRIME_NMBD
-  DEBUG(3,("priming nmbd\n"));
-  {
-    struct in_addr ip;
-    ip = *interpret_addr2("localhost");
-    if (zero_ip(ip)) ip = *interpret_addr2("127.0.0.1");
-    *OutBuffer = 0;
-    send_one_packet(OutBuffer,1,ip,NMB_PORT,SOCK_DGRAM);
-  }
-#endif    
-
-
   max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
 
   /* re-initialise the timezone */

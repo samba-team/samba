@@ -103,12 +103,6 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
-/* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
-   when smbd starts? */
-#ifndef PRIME_NMBD
-#define PRIME_NMBD 1
-#endif
-
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER
