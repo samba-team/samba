@@ -2693,6 +2693,23 @@ if test x"$HAVE_WINBIND" = x"yes"; then
 
         AC_MSG_RESULT(yes)
 
+	AC_MSG_CHECKING(whether to enable winbind auth challenge/response code)
+	AC_ARG_WITH(winbind-auth-challenge,
+	[  --with-winbind-auth-challenge   Enable winbindd_pam_auth_crap() functionality (default no)],
+	[ 
+	  case "$withval" in
+		yes)
+			AC_DEFINE(WITH_WINBIND_AUTH_CRAP)
+			AC_MSG_RESULT(yes)
+			;;
+	        no)
+			AC_MSG_RESULT(no)
+	                ;;
+	  esac ],
+	)
+
+# Check for FreeBSD problem with getgroups
+
 	WINBIND_TARGETS="bin/wbinfo"
 	WINBIND_STARGETS="bin/winbindd"
 	case "$host_os" in
@@ -2719,19 +2736,6 @@ else
 	WINBIND_PAM_TARGETS=""
 fi
 
-
-AC_ARG_WITH(winbind,
-[  --with-winbind-auth-challenge   Enable winbindd_pam_auth_crap() functionality (default no)],
-[ 
-  case "$withval" in
-	yes)
-		WITH_WINBIND_AUTH_CRAP=yes
-		;;
-        no)
-		WITH_WINBIND_AUTH_CRAP=no
-                ;;
-  esac ],
-)
 
 # Check for FreeBSD problem with getgroups
 # It returns EGID too many times in the list of groups
