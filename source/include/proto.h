@@ -3655,7 +3655,8 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth);
-BOOL convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 type, uint8 *data, uint32 len);
+BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
+				uint32 type, const uint8 *data, uint32 len);
 BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth);
 BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth);
 BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth);
@@ -4967,7 +4968,13 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle,
 				uint32 *datasize,
 				uint8  **data,
 				uint32 *realdatasize);
-uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata);
+uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
+				const UNISTR2 *value,
+				uint32 type,
+				uint32 max_len,
+				const uint8 *data,
+				uint32 real_len,
+				uint32 numeric_data);
 uint32 _spoolss_addform(SPOOL_Q_ADDFORM *q_u, prs_struct *rdata);
 uint32 _spoolss_setform(SPOOL_Q_SETFORM *q_u, prs_struct *rdata);
 uint32 _spoolss_enumprintprocessors(SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *rdata);

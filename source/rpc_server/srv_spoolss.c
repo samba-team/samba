@@ -892,50 +892,21 @@ static void api_spoolss_enumprinterdata(rpcsrv_struct *p, prs_struct *data,
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata)
-{
-	SPOOL_R_SETPRINTERDATA r_u;	
-	NT_PRINTER_INFO_LEVEL printer;
-	NT_PRINTER_PARAM *param = NULL;
-		
-	int pnum = 0;
-	int snum = 0;
-	
-	DEBUG(5,("spoolss_reply_setprinterdata\n"));
-
-	pnum = find_printer_index_by_hnd(&(q_u->handle));
-	
-	if (OPEN_HANDLE(pnum))
-	{
-		get_printer_snum(&(q_u->handle), &snum);		
-		get_a_printer(&printer, 2, lp_servicename(snum));
-		convert_specific_param(&param, q_u->value , q_u->type, q_u->data, q_u->real_len);
-
-		unlink_specific_param_if_exist(printer.info_2, param);
-		
-		add_a_specific_param(printer.info_2, param);
-		
-		add_a_printer(printer, 2);
-		
-		free_a_printer(printer, 2);
-	}	
-	
-	r_u.status = 0x0;
-	spoolss_io_r_setprinterdata("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_setprinterdata(rpcsrv_struct *p, prs_struct *data,
                                        prs_struct *rdata)
 {
 	SPOOL_Q_SETPRINTERDATA q_u;
+	SPOOL_R_SETPRINTERDATA r_u;	
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_setprinterdata("", &q_u, data, 0);
-	
-	spoolss_reply_setprinterdata(&q_u, rdata);
-	
-	free(q_u.data);
+	r_u.status = _spoolss_setprinterdata(&q_u.handle,
+				&q_u.value, q_u.type, q_u.max_len,
+				q_u.data, q_u.real_len, q_u.numeric_data);
+	spoolss_io_r_setprinterdata("", &r_u, rdata, 0);
+	safe_free(q_u.data);
 }
 
 /****************************************************************************

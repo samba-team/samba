@@ -4169,7 +4169,8 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 /*******************************************************************
 ********************************************************************/  
-BOOL convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 type, uint8 *data, uint32 len)
+BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
+				uint32 type, const uint8 *data, uint32 len)
 {
 	DEBUG(5,("converting a specific param struct\n"));
 
@@ -4179,7 +4180,7 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, UNISTR2 value , uint32 typ
 		ZERO_STRUCTP(*param);
 		DEBUGADD(6,("Allocated a new PARAM struct\n"));
 	}
-	unistr2_to_ascii((*param)->value, &value, sizeof((*param)->value)-1);
+	unistr2_to_ascii((*param)->value, value, sizeof((*param)->value)-1);
 	(*param)->type = type;
 	
 	/* le champ data n'est pas NULL termine */

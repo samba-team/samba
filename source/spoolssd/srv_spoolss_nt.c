@@ -3168,41 +3168,59 @@ uint32 _spoolss_enumprinterdata(const POLICY_HND *handle,
 	return status;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata)
+uint32 _spoolss_setprinterdata( const POLICY_HND *handle,
+				const UNISTR2 *value,
+				uint32 type,
+				uint32 max_len,
+				const uint8 *data,
+				uint32 real_len,
+				uint32 numeric_data)
 {
-	SPOOL_R_SETPRINTERDATA r_u;	
 	NT_PRINTER_INFO_LEVEL printer;
 	NT_PRINTER_PARAM *param = NULL;
 		
 	int pnum=0;
 	int snum=0;
+	uint32 status = 0x0;
 	
 	DEBUG(5,("spoolss_setprinterdata\n"));
 
 	pnum = find_printer_index_by_hnd(handle);
 	
-	if (OPEN_HANDLE(pnum))
+	if (!OPEN_HANDLE(pnum))
 	{
-		get_printer_snum(handle, &snum);		
-		get_a_printer(&printer, 2, lp_servicename(snum));
-		convert_specific_param(&param, value , type, data, real_len);
+		return NT_STATUS_INVALID_HANDLE;
+	}
+	if (!get_printer_snum(handle, &snum))
+	{
+		return NT_STATUS_INVALID_HANDLE;
+	}
 
-		unlink_specific_param_if_exist(printer.info_2, param);
-		
-		add_a_specific_param(printer.info_2, param);
-		
-		add_a_printer(printer, 2);
-		
-		free_a_printer(printer, 2);
-	}	
+	status = get_a_printer(&printer, 2, lp_servicename(snum));
+	if (status != 0x0)
+	{
+		return status;
+	}
+
+	convert_specific_param(&param, value , type, data, real_len);
+	unlink_specific_param_if_exist(printer.info_2, param);
 	
-	status = 0x0;
-	spoolss_io_r_setprinterdata("", &r_u, rdata, 0);
+	if (!add_a_specific_param(printer.info_2, param))
+	{
+		status = NT_STATUS_INVALID_PARAMETER;
+	}
+	else
+	{
+		status = add_a_printer(printer, 2);
+	}
+	free_a_printer(printer, 2);
+	
+	return status;
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
