@@ -615,6 +615,7 @@ NTSTATUS dcerpc_request(struct dcerpc_pipe *p,
 	}
 
 	if (pkt.ptype == DCERPC_PKT_FAULT) {
+		DEBUG(5,("rpc fault 0x%x\n", pkt.u.fault.status));
 		p->last_fault_code = pkt.u.fault.status;
 		return NT_STATUS_NET_WRITE_FAULT;
 	}
