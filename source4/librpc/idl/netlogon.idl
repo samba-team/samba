@@ -502,7 +502,7 @@ interface netlogon
 		netr_String unknown2;
 		netr_String unknown3;
 		netr_String unknown4;
-		uint32 unknown5;
+		uint32 flags;
 		uint32 unknown6;
 		uint32 unknown7;
 		uint32 unknown8;
