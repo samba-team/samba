@@ -1138,6 +1138,29 @@ static BOOL test_QueryInfoPolicy2(struct dcerpc_pipe *p,
 	return ret;
 }
 
+static BOOL test_GetUserName(struct dcerpc_pipe *p, 
+				  TALLOC_CTX *mem_ctx, 
+				  struct policy_handle *handle)
+{
+	struct lsa_GetUserName r;
+	NTSTATUS status;
+	BOOL ret = True;
+	printf("\nTesting GetUserName\n");
+
+	r.in.system_name = "\\";	
+	r.in.account_name = NULL;	
+	r.in.unknown_name = NULL;
+
+	status = dcerpc_lsa_GetUserName(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("GetUserName failed - %s\n", nt_errstr(status));
+		ret = False;
+	}
+
+	return ret;
+}
+
 static BOOL test_Close(struct dcerpc_pipe *p, 
 		       TALLOC_CTX *mem_ctx, 
 		       struct policy_handle *handle)
@@ -1230,7 +1253,11 @@ BOOL torture_rpc_lsa(void)
 	if (!test_QueryInfoPolicy2(p, mem_ctx, &handle)) {
 		ret = False;
 	}
-	
+
+	if (!test_GetUserName(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
 #if 0
 	if (!test_Delete(p, mem_ctx, &handle)) {
 		ret = False;
