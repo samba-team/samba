@@ -425,7 +425,7 @@ int main(int argc, char **argv)
 		    exit(1);
 	    }
 	    (void) setsockopt(s, SOL_SOCKET, SO_REUSEADDR,
-				(char *)&on, sizeof(on));
+				(void *)&on, sizeof(on));
 	    if (bind(s, (struct sockaddr *)&sin, sizeof sin) < 0) {
 		perror("bind");
 		exit(1);
@@ -478,9 +478,9 @@ int main(int argc, char **argv)
 		 */
 #ifdef SO_SEC_MULTI			/* 8.0 code */
 		if ((getsockopt(0, SOL_SOCKET, SO_SECURITY,
-			       (char *)&ss, &szss) < 0) ||
+			       (void *)&ss, &szss) < 0) ||
 		    (getsockopt(0, SOL_SOCKET, SO_SEC_MULTI,
-				(char *)&sock_multi, &szi) < 0)) {
+				(void *)&sock_multi, &szi) < 0)) {
 			perror("getsockopt");
 			exit(1);
 		} else {
@@ -498,7 +498,7 @@ int main(int argc, char **argv)
 		}
 #else /* SO_SEC_MULTI */		/* 7.0 code */
 		if (getsockopt(0, SOL_SOCKET, SO_SECURITY,
-				(char *)&ss, &szss) >= 0) {
+				(void *)&ss, &szss) >= 0) {
 			dv.dv_actlvl = ss.ss_slevel;
 			dv.dv_actcmp = ss.ss_compart;
 			dv.dv_minlvl = ss.ss_minlvl;
@@ -518,7 +518,7 @@ int main(int argc, char **argv)
 	}
 	if (keepalive &&
 	    setsockopt(0, SOL_SOCKET, SO_KEEPALIVE,
-			(char *)&on, sizeof (on)) < 0) {
+			(void *)&on, sizeof (on)) < 0) {
 		syslog(LOG_WARNING, "setsockopt (SO_KEEPALIVE): %m");
 	}
 
@@ -533,7 +533,7 @@ int main(int argc, char **argv)
 			tos = 020;	/* Low Delay bit */
 		if (tos
 		   && (setsockopt(0, IPPROTO_IP, IP_TOS,
-				  (char *)&tos, sizeof(tos)) < 0)
+				  (void *)&tos, sizeof(tos)) < 0)
 		   && (errno != ENOPROTOOPT) )
 			syslog(LOG_WARNING, "setsockopt (IP_TOS): %m");
 	}
@@ -1102,7 +1102,7 @@ telnet(f, p, host)
 
 #if	defined(SO_OOBINLINE)
 	(void) setsockopt(net, SOL_SOCKET, SO_OOBINLINE,
-				(char *)&on, sizeof on);
+				(void *)&on, sizeof on);
 #endif	/* defined(SO_OOBINLINE) */
 
 #ifdef	SIGTSTP

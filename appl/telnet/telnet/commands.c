@@ -2307,7 +2307,8 @@ int tn(int argc, char **argv)
 	    return 0;
 	}
 #if	defined(IP_OPTIONS) && defined(IPPROTO_IP)
-	if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS, (char *)srp, srlen) < 0)
+	if (srp && setsockopt(net, IPPROTO_IP, IP_OPTIONS, (void *)srp,
+			      srlen) < 0)
 		perror("setsockopt (IP_OPTIONS)");
 #endif
 #if	defined(IPPROTO_IP) && defined(IP_TOS)
@@ -2321,7 +2322,7 @@ int tn(int argc, char **argv)
 		tos = 020;	/* Low Delay bit */
 	    if (tos
 		&& (setsockopt(net, IPPROTO_IP, IP_TOS,
-		    (char *)&tos, sizeof(int)) < 0)
+		    (void *)&tos, sizeof(int)) < 0)
 		&& (errno != ENOPROTOOPT))
 		    perror("telnet: setsockopt (IP_TOS) (ignored)");
 	}

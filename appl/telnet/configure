@@ -1162,12 +1162,12 @@ tgetent()
 EOF
 if { (eval echo configure:1164: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_tgetent=${ac_lib:-yes}";break
+  eval "ac_cv_funclib_tgetent=${ac_lib-yes}";break
 fi
 rm -f conftest*
 
 	done
-	eval "ac_cv_funclib_tgetent=\${ac_cv_funclib_tgetent:-no}"
+	eval "ac_cv_funclib_tgetent=\${ac_cv_funclib_tgetent-no}"
 	LIBS="$ac_save_LIBS"
 fi
 
@@ -1240,12 +1240,12 @@ setupterm()
 EOF
 if { (eval echo configure:1242: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_setupterm=${ac_lib:-yes}";break
+  eval "ac_cv_funclib_setupterm=${ac_lib-yes}";break
 fi
 rm -f conftest*
 
 	done
-	eval "ac_cv_funclib_setupterm=\${ac_cv_funclib_setupterm:-no}"
+	eval "ac_cv_funclib_setupterm=\${ac_cv_funclib_setupterm-no}"
 	LIBS="$ac_save_LIBS"
 fi
 
@@ -1318,12 +1318,12 @@ socket()
 EOF
 if { (eval echo configure:1320: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_socket=${ac_lib:-yes}";break
+  eval "ac_cv_funclib_socket=${ac_lib-yes}";break
 fi
 rm -f conftest*
 
 	done
-	eval "ac_cv_funclib_socket=\${ac_cv_funclib_socket:-no}"
+	eval "ac_cv_funclib_socket=\${ac_cv_funclib_socket-no}"
 	LIBS="$ac_save_LIBS"
 fi
 
@@ -1396,12 +1396,12 @@ gethostbyname()
 EOF
 if { (eval echo configure:1398: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_gethostbyname=${ac_lib:-yes}";break
+  eval "ac_cv_funclib_gethostbyname=${ac_lib-yes}";break
 fi
 rm -f conftest*
 
 	done
-	eval "ac_cv_funclib_gethostbyname=\${ac_cv_funclib_gethostbyname:-no}"
+	eval "ac_cv_funclib_gethostbyname=\${ac_cv_funclib_gethostbyname-no}"
 	LIBS="$ac_save_LIBS"
 fi
 
@@ -1679,12 +1679,12 @@ logout()
 EOF
 if { (eval echo configure:1681: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; }; then
   rm -rf conftest*
-  eval "ac_cv_funclib_logout=${ac_lib:-yes}";break
+  eval "ac_cv_funclib_logout=${ac_lib-yes}";break
 fi
 rm -f conftest*
 
 	done
-	eval "ac_cv_funclib_logout=\${ac_cv_funclib_logout:-no}"
+	eval "ac_cv_funclib_logout=\${ac_cv_funclib_logout-no}"
 	LIBS="$ac_save_LIBS"
 fi
 

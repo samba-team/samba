@@ -29,7 +29,7 @@ int     pop_timeout = POP_TIMEOUT;
 
 jmp_buf env;
 
-static int
+static RETSIGTYPE
 ring()
 {
   longjmp(env,1);
@@ -41,8 +41,7 @@ ring()
 static char *
 tgets(char *str, int size, FILE *fp, int timeout)
 {
-  int ring();
-  (void) signal(SIGALRM, (void *)ring);
+  (void) signal(SIGALRM, ring);
   alarm(timeout);
   if (setjmp(env))
     str = NULL;
@@ -63,8 +62,8 @@ main (int argc, char **argv)
     state_table     *   s;
     char                message[MAXLINELEN];
 
-    (void) signal(SIGHUP,(void *)catchSIGHUP);
-    (void) signal(SIGPIPE,(void *)catchSIGHUP);
+    (void) signal(SIGHUP, catchSIGHUP);
+    (void) signal(SIGPIPE,catchSIGHUP);
 
     /*  Start things rolling */
     pop_init(&p,argc,argv);

@@ -92,7 +92,7 @@ SetSockOpt(fd, level, option, yesno)
 {
 #ifndef	NOT43
     return setsockopt(fd, level, option,
-				(char *)&yesno, sizeof yesno);
+				(void *)&yesno, sizeof yesno);
 #else	/* NOT43 */
     if (yesno == 0) {		/* Can't do that in 4.2! */
 	fprintf(stderr, "Error: attempt to turn off an option 0x%x.\n",

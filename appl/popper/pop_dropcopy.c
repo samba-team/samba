@@ -30,7 +30,6 @@ pop_dropcopy(POP *p, struct passwd *pwp)
     char                    buffer[BUFSIZ];         /*  Read buffer */
     long                    offset;                 /*  Old/New boundary */
     int                     nchar;                  /*  Bytes written/read */
-    struct stat             mybuf;                  /*  For lstat() */
 
     /*  Create a temporary maildrop into which to copy the updated maildrop */
     (void)sprintf(p->temp_drop,POP_DROP,p->user);

@@ -14,6 +14,7 @@ RCSID("$Id$");
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
@@ -25,6 +26,8 @@ RCSID("$Id$");
 
 #include <krb.h>
 #include <kafs.h>
+
+char *crypt(const char *, const char *);
 
 char inst[100];
 char name[100];
