@@ -67,6 +67,17 @@ static void display_account_info(uint32 rid, SAM_ACCOUNT_INFO *a)
 	       smbpasswd_encode_acb_info(a->acb_info));
 }
 
+static void display_domain_info(SAM_DOMAIN_INFO *a)
+{
+	d_printf("Domain name: %s\n", unistr2_static(&a->uni_dom_name));
+}
+
+static void display_group_info(uint32 rid, SAM_GROUP_INFO *a)
+{
+	d_printf("Group '%s' ", unistr2_static(&a->uni_grp_name));
+	d_printf("desc='%s', rid=%u\n", unistr2_static(&a->uni_grp_desc), rid);
+}
+
 static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 {
 	switch (hdr_delta->type) {
@@ -82,6 +93,12 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 	case SAM_DELTA_ALIAS_MEM:
 		display_alias_mem(hdr_delta->target_rid, &delta->als_mem_info);
 		break;
+	case SAM_DELTA_DOMAIN_INFO:
+		display_domain_info(&delta->domain_info);
+		break;
+	case SAM_DELTA_GROUP_INFO:
+		display_group_info(hdr_delta->target_rid, &delta->group_info);
+		break;
 	default:
 		d_printf("Unknown delta record type %d\n", hdr_delta->type);
 		break;
@@ -91,7 +108,7 @@ static void display_sam_entry(SAM_DELTA_HDR *hdr_delta, SAM_DELTA_CTR *delta)
 
 static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret_creds)
 {
-	unsigned last_rid = 0;
+	unsigned last_rid = -1;
         NTSTATUS result;
 	int i;
         TALLOC_CTX *mem_ctx;
@@ -113,9 +130,6 @@ static void dump_database(struct cli_state *cli, unsigned db_type, DOM_CRED *ret
                 for (i = 0; i < num_deltas; i++) {
 			display_sam_entry(&hdr_deltas[i], &deltas[i]);
 			last_rid = hdr_deltas[i].target_rid;
-			if (last_rid == 0) {
-				break;
-			}
                 }
 	} while (last_rid && NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
@@ -155,7 +169,9 @@ int rpc_samdump(int argc, const char **argv)
 
 	dump_database(cli, SAM_DATABASE_DOMAIN, &ret_creds);
 	dump_database(cli, SAM_DATABASE_BUILTIN, &ret_creds);
-	dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds);
+
+	/* Currently we crash on PRIVS somewhere in unmarshalling */
+	/* Dump_database(cli, SAM_DATABASE_PRIVS, &ret_creds); */
 
 	cli_nt_session_close(cli);
         
