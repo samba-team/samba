@@ -64,10 +64,12 @@ sub find_sibling($$)
 
 ####################################################################
 # work out the name of a size_is() variable
-sub find_size_var($$)
+sub find_size_var($$$)
 {
 	my($e) = shift;
 	my($size) = shift;
+	my($var_prefix) = shift;
+
 	my($fn) = $e->{PARENT};
 
 	if (util::is_constant($size)) {
@@ -91,6 +93,9 @@ sub find_size_var($$)
 
 	my $e2 = find_sibling($e, $size);
 
+	if (util::has_property($e2, "in") && util::has_property($e2, "out")) {
+		return $prefix . "$var_prefix$size";
+	}
 	if (util::has_property($e2, "in")) {
 		return $prefix . "r->in.$size";
 	}
@@ -212,7 +217,7 @@ sub ParseArrayPush($$$)
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = find_size_var($e, util::array_size($e));
+	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 
 	if (defined $e->{CONFORMANT_SIZE}) {
 		# the conformant size has already been pushed
@@ -222,7 +227,7 @@ sub ParseArrayPush($$$)
 	}
 
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length);
+		$length = find_size_var($e, $length, $var_prefix);
 		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, 0));\n";
 		pidl "\t\tNDR_CHECK(ndr_push_uint32(ndr, $length));\n";
 		$size = $length;
@@ -241,11 +246,11 @@ sub ParseArrayPrint($$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
-	my $size = find_size_var($e, util::array_size($e));
+	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 	my $length = util::has_property($e, "length_is");
 
 	if (defined $length) {
-		$size = find_size_var($e, $length);
+		$size = find_size_var($e, $length, $var_prefix);
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
@@ -263,7 +268,7 @@ sub ParseArrayPull($$$)
 	my $var_prefix = shift;
 	my $ndr_flags = shift;
 
-	my $size = find_size_var($e, util::array_size($e));
+	my $size = find_size_var($e, util::array_size($e), $var_prefix);
 	my $alloc_size = $size;
 
 	# if this is a conformant array then we use that size to allocate, and make sure
@@ -275,13 +280,22 @@ sub ParseArrayPull($$$)
 		pidl "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
+		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
+			my $size2 = substr($size, 1);
+			pidl "if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {	NDR_ALLOC(ndr, $size2); }\n";
+		}
+
 		# non fixed arrays encode the size just before the array
 		pidl "\t{\n";
 		pidl "\t\tuint32 _array_size;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_array_size));\n";
-		pidl "\t\tif ($size > _array_size) {\n";
+		if ($size =~ /r->in/) {
+			pidl "\t\tif (!(ndr->flags & LIBNDR_FLAG_REF_ALLOC) && _array_size != $size) {\n";
+		} else {
+			pidl "\t\tif ($size != _array_size) {\n";
+		}
 		pidl "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
-		pidl "\t\t}\n";
+		pidl "\t\t} else { $size = _array_size; }\n";
 		pidl "\t}\n";
 	}
 
@@ -303,7 +317,7 @@ sub ParseArrayPull($$$)
 	pidl "\t{\n";
 
 	if (my $length = util::has_property($e, "length_is")) {
-		$length = find_size_var($e, $length);
+		$length = find_size_var($e, $length, $var_prefix);
 		pidl "\t\tuint32 _offset, _length;\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_offset));\n";
 		pidl "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_length));\n";
@@ -395,7 +409,7 @@ sub ParseElementPullSwitch($$$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch);
+	my $switch_var = find_size_var($e, $switch, $var_prefix);
 
 	my $cprefix = util::c_pull_prefix($e);
 
@@ -433,7 +447,7 @@ sub ParseElementPushSwitch($$$$)
 	my($var_prefix) = shift;
 	my($ndr_flags) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch);
+	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
 
 	my $utype = $structs{$e->{TYPE}};
@@ -460,7 +474,7 @@ sub ParseElementPrintSwitch($$$)
 	my($e) = shift;
 	my($var_prefix) = shift;
 	my $switch = shift;
-	my $switch_var = find_size_var($e, $switch);
+	my $switch_var = find_size_var($e, $switch, $var_prefix);
 	my $cprefix = util::c_push_prefix($e);
 
 	pidl "\tndr_print_$e->{TYPE}(ndr, \"$e->{NAME}\", $switch_var, $cprefix$var_prefix$e->{NAME});\n";
@@ -667,7 +681,7 @@ sub ParseStructPush($)
 	# alignment)
 	my $e = $struct->{ELEMENTS}[-1];
 	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
-		my $size = find_size_var($e, util::array_size($e));
+		my $size = find_size_var($e, util::array_size($e), "r->");
 		$e->{CONFORMANT_SIZE} = $size;
 		$conform_e = $e;
 		pidl "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
@@ -1078,7 +1092,11 @@ sub ParseFunctionPrint($)
 		}
 	}
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", &r->out.result);\n";
+		if (util::is_scalar_type($fn->{RETURN_TYPE})) {
+			pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", r->out.result);\n";
+		} else {
+			pidl "\tndr_print_$fn->{RETURN_TYPE}(ndr, \"result\", &r->out.result);\n";
+		}
 	}
 	pidl "\tndr->depth--;\n";
 	pidl "\t}\n";
@@ -1150,7 +1168,7 @@ sub ParseFunctionElementPull($$)
 
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
-			pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, _ptr_$e->{NAME}));\n";
+			pidl "\tNDR_CHECK(ndr_pull_uint32(ndr, &_ptr_$e->{NAME}));\n";
 			pidl "\tif (_ptr_$e->{NAME}) {\n";
 		} elsif ($inout eq "in" && util::has_property($e, "ref")) {
 			pidl "\t{\n";

@@ -60,37 +60,6 @@ void dcerpc_pipe_close(struct dcerpc_pipe *p)
 }
 
 
-/*
-  build a GUID from a string
-*/
-static NTSTATUS guid_from_string(const char *s, struct GUID *guid)
-{
-        uint32 time_low;
-        uint32 time_mid, time_hi_and_version;
-        uint32 clock_seq_hi_and_reserved;
-        uint32 clock_seq_low;
-        uint32 node[6];
-        int i;
-
-        if (11 != sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
-                         &time_low, &time_mid, &time_hi_and_version, 
-                         &clock_seq_hi_and_reserved, &clock_seq_low,
-                         &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
-                return NT_STATUS_INVALID_PARAMETER;
-        }
-
-        SIVAL(guid->info, 0, time_low);
-        SSVAL(guid->info, 4, time_mid);
-        SSVAL(guid->info, 6, time_hi_and_version);
-        SCVAL(guid->info, 8, clock_seq_hi_and_reserved);
-        SCVAL(guid->info, 9, clock_seq_low);
-        for (i=0;i<6;i++) {
-                SCVAL(guid->info, 10 + i, node[i]);
-        }
-
-        return NT_STATUS_OK;
-}
-
 /* 
    parse a data blob into a dcerpc_packet structure. This handles both
    input and output packets
@@ -232,7 +201,7 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	struct dcerpc_syntax_id transfer_syntax;
 	NTSTATUS status;
 
-	status = guid_from_string(uuid, &syntax.uuid);
+	status = GUID_from_string(uuid, &syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(2,("Invalid uuid string in dcerpc_bind_byuuid\n"));
 		return status;
@@ -240,7 +209,7 @@ NTSTATUS dcerpc_bind_byuuid(struct dcerpc_pipe *p,
 	syntax.major_version = version;
 	syntax.minor_version = 0;
 
-	status = guid_from_string("8a885d04-1ceb-11c9-9fe8-08002b104860", 
+	status = GUID_from_string("8a885d04-1ceb-11c9-9fe8-08002b104860", 
 				   &transfer_syntax.uuid);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

@@ -730,6 +730,38 @@ void ndr_print_array_uint8(struct ndr_print *ndr, const char *name,
 	ndr->depth--;	
 }
 
+/*
+  build a GUID from a string
+*/
+NTSTATUS GUID_from_string(const char *s, struct GUID *guid)
+{
+        uint32 time_low;
+        uint32 time_mid, time_hi_and_version;
+        uint32 clock_seq_hi_and_reserved;
+        uint32 clock_seq_low;
+        uint32 node[6];
+        int i;
+
+        if (11 != sscanf(s, "%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x",
+                         &time_low, &time_mid, &time_hi_and_version, 
+                         &clock_seq_hi_and_reserved, &clock_seq_low,
+                         &node[0], &node[1], &node[2], &node[3], &node[4], &node[5])) {
+                return NT_STATUS_INVALID_PARAMETER;
+        }
+
+        SIVAL(guid->info, 0, time_low);
+        SSVAL(guid->info, 4, time_mid);
+        SSVAL(guid->info, 6, time_hi_and_version);
+        SCVAL(guid->info, 8, clock_seq_hi_and_reserved);
+        SCVAL(guid->info, 9, clock_seq_low);
+        for (i=0;i<6;i++) {
+                SCVAL(guid->info, 10 + i, node[i]);
+        }
+
+        return NT_STATUS_OK;
+}
+
+
 const char *GUID_string(TALLOC_CTX *mem_ctx, const struct GUID *guid)
 {
 	return talloc_asprintf(mem_ctx, 

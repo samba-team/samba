@@ -183,6 +183,9 @@ sub is_scalar_type($)
     return 1, if ($type eq "uint8");
     return 1, if ($type eq "uint16");
     return 1, if ($type eq "NTTIME");
+    return 1, if ($type eq "error_status_t");
+    return 1, if ($type eq "boolean32");
+    return 1, if ($type eq "unsigned32");
     return 1, if ($type eq "HYPER_T");
     return 1, if ($type eq "wchar_t");
     return 1, if ($type eq "DATA_BLOB");
