@@ -113,7 +113,7 @@ static void dcesrv_crypto_ntlmssp_end(struct dcesrv_auth *auth)
 	return;
 }
 
-static const struct dcesrv_cyrpto_ops dcesrv_crypto_ntlmssp_ops = {
+static const struct dcesrv_crypto_ops dcesrv_crypto_ntlmssp_ops = {
 	.name		= "ntlmssp",
 	.auth_type	= DCERPC_AUTH_TYPE_NTLMSSP,
 	.start 		= dcesrv_crypto_ntlmssp_start,
@@ -128,12 +128,7 @@ static const struct dcesrv_cyrpto_ops dcesrv_crypto_ntlmssp_ops = {
 /*
   startup the cryptographic side of an authenticated dcerpc server
 */
-NTSTATUS dcesrv_crypto_ntlmssp_get_ops(struct dcesrv_connection *dce_conn,
-			       struct dcesrv_auth *auth)
+const struct dcesrv_crypto_ops *dcesrv_crypto_ntlmssp_get_ops(void)
 {
-	NTSTATUS status = NT_STATUS_OK;
-
-	auth->crypto_ctx.ops = &dcesrv_crypto_ntlmssp_ops;
-
-	return status;
+	return &dcesrv_crypto_ntlmssp_ops;
 }
