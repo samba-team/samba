@@ -1,3 +1,9 @@
+2004-10-14  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/pkinit.c: match new error names
+	
+	* lib/krb5/krb5_err.et: make error messages sane again
+	
 2004-10-13  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/keytab.c: use KRB5_KT_BADNAME
@@ -23,12 +29,17 @@
 	
 2004-10-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* kdc/pkinit.c: use ETYPE_DES3_CBC_NONE_CMS
+	
+	* lib/krb5/crypto.c: add enctype_des3_cbc_none_cms add cms padding
+	for rc2 don't to padding for blocksize 1
+	
 	* lib/hdb/{keys.c,Makefile.am},lib/kadm5/{keys,set_keys}.c:
 	Move keyset parsing and password based keyset generation into hdb.
 	Requested by Andrew Bartlett <abartlet@samba.org> for hdb-ldb
 	backend.
 
-2004-10-07  Love  <lha@stacken.kth.se>
+2004-10-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kuser/kinit.c: adapt to new signature of
 	krb5_get_init_creds_opt_set_pkinit
