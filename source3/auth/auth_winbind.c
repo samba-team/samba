@@ -4,7 +4,7 @@
    Winbind authentication mechnism
 
    Copyright (C) Tim Potter 2000
-   Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Andrew Bartlett 2001 - 2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

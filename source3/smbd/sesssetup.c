@@ -177,9 +177,9 @@ static int reply_spnego_kerberos(connection_struct *conn,
 		return ERROR_NT(NT_STATUS_NO_SUCH_USER);
 	}
 
-	if (!make_server_info_pw(&server_info,pw)) {
+	if (!NT_STATUS_IS_OK(ret = make_server_info_pw(&server_info,pw))) {
 		DEBUG(1,("make_server_info_from_pw failed!\n"));
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
+		return ERROR_NT(ret);
 	}
 	
 	sess_vuid = register_vuid(server_info, user);

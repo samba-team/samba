@@ -69,6 +69,10 @@ void invalidate_vuid(uint16 vuid)
 
 	DLIST_REMOVE(validated_users, vuser);
 
+	/* clear the vuid from the 'cache' on each connection, and
+	   from the vuid 'owner' of connections */
+	conn_clear_vuid_cache(vuid);
+
 	SAFE_FREE(vuser->groups);
 	delete_nt_token(&vuser->nt_user_token);
 	SAFE_FREE(vuser);
@@ -90,95 +94,6 @@ void invalidate_all_vuids(void)
 }
 
 /****************************************************************************
- Create the SID list for this user.
-****************************************************************************/
-
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest, NT_USER_TOKEN *sup_tok)
-{
-	extern DOM_SID global_sid_World;
-	extern DOM_SID global_sid_Network;
-	extern DOM_SID global_sid_Builtin_Guests;
-	extern DOM_SID global_sid_Authenticated_Users;
-	NT_USER_TOKEN *token;
-	DOM_SID *psids;
-	int i, psid_ndx = 0;
-	size_t num_sids = 0;
-	fstring sid_str;
-
-	if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
-		return NULL;
-
-	ZERO_STRUCTP(token);
-
-	/* We always have uid/gid plus World and Network and Authenticated Users or Guest SIDs. */
-	num_sids = 5 + ngroups;
-
-	if (sup_tok && sup_tok->num_sids)
-		num_sids += sup_tok->num_sids;
-
-	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
-		SAFE_FREE(token);
-		return NULL;
-	}
-
-	psids = token->user_sids;
-
-	/*
-	 * Note - user SID *MUST* be first in token !
-	 * se_access_check depends on this.
-	 */
-
-	uid_to_sid( &psids[PRIMARY_USER_SID_INDEX], uid);
-	psid_ndx++;
-
-	/*
-	 * Primary group SID is second in token. Convention.
-	 */
-
-	gid_to_sid( &psids[PRIMARY_GROUP_SID_INDEX], gid);
-	psid_ndx++;
-
-	/* Now add the group SIDs. */
-
-	for (i = 0; i < ngroups; i++) {
-		if (groups[i] != gid) {
-			gid_to_sid( &psids[psid_ndx++], groups[i]);
-		}
-	}
-
-	if (sup_tok) {
-		/* Now add the additional SIDs from the supplimentary token. */
-		for (i = 0; i < sup_tok->num_sids; i++)
-			sid_copy( &psids[psid_ndx++], &sup_tok->user_sids[i] );
-	}
-
-	/*
-	 * Finally add the "standard" SIDs.
-	 * The only difference between guest and "anonymous" (which we
-	 * don't really support) is the addition of Authenticated_Users.
-	 */
-
-	sid_copy( &psids[psid_ndx++], &global_sid_World);
-	sid_copy( &psids[psid_ndx++], &global_sid_Network);
-
-	if (is_guest)
-		sid_copy( &psids[psid_ndx++], &global_sid_Builtin_Guests);
-	else
-		sid_copy( &psids[psid_ndx++], &global_sid_Authenticated_Users);
-
-	token->num_sids = psid_ndx;
-
-	/* Dump list of sids in token */
-
-	for (i = 0; i < token->num_sids; i++) {
-		DEBUG(5, ("user token sid %s\n", 
-			  sid_to_string(sid_str, &token->user_sids[i])));
-	}
-
-	return token;
-}
-
-/****************************************************************************
 register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
@@ -187,8 +102,6 @@ tell random client vuid's (normally zero) from valid vuids.
 int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 {
 	user_struct *vuser = NULL;
-	uid_t uid;
-	gid_t gid;
 
 	/* Ensure no vuid gets registered in share level security. */
 	if(lp_security() == SEC_SHARE)
@@ -205,15 +118,6 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 
 	ZERO_STRUCTP(vuser);
 
-	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
-		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT (flags:%x)\n", pdb_get_init_flag(server_info->sam_account)));
-		free(vuser);
-		return UID_FIELD_INVALID;
-	}
-
-	uid = pdb_get_uid(server_info->sam_account);
-	gid = pdb_get_gid(server_info->sam_account);
-
 	/* Allocate a free vuid. Yes this is a linear search... :-) */
 	while( get_valid_user_struct(next_vuid) != NULL ) {
 		next_vuid++;
@@ -225,18 +129,38 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 	DEBUG(10,("register_vuid: allocated vuid = %u\n", (unsigned int)next_vuid ));
 
 	vuser->vuid = next_vuid;
-	vuser->uid = uid;
-	vuser->gid = gid;
+
+	/* the next functions should be done by a SID mapping system (SMS) as
+	 * the new real sam db won't have reference to unix uids or gids
+	 */
+	if (!IS_SAM_UNIX_USER(server_info->sam_account)) {
+		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT (flags:%x)\n", pdb_get_init_flag(server_info->sam_account)));
+		free(vuser);
+		return UID_FIELD_INVALID;
+	}
+	
+	vuser->uid = pdb_get_uid(server_info->sam_account);
+	vuser->gid = pdb_get_gid(server_info->sam_account);
+	
+	vuser->n_groups = server_info->n_groups;
+	if (vuser->n_groups) {
+		if (!(vuser->groups = memdup(server_info->groups, sizeof(gid_t) * vuser->n_groups))) {
+			DEBUG(0,("register_vuid: failed to memdup vuser->groups\n"));
+			free(vuser);
+			return UID_FIELD_INVALID;
+		}
+	}
+
 	vuser->guest = server_info->guest;
-	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account));
-	fstrcpy(vuser->user.smb_name, smb_name);
+	fstrcpy(vuser->user.unix_name, pdb_get_username(server_info->sam_account)); 
+	fstrcpy(vuser->user.smb_name, smb_name); 
 	fstrcpy(vuser->user.domain, pdb_get_domain(server_info->sam_account));
 	fstrcpy(vuser->user.full_name, pdb_get_fullname(server_info->sam_account));
 
 	{
 		/* Keep the homedir handy */
 		const char *homedir = pdb_get_homedir(server_info->sam_account);
-		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account);
+		const char *unix_homedir = pdb_get_unix_homedir(server_info->sam_account); /* should be optained by SMS */
 		const char *logon_script = pdb_get_logon_script(server_info->sam_account);
 		if (homedir) {
 			vuser->homedir = smb_xstrdup(homedir);
@@ -260,19 +184,13 @@ int register_vuid(auth_serversupplied_info *server_info, const char *smb_name)
 
 	DEBUG(3, ("User name: %s\tReal name: %s\n",vuser->user.unix_name,vuser->user.full_name));	
 
-	vuser->n_groups = 0;
-	vuser->groups  = NULL;
-
-	/* Find all the groups this uid is in and store them. 
-		Used by change_to_user() */
-	initialise_groups(vuser->user.unix_name, vuser->uid, vuser->gid);
-	get_current_groups(vuser->gid, &vuser->n_groups, &vuser->groups);
-
-	if (server_info->ptok)
-		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &server_info->ptok);
-
-	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, vuser->guest, server_info->ptok);
+ 	if (server_info->ptok) {
+		vuser->nt_user_token = dup_nt_token(server_info->ptok);
+	} else {
+		DEBUG(1, ("server_info does not contain a user_token - cannot continue\n"));
+		free(vuser);
+		return UID_FIELD_INVALID;
+	}
 
 	DEBUG(3,("UNIX uid %d is UNIX user %s, and will be vuid %u\n",(int)vuser->uid,vuser->user.unix_name, vuser->vuid));
 
@@ -451,7 +369,7 @@ static char *validate_group(char *group, DATA_BLOB password,int snum)
  Note this is *NOT* used when logging on using sessionsetup_and_X.
 ****************************************************************************/
 
-BOOL authorise_login(int snum,char *user, DATA_BLOB password, 
+BOOL authorise_login(int snum, fstring user, DATA_BLOB password, 
 		     BOOL *guest)
 {
 	BOOL ok = False;

@@ -117,7 +117,7 @@
 #endif
 
 /* the size of the uid cache used to reduce valid user checks */
-#define UID_CACHE_SIZE 4
+#define VUID_CACHE_SIZE 32
 
 /* the following control timings of various actions. Don't change 
    them unless you know what you are doing. These are all in seconds */

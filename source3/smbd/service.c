@@ -305,6 +305,7 @@ static void set_admin_user(connection_struct *conn)
 #endif
 	    ) {
 		conn->admin_user = True;
+		conn->force_user = True;  /* Admin users are effectivly 'forced' */
 		DEBUG(0,("%s logged in as admin user (root privileges)\n",conn->user));
 	} else {
 		conn->admin_user = False;
@@ -329,7 +330,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 {
 	struct passwd *pass = NULL;
 	BOOL guest = False;
-	BOOL force = False;
 	connection_struct *conn;
 	struct stat st;
 	fstring user;
@@ -349,7 +349,6 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	if (lp_guest_only(snum)) {
 		const char *guestname = lp_guestaccount();
 		guest = True;
-		force = True;
 		pass = getpwnam_alloc(guestname);
 		if (!pass) {
 			DEBUG(0,("authorise_login: Invalid guest account %s??\n",guestname));
@@ -397,7 +396,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 			return NULL;
 		}
 		pass = Get_Pwnam(user);
-		conn->force_user = force;
+		conn->force_user = True;
 		conn->uid = pass->pw_uid;
 		conn->gid = pass->pw_gid;
 		string_set(&conn->user, pass->pw_name);
@@ -434,7 +433,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 
 	/*
 	 * If force user is true, then store the
-	 * given userid and also the primary groupid
+	 * given userid and also the groups
 	 * of the user we're forcing.
 	 */
 	
@@ -492,6 +491,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		gid = nametogid(gname);
 		
 		if (gid != (gid_t)-1) {
+
 			/*
 			 * If the user has been forced and the forced group starts
 			 * with a '+', then we only set the group to be the forced
@@ -507,6 +507,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 				conn->gid = gid;
 				DEBUG(3,("Forced group %s\n",gname));
 			}
+			conn->force_group = True;
 		} else {
 			DEBUG(1,("Couldn't find group %s\n",gname));
 			conn_free(conn);
@@ -524,23 +525,27 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		DEBUG(3,("Connect path is '%s' for service [%s]\n",s, lp_servicename(snum)));
 	}
 
-	/* groups stuff added by ih */
-	conn->ngroups = 0;
-	conn->groups = NULL;
-	
-	/* Find all the groups this uid is in and
-	   store them. Used by change_to_user() */
-	initialise_groups(conn->user, conn->uid, conn->gid); 
-	get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
+	if (conn->force_user || conn->force_group) {
+
+		/* groups stuff added by ih */
+		conn->ngroups = 0;
+		conn->groups = NULL;
 		
-	conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
-					      conn->ngroups, conn->groups,
-					      guest, NULL);
+		/* Find all the groups this uid is in and
+		   store them. Used by change_to_user() */
+		initialise_groups(conn->user, conn->uid, conn->gid); 
+		get_current_groups(conn->gid, &conn->ngroups,&conn->groups);
+		
+		conn->nt_user_token = create_nt_token(conn->uid, conn->gid, 
+						      conn->ngroups, conn->groups,
+						      guest);
+	}
 
 	/*
 	 * New code to check if there's a share security descripter
 	 * added from NT server manager. This is done after the
 	 * smb.conf checks are done as we need a uid and token. JRA.
+	 *
 	 */
 
 	{

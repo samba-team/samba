@@ -430,9 +430,9 @@ typedef struct
   time_t status_time;
 } dir_status_struct;
 
-struct uid_cache {
+struct vuid_cache {
   int entries;
-  uid_t list[UID_CACHE_SIZE];
+  uint16 list[VUID_CACHE_SIZE];
 };
 
 typedef struct
@@ -461,7 +461,8 @@ typedef struct connection_struct
 	unsigned cnum; /* an index passed over the wire */
 	int service;
 	BOOL force_user;
-	struct uid_cache uid_cache;
+	BOOL force_group;
+	struct vuid_cache vuid_cache;
 	void *dirptr;
 	BOOL printer;
 	BOOL ipc;
