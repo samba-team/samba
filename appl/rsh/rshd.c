@@ -848,6 +848,8 @@ main(int argc, char **argv)
 	mini_inetd (port);
     }
 
+    signal (SIGPIPE, SIG_IGN);
+
     doit (do_kerberos, do_rhosts);
     return 0;
 }
