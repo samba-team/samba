@@ -53,6 +53,9 @@ SEC_DESC *cli_query_secdesc(struct cli_state *cli, int fnum,
 		goto cleanup;
 	}
 
+	if (cli_is_error(cli))
+		goto cleanup;
+
 	prs_init(&pd, rdata_count, mem_ctx, UNMARSHALL);
 	prs_copy_data_in(&pd, rdata, rdata_count);
 	prs_set_offset(&pd,0);

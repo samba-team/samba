@@ -446,7 +446,8 @@ static void standard_sub_advanced(int snum, const char *user,
 			string_sub(p,"%P", connectpath, l); 
 			break;
 		case 'S': 
-			string_sub(p,"%S", lp_servicename(snum), l); 
+			if ( snum != -1 )
+				string_sub(p,"%S", lp_servicename(snum), l); 
 			break;
 		case 'g': 
 			string_sub(p,"%g", gidtoname(gid), l); 
@@ -463,7 +464,8 @@ static void standard_sub_advanced(int snum, const char *user,
 			 * "path =" string in [homes] and so needs the
 			 * service name, not the username.  */
 		case 'p': 
-			string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
+			if ( snum != -1 )
+				string_sub(p,"%p", automount_path(lp_servicename(snum)), l); 
 			break;
 		case '\0': 
 			p++; 
@@ -797,6 +799,6 @@ void standard_sub_snum(int snum, char *str, size_t len)
 		cached_uid = current_user.uid;
 	}
 
-	standard_sub_advanced(snum, cached_user, "", -1,
+	standard_sub_advanced(snum, cached_user, "", current_user.gid,
 			      smb_user_name, str, len);
 }

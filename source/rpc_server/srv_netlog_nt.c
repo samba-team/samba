@@ -486,8 +486,8 @@ NTSTATUS _net_srv_pwset(pipes_struct *p, NET_Q_SRV_PWSET *q_u, NET_R_SRV_PWSET *
 	cred_hash3( pwd, q_u->pwd, p->dc.sess_key, 0);
 
 	DEBUG(100,("Server password set : new given value was :\n"));
-	for(i = 0; i < 16; i++)
-		DEBUG(100,("%02X ", q_u->pwd[i]));
+	for(i = 0; i < sizeof(pwd); i++)
+		DEBUG(100,("%02X ", pwd[i]));
 	DEBUG(100,("\n"));
 
 	old_pw = pdb_get_nt_passwd(sampass);

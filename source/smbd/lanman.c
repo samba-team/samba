@@ -441,7 +441,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
+  PACKI(desc,"W",pjobid_to_rap(lp_const_servicename(snum),queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -548,9 +548,8 @@ static void fill_printq_info_52(connection_struct *conn, int snum,
 	PACKS(desc, "z", driver.info_3->datafile);    /* Datafile name */
 	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
 	
-	fstrcpy(location, "\\\\");
-	fstrcat(location, get_called_name());
-	fstrcat(location, "\\print$\\WIN40\\0");
+	fstrcpy(location, "\\\\%L\\print$\\WIN40\\0");
+	standard_sub_basic( "", location, sizeof(location)-1 );
 	PACKS(desc,"z", location);                          /* share to retrieve files */
 	
 	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
@@ -1501,10 +1500,12 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   if (!check_share_info(uLevel,str2)) return False;
   
   data_len = fixed_len = string_len = 0;
-  for (i=0;i<count;i++)
+  for (i=0;i<count;i++) {
+    fstring servicename_dos;
+    push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )   /* Maximum name length. */
+        && (strlen(servicename_dos) < 13) )   /* Maximum name length. */
     {
       total++;
       data_len += fill_share_info(conn,i,uLevel,0,&f_len,0,&s_len,0);
@@ -1517,6 +1518,7 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
       else
         missed = True;
     }
+  }
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
   memset(*rdata,0,*rdata_len);
@@ -1527,9 +1529,11 @@ static BOOL api_RNetShareEnum( connection_struct *conn,
   s_len = string_len;
   for( i = 0; i < count; i++ )
     {
+    fstring servicename_dos;
+    push_ascii_fstring(servicename_dos, lp_servicename(i));
     if( lp_browseable( i )
         && lp_snum_ok( i )
-        && (strlen( lp_servicename( i ) ) < 13) )
+        && (strlen(servicename_dos) < 13) )
       {
       if( fill_share_info( conn,i,uLevel,&p,&f_len,&p2,&s_len,*rdata ) < 0 )
  	break;
@@ -2118,11 +2122,12 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int errcode;
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 
 	/* check it's a supported varient */
@@ -2133,7 +2138,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);	
 	*rdata_len = 0;
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode = NERR_JobNotFound;
 		goto out;
 	}
@@ -2253,11 +2258,12 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *p = skip_string(str2,1);
 	uint32 jobid;
 	int snum;
+	fstring sharename;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+	if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
 		return False;
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
@@ -2269,7 +2275,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(snum, jobid)) {
+	if (!print_job_exists(sharename, jobid)) {
 		errcode=NERR_JobNotFound;
 		goto out;
 	}
@@ -2935,6 +2941,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
+  fstring sharename;
   uint32 jobid;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
@@ -2952,7 +2959,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+  if(!rap_to_pjobid(SVAL(p,0), sharename, &jobid))
     return False;
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);

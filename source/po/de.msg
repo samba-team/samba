@@ -23,13 +23,13 @@ msgstr ""
 "Last-Translator: Andreas Moroder\n"
 "Language-Team: (Samba Team) <samba-technical@samba.org>\n"
 "MIME-Version: 1.0\n"
-"Content-Type: text/plain; charset=iso-8859-1\n"
+"Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 
 #: ../web/swat.c:117
 #, c-format
 msgid "ERROR: Can't open %s"
-msgstr "ERRORE: Kann %s nicht öffnen"
+msgstr "ERRORE: Kann %s nicht Ã¶ffnen"
 
 #: ../web/swat.c:200
 msgid "Help"
@@ -100,7 +100,7 @@ msgstr "Erweiterte Ansicht"
 
 #: ../web/swat.c:529
 msgid "Change View To"
-msgstr "Ändere Passwort"
+msgstr "Ã„ndere Passwort"
 
 #: ../web/swat.c:554
 msgid "Current Config"
@@ -108,7 +108,7 @@ msgstr "Aktuelle Konfiguration"
 
 #: ../web/swat.c:558
 msgid "Normal View"
-msgstr "Normale Ansich"
+msgstr "Normale Ansicht"
 
 #: ../web/swat.c:560
 msgid "Full View"
@@ -159,11 +159,11 @@ msgstr ""
 
 #: ../web/swat.c:734
 msgid "Domain Member"
-msgstr "Domänen master"
+msgstr "DomÃ¤nen master"
 
 #: ../web/swat.c:735
 msgid "Domain Controller"
-msgstr "Domänen master"
+msgstr "DomÃ¤nen master"
 
 #: ../web/swat.c:738
 msgid "Unusual Type in smb.conf - Please Select New Mode"
@@ -211,11 +211,11 @@ msgstr "Globale Variablen"
 
 #: ../web/swat.c:815 ../web/swat.c:916 ../web/swat.c:1265
 msgid "Commit Changes"
-msgstr "Speichere Änderungen"
+msgstr "Speichere Ã„nderungen"
 
 #: ../web/swat.c:819 ../web/swat.c:919 ../web/swat.c:1267
 msgid "Reset Values"
-msgstr "Setze Werte zurück"
+msgstr "Setze Werte zurÃ¼ck"
 
 #: ../web/swat.c:844
 msgid "Share Parameters"
@@ -223,11 +223,11 @@ msgstr "Parameter der Freigabe"
 
 #: ../web/swat.c:887
 msgid "Choose Share"
-msgstr "Wähle Freigabe"
+msgstr "WÃ¤hle Freigabe"
 
 #: ../web/swat.c:901
 msgid "Delete Share"
-msgstr "Lösche Freigabe"
+msgstr "LÃ¶sche Freigabe"
 
 #: ../web/swat.c:908
 msgid "Create Share"
@@ -235,7 +235,7 @@ msgstr "Erstelle Freigabe"
 
 #: ../web/swat.c:944
 msgid "password change in demo mode rejected"
-msgstr "Änderung des Passworts im Demo modus nicht aktiv"
+msgstr "Ã„nderung des Passworts im Demo modus nicht aktiv"
 
 #: ../web/swat.c:957
 msgid "Can't setup password database vectors."
@@ -247,29 +247,29 @@ msgstr " \"Benutzername\" muss angegeben werden "
 
 #: ../web/swat.c:999
 msgid " Must specify \"Old Password\" "
-msgstr " \"Altes Passwort\" muß angegeben werden "
+msgstr " \"Altes Passwort\" muÃŸ angegeben werden "
 
 #: ../web/swat.c:1005
 msgid " Must specify \"Remote Machine\" "
-msgstr " \"Remote Maschine\" muß angegeben werden "
+msgstr " \"Remote Maschine\" muÃŸ angegeben werden "
 
 #: ../web/swat.c:1012
 msgid " Must specify \"New, and Re-typed Passwords\" "
-msgstr " \"Neues/Bestätige Passwort\" muß angegeben werden "
+msgstr " \"Neues/BestÃ¤tige Passwort\" muÃŸ angegeben werden "
 
 #: ../web/swat.c:1018
 msgid " Re-typed password didn't match new password "
-msgstr " Das bestätigte Passwort stimmt nicht mit dem neuen Passwort überein"
+msgstr " Das bestÃ¤tigte Passwort stimmt nicht mit dem neuen Passwort Ã¼berein"
 
 #: ../web/swat.c:1048
 #, c-format
 msgid " The passwd for '%s' has been changed."
-msgstr " Das Passwort für '%s' wurde geändert."
+msgstr " Das Passwort fÃ¼r '%s' wurde geÃ¤ndert."
 
 #: ../web/swat.c:1051
 #, c-format
 msgid " The passwd for '%s' has NOT been changed."
-msgstr " Das Passwort für '%s' wurde nicht geändert."
+msgstr " Das Passwort fÃ¼r '%s' wurde nicht geÃ¤ndert."
 
 #: ../web/swat.c:1076
 msgid "Server Password Management"
@@ -292,23 +292,23 @@ msgstr "Neues Passwort"
 
 #: ../web/swat.c:1093 ../web/swat.c:1138
 msgid "Re-type New Password"
-msgstr "Bestätige neues Passwort"
+msgstr "BestÃ¤tige neues Passwort"
 
 #: ../web/swat.c:1101 ../web/swat.c:1149
 msgid "Change Password"
-msgstr "Ändere Passwort"
+msgstr "Ã„ndere Passwort"
 
 #: ../web/swat.c:1104
 msgid "Add New User"
-msgstr "Füge Benutzer hinzu"
+msgstr "FÃ¼ge Benutzer hinzu"
 
 #: ../web/swat.c:1106
 msgid "Delete User"
-msgstr "Lösche Benutzer"
+msgstr "LÃ¶sche Benutzer"
 
 #: ../web/swat.c:1108
 msgid "Disable User"
-msgstr "Desaktiviere Benutzer"
+msgstr "Deaktiviere Benutzer"
 
 #: ../web/swat.c:1110
 msgid "Enable User"
@@ -344,15 +344,15 @@ msgstr "Printcap Name"
 
 #: ../web/swat.c:1185
 msgid "Attempting to delete these printers from SWAT will have no effect."
-msgstr "Der Versuch diese Drucker von SWAT aus zu löschen wird keine Auswirkung haben."
+msgstr "Der Versuch diese Drucker von SWAT aus zu lÃ¶schen wird keine Auswirkung haben."
 
 #: ../web/swat.c:1231
 msgid "Choose Printer"
-msgstr "Wähle Drucker"
+msgstr "WÃ¤hle Drucker"
 
 #: ../web/swat.c:1250
 msgid "Delete Printer"
-msgstr "Lösche Drucker"
+msgstr "LÃ¶sche Drucker"
 
 #: ../web/swat.c:1257
 msgid "Create Printer"
@@ -558,7 +558,7 @@ msgstr "Verwaltung Dateinamen"
 
 #: ../param/loadparm.c:996
 msgid "Domain Options"
-msgstr "Domänen Optionen"
+msgstr "DomÃ¤nen Optionen"
 
 #: ../param/loadparm.c:1000
 msgid "Logon Options"

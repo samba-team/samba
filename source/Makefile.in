@@ -1137,6 +1137,11 @@ bin/smbpasswd.@SHLIBEXT@: passdb/pdb_smbpasswd.@PICSUFFIX@
 	@$(SHLD) $(LDSHFLAGS) -o $@ passdb/pdb_smbpasswd.@PICSUFFIX@ \
 		@SONAMEFLAG@`basename $@`
 
+bin/idmap_rid.@SHLIBEXT@: sam/idmap_rid.@PICSUFFIX@
+	@echo "Building plugin $@"
+	@$(SHLD) $(LDSHFLAGS) -o $@ sam/idmap_rid.@PICSUFFIX@ \
+		@SONAMEFLAG@`basename $@`
+
 bin/weird.@SHLIBEXT@: $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@)
 	@echo "Building plugin $@"
 	@$(SHLD) $(LDSHFLAGS) -o $@ $(DEVEL_HELP_WEIRD_OBJ:.o=.@PICSUFFIX@) \

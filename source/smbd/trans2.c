@@ -31,20 +31,43 @@ extern uint32 global_client_caps;
 extern struct current_user current_user;
 
 #define get_file_size(sbuf) ((sbuf).st_size)
+#define DIR_ENTRY_SAFETY_MARGIN 4096
 
-/* given a stat buffer return the allocated size on disk, taking into
-   account sparse files */
+/********************************************************************
+ Roundup a value to the nearest SMB_ROUNDUP_ALLOCATION_SIZE boundary.
+ Only do this for Windows clients.
+********************************************************************/
+
+SMB_BIG_UINT smb_roundup(SMB_BIG_UINT val)
+{
+	/* Only roundup for Windows clients. */
+	enum remote_arch_types ra_type = get_remote_arch();
+	if ((ra_type != RA_SAMBA) && (ra_type != RA_CIFSFS)) {
+		val = SMB_ROUNDUP(val,SMB_ROUNDUP_ALLOCATION_SIZE);
+	}
+	return val;
+}
+
+/********************************************************************
+ Given a stat buffer return the allocated size on disk, taking into
+ account sparse files.
+********************************************************************/
+
 SMB_BIG_UINT get_allocation_size(files_struct *fsp, SMB_STRUCT_STAT *sbuf)
 {
 	SMB_BIG_UINT ret;
+
 #if defined(HAVE_STAT_ST_BLOCKS) && defined(STAT_ST_BLOCKSIZE)
 	ret = (SMB_BIG_UINT)STAT_ST_BLOCKSIZE * (SMB_BIG_UINT)sbuf->st_blocks;
 #else
 	ret = (SMB_BIG_UINT)get_file_size(*sbuf);
 #endif
+
 	if (!ret && fsp && fsp->initial_allocation_size)
 		ret = fsp->initial_allocation_size;
-	ret = SMB_ROUNDUP(ret,SMB_ROUNDUP_ALLOCATION_SIZE);
+
+	ret = smb_roundup(ret);
+
 	return ret;
 }
 
@@ -734,32 +757,6 @@ static uint32 unix_filetype(mode_t mode)
 }
 
 /****************************************************************************
- Return the major devicenumber for UNIX extensions.
-****************************************************************************/
-
-static uint32 unix_dev_major(SMB_DEV_T dev)
-{
-#if defined(HAVE_DEVICE_MAJOR_FN)
-	return (uint32)major(dev);
-#else
-	return (uint32)(dev >> 8);
-#endif
-}
-
-/****************************************************************************
- Return the minor devicenumber for UNIX extensions.
-****************************************************************************/
-
-static uint32 unix_dev_minor(SMB_DEV_T dev)
-{
-#if defined(HAVE_DEVICE_MINOR_FN)
-	return (uint32)minor(dev);
-#else
-	return (uint32)(dev & 0xff);
-#endif
-}
-
-/****************************************************************************
  Map wire perms onto standard UNIX permissions. Obey share restrictions.
 ****************************************************************************/
 
@@ -1360,7 +1357,12 @@ static int call_trans2findfirst(connection_struct *conn, char *inbuf, char *outb
 close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 		dirtype, maxentries, close_after_first, close_if_end, requires_resume_key,
 		info_level, max_data_bytes));
-  
+
+	if (!maxentries) {
+		/* W2K3 seems to treat zero as 1. */
+		maxentries = 1;
+	}
+ 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
@@ -1409,12 +1411,12 @@ close_if_end = %d requires_resume_key = %d level = 0x%x, max_data_bytes = %d\n",
 
 	DEBUG(5,("dir=%s, mask = %s\n",directory, mask));
 
-	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if( pdata == NULL )
 		return(ERROR_DOS(ERRDOS,ERRnomem));
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = Realloc(*pparams, 10);
@@ -1586,6 +1588,11 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 		dptr_num, max_data_bytes, maxentries, close_after_request, close_if_end, 
 		requires_resume_key, resume_key, resume_name, continue_bit, info_level));
 
+	if (!maxentries) {
+		/* W2K3 seems to treat zero as 1. */
+		maxentries = 1;
+	}
+
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
 		case SMB_INFO_QUERY_EA_SIZE:
@@ -1602,12 +1609,12 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
 			return ERROR_DOS(ERRDOS,ERRunknownlevel);
 	}
 
-	pdata = Realloc( *ppdata, max_data_bytes + 1024);
+	pdata = Realloc( *ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if(pdata == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	/* Realloc the params space */
 	params = Realloc(*pparams, 6*SIZEOFWORD);
@@ -1818,12 +1825,12 @@ static int call_trans2qfsinfo(connection_struct *conn, char *inbuf, char *outbuf
 		return ERROR_DOS(ERRSRV,ERRinvdevice);
 	}
 
-	pdata = Realloc(*ppdata, max_data_bytes + 1024);
+	pdata = Realloc(*ppdata, max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
 
 	*ppdata = pdata;
-	memset((char *)pdata,'\0',max_data_bytes + 1024);
+	memset((char *)pdata,'\0',max_data_bytes + DIR_ENTRY_SAFETY_MARGIN);
 
 	switch (info_level) {
 		case SMB_INFO_ALLOCATION:
@@ -2389,7 +2396,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 	  return ERROR_DOS(ERRDOS,ERRnomem);
 	*pparams = params;
 	memset((char *)params,'\0',2);
-	data_size = max_data_bytes + 1024;
+	data_size = max_data_bytes + DIR_ENTRY_SAFETY_MARGIN;
 	pdata = Realloc(*ppdata, data_size); 
 	if ( pdata == NULL )
 		return ERROR_DOS(ERRDOS,ERRnomem);
@@ -2804,25 +2811,38 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
  open_file_shared. JRA.
 ****************************************************************************/
 
-NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
+NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close, uint32 dosmode)
 {
-	/*
-	 * Only allow delete on close for writable shares.
-	 */
+	if (delete_on_close) {
+		/*
+		 * Only allow delete on close for writable files.
+		 */
 
-	if (delete_on_close && !CAN_WRITE(fsp->conn)) {
-		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
+		if (dosmode & aRONLY) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but file attribute is readonly.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
-	}
-	/*
-	 * Only allow delete on close for files/directories opened with delete intent.
-	 */
+			return NT_STATUS_CANNOT_DELETE;
+		}
 
-	if (delete_on_close && !(fsp->desired_access & DELETE_ACCESS)) {
-		DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
+		/*
+		 * Only allow delete on close for writable shares.
+		 */
+
+		if (!CAN_WRITE(fsp->conn)) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but write access denied on share.\n",
 				fsp->fsp_name ));
-				return NT_STATUS_ACCESS_DENIED;
+			return NT_STATUS_ACCESS_DENIED;
+		}
+
+		/*
+		 * Only allow delete on close for files/directories opened with delete intent.
+		 */
+
+		if (!(fsp->desired_access & DELETE_ACCESS)) {
+			DEBUG(10,("set_delete_on_close_internal: file %s delete on close flag set but delete access denied.\n",
+				fsp->fsp_name ));
+			return NT_STATUS_ACCESS_DENIED;
+		}
 	}
 
 	if(fsp->is_directory) {
@@ -2859,7 +2879,7 @@ NTSTATUS set_delete_on_close_over_all(files_struct *fsp, BOOL delete_on_close)
 		return NT_STATUS_ACCESS_DENIED;
 
 	if (!modify_delete_flag(fsp->dev, fsp->inode, delete_on_close)) {
-		DEBUG(0,("set_delete_on_close_internal: failed to change delete on close flag for file %s\n",
+		DEBUG(0,("set_delete_on_close_over_all: failed to change delete on close flag for file %s\n",
 			fsp->fsp_name ));
 		unlock_share_entry_fsp(fsp);
 		return NT_STATUS_ACCESS_DENIED;
@@ -3189,7 +3209,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 					fname, (double)allocation_size ));
 
 			if (allocation_size)
-				allocation_size = SMB_ROUNDUP(allocation_size,SMB_ROUNDUP_ALLOCATION_SIZE);
+				allocation_size = smb_roundup(allocation_size);
 
 			if(allocation_size != get_file_size(sbuf)) {
 				SMB_STRUCT_STAT new_sbuf;
@@ -3279,7 +3299,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			if (fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadfid));
 
-			status = set_delete_on_close_internal(fsp, delete_on_close);
+			status = set_delete_on_close_internal(fsp, delete_on_close, dosmode);
  
 			if (NT_STATUS_V(status) !=  NT_STATUS_V(NT_STATUS_OK))
 				return ERROR_NT(status);

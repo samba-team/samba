@@ -4,7 +4,7 @@
 #include <unistd.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include "../include/byteorder.h"
+#include "include/byteorder.h"
 
 #define PARSE_SCALARS (1<<0)
 #define PARSE_BUFFERS (1<<1)

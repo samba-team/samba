@@ -288,6 +288,21 @@ dnl Check if we use GNU ld
 LD=ld
 AC_PROG_LD_GNU
 
+dnl Certain versions of GNU ld the default is not to have the 
+dnl --allow-shlib-undefined flag defined.  This causes a stackload of
+dnl warnings when building modules.
+if test "$ac_cv_prog_gnu_ld" = "yes"; then
+	ac_cv_gnu_ld_version=`$LD -v 2>/dev/null | head -1`
+	AC_MSG_CHECKING(GNU ld release date)
+	changequote(,)dnl
+	ac_cv_gnu_ld_date=`echo $ac_cv_gnu_ld_version | sed -n 's,^.*\([2-9][0-9][0-9][0-9]\)[-]*\([01][0-9]\)[-]*\([0-3][0-9]\).*$,\1\2\3,p'`
+	changequote([,])dnl
+	AC_MSG_RESULT(${ac_cv_gnu_ld_date})
+ 	if test "$ac_cv_gnu_ld_date" -lt 20030217; then
+ 		ac_cv_gnu_ld_no_default_allow_shlib_undefined=yes
+ 	fi
+fi
+
 dnl needed before AC_TRY_COMPILE
 AC_ISC_POSIX
 
@@ -456,17 +471,20 @@ case "$host_os" in
 				rm -fr conftest.c
 				case "$ac_cv_gcc_compiler_version_number" in
 					*"gcc version 2.6"*|*"gcc version 2.7"*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+						CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE -D_REENTRANT"
+						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						;;
 					*)
-						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+						CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
+						LDFLAGS="$LDFLAGS -lthread"
 						AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 						AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 						;;
 				esac
 			else
-				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_REENTRANT -D_FILE_OFFSET_BITS=64"
+				LDFLAGS="$LDFLAGS -lthread"
 				AC_DEFINE(_LARGEFILE64_SOURCE, 1, [Whether to enable large file support])
 				AC_DEFINE(_FILE_OFFSET_BITS, 64, [File offset bits])
 			fi
@@ -958,7 +976,7 @@ if test x"$ac_cv_func_execl" = x"no"; then
 fi
 
 AC_CHECK_FUNCS(dlopen dlclose dlsym dlerror waitpid getcwd strdup strndup strnlen strtoul strerror chown fchown chmod fchmod chroot link mknod mknod64)
-AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync bzero memset strlcpy strlcat setpgid)
+AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync memset strlcpy strlcat setpgid)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf asprintf vasprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction sigset innetgr setnetgrent getnetgrent endnetgrent)
 AC_CHECK_FUNCS(initgroups select poll rdchk getgrnam getgrent pathconf realpath)
@@ -1129,7 +1147,11 @@ if test "$enable_shared" = "yes"; then
   case "$host_os" in
 		*linux*)   AC_DEFINE(LINUX,1,[Whether the host os is linux])
 			BLDSHARED="true"
-			LDSHFLAGS="-shared -Wl,-Bsymbolic" 
+			if test "${ac_cv_gnu_ld_no_default_allow_shlib_undefined}" = "yes"; then
+				LDSHFLAGS="-shared -Wl,-Bsymbolic -Wl,--allow-shlib-undefined" 
+			else
+				LDSHFLAGS="-shared -Wl,-Bsymbolic" 
+			fi
 			DYNEXP="-Wl,--export-dynamic"
 			PICFLAGS="-fPIC"
 			SONAMEFLAG="-Wl,-soname="
@@ -4291,6 +4313,14 @@ AC_CHECK_MEMBER(struct passwd.pw_age,
 		AC_DEFINE(HAVE_PASSWD_PW_AGE, 1, [Defined if struct passwd has pw_age field]),,
 		[#include <pwd.h>])
 
+# AIX 4.3.x and 5.1 do not have as many members in
+# struct secmethod_table as AIX 5.2
+AC_CHECK_MEMBERS([struct secmethod_table.method_attrlist], , ,
+       [#include <usersec.h>])
+AC_CHECK_MEMBERS([struct secmethod_table.method_version], , ,
+       [#include <usersec.h>])
+
+
 #################################################
 # Check to see if we should use the included popt 
 
@@ -4427,6 +4457,7 @@ SMB_SUBSYSTEM(RPC,smbd/server.o)
 
 SMB_MODULE(idmap_ldap, sam/idmap_ldap.o, "bin/idmap_ldap.$SHLIBEXT", IDMAP)
 SMB_MODULE(idmap_tdb, sam/idmap_tdb.o, "bin/idmap_tdb.$SHLIBEXT", IDMAP)
+SMB_MODULE(idmap_rid, sam/idmap_rid.o, "bin/idmap_rid.$SHLIBEXT", IDMAP)
 SMB_SUBSYSTEM(IDMAP,sam/idmap.o)
 
 SMB_MODULE(charset_weird, modules/weird.o, "bin/weird.$SHLIBEXT", CHARSET)

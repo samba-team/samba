@@ -22,7 +22,7 @@
 */
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 extern DOM_SID global_sid_Builtin; 
 

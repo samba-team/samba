@@ -150,6 +150,7 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	size_t share_entry_count = 0;
 	BOOL delete_on_close = False;
 	connection_struct *conn = fsp->conn;
+	int saved_errno = 0;
 	int err = 0;
 	int err1 = 0;
 
@@ -160,8 +161,10 @@ static int close_normal_file(files_struct *fsp, BOOL normal_close)
 	 * error here, we must remember this.
 	 */
 
-	if (close_filestruct(fsp) == -1)
+	if (close_filestruct(fsp) == -1) {
+		saved_errno = errno;
 		err1 = -1;
+	}
 
 	if (fsp->print_file) {
 		print_fsp_end(fsp, normal_close);
@@ -242,6 +245,12 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 
 	err = fd_close(conn, fsp);
 
+	/* Only save errno if fd_close failed and we don't already
+	   have an errno saved from a flush call. */
+	if ((err1 != -1) && (err == -1)) {
+		saved_errno = errno;
+	}
+
 	/* check for magic scripts */
 	if (normal_close) {
 		check_magic(fsp,conn);
@@ -252,24 +261,25 @@ with error %s\n", fsp->fsp_name, strerror(errno) ));
 	 */
 
 	if(fsp->pending_modtime) {
-		int saved_errno = errno;
 		set_filetime(conn, fsp->fsp_name, fsp->pending_modtime);
-		errno = saved_errno;
 	}
 
 	DEBUG(2,("%s closed file %s (numopen=%d) %s\n",
-		 conn->user,fsp->fsp_name,
-		 conn->num_files_open, err ? strerror(err) : ""));
+		conn->user,fsp->fsp_name,
+		conn->num_files_open,
+		(err == -1 || err1 == -1) ? strerror(saved_errno) : ""));
 
 	if (fsp->fsp_name)
 		string_free(&fsp->fsp_name);
 
 	file_free(fsp);
 
-	if (err == -1 || err1 == -1)
-		return errno;
-	else
+	if (err == -1 || err1 == -1) {
+		errno = saved_errno;
+		return saved_errno;
+	} else {
 		return 0;
+	}
 }
 
 /****************************************************************************

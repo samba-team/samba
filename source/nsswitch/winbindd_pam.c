@@ -59,7 +59,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 				     NET_USER_INFO_3 *info3,
 				     const char *group_sid) 
 {
-	DOM_SID required_membership_sid;
+	DOM_SID require_membership_of_sid;
 	DOM_SID *all_sids;
 	size_t num_all_sids = (2 + info3->num_groups2 + info3->num_other_sids);
 	size_t i, j = 0;
@@ -71,7 +71,7 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_OK;
 	}
 	
-	if (!string_to_sid(&required_membership_sid, group_sid)) {
+	if (!string_to_sid(&require_membership_of_sid, group_sid)) {
 		DEBUG(0, ("check_info3_in_group: could not parse %s as a SID!", 
 			  group_sid));
 
@@ -133,9 +133,9 @@ static NTSTATUS check_info3_in_group(TALLOC_CTX *mem_ctx,
 		fstring sid1, sid2;
 		DEBUG(10, ("User has SID: %s\n", 
 			   sid_to_string(sid1, &all_sids[i])));
-		if (sid_equal(&required_membership_sid, &all_sids[i])) {
+		if (sid_equal(&require_membership_of_sid, &all_sids[i])) {
 			DEBUG(10, ("SID %s matches %s - user permitted to authenticate!\n", 
-				   sid_to_string(sid1, &required_membership_sid), sid_to_string(sid2, &all_sids[i])));
+				   sid_to_string(sid1, &require_membership_of_sid), sid_to_string(sid2, &all_sids[i])));
 			return NT_STATUS_OK;
 		}
 	}
@@ -190,13 +190,59 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 	/* do password magic */
 	
-	generate_random_buffer(chal, 8);
-	SMBencrypt(state->request.data.auth.pass, chal, local_lm_response);
-		
-	SMBNTencrypt(state->request.data.auth.pass, chal, local_nt_response);
 
-	lm_resp = data_blob_talloc(mem_ctx, local_lm_response, sizeof(local_lm_response));
-	nt_resp = data_blob_talloc(mem_ctx, local_nt_response, sizeof(local_nt_response));
+	generate_random_buffer(chal, 8);
+	if (lp_client_ntlmv2_auth()) {
+		DATA_BLOB server_chal;
+		DATA_BLOB names_blob;
+		DATA_BLOB nt_response;
+		DATA_BLOB lm_response;
+		server_chal = data_blob_talloc(mem_ctx, chal, 8); 
+		
+		/* note that the 'workgroup' here is a best guess - we don't know
+		   the server's domain at this point.  The 'server name' is also
+		   dodgy... 
+		*/
+		names_blob = NTLMv2_generate_names_blob(global_myname(), lp_workgroup());
+		
+		if (!SMBNTLMv2encrypt(name_user, name_domain, 
+				      state->request.data.auth.pass, 
+				      &server_chal, 
+				      &names_blob,
+				      &lm_response, &nt_response, NULL)) {
+			data_blob_free(&names_blob);
+			data_blob_free(&server_chal);
+			DEBUG(0, ("winbindd_pam_auth: SMBNTLMv2encrypt() failed!\n"));
+			result = NT_STATUS_NO_MEMORY;
+			goto done;
+		}
+		data_blob_free(&names_blob);
+		data_blob_free(&server_chal);
+		lm_resp = data_blob_talloc(mem_ctx, lm_response.data, lm_response.length);
+		nt_resp = data_blob_talloc(mem_ctx, nt_response.data, nt_response.length);
+		data_blob_free(&lm_response);
+		data_blob_free(&nt_response);
+
+	} else {
+		if (lp_client_lanman_auth() 
+		    && SMBencrypt(state->request.data.auth.pass, 
+				  chal, 
+				  local_lm_response)) {
+			lm_resp = data_blob_talloc(mem_ctx, 
+						   local_lm_response, 
+						   sizeof(local_lm_response));
+		} else {
+			lm_resp = data_blob(NULL, 0);
+		}
+		SMBNTencrypt(state->request.data.auth.pass, 
+			     chal,
+			     local_nt_response);
+
+		nt_resp = data_blob_talloc(mem_ctx, 
+					   local_nt_response, 
+					   sizeof(local_nt_response));
+	}
+
 	
 	/* what domain should we contact? */
 	
@@ -288,10 +334,10 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 
 		/* Check if the user is in the right group */
 
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth.required_membership_sid))) {
+		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth.require_membership_of_sid))) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request.data.auth.user, 
-				  state->request.data.auth.required_membership_sid));
+				  state->request.data.auth.require_membership_of_sid));
 		}
 	}
 
@@ -368,7 +414,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
         NET_USER_INFO_3 info3;
         struct cli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx = NULL;
-	char *name_user = NULL;
+	const char *name_user = NULL;
 	const char *name_domain = NULL;
 	const char *workstation;
 	struct winbindd_domain *contact_domain;
@@ -386,7 +432,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		/* send a better message than ACCESS_DENIED */
 		asprintf(&error_string, "winbind client not authorized to use winbindd_pam_auth_crap.  Ensure permissions on %s are set correctly.",
 			 get_winbind_priv_pipe_dir());
-		push_utf8_fstring(state->response.data.auth.error_string, error_string);
+		fstrcpy(state->response.data.auth.error_string, error_string);
 		SAFE_FREE(error_string);
 		result =  NT_STATUS_ACCESS_DENIED;
 		goto done;
@@ -396,26 +442,16 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 	state->request.data.auth_crap.user[sizeof(state->request.data.auth_crap.user)-1]=0;
 	state->request.data.auth_crap.domain[sizeof(state->request.data.auth_crap.domain)-1]=0;
 
-	if (!(mem_ctx = talloc_init("winbind pam auth crap for (utf8) %s", state->request.data.auth_crap.user))) {
+	if (!(mem_ctx = talloc_init("winbind pam auth crap for %s", state->request.data.auth_crap.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;
 		goto done;
 	}
 
-        if (pull_utf8_talloc(mem_ctx, &name_user, state->request.data.auth_crap.user) == (size_t)-1) {
-		DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	name_user = state->request.data.auth_crap.user;
 
 	if (*state->request.data.auth_crap.domain) {
-		char *dom = NULL;
-		if (pull_utf8_talloc(mem_ctx, &dom, state->request.data.auth_crap.domain) == (size_t)-1) {
-			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		name_domain = dom;
+		name_domain = state->request.data.auth_crap.domain;
 	} else if (lp_winbind_use_default_domain()) {
 		name_domain = lp_workgroup();
 	} else {
@@ -429,13 +465,7 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		  name_domain, name_user));
 	   
 	if (*state->request.data.auth_crap.workstation) {
-		char *wrk = NULL;
-		if (pull_utf8_talloc(mem_ctx, &wrk, state->request.data.auth_crap.workstation) == (size_t)-1) {
-			DEBUG(0, ("winbindd_pam_auth_crap: pull_utf8_talloc failed!\n"));
-			result = NT_STATUS_UNSUCCESSFUL;
-			goto done;
-		}
-		workstation = wrk;
+		workstation = state->request.data.auth_crap.workstation;
 	} else {
 		workstation = global_myname();
 	}
@@ -541,10 +571,10 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 		netsamlogon_cache_store( cli->mem_ctx, name_user, &info3 );
 		wcache_invalidate_samlogon(find_domain_from_name(name_domain), &info3);
 		
-		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth_crap.required_membership_sid))) {
+		if (!NT_STATUS_IS_OK(result = check_info3_in_group(mem_ctx, &info3, state->request.data.auth_crap.require_membership_of_sid))) {
 			DEBUG(3, ("User %s is not in the required group (%s), so plaintext authentication is rejected\n",
 				  state->request.data.auth_crap.user, 
-				  state->request.data.auth_crap.required_membership_sid));
+				  state->request.data.auth_crap.require_membership_of_sid));
 			goto done;
 		}
 
@@ -570,8 +600,8 @@ enum winbindd_result winbindd_pam_auth_crap(struct winbindd_cli_state *state)
 
 			DEBUG(5, ("Setting unix username to [%s]\n", username_out));
 
-			/* this interface is in UTF8 */
-			if (push_utf8_allocate((char **)&state->response.extra_data, username_out) == -1) {
+			state->response.extra_data = strdup(username_out);
+			if (!state->response.extra_data) {
 				result = NT_STATUS_NO_MEMORY;
 				goto done;
 			}
@@ -597,11 +627,11 @@ done:
 	}
 	
 	state->response.data.auth.nt_status = NT_STATUS_V(result);
-	push_utf8_fstring(state->response.data.auth.nt_status_string, nt_errstr(result));
+	fstrcpy(state->response.data.auth.nt_status_string, nt_errstr(result));
 	
 	/* we might have given a more useful error above */
 	if (!*state->response.data.auth.error_string) 
-		push_utf8_fstring(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
+		fstrcpy(state->response.data.auth.error_string, get_friendly_nt_error_msg(result));
 	state->response.data.auth.pam_error = nt_status_to_pam(result);
 
 	DEBUG(NT_STATUS_IS_OK(result) ? 5 : 2, 
@@ -631,7 +661,7 @@ enum winbindd_result winbindd_pam_chauthtok(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5lu]: pam chauthtok %s\n", (unsigned long)state->pid,
 		state->request.data.chauthtok.user));
 
-	if (!(mem_ctx = talloc_init("winbind password change for (utf8) %s", 
+	if (!(mem_ctx = talloc_init("winbind password change for %s", 
 				    state->request.data.chauthtok.user))) {
 		DEBUG(0, ("winbindd_pam_auth_crap: could not talloc_init()!\n"));
 		result = NT_STATUS_NO_MEMORY;

@@ -24,7 +24,7 @@
 
 #include "includes.h"
 
-#include "../include/libsmb_internal.h"
+#include "include/libsmb_internal.h"
 
 /*
  * Internal flags for extended attributes
@@ -596,6 +596,7 @@ SMBCSRV *smbc_server(SMBCCTX *context,
                  */
                 c.port = 445;
                 if (!cli_connect(&c, server_n, &ip)) {
+			cli_shutdown(&c);
                         errno = ENETUNREACH;
                         return NULL;
                 }

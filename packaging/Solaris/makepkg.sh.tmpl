@@ -49,6 +49,12 @@ add_dynamic_entries()
  	echo s none /usr/lib/nss_winbind.so.2=/usr/lib/libnss_winbind.so 0755 root other
     fi
 
+ # add pam_winbind module to /usr/lib/security
+    if [ -f $DISTR_BASE/source/nsswitch/pam_winbind.so ] ; then
+	echo f none /usr/lib/security/pam_winbind.so.1=source/nsswitch/pam_winbind.so 0755 root bin
+	echo s none /usr/lib/security/pam_winbind.so=/usr/lib/security/pam_winbind.so.1 0777 root root
+    fi
+
  # add the .dat codepages
   echo "#\n# Codepages \n#"
     for file in $DISTR_BASE/source/codepages/*.dat ; do

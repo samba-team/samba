@@ -18,7 +18,7 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
  
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 struct table_node {
 	const char *long_archi;
@@ -32,10 +32,12 @@ static const struct table_node archi_table[]= {
 
 	{"Windows 4.0",          "WIN40",	0 },
 	{"Windows NT x86",       "W32X86",	2 },
+	{"Windows NT x86",       "W32X86",	3 },
 	{"Windows NT R4000",     "W32MIPS",	2 },
 	{"Windows NT Alpha_AXP", "W32ALPHA",	2 },
 	{"Windows NT PowerPC",   "W32PPC",	2 },
-	{"Windows IA64",	 "IA64",	3 },
+	{"Windows IA64",         "IA64",	3 },
+	{"Windows x64",          "x64",		3 },
 	{NULL,                   "",		-1 }
 };
 
@@ -839,38 +841,41 @@ net_spoolss_enum_printers(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 static BOOL
 net_spoolss_open_printer_ex(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-			    const char *printername, const char *datatype, 
-			    uint32 access_required, const char *servername, 
+			    const char *printername, uint32 access_required, 
 			    const char *username, POLICY_HND *hnd)
 {
 	WERROR result;
+	fstring servername, printername2;
 
-	fstring servername2;
-	slprintf(servername2, sizeof(servername2)-1, "\\\\%s", cli->desthost);
+	slprintf(servername, sizeof(servername)-1, "\\\\%s", cli->desthost);
+
+	fstrcpy(printername2, servername);
+	fstrcat(printername2, "\\");
+	fstrcat(printername2, printername);
 
 	DEBUG(10,("connecting to: %s as %s for %s and access: %x\n", 
-		servername2, username, printername, access_required));
+		servername, username, printername2, access_required));
 
 	/* open printer */
-	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername,
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername2,
 			"", access_required,
-			servername2, username, hnd);
+			servername, username, hnd);
 
 	/* be more verbose */
 	if (W_ERROR_V(result) == W_ERROR_V(WERR_ACCESS_DENIED)) {
 		d_printf("no access to printer [%s] on [%s] for user [%s] granted\n", 
-			printername, servername2, username);
+			printername2, servername, username);
 		return False;
 	}
 
 	if (!W_ERROR_IS_OK(result)) {
 		d_printf("cannot open printer %s on server %s: %s\n", 
-			printername, servername2, dos_errstr(result));
+			printername2, servername, dos_errstr(result));
 		return False;
 	}
 
 	DEBUG(2,("got printer handle for printer: %s, server: %s\n", 
-		printername, servername2));
+		printername2, servername));
 
 	return True;
 }
@@ -1088,7 +1093,8 @@ net_spoolss_getprinterdriver(struct cli_state *cli,
 	if (!W_ERROR_IS_OK(result)) {
 		DEBUG(1,("cannot get driver (for architecture: %s): %s\n", 
 			env, dos_errstr(result)));
-		if (W_ERROR_V(result) != W_ERROR_V(WERR_UNKNOWN_PRINTER_DRIVER)) {
+		if (W_ERROR_V(result) != W_ERROR_V(WERR_UNKNOWN_PRINTER_DRIVER) &&
+		    W_ERROR_V(result) != W_ERROR_V(WERR_INVALID_ENVIRONMENT)) {
 			printf("cannot get driver: %s\n", dos_errstr(result));
 		}
 		return False;
@@ -1132,7 +1138,6 @@ get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 {
 
 	char *sharename;
-	fstring servername;
 	POLICY_HND hnd;
 
 	/* no arguments given, enumerate all printers */
@@ -1150,9 +1155,8 @@ get_printer_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	/* argument given, get a single printer by name */
 	sharename = strdup(argv[0]);
 
-	if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, 
-			cli->user_name, &hnd)) 
+	if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS,	cli->user_name, &hnd)) 
 		return False;
 
 	if (!net_spoolss_getprinter(cli, mem_ctx, &hnd, level, ctr)) {
@@ -1284,6 +1288,194 @@ done:
 
 }
 
+/** 
+ * Publish print-queues with args-wrapper
+ *
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ * @param action
+ *
+ * @return Normal NTSTATUS return.
+ **/
+
+static NTSTATUS rpc_printer_publish_internals_args(struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+						   int argc, const char **argv, uint32 action)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	uint32 i, num_printers; 
+	uint32 level = 7;
+	pstring printername, sharename;
+	PRINTER_INFO_CTR ctr, ctr_pub;
+	POLICY_HND hnd;
+	BOOL got_hnd = False;
+	WERROR result;
+	char *action_str;
+
+	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
+		return nt_status;
+
+	for (i = 0; i < num_printers; i++) {
+
+		/* do some initialization */
+		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
+			sizeof(printername), -1, STR_TERMINATE);
+		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
+			sizeof(sharename), -1, STR_TERMINATE);
+
+		/* open printer handle */
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd)) 
+			goto done;
+
+		got_hnd = True;
+
+		/* check for existing dst printer */
+		if (!net_spoolss_getprinter(cli, mem_ctx, &hnd, level, &ctr_pub)) 
+			goto done;
+
+		/* check action and set string */
+		switch (action) {
+		case SPOOL_DS_PUBLISH:
+			action_str = "published";
+			break;
+		case SPOOL_DS_UPDATE:
+			action_str = "updated";
+			break;
+		case SPOOL_DS_UNPUBLISH:
+			action_str = "unpublished";
+			break;
+		default:
+			printf("unkown action: %d\n", action);
+			break;
+		}
+
+		ctr_pub.printers_7->action = action;
+
+		result = cli_spoolss_setprinter(cli, mem_ctx, &hnd, level, &ctr_pub, 0);
+		if (!W_ERROR_IS_OK(result) && (W_ERROR_V(result) =! W_ERROR_V(WERR_IO_PENDING))) {
+			printf("cannot set printer-info: %s\n", dos_errstr(result));
+			goto done;
+		}
+
+		printf("successfully %s printer %s in Active Directory\n", action_str, sharename);
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+	
+	return nt_status;
+}
+
+NTSTATUS rpc_printer_publish_publish_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					       struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					       int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_PUBLISH);
+}
+
+NTSTATUS rpc_printer_publish_unpublish_internals(const DOM_SID *domain_sid, const char *domain_name, 
+						 struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+						 int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UNPUBLISH);
+}
+
+NTSTATUS rpc_printer_publish_update_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					      struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+					      int argc, const char **argv)
+{
+	return rpc_printer_publish_internals_args(cli, mem_ctx, argc, argv, SPOOL_DS_UPDATE);
+}
+
+/** 
+ * List print-queues w.r.t. thei publishing
+ *
+ * All parameters are provided by the run_rpc_command function, except for
+ * argc, argv which are passed through. 
+ *
+ * @param domain_sid The domain sid aquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on compleation of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+NTSTATUS rpc_printer_publish_list_internals(const DOM_SID *domain_sid, const char *domain_name, 
+					    struct cli_state *cli, TALLOC_CTX *mem_ctx,
+					    int argc, const char **argv)
+{
+	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	uint32 i, num_printers; 
+	uint32 level = 7;
+	pstring printername, sharename;
+	pstring guid;
+	PRINTER_INFO_CTR ctr, ctr_pub;
+	POLICY_HND hnd;
+	BOOL got_hnd = False;
+	int state;
+
+	if (!get_printer_info(cli, mem_ctx, 2, argc, argv, &num_printers, &ctr))
+		return nt_status;
+
+	for (i = 0; i < num_printers; i++) {
+
+		ZERO_STRUCT(ctr_pub);
+
+		/* do some initialization */
+		rpcstr_pull(printername, ctr.printers_2[i].printername.buffer, 
+			sizeof(printername), -1, STR_TERMINATE);
+		rpcstr_pull(sharename, ctr.printers_2[i].sharename.buffer, 
+			sizeof(sharename), -1, STR_TERMINATE);
+
+		/* open printer handle */
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd)) 
+			goto done;
+
+		got_hnd = True;
+
+		/* check for existing dst printer */
+		if (!net_spoolss_getprinter(cli, mem_ctx, &hnd, level, &ctr_pub)) 
+			goto done;
+
+		rpcstr_pull(guid, ctr_pub.printers_7->guid.buffer, sizeof(guid), -1, STR_TERMINATE);
+
+		state = ctr_pub.printers_7->action;
+		switch (state) {
+			case SPOOL_DS_PUBLISH:
+				printf("printer [%s] is published", sharename);
+				if (opt_verbose)
+					printf(", guid: %s", guid);
+				printf("\n");
+				break;
+			case SPOOL_DS_UNPUBLISH:
+				printf("printer [%s] is unpublished\n", sharename);
+				break;
+			case SPOOL_DS_UPDATE:
+				printf("printer [%s] is currently updating\n", sharename);
+				break;
+			default:
+				printf("unkown state: %d\n", state);
+				break;
+		}
+	}
+
+	nt_status = NT_STATUS_OK;
+
+done:
+	if (got_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &hnd);
+	
+	return nt_status;
+}
 
 /** 
  * Migrate Printer-ACLs from a source server to the destination server
@@ -1311,7 +1503,6 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid, const
 	uint32 i = 0;
 	uint32 num_printers;
 	uint32 level = 2;
-	fstring servername = "";
 	pstring printername = "", sharename = "";
 	BOOL got_hnd_src = False;
 	BOOL got_hnd_dst = False;
@@ -1365,16 +1556,16 @@ NTSTATUS rpc_printer_migrate_security_internals(const DOM_SID *domain_sid, const
 		*/
 
 		/* open src printer handle */
-		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, cli->user_name, &hnd_src)) 
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src)) 
 			goto done;
 
 		got_hnd_src = True;
 
 
 		/* open dst printer handle */
-		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, "", 
-			PRINTER_ALL_ACCESS, servername, cli_dst->user_name, &hnd_dst)) 
+		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli_dst->user_name, &hnd_dst)) 
 			goto done;
 
 		got_hnd_dst = True;
@@ -1459,7 +1650,6 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid, const ch
 	uint32 i, f;
 	uint32 num_printers;
 	uint32 level = 1;
-	fstring servername = "";
 	pstring printername = "", sharename = "";
 	BOOL got_hnd_src = False;
 	BOOL got_hnd_dst = False;
@@ -1510,16 +1700,16 @@ NTSTATUS rpc_printer_migrate_forms_internals(const DOM_SID *domain_sid, const ch
 
 
 		/* open src printer handle */
-		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, cli->user_name, &hnd_src)) 
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src)) 
 			goto done;
 
 		got_hnd_src = True;
 
 
 		/* open dst printer handle */
-		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, "", 
-			PRINTER_ALL_ACCESS, servername, cli->user_name, &hnd_dst)) 
+		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) 
 			goto done;
 
 		got_hnd_dst = True;
@@ -1633,7 +1823,6 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 	uint32 i, p;
 	uint32 num_printers;
 	uint32 level = 3; 
-	fstring servername = "";
 	pstring printername = "", sharename = "";
 	BOOL got_hnd_src = False;
 	BOOL got_hnd_dst = False;
@@ -1708,8 +1897,8 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 			printername, sharename);
 
 		/* open dst printer handle */
-		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, "", 
-			PRINTER_ALL_ACCESS, servername, cli->user_name, &hnd_dst)) 
+		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) 
 			goto done;
 			
 		got_hnd_dst = True;
@@ -1720,8 +1909,8 @@ NTSTATUS rpc_printer_migrate_drivers_internals(const DOM_SID *domain_sid, const 
 
 
 		/* open src printer handle */
-		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, cli->user_name, &hnd_src)) 
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src)) 
 			goto done;
 
 		got_hnd_src = True;
@@ -1848,7 +2037,6 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const
 	struct cli_state *cli_dst = NULL;
 	POLICY_HND hnd_dst, hnd_src;
 	pstring printername, sharename;
-	fstring servername;
 	BOOL got_hnd_src = False;
 	BOOL got_hnd_dst = False;
 	BOOL got_dst_spoolss_pipe = False;
@@ -1891,8 +2079,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const
 
 
 		/* open dst printer handle */
-		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, "", 
-			PRINTER_ALL_ACCESS, servername, cli->user_name, &hnd_dst)) {
+		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, 
+			PRINTER_ALL_ACCESS, cli->user_name, &hnd_dst)) {
 			
 			DEBUG(1,("could not open printer: %s\n", sharename));
 		} else {
@@ -1923,8 +2111,8 @@ NTSTATUS rpc_printer_migrate_printers_internals(const DOM_SID *domain_sid, const
 		   we first need a handle for that */
 
 		/* open src printer handle */
-		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, cli->user_name, &hnd_src)) 
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src)) 
 			goto done;
 
 		got_hnd_src = True;
@@ -2005,7 +2193,6 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 	uint32 i = 0, p = 0, j = 0;
 	uint32 num_printers, val_needed, data_needed;
 	uint32 level = 2;
-	fstring servername = "";
 	pstring printername = "", sharename = "";
 	BOOL got_hnd_src = False;
 	BOOL got_hnd_dst = False;
@@ -2064,16 +2251,16 @@ NTSTATUS rpc_printer_migrate_settings_internals(const DOM_SID *domain_sid, const
 
 
 		/* open src printer handle */
-		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename, "", 
-			MAXIMUM_ALLOWED_ACCESS, servername, cli->user_name, &hnd_src)) 
+		if (!net_spoolss_open_printer_ex(cli, mem_ctx, sharename,
+			MAXIMUM_ALLOWED_ACCESS, cli->user_name, &hnd_src)) 
 			goto done;
 
 		got_hnd_src = True;
 
 
 		/* open dst printer handle */
-		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename, "", 
-			PRINTER_ALL_ACCESS, servername, cli_dst->user_name, &hnd_dst)) 
+		if (!net_spoolss_open_printer_ex(cli_dst, mem_ctx, sharename,
+			PRINTER_ALL_ACCESS, cli_dst->user_name, &hnd_dst)) 
 			goto done;
 
 		got_hnd_dst = True;

@@ -161,7 +161,7 @@ static char** get_userattr_delete_list( int schema_ver )
 		case SCHEMAVER_SAMBASAMACCOUNT:
 			return get_attr_list( attrib_map_to_delete_v30 );
 		default:
-			DEBUG(0,("get_userattr_list: unknown schema version specified!\n"));
+			DEBUG(0,("get_userattr_delete_list: unknown schema version specified!\n"));
 			break;
 	}
 	
@@ -726,6 +726,9 @@ static BOOL init_sam_from_ldap (struct ldapsam_privates *ldap_state,
 	if (pwHistLen > 0){
 		uint8 *pwhist = NULL;
 		int i;
+
+		/* We can only store (sizeof(pstring)-1)/64 password history entries. */
+		pwHistLen = MIN(pwHistLen, ((sizeof(temp)-1)/64));
 
 		if ((pwhist = malloc(pwHistLen * PW_HISTORY_ENTRY_LEN)) == NULL){
 			DEBUG(0, ("init_sam_from_ldap: malloc failed!\n"));
@@ -1393,7 +1396,7 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 	}
 
 	if (!init_sam_from_ldap(ldap_state, user, entry)) {
-		DEBUG(1,("ldapsam_getsampwrid: init_sam_from_ldap failed!\n"));
+		DEBUG(1,("ldapsam_getsampwsid: init_sam_from_ldap failed!\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_USER;
 	}
@@ -1403,6 +1406,66 @@ static NTSTATUS ldapsam_getsampwsid(struct pdb_methods *my_methods, SAM_ACCOUNT 
 				     my_methods, PDB_CHANGED);
 	return NT_STATUS_OK;
 }	
+
+static BOOL ldapsam_can_pwchange_exop(struct smbldap_state *ldap_state)
+{
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry = NULL;
+	char **values = NULL;
+	char *attrs[] = { "supportedExtension", NULL };
+	int rc, num_result, num_values, i;
+	BOOL result = False;
+
+	rc = smbldap_search(ldap_state, "", LDAP_SCOPE_BASE, "(objectclass=*)",
+			    attrs, 0, &msg);
+
+	if (rc != LDAP_SUCCESS) {
+		DEBUG(3, ("Could not search rootDSE\n"));
+		return False;
+	}
+
+	num_result = ldap_count_entries(ldap_state->ldap_struct, msg);
+
+	if (num_result != 1) {
+		DEBUG(3, ("Expected one rootDSE, got %d\n", num_result));
+		goto done;
+	}
+
+	entry = ldap_first_entry(ldap_state->ldap_struct, msg);
+
+	if (entry == NULL) {
+		DEBUG(3, ("Could not retrieve rootDSE\n"));
+		goto done;
+	}
+
+	values = ldap_get_values(ldap_state->ldap_struct, entry,
+				 "supportedExtension");
+
+	if (values == NULL) {
+		DEBUG(9, ("LDAP Server does not support any extensions\n"));
+		goto done;
+	}
+
+	num_values = ldap_count_values(values);
+
+	if (num_values == 0) {
+		DEBUG(9, ("LDAP Server does not support any extensions\n"));
+		goto done;
+	}
+
+	for (i=0; i<num_values; i++) {
+		if (strcmp(values[i], LDAP_EXOP_MODIFY_PASSWD) == 0)
+			result = True;
+	}
+
+ done:
+	if (values != NULL)
+		ldap_value_free(values);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
 
 /********************************************************************
  Do the actual modification - also change a plaintext passord if 
@@ -1467,6 +1530,12 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 		char *utf8_password;
 		char *utf8_dn;
 
+		if (!ldapsam_can_pwchange_exop(ldap_state->smbldap_state)) {
+			DEBUG(2, ("ldap password change requested, but LDAP "
+				  "server does not support it -- ignoring\n"));
+			return NT_STATUS_OK;
+		}
+
 		if (push_utf8_allocate(&utf8_password, pdb_get_plaintext_passwd(newpwd)) == (size_t)-1) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -1503,6 +1572,15 @@ static NTSTATUS ldapsam_modify_entry(struct pdb_methods *my_methods,
 						     bv, NULL, NULL, &retoid, 
 						     &retdata)) != LDAP_SUCCESS) {
 			char *ld_error = NULL;
+
+			if (rc == LDAP_OBJECT_CLASS_VIOLATION) {
+				DEBUG(3, ("Could not set userPassword "
+					  "attribute due to an objectClass "
+					  "violation -- ignoring\n"));
+				ber_bvfree(bv);
+				return NT_STATUS_OK;
+			}
+
 			ldap_get_option(ldap_state->smbldap_state->ldap_struct, LDAP_OPT_ERROR_STRING,
 					&ld_error);
 			DEBUG(0,("ldapsam_modify_entry: LDAP Password could not be changed for user %s: %s\n\t%s\n",
@@ -2384,7 +2462,7 @@ static NTSTATUS ldapsam_setsamgrent(struct pdb_methods *my_methods, BOOL update)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	DEBUG(2, ("ldapsam_setsampwent: %d entries in the base!\n",
+	DEBUG(2, ("ldapsam_setsamgrent: %d entries in the base!\n",
 		  ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
 				     ldap_state->result)));
 
@@ -2508,13 +2586,13 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_modify_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_modify_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -2549,7 +2627,7 @@ static NTSTATUS ldapsam_modify_aliasmem(struct pdb_methods *methods,
 		ldap_get_option(ldap_state->smbldap_state->ldap_struct,
 				LDAP_OPT_ERROR_STRING,&ld_error);
 		
-		DEBUG(0, ("ldapsam_delete_entry: Could not delete attributes "
+		DEBUG(0, ("ldapsam_modify_aliasmem: Could not modify alias "
 			  "for %s, error: %s (%s)\n", dn, ldap_err2string(rc),
 			  ld_error?ld_error:"unknown"));
 		SAFE_FREE(ld_error);
@@ -2607,13 +2685,13 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 				   result);
 
 	if (count < 1) {
-		DEBUG(4, ("ldapsam_add_aliasmem: Did not find alias\n"));
+		DEBUG(4, ("ldapsam_enum_aliasmem: Did not find alias\n"));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
 	}
 
 	if (count > 1) {
-		DEBUG(1, ("ldapsam_getgroup: Duplicate entries for filter %s: "
+		DEBUG(1, ("ldapsam_enum_aliasmem: Duplicate entries for filter %s: "
 			  "count=%d\n", filter, count));
 		ldap_msgfree(result);
 		return NT_STATUS_NO_SUCH_ALIAS;
@@ -2918,7 +2996,7 @@ and will risk BDCs having inconsistant SIDs\n"));
 	}
 
 	if (smbldap_get_single_pstring(ldap_state->smbldap_state->ldap_struct, entry, 
-				 get_userattr_key2string(ldap_state->schema_ver, LDAP_ATTR_ALGORITHMIC_RID_BASE), 
+				 get_attr_key2string( dominfo_attr_list, LDAP_ATTR_ALGORITHMIC_RID_BASE ),
 				 alg_rid_base_string)) {
 		alg_rid_base = (uint32)atol(alg_rid_base_string);
 		if (alg_rid_base != algorithmic_rid_base()) {

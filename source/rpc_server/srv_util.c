@@ -3,7 +3,8 @@
  *  RPC Pipe client / server routines
  *  Copyright (C) Andrew Tridgell              1992-1998
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-1998,
- *  Copyright (C) Paul Ashton                  1997-1998.
+ *  Copyright (C) Paul Ashton                  1997-1998,
+ *  Copyright (C) Andrew Bartlett                   2004.
  *  
  *  This program is free software; you can redistribute it and/or modify
  *  it under the terms of the GNU General Public License as published by
@@ -46,7 +47,7 @@
  * and groups.
  */
 
-rid_name builtin_alias_rids[] =
+static const rid_name builtin_alias_rids[] =
 {  
     { BUILTIN_ALIAS_RID_ADMINS       , "Administrators" },
     { BUILTIN_ALIAS_RID_USERS        , "Users" },
@@ -62,7 +63,7 @@ rid_name builtin_alias_rids[] =
 };
 
 /* array lookup of well-known Domain RID users. */
-rid_name domain_user_rids[] =
+static const rid_name domain_user_rids[] =
 {  
     { DOMAIN_USER_RID_ADMIN         , "Administrator" },
     { DOMAIN_USER_RID_GUEST         , "Guest" },
@@ -70,7 +71,7 @@ rid_name domain_user_rids[] =
 };
 
 /* array lookup of well-known Domain RID groups. */
-rid_name domain_group_rids[] =
+static const rid_name domain_group_rids[] =
 {  
     { DOMAIN_GROUP_RID_ADMINS       , "Domain Admins" },
     { DOMAIN_GROUP_RID_USERS        , "Domain Users" },
@@ -97,17 +98,6 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 	gid_t winbind_gid_low, winbind_gid_high;
 	BOOL ret;
 	BOOL winbind_groups_exist;
-
-	/*
-	 * this code is far from perfect.
-	 * first it enumerates the full /etc/group and that can be slow.
-	 * second, it works only with users' SIDs
-	 * whereas the day we support nested groups, it will have to
-	 * support both users's SIDs and domain groups' SIDs
-	 *
-	 * having our own ldap backend would be so much faster !
-	 * we're far from that, but hope one day ;-) JFM.
-	 */
 
 	*prids=NULL;
 	*numgroups=0;
@@ -136,11 +126,8 @@ NTSTATUS get_alias_user_groups(TALLOC_CTX *ctx, DOM_SID *sid, int *numgroups, ui
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	become_root();
-	/* on some systems this must run as root */
-	num_groups = getgroups_user(user_name, &groups);	
-	unbecome_root();
-	if (num_groups == -1) {
+	ret = getgroups_user(user_name, &groups, &num_groups);	
+	if (!ret) {
 		/* this should never happen */
 		DEBUG(2,("get_alias_user_groups: getgroups_user failed\n"));
 		pdb_free_sam(&sam_pass);
@@ -272,115 +259,57 @@ done:
  ********************************************************************/
 BOOL get_domain_user_groups(TALLOC_CTX *ctx, int *numgroups, DOM_GID **pgids, SAM_ACCOUNT *sam_pass)
 {
-	GROUP_MAP *map=NULL;
-	int i, num, num_entries, cur_gid=0;
-	struct group *grp;
-	DOM_GID *gids;
-	fstring user_name;
-	uint32 grid;
-	uint32 tmp_rid;
-	BOOL ret;
 
-	*numgroups= 0;
+	const char *username = pdb_get_username(sam_pass);
+	int		n_unix_groups;
+	int		i,j;
+	gid_t *unix_groups;
 
-	fstrcpy(user_name, pdb_get_username(sam_pass));
-	grid=pdb_get_group_rid(sam_pass);
-
-	DEBUG(10,("get_domain_user_groups: searching domain groups [%s] is a member of\n", user_name));
-
-	/* we must wrap this is become/unbecome root for ldap backends */
+	*numgroups = 0;
+	*pgids   = NULL;
 	
+	if (!getgroups_user(username, &unix_groups, &n_unix_groups)) {
+		return False;
+	}
+
+	/* now setup the space for storing the SIDS */
+	
+	if (n_unix_groups > 0) {
+	
+		*pgids   = talloc(ctx, sizeof(DOM_GID) * n_unix_groups);
+		
+		if (!*pgids) {
+			DEBUG(0, ("get_user_group: malloc() failed for DOM_GID list!\n"));
+			SAFE_FREE(unix_groups);
+			return False;
+		}
+	}
+
 	become_root();
-	/* first get the list of the domain groups */
-	ret = pdb_enum_group_mapping(SID_NAME_DOM_GRP, &map, &num_entries, ENUM_ONLY_MAPPED);
-	
+	j = 0;
+	for (i = 0; i < n_unix_groups; i++) {
+		GROUP_MAP map;
+		uint32 rid;
+		
+		if (!pdb_getgrgid(&map, unix_groups[i])) {
+			DEBUG(3, ("get_user_groups: failed to convert gid %ld to a domain group!\n", 
+				(long int)unix_groups[i+1]));
+			if (i == 0) {
+				DEBUG(1,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", username));
+				DEBUGADD(1,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
+			}
+		} else if ((map.sid_name_use == SID_NAME_DOM_GRP)
+			   && sid_peek_check_rid(get_global_sam_sid(), &map.sid, &rid)) {
+			(*pgids)[j].attr=7;
+			(*pgids)[j].g_rid=rid;
+			j++;
+		}
+	}
 	unbecome_root();
 
-	/* end wrapper for group enumeration */
+	*numgroups = j;
 
-	
-	if ( !ret )
-		return False;
-		
-	DEBUG(10,("get_domain_user_groups: there are %d mapped groups\n", num_entries));
-
-
-	/* 
-	 * alloc memory. In the worse case, we alloc memory for nothing.
-	 * but I prefer to alloc for nothing
-	 * than reallocing everytime.
-	 */
-	gids = (DOM_GID *)talloc(ctx, sizeof(DOM_GID) *  num_entries);	
-
-	/* for each group, check if the user is a member of.  Only include groups 
-	   from this domain */
-	
-	for(i=0; i<num_entries; i++) {
-	
-		if ( !sid_check_is_in_our_domain(&map[i].sid) ) {
-			DEBUG(10,("get_domain_user_groups: skipping check of %s since it is not in our domain\n",
-				map[i].nt_name));
-			continue;
-		}
-			
-		if ((grp=getgrgid(map[i].gid)) == NULL) {
-			/* very weird !!! */
-			DEBUG(5,("get_domain_user_groups: gid %d doesn't exist anymore !\n", (int)map[i].gid));
-			continue;
-		}
-
-		for(num=0; grp->gr_mem[num]!=NULL; num++) {
-			if(strcmp(grp->gr_mem[num], user_name)==0) {
-				/* we found the user, add the group to the list */
-				sid_peek_rid(&map[i].sid, &(gids[cur_gid].g_rid));
-				gids[cur_gid].attr=7;
-				DEBUG(10,("get_domain_user_groups: user found in group %s\n", map[i].nt_name));
-				cur_gid++;
-				break;
-			}
-		}
-	}
-
-	/* we have checked the groups */
-	/* we must now check the gid of the user or the primary group rid, that's the same */
-	for (i=0; i<cur_gid && grid!=gids[i].g_rid; i++)
-		;
-	
-	/* the user's gid is already there */
-	if (i!=cur_gid) {
-		/* 
-		 * the primary group of the user but be the first one in the list
-		 * don't ask ! JFM.
-		 */
-		gids[i].g_rid=gids[0].g_rid;
-		gids[0].g_rid=grid;
-		goto done;
-	}
-
-	for(i=0; i<num_entries; i++) {
-		sid_peek_rid(&map[i].sid, &tmp_rid);
-		if (tmp_rid==grid) {
-			/* 
-			 * the primary group of the user but be the first one in the list
-			 * don't ask ! JFM.
-			 */
-			gids[cur_gid].g_rid=gids[0].g_rid;
-			gids[0].g_rid=tmp_rid;
-			gids[cur_gid].attr=7;
-			DEBUG(10,("get_domain_user_groups: primary gid of user found in group %s\n", map[i].nt_name));
-			cur_gid++;
-			goto done; /* leave the loop early */
-		}
-	}
-
-	DEBUG(0,("get_domain_user_groups: primary gid of user [%s] is not a Domain group !\n", user_name));
-	DEBUGADD(0,("get_domain_user_groups: You should fix it, NT doesn't like that\n"));
-
-
- done:
-	*pgids=gids;
-	*numgroups=cur_gid;
-	SAFE_FREE(map);
+	SAFE_FREE(unix_groups);
 
 	return True;
 }
@@ -414,167 +343,3 @@ NTSTATUS nt_token_to_group_list(TALLOC_CTX *mem_ctx, const DOM_SID *domain_sid,
 	return NT_STATUS_OK;
 }
 
-/*******************************************************************
- Look up a local (domain) rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_group_name(uint32 rid, char *group_name, uint32 *type)
-{
-	int i = 0; 
-	(*type) = SID_NAME_DOM_GRP;
-
-	DEBUG(5,("lookup_group_name: rid: %d", rid));
-
-	while (domain_group_rids[i].rid != rid && domain_group_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (domain_group_rids[i].rid != 0)
-	{
-		fstrcpy(group_name, domain_group_rids[i].name);
-		DEBUG(5,(" = %s\n", group_name));
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local alias rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_alias_name(uint32 rid, char *alias_name, uint32 *type)
-{
-	int i = 0; 
-	(*type) = SID_NAME_WKN_GRP;
-
-	DEBUG(5,("lookup_alias_name: rid: %d", rid));
-
-	while (builtin_alias_rids[i].rid != rid && builtin_alias_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (builtin_alias_rids[i].rid != 0)
-	{
-		fstrcpy(alias_name, builtin_alias_rids[i].name);
-		DEBUG(5,(" = %s\n", alias_name));
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	return NT_STATUS_NONE_MAPPED;
-}
-
-
-#if 0 /*Nobody uses this function just now*/
-/*******************************************************************
- Look up a local user rid and return a name and type.
- ********************************************************************/
-NTSTATUS local_lookup_user_name(uint32 rid, char *user_name, uint32 *type)
-{
-	SAM_ACCOUNT *sampwd=NULL;
-	int i = 0;
-	BOOL ret;
-	
-	(*type) = SID_NAME_USER;
-
-	DEBUG(5,("lookup_user_name: rid: %d", rid));
-
-	/* look up the well-known domain user rids first */
-	while (domain_user_rids[i].rid != rid && domain_user_rids[i].rid != 0)
-	{
-		i++;
-	}
-
-	if (domain_user_rids[i].rid != 0) {
-		fstrcpy(user_name, domain_user_rids[i].name);
-		DEBUG(5,(" = %s\n", user_name));
-		return NT_STATUS_OK;
-	}
-
-	pdb_init_sam(&sampwd);
-
-	/* ok, it's a user.  find the user account */
-	become_root();
-	ret = pdb_getsampwrid(sampwd, rid);
-	unbecome_root();
-
-	if (ret == True) {
-		fstrcpy(user_name, pdb_get_username(sampwd) );
-		DEBUG(5,(" = %s\n", user_name));
-		pdb_free_sam(&sampwd);
-		return NT_STATUS_OK;
-	}
-
-	DEBUG(5,(" none mapped\n"));
-	pdb_free_sam(&sampwd);
-	return NT_STATUS_NONE_MAPPED;
-}
-
-#endif
-
-/*******************************************************************
- Look up a local (domain) group name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_group_rid(char *group_name, uint32 *rid)
-{
-	const char *grp_name;
-	int i = -1; /* start do loop at -1 */
-
-	do /* find, if it exists, a group rid for the group name*/
-	{
-		i++;
-		(*rid) = domain_group_rids[i].rid;
-		grp_name = domain_group_rids[i].name;
-
-	} while (grp_name != NULL && !strequal(grp_name, group_name));
-
-	return (grp_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local (BUILTIN) alias name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_alias_rid(const char *alias_name, uint32 *rid)
-{
-	const char *als_name;
-	int i = -1; /* start do loop at -1 */
-
-	do /* find, if it exists, a alias rid for the alias name*/
-	{
-		i++;
-		(*rid) = builtin_alias_rids[i].rid;
-		als_name = builtin_alias_rids[i].name;
-
-	} while (als_name != NULL && !strequal(als_name, alias_name));
-
-	return (als_name != NULL) ? NT_STATUS_OK : NT_STATUS_NONE_MAPPED;
-}
-
-/*******************************************************************
- Look up a local user name and return a rid
- ********************************************************************/
-NTSTATUS local_lookup_user_rid(char *user_name, uint32 *rid)
-{
-	SAM_ACCOUNT *sampass=NULL;
-	BOOL ret;
-
-	(*rid) = 0;
-
-	pdb_init_sam(&sampass);
-
-	/* find the user account */
-	become_root();
-	ret = pdb_getsampwnam(sampass, user_name);
-	unbecome_root();
-
-	if (ret == True) {
-		(*rid) = pdb_get_user_rid(sampass);
-		pdb_free_sam(&sampass);
-		return NT_STATUS_OK;
-	}
-
-	pdb_free_sam(&sampass);
-	return NT_STATUS_NONE_MAPPED;
-}

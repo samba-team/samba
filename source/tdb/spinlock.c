@@ -27,7 +27,7 @@
 #include <config.h>
 #endif
 
-#if STANDALONE
+#ifdef STANDALONE
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -157,7 +157,7 @@ static inline int __spin_is_locked(spinlock_t *lock)
  * "sgi" and "_COMPILER_VERSION" are always defined by MIPSPro.
  */
 
-#if defined(STANDALONE)
+#ifdef STANDALONE
 
 /* MIPSPro 7.3 has "__inline" as an extension, but not "inline. */
 #define inline __inline

@@ -38,7 +38,7 @@
 /*****************************************************/
 
 #include "includes.h"
-#include "../utils/net.h"
+#include "utils/net.h"
 
 /***********************************************************************/
 /* Beginning of internationalization section.  Translatable constants  */
@@ -69,7 +69,7 @@ int opt_port = 0;
 int opt_verbose = 0;
 int opt_maxusers = -1;
 const char *opt_comment = "";
-const char *opt_container = "cn=Users";
+const char *opt_container = NULL;
 int opt_flags = -1;
 int opt_timeout = 0;
 const char *opt_target_workgroup = NULL;
@@ -697,6 +697,7 @@ static struct functable net_func[] = {
 	{"MAXRID", net_maxrid},
 	{"IDMAP", net_idmap},
 	{"STATUS", net_status},
+	{"USERSIDLIST", net_usersidlist},
 #ifdef WITH_FAKE_KASERVER
 	{"AFSKEY", net_afskey},
 #endif

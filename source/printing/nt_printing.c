@@ -210,6 +210,7 @@ struct table_node {
 #define SPL_ARCH_W32ALPHA	"W32ALPHA"
 #define SPL_ARCH_W32PPC		"W32PPC"
 #define SPL_ARCH_IA64		"IA64"
+#define SPL_ARCH_X64		"x64"
 
 static const struct table_node archi_table[]= {
 
@@ -219,6 +220,7 @@ static const struct table_node archi_table[]= {
 	{"Windows NT Alpha_AXP", SPL_ARCH_W32ALPHA,	2 },
 	{"Windows NT PowerPC",   SPL_ARCH_W32PPC,	2 },
 	{"Windows IA64",   	 SPL_ARCH_IA64,		3 },
+	{"Windows x64",   	 SPL_ARCH_X64,		3 },
 	{NULL,                   "",		-1 }
 };
 
@@ -378,9 +380,11 @@ BOOL nt_printing_init(void)
 	   msgs.  This is done in claim_connection() */
 
 
-	win_rc = check_published_printers();
-	if (!W_ERROR_IS_OK(win_rc))
-		DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", dos_errstr(win_rc)));
+	if ( lp_security() == SEC_ADS ) {
+		win_rc = check_published_printers();
+		if (!W_ERROR_IS_OK(win_rc))
+			DEBUG(0, ("nt_printing_init: error checking published printers: %s\n", dos_errstr(win_rc)));
+	}
 
 	return True;
 }
@@ -3270,7 +3274,7 @@ static void map_to_os2_driver(fstring drivername)
 /****************************************************************************
  Get a default printer info 2 struct.
 ****************************************************************************/
-static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename)
+static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char* sharename)
 {
 	int snum;
 	NT_PRINTER_INFO_LEVEL_2 info;
@@ -3279,9 +3283,9 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 
 	snum = lp_servicenumber(sharename);
 
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
 	slprintf(info.printername, sizeof(info.printername)-1, "\\\\%s\\%s", 
-		 get_called_name(), sharename);
+		servername, sharename);
 	fstrcpy(info.sharename, sharename);
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 
@@ -3349,11 +3353,12 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const 
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sharename)
+static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *servername, const char *sharename)
 {
 	pstring key;
 	NT_PRINTER_INFO_LEVEL_2 info;
-	int 		len = 0;
+	int len = 0;
+	int snum = lp_servicenumber(sharename);
 	TDB_DATA kbuf, dbuf;
 	fstring printername;
 	char adevice[MAXDEVICENAME];
@@ -3367,7 +3372,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 
 	dbuf = tdb_fetch(tdb_printers, kbuf);
 	if (!dbuf.dptr)
-		return get_a_printer_2_default(info_ptr, sharename);
+		return get_a_printer_2_default(info_ptr, servername, sharename);
 
 	len += tdb_unpack(dbuf.dptr+len, dbuf.dsize-len, "dddddddddddfffffPfffff",
 			&info.attributes,
@@ -3398,9 +3403,13 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 	info.attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
-	slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", get_called_name(),
-			info.printername);
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", servername);
+
+	if ( lp_force_printername(snum) )
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, sharename );
+	else 
+		slprintf(printername, sizeof(printername)-1, "\\\\%s\\%s", servername, info.printername);
+
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
@@ -3413,7 +3422,7 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, const char *sh
 	 * See comments in get_a_printer_2_default()
 	 */
 
-	if (lp_default_devmode(lp_servicenumber(sharename)) && !info.devmode) {
+	if (lp_default_devmode(snum) && !info.devmode) {
 		DEBUG(8,("get_a_printer_2: Constructing a default device mode for [%s]\n",
 			printername));
 		info.devmode = construct_nt_devicemode(printername);
@@ -3775,7 +3784,7 @@ static uint32 update_driver_init_2(NT_PRINTER_INFO_LEVEL_2 *info)
 
 	len += pack_values( &info->data, buf+len, buflen-len );
 
-	if (buflen != len) {
+	if (buflen < len) {
 		char *tb;
 
 		tb = (char *)Realloc(buf, len);
@@ -4059,6 +4068,7 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 {
 	WERROR result;
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
+	fstring servername;
 	
 	*pp_printer = NULL;
 
@@ -4071,6 +4081,13 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 				return WERR_NOMEM;
 			}
 			ZERO_STRUCTP(printer);
+
+			if ( print_hnd ) 
+				fstrcpy( servername, print_hnd->servername );
+			else {
+				fstrcpy( servername, "%L" );
+				standard_sub_basic( "", servername, sizeof(servername)-1 );
+			}
 			
 			/* 
 			 * check for cache first.  A Printer handle cannot changed
@@ -4105,12 +4122,12 @@ WERROR get_a_printer( Printer_entry *print_hnd, NT_PRINTER_INFO_LEVEL **pp_print
 			   Make sure to use a short lived talloc ctx */
 
 			if ( print_hnd )
-				result = find_printer_in_print_hnd_cache(get_talloc_ctx(), &printer->info_2, sharename);
+				result = find_printer_in_print_hnd_cache(get_talloc_ctx(), &printer->info_2, servername, sharename);
 			
 			/* fail to disk if we don't have it with any open handle */
 
 			if ( !print_hnd || !W_ERROR_IS_OK(result) )
-				result = get_a_printer_2(&printer->info_2, sharename);				
+				result = get_a_printer_2(&printer->info_2, servername, sharename );
 			
 			/* we have a new printer now.  Save it with this handle */
 			
@@ -5115,4 +5132,12 @@ BOOL print_time_access_check(int snum)
 		errno = EACCES;
 
 	return ok;
+}
+
+/****************************************************************************
+ Fill in the servername sent in the _spoolss_open_printer_ex() call
+****************************************************************************/
+char* get_server_name( Printer_entry *printer )
+{
+	return printer->servername;
 }
