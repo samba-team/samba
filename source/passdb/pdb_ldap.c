@@ -2912,6 +2912,55 @@ done:
 }
 
 
+static NTSTATUS ldapsam_settrustpwent(struct pdb_methods *methods)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_gettrustpwent(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_gettrustpwnam(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const char *name)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_gettrustpwsid(struct pdb_methods *methods, SAM_TRUST_PASSWD *trust, const DOM_SID *sid)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_add_trust_passwd(struct pdb_methods* methods, SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_update_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
+static NTSTATUS ldapsam_delete_trust_passwd(struct pdb_methods *methods, const SAM_TRUST_PASSWD *trust)
+{
+	NTSTATUS nt_status = NT_STATUS_NOT_IMPLEMENTED;
+	return nt_status;
+}
+
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -2969,6 +3018,14 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->remove_privilege_from_sid = ldapsam_remove_privilege_from_sid;
 	(*pdb_method)->get_privilege_set = ldapsam_get_privilege_set;
 	(*pdb_method)->get_privilege_entry = ldapsam_get_privilege_entry;
+
+	(*pdb_method)->settrustpwent = ldapsam_settrustpwent;
+	(*pdb_method)->gettrustpwent = ldapsam_gettrustpwent;
+	(*pdb_method)->gettrustpwnam = ldapsam_gettrustpwnam;
+	(*pdb_method)->gettrustpwsid = ldapsam_gettrustpwsid;
+	(*pdb_method)->add_trust_passwd = ldapsam_add_trust_passwd;
+	(*pdb_method)->update_trust_passwd = ldapsam_update_trust_passwd;
+	(*pdb_method)->delete_trust_passwd = ldapsam_delete_trust_passwd;
 
 	/* TODO: Setup private data and free */
 
