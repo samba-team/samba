@@ -67,15 +67,15 @@ length_type (char *name, Type *t, char *variable)
       fprintf (codefile,
 	       "{\n"
 	       "int oldret = %s;\n"
-	       "%s = 0;\n", variable, variable);
+	       "int i;\n"
+	       "%s = 0;\n",
+	       variable, variable);
 
-      fprintf (codefile, "while((%s)->len){\n", name);
-      sprintf (n, "&(%s)->val[(%s)->len-1]", name, name);
+      fprintf (codefile, "for(i = (%s)->len - 1; i >= 0; --i){\n", name);
+      sprintf (n, "&(%s)->val[i]", name);
       length_type(n, t->subtype, variable);
-      fprintf(codefile, 
-	      "(%s)->len--;\n"
-	      "}\n",
-	      name);
+      fprintf (codefile, "}\n");
+
       fprintf (codefile,
 	       "%s += 1 + length_len(%s) + oldret;\n"
 	       "}\n", variable, variable);
