@@ -2081,35 +2081,30 @@ BOOL spoolss_closeprinter(struct cli_state *cli, uint16 fnum, PRINTER_HND *hnd);
 
 /*The following definitions come from  rpc_client/cli_srvsvc.c  */
 
-BOOL do_srv_net_srv_tprt_enum(struct cli_state *cli, uint16 fnum,
-			const char *server_name, 
+BOOL do_srv_net_srv_tprt_enum(
+			const char *srv_name, 
 			uint32 switch_value, SRV_TPRT_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_conn_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name,
+BOOL do_srv_net_srv_conn_enum( char *srv_name, char *qual_name,
 			uint32 switch_value, SRV_CONN_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_sess_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name, char *user_name,
+BOOL do_srv_net_srv_sess_enum( char *srv_name, char *qual_name, char *user_name,
 			uint32 switch_value, SRV_SESS_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_share_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, 
+BOOL do_srv_net_srv_share_enum( char *srv_name, 
 			uint32 switch_value, SRV_SHARE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_file_enum(struct cli_state *cli, uint16 fnum,
-			char *server_name, char *qual_name, uint32 file_id,
+BOOL do_srv_net_srv_file_enum( char *srv_name, char *qual_name, uint32 file_id,
 			uint32 switch_value, SRV_FILE_INFO_CTR *ctr,
 			uint32 preferred_len,
 			ENUM_HND *hnd);
-BOOL do_srv_net_srv_get_info(struct cli_state *cli, uint16 fnum,
-			char *server_name, uint32 switch_value, SRV_INFO_CTR *ctr);
-BOOL do_srv_net_remote_tod(struct cli_state *cli, uint16 fnum,
-			   char *server_name, TIME_OF_DAY_INFO *tod);
+BOOL do_srv_net_srv_get_info( char *srv_name, uint32 switch_value,
+				SRV_INFO_CTR *ctr);
+BOOL do_srv_net_remote_tod( char *srv_name, TIME_OF_DAY_INFO *tod);
 
 /*The following definitions come from  rpc_client/cli_svcctl.c  */
 
@@ -3661,8 +3656,7 @@ BOOL net_srv_get_info(struct client_info *info,
 		uint32 info_level,
 		SRV_INFO_CTR *ctr);
 void cmd_srv_query_info(struct client_info *info, int argc, char *argv[]);
-BOOL msrpc_srv_enum_tprt(struct cli_state *cli,
-				const char* dest_srv,
+BOOL msrpc_srv_enum_tprt( const char* dest_srv,
 				uint32 info_level,
 				SRV_TPRT_INFO_CTR *ctr,
 				TPRT_INFO_FN(tprt_fn));
