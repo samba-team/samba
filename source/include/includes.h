@@ -320,6 +320,14 @@ extern int innetgr (const char *, const char *, const char *, const char *);
 #define USE_GETCWD
 #define USE_SETSID
 #define USE_SYSV_IPC
+
+union semun {
+	int val;
+	struct semid_ds *buf;
+	ushort *array;
+};
+
+
 #ifndef REPLACE_GETPASS
 #define REPLACE_GETPASS
 #endif /* REPLACE_GETPASS */
