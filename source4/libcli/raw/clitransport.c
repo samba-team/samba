@@ -90,11 +90,10 @@ void smbcli_transport_close(struct smbcli_transport *transport)
 {
 	transport->reference_count--;
 	if (transport->reference_count <= 0) {
-		smbcli_sock_close(transport->socket);
 		event_remove_fd(transport->event.ctx, transport->event.fde);
 		event_remove_timed(transport->event.ctx, transport->event.te);
 		event_context_destroy(transport->event.ctx);
-		talloc_free(transport);
+		smbcli_sock_close(transport->socket);
 	}
 }
 
