@@ -3260,8 +3260,8 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	 * NB. The setup array has already been transformed
 	 * via SVAL and so is in gost byte order.
 	 */
-	pnum = setup[1];
-	subcommand = setup[0];
+	pnum = (setup[1] & 0xFFFF);
+	subcommand = (setup[0] & 0xFFFF);
 
 	if(!(p = get_rpc_pipe(pnum))) {
 		DEBUG(1,("api_fd_reply: INVALID PIPE HANDLE: %x\n", pnum));
