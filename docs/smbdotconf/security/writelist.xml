@@ -11,7 +11,12 @@
     @group syntax.</para>
 
     <para>Note that if a user is in both the read list and the 
-		write list then they will be given write access.</para>
+    write list then they will be given write access.</para>
+
+    <para>This parameter will not work with the <link linkend="SECURITY">
+    <parameter moreinfo="none">security = share</parameter></linkend> in
+    Samba 3.0.  This is by design.</para>
+
 </description>
 
 <related>read list</related>
