@@ -143,7 +143,7 @@ static uint32 do_reseed(unsigned char *md4_outbuf)
 
   /* possibly add in some secret file contents */
   do_filehash("/etc/shadow", &md4_inbuf[0]);
-  do_filehash(SMB_PASSWD_FILE, &md4_inbuf[16]);
+  do_filehash(lp_smb_passwd_file(), &md4_inbuf[16]);
 
   /* add in the root encrypted password. On any system where security is taken
      seriously this will be secret */

@@ -38,7 +38,7 @@ static void gotalarm_sig(void)
  seconds.
 ****************************************************************/
 
-static int do_pw_lock(int fd, int waitsecs, int type)
+static BOOL do_pw_lock(int fd, int waitsecs, int type)
 {
   struct flock    lock;
   int             ret;
@@ -60,9 +60,10 @@ static int do_pw_lock(int fd, int waitsecs, int type)
   if (gotalarm) {
     DEBUG(0, ("do_pw_lock: failed to %s SMB passwd file.\n",
                 type == F_UNLCK ? "unlock" : "lock"));
-    return -1;
+    return False;
   }
-  return ret;
+
+  return ((ret == 0) ? True : False);
 }
 
 static int pw_file_lock_depth;
@@ -71,35 +72,41 @@ static int pw_file_lock_depth;
  Lock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-int pw_file_lock(int fd, int type, int secs)
+static BOOL pw_file_lock(int fd, int type, int secs, int *plock_depth)
 {
   if (fd < 0)
-    return (-1);
+    return False;
+
+  (*plock_depth)++;
+
   if(pw_file_lock_depth == 0) {
     if (do_pw_lock(fd, secs, type)) {
-      return -1;
+      DEBUG(10,("pw_file_lock: locking file failed, error = %s.\n",
+                 strerror(errno)));
+      return False;
     }
   }
 
-  pw_file_lock_depth++;
-
-  return fd;
+  return True;
 }
 
 /***************************************************************
  Unlock an fd. Abandon after waitsecs seconds.
 ****************************************************************/
 
-int pw_file_unlock(int fd)
+static BOOL pw_file_unlock(int fd, int *plock_depth)
 {
- int ret = 0;
+  BOOL ret;
 
- if(pw_file_lock_depth == 1)
-   ret = do_pw_lock(fd, 5, F_UNLCK);
+  if(*plock_depth == 1)
+    ret = do_pw_lock(fd, 5, F_UNLCK);
 
- pw_file_lock_depth--;
+  (*plock_depth)--;
 
- return ret;
+  if(ret == False)
+    DEBUG(10,("pw_file_unlock: unlocking file failed, error = %s.\n",
+                 strerror(errno)));
+  return ret;
 }
 
 /***************************************************************
@@ -128,7 +135,7 @@ void *startsmbpwent(BOOL update)
   /* Set a 16k buffer to do more efficient reads */
   setvbuf(fp, s_readbuf, _IOFBF, sizeof(s_readbuf));
 
-  if ((pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 5)) < 0) {
+  if ((pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 5, &pw_file_lock_depth)) == False) {
     DEBUG(0, ("startsmbpwent: unable to lock file %s\n", pfile));
     fclose(fp);
     return NULL;
@@ -149,7 +156,7 @@ void endsmbpwent(void *vp)
 {
   FILE *fp = (FILE *)vp;
 
-  pw_file_unlock(fileno(fp));
+  pw_file_unlock(fileno(fp), &pw_file_lock_depth);
   fclose(fp);
   DEBUG(7, ("endsmbpwent: closed password file.\n"));
 }
@@ -764,7 +771,9 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   /* Set a 16k buffer to do more efficient reads */
   setvbuf(fp, readbuf, _IOFBF, sizeof(readbuf));
 
-  if ((lockfd = pw_file_lock(fileno(fp), F_RDLCK | F_WRLCK, 5)) < 0) {
+  lockfd = fileno(fp);
+
+  if (pw_file_lock(lockfd, F_RDLCK | F_WRLCK, 5, &pw_file_lock_depth) == False) {
     DEBUG(0, ("mod_smbpwd_entry: unable to lock file %s\n", pfile));
     fclose(fp);
     return False;
@@ -782,10 +791,10 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
     linebuf[0] = '\0';
 
-    fgets(linebuf, 256, fp);
+    fgets(linebuf, sizeof(linebuf), fp);
     if (ferror(fp)) {
+      pw_file_unlock(lockfd, &pw_file_lock_depth);
       fclose(fp);
-      pw_file_unlock(lockfd);
       return False;
     }
 
@@ -861,8 +870,8 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   if (!isdigit(*p)) {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (uid not number)\n"));
+    pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
@@ -870,8 +879,8 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
     p++;
   if (*p != ':') {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no : after uid)\n"));
+    pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
@@ -888,28 +897,28 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
   if (*p == '*' || *p == 'X') {
     /* Password deliberately invalid - end here. */
     DEBUG(10, ("get_smbpwd_entry: entry invalidated for user %s\n", user_name));
+    pw_file_unlock(lockfd, &pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
   if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return (False);
   }
 
   if (p[32] != ':') {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
   if (*p == '*' || *p == 'X') {
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
@@ -919,15 +928,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
               the lanman password. */
   if (linebuf_len < (PTR_DIFF(p, linebuf) + 33)) {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (passwd too short)\n"));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return (False);
   }
 
   if (p[32] != ':') {
     DEBUG(0, ("mod_smbpwd_entry: malformed password entry (no terminating :)\n"));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
@@ -989,23 +998,23 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   if (lseek(fd, pwd_seekpos - 1, SEEK_SET) != pwd_seekpos - 1) {
     DEBUG(0, ("mod_smbpwd_entry: seek fail on file %s.\n", pfile));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
   /* Sanity check - ensure the character is a ':' */
   if (read(fd, &c, 1) != 1) {
     DEBUG(0, ("mod_smbpwd_entry: read fail on file %s.\n", pfile));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
   if (c != ':')	{
     DEBUG(0, ("mod_smbpwd_entry: check on passwd file %s failed.\n", pfile));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
  
@@ -1053,12 +1062,192 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 
   if (write(fd, ascii_p16, wr_len) != wr_len) {
     DEBUG(0, ("mod_smbpwd_entry: write failed in passwd file %s\n", pfile));
+    pw_file_unlock(lockfd,&pw_file_lock_depth);
     fclose(fp);
-    pw_file_unlock(lockfd);
     return False;
   }
 
+  pw_file_unlock(lockfd,&pw_file_lock_depth);
   fclose(fp);
-  pw_file_unlock(lockfd);
   return True;
 }
+
+#ifdef DOMAIN_CLIENT
+
+static int mach_passwd_lock_depth;
+
+/************************************************************************
+ Routine to lock the machine account password file for a domain.
+************************************************************************/
+
+void *machine_password_lock( char *domain, char *name, BOOL update)
+{
+  FILE *fp;
+  pstring mac_file;
+  unsigned int mac_file_len;
+  char *p;
+
+  if(mach_passwd_lock_depth == 0) {
+    pstrcpy(mac_file, lp_smb_passwd_file());
+    p = strrchr(mac_file, '/');
+    if(p != NULL)
+      *++p = '\0';
+    mac_file_len = strlen(mac_file);
+    if(sizeof(pstring) - mac_file_len - strlen(domain) - strlen(name) - 6) {
+      DEBUG(0,("machine_password_lock: path %s too long to add machine details.\n",
+                mac_file));
+      return NULL;
+    }
+
+    strcat(mac_file, domain);
+    strcat(mac_file, ".");
+    strcat(mac_file, name);
+    strcat(mac_file, ".mac");
+
+    if((fp = fopen(mac_file, "r+b")) == 0) {
+      DEBUG(0,("machine_password_lock: cannot open file %s. Error was %s.\n",
+            mac_file, strerror(errno) ));
+      return NULL;
+    }
+
+    chmod(mac_file, 0600);
+  }
+
+  if(pw_file_lock(fileno(fp), F_RDLCK | (update ? F_WRLCK : 0), 
+                                      60, &mach_passwd_lock_depth) == False) {
+    DEBUG(0,("machine_password_lock: cannot lock file %s.\n", mac_file));
+    fclose(fp);
+    return NULL;
+  }
+
+  return (void *)fp;
+}
+
+/************************************************************************
+ Routine to unlock the machine account password file for a domain.
+************************************************************************/
+
+BOOL machine_password_unlock( void *token )
+{
+  FILE *fp = (FILE *)token;
+  BOOL ret = pw_file_unlock(fileno(fp), &mach_passwd_lock_depth);
+  if(mach_passwd_lock_depth == 0)
+    fclose(fp);
+  return ret;
+}
+
+/************************************************************************
+ Routine to get the machine account password for a domain.
+ The user of this function must have locked the machine password file.
+************************************************************************/
+
+BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
+                                   time_t *last_change_time)
+{
+  FILE *fp = (FILE *)mach_tok;
+  char linebuf[256];
+  char *p;
+  int i;
+
+  linebuf[0] = '\0';
+
+  *last_change_time = (time_t)0;
+  memset(ret_pwd, '\0', 16);
+
+  if(fseek( fp, 0L, SEEK_SET) == -1) {
+    DEBUG(0,("get_machine_account_password: Failed to seek to start of file. Error was %s.\n",
+              strerror(errno) ));
+    return False;
+  } 
+
+  fgets(linebuf, sizeof(linebuf), fp);
+  if(ferror(fp)) {
+    DEBUG(0,("get_machine_account_password: Failed to read password. Error was %s.\n",
+              strerror(errno) ));
+    return False;
+  }
+
+  /*
+   * The length of the line read
+   * must be 45 bytes ( <---XXXX 32 bytes-->:TLC-12345678
+   */
+
+  if(strlen(linebuf) != 45) {
+    DEBUG(0,("get_machine_account_password: Malformed machine password file (wrong length).\n"));
+#ifdef DEBUG_PASSWORD
+    DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+#endif
+    return False;
+  }
+
+  /*
+   * Get the hex password.
+   */
+
+  if (!gethexpwd((char *)linebuf, (char *)ret_pwd) || linebuf[32] != ':' || 
+         strncmp(&linebuf[33], "TLC-", 4)) {
+    DEBUG(0,("get_machine_account_password: Malformed machine password file (incorrect format).\n"));
+#ifdef DEBUG_PASSWORD
+    DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+#endif
+    return False;
+  }
+
+  /*
+   * Get the last changed time.
+   */
+  p = &linebuf[37];
+
+  for(i = 0; i < 8; i++) {
+    if(p[i] == '\0' || !isxdigit(p[i])) {
+      DEBUG(0,("get_machine_account_password: Malformed machine password file (no timestamp).\n"));
+#ifdef DEBUG_PASSWORD
+      DEBUG(100,("get_machine_account_password: line = |%s|\n", linebuf));
+#endif
+      return False;
+    }
+  }
+
+  /*
+   * p points at 8 characters of hex digits -
+   * read into a time_t as the seconds since
+   * 1970 that the password was last changed.
+   */
+
+  *last_change_time = (time_t)strtol(p, NULL, 16);
+
+  return True;
+}
+
+/************************************************************************
+ Routine to get the machine account password for a domain.
+ The user of this function must have locked the machine password file.
+************************************************************************/
+
+BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd)
+{
+  char linebuf[64];
+  int i;
+  FILE *fp = (FILE *)mach_tok;
+
+  if(fseek( fp, 0L, SEEK_SET) == -1) {
+    DEBUG(0,("set_machine_account_password: Failed to seek to start of file. Error was %s.\n",
+              strerror(errno) ));
+    return False;
+  } 
+
+  for (i = 0; i < 16; i++)
+    sprintf(&linebuf[(i*2)], "%02X", md4_new_pwd[i]);
+
+  sprintf(&linebuf[32], ":TLC-%08X\n", (unsigned)time(NULL));
+
+  if(fwrite( linebuf, 1, 45, fp)!= 45) {
+    DEBUG(0,("set_machine_account_password: Failed to write file. Warning - the machine \
+machine account is now invalid. Please recreate. Error was %s.\n", strerror(errno) ));
+    return False;
+  }
+
+  fflush(fp);
+  return True;
+}
+#endif /* DOMAIN_CLIENT */

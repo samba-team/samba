@@ -1525,6 +1525,9 @@ struct cli_state *server_cryptkey(void);
 BOOL server_validate(char *user, char *domain, 
 		     char *pass, int passlen,
 		     char *ntpass, int ntpasslen);
+BOOL domain_client_validate( char *user, char *domain, 
+                             char *smb_apasswd, int smb_apasslen, 
+                             char *smb_ntpasswd, int smb_ntpasslen);
 
 /*The following definitions come from  pcap.c  */
 
@@ -1713,8 +1716,6 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
-int pw_file_lock(int fd, int type, int secs);
-int pw_file_unlock(int fd);
 void *startsmbpwent(BOOL update);
 void endsmbpwent(void *vp);
 struct smb_passwd *getsmbpwent(void *vp);
@@ -1725,6 +1726,11 @@ struct smb_passwd *getsmbpwuid(unsigned int uid);
 char *encode_acct_ctrl(uint16 acct_ctrl);
 BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
 BOOL mod_smbpwd_entry(struct smb_passwd* pwd);
+void *machine_password_lock( char *doman, char *name, BOOL update);
+BOOL machine_password_unlock( void *token );
+BOOL get_machine_account_password( void *mach_tok, unsigned char *ret_pwd,
+                                   time_t *last_change_time);
+BOOL set_machine_account_password( void *mach_tok, unsigned char *md4_new_pwd);
 
 /*The following definitions come from  status.c  */
 
