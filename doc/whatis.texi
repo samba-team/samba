@@ -28,10 +28,6 @@ services can authenticate each other.
 @section Basic mechanism
 
 @ifinfo
-THIS IS INFO
-@end ifinfo
-
-@ifinfo
 @macro sub{arg}
 <\arg\>
 @end macro
