@@ -686,7 +686,10 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 
 		if (spnego_state->no_response_expected) {
 			if (spnego.negTokenTarg.negResult != SPNEGO_ACCEPT_COMPLETED) {
-				DEBUG(1,("gensec_update ok but not accepted\n"));
+				DEBUG(3,("GENSEC SPNEGO: client GENSEC accepted, but server rejected (bad password?)\n"));
+				nt_status = NT_STATUS_INVALID_PARAMETER;
+			} else if (spnego.negTokenTarg.responseToken.length) {
+				DEBUG(2,("GENSEC SPNEGO: client GENSEC accepted, but server continued negotiation!\n"));
 				nt_status = NT_STATUS_INVALID_PARAMETER;
 			} else {
 				nt_status = NT_STATUS_OK;
