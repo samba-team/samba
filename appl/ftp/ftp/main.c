@@ -46,6 +46,8 @@ main(int argc, char **argv)
 	char homedir[MaxPathLen];
 	struct servent *sp;
 
+	set_progname(argv[0]);
+
 	sp = getservbyname("ftp", "tcp");
 	if (sp == 0)
 		errx(1, "ftp/tcp: unknown service");
@@ -81,9 +83,9 @@ main(int argc, char **argv)
 			break;
 
 		default:
-			fprintf(stderr,
-				"usage: ftp [-dgintv] [host [port]]\n");
-			exit(1);
+		    fprintf(stderr,
+			    "usage: ftp [-dgintv] [host [port]]\n");
+		    exit(1);
 		}
 	}
 	argc -= optind;
