@@ -605,8 +605,13 @@ static void tdb_log(TDB_CONTEXT *tdb, int level, const char *format, ...)
 
 	DEBUG(level, ("tdb(%s): %s", tdb->name ? tdb->name : "unknown", ptr));
 
-	if (tdb->ecode == TDB_ERR_CORRUPT || tdb->ecode == TDB_ERR_IO)
+	if (tdb->ecode == TDB_ERR_CORRUPT) {
+		DEBUG(0,("tdb_log: TDB %s is corrupt. Removing and stoping this smbd.\n",
+			tdb->name ));
+		unlink(tdb->name);
 		smb_panic("corrupt tdb\n");
+	}
+
 	if (tdb->ecode == TDB_ERR_IO)
 		smb_panic("i/o error on tdb.\n");
 
