@@ -1935,20 +1935,21 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 	
 	if ( !W_ERROR_IS_OK(status) ) 
 	{
-		/* if the client asked for a specific version, then we've failed */
+		/* 
+		 * if the client asked for a specific version, 
+		 * or this is something other than Windows NT x86,
+		 * then we've failed 
+		 */
 		
-		if ( flags & DPD_DELETE_SPECIFIC_VERSION )
+		if ( (flags&DPD_DELETE_SPECIFIC_VERSION) || (version !=2) )
 			goto done;
 			
 		/* try for Win2k driver if "Windows NT x86" */
 		
-		if ( version == 2 ) 
-		{
-			version = 3;
-			if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
-				status = WERR_UNKNOWN_PRINTER_DRIVER;
-				goto done;
-			}
+		version = 3;
+		if (!W_ERROR_IS_OK(get_a_printer_driver(&info, 3, driver, arch, version))) {
+			status = WERR_UNKNOWN_PRINTER_DRIVER;
+			goto done;
 		}
 	}
 	
@@ -1988,6 +1989,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			
 			if ( delete_files && printer_driver_files_in_use(info_win2k.info_3) & (flags&DPD_DELETE_ALL_FILES) ) {
 				/* no idea of the correct error here */
+				free_a_printer_driver( info_win2k, 3 );
 				status = WERR_ACCESS_DENIED;	
 				goto done;
 			}
@@ -1995,7 +1997,7 @@ WERROR _spoolss_deleteprinterdriverex(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIV
 			/* if we get to here, we now have 2 driver info structures to remove */
 			/* remove the Win2k driver first*/
 		
-			status_win2k = delete_printer_driver(info.info_3, &user, 3, delete_files);
+			status_win2k = delete_printer_driver(info_win2k.info_3, &user, 3, delete_files);
 			free_a_printer_driver( info_win2k, 3 );
 				
 			/* this should not have failed---if it did, report to client */
