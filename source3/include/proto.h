@@ -3494,6 +3494,13 @@ void init_srv_share_info2(SH_INFO_2 *sh2,
 				char *net_name, uint32 type, char *remark,
 				uint32 perms, uint32 max_uses, uint32 num_uses,
 				char *path, char *passwd);
+void init_srv_share_info502(SH_INFO_502 *sh502,
+				char *net_name, uint32 type, char *remark,
+				uint32 perms, uint32 max_uses, uint32 num_uses,
+				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
+void init_srv_share_info502_str(SH_INFO_502_STR *sh502,
+				char *net_name, char *remark,
+				char *path, char *passwd, SEC_DESC *psd, size_t sd_size);
 void init_srv_q_net_share_enum(SRV_Q_NET_SHARE_ENUM *q_n, 
 				char *srv_name, uint32 info_level,
 				uint32 preferred_len, ENUM_HND *hnd);
@@ -3501,6 +3508,8 @@ BOOL srv_io_q_net_share_enum(char *desc, SRV_Q_NET_SHARE_ENUM *q_n, prs_struct *
 BOOL srv_io_r_net_share_enum(char *desc, SRV_R_NET_SHARE_ENUM *r_n, prs_struct *ps, int depth);
 BOOL srv_io_q_net_share_get_info(char *desc, SRV_Q_NET_SHARE_GET_INFO *q_n, prs_struct *ps, int depth);
 BOOL srv_io_r_net_share_get_info(char *desc, SRV_R_NET_SHARE_GET_INFO *r_n, prs_struct *ps, int depth);
+BOOL srv_io_q_net_share_set_info(char *desc, SRV_Q_NET_SHARE_SET_INFO *q_n, prs_struct *ps, int depth);
+BOOL srv_io_r_net_share_set_info(char *desc, SRV_R_NET_SHARE_SET_INFO *q_n, prs_struct *ps, int depth);
 void init_srv_sess_info0_str(SESS_INFO_0_STR *ss0, char *name);
 void init_srv_sess_info0(SESS_INFO_0 *ss0, char *name);
 void init_srv_sess_info1_str(SESS_INFO_1_STR *ss1, char *name, char *user);
@@ -3773,6 +3782,7 @@ uint32 _srv_net_conn_enum(pipes_struct *p, SRV_Q_NET_CONN_ENUM *q_u, SRV_R_NET_C
 uint32 _srv_net_sess_enum(pipes_struct *p, SRV_Q_NET_SESS_ENUM *q_u, SRV_R_NET_SESS_ENUM *r_u);
 uint32 _srv_net_share_enum(pipes_struct *p, SRV_Q_NET_SHARE_ENUM *q_u, SRV_R_NET_SHARE_ENUM *r_u);
 uint32 _srv_net_share_get_info(pipes_struct *p, SRV_Q_NET_SHARE_GET_INFO *q_u, SRV_R_NET_SHARE_GET_INFO *r_u);
+uint32 _srv_net_share_set_info(pipes_struct *p, SRV_Q_NET_SHARE_SET_INFO *q_u, SRV_R_NET_SHARE_SET_INFO *r_u);
 uint32 _srv_net_remote_tod(pipes_struct *p, SRV_Q_NET_REMOTE_TOD *q_u, SRV_R_NET_REMOTE_TOD *r_u);
 
 /*The following definitions come from  rpc_server/srv_util.c  */

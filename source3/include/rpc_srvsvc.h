@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB parameters and setup
@@ -31,6 +31,7 @@
 #define SRV_NETSESSENUM        0x0c
 #define SRV_NETSHAREENUM       0x0f
 #define SRV_NET_SHARE_GET_INFO 0x10
+#define SRV_NET_SHARE_SET_INFO 0x11
 #define SRV_NET_SRV_GET_INFO   0x15
 #define SRV_NET_SRV_SET_INFO   0x16
 #define SRV_NET_REMOTE_TOD     0x1c
@@ -305,6 +306,44 @@ typedef struct share_info_2_info
 
 } SRV_SHARE_INFO_2;
 
+/* SH_INFO_502 (pointers to level 502 share info strings) */
+typedef struct ptr_share_info502
+{
+	uint32 ptr_netname; /* pointer to net name. */
+	uint32 type; /* ipc, print, disk ... */
+	uint32 ptr_remark; /* pointer to comment. */
+	uint32 perms;      /* permissions */
+	uint32 max_uses;   /* maximum uses */
+	uint32 num_uses;   /* current uses */
+	uint32 ptr_path;   /* pointer to path name */
+	uint32 ptr_passwd; /* pointer to password */
+	uint32 sd_size;    /* size of security descriptor */
+	uint32 ptr_sd;     /* pointer to security descriptor */
+
+} SH_INFO_502;
+
+/* SH_INFO_502_STR (level 502 share info strings) */
+typedef struct str_share_info502
+{
+	UNISTR2 uni_netname; /* unicode string of net name (e.g NETLOGON) */
+	UNISTR2 uni_remark;  /* unicode string of comment (e.g "Logon server share") */
+	UNISTR2 uni_path;    /* unicode string of local path (e.g c:\winnt\system32\repl\import\scripts) */
+	UNISTR2 uni_passwd;  /* unicode string of password - presumably for share level security (e.g NULL) */
+
+	uint32 sd_size;
+	SEC_DESC *sd;
+
+} SH_INFO_502_STR;
+
+/* SRV_SHARE_INFO_502 */
+/* SRV_SHARE_INFO_2 */
+typedef struct share_info_502_info
+{
+	SH_INFO_502 info_502;
+	SH_INFO_502_STR info_502_str;
+
+} SRV_SHARE_INFO_502;
+
 /* SRV_SHARE_INFO_1005 */
 typedef struct share_info_1005_info
 {
@@ -325,6 +364,7 @@ typedef struct srv_share_info_ctr_info
 	union {
 		SRV_SHARE_INFO_1 *info1; /* share info level 1 */
 		SRV_SHARE_INFO_2 *info2; /* share info level 2 */
+		SRV_SHARE_INFO_502 *info502; /* share info level 502 */
 		void *info;
 
 	} share;
@@ -370,22 +410,50 @@ typedef struct q_net_share_get_info_info
 
 } SRV_Q_NET_SHARE_GET_INFO;
 
-/* SRV_R_NET_SHARE_GET_INFO */
-typedef struct r_net_share_get_info_info
-{
+/* SRV_SHARE_INFO */
+typedef struct srv_share_info {
 	uint32 switch_value;
 	uint32 ptr_share_ctr;
 
 	union {
 		SRV_SHARE_INFO_1 info1;
 		SRV_SHARE_INFO_2 info2;
-	        SRV_SHARE_INFO_1005 info1005;
+		SRV_SHARE_INFO_502 info502;
+        SRV_SHARE_INFO_1005 info1005;
 	} share;
+} SRV_SHARE_INFO;
 
+/* SRV_R_NET_SHARE_GET_INFO */
+typedef struct r_net_share_get_info_info
+{
+	SRV_SHARE_INFO info;
 	uint32 status;
 
 } SRV_R_NET_SHARE_GET_INFO;
 
+/* JRA. NB. We also need level 1004, 1006 and 1501 here. */
+
+/* SRV_Q_NET_SHARE_SET_INFO */
+typedef struct q_net_share_set_info_info
+{
+	uint32 ptr_srv_name;
+	UNISTR2 uni_srv_name;
+
+	UNISTR2 uni_share_name;
+	uint32 info_level;
+
+	SRV_SHARE_INFO info;
+
+} SRV_Q_NET_SHARE_SET_INFO;
+
+/* SRV_R_NET_SHARE_SET_INFO */
+typedef struct r_net_share_set_info
+{
+	uint32 switch_value;         /* switch value */
+
+	uint32 status;               /* return status */
+
+} SRV_R_NET_SHARE_SET_INFO;
 
 /* FILE_INFO_3 (level 3 file info strings) */
 typedef struct file_info3_info
