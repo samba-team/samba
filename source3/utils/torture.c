@@ -2397,6 +2397,8 @@ static void run_opentest(int dummy)
     int fnum1, fnum2;
 	uint8 eclass;
 	uint32 errnum;
+	char buf[20];
+	size_t fsize;
 
     printf("starting open test\n");
 
@@ -2470,11 +2472,76 @@ static void run_opentest(int dummy)
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
 
+    if (!cli_close(&cli1, fnum1)) {
+        printf("close2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	cli_unlink(&cli1, fname);
+
+    printf("finished open test 2\n");
+
+	/* Test truncate open disposition on file opened for read. */
+
+    fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+    if (fnum1 == -1) {
+        printf("(3) open (1) of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+	/* write 20 bytes. */
+
+	memset(buf, '\0', 20);
+
+	if (cli_write(&cli1, fnum1, 0, buf, 0, 20) != 20) {
+		printf("write failed (%s)\n", cli_errstr(&cli1));
+	}
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("(3) close1 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	/* Ensure size == 20. */
+	if (!cli_getatr(&cli1, fname, NULL, &fsize, NULL)) {
+		printf("(3) getatr failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (fsize != 20) {
+		printf("(3) file size != 20\n");
+		return;
+	}
+
+	/* Now test if we can truncate a file opened for readonly. */
+
+	fnum1 = cli_open(&cli1, fname, O_RDONLY|O_TRUNC, DENY_NONE);
+    if (fnum1 == -1) {
+        printf("(3) open (2) of %s failed (%s)\n", fname, cli_errstr(&cli1));
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("close2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	/* Ensure size == 0. */
+	if (!cli_getatr(&cli1, fname, NULL, &fsize, NULL)) {
+		printf("(3) getatr failed (%s)\n", cli_errstr(&cli1));
+		return;
+	}
+
+	if (fsize != 0) {
+		printf("(3) file size != 0\n");
+		return;
+	}
+    printf("finished open test 3\n");
+
 	cli_unlink(&cli1, fname);
 
     close_connection(&cli1);
 
-    printf("finished open test 2\n");
 }
 
 static void list_fn(file_info *finfo, const char *name, void *state)
