@@ -40,6 +40,10 @@
 
 RCSID("$Id$");
 
+typedef struct krb5_fcache{
+    char *filename;
+}krb5_fcache;
+
 #define FILENAME(X) (((krb5_fcache*)(X)->data.data)->filename)
 
 static char*
@@ -126,6 +130,14 @@ fcc_initialize(krb5_context context,
     return 0;
 }
 
+static krb5_error_code
+fcc_close(krb5_context context,
+	  krb5_ccache id)
+{
+    free (FILENAME(id));
+    krb5_data_free(&id->data);
+    return 0;
+}
 
 static krb5_error_code
 fcc_destroy(krb5_context context,
@@ -137,17 +149,7 @@ fcc_destroy(krb5_context context,
 
     ret = erase_file(f);
   
-    krb5_free_ccache(context, id);
-    return ret;
-}
-
-static krb5_error_code
-fcc_close(krb5_context context,
-	  krb5_ccache id)
-{
-    free (FILENAME(id));
-    krb5_data_free(&id->data);
-    return 0;
+    return fcc_close (context, id);
 }
 
 static krb5_error_code
@@ -249,10 +251,10 @@ fcc_get_first (krb5_context context,
     krb5_principal principal;
     krb5_storage *sp;
 
-    cursor->fd = open (krb5_cc_get_name (context, id), O_RDONLY);
-    if (cursor->fd < 0)
+    cursor->u.fd = open (krb5_cc_get_name (context, id), O_RDONLY);
+    if (cursor->u.fd < 0)
 	return errno;
-    sp = krb5_storage_from_fd(cursor->fd);
+    sp = krb5_storage_from_fd(cursor->u.fd);
     krb5_ret_int16 (sp, &tag);
     krb5_ret_principal (sp, &principal);
     krb5_storage_free(sp);
@@ -268,8 +270,8 @@ fcc_get_next (krb5_context context,
 {
     krb5_error_code err;
     krb5_storage *sp;
-    sp =  krb5_storage_from_fd(cursor->fd);
-    err = fcc_read_cred (cursor->fd, creds);
+    sp =  krb5_storage_from_fd(cursor->u.fd);
+    err = fcc_read_cred (cursor->u.fd, creds);
     krb5_storage_free(sp);
     return err;
 }
@@ -279,7 +281,7 @@ fcc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
 {
-    return close (cursor->fd);
+    return close (cursor->u.fd);
 }
 
 static krb5_error_code
