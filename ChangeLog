@@ -1,3 +1,13 @@
+2002-09-09  Jacques Vidrine  <nectar@kth.se>
+
+	* kdc/kerberos5.c (get_pa_etype_info, fix_transited_encoding),
+	kdc/kaserver.c (krb5_ret_xdr_data),
+	lib/krb5/transited.c (krb5_domain_x500_decode): Validate some
+	counts: Check that they are non-negative, and that they are small
+	enough to avoid integer overflow when used in memory allocation
+	calculations.  Potential problem areas pointed out by 
+	Sebastian Krahmer <krahmer@suse.de>.
+
 2002-09-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* configure.in: don't try to build pam module
