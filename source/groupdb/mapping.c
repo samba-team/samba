@@ -496,21 +496,19 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 /* This operation happens on session setup, so it should better be fast. We
  * store a list of aliases a SID is member of hanging off MEMBEROF/SID. */
 
-static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
+static NTSTATUS one_alias_membership(const DOM_SID *member,
+				     DOM_SID **sids, int *num)
 {
 	fstring key, string_sid;
 	TDB_DATA kbuf, dbuf;
 	const char *p;
-
-	*num = 0;
-	*sids = NULL;
 
 	if (!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	sid_to_string(string_sid, sid);
+	sid_to_string(string_sid, member);
 	slprintf(key, sizeof(key), "%s%s", MEMBEROF_PREFIX, string_sid);
 
 	kbuf.dsize = strlen(key)+1;
@@ -531,13 +529,29 @@ static NTSTATUS alias_memberships(const DOM_SID *sid, DOM_SID **sids, int *num)
 		if (!string_to_sid(&alias, string_sid))
 			continue;
 
-		add_sid_to_array(&alias, sids, num);
+		add_sid_to_array_unique(&alias, sids, num);
 
 		if (sids == NULL)
 			return NT_STATUS_NO_MEMORY;
 	}
 
 	SAFE_FREE(dbuf.dptr);
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS alias_memberships(const DOM_SID *members, int num_members,
+				  DOM_SID **sids, int *num)
+{
+	int i;
+
+	*num = 0;
+	*sids = NULL;
+
+	for (i=0; i<num_members; i++) {
+		NTSTATUS status = one_alias_membership(&members[i], sids, num);
+		if (!NT_STATUS_IS_OK(status))
+			return status;
+	}
 	return NT_STATUS_OK;
 }
 
@@ -548,7 +562,7 @@ static BOOL is_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 
 	/* This feels the wrong way round, but the on-disk data structure
 	 * dictates it this way. */
-	if (!NT_STATUS_IS_OK(alias_memberships(member, &sids, &num)))
+	if (!NT_STATUS_IS_OK(alias_memberships(member, 1, &sids, &num)))
 		return False;
 
 	for (i=0; i<num; i++) {
@@ -707,7 +721,7 @@ static NTSTATUS del_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	pstring key;
 	fstring sid_string;
 
-	result = alias_memberships(member, &sids, &num);
+	result = alias_memberships(member, 1, &sids, &num);
 
 	if (!NT_STATUS_IS_OK(result))
 		return result;
@@ -1343,10 +1357,11 @@ NTSTATUS pdb_default_enum_aliasmem(struct pdb_methods *methods,
 }
 
 NTSTATUS pdb_default_alias_memberships(struct pdb_methods *methods,
-				       const DOM_SID *sid,
+				       const DOM_SID *members,
+				       int num_members,
 				       DOM_SID **aliases, int *num)
 {
-	return alias_memberships(sid, aliases, num);
+	return alias_memberships(members, num_members, aliases, num);
 }
 
 /**********************************************************************

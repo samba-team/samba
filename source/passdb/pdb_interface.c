@@ -587,7 +587,8 @@ static NTSTATUS context_enum_aliasmem(struct pdb_context *context,
 }
 	
 static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
-					       const DOM_SID *sid,
+					       const DOM_SID *members,
+					       int num_members,
 					       DOM_SID **aliases, int *num)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -598,8 +599,8 @@ static NTSTATUS context_enum_alias_memberships(struct pdb_context *context,
 	}
 
 	return context->pdb_methods->
-		enum_alias_memberships(context->pdb_methods, sid, aliases,
-				       num);
+		enum_alias_memberships(context->pdb_methods, members,
+				       num_members, aliases, num);
 }
 	
 /******************************************************************
@@ -1125,7 +1126,7 @@ BOOL pdb_enum_aliasmem(const DOM_SID *alias,
 						 members, num_members));
 }
 
-BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
+BOOL pdb_enum_alias_memberships(const DOM_SID *members, int num_members,
 				DOM_SID **aliases, int *num)
 {
 	struct pdb_context *pdb_context = pdb_get_static_context(False);
@@ -1135,7 +1136,8 @@ BOOL pdb_enum_alias_memberships(const DOM_SID *sid,
 	}
 
 	return NT_STATUS_IS_OK(pdb_context->
-			       pdb_enum_alias_memberships(pdb_context, sid,
+			       pdb_enum_alias_memberships(pdb_context, members,
+							  num_members,
 							  aliases, num));
 }
 

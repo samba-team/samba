@@ -2733,71 +2733,73 @@ static NTSTATUS ldapsam_enum_aliasmem(struct pdb_methods *methods,
 }
 
 static NTSTATUS ldapsam_alias_memberships(struct pdb_methods *methods,
-					  const DOM_SID *sid,
-					  DOM_SID **aliases, int *num)
+					  const DOM_SID *members,
+					  int num_members,
+					  DOM_SID **aliases, int *num_aliases)
 {
 	struct ldapsam_privates *ldap_state =
 		(struct ldapsam_privates *)methods->private_data;
+	LDAP *ldap_struct;
 
-	fstring sid_string;
 	const char *attrs[] = { LDAP_ATTRIBUTE_SID, NULL };
 
 	LDAPMessage *result = NULL;
 	LDAPMessage *entry = NULL;
-	int count;
+	int i;
 	int rc;
-	pstring filter;
+	char *filter;
+	TALLOC_CTX *mem_ctx;
 
-	sid_to_string(sid_string, sid);
-	pstr_sprintf(filter, "(&(|(objectclass=%s)(objectclass=%s))(%s=%s))",
-		     LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY,
-		     get_attr_key2string(groupmap_attr_list,
-					 LDAP_ATTR_SID_LIST), sid_string);
+	mem_ctx = talloc_init("ldapsam_alias_memberships");
+
+	if (mem_ctx == NULL)
+		return NT_STATUS_NO_MEMORY;
+
+	/* This query could be further optimized by adding a
+	   (&(sambaSID=<domain-sid>*)) so that only those aliases that are
+	   asked for in the getuseraliases are returned. */	   
+
+	filter = talloc_asprintf(mem_ctx,
+				 "(&(|(objectclass=%s)(objectclass=%s))(|",
+				 LDAP_OBJ_GROUPMAP, LDAP_OBJ_IDMAP_ENTRY);
+
+	for (i=0; i<num_members; i++)
+		filter = talloc_asprintf(mem_ctx, "%s(sambaSIDList=%s)",
+					 filter,
+					 sid_string_static(&members[i]));
+
+	filter = talloc_asprintf(mem_ctx, "%s))", filter);
 
 	rc = smbldap_search(ldap_state->smbldap_state, lp_ldap_group_suffix(),
 			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &result);
+
+	talloc_destroy(mem_ctx);
 
 	if (rc != LDAP_SUCCESS)
 		return NT_STATUS_UNSUCCESSFUL;
 
 	*aliases = NULL;
-	*num = 0;
+	*num_aliases = 0;
 
-	count = ldap_count_entries(ldap_state->smbldap_state->ldap_struct,
-				   result);
+	ldap_struct = ldap_state->smbldap_state->ldap_struct;
 
-	if (count < 1) {
-		ldap_msgfree(result);
-		return NT_STATUS_OK;
-	}
-
-
-	for (entry = ldap_first_entry(ldap_state->smbldap_state->ldap_struct,
-				      result);
+	for (entry = ldap_first_entry(ldap_struct, result);
 	     entry != NULL;
-	     entry = ldap_next_entry(ldap_state->smbldap_state->ldap_struct,
-				     entry))
+	     entry = ldap_next_entry(ldap_struct, entry))
 	{
-		DOM_SID alias;
-		char **vals;
-		vals = ldap_get_values(ldap_state->smbldap_state->ldap_struct,
-				       entry, LDAP_ATTRIBUTE_SID);
+		fstring sid_str;
+		DOM_SID sid;
 
-		if (vals == NULL)
+		if (!smbldap_get_single_attribute(ldap_struct, entry,
+						  LDAP_ATTRIBUTE_SID,
+						  sid_str,
+						  sizeof(sid_str)-1))
 			continue;
 
-		if (vals[0] == NULL) {
-			ldap_value_free(vals);
+		if (!string_to_sid(&sid, sid_str))
 			continue;
-		}
 
-		if (!string_to_sid(&alias, vals[0])) {
-			ldap_value_free(vals);
-			continue;
-		}
-
-		add_sid_to_array(&alias, aliases, num);
-		ldap_value_free(vals);
+		add_sid_to_array_unique(&sid, aliases, num_aliases);
 	}
 
 	ldap_msgfree(result);
