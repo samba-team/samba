@@ -439,9 +439,15 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	if (security_info_sent & OWNER_SECURITY_INFORMATION) {
 		sid_copy(&owner_sid, psd->owner_sid);
 		if (!sid_to_uid( &owner_sid, puser, &sid_type)) {
+#if ACL_FORCE_UNMAPPABLE
+			/* this allows take ownership to work reasonably */
+			extern struct current_user current_user;
+			*puser = current_user.uid;
+#else
 			DEBUG(3,("unpack_nt_owners: unable to validate owner sid for %s\n",
 				 sid_string_static(&owner_sid)));
 			return False;
+#endif
 		}
  	}
 
@@ -453,8 +459,14 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	if (security_info_sent & GROUP_SECURITY_INFORMATION) {
 		sid_copy(&grp_sid, psd->grp_sid);
 		if (!sid_to_gid( &grp_sid, pgrp, &sid_type)) {
+#if ACL_FORCE_UNMAPPABLE
+			/* this allows take group ownership to work reasonably */
+			extern struct current_user current_user;
+			*pgrp = current_user.gid;
+#else
 			DEBUG(3,("unpack_nt_owners: unable to validate group sid.\n"));
 			return False;
+#endif
 		}
 	}
 
@@ -1996,6 +2008,52 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	return sd_size;
 }
 
+/*
+  try to chown a file. We will be able to chown it under the following conditions
+
+  1) if we have root privileges, then it will just work
+  2) if we have write permission to the file and dos_filemodes is set
+     then allow chown to the currently authenticated user.
+
+ */
+static int try_chown(connection_struct *conn, const char *fname, uid_t uid, gid_t gid)
+{
+	int ret;
+	extern struct current_user current_user;
+	files_struct *fsp;
+	SMB_STRUCT_STAT st;
+
+	/* try the direct way first */
+	ret = vfs_chown(conn, fname, uid, gid);
+	if (ret == 0) return 0;
+
+	if(!CAN_WRITE(conn) || !lp_dos_filemode(SNUM(conn)))
+		return -1;
+
+	if (vfs_stat(conn,fname,&st)) {
+		return -1;
+	}
+
+	fsp = open_file_fchmod(conn,fname,&st);
+	if (!fsp) {
+		return -1;
+	}
+
+	/* only allow chown to the current user. This is more secure,
+	   and also copes with the case where the SID in a take ownership ACL is
+	   a local SID on the users workstation 
+	*/
+	uid = current_user.uid;
+	
+	become_root();
+	ret = vfswrap_fchown(fsp, fsp->fd, uid, gid);
+	unbecome_root();
+
+	close_file_fchmod(fsp);
+
+	return ret;
+}
+
 /****************************************************************************
  Reply to set a security descriptor on an fsp. security_info_sent is the
  description of the following NT ACL.
@@ -2052,7 +2110,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		DEBUG(3,("set_nt_acl: chown %s. uid = %u, gid = %u.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp ));
 
-		if(vfs_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
+		if(try_chown( fsp->conn, fsp->fsp_name, user, grp) == -1) {
 			DEBUG(3,("set_nt_acl: chown %s, %u, %u failed. Error = %s.\n",
 				fsp->fsp_name, (unsigned int)user, (unsigned int)grp, strerror(errno) ));
 			return False;
