@@ -547,16 +547,16 @@ BOOL ldap_encode(struct ldap_message *msg, DATA_BLOB *result)
 		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
-	case LDAP_TAG_DelRequest: {
-		struct ldap_DelRequest *r = &msg->r.DelRequest;
+	case LDAP_TAG_DeleteRequest: {
+		struct ldap_DeleteRequest *r = &msg->r.DeleteRequest;
 		asn1_push_tag(&data,
-			      ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
+			      ASN1_APPLICATION_SIMPLE(LDAP_TAG_DeleteRequest));
 		asn1_write(&data, r->dn, strlen(r->dn));
 		asn1_pop_tag(&data);
 		break;
 	}
-	case LDAP_TAG_DelResponse: {
-		struct ldap_Result *r = &msg->r.DelResponse;
+	case LDAP_TAG_DeleteResponse: {
+		struct ldap_Result *r = &msg->r.DeleteResponse;
 		ldap_encode_response(msg->type, r, &data);
 		break;
 	}
@@ -1009,13 +1009,13 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		break;
 	}
 
-	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest): {
-		struct ldap_DelRequest *r = &msg->r.DelRequest;
+	case ASN1_APPLICATION_SIMPLE(LDAP_TAG_DeleteRequest): {
+		struct ldap_DeleteRequest *r = &msg->r.DeleteRequest;
 		int len;
 		char *dn;
-		msg->type = LDAP_TAG_DelRequest;
+		msg->type = LDAP_TAG_DeleteRequest;
 		asn1_start_tag(data,
-			       ASN1_APPLICATION_SIMPLE(LDAP_TAG_DelRequest));
+			       ASN1_APPLICATION_SIMPLE(LDAP_TAG_DeleteRequest));
 		len = asn1_tag_remaining(data);
 		dn = talloc(msg->mem_ctx, len+1);
 		if (dn == NULL)
@@ -1027,11 +1027,11 @@ BOOL ldap_decode(ASN1_DATA *data, struct ldap_message *msg)
 		break;
 	}
 
-	case ASN1_APPLICATION(LDAP_TAG_DelResponse): {
-		struct ldap_Result *r = &msg->r.DelResponse;
-		msg->type = LDAP_TAG_DelResponse;
+	case ASN1_APPLICATION(LDAP_TAG_DeleteResponse): {
+		struct ldap_Result *r = &msg->r.DeleteResponse;
+		msg->type = LDAP_TAG_DeleteResponse;
 		ldap_decode_response(msg->mem_ctx, data,
-				     LDAP_TAG_DelResponse, r);
+				     LDAP_TAG_DeleteResponse, r);
 		break;
 	}
 
