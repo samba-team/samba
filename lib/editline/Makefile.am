@@ -12,6 +12,9 @@ noinst_LIBRARIES =
 endif
 
 noinst_PROGRAMS = testit
+
+check_LOCAL =
+
 testit_LDADD = \
 	libeditline.a \
 	$(LIB_tgetent) \
