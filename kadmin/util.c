@@ -138,4 +138,5 @@ edit_entry(kadm5_principal_ent_t ent, int *mask)
     get_response("Attributes", buf, resp, sizeof(resp));
     ent->attributes = str2attr(resp, ent->attributes);
     *mask |= KADM5_ATTRIBUTES;
+    return 0;
 }
