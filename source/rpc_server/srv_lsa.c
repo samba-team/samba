@@ -298,7 +298,6 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 	for (i = 0; i < num_entries; i++) {
 		BOOL status = False;
 		DOM_SID find_sid = sid[i].sid;
-		DOM_SID tmp_sid  = sid[i].sid;
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
 		fstring name;
@@ -330,7 +329,7 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 		}
 
 		DEBUG(10,("init_lsa_trans_names: adding domain '%s' sid %s to referenced list.\n",
-				dom_name ));
+				dom_name, name ));
 
 		dom_idx = init_dom_ref(ref, dom_name, &find_sid);
 

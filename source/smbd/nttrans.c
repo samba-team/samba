@@ -1944,36 +1944,36 @@ static BOOL validate_unix_sid( DOM_SID *psid, uint32 *prid, DOM_SID *sd_sid)
  Map NT perms to UNIX.
 ****************************************************************************/
 
-static mode_t map_nt_perms( SEC_ACCESS access, int type)
+static mode_t map_nt_perms( SEC_ACCESS sec_access, int type)
 {
   mode_t mode = 0;
 
   switch(type) {
   case S_IRUSR:
-    if(access.mask & GENERIC_ALL_ACCESS)
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IRUSR|S_IWUSR|S_IXUSR;
     else {
-      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IRUSR : 0;
-      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWUSR : 0;
-      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXUSR : 0;
+      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IRUSR : 0;
+      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWUSR : 0;
+      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXUSR : 0;
     }
     break;
   case S_IRGRP:
-    if(access.mask & GENERIC_ALL_ACCESS)
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IRGRP|S_IWGRP|S_IXGRP;
     else {
-      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IRGRP : 0;
-      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWGRP : 0;
-      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXGRP : 0;
+      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IRGRP : 0;
+      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWGRP : 0;
+      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXGRP : 0;
     }
     break;
   case S_IROTH:
-    if(access.mask & GENERIC_ALL_ACCESS)
+    if(sec_access.mask & GENERIC_ALL_ACCESS)
       mode = S_IROTH|S_IWOTH|S_IXOTH;
     else {
-      mode |= (access.mask & GENERIC_READ_ACCESS) ? S_IROTH : 0;
-      mode |= (access.mask & GENERIC_WRITE_ACCESS) ? S_IWOTH : 0;
-      mode |= (access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXOTH : 0;
+      mode |= (sec_access.mask & GENERIC_READ_ACCESS) ? S_IROTH : 0;
+      mode |= (sec_access.mask & GENERIC_WRITE_ACCESS) ? S_IWOTH : 0;
+      mode |= (sec_access.mask & GENERIC_EXECUTE_ACCESS) ? S_IXOTH : 0;
     }
     break;
   }
@@ -2140,7 +2140,6 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 									int bufsize, char **ppsetup, 
 									char **ppparams, char **ppdata)
 {
-  uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
   uint32 total_parameter_count = IVAL(inbuf, smb_nts_TotalParameterCount);
   char *params= *ppparams;
   char *data = *ppdata;
@@ -2272,7 +2271,7 @@ security descriptor.\n"));
     if(sbuf.st_mode != perms) {
 
       DEBUG(3,("call_nt_transact_set_security_desc: chmod %s. perms = 0%o.\n",
-            fsp->fsp_name, perms ));
+            fsp->fsp_name, (unsigned int)perms ));
 
       if(dos_chmod( fsp->fsp_name, perms) == -1) {
         DEBUG(3,("call_nt_transact_set_security_desc: chmod %s, 0%o failed. Error = %s.\n",

@@ -46,7 +46,7 @@ typedef struct _known_sid_users {
 	char *known_user_name;
 } known_sid_users;
 
-static known_sid_users no_users[] = {{0, 0, NULL}};
+/* static known_sid_users no_users[] = {{0, 0, NULL}}; */
 static known_sid_users everyone_users[] = {{ 0, SID_NAME_WKN_GRP, "Everyone" }, {0, 0, NULL}};
 static known_sid_users creator_owner_users[] = {{ 0, SID_NAME_ALIAS, "Creator Owner" }, {0, 0, NULL}};
 static known_sid_users nt_authority_users[] = {{ 1, SID_NAME_ALIAS, "Dialup" },
@@ -159,7 +159,7 @@ BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain)
 	int i = 0;
 
 	if (nt_domain == NULL) {
-		DEBUG(5,("map_domain_name_to_sid: mapping NULL domain to our SID.\n", nt_domain));
+		DEBUG(5,("map_domain_name_to_sid: mapping NULL domain to our SID.\n"));
 		sid_copy(sid, &global_sam_sid);
 		return True;
 	}

@@ -54,6 +54,13 @@ static void register_name_response(struct subnet_record *subrec,
   /* Sanity check. Ensure that the answer name in the incoming packet is the
      same as the requested name in the outgoing packet. */
 
+  if(!question_name || !answer_name)
+  {
+    DEBUG(0,("register_name_response: malformed response (%s is NULL).\n",
+           question_name ? "question_name" : "answer_name" ));
+    return;
+  }
+
   if(!nmb_name_equal(question_name, answer_name))
   {
     DEBUG(0,("register_name_response: Answer name %s differs from question \
