@@ -95,6 +95,9 @@ static void init_sid_name_map (void)
 
 	if ((lp_security() == SEC_USER) && lp_domain_logons()) {
 		sid_name_map[i].sid = get_global_sam_sid();
+		/* This is not lp_workgroup() for good reason:
+		   it must stay around longer than the lp_*() 
+		   strings do */
 		sid_name_map[i].name = global_myworkgroup;
 		sid_name_map[i].known_users = NULL;
 		i++;
