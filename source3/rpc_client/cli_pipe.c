@@ -844,7 +844,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 		uint32 data_len, send_size;
 		uint8 flags = 0;
 		uint32 crc32 = 0;
-		uint32 callid;
+		uint32 callid = 0;
 
 		/*
 		 * how much will we send this time
