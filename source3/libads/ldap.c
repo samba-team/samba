@@ -749,14 +749,15 @@ void ads_memfree(ADS_STRUCT *ads, void *mem)
 /**
  * Get a dn from search results
  * @param ads connection to ads server
- * @param res Search results
+ * @param msg Search result
  * @return dn string
  **/
-char *ads_get_dn(ADS_STRUCT *ads, void *res)
+char *ads_get_dn(ADS_STRUCT *ads, void *msg)
 {
 	char *utf8_dn, *unix_dn;
 
-	utf8_dn = ldap_get_dn(ads->ld, res);
+	utf8_dn = ldap_get_dn(ads->ld, msg);
+
 	pull_utf8_allocate((void **) &unix_dn, utf8_dn);
 	ldap_memfree(utf8_dn);
 	return unix_dn;
@@ -1078,6 +1079,7 @@ static ADS_STATUS ads_add_machine_acct(ADS_STRUCT *ads, const char *hostname,
 #ifndef ENCTYPE_ARCFOUR_HMAC
 	acct_control |= UF_USE_DES_KEY_ONLY;
 #endif
+
 	if (!(controlstr = talloc_asprintf(ctx, "%u", acct_control)))
 		goto done;
 
@@ -1384,7 +1386,7 @@ ADS_STATUS ads_join_realm(ADS_STRUCT *ads, const char *hostname,
 ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 {
 	ADS_STATUS status;
-	void *res;
+	void *res, *msg;
 	char *hostnameDN, *host; 
 	int rc;
 
@@ -1398,7 +1400,12 @@ ADS_STATUS ads_leave_realm(ADS_STRUCT *ads, const char *hostname)
 	    return status;
 	}
 
-	hostnameDN = ads_get_dn(ads, (LDAPMessage *)res);
+	msg = ads_first_entry(ads, res);
+	if (!msg) {
+		return ADS_ERROR_SYSTEM(ENOENT);
+	}
+
+	hostnameDN = ads_get_dn(ads, (LDAPMessage *)msg);
 	rc = ldap_delete_s(ads->ld, hostnameDN);
 	ads_memfree(ads, hostnameDN);
 	if (rc != LDAP_SUCCESS) {
