@@ -13,6 +13,8 @@ static int hf_string4_offset = -1;
 static int hf_string4_len2 = -1;
 static int hf_string_data = -1;
 
+static gint ett_array = -1;
+
 /* Create a ndr_pull structure from data stored in a tvb at a given offset. */
 
 struct e_ndr_pull *ndr_pull_init(tvbuff_t *tvb, int offset, packet_info *pinfo,
@@ -523,17 +525,25 @@ void ndr_pull_array(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags,
 						   proto_tree *tree,
 						   int ndr_flags))
 {
+	proto_tree **subtrees;
 	int i;
+
+	subtrees = (proto_tree **)g_malloc(sizeof(proto_tree **) * count);
+
 	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
 	for (i=0;i<count;i++) {
-		pull_fn(ndr, tree, NDR_SCALARS);
+		proto_item *item;
+		item = proto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, "Array entry");
+		subtrees[i] = proto_item_add_subtree(item, ett_array);
+		pull_fn(ndr, subtrees[i], NDR_SCALARS);
 	}
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
 buffers:
 	for (i=0;i<count;i++) {
-		pull_fn(ndr, tree, NDR_BUFFERS);
+		pull_fn(ndr, subtrees[i], NDR_BUFFERS);
 	}
- done: ;
+ done: 
+	g_free(subtrees);
 }
 
 void proto_register_eparser(void)
@@ -547,9 +557,12 @@ void proto_register_eparser(void)
 	{ &hf_subcontext_size_4, { "Subcontext size4", "eparser.subcontext_size4", FT_UINT16, BASE_DEC, NULL, 0x0, "Subcontext size4", HFILL }},
 	{ &hf_relative_ofs, { "Relative offset", "eparser.relative_offset", FT_UINT32, BASE_DEC, NULL, 0x0, "Relative offset", HFILL }},
 	};
-
+	static gint *ett[] = {
+		&ett_array,
+	};
 	int proto_dcerpc;
 	
 	proto_dcerpc = proto_get_id_by_filter_name("dcerpc");
 	proto_register_field_array(proto_dcerpc, hf, array_length(hf));
+	proto_register_subtree_array(ett, array_length(ett));
 }
