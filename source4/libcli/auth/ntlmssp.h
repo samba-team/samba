@@ -68,6 +68,9 @@ enum NTLM_MESSAGE_TYPE
 #define NTLMSSP_NAME_TYPE_SERVER_DNS  0x03
 #define NTLMSSP_NAME_TYPE_DOMAIN_DNS  0x04
 
+
+#define NTLMSSP_SIGN_VERSION 0xa
+
 typedef struct ntlmssp_state 
 {
 	TALLOC_CTX *mem_ctx;

@@ -50,7 +50,6 @@ typedef struct _GROUP_MAP {
 	fstring nt_name;
 	fstring comment;
 	uint32 systemaccount;
-	PRIVILEGE_SET priv_set;
 } GROUP_MAP;
 
 typedef struct _PRIVS {

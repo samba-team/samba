@@ -837,13 +837,5 @@ NTSTATUS make_pdb_methods(TALLOC_CTX *mem_ctx, PDB_METHODS **methods)
 	(*methods)->update_sam_account = pdb_default_update_sam_account;
 	(*methods)->delete_sam_account = pdb_default_delete_sam_account;
 
-	(*methods)->getgrsid = pdb_default_getgrsid;
-	(*methods)->getgrgid = pdb_default_getgrgid;
-	(*methods)->getgrnam = pdb_default_getgrnam;
-	(*methods)->add_group_mapping_entry = pdb_default_add_group_mapping_entry;
-	(*methods)->update_group_mapping_entry = pdb_default_update_group_mapping_entry;
-	(*methods)->delete_group_mapping_entry = pdb_default_delete_group_mapping_entry;
-	(*methods)->enum_group_mapping = pdb_default_enum_group_mapping;
-
 	return NT_STATUS_OK;
 }
