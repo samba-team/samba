@@ -3326,7 +3326,7 @@ static BOOL run_rename(int dummy)
 	const char *fname = "\\test.txt";
 	const char *fname1 = "\\test1.txt";
 	BOOL correct = True;
-	int fnum1;
+	int fnum1, fnum2;
 
 	printf("starting rename test\n");
 	
@@ -3345,9 +3345,9 @@ static BOOL run_rename(int dummy)
 	}
 
 	if (!cli_rename(cli1, fname, fname1)) {
-		printf("First rename failed (this is correct) - %s\n", cli_errstr(cli1));
+		printf("First rename failed (SHARE_READ) (this is correct) - %s\n", cli_errstr(cli1));
 	} else {
-		printf("First rename succeeded - this should have failed !\n");
+		printf("First rename succeeded (SHARE_READ) - this should have failed !\n");
 		correct = False;
 	}
 
@@ -3371,10 +3371,10 @@ static BOOL run_rename(int dummy)
 	}
 
 	if (!cli_rename(cli1, fname, fname1)) {
-		printf("Second rename failed - this should have succeeded - %s\n", cli_errstr(cli1));
+		printf("Second rename failed (SHARE_DELETE | SHARE_READ) - this should have succeeded - %s\n", cli_errstr(cli1));
 		correct = False;
 	} else {
-		printf("Second rename succeeded\n");
+		printf("Second rename succeeded (SHARE_DELETE | SHARE_READ)\n");
 	}
 
 	if (!cli_close(cli1, fnum1)) {
@@ -3418,10 +3418,10 @@ static BOOL run_rename(int dummy)
 #endif
 
 	if (!cli_rename(cli1, fname, fname1)) {
-		printf("Third rename failed - this should have succeeded - %s\n", cli_errstr(cli1));
+		printf("Third rename failed (SHARE_NONE) - this should have succeeded - %s\n", cli_errstr(cli1));
 		correct = False;
 	} else {
-		printf("Third rename succeeded\n");
+		printf("Third rename succeeded (SHARE_NONE)\n");
 	}
 
 	if (!cli_close(cli1, fnum1)) {
@@ -3432,6 +3432,75 @@ static BOOL run_rename(int dummy)
 	cli_unlink(cli1, fname);
 	cli_unlink(cli1, fname1);
 
+        /*----*/
+
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ | FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0, 0);
+
+	if (fnum1 == -1) {
+		printf("Fourth open failed - %s\n", cli_errstr(cli1));
+		return False;
+	}
+
+	if (!cli_rename(cli1, fname, fname1)) {
+		printf("Fourth rename failed (SHARE_READ | SHARE_WRITE) (this is correct) - %s\n", cli_errstr(cli1));
+	} else {
+		printf("Fourth rename succeeded (SHARE_READ | SHARE_WRITE) - this should have failed !\n");
+		correct = False;
+	}
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close - 4 failed (%s)\n", cli_errstr(cli1));
+		return False;
+	}
+
+	cli_unlink(cli1, fname);
+	cli_unlink(cli1, fname1);
+
+        /*--*/
+
+	fnum1 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0, 0);
+
+	if (fnum1 == -1) {
+		printf("Fifth open failed - %s\n", cli_errstr(cli1));
+		return False;
+	}
+
+	if (!cli_rename(cli1, fname, fname1)) {
+		printf("Fifth rename failed (SHARE_READ | SHARE_WRITE | SHARE_DELETE) - this should have failed ! \n");
+		correct = False;
+	} else {
+		printf("Fifth rename succeeded (SHARE_READ | SHARE_WRITE | SHARE_DELETE) (this is correct) - %s\n", cli_errstr(cli1));
+	}
+
+        /*
+         * Now check if the first name still exists ...
+         */
+
+        /*fnum2 = cli_nt_create_full(cli1, fname, 0, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0, 0);
+
+        if (fnum2 == -1) {
+          printf("Opening original file after rename of open file fails: %s\n",
+              cli_errstr(cli1));
+        }
+        else {
+          printf("Opening original file after rename of open file works ...\n");
+          (void)cli_close(cli1, fnum2);
+          } */
+
+        /*--*/
+
+
+	if (!cli_close(cli1, fnum1)) {
+		printf("close - 5 failed (%s)\n", cli_errstr(cli1));
+		return False;
+	}
+
+	cli_unlink(cli1, fname);
+	cli_unlink(cli1, fname1);
+        
 	if (!torture_close_connection(cli1)) {
 		correct = False;
 	}
