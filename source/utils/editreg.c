@@ -310,7 +310,7 @@ Hope this helps....  (Although it was "fun" for me to uncover this things,
 
 #define False 0
 #define True 1
-#define REG_KEY_LIST_SIZE 10;
+#define REG_KEY_LIST_SIZE 10
 
 static int verbose = 0;
 static int print_security = 0;
@@ -990,13 +990,22 @@ REG_KEY *nt_create_reg_key1(char *name, REG_KEY *parent)
 }
 
 REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create);
-REG_KEY *nt_add_reg_key_list(KEY_LIST *list, char * name, REG_KEY *parent, int create)
+REG_KEY *nt_add_reg_key_list(REG_KEY *key, char * name, int create)
 {
   int i;
   REG_KEY *ret;
+  KEY_LIST *list;
   char *lname, *c1, *c2;
 
-  if (!list || !name || !*name) return NULL;
+  if (!key || !name || !*name) return NULL;
+  
+  list = key->sub_keys;
+  if (!list) { /* Create an empty list */
+
+    list = (KEY_LIST *)malloc(sizeof(KEY_LIST) + (REG_KEY_LIST_SIZE - 1) * sizeof(REG_KEY *));
+    list->key_count = list->max_keys = 0;
+
+  }
 
   for (i = 0; i < list->key_count; i++) {
     if ((ret = nt_add_reg_key(list->keys[i], name, create)))
@@ -1022,7 +1031,13 @@ REG_KEY *nt_add_reg_key_list(KEY_LIST *list, char * name, REG_KEY *parent, int c
     list->key_count++;
   }
   else { /* Create more space in the list ... */
+    if (!(list = (KEY_LIST *)realloc(list, sizeof(KEY_LIST) + 
+				     (list->max_keys + REG_KEY_LIST_SIZE - 1) 
+				     * sizeof(REG_KEY *))));
+      goto error;
 
+    list->max_keys += REG_KEY_LIST_SIZE;
+    list->key_count++;
   }
 
   return NULL;
@@ -1063,7 +1078,7 @@ REG_KEY *nt_add_reg_key(REG_KEY *key, char *name, int create)
   if (strcmp(c1, key->name) != 0)
     goto error;
   
-  tmp = nt_add_reg_key_list(key->sub_keys, c2, key, True);
+  tmp = nt_add_reg_key_list(key, c2, True);
   free(lname);
   return tmp;
   
@@ -1782,7 +1797,7 @@ KEY_LIST *process_lf(REGF *regf, LF_HDR *lf_hdr, int size, REG_KEY *parent)
 }
 
 /*
- * This routine is passed a NK_HDR pointer and retrieves the entire tree
+ * This routine is passed an NK_HDR pointer and retrieves the entire tree
  * from there down. It returns a REG_KEY *.
  */
 REG_KEY *nt_get_key_tree(REGF *regf, NK_HDR *nk_hdr, int size, REG_KEY *parent)
