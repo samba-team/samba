@@ -223,6 +223,7 @@ Here come some platform specific sections
 #define USE_SETSID
 #define HAVE_BZERO
 #define HAVE_MEMMOVE
+#define USE_SETFS
 #ifdef SHADOW_PWD
 #ifndef crypt
 #define crypt pw_encrypt

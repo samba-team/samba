@@ -583,6 +583,8 @@ struct from_host {
 };
 
 /* and a few prototypes */
+BOOL become_guest(void);
+void init_uid(void);
 BOOL user_ok(char *user,int snum);
 int sys_rename(char *from, char *to);
 int sys_select(fd_set *fds,struct timeval *tval);

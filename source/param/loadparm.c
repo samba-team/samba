@@ -58,7 +58,6 @@ BOOL bLoaded = False;
 extern int DEBUGLEVEL;
 extern int ReadSize;
 extern pstring user_socket_options;
-extern pstring smbrun_path;
 
 #ifndef GLOBAL_NAME
 #define GLOBAL_NAME "global"
@@ -132,6 +131,8 @@ typedef struct
    char *szUsernameMap;
    char *szCharacterSet;
    char *szLogonScript;
+   char *szWINSserver;
+   char *szSmbrun;
    int max_log_size;
    int mangled_stack;
    int max_xmit;
@@ -368,7 +369,7 @@ struct parm_struct
   {"strip dot",        P_BOOL,    P_GLOBAL, &Globals.bStripDot,         NULL},
   {"password server",  P_STRING,  P_GLOBAL, &Globals.szPasswordServer,  NULL},
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
-  {"smbrun",           P_GSTRING, P_GLOBAL, smbrun_path,                NULL},
+  {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL},
@@ -395,6 +396,7 @@ struct parm_struct
   {"username map",     P_STRING,  P_GLOBAL, &Globals.szUsernameMap,     NULL},
   {"character set",    P_STRING,  P_GLOBAL, &Globals.szCharacterSet,    handle_character_set},
   {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL},
+  {"wins server",      P_STRING,  P_GLOBAL, &Globals.szWINSserver,      NULL},
   {"max log size",     P_INTEGER, P_GLOBAL, &Globals.max_log_size,      NULL},
   {"mangled stack",    P_INTEGER, P_GLOBAL, &Globals.mangled_stack,     NULL},
   {"max mux",          P_INTEGER, P_GLOBAL, &Globals.max_mux,           NULL},
@@ -543,6 +545,7 @@ static void init_globals(void)
   string_set(&Globals.szPrintcapname, PRINTCAP_NAME);
   string_set(&Globals.szLockDir, LOCKDIR);
   string_set(&Globals.szRootdir, "/");
+  string_set(&Globals.szSmbrun, SMBRUN);
   sprintf(s,"Samba %s",VERSION);
   string_set(&Globals.szServerString,s);
   Globals.bLoadPrinters = True;
@@ -677,6 +680,7 @@ char *lp_string(char *s)
  int fn_name(int i) {return(LP_SNUM_OK(i)? pSERVICE(i)->val : sDefault.val);}
 
 FN_GLOBAL_STRING(lp_logfile,&Globals.szLogFile)
+FN_GLOBAL_STRING(lp_smbrun,&Globals.szSmbrun)
 FN_GLOBAL_STRING(lp_configfile,&Globals.szConfigFile)
 FN_GLOBAL_STRING(lp_smb_passwd_file,&Globals.szSMBPasswdFile)
 FN_GLOBAL_STRING(lp_serverstring,&Globals.szServerString)
@@ -696,6 +700,7 @@ FN_GLOBAL_STRING(lp_domain_controller,&Globals.szDomainController)
 FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
+FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 
 FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
