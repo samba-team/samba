@@ -35,7 +35,6 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 {
 	uint32 sum[2];
 	char sum2[8];
-	char buf[8];
 	char netsesskey[8];
 
 	sum[0] = IVAL(clnt_chal->data, 0) + IVAL(srv_chal->data, 0);
@@ -44,8 +43,7 @@ void cred_session_key(DOM_CHAL *clnt_chal, DOM_CHAL *srv_chal, char *pass,
 	SIVAL(sum2,0,sum[0]);
 	SIVAL(sum2,4,sum[1]);
 
-	smbhash(buf, sum2, pass);
-	smbhash(netsesskey, buf, pass+9);
+	cred_hash1(netsesskey, sum2, pass);
 
 	session_key[0] = IVAL(netsesskey, 0);
 	session_key[1] = IVAL(netsesskey, 4);
@@ -74,8 +72,6 @@ Output:
 void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp, 
 		 DOM_CHAL *cred)
 {
-	char key2[7];
-	char buf[8];
 	char calc_cred[8];
 	char timecred[8];
 	char netsesskey[8];
@@ -86,10 +82,7 @@ void cred_create(uint32 session_key[2], DOM_CHAL *stor_cred, UTIME timestamp,
 	SIVAL(timecred, 0, IVAL(stor_cred, 0) + timestamp.time);
 	SIVAL(timecred, 4, IVAL(stor_cred, 4));
 
-	smbhash(buf, timecred, netsesskey);
-	memset(key2, 0, 7);
-	key2[0] = netsesskey[7];
-	smbhash(calc_cred, buf, key2);
+	cred_hash2(calc_cred, timecred, netsesskey);
 
 	cred->data[0] = IVAL(calc_cred, 0);
 	cred->data[1] = IVAL(calc_cred, 4);

@@ -275,7 +275,7 @@ void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
+static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
 {
 	int i;
 	char outb[64];
@@ -317,4 +317,21 @@ void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
 	smbhash(p24+16, c8, p21+14);
 }
 
+void cred_hash1(char *out, char *in, char *key)
+{
+	char buf[8];
+
+	smbhash(buf, in, key);
+	smbhash(out, buf, key+9);
+}
+
+void cred_hash2(char *out, char *in, char *key)
+{
+	char buf[8];
+	static char key2[8];
+	
+	smbhash(buf, in, key);
+	key2[0] = key[7];
+	smbhash(out, buf, key2);
+}
 
