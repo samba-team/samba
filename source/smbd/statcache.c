@@ -2,7 +2,7 @@
    Unix SMB/CIFS implementation.
    stat cache code
    Copyright (C) Andrew Tridgell 1992-2000
-   Copyright (C) Jeremy Allison 1999-2000
+   Copyright (C) Jeremy Allison 1999-2004
    Copyright (C) Andrew Bartlett <abartlet@samba.org> 2003
    
    This program is free software; you can redistribute it and/or modify
@@ -280,16 +280,11 @@ BOOL stat_cache_lookup(connection_struct *conn, pstring name, pstring dirpath,
 	}
 }
 
-/*
- **************************************************************
- *      Compute a hash value based on a string key value.
- *      Make the string key into an array of int's if possible.
- *      For the last few chars that cannot be int'ed, use char instead.
- *      The function returns the bucket index number for the hashed
- *      key.
- *      JRA. Use a djb-algorithm hash for speed.
- **************************************************************
- */
+/***************************************************************
+ Compute a hash value based on a string key value.
+ The function returns the bucket index number for the hashed key.
+ JRA. Use a djb-algorithm hash for speed.
+***************************************************************/
                                                                                                      
 static u32 string_hash(TDB_DATA *key)
 {
@@ -301,14 +296,10 @@ static u32 string_hash(TDB_DATA *key)
         return n;
 }
 
-/*************************************************************************** **
- * Initializes or clears the stat cache.
- *
- *  Input:  none.
- *  Output: none.
- *
- * ************************************************************************** **
- */
+/***************************************************************************
+ Initializes or clears the stat cache.
+**************************************************************************/
+
 BOOL reset_stat_cache( void )
 {
 	if (!lp_stat_cache())
@@ -318,10 +309,11 @@ BOOL reset_stat_cache( void )
 		tdb_close(tdb_stat_cache);
 	}
 
-	/* Create the in-memory tdb. */
-	tdb_stat_cache = tdb_open_log("statcache", 0, TDB_INTERNAL, (O_RDWR|O_CREAT), 0644);
+	/* Create the in-memory tdb using our custom hash function. */
+	tdb_stat_cache = tdb_open_ex("statcache", 0, TDB_INTERNAL,
+                                    (O_RDWR|O_CREAT), 0644, NULL, string_hash);
+
 	if (!tdb_stat_cache)
 		return False;
-	tdb_set_hash_function(tdb_stat_cache, string_hash);
 	return True;
 }
