@@ -186,6 +186,19 @@ port 445 is tried and if no response then port 139 is tried.
 	</varlistentry>
 
 	<varlistentry>
+		<term>iocharset</term>
+
+		<listitem><para>Charset used to convert local path names to and from
+		Unicode. Unicode is used by default for network path
+		names if the server supports it. If iocharset is
+		not specified then the nls_default specified
+		during the local client kernel build will be used.
+		If server does not support Unicode, this parameter is
+		unused. </para></listitem>
+
+	</varlistentry>
+
+	<varlistentry>
 		<term>ro</term>
 
 		<listitem><para>mount read-only</para></listitem>
