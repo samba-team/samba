@@ -20,6 +20,7 @@
 	<cmdsynopsis>
 		<command>log2pcap</command>
 		<arg choice="opt">-h</arg>
+		<arg choice="opt">-q</arg>
 		<arg choice="opt">logfile</arg>
 		<arg choice="opt">pcap_file</arg>
 	</cmdsynopsis>
@@ -53,6 +54,12 @@
 		specified the output file will be a 
 		hex dump, in a format that is readable 
 		by the <application>text2pcap</application> utility.</para></listitem>
+	    </varlistentry>
+
+	    <varlistentry>
+	    	<term>-q</term>
+		<listitem><para>Be quiet. No warning messages about missing 
+		or incomplete data will be given.</para></listitem>
 	    </varlistentry>
 		
 	    <varlistentry>
