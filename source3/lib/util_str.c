@@ -753,18 +753,18 @@ smb_ucs2_t *all_string_sub_w(smb_ucs2_t *s, const smb_ucs2_t *pattern,
 					    const smb_ucs2_t *insert)
 {
 	smb_ucs2_t *r, *rp, *sp;
-	size_t	ls, lp, li, lt;
+	size_t	lr, lp, li, lt;
 
 	if (!insert || !pattern || !*pattern || !s) return NULL;
 
-	ls = lt = (size_t)strlen_w(s) * sizeof(smb_ucs2_t);
-	lp = (size_t)strlen_w(pattern) * sizeof(smb_ucs2_t);
-	li = (size_t)strlen_w(insert) * sizeof(smb_ucs2_t);
+	lt = (size_t)strlen_w(s);
+	lp = (size_t)strlen_w(pattern);
+	li = (size_t)strlen_w(insert);
 
 	if (li > lp) {
 		smb_ucs2_t *st = s;
 		int ld = li - lp;
-		while (sp = strstr_w(st, pattern)) {
+		while ((sp = strstr_w(st, pattern))) {
 			st = sp + lp;
 			lt += ld;
 		}
@@ -776,12 +776,17 @@ smb_ucs2_t *all_string_sub_w(smb_ucs2_t *s, const smb_ucs2_t *pattern,
 		return NULL;
 	}
 
-	while (sp = strstr_w(s, pattern)) {
-		memcpy(rp, s, sp - s);
-		rp += (sp - s);
-		memcpy(rp, insert, li);
+	while ((sp = strstr_w(s, pattern))) {
+		memcpy(rp, s, (sp - s));
+		rp += ((sp - s) / sizeof(smb_ucs2_t));
+		memcpy(rp, insert, (li * sizeof(smb_ucs2_t)));
 		s = sp + lp;
 		rp += li;
+	}
+	lr = ((rp - r) / sizeof(smb_ucs2_t));
+	if (lr < lt) {
+		memcpy(rp, s, ((lt - lr) * sizeof(smb_ucs2_t)));
+		rp += (lt - lr);
 	}
 	*rp = 0;
 
