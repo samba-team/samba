@@ -236,6 +236,7 @@ typedef struct
 	int iLockSpinCount;
 	int iLockSpinTime;
 	int nbt_port;
+	int dgram_port;
 	char *socket_options;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -617,6 +618,7 @@ static struct parm_struct parm_table[] = {
 	
 	{"smb ports", P_LIST, P_GLOBAL, &Globals.smb_ports, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"nbt port", P_INTEGER, P_GLOBAL, &Globals.nbt_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"dgram port", P_INTEGER, P_GLOBAL, &Globals.dgram_port, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_DEVELOPER},
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_DEVELOPER},
@@ -1051,6 +1053,7 @@ static void init_globals(void)
 
 	do_parameter("smb ports", SMB_PORTS);
 	do_parameter("nbt port", "137");
+	do_parameter("dgram port", "138");
 
 	do_parameter("nt status support", "True");
 
@@ -1152,6 +1155,7 @@ static const char *lp_string(const char *s)
 
 FN_GLOBAL_LIST(lp_smb_ports, &Globals.smb_ports)
 FN_GLOBAL_INTEGER(lp_nbt_port, &Globals.nbt_port)
+FN_GLOBAL_INTEGER(lp_dgram_port, &Globals.dgram_port)
 FN_GLOBAL_STRING(lp_dos_charset, &Globals.dos_charset)
 FN_GLOBAL_STRING(lp_unix_charset, &Globals.unix_charset)
 FN_GLOBAL_STRING(lp_display_charset, &Globals.display_charset)

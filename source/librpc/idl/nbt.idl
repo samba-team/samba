@@ -183,4 +183,66 @@ interface nbt
 		nbt_res_rec       additional[arcount];
 		[flag(NDR_REMAINING)] DATA_BLOB padding;
 	} nbt_name_packet;
+
+
+	/*
+	  NBT DGRAM packets (UDP/138)
+	*/
+
+	typedef [enum8bit] enum {
+		DGRAM_DIRECT_UNIQUE  = 0x10,
+		DGRAM_DIRECT_GROUP   = 0x11,
+		DGRAM_BCAST          = 0x12,
+		DGRAM_ERROR          = 0x13,
+		DGRAM_QUERY          = 0x14,
+		DGRAM_QUERY_POSITIVE = 0x15,
+		DGRAM_QUERY_NEGATIVE = 0x16
+	} dgram_msg_type;
+
+	typedef [bitmap8bit] bitmap {
+		DGRAM_FLAG_MORE         = 0x80,
+		DGRAM_FLAG_FIRST        = 0x40,
+		DGRAM_FLAG_NODE_TYPE    = 0x30
+	} dgram_flags;
+
+	typedef [enum8bit] enum {
+		DGRAM_NODE_B    = 0x00,
+		DGRAM_NODE_P    = 0x10,
+		DGRAM_NODE_M    = 0x20,
+		DGRAM_NODE_NBDD = 0x30
+	} dgram_node_type;
+
+	/* a dgram_message is the main dgram body in general use */
+	typedef struct {
+		uint16         length;
+		uint16         offset;
+		nbt_name       source_name;
+		nbt_name       dest_name;
+		[flag(NDR_REMAINING)] DATA_BLOB data;
+	} dgram_message;
+
+	typedef [enum8bit] enum {
+		DGRAM_ERROR_NAME_NOT_PRESENT = 0x82,
+		DGRAM_ERROR_INVALID_SOURCE   = 0x83,
+		DGRAM_ERROR_INVALID_DEST     = 0x84
+	} dgram_err_code;
+
+	typedef [nodiscriminant] union {
+		[case(DGRAM_DIRECT_UNIQUE)]   dgram_message msg;
+		[case(DGRAM_DIRECT_GROUP)]    dgram_message msg;
+		[case(DGRAM_BCAST)]           dgram_message msg;
+		[case(DGRAM_ERROR)]           dgram_err_code error;
+		[case(DGRAM_QUERY)]           nbt_name       dest_name;
+		[case(DGRAM_QUERY_POSITIVE)]  nbt_name       dest_name;
+		[case(DGRAM_QUERY_NEGATIVE)]  nbt_name       dest_name;
+	} dgram_data;
+
+	typedef [flag(NDR_NOALIGN|NDR_BIG_ENDIAN|NDR_PAHEX),public] struct {
+		dgram_msg_type msg_type;
+		dgram_flags    flags;
+		uint16         dgram_id;
+		ipv4address    source;
+		uint16         src_port;
+		[switch_is(msg_type)] dgram_data data;
+	} nbt_dgram_packet;
 }
