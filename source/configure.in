@@ -178,7 +178,7 @@ AC_CHECK_FUNCS(_close __close _fchdir __fchdir _fcntl __fcntl)
 AC_CHECK_FUNCS(_getdents __getdents _lseek __lseek _read __read)
 AC_CHECK_FUNCS(_write __write)
 AC_CHECK_FUNCS(_stat64 __stat64 _fstat64 __fstat64 _lstat64 __lstat64)
-AC_CHECK_FUNCS(llseek _llseek __llseek)
+AC_CHECK_FUNCS(llseek _llseek __llseek readdir64 _readdir64 __readdir64)
 
 AC_CACHE_CHECK([for long long],samba_cv_have_longlong,[
 AC_TRY_RUN([#include <stdio.h>

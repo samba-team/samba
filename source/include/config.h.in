@@ -205,6 +205,9 @@
 /* Define if you have the __readdir function.  */
 #undef HAVE___READDIR
 
+/* Define if you have the __readdir64 function.  */
+#undef HAVE___READDIR64
+
 /* Define if you have the __seekdir function.  */
 #undef HAVE___SEEKDIR
 
@@ -285,6 +288,9 @@
 
 /* Define if you have the _readdir function.  */
 #undef HAVE__READDIR
+
+/* Define if you have the _readdir64 function.  */
+#undef HAVE__READDIR64
 
 /* Define if you have the _seekdir function.  */
 #undef HAVE__SEEKDIR
@@ -426,6 +432,9 @@
 
 /* Define if you have the rdchk function.  */
 #undef HAVE_RDCHK
+
+/* Define if you have the readdir64 function.  */
+#undef HAVE_READDIR64
 
 /* Define if you have the rename function.  */
 #undef HAVE_RENAME
