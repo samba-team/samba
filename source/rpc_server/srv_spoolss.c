@@ -826,31 +826,19 @@ static void api_spoolss_addprinterex(rpcsrv_struct *p, prs_struct *data, prs_str
 
 /****************************************************************************
 ****************************************************************************/
-static void spoolss_reply_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *rdata)
-{
-	SPOOL_R_ADDPRINTERDRIVER r_u;
-
-	r_u.status=0x0; /* everything is always nice in this world */
-
-	spoolss_io_r_addprinterdriver("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
 static void api_spoolss_addprinterdriver(rpcsrv_struct *p, prs_struct *data,
                                          prs_struct *rdata)
 {
 	SPOOL_Q_ADDPRINTERDRIVER q_u;
-	NT_PRINTER_DRIVER_INFO_LEVEL driver;
+	SPOOL_R_ADDPRINTERDRIVER r_u;
+	
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 	
 	spoolss_io_q_addprinterdriver("", &q_u, data, 0);
-
-	convert_printer_driver_info(q_u.info, &driver, q_u.level);
-
-	add_a_printer_driver(driver, q_u.level);
-
-	spoolss_reply_addprinterdriver(&q_u, rdata);
-	/* free mem used in q_u and r_u */
+	r_u.status = _spoolss_addprinterdriver(&q_u.server_name,
+				q_u.level, &q_u.info);
+	spoolss_io_r_addprinterdriver("", &r_u, rdata, 0);
 }
 
 /****************************************************************************

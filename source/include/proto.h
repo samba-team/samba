@@ -4841,13 +4841,6 @@ msrpc_service_fns *get_service_fns(void);
 
 /*The following definitions come from  spoolssd/srv_spoolss_nt.c  */
 
-BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
-                          NT_PRINTER_INFO_LEVEL *printer,
-			  uint32 level);
-BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
-                                 NT_PRINTER_DRIVER_INFO_LEVEL *printer,
-			         uint32 level);
-BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode);
 void init_printer_hnd(void);
 uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 
@@ -4947,7 +4940,7 @@ uint32 _spoolss_enumports( const UNISTR2 *name,
 				PORT_INFO_CTR *ctr,
 				uint32 *offered,
 				uint32 *numofports);
-uint32 _spoolss_addprinterex( const UNISTR2 *server_name,
+uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
 				uint32 level,
 				const SPOOL_PRINTER_INFO_LEVEL *info,
 				uint32 unk0,
@@ -4957,7 +4950,9 @@ uint32 _spoolss_addprinterex( const UNISTR2 *server_name,
 				uint32 user_level,
 				const SPOOL_USER_LEVEL *user,
 				POLICY_HND *handle);
-uint32 _spoolss_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *rdata);
+uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
+				uint32 level,
+				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info);
 uint32 _spoolss_getprinterdriverdirectory(SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *rdata);
 uint32 _spoolss_enumprinterdata(SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *rdata);
 uint32 _spoolss_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *rdata);

@@ -35,7 +35,7 @@ extern pstring global_myname;
 #define PRINTER_HANDLE_IS_PRINTER	0
 #define PRINTER_HANDLE_IS_PRINTSERVER	1
 
-BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
+static BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
                           NT_PRINTER_INFO_LEVEL *printer,
 			  uint32 level)
 {
@@ -56,7 +56,7 @@ BOOL convert_printer_info(const SPOOL_PRINTER_INFO_LEVEL *uni,
 	return True;
 }
 
-BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
+static BOOL convert_printer_driver_info(const SPOOL_PRINTER_DRIVER_INFO_LEVEL *uni,
                                  NT_PRINTER_DRIVER_INFO_LEVEL *printer,
 			         uint32 level)
 {
@@ -65,7 +65,7 @@ BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
 		case 3: 
 		{
 			printer->info_3=NULL;
-			uni_2_asc_printer_driver_3(uni.info_3, &(printer->info_3));						
+			uni_2_asc_printer_driver_3(uni->info_3, &(printer->info_3));						
 			break;
 		}
 		default:
@@ -77,7 +77,7 @@ BOOL convert_printer_driver_info(SPOOL_PRINTER_DRIVER_INFO_LEVEL uni,
 	return True;
 }
 
-BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
+static BOOL convert_devicemode(DEVICEMODE devmode, NT_DEVICEMODE *nt_devmode)
 {
 	unistr_to_ascii(nt_devmode->devicename,
 	                devmode.devicename.buffer,
@@ -3022,36 +3022,18 @@ uint32 _spoolss_addprinterex( const UNISTR2 *uni_srv_name,
 	return 0x0;
 }
 
-#if 0
-
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_addprinterdriver(SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *rdata)
+uint32 _spoolss_addprinterdriver( const UNISTR2 *server_name,
+				uint32 level,
+				const SPOOL_PRINTER_DRIVER_INFO_LEVEL *info)
 {
-	SPOOL_R_ADDPRINTERDRIVER r_u;
-
-	status=0x0; /* everything is always nice in this world */
-
-	spoolss_io_r_addprinterdriver("", &r_u, rdata, 0);
-}
-
-/****************************************************************************
-****************************************************************************/
-static void api_spoolss_addprinterdriver(rpcsrv_struct *p, prs_struct *data,
-                                         prs_struct *rdata)
-{
-	SPOOL_Q_ADDPRINTERDRIVER q_u;
 	NT_PRINTER_DRIVER_INFO_LEVEL driver;
-	
-	spoolss_io_q_addprinterdriver("", &q_u, data, 0);
-
 	convert_printer_driver_info(info, &driver, level);
-
-	add_a_printer_driver(driver, level);
-
-	spoolss_addprinterdriver(&q_u, rdata);
-	/* free mem used in q_u and r_u */
+	return add_a_printer_driver(driver, level);
 }
+
+#if 0
 
 /****************************************************************************
 ****************************************************************************/
