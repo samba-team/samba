@@ -1,4 +1,4 @@
-2003-01-29  Love  <lha@stacken.kth.se>
+2003-01-29  Love Hörquist Åstrand <lha@it.su.se>
 
 	* server.c (kadmind_dispatch): kadm_chpass: require the password
 	to pass the password quality check in case the user changes the

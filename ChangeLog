@@ -1,5 +1,28 @@
+2003-01-26  Love Hörquist Åstrand <lha@it.su.se>
+
+	* lib/asn1/check-gen.c: add checks for Authenticator too
+	
+2003-01-25  Love Hörquist Åstrand <lha@it.su.se>
+
+	* doc/setup.texi: in the hprop example, use hprop and the first
+	component, not host
+
+	* lib/krb5/get_addrs.c (find_all_addresses): address-less
+	point-to-point might not have an address, just ignore
+	those. Reported by Harald Barth.
+
 2003-01-23  Love Hörquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/verify_krb5_conf.c (check_section): when key isn't
+	found, don't print out all known keys
+
+	* lib/krb5/verify_krb5_conf.c (syslogvals): mark up where severity
+	and facility start resp
+	(check_log): find_value() returns -1 when key isn't found
+
+	* lib/krb5/crypto.c (_krb5_aes_cts_encrypt): make key argument a
+	'const void *' to avoid AES_KEY being exposed in krb5-private.h
+	
 	* lib/krb5/krb5.conf.5: add [kdc]use_2b
 
 	* kdc/524.c (encode_524_response): its 2b not b2
