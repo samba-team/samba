@@ -3,6 +3,7 @@
 
 echo "fixing distribution in $1..."
 
+test -d "$1" || { echo not a dir in \$1 ; exit 1 ; }
 cd $1
 
 if test "$DATEDVERSION"; then
