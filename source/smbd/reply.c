@@ -1170,8 +1170,6 @@ int reply_getatr(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
   
-  /* if((SVAL(inbuf,smb_flg2) & FLAGS2_DFS_PATHNAMES) && dfs_redirect(fname,conn)) return(dfs_path_error(inbuf,outbuf)); 
-   */
   /* dos smetimes asks for a stat of "" - it returns a "hidden directory"
      under WfWg - weird! */
   if (! (*fname))
@@ -1352,9 +1350,9 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
   path = smb_buf(inbuf) + 1;
   status_len = SVAL(smb_buf(inbuf),3 + strlen(path));
 
-  
+  RESOLVE_DFSPATH(path, conn, inbuf, outbuf);
   /* dirtype &= ~aDIR; */
-  
+
   if (status_len == 0)
   {
     SMB_STRUCT_STAT sbuf;
@@ -1471,11 +1469,11 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 
   SearchEmpty:
 
-  if (numentries == 0 || !ok)
+  if ( (numentries == 0) || !ok)
   {
-    CVAL(outbuf,smb_rcls) = ERRDOS;
-    SSVAL(outbuf,smb_err,ERRnofiles);
-    dptr_close(&dptr_num);
+	  CVAL(outbuf,smb_rcls) = ERRDOS;
+	  SSVAL(outbuf,smb_err,ERRnofiles);
+	  dptr_close(&dptr_num);
   }
 
   /* If we were called as SMBffirst with smb_search_id == NULL
@@ -1503,7 +1501,7 @@ int reply_search(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
     uint16 flg2 = SVAL(outbuf,smb_flg2);
     SSVAL(outbuf,smb_flg2,flg2 | 0x40); /* IS_LONG_NAME */
   }
-  
+
   outsize += DIR_STRUCT_SIZE*numentries;
   smb_setlen(outbuf,outsize - 4);
   
