@@ -146,7 +146,7 @@ the following 4 commands as root:
   setfattr -n user.test -v test test.txt
   setfattr -n security.test -v test2 test.txt
   getfattr -d test.txt
-  getfattr -d test.txt
+  getfattr -n security.test -d test.txt
 
 You should see output like this:
 
