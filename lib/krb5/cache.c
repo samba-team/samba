@@ -85,9 +85,9 @@ krb5_cc_resolve(krb5_context context,
     int i;
 
     if(context->cc_ops == NULL){
-	ret = krb5_cc_register(context, &fcc_ops, 1);
+	ret = krb5_cc_register(context, &krb5_fcc_ops, 1);
 	if(ret) return ret;
-	ret = krb5_cc_register(context, &mcc_ops, 1);
+	ret = krb5_cc_register(context, &krb5_mcc_ops, 1);
 	if(ret) return ret;
     }
 
