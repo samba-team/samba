@@ -317,6 +317,14 @@ static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 		max_bits1 = MAX(bits1, max_bits1);
 		max_bits2 = MAX(bits2, max_bits2);
 	}	
+	
+	/* bias towards directly reachable IPs */
+	if (iface_local(*ip1)) {
+		max_bits1 += 32;
+	}
+	if (iface_local(*ip2)) {
+		max_bits2 += 32;
+	}
 
 	return max_bits2 - max_bits1;
 }
