@@ -471,7 +471,7 @@ static int ldapsam_open(struct ldapsam_privates *ldap_state)
     	}
 
 	if (ldap_state->ldap_struct != NULL) {
-		DEBUG(5,("ldapsam_open: allready connected to the LDAP server\n"));
+		DEBUG(5,("ldapsam_open: already connected to the LDAP server\n"));
 		return LDAP_SUCCESS;
 	}
 
