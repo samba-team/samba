@@ -2205,7 +2205,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
  	pdb_init_sam(&pwd);
 	pdb_init_sam(&new_pwd);
  
-	if (pdb_getsampwrid(pwd, rid)) {
+	if (!pdb_getsampwrid(pwd, rid)) {
 		pdb_free_sam(pwd);
 		pdb_free_sam(new_pwd);
 		return False;
