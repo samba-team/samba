@@ -117,6 +117,7 @@ BOOL samr_io_q_lookup_domain(char *desc, SAMR_Q_LOOKUP_DOMAIN *q_u, prs_struct *
 	smb_io_unihdr("hdr_domain", &(q_u->hdr_domain), ps, depth);
 	smb_io_unistr2("uni_domain", &(q_u->uni_domain),
 		       q_u->hdr_domain.buffer, ps, depth);
+	prs_align(ps);
 
 	return True;
 }
@@ -519,6 +520,7 @@ BOOL sam_io_unk_info2(char *desc, SAM_UNK_INFO_2 *u_2, prs_struct *ps, int depth
 	prs_uint8s(False, "padding", ps, depth, u_2->padding, sizeof(u_2->padding)); /* 12 bytes zeros */
 
 	smb_io_unistr2( "uni_domain", &u_2->uni_domain, u_2->hdr_domain.buffer, ps, depth); /* domain name unicode string */
+	prs_align(ps);
 	smb_io_unistr2( "uni_server", &u_2->uni_server, u_2->hdr_server.buffer, ps, depth); /* server name unicode string */
 
 	prs_align(ps);
@@ -880,8 +882,11 @@ static BOOL sam_io_sam_str1(char *desc,  SAM_STR1 *sam, uint32 acct_buf, uint32 
 	prs_align(ps);
 
 	smb_io_unistr2("unistr2", &(sam->uni_acct_name), acct_buf, ps, depth); /* account name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(sam->uni_full_name), name_buf, ps, depth); /* full name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(sam->uni_acct_desc), desc_buf, ps, depth); /* account desc unicode string */
+	prs_align(ps);
 
 	return True;
 }
@@ -947,7 +952,9 @@ static BOOL sam_io_sam_str2(char *desc,  SAM_STR2 *sam, uint32 acct_buf, uint32 
 	prs_align(ps);
 
 	smb_io_unistr2("unistr2", &(sam->uni_srv_name), acct_buf, ps, depth); /* account name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(sam->uni_srv_desc), desc_buf, ps, depth); /* account desc unicode string */
+	prs_align(ps);
 
 	return True;
 }
@@ -1011,7 +1018,9 @@ static BOOL sam_io_sam_str3(char *desc,  SAM_STR3 *sam, uint32 acct_buf, uint32 
 	prs_align(ps);
 
 	smb_io_unistr2("unistr2", &(sam->uni_grp_name), acct_buf, ps, depth); /* account name unicode string */
+	prs_align(ps);
 	smb_io_unistr2("unistr2", &(sam->uni_grp_desc), desc_buf, ps, depth); /* account desc unicode string */
+	prs_align(ps);
 
 	return True;
 }
@@ -1313,6 +1322,7 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct
 		{
 			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_acct_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+			prs_align(ps);
 		}
 
 		prs_align(ps);
@@ -1947,6 +1957,7 @@ BOOL samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int dept
 	prs_align(ps);
 
 	smb_io_unistr2("uni_acct_desc", &(gr1->uni_acct_desc), gr1->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
 
 	return True;
 }
@@ -1982,6 +1993,7 @@ BOOL samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int dept
 
 	smb_io_unihdr ("hdr_acct_desc", &(gr4->hdr_acct_desc) , ps, depth); 
 	smb_io_unistr2("uni_acct_desc", &(gr4->uni_acct_desc), gr4->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
 
 	return True;
 }
@@ -2901,6 +2913,7 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps
 			slprintf(tmp, sizeof(tmp)-1, "dom[%d]", i);
 			prs_grow(ps);
 			smb_io_unistr2(tmp, &(r_u->uni_dom_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+			prs_align(ps);
 		}
 
 		prs_align(ps);
@@ -3061,6 +3074,7 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 		{
 			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+			prs_align(ps);
 		}
 
 		prs_align(ps);
@@ -3221,6 +3235,7 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES *r_u, prs_st
 		{
 			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
+			prs_align(ps);
 		}
 
 		prs_align(ps);
@@ -3265,6 +3280,7 @@ BOOL samr_io_alias_info3(char *desc,  ALIAS_INFO3 *al3, prs_struct *ps, int dept
 
 	smb_io_unihdr ("hdr_acct_desc", &(al3->hdr_acct_desc) , ps, depth); 
 	smb_io_unistr2("uni_acct_desc", &(al3->uni_acct_desc), al3->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
 
 	return True;
 }
@@ -3893,6 +3909,7 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "str[%02d]  ", i);
 			smb_io_unistr2("", &(r_u->uni_name[i]), r_u->hdr_name[i].buffer, ps, depth); 
+			prs_align(ps);
 		}
 	}
 
@@ -4050,6 +4067,7 @@ BOOL samr_io_q_create_dom_alias(char *desc,  SAMR_Q_CREATE_DOM_ALIAS *q_u, prs_s
 
 	smb_io_unihdr ("hdr_acct_desc", &(q_u->hdr_acct_desc) , ps, depth); 
 	smb_io_unistr2("uni_acct_desc", &(q_u->uni_acct_desc), q_u->hdr_acct_desc.buffer, ps, depth);
+	prs_align(ps);
 
 	prs_uint16("unknown_1", ps, depth, &(q_u->unknown_1));
 	prs_uint16("unknown_2", ps, depth, &(q_u->unknown_2));
@@ -4437,6 +4455,7 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 	{
 		prs_grow(ps);
 		smb_io_unistr2("", &(q_u->uni_name[i]), q_u->hdr_name[i].buffer, ps, depth); 
+		prs_align(ps);
 	}
 
 	prs_align(ps);
@@ -6081,6 +6100,7 @@ BOOL samr_io_q_unknown_38(char *desc,  SAMR_Q_UNKNOWN_38 *q_u, prs_struct *ps, i
 	{
 		smb_io_unihdr ("", &(q_u->hdr_srv_name), ps, depth); 
 		smb_io_unistr2("", &(q_u->uni_srv_name), q_u->hdr_srv_name.buffer, ps, depth); 
+		prs_align(ps);
 	}
 
 	return True;
