@@ -9,7 +9,7 @@ CLEANFILES = roken.h make-roken.c $(XHEADERS)
 lib_LTLIBRARIES = libroken.la
 libroken_la_LDFLAGS = -version-info 16:0:0
 
-noinst_PROGRAMS = make-roken snprintf-test
+noinst_PROGRAMS = make-roken snprintf-test resolve-test
 
 nodist_make_roken_SOURCES = make-roken.c
 
@@ -19,8 +19,7 @@ check_PROGRAMS = 				\
 		parse_bytes-test		\
 		parse_reply-test		\
 		snprintf-test			\
-		strpftime-test			\
-		resolve-test
+		strpftime-test
 
 TESTS = $(check_PROGRAMS)
 
