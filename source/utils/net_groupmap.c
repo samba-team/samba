@@ -508,9 +508,8 @@ int net_groupmap(int argc, const char **argv)
 		return -1;
 	}
 	
-	return net_run_function(argc, argv, func, net_help_groupmap);
-	if ( 0 == argc )
-		return net_help_groupmap( argc, argv );
+	if ( argc )
+		return net_run_function(argc, argv, func, net_help_groupmap);
 
 	return net_help_groupmap( argc, argv );
 }

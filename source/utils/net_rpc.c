@@ -1976,7 +1976,7 @@ static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, struct cli_state
 	sid_to_string(str_sid, domain_sid);
 	d_printf("%s\n", str_sid);
 	return NT_STATUS_OK;
-};
+}
 
 
 static int rpc_trustdom_list(int argc, const char **argv)
