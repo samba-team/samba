@@ -122,7 +122,7 @@ interface drsuapi
 		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string dn;
 	} drsuapi_DsReplicaObjectIdentifier;
 
-	typedef bitmap {
+	typedef [public] bitmap {
 		DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION	= 0x00000001,
 		DRSUAPI_DS_REPLICA_SYNC_WRITEABLE		= 0x00000002,
 		DRSUAPI_DS_REPLICA_SYNC_PERIODIC		= 0x00000004,
@@ -168,15 +168,15 @@ interface drsuapi
 
 	/*****************/
 	/* Function 0x03 */
-	typedef struct {
-		hyper usn1;
-		hyper usn2;
-		hyper usn3;
-	} drsuapi_DsGetNCChangesUsnTriple;
+	typedef [public] struct {
+		hyper tmp_highest_usn; /* updated after each object update */
+		hyper reserved_usn;
+		hyper highest_usn; /* updated after a full replication cycle */
+	} drsuapi_DsReplicaUsnCtr;
 
-	typedef struct {
-		GUID source_dsa_invocation_id;
-		hyper highest_usn;
+	typedef [public] struct {
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		hyper highest_usn;  /* updated after a full replication cycle */
 	} drsuapi_DsReplicaCoursor;
 
 	typedef struct {
@@ -184,15 +184,15 @@ interface drsuapi
 		uint32 u2;
 		[range(0,0x100000)] uint32 count;
 		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCoursor array[];
+		[size_is(count)] drsuapi_DsReplicaCoursor coursors[];
 	} drsuapi_DsReplicaCoursor05Ctr;
 
 	typedef struct {
-		GUID guid1;
-		GUID guid2;
+		GUID destination_dsa_guid;
+		GUID source_dsa_guid;
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsGetNCChangesUsnTriple usn1;
-		drsuapi_DsReplicaCoursor05Ctr *coursor;
+		drsuapi_DsReplicaUsnCtr replication_state;
+		drsuapi_DsReplicaCoursor05Ctr *highwatermark_vector;
 		uint32 unknown1;
 		uint32 unknown2;
 		uint32 unknown3;
@@ -216,11 +216,11 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesRequest_Ctr12;
 
 	typedef struct {
-		GUID guid1;
-		GUID guid2;
+		GUID destination_dsa_guid;
+		GUID source_dsa_guid;
 		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsGetNCChangesUsnTriple usn1;
-		drsuapi_DsReplicaCoursor05Ctr *coursor;
+		drsuapi_DsReplicaUsnCtr replication_state;
+		drsuapi_DsReplicaCoursor05Ctr *highwatermark_vector;
 		uint32 unknown1;
 		uint32 unknown2;
 		uint32 unknown3;
@@ -236,24 +236,25 @@ interface drsuapi
 		[case(8)] drsuapi_DsGetNCChangesRequest8 req8;
 	} drsuapi_DsGetNCChangesRequest;
 
-	typedef struct {
-		drsuapi_DsReplicaCoursor coursor;
-		NTTIME_1sec time1;
-	} drsuapi_DsReplicaCoursorEx;
+	typedef [public] struct {
+		GUID source_dsa_invocation_id; /* the 'invocationId' field of the CN=NTDS Settings object */
+		hyper highest_usn;  /* updated after a full replication cycle */
+		NTTIME last_sync_success;
+	} drsuapi_DsReplicaCoursor2;
 
 	typedef struct {
 		uint32 u1;
 		uint32 u2;
 		[range(0,0x100000)] uint32 count;
 		uint32 u3;
-		[size_is(count)] drsuapi_DsReplicaCoursorEx array[];
-	} drsuapi_DsReplicaCoursorEx05Ctr;
+		[size_is(count)] drsuapi_DsReplicaCoursor2 coursors[];
+	} drsuapi_DsReplicaCoursor2Ctr2;
 
 	typedef [v1_enum] enum {
 		DRSUAPI_OBJECTCLASS_top		= 0x0
 	} drsuapi_DsObjectClassId;
 
-	typedef [v1_enum] enum {
+	typedef [v1_enum,public] enum {
 		DRSUAPI_ATTRIBUTE_objectClass		= 0x00000000,
 		DRSUAPI_ATTRIBUTE_description		= 0x0000000d,
 		DRSUAPI_ATTRIBUTE_invocationId		= 0x00020073,
@@ -374,6 +375,8 @@ interface drsuapi
 
 		/* UINT32 */
 		[case(0x00020001)] drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(0x0002004c)] drsuapi_DsAttributeValueCtrUINT32 uint32;
+		[case(0x000200a9)] drsuapi_DsAttributeValueCtrUINT32 uint32;
 		[case(0x00090177)] drsuapi_DsAttributeValueCtrUINT32 uint32;
 		[case(0x000905b3)] drsuapi_DsAttributeValueCtrUINT32 uint32;
 
@@ -389,12 +392,14 @@ interface drsuapi
 		/* UnicodeString */
 		[case(DRSUAPI_ATTRIBUTE_description)]		drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 		[case(0x00090001)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
+		[case(0x000900dd)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 		[case(0x0009037b)]				drsuapi_DsAttributeValueCtrUnicodeString unicode_string;
 
 		/* DN String */
 		[case(DRSUAPI_ATTRIBUTE_objectCategory)]	drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0002000e)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x00020024)]				drsuapi_DsAttributeValueCtrDNString dn_string;
+		[case(0x00090171)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0009071c)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0009072c)]				drsuapi_DsAttributeValueCtrDNString dn_string;
 		[case(0x0009026a)]				drsuapi_DsAttributeValueCtrDNString dn_string;
@@ -425,9 +430,9 @@ interface drsuapi
 
 	typedef struct {
 		uint32 version;
-		NTTIME_1sec time;
-		GUID guid;
-		hyper usn;
+		NTTIME_1sec orginating_time;
+		GUID orginating_invocation_id;
+		hyper orginating_usn;
 	} drsuapi_DsReplicaMetaData;
 
 	typedef [public] struct {
@@ -439,7 +444,7 @@ interface drsuapi
 		drsuapi_DsReplicaObjectListItemEx *next_object;
 		drsuapi_DsReplicaObject object;
 		uint32 unknown1;
-		GUID *guid;
+		GUID *parent_object_guid;
 		drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;
 	} drsuapi_DsReplicaObjectListItemEx;
 
@@ -447,45 +452,56 @@ interface drsuapi
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsGetNCChangesUsnTriple usn1;
-		drsuapi_DsGetNCChangesUsnTriple usn2;
-		drsuapi_DsReplicaCoursorEx05Ctr *coursor_ex;
+		drsuapi_DsReplicaUsnCtr old_replication_state;
+		drsuapi_DsReplicaUsnCtr new_replication_state;
+		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
 		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
-		uint32 u1[3];
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
 		drsuapi_DsReplicaObjectListItemEx *first_object;
-		uint32 u2;
+		uint32 unknown4;
 	} drsuapi_DsGetNCChangesCtr1;
+
+	typedef struct {
+		uint32 unknown1;/* decompressed_length ? */
+		uint32 compressed_length;
+		DATA_BLOB *compressed;
+	} drsuapi_DsGetNCChangesCompressedInfo;
+
+	typedef struct {
+		drsuapi_DsGetNCChangesCompressedInfo info;
+	} drsuapi_DsGetNCChangesCtr2;
 
 	typedef struct {
 		GUID guid1;
 		GUID guid2;
 		drsuapi_DsReplicaObjectIdentifier *naming_context;
-		drsuapi_DsGetNCChangesUsnTriple usn1;
-		drsuapi_DsGetNCChangesUsnTriple usn2;
-		drsuapi_DsReplicaCoursorEx05Ctr *coursor_ex;
+		drsuapi_DsReplicaUsnCtr old_replication_state;
+		drsuapi_DsReplicaUsnCtr new_replication_state;
+		drsuapi_DsReplicaCoursor05Ctr *uptodateness_vector;
 		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
-		uint32 u1[3];
-		uint32 ptr1;
-		uint32 u2[3];
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+		drsuapi_DsReplicaObjectListItemEx *first_object;
+		uint32 unknown4;
+		uint32 unknown5;
+		uint32 unknown6;
 		uint32 len1;
 		uint32 array_ptr1;
-		uint32 u3;
+		uint32 unknown7;
 	} drsuapi_DsGetNCChangesCtr6;
 
 	typedef struct {
-		uint32 u1;/* decompressed_length ? */
-		uint32 compressed_length;
-		DATA_BLOB *compressed;
-	} drsuapi_DsGetNCChangesCtr7CompressedInfo;
-
-	typedef struct {
-		uint32 u1;
-		uint16 u2; /* enum */
-		drsuapi_DsGetNCChangesCtr7CompressedInfo info;
+		uint32 unknown1;
+		uint16 unknown2; /* enum */
+		drsuapi_DsGetNCChangesCompressedInfo info;
 	} drsuapi_DsGetNCChangesCtr7;
 
 	typedef [switch_type(int32)] union {
 		[case(1)] drsuapi_DsGetNCChangesCtr1 ctr1;
+		[case(2)] drsuapi_DsGetNCChangesCtr2 ctr2;
 		[case(6)] drsuapi_DsGetNCChangesCtr6 ctr6;
 		[case(7)] drsuapi_DsGetNCChangesCtr7 ctr7;
 	} drsuapi_DsGetNCChangesCtr;
@@ -983,12 +999,6 @@ interface drsuapi
 		int32 enumeration_context;
 		[size_is(count)] drsuapi_DsReplicaAttrValMetaData array[];
 	} drsuapi_DsReplicaAttrValMetaDataCtr;
-
-	typedef struct {
-		GUID source_dsa_invocation_id;
-		hyper highest_usn;
-		NTTIME last_sync_success;
-	} drsuapi_DsReplicaCoursor2;
 
 	typedef struct {
 		uint32 count;

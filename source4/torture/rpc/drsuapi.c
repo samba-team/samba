@@ -912,45 +912,45 @@ static BOOL test_DsGetNCChanges(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 		switch (r.in.level) {
 		case 5:
-			nc.guid				= null_guid;
-			nc.sid				= null_sid;
-			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			nc.guid	= null_guid;
+			nc.sid	= null_sid;
+			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req5.guid1		= null_guid;
-			r.in.req.req5.guid2		= null_guid;
-			r.in.req.req5.naming_context	= &nc;
-			r.in.req.req5.usn1.usn1		= 0;
-			r.in.req.req5.usn1.usn2		= 0;
-			r.in.req.req5.usn1.usn3		= 0;
-			r.in.req.req5.coursor		= NULL;
-			r.in.req.req5.unknown1		= 0;/*0x10201C70;*/
-			r.in.req.req5.unknown2		= 0;/*402;*/
-			r.in.req.req5.unknown3		= 0;/*402116;*/
-			r.in.req.req5.unknown4		= 0;
-			r.in.req.req5.h1		= 0;
+			r.in.req.req5.destination_dsa_guid		= GUID_random();
+			r.in.req.req5.source_dsa_guid			= null_guid;
+			r.in.req.req5.naming_context			= &nc;
+			r.in.req.req5.replication_state.tmp_highest_usn	= 0;
+			r.in.req.req5.replication_state.reserved_usn	= 0;
+			r.in.req.req5.replication_state.highest_usn	= 0;
+			r.in.req.req5.highwatermark_vector		= NULL;
+			r.in.req.req5.unknown1				= 0;/*0x10201C70;*/
+			r.in.req.req5.unknown2				= 402;
+			r.in.req.req5.unknown3				= 402116;
+			r.in.req.req5.unknown4				= 0;
+			r.in.req.req5.h1				= 0;
 
 			break;
 		case 8:
-			nc.guid				= null_guid;
-			nc.sid				= null_sid;
-			nc.dn				= priv->domain_obj_dn?priv->domain_obj_dn:"";
+			nc.guid	= null_guid;
+			nc.sid	= null_sid;
+			nc.dn	= priv->domain_obj_dn?priv->domain_obj_dn:"";
 
-			r.in.req.req8.guid1		= null_guid;
-			r.in.req.req8.guid2		= null_guid;
-			r.in.req.req8.naming_context	= &nc;
-			r.in.req.req8.usn1.usn1		= 0;
-			r.in.req.req8.usn1.usn2		= 0;
-			r.in.req.req8.usn1.usn3		= 0;
-			r.in.req.req8.coursor		= NULL;
-			r.in.req.req8.unknown1		= 0;/*0x10201C70;*/
-			r.in.req.req8.unknown2		= 0;/*402;*/
-			r.in.req.req8.unknown3		= 0;/*402116;*/
-			r.in.req.req8.unknown4		= 0;
-			r.in.req.req8.h1		= 0;
-			r.in.req.req8.unique_ptr1	= 0;
-			r.in.req.req8.unique_ptr2	= 0;
-			r.in.req.req8.ctr12.count	= 0;
-			r.in.req.req8.ctr12.array	= NULL;
+			r.in.req.req8.destination_dsa_guid		= GUID_random();
+			r.in.req.req8.source_dsa_guid			= null_guid;
+			r.in.req.req8.naming_context			= &nc;
+			r.in.req.req8.replication_state.tmp_highest_usn	= 0;
+			r.in.req.req8.replication_state.reserved_usn	= 0;
+			r.in.req.req8.replication_state.highest_usn	= 0;
+			r.in.req.req8.highwatermark_vector		= NULL;
+			r.in.req.req8.unknown1				= 0x10201C70;
+			r.in.req.req8.unknown2				= 402;
+			r.in.req.req8.unknown3				= 402116;
+			r.in.req.req8.unknown4				= 0;
+			r.in.req.req8.h1				= 0;
+			r.in.req.req8.unique_ptr1			= 0;
+			r.in.req.req8.unique_ptr2			= 0;
+			r.in.req.req8.ctr12.count			= 0;
+			r.in.req.req8.ctr12.array			= NULL;
 
 			break;
 		}
