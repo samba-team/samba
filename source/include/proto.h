@@ -2462,7 +2462,7 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 
 /* The following definitions come from printing/pcap.c  */
 
-BOOL pcap_printername_ok(char *pszPrintername, char *pszPrintcapname);
+BOOL pcap_printername_ok(char *pszPrintername, const char *pszPrintcapname);
 void pcap_printer_fn(void (*fn)(char *, char *));
 
 /* The following definitions come from printing/print_cups.c  */
