@@ -69,13 +69,13 @@ static void print_priv_entry(const char *privname, const char *description, cons
 		return;
 	}
 		
-	if (!description)
-		d_printf("%s\n", privname);
-	else {
-		d_printf("%s\n", privname);
+	d_printf("%s\n", privname);
+
+	if (description) {
 		d_printf("\tdescription: %s\n", description);
-		d_printf("\tSIDS: %s\n", sid_list);
 	}
+
+	d_printf("\tSIDS: %s\n", sid_list);
 }
 
 /*********************************************************
@@ -83,17 +83,13 @@ static void print_priv_entry(const char *privname, const char *description, cons
 **********************************************************/
 static int net_priv_list(int argc, const char **argv)
 {
-	BOOL long_list = False;
 	fstring privname = "";
 	fstring sid_string = "";
 	int i;
 	
 	/* get the options */
 	for ( i=0; i<argc; i++ ) {
-		if (!StrCaseCmp(argv[i], "verbose")) {
-			long_list = True;
-		}
-		else if (!StrnCaseCmp(argv[i], "privname", strlen("privname"))) {
+		if (!StrnCaseCmp(argv[i], "privname", strlen("privname"))) {
 			fstrcpy(privname, get_string_param(argv[i]));
 			if (!privname[0]) {
 				d_printf("must supply a name\n");
@@ -122,20 +118,18 @@ static int net_priv_list(int argc, const char **argv)
 		if (*privname) {
 			const char *description = NULL;
 
-			if (long_list) {
-				BOOL found = False;
+			BOOL found = False;
 
-				for (i=0; privs[i].se_priv != SE_ALL_PRIVS; i++) {
-					if (!StrCaseCmp(privs[i].priv, privname)) {
-						description = privs[i].description;
-						found = True;
-						break;
-					}
+			for (i=0; privs[i].se_priv != SE_ALL_PRIVS; i++) {
+				if (!StrCaseCmp(privs[i].priv, privname)) {
+					description = privs[i].description;
+					found = True;
+					break;
 				}
-				if (!found) {
-					d_printf("No such privilege!\n");
-					return -1;
-				}
+			}
+			if (!found) {
+				d_printf("No such privilege!\n");
+				return -1;
 			}
 			
 			/* Get the current privilege from the database */
@@ -148,11 +142,8 @@ static int net_priv_list(int argc, const char **argv)
 
 			if (!pdb_get_privilege_entry(privs[i].priv, &sid_list))
 				continue;
-			if (long_list) {
-				print_priv_entry(privs[i].priv, privs[i].description, sid_list);
-			} else {
-				print_priv_entry(privs[i].priv, NULL, sid_list);
-			}
+
+			print_priv_entry(privs[i].priv, privs[i].description, sid_list);
 
 			SAFE_FREE(sid_list);
 		}
