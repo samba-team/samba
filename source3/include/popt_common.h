@@ -25,6 +25,10 @@
 extern struct poptOption popt_common_samba[];
 extern struct poptOption popt_common_credentials[];
 
+#ifndef POPT_TABLEEND
+#define POPT_TABLEEND { NULL, '\0', 0, 0, 0, NULL, NULL }
+#endif
+
 #define POPT_COMMON_SAMBA { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_samba, 0, "Common samba options:", NULL },
 #define POPT_CREDENTIALS { NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_common_credentials, 0, "Authentication options:", NULL },
 
