@@ -917,7 +917,7 @@ static void find_fill_info(struct request_context *req,
 		SBVAL(data,         48, file->directory_info.alloc_size);
 		SIVAL(data,         56, file->directory_info.attrib);
 		trans2_append_data_string(req, trans, &file->directory_info.name, 
-					  ofs + 60, 0);
+					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -935,7 +935,7 @@ static void find_fill_info(struct request_context *req,
 		SIVAL(data,         56, file->full_directory_info.attrib);
 		SIVAL(data,         64, file->full_directory_info.ea_size);
 		trans2_append_data_string(req, trans, &file->full_directory_info.name, 
-					  ofs + 60, 0);
+					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -945,7 +945,7 @@ static void find_fill_info(struct request_context *req,
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          4, file->name_info.file_index);
 		trans2_append_data_string(req, trans, &file->name_info.name, 
-					  ofs + 8, 0);
+					  ofs + 8, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -969,7 +969,7 @@ static void find_fill_info(struct request_context *req,
 					&file->both_directory_info.short_name, 
 					24, STR_UNICODE | STR_LEN8BIT);
 		trans2_append_data_string(req, trans, &file->both_directory_info.name, 
-					  ofs + 60, 0);
+					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -990,7 +990,7 @@ static void find_fill_info(struct request_context *req,
 		SIVAL(data,         72, file->level_261.unknown[1]);
 		SIVAL(data,         76, file->level_261.unknown[2]);
 		trans2_append_data_string(req, trans, &file->level_261.name, 
-					  ofs + 60, 0);
+					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
@@ -1017,7 +1017,7 @@ static void find_fill_info(struct request_context *req,
 		SIVAL(data,         98, file->level_262.unknown[1]);
 		SSVAL(data,        102, 0); /* reserved? */
 		trans2_append_data_string(req, trans, &file->level_262.name, 
-					  ofs + 60, 0);
+					  ofs + 60, STR_TERMINATE_ASCII);
 		data = trans->out.data.data + ofs;
 		SIVAL(data,          0, trans->out.data.length - ofs);
 		break;
