@@ -106,7 +106,7 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *stat
             return WINBINDD_OK;
     }
 
-    slprintf(name,sizeof(name),"%s\\%s", name_domain, name_user);
+    slprintf(name,sizeof(name)-1,"%s\\%s", name_domain, name_user);
 
     /* Get rid and name type from name */
     /* the following costs 1 packet */
@@ -364,7 +364,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 
             /* Prepend domain to name */
 
-	    slprintf(domain_user_name, sizeof(domain_user_name),
+	    slprintf(domain_user_name, sizeof(domain_user_name)-1,
 		     "%s%s%s", ent->domain->name, lp_winbind_separator(), user_name);
                 
             /* Get passwd entry from user name */

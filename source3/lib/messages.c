@@ -115,7 +115,7 @@ static TDB_DATA message_key_pid(pid_t pid)
 	static char key[20];
 	TDB_DATA kbuf;
 
-	slprintf(key, sizeof(key), "PID/%d", (int)pid);
+	slprintf(key, sizeof(key)-1, "PID/%d", (int)pid);
 	
 	kbuf.dptr = (char *)key;
 	kbuf.dsize = strlen(key)+1;

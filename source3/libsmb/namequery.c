@@ -1013,7 +1013,7 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 	bufp += 2;
 	fstrcpy(bufp,srcname);
 	bufp += (strlen(bufp) + 1);
-	slprintf(bufp, sizeof(fstring), "\\MAILSLOT\\NET\\GETDC%d", dgm_id);
+	slprintf(bufp, sizeof(fstring)-1, "\\MAILSLOT\\NET\\GETDC%d", dgm_id);
 	mailslot_name = bufp;
 	bufp += (strlen(bufp) + 1);
 	bufp = ALIGN2(bufp, buffer);

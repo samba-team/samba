@@ -592,7 +592,7 @@ static void smb_dump(char *name, int type, char *data, ssize_t len)
 
 	if (len < 4) len = smb_len(data)+4;
 	for (i=1;i<100;i++) {
-		slprintf(fname,sizeof(fname), "/tmp/%s.%d.%s", name, i,
+		slprintf(fname,sizeof(fname)-1, "/tmp/%s.%d.%s", name, i,
 				type ? "req" : "resp");
 		fd = open(fname, O_WRONLY|O_CREAT|O_EXCL, 0644);
 		if (fd != -1 || errno != EEXIST) break;

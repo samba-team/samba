@@ -1171,7 +1171,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 	/* interpret the command */
 	DEBUG(4,("api_rpcTNP: %s op 0x%x - ", rpc_name, p->hdr_req.opnum));
 
-	slprintf(name, sizeof(name), "in_%s", rpc_name);
+	slprintf(name, sizeof(name)-1, "in_%s", rpc_name);
 	prs_dump(name, p->hdr_req.opnum, &p->in_data.data);
 
 	for (fn_num = 0; api_rpc_cmds[fn_num].name; fn_num++) {
@@ -1201,7 +1201,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		return False;
 	}
 
-	slprintf(name, sizeof(name), "out_%s", rpc_name);
+	slprintf(name, sizeof(name)-1, "out_%s", rpc_name);
 	offset2 = prs_offset(&p->out_data.rdata);
 	prs_set_offset(&p->out_data.rdata, offset1);
 	prs_dump(name, p->hdr_req.opnum, &p->out_data.rdata);

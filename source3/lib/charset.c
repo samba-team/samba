@@ -205,7 +205,7 @@ static codepage_p load_client_codepage( int client_codepage )
   pstrcat(codepage_file_name, "/");
   pstrcat(codepage_file_name, "codepage.");
   slprintf(&codepage_file_name[strlen(codepage_file_name)], 
-	   sizeof(pstring)-(strlen(codepage_file_name)+1),
+	   sizeof(pstring)-(strlen(codepage_file_name)+1)-1,
 	   "%03d",
            client_codepage);
 

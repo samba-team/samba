@@ -158,7 +158,7 @@ static uint32 cmd_spoolss_open_printer_ex(struct cli_state *cli, int argc, char 
 		return NT_STATUS_UNSUCCESSFUL;
 		
 
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
@@ -503,9 +503,9 @@ static uint32 cmd_spoolss_getprinter(struct cli_state *cli, int argc, char **arg
 		info_level = atoi(argv[2]);
 	}
 
-	slprintf (servername, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (servername);
-	slprintf (printername, sizeof(fstring), "\\\\%s\\%s", servername, argv[1]);
+	slprintf (printername, sizeof(fstring)-1, "\\\\%s\\%s", servername, argv[1]);
 	fstrcpy  (username, cli->user_name);
 	
 	/* get a printer handle */
@@ -691,7 +691,7 @@ static uint32 cmd_spoolss_getdriver(struct cli_state *cli, int argc, char **argv
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	fstrcpy  (user, cli->user_name);
 	fstrcpy  (printername, argv[1]);
@@ -789,7 +789,7 @@ static uint32 cmd_spoolss_enum_drivers(struct cli_state *cli, int argc, char **a
 	}
 
 	/* get the arguments need to open the printer handle */
-	slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+	slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
 	strupper (server);
 	if (argc == 2)
 		info_level = atoi(argv[1]);
@@ -1091,7 +1091,7 @@ static uint32 cmd_spoolss_addprinterex (struct cli_state *cli, int argc, char **
 		return NT_STATUS_NOPROBLEMO;
         }
 
-        slprintf (server, sizeof(fstring), "\\\\%s", cli->desthost);
+        slprintf (server, sizeof(fstring)-1, "\\\\%s", cli->desthost);
         strupper (server);
 
 	/* Initialise RPC connection */

@@ -455,22 +455,22 @@ static void init_mount(void)
 		args[i++] = "-r";
 	}
 	if (mount_uid) {
-		slprintf(tmp, sizeof(tmp), "%d", mount_uid);
+		slprintf(tmp, sizeof(tmp)-1, "%d", mount_uid);
 		args[i++] = "-u";
 		args[i++] = xstrdup(tmp);
 	}
 	if (mount_gid) {
-		slprintf(tmp, sizeof(tmp), "%d", mount_gid);
+		slprintf(tmp, sizeof(tmp)-1, "%d", mount_gid);
 		args[i++] = "-g";
 		args[i++] = xstrdup(tmp);
 	}
 	if (mount_fmask) {
-		slprintf(tmp, sizeof(tmp), "0%o", mount_fmask);
+		slprintf(tmp, sizeof(tmp)-1, "0%o", mount_fmask);
 		args[i++] = "-f";
 		args[i++] = xstrdup(tmp);
 	}
 	if (mount_dmask) {
-		slprintf(tmp, sizeof(tmp), "0%o", mount_dmask);
+		slprintf(tmp, sizeof(tmp)-1, "0%o", mount_dmask);
 		args[i++] = "-d";
 		args[i++] = xstrdup(tmp);
 	}

@@ -270,7 +270,7 @@ static BOOL winbindd_fill_grent_mem(struct winbindd_domain *domain,
                          malloc(sizeof(*entry))) != NULL) {
 
                         /* Create name */
-			slprintf(entry->name, sizeof(entry->name),
+			slprintf(entry->name, sizeof(entry->name)-1,
 				 "%s%s%s", name_dom, lp_winbind_separator(), name_user);
                         
                         /* Add to list */
@@ -477,7 +477,7 @@ enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *sta
             return WINBINDD_OK;
     }
 
-    slprintf(name, sizeof(name), "%s\\%s", name_domain, name_group);
+    slprintf(name, sizeof(name)-1, "%s\\%s", name_domain, name_group);
 
     /* Get rid and name type from name */
         
@@ -717,7 +717,7 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
    
             /* Prepend domain to name */
 
-	    slprintf(domain_group_name, sizeof(domain_group_name),
+	    slprintf(domain_group_name, sizeof(domain_group_name)-1,
 		     "%s%s%s", ent->domain->name, lp_winbind_separator(), group_name);
    
             /* Get group entry from group name */

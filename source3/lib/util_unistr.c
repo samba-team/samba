@@ -1960,9 +1960,9 @@ smb_ucs2_t *octal_string_w(int i)
 	char ret[64];
 
 	if (i == -1)
-		slprintf(ret, sizeof(ret), "-1");
+		slprintf(ret, sizeof(ret)-1, "-1");
 	else 
-		slprintf(ret, sizeof(ret), "0%o", i);
+		slprintf(ret, sizeof(ret)-1, "0%o", i);
 	return unix_to_unicode(wret, ret, sizeof(wret));
 }
 

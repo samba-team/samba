@@ -55,7 +55,7 @@ static uint32 cached_sequence_number(char *domain_name)
 	struct cache_rec rec;
 	time_t t = time(NULL);
 
-	slprintf(keystr, sizeof(keystr), "CACHESEQ/%s", domain_name);
+	slprintf(keystr, sizeof(keystr)-1, "CACHESEQ/%s", domain_name);
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	dbuf = tdb_fetch_by_string(cache_tdb, keystr);
 	if (!dbuf.dptr || dbuf.dsize != sizeof(rec)) {
@@ -91,7 +91,7 @@ static BOOL cache_domain_expired(char *domain_name, uint32 seq_num)
 static void set_cache_sequence_number(char *domain_name, char *cache_type, char *subkey)
 {
 	fstring keystr;
-	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
+	slprintf(keystr,sizeof(keystr)-1,"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	tdb_store_int(cache_tdb, keystr, cached_sequence_number(domain_name));
@@ -101,7 +101,7 @@ static uint32 get_cache_sequence_number(char *domain_name, char *cache_type, cha
 {
 	fstring keystr;
 	uint32 seq_num;
-	slprintf(keystr,sizeof(keystr),"CACHESEQ %s/%s/%s",
+	slprintf(keystr,sizeof(keystr)-1,"CACHESEQ %s/%s/%s",
 		 domain_name, cache_type, subkey?subkey:"");
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	seq_num = (uint32)tdb_fetch_int(cache_tdb, keystr);
@@ -125,7 +125,7 @@ static void fill_cache(char *domain_name, char *cache_type,
 		  cache_type, domain_name, num_sam_entries));
 
 	/* Store data as a mega-huge chunk in the tdb */
-	slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
+	slprintf(keystr, sizeof(keystr)-1, "%s CACHE DATA/%s", cache_type,
 		 domain_name);
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	tdb_store_by_string(cache_tdb, keystr, 
@@ -158,7 +158,7 @@ static void fill_cache_entry(char *domain, char *cache_type, char *name, void *b
 	fstring keystr;
 
 	/* Create key for store */
-	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
+	slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s", cache_type, domain, name);
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 
 	DEBUG(4, ("filling cache entry %s\n", keystr));
@@ -185,7 +185,7 @@ void winbindd_fill_uid_cache_entry(char *domain, uid_t uid,
 
         if (lp_winbind_cache_time() == 0) return;
 
-        slprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
+        slprintf(uidstr, sizeof(uidstr)-1, "#%u", (unsigned)uid);
         fill_cache_entry(domain, CACHE_TYPE_USER, uidstr, pw, sizeof(struct winbindd_pw));
         set_cache_sequence_number(domain, CACHE_TYPE_USER, uidstr);
 }
@@ -203,7 +203,7 @@ void winbindd_fill_group_cache_entry(char *domain, char *group_name,
         fill_cache_entry(domain, CACHE_TYPE_GROUP, group_name, gr, sizeof(struct winbindd_gr));
 
         /* Fill extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, group_name);
+        slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, group_name);
         dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
@@ -218,7 +218,7 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
         fstring keystr;
 	fstring gidstr;
 
-	slprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
+	slprintf(gidstr, sizeof(gidstr)-1, "#%u", (unsigned)gid);
 
         if (lp_winbind_cache_time() == 0) return;
 
@@ -226,7 +226,7 @@ void winbindd_fill_gid_cache_entry(char *domain, gid_t gid,
         fill_cache_entry(domain, CACHE_TYPE_GROUP, gidstr, gr, sizeof(struct winbindd_gr));
 
         /* Fill extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, gidstr);
+        slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain, gidstr);
         dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         tdb_store_by_string(cache_tdb, keystr, extra_data, extra_data_len);
 
@@ -254,7 +254,7 @@ static BOOL fetch_cache(char *domain_name, char *cache_type,
 	}
 	
         /* Create key */        
-        slprintf(keystr, sizeof(keystr), "%s CACHE DATA/%s", cache_type,
+        slprintf(keystr, sizeof(keystr)-1, "%s CACHE DATA/%s", cache_type,
                  domain_name);
         dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
 	
@@ -304,7 +304,7 @@ static BOOL fetch_cache_entry(char *domain, char *cache_type, char *name, void *
 	fstring keystr;
     
 	/* Create key for lookup */
-	slprintf(keystr, sizeof(keystr), "%s/%s/%s", cache_type, domain, name);
+	slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s", cache_type, domain, name);
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
     
 	/* Look up cache entry */
@@ -342,7 +342,7 @@ BOOL winbindd_fetch_uid_cache_entry(char *domain_name, uid_t uid,
 
         if (lp_winbind_cache_time() == 0) return False;
 
-	slprintf(uidstr, sizeof(uidstr), "#%u", (unsigned)uid);
+	slprintf(uidstr, sizeof(uidstr)-1, "#%u", (unsigned)uid);
     	seq_num = get_cache_sequence_number(domain_name, CACHE_TYPE_USER, uidstr);
 	if (cache_domain_expired(domain_name, seq_num)) return False;
 
@@ -369,7 +369,7 @@ BOOL winbindd_fetch_group_cache_entry(char *domain_name, char *group,
         if (!fetch_cache_entry(domain_name, CACHE_TYPE_GROUP, group, gr, sizeof(struct winbindd_gr))) return False;
 	
         /* Fetch extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, group);
+        slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, group);
         dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         data = tdb_fetch_by_string(cache_tdb, keystr);
 
@@ -395,7 +395,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 	fstring gidstr;
 	uint32 seq_num;
 
-	slprintf(gidstr, sizeof(gidstr), "#%u", (unsigned)gid);
+	slprintf(gidstr, sizeof(gidstr)-1, "#%u", (unsigned)gid);
 	
         if (lp_winbind_cache_time() == 0) return False;
 
@@ -407,7 +407,7 @@ BOOL winbindd_fetch_gid_cache_entry(char *domain_name, gid_t gid,
 			       gidstr, gr, sizeof(struct winbindd_gr))) return False;
 
         /* Fetch extra data */
-        slprintf(keystr, sizeof(keystr), "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, gidstr);
+        slprintf(keystr, sizeof(keystr)-1, "%s/%s/%s DATA", CACHE_TYPE_GROUP, domain_name, gidstr);
         dos_to_unix(keystr, True);         /* Convert key to unix-codepage */
         data = tdb_fetch_by_string(cache_tdb, keystr);
         if (!data.dptr) return False;

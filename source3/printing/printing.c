@@ -254,7 +254,7 @@ check if the print queue has been updated recently enough
 static void print_cache_flush(int snum)
 {
 	fstring key;
-	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	tdb_store_int(tdb, key, -1);
 }
@@ -269,7 +269,7 @@ static pid_t get_updating_pid(fstring printer_name)
 	TDB_DATA data, key;
 	pid_t updating_pid;
 
-	slprintf(keystr, sizeof(keystr), "UPDATING/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", printer_name);
     	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
@@ -298,7 +298,7 @@ static void set_updating_pid(fstring printer_name, BOOL delete)
 	TDB_DATA data;
 	pid_t updating_pid = getpid();
 
-	slprintf(keystr, sizeof(keystr), "UPDATING/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "UPDATING/%s", printer_name);
     	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
@@ -380,7 +380,7 @@ static void print_queue_update(int snum)
 	 * if the lpq takes a long time.
 	 */
 
-	slprintf(cachestr, sizeof(cachestr), "CACHE/%s", printer_name);
+	slprintf(cachestr, sizeof(cachestr)-1, "CACHE/%s", printer_name);
 	tdb_store_int(tdb, cachestr, (int)time(NULL));
 
         /* get the current queue using the appropriate interface */
@@ -452,7 +452,7 @@ static void print_queue_update(int snum)
 	}
 
 	/* store the new queue status structure */
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", printer_name);
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
 
@@ -466,7 +466,7 @@ static void print_queue_update(int snum)
 	 * as little as possible...
 	 */
 
-	slprintf(keystr, sizeof(keystr), "CACHE/%s", printer_name);
+	slprintf(keystr, sizeof(keystr)-1, "CACHE/%s", printer_name);
 	tdb_store_int(tdb, keystr, (int)time(NULL));
 
 	/* Delete our pid from the db. */
@@ -751,7 +751,7 @@ static BOOL print_cache_expired(int snum)
 	fstring key;
 	time_t t2, t = time(NULL);
 
-	slprintf(key, sizeof(key), "CACHE/%s", lp_servicename(snum));
+	slprintf(key, sizeof(key)-1, "CACHE/%s", lp_servicename(snum));
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	t2 = tdb_fetch_int(tdb, key);
 	if (t2 == ((time_t)-1) || (t - t2) >= lp_lpqcachetime()) {
@@ -770,7 +770,7 @@ static int get_queue_status(int snum, print_status_struct *status)
 	TDB_DATA data, key;
 
 	ZERO_STRUCTP(status);
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
@@ -912,7 +912,7 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	   a symlink security hole - it allows us to use O_EXCL 
 	   There may be old spool files owned by other users lying around.
 	*/
-	slprintf(pjob.filename, sizeof(pjob.filename), "%s/%s%d", 
+	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%d", 
 		 path, PRINT_SPOOL_PREFIX, jobid);
 	if (unlink(pjob.filename) == -1 && errno != ENOENT) {
 		goto next_jobnum;
@@ -1120,7 +1120,7 @@ int print_queue_status(int snum,
 	 * be no jobs in the queue.
 	 */
 	ZERO_STRUCTP(status);
-	slprintf(keystr, sizeof(keystr), "STATUS/%s", lp_servicename(snum));
+	slprintf(keystr, sizeof(keystr)-1, "STATUS/%s", lp_servicename(snum));
 	dos_to_unix(keystr, True);             /* Convert key to unix-codepage */
 	key.dptr = keystr;
 	key.dsize = strlen(keystr);
