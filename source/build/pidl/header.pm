@@ -92,7 +92,7 @@ sub HeaderStruct($$)
 }
 
 #####################################################################
-# parse a struct
+# parse a enum
 sub HeaderEnum($$)
 {
     my($enum) = shift;
@@ -121,6 +121,26 @@ sub HeaderEnum($$)
     $res .= "}";
 }
 
+#####################################################################
+# parse a bitmap
+sub HeaderBitmap($$)
+{
+    my($bitmap) = shift;
+    my($name) = shift;
+
+    util::register_bitmap($bitmap, $name);
+
+    $res .= "\n/* bitmap $name */\n";
+
+    my $els = \@{$bitmap->{ELEMENTS}};
+    foreach my $i (0 .. $#{$els}) {
+	    my $e = ${$els}[$i];
+	    chomp $e;
+	    $res .= "#define $e\n";
+    }
+
+    $res .= "\n";
+}
 
 #####################################################################
 # parse a union
@@ -155,6 +175,8 @@ sub HeaderType($$$)
 	if (ref($data) eq "HASH") {
 		($data->{TYPE} eq "ENUM") &&
 		    HeaderEnum($data, $name);
+		($data->{TYPE} eq "BITMAP") &&
+		    HeaderBitmap($data, $name);
 		($data->{TYPE} eq "STRUCT") &&
 		    HeaderStruct($data, $name);
 		($data->{TYPE} eq "UNION") &&
@@ -165,6 +187,9 @@ sub HeaderType($$$)
 		$res .= "const char *";
 	} elsif (util::is_enum($e->{TYPE})) {
 		$res .= "enum $data";
+	} elsif (util::is_bitmap($e->{TYPE})) {
+		my $bitmap = util::get_bitmap($e->{TYPE});
+		$res .= util::bitmap_type_decl($bitmap);
 	} elsif (util::is_scalar_type($data)) {
 		$res .= "$data";
 	} elsif (util::has_property($e, "switch_is")) {
@@ -180,7 +205,7 @@ sub HeaderTypedef($)
 {
     my($typedef) = shift;
     HeaderType($typedef, $typedef->{DATA}, $typedef->{NAME});
-    $res .= ";\n";
+    $res .= ";\n" unless ($typedef->{DATA}->{TYPE} eq "BITMAP");
 }
 
 #####################################################################

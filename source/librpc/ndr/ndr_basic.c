@@ -1000,9 +1000,18 @@ void ndr_print_struct(struct ndr_print *ndr, const char *name, const char *type)
 }
 
 void ndr_print_enum(struct ndr_print *ndr, const char *name, const char *type, 
-		    const char *val, uint32_t value)
+		    const char *val, uint_t value)
 {
-	ndr->print(ndr, "%-25s: %s (%u)", name, val?val:"UNKNOWN", value);
+	ndr->print(ndr, "%-25s: %s (%d)", name, val?val:"UNKNOWN_ENUM_VALUE", value);
+}
+
+void ndr_print_bitmap_flag(struct ndr_print *ndr, size_t size, const char *flag_name, uint_t flag, uint_t value)
+{
+	/* size can be later used to print something like:
+	 * ...1.... .........: FLAG1_NAME
+	 * .....0.. .........: FLAG2_NAME
+	 */
+	ndr->print(ndr, "%s: %-25s", (flag & value)?"1":"0", flag_name);
 }
 
 void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8_t v)
