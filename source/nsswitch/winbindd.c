@@ -727,6 +727,7 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
+	extern fstring global_myworkgroup;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
@@ -780,15 +781,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	if (!*global_myname) {
-		char *p;
-
-		fstrcpy(global_myname, myhostname());
-		p = strchr(global_myname, '.');
-		if (p)
-			*p = 0;
-	}
-
 	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
@@ -802,6 +794,18 @@ int main(int argc, char **argv)
 	}
 
 	codepage_initialise(lp_client_code_page());
+
+	/* Setup names. */
+	if (!*global_myname) {
+		char *p;
+
+		fstrcpy(global_myname, myhostname());
+		p = strchr(global_myname, '.');
+		if (p)
+			*p = 0;
+	}
+
+	fstrcpy(global_myworkgroup, lp_workgroup());
 
 	if (new_debuglevel != -1)
 		DEBUGLEVEL = new_debuglevel;
