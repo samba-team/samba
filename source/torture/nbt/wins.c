@@ -33,18 +33,24 @@
 	}} while (0)
 
 #define CHECK_STRING(v, correct) do { \
-	if (StrCaseCmp(v, correct) != 0) { \
+	if ((v) != (correct) && \
+	    ((v)==NULL || (correct)==NULL || StrCaseCmp(v, correct) != 0)) { \
 		printf("(%s) Incorrect value %s='%s' - should be '%s'\n", \
 		       __location__, #v, v, correct); \
 		ret = False; \
 	}} while (0)
 
+#define CHECK_NAME(_name, correct) do { \
+	CHECK_STRING((_name).name, (correct).name); \
+	CHECK_VALUE((_name).type, (correct).type); \
+	CHECK_STRING((_name).scope, (correct).scope); \
+} while (0)
 
 /*
   test operations against a WINS server
 */
-static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name, 
-			      const char *address)
+static BOOL nbt_test_wins_name(TALLOC_CTX *mem_ctx, const char *address,
+			       struct nbt_name *name)
 {
 	struct nbt_name_register_wins io;
 	struct nbt_name_query query;
@@ -54,18 +60,18 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	struct nbt_name_socket *nbtsock = nbt_name_socket_init(mem_ctx, NULL);
 	BOOL ret = True;
 	const char *myaddress = talloc_strdup(mem_ctx, iface_n_ip(0));
-	const char *tname = talloc_asprintf(mem_ctx, "_TORTURE-%5u", 
-					  (unsigned)(random() % (100000)));
 
 	/* we do the listen here to ensure the WINS server receives the packets from
 	   the right IP */
 	socket_listen(nbtsock->sock, myaddress, 0, 0, 0);
 
-	printf("Testing name registration to WINS with name '%s' at %s\n", tname, myaddress);
+	printf("Testing name registration to WINS with name %s<%02x> at %s\n", 
+	       name->name, name->type, myaddress);
+	if (name->scope) {
+		printf("scope is %s\n", name->scope);
+	}
 
-	io.in.name.name = tname;
-	io.in.name.type = NBT_NAME_CLIENT;
-	io.in.name.scope = NULL;
+	io.in.name = *name;
 	io.in.wins_servers = str_list_make(mem_ctx, address, NULL);
 	io.in.addresses = str_list_make(mem_ctx, myaddress, NULL);
 	io.in.nb_flags = NBT_NODE_H;
@@ -86,7 +92,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	CHECK_VALUE(io.out.rcode, 0);
 
 	printf("query the name to make sure its there\n");
-	query.in.name = io.in.name;
+	query.in.name = *name;
 	query.in.dest_addr = address;
 	query.in.broadcast = False;
 	query.in.wins_lookup = True;
@@ -104,15 +110,12 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 		return False;
 	}
 	
-	CHECK_STRING(query.out.name.name, tname);
-	CHECK_VALUE(query.out.name.type, NBT_NAME_CLIENT);
+	CHECK_NAME(query.out.name, *name);
 	CHECK_VALUE(query.out.num_addrs, 1);
 	CHECK_STRING(query.out.reply_addrs[0], myaddress);
 
 	printf("refresh the name\n");
-	refresh.in.name.name = tname;
-	refresh.in.name.type = NBT_NAME_CLIENT;
-	refresh.in.name.scope = NULL;
+	refresh.in.name = *name;
 	refresh.in.wins_servers = str_list_make(mem_ctx, address, NULL);
 	refresh.in.addresses = str_list_make(mem_ctx, myaddress, NULL);
 	refresh.in.nb_flags = NBT_NODE_H;
@@ -133,7 +136,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	CHECK_VALUE(io.out.rcode, 0);
 
 	printf("release the name\n");
-	release.in.name = io.in.name;
+	release.in.name = *name;
 	release.in.dest_addr = address;
 	release.in.address = myaddress;
 	release.in.nb_flags = NBT_NODE_H;
@@ -152,9 +155,9 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 		return False;
 	}
 	
-	CHECK_STRING(release.out.name.name, tname);
-	CHECK_VALUE(release.out.name.type, NBT_NAME_CLIENT);
+	CHECK_NAME(release.out.name, *name);
 	CHECK_VALUE(release.out.rcode, 0);
+
 
 	printf("release again\n");
 	status = nbt_name_release(nbtsock, mem_ctx, &release);
@@ -168,8 +171,7 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 		return False;
 	}
 	
-	CHECK_STRING(release.out.name.name, tname);
-	CHECK_VALUE(release.out.name.type, NBT_NAME_CLIENT);
+	CHECK_NAME(release.out.name, *name);
 	CHECK_VALUE(release.out.rcode, 0);
 
 
@@ -187,6 +189,41 @@ static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	return ret;
 }
 
+
+
+/*
+  test operations against a WINS server
+*/
+static BOOL nbt_test_wins(TALLOC_CTX *mem_ctx, const char *address)
+{
+	struct nbt_name name;
+	BOOL ret = True;
+	uint32_t r = (unsigned)(random() % (100000));
+
+	name.name = talloc_asprintf(mem_ctx, "_TORTURE-%5u", r);
+				    
+	name.type = NBT_NAME_CLIENT;
+	name.scope = NULL;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.scope = "example";
+	name.type = 0x71;
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.scope = "foo.example.com";
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.name = talloc_asprintf(mem_ctx, "_T\01-%5u.foo", r);
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.name = "";
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	name.name = talloc_asprintf(mem_ctx, ".");
+	ret &= nbt_test_wins_name(mem_ctx, address, &name);
+
+	return ret;
+}
 
 /*
   test WINS operations
@@ -212,7 +249,7 @@ BOOL torture_nbt_wins(void)
 		return False;
 	}
 
-	ret &= nbt_test_wins(mem_ctx, &name, address);
+	ret &= nbt_test_wins(mem_ctx, address);
 
 	talloc_free(mem_ctx);
 
