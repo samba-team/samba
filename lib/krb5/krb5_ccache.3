@@ -68,7 +68,7 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_copy_cache
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_ccache from"
 .Fa "krb5_ccache to"
 .Fc
@@ -79,66 +79,66 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft "const char *"
 .Fo krb5_cc_default_name
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_destroy
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_end_seq_get
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_ccache id"
 .Fa "krb5_cc_cursor *cursor"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_gen_new
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_cc_ops *ops"
 .Fa "krb5_ccache *id"
 .Fc
 .Ft "const char *"
 .Fo krb5_cc_get_name
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_get_principal
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fa "krb5_principal *principal"
 .Fc
 .Ft "const char *"
 .Fo krb5_cc_get_type
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_get_version
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_ccache id"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_initialize
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fa "krb5_principal primary_principal"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_register
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_cc_ops *ops"
 .Fa "krb5_boolean override"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_resolve
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const char *name"
 .Fa "krb5_ccache *id"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_retrieve_cred
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fa "krb5_flags whichfields"
 .Fa "const krb5_creds *mcreds"
@@ -146,31 +146,31 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_remove_cred
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fa "krb5_flags which"
 .Fa "krb5_creds *cred"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_set_default_name
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const char *name"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_store_cred
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_ccache id"
 .Fa "krb5_creds *creds"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_set_flags
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "krb5_cc_set_flags id"
 .Fa "krb5_flags flags"
 .Fc
 .Ft krb5_error_code
 .Fo krb5_cc_next_cred
-.Fa "krb5_context *"
+.Fa "krb5_context *context"
 .Fa "const krb5_ccache id"
 .Fa "krb5_cc_cursor *cursor"
 .Fa "krb5_creds *creds"
