@@ -80,7 +80,6 @@ krb5_data_realloc(krb5_data *p, int len)
 krb5_error_code
 krb5_data_copy(krb5_data *p, void *data, size_t len)
 {
-    krb5_data_free(p);
     if (len) {
 	if(krb5_data_alloc(p, len))
 	    return ENOMEM;
