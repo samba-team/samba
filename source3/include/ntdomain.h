@@ -138,13 +138,6 @@ struct mem_buf
 	struct mem_buf *next;
 };
 
-typedef struct
-{  
-	uint32 rid;
-	char *name;
-
-} rid_name;
-
 struct acct_info
 {
     fstring acct_name; /* account name */

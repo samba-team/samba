@@ -120,6 +120,12 @@ struct smb_passwd *getsmbfilepwent(void *vp)
 		 */
 		p = strncpyn(unix_name, linebuf, sizeof(unix_name), ':');
 
+		if (p == NULL)
+		{
+			DEBUG(0,("getsmbfilepwent: no ':' separator found\n"));
+			continue;
+		}
+
 		/* Go past ':' */
 		p++;
 

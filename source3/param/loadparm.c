@@ -127,6 +127,7 @@ typedef struct
   char *szAliasnameMap;
   char *szGroupnameMap;
   char *szBuiltinnameMap;
+  char *szBuiltinRidFile;
   char *szNTusernameMap;
   char *szCharacterSet;
   char *szLogonScript;
@@ -716,7 +717,8 @@ static struct parm_struct parm_table[] =
   {"local group map",   P_STRING, P_GLOBAL, &Globals.szAliasnameMap,     NULL,   NULL,  0},
   {"domain group map",  P_STRING, P_GLOBAL, &Globals.szGroupnameMap,     NULL,   NULL,  0},
   {"builtin group map", P_STRING, P_GLOBAL, &Globals.szBuiltinnameMap,   NULL,   NULL,  0},
-  {"domain user map",   P_STRING, P_GLOBAL, &Globals.szNTusernameMap,     NULL,   NULL,  0},
+  {"builtin rid file",  P_STRING, P_GLOBAL, &Globals.szBuiltinRidFile,   NULL,   NULL,  0},
+  {"domain user map",   P_STRING, P_GLOBAL, &Globals.szNTusernameMap,    NULL,   NULL,  0},
   {"machine password timeout", P_INTEGER, P_GLOBAL, &Globals.machine_password_timeout,  NULL,   NULL,  0},
 
   {"Logon Options", P_SEP, P_SEPARATOR},
@@ -1196,6 +1198,7 @@ FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_aliasname_map,&Globals.szAliasnameMap)
 FN_GLOBAL_STRING(lp_groupname_map,&Globals.szGroupnameMap)
 FN_GLOBAL_STRING(lp_builtinname_map,&Globals.szBuiltinnameMap)
+FN_GLOBAL_STRING(lp_builtinrid_file,&Globals.szBuiltinRidFile)
 FN_GLOBAL_STRING(lp_ntusrname_map,&Globals.szNTusernameMap)
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 

@@ -188,7 +188,6 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 	/* Static buffers we will return. */
 	FILE *fp = (FILE *)vp;
 	unsigned char   c;
-	unsigned char  *p;
 	size_t            linebuf_len;
 
 	if (fp == NULL)
@@ -248,12 +247,6 @@ int getfileline(void *vp, char *linebuf, int linebuf_size)
 			continue;
 		}
 
-		p = (unsigned char *) strchr(linebuf, ':');
-		if (p == NULL)
-		{
-			DEBUG(0, ("getfileline: malformed line entry (no :)\n"));
-			continue;
-		}
 		return linebuf_len;
 	}
 	return -1;
@@ -326,3 +319,49 @@ char *fgets_slash(char *s2,int maxlen,FILE *f)
   return(s);
 }
 
+/****************************************************************************
+checks if a file has changed since last read
+****************************************************************************/
+BOOL file_modified(const char *filename, time_t *lastmodified)
+{
+	SMB_STRUCT_STAT st;
+
+	if (sys_stat(filename, &st) != 0)
+	{
+		DEBUG(0, ("file_changed: Unable to stat file %s. Error was %s\n",
+			  filename, strerror(errno) ));
+		return False;
+	}
+
+	if(st.st_mtime <= *lastmodified)
+	{
+		DEBUG(20, ("file_modified: %s not modified\n", filename));
+		return False;
+	}
+
+	DEBUG(20, ("file_modified: %s modified\n", filename));
+	*lastmodified = st.st_mtime;
+	return True;
+}
+
+/***************************************************************************
+opens a file if modified otherwise returns NULL
+***************************************************************************/
+void *open_file_if_modified(const char *filename, char *mode, time_t *lastmodified)
+{
+	FILE *f;
+
+	if (file_modified(filename, lastmodified))
+	{
+		return NULL;
+	}
+
+	if( (f = fopen(filename, mode)) == NULL)
+	{
+		DEBUG(0, ("open_file_if_modified: can't open file %s. Error was %s\n",
+			  filename, strerror(errno)));
+		return NULL;
+	}
+
+	return (void *)f;
+}
