@@ -230,7 +230,7 @@ BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr t
   comparison function used by sort_ip_list
 */
 
-int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
+static int ip_compare(struct in_addr *ip1, struct in_addr *ip2)
 {
 	int max_bits1=0, max_bits2=0;
 	int num_interfaces = iface_count();
@@ -292,7 +292,7 @@ static void sort_ip_list(struct in_addr *iplist, int count)
 	qsort(iplist, count, sizeof(struct in_addr), QSORT_CAST ip_compare);	
 }
 
-void sort_ip_list2(struct ip_service *iplist, int count)
+static void sort_ip_list2(struct ip_service *iplist, int count)
 {
 	if (count <= 1) {
 		return;
@@ -1229,32 +1229,12 @@ BOOL get_pdc_ip(const char *domain, struct in_addr *ip)
 	return True;
 }
 
-/*********************************************************************
- small wrapper function to get the DC list and sort it if neccessary 
-*********************************************************************/
-BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
-{
-	BOOL ordered;
-	
-	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
-		(ads_only ? "ads" : lp_name_resolve_order())));
-	
-	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) )
-		return False;
-		
-	/* only sort if we don't already have an ordered list */
-	if ( !ordered )
-		sort_ip_list2( *ip_list, *count );
-		
-	return True;
-}
-
 /********************************************************
  Get the IP address list of the domain controllers for
  a domain.
 *********************************************************/
 
-BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
+static BOOL get_dc_list(const char *domain, struct ip_service **ip_list, 
                  int *count, BOOL ads_only, int *ordered)
 {
 	fstring resolve_order;
@@ -1403,3 +1383,24 @@ BOOL get_dc_list(const char *domain, struct ip_service **ip_list,
 	
 	return internal_resolve_name(domain, 0x1C, ip_list, count, resolve_order);
 }
+
+/*********************************************************************
+ small wrapper function to get the DC list and sort it if neccessary 
+*********************************************************************/
+BOOL get_sorted_dc_list( const char *domain, struct ip_service **ip_list, int *count, BOOL ads_only )
+{
+	BOOL ordered;
+	
+	DEBUG(8,("get_sorted_dc_list: attempting lookup using [%s]\n",
+		(ads_only ? "ads" : lp_name_resolve_order())));
+	
+	if ( !get_dc_list(domain, ip_list, count, ads_only, &ordered) )
+		return False;
+		
+	/* only sort if we don't already have an ordered list */
+	if ( !ordered )
+		sort_ip_list2( *ip_list, *count );
+		
+	return True;
+}
+
