@@ -38,7 +38,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name,int max_connections)
+BOOL yield_connection(connection_struct *conn,char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -87,7 +87,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-    if (crec.cnum == -1)
+	if (crec.cnum == -1)
 		return 0;
 
 	/* If the pid was not found delete the entry from connections.tdb */

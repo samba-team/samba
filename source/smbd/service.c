@@ -527,7 +527,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 				*ecode = ERRaccess;
 				DEBUG(0,( "make_connection: connection to %s denied due to security descriptor.\n",
 					service ));
-				yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+				yield_connection(conn, lp_servicename(SNUM(conn)));
 				conn_free(conn);
 				return NULL;
 			} else {
@@ -539,7 +539,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	if (!vfs_init(conn)) {
 		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
-		yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		return NULL;
 	}
@@ -553,7 +553,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_rootpreexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
@@ -562,9 +562,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	
 	if (!change_to_user(conn, conn->vuid)) {
 		DEBUG(0,("Can't become connected user!\n"));
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRbadpw;
 		return NULL;
@@ -578,7 +576,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		ret = smbrun(cmd,NULL);
 		if (ret != 0 && lp_preexec_close(SNUM(conn))) {
 			DEBUG(1,("preexec gave %d - failing connection\n", ret));
-			yield_connection(conn, lp_servicename(SNUM(conn)), lp_max_connections(SNUM(conn)));
+			yield_connection(conn, lp_servicename(SNUM(conn)));
 			conn_free(conn);
 			*ecode = ERRsrverror;
 			return NULL;
@@ -590,9 +588,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			 remote_machine, conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		change_to_root_user();
-		yield_connection(conn,
-				 lp_servicename(SNUM(conn)),
-				 lp_max_connections(SNUM(conn)));
+		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
 		*ecode = ERRnosuchshare;
 		return NULL;
@@ -666,9 +662,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	    
 	}
 
-	yield_connection(conn,
-			 lp_servicename(SNUM(conn)),
-			 lp_max_connections(SNUM(conn)));
+	yield_connection(conn, lp_servicename(SNUM(conn)));
 
 	file_close_conn(conn);
 	dptr_closecnum(conn);

@@ -459,9 +459,8 @@ void exit_server(char *reason)
 	invalidate_all_vuids();
 
 	/* delete our entry in the connections database. */
-	if (lp_status(-1)) {
-		yield_connection(NULL,"",MAXSTATUS);
-	}
+	if (lp_status(-1))
+		yield_connection(NULL,"");
 
 	respond_to_all_remaining_local_messages();
 	decrement_smbd_process_count();
@@ -756,50 +755,41 @@ static void usage(char *pname)
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
-	}
 
-	if (is_daemon) {
+	if (is_daemon)
 		pidfile_create("smbd");
-	}
 
-	if (!message_init()) {
+	if (!message_init())
 		exit(1);
-	}
 
 	/* Setup the main smbd so that we can get messages. */
-	if (lp_status(-1)) {
-		claim_connection(NULL,"",MAXSTATUS,True);
-	}
+	if (lp_status(-1))
+		claim_connection(NULL,"",0,True);
 
 	/* Attempt to migrate from an old 2.0.x machine account file. */
-	if (!migrate_from_old_password_file(global_myworkgroup)) {
+	if (!migrate_from_old_password_file(global_myworkgroup))
 		DEBUG(0,("Failed to migrate from old MAC file.\n"));
-	}
 
 	if (!open_sockets(is_daemon,port))
 		exit(1);
 
 	/*
-	 * everything after this point is run after the fork()
+	 * Everything after this point is run after the fork().
 	 */ 
 
-	if (!locking_init(0)) {
+	if (!locking_init(0))
 		exit(1);
-	}
 
-	if (!print_backend_init()) {
+	if (!print_backend_init())
 		exit(1);
-	}
 
-	if (!share_info_db_init()) {
+	if (!share_info_db_init())
 		exit(1);
-	}
 
-	if(!initialize_password_db(False)) {
+	if(!initialize_password_db(False))
 		exit(1);
-	}
 
 	/* possibly reload the services file. */
 	reload_services(True);
@@ -815,14 +805,12 @@ static void usage(char *pname)
 	}
 
 	/* Setup oplocks */
-	if (!init_oplocks()) {
+	if (!init_oplocks())
 		exit(1);
-	}
 
 	/* Setup change notify */
-	if (!init_change_notify()) {
+	if (!init_change_notify())
 		exit(1);
-	}
 
 	smbd_process();
 	
