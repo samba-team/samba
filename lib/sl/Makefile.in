@@ -60,7 +60,7 @@ LIBADD = strtok_r.o snprintf.o
 
 LIB_OBJECTS = sl.o ss.o $(LIBADD)
 
-mk_cmds_OBJECTS = make_cmds.o parse.o lex.o
+mk_cmds_OBJECTS = make_cmds.o parse.o lex.o snprintf.o
 
 OBJECTS = $(LIB_OBJECTS) $(mk_cmds_OBJECTS)
 
