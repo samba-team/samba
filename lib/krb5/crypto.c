@@ -112,7 +112,7 @@ struct encryption_type {
     size_t blocksize;
     size_t confoundersize;
     struct key_type *keytype;
-    struct checksum_type *cksumtype;
+    struct checksum_type *checksum;
     struct checksum_type *keyed_checksum;
     unsigned flags;
     krb5_error_code (*encrypt)(struct key_data *key,
@@ -1403,7 +1403,7 @@ do_checksum (krb5_context context,
 static krb5_error_code
 create_checksum(krb5_context context,
 		krb5_crypto crypto,
-		unsigned usage, /* not krb5_key_usage */
+		krb5_key_usage usage, /* not krb5_key_usage */
 		krb5_cksumtype type, /* 0 -> pick from crypto */
 		void *data,
 		size_t len,
@@ -1411,13 +1411,14 @@ create_checksum(krb5_context context,
 {
     struct checksum_type *ct = NULL;
 
-    if (type)
+    if (type) {
 	ct = _find_checksum(type);
-    else if(crypto) {
+    } else if (crypto) {
 	ct = crypto->et->keyed_checksum;
-	if(ct == NULL)
-	    ct = crypto->et->cksumtype;
+	if (ct == NULL)
+	    ct = crypto->et->checksum;
     }
+
     if(ct == NULL)
 	return KRB5_PROG_SUMTYPE_NOSUPP;
     return do_checksum (context, ct, crypto, usage, data, len, result);
@@ -1426,14 +1427,15 @@ create_checksum(krb5_context context,
 krb5_error_code
 krb5_create_checksum(krb5_context context,
 		     krb5_crypto crypto,
-		     unsigned usage_or_type,
+		     krb5_key_usage usage,
+		     int type,
 		     void *data,
 		     size_t len,
 		     Checksum *result)
 {
     return create_checksum(context, crypto, 
-			   CHECKSUM_USAGE(usage_or_type), 
-			   usage_or_type, data, len, result);
+			   CHECKSUM_USAGE(usage), 
+			   type, data, len, result);
 }
 
 static krb5_error_code
@@ -2175,7 +2177,7 @@ encrypt_internal_derived(krb5_context context,
     ret = create_checksum(context, 
 			  crypto, 
 			  INTEGRITY_USAGE(usage),
-			  0,
+			  et->keyed_checksum->type,
 			  p, 
 			  block_sz,
 			  &cksum);
@@ -2225,7 +2227,7 @@ encrypt_internal(krb5_context context,
     krb5_error_code ret;
     struct encryption_type *et = crypto->et;
     
-    checksum_sz = CHECKSUMSIZE(et->cksumtype);
+    checksum_sz = CHECKSUMSIZE(et->checksum);
     
     sz = et->confoundersize + checksum_sz + len;
     block_sz = (sz + et->blocksize - 1) &~ (et->blocksize - 1); /* pad */
@@ -2243,14 +2245,12 @@ encrypt_internal(krb5_context context,
     ret = create_checksum(context, 
 			  crypto,
 			  0,
-			  0,
+			  et->checksum->type,
 			  p, 
 			  block_sz,
 			  &cksum);
-    if(ret == 0 && cksum.checksum.length != checksum_sz) {
-	free_Checksum (&cksum);
+    if(ret == 0 && cksum.checksum.length != checksum_sz)
 	ret = KRB5_CRYPTO_INTERNAL;
-    }
     if(ret) {
 	memset(p, 0, block_sz);
 	free(p);
@@ -2284,7 +2284,7 @@ encrypt_internal_special(krb5_context context,
 			 void *ivec)
 {
     struct encryption_type *et = crypto->et;
-    size_t cksum_sz = CHECKSUMSIZE(et->cksumtype);
+    size_t cksum_sz = CHECKSUMSIZE(et->checksum);
     size_t sz = len + cksum_sz + et->confoundersize;
     char *tmp, *p;
 
@@ -2385,7 +2385,7 @@ decrypt_internal(krb5_context context,
     size_t checksum_sz, l;
     struct encryption_type *et = crypto->et;
     
-    checksum_sz = CHECKSUMSIZE(et->cksumtype);
+    checksum_sz = CHECKSUMSIZE(et->checksum);
     p = malloc(len);
     if(len != 0 && p == NULL)
 	return ENOMEM;
@@ -2406,7 +2406,7 @@ decrypt_internal(krb5_context context,
  	return ret;
     }
     memset(p + et->confoundersize, 0, checksum_sz);
-    cksum.cksumtype = CHECKSUMTYPE(et->cksumtype);
+    cksum.cksumtype = CHECKSUMTYPE(et->checksum);
     ret = verify_checksum(context, NULL, 0, p, len, &cksum);
     free_Checksum(&cksum);
     if(ret) {
@@ -2434,7 +2434,7 @@ decrypt_internal_special(krb5_context context,
 			 void *ivec)
 {
     struct encryption_type *et = crypto->et;
-    size_t cksum_sz = CHECKSUMSIZE(et->cksumtype);
+    size_t cksum_sz = CHECKSUMSIZE(et->checksum);
     size_t sz = len - cksum_sz - et->confoundersize;
     char *cdata = (char *)data;
     char *tmp;
@@ -2905,7 +2905,7 @@ wrapped_length (krb5_context context,
     size_t blocksize = et->blocksize;
     size_t res;
 
-    res =  et->confoundersize + et->cksumtype->checksumsize + data_len;
+    res =  et->confoundersize + et->checksum->checksumsize + data_len;
     res =  (res + blocksize - 1) / blocksize * blocksize;
     return res;
 }
@@ -2921,7 +2921,7 @@ wrapped_length_dervied (krb5_context context,
 
     res =  et->confoundersize + data_len;
     res =  (res + blocksize - 1) / blocksize * blocksize;
-    res += et->cksumtype->checksumsize;
+    res += et->checksum->checksumsize;
     return res;
 }
 
