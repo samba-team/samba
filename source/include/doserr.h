@@ -51,6 +51,7 @@
 #define ERRremcd 16 /* Attempt to delete current directory */
 #define ERRdiffdevice 17 /* rename/move across different filesystems */
 #define ERRnofiles 18 /* no more files found in file search */
+#define ERRgeneral 31 /* General failure */
 #define ERRbadshare 32 /* Share mode on file conflict with open mode */
 #define ERRlock 33 /* Lock request conflicts with existing lock */
 #define ERRunsup 50 /* Request unsupported, returned by Win 95, RJS 20Jun98 */
