@@ -1235,6 +1235,40 @@ sub ParseFunctionElementPull($$)
 	}
 }
 
+
+############################################################
+# allocate ref variables
+sub AllocateRefVars($)
+{
+	my $e = shift;
+	my $asize = util::array_size($e);
+
+	# note that if the variable is also an "in"
+	# variable then we copy the initial value from
+	# the in side
+
+	if (!defined $asize) {
+		# its a simple variable
+		pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
+		if (util::has_property($e, "in")) {
+			pidl "\t*r->out.$e->{NAME} = *r->in.$e->{NAME};\n";
+		} else {
+			pidl "\tZERO_STRUCTP(r->out.$e->{NAME});\n";
+		}
+		return;
+	}
+
+	# its an array
+	my $size = find_size_var($e, $asize, "r->out.");
+	pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, MAX(1, $size));\n";
+	if (util::has_property($e, "in")) {
+		pidl "\tmemcpy(r->out.$e->{NAME},r->in.$e->{NAME},$size * sizeof(*r->in.$e->{NAME}));\n";
+	} else {
+		pidl "\tmemset(r->out.$e->{NAME}, 0, $size * sizeof(*r->out.$e->{NAME}));\n";
+	}
+}
+
+
 #####################################################################
 # parse a function
 sub ParseFunctionPull($)
@@ -1253,6 +1287,18 @@ sub ParseFunctionPull($)
 	}
 
 	pidl "\n\tif (!(flags & NDR_IN)) goto ndr_out;\n\n";
+
+	# auto-init the out section of a structure. I originally argued that
+	# this was a bad idea as it hides bugs, but coping correctly
+	# with initialisation and not wiping ref vars is turning
+	# out to be too tricky (tridge)
+	foreach my $e (@{$fn->{DATA}}) {
+		if (util::has_property($e, "out")) {
+			pidl "\tZERO_STRUCT(r->out);\n\n";
+			last;
+		}
+	}
+
 	foreach my $e (@{$fn->{DATA}}) {
 		if (util::has_property($e, "in")) {
 			ParseFunctionElementPull($e, "in");
@@ -1260,13 +1306,7 @@ sub ParseFunctionPull($)
 		# we need to allocate any reference output variables, so that
 		# a dcerpc backend can be sure they are non-null
 		if (util::has_property($e, "out") && util::has_property($e, "ref")) {
-			my $asize = util::array_size($e);
-			if (defined $asize) {
-				my $size = find_size_var($e, $asize, "r->out.");
-				pidl "\tNDR_ALLOC_N(ndr, r->out.$e->{NAME}, MAX(1, $size));\n";
-			} else {
-				pidl "\tNDR_ALLOC(ndr, r->out.$e->{NAME});\n";
-			}
+			AllocateRefVars($e);
 		}
 	}
 
