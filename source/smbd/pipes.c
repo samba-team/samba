@@ -364,6 +364,7 @@ BOOL api_LsarpcTNP(int cnum,int uid, char *param,char *data,
   return(True);
 }
 
+#ifdef UNDEFINED_NTDOMAIN
 /*
    PAXX: Someone fix above.
    The above API is indexing RPC calls based on RPC flags and 
@@ -953,7 +954,6 @@ static void api_lsa_lookup_sids( char *param, char *data,
 }
 
 
-#ifdef UNDEFINED_NTDOMAIN
 /*
    PAXX: Someone fix above.
    The above API is indexing RPC calls based on RPC flags and 

@@ -416,10 +416,132 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   }
   return (True);
 }
+
+#elif defined (SGI6)
+/****************************************************************************
+try to get the disk space from disk quotas (IRIX 6.2 version)
+****************************************************************************/
+
+#include <sys/quota.h>
+#include <mntent.h>
+
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
+{
+  uid_t euser_id;
+  int r;
+  struct dqblk D;
+  struct fs_disk_quota        F;
+  struct stat S;
+  FILE *fp;
+  struct mntent *mnt;
+  int devno;
+  int found;
+  
+  /* find the block device file */
+  
+  if ( stat(path, &S) == -1 ) {
+    return(False) ;
+  }
+
+  devno = S.st_dev ;
+  
+  fp = setmntent(MOUNTED,"r");
+  found = False ;
+  
+  while ((mnt = getmntent(fp))) {
+    if ( stat(mnt->mnt_dir,&S) == -1 )
+      continue ;
+    if (S.st_dev == devno) {
+      found = True ;
+      break ;
+    }
+  }
+  endmntent(fp) ;
+  
+  if (!found) {
+    return(False);
+  }
+
+  euser_id=geteuid();
+  seteuid(0);  
+
+  /* Use softlimit to determine disk space, except when it has been exceeded */
+
+  *bsize = 512;
+
+  if ( 0 == strcmp ( mnt->mnt_type, "efs" ))
+  {
+    r=quotactl (Q_GETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &D);
+
+    if (r==-1)
+      return(False);
+        
+    /* Use softlimit to determine disk space, except when it has been exceeded */
+    if (
+        (D.dqb_bsoftlimit && D.dqb_curblocks>=D.dqb_bsoftlimit) ||
+        (D.dqb_bhardlimit && D.dqb_curblocks>=D.dqb_bhardlimit) ||
+        (D.dqb_fsoftlimit && D.dqb_curfiles>=D.dqb_fsoftlimit) ||
+        (D.dqb_fhardlimit && D.dqb_curfiles>=D.dqb_fhardlimit)
+       )
+    {
+      *dfree = 0;
+      *dsize = D.dqb_curblocks;
+    }
+    else if (D.dqb_bsoftlimit==0 && D.dqb_bhardlimit==0)
+    {
+      return(False);
+    }
+    else 
+    {
+      *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;
+      *dsize = D.dqb_bsoftlimit;
+    }
+
+  }
+  else if ( 0 == strcmp ( mnt->mnt_type, "xfs" ))
+  {
+    r=quotactl (Q_XGETQUOTA, mnt->mnt_fsname, euser_id, (caddr_t) &F);
+
+    if (r==-1)
+      return(False);
+        
+    /* Use softlimit to determine disk space, except when it has been exceeded */
+    if (
+        (F.d_blk_softlimit && F.d_bcount>=F.d_blk_softlimit) ||
+        (F.d_blk_hardlimit && F.d_bcount>=F.d_blk_hardlimit) ||
+        (F.d_ino_softlimit && F.d_icount>=F.d_ino_softlimit) ||
+        (F.d_ino_hardlimit && F.d_icount>=F.d_ino_hardlimit)
+       )
+    {
+      /*
+       * Fixme!: these are __uint64_t, this may truncate values
+       */
+      *dfree = 0;
+      *dsize = (int) F.d_bcount;
+    }
+    else if (F.d_blk_softlimit==0 && F.d_blk_hardlimit==0)
+    {
+      return(False);
+    }
+    else 
+    {
+      *dfree = (int)(F.d_blk_softlimit - F.d_bcount);
+      *dsize = (int)F.d_blk_softlimit;
+    }
+
+  }
+  else
+    return(False);
+
+  return (True);
+
+}
+
 #else
 
 #ifdef        __FreeBSD__
 #include <ufs/ufs/quota.h>
+#include <machine/param.h>
 #elif         AIX
 /* AIX quota patch from Ole Holm Nielsen <ohnielse@fysik.dtu.dk> */
 #include <jfs/quota.h>
@@ -463,7 +585,25 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   }
 #else /* USE_SETRES */
 #if defined(__FreeBSD__)
-  r= quotactl(path,Q_GETQUOTA,euser_id,(char *) &D);
+  {
+    /* FreeBSD patches from Marty Moll <martym@arbor.edu> */
+    uid_t user_id;
+    gid_t egrp_id;
+ 
+    /* Need to be root to get quotas in FreeBSD */
+    user_id = getuid();
+    egrp_id = getegid();
+    setuid(0);
+    seteuid(0);
+    r= quotactl(path,QCMD(Q_GETQUOTA,USRQUOTA),euser_id,(char *) &D);
+
+    /* As FreeBSD has group quotas, if getting the user
+       quota fails, try getting the group instead. */
+    if (r)
+      r= quotactl(path,QCMD(Q_GETQUOTA,GRPQUOTA),egrp_id,(char *) &D);
+    setuid(user_id);
+    seteuid(euser_id);
+  }
 #elif defined(AIX)
   /* AIX has both USER and GROUP quotas: 
      Get the USER quota (ohnielse@fysik.dtu.dk) */
@@ -474,7 +614,12 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 #endif /* USE_SETRES */
 
   /* Use softlimit to determine disk space, except when it has been exceeded */
+#if defined(__FreeBSD__)
+  *bsize = DEV_BSIZE;
+#else /* !__FreeBSD__ */
   *bsize = 1024;
+#endif /*!__FreeBSD__ */
+
   if (r)
     {
       if (errno == EDQUOT) 
