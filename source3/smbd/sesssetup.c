@@ -375,7 +375,7 @@ static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *ou
 	DEBUG(3,("Got anonymous request\n"));
 
 	make_server_info_guest(&server_info);
-	sess_vuid = register_vuid(server_info, lp_guestaccount(-1), False);
+	sess_vuid = register_vuid(server_info, lp_guestaccount(-1), True);
 	free_server_info(&server_info);
   
 	if (sess_vuid == -1) {
