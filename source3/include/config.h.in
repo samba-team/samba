@@ -127,6 +127,9 @@
 /* Define if you have the bigcrypt function.  */
 #undef HAVE_BIGCRYPT
 
+/* Define if you have the bzero function.  */
+#undef HAVE_BZERO
+
 /* Define if you have the chmod function.  */
 #undef HAVE_CHMOD
 
@@ -189,6 +192,9 @@
 
 /* Define if you have the memmove function.  */
 #undef HAVE_MEMMOVE
+
+/* Define if you have the memset function.  */
+#undef HAVE_MEMSET
 
 /* Define if you have the mktime function.  */
 #undef HAVE_MKTIME
@@ -286,6 +292,9 @@
 /* Define if you have the <limits.h> header file.  */
 #undef HAVE_LIMITS_H
 
+/* Define if you have the <memory.h> header file.  */
+#undef HAVE_MEMORY_H
+
 /* Define if you have the <ndir.h> header file.  */
 #undef HAVE_NDIR_H
 
@@ -309,6 +318,9 @@
 
 /* Define if you have the <string.h> header file.  */
 #undef HAVE_STRING_H
+
+/* Define if you have the <strings.h> header file.  */
+#undef HAVE_STRINGS_H
 
 /* Define if you have the <sys/dir.h> header file.  */
 #undef HAVE_SYS_DIR_H
@@ -345,6 +357,9 @@
 
 /* Define if you have the <sys/param.h> header file.  */
 #undef HAVE_SYS_PARAM_H
+
+/* Define if you have the <rpcsvc/ypclnt.h> header file.  */
+#undef HAVE_RPCSVC_YPCLNT_H
 
 /* Define if you have the <sys/security.h> header file.  */
 #undef HAVE_SYS_SECURITY_H

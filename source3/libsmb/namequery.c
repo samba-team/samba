@@ -72,7 +72,7 @@ static void _interpret_node_status(char *p, char *master,char *rname)
       }
       
       for (i = strlen( qname) ; --i >= 0 ; ) {
-	if (!isprint(qname[i])) qname[i] = '.';
+	if (!isprint((int)qname[i])) qname[i] = '.';
       }
       DEBUG(1,("\t%-15s <%02x> - %s\n",qname,type,flags));
       p+=2;
@@ -439,7 +439,7 @@ BOOL resolve_name(char *name, struct in_addr *return_ip)
   }
    
   for (i=0; pure_address && name[i]; i++)
-    if (!(isdigit(name[i]) || name[i] == '.'))
+    if (!(isdigit((int)name[i]) || name[i] == '.'))
       pure_address = False;
    
   /* if it's in the form of an IP address then get the lib to interpret it */

@@ -112,7 +112,7 @@ static int     format_pos     = 0;
  * catch a sigusr2 - decrease the debug log level.
  * ************************************************************************** **
  */
-int sig_usr2( void )
+void sig_usr2( int sig )
   {
   BlockSignals( True, SIGUSR2 );
 
@@ -125,7 +125,6 @@ int sig_usr2( void )
   BlockSignals( False, SIGUSR2 );
   CatchSignal( SIGUSR2, SIGNAL_CAST sig_usr2 );
 
-  return( 0 );
   } /* sig_usr2 */
 #endif /* SIGUSR2 */
 
@@ -134,7 +133,7 @@ int sig_usr2( void )
  * catch a sigusr1 - increase the debug log level. 
  * ************************************************************************** **
  */
-int sig_usr1( void )
+void sig_usr1( int sig )
   {
   BlockSignals( True, SIGUSR1 );
 
@@ -148,7 +147,6 @@ int sig_usr1( void )
   BlockSignals( False, SIGUSR1 );
   CatchSignal( SIGUSR1, SIGNAL_CAST sig_usr1 );
 
-  return( 0 );
   } /* sig_usr1 */
 #endif /* SIGUSR1 */
 

@@ -235,7 +235,7 @@ static BOOL parse_lpq_bsd(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the Job and Total columns must be integer */
-  if (!isdigit(*tok[JOBTOK]) || !isdigit(*tok[TOTALTOK])) return(False);
+  if (!isdigit((int)*tok[JOBTOK]) || !isdigit((int)*tok[TOTALTOK])) return(False);
 
   /* if the fname contains a space then use STDIN */
   if (strchr(tok[FILETOK],' '))
@@ -405,7 +405,7 @@ A long spool-path will just waste significant chars of the file name.
     return(False);
 
   /* the Job and Total columns must be integer */
-  if (!isdigit(*tok[LPRNG_JOBTOK]) || !isdigit(*tok[LPRNG_TOTALTOK])) return(False);
+  if (!isdigit((int)*tok[LPRNG_JOBTOK]) || !isdigit((int)*tok[LPRNG_TOTALTOK])) return(False);
 
   /* if the fname contains a space then use STDIN */
   /* I do not understand how this would be possible. Magnus. */
@@ -479,7 +479,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
       if ((count == 7) && ((strcmp(tok[0],"QUEUED") == 0) || (strcmp(tok[0],"HELD") == 0)))
       {
           /* the 2nd and 5th columns must be integer */
-          if (!isdigit(*tok[1]) || !isdigit(*tok[4])) return(False);
+          if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[4])) return(False);
           buf->size = atoi(tok[4]) * 1024;
           /* if the fname contains a space then use STDIN */
           if (strchr(tok[2],' '))
@@ -513,7 +513,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
   else
   {
       /* the 4th and 9th columns must be integer */
-      if (!isdigit(*tok[3]) || !isdigit(*tok[8])) return(False);
+      if (!isdigit((int)*tok[3]) || !isdigit((int)*tok[8])) return(False);
       buf->size = atoi(tok[8]) * 1024;
       /* if the fname contains a space then use STDIN */
       if (strchr(tok[4],' '))
@@ -590,7 +590,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     if (count < 2) return(False);
     
     /* the 2nd column must be integer */
-    if (!isdigit(*tok[1])) return(False);
+    if (!isdigit((int)*tok[1])) return(False);
     
     /* if the fname contains a space then use STDIN */
     if (strchr(tok[0],' '))
@@ -628,7 +628,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     
     /* first token must be printer name (cannot check ?) */
     /* the 2nd, 5th & 7th column must be integer */
-    if (!isdigit(*tok[1]) || !isdigit(*tok[4]) || !isdigit(*tok[6])) return(False);
+    if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[4]) || !isdigit((int)*tok[6])) return(False);
     jobid = atoi(tok[1]);
     StrnCpy(jobuser,tok[2],sizeof(buf->user)-1);
     jobprio = atoi(tok[4]);
@@ -678,8 +678,8 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the 2nd and 4th, 6th columns must be integer */
-  if (!isdigit(*tok[1]) || !isdigit(*tok[3])) return(False);
-  if (!isdigit(*tok[5])) return(False);
+  if (!isdigit((int)*tok[1]) || !isdigit((int)*tok[3])) return(False);
+  if (!isdigit((int)*tok[5])) return(False);
 
   /* if the user contains a ! then trim the first part of it */  
   if ((p=strchr(tok[2],'!')))
@@ -742,7 +742,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the 3rd and 5th columns must be integer */
-  if (!isdigit(*tok[2]) || !isdigit(*tok[4])) return(False);
+  if (!isdigit((int)*tok[2]) || !isdigit((int)*tok[4])) return(False);
 
   /* only take the last part of the filename */
   {
@@ -797,11 +797,11 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the first must be "active" or begin with an integer */
-  if (strcmp(tok[0],"active") && !isdigit(tok[0][0]))
+  if (strcmp(tok[0],"active") && !isdigit((int)tok[0][0]))
     return(False);
 
   /* the 5th and 8th must be integer */
-  if (!isdigit(*tok[4]) || !isdigit(*tok[7])) 
+  if (!isdigit((int)*tok[4]) || !isdigit((int)*tok[7])) 
     return(False);
 
   /* if the fname contains a space then use STDIN */
@@ -865,20 +865,20 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
     return(False);
 
   /* the 1st and 7th columns must be integer */
-  if (!isdigit(*tok[0]) || !isdigit(*tok[6]))  return(False);
+  if (!isdigit((int)*tok[0]) || !isdigit((int)*tok[6]))  return(False);
   /* if the 2nd column is either '>' or 'H' then the 7th and 8th must be
    * integer, else it's the 6th and 7th that must be
    */
   if (*tok[1] == 'H' || *tok[1] == '>')
     {
-      if (!isdigit(*tok[7]))
+      if (!isdigit((int)*tok[7]))
         return(False);
       buf->status = *tok[1] == '>' ? LPQ_PRINTING : LPQ_PAUSED;
       count = 1;
     }
   else
     {
-      if (!isdigit(*tok[5]))
+      if (!isdigit((int)*tok[5]))
         return(False);
       buf->status = LPQ_QUEUED;
       count = 0;

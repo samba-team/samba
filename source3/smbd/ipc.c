@@ -274,7 +274,7 @@ static int get_counter(char** p)
 {
   int i, n;
   if (!p || !(*p)) return(1);
-  if (!isdigit(**p)) return 1;
+  if (!isdigit((int)**p)) return 1;
   for (n = 0;;) {
     i = **p;
     if (isdigit(i))
@@ -1969,7 +1969,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
     break;
   case 0xb:   /* change print job name, data gives the name */
     /* jobid, snum should be zero */
-    if (isalpha(*s))
+    if (isalpha((int)*s))
       {
 	pstring name;
 	int l = 0;

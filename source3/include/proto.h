@@ -63,8 +63,8 @@ void add_char_string(char *s);
 
 /*The following definitions come from  lib/debug.c  */
 
-int sig_usr2( void );
-int sig_usr1( void );
+void sig_usr2( int sig );
+void sig_usr1( int sig );
 void setup_logging( char *pname, BOOL interactive );
 void reopen_logs( void );
 void force_check_log_size( void );

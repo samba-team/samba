@@ -2436,7 +2436,7 @@ int error_packet(char *inbuf,char *outbuf,int error_class,uint32 error_code,int 
 /****************************************************************************
   this is called when the client exits abruptly
   **************************************************************************/
-static int sig_pipe(void)
+static void sig_pipe(int sig)
 {
 	struct cli_state *cli;
 	BlockSignals(True,SIGPIPE);
@@ -2445,11 +2445,10 @@ static int sig_pipe(void)
 		DEBUG(3,("lost connection to password server\n"));
 		cli_shutdown(cli);
 		BlockSignals(False,SIGPIPE);
-		return 0;
+		return;
 	}
 
 	exit_server("Got sigpipe\n");
-	return(0);
 }
 
 /****************************************************************************
@@ -2756,7 +2755,7 @@ address %x. Error was %s\n", htonl(INADDR_LOOPBACK), strerror(errno)));
   oplock_port = ntohs(sock_name.sin_port);
 
   DEBUG(3,("open_oplock ipc: pid = %d, oplock_port = %u\n", 
-            getpid(), oplock_port));
+            (int)getpid(), oplock_port));
 
   return True;
 }
@@ -3420,7 +3419,7 @@ this prevents zombie child processes
 ****************************************************************************/
 static BOOL reload_after_sighup = False;
 
-static int sig_hup(void)
+static void sig_hup(int sig)
 {
   BlockSignals(True,SIGHUP);
   DEBUG(0,("Got SIGHUP\n"));
@@ -3433,7 +3432,6 @@ static int sig_hup(void)
 
   reload_after_sighup = True;
   BlockSignals(False,SIGHUP);
-  return(0);
 }
 
 /****************************************************************************
@@ -4377,7 +4375,7 @@ static BOOL dump_core(void)
     rlp.rlim_cur = MAX(4*1024*1024,rlp.rlim_cur);
     setrlimit(RLIMIT_CORE, &rlp);
     getrlimit(RLIMIT_CORE, &rlp);
-    DEBUG(3,("Core limits now %d %d\n",rlp.rlim_cur,rlp.rlim_max));
+    DEBUG(3,("Core limits now %d %d\n",(int)rlp.rlim_cur,(int)rlp.rlim_max));
   }
 #endif
 #endif
@@ -5312,14 +5310,14 @@ static void usage(char *pname)
     rlp.rlim_cur = (MAX_OPEN_FILES+10>rlp.rlim_max)? rlp.rlim_max:MAX_OPEN_FILES+10;
     setrlimit(RLIMIT_NOFILE, &rlp);
     getrlimit(RLIMIT_NOFILE, &rlp);
-    DEBUG(3,("Maximum number of open files per session is %d\n",rlp.rlim_cur));
+    DEBUG(3,("Maximum number of open files per session is %d\n",(int)rlp.rlim_cur));
   }
 #endif
 #endif
 
   
   DEBUG(2,("uid=%d gid=%d euid=%d egid=%d\n",
-	getuid(),getgid(),geteuid(),getegid()));
+	(int)getuid(),(int)getgid(),(int)geteuid(),(int)getegid()));
 
   if (sizeof(uint16) < 2 || sizeof(uint32) < 4)
     {

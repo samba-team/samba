@@ -499,7 +499,7 @@ static void cgi_download(char *file)
 
 	/* sanitise the filename */
 	for (i=0;file[i];i++) {
-		if (!isalnum(file[i]) && !strchr("/.-_", file[i])) {
+		if (!isalnum((int)file[i]) && !strchr("/.-_", file[i])) {
 			cgi_setup_error("404 File Not Found","",
 					"Illegal character in filename");
 		}

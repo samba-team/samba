@@ -856,7 +856,7 @@ static char *hex_to_sj(char *from, BOOL overwrite)
     sp = (char *) from;
     dp = cvtbuf;
     while (*sp) {
-	if (*sp == hex_tag && isxdigit (sp[1]) && isxdigit (sp[2])) {
+	if (*sp == hex_tag && isxdigit((int)sp[1]) && isxdigit((int)sp[2])) {
 	    *dp++ = (hex2bin (sp[1])<<4) | (hex2bin (sp[2]));
 	    sp += 3;
 	} else
@@ -924,7 +924,7 @@ static char *cap_to_sj(char *from, BOOL overwrite)
          * we only do the reverse (that's why the strchr is used rather than
          * isxdigit. Based on fix from ado@elsie.nci.nih.gov (Arthur David Olson).
          */
-        if (*sp == hex_tag && (strchr ("89abcdefABCDEF", sp[1]) != NULL) && isxdigit (sp[2])) {
+        if (*sp == hex_tag && (strchr ("89abcdefABCDEF", sp[1]) != NULL) && isxdigit((int)sp[2])) {
             *dp++ = (hex2bin (sp[1])<<4) | (hex2bin (sp[2]));
             sp += 3;
         } else

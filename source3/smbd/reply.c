@@ -327,7 +327,6 @@ int reply_tcon_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		pstrcpy(smb_buf(outbuf),devicename);
 	} else {
 		char *fsname = FSTYPE_STRING;
-		char *p;
 
 		set_message(outbuf,3,3,True);
 
@@ -1565,7 +1564,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
  
   DEBUG( 2, ( "new file %s\n", fname ) );
   DEBUG( 3, ( "mknew %s fd=%d fnum=%d dmode=%d umode=%o\n",
-        fname, fsp->fd_ptr->fd, fnum, createmode, unixmode ) );
+        fname, fsp->fd_ptr->fd, fnum, createmode, (int)unixmode ) );
 
   return(outsize);
 }
@@ -1642,7 +1641,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   DEBUG( 2, ( "created temp file %s\n", fname2 ) );
   DEBUG( 3, ( "ctemp %s fd=%d fnum=%d dmode=%d umode=%o\n",
-        fname2, fsp->fd_ptr->fd, fnum, createmode, unixmode ) );
+        fname2, fsp->fd_ptr->fd, fnum, createmode, (int)unixmode ) );
 
   return(outsize);
 }
@@ -2640,7 +2639,7 @@ int reply_printopen(connection_struct *conn,
 		pstrcpy(s,smb_buf(inbuf)+1);
 		p = s;
 		while (*p) {
-			if (!(isalnum(*p) || strchr("._-",*p)))
+			if (!(isalnum((int)*p) || strchr("._-",*p)))
 				*p = 'X';
 			p++;
 		}

@@ -85,7 +85,6 @@ if shared is not set then open the file with O_EXCL set
 ****************************************************************************/
 int smbrun(char *cmd,char *outfile,BOOL shared)
 {
-	extern struct current_user current_user;
 	int fd,pid;
 	int uid = current_user.uid;
 	int gid = current_user.gid;

@@ -3636,7 +3636,7 @@ uint32 interpret_addr(char *str)
   if (strcmp(str,"255.255.255.255") == 0) return(0xFFFFFFFF);
 
   for (i=0; pure_address && str[i]; i++)
-    if (!(isdigit(str[i]) || str[i] == '.')) 
+    if (!(isdigit((int)str[i]) || str[i] == '.')) 
       pure_address = False;
 
   /* if it's in the form of an IP address then get the lib to interpret it */
@@ -4608,7 +4608,7 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type)
 	  (lock.l_pid != 0) && 
 	  (lock.l_pid != getpid()))
 	{
-	  DEBUG(3,("fd %d is locked by pid %d\n",fd,lock.l_pid));
+	  DEBUG(3,("fd %d is locked by pid %d\n",fd,(int)lock.l_pid));
 	  return(True);
 	}
 

@@ -829,7 +829,7 @@ static BOOL check_user_equiv(char *user, char *remote, char *equiv_file)
 	{
 	  BOOL host_ok = False;
 
-#ifdef HAVE_NETGROUP	  
+#if defined(HAVE_NETGROUP) && defined(HAVE_YP_GET_DEFAULT_DOMAIN)
 	  if (is_group)
 	    {
 	      static char *mydomain = NULL;

@@ -61,7 +61,7 @@ extern struct in_addr ipzero;
 /**************************************************************************** **
   catch a sigterm
  **************************************************************************** */
-static int sig_term(void)
+static void sig_term(int sig)
 {
   BlockSignals(True,SIGTERM);
   
@@ -81,14 +81,12 @@ static int sig_term(void)
 
   exit(0);
 
-  /* Keep compiler happy.. */
-  return 0;
 } /* sig_term */
 
 /**************************************************************************** **
  catch a sighup
  **************************************************************************** */
-static int sig_hup(void)
+static void sig_hup(int sig)
 {
   BlockSignals( True, SIGHUP );
 
@@ -103,13 +101,12 @@ static int sig_hup(void)
 
   BlockSignals(False,SIGHUP);
 
-  return(0);
 } /* sig_hup */
 
 /**************************************************************************** **
  catch a sigpipe
  **************************************************************************** */
-static int sig_pipe(void)
+static void sig_pipe(int sig)
 {
   BlockSignals( True, SIGPIPE );
 
@@ -117,7 +114,6 @@ static int sig_pipe(void)
   if ( !is_daemon )
     exit(1);
   BlockSignals( False, SIGPIPE );
-  return(0);
 } /* sig_pipe */
 
 #if DUMP_CORE
@@ -147,7 +143,7 @@ static BOOL dump_core(void)
     rlp.rlim_cur = MAX( 4*1024*1024, rlp.rlim_cur );
     setrlimit( RLIMIT_CORE, &rlp );
     getrlimit( RLIMIT_CORE, &rlp );
-    DEBUG( 3, ( "Core limits now %d %d\n", rlp.rlim_cur, rlp.rlim_max ) );
+    DEBUG( 3, ( "Core limits now %d %d\n", (int)rlp.rlim_cur, (int)rlp.rlim_max ) );
   }
 #endif
 #endif

@@ -1274,7 +1274,7 @@ char *strdup(char *s);
 #endif
 
 #ifndef SIGNAL_CAST
-#define SIGNAL_CAST (RETSIGTYPE (*)())
+#define SIGNAL_CAST (RETSIGTYPE (*)(int))
 #endif
 
 #ifndef SELECT_CAST

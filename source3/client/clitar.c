@@ -522,7 +522,7 @@ static long unoct(char *p, int ndgs)
 
   while (--ndgs)
     {
-      if (isdigit(*p))
+      if (isdigit((int)*p))
         value = (value << 3) | (long) (*p - '0');
 
       p++;
@@ -1517,7 +1517,7 @@ static void unfixtarname(char *tptr, char *fp, int l, BOOL first)
    * dos \'s in path. Kill any absolute path names. But only if first!
    */
 
-  DEBUG(5, ("firstb=%lX, secondb=%lX, len=%i\n", tptr, fp, l));
+  DEBUG(5, ("firstb=%lX, secondb=%lX, len=%i\n", (long)tptr, (long)fp, l));
 
   if (first) {
     if (*fp == '.') {
