@@ -125,6 +125,31 @@ realm_of_cell(char *cell)
   return realm;
 }
 
+/* Magic to get AIX syscalls to work */
+#ifdef _AIX
+
+static int (*Pioctl)(char*, int, void*, int);
+static int (*Setpag)(void);
+
+#include "dlfcn.h"
+
+int aix_setup(void)
+{
+#ifdef STATIC_AFS_SYSCALLS
+    Pioctl = aix_pioctl;
+    Setpag = aix_setpag;
+#else
+    void *ptr;
+    ptr = dlopen(LIBDIR "/afslib.so", 0);
+    if(ptr){
+	Setpag = (int (*)(void))dlsym(ptr, "aix_setpag");
+	Pioctl = (int (*)(char*, int, void*, int))dlsym(ptr, "aix_pioctl");
+    }
+#endif
+}
+#endif
+
+
 /*
  * Try to find the cells we should try to klog to.  Look at
  * /usr/vice/etc/TheseCells and /usr/vice/etc/ThisCell,
@@ -328,7 +353,7 @@ k_pioctl(char *a_path,
 
 #ifdef _AIX
   if (afs_entry_point == AIX_ENTRY_POINTS)
-    return lpioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
+      return Pioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
 
   errno = ENOSYS;
@@ -368,7 +393,7 @@ k_setpag(void)
 
 #ifdef _AIX
   if (afs_entry_point == AIX_ENTRY_POINTS)
-    return lsetpag();
+      return Setpag();
 #endif
 
   errno = ENOSYS;
@@ -460,15 +485,11 @@ k_hasafs(void)
 #endif /* AFS_SYSCALL */
 
 #ifdef _AIX
-  if (setjmp(catch_SIGSYS) == 0)
-    {
-      lpioctl(0, 0, 0, 0);
-      if (errno == EINVAL)
-	{
-	  afs_entry_point = AIX_ENTRY_POINTS;
-	  goto done;
-	}
-    }
+  aix_setup();
+  if(Pioctl != NULL && Setpag != NULL){
+      afs_entry_point = AIX_ENTRY_POINTS;
+      goto done;
+  }
 #endif
 
  done:
@@ -479,3 +500,4 @@ k_hasafs(void)
   errno = saved_errno;
   return afs_entry_point != NO_ENTRY_POINT;
 }
+

@@ -10,14 +10,12 @@ VPATH = @srcdir@
 CC = @CC@
 AR = ar
 RANLIB = @RANLIB@
-DEFS = @DEFS@
+DEFS = @DEFS@ -DLIBDIR='"$(libdir)"'
 CFLAGS = @CFLAGS@
 
 INSTALL = @INSTALL@
 INSTALL_DATA	= @INSTALL_DATA@
 MKDIRHIER = @top_srcdir@/mkdirhier-sh
-
-AIX_SYSCALL_MAGIC=@AIX_SYSCALL_MAGIC@
 
 prefix = @prefix@
 exec_prefix = $(prefix)
@@ -28,9 +26,10 @@ PICFLAGS = @PICFLAGS@
 LIBNAME = libkafs
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
-LIB = $(LIBNAME).$(LIBEXT)
+AFS_EXTRA_LIBS	= @AFS_EXTRA_LIBS@
+LIB = $(LIBNAME).$(LIBEXT) $(AFS_EXTRA_LIBS)
 
-SOURCES = afssys.c
+SOURCES = afssys.c afslib.c
 
 OBJECTS = afssys.o
 
@@ -71,14 +70,17 @@ dist: $(DISTFILES)
 	    || cp -p $$file ../`cat ../.fname`/lib; \
 	done
 
-$(LIBNAME).a: $(OBJECTS)
+$(LIBNAME).a: $(OBJECTS) @AFS_EXTRA_OBJS@
 	rm -f $@
-	$(AR) cr $@ $(OBJECTS)
-	-if [ "$(AIX_SYSCALL_MAGIC)" = yes ] ; then $(AR) cr $@ $(srcdir)/afsl.exp ; fi
+	$(AR) cr $@ $?
 	-$(RANLIB) $@
+
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
 	$(CC) $(CFLAGS) $(PICFLAGS) -shared -o $@ $(OBJECTS)
+
+$(AFS_EXTRA_LIBS): afslib.o
+	$(CC) -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp -bnoentry afslib.o
 
 $(OBJECTS): ../../config.h
