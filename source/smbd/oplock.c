@@ -267,7 +267,7 @@ BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
 #ifdef LARGE_SMB_INO_T
       dbgtext( "dev = %x, inode = %.0f ", (unsigned int)dev, (double)inode);
 #else /* LARGE_SMB_INO_T */
-      dbgtext( "dev = %x, inode = %x ", (unsigned int)dev, (unsigned long)inode);
+      dbgtext( "dev = %x, inode = %lx ", (unsigned int)dev, (unsigned long)inode);
 #endif /* LARGE_SMB_INO_T */
       dbgtext( "allowing break to succeed.\n" );
       }
