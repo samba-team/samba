@@ -245,6 +245,7 @@ int main(int argc, char **argv)
 #ifdef	ENCRYPTION
 			encrypt_auto(1);
 			decrypt_auto(1);
+			EncryptVerbose(1);
 #else
 			fprintf(stderr,
 			    "%s: Warning: -x ignored, no ENCRYPT support.\n",
