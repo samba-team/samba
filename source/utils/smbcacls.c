@@ -340,7 +340,7 @@ static SEC_DESC *sec_desc_parse(char *str)
 	char *p = str;
 	fstring tok;
 	SEC_DESC *ret;
-	unsigned sd_size;
+	size_t sd_size;
 	DOM_SID *grp_sid=NULL, *owner_sid=NULL;
 	SEC_ACL *dacl=NULL;
 	int revision=1;
