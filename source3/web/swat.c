@@ -38,10 +38,12 @@ static BOOL demo_mode = False;
 #define OLD_PSWD "old_passwd"
 #define NEW_PSWD "new_passwd"
 #define NEW2_PSWD "new2_passwd"
-#define CHG_PASSWD_FLAG "chg_passwd_flag"
+#define CHG_S_PASSWD_FLAG "chg_s_passwd_flag"
+#define CHG_R_PASSWD_FLAG "chg_r_passwd_flag"
 #define ADD_USER_FLAG "add_user_flag"
 #define DISABLE_USER_FLAG "disable_user_flag"
 #define ENABLE_USER_FLAG "enable_user_flag"
+#define RHOST "remote_host"
 
 /* we need these because we link to locking*.o */
  void become_root(BOOL save_dir) {}
@@ -605,6 +607,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 ****************************************************************************/
 static void chg_passwd(void)
 {
+	char *host;
 	BOOL rslt;
 
 	/* Make sure users name has been specified */
@@ -619,9 +622,19 @@ static void chg_passwd(void)
 	 */
 	if (!cgi_variable(DISABLE_USER_FLAG) && !cgi_variable(ENABLE_USER_FLAG)) {
 
-		/* If current user is not root, make sure old password has been specified */
-		if ((am_root() == False) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0)) {
+		/*
+		 * If current user is not root, make sure old password has been specified 
+		 * If REMOTE change, even root must provide old password 
+		 */
+		if (((am_root() == False) && (strlen( cgi_variable(OLD_PSWD)) <= 0)) ||
+		    ((cgi_variable(CHG_R_PASSWD_FLAG)) &&  (strlen( cgi_variable(OLD_PSWD)) <= 0))) {
 			printf("<p> Must specify \"Old Password\" \n");
+			return;
+		}
+
+		/* If changing a users password on a remote hosts we have to know what host */
+		if ((cgi_variable(CHG_R_PASSWD_FLAG)) && (strlen( cgi_variable(RHOST)) <= 0)) {
+			printf("<p> Must specify \"Remote Machine\" \n");
 			return;
 		}
 
@@ -639,7 +652,14 @@ static void chg_passwd(void)
 		}
 	}
 
-	rslt = change_password(am_root() ? NULL : "127.0.0.1",
+	if (cgi_variable(CHG_R_PASSWD_FLAG)) {
+		host = cgi_variable(RHOST);
+	} else if (am_root()) {
+		host = NULL;
+	} else {
+		host = "127.0.0.1";
+	}
+	rslt = change_password(host,
 			       cgi_variable(USER),
 			       cgi_variable(OLD_PSWD), cgi_variable(NEW_PSWD),
 			       cgi_variable(ADD_USER_FLAG)? True : False,
@@ -663,12 +683,6 @@ static void passwd_page(void)
 {
 	char *new_name = get_user_name();
 
-	printf("<H2>Password Manager</H2>\n");
-
-	printf("<FORM name=\"swatform\" method=post>\n");
-
-	printf("<table>\n");
-
 	/* 
 	 * After the first time through here be nice. If the user
 	 * changed the User box text to another users name, remember it.
@@ -679,6 +693,15 @@ static void passwd_page(void)
 
 	if (!new_name) new_name = "";
 
+	printf("<H2>Server Password Management</H2>\n");
+
+	printf("<FORM name=\"swatform\" method=post>\n");
+
+	printf("<table>\n");
+
+	/* 
+	 * Create all the dialog boxes for data collection
+	 */
 	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
 	       USER, new_name);
 	if (am_root() == False) {
@@ -687,21 +710,60 @@ static void passwd_page(void)
 	printf("<p> New Password: <input type=password size=30 name=%s>\n",NEW_PSWD);
 	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",NEW2_PSWD);
 
-	printf("</select></td></tr><p>");
-	printf("<tr><td>");
-	printf("<input type=submit name=%s value=\"Change Password\">", CHG_PASSWD_FLAG);
+	/*
+	 * Create all the control buttons for requesting action
+	 */
+	printf("<p><tr><td>");
+	printf("<input type=submit name=%s value=\"Change Password\">", CHG_S_PASSWD_FLAG);
 	if (am_root() == True) {
 		printf("<input type=submit name=%s value=\"Add New User\">", ADD_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Disable User\">", DISABLE_USER_FLAG);
 		printf("<input type=submit name=%s value=\"Enable User\">", ENABLE_USER_FLAG);
 	}
-	printf("</td>\n");
+	printf("</td></tr>\n");
 
 	/*
-	 * If we don't have user information then there's nothing to do. It's probably
-	 * the first time through this code.
+	 * Do some work if change, add, disable or enable was requested. It could be
+	 * this is the first time through this code, so there isn't anything to do.
 	 */
-	if (cgi_variable(USER)) {
+	if ((cgi_variable(CHG_S_PASSWD_FLAG)) || (cgi_variable(ADD_USER_FLAG)) ||
+	    (cgi_variable(DISABLE_USER_FLAG)) || (cgi_variable(ENABLE_USER_FLAG))) {
+		chg_passwd();		
+	}
+
+	printf("</table>");
+
+	printf("</FORM>\n");
+
+	printf("<H2>Client/Server Password Management</H2>\n");
+
+	printf("<FORM name=\"swatform\" method=post>\n");
+
+	printf("<table>\n");
+
+	/* 
+	 * Create all the dialog boxes for data collection
+	 */
+	printf("<p> User Name        : <input type=text size=30 name=%s value=%s> \n", 
+	       USER, new_name);
+	printf("<p> Old Password: <input type=password size=30 name=%s>\n",OLD_PSWD);
+	printf("<p> New Password: <input type=password size=30 name=%s>\n",NEW_PSWD);
+	printf("<p> Re-type New Password: <input type=password size=30 name=%s>\n",NEW2_PSWD);
+	printf("<p> Remote Machine: <input type=password size=30 name=%s>\n",RHOST);
+
+	/*
+	 * Create all the control buttons for requesting action
+	 */
+	printf("<p><tr><td>");
+	printf("<input type=submit name=%s value=\"Change Password\">", CHG_R_PASSWD_FLAG);
+	printf("</td></tr>\n");
+
+	/*
+	 * Do some work if a request has been made to change the password somewhere other
+	 * than the server. It could be this is the first time through this code, so there 
+	 * isn't anything to do.
+	 */
+	if (cgi_variable(CHG_R_PASSWD_FLAG)) {
 		chg_passwd();		
 	}
 
