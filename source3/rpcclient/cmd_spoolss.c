@@ -69,7 +69,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
         return True;
 }
 
-
+#if 0
 /**********************************************************************
  * dummy function  -- placeholder
   */
@@ -80,6 +80,7 @@ static NTSTATUS cmd_spoolss_not_implemented(struct cli_state *cli,
 	printf ("(*) This command is not currently implemented.\n");
 	return NT_STATUS_OK;
 }
+#endif
 
 /***********************************************************************
  * Get printer information
@@ -603,6 +604,189 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 		printf("unknown info level %d\n", info_level);
 		break;
 	}
+
+ done: 
+	if (opened_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+static void display_reg_value(REGISTRY_VALUE value)
+{
+	pstring text;
+
+	switch(value.type) {
+	case REG_DWORD:
+		printf("%s: REG_DWORD: 0x%08x\n", value.valuename, 
+		       *((uint32 *) value.data_p));
+		break;
+	case REG_SZ:
+		rpcstr_pull(text, value.data_p, sizeof(text), value.size,
+			    STR_TERMINATE);
+		printf("%s: REG_SZ: %s\n", value.valuename, text);
+		break;
+	case REG_BINARY:
+		printf("%s: REG_BINARY: unknown length value not displayed\n",
+		       value.valuename);
+		break;
+	case REG_MULTI_SZ: {
+		uint16 *curstr = (uint16 *) value.data_p;
+		uint8 *start = value.data_p;
+		printf("%s: REG_MULTI_SZ:\n", value.valuename);
+		while ((*curstr != 0) && 
+		       ((uint8 *) curstr < start + value.size)) {
+			rpcstr_pull(text, curstr, sizeof(text), -1, 
+				    STR_TERMINATE);
+			printf("  %s\n", text);
+			curstr += strlen(text) + 1;
+		}
+	}
+	break;
+	default:
+		printf("%s: unknown type %d\n", value.valuename, value.type);
+	}
+	
+}
+
+/***********************************************************************
+ * Get printer data
+ */
+static NTSTATUS cmd_spoolss_getprinterdata(struct cli_state *cli,
+					   TALLOC_CTX *mem_ctx,
+					   int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	WERROR          result;
+	BOOL 		opened_hnd = False;
+	fstring 	printername,
+			servername,
+			user;
+	uint32 needed;
+	char *valuename;
+	REGISTRY_VALUE value;
+
+	if (argc != 3) {
+		printf("Usage: %s <printername> <valuename>\n", argv[0]);
+		printf("<printername> of . queries print server\n");
+		return NT_STATUS_OK;
+	}
+	valuename = argv[2];
+
+	/* Open a printer handle */
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	if (strncmp(argv[1], ".", sizeof(".")) == 0)
+		fstrcpy(printername, servername);
+	else
+		slprintf (printername, sizeof(fstring)-1, "%s\\%s", 
+			  servername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+	
+	/* get a printer handle */
+
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &pol);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+ 
+	opened_hnd = True;
+
+	/* Get printer info */
+
+	result = cli_spoolss_getprinterdata(cli, mem_ctx, 0, &needed,
+					&pol, valuename, &value);
+
+	if (W_ERROR_V(result) == ERRmoredata)
+		result = cli_spoolss_getprinterdata(
+			cli, mem_ctx, needed, NULL, &pol, valuename, &value);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Display printer data */
+
+	fstrcpy(value.valuename, valuename);
+	display_reg_value(value);
+	
+
+ done: 
+	if (opened_hnd) 
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/***********************************************************************
+ * Get printer data
+ */
+static NTSTATUS cmd_spoolss_getprinterdataex(struct cli_state *cli,
+					     TALLOC_CTX *mem_ctx,
+					     int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	WERROR          result;
+	BOOL 		opened_hnd = False;
+	fstring 	printername,
+			servername,
+			user;
+	uint32 needed;
+	char *valuename, *keyname;
+	REGISTRY_VALUE value;
+
+	if (argc != 4) {
+		printf("Usage: %s <printername> <keyname> <valuename>\n", 
+		       argv[0]);
+		printf("<printername> of . queries print server\n");
+		return NT_STATUS_OK;
+	}
+	valuename = argv[3];
+	keyname = argv[2];
+
+	/* Open a printer handle */
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	if (strncmp(argv[1], ".", sizeof(".")) == 0)
+		fstrcpy(printername, servername);
+	else
+		slprintf (printername, sizeof(fstring)-1, "%s\\%s", 
+			  servername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+	
+	/* get a printer handle */
+
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, 
+					     "", MAXIMUM_ALLOWED_ACCESS, 
+					     servername, user, &pol);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+ 
+	opened_hnd = True;
+
+	/* Get printer info */
+
+	result = cli_spoolss_getprinterdataex(cli, mem_ctx, 0, &needed,
+					      &pol, keyname, valuename, 
+					      &value);
+
+	if (W_ERROR_V(result) == ERRmoredata)
+		result = cli_spoolss_getprinterdataex(cli, mem_ctx, needed, 
+						      NULL, &pol, keyname,
+						      valuename, &value);
+
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	/* Display printer data */
+
+	fstrcpy(value.valuename, valuename);
+	display_reg_value(value);
+	
 
  done: 
 	if (opened_hnd) 
@@ -1814,42 +1998,6 @@ done:
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
-static void display_reg_value(REGISTRY_VALUE value)
-{
-	pstring text;
-
-	switch(value.type) {
-	case REG_DWORD:
-		printf("%s: REG_DWORD: 0x%08x\n", value.valuename, 
-		       *((uint32 *) value.data_p));
-		break;
-	case REG_SZ:
-		rpcstr_pull(text, value.data_p, sizeof(text), value.size,
-			    STR_TERMINATE);
-		printf("%s: REG_SZ: %s\n", value.valuename, text);
-		break;
-	case REG_BINARY:
-		printf("%s: REG_BINARY: unknown length value not displayed\n",
-		       value.valuename);
-		break;
-	case REG_MULTI_SZ: {
-		uint16 *curstr = (uint16 *) value.data_p;
-		uint8 *start = value.data_p;
-		printf("%s: REG_MULTI_SZ:\n", value.valuename);
-		while ((*curstr != 0) && 
-		       ((uint8 *) curstr < start + value.size)) {
-			rpcstr_pull(text, curstr, sizeof(text), -1, 
-				    STR_TERMINATE);
-			printf("  %s\n", text);
-			curstr += strlen(text) + 1;
-		}
-	}
-	break;
-	default:
-		printf("%s: unknown type %d\n", value.valuename, value.type);
-	}
-	
-}
 /* enumerate data */
 
 static NTSTATUS cmd_spoolss_enum_data( struct cli_state *cli, 
@@ -2145,7 +2293,8 @@ struct cmd_set spoolss_commands[] = {
 	{ "enumports", 		cmd_spoolss_enum_ports, 	PI_SPOOLSS, "Enumerate printer ports",             "" },
 	{ "enumdrivers", 	cmd_spoolss_enum_drivers, 	PI_SPOOLSS, "Enumerate installed printer drivers", "" },
 	{ "enumprinters", 	cmd_spoolss_enum_printers, 	PI_SPOOLSS, "Enumerate printers",                  "" },
-	{ "getdata",		cmd_spoolss_not_implemented,	PI_SPOOLSS, "Get print driver data (*)",           "" },
+	{ "getdata",		cmd_spoolss_getprinterdata,	PI_SPOOLSS, "Get print driver data",               "" },
+	{ "getdataex",		cmd_spoolss_getprinterdataex,	PI_SPOOLSS, "Get printer driver data with keyname", ""},
 	{ "getdriver",		cmd_spoolss_getdriver,		PI_SPOOLSS, "Get print driver information",        "" },
 	{ "getdriverdir",	cmd_spoolss_getdriverdir,	PI_SPOOLSS, "Get print driver upload directory",   "" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PI_SPOOLSS, "Get printer info",                    "" },
