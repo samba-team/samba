@@ -157,7 +157,7 @@ char *find_desc(FILE *fichier,char *text)
     fgets(chaine,255,fichier);
 
     long_desc=strtok(chaine,"=");
-    crap=strtok(NULL,",");
+    crap=strtok(NULL,",\r");
 
     p=long_desc;
     while(*p!='"' && *p!='\0')
@@ -217,6 +217,9 @@ void scan_copyfiles(FILE *fichier, char *chaine)
       }	
       i=0;
       while (*buffer[i]!='\0') {
+	part = &buffer[i][strlen(buffer[i])-1];
+	if (*part == '=')
+	  *part = '\0';
         if (strlen(files_to_copy) != 0)
           strcat(files_to_copy,",");
 	strcat(files_to_copy,direc);
