@@ -399,18 +399,35 @@ loop (int from0, int to0,
    }
 }
 
+/*
+ * Used by `setup_copier' to create some pipe-like means of
+ * communcation.  Real pipes would probably be the best thing, but
+ * then the shell doesn't understand it's talking to rshd.  If
+ * socketpair doesn't work everywhere, some autoconf magic would have
+ * to be added here.
+ *
+ * If it fails creating the `pipe', it aborts by calling fatal.
+ */
+
+static void
+pipe_a_like (int fd[2])
+{
+    if (socketpair (AF_UNIX, SOCK_STREAM, 0, fd) < 0)
+	fatal (STDOUT_FILENO, "socketpair: %m");
+}
+
+/*
+ * Start a child process and leave the parent copying data to and from it.  */
+
 static void
 setup_copier (void)
 {
     int p0[2], p1[2], p2[2];
     pid_t pid;
 
-    if (pipe(p0) < 0)
-	fatal (STDOUT_FILENO, "pipe: %m");
-    if (pipe(p1) < 0)
-	fatal (STDOUT_FILENO, "pipe: %m");
-    if (pipe(p2) < 0)
-	fatal (STDOUT_FILENO, "pipe: %m");
+    pipe_a_like(p0);
+    pipe_a_like(p1);
+    pipe_a_like(p2);
     pid = fork ();
     if (pid < 0)
 	fatal (STDOUT_FILENO, "fork: %m");
@@ -424,7 +441,7 @@ setup_copier (void)
 	close (p0[0]);
 	close (p1[1]);
 	close (p2[1]);
-    } else {
+    } else { /* parent */
 	close (p0[0]);
 	close (p1[1]);
 	close (p2[1]);
@@ -438,10 +455,29 @@ setup_copier (void)
     }
 }
 
+/*
+ * Is `port' a ``reserverd'' port?
+ */
+
 static int
 is_reserved(u_short port)
 {
     return ntohs(port) < IPPORT_RESERVED;
+}
+
+/*
+ * Set the necessary part of the environment in `env'.
+ */
+
+static void
+setup_environment (char *env[6], struct passwd *pwd)
+{
+    asprintf (&env[0], "USER=%s",  pwd->pw_name);
+    asprintf (&env[1], "HOME=%s",  pwd->pw_dir);
+    asprintf (&env[2], "SHELL=%s", pwd->pw_shell);
+    asprintf (&env[3], "PATH=%s",  _PATH_DEFPATH);
+    asprintf (&env[4], "SSH_CLIENT=only_to_make_bash_happy");
+    env[5] = NULL;
 }
 
 static void
@@ -457,7 +493,7 @@ doit (int do_kerberos, int check_rhosts)
     char cmd[COMMAND_SZ];
     struct passwd *pwd;
     int s = STDIN_FILENO;
-    char *env[5];
+    char *env[6];
 
     addrlen = sizeof(thisaddr);
     if (getsockname (s, (struct sockaddr *)&thisaddr, &addrlen) < 0
@@ -577,11 +613,7 @@ doit (int do_kerberos, int check_rhosts)
 	close (errsock);
     }
 
-    asprintf (&env[0], "USER=%s",  pwd->pw_name);
-    asprintf (&env[1], "HOME=%s",  pwd->pw_dir);
-    asprintf (&env[2], "SHELL=%s", pwd->pw_shell);
-    asprintf (&env[3], "PATH=%s",  _PATH_DEFPATH);
-    env[4] = NULL;
+    setup_environment (env, pwd);
 
     if (do_encrypt) {
 	setup_copier ();
