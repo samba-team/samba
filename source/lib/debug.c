@@ -195,48 +195,45 @@ void setup_logging( char *pname, BOOL interactive )
 
 /* ************************************************************************** **
  * reopen the log files
+ * note that we now do this unconditionally
  * ************************************************************************** **
  */
 void reopen_logs( void )
-  {
-  pstring fname;
+{
+	pstring fname;
+	mode_t oldumask;
+
+	if (DEBUGLEVEL <= 0) {
+		if (dbf) {
+			(void)fclose(dbf);
+			dbf = NULL;
+		}
+		return;
+	}
+
+	oldumask = umask( 022 );
   
-  if( DEBUGLEVEL > 0 )
-    {
-    pstrcpy( fname, debugf );
-    if( lp_loaded() && (*lp_logfile()) )
-      pstrcpy( fname, lp_logfile() );
+	pstrcpy(fname, debugf );
+	if (lp_loaded() && (*lp_logfile()))
+		pstrcpy(fname, lp_logfile());
 
-    if( !strcsequal( fname, debugf ) || !dbf || !file_exist( debugf, NULL ) )
-      {
-      mode_t oldumask = umask( 022 );
+	pstrcpy( debugf, fname );
+	if (dbf)
+		(void)fclose(dbf);
+	if (append_log)
+		dbf = sys_fopen( debugf, "a" );
+	else
+		dbf = sys_fopen( debugf, "w" );
+	/* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
+	 * to fix problem where smbd's that generate less
+	 * than 100 messages keep growing the log.
+	 */
+	force_check_log_size();
+	if (dbf)
+		setbuf( dbf, NULL );
+	(void)umask(oldumask);
+}
 
-      pstrcpy( debugf, fname );
-      if( dbf )
-        (void)fclose( dbf );
-      if( append_log )
-        dbf = sys_fopen( debugf, "a" );
-      else
-        dbf = sys_fopen( debugf, "w" );
-      /* Fix from klausr@ITAP.Physik.Uni-Stuttgart.De
-       * to fix problem where smbd's that generate less
-       * than 100 messages keep growing the log.
-       */
-      force_check_log_size();
-      if( dbf )
-        setbuf( dbf, NULL );
-      (void)umask( oldumask );
-      }
-    }
-  else
-    {
-    if( dbf )
-      {
-      (void)fclose( dbf );
-      dbf = NULL;
-      }
-    }
-  } /* reopen_logs */
 
 /* ************************************************************************** **
  * Force a check of the log size.
