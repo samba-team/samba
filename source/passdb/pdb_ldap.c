@@ -439,9 +439,9 @@ static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
 	get_single_attribute(ldap_struct, entry, "userWorkstations", workstations);
 	get_single_attribute(ldap_struct, entry, "rid", temp);
-	user_rid = (uint32)strtol(temp, NULL, 16);
+	user_rid = (uint32)strtol(temp, NULL, 10);
 	get_single_attribute(ldap_struct, entry, "primaryGroupID", temp);
-	group_rid = (uint32)strtol(temp, NULL, 16);
+	group_rid = (uint32)strtol(temp, NULL, 10);
 
 
 	/* These values MAY be in LDAP, but they can also be retrieved through 
@@ -577,9 +577,13 @@ static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * 
 	make_a_mod(mods, ldap_state, "description", pdb_get_acct_desc(sampass));
 	make_a_mod(mods, ldap_state, "userWorkstations", pdb_get_workstations(sampass));
 
+	if ( !sampass->user_rid)
+		sampass->user_rid = pdb_uid_to_user_rid(pdb_get_uid(sampass));
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
 	make_a_mod(mods, ldap_state, "rid", temp);
 
+	if ( !sampass->group_rid)
+		sampass->user_rid = pdb_gid_to_group_rid(pdb_get_gid(sampass));
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->group_rid);
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
