@@ -220,7 +220,7 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t
 		}
 	}
 
-	/* Now add the additional SIDs from the supplimentary token. */
+	/* Now add the additional SIDs from the supplementary token. */
 	if (sup_tok) {
 		for (i = 0; i < sup_tok->num_sids; i++)
 			sid_copy( &psids[psid_ndx++], &sup_tok->user_sids[i] );
@@ -259,7 +259,7 @@ tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
 
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, 
-                     char *requested_name, char *domain,BOOL guest, NT_USER_TOKEN *ptok)
+                     char *requested_name, char *domain,BOOL guest, NT_USER_TOKEN **pptok)
 {
 	user_struct *vuser = NULL;
 	struct passwd *pwfile; /* for getting real name from passwd file */
@@ -308,12 +308,12 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name,
 	initialise_groups(unix_name, uid, gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
-	if (ptok)
-		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &ptok);
+	if (*pptok)
+		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, pptok);
 
 	/* Create an NT_USER_TOKEN struct for this user. */
 	vuser->nt_user_token = 
-                create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest, ptok);
+                create_nt_token(uid,gid, vuser->n_groups, vuser->groups, guest, *pptok);
 
 	next_vuid++;
 	num_validated_vuids++;
@@ -1469,7 +1469,7 @@ BOOL domain_client_validate( char *user, char *domain,
   time_t last_change_time;
 
   if (pptoken)
-    *pptoken = NULL;
+          *pptoken = NULL;
 
   if(user_exists != NULL)
     *user_exists = True; /* Only set false on a very specific error. */
@@ -1609,18 +1609,15 @@ BOOL domain_client_validate( char *user, char *domain,
      other means.  We merge this into the NT_USER_TOKEN associated with the vuid
      later on. */
 
-  if (pptoken) {
+  if (pptoken && info3.num_groups2 > 0) {
     NT_USER_TOKEN *ptok;
     int i;
     DOM_SID domain_sid;
 
-    *pptoken = NULL;
-
-    if (info3.num_groups2 != 0) {
-      if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
-        DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
-        return False;
-      }
+    if ((ptok = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL) {
+      DEBUG(0, ("domain_client_validate: Out of memory allocating NT_USER_TOKEN\n"));
+      return False;
+    }
  
       ptok->num_sids = (size_t)info3.num_groups2;
       if ((ptok->user_sids = (DOM_SID *)malloc( sizeof(DOM_SID) * ptok->num_sids )) == NULL) {
@@ -1640,7 +1637,6 @@ BOOL domain_client_validate( char *user, char *domain,
         sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
       }
       *pptoken = ptok;
-    }
   }
 
 #if 0
