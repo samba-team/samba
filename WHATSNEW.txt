@@ -18,6 +18,10 @@ details:
 
 1)  Fix uninitialized variable in passdb.c.
 2)  Fix formal parameter type in get_static() in nsswitch/wins.c.
+3)  Fix problem mounting directories when mount.cifs is installed 
+    with the setuid on.
+4)  Fix bug that prevent --mandir from overriding the defaults
+    given in the --with-fhs macro.
 
 
 Changes since 3.0.1rc1
