@@ -1562,6 +1562,7 @@ extern int unix_ERR_code;
 
 /* useful macros */
 #define ZERO_STRUCT(x) memset((char *)&(x), 0, sizeof(x))
+#define ZERO_ARRAY(x) memset((char *)(x), 0, sizeof(x))
 #define SMB_ASSERT(b) ((b)?(void)0: \
         (DEBUG(0,("PANIC: assert failed at %s(%d)\n", \
 		 __FILE__, __LINE__)), smb_panic("assert failed")))
