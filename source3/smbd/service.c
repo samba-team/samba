@@ -344,7 +344,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			if (user_in_list(user, list))
 				conn->read_only = True;
 		}
-		else DEBUG(0, ("read list substitution failed readlist: 0x%x list: 0x%x\n", lp_readlist(snum), list));
+		else DEBUG(0, ("read list substitution failed\n"));
 		if (list) lp_list_free(&list);
 
 		lp_list_copy(&list, lp_writelist(snum));
@@ -352,7 +352,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 			if (user_in_list(user, list))
 				conn->read_only = False;
 		}
-		else DEBUG(0, ("write list substitution failed writelist: 0x%x list: 0x%x\n", lp_writelist(snum), list));
+		else DEBUG(0, ("write list substitution failed writelist\n"));
 		if (list) lp_list_free(&list);
 	}
 
