@@ -325,8 +325,39 @@ static BOOL cli_session_setup_spnego(struct cli_state *cli, char *user,
 	uint32 capabilities = cli_session_setup_capabilities(cli);
 	char *p;
 	DATA_BLOB blob2, negTokenTarg;
+	char *principle;
+	char *OIDs[ASN1_MAX_OIDS];
+	uint8 guid[16];
+	int i;
+	BOOL got_kerberos_mechanism = False;
 
-	negTokenTarg = spnego_gen_negTokenTarg(cli);
+	/* the server sent us the first part of the SPNEGO exchange in the negprot 
+	   reply */
+	if (!spnego_parse_negTokenInit(cli->secblob, guid, OIDs, &principle)) {
+		return False;
+	}
+
+	/* make sure the server understands kerberos */
+	for (i=0;OIDs[i];i++) {
+		DEBUG(3,("got OID=%s\n", OIDs[i]));
+		if (strcmp(OIDs[i], "1 2 840 48018 1 2 2") == 0) {
+			got_kerberos_mechanism = True;
+		}
+		free(OIDs[i]);
+	}
+	DEBUG(3,("got principle=%s\n", principle));
+
+	if (!got_kerberos_mechanism) {
+		DEBUG(1,("Server didn't offer kerberos5 mechanism!?\n"));
+		return False;
+	}
+
+	/* generate the encapsulated kerberos5 ticket */
+	negTokenTarg = spnego_gen_negTokenTarg(cli, principle);
+
+	free(principle);
+
+	if (!negTokenTarg.data) return False;
 
 	capabilities |= CAP_EXTENDED_SECURITY;
 

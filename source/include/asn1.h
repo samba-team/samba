@@ -22,6 +22,7 @@
 
 struct nesting {
 	off_t start;
+	size_t taglen; /* for parsing */
 	struct nesting *next;
 };
 
@@ -30,6 +31,7 @@ typedef struct {
 	size_t length;
 	off_t ofs;
 	struct nesting *nesting;
+	BOOL has_error;
 } ASN1_DATA;
 
 
@@ -40,3 +42,5 @@ typedef struct {
 #define ASN1_OCTET_STRING 0x4
 #define ASN1_OID 0x6
 #define ASN1_BOOLEAN 0x1
+
+#define ASN1_MAX_OIDS 20
