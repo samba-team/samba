@@ -147,11 +147,6 @@ BOOL initialise_wins(void)
 
   add_samba_names_to_subnet(wins_server_subnet);
 
-#ifndef SYNC_DNS
-  /* Setup the async dns. */
-  start_async_dns();
-#endif
-
   pstrcpy(fname,lp_lockdir());
   trim_string(fname,NULL,"/");
   pstrcat(fname,"/");

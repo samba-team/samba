@@ -185,6 +185,67 @@ static void expire_names_and_servers(time_t t)
   expire_workgroups_and_servers(t);
 } /* expire_names_and_servers */
 
+
+/************************************************************************** **
+reload the list of network interfaces
+ ************************************************************************** */
+static void reload_interfaces(time_t t)
+{
+	static time_t lastt;
+	int n;
+	struct subnet_record *subrec;
+	extern BOOL rescan_listen_set;
+
+	if (t && ((t - lastt) < NMBD_INTERFACES_RELOAD)) return;
+	lastt = t;
+
+	if (!interfaces_changed()) return;
+
+	/* the list of probed interfaces has changed, we may need to add/remove
+	   some subnets */
+	load_interfaces();
+
+	/* find any interfaces that need adding */
+	for (n=iface_count() - 1; n >= 0; n--) {
+		struct interface *iface = get_interface(n);
+		for (subrec=subnetlist; subrec; subrec=subrec->next) {
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+		}
+		if (!subrec) {
+			/* it wasn't found! add it */
+			DEBUG(2,("Found new interface %s\n", 
+				 inet_ntoa(iface->ip)));
+			subrec = make_normal_subnet(iface);
+			if (subrec) register_my_workgroup_one_subnet(subrec);
+		}
+	}
+
+	/* find any interfaces that need deleting */
+	for (subrec=subnetlist; subrec; subrec=subrec->next) {
+		for (n=iface_count() - 1; n >= 0; n--) {
+			struct interface *iface = get_interface(n);
+			if (ip_equal(iface->ip, subrec->myip) &&
+			    ip_equal(iface->nmask, subrec->mask_ip)) break;
+		}
+		if (n == -1) {
+			/* oops, an interface has disapeared. This is
+			 tricky, we don't dare actually free the
+			 interface as it could be being used, so
+			 instead we just wear the memory leak and
+			 remove it from the list of interfaces without
+			 freeing it */
+			DEBUG(2,("Deleting dead interface %s\n", 
+				 inet_ntoa(subrec->myip)));
+			close_subnet(subrec);
+		}
+	}
+	
+	rescan_listen_set = True;
+}
+
+
+
 /**************************************************************************** **
   reload the services file
  **************************************************************************** */
@@ -402,11 +463,14 @@ static void process(void)
      */
 
     if(reload_after_sighup) {
-      reload_services( True );
-      reopen_logs();
-      reload_after_sighup = False;
+	    reload_services( True );
+	    reopen_logs();
+	    reload_interfaces(0);
+	    reload_after_sighup = False;
     }
 
+    /* check for new network interfaces */
+    reload_interfaces(t);
   }
 } /* process */
 
@@ -684,7 +748,7 @@ static void usage(char *pname)
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
 
-  if( !get_myname( myhostname, NULL) )
+  if(!get_myname( myhostname))
   {
     DEBUG( 0, ( "Unable to get my hostname - exiting.\n" ) );
     return -1;
@@ -721,6 +785,14 @@ static void usage(char *pname)
     DEBUG( 2, ( "Becoming a daemon.\n" ) );
     become_daemon();
   }
+
+#ifndef SYNC_DNS
+  /* Setup the async dns. We do it here so it doesn't have all the other
+     stuff initialised and thus chewing memory and sockets */
+  if(lp_we_are_a_wins_server()) {
+	  start_async_dns();
+  }
+#endif
 
   if (!directory_exist(lp_lockdir(), NULL)) {
 	  mkdir(lp_lockdir(), 0755);

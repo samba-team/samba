@@ -217,9 +217,10 @@ static void show_parameter(int snum, struct parm_struct *parm)
 		break;
 
 	case P_OCTAL:
-		printf("<input type=text size=8 name=\"parm_%s\" value=0%o>", make_parm_name(parm->label), *(int *)ptr);
-		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'0%o\'\">",
-			make_parm_name(parm->label),(int)(parm->def.ivalue));
+		printf("<input type=text size=8 name=\"parm_%s\" value=%s>", make_parm_name(parm->label), octal_string(*(int *)ptr));
+		printf("<input type=button value=\"Set Default\" onClick=\"swatform.parm_%s.value=\'%s\'\">",
+		       make_parm_name(parm->label),
+		       octal_string((int)(parm->def.ivalue)));
 		break;
 
 	case P_ENUM:
@@ -942,6 +943,8 @@ static void printers_page(void)
 	extern FILE *dbf;
 	int opt;
 	char *page;
+
+	fault_setup(NULL);
 
 #if defined(HAVE_SET_AUTH_PARAMETERS)
     set_auth_parameters(argc, argv);

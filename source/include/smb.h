@@ -713,7 +713,7 @@ struct server_info_struct
 /* used for network interfaces */
 struct interface
 {
-	struct interface *next;
+	struct interface *next, *prev;
 	struct in_addr ip;
 	struct in_addr bcast;
 	struct in_addr nmask;
@@ -882,6 +882,7 @@ struct bitmap {
 #define FLAG_GLOBAL 	0x08 /* local options that should be globally settable in SWAT */
 #define FLAG_DEPRECATED 0x10 /* options that should no longer be used */
 #define FLAG_HIDE  	0x20 /* options that should be hidden in SWAT */
+#define FLAG_DOS_STRING 0x40 /* convert from UNIX to DOS codepage when reading this string. */
 
 #ifndef LOCKING_VERSION
 #define LOCKING_VERSION 4
@@ -1746,6 +1747,10 @@ struct nmb_name {
 #define MAP_TO_GUEST_ON_BAD_USER 1
 #define MAP_TO_GUEST_ON_BAD_PASSWORD 2
 
-#endif /* _SMB_H */
+/*
+ * SMB UCS2 (16-bit unicode) internal type.
+ */
 
-/* _SMB_H */
+typedef uint16 smb_ucs2_t;
+
+#endif /* _SMB_H */

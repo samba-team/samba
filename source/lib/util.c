@@ -1724,43 +1724,30 @@ void *Realloc(void *p,size_t size)
 /****************************************************************************
 get my own name and IP
 ****************************************************************************/
-BOOL get_myname(char *my_name,struct in_addr *ip)
+BOOL get_myname(char *my_name)
 {
-  struct hostent *hp;
-  pstring hostname;
+	pstring hostname;
 
-  *hostname = 0;
+	*hostname = 0;
 
-  /* get my host name */
-  if (gethostname(hostname, sizeof(hostname)) == -1) 
-    {
-      DEBUG(0,("gethostname failed\n"));
-      return False;
-    } 
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
 
-  /* Ensure null termination. */
-  hostname[sizeof(hostname)-1] = '\0';
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
 
-  /* get host info */
-  if ((hp = Get_Hostbyname(hostname)) == 0) 
-    {
-      DEBUG(0,( "Get_Hostbyname: Unknown host %s\n",hostname));
-      return False;
-    }
-
-  if (my_name)
-    {
-      /* split off any parts after an initial . */
-      char *p = strchr(hostname,'.');
-      if (p) *p = 0;
-
-      fstrcpy(my_name,hostname);
-    }
-
-  if (ip)
-    putip((char *)ip,(char *)hp->h_addr);
-
-  return(True);
+	if (my_name) {
+		/* split off any parts after an initial . */
+		char *p = strchr(hostname,'.');
+		if (p) *p = 0;
+		
+		fstrcpy(my_name,hostname);
+	}
+	
+	return(True);
 }
 
 
@@ -1769,10 +1756,7 @@ true if two IP addresses are equal
 ****************************************************************************/
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2)
 {
-  uint32 a1,a2;
-  a1 = ntohl(ip1.s_addr);
-  a2 = ntohl(ip2.s_addr);
-  return(a1 == a2);
+	return ip1.s_addr == ip2.s_addr;
 }
 
 
@@ -2713,14 +2697,6 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
   {
     DEBUG(3,("lock failed at offset %.0f count %.0f op %d type %d (%s)\n",
           (double)offset,(double)count,op,type,strerror(errno)));
-
-    /* perhaps it doesn't support this sort of locking?? */
-    if (errno == EINVAL)
-    {
-      DEBUG(3,("locking not supported? returning True\n"));
-      return(True);
-    }
-
     return(False);
   }
 
@@ -3077,4 +3053,17 @@ char *smbd_mktemp(char *template)
 	}
 
 	return p;
+}
+
+
+/*****************************************************************
+like strdup but for memory
+ *****************************************************************/  
+void *memdup(void *p, size_t size)
+{
+	void *p2;
+	p2 = malloc(size);
+	if (!p2) return NULL;
+	memcpy(p2, p, size);
+	return p2;
 }

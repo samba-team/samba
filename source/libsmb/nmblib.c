@@ -673,6 +673,7 @@ void free_packet(struct packet_struct *packet)
     free_nmb_packet(&packet->packet.nmb);
   else if (packet->packet_type == DGRAM_PACKET)
     free_dgram_packet(&packet->packet.dgram);
+  ZERO_STRUCTPN(packet);
   free(packet);
 }
 

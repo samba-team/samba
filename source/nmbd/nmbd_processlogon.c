@@ -135,6 +135,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
       fstrcpy(reply_name,my_name);
       fstrcpy(q, reply_name);
+
       q = skip_string(q, 1); /* PDC name */
 
       if (strcmp(mailslot, NT_LOGON_MAILSLOT)==0) {
@@ -142,6 +143,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
 
         PutUniCode(q, my_name); /* PDC name */
         q = skip_unicode_string(q, 1); 
+
         PutUniCode(q, global_myworkgroup); /* Domain name*/
         q = skip_unicode_string(q, 1); 
 

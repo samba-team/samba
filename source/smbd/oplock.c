@@ -790,6 +790,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   int break_counter = OPLOCK_BREAK_RESENDS;
   int timeout = (OPLOCK_BREAK_TIMEOUT/OPLOCK_BREAK_RESENDS) * 1000;
   pstring file_name;
+  BOOL using_levelII;
 
   if((fsp = initial_break_processing(dev, inode, tval)) == NULL)
     return True;
@@ -858,14 +859,15 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   /* Prepare the SMBlockingX message. */
 
   if ((global_client_caps & CAP_LEVEL_II_OPLOCKS) && !lp_kernel_oplocks() && lp_level2_oplocks(SNUM(fsp->conn))) {
-    prepare_break_message( outbuf, fsp, True);
-    /* Remember we just sent a break to level II on this file. */
-    fsp->sent_oplock_break = LEVEL_II_BREAK_SENT;
+	  using_levelII = True;
   } else {
-    prepare_break_message( outbuf, fsp, False);
-    /* Remember we just sent a break to none on this file. */
-    fsp->sent_oplock_break = EXCLUSIVE_BREAK_SENT;
+	  using_levelII = False;
   }
+
+  prepare_break_message( outbuf, fsp, using_levelII);
+  /* Remember if we just sent a break to level II on this file. */
+  fsp->sent_oplock_break = using_levelII?
+	  LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
 
   send_smb(Client, outbuf);
 
@@ -914,6 +916,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
 
       if (smb_read_error == READ_TIMEOUT && break_counter--) {
         DEBUG(0, ( "oplock_break resend\n" ) );
+	prepare_break_message( outbuf, fsp, using_levelII);
         send_smb(Client, outbuf);
         continue;
       }

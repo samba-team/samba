@@ -490,14 +490,11 @@ static void usage(void)
 	argv += 2;
 
 	while ((opt = 
-		getopt(argc, argv,"O:B:i:U:W:EI:n:Nd:h")) != EOF)
+		getopt(argc, argv,"O:i:U:W:EI:n:Nd:h")) != EOF)
 		switch (opt) {
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
 			break;	
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
-			break;
 		case 'i':
 			pstrcpy(scope,optarg);
 			break;
@@ -553,7 +550,7 @@ static void usage(void)
 
 	DEBUG(3,("smbmount started (version %s)\n", VERSION));
 
-	if (!get_myname(myhostname,NULL)) {
+	if (!get_myname(myhostname)) {
 		DEBUG(0,("Failed to get my hostname.\n"));
 	}
 
@@ -570,7 +567,7 @@ static void usage(void)
 		pstrcpy(workgroup,lp_workgroup());
 
 	load_interfaces();
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);  
 	strupper(global_myname);
 
 	init_mount(service, mpoint, "");

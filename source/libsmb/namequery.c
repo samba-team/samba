@@ -460,7 +460,7 @@ static BOOL resolve_bcast(const char *name, struct in_addr *return_ip, int name_
 	 * Lookup the name on all the interfaces, return on
 	 * the first successful match.
 	 */
-	for( i = 0; i < num_interfaces; i++) {
+	for( i = num_interfaces-1; i >= 0; i--) {
 		struct in_addr sendto_ip;
 		/* Done this way to fix compiler error on IRIX 5.x */
 		sendto_ip = *iface_bcast(*iface_n_ip(i));

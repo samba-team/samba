@@ -309,7 +309,7 @@ enum client_action
 	myumask = umask(0);
 	umask(myumask);
 
-	if (!get_myname(global_myname, NULL))
+	if (!get_myname(global_myname))
 	{
 		fprintf(stderr, "Failed to get my hostname.\n");
 	}
@@ -360,7 +360,7 @@ enum client_action
 		cli_action = CLIENT_SVC;
 	}
 
-	while ((opt = getopt(argc, argv,"s:B:O:M:S:i:N:o:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	while ((opt = getopt(argc, argv,"s:O:M:S:i:N:o:n:d:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
 	{
 		switch (opt)
 		{
@@ -385,12 +385,6 @@ enum client_action
 				pstrcpy(cli_info.dest_host,optarg);
 				strupper(cli_info.dest_host);
 				cli_action = CLIENT_IPC;
-				break;
-			}
-
-			case 'B':
-			{
-				iface_set_default(NULL,optarg,NULL);
 				break;
 			}
 

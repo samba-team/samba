@@ -95,16 +95,21 @@ char *getsmbpass(char *prompt)    ;
 /*The following definitions come from  lib/interface.c  */
 
 void load_interfaces(void);
-void iface_set_default(char *ip,char *bcast,char *nmask);
+BOOL interfaces_changed(void);
 BOOL ismyip(struct in_addr ip);
 BOOL is_local_net(struct in_addr from);
 int iface_count(void);
 BOOL we_are_multihomed(void);
 struct interface *get_interface(int n);
 struct in_addr *iface_n_ip(int n);
+struct in_addr *iface_n_bcast(int n);
 unsigned iface_hash(void);
 struct in_addr *iface_bcast(struct in_addr ip);
 struct in_addr *iface_ip(struct in_addr ip);
+
+/*The following definitions come from  lib/interfaces.c  */
+
+int get_interfaces(struct iface_struct *ifaces, int max_interfaces);
 
 /*The following definitions come from  lib/kanji.c  */
 
@@ -115,10 +120,6 @@ void initialize_multibyte_vectors( int client_codepage);
 /*The following definitions come from  lib/md4.c  */
 
 void mdfour(unsigned char *out, unsigned char *in, int n);
-
-/*The following definitions come from  lib/netmask.c  */
-
-int get_netmask(struct in_addr *ipaddr, struct in_addr *nmask);
 
 /*The following definitions come from  lib/pidfile.c  */
 
@@ -252,7 +253,7 @@ void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p,size_t size);
-BOOL get_myname(char *my_name,struct in_addr *ip);
+BOOL get_myname(char *my_name);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int interpret_protocol(char *str,int def);
 uint32 interpret_addr(char *str);
@@ -288,6 +289,7 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
 char *smbd_mktemp(char *template);
+void *memdup(void *p, size_t size);
 
 /*The following definitions come from  lib/util_file.c  */
 
@@ -392,6 +394,7 @@ void fstring_sub(char *s,const char *pattern,const char *insert);
 void pstring_sub(char *s,const char *pattern,const char *insert);
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len);
 void split_at_last_component(char *path, char *front, char sep, char *back);
+char *octal_string(int i);
 
 /*The following definitions come from  lib/util_unistr.c  */
 
@@ -719,6 +722,7 @@ void add_logon_names(void);
 
 /*The following definitions come from  nmbd/nmbd_mynames.c  */
 
+void register_my_workgroup_one_subnet(struct subnet_record *subrec);
 BOOL register_my_workgroup_and_names(void);
 void release_my_names(void);
 void refresh_my_names(time_t t);
@@ -918,6 +922,8 @@ void write_browse_list(time_t t, BOOL force_write);
 
 /*The following definitions come from  nmbd/nmbd_subnetdb.c  */
 
+void close_subnet(struct subnet_record *subrec);
+struct subnet_record *make_normal_subnet(struct interface *iface);
 BOOL create_subnets(void);
 BOOL we_are_a_wins_client(void);
 struct subnet_record *get_next_subnet_maybe_unicast(struct subnet_record *subrec);
@@ -1260,8 +1266,8 @@ void pdb_set_kickoff_time(char *p, int max_len, time_t t);
 void pdb_set_can_change_time(char *p, int max_len, time_t t);
 void pdb_set_must_change_time(char *p, int max_len, time_t t);
 void pdb_set_last_set_time(char *p, int max_len, time_t t);
-void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl);
-BOOL pdb_gethexpwd(char *p, char *pwd);
+void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl);
+BOOL pdb_gethexpwd(char *p, unsigned char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 BOOL pdb_generate_sam_sid(void);
 uid_t pdb_user_rid_to_uid(uint32 user_rid);
@@ -2537,6 +2543,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_write(char *inbuf,char *outbuf,int length,int dum_bufsize);
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);

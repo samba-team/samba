@@ -37,6 +37,9 @@ extern struct in_addr loopback_ip;
 
 static void queue_packet(struct packet_struct *packet);
 
+BOOL rescan_listen_set = False;
+
+
 /*******************************************************************
   The global packet linked-list. Incoming entries are 
   added to the end of this list. It is supposed to remain fairly 
@@ -1076,15 +1079,6 @@ mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scop
     case ANN_GetBackupListReq:
     {
       debug_browse_data(buf, len);
-
-      /* This is one occasion where we change a subnet that is
-        given to us. If the packet was sent to WORKGROUP<1b> instead
-        of WORKGROUP<1d> then it was unicast to us a domain master
-        browser. Change subrec to unicast.
-      */
-      if(dgram->dest_name.name_type == 0x1b)
-        subrec = unicast_subnet;
-
       process_get_backup_list_request(subrec, p, buf+1);
       break;
     }
@@ -1729,6 +1723,10 @@ only use %d.\n", (count*2) + 2, FD_SETSIZE));
   }
 
   *listen_number = (count*2) + 2;
+
+  if (*ppset) free(*ppset);
+  if (*psock_array) free(*psock_array);
+
   *ppset = pset;
   *psock_array = sock_array;
  
@@ -1752,13 +1750,14 @@ BOOL listen_for_packets(BOOL run_election)
   int dns_fd;
 #endif
 
-  if(listen_set == NULL)
+  if(listen_set == NULL || rescan_listen_set)
   {
     if(create_listen_fdset(&listen_set, &sock_array, &listen_number))
     {
       DEBUG(0,("listen_for_packets: Fatal error. unable to create listen set. Exiting.\n"));
       return True;
     }
+    rescan_listen_set = False;
   }
 
   memcpy((char *)&fds, (char *)listen_set, sizeof(fd_set));

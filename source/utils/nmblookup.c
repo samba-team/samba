@@ -31,9 +31,14 @@ extern pstring scope;
 extern pstring myhostname;
 extern struct in_addr ipzero;
 
-int ServerFD= -1;
-
-int RootPort = 0;
+static BOOL use_bcast = True;
+static BOOL got_bcast = False;
+static struct in_addr bcast_addr;
+static BOOL recursion_desired = False;
+static BOOL translate_addresses = False;
+static int ServerFD= -1;
+static int RootPort = 0;
+static BOOL find_status=False;
 
 /****************************************************************************
   open the socket communication
@@ -60,7 +65,7 @@ static BOOL open_sockets(void)
 ****************************************************************************/
 static BOOL init_structs(void )
 {
-  if (!get_myname(myhostname,NULL))
+  if (!get_myname(myhostname))
     return(False);
 
   return True;
@@ -91,6 +96,59 @@ static void usage(void)
 
 
 /****************************************************************************
+send out one query
+****************************************************************************/
+static BOOL query_one(char *lookup, unsigned int lookup_type)
+{
+	int j, count;
+	struct in_addr *ip_list=NULL;
+
+	if (got_bcast) {
+		printf("querying %s on %s\n", lookup, inet_ntoa(bcast_addr));
+		ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
+				     use_bcast?True:recursion_desired,
+				     bcast_addr,&count,NULL);
+	} else {
+		struct in_addr *bcast;
+		for (j=iface_count() - 1;
+		     !ip_list && j >= 0;
+		     j--) {
+			bcast = iface_n_bcast(j);
+			printf("querying %s on %s\n", 
+			       lookup, inet_ntoa(*bcast));
+			ip_list = name_query(ServerFD,lookup,lookup_type,
+					     use_bcast,
+					     use_bcast?True:recursion_desired,
+					     *bcast,&count,NULL);
+		}
+	}
+
+	if (!ip_list) return False;
+
+	for (j=0;j<count;j++) {
+		if (translate_addresses) {
+			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
+			if (host) {
+				printf("%s, ", host -> h_name);
+			}
+		}
+		printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
+	}
+
+	/* We can only do find_status if the ip address returned
+	   was valid - ie. name_query returned true.
+	*/
+	if (find_status) {
+		printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
+		name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL,NULL);
+		printf("\n");
+	}
+
+	return (ip_list != NULL);
+}
+
+
+/****************************************************************************
   main program
 ****************************************************************************/
 int main(int argc,char *argv[])
@@ -101,15 +159,9 @@ int main(int argc,char *argv[])
   extern int optind;
   extern char *optarg;
   BOOL find_master=False;
-  BOOL find_status=False;
   int i;
   static pstring servicesf = CONFIGFILE;
-  struct in_addr bcast_addr;
-  BOOL use_bcast = True;
-  BOOL got_bcast = False;
   BOOL lookup_by_ip = False;
-  BOOL recursion_desired = False;
-  BOOL translate_addresses = False;
   int commandline_debuglevel = -2;
 
   DEBUGLEVEL = 1;
@@ -125,13 +177,11 @@ int main(int argc,char *argv[])
     switch (opt)
       {
       case 'B':
-	iface_set_default(NULL,optarg,NULL);
 	bcast_addr = *interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = True;
 	break;
       case 'U':
-	iface_set_default(NULL,optarg,NULL);
 	bcast_addr = *interpret_addr2(optarg);
 	got_bcast = True;
 	use_bcast = False;
@@ -195,18 +245,10 @@ int main(int argc,char *argv[])
   load_interfaces();
   if (!open_sockets()) return(1);
 
-  if (!got_bcast)
-    bcast_addr = *iface_bcast(ipzero);
-
-  DEBUG(1,("Sending queries to %s\n",inet_ntoa(bcast_addr)));
-
-
   for (i=optind;i<argc;i++)
   {
-      int j, count;
       char *p;
       struct in_addr ip;
-      struct in_addr *ip_list;
 
       fstrcpy(lookup,argv[i]);
 
@@ -236,27 +278,7 @@ int main(int argc,char *argv[])
         sscanf(p+1,"%x",&lookup_type);
       }
 
-      if ((ip_list = name_query(ServerFD,lookup,lookup_type,use_bcast,
-				use_bcast?True:recursion_desired,
-				bcast_addr,&count,NULL))) {
-	      for (j=0;j<count;j++) {
-		      if (translate_addresses) {
-			struct hostent *host = gethostbyaddr((char *)&ip_list[j], sizeof(ip_list[j]), AF_INET);
-			if (host)
-			  printf("%s, ", host -> h_name);
-		      }
-		      printf("%s %s<%02x>\n",inet_ntoa(ip_list[j]),lookup, lookup_type);
-	      }
-
-	      /* We can only do find_status if the ip address returned
-		 was valid - ie. name_query returned true.
-		 */
-	      if (find_status) {
-		      printf("Looking up status of %s\n",inet_ntoa(ip_list[0]));
-		      name_status(ServerFD,lookup,lookup_type,True,ip_list[0],NULL,NULL,NULL);
-		      printf("\n");
-	      }
-      } else {
+      if (!query_one(lookup, lookup_type)) {
 	      printf("name_query failed to find name %s\n", lookup);
       }
   }

@@ -106,6 +106,7 @@ void pwd_set_cleartext(struct pwd_info *pwd, char *clr)
 {
 	pwd_init(pwd);
 	fstrcpy(pwd->password, clr);
+	unix_to_dos(pwd->password,True);
 	pwd->cleartext = True;
 	pwd->null_pwd  = False;
 	pwd->crypted   = False;
@@ -122,6 +123,7 @@ void pwd_get_cleartext(struct pwd_info *pwd, char *clr)
 	if (pwd->cleartext)
 	{
 		fstrcpy(clr, pwd->password);
+		dos_to_unix(clr, True);
 	}
 	else
 	{
@@ -184,9 +186,14 @@ void pwd_get_lm_nt_16(struct pwd_info *pwd, uchar lm_pwd[16], uchar nt_pwd[16])
  ****************************************************************************/
 void pwd_make_lm_nt_16(struct pwd_info *pwd, char *clr)
 {
+	pstring dos_passwd;
+
 	pwd_init(pwd);
 
-	nt_lm_owf_gen(clr, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
+	pstrcpy(dos_passwd, clr);
+	unix_to_dos(dos_passwd, True);
+
+	nt_lm_owf_gen(dos_passwd, pwd->smb_nt_pwd, pwd->smb_lm_pwd);
 	pwd->null_pwd  = False;
 	pwd->cleartext = False;
 	pwd->crypted = False;

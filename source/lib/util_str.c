@@ -1192,3 +1192,17 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 		}
 	}
 }
+
+
+/****************************************************************************
+write an octal as a string
+****************************************************************************/
+char *octal_string(int i)
+{
+	static char ret[64];
+	if (i == -1) {
+		return "-1";
+	}
+	slprintf(ret, sizeof(ret), "0%o", i);
+	return ret;
+}

@@ -616,6 +616,13 @@ extern int errno;
 #include "ubi_sLinkList.h"
 #include "ubi_dLinkList.h"
 #include "dlinklist.h"
+#include "interfaces.h"
+
+#ifdef HAVE_FNMATCH
+#include <fnmatch.h>
+#else
+#include "lib/fnmatch.h"
+#endif
 
 #ifndef UBI_BINTREE_H
 #include "ubi_Cache.h"

@@ -1519,6 +1519,7 @@ list a share name
 static void browse_fn(const char *name, uint32 m, const char *comment)
 {
         fstring typestr;
+
         *typestr=0;
 
         switch (m)
@@ -1576,6 +1577,26 @@ static BOOL list_servers(char *wk_grp)
 	return True;
 }
 
+#if defined(HAVE_LIBREADLINE)
+#  if defined(HAVE_READLINE_HISTORY_H) || defined(HAVE_HISTORY_H)
+/****************************************************************************
+history
+****************************************************************************/
+static void cmd_history(void)
+{
+	HIST_ENTRY **hlist;
+	register int i;
+
+	hlist = history_list ();	/* Get pointer to history list */
+	
+	if (hlist)			/* If list not empty */
+	{
+		for (i = 0; hlist[i]; i++)	/* then display it */
+			DEBUG(0, ("%d: %s\n", i, hlist[i]->line));
+	}
+}
+#  endif 
+#endif
 
 /* Some constants for completing filename arguments */
 
@@ -1632,6 +1653,9 @@ struct
   {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"help",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
+#ifdef HAVE_LIBREADLINE
+  {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
+#endif
   {"!",NULL,"run a shell command on the local system",{COMPL_NONE,COMPL_NONE}},
   {"",NULL,NULL,{COMPL_NONE,COMPL_NONE}}
 };
@@ -1689,6 +1713,7 @@ static void cmd_help(void)
 	}
 }
 
+#ifndef HAVE_LIBREADLINE
 /****************************************************************************
 wait for keyboard activity, swallowing network packets
 ****************************************************************************/
@@ -1719,6 +1744,7 @@ static void wait_keyboard(void)
 		cli_chkpath(cli, "\\");
 	}  
 }
+#endif
 
 /****************************************************************************
 process a -c command string
@@ -1769,10 +1795,36 @@ static void process_stdin(void)
 	pstring line;
 	char *ptr;
 
+#ifdef HAVE_LIBREADLINE
+/* Minimal readline support, 29Jun1999, s.xenitellis@rhbnc.ac.uk */
+	const int PromptSize = 2048;
+	char prompt_str[PromptSize];	/* This holds the buffer "smb: \dir1\> " */
+	
+        char *temp;			/* Gets the buffer from readline() */
+	temp = (char *)NULL;
+#endif
 	while (!feof(stdin)) {
 		fstring tok;
 		int i;
+#ifdef HAVE_LIBREADLINE
+		if ( temp != (char *)NULL )
+		{
+			free( temp );	/* Free memory allocated every time by readline() */
+			temp = (char *)NULL;
+		}
 
+		snprintf( prompt_str, PromptSize - 1, "smb: %s> ", CNV_LANG(cur_dir) );
+
+		temp = readline( prompt_str );		/* We read the line here */
+
+		if ( !temp )
+			break;		/* EOF occured */
+
+		if ( *temp )		/* If non-empty line, save to history */
+			add_history (temp);
+	
+		strncpy( line, temp, 1023 ); /* Maximum size of (pstring)line. Null is guarranteed. */
+#else 
 		/* display a prompt */
 		DEBUG(0,("smb: %s> ", CNV_LANG(cur_dir)));
 		dbgflush( );
@@ -1782,6 +1834,7 @@ static void process_stdin(void)
 		/* and get a response */
 		if (!fgets(line,1000,stdin))
 			break;
+#endif
 
 		/* input language code to internal one */
 		CNV_INPUT (line);
@@ -1935,7 +1988,6 @@ static void usage(char *pname)
 
   DEBUG(0,("\nVersion %s\n",VERSION));
   DEBUG(0,("\t-s smb.conf           pathname to smb.conf file\n"));
-  DEBUG(0,("\t-B IP addr            broadcast IP address to use\n"));
   DEBUG(0,("\t-O socket_options     socket options to use\n"));
   DEBUG(0,("\t-R name resolve order use these name resolution services only\n"));
   DEBUG(0,("\t-M host               send a winpopup message to the host\n"));
@@ -2128,6 +2180,10 @@ static int do_message_op(void)
 
 	DEBUGLEVEL = 2;
 
+#ifdef HAVE_LIBREADLINE
+	/* Allow conditional parsing of the ~/.inputrc file. */
+	rl_readline_name = "smbclient";
+#endif    
 	setup_logging(pname,True);
 
 	/*
@@ -2157,7 +2213,7 @@ static int do_message_op(void)
 	TimeInit();
 	charset_initialise();
 
-	if(!get_myname(myhostname,NULL)) {
+	if(!get_myname(myhostname)) {
 		DEBUG(0,("Failed to get my hostname.\n"));
 	}
 
@@ -2243,13 +2299,10 @@ static int do_message_op(void)
 	}
 
 	while ((opt = 
-		getopt(argc, argv,"s:B:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
+		getopt(argc, argv,"s:O:R:M:i:Nn:d:Pp:l:hI:EU:L:t:m:W:T:D:c:b:")) != EOF) {
 		switch (opt) {
 		case 's':
 			pstrcpy(servicesf, optarg);
-			break;
-		case 'B':
-			iface_set_default(NULL,optarg,NULL);
 			break;
 		case 'O':
 			pstrcpy(user_socket_options,optarg);
@@ -2354,7 +2407,7 @@ static int do_message_op(void)
 		}
 	}
 
-	get_myname((*global_myname)?NULL:global_myname,NULL);  
+	get_myname((*global_myname)?NULL:global_myname);  
 
 	if(*new_name_resolve_order)
 		lp_set_name_resolve_order(new_name_resolve_order);

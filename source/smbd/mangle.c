@@ -676,6 +676,12 @@ static char *map_filename( char *s,         /* This is null terminated */
   pstrcpy( matching_bit, "" );  /* Match but no star gets this. */
   pp = pat;                     /* Initialize the pointers. */
   sp = s;
+
+  if( strequal(s, ".") || strequal(s, ".."))
+    {
+    return NULL;                /* Do not map '.' and '..' */
+    }
+
   if( (len == 1) && (*pattern == '*') )
     {
     return NULL;                /* Impossible, too ambiguous for */

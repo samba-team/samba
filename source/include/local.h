@@ -103,12 +103,6 @@
 #define GUEST_ACCOUNT "nobody"
 #endif
 
-/* do you want smbd to send a 1 byte packet to nmbd to trigger it to start 
-   when smbd starts? */
-#ifndef PRIME_NMBD
-#define PRIME_NMBD 1
-#endif
-
 /* the default pager to use for the client "more" command. Users can
    override this with the PAGER environment variable */
 #ifndef PAGER
@@ -137,6 +131,7 @@
 #define NMBD_INETD_TIMEOUT (120)
 #define NMBD_MAX_TTL (24*60*60)
 #define LPQ_LOCK_TIMEOUT (5)
+#define NMBD_INTERFACES_RELOAD (120)
 
 /* the following are in milliseconds */
 #define LOCK_RETRY_TIMEOUT (100)

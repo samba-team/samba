@@ -693,14 +693,14 @@ void pdb_set_last_set_time(char *p, int max_len, time_t t)
 /*************************************************************
  Routine to set 32 hex password characters from a 16 byte array.
 **************************************************************/
-void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
+void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl)
 {
 	if (pwd != NULL)
 	{
 		int i;
 		for (i = 0; i < 16; i++)
 		{
-			slprintf(&p[i*2], 33, "%02X", pwd[i]);
+			slprintf(&p[i*2], 3, "%02X", pwd[i]);
 		}
 	}
 	else
@@ -719,7 +719,7 @@ void pdb_sethexpwd(char *p, char *pwd, uint16 acct_ctrl)
  Routine to get the 32 hex characters and turn them
  into a 16 byte array.
 **************************************************************/
-BOOL pdb_gethexpwd(char *p, char *pwd)
+BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
 {
 	int i;
 	unsigned char   lonybble, hinybble;

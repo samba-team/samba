@@ -43,26 +43,9 @@ int workgroup_count = 0; /* unique index key: one for each workgroup */
 
 static void add_workgroup(struct subnet_record *subrec, struct work_record *work)
 {
-  struct work_record *w2;
-
-  work->subnet = subrec;
-
-  if (!subrec->workgrouplist)
-  {
-    subrec->workgrouplist = work;
-    work->prev = NULL;
-    work->next = NULL;
-    return;
-  }
-  
-  for (w2 = subrec->workgrouplist; w2->next; w2 = w2->next)
-    ;
-  
-  w2->next = work;
-  work->next = NULL;
-  work->prev = w2;
-
-  subrec->work_changed = True;
+	work->subnet = subrec;
+	DLIST_ADD(subrec->workgrouplist, work);
+	subrec->work_changed = True;
 }
 
 /****************************************************************************

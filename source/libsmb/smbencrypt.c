@@ -209,10 +209,12 @@ BOOL make_oem_passwd_hash(char data[516], const char *passwd, uchar old_pw_hash[
 	generate_random_buffer((unsigned char *)data, 516, False);
 	if (unicode)
 	{
+		/* Note that passwd should be in DOS oem character set. */
 		struni2( &data[512 - new_pw_len], passwd);
 	}
 	else
 	{
+		/* Note that passwd should be in DOS oem character set. */
 		fstrcpy( &data[512 - new_pw_len], passwd);
 	}
 	SIVAL(data, 512, new_pw_len);

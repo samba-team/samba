@@ -465,6 +465,7 @@ static BOOL handle_include(char *pszParmValue, char **ptr);
 static BOOL handle_copy(char *pszParmValue, char **ptr);
 static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
+static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 
 static void set_default_server_announce_type(void);
 
@@ -527,13 +528,13 @@ static struct enum_list enum_ssl_version[] = {{SMB_SSL_V2, "ssl2"}, {SMB_SSL_V3,
 static struct parm_struct parm_table[] =
 {
   {"Base Options", P_SEP, P_SEPARATOR},
-  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
-  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT},
-  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  0},
-  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC},
-  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC},
-  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  0},
-  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC},
+  {"comment",          P_STRING,  P_LOCAL,  &sDefault.comment,          NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
+  {"path",             P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_BASIC|FLAG_SHARE|FLAG_PRINT|FLAG_DOS_STRING},
+  {"directory",        P_STRING,  P_LOCAL,  &sDefault.szPath,           NULL,   NULL,  FLAG_DOS_STRING},
+  {"workgroup",        P_USTRING, P_GLOBAL, &Globals.szWorkGroup,       NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios name",     P_UGSTRING,P_GLOBAL, global_myname,                     NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
+  {"netbios aliases",  P_STRING,  P_GLOBAL, &Globals.szNetbiosAliases,  NULL,   NULL,  FLAG_DOS_STRING},
+  {"server string",    P_STRING,  P_GLOBAL, &Globals.szServerString,    NULL,   NULL,  FLAG_BASIC|FLAG_DOS_STRING},
   {"interfaces",       P_STRING,  P_GLOBAL, &Globals.szInterfaces,      NULL,   NULL,  FLAG_BASIC},
   {"bind interfaces only", P_BOOL,P_GLOBAL, &Globals.bBindInterfacesOnly,NULL,   NULL,  0},
 
@@ -704,9 +705,9 @@ static struct parm_struct parm_table[] =
   {"mangling char",    P_CHAR,    P_LOCAL,  &sDefault.magic_char,       NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"delete veto files",P_BOOL,    P_LOCAL,  &sDefault.bDeleteVetoFiles, NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
-  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
-  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
-  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
+  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
+  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
+  {"veto oplock files",P_STRING,  P_LOCAL,  &sDefault.szVetoOplockFiles,NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL|FLAG_DOS_STRING},
   {"map system",       P_BOOL,    P_LOCAL,  &sDefault.bMap_system,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"map hidden",       P_BOOL,    P_LOCAL,  &sDefault.bMap_hidden,      NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
   {"map archive",      P_BOOL,    P_LOCAL,  &sDefault.bMap_archive,     NULL,   NULL,  FLAG_SHARE|FLAG_GLOBAL},
@@ -728,10 +729,10 @@ static struct parm_struct parm_table[] =
   {"Logon Options", P_SEP, P_SEPARATOR},
   {"add user script",  P_STRING,  P_GLOBAL, &Globals.szAddUserScript,   NULL,   NULL,  0},
   {"delete user script",P_STRING, P_GLOBAL, &Globals.szDelUserScript,   NULL,   NULL,  0},
-  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  0},
-  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  0},
+  {"logon script",     P_STRING,  P_GLOBAL, &Globals.szLogonScript,     NULL,   NULL,  FLAG_DOS_STRING},
+  {"logon path",       P_STRING,  P_GLOBAL, &Globals.szLogonPath,       NULL,   NULL,  FLAG_DOS_STRING},
   {"logon drive",      P_STRING,  P_GLOBAL, &Globals.szLogonDrive,      NULL,   NULL,  0},
-  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL,  0},
+  {"logon home",       P_STRING,  P_GLOBAL, &Globals.szLogonHome,       NULL,   NULL,  FLAG_DOS_STRING},
   {"domain logons",    P_BOOL,    P_GLOBAL, &Globals.bDomainLogons,     NULL,   NULL,  0},
 
   {"Browse Options", P_SEP, P_SEPARATOR},
@@ -1464,9 +1465,10 @@ static int add_a_service(service *pservice, char *name)
 
   init_service(pSERVICE(i));
   copy_service(pSERVICE(i),&tservice,NULL);
-  if (name)
+  if (name) {
     string_set(&iSERVICE(i).szService,name);  
-
+    unix_to_dos(iSERVICE(i).szService, True);
+  }
   return(i);
 }
 
@@ -1859,19 +1861,23 @@ static BOOL handle_coding_system(char *pszParmValue,char **ptr)
 }
 
 /***************************************************************************
-handle the interpretation of the character set system parameter
+ Handle the interpretation of the character set system parameter.
 ***************************************************************************/
+
 static BOOL handle_character_set(char *pszParmValue,char **ptr)
 {
+    /* A dependency here is that the parameter client code page should be
+      set before this is called.
+    */
 	string_set(ptr,pszParmValue);
 	interpret_character_set(pszParmValue);
 	return(True);
 }
 
-
 /***************************************************************************
 handle the valid chars lines
 ***************************************************************************/
+
 static BOOL handle_valid_chars(char *pszParmValue,char **ptr)
 { 
   string_set(ptr,pszParmValue);
@@ -1886,10 +1892,10 @@ static BOOL handle_valid_chars(char *pszParmValue,char **ptr)
   return(True);
 }
 
-
 /***************************************************************************
 handle the include operation
 ***************************************************************************/
+
 static BOOL handle_include(char *pszParmValue,char **ptr)
 { 
   pstring fname;
@@ -2058,19 +2064,27 @@ BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
 
      case P_STRING:
        string_set(parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos(*(char **)parm_ptr, True);
        break;
 
      case P_USTRING:
        string_set(parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos(*(char **)parm_ptr, True);
        strupper(*(char **)parm_ptr);
        break;
 
      case P_GSTRING:
        pstrcpy((char *)parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos((char *)parm_ptr, True);
        break;
 
      case P_UGSTRING:
        pstrcpy((char *)parm_ptr,pszParmValue);
+       if (parm_table[parmnum].flags & FLAG_DOS_STRING)
+           unix_to_dos((char *)parm_ptr, True);
        strupper((char *)parm_ptr);
        break;
 
@@ -2138,7 +2152,7 @@ static void print_parameter(struct parm_struct *p,void *ptr, FILE *f)
 		break;
       
 	case P_OCTAL:
-		fprintf(f,"0%o",*(int *)ptr);
+		fprintf(f,"%s",octal_string(*(int *)ptr));
 		break;
       
 	case P_GSTRING:

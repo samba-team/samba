@@ -142,7 +142,10 @@ exit(1);
 #
 # Tests needed for glibc 2.1 large file support.
 # 
-    *linux*|*hurd*)
+	*linux*)
+		AC_MSG_RESULT([disabling large file support for glibc2.1 on Linux])     
+		;;
+    *hurd*)
         AC_MSG_CHECKING([for LFS support])
         old_CPPFLAGS="$CPPFLAGS"
         CPPFLAGS="-D_LARGEFILE64_SOURCE -D_GNU_SOURCE $CPPFLAGS"
@@ -434,6 +437,9 @@ AC_LIBTESTFUNC(sec, putprpwnam)
 
 AC_LIBTESTFUNC(security, set_auth_parameters)
 AC_LIBTESTFUNC(sec, set_auth_parameters)
+
+# UnixWare 7.x has its getspnam in -lgen
+AC_LIBTESTFUNC(gen, getspnam)
 
 AC_LIBTESTFUNC(security, getspnam)
 AC_LIBTESTFUNC(sec, getspnam)
@@ -806,6 +812,14 @@ if test x"$samba_cv_REPLACE_GETPASS" = x"yes"; then
 	AC_DEFINE(REPLACE_GETPASS)
 fi
 
+AC_CACHE_CHECK([for working fnmatch],samba_cv_HAVE_FNMATCH,[
+AC_TRY_RUN([#include <fnmatch.h>
+main() { exit(fnmatch("*.o", "x.o", FNM_PATHNAME) == 0? 0: 1); }],
+samba_cv_HAVE_FNMATCH=yes,samba_cv_HAVE_FNMATCH=no,samba_cv_HAVE_FNMATCH=cross)])
+if test x"$samba_cv_HAVE_FNMATCH" = x"yes"; then
+    AC_DEFINE(HAVE_FNMATCH)
+fi
+
 AC_CACHE_CHECK([for broken inet_ntoa],samba_cv_REPLACE_INET_NTOA,[
 AC_TRY_RUN([
 #include <stdio.h>
@@ -832,41 +846,41 @@ else
     AC_MSG_WARN(running as non-root will disable some tests)
 fi
 
-netmask=no;
-AC_CACHE_CHECK([for netmask ifconf],samba_cv_HAVE_NETMASK_IFCONF,[
+iface=no;
+AC_CACHE_CHECK([for iface AIX],samba_cv_HAVE_IFACE_AIX,[
 AC_TRY_RUN([
-#define HAVE_NETMASK_IFCONF 1
+#define HAVE_IFACE_AIX 1
 #define AUTOCONF 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netmask.c"],
-           samba_cv_HAVE_NETMASK_IFCONF=yes,samba_cv_HAVE_NETMASK_IFCONF=no,samba_cv_HAVE_NETMASK_IFCONF=cross)])
-if test x"$samba_cv_HAVE_NETMASK_IFCONF" = x"yes"; then
-    netmask=yes;AC_DEFINE(HAVE_NETMASK_IFCONF)
+#include "${srcdir-.}/lib/interfaces.c"],
+           samba_cv_HAVE_IFACE_AIX=yes,samba_cv_HAVE_IFACE_AIX=no,samba_cv_HAVE_IFACE_AIX=cross)])
+if test x"$samba_cv_HAVE_IFACE_AIX" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_AIX)
 fi
 
-if test $netmask = no; then
-AC_CACHE_CHECK([for netmask ifreq],samba_cv_HAVE_NETMASK_IFREQ,[
+if test $iface = no; then
+AC_CACHE_CHECK([for iface ifconf],samba_cv_HAVE_IFACE_IFCONF,[
 AC_TRY_RUN([
-#define HAVE_NETMASK_IFREQ 1
+#define HAVE_IFACE_IFCONF 1
 #define AUTOCONF 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netmask.c"],
-           samba_cv_HAVE_NETMASK_IFREQ=yes,samba_cv_HAVE_NETMASK_IFREQ=no,samba_cv_HAVE_NETMASK_IFREQ=cross)])
-if test x"$samba_cv_HAVE_NETMASK_IFREQ" = x"yes"; then
-    netmask=yes;AC_DEFINE(HAVE_NETMASK_IFREQ)
+#include "${srcdir-.}/lib/interfaces.c"],
+           samba_cv_HAVE_IFACE_IFCONF=yes,samba_cv_HAVE_IFACE_IFCONF=no,samba_cv_HAVE_IFACE_IFCONF=cross)])
+if test x"$samba_cv_HAVE_IFACE_IFCONF" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_IFCONF)
 fi
 fi
 
-if test $netmask = no; then
-AC_CACHE_CHECK([for netmask AIX],samba_cv_HAVE_NETMASK_AIX,[
+if test $iface = no; then
+AC_CACHE_CHECK([for iface ifreq],samba_cv_HAVE_IFACE_IFREQ,[
 AC_TRY_RUN([
-#define HAVE_NETMASK_AIX 1
+#define HAVE_IFACE_IFREQ 1
 #define AUTOCONF 1
 #include "confdefs.h"
-#include "${srcdir-.}/lib/netmask.c"],
-           samba_cv_HAVE_NETMASK_AIX=yes,samba_cv_HAVE_NETMASK_AIX=no,samba_cv_HAVE_NETMASK_AIX=cross)])
-if test x"$samba_cv_HAVE_NETMASK_AIX" = x"yes"; then
-    netmask=yes;AC_DEFINE(HAVE_NETMASK_AIX)
+#include "${srcdir-.}/lib/interfaces.c"],
+           samba_cv_HAVE_IFACE_IFREQ=yes,samba_cv_HAVE_IFACE_IFREQ=no,samba_cv_HAVE_IFACE_IFREQ=cross)])
+if test x"$samba_cv_HAVE_IFACE_IFREQ" = x"yes"; then
+    iface=yes;AC_DEFINE(HAVE_IFACE_IFREQ)
 fi
 fi
 
