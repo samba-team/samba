@@ -68,7 +68,7 @@ krb5_destroy (kx_context *c)
 	krb5_free_principal (kc->context, kc->client);
     if (kc->context)
 	krb5_free_context (kc->context);
-    free (kc->context);
+    free (kc);
 }
 
 /*
@@ -84,7 +84,7 @@ krb5_authenticate (kx_context *kc, int s)
     krb5_auth_context auth_context = NULL;
     krb5_error_code ret;
     krb5_principal server;
-    char *host = kc->host;
+    const char *host = kc->host;
 
     ret = krb5_sname_to_principal (context,
 				   host, "host", KRB5_NT_SRV_HST, &server);
