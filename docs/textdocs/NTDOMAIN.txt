@@ -42,7 +42,7 @@ This *has* been reported to the NTBUGTRAQ@LISTSERV.NTBUGTRAQ.COM digest.
 Domain Logons using latest cvs source
 =====================================
 
-1) compile samba with -DNTDOMAIN
+1) obtain and compile samba: see http://samba.anu.edu.au/cvs.html
 
 2) set up samba with encrypted passwords: see ENCRYPTION.txt (probably out
    of date: you no longer need the DES libraries, but other than that,
@@ -54,8 +54,7 @@ Domain Logons using latest cvs source
 
 3) [ for each workstation, add a line to smbpasswd with a username of MACHINE$
      and a password of "machine".  this process will be automated in further
-     releases.  lkcl02nov97 - done, as of 1.9.18alpha11!  added new options
-     "domain hosts allow/deny" too :-) ]
+     releases (but for now use smbpasswd -m machine_name).
 
 4) if using NT server to log in, run the User Manager for Domains, and
    add the capability to "Log in Locally" to the policies, which you would
@@ -110,11 +109,7 @@ Domain Logons using latest cvs source
 
    The domain box should have two entries: the hostname and the SAMBA domain.
    Any local accounts are under the hostname domain, from which you will be
-   able to shut down the machine etc.  At present, we do not specify that
-   the NT user logging in is a member of any groups, so will have no
-   priveleges, including the ability to shut down the machine [lkcl02nov97 -
-   done, as of samba-1.9.18alpha3!  see "domain admin/guest users" and
-   "domain groups" parameters].
+   able to shut down the machine etc.
    
    Select the SAMBA domain, and type in a valid username and password for
    which there is a valid entry in the samba server's smbpasswd LM/NT OWF
