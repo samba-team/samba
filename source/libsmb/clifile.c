@@ -802,3 +802,43 @@ BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 	return True;
 }
 
+
+/****************************************************************************
+create and open a temporary file
+****************************************************************************/
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path)
+{
+	char *p;
+
+	memset(cli->outbuf,'\0',smb_size);
+	memset(cli->inbuf,'\0',smb_size);
+
+	set_message(cli->outbuf,1,strlen(path)+2,True);
+
+	CVAL(cli->outbuf,smb_com) = SMBctemp;
+	SSVAL(cli->outbuf,smb_tid,cli->cnum);
+	cli_setup_packet(cli);
+
+	SSVAL(cli->outbuf,smb_vwv0,0);
+
+	p = smb_buf(cli->outbuf);
+	*p++ = 4;
+	pstrcpy(p,path);
+	unix_to_dos(p,True);
+	p = skip_string(p,1);
+
+	cli_send_smb(cli);
+	if (!cli_receive_smb(cli)) {
+		return -1;
+	}
+
+	if (CVAL(cli->inbuf,smb_rcls) != 0) {
+		return -1;
+	}
+
+	if (tmp_path) {
+		*tmp_path = strdup(smb_buf(cli->inbuf)+1);
+	}
+
+	return SVAL(cli->inbuf,smb_vwv0);
+}

@@ -1714,34 +1714,6 @@ BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name)
 
 
 /*****************************************************************
-like mktemp() but make sure that no % characters are used
-% characters are bad for us because of the macro subs
- *****************************************************************/  
-char *smbd_mktemp(char *template)
-{
-	char *p = mktemp(template);
-	char *p2;
-	SMB_STRUCT_STAT st;
-
-	if (!p) return NULL;
-
-	while ((p2=strchr(p,'%'))) {
-		p2[0] = 'A';
-		while (sys_stat(p,&st) == 0 && p2[0] < 'Z') {
-			/* damn, it exists */
-			p2[0]++;
-		}
-		if (p2[0] == 'Z') {
-			/* oh well ... better return something */
-			p2[0] = '%';
-			return p;
-		}
-	}
-
-	return p;
-}
-
-/*****************************************************************
 possibly replace mkstemp if it is broken
 *****************************************************************/  
 int smb_mkstemp(char *template)
@@ -1750,8 +1722,8 @@ int smb_mkstemp(char *template)
 	return mkstemp(template);
 #else
 	/* have a reasonable go at emulating it. Hope that
-		the system mktemp() isn't completly hopeless */
-	char *p = smbd_mktemp(template);
+	   the system mktemp() isn't completly hopeless */
+	char *p = mktemp(template);
 	if (!p) return -1;
 	return open(p, O_CREAT|O_EXCL|O_RDWR, 0600);
 #endif

@@ -892,7 +892,6 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 	/* lock the database */
 	tdb_lock_bystring(tdb, "INFO/nextjob");
 
- next_jobnum:
 	next_jobid = tdb_fetch_int(tdb, "INFO/nextjob");
 	if (next_jobid == -1) next_jobid = 1;
 
@@ -906,18 +905,10 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 
 	tdb_store_int(tdb, "INFO/nextjob", jobid);
 
-	/* we have a job entry - now create the spool file 
-
-	   we unlink first to cope with old spool files and also to beat
-	   a symlink security hole - it allows us to use O_EXCL 
-	   There may be old spool files owned by other users lying around.
-	*/
-	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%s%d", 
-		 path, PRINT_SPOOL_PREFIX, jobid);
-	if (unlink(pjob.filename) == -1 && errno != ENOENT) {
-		goto next_jobnum;
-	}
-	pjob.fd = sys_open(pjob.filename,O_WRONLY|O_CREAT|O_EXCL,0600);
+	/* we have a job entry - now create the spool file */
+	slprintf(pjob.filename, sizeof(pjob.filename)-1, "%s/%sXXXXXX", 
+		 path, PRINT_SPOOL_PREFIX);
+	pjob.fd = smb_mkstemp(pjob.filename);
 
 	if (pjob.fd == -1) {
 		if (errno == EACCES) {

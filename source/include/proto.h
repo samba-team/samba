@@ -294,6 +294,27 @@ int sys_acl_set_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T permset_d);
 int sys_acl_free_text(char *text);
 int sys_acl_free_acl(SMB_ACL_T the_acl) ;
 int sys_acl_free_qualifier(void *qual) ;
+int sys_acl_get_entry( SMB_ACL_T theacl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
+int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
+int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
+void *sys_acl_get_qualifier( SMB_ACL_ENTRY_T entry_d);
+SMB_ACL_T sys_acl_get_file( const char *path_p, SMB_ACL_TYPE_T type);
+SMB_ACL_T sys_acl_get_fd(int fd);
+int sys_acl_clear_perms(SMB_ACL_PERMSET_T permset);
+int sys_acl_add_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+char *sys_acl_to_text( SMB_ACL_T theacl, ssize_t *plen);
+SMB_ACL_T sys_acl_init( int count);
+int sys_acl_create_entry( SMB_ACL_T *pacl, SMB_ACL_ENTRY_T *pentry);
+int sys_acl_set_tag_type( SMB_ACL_ENTRY_T entry, SMB_ACL_TAG_T tagtype);
+int sys_acl_set_qualifier( SMB_ACL_ENTRY_T entry, void *qual);
+int sys_acl_set_permset( SMB_ACL_ENTRY_T entry, SMB_ACL_PERMSET_T permset);
+int sys_acl_valid( SMB_ACL_T theacl );
+int sys_acl_set_file( char *name, SMB_ACL_TYPE_T acltype, SMB_ACL_T theacl);
+int sys_acl_set_fd( int fd, SMB_ACL_T theacl);
+int sys_acl_get_perm( SMB_ACL_PERMSET_T permset, SMB_ACL_PERM_T perm);
+int sys_acl_free_text(char *text);
+int sys_acl_free_acl(SMB_ACL_T posix_acl);
+int sys_acl_free_qualifier(void *qual);
 int sys_acl_get_entry( SMB_ACL_T the_acl, int entry_id, SMB_ACL_ENTRY_T *entry_p);
 int sys_acl_get_tag_type( SMB_ACL_ENTRY_T entry_d, SMB_ACL_TAG_T *tag_type_p);
 int sys_acl_get_permset( SMB_ACL_ENTRY_T entry_d, SMB_ACL_PERMSET_T *permset_p);
@@ -466,7 +487,6 @@ int str_checksum(const char *s);
 void zero_free(void *p, size_t size);
 int set_maxfiles(int requested_max);
 BOOL reg_split_key(char *full_keyname, uint32 *reg_type, char *key_name);
-char *smbd_mktemp(char *template);
 int smb_mkstemp(char *template);
 void *memdup(void *p, size_t size);
 char *myhostname(void);
@@ -897,6 +917,7 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t);
 BOOL cli_chkpath(struct cli_state *cli, char *path);
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail);
+int cli_ctemp(struct cli_state *cli, char *path, char **tmp_path);
 
 /*The following definitions come from  libsmb/clilist.c  */
 
@@ -2018,7 +2039,7 @@ int sysv_printername_ok(char *name);
 
 /*The following definitions come from  printing/printfsp.c  */
 
-files_struct *print_fsp_open(connection_struct *conn,char *jobname);
+files_struct *print_fsp_open(connection_struct *conn);
 void print_fsp_end(files_struct *fsp, BOOL normal_close);
 
 /*The following definitions come from  printing/printing.c  */

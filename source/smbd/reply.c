@@ -1835,14 +1835,15 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
   pstring fname;
-  pstring fname2;
   int outsize = 0;
   int createmode;
-  mode_t unixmode;
+  mode_t unixmode = 0600;
   BOOL bad_path = False;
   files_struct *fsp;
   int oplock_request = CORE_OPLOCK_REQUEST(inbuf);
+  int tmpfd;
   SMB_STRUCT_STAT sbuf;
+
   START_PROFILE(SMBctemp);
 
   createmode = SVAL(inbuf,smb_vwv0);
@@ -1853,17 +1854,22 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 
   unix_convert(fname,conn,0,&bad_path,&sbuf);
   
-  unixmode = unix_mode(conn,createmode,fname);
-  
-  pstrcpy(fname2,(char *)smbd_mktemp(fname));
-  /* This file should not exist. */
-  ZERO_STRUCT(sbuf);
-  vfs_stat(conn,fname2,&sbuf);
+  tmpfd = smb_mkstemp(fname);
+  if (tmpfd == -1) {
+	  END_PROFILE(SMBctemp);
+	  return(UNIXERROR(ERRDOS,ERRnoaccess));
+  }
+
+  vfs_stat(conn,fname,&sbuf);
 
   /* Open file in dos compatibility share mode. */
   /* We should fail if file exists. */
-  fsp = open_file_shared(conn,fname2,&sbuf,SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
-                   (FILE_CREATE_IF_NOT_EXIST|FILE_EXISTS_FAIL), unixmode, oplock_request, NULL, NULL);
+  fsp = open_file_shared(conn,fname,&sbuf,
+			 SET_DENY_MODE(DENY_FCB)|SET_OPEN_MODE(DOS_OPEN_FCB), 
+			 FILE_FAIL_IF_NOT_EXIST, 
+			 unixmode, oplock_request, NULL, NULL);
+  /* close fd from smb_mkstemp() */
+  close(tmpfd);
 
   if (!fsp)
   {
@@ -1876,10 +1882,10 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  outsize = set_message(outbuf,1,2 + strlen(fname2),True);
+  outsize = set_message(outbuf,1,2 + strlen(fname),True);
   SSVAL(outbuf,smb_vwv0,fsp->fnum);
   CVAL(smb_buf(outbuf),0) = 4;
-  pstrcpy(smb_buf(outbuf) + 1,fname2);
+  pstrcpy(smb_buf(outbuf) + 1,fname);
 
   if (oplock_request && lp_fake_oplocks(SNUM(conn))) {
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
@@ -1888,9 +1894,9 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
   if(EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
     CVAL(outbuf,smb_flg) |= CORE_OPLOCK_GRANTED;
 
-  DEBUG( 2, ( "created temp file %s\n", fname2 ) );
+  DEBUG( 2, ( "created temp file %s\n", fname ) );
   DEBUG( 3, ( "ctemp %s fd=%d dmode=%d umode=%o\n",
-        fname2, fsp->fd, createmode, (int)unixmode ) );
+        fname, fsp->fd, createmode, (int)unixmode ) );
 
   END_PROFILE(SMBctemp);
   return(outsize);
@@ -3172,7 +3178,7 @@ int reply_printopen(connection_struct *conn,
 	}
 
 	/* Open for exclusive use, write only. */
-	fsp = print_fsp_open(conn,"dos.prn");
+	fsp = print_fsp_open(conn);
 
 	if (!fsp) {
 		END_PROFILE(SMBsplopen);

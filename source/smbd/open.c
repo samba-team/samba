@@ -596,11 +596,11 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 	uint16 port = 0;
 
 	if (conn->printer) {
-		/* printers are handled completely differently. Most of the passed parameters are
-			ignored */
+		/* printers are handled completely differently. Most
+			of the passed parameters are ignored */
 		*Access = DOS_OPEN_WRONLY;
 		*action = FILE_WAS_CREATED;
-		return print_fsp_open(conn, fname);
+		return print_fsp_open(conn);
 	}
 
 	fsp = file_new(conn);
