@@ -496,14 +496,10 @@ out:
 	free (name);
     if (instance)
 	free (instance);
-    if (client_entry) {
-	hdb_free_entry (context, client_entry);
-	free (client_entry);
-    }
-    if (server_entry) {
-	hdb_free_entry (context, server_entry);
-	free (server_entry);
-    }
+    if (client_entry)
+	free_ent (client_entry);
+    if (server_entry)
+	free_ent (server_entry);
 }
 
 static krb5_error_code
@@ -730,14 +726,10 @@ out:
 	free (name);
     if (instance)
 	free (instance);
-    if (krbtgt_entry) {
-	hdb_free_entry (context, krbtgt_entry);
-	free (krbtgt_entry);
-    }
-    if (server_entry) {
-	hdb_free_entry (context, server_entry);
-	free (server_entry);
-    }
+    if (krbtgt_entry)
+	free_ent (krbtgt_entry);
+    if (server_entry)
+	free_ent (server_entry);
 }
 
 krb5_error_code
