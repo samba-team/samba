@@ -39,7 +39,9 @@
  * FTP global variables.
  */
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <setjmp.h>
 
 /*

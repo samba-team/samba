@@ -65,18 +65,30 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 
 #include <ctype.h>
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 #include <errno.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 
 #include "glob.h"
 #include "roken.h"

@@ -38,13 +38,19 @@
 #ifndef _EXTERN_H_
 #define _EXTERN_H_
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_NETDB_H
 #include <netdb.h>
+#endif
 
 #include <stdio.h>
 #include <stdarg.h>
 #include <setjmp.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 
 void	blkfree(char **);
 char  **copyblk(char **);

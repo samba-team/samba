@@ -41,19 +41,37 @@ RCSID("$Id$");
 /*
  * FTP server.
  */
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
 #include <sys/stat.h>
+#endif
+#ifdef HAVE_SYS_IOCTL_H
 #include <sys/ioctl.h>
+#endif
+#ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif
+#ifdef HAVE_SYS_WAIT_H
 #include <sys/wait.h>
+#endif
 
+#ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
+#endif
+#ifdef HAVE_NETINET_IN_SYSTM_H
 #include <netinet/in_systm.h>
+#endif
+#ifdef HAVE_NETINET_IP_H
 #include <netinet/ip.h>
+#endif
 
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
@@ -61,25 +79,41 @@ RCSID("$Id$");
 
 #define	FTP_NAMES
 #include <arpa/ftp.h>
+#ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
+#endif
+#ifdef HAVE_ARPA_TELNET_H
 #include <arpa/telnet.h>
+#endif
 
 #include <ctype.h>
+#ifdef HAVE_DIRENT_H
 #include <dirent.h>
+#endif
 #include <errno.h>
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #include <glob.h>
 #include <limits.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
 #include <setjmp.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef HAVE_SYSLOG_H
 #include <syslog.h>
+#endif
 #include <time.h>
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+#ifdef HAVE_GRP_H
 #include <grp.h>
+#endif
 
 #include <stdarg.h>
 
