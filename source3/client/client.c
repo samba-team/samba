@@ -768,7 +768,7 @@ static int do_short_dir(char *inbuf,char *outbuf,char *Mask,int attribute,void (
       memcpy(p,status,21);
 
       send_smb(Client,outbuf);
-      receive_smb(Client,inbuf,CLIENT_TIMEOUT,False);
+      receive_smb(Client,inbuf,CLIENT_TIMEOUT);
 
       if (CVAL(inbuf,smb_rcls) != 0) 
 	DEBUG(0,("Error closing search: %s\n",smb_errstr(inbuf)));      

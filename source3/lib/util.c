@@ -75,6 +75,8 @@ pstring user_socket_options="";
 pstring sesssetup_user="";
 
 
+int smb_read_error = 0;
+
 static char *filename_dos(char *path,char *buf);
 
 static BOOL stdout_logging = False;
@@ -1692,102 +1694,43 @@ int read_udp_socket(int fd,char *buf,int len)
 }
 
 /****************************************************************************
-Set a fd into blocking/nonblocking mode. Uses POSIX O_NONBLOCK if available,
-else
-if SYSV use O_NDELAY
-if BSD use FNDELAY
-****************************************************************************/
-int set_blocking(int fd, BOOL set)
-{
-int val;
-#ifdef O_NONBLOCK
-#define FLAG_TO_SET O_NONBLOCK
-#else
-#ifdef SYSV
-#define FLAG_TO_SET O_NDELAY
-#else /* BSD */
-#define FLAG_TO_SET FNDELAY
-#endif
-#endif
-
-  if((val = fcntl(fd, F_GETFL, 0))==-1)
-	return -1;
-  if(set) /* Turn blocking on - ie. clear nonblock flag */
-	val &= ~FLAG_TO_SET;
-  else
-    val |= FLAG_TO_SET;
-  return fcntl( fd, F_SETFL, val);
-#undef FLAG_TO_SET
-}
-
-
-/****************************************************************************
-Calculate the difference in timeout values. Return 1 if val1 > val2,
-0 if val1 == val2, -1 if val1 < val2. Stores result in retval. retval
-may be == val1 or val2
-****************************************************************************/
-static int tval_sub( struct timeval *retval, struct timeval *val1, struct timeval *val2)
-{
-  int usecdiff = val1->tv_usec - val2->tv_usec;
-  int secdiff = val1->tv_sec - val2->tv_sec;
-  if(usecdiff < 0) {
-    usecdiff = 1000000 + usecdiff;
-    secdiff--;
-  }
-  retval->tv_sec = secdiff;
-  retval->tv_usec = usecdiff;
-  if(secdiff < 0)
-    return -1;
-  if(secdiff > 0)
-    return 1;
-  return (usecdiff < 0 ) ? -1 : ((usecdiff > 0 ) ? 1 : 0);
-}
-
-/****************************************************************************
 read data from a device with a timout in msec.
 mincount = if timeout, minimum to read before returning
 maxcount = number to be read.
 ****************************************************************************/
-int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out,BOOL exact)
+int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out)
 {
   fd_set fds;
   int selrtn;
   int readret;
   int nread = 0;
-  struct timeval timeout, tval1, tval2, tvaldiff;
-  int error_limit = 5;
+  struct timeval timeout;
 
   /* just checking .... */
   if (maxcnt <= 0) return(0);
 
-  if(time_out == -2)
-    time_out = DEFAULT_PIPE_TIMEOUT;
+  smb_read_error = 0;
 
   /* Blocking read */
-  if(time_out < 0) {
+  if (time_out <= 0) {
     if (mincnt == 0) mincnt = maxcnt;
 
-    while (nread < mincnt)
-      {
-	readret = read(fd, buf + nread, maxcnt - nread);
-	if (readret <= 0) return(nread);
-	nread += readret;
+    while (nread < mincnt) {
+      readret = read(fd, buf + nread, maxcnt - nread);
+      if (readret == 0) {
+	smb_read_error = READ_EOF;
+	return -1;
       }
+
+      if (readret == -1) {
+	smb_read_error = READ_ERROR;
+	return -1;
+      }
+      nread += readret;
+    }
     return(nread);
   }
   
-  /* Non blocking read */
-  if(time_out == 0) {
-    set_blocking(fd, False);
-    nread = read_data(fd, buf, mincnt);
-    if (nread < maxcnt)
-      nread += read(fd,buf+nread,maxcnt-nread);
-    if(nread == -1 && errno == EWOULDBLOCK)
-      nread = 0;
-    set_blocking(fd,True);
-    return nread;
-  }
-
   /* Most difficult - timeout read */
   /* If this is ever called on a disk file and 
 	 mincnt is greater then the filesize then
@@ -1798,69 +1741,40 @@ int read_with_timeout(int fd,char *buf,int mincnt,int maxcnt,long time_out,BOOL 
   timeout.tv_sec = time_out / 1000;
   timeout.tv_usec = 1000 * (time_out % 1000);
 
-  /* As most UNIXes don't modify the value of timeout
-     when they return from select we need to get the timeofday (in usec)
-     now, and also after the select returns so we know
-     how much time has elapsed */
-
-  if (exact)
-    GetTimeOfDay( &tval1);
-  nread = 0; /* Number of bytes we have read */
-
-  for(;;) 
+  for (nread=0; nread<mincnt; ) 
     {      
       FD_ZERO(&fds);
       FD_SET(fd,&fds);
       
       selrtn = sys_select(&fds,&timeout);
-      
+
       /* Check if error */
       if(selrtn == -1) {
+	/* something is wrong. Maybe the socket is dead? */
+	smb_read_error = READ_ERROR;
 	return -1;
       }
       
       /* Did we timeout ? */
       if (selrtn == 0) {
-	if (nread < mincnt) return -1;
-	break; /* Yes */
+	smb_read_error = READ_TIMEOUT;
+	return -1;
       }
       
       readret = read(fd, buf+nread, maxcnt-nread);
-      if (readret == 0 && nread < mincnt) {
-	/* error_limit should not really be needed, but some systems
-	   do strange things ...  I don't want to just continue
-	   indefinately in case we get an infinite loop */
-	if (error_limit--) continue;
-	return(-1);
+      if (readret == 0) {
+	/* we got EOF on the file descriptor */
+	smb_read_error = READ_EOF;
+	return -1;
       }
 
-      if (readret < 0) {
-	/* force a particular error number for
-	   portability */
-	DEBUG(5,("read gave error %s\n",strerror(errno)));
+      if (readret == -1) {
+	/* the descriptor is probably dead */
+	smb_read_error = READ_ERROR;
 	return -1;
       }
       
       nread += readret;
-      
-      /* If we have read more than mincnt then return */
-      if (nread >= mincnt)
-	break;
-
-      /* We need to do another select - but first reduce the
-	 time_out by the amount of time already elapsed - if
-	 this is less than zero then return */
-      if (exact) {
-	GetTimeOfDay(&tval2);
-	(void)tval_sub( &tvaldiff, &tval2, &tval1);
-      
-	if (tval_sub(&timeout, &timeout, &tvaldiff) <= 0) 
-	  break; /* We timed out */
-      }
-      
-      /* Save the time of day as we need to do the select 
-	 again (saves a system call) */
-      tval1 = tval2;
     }
 
   /* Return the number we got */
@@ -1927,12 +1841,19 @@ int read_data(int fd,char *buffer,int N)
   int  ret;
   int total=0;  
  
+  smb_read_error = 0;
+
   while (total < N)
     {
       ret = read(fd,buffer + total,N - total);
-
-      if (ret <= 0)
-	return total;
+      if (ret == 0) {
+	smb_read_error = READ_EOF;
+	return 0;
+      }
+      if (ret == -1) {
+	smb_read_error = READ_ERROR;
+	return -1;
+      }
       total += ret;
     }
   return total;
@@ -2056,23 +1977,12 @@ int read_smb_length(int fd,char *inbuf,int timeout)
   while (!ok)
     {
       if (timeout > 0)
-	ok = (read_with_timeout(fd,buffer,4,4,timeout,False) == 4);
-      else	
+	ok = (read_with_timeout(fd,buffer,4,4,timeout) == 4);
+      else 
 	ok = (read_data(fd,buffer,4) == 4);
 
       if (!ok)
-	{
-	  if (timeout>0)
-	    {
-	      DEBUG(10,("select timeout (%d)\n", timeout));
-	      return(-1);
-	    }
-	  else
-	    {
-	      DEBUG(6,("couldn't read from client\n"));
-	      exit(1);
-	    }
-	}
+	return(-1);
 
       len = smb_len(buffer);
       msg_type = CVAL(buffer,0);
@@ -2099,6 +2009,8 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
 {
   int len,ret;
 
+  smb_read_error = 0;
+
   bzero(buffer,smb_size + 100);
 
   len = read_smb_length(fd,buffer,timeout);
@@ -2113,7 +2025,7 @@ BOOL receive_smb(int fd,char *buffer,int timeout)
 
   ret = read_data(fd,buffer+4,len);
   if (ret != len) {
-    DEBUG(0,("ERROR: Invalid SMB length. Expected %d got %d\n",len,ret));
+    smb_read_error = READ_ERROR;
     return False;
   }
 
