@@ -93,10 +93,13 @@ libkrb5_la_SOURCES = \
 
 libkrb5_la_LDFLAGS = -version-info 1:0:0
 
-$(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h
+$(libkrb5_la_OBJECTS): $(srcdir)/krb5-protos.h $(srcdir)/krb5-private.h
 
 $(srcdir)/krb5-protos.h:
-	cd $(srcdir); perl ../../cf/make-proto.pl $(libkrb5_la_SOURCES) > krb5-protos.h || rm -f krb5-protos.h
+	cd $(srcdir); perl ../../cf/make-proto.pl -o krb5-protos.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
+
+$(srcdir)/krb5-private.h:
+	cd $(srcdir); perl ../../cf/make-proto.pl -p krb5-private.h $(libkrb5_la_SOURCES) || rm -f krb5-protos.h
 
 libkrb5_la_LIBADD = ../com_err/error.lo ../com_err/com_err.lo
 
@@ -104,7 +107,7 @@ man_MANS = krb5.conf.5 krb5_warn.3 krb5_openlog.3 \
 	krb5_425_conv_principal.3 krb5_build_principal.3 krb5_free_principal.3 \
 	krb5_parse_name.3 krb5_sname_to_principal.3 krb5_unparse_name.3
 
-include_HEADERS = krb5.h krb5-protos.h krb5_err.h heim_err.h
+include_HEADERS = krb5.h krb5-protos.h krb5-private.h krb5_err.h heim_err.h
 
 CLEANFILES = krb5_err.c krb5_err.h heim_err.c heim_err.h
 
