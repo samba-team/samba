@@ -1,3 +1,12 @@
+2004-08-26  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* acl.c (fetch_acl): use " \t\n" instead of just "\n" for the
+	delim of the third element, this is so we can match
+	"foo@REALM<SPC>all<SPC><SPC>*@REALM", before it just matched
+	"foo@REALM<SPC>all<SPC>*@REALM", but that is kind of lucky since
+	what really happen was that the last <SPC> was stamped out, and
+	the it never strtok_r never needed to parse over it.
+	
 2004-08-25  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* set_keys.c (_kadm5_generate_key_set): since arcfour-hmac-md5 is
