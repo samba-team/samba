@@ -202,6 +202,7 @@ usage (int ret)
 {
     arg_printusage (args,
 		    sizeof(args)/sizeof(*args),
+		    NULL,
 		    "");
     exit (ret);
 }

@@ -68,7 +68,7 @@ int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(int status)
 {
-    arg_printusage (args, num_args, "password");
+    arg_printusage (args, num_args, NULL, "password");
     exit(status);
 }
 

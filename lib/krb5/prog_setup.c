@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -44,7 +44,7 @@ RCSID("$Id$");
 void
 krb5_std_usage(int code, struct getargs *args, int num_args)
 {
-    arg_printusage(args, num_args, "");
+    arg_printusage(args, num_args, NULL, "");
     exit(code);
 }
 

@@ -67,11 +67,11 @@ srvconv(int argc, char **argv)
     krb5_storage *sp;
 
     if(getarg(args, num_args, argc, argv, &optind)){
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil srvconvert", "");
 	return 1;
     }
     if(help_flag){
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil srvconvert", "");
 	return 0;
     }
 
@@ -79,7 +79,7 @@ srvconv(int argc, char **argv)
     argv += optind;
 
     if (argc != 0) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil srvconvert", "");
 	return 1;
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -272,7 +272,7 @@ check_password(struct passwd *pwd, const char *password)
 void
 usage(int status)
 {
-    arg_printusage(args, nargs, "[username]");
+    arg_printusage(args, nargs, NULL, "[username]");
     exit(status);
 }
 

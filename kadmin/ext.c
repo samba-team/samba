@@ -53,7 +53,7 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(void)
 {
-    arg_printusage(args, num_args, "principal...");
+    arg_printusage(args, num_args, "ext", "principal...");
 }
 
 static int

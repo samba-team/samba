@@ -368,7 +368,7 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(int ret)
 {
-    arg_printusage (args, num_args, "host ...");
+    arg_printusage (args, num_args, NULL, "host ...");
     exit (ret);
 }
 

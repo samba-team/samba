@@ -617,6 +617,7 @@ usage (int ret)
 {
     arg_printusage (args,
 		    sizeof(args) / sizeof(args[0]),
+		    NULL,
 		    "host command");
     exit (ret);
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -54,6 +54,7 @@ usage (int ret)
 {
     arg_printusage (args,
 		    sizeof(args)/sizeof(*args),
+		    NULL,
 		    "[principal]");
     exit (ret);
 }

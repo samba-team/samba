@@ -113,7 +113,7 @@ struct units byte_units[] = {
 static void
 usage(int ret)
 {
-    arg_printusage (args, num_args, "");
+    arg_printusage (args, num_args, NULL, "");
     exit (ret);
 }
 

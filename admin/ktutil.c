@@ -101,11 +101,11 @@ kt_remove(int argc, char **argv)
     args[i++].value = &keytype_string;
     args[i++].value = &help_flag;
     if(getarg(args, num_args, argc, argv, &optind)) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil remove", "");
 	return 0;
     }
     if(help_flag) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil remove", "");
 	return 0;
     }
     if(principal_string) {
@@ -172,11 +172,11 @@ kt_add(int argc, char **argv)
     args[i++].value = &help_flag;
 
     if(getarg(args, num_args, argc, argv, &optind)) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil add", "");
 	return 0;
     }
     if(help_flag) {
-	arg_printusage(args, num_args, "");
+	arg_printusage(args, num_args, "ktutil add", "");
 	return 0;
     }
     if(principal_string == NULL) {
@@ -292,7 +292,7 @@ help(int argc, char **argv)
 static void
 usage(int status)
 {
-    arg_printusage(args, num_args, "command");
+    arg_printusage(args, num_args, NULL, "command");
     exit(status);
 }
 
