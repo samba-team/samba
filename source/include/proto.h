@@ -516,7 +516,8 @@ struct in_addr *interpret_addr2(char *str);
 BOOL zero_ip(struct in_addr ip);
 BOOL matchname(char *remotehost,struct in_addr  addr);
 void standard_sub_basic(char *str);
-void standard_sub(connection_struct *conn,char *str);
+void standard_sub_vuser(const user_struct *vuser, char *str);
+void standard_sub(connection_struct *conn, user_struct *vuser, char *str);
 BOOL same_net(struct in_addr ip1,struct in_addr ip2,struct in_addr mask);
 struct hostent *Get_Hostbyname(const char *name);
 BOOL process_exists(int pid);
@@ -1522,10 +1523,6 @@ char *lp_groupname_map(void);
 char *lp_builtinname_map(void);
 char *lp_builtinrid_file(void);
 char *lp_ntusrname_map(void);
-char *lp_logon_script(void);
-char *lp_logon_path(void);
-char *lp_logon_drive(void);
-char *lp_logon_home(void);
 char *lp_remote_announce(void);
 char *lp_remote_browse_sync(void);
 char *lp_wins_server(void);
@@ -1614,6 +1611,10 @@ int lp_change_notify_timeout(void);
 int lp_stat_cache_size(void);
 int lp_map_to_guest(void);
 int lp_ldap_port(void);
+char *lp_logon_script(uint16 );
+char *lp_logon_path(uint16 );
+char *lp_logon_drive(uint16 );
+char *lp_logon_home(uint16 );
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );
@@ -1941,14 +1942,19 @@ int sysv_printername_ok(char *name);
 /*The following definitions come from  printing/printing.c  */
 
 void lpq_reset(int snum);
-void print_file(connection_struct *conn, int snum, files_struct *file);
-int get_printqueue(int snum, connection_struct *conn, print_queue_struct **queue,
+void print_file(connection_struct *conn, uint16 vuid,
+				int snum, files_struct *file);
+int get_printqueue(int snum, connection_struct *conn, uint16 vuid,
+				print_queue_struct **queue,
 		   print_status_struct *status);
-void del_printqueue(connection_struct *conn,int snum,int jobid);
-void status_printjob(connection_struct *conn,int snum,int jobid,int status);
+void del_printqueue(connection_struct *conn,uint16 vuid,
+				int snum,int jobid);
+void status_printjob(connection_struct *conn,uint16 vuid,
+				int snum,int jobid,int status);
 int printjob_encode(int snum, int job);
 void printjob_decode(int jobid, int *snum, int *job);
-uint32 status_printqueue(connection_struct *conn,int snum,int status);
+uint32 status_printqueue(connection_struct *conn,uint16 vuid,
+				int snum,int status);
 void load_printers(void);
 
 /*The following definitions come from  profile/profile.c  */

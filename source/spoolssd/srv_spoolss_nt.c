@@ -997,7 +997,7 @@ static void spoolss_notify_status(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_
 
 	bzero(&status,sizeof(status));
 
-	count=get_printqueue(snum, NULL, &q, &status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &q, &status);
 
 	data->notify_data.value[0]=(uint32) status.status;
 	if (q) free(q);
@@ -1013,7 +1013,7 @@ static void spoolss_notify_cjobs(int snum, SPOOL_NOTIFY_INFO_DATA *data, print_q
 
 	bzero(&status,sizeof(status));
 
-	data->notify_data.value[0]=get_printqueue(snum, NULL, &q, &status);
+	data->notify_data.value[0]=get_printqueue(snum, NULL, UID_FIELD_INVALID, &q, &status);
 	if (q) free(q);
 }
 
@@ -1408,7 +1408,7 @@ static uint32 printer_notify_info(const POLICY_HND *hnd,
 		print_queue_struct *queue=NULL;
 		print_status_struct status;
 		bzero(&status, sizeof(status));	
-		count=get_printqueue(snum, NULL, &queue, &status);
+		count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 		for (j=0; j<count; j++)
 		{
 			construct_notify_jobs_info(&(queue[j]), info, pnum, snum, i, queue[j].job);
@@ -1477,7 +1477,7 @@ static BOOL construct_printer_info_0(PRINTER_INFO_0 *printer,int snum, pstring s
 		return (False);
 	}
 
-	count=get_printqueue(snum, NULL, &queue, &status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 	
 	/* the description and the name are of the form \\server\share */
 	slprintf(chaine,sizeof(chaine)-1,"\\\\%s\\%s",servername, ntprinter.info_2->printername);
@@ -1630,7 +1630,7 @@ static BOOL construct_printer_info_2(PRINTER_INFO_2 *printer, int snum, pstring 
 	print_queue_struct *queue=NULL;
 	print_status_struct status;
 	bzero(&status, sizeof(status));	
-	count=get_printqueue(snum, NULL, &queue, &status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &status);
 
 	if (get_a_printer(&ntprinter, 2, lp_servicename(snum)) !=0 )
 	{
@@ -2377,12 +2377,12 @@ static uint32 control_printer(const POLICY_HND *handle, uint32 command)
 	{
 		case PRINTER_CONTROL_PAUSE:
 			/* pause the printer here */
-			return status_printqueue(NULL, snum, LPSTAT_STOPPED);
+			return status_printqueue(NULL, UID_FIELD_INVALID, snum, LPSTAT_STOPPED);
 
 		case PRINTER_CONTROL_RESUME:
 		case PRINTER_CONTROL_UNPAUSE:
 			/* UN-pause the printer here */
-			return status_printqueue(NULL, snum, LPSTAT_OK);
+			return status_printqueue(NULL, UID_FIELD_INVALID, snum, LPSTAT_OK);
 		case PRINTER_CONTROL_PURGE:
 			/* Envoi des dragées FUCA dans l'imprimante */
 			break;
@@ -2617,7 +2617,7 @@ uint32 _spoolss_enumjobs( const POLICY_HND *handle,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	count = get_printqueue(snum, NULL, &queue, &prt_status);
+	count = get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);
 	(*numofjobs) = 0;
 	
 	DEBUG(4,("count:[%d], status:[%d], [%s]\n",
@@ -2694,7 +2694,7 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	count=get_printqueue(snum, NULL, &queue, &prt_status);		
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);		
 
 	while ( (i<count) && found==False )
 	{
@@ -2712,19 +2712,19 @@ uint32 _spoolss_setjob( const POLICY_HND *handle,
 			case JOB_CONTROL_CANCEL:
 			case JOB_CONTROL_DELETE:
 			{
-				del_printqueue(NULL, snum, jobid);
+				del_printqueue(NULL, UID_FIELD_INVALID, snum, jobid);
 				safe_free(queue);
 				return NT_STATUS_NOPROBLEMO;
 			}
 			case JOB_CONTROL_PAUSE:
 			{
-				status_printjob(NULL, snum, jobid, LPQ_PAUSED);
+				status_printjob(NULL, UID_FIELD_INVALID, snum, jobid, LPQ_PAUSED);
 				safe_free(queue);
 				return NT_STATUS_NOPROBLEMO;
 			}
 			case JOB_CONTROL_RESUME:
 			{
-				status_printjob(NULL, snum, jobid, LPQ_QUEUED);
+				status_printjob(NULL, UID_FIELD_INVALID, snum, jobid, LPQ_QUEUED);
 				safe_free(queue);
 				return NT_STATUS_NOPROBLEMO;
 			}
@@ -3323,7 +3323,7 @@ uint32 _spoolss_getjob( const POLICY_HND *handle,
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
-	count=get_printqueue(snum, NULL, &queue, &prt_status);
+	count=get_printqueue(snum, NULL, UID_FIELD_INVALID, &queue, &prt_status);
 	
 	DEBUGADD(4,("count:[%d], prt_status:[%d], [%s]\n",
 	             count, prt_status.status, prt_status.message));

@@ -23,8 +23,6 @@
 #ifdef USE_SMBPASS_DB
 
 extern int DEBUGLEVEL;
-extern pstring samlogon_user;
-extern BOOL sam_logon_in_ssb;
 
 /***************************************************************
  Start to enumerate the smbpasswd list. Returns a void pointer
@@ -98,29 +96,13 @@ static struct sam_passwd *getsamfile21pwent(void *vp)
 	 * as putting the nt name in is a bit meaningless.
 	 */
 
-	pstrcpy(samlogon_user, user->unix_name);
-
-	if (samlogon_user[strlen(samlogon_user)-1] == '$' && 
-	    user->group_rid != DOMAIN_GROUP_RID_USERS)
-	{
-		DEBUG(0,("trust account %s should be in DOMAIN_GROUP_RID_USERS\n",
-		          samlogon_user));
-	}
-
-	/* XXXX hack to get standard_sub_basic() to use sam logon username */
-	/* possibly a better way would be to do a become_user() call */
-
-	sam_logon_in_ssb = True;
-
 	pstrcpy(full_name    , "");
-	pstrcpy(logon_script , lp_logon_script       ());
-	pstrcpy(profile_path , lp_logon_path         ());
-	pstrcpy(home_drive   , lp_logon_drive        ());
-	pstrcpy(home_dir     , lp_logon_home         ());
+	pstrcpy(logon_script , lp_logon_script       (UID_FIELD_INVALID));
+	pstrcpy(profile_path , lp_logon_path         (UID_FIELD_INVALID));
+	pstrcpy(home_drive   , lp_logon_drive        (UID_FIELD_INVALID));
+	pstrcpy(home_dir     , lp_logon_home         (UID_FIELD_INVALID));
 	pstrcpy(acct_desc    , "");
 	pstrcpy(workstations , "");
-
-	sam_logon_in_ssb = False;
 
 	/* 
 	   only overwrite values with defaults IIF specific backend

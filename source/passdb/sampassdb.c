@@ -612,9 +612,6 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	static pstring acct_desc;
 	static pstring workstations;
 
-	extern BOOL sam_logon_in_ssb;
-	extern pstring samlogon_user;
-
 	if (user == NULL) return NULL;
 
 	pwdb_init_sam(&pw_buf);
@@ -649,21 +646,6 @@ struct sam_passwd *pwdb_smb_to_sam(struct smb_passwd *user)
 	}
 
 	DEBUG(5,("getsamfile21pwent\n"));
-
-	/* XXXX hack to get standard_sub_basic() to use sam logon username */
-	/* possibly a better way would be to do a become_user() call */
-
-	sam_logon_in_ssb = True;
-
-	pstrcpy(samlogon_user, pw_buf.unix_name);
-
-	pstrcpy(logon_script , lp_logon_script       ());
-	pstrcpy(profile_path , lp_logon_path         ());
-	pstrcpy(home_drive   , lp_logon_drive        ());
-	pstrcpy(home_dir     , lp_logon_home         ());
-	pstrcpy(workstations , "");
-
-	sam_logon_in_ssb = False;
 
 	if (pw_buf.home_dir == NULL)
 		pw_buf.home_dir     = home_dir;

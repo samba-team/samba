@@ -2763,6 +2763,7 @@ int reply_printqueue(connection_struct *conn,
 	int outsize = set_message(outbuf,2,3,True);
 	int max_count = SVAL(inbuf,smb_vwv0);
 	int start_index = SVAL(inbuf,smb_vwv1);
+	uint16 vuid = SVAL(inbuf,smb_uid);
 
 	/* we used to allow the client to get the cnum wrong, but that
 	   is really quite gross and only worked when there was only
@@ -2782,7 +2783,7 @@ int reply_printqueue(connection_struct *conn,
 	{
 		print_queue_struct *queue = NULL;
 		char *p = smb_buf(outbuf) + 3;
-		int count = get_printqueue(SNUM(conn), conn,&queue,NULL);
+		int count = get_printqueue(SNUM(conn), conn, vuid, &queue,NULL);
 		int num_to_get = ABS(max_count);
 		int first = (max_count>0?start_index:start_index+max_count+1);
 		int i;
