@@ -171,17 +171,36 @@ static BOOL close_connection(struct cli_state *c)
 static BOOL check_error(struct cli_state *c, 
 			uint8 eclass, uint32 ecode, uint32 nterr)
 {
-	uint8 class;
-	uint32 num;
-	(void)cli_error(c, &class, &num, NULL);
-	if ((eclass != class || ecode != num) &&
-	    num != (nterr&0xFFFFFF)) {
-		printf("unexpected error code class=%d code=%d\n", 
-			 (int)class, (int)num);
-		printf(" expected %d/%d %d\n", 
-		       (int)eclass, (int)ecode, (int)nterr);
-		return False;
-	}
+        if (cli_is_dos_error(c)) {
+                uint8 class;
+                uint32 num;
+
+                /* Check DOS error */
+
+                cli_dos_error(c, &class, &num);
+
+                if (eclass != class || ecode != num) {
+                        printf("unexpected error code class=%d code=%d\n", 
+                               (int)class, (int)num);
+                        printf(" expected %d/%d %d\n", 
+                               (int)eclass, (int)ecode, (int)nterr);
+                        return False;
+                }
+
+        } else {
+                uint32 status;
+
+                /* Check NT error */
+
+                status = cli_nt_error(c);
+
+                if (nterr != status) {
+                        printf("unexpected error code 0x%08x\n", status);
+                        printf(" expected 0x%08x\n", nterr);
+                        return False;
+                }
+        }
+
 	return True;
 }
 
@@ -2785,8 +2804,6 @@ static BOOL run_opentest(int dummy)
 	static struct cli_state cli1;
 	char *fname = "\\readonly.file";
 	int fnum1, fnum2;
-	uint8 eclass;
-	uint32 errnum;
 	char buf[20];
 	size_t fsize;
 	BOOL correct = True;
@@ -2827,16 +2844,9 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRnoaccess, not ERRbadshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-	cli_error( &cli1, &eclass, &errnum, NULL);
-	
-	if (eclass != ERRDOS || errnum != ERRnoaccess) {
-		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,
-		       (unsigned int)errnum, cli_errstr(&cli1) );
-		correct = False;
-	} else {
+        if (check_error(&cli1, ERRDOS, ERRnoaccess, 0)) {
 		printf("correct error code ERRDOS/ERRnoaccess returned\n");
 	}
-	
 	
 	printf("finished open test 1\n");
 	
@@ -2855,13 +2865,7 @@ static BOOL run_opentest(int dummy)
 	/* This will fail - but the error should be ERRshare. */
 	fnum2 = cli_open(&cli1, fname, O_RDWR, DENY_ALL);
 	
-	cli_error( &cli1, &eclass, &errnum, NULL);
-
-	if (eclass != ERRDOS || errnum != ERRbadshare) {
-		printf("wrong error code (%x,%x) = %s\n", (unsigned int)eclass,
-		       (unsigned int)errnum, cli_errstr(&cli1) );
-		correct = False;
-	} else {
+	if (check_error(&cli1, ERRDOS, ERRbadshare, 0)) {
 		printf("correct error code ERRDOS/ERRbadshare returned\n");
 	}
 	
