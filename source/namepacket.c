@@ -171,6 +171,8 @@ void initiate_netbios_packet(uint16 *id,
   p.timestamp = time(NULL);
   p.packet_type = NMB_PACKET;
   
+  debug_nmb_packet(&p);
+  
   if (!send_packet(&p)) {
     DEBUG(3,("send_packet to %s %d failed\n",inet_ntoa(p.ip),p.port));
     *id = 0xffff;
