@@ -1269,7 +1269,11 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 		   const NEG_FLAGS * clnt_flgs,
 		   DOM_CHAL * srv_chal,
 		   NEG_FLAGS * srv_flgs, uint32 remote_pid);
-uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
+uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
+		      const UNISTR2 *uni_acct_name,
+		      uint16 sec_chan,
+		      const UNISTR2 *uni_comp_name,
+		      const DOM_CRED * clnt_cred,
 		      const uint8 pwd[16],
 		      DOM_CRED * srv_cred, uint32 remote_pid);
 uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,

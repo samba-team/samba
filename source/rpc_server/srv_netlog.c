@@ -136,7 +136,11 @@ static BOOL api_net_srv_pwset(rpcsrv_struct * p,
 	}
 
 	r_s.status =
-		_net_srv_pwset(&q_a.clnt_id, q_a.pwd, &r_s.srv_cred,
+		_net_srv_pwset(&q_a.clnt_id.login.uni_logon_srv,
+			       &q_a.clnt_id.login.uni_acct_name,
+			       q_a.clnt_id.login.sec_chan,
+			       &q_a.clnt_id.login.uni_comp_name,
+			       &q_a.clnt_id.cred, q_a.pwd, &r_s.srv_cred,
 			       p->key.pid);
 
 	/* store the response in the SMB stream */

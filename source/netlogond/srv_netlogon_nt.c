@@ -703,7 +703,11 @@ uint32 _net_auth_2(const UNISTR2 *uni_logon_srv,
 /*************************************************************************
  _net_srv_pwset
  *************************************************************************/
-uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
+uint32 _net_srv_pwset(const UNISTR2 *uni_logon_srv,
+		      const UNISTR2 *uni_acct_name,
+		      uint16 sec_chan,
+		      const UNISTR2 *uni_comp_name,
+		      const DOM_CRED * clnt_cred,
 		      const uint8 pwd[16],
 		      DOM_CRED * srv_cred, uint32 remote_pid)
 {
@@ -711,16 +715,13 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 	unsigned char hash3_pwd[16];
 	uint32 status_pwd;
 
-	const UNISTR2 *uni_trust_name;
 	fstring trust_name;
 	struct dcinfo dc;
-	const UNISTR2 *uni_samusr;
 	SAM_USERINFO_CTR ctr;
 
 	ZERO_STRUCT(dc);
 
-	uni_trust_name = &(clnt_id->login.uni_comp_name);
-	unistr2_to_ascii(trust_name, uni_trust_name, sizeof(trust_name) - 1);
+	unistr2_to_ascii(trust_name, uni_comp_name, sizeof(trust_name) - 1);
 
 	if (!cred_get(remote_pid, global_sam_name, trust_name, &dc))
 	{
@@ -729,7 +730,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 
 	/* checks and updates credentials.  creates reply credentials */
 	if (!deal_with_creds
-	    (dc.sess_key, &(dc.clnt_cred), &(clnt_id->cred), srv_cred))
+	    (dc.sess_key, &(dc.clnt_cred), clnt_cred, srv_cred))
 	{
 		/* lkclXXXX take a guess at a sensible error code to return... */
 		return NT_STATUS_ACCESS_DENIED;
@@ -742,15 +743,14 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	uni_samusr = &(clnt_id->login.uni_acct_name);
-	unistr2_to_ascii(trust_acct, uni_samusr, sizeof(trust_acct) - 1);
+	unistr2_to_ascii(trust_acct, uni_acct_name, sizeof(trust_acct) - 1);
 
 	DEBUG(3, ("Server Password Set Wksta:[%s]\n", trust_acct));
 
 	/* get info for trust account */
 	ZERO_STRUCT(ctr);
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+	status_pwd = direct_samr_userinfo(uni_acct_name, 0x12, &ctr,
 					  NULL, NULL, False);
 	unbecome_root(True);
 
@@ -779,7 +779,7 @@ uint32 _net_srv_pwset(const DOM_CLNT_INFO * clnt_id,
 	memcpy(ctr.info.id12->nt_pwd, hash3_pwd, sizeof(hash3_pwd));
 
 	become_root(True);
-	status_pwd = direct_samr_userinfo(uni_samusr, 0x12, &ctr,
+	status_pwd = direct_samr_userinfo(uni_acct_name, 0x12, &ctr,
 					  NULL, NULL, True);
 	unbecome_root(True);
 
@@ -996,8 +996,8 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* interactive login. */
 				status =
 					net_login_interactive(&
-							      (sam_id->
-							       ctr->auth.id1),
+							      (sam_id->ctr->
+							       auth.id1),
 							      &dc);
 				(*auth_resp) = 1;
 				break;
@@ -1007,10 +1007,10 @@ uint32 _net_sam_logon(const DOM_SAM_INFO * sam_id,
 				/* network login.  lm challenge and 24 byte responses */
 				status =
 					net_login_network(&
-							  (sam_id->ctr->
-							   auth.id2),
-							  acb_info, &dc,
-usr_sess_key, lm_pw8);
+							  (sam_id->ctr->auth.
+							   id2), acb_info,
+							  &dc, usr_sess_key,
+lm_pw8);
 				padding = lm_pw8;
 				enc_user_sess_key = usr_sess_key;
 				(*auth_resp) = 1;
