@@ -250,6 +250,12 @@ same fixes apply as they did for the "smbclient -L" test above. In
 particular, make sure your "hosts allow" line is correct (see the man
 pages)
 
+Also, do not overlook that fact that when the workstation requests the
+connection to the samba server it will attempt to connect using the 
+name with which you logged onto your Windows machine. You need to make
+sure that an account exists on your Samba server with that exact same
+name and password.
+
 If you get "specified computer is not receiving requests" or similar
 it probably means that the host is not contactable via tcp services.
 Check to see if the host is running tcp wrappers, and if so add an entry in
