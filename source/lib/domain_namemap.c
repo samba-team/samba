@@ -330,11 +330,19 @@ static BOOL make_mydomain_sid(DOM_NAME_MAP *grp, DOM_MAP_TYPE type)
 		}
 		ret = True;
 	}
-	if (type != grp->type)
-	{
-		DEBUG(0,("well-known NT name %s\\%s listed in wrong map file\n",
-		          grp->nt_domain, grp->nt_name));
-		return False;
+	switch(type) {
+		case DOM_MAP_LOCAL:
+			if(grp->type != SID_NAME_ALIAS)
+				return False;
+			break;
+		case DOM_MAP_DOMAIN:
+			if(grp->type != SID_NAME_DOM_GRP)
+				return False;
+			break;
+		case DOM_MAP_USER:
+			if(grp->type != SID_NAME_USER)
+				return False;
+			break;
 	}
 
 	sid_to_string(sid_str, &grp->sid);
