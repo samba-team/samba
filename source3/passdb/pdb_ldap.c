@@ -2361,6 +2361,7 @@ static NTSTATUS ldapsam_delete_group_mapping_entry(struct pdb_methods *methods,
 
 	if (rc != LDAP_SUCCESS) {
 		DEBUG(0, ("failed to delete group %s\n", sidstring));
+		return NT_STATUS_UNSUCCESSFUL;
 	}
 
 	DEBUG(2, ("successfully delete group mapping %s in LDAP\n",
