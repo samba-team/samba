@@ -92,7 +92,7 @@
 }
 #endif
 
-#ifdef HAVE_PREAD64
+#if defined(HAVE_PREAD64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
  ssize_t pread64(int fd, void *buf, size_t size, off64_t ofs)
 {
 	if (smbw_fd(fd)) {
@@ -114,7 +114,7 @@
 }
 #endif
 
-#ifdef HAVE_PWRITE64
+#if defined(HAVE_PWRITE64) && defined(HAVE_EXPLICIT_LARGEFILE_SUPPORT)
  ssize_t pwrite64(int fd, void *buf, size_t size, off64_t ofs)
 {
 	if (smbw_fd(fd)) {

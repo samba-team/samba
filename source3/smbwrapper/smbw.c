@@ -1423,7 +1423,7 @@ say no to acls
 }
 #endif
 
-
+#ifdef HAVE_EXPLICIT_LARGEFILE_SUPPORT
 #ifdef HAVE_STAT64
 /* this can't be in wrapped.c because of include conflicts */
  void stat64_convert(struct stat *st, struct stat64 *st64)
@@ -1452,6 +1452,7 @@ say no to acls
 	d64->d_reclen = d->d_reclen;
 	pstrcpy(d64->d_name, d->d_name);
 }
+#endif
 #endif
 
 
