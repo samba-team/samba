@@ -298,6 +298,7 @@ gss_verify_mic_internal
 			       type);
 	break;
     case KEYTYPE_ARCFOUR :
+    case KEYTYPE_ARCFOUR_56 :
 	ret = _gssapi_verify_mic_arcfour (minor_status, context_handle,
 					  message_buffer, token_buffer,
 					  qop_state, key, type);

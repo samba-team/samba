@@ -127,6 +127,7 @@ gss_wrap_size_limit (
   switch (keytype) {
   case KEYTYPE_DES :
   case KEYTYPE_ARCFOUR:
+  case KEYTYPE_ARCFOUR_56:
       ret = sub_wrap_size(req_output_size, max_input_size, 8, 22);
       break;
   case KEYTYPE_DES3 :
@@ -475,6 +476,7 @@ OM_uint32 gss_wrap
 		       output_message_buffer, key);
       break;
   case KEYTYPE_ARCFOUR:
+  case KEYTYPE_ARCFOUR_56:
       ret = _gssapi_wrap_arcfour (minor_status, context_handle, conf_req_flag,
 				  qop_req, input_message_buffer, conf_state,
 				  output_message_buffer, key);

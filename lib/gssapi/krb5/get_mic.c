@@ -288,6 +288,7 @@ OM_uint32 gss_get_mic
 		      message_buffer, message_token, key);
       break;
   case KEYTYPE_ARCFOUR:
+  case KEYTYPE_ARCFOUR_56:
       ret = _gssapi_get_mic_arcfour (minor_status, context_handle, qop_req,
 				     message_buffer, message_token, key);
       break;

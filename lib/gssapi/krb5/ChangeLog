@@ -8,15 +8,22 @@
 	* acquire_cred.c: plug leak
 
 	* get_mic.c: use gss_krb5_get_subkey() instead
-	  of gss_krb5_get_{local,remote}key()
+	  of gss_krb5_get_{local,remote}key(), support
+	  KEYTYPE_ARCFOUR_56
 
-	* gssapi_local.c: use gss_krb5_get_subkey()
+	* gssapi_local.c: use gss_krb5_get_subkey(),
+	  support KEYTYPE_ARCFOUR_56
 
-	* unwrap.c: use gss_krb5_get_subkey()
+	* import_sec_context.c: plug leak
 
-	* verify_mic.c: use gss_krb5_get_subkey()
+	* unwrap.c: use gss_krb5_get_subkey(),
+	  support KEYTYPE_ARCFOUR_56
 
-	* wrap.c: use gss_krb5_get_subkey()
+	* verify_mic.c: use gss_krb5_get_subkey(),
+	  support KEYTYPE_ARCFOUR_56
+
+	* wrap.c: use gss_krb5_get_subkey(),
+	  support KEYTYPE_ARCFOUR_56
 
 2004-11-30  Love Hörnquist Åstrand  <lha@it.su.se>
 
