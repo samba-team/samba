@@ -125,15 +125,17 @@ static BOOL test_one_file(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		uint32 cap = cli->transport->negotiate.capabilities;
 
+		printf("testing %s\n", levels[i].name);
+
 		levels[i].status = single_search(cli, mem_ctx, fname, 
 						 levels[i].level, &levels[i].data);
 
 		/* see if this server claims to support this level */
 		if ((cap & levels[i].capability_mask) != levels[i].capability_mask) {
+			printf("search level %s(%d) not supported by server\n",
+			       levels[i].name, (int)levels[i].level);
 			continue;
 		}
-
-		printf("testing %s\n", levels[i].name);
 
 		if (!NT_STATUS_IS_OK(levels[i].status)) {
 			printf("search level %s(%d) failed - %s\n",
