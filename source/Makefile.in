@@ -189,7 +189,7 @@ SECRETS_OBJ = passdb/secrets.o
 LIBNMB_OBJ = libsmb/unexpected.o libsmb/namecache.o libsmb/nmblib.o \
 	     libsmb/namequery.o 
 
-LIBNTLMSSP_OBJ = libsmb/ntlmssp.o libsmb/ntlmssp_parse.o
+LIBNTLMSSP_OBJ = libsmb/ntlmssp.o libsmb/ntlmssp_parse.o libsmb/ntlmssp_sign.o
 
 LIBSAMBA_OBJ = libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o
 
@@ -198,7 +198,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
-	     libsmb/clistr.o \
+	     libsmb/clistr.o libsmb/smb_signing.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
 	     libsmb/passchange.o libsmb/doserr.o \
