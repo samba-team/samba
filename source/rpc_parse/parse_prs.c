@@ -627,6 +627,8 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 	return True;
 }
 
+
+
 /******************************************************************
  Stream a unicode string, length/buffer specified separately,
  in uint16 chars. We use DBG_RW_PCVAL, not DBG_RW_PSVAL here
@@ -708,6 +710,96 @@ BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 
 	return True;
 }
+
+#if 0	/* RPCCLIENT_TEST */
+BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
+{
+	int len = 0;
+	unsigned char *p = (unsigned char *)str->buffer;
+	uint8 *start;
+	char *q;
+	char zero=0;
+
+	if (MARSHALLING(ps)) {
+
+		for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+				   str->buffer[len] != 0; len++)
+			;
+
+		q = prs_mem_get(ps, (len+1)*2);
+		if (q == NULL)
+			return False;
+
+		start = (uint8*)q;
+
+		for(len = 0; len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+				   str->buffer[len] != 0; len++) 
+		{
+			if(ps->bigendian_data) 
+			{
+				RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
+				p += 2;
+				q += 2;
+			} 
+			else 
+			{
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+			}
+		}
+
+		/*
+		 * even if the string is 'empty' (only an \0 char)
+		 * at this point the leading \0 hasn't been parsed.
+		 * so parse it now
+		 */
+
+		RW_CVAL(ps->io, q, zero, 0);
+		q++;
+		RW_CVAL(ps->io, q, zero, 0);
+		q++;
+
+		len++;
+
+		dump_data(5+depth, (char *)start, len * 2);
+	}
+	else { /* unmarshalling */
+	
+		len = -1;
+		q = prs_data_p(ps) + prs_offset(ps);
+
+		do 
+		{
+			len++;
+
+			if(ps->bigendian_data) 
+			{
+				RW_SVAL(ps->io, ps->bigendian_data, q, *p, 0);
+				p += 2;
+				q += 2;
+			} else {
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+				RW_CVAL(ps->io, q, *p, 0);
+				p++;
+				q++;
+			}
+		} while (len < (sizeof(str->buffer) / sizeof(str->buffer[0])) &&
+				   str->buffer[len] != 0);
+	}
+
+	ps->data_offset += len*2;
+	
+	return True;
+}
+
+#endif	/* RPCCLIENT_TEST */
+
 
 /*******************************************************************
  Stream a null-terminated string.  len is strlen, and therefore does
