@@ -505,10 +505,10 @@ if [ $1 = 0 ] ; then
 	fi
 fi
 
-%triggerpostun -- samba < samba-2.0.0
-if [ $0 != 0 ]; then
-    /sbin/chkconfig --add smb
-fi
+#%triggerpostun -- samba < samba-2.0.0
+#if [ $0 != 0 ]; then
+#    /sbin/chkconfig --add smb
+#fi
 
 %files
 %defattr(-,root,root)
