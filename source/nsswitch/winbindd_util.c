@@ -766,6 +766,7 @@ static struct cmdstr_table cmdstr_table[] = {
 	/* PAM auth functions */
 
 	{ WINBINDD_PAM_AUTH, "pam auth" },
+	{ WINBINDD_PAM_AUTH_NTLM, "pam auth ntlm" },
 	{ WINBINDD_PAM_CHAUTHTOK, "pam chauthtok" },
 
 	/* List things */

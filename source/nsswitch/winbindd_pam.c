@@ -47,8 +47,7 @@ static void parse_domain_user(char *domuser, fstring domain, fstring user)
 	dos_to_unix(domain, True);
 }
 
-/* Return a password structure from a username.  Specify whether cached data 
-   can be returned. */
+/* Authenticate a user from a plaintext password */
 
 enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state) 
 {
@@ -90,6 +89,55 @@ enum winbindd_result winbindd_pam_auth(struct winbindd_cli_state *state)
 						NULL,
 						lmpw, sizeof(lmpw),
 						ntpw, sizeof(ntpw), &info3);
+
+	if (status != NT_STATUS_NOPROBLEMO) {
+                DEBUG(3, ("winbindd_pam_auth() failed with status 0x%08x\n",
+                          status));
+                return WINBINDD_ERROR;
+        }
+
+	return WINBINDD_OK;
+}
+
+/* Authenticate a user with a hashed password */
+
+enum winbindd_result winbindd_pam_auth_ntlm(struct winbindd_cli_state *state) 
+{
+	NET_USER_INFO_3 info3;
+	uchar trust_passwd[16];
+	uint32 status;
+	fstring server;
+	fstring name_domain, name_user;
+	extern pstring global_myname;
+
+	DEBUG(3, ("[%5d]: pam auth ntlm %s\n", state->pid,
+		  state->request.data.auth_ntlm.user));
+
+	/* Parse domain and username */
+	parse_domain_user(state->request.data.auth_ntlm.user, name_domain, 
+                          name_user);
+
+	/* don't allow the null domain */
+	if (strcmp(name_domain,"") == 0) return WINBINDD_ERROR;
+
+	ZERO_STRUCT(info3);
+
+	if (!_get_trust_account_password(lp_workgroup(), trust_passwd, NULL)) {
+            DEBUG(1, ("could not get trust password for domain %s\n",
+                      name_domain));
+            return WINBINDD_ERROR;
+        }
+
+	slprintf(server, sizeof(server), "\\\\%s", server_state.controller);
+
+	status = domain_client_validate_backend
+                (server, name_user, name_domain, global_myname, SEC_CHAN_WKSTA,
+                 trust_passwd, NULL, 
+                 state->request.data.auth_ntlm.lm_hash,
+                 sizeof(state->request.data.auth_ntlm.lm_hash),
+                 state->request.data.auth_ntlm.nt_hash,
+                 sizeof(state->request.data.auth_ntlm.nt_hash),
+                 &info3);
 
 	if (status != NT_STATUS_NOPROBLEMO) return WINBINDD_ERROR;
 
