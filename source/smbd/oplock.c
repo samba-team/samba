@@ -166,7 +166,7 @@ Error was %s.\n", strerror(errno) ));
     inode = (SMB_DEV_T)os.os_ino;
 
     DEBUG(5,("receive_local_message: kernel oplock break request received for \
-dev = %x, inode = %0.f\n", (unsigned int)dev, (double)inode ));
+dev = %x, inode = %.0f\n", (unsigned int)dev, (double)inode ));
 
     /*
      * Create a kernel oplock break message.
@@ -243,12 +243,12 @@ BOOL set_file_oplock(files_struct *fsp)
     if(fcntl(fsp->fd_ptr->fd, F_OPLKREG, oplock_pipe_write) < 0) {
       if(errno != EAGAIN) {
         DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
-inode = %0.f. Error was %s\n", 
+inode = %.0f. Error was %s\n", 
               fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
                strerror(errno) ));
       } else {
         DEBUG(5,("set_file_oplock: Refused oplock on file %s, dev = %x, \
-inode = %0.f. Another process had the file open.\n",
+inode = %.0f. Another process had the file open.\n",
               fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode ));
       }
       return False;
@@ -1026,7 +1026,7 @@ void check_kernel_oplocks(void)
     int pfd[2];
     pstring tmpname;
 
-    slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", getpid());
+    slprintf( tmpname, sizeof(tmpname)-1, "/tmp/ot.%d.XXXXXX", (unsigned int)getpid());
     mktemp(tmpname);
 
     if(pipe(pfd) != 0) {
@@ -1048,7 +1048,7 @@ void check_kernel_oplocks(void)
 
     if(fcntl(fd, F_OPLKREG, pfd[1]) == -1) {
       DEBUG(0,("check_kernel_oplocks: Kernel oplocks are not available on this machine. \
-Disabling kernel oplock supprt.\n" ));
+Disabling kernel oplock support.\n" ));
       close(pfd[0]);
       close(pfd[1]);
       close(fd);
@@ -1057,7 +1057,7 @@ Disabling kernel oplock supprt.\n" ));
 
     if(fcntl(fd, F_OPLKACK, OP_REVOKE) < 0 ) {
       DEBUG(0,("check_kernel_oplocks: Error when removing kernel oplock. Error was %s. \
-Disabling kernel oplock supprt.\n" ));
+Disabling kernel oplock support.\n", strerror(errno) ));
       close(pfd[0]);
       close(pfd[1]);
       close(fd);
