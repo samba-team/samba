@@ -49,21 +49,23 @@ while ( $string = <STDIN> ) {
 	## check and see if account info already exists in LDAP.
         $result = $ldap->search ( base => "$DN",
 				  scope => "sub",
-				  filter => "(&(objectclass=sambaAccount)(uid=$smbentry[0]))"
+				  filter => "(uid=$smbentry[0])"
 				);
 
         ## If no LDAP entry exists, create one.
 	if ( $result->count == 0 ) {
-		$result = $ldap->add ( dn => "uid=$smbentry[0]\,$DN",
-				 attrs => [
-				    uid => $smbentry[0],
-                                    rid => $rid,
-				    lmPassword => $smbentry[2],
-				    ntPassword => $smbentry[3],
-                                    acctFlags => $smbentry[4],
-				    cn => $smbentry[0],
-                                    pwdLastSet => hex(substr($smbentry[5],4)),
-                                    objectclass => 'sambaAccount' ] );
+		$new_entry  = Net::LDAP::Entry->new();
+		$new_entry->add( dn => "uid=$smbentry[0],$DN",
+				 uid => $smbentry[0],
+                                 rid => $rid,
+				 lmPassword => $smbentry[2],
+				 ntPassword => $smbentry[3],
+                                 acctFlags => $smbentry[4],
+				 cn => $smbentry[0],
+                                 pwdLastSet => hex(substr($smbentry[5],4)),
+                                 objectclass => 'sambaAccount' );
+
+		$result = $ldap->add( $new_entry );
 		$result->error() if $result->code();
 		print "Adding [uid=" . $smbentry[0] . "," . $DN . "]\n";
 
@@ -72,7 +74,7 @@ while ( $string = <STDIN> ) {
 	elsif ($result->count == 1) 
 	{
 		# Put the search results into an entry object
-		$entry = $result->shift_entry;
+		$entry = $result->entry(0);
 
 		print "Updating [" . $entry->dn . "]\n";
 
@@ -80,16 +82,16 @@ while ( $string = <STDIN> ) {
 		@values = $entry->get_value( "objectclass" );
 		$flag = 1;
 		foreach $item (@values) {
+			print "$item\n";
 			if ( "$item" eq "sambaAccount" ) {
 				$flag = 0;
-				last;
 			}
 		}
 		if ( $flag ) {
 	    		## Adding sambaAccount objectclass requires adding at least rid:
+			## uid attribute already exists we know since we searched on it
 			$entry->add(objectclass => "sambaAccount",
-       				   rid	       => $rid,
-				   uid         => $smbentry[0] );
+       				   rid	       => $rid );
 	    }
 
 	    ## Set the other attribute values
