@@ -123,9 +123,6 @@ BOOL secrets_named_mutex(const char *name, uint_t timeout, size_t *p_ref_count)
 	size_t ref_count = *p_ref_count;
 	int ret = 0;
 
-	if (!message_init())
-		return False;
-
 	if (ref_count == 0) {
 		ret = tdb_lock_bystring(tdb->tdb, name, timeout);
 		if (ret == 0)
