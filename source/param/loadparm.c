@@ -2831,7 +2831,6 @@ static void print_parameter(struct parm_struct *p, void *ptr, FILE * f,  char *(
 		case P_INTEGER:
 			fprintf(f, "%d", *(int *)ptr);
 			if (strequal(p->label,"log level")) {
-			    int i;
 			    for (i = 1; i < DBGC_LAST; i ++) {
 				if (((int *)ptr)[i])
 				    fprintf(f, ",%s:%d",debug_classname_from_index(i),((int *)ptr)[i]);

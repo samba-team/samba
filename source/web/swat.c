@@ -216,8 +216,6 @@ static void show_parameter(int snum, struct parm_struct *parm)
 
 	case P_INTEGER:
 		if (strequal(parm->label,"log level")) {
-			int i;
-
 			printf("<input type=text size=40 name=\"parm_%s\" value=%d", 
 				make_parm_name(parm->label),*(int *)ptr);
 			for (i = 1; i < DBGC_LAST; i ++) {
