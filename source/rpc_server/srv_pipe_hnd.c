@@ -569,8 +569,14 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	}
 
 	prs_init( &rpc_in, 0, p->mem_ctx, UNMARSHALL);
-	/* Ensure we're using the corrent endianness. */
+
+	/*
+	 * Ensure we're using the corrent endianness for both the 
+	 * RPC header flags and the raw data we will be reading from.
+	 */
+
 	prs_set_endian_data( &rpc_in, p->endian);
+	prs_set_endian_data( &p->in_data.data, p->endian);
 
 	prs_give_memory( &rpc_in, data_p, (uint32)data_len, False);
 
@@ -600,6 +606,9 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 			DEBUG(0,("process_complete_pdu: Unknown rpc type = %u received.\n", (unsigned int)p->hdr.pkt_type ));
 			break;
 	}
+
+	/* Reset to little endian. Probably don't need this but it won't hurt. */
+	prs_set_endian_data( &p->in_data.data, RPC_LITTLE_ENDIAN);
 
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
