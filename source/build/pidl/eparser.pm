@@ -2,6 +2,7 @@
 # Samba4 parser generator for IDL structures
 # Copyright tridge@samba.org 2000-2003
 # Copyright tpot@samba.org 2001,2004
+# Copyright jelmer@samba.org 2004
 # released under the GNU GPL
 
 package IdlEParser;
@@ -238,7 +239,7 @@ sub ParseArrayPull($$)
 		pidl "\tif ($size > $alloc_size) {\n";
 		pidl "\t\tproto_tree_add_text(tree, ndr->tvb, ndr->offset, 0, \"Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
 		pidl "\t\tif (check_col(ndr->pinfo->cinfo, COL_INFO))\n";
-		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad conformant size\", $alloc_size, $size);\n";
+		pidl "\t\t\tcol_append_fstr(ndr->pinfo->cinfo, COL_INFO, \", Bad conformant size (%u should be %u)\", $alloc_size, $size);\n";
 		pidl "\t}\n";
 	} elsif (!util::is_inline_array($e)) {
 #		if ($var_prefix =~ /^r->out/ && $size =~ /^\*r->in/) {
@@ -300,7 +301,6 @@ sub ParseElementPullSwitch($$$)
 	if (!defined $utype ||
 	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
 		my $e2 = find_sibling($e, $switch);
-		pidl "\tguint16 _level;\n";
 		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
 		pidl "\t\tndr_pull_level(ndr, tree, hf_level, &_level);\n";
 		pidl "\t}\n";
@@ -421,7 +421,7 @@ sub ParseStructPull($)
 	my($struct) = shift;
 	my $conform_e;
 
-	pidl "\tguint32 _offset, _length;\n";
+	pidl "\tguint32 _U_ _offset, _U_ _length, _U_ _level;\n";
 
 	for my $e (@{$struct->{ELEMENTS}}) {
 	    if (util::is_builtin_type($e->{TYPE})) {
@@ -562,6 +562,7 @@ sub ParseUnionPull($)
 	pidl "\t}\n";
 	pidl "\tndr_pull_struct_end(ndr);\n";
 	pidl "done:\n";
+	pidl "return;\n";
 	end_flags($e);
 }
 
@@ -569,13 +570,13 @@ sub ParseUnionPull($)
 # parse a enum - pull side
 sub ParseEnumPull($)
 {
-	my $e = shift;
+	my $enum = shift;
 
 	my $name;
 	my $ndx = 0;
 
-	for my $e (@{$e->{ELEMENTS}}) {
-	    if ($e =~ /([a-zA-Z_]+)=([0-9]+)/) {
+	for my $e (@{$enum->{ELEMENTS}}) {
+	    if ($e =~ /([a-zA-Z0-9_]+)=([0-9x]+)/) {
 		$name = $1;
 		$ndx = $2;
 	    } else {
@@ -650,8 +651,9 @@ sub ParseFunctionElementPull($$)
 
 	if (util::array_size($e)) {
 		if (util::need_wire_pointer($e)) {
-			pidl "\tndr_pull_ptr(ndr, &ptr_$e->{NAME});\n";
+			pidl "\tndr_pull_ptr(ndr, tree, hf_ptr, &ptr_$e->{NAME});\n";
 			pidl "\tif (ptr_$e->{NAME}) {\n";
+			pidl "\t\tguint32 " . find_size_var($e, util::array_size($e)) . ";\n";
 		} elsif ($inout eq "out" && util::has_property($e, "ref")) {
 			pidl "\tif (r->$inout.$e->{NAME}) {\n";
 		} else {
@@ -694,7 +696,7 @@ sub ParseFunctionPull($)
 	pidl $static . "int $fn->{NAME}_rqst(tvbuff_t *tvb, int offset, packet_info *pinfo, proto_tree *tree, guint8 *drep)\n";
 	pidl "{\n";
 	pidl "\tstruct e_ndr_pull *ndr = ndr_pull_init(tvb, offset, pinfo, drep);\n";
-	pidl "\tguint32 _offset, _length;\n";
+	pidl "\tguint32 _U_ _offset, _U_ _length, _U_ _level;\n";
 
 	# declare any internal pointers we need
 	foreach my $e (@{$fn->{DATA}}) {
@@ -754,7 +756,7 @@ sub ParseFunctionPull($)
 	}
 
 	if ($fn->{RETURN_TYPE} && $fn->{RETURN_TYPE} ne "void") {
-		pidl "\tndr_pull_$fn->{RETURN_TYPE}(ndr, tree, hf_rc);\n";
+		pidl "\tndr_pull_$fn->{RETURN_TYPE}(ndr, tree, hf_rc, NULL);\n";
 	}
 
 	pidl "\toffset = ndr->offset;\n";
@@ -781,7 +783,7 @@ sub FunctionTable($)
 		return;
 	}
 
-	pidl "static dcerpc_sub_dissector dcerpc_dissectors[] = {\n";
+	pidl "static dcerpc_sub_dissector dcerpc_" . $interface->{NAME} . "_dissectors[] = {\n";
 	my $num = 0;
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "FUNCTION") {
@@ -1098,7 +1100,7 @@ sub Parse($$)
 	    pidl "{\n";
 	    pidl "\tdcerpc_init_uuid(proto_dcerpc_$module, ett_dcerpc_$module, \n";
 	    pidl "\t\t&uuid_dcerpc_$module, ver_dcerpc_$module, \n";
-	    pidl "\t\tdcerpc_dissectors, hf_opnum);\n";
+	    pidl "\t\tdcerpc_" . $module . "_dissectors, hf_opnum);\n";
 	    pidl "}\n";
 
 	} else {
