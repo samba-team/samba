@@ -714,12 +714,6 @@ BOOL winbind_setup_common(void)
 	if (!winbindd_param_init())
 		return False;
 
-	/* Get list of domains we look up requests for.  This includes the
-	   domain which we are a member of as well as any trusted
-	   domains. */ 
-
-	init_domain_list();
-
 	/* Winbind daemon initialisation */
 
 	if (!winbindd_idmap_init())
