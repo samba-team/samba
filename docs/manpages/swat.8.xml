@@ -94,7 +94,7 @@
 	these in: </para>
 	
 	<itemizedlist>
-		<listitem><para>/usr/local/samba/bin/swat</para></listitem>
+		<listitem><para>/usr/local/samba/sbin/swat</para></listitem>
 		<listitem><para>/usr/local/samba/swat/images/*</para></listitem>
 		<listitem><para>/usr/local/samba/swat/help/*</para></listitem>
 	</itemizedlist>
@@ -125,7 +125,7 @@
 		add a line like this: </para>
 
 		<para><command>swat    stream  tcp     nowait.400  root
-		/usr/local/samba/bin/swat swat</command></para>
+		/usr/local/samba/sbin/swat swat</command></para>
 	
 		<para>Once you have edited <filename>/etc/services</filename> 
 		and <filename>/etc/inetd.conf</filename> you need to send a 
