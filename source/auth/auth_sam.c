@@ -222,6 +222,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 			       "accountExpires",
 			       "badPwdCount",
 			       "logonCount",
+			       "primaryGroupID",
 			       NULL,
 	};
 
@@ -333,6 +334,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		struct dom_sid *primary_group_sid;
 		const char *sidstr;
 		int i;
+		uint_t rid;
 
 		group_ret = samdb_search(sam_ctx,
 					 mem_ctx, NULL, &group_msgs, group_attrs,
@@ -357,8 +359,16 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 		sidstr = ldb_msg_find_string(msgs[0], "objectSid", NULL);
 		user_sid = dom_sid_parse_talloc(*server_info, sidstr);
 		primary_group_sid = dom_sid_parse_talloc(*server_info, sidstr);
-		primary_group_sid->sub_auths[primary_group_sid->num_auths-1] 
-			= samdb_result_uint(msgs[0], "primaryGroupID", 0);
+		rid = samdb_result_uint(msgs[0], "primaryGroupID", ~0);
+		if (rid == ~0) {
+			if (group_ret > 0) {
+				primary_group_sid = groupSIDs[0];
+			} else {
+				primary_group_sid = NULL;
+			}
+		} else {
+			primary_group_sid->sub_auths[primary_group_sid->num_auths-1] = rid;
+		}
 
 		(*server_info)->user_sid = user_sid;
 		(*server_info)->primary_group_sid = primary_group_sid;
