@@ -545,14 +545,14 @@ main (int argc, char **argv)
 
     memset (&conf, 0, sizeof(conf));
     
-    ret = kadm5_s_init_with_password_ctx(context, 
-					 KADM5_ADMIN_SERVICE,
-					 "password",
-					 KADM5_ADMIN_SERVICE,
-					 &conf, 0, 0, 
-					 &kadm5_handle);
+    ret = kadm5_init_with_password_ctx(context, 
+				       KADM5_ADMIN_SERVICE,
+				       NULL,
+				       KADM5_ADMIN_SERVICE,
+				       &conf, 0, 0, 
+				       &kadm5_handle);
     if (ret)
-	krb5_err (context, 1, ret, "kadm5_s_init_with_password_ctx");
+	krb5_err (context, 1, ret, "kadm5_init_with_password_ctx");
 
 #ifdef HAVE_SIGACTION
     {
