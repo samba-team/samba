@@ -71,7 +71,7 @@ static OM_uint32 acquire_initiator_cred
     OM_uint32 ret;
     krb5_creds cred;
     krb5_principal def_princ;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt;
     krb5_ccache ccache;
     krb5_keytab keytab;
     krb5_error_code kret;
@@ -117,9 +117,12 @@ static OM_uint32 acquire_initiator_cred
 	kret = get_keytab(&keytab);
 	if (kret)
 	    goto end;
-	krb5_get_init_creds_opt_init(&opt);
+	kret = krb5_get_init_creds_opt_alloc(&opt);
+	if (ret)
+	    goto end;
 	kret = krb5_get_init_creds_keytab(gssapi_krb5_context, &cred,
-	    handle->principal, keytab, 0, NULL, &opt);
+	    handle->principal, keytab, 0, NULL, opt);
+	krb5_get_init_creds_opt_free(opt);
 	if (kret)
 	    goto end;
 	kret = krb5_cc_gen_new(gssapi_krb5_context, &krb5_mcc_ops,

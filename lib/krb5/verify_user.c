@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997-2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997-2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -136,13 +136,15 @@ verify_user_opt_int(krb5_context context,
 
 {
     krb5_error_code ret;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt;
     krb5_creds cred;
 
-    krb5_get_init_creds_opt_init (&opt);
+    ret = krb5_get_init_creds_opt_alloc (&opt);
+    if (ret)
+	return ret;
     krb5_get_init_creds_opt_set_default_flags(context, NULL, 
 					      *krb5_princ_realm(context, principal), 
-					      &opt);
+					      opt);
     ret = krb5_get_init_creds_password (context,
 					&cred,
 					principal,
@@ -151,7 +153,8 @@ verify_user_opt_int(krb5_context context,
 					NULL,
 					0,
 					NULL,
-					&opt);
+					opt);
+    krb5_get_init_creds_opt_free(opt);
     if(ret)
 	return ret;
 #define OPT(V, D) ((vopt && (vopt->V)) ? (vopt->V) : (D))

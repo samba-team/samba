@@ -119,7 +119,7 @@ main (int argc, char **argv)
     krb5_principal principal;
     krb5_principal admin_principal;
     int optind = 0;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt;
     krb5_creds cred;
     krb5_ccache id;
     int exit_value;
@@ -135,12 +135,6 @@ main (int argc, char **argv)
 	exit(0);
     }
 
-    krb5_get_init_creds_opt_init (&opt);
-    
-    krb5_get_init_creds_opt_set_tkt_life (&opt, 300);
-    krb5_get_init_creds_opt_set_forwardable (&opt, FALSE);
-    krb5_get_init_creds_opt_set_proxiable (&opt, FALSE);
-
     admin_principal = NULL;
 
     argc -= optind;
@@ -150,6 +144,14 @@ main (int argc, char **argv)
     if (ret)
 	errx (1, "krb5_init_context failed: %d", ret);
   
+    ret = krb5_get_init_creds_opt_alloc (&opt);
+    if (ret)
+	krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
+    
+    krb5_get_init_creds_opt_set_tkt_life (opt, 300);
+    krb5_get_init_creds_opt_set_forwardable (opt, FALSE);
+    krb5_get_init_creds_opt_set_proxiable (opt, FALSE);
+
     if (admin_principal_str) {
 	ret = krb5_parse_name (context, admin_principal_str, &admin_principal);
 	if (ret)
@@ -174,7 +176,7 @@ main (int argc, char **argv)
 					NULL,
 					0,
 					"kadmin/changepw",
-					&opt);
+					opt);
     switch (ret) {
     case 0:
 	break;
@@ -187,6 +189,8 @@ main (int argc, char **argv)
     default:
 	krb5_err(context, 1, ret, "krb5_get_init_creds");
     }
+
+    krb5_get_init_creds_opt_free(opt);
 
     ret = krb5_cc_initialize(context, id, admin_principal);
     if (ret)

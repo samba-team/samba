@@ -141,19 +141,21 @@ get_new_cache(krb5_context context,
 {
     krb5_error_code ret;
     krb5_creds cred;
-    krb5_get_init_creds_opt opt;
+    krb5_get_init_creds_opt *opt;
     krb5_ccache id;
     
-    krb5_get_init_creds_opt_init (&opt);
+    ret = krb5_get_init_creds_opt_alloc (&opt);
+    if (ret)
+	return ret;
 
     krb5_get_init_creds_opt_set_default_flags(context, "kadmin", 
 					      krb5_principal_get_realm(context, 
 								       client), 
-					      &opt);
+					      opt);
 
 
-    krb5_get_init_creds_opt_set_forwardable (&opt, FALSE);
-    krb5_get_init_creds_opt_set_proxiable (&opt, FALSE);
+    krb5_get_init_creds_opt_set_forwardable (opt, FALSE);
+    krb5_get_init_creds_opt_set_proxiable (opt, FALSE);
 
     if(password == NULL && prompter == NULL) {
 	krb5_keytab kt;
@@ -161,15 +163,17 @@ get_new_cache(krb5_context context,
 	    ret = krb5_kt_default(context, &kt);
 	else
 	    ret = krb5_kt_resolve(context, keytab, &kt);
-	if(ret) 
+	if(ret) {
+	    krb5_get_init_creds_opt_free(opt);
 	    return ret;
+	}
 	ret = krb5_get_init_creds_keytab (context,
 					  &cred,
 					  client,
 					  kt,
 					  0,
 					  server_name,
-					  &opt);
+					  opt);
 	krb5_kt_close(context, kt);
     } else {
 	ret = krb5_get_init_creds_password (context,
@@ -180,8 +184,9 @@ get_new_cache(krb5_context context,
 					    NULL,
 					    0,
 					    server_name,
-					    &opt);
+					    opt);
     }
+    krb5_get_init_creds_opt_free(opt);
     switch(ret){
     case 0:
 	break;

@@ -69,7 +69,7 @@ get_creds(krb5_context context, const char *keytab_str,
     krb5_keytab keytab;
     krb5_principal client;
     krb5_error_code ret;
-    krb5_get_init_creds_opt init_opts;
+    krb5_get_init_creds_opt *init_opts;
     krb5_creds creds;
     char *server;
     char keytab_buf[256];
@@ -89,15 +89,17 @@ get_creds(krb5_context context, const char *keytab_str,
 				   KRB5_NT_SRV_HST, &client);
     if (ret) krb5_err(context, 1, ret, "krb5_sname_to_principal");
 
-    krb5_get_init_creds_opt_init(&init_opts);
+    ret = krb5_get_init_creds_opt_alloc(&init_opts);
+    if (ret) krb5_err(context, 1, ret, "krb5_get_init_creds_opt_alloc");
 
     asprintf (&server, "%s/%s", IPROP_NAME, host);
     if (server == NULL)
 	krb5_errx (context, 1, "malloc: no memory");
 
     ret = krb5_get_init_creds_keytab(context, &creds, client, keytab,
-				     0, server, &init_opts);
+				     0, server, init_opts);
     free (server);
+    krb5_get_init_creds_opt_free(init_opts);
     if(ret) krb5_err(context, 1, ret, "krb5_get_init_creds");
     
     ret = krb5_kt_close(context, keytab);
