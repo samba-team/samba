@@ -29,6 +29,22 @@
  * -------------------------------------------------------------------------- **
  *
  * $Log: debug2html.c,v $
+ * Revision 1.2  1998/10/27 23:28:29  crh
+ * Fixed a small bug in debug2html.  It wasn't properly checking EOF.  The
+ * current status is "it works".  I need to add some syntax error recovery
+ * and a usage message.  Basic stuff.
+ *
+ * I've also modified Makefile.in.  If you want to compile it you'll have to
+ * do a 'make debug2html', as I used smbtorture as a model.  We can decide
+ * later if this tool is useful enough to be compiled always.
+ *
+ * BTW, a 'make realclean' fails because the bin directory isn't empty.
+ * That's because it doesn't delete optionally compiled files such as
+ * smbtorture and debug2html (and because of the CVS subdirectory, but I
+ * think that's only a problem for developers).
+ *
+ * Chris -)-----
+ *
  * Revision 1.1  1998/10/26 23:21:37  crh
  * Here is the simple debug parser and the debug2html converter.  Still to do:
  *
@@ -218,7 +234,8 @@ int main( int argc, char *argv[] )
   (void)printf( "<HTML>\n<HEAD>\n" );
   (void)printf( "  <TITLE>Samba Debug Output</TITLE>\n</HEAD>\n\n<BODY>\n" );
 
-  while( (len = fread( bufr, 1, BSIZE, stdin )) > 0 )
+  while( (!feof( stdin ))
+      && ((len = fread( bufr, 1, BSIZE, stdin )) > 0) )
     {
     for( i = 0; i < len; i++ )
       {
