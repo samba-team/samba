@@ -12,9 +12,10 @@ foodir = $(includedir)
 foo_DATA =					\
 	admin.h					\
 	base64.h				\
+	com_err.h				\
+	com_right.h				\
 	der.h					\
 	des.h					\
-	error.h					\
 	getarg.h				\
 	gssapi.h				\
 	hdb.h					\
@@ -53,8 +54,10 @@ des.h:
 	$(LN_S) $(top_srcdir)/lib/des/des.h .
 err.h:
 	$(LN_S) $(top_srcdir)/lib/roken/err.h .
-error.h:
-	$(LN_S) $(top_srcdir)/lib/error/error.h .
+com_err.h:
+	$(LN_S) $(top_srcdir)/lib/com_err/com_err.h .
+com_right.h:
+	$(LN_S) $(top_srcdir)/lib/com_err/com_right.h .
 fnmatch.h:
 	$(LN_S) $(top_srcdir)/lib/roken/fnmatch.h .
 getarg.h:
