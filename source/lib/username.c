@@ -27,8 +27,9 @@ static struct passwd *uname_string_combinations(char *s, struct passwd * (*fn) (
 static struct passwd *uname_string_combinations2(char *s, int offset, struct passwd * (*fn) (char *), int N);
 
 /****************************************************************************
-get a users home directory.
+ Get a users home directory.
 ****************************************************************************/
+
 char *get_home_dir(char *user)
 {
   static struct passwd *pass;
@@ -41,15 +42,16 @@ char *get_home_dir(char *user)
 
 
 /*******************************************************************
-map a username from a dos name to a unix name by looking in the username
-map. Note that this modifies the name in place.
-This is the main function that should be called *once* on
-any incoming or new username - in order to canonicalize the name.
-This is being done to de-couple the case conversions from the user mapping
-function. Previously, the map_username was being called
-every time Get_Pwnam was called.
-Returns True if username was changed, false otherwise.
+ Map a username from a dos name to a unix name by looking in the username
+ map. Note that this modifies the name in place.
+ This is the main function that should be called *once* on
+ any incoming or new username - in order to canonicalize the name.
+ This is being done to de-couple the case conversions from the user mapping
+ function. Previously, the map_username was being called
+ every time Get_Pwnam was called.
+ Returns True if username was changed, false otherwise.
 ********************************************************************/
+
 BOOL map_username(char *user)
 {
   static BOOL initialised=False;
@@ -144,36 +146,34 @@ BOOL map_username(char *user)
 }
 
 /****************************************************************************
-Get_Pwnam wrapper
+ Get_Pwnam wrapper
 ****************************************************************************/
+
 static struct passwd *_Get_Pwnam(char *s)
 {
   struct passwd *ret;
 
   ret = getpwnam(s);
-  if (ret)
-    {
+  if (ret) {
 #ifdef HAVE_GETPWANAM
-      struct passwd_adjunct *pwret;
-      pwret = getpwanam(s);
-      if (pwret)
-	{
-	  free(ret->pw_passwd);
-	  ret->pw_passwd = pwret->pwa_passwd;
-	}
-#endif
-
+    struct passwd_adjunct *pwret;
+    pwret = getpwanam(s);
+    if (pwret) {
+      ret->pw_passwd = pwret->pwa_passwd;
     }
+#endif
+  }
 
   return(ret);
 }
 
 
 /****************************************************************************
-a wrapper for getpwnam() that tries with all lower and all upper case 
-if the initial name fails. Also tried with first letter capitalised
-Note that this can change user!
+ A wrapper for getpwnam() that tries with all lower and all upper case 
+ if the initial name fails. Also tried with first letter capitalised
+ Note that this can change user!
 ****************************************************************************/
+
 struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 {
   fstring user2;
@@ -192,33 +192,39 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
   }
 
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   strlower(user);
   ret = _Get_Pwnam(user);
-  if (ret)  return(ret);
+  if (ret)
+    return(ret);
 
   strupper(user);
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
-  /* try with first letter capitalised */
+  /* Try with first letter capitalised. */
   if (strlen(user) > 1)
     strlower(user+1);  
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   /* try with last letter capitalised */
   strlower(user);
   last_char = strlen(user)-1;
   user[last_char] = toupper(user[last_char]);
   ret = _Get_Pwnam(user);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
-  /* try all combinations up to usernamelevel */
+  /* Try all combinations up to usernamelevel. */
   strlower(user);
   ret = uname_string_combinations(user, _Get_Pwnam, usernamelevel);
-  if (ret) return(ret);
+  if (ret)
+    return(ret);
 
   if (allow_change)
     fstrcpy(user,user2);
@@ -227,8 +233,9 @@ struct passwd *Get_Pwnam(char *user,BOOL allow_change)
 }
 
 /****************************************************************************
-check if a user is in a netgroup user list
+ Check if a user is in a netgroup user list.
 ****************************************************************************/
+
 static BOOL user_in_netgroup_list(char *user,char *ngname)
 {
 #ifdef HAVE_NETGROUP
@@ -236,12 +243,9 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
   if (mydomain == NULL)
     yp_get_default_domain(&mydomain);
 
-  if(mydomain == NULL)
-  {
+  if(mydomain == NULL) {
     DEBUG(5,("Unable to get default yp domain\n"));
-  }
-  else
-  {
+  } else {
     DEBUG(5,("looking for user %s of domain %s in netgroup %s\n",
           user, mydomain, ngname));
     DEBUG(5,("innetgr is %s\n",
@@ -256,8 +260,9 @@ static BOOL user_in_netgroup_list(char *user,char *ngname)
 }
 
 /****************************************************************************
-check if a user is in a UNIX user list
+ Check if a user is in a UNIX user list.
 ****************************************************************************/
+
 static BOOL user_in_group_list(char *user,char *gname)
 {
 #ifdef HAVE_GETGRNAM 
@@ -265,8 +270,7 @@ static BOOL user_in_group_list(char *user,char *gname)
   char **member;  
   struct passwd *pass = Get_Pwnam(user,False);
 
-  if (pass)
-  { 
+  if (pass) { 
     gptr = getgrgid(pass->pw_gid);
     if (gptr && strequal(gptr->gr_name,gname))
       return(True); 
@@ -274,11 +278,9 @@ static BOOL user_in_group_list(char *user,char *gname)
 
   gptr = (struct group *)getgrnam(gname);
 
-  if (gptr)
-  {
+  if (gptr) {
     member = gptr->gr_mem;
-    while (member && *member)
-    {
+    while (member && *member) {
       if (strequal(*member,user))
         return(True);
       member++;
@@ -289,16 +291,16 @@ static BOOL user_in_group_list(char *user,char *gname)
 }	      
 
 /****************************************************************************
-check if a user is in a user list - can check combinations of UNIX
-and netgroup lists.
+ Check if a user is in a user list - can check combinations of UNIX
+ and netgroup lists.
 ****************************************************************************/
+
 BOOL user_in_list(char *user,char *list)
 {
   pstring tok;
   char *p=list;
 
-  while (next_token(&p,tok,LIST_SEP, sizeof(tok)))
-  {
+  while (next_token(&p,tok,LIST_SEP, sizeof(tok))) {
     /*
      * Check raw username.
      */
@@ -310,8 +312,7 @@ BOOL user_in_list(char *user,char *list)
      * of UNIX and netgroups has been specified.
      */
 
-    if(*tok == '@')
-    {
+    if(*tok == '@') {
       /*
        * Old behaviour. Check netgroup list
        * followed by UNIX list.
@@ -320,11 +321,9 @@ BOOL user_in_list(char *user,char *list)
         return True;
       if(user_in_group_list(user,&tok[1]))
         return True;
-    }
-    else if (*tok == '+')
-    {
-      if(tok[1] == '&')
-      {
+    } else if (*tok == '+') {
+
+      if(tok[1] == '&') {
         /*
          * Search UNIX list followed by netgroup.
          */
@@ -332,20 +331,20 @@ BOOL user_in_list(char *user,char *list)
           return True;
         if(user_in_netgroup_list(user,&tok[2]))
           return True;
-      }
-      else
-      {
+
+      } else {
+
         /*
          * Just search UNIX list.
          */
+
         if(user_in_group_list(user,&tok[1]))
           return True;
       }
-    }
-    else if (*tok == '&')
-    {
-      if(tok[1] == '&')
-      {
+
+    } else if (*tok == '&') {
+
+      if(tok[1] == '&') {
         /*
          * Search netgroup list followed by UNIX list.
          */
@@ -353,9 +352,7 @@ BOOL user_in_list(char *user,char *list)
           return True;
         if(user_in_group_list(user,&tok[2]))
           return True;
-      }
-      else
-      {
+      } else {
         /*
          * Just search netgroup list.
          */
@@ -369,15 +366,16 @@ BOOL user_in_list(char *user,char *list)
 
 /* The functions below have been taken from password.c and slightly modified */
 /****************************************************************************
-apply a function to upper/lower case combinations
-of a string and return true if one of them returns true.
-try all combinations with N uppercase letters.
-offset is the first char to try and change (start with 0)
-it assumes the string starts lowercased
+ Apply a function to upper/lower case combinations
+ of a string and return true if one of them returns true.
+ Try all combinations with N uppercase letters.
+ offset is the first char to try and change (start with 0)
+ it assumes the string starts lowercased
 ****************************************************************************/
+
 static struct passwd *uname_string_combinations2(char *s,int offset,struct passwd *(*fn)(char *),int N)
 {
-  int len = strlen(s);
+  size_t len = strlen(s);
   int i;
   struct passwd *ret;
 
@@ -388,36 +386,36 @@ static struct passwd *uname_string_combinations2(char *s,int offset,struct passw
   if (N <= 0 || offset >= len)
     return(fn(s));
 
-
-  for (i=offset;i<(len-(N-1));i++)
-
-    {
-      char c = s[i];
-      if (!islower(c)) continue;
-      s[i] = toupper(c);
-      ret = uname_string_combinations2(s,i+1,fn,N-1);
-      if(ret) return(ret);
-      s[i] = c;
-    }
+  for (i=offset;i<(len-(N-1));i++) {
+    char c = s[i];
+    if (!islower(c))
+      continue;
+    s[i] = toupper(c);
+    ret = uname_string_combinations2(s,i+1,fn,N-1);
+    if(ret)
+      return(ret);
+    s[i] = c;
+  }
   return(NULL);
 }
 
 /****************************************************************************
-apply a function to upper/lower case combinations
-of a string and return true if one of them returns true.
-try all combinations with up to N uppercase letters.
-offset is the first char to try and change (start with 0)
-it assumes the string starts lowercased
+ Apply a function to upper/lower case combinations
+ of a string and return true if one of them returns true.
+ Try all combinations with up to N uppercase letters.
+ offset is the first char to try and change (start with 0)
+ it assumes the string starts lowercased
 ****************************************************************************/
+
 static struct passwd * uname_string_combinations(char *s,struct passwd * (*fn)(char *),int N)
 {
   int n;
   struct passwd *ret;
 
-  for (n=1;n<=N;n++)
-  {
+  for (n=1;n<=N;n++) {
     ret = uname_string_combinations2(s,0,fn,n);
-    if(ret) return(ret);
+    if(ret)
+      return(ret);
   }
   return(NULL);
 }

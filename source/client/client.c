@@ -695,6 +695,11 @@ static void do_get(char *rname,char *lname)
 		nread += n;
 	}
 
+	if (nread < size) {
+		DEBUG (0, ("Short read when getting file %s. Only got %d bytes.\n",
+               CNV_LANG(rname), nread));
+	}
+
 	free(data);
 	
 	if (!cli_close(cli, fnum)) {
