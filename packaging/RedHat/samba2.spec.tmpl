@@ -142,15 +142,16 @@ cd source
 
 %ifarch ia64
 libtoolize --copy --force     # get it to recognize IA-64
-autoconf
 autoheader
+autoconf
 EXTRA="-D_LARGEFILE64_SOURCE"
 %endif
 NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--prefix=%{prefix} \
 	--localstatedir=/var \
-	--with-configdir=/etc/samba \
+	--with-configdir=/etc \
+	--with-codepagedir=/etc/codepages \
 	--with-fhs \
 	--with-quotas \
 	--with-smbmount \
@@ -158,7 +159,7 @@ CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
 	--with-syslog \
 	--with-utmp \
 	--with-netatalk \
-	--with-sambabook=%{prefix}/share/samba/swat/using_samba
+	--with-sambabook=%{prefix}/share/swat/using_samba
 make -j${NUMCPU} proto
 make -j${NUMCPU} all nsswitch/libnss_wins.so
 make -j${NUMCPU} debug2html
@@ -168,14 +169,13 @@ make -j${NUMCPU} bin/smbspool
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
+mkdir -p $RPM_BUILD_ROOT/sbin
+mkdir -p $RPM_BUILD_ROOT/etc/codepages/src
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba}
-mkdir -p $RPM_BUILD_ROOT/etc/samba/private
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
-mkdir -p $RPM_BUILD_ROOT/sbin
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/codepages
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/swat/{images,help,include,using_samba}
-mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/swat/using_samba/{figs,gifs}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include,using_samba}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOTMANDIR_MACRO
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
 mkdir -p $RPM_BUILD_ROOT/var/log/samba
@@ -189,7 +189,7 @@ for i in nmblookup smbclient smbpasswd smbstatus testparm testprns \
 do
 install -m755 -s source/bin/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
-for i in addtosmbpass mksmbpasswd.sh smbtar 
+for i in mksmbpasswd.sh smbtar 
 do
 install -m755 source/script/$i $RPM_BUILD_ROOT%{prefix}/bin
 done
@@ -205,13 +205,15 @@ ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
 
 # This allows us to get away without duplicating code that 
-#  sombody else can maintin for us.  
+#  sombody else can maintain for us.  
 cd source
-make LIBDIR=$RPM_BUILD_ROOT%{prefix}/share/samba \
+make LIBDIR=$RPM_BUILD_ROOT%{prefix}/etc \
 	BINDIR=$RPM_BUILD_ROOT%{prefix}/bin \
 	MANDIR=$RPM_BUILD_ROOTMANDIR_MACRO \
-	CODEPAGEDIR=$RPM_BUILD_ROOT%{prefix}/share/samba/codepages \
-	installman installcp
+	CODEPAGEDIR=$RPM_BUILD_ROOT%{prefix}/etc/codepages \
+	SWATDIR=$RPM_BUILD_ROOT/usr/share/swat \
+	SAMBABOOK=$RPM_BUILD_ROOT/usr/share/swat/using_samba \
+	installman installcp installswat
 cd ..
 
 # Install the nsswitch library extenstion file
@@ -222,26 +224,25 @@ install -m755 source/nsswitch/libnss_wins.so $RPM_BUILD_ROOT/lib
 # Install SWAT helper files
 for i in swat/help/*.html docs/htmldocs/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/help
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/help
 done
 for i in swat/images/*.gif
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/images
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/images
 done
 for i in swat/include/*.html
 do
-install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/samba/swat/include
+install -m644 $i $RPM_BUILD_ROOT%{prefix}/share/swat/include
 done
 
 # Install the miscellany
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
-install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/samba/smb.conf
-install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
+install -m644 packaging/RedHat/smb.conf $RPM_BUILD_ROOT/etc/smb.conf
+install -m644 packaging/RedHat/smbusers $RPM_BUILD_ROOT/etc/smbusers
 install -m755 packaging/RedHat/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
 install -m755 packaging/RedHat/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
-install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/RedHat/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
@@ -251,17 +252,29 @@ rm -rf $RPM_BUILD_ROOT
 %post
 /sbin/chkconfig --add smb
 
-# Add swat entry to /etc/services if not already there
+# Add swat entry to /etc/services if not already there.
 if !( grep ^[:space:]*swat /etc/services > /dev/null ) then
 	echo 'swat		901/tcp				# Add swat service used via inetd' >> /etc/services
 fi
 
-# Add swat entry to /etc/inetd.conf if needed
+# Add swat entry to /etc/inetd.conf if needed.
 if [ -f /etc/inetd.conf ]; then
 	if !( grep ^[:space:]*swat /etc/inetd.conf > /dev/null ) then
 		echo 'swat	stream	tcp	nowait.400	root	%{prefix}/sbin/swat swat' >> /etc/inetd.conf
 	killall -1 inetd || :
 	fi
+fi
+
+# Add swat entry to xinetd.d if needed.
+if [ -d $RPM_BUILD_ROOT/etc/xinetd.d ]; then
+    install -m644 packaging/RedHat/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
+fi
+
+# Install the correct version of the samba pam file, depending on pam version.
+if [ -f /lib/security/pam_stack.so ]; then
+	install -m644 packaging/RedHat/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
+else
+	install -m644 packaging/RedHat/samba.pamd.stack $RPM_BUILD_ROOT/etc/pam.d/samba
 fi
 
 %preun
@@ -275,6 +288,28 @@ if [ $1 = 0 ] ; then
     if [ -e /var/lock/samba/wins.dat ]; then
 	    rm -f /var/lock/samba/wins.dat
     fi
+
+	# Remove the transient tdb files.
+	if [ -e /var/lock/samba/brlock.tdb ]; then
+		rm -f /var/lock/samba/brlock.tdb
+	fi
+
+	if [ -e /var/lock/samba/unexpected.tdb ]; then
+		rm -f /var/lock/samba/unexpected.tdb
+	fi
+
+	if [ -e /var/lock/samba/connections.tdb ]; then
+		rm -f /var/lock/samba/connections.tdb
+	fi
+
+	if [ -e /var/lock/samba/locking.tdb ]; then
+		rm -f /var/lock/samba/locking.tdb
+	fi
+
+	if [ -e /var/lock/samba/messages.tdb ]; then
+		rm -f /var/lock/samba/messages.tdb
+	fi
+
 fi
 
 %postun
@@ -286,9 +321,6 @@ if [ $1 = 0 ] ; then
     if [ -e /var/log/samba ]; then
       rm -rf /var/log/samba
     fi
-    if [ -e /var/lock/samba ]; then
-      rm -rf /var/lock/samba
-    fi
 
     # Remove swat entries from /etc/inetd.conf and /etc/services
     cd /etc
@@ -299,6 +331,11 @@ if [ $1 = 0 ] ; then
 	fi
     sed -e '/^[:space:]*swat.*$/d' /etc/services > $tmpfile
     mv $tmpfile services
+
+	# Remove swat entry from /etc/xinetd.d
+	if [ -f /etc/xinetd.d/swat ]; then
+		rm -r /etc/xinetd.d/swat
+	fi
 fi
 
 %triggerpostun -- samba < samba-2.0.0
@@ -320,7 +357,6 @@ fi
 %attr(-,root,root) %{prefix}/sbin/smbumount
 %attr(-,root,root) /sbin/mount.smbfs
 %attr(-,root,root) /sbin/mount.smb
-%attr(-,root,root) %{prefix}/bin/addtosmbpass
 %attr(-,root,root) %{prefix}/bin/mksmbpasswd.sh
 %attr(-,root,root) %{prefix}/bin/smbclient
 %attr(-,root,root) %{prefix}/bin/smbspool
@@ -339,15 +375,14 @@ fi
 %attr(-,root,root) %{prefix}/bin/smbcontrol
 %attr(-,root,root) %{prefix}/bin/smbcacls
 %attr(755,root,root) /lib/libnss_wins.s*
-%attr(-,root,root) %{prefix}/share/samba/swat/help/*
-%attr(-,root,root) %{prefix}/share/samba/swat/images/*
-%attr(-,root,root) %{prefix}/share/samba/swat/include/header.html
-%attr(-,root,root) %{prefix}/share/samba/swat/include/footer.html
-%attr(-,root,root) %{prefix}/share/samba/swat/using_samba/*
-%attr(-,root,root) %config(noreplace) /etc/samba/lmhosts
-%attr(-,root,root) %config(noreplace) /etc/samba/smb.conf
-%attr(-,root,root) %config(noreplace) /etc/samba/smbusers
-%attr(700,root,root) %dir /etc/samba/private
+%attr(-,root,root) %{prefix}/share/swat/help/*
+%attr(-,root,root) %{prefix}/share/swat/images/*
+%attr(-,root,root) %{prefix}/share/swat/include/header.html
+%attr(-,root,root) %{prefix}/share/swat/include/footer.html
+%attr(-,root,root) %{prefix}/share/swat/using_samba/*
+%attr(-,root,root) %config(noreplace) /etc/lmhosts
+%attr(-,root,root) %config(noreplace) /etc/smb.conf
+%attr(-,root,root) %config(noreplace) /etc/smbusers
 %attr(-,root,root) /etc/rc.d/init.d/smb
 %attr(-,root,root) /etc/logrotate.d/samba
 %attr(-,root,root) %config(noreplace) /etc/pam.d/samba
@@ -355,7 +390,7 @@ fi
 %attr(-,root,root) MANDIR_MACRO/man5/*
 %attr(-,root,root) MANDIR_MACRO/man7/*
 %attr(-,root,root) MANDIR_MACRO/man8/*
-%attr(-,root,root) %dir %{prefix}/share/samba/codepages/*
+%attr(-,root,root) %dir %{prefix}/etc/codepages/*
 %attr(755,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
