@@ -249,10 +249,9 @@ BOOL create_subnets(void)
 
   for (i = 0 ; i < num_interfaces; i++)
   {
-    struct subnet_record *subrec;
     struct interface *iface = get_interface(i);
 
-    if (!(subrec = make_normal_subnet(iface))) return False;
+    if (!make_normal_subnet(iface)) return False;
   }
 
   /* 

@@ -719,7 +719,7 @@ static int call_trans2findfirst(connection_struct *conn,
   pdata = *ppdata = Realloc(*ppdata, max_data_bytes + 1024);
   if(!*ppdata)
     return(ERROR(ERRDOS,ERRnomem));
-  memset((char *)pdata,'\0',max_data_bytes);
+  memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   /* Realloc the params space */
   params = *pparams = Realloc(*pparams, 10);
@@ -899,7 +899,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   pdata = *ppdata = Realloc( *ppdata, max_data_bytes + 1024);
   if(!*ppdata)
     return(ERROR(ERRDOS,ERRnomem));
-  memset((char *)pdata,'\0',max_data_bytes);
+  memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   /* Realloc the params space */
   params = *pparams = Realloc(*pparams, 6*SIZEOFWORD);
@@ -1076,6 +1076,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
 			      int length, int bufsize,
 			      char **pparams, char **ppdata)
 {
+  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
   char *pdata = *ppdata;
   char *params = *pparams;
   uint16 info_level = SVAL(params,0);
@@ -1092,8 +1093,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
     return (ERROR(ERRSRV,ERRinvdevice));
   }
 
-  pdata = *ppdata = Realloc(*ppdata, 1024);
-  memset((char *)pdata,'\0',1024);
+  pdata = *ppdata = Realloc(*ppdata, max_data_bytes + 1024);
+  memset((char *)pdata,'\0',max_data_bytes + 1024);
 
   switch (info_level) 
   {
@@ -1130,7 +1131,8 @@ static int call_trans2qfsinfo(connection_struct *conn,
       break;
     }
     case SMB_QUERY_FS_ATTRIBUTE_INFO:
-      data_len = 12 + 2*strlen(fstype);
+    {
+      int fstype_len;
       SIVAL(pdata,0,FILE_CASE_PRESERVED_NAMES|FILE_CASE_SENSITIVE_SEARCH|
             lp_nt_acl_support() ? FILE_PERSISTENT_ACLS : 0); /* FS ATTRIBUTES */
 #if 0 /* Old code. JRA. */
@@ -1138,10 +1140,12 @@ static int call_trans2qfsinfo(connection_struct *conn,
 #endif /* Old code. */
 
       SIVAL(pdata,4,128); /* Max filename component length */
-      SIVAL(pdata,8,2*strlen(fstype));
-      dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring)*2);
+      fstype_len = dos_PutUniCode(pdata+12,unix_to_dos(fstype,False),sizeof(pstring)/2);
+      SIVAL(pdata,8,fstype_len);
+      data_len = 12 + fstype_len;
       SSVAL(outbuf,smb_flg2,SVAL(outbuf,smb_flg2)|FLAGS2_UNICODE_STRINGS);
       break;
+    }
     case SMB_QUERY_FS_LABEL_INFO:
       data_len = 4 + strlen(vname);
       SIVAL(pdata,0,strlen(vname));
@@ -1166,7 +1170,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
       } else {
 	      data_len = 18 + 2*strlen(vname);
 	      SIVAL(pdata,12,strlen(vname)*2);
-	      dos_PutUniCode(pdata+18,unix_to_dos(vname,False),sizeof(pstring)*2);      
+	      dos_PutUniCode(pdata+18,unix_to_dos(vname,False),sizeof(pstring)/2);      
       }
 
       DEBUG(5,("call_trans2qfsinfo : SMB_QUERY_FS_VOLUME_INFO namelen = %d, vol = %s\n", 
@@ -1244,6 +1248,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				    char **pparams,char **ppdata,
 				    int total_data)
 {
+  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
   char *params = *pparams;
   char *pdata = *ppdata;
   uint16 tran_call = SVAL(inbuf, smb_setup0);
@@ -1342,7 +1347,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   
   params = *pparams = Realloc(*pparams,2);
   memset((char *)params,'\0',2);
-  data_size = 1024;
+  data_size = max_data_bytes + 1024;
   pdata = *ppdata = Realloc(*ppdata, data_size); 
 
   if (total_data > 0 && IVAL(pdata,0) == total_data) {
@@ -1607,9 +1612,11 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 	   tran_call,fname,info_level,total_data));
 
   /* Realloc the parameter and data sizes */
-  params = *pparams = Realloc(*pparams,2); SSVAL(params,0,0);
+  params = *pparams = Realloc(*pparams,2);
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
+
+  SSVAL(params,0,0);
 
   size = st.st_size;
   tvs.modtime = st.st_mtime;
