@@ -32,6 +32,55 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
+uint32 lookup_lsa_names(const char *srv_name, const DOM_SID *sid,
+			uint32 num_names, const char **names,
+			uint32 *num_sids, DOM_SID **sids, uint8 **types)
+{
+	BOOL res1 = True;
+	BOOL res2 = True;
+	POLICY_HND lsa_pol;
+
+	if (srv_name == NULL)
+	{
+		srv_name = "\\\\.";
+	}
+
+	if (num_sids)
+	{
+		*num_sids = 0;
+	}
+	if (sids)
+	{
+		*sids = NULL;
+	}
+	if (types)
+	{
+		*types = NULL;
+	}
+
+	if (!num_sids || (!types && !sids))
+	{
+		/* Not sure, wether that's a good error-code */
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	res1 = res1 ? lsa_open_policy(srv_name, &lsa_pol, True) : False;
+
+	res2 = res1 ? lsa_lookup_names(&lsa_pol,
+				       num_names, names, 
+				       sids, types, num_sids) : False;
+
+	res1 = res1 ? lsa_close(&lsa_pol) : False;
+
+	if (! res2)
+	{
+		return NT_STATUS_NONE_MAPPED | 0xC0000000;
+	}
+
+	return 0x0;
+}
+
+
 uint32 lookup_lsa_name(const char *domain,
 				char *name, DOM_SID *sid, uint8 *type)
 {

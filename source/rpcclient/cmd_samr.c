@@ -287,6 +287,93 @@ void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[])
 }
 
 /****************************************************************************
+Lookup names in SAM server.
+****************************************************************************/
+void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
+{
+	fstring srv_name;
+	fstring domain;
+	DOM_SID sid_dom;
+	uint32 ace_perms = 0x02000000; /* absolutely no idea. */
+	BOOL res = True, res1 = True;
+	POLICY_HND pol_sam;
+	POLICY_HND pol_dom;
+	int num_names;
+	const char **names;
+	uint32 num_rids, i;
+	uint32 *rids = NULL;
+	uint32 *types = NULL;
+
+	sid_copy(&sid_dom, &info->dom.level5_sid);
+	fstrcpy(domain, info->dom.level5_dom);
+
+	if (sid_dom.num_auths == 0)
+	{
+		report(out_hnd, "please use 'lsaquery' first, to ascertain the SID\n");
+		return;
+	}
+
+	fstrcpy(srv_name, "\\\\");
+	fstrcat(srv_name, info->dest_host);
+	strupper(srv_name);
+
+	if (argc < 2)
+	{
+		report(out_hnd, "samlookupnames <name> [<name> ...]\n");
+		return;
+	}
+
+	report(out_hnd, "SAM Lookup Names\n");
+
+	argc--;
+	argv++;
+
+	num_names = argc;
+	names = (const char **) argv;
+
+	if (num_names <= 0)
+	{
+		report(out_hnd, "samlookupnames <name> [<name> ...]\n");
+		return;
+	}
+
+	/* establish a connection. */
+	res = res ? samr_connect(srv_name, 0x02000000,
+				 &pol_sam) : False;
+
+	/* connect to the domain */
+	res = res ? samr_open_domain(&pol_sam, ace_perms, &sid_dom,
+				     &pol_dom) : False;
+
+	res1 = res ? samr_query_lookup_names( &pol_dom, 0x000003e8,
+	            num_names, names,
+	            &num_rids, &rids, &types) : False;
+
+	res = res ? samr_close(&pol_dom) : False;
+	res = res ? samr_close(&pol_sam) : False;
+
+	if (res1)
+	{
+		DEBUG(5,("cmd_sam_lookup_names: query succeeded\n"));
+	}
+	else
+	{
+		DEBUG(5,("cmd_sam_lookup_names: query failed\n"));
+	}
+
+	if (res1) {
+		for(i = 0; i < num_rids; i++) {
+			report(out_hnd, "RID: %s -> %d (%d: %s)\n",
+			       names[i], rids[i], types[i],
+			       get_sid_name_use_str(types[i]));
+		}
+	}
+
+	safe_free(rids);
+	safe_free(types);
+}
+
+/****************************************************************************
 SAM delete alias member.
 ****************************************************************************/
 void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[])

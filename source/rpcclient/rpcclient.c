@@ -339,6 +339,12 @@ struct command_set commands[] =
 		{COMPL_NONE, COMPL_NONE}
 	},
 	{
+		"samlookupnames",
+		cmd_sam_lookup_names,
+		"Lookup Names in SAM",
+		{COMPL_NONE, COMPL_NONE}
+	},
+	{
 		"enumusers",
 		cmd_sam_enum_users,
 		"SAM User Database Query (experimental!)",

@@ -500,6 +500,7 @@ void become_daemon(void);
 BOOL yesno(char *p);
 int set_filelen(int fd, SMB_OFF_T len);
 void *Realloc(void *p,size_t size);
+void safe_free(void *p);
 BOOL get_myname(char *my_name,struct in_addr *ip);
 BOOL ip_equal(struct in_addr ip1,struct in_addr ip2);
 int interpret_protocol(char *str,int def);
@@ -2376,6 +2377,9 @@ BOOL wks_query_info( char *srv_name, uint32 switch_value,
 
 /*The following definitions come from  rpc_client/msrpc_lsarpc.c  */
 
+uint32 lookup_lsa_names(const char *srv_name, const DOM_SID *sid,
+			uint32 num_names, const char **names,
+			uint32 *num_sids, DOM_SID **sids, uint8 **types);
 uint32 lookup_lsa_name(const char *domain,
 				char *name, DOM_SID *sid, uint8 *type);
 uint32 lookup_lsa_sid(const char *domain,
@@ -3966,6 +3970,7 @@ void cmd_reg_shutdown(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_test(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_lookup_domain(struct client_info *info, int argc, char *argv[]);
+void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_del_aliasmem(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_delete_dom_alias(struct client_info *info, int argc, char *argv[]);
 void cmd_sam_add_aliasmem(struct client_info *info, int argc, char *argv[]);

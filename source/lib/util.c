@@ -1295,6 +1295,18 @@ void *Realloc(void *p,size_t size)
 
 
 /****************************************************************************
+free memory, checks for NULL
+****************************************************************************/
+void safe_free(void *p)
+{
+	if (p)
+	{
+		free(p);
+	}
+}
+
+
+/****************************************************************************
 get my own name and IP
 ****************************************************************************/
 BOOL get_myname(char *my_name,struct in_addr *ip)
@@ -2947,6 +2959,7 @@ void *memdup(const void *p, size_t size)
 {
 	void *p2;
 	if (!p) return NULL;
+	if (size==0) return NULL;
 	p2 = malloc(size);
 	if (!p2) return NULL;
 	memcpy(p2, p, size);
