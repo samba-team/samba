@@ -74,14 +74,17 @@
 #define SACL_SECURITY_INFORMATION  0x00000008
 
 
-
+#ifndef _SEC_ACCESS
 /* SEC_ACCESS */
 typedef struct security_info_info
 {
 	uint32 mask;
 
 } SEC_ACCESS;
+#define _SEC_ACCESS
+#endif
 
+#ifndef _SEC_ACE
 /* SEC_ACE */
 typedef struct security_ace_info
 {
@@ -93,9 +96,14 @@ typedef struct security_ace_info
 	DOM_SID sid;
 
 } SEC_ACE;
+#define _SEC_ACE
+#endif
 
+#ifndef ACL_REVISION
 #define ACL_REVISION 0x3
+#endif
 
+#ifndef _SEC_ACL
 /* SEC_ACL */
 typedef struct security_acl_info
 {
@@ -106,9 +114,14 @@ typedef struct security_acl_info
 	SEC_ACE *ace;
 
 } SEC_ACL;
+#define _SEC_ACL
+#endif
 
+#ifndef SEC_DESC_REVISION
 #define SEC_DESC_REVISION 0x1
+#endif
 
+#ifndef _SEC_DESC
 /* SEC_DESC */
 typedef struct security_descriptor_info
 {
@@ -126,7 +139,10 @@ typedef struct security_descriptor_info
 	DOM_SID *grp_sid;
 
 } SEC_DESC;
+#define _SEC_DESC
+#endif
 
+#ifndef _SEC_DESC_BUF
 /* SEC_DESC_BUF */
 typedef struct sec_desc_buf_info
 {
@@ -137,5 +153,7 @@ typedef struct sec_desc_buf_info
 	SEC_DESC *sec;
 
 } SEC_DESC_BUF;
+#define _SEC_DESC_BUF
+#endif
 
 #endif /* _RPC_SECDES_H */

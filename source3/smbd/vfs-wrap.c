@@ -1,7 +1,7 @@
 /* 
    Unix SMB/Netbios implementation.
    Version 1.9.
-s   Wrap disk only vfs functions to sidestep dodgy compilers.
+   Wrap disk only vfs functions to sidestep dodgy compilers.
    Copyright (C) Tim Potter 1998
    
    This program is free software; you can redistribute it and/or modify
@@ -346,13 +346,3 @@ BOOL vfswrap_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 {
 	return fcntl_lock(fd, op, offset, count,type);
 }
-
-#if 0
-size_t vfswrap_get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
-{
-}
-
-BOOL vfswrap_set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
-{
-}
-#endif

@@ -69,11 +69,11 @@ struct vfs_ops default_vfs_ops = {
     vfswrap_getwd,
     vfswrap_utime,
     vfswrap_ftruncate,
-	vfswrap_lock,
-#if 0
-	vfswrap_get_nt_acl,
-	vfswrap_set_nt_acl
-#endif
+    vfswrap_lock,
+    NULL, /* The 4 security descriptor functions are not defined by default. */
+    NULL,
+    NULL,
+    NULL
 };
 
 /****************************************************************************
@@ -219,6 +219,14 @@ BOOL vfs_init_custom(connection_struct *conn)
 	conn->vfs_ops.chown = default_vfs_ops.chown;
     }
     
+    if (conn->vfs_ops.chdir == NULL) {
+	conn->vfs_ops.chdir = default_vfs_ops.chdir;
+    }
+
+    if (conn->vfs_ops.getwd == NULL) {
+	conn->vfs_ops.getwd = default_vfs_ops.getwd;
+    }
+    
     if (conn->vfs_ops.utime == NULL) {
 	conn->vfs_ops.utime = default_vfs_ops.utime;
     }
@@ -229,6 +237,22 @@ BOOL vfs_init_custom(connection_struct *conn)
     
     if (conn->vfs_ops.lock == NULL) {
 	conn->vfs_ops.lock = default_vfs_ops.lock;
+    }
+
+    if (conn->vfs_ops.fget_nt_acl == NULL) {
+	conn->vfs_ops.fget_nt_acl = default_vfs_ops.fget_nt_acl;
+    }
+
+    if (conn->vfs_ops.get_nt_acl == NULL) {
+	conn->vfs_ops.get_nt_acl = default_vfs_ops.get_nt_acl;
+    }
+
+    if (conn->vfs_ops.fset_nt_acl == NULL) {
+	conn->vfs_ops.fset_nt_acl = default_vfs_ops.fset_nt_acl;
+    }
+
+    if (conn->vfs_ops.set_nt_acl == NULL) {
+	conn->vfs_ops.set_nt_acl = default_vfs_ops.set_nt_acl;
     }
     
     return True;
@@ -242,6 +266,15 @@ BOOL vfs_init_custom(connection_struct *conn)
 int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st)
 {
 	return(conn->vfs_ops.stat(dos_to_unix(fname,False),st));
+} 
+
+/*******************************************************************
+ vfs fstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+int vfs_fstat(connection_struct *conn, int fd, SMB_STRUCT_STAT *st)
+{
+	return(conn->vfs_ops.fstat(fd,st));
 } 
 
 /*******************************************************************
