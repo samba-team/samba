@@ -1,4 +1,4 @@
-#include "kdc_locl.h"
+#include "admin_locl.h"
 
 RCSID("$Id$");
 
