@@ -171,6 +171,22 @@ BOOL torture_open_connection(struct cli_state **c)
 	return True;
 }
 
+BOOL torture_cli_session_setup2(struct cli_state *cli, uint16 *new_vuid)
+{
+	uint16 old_vuid = cli->vuid;
+	fstring old_user_name;
+	size_t passlen = strlen(password);
+	BOOL ret;
+
+	fstrcpy(old_user_name, cli->user_name);
+	cli->vuid = 0;
+	ret = cli_session_setup(cli, username, password, passlen, password, passlen, workgroup);
+	*new_vuid = cli->vuid;
+	cli->vuid = old_vuid;
+	fstrcpy(cli->user_name, old_user_name);
+	return ret;
+}
+
 
 BOOL torture_close_connection(struct cli_state *c)
 {
@@ -1935,6 +1951,54 @@ static BOOL run_fdpasstest(int dummy)
 	return True;
 }
 
+static BOOL run_fdsesstest(int dummy)
+{
+	struct cli_state *cli;
+	uint16 new_vuid;
+	uint16 saved_vuid;
+	const char *fname = "\\fdsess.tst";
+	int fnum1;
+	pstring buf;
+
+	if (!torture_open_connection(&cli))
+		return False;
+	cli_sockopt(cli, sockops);
+
+	if (!torture_cli_session_setup2(cli, &new_vuid))
+		return False;
+
+	printf("starting fdsesstest\n");
+
+	cli_unlink(cli, fname);
+
+	fnum1 = cli_open(cli, fname, O_RDWR|O_CREAT|O_EXCL, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("open of %s failed (%s)\n", fname, cli_errstr(cli));
+		return False;
+	}
+
+	if (cli_write(cli, fnum1, 0, "hello world\n", 0, 13) != 13) {
+		printf("write failed (%s)\n", cli_errstr(cli));
+		return False;
+	}
+
+	saved_vuid = cli->vuid;
+	cli->vuid = new_vuid;
+
+	if (cli_read(cli, fnum1, buf, 0, 13) == 13) {
+		printf("read succeeded! nasty security hole [%s]\n",
+		       buf);
+		return False;
+	}
+
+	cli_close(cli, fnum1);
+	cli_unlink(cli, fname);
+
+	torture_close_connection(cli);
+
+	printf("finished fdsesstest\n");
+	return True;
+}
 
 /*
   This test checks that 
@@ -4448,6 +4512,7 @@ static struct {
 	{"TCON2",  run_tcon2_test, 0},
 	{"IOCTL",  torture_ioctl_test, 0},
 	{"CHKPATH",  torture_chkpath_test, 0},
+	{"FDSESS", run_fdsesstest, 0},
 	{NULL, NULL, 0}};
 
 
