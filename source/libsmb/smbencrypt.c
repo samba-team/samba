@@ -28,7 +28,7 @@
    This implements the X/Open SMB password encryption
    It takes a password ('unix' string), a 8 byte "crypt key" 
    and puts 24 bytes of encrypted password into p24 */
-void SMBencrypt(const uchar *passwd, const uchar *c8, uchar *p24)
+void SMBencrypt(const char *passwd, const uchar *c8, uchar *p24)
 {
 	uchar p21[21];
 
