@@ -45,7 +45,7 @@ static struct timeval tp1,tp2;
 
 void start_timer(void)
 {
-	GetTimeOfDay(&tp1
+	GetTimeOfDay(&tp1);
 }
 
 double end_timer(void)
