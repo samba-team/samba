@@ -41,7 +41,7 @@ static void *startsmbfilepwent_internal(const char *pfile, enum pwf_access_type 
   FILE *fp = NULL;
   const char *open_mode = NULL;
   int race_loop = 0;
-  int lock_type;
+  int lock_type = F_RDLCK;
 
   if (!*pfile) {
     DEBUG(0, ("startsmbfilepwent: No SMB password file set\n"));
