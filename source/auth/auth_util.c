@@ -930,17 +930,22 @@ static NTSTATUS fill_sam_account(TALLOC_CTX *mem_ctx,
 				 uid_t *uid, gid_t *gid,
 				 SAM_ACCOUNT **sam_account)
 {
-	fstring dom_user;
+	fstring dom_user, lower_username;
 	fstring real_username;
 	struct passwd *passwd;
 
-	fstr_sprintf(dom_user, "%s%s%s", domain, lp_winbind_separator(), 
-		username);
+	fstrcpy( lower_username, username );
+	strlower_m( lower_username );
+
+	fstr_sprintf(dom_user, "%s%c%s", domain, *lp_winbind_separator(), 
+		lower_username);
 
 	/* get the passwd struct but don't create the user if he/she 
 	   does not exist.  We were explicitly called from a following
 	   a winbindd authentication request so we should assume that 
 	   nss_winbindd is working */
+
+	map_username( dom_user );
 
 	if ( !(passwd = smb_getpwnam( dom_user, real_username, True )) )
 		return NT_STATUS_NO_SUCH_USER;
@@ -1104,18 +1109,25 @@ NTSTATUS make_server_info_info3(TALLOC_CTX *mem_ctx,
 	}
 	
 	/* try to fill the SAM account..  If getpwnam() fails, then try the 
-	   add user script (2.2.x behavior) */
+	   add user script (2.2.x behavior).
+
+	   We use the _unmapped_ username here in an attempt to provide
+	   consistent username mapping behavior between kerberos and NTLM[SSP]
+	   authentication in domain mode security.  I.E. Username mapping should
+	   be applied to the fully qualified username (e.g. DOMAIN\user) and
+	   no just the login name.  Yes this mean swe called map_username()
+	   unnecessarily in make_user_info_map() but that is how the current
+	   code is designed.  Making the change here is the least disruptive 
+	   place.    -- jerry */
 	   
-	nt_status = fill_sam_account(mem_ctx, nt_domain, internal_username,
+	nt_status = fill_sam_account(mem_ctx, nt_domain, sent_nt_username,
 		&found_username, &uid, &gid, &sam_account);
 
 	if (NT_STATUS_EQUAL(nt_status, NT_STATUS_NO_SUCH_USER)) {
-		DEBUG(3,("User %s does not exist, trying to add it\n", 
-			internal_username));
-		auth_add_user_script(nt_domain, internal_username);
-		nt_status = fill_sam_account(mem_ctx, nt_domain, 
-			internal_username, &found_username,
-			&uid, &gid, &sam_account);
+		DEBUG(3,("User %s does not exist, trying to add it\n", internal_username));
+		auth_add_user_script( nt_domain, sent_nt_username );
+		nt_status = fill_sam_account( mem_ctx, nt_domain, sent_nt_username, 
+			&found_username, &uid, &gid, &sam_account );
 	}
 	
 	if (!NT_STATUS_IS_OK(nt_status)) {
