@@ -139,8 +139,7 @@ EVERYTHING_PROGS = bin/debug2html@EXEEXT@ bin/smbfilter@EXEEXT@ bin/talloctort@E
 
 SHLIBS = @SHLIB_PROGS@ @LIBSMBCLIENT@
 
-SCRIPTS = $(srcdir)/script/smbtar $(srcdir)/script/addtosmbpass $(srcdir)/script/convert_smbpasswd \
-	  $(builddir)/script/findsmb
+SCRIPTS = $(srcdir)/script/smbtar $(builddir)/script/findsmb
 
 QUOTAOBJS=@QUOTAOBJS@
 
