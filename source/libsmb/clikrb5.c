@@ -274,7 +274,7 @@ int create_kerberos_key_from_string(krb5_context context,
 
 void kerberos_free_data_contents(krb5_context context, krb5_data *pdata)
 {
-#if !defined(HAVE_KRB5_FREE_DATA_CONTENTS)
+#if defined(HAVE_KRB5_FREE_DATA_CONTENTS)
 	if (pdata->data) {
 		krb5_free_data_contents(context, pdata);
 	}
