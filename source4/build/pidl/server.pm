@@ -1,5 +1,3 @@
-
-
 ###################################################
 # server boilerplate generator
 # Copyright tridge@samba.org 2003
