@@ -24,7 +24,7 @@
 		Defaults to trying 445 first, then 139.
 		</p></dd><dt><span class="term">-n &lt;primary NetBIOS name&gt;</span></dt><dd><p>This option allows you to override
 the NetBIOS name that Samba uses for itself. This is identical
-to setting the <a class="indexterm" name="id2796900"></a><a href="#"><i class="parameter"><tt>netbios name</tt></i></a> parameter in the <tt class="filename">smb.conf</tt> file. 
+to setting the <a class="indexterm" name="id2802246"></a><i class="parameter"><tt>netbios name</tt></i> parameter in the <tt class="filename">smb.conf</tt> file. 
 However, a command
 line setting will take precedence over settings in
 <tt class="filename">smb.conf</tt>.</p></dd><dt><span class="term">-s &lt;configuration file&gt;</span></dt><dd><p>The file specified contains the 
@@ -47,13 +47,13 @@ not specified is zero.</p><p>The higher this value, the more detail will be
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</p><p>Levels above 1 will generate considerable 
 amounts of log data, and should only be used when 
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2797170"></a><a href="#"><i class="parameter"><tt>log level</tt></i></a> parameter
+override the <a class="indexterm" name="id2796607"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd></dl></div></div><div class="refsect1" lang="en"><h2>COMMANDS</h2><div class="refsect2" lang="en"><h3>CHANGESECRETPW</h3><p>This command allows the Samba machine account password to be set from an external application
 to a machine account password that has already been stored in Active Directory. DO NOT USE this command
 unless you know exactly what you are doing. The use of this command requires that the force flag (-f)

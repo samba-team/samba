@@ -2,7 +2,7 @@
 <chapterinfo>
 	&author.jelmer;
 	&author.jht;
-	<author><firstname>Tim</firstname><surname>Potter</surname></author>
+	&author.tpot;
 	<author><firstname>Simo</firstname><surname>Sorce</surname><contrib>original vfs_skel README</contrib></author>
 	<author><firstname>Alexander</firstname><surname>Bokovoy</surname><contrib>original vfs_netatalk docs</contrib></author>
 	<author><firstname>Stefan</firstname><surname>Metzmacher</surname><contrib>Update for multiple modules</contrib></author>
@@ -13,9 +13,9 @@
 <title>Features and Benefits</title>
 
 <para>
-Since Samba-3, there is support for stackable VFS(Virtual File System) modules.  
-Samba passes each request to access the unix file system thru the loaded VFS modules. 
-This chapter covers all the modules that come with the samba source and references to 
+Since Samba-3, there is support for stackable VFS (Virtual File System) modules. 
+Samba passes each request to access the UNIX file system through the loaded VFS modules. 
+This chapter covers all the modules that come with the Samba source and references to 
 some external modules.
 </para>
 
@@ -27,17 +27,17 @@ some external modules.
 
 <para>
 If not supplied with your platform distribution binary Samba package you may have problems
-to compile these modules, as shared libraries are compiled and linked in different ways
-on different systems.  They currently have been tested against GNU/Linux and IRIX.
+compiling these modules, as shared libraries are compiled and linked in different ways
+on different systems. They currently have been tested against GNU/Linux and IRIX.
 </para>
 
 <para>
-To use the VFS modules, create a share similar to the one below.  The
+To use the VFS modules, create a share similar to the one below. The
 important parameter is the <smbconfoption><name>vfs objects</name></smbconfoption> parameter where
 you can list one or more VFS modules by name. For example, to log all access 
-to files and put deleted files in a recycle bin:
+to files and put deleted files in a recycle bin, see <link linkend="vfsrecyc"/>.
 
-<smbconfexample>
+<smbconfexample id="vfsrecyc">
 	<title>smb.conf with VFS modules</title>
 	<smbconfsection>[audit]</smbconfsection>
 <smbconfoption><name>comment</name><value>Audited /data directory</value></smbconfoption>
@@ -53,17 +53,16 @@ The modules are used in the order in which they are specified.
 </para>
 
 <para>
-Samba will attempt to load modules from the <emphasis>lib</emphasis>
-directory in the root directory of the samba installation (usually 
-<filename>/usr/lib/samba/vfs</filename> or <filename>/usr/local/samba/lib/vfs
+Samba will attempt to load modules from the <filename>/lib</filename> directory in the root directory of the
+Samba installation (usually <filename>/usr/lib/samba/vfs</filename> or <filename>/usr/local/samba/lib/vfs
 </filename>).
 </para>
 
 <para>
 Some modules can be used twice for the same share.
-This can be done using a configuration similar to the one below.
+This can be done using a configuration similar to the one shown in <link linkend="multimodule"/>.
 
-<smbconfexample>
+<smbconfexample id="multimodule">
 	<title>smb.conf with multiple VFS modules</title>
 <smbconfsection>[test]</smbconfsection>
 <smbconfoption><name>comment</name><value>VFS TEST</value></smbconfoption>
@@ -80,19 +79,19 @@ This can be done using a configuration similar to the one below.
 </sect1>
 
 <sect1>
-<title>Included modules</title>
+<title>Included Modules</title>
 
 	<sect2>
 	<title>audit</title>
 
 		<para>
 		A simple module to audit file access to the syslog
-		facility.  The following operations are logged:
+		facility. The following operations are logged:
 		<itemizedlist>
-		<listitem><para>share</para></listitem>
-		<listitem><para>connect/disconnect</para></listitem>
-		<listitem><para>directory opens/create/remove</para></listitem>
-		<listitem><para>file open/close/rename/unlink/chmod</para></listitem>
+			<listitem>share</listitem>
+			<listitem>connect/disconnect</listitem>
+			<listitem>directory opens/create/remove</listitem>
+			<listitem>file open/close/rename/unlink/chmod</listitem>
 		</itemizedlist>
 		</para>
 
@@ -102,18 +101,17 @@ This can be done using a configuration similar to the one below.
 	<title>extd_audit</title>
 
 		<para>
-		This module is identical with the <emphasis>audit</emphasis> module above except
-		that it sends audit logs to both syslog as well as the smbd log file/s. The 
-		loglevel for this module is set in the smb.conf file. 
+		This module is identical with the <command>audit</command> module above except
+		that it sends audit logs to both syslog as well as the <command>smbd</command> log files. The 
+		<smbconfoption><name>log level</name></smbconfoption> for this module is set in the &smb.conf; file. 
 		</para>
 
 		<para>
-		The logging information that will be written to the smbd log file is controlled by
-		the <smbconfoption><name>log level</name></smbconfoption> parameter in &smb.conf;. The
-		following information will be recorded:
+		Valid settings and the information that will be recorded are shown in <link linkend="xtdaudit"/>.
 		</para>
 
-		<table frame="all"><title>Extended Auditing Log Information</title>
+		<table frame="all" id="xtdaudit">
+			<title>Extended Auditing Log Information</title>
 		<tgroup cols="2" align="center">
 			<thead>
 			<row><entry align="center">Log Level</entry><entry>Log Details - File and Directory Operations</entry></row>
@@ -128,12 +126,12 @@ This can be done using a configuration similar to the one below.
 
 	</sect2>
 
-	<sect2>
+	<sect2 id="fakeperms">
 	<title>fake_perms</title>
 
 		<para>
 		This module was created to allow Roaming Profile files and directories to be set (on the Samba server
-		under Unix) as read only. This module will if installed on the Profiles share will report to the client
+		under UNIX) as read only. This module will, if installed on the Profiles share, report to the client
 		that the Profile files and directories are writable. This satisfies the client even though the files
 		will never be overwritten as the client logs out or shuts down.
 		</para>
@@ -144,67 +142,82 @@ This can be done using a configuration similar to the one below.
 	<title>recycle</title>
 
 		<para>
-		A recycle-bin like module. When used any unlink call
-		will be intercepted and files moved to the recycle
-		directory instead of being deleted. This gives the same 
-		effect as the "Recycle Bin" on Windows computers.
+		A Recycle Bin-like module. Where used, unlink calls will be intercepted and files moved
+		to the recycle directory instead of being deleted. This gives the same effect as the
+		<guiicon>Recycle Bin</guiicon> on Windows computers.
+		</para>
+
+		<para>
+		The <guiicon>Recycle Bin</guiicon> will not appear in <application>Windows Explorer</application> views of the network file system
+		(share) nor on any mapped drive. Instead, a directory called <filename>.recycle</filename> will be
+		automatically created when the first file is deleted. Users can recover files from the 
+		<filename>.recycle</filename> directory. If the <parameter>recycle:keeptree</parameter> has been
+		specified, deleted files will be found in a path identical with that from which the file was deleted.
 		</para>
 		
-		<para>Supported options:
+		<para>Supported options for the <command>recycle</command> module are as follow:
 		<variablelist>
 			<varlistentry>
 			<term>recycle:repository</term>
-			<listitem><para>Relative path of the directory where deleted files should be moved to</para></listitem>
+				<listitem><para>
+				Relative path of the directory where deleted files should be moved.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:keeptree</term>
-			<listitem><para>Specifies whether the directory structure should 
-					be kept or if the files in the directory that is being 
-					deleted should be kept seperately in the recycle bin.
-			</para></listitem>
+				<listitem><para>
+				Specifies whether the directory structure should be kept or if the files in the directory that is being 
+				deleted should be kept seperately in the recycle bin.
+				</para></listitem>
 			</varlistentry>
 			
 			<varlistentry>
 			<term>recycle:versions</term>
-			<listitem><para>If this option is set, two files 
-					with the same name that are deleted will both 
-					be kept in the recycle bin. Newer deleted versions 
-					of a file will be called "Copy #x of <replaceable>filename</replaceable>".</para></listitem>
+				<listitem><para>
+				If this option is set, two files 
+				with the same name that are deleted will both 
+				be kept in the recycle bin. Newer deleted versions 
+				of a file will be called <quote>Copy #x of <replaceable>filename</replaceable></quote>.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:touch</term>
-			<listitem><para>Specifies whether a file's access 
-					date should be touched when the file is moved to 
-			the recycle bin.</para></listitem>
+				<listitem><para>
+				Specifies whether a file's access date should be touched when the file is moved to the recycle bin.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:maxsize</term>
-			<listitem><para>Files that are larger than the number 
-					of bytes specified by this parameter will 
-					not be put into the recycle bin.</para></listitem>
+				<listitem><para>
+				Files that are larger than the number of bytes specified by this parameter will not be put into the recycle bin.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:exclude</term>
-			<listitem><para>List of files that should not 
-					be put into the recycle bin when deleted, but deleted 
-					in the regular way.</para></listitem>
+				<listitem><para>
+				List of files that should not be put into the recycle bin when deleted, but deleted in the regular way.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:exclude_dir</term>
-			<listitem><para>Contains a list of directories. When files from 
-					these directories are deleted, they are not put into the 
-					recycle bin, but deleted in the regular way. 
-			</para></listitem>
+				<listitem><para>
+				Contains a list of directories. When files from these directories are
+				deleted, they are not put into the
+				recycle bin but are deleted in the
+				regular way.
+				</para></listitem>
 			</varlistentry>
 
 			<varlistentry>
 			<term>recycle:noversions</term>
-			<listitem><para>Opposite of <parameter>recycle:versions</parameter>. If both options are specified, this one takes precedence.</para></listitem>
+				<listitem><para>
+				Opposite of <parameter>recycle:versions</parameter>. If both options are specified, this one takes precedence.
+				</para></listitem>
 			</varlistentry>
 		</variablelist>
 		</para>
@@ -215,14 +228,13 @@ This can be done using a configuration similar to the one below.
 	<title>netatalk</title>
 
 		<para>
-		A netatalk module, that will ease co-existence of samba and
-		netatalk file sharing services.
+		A netatalk module will ease co-existence of Samba and netatalk file sharing services.
 		</para>
 
 		<para>Advantages compared to the old netatalk module:
 		<itemizedlist>
-		<listitem><para>it doesn't care about creating of .AppleDouble forks, just keeps them in sync</para></listitem>
-		<listitem><para>if a share in &smb.conf; doesn't contain .AppleDouble item in hide or veto list, it will be added automatically</para></listitem>
+			<listitem><para>Does not care about creating .AppleDouble forks, just keeps them in sync.</para></listitem>
+			<listitem><para>If a share in &smb.conf; does not contain .AppleDouble item in hide or veto list, it will be added automatically.</para></listitem>
 		</itemizedlist>
 		</para>
 
@@ -231,12 +243,12 @@ This can be done using a configuration similar to the one below.
 </sect1>
 
 <sect1>
-<title>VFS modules available elsewhere</title>
+<title>VFS Modules Available Elsewhere</title>
 
 <para>
 This section contains a listing of various other VFS modules that 
-have been posted but don't currently reside in the Samba CVS 
-tree for one reason or another (e.g. it is easy for the maintainer 
+have been posted but do not currently reside in the Samba CVS 
+tree for one reason or another (e.g., it is easy for the maintainer 
 to have his or her own CVS tree).
 </para>
 
@@ -252,22 +264,23 @@ should be implied due to its presence here.
 		URL: <ulink noescape="1" url="http://www.css.tayloru.edu/~elorimer/databasefs/index.php">http://www.css.tayloru.edu/~elorimer/databasefs/index.php</ulink>
 		</para>
 
-		<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer</ulink>.</para>
+		<para>By <ulink url="mailto:elorimer@css.tayloru.edu">Eric Lorimer.</ulink></para>
 
 		<para>
-		I have created a VFS module which implements a fairly complete read-only
-		filesystem.  It presents information from a database as a filesystem in
+		I have created a VFS module that implements a fairly complete read-only
+		filesystem. It presents information from a database as a filesystem in
 		a modular and generic way to allow different databases to be used
 		(originally designed for organizing MP3s under directories such as
-		"Artists," "Song Keywords," etc... I have since applied it to a student
-		roster database very easily).  The directory structure is stored in the
+		<quote>Artists,</quote> <quote>Song Keywords,</quote> and so on. I have since easily
+		applied it to a student
+		roster database.) The directory structure is stored in the
 		database itself and the module makes no assumptions about the database
 		structure beyond the table it requires to run.
 		</para>
 
 		<para>
 		Any feedback would be appreciated: comments, suggestions, patches,
-		etc...  If nothing else, hopefully it might prove useful for someone
+		and so on. If nothing else, hopefully it might prove useful for someone
 		else who wishes to create a virtual filesystem.
 		</para>
 
@@ -279,10 +292,10 @@ should be implied due to its presence here.
 	<para>URL: <ulink noescape="1" url="http://www.openantivirus.org/">http://www.openantivirus.org/</ulink></para>
 
 		<para>
-		samba-vscan is a proof-of-concept module for Samba, which
+		<filename>samba-vscan</filename> is a proof-of-concept module for Samba, which
 		uses the VFS (virtual file system) features of Samba 2.2.x/3.0
 		alphaX. Of course, Samba has to be compiled with VFS support. 
-		samba-vscan supports various virus scanners and is maintained 
+		<filename>samba-vscan</filename> supports various virus scanners and is maintained 
 		by Rainer Link.
 		</para>
 

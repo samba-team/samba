@@ -1,12 +1,12 @@
 Building Samba Packages for Debian GNU/Linux
 --------------------------------------------
 
-Building Debian packages is not as hard as some people might think. The
-following instructions will allow you to build your own Samba Debian
-packages. These instructions, and the files in packaging/Debian/, are
-current as of Samba 3.0.0rc2, and allow you to build Debian packages
+Building Debian packages is not as hard as some people might think.
+The following instructions will allow you to build your own Samba
+Debian packages. These instructions and the files in packaging/Debian/
+are current as of Samba 3.0.0, and allow you to build Debian packages
 for Debian unstable (so you need some development packages available
-only in Debian unstable.) If you are using something newer than 3.0.0rc2
+only in Debian unstable.) If you are using something newer than 3.0.0
 you might want to try to follow the instructions to see if patches
 apply cleanly. If some patches don't apply cleanly please e-mail
 samba@packages.debian.org since we might have fixed patches that we have

@@ -30,16 +30,14 @@ package smbldap_conf;
 use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS
 $UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
 $slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
-$ldap_path $ldap_opts $ldapsearch $ldapsearchnobind
-$ldapmodify $ldappasswd $ldapadd $ldapdelete $ldapmodrdn
-$suffix $usersdn $computersdn
+$ldap_path $ldap_opts $ldapmodify $suffix $usersdn $computersdn
 $groupsdn $scope $binddn $bindpasswd
 $slaveDN $slavePw $masterDN $masterPw
 $_userLoginShell $_userHomePrefix $_userGecos
 $_defaultUserGid $_defaultComputerGid
 $_skeletonDir $_userSmbHome
 $_userProfile $_userHomeDrive
-$_userScript $usersou $computersou $groupsou
+$_userScript $usersou $computersou $groupsou $SID $hash_encrypt
 );
 
 use Exporter;
@@ -49,14 +47,13 @@ $VERSION = 1.00;
 @EXPORT = qw(
 $UID_START $GID_START $smbpasswd $slaveLDAP $masterLDAP
 $slavePort $masterPort $ldapSSL $slaveURI $masterURI $with_smbpasswd $mk_ntpasswd
-$ldap_path $ldap_opts $ldapsearch $ldapsearchnobind $ldapmodify $ldappasswd
-$ldapadd $ldapdelete $ldapmodrdn $suffix $usersdn
+$ldap_path $ldap_opts $ldapmodify $suffix $usersdn
 $computersdn $groupsdn $scope $binddn $bindpasswd
 $slaveDN $slavePw $masterDN $masterPw
 $_userLoginShell $_userHomePrefix $_userGecos
 $_defaultUserGid $_defaultComputerGid $_skeletonDir 
 $_userSmbHome $_userProfile $_userHomeDrive $_userScript
-$usersou $computersou $groupsou
+$usersou $computersou $groupsou $SID $hash_encrypt
 );
 
 
@@ -66,16 +63,13 @@ $usersou $computersou $groupsou
 #
 ##############################################################################
 
-#
 # UID and GID starting at...
-#
-
 $UID_START = 1000;
 $GID_START = 1000;
 
 # Put your own SID
-# to obtain this number do: # net getlocalsid
-our $SID='S-1-5-21-636805976-1992644568-3666589737';
+# to obtain this number do: "net getlocalsid"
+$SID='S-1-5-21-3516781642-1962875130-3438800523';
 
 ##############################################################################
 #
@@ -86,84 +80,65 @@ our $SID='S-1-5-21-636805976-1992644568-3666589737';
 # Notes: to use to dual ldap servers backend for Samba, you must patch
 # Samba with the dual-head patch from IDEALX. If not using this patch
 # just use the same server for slaveLDAP and masterLDAP.
-#
-# Slave LDAP : needed for read operations
-#
+# Those two servers declarations can also be used when you have 
+# . one master LDAP server where all writing operations must be done
+# . one slave LDAP server where all reading operations must be done
+#   (typically a replication directory)
+
 # Ex: $slaveLDAP = "127.0.0.1";
 $slaveLDAP = "127.0.0.1";
-
 $slavePort = "389";
 
-# 
 # Master LDAP : needed for write operations
-#
 # Ex: $masterLDAP = "127.0.0.1";
 $masterLDAP = "127.0.0.1";
-
-
-#
-# Master Port
-# 389 636
-# Ex: $masterPort = "
 $masterPort = "389";
 
-#
 # Use SSL for LDAP
-#
+# If set to "1", this option will use start_tls for connection
+# (you should also used the port 389)
 $ldapSSL = "0";
 
-#
 # LDAP Suffix
-#
 # Ex: $suffix = "dc=IDEALX,dc=ORG";
 $suffix = "dc=IDEALX,dc=ORG";
 
 
-# 
 # Where are stored Users
-#
 # Ex: $usersdn = "ou=Users,$suffix"; for ou=Users,dc=IDEALX,dc=ORG
 $usersou = q(_USERS_);
-
 $usersdn = "ou=$usersou,$suffix";
 
-# 
 # Where are stored Computers
-#
 # Ex: $computersdn = "ou=Computers,$suffix"; for ou=Computers,dc=IDEALX,dc=ORG
 $computersou = q(_COMPUTERS_);
-
 $computersdn = "ou=$computersou,$suffix";
 
-# 
 # Where are stored Groups
-# 
 # Ex $groupsdn = "ou=Groups,$suffix"; for ou=Groups,dc=IDEALX,dc=ORG
 $groupsou = q(_GROUPS_);
-
 $groupsdn = "ou=$groupsou,$suffix";
 
-#
 # Default scope Used
-#
 $scope = "sub";
 
-#
-# Credential Configuration
-#
+# Unix password encryption (CRYPT, MD5, SMD5, SSHA, SHA)
+$hash_encrypt="SSHA";
+
+############################
+# Credential Configuration #
+############################
 # Bind DN used 
 # Ex: $binddn = "cn=Manager,$suffix"; for cn=Manager,dc=IDEALX,dc=org
 $binddn = "cn=Manager,$suffix";
-#
+
 # Bind DN passwd used
 # Ex: $bindpasswd = 'secret'; for 'secret'
 $bindpasswd = "secret";
 
-#
 # Notes: if using dual ldap patch, you can specify to different configuration
 # By default, we will use the same DN (so it will work for standard Samba 
 # release)
-#
 $slaveDN = $binddn;
 $slavePw = $bindpasswd;
 $masterDN = $binddn;
@@ -176,36 +151,24 @@ $masterPw = $bindpasswd;
 ##############################################################################
 
 # Login defs
-#
 # Default Login Shell
-#
 # Ex: $_userLoginShell = q(/bin/bash);
 $_userLoginShell = q(_LOGINSHELL_);
 
-#
 # Home directory prefix (without username)
-#
 #Ex: $_userHomePrefix = q(/home/);
 $_userHomePrefix = q(_HOMEPREFIX_);
 
-#
 # Gecos
-#
 $_userGecos = q(System User);
 
-#
 # Default User (POSIX and Samba) GID
-#
-$_defaultUserGid = 100;
+$_defaultUserGid = 513;
 
-#
 # Default Computer (Samba) GID
-#
 $_defaultComputerGid = 553;
 
-#
 # Skel dir
-#
 $_skeletonDir = q(/etc/skel);
 
 ##############################################################################
@@ -214,28 +177,23 @@ $_skeletonDir = q(/etc/skel);
 #
 ##############################################################################
 
-#
 # The UNC path to home drives location without the username last extension
 # (will be dynamically prepended)
 # Ex: q(\\\\My-PDC-netbios-name\\homes) for \\My-PDC-netbios-name\homes
 $_userSmbHome = q(\\\\_PDCNAME_\\homes);
 
-#
 # The UNC path to profiles locations without the username last extension
 # (will be dynamically prepended)
-# Ex: q(\\\\My-PDC-netbios-name\\profiles) for \\My-PDC-netbios-name\profiles
+# Ex: q(\\\\My-PDC-netbios-name\\profiles\\) for \\My-PDC-netbios-name\profiles
 $_userProfile = q(\\\\_PDCNAME_\\profiles\\);
 
-# 
 # The default Home Drive Letter mapping
 # (will be automatically mapped at logon time if home directory exist)
 # Ex: q(U:) for U:
 $_userHomeDrive = q(_HOMEDRIVE_);
 
-#
 # The default user netlogon script name
 # if not used, will be automatically username.cmd
-#
 #$_userScript = q(startup.cmd); # make sure script file is edited under dos
 
 
@@ -251,28 +209,28 @@ $with_smbpasswd = 0;
 $smbpasswd = "/usr/bin/smbpasswd";
 $mk_ntpasswd = "/usr/local/sbin/mkntpwd";
 
-if ( $ldapSSL eq "0" ) {
+# those next externals commands are kept fot the migration scripts and
+# for the populate script: this will be updated as soon as possible
 	$slaveURI = "ldap://$slaveLDAP:$slavePort";
 	$masterURI = "ldap://$masterLDAP:$masterPort";
-}
-elsif ( $ldapSSL eq "1" ) {
-	$slaveURI = "ldaps://$slaveLDAP:$slavePort";
-	$masterURI = "ldaps://$masterLDAP:$masterPort";
-}
-else {
-	die "ldapSSL option must be either 0 or 1.\n";
-}
-	
 
 $ldap_path = "/usr/bin";
+
+if ( $ldapSSL eq "0" ) {
 $ldap_opts = "-x";
-$ldapsearch = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI -D '$slaveDN' -w '$slavePw'";
-$ldapsearchnobind = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI";
+} elsif ( $ldapSSL eq "1" ) {
+	$ldap_opts = "-x -Z";
+} else {
+	die "ldapSSL option must be either 0 or 1.\n";
+}
+
+#$ldapsearch = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI -D '$slaveDN' -w '$slavePw'";
+#$ldapsearchnobind = "$ldap_path/ldapsearch $ldap_opts -H $slaveURI";
 $ldapmodify = "$ldap_path/ldapmodify $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
-$ldappasswd = "$ldap_path/ldappasswd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
-$ldapadd = "$ldap_path/ldapadd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
-$ldapdelete = "$ldap_path/ldapdelete $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
-$ldapmodrdn = "$ldap_path/ldapmodrdn $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+#$ldappasswd = "$ldap_path/ldappasswd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+#$ldapadd = "$ldap_path/ldapadd $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+#$ldapdelete = "$ldap_path/ldapdelete $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
+#$ldapmodrdn = "$ldap_path/ldapmodrdn $ldap_opts -H $masterURI -D '$masterDN' -w '$masterPw'";
 
 
 

@@ -1,6 +1,7 @@
 <chapter id="unicode">
 <chapterinfo>
 	&author.jelmer;
+	&author.jht;
 	<author>
 		<firstname>TAKAHASHI</firstname><surname>Motonobu</surname>
 		<affiliation>
@@ -25,62 +26,65 @@ origin.
 
 <para>
 Of all the effort that has been brought to bear on providing native language support
-for all computer users, the efforts of the <ulink url="http://www.openi18n.org/">Openi18n organisation</ulink> is deserving of
+for all computer users, the efforts of the <ulink url="http://www.openi18n.org/">Openi18n organization</ulink> is deserving of
 special mention.
 </para>
 
 <para>
 Samba-2.x supported a single locale through a mechanism called 
 <emphasis>codepages</emphasis>. Samba-3 is destined to become a truly trans-global
-file and printer sharing platform.
+file and printer-sharing platform.
 </para>
 
 </sect1>
 
 <sect1>
-<title>What are charsets and unicode?</title>
+<title>What Are Charsets and Unicode?</title>
 
 <para>
 Computers communicate in numbers. In texts, each number will be 
 translated to a corresponding letter. The meaning that will be assigned 
-to a certain number depends on the <emphasis>character set(charset)
+to a certain number depends on the <emphasis>character set (charset)
 </emphasis> that is used. 
+</para>
+
+<para>
 A charset can be seen as a table that is used to translate numbers to 
 letters. Not all computers use the same charset (there are charsets 
-with German umlauts, Japanese characters, etc). Usually a charset contains 
+with German umlauts, Japanese characters, and so on). Usually a charset contains 
 256 characters, which means that storing a character with it takes 
 exactly one byte. </para>
 
 <para>
 There are also charsets that support even more characters, 
-but those need twice(or even more) as much storage space. These 
+but those need twice as much storage space (or more). These 
 charsets can contain <command>256 * 256 = 65536</command> characters, which
-is more then all possible characters one could think of. They are called 
-multibyte charsets (because they use more then one byte to 
-store one character). 
+is more than all possible characters one could think of. They are called 
+multibyte charsets because they use more then one byte to 
+store one character. 
 </para>
 
 <para>
-	A standardised multibyte charset is <ulink url="http://www.unicode.org/">unicode</ulink>.
+A standardized multibyte charset is <ulink url="http://www.unicode.org/">unicode</ulink>.
 A big advantage of using a multibyte charset is that you only need one; there 
 is no need to make sure two computers use the same charset when they are 
 communicating.
 </para>
 
-<para>Old windows clients use single-byte charsets, named 
-'codepages' by Microsoft. However, there is no support for 
-negotiating the charset to be used in the smb protocol. Thus, you 
+<para>Old Windows clients use single-byte charsets, named 
+<parameter>codepages</parameter>, by Microsoft. However, there is no support for 
+negotiating the charset to be used in the SMB/CIFS protocol. Thus, you 
 have to make sure you are using the same charset when talking to an older client.
-Newer clients (Windows NT, 2K, XP) talk unicode over the wire.
+Newer clients (Windows NT, 200x, XP) talk unicode over the wire.
 </para>
 </sect1>
 
 <sect1>
-<title>Samba and charsets</title>
+<title>Samba and Charsets</title>
 
 <para>
-As of samba 3.0, samba can (and will) talk unicode over the wire. Internally, 
-samba knows of three kinds of character sets: 
+As of Samba-3.0, Samba can (and will) talk unicode over the wire. Internally, 
+Samba knows of three kinds of character sets: 
 </para>
 
 <variablelist>
@@ -89,21 +93,21 @@ samba knows of three kinds of character sets:
 		<listitem><para>
 		This is the charset used internally by your operating system. 
 		The default is <constant>UTF-8</constant>, which is fine for most 
-		systems. The default in previous samba releases was <constant>ASCII</constant>. 
+		systems, which covers all characters in all languages. The default in previous Samba releases was <constant>ASCII</constant>. 
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
 		<term><smbconfoption><name>display charset</name></smbconfoption></term>
-		<listitem><para>This is the charset samba will use to print messages
-		on your screen. It should generally be the same as the <command>unix charset</command>.
+		<listitem><para>This is the charset Samba will use to print messages
+		on your screen. It should generally be the same as the <parameter>unix charset</parameter>.
 		</para></listitem>
 	</varlistentry>
 
 	<varlistentry>
 		<term><smbconfoption><name>dos charset</name></smbconfoption></term>
-		<listitem><para>This is the charset samba uses when communicating with 
-		DOS and Windows 9x clients. It will talk unicode to all newer clients.
+		<listitem><para>This is the charset Samba uses when communicating with 
+		DOS and Windows 9x/Me clients. It will talk unicode to all newer clients.
 		The default depends on the charsets you have installed on your system.
 		Run <command>testparm -v | grep "dos charset"</command> to see 
 		what the default is on your system. 
@@ -114,42 +118,38 @@ samba knows of three kinds of character sets:
 </sect1>
 
 <sect1>
-<title>Conversion from old names</title>
+<title>Conversion from Old Names</title>
 
-<para>Because previous samba versions did not do any charset conversion, 
-characters in filenames are usually not correct in the unix charset but only 
+<para>Because previous Samba versions did not do any charset conversion, 
+characters in filenames are usually not correct in the UNIX charset but only 
 for the local charset used by the DOS/Windows clients.</para>
-
-<para>Bjoern Jacke has written a utility named <ulink url="http://j3e.de/linux/convmv/">convm</ulink> that can convert whole directory 
-	structures to different charsets with one single command. 
-</para>
 
 </sect1>
 
 <sect1>
-<title>Japanese charsets</title>
+<title>Japanese Charsets</title>
 
-<para>Samba doesn't work correctly with Japanese charsets yet. Here are
+<para>Samba does not work correctly with Japanese charsets yet. Here are
 points of attention when setting it up:</para>
 
 <itemizedlist>
 
 	<listitem><para>You should set <smbconfoption><name>mangling method</name><value>hash</value></smbconfoption></para></listitem>
 
-<listitem><para>There are various iconv() implementations around and not
-all of  them work equally well. glibc2's iconv() has a critical problem
-in CP932.  libiconv-1.8 works with CP932 but still has some problems and
-does not  work with EUC-JP.</para></listitem>
+	<listitem><para>There are various iconv() implementations around and not
+	all of  them work equally well. glibc2's iconv() has a critical problem
+	in CP932. libiconv-1.8 works with CP932 but still has some problems and
+	does not  work with EUC-JP.</para></listitem>
 
-<listitem><para>You should set <smbconfoption><name>dos charset</name><value>CP932</value></smbconfoption>, not
-Shift_JIS, SJIS...</para></listitem>
+	<listitem><para>You should set <smbconfoption><name>dos charset</name><value>CP932</value></smbconfoption>, not
+	Shift_JIS, SJIS.</para></listitem>
 
-<listitem><para>Currently only <smbconfoption><name>unix charset</name><value>CP932</value></smbconfoption>
-will work (but still has some problems...) because of iconv() issues.
-<smbconfoption><name>unix charset</name><value>EUC-JP</value></smbconfoption> doesn't work well because of
-iconv() issues.</para></listitem>
+	<listitem><para>Currently only <smbconfoption><name>UNIX charset</name><value>CP932</value></smbconfoption>
+	will work (but still has some problems...) because of iconv() issues.
+	<smbconfoption><name>UNIX charset</name><value>EUC-JP</value></smbconfoption> does not work well because of
+	iconv() issues.</para></listitem>
 
-<listitem><para>Currently Samba 3.0 does not support <smbconfoption><name>unix charset</name><value>UTF8-MAC/CAP/HEX/JIS*</value></smbconfoption></para></listitem>
+	<listitem><para>Currently Samba-3.0 does not support <smbconfoption><name>UNIX charset</name><value>UTF8-MAC/CAP/HEX/JIS*</value></smbconfoption>.</para></listitem>
 
 </itemizedlist>
 
@@ -158,16 +158,19 @@ iconv() issues.</para></listitem>
 </sect1>
 
 <sect1>
-	<title>Common errors</title>
+	<title>Common Errors</title>
 
 	<sect2>
-		<title>CP850.so can't be found</title>
+		<title>CP850.so Can't Be Found</title>
 
-		<para><quote>Samba is complaining about a missing <filename>CP850.so</filename> file</quote>.</para>
+		<para><quote>Samba is complaining about a missing <filename>CP850.so</filename> file.</quote></para>
 
-		<para>CP850 is the default <smbconfoption><name>dos charset</name></smbconfoption>. The <smbconfoption><name>dos charset</name></smbconfoption> is used to convert data to the codepage used by your dos clients. If you don't have any dos clients, you can safely ignore this message. </para>
+		<para><emphasis>Answer:</emphasis> CP850 is the default <smbconfoption><name>dos charset</name></smbconfoption>.
+		The <smbconfoption><name>dos charset</name></smbconfoption> is used to convert data to the codepage used by your dos clients.
+		If you do not have any dos clients, you can safely ignore this message. </para>
 
-		<para>CP850 should be supported by your local iconv implementation. Make sure you have all the required packages installed. If you compiled samba from source, make sure configure found iconv.</para>
+		<para>CP850 should be supported by your local iconv implementation. Make sure you have all the required packages installed.
+		If you compiled Samba from source, make sure to configure found iconv.</para>
 	</sect2>
 </sect1>
 
