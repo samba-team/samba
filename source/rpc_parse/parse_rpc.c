@@ -270,7 +270,7 @@ creates an RPC_ADDR_STR structure.
 
 The name can be null (RPC Alter-Context)
 ********************************************************************/
-static BOOL make_rpc_addr_str(RPC_ADDR_STR *str, char *name)
+static BOOL make_rpc_addr_str(RPC_ADDR_STR *str, const char *name)
 {
 	if (str == NULL ) return False;
 	if (name == NULL)
@@ -434,7 +434,7 @@ jfm: nope two ! The pipe_addr can be NULL !
 ********************************************************************/
 BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				char *pipe_addr,
+				const char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer)
 {

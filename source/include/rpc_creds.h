@@ -36,6 +36,9 @@ typedef struct ntuser_creds
 typedef struct unixuser_creds
 {
 	fstring user_name;
+	fstring requested_name;
+	fstring real_name;
+	BOOL guest;
 
 } CREDS_UNIX;
 
@@ -51,7 +54,8 @@ typedef struct unixsec_creds
 typedef struct ntsec_creds
 {
 	DOM_SID      sid;
-	SEC_DESC_BUF sd ;
+	uint32 num_grps;
+	uint32 *grp_rids;
 
 } CREDS_NT_SEC;
 

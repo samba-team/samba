@@ -35,7 +35,7 @@ core of smb password checking routine.
 ****************************************************************************/
 static BOOL smb_pwd_check_ntlmv1(char *password, unsigned char *part_passwd,
 				unsigned char *c8,
-				uchar sess_key[16])
+				uchar user_sess_key[16])
 {
   /* Finish the encryption of part_passwd. */
   unsigned char p24[24];
@@ -47,9 +47,9 @@ static BOOL smb_pwd_check_ntlmv1(char *password, unsigned char *part_passwd,
     return True;
 
   SMBOWFencrypt(part_passwd, c8, p24);
-	if (sess_key != NULL)
+	if (user_sess_key != NULL)
 	{
-		SMBsesskeygen_ntv1(part_passwd, NULL, sess_key);
+		SMBsesskeygen_ntv1(part_passwd, NULL, user_sess_key);
 	}
 
 #if DEBUG_PASSWORD
@@ -72,7 +72,7 @@ static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 				unsigned char *part_passwd,
 				unsigned char const *c8,
 				const char *user, const char *domain,
-				char *sess_key)
+				char *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
 	unsigned char kr[16];
@@ -90,9 +90,9 @@ static BOOL smb_pwd_check_ntlmv2(char *password, size_t pwd_len,
 
 	ntv2_owf_gen(part_passwd, user, domain, kr);
 	SMBOWFencrypt_ntv2(kr, c8, 8, password+16, pwd_len-16, resp);
-	if (sess_key != NULL)
+	if (user_sess_key != NULL)
 	{
-		SMBsesskeygen_ntv2(kr, resp, sess_key);
+		SMBsesskeygen_ntv2(kr, resp, user_sess_key);
 	}
 
 #if DEBUG_PASSWORD
@@ -117,7 +117,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 				const char *user, const char *domain,
 				uchar *lm_pass, size_t lm_pwd_len,
 				uchar *nt_pass, size_t nt_pwd_len,
-				uchar sess_key[16])
+				uchar user_sess_key[16])
 {
 	if (smb_pass == NULL)
 	{
@@ -151,7 +151,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 			if (smb_pwd_check_ntlmv2(nt_pass, nt_pwd_len,
 				       (uchar *)smb_pass->smb_nt_passwd, 
 					challenge, user, domain,
-			                sess_key))
+			                user_sess_key))
 			{
 				return True;
 			}
@@ -162,7 +162,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 			if (smb_pwd_check_ntlmv1((char *)nt_pass, 
 				       (uchar *)smb_pass->smb_nt_passwd, 
 				       challenge,
-			               sess_key))
+			               user_sess_key))
 			{
 				DEBUG(4,("NT MD4 password check succeeded\n"));
 				return True;

@@ -80,7 +80,7 @@ static void wks_reply_query_info(WKS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_wks_query_info
  ********************************************************************/
-static void api_wks_query_info( pipes_struct *p, prs_struct *data,
+static void api_wks_query_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	WKS_Q_QUERY_INFO q_u;
@@ -105,7 +105,7 @@ struct api_struct api_wks_cmds[] =
 /*******************************************************************
  receives a wkssvc pipe and responds.
  ********************************************************************/
-BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_wkssvc_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_wkssvc_rpc", api_wks_cmds, data);
 }

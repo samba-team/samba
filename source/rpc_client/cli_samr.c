@@ -60,6 +60,8 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 	/* turn parameters into data stream */
 	samr_io_q_chgpasswd_user("", &q_e, &data, 0);
 
+	dbgflush();
+
 	/* send the data on \PIPE\ */
 	if (rpc_con_pipe_req(con, SAMR_CHGPASSWD_USER, &data, &rdata))
 	{
@@ -84,8 +86,6 @@ BOOL samr_chgpasswd_user( struct cli_connection *con,
 
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
-
-	cli_connection_unlink(con);
 
 	return valid_pwc;
 }

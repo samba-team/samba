@@ -341,7 +341,7 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 /*************************************************************************
  api_net_req_chal:
  *************************************************************************/
-static void api_net_req_chal( pipes_struct *p,
+static void api_net_req_chal( rpcsrv_struct *p,
                               prs_struct *data,
                               prs_struct *rdata)
 {
@@ -351,12 +351,7 @@ static void api_net_req_chal( pipes_struct *p,
 	fstring mach_acct;
 	fstring mach_name;
 
-	user_struct *vuser;
-
-	DEBUG(5,("api_net_req_chal(%d): vuid %d\n", __LINE__, (int)p->vuid));
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-      return;
+	DEBUG(5,("api_net_req_chal(%d)\n", __LINE__));
 
 	/* grab the challenge... */
 	net_io_q_req_chal("", &q_r, data, 0);
@@ -368,23 +363,23 @@ static void api_net_req_chal( pipes_struct *p,
 
 	fstrcat(mach_acct, "$");
 
-	if (get_md4pw((char *)vuser->dc.md4pw, mach_name, mach_acct))
+	if (get_md4pw((char *)p->dc.md4pw, mach_name, mach_acct))
 	{
 		/* copy the client credentials */
-		memcpy(vuser->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
-		memcpy(vuser->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+		memcpy(p->dc.clnt_chal.data          , q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
+		memcpy(p->dc.clnt_cred.challenge.data, q_r.clnt_chal.data, sizeof(q_r.clnt_chal.data));
 
 		/* create a server challenge for the client */
 		/* Set these to random values. */
-                generate_random_buffer(vuser->dc.srv_chal.data, 8, False);
+                generate_random_buffer(p->dc.srv_chal.data, 8, False);
 
-		memcpy(vuser->dc.srv_cred.challenge.data, vuser->dc.srv_chal.data, 8);
+		memcpy(p->dc.srv_cred.challenge.data, p->dc.srv_chal.data, 8);
 
-		bzero(vuser->dc.sess_key, sizeof(vuser->dc.sess_key));
+		bzero(p->dc.sess_key, sizeof(p->dc.sess_key));
 
 		/* from client / server challenges and md4 password, generate sess key */
-		cred_session_key(&(vuser->dc.clnt_chal), &(vuser->dc.srv_chal),
-				 (char *)vuser->dc.md4pw, vuser->dc.sess_key);
+		cred_session_key(&(p->dc.clnt_chal), &(p->dc.srv_chal),
+				 (char *)p->dc.md4pw, p->dc.sess_key);
 	}
 	else
 	{
@@ -394,14 +389,14 @@ static void api_net_req_chal( pipes_struct *p,
 
 	/* construct reply. */
 	net_reply_req_chal(&q_r, rdata,
-					&(vuser->dc.srv_chal), status);
+					&(p->dc.srv_chal), status);
 
 }
 
 /*************************************************************************
  api_net_auth:
  *************************************************************************/
-static void api_net_auth( pipes_struct *p,
+static void api_net_auth( rpcsrv_struct *p,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -411,27 +406,22 @@ static void api_net_auth( pipes_struct *p,
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
-	user_struct *vuser;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-      return;
-
 	srv_time.time = 0;
 
 	/* grab the challenge... */
 	net_io_q_auth("", &q_a, data, 0);
 
 	/* check that the client credentials are valid */
-	if (cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
-                    &(vuser->dc.clnt_cred.challenge), srv_time))
+	if (cred_assert(&(q_a.clnt_chal), p->dc.sess_key,
+                    &(p->dc.clnt_cred.challenge), srv_time))
 	{
 
 		/* create server challenge for inclusion in the reply */
-		cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred.challenge), srv_time, &srv_cred);
+		cred_create(p->dc.sess_key, &(p->dc.srv_cred.challenge), srv_time, &srv_cred);
 
 		/* copy the received client credentials for use next time */
-		memcpy(vuser->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		memcpy(vuser->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(p->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(p->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	}
 	else
 	{
@@ -445,7 +435,7 @@ static void api_net_auth( pipes_struct *p,
 /*************************************************************************
  api_net_auth_2:
  *************************************************************************/
-static void api_net_auth_2( pipes_struct *p,
+static void api_net_auth_2( rpcsrv_struct *p,
                             prs_struct *data,
                             prs_struct *rdata)
 {
@@ -455,27 +445,22 @@ static void api_net_auth_2( pipes_struct *p,
 	DOM_CHAL srv_cred;
 	UTIME srv_time;
 
-	user_struct *vuser;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-      return;
-
 	srv_time.time = 0;
 
 	/* grab the challenge... */
 	net_io_q_auth_2("", &q_a, data, 0);
 
 	/* check that the client credentials are valid */
-	if (cred_assert(&(q_a.clnt_chal), vuser->dc.sess_key,
-                    &(vuser->dc.clnt_cred.challenge), srv_time))
+	if (cred_assert(&(q_a.clnt_chal), p->dc.sess_key,
+                    &(p->dc.clnt_cred.challenge), srv_time))
 	{
 
 		/* create server challenge for inclusion in the reply */
-		cred_create(vuser->dc.sess_key, &(vuser->dc.srv_cred.challenge), srv_time, &srv_cred);
+		cred_create(p->dc.sess_key, &(p->dc.srv_cred.challenge), srv_time, &srv_cred);
 
 		/* copy the received client credentials for use next time */
-		memcpy(vuser->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
-		memcpy(vuser->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(p->dc.clnt_cred.challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
+		memcpy(p->dc.srv_cred .challenge.data, q_a.clnt_chal.data, sizeof(q_a.clnt_chal.data));
 	}
 	else
 	{
@@ -489,7 +474,7 @@ static void api_net_auth_2( pipes_struct *p,
 /*************************************************************************
  api_net_srv_pwset:
  *************************************************************************/
-static void api_net_srv_pwset( pipes_struct *p,
+static void api_net_srv_pwset( rpcsrv_struct *p,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -499,19 +484,15 @@ static void api_net_srv_pwset( pipes_struct *p,
 	pstring mach_acct;
 	struct smb_passwd *smb_pass;
 	BOOL ret;
-	user_struct *vuser;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-      return;
 
 	/* grab the challenge and encrypted password ... */
 	net_io_q_srv_pwset("", &q_a, data, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	if (deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
 	                    &(q_a.clnt_id.cred), &srv_cred))
 	{
-		memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
+		memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred), sizeof(p->dc.clnt_cred));
 
 		DEBUG(5,("api_net_srv_pwset: %d\n", __LINE__));
 
@@ -536,7 +517,7 @@ static void api_net_srv_pwset( pipes_struct *p,
 			}
 			DEBUG(100,("\n"));
 
-			cred_hash3( pwd, q_a.pwd, vuser->dc.sess_key, 0);
+			cred_hash3( pwd, q_a.pwd, p->dc.sess_key, 0);
 
 			/* lies!  nt and lm passwords are _not_ the same: don't care */
 			smb_pass->smb_passwd    = pwd;
@@ -571,7 +552,7 @@ static void api_net_srv_pwset( pipes_struct *p,
 /*************************************************************************
  api_net_sam_logoff:
  *************************************************************************/
-static void api_net_sam_logoff( pipes_struct *p,
+static void api_net_sam_logoff( rpcsrv_struct *p,
                                 prs_struct *data,
                                 prs_struct *rdata)
 {
@@ -579,11 +560,6 @@ static void api_net_sam_logoff( pipes_struct *p,
 	NET_ID_INFO_CTR ctr;	
 
 	DOM_CRED srv_cred;
-
-	user_struct *vuser;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-      return;
 
 	/* the DOM_ID_INFO_1 structure is a bit big.  plus we might want to
 	   dynamically allocate it inside net_io_q_sam_logon, at some point */
@@ -593,9 +569,9 @@ static void api_net_sam_logoff( pipes_struct *p,
 	net_io_q_sam_logoff("", &q_l, data, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
 	                &(q_l.sam_id.client.cred), &srv_cred);
-	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
+	memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred), sizeof(p->dc.clnt_cred));
 
 	/* construct reply.  always indicate success */
 	net_reply_sam_logoff(&q_l, rdata, &srv_cred, 0x0);
@@ -604,27 +580,23 @@ static void api_net_sam_logoff( pipes_struct *p,
 /*************************************************************************
  api_net_sam_sync:
  *************************************************************************/
-static void api_net_sam_sync( pipes_struct *p,
+static void api_net_sam_sync( rpcsrv_struct *p,
                               prs_struct *data,
                               prs_struct *rdata)
 {
 	NET_Q_SAM_SYNC q_s;
 	DOM_CRED srv_creds;
-	user_struct *vuser;
 	uint32 status = 0x0;
-
-	if ((vuser = get_valid_user_struct(p->vuid)) == NULL)
-		return;
 
 	/* grab the challenge... */
 	net_io_q_sam_sync("", &q_s, data, 0);
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	if (deal_with_creds(p->dc.sess_key, &(p->dc.clnt_cred), 
 	                &(q_s.cli_creds), &srv_creds))
 	{
-		memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred),
-		       sizeof(vuser->dc.clnt_cred));
+		memcpy(&(p->dc.srv_cred), &(p->dc.clnt_cred),
+		       sizeof(p->dc.clnt_cred));
 	}
 	else
 	{
@@ -632,7 +604,7 @@ static void api_net_sam_sync( pipes_struct *p,
 	}
 
 	/* construct reply. */
-	net_reply_sam_sync(&q_s, rdata, vuser->dc.sess_key, &srv_creds, status);
+	net_reply_sam_sync(&q_s, rdata, p->dc.sess_key, &srv_creds, status);
 }
 
 
@@ -641,7 +613,7 @@ static void api_net_sam_sync( pipes_struct *p,
  *************************************************************************/
 static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 				struct sam_passwd *smb_pass,
-				user_struct *vuser)
+				struct dcinfo *dc)
 {
 	uint32 status = 0x0;
 
@@ -650,7 +622,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
 	unsigned char key[16];
 
 	memset(key, 0, 16);
-	memcpy(key, vuser->dc.sess_key, 8);
+	memcpy(key, dc->sess_key, 8);
 
 	memcpy(lm_pwd, id1->lm_owf.data, 16);
 	memcpy(nt_pwd, id1->nt_owf.data, 16);
@@ -698,7 +670,7 @@ static uint32 net_login_interactive(NET_ID_INFO_1 *id1,
  *************************************************************************/
 static uint32 net_login_network(NET_ID_INFO_2 *id2,
 				struct sam_passwd *sam_pass,
-				user_struct *vuser,
+				struct dcinfo *dc,
 				char sess_key[16])
 {
 	fstring user;
@@ -723,7 +695,7 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 		unsigned char key[16];
 
 		memset(key, 0, 16);
-		memcpy(key, vuser->dc.sess_key, 8);
+		memcpy(key, dc->sess_key, 8);
 
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("key:"));
@@ -749,8 +721,9 @@ static uint32 net_login_network(NET_ID_INFO_2 *id2,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
-	DOM_CRED *srv_cred, NET_USER_INFO_3 *usr_info)
+static uint32 reply_net_sam_logon(NET_Q_SAM_LOGON *q_l,
+				struct dcinfo *dc,
+				DOM_CRED *srv_cred, NET_USER_INFO_3 *usr_info)
 {
 	struct sam_passwd *sam_pass = NULL;
 	UNISTR2 *uni_samusr = NULL;
@@ -781,13 +754,13 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 	DOM_GID *gids = NULL;
 
 	/* checks and updates credentials.  creates reply credentials */
-	if (!deal_with_creds(vuser->dc.sess_key, &(vuser->dc.clnt_cred), 
+	if (!deal_with_creds(dc->sess_key, &(dc->clnt_cred), 
 	                     &(q_l->sam_id.client.cred), srv_cred))
 	{
 		return 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
 	
-	memcpy(&(vuser->dc.srv_cred), &(vuser->dc.clnt_cred), sizeof(vuser->dc.clnt_cred));
+	memcpy(&(dc->srv_cred), &(dc->clnt_cred), sizeof(dc->clnt_cred));
 
 	/* find the username */
 
@@ -864,13 +837,13 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 			case INTERACTIVE_LOGON_TYPE:
 			{
 				/* interactive login. */
-				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, vuser);
+				status = net_login_interactive(&q_l->sam_id.ctr->auth.id1, sam_pass, dc);
 				break;
 			}
 			case NET_LOGON_TYPE:
 			{
 				/* network login.  lm challenge and 24 byte responses */
-				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, vuser, sess_key);
+				status = net_login_network(&q_l->sam_id.ctr->auth.id2, sam_pass, dc, sess_key);
 				enc_user_sess_key = sess_key;
 				break;
 			}
@@ -941,7 +914,7 @@ static uint32 reply_net_sam_logon( NET_Q_SAM_LOGON *q_l, user_struct *vuser,
 /*************************************************************************
  api_net_sam_logon:
  *************************************************************************/
-static void api_net_sam_logon( pipes_struct *p,
+static void api_net_sam_logon( rpcsrv_struct *p,
                                prs_struct *data,
                                prs_struct *rdata)
 {
@@ -951,17 +924,10 @@ static void api_net_sam_logon( pipes_struct *p,
 	uint32 status = 0x0;
 	DOM_CRED srv_cred;
 
-	user_struct *vuser = get_valid_user_struct(p->vuid);
-
-	if (vuser == NULL)
-	{
-		return;
-	}
-
 	q_l.sam_id.ctr = &ctr;
 	net_io_q_sam_logon("", &q_l, data, 0);
 
-	status = reply_net_sam_logon(&q_l, vuser, &srv_cred, &usr_info);
+	status = reply_net_sam_logon(&q_l, &p->dc, &srv_cred, &usr_info);
 	net_reply_sam_logon(&q_l, rdata, &srv_cred, &usr_info, status);
 }
 
@@ -969,7 +935,7 @@ static void api_net_sam_logon( pipes_struct *p,
 /*************************************************************************
  api_net_trust_dom_list:
  *************************************************************************/
-static void api_net_trust_dom_list( pipes_struct *p,
+static void api_net_trust_dom_list( rpcsrv_struct *p,
                                     prs_struct *data,
                                     prs_struct *rdata)
 {
@@ -1003,7 +969,7 @@ static void api_net_trust_dom_list( pipes_struct *p,
 /*************************************************************************
  api_net_logon_ctrl2:
  *************************************************************************/
-static void api_net_logon_ctrl2( pipes_struct *p,
+static void api_net_logon_ctrl2( rpcsrv_struct *p,
                                  prs_struct *data,
                                  prs_struct *rdata)
 {
@@ -1049,7 +1015,7 @@ static struct api_struct api_net_cmds [] =
 /*******************************************************************
  receives a netlogon pipe and responds.
  ********************************************************************/
-BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_netlog_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_netlog_rpc", api_net_cmds, data);
 }

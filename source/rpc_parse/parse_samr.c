@@ -1314,13 +1314,11 @@ BOOL samr_io_r_enum_dom_users(char *desc, SAMR_R_ENUM_DOM_USERS *r_u, prs_struct
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_acct_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 			prs_align(ps);
 		}
@@ -1444,13 +1442,11 @@ static BOOL sam_io_sam_dispinfo_1(char *desc, SAM_DISPINFO_1 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_entry1("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_str1 ("", &(sam->str[i]),
 				 sam->sam[i].hdr_acct_name.buffer,
 				 sam->sam[i].hdr_user_name.buffer,
@@ -1521,13 +1517,11 @@ static BOOL sam_io_sam_dispinfo_2(char *desc, SAM_DISPINFO_2 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_entry2("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_str2 ("", &(sam->str[i]),
 				 sam->sam[i].hdr_srv_name.buffer,
 				 sam->sam[i].hdr_srv_desc.buffer,
@@ -1597,13 +1591,11 @@ static BOOL sam_io_sam_dispinfo_3(char *desc, SAM_DISPINFO_3 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_entry3("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_str3 ("", &(sam->str[i]),
 				 sam->sam[i].hdr_grp_name.buffer,
 				 sam->sam[i].hdr_grp_desc.buffer,
@@ -1672,13 +1664,11 @@ static BOOL sam_io_sam_dispinfo_4(char *desc, SAM_DISPINFO_4 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_entry4("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		smb_io_string2("acct_name", &(sam->str[i].acct_name),
 			       sam->sam[i].hdr_acct_name.buffer, ps, depth);
 	}
@@ -1744,13 +1734,11 @@ static BOOL sam_io_sam_dispinfo_5(char *desc, SAM_DISPINFO_5 *sam, uint32 num_en
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		sam_io_sam_entry5("", &(sam->sam[i]), ps, depth);
 	}
 
 	for (i = 0; i < num_entries; i++)
 	{
-		prs_grow(ps);
 		smb_io_string2("grp_name", &(sam->str[i].grp_name),
 			       sam->sam[i].hdr_grp_name.buffer, ps, depth);
 	}
@@ -2599,7 +2587,6 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 			}
 			for (i = 0; i < r_u->num_rids; i++)
 			{
-				prs_grow(ps);
 				prs_uint32("", ps, depth, &(r_u->rid[i]));
 			}
 		}
@@ -2621,7 +2608,6 @@ BOOL samr_io_r_query_groupmem(char *desc,  SAMR_R_QUERY_GROUPMEM *r_u, prs_struc
 			}
 			for (i = 0; i < r_u->num_attrs; i++)
 			{
-				prs_grow(ps);
 				prs_uint32("", ps, depth, &(r_u->attr[i]));
 			}
 		}
@@ -2753,7 +2739,6 @@ BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_s
 
 			for (i = 0; i < r_u->num_entries2; i++)
 			{
-				prs_grow(ps);
 				smb_io_gid("", &(r_u->gid[i]), ps, depth);
 			}
 		}
@@ -2903,7 +2888,6 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps
 		{
 			fstring tmp;
 			slprintf(tmp, sizeof(tmp)-1, "dom[%d]", i);
-			prs_grow(ps);
 			sam_io_sam_entry(tmp, &(r_u->sam[i]), ps, depth);
 		}
 
@@ -2911,7 +2895,6 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS *r_u, prs_struct *ps
 		{
 			fstring tmp;
 			slprintf(tmp, sizeof(tmp)-1, "dom[%d]", i);
-			prs_grow(ps);
 			smb_io_unistr2(tmp, &(r_u->uni_dom_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 			prs_align(ps);
 		}
@@ -3066,13 +3049,11 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS *r_u, prs_stru
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 			prs_align(ps);
 		}
@@ -3227,13 +3208,11 @@ BOOL samr_io_r_enum_dom_aliases(char *desc, SAMR_R_ENUM_DOM_ALIASES *r_u, prs_st
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			sam_io_sam_entry("", &(r_u->sam[i]), ps, depth);
 		}
 
 		for (i = 0; i < r_u->num_entries2; i++)
 		{
-			prs_grow(ps);
 			smb_io_unistr2("", &(r_u->uni_grp_name[i]), r_u->sam[i].hdr_name.buffer, ps, depth);
 			prs_align(ps);
 		}
@@ -3528,7 +3507,6 @@ BOOL samr_io_q_query_useraliases(char *desc,  SAMR_Q_QUERY_USERALIASES *q_u, prs
 	{
 		if (q_u->ptr_sid[i] != 0)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp)-1, "sid[%02d]", i);
 			smb_io_dom_sid2(tmp, &(q_u->sid[i]), ps, depth); 
 		}
@@ -3767,7 +3745,6 @@ BOOL samr_io_q_lookup_rids(char *desc,  SAMR_Q_LOOKUP_RIDS *q_u, prs_struct *ps,
 
 	for (i = 0; i < q_u->num_rids2; i++)
 	{
-		prs_grow(ps);
 		slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
 		prs_uint32(tmp, ps, depth, &(q_u->rid[i]));
 	}
@@ -3902,13 +3879,11 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 		}
 		for (i = 0; i < r_u->num_names2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "hdr[%02d]  ", i);
 			smb_io_unihdr ("", &(r_u->hdr_name[i]), ps, depth); 
 		}
 		for (i = 0; i < r_u->num_names2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "str[%02d]  ", i);
 			smb_io_unistr2("", &(r_u->uni_name[i]), r_u->hdr_name[i].buffer, ps, depth); 
 			prs_align(ps);
@@ -3940,7 +3915,6 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
 
 		for (i = 0; i < r_u->num_types2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
 			prs_uint32(tmp, ps, depth, &(r_u->type[i]));
 		}
@@ -4375,13 +4349,11 @@ BOOL samr_io_r_query_aliasmem(char *desc,  SAMR_R_QUERY_ALIASMEM *r_u, prs_struc
 
 			for (i = 0; i < r_u->num_sids1; i++)
 			{
-				prs_grow(ps);
 				ptr_sid[i] = 1;
 				prs_uint32("", ps, depth, &(ptr_sid[i]));
 			}
 			for (i = 0; i < r_u->num_sids1; i++)
 			{
-				prs_grow(ps);
 				if (ptr_sid[i] != 0)
 				{
 					smb_io_dom_sid2("", &(r_u->sid[i]), ps, depth);
@@ -4450,12 +4422,10 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 
 	for (i = 0; i < q_u->num_names2; i++)
 	{
-		prs_grow(ps);
 		smb_io_unihdr ("", &(q_u->hdr_name[i]), ps, depth); 
 	}
 	for (i = 0; i < q_u->num_names2; i++)
 	{
-		prs_grow(ps);
 		smb_io_unistr2("", &(q_u->uni_name[i]), q_u->hdr_name[i].buffer, ps, depth); 
 		prs_align(ps);
 	}
@@ -4541,7 +4511,6 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 		for (i = 0; i < r_u->num_rids2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "rid[%02d]  ", i);
 			prs_uint32(tmp, ps, depth, &(r_u->rid[i]));
 		}
@@ -4562,7 +4531,6 @@ BOOL samr_io_r_lookup_names(char *desc,  SAMR_R_LOOKUP_NAMES *r_u, prs_struct *p
 
 		for (i = 0; i < r_u->num_types2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "type[%02d]  ", i);
 			prs_uint32(tmp, ps, depth, &(r_u->type[i]));
 		}
@@ -6289,13 +6257,11 @@ BOOL samr_io_q_chgpasswd_user(char *desc, SAMR_Q_CHGPASSWD_USER *q_u, prs_struct
 	prs_align(ps);
 
 	samr_io_enc_passwd("nt_newpass", &(q_u->nt_newpass), ps, depth); 
-	prs_grow(ps);
 	samr_io_enc_hash  ("nt_oldhash", &(q_u->nt_oldhash), ps, depth); 
 
 	prs_uint32("unknown", ps, depth, &(q_u->unknown));
 
 	samr_io_enc_passwd("lm_newpass", &(q_u->lm_newpass), ps, depth); 
-	prs_grow(ps);
 	samr_io_enc_hash  ("lm_oldhash", &(q_u->lm_oldhash), ps, depth); 
 
 	return True;

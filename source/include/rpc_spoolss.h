@@ -850,7 +850,7 @@ struct s_notify_info_data_table
 	uint16 field;
 	char   *name;
 	uint32 size;
-	void   (*fn) (connection_struct *conn, int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
+	void   (*fn) (int snum, SPOOL_NOTIFY_INFO_DATA *data, print_queue_struct *queue, NT_PRINTER_INFO_LEVEL *printer);
 };
 
 typedef struct spool_q_getprinterdriver2

@@ -221,14 +221,12 @@ BOOL at_io_r_enum_jobs(char *desc, AT_R_ENUM_JOBS *r_e, prs_struct *ps, int dept
 
 		for (i = 0; i < r_e->num_entries2; i++)
 		{
-			prs_grow(ps);
 			prs_uint32("jobid", ps, depth, &(r_e->info[i].jobid));
 			at_io_job_info("", &(r_e->info[i].info), ps, depth);
 		}
 
 		for (i = 0; i < r_e->num_entries2; i++)
 		{
-			prs_grow(ps);
 			smb_io_unistr2("", &(r_e->command[i]),
 				 r_e->info[i].info.ptr_command, ps, depth);
 		}

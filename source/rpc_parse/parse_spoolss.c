@@ -376,14 +376,12 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info,
 
 	for (i=0;i<info->count;i++)
 	{
-		prs_grow(ps);
 		smb_io_notify_info_data(desc, &(info->data[i]), ps, depth);
 	}
 
 	/* now do the strings at the end of the stream */	
 	for (i=0;i<info->count;i++)
 	{
-		prs_grow(ps);
 		smb_io_notify_info_data_strings(desc, &(info->data[i]),
 		                                ps, depth);
 	}

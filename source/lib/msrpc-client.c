@@ -41,6 +41,9 @@ BOOL msrpc_send_prs(struct msrpc_state *msrpc, prs_struct *ps)
 {
 	size_t len = mem_buf_len(ps->data);
 
+	DEBUG(10,("msrpc_send_prs: len %d\n", len));
+	dbgflush();
+
 	_smb_setlen(msrpc->outbuf, len);
 	mem_buf_copy(&msrpc->outbuf[4], ps->data, 0, len);
 
@@ -175,14 +178,6 @@ static BOOL msrpc_authenticate(struct msrpc_state *msrpc,
 	uint16 command;
 
 	command = usr != NULL ? AGENT_CMD_CON : AGENT_CMD_CON_ANON;
-
-	if (usr != NULL)
-	{
-		usr->ptr_ntc = 1;
-		usr->ptr_uxc = 1;
-		usr->ptr_nts = 0;
-		usr->ptr_uxs = 0;
-	}
 
 	if (!create_user_creds(&ps, msrpc->pipe_name, 0x0, command, usr))
 	{

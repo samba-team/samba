@@ -30,13 +30,19 @@ extern int DEBUGLEVEL;
 /*******************************************************************
 makes a CREDS_UNIX structure.
 ********************************************************************/
-BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name)
+BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
+				const char* requested_name,
+				const char* real_name,
+				BOOL guest)
 {
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_creds_unix\n"));
 
-	fstrcpy(r_u->user_name, user_name);
+	fstrcpy(r_u->user_name     , user_name);
+	fstrcpy(r_u->requested_name, requested_name);
+	fstrcpy(r_u->real_name     , real_name);
+	r_u->guest = guest;
 
 	return True;
 }
@@ -54,7 +60,11 @@ BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth)
 	prs_align(ps);
 	prs_string("user_name", ps, depth,   r_u->user_name, strlen(r_u->user_name), sizeof(r_u->user_name));
 	prs_align(ps);
-
+	prs_string("requested_name", ps, depth,   r_u->requested_name, strlen(r_u->requested_name), sizeof(r_u->requested_name));
+	prs_align(ps);
+	prs_string("real_name", ps, depth,   r_u->real_name, strlen(r_u->real_name), sizeof(r_u->real_name));
+	prs_align(ps);
+	prs_uint32("guest", ps, depth, &(r_u->guest));
 	return True;
 }
 
@@ -70,8 +80,9 @@ void creds_free_unix(CREDS_UNIX *r_u)
 makes a CREDS_UNIX_SEC structure.
 ********************************************************************/
 BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
-		uint32 uid, uint32 gid, uint32 num_grps, uint32 *grps)
+		uint32 uid, uint32 gid, uint32 num_grps, gid_t *grps)
 {
+	int i;
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_creds_unix_sec\n"));
@@ -79,7 +90,16 @@ BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
 	r_u->uid      = uid;
 	r_u->gid      = gid;
 	r_u->num_grps = num_grps;
-	r_u->grps     = grps;
+	r_u->grps = (uint32*)Realloc(NULL, sizeof(r_u->grps[0]) *
+				       r_u->num_grps);
+	if (r_u->grps == NULL && num_grps != 0)
+	{
+		return False;
+	}
+	for (i = 0; i < num_grps; i++)
+	{
+		r_u->grps[i] = (gid_t)grps[i];
+	}
 
 	return True;
 }
@@ -114,7 +134,6 @@ BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int dept
 	}
 	for (i = 0; i < r_u->num_grps; i++)
 	{
-		prs_grow(ps);
 		prs_uint32("", ps, depth, &(r_u->grps[i]));
 	}
 	return True;
@@ -134,10 +153,39 @@ void creds_free_unix_sec(CREDS_UNIX_SEC *r_u)
 }
 
 /*******************************************************************
+makes a CREDS_NT_SEC structure.
+********************************************************************/
+BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
+		DOM_SID *sid, uint32 num_grps, uint32 *grps)
+{
+	int i;
+	if (r_u == NULL) return False;
+
+	DEBUG(5,("make_creds_unix_sec\n"));
+
+	sid_copy(&r_u->sid, sid);
+	r_u->num_grps = num_grps;
+	r_u->grp_rids = (uint32*)Realloc(NULL, sizeof(r_u->grp_rids[0]) *
+				       r_u->num_grps);
+
+	if (r_u->grp_rids == NULL && num_grps != 0)
+	{
+		return False;
+	}
+	for (i = 0; i < num_grps; i++)
+	{
+		r_u->grp_rids[i] = grps[i];
+	}
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes a structure.
 ********************************************************************/
 BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth)
 {
+	int i;
 	if (r_u == NULL) return False;
 
 	prs_debug(ps, depth, desc, "creds_io_nt");
@@ -148,8 +196,22 @@ BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth)
 	smb_io_dom_sid ("sid", &r_u->sid, ps, depth);
 	prs_align(ps);
 
-	sec_io_desc_buf("sd ", &r_u->sd , ps, depth);
-	prs_align(ps);
+	prs_uint32("num_grps", ps, depth, &(r_u->num_grps));
+	if (r_u->num_grps != 0)
+	{
+		r_u->grp_rids = (uint32*)Realloc(r_u->grp_rids,
+				       sizeof(r_u->grp_rids[0]) *
+				       r_u->num_grps);
+		if (r_u->grp_rids == NULL)
+		{
+			creds_free_nt_sec(r_u);
+			return False;
+		}
+	}
+	for (i = 0; i < r_u->num_grps; i++)
+	{
+		prs_uint32("", ps, depth, &(r_u->grp_rids[i]));
+	}
 
 	return True;
 }
@@ -159,6 +221,11 @@ frees a structure.
 ********************************************************************/
 void creds_free_nt_sec(CREDS_NT_SEC *r_u)
 {
+	if (r_u->grp_rids != NULL)
+	{
+		free(r_u->grp_rids);
+		r_u->grp_rids = NULL;
+	}
 }
 
 /*******************************************************************
@@ -265,6 +332,8 @@ BOOL creds_io_hybrid(char *desc, CREDS_HYBRID *r_u, prs_struct *ps, int depth)
 	prs_uint32("reuse", ps, depth, &(r_u->reuse));
 	prs_uint32("ptr_ntc", ps, depth, &(r_u->ptr_ntc));
 	prs_uint32("ptr_uxc", ps, depth, &(r_u->ptr_uxc));
+	prs_uint32("ptr_nts", ps, depth, &(r_u->ptr_nts));
+	prs_uint32("ptr_uxs", ps, depth, &(r_u->ptr_uxs));
 	if (r_u->ptr_ntc != 0)
 	{
 		if (!creds_io_nt  ("ntc", &r_u->ntc, ps, depth)) return False;
@@ -321,7 +390,7 @@ void copy_unix_sec_creds(CREDS_UNIX_SEC *to, const CREDS_UNIX_SEC *from)
 
 	if (from->num_grps != 0)
 	{
-		size_t size = to->num_grps * sizeof(to->grps[0]);
+		size_t size = from->num_grps * sizeof(from->grps[0]);
 		to->grps = (uint32*)malloc(size);
 		if (to->grps == NULL)
 		{

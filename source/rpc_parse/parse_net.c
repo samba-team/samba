@@ -1669,7 +1669,6 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO *info, prs_
 
 		for (i = 0; i < info->num_members2; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "rids[%02d]", i);
 			prs_uint32(tmp, ps, depth, &(info->rids[i]));
 		}
@@ -1688,7 +1687,6 @@ static BOOL net_io_sam_group_mem_info(char *desc, SAM_GROUP_MEM_INFO *info, prs_
 
 		for (i = 0; i < info->num_members3; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "attribs[%02d]", i);
 			prs_uint32(tmp, ps, depth, &(info->attribs[i]));
 		}
@@ -1754,7 +1752,6 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_
 
 		for (i = 0; i < info->num_sids; i++)
 		{
-			prs_grow(ps);
 			slprintf(tmp, sizeof(tmp) - 1, "ptr_sids[%02d]", i);
 			prs_uint32(tmp, ps, depth, &(info->ptr_sids[i]));
 		}
@@ -1765,7 +1762,6 @@ static BOOL net_io_sam_alias_mem_info(char *desc, SAM_ALIAS_MEM_INFO *info, prs_
 		{
 			if (info->ptr_sids[i] != 0)
 			{
-				prs_grow(ps);
 				slprintf(tmp, sizeof(tmp) - 1, "sids[%02d]", i);
 				smb_io_dom_sid2(tmp, &(info->sids[i]), ps, depth);
 			}

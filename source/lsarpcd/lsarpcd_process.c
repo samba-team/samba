@@ -181,7 +181,7 @@ do a switch on the message type, and return the response size
 ****************************************************************************/
 static int do_message(char *inbuf,char *outbuf,int size,int bufsize)
 {
-  static int pid= -1;
+	static int pid= -1;
 
 	pipes_struct *p = &static_pipe;
 	prs_struct pd;
@@ -195,24 +195,16 @@ static int do_message(char *inbuf,char *outbuf,int size,int bufsize)
     pid = getpid();
 
 	/* dce/rpc command */
-	if (rpc_command(p, &pd))
+	if (rpc_to_smb(p, smb_base(inbuf), smb_len(inbuf)))
 	{
 		char *copy_into = smb_base(outbuf);
-		outsize = mem_buf_len(p->rhdr.data);
-		if (!mem_buf_copy(copy_into, p->rhdr.data, 0, outsize))
+		outsize = mem_buf_len(p->rsmb_pdu.data);
+		if (!mem_buf_copy(copy_into, p->rsmb_pdu.data, 0, outsize))
 		{
 			return -1;
 		}
+		mem_free_data(p->rsmb_pdu.data);
 	}
- 	mem_free_data(pd.data);
-
-	mem_free_data(p->rhdr .data);
-	mem_free_data(p->rfault .data);
-	mem_free_data(p->rdata  .data);
-	mem_free_data(p->rdata_i.data);		
-	mem_free_data(p->rauth  .data);
-	mem_free_data(p->rverf  .data);
-	mem_free_data(p->rntlm  .data);		
 
 	return outsize;
 }
@@ -393,6 +385,7 @@ BOOL get_user_creds(struct user_creds *usr)
 void lsarpcd_process(void)
 {
 	struct user_creds usr;
+	gid_t *groups = NULL;
 
 	ZERO_STRUCT(static_pipe);
 
@@ -405,7 +398,44 @@ void lsarpcd_process(void)
 		return;
 	}
 
+	if (usr.uxs.num_grps != 0)
+	{
+		int i;
+		groups = malloc(usr.uxs.num_grps * sizeof(groups[0]));
+		if (groups == NULL)
+		{
+			return;
+		}
+		for (i = 0; i < usr.uxs.num_grps; i++)
+		{
+			groups[i] = (gid_t)usr.uxs.grps[i];
+		}
+	}
+		
+	static_pipe.vuid = create_vuid(usr.uxs.uid, usr.uxs.gid,
+	                               usr.uxs.num_grps, groups,
+	                               usr.uxc.user_name,
+	                               usr.uxc.requested_name,
+	                               usr.uxc.real_name,
+	                               usr.uxc.guest,
+	                               usr.ntc.pwd.sess_key);
+
+	if (static_pipe.vuid == UID_FIELD_INVALID)
+	{
+		return;
+	}
+
 	free_user_creds(&usr);
+
+	become_vuser(static_pipe.vuid);
+
+	static_pipe.l = malloc(sizeof(*static_pipe.l));
+	if (static_pipe.l == NULL)
+	{
+		return;
+	}
+
+	ZERO_STRUCTP(static_pipe.l);
 
   InBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
   OutBuffer = (char *)malloc(BUFFER_SIZE + SAFETY_MARGIN);
@@ -457,7 +487,7 @@ void lsarpcd_process(void)
       t = time(NULL);
 
       /* become root again if waiting */
-      unbecome_user();
+      unbecome_vuser();
 
       /* check for smb.conf reload */
       if (counter >= service_load_counter + SMBD_RELOAD_CHECK)

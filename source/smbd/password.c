@@ -221,14 +221,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL, vuser->dc.user_sess_key);
+	ok = password_ok(user,password, pwlen, NULL, vuser->user_sess_key);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuser != 0) && vuser->guest) {	  
 	if (user_ok(vuser->name,snum) &&
-	    password_ok(vuser->name, password, pwlen, NULL, vuser->dc.user_sess_key)) {
+	    password_ok(vuser->name, password, pwlen, NULL, vuser->user_sess_key)) {
 	  fstrcpy(user, vuser->name);
 	  vuser->guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -252,7 +252,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
         fstrcpy(user2,auser);
         if (!user_ok(user2,snum)) continue;
 		  
-        if (password_ok(user2,password, pwlen, NULL, vuser->dc.user_sess_key)) {
+        if (password_ok(user2,password, pwlen, NULL, vuser->user_sess_key)) {
           ok = True;
           fstrcpy(user,user2);
           DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -291,7 +291,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	  {
 	    if (*auser == '@')
 	      {
-		auser = validate_group(auser+1,password,pwlen,snum, vuser->dc.user_sess_key);
+		auser = validate_group(auser+1,password,pwlen,snum, vuser->user_sess_key);
 		if (auser)
 		  {
 		    ok = True;
@@ -304,7 +304,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		fstrcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL, vuser->dc.user_sess_key))
+		    password_ok(user2,password,pwlen,NULL, vuser->user_sess_key))
 		  {
 		    ok = True;
 		    fstrcpy(user,user2);

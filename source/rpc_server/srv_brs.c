@@ -66,7 +66,7 @@ static void brs_reply_query_info(BRS_Q_QUERY_INFO *q_u,
 /*******************************************************************
  api_brs_query_info
  ********************************************************************/
-static void api_brs_query_info( pipes_struct *p, prs_struct *data,
+static void api_brs_query_info( rpcsrv_struct *p, prs_struct *data,
                                     prs_struct *rdata )
 {
 	BRS_Q_QUERY_INFO q_u;
@@ -91,7 +91,7 @@ struct api_struct api_brs_cmds[] =
 /*******************************************************************
  receives a browser pipe and responds.
  ********************************************************************/
-BOOL api_brs_rpc(pipes_struct *p, prs_struct *data)
+BOOL api_brs_rpc(rpcsrv_struct *p, prs_struct *data)
 {
 	return api_rpcTNP(p, "api_brssvc_rpc", api_brs_cmds, data);
 }

@@ -129,13 +129,11 @@ static BOOL srv_io_srv_share_info_1(char *desc,  SRV_SHARE_INFO_1 *ctr, prs_stru
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_share_info1("", &(ctr->info_1[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_share_info1_str("", &(ctr->info_1_str[i]), ps, depth); 
 		}
 
@@ -267,13 +265,11 @@ static BOOL srv_io_srv_share_info_2(char *desc,  SRV_SHARE_INFO_2 *ctr, prs_stru
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			if (!srv_io_share_info2("", &(ctr->info_2[i]), ps, depth)) return False;
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			if (!srv_io_share_info2_str("", &(ctr->info_2_str[i]), &(ctr->info_2[i]), ps, depth)) return False;
 		}
 
@@ -499,13 +495,11 @@ static BOOL srv_io_srv_sess_info_0(char *desc,  SRV_SESS_INFO_0 *ss0, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_sess_info0("", &(ss0->info_0[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_sess_info0_str("", &(ss0->info_0_str[i]),
 			                          &(ss0->info_0[i]),
 			                          ps, depth); 
@@ -628,13 +622,11 @@ static BOOL srv_io_srv_sess_info_1(char *desc,  SRV_SESS_INFO_1 *ss1, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_sess_info1("", &(ss1->info_1[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_sess_info1_str("", &(ss1->info_1_str[i]),
 			                      &(ss1->info_1[i]),
 			                      ps, depth); 
@@ -839,7 +831,6 @@ static BOOL srv_io_srv_conn_info_0(char *desc,  SRV_CONN_INFO_0 *ss0, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_conn_info0("", &(ss0->info_0[i]), ps, depth); 
 		}
 
@@ -959,13 +950,11 @@ static BOOL srv_io_srv_conn_info_1(char *desc,  SRV_CONN_INFO_1 *ss1, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_conn_info1("", &(ss1->info_1[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_conn_info1_str("", &(ss1->info_1_str[i]),
 			                          &(ss1->info_1[i]),
 			                          ps, depth); 
@@ -1228,13 +1217,11 @@ static BOOL srv_io_srv_tprt_info_0(char *desc,  SRV_TPRT_INFO_0 *tp0, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_tprt_info0("", &(tp0->info_0[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_tprt_info0_str("", &(tp0->info_0_str[i]),
 			                          &(tp0->info_0[i]),
 			                          ps, depth); 
@@ -1511,13 +1498,11 @@ static BOOL srv_io_srv_file_info_3(char *desc,  SRV_FILE_INFO_3 *fl3, prs_struct
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_file_info3("", &(fl3->info_3[i]), ps, depth); 
 		}
 
 		for (i = 0; i < num_entries; i++)
 		{
-			prs_grow(ps);
 			srv_io_file_info3_str("", &(fl3->info_3_str[i]), ps, depth); 
 		}
 

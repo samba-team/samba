@@ -325,7 +325,7 @@ BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar challenge[8],
 				const char *user, const char *domain,
 				uchar *lm_pass, size_t lm_pwd_len,
 				uchar *nt_pass, size_t nt_pwd_len,
-				uchar sess_key[16]);
+				uchar user_sess_key[16]);
 BOOL pass_check_smb(struct smb_passwd *smb_pass, char *domain, uchar *chal,
 		uchar *lm_pwd, size_t lm_pwd_len,
 		uchar *nt_pwd, size_t nt_pwd_len,
@@ -728,6 +728,10 @@ void start_agent(struct vagent_ops *va);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
+uint16 create_vuid(uid_t uid, gid_t gid, int n_groups, gid_t *groups,
+				char *unix_name, char *requested_name,
+				char *real_name,
+				BOOL guest, uchar user_sess_key[16]);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest, uchar user_sess_key[16]);
 
 /*The following definitions come from  libsmb/clientgen.c  */
@@ -1810,7 +1814,7 @@ int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
 void add_a_form(nt_forms_struct **list, FORM form, int *count);
 void update_a_form(nt_forms_struct **list, FORM form, int count);
-int get_ntdrivers(connection_struct *conn, fstring **list, char *architecture);
+int get_ntdrivers(fstring **list, char *architecture);
 void get_short_archi(char *short_archi, char *long_archi);
 void dump_a_param(NT_PRINTER_PARAM *param);
 BOOL add_a_specific_param(NT_PRINTER_INFO_LEVEL_2 *info_2, NT_PRINTER_PARAM *param);
@@ -1841,9 +1845,8 @@ int sysv_printername_ok(char *name);
 /*The following definitions come from  printing/printing.c  */
 
 void lpq_reset(int snum);
-void print_file(connection_struct *conn, files_struct *file);
-int get_printqueue(int snum, 
-		   connection_struct *conn,print_queue_struct **queue,
+void print_file(connection_struct *conn, int snum, files_struct *file);
+int get_printqueue(int snum, connection_struct *conn, print_queue_struct **queue,
 		   print_status_struct *status);
 void del_printqueue(connection_struct *conn,int snum,int jobid);
 void status_printjob(connection_struct *conn,int snum,int jobid,int status);
@@ -2470,13 +2473,18 @@ BOOL brs_io_r_query_info(char *desc,  BRS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_parse/parse_creds.c  */
 
-BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name);
+BOOL make_creds_unix(CREDS_UNIX *r_u, const char* user_name,
+				const char* requested_name,
+				const char* real_name,
+				BOOL guest);
 BOOL creds_io_unix(char *desc, CREDS_UNIX *r_u, prs_struct *ps, int depth);
 void creds_free_unix(CREDS_UNIX *r_u);
 BOOL make_creds_unix_sec(CREDS_UNIX_SEC *r_u,
-		uint32 uid, uint32 gid, uint32 num_grps, uint32 *grps);
+		uint32 uid, uint32 gid, uint32 num_grps, gid_t *grps);
 BOOL creds_io_unix_sec(char *desc, CREDS_UNIX_SEC *r_u, prs_struct *ps, int depth);
 void creds_free_unix_sec(CREDS_UNIX_SEC *r_u);
+BOOL make_creds_nt_sec(CREDS_NT_SEC *r_u,
+		DOM_SID *sid, uint32 num_grps, uint32 *grps);
 BOOL creds_io_nt_sec(char *desc, CREDS_NT_SEC *r_u, prs_struct *ps, int depth);
 void creds_free_nt_sec(CREDS_NT_SEC *r_u);
 BOOL creds_io_pwd_info(char *desc, struct pwd_info *pwd, prs_struct *ps, int depth);
@@ -2755,14 +2763,16 @@ BOOL net_io_r_sam_sync(char *desc, uint8 sess_key[16],
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
 void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
-void prs_debug_out(prs_struct *ps, int level);
+void prs_debug_out(prs_struct *ps, char *msg, int level);
 void prs_init(prs_struct *ps, uint32 size,
 				uint8 align, uint32 margin,
 				BOOL io);
+BOOL prs_copy(prs_struct *ps, const prs_struct *from);
 void prs_mem_free(prs_struct *ps);
 void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next);
 void prs_align(prs_struct *ps);
-BOOL prs_grow(prs_struct *ps);
+BOOL prs_grow(prs_struct *ps, uint32 new_size);
+BOOL prs_append_data(prs_struct *ps, const char *data, int len);
 BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8);
 BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16);
 BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16]);
@@ -2879,7 +2889,7 @@ BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc,
 BOOL smb_io_rpc_hdr_rb(char *desc,  RPC_HDR_RB *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_ba(RPC_HDR_BA *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
-				char *pipe_addr,
+				const char *pipe_addr,
 				uint8 num_results, uint16 result, uint16 reason,
 				RPC_IFACE *transfer);
 BOOL smb_io_rpc_hdr_ba(char *desc,  RPC_HDR_BA *rpc, prs_struct *ps, int depth);
@@ -3646,7 +3656,7 @@ BOOL wks_io_r_query_info(char *desc,  WKS_R_QUERY_INFO *r_u, prs_struct *ps, int
 
 /*The following definitions come from  rpc_server/srv_brs.c  */
 
-BOOL api_brs_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_brs_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_lookup.c  */
 
@@ -3671,23 +3681,26 @@ uint32 lookup_name(char *name, DOM_SID *sid, uint8 *type);
 
 /*The following definitions come from  rpc_server/srv_lsa.c  */
 
-BOOL api_ntlsa_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_ntlsa_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_netlog.c  */
 
-BOOL api_netlog_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_netlog_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_pipe.c  */
 
-BOOL create_rpc_reply(pipes_struct *p,
-				uint32 data_start, uint32 data_end);
+void rpcsrv_free_temp(rpcsrv_struct *l);
+BOOL create_rpc_reply(rpcsrv_struct *l, uint32 data_start);
 void close_msrpc_command_processor(void);
 void add_msrpc_command_processor(char* pipe_name,
 				char* process_name,
-				BOOL (*fn) (pipes_struct *, prs_struct *));
-BOOL rpc_command(pipes_struct *p, prs_struct *pd);
-BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds,
+				BOOL (*fn) (rpcsrv_struct *, prs_struct *));
+BOOL rpc_add_to_pdu(prs_struct *ps, const char *data, int len);
+BOOL rpc_send_and_rcv_pdu(pipes_struct *p);
+BOOL rpc_to_smb(pipes_struct *p, char *data, int len);
+BOOL api_rpcTNP(rpcsrv_struct *l, char *rpc_name, struct api_struct *api_rpc_cmds,
 				prs_struct *data);
+BOOL is_complete_pdu(prs_struct *ps);
 
 /*The following definitions come from  rpc_server/srv_pipe_hnd.c  */
 
@@ -3706,30 +3719,30 @@ pipes_struct *get_rpc_pipe(int pnum);
 
 /*The following definitions come from  rpc_server/srv_reg.c  */
 
-BOOL api_reg_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_reg_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_samr.c  */
 
-BOOL api_samr_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_samr_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_spoolss.c  */
 
 void init_printer_hnd(void);
 uint32 size_of_notify_info_data(uint16 type, uint16 field);
 BOOL type_of_notify_info_data(uint16 type, uint16 field);
-BOOL api_spoolss_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_spoolss_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_srvsvc.c  */
 
-BOOL api_srvsvc_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_srvsvc_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_svcctl.c  */
 
-BOOL api_svcctl_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_svcctl_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpc_server/srv_wkssvc.c  */
 
-BOOL api_wkssvc_rpc(pipes_struct *p, prs_struct *data);
+BOOL api_wkssvc_rpc(rpcsrv_struct *p, prs_struct *data);
 
 /*The following definitions come from  rpcclient/cmd_atsvc.c  */
 
@@ -4396,6 +4409,8 @@ int reply_trans2(connection_struct *conn,
 
 void init_uid(void);
 BOOL become_guest(void);
+BOOL become_vuser(uint16 vuid);
+BOOL unbecome_vuser(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void );
 void become_root(BOOL save_dir) ;

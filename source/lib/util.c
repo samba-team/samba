@@ -3012,7 +3012,12 @@ void dump_data(int level, const char *buf1, int len)
 {
 	unsigned char const *buf = (unsigned char const *)buf1;
 	int i=0;
-	if (len<=0) return;
+	if (len<0) return;
+	if (len == 0)
+	{
+		DEBUG(level,("\n"));
+		return;
+	}
 
 	DEBUG(level,("[%03X] ",i));
 	for (i=0;i<len;)

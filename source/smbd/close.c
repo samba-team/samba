@@ -129,7 +129,7 @@ void close_file(files_struct *fsp, BOOL normal_close)
 
 	/* NT uses smbclose to start a print - weird */
 	if (normal_close && fsp->print_file)
-		print_file(conn, fsp);
+		print_file(conn, SNUM(conn), fsp);
 
 	/* check for magic scripts */
 	if (normal_close) {

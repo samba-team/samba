@@ -40,6 +40,7 @@ extern int DEBUGLEVEL;
 extern fstring remote_machine;
 extern pstring myhostname;
 
+extern pstring OriginalDir;
 
 /****************************************************************************
   when exiting, take the whole family
@@ -455,6 +456,8 @@ static void usage(char *pname)
 	/* we want total control over the permissions on created files,
 	   so set our umask to 0 */
 	umask(0);
+
+	dos_GetWd(OriginalDir);
 
 	init_uid();
 

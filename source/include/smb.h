@@ -613,7 +613,6 @@ struct dcinfo
 
   uchar  sess_key[8]; /* Session key */
   uchar  md4pw[16];   /* md4(machine password) */
-  uchar  user_sess_key[16]; /* user session key (md4 nt#) */
 };
 
 typedef struct
@@ -631,11 +630,7 @@ typedef struct
   int n_groups;
   gid_t *groups;
 
-  int n_sids;
-  int *sids;
-
-  /* per-user authentication information on NT RPCs */
-  struct dcinfo dc;
+	uchar user_sess_key[16];
 
 } user_struct;
 

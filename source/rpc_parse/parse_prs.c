@@ -39,10 +39,11 @@ void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
 /*******************************************************************
  debug a parse structure
  ********************************************************************/
-void prs_debug_out(prs_struct *ps, int level)
+void prs_debug_out(prs_struct *ps, char *msg, int level)
 {
-	DEBUG(level,("ps: io %s align %d offset %d err %d data %p len %d\n",
-		BOOLSTR(ps->io), ps->align, ps->offset, ps->error, ps->data,
+	DEBUG(level,("%s ps: io %s align %d offset %d err %d data %p len %d\n",
+		msg, BOOLSTR(ps->io), ps->align, ps->offset, ps->error,
+		ps->data,
 		ps->data != NULL ? mem_buf_len(ps->data) : 0));
 }
 
@@ -70,6 +71,22 @@ void prs_init(prs_struct *ps, uint32 size,
 }
 
 /*******************************************************************
+ copy a parse structure
+ ********************************************************************/
+BOOL prs_copy(prs_struct *ps, const prs_struct *from)
+{
+	int len = mem_buf_len(from->data);
+	prs_init(ps, len, from->align, from->data->margin, from->io);
+	if (!mem_buf_copy(mem_data(&ps->data, 0), from->data, 0, len))
+	{
+		return False;
+	}
+	ps->offset = len;
+	prs_link(NULL, ps, NULL);
+	return True;
+}
+
+/*******************************************************************
  initialise a parse structure
  ********************************************************************/
 void prs_mem_free(prs_struct *ps)
@@ -85,6 +102,10 @@ void prs_link(prs_struct *prev, prs_struct *ps, prs_struct *next)
 	ps->data->offset.start = prev != NULL ? prev->data->offset.end : 0;
 	ps->data->offset.end   = ps->data->offset.start + ps->offset;
 	ps->data->next         = next != NULL ? next->data : NULL;
+
+	DEBUG(150,("prs_link: start %d end %d\n",
+		ps->data->offset.start,
+		ps->data->offset.end));
 }
 
 /*******************************************************************
@@ -107,12 +128,31 @@ void prs_align(prs_struct *ps)
 
  depends on the data stream mode (io)
  ********************************************************************/
-BOOL prs_grow(prs_struct *ps)
+BOOL prs_grow(prs_struct *ps, uint32 new_size)
 {
 	if (ps->error) return False;
-	return mem_grow_data(&(ps->data), ps->io, ps->offset, False);
+	return mem_grow_data(&(ps->data), ps->io, new_size, False);
 }
 
+/*******************************************************************
+ lengthens a buffer by len bytes and copies data into it.
+ ********************************************************************/
+BOOL prs_append_data(prs_struct *ps, const char *data, int len)
+{
+	int prev_size = ps->data->data_used;
+	int new_size  = prev_size + len;
+	char *to;
+
+	mem_realloc_data(ps->data, new_size);
+	to = mem_data(&ps->data, prev_size);
+	if (to == NULL || ps->data->data_used != new_size)
+	{
+		return False;
+	}
+	memcpy(to, data, len);
+
+	return True;
+}
 
 /*******************************************************************
  stream a uint8
@@ -121,15 +161,18 @@ BOOL _prs_uint8(char *name, prs_struct *ps, int depth, uint8 *data8)
 {
 	char *q;
 	if (ps->error) return False;
+	prs_grow(ps, ps->offset + 1);
 	q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint8 error", 5);
 		return False;
 	}
 
 	DBG_RW_CVAL(name, depth, ps->offset, ps->io, q, *data8)
 	ps->offset += 1;
+
 
 	return True;
 }
@@ -141,10 +184,12 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 {
 	char *q;
 	if (ps->error) return False;
+	prs_grow(ps, ps->offset + 2);
 	q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint16 error", 5);
 		return False;
 	}
 
@@ -165,6 +210,7 @@ BOOL _prs_hash1(prs_struct *ps, uint32 offset, uint8 sess_key[16])
 	if (q == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_hash1 error", 5);
 		return False;
 	}
 
@@ -188,10 +234,12 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 {
 	char *q;
 	if (ps->error) return False;
+	prs_grow(ps, ps->offset + 4);
 	q = mem_data(&(ps->data), ps->offset);
 	if (q == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint32 error", 5);
 		return False;
 	}
 
@@ -211,13 +259,15 @@ BOOL _prs_uint8s(BOOL charmode, char *name, prs_struct *ps, int depth, uint8 *da
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + len * sizeof(uint8);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL) 
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint8s error", 5);
 		return False;
 	}
 
@@ -236,13 +286,15 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + len * sizeof(uint16);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint16s error", 5);
 		return False;
 	}
 
@@ -261,13 +313,15 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + len * sizeof(uint32);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_uint32s error", 5);
 		return False;
 	}
 
@@ -287,13 +341,15 @@ BOOL _prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
+	end_offset = ps->offset + str->buf_len * sizeof(uint8);
+	prs_grow(ps, end_offset);
 	q = mem_data(&(ps->data), ps->offset);
-	end_offset = ps->offset + str->buf_len;
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_buffer2 error", 5);
 		return False;
 	}
 
@@ -313,13 +369,15 @@ BOOL _prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + str->str_str_len * sizeof(uint8);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_string2 error", 5);
 		return False;
 	}
 
@@ -339,13 +397,15 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_unistr2 error", 5);
 		return False;
 	}
 
@@ -365,13 +425,15 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 	int end_offset;
 	char *e;
 	if (ps->error) return False;
-	q = mem_data(&(ps->data), ps->offset);
 	end_offset = ps->offset + str->uni_str_len * sizeof(uint16);
+	prs_grow(ps, end_offset);
+	q = mem_data(&(ps->data), ps->offset);
 	e = mem_data(&(ps->data), end_offset-1);
 
 	if (q == NULL || e == NULL)
 	{
 		ps->error = True;
+		prs_debug_out(ps, "_prs_unistr3 error", 5);
 		return False;
 	}
 
@@ -395,10 +457,12 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 	{
 		char *q;
 		i++;
+		prs_grow(ps, ps->offset + i*2);
 		q = mem_data(&(ps->data), ps->offset + i*2);
 		if (q == NULL) 
 		{
 			ps->error = True;
+			prs_debug_out(ps, "_prs_unistr error", 5);
 			return False;
 		}
 		RW_SVAL(ps->io, q, str->buffer[i],0);
@@ -432,15 +496,19 @@ BOOL _prs_string(char *name, prs_struct *ps, int depth, char *str, uint16 len, u
 	DEBUG(120,("_prs_string: string %s len %d max %d\n",
 			str, len, max_buf_size));
 
+	DEBUG(10,("%s%04x %s: ", tab_depth(depth), ps->offset, name != NULL ? name : ""));
+
 	do
 	{
 		char *q;
 		i++;
 
+		prs_grow(ps, ps->offset + i);
 		q = mem_data(&(ps->data), ps->offset + i);
 		if (q == NULL)
 		{
 			ps->error = True;
+			prs_debug_out(ps, "_prs_string error", 5);
 			return False;
 		}
 

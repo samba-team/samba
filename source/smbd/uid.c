@@ -25,6 +25,7 @@ extern int DEBUGLEVEL;
 
 static uid_t initial_uid;
 static gid_t initial_gid;
+static struct uid_cache vcache;
 
 /* what user is current? */
 extern struct current_user current_user;
@@ -54,6 +55,8 @@ void init_uid(void)
 	current_user.conn = NULL;
 	current_user.vuid = UID_FIELD_INVALID;
 	
+	vcache.entries = 0;
+
 	dos_ChDir(OriginalDir);
 }
 
@@ -192,19 +195,19 @@ BOOL become_guest(void)
 /*******************************************************************
 check if a username is OK
 ********************************************************************/
-static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
+static BOOL check_vuser_ok(struct uid_cache *cache, user_struct *vuser,int snum)
 {
   int i;
-  for (i=0;i<conn->uid_cache.entries;i++)
-    if (conn->uid_cache.list[i] == vuser->uid) return(True);
+  for (i=0;i<cache->entries;i++)
+    if (cache->list[i] == vuser->uid) return(True);
 
   if (!user_ok(vuser->name,snum)) return(False);
 
-  i = conn->uid_cache.entries % UID_CACHE_SIZE;
-  conn->uid_cache.list[i] = vuser->uid;
+  i = cache->entries % UID_CACHE_SIZE;
+  cache->list[i] = vuser->uid;
 
-  if (conn->uid_cache.entries < UID_CACHE_SIZE)
-    conn->uid_cache.entries++;
+  if (cache->entries < UID_CACHE_SIZE)
+    cache->entries++;
 
   return(True);
 }
@@ -213,11 +216,114 @@ static BOOL check_user_ok(connection_struct *conn, user_struct *vuser,int snum)
 /****************************************************************************
   become the user of a connection number
 ****************************************************************************/
+BOOL become_vuser(uint16 vuid)
+{
+	user_struct *vuser = get_valid_user_struct(vuid);
+	gid_t gid;
+	uid_t uid;
+
+	unbecome_vuser();
+
+	if((vuser != NULL) && !check_vuser_ok(&vcache, vuser, -1))
+		return False;
+
+	if ( vuser != 0 &&
+	     current_user.vuid == vuid && 
+	     current_user.uid  == vuser->uid)
+	{
+		DEBUG(4,("Skipping become_vuser - already user\n"));
+		return(True);
+	}
+	uid = vuser->uid;
+	gid = vuser->gid;
+	current_user.ngroups = vuser->n_groups;
+	current_user.groups  = vuser->groups;
+	
+	if (initial_uid == 0)
+	{
+		if (!become_gid(gid)) return(False);
+
+#ifdef HAVE_SETGROUPS      
+		/* groups stuff added by ih/wreu */
+		if (current_user.ngroups > 0)
+		{
+			if (setgroups(current_user.ngroups,
+				      current_user.groups)<0) {
+				DEBUG(0,("setgroups call failed!\n"));
+			}
+		}
+#endif
+
+		if (!become_uid(uid)) return(False);
+	}
+	
+	current_user.conn = NULL;
+	current_user.vuid = vuid;
+
+	DEBUG(5,("become_vuser uid=(%d,%d) gid=(%d,%d)\n",
+		 (int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+  
+	return(True);
+}
+
+/****************************************************************************
+  unbecome a user 
+****************************************************************************/
+BOOL unbecome_vuser(void)
+{
+  dos_ChDir(OriginalDir);
+
+  if (initial_uid == 0)
+    {
+#ifdef HAVE_SETRESUID
+      setresuid(-1,getuid(),-1);
+      setresgid(-1,getgid(),-1);
+#else
+      if (seteuid(initial_uid) != 0) 
+	setuid(initial_uid);
+      setgid(initial_gid);
+#endif
+    }
+
+#ifdef NO_EID
+  if (initial_uid == 0)
+    DEBUG(2,("Running with no EID\n"));
+  initial_uid = getuid();
+  initial_gid = getgid();
+#else
+  if (geteuid() != initial_uid) {
+	  DEBUG(0,("Warning: You appear to have a trapdoor uid system\n"));
+	  initial_uid = geteuid();
+  }
+  if (getegid() != initial_gid) {
+	  DEBUG(0,("Warning: You appear to have a trapdoor gid system\n"));
+	  initial_gid = getegid();
+  }
+#endif
+
+  current_user.uid = initial_uid;
+  current_user.gid = initial_gid;
+  
+  if (dos_ChDir(OriginalDir) != 0)
+    DEBUG( 0, ( "chdir(%s) failed in unbecome_vuser\n", OriginalDir ) );
+
+  DEBUG(5,("unbecome_vuser now uid=(%d,%d) gid=(%d,%d)\n",
+	(int)getuid(),(int)geteuid(),(int)getgid(),(int)getegid()));
+
+  current_user.conn = NULL;
+  current_user.vuid = UID_FIELD_INVALID;
+
+  return(True);
+}
+
+/****************************************************************************
+  become the user of a connection number
+****************************************************************************/
 BOOL become_user(connection_struct *conn, uint16 vuid)
 {
 	user_struct *vuser = get_valid_user_struct(vuid);
 	int snum;
-    gid_t gid;
+	gid_t gid;
 	uid_t uid;
 
 	/*
@@ -247,7 +353,7 @@ BOOL become_user(connection_struct *conn, uint16 vuid)
 
 	snum = SNUM(conn);
 
-	if((vuser != NULL) && !check_user_ok(conn, vuser, snum))
+	if((vuser != NULL) && !check_vuser_ok(&conn->uid_cache, vuser, snum))
 		return False;
 
 	if (conn->force_user || 

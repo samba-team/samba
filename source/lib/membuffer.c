@@ -70,7 +70,7 @@ void mem_init(struct mem_buf *buf, int margin)
 	buf->next      = NULL;
 
 	buf->offset.start = 0;
-	buf->offset.end   = 0;
+	buf->offset.end   = 0x0;
 }
 
 /*******************************************************************
@@ -119,6 +119,7 @@ BOOL mem_alloc_data(struct mem_buf *buf, int size)
 	}
 
 	bzero(buf->data, buf->data_size);
+	buf->offset.end   = buf->offset.start + size;
 
 	return True;
 }
@@ -229,6 +230,7 @@ void mem_free_data(struct mem_buf *buf)
 	if (buf->data != NULL && buf->dynamic)
 	{
 		free(buf->data);     /* delete data in this structure */
+		buf->data = NULL;
 	}
 	mem_init(buf, buf->margin);
 }
@@ -276,6 +278,10 @@ BOOL mem_realloc_data(struct mem_buf *buf, size_t new_size)
 		return False;
 	}
 
+	buf->offset.end   = buf->offset.start + new_size;
+
+	DEBUG(150,("mem_realloc_data: size: %d start: %d end: %d\n",
+				new_size, buf->offset.start, buf->offset.end));
 	return True;
 }
 
@@ -286,13 +292,13 @@ BOOL mem_grow_data(struct mem_buf **buf, BOOL io, int new_size, BOOL force_grow)
 {
 	if (new_size + (*buf)->margin >= (*buf)->data_size)
 	{
-		if (io && !force_grow)
+		if (!io || force_grow)
 		{
-			DEBUG(3,("mem_grow_data: cannot resize when reading from a data stream\n"));
+			/* writing or forge realloc */
+			return mem_realloc_data((*buf), new_size);
 		}
 		else
 		{
-			return mem_realloc_data((*buf), new_size);
 		}
 	}
 	return True;
