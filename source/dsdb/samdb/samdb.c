@@ -890,6 +890,21 @@ int samdb_msg_add_value(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ld
 }
 
 /*
+  sets a general value element to a message
+*/
+int samdb_msg_set_value(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
+			const char *attr_name, const struct ldb_val *val)
+{
+	struct ldb_message_element *el;
+
+	el = ldb_msg_find_element(msg, attr_name);
+	if (el) {
+		el->num_values = 0;
+	}
+	return ldb_msg_add_value(sam_ctx->ldb, msg, attr_name, val);
+}
+
+/*
   set a string element in a message
 */
 int samdb_msg_set_string(struct ldb_wrap *sam_ctx, TALLOC_CTX *mem_ctx, struct ldb_message *msg,
