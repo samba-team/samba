@@ -1,3 +1,8 @@
+2003-10-21  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/kerberos5.c (fix_transited_encoding): always print
+	cross-realm information
+	
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kdc/kerberos5.c (fix_transited_encoding): set transited type
@@ -14,7 +19,7 @@
 	* lib/hdb/hdb.asn1: add flag to enforce transited policy
 
 2003-10-21  Love Hörnquist Åstrand  <lha@it.su.se>
-
+	
 	* lib/krb5/transited.c (krb5_domain_x500_decode): set *num_realms
 	to zero not num_realms
 
