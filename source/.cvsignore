@@ -1,4 +1,5 @@
 makefile
+makefile.sunos5
 nmbd
 nmblookup
 smbclient
