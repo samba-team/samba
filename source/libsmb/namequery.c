@@ -514,13 +514,15 @@ struct in_addr *name_query(int fd,const char *name,int name_type,
 }
 
 /********************************************************
-This routine parses /etc/resolv.conf and finds the
-first three nameservers specified in the file.
-This routine is used by the Admin Log
-messages when a DNS lookup fails.
+ This routine parses /etc/resolv.conf and finds the
+ first three nameservers specified in the file.
+ This routine is used by the Admin Log
+ messages when a DNS lookup fails.
+
+ Returns the number of nameservers found.
 *********************************************************/
 
-BOOL parse_resolvconf(char name_server_arr[][16])
+static int parse_resolvconf(char name_server_arr[][16])
 {
   char *fname = NAME_SERVER_FILE;
   FILE *fp = sys_fopen(fname,"r");
@@ -530,7 +532,7 @@ BOOL parse_resolvconf(char name_server_arr[][16])
   if (!fp) {
     DEBUG(4,("parse_resolvconf: Can't open resolv.conf file %s. Error was %s\n",
              fname, strerror(errno)));
-   return FALSE;
+    return 0;
   }
 
   while(!feof(fp) && !ferror(fp)) {
@@ -582,6 +584,8 @@ BOOL parse_resolvconf(char name_server_arr[][16])
         }
     }
   }
+
+  return i;
 }
 
 /********************************************************
@@ -866,8 +870,15 @@ static BOOL resolve_hosts(const char *name,
 		return True;
 	}
         /* BEGIN_ADMIN_LOG */
-        parse_resolvconf(name_server_arr);
-        sys_adminlog(LOG_CRIT,(char *)gettext("Failed DNS name resolution. Unresolved name: %s. DNS server address: %s."),name,name_server_arr[0]);
+	{
+		BOOL parse_ok;
+		
+		parse_ok = parse_resolvconf(name_server_arr);
+		sys_adminlog(LOG_CRIT,
+			     (char *)gettext("Failed DNS name resolution. Unresolved name: %s. DNS server address: %s."),
+			     name,
+			     parse_ok ? name_server_arr[0] : "UNKNOWN");
+	}
         /* END_ADMIN_LOG */
 	return False;
 }

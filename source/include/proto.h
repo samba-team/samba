@@ -911,7 +911,6 @@ BOOL name_status_find(const char *q_name, int q_type, int type,
 struct in_addr *name_query(int fd,const char *name,int name_type, 
 			   BOOL bcast,BOOL recurse,
 			   struct in_addr to_ip, int *count);
-BOOL parse_resolvconf(char name_server_arr[][16]);
 FILE *startlmhosts(char *fname);
 BOOL getlmhostsent( FILE *fp, pstring name, int *name_type, struct in_addr *ipaddr);
 void endlmhosts(FILE *fp);
