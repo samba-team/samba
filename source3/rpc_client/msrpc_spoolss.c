@@ -182,8 +182,11 @@ static void decode_printerdriverdir_info_1(NEW_BUFFER *buffer, DRIVER_DIRECTORY_
 }
 
 
-static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
-			       PORT_INFO_2 **info)
+/**********************************************************************
+ Decode a PORT_INFO_2 struct from a NEW_BUFFER 
+**********************************************************************/
+void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned, 
+			PORT_INFO_2 **info)
 {
         uint32 i;
         PORT_INFO_2 *inf;
@@ -194,6 +197,28 @@ static void decode_port_info_2(NEW_BUFFER *buffer, uint32 returned,
 
         for (i=0; i<returned; i++) {
                 new_smb_io_port_info_2("", buffer, &(inf[i]), 0);
+        }
+
+        *info=inf;
+}
+
+/**********************************************************************
+ Decode a PORT_INFO_1 struct from a NEW_BUFFER 
+**********************************************************************/
+void decode_port_info_1(NEW_BUFFER *buffer, uint32 returned, 
+			PORT_INFO_1 **info)
+{
+        uint32 i;
+        PORT_INFO_1 *inf;
+
+        inf=(PORT_INFO_1*)malloc(returned*sizeof(PORT_INFO_1));
+
+        prs_set_offset(&buffer->prs, 0);
+
+        for (i=0; i<returned; i++) {
+		/* WRITEME!!!! yet to be written --jerry */
+                /* new_smb_io_port_info_1("", buffer, &(inf[i]), 0); */
+		;;
         }
 
         *info=inf;
@@ -282,6 +307,9 @@ BOOL msrpc_spoolss_enum_ports(char* srv_name,
 	if (returned != 0)
 	{
 		switch (level) {
+		case 1:
+			decode_port_info_1(&buffer, returned, &ctr->port.info_1);
+			break;
 		case 2:
 			decode_port_info_2(&buffer, returned, &ctr->port.info_2);
 			break;
