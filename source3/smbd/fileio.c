@@ -130,7 +130,6 @@ tryagain:
 		if (readret == -1)
 			return -1;
 #endif
-
 		if (readret > 0)
 			ret += readret;
 	}
