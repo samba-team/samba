@@ -958,7 +958,7 @@ char *get_peer_addr(int fd)
 	return addr_buf;
 }
 
-char *get_socket_addr(int fd)
+static char *get_socket_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
