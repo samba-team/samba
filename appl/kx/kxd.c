@@ -226,7 +226,7 @@ recv_conn (int sock, kx_context *kc,
 	 fatal (kc, sock, "cannot set uid");
      }
 
-     ret = getnameinfo((struct sockaddr *)&kc->thataddr, kc->thataddr_len,
+     ret = getnameinfo(kc->thataddr, kc->thataddr_len,
 		       remoteaddr, sizeof(remoteaddr), 
 		       NULL, 0, NI_NUMERICHOST);
      if (ret != 0)
