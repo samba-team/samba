@@ -648,6 +648,7 @@ static BOOL api_lsa_lookup_names(pipes_struct *p)
 static BOOL api_lsa_close(pipes_struct *p)
 {
 	LSA_R_CLOSE r_c;
+	prs_struct *rdata = &p->out_data.rdata;
 
 	ZERO_STRUCT(r_c);
 
@@ -668,7 +669,6 @@ static BOOL api_lsa_open_secret(pipes_struct *p)
 	/* XXXX this is NOT good */
 	size_t i;
 	uint32 dummy = 0;
-	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
 
 	for(i =0; i < 4; i++) {
