@@ -2,7 +2,7 @@
 
 AUTOMAKE_OPTIONS = no-dependencies foreign
 
-INCLUDES = -I$(top_builddir)/include $(INCLUDE_readline)
+INCLUDES = $(WFLAGS) -I$(top_builddir)/include $(INCLUDE_readline)
 
 sbin_PROGRAMS = kadmin
 
