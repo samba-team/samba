@@ -241,7 +241,7 @@ struct acct_info
  * this SAMBA will load. Increment this if *ANY* changes are made to the interface. 
  */
 
-#define PASSDB_INTERFACE_VERSION 6
+#define PASSDB_INTERFACE_VERSION 7
 
 typedef struct pdb_context 
 {
