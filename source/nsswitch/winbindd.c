@@ -22,10 +22,6 @@
 
 #include "winbindd.h"
 
-/* List of all connected clients */
-
-struct winbindd_cli_state *client_list;
-static int num_clients;
 BOOL opt_nocache;
 BOOL opt_dual_daemon;
 
@@ -130,11 +126,11 @@ static void winbindd_status(void)
 
 	/* Print client state information */
 	
-	DEBUG(0, ("\t%d clients currently active\n", num_clients));
+	DEBUG(0, ("\t%d clients currently active\n", winbindd_num_clients()));
 	
-	if (DEBUGLEVEL >= 2 && num_clients) {
+	if (DEBUGLEVEL >= 2 && winbindd_num_clients()) {
 		DEBUG(2, ("\tclient list:\n"));
-		for(tmp = client_list; tmp; tmp = tmp->next) {
+		for(tmp = winbindd_client_list(); tmp; tmp = tmp->next) {
 			DEBUG(2, ("\t\tpid %d, sock %d, rbl %d, wbl %d\n",
 				  tmp->pid, tmp->sock, tmp->read_buf_len, 
 				  tmp->write_buf_len));
@@ -196,14 +192,6 @@ static void sighup_handler(int signum)
 {
 	do_sighup = True;
 	sys_select_signal();
-}
-
-/* Create winbindd socket */
-
-static int create_sock(void)
-{
-	return create_pipe_sock( WINBINDD_SOCKET_DIR,
-				 WINBINDD_SOCKET_NAME, 0755);
 }
 
 struct dispatch_table {
@@ -316,7 +304,7 @@ static void process_request(struct winbindd_cli_state *state)
 
 /* Process a new connection by adding it to the client connection list */
 
-static void new_connection(int accept_sock)
+static void new_connection(int listen_sock)
 {
 	struct sockaddr_un sunaddr;
 	struct winbindd_cli_state *state;
@@ -328,7 +316,7 @@ static void new_connection(int accept_sock)
 	len = sizeof(sunaddr);
 
 	do {
-		sock = accept(accept_sock, (struct sockaddr *)&sunaddr, &len);
+		sock = accept(listen_sock, (struct sockaddr *)&sunaddr, &len);
 	} while (sock == -1 && errno == EINTR);
 
 	if (sock == -1)
@@ -347,8 +335,7 @@ static void new_connection(int accept_sock)
 	
 	/* Add to connection list */
 	
-	DLIST_ADD(client_list, state);
-	num_clients++;
+	winbindd_add_client(state);
 }
 
 /* Remove a client connection from client connection list */
@@ -375,9 +362,8 @@ static void remove_client(struct winbindd_cli_state *state)
 		
 		/* Remove from list and free */
 		
-		DLIST_REMOVE(client_list, state);
+		winbindd_remove_client(state);
 		SAFE_FREE(state);
-		num_clients--;
 	}
 }
 
@@ -514,14 +500,14 @@ static void winbind_client_write(struct winbindd_cli_state *state)
    simultaneous connections while remaining impervious to many denial of
    service attacks. */
 
-static void process_loop(int accept_sock)
+static void process_loop(void)
 {
 	/* We'll be doing this a lot */
 
 	while (1) {
 		struct winbindd_cli_state *state;
 		fd_set r_fds, w_fds;
-		int maxfd = accept_sock, selret;
+		int maxfd, listen_sock, selret;
 		struct timeval timeout;
 
 		/* Handle messages */
@@ -535,9 +521,12 @@ static void process_loop(int accept_sock)
 
 		/* Initialise fd lists for select() */
 
+		listen_sock = open_winbindd_socket();
+		maxfd = listen_sock;
+
 		FD_ZERO(&r_fds);
 		FD_ZERO(&w_fds);
-		FD_SET(accept_sock, &r_fds);
+		FD_SET(listen_sock, &r_fds);
 
 		timeout.tv_sec = WINBINDD_ESTABLISH_LOOP;
 		timeout.tv_usec = 0;
@@ -547,7 +536,7 @@ static void process_loop(int accept_sock)
 
 		/* Set up client readers and writers */
 
-		state = client_list;
+		state = winbindd_client_list();
 
 		while (state) {
 
@@ -602,12 +591,13 @@ static void process_loop(int accept_sock)
 			if (opt_dual_daemon)
 				dual_select(&w_fds);
 
-			if (FD_ISSET(accept_sock, &r_fds))
-				new_connection(accept_sock);
+			if (FD_ISSET(listen_sock, &r_fds))
+				new_connection(listen_sock);
             
 			/* Process activity on client connections */
             
-			for (state = client_list; state; state = state->next) {
+			for (state = winbindd_client_list(); state; 
+			     state = state->next) {
                 
 				/* Data available for reading */
                 
@@ -661,11 +651,29 @@ static void process_loop(int accept_sock)
 
 		if (do_sighup) {
 
-			/* Flush winbindd cache */
+			DEBUG(3, ("got SIGHUP\n"));
+
+			/* Flush various caches */
 
 			flush_caches();
 			reload_services_file(True);
 			namecache_flush();
+
+			/* I'm not sure whether we need to close the
+			   winbindd socket and close all connected clients
+			   here.  Since we kill off all the cached
+			   connections we will eventually call
+			   init_domain_list(). From here it's possible to
+			   get stuck in the "holding pattern" due to a
+			   network error, or an incorrect username/password
+			   for restrict anonymous support in secrets.tdb.
+			   Since we're still listening on the winbindd
+			   socket but not accepting connections, new
+			   clients can block, perhaps indefinitely. -tpot */
+#if 0
+			close_winbindd_socket();
+			winbindd_kill_all_clients();
+#endif
 			winbindd_cm_flush();
 
 			do_sighup = False;
@@ -755,7 +763,6 @@ int main(int argc, char **argv)
 	extern BOOL AllowDebugChange;
 	extern BOOL append_log;
 	pstring logfile;
-	int accept_sock;
 	BOOL interactive = False;
 	int opt;
 
@@ -889,16 +896,9 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	/* Create UNIX domain socket */
-	
-	if ((accept_sock = create_sock()) == -1) {
-		DEBUG(0, ("failed to create socket\n"));
-		return 1;
-	}
-
 	/* Loop waiting for requests */
 
-	process_loop(accept_sock);
+	process_loop();
 
 #if 0
 	uni_group_cache_shutdown();
