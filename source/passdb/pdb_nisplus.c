@@ -978,7 +978,7 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 /*************************************************************************
  Routine to search the nisplus passwd file for an entry matching the username
  *************************************************************************/
-BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname)
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, const char *sname)
 {
 	/* Static buffers we will return. */
 	nis_result *result = NULL;
@@ -1045,7 +1045,7 @@ BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid)
 /*************************************************************************
  Routine to remove entry from the nisplus smbpasswd table
  *************************************************************************/
-BOOL pdb_delete_sam_account(char *sname)
+BOOL pdb_delete_sam_account(const char *sname)
 {
   char *pfile = smb_passwd_table();
   pstring nisname;

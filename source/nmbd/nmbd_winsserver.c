@@ -30,10 +30,10 @@
 possibly call the WINS hook external program when a WINS change is made
 *****************************************************************************/
 
-static void wins_hook(char *operation, struct name_record *namerec, int ttl)
+static void wins_hook(const char *operation, struct name_record *namerec, int ttl)
 {
 	pstring command;
-	char *cmd = lp_wins_hook();
+	const char *cmd = lp_wins_hook();
 	char *p;
 	int i;
 
@@ -194,7 +194,7 @@ BOOL initialise_wins(void)
     int type = 0;
     int nb_flags;
     int ttl;
-    char *ptr;
+    const char *ptr;
     char *p;
     BOOL got_token;
     BOOL was_ip;

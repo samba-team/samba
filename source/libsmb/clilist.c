@@ -152,7 +152,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 	int ff_dir_handle=0;
 	int loop_count = 0;
 	char *rparam=NULL, *rdata=NULL;
-	int param_len, data_len;	
+	unsigned int param_len, data_len;	
 	uint16 setup;
 	pstring param;
 

@@ -30,7 +30,7 @@
 static const struct
 {
 	int err;
-	char *message;
+	const char *message;
 } rap_errmap[] = {
 	{5,    "RAP5: User has insufficient privilege" },
 	{50,   "RAP50: Not supported by server" },
@@ -58,7 +58,7 @@ static const struct
 /****************************************************************************
   return a description of an SMB error
 ****************************************************************************/
-static char *cli_smb_errstr(struct cli_state *cli)
+static const char *cli_smb_errstr(struct cli_state *cli)
 {
 	return smb_dos_errstr(cli->inbuf);
 }
@@ -69,7 +69,7 @@ static char *cli_smb_errstr(struct cli_state *cli)
  in which case they can be safely ignored.
 ****************************************************************************/
     
-char *cli_errstr(struct cli_state *cli)
+const char *cli_errstr(struct cli_state *cli)
 {   
 	static fstring cli_error_message;
 	uint32 flgs2 = SVAL(cli->inbuf,smb_flg2), errnum;

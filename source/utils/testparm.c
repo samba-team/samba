@@ -115,7 +115,7 @@ parameter.\n" );
 			} else {
 				pstring passwd_prog;
 				pstring truncated_prog;
-				char *p;
+				const char *p;
 
 				pstrcpy( passwd_prog, lp_passwd_program());
 				p = passwd_prog;

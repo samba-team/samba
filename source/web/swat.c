@@ -51,8 +51,8 @@ static int iNumNonAutoPrintServices = 0;
 #define RHOST "remote_host"
 
 typedef struct html_conversion {
-	char src;
-	char *dest;
+	const char src;
+	const char *dest;
 } html_conversion;
 
 static const html_conversion entities[] = {
@@ -136,7 +136,7 @@ static char *htmlentities(char *str)
 	return(dststr);
 }
 
-static char *stripspace(char *str)
+static char *stripspace(const char *str)
 {
 static char newstring[1024];
 char *p = newstring;
@@ -149,7 +149,7 @@ char *p = newstring;
 	return newstring;
 }
 
-static char *make_parm_name(char *label)
+static char *make_parm_name(const char *label)
 {
 	static char parmname[1024];
 	char *p = parmname;
@@ -166,7 +166,7 @@ static char *make_parm_name(char *label)
 /****************************************************************************
   include a lump of html in a page 
 ****************************************************************************/
-static int include_html(char *fname)
+static int include_html(const char *fname)
 {
 	FILE *f = sys_fopen(fname,"r");
 	char buf[1024];
@@ -325,8 +325,8 @@ static void show_parameters(int snum, int allparameters, unsigned int parm_filte
 {
 	int i = 0;
 	struct parm_struct *parm;
-	char *heading = NULL;
-	char *last_heading = NULL;
+	const char *heading = NULL;
+	const char *last_heading = NULL;
 
 	while ((parm = lp_next_parameter(snum, &i, allparameters))) {
 		if (snum < 0 && parm->class == P_LOCAL && !(parm->flags & FLAG_GLOBAL))
@@ -458,10 +458,13 @@ static int save_reload(int snum)
 /****************************************************************************
   commit one parameter 
 ****************************************************************************/
-static void commit_parameter(int snum, struct parm_struct *parm, char *v)
+static void commit_parameter(int snum, struct parm_struct *parm, const char *cv)
 {
 	int i;
 	char *s;
+	pstring v;
+
+	pstrcpy(v, cv);
 
 	/* lp_do_parameter() will do unix_to_dos(v). */
 	if(parm->flags & FLAG_DOS_STRING)
@@ -490,7 +493,7 @@ static void commit_parameters(int snum)
 	int i = 0;
 	struct parm_struct *parm;
 	pstring label;
-	char *v;
+	const char *v;
 
 	while ((parm = lp_next_parameter(snum, &i, 1))) {
 		slprintf(label, sizeof(label)-1, "parm_%s", make_parm_name(parm->label));
@@ -504,7 +507,7 @@ static void commit_parameters(int snum)
 /****************************************************************************
   spit out the html for a link with an image 
 ****************************************************************************/
-static void image_link(char *name,char *hlink, char *src)
+static void image_link(const char *name,const char *hlink, const char *src)
 {
 	printf("<A HREF=\"%s/%s\"><img border=\"0\" src=\"/swat/%s\" alt=\"%s\"></A>\n", 
 	       cgi_baseurl(), hlink, src, name);
@@ -819,7 +822,7 @@ static void globals_page(void)
 ****************************************************************************/
 static void shares_page(void)
 {
-	char *share = cgi_variable("share");
+	const char *share = cgi_variable("share");
 	char *s;
 	int snum=-1;
 	int i;
@@ -918,8 +921,8 @@ static void shares_page(void)
 /*************************************************************
 change a password either locally or remotely
 *************************************************************/
-static BOOL change_password(const char *remote_machine, char *user_name, 
-			    char *old_passwd, char *new_passwd, 
+static BOOL change_password(const char *remote_machine, const char *user_name, 
+			    const char *old_passwd, const char *new_passwd, 
 				int local_flags)
 {
 	BOOL ret = False;
@@ -960,7 +963,7 @@ static BOOL change_password(const char *remote_machine, char *user_name,
 ****************************************************************************/
 static void chg_passwd(void)
 {
-	char *host;
+	const char *host;
 	BOOL rslt;
 	int local_flags = 0;
 
@@ -1044,7 +1047,7 @@ static void chg_passwd(void)
 ****************************************************************************/
 static void passwd_page(void)
 {
-	char *new_name = cgi_user_name();
+	const char *new_name = cgi_user_name();
 
 	/* 
 	 * After the first time through here be nice. If the user
@@ -1149,7 +1152,7 @@ static void passwd_page(void)
 ****************************************************************************/
 static void printers_page(void)
 {
-	char *share = cgi_variable("share");
+	const char *share = cgi_variable("share");
 	char *s;
 	int snum=-1;
 	int i;
@@ -1268,7 +1271,7 @@ static void printers_page(void)
 	extern int optind;
 	extern FILE *dbf;
 	int opt;
-	char *page;
+	const char *page;
 
 	fault_setup(NULL);
 	umask(S_IWGRP | S_IWOTH);

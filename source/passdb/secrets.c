@@ -50,7 +50,7 @@ BOOL secrets_init(void)
 /* read a entry from the secrets database - the caller must free the result
    if size is non-null then the size of the entry is put in there
  */
-void *secrets_fetch(char *key, size_t *size)
+void *secrets_fetch(const char *key, size_t *size)
 {
 	TDB_DATA kbuf, dbuf;
 
@@ -66,7 +66,7 @@ void *secrets_fetch(char *key, size_t *size)
 
 /* store a secrets entry 
  */
-BOOL secrets_store(char *key, void *data, size_t size)
+BOOL secrets_store(const char *key, const void *data, size_t size)
 {
 	TDB_DATA kbuf, dbuf;
 	if (!tdb)
@@ -81,7 +81,7 @@ BOOL secrets_store(char *key, void *data, size_t size)
 
 /* delete a secets database entry
  */
-BOOL secrets_delete(char *key)
+BOOL secrets_delete(const char *key)
 {
 	TDB_DATA kbuf;
 	if (!tdb)
@@ -91,7 +91,7 @@ BOOL secrets_delete(char *key)
 	return tdb_delete(tdb, kbuf) == 0;
 }
 
-BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
+BOOL secrets_store_domain_sid(const char *domain, DOM_SID *sid)
 {
 	fstring key;
 
@@ -100,7 +100,7 @@ BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
-BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
+BOOL secrets_fetch_domain_sid(const char *domain, DOM_SID *sid)
 {
 	DOM_SID *dyn_sid;
 	fstring key;
@@ -131,7 +131,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 form a key for fetching a domain trust password
 ************************************************************************/
 
-char *trust_keystr(char *domain)
+const char *trust_keystr(const char *domain)
 {
 	static fstring keystr;
 	fstring dos_domain;
@@ -150,7 +150,7 @@ char *trust_keystr(char *domain)
  Lock the trust password entry.
 ************************************************************************/
 
-BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock)
+BOOL secrets_lock_trust_account_password(const char *domain, BOOL dolock)
 {
 	if (!tdb)
 		return False;
@@ -168,7 +168,7 @@ BOOL secrets_lock_trust_account_password(char *domain, BOOL dolock)
  the above call.
 ************************************************************************/
 
-BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
+BOOL secrets_fetch_trust_account_password(const char *domain, uint8 ret_pwd[16],
 					  time_t *pass_last_set_time)
 {
 	struct machine_acct_pass *pass;
@@ -184,11 +184,11 @@ BOOL secrets_fetch_trust_account_password(char *domain, uint8 ret_pwd[16],
 	return True;
 }
 
-
 /************************************************************************
  Routine to set the trust account password for a domain.
 ************************************************************************/
-BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
+
+BOOL secrets_store_trust_account_password(const char *domain, uint8 new_pwd[16])
 {
 	struct machine_acct_pass pass;
 
@@ -202,7 +202,7 @@ BOOL secrets_store_trust_account_password(char *domain, uint8 new_pwd[16])
  Routine to delete the trust account password file for a domain.
 ************************************************************************/
 
-BOOL trust_password_delete(char *domain)
+BOOL trust_password_delete(const char *domain)
 {
 	return secrets_delete(trust_keystr(domain));
 }
@@ -236,7 +236,7 @@ void reset_globals_after_fork(void)
 	generate_random_buffer( &dummy, 1, True);
 }
 
-BOOL secrets_store_ldap_pw(char* dn, char* pw)
+BOOL secrets_store_ldap_pw(const char* dn, const char* pw)
 {
 	fstring key;
 	char *p;
@@ -248,7 +248,7 @@ BOOL secrets_store_ldap_pw(char* dn, char* pw)
 	return secrets_store(key, pw, strlen(pw));
 }
 
-BOOL fetch_ldap_pw(char *dn, char* pw, int len)
+BOOL fetch_ldap_pw(const char *dn, char* pw, int len)
 {
 	fstring key;
 	char *p;
@@ -298,7 +298,7 @@ BOOL secrets_named_mutex(const char *name, unsigned int timeout)
 /*
   unlock a named mutex
 */
-void secrets_named_mutex_release(char *name)
+void secrets_named_mutex_release(const char *name)
 {
 	tdb_unlock_bystring(tdb, name);
 	DEBUG(10,("secrets_named_mutex: released mutex for %s\n", name ));

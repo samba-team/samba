@@ -37,7 +37,7 @@ extern BOOL found_lm_clients;
  Send a browser reset packet.
 **************************************************************************/
 
-void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_addr to_ip)
+void send_browser_reset(int reset_type, const char *to_name, int to_type, struct in_addr to_ip)
 {
   pstring outbuf;
   char *p;
@@ -93,9 +93,9 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
   **************************************************************************/
 
 static void send_announcement(struct subnet_record *subrec, int announce_type,
-                              char *from_name, char *to_name, int to_type, struct in_addr to_ip,
+                              const char *from_name, const char *to_name, int to_type, struct in_addr to_ip,
                               time_t announce_interval,
-                              char *server_name, int server_type, char *server_comment)
+                              const char *server_name, int server_type, const char *server_comment)
 {
   pstring outbuf;
   char *p;
@@ -487,7 +487,8 @@ void announce_my_servers_removed(void)
 
 void announce_remote(time_t t)
 {
-  char *s,*ptr;
+  char *s;
+  const char *ptr;
   static time_t last_time = 0;
   pstring s2;
   struct in_addr addr;
@@ -550,7 +551,8 @@ void announce_remote(time_t t)
 
 void browse_sync_remote(time_t t)
 {  
-  char *s,*ptr;
+  char *s;
+  const char *ptr;
   static time_t last_time = 0; 
   pstring s2;
   struct in_addr addr;

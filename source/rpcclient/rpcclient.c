@@ -441,7 +441,8 @@ static void add_command_set(struct cmd_set *cmd_set)
 static NTSTATUS do_cmd(struct cli_state *cli, struct cmd_set *cmd_entry, 
                        char *cmd)
 {
-	char *p = cmd, **argv = NULL;
+	char **argv = NULL;
+	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	pstring buf;
 	int argc = 0, i;
@@ -535,7 +536,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 	struct cmd_list *temp_list;
 	BOOL found = False;
 	pstring buf;
-	char *p = cmd;
+	const char *p = cmd;
 	NTSTATUS result = NT_STATUS_OK;
 	int len = 0;
 

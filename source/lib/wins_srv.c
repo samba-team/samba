@@ -105,7 +105,7 @@ static ubi_slNewList( wins_srv_list );
  */
 
 
-BOOL wins_srv_load_list( char *src )
+BOOL wins_srv_load_list( const char *src )
   /* ------------------------------------------------------------------------ **
    * Create or recreate the linked list of failover WINS servers.
    *
@@ -123,7 +123,7 @@ BOOL wins_srv_load_list( char *src )
    */
   {
   list_entry   *entry;
-  char         *p = src;
+  const char         *p = src;
   pstring       wins_id_bufr;
   unsigned long count;
 

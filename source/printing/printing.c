@@ -51,7 +51,7 @@ static int get_queue_status(int, print_status_struct *);
 
 BOOL print_backend_init(void)
 {
-	char *sversion = "INFO/version";
+	const char *sversion = "INFO/version";
 
 	if (tdb && local_pid == sys_getpid())
 		return True;

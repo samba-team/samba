@@ -584,7 +584,7 @@ in workgroup %s on subnet %s\n",
  as the workgroup name.
 ****************************************************************/
 
-void set_workgroup_local_master_browser_name( struct work_record *work, char *newname)
+void set_workgroup_local_master_browser_name( struct work_record *work, const char *newname)
 {
   DEBUG(5,("set_workgroup_local_master_browser_name: setting local master name to '%s' \
 for workgroup %s.\n", newname, work->work_group ));

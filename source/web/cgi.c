@@ -40,7 +40,7 @@ static int num_variables;
 static int content_length;
 static int request_post;
 static char *query_string;
-static char *baseurl;
+static const char *baseurl;
 static char *pathinfo;
 static char *C_user;
 static BOOL inetd_server;
@@ -238,7 +238,7 @@ void cgi_load_variables(FILE *f1)
   browser. Also doesn't allow for variables[] containing multiple variables
   with the same name and the same or different values.
   ***************************************************************************/
-char *cgi_variable(char *name)
+const char *cgi_variable(const char *name)
 {
 	int i;
 
@@ -251,7 +251,7 @@ char *cgi_variable(char *name)
 /***************************************************************************
 tell a browser about a fatal error in the http processing
   ***************************************************************************/
-static void cgi_setup_error(char *err, char *header, char *info)
+static void cgi_setup_error(const char *err, const char *header, const char *info)
 {
 	if (!got_request) {
 		/* damn browsers don't like getting cut off before they give a request */
@@ -298,7 +298,7 @@ decode a base64 string in-place - simple and slow algorithm
   ***************************************************************************/
 static void base64_decode(char *s)
 {
-	char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+	const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 	int bit_offset, byte_offset, idx, i, n;
 	unsigned char *d = (unsigned char *)s;
 	char *p;
@@ -487,7 +487,7 @@ static void cgi_download(char *file)
 setup the cgi framework, handling the possability that this program is either
 run as a true cgi program by a web browser or is itself a mini web server
   ***************************************************************************/
-void cgi_setup(char *rootdir, int auth_required)
+void cgi_setup(const char *rootdir, int auth_required)
 {
 	BOOL authenticated = False;
 	char line[1024];
@@ -576,7 +576,7 @@ void cgi_setup(char *rootdir, int auth_required)
 /***************************************************************************
 return the current pages URL
   ***************************************************************************/
-char *cgi_baseurl(void)
+const char *cgi_baseurl(void)
 {
 	if (inetd_server) {
 		return baseurl;
@@ -587,7 +587,7 @@ char *cgi_baseurl(void)
 /***************************************************************************
 return the current pages path info
   ***************************************************************************/
-char *cgi_pathinfo(void)
+const char *cgi_pathinfo(void)
 {
 	char *r;
 	if (inetd_server) {

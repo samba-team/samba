@@ -324,7 +324,7 @@ register name %s IP %s\n", nmb_namestr(nmbname), inet_ntoa(ip_list[i]) ));
 ****************************************************************************/
 
 BOOL register_name(struct subnet_record *subrec,
-                   char *name, int type, uint16 nb_flags,
+                   const char *name, int type, uint16 nb_flags,
                    register_name_success_function success_fn,
                    register_name_fail_function fail_fn,
                    struct userdata_struct *userdata)

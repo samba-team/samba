@@ -39,8 +39,8 @@ static void initmaps(void) {
     mapsinited = True;
 }
 
-static void update_map(char *str) {
-    char *p;
+static void update_map(const char *str) {
+    const char *p;
 
     for (p = str; *p; p++) {
         if (p[1]) {

@@ -727,7 +727,7 @@ enum brl_type {READ_LOCK, WRITE_LOCK, PENDING_LOCK};
 
 struct enum_list {
 	int value;
-	char *name;
+	const char *name;
 };
 
 #define BRLOCK_FN_CAST() \
@@ -740,11 +740,11 @@ struct enum_list {
 				 br_off start, br_off size)
 struct parm_struct
 {
-	char *label;
+	const char *label;
 	parm_type type;
 	parm_class class;
 	void *ptr;
-	BOOL (*special)(char *, char **);
+	BOOL (*special)(const char *, char **);
 	struct enum_list *enum_list;
 	unsigned flags;
 	union {
@@ -1369,7 +1369,7 @@ enum schema_types {SCHEMA_COMPAT, SCHEMA_AD, SCHEMA_SAMBA};
 enum ldap_ssl_types {LDAP_SSL_ON, LDAP_SSL_OFF, LDAP_SSL_START_TLS};
 
 /* Remote architectures we know about. */
-enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_SAMBA};
+enum remote_arch_types {RA_UNKNOWN, RA_WFWG, RA_OS2, RA_WIN95, RA_WINNT, RA_WIN2K, RA_WINXP, RA_WIN2K3, RA_SAMBA};
 
 /* case handling */
 enum case_handling {CASE_LOWER,CASE_UPPER};

@@ -240,6 +240,7 @@ typedef struct
 	BOOL sslReqServerCert;
 	BOOL sslCompatibility;
 #endif				/* WITH_SSL */
+	char *szAclCompat;
 	BOOL bMsAddPrinterWizard;
 	BOOL bDNSproxy;
 	BOOL bWINSsupport;
@@ -556,19 +557,20 @@ static int default_server_announce;
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
 
 /* prototypes for the special type handlers */
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr);
-static BOOL handle_include(char *pszParmValue, char **ptr);
-static BOOL handle_copy(char *pszParmValue, char **ptr);
-static BOOL handle_character_set(char *pszParmValue, char **ptr);
-static BOOL handle_coding_system(char *pszParmValue, char **ptr);
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr);
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
-static BOOL handle_source_env(char *pszParmValue, char **ptr);
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr);
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr);
-static BOOL handle_wins_server_list(char *pszParmValue, char **ptr);
-static BOOL handle_debug_list( char *pszParmValue, char **ptr );
+static BOOL handle_valid_chars(const char *pszParmValue, char **ptr);
+static BOOL handle_include(const char *pszParmValue, char **ptr);
+static BOOL handle_copy(const char *pszParmValue, char **ptr);
+static BOOL handle_character_set(const char *pszParmValue, char **ptr);
+static BOOL handle_coding_system(const char *pszParmValue, char **ptr);
+static BOOL handle_client_code_page(const char *pszParmValue, char **ptr);
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr);
+static BOOL handle_source_env(const char *pszParmValue, char **ptr);
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr);
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr);
+static BOOL handle_wins_server_list(const char *pszParmValue, char **ptr);
+static BOOL handle_debug_list(const char *pszParmValue, char **ptr );
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -858,6 +860,7 @@ static struct parm_struct parm_table[] = {
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, 0},
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, 0},
 	
+	{"acl compatibility", P_STRING, P_GLOBAL, &Globals.szAclCompat, handle_acl_compatibility, NULL, FLAG_SHARE | FLAG_GLOBAL | FLAG_ADVANCED},
 	{"nt smb support", P_BOOL, P_GLOBAL, &Globals.bNTSmbSupport, NULL, NULL, 0},
 	{"nt pipe support", P_BOOL, P_GLOBAL, &Globals.bNTPipeSupport, NULL, NULL, 0},
 	{"nt acl support", P_BOOL,  P_LOCAL, &sDefault.bNTAclSupport, NULL, NULL, FLAG_GLOBAL | FLAG_SHARE },
@@ -1451,6 +1454,7 @@ static void init_globals(void)
 	string_set(&Globals.szTemplateShell, "/bin/false");
 	string_set(&Globals.szTemplateHomedir, "/home/%D/%U");
 	string_set(&Globals.szWinbindSeparator, "\\");
+	string_set(&Globals.szAclCompat, "");
 	Globals.winbind_cache_time = 15;
 
 	Globals.bWinbindEnumUsers = True;
@@ -1594,6 +1598,7 @@ FN_GLOBAL_STRING(lp_domain_guest_group, &Globals.szDomainGuestGroup)
 FN_GLOBAL_STRING(lp_template_homedir, &Globals.szTemplateHomedir)
 FN_GLOBAL_STRING(lp_template_shell, &Globals.szTemplateShell)
 FN_GLOBAL_STRING(lp_winbind_separator, &Globals.szWinbindSeparator)
+FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
@@ -1825,9 +1830,9 @@ FN_GLOBAL_BOOL(lp_hide_local_users, &Globals.bHideLocalUsers)
 
 /* local prototypes */
 
-static int map_parameter(char *pszParmName);
-static BOOL set_boolean(BOOL *pb, char *pszParmValue);
-static int getservicebyname(char *pszServiceName,
+static int map_parameter(const char *pszParmName);
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue);
+static int getservicebyname(const char *pszServiceName,
 			 service * pserviceDest);
 static void copy_service(service * pserviceDest,
 		      service * pserviceSource, BOOL *pcopymapDest);
@@ -1879,7 +1884,7 @@ static void free_service(service * pservice)
 add a new service to the services array initialising it with the given 
 service. name must be in DOS codepage.
 ***************************************************************************/
-static int add_a_service(service * pservice, char *name)
+static int add_a_service(service * pservice, const char *name)
 {
 	int i;
 	service tservice;
@@ -1996,7 +2001,7 @@ int lp_add_service(char *pszService, int iDefaultService)
 /***************************************************************************
 add the IPC service
 ***************************************************************************/
-static BOOL lp_add_ipc(char *ipc_name, BOOL guest_ok)
+static BOOL lp_add_ipc(const char *ipc_name, BOOL guest_ok)
 {
 	pstring comment;
 	int i = add_a_service(&sDefault, ipc_name);
@@ -2032,7 +2037,7 @@ printername must be in DOS codepage.
 ***************************************************************************/
 BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 {
-	char *comment = "From Printcap";
+	const char *comment = "From Printcap";
 	int i = add_a_service(ServicePtrs[iDefaultService], pszPrintername);
 
 	if (i < 0)
@@ -2063,7 +2068,7 @@ BOOL lp_add_printer(char *pszPrintername, int iDefaultService)
 Map a parameter's string representation to something we can use. 
 Returns False if the parameter string is not recognised, else TRUE.
 ***************************************************************************/
-static int map_parameter(char *pszParmName)
+static int map_parameter(const char *pszParmName)
 {
 	int iIndex;
 
@@ -2084,7 +2089,7 @@ Set a boolean variable from the text value stored in the passed string.
 Returns True in success, False if the passed string does not correctly 
 represent a boolean.
 ***************************************************************************/
-static BOOL set_boolean(BOOL *pb, char *pszParmValue)
+static BOOL set_boolean(BOOL *pb, const char *pszParmValue)
 {
 	BOOL bRetval;
 
@@ -2111,7 +2116,7 @@ static BOOL set_boolean(BOOL *pb, char *pszParmValue)
 /***************************************************************************
 Find a service by name. Otherwise works like get_service.
 ***************************************************************************/
-static int getservicebyname(char *pszServiceName, service * pserviceDest)
+static int getservicebyname(const char *pszServiceName, service * pserviceDest)
 {
 	int iService;
 
@@ -2254,7 +2259,7 @@ static struct file_lists
 keep a linked list of all config files so we know when one has changed 
 it's date and needs to be reloaded
 ********************************************************************/
-static void add_to_file_list(char *fname, char *subfname)
+static void add_to_file_list(const char *fname, const char *subfname)
 {
 	struct file_lists *f = file_lists;
  
@@ -2326,7 +2331,7 @@ BOOL lp_file_list_changed(void)
  Note: We must *NOT* use string_set() here as ptr points to global_myname.
 ***************************************************************************/
 
-static BOOL handle_netbios_name(char *pszParmValue, char **ptr)
+static BOOL handle_netbios_name(const char *pszParmValue, char **ptr)
 {
 	pstring netbios_name;
 
@@ -2410,7 +2415,7 @@ static BOOL source_env(char **lines)
  Handle the source environment operation
 ***************************************************************************/
 
-static BOOL handle_source_env(char *pszParmValue, char **ptr)
+static BOOL handle_source_env(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	char *p = fname;
@@ -2455,7 +2460,7 @@ static BOOL handle_source_env(char *pszParmValue, char **ptr)
 /***************************************************************************
   handle the interpretation of the vfs object parameter
   *************************************************************************/
-static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
+static BOOL handle_vfs_object(const char *pszParmValue, char **ptr)
 {
 	/* Set string value */
 
@@ -2470,7 +2475,7 @@ static BOOL handle_vfs_object(char *pszParmValue, char **ptr)
 /***************************************************************************
   handle the interpretation of the coding system parameter
   *************************************************************************/
-static BOOL handle_coding_system(char *pszParmValue, char **ptr)
+static BOOL handle_coding_system(const char *pszParmValue, char **ptr)
 {
 	string_set(ptr, pszParmValue);
 	interpret_coding_system(pszParmValue);
@@ -2483,7 +2488,7 @@ static BOOL handle_coding_system(char *pszParmValue, char **ptr)
 
 static char *saved_character_set = NULL;
 
-static BOOL handle_character_set(char *pszParmValue, char **ptr)
+static BOOL handle_character_set(const char *pszParmValue, char **ptr)
 {
 	/* A dependency here is that the parameter client code page should be
 	   set before this is called.
@@ -2501,7 +2506,7 @@ static BOOL handle_character_set(char *pszParmValue, char **ptr)
  parameter in case this came before 'client code page' in the smb.conf.
 ***************************************************************************/
 
-static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
+static BOOL handle_client_code_page(const char *pszParmValue, char **ptr)
 {
 	Globals.client_code_page = atoi(pszParmValue);
 	if (saved_character_set != NULL)
@@ -2515,7 +2520,7 @@ static BOOL handle_client_code_page(char *pszParmValue, char **ptr)
 handle the valid chars lines
 ***************************************************************************/
 
-static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
+static BOOL handle_valid_chars(const char *pszParmValue, char **ptr)
 {
 	string_set(ptr, pszParmValue);
 
@@ -2533,7 +2538,7 @@ static BOOL handle_valid_chars(char *pszParmValue, char **ptr)
 handle the include operation
 ***************************************************************************/
 
-static BOOL handle_include(char *pszParmValue, char **ptr)
+static BOOL handle_include(const char *pszParmValue, char **ptr)
 {
 	pstring fname;
 	pstrcpy(fname, pszParmValue);
@@ -2556,7 +2561,7 @@ static BOOL handle_include(char *pszParmValue, char **ptr)
 /***************************************************************************
 handle the interpretation of the copy parameter
 ***************************************************************************/
-static BOOL handle_copy(char *pszParmValue, char **ptr)
+static BOOL handle_copy(const char *pszParmValue, char **ptr)
 {
 	BOOL bRetval;
 	int iTemp;
@@ -2646,7 +2651,7 @@ BOOL lp_winbind_gid(gid_t *low, gid_t *high)
 
 /* Do some simple checks on "winbind [ug]id" parameter values */
 
-static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_uid(const char *pszParmValue, char **ptr)
 {
 	unsigned int low, high;
 
@@ -2663,7 +2668,7 @@ static BOOL handle_winbind_uid(char *pszParmValue, char **ptr)
 	return True;
 }
 
-static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
+static BOOL handle_winbind_gid(const char *pszParmValue, char **ptr)
 {
 	unsigned int low, high;
 
@@ -2684,7 +2689,7 @@ static BOOL handle_winbind_gid(char *pszParmValue, char **ptr)
  Handle the WINS SERVER list.
 ***************************************************************************/
 
-static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
+static BOOL handle_wins_server_list(const char *pszParmValue, char **ptr )
 {
 	if( !wins_srv_load_list( pszParmValue ) )
 		return( False );  /* Parse failed. */
@@ -2697,7 +2702,7 @@ static BOOL handle_wins_server_list( char *pszParmValue, char **ptr )
  Handle the DEBUG level list.
 ***************************************************************************/
 
-static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
+static BOOL handle_debug_list(const char *pszParmValueIn, char **ptr )
 {
 	pstring pszParmValue;
 
@@ -2705,6 +2710,19 @@ static BOOL handle_debug_list( char *pszParmValueIn, char **ptr )
 	return debug_parse_levels( pszParmValue );
 }
 
+
+static BOOL handle_acl_compatibility(const char *pszParmValue, char **ptr)
+{
+	if (strequal(pszParmValue, "auto"))
+		string_set(ptr, "");
+	else if (strequal(pszParmValue, "winnt"))
+		string_set(ptr, "winnt");
+	else if (strequal(pszParmValue, "win2k"))
+		string_set(ptr, "win2k");
+	else
+		return False;
+	return True;
+}
 
 /***************************************************************************
  Initialise a copymap.
@@ -2738,7 +2756,7 @@ void *lp_local_ptr(int snum, void *ptr)
 Process a parameter for a particular service number. If snum < 0
 then assume we are in the globals
 ***************************************************************************/
-BOOL lp_do_parameter(int snum, char *pszParmName, char *pszParmValue)
+BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue)
 {
 	int parmnum, i;
 	void *parm_ptr = NULL;	/* where we are going to store the result */
@@ -3450,7 +3468,7 @@ static void set_server_role(void)
 Load the services array from the services file. Return True on success, 
 False on failure.
 ***************************************************************************/
-BOOL lp_load(char *pszFname, BOOL global_only, BOOL save_defaults,
+BOOL lp_load(const char *pszFname, BOOL global_only, BOOL save_defaults,
 	     BOOL add_ipc)
 {
 	pstring n2;
@@ -3569,7 +3587,7 @@ exist. Note that this is a DIFFERENT ANIMAL from the internal function
 getservicebyname()! This works ONLY if all services have been loaded, and
 does not copy the found service.
 ***************************************************************************/
-int lp_servicenumber(char *pszServiceName)
+int lp_servicenumber(const char *pszServiceName)
 {
 	int iService;
 	fstring serviceName;

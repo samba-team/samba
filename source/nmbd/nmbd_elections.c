@@ -33,8 +33,8 @@ extern time_t StartupTime;
 /****************************************************************************
   Send an election datagram packet.
 **************************************************************************/
-static void send_election_dgram(struct subnet_record *subrec, char *workgroup_name,
-                                uint32 criterion, int timeup,char *server_name)
+static void send_election_dgram(struct subnet_record *subrec, const char *workgroup_name,
+                                uint32 criterion, int timeup,const char *server_name)
 {
   pstring outbuf;
   char *p;

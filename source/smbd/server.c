@@ -498,7 +498,7 @@ static void decrement_smbd_process_count(void)
  Exit the server.
 ****************************************************************************/
 
-void exit_server(char *reason)
+void exit_server(const char *reason)
 {
 	static int firsttime=1;
 	extern char *last_inbuf;
@@ -578,6 +578,36 @@ static void init_structs(void )
 
 	secrets_init();
 }
+
+/****************************************************************************
+  Keep track of the number of running smbd's. This functionality is used to
+  'hard' limit Samba overhead on resource constrained systems. 
+  This function is only called once per smbd.
+****************************************************************************/
+
+static BOOL smbd_process_limit(void)
+{
+	int32  total_smbds;
+	
+	if (lp_max_smbd_processes()) {
+
+		/* Always add one to the smbd process count, as exit_server() always
+		 * subtracts one.
+		 */
+
+		if (!conn_tdb_ctx()) {
+			DEBUG(0,("smbd_process_limit: max smbd processes parameter set with status parameter not \
+set. Ignoring max smbd restriction.\n"));
+			return False;
+		}
+
+		total_smbds = increment_smbd_process_count();
+		return total_smbds > lp_max_smbd_processes();
+	}
+	else
+		return False;
+}
+
 
 /****************************************************************************
  Usage on the program.
@@ -883,6 +913,12 @@ static void usage(char *pname)
 	if (!init_change_notify())
 		exit(1);
 
+	if ( smbd_process_limit() ) {
+		  DEBUG( 1, ( "Connection denied from %s\n",
+			      client_addr() ) );
+		  exit_server("connection denied");
+	}
+		
 	smbd_process();
 	
 	exit_server("normal exit");

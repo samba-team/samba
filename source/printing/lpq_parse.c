@@ -23,7 +23,7 @@
 #include "includes.h"
 
 
-static char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+static const char *Months[13] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
 			      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec", "Err"};
 
 
@@ -234,12 +234,11 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
 #define	LPRNG_MAXTOK	128 /* PFMA just to keep us from running away. */
 
   fstring tokarr[LPRNG_MAXTOK];
-  char *cptr;
+  const char *cptr;
+  char *ptr;
   int  num_tok = 0;
-  pstring line2;
 
-  pstrcpy(line2,line);
-  cptr = line2;
+  cptr = line;
   while(next_token( &cptr, tokarr[num_tok], " \t", sizeof(fstring)) && (num_tok < LPRNG_MAXTOK))
     num_tok++;
 
@@ -275,8 +274,8 @@ static BOOL parse_lpq_lprng(char *line,print_queue_struct *buf,BOOL first)
    * for the current user on the taskbar.  Plop in a null.
    */
 
-  if ((cptr = strchr(buf->fs_user,'@')) != NULL) {
-    *cptr = '\0';
+  if ((ptr = strchr(buf->fs_user,'@')) != NULL) {
+    *ptr = '\0';
   }
 
   fstrcpy(buf->fs_file,tokarr[LPRNG_FILETOK]);
@@ -316,6 +315,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[11];
   int count=0;
+  const char *cline = line;
 
   /* handle the case of "(standard input)" as a filename */
   pstring_sub(line,"standard input","STDIN");
@@ -324,7 +324,7 @@ static BOOL parse_lpq_aix(char *line,print_queue_struct *buf,BOOL first)
 
   for (count=0; 
        count<10 && 
-	       next_token(&line,tok[count],NULL, sizeof(tok[count])); 
+	       next_token(&cline,tok[count],NULL, sizeof(tok[count])); 
        count++) ;
 
   /* we must get 6 tokens */
@@ -423,6 +423,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
  
   int count;
   char htab = '\011';  
+  const char *cline = line;
   fstring tok[12];
 
   /* If a line begins with a horizontal TAB, it is a subline type */
@@ -439,7 +440,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     all_string_sub(line,"(","\"",0);
     all_string_sub(line,")","\"",0);
     
-    for (count=0; count<2 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+    for (count=0; count<2 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
     /* we must get 2 tokens */
     if (count < 2) return(False);
     
@@ -475,7 +476,7 @@ static BOOL parse_lpq_hpux(char * line, print_queue_struct *buf, BOOL first)
     /* handle the dash in the job id */
     pstring_sub(line,"-"," ");
     
-    for (count=0; count<12 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+    for (count=0; count<12 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
       
     /* we must get 8 tokens */
     if (count < 8) return(False);
@@ -521,7 +522,8 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   fstring tok[9];
   int count=0;
   char *p;
-
+  const char *cline = line;
+  
   /* 
    * Handle the dash in the job id, but make sure that we skip over
    * the printer name in case we have a dash in that.
@@ -544,7 +546,7 @@ static BOOL parse_lpq_sysv(char *line,print_queue_struct *buf,BOOL first)
   if((p >= line) && (*p == '-'))
     *p = ' ';
 
-  for (count=0; count<9 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++)
+  for (count=0; count<9 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++)
     ;
 
   /* we must get 7 tokens */
@@ -593,6 +595,7 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[7];
   int count=0;
+  const char *cline = line;
 
   DEBUG(4,("antes [%s]\n", line));
 
@@ -606,10 +609,8 @@ static BOOL parse_lpq_qnx(char *line,print_queue_struct *buf,BOOL first)
   pstring_sub(line,"[job #","");
   pstring_sub(line,"]","");
   DEBUG(4,("despues 2 [%s]\n", line));
-
   
-  
-  for (count=0; count<7 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+  for (count=0; count<7 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 7 tokens */
   if (count < 7)
@@ -658,13 +659,14 @@ static BOOL parse_lpq_plp(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[11];
   int count=0;
+  const char *cline = line;
 
   /* handle the case of "(standard input)" as a filename */
   pstring_sub(line,"stdin","STDIN");
   all_string_sub(line,"(","\"",0);
   all_string_sub(line,")","\"",0);
   
-  for (count=0; count<11 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+  for (count=0; count<11 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 11 tokens */
   if (count < 11)
@@ -728,11 +730,12 @@ static BOOL parse_lpq_softq(char *line,print_queue_struct *buf,BOOL first)
 {
   fstring tok[10];
   int count=0;
+  const char *cline = line;
 
   /* mung all the ":"s to spaces*/
   pstring_sub(line,":"," ");
   
-  for (count=0; count<10 && next_token(&line,tok[count],NULL,sizeof(tok[count])); count++) ;
+  for (count=0; count<10 && next_token(&cline,tok[count],NULL,sizeof(tok[count])); count++) ;
 
   /* we must get 9 tokens */
   if (count < 9)
@@ -947,9 +950,9 @@ static BOOL parse_lpq_os2(char *line,print_queue_struct *buf,BOOL first)
   return(True);
 }
 
-static char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
-static char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
-static char *stat2_strings[] = { "jam", "paper", "error", "responding", "not accepting", "not running", "turned off", NULL };
+static const char *stat0_strings[] = { "enabled", "online", "idle", "no entries", "free", "ready", NULL };
+static const char *stat1_strings[] = { "offline", "disabled", "down", "off", "waiting", "no daemon", NULL };
+static const char *stat2_strings[] = { "jam", "paper", "error", "responding", "not accepting", "not running", "turned off", NULL };
 
 #ifdef DEVELOPER
 
@@ -960,6 +963,7 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 {
 	int toknum = 0;
 	fstring tok;
+  	const char *cline = line;
 
 	/* First line is printer status */
 
@@ -967,7 +971,7 @@ static BOOL parse_lpq_vlp(char *line,print_queue_struct *buf,BOOL first)
 
 	/* Parse a print job entry */
 
-	while(next_token(&line, tok, NULL, sizeof(fstring))) {
+	while(next_token(&cline, tok, NULL, sizeof(fstring))) {
 		switch (toknum) {
 		case 0:
 			buf->job = atoi(tok);

@@ -330,18 +330,22 @@ void dptr_closepath(char *path,uint16 spid)
 
 static BOOL start_dir(connection_struct *conn,char *directory)
 {
+  const char *dir2;
+
   DEBUG(5,("start_dir dir=%s\n",directory));
 
   if (!check_name(directory,conn))
     return(False);
   
   if (! *directory)
-    directory = ".";
+    dir2 = ".";
+  else
+    dir2 = directory;
 
-  conn->dirptr = OpenDir(conn, directory, True);
+  conn->dirptr = OpenDir(conn, dir2, True);
   if (conn->dirptr) {    
     dptrs_open++;
-    string_set(&conn->dirpath,directory);
+    string_set(&conn->dirpath,dir2);
     return(True);
   }
   
@@ -739,10 +743,10 @@ static BOOL user_can_read_file(connection_struct *conn, char *name)
  Open a directory.
 ********************************************************************/
 
-void *OpenDir(connection_struct *conn, char *name, BOOL use_veto)
+void *OpenDir(connection_struct *conn, const char *name, BOOL use_veto)
 {
 	Dir *dirp;
-	char *n;
+	const char *n;
 	DIR *p = conn->vfs_ops.opendir(conn,dos_to_unix_static(name));
 	int used=0;
   
@@ -909,7 +913,7 @@ static ubi_dlNewList( dir_cache );
  Output: None.
 *****************************************************************************/
 
-void DirCacheAdd( char *path, char *name, char *dname, int snum )
+void DirCacheAdd( const char *path, const char *name, const char *dname, int snum )
 {
   int               pathlen;
   int               namelen;
@@ -956,7 +960,7 @@ void DirCacheAdd( char *path, char *name, char *dname, int snum )
          for large caches.
 *****************************************************************************/
 
-char *DirCacheCheck( char *path, char *name, int snum )
+char *DirCacheCheck( const char *path, const char *name, int snum )
 {
   dir_cache_entry *entry;
 

@@ -62,7 +62,7 @@ typedef enum
  * Function prototypes...
  */
 
- char *dbg_token2string( dbg_Token tok );
+ const char *dbg_token2string( dbg_Token tok );
   /* ------------------------------------------------------------------------ **
    * Given a token, return a string describing the token.
    *

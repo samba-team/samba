@@ -27,7 +27,7 @@
 extern char *dos_char_map;
 extern char *upper_char_map;
 extern char *lower_char_map;
-extern void add_char_string(char *s);
+extern void add_char_string(const char *s);
 extern void charset_initialise(void);
 
 #ifdef toupper

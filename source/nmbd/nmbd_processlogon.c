@@ -34,7 +34,7 @@ Process a domain logon packet
 **************************************************************************/
 
 void process_logon_packet(struct packet_struct *p,char *buf,int len, 
-                          char *mailslot)
+                          const char *mailslot)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
   pstring my_name;

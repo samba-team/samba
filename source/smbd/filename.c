@@ -33,7 +33,7 @@ extern BOOL short_case_preserve;
 extern fstring remote_machine;
 extern BOOL use_mangled_map;
 
-static BOOL scan_directory(char *path, char *name,size_t maxlength,
+static BOOL scan_directory(const char *path, char *name,size_t maxlength,
 			   connection_struct *conn,BOOL docache);
 
 /****************************************************************************
@@ -441,7 +441,7 @@ BOOL check_name(char *name,connection_struct *conn)
  If the name looks like a mangled name then try via the mangling functions
 ****************************************************************************/
 
-static BOOL scan_directory(char *path, char *name,size_t maxlength,
+static BOOL scan_directory(const char *path, char *name,size_t maxlength,
 			   connection_struct *conn,BOOL docache)
 {
 	void *cur_dir;

@@ -301,8 +301,8 @@ protocol [LANMAN2.1]
  
 /* List of supported protocols, most desired first */
 static struct {
-  char *proto_name;
-  char *short_name;
+  const char *proto_name;
+  const char *short_name;
   int (*proto_reply_fn)(char *);
   int protocol_level;
 } supported_protocols[] = {

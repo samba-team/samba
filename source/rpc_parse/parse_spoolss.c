@@ -45,7 +45,7 @@ static uint32 str_len_uni(UNISTR *source)
 This should be moved in a more generic lib.
 ********************************************************************/  
 
-static BOOL spoolss_io_system_time(char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
+static BOOL spoolss_io_system_time(const char *desc, prs_struct *ps, int depth, SYSTEMTIME *systime)
 {
 	if(!prs_uint16("year", ps, depth, &systime->year))
 		return False;
@@ -88,7 +88,7 @@ BOOL make_systemtime(SYSTEMTIME *systime, struct tm *unixtime)
 reads or writes an DOC_INFO structure.
 ********************************************************************/  
 
-static BOOL smb_io_doc_info_1(char *desc, DOC_INFO_1 *info_1, prs_struct *ps, int depth)
+static BOOL smb_io_doc_info_1(const char *desc, DOC_INFO_1 *info_1, prs_struct *ps, int depth)
 {
 	if (info_1 == NULL) return False;
 
@@ -119,7 +119,7 @@ static BOOL smb_io_doc_info_1(char *desc, DOC_INFO_1 *info_1, prs_struct *ps, in
 reads or writes an DOC_INFO structure.
 ********************************************************************/  
 
-static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int depth)
+static BOOL smb_io_doc_info(const char *desc, DOC_INFO *info, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=0;
 	
@@ -168,7 +168,7 @@ static BOOL smb_io_doc_info(char *desc, DOC_INFO *info, prs_struct *ps, int dept
 reads or writes an DOC_INFO_CONTAINER structure.
 ********************************************************************/  
 
-static BOOL smb_io_doc_info_container(char *desc, DOC_INFO_CONTAINER *cont, prs_struct *ps, int depth)
+static BOOL smb_io_doc_info_container(const char *desc, DOC_INFO_CONTAINER *cont, prs_struct *ps, int depth)
 {
 	if (cont == NULL) return False;
 
@@ -195,7 +195,7 @@ reads or writes an NOTIFY OPTION TYPE structure.
    structure.  The _TYPE structure is really the deferred referrants (i.e
    the notify fields array) of the _TYPE structure. -tpot */
 
-static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
+static BOOL smb_io_notify_option_type(const char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_notify_option_type");
 	depth++;
@@ -223,7 +223,7 @@ static BOOL smb_io_notify_option_type(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type
 reads or writes an NOTIFY OPTION TYPE DATA.
 ********************************************************************/  
 
-static BOOL smb_io_notify_option_type_data(char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
+static BOOL smb_io_notify_option_type_data(const char *desc, SPOOL_NOTIFY_OPTION_TYPE *type, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -254,7 +254,7 @@ static BOOL smb_io_notify_option_type_data(char *desc, SPOOL_NOTIFY_OPTION_TYPE 
 reads or writes an NOTIFY OPTION structure.
 ********************************************************************/  
 
-static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_CTR *ctr , prs_struct *ps, int depth)
+static BOOL smb_io_notify_option_type_ctr(const char *desc, SPOOL_NOTIFY_OPTION_TYPE_CTR *ctr , prs_struct *ps, int depth)
 {		
 	int i;
 	
@@ -286,7 +286,7 @@ static BOOL smb_io_notify_option_type_ctr(char *desc, SPOOL_NOTIFY_OPTION_TYPE_C
 reads or writes an NOTIFY OPTION structure.
 ********************************************************************/  
 
-static BOOL smb_io_notify_option(char *desc, SPOOL_NOTIFY_OPTION *option, prs_struct *ps, int depth)
+static BOOL smb_io_notify_option(const char *desc, SPOOL_NOTIFY_OPTION *option, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "smb_io_notify_option");
 	depth++;
@@ -317,7 +317,7 @@ static BOOL smb_io_notify_option(char *desc, SPOOL_NOTIFY_OPTION *option, prs_st
 reads or writes an NOTIFY INFO DATA structure.
 ********************************************************************/  
 
-static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
+static BOOL smb_io_notify_info_data(const char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=0xADDE0FF0;
 
@@ -377,7 +377,7 @@ static BOOL smb_io_notify_info_data(char *desc,SPOOL_NOTIFY_INFO_DATA *data, prs
 reads or writes an NOTIFY INFO DATA structure.
 ********************************************************************/  
 
-BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
+BOOL smb_io_notify_info_data_strings(const char *desc,SPOOL_NOTIFY_INFO_DATA *data,
                                      prs_struct *ps, int depth)
 {
 	uint32 x;
@@ -437,7 +437,7 @@ BOOL smb_io_notify_info_data_strings(char *desc,SPOOL_NOTIFY_INFO_DATA *data,
 reads or writes an NOTIFY INFO structure.
 ********************************************************************/  
 
-static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *ps, int depth)
+static BOOL smb_io_notify_info(const char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *ps, int depth)
 {
 	int i;
 
@@ -473,7 +473,7 @@ static BOOL smb_io_notify_info(char *desc, SPOOL_NOTIFY_INFO *info, prs_struct *
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spool_io_user_level_1(char *desc, SPOOL_USER_1 *q_u, prs_struct *ps, int depth)
+static BOOL spool_io_user_level_1(const char *desc, SPOOL_USER_1 *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "");
 	depth++;
@@ -512,7 +512,7 @@ static BOOL spool_io_user_level_1(char *desc, SPOOL_USER_1 *q_u, prs_struct *ps,
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps, int depth)
+static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps, int depth)
 {
 	if (q_u==NULL)
 		return False;
@@ -546,7 +546,7 @@ static BOOL spool_io_user_level(char *desc, SPOOL_USER_CTR *q_u, prs_struct *ps,
 
 #define DM_NUM_OPTIONAL_FIELDS 		8
 
-BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
+BOOL spoolss_io_devmode(const char *desc, prs_struct *ps, int depth, DEVICEMODE *devmode)
 {
 	uint32 available_space;		/* size of the device mode left to parse */
 					/* only important on unmarshalling       */
@@ -587,7 +587,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 			return False;
 	}
 
-	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, 32))
+	if (!prs_uint16uni(True,"devicename", ps, depth, devmode->devicename.buffer, MAXDEVICENAME))
 		return False;
 	
 	if (!prs_uint16("specversion",      ps, depth, &devmode->specversion))
@@ -730,7 +730,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
  Read or write a DEVICEMODE container
 ********************************************************************/  
 
-static BOOL spoolss_io_devmode_cont(char *desc, DEVMODE_CTR *dm_c, prs_struct *ps, int depth)
+static BOOL spoolss_io_devmode_cont(const char *desc, DEVMODE_CTR *dm_c, prs_struct *ps, int depth)
 {
 	if (dm_c==NULL)
 		return False;
@@ -775,7 +775,7 @@ static BOOL spoolss_io_devmode_cont(char *desc, DEVMODE_CTR *dm_c, prs_struct *p
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spoolss_io_printer_default(char *desc, PRINTER_DEFAULT *pd, prs_struct *ps, int depth)
+static BOOL spoolss_io_printer_default(const char *desc, PRINTER_DEFAULT *pd, prs_struct *ps, int depth)
 {
 	if (pd==NULL)
 		return False;
@@ -960,7 +960,7 @@ BOOL make_spoolss_printer_info_2(TALLOC_CTX *mem_ctx, SPOOL_PRINTER_INFO_LEVEL_2
  * called from spoolss_q_open_printer_ex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_open_printer(const char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -991,7 +991,7 @@ BOOL spoolss_io_q_open_printer(char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_struct
  * called from spoolss_open_printer_ex (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_open_printer(const char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
@@ -1016,7 +1016,7 @@ BOOL spoolss_io_r_open_printer(char *desc, SPOOL_R_OPEN_PRINTER *r_u, prs_struct
  * called from spoolss_q_open_printer_ex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_open_printer_ex(const char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1052,7 +1052,7 @@ BOOL spoolss_io_q_open_printer_ex(char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u, prs_
  * called from spoolss_open_printer_ex (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_open_printer_ex(char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_open_printer_ex(const char *desc, SPOOL_R_OPEN_PRINTER_EX *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
@@ -1121,7 +1121,7 @@ BOOL make_spoolss_q_getprinterdata(SPOOL_Q_GETPRINTERDATA *q_u,
  * called from spoolss_q_getprinterdata (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprinterdata(const char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1150,7 +1150,7 @@ BOOL spoolss_io_q_getprinterdata(char *desc, SPOOL_Q_GETPRINTERDATA *q_u, prs_st
  * called from spoolss_q_deleteprinterdata (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_deleteprinterdata(char *desc, SPOOL_Q_DELETEPRINTERDATA *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_deleteprinterdata(const char *desc, SPOOL_Q_DELETEPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -1175,7 +1175,7 @@ BOOL spoolss_io_q_deleteprinterdata(char *desc, SPOOL_Q_DELETEPRINTERDATA *q_u, 
  * called from spoolss_r_deleteprinterdata (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_deleteprinterdata(const char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinterdata");
 	depth++;
@@ -1190,7 +1190,7 @@ BOOL spoolss_io_r_deleteprinterdata(char *desc, SPOOL_R_DELETEPRINTERDATA *r_u, 
  * called from spoolss_r_getprinterdata (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_getprinterdata(char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprinterdata(const char *desc, SPOOL_R_GETPRINTERDATA *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -1246,7 +1246,7 @@ BOOL make_spoolss_q_closeprinter(SPOOL_Q_CLOSEPRINTER *q_u, POLICY_HND *hnd)
  * called from spoolss_abortprinter (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_abortprinter(const char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1267,7 +1267,7 @@ BOOL spoolss_io_q_abortprinter(char *desc, SPOOL_Q_ABORTPRINTER *q_u, prs_struct
  * called from spoolss_r_abortprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_abortprinter(char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_abortprinter(const char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_abortprinter");
 	depth++;
@@ -1283,7 +1283,7 @@ BOOL spoolss_io_r_abortprinter(char *desc, SPOOL_R_ABORTPRINTER *r_u, prs_struct
  * called from spoolss_deleteprinter (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_deleteprinter(const char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1305,7 +1305,7 @@ BOOL spoolss_io_q_deleteprinter(char *desc, SPOOL_Q_DELETEPRINTER *q_u, prs_stru
  * called from spoolss_deleteprinter (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_deleteprinter(const char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_deleteprinter");
 	depth++;
@@ -1328,7 +1328,7 @@ BOOL spoolss_io_r_deleteprinter(char *desc, SPOOL_R_DELETEPRINTER *r_u, prs_stru
  * called from spoolss_deleteprinterdriver (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_deleteprinterdriver(const char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1355,7 +1355,7 @@ BOOL spoolss_io_q_deleteprinterdriver(char *desc, SPOOL_Q_DELETEPRINTERDRIVER *q
 /*******************************************************************
  * write a structure.
  ********************************************************************/
-BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_deleteprinterdriver(const char *desc, SPOOL_R_DELETEPRINTERDRIVER *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL) return False;
 
@@ -1379,7 +1379,7 @@ BOOL spoolss_io_r_deleteprinterdriver(char *desc, SPOOL_R_DELETEPRINTERDRIVER *r
  * called from spoolss_closeprinter (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_closeprinter(const char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1401,7 +1401,7 @@ BOOL spoolss_io_q_closeprinter(char *desc, SPOOL_Q_CLOSEPRINTER *q_u, prs_struct
  * called from spoolss_closeprinter (cli_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_closeprinter(const char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_closeprinter");
 	depth++;
@@ -1422,7 +1422,7 @@ BOOL spoolss_io_r_closeprinter(char *desc, SPOOL_R_CLOSEPRINTER *r_u, prs_struct
  * called from spoolss_q_startdocprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_startdocprinter(const char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1446,7 +1446,7 @@ BOOL spoolss_io_q_startdocprinter(char *desc, SPOOL_Q_STARTDOCPRINTER *q_u, prs_
  * called from spoolss_r_startdocprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_startdocprinter(char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_startdocprinter(const char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_startdocprinter");
 	depth++;
@@ -1463,7 +1463,7 @@ BOOL spoolss_io_r_startdocprinter(char *desc, SPOOL_R_STARTDOCPRINTER *r_u, prs_
  * called from spoolss_q_enddocprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_enddocprinter(char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enddocprinter(const char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1484,7 +1484,7 @@ BOOL spoolss_io_q_enddocprinter(char *desc, SPOOL_Q_ENDDOCPRINTER *q_u, prs_stru
  * called from spoolss_r_enddocprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_enddocprinter(char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enddocprinter(const char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enddocprinter");
 	depth++;
@@ -1499,7 +1499,7 @@ BOOL spoolss_io_r_enddocprinter(char *desc, SPOOL_R_ENDDOCPRINTER *r_u, prs_stru
  * called from spoolss_q_startpageprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_startpageprinter(char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_startpageprinter(const char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1520,7 +1520,7 @@ BOOL spoolss_io_q_startpageprinter(char *desc, SPOOL_Q_STARTPAGEPRINTER *q_u, pr
  * called from spoolss_r_startpageprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_startpageprinter(char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_startpageprinter(const char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_startpageprinter");
 	depth++;
@@ -1535,7 +1535,7 @@ BOOL spoolss_io_r_startpageprinter(char *desc, SPOOL_R_STARTPAGEPRINTER *r_u, pr
  * called from spoolss_q_endpageprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_endpageprinter(char *desc, SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_endpageprinter(const char *desc, SPOOL_Q_ENDPAGEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1556,7 +1556,7 @@ BOOL spoolss_io_q_endpageprinter(char *desc, SPOOL_Q_ENDPAGEPRINTER *q_u, prs_st
  * called from spoolss_r_endpageprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_endpageprinter(char *desc, SPOOL_R_ENDPAGEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_endpageprinter(const char *desc, SPOOL_R_ENDPAGEPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_endpageprinter");
 	depth++;
@@ -1571,7 +1571,7 @@ BOOL spoolss_io_r_endpageprinter(char *desc, SPOOL_R_ENDPAGEPRINTER *r_u, prs_st
  * called from spoolss_q_writeprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_writeprinter(char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_writeprinter(const char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL) return False;
 
@@ -1608,7 +1608,7 @@ BOOL spoolss_io_q_writeprinter(char *desc, SPOOL_Q_WRITEPRINTER *q_u, prs_struct
  * called from spoolss_r_writeprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_writeprinter(char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_writeprinter(const char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_writeprinter");
 	depth++;
@@ -1625,7 +1625,7 @@ BOOL spoolss_io_r_writeprinter(char *desc, SPOOL_R_WRITEPRINTER *r_u, prs_struct
  * called from spoolss_q_rffpcnex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_rffpcnex(const char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_rffpcnex");
 	depth++;
@@ -1671,7 +1671,7 @@ BOOL spoolss_io_q_rffpcnex(char *desc, SPOOL_Q_RFFPCNEX *q_u, prs_struct *ps, in
  * called from spoolss_r_rffpcnex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_rffpcnex(const char *desc, SPOOL_R_RFFPCNEX *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_rffpcnex");
 	depth++;
@@ -1687,7 +1687,7 @@ BOOL spoolss_io_r_rffpcnex(char *desc, SPOOL_R_RFFPCNEX *r_u, prs_struct *ps, in
  * called from spoolss_q_rfnpcnex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_rfnpcnex(const char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_rfnpcnex");
 	depth++;
@@ -1722,7 +1722,7 @@ BOOL spoolss_io_q_rfnpcnex(char *desc, SPOOL_Q_RFNPCNEX *q_u, prs_struct *ps, in
  * called from spoolss_r_rfnpcnex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_rfnpcnex(char *desc, SPOOL_R_RFNPCNEX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_rfnpcnex(const char *desc, SPOOL_R_RFNPCNEX *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_rfnpcnex");
 	depth++;
@@ -1842,7 +1842,7 @@ static uint32 size_of_systemtime(SYSTEMTIME *systime)
  *
  ********************************************************************/
 
-static BOOL smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *string)
+static BOOL smb_io_relstr(const char *desc, NEW_BUFFER *buffer, int depth, UNISTR *string)
 {
 	prs_struct *ps=&buffer->prs;
 	
@@ -1901,7 +1901,7 @@ static BOOL smb_io_relstr(char *desc, NEW_BUFFER *buffer, int depth, UNISTR *str
  * used by 2 RPC structs
  ********************************************************************/
 
-static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16 **string)
+static BOOL smb_io_relarraystr(const char *desc, NEW_BUFFER *buffer, int depth, uint16 **string)
 {
 	UNISTR chaine;
 	
@@ -2029,7 +2029,7 @@ static BOOL smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, uint16
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
-static BOOL smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth, SEC_DESC **secdesc)
+static BOOL smb_io_relsecdesc(const char *desc, NEW_BUFFER *buffer, int depth, SEC_DESC **secdesc)
 {
 	prs_struct *ps= &buffer->prs;
 
@@ -2090,7 +2090,7 @@ static BOOL smb_io_relsecdesc(char *desc, NEW_BUFFER *buffer, int depth, SEC_DES
  Parse a DEVMODE structure and its relative pointer.
 ********************************************************************/
 
-static BOOL smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
+static BOOL smb_io_reldevmode(const char *desc, NEW_BUFFER *buffer, int depth, DEVICEMODE **devmode)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2158,7 +2158,7 @@ static BOOL smb_io_reldevmode(char *desc, NEW_BUFFER *buffer, int depth, DEVICEM
  Parse a PRINTER_INFO_0 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info, int depth)
+BOOL smb_io_printer_info_0(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2259,7 +2259,7 @@ BOOL smb_io_printer_info_0(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_0 *info,
  Parse a PRINTER_INFO_1 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
+BOOL smb_io_printer_info_1(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2284,7 +2284,7 @@ BOOL smb_io_printer_info_1(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_1 *info,
  Parse a PRINTER_INFO_2 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
+BOOL smb_io_printer_info_2(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 	uint32 dm_offset, sd_offset, current_offset;
@@ -2374,7 +2374,7 @@ BOOL smb_io_printer_info_2(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_2 *info,
  Parse a PRINTER_INFO_3 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
+BOOL smb_io_printer_info_3(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2395,7 +2395,7 @@ BOOL smb_io_printer_info_3(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_3 *info,
  Parse a PRINTER_INFO_4 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_4(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_4 *info, int depth)
+BOOL smb_io_printer_info_4(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_4 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2417,7 +2417,7 @@ BOOL smb_io_printer_info_4(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_4 *info,
  Parse a PRINTER_INFO_5 structure.
 ********************************************************************/  
 
-BOOL smb_io_printer_info_5(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info, int depth)
+BOOL smb_io_printer_info_5(const char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2443,7 +2443,7 @@ BOOL smb_io_printer_info_5(char *desc, NEW_BUFFER *buffer, PRINTER_INFO_5 *info,
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
-BOOL smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
+BOOL smb_io_port_info_1(const char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2462,7 +2462,7 @@ BOOL smb_io_port_info_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int d
  Parse a PORT_INFO_2 structure.
 ********************************************************************/  
 
-BOOL smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
+BOOL smb_io_port_info_2(const char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2489,7 +2489,7 @@ BOOL smb_io_port_info_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int d
  Parse a DRIVER_INFO_1 structure.
 ********************************************************************/
 
-BOOL smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
+BOOL smb_io_printer_driver_info_1(const char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 *info, int depth) 
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2508,7 +2508,7 @@ BOOL smb_io_printer_driver_info_1(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_1 
  Parse a DRIVER_INFO_2 structure.
 ********************************************************************/
 
-BOOL smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) 
+BOOL smb_io_printer_driver_info_2(const char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 *info, int depth) 
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2537,7 +2537,7 @@ BOOL smb_io_printer_driver_info_2(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_2 
  Parse a DRIVER_INFO_3 structure.
 ********************************************************************/
 
-BOOL smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth)
+BOOL smb_io_printer_driver_info_3(const char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2576,7 +2576,7 @@ BOOL smb_io_printer_driver_info_3(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_3 
  Parse a DRIVER_INFO_6 structure.
 ********************************************************************/
 
-BOOL smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth)
+BOOL smb_io_printer_driver_info_6(const char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2641,7 +2641,7 @@ BOOL smb_io_printer_driver_info_6(char *desc, NEW_BUFFER *buffer, DRIVER_INFO_6 
  Parse a JOB_INFO_1 structure.
 ********************************************************************/  
 
-BOOL smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth)
+BOOL smb_io_job_info_1(const char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2684,7 +2684,7 @@ BOOL smb_io_job_info_1(char *desc, NEW_BUFFER *buffer, JOB_INFO_1 *info, int dep
  Parse a JOB_INFO_2 structure.
 ********************************************************************/  
 
-BOOL smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
+BOOL smb_io_job_info_2(const char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int depth)
 {	
 	uint32 pipo=0;
 	prs_struct *ps=&buffer->prs;
@@ -2751,7 +2751,7 @@ BOOL smb_io_job_info_2(char *desc, NEW_BUFFER *buffer, JOB_INFO_2 *info, int dep
 /*******************************************************************
 ********************************************************************/  
 
-BOOL smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
+BOOL smb_io_form_1(const char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 	
@@ -2786,7 +2786,7 @@ BOOL smb_io_form_1(char *desc, NEW_BUFFER *buffer, FORM_1 *info, int depth)
  Read/write a BUFFER struct.
 ********************************************************************/  
 
-static BOOL spoolss_io_buffer(char *desc, prs_struct *ps, int depth, NEW_BUFFER **pp_buffer)
+static BOOL spoolss_io_buffer(const char *desc, prs_struct *ps, int depth, NEW_BUFFER **pp_buffer)
 {
 	NEW_BUFFER *buffer = *pp_buffer;
 
@@ -2898,7 +2898,7 @@ uint32 new_get_buffer_size(NEW_BUFFER *buffer)
  Parse a DRIVER_DIRECTORY_1 structure.
 ********************************************************************/  
 
-BOOL smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
+BOOL smb_io_driverdir_1(const char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2917,7 +2917,7 @@ BOOL smb_io_driverdir_1(char *desc, NEW_BUFFER *buffer, DRIVER_DIRECTORY_1 *info
  Parse a PORT_INFO_1 structure.
 ********************************************************************/  
 
-BOOL smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
+BOOL smb_io_port_1(const char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2936,7 +2936,7 @@ BOOL smb_io_port_1(char *desc, NEW_BUFFER *buffer, PORT_INFO_1 *info, int depth)
  Parse a PORT_INFO_2 structure.
 ********************************************************************/  
 
-BOOL smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
+BOOL smb_io_port_2(const char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2962,7 +2962,7 @@ BOOL smb_io_port_2(char *desc, NEW_BUFFER *buffer, PORT_INFO_2 *info, int depth)
 /*******************************************************************
 ********************************************************************/  
 
-BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_1 *info, int depth)
+BOOL smb_io_printprocessor_info_1(const char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2980,7 +2980,7 @@ BOOL smb_io_printprocessor_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR
 /*******************************************************************
 ********************************************************************/  
 
-BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDATATYPE_1 *info, int depth)
+BOOL smb_io_printprocdatatype_info_1(const char *desc, NEW_BUFFER *buffer, PRINTPROCDATATYPE_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -2998,7 +2998,7 @@ BOOL smb_io_printprocdatatype_info_1(char *desc, NEW_BUFFER *buffer, PRINTPROCDA
 /*******************************************************************
 ********************************************************************/  
 
-BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *info, int depth)
+BOOL smb_io_printmonitor_info_1(const char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -3016,7 +3016,7 @@ BOOL smb_io_printmonitor_info_1(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_1 *
 /*******************************************************************
 ********************************************************************/  
 
-BOOL smb_io_printmonitor_info_2(char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *info, int depth)
+BOOL smb_io_printmonitor_info_2(const char *desc, NEW_BUFFER *buffer, PRINTMONITOR_2 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 
@@ -3550,7 +3550,7 @@ BOOL make_spoolss_q_getprinterdriver2(SPOOL_Q_GETPRINTERDRIVER2 *q_u,
  * called from spoolss_getprinterdriver2 (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprinterdriver2(const char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprinterdriver2");
 	depth++;
@@ -3592,7 +3592,7 @@ BOOL spoolss_io_q_getprinterdriver2(char *desc, SPOOL_Q_GETPRINTERDRIVER2 *q_u, 
  * called from spoolss_getprinterdriver2 (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_getprinterdriver2(char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprinterdriver2(const char *desc, SPOOL_R_GETPRINTERDRIVER2 *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdriver2");
 	depth++;
@@ -3665,7 +3665,7 @@ BOOL make_spoolss_q_enumports(SPOOL_Q_ENUMPORTS *q_u,
  * called from spoolss_enumprinters (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprinters(const char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinters");
 	depth++;
@@ -3701,7 +3701,7 @@ BOOL spoolss_io_q_enumprinters(char *desc, SPOOL_Q_ENUMPRINTERS *q_u, prs_struct
  Parse a SPOOL_R_ENUMPRINTERS structure.
  ********************************************************************/
 
-BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinters(const char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinters");
 	depth++;
@@ -3733,7 +3733,7 @@ BOOL spoolss_io_r_enumprinters(char *desc, SPOOL_R_ENUMPRINTERS *r_u, prs_struct
  *
  ********************************************************************/
 
-BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprinter(const char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps, int depth)
 {	
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinter");
 	depth++;
@@ -3761,7 +3761,7 @@ BOOL spoolss_io_r_getprinter(char *desc, SPOOL_R_GETPRINTER *r_u, prs_struct *ps
  * called from spoolss_getprinter (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_getprinter(char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprinter(const char *desc, SPOOL_Q_GETPRINTER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprinter");
 	depth++;
@@ -3873,7 +3873,7 @@ BOOL make_spoolss_q_setprinter(TALLOC_CTX *mem_ctx, SPOOL_Q_SETPRINTER *q_u,
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_setprinter(const char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_setprinter");
 	depth++;
@@ -3891,7 +3891,7 @@ BOOL spoolss_io_r_setprinter(char *desc, SPOOL_R_SETPRINTER *r_u, prs_struct *ps
  Marshall/unmarshall a SPOOL_Q_SETPRINTER struct.
 ********************************************************************/  
 
-BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_setprinter(const char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps, int depth)
 {
 	uint32 ptr_sec_desc = 0;
 
@@ -3954,7 +3954,7 @@ BOOL spoolss_io_q_setprinter(char *desc, SPOOL_Q_SETPRINTER *q_u, prs_struct *ps
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_fcpn(const char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_fcpn");
 	depth++;
@@ -3971,7 +3971,7 @@ BOOL spoolss_io_r_fcpn(char *desc, SPOOL_R_FCPN *r_u, prs_struct *ps, int depth)
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_fcpn(const char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_fcpn");
@@ -3990,7 +3990,7 @@ BOOL spoolss_io_q_fcpn(char *desc, SPOOL_Q_FCPN *q_u, prs_struct *ps, int depth)
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_addjob(const char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "");
 	depth++;
@@ -4016,7 +4016,7 @@ BOOL spoolss_io_r_addjob(char *desc, SPOOL_R_ADDJOB *r_u, prs_struct *ps, int de
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_addjob(const char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "");
 	depth++;
@@ -4044,7 +4044,7 @@ BOOL spoolss_io_q_addjob(char *desc, SPOOL_Q_ADDJOB *q_u, prs_struct *ps, int de
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumjobs(char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumjobs(const char *desc, SPOOL_R_ENUMJOBS *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumjobs");
 	depth++;
@@ -4096,7 +4096,7 @@ BOOL make_spoolss_q_enumjobs(SPOOL_Q_ENUMJOBS *q_u, const POLICY_HND *hnd,
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumjobs(const char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumjobs");
 	depth++;
@@ -4129,7 +4129,7 @@ BOOL spoolss_io_q_enumjobs(char *desc, SPOOL_Q_ENUMJOBS *q_u, prs_struct *ps, in
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_schedulejob(const char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_schedulejob");
 	depth++;
@@ -4146,7 +4146,7 @@ BOOL spoolss_io_r_schedulejob(char *desc, SPOOL_R_SCHEDULEJOB *r_u, prs_struct *
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_schedulejob(const char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_schedulejob");
 	depth++;
@@ -4165,7 +4165,7 @@ BOOL spoolss_io_q_schedulejob(char *desc, SPOOL_Q_SCHEDULEJOB *q_u, prs_struct *
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_setjob(const char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_setjob");
 	depth++;
@@ -4182,7 +4182,7 @@ BOOL spoolss_io_r_setjob(char *desc, SPOOL_R_SETJOB *r_u, prs_struct *ps, int de
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_setjob(const char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_setjob");
 	depth++;
@@ -4210,7 +4210,7 @@ BOOL spoolss_io_q_setjob(char *desc, SPOOL_Q_SETJOB *q_u, prs_struct *ps, int de
  Parse a SPOOL_R_ENUMPRINTERDRIVERS structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumprinterdrivers(char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinterdrivers(const char *desc, SPOOL_R_ENUMPRINTERDRIVERS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdrivers");
 	depth++;
@@ -4260,7 +4260,7 @@ BOOL make_spoolss_q_enumprinterdrivers(SPOOL_Q_ENUMPRINTERDRIVERS *q_u,
  Parse a SPOOL_Q_ENUMPRINTERDRIVERS structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprinterdrivers(const char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdrivers");
@@ -4301,7 +4301,7 @@ BOOL spoolss_io_q_enumprinterdrivers(char *desc, SPOOL_Q_ENUMPRINTERDRIVERS *q_u
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumforms(const char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumforms");
@@ -4328,7 +4328,7 @@ BOOL spoolss_io_q_enumforms(char *desc, SPOOL_Q_ENUMFORMS *q_u, prs_struct *ps, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumforms(const char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumforms");
 	depth++;
@@ -4357,7 +4357,7 @@ BOOL spoolss_io_r_enumforms(char *desc, SPOOL_R_ENUMFORMS *r_u, prs_struct *ps, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getform(const char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_getform");
@@ -4390,7 +4390,7 @@ BOOL spoolss_io_q_getform(char *desc, SPOOL_Q_GETFORM *q_u, prs_struct *ps, int 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getform(const char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_getform");
 	depth++;
@@ -4417,7 +4417,7 @@ BOOL spoolss_io_r_getform(char *desc, SPOOL_R_GETFORM *r_u, prs_struct *ps, int 
  Parse a SPOOL_R_ENUMPORTS structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumports(const char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumports");
 	depth++;
@@ -4446,7 +4446,7 @@ BOOL spoolss_io_r_enumports(char *desc, SPOOL_R_ENUMPORTS *r_u, prs_struct *ps, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumports(const char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "");
 	depth++;
@@ -4479,7 +4479,7 @@ BOOL spoolss_io_q_enumports(char *desc, SPOOL_Q_ENUMPORTS *q_u, prs_struct *ps, 
  Parse a SPOOL_PRINTER_INFO_LEVEL_1 structure.
 ********************************************************************/  
 
-BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth)
+BOOL spool_io_printer_info_level_1(const char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, prs_struct *ps, int depth)
 {	
 	prs_debug(ps, depth, desc, "spool_io_printer_info_level_1");
 	depth++;
@@ -4510,7 +4510,7 @@ BOOL spool_io_printer_info_level_1(char *desc, SPOOL_PRINTER_INFO_LEVEL_1 *il, p
  Parse a SPOOL_PRINTER_INFO_LEVEL_3 structure.
 ********************************************************************/  
 
-BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth)
+BOOL spool_io_printer_info_level_3(const char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, prs_struct *ps, int depth)
 {	
 	prs_debug(ps, depth, desc, "spool_io_printer_info_level_3");
 	depth++;
@@ -4528,7 +4528,7 @@ BOOL spool_io_printer_info_level_3(char *desc, SPOOL_PRINTER_INFO_LEVEL_3 *il, p
  Parse a SPOOL_PRINTER_INFO_LEVEL_2 structure.
 ********************************************************************/  
 
-BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
+BOOL spool_io_printer_info_level_2(const char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, prs_struct *ps, int depth)
 {	
 	prs_debug(ps, depth, desc, "spool_io_printer_info_level_2");
 	depth++;
@@ -4610,7 +4610,7 @@ BOOL spool_io_printer_info_level_2(char *desc, SPOOL_PRINTER_INFO_LEVEL_2 *il, p
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth)
+BOOL spool_io_printer_info_level(const char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spool_io_printer_info_level");
 	depth++;
@@ -4680,7 +4680,7 @@ BOOL spool_io_printer_info_level(char *desc, SPOOL_PRINTER_INFO_LEVEL *il, prs_s
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_addprinterex(const char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct *ps, int depth)
 {
 	uint32 ptr_sec_desc = 0;
 
@@ -4744,7 +4744,7 @@ BOOL spoolss_io_q_addprinterex(char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_struct
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
+BOOL spoolss_io_r_addprinterex(const char *desc, SPOOL_R_ADDPRINTEREX *r_u, 
 			       prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterex");
@@ -4762,7 +4762,7 @@ BOOL spoolss_io_r_addprinterex(char *desc, SPOOL_R_ADDPRINTEREX *r_u,
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
+BOOL spool_io_printer_driver_info_level_3(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 **q_u, 
                                           prs_struct *ps, int depth)
 {	
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_3 *il;
@@ -4840,7 +4840,7 @@ BOOL spool_io_printer_driver_info_level_3(char *desc, SPOOL_PRINTER_DRIVER_INFO_
 parse a SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 structure
 ********************************************************************/  
 
-BOOL spool_io_printer_driver_info_level_6(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
+BOOL spool_io_printer_driver_info_level_6(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 **q_u, 
                                           prs_struct *ps, int depth)
 {	
 	SPOOL_PRINTER_DRIVER_INFO_LEVEL_6 *il;
@@ -5031,7 +5031,7 @@ static BOOL uniarray_2_dosarray(BUFFER5 *buf5, fstring **ar)
  and size of array at beginning
 ********************************************************************/  
 
-BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth)
+BOOL smb_io_unibuffer(const char *desc, UNISTR2 *buffer, prs_struct *ps, int depth)
 {
 	if (buffer==NULL) return False;
 
@@ -5050,7 +5050,7 @@ BOOL smb_io_unibuffer(char *desc, UNISTR2 *buffer, prs_struct *ps, int depth)
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spool_io_printer_driver_info_level(char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth)
+BOOL spool_io_printer_driver_info_level(const char *desc, SPOOL_PRINTER_DRIVER_INFO_LEVEL *il, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spool_io_printer_driver_info_level");
 	depth++;
@@ -5199,7 +5199,7 @@ BOOL make_spoolss_buffer5(TALLOC_CTX *mem_ctx, BUFFER5 *buf5, uint32 len, uint16
  fill in the prs_struct for a ADDPRINTERDRIVER request PDU
  ********************************************************************/  
 
-BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_addprinterdriver(const char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_addprinterdriver");
 	depth++;
@@ -5226,7 +5226,7 @@ BOOL spoolss_io_q_addprinterdriver(char *desc, SPOOL_Q_ADDPRINTERDRIVER *q_u, pr
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_addprinterdriver(char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_addprinterdriver(const char *desc, SPOOL_R_ADDPRINTERDRIVER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprinterdriver");
 	depth++;
@@ -5408,7 +5408,7 @@ BOOL make_spoolss_q_getprinterdriverdir(SPOOL_Q_GETPRINTERDRIVERDIR *q_u,
  Parse a SPOOL_Q_GETPRINTERDRIVERDIR structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprinterdriverdir(const char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_getprinterdriverdir");
 	depth++;
@@ -5450,7 +5450,7 @@ BOOL spoolss_io_q_getprinterdriverdir(char *desc, SPOOL_Q_GETPRINTERDRIVERDIR *q
  Parse a SPOOL_R_GETPRINTERDRIVERDIR structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprinterdriverdir(const char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprinterdriverdir");
 	depth++;
@@ -5476,7 +5476,7 @@ BOOL spoolss_io_r_getprinterdriverdir(char *desc, SPOOL_R_GETPRINTERDRIVERDIR *r
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprintprocessors(const char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocessors");
 	depth++;
@@ -5505,7 +5505,7 @@ BOOL spoolss_io_r_enumprintprocessors(char *desc, SPOOL_R_ENUMPRINTPROCESSORS *r
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprintprocessors(const char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintprocessors");
 	depth++;
@@ -5547,7 +5547,7 @@ BOOL spoolss_io_q_enumprintprocessors(char *desc, SPOOL_Q_ENUMPRINTPROCESSORS *q
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_addprintprocessor(char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_addprintprocessor(const char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_addprintprocessor");
 	depth++;
@@ -5581,7 +5581,7 @@ BOOL spoolss_io_q_addprintprocessor(char *desc, SPOOL_Q_ADDPRINTPROCESSOR *q_u, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_addprintprocessor(char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_addprintprocessor(const char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_addprintproicessor");
 	depth++;
@@ -5598,7 +5598,7 @@ BOOL spoolss_io_r_addprintprocessor(char *desc, SPOOL_R_ADDPRINTPROCESSOR *r_u, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprintprocdatatypes(const char *desc, SPOOL_R_ENUMPRINTPROCDATATYPES *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintprocdatatypes");
 	depth++;
@@ -5627,7 +5627,7 @@ BOOL spoolss_io_r_enumprintprocdatatypes(char *desc, SPOOL_R_ENUMPRINTPROCDATATY
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumprintprocdatatypes(char *desc, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprintprocdatatypes(const char *desc, SPOOL_Q_ENUMPRINTPROCDATATYPES *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintprocdatatypes");
 	depth++;
@@ -5670,7 +5670,7 @@ BOOL spoolss_io_q_enumprintprocdatatypes(char *desc, SPOOL_Q_ENUMPRINTPROCDATATY
  Parse a SPOOL_Q_ENUMPRINTMONITORS structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprintmonitors(const char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprintmonitors");
 	depth++;
@@ -5704,7 +5704,7 @@ BOOL spoolss_io_q_enumprintmonitors(char *desc, SPOOL_Q_ENUMPRINTMONITORS *q_u, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprintmonitors(const char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprintmonitors");
 	depth++;
@@ -5733,7 +5733,7 @@ BOOL spoolss_io_r_enumprintmonitors(char *desc, SPOOL_R_ENUMPRINTMONITORS *r_u, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinterdata(const char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_struct *ps, int depth)
 {	
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdata");
 	depth++;
@@ -5790,7 +5790,7 @@ BOOL spoolss_io_r_enumprinterdata(char *desc, SPOOL_R_ENUMPRINTERDATA *r_u, prs_
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_enumprinterdata(char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprinterdata(const char *desc, SPOOL_Q_ENUMPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdata");
 	depth++;
@@ -5845,7 +5845,7 @@ BOOL make_spoolss_q_setprinterdata(SPOOL_Q_SETPRINTERDATA *q_u, TALLOC_CTX *ctx,
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_setprinterdata(const char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_setprinterdata");
 	depth++;
@@ -5894,7 +5894,7 @@ BOOL spoolss_io_q_setprinterdata(char *desc, SPOOL_Q_SETPRINTERDATA *q_u, prs_st
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_setprinterdata(const char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_setprinterdata");
 	depth++;
@@ -5909,7 +5909,7 @@ BOOL spoolss_io_r_setprinterdata(char *desc, SPOOL_R_SETPRINTERDATA *r_u, prs_st
 
 /*******************************************************************
 ********************************************************************/  
-BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_resetprinter(const char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_resetprinter");
 	depth++;
@@ -5936,7 +5936,7 @@ BOOL spoolss_io_q_resetprinter(char *desc, SPOOL_Q_RESETPRINTER *q_u, prs_struct
 
 /*******************************************************************
 ********************************************************************/  
-BOOL spoolss_io_r_resetprinter(char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_resetprinter(const char *desc, SPOOL_R_RESETPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_resetprinter");
 	depth++;
@@ -5988,7 +5988,7 @@ BOOL convert_specific_param(NT_PRINTER_PARAM **param, const UNISTR2 *value,
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spoolss_io_addform(char *desc, FORM *f, uint32 ptr, prs_struct *ps, int depth)
+static BOOL spoolss_io_addform(const char *desc, FORM *f, uint32 ptr, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_addform");
 	depth++;
@@ -6024,7 +6024,7 @@ static BOOL spoolss_io_addform(char *desc, FORM *f, uint32 ptr, prs_struct *ps, 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_deleteform(char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_deleteform(const char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_deleteform");
 	depth++;
@@ -6042,7 +6042,7 @@ BOOL spoolss_io_q_deleteform(char *desc, SPOOL_Q_DELETEFORM *q_u, prs_struct *ps
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_deleteform(const char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_deleteform");
 	depth++;
@@ -6058,7 +6058,7 @@ BOOL spoolss_io_r_deleteform(char *desc, SPOOL_R_DELETEFORM *r_u, prs_struct *ps
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_addform(const char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_addform");
@@ -6087,7 +6087,7 @@ BOOL spoolss_io_q_addform(char *desc, SPOOL_Q_ADDFORM *q_u, prs_struct *ps, int 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_addform(const char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_addform");
 	depth++;
@@ -6103,7 +6103,7 @@ BOOL spoolss_io_r_addform(char *desc, SPOOL_R_ADDFORM *r_u, prs_struct *ps, int 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_setform(const char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int depth)
 {
 	uint32 useless_ptr=1;
 	prs_debug(ps, depth, desc, "spoolss_io_q_setform");
@@ -6138,7 +6138,7 @@ BOOL spoolss_io_q_setform(char *desc, SPOOL_Q_SETFORM *q_u, prs_struct *ps, int 
 /*******************************************************************
 ********************************************************************/  
 
-BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_setform(const char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_setform");
 	depth++;
@@ -6155,7 +6155,7 @@ BOOL spoolss_io_r_setform(char *desc, SPOOL_R_SETFORM *r_u, prs_struct *ps, int 
  Parse a SPOOL_R_GETJOB structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getjob(const char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_getjob");
 	depth++;
@@ -6182,7 +6182,7 @@ BOOL spoolss_io_r_getjob(char *desc, SPOOL_R_GETJOB *r_u, prs_struct *ps, int de
  Parse a SPOOL_Q_GETJOB structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_getjob(char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getjob(const char *desc, SPOOL_Q_GETJOB *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "");
 	depth++;
@@ -6277,7 +6277,7 @@ BOOL make_spoolss_q_replyopenprinter(SPOOL_Q_REPLYOPENPRINTER *q_u,
  Parse a SPOOL_Q_REPLYOPENPRINTER structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_replyopenprinter(const char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_replyopenprinter");
 	depth++;
@@ -6308,7 +6308,7 @@ BOOL spoolss_io_q_replyopenprinter(char *desc, SPOOL_Q_REPLYOPENPRINTER *q_u, pr
  Parse a SPOOL_R_REPLYOPENPRINTER structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_replyopenprinter(char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_replyopenprinter(const char *desc, SPOOL_R_REPLYOPENPRINTER *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_replyopenprinter");
 	depth++;
@@ -6348,7 +6348,7 @@ BOOL make_spoolss_q_routerreplyprinter(SPOOL_Q_ROUTERREPLYPRINTER *q_u, POLICY_H
 /*******************************************************************
  Parse a SPOOL_Q_ROUTERREPLYPRINTER structure.
 ********************************************************************/
-BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_routerreplyprinter (const char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_u, prs_struct *ps, int depth)
 {
 
 	prs_debug(ps, depth, desc, "spoolss_io_q_routerreplyprinter");
@@ -6378,7 +6378,7 @@ BOOL spoolss_io_q_routerreplyprinter (char *desc, SPOOL_Q_ROUTERREPLYPRINTER *q_
 /*******************************************************************
  Parse a SPOOL_R_ROUTERREPLYPRINTER structure.
 ********************************************************************/
-BOOL spoolss_io_r_routerreplyprinter (char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_routerreplyprinter (const char *desc, SPOOL_R_ROUTERREPLYPRINTER *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_routerreplyprinter");
 	depth++;
@@ -6410,7 +6410,7 @@ BOOL make_spoolss_q_reply_closeprinter(SPOOL_Q_REPLYCLOSEPRINTER *q_u, POLICY_HN
  Parse a SPOOL_Q_REPLYCLOSEPRINTER structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_replycloseprinter(const char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_replycloseprinter");
 	depth++;
@@ -6428,7 +6428,7 @@ BOOL spoolss_io_q_replycloseprinter(char *desc, SPOOL_Q_REPLYCLOSEPRINTER *q_u, 
  Parse a SPOOL_R_REPLYCLOSEPRINTER structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_replycloseprinter(char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_replycloseprinter(const char *desc, SPOOL_R_REPLYCLOSEPRINTER *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_replycloseprinter");
 	depth++;
@@ -6555,7 +6555,7 @@ BOOL make_spoolss_q_reply_rrpcn(SPOOL_Q_REPLY_RRPCN *q_u, POLICY_HND *hnd,
  Parse a SPOOL_Q_REPLY_RRPCN structure.
 ********************************************************************/  
 
-BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_reply_rrpcn(const char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_reply_rrpcn");
 	depth++;
@@ -6592,7 +6592,7 @@ BOOL spoolss_io_q_reply_rrpcn(char *desc, SPOOL_Q_REPLY_RRPCN *q_u, prs_struct *
  Parse a SPOOL_R_REPLY_RRPCN structure.
 ********************************************************************/  
 
-BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_reply_rrpcn(const char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *ps, int depth)
 {		
 	prs_debug(ps, depth, desc, "spoolss_io_r_reply_rrpcn");
 	depth++;
@@ -6614,7 +6614,7 @@ BOOL spoolss_io_r_reply_rrpcn(char *desc, SPOOL_R_REPLY_RRPCN *r_u, prs_struct *
  * called from spoolss_q_getprinterdataex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_q_getprinterdataex(char *desc, SPOOL_Q_GETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprinterdataex(const char *desc, SPOOL_Q_GETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -6647,7 +6647,7 @@ BOOL spoolss_io_q_getprinterdataex(char *desc, SPOOL_Q_GETPRINTERDATAEX *q_u, pr
  * called from spoolss_r_getprinterdataex (srv_spoolss.c)
  ********************************************************************/
 
-BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprinterdataex(const char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -6686,7 +6686,7 @@ BOOL spoolss_io_r_getprinterdataex(char *desc, SPOOL_R_GETPRINTERDATAEX *r_u, pr
  * read a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_q_setprinterdataex(char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_setprinterdataex(const char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_setprinterdataex");
 	depth++;
@@ -6742,7 +6742,7 @@ BOOL spoolss_io_q_setprinterdataex(char *desc, SPOOL_Q_SETPRINTERDATAEX *q_u, pr
  * write a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_setprinterdataex(const char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_setprinterdataex");
 	depth++;
@@ -6760,7 +6760,7 @@ BOOL spoolss_io_r_setprinterdataex(char *desc, SPOOL_R_SETPRINTERDATAEX *r_u, pr
  * read a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_q_enumprinterkey(char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprinterkey(const char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterkey");
 	depth++;
@@ -6786,7 +6786,7 @@ BOOL spoolss_io_q_enumprinterkey(char *desc, SPOOL_Q_ENUMPRINTERKEY *q_u, prs_st
  * write a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinterkey(const char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterkey");
 	depth++;
@@ -6814,7 +6814,7 @@ BOOL spoolss_io_r_enumprinterkey(char *desc, SPOOL_R_ENUMPRINTERKEY *r_u, prs_st
  * read a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_q_enumprinterdataex(char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_enumprinterdataex(const char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_q_enumprinterdataex");
 	depth++;
@@ -6839,7 +6839,7 @@ BOOL spoolss_io_q_enumprinterdataex(char *desc, SPOOL_Q_ENUMPRINTERDATAEX *q_u, 
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps, 
+static BOOL spoolss_io_printer_enum_values_ctr(const char *desc, prs_struct *ps, 
 				PRINTER_ENUM_VALUES_CTR *ctr, int depth)
 {
 	int 	i;
@@ -6922,7 +6922,7 @@ static BOOL spoolss_io_printer_enum_values_ctr(char *desc, prs_struct *ps,
  * write a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_r_enumprinterdataex(char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_enumprinterdataex(const char *desc, SPOOL_R_ENUMPRINTERDATAEX *r_u, prs_struct *ps, int depth)
 {
 	uint32 data_offset, end_offset;
 	prs_debug(ps, depth, desc, "spoolss_io_r_enumprinterdataex");
@@ -6999,7 +6999,7 @@ BOOL make_spoolss_q_getprintprocessordirectory(SPOOL_Q_GETPRINTPROCESSORDIRECTOR
 	return True;
 }
 
-BOOL spoolss_io_q_getprintprocessordirectory(char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth)
+BOOL spoolss_io_q_getprintprocessordirectory(const char *desc, SPOOL_Q_GETPRINTPROCESSORDIRECTORY *q_u, prs_struct *ps, int depth)
 {
 	uint32 ptr;
 
@@ -7051,7 +7051,7 @@ BOOL spoolss_io_q_getprintprocessordirectory(char *desc, SPOOL_Q_GETPRINTPROCESS
  * write a structure.
  ********************************************************************/  
 
-BOOL spoolss_io_r_getprintprocessordirectory(char *desc, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u, prs_struct *ps, int depth)
+BOOL spoolss_io_r_getprintprocessordirectory(const char *desc, SPOOL_R_GETPRINTPROCESSORDIRECTORY *r_u, prs_struct *ps, int depth)
 {
 	prs_debug(ps, depth, desc, "spoolss_io_r_getprintprocessordirectory");
 	depth++;
@@ -7074,7 +7074,7 @@ BOOL spoolss_io_r_getprintprocessordirectory(char *desc, SPOOL_R_GETPRINTPROCESS
 	return True;
 }
 
-BOOL smb_io_printprocessordirectory_1(char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_DIRECTORY_1 *info, int depth)
+BOOL smb_io_printprocessordirectory_1(const char *desc, NEW_BUFFER *buffer, PRINTPROCESSOR_DIRECTORY_1 *info, int depth)
 {
 	prs_struct *ps=&buffer->prs;
 

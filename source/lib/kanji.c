@@ -1528,7 +1528,7 @@ static void setup_string_function(int codes)
  Interpret coding system.
 ************************************************************************/
 
-void interpret_coding_system(char *str)
+void interpret_coding_system(const char *str)
 {
     int codes = UNKNOWN_CODE;
     

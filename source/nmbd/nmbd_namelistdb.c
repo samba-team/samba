@@ -176,7 +176,7 @@ void update_name_ttl( struct name_record *namerec, int ttl )
  * ************************************************************************** **
  */
 struct name_record *add_name_to_subnet( struct subnet_record *subrec,
-                                        char                 *name,
+                                        const char            *name,
                                         int                   type,
                                         uint16                nb_flags,
                                         int                   ttl,
@@ -527,7 +527,7 @@ void add_samba_names_to_subnet( struct subnet_record *subrec )
 static void dump_subnet_namelist( struct subnet_record *subrec, FILE *fp)
 {
   struct name_record *namerec;
-  char *src_type;
+  const char *src_type;
   struct tm *tm;
   int i;
 

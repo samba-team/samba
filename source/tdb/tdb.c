@@ -1911,6 +1911,8 @@ int tdb_lockkeys(TDB_CONTEXT *tdb, u32 number, TDB_DATA keys[])
 void tdb_unlockkeys(TDB_CONTEXT *tdb)
 {
 	u32 i;
+	if (!tdb->lockedkeys)
+		return;
 	for (i = 0; i < tdb->lockedkeys[0]; i++)
 		tdb_unlock(tdb, tdb->lockedkeys[i+1], F_WRLCK);
 	SAFE_FREE(tdb->lockedkeys);

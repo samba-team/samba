@@ -337,7 +337,7 @@ BOOL winbindd_param_init(void)
 BOOL check_domain_env(char *domain_env, char *domain)
 {
 	fstring name;
-	char *tmp = domain_env;
+	const char *tmp = domain_env;
 
 	while(next_token(&tmp, name, ",", sizeof(fstring))) {
 		if (strequal(name, domain))

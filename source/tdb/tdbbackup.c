@@ -242,7 +242,7 @@ static void usage(void)
 	int ret = 0;
 	int c;
 	int verify = 0;
-	char *suffix = ".bak";
+	const char *suffix = ".bak";
 	extern int optind;
 	extern char *optarg;
 

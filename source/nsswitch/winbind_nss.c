@@ -550,9 +550,9 @@ static char *get_static(char **buffer, int *buflen, int len)
    lib/util_str.c as I really don't want to have to link in any other
    objects if I can possibly avoid it. */
 
-BOOL next_token(char **ptr,char *buff,char *sep, size_t bufsize)
+BOOL next_token(const char **ptr,char *buff,const char *sep, size_t bufsize)
 {
-	char *s;
+	const char *s;
 	BOOL quoted;
 	size_t len=1;
 
@@ -745,7 +745,7 @@ static int fill_grent(struct group *result, struct winbindd_gr *gr,
 
 	i = 0;
 
-	while(next_token((char **)&gr_mem, name, ",", sizeof(fstring))) {
+	while(next_token((const char **)&gr_mem, name, ",", sizeof(fstring))) {
         
 		/* Allocate space for member */
         

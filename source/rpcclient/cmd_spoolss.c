@@ -26,8 +26,8 @@
 #include "rpcclient.h"
 
 struct table_node {
-	char 	*long_archi;
-	char 	*short_archi;
+	const char 	*long_archi;
+	const char 	*short_archi;
 	int	version;
 };
  
@@ -45,7 +45,7 @@ struct table_node archi_table[]= {
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, char *long_archi)
+BOOL get_short_archi(char *short_archi, const char *long_archi)
 {
         int i=-1;
 
@@ -969,7 +969,7 @@ void set_drv_info_3_env (DRIVER_INFO_3 *info, const char *arch)
  wrapper for strtok to get the next parameter from a delimited list.
  Needed to handle the empty parameter string denoted by "NULL"
  *************************************************************************/
-static char* get_driver_3_param (char* str, char* delim, UNISTR* dest)
+static char* get_driver_3_param (char* str, const char* delim, UNISTR* dest)
 {
 	char	*ptr;
 

@@ -44,7 +44,7 @@ enum chown_mode {REQUEST_NONE, REQUEST_CHOWN, REQUEST_CHGRP};
 enum exit_values {EXIT_OK, EXIT_FAILED, EXIT_PARSE_ERROR};
 
 struct perm_value {
-	char *perm;
+	const char *perm;
 	uint32 mask;
 };
 
@@ -237,6 +237,7 @@ static void print_ace(FILE *f, SEC_ACE *ace)
 static BOOL parse_ace(SEC_ACE *ace, char *str)
 {
 	char *p;
+	const char *cp;
 	fstring tok;
 	unsigned atype, aflags, amask;
 	DOM_SID sid;
@@ -262,7 +263,8 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 		return False;
 	}
 
-	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+	cp = p;
+	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 
@@ -276,12 +278,12 @@ static BOOL parse_ace(SEC_ACE *ace, char *str)
 
 	/* Only numeric form accepted for flags at present */
 
-	if (!(next_token(&p, tok, "/", sizeof(fstring)) &&
+	if (!(next_token(&cp, tok, "/", sizeof(fstring)) &&
 	      sscanf(tok, "%i", &aflags))) {
 		return False;
 	}
 
-	if (!next_token(&p, tok, "/", sizeof(fstring))) {
+	if (!next_token(&cp, tok, "/", sizeof(fstring))) {
 		return False;
 	}
 
@@ -347,7 +349,7 @@ static BOOL add_ace(SEC_ACL **the_acl, SEC_ACE *ace)
 /* parse a ascii version of a security descriptor */
 static SEC_DESC *sec_desc_parse(char *str)
 {
-	char *p = str;
+	const char *p = str;
 	fstring tok;
 	SEC_DESC *ret;
 	size_t sd_size;

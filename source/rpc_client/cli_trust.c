@@ -169,7 +169,7 @@ machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli)));
  update.
 ************************************************************************/
 
-BOOL change_trust_account_password( char *domain, char *remote_machine_list)
+BOOL change_trust_account_password( char *domain, const char *remote_machine_list)
 {
   fstring remote_machine;
   unsigned char old_trust_passwd_hash[16];

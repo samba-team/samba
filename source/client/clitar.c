@@ -125,12 +125,12 @@ extern int Protocol;
 int blocksize=20;
 int tarhandle;
 
-static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
-			   char *amode, unsigned char ftype);
+static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t mtime,
+			   const char *amode, unsigned char ftype);
 static void do_atar(char *rname,char *lname,file_info *finfo1);
 static void do_tar(file_info *finfo);
 static void oct_it(SMB_BIG_UINT value, int ndgs, char *p);
-static void fixtarname(char *tptr, char *fp, int l);
+static void fixtarname(char *tptr, const char *fp, int l);
 static int dotarbuf(int f, char *b, int n);
 static void dozerobuf(int f, int n);
 static void dotareof(int f);
@@ -168,8 +168,8 @@ static char *string_create_s(int size)
 /****************************************************************************
 Write a tar header to buffer
 ****************************************************************************/
-static void writetarheader(int f,  char *aname, SMB_BIG_UINT size, time_t mtime,
-			   char *amode, unsigned char ftype)
+static void writetarheader(int f,  const char *aname, SMB_BIG_UINT size, time_t mtime,
+			   const char *amode, unsigned char ftype)
 {
   union hblock hb;
   int i, chk, l;
@@ -418,7 +418,7 @@ static void dotareof(int f)
 /****************************************************************************
 (Un)mangle DOS pathname, make nonabsolute
 ****************************************************************************/
-static void fixtarname(char *tptr, char *fp, int l)
+static void fixtarname(char *tptr, const char *fp, int l)
 {
   /* add a '.' to start of file name, convert from ugly dos \'s in path
    * to lovely unix /'s :-} */
@@ -1000,9 +1000,10 @@ static int skip_file(int skipsize)
 
 static int get_file(file_info2 finfo)
 {
-  int fnum = -1, pos = 0, dsize = 0, rsize = 0, bpos = 0;
+  int fnum = -1, pos = 0, dsize = 0, bpos = 0;
+  SMB_BIG_UINT rsize = 0;
 
-  DEBUG(5, ("get_file: file: %s, size %i\n", finfo.name, (int)finfo.size));
+  DEBUG(5, ("get_file: file: %s, size %.0f\n", finfo.name, (double)finfo.size));
 
   if (ensurepath(finfo.name) && 
       (fnum=cli_open(cli, finfo.name, O_RDWR|O_CREAT|O_TRUNC, DENY_NONE)) == -1) {
@@ -1093,7 +1094,7 @@ static int get_file(file_info2 finfo)
 
   ntarf++;
 
-  DEBUG(0, ("restore tar file %s of size %d bytes\n", finfo.name, (int)finfo.size));
+  DEBUG(0, ("restore tar file %s of size %.0f bytes\n", finfo.name, (double)finfo.size));
   
   return(True);
 }
@@ -1123,18 +1124,18 @@ static int get_dir(file_info2 finfo)
 */
 static char * get_longfilename(file_info2 finfo)
 {
-  int namesize = finfo.size + strlen(cur_dir) + 2;
+  int namesize = strlen(finfo.name) + strlen(cur_dir) + 2;
   char *longname = malloc(namesize);
-  int offset = 0, left = finfo.size;
+  SMB_BIG_INT offset = 0, left = finfo.size;
   BOOL first = True;
 
   DEBUG(5, ("Restoring a long file name: %s\n", finfo.name));
-  DEBUG(5, ("Len = %d\n", (int)finfo.size));
+  DEBUG(5, ("Len = %.0f\n", (double)finfo.size));
 
   if (longname == NULL) {
 
     DEBUG(0, ("could not allocate buffer of size %d for longname\n", 
-	      (int)(finfo.size + strlen(cur_dir) + 2)));
+	      namesize));
     return(NULL);
   }
 

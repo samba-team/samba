@@ -54,7 +54,7 @@ const DOM_SID *global_sid_everyone = &global_sid_World;
 typedef struct _known_sid_users {
 	uint32 rid;
 	enum SID_NAME_USE sid_name_use;
-	char *known_user_name;
+	const char *known_user_name;
 } known_sid_users;
 
 /* static known_sid_users no_users[] = {{0, 0, NULL}}; */
@@ -95,7 +95,7 @@ static known_sid_users builtin_groups[] = {
 static struct sid_name_map_info
 {
 	DOM_SID *sid;
-	char *name;
+	const char *name;
 	known_sid_users *known_users;
 } sid_name_map[MAX_SID_NAMES];
 
@@ -382,7 +382,8 @@ const char *sid_string_static(const DOM_SID *sid)
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 {
   pstring tok;
-  char *p, *q;
+  char *q;
+  const char *p;
   /* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
   uint32 ia;
   
@@ -393,7 +394,7 @@ BOOL string_to_sid(DOM_SID *sidout, const char *sidstr)
 
   memset((char *)sidout, '\0', sizeof(DOM_SID));
 
-  q = p = strdup(sidstr + 2);
+  p = q = strdup(sidstr + 2);
   if (p == NULL) {
     DEBUG(0, ("string_to_sid: out of memory!\n"));
     return False;

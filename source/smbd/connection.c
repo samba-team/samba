@@ -38,7 +38,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
  Delete a connection record.
 ****************************************************************************/
 
-BOOL yield_connection(connection_struct *conn,char *name)
+BOOL yield_connection(connection_struct *conn,const char *name)
 {
 	struct connections_key key;
 	TDB_DATA kbuf;
@@ -110,7 +110,7 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
  Claim an entry in the connections database.
 ****************************************************************************/
 
-BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOOL Clear)
+BOOL claim_connection(connection_struct *conn,const char *name,int max_connections,BOOL Clear)
 {
 	struct connections_key key;
 	struct connections_data crec;

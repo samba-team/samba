@@ -38,9 +38,9 @@
 
 typedef const struct
 {
-  char *name;
+  const char *name;
   int code;
-  char *message;
+  const char *message;
 } err_code_struct;
 
 /* Dos Error Messages */
@@ -143,7 +143,7 @@ err_code_struct hard_msgs[] = {
 const struct
 {
   int code;
-  char *class;
+  const char *class;
   err_code_struct *err_msgs;
 } err_classes[] = { 
   {0,"SUCCESS",NULL},
@@ -161,7 +161,8 @@ const struct
 /****************************************************************************
 return a SMB error name from a class and code
 ****************************************************************************/
-char *smb_dos_err_name(uint8 class, uint16 num)
+
+const char *smb_dos_err_name(uint8 class, uint16 num)
 {
 	static pstring ret;
 	int i,j;
@@ -185,7 +186,7 @@ char *smb_dos_err_name(uint8 class, uint16 num)
 
 /* Return a string for a DOS error */
 
-char *get_dos_error_msg(WERROR result)
+const char *get_dos_error_msg(WERROR result)
 {
 	uint16 errnum;
 
@@ -197,7 +198,8 @@ char *get_dos_error_msg(WERROR result)
 /****************************************************************************
 return a SMB error class name as a string.
 ****************************************************************************/
-char *smb_dos_err_class(uint8 class)
+
+const char *smb_dos_err_class(uint8 class)
 {
 	static pstring ret;
 	int i;
@@ -215,7 +217,8 @@ char *smb_dos_err_class(uint8 class)
 /****************************************************************************
 return a SMB string from an SMB buffer
 ****************************************************************************/
-char *smb_dos_errstr(char *inbuf)
+
+const char *smb_dos_errstr(char *inbuf)
 {
 	static pstring ret;
 	int class = CVAL(inbuf,smb_rcls);
@@ -250,6 +253,7 @@ char *smb_dos_errstr(char *inbuf)
 /*****************************************************************************
 map a unix errno to a win32 error
  *****************************************************************************/
+
 WERROR map_werror_from_unix(int error)
 {
 	NTSTATUS status = map_nt_error_from_unix(error);

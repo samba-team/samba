@@ -27,7 +27,8 @@
 */
 
 char *files_to_copy;
-char *driverfile, *datafile, *helpfile, *languagemonitor, *datatype, *vendorsetup;
+char *driverfile, *datafile, *helpfile, *languagemonitor, *vendorsetup;
+const char *datatype;
 char buffer[50][sizeof(pstring)];
 char sbuffer[50][sizeof(pstring)];
 char sub_dir[50][2][sizeof(pstring)];
@@ -209,7 +210,7 @@ static void lookup_strings(FILE *fichier)
    Return all the lines between the entry and the next one or the end of file
    An entry is something between braces.
 */
-static void lookup_entry(FILE *fichier,char *chaine)
+static void lookup_entry(FILE *fichier,const char *chaine)
 {
   int found=0,pointeur=0,i=0;
   char *temp,*temp2;

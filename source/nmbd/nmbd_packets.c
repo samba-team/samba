@@ -852,7 +852,7 @@ void reply_netbios_packet(struct packet_struct *orig_packet,
   struct res_rec answers;
   struct nmb_packet *orig_nmb = &orig_packet->packet.nmb;
   BOOL loopback_this_packet = False;
-  char *packet_type = "unknown";
+  const char *packet_type = "unknown";
   
   /* Check if we are sending to or from ourselves. */
   if(ismyip(orig_packet->ip) && (orig_packet->port == global_nmb_port))
@@ -1894,9 +1894,9 @@ BOOL listen_for_packets(BOOL run_election)
 /****************************************************************************
   Construct and send a netbios DGRAM.
 **************************************************************************/
-BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
-                   char *srcname, int src_type,
-                   char *dstname, int dest_type,
+BOOL send_mailslot(BOOL unique, const char *mailslot,char *buf,int len,
+                   const char *srcname, int src_type,
+                   const char *dstname, int dest_type,
                    struct in_addr dest_ip,struct in_addr src_ip,
 		   int dest_port)
 {

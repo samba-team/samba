@@ -257,7 +257,7 @@ static BOOL upgrade_to_version_3(void)
 BOOL nt_printing_init(void)
 {
 	static pid_t local_pid;
-	char *vstring = "INFO/version";
+	const char *vstring = "INFO/version";
 
 	if (tdb_drivers && tdb_printers && tdb_forms && local_pid == sys_getpid())
 		return True;
@@ -644,11 +644,12 @@ int get_ntdrivers(fstring **list, char *architecture, uint32 version)
 function to do the mapping between the long architecture name and
 the short one.
 ****************************************************************************/
-BOOL get_short_archi(char *short_archi, char *long_archi)
+
+BOOL get_short_archi(char *short_archi, const char *long_archi)
 {
 	struct table {
-		char *long_archi;
-		char *short_archi;
+		const char *long_archi;
+		const char *short_archi;
 	};
 	
 	struct table archi_table[]=
@@ -1049,6 +1050,8 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	pstring           driverpath;
 	fstring           user_name;
 	fstring           null_pw;
+	fstring           dev;
+	fstring           sharename;
 	files_struct      *fsp = NULL;
 	BOOL              bad_path;
 	int	              ecode;
@@ -1087,7 +1090,9 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	fstrcpy(dev, "A:");
+	fstrcpy(sharename, "print$");
+	conn = make_connection(sharename, user_name, null_pw, 0, dev, user->vuid, &ecode);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1376,6 +1381,8 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 	pstring new_name;
 	fstring user_name;
 	fstring null_pw;
+	fstring dev;
+	fstring sharename;
 	connection_struct *conn;
 	pstring inbuf;
 	pstring outbuf;
@@ -1419,7 +1426,9 @@ BOOL move_driver_to_download_area(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract, 
 
 	/* Null password is ok - we are already an authenticated user... */
 	*null_pw = '\0';
-	conn = make_connection("print$", user_name, null_pw, 0, "A:", user->vuid, &ecode);
+	fstrcpy(dev, "A:");
+	fstrcpy(sharename, "print$");
+	conn = make_connection(sharename, user_name, null_pw, 0, dev, user->vuid, &ecode);
 	unbecome_root();
 
 	if (conn == NULL) {
@@ -1721,7 +1730,7 @@ static uint32 add_a_printer_driver_6(NT_PRINTER_DRIVER_INFO_LEVEL_6 *driver)
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch)
+static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, const fstring in_prt, const fstring in_arch)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 info;
 
@@ -1748,7 +1757,7 @@ static WERROR get_a_printer_driver_3_default(NT_PRINTER_DRIVER_INFO_LEVEL_3 **in
 
 /****************************************************************************
 ****************************************************************************/
-static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, fstring in_prt, fstring in_arch, uint32 version)
+static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, const fstring in_prt, const fstring in_arch, uint32 version)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 driver;
 	TDB_DATA kbuf, dbuf;
@@ -1817,7 +1826,7 @@ static WERROR get_a_printer_driver_3(NT_PRINTER_DRIVER_INFO_LEVEL_3 **info_ptr, 
 
 /****************************************************************************
 ****************************************************************************/
-uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
+uint32 get_a_printer_driver_9x_compatible(pstring line, const fstring model)
 {
 	NT_PRINTER_DRIVER_INFO_LEVEL_3 *info3;
 	TDB_DATA kbuf;
@@ -2227,7 +2236,7 @@ void free_nt_printer_param(NT_PRINTER_PARAM **param_ptr)
 NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 {
 
-	char adevice[32];
+	char adevice[MAXDEVICENAME+1];
 	NT_DEVICEMODE *nt_devmode = (NT_DEVICEMODE *)malloc(sizeof(NT_DEVICEMODE));
 
 	if (nt_devmode == NULL) {
@@ -2237,7 +2246,7 @@ NT_DEVICEMODE *construct_nt_devicemode(const fstring default_devicename)
 
 	ZERO_STRUCTP(nt_devmode);
 
-	safe_strcpy(adevice, default_devicename, sizeof(adevice));
+	safe_strcpy(adevice, default_devicename, sizeof(adevice)-1);
 	fstrcpy(nt_devmode->devicename, adevice);	
 	
 	fstrcpy(nt_devmode->formname, "Letter");
@@ -3377,7 +3386,7 @@ uint32 add_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL driver, uint32 level)
 /****************************************************************************
 ****************************************************************************/
 WERROR get_a_printer_driver(NT_PRINTER_DRIVER_INFO_LEVEL *driver, uint32 level,
-                            fstring drivername, fstring architecture, uint32 version)
+                            fstring drivername, const fstring architecture, uint32 version)
 {
 	WERROR result;
 	

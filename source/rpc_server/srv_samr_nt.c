@@ -685,7 +685,7 @@ static NTSTATUS get_group_alias_entries(DOMAIN_GRP *d_grp, DOM_SID *sid, uint32 
 
 	/* well-known aliases */
 	if (strequal(sid_str, "S-1-5-32")) {
-		char *alias_name;
+		const char *alias_name;
 		while (!lp_hide_local_users() &&
 				num_entries < max_entries && 
 				((alias_name = builtin_alias_rids[num_entries].name) != NULL)) {
