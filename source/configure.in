@@ -189,10 +189,10 @@ AC_CHECK_FUNCS(waitpid getcwd strdup strtoul strerror chown chmod chroot)
 AC_CHECK_FUNCS(fstat strchr utime utimes getrlimit fsync execl bzero memset)
 AC_CHECK_FUNCS(memmove vsnprintf snprintf setsid glob strpbrk pipe crypt16 getauthuid)
 AC_CHECK_FUNCS(strftime sigprocmask sigblock sigaction innetgr setnetgrent getnetgrent endnetgrent)
-AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf putprpwnam)
+AC_CHECK_FUNCS(initgroups select rdchk getgrnam pathconf )
 AC_CHECK_FUNCS(setuidx setgroups mktime rename ftruncate stat64 fstat64 lstat64 fopen64)
-AC_CHECK_FUNCS(set_auth_parameters atexit grantpt getspnam dup2 lseek64 ftruncate64)
-AC_CHECK_FUNCS(fseek64 ftell64 bigcrypt getprpwnam setluid yp_get_default_domain getpwanam)
+AC_CHECK_FUNCS(atexit grantpt dup2 lseek64 ftruncate64)
+AC_CHECK_FUNCS(fseek64 ftell64 setluid yp_get_default_domain getpwanam)
 AC_CHECK_FUNCS(srandom random srand rand setenv mmap64)
 # syscall() is needed for smbwrapper.
 AC_CHECK_FUNCS(syscall)
@@ -218,80 +218,20 @@ AC_CHECK_FUNCS(open64 _open64 __open64 creat64)
 # Needed for OSF1 and HPUX.
 #
 
-if test x"$ac_cv_func_putprpwnam" = x"no"; then
-    case "$LIBS" in
-    *-lsecurity*) ;;
-    *) AC_CHECK_LIB(security, putprpwnam) ;;
-    esac
-    case "$LIBS" in
-    *-lsec*) ;;
-    *) AC_CHECK_LIB(sec, putprpwnam) ;;
-    esac
-    if test x"$ac_cv_lib_security_putprpwnam" = x"yes" ||
-       test x"$ac_cv_lib_sec_putprpwnam" = x"yes"; then
-        AC_DEFINE(HAVE_PUTPRPWNAM)
-    fi
-fi
+AC_LIBTESTFUNC(security, putprpwnam)
+AC_LIBTESTFUNC(sec, putprpwnam)
 
-if test x"$ac_cv_func_set_auth_parameters" = x"no"; then
-    case "$LIBS" in
-    *-lsecurity*) ;;
-    *) AC_CHECK_LIB(security, set_auth_parameters) ;;
-    esac
-    case "$LIBS" in
-    *-lsec*) ;;
-    *) AC_CHECK_LIB(sec, set_auth_parameters) ;;
-    esac
-    if test x"$ac_cv_lib_security_set_auth_parameters" = x"yes" ||
-       test x"$ac_cv_lib_sec_set_auth_parameters" = x"yes"; then
-        AC_DEFINE(HAVE_SET_AUTH_PARAMETERS)
-    fi
-fi
+AC_LIBTESTFUNC(security, set_auth_parameters)
+AC_LIBTESTFUNC(sec, set_auth_parameters)
 
-if test x"$ac_cv_func_getspnam" = x"no"; then
-    case "$LIBS" in
-    *-lsecurity*) ;;
-    *) AC_CHECK_LIB(security, getspnam) ;;
-    esac
-    case "$LIBS" in
-    *-lsec*) ;;
-    *) AC_CHECK_LIB(sec, getspnam) ;;
-    esac
-    if test x"$ac_cv_lib_security_getspnam" = x"yes" ||
-       test x"$ac_cv_lib_sec_getspnam" = x"yes"; then
-        AC_DEFINE(HAVE_GETSPNAM)
-    fi
-fi
+AC_LIBTESTFUNC(security, getspnam)
+AC_LIBTESTFUNC(sec, getspnam)
 
-if test x"$ac_cv_func_bigcrypt" = x"no"; then
-    case "$LIBS" in
-    *-lsecurity*) ;;
-    *) AC_CHECK_LIB(security, bigcrypt) ;;
-    esac
-    case "$LIBS" in
-    *-lsec*) ;;
-    *) AC_CHECK_LIB(sec, bigcrypt) ;;
-    esac
-    if test x"$ac_cv_lib_security_bigcrypt" = x"yes" ||
-       test x"$ac_cv_lib_sec_bigcrypt" = x"yes"; then
-        AC_DEFINE(HAVE_BIGCRYPT)
-    fi
-fi
+AC_LIBTESTFUNC(security, bigcrypt)
+AC_LIBTESTFUNC(sec, bigcrypt)
 
-if test x"$ac_cv_func_getprpwnam" = x"no"; then
-    case "$LIBS" in
-    *-lsecurity*) ;;
-    *) AC_CHECK_LIB(security, getprpwnam) ;;
-    esac
-    case "$LIBS" in
-    *-lsec*) ;;
-    *) AC_CHECK_LIB(sec, getprpwnam) ;;
-    esac
-    if test x"$ac_cv_lib_security_getprpwnam" = x"yes" ||
-       test x"$ac_cv_lib_sec_getprpwnam" = x"yes"; then
-        AC_DEFINE(HAVE_GETPRPWNAM)
-    fi
-fi
+AC_LIBTESTFUNC(security, getprpwnam)
+AC_LIBTESTFUNC(sec, getprpwnam)
 
 # this bit needs to be modified for each OS that is suported by
 # smbwrapper. You need to specify how to created a shared library and

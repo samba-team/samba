@@ -289,8 +289,8 @@ MAKEDIR = || exec false; \
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c
 	@$(CC) -I. -I$(srcdir) $(FLAGS) -c $< \
-	  -o $@ @MAINT@ -Wp,-MD,.deps/$@ && \
-@MAINT@	sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
+	  -o $@ @MAINT@ -Wp,-MD,.deps/$@
+@MAINT@	@sed 's|^'`echo $@ | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 
@@ -302,8 +302,8 @@ MAKEDIR = || exec false; \
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@
 	@$(CC) -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
-	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@ && \
-@MAINT@	sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
+	  -o $*.po.o @MAINT@ -Wp,-MD,.deps/$@
+@MAINT@	@sed 's|^'`echo $*\.po\.o | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po.o $@
@@ -317,8 +317,8 @@ MAKEDIR = || exec false; \
 @MAINT@	      $(MAKEDIR); fi; rm -f .deps/$@ .deps/$@d
 	@echo Compiling $*.c with @PICFLAG@ and -32
 	@$(CC) -32 -I. -I$(srcdir) $(FLAGS) @PICFLAG@ -c $< \
-	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@ && \
-@MAINT@	sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
+	  -o $*.po32.o @MAINT@ -Wp,-MD,.deps/$@
+@MAINT@	@sed 's|^'`echo $*.po32.o | sed 's,.*/,,'`':|$@:|' \
 @MAINT@	  <.deps/$@ >.deps/$@d && \
 @MAINT@	rm -f .deps/$@ && : >.deps/.stamp
 	@mv $*.po32.o $@

@@ -597,6 +597,10 @@ extern int errno;
 #endif
 #endif
 
+#ifndef PRINTCAP_NAME
+#define PRINTCAP_NAME "/etc/printcap"
+#endif
+
 #ifndef SIGCLD
 #define SIGCLD SIGCHLD
 #endif
