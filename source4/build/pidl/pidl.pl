@@ -17,6 +17,7 @@ use idl;
 use dump;
 use header;
 use server;
+use stub;
 use parser;
 use eparser;
 use validator;
@@ -139,7 +140,17 @@ sub process_file($)
 
 	if ($opt_server) {
 		my($server) = util::ChangeExtension($output, "_s.c");
-		util::FileSave($server, IdlServer::Parse($pidl));
+		my $res = "";
+		foreach my $x (@{$pidl}) {
+			next if ($x->{TYPE} ne "INTERFACE");
+
+			if (util::has_property($x, "object")) {
+				$res .= IdlStub::ParseInterface($x);
+			} else {
+				$res .= IdlServer::ParseInterface($x);
+			}
+		}
+		util::FileSave($server, $res);
 	}
 
 	if ($opt_parser) {

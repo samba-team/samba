@@ -21,6 +21,8 @@ parser.pm - Generates pull/push functions for parsing
 server.pm - Generates server side implementation in C
 template.pm - Generates stubs in C for server implementation
 validator.pm  - Validates the parse tree
+proxy.pm - Generates proxy object for DCOM (client-side)
+stub.pm - Generates stub call handler for DCOM (server-side)
 
 Other files in this directory are:
 tables.pl - Generates a table of available interfaces from a list of IDL files 
