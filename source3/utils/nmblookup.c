@@ -193,7 +193,7 @@ int main(int argc,char *argv[])
 
   struct poptOption long_options[] = {
 	  POPT_AUTOHELP
-	  { "broadcast", 'b', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
+	  { "broadcast", 'B', POPT_ARG_STRING, NULL, 'B', "Specify address to use for broadcasts", "BROADCAST-ADDRESS" },
 	  { "flags", 'f', POPT_ARG_VAL, &give_flags, True, "List the NMB flags returned" },
 	  { "unicast", 'U', POPT_ARG_STRING, NULL, 'U', "Specify address to use for unicast" },
 	  { "master-browser", 'M', POPT_ARG_VAL, &find_master, True, "Search for a master browser" },
@@ -216,9 +216,8 @@ int main(int argc,char *argv[])
 
   poptSetOtherOptionHelp(pc, "<NODE> ...");
 
-  while ((opt = poptGetNextOpt(pc)) != -1)
-	  switch (opt)
-	  {
+  while ((opt = poptGetNextOpt(pc)) != -1) {
+	  switch (opt) {
 	  case 'B':
 		  bcast_addr = *interpret_addr2(poptGetOptArg(pc));
 		  got_bcast = True;
@@ -233,6 +232,7 @@ int main(int argc,char *argv[])
 		  translate_addresses = !translate_addresses;
 		  break;
 	  }
+  }
 
   poptGetArg(pc); /* Remove argv[0] */
 
