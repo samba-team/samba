@@ -312,6 +312,7 @@ static void process(void)
       announce_host(t);
       announce_master(t);
       announce_remote(t);
+      browse_sync_remote(t);
 
       query_refresh_names(t);
 

@@ -209,6 +209,7 @@ char *lp_logon_path(void);
 char *lp_logon_drive(void);
 char *lp_logon_home(void);
 char *lp_remote_announce(void);
+char *lp_remote_browse_sync(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
 char *lp_socket_address(void);
@@ -426,6 +427,7 @@ void announce_host(time_t t);
 void reset_announce_timer();
 void announce_master(time_t t);
 void announce_remote(time_t t);
+void browse_sync_remote(time_t t);
 
 /*The following definitions come from  namebrowse.c  */
 
