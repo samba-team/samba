@@ -89,7 +89,6 @@ des_init_random_number_generator(des_cblock *seed)
   struct timeval now;
   static long uniq[2];
   des_cblock new_key;
-  long gethostid(void);
 
   gettimeofday(&now, (struct timezone *)0);
   if (!uniq[0])
