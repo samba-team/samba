@@ -68,6 +68,7 @@ BOOL case_mangle;
 fstring remote_machine="";
 fstring local_machine="";
 fstring remote_arch="UNKNOWN";
+static enum remote_arch_types ra_type = RA_UNKNOWN;
 fstring remote_proto="UNKNOWN";
 pstring myhostname="";
 pstring user_socket_options="";   
@@ -3867,4 +3868,42 @@ BOOL is_myname(const char *s)
   }
   DEBUG(8, ("is_myname(\"%s\") returns %d\n", s, ret));
   return(ret);
+}
+
+/*******************************************************************
+set the horrid remote_arch string based on an enum.
+********************************************************************/
+void set_remote_arch(enum remote_arch_types type)
+{
+  ra_type = type;
+  switch( type )
+  {
+  case RA_WFWG:
+    strcpy(remote_arch, "WfWg");
+    return;
+  case RA_OS2:
+    strcpy(remote_arch, "OS2");
+    return;
+  case RA_WIN95:
+    strcpy(remote_arch, "Win95");
+    return;
+  case RA_WINNT:
+    strcpy(remote_arch, "WinNT");
+    return;
+  case RA_SAMBA:
+    strcpy(remote_arch,"Samba");
+    return;
+  default:
+    ra_type = RA_UNKNOWN;
+    strcpy(remote_arch, "UNKNOWN");
+    break;
+  }
+}
+
+/*******************************************************************
+ Get the remote_arch type.
+********************************************************************/
+enum remote_arch_types get_remote_arch()
+{
+  return ra_type;
 }

@@ -986,6 +986,8 @@ BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
 int file_lock(char *name,int timeout);
 void file_unlock(int fd);
 BOOL is_myname(const char *s);
+void set_remote_arch(enum remote_arch_types type);
+enum remote_arch_types get_remote_arch();
 
 /*The following definitions come from  vt_mode.c  */
 
