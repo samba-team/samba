@@ -1,5 +1,7 @@
 2004-08-26  Johan Danielsson  <joda@pdc.kth.se>
 
+	* err.hin: no need to declare __progname here
+
 	* Makefile.am: always clean generated headers
 
 2004-06-26  Love Hörnquist Åstrand  <lha@it.su.se>
