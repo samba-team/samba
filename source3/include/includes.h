@@ -1126,11 +1126,17 @@ extern char *sys_errlist[];
 #include "smb.h"
 #include "nameserv.h"
 #include "ubiqx/ubi_dLinkList.h"
-#include "proto.h"
+
 #include "byteorder.h"
 
 #include "kanji.h"
 #include "charset.h"
+
+/***** automatically generated prototypes *****/
+#include "rpc_pipes/rpc_proto.h"
+#include "proto.h"
+
+
 
 #ifndef S_IFREG
 #define S_IFREG 0100000
