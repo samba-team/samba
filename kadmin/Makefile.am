@@ -36,6 +36,7 @@ EXTRA_kadmind_SOURCES = version4.c
 
 COMMON_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(top_builddir)/lib/des/libdes.la \
 	$(top_builddir)/lib/asn1/libasn1.la \

@@ -36,6 +36,7 @@ kdc_SOURCES = \
 
 hprop_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_kdb) $(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
@@ -45,6 +46,7 @@ hprop_LDADD = \
 
 hpropd_LDADD = \
 	$(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_kdb) $(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
@@ -53,6 +55,7 @@ hpropd_LDADD = \
 	$(DBLIB) 
 
 LDADD = $(top_builddir)/lib/hdb/libhdb.la \
+	$(LIB_openldap) \
 	$(top_builddir)/lib/krb5/libkrb5.la \
 	$(LIB_krb4) \
 	$(top_builddir)/lib/des/libdes.la \
