@@ -5485,6 +5485,8 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 			   LOGON_HRS * hrs, uint16 bad_password_count, uint16 logon_count,
 			   char newpass[516], uint32 unknown_6)
 {
+	DATA_BLOB blob = base64_decode_data_blob(mung_dial);
+	
 	usr->logon_time = *logon_time;	/* all zeros */
 	usr->logoff_time = *logoff_time;	/* all zeros */
 	usr->kickoff_time = *kickoff_time;	/* all zeros */
@@ -5544,9 +5546,11 @@ void init_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	init_unistr2(&usr->uni_unknown_str, unk_str, UNI_FLAGS_NONE);
 	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
 
-	init_unistr2(&usr->uni_munged_dial, mung_dial, UNI_FLAGS_NONE);
+	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
 
+	data_blob_free(&blob);
+	
 	usr->unknown_6 = unknown_6;	/* 0x0000 04ec */
 	usr->padding4 = 0;
 
@@ -5934,6 +5938,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	const char*		description = pdb_get_acct_desc(pw);
 	const char*		workstations = pdb_get_workstations(pw);
 	const char*		munged_dial = pdb_get_munged_dial(pw);
+	DATA_BLOB blob = base64_decode_data_blob(munged_dial);
 
 	uint32 user_rid;
 	const DOM_SID *user_sid;
@@ -5970,6 +5975,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 			  user_name, 
 			  sid_to_string(user_sid_string, user_sid),
 			  sid_to_string(domain_sid_string, domain_sid)));
+		data_blob_free(&blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -5983,6 +5989,7 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 			  user_name, 
 			  sid_to_string(group_sid_string, group_sid),
 			  sid_to_string(domain_sid_string, domain_sid)));
+		data_blob_free(&blob);
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
@@ -6042,8 +6049,9 @@ NTSTATUS init_sam_user_info21A(SAM_USER_INFO_21 *usr, SAM_ACCOUNT *pw, DOM_SID *
 	init_unistr2(&usr->uni_unknown_str, NULL, UNI_STR_TERMINATE);
 	init_uni_hdr(&usr->hdr_unknown_str, &usr->uni_unknown_str);
 
-	init_unistr2(&usr->uni_munged_dial, munged_dial, UNI_STR_TERMINATE);
+	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
+	data_blob_free(&blob);
 
 	usr->unknown_6 = pdb_get_unknown_6(pw);
 	usr->padding4 = 0;
@@ -6184,10 +6192,11 @@ static BOOL sam_io_user_info21(const char *desc, SAM_USER_INFO_21 * usr,
 void init_sam_user_info20A(SAM_USER_INFO_20 *usr, SAM_ACCOUNT *pw)
 {
 	const char *munged_dial = pdb_get_munged_dial(pw);
-
-	init_unistr2(&usr->uni_munged_dial, munged_dial, UNI_STR_TERMINATE);
+	DATA_BLOB blob = base64_decode_data_blob(munged_dial);
+	
+	init_unistr2_from_datablob(&usr->uni_munged_dial, &blob);
 	init_uni_hdr(&usr->hdr_munged_dial, &usr->uni_munged_dial);
-
+	data_blob_free(&blob);
 }
 
 /*******************************************************************
