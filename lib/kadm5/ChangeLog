@@ -1,3 +1,7 @@
+2004-08-18  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ipropd_slave.c: add --detach
+
 2004-06-28  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* ad.c: implement kadm5_ad_init_with_password_ctx set more error
