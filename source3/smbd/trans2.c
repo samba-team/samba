@@ -1256,48 +1256,47 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 				    char **pparams,char **ppdata,
 				    int total_data)
 {
-  int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
-  char *params = *pparams;
-  char *pdata = *ppdata;
-  uint16 tran_call = SVAL(inbuf, smb_setup0);
-  uint16 info_level;
-  int mode=0;
-  SMB_OFF_T size=0;
-  unsigned int data_size;
-  SMB_STRUCT_STAT sbuf;
-  pstring fname;
-  char *base_name;
-  char *p;
-  SMB_OFF_T pos = 0;
-  BOOL bad_path = False;
-  BOOL delete_pending = False;
-  int len;
-  time_t c_time;
+	int max_data_bytes = SVAL(inbuf, smb_mdrcnt);
+	char *params = *pparams;
+	char *pdata = *ppdata;
+	uint16 tran_call = SVAL(inbuf, smb_setup0);
+	uint16 info_level;
+	int mode=0;
+	SMB_OFF_T size=0;
+	unsigned int data_size;
+	SMB_STRUCT_STAT sbuf;
+	pstring fname;
+	char *base_name;
+	char *p;
+	SMB_OFF_T pos = 0;
+	BOOL bad_path = False;
+	BOOL delete_pending = False;
+	int len;
+	time_t c_time;
 
-  if (tran_call == TRANSACT2_QFILEINFO) {
-	  files_struct *fsp = file_fsp(params,0);
-	  info_level = SVAL(params,2);
+	if (tran_call == TRANSACT2_QFILEINFO) {
+		files_struct *fsp = file_fsp(params,0);
+		info_level = SVAL(params,2);
 
-	  DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", 
-		   info_level));
+		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-	  if(fsp && (fsp->is_directory || fsp->stat_open)) {
-		  /*
-		   * This is actually a QFILEINFO on a directory
-		   * handle (returned from an NT SMB). NT5.0 seems
-		   * to do this call. JRA.
-		   */
-		  pstrcpy(fname, fsp->fsp_name);
-		  unix_convert(fname,conn,0,&bad_path,&sbuf);
-		  if (!check_name(fname,conn) || 
-		      (!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
-			  DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
-			  if((errno == ENOENT) && bad_path) {
-				  unix_ERR_class = ERRDOS;
-				  unix_ERR_code = ERRbadpath;
-			  }
-			  return(UNIXERROR(ERRDOS,ERRbadpath));
-		  }
+		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+			/*
+			 * This is actually a QFILEINFO on a directory
+			 * handle (returned from an NT SMB). NT5.0 seems
+			 * to do this call. JRA.
+			 */
+			pstrcpy(fname, fsp->fsp_name);
+			unix_convert(fname,conn,0,&bad_path,&sbuf);
+			if (!check_name(fname,conn) || 
+					(!VALID_STAT(sbuf) && vfs_stat(conn,fname,&sbuf))) {
+				DEBUG(3,("fileinfo of %s failed (%s)\n",fname,strerror(errno)));
+				if((errno == ENOENT) && bad_path) {
+					unix_ERR_class = ERRDOS;
+					unix_ERR_code = ERRbadpath;
+				}
+				return(UNIXERROR(ERRDOS,ERRbadpath));
+			}
 		  
 		  delete_pending = fsp->directory_delete_on_close;
 	  } else {
@@ -1444,21 +1443,21 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
       break;
 
-    case SMB_FILE_STANDARD_INFORMATION:
-    case SMB_QUERY_FILE_STANDARD_INFO:
-      data_size = 24;
-      /* Fake up allocation size. */
-      SOFF_T(pdata,0,SMB_ROUNDUP(size + 1, ((SMB_OFF_T)0x1000000)));
-      SOFF_T(pdata,8,size);
-      SIVAL(pdata,16,sbuf.st_nlink);
-      CVAL(pdata,20) = 0;
-      CVAL(pdata,21) = (mode&aDIR)?1:0;
-      break;
+	case SMB_FILE_STANDARD_INFORMATION:
+	case SMB_QUERY_FILE_STANDARD_INFO:
+		data_size = 24;
+		/* Fake up allocation size. */
+		SOFF_T(pdata,0,SMB_ROUNDUP(size + 1, ((SMB_OFF_T)0x100000)));
+		SOFF_T(pdata,8,size);
+		SIVAL(pdata,16,sbuf.st_nlink);
+		CVAL(pdata,20) = 0;
+		CVAL(pdata,21) = (mode&aDIR)?1:0;
+		break;
 
-    case SMB_FILE_EA_INFORMATION:
-    case SMB_QUERY_FILE_EA_INFO:
-      data_size = 4;
-      break;
+	case SMB_FILE_EA_INFORMATION:
+	case SMB_QUERY_FILE_EA_INFO:
+		data_size = 4;
+		break;
 
     /* Get the 8.3 name - used if NT SMB was negotiated. */
     case SMB_QUERY_FILE_ALT_NAME_INFO:
