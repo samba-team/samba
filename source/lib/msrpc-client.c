@@ -92,15 +92,18 @@ BOOL msrpc_send(int fd, prs_struct * ps)
 	char *outbuf;
 
 	/* if there is no data then say success */
-	if (!ps || !ps->data) return True;
-
-	DEBUG(10, ("ncalrpc_l_send_prs: data: %p len %d\n", outbuf, len));
-	dbgflush();
+	if (!ps || !ps->data) return False;
 
 	len = prs_buf_len(ps);
 	outbuf = ps->data;
 
+	DEBUG(10, ("ncalrpc_l_send_prs: data: %p len %d\n", outbuf, len));
 	dump_data(10, outbuf, len);
+
+	if (len == 0)
+	{
+		return False;
+	}
 
 	ret = write_socket(fd, outbuf, len);
 	prs_free_data(ps);
@@ -193,9 +196,6 @@ static BOOL ncalrpc_l_authenticate(struct msrpc_local *msrpc)
 	char *data;
 	prs_struct ps;
 	uint32 status;
-
-	char *in = msrpc->inbuf;
-	char *out = msrpc->outbuf;
 
 	uint16 command;
 

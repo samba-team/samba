@@ -123,10 +123,14 @@ static void process_msrpc(rpcsrv_struct * l, const char *name,
 	dump_data(10, pdu->data, len);
 
 	more = rpc_local(l, pdu->data, len, name); 
-	while (more) {
-		msrpc_send(l->c, &l->rsmb_pdu);
+	while (more)
+	{
+		more = msrpc_send(l->c, &l->rsmb_pdu);
 		prs_free_data(&l->rsmb_pdu);
-		more = rpc_local(l, NULL, 0, name);
+		if (more)
+		{
+			more = rpc_local(l, NULL, 0, name);
+		}
 	}
 }
 
