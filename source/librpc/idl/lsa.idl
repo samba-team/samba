@@ -230,6 +230,9 @@
 		);
 
 	/******************/
+	/* NOTE: This only returns accounts that have at least
+	   one privilege set 
+	*/
 	/* Function: 0x0b */
 	typedef struct {
 		dom_sid2 *sid;
