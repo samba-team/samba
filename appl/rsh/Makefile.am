@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) -DBINDIR=\"$(bindir)\"
+INCLUDES += $(INCLUDE_krb4)
 
 bin_PROGRAMS = rsh
 
