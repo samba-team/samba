@@ -46,6 +46,7 @@ libdes_la_SOURCES =	\
 	podd.h		\
 	qud_cksm.c	\
 	rc4_skey.c	\
+	rc4_enc.c	\
 	read_pwd.c	\
 	rnd_keys.c	\
 	set_key.c	\
