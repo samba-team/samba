@@ -597,7 +597,7 @@ BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned cha
 /****************************************************************************
 check if a username/password is OK
 ****************************************************************************/
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL is_nt_password)
+BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd)
 {
   pstring pass2;
   int level = lp_passwordlevel();
@@ -672,7 +672,7 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL 
 	  return(False);
 	}
 
-	if(Protocol >= PROTOCOL_NT1 && is_nt_password)
+	if(Protocol >= PROTOCOL_NT1)
 	{
 		/* We have the NT MD4 hash challenge available - see if we can
 		   use it (ie. does it exist in the smbpasswd file).
@@ -688,7 +688,6 @@ BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL 
 	        return(True);
     	  }
 		  DEBUG(4,("NT MD4 password check failed\n"));
-		  return (False);
 		}
 	}
 
@@ -888,7 +887,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
     while (getnetgrent(&host, &user, &domain)) {
       if (user) {
 	if (user_ok(user, snum) && 
-	    password_ok(user,password,pwlen,NULL,False)) {
+	    password_ok(user,password,pwlen,NULL)) {
 	  endnetgrent();
 	  return(user);
 	}
@@ -910,7 +909,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	    static fstring name;
 	    strcpy(name,*member);
 	    if (user_ok(name,snum) &&
-		password_ok(name,password,pwlen,NULL,False))
+		password_ok(name,password,pwlen,NULL))
 	      return(&name[0]);
 	    member++;
 	  }
@@ -923,7 +922,7 @@ static char *validate_group(char *group,char *password,int pwlen,int snum)
 	  while (pwd = getpwent ()) {
 	    if (*(pwd->pw_passwd) && pwd->pw_gid == gptr->gr_gid) {
 	      /* This Entry have PASSWORD and same GID then check pwd */
-	      if (password_ok(NULL, password, pwlen, pwd,False)) {
+	      if (password_ok(NULL, password, pwlen, pwd)) {
 		strcpy(tm, pwd->pw_name);
 		endpwent ();
 		return tm;
@@ -974,14 +973,14 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 
       /* check the given username and password */
       if (!ok && (*user) && user_ok(user,snum)) {
-	ok = password_ok(user,password, pwlen, NULL, False);
+	ok = password_ok(user,password, pwlen, NULL);
 	if (ok) DEBUG(3,("ACCEPTED: given username password ok\n"));
       }
 
       /* check for a previously registered guest username */
       if (!ok && (vuid >= 0) && validated_users[vuid].guest) {	  
 	if (user_ok(validated_users[vuid].name,snum) &&
-	    password_ok(validated_users[vuid].name, password, pwlen, NULL, False)) {
+	    password_ok(validated_users[vuid].name, password, pwlen, NULL)) {
 	  strcpy(user, validated_users[vuid].name);
 	  validated_users[vuid].guest = False;
 	  DEBUG(3,("ACCEPTED: given password with registered user %s\n", user));
@@ -1005,7 +1004,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 	      strcpy(user2,auser);
 	      if (!user_ok(user2,snum)) continue;
 		  
-	      if (password_ok(user2,password, pwlen, NULL, False)) {
+	      if (password_ok(user2,password, pwlen, NULL)) {
 		ok = True;
 		strcpy(user,user2);
 		DEBUG(3,("ACCEPTED: session list username and given password ok\n"));
@@ -1057,7 +1056,7 @@ BOOL authorise_login(int snum,char *user,char *password, int pwlen,
 		fstring user2;
 		strcpy(user2,auser);
 		if (user_ok(user2,snum) && 
-		    password_ok(user2,password,pwlen,NULL, False))
+		    password_ok(user2,password,pwlen,NULL))
 		  {
 		    ok = True;
 		    strcpy(user,user2);
