@@ -23,6 +23,17 @@
 #include "includes.h"
 
 /****************************************************************************
+ Change the timeout (in milliseconds).
+****************************************************************************/
+
+unsigned int cli_set_timeout(struct cli_state *cli, unsigned int timeout)
+{
+	unsigned int old_timeout = cli->timeout;
+	cli->timeout = timeout;
+	return old_timeout;
+}
+
+/****************************************************************************
  Change the port number used to call on.
 ****************************************************************************/
 
