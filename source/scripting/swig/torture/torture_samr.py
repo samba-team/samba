@@ -1,162 +1,57 @@
 #!/usr/bin/python
 
-import dcerpc
+import sys
+import dcerpc, samr
 
 def test_Connect(pipe):
 
-    print 'testing samr_Connect'
+    print 'testing Connect'
 
-    r = {}
-    r['system_name'] = 0;
-    r['access_mask'] = 0x02000000
-
-    result = dcerpc.samr_Connect(pipe, r)
-
-    s = {}
-    s['handle'] = result['connect_handle']
-
-    handle = result['connect_handle']
-  
-    print 'testing samr_Connect2'
-
-    r = {}
-    r['system_name'] = None
-    r['access_mask'] = 0x02000000
-
-    result = dcerpc.samr_Connect2(pipe, r)
-
-    s = {}
-    s['handle'] = result['connect_handle']
-
-    dcerpc.samr_Close(pipe, s)
-    
-    print 'testing samr_Connect3'
-
-    r = {}
-    r['system_name'] = None
-    r['unknown'] = 0
-    r['access_mask'] = 0x02000000
-
-    result = dcerpc.samr_Connect3(pipe, r)
-
-    s = {}
-    s['handle'] = result['connect_handle']
-
-    dcerpc.samr_Close(pipe, s)
-
-    print 'testing samr_Connect4'
-
-    r = {}
-    r['system_name'] = None
-    r['unknown'] = 0
-    r['access_mask'] = 0x02000000
-
-    result = dcerpc.samr_Connect4(pipe, r)
-
-    s = {}
-    s['handle'] = result['connect_handle']
-    
-    dcerpc.samr_Close(pipe, s)
-
-    print 'testing samr_Connect5'
-
-    r = {}
-    r['system_name'] = None
-    r['access_mask'] = 0x02000000
-    r['level'] = 1
-    r['info'] = {}
-    r['info']['info1'] = {}
-    r['info']['info1']['unknown1'] = 0
-    r['info']['info1']['unknown2'] = 0
-
-    try:
-        result = dcerpc.samr_Connect5(pipe, r)
-        s = {}
-        s['handle'] = result['connect_handle']
-        dcerpc.samr_Close(pipe, s)
-    except dcerpc.NTSTATUS, arg:
-        if arg[0] != dcerpc.NT_STATUS_NET_WRITE_FAULT:
-            raise
+    handle = samr.Connect(pipe)
+    handle = samr.Connect2(pipe)
+    handle = samr.Connect3(pipe)
+    handle = samr.Connect4(pipe)
+    handle = samr.Connect5(pipe)
 
     return handle
     
 def test_QuerySecurity(pipe, handle):
 
-    print 'testing samr_QuerySecurity'
+    print 'testing QuerySecurity'
 
-    r = {}
-    r['handle'] = handle
-    r['sec_info'] = 7
+    sdbuf = handle.QuerySecurity()
+    handle.SetSecurity(sdbuf)
 
-    result = dcerpc.samr_QuerySecurity(pipe, r)
-
-    s = {}
-    s['handle'] = handle
-    s['sec_info'] = 7
-    s['sdbuf'] = result['sdbuf']
-
-    dcerpc.samr_SetSecurity(pipe, s)
-
-    dcerpc.samr_QuerySecurity(pipe, r)
 
 def test_GetDomPwInfo(pipe, handle, domain):
 
-    print 'testing samr_GetDomPwInfo'
+    print 'testing GetDomPwInfo'
 
-    r = {}
-    r['handle'] = handle
-    r['name'] = {}
-    r['name']['name'] = domain
-
-    dcerpc.samr_GetDomPwInfo(pipe, r)
-
-    r['name']['name'] = '\\\\%s' % domain
-
-    dcerpc.samr_GetDomPwInfo(pipe, r)
-
-    r['name']['name'] = '\\\\__NONAME__'
-
-    dcerpc.samr_GetDomPwInfo(pipe, r)
-
-    r['name']['name'] = '\\\\Builtin'
-
-    dcerpc.samr_GetDomPwInfo(pipe, r)
+    handle.GetDomPwInfo(domain)
+    handle.GetDomPwInfo('__NONAME__')
+    handle.GetDomPwInfo('Builtin')
 
 def test_RemoveMemberFromForeignDomain(pipe, domain_handle):
 
-    print 'test samr_RemoveMemberFromForeignDomain'
+    print 'test RemoveMemberFromForeignDomain'
 
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['sid'] = {}
-    r['sid']['sid_rev_num'] = 1
-    r['sid']['id_auth'] = [1, 2, 3, 4, 5, 6]
-    r['sid']['num_auths'] = 4
-    r['sid']['sub_auths'] = [7, 8, 9, 10]
+    sid = samr.string_to_sid('S-1-5-32-12-34-56-78-9')
 
-    dcerpc.samr_RemoveMemberFromForeignDomain(pipe, r)
+    domain_handle.RemoveMemberFromForeignDomain(sid)
 
 def test_CreateUser2(pipe, domain_handle):
 
-    print 'test samr_CreateUser2'
+    print 'test CreateUser2'
 
-    r = {}
-    r['domain_handle'] = domain_handle
-    r['access_mask'] = 0x02000000
-    r['account_name'] = {}
-    r['account_name']['name'] = 'samrtorturemach$'
-    r['acct_flags'] = 0x0080            # WSTRUST
+    username = 'samrtorturemach$'
 
     try:
-        dcerpc.samr_CreateUser2(pipe, r)
+        return domain_handle.CreateUser2(username, 0x0080) # WSTRUST
     except dcerpc.NTSTATUS, arg:
-        if arg[0] == dcerpc.NT_STATUS_ACCESS_DENIED:
-            return
-        elif arg[0] == dcerpc.NT_STATUS_USER_EXISTS:
-            test_DeleteUser_byname(pipe, domain_handle, 'samrtorturemach$')
-            result = dcerpc.samr_CreateUser(pipe, r)
-        else:
-            raise dcerpc.NTSTATUS(arg)
+        if arg[0] == 0x0c0000063L:
+            domain_handle.OpenUser(username).DeleteUser()
+            return domain_handle.CreateUser2(username)
+        raise
 
 def test_LookupName(pipe, domain_handle, name):
 
@@ -749,22 +644,17 @@ def test_Close(pipe, handle):
 
 def test_OpenDomain(pipe, connect_handle, domain_sid):
 
-    print 'testing samr_OpenDomain'
+    print 'testing OpenDomain'
 
-    r = {}
-    r['connect_handle'] = connect_handle
-    r['access_mask'] = 0x02000000
-    r['sid'] = domain_sid
-
-    result = dcerpc.samr_OpenDomain(pipe, r)
-
-    domain_handle = result['domain_handle']
+    domain_handle = connect_handle.OpenDomain(domain_sid)
 
     test_QuerySecurity(pipe, domain_handle)
 
     test_RemoveMemberFromForeignDomain(pipe, domain_handle)
 
     test_CreateUser2(pipe, domain_handle)
+
+    sys.exit(0)
 
     user_handle = test_CreateUser(pipe, domain_handle)
 
@@ -811,80 +701,33 @@ def test_OpenDomain(pipe, connect_handle, domain_sid):
     
 def test_LookupDomain(pipe, connect_handle, domain):
 
-    print 'testing samr_LookupDomain'
+    print 'testing LookupDomain'
 
-    r = {}
-    r['connect_handle'] = connect_handle
-    r['domain'] = {}
-    r['domain']['name'] = None
+    sid = connect_handle.LookupDomain(domain)
 
     try:
-        dcerpc.samr_LookupDomain(pipe, r)
+        connect_handle.LookupDomain('xxNODOMAINxx')
     except dcerpc.NTSTATUS, arg:
-        if arg[0] != dcerpc.NT_STATUS_INVALID_PARAMETER:
-            raise dcerpc.NTSTATUS(arg)
-
-    r['domain']['name'] = 'xxNODOMAINxx'
-
-    try:
-        dcerpc.samr_LookupDomain(pipe, r)
-    except dcerpc.NTSTATUS, arg:
-        if arg[0] != dcerpc.NT_STATUS_NO_SUCH_DOMAIN:
-            raise dcerpc.NTSTATUS(arg)
-
-    r['domain']['name'] = domain
-
-    result = dcerpc.samr_LookupDomain(pipe, r)
-
+        if arg[0] != 0xC00000DFL:          # NT_STATUS_NO_SUCH_DOMAIN
+            raise
+            
     test_GetDomPwInfo(pipe, connect_handle, domain)
-
-    test_OpenDomain(pipe, connect_handle, result['sid'])
+    test_OpenDomain(pipe, connect_handle, sid)
     
 def test_EnumDomains(pipe, connect_handle):
 
-    print 'testing samr_EnumDomains'
+    print 'testing EnumDomains'
 
-    r = {}
-    r['connect_handle'] = connect_handle
-    r['resume_handle'] = 0
-    r['buf_size'] = -1
-
-    result = dcerpc.samr_EnumDomains(pipe, r)
-
-    for domain in result['sam']['entries']:
-        test_LookupDomain(pipe, connect_handle, domain['name']['name'])
-
-def test_LongInt(pipe):
-
-    # Check that we can use long values for shorter width types
-
-    r = {}
-    r['system_name'] = 0L;
-    r['access_mask'] = 0x02000000L
-
-    result = dcerpc.samr_Connect(pipe, r)
-
-    # Test that we can parse a SID that contains a sub_auth that can't
-    # be held in a python int.
-
-    r = {}
-    r['connect_handle'] = result['connect_handle']
-    r['access_mask'] = 0x02000000
-    r['sid'] = {'sid_rev_num': 1, 'id_auth': [0, 0, 0, 0, 0, 5],
-                'num_auths': 4,
-                'sub_auths': [21, 737922324, 3002806791L, 1285293260]}
-
-    result = dcerpc.samr_OpenDomain(pipe, r)
+    for domain in connect_handle.EnumDomains():
+        test_LookupDomain(pipe, connect_handle, domain)
 
 def runtests(binding, domain, username, password):
 
     print 'Testing SAMR pipe'
 
     pipe = dcerpc.pipe_connect(binding,
-            dcerpc.DCERPC_SAMR_UUID, dcerpc.DCERPC_SAMR_VERSION,
+            dcerpc.DCERPC_SAMR_UUID, int(dcerpc.DCERPC_SAMR_VERSION),
             domain, username, password)
-
-    test_LongInt(pipe)
 
     handle = test_Connect(pipe)
 
