@@ -22,6 +22,7 @@
 
 #include "includes.h"
 #include "vfs_posix.h"
+#include "librpc/gen_ndr/ndr_security.h"
 
 /*
   create a directory with EAs
@@ -41,6 +42,11 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 
 	if (name->exists) {
 		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	status = pvfs_access_check_create(pvfs, req, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
@@ -108,6 +114,11 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
+	status = pvfs_access_check_create(pvfs, req, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	mode = pvfs_fileperms(pvfs, FILE_ATTRIBUTE_DIRECTORY);
 
 	if (mkdir(name->full_name, mode) == -1) {
@@ -144,6 +155,11 @@ NTSTATUS pvfs_rmdir(struct ntvfs_module_context *ntvfs,
 
 	if (!name->exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	}
+
+	status = pvfs_access_check_simple(pvfs, req, name, SEC_STD_DELETE);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
 	}
 
 	status = pvfs_xattr_unlink_hook(pvfs, name->full_name);

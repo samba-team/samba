@@ -24,6 +24,31 @@
 #include "vfs_posix.h"
 #include "librpc/gen_ndr/ndr_xattr.h"
 
+
+/*
+  determine what access bits are needed for a call
+*/
+static uint32_t pvfs_fileinfo_access(enum smb_fileinfo_level level)
+{
+	uint32_t needed;
+
+	switch (level) {
+	case RAW_FILEINFO_EA_LIST:
+	case RAW_FILEINFO_ALL_EAS:
+		needed = SEC_FILE_READ_EA;
+		break;
+
+	case RAW_FILEINFO_IS_NAME_VALID:
+		needed = 0;
+		break;
+
+	default:
+		needed = SEC_FILE_READ_ATTRIBUTE;
+		break;
+	}
+	return needed;	
+}
+
 /*
   reply to a RAW_FILEINFO_EA_LIST call
 */
@@ -269,6 +294,12 @@ NTSTATUS pvfs_qpathinfo(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
+	status = pvfs_access_check_simple(pvfs, req, name, 
+					  pvfs_fileinfo_access(info->generic.level));
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
 	status = pvfs_map_fileinfo(pvfs, req, name, info, -1);
 
 	return status;
@@ -284,12 +315,18 @@ NTSTATUS pvfs_qfileinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_file *f;
 	struct pvfs_file_handle *h;
 	NTSTATUS status;
+	uint32_t access_needed;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.in.fnum);
 	if (!f) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
 	h = f->handle;
+
+	access_needed = pvfs_fileinfo_access(info->generic.level);
+	if (!(f->access_mask & access_needed)) {
+		return NT_STATUS_ACCESS_DENIED;
+	}
 
 	/* update the file information */
 	status = pvfs_resolve_name_fd(pvfs, h->fd, h->name);
