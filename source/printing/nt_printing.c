@@ -819,7 +819,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	int access_mode;
 	int action;
 	files_struct    *fsp = NULL;
-	files_struct    *fsp2 = NULL;
 	SMB_STRUCT_STAT st;
 	SMB_STRUCT_STAT stat_buf;
 	BOOL bad_path;
@@ -845,12 +844,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		return True;
 
 	} else {
-#if 0 /*JRRTEST*/
 		int ret = get_file_version(fsp, old_file, &old_major, &old_minor);
 		if (ret == -1) goto error_exit;
-#else
-		int ret = 0;
-#endif
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
@@ -860,13 +855,8 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 		if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
 		old_create_time = st.st_mtime;
 		DEBUGADD(6,("file_version_is_newer: [%s] mod time = %ld sec\n", old_file, old_create_time));
-		DEBUG(6,("file_version_is_newer: st.st_size = %d\n", st.st_size));
-		DEBUG(6,("file_version_is_newer: st.st_ino  = %d\n", st.st_ino));
-		DEBUG(6,("file_version_is_newer: atime      = %ld sec\n", st.st_atime));
-		DEBUG(6,("file_version_is_newer: mtime      = %ld sec\n", st.st_mtime));
-		DEBUG(6,("file_version_is_newer: ctime      = %ld sec\n", st.st_ctime));
 	}
-//	close_file(fsp, True);
+	close_file(fsp, True);
 
 	ZERO_STRUCT(st);
 	ZERO_STRUCT(stat_buf);
@@ -874,40 +864,30 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	pstrcpy(filepath, new_file);
 	unix_convert(filepath,conn,NULL,&bad_path,&stat_buf);
 
-	fsp2 = open_file_shared(conn, filepath, &stat_buf,
+	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
 						   0, 0, &access_mode, &action);
-	if (!fsp2) {
+	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
 				filepath, errno));
 		goto error_exit;
 
 	} else {
-#if 0 /*JRRTEST*/
-		int ret = get_file_version(fsp2, new_file, &new_major, &new_minor);
+		int ret = get_file_version(fsp, new_file, &new_major, &new_minor);
 		if (ret == -1) goto error_exit;
-#else
-		int ret = 0;
-#endif
 
 		if (!ret) {
 			DEBUG(6,("file_version_is_newer: Version info not found [%s], use mod time\n",
 					 new_file));
 			use_version = False;
 		}
-		if (fsp2->conn->vfs_ops.fstat(fsp2, fsp2->fd, &st) == -1) goto error_exit;
+		if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
 		new_create_time = st.st_mtime;
 		DEBUGADD(6,("file_version_is_newer: [%s] mod time = %ld sec\n", new_file, new_create_time));
-		DEBUG(6,("file_version_is_newer: st.st_size = %d\n", st.st_size));
-		DEBUG(6,("file_version_is_newer: st.st_ino  = %d\n", st.st_ino));
-		DEBUG(6,("file_version_is_newer: atime      = %ld sec\n", st.st_atime));
-		DEBUG(6,("file_version_is_newer: mtime      = %ld sec\n", st.st_mtime));
-		DEBUG(6,("file_version_is_newer: ctime      = %ld sec\n", st.st_ctime));
 	}
 	close_file(fsp, True);
-	close_file(fsp2, True);
 
 	if (use_version && (new_major != old_major || new_minor != old_minor)) {
 		/* Compare versions and choose the larger version number */
@@ -937,7 +917,6 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	error_exit:
 		if(fsp)
 			close_file(fsp, True);
-			close_file(fsp2, True);
 		return -1;
 }
 
