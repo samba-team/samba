@@ -110,32 +110,6 @@ static void calc_maxfd(struct event_context *ev)
 	}
 }
 
-/*
-  move the event structures from ev2 into ev, upping the reference
-  count on ev. The event context ev2 is then destroyed.
-
-  this is used by modules that need to call on the events of a lower module
-*/
-struct event_context *event_context_merge(struct event_context *ev, 
-					  struct event_context *ev2)
-{
-	DLIST_CONCATENATE(ev->fd_events, ev2->fd_events, struct fd_event *);
-	DLIST_CONCATENATE(ev->timed_events, ev2->timed_events, struct timed_event *);
-	DLIST_CONCATENATE(ev->loop_events, ev2->loop_events, struct loop_event *);
-
-	ev2->fd_events = NULL;
-	ev2->timed_events = NULL;
-	ev2->loop_events = NULL;
-
-	talloc_steal(ev->events, ev2->events);
-
-	event_context_destroy(ev2);
-
-	calc_maxfd(ev);
-
-	return ev;
-}
-
 /* to mark the ev->maxfd invalid
  * this means we need to recalculate it
  */

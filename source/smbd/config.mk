@@ -45,7 +45,8 @@ REQUIRED_SUBSYSTEMS = \
 [SUBSYSTEM::SERVER_SERVICE]
 INIT_OBJ_FILES = \
 		smbd/service.o \
-		smbd/service_stream.o
+		smbd/service_stream.o \
+		smbd/service_task.o
 REQUIRED_SUBSYSTEMS = \
 		MESSAGING
 # End SUBSYSTEM SERVER

@@ -105,10 +105,70 @@ static void thread_accept_connection(struct event_context *ev,
 	}
 }
 
-/* called when a SMB connection goes down */
-static void thread_terminate_connection(struct event_context *event_ctx, const char *reason) 
+
+struct new_task_state {
+	struct event_context *ev;
+	void (*new_task)(struct event_context *, uint32_t , void *);
+	void *private;
+};
+
+static void *thread_task_fn(void *thread_parm)
 {
-	DEBUG(10,("thread_terminate_connection: reason[%s]\n",reason));
+	struct new_task_state *new_task = talloc_get_type(thread_parm, struct new_task_state);
+
+	new_task->new_task(new_task->ev, pthread_self(), new_task->private);
+
+	/* run this connection from here */
+	event_loop_wait(new_task->ev);
+
+	talloc_free(new_task);
+
+	return NULL;
+}
+
+/*
+  called when a new task is needed
+*/
+static void thread_new_task(struct event_context *ev, 
+			    void (*new_task)(struct event_context *, uint32_t , void *), 
+			    void *private)
+{		
+	int rc;
+	pthread_t thread_id;
+	pthread_attr_t thread_attr;
+	struct new_task_state *state;
+	struct event_context *ev2;
+
+	ev2 = event_context_init(ev);
+	if (ev2 == NULL) return;
+
+	state = talloc(ev2, struct new_task_state);
+	if (state == NULL) {
+		talloc_free(ev2);
+		return;
+	}
+
+	state->new_task = new_task;
+	state->private  = private;
+	state->ev       = ev2;
+
+	pthread_attr_init(&thread_attr);
+	pthread_attr_setdetachstate(&thread_attr, PTHREAD_CREATE_DETACHED);
+	rc = pthread_create(&thread_id, &thread_attr, thread_task_fn, state);
+	pthread_attr_destroy(&thread_attr);
+	if (rc == 0) {
+		DEBUG(4,("thread_new_task: created thread_id=%lu\n", 
+			 (unsigned long int)thread_id));
+	} else {
+		DEBUG(0,("thread_new_task: thread create failed rc=%d\n", rc));
+		talloc_free(ev2);
+	}
+}
+
+/* called when a task goes down */
+static void thread_terminate(struct event_context *event_ctx, const char *reason) 
+{
+	DEBUG(10,("thread_terminate: reason[%s]\n",reason));
 
 	talloc_free(event_ctx);
 
@@ -442,7 +502,8 @@ static const struct model_ops thread_ops = {
 	.name			= "thread",
 	.model_init		= thread_model_init,
 	.accept_connection	= thread_accept_connection,
-	.terminate_connection	= thread_terminate_connection,
+	.new_task               = thread_new_task,
+	.terminate              = thread_terminate,
 };
 
 /*
