@@ -2199,6 +2199,113 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	return ldapsam_getgroup(methods, filter, map);
 }
 
+static NTSTATUS ldapsam_enum_group_memberships(struct pdb_methods *methods,
+					       const char *username,
+					       gid_t primary_gid,
+					       DOM_SID **sids, gid_t **gids,
+					       int *num_groups)
+{
+	struct ldapsam_privates *ldap_state =
+		(struct ldapsam_privates *)methods->private_data;
+	struct smbldap_state *conn = ldap_state->smbldap_state;
+	pstring filter;
+	char *attrs[] = { "gidNumber", "sambaSID", NULL };
+	char *escape_name = escape_ldap_string_alloc(username);
+	int rc;
+	LDAPMessage *msg = NULL;
+	LDAPMessage *entry;
+	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	int num_sids, num_gids;
+	extern DOM_SID global_sid_NULL;
+
+	if (!lp_parm_bool(-1, "ldapsam", "trusted", False))
+		return pdb_default_enum_group_memberships(methods, username,
+							  primary_gid, sids,
+							  gids, num_groups);
+
+	*sids = NULL;
+	num_sids = 0;
+
+	if (escape_name == NULL)
+		return NT_STATUS_UNSUCCESSFUL;
+
+	pstr_sprintf(filter, "(&(objectClass=posixGroup)"
+		     "(|(memberUid=%s)(gidNumber=%d)))",
+		     username, primary_gid);
+
+	rc = smbldap_search(conn, lp_ldap_group_suffix(),
+			    LDAP_SCOPE_SUBTREE, filter, attrs, 0, &msg);
+
+	if (rc != LDAP_SUCCESS)
+		goto done;
+
+	num_gids = 0;
+	*gids = NULL;
+
+	num_sids = 0;
+	*sids = NULL;
+
+	/* We need to add the primary group as the first gid/sid */
+
+	add_gid_to_array_unique(primary_gid, gids, &num_gids);
+
+	/* This sid will be replaced later */
+
+	add_sid_to_array_unique(&global_sid_NULL, sids, &num_sids);
+
+	for (entry = ldap_first_entry(conn->ldap_struct, msg);
+	     entry != NULL;
+	     entry = ldap_next_entry(conn->ldap_struct, entry))
+	{
+		fstring str;
+		DOM_SID sid;
+		gid_t gid;
+		char *end;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "sambaSID",
+						  str, sizeof(str)-1))
+			goto done;
+
+		if (!string_to_sid(&sid, str))
+			goto done;
+
+		if (!smbldap_get_single_attribute(conn->ldap_struct,
+						  entry, "gidNumber",
+						  str, sizeof(str)-1))
+			goto done;
+
+		gid = strtoul(str, &end, 10);
+
+		if (PTR_DIFF(end, str) != strlen(str))
+			goto done;
+
+		if (gid == primary_gid) {
+			sid_copy(&(*sids)[0], &sid);
+		} else {
+			add_gid_to_array_unique(gid, gids, &num_gids);
+			add_sid_to_array_unique(&sid, sids, &num_sids);
+		}
+	}
+
+	if (sid_compare(&global_sid_NULL, &(*sids)[0]) == 0) {
+		DEBUG(3, ("primary group not found\n"));
+		goto done;
+	}
+
+	*num_groups = num_sids;
+
+	result = NT_STATUS_OK;
+
+ done:
+
+	SAFE_FREE(escape_name);
+	if (msg != NULL)
+		ldap_msgfree(msg);
+
+	return result;
+}
+
 /**********************************************************************
  *********************************************************************/
 
@@ -2858,6 +2965,7 @@ static NTSTATUS pdb_init_ldapsam_common(PDB_CONTEXT *pdb_context, PDB_METHODS **
 	(*pdb_method)->update_group_mapping_entry = ldapsam_update_group_mapping_entry;
 	(*pdb_method)->delete_group_mapping_entry = ldapsam_delete_group_mapping_entry;
 	(*pdb_method)->enum_group_mapping = ldapsam_enum_group_mapping;
+	(*pdb_method)->enum_group_memberships = ldapsam_enum_group_memberships;
 
 	/* TODO: Setup private data and free */
 

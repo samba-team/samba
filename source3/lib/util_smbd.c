@@ -37,25 +37,20 @@
   NOTE! uses become_root() to gain correct priviages on systems
   that lack a native getgroups() call (uses initgroups and getgroups)
 */
-BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
+BOOL getgroups_user(const char *user, gid_t primary_gid, gid_t **ret_groups, int *ngroups)
 {
-	struct passwd *pwd;
 	int ngrp, max_grp;
 	gid_t *temp_groups;
 	gid_t *groups;
 	int i;
 
-	pwd = getpwnam_alloc(user);
-	if (!pwd) return False;
-
 	max_grp = groups_max();
 	temp_groups = (gid_t *)malloc(sizeof(gid_t) * max_grp);
 	if (! temp_groups) {
-		passwd_free(&pwd);
 		return False;
 	}
 
-	if (sys_getgrouplist(user, pwd->pw_gid, temp_groups, &max_grp) == -1) {
+	if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
 		
 		gid_t *groups_tmp;
 		
@@ -67,9 +62,8 @@ BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
 		}
 		temp_groups = groups_tmp;
 		
-		if (sys_getgrouplist(user, pwd->pw_gid, temp_groups, &max_grp) == -1) {
+		if (sys_getgrouplist(user, primary_gid, temp_groups, &max_grp) == -1) {
 			DEBUG(0, ("get_user_groups: failed to get the unix group list\n"));
-			passwd_free(&pwd);
 			SAFE_FREE(temp_groups);
 			return False;
 		}
@@ -79,9 +73,7 @@ BOOL getgroups_user(const char *user, gid_t **ret_groups, int *ngroups)
 	groups = NULL;
 
 	/* Add in primary group first */
-	add_gid_to_array_unique(pwd->pw_gid, &groups, &ngrp);
-
-	passwd_free(&pwd);
+	add_gid_to_array_unique(primary_gid, &groups, &ngrp);
 
 	for (i=0; i<max_grp; i++)
 		add_gid_to_array_unique(temp_groups[i], &groups, &ngrp);

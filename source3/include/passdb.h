@@ -287,6 +287,12 @@ typedef struct pdb_context
 					   GROUP_MAP **rmap, int *num_entries,
 					   BOOL unix_only);
 
+	NTSTATUS (*pdb_enum_group_memberships)(struct pdb_context *context,
+					       const char *username,
+					       gid_t primary_gid,
+					       DOM_SID **sids, gid_t **gids,
+					       int *num_groups);
+
 	NTSTATUS (*pdb_find_alias)(struct pdb_context *context,
 				   const char *name, DOM_SID *sid);
 
@@ -378,6 +384,12 @@ typedef struct pdb_methods
 				       enum SID_NAME_USE sid_name_use,
 				       GROUP_MAP **rmap, int *num_entries,
 				       BOOL unix_only);
+
+	NTSTATUS (*enum_group_memberships)(struct pdb_methods *methods,
+					   const char *username,
+					   gid_t primary_gid,
+					   DOM_SID **sids, gid_t **gids,
+					   int *num_groups);
 
 	NTSTATUS (*find_alias)(struct pdb_methods *methods,
 			       const char *name, DOM_SID *sid);
