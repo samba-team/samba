@@ -683,7 +683,7 @@ static BOOL test_ntlm(void)
 }
 
 /* 
- * Test the NTLM response only, but in the LM feild.
+ * Test the NTLM response only, but in the LM field.
  */
 
 static BOOL test_ntlm_in_lm(void) 
@@ -749,7 +749,7 @@ static BOOL test_ntlm_in_lm(void)
 }
 
 /* 
- * Test the NTLM response only, but in the both the NT and LM feilds.
+ * Test the NTLM response only, but in the both the NT and LM fields.
  */
 
 static BOOL test_ntlm_in_both(void) 
@@ -1048,13 +1048,171 @@ static BOOL test_lmv2(void)
 }
 
 /* 
+ * Test the normal 'LM and NTLM' combination but deliberately break one
+ */
+
+static BOOL test_ntlm_broken(BOOL break_lm) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB lm_response = data_blob(NULL, 24);
+	DATA_BLOB nt_response = data_blob(NULL, 24);
+	DATA_BLOB session_key = data_blob(NULL, 16);
+
+	uchar lm_key[8];
+	uchar nt_key[16];
+	uchar lm_hash[16];
+	uchar nt_hash[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+	
+	ZERO_STRUCT(lm_key);
+	ZERO_STRUCT(nt_key);
+
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	SMBencrypt(opt_password,chall.data,lm_response.data);
+	E_deshash(opt_password, lm_hash); 
+
+	SMBNTencrypt(opt_password,chall.data,nt_response.data);
+
+	E_md4hash(opt_password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+
+	if (break_lm)
+		lm_response.data[0]++;
+	else
+		nt_response.data[0]++;
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &lm_response,
+					      &nt_response,
+					      flags,
+					      lm_key, 
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&lm_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+	if (memcmp(lm_hash, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 8);
+		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+		pass = False;
+	}
+	if (memcmp(session_key.data, nt_key, 
+		   sizeof(nt_key)) != 0) {
+		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, session_key.data, session_key.length);
+		pass = False;
+	}
+        return pass;
+}
+
+static BOOL test_ntlm_lm_broken(void) 
+{
+	return test_ntlm_broken(True);
+}
+
+static BOOL test_ntlm_ntlm_broken(void) 
+{
+	return test_ntlm_broken(False);
+}
+
+static BOOL test_ntlmv2_broken(BOOL break_lmv2)
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+
+	uchar lm_key[16];
+	uchar nt_key[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+
+	ZERO_STRUCT(nt_key);
+	ZERO_STRUCT(lm_key);
+	
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+			      &lmv2_response, &ntlmv2_response, 
+			      &lm_session_key, &nt_session_key)) {
+		return False;
+	}
+
+	/* Heh - this should break the appropriate password hash nicely! */
+
+	if (break_lmv2)
+		lmv2_response.data[0]++;
+	else
+		ntlmv2_response.data[0]++;
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &lmv2_response,
+					      &ntlmv2_response,
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&lmv2_response);
+	data_blob_free(&ntlmv2_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+        return pass;
+}
+
+static BOOL test_ntlmv2_lmv2_broken(void) 
+{
+	return test_ntlmv2_broken(True);
+}
+
+static BOOL test_ntlmv2_ntlmv2_broken(void) 
+{
+	return test_ntlmv2_broken(False);
+}
+
+/* 
    Tests:
    
    - LM only
    - NT and LM		   
    - NT
-   - NT in LM feild
-   - NT in both feilds
+   - NT in LM field
+   - NT in both fields
    - NTLMv2
    - NTLMv2 and LMv2
    - LMv2
@@ -1068,14 +1226,18 @@ struct ntlm_tests {
 	BOOL (*fn)(void);
 	const char *name;
 } test_table[] = {
-	{test_lm, "test LM"},
-	{test_lm_ntlm, "test LM and NTLM"},
-	{test_ntlm, "test NTLM"},
-	{test_ntlm_in_lm, "test NTLM in LM"},
-	{test_ntlm_in_both, "test NTLM in both"},
-	{test_ntlmv2, "test NTLMv2"},
-	{test_lmv2_ntlmv2, "test NTLMv2 and LMv2"},
-	{test_lmv2, "test LMv2"}
+	{test_lm, "LM"},
+	{test_lm_ntlm, "LM and NTLM"},
+	{test_ntlm, "NTLM"},
+	{test_ntlm_in_lm, "NTLM in LM"},
+	{test_ntlm_in_both, "NTLM in both"},
+	{test_ntlmv2, "NTLMv2"},
+	{test_lmv2_ntlmv2, "NTLMv2 and LMv2"},
+	{test_lmv2, "LMv2"},
+	{test_ntlmv2_lmv2_broken, "NTLMv2 and LMv2, LMv2 broken"},
+	{test_ntlmv2_ntlmv2_broken, "NTLMv2 and LMv2, NTLMv2 broken"},
+	{test_ntlm_lm_broken, "NTLM and LM, LM broken"},
+	{test_ntlm_ntlm_broken, "NTLM and LM, NTLM broken"}
 };
 
 static BOOL diagnose_ntlm_auth(void)
