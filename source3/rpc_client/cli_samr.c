@@ -35,6 +35,8 @@ NTSTATUS cli_samr_connect(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_CONNECT r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_connect to %s\n", cli->desthost));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -82,6 +84,8 @@ NTSTATUS cli_samr_connect4(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_CONNECT4 r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_connect4 to %s\n", cli->desthost));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -128,6 +132,8 @@ NTSTATUS cli_samr_close(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_CLOSE_HND q;
 	SAMR_R_CLOSE_HND r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_close\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -177,6 +183,8 @@ NTSTATUS cli_samr_open_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_OPEN_DOMAIN r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_open_domain with sid %s\n", sid_string_static(domain_sid) ));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -224,6 +232,8 @@ NTSTATUS cli_samr_open_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_OPEN_USER q;
 	SAMR_R_OPEN_USER r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_open_user with rid 0x%x\n", user_rid ));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -273,6 +283,8 @@ NTSTATUS cli_samr_open_group(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_OPEN_GROUP r;
 	NTSTATUS result =  NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_open_group with rid 0x%x\n", group_rid ));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -321,6 +333,8 @@ NTSTATUS cli_samr_query_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_QUERY_USERINFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_query_userinfo\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -364,6 +378,8 @@ NTSTATUS cli_samr_query_groupinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_GROUPINFO q;
 	SAMR_R_QUERY_GROUPINFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_query_groupinfo\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -409,6 +425,8 @@ NTSTATUS cli_samr_query_usergroups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_USERGROUPS q;
 	SAMR_R_QUERY_USERGROUPS r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_query_usergroups\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -457,6 +475,8 @@ NTSTATUS cli_samr_query_useraliases(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	unsigned int ptr=1;
 	
+	DEBUG(10,("cli_samr_query_useraliases\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -502,6 +522,8 @@ NTSTATUS cli_samr_query_groupmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_GROUPMEM q;
 	SAMR_R_QUERY_GROUPMEM r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_query_groupmem\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -568,6 +590,8 @@ NTSTATUS cli_samr_enum_dom_users(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	int i;
 	
+	DEBUG(10,("cli_samr_enum_dom_users starting at index %u\n", (unsigned int)*start_idx));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 	
@@ -646,6 +670,8 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 name_idx, i;
 
+	DEBUG(10,("cli_samr_enum_dom_groups starting at index %u\n", (unsigned int)*start_idx));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -723,6 +749,8 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_ENUM_DOM_ALIASES r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 name_idx, i;
+
+	DEBUG(10,("cli_samr_enum_als_groups starting at index %u\n", (unsigned int)*start_idx));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -804,6 +832,8 @@ NTSTATUS cli_samr_query_aliasmem(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 i;
 
+	DEBUG(10,("cli_samr_query_aliasmem\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -862,6 +892,8 @@ NTSTATUS cli_samr_open_alias(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_OPEN_ALIAS r;
 	NTSTATUS result;
 
+	DEBUG(10,("cli_samr_open_alias with rid 0x%x\n", alias_rid));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -913,6 +945,8 @@ NTSTATUS cli_samr_query_dom_info(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_QUERY_DOMAIN_INFO q;
 	SAMR_R_QUERY_DOMAIN_INFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_query_dom_info\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -997,6 +1031,8 @@ NTSTATUS cli_samr_query_dispinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_QUERY_DISPINFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_query_dispinfo for start_idx = %u\n", *start_idx));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1058,6 +1094,8 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_LOOKUP_RIDS r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 i;
+
+	DEBUG(10,("cli_samr_lookup_rids\n"));
 
         if (num_rids > 1000) {
                 DEBUG(2, ("cli_samr_lookup_rids: warning: NT4 can crash if "
@@ -1133,6 +1171,8 @@ NTSTATUS cli_samr_lookup_names(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 i;
 
+	DEBUG(10,("cli_samr_lookup_names\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1196,6 +1236,8 @@ NTSTATUS cli_samr_create_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_CREATE_USER r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_create_dom_user %s\n", acct_name));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1249,6 +1291,8 @@ NTSTATUS cli_samr_set_userinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_SET_USERINFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_set_userinfo\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1299,6 +1343,8 @@ NTSTATUS cli_samr_set_userinfo2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_SET_USERINFO2 r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_set_userinfo2\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1345,6 +1391,8 @@ NTSTATUS cli_samr_delete_dom_user(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_DELETE_DOM_USER r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_delete_dom_user\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1390,6 +1438,8 @@ NTSTATUS cli_samr_query_sec_obj(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_R_QUERY_SEC_OBJ r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 
+	DEBUG(10,("cli_samr_query_sec_obj\n"));
+
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
 
@@ -1434,6 +1484,8 @@ NTSTATUS cli_samr_get_dom_pwinfo(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_GET_DOM_PWINFO q;
 	SAMR_R_GET_DOM_PWINFO r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_get_dom_pwinfo\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -1486,6 +1538,8 @@ NTSTATUS cli_samr_lookup_domain(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	SAMR_Q_LOOKUP_DOMAIN q;
 	SAMR_R_LOOKUP_DOMAIN r;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+
+	DEBUG(10,("cli_samr_lookup_domain\n"));
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
