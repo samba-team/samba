@@ -78,6 +78,10 @@ typedef int BOOL;
 #define READ_EOF 2
 #define READ_ERROR 3
 
+/* This error code can go into the client smb_rw_error. */
+#define WRITE_ERROR 4
+#define READ_BAD_SIG 5
+
 #define DIR_STRUCT_SIZE 43
 
 /* these define the attribute byte as seen by DOS */
@@ -160,9 +164,6 @@ typedef uint16 smb_ucs2_t;
 /* ucs2 string types. */
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
 typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
-/* This error code can go into the client smb_rw_error. */
-#define WRITE_ERROR 4
 
 #ifdef WORDS_BIGENDIAN
 #define UCS2_SHIFT 8
