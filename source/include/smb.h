@@ -511,7 +511,6 @@ struct connect_record
 #define MAP_HIDDEN(cnum)   (OPEN_CNUM(cnum) && lp_map_hidden(SNUM(cnum)))
 #define MAP_SYSTEM(cnum)   (OPEN_CNUM(cnum) && lp_map_system(SNUM(cnum)))
 #define MAP_ARCHIVE(cnum)   (OPEN_CNUM(cnum) && lp_map_archive(SNUM(cnum)))
-#define CREATE_MODE(cnum)  (lp_create_mode(SNUM(cnum)) | 0700)
 #ifdef SMB_PASSWD
 #define SMBENCRYPT()       (lp_encrypted_passwords())
 #else

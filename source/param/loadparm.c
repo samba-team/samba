@@ -221,7 +221,9 @@ typedef struct
   char *volume;
   int  iMinPrintSpace;
   int  iCreate_mode;
+  int  iCreate_force_mode;
   int  iDir_mode;
+  int  iDir_force_mode;
   int  iMaxConnections;
   int  iDefaultCase;
   BOOL bAlternatePerm;
@@ -296,7 +298,9 @@ static service sDefault =
   NULL,    /* volume */
   0,       /* iMinPrintSpace */
   0644,    /* iCreate_mode */
+  0700,    /* iCreate_force_mode */
   0755,    /* iDir_mode */
+  0000,    /* iDir_force_mode */
   0,       /* iMaxConnections */
   CASE_LOWER, /* iDefaultCase */
   False,   /* bAlternatePerm */
@@ -496,8 +500,10 @@ struct parm_struct
   {"min print space",  P_INTEGER, P_LOCAL,  &sDefault.iMinPrintSpace,   NULL},
   {"create mask",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mode,     NULL},
   {"create mode",      P_OCTAL,   P_LOCAL,  &sDefault.iCreate_mode,     NULL},
+  {"force create mode",P_OCTAL,   P_LOCAL,  &sDefault.iCreate_force_mode,     NULL},
   {"directory mask",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mode,        NULL},
   {"directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_mode,        NULL},
+  {"force directory mode",   P_OCTAL,   P_LOCAL,  &sDefault.iDir_force_mode,        NULL},
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL},
   {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL},
@@ -899,7 +905,9 @@ FN_LOCAL_BOOL(lp_delete_readonly,bDeleteReadonly)
 FN_LOCAL_BOOL(lp_fake_oplocks,bFakeOplocks)
 
 FN_LOCAL_INTEGER(lp_create_mode,iCreate_mode)
+FN_LOCAL_INTEGER(lp_force_create_mode,iCreate_force_mode)
 FN_LOCAL_INTEGER(lp_dir_mode,iDir_mode)
+FN_LOCAL_INTEGER(lp_force_dir_mode,iDir_force_mode)
 FN_LOCAL_INTEGER(lp_max_connections,iMaxConnections)
 FN_LOCAL_INTEGER(lp_defaultcase,iDefaultCase)
 FN_LOCAL_INTEGER(lp_minprintspace,iMinPrintSpace)
