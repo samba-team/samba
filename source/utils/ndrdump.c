@@ -40,6 +40,10 @@ static const struct dcerpc_interface_call *find_function(
 	const char *function)
 {
 	int i;
+	if (isdigit(function[0])) {
+		i = strtol(function, NULL, 0);
+		return &p->calls[i];
+	}
 	for (i=0;i<p->num_calls;i++) {
 		if (strcmp(p->calls[i].name, function) == 0) {
 			break;
@@ -161,6 +165,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	if (ndr->offset != ndr->data_size) {
 		printf("WARNING! %d unread bytes\n", ndr->data_size - ndr->offset);
+		dump_data(0, ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 	}
 
 	pr.mem_ctx = mem_ctx;
