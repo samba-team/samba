@@ -281,6 +281,12 @@ strip $DESTDIR/usr/bin/smb{mount,mnt,umount}
 ( cd $DESTDIR/sbin; ln -s /usr/bin/smbmount mount.smbfs; \
 	ln -s /usr/bin/smbumount umount.smbfs )
 
+install -m 755 source/bin/smbfilter $DESTDIR/usr/bin
+for i in debug2html talloctort samsync make_printerdef
+do
+	install -m 755 source/bin/$i $DESTDIR/usr/sbin
+done
+
 #mv $DESTDIR/usr/bin/{make,add,conv}* $DESTDIR/usr/sbin
 
 #cp -p source/codepages/codepage_def.??? $DESTDIR%{EtcSamba}/codepages/src
@@ -299,7 +305,7 @@ ln -s /etc/rc.d/init.d/samba $DESTDIR/usr/sbin
 
 cp -p $VVS/smb.conf.sample $DESTDIR%{EtcSamba}/smb.conf.sample
 cp -p $VVS/smbusers $DESTDIR%{EtcSamba}
-cp -p $VVS/findsmb $DESTDIR/usr/sbin
+cp -p $VVS/findsmb $DESTDIR/usr/bin
 cp -p $VVS/samba.daemon $DESTDIR/etc/sysconfig/daemons/samba
 cp -p $VVS/samba.pam $DESTDIR/etc/pam.d/samba
 cp -p $VVS/samba.logrotate $DESTDIR/etc/logrotate.d/samba
