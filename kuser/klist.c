@@ -116,7 +116,7 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	printf("Renew till: %s\n", 
 	       printable_time(cred->times.renew_till));
     printf("Ticket flags: ");
-#define PRINT_FLAG2(f, s) if(cred->flags.b. ##f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
+#define PRINT_FLAG2(f, s) if(cred->flags.b.f) { if(!first_flag) printf(", "); printf("%s", #s); first_flag = 0; }
 #define PRINT_FLAG(f) PRINT_FLAG2(f, f)
     first_flag = 1;
     PRINT_FLAG(forwardable);
