@@ -54,6 +54,8 @@ void sig_usr1( int sig );
 void setup_logging( char *pname, BOOL interactive );
 void reopen_logs( void );
 void force_check_log_size( void );
+BOOL need_to_check_log_size( void );
+void check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 
@@ -1262,7 +1264,6 @@ BOOL lp_nis_home_map(void);
 BOOL lp_bind_interfaces_only(void);
 BOOL lp_unix_password_sync(void);
 BOOL lp_passwd_chat_debug(void);
-BOOL lp_ole_locking_compat(void);
 BOOL lp_nt_smb_support(void);
 BOOL lp_nt_pipe_support(void);
 BOOL lp_nt_acl_support(void);
