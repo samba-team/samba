@@ -1,15 +1,14 @@
-# Generated automatically from Makefile.in by configure.
 MAKEFILE	= Makefile.vfs
 
 include	$(MAKEFILE)
 
-CC		= gcc
+CC		= @CC@
 LIBTOOL		= libtool
-CFLAGS		= -O -Wall -g -O2 -march=i386 -mcpu=i686 -I/usr/kerberos/include $(VFS_CFLAGS)
-CPPFLAGS	= -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE  -I/usr/kerberos/include $(VFS_CPPFLAGS)
-LDFLAGS		=  -Wl,-rpath,/usr/lib -L/usr/kerberos/lib $(VFS_LDFLAGS)
+CFLAGS		= @CFLAGS@ $(VFS_CFLAGS)
+CPPFLAGS	= @CPPFLAGS@ $(VFS_CPPFLAGS)
+LDFLAGS		= @LDFLAGS@ $(VFS_LDFLAGS)
 LDSHFLAGS	= -shared
-srcdir		= /home/sorce/devel/samba/cascaded-vfs/samba/source
+srcdir		= @builddir@
 FLAGS		=  $(CFLAGS) -Iinclude -I$(srcdir)/include -I$(srcdir)/ubiqx -I$(srcdir)/smbwrapper  -I. $(CPPFLAGS) -I$(srcdir)
 
 # Default target
