@@ -1048,6 +1048,10 @@ static uint32 search_top_nua_rid(struct ldapsam_privates *ldap_state, LDAP *ldap
 	}
 
 	ldap_msgfree(result);
+
+	if (top_rid < ldap_state->low_nua_rid) 
+		top_rid = ldap_state->low_nua_rid;
+
 	return top_rid;
 }
 
