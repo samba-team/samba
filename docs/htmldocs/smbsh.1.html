@@ -1,4 +1,4 @@
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbsh</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbsh.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbsh &#8212; Allows access to Windows NT filesystem 
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>smbsh</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="refentry" lang="en"><a name="smbsh.1"></a><div class="titlepage"><div></div><div></div></div><div class="refnamediv"><h2>Name</h2><p>smbsh &#8212; Allows access to remote SMB shares
 	using UNIX commands</p></div><div class="refsynopsisdiv"><h2>Synopsis</h2><div class="cmdsynopsis"><p><tt class="command">smbsh</tt>  [-W workgroup] [-U username] [-P prefix] [-R &lt;name resolve order&gt;] [-d &lt;debug level&gt;] [-l logfile] [-L libdir]</p></div></div><div class="refsect1" lang="en"><h2>DESCRIPTION</h2><p>This tool is part of the <a href="Samba.7.html"><span class="citerefentry"><span class="refentrytitle">Samba</span>(7)</span></a> suite.</p><p><b class="command">smbsh</b> allows you to access an NT filesystem 
 	using UNIX commands such as <b class="command">ls</b>, <b class="command">
 	egrep</b>, and <b class="command">rcp</b>. You must use a 
@@ -33,11 +33,11 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796723"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2802215"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-R &lt;name resolve order&gt;</span></dt><dd><p>This option is used to determine what naming 
 services and in what order to resolve 
 host names to IP addresses. The option takes a space-separated 
-string of different name resolution options.</p><p>The options are: &quot;lmhosts&quot;, &quot;host&quot;, &quot;wins&quot; and &quot;bcast&quot;. 
+string of different name resolution options.</p><p>The options are: "lmhosts", "host", "wins" and "bcast". 
 They cause names to be resolved as follows :</p><div class="itemizedlist"><ul type="disc"><li><p><tt class="constant">lmhosts</tt>: 
 Lookup an IP address in the Samba lmhosts file. If the 
 line in lmhosts has no name type attached to the 
@@ -66,9 +66,9 @@ resolution methods as it depends on the target host
 being on a locally connected subnet.
 </p></li></ul></div><p>If this parameter is not set then the name resolve order 
 defined in the <tt class="filename">smb.conf</tt> file parameter  
-(<a class="indexterm" name="id2796877"></a><i class="parameter"><tt>name resolve order</tt></i>) will be used.
+(<a class="indexterm" name="id2796281"></a><i class="parameter"><tt>name resolve order</tt></i>) will be used.
 </p><p>The default order is lmhosts, host, wins, bcast. Without 
-this parameter or any entry in the <a class="indexterm" name="id2796896"></a><i class="parameter"><tt>name resolve order</tt></i> parameter of the <tt class="filename">smb.conf</tt> file, the name 
+this parameter or any entry in the <a class="indexterm" name="id2796300"></a><i class="parameter"><tt>name resolve order</tt></i> parameter of the <tt class="filename">smb.conf</tt> file, the name 
 resolution methods will be attempted in this order. </p></dd><dt><span class="term">-L libdir</span></dt><dd><p>This parameter specifies the location of the 
 		shared libraries used by <b class="command">smbsh</b>. The default
 		value is specified at compile time.
@@ -91,7 +91,7 @@ resolution methods will be attempted in this order. </p></dd><dt><span class="te
 	cd</b> command to change directories, <b class="command">vi</b> to 
 	edit files, and <b class="command">rcp</b>  to copy files.</p></div><div class="refsect1" lang="en"><h2>VERSION</h2><p>This man page is correct for version 3.0 of the Samba suite.</p></div><div class="refsect1" lang="en"><h2>BUGS</h2><p><b class="command">smbsh</b> works by intercepting the standard 
 	libc calls with the dynamically loaded versions in <tt class="filename">
-	smbwrapper.o</tt>. Not all calls have been &quot;wrapped&quot;, so 
+	smbwrapper.o</tt>. Not all calls have been "wrapped", so 
 	some programs may not function correctly under <b class="command">smbsh
 	</b>.</p><p>Programs which are not dynamically linked cannot make 
 	use of <b class="command">smbsh</b>'s functionality. Most versions 

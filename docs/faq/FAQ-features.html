@@ -1,41 +1,40 @@
-<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Features</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-errors.html" title="Chapter 4. Common errors"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Features</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-errors.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> </td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-features"></a>Chapter 5. Features</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-features.html#id2816464">How can I use samba as a fax server?</a></dt><dd><dl><dt><a href="FAQ-features.html#id2814278">Tools for printing faxes</a></dt><dt><a href="FAQ-features.html#id2814327">Making the fax-server</a></dt><dt><a href="FAQ-features.html#id2814420">Installing the client drivers</a></dt><dt><a href="FAQ-features.html#id2814505">Example smb.conf</a></dt></dl></dd><dt><a href="FAQ-features.html#id2814704">Samba doesn't work well together with DHCP!</a></dt><dt><a href="FAQ-features.html#id2814830">How can I assign NetBIOS names to clients with DHCP?</a></dt><dt><a href="FAQ-features.html#id2814877">How do I convert between unix and dos text formats?</a></dt><dt><a href="FAQ-features.html#id2814906">Does samba have wins replication support?</a></dt></dl></div><div xmlns:ns6="" class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2816464"></a>How can I use samba as a fax server?</h2></div></div><div></div></div><p>Contributor: <a href="mailto:zuber@berlin.snafu.de" target="_top">Gerhard Zuber</a></p><ns6:p>Requirements:
-</ns6:p><table class="simplelist" border="0" summary="Simple list"><tr><td>UNIX box (Linux preferred) with SAMBA and a faxmodem</td></tr><tr><td>ghostscript package</td></tr><tr><td>mgetty+sendfax package</td></tr><tr><td>pbm package (portable bitmap tools)</td></tr></table><ns6:p>
-</ns6:p><p>First, install and configure the required packages. Be sure to read the mgetty+sendfax 
-manual carefully.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2814278"></a>Tools for printing faxes</h3></div></div><div></div></div><p>Your incomed faxes are in:
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=ISO-8859-1"><title>Chapter 5. Features</title><link rel="stylesheet" href="samba.css" type="text/css"><meta name="generator" content="DocBook XSL Stylesheets V1.60.1"><link rel="home" href="samba-faq.html" title="Samba FAQ"><link rel="up" href="samba-faq.html" title="Samba FAQ"><link rel="previous" href="FAQ-errors.html" title="Chapter 4. Common errors"></head><body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF"><div class="navheader"><table width="100%" summary="Navigation header"><tr><th colspan="3" align="center">Chapter 5. Features</th></tr><tr><td width="20%" align="left"><a accesskey="p" href="FAQ-errors.html">Prev</a> </td><th width="60%" align="center"> </th><td width="20%" align="right"> </td></tr></table><hr></div><div class="chapter" lang="en"><div class="titlepage"><div><div><h2 class="title"><a name="FAQ-features"></a>Chapter 5. Features</h2></div></div><div></div></div><div class="toc"><p><b>Table of Contents</b></p><dl><dt><a href="FAQ-features.html#id2875179">How can I use samba as a fax server?</a></dt><dd><dl><dt><a href="FAQ-features.html#id2874300">Tools for printing faxes</a></dt><dt><a href="FAQ-features.html#id2874353">Making the fax-server</a></dt><dt><a href="FAQ-features.html#id2874445">Installing the client drivers</a></dt><dt><a href="FAQ-features.html#id2874838">Example smb.conf</a></dt></dl></dd><dt><a href="FAQ-features.html#id2814744">Samba doesn't work well together with DHCP!</a></dt><dt><a href="FAQ-features.html#id2814866">How can I assign NetBIOS names to clients with DHCP?</a></dt><dt><a href="FAQ-features.html#id2883464">How do I convert between unix and dos text formats?</a></dt><dt><a href="FAQ-features.html#id2883493">Does samba have wins replication support?</a></dt></dl></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2875179"></a>How can I use samba as a fax server?</h2></div></div><div></div></div><p>Contributor: <a href="mailto:zuber@berlin.snafu.de" target="_top">Gerhard Zuber</a></p><p>Requirements:
+</p><table class="simplelist" border="0" summary="Simple list"><tr><td>UNIX box (Linux preferred) with SAMBA and a faxmodem</td></tr><tr><td>ghostscript package</td></tr><tr><td>mgetty+sendfax package</td></tr><tr><td>pbm package (portable bitmap tools)</td></tr></table><p>
+</p><p>First, install and configure the required packages. Be sure to read the mgetty+sendfax 
+manual carefully.</p><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2874300"></a>Tools for printing faxes</h3></div></div><div></div></div><p>Your incomed faxes are in:
 <tt class="filename">/var/spool/fax/incoming</tt>. Print it with:</p><pre class="programlisting">
 for i in *
 do
 g3cat $i | g3tolj | lpr -P hp
 done
-</pre><ns6:p>
-</ns6:p><p>
+</pre><p>
+</p><p>
 g3cat is in the tools-section, g3tolj is in the contrib-section
 for printing to HP lasers.
 </p><p>
 If you want to produce files for displaying and printing with Windows, use
 some tools from the pbm-package like the following command: <b class="command">g3cat $i | g3topbm - |  ppmtopcx - &gt;$i.pcx</b>
 and view it with your favourite Windows tool (maybe paintbrush)
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2814327"></a>Making the fax-server</h3></div></div><div></div></div><p>fetch the file <tt class="filename">mgetty+sendfax/frontends/winword/faxfilter</tt> and place it in <tt class="filename">/usr/local/etc/mgetty+sendfax/</tt>(replace /usr/local/ with whatever place you installed mgetty+sendfax)</p><p>prepare your faxspool file as mentioned in this file
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2874353"></a>Making the fax-server</h3></div></div><div></div></div><p>fetch the file <tt class="filename">mgetty+sendfax/frontends/winword/faxfilter</tt> and place it in <tt class="filename">/usr/local/etc/mgetty+sendfax/</tt>(replace /usr/local/ with whatever place you installed mgetty+sendfax)</p><p>prepare your faxspool file as mentioned in this file
 edit fax/faxspool.in and reinstall or change the final
 /usr/local/bin/faxspool too.
 </p><pre class="programlisting">
-if [ &quot;$user&quot; = &quot;root&quot; -o &quot;$user&quot; = &quot;fax&quot; -o \
-     &quot;$user&quot; = &quot;lp&quot; -o &quot;$user&quot; = &quot;daemon&quot; -o &quot;$user&quot; = &quot;bin&quot; ]
+if [ "$user" = "root" -o "$user" = "fax" -o \
+     "$user" = "lp" -o "$user" = "daemon" -o "$user" = "bin" ]
 </pre><p>find the first line and change it to the second.</p><p>
 make sure you have pbmtext (from the pbm-package). This is
 needed for creating the small header line on each page.
-</p><p>Prepare your faxheader <tt class="filename">/usr/local/etc/mgetty+sendfax/faxheader</tt></p><ns6:p>
+</p><p>Prepare your faxheader <tt class="filename">/usr/local/etc/mgetty+sendfax/faxheader</tt></p><p>
 Edit your /etc/printcap file:
-</ns6:p><pre class="programlisting">
+</p><pre class="programlisting">
 # FAX 
 lp3|fax:\
         :lp=/dev/null:\
         :sd=/usr/spool/lp3:\
         :if=/usr/local/etc/mgetty+sendfax/faxfilter:sh:sf:mx#0:\
         :lf=/usr/spool/lp3/fax-log:
-</pre><p>Now, edit your <tt class="filename">smb.conf</tt> so you have a smb based printer named &quot;fax&quot;</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2814420"></a>Installing the client drivers</h3></div></div><div></div></div><p>
-Now you have a printer called &quot;fax&quot; which can be used via
+</pre><p>Now, edit your <tt class="filename">smb.conf</tt> so you have a smb based printer named "fax"</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2874445"></a>Installing the client drivers</h3></div></div><div></div></div><p>
+Now you have a printer called "fax" which can be used via
 TCP/IP-printing (lpd-system) or via SAMBA (windows printing).
 </p><p>
 On every system you are able to produce postscript-files you
@@ -45,7 +44,7 @@ On Windows 3.1 95 and NT:
 </p><p>
 Install a printer wich produces postscript output,
    e.g.  apple laserwriter
-</p><p>Connect the &quot;fax&quot; to your printer.</p><p>
+</p><p>Connect the "fax" to your printer.</p><p>
 Now write your first fax. Use your favourite wordprocessor,
 write, winword, notepad or whatever you want, and start
 with the headerpage.
@@ -55,17 +54,17 @@ your address, your phone/fax-number.
 </p><p>
 It carries also the recipient, his address and his *** fax
 number ***. Now here is the trick:
-</p><ns6:p>
+</p><p>
 Use the text:
-</ns6:p><pre class="programlisting">
+</p><pre class="programlisting">
 Fax-Nr: 123456789
-</pre><ns6:p>
+</pre><p>
 as the recipients fax-number. Make sure this text does not
 occur in regular text ! Make sure this text is not broken
 by formatting information, e.g. format it as a single entity.
 (Windows Write and Win95 Wordpad are functional, maybe newer
  versions of Winword are breaking formatting information).
-</ns6:p><p>
+</p><p>
 The trick is that postscript output is human readable and
 the faxfilter program scans the text for this pattern and
 uses the found number as the fax-destination-number.
@@ -73,7 +72,7 @@ uses the found number as the fax-destination-number.
 Now print your fax through the fax-printer and it will be
 queued for later transmission. Use faxrunq for sending the
 queue out.
-</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2814505"></a>Example smb.conf</h3></div></div><div></div></div><pre class="programlisting">
+</p></div><div class="sect2" lang="en"><div class="titlepage"><div><div><h3 class="title"><a name="id2874838"></a>Example smb.conf</h3></div></div><div></div></div><pre class="programlisting">
 [global]
  printcap name = /etc/printcap
  print command = /usr/bin/lpr -r -P %p %s
@@ -89,7 +88,7 @@ queue out.
     create mode = 0700
     browseable = yes
     guest ok = no
-</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814704"></a>Samba doesn't work well together with DHCP!</h2></div></div><div></div></div><p>
+</pre></div></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814744"></a>Samba doesn't work well together with DHCP!</h2></div></div><div></div></div><p>
 We wish to help those folks who wish to use the ISC DHCP Server and provide
 sample configuration settings. Most operating systems today come ship with
 the ISC DHCP Server. ISC DHCP is available from:
@@ -142,14 +141,14 @@ applied to the resulting DHCP offered settings UNLESS the DHCP server also sets
 a NetBIOS Scope. It may therefore be prudent to forcibly apply a NULL NetBIOS
 Scope from your DHCP server. The can be done in the dhcpd.conf file with the
 parameter:
-<b class="command">option netbios-scope &quot;&quot;;</b>
+<b class="command">option netbios-scope "";</b>
 </p><p>
 While it is true that the Microsoft DHCP server that comes with Windows NT
 Server provides only a sub-set of rfc1533 functionality this is hardly an issue
 in those sites that already have a large investment and commitment to Unix
 systems and technologies. The current state of the art of the DHCP Server
 specification in covered in rfc2132.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814830"></a>How can I assign NetBIOS names to clients with DHCP?</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814866"></a>How can I assign NetBIOS names to clients with DHCP?</h2></div></div><div></div></div><p>
 SMB network clients need to be configured so that all standard TCP/IP name to
 address resolution works correctly. Once this has been achieved the SMB
 environment provides additional tools and services that act as helper agents in
@@ -164,13 +163,13 @@ This can be done, but needs a few NT registry hacks and you need to be able to
 speak UNICODE, which is of course no problem for a True Wizzard(tm) :)
 Instructions on how to do this (including a small util for less capable
 Wizzards) can be found at
-</p><p><a href="http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html" target="_top">http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html</a></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814877"></a>How do I convert between unix and dos text formats?</h2></div></div><div></div></div><p>
+</p><p><a href="http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html" target="_top">http://www.unixtools.org/~nneul/sw/nt/dhcp-netbios-hostname.html</a></p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2883464"></a>How do I convert between unix and dos text formats?</h2></div></div><div></div></div><p>
 Jim barry has written an <a href="ftp://samba.org/pub/samba/contributed/fixcrlf.zip" target="_top">
 excellent drag-and-drop cr/lf converter for
 windows</a>. Just drag your file onto the icon and it converts the file.
 </p><p>
 The utilities unix2dos and dos2unix(in the mtools package) should do 
 the job under unix.
-</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2814906"></a>Does samba have wins replication support?</h2></div></div><div></div></div><p>
+</p></div><div class="sect1" lang="en"><div class="titlepage"><div><div><h2 class="title" style="clear: both"><a name="id2883493"></a>Does samba have wins replication support?</h2></div></div><div></div></div><p>
 At the time of writing there is currently being worked on a wins replication implementation(wrepld).
 </p></div></div><div class="navfooter"><hr><table width="100%" summary="Navigation footer"><tr><td width="40%" align="left"><a accesskey="p" href="FAQ-errors.html">Prev</a> </td><td width="20%" align="center"><a accesskey="u" href="samba-faq.html">Up</a></td><td width="40%" align="right"> </td></tr><tr><td width="40%" align="left" valign="top">Chapter 4. Common errors </td><td width="20%" align="center"><a accesskey="h" href="samba-faq.html">Home</a></td><td width="40%" align="right" valign="top"> </td></tr></table></div></body></html>

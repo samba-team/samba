@@ -69,9 +69,9 @@ amounts of log data, and should only be used when
 investigating a problem. Levels above 3 are designed for 
 use only by developers and generate HUGE amounts of log
 data, most of which is extremely cryptic.</p><p>Note that specifying this parameter here will 
-override the <a class="indexterm" name="id2796919"></a><i class="parameter"><tt>log level</tt></i> parameter
+override the <a class="indexterm" name="id2796344"></a><i class="parameter"><tt>log level</tt></i> parameter
 in the <tt class="filename">smb.conf</tt> file.</p></dd><dt><span class="term">-l|--logfile=logbasename</span></dt><dd><p>File name for log/debug files. The extension
-<tt class="constant">&quot;.client&quot;</tt> will be appended. The log file is
+<tt class="constant">".client"</tt> will be appended. The log file is
 never removed by the client.
 </p></dd><dt><span class="term">-h|--help</span></dt><dd><p>Print a summary of command line options.
 </p></dd><dt><span class="term">-i</span></dt><dd><p>Tells <b class="command">winbindd</b> to not 
@@ -108,15 +108,15 @@ never removed by the client.
 	and group rids. </p></div><div class="refsect1" lang="en"><h2>CONFIGURATION</h2><p>Configuration of the <b class="command">winbindd</b> daemon 
 	is done through configuration parameters in the <a href="smb.conf.5.html"><span class="citerefentry"><span class="refentrytitle">smb.conf</span>(5)</span></a> file.  All parameters should be specified in the 
 	[global] section of smb.conf. </p><div class="itemizedlist"><ul type="disc"><li><p>
-		<a class="indexterm" name="id2797151"></a><i class="parameter"><tt>winbind separator</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797169"></a><i class="parameter"><tt>idmap uid</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797187"></a><i class="parameter"><tt>idmap gid</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797205"></a><i class="parameter"><tt>winbind cache time</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797223"></a><i class="parameter"><tt>winbind enum users</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797241"></a><i class="parameter"><tt>winbind enum groups</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797259"></a><i class="parameter"><tt>template homedir</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797277"></a><i class="parameter"><tt>template shell</tt></i></p></li><li><p>
-		<a class="indexterm" name="id2797296"></a><i class="parameter"><tt>winbind use default domain</tt></i></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
+		<a class="indexterm" name="id2798898"></a><i class="parameter"><tt>winbind separator</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2798916"></a><i class="parameter"><tt>idmap uid</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2798934"></a><i class="parameter"><tt>idmap gid</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2798952"></a><i class="parameter"><tt>winbind cache time</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2798970"></a><i class="parameter"><tt>winbind enum users</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2798988"></a><i class="parameter"><tt>winbind enum groups</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2799006"></a><i class="parameter"><tt>template homedir</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2799025"></a><i class="parameter"><tt>template shell</tt></i></p></li><li><p>
+		<a class="indexterm" name="id2799043"></a><i class="parameter"><tt>winbind use default domain</tt></i></p></li></ul></div></div><div class="refsect1" lang="en"><h2>EXAMPLE SETUP</h2><p>To setup winbindd for user and group lookups plus 
 	authentication from a domain controller use something like the 
 	following setup. This was tested on a RedHat 6.2 Linux box. </p><p>In <tt class="filename">/etc/nsswitch.conf</tt> put the 
 	following:
@@ -135,7 +135,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 	</b></p><p>The next step is to join the domain. To do that use the 
 	<b class="command">net</b> program like this:  </p><p><b class="command">net join -S PDC -U Administrator</b></p><p>The username after the <i class="parameter"><tt>-U</tt></i> can be any
 	Domain user that has administrator privileges on the machine.
-	Substitute the name or IP of your PDC for &quot;PDC&quot;.</p><p>Next copy <tt class="filename">libnss_winbind.so</tt> to 
+	Substitute the name or IP of your PDC for "PDC".</p><p>Next copy <tt class="filename">libnss_winbind.so</tt> to 
 	<tt class="filename">/lib</tt> and <tt class="filename">pam_winbind.so
 	</tt> to <tt class="filename">/lib/security</tt>.  A symbolic link needs to be
 	made from <tt class="filename">/lib/libnss_winbind.so</tt> to
@@ -176,7 +176,7 @@ auth       required     /lib/security/pam_pwdb.so use_first_pass shadow nullok
 		apply any parameter changes to the running 
 		version of winbindd.  This signal also clears any cached 
 		user and group information.  The list of other domains trusted 
-		by winbindd is also reloaded.  </p></dd><dt><span class="term">SIGUSR1</span></dt><dd><p>The SIGUSR1 signal will cause <b class="command">
+		by winbindd is also reloaded.  </p></dd><dt><span class="term">SIGUSR2</span></dt><dd><p>The SIGUSR2 signal will cause <b class="command">
 		winbindd</b> to write status information to the winbind 
 		log file including information about the number of user and 
 		group ids allocated by <b class="command">winbindd</b>.</p><p>Log files are stored in the filename specified by the 
