@@ -64,6 +64,7 @@ get_cred(kafs_data *data, const char *name, const char *inst,
 	krb5_free_principal(d->context, in_creds.server);
 	return ret;
     }
+    in_creds.session.keytype = KEYTYPE_DES;
     ret = krb5_get_credentials(d->context, 0, d->id, &in_creds, &out_creds);
     krb5_free_principal(d->context, in_creds.server);
     krb5_free_principal(d->context, in_creds.client);
