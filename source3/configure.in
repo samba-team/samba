@@ -2615,27 +2615,7 @@ if test x"$with_ads_support" != x"no"; then
 
   # Do no harm to the values of CFLAGS and LIBS while testing for
   # Kerberos support.
-
-  #################################################
-  # check for krb5-config from recent MIT and Heimdal kerberos 5
-  AC_PATH_PROG(KRB5_CONFIG, krb5-config)
-  AC_MSG_CHECKING(for working krb5-config)
-  if test -x "$KRB5_CONFIG"; then
-    ac_save_CFLAGS=$CFLAGS
-    CFLAGS="";export CFLAGS
-    ac_save_LDFLAGS=$LDFLAGS
-    LDFLAGS="";export LDFLAGS
-    KRB5_LIBS="`$KRB5_CONFIG --libs gssapi`"
-    KRB5_CFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
-    KRB5_CPPFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
-    CFLAGS=$ac_save_CFLAGS;export CFLAGS
-    LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
-    FOUND_KRB5=yes
-    AC_MSG_RESULT(yes)
-  else
-    AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
-  fi
-  
+ 
   if test x$FOUND_KRB5 = x"no"; then
     #################################################
     # check for location of Kerberos 5 install
@@ -2656,12 +2636,36 @@ if test x"$with_ads_support" != x"no"; then
         KRB5_CPPFLAGS="-I$withval/include"
         KRB5_LDFLAGS="-L$withval/lib"
         FOUND_KRB5=yes
+	if test -x "$withval/bin/krb5-config"; then
+		KRB5_CONFIG=$withval/bin/krb5-config
+	fi
         ;;
       esac ],
       AC_MSG_RESULT(no krb5-path given)
     )
   fi
 
+  #################################################
+  # check for krb5-config from recent MIT and Heimdal kerberos 5
+  AC_PATH_PROG(KRB5_CONFIG, krb5-config)
+  AC_MSG_CHECKING(for working krb5-config)
+  if test -x "$KRB5_CONFIG"; then
+    ac_save_CFLAGS=$CFLAGS
+    CFLAGS="";export CFLAGS
+    ac_save_LDFLAGS=$LDFLAGS
+    LDFLAGS="";export LDFLAGS
+    KRB5_LIBS="`$KRB5_CONFIG --libs gssapi`"
+    KRB5_LDFLAGS="`$KRB5_CONFIG --libs gssapi | sed s/-lgss.*//`"
+    KRB5_CFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`" 
+    KRB5_CPPFLAGS="`$KRB5_CONFIG --cflags | sed s/@INCLUDE_des@//`"
+    CFLAGS=$ac_save_CFLAGS;export CFLAGS
+    LDFLAGS=$ac_save_LDFLAGS;export LDFLAGS
+    FOUND_KRB5=yes
+    AC_MSG_RESULT(yes)
+  else
+    AC_MSG_RESULT(no. Fallback to previous krb5 detection strategy)
+  fi
+ 
   if test x$FOUND_KRB5 = x"no"; then
     #################################################
     # see if this box has the SuSE location for the heimdal krb implementation
@@ -2700,9 +2704,9 @@ if test x"$with_ads_support" != x"no"; then
   ac_save_CPPFLAGS=$CPPFLAGS
   ac_save_LDFLAGS=$LDFLAGS
 
-  CFLAGS="$CFLAGS $KRB5_CFLAGS"
-  CPPFLAGS="$CPPFLAGS $KRB5_CPPFLAGS"
-  LDFLAGS="$LDFLAGS $KRB5_LDFLAGS"
+  CFLAGS="$KRB5_CFLAGS $CFLAGS"
+  CPPFLAGS="$KRB5_CPPFLAGS $CPPFLAGS"
+  LDFLAGS="$KRB5_LDFLAGS $LDFLAGS"
 
   KRB5_LIBS="$KRB5_LDFLAGS $KRB5_LIBS"
 
@@ -2789,7 +2793,7 @@ if test x"$with_ads_support" != x"no"; then
   AC_CHECK_FUNC_EXT(krb5_c_enctype_compare, $KRB5_LIBS)
   AC_CHECK_FUNC_EXT(krb5_enctypes_compatible_keys, $KRB5_LIBS)
 
-  LIBS="$LIBS $KRB5_LIBS"
+  LIBS="$KRB5_LIBS $LIBS"
   
   AC_CACHE_CHECK([for addrtype in krb5_address],
                 samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
