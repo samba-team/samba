@@ -296,6 +296,19 @@ static uint32 write_this_workgroup_name( struct subnet_record *subrec,
   Write out the browse.dat file.
   ******************************************************************/
 
+void write_browse_list_entry(XFILE *fp, fstring name, uint32 rec_type,
+		fstring local_master_browser_name, fstring description)
+{
+	fstring tmp;
+
+	slprintf(tmp,sizeof(tmp)-1, "\"%s\"", name);
+	x_fprintf(fp, "%-25s ", tmp);
+	x_fprintf(fp, "%08x ", rec_type);
+	slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", local_master_browser_name);
+	x_fprintf(fp, "%-30s", tmp);
+	x_fprintf(fp, "\"%s\"\n", description);
+}
+
 void write_browse_list(time_t t, BOOL force_write)
 {   
   struct subnet_record *subrec;
@@ -365,12 +378,9 @@ void write_browse_list(time_t t, BOOL force_write)
     return;
   }
 
-  slprintf(tmp,sizeof(tmp)-1, "\"%s\"", work->work_group);
-  x_fprintf(fp, "%-25s ", tmp);
-  x_fprintf(fp, "%08x ", SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY);
-  slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
-  x_fprintf(fp, "%-30s", tmp);
-  x_fprintf(fp, "\"%s\"\n", work->work_group);
+  write_browse_list_entry(fp, work->work_group,
+     SV_TYPE_DOMAIN_ENUM|SV_TYPE_NT|SV_TYPE_LOCAL_LIST_ONLY,
+     work->local_master_browser_name, work->work_group);
 
   /* 
    * We need to do something special for our own names.
@@ -394,13 +404,8 @@ void write_browse_list(time_t t, BOOL force_write)
     }
 
     /* Output server details, plus what workgroup they're in. */
-    slprintf(tmp, sizeof(tmp)-1, "\"%s\"", my_netbios_names[i]);
-    x_fprintf(fp, "%-25s ", tmp);
-    x_fprintf(fp, "%08x ", stype);
-    slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", 
-	     string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH));
-    x_fprintf(fp, "%-30s", tmp);
-    x_fprintf(fp, "\"%s\"\n", global_myworkgroup);
+    write_browse_list_entry(fp, my_netbios_names[i], stype,
+        string_truncate(lp_serverstring(), MAX_SERVER_STRING_LENGTH), global_myworkgroup);
   }
       
   for (subrec = FIRST_SUBNET; subrec ; subrec = NEXT_SUBNET_INCLUDING_UNICAST(subrec)) 
@@ -414,13 +419,9 @@ void write_browse_list(time_t t, BOOL force_write)
 
       if(wg_type)
       {
-        slprintf(tmp, sizeof(tmp)-1, "\"%s\"", work->work_group);
-        x_fprintf(fp, "%-25s ", tmp);
-
-        x_fprintf(fp, "%08x ", wg_type);
-        slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", work->local_master_browser_name);
-        x_fprintf(fp, "%-30s", tmp);
-        x_fprintf(fp, "\"%s\"\n", work->work_group);
+        write_browse_list_entry(fp, work->work_group, wg_type,
+                                work->local_master_browser_name,
+                                work->work_group);
       }
 
       /* Now write out any server records a workgroup may have. */
@@ -438,12 +439,8 @@ void write_browse_list(time_t t, BOOL force_write)
         if(serv_type)
         {
           /* Output server details, plus what workgroup they're in. */
-          slprintf(tmp, sizeof(tmp)-1, "\"%s\"", servrec->serv.name);
-          x_fprintf(fp, "%-25s ", tmp);
-          x_fprintf(fp, "%08x ", serv_type);
-          slprintf(tmp, sizeof(tmp)-1, "\"%s\" ", servrec->serv.comment);
-          x_fprintf(fp, "%-30s", tmp);
-          x_fprintf(fp, "\"%s\"\n", work->work_group);
+          write_browse_list_entry(fp, servrec->serv.name, serv_type,
+                                 servrec->serv.comment, work->work_group);
         }
       }
     }
