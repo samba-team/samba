@@ -56,6 +56,7 @@ attr_to_flags(unsigned attr, HDBFlags *flags)
     /* HW_AUTH */
     flags->server =		!(attr & KRB5_KDB_DISALLOW_SVR);
     flags->change_pw = 	       !!(attr & KRB5_KDB_PWCHANGE_SERVICE);
+    flags->client =	       !!(attr & KRB5_KDB_DISALLOW_SVR);
 }
 
 kadm5_ret_t
