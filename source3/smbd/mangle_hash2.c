@@ -88,13 +88,14 @@ static char **prefix_cache;
 static u32 *prefix_cache_hashes;
 
 /* these are the characters we use in the 8.3 hash. Must be 36 chars long */
-const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+static const char *basechars = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 static unsigned char base_reverse[256];
 #define base_forward(v) basechars[v]
 
 /* the list of reserved dos names - all of these are illegal */
-const char *reserved_names[] = { "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
-				 "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
+static const char *reserved_names[] = 
+{ "AUX", "LOCK$", "CON", "COM1", "COM2", "COM3", "COM4",
+  "LPT1", "LPT2", "LPT3", "NUL", "PRN", NULL };
 
 /* 
    hash a string of the specified length. The string does not need to be
