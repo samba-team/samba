@@ -85,15 +85,9 @@ static void smbcli_sock_connect_handler(struct event_context *ev, struct fd_even
 		c->status = smbcli_sock_connect_one(conn->sock, 
 						    conn->dest_host, 
 						    conn->iports[i]);
-		if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (NT_STATUS_IS_OK(c->status) ||
+		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			conn->sock->event.fde->private = c;
-			return;
-		}
-		if (NT_STATUS_IS_OK(c->status)) {
-			c->state = SMBCLI_REQUEST_DONE;
-			if (c->async.fn) {
-				c->async.fn(c);
-			}
 			return;
 		}
 	}
@@ -153,7 +147,7 @@ static NTSTATUS smbcli_sock_connect_one(struct smbcli_socket *sock,
   this is the async send side of the interface
 */
 struct smbcli_composite *smbcli_sock_connect_send(struct smbcli_socket *sock, 
-						  struct ipv4_addr *ip, int port)
+						  const char *host_addr, int port)
 {
 	struct smbcli_composite *c;
 	struct clisocket_connect *conn;
@@ -186,7 +180,7 @@ struct smbcli_composite *smbcli_sock_connect_send(struct smbcli_socket *sock,
 		conn->iports[1] = 0;
 	}
 
-	conn->dest_host = talloc_strdup(c, sys_inet_ntoa(*ip));
+	conn->dest_host = talloc_strdup(c, host_addr);
 	if (conn->dest_host == NULL) goto failed;
 
 	c->private = conn;
@@ -200,12 +194,9 @@ struct smbcli_composite *smbcli_sock_connect_send(struct smbcli_socket *sock,
 		c->status = smbcli_sock_connect_one(sock, 
 						    conn->dest_host, 
 						    conn->iports[i]);
-		if (NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		if (NT_STATUS_IS_OK(c->status) ||
+		    NT_STATUS_EQUAL(c->status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 			sock->event.fde->private = c;
-			return c;
-		}
-		if (NT_STATUS_IS_OK(c->status)) {
-			c->state = SMBCLI_REQUEST_DONE;
 			return c;
 		}
 	}
@@ -235,11 +226,11 @@ NTSTATUS smbcli_sock_connect_recv(struct smbcli_composite *c)
 
   sync version of the function
 */
-NTSTATUS smbcli_sock_connect(struct smbcli_socket *sock, struct ipv4_addr *ip, int port)
+NTSTATUS smbcli_sock_connect(struct smbcli_socket *sock, const char *host_addr, int port)
 {
 	struct smbcli_composite *c;
 
-	c = smbcli_sock_connect_send(sock, ip, port);
+	c = smbcli_sock_connect_send(sock, host_addr, port);
 	if (c == NULL) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -339,7 +330,7 @@ BOOL smbcli_sock_connect_byname(struct smbcli_socket *sock, const char *host, in
 
 	sock->hostname = name;
 
-	status = smbcli_sock_connect(sock, &ip, port);
+	status = smbcli_sock_connect(sock, sys_inet_ntoa(ip), port);
 
 	return NT_STATUS_IS_OK(status);
 }
