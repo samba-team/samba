@@ -222,9 +222,7 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 	fstrcpy(map.nt_name, nt_name);
 	fstrcpy(map.comment, comment);
 
-	pdb_add_group_mapping_entry(&map);
-
-	return True;
+	return pdb_add_group_mapping_entry(&map);
 }
 
 /****************************************************************************
