@@ -271,6 +271,11 @@ process_msg (krb5_context context, slave *s, int log_fd,
     if (ret)
 	return 1;
 
+    if(in->length == 0) {
+	krb5_warnx(context, "process_msg: short message");
+	return 1;
+    }
+
     ret = krb5_rd_priv (context, s->ac, &in, &out, NULL);
     krb5_data_free (&in);
     if (ret) {
