@@ -230,8 +230,8 @@ static BOOL get_privileges( const DOM_SID *sid, SE_PRIV *mask )
 	SMB_ASSERT( data.dsize == sizeof( SE_PRIV ) );
 	
 	se_priv_copy( mask, (SE_PRIV*)data.dptr );
-	
-	
+	SAFE_FREE(data.dptr);
+
 	return True;
 }
 
