@@ -107,12 +107,11 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	NTSTATUS status;
 
 	pvfs = talloc_zero(tcon, struct pvfs_state);
-	if (pvfs == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(pvfs);
 
 	/* for simplicity of path construction, remove any trailing slash now */
 	base_directory = talloc_strdup(pvfs, lp_pathname(tcon->service));
+	NT_STATUS_HAVE_NO_MEMORY(base_directory);
 	trim_string(base_directory, NULL, "/");
 
 	pvfs->tcon = tcon;
@@ -127,7 +126,10 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 	}
 
 	tcon->fs_type = talloc_strdup(tcon, "NTFS");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->fs_type);
+
 	tcon->dev_type = talloc_strdup(tcon, "A:");
+	NT_STATUS_HAVE_NO_MEMORY(tcon->dev_type);
 
 	ntvfs->private_data = pvfs;
 
@@ -153,20 +155,14 @@ static NTSTATUS pvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	/* allocate the fnum id -> ptr tree */
 	pvfs->idtree_fnum = idr_init(pvfs);
-	if (pvfs->idtree_fnum == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(pvfs->idtree_fnum);
 
 	/* allocate the search handle -> ptr tree */
 	pvfs->idtree_search = idr_init(pvfs);
-	if (pvfs->idtree_search == NULL) {
-		return NT_STATUS_NO_MEMORY;
-	}
+	NT_STATUS_HAVE_NO_MEMORY(pvfs->idtree_search);
 
 	status = pvfs_mangle_init(pvfs);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	pvfs_setup_options(pvfs);
 
@@ -200,9 +196,7 @@ static NTSTATUS pvfs_chkpath(struct ntvfs_module_context *ntvfs,
 
 	/* resolve the cifs name to a posix name */
 	status = pvfs_resolve_name(pvfs, req, cp->in.path, 0, &name);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	NT_STATUS_NOT_OK_RETURN(status);
 
 	if (!name->exists) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
