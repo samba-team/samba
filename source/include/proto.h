@@ -559,7 +559,7 @@ void pwdb_set_must_change_time(char *p, int max_len, time_t t);
 void pwdb_set_last_set_time(char *p, int max_len, time_t t);
 void pwdb_sethexpwd(char *p, const uchar *pwd, uint16 acct_ctrl);
 BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl);
-void *memdup(void *p, size_t size);
+void *memdup(const void *p, size_t size);
 char *lock_path(char *name);
 const struct passwd *map_nt_and_unix_username(const char *domain,
 				const char *ntuser,
@@ -2935,7 +2935,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 
 /*The following definitions come from  rpc_parse/parse_prs.c  */
 
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name);
+void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
 void prs_debug_out(const prs_struct *ps, char *msg, int level);
 void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
 void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
@@ -3231,8 +3231,9 @@ BOOL make_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 				POLICY_HND *hnd);
 BOOL samr_io_q_query_usergroups(char *desc,  SAMR_Q_QUERY_USERGROUPS *q_u, prs_struct *ps, int depth);
 BOOL make_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u,
-		uint32 num_gids, DOM_GID *gid, uint32 status);
+		uint32 num_gids, const DOM_GID *gid, uint32 status);
 BOOL samr_io_r_query_usergroups(char *desc,  SAMR_R_QUERY_USERGROUPS *r_u, prs_struct *ps, int depth);
+void samr_free_r_query_usergroups(SAMR_R_QUERY_USERGROUPS *r_u);
 BOOL make_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS *q_e, POLICY_HND *pol,
 				uint32 start_idx, uint32 size);
 BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps, int depth);

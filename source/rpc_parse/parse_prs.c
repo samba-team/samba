@@ -28,7 +28,7 @@ extern int DEBUGLEVEL;
 /*******************************************************************
  debug output for parsing info.
  ********************************************************************/
-void prs_debug(prs_struct *ps, int depth, char *desc, char *fn_name)
+void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name)
 {
 	CHECK_STRUCT(ps);
 	DEBUG(5+depth, ("%s%06x %s %s\n", tab_depth(depth), ps->offset, fn_name, desc));

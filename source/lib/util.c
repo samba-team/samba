@@ -3575,9 +3575,10 @@ BOOL pwdb_gethexpwd(const char *p, char *pwd, uint32 *acct_ctrl)
 /*****************************************************************
 like strdup but for memory
  *****************************************************************/  
-void *memdup(void *p, size_t size)
+void *memdup(const void *p, size_t size)
 {
 	void *p2;
+	if (!p) return NULL;
 	p2 = malloc(size);
 	if (!p2) return NULL;
 	memcpy(p2, p, size);

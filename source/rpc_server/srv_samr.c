@@ -2427,7 +2427,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 		}
 	}
 
-	/* construct the response.  lkclXXXX: gids are not copied! */
+	/* construct the response */
 	make_samr_r_query_usergroups(&r_u, num_groups, gids, status);
 
 	/* store the response in the SMB stream */
