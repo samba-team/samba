@@ -331,6 +331,8 @@ announce version
 
 auto services
 
+bind interfaces only
+
 browse list
 
 character set
@@ -374,6 +376,8 @@ homedir map
 hosts equiv
 
 include
+
+interfaces
 
 keepalive
 
@@ -816,6 +820,40 @@ ALL attempts to connect to the service will fail. Such failures are logged.
 
 .B Example:
  	available = no
+
+.SS bind interfaces only (G)
+This global parameter (new for 1.9.18) allows the Samba admin to limit
+what interfaces on a machine will serve smb requests. If affects file service
+(smbd) and name service (nmbd) in slightly different ways.
+
+For name service it causes nmbd to bind to ports 137 and 138 on
+the interfaces listed in the 'interfaces' parameter. nmbd also binds
+to the 'all addresses' interface (0.0.0.0) on ports 137 and 138
+for the purposes of reading broadcast messages. If this option is
+not set then nmbd will service name requests on all of these
+sockets. If "bind interfaces only" is set then nmbd will check
+the source address of any packets coming in on the broadcast
+sockets and discard any that don't match the broadcast addresses
+of the interfaces in the 'interfaces' parameter list. As unicast
+packets are received on the other sockets it allows nmbd to
+refuse to serve names to machines that send packets that arrive
+through any interfaces not listed in the 'interfaces' list.
+IP Source address spoofing does defeat this simple check, however
+so it must not be used seriously as a security feature for nmbd.
+
+For file service it causes smbd to bind only to the interface
+list given in the 'interfaces' parameter. This restricts the
+networks that smbd will serve to packets coming in those interfaces.
+Note that you should not use this parameter for machines that
+are serving ppp or other intermittant or non-broadcast network
+interfaces as it will not cope with non-permanent interfaces.
+
+.B Default:
+       bind interfaces only = False
+
+.B Example:
+       bind interfaces only = True
+
 .SS browseable (S)
 This controls whether this share is seen in the list of available
 shares in a net view and in the browse list.
@@ -3673,7 +3711,7 @@ administrator easy, but the various combinations of default attributes can be
 tricky. Take extreme care when designing these sections. In particular,
 ensure that the permissions on spool directories are correct.
 .SH VERSION
-This man page is (mostly) correct for version 1.9.16 of the Samba suite, plus some
+This man page is (mostly) correct for version 1.9.18 of the Samba suite, plus some
 of the recent patches to it. These notes will necessarily lag behind 
 development of the software, so it is possible that your version of 
 the server has extensions or parameter semantics that differ from or are not 

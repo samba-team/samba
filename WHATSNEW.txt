@@ -1,95 +1,140 @@
-              WHATS NEW IN 1.9.17 - August 25th 1997
-              ======================================
+          WHATS NEW IN 1.9.18alpha2 Oct 21st 1997
+          =======================================
 
-New stable release of Samba.
-----------------------------
+This is NOT a production release of Samba code.
+For production servers please run Samba 1.9.17p4
+or later releases in the 1.9.17 series.
 
-This is the new stable release of Samba, superceding
-the last stable release 1.9.16p11. All users are
-encouraged to upgrade to this new release as there have
-been many improvements to the code since that time.
-See the Frequently Asked Questions (under docs/faq) for
-an explanation of how the version numbering scheme works,
-distinguishing between stable and development releases.
+This release contains some experimental features and
+changes and is being made available so people can
+test and provide feedback and patches for ongoing
+Samba development.
 
-Changes since 1.9.16p11.
-------------------------
+Please note that only the Domain controler code
+is truly experimental. The other changes have
+been extensively tested and are of the same
+quality as normal Samba alpha releases. The
+Domain controler code is disabled in the Makefile
+by default and is being made available to Samba
+programmers in the interests of advancing a 
+public implementation of this important protocol.
 
-Improved browsing support. 
---------------------------
+This release contains three major changes to the 
+1.9.17 series and much re-written code.
 
-Samba now should support propagation of browse lists 
-across subnets correctly. Look in the file docs/BROWSING.txt 
-as it has been largely re-written to explain how to do this.
+The main changes are :
 
-*IMPORTANT* All Samba servers acting as local/domain master
-browsers must be running 1.9.17 (or later).
+1). Oplock support now operational.
+-----------------------------------
 
-Thanks to Silicon Graphics for allowing us to test the new 
-code on their corporate network.
+Samba now supports 'exclusive' and 'batch' oplocks.
+These are an advanced networked file system feature
+that allows clients to obtain a exclusive use of a 
+file. This allows a client to cache any changes it
+makes locally, and greatly improves performance.
+
+Windows NT has this feature and prior to this
+release this was one of the reasons Windows NT
+could be faster in some situations.
+
+The oplock code in Samba has been extensively
+tested and is believed to be completely stable.
+
+Please report any problems to the samba-bugs alias.
+
+2). Experimental Domain controler code.
+---------------------------------------
+
+Samba now contains a *VERY* experimental
+implementation of part of the Windows NT
+4.x Domain Controler specification, as
+published by Paul Ashton (now a Samba Team
+member). This code is not enabled in the
+Makefile by default, and to work on this 
+code you must read the file :
+
+   docs/NTDOMAIN.txt
+
+Please note that as this code is not complete.
+It is being made available as part of this
+release to allow interested parties to contribute
+and help the Samba Team in implementing this
+important feature.
+
+Please do not expect to be able to replace your
+NT Domain Controlers with Samba until this code
+is finished, tested and an announcement is made.
+
+At present the Domain Controler code is for 
+programmers and people interested in Microsoft 
+protocols only.
+
+3). New Internationalization support.
+-------------------------------------
+
+With this release Samba no longer needs to be
+separately compiled for Japanese (Kanji) support,
+the same binary will serve both Kanji and non-Kanji
+clients.
+
+A new method of dynamically loading client code pages
+has been added to allow the case insensitivity to
+be done dependent on the code page of the client.
+
+Note that Samba still will only handle one client
+code page at a time. This will be fixed when
+Samba is fully UNICODE enabled.
+
+Please see the new man page for make_smbcodepage
+for details on adding additional client code page
+support.
+
+Changed code.
+-------------
+
+Samba no longer needs the libdes library to support
+encrypted passwords. Samba now contains a restricted
+version of DES that can only be used for authentication
+purposes (to comply with the USA export encryption
+regulations and to allow USA Mirror sites to carry
+Samba source code). The 'encrypt passwords' parameter
+may now be used without recompiling.
+
+Much of the internals of Samba has been re-structured
+to support the oplock and Domain controler changes.
+
+New parameters in smb.conf.
+---------------------------
+
+New Global parameters.
+----------------------
+
+Documented in the smb.con man pages :
+
+"bind interfaces only"
+"username level"
+
+Not yet documented in the smb.conf man page, please 
+read docs/NTDOMAIN.txt for information on the next 
+parameters.
+
+"domain sid"
+"domain groups"
+"logon drive"
+"logon home"
+
+New Share level parameters.
+---------------------------
+
+Documented in the smb.con man pages :
+
+"delete veto files"
+"oplocks"
 
 
-Improved share mode handling
-----------------------------
+Reporting bugs.
+---------------
 
-The handling of share modes has been completely rewritten.
-Samba can now run agressive PC Benchmarks (Ziff-Davis
-NetBench) correctly with many hundreds of concurrent PC's.
-The confidence level on share mode handling in Samba
-is now much higher than it was previously. PC database
-packages should be safe when run against a Samba share. 
-Thanks to Silicon Graphics for testing this code for us.
-
-If at all possible compile Samba to use the new share
-mode handling with shared memory (set the flags 
-FAST_SHARE_MODES in the Makefile). This will be *much* faster
-than old file-based share modes. FAST_SHARE_MODES have
-been turned on by default on the following platforms in
-the Makefile :
-
-	Linux
-	Solaris
-	BSDI
-	IRIX 5.x.x
-	FreeBSD
-
-Roving profile support.
------------------------
-
-Roving profiles are believed to work correctly
-with Windows NT 4.x and Windows 95. Domain logons
-are fully implemented *for Windows 95 machines only*.
-
-
-Updated documentation
----------------------
-All options are now documented in the smb.conf man page
-we believe. Much work has been done by Samba Team members
-to improve the quality and quantity of the Samba documentation.
-
-A draft new structure for documentation is being worked on: see
-docs/faq/Samba-meta-FAQ for details. This will soon be a master
-reference to all Samba documentation.
-
-Many bugfixes and improvements
-------------------------------
-From around the 'net around the world. Many
-thanks to everyone who contributed.
-
-Commercial thanks.
-------------------
-
-Thanks to Cisco for the new netbios alias code support.
-Thanks to Silicon Graphics for the help with the cross
-subnet browsing and NetBench code.
-Thanks to Whistle for funding one of the Samba Team
-members.
-
-Reporting bugs
---------------
-
-The Samba Team believes that this is a stable
-production release, but all software has bugs.
 If you have problems, or think you have found a
 bug please email a report to :
 
