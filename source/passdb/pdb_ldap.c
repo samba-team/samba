@@ -51,6 +51,10 @@
 #include <lber.h>
 #include <ldap.h>
 
+#ifndef LDAP_OPT_SUCCESS
+#define LDAP_OPT_SUCCESS 0
+#endif
+
 #ifndef SAM_ACCOUNT
 #define SAM_ACCOUNT struct sam_passwd
 #endif
