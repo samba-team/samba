@@ -1225,10 +1225,16 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
 
   if (is_ipaddress(server)) {
 	  struct in_addr to_ip;
+	  
+	  /* we shouldn't have 255.255.255.255 forthe IP address of 
+	     a password server anyways */
+	  if ((to_ip.s_addr=inet_addr(server)) == 0xFFFFFFFF) {
+	  	DEBUG (0,("connect_to_domain_password_server: inet_addr(%s) returned 0xFFFFFFFF!\n", server));
+	  	return False;
+	  }
 
-	  if (!inet_aton(server, &to_ip) ||
-	      !name_status_find(0x20, to_ip, remote_machine)) {
-		  DEBUG(1, ("connect_to_domain_password_server: Can't "
+	  if (!name_status_find(0x20, to_ip, remote_machine)) {
+		  DEBUG(0, ("connect_to_domain_password_server: Can't "
 			    "resolve name for IP %s\n", server));
 		  return False;
 	  }
