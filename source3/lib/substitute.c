@@ -97,10 +97,7 @@ static char *automount_path(const char *user_name)
 	/* use the passwd entry as the default */
 	/* this will be the default if WITH_AUTOMOUNT is not used or fails */
 
-	if (((pass = Get_Pwnam(user_name))!=NULL) && (pass->pw_dir != NULL))
-		pstrcpy(server_path, pass->pw_dir );
-	else
-		*server_path = '\0';
+	pstrcpy(server_path, get_user_home_dir(user_name));
 
 #if (defined(HAVE_NETGROUP) && defined (WITH_AUTOMOUNT))
 
@@ -117,7 +114,6 @@ static char *automount_path(const char *user_name)
 			}
 		} else {
 			/* NIS key lookup failed: default to user home directory from password file */
-			pstrcpy(server_path, get_user_home_dir(user_name));
 			DEBUG(5, ("NIS lookup failed. Using Home path from passwd file. Home path is: %s\n", server_path ));
 		}
 	}

@@ -3104,15 +3104,16 @@ static void dump_copy_map(BOOL *pcopymap)
 /***************************************************************************
 Return TRUE if the passed service number is within range.
 ***************************************************************************/
+
 BOOL lp_snum_ok(int iService)
 {
 	return (LP_SNUM_OK(iService) && ServicePtrs[iService]->bAvailable);
 }
 
-
 /***************************************************************************
-auto-load some home services
+ Auto-load some home services.
 ***************************************************************************/
+
 static void lp_add_auto_services(char *str)
 {
 	char *s;
@@ -3128,34 +3129,30 @@ static void lp_add_auto_services(char *str)
 
 	homes = lp_servicenumber(HOMES_NAME);
 
-	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP))
-	{
-		char *home = get_user_home_dir(p);
+	for (p = strtok(s, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+		char *home = get_user_service_home_dir(p);
 
 		if (lp_servicenumber(p) >= 0)
 			continue;
 
 		if (home && homes >= 0)
-		{
 			lp_add_home(p, homes, home);
-		}
 	}
 	SAFE_FREE(s);
 }
 
 /***************************************************************************
-auto-load one printer
+ Auto-load one printer.
 ***************************************************************************/
+
 void lp_add_one_printer(char *name, char *comment)
 {
 	int printers = lp_servicenumber(PRINTERS_NAME);
 	int i;
 
-	if (lp_servicenumber(name) < 0)
-	{
+	if (lp_servicenumber(name) < 0) {
 		lp_add_printer(name, printers);
-		if ((i = lp_servicenumber(name)) >= 0)
-		{
+		if ((i = lp_servicenumber(name)) >= 0) {
 			string_set(&ServicePtrs[i]->comment, comment);
 			ServicePtrs[i]->autoloaded = True;
 		}
@@ -3163,59 +3160,57 @@ void lp_add_one_printer(char *name, char *comment)
 }
 
 /***************************************************************************
-have we loaded a services file yet?
+ Have we loaded a services file yet?
 ***************************************************************************/
+
 BOOL lp_loaded(void)
 {
 	return (bLoaded);
 }
 
 /***************************************************************************
-unload unused services
+ Unload unused services.
 ***************************************************************************/
+
 void lp_killunused(BOOL (*snumused) (int))
 {
 	int i;
-	for (i = 0; i < iNumServices; i++)
-	{
+	for (i = 0; i < iNumServices; i++) {
 		if (!VALID(i))
 			continue;
 
-		if (!snumused || !snumused(i))
-		{
+		if (!snumused || !snumused(i)) {
 			ServicePtrs[i]->valid = False;
 			free_service(ServicePtrs[i]);
 		}
 	}
 }
 
-
 /***************************************************************************
-unload a service
+ Unload a service.
 ***************************************************************************/
+
 void lp_killservice(int iServiceIn)
 {
-	if (VALID(iServiceIn))
-	{
+	if (VALID(iServiceIn)) {
 		ServicePtrs[iServiceIn]->valid = False;
 		free_service(ServicePtrs[iServiceIn]);
 	}
 }
 
 /***************************************************************************
-save the curent values of all global and sDefault parameters into the 
-defaults union. This allows swat and testparm to show only the
-changed (ie. non-default) parameters.
+ Save the curent values of all global and sDefault parameters into the 
+ defaults union. This allows swat and testparm to show only the
+ changed (ie. non-default) parameters.
 ***************************************************************************/
+
 static void lp_save_defaults(void)
 {
 	int i;
-	for (i = 0; parm_table[i].label; i++)
-	{
+	for (i = 0; parm_table[i].label; i++) {
 		if (i > 0 && parm_table[i].ptr == parm_table[i - 1].ptr)
 			continue;
-		switch (parm_table[i].type)
-		{
+		switch (parm_table[i].type) {
 			case P_LIST:
 				lp_list_copy(&(parm_table[i].def.lvalue),
 					    *(char ***)parm_table[i].ptr);
@@ -3255,16 +3250,15 @@ static void lp_save_defaults(void)
 /*******************************************************************
  Set the server type we will announce as via nmbd.
 ********************************************************************/
+
 static void set_server_role(void)
 {
 	server_role = ROLE_STANDALONE;
 
-	switch (lp_security())
-	{
+	switch (lp_security()) {
 		case SEC_SHARE:
 		{
-			if (lp_domain_logons())
-			{
+			if (lp_domain_logons()) {
 				DEBUG(0,
 				      ("Server's Role (logon server) conflicts with share-level security\n"));
 			}
@@ -3274,8 +3268,7 @@ static void set_server_role(void)
 		case SEC_DOMAIN:
 		case SEC_ADS:
 		{
-			if (lp_domain_logons())
-			{
+			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_BDC;
 				break;
 			}
@@ -3284,8 +3277,7 @@ static void set_server_role(void)
 		}
 		case SEC_USER:
 		{
-			if (lp_domain_logons())
-			{
+			if (lp_domain_logons()) {
 				server_role = ROLE_DOMAIN_PDC;
 				break;
 			}

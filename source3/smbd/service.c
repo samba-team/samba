@@ -127,7 +127,7 @@ int find_service(fstring service)
    /* now handle the special case of a home directory */
    if (iService < 0)
    {
-      char *phome_dir = get_user_home_dir(service);
+      char *phome_dir = get_user_service_home_dir(service);
 
       if(!phome_dir)
       {
@@ -136,7 +136,7 @@ int find_service(fstring service)
          * be a Windows to unix mapped user name.
          */
         if(map_username(service))
-          phome_dir = get_user_home_dir(service);
+          phome_dir = get_user_service_home_dir(service);
       }
 
       DEBUG(3,("checking for home directory %s gave %s\n",service,
