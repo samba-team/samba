@@ -27,7 +27,7 @@
 /* Connect to a domain controller using get_any_dc_name() to discover 
    the domain name and sid */
 
-BOOL lookup_domain_sid(fstring domain_name, struct winbindd_domain *domain)
+BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain)
 {
     fstring level5_dom;
     BOOL res;
@@ -140,7 +140,7 @@ BOOL open_sam_handles(struct winbindd_domain *domain)
 /* Lookup a sid in a domain from a name */
 
 BOOL winbindd_lookup_sid_by_name(struct winbindd_domain *domain,
-                                 fstring name, DOM_SID *sid,
+                                 char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type)
 {
     int num_sids = 0, num_names = 1;
