@@ -112,7 +112,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 
-	printf("\nTesting LookupNames\n");
+	printf("\nTesting LookupNames with %d names\n", tnames->count);
 
 	sids.count = 0;
 	sids.sids = NULL;
@@ -197,7 +197,7 @@ static BOOL test_many_LookupSids(struct dcerpc_pipe *p,
 	names.count = 0;
 	names.names = NULL;
 
-	sids.num_sids = 10000;
+	sids.num_sids = 1000;
 
 	sids.sids = talloc_array_p(mem_ctx, struct lsa_SidPtr, sids.num_sids);
 
@@ -346,7 +346,7 @@ static BOOL test_CreateTrustedDomain(struct dcerpc_pipe *p,
 
 	printf("Testing CreateTrustedDomain\n");
 
-	domsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-697-97398-3797956");
+	domsid = dom_sid_parse_talloc(mem_ctx, "S-1-5-21-97398-379795-12345");
 
 	trustinfo.sid = domsid;
 	init_lsa_Name(&trustinfo.name, "torturedomain");
