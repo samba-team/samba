@@ -21,6 +21,9 @@
 
 #include "includes.h"
 
+extern int DEBUGLEVEL;
+
+
  void replace_dummy(void) 
 {}
 
