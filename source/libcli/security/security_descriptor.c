@@ -223,6 +223,7 @@ BOOL security_descriptor_mask_equal(const struct security_descriptor *sd1,
 				    SID_AUTHENTICATED_USERS, 
 				    SEC_ACE_TYPE_ACCESS_ALLOWED,
 				    SEC_FILE_ALL,
+				    SEC_ACE_FLAG_OBJECT_INHERIT,
 				    NULL);
   that would create a sd with one ACE
 */
@@ -266,7 +267,7 @@ struct security_descriptor *security_descriptor_create(TALLOC_CTX *mem_ctx,
 		}
 		ace->type = va_arg(ap, unsigned int);
 		ace->access_mask = va_arg(ap, unsigned int);
-		ace->flags = 0;
+		ace->flags = va_arg(ap, unsigned int);
 		sid = dom_sid_parse_talloc(ace, sidstr);
 		if (sid == NULL) {
 			va_end(ap);
