@@ -353,9 +353,9 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 
 		for (i = 0; i < num_printers; i++) {
 			PyObject *value;
-			fstring name;
+			fstring s;
 
-			rpcstr_pull(name, ctr.printers_0[i].printername.buffer,
+			rpcstr_pull(s, ctr.printers_0[i].printername.buffer,
 				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_0(&value, &ctr.printers_0[i]);
@@ -363,7 +363,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 			PyDict_SetItemString(
 				value, "level", PyInt_FromLong(0));
 
-			PyDict_SetItemString(result, name, value);
+			PyDict_SetItemString(result, s, value);
 		}
 
 		break;
@@ -372,9 +372,9 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
-			fstring name;
+			fstring s;
 
-			rpcstr_pull(name, ctr.printers_1[i].name.buffer,
+			rpcstr_pull(s, ctr.printers_1[i].name.buffer,
 				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_1(&value, &ctr.printers_1[i]);
@@ -382,7 +382,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 			PyDict_SetItemString(
 				value, "level", PyInt_FromLong(1));
 
-			PyDict_SetItemString(result, name, value);
+			PyDict_SetItemString(result, s, value);
 		}
 		
 		break;
@@ -391,9 +391,9 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 
 		for(i = 0; i < num_printers; i++) {
 			PyObject *value;
-			fstring name;
+			fstring s;
 
-			rpcstr_pull(name, ctr.printers_2[i].printername.buffer,
+			rpcstr_pull(s, ctr.printers_2[i].printername.buffer,
 				    sizeof(fstring), -1, STR_TERMINATE);
 
 			py_from_PRINTER_INFO_2(&value, &ctr.printers_2[i]);
@@ -401,7 +401,7 @@ PyObject *spoolss_enumprinters(PyObject *self, PyObject *args, PyObject *kw)
 			PyDict_SetItemString(
 				value, "level", PyInt_FromLong(2));
 
-			PyDict_SetItemString(result, name, value);
+			PyDict_SetItemString(result, s, value);
 		}
 		
 		break;
