@@ -6,7 +6,8 @@
 NOPROTO = YES
 INIT_OBJ_FILES = gtk/common/gtk-smb.o 
 ADD_OBJ_FILES = gtk/common/select.o \
-		gtk/common/gtk_events.o
+		gtk/common/gtk_events.o \
+		gtk/common/credentials.o
 REQUIRED_SUBSYSTEMS = CHARSET LIBBASIC EXT_LIB_gtk RPC_NDR_SAMR
 # End SUBSYSTEM GTKSMB
 ##############################

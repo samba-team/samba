@@ -20,8 +20,8 @@
 */
 
 #include "includes.h"
-#include "gtk/common/select.h"
 #include "gtk/common/gtk-smb.h"
+#include "gtk/common/select.h"
 
 void gtk_show_werror(GtkWidget *win, const char *message, WERROR err) 
 {
@@ -58,11 +58,6 @@ static void on_browse_activate  (GtkButton     *button,  gpointer         user_d
 	gtk_widget_destroy(GTK_WIDGET(shd));
 }
 
-static void on_krb5_toggled(GtkToggleButton *togglebutton, GtkRpcBindingDialog *d)
-{
-	gtk_widget_set_sensitive(d->entry_password, !gtk_toggle_button_get_active(togglebutton));
-}
-
 static void on_ncalrpc_toggled(GtkToggleButton *tb, GtkRpcBindingDialog *d)
 {
 	gtk_widget_set_sensitive(d->frame_host, !gtk_toggle_button_get_active(tb));
@@ -84,7 +79,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	GtkWidget *table1;
 	GtkWidget *lbl_username;
 	GtkWidget *lbl_userdomain;
-	GtkWidget *lbl_password;
 	GtkWidget *btn_browse;
 	GtkWidget *label9;
 	GtkWidget *lbl_credentials;
@@ -98,6 +92,7 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_rpc_binding_dialog->credentials = cli_credentials_init(gtk_rpc_binding_dialog->mem_ctx);
 
 	cli_credentials_guess(gtk_rpc_binding_dialog->credentials);
+	cli_credentials_set_gtk_callbacks(gtk_rpc_binding_dialog->credentials);
 	
 	gtk_window_set_title (GTK_WINDOW (gtk_rpc_binding_dialog), "Connect");
 
@@ -192,12 +187,6 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 					  (GtkAttachOptions) (0), 0, 0);
 	gtk_misc_set_alignment (GTK_MISC (lbl_userdomain), 0, 0.5);
 
-	lbl_password = gtk_label_new ("Password:");
-	gtk_table_attach (GTK_TABLE (table1), lbl_password, 0,1, 2,3,
-					  (GtkAttachOptions) (GTK_FILL),
-					  (GtkAttachOptions) (0), 0, 0);
-	gtk_misc_set_alignment (GTK_MISC (lbl_password), 0, 0.5);
-
 	label9 = gtk_label_new ("");
 	gtk_table_attach (GTK_TABLE (table1), label9, 0,1, 3,4,
 					  (GtkAttachOptions) (GTK_FILL),
@@ -220,23 +209,10 @@ static void gtk_rpc_binding_dialog_init (GtkRpcBindingDialog *gtk_rpc_binding_di
 	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_userdomain), 
 					   cli_credentials_get_domain(gtk_rpc_binding_dialog->credentials));
 
-	gtk_rpc_binding_dialog->entry_password = gtk_entry_new ();
-	gtk_entry_set_visibility (GTK_ENTRY (gtk_rpc_binding_dialog->entry_password), FALSE);
-	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->entry_password, 1,2, 2,3,
-					  (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
-					  (GtkAttachOptions) (0), 0, 0);
-
-	gtk_entry_set_text(GTK_ENTRY(gtk_rpc_binding_dialog->entry_password), 
-					   cli_credentials_get_password(gtk_rpc_binding_dialog->credentials));
-
 	gtk_rpc_binding_dialog->krb5_chk_button = gtk_check_button_new_with_mnemonic ("_Use kerberos");
 	gtk_table_attach (GTK_TABLE (table1), gtk_rpc_binding_dialog->krb5_chk_button, 1,2, 3,4,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
-
-	g_signal_connect ((gpointer) gtk_rpc_binding_dialog->krb5_chk_button, "toggled",
-					  G_CALLBACK (on_krb5_toggled),
-					  gtk_rpc_binding_dialog);
 
 	/* Poor man's autodetection */
 	if(getenv("KRB5CCNAME")) {
@@ -296,7 +272,7 @@ GType gtk_rpc_binding_dialog_get_type (void)
   return mytype;
 }
 
-GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_pipe)
+GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct dcerpc_pipe *sam_pipe)
 {
 	GtkRpcBindingDialog *d = GTK_RPC_BINDING_DIALOG ( g_object_new (gtk_rpc_binding_dialog_get_type (), NULL));
 	if (nocredentials) {
@@ -309,7 +285,6 @@ GtkWidget *gtk_rpc_binding_dialog_new (BOOL nocredentials, struct sam_pipe *sam_
 struct cli_credentials *gtk_rpc_binding_dialog_get_credentials(GtkRpcBindingDialog *d)
 {
 	cli_credentials_set_username(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_username)), CRED_SPECIFIED);
-	cli_credentials_set_password(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_password)), CRED_SPECIFIED);
 	cli_credentials_set_domain(d->credentials, gtk_entry_get_text(GTK_ENTRY(d->entry_userdomain)), CRED_SPECIFIED);
 	
 	return d->credentials;
