@@ -685,18 +685,60 @@ krb5_change_password (krb5_context	context,
  */
 
 krb5_error_code KRB5_LIB_FUNCTION
-krb5_set_password (krb5_context	 context,
-		   krb5_ccache	 ccache,
-		   char		*newpw,
-		   krb5_principal targprinc,
-		   int		*result_code,
-		   krb5_data	*result_code_string,
-		   krb5_data	*result_string)
+krb5_set_password(krb5_context context,
+		  krb5_creds *creds,
+		  char *newpw,
+		  krb5_principal targprinc,
+		  int *result_code,
+		  krb5_data *result_code_string,
+		  krb5_data *result_string)
+{
+    krb5_principal principal = NULL;
+    krb5_error_code ret = 0;
+    int i;
+
+    *result_code = KRB5_KPASSWD_MALFORMED;
+    result_code_string->data = result_string->data = NULL;
+    result_code_string->length = result_string->length = 0;
+
+    if (targprinc == NULL) {
+	ret = krb5_get_default_principal(context, &principal);
+	if (ret)
+	    return ret;
+    } else
+	principal = targprinc;
+
+    for (i = 0; procs[i].name != NULL; i++) {
+	*result_code = 0;
+	ret = change_password_loop(context, creds, targprinc, newpw, 
+				   result_code, result_code_string, 
+				   result_string, 
+				   &procs[i]);
+	if (ret == 0 && *result_code == 0)
+	    break;
+    }
+
+    if (targprinc == NULL)
+	krb5_free_principal(context, principal);
+    return ret;
+}
+
+/*
+ *
+ */
+
+krb5_error_code KRB5_LIB_FUNCTION
+krb5_set_password_using_ccache(krb5_context context,
+			       krb5_ccache ccache,
+			       char *newpw,
+			       krb5_principal targprinc,
+			       int *result_code,
+			       krb5_data *result_code_string,
+			       krb5_data *result_string)
 {
     krb5_creds creds, *credsp;
     krb5_error_code ret;
     krb5_principal principal = NULL;
-    int i;
 
     *result_code = KRB5_KPASSWD_MALFORMED;
     result_code_string->data = result_string->data = NULL;
@@ -729,15 +771,14 @@ krb5_set_password (krb5_context	 context,
     if (ret)
 	goto out;
 
-    for (i = 0; procs[i].name != NULL; i++) {
-	*result_code = 0;
-	ret = change_password_loop(context, credsp, targprinc, newpw, 
-				   result_code, result_code_string, 
-				   result_string, 
-				   &procs[i]);
-	if (ret == 0 && *result_code == 0)
-	    break;
-    }
+    ret = krb5_set_password(context,
+			    credsp,
+			    newpw,
+			    principal,
+			    result_code,
+			    result_code_string,
+			    result_string);
+
     krb5_free_creds(context, credsp); 
 
     return ret;
