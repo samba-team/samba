@@ -1769,21 +1769,18 @@ BOOL profile_setup(BOOL rdonly);
 
 /*The following definitions come from  rpc_client/cli_atsvc.c  */
 
-BOOL at_add_job(struct cli_state *cli, uint16 fnum, 
-		char *server_name, AT_JOB_INFO *info, char *command,
+BOOL at_add_job(
+		char *srv_name, AT_JOB_INFO *info, char *command,
 		uint32 *jobid);
-BOOL at_del_job(struct cli_state *cli, uint16 fnum, 
-		char *server_name, uint32 min_jobid, uint32 max_jobid);
-BOOL at_enum_jobs(struct cli_state *cli, uint16 fnum, 
-		  char *server_name, uint32 *num_jobs,
+BOOL at_del_job( char *srv_name, uint32 min_jobid, uint32 max_jobid);
+BOOL at_enum_jobs( char *srv_name, uint32 *num_jobs,
 		  AT_ENUM_INFO *jobs, char ***commands);
-BOOL at_query_job(struct cli_state *cli, uint16 fnum, char *server_name,
+BOOL at_query_job(char *srv_name,
 		  uint32 jobid, AT_JOB_INFO *job, fstring command);
 
 /*The following definitions come from  rpc_client/cli_brs.c  */
 
-BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum, 
-			const char *server_name, uint32 switch_value,
+BOOL brs_query_info( const char *srv_name, uint32 switch_value,
 			void *id);
 
 /*The following definitions come from  rpc_client/cli_connect.c  */

@@ -33,8 +33,7 @@ extern int DEBUGLEVEL;
 /****************************************************************************
 do a BRS Query 
 ****************************************************************************/
-BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum, 
-			const char *server_name, uint32 switch_value,
+BOOL brs_query_info( const char *srv_name, uint32 switch_value,
 			void *id)
 {
 	prs_struct rbuf;
@@ -42,7 +41,14 @@ BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum,
 	BRS_Q_QUERY_INFO q_o;
 	BOOL valid_info = False;
 
-	if (server_name == NULL || id == NULL) return False;
+	struct cli_connection *con = NULL;
+
+	if (!cli_connection_init(srv_name, PIPE_BROWSER, &con))
+	{
+		return False;
+	}
+
+	if (id == NULL) return False;
 
 	prs_init(&buf , 1024, 4, SAFETY_MARGIN, False);
 	prs_init(&rbuf, 0   , 4, SAFETY_MARGIN, True );
@@ -52,13 +58,13 @@ BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum,
 	DEBUG(4,("BRS Query Info\n"));
 
 	/* store the parameters */
-	make_brs_q_query_info(&q_o, server_name, switch_value);
+	make_brs_q_query_info(&q_o, srv_name, switch_value);
 
 	/* turn parameters into data stream */
 	brs_io_q_query_info("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, BRS_QUERY_INFO, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, BRS_QUERY_INFO, &buf, &rbuf))
 	{
 		BRS_R_QUERY_INFO r_o;
 		BOOL p;
@@ -83,6 +89,8 @@ BOOL do_brs_query_info(struct cli_state *cli, uint16 fnum,
 
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
+
+	cli_connection_unlink(con);
 
 	return valid_info;
 }
