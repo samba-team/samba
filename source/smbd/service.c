@@ -460,7 +460,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		/* Find all the groups this uid is in and
 		   store them. Used by become_user() */
 		initialise_groups(conn->user, conn->uid, conn->gid); 
-		initialize_groups(conn->user, conn->uid, conn->gid); 
 		get_current_groups(&conn->ngroups,&conn->groups);
 		
 		/* check number of connections */

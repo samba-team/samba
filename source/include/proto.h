@@ -1299,6 +1299,8 @@ void expire_workgroups_and_servers(time_t t);
 
 BOOL winbind_lookup_name(char *name, DOM_SID *sid, enum SID_NAME_USE *name_type);
 BOOL winbind_lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
+int winbind_initgroups(char *user, gid_t gid);
+int winbind_getgroups(char *user, int size, gid_t *list);
 BOOL lookup_name(char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);
@@ -3648,7 +3650,6 @@ user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
 char *validated_domain(uint16 vuid);
-BOOL initialize_groups(char *user, uid_t uid, gid_t gid);
 NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups);
 uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
 		     char *domain,BOOL guest);
