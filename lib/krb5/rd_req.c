@@ -155,6 +155,57 @@ check_transited(krb5_context context, Ticket *ticket, EncTicketPart *enc)
     return ret;
 }
 
+static krb5_error_code
+find_etypelist(krb5_context context,
+	       krb5_auth_context auth_context,
+	       EtypeList *etypes)
+{
+    krb5_error_code ret;
+    krb5_authdata *ad;
+    krb5_authdata adIfRelevant;
+    unsigned i;
+
+    adIfRelevant.len = 0;
+
+    etypes->len = 0;
+    etypes->val = NULL;
+
+    ad = auth_context->authenticator->authorization_data;
+    if (ad == NULL)
+	return 0;
+
+    for (i = 0; i < ad->len; i++) {
+	if (ad->val[i].ad_type == KRB5_AUTHDATA_IF_RELEVANT) {
+	    ret = decode_AD_IF_RELEVANT(ad->val[i].ad_data.data,
+					ad->val[i].ad_data.length,
+					&adIfRelevant,
+					NULL);
+	    if (ret)
+		return ret;
+
+	    if (adIfRelevant.len == 1 &&
+		adIfRelevant.val[0].ad_type ==
+			KRB5_AUTHDATA_GSS_API_ETYPE_NEGOTIATION) {
+		break;
+	    }
+	    free_AD_IF_RELEVANT(&adIfRelevant);
+	    adIfRelevant.len = 0;
+	}
+    }
+
+    if (adIfRelevant.len == 0)
+	return 0;
+
+    ret = decode_EtypeList(adIfRelevant.val[0].ad_data.data,
+			   adIfRelevant.val[0].ad_data.length,
+			   etypes,
+			   NULL);
+
+    free_AD_IF_RELEVANT(&adIfRelevant);
+
+    return ret;
+}
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_decrypt_ticket(krb5_context context,
 		    Ticket *ticket,
@@ -279,6 +330,7 @@ krb5_verify_ap_req2(krb5_context context,
     krb5_ticket *t;
     krb5_auth_context ac;
     krb5_error_code ret;
+    EtypeList etypes;
     
     if (auth_context && *auth_context) {
 	ac = *auth_context;
@@ -374,8 +426,27 @@ krb5_verify_ap_req2(krb5_context context,
 	    goto out;
     }
 
+    ret = find_etypelist(context, ac, &etypes);
+    if (ret)
+	goto out;
+
+    ac->keytype = ETYPE_NULL;
+
+    if (etypes.val) {
+	int i;
+
+	for (i = 0; i < etypes.len; i++) {
+	    if (!krb5_enctype_is_disabled(context, etypes.val[i])) {
+		ac->keytype = etypes.val[i];
+		break;
+	    }
+	}
+    }
+
     if (ap_req_options) {
 	*ap_req_options = 0;
+	if (ac->keytype != ETYPE_NULL)
+	    *ap_req_options |= AP_OPTS_USE_SUBKEY;
 	if (ap_req->ap_options.use_session_key)
 	    *ap_req_options |= AP_OPTS_USE_SESSION_KEY;
 	if (ap_req->ap_options.mutual_required)
@@ -391,6 +462,7 @@ krb5_verify_ap_req2(krb5_context context,
 	    *auth_context = ac;
     } else
 	krb5_auth_con_free (context, ac);
+    free_EtypeList(&etypes);
     return 0;
  out:
     if (t)

@@ -35,6 +35,70 @@
 
 RCSID("$Id$");
 
+static krb5_error_code
+make_etypelist(krb5_context context,
+	       krb5_authdata **auth_data)
+{
+    EtypeList etypes;
+    krb5_error_code ret;
+    krb5_authdata ad;
+    u_char *buf;
+    size_t len;
+    size_t buf_size;
+     
+    ret = krb5_init_etype(context, &etypes.len, &etypes.val, NULL);
+    if (ret)
+	return ret;
+
+    ASN1_MALLOC_ENCODE(EtypeList, buf, buf_size, &etypes, &len, ret);
+    if (ret) {
+	free_EtypeList(&etypes);
+	return ret;
+    }
+    if(buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+    free_EtypeList(&etypes);
+
+    ALLOC_SEQ(&ad, 1);
+    if (ad.val == NULL) {
+	free(buf);
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ad.val[0].ad_type = KRB5_AUTHDATA_GSS_API_ETYPE_NEGOTIATION;
+    ad.val[0].ad_data.length = len;
+    ad.val[0].ad_data.data = buf;
+
+    ASN1_MALLOC_ENCODE(AD_IF_RELEVANT, buf, buf_size, &ad, &len, ret);
+    if (ret) {
+	free_AuthorizationData(&ad);
+	return ret;
+    } 
+    if(buf_size != len)
+	krb5_abortx(context, "internal error in ASN.1 encoder");
+    free_AuthorizationData(&ad);
+
+    ALLOC(*auth_data, 1);
+    if (*auth_data == NULL) {
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    ALLOC_SEQ(*auth_data, 1);
+    if ((*auth_data)->val == NULL) {
+	free(buf);
+	krb5_set_error_string(context, "malloc: out of memory");
+	return ENOMEM;
+    }
+
+    (*auth_data)->val[0].ad_type = KRB5_AUTHDATA_IF_RELEVANT;
+    (*auth_data)->val[0].ad_data.length = len;
+    (*auth_data)->val[0].ad_data.data = buf;
+
+    return 0;
+}
+
 krb5_error_code KRB5_LIB_FUNCTION
 krb5_build_authenticator (krb5_context context,
 			  krb5_auth_context auth_context,
@@ -84,6 +148,16 @@ krb5_build_authenticator (krb5_context context,
 	auth->seq_number = NULL;
     auth->authorization_data = NULL;
     auth->cksum = cksum;
+
+    if (cksum != NULL && cksum->cksumtype == CKSUMTYPE_GSSAPI) {
+	/*
+	 * This is not GSS-API specific, we only enable it for
+	 * GSS for now
+	 */
+	ret = make_etypelist(context, &auth->authorization_data);
+	if (ret)
+	    goto fail;
+    }
 
     /* XXX - Copy more to auth_context? */
 
