@@ -928,10 +928,10 @@ BOOL locking_init(int read_only);
 BOOL locking_end(void);
 BOOL lock_share_entry(connection_struct *conn,
 		      SMB_DEV_T dev, SMB_INO_T inode);
-BOOL unlock_share_entry(connection_struct *conn,
+void unlock_share_entry(connection_struct *conn,
 			SMB_DEV_T dev, SMB_INO_T inode);
 BOOL lock_share_entry_fsp(files_struct *fsp);
-BOOL unlock_share_entry_fsp(files_struct *fsp);
+void unlock_share_entry_fsp(files_struct *fsp);
 int get_share_modes(connection_struct *conn, 
 		    SMB_DEV_T dev, SMB_INO_T inode, 
 		    share_mode_entry **shares);
