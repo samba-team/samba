@@ -28,6 +28,7 @@
 #include "includes.h"
 #include "events.h"
 #include "libcli/raw/libcliraw.h"
+#include "libcli/composite/composite.h"
 #include "smb_server/smb_server.h"
 
 /* this is stored in ntvfs_private */
@@ -96,12 +97,14 @@ static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde,
   connect to a share - used when a tree_connect operation comes in.
 */
 static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs, 
-				struct smbsrv_request *req, const char *sharename)
+			     struct smbsrv_request *req, const char *sharename)
 {
 	struct smbsrv_tcon *tcon = req->tcon;
 	NTSTATUS status;
 	struct cvfs_private *private;
 	const char *host, *user, *pass, *domain, *remote_share;
+	struct smb_composite_connect io;
+	struct smbcli_composite *creq;
 
 	/* Here we need to determine which server to connect to.
 	 * For now we use parametric options, type cifs.
@@ -121,7 +124,7 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	
-	private = talloc_p(req->tcon, struct cvfs_private);
+	private = talloc(req->tcon, struct cvfs_private);
 	if (!private) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -129,17 +132,22 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 
 	ntvfs->private_data = private;
 
-	status = smbcli_tree_full_connection(private,
-					     &private->tree, 
-					     "vfs_cifs",
-					     host,
-					     0,
-					     remote_share, "?????",
-					     user, domain,
-					     pass);
-	if (!NT_STATUS_IS_OK(status)) {
-		return status;
-	}
+	/* connect to the server, using the smbd event context */
+	io.in.dest_host = host;
+	io.in.port = 0;
+	io.in.called_name = host;
+	io.in.calling_name = "vfs_cifs";
+	io.in.service = remote_share;
+	io.in.service_type = "?????";
+	io.in.domain = domain;
+	io.in.user = user;
+	io.in.password = pass;
+	
+	creq = smb_composite_connect_send(&io, tcon->smb_conn->connection->event.ctx);
+	status = smb_composite_connect_recv(creq, private);
+	NT_STATUS_NOT_OK_RETURN(status);
+
+	private->tree = io.out.tree;
 
 	private->transport = private->tree->session->transport;
 	SETUP_PID;
@@ -155,9 +163,6 @@ static NTSTATUS cvfs_connect(struct ntvfs_module_context *ntvfs,
 	private->transport->socket->event.fde->handler = cifs_socket_handler;
 	private->transport->socket->event.fde->private = private;
 
-	private->transport->socket->event.ctx = event_context_merge(tcon->smb_conn->connection->event.ctx,
-								    private->transport->socket->event.ctx);
-	talloc_reference(private, private->transport->socket->event.ctx);
 	private->map_generic = lp_parm_bool(req->tcon->service, 
 					    "cifs", "mapgeneric", False);
 
