@@ -48,20 +48,70 @@ int web_open(const char *fname, int flags, mode_t mode)
 }
 
 
+struct pri_list {
+	float pri;
+	char *string;
+};
+
+static int qsort_cmp_list(const void *x, const void *y) {
+	struct pri_list *a = (struct pri_list *)x;
+	struct pri_list *b = (struct pri_list *)y;
+	if (a->pri > b->pri) return -1;
+	if (a->pri == b->pri) return 0;
+	return 1;
+}
+
 /*
   choose from a list of languages. The list can be comma or space
   separated
   Keep choosing until we get a hit 
+  Changed to habdle priority -- Simo
 */
-void web_set_lang(const char *lang_list)
+
+void web_set_lang(const char *lang_string)
 {
-	fstring lang;
-	char *p = (char *)lang_list;
+	char **lang_list, **count;
+	struct pri_list *pl;
+	int lang_num, i;
+
+	/* build the lang list */
+	lang_list = str_list_make(lang_string, ", \t\r\n");
+	if (!lang_list) return;
 	
-	while (next_token(&p, lang, ", \t\r\n", sizeof(lang))) {
-		if (lang_tdb_init(lang)) return;
+	/* sort the list by priority */
+	lang_num = 0;
+	count = lang_list;
+	while (*count && **count) {
+		count++;
+		lang_num++;
 	}
-	
+	pl = (struct pri_list *)malloc(sizeof(struct pri_list) * lang_num);
+	for (i = 0; i < lang_num; i++) {
+		char *pri_code;
+		if ((pri_code=strstr(lang_list[i], ";q="))) {
+			*pri_code = '\0';
+			pri_code += 3;
+			sscanf(pri_code, "%f", &(pl[i].pri));
+		} else {
+			pl[i].pri = 1;
+		}
+		pl[i].string = strdup(lang_list[i]);
+	}
+	str_list_free(&lang_list);
+
+	qsort(pl, lang_num, sizeof(struct pri_list), &qsort_cmp_list);
+
 	/* it's not an error to not initialise - we just fall back to 
 	   the default */
+
+	for (i = 0; i < lang_num; i++) {
+		if (lang_tdb_init(pl[i].string)) break;
+	}
+
+	for (i = 0; i < lang_num; i++) {
+		SAFE_FREE(pl[i].string);
+	}
+	SAFE_FREE(pl);
+
+	return;
 }

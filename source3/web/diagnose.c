@@ -21,6 +21,23 @@
 #include "includes.h"
 #include "../web/swat_proto.h"
 
+#ifdef WITH_WINBIND
+
+NSS_STATUS winbindd_request(int req_type,
+			struct winbindd_request *request,
+			struct winbindd_response *response);
+
+/* check to see if winbind is running by pinging it */
+
+BOOL winbindd_running(void)
+{
+
+	if (winbindd_request(WINBINDD_PING, NULL, NULL))
+		return False;
+
+	return True;
+}	
+#endif
 
 /* check to see if nmbd is running on localhost by looking for a __SAMBA__
    response */
