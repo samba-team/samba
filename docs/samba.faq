@@ -219,8 +219,8 @@ http://samba.canberra.edu.au/pub/samba/samba.html, under which there is a
 comprehensive survey of Samba users. Another useful resource is the hypertext
 archive of the Samba mailing list.
 
-Send email to listproc@anu.edu.au. Make sure the subject line is blank, and
-include the following two lines in the body of the message:
+Send email to listproc@samba.anu.edu.au. Make sure the subject line is
+blank, and include the following two lines in the body of the message:
 
       subscribe samba Firstname Lastname
       subscribe samba-announce Firstname Lastname
@@ -234,8 +234,8 @@ single message containing all the messages that have been received by the list
 since the last time and sends a copy of this message to all subscribers.
 
 If you stop being interested in Samba, please send another email to
-listproc@anu.edu.au. Make sure the subject line is blank, and include the
-following two lines in the body of the message:
+listproc@samba.anu.edu.au. Make sure the subject line is blank, and
+include the following two lines in the body of the message:
 
       unsubscribe samba
       unsubscribe samba-announce
@@ -742,6 +742,46 @@ zones.  A common symptom is for file timestamps to be off by an hour.
 To work around the problem, try disconnecting from your Samba server
 and then reconnecting to it; or upgrade your Samba server to
 1.9.16alpha10 or later.
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+* 7: How do I set the printer driver name correctly?
+
+Question:
+> On NT, I opened "Printer Manager" and "Connect to Printer". 
+> Enter "\\ptdi270\ps1" in the box of printer. I got the
+> following error message:
+> 
+>     You do not have sufficient access to your machine
+>     to connect to the selected printer, since a driver
+>     needs to be installed locally.
+
+Answer:
+
+In the more recent versions of Samba you can now set the "printer
+driver" in smb.conf. This tells the client what driver to use. For
+example, I have:
+
+     printer driver = HP LaserJet 4L
+
+and NT knows to use the right driver. You have to get this string
+exactly right.
+
+To find the exact string to use, you need to get to the dialog box in
+your client where you select which printer driver to install. The
+correct strings for all the different printers are shown in a listbox
+in that dialog box.
+
+You could also try setting the driver to NULL like this:
+
+     printer driver = NULL
+
+this is effectively what older versions of Samba did, so if that
+worked for you then give it a go. If this does work then let me know
+and I'll make it the default. Currently the default is a 0 length
+string.
+
+
 
 ===============================================================================
 SECTION FIVE: Specific client application problems
