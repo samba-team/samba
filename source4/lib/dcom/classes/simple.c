@@ -57,7 +57,7 @@ NTSTATUS dcom_simple_init(void)
 
 	if (!simple_class.class_object) {
 		DEBUG(1, ("Unable to create class object for simple class\n"));
-		return NT_STATUS_FOOBAR;
+		return NT_STATUS_OK;
 	}
 
 	GUID_from_string("5e9ddec7-5767-11cf-beab-00aa006c3606", &simple_class.clsid);
