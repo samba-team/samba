@@ -1,3 +1,11 @@
+1999-11-11  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/main.c: make this work with multi-db
+
+	* kdc/kdc_locl.h: make this work with multi-db
+
+	* kdc/config.c: make this work with multi-db
+
 1999-11-09  Johan Danielsson  <joda@pdc.kth.se>
 
 	* kdc/misc.c: update for multi-database code
