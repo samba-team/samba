@@ -2607,7 +2607,7 @@ static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	setenv("KRB5CCNAME", "MEMORY:prtpub_cache", 1);
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
 							    NULL, NULL);
@@ -2668,7 +2668,7 @@ WERROR unpublish_it(NT_PRINTER_INFO_LEVEL *printer)
 		DEBUG(3, ("ads_init() failed\n"));
 		return WERR_SERVER_UNAVAILABLE;
 	}
-	setenv("KRB5CCNAME", "MEMORY:prtpub_cache", 1);
+	setenv(KRB5_ENV_CCNAME, "MEMORY:prtpub_cache", 1);
 	SAFE_FREE(ads->auth.password);
 	ads->auth.password = secrets_fetch_machine_password(lp_workgroup(),
 							    NULL, NULL);
