@@ -240,14 +240,24 @@ static krb5_error_code
 get_addrs_int (krb5_context context, krb5_addresses *res, int loop)
 {
     krb5_error_code ret = -1;
+
 #if defined(AF_INET6) && defined(SIOCGIF6CONF) && defined(SIOCGIF6FLAGS)
-    ret = find_all_addresses (context, res, loop,
-			      AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
-			      sizeof(struct in6_ifreq));
-#elif defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
-    ret = find_all_addresses (context, res, loop,
-			      AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
-			      sizeof(struct ifreq));
+    if (ret)
+	ret = find_all_addresses (context, res, loop,
+				  AF_INET6, SIOCGIF6CONF, SIOCGIF6FLAGS,
+				  sizeof(struct in6_ifreq));
+#endif
+#if defined(HAVE_IPV6) && defined(SIOCGIFCONF)
+    if (ret)
+	ret = find_all_addresses (context, res, loop,
+				  AF_INET6, SIOCGIFCONF, SIOCGIFFLAGS,
+				  sizeof(struct ifreq));
+#endif
+#if defined(AF_INET) && defined(SIOCGIFCONF) && defined(SIOCGIFFLAGS)
+    if (ret)
+	ret = find_all_addresses (context, res, loop,
+				  AF_INET, SIOCGIFCONF, SIOCGIFFLAGS,
+				  sizeof(struct ifreq));
 #endif
     if(ret || res->len == 0)
 	ret = gethostname_fallback (res);
