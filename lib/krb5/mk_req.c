@@ -53,16 +53,17 @@ krb5_mk_req(krb5_context context,
 		  cred->session.contents.data,
 		  cred->session.contents.length);
 
-  r = krb5_build_authenticator (context, cred->client,
-				NULL, &auth,
+  r = krb5_build_authenticator (context,
+				*auth_context,
+				cred,
+				NULL,
+				&auth,
 				&authenticator);
   if (r)
     return r;
 
-  (*auth_context)->authenticator->cusec = auth->cusec;
-  (*auth_context)->authenticator->ctime = auth->ctime;
-
   r = krb5_build_ap_req (context, cred, ap_req_options,
 			 authenticator, outbuf);
+  krb5_data_free (&authenticator);
   return r;
 }
