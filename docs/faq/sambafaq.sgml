@@ -9,15 +9,17 @@
        9 June 1997 Paul
         Lots of changes, added doco list, updated compatible systems list
         added NT SP3 entry, added Year 2000 entry, Getting ready for 1.9.17
+ v 0.8 7th Oct 97 Paul
+        changed samba.canberra entries to samba.anu.../samba/
 -->
 
 <article>
 
 <title> Samba FAQ
 
-<author>Paul Blackman, <tt>ictinus@lake.canberra.edu.au</tt>
+<author>Paul Blackman, <tt>ictinus@samba.anu.edu.au</tt>
 
-<date>v 0.7, June '97
+<date>v 0.8, June '97
 
 <abstract> This is the Frequently Asked Questions (FAQ) document for
 Samba, the free and very popular SMB server product. An SMB server
@@ -191,7 +193,7 @@ There are a number of places to look for more information on Samba, including:
 <itemize>
 <item>Two mailing lists devoted to discussion of Samba-related matters.  
 <item>The newsgroup, comp.protocols.smb, which has a great deal of discussion on Samba. 
-<item>The WWW site 'SAMBA Web Pages' at <url url="http://samba.canberra.edu.au/pub/samba/samba.html"> includes:
+<item>The WWW site 'SAMBA Web Pages' at <url url="http://samba.edu.au/samba/"> includes:
   <itemize>
     <item>Links to man pages and documentation, including this FAQ
     <item>A comprehensive survey of Samba users.
@@ -562,7 +564,8 @@ To syncronize your PC's clock with your Samba server:
 <itemize>
 <item> Copy timesync.pif to your windows directory
  <item> timesync.pif can be found at:
-    <url url="http://samba.canberra.edu.au/pub/samba/binaries/miscellaneous/timesync.pif">
+    <url 
+url="http://samba.anu.edu.au/samba/binaries/miscellaneous/timesync.pif">
 <item> Add timesync.pif to your 'Start Up' group/folder
 <item> Open the properties dialog box for the program/icon
 <item> Make sure the 'Run Minimized' option is set in program 'Properties'
