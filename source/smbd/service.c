@@ -301,8 +301,11 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	/* lowercase the user name */
 	strlower(user);
 
-	/* add it as a possible user name */
-	add_session_user(service);
+	/* add it as a possible user name if we 
+	   are in share mode security */
+	if (lp_security() == SEC_SHARE) {
+		add_session_user(service);
+	}
 
 	/* shall we let them in? */
 	if (!authorise_login(snum,user,password,pwlen,&guest,&force,vuid)) {
