@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -168,7 +168,7 @@ fcc_destroy(krb5_context context,
     char *f;
     f = FILENAME(id);
 
-    return erase_file(f);
+    erase_file(f);
   
     return fcc_close (context, id);
 }
