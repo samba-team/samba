@@ -97,9 +97,11 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	poptContext pc;
 	NTSTATUS status;
 	void *st;
+	const char *ctx_filename = NULL;
 	int opt;
 	struct ndr_print *pr;
 	struct poptOption long_options[] = {
+		{"context-file", 'c', POPT_ARG_STRING, &ctx_filename, 0, "In-filename to parse first", "CTX-FILE" },
 		POPT_AUTOHELP
 		POPT_TABLEEND
 	};
@@ -148,6 +150,44 @@ static void show_functions(const struct dcerpc_interface_table *p)
 
 	f = find_function(p, function);
 
+	mem_ctx = talloc_init("ndrdump");
+
+	st = talloc_zero(mem_ctx, f->struct_size);
+	if (!st) {
+		printf("Unable to allocate %d bytes\n", f->struct_size);
+		exit(1);
+	}
+
+	if (ctx_filename) {
+		if (flags == NDR_IN) {
+			printf("Context file can only be used for \"out\" packages\n");
+			exit(1);
+		}
+			
+		data = file_load(ctx_filename, &size);
+		if (!data) {
+			perror(ctx_filename);
+			exit(1);
+		}
+
+		blob.data = data;
+		blob.length = size;
+
+		ndr = ndr_pull_init_blob(&blob, mem_ctx);
+
+		status = f->ndr_pull(ndr, NDR_IN, st);
+
+		if (ndr->offset != ndr->data_size) {
+			printf("WARNING! %d unread bytes while parsing context file\n", ndr->data_size - ndr->offset);
+			exit(1);
+		}
+
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("pull for context file returned %s\n", nt_errstr(status));
+			exit(1);
+		}
+	} 
+
 	data = file_load(filename, &size);
 	if (!data) {
 		perror(filename);
@@ -157,15 +197,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	blob.data = data;
 	blob.length = size;
 
-	mem_ctx = talloc_init("ndrdump");
-	
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
-
-	st = talloc_zero(mem_ctx, f->struct_size);
-	if (!st) {
-		printf("Unable to allocate %d bytes\n", f->struct_size);
-		exit(1);
-	}
 
 	if (flags == NDR_OUT) {
 		ndr->flags |= LIBNDR_FLAG_REF_ALLOC;
@@ -183,7 +215,7 @@ static void show_functions(const struct dcerpc_interface_table *p)
 	pr = talloc_p(NULL, struct ndr_print);
 	pr->print = ndr_print_debug_helper;
 	pr->depth = 1;
-	f->ndr_print(pr, function, flags, st);
+	f->ndr_print(pr, function, flags | NDR_IN, st);
 
 	if (!NT_STATUS_IS_OK(status) ||
 	    ndr->offset != ndr->data_size) {
