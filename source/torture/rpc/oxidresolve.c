@@ -21,13 +21,12 @@
 
 #include "includes.h"
 
-static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T setid)
 {
 	struct SimplePing r;
 	NTSTATUS status;
-	HYPER_T h = 10;
 
-	r.in.SetId = &h;
+	r.in.SetId = &setid;
 
 	status = dcerpc_SimplePing(p, mem_ctx, &r);
 	if(NT_STATUS_IS_ERR(status)) {
@@ -39,6 +38,34 @@ static int test_SimplePing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		fprintf(stderr, "SimplePing: %s\n", win_errstr(r.out.result));
 		return 0;
 	}
+
+	return 1;
+}
+
+static int test_ComplexPing(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, HYPER_T *setid)
+{
+	struct ComplexPing r;
+	NTSTATUS status;
+
+	*setid = 0;
+	ZERO_STRUCT(r.in);
+
+	r.in.SequenceNum = 0;
+	r.in.SetId = setid;
+	r.out.SetId = setid;
+
+	status = dcerpc_ComplexPing(p, mem_ctx, &r);
+	if(NT_STATUS_IS_ERR(status)) {
+		fprintf(stderr, "ComplexPing: %s\n", nt_errstr(status));
+		return 0;
+	}
+
+	if(!W_ERROR_IS_OK(r.out.result)) {
+		fprintf(stderr, "ComplexPing: %s\n", win_errstr(r.out.result));
+		return 0;
+	}
+
+	
 
 	return 1;
 }
@@ -88,6 +115,7 @@ BOOL torture_rpc_oxidresolve(void)
        struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	HYPER_T setid;
 
 	mem_ctx = talloc_init("torture_rpc_oxidresolve");
 
@@ -100,10 +128,13 @@ BOOL torture_rpc_oxidresolve(void)
 		return False;
 	}
 
-	if(!test_SimplePing(p, mem_ctx))
+	if(!test_ServerAlive(p, mem_ctx))
 		ret = False;
 
-	if(!test_ServerAlive(p, mem_ctx))
+	if(!test_ComplexPing(p, mem_ctx, &setid))
+		ret = False;
+
+	if(!test_SimplePing(p, mem_ctx, setid))
 		ret = False;
 
 	if(!test_ServerAlive2(p, mem_ctx))
