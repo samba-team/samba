@@ -410,7 +410,6 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 		ZERO_STRUCTP(domain_state);
 		
 		domain_state->domain = tmp;
-                domain_state->mem_ctx = talloc_init();
 
 		/* Add to list of open domains */
 		
@@ -444,6 +443,8 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	NTSTATUS status;
 	uint32 num_entries;
 	struct acct_info *name_list = NULL, *tnl;
+        TALLOC_CTX *mem_ctx;
+        BOOL result = False;
         
 	if (ent->got_all_sam_entries)
 		return False;
@@ -454,6 +455,9 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 				       &ent->num_sam_entries))
 		return True;
 #endif
+
+        if (!(mem_ctx = talloc_init()))
+                return False;
 		
 	/* Free any existing group info */
 
@@ -473,7 +477,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
                         break;
 
                 status = cli_samr_enum_dom_groups(
-                        hnd->cli, ent->mem_ctx, &hnd->pol,
+                        hnd->cli, mem_ctx, &hnd->pol,
                         &ent->grp_query_start_ndx,
                         0x8000, /* buffer size? */
                         (struct acct_info **) &sam_grp_entries, &num_entries);
@@ -492,15 +496,13 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
                                          "realloc a structure!\n"));
 				SAFE_FREE(name_list);
 
-				return False; 
+				goto done;
                         } else 
                                 name_list = tnl;
 
 			memcpy(&name_list[ent->num_sam_entries],
 			       sam_grp_entries, 
 			       num_entries * sizeof(struct acct_info));
-
-			SAFE_FREE(sam_grp_entries);
 		}
 
 		ent->num_sam_entries += num_entries;
@@ -524,7 +526,12 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	ent->got_all_sam_entries = (NT_STATUS_V(status) != 
                                     NT_STATUS_V(STATUS_MORE_ENTRIES));
 
-	return ent->num_sam_entries > 0;
+	result = (ent->num_sam_entries > 0);
+
+ done:
+        talloc_destroy(mem_ctx);
+
+        return result;
 }
 
 /* Fetch next group entry from ntdom database */
@@ -585,7 +592,6 @@ enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state)
 				/* Free state information for this domain */
 
 				SAFE_FREE(ent->sam_entries);
-				ent->sam_entries = NULL;
 
 				next_ent = ent->next;
 				DLIST_REMOVE(state->getgrent_state, ent);
@@ -762,7 +768,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 
 		ZERO_STRUCT(groups);
 		groups.domain = domain;
-                groups.mem_ctx = talloc_init();
 
 		/* 
 		 * iterate through all groups 
@@ -819,7 +824,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 			DEBUG(0,("winbindd_list_groups: failed to enlarge "
                                  "buffer!\n"));
 			SAFE_FREE(extra_data);
-                        talloc_destroy(groups.mem_ctx);
 			return WINBINDD_ERROR;
 		} else
 			extra_data = ted;
@@ -847,7 +851,6 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
 		}
 
         next_group:
-                talloc_destroy(groups.mem_ctx);
 	}
 
 	/* Assign extra_data fields in response structure */
