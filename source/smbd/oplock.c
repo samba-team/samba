@@ -410,7 +410,7 @@ pid %d, port %d, dev = %x, inode = %.0f, mid = %u\n",
 
 				schedule_sharing_violation_open_smb_message(mid);
 			}
-			break;
+			return True;
 
 		/* 
 		 * Keep this as a debug case - eventually we can remove it.

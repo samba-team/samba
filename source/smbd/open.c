@@ -862,6 +862,16 @@ deferred open entry for mid %u, file %s\n",
 	if (!add_deferred_open(mid, ptv, dev, inode, global_oplock_port, fname)) {
 		remove_sharing_violation_open_smb_message(mid);
 	}
+
+	/*
+	 * Push the MID of this packet on the signing queue.
+	 * We only do this once, the first time we push the packet
+	 * onto the deferred open queue, as this has a side effect
+	 * of incrementing the response sequence number.
+	 */
+
+	srv_defer_sign_response(mid);
+
 	SAFE_FREE(de_array);
 }
 
