@@ -269,6 +269,7 @@ AC_CHECK_HEADERS([\
 	netinet/in6_machtypes.h			\
 	netinet/in6_var.h			\
 	netinet/in_systm.h			\
+	netinet/ip.h				\
 	netinet6/in6.h				\
 	netinfo/ni.h				\
 	paths.h					\
