@@ -3,7 +3,7 @@
 import sys
 from gtkdictbrowser import GtkDictBrowser
 import gtk
-import tdb
+from samba import tdb
 import string
 
 # Open handle on tdb
