@@ -2441,16 +2441,13 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	fstrcpy(info.portname, SAMBA_PRINTER_PORT_NAME);
 	fstrcpy(info.drivername, lp_printerdriver(snum));
 
-#if 0	/* JERRY */
-	if (!*info.drivername)
-		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
-#else
 	/* by setting the driver name to an empty string, a local NT admin
 	   can now run the **local** APW to install a local printer driver
  	   for a Samba shared printer in 2.2.  Without this, drivers **must** be 
 	   installed on the Samba server for NT clients --jerry */
+#if 0	/* JERRY --do not uncomment-- */
 	if (!*info.drivername)
-		fstrcpy(info.drivername, "");
+		fstrcpy(info.drivername, "NO DRIVER AVAILABLE FOR THIS PRINTER");
 #endif
 
 
@@ -2469,9 +2466,15 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	info.untiltime = 0; /* Minutes since 12:00am GMT */
 	info.priority = 1;
 	info.default_priority = 1;
-	info.setuptime = (uint32)time(NULL);
+	info.setuptime = (uint32)time(NULL) - 86400;	/* minus 1 day */
 
-#if 1 /* JRA - NO NOT CHANGE ! */
+	/*
+	 * I changed this as I think it is better to have a generic
+	 * DEVMODE than to crash Win2k explorer.exe   --jerry
+	 * See the HP Deskjet 990c Win2k drivers for an example.
+	 */
+
+#if 0 /* JRA - NO NOT CHANGE ! */
 	info.devmode = NULL;
 #else
 	/*
@@ -2499,7 +2502,6 @@ static WERROR get_a_printer_2_default(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstrin
 	return WERR_OK;
 
   fail:
-
 	if (info.devmode)
 		free_nt_devicemode(&info.devmode);
 	return WERR_ACCESS_DENIED;
@@ -2562,10 +2564,11 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	fstrcpy(info.printername, printername);
 
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
-#if 0
+#if 1
 	/*
-	 * We don't want to generate a default device mode (which is why this code is commented out).  
-	 * Better to have the printer initiailized by the client.	  --jerry
+	 * Some client drivers freak out if there is a NULL devmode
+	 * (probably the driver is not checking before accessing 
+	 * the devmode pointer)   --jerry
 	 */
 	if (!info.devmode)
 	{
