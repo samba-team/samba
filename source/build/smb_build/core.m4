@@ -45,6 +45,7 @@ cat >> config.smb_build.pl < build/smb_build/smb_build_h.pl
 echo "#line 1 \"build/smb_build/main.pl\"" >> config.smb_build.pl
 cat >> config.smb_build.pl < build/smb_build/main.pl
 
+echo "#line 8 \"build/smb_build/core.m4\"" >> config.smb_build.pl
 cat >> config.smb_build.pl <<\_SMB_ACEOF
 ###########################################################
 ### First we list all info from configure		###
