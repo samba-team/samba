@@ -85,7 +85,7 @@ typedef enum krb5_cksumtype {
   CKSUMTYPE_RSA_MD5		= 7,
   CKSUMTYPE_RSA_MD5_DES		= 8,
   CKSUMTYPE_RSA_MD5_DES3	= 9,
-  CKSUMTYPE_SHA1		= 10,
+/*  CKSUMTYPE_SHA1		= 10,*/
   CKSUMTYPE_HMAC_SHA1_DES3	= 12,
   CKSUMTYPE_SHA1		= 1000 /* correct value? */
 } krb5_cksumtype;
