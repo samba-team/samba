@@ -1,5 +1,7 @@
 1999-07-28  Assar Westerlund  <assar@sics.se>
 
+	* common/socket.c: moved to roken
+
 	* common/socket.c: new file with generic socket functions
 
 	* ftpd/ftpd.c: make it more AF-neutral and v6-capable

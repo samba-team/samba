@@ -1,4 +1,14 @@
+1999-07-29  Assar Westerlund  <assar@sics.se>
+
+	* mini_inetd.c (mini_inetd): fix my stupid bugs
+
 1999-07-28  Assar Westerlund  <assar@sics.se>
+
+	* roken-common.h: add socket* functions
+
+	* Makefile.am (libroken_la_SOURCES): add socket.c
+
+	* socket.c: new file, originally from appl/ftp/common
 
 	* Makefile.am: set version to 2:0:2
 
