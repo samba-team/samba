@@ -556,7 +556,6 @@ static int construct_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int type = CVAL(inbuf,smb_com);
   int outsize = 0;
   int msg_type = CVAL(inbuf,0);
-  extern int chain_size;
 
   GetTimeOfDay(&smb_last_time);
 
@@ -721,7 +720,6 @@ int chain_reply(char *inbuf,char *outbuf,int size,int bufsize)
   int outsize2;
   char inbuf_saved[smb_wct];
   char outbuf_saved[smb_wct];
-  extern int chain_size;
   int wct = CVAL(outbuf,smb_wct);
   int outsize = smb_size + 2*wct + SVAL(outbuf,smb_vwv0+2*wct);
 

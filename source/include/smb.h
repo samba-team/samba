@@ -1353,6 +1353,76 @@ struct bitmap {
 /* where to find the base of the SMB packet proper */
 #define smb_base(buf) (((char *)(buf))+4)
 
+/* Extra macros added by Ying Chen at IBM - speed increase by inlining. */
+#define smb_buf(buf) (buf + smb_size + CVAL(buf,smb_wct)*2)
+#define smb_buflen(buf) (SVAL(buf,smb_vwv0 + (int)CVAL(buf, smb_wct)*2))
+
+/* Note that chain_size must be available as an extern int to this macro. */
+#define smb_offset(p,buf) (PTR_DIFF(p,buf+4) + chain_size)
+
+#define smb_len(buf) (PVAL(buf,3)|(PVAL(buf,2)<<8)|((PVAL(buf,1)&1)<<16))
+#define _smb_setlen(buf,len) buf[0] = 0; buf[1] = (len&0x10000)>>16; \
+        buf[2] = (len&0xFF00)>>8; buf[3] = len&0xFF;
+
+/*********************************************************
+* Routine to check if a given string matches exactly.
+* Case can be significant or not.
+**********************************************************/
+
+#define exact_match(str, regexp, case_sig) \
+  ((case_sig?strcmp(str,regexp):strcasecmp(str,regexp)) == 0)
+
+/*******************************************************************
+find the difference in milliseconds between two struct timeval
+values
+********************************************************************/
+
+#define TvalDiff(tvalold,tvalnew) \
+  (((tvalnew)->tv_sec - (tvalold)->tv_sec)*1000 +  \
+	 ((int)(tvalnew)->tv_usec - (int)(tvalold)->tv_usec)/1000)
+
+/****************************************************************************
+true if two IP addresses are equal
+****************************************************************************/
+
+#define ip_equal(ip1,ip2) ((ip1).s_addr == (ip2).s_addr)
+
+/*****************************************************************
+ splits out the last subkey of a key
+ *****************************************************************/  
+
+#define reg_get_subkey(full_keyname, key_name, subkey_name) \
+	split_at_last_component(full_keyname, key_name, '\\', subkey_name)
+
+/****************************************************************************
+ Used by dptr_zero.
+****************************************************************************/
+
+#define DPTR_MASK ((uint32)(((uint32)1)<<31))
+
+/****************************************************************************
+ Return True if the offset is at zero.
+****************************************************************************/
+
+#define dptr_zero(buf) ((IVAL(buf,1)&~DPTR_MASK) == 0)
+
+/*******************************************************************
+copy an IP address from one buffer to another
+********************************************************************/
+
+#define putip(dest,src) memcpy(dest,src,4)
+
+/****************************************************************************
+ Make a filename into unix format.
+****************************************************************************/
+
+#define unix_format(fname) string_replace(fname,'\\','/')
+
+/****************************************************************************
+ Make a file into DOS format.
+****************************************************************************/
+
+#define dos_format(fname) string_replace(fname,'/','\\')
 
 /* we don't allow server strings to be longer than 48 characters as
    otherwise NT will not honour the announce packets */
@@ -1610,6 +1680,11 @@ enum ssl_version_enum {SMB_SSL_V2,SMB_SSL_V3,SMB_SSL_V23,SMB_SSL_TLS1};
  */
 extern int unix_ERR_class;
 extern int unix_ERR_code;
+
+/*
+ * Used in chaining code.
+ */
+extern int chain_size;
 
 /*
  * Map the Core and Extended Oplock requesst bits down

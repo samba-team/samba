@@ -27,7 +27,6 @@ extern int Protocol;
 extern int Client;  
 extern int smb_read_error;
 extern int global_oplock_break;
-extern int chain_size;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
