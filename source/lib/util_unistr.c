@@ -83,7 +83,7 @@ void load_case_tables(void)
   see if a ucs2 character can be mapped correctly to a dos character
   and mapped back to the same character in ucs2
 */
-static int check_dos_char(smb_ucs2_t c)
+int check_dos_char(smb_ucs2_t c)
 {
 	char buf[10];
 	smb_ucs2_t c2 = 0;
