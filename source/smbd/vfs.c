@@ -255,24 +255,6 @@ BOOL vfs_init_custom(connection_struct *conn)
 #endif
 
 /*******************************************************************
- vfs stat wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_stat(connection_struct *conn, char *fname, SMB_STRUCT_STAT *st)
-{
-	return(conn->vfs_ops.stat(conn, dos_to_unix(fname,False),st));
-} 
-
-/*******************************************************************
- vfs fstat wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_fstat(files_struct *fsp, int fd, SMB_STRUCT_STAT *st)
-{
-	return(fsp->conn->vfs_ops.fstat(fsp,fd,st));
-} 
-
-/*******************************************************************
  Check if directory exists.
 ********************************************************************/
 
@@ -317,51 +299,6 @@ int vfs_mkdir(connection_struct *conn, char *fname, mode_t mode)
 	}
 	return ret;
 }
-
-/*******************************************************************
- vfs rmdir wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_rmdir(connection_struct *conn, char *fname)
-{
-	return(conn->vfs_ops.rmdir(conn,dos_to_unix(fname,False)));
-} 
-
-/*******************************************************************
- vfs Unlink wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_unlink(connection_struct *conn, char *fname)
-{
-	return(conn->vfs_ops.unlink(conn,dos_to_unix(fname,False)));
-} 
-
-/*******************************************************************
- vfs chmod wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_chmod(connection_struct *conn, char *fname,mode_t mode)
-{
-	return(conn->vfs_ops.chmod(conn,dos_to_unix(fname,False), mode));
-} 
-
-/*******************************************************************
- vfs chown wrapper that calls dos_to_unix.
-********************************************************************/
-
-int vfs_chown(connection_struct *conn, char *fname, uid_t uid, gid_t gid)
-{
-	return(conn->vfs_ops.chown(conn,dos_to_unix(fname,False), uid, gid));
-} 
-
-/*******************************************************************
- A wrapper for vfs_chdir().
-********************************************************************/
-
-int vfs_chdir(connection_struct *conn, char *fname)
-{
-	return(conn->vfs_ops.chdir(conn,dos_to_unix(fname,False)));
-} 
 
 /*******************************************************************
  vfs getwd wrapper that calls dos_to_unix.

@@ -215,5 +215,46 @@ copy an IP address from one buffer to another
 
 #define dos_format(fname) string_replace(fname,'/','\\')
 
+/*******************************************************************
+ vfs stat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_stat(conn, fname, st) ((conn)->vfs_ops.stat((conn), dos_to_unix((fname),False),(st)))
+
+/*******************************************************************
+ vfs fstat wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_fstat(fsp, fd, st) ((fsp)->conn->vfs_ops.fstat((fsp),(fd),(st)))
+
+/*******************************************************************
+ vfs rmdir wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_rmdir(conn,fname) ((conn)->vfs_ops.rmdir((conn),dos_to_unix((fname),False)))
+
+/*******************************************************************
+ vfs Unlink wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_unlink(conn, fname) ((conn)->vfs_ops.unlink((conn),dos_to_unix((fname),False)))
+
+/*******************************************************************
+ vfs chmod wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_chmod(conn,fname,mode) ((conn)->vfs_ops.chmod((conn),dos_to_unix((fname),False),(mode)))
+
+/*******************************************************************
+ vfs chown wrapper that calls dos_to_unix.
+********************************************************************/
+
+#define vfs_chown(conn,fname,uid,gid) ((conn)->vfs_ops.chown((conn),dos_to_unix((fname),False),(uid),(gid)))
+
+/*******************************************************************
+ A wrapper for vfs_chdir().
+********************************************************************/
+
+#define vfs_chdir(conn,fname) ((conn)->vfs_ops.chdir((conn),dos_to_unix((fname),False)))
 
 #endif /* _SMB_MACROS_H */
