@@ -1,3 +1,11 @@
+Tue Mar 23 00:00:13 1999  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common (install_build_headers): try to make it work
+ 	better when list of headers is empty.  handle make rewriting the
+ 	filenames.
+
+	* Makefile.am.common: hesoid -> hesiod
+
 Sun Mar 21 14:48:03 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* grok-type.m4: <bind/bitypes.h>

@@ -1,3 +1,21 @@
+Tue Mar 23 00:00:45 1999  Assar Westerlund  <assar@sics.se>
+
+	* lib/kadm5/Makefile.am (install_build_headers): recover from make
+ 	rewriting the names of the headers kludge to help solaris make
+
+	* lib/krb5/Makefile.am: kludge to help solaris make
+
+	* lib/hdb/Makefile.am: kludge to help solaris make
+
+	* configure.in (LIB_kdb): make sure there's a -L option in here by
+ 	adding $(LIB_krb4)
+
+	* lib/asn1/gen_glue.c (generate_2int, generate_int2): int ->
+ 	unsigned
+
+	* configure.in (SunOS): set to a number KRB4, KRB5 conditionals:
+ 	remove the `dnl' to work around an automake flaw
+
 Sun Mar 21 14:08:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/Makefile.am: create krb5-private.h
