@@ -22,10 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __seekdir; __seekdir = seekdir");
-#endif
-
  void seekdir(DIR *dir, off_t offset)
 {
 	if (smbw_dirp(dir)) {

@@ -22,10 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __readdir; __readdir = readdir");
-#endif
-
  struct dirent *readdir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {

@@ -22,10 +22,6 @@
 
 #include "wrapper.h"
 
-#ifdef linux
-__asm__(".globl __closedir; __closedir = closedir");
-#endif
-
  int closedir(DIR *dir)
 {
 	if (smbw_dirp(dir)) {
