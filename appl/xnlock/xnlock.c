@@ -96,6 +96,7 @@ struct appres_t {
     Boolean accept_root;
     char *text, *text_prog, *file, *logoutPasswd;
     Boolean no_screensaver;
+    Boolean destroytickets;
 } appres;
 
 static XtResource resources[] = {
@@ -129,6 +130,9 @@ static XtResource resources[] = {
     
     { "noScreenSaver", "NoScreenSaver", XtRBoolean, sizeof(Boolean),
       XtOffsetOf(struct appres_t,no_screensaver), XtRImmediate, (XtPointer)True },
+
+    { "destroyTickets", "DestroyTickets", XtRBoolean, sizeof(Boolean),
+      XtOffsetOf(struct appres_t,destroytickets), XtRImmediate, (XtPointer)True },
 };
 
 static XrmOptionDescRec options[] = {
@@ -141,6 +145,7 @@ static XrmOptionDescRec options[] = {
     { "-ar",  ".acceptRootPasswd", XrmoptionNoArg, "True" },
     { "-noar", ".acceptRootPasswd", XrmoptionNoArg, "False" },
     { "-nonoscreensaver", ".noScreenSaver", XrmoptionNoArg, "False" },
+    { "-nodestroytickets", ".destroyTickets", XrmoptionNoArg, "False" },
 };
 
 static char*
@@ -187,6 +192,7 @@ usage(void)
     fprintf(stderr, "-nar          don't accept root's passwd\n");
     fprintf(stderr, "-f [file]     message is read from file or ~/.msgfile\n");
     fprintf(stderr, "-prog program  text is gotten from executing `program'\n");
+    fprintf(stderr, "-nodestroytickets keep kerberos tickets\n");
     exit(1);
 }
 
@@ -560,22 +566,7 @@ verify(char *password)
 		 * continue */
 		signal(SIGHUP, SIG_DFL);
 	    }
-    /*
-     * Try to verify as user with kerberos.
-     */
 
-    ret = krb_verify_user(name, inst, realm, password, 0, NULL);
-    
-    if(ret == KSUCCESS){
-	if(k_hasafs())
-	    k_afsklog(0, 0);
-	return 0;
-    }
-
-    if(ret != INTK_BADPW)
-	warnx ("warning: %s",
-	       (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
-    
     /*
      * Try copy of users password.
      */
@@ -585,8 +576,22 @@ verify(char *password)
     /*
      * Try to verify as user in case password change.
      */
-    if(unix_verify_user(name, password) == 0)
+    if (unix_verify_user(name, password) == 0)
 	return 0;
+
+    /*
+     * Try to verify as user with kerberos.
+     */
+    ret = krb_verify_user(name, inst, realm, password, 0, NULL);
+    if (ret == KSUCCESS){
+	if (k_hasafs())
+	    k_afsklog(0, 0);
+	return 0;
+    }
+    if (ret != INTK_BADPW)
+	warnx ("warning: %s",
+	       (ret < 0) ? strerror(ret) : krb_get_err_text(ret));
+    
     return -1;
 }
 
@@ -887,7 +892,6 @@ main (int argc, char **argv)
     locked_at = time(0);
 
     krb_get_default_principal(name, inst, realm);
-    
 
     override = XtVaAppInitialize(&app, "XNlock", options, XtNumber(options),
 				 (Cardinal*)&argc, argv, NULL, 
@@ -900,6 +904,11 @@ main (int argc, char **argv)
     /* the background is black and the little guy is white */
     Black = appres.bg;
     White = appres.fg;
+
+    if (appres.destroytickets) {
+        dest_tkt();		/* Nuke old ticket file */
+	creat(TKT_FILE, 0600);	/* but keep a place holder */
+    }
 
     dpy = XtDisplay(override);
     
