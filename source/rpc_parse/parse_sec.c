@@ -66,11 +66,7 @@ void sec_io_ace(char *desc, SEC_ACE *t, prs_struct *ps, int depth)
 	prs_align(ps);
 	smb_io_dom_sid("sid ", &t->sid , ps, depth);
 
-	prs_uint16_post("ace_size ", ps, depth, offset_ace_size, old_offset);
-	if (ps->io)
-	{
-		ps->offset = old_offset + t->ace_size;
-	}
+	prs_uint16_post("ace_size ", ps, depth, &t->ace_size, offset_ace_size, old_offset);
 }
 
 /*******************************************************************
@@ -105,11 +101,7 @@ void sec_io_acl(char *desc, SEC_ACL *t, prs_struct *ps, int depth)
 
 	prs_align(ps);
 
-	prs_uint16_post("acl_size ", ps, depth, offset_acl_size, old_offset);
-	if (ps->io)
-	{
-		ps->offset = old_offset + t->acl_size;
-	}
+	prs_uint16_post("acl_size ", ps, depth, &t->acl_size, offset_acl_size, old_offset);
 }
 
 
@@ -118,6 +110,12 @@ reads or writes a structure.
 ********************************************************************/
 void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 {
+	uint32 off_owner_sid;
+	uint32 off_pnt_sid  ;
+	uint32 off_unknown  ;
+	uint32 off_acl      ;
+	uint32 old_offset;
+
 	if (t == NULL) return;
 
 	prs_debug(ps, depth, desc, "sec_io_desc");
@@ -125,32 +123,29 @@ void sec_io_desc(char *desc, SEC_DESC *t, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	prs_uint16("unknown_1", ps, depth, &(t->unknown_1));
-	prs_uint16("unknown_2", ps, depth, &(t->unknown_2));
+	/* start of security descriptor stored for back-calc offset purposes */
+	old_offset = ps->offset;
 
-	prs_uint32("off_owner_sid", ps, depth, &(t->off_owner_sid));
-	prs_uint32("off_pnt_sid  ", ps, depth, &(t->off_pnt_sid  ));
-	prs_uint32("off_unknown  ", ps, depth, &(t->off_unknown  ));
-	prs_uint32("off_acl      ", ps, depth, &(t->off_acl      ));
+	prs_uint32("unknown_1", ps, depth, &(t->unknown_1));
 
+	prs_uint32_pre("off_owner_sid", ps, depth, &(t->off_owner_sid), &off_owner_sid);
+	prs_uint32_pre("off_pnt_sid  ", ps, depth, &(t->off_pnt_sid  ), &off_pnt_sid  );
+	prs_uint32_pre("off_unknown  ", ps, depth, &(t->off_unknown  ), &off_unknown  );
+	prs_uint32_pre("off_acl      ", ps, depth, &(t->off_acl      ), &off_acl      );
+
+	prs_uint32_post("off_acl     ", ps, depth, &(t->off_acl      ), off_acl      , old_offset);
 	sec_io_acl    ("acl"       , &t->acl       , ps, depth);
+	prs_align(ps);
+
+	prs_uint32_post("off_unknown  ", ps, depth, &(t->off_unknown  ), off_unknown  , ps->offset);
+
+	prs_uint32_post("off_owner_sid", ps, depth, &(t->off_owner_sid), off_owner_sid, old_offset);
 	smb_io_dom_sid("owner_sid ", &t->owner_sid , ps, depth);
 	prs_align(ps);
+
+	prs_uint32_post("off_pnt_sid  ", ps, depth, &(t->off_pnt_sid  ), off_pnt_sid  , old_offset);
 	smb_io_dom_sid("parent_sid", &t->parent_sid, ps, depth);
 	prs_align(ps);
-}
-
-/*******************************************************************
-creates a SEC_DESC_BUF structure.
-********************************************************************/
-void make_sec_desc_buf(SEC_DESC_BUF *buf, int len, uint32 buf_ptr)
-{
-	ZERO_STRUCTP(buf);
-
-	/* max buffer size (allocated size) */
-	buf->max_len = len;
-	buf->undoc       = 0;
-	buf->len = buf_ptr != 0 ? len : 0;
 }
 
 /*******************************************************************
@@ -158,6 +153,9 @@ reads or writes a SEC_DESC_BUF structure.
 ********************************************************************/
 void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 {
+	uint32 off_len;
+	uint32 old_offset;
+
 	if (sec == NULL) return;
 
 	prs_debug(ps, depth, desc, "sec_io_desc_buf");
@@ -165,12 +163,18 @@ void sec_io_desc_buf(char *desc, SEC_DESC_BUF *sec, prs_struct *ps, int depth)
 
 	prs_align(ps);
 	
-	prs_uint32("max_len", ps, depth, &(sec->max_len));
-	prs_uint32("undoc  ", ps, depth, &(sec->undoc  ));
-	prs_uint32("len    ", ps, depth, &(sec->len    ));
+	prs_uint32    ("max_len", ps, depth, &(sec->max_len));
+	prs_uint32    ("undoc  ", ps, depth, &(sec->undoc  ));
+	prs_uint32_pre("len    ", ps, depth, &(sec->len    ), &off_len);
 
-	if (sec->len != 0)
+	old_offset = ps->offset;
+
+	/* reading, length is non-zero; writing, descriptor is non-NULL */
+	if ((sec->len != 0 || (!ps->io)) && sec->sec != NULL)
 	{
-		sec_io_desc("sec   ", &sec->sec, ps, depth);
+		sec_io_desc("sec   ", sec->sec, ps, depth);
 	}
+
+	prs_uint32_post("len    ", ps, depth, &(sec->len    ), off_len    , old_offset);
 }
+

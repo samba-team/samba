@@ -1175,7 +1175,7 @@ void display_sec_desc(FILE *out_hnd, enum action_type action, SEC_DESC *sec)
 	{
 		case ACTION_HEADER:
 		{
-			fprintf(out_hnd, "\tSecurity Descriptor\tunk 1,2: %x %x\n", sec->unknown_1, sec->unknown_2); 
+			fprintf(out_hnd, "\tSecurity Descriptor\tunk 1: %x\n", sec->unknown_1); 
 			fprintf(out_hnd, "\t-------------------\n");
 
 			break;

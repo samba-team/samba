@@ -766,17 +766,20 @@ void cmd_reg_get_key_sec(struct client_info *info)
 
 	/* query key sec info.  first call sets sec_buf_size. */
 	sec_buf_size = 0;
+	sec_buf.sec = NULL;
+
 	res4 = res3 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 	
 	res4 = res4 ? do_reg_get_key_sec(smb_cli, &key_pol,
 				&sec_buf_size, &sec_buf) : False;
 
-	if (res4 && sec_buf.len > 0)
+	if (res4 && sec_buf.len > 0 && sec_buf.sec != NULL)
 	{
-		display_sec_desc(out_hnd, ACTION_HEADER   , &sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_ENUMERATE, &sec_buf.sec);
-		display_sec_desc(out_hnd, ACTION_FOOTER   , &sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_HEADER   , sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_ENUMERATE, sec_buf.sec);
+		display_sec_desc(out_hnd, ACTION_FOOTER   , sec_buf.sec);
+		free(sec_buf.sec);
 	}
 
 	/* close the key handle */
