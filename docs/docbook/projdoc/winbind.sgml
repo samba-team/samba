@@ -577,9 +577,17 @@ I'm always paranoid and like to make sure the daemon
 is really running...
 </para>
 
-<para>
+<para><programlisting>
 <prompt>root# </prompt> ps -ae | grep winbindd 
 3025 ?        00:00:00 winbindd
+</programlisting></para>
+
+<para>
+The reply <command>3025 ? 00:00:00 winbind</command>' indicates that 
+I have <command>winbindd</command> running as process #3025 on my system.  You will get a
+different process number, but you should see the <command>winbindd</command> 
+daemon.  If it is NOT running, you will get no response from your system and will
+simply be returned the command prompt.
 </para>
 
 <para>

@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/hacks/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMB.CONF" "5" "17 October 2001" "" ""
+.TH "SMB.CONF" "5" "04 November 2001" "" ""
 .SH NAME
 smb.conf \- The configuration file for the Samba suite
 .SH "SYNOPSIS"
@@ -5212,7 +5212,7 @@ or PLP :\fR
 
 \fBprint command = lpr -r -P%p %s\fR
 
-For \fBprinting = SYS or HPUX :\fR
+For \fBprinting = SYSV or HPUX :\fR
 
 \fBprint command = lp -c -d%p %s; rm %s\fR
 
@@ -5396,7 +5396,7 @@ default values for the \fIprint command\fR,
 \fIlprm command\fR if specified in the 
 [global] section.
 
-Currently eight printing styles are supported. They are
+Currently nine printing styles are supported. They are
 BSD, AIX, 
 LPRNG, PLP,
 SYSV, HPUX,
@@ -5695,7 +5695,7 @@ The alternatives are \fBsecurity = share\fR,
 \fBsecurity = server\fR or \fBsecurity = domain
 \fR\&.
 
-In versions of Samba prior to 2..0, the default was 
+In versions of Samba prior to 2.0.0, the default was 
 \fBsecurity = share\fR mainly because that was
 the only option at one stage.
 
@@ -7019,15 +7019,14 @@ Default: \fBNo files or directories are vetoed.
 Examples:
 .sp
 .nf
-	   ; Veto any files containing the word Security, 
-    	; any ending in .tmp, and any directory containing the
-    	; word root.
-		veto files = /*Security*/*.tmp/*root*/
+; Veto any files containing the word Security, 
+; any ending in .tmp, and any directory containing the
+; word root.
+veto files = /*Security*/*.tmp/*root*/
 
-		; Veto the Apple specific files that a NetAtalk server
-    	; creates.
-		veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
-		
+; Veto the Apple specific files that a NetAtalk server
+; creates.
+veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
 .sp
 .fi
 .TP

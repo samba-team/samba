@@ -14157,7 +14157,7 @@ CLASS="COMMAND"
 ><P
 >For <B
 CLASS="COMMAND"
->printing = SYS or HPUX :</B
+>printing = SYSV or HPUX :</B
 ></P
 ><P
 ><B
@@ -14640,7 +14640,7 @@ CLASS="PARAMETER"
 > if specified in the 
 		[global] section.</P
 ><P
->Currently eight printing styles are supported. They are
+>Currently nine printing styles are supported. They are
 		<TT
 CLASS="CONSTANT"
 >BSD</TT
@@ -15420,7 +15420,7 @@ CLASS="COMMAND"
 		</B
 >.</P
 ><P
->In versions of Samba prior to 2..0, the default was 
+>In versions of Samba prior to 2.0.0, the default was 
 		<B
 CLASS="COMMAND"
 >security = share</B
@@ -18451,15 +18451,14 @@ WIDTH="90%"
 ><TD
 ><PRE
 CLASS="PROGRAMLISTING"
->	   ; Veto any files containing the word Security, 
-    	; any ending in .tmp, and any directory containing the
-    	; word root.
-		veto files = /*Security*/*.tmp/*root*/
+>; Veto any files containing the word Security, 
+; any ending in .tmp, and any directory containing the
+; word root.
+veto files = /*Security*/*.tmp/*root*/
 
-		; Veto the Apple specific files that a NetAtalk server
-    	; creates.
-		veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
-		</PRE
+; Veto the Apple specific files that a NetAtalk server
+; creates.
+veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/</PRE
 ></TD
 ></TR
 ></TABLE

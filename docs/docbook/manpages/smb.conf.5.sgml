@@ -7985,16 +7985,16 @@
 		<para>Default: <emphasis>No files or directories are vetoed.
 		</emphasis></para>
 
-		<para>Examples:<programlisting>
-	   ; Veto any files containing the word Security, 
-    	; any ending in .tmp, and any directory containing the
-    	; word root.
-		veto files = /*Security*/*.tmp/*root*/
+<para>Examples:<programlisting>
+; Veto any files containing the word Security, 
+; any ending in .tmp, and any directory containing the
+; word root.
+veto files = /*Security*/*.tmp/*root*/
 
-		; Veto the Apple specific files that a NetAtalk server
-    	; creates.
-		veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
-		</programlisting></para>
+; Veto the Apple specific files that a NetAtalk server
+; creates.
+veto files = /.AppleDouble/.bin/.AppleDesktop/Network Trash Folder/
+</programlisting></para>
 		</listitem>
 		</varlistentry>
 

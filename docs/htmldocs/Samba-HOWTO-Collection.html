@@ -777,12 +777,12 @@ HREF="#AEN1797"
 ></DT
 ><DT
 >9.5.3.6. <A
-HREF="#AEN1824"
+HREF="#AEN1829"
 >Fix the /etc/rc.d/init.d/smb startup files</A
 ></DT
 ><DT
 >9.5.3.7. <A
-HREF="#AEN1841"
+HREF="#AEN1846"
 >Configure Winbind and PAM</A
 ></DT
 ></DL
@@ -791,12 +791,12 @@ HREF="#AEN1841"
 ></DD
 ><DT
 >9.6. <A
-HREF="#AEN1882"
+HREF="#AEN1887"
 >Limitations</A
 ></DT
 ><DT
 >9.7. <A
-HREF="#AEN1892"
+HREF="#AEN1897"
 >Conclusion</A
 ></DT
 ></DL
@@ -810,32 +810,32 @@ HREF="#OS2"
 ><DL
 ><DT
 >10.1. <A
-HREF="#AEN1906"
+HREF="#AEN1911"
 >FAQs</A
 ></DT
 ><DD
 ><DL
 ><DT
 >10.1.1. <A
-HREF="#AEN1908"
+HREF="#AEN1913"
 >How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></DT
 ><DT
 >10.1.2. <A
-HREF="#AEN1923"
+HREF="#AEN1928"
 >How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></DT
 ><DT
 >10.1.3. <A
-HREF="#AEN1932"
+HREF="#AEN1937"
 >Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></DT
 ><DT
 >10.1.4. <A
-HREF="#AEN1936"
+HREF="#AEN1941"
 >How do I get printer driver download working 
 		for OS/2 clients?</A
 ></DT
@@ -852,24 +852,24 @@ HREF="#CVS-ACCESS"
 ><DL
 ><DT
 >11.1. <A
-HREF="#AEN1952"
+HREF="#AEN1957"
 >Introduction</A
 ></DT
 ><DT
 >11.2. <A
-HREF="#AEN1957"
+HREF="#AEN1962"
 >CVS Access to samba.org</A
 ></DT
 ><DD
 ><DL
 ><DT
 >11.2.1. <A
-HREF="#AEN1960"
+HREF="#AEN1965"
 >Access via CVSweb</A
 ></DT
 ><DT
 >11.2.2. <A
-HREF="#AEN1965"
+HREF="#AEN1970"
 >Access via cvs</A
 ></DT
 ></DL
@@ -878,7 +878,7 @@ HREF="#AEN1965"
 ></DD
 ><DT
 ><A
-HREF="#AEN1993"
+HREF="#AEN1998"
 >Index</A
 ></DT
 ></DL
@@ -8632,11 +8632,38 @@ CLASS="PROMPT"
 >I'm always paranoid and like to make sure the daemon 
 is really running...</P
 ><P
+><TABLE
+BORDER="0"
+BGCOLOR="#E0E0E0"
+WIDTH="100%"
+><TR
+><TD
+><PRE
+CLASS="PROGRAMLISTING"
 ><TT
 CLASS="PROMPT"
 >root# </TT
 > ps -ae | grep winbindd 
-3025 ?        00:00:00 winbindd</P
+3025 ?        00:00:00 winbindd</PRE
+></TD
+></TR
+></TABLE
+></P
+><P
+>The reply <B
+CLASS="COMMAND"
+>3025 ? 00:00:00 winbind</B
+>' indicates that 
+I have <B
+CLASS="COMMAND"
+>winbindd</B
+> running as process #3025 on my system.  You will get a
+different process number, but you should see the <B
+CLASS="COMMAND"
+>winbindd</B
+> 
+daemon.  If it is NOT running, you will get no response from your system and will
+simply be returned the command prompt.</P
 ><P
 >Now... for the real test, try to get some information about the 
 users on your PDC</P
@@ -8728,7 +8755,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1824"
+NAME="AEN1829"
 >9.5.3.6. Fix the /etc/rc.d/init.d/smb startup files</A
 ></H3
 ><P
@@ -8841,7 +8868,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN1841"
+NAME="AEN1846"
 >9.5.3.7. Configure Winbind and PAM</A
 ></H3
 ><P
@@ -9053,7 +9080,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1882"
+NAME="AEN1887"
 >9.6. Limitations</A
 ></H1
 ><P
@@ -9094,7 +9121,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1892"
+NAME="AEN1897"
 >9.7. Conclusion</A
 ></H1
 ><P
@@ -9118,7 +9145,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1906"
+NAME="AEN1911"
 >10.1. FAQs</A
 ></H1
 ><DIV
@@ -9126,7 +9153,7 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1908"
+NAME="AEN1913"
 >10.1.1. How can I configure OS/2 Warp Connect or 
 		OS/2 Warp 4 as a client for Samba?</A
 ></H2
@@ -9185,7 +9212,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1923"
+NAME="AEN1928"
 >10.1.2. How can I configure OS/2 Warp 3 (not Connect), 
 		OS/2 1.2, 1.3 or 2.x for Samba?</A
 ></H2
@@ -9238,7 +9265,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1932"
+NAME="AEN1937"
 >10.1.3. Are there any other issues when OS/2 (any version) 
 		is used as a client?</A
 ></H2
@@ -9260,7 +9287,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1936"
+NAME="AEN1941"
 >10.1.4. How do I get printer driver download working 
 		for OS/2 clients?</A
 ></H2
@@ -9316,7 +9343,7 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1952"
+NAME="AEN1957"
 >11.1. Introduction</A
 ></H1
 ><P
@@ -9338,7 +9365,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1957"
+NAME="AEN1962"
 >11.2. CVS Access to samba.org</A
 ></H1
 ><P
@@ -9351,7 +9378,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1960"
+NAME="AEN1965"
 >11.2.1. Access via CVSweb</A
 ></H2
 ><P
@@ -9372,7 +9399,7 @@ CLASS="SECT2"
 ><HR><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1965"
+NAME="AEN1970"
 >11.2.2. Access via cvs</A
 ></H2
 ><P
@@ -9478,7 +9505,7 @@ CLASS="COMMAND"
 ></DIV
 ><HR><H1
 ><A
-NAME="AEN1993"
+NAME="AEN1998"
 >Index</A
 ></H1
 ><DL

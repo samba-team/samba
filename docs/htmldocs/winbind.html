@@ -759,11 +759,29 @@ CLASS="PROMPT"
 >I'm always paranoid and like to make sure the daemon 
 is really running...</P
 ><P
+><PRE
+CLASS="PROGRAMLISTING"
 ><TT
 CLASS="PROMPT"
 >root# </TT
 > ps -ae | grep winbindd 
-3025 ?        00:00:00 winbindd</P
+3025 ?        00:00:00 winbindd</PRE
+></P
+><P
+>The reply <B
+CLASS="COMMAND"
+>3025 ? 00:00:00 winbind</B
+>' indicates that 
+I have <B
+CLASS="COMMAND"
+>winbindd</B
+> running as process #3025 on my system.  You will get a
+different process number, but you should see the <B
+CLASS="COMMAND"
+>winbindd</B
+> 
+daemon.  If it is NOT running, you will get no response from your system and will
+simply be returned the command prompt.</P
 ><P
 >Now... for the real test, try to get some information about the 
 users on your PDC</P
@@ -837,7 +855,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN183"
+NAME="AEN188"
 >Fix the /etc/rc.d/init.d/smb startup files</A
 ></H3
 ><P
@@ -932,7 +950,7 @@ CLASS="SECT3"
 ><HR><H3
 CLASS="SECT3"
 ><A
-NAME="AEN200"
+NAME="AEN205"
 >Configure Winbind and PAM</A
 ></H3
 ><P
@@ -1090,7 +1108,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN241"
+NAME="AEN246"
 >Limitations</A
 ></H1
 ><P
@@ -1131,7 +1149,7 @@ CLASS="SECT1"
 ><HR><H1
 CLASS="SECT1"
 ><A
-NAME="AEN251"
+NAME="AEN256"
 >Conclusion</A
 ></H1
 ><P
