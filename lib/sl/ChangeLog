@@ -1,3 +1,7 @@
+2004-07-05  Johan Danielsson  <joda@pdc.kth.se>
+
+	* slc-gram.y: add min_args/max_args checking
+	
 2004-06-21  Love  <lha@stacken.kth.se>
 
 	* slc-gram.y: pull in <stdlib.h> and <vers.h> to avoid warnings
