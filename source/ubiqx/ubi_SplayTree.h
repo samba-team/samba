@@ -36,66 +36,17 @@
  *
  * -------------------------------------------------------------------------- **
  *
- * Revision 2.5  1997/07/26 04:15:46  crh
- * + Cleaned up a few minor syntax annoyances that gcc discovered for me.
- * + Changed ubi_TRUE and ubi_FALSE to ubi_trTRUE and ubi_trFALSE.
+ * Log: ubi_SplayTree.h,v
+ * Revision 3.0  1997/12/08 05:32:35  crh
+ * This is a new major revision level because of a redesign of the handling
+ * of the pointers in the ubi_trNode structure.  See ubi_BinTree for more
+ * info.
  *
- * Revision 2.4  1997/06/03 05:22:56  crh
- * Changed TRUE and FALSE to ubi_TRUE and ubi_FALSE to avoid causing
- * problems.
+ * Revision 2;  1995/02/27 - 1997/12/07:
+ * Major changes: added the function ubi_sptSplay().
  *
- * Revision 2.3  1995/10/03 22:19:37  CRH
- * Ubisized!
- * Also, added the function ubi_sptSplay().
- *
- * Revision 2.1  95/03/09  23:55:04  CRH
- * Added the ModuleID static string and function.  These modules are now
- * self-identifying.
- * 
- * Revision 2.0  95/02/27  22:34:55  CRH
- * This module was updated to match the interface changes made to the
- * ubi_BinTree module.  In particular, the interface to the Locate() function
- * has changed.  See ubi_BinTree for more information on changes and new
- * functions.
- *
- * The revision number was also upped to match ubi_BinTree.
- *
- *
- * Revision 1.0  93/10/15  22:59:36  CRH
- * With this revision, I have added a set of #define's that provide a single,
- * standard API to all existing tree modules.  Until now, each of the three
- * existing modules had a different function and typedef prefix, as follows:
- *
- *       Module        Prefix
- *     ubi_BinTree     ubi_bt
- *     ubi_AVLtree     ubi_avl
- *     ubi_SplayTree   ubi_spt
- *
- * To further complicate matters, only those portions of the base module
- * (ubi_BinTree) that were superceeded in the new module had the new names.
- * For example, if you were using ubi_AVLtree, the AVL node structure was
- * named "ubi_avlNode", but the root structure was still "ubi_btRoot".  Using
- * SplayTree, the locate function was called "ubi_sptLocate", but the next
- * and previous functions remained "ubi_btNext" and "ubi_btPrev".
- *
- * This was not too terrible if you were familiar with the modules and knew
- * exactly which tree model you wanted to use.  If you wanted to be able to
- * change modules (for speed comparisons, etc), things could get messy very
- * quickly.
- *
- * So, I have added a set of defined names that get redefined in any of the
- * descendant modules.  To use this standardized interface in your code,
- * simply replace all occurances of "ubi_bt", "ubi_avl", and "ubi_spt" with
- * "ubi_tr".  The "ubi_tr" names will resolve to the correct function or
- * datatype names for the module that you are using.  Just remember to
- * include the header for that module in your program file.  Because these
- * names are handled by the preprocessor, there is no added run-time
- * overhead.
- *
- * Note that the original names do still exist, and can be used if you wish
- * to write code directly to a specific module.  This should probably only be
- * done if you are planning to implement a new descendant type, such as
- * red/black trees.  CRH
+ * Revision 1; 93/10/15 - 95/02/27:
+ * Added the ubi_tr defines.  See ubi_BinTree.h for more info.
  *
  * Revision 0.0  93/04/21  23:07:13  CRH
  * Initial version, written by Christopher R. Hertel.
@@ -266,7 +217,7 @@ void ubi_sptSplay( ubi_btRootPtr RootPtr,
    *          Splaying the tree will not damage it (assuming that I've done
    *          *my* job), but there is overhead involved.  I don't recommend
    *          that you use this function unless you understand the underlying
-   *          Splay Tree principles involved.
+   *          Splay Tree.
    * ------------------------------------------------------------------------ **
    */
 
