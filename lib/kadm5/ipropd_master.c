@@ -227,7 +227,7 @@ send_complete (krb5_context context, slave *s,
 {
     krb5_error_code ret;
     HDB *db;
-    krb5_data data, priv_data;
+    krb5_data data;
     char buf[8];
 
     ret = hdb_create (context, &db, database);
@@ -274,7 +274,6 @@ send_diffs (krb5_context context, slave *s, int log_fd,
     u_int32_t len;
     off_t right, left;
     krb5_data data;
-    krb5_data priv_data;
     int ret = 0;
 
     if (s->version == current_version)
