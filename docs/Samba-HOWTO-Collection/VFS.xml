@@ -590,7 +590,7 @@ should be implied due to its presence here.
 
 		<para>
 		samba-vscan is a proof-of-concept module for Samba, which
-		uses provides on-access anti-virus support for files shared using 
+		provides on-access anti-virus support for files shared using 
 		Samba.
 		samba-vscan supports various virus scanners and is maintained 
 		by Rainer Link.
