@@ -139,7 +139,7 @@ static NTSTATUS pvfs_setfileinfo_rename(struct pvfs_state *pvfs,
 		}
 	}
 
-	status = pvfs_access_check_create_nomask(pvfs, req, name2);
+	status = pvfs_access_check_parent(pvfs, req, name2, SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

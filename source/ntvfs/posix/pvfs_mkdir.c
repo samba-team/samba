@@ -44,7 +44,7 @@ static NTSTATUS pvfs_t2mkdir(struct pvfs_state *pvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = pvfs_access_check_create_nomask(pvfs, req, name);
+	status = pvfs_access_check_parent(pvfs, req, name, SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -114,7 +114,7 @@ NTSTATUS pvfs_mkdir(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	status = pvfs_access_check_create_nomask(pvfs, req, name);
+	status = pvfs_access_check_parent(pvfs, req, name, SEC_DIR_ADD_FILE);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

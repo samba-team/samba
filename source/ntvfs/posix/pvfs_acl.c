@@ -452,9 +452,10 @@ NTSTATUS pvfs_access_check_create(struct pvfs_state *pvfs,
 /*
   access check for creating a new file/directory - no access mask supplied
 */
-NTSTATUS pvfs_access_check_create_nomask(struct pvfs_state *pvfs, 
-					 struct smbsrv_request *req,
-					 struct pvfs_filename *name)
+NTSTATUS pvfs_access_check_parent(struct pvfs_state *pvfs, 
+				  struct smbsrv_request *req,
+				  struct pvfs_filename *name,
+				  uint32_t access_mask)
 {
 	struct pvfs_filename *parent;
 	NTSTATUS status;
@@ -464,7 +465,7 @@ NTSTATUS pvfs_access_check_create_nomask(struct pvfs_state *pvfs,
 		return status;
 	}
 
-	return pvfs_access_check_simple(pvfs, req, parent, SEC_DIR_ADD_FILE);
+	return pvfs_access_check_simple(pvfs, req, parent, access_mask);
 }
 
 
