@@ -195,7 +195,7 @@ typedef struct SMB_ACL_T {
 
 /* Donated by Medha Date, mdate@austin.ibm.com, for IBM */
 
-#include "/usr/include/acl.h"
+#include <acl.h>
 
 typedef uint                        *SMB_ACL_PERMSET_T;
  
