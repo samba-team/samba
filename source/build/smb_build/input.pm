@@ -109,6 +109,9 @@ sub check_library($$)
 	}
 
 	$lib->{OUTPUT_TYPE} = "SHARED_LIBRARY";
+	$lib->{MAJOR_VERSION} = join('', @{$lib->{MAJOR_VERSION}});
+	$lib->{MINOR_VERSION} = join('', @{$lib->{MINOR_VERSION}});
+	$lib->{RELEASE_VERSION} = join('', @{$lib->{RELEASE_VERSION}});
 }
 
 sub check_binary($$)
