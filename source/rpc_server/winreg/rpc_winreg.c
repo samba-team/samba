@@ -149,16 +149,14 @@ static WERROR winreg_DeleteValue(struct dcesrv_call_state *dce_call, TALLOC_CTX 
 		       struct winreg_DeleteValue *r)
 {
 	struct dcesrv_handle *h;
-	struct registry_value *value;
+	struct registry_key *key;
 
-	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGVAL);
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.handle, HTYPE_REGKEY);
 	DCESRV_CHECK_HANDLE(h);
 
-	value = h->data;
+	key = h->data;
 	
-	/* FIXME */
-
-	return WERR_NOT_SUPPORTED;
+	return reg_del_value(key, r->in.value.name);
 }
 
 

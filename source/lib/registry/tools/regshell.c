@@ -142,18 +142,12 @@ static struct registry_key *cmd_rmkey(TALLOC_CTX *mem_ctx, struct registry_key *
 
 static struct registry_key *cmd_rmval(TALLOC_CTX *mem_ctx, struct registry_key *cur, int argc, char **argv)
 { 
-	struct registry_value *val;
 	if(argc < 2) {
 		fprintf(stderr, "Usage: rmval <valuename>\n");
 		return NULL;
 	}
 
-	if(!W_ERROR_IS_OK(reg_key_get_value_by_name(mem_ctx, cur, argv[1], &val))) {
-		fprintf(stderr, "No such value '%s'\n", argv[1]);
-		return NULL;
-	}
-
-	if(!W_ERROR_IS_OK(reg_del_value(val))) {
+	if(!W_ERROR_IS_OK(reg_del_value(cur, argv[1]))) {
 		fprintf(stderr, "Error deleting value '%s'\n", argv[1]);
 	} else {
 		fprintf(stderr, "Successfully deleted value '%s'\n", argv[1]);

@@ -120,27 +120,13 @@ static WERROR reg_dir_open(struct registry_hive *h, struct registry_key **key)
 	return WERR_OK;
 }
 
-static WERROR reg_dir_set_value(struct registry_key *p, const char *name, int type, void *data, int len)
-{
-	/* FIXME */
-	return WERR_NOT_SUPPORTED;
-}
-
-static WERROR reg_dir_del_value(struct registry_value *v)
-{
-	/* FIXME*/
-	return WERR_NOT_SUPPORTED;
-}
-
 static struct hive_operations reg_backend_dir = {
 	.name = "dir",
 	.open_hive = reg_dir_open,
 	.open_key = reg_dir_open_key,
 	.add_key = reg_dir_add_key,
 	.del_key = reg_dir_del_key,
-	.get_subkey_by_index = reg_dir_key_by_index,
-	.set_value = reg_dir_set_value,
-	.del_value = reg_dir_del_value,
+	.get_subkey_by_index = reg_dir_key_by_index
 };
 
 NTSTATUS registry_dir_init(void)

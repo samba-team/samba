@@ -332,7 +332,6 @@ static WERROR w95_get_value_by_id(TALLOC_CTX *mem_ctx, struct registry_key *k, i
 	}
 
 	*value = talloc_p(mem_ctx, struct registry_value);
-	(*value)->backend_data = curval;
 	(*value)->name = talloc_strndup(mem_ctx, (char *)curval+sizeof(RGDB_VALUE), curval->name_len);
 		
 	(*value)->data_len = curval->data_len;
