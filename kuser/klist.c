@@ -591,6 +591,8 @@ static struct getargs args[] = {
       "display v5 cred cache", NULL},
     { "verbose",		'v', arg_flag, &do_verbose,
       "verbose output", NULL },
+    { NULL,			'a', arg_flag, &do_verbose },
+    { NULL,			'n', arg_flag, &do_verbose },
     { "version", 		0,   arg_flag, &version_flag, 
       "print version", NULL },
     { "help",			0,   arg_flag, &help_flag, 
