@@ -35,12 +35,15 @@ and does NOT need NetBEUI (Microsoft Raw NetBIOS frame)
 protocol.
 
 Samba-2.2 features working NT Domain Control capability and 
-includes the new SWAT (Samba Web Administration Tool) that 
+includes the SWAT (Samba Web Administration Tool) that 
 allows samba's smb.conf file to be remotely managed using your 
-favourite web browser. For the time being this is being enabled
-on TCP port 901 via inetd. Users are advised to use Samba-2.2 as
-a Windows NT4 Domain Controllers for the domain. This release
-does NOT as yet have Backup Domain control ability.
+favourite web browser. For the time being this is being
+enabled on TCP port 901 via inetd.
+
+Users are advised to use Samba-2.2 as a Windows NT4
+Domain Controller only on networks that do NOT have a Windows
+NT Domain Controller. This release does NOT as yet have
+Backup Domain control ability.
 
 Please refer to the WHATSNEW.txt document for fixup information.
 This binary release includes encrypted password support.
