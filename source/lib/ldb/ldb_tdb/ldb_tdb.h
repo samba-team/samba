@@ -42,6 +42,7 @@ struct ltdb_private {
 #define LTDB_FLAG_INTEGER          (1<<1)
 #define LTDB_FLAG_WILDCARD         (1<<2)
 #define LTDB_FLAG_OBJECTCLASS      (1<<3)
+#define LTDB_FLAG_HIDDEN           (1<<4)
 
 
 #ifndef IVAL
