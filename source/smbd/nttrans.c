@@ -371,7 +371,7 @@ static int map_share_mode( char *fname, uint32 create_options,
 
 	if (smb_open_mode == -1) {
 
-		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
+		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|SYNCHRONIZE_ACCESS|
 					FILE_EXECUTE|FILE_READ_ATTRIBUTES|
 					FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
 					FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS)) {
@@ -579,7 +579,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 			return do_ntcreate_pipe_open(conn,inbuf,outbuf,length,bufsize);
 		} else {
 			END_PROFILE(SMBntcreateX);
-			return(ERROR_DOS(ERRDOS,ERRbadaccess));
+			return(ERROR_DOS(ERRDOS,ERRnoaccess));
 		}
 	}
 			
@@ -595,7 +595,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	
 	if((smb_ofun = map_create_disposition( create_disposition )) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return(ERROR_DOS(ERRDOS,ERRbadaccess));
+		return(ERROR_DOS(ERRDOS,ERRnoaccess));
 	}
 
 	/*
@@ -670,7 +670,7 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
@@ -902,7 +902,7 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 
 	if(total_parameter_count < 54) {
 		DEBUG(0,("do_nt_transact_create_pipe - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	srvstr_pull(inbuf, fname, params+53, sizeof(fname), total_parameter_count-53, STR_TERMINATE);
@@ -1059,7 +1059,7 @@ static int call_nt_transact_create(connection_struct *conn,
 			return do_nt_transact_create_pipe(conn, inbuf, outbuf, length, 
 					bufsize, ppsetup, ppparams, ppdata);
 		else
-			return ERROR_DOS(ERRDOS,ERRbadaccess);
+			return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	/*
@@ -1068,7 +1068,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 	if(total_parameter_count < 54) {
 		DEBUG(0,("call_nt_transact_create - insufficient parameters (%u)\n", (unsigned int)total_parameter_count));
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 	}
 
 	flags = IVAL(params,0);
@@ -1159,7 +1159,7 @@ static int call_nt_transact_create(connection_struct *conn,
 
 	if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
 						share_access, file_attributes)) == -1)
-		return ERROR_DOS(ERRDOS,ERRbadaccess);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
 
 	oplock_request = (flags & REQUEST_OPLOCK) ? EXCLUSIVE_OPLOCK : 0;
 	oplock_request |= (flags & REQUEST_BATCH_OPLOCK) ? BATCH_OPLOCK : 0;
@@ -1609,7 +1609,7 @@ static int call_nt_transact_set_security_desc(connection_struct *conn,
 		(unsigned int)security_info_sent ));
 
 	if (total_data_count == 0)
-		return ERROR_DOS(ERRDOS, ERRbadaccess);
+		return ERROR_DOS(ERRDOS, ERRnoaccess);
 
 	if (!NT_STATUS_IS_OK(nt_status = set_sd( fsp, data, total_data_count, security_info_sent)))
 		return ERROR_NT(nt_status);
