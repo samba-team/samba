@@ -626,7 +626,7 @@ Following is a discussion of the settings from above shown example.
 </para>
 
 <sect2>
-<title>The <parameter>[global]</parameter> Section</title>
+<title>The [global] Section</title>
 
 <para>
 The <parameter>[global]</parameter> section is one of 4 special
@@ -731,7 +731,7 @@ man page of <filename>smb.conf</filename>.
 </sect2>
 
 <sect2>
-<title>The <parameter>[printers]</parameter> Section</title>
+<title>The [printers] Section</title>
 
 <para>
 This is the second special section. If a section with this name
@@ -1312,7 +1312,7 @@ clients are thrown aside now. They can use Samba's
 </sect2>
 
 <sect2>
-<title>Creating the <parameter>[print$]</parameter> Share</title>
+<title>Creating the [print$] Share</title>
 
 <para>
 In order to support the up- and downloading of printer driver files,
@@ -1502,7 +1502,7 @@ on your Samba host.
 </sect1>
 
 <sect1>
-<title>Installing Drivers into <parameter>[print$]</parameter></title>
+<title>Installing Drivers into [print$]</title>
 
 <para>
 You have successfully created the <parameter>[print$]</parameter>
@@ -1552,9 +1552,9 @@ However, the job to set a valid driver for the printer is not a
 straightforward one: You must attempt to view the printer properties
 for the printer to which you want the driver assigned. Open the
 Windows Explorer, open Network Neighbourhood, browse to the Samba
-host, open Samba's "Printers" folder, right-click the printer icon and
-select "Properties...". You are now trying to view printer and driver
-properties for a queue which has this default "NULL" driver
+host, open Samba's <guiicon>Printers</guiicon> folder, right-click the printer icon and
+select <guimenu>Properties...</guimenu>. You are now trying to view printer and driver
+properties for a queue which has this default <constant>NULL</constant> driver
 assigned. This will result in an error message (this is normal here):
 </para>
 
@@ -2852,8 +2852,8 @@ privilege; you should check it by using the
 </sect2>
 
 <sect2>
-<title>Weird Error Message <computeroutput>Cannot connect under a
-different Name</computeroutput></title>
+<title>Weird Error Message <errorname>Cannot connect under a
+different Name</errorname></title>
 
 <para>
 Once you are connected with the wrong credentials, there is no means
