@@ -12,7 +12,9 @@ verr(int eval, const char *fmt, va_list ap)
   int sverrno;
   
   sverrno = errno;
+#if 0
   fprintf(stderr, "%s: ", __progname);
+#endif
   if (fmt != NULL) {
     vfprintf(stderr, fmt, ap);
     fprintf(stderr, ": ");
