@@ -152,7 +152,6 @@ init_context_from_config_file(krb5_context context)
     
     INIT_FIELD(context, bool, scan_interfaces, TRUE, "scan_interfaces");
     INIT_FIELD(context, bool, srv_lookup, TRUE, "srv_lookup");
-    INIT_FIELD(context, bool, srv_try_txt, FALSE, "srv_try_txt");
     INIT_FIELD(context, int, fcache_vno, 0, "fcache_version");
 
     context->cc_ops       = NULL;
