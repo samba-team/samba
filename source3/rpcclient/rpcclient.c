@@ -570,7 +570,7 @@ static void usage(void)
 
 	DEBUGLEVEL = 1;
 
-	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:l:h")) != EOF) {
+	while ((opt = getopt(argc, argv, "A:s:Nd:U:W:c:h")) != EOF) {
 		switch (opt) {
 		case 'A':
 			/* only get the username, password, and domain from the file */
@@ -585,12 +585,6 @@ static void usage(void)
 
 		case 'd':
 			DEBUGLEVEL = atoi(optarg);
-			break;
-
-		case 'l':
-			slprintf(logfile, sizeof(logfile) - 1, "%s.client", optarg);
-			lp_set_logfile(logfile);
-			interactive = False;
 			break;
 
 		case 'N':
