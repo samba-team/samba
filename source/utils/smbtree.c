@@ -293,7 +293,8 @@ static BOOL print_tree(struct user_auth_info *user_info)
 
                 for (sv = servers; sv; sv = sv->next) {
 
-                        printf("\t%s\n", sv->name);
+                        printf("\t\\\\%-15s\t\t%s\n", 
+			       sv->name, sv->comment);
 
                         /* List shares */
 
@@ -305,7 +306,8 @@ static BOOL print_tree(struct user_auth_info *user_info)
                                 continue;
 
                         for (sh = shares; sh; sh = sh->next) {
-                                printf("\t\t%s\n", sh->name);
+                                printf("\t\t\\\\%s\\%-15s\t%s\n", 
+				       sv->name, sh->name, sh->comment);
                         }
                 }
         }
