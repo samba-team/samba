@@ -1993,6 +1993,7 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 {
 	NTSTATUS nt_status;
 	struct smb_ldap_privates *ldap_state;
+	uint32 low_nua_uid, high_nua_uid;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
@@ -2051,33 +2052,15 @@ NTSTATUS pdb_init_ldapsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, co
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	return NT_STATUS_OK;
-}
+	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
+		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
 
-NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct smb_ldap_privates *ldap_state;
-	uint32 low_nua_uid, high_nua_uid;
+		ldap_state->permit_non_unix_accounts = True;
+		
+		ldap_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_ldapsam(pdb_context, pdb_method, location))) {
-		return nt_status;
+		ldap_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 	}
-
-	(*pdb_method)->name = "ldapsam_nua";
-
-	ldap_state = (*pdb_method)->private_data;
-	
-	ldap_state->permit_non_unix_accounts = True;
-
-	if (!lp_non_unix_account_range(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("cannot use ldapsam_nua without 'non unix account range' in smb.conf!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	ldap_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
-
-	ldap_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 
 	return NT_STATUS_OK;
 }
@@ -2085,6 +2068,5 @@ NTSTATUS pdb_init_ldapsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method
 int pdb_ldap_init(void)
 {
 	smb_register_passdb("ldapsam", pdb_init_ldapsam, PASSDB_INTERFACE_VERSION);
-	smb_register_passdb("ldapsam_nua", pdb_init_ldapsam_nua, PASSDB_INTERFACE_VERSION);
 	return True;
 }

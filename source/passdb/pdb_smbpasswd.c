@@ -1554,27 +1554,9 @@ NTSTATUS pdb_init_smbpasswd(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, 
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	return NT_STATUS_OK;
-}
-
-NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct smbpasswd_privates *privates;
-
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_smbpasswd(pdb_context, pdb_method, location))) {
-		return nt_status;
-	}
-
-	(*pdb_method)->name = "smbpasswd_nua";
-
-	privates = (*pdb_method)->private_data;
-	
-	privates->permit_non_unix_accounts = True;
-
-	if (!lp_non_unix_account_range(&privates->low_nua_userid, &privates->high_nua_userid)) {
-		DEBUG(0, ("cannot use smbpasswd_nua without 'non unix account range' in smb.conf!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
+	if (lp_idmap_uid(&privates->low_nua_userid, &privates->high_nua_userid)) {
+		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
+		privates->permit_non_unix_accounts = True;
 	}
 
 	return NT_STATUS_OK;
@@ -1583,6 +1565,5 @@ NTSTATUS pdb_init_smbpasswd_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_meth
 int pdb_smbpasswd_init(void) 
 {
 	smb_register_passdb("smbpasswd", pdb_init_smbpasswd, PASSDB_INTERFACE_VERSION);
-	smb_register_passdb("smbpasswd_nua", pdb_init_smbpasswd_nua, PASSDB_INTERFACE_VERSION);
 	return True;
 }

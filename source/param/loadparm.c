@@ -557,7 +557,6 @@ static BOOL handle_source_env(const char *pszParmValue, char **ptr);
 static BOOL handle_netbios_name(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_uid(const char *pszParmValue, char **ptr);
 static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr);
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr);
 static BOOL handle_debug_list( const char *pszParmValue, char **ptr );
 static BOOL handle_workgroup( const char *pszParmValue, char **ptr );
 static BOOL handle_netbios_aliases( const char *pszParmValue, char **ptr );
@@ -766,7 +765,6 @@ static struct parm_struct parm_table[] = {
 	{"smb passwd file", P_STRING, P_GLOBAL, &Globals.szSMBPasswdFile, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"private dir", P_STRING, P_GLOBAL, &Globals.szPrivateDir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"passdb backend", P_LIST, P_GLOBAL, &Globals.szPassdbBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"non unix account range", P_STRING, P_GLOBAL, &Globals.szNonUnixAccountRange, handle_non_unix_account_range, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"algorithmic rid base", P_INTEGER, P_GLOBAL, &Globals.AlgorithmicRidBase, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root directory", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"root dir", P_STRING, P_GLOBAL, &Globals.szRootdir, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
@@ -1133,7 +1131,6 @@ static struct parm_struct parm_table[] = {
 	{"winbind enum users", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumUsers, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind enum groups", P_BOOL, P_GLOBAL, &Globals.bWinbindEnumGroups, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"winbind use default domain", P_BOOL, P_GLOBAL, &Globals.bWinbindUseDefaultDomain, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
-	{"winbind backend", P_STRING, P_GLOBAL, &Globals.szWinbindBackend, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 
 	{NULL, P_BOOL, P_NONE, NULL, NULL, NULL, 0}
 };
@@ -1656,7 +1653,6 @@ FN_GLOBAL_STRING(lp_acl_compatibility, &Globals.szAclCompat)
 FN_GLOBAL_BOOL(lp_winbind_enum_users, &Globals.bWinbindEnumUsers)
 FN_GLOBAL_BOOL(lp_winbind_enum_groups, &Globals.bWinbindEnumGroups)
 FN_GLOBAL_BOOL(lp_winbind_use_default_domain, &Globals.bWinbindUseDefaultDomain)
-FN_GLOBAL_STRING(lp_winbind_backend, &Globals.szWinbindBackend)
 
 FN_GLOBAL_STRING(lp_idmap_backend, &Globals.szIdmapBackend)
 FN_GLOBAL_BOOL(lp_idmap_only, &Globals.bIdmapOnly)
@@ -2881,7 +2877,6 @@ static BOOL handle_copy(const char *pszParmValue, char **ptr)
 
 static uid_t idmap_uid_low, idmap_uid_high;
 static gid_t idmap_gid_low, idmap_gid_high;
-static uint32 non_unix_account_low, non_unix_account_high;
 
 BOOL lp_idmap_uid(uid_t *low, uid_t *high)
 {
@@ -2907,20 +2902,6 @@ BOOL lp_idmap_gid(gid_t *low, gid_t *high)
 
         if (high)
                 *high = idmap_gid_high;
-
-        return True;
-}
-
-BOOL lp_non_unix_account_range(uint32 *low, uint32 *high)
-{
-        if (non_unix_account_low == 0 || non_unix_account_high == 0)
-                return False;
-
-        if (low)
-                *low = non_unix_account_low;
-
-        if (high)
-                *high = non_unix_account_high;
 
         return True;
 }
@@ -2957,27 +2938,6 @@ static BOOL handle_idmap_gid(const char *pszParmValue, char **ptr)
 
         idmap_gid_low = low;
         idmap_gid_high = high;
-
-	return True;
-}
-
-/***************************************************************************
- Do some simple checks on "non unix account range" parameter values.
-***************************************************************************/
-
-static BOOL handle_non_unix_account_range(const char *pszParmValue, char **ptr)
-{
-	uint32 low, high;
-
-	if (sscanf(pszParmValue, "%u-%u", &low, &high) != 2 || high < low)
-		return False;
-
-	/* Parse OK */
-
-	string_set(ptr, pszParmValue);
-
-        non_unix_account_low = low;
-        non_unix_account_high = high;
 
 	return True;
 }

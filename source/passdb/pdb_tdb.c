@@ -912,14 +912,7 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 {
 	NTSTATUS nt_status;
 	struct tdbsam_privates *tdb_state;
-
-#if 0 /* when made a module use this */
-	tdbsam_debug_level = debug_add_class("tdbsam");
-	if(tdbsam_debug_level == -1) {
-		tdbsam_debug_level = DBGC_ALL;
-		DEBUG(0, ("tdbsam: Couldn't register custom debugging class!\n"));
-	}
-#endif
+	uint32 low_nua_uid, high_nua_uid;
 
 	if (!NT_STATUS_IS_OK(nt_status = make_pdb_methods(pdb_context->mem_ctx, pdb_method))) {
 		return nt_status;
@@ -959,41 +952,23 @@ NTSTATUS pdb_init_tdbsam(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, con
 
 	(*pdb_method)->free_private_data = free_private_data;
 
-	return NT_STATUS_OK;
-}
+	if (lp_idmap_uid(&low_nua_uid, &high_nua_uid)) {
+		DEBUG(0, ("idmap uid range defined, non unix accounts enabled\n"));
 
-NTSTATUS pdb_init_tdbsam_nua(PDB_CONTEXT *pdb_context, PDB_METHODS **pdb_method, const char *location)
-{
-	NTSTATUS nt_status;
-	struct tdbsam_privates *tdb_state;
-	uint32 low_nua_uid, high_nua_uid;
+		tdb_state->permit_non_unix_accounts = True;
 
-	if (!NT_STATUS_IS_OK(nt_status = pdb_init_tdbsam(pdb_context, pdb_method, location))) {
-		return nt_status;
+		tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
+
+		tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
+
 	}
-
-	(*pdb_method)->name = "tdbsam_nua";
-
-	tdb_state = (*pdb_method)->private_data;
-
-	tdb_state->permit_non_unix_accounts = True;
-
-	if (!lp_non_unix_account_range(&low_nua_uid, &high_nua_uid)) {
-		DEBUG(0, ("cannot use tdbsam_nua without 'non unix account range' in smb.conf!\n"));
-		return NT_STATUS_UNSUCCESSFUL;
-	}
-
-	tdb_state->low_nua_rid=fallback_pdb_uid_to_user_rid(low_nua_uid);
-
-	tdb_state->high_nua_rid=fallback_pdb_uid_to_user_rid(high_nua_uid);
 
 	return NT_STATUS_OK;
 }
 
 int pdb_tdbsam_init(void)
 {
-    smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
-    smb_register_passdb("tdbsam_nua", pdb_init_tdbsam_nua, PASSDB_INTERFACE_VERSION);
+	smb_register_passdb("tdbsam", pdb_init_tdbsam, PASSDB_INTERFACE_VERSION);
 	return True;
 }
 
