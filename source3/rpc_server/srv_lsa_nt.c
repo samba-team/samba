@@ -66,7 +66,7 @@ static void init_dom_query(DOM_QUERY *d_q, const char *dom_name, DOM_SID *dom_si
 
 	/* this string is supposed to be non-null terminated. */
 	/* But the maxlen in this UNISTR2 must include the terminating null. */
-	init_unistr2(&d_q->uni_domain_name, dom_name, UNI_MAXLEN_TERMINATE);
+	init_unistr2(&d_q->uni_domain_name, dom_name, UNI_BROKEN_NON_NULL);
 
 	/*
 	 * I'm not sure why this really odd combination of length

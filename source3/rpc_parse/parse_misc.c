@@ -914,7 +914,7 @@ void init_unistr2(UNISTR2 *str, const char *buf, enum unistr2_term_codes flags)
 	str->uni_max_len = num_chars;
 	str->offset = 0;
 	str->uni_str_len = num_chars;
-	if (num_chars && (flags == UNI_MAXLEN_TERMINATE))
+	if ( num_chars && ((flags == UNI_MAXLEN_TERMINATE) || (flags == UNI_BROKEN_NON_NULL)) )
 		str->uni_max_len++;
 }
 
