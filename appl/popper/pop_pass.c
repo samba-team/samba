@@ -167,13 +167,16 @@ pop_pass (POP *p)
 
 #ifdef OTP
 	 if (otp_verify_user (&p->otp_ctx, p->pop_parm[1]) == 0)
-	     ;
+	     /* pass OK */;
 	 else
 #endif
-	 if(p->auth_level != AUTH_NONE)
+	 /*  Compare the supplied password with the password file entry */
+	 if (p->auth_level != AUTH_NONE)
 	     return pop_msg(p, POP_FAILURE,
 			    "Password supplied for \"%s\" is incorrect.",
 			    p->user);
+	 else if (!strcmp(crypt(p->pop_parm[1], pw->pw_passwd), pw->pw_passwd))
+	     /* pass OK */;
 	 else {
 	     int ret = -1;
 #ifdef KRB4
