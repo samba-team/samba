@@ -762,7 +762,7 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 				return NULL;
 			}
 			string = t;
-			s = t + (p - s);
+			p = t + (p - s);
 		}
 		if (li != lp) {
 			memmove(p+li,p+lp,strlen(p+lp)+1);
@@ -992,7 +992,7 @@ void strlower_m(char *s)
 /*******************************************************************
   duplicate convert a string to lower case
 ********************************************************************/
-char *strdup_lower(char *s)
+char *strdup_lower(const char *s)
 {
 	char *t = strdup(s);
 	if (t == NULL) {
@@ -1026,7 +1026,7 @@ void strupper_m(char *s)
 /*******************************************************************
   convert a string to upper case
 ********************************************************************/
-char *strdup_upper(char *s)
+char *strdup_upper(const char *s)
 {
 	char *t = strdup(s);
 	if (t == NULL) {

@@ -207,28 +207,28 @@ NTSTATUS pdb_fill_sam_pw(SAM_ACCOUNT *sam_account, const struct passwd *pwd)
 	if (pwd->pw_name[strlen(pwd->pw_name)-1] != '$')
 	{
 		pdb_set_profile_path(sam_account, 
-				     standard_sub_specified((sam_account)->mem_ctx, 
+				     talloc_sub_specified((sam_account)->mem_ctx, 
 							    lp_logon_path(), 
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
 				     False);
 		
 		pdb_set_homedir(sam_account, 
-				standard_sub_specified((sam_account)->mem_ctx, 
+				talloc_sub_specified((sam_account)->mem_ctx, 
 						       lp_logon_home(),
 						       pwd->pw_name, global_myname, 
 						       pwd->pw_uid, pwd->pw_gid),
 				False);
 		
 		pdb_set_dir_drive(sam_account, 
-				  standard_sub_specified((sam_account)->mem_ctx, 
+				  talloc_sub_specified((sam_account)->mem_ctx, 
 							 lp_logon_drive(),
 							 pwd->pw_name, global_myname, 
 							 pwd->pw_uid, pwd->pw_gid),
 				  False);
 		
 		pdb_set_logon_script(sam_account, 
-				     standard_sub_specified((sam_account)->mem_ctx, 
+				     talloc_sub_specified((sam_account)->mem_ctx, 
 							    lp_logon_script(),
 							    pwd->pw_name, global_myname, 
 							    pwd->pw_uid, pwd->pw_gid), 
