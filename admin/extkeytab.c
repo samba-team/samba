@@ -51,8 +51,8 @@ ext_keytab(int argc, char **argv)
     krb5_keytab_entry key_entry;
     char *p;
     
-    if(argc != 2){
-	warnx("Usage: ext_keytab principal\n");
+    if(argc < 2 || argc > 3){
+	warnx("Usage: ext_keytab principal [file]\n");
 	return 0;
     }
 	
@@ -85,7 +85,15 @@ ext_keytab(int argc, char **argv)
 		   ent.keys.val[0].key.keyvalue.data,
 		   ent.keys.val[0].key.keyvalue.length);
 
-    ret = krb5_kt_default (context, &kid);
+    { 
+	char ktname[128] = "FILE:";
+	if(argc == 3)
+	    strcat(ktname, argv[2]);
+	else
+	    ret = krb5_kt_default_name(context, ktname, sizeof(ktname));
+	ret = krb5_kt_resolve(context, ktname, &kid);
+    }
+
     if (ret) {
 	warnx("%s", krb5_get_err_text(context, ret));
 	goto cleanup2;
