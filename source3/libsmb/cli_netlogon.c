@@ -81,19 +81,15 @@ void cli_netlogon_shutdown(struct cli_state *cli)
 	cli_shutdown(cli);
 }
 
-/***************************************************************************
-Synchronise SAM Database (requires SEC_CHAN_BDC).
-****************************************************************************/
-BOOL cli_net_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-		      char *srv_name, uint32 database_id, uint32 *num_deltas, 
-		      SAM_DELTA_HDR *hdr_deltas, SAM_DELTA_CTR *deltas)
+/* Logon Control 2 */
+
+uint32 cli_netlogon_logon_ctrl2(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				uint32 query_level)
 {
 	prs_struct qbuf, rbuf;
-	NET_Q_SAM_SYNC q;
-	NET_R_SAM_SYNC r;
+	NET_Q_LOGON_CTRL2 q;
+	NET_R_LOGON_CTRL2 r;
 	uint32 result = NT_STATUS_UNSUCCESSFUL;
-	DOM_CRED new_clnt_cred;
-	uint8 sess_key[16];
 
 	ZERO_STRUCT(q);
 	ZERO_STRUCT(r);
@@ -105,38 +101,28 @@ BOOL cli_net_sam_sync(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Initialise input parameters */
 
-	init_q_sam_sync(&q, srv_name, cli->clnt_name_slash, &new_clnt_cred, 
-			database_id);
+	init_net_q_logon_ctrl2(&q, cli->srv_name_slash, query_level);
 
 	/* Marshall data and send request */
 
-	if (!net_io_q_sam_sync("", &q, &qbuf, 0) ||
-	    !rpc_api_pipe_req(cli, NET_SAM_SYNC, &qbuf, &rbuf)) {
+	if (!net_io_q_logon_ctrl2("", &q, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, NET_LOGON_CTRL2, &qbuf, &rbuf)) {
+		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	r.hdr_deltas = hdr_deltas;
-	r.deltas = deltas;
+	/* Unmarshall response */
 
-	if (!net_io_r_sam_sync("", sess_key, &r, &rbuf, 0)) {
+	if (!net_io_r_logon_ctrl2("", &r, &rbuf, 0)) {
+		result = NT_STATUS_UNSUCCESSFUL;
 		goto done;
 	}
 
-	if ((result = r.status) != NT_STATUS_NOPROBLEMO) {
-		goto done;
-	}
-
-#if 0
-		/* Update the credentials. */
-		if (ok && !cli_con_deal_with_creds(con, &(r_s.srv_creds)))
-		{
-			*num_deltas = r_s.num_deltas2;
-		}
-#endif
+	result = r.status;
 
  done:
-	prs_mem_free(&rbuf);
 	prs_mem_free(&qbuf);
+	prs_mem_free(&rbuf);
 
 	return result;
 }
