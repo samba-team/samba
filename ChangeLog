@@ -1,5 +1,13 @@
 2003-07-21  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/mit_glue.c (krb5_c_get_checksum): make type and data
+	argument optional
+	(krb5_c_{encrypt,decrypt}): return "better" error codes for
+	invalid ivec length
+
+	* lib/krb5/krb5_c_make_checksum.3: update krb5_c_get_checksum
+	usage
+
 	* lib/krb5/crypto.c (krb5_crypto_getenctype): new function
 	
 	* include/make_crypto.c: avoid redefining
