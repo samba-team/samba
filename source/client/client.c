@@ -2276,8 +2276,6 @@ static BOOL browse_host(const char *query_host)
 	r.in.ctr.ctr1 = &ctr1;
 	r.in.max_buffer = ~0;
 	r.in.resume_handle = &resume_handle;
-	r.out.resume_handle = &resume_handle;
-	r.out.ctr.ctr1 = &ctr1;
 
 	d_printf("\n\tSharename       Type       Comment\n");
 	d_printf("\t---------       ----       -------\n");
