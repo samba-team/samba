@@ -543,11 +543,18 @@
 		[relative] nstring *port_name;
 	} spoolss_PortInfo1;
 
+	typedef bitmap {
+		SPOOLSS_PORT_TYPE_WRITE		= 0x00000001,
+		SPOOLSS_PORT_TYPE_READ		= 0x00000002,
+		SPOOLSS_PORT_TYPE_REDIRECTED	= 0x00000004,
+		SPOOLSS_PORT_TYPE_NET_ATTACHED  = 0x00000008
+	} spoolss_PortType;
+
 	typedef struct {
 		[relative] nstring *port_name;
 		[relative] nstring *monitor_name;
 		[relative] nstring *description;
-		uint32 port_type;
+		spoolss_PortType port_type;
 		uint32 reserved;
 	} spoolss_PortInfo2;
 
