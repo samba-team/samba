@@ -23,7 +23,7 @@
 
 #include "includes.h"
 #include "dynconfig.h"
-#include "client.h"
+#include "clilist.h"
 #include "lib/cmdline/popt_common.h"
 #include "librpc/gen_ndr/ndr_srvsvc.h"
 #include "libcli/raw/libcliraw.h"
@@ -174,7 +174,7 @@ static int readfile(char *b, int n, XFILE *f)
 		return x_fread(b,1,n,f);
   
 	i = 0;
-	while (i < (n - 1) && (i < CLI_BUFFER_SIZE)) {
+	while (i < (n - 1)) {
 		if ((c = x_getc(f)) == EOF) {
 			break;
 		}
@@ -358,9 +358,9 @@ BOOL mask_match(struct smbcli_state *c, const char *string, char *pattern,
 /*******************************************************************
   decide if a file should be operated on
   ********************************************************************/
-static BOOL do_this_one(struct file_info *finfo)
+static BOOL do_this_one(struct clilist_file_info *finfo)
 {
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) return(True);
+	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY) return(True);
 
 	if (*fileselection && 
 	    !mask_match(cli, finfo->name,fileselection,False)) {
@@ -373,7 +373,7 @@ static BOOL do_this_one(struct file_info *finfo)
 		return(False);
 	}
 
-	if ((archive_level==1 || archive_level==2) && !(finfo->mode & FILE_ATTRIBUTE_ARCHIVE)) {
+	if ((archive_level==1 || archive_level==2) && !(finfo->attrib & FILE_ATTRIBUTE_ARCHIVE)) {
 		DEBUG(3,("archive %s failed\n", finfo->name));
 		return(False);
 	}
@@ -384,11 +384,11 @@ static BOOL do_this_one(struct file_info *finfo)
 /****************************************************************************
   display info about a file
   ****************************************************************************/
-static void display_finfo(struct file_info *finfo)
+static void display_finfo(struct clilist_file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
-		char *astr = attrib_string(NULL, finfo->mode);
+		char *astr = attrib_string(NULL, finfo->attrib);
 		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
 			 astr,
@@ -403,7 +403,7 @@ static void display_finfo(struct file_info *finfo)
 /****************************************************************************
    accumulate size of a file
   ****************************************************************************/
-static void do_du(struct file_info *finfo)
+static void do_du(struct clilist_file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		dir_total += finfo->size;
@@ -416,7 +416,7 @@ static char *do_list_queue = 0;
 static long do_list_queue_size = 0;
 static long do_list_queue_start = 0;
 static long do_list_queue_end = 0;
-static void (*do_list_fn)(struct file_info *);
+static void (*do_list_fn)(struct clilist_file_info *);
 
 /****************************************************************************
 functions for do_list_queue
@@ -535,9 +535,9 @@ static int do_list_queue_empty(void)
 /****************************************************************************
 a helper for do_list
   ****************************************************************************/
-static void do_list_helper(struct file_info *f, const char *mask, void *state)
+static void do_list_helper(struct clilist_file_info *f, const char *mask, void *state)
 {
-	if (f->mode & FILE_ATTRIBUTE_DIRECTORY) {
+	if (f->attrib & FILE_ATTRIBUTE_DIRECTORY) {
 		if (do_list_dirs && do_this_one(f)) {
 			do_list_fn(f);
 		}
@@ -567,7 +567,8 @@ static void do_list_helper(struct file_info *f, const char *mask, void *state)
 /****************************************************************************
 a wrapper around smbcli_list that adds recursion
   ****************************************************************************/
-void do_list(const char *mask,uint16_t attribute,void (*fn)(struct file_info *),BOOL rec, BOOL dirs)
+void do_list(const char *mask,uint16_t attribute,
+	     void (*fn)(struct clilist_file_info *),BOOL rec, BOOL dirs)
 {
 	static int in_do_list = 0;
 
@@ -882,7 +883,7 @@ static BOOL yesno(char *p)
 /****************************************************************************
   do a mget operation on one file
   ****************************************************************************/
-static void do_mget(struct file_info *finfo)
+static void do_mget(struct clilist_file_info *finfo)
 {
 	pstring rname;
 	pstring quest;
@@ -897,7 +898,7 @@ static void do_mget(struct file_info *finfo)
 		return;
 	}
 
-	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY)
+	if (finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)
 		slprintf(quest,sizeof(pstring)-1,
 			 "Get directory %s? ",finfo->name);
 	else
@@ -906,7 +907,7 @@ static void do_mget(struct file_info *finfo)
 
 	if (prompt && !yesno(quest)) return;
 
-	if (!(finfo->mode & FILE_ATTRIBUTE_DIRECTORY)) {
+	if (!(finfo->attrib & FILE_ATTRIBUTE_DIRECTORY)) {
 		pstrcpy(rname,cur_dir);
 		pstrcat(rname,finfo->name);
 		do_get(rname, finfo->name, False);
@@ -2386,7 +2387,6 @@ static struct
   {"acl",cmd_acl,"<file> show file ACL",{COMPL_NONE,COMPL_NONE}},
   {"allinfo",cmd_allinfo,"<file> show all possible info about a file",{COMPL_NONE,COMPL_NONE}},
   {"archive",cmd_archive,"<level>\n0=ignore archive bit\n1=only get archive files\n2=only get archive files and reset archive bit\n3=get all files and reset archive bit",{COMPL_NONE,COMPL_NONE}},
-  {"blocksize",cmd_block,"blocksize <number> (default 20)",{COMPL_NONE,COMPL_NONE}},
   {"cancel",cmd_cancel,"<jobid> cancel a print queue entry",{COMPL_NONE,COMPL_NONE}},
   {"cd",cmd_cd,"[directory] change/report the remote directory",{COMPL_REMOTE,COMPL_NONE}},
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
@@ -2426,10 +2426,7 @@ static struct
   {"reput",cmd_reput,"<local name> [remote name] put a file restarting at end of remote file",{COMPL_LOCAL,COMPL_REMOTE}},
   {"rm",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
   {"rmdir",cmd_rmdir,"<directory> remove a directory",{COMPL_NONE,COMPL_NONE}},
-  {"setmode",cmd_setmode,"filename <setmode string> change modes of file",{COMPL_REMOTE,COMPL_NONE}},
   {"symlink",cmd_symlink,"<src> <dest> create a UNIX symlink",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"tar",cmd_tar,"tar <c|x>[IXFqbgNan] current directory to/from <file name>",{COMPL_NONE,COMPL_NONE}},
-  {"tarmode",cmd_tarmode,"<full|inc|reset|noreset> tar's behaviour towards archive bits",{COMPL_NONE,COMPL_NONE}},
   {"translate",cmd_translate,"toggle text translation for printing",{COMPL_NONE,COMPL_NONE}},
   
   /* Yes, this must be here, see crh's comment above. */
@@ -2550,12 +2547,12 @@ typedef struct {
 	int len;
 } completion_remote_t;
 
-static void completion_remote_filter(struct file_info *f, const char *mask, void *state)
+static void completion_remote_filter(struct clilist_file_info *f, const char *mask, void *state)
 {
 	completion_remote_t *info = (completion_remote_t *)state;
 
 	if ((info->count < MAX_COMPLETIONS - 1) && (strncmp(info->text, f->name, info->len) == 0) && (strcmp(f->name, ".") != 0) && (strcmp(f->name, "..") != 0)) {
-		if ((info->dirmask[0] == 0) && !(f->mode & FILE_ATTRIBUTE_DIRECTORY))
+		if ((info->dirmask[0] == 0) && !(f->attrib & FILE_ATTRIBUTE_DIRECTORY))
 			info->matches[info->count] = strdup(f->name);
 		else {
 			pstring tmp;
@@ -2565,13 +2562,13 @@ static void completion_remote_filter(struct file_info *f, const char *mask, void
 			else
 				tmp[0] = 0;
 			pstrcat(tmp, f->name);
-			if (f->mode & FILE_ATTRIBUTE_DIRECTORY)
+			if (f->attrib & FILE_ATTRIBUTE_DIRECTORY)
 				pstrcat(tmp, "/");
 			info->matches[info->count] = strdup(tmp);
 		}
 		if (info->matches[info->count] == NULL)
 			return;
-		if (f->mode & FILE_ATTRIBUTE_DIRECTORY)
+		if (f->attrib & FILE_ATTRIBUTE_DIRECTORY)
 			smb_readline_ca_char(0);
 
 		if (info->count == 1)
@@ -2912,31 +2909,6 @@ static int do_host_query(char *query_host)
 
 
 /****************************************************************************
-handle a tar operation
-****************************************************************************/
-static int do_tar_op(char *base_directory)
-{
-	int ret;
-
-	/* do we already have a connection? */
-	if (!cli) {
-		cli = do_connect(desthost, service);	
-		if (!cli)
-			return 1;
-	}
-
-	recurse=True;
-
-	if (*base_directory) do_cd(base_directory);
-	
-	ret=process_tar();
-
-	smbcli_shutdown(cli);
-
-	return(ret);
-}
-
-/****************************************************************************
 handle a message operation
 ****************************************************************************/
 static int do_message_op(void)
@@ -2997,7 +2969,6 @@ static void remember_query_host(const char *arg,
 	int opt;
 	pstring query_host;
 	BOOL message = False;
-	extern char tar_type;
 	pstring term_code;
 	poptContext pc;
 	char *p;
@@ -3011,7 +2982,6 @@ static void remember_query_host(const char *arg,
 		{ "stderr", 'E', POPT_ARG_NONE, NULL, 'E', "Write messages to stderr instead of stdout" },
 		{ "list", 'L', POPT_ARG_STRING, NULL, 'L', "Get a list of shares available on a host", "HOST" },
 		{ "terminal", 't', POPT_ARG_STRING, NULL, 't', "Terminal I/O code {sjis|euc|jis7|jis8|junet|hex}", "CODE" },
-		{ "tar", 'T', POPT_ARG_STRING, NULL, 'T', "Command line tar", "<c|x>IXFqgbNan" },
 		{ "directory", 'D', POPT_ARG_STRING, NULL, 'D', "Start from directory", "DIR" },
 		{ "command", 'c', POPT_ARG_STRING, &cmdstr, 'c', "Execute semicolon separated commands" }, 
 		{ "send-buffer", 'b', POPT_ARG_INT, NULL, 'b', "Changes the transmit/send buffer", "BYTES" },
@@ -3074,12 +3044,6 @@ static void remember_query_host(const char *arg,
 		case 't':
 			pstrcpy(term_code, poptGetOptArg(pc));
 			break;
-		case 'T':
-			if (!tar_parseargs(argc, argv, poptGetOptArg(pc), optind)) {
-				poptPrintUsage(pc, stderr, 0);
-				exit(1);
-			}
-			break;
 		case 'D':
 			fstrcpy(base_directory,poptGetOptArg(pc));
 			break;
@@ -3111,7 +3075,7 @@ static void remember_query_host(const char *arg,
 
 	/*init_names(); */
 
-	if (!tar_type && !*query_host && !*service && !message) {
+	if (!*query_host && !*service && !message) {
 		poptPrintUsage(pc, stderr, 0);
 		exit(1);
 	}
@@ -3125,11 +3089,6 @@ static void remember_query_host(const char *arg,
 	DEBUG( 3, ( "Client started (version %s).\n", SAMBA_VERSION_STRING ) );
 
 	talloc_destroy(mem_ctx);
-	if (tar_type) {
-		if (cmdstr)
-			process_command_string(cmdstr);
-		return do_tar_op(base_directory);
-	}
 
 	if ((p=strchr_m(query_host,'#'))) {
 		*p = 0;

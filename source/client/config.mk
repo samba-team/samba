@@ -4,8 +4,7 @@
 # Start BINARY smbclient
 [BINARY::smbclient]
 OBJ_FILES = \
-		client/client.o \
-		client/clitar.o
+		client/client.o
 REQUIRED_SUBSYSTEMS = \
 		CONFIG \
 		LIBCMDLINE \
