@@ -109,6 +109,9 @@ static int net_ads_info(int argc, const char **argv)
 	d_printf("LDAP port: %d\n", ads->ldap_port);
 	d_printf("Server time: %s\n", http_timestring(ads->config.current_time));
 
+       d_printf("KDC server: %s\n", ads->auth.kdc_server );
+       d_printf("Server time offset: %d\n", ads->auth.time_offset );
+
 	return 0;
 }
 
@@ -124,6 +127,7 @@ static ADS_STRUCT *ads_startup(void)
 	ADS_STATUS status;
 	BOOL need_password = False;
 	BOOL second_time = False;
+       char *cp;
 	
 	ads = ads_init(NULL, NULL, opt_host);
 
@@ -145,12 +149,24 @@ retry:
 
 	if (opt_password) {
 		use_in_memory_ccache();
-		ads->auth.password = strdup(opt_password);
+		ads->auth.password = smb_xstrdup(opt_password);
 	}
 
-	ads->auth.user_name = strdup(opt_user_name);
+	ads->auth.user_name = smb_xstrdup(opt_user_name);
+
+       /*
+        * If the username is of the form "name@realm", 
+        * extract the realm and convert to upper case.
+        * This is only used to establish the connection.
+        */
+       if (cp = strchr(ads->auth.user_name, '@')) {
+               *cp++ = '\0';
+               ads->auth.realm = smb_xstrdup(cp);
+               strupper(ads->auth.realm);
+       }
 
 	status = ads_connect(ads);
+
 	if (!ADS_ERR_OK(status)) {
 		if (!need_password && !second_time) {
 			need_password = True;
