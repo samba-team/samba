@@ -7,7 +7,7 @@
 			<address><email>vorlon@netexpress.net</email></address>
 		</affiliation>
 	</author>
-    <pubdate> (Jun 21 2001) </pubdate>
+    <pubdate>May 31, 2003</pubdate>
 </chapterinfo>
  
 <title>PAM based Distributed Authentication</title>
@@ -24,6 +24,10 @@ controls that are appropriate to your Samba configuration.
 In addition to knowing how to configure winbind into PAM, you will learn generic PAM managment
 possibilities and in particular how to deploy tools like pam_smbpass.so to your adavantage.
 </para>
+
+<note><para>
+The use of Winbind require more than PAM configuration alone. Please refer to: <link linkend="winbind"></link>
+</para></note>
 
 <sect1>
 <title>Features and Benefits</title>
@@ -178,7 +182,9 @@ auth  required  /other_path/pam_strange_module.so
 
 <para>
 The remaining information in this subsection was taken from the documentation of the Linux-PAM
-project.
+project. For more information on PAM, see 
+<ulink url="http://ftp.kernel.org/pub/linux/libs/pam/">
+http://ftp.kernel.org/pub/linux/libs/pam</ulink> The Official Linux-PAM home page.
 </para>
 
 <para>
@@ -460,6 +466,9 @@ of the login process. Essentially all conditions can be disabled
 by commenting them out except the calls to <filename>pam_pwdb.so</filename>.
 </para>
 
+<sect3>
+<title>PAM: original login config</title>
+
 <para><screen>
 #%PAM-1.0
 # The PAM configuration file for the `login' service
@@ -476,6 +485,11 @@ session      required    pam_pwdb.so
 # password   required    pam_cracklib.so retry=3
 password     required    pam_pwdb.so shadow md5
 </screen></para>
+
+</sect3>
+
+<sect3>
+<title>PAM: login using pam_smbpass</title>
 
 <para>
 PAM allows use of replacable modules. Those available on a sample system include:
@@ -574,10 +588,12 @@ life though, every decision makes trade-offs, so you may want examine the
 PAM documentation for further helpful information.
 </para></note>
 
+</sect3>
+
 </sect2>
 
 <sect2>
-<title>PAM Configuration in smb.conf</title>
+<title>smb.conf PAM Configuration</title>
 
 <para>
 There is an option in smb.conf called <ulink 
@@ -586,7 +602,7 @@ The following is from the on-line help for this option in SWAT;
 </para>
 
 <para>
-When Samba is configured to enable PAM support (i.e. 
+When Samba-3 is configured to enable PAM support (i.e. 
 <option>--with-pam</option>), this parameter will 
 control whether or not Samba should obey PAM's account 
 and session management directives. The default behavior 
@@ -604,7 +620,7 @@ password encryption.
 </sect2>
 
 <sect2>
-<title>Authentication off a remote CIFS Server using winbindd.so</title>
+<title>Remote CIFS Authentication using winbindd.so</title>
 
 <para>
 All operating systems depend on the provision of users credentials accecptable to the platform.
@@ -653,10 +669,6 @@ keep the smbpasswd (Samba password) database in sync with the unix
 password file. PAM (Pluggable Authentication Modules) is an API supported
 under some Unices, such as Solaris, HPUX and Linux, that provides a
 generic interface to authentication mechanisms.
-</para>
-
-<para>
-	For more information on PAM, see <ulink url="http://ftp.kernel.org/pub/linux/libs/pam/">The linux PAM homepage</ulink>.
 </para>
 
 <para>

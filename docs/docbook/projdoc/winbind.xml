@@ -22,7 +22,7 @@
 	<pubdate>27 June 2002</pubdate>
 </chapterinfo>
 
-<title>Unified Logons between Windows NT and UNIX using Winbind</title>
+<title>Integrated Logon Support using Winbind</title>
 
 <sect1>
 	<title>Features and Benefits</title>
