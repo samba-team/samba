@@ -1,0 +1,560 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Analysing and solving samba problems</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="Modular DocBook HTML Stylesheet Version 1.7"><LINK
+REL="HOME"
+TITLE="SAMBA Project Documentation"
+HREF="samba-howto-collection.html"><LINK
+REL="UP"
+TITLE="Appendixes"
+HREF="appendixes.html"><LINK
+REL="PREVIOUS"
+TITLE="The samba checklist"
+HREF="diagnosis.html"><LINK
+REL="NEXT"
+TITLE="Reporting Bugs"
+HREF="bugreport.html"></HEAD
+><BODY
+CLASS="CHAPTER"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+SUMMARY="Header navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>SAMBA Project Documentation</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="diagnosis.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="bugreport.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="CHAPTER"
+><H1
+><A
+NAME="PROBLEMS"
+></A
+>Chapter 34. Analysing and solving samba problems</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>34.1. <A
+HREF="problems.html#AEN4983"
+>Diagnostics tools</A
+></DT
+><DT
+>34.2. <A
+HREF="problems.html#AEN4998"
+>Installing 'Network Monitor' on an NT Workstation or a Windows 9x box</A
+></DT
+><DT
+>34.3. <A
+HREF="problems.html#AEN5027"
+>Useful URL's</A
+></DT
+><DT
+>34.4. <A
+HREF="problems.html#AEN5051"
+>Getting help from the mailing lists</A
+></DT
+><DT
+>34.5. <A
+HREF="problems.html#AEN5081"
+>How to get off the mailinglists</A
+></DT
+></DL
+></DIV
+><P
+>There are many sources of information available in the form 
+of mailing lists, RFC's and documentation.  The docs that come 
+with the samba distribution contain very good explanations of 
+general SMB topics such as browsing.</P
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4983"
+>34.1. Diagnostics tools</A
+></H1
+><P
+>One of the best diagnostic tools for debugging problems is Samba itself.  
+You can use the -d option for both smbd and nmbd to specify what 
+'debug level' at which to run.  See the man pages on smbd, nmbd  and 
+smb.conf for more information on debugging options.  The debug 
+level can range from 1 (the default) to 10 (100 for debugging passwords).</P
+><P
+>Another helpful method of debugging is to compile samba using the 
+<B
+CLASS="COMMAND"
+>gcc -g </B
+> flag.   This will include debug 
+information in the binaries and allow you to attach gdb to the 
+running smbd / nmbd process.  In order to attach gdb to an smbd 
+process for an NT workstation, first get the workstation to make the 
+connection. Pressing ctrl-alt-delete and going down to the domain box 
+is sufficient (at least, on the first time you join the domain) to 
+generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
+maintains an open connection, and therefore there will be an smbd 
+process running (assuming that you haven't set a really short smbd 
+idle timeout)  So, in between pressing ctrl alt delete, and actually 
+typing in your password, you can gdb attach and continue.</P
+><P
+>Some useful samba commands worth investigating:</P
+><P
+></P
+><UL
+><LI
+><P
+>testparam | more</P
+></LI
+><LI
+><P
+>smbclient -L //{netbios name of server}</P
+></LI
+></UL
+><P
+>An SMB enabled version of tcpdump is available from 
+<A
+HREF="http://www.tcpdump.org/"
+TARGET="_top"
+>http://www.tcpdup.org/</A
+>.
+Ethereal, another good packet sniffer for Unix and Win32
+hosts, can be downloaded from <A
+HREF="http://www.ethereal.com/"
+TARGET="_top"
+>http://www.ethereal.com</A
+>.</P
+><P
+>For tracing things on the Microsoft Windows NT, Network Monitor 
+(aka. netmon) is available on the Microsoft Developer Network CD's, 
+the Windows NT Server install CD and the SMS CD's.  The version of 
+netmon that ships with SMS allows for dumping packets between any two 
+computers (i.e. placing the network interface in promiscuous mode).  
+The version on the NT Server install CD will only allow monitoring 
+of network traffic directed to the local NT box and broadcasts on the 
+local subnet.  Be aware that Ethereal can read and write netmon 
+formatted files.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN4998"
+>34.2. Installing 'Network Monitor' on an NT Workstation or a Windows 9x box</A
+></H1
+><P
+>Installing netmon on an NT workstation requires a couple 
+of steps.  The following are for installing Netmon V4.00.349, which comes 
+with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
+Workstation 4.0.  The process should be similar for other version of 
+Windows NT / Netmon.  You will need both the Microsoft Windows 
+NT Server 4.0 Install CD and the Workstation 4.0 Install CD.</P
+><P
+>Initially you will need to install 'Network Monitor Tools and Agent' 
+on the NT Server.  To do this </P
+><P
+></P
+><UL
+><LI
+><P
+>Goto Start - Settings - Control Panel - 
+	Network - Services - Add </P
+></LI
+><LI
+><P
+>Select the 'Network Monitor Tools and Agent' and 
+	click on 'OK'.</P
+></LI
+><LI
+><P
+>Click 'OK' on the Network Control Panel.
+	</P
+></LI
+><LI
+><P
+>Insert the Windows NT Server 4.0 install CD 
+	when prompted.</P
+></LI
+></UL
+><P
+>At this point the Netmon files should exist in 
+<TT
+CLASS="FILENAME"
+>%SYSTEMROOT%\System32\netmon\*.*</TT
+>.    
+Two subdirectories exist as well, <TT
+CLASS="FILENAME"
+>parsers\</TT
+> 
+which contains the necessary DLL's for parsing the netmon packet 
+dump, and <TT
+CLASS="FILENAME"
+>captures\</TT
+>.</P
+><P
+>In order to install the Netmon tools on an NT Workstation, you will 
+first need to install the 'Network  Monitor Agent' from the Workstation 
+install CD.</P
+><P
+></P
+><UL
+><LI
+><P
+>Goto Start - Settings - Control Panel - 
+	Network - Services - Add</P
+></LI
+><LI
+><P
+>Select the 'Network Monitor Agent' and click 
+	on 'OK'.</P
+></LI
+><LI
+><P
+>Click 'OK' on the Network Control Panel.
+	</P
+></LI
+><LI
+><P
+>Insert the Windows NT Workstation 4.0 install 
+	CD when prompted.</P
+></LI
+></UL
+><P
+>Now copy the files from the NT Server in %SYSTEMROOT%\System32\netmon\*.* 
+to %SYSTEMROOT%\System32\netmon\*.* on the Workstation and set 
+permissions as  you deem appropriate for your site. You will need 
+administrative rights on the NT box to run netmon.</P
+><P
+>To install Netmon on a Windows 9x box install the network monitor agent 
+from the Windows 9x CD (\admin\nettools\netmon).  There is a readme 
+file located with the netmon driver files on the CD if you need 
+information on how to do this.  Copy the files from a working 
+Netmon installation.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN5027"
+>34.3. Useful URL's</A
+></H1
+><P
+></P
+><UL
+><LI
+><P
+>Home of Samba site <A
+HREF="http://samba.org"
+TARGET="_top"
+>      http://samba.org</A
+>. We have a mirror near you !</P
+></LI
+><LI
+><P
+> The <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Development</I
+></SPAN
+> document 
+on the Samba mirrors might mention your problem. If so,
+it might mean that the developers are working on it.</P
+></LI
+><LI
+><P
+>See how Scott Merrill simulates a BDC behavior at 
+       <A
+HREF="http://www.skippy.net/linux/smb-howto.html"
+TARGET="_top"
+>       http://www.skippy.net/linux/smb-howto.html</A
+>. </P
+></LI
+><LI
+><P
+>Although 2.0.7 has almost had its day as a PDC, David Bannon will
+       keep the 2.0.7 PDC pages at <A
+HREF="http://bioserve.latrobe.edu.au/samba"
+TARGET="_top"
+>       http://bioserve.latrobe.edu.au/samba</A
+> going for a while yet.</P
+></LI
+><LI
+><P
+>Misc links to CIFS information 
+       <A
+HREF="http://samba.org/cifs/"
+TARGET="_top"
+>http://samba.org/cifs/</A
+></P
+></LI
+><LI
+><P
+>NT Domains for Unix <A
+HREF="http://mailhost.cb1.com/~lkcl/ntdom/"
+TARGET="_top"
+>       http://mailhost.cb1.com/~lkcl/ntdom/</A
+></P
+></LI
+><LI
+><P
+>FTP site for older SMB specs: 
+       <A
+HREF="ftp://ftp.microsoft.com/developr/drg/CIFS/"
+TARGET="_top"
+>       ftp://ftp.microsoft.com/developr/drg/CIFS/</A
+></P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN5051"
+>34.4. Getting help from the mailing lists</A
+></H1
+><P
+>There are a number of Samba related mailing lists. Go to <A
+HREF="http://samba.org"
+TARGET="_top"
+>http://samba.org</A
+>, click on your nearest mirror
+and then click on <B
+CLASS="COMMAND"
+>Support</B
+> and then click on <B
+CLASS="COMMAND"
+>Samba related mailing lists</B
+>.</P
+><P
+>For questions relating to Samba TNG go to
+<A
+HREF="http://www.samba-tng.org/"
+TARGET="_top"
+>http://www.samba-tng.org/</A
+> 
+It has been requested that you don't post questions about Samba-TNG to the
+main stream Samba lists.</P
+><P
+>If you post a message to one of the lists please observe the following guide lines :</P
+><P
+></P
+><UL
+><LI
+><P
+> Always remember that the developers are volunteers, they are 
+not paid and they never guarantee to produce a particular feature at 
+a particular time. Any time lines are 'best guess' and nothing more.</P
+></LI
+><LI
+><P
+> Always mention what version of samba you are using and what 
+operating system its running under. You should probably list the
+relevant sections of your <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file, at least the options 
+in [global] that affect PDC support.</P
+></LI
+><LI
+><P
+>In addition to the version, if you obtained Samba via
+CVS mention the date when you last checked it out.</P
+></LI
+><LI
+><P
+> Try and make your question clear and brief, lots of long, 
+convoluted questions get deleted before	they are completely read ! 
+Don't post html encoded messages (if you can select colour or font 
+size its html).</P
+></LI
+><LI
+><P
+> If you run one of those nifty 'I'm on holidays' things when 
+you are away, make sure its configured	to not answer mailing lists.</P
+></LI
+><LI
+><P
+> Don't cross post. Work out which is the best list to post to 
+and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
+Many people active on the lists subscribe to more 
+than one list and get annoyed to see the same message two or more times. 
+Often someone will see a message and thinking it would be better dealt 
+with on another, will forward it on for you.</P
+></LI
+><LI
+><P
+>You might include <SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>partial</I
+></SPAN
+>
+log files written at a debug level set to as much as 20.  
+Please don't send the entire log but enough to give the context of the 
+error messages.</P
+></LI
+><LI
+><P
+>(Possibly) If you have a complete netmon trace ( from the opening of 
+the pipe to the error ) you can send the *.CAP file as well.</P
+></LI
+><LI
+><P
+>Please think carefully before attaching a document to an email.
+Consider pasting the relevant parts into the body of the message. The samba
+mailing lists go to a huge number of people, do they all need a copy of your 
+smb.conf in their attach directory?</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN5081"
+>34.5. How to get off the mailinglists</A
+></H1
+><P
+>To have your name removed from a samba mailing list, go to the
+same place you went to to get on it. Go to <A
+HREF="http://lists.samba.org/"
+TARGET="_top"
+>http://lists.samba.org</A
+>, 
+click on your nearest mirror and then click on <B
+CLASS="COMMAND"
+>Support</B
+> and 
+then click on <B
+CLASS="COMMAND"
+> Samba related mailing lists</B
+>. Or perhaps see 
+<A
+HREF="http://lists.samba.org/mailman/roster/samba-ntdom"
+TARGET="_top"
+>here</A
+></P
+><P
+>Please don't post messages to the list asking to be removed, you will just
+be referred to the above address (unless that process failed in some way...)</P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+SUMMARY="Footer navigation table"
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="diagnosis.html"
+ACCESSKEY="P"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="samba-howto-collection.html"
+ACCESSKEY="H"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="bugreport.html"
+ACCESSKEY="N"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>The samba checklist</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="appendixes.html"
+ACCESSKEY="U"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Reporting Bugs</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>
