@@ -174,7 +174,7 @@ void auth_ntlmssp_end(struct auth_ntlmssp_state **auth_ntlmssp_state)
 		ntlmssp_end(&(*auth_ntlmssp_state)->ntlmssp_state);
 	}
 	if ((*auth_ntlmssp_state)->auth_context) {
-		((*auth_ntlmssp_state)->auth_context->free)(&(*auth_ntlmssp_state)->auth_context);
+		free_auth_context(&(*auth_ntlmssp_state)->auth_context);
 	}
 	if ((*auth_ntlmssp_state)->server_info) {
 		free_server_info(&(*auth_ntlmssp_state)->server_info);
