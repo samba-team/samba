@@ -494,7 +494,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
 
 /********************************************************************
  Return a driver name given an snum.
- Looks in a tdb first. Returns True if from tdb, False otherwise.
+ Returns True if from tdb, False otherwise.
  ********************************************************************/
 
 static BOOL get_driver_name(int snum, pstring drivername)
@@ -507,8 +507,6 @@ static BOOL get_driver_name(int snum, pstring drivername)
 		pstrcpy( drivername, info->info_2->drivername);
 		in_tdb = True;
 		free_a_printer(&info, 2);
-	} else {
-		pstrcpy( drivername, lp_printerdriver(snum));
 	}
 
 	return in_tdb;
@@ -518,162 +516,83 @@ static BOOL get_driver_name(int snum, pstring drivername)
  Respond to the DosPrintQInfo command with a level of 52
  This is used to get printer driver information for Win9x clients
  ********************************************************************/
-static void fill_printq_info_52(connection_struct *conn, int snum, int uLevel,
-				struct pack_desc* desc,
-				int count, print_queue_struct* queue,
-				print_status_struct* status)
+static void fill_printq_info_52(connection_struct *conn, int snum, 
+				struct pack_desc* desc,	int count )
 {
-	int i;
-	BOOL ok = False;
-	pstring tok,driver,datafile,langmon,helpfile,datatype;
-	char *p;
-	char **lines = NULL;
-	pstring gen_line;
-	BOOL in_tdb = False;
-	fstring location;
-	pstring drivername;
+	int 				i;
+	fstring 			location;
+	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
+	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
-	/*
-	 * Check in the tdb *first* before checking the legacy
-	 * files. This allows an NT upload to take precedence over
-	 * the existing fileset. JRA.
-	 * 
-	 * we need to lookup the driver name prior to making the call
-	 * to get_a_printer_driver_9x_compatible() and not rely on the
-	 * 'print driver' parameter --jerry
-	 */
-
-
-	if ((get_driver_name(snum,drivername)) && 
-	    ((ok = get_a_printer_driver_9x_compatible(gen_line, drivername)) == True))
-	{
-		in_tdb = True;
-		p = gen_line;
-		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
-	} 
-	else 
-	{
-		/* didn't find driver in tdb */
-
-		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
-			   snum, drivername, lp_driverfile(snum)));
-
-		lines = file_lines_load(lp_driverfile(snum),NULL);
-		if (!lines) 
-		{
-			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),
-				  strerror(errno)));
-			desc->errcode=NERR_notsupported;
-			goto done;
-		} 
-
-		/* lookup the long printer driver name in the file description */
-		for (i=0;lines[i] && !ok;i++) 
-		{
-			p = lines[i];
-			if (next_token(&p,tok,":",sizeof(tok)) &&
-		    	   (strlen(drivername) == strlen(tok)) &&
-		    	   (!strncmp(tok,drivername,strlen(drivername))))
-			{
-				ok = True;
-			}
-		}
+	if ( !W_ERROR_IS_OK(get_a_printer( &printer, 2, lp_servicename(snum))) ) {
+		DEBUG(3,("fill_printq_info_52: Failed to lookup printer [%s]\n", 
+			lp_servicename(snum)));
+		goto err;
 	}
-
-	if (ok)
-	{
-		/* driver file name */
-		if (!next_token(&p,driver,":",sizeof(driver)))
-			goto err;
-
-		/* data file name */
-		if (!next_token(&p,datafile,":",sizeof(datafile)))
-			goto err;
-
-		/*
-		 * for the next tokens - which may be empty - I have
-		 * to check for empty tokens first because the
-		 * next_token function will skip all empty token
-		 * fields */
-
-		/* help file */
-		if (*p == ':') 
-		{
-			*helpfile = '\0';
-			p++;
-		} 
-		else if (!next_token(&p,helpfile,":",sizeof(helpfile)))
-			goto err;
-	
-		/* language monitor */
-		if (*p == ':') 
-		{
-			*langmon = '\0';
-			p++;
-		} 
-		else if (!next_token(&p,langmon,":",sizeof(langmon)))
-			goto err;
-	
-		/* default data type */
-		if (!next_token(&p,datatype,":",sizeof(datatype))) 
-			goto err;
-	
-		PACKI(desc,"W",0x0400);               /* don't know */
-		PACKS(desc,"z",drivername);    /* long printer name */
-		PACKS(desc,"z",driver);                    /* Driverfile Name */
-		PACKS(desc,"z",datafile);                  /* Datafile name */
-		PACKS(desc,"z",langmon);			 /* language monitor */
-		if (in_tdb)
-		{
-			fstrcpy(location, "\\\\");
-			fstrcat(location, global_myname);
-			fstrcat(location, "\\print$\\WIN40\\0");
-			PACKS(desc,"z",location);   /* share to retrieve files */
-		}
-		else
-		{
-			PACKS(desc,"z",lp_driverlocation(snum));   /* share to retrieve files */
-		}
-		PACKS(desc,"z",datatype);			 /* default data type */
-		PACKS(desc,"z",helpfile);                  /* helpfile name */
-		PACKS(desc,"z",driver);                    /* driver name */
-
-		DEBUG(3,("printerdriver:%s:\n",drivername));
-		DEBUG(3,("Driver:%s:\n",driver));
-		DEBUG(3,("Data File:%s:\n",datafile));
-		DEBUG(3,("Language Monitor:%s:\n",langmon));
-		if (in_tdb)
-			DEBUG(3,("lp_driverlocation:%s:\n",location));
-		else
-			DEBUG(3,("lp_driverlocation:%s:\n",lp_driverlocation(snum)));
-		DEBUG(3,("Data Type:%s:\n",datatype));
-		DEBUG(3,("Help File:%s:\n",helpfile));
-		PACKI(desc,"N",count);                     /* number of files to copy */
-
-		for (i=0;i<count;i++) 
-		{
-			/* no need to check return value here
-			 * - it was already tested in
-			 * get_printerdrivernumber */
-			next_token(&p,tok,",",sizeof(tok));
-			PACKS(desc,"z",tok);         /* driver files to copy */
-			DEBUG(3,("file:%s:\n",tok));
-		}
 		
-		DEBUG(3,("fill_printq_info on <%s> gave %d entries\n",
-		  	  SERVICE(snum),count));
-
-	        desc->errcode=NERR_Success;
-		goto done;
+	if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, 
+		"Windows 4.0", 0)) )
+	{
+		DEBUG(3,("fill_printq_info_52: Failed to lookup driver [%s]\n", 
+			printer->info_2->drivername));
+		goto err;
 	}
 
-  err:
+	trim_string(driver.info_3->driverpath, "\\print$\\WIN40\\0\\", 0);
+	trim_string(driver.info_3->datafile, "\\print$\\WIN40\\0\\", 0);
+	trim_string(driver.info_3->helpfile, "\\print$\\WIN40\\0\\", 0);
+	
+	PACKI(desc, "W", 0x0400);                     /* don't know */
+	PACKS(desc, "z", driver.info_3->name);        /* long printer name */
+	PACKS(desc, "z", driver.info_3->driverpath);  /* Driverfile Name */
+	PACKS(desc, "z", driver.info_3->datafile);    /* Datafile name */
+	PACKS(desc, "z", driver.info_3->monitorname); /* language monitor */
+	
+	fstrcpy(location, "\\\\");
+	fstrcat(location, get_called_name());
+	fstrcat(location, "\\print$\\WIN40\\0");
+	PACKS(desc,"z", location);                          /* share to retrieve files */
+	
+	PACKS(desc,"z", driver.info_3->defaultdatatype);    /* default data type */
+	PACKS(desc,"z", driver.info_3->helpfile);           /* helpfile name */
+	PACKS(desc,"z", driver.info_3->driverpath);               /* driver name */
 
+	DEBUG(3,("Printer Driver Name: %s:\n",driver.info_3->name));
+	DEBUG(3,("Driver: %s:\n",driver.info_3->driverpath));
+	DEBUG(3,("Data File: %s:\n",driver.info_3->datafile));
+	DEBUG(3,("Language Monitor: %s:\n",driver.info_3->monitorname));
+	DEBUG(3,("Driver Location: %s:\n",location));
+	DEBUG(3,("Data Type: %s:\n",driver.info_3->defaultdatatype));
+	DEBUG(3,("Help File: %s:\n",driver.info_3->helpfile));
+	PACKI(desc,"N",count);                     /* number of files to copy */
+
+	for ( i=0; i<count && driver.info_3->dependentfiles && *driver.info_3->dependentfiles[i]; i++) 
+	{
+		trim_string(driver.info_3->dependentfiles[i], "\\print$\\WIN40\\0\\", 0);
+		PACKS(desc,"z",driver.info_3->dependentfiles[i]);         /* driver files to copy */
+		DEBUG(3,("Dependent File: %s:\n",driver.info_3->dependentfiles[i]));
+	}
+	
+	/* sanity check */
+	if ( i != count )
+		DEBUG(3,("fill_printq_info_52: file count specified by client [%d] != number of dependent files [%i]\n",
+			count, i));
+		
+	DEBUG(3,("fill_printq_info on <%s> gave %d entries\n", SERVICE(snum),i));
+
+        desc->errcode=NERR_Success;
+	goto done;
+
+err:
 	DEBUG(3,("fill_printq_info: Can't supply driver files\n"));
 	desc->errcode=NERR_notsupported;
 
- done:
-	file_lines_free(lines);	
+done:
+	if ( printer )
+		free_a_printer( &printer, 2 );
+		
+	if ( driver.info_3 )
+		free_a_printer_driver( driver, 3 );
 }
 
 
@@ -751,88 +670,42 @@ static void fill_printq_info(connection_struct *conn, int snum, int uLevel,
 			fill_printjob_info(conn,snum,uLevel == 2 ? 1 : 2,desc,&queue[i],i);
 	}
 
-	if (uLevel==52) {
-		fill_printq_info_52(conn, snum, uLevel, desc, count, queue, status);
-	}
+	if (uLevel==52)
+		fill_printq_info_52( conn, snum, desc, count );
 }
 
 /* This function returns the number of files for a given driver */
 static int get_printerdrivernumber(int snum)
 {
-	int i, result = 0;
-	BOOL ok = False;
-	pstring tok;
-	char *p;
-	char **lines = NULL;
-	pstring gen_line;
-	pstring drivername;
-	
-	/*
-	 * Check in the tdb *first* before checking the legacy
-	 * files. This allows an NT upload to take precedence over
-	 * the existing fileset. JRA.
-	 *
-	 * we need to lookup the driver name prior to making the call
-	 * to get_a_printer_driver_9x_compatible() and not rely on the
-	 * 'print driver' parameter --jerry
-	 */
-	
-	if ((get_driver_name(snum,drivername)) && 
-	    (ok = get_a_printer_driver_9x_compatible(gen_line, drivername) == True)) 
-	{
-		p = gen_line;
-		DEBUG(10,("9x compatable driver line for [%s]: [%s]\n", drivername, gen_line));
-	} 
-	else 
-	{
-		/* didn't find driver in tdb */
-	
-		DEBUG(10,("snum: %d\nprinterdriver: [%s]\nlp_driverfile: [%s]\n",
-			  snum, drivername, lp_driverfile(snum)));
-		
-		lines = file_lines_load(lp_driverfile(snum), NULL);
-		if (!lines) 
-		{
-			DEBUG(3,("Can't open %s - %s\n", lp_driverfile(snum),strerror(errno)));
-			goto done;
-		} 
+	int 				result = 0;
+	NT_PRINTER_DRIVER_INFO_LEVEL 	driver;
+	NT_PRINTER_INFO_LEVEL 		*printer = NULL;
 
-		/* lookup the long printer driver name in the file description */
-		for (i=0;lines[i] && !ok;i++) 
-		{
-			p = lines[i];
-			if (next_token(&p,tok,":",sizeof(tok)) &&
-			   (strlen(drivername) == strlen(tok)) &&
-			   (!strncmp(tok,drivername,strlen(drivername)))) 
-			{
-				ok = True;
-			}
-		}
+	if ( !W_ERROR_IS_OK(get_a_printer( &printer, 2, lp_servicename(snum))) ) {
+		DEBUG(3,("get_printerdrivernumber: Failed to lookup printer [%s]\n", 
+			lp_servicename(snum)));
+		goto done;
+	}
+		
+	if ( !W_ERROR_IS_OK(get_a_printer_driver(&driver, 3, printer->info_2->drivername, 
+		"Windows 4.0", 0)) )
+	{
+		DEBUG(3,("get_printerdrivernumber: Failed to lookup driver [%s]\n", 
+			printer->info_2->drivername));
+		goto done;
 	}
 	
-	if( ok ) 
-	{
-		/* skip 5 fields */
-		i = 5;
-		while (*p && i) {
-			if (*p++ == ':') i--;
-		}
-		if (!*p || i) {
-			DEBUG(3,("Can't determine number of printer driver files\n"));
-			goto done;
-		}
-		
-		/* count the number of files */
-		while (next_token(&p,tok,",",sizeof(tok)))
-			i++;
-	
-		result = i;
-	}
-
+	/* count the number of files */
+	while ( driver.info_3->dependentfiles && *driver.info_3->dependentfiles[result] )
+			result++;
+			\
  done:
-
-	file_lines_free(lines);
-
+	if ( printer )
+		free_a_printer( &printer, 2 );
+		
+	if ( driver.info_3 )
+		free_a_printer_driver( driver, 3 );
+		
 	return result;
 }
 

@@ -30,13 +30,9 @@ static BOOL setup_write_cache(files_struct *, SMB_OFF_T);
 
 static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 {
-	SMB_OFF_T offset = 0;
 	SMB_OFF_T seek_ret;
 
-	if (fsp->print_file && lp_postscript(fsp->conn->service))
-		offset = 3;
-
-	seek_ret = fsp->conn->vfs_ops.lseek(fsp,fsp->fd,pos+offset,SEEK_SET);
+	seek_ret = fsp->conn->vfs_ops.lseek(fsp,fsp->fd,pos,SEEK_SET);
 
 	if(seek_ret == -1) {
 		DEBUG(0,("seek_file: (%s) sys_lseek failed. Error was %s\n",
@@ -45,10 +41,10 @@ static SMB_OFF_T seek_file(files_struct *fsp,SMB_OFF_T pos)
 		return -1;
 	}
 
-	fsp->pos = seek_ret - offset;
+	fsp->pos = seek_ret;
 
 	DEBUG(10,("seek_file (%s): requested pos = %.0f, new pos = %.0f\n",
-		fsp->fsp_name, (double)(pos+offset), (double)fsp->pos ));
+		fsp->fsp_name, (double)pos, (double)fsp->pos ));
 
 	return(fsp->pos);
 }
