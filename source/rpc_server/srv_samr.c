@@ -288,46 +288,27 @@ static void api_samr_del_aliasmem( rpcsrv_struct *p, prs_struct *data, prs_struc
 }
 
 /*******************************************************************
- samr_reply_enum_domains
+ api_samr_enum_domains
  ********************************************************************/
-static void samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS *q_u,
-				prs_struct *rdata)
+static void api_samr_enum_domains( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
 {
+	SAMR_Q_ENUM_DOMAINS q_e;
 	SAMR_R_ENUM_DOMAINS r_e;
-	char  **doms = NULL;
 	uint32 num_entries = 0;
 
-	r_e.status = 0x0;
-	r_e.num_entries2 = 0;
-
+	ZERO_STRUCT(q_e);
 	ZERO_STRUCT(r_e);
 
-	r_e.status = 0x0;
+	samr_io_q_enum_domains("", &q_e, data, 0);
 
-	/* find the connection policy handle. */
-	if (r_e.status == 0x0 && (find_policy_by_hnd(get_global_hnd_cache(), &(q_u->pol)) == -1))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
-	}
+	r_e.status = _samr_enum_domains(&q_e.pol, &q_e.start_idx,
+	                              q_e.max_size,
+	                              &r_e.sam, &r_e.uni_dom_name,
+	                              &num_entries);
 
-	DEBUG(5,("samr_reply_enum_domains:\n"));
+	make_samr_r_enum_domains(&r_e, q_e.start_idx, num_entries);
 
-	if (!enumdomains(&doms, &num_entries))
-	{
-		r_e.status = 0xC0000000 | NT_STATUS_NO_MEMORY;
-	}
-
-	if (r_e.status == 0x0)
-	{
-		make_samr_r_enum_domains(&r_e,
-		          q_u->start_idx + num_entries,
-		          num_entries, doms, r_e.status);
-	}
-
-	/* store the response in the SMB stream */
 	samr_io_r_enum_domains("", &r_e, rdata, 0);
-
-	free_char_array(num_entries, doms);
 
 	if (r_e.sam != NULL)
 	{
@@ -338,22 +319,6 @@ static void samr_reply_enum_domains(SAMR_Q_ENUM_DOMAINS *q_u,
 	{
 		free(r_e.uni_dom_name);
 	}
-
-	DEBUG(5,("samr_enum_domains: %d\n", __LINE__));
-}
-
-/*******************************************************************
- api_samr_enum_domains
- ********************************************************************/
-static void api_samr_enum_domains( rpcsrv_struct *p, prs_struct *data, prs_struct *rdata)
-{
-	SAMR_Q_ENUM_DOMAINS q_e;
-
-	/* grab the samr open */
-	samr_io_q_enum_domains("", &q_e, data, 0);
-
-	/* construct reply. */
-	samr_reply_enum_domains(&q_e, rdata);
 }
 
 /*******************************************************************

@@ -2766,18 +2766,13 @@ BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS *q_e, prs_struct *ps
 makes a SAMR_R_ENUM_DOMAINS structure.
 ********************************************************************/
 BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
-		uint32 next_idx,
-		uint32 num_sam_entries, char **doms, uint32 status)
+		uint32 next_idx, uint32 num_sam_entries)
 {
-	uint32 i;
-
 	if (r_u == NULL) return False;
 
 	DEBUG(5,("make_samr_r_enum_domains\n"));
 
 	r_u->next_idx = next_idx;
-	r_u->sam = NULL;
-	r_u->uni_dom_name = NULL;
 
 	if (num_sam_entries != 0)
 	{
@@ -2785,23 +2780,6 @@ BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
-
-		r_u->sam = (SAM_ENTRY*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->sam[0]));
-		r_u->uni_dom_name = (UNISTR2*)Realloc(NULL, r_u->num_entries2 * sizeof(r_u->uni_dom_name[0]));
-
-		if (r_u->sam == NULL || r_u->uni_dom_name == NULL)
-		{
-			DEBUG(0,("NULL pointers in SAMR_R_ENUM_DOMAINS\n"));
-			return False;
-		}
-
-		for (i = 0; i < num_sam_entries; i++)
-		{
-			int acct_name_len = doms[i] != NULL ? strlen(doms[i]) : 0;
-
-			make_sam_entry(&(r_u->sam[i]), acct_name_len, 0);
-			make_unistr2(&(r_u->uni_dom_name[i]), doms[i], acct_name_len);
-		}
 
 		r_u->num_entries4 = num_sam_entries;
 	}
@@ -2811,8 +2789,6 @@ BOOL make_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS *r_u,
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	r_u->status = status;
 
 	return True;
 }
