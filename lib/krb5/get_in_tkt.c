@@ -358,9 +358,9 @@ add_padata(krb5_context context,
 {
     krb5_error_code ret;
     PA_DATA *pa2;
-    krb5_keyblock *key;
     krb5_salt salt2;
     krb5_enctype *ep;
+    int i;
     
     if(salt == NULL) {
 	/* default to standard salt */
@@ -373,25 +373,26 @@ add_padata(krb5_context context,
 	for (ep = enctypes; *ep != ETYPE_NULL; ep++)
 	    netypes++;
     }
-    while (netypes--) {
-	ret = (*key_proc)(context, *enctypes, *salt, keyseed, &key);
-	if (ret != KRB5_KT_NOTFOUND)
-	    break;
-	enctypes++;
+    pa2 = realloc (md->val, (md->len + netypes) * sizeof(*md->val));
+    if (pa2 == NULL)
+	return ENOMEM;
+    md->val = pa2;
+
+    for (i = 0; i < netypes; ++i) {
+	krb5_keyblock *key;
+
+	ret = (*key_proc)(context, enctypes[i], *salt, keyseed, &key);
+	if (ret)
+	    continue;
+	ret = make_pa_enc_timestamp (context, &md->val[md->len],
+				     enctypes[i], key);
+	krb5_free_keyblock (context, key);
+	if (ret)
+	    return ret;
+	++md->len;
     }
     if(salt == &salt2)
 	krb5_free_salt(context, salt2);
-    if (ret)
-	return ret;
-    pa2 = realloc(md->val, (md->len + 1) * sizeof(*md->val));
-    if(pa2 == NULL)
-	return ENOMEM;
-    md->val = pa2;
-    ret = make_pa_enc_timestamp(context, &md->val[md->len], *enctypes, key);
-    krb5_free_keyblock (context, key);
-    if(ret)
-	return ret;
-    md->len++;
     return 0;
 }
 
