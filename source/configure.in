@@ -1763,6 +1763,16 @@ if test x"$samba_cv_HAVE_STAT_ST_BLOCKS" = x"yes"; then
     AC_DEFINE(HAVE_STAT_ST_BLOCKS)
 fi 
 
+AC_CACHE_CHECK([for st_blksize in struct stat],samba_cv_HAVE_STAT_ST_BLKSIZE,[
+AC_TRY_COMPILE([#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>],
+[struct stat st;  st.st_blksize = 0;],
+samba_cv_HAVE_STAT_ST_BLKSIZE=yes,samba_cv_HAVE_STAT_ST_BLKSIZE=no,samba_cv_HAVE_STAT_ST_BLKSIZE=cross)])
+if test x"$samba_cv_HAVE_STAT_ST_BLKSIZE" = x"yes"; then
+    AC_DEFINE(HAVE_STAT_ST_BLKSIZE)
+fi
+
 case "$host_os" in
 *linux*)
 AC_CACHE_CHECK([for broken RedHat 7.2 system header files],samba_cv_BROKEN_REDHAT_7_SYSTEM_HEADERS,[
