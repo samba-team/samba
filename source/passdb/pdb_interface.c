@@ -36,7 +36,7 @@ static void lazy_initialize_passdb(void)
 
 static struct pdb_init_function_entry *pdb_find_backend_entry(const char *name);
 
-NTSTATUS smb_register_passdb(uint16 version, const char *name, pdb_init_function init) 
+NTSTATUS smb_register_passdb(int version, const char *name, pdb_init_function init) 
 {
 	struct pdb_init_function_entry *entry = backends;
 
