@@ -3553,6 +3553,18 @@ static void usage(poptContext pc)
 	exit(1);
 }
 
+static BOOL is_binding_string(const char *binding_string)
+{
+	TALLOC_CTX *mem_ctx = talloc_init("is_binding_string");
+	struct dcerpc_binding binding_struct;
+	NTSTATUS status;
+	
+	status = dcerpc_parse_binding(mem_ctx, binding_string, &binding_struct);
+
+	talloc_destroy(mem_ctx);
+	return NT_STATUS_IS_OK(status);
+}
+
 /****************************************************************************
   main program
 ****************************************************************************/
@@ -3648,7 +3660,7 @@ static void usage(poptContext pc)
 	}
 
 	/* see if its a RPC transport specifier */
-	if (strncmp(argv_new[1], "ncacn_", 6) == 0) {
+	if (is_binding_string(argv_new[1])) {
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		char *binding = NULL;
