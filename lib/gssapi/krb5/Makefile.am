@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/../krb5 \
+AM_CPPFLAGS += -I$(srcdir)/../krb5 \
 	-I${srcdir}/../asn1/include \
 	$(INCLUDE_des) \
 	$(INCLUDE_krb4)

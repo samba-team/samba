@@ -6,7 +6,7 @@ if do_roken_rename
 ES = strtok_r.c snprintf.c strdup.c strupr.c getprogname.c
 endif
 
-INCLUDES += $(ROKEN_RENAME)
+AM_CPPFLAGS += $(ROKEN_RENAME)
 
 YFLAGS = -d
 

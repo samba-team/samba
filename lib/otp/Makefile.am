@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_des) $(ROKEN_RENAME)
+AM_CPPFLAGS += $(INCLUDE_des) $(ROKEN_RENAME)
 
 noinst_PROGRAMS = otptest
 

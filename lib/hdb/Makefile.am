@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
+AM_CPPFLAGS += -I../asn1 -I$(srcdir)/../asn1 $(INCLUDE_des)
 
 BUILT_SOURCES = \
 	$(foo:.x=.c)	\
@@ -59,7 +59,7 @@ libhdb_la_SOURCES =				\
 	$(hdb_source)				\
 	$(BUILT_SOURCES)
 
-INCLUDES += $(INCLUDE_openldap)
+AM_CPPFLAGS += $(INCLUDE_openldap)
 
 include_HEADERS = hdb.h hdb_err.h hdb_asn1.h hdb-protos.h hdb-private.h
 

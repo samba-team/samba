@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_des)
+AM_CPPFLAGS += $(INCLUDE_des)
 
 bin_PROGRAMS = otp otpprint
 bin_SUIDS = otp

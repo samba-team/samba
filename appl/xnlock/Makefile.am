@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(X_CFLAGS)
+AM_CPPFLAGS += $(INCLUDE_krb4) $(X_CFLAGS)
 
 WFLAGS += $(WFLAGS_NOIMPLICITINT)
 

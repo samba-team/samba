@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(INCLUDE_hesiod)
+AM_CPPFLAGS += $(INCLUDE_krb4) $(INCLUDE_hesiod)
 
 bin_SCRIPTS		= pfrom
 

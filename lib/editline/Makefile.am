@@ -6,7 +6,7 @@ if do_roken_rename
 ES = snprintf.c strdup.c
 endif
 
-INCLUDES += $(ROKEN_RENAME)
+AM_CPPFLAGS += $(ROKEN_RENAME)
 
 man_MANS = editline.3
 

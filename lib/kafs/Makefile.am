@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
+AM_CPPFLAGS += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
 
 if KRB4
 DEPLIB_krb4 = $(LIB_krb4) $(LIB_des)
@@ -11,7 +11,7 @@ else
 DEPLIB_krb4  =
 krb4_am_workaround = 
 endif # KRB4
-INCLUDES += $(krb4_am_workaround)
+AM_CPPFLAGS += $(krb4_am_workaround)
 
 if KRB5
 DEPLIB_krb5 = ../krb5/libkrb5.la 
@@ -20,7 +20,7 @@ else
 DEPLIB_krb5  =
 krb5_am_workaround = 
 endif # KRB5
-INCLUDES += $(krb5_am_workaround)
+AM_CPPFLAGS += $(krb5_am_workaround)
 
 
 if AIX

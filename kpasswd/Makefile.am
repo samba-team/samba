@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_des)
+AM_CPPFLAGS += $(INCLUDE_des)
 
 man_MANS = kpasswd.1 kpasswdd.8
 

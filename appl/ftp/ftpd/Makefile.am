@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
+AM_CPPFLAGS += -I$(srcdir)/../common $(INCLUDE_krb4) -DFTP_SERVER
 
 libexec_PROGRAMS = ftpd
 

@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) -I$(srcdir)/../login
+AM_CPPFLAGS += $(INCLUDE_krb4) -I$(srcdir)/../login
 
 bin_PROGRAMS = rsh
 

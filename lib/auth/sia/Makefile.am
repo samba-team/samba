@@ -2,7 +2,7 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4)
+AM_CPPFLAGS += $(INCLUDE_krb4)
 
 WFLAGS += $(WFLAGS_NOIMPLICITINT)
 
@@ -107,6 +107,6 @@ SUFFIXES += .c .o
 # XXX inline COMPILE since automake wont add it
 
 .c.o:
-	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CC) $(DEFS) $(DEFAULT_AM_CPPFLAGS) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) \
 	-c `test -f '$<' || echo '$(srcdir)/'`$<
