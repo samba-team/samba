@@ -298,17 +298,24 @@ void message_dispatch(void)
 	size_t len;
 	struct dispatch_fns *dfn;
 
+	/* JRATEMP */
+	DEBUG(10,("message_dispatch: received_signal = %d\n", received_signal));
+
 	if (!received_signal) return;
 	received_signal = 0;
 
 	while (message_recv(&msg_type, &src, &buf, &len)) {
 		for (dfn = dispatch_fns; dfn; dfn = dfn->next) {
 			if (dfn->msg_type == msg_type) {
+				DEBUG(10,("message_dispatch: processing message.\n"));
 				dfn->fn(msg_type, src, buf, len);
 			}
 		}
 		if (buf) free(buf);
 	}
+
+	/* JRATEMP */
+	DEBUG(10,("message_dispatch: exit\n"));
 }
 
 
