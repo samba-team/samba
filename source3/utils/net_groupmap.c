@@ -370,20 +370,14 @@ int net_groupmap_modify(int argc, const char **argv)
 	 * Allow changing of group type only between domain and local
 	 * We disallow changing Builtin groups !!! (SID problem)
 	 */ 
-	if (sid_type==SID_NAME_ALIAS 
-	    || sid_type==SID_NAME_DOM_GRP 
-	    || sid_type==SID_NAME_UNKNOWN) 
-	{
-		if (map.sid_name_use==SID_NAME_ALIAS 
-		    || map.sid_name_use==SID_NAME_DOM_GRP
-		    || map.sid_name_use==SID_NAME_UNKNOWN) 
-		{
-			map.sid_name_use=sid_type;
-		} else {
-			printf("cannot change group type to builtin\n");
-		};
-	} else {
-		printf("cannot change group type from builtin\n");
+	if ( sid_type != SID_NAME_UNKNOWN ) 
+	{ 
+		if ( map.sid_name_use == SID_NAME_WKN_GRP ) {
+			d_printf("You can only change between domain and local groups.\n");
+			return -1;
+		}
+		
+		map.sid_name_use=sid_type;
 	}
 
 	/* Change comment if new one */
