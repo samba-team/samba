@@ -191,9 +191,9 @@ doit_v5 (char *host, int port)
 
 
 #ifdef KRB4
-static int use_v4 = 0;
+static int use_v4 = -1;
 #endif
-static int use_v5 = 1;
+static int use_v5 = -1;
 static char *port_str;
 static int do_version;
 static int do_help;
@@ -264,6 +264,13 @@ main(int argc, char **argv)
 	    port = htons(port);
 	}
     }
+
+#if defined(KRB4) && defined(KRB5)
+    if(use_v4 == -1 && use_v5 == 1)
+	use_v4 = 0;
+    if(use_v5 == -1 && use_v4 == 1)
+	use_v5 = 0;
+#endif    
 
 #ifdef KRB5
     if (ret && use_v5) {

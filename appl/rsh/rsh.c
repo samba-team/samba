@@ -711,9 +711,9 @@ doit (const char *hostname,
 }
 
 #ifdef KRB4
-static int use_v4 = 0;
+static int use_v4 = -1;
 #endif
-static int use_v5 = 0;
+static int use_v5 = -1;
 static int use_only_broken = 0;
 static int use_broken = 1;
 static char *port_str;
@@ -825,11 +825,12 @@ main(int argc, char **argv)
     if (do_forwardable)
 	do_forward = 1;
 
-    /* default to v5 */
-#ifdef KRB4
-    if(use_v4 == 0 && use_v5 == 0)
-#endif
-	use_v5 = 1;
+#if defined(KRB4) && defined(KRB5)
+    if(use_v4 == -1 && use_v5 == 1)
+	use_v4 = 0;
+    if(use_v5 == -1 && use_v4 == 1)
+	use_v5 = 0;
+#endif    
 
     if (use_only_broken) {
 #ifdef KRB4

@@ -618,13 +618,13 @@ doit_v5 (const char *host, int port, const char *user,
  */
 
 #ifdef KRB4
-static int use_v4		= 0;
+static int use_v4		= -1;
 #ifdef HAVE_KRB_ENABLE_DEBUG
 static int krb_debug_flag	= 0;
 #endif /* HAVE_KRB_ENABLE_DEBUG */
 #endif /* KRB4 */
 #ifdef KRB5
-static int use_v5		= 0;
+static int use_v5		= -1;
 #endif
 static char *port_str		= NULL;
 static const char *user		= NULL;
@@ -736,16 +736,12 @@ main(int argc, char **argv)
 	krb_enable_debug ();
 #endif
 
-#if defined(KRB5)
-#if defined(KRB4)
-    if (use_v4 == 0 && use_v5 == 0)
-	use_v5 = 1;
-#else
-    use_v5 = 1;
-#endif /* KRB4 */
-#elif defined(KRB4)
-    use_v4 = 1;
-#endif
+#if defined(KRB4) && defined(KRB5)
+    if(use_v4 == -1 && use_v5 == 1)
+	use_v4 = 0;
+    if(use_v5 == -1 && use_v4 == 1)
+	use_v5 = 0;
+#endif    
 
 #ifdef KRB5
     if (ret && use_v5) {

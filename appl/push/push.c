@@ -713,15 +713,11 @@ main(int argc, char **argv)
     argv += optind;
 
 #if defined(KRB4) && defined(KRB5)
-    if(use_v4 == -1 && use_v5 == -1)
-	use_v4 = use_v5 = 1;
-#elif defined(KRB4)
-    if (use_v4 == -1)
-	use_v4 = 1;
-#elif defined(KRB5)
-    if (use_v5 == -1)
-	use_v5 = 1;
-#endif
+    if(use_v4 == -1 && use_v5 == 1)
+	use_v4 = 0;
+    if(use_v5 == -1 && use_v4 == 1)
+	use_v5 = 0;
+#endif    
 
     if (do_help)
 	usage (0);
