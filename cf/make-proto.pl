@@ -66,11 +66,10 @@ while(<>) {
     }
 }
 
-print "/* This is a generated file */\n\n";
-print "#ifndef __krb5_protos_h__\n";
-print "#define __krb5_protos_h__\n\n";
+print '/* This is a generated file */
+#ifndef __krb5_protos_h__
+#define __krb5_protos_h__
 
-print '
 #ifdef __STDC__
 #include <stdarg.h>
 #ifndef __P
