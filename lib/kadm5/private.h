@@ -167,6 +167,12 @@ _kadm5_set_keys __P((
 	const char *password));
 
 kadm5_ret_t
+_kadm5_set_keys2 __P((
+	hdb_entry *ent, 
+	int16_t n_key_data, 
+	krb5_key_data *key_data));
+
+kadm5_ret_t
 _kadm5_set_modifier __P((
 	kadm5_server_context *context,
 	hdb_entry *ent));
