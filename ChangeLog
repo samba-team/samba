@@ -1,10 +1,23 @@
+2000-01-09  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/principal.c (krb5_sname_to_principal): use
+	krb5_expand_hostname_realms
+	* lib/krb5/mk_req.c (krb5_km_req): use krb5_expand_hostname_realms
+	* lib/krb5/expand_hostname.c (krb5_expand_hostname_realms): new
+	variant of krb5_expand_hostname that tries until it expands into
+	something that's digestable by krb5_get_host_realm, returning also
+	the result from that function.
+
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
 	* Release 0.2m
 
 2000-01-08  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: replace AC_C_BIGENDIAN with KRB_C_BIGENDIAN
+
 	* lib/krb5/Makefile.am: bump version to 7:1:0
+
 	* lib/krb5/principal.c (krb5_sname_to_principal): use
 	krb5_expand_hostname
 	* lib/krb5/expand_hostname.c (krb5_expand_hostname): handle
