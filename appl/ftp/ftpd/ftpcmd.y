@@ -108,6 +108,8 @@ static int		 yylex (void);
 	KAUTH	KLIST	KDESTROY KRBTKFILE AFSLOG
 	LOCATE	URL
 
+	FEAT	OPTS
+
 	LEXERR
 
 %token	<s> STRING
@@ -399,6 +401,19 @@ cmd
 			if ($3)
 				cwd("..");
 		}
+	| FEAT CRLF
+		{
+			lreply(211, "Supported features:");
+			lreply(0, " MDTM");
+			lreply(0, " REST STREAM");
+			lreply(0, " SIZE");
+			reply(211, "End");
+		}
+	| OPTS SP foo CRLF
+		{
+			reply(501, "Bad options");
+		}
+
 	| SITE SP HELP CRLF
 		{
 			help(sitetab, (char *) 0);
@@ -966,6 +981,10 @@ struct tab cmdtab[] = {		/* In order defined in RFC 765 */
 	{ "CONF", CONF,	STR1, 1,	"<sp> confidentiality command" },
 	{ "ENC",  ENC,	STR1, 1,	"<sp> privacy command" },
 
+	/* RFC2389 */
+	{ "FEAT", FEAT, ARGS, 1,	"" },
+	{ "OPTS", OPTS, ARGS, 1,	"<sp> command [<sp> options]" },
+
 	{ NULL,   0,    0,    0,	0 }
 };
 
@@ -1177,7 +1196,10 @@ yylex(void)
 		dostr1:
 			if (cbuf[cpos] == ' ') {
 				cpos++;
-				state = state == OSTR ? STR2 : ++state;
+				if(state == OSTR)
+				    state = STR2;
+				else
+				    state++;
 				return (SP);
 			}
 			break;
