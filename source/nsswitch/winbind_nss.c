@@ -30,7 +30,6 @@ void init_request(struct winbindd_request *req,int rq_type);
 int write_sock(void *buffer, int count);
 int read_reply(struct winbindd_response *response);
 
-
 /* Allocate some space from the nss static buffer.  The buffer and buflen
    are the pointers passed in by the C library to the _nss_ntdom_*
    functions. */
