@@ -162,14 +162,13 @@ PyObject *spoolss_deleteform(PyObject *self, PyObject *args, PyObject *kw)
 {
 	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
 	WERROR werror;
-	int level = 1;
 	static char *kwlist[] = {"form_name", "level", NULL};
 	char *form_name;
 
 	/* Parse parameters */
 	
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|i", kwlist, &form_name, &level))
+		    args, kw, "s", kwlist, &form_name))
 		return NULL;
 	
 	/* Call rpc function */
