@@ -59,7 +59,8 @@
 
 
 		<varlistentry>
-		<term>-A filename</term><listitem><para>This option allows 
+		<term>-A|--authfile=filename</term>
+		<listitem><para>This option allows 
 		you to specify a file from which to read the username and 
 		password used in the connection.  The format of the file is 
 		</para>
@@ -77,7 +78,7 @@
 
 
 		<varlistentry>
-		<term>-c 'command string'</term>
+		<term>-c|--command='command string'</term>
 		<listitem><para>execute semicolon separated commands (listed 
 		below)) </para></listitem>
 		</varlistentry>
@@ -86,7 +87,7 @@
 		
 
 		<varlistentry>
-		<term>-d debuglevel</term>
+		<term>-d|--debug=debuglevel</term>
 		<listitem><para>set the debuglevel. Debug level 0 is the lowest 
 		and 100 being the highest. This should be set to 100 if you are
 		planning on submitting a bug report to the Samba team (see <filename>BUGS.txt</filename>). 
@@ -97,7 +98,7 @@
 
 
 		<varlistentry>
-		<term>-h</term>
+		<term>-h|--help</term>
 		<listitem><para>Print a summary of command line options.
 		</para></listitem>
 		</varlistentry>
@@ -106,7 +107,7 @@
 
 		
 		<varlistentry>
-		<term>-l logbasename</term>
+		<term>-l|--logfile=logbasename</term>
 		<listitem><para>File name for log/debug files. The extension 
 		<constant>'.client'</constant> will be appended. The log file is never removed  
 		by the client.
@@ -116,7 +117,7 @@
 
 		
 		<varlistentry>
-		<term>-N</term>
+		<term>-N|--nopass</term>
 		<listitem><para>instruct <command>rpcclient</command> not to ask 
 		for a password.   By default, <command>rpcclient</command> will prompt 
 		for a password.  See also the <parameter>-U</parameter> option.</para></listitem>
@@ -124,7 +125,7 @@
 
 		
 		<varlistentry>
-		<term>-s smb.conf</term>
+		<term>-s|--conf=smb.conf</term>
 		<listitem><para>Specifies the location of the all important 
 		<filename>smb.conf</filename> file. </para></listitem>
 		</varlistentry>
@@ -132,7 +133,7 @@
 				
 
 		<varlistentry>
-		<term>-U username[%password]</term>
+		<term>-U|--user=username[%password]</term>
 		<listitem><para>Sets the SMB username or username and password. </para>
 		
 		<para>If %password is not specified, the user will be prompted. The 
@@ -160,7 +161,7 @@
 		
 		
 		<varlistentry>
-		<term>-W domain</term>
+		<term>-W|--workgroup=domain</term>
 		<listitem><para>Set the SMB domain of the username.   This 
 		overrides the default domain which is the domain defined in 
 		smb.conf.  If the domain specified is the same as the server's NetBIOS name, 
@@ -399,7 +400,7 @@
 <refsect1>
 	<title>VERSION</title>
 
-	<para>This man page is correct for version 2.2 of the Samba 
+	<para>This man page is correct for version 3.0 of the Samba 
 	suite.</para>
 </refsect1>
 
