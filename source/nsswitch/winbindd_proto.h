@@ -47,7 +47,6 @@ void winbindd_cache_status(void);
 
 /* The following definitions come from nsswitch/winbindd_cm.c  */
 
-BOOL cm_get_dc_name(char *domain, fstring srv_name);
 CLI_POLICY_HND *cm_get_lsa_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_handle(char *domain);
 CLI_POLICY_HND *cm_get_sam_dom_handle(char *domain, DOM_SID *domain_sid);
@@ -120,6 +119,7 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state);
 /* The following definitions come from nsswitch/winbindd_util.c  */
 
 BOOL get_domain_info(void);
+void free_domain_info(void);
 BOOL lookup_domain_sid(char *domain_name, struct winbindd_domain *domain);
 BOOL winbindd_lookup_sid_by_name(char *name, DOM_SID *sid,
                                  enum SID_NAME_USE *type);
