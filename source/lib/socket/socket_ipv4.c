@@ -150,7 +150,7 @@ static NTSTATUS ipv4_tcp_listen(struct socket_context *sock,
 static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_context **new_sock, uint32_t flags)
 {
 	struct sockaddr_in cli_addr;
-	socklen_t cli_addr_len = 0;
+	socklen_t cli_addr_len = sizeof(cli_addr);
 	int new_fd;
 
 	new_fd = accept(sock->fd, (struct sockaddr *)&cli_addr, &cli_addr_len);
@@ -167,6 +167,7 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 
 	(*new_sock) = talloc_p(NULL, struct socket_context);
 	if (!(*new_sock)) {
+		close(new_fd);
 		return NT_STATUS_NO_MEMORY;
 	}
 
