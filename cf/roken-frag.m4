@@ -6,11 +6,11 @@ dnl rk_ROKEN(subdir)
 dnl
 AC_DEFUN(rk_ROKEN, [
 
+AC_REQUIRE([rk_CONFIG_HEADER])
+
 DIR_roken=roken
 LIB_roken='$(top_builddir)/lib/roken/libroken.la'
 CPPFLAGS_roken='-I$(top_builddir)/lib/roken -I$(top_srcdir)/lib/roken'
-
-AC_REQUIRE([rk_DB])
 
 dnl Checks for programs
 AC_REQUIRE([AC_PROG_CC])
@@ -27,6 +27,8 @@ AC_REQUIRE([AC_C___ATTRIBUTE__])
 AC_REQUIRE([AC_C_INLINE])
 AC_REQUIRE([AC_C_CONST])
 AC_WFLAGS(-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wmissing-declarations -Wnested-externs)
+
+AC_REQUIRE([rk_DB])
 
 dnl C types
 
@@ -490,7 +492,7 @@ dnl
 AC_HAVE_STRUCT_FIELD(struct sockaddr, sa_len, [#include <sys/types.h>
 #include <sys/socket.h>])
 
-dnl AC_CONFIG_FILES($1/Makefile) dnl breaks automake
+AC_CONFIG_FILES($1/Makefile) dnl breaks automake
 
 LIB_roken="${LIB_roken} \$(LIB_crypt) \$(LIB_dbopen)"
 
