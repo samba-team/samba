@@ -49,4 +49,14 @@
 
 void set_buffer_size(int, int);
 
+#include <stdlib.h>
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_STAT_H
+#include <sys/stat.h>
+#endif
+
+void *alloc_buffer (void *oldbuf, size_t *sz, struct stat *st);
+
 #endif /* __COMMON_H__ */
