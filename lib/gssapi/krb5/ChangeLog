@@ -1,3 +1,8 @@
+2002-06-20  Jacques Vidrine <n@nectar.com>
+
+	* import_name.c: Compare name types by value if pointers do
+	  not match.  Reported by: "Douglas E. Engert" <deengert@anl.gov>
+
 2002-05-20  Jacques Vidrine <n@nectar.com>
 
 	* verify_mic.c (gss_verify_mic), unwrap.c (gss_unwrap): initialize
