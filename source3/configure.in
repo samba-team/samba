@@ -1656,7 +1656,7 @@ fi
 
 
 ICONV_LOCATION=standard
-LOOK_DIRS="/usr /usr/local /sw"
+LOOK_DIRS="/usr /usr/local /sw /opt"
 AC_ARG_WITH(libiconv,
 [  --with-libiconv=BASEDIR Use libiconv in BASEDIR/lib and BASEDIR/include (default=auto) ],
 [
@@ -1671,6 +1671,7 @@ AC_ARG_WITH(libiconv,
 ])
 
 ICONV_FOUND="no"
+libext=""
 for i in $LOOK_DIRS ; do
     save_LIBS=$LIBS
     save_LDFLAGS=$LDFLAGS
@@ -1678,15 +1679,24 @@ for i in $LOOK_DIRS ; do
     CPPFLAGS="$CPPFLAGS -I$i/include"
 dnl This is here to handle -withval stuff for --with-libiconv
 dnl Perhaps we should always add a -L
-    LDFLAGS="$LDFLAGS -L$i/lib"
-    LIBS=
-    export LDFLAGS LIBS CPPFLAGS
+
+dnl Check lib and lib32 library variants to cater for IRIX ABI-specific
+dnl installation paths.
+    for l in "lib" "lib32" ; do
+        LDFLAGS="$LDFLAGS -L$i/$l"
+        LIBS=
+        export LDFLAGS LIBS CPPFLAGS
 dnl Try to find iconv(3)
-    jm_ICONV($i)
+        jm_ICONV($i)
+        if test "$ICONV_FOUND" = yes; then
+            libext="$l"
+            break;
+        fi
+    done
 
     if test "$ICONV_FOUND" = yes; then
 	LDFLAGS=$save_LDFLAGS
-        LIB_ADD_DIR(LDFLAGS, "$i/lib")
+        LIB_ADD_DIR(LDFLAGS, "$i/$libext")
         CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
         LIBS="$save_LIBS"
         ICONV_LOCATION=$i
@@ -1762,7 +1772,7 @@ dnl ])
            fi
 	   dnl Add the flags we need to CPPFLAGS and LDFLAGS
 	   CFLAGS_ADD_DIR(CPPFLAGS, "$i/include")
-	   LIB_ADD_DIR(LDFLAGS, "$i/lib")
+	   LIB_ADD_DIR(LDFLAGS, "$i/$libext")
 	   export CPPFLAGS
            AC_DEFINE(HAVE_NATIVE_ICONV,1,[Whether to use native iconv])
 	   AC_DEFINE_UNQUOTED(DEFAULT_DOS_CHARSET,$default_dos_charset,[Default dos charset name])
@@ -1778,6 +1788,7 @@ dnl We only need to clean these up here for the next pass through the loop
     LIBS=$save_LIBS
     export LDFLAGS LIBS CPPFLAGS
 done
+unset libext
 
 
 if test x"$ICONV_FOUND" = x"no" -o x"$samba_cv_HAVE_NATIVE_ICONV" != x"yes" ; then
