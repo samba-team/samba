@@ -4,6 +4,7 @@
    endpoint server for the echo pipe
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2005
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 #include "includes.h"
 #include "rpc_server/dcerpc_server.h"
 #include "librpc/gen_ndr/ndr_echo.h"
+#include "events.h"
 
 
 static NTSTATUS echo_AddOne(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_AddOne *r)
@@ -112,10 +114,67 @@ static NTSTATUS echo_TestEnum(struct dcesrv_call_state *dce_call, TALLOC_CTX *me
 	return NT_STATUS_OK;
 }
 
+struct echo_TestSleep_private {
+	struct dcesrv_call_state *dce_call;
+	struct echo_TestSleep *r;
+	struct timed_event *te;
+};
+
+static void echo_TestSleep_handler(struct event_context *ev, struct timed_event *te, struct timeval t)
+{
+	struct echo_TestSleep_private *p = te->private;
+	struct echo_TestSleep *r = p->r;
+	NTSTATUS status;
+
+	r->out.result = r->in.seconds;
+
+	status = dcesrv_reply(p->dce_call);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(0,("echo_TestSleep_handler: dcesrv_reply() failed - %s\n",
+			nt_errstr(status)));
+	}
+}
+
+static int echo_TestSleep_destructor(void *ptr)
+{
+	struct echo_TestSleep_private *p = ptr;
+	event_remove_timed(p->dce_call->event_ctx, p->te);
+	return 0;
+}
+
 static long echo_TestSleep(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct echo_TestSleep *r)
 {
-	sleep(r->in.seconds);
-	return r->in.seconds;
+	struct timed_event te;
+	struct echo_TestSleep_private *p;
+
+	if (!(dce_call->state_flags & DCESRV_CALL_STATE_FLAG_MAY_ASYNC)) {
+		/* we're not allowed to reply async */
+		sleep(r->in.seconds);
+		return r->in.seconds;
+	}
+
+	/* we're allowed to reply async */
+	p = talloc(mem_ctx, struct echo_TestSleep_private);
+	if (!p) {
+		return 0;
+	}
+
+	p->dce_call	= dce_call;
+	p->r		= r;
+
+	te.handler	= echo_TestSleep_handler;
+	te.private	= p;
+	te.next_event	= timeval_add(&dce_call->time, r->in.seconds, 0);
+
+	p->te = event_add_timed(dce_call->event_ctx, &te);
+	if (!p->te) {
+		return 0;
+	}
+
+	talloc_set_destructor(p, echo_TestSleep_destructor);
+
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_ASYNC;
+	return 0;
 }
 
 /* include the generated boilerplate */

@@ -4,7 +4,7 @@
    server side dcerpc using various kinds of sockets (tcp, unix domain)
 
    Copyright (C) Andrew Tridgell 2003
-   Copyright (C) Stefan (metze) Metzmacher 2004   
+   Copyright (C) Stefan (metze) Metzmacher 2004-2005  
    Copyright (C) Jelmer Vernooij 2004
 
    This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,7 @@ static ssize_t dcerpc_write_fn(void *private, DATA_BLOB *out)
 	return sendlen;
 }
 
-void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
+static void dcesrv_terminate_connection(struct dcesrv_connection *dce_conn, const char *reason)
 {
 	server_terminate_connection(dce_conn->srv_conn, reason);
 }
@@ -226,24 +226,26 @@ void dcesrv_sock_init(struct server_service *service, const struct model_ops *mo
 	return;	
 }
 
-void dcesrv_sock_accept(struct server_connection *conn)
+void dcesrv_sock_accept(struct server_connection *srv_conn)
 {
 	NTSTATUS status;
-	struct dcesrv_socket_context *dcesrv_sock = conn->server_socket->private_data;
+	struct dcesrv_socket_context *dcesrv_sock = srv_conn->server_socket->private_data;
 	struct dcesrv_connection *dcesrv_conn = NULL;
 
 	DEBUG(5,("dcesrv_sock_accept\n"));
 
-	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx, dcesrv_sock->endpoint, &dcesrv_conn);
+	status = dcesrv_endpoint_connect(dcesrv_sock->dcesrv_ctx,
+					 dcesrv_sock,
+					 dcesrv_sock->endpoint,
+					 srv_conn,
+					 &dcesrv_conn);
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("dcesrv_sock_accept: dcesrv_endpoint_connect failed: %s\n", 
 			nt_errstr(status)));
 		return;
 	}
 
-	dcesrv_conn->srv_conn = conn;
-
-	conn->private_data = dcesrv_conn;
+	srv_conn->private_data = dcesrv_conn;
 
 	return;	
 }
