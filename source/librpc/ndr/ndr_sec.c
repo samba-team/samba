@@ -51,22 +51,21 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 
 
 /*
-  print a dom_sid
+  convert a dom_sid to a string
 */
-void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+const char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	int i, ofs, maxlen;
 	uint32 ia;
 	char *ret;
 	
 	if (!sid) {
-		ndr->print(ndr, "%-25s: (NULL SID)", name);
-		return;
+		return "(NULL SID)";
 	}
 
 	maxlen = sid->num_auths * 11 + 25;
-	ret = talloc(ndr->mem_ctx, maxlen);
-	if (!ret) return;
+	ret = talloc(mem_ctx, maxlen);
+	if (!ret) return "(SID ERR)";
 
 	ia = (sid->id_auth[5]) +
 		(sid->id_auth[4] << 8 ) +
@@ -79,8 +78,17 @@ void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *
 	for (i = 0; i < sid->num_auths; i++) {
 		ofs += snprintf(ret + ofs, maxlen - ofs, "-%lu", (unsigned long)sid->sub_auths[i]);
 	}
+	
+	return ret;
+}
 
-	ndr->print(ndr, "%-25s: %s", name, ret);
+
+/*
+  print a dom_sid
+*/
+void ndr_print_dom_sid(struct ndr_print *ndr, const char *name, struct dom_sid *sid)
+{
+	ndr->print(ndr, "%-25s: %s", name, dom_sid_string(ndr->mem_ctx, sid));
 }
 
 void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2 *sid)
