@@ -27,6 +27,7 @@ LDADD = $(top_builddir)/lib/hdb/libhdb.la \
 	$(LIB_krb4) \
 	$(LIB_des) \
 	$(top_builddir)/lib/asn1/libasn1.la \
-	$(LIB_roken)
+	$(LIB_roken) \
+	$(LIB_pidfile)
 
 
