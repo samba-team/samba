@@ -1151,7 +1151,7 @@ BOOL api_pipe_request(pipes_struct *p)
  ********************************************************************/
 
 BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, 
-		struct api_struct *api_rpc_cmds)
+		const struct api_struct *api_rpc_cmds)
 {
 	int fn_num;
 	fstring name;

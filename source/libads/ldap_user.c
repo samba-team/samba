@@ -43,7 +43,7 @@ ADS_STATUS ads_add_user_acct(ADS_STRUCT *ads, const char *user,
 	TALLOC_CTX *ctx;
 	ADS_MODLIST mods;
 	ADS_STATUS status;
-	char *upn, *new_dn, *name, *controlstr;
+	const char *upn, *new_dn, *name, *controlstr;
 	const char *objectClass[] = {"top", "person", "organizationalPerson",
 				     "user", NULL};
 
