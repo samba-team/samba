@@ -62,7 +62,7 @@ BOOL rpc_find_dc(const char *domain, fstring srv_name, struct ipv4_addr *ip_out)
 
 	if ( use_pdc_only ) {
 		for (i = 0; i < count; i++) {	
-			if (ip_equal( exclude_ip, ip_list[i]))
+			if (ipv4_equal( exclude_ip, ip_list[i]))
 				zero_ip(&ip_list[i]);
 		}
 	}

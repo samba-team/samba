@@ -236,8 +236,8 @@ int ip_compare(struct ipv4_addr *ip1, struct ipv4_addr *ip2)
 		struct ipv4_addr ip;
 		int bits1, bits2;
 		ip = *iface_n_bcast(i);
-		bits1 = matching_quad_bits((uint8_t *)&ip1->s_addr, (uint8_t *)&ip.s_addr);
-		bits2 = matching_quad_bits((uint8_t *)&ip2->s_addr, (uint8_t *)&ip.s_addr);
+		bits1 = matching_quad_bits((uint8_t *)&ip1->addr, (uint8_t *)&ip.addr);
+		bits2 = matching_quad_bits((uint8_t *)&ip2->addr, (uint8_t *)&ip.addr);
 		max_bits1 = MAX(bits1, max_bits1);
 		max_bits2 = MAX(bits2, max_bits2);
 	}	
@@ -678,7 +678,7 @@ BOOL resolve_wins(TALLOC_CTX *mem_ctx, const char *name, int name_type,
 
 			DEBUG(3,("resolve_wins: using WINS server %s and tag '%s'\n", sys_inet_ntoa(wins_ip), wins_tags[t]));
 
-			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.s_addr, True);
+			sock = open_socket_in(SOCK_DGRAM, 0, 3, src_ip.addr, True);
 			if (sock == -1) {
 				continue;
 			}
@@ -776,12 +776,12 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
 	}
 	if(is_address) { 
 		/* if it's in the form of an IP address then get the lib to interpret it */
-		if (((*return_iplist)->s_addr = inet_addr(name)) == 0xFFFFFFFF ){
+		if (((*return_iplist)->addr = inet_addr(name)) == 0xFFFFFFFF ){
 			DEBUG(1,("internal_resolve_name: inet_addr failed on %s\n", name));
 			return False;
 		}
 	} else {
-		(*return_iplist)->s_addr = allones ? 0xFFFFFFFF : 0;
+		(*return_iplist)->addr = allones ? 0xFFFFFFFF : 0;
 		*return_count = 1;
 	}
     return True;
@@ -854,7 +854,7 @@ static BOOL internal_resolve_name(TALLOC_CTX *mem_ctx, const char *name, int nam
 		  int j;
 
 		  for (j = i + 1; j < *return_count; j++) {
-			  if (ip_equal((*return_iplist)[i], 
+			  if (ipv4_equal((*return_iplist)[i], 
 				       (*return_iplist)[j])) {
 				  is_dupe = True;
 				  break;
@@ -1312,7 +1312,7 @@ BOOL get_dc_list(TALLOC_CTX *mem_ctx, const char *domain, struct ipv4_addr **ip_
 					continue;
 					
 				for ( j=i+1; j<local_count; j++ ) {
-					if ( ip_equal( return_iplist[i], return_iplist[j]) )
+					if ( ipv4_equal( return_iplist[i], return_iplist[j]) )
 						zero_ip(&return_iplist[j]);
 				}
 			}

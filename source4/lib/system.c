@@ -540,7 +540,7 @@ int sys_dup2(int oldfd, int newfd)
 const char *sys_inet_ntoa(struct ipv4_addr in)
 {
 	struct in_addr in2;
-	in2.s_addr = in.s_addr;
+	in2.s_addr = in.addr;
 	return inet_ntoa(in2);
 }
 
@@ -554,7 +554,7 @@ struct ipv4_addr sys_inet_makeaddr(int net, int host)
 	struct in_addr in;
 	struct ipv4_addr in2;
 	in = inet_makeaddr(net, host);
-	in2.s_addr = in.s_addr;
+	in2.addr = in.s_addr;
 	return in2;
 }
 

@@ -66,7 +66,7 @@ static void display_tower(TALLOC_CTX *mem_ctx, struct epm_tower *twr)
 			printf(" IP:");
 			{
 				struct ipv4_addr in;
-				in.s_addr = htonl(rhs->ip.address);
+				in.addr = htonl(rhs->ip.address);
 				printf("%s", sys_inet_ntoa(in));
 			}
 			break;
