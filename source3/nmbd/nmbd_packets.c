@@ -1024,6 +1024,56 @@ command code %d from %s IP %s to %s\n",
 }
 
 /****************************************************************************
+ Dispatch a LanMan browse frame from port 138 to the correct processing function.
+****************************************************************************/
+
+void process_lanman_packet(struct packet_struct *p, char *buf,int len)
+{
+  struct dgram_packet *dgram = &p->packet.dgram;
+  int command = SVAL(buf,0);
+  struct subnet_record *subrec = find_subnet_for_dgram_browse_packet(p);
+
+  /* Drop the packet if it's a different NetBIOS scope, or
+     the source is from one of our names. */
+
+  if (!strequal(dgram->dest_name.scope,scope ))
+  {
+    DEBUG(7,("process_lanman_packet: Discarding datagram from IP %s. Scope (%s) \
+mismatch with our scope (%s).\n", inet_ntoa(p->ip), dgram->dest_name.scope, scope));
+    return;
+  }
+
+  if (is_myname(dgram->source_name.name))
+  {
+    DEBUG(0,("process_lanman_packet: Discarding datagram from IP %s. Source name \
+%s is one of our names !\n", inet_ntoa(p->ip), namestr(&dgram->source_name)));
+    return;
+  }
+
+  switch (command)
+  {
+    case ANN_HostAnnouncement:
+    {
+      debug_browse_data(buf, len);
+      process_lm_host_announce(subrec, p, buf+1);
+      break;
+    }
+    case ANN_AnnouncementRequest:
+    {
+      process_lm_announce_request(subrec, p, buf+1);
+      break;
+    }
+    default:
+    {
+      DEBUG(0,("process_lanman_packet: On subnet %s ignoring browse packet \
+command code %d from %s IP %s to %s\n",
+            subrec->subnet_name, command, namestr(&dgram->source_name),
+            inet_ntoa(p->ip), namestr(&dgram->dest_name)));
+    }
+  }
+}
+
+/****************************************************************************
   Determine if a packet is for us on port 138. Note that to have any chance of
   being efficient we need to drop as many packets as possible at this
   stage as subsequent processing is expensive. 
@@ -1097,6 +1147,12 @@ static void process_dgram(struct packet_struct *p)
   if (strequal(smb_buf(buf),BROWSE_MAILSLOT))
   {
     process_browse_packet(p,buf2,len);
+    return;
+  }
+
+  /* Datagram packet received for the LAN Manager mailslot */
+  if (strequal(smb_buf(buf),LANMAN_MAILSLOT)) {
+    process_lanman_packet(p,buf2,len);
     return;
   }
 

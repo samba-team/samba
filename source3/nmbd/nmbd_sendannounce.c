@@ -32,6 +32,7 @@ extern pstring myname;
 extern fstring myworkgroup;
 extern char **my_netbios_names;
 extern int  updatecount;
+extern BOOL found_lm_clients;
 
 /****************************************************************************
  Send a browser reset packet.
@@ -127,6 +128,37 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
 }
 
 /****************************************************************************
+  Broadcast a LanMan announcement.
+**************************************************************************/
+
+static void send_lm_announcement(struct subnet_record *subrec, int announce_type,
+                              char *from_name, char *to_name, int to_type, struct in_addr to_ip,
+                              time_t announce_interval,
+                              char *server_name, int server_type, char *server_comment)
+{
+  pstring outbuf;
+  char *p=outbuf;
+
+  bzero(outbuf,sizeof(outbuf));
+
+  SSVAL(p,0,announce_type);
+  SIVAL(p,2,server_type & ~SV_TYPE_LOCAL_LIST_ONLY);
+  CVAL(p,6) = lp_major_announce_version(); /* Major version. */
+  CVAL(p,7) = lp_minor_announce_version(); /* Minor version. */
+  SSVAL(p,8,announce_interval);            /* In seconds - according to spec. */
+
+  p += 10;
+  StrnCpy(p,server_name,15);
+  strupper(p);
+  p = skip_string(p,1);
+  pstrcpy(p,server_comment);
+  p = skip_string(p,1);
+
+  send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
+                from_name, 0x0, to_name, to_type, to_ip, subrec->myip);
+}
+
+/****************************************************************************
  We are a local master browser. Announce this to WORKGROUP<1e>.
 ****************************************************************************/
 
@@ -186,6 +218,29 @@ static void send_host_announcement(struct subnet_record *subrec, struct work_rec
                     work->work_group, 0x1d,          /* To nbt name. */
                     subrec->bcast_ip,                /* To ip. */
                     work->announce_interval,         /* Time until next announce. */
+                    servrec->serv.name,              /* Name to announce. */
+                    type,                            /* Type field. */
+                    servrec->serv.comment);
+}
+
+/****************************************************************************
+ Announce the given LanMan host
+****************************************************************************/
+
+static void send_lm_host_announcement(struct subnet_record *subrec, struct work_record *work,
+                                   struct server_record *servrec, int lm_interval)
+{
+  /* Ensure we don't have the prohibited bits set. */
+  uint32 type = servrec->serv.type & ~SV_TYPE_LOCAL_LIST_ONLY;
+
+  DEBUG(3,("send_lm_host_announcement: type %x for host %s on subnet %s for workgroup %s, ttl: %d\n",
+            type, servrec->serv.name, subrec->subnet_name, work->work_group, lm_interval));
+
+  send_lm_announcement(subrec, ANN_HostAnnouncement,
+                    servrec->serv.name,              /* From nbt name. */
+                    work->work_group, 0x00,          /* To nbt name. */
+                    subrec->bcast_ip,                /* To ip. */
+                    lm_interval,                     /* Time until next announce. */
                     servrec->serv.name,              /* Name to announce. */
                     type,                            /* Type field. */
                     servrec->serv.comment);
@@ -253,6 +308,56 @@ void announce_my_server_names(time_t t)
       {
         if (is_myname(servrec->serv.name))
           announce_server(subrec, work, servrec);
+      }
+    } /* if work */
+  } /* for subrec */
+}
+
+/****************************************************************************
+  Go through all my registered names on all broadcast subnets and announce
+  them as a LanMan server if the timeout requires it.
+**************************************************************************/
+
+void announce_my_lm_server_names(time_t t)
+{
+  struct subnet_record *subrec;
+  static time_t last_lm_announce_time=0;
+  int announce_interval = lp_lm_interval();
+  int lm_announce = lp_lm_announce();
+
+  if ((announce_interval <= 0) || (lm_announce <= 0))
+  {
+    /* user absolutely does not want LM announcements to be sent. */
+    return;
+  }
+
+  if ((lm_announce >= 2) && (!found_lm_clients))
+  {
+    /* has been set to 2 (Auto) but no LM clients detected (yet). */
+    return;
+  }
+
+  /* Otherwise: must have been set to 1 (Yes), or LM clients *have*
+     been detected. */
+
+  for (subrec = FIRST_SUBNET; subrec; subrec = NEXT_SUBNET_EXCLUDING_UNICAST(subrec))
+  {
+    struct work_record *work = find_workgroup_on_subnet(subrec, myworkgroup);
+
+    if(work)
+    {
+      struct server_record *servrec;
+
+      if (last_lm_announce_time && ((t - last_lm_announce_time) < announce_interval ))
+        continue;
+
+      last_lm_announce_time = t;
+
+      for (servrec = work->serverlist; servrec; servrec = servrec->next)
+      {
+        if (is_myname(servrec->serv.name))
+          /* skipping equivalent of announce_server() */
+          send_lm_host_announcement(subrec, work, servrec, announce_interval);
       }
     } /* if work */
   } /* for subrec */
@@ -342,6 +447,7 @@ void announce_my_servers_removed(void)
         if(AM_LOCAL_MASTER_BROWSER(work))
           send_local_master_announcement(subrec, work, servrec);
         send_host_announcement(subrec, work, servrec);
+        send_lm_host_announcement(subrec, work, servrec, 0);
       }
     }
   }

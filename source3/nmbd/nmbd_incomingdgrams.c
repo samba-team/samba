@@ -28,6 +28,7 @@ extern int DEBUGLEVEL;
 
 extern pstring myname;
 extern fstring myworkgroup;
+extern BOOL found_lm_clients;
 
 #if 0
 
@@ -223,9 +224,7 @@ void process_workgroup_announce(struct subnet_record *subrec, struct packet_stru
   if(*work->local_master_browser_name == '\0')
   {
     /* Set the master browser name. */
-    StrnCpy(work->local_master_browser_name, master_name,
-            sizeof(work->local_master_browser_name)-1);
-
+    set_workgroup_local_master_browser_name( work, master_name );
   }
 
   subrec->work_changed = True;
@@ -324,9 +323,7 @@ a local master browser for workgroup %s and we think we are master. Forcing elec
     StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
   }
 
-  /* Set the master browser name. */
-  StrnCpy(work->local_master_browser_name, server_name,
-            sizeof(work->local_master_browser_name)-1);
+  set_workgroup_local_master_browser_name( work, server_name );
 
   subrec->work_changed = True;
 }
@@ -382,6 +379,105 @@ master - ignoring master announce.\n"));
   }
   else
     update_browser_death_time(browrec);
+}
+
+/*******************************************************************
+  Process an incoming LanMan host announcement packet.
+*******************************************************************/
+
+void process_lm_host_announce(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+{
+  struct dgram_packet *dgram = &p->packet.dgram;
+  uint32 servertype = IVAL(buf,1);
+  int osmajor=CVAL(buf,5);           /* major version of node software */
+  int osminor=CVAL(buf,6);           /* minor version of node software */
+  int ttl = SVAL(buf,7);
+  char *announce_name = buf+9;
+  struct work_record *work;
+  struct server_record *servrec;
+  char *work_name;
+  char *source_name = dgram->source_name.name;
+  pstring comment;
+  char *s = buf+9;
+
+  s = skip_string(s,1);
+  StrnCpy(comment, s, 43);
+
+  DEBUG(3,("process_lm_host_announce: LM Announcement from %s<%02x> IP %s to \
+%s for server %s.\n", source_name, source_name[15], inet_ntoa(p->ip),
+              namestr(&dgram->dest_name),announce_name));
+
+  DEBUG(5,("process_lm_host_announce: os=(%d,%d) ttl=%d server type=%08x comment=%s\n",
+          osmajor, osminor, ttl, servertype,comment));
+
+  if ((osmajor < 36) || (osmajor > 38) || (osminor !=0))
+  {
+    DEBUG(5,("process_lm_host_announce: LM Announcement packet does not " \
+             "originate from OS/2 Warp client. Ignoring packet.\n"));
+    /* Could have been from a Windows machine (with its LM Announce enabled),
+       or a Samba server. Then don't disrupt the current browse list. */
+    return;
+  }
+
+  /* Filter servertype to remove impossible bits. */
+  servertype &= ~(SV_TYPE_LOCAL_LIST_ONLY|SV_TYPE_DOMAIN_ENUM);
+
+  /* A LanMan host announcement must be sent to the name WORKGROUP<00>. */
+  if(dgram->dest_name.name_type != 0x00)
+  {
+    DEBUG(2,("process_lm_host_announce: incorrect name type for destination from IP %s \
+(was %02x) should be 0x00. Allowing packet anyway.\n",
+              inet_ntoa(p->ip), dgram->dest_name.name_type));
+    /* Change it so it was. */
+    dgram->dest_name.name_type = 0x00;
+  }
+
+  /* For a LanMan host announce the workgroup name is the destination name. */
+  work_name = dgram->dest_name.name;
+
+  /*
+   * Syntax servers version 5.1 send HostAnnounce packets to
+   * *THE WRONG NAME*. They send to LOCAL_MASTER_BROWSER_NAME<00>
+   * instead of WORKGROUP<1d> name. So to fix this we check if
+   * the workgroup name is our own name, and if so change it
+   * to be our primary workgroup name. This code is probably
+   * not needed in the LanMan announce code, but it won't hurt.
+   */
+
+  if(strequal(work_name, myname))
+    work_name = myworkgroup;
+
+  /*
+   * We are being very agressive here in adding a workgroup
+   * name on the basis of a host announcing itself as being
+   * in that workgroup. Maybe we should wait for the workgroup
+   * announce instead ? JRA.
+   */
+
+  if ((work = find_workgroup_on_subnet(subrec, work_name))==NULL)
+  {
+    /* We have no record of this workgroup. Add it. */
+    if((work = create_workgroup_on_subnet(subrec, work_name, ttl))==NULL)
+      return;
+  }
+
+  if((servrec = find_server_in_workgroup( work, announce_name))==NULL)
+  {
+    /* If this server is not already in the workgroup, add it. */
+    create_server_on_workgroup(work, announce_name,
+                               servertype|SV_TYPE_LOCAL_LIST_ONLY,
+                               ttl, comment);
+  }
+  else
+  {
+    /* Update the record. */
+    servrec->serv.type = servertype|SV_TYPE_LOCAL_LIST_ONLY;
+    update_server_ttl( servrec, ttl);
+    StrnCpy(servrec->serv.comment,comment,sizeof(servrec->serv.comment)-1);
+  }
+
+  subrec->work_changed = True;
+  found_lm_clients = True;
 }
 
 /****************************************************************************
@@ -600,12 +696,12 @@ request from %s IP %s state=0x%X\n",
 }
 
 /*******************************************************************
-  Process a announcement request packet.
+  Process an announcement request packet.
   We don't respond immediately, we just check it's a request for
-  out workgroup and then set the flag telling the announce code
+  our workgroup and then set the flag telling the announce code
   in nmbd_sendannounce.c:announce_my_server_names that an 
   announcement is needed soon.
-  ******************************************************************/
+******************************************************************/
 
 void process_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
 {
@@ -633,4 +729,41 @@ void process_announce_request(struct subnet_record *subrec, struct packet_struct
   }
 
   work->needannounce = True;
+}
+
+/*******************************************************************
+  Process a LanMan announcement request packet.
+  We don't respond immediately, we just check it's a request for
+  our workgroup and then set the flag telling that we have found
+  a LanMan client (DOS or OS/2) and that we will have to start
+  sending LanMan announcements (unless specifically disabled
+  through the "lm_announce" parameter in smb.conf)
+******************************************************************/
+
+void process_lm_announce_request(struct subnet_record *subrec, struct packet_struct *p, char *buf)
+{
+  struct dgram_packet *dgram = &p->packet.dgram;
+  struct work_record *work;
+  char *workgroup_name = dgram->dest_name.name;
+
+  DEBUG(3,("process_lm_announce_request: Announce request from %s IP %s to %s.\n",
+           namestr(&dgram->source_name), inet_ntoa(p->ip),
+           namestr(&dgram->dest_name)));
+
+  /* We only send announcement requests on our workgroup. */
+  if(strequal(workgroup_name, myworkgroup) == False)
+  {
+    DEBUG(7,("process_lm_announce_request: Ignoring announce request for workgroup %s.\n",
+           workgroup_name));
+    return;
+  }
+
+  if((work = find_workgroup_on_subnet(subrec, workgroup_name)) == NULL)
+  {
+    DEBUG(0,("process_announce_request: Unable to find workgroup %s on subnet !\n",
+            workgroup_name));
+    return;
+  }
+
+  found_lm_clients = True;
 }
