@@ -119,7 +119,7 @@ add_new_key(int argc, char **argv)
 out:
     if(princ_ent)
 	krb5_free_principal(context, princ_ent);
-    if(password)
+    if(!rkey && password)
 	memset(password, 0, strlen(password));
     return 0;
 usage:
