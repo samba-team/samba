@@ -631,6 +631,7 @@ static void srv_spoolss_receive_message(int msg_type, pid_t src, void *buf, size
 		return;
 	}
 
+	memcpy(msg, buf, len);
 	low = IVAL(msg,0);
 	high = IVAL(msg,4);
 
@@ -668,7 +669,7 @@ static BOOL srv_spoolss_sendnotify(uint32 high, uint32 low)
 
 	SIVAL(msg,0,low);
 	SIVAL(msg,4,high);
-	DEBUG(10,("srv_spoolss_sendnotify: printer change low=%x  high=%x\n", msg[0], msg[1]));
+	DEBUG(10,("srv_spoolss_sendnotify: printer change low=0x%x  high=0x%x\n", low, high));
 
 	message_send_all(conn_tdb_ctx(), MSG_PRINTER_NOTIFY, msg, sizeof(msg), False);
 	return True;
