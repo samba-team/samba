@@ -283,8 +283,8 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	return ENOMEM;
     for(i = 0; i < client->keys.len; i++) {
 	pa.val[i].etype = client->keys.val[i].key.keytype;
-	ALLOC(pa.val[i].salttype);
 	if(client->keys.val[i].salt){
+	    ALLOC(pa.val[i].salttype);
 #if 0
 	    if(client->keys.val[i].salt->type == hdb_pw_salt)
 		*pa.val[i].salttype = 0; /* or 1? or NULL? */
@@ -307,19 +307,20 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
 	    krb5_copy_data(context, &client->keys.val[i].salt->salt,
 			   &pa.val[i].salt);
 	} else {
-#if 0
-	    *pa.val[i].salttype = 1; /* or 0 with salt? */
-#else
-	    *pa.val[i].salttype = KRB5_PADATA_PW_SALT;
-#endif
+	    /* we return no salt type at all, as that should indicate
+	     * the default salt type and make everybody happy.  some
+	     * systems (like w2k) dislike being told the salt type
+	     * here. */
+
+	    pa.val[i].salttype = NULL;
 	    pa.val[i].salt = NULL;
 	}
     }
     len = length_ETYPE_INFO(&pa);
     buf = malloc(len);
-    if (buf) {
+    if (buf == NULL) {
 	free_ETYPE_INFO(&pa);
-	return ret;
+	return ENOMEM;
     }
     ret = encode_ETYPE_INFO(buf + len - 1, len, &pa, &len);
     free_ETYPE_INFO(&pa);
