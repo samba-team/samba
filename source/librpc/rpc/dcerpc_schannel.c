@@ -92,6 +92,11 @@ static NTSTATUS dcerpc_schannel_sign_packet(struct gensec_security *gensec_secur
 	return schannel_sign_packet(dce_schan_state->schannel_state, mem_ctx, data, length, sig);
 }
 
+static size_t dcerpc_schannel_sig_size(struct gensec_security *gensec_security)
+{
+	return 32;
+}
+
 static NTSTATUS dcerpc_schannel_session_key(struct gensec_security *gensec_security, 
 					    DATA_BLOB *session_key)
 {
@@ -504,6 +509,7 @@ static const struct gensec_security_ops gensec_dcerpc_schannel_security_ops = {
 	.unseal_packet 	= dcerpc_schannel_unseal_packet,
 	.session_key	= dcerpc_schannel_session_key,
 	.session_info	= dcerpc_schannel_session_info,
+	.sig_size	= dcerpc_schannel_sig_size,
 	.end		= dcerpc_schannel_end
 };
 
