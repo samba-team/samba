@@ -792,12 +792,28 @@ int dcesrv_lookup_endpoints(const struct dcerpc_interface_table *table,
 }
 
 
+BOOL dcesrv_set_interface(struct dcesrv_state *dce, 
+			  const char *uuid, uint32 if_version,
+			  const struct dcerpc_interface_table *table,
+			  const dcesrv_dispatch_fn_t *dispatch_table)
+{
+	if (strcasecmp(table->uuid, uuid) != 0 || if_version != table->if_version) {
+		DEBUG(2,("Attempt to use unknown interface %s/%d\n", uuid, if_version));
+		return False;
+	}
+
+	dce->ndr = table;
+	dce->dispatch = dispatch_table;
+	return True;
+}
+
+
 /*
   initialise the dcerpc server subsystem
 */
 BOOL dcesrv_init(struct dcesrv_context *dce)
 {
-	rpc_echo_init(dce);
+	rpc_rpcecho_init(dce);
 	rpc_epmapper_init(dce);
 	return True;
 }

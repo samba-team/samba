@@ -55,14 +55,14 @@ static NTSTATUS echo_SourceData(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, s
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall *r)
+static NTSTATUS echo_TestCall(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_TestCall *r)
 {
 	r->out.s2 = "this is a test string";
 	
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct TestCall2 *r)
+static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, struct echo_TestCall2 *r)
 {
 	r->out.info = talloc(mem_ctx, sizeof(*r->out.info));
 	if (!r->out.info) {
@@ -109,79 +109,5 @@ static NTSTATUS echo_TestCall2(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, st
 }
 
 
-
-
-/**************************************************************************
-  all the code below this point is boilerplate that will be auto-generated
-***************************************************************************/
-
-static const dcesrv_dispatch_fn_t dispatch_table[] = {
-	(dcesrv_dispatch_fn_t)echo_AddOne,
-	(dcesrv_dispatch_fn_t)echo_EchoData,
-	(dcesrv_dispatch_fn_t)echo_SinkData,
-	(dcesrv_dispatch_fn_t)echo_SourceData,
-	(dcesrv_dispatch_fn_t)echo_TestCall,
-	(dcesrv_dispatch_fn_t)echo_TestCall2
-};
-
-
-/*
-  return True if we want to handle the given endpoint
-*/
-static BOOL op_query_endpoint(const struct dcesrv_endpoint *ep)
-{
-	return dcesrv_table_query(&dcerpc_table_rpcecho, ep);
-}
-
-/*
-  setup for a particular rpc interface
-*/
-static BOOL op_set_interface(struct dcesrv_state *dce, const char *uuid, uint32 if_version)
-{
-	if (strcasecmp(uuid, dcerpc_table_rpcecho.uuid) != 0 ||
-	    if_version != dcerpc_table_rpcecho.if_version) {
-		DEBUG(2,("Attempt to use unknown interface %s/%d\n", uuid, if_version));
-		return False;
-	}
-
-	dce->ndr = &dcerpc_table_rpcecho;
-	dce->dispatch = dispatch_table;
-
-	return True;
-}
-
-
-/* op_connect is called when a connection is made to an endpoint */
-static NTSTATUS op_connect(struct dcesrv_state *dce)
-{
-	return NT_STATUS_OK;
-}
-
-static void op_disconnect(struct dcesrv_state *dce)
-{
-	/* nothing to do */
-}
-
-
-static int op_lookup_endpoints(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **e)
-{
-	return dcesrv_lookup_endpoints(&dcerpc_table_rpcecho, mem_ctx, e);
-}
-
-static const struct dcesrv_endpoint_ops rpc_echo_ops = {
-	op_query_endpoint,
-	op_set_interface,
-	op_connect,
-	op_disconnect,
-	op_lookup_endpoints
-};
-
-/*
-  register with the dcerpc server
-*/
-void rpc_echo_init(struct dcesrv_context *dce)
-{
-	if (!dcesrv_endpoint_register(dce, &rpc_echo_ops, &dcerpc_table_rpcecho)) {
-		DEBUG(1,("Failed to register rpcecho endpoint\n"));
-	}
-}
+/* include the generated boilerplate */
+#include "librpc/gen_ndr/ndr_echo_s.c"

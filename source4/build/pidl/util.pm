@@ -127,9 +127,9 @@ sub ChangeExtension($$)
     my($fname) = shift;
     my($ext) = shift;
     if ($fname =~ /^(.*)\.(.*?)$/) {
-	return "$1.$ext";
+	return "$1$ext";
     }
-    return "$fname.$ext";
+    return "$fname$ext";
 }
 
 #####################################################################

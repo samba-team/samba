@@ -16,6 +16,7 @@ use File::Basename;
 use idl;
 use dump;
 use header;
+use server;
 use parser;
 use eparser;
 use validator;
@@ -26,6 +27,7 @@ my($opt_parse) = 0;
 my($opt_dump) = 0;
 my($opt_diff) = 0;
 my($opt_header) = 0;
+my($opt_server) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
@@ -61,6 +63,7 @@ sub ShowHelp()
              --dump                dump a pidl file back to idl
              --header              create a C header file
              --parser              create a C parser
+             --server              create server boilterplate
              --eparser             create an ethereal parser
              --diff                run diff on the idl and dumped output
              --keep                keep the .pidl file
@@ -75,6 +78,7 @@ GetOptions (
 	    'parse' => \$opt_parse,
 	    'dump' => \$opt_dump,
 	    'header' => \$opt_header,
+	    'server' => \$opt_server,
 	    'parser' => \$opt_parser,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
@@ -100,7 +104,7 @@ sub process_file($)
 		$output = $opt_output . $basename;
 	}
 
-	my($pidl_file) = util::ChangeExtension($output, "pidl");
+	my($pidl_file) = util::ChangeExtension($output, ".pidl");
 
 	print "Compiling $idl_file\n";
 
@@ -120,22 +124,27 @@ sub process_file($)
 	}
 	
 	if ($opt_header) {
-		my($header) = util::ChangeExtension($output, "h");
+		my($header) = util::ChangeExtension($output, ".h");
 		util::FileSave($header, IdlHeader::Parse($pidl));
+	}
+
+	if ($opt_server) {
+		my($server) = util::ChangeExtension($output, "_s.c");
+		util::FileSave($server, IdlServer::Parse($pidl));
 	}
 	
 	if ($opt_parser) {
-		my($parser) = util::ChangeExtension($output, "c");
+		my($parser) = util::ChangeExtension($output, ".c");
 		IdlParser::Parse($pidl, $parser);
 	}
 	
 	if ($opt_eparser) {
-		my($parser) = util::ChangeExtension($output, "c");
+		my($parser) = util::ChangeExtension($output, ".c");
 		util::FileSave($parser, IdlEParser::Parse($pidl));
 	}
 	
 	if ($opt_diff) {
-		my($tempfile) = util::ChangeExtension($output, "tmp");
+		my($tempfile) = util::ChangeExtension($output, ".tmp");
 		util::FileSave($tempfile, IdlDump::Dump($pidl));
 		system("diff -wu $idl_file $tempfile");
 		unlink($tempfile);
