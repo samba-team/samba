@@ -298,6 +298,7 @@ AC_OUTPUT(Makefile 			\
 	admin/Makefile			\
 	kdc/Makefile			\
 	appl/Makefile			\
+	appl/test/Makefile		\
 	appl/rsh/Makefile		\
 	appl/telnet/Makefile		\
 	appl/telnet/libtelnet/Makefile	\
