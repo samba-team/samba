@@ -176,6 +176,9 @@ int net_help_printer(int argc, const char **argv)
 		 "\tlists all printers on print-server\n\n");
 	d_printf("net rpc printer DRIVER [printer] [misc. options] [targets]\n"\
 		 "\tlists all printer-drivers on print-server\n\n");
+	d_printf("net rpc printer PUBLISH action [printer] [misc. options] [targets]\n"\
+		 "\tpublishes printer settings in Active Directory\n"
+		 "\taction can be one of PUBLISH, UPDATE, UNPUBLISH or LIST\n\n");
 	d_printf("net rpc printer MIGRATE PRINTERS [printer] [misc. options] [targets]"\
 		 "\n\tmigrates printers from remote to local server\n\n");
 	d_printf("net rpc printer MIGRATE SETTINGS [printer] [misc. options] [targets]"\

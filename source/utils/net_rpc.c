@@ -3,6 +3,7 @@
    Distributed SMB/CIFS Server Management Utility 
    Copyright (C) 2001 Andrew Bartlett (abartlet@samba.org)
    Copyright (C) 2002 Jim McDonough (jmcd@us.ibm.com)
+   Copyright (C) 2004 Guenther Deschner (gd@samba.org)
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -5045,6 +5046,106 @@ static int rpc_printer_driver_list(int argc, const char **argv)
 }
 
 /** 
+ * Publish printer in ADS via MSRPC
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_publish_publish(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_publish_publish_internals,
+			       argc, argv);
+}
+
+/** 
+ * Update printer in ADS via MSRPC
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_publish_update(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_publish_update_internals,
+			       argc, argv);
+}
+
+/** 
+ * UnPublish printer in ADS via MSRPC
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_publish_unpublish(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_publish_unpublish_internals,
+			       argc, argv);
+}
+
+/** 
+ * List published printers via MSRPC
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_publish_list(int argc, const char **argv)
+{
+
+	return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_publish_list_internals,
+			       argc, argv);
+}
+
+
+/** 
+ * Publish printer in ADS
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_printer_publish(int argc, const char **argv)
+{
+
+	struct functable func[] = {
+		{"publish", 	rpc_printer_publish_publish},
+		{"update", 	rpc_printer_publish_update},
+		{"unpublish", 	rpc_printer_publish_unpublish},
+		{"list", 	rpc_printer_publish_list},
+		{"help", 	rpc_printer_usage},
+		{NULL, NULL}
+	};
+
+	if (argc == 0)
+		return run_rpc_command(NULL, PI_SPOOLSS, 0, 
+			       rpc_printer_publish_list_internals,
+			       argc, argv);
+
+	return net_run_function(argc, argv, func, rpc_printer_usage);
+
+}
+
+
+/** 
  * Display rpc printer help page.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -5067,6 +5168,7 @@ int net_rpc_printer(int argc, const char **argv)
 		{"list", rpc_printer_list},
 		{"migrate", rpc_printer_migrate},
 		{"driver", rpc_printer_driver_list},
+		{"publish", rpc_printer_publish},
 		{NULL, NULL}
 	};
 
