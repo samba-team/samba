@@ -60,12 +60,20 @@ static BOOL cli_send_smb(struct cli_state *cli, BOOL show)
 	ssize_t ret;
 	BOOL reestablished=False;
 
+	len = smb_len(cli->outbuf) + 4;
+
 	if (show)
 	{
-		show_msg(cli->outbuf);
+		uint8 msg_type = CVAL(cli->outbuf, 0);
+		if (msg_type == 0)
+		{
+			show_msg(cli->outbuf);
+		}
+		else
+		{
+			dump_data(10, cli->outbuf, len);
+		}
 	}
-
-	len = smb_len(cli->outbuf) + 4;
 
 	while (nwritten < len) {
 		ret = write_socket(cli->fd,cli->outbuf+nwritten,len - nwritten);
@@ -2465,7 +2473,7 @@ BOOL cli_session_request(struct cli_state *cli,
 retry:
 #endif /* WITH_SSL */
 
-	cli_send_smb(cli, False);
+	cli_send_smb(cli, True);
 	DEBUG(5,("Sent session request\n"));
 
 	if (!cli_receive_smb(cli))

@@ -526,6 +526,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
 {
   BOOL ret;
+  uint8 msg_type;
 
   for(;;)
   {
@@ -539,9 +540,18 @@ BOOL client_receive_smb(int fd,char *buffer, unsigned int timeout)
     }
 
     /* Ignore session keepalive packets. */
-    if(CVAL(buffer,0) != 0x85)
+    msg_type = CVAL(buffer,0);
+    if (msg_type != 0x85)
       break;
   }
+	if (msg_type == 0)
+	{
+		show_msg(buffer);
+	}
+	else
+	{
+		dump_data(10, buffer, smb_len(buffer) + 4);
+	}
   show_msg(buffer);
   return ret;
 }
