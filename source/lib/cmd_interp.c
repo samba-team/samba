@@ -1173,11 +1173,16 @@ static uint32 cmd_set(struct client_info *info, int argc, char *argv[])
 
 		if (usr.ntc.domain[0]) {
 			fstrcpy(workgroup, usr.ntc.domain);
+
+			/* We have already converted from unix_to_dos()
+			   above so undo this for the resolve name stuff -
+			   SIGH */
+
+			dos_to_unix(workgroup, True);
+
 		} else {
 			fstrcpy(workgroup, lp_workgroup());
 		}
-
-		dos_to_unix(workgroup, True);
 
 		if (!resolve_srv_name(cli_info.dest_host, cli_info.dest_host,
 				      workgroup, &ip)) {
