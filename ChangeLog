@@ -1,5 +1,8 @@
 Sun Mar  1 02:05:11 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
+	* lib/kadm5/get_princs_s.c: Also try to match aganist the
+ 	expression appended with `@default-realm'.
+
 	* lib/krb5/principal.c: Add `krb5_unparse_name_fixed_short', that
  	excludes the realm if it's the same as the default realm.
 
