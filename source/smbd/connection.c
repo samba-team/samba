@@ -340,7 +340,7 @@ static void utmp_yield(pid_t pid, const connection_struct *conn)
 	}
 }
 
-static void utmp_claim(const struct connect_record *crec, const connection_struct *conn)
+static void utmp_claim(const struct connections_data *crec, const connection_struct *conn)
 {
 	struct utmp u;
 
@@ -354,8 +354,8 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 		return;
 	}
 
-	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d i:%d\n",
-	  conn->user, conn->cnum, i));
+	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d\n",
+	  conn->user, conn->cnum));
 	DEBUG(2,("utmp_claim: crec: pid:%d, cnum:%d name:%s addr:%s mach:%s DNS:%s\n",
 	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, client_name()));
 
