@@ -28,9 +28,11 @@ AC_PROG_AWK
 AC_KRB_PROG_LN_S
 
 if test "$GCC" = "yes"; then
-  WFLAGS="-Wall -Wno-unused -Wmissing-prototypes"
+  WFLAGS="-Wall -Wmissing-prototypes -Wpointer-arith -Wbad-function-cast -Wcast-align -Wmissing-declarations -Wnested-externs"
+  WFLAGS_NOUNUSED="-Wno-unused"
 fi
 AC_SUBST(WFLAGS)
+AC_SUBST(WFLAGS_NOUNUSED)
 CFLAGS="-g"
 
 berkeley_db=db
@@ -157,22 +159,25 @@ AC_DECL_YYTEXT
 dnl Checks for header files.
 AC_HEADER_STDC
 
-AC_CHECK_HEADERS(arpa/inet.h arpa/telnet.h bsdsetjmp.h crypt.h)
+AC_CHECK_HEADERS(arpa/inet.h arpa/nameser.h arpa/telnet.h bsdsetjmp.h crypt.h)
 AC_CHECK_HEADERS(curses.h db.h dbm.h dirent.h err.h errno.h)
-AC_CHECK_HEADERS(fcntl.h fnmatch.h grp.h inttypes.h limits.h ndbm.h)
+AC_CHECK_HEADERS(fcntl.h fnmatch.h grp.h inttypes.h limits.h maillock.h ndbm.h)
 AC_CHECK_HEADERS(net/if.h netdb.h)
 AC_CHECK_HEADERS(netinet/in.h netinet/in6.h netinet/in6_var.h)
 AC_CHECK_HEADERS(netinet/in6_machtypes.h netinet/in_systm.h)
 AC_CHECK_HEADERS(netinet/ip.h netinet/tcp.h netinfo/ni.h netinet6/in6.h paths.h pty.h pwd.h)
+AC_CHECK_HEADERS(io.h resolv.h)
 AC_CHECK_HEADERS(rpcsvc/dbm.h sac.h sgtty.h shadow.h signal.h stropts.h)
 AC_CHECK_HEADERS(sys/bitypes.h sys/file.h sys/filio.h sys/ioctl.h)
 AC_CHECK_HEADERS(sys/param.h sys/proc.h sys/pty.h sys/ptyio.h)
 AC_CHECK_HEADERS(sys/ptyvar.h sys/resource.h sys/select.h)
 AC_CHECK_HEADERS(sys/socket.h sys/sockio.h sys/stat.h sys/stream.h)
-AC_CHECK_HEADERS(sys/stropts.h sys/sysctl.h sys/time.h sys/timeb.h)
-AC_CHECK_HEADERS(sys/times.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
+AC_CHECK_HEADERS(sys/stropts.h sys/strtty.h sys/str_tty.h sys/syscall.h)
+AC_CHECK_HEADERS(sys/sysctl.h sys/time.h sys/timeb.h sys/times.h)
+AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
-AC_CHECK_HEADERS(termios.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
+AC_CHECK_HEADERS(termios.h time.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
+AC_CHECK_HEADERS(winsock.h)
 
 if test "$ac_cv_header_err_h" = no; then
 	EXTRA_HDRS="$EXTRA_HDRS err.h"
@@ -202,11 +207,15 @@ dnl Checks for library functions.
 AC_BROKEN_SNPRINTF
 AC_BROKEN_VSNPRINTF
 
-AC_CHECK_FUNCS(_getpty asnprintf asprintf fcntl gethostname)
-AC_CHECK_FUNCS(getmsg grantpt logwtmp mktime ptsname rand random)
+AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf fcntl gethostname getlogin)
+AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
+AC_CHECK_FUNCS(grantpt logwtmp mktime ptsname rand random)
 AC_CHECK_FUNCS(revoke select setitimer setlogin setpcred setpgid)
-AC_CHECK_FUNCS(setsid setsockopt sigaction strstr timegm ttyname umask)
+AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
+AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
+AC_CHECK_FUNCS(sysconf sysctl timegm ttyname ttyslot umask uname)
 AC_CHECK_FUNCS(unlockpt vasnprintf vasprintf vhangup)
+AC_CHECK_FUNCS(yp_get_default_domain)
 
 AC_TYPE_SIGNAL
 if test "$ac_cv_type_signal" = "void" ; then
@@ -231,9 +240,9 @@ AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
 AC_BROKEN(initgroups innetgr iruserok lstat memmove mkstemp)
 AC_BROKEN(putenv rcmd readv setegid setenv setenv seteuid)
-AC_BROKEN(seteuid strcasecmp strcpy_truncate strdup strerror strftime)
-AC_BROKEN(strlwr strnlen strsep strtok_r strupr unsetenv verr verrx)
-AC_BROKEN(vsyslog vwarn vwarnx warn warnx writev)
+AC_BROKEN(seteuid strcasecmp strncasecmp strcpy_truncate strdup strerror)
+AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
+AC_BROKEN(unsetenv verr verrx vsyslog vwarn vwarnx warn warnx writev)
 
 AC_CACHE_CHECK(if realloc if broken, ac_cv_func_realloc_broken, [
 ac_cv_func_realloc_broken=no
@@ -373,6 +382,7 @@ AC_EGREP_HEADER(ut_type, utmp.h, AC_DEFINE(HAVE_UT_TYPE))
 AC_EGREP_HEADER(ut_pid, utmp.h, AC_DEFINE(HAVE_UT_PID))
 AC_EGREP_HEADER(ut_id, utmp.h, AC_DEFINE(HAVE_UT_ID))
 AC_EGREP_HEADER(ut_syslen, utmpx.h, AC_DEFINE(HAVE_UT_SYSLEN))
+AC_EGREP_HEADER(ut_exit, utmpx.h, AC_DEFINE(HAVE_UT_EXIT))
 
 AC_KRB_IPV6
 
@@ -483,8 +493,7 @@ AC_OUTPUT(Makefile 			\
 	lib/roken/Makefile		\
 	lib/editline/Makefile		\
 	lib/sl/Makefile			\
-	lib/error/Makefile		\
-	lib/error/compile_et		\
+	lib/com_err/Makefile		\
 	lib/asn1/Makefile		\
 	lib/des/Makefile		\
 	lib/krb5/Makefile		\
