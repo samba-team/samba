@@ -66,6 +66,7 @@
 /* this flag is used to force a section of IDL as little endian. It is
    needed for the epmapper IDL, which is defined as always being LE */
 #define NDR_LITTLE_ENDIAN LIBNDR_FLAG_LITTLE_ENDIAN
+#define NDR_BIG_ENDIAN LIBNDR_FLAG_BIGENDIAN
 
 
 /*
