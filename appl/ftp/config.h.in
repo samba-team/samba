@@ -1,0 +1,47 @@
+/* config.h.in.  Generated automatically from configure.in by autoheader.  */
+
+
+#undef HAVE___PROGNAME
+#undef HAVE_UT_HOST
+#undef BROKEN_GETCWD
+
+/* Define if you have the getcwd function.  */
+#undef HAVE_GETCWD
+
+/* Define if you have the gethostbyname function.  */
+#undef HAVE_GETHOSTBYNAME
+
+/* Define if you have the setproctitle function.  */
+#undef HAVE_SETPROCTITLE
+
+/* Define if you have the socket function.  */
+#undef HAVE_SOCKET
+
+/* Define if you have the <bsd/bsd.h> header file.  */
+#undef HAVE_BSD_BSD_H
+
+/* Define if you have the <paths.h> header file.  */
+#undef HAVE_PATHS_H
+
+/* Define if you have the <sys/select.h> header file.  */
+#undef HAVE_SYS_SELECT_H
+
+/* Define if you have the nsl library (-lnsl).  */
+#undef HAVE_LIBNSL
+
+/* Define if you have the socket library (-lsocket).  */
+#undef HAVE_LIBSOCKET
+
+#undef HAVE___PROGNAME
+#undef HAVE_UT_HOST
+#undef BROKEN_GETCWD
+
+#ifdef __STDC__
+#define RCSID(msg) static const char *rcsid[] = { (char *)rcsid, "\0100(#)" msg }
+#else
+#define RCSID(msg) static char *rcsid[] = { (char *)rcsid, msg }
+#endif
+
+#define WTMP_PATH "/var/adm/wtmp"
+
+#define KERBEROS
