@@ -1,0 +1,98 @@
+<localization language="fi">
+
+<gentext key="abstract"                 text="Lyhennelm&#228;"/>
+<gentext key="appendix"                 text="Liite"/>
+<gentext key="article"                  text="Artikkeli"/>
+<gentext key="bibliography"             text="L&#228;hteet"/>
+<gentext key="book"                     text="Kirja"/>
+<gentext key="caution"                  text="VARO"/>
+<gentext key="caution"                  text="Varo"/>
+<gentext key="chapter"                  text="Luku"/>
+<gentext key="copyright"                text="Copyright"/>
+<gentext key="dedication"               text="Omistus"/>
+<gentext key="edition"                  text="Edition"/>
+<gentext key="equation"                 text="Kaava"/>
+<gentext key="example"                  text="Esimerkki"/>
+<gentext key="figure"                   text="Kuva"/>
+<gentext key="glosssee"                 text="Katso"/>
+<gentext key="glossseealso"             text="Katso my&#246;s"/>
+<gentext key="glossary"                 text="Sanasto"/>
+<gentext key="important"                text="T&#196;RKE&#196;&#196;"/>
+<gentext key="isbn"                     text="ISBN"/>
+<gentext key="important"                text="T&#228;rke&#228;&#228;"/>
+<gentext key="index"                    text="Indeksi"/>
+<gentext key="legalnotice"              text=""/>
+<gentext key="msgaud"                   text="Yleis&#246;"/>
+<gentext key="msglevel"                 text="Taso"/>
+<gentext key="msgorig"                  text="Alkuper&#228;"/>
+<gentext key="note"                     text="HUOMAA"/>
+<gentext key="note"                     text="Huomaa"/>
+<gentext key="part"                     text="Osa"/>
+<gentext key="preface"                  text="Esipuhe"/>
+<gentext key="procedure"                text="Aliohjelma"/>
+<gentext key="published"                text="Julkaistu"/>
+<gentext key="refname"                  text="Nimi"/>
+<gentext key="reference"                text="L&#228;hdeluettelo"/>
+<gentext key="revision"                 text="Versio"/>
+<gentext key="revhistory"               text="Versiohistoria"/>
+<gentext key="section"                  text="Kohta"/>
+<gentext key="see"                      text="Katso"/>
+<gentext key="seealso"                  text="Katso my&#246;s"/>
+<gentext key="set"                      text="Kokoelma"/>
+<gentext key="setindex"                 text="Kokoelman indeksi"/>
+<gentext key="sidebar"                  text=""/>
+<gentext key="step"                     text="Step"/>
+<gentext key="tip"                      text="VIHJE"/>
+<gentext key="table"                    text="Taulu"/>
+<gentext key="tip"                      text="Vihje"/>
+<gentext key="warning"                  text="VAROITUS"/>
+<gentext key="warning"                  text="Varoitus"/>
+<gentext key="appendix"                 text="liite"/>
+<gentext key="chapter"                  text="luku"/>
+<gentext key="section"                  text="kohta"/>
+<gentext key="sidebar"                  text="sivupalkki"/>
+<gentext key="step"                     text="step"/>
+<gentext key="seealso"                  text="Katso my&#246;s"/>
+
+<gentext key="TableofContents"          text="Sis&#228;llys"/>
+<gentext key="in"                       text="teoksessa"/>
+<gentext key="by"                       text=""/>
+<gentext key="Edited"                   text="Toim."/>
+<gentext key="Editedby"                 text="Toimittanut"/>
+<gentext key="and"                      text="ja"/>
+<gentext key="Notes"                    text=""/>
+<gentext key="TableNotes"               text=""/>
+<gentext key="nonexistantelement"       text="elementti&#228; ei ole olemassa"/>
+<gentext key="Pgs"                      text="Sivut"/>
+<gentext key="unsupported"              text="ei tueta"/>
+<gentext key="xrefto"                   text="xref johonkin"/>
+<gentext key="unexpectedelementname"    text="Odottamaton elementin nimi"/>
+<gentext key="Revisedby"                text="Revised by: "/>
+
+<gentext key="ListofTables"             text="Luettelo tauluista"/>
+<gentext key="ListofExamples"           text="Luettelo esimerkeist&#228;"/>
+<gentext key="ListofFigures"            text="Luettelo kuvista"/>
+<gentext key="ListofEquations"          text="Luettelo esimerkeist&#228;"/>
+<gentext key="ListofUnknown"            text="Luettelo tuntemattomista"/>
+
+<gentext key="nav-prev"                 text="Edellinen"/>
+<gentext key="nav-prev-sibling"         text="Nopeasti taaksep&#x00E4;in"/>
+<gentext key="nav-next-sibling"         text="Nopeasti eteenp&#x00E4;in"/>
+<gentext key="nav-next"                 text="Seuraava"/>
+<gentext key="nav-up"                   text="Yl&#x00F6;s"/>
+<gentext key="nav-home"                 text="Alkuun"/>
+
+<dingbat key="startquote" text="&#x201C;"/>
+<dingbat key="endquote" text="&#x201D;"/>
+<dingbat key="nestedstartquote" text="&#x2018;"/>
+<dingbat key="nestedendquote" text="&#x2019;"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>
