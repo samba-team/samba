@@ -84,18 +84,19 @@ static int count_fn( TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *u
 
 	memcpy(&crec, dbuf.dptr, sizeof(crec));
  
-	if (crec.cnum == -1)
+    if (crec.cnum == -1)
 		return 0;
 
-	/* if the pid was not found delete the entry from connections.tdb */
-	if (cs->Clear && !process_exists(crec.pid)) {
+	/* If the pid was not found delete the entry from connections.tdb */
+
+	if (cs->Clear && !process_exists(crec.pid) && (errno == ESRCH)) {
 		DEBUG(2,("pid %u doesn't exist - deleting connections %d [%s]\n",
 			(unsigned int)crec.pid, crec.cnum, crec.name));
 		tdb_delete(the_tdb, kbuf);
 		return 0;
 	}
 
-	if (cs && strequal(crec.name, cs->name))
+	if (strequal(crec.name, cs->name))
 		cs->curr_connections++;
 
 	return 0;
@@ -109,7 +110,9 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 {
 	struct connections_key key;
 	struct connections_data crec;
-	TDB_DATA kbuf, dbuf;
+	TDB_DATA kbuf, dbuf, lockkey;
+	BOOL rec_locked = False;
+	BOOL ret = True;
 
 	if (!tdb) {
 		tdb = tdb_open(lock_path("connections.tdb"), 0, TDB_CLEAR_IF_FIRST, 
@@ -130,18 +133,30 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 		cs.name = lp_servicename(SNUM(conn));
 		cs.Clear = Clear;
 
+		lockkey.dptr = cs.name;
+		lockkey.dsize = strlen(cs.name)+1;
+
 		/*
-		 * Go through and count the connections
+		 * Go through and count the connections with hash chain representing the service name
+		 * locked. This is slow but removes race conditions. JRA.
 		 */
+
+		if (tdb_chainlock(tdb, lockkey))
+			return False;
+
+		rec_locked = True;
+
 		if (tdb_traverse(tdb, count_fn, &cs) == -1) {
 			DEBUG(0,("claim_connection: traverse of connections.tdb failed.\n"));
-			return False;
+			ret = False;
+			goto out;
 		}
 
 		if (cs.curr_connections >= max_connections) {
 			DEBUG(1,("claim_connection: Max connections (%d) exceeded for %s\n",
 				max_connections, name ));
-			return False;
+			ret = False;
+			goto out;
 		}
 	}
 
@@ -176,19 +191,12 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	dbuf.dsize = sizeof(crec);
 
 	if (tdb_store(tdb, kbuf, dbuf, TDB_REPLACE) != 0)
-		return False;
+		ret = False;
 
-	return True;
+  out:
+
+	if (rec_locked)
+		tdb_chainunlock(tdb, lockkey);
+
+	return ret;
 }
-
-#if 0
-/****************************************************************************
- Use the count function to clean any dead records. Shouldn't be needed...
-****************************************************************************/
-
-void clean_connection_db(void)
-{
-	if (tdb_traverse(tdb, count_fn, NULL) == -1)
-		DEBUG(0,("clean_connection_db: traverse of connections.tdb failed.\n"));
-}
-#endif
