@@ -43,7 +43,11 @@ The
 function does the same, except that it ignores the realm in
 .Fa principal
 and tries all the local realms (see
-.Xr krb5.conf 5 ) .
+.Xr krb5.conf 5 ) . 
+After a successful return, the principal is set to the authenticated
+realm. If the call fails, the principal will not be meaningful, and
+should only be freed with
+.Xr krb5_free_principal 3 .
 .Sh EXAMPLE
 Here is a example program that verifies a password. it uses the
 .Ql host/`hostname`
@@ -80,6 +84,7 @@ main(int argc, char **argv)
 .Ed
 .Sh SEE ALSO
 .Xr krb5_err 3 ,
+.Xr krb5_free_principal 3 ,
 .Xr krb5_init_context 3 ,
 .Xr krb5_kt_default 3 ,
 .Xr krb5.conf 5
