@@ -113,14 +113,33 @@ void ndr_pull_uint64(struct e_ndr_pull *ndr, proto_tree *tree, int hf,
 
 void ndr_pull_DATA_BLOB(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gDATA_BLOB *h)
 {
-	guint32 len1, ofs, len2;
-	char *data;
+	guint32 length;
 
 	if (!(ndr_flags & NDR_SCALARS)) {
 		return;
 	}
 
-	/* FIXME */
+	if (ndr->flags & LIBNDR_ALIGN_FLAGS) {
+		if (ndr->flags & LIBNDR_FLAG_ALIGN2) {
+			length = NDR_ALIGN(ndr, 2);
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN4) {
+			length = NDR_ALIGN(ndr, 4);
+		} else if (ndr->flags & LIBNDR_FLAG_ALIGN8) {
+			length = NDR_ALIGN(ndr, 8);
+		}
+		if (ndr->data_size - ndr->offset < length) {
+			length = ndr->data_size - ndr->offset;
+		}
+	} else if (ndr->flags & LIBNDR_FLAG_REMAINING) {
+		length = ndr->data_size - ndr->offset;
+	} else {
+		ndr_pull_uint32(ndr, &length);
+	}
+
+	h->data = g_malloc(length);
+	proto_tree_add_bytes(tree, hf_bytes_data, ndr->tvb, ndr->offset, length, h->data);
+	
+    ndr->offset += length;
 }
 
 void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags)

@@ -70,21 +70,21 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 	twr->floors[1].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
 	
 	/* on an RPC connection ... */
-	twr->floors[2].lhs.protocol = EPM_PROTOCOL_RPC_C;
+	twr->floors[2].lhs.protocol = EPM_PROTOCOL_NCACN_RPC_C;
 	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[2].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
 
 	switch (e->ep_description.type) {
 	case ENDPOINT_SMB:
 		/* on a SMB pipe ... */
-		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
+		twr->floors[3].lhs.protocol = EPM_PROTOCOL_NCACN_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
 								   e->ep_description.info.smb_pipe);
 		twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
 		
 		/* on an NetBIOS link ... */
-		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NETBIOS;
+		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NCACN_NETBIOS;
 		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[4].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\\\%s", 
 								   lp_netbios_name());
@@ -93,13 +93,13 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 
 	case ENDPOINT_TCP:
 		/* on a TCP connection ... */
-		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
+		twr->floors[3].lhs.protocol = EPM_PROTOCOL_NCACN_TCP;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[3].rhs.rhs_data = data_blob_talloc(mem_ctx, NULL, 2);
 		RSSVAL(twr->floors[3].rhs.rhs_data.data, 0, e->ep_description.info.tcp_port);
 		
 		/* on an IP link ... */
-		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
+		twr->floors[4].lhs.protocol = EPM_PROTOCOL_NCACN_IP;
 		twr->floors[4].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[4].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 4);
 		/* TODO: we should fill in our IP address here as a hint to the 
@@ -272,7 +272,7 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 	    floors[1].lhs.protocol != EPM_PROTOCOL_UUID ||
 	    guid_cmp(mem_ctx, &floors[1].lhs.info.uuid.uuid, NDR_GUID) != 0 ||
 	    floors[1].lhs.info.uuid.version != NDR_GUID_VERSION ||
-	    floors[2].lhs.protocol != EPM_PROTOCOL_RPC_C) {
+	    floors[2].lhs.protocol != EPM_PROTOCOL_NCACN_RPC_C) {
 		goto failed;
 	}
 	
@@ -283,14 +283,14 @@ static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		}
 		switch (eps[i].ep_description.type) {
 		case ENDPOINT_SMB:
-			if (floors[3].lhs.protocol != EPM_PROTOCOL_SMB ||
-			    floors[4].lhs.protocol != EPM_PROTOCOL_NETBIOS) {
+			if (floors[3].lhs.protocol != EPM_PROTOCOL_NCACN_SMB ||
+			    floors[4].lhs.protocol != EPM_PROTOCOL_NCACN_NETBIOS) {
 				continue;
 			}
 			break;
 		case ENDPOINT_TCP:
-			if (floors[3].lhs.protocol != EPM_PROTOCOL_TCP ||
-			    floors[4].lhs.protocol != EPM_PROTOCOL_IP) {
+			if (floors[3].lhs.protocol != EPM_PROTOCOL_NCACN_TCP ||
+			    floors[4].lhs.protocol != EPM_PROTOCOL_NCACN_IP) {
 				continue;
 			}
 			break;

@@ -60,8 +60,8 @@ typedef guint32 gWERROR;
 
 typedef struct 
 {
-	int foobar;
-	/* FIXME */
+	guint8 *data;
+	guint32 length;
 } gDATA_BLOB;
 
 #include "packet-dcerpc-proto.h"
@@ -92,7 +92,7 @@ void ndr_pull_NTTIME(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gNTTIME *
 void ndr_pull_HYPER_T(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gHYPER_T *data);
 void ndr_pull_int64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gint64 *data);
 void ndr_pull_uint64(struct e_ndr_pull *ndr, proto_tree *tree, int hf, guint64 *data);
-void ndr_pull_DATA_BLOB(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gDATA_BLOB *blob);
+void ndr_pull_DATA_BLOB(struct e_ndr_pull *ndr, proto_tree *tree, int hf, gDATA_BLOB *data);
 void ndr_pull_string(struct e_ndr_pull *ndr, proto_tree *tree, int ndr_flags);
 void ndr_pull_dom_sid2(struct e_ndr_pull *ndr, proto_tree *tree, int flags);
 

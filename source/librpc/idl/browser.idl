@@ -6,5 +6,50 @@ interface browser
 {
 	/******************/
 	/* Function  0x00 */
-	NTSTATUS browser_Unknown0();
+	NTSTATUS BrowserrServerEnum();
+
+	/******************/
+	/* Function  0x01 */
+	NTSTATUS BrowserrDebugCall();
+
+	/******************/
+	/* Function  0x02 */
+	NTSTATUS BrowserrQueryOtherDomains();
+
+	/******************/
+	/* Function  0x03 */
+	NTSTATUS BrowserrResetNetlogonState();
+
+	/******************/
+	/* Function  0x04 */
+	NTSTATUS BrowserrDebugTrace();
+
+	/******************/
+	/* Function  0x05 */
+	NTSTATUS BrowserrQueryStatistics();
+
+	/******************/
+	/* Function  0x06 */
+	NTSTATUS BrowserResetStatistics();
+
+	/******************/
+	/* Function  0x07 */
+	NTSTATUS NetrBrowserStatisticsClear();
+
+	/******************/
+	/* Function  0x08 */
+	NTSTATUS NetrBrowserStatisticsGet();
+
+	/******************/
+	/* Function  0x09 */
+	NTSTATUS BrowserrSetNetlogonState();
+
+	/******************/
+	/* Function  0x10 */
+	NTSTATUS BrowserrQueryEmulatedDomains();
+
+	/******************/
+	/* Function  0x11 */
+	NTSTATUS BrowserrServerEnumEx();
+
 }

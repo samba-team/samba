@@ -2,6 +2,10 @@
 
 /*
   endpoint mapper interface
+  Related links:
+	http://www.opengroup.org/onlinepubs/9629399/apdxl.htm : Details on towers
+http://www.opengroup.org/onlinepubs/9629399/chap6.htm#tagcjh_11_02_03_01: binding strings
+
 */
 
 [
@@ -36,14 +40,22 @@ interface epmapper
 	} epm_prot_uuid;
 
 	typedef enum {
-		EPM_PROTOCOL_TCP     = 0x07,
-		EPM_PROTOCOL_IP      = 0x09,
-		EPM_PROTOCOL_PIPE    = 0x10,
-		EPM_PROTOCOL_NETBIOS = 0x11,
-		EPM_PROTOCOL_RPC_C   = 0x0b,
-		EPM_PROTOCOL_UUID    = 0x0d,
-		EPM_PROTOCOL_SMB     = 0x0f,
-		EPM_PROTOCOL_HTTP    = 0x1f
+		EPM_PROTOCOL_NCACN_DNET_NSP	= 0x04,
+		EPM_PROTOCOL_NCACN_OSI_TP4  = 0x05,
+		EPM_PROTOCOL_NCACN_OSI_CLNS = 0x06,
+		EPM_PROTOCOL_NCACN_TCP     	= 0x07,
+		EPM_PROTOCOL_NCADG_UDP     	= 0x08,
+		EPM_PROTOCOL_NCACN_IP      	= 0x09,
+		EPM_PROTOCOL_NCADG_RPC      = 0x0a, /* Connectionless RPC */
+		EPM_PROTOCOL_NCACN_RPC_C   	= 0x0b,
+		EPM_PROTOCOL_NCACN_SPX     	= 0x0c,
+		EPM_PROTOCOL_UUID    		= 0x0d,
+		EPM_PROTOCOL_NCADG_IPX  	= 0x0e,
+		EPM_PROTOCOL_NCACN_SMB     	= 0x0f,
+		EPM_PROTOCOL_NCACN_PIPE    	= 0x10,
+		EPM_PROTOCOL_NCACN_NETBIOS 	= 0x11,
+		EPM_PROTOCOL_NCACN_NB_NB   	= 0x12,
+		EPM_PROTOCOL_NCACN_HTTP    	= 0x1f
 	} epm_protocols;
 
 	typedef [nodiscriminant] union {
@@ -158,7 +170,7 @@ interface epmapper
     
 
 	/**********************/
-	/* Function 0x05      */
+	/* Function 0x06      */
 	void epm_MgmtDelete(
 		[in]            uint32   object_speced,
 		[in]            GUID     *object,

@@ -2,6 +2,7 @@
 
 /*
   protected_storage interface definitions
+  Also seen with UUID: c9378ff1-16f7-11d0-a0b2-00aa0061426a ver 1.0 
 */
 
 [ uuid(e3514235-4b06-11d1-ab04-00c04fc2dcd2),
