@@ -103,9 +103,15 @@ static NTSTATUS check_winbind_security(const struct auth_context *auth_context,
 	
 	result = winbindd_request(WINBINDD_PAM_AUTH_CRAP, &request, &response);
 
-	if (result == NSS_STATUS_UNAVAIL) {
+	if ( result == NSS_STATUS_UNAVAIL )  {
 		struct auth_methods *auth_method = my_private_data;
-		return auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+
+		if ( auth_method )
+			return auth_method->auth(auth_context, auth_method->private_data, 
+				mem_ctx, user_info, server_info);
+		else
+			/* log an error since this should not happen */
+			DEBUG(0,("check_winbind_security: ERROR!  my_private_data == NULL!\n"));
 	}
 
 	nt_status = NT_STATUS(response.data.auth.nt_status);
