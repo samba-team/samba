@@ -42,10 +42,6 @@ static const fstring name_deadbeef = "<deadbeef>";
 /* Globals for domain list stuff */
 struct winbindd_domain *domain_list = NULL;
 
-static struct winbindd_methods msrpc_methods = {
-	winbindd_query_dispinfo
-};
-
 /* Given a domain name, return the struct winbindd domain info for it 
    if it is actually working. */
 
@@ -138,6 +134,7 @@ BOOL get_domain_info(void)
 	fstring level5_dom;
 	BOOL rv = False;
 	TALLOC_CTX *mem_ctx;
+	extern struct winbindd_methods msrpc_methods;
 	
 	DEBUG(1, ("getting trusted domain list\n"));
 
@@ -163,7 +160,7 @@ BOOL get_domain_info(void)
 		goto done;
 
 	result = cli_lsa_enum_trust_dom(hnd->cli, mem_ctx,
-						&hnd->pol, &enum_ctx, &num_doms, &domains, &sids);
+					&hnd->pol, &enum_ctx, &num_doms, &domains, &sids);
 	
 	if (!NT_STATUS_IS_OK(result))
 		goto done;
@@ -787,72 +784,6 @@ BOOL winbindd_param_init(void)
     }
     
     return True;
-}
-
-/* Query display info for a domain.  This returns enough information plus a
-   bit extra to give an overview of domain users for the User Manager
-   application. */
-
-NTSTATUS winbindd_query_dispinfo(struct winbindd_domain *domain,
-                                 TALLOC_CTX *mem_ctx,
-				 uint32 *start_ndx, uint32 *num_entries, 
-				 WINBIND_DISPINFO **info)
-{
-	CLI_POLICY_HND *hnd;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	POLICY_HND dom_pol;
-	BOOL got_dom_pol = False;
-	uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	SAM_DISPINFO_CTR ctr;
-	SAM_DISPINFO_1 info1;
-	int i;
-
-	/* Get sam handle */
-
-	if (!(hnd = cm_get_sam_handle(domain->name)))
-		goto done;
-
-	/* Get domain handle */
-
-	result = cli_samr_open_domain(hnd->cli, mem_ctx, &hnd->pol,
-					des_access, &domain->sid, &dom_pol);
-
-	if (!NT_STATUS_IS_OK(result))
-		goto done;
-
-	got_dom_pol = True;
-
-	ctr.sam.info1 = &info1;
-
-	/* Query display info level 1 */
-	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
-					&dom_pol, start_ndx, 1,
-					num_entries, 0xffff, &ctr);
-
-	/* now map the result into the WINBIND_DISPINFO structure */
-	(*info) = (WINBIND_DISPINFO *)talloc(mem_ctx, (*num_entries)*sizeof(WINBIND_DISPINFO));
-	if (!(*info)) {
-		return NT_STATUS_NO_MEMORY;
-	}
-
-	for (i=0;i<*num_entries;i++) {
-		(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_acct_name);
-		(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_full_name);
-		(*info)[i].user_rid = info1.sam[i].rid_user;
-		/* For the moment we set the primary group for every user to be the
-		   Domain Users group.  There are serious problems with determining
-		   the actual primary group for large domains.  This should really
-		   be made into a 'winbind force group' smb.conf parameter or
-		   something like that. */ 
-		(*info)[i].group_rid = DOMAIN_GROUP_RID_USERS;
-	}
-
- done:
-
-	if (got_dom_pol)
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
-
-	return result;
 }
 
 /* Check if a domain is present in a comma-separated list of domains */

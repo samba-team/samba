@@ -511,28 +511,16 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 		
 	do {
 		struct acct_info *sam_grp_entries = NULL;
-		uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
-		CLI_POLICY_HND *hnd;
-		POLICY_HND dom_pol;
 
 		num_entries = 0;
 
-		if (!(hnd = cm_get_sam_handle(ent->domain->name)))
-			break;
+		status = ent->domain->methods->enum_dom_groups(ent->domain,
+							       mem_ctx, 
+							       &ent->grp_query_start_ndx,
+							       &num_entries,
+							       &sam_grp_entries);
 
-		status = cli_samr_open_domain(hnd->cli, mem_ctx,
-						&hnd->pol, des_access, &ent->domain->sid, &dom_pol);
-
-		if (!NT_STATUS_IS_OK(status))
-			break;
-
-		status = cli_samr_enum_dom_groups(
-						hnd->cli, mem_ctx, &dom_pol,
-						&ent->grp_query_start_ndx,
-						0x8000, /* buffer size? */
-						(struct acct_info **) &sam_grp_entries, &num_entries);
-
-		cli_samr_close(hnd->cli, mem_ctx, &dom_pol);
+		if (!NT_STATUS_IS_OK(status)) break;
 
 		/* Copy entries into return buffer */
 

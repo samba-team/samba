@@ -412,7 +412,8 @@ WINBINDD_OBJ1 = \
 		nsswitch/winbindd_pam.o   \
 		nsswitch/winbindd_sid.o   \
 		nsswitch/winbindd_misc.o  \
-		nsswitch/winbindd_cm.o
+		nsswitch/winbindd_cm.o \
+		nsswitch/winbindd_rpc.o  \
 
 NECESSARY_BECAUSE_SAMBA_DEPENDENCIES_ARE_SO_BROKEN_OBJ = \
 		rpc_client/cli_netlogon.o rpc_client/cli_login.o \
