@@ -86,6 +86,20 @@ char **my_netbios_names;
 static char *filename_dos(char *path,char *buf);
 
 
+/*************************************************************
+ initialise password databases, domain names, domain sid.
+**************************************************************/
+BOOL init_myworkgroup(void)
+{
+	fstrcpy(global_myworkgroup, lp_workgroup());
+
+	if (strequal(global_myworkgroup,"*"))
+	{
+		DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+		return False;
+	}
+	return True;
+}
 
 /****************************************************************************
   find a suitable temporary directory. The result should be copied immediately

@@ -677,7 +677,7 @@ static void usage(char *pname)
 
   reload_services( True );
 
-	if (!pwdb_init_myworkgroup())
+	if (!init_myworkgroup())
 	{
 		exit(1);
 	}
