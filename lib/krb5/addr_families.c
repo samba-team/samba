@@ -629,7 +629,7 @@ krb5_boolean
 krb5_sockaddr_uninteresting(const struct sockaddr *sa)
 {
     struct addr_operations *a = find_af(sa->sa_family);
-    if (a == NULL)
+    if (a == NULL || a->uninteresting == NULL)
 	return TRUE;
     return (*a->uninteresting)(sa);
 }
