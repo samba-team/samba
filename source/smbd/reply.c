@@ -249,7 +249,7 @@ void reply_ioctl(struct request_context *req)
 {
 	union smb_ioctl *io;
 
-	/* parse requst */
+	/* parse request */
 	REQ_CHECK_WCT(req, 3);
 	REQ_TALLOC(io, sizeof(*io));
 

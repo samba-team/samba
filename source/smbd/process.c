@@ -765,7 +765,7 @@ void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int 
 	event_add_fd(ev, &fde);
 
 	/* setup the DCERPC server subsystem */
-	dcesrv_init(&smb->dcesrv);
+	dcesrv_init_context(&smb->dcesrv);
 }
 
 
@@ -823,6 +823,10 @@ void smbd_process_init(void)
 
 	/* Setup the NTVFS subsystem */
 	if (!ntvfs_init())
+		exit(1);
+
+	/* Setup the DCERPC subsystem */
+	if (!dcesrv_init())
 		exit(1);
 
 	/* re-initialise the timezone */

@@ -4,6 +4,7 @@
    server side dcerpc core code
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,15 +24,105 @@
 #include "includes.h"
 
 /*
-  find the set of endpoint operations for an endpoint server
+  see if two endpoints match
 */
-static const struct dcesrv_endpoint_ops *find_endpoint(struct dcesrv_context *dce,
-						       const struct dcesrv_endpoint *endpoint)
+static BOOL endpoints_match(const struct dcesrv_ep_description *ep1,
+							const struct dcesrv_ep_description *ep2)
 {
-	struct dce_endpoint *ep;
-	for (ep=dce->endpoint_list; ep; ep=ep->next) {
-		if (ep->endpoint_ops->query_endpoint(endpoint)) {
-			return ep->endpoint_ops;
+	if (ep1->type != ep2->type) {
+		return False;
+	}
+
+	switch (ep1->type) {
+		case ENDPOINT_SMB:
+			if (strcmp(ep1->info.smb_pipe,ep2->info.smb_pipe)==0) {
+				return True;
+			}			
+			break;
+		case ENDPOINT_TCP:
+			if (ep1->info.tcp_port == ep2->info.tcp_port) {
+				return True;
+			}
+			break;
+	}
+
+	return False;
+}
+
+/*
+  find an endpoint in the dcesrv_context
+*/
+static struct dcesrv_endpoint *find_endpoint(struct dcesrv_context *dce_ctx,
+						       const struct dcesrv_ep_description *ep_description)
+{
+	struct dcesrv_endpoint *ep;
+	for (ep=dce_ctx->endpoint_list; ep; ep=ep->next) {
+		if (endpoints_match(&ep->ep_description, ep_description)) {
+			return ep;
+		}
+	}
+	return NULL;
+}
+
+/*
+  see if a uuid and if_version match to an interface
+*/
+static BOOL interface_match(const struct dcesrv_interface *if1,
+							const struct dcesrv_interface *if2)
+{
+	if (if1->ndr->if_version != if2->ndr->if_version) {
+		return False;
+	}
+
+	if (strcmp(if1->ndr->uuid, if2->ndr->uuid)==0) {
+		return True;
+	}			
+
+	return False;
+}
+
+/*
+  find the interface operations on an endpoint
+*/
+static const struct dcesrv_interface *find_interface(const struct dcesrv_endpoint *endpoint,
+						       const struct dcesrv_interface *iface)
+{
+	struct dcesrv_if_list *ifl;
+	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
+		if (interface_match(&(ifl->iface), iface)) {
+			return &(ifl->iface);
+		}
+	}
+	return NULL;
+}
+
+/*
+  see if a uuid and if_version match to an interface
+*/
+static BOOL interface_match_by_uuid(const struct dcesrv_interface *iface,
+							const char *uuid, uint32 if_version)
+{
+	if (iface->ndr->if_version != if_version) {
+		return False;
+	}
+
+	if (strcmp(iface->ndr->uuid, uuid)==0) {
+		return True;
+	}			
+
+	return False;
+}
+
+/*
+  find the interface operations on an endpoint by uuid
+*/
+static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv_endpoint *endpoint,
+						       const char *uuid, uint32 if_version)
+{
+	struct dcesrv_if_list *ifl;
+	for (ifl=endpoint->interface_list; ifl; ifl=ifl->next) {
+		if (interface_match_by_uuid(&(ifl->iface), uuid, if_version)) {
+			return &(ifl->iface);
 		}
 	}
 	return NULL;
@@ -40,10 +131,10 @@ static const struct dcesrv_endpoint_ops *find_endpoint(struct dcesrv_context *dc
 /*
   find a call that is pending in our call list
 */
-static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_state *dce, uint16 call_id)
+static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_conn, uint16 call_id)
 {
 	struct dcesrv_call_state *c;
-	for (c=dce->call_list;c;c=c->next) {
+	for (c=dce_conn->call_list;c;c=c->next) {
 		if (c->pkt.call_id == call_id) {
 			return c;
 		}
@@ -52,121 +143,175 @@ static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_state *dce, uint
 }
 
 /*
-  register an endpoint server
+  register an interface on an endpoint
 */
-BOOL dcesrv_endpoint_register(struct dcesrv_context *dce, 
-			      const struct dcesrv_endpoint_ops *ops,
-			      const struct dcerpc_interface_table *table)
+NTSTATUS dcesrv_interface_register(struct dcesrv_context *dce_ctx,
+				const char *ep_name,
+				const struct dcesrv_interface *iface,
+				const struct security_descriptor *sd)
 {
-	BOOL done_smb=False;
-	BOOL done_tcp=False;
-	int i;
+	struct dcesrv_ep_description ep_description;
+	struct dcesrv_endpoint *ep;
+	struct dcesrv_if_list *ifl;
+	BOOL tcp;
+	BOOL add_ep = False;
 
-	for (i=0;i<table->endpoints->count;i++) {
-		struct dce_endpoint *ep;
-		BOOL tcp;
+	tcp = (strncasecmp(ep_name, "TCP-", 4) == 0);
 
-		tcp = (strncasecmp(table->endpoints->names[i], "TCP-", 4) == 0);
+	if (tcp) {
+		ep_description.type = ENDPOINT_TCP;
+		ep_description.info.tcp_port = atoi(ep_name+4);
+	} else {
+		ep_description.type = ENDPOINT_SMB;
+		ep_description.info.smb_pipe = ep_name;
+	}
 
-		if (tcp) {
-			if (done_tcp) continue;
-			done_tcp = True;
-		} else {
-			if (done_smb) continue;
-			done_smb = True;
-		}
-
-		ep = malloc(sizeof(*ep));
+	/* check if this endpoint exists
+	 */
+	if ((ep=find_endpoint(dce_ctx, &ep_description))==NULL) {
+		ep = talloc(dce_ctx->mem_ctx, sizeof(*ep));
 		if (!ep) {
-			return False;
+			return NT_STATUS_NO_MEMORY;
 		}
-
+		ZERO_STRUCTP(ep);
 		if (tcp) {
-			ep->endpoint.type = ENDPOINT_TCP;
-			ep->endpoint.info.tcp_port = atoi(table->endpoints->names[i]+4);
+			ep->ep_description.type = ENDPOINT_TCP;
+			ep->ep_description.info.tcp_port = atoi(ep_name+4);
 		} else {
-			ep->endpoint.type = ENDPOINT_SMB;
-			ep->endpoint.info.smb_pipe = table->endpoints->names[i];
+			ep->ep_description.type = ENDPOINT_SMB;
+			ep->ep_description.info.smb_pipe = smb_xstrdup(ep_name);
+		}
+		add_ep = True;
+	}
+
+	/* see if the interface is already registered on te endpoint */
+	if (find_interface(ep, iface)!=NULL) {
+		DEBUG(0,("dcesrv_interface_register: interface '%s' already registered on endpoint '%s'\n",
+			iface->ndr->name, ep_name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	/* talloc a new interface list element */
+	ifl = talloc(dce_ctx->mem_ctx, sizeof(*ifl));
+	if (!ifl) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	/* copy the given interface struct to the one on the endpoints interface list */
+	memcpy(&(ifl->iface),iface, sizeof(struct dcesrv_interface));
+
+	/* if we have a security descriptor given,
+	 * we should see if we can set it up on the endpoint
+	 */
+	if (sd != NULL) {
+		/* if there's currently no security descriptor given on the endpoint
+		 * we try to set it
+		 */
+		if (ep->sd == NULL) {
+			ep->sd = copy_security_descriptor(dce_ctx->mem_ctx, sd);
 		}
 
-		ep->endpoint_ops = ops;
-		DLIST_ADD(dce->endpoint_list, ep);
+		/* if now there's no security descriptor given on the endpoint
+		 * something goes wrong, either we failed to copy the security descriptor
+		 * or there was already one on the endpoint
+		 */
+		if (ep->sd != NULL) {
+			DEBUG(0,("dcesrv_interface_register: interface '%s' failed to setup a security descriptor\n"
+			         "                           on endpoint '%s'\n",
+				iface->ndr->name, ep_name));
+			if (add_ep) free(ep);
+			free(ifl);
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
 	}
 
-	return True;
-}
+	/* finally add the interface on the endpoint */
+	DLIST_ADD(ep->interface_list, ifl);
 
-/*
-  connect to a dcerpc endpoint
-*/
-NTSTATUS dcesrv_endpoint_connect_ops(struct dcesrv_context *dce,
-				     const struct dcesrv_endpoint *endpoint,
-				     const struct dcesrv_endpoint_ops *ops,
-				     struct dcesrv_state **p)
-{
-	TALLOC_CTX *mem_ctx;
-	NTSTATUS status;
-
-	mem_ctx = talloc_init("dcesrv_endpoint_connect");
-	if (!mem_ctx) {
-		return NT_STATUS_NO_MEMORY;
+	/* if it's a new endpoint add it to the dcesrv_context */
+	if (add_ep) {
+		DLIST_ADD(dce_ctx->endpoint_list, ep);
 	}
 
-	*p = talloc_p(mem_ctx, struct dcesrv_state);
-	if (! *p) {
-		talloc_destroy(mem_ctx);
-		return NT_STATUS_NO_MEMORY;
-	}
+	DEBUG(3,("dcesrv_interface_register: interface '%s' registered on endpoint '%s'\n",
+		iface->ndr->name, ep_name));
 
-	(*p)->dce = dce;
-	(*p)->mem_ctx = mem_ctx;
-	(*p)->endpoint = *endpoint;
-	(*p)->ops = ops;
-	(*p)->private = NULL;
-	(*p)->call_list = NULL;
-	(*p)->cli_max_recv_frag = 0;
-	(*p)->ndr = NULL;
-	(*p)->dispatch = NULL;
-	(*p)->handles = NULL;
-	(*p)->partial_input = data_blob(NULL, 0);
-	(*p)->auth_state.ntlmssp_state = NULL;
-	(*p)->auth_state.auth_info = NULL;
-
-	/* make sure the endpoint server likes the connection */
-	status = ops->connect(*p);
-	if (!NT_STATUS_IS_OK(status)) {
-		talloc_destroy(mem_ctx);
-		return status;
-	}
-	
 	return NT_STATUS_OK;
 }
 
 /*
   connect to a dcerpc endpoint
 */
-NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce,
-				 const struct dcesrv_endpoint *endpoint,
-				 struct dcesrv_state **p)
+NTSTATUS dcesrv_endpoint_connect(struct dcesrv_context *dce_ctx,
+				 const struct dcesrv_endpoint *ep,
+				 struct dcesrv_connection **p)
 {
-	const struct dcesrv_endpoint_ops *ops;
+	TALLOC_CTX *mem_ctx;
+
+	mem_ctx = talloc_init("dcesrv_endpoint_connect");
+	if (!mem_ctx) {
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	*p = talloc_p(mem_ctx, struct dcesrv_connection);
+	if (! *p) {
+		talloc_destroy(mem_ctx);
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	(*p)->dce_ctx = dce_ctx;
+	(*p)->mem_ctx = mem_ctx;
+	(*p)->endpoint = ep;
+	(*p)->iface = NULL;
+	(*p)->private = NULL;
+	(*p)->call_list = NULL;
+	(*p)->cli_max_recv_frag = 0;
+	(*p)->handles = NULL;
+	(*p)->partial_input = data_blob(NULL, 0);
+	(*p)->auth_state.ntlmssp_state = NULL;
+	(*p)->auth_state.auth_info = NULL;
+
+	return NT_STATUS_OK;
+}
+
+/*
+  search and connect to a dcerpc endpoint
+*/
+NTSTATUS dcesrv_endpoint_search_connect(struct dcesrv_context *dce_ctx,
+				 const struct dcesrv_ep_description *ep_description,
+				 struct dcesrv_connection **dce_conn_p)
+{
+	NTSTATUS status;
+	const struct dcesrv_endpoint *ep;
 
 	/* make sure this endpoint exists */
-	ops = find_endpoint(dce, endpoint);
-	if (!ops) {
+	ep = find_endpoint(dce_ctx, ep_description);
+	if (!ep) {
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	return dcesrv_endpoint_connect_ops(dce, endpoint, ops, p);
+	status = dcesrv_endpoint_connect(dce_ctx, ep, dce_conn_p);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	/* TODO: check security descriptor of the endpoint here 
+	 *       if it's a smb named pipe
+	 *	 if it's failed free dce_conn_p
+	 */
+
+	return NT_STATUS_OK;
 }
 
 
 /*
   disconnect a link to an endpoint
 */
-void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
+void dcesrv_endpoint_disconnect(struct dcesrv_connection *p)
 {
-	p->ops->disconnect(p);
+	if (p->iface) {
+		p->iface->unbind(p, p->iface);
+	}
 
 	/* destroy any handles */
 	while (p->handles) {
@@ -315,15 +460,16 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
-	if (!call->dce->ops->set_interface(call->dce, uuid, if_version)) {
+	call->conn->iface = find_interface_by_uuid(call->conn->endpoint, uuid, if_version);
+	if (!call->conn->iface) {
 		DEBUG(2,("Request for unknown dcerpc interface %s/%d\n", uuid, if_version));
 		/* we don't know about that interface */
 		result = DCERPC_BIND_PROVIDER_REJECT;
-		reason = DCERPC_BIND_REASON_ASYNTAX;
+		reason = DCERPC_BIND_REASON_ASYNTAX;		
 	}
 
-	if (call->dce->cli_max_recv_frag == 0) {
-		call->dce->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
+	if (call->conn->cli_max_recv_frag == 0) {
+		call->conn->cli_max_recv_frag = call->pkt.u.bind.max_recv_frag;
 	}
 
 	/* handle any authentication that is being requested */
@@ -340,9 +486,9 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	pkt.u.bind_ack.max_xmit_frag = 0x2000;
 	pkt.u.bind_ack.max_recv_frag = 0x2000;
 	pkt.u.bind_ack.assoc_group_id = call->pkt.u.bind.assoc_group_id;
-	if (call->dce->ndr) {
+	if (call->conn->iface && call->conn->iface->ndr) {
 		pkt.u.bind_ack.secondary_address = talloc_asprintf(call->mem_ctx, "\\PIPE\\%s", 
-								   call->dce->ndr->name);
+								   call->conn->iface->ndr->name);
 	} else {
 		pkt.u.bind_ack.secondary_address = "";
 	}
@@ -361,13 +507,21 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return dcesrv_bind_nak(call, 0);
 	}
 
+	if (call->conn->iface) {
+		status = call->conn->iface->bind(call, call->conn->iface);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(2,("Request for dcerpc interface %s/%d rejected\n", uuid, if_version));
+			return status;
+		}
+	}
+
 	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
 
 	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, 
-				  call->dce->auth_state.auth_info);
+				  call->conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -375,7 +529,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
-	DLIST_ADD_END(call->dce->call_list, call, struct dcesrv_call_state *);
+	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
 
 	return NT_STATUS_OK;
 }
@@ -413,7 +567,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 
 	opnum = call->pkt.u.request.opnum;
 
-	if (opnum >= call->dce->ndr->num_calls) {
+	if (opnum >= call->conn->iface->ndr->num_calls) {
 		return dcesrv_fault(call, DCERPC_FAULT_OP_RNG_ERROR);
 	}
 
@@ -422,7 +576,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	r = talloc(call->mem_ctx, call->dce->ndr->calls[opnum].struct_size);
+	r = talloc(call->mem_ctx, call->conn->iface->ndr->calls[opnum].struct_size);
 	if (!r) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -432,13 +586,13 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	}
 
 	/* unravel the NDR for the packet */
-	status = call->dce->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
+	status = call->conn->iface->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
 
 	/* call the dispatch function */
-	status = call->dce->dispatch[opnum](call->dce, call->mem_ctx, r);
+	status = call->conn->iface->dispatch(call, call->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault_nt(call, status);
 	}
@@ -453,7 +607,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
-	status = call->dce->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
+	status = call->conn->iface->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return dcesrv_fault(call, DCERPC_FAULT_NDR);
 	}
@@ -471,9 +625,9 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		}
 
 		length = stub.length;
-		if (length + DCERPC_RESPONSE_LENGTH > call->dce->cli_max_recv_frag) {
+		if (length + DCERPC_RESPONSE_LENGTH > call->conn->cli_max_recv_frag) {
 			/* the 32 is to cope with signing data */
-			length = call->dce->cli_max_recv_frag - 
+			length = call->conn->cli_max_recv_frag - 
 				(DCERPC_MAX_SIGN_SIZE+DCERPC_RESPONSE_LENGTH);
 		}
 
@@ -507,7 +661,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		stub.length -= length;
 	} while (stub.length != 0);
 
-	DLIST_ADD_END(call->dce->call_list, call, struct dcesrv_call_state *);
+	DLIST_ADD_END(call->conn->call_list, call, struct dcesrv_call_state *);
 
 	return NT_STATUS_OK;
 }
@@ -530,18 +684,18 @@ static BOOL dce_full_packet(const DATA_BLOB *data)
 /*
   we might have consumed only part of our input - advance past that part
 */
-static void dce_partial_advance(struct dcesrv_state *dce, uint32 offset)
+static void dce_partial_advance(struct dcesrv_connection *dce_conn, uint32 offset)
 {
 	DATA_BLOB blob;
 
-	if (dce->partial_input.length == offset) {
-		free(dce->partial_input.data);
-		dce->partial_input = data_blob(NULL, 0);
+	if (dce_conn->partial_input.length == offset) {
+		free(dce_conn->partial_input.data);
+		dce_conn->partial_input = data_blob(NULL, 0);
 		return;
 	}
 
-	blob = dce->partial_input;
-	dce->partial_input = data_blob(blob.data + offset,
+	blob = dce_conn->partial_input;
+	dce_conn->partial_input = data_blob(blob.data + offset,
 				       blob.length - offset);
 	free(blob.data);
 }
@@ -549,7 +703,7 @@ static void dce_partial_advance(struct dcesrv_state *dce, uint32 offset)
 /*
   process some input to a dcerpc endpoint server.
 */
-NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
+NTSTATUS dcesrv_input_process(struct dcesrv_connection *dce_conn)
 {
 	struct ndr_pull *ndr;
 	TALLOC_CTX *mem_ctx;
@@ -563,20 +717,20 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 	}
 	call = talloc_p(mem_ctx, struct dcesrv_call_state);
 	if (!call) {
-		talloc_free(dce->mem_ctx, dce->partial_input.data);
+		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 	call->mem_ctx = mem_ctx;
-	call->dce = dce;
+	call->conn = dce_conn;
 	call->replies = NULL;
 
-	blob = dce->partial_input;
+	blob = dce_conn->partial_input;
 	blob.length = dcerpc_get_frag_length(&blob);
 
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 	if (!ndr) {
-		talloc_free(dce->mem_ctx, dce->partial_input.data);
+		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -587,12 +741,12 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
 	if (!NT_STATUS_IS_OK(status)) {
-		talloc_free(dce->mem_ctx, dce->partial_input.data);
+		talloc_free(dce_conn->mem_ctx, dce_conn->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return status;
 	}
 
-	dce_partial_advance(dce, blob.length);
+	dce_partial_advance(dce_conn, blob.length);
 
 	/* we have to check the signing here, before combining the
 	   pdus */
@@ -613,7 +767,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 
 		/* this is a continuation of an existing call - find the call then
 		   tack it on the end */
-		call = dcesrv_find_call(dce, call2->pkt.call_id);
+		call = dcesrv_find_call(dce_conn, call2->pkt.call_id);
 		if (!call) {
 			return dcesrv_fault(call2, DCERPC_FAULT_OTHER);
 		}
@@ -648,7 +802,7 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 	/* this may not be the last pdu in the chain - if its isn't then
 	   just put it on the call_list and wait for the rest */
 	if (!(call->pkt.pfc_flags & DCERPC_PFC_FLAG_LAST)) {
-		DLIST_ADD_END(dce->call_list, call, struct dcesrv_call_state *);
+		DLIST_ADD_END(dce_conn->call_list, call, struct dcesrv_call_state *);
 		return NT_STATUS_OK;
 	}
 
@@ -682,21 +836,21 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
   provide some input to a dcerpc endpoint server. This passes data
   from a dcerpc client into the server
 */
-NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
+NTSTATUS dcesrv_input(struct dcesrv_connection *dce_conn, const DATA_BLOB *data)
 {
 	NTSTATUS status;
 
-	dce->partial_input.data = Realloc(dce->partial_input.data,
-					  dce->partial_input.length + data->length);
-	if (!dce->partial_input.data) {
+	dce_conn->partial_input.data = Realloc(dce_conn->partial_input.data,
+					  dce_conn->partial_input.length + data->length);
+	if (!dce_conn->partial_input.data) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	memcpy(dce->partial_input.data + dce->partial_input.length,
+	memcpy(dce_conn->partial_input.data + dce_conn->partial_input.length,
 	       data->data, data->length);
-	dce->partial_input.length += data->length;
+	dce_conn->partial_input.length += data->length;
 
-	while (dce_full_packet(&dce->partial_input)) {
-		status = dcesrv_input_process(dce);
+	while (dce_full_packet(&dce_conn->partial_input)) {
+		status = dcesrv_input_process(dce_conn);
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
@@ -710,12 +864,12 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
   is wanted is in data->length and data->data is already allocated
   to hold that much data.
 */
-NTSTATUS dcesrv_output(struct dcesrv_state *dce, DATA_BLOB *data)
+NTSTATUS dcesrv_output(struct dcesrv_connection *dce_conn, DATA_BLOB *data)
 {
 	struct dcesrv_call_state *call;
 	struct dcesrv_call_reply *rep;
 
-	call = dce->call_list;
+	call = dce_conn->call_list;
 	if (!call || !call->replies) {
 		return NT_STATUS_FOOBAR;
 	}
@@ -736,88 +890,151 @@ NTSTATUS dcesrv_output(struct dcesrv_state *dce, DATA_BLOB *data)
 
 	if (call->replies == NULL) {
 		/* we're done with the whole call */
-		DLIST_REMOVE(dce->call_list, call);
+		DLIST_REMOVE(dce_conn->call_list, call);
 		talloc_destroy(call->mem_ctx);
 	}
 
 	return NT_STATUS_OK;
 }
 
-
 /*
-  a useful function for implementing the query endpoint op
- */
-BOOL dcesrv_table_query(const struct dcerpc_interface_table *table,
-			const struct dcesrv_endpoint *ep)
-{
-	int i;
-	const struct dcerpc_endpoint_list *endpoints = table->endpoints;
-
-	if (ep->type != ENDPOINT_SMB) {
-		return False;
-	}
-
-	for (i=0;i<endpoints->count;i++) {
-		if (strcasecmp(ep->info.smb_pipe, endpoints->names[i]) == 0) {
-			return True;
-		}
-	}
-	return False;
-}
-
-
-/*
-  a useful function for implementing the lookup_endpoints op
- */
-int dcesrv_lookup_endpoints(const struct dcerpc_interface_table *table,
-			    TALLOC_CTX *mem_ctx,
-			    struct dcesrv_ep_iface **e)
-{
-	int i;
-	*e = talloc_array_p(mem_ctx, struct dcesrv_ep_iface, table->endpoints->count);
-	if (! *e) {
-		return -1;
-	}
-
-	for (i=0;i<table->endpoints->count;i++) {
-		(*e)[i].name = table->name;
-		(*e)[i].uuid = table->uuid;
-		(*e)[i].if_version = table->if_version;
-		if (strncmp(table->endpoints->names[i], "TCP-", 4) == 0) {
-			(*e)[i].endpoint.type = ENDPOINT_TCP;
-			(*e)[i].endpoint.info.tcp_port = atoi(table->endpoints->names[i]+4);
-		} else {
-			(*e)[i].endpoint.type = ENDPOINT_SMB;
-			(*e)[i].endpoint.info.smb_pipe = table->endpoints->names[i];
-		}
-	}
-
-	return i;
-}
-
-
-BOOL dcesrv_set_interface(struct dcesrv_state *dce, 
-			  const char *uuid, uint32 if_version,
-			  const struct dcerpc_interface_table *table,
-			  const dcesrv_dispatch_fn_t *dispatch_table)
-{
-	if (strcasecmp(table->uuid, uuid) != 0 || if_version != table->if_version) {
-		DEBUG(2,("Attempt to use unknown interface %s/%d\n", uuid, if_version));
-		return False;
-	}
-
-	dce->ndr = table;
-	dce->dispatch = dispatch_table;
-	return True;
-}
-
-
-/*
-  initialise the dcerpc server subsystem
+  initialise the dcerpc server context
 */
-BOOL dcesrv_init(struct dcesrv_context *dce)
+NTSTATUS dcesrv_init_context(struct dcesrv_context *dce_ctx)
 {
-	rpc_rpcecho_init(dce);
-	rpc_epmapper_init(dce);
+	int i;
+	const char **endpoint_servers = lp_dcerpc_endpoint_servers();
+
+	dce_ctx->mem_ctx = talloc_init("struct dcesrv_context");
+	if (!dce_ctx->mem_ctx) {
+		DEBUG(3,("dcesrv_init_context: talloc_init failed\n"));
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	dce_ctx->endpoint_list = NULL;
+
+	if (!endpoint_servers) {
+		DEBUG(3,("dcesrv_init_context: no endpoint servers configured\n"));
+		return NT_STATUS_OK;
+	}
+
+	for (i=0;endpoint_servers[i];i++) {
+		NTSTATUS ret;
+		const struct dcesrv_endpoint_server *ep_server;
+		
+		ep_server = dcesrv_ep_server_byname(endpoint_servers[i]);
+		if (!ep_server) {
+			DEBUG(0,("dcesrv_init_context: failed to find endpoint server = '%s'\n", endpoint_servers[i]));
+			return NT_STATUS_UNSUCCESSFUL;
+		}
+
+		ret = ep_server->init_server(dce_ctx, ep_server);
+		if (!NT_STATUS_IS_OK(ret)) {
+			DEBUG(0,("dcesrv_init_context: failed to init endpoint server = '%s'\n", endpoint_servers[i]));
+			return ret;
+		}
+	}
+
+	return NT_STATUS_OK;
+}
+
+/* the list of currently registered DCERPC endpoint servers.
+ */
+static struct {
+	struct dcesrv_endpoint_server *ep_server;
+} *ep_servers = NULL;
+static int num_ep_servers;
+
+/*
+  register a DCERPC endpoint server. 
+
+  The 'name' can be later used by other backends to find the operations
+  structure for this backend.  
+
+  The 'type' is used to specify whether this is for a disk, printer or IPC$ share
+*/
+static NTSTATUS decrpc_register_ep_server(void *_ep_server)
+{
+	const struct dcesrv_endpoint_server *ep_server = _ep_server;
+	
+	if (dcesrv_ep_server_byname(ep_server->name) != NULL) {
+		/* its already registered! */
+		DEBUG(1,("DCERPC endpoint server '%s' already registered\n", 
+			 ep_server->name));
+		return NT_STATUS_OBJECT_NAME_COLLISION;
+	}
+
+	ep_servers = Realloc(ep_servers, sizeof(ep_servers[0]) * (num_ep_servers+1));
+	if (!ep_servers) {
+		smb_panic("out of memory in decrpc_register");
+	}
+
+	ep_servers[num_ep_servers].ep_server = smb_xmemdup(ep_server, sizeof(*ep_server));
+	ep_servers[num_ep_servers].ep_server->name = smb_xstrdup(ep_server->name);
+
+	num_ep_servers++;
+
+	DEBUG(1,("DCERPC module '%s' registered\n", 
+		 ep_server->name));
+
+	return NT_STATUS_OK;
+}
+
+/*
+  return the operations structure for a named backend of the specified type
+*/
+const struct dcesrv_endpoint_server *dcesrv_ep_server_byname(const char *name)
+{
+	int i;
+
+	for (i=0;i<num_ep_servers;i++) {
+		if (strcmp(ep_servers[i].ep_server->name, name) == 0) {
+			return ep_servers[i].ep_server;
+		}
+	}
+
+	return NULL;
+}
+
+/*
+  return the DCERPC module version, and the size of some critical types
+  This can be used by endpoint server modules to either detect compilation errors, or provide
+  multiple implementations for different smbd compilation options in one module
+*/
+const struct dcesrv_critical_sizes *dcerpc_module_version(void)
+{
+	static const struct dcesrv_critical_sizes critical_sizes = {
+		DCERPC_MODULE_VERSION,
+		sizeof(struct dcesrv_context),
+		sizeof(struct dcesrv_endpoint),
+		sizeof(struct dcesrv_endpoint_server),
+		sizeof(struct dcesrv_ep_description),
+		sizeof(struct dcesrv_interface),
+		sizeof(struct dcesrv_if_list),
+		sizeof(struct dcesrv_connection),
+		sizeof(struct dcesrv_call_state),
+		sizeof(struct dcesrv_auth),
+		sizeof(struct dcesrv_handle)
+	};
+
+	return &critical_sizes;
+}
+
+/*
+  initialise the DCERPC subsystem
+*/
+BOOL dcesrv_init(void)
+{
+	NTSTATUS status;
+
+	status = register_subsystem("dcerpc", decrpc_register_ep_server); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
+
+	/* FIXME: Perhaps panic if a basic endpoint server, such as EPMAPER, fails to initialise? */
+	static_init_dcerpc;
+
+	DEBUG(1,("DCERPC subsystem version %d initialised\n", DCERPC_MODULE_VERSION));
 	return True;
 }

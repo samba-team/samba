@@ -125,9 +125,19 @@ struct subsystem {
 
 static struct subsystem *subsystems = NULL;
 
-void register_subsystem(const char *name, register_backend_function callback) 
+NTSTATUS register_subsystem(const char *name, register_backend_function callback) 
 {
 	struct subsystem *s;
+	struct subsystem *t = subsystems;
+
+	while(t) {
+		if(!strcmp(name, t->name)) {
+			/* its already registered! */
+			DEBUG(0,("SUBSYSTEM '%s' for type already registered\n", name));
+			return NT_STATUS_OBJECT_NAME_COLLISION;
+		}
+		t = t->next;
+	}
 
 	s = smb_xmalloc(sizeof(struct subsystem));
 
@@ -136,6 +146,8 @@ void register_subsystem(const char *name, register_backend_function callback)
 	s->prev = s->next = NULL;
 
 	DLIST_ADD(subsystems, s);
+
+	return NT_STATUS_OK;
 }
 
 NTSTATUS register_backend(const char *subsystem, void *args)

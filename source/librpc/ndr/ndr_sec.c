@@ -88,6 +88,37 @@ void ndr_print_dom_sid2(struct ndr_print *ndr, const char *name, struct dom_sid2
 	ndr_print_dom_sid(ndr, name, sid);
 }
 
+/*
+  return the wire size of a dom_sid
+*/
+size_t ndr_size_dom_sid(struct dom_sid *sid)
+{
+	if (!sid) return 0;
+	return 8 + 4*sid->num_auths;
+}
+
+/*
+  add a rid to a domain dom_sid to make a full dom_sid
+*/
+struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
+				const struct dom_sid *domain_sid, 
+				uint32 rid)
+{
+	struct dom_sid *sid;
+
+	sid = talloc_p(mem_ctx, struct dom_sid);
+	if (!sid) return NULL;
+
+	*sid = *domain_sid;
+	sid->sub_auths = talloc_array_p(mem_ctx, uint32, sid->num_auths+1);
+	if (!sid->sub_auths) {
+		return NULL;
+	}
+	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32));
+	sid->sub_auths[sid->num_auths] = rid;
+	sid->num_auths++;
+	return sid;
+}
 
 /*
   return the wire size of a security_ace
@@ -115,15 +146,6 @@ size_t ndr_size_security_acl(struct security_acl *acl)
 }
 
 /*
-  return the wire size of a dom_sid
-*/
-size_t ndr_size_dom_sid(struct dom_sid *sid)
-{
-	if (!sid) return 0;
-	return 8 + 4*sid->num_auths;
-}
-
-/*
   return the wire size of a security descriptor
 */
 size_t ndr_size_security_descriptor(struct security_descriptor *sd)
@@ -139,25 +161,17 @@ size_t ndr_size_security_descriptor(struct security_descriptor *sd)
 	return ret;
 }
 
-/*
-  add a rid to a domain dom_sid to make a full dom_sid
-*/
-struct dom_sid *dom_sid_add_rid(TALLOC_CTX *mem_ctx, 
-				const struct dom_sid *domain_sid, 
-				uint32 rid)
+/* 
+   talloc and copy a security descriptor
+ */
+struct security_descriptor *copy_security_descriptor(TALLOC_CTX *mem_ctx, 
+							const struct security_descriptor *osd)
 {
-	struct dom_sid *sid;
+	struct security_descriptor *nsd;
 
-	sid = talloc_p(mem_ctx, struct dom_sid);
-	if (!sid) return NULL;
+	/* FIXME */
+	DEBUG(1, ("copy_security_descriptor: sorry unimplemented yet\n"));
+	nsd = NULL;
 
-	*sid = *domain_sid;
-	sid->sub_auths = talloc_array_p(mem_ctx, uint32, sid->num_auths+1);
-	if (!sid->sub_auths) {
-		return NULL;
-	}
-	memcpy(sid->sub_auths, domain_sid->sub_auths, sid->num_auths*sizeof(uint32));
-	sid->sub_auths[sid->num_auths] = rid;
-	sid->num_auths++;
-	return sid;
+	return nsd;
 }

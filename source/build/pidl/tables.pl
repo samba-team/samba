@@ -60,7 +60,7 @@ sub process_file($)
 	close(FILE);
 }
 
-
+print "Creating $opt_output.[ch]\n";
 open(TABLEH, ">$opt_output.h") || die "failed to open $opt_output.h\n";
 open(TABLEC, ">$opt_output.c") || die "failed to open $opt_output.c\n";
 

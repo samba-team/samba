@@ -1,7 +1,9 @@
 /* 
    Unix SMB/CIFS implementation.
    NTVFS base code
+
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -107,12 +109,17 @@ const struct ntvfs_critical_sizes *ntvfs_interface_version(void)
 */
 BOOL ntvfs_init(void)
 {
-	register_subsystem("ntvfs", ntvfs_register); 
+	NTSTATUS status;
+
+	status = register_subsystem("ntvfs", ntvfs_register); 
+	if (!NT_STATUS_IS_OK(status)) {
+		return False;
+	}
 
 	/* FIXME: Perhaps panic if a basic backend, such as IPC, fails to initialise? */
 	static_init_ntvfs;
 
-	DEBUG(3,("NTVFS version %d initialised\n", NTVFS_INTERFACE_VERSION));
+	DEBUG(3,("NTVFS subsystem version %d initialised\n", NTVFS_INTERFACE_VERSION));
 	return True;
 }
 

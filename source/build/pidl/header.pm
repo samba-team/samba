@@ -278,7 +278,7 @@ sub HeaderInterface($)
 	    $res .= "#define DCERPC_$name\_VERSION $if_version\n";
 	    $res .= "#define DCERPC_$name\_NAME \"$interface->{NAME}\"\n\n";
 	    $res .= "extern const struct dcerpc_interface_table dcerpc_table_$interface->{NAME};\n";
-	    $res .= "void rpc_$interface->{NAME}_init(void *);\n\n";
+	    $res .= "NTSTATUS dcerpc_$interface->{NAME}_init(void);\n\n";
     }
 
     foreach my $d (@{$data}) {

@@ -4,7 +4,8 @@
    server side dcerpc over tcp code
 
    Copyright (C) Andrew Tridgell 2003
-   
+   Copyright (C) Stefan (metze) Metzmacher 2004   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -23,10 +24,10 @@
 #include "includes.h"
 
 struct rpc_server_context {
-	struct dcesrv_endpoint *endpoint;
-	const struct dcesrv_endpoint_ops *endpoint_ops;
+	struct dcesrv_ep_description *ep_description;
+	const struct dcesrv_endpoint *endpoint;
 	const struct model_ops *model_ops;
-	struct dcesrv_state *dce;
+	struct dcesrv_connection *dce_conn;
 	struct dcesrv_context dcesrv_context;
 	int socket_fd;
 	struct event_context *events;	
@@ -39,7 +40,7 @@ void rpc_server_terminate(void *rr)
 {
 	struct rpc_server_context *r = rr;
 
-	dcesrv_endpoint_disconnect(r->dce);
+	dcesrv_endpoint_disconnect(r->dce_conn);
 	close(r->socket_fd);
 	event_remove_fd_all(r->events, r->socket_fd);
 	free(r);
@@ -69,13 +70,13 @@ static void dcerpc_write_handler(struct event_context *ev, struct fd_event *fde,
 		return;
 	}
 
-	status = dcesrv_output(r->dce, &blob);
+	status = dcesrv_output(r->dce_conn, &blob);
 
 	if (NT_STATUS_IS_OK(status)) {
 		write_data(fde->fd, blob.data, blob.length);
 	}
 
-	if (!r->dce->call_list || !r->dce->call_list->replies) {
+	if (!r->dce_conn->call_list || !r->dce_conn->call_list->replies) {
 		fde->flags &= ~EVENT_FD_WRITE;
 	}
 
@@ -111,11 +112,11 @@ static void dcerpc_read_handler(struct event_context *ev, struct fd_event *fde,
 
 	blob.length = ret;
 
-	dcesrv_input(r->dce, &blob);
+	dcesrv_input(r->dce_conn, &blob);
 
 	data_blob_free(&blob);
 
-	if (r->dce->call_list && r->dce->call_list->replies) {
+	if (r->dce_conn->call_list && r->dce_conn->call_list->replies) {
 		fde->flags |= EVENT_FD_WRITE;
 	}
 }
@@ -146,6 +147,7 @@ void init_rpc_session(struct event_context *ev, void *private, int fd)
 {
 	struct fd_event fde;
 	struct rpc_server_context *r = private;
+	NTSTATUS status;
 
 	r = memdup(r, sizeof(struct rpc_server_context));
 
@@ -155,9 +157,16 @@ void init_rpc_session(struct event_context *ev, void *private, int fd)
 	set_socket_options(fd,"SO_KEEPALIVE");
 	set_socket_options(fd, lp_socket_options());
 
-	dcesrv_endpoint_connect_ops(&r->dcesrv_context, r->endpoint, r->endpoint_ops, &r->dce);
+	status = dcesrv_endpoint_connect(&r->dcesrv_context, r->endpoint, &r->dce_conn);
+	if (!NT_STATUS_IS_OK(status)) {
+		close(fd);
+		free(r);
+		DEBUG(0,("init_rpc_session: connection to endpoint failed: %s\n", 
+			nt_errstr(status)));
+		return;
+	}
 
-	r->dce->dce = &r->dcesrv_context;
+	r->dce_conn->dce_ctx = &r->dcesrv_context;
 
 	set_blocking(fd, False);
 
@@ -179,7 +188,7 @@ static void setup_listen_rpc(struct event_context *events,
 			     struct model_ops *model_ops, 
 			     struct in_addr *ifip, uint32 *port,
 			     struct rpc_server_context *r,
-			     const struct dcesrv_endpoint_ops *endpoint_ops)
+			     const struct dcesrv_endpoint *endpoint)
 {
 	struct fd_event fde;
 	int i;
@@ -209,14 +218,14 @@ static void setup_listen_rpc(struct event_context *events,
 		smb_panic("out of memory");
 	}
 
-	r->endpoint_ops = endpoint_ops;
-
-	r->endpoint = malloc(sizeof(struct dcesrv_endpoint));
-	if (!r->endpoint) {
+	r->ep_description = malloc(sizeof(struct dcesrv_ep_description));
+	if (!r->ep_description) {
 		smb_panic("out of memory");
 	}
-	r->endpoint->type = ENDPOINT_TCP;
-	r->endpoint->info.tcp_port = *port;
+	r->ep_description->type = ENDPOINT_TCP;
+	r->ep_description->info.tcp_port = *port;
+
+	r->endpoint = endpoint;
 
 	/* ready to listen */
 	set_socket_options(fde.fd, "SO_KEEPALIVE"); 
@@ -244,7 +253,7 @@ static void add_socket_rpc(struct event_context *events,
 			   struct model_ops *model_ops, 
 			   struct in_addr *ifip)
 {
-	struct dce_endpoint *e;
+	struct dcesrv_endpoint *e;
 	struct rpc_server_context *r;
 
 	r = malloc(sizeof(struct rpc_server_context));
@@ -253,18 +262,18 @@ static void add_socket_rpc(struct event_context *events,
 	}
 
 	r->dcesrv_context.endpoint_list = NULL;
-	dcesrv_init(&r->dcesrv_context);
-	r->endpoint = NULL;
+	dcesrv_init_context(&r->dcesrv_context);
+	r->ep_description = NULL;
 	r->model_ops = model_ops;
-	r->dce = NULL;
+	r->dce_conn = NULL;
 	r->socket_fd = -1;
 	r->events = NULL;
 	
 	for (e=r->dcesrv_context.endpoint_list;e;e=e->next) {
-		if (e->endpoint.type == ENDPOINT_TCP) {
+		if (e->ep_description.type == ENDPOINT_TCP) {
 			setup_listen_rpc(events, model_ops, ifip, 
-					 &e->endpoint.info.tcp_port, 
-					 r, e->endpoint_ops);
+					 &e->ep_description.info.tcp_port, 
+					 r, e);
 		}
 	}
 

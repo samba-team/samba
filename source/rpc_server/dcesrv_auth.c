@@ -4,7 +4,7 @@
    server side dcerpc authentication code
 
    Copyright (C) Andrew Tridgell 2003
-   
+
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 2 of the License, or
@@ -31,40 +31,40 @@
 BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 {
 	struct dcerpc_packet *pkt = &call->pkt;
-	struct dcesrv_state *dce = call->dce;
+	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
 	if (pkt->u.bind.auth_info.length == 0) {
-		dce->auth_state.auth_info = NULL;
+		dce_conn->auth_state.auth_info = NULL;
 		return True;
 	}
 
-	dce->auth_state.auth_info = talloc_p(dce->mem_ctx, struct dcerpc_auth);
-	if (!dce->auth_state.auth_info) {
+	dce_conn->auth_state.auth_info = talloc_p(dce_conn->mem_ctx, struct dcerpc_auth);
+	if (!dce_conn->auth_state.auth_info) {
 		return False;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.bind.auth_info,
 				      call->mem_ctx,
-				      dce->auth_state.auth_info,
+				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	if (dce->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
+	if (dce_conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
 		/* only do NTLMSSP for now */
-		DEBUG(2,("auth_type %d not supported\n", dce->auth_state.auth_info->auth_type));
+		DEBUG(2,("auth_type %d not supported\n", dce_conn->auth_state.auth_info->auth_type));
 		return False;
 	}
 
-	if (dce->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    dce->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
-		DEBUG(2,("auth_level %d not supported\n", dce->auth_state.auth_info->auth_level));
+	if (dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
+	    dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+		DEBUG(2,("auth_level %d not supported\n", dce_conn->auth_state.auth_info->auth_level));
 		return False;
 	}
 
-	status = auth_ntlmssp_start(&dce->auth_state.ntlmssp_state);
+	status = auth_ntlmssp_start(&dce_conn->auth_state.ntlmssp_state);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -77,23 +77,23 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 */
 BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *pkt)
 {
-	struct dcesrv_state *dce = call->dce;
+	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	if (!call->dce->auth_state.ntlmssp_state) {
+	if (!call->conn->auth_state.ntlmssp_state) {
 		return True;
 	}
 
-	status = auth_ntlmssp_update(dce->auth_state.ntlmssp_state,
-				     dce->auth_state.auth_info->credentials, 
-				     &dce->auth_state.auth_info->credentials);
+	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
+				     dce_conn->auth_state.auth_info->credentials, 
+				     &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status) && 
 	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		return False;
 	}
 
-	dce->auth_state.auth_info->auth_pad_length = 0;
-	dce->auth_state.auth_info->auth_reserved = 0;
+	dce_conn->auth_state.auth_info->auth_pad_length = 0;
+	dce_conn->auth_state.auth_info->auth_reserved = 0;
 				     
 	return True;
 }
@@ -105,43 +105,43 @@ BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *
 BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 {
 	struct dcerpc_packet *pkt = &call->pkt;
-	struct dcesrv_state *dce = call->dce;
+	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	if (!dce->auth_state.auth_info ||
-	    !dce->auth_state.ntlmssp_state ||
+	if (!dce_conn->auth_state.auth_info ||
+	    !dce_conn->auth_state.ntlmssp_state ||
 	    pkt->u.auth.auth_info.length == 0) {
 		return False;
 	}
 
 	status = ndr_pull_struct_blob(&pkt->u.auth.auth_info,
 				      call->mem_ctx,
-				      dce->auth_state.auth_info,
+				      dce_conn->auth_state.auth_info,
 				      (ndr_pull_flags_fn_t)ndr_pull_dcerpc_auth);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	if (dce->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
+	if (dce_conn->auth_state.auth_info->auth_type != DCERPC_AUTH_TYPE_NTLMSSP) {
 		return False;
 	}
-	if (dce->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
-	    dce->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+	if (dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
+	    dce_conn->auth_state.auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
 		return False;
 	}
 
-	status = auth_ntlmssp_update(dce->auth_state.ntlmssp_state,
-				     dce->auth_state.auth_info->credentials, 
-				     &dce->auth_state.auth_info->credentials);
+	status = auth_ntlmssp_update(dce_conn->auth_state.ntlmssp_state,
+				     dce_conn->auth_state.auth_info->credentials, 
+				     &dce_conn->auth_state.auth_info->credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
 
-	switch (dce->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
 		/* setup for signing */
-		status = ntlmssp_sign_init(dce->auth_state.ntlmssp_state->ntlmssp_state);
+		status = ntlmssp_sign_init(dce_conn->auth_state.ntlmssp_state->ntlmssp_state);
 		break;
 	}
 
@@ -155,14 +155,14 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 {
 	struct dcerpc_packet *pkt = &call->pkt;
-	struct dcesrv_state *dce = call->dce;
+	struct dcesrv_connection *dce_conn = call->conn;
 	DATA_BLOB auth_blob;
 	struct dcerpc_auth auth;
 	struct ndr_pull *ndr;
 	NTSTATUS status;
 
-	if (!dce->auth_state.auth_info ||
-	    !dce->auth_state.ntlmssp_state) {
+	if (!dce_conn->auth_state.auth_info ||
+	    !dce_conn->auth_state.ntlmssp_state) {
 		return True;
 	}
 
@@ -194,16 +194,16 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	}
 
 	/* check signature or unseal the packet */
-	switch (dce->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = ntlmssp_unseal_packet(dce->auth_state.ntlmssp_state->ntlmssp_state, 
+		status = ntlmssp_unseal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
 					       pkt->u.request.stub_and_verifier.data, 
 					       pkt->u.request.stub_and_verifier.length, 
 					       &auth.credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = ntlmssp_check_packet(dce->auth_state.ntlmssp_state->ntlmssp_state, 
+		status = ntlmssp_check_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
 					      pkt->u.request.stub_and_verifier.data, 
 					      pkt->u.request.stub_and_verifier.length, 
 					      &auth.credentials);
@@ -230,12 +230,12 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 			  DATA_BLOB *blob, struct dcerpc_packet *pkt)
 {
-	struct dcesrv_state *dce = call->dce;
+	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simple */
-	if (!dce->auth_state.auth_info || !dce->auth_state.ntlmssp_state) {
+	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.ntlmssp_state) {
 		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
@@ -255,23 +255,23 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	}
 
 	/* pad to 8 byte multiple */
-	dce->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
-	ndr_push_zero(ndr, dce->auth_state.auth_info->auth_pad_length);
+	dce_conn->auth_state.auth_info->auth_pad_length = NDR_ALIGN(ndr, 8);
+	ndr_push_zero(ndr, dce_conn->auth_state.auth_info->auth_pad_length);
 
 	/* sign or seal the packet */
-	switch (dce->auth_state.auth_info->auth_level) {
+	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = ntlmssp_seal_packet(dce->auth_state.ntlmssp_state->ntlmssp_state, 
+		status = ntlmssp_seal_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
 					     ndr->data + DCERPC_REQUEST_LENGTH, 
 					     ndr->offset - DCERPC_REQUEST_LENGTH,
-					     &dce->auth_state.auth_info->credentials);
+					     &dce_conn->auth_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = ntlmssp_sign_packet(dce->auth_state.ntlmssp_state->ntlmssp_state, 
+		status = ntlmssp_sign_packet(dce_conn->auth_state.ntlmssp_state->ntlmssp_state, 
 					     ndr->data + DCERPC_REQUEST_LENGTH, 
 					     ndr->offset - DCERPC_REQUEST_LENGTH,
-					     &dce->auth_state.auth_info->credentials);
+					     &dce_conn->auth_state.auth_info->credentials);
 		break;
 	default:
 		status = NT_STATUS_INVALID_LEVEL;
@@ -283,7 +283,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	}	
 
 	/* add the auth verifier */
-	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, dce->auth_state.auth_info);
+	status = ndr_push_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, dce_conn->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return False;
 	}
@@ -295,9 +295,9 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	   in these earlier as we don't know the signature length (it
 	   could be variable length) */
 	dcerpc_set_frag_length(blob, blob->length);
-	dcerpc_set_auth_length(blob, dce->auth_state.auth_info->credentials.length);
+	dcerpc_set_auth_length(blob, dce_conn->auth_state.auth_info->credentials.length);
 
-	data_blob_free(&dce->auth_state.auth_info->credentials);
+	data_blob_free(&dce_conn->auth_state.auth_info->credentials);
 
 	return True;
 }

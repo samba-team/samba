@@ -26,6 +26,13 @@
 /* handle types for this module */
 enum handle_types {HTYPE_LOOKUP};
 
+/* a endpoint combined with an interface description */
+struct dcesrv_ep_iface {
+	const char *name;
+	struct dcesrv_ep_description ep_description;
+	const char *uuid;
+	uint32 if_version;
+};
 
 /*
   simple routine to compare a GUID string to a GUID structure
@@ -67,13 +74,13 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 	twr->floors[2].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->floors[2].rhs.rhs_data = data_blob_talloc_zero(mem_ctx, 2);
 
-	switch (e->endpoint.type) {
+	switch (e->ep_description.type) {
 	case ENDPOINT_SMB:
 		/* on a SMB pipe ... */
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[3].rhs.rhs_data.data = talloc_asprintf(mem_ctx, "\\PIPE\\%s", 
-								   e->endpoint.info.smb_pipe);
+								   e->ep_description.info.smb_pipe);
 		twr->floors[3].rhs.rhs_data.length = strlen(twr->floors[3].rhs.rhs_data.data)+1;
 		
 		/* on an NetBIOS link ... */
@@ -89,7 +96,7 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
 		twr->floors[3].lhs.protocol = EPM_PROTOCOL_TCP;
 		twr->floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 		twr->floors[3].rhs.rhs_data = data_blob_talloc(mem_ctx, NULL, 2);
-		RSSVAL(twr->floors[3].rhs.rhs_data.data, 0, e->endpoint.info.tcp_port);
+		RSSVAL(twr->floors[3].rhs.rhs_data.data, 0, e->ep_description.info.tcp_port);
 		
 		/* on an IP link ... */
 		twr->floors[4].lhs.protocol = EPM_PROTOCOL_IP;
@@ -106,44 +113,26 @@ static BOOL fill_protocol_tower(TALLOC_CTX *mem_ctx, struct epm_towers *twr,
   build a list of all interfaces handled by all endpoint servers
 */
 static uint32 build_ep_list(TALLOC_CTX *mem_ctx,
-			    struct dce_endpoint *endpoint_list,
+			    struct dcesrv_endpoint *endpoint_list,
 			    struct dcesrv_ep_iface **eps)
 {
-	struct dce_endpoint *d;
 	uint32 total = 0;
 
 	(*eps) = NULL;
 	
-	for (d=endpoint_list; d; d=d->next) {
-		struct dcesrv_ep_iface *e;
-		int count = d->endpoint_ops->lookup_endpoints(mem_ctx, &e);
-		if (count > 0) {
-			int i;
-			for (i=0;i<count;i++) {
-				e[i].endpoint = d->endpoint;
-			}
-			(*eps) = talloc_realloc_p(mem_ctx, *eps, 
-						  struct dcesrv_ep_iface,
-						  total + count);
-			if (!*eps) {
-				return 0;
-			}
-			memcpy((*eps) + total, e, sizeof(*e) * count);
-			total += count;
-		}
-	}
+	/* TODO */
 
 	return total;
 }
 
 
-static NTSTATUS epm_Insert(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_Insert(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			   struct epm_Insert *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS epm_Delete(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_Delete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			   struct epm_Delete *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -154,7 +143,7 @@ static NTSTATUS epm_Delete(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
   implement epm_Lookup. This call is used to enumerate the interfaces
   available on a rpc server
 */
-static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_Lookup(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			   struct epm_Lookup *r)
 {
 	struct dcesrv_handle *h;
@@ -165,7 +154,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 	uint32 num_ents;
 	int i;
 
-	h = dcesrv_handle_fetch(dce, r->in.entry_handle, HTYPE_LOOKUP);
+	h = dcesrv_handle_fetch(dce_call->conn, r->in.entry_handle, HTYPE_LOOKUP);
 	if (!h) {
 		return NT_STATUS_INVALID_HANDLE;
 	}
@@ -181,7 +170,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 		}
 		h->data = eps;
 
-		eps->count = build_ep_list(h->mem_ctx, dce->dce->endpoint_list, &eps->e);
+		eps->count = build_ep_list(h->mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps->e);
 	}
 
 	/* return the next N elements */
@@ -198,7 +187,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 		r->out.entries = NULL;
 		r->out.status  = EPMAPPER_STATUS_NO_MORE_ENTRIES;
 		ZERO_STRUCTP(r->out.entry_handle);
-		dcesrv_handle_destroy(dce, h);
+		dcesrv_handle_destroy(dce_call->conn, h);
 		return NT_STATUS_OK;
 	}
 
@@ -231,7 +220,7 @@ static NTSTATUS epm_Lookup(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
   implement epm_Map. This is used to find the specific endpoint to talk to given
   a generic protocol tower
 */
-static NTSTATUS epm_Map(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_Map(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			struct epm_Map *r)
 {
 	uint32 count;
@@ -239,7 +228,7 @@ static NTSTATUS epm_Map(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 	struct dcesrv_ep_iface *eps;
 	struct epm_floor *floors;
 
-	count = build_ep_list(mem_ctx, dce->dce->endpoint_list, &eps);
+	count = build_ep_list(mem_ctx, dce_call->conn->dce_ctx->endpoint_list, &eps);
 
 	ZERO_STRUCTP(r->out.entry_handle);
 	r->out.num_towers = 1;
@@ -273,7 +262,7 @@ static NTSTATUS epm_Map(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx,
 		    floors[0].lhs.info.uuid.version != eps[i].if_version) {
 			continue;
 		}
-		switch (eps[i].endpoint.type) {
+		switch (eps[i].ep_description.type) {
 		case ENDPOINT_SMB:
 			if (floors[3].lhs.protocol != EPM_PROTOCOL_SMB ||
 			    floors[4].lhs.protocol != EPM_PROTOCOL_NETBIOS) {
@@ -300,19 +289,19 @@ failed:
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS epm_LookupHandleFree(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_LookupHandleFree(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 				     struct epm_LookupHandleFree *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS epm_InqObject(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_InqObject(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			      struct epm_InqObject *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-static NTSTATUS epm_MgmtDelete(struct dcesrv_state *dce, TALLOC_CTX *mem_ctx, 
+static NTSTATUS epm_MgmtDelete(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, 
 			       struct epm_MgmtDelete *r)
 {
 	return NT_STATUS_NOT_IMPLEMENTED;

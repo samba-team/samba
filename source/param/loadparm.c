@@ -151,6 +151,7 @@ typedef struct
 	char *szAbortShutdownScript;
 	char *szWINSHook;
 	char *szWINSPartners;
+	char **dcerpc_ep_servers;
 #ifdef WITH_UTMP
 	char *szUtmpDir;
 	char *szWtmpDir;
@@ -738,6 +739,7 @@ static struct parm_struct parm_table[] = {
 	{"interfaces", P_LIST, P_GLOBAL, &Globals.szInterfaces, NULL, NULL, FLAG_BASIC | FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"bind interfaces only", P_BOOL, P_GLOBAL, &Globals.bBindInterfacesOnly, NULL, NULL, FLAG_ADVANCED | FLAG_WIZARD | FLAG_DEVELOPER},
 	{"ntvfs handler", P_STRING, P_LOCAL, &sDefault.ntvfs_handler, NULL, NULL, FLAG_ADVANCED},
+	{"dcerpc endpoint servers", P_LIST, P_GLOBAL, &Globals.dcerpc_ep_servers, NULL, NULL, FLAG_ADVANCED},
 
 	{"Security Options", P_SEP, P_SEPARATOR},
 	
@@ -1270,6 +1272,8 @@ static void init_globals(void)
 	string_set(&sDefault.fstype, FSTYPE_STRING);
 	string_set(&sDefault.ntvfs_handler, "default");
 
+	Globals.dcerpc_ep_servers = str_list_make("epmapper rpcecho", NULL);
+
 	string_set(&Globals.szSMBPasswdFile, dyn_SMB_PASSWD_FILE);
 	string_set(&Globals.szPrivateDir, dyn_PRIVATE_DIR);
 
@@ -1571,6 +1575,7 @@ FN_GLOBAL_STRING(lp_lockdir, &Globals.szLockDir)
 FN_GLOBAL_STRING(lp_piddir, &Globals.szPidDir)
 FN_GLOBAL_STRING(lp_mangling_method, &Globals.szManglingMethod)
 FN_GLOBAL_INTEGER(lp_mangle_prefix, &Globals.mangle_prefix)
+FN_GLOBAL_LIST(lp_dcerpc_endpoint_servers, &Globals.dcerpc_ep_servers)
 #ifdef WITH_UTMP
 FN_GLOBAL_STRING(lp_utmpdir, &Globals.szUtmpDir)
 FN_GLOBAL_STRING(lp_wtmpdir, &Globals.szWtmpDir)
