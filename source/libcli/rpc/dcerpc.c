@@ -527,8 +527,8 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.hdr.call_id = p->call_id++;
 	pkt.hdr.auth_length = 0;
 
-        pkt.in.bind.max_xmit_frag = 5680;
-        pkt.in.bind.max_recv_frag = 5680;
+        pkt.in.bind.max_xmit_frag = 0x2000;
+        pkt.in.bind.max_recv_frag = 0x2000;
         pkt.in.bind.assoc_group_id = 0;
         pkt.in.bind.num_contexts = 1;
 	pkt.in.bind.ctx_list = talloc(mem_ctx, sizeof(pkt.in.bind.ctx_list[0]));
@@ -564,7 +564,6 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	if (pkt.hdr.ptype != DCERPC_PKT_BIND_ACK) {
 		status = NT_STATUS_UNSUCCESSFUL;
 	}
-
 
 	p->srv_max_xmit_frag = pkt.out.bind_ack.max_xmit_frag;
 	p->srv_max_recv_frag = pkt.out.bind_ack.max_recv_frag;
@@ -610,6 +609,9 @@ NTSTATUS cli_dcerpc_bind_byname(struct dcerpc_pipe *p, const char *pipe_name)
 	return dcerpc_bind(p, &known_pipes[i].syntax, &known_pipes[i].transfer_syntax);
 }
 
+/*
+  perform a full request/response pair on a dcerpc pipe
+*/
 NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p, 
 			    uint16 opnum,
 			    TALLOC_CTX *mem_ctx,
@@ -619,7 +621,7 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 	
 	struct dcerpc_packet pkt;
 	NTSTATUS status;
-	DATA_BLOB blob;
+	DATA_BLOB blob_in, blob_out;
 
 	init_dcerpc_hdr(&pkt.hdr);
 
@@ -633,12 +635,25 @@ NTSTATUS cli_dcerpc_request(struct dcerpc_pipe *p,
 	pkt.in.request.stub_data = *stub_data_in;
 	pkt.in.request.auth_verifier = data_blob(NULL, 0);
 
-	status = dcerpc_push(&blob, mem_ctx, &pkt);
+	status = dcerpc_push(&blob_in, mem_ctx, &pkt);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	status = dcerpc_raw_packet(p, mem_ctx, &blob, stub_data_out);
+	status = dcerpc_raw_packet(p, mem_ctx, &blob_in, &blob_out);
+
+	status = dcerpc_pull(&blob_out, mem_ctx, &pkt);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
+
+	if (pkt.hdr.ptype != DCERPC_PKT_RESPONSE) {
+		status = NT_STATUS_UNSUCCESSFUL;
+	}
+
+	if (stub_data_out) {
+		*stub_data_out = pkt.out.response.stub_data;
+	}
 
 	return status;
 }

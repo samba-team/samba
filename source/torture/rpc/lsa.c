@@ -36,7 +36,6 @@ static DATA_BLOB blob_lsa_open_policy_req(TALLOC_CTX *mem_ctx, BOOL sec_qos,
 	prs_init(&qbuf, MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
 
 	/* Initialise input parameters */
-
 	if (sec_qos) {
 		init_lsa_sec_qos(&qos, 2, 1, 0);
 		init_q_open_pol(&q, '\\', 0, des_access, &qos);
@@ -55,7 +54,7 @@ BOOL torture_rpc_lsa(int dummy)
 {
         NTSTATUS status;
         struct dcerpc_pipe *p;
-	DATA_BLOB request;
+	DATA_BLOB request, response;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("torture_rpc_lsa");
@@ -68,7 +67,7 @@ BOOL torture_rpc_lsa(int dummy)
 	request = blob_lsa_open_policy_req(mem_ctx, True, 
 					   SEC_RIGHTS_MAXIMUM_ALLOWED);
 
-	status = cli_dcerpc_request(p, LSA_OPENPOLICY, mem_ctx, &request, NULL);
+	status = cli_dcerpc_request(p, LSA_OPENPOLICY, mem_ctx, &request, &response);
 	if (!NT_STATUS_IS_OK(status)) {
 		d_printf("Failed to LSA_OPENPOLICY - %s\n", nt_errstr(status));
 	}
