@@ -50,7 +50,10 @@ static uint32_t access_check_max_allowed(const struct security_descriptor *sd,
 	unsigned i;
 	
 	if (sid_active_in_token(sd->owner_sid, token)) {
-		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL | SEC_STD_DELETE;
+		granted |= SEC_STD_WRITE_DAC | SEC_STD_READ_CONTROL;
+	}
+	if (sec_privilege_check(token, SEC_PRIV_RESTORE)) {
+		granted |= SEC_STD_DELETE;
 	}
 
 	for (i = 0;i<sd->dacl->num_aces; i++) {
@@ -96,17 +99,13 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 		bits_remaining = access_desired & ~SEC_STD_DELETE;
 	}
 
-#if 0
-	/* this is where we should check for the "system security" privilege, once we 
-	   move to the full security_token and not just the nt_user_token */
 	if (access_desired & SEC_FLAG_SYSTEM_SECURITY) {
-		if (privilege_in_token(SE_PRIVILEGE_SYSTEM_SECURITY, token)) {
+		if (sec_privilege_check(token, SEC_PRIV_SECURITY)) {
 			bits_remaining &= ~SEC_FLAG_SYSTEM_SECURITY;
 		} else {
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
-#endif
 
 	/* dacl not present allows access */
 	if (!(sd->type & SEC_DESC_DACL_PRESENT)) {
@@ -123,6 +122,10 @@ NTSTATUS sec_access_check(const struct security_descriptor *sd,
 	if ((bits_remaining & (SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL)) &&
 	    sid_active_in_token(sd->owner_sid, token)) {
 		bits_remaining &= ~(SEC_STD_WRITE_DAC|SEC_STD_READ_CONTROL);
+	}
+	if ((bits_remaining & SEC_STD_DELETE) &&
+	    sec_privilege_check(token, SEC_PRIV_RESTORE)) {
+		bits_remaining &= ~SEC_STD_DELETE;
 	}
 
 	/* check each ace in turn. */

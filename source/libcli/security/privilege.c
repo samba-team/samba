@@ -82,3 +82,27 @@ int sec_privilege_id(const char *name)
 	}
 	return -1;
 }
+
+
+/*
+  return True if a security_token has a particular privilege bit set
+*/
+BOOL sec_privilege_check(const struct security_token *token, unsigned int privilege)
+{
+	uint64_t mask = 1;
+	mask <<= (privilege-1);
+	if (token->privilege_mask & mask) {
+		return True;
+	}
+	return False;
+}
+
+/*
+  set a bit in the privilege mask
+*/
+void sec_privilege_set(struct security_token *token, unsigned int privilege)
+{
+	uint64_t mask = 1;
+	mask <<= (privilege-1);
+	token->privilege_mask |= mask;
+}
