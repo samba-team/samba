@@ -520,6 +520,8 @@ default case
 
 delete readonly
 
+delete veto files
+
 deny hosts
 
 directory
@@ -1035,6 +1037,34 @@ override this one. Where the lists conflict, the 'allow' list takes precedence.
 
 .B Example:
   	deny hosts = 150.203.4. badhost.mynet.edu.au
+
+.SS delete veto files (S)
+
+This option is used when Samba is attempting to delete a directory
+that contains one or more vetoed directories (see the 'veto files' option).
+If this option is set to False (the default) then if a vetoed directory
+contains any non-vetoed files or directories then the directory delete 
+will fail. This is usually what you want. 
+
+If this option is set to True, then Samba will attempt
+to recursively delete any files and directories within the vetoed
+directory. This can be useful for integration with file serving
+systems such as Netatalk, which create meta-files within directories
+you might normally veto DOS/Windows users from seeing (eg. .AppleDouble)
+
+Setting 'delete veto files = True' allows these directories to be 
+transparently deleted when the parent directory is deleted (so long
+as the user has permissions to do so).
+
+.B Default:
+    delete veto files = False
+
+.B Example:
+    delete veto files = True
+
+See
+.B veto files
+
 .SS dfree command (G)
 The dfree command setting should only be used on systems where a
 problem occurs with the internal disk space calculations. This has
@@ -1522,10 +1552,10 @@ A boolean variable that controls whether all printers in the printcap
 will be loaded for browsing by default. 
 
 .B Default:
-	load printers = no
+	load printers = yes
 
 .B Example:
-	load printers = yes
+	load printers = no
 
 .SS local master (G)
 This option allows the nmbd to become a local master browser on a
