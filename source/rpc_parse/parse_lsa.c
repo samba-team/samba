@@ -625,20 +625,6 @@ BOOL lsa_io_r_enum_trust_dom(char *desc, LSA_R_ENUM_TRUST_DOM *r_e,
 	return True;
 }
 
-void lsa_free_r_enum_trust_dom(LSA_R_ENUM_TRUST_DOM * r_e)
-{
-	safe_free(r_e->uni_domain_name);
-	safe_free(r_e->hdr_domain_name);
-	safe_free(r_e->domain_sid);
-
-	r_e->uni_domain_name = NULL;
-	r_e->hdr_domain_name = NULL;
-	r_e->domain_sid = NULL;
-
-	r_e->num_domains = 0;
-	r_e->ptr_enum_domains = 0;
-}
-
 /*******************************************************************
 reads or writes a dom query structure.
 ********************************************************************/
@@ -758,7 +744,7 @@ static BOOL lsa_io_dom_query_6(char *desc, DOM_QUERY_6 *d_q, prs_struct *ps, int
 }
 
 /*******************************************************************
- Reads or writes an LSA_Q_QUERY_INFO structure.
+ Reads or writes an LSA_R_QUERY_INFO structure.
 ********************************************************************/
 
 BOOL lsa_io_r_query(char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,

@@ -278,7 +278,7 @@ uint32 cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				 "%s%s%s", dom_name, dom_name[0] ? 
 				 "\\" : "", name);
 
-			(*names)[i] = strdup(full_name);
+			(*names)[i] = talloc_strdup(mem_ctx, full_name);
 			(*types)[i] = t_names.name[i].sid_name_use;
 		} else {
 			(*names)[i] = NULL;
@@ -436,6 +436,9 @@ uint32 cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
+	ZERO_STRUCTP(domain_sid);
+	domain_name[0] = '\0';
+
 	switch (info_class) {
 
 	case 3:
@@ -518,7 +521,12 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (result != NT_STATUS_NOPROBLEMO && result != 0x8000001a) {
+	/* For some undocumented reason this function sometimes returns
+	   0x8000001a (NT_STATUS_UNABLE_TO_FREE_VM) so we ignore it and
+	   pretend everything is OK. */
+
+	if (result != NT_STATUS_NOPROBLEMO && 
+	    result != NT_STATUS_UNABLE_TO_FREE_VM) {
 
 		/* An actual error ocured */
 
@@ -529,32 +537,41 @@ uint32 cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 
-	if (r.num_domains && !((*domain_names) = (char **)talloc(mem_ctx, sizeof(char *) *
-						r.num_domains))) {
-		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+	if (r.num_domains) {
 
-	if (r.num_domains && !((*domain_sids) = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
-						 r.num_domains))) {
-		DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
-		result = NT_STATUS_UNSUCCESSFUL;
-		goto done;
-	}
+		/* Allocate memory for trusted domain names and sids */
 
-	for (i = 0; i < r.num_domains; i++) {
-		fstring tmp;
+		*domain_names = (char **)talloc(mem_ctx, sizeof(char *) *
+						r.num_domains);
 
-		unistr2_to_ascii(tmp, &r.uni_domain_name[i], sizeof(tmp) - 1);
-		(*domain_names)[i] = strdup(tmp);
-		sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
+		if (!*domain_names) {
+			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		*domain_sids = (DOM_SID *)talloc(mem_ctx, sizeof(DOM_SID) *
+						 r.num_domains);
+		if (!domain_sids) {
+			DEBUG(0, ("cli_lsa_enum_trust_dom(): out of memory\n"));
+			result = NT_STATUS_UNSUCCESSFUL;
+			goto done;
+		}
+
+		/* Copy across names and sids */
+
+		for (i = 0; i < r.num_domains; i++) {
+			fstring tmp;
+
+			unistr2_to_ascii(tmp, &r.uni_domain_name[i], 
+					 sizeof(tmp) - 1);
+			(*domain_names)[i] = strdup(tmp);
+			sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
+		}
 	}
 
 	*num_domains = r.num_domains;
 	*enum_ctx = r.enum_context;
-
-	lsa_free_r_enum_trust_dom(&r);
 
  done:
 	prs_mem_free(&qbuf);
