@@ -54,7 +54,7 @@ NTSTATUS sam_get_methods_by_sid(const SAM_CONTEXT *context, SAM_METHODS **sam_me
 	tmp_methods = context->methods;
 
 	while (tmp_methods) {
-		if (sid_equal(domainsid, &(tmp_methods->domain->private.sid)))
+		if (sid_equal(domainsid, &(tmp_methods->domain_sid)))
 		{
 			(*sam_method) = tmp_methods;
 			return NT_STATUS_OK;
@@ -79,7 +79,7 @@ NTSTATUS sam_get_methods_by_name(const SAM_CONTEXT *context, SAM_METHODS **sam_m
 	tmp_methods = context->methods;
 
 	while (tmp_methods) {
-		if (strcmp(domainname, tmp_methods->domain->private.name))
+		if (strcmp(domainname, tmp_methods->domain_name))
 		{
 			(*sam_method) = tmp_methods;
 			return NT_STATUS_OK;
@@ -162,7 +162,7 @@ NTSTATUS context_sam_lookup_name(const SAM_CONTEXT *context, const NT_USER_TOKEN
 
 	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_lookup_name(tmp_methods, access_token, name, sid, type))) {
 		DEBUG(4,("sam_lookup_name for %s\\%s in backend %s failed\n",
-				 tmp_methods->domain->private.name, name, tmp_methods->backendname));
+				 tmp_methods->domain_name, name, tmp_methods->backendname));
 		return nt_status;
 	}
 
@@ -278,9 +278,9 @@ NTSTATUS context_sam_enum_domains(const SAM_CONTEXT *context, const NT_USER_TOKE
 	}
 
 	while (tmp_methods) {
-		DEBUGADD(7,("    [%d] %s: %s\n", i, tmp_methods->domain->private.name, sid_string_static(&tmp_methods->domain->private.sid)));
-		sid_copy(domains[i],&tmp_methods->domain->private.sid);
-		if(asprintf(&(*domain_names[i]),"%s",tmp_methods->domain->private.name) < 0) {
+		DEBUGADD(7,("    [%d] %s: %s\n", i, tmp_methods->domain_name, sid_string_static(&tmp_methods->domain_sid)));
+		sid_copy(domains[i],&tmp_methods->domain_sid);
+		if(asprintf(&(*domain_names[i]),"%s",tmp_methods->domain_name) < 0) {
 			DEBUG(0,("context_sam_enum_domains: asprintf failed"));
 			SAFE_FREE((*domains));
 			SAFE_FREE((*domain_names));
@@ -321,8 +321,8 @@ NTSTATUS context_sam_lookup_domain(const SAM_CONTEXT *context, const NT_USER_TOK
 	tmp_methods= context->methods;
 
 	while (tmp_methods) {
-		if (strcmp(domain, tmp_methods->domain->private.name) == 0) {
-			sid_copy((*domainsid), &tmp_methods->domain->private.sid);
+		if (strcmp(domain, tmp_methods->domain_name) == 0) {
+			sid_copy((*domainsid), &tmp_methods->domain_sid);
 			return NT_STATUS_OK;
 		}
 		tmp_methods= tmp_methods->next;
@@ -495,7 +495,7 @@ NTSTATUS context_sam_enum_accounts(const SAM_CONTEXT *context, const NT_USER_TOK
 
 	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_accounts(tmp_methods, access_token, acct_ctrl, account_count, accounts))) {
 		DEBUG(4,("sam_enum_accounts for domain %s in backend %s failed\n",
-				 tmp_methods->domain->private.name, tmp_methods->backendname));
+				 tmp_methods->domain_name, tmp_methods->backendname));
 		return nt_status;
 	}
 
@@ -701,7 +701,7 @@ NTSTATUS context_sam_enum_groups(const SAM_CONTEXT *context, const NT_USER_TOKEN
 
 	if (!NT_STATUS_IS_OK(nt_status = tmp_methods->sam_enum_groups(tmp_methods, access_token, group_ctrl, groups_count, groups))) {
 		DEBUG(4,("sam_enum_groups for domain %s in backend %s failed\n",
-				 tmp_methods->domain->private.name, tmp_methods->backendname));
+				 tmp_methods->domain_name, tmp_methods->backendname));
 		return nt_status;
 	}
 
@@ -969,13 +969,23 @@ static NTSTATUS make_backend_entry(SAM_BACKEND_ENTRY *backend_entry, char *sam_b
  create sam_methods struct based on sam_backend_entry
  *****************************************************************/
 
-static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS **methods, SAM_BACKEND_ENTRY *backend_entry)
+static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS **methods_ptr, SAM_BACKEND_ENTRY *backend_entry)
 {
 	NTSTATUS nt_status = NT_STATUS_UNSUCCESSFUL;
+	SAM_METHODS *methods;
 	int i;
-	
+
 	DEBUG(5,("make_sam_methods_backend_entry: %d\n", __LINE__));
 
+	if (!NT_STATUS_IS_OK(nt_status = make_sam_methods(context->mem_ctx, methods_ptr))) {
+		return nt_status;
+	}
+
+	methods = *methods_ptr;
+	methods->backendname = talloc_strdup(context->mem_ctx, backend_entry->module_name);
+	methods->domain_name = talloc_strdup(context->mem_ctx, backend_entry->domain_name);
+	sid_copy(&methods->domain_sid, backend_entry->domain_sid);
+	methods->parent = context;
 
 	DEBUG(5,("Attempting to find sam backend %s\n", backend_entry->module_name));
 	for (i = 0; builtin_sam_init_functions[i].module_name; i++)
@@ -984,7 +994,7 @@ static NTSTATUS make_sam_methods_backend_entry(SAM_CONTEXT *context, SAM_METHODS
 		{
 			DEBUG(5,("Found sam backend %s (at pos %d)\n", backend_entry->module_name, i));
 			DEBUGADD(5,("initialising it with options=%s for domain %s\n", backend_entry->module_params, sid_string_static(backend_entry->domain_sid)));
-			nt_status = builtin_sam_init_functions[i].init(context, methods, backend_entry->domain_sid, backend_entry->module_params);
+			nt_status = builtin_sam_init_functions[i].init(methods, backend_entry->module_params);
 			if (NT_STATUS_IS_OK(nt_status)) {
 				DEBUG(5,("sam backend %s has a valid init\n", backend_entry->module_name));
 			} else {
@@ -1030,7 +1040,6 @@ static NTSTATUS sam_context_check_default_backends(SAM_CONTEXT *context)
 			return ntstatus;
 		}
 
-		methods->parent = context;
 		DLIST_ADD_END(context->methods, methods, tmpmethods);
 
 	} else if (!NT_STATUS_IS_OK(ntstatus)) {
@@ -1056,7 +1065,6 @@ static NTSTATUS sam_context_check_default_backends(SAM_CONTEXT *context)
 			return ntstatus;
 		}
 
-		methods->parent = context;
 		DLIST_ADD_END(context->methods, methods, tmpmethods);
 	} else if (!NT_STATUS_IS_OK(ntstatus)) {
 		DEBUG(2, ("sam_get_methods_by_sid failed for BUILTIN\n"));
@@ -1138,7 +1146,6 @@ NTSTATUS make_sam_context_list(SAM_CONTEXT **context, char **sam_backends_param)
 			free_sam_context(context);
 			return nt_status;
 		}
-		curmethods->parent = *context;
 		DLIST_ADD_END((*context)->methods, curmethods, tmpmethods);
 	}
 	

@@ -54,7 +54,7 @@ static char* next_command (char** cmdstr)
 }
 
 /* Display help on commands */
-static NTSTATUS cmd_help(struct sam_context *sam, TALLOC_CTX *mem_ctx,
+static NTSTATUS cmd_help(struct samtest_state *st, TALLOC_CTX *mem_ctx,
 			 int argc, char **argv)
 {
 	struct cmd_list *tmp;
@@ -112,7 +112,7 @@ static NTSTATUS cmd_help(struct sam_context *sam, TALLOC_CTX *mem_ctx,
 }
 
 /* Change the debug level */
-static NTSTATUS cmd_debuglevel(struct sam_context *sam, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_debuglevel(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	if (argc > 2) {
 		printf("Usage: %s [debuglevel]\n", argv[0]);
@@ -128,7 +128,7 @@ static NTSTATUS cmd_debuglevel(struct sam_context *sam, TALLOC_CTX *mem_ctx, int
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS cmd_quit(struct sam_context *sam, TALLOC_CTX *mem_ctx, int argc, char **argv)
+static NTSTATUS cmd_quit(struct samtest_state *st, TALLOC_CTX *mem_ctx, int argc, char **argv)
 {
 	/* Cleanup */
 	talloc_destroy(mem_ctx);
@@ -185,7 +185,7 @@ static void add_command_set(struct cmd_set *cmd_set)
 	DLIST_ADD(cmd_list, entry);
 }
 
-static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char *cmd)
+static NTSTATUS do_cmd(struct samtest_state *st, struct cmd_set *cmd_entry, char *cmd)
 {
 	char *p = cmd, **argv = NULL;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -237,7 +237,7 @@ static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char 
 		}
 
 		/* Run command */
-		result = cmd_entry->fn(sam, mem_ctx, argc, argv);
+		result = cmd_entry->fn(st, mem_ctx, argc, argv);
 
 	} else {
 		fprintf (stderr, "Invalid command\n");
@@ -259,7 +259,7 @@ static NTSTATUS do_cmd(struct sam_context *sam, struct cmd_set *cmd_entry, char 
 }
 
 /* Process a command entered at the prompt or as part of -c */
-static NTSTATUS process_cmd(struct sam_context *sam, char *cmd)
+static NTSTATUS process_cmd(struct samtest_state *st, char *cmd)
 {
 	struct cmd_list *temp_list;
 	BOOL found = False;
@@ -288,7 +288,7 @@ static NTSTATUS process_cmd(struct sam_context *sam, char *cmd)
 		while(temp_set->name) {
 			if (strequal(buf, temp_set->name)) {
 				found = True;
-				result = do_cmd(sam, temp_set, cmd);
+				result = do_cmd(st, temp_set, cmd);
 
 				goto done;
 			}
@@ -339,7 +339,7 @@ int main(int argc, char *argv[])
 	pstring 		logfile;
 	struct cmd_set 		**cmd_set;
 	extern BOOL 		AllowDebugChange;
-	static struct sam_context sam;
+	struct samtest_state st;
 
 
 	/* make sure the vars that get altered (4th field) are in
@@ -352,6 +352,8 @@ int main(int argc, char *argv[])
 		{"logfile",	'l', POPT_ARG_STRING,	&opt_logfile, 'l', "Logfile to use instead of stdout"},
 		{ 0, 0, 0, 0}
 	};
+
+	ZERO_STRUCT(st);
 
 	setlinebuf(stdout);
 
@@ -397,7 +399,7 @@ int main(int argc, char *argv[])
 		char    *p = cmdstr;
  
 		while((cmd=next_command(&p)) != NULL) {
-			process_cmd(&sam, cmd);
+			process_cmd(&st, cmd);
 		}
 		
 		return 0;
@@ -417,7 +419,7 @@ int main(int argc, char *argv[])
 			break;
 
 		if (line[0] != '\n')
-			process_cmd(&sam, line);
+			process_cmd(&st, line);
 	}
 	
 	return 0;
