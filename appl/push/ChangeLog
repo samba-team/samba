@@ -1,3 +1,7 @@
+Fri Jul 10 01:14:45 1998  Assar Westerlund  <assar@sics.se>
+
+	* push.c (net_{read,write}): remove
+
 Wed Jun 24 14:41:41 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
 	* push.c: allow `po:user@host' mailbox syntax

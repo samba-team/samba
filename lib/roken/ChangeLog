@@ -1,3 +1,11 @@
+Fri Jul 10 01:20:08 1998  Assar Westerlund  <assar@sics.se>
+
+	* roken.h.in (net_write, net_read): add prototypes
+
+	* Makefile.in: net_{read,write}.c: add
+
+	* net_{read,write}.c: new files
+
 Tue Jun 30 17:29:09 1998  Assar Westerlund  <assar@sics.se>
 
 	* roken.h.in (issuid): add
