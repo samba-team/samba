@@ -133,8 +133,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     memset (&cred, 0, sizeof(cred));
     cred.pvno = 5;
     cred.msg_type = krb_cred;
-    cred.tickets.len = 1;
-    ALLOC(cred.tickets.val, 1);
+    ALLOC_SEQ(&cred.tickets, 1);
     if (cred.tickets.val == NULL) {
 	ret = ENOMEM;
 	goto out2;
@@ -146,8 +145,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	goto out3;
 
     memset (&enc_krb_cred_part, 0, sizeof(enc_krb_cred_part));
-    enc_krb_cred_part.ticket_info.len = 1;
-    ALLOC(enc_krb_cred_part.ticket_info.val, 1);
+    ALLOC_SEQ(&enc_krb_cred_part.ticket_info, 1);
     if (enc_krb_cred_part.ticket_info.val == NULL) {
 	ret = ENOMEM;
 	goto out4;
