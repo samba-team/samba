@@ -2,16 +2,18 @@
 
 include $(top_srcdir)/Makefile.am.common
 
-INCLUDES += $(INCLUDE_krb4) $(AFS_EXTRA_DEFS) $(ROKEN_RENAME) -I$(top_srcdir)/lib/krb5
+INCLUDES += $(AFS_EXTRA_DEFS) $(ROKEN_RENAME)
 
 if KRB4
 DEPLIB_krb4 = $(LIB_krb4) $(LIB_des)
+INCLUDES += $(INCLUDE_krb4)
 else
 DEPLIB_krb4  =
 endif # KRB4
 
 if KRB5
 DEPLIB_krb5 = ../krb5/libkrb5.la 
+INCLUDES += $(INCLUDE_des) -I$(top_srcdir)/lib/krb5
 else
 DEPLIB_krb5  =
 endif # KRB5
@@ -67,7 +69,7 @@ endif
 
 
 if do_roken_rename
-ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c
+ROKEN_SRCS = resolve.c strtok_r.c strlcpy.c strsep.c strupr.c
 endif
 
 libkafs_la_SOURCES =				\
@@ -106,3 +108,6 @@ strlcpy.c:
 
 strsep.c:
 	$(LN_S) $(srcdir)/../roken/strsep.c .
+
+strupr.c:
+	$(LN_S) $(srcdir)/../roken/strupr.c .
