@@ -1006,6 +1006,8 @@ it() link(bf(wide links))(widelinks)
 
 it() link(bf(writable))(writable)
 
+it() link(bf(write cache size))(writecachesize)
+
 it() link(bf(write list))(writelist)
 
 it() link(bf(write ok))(writeok)
@@ -6763,6 +6765,32 @@ tt(     write list = <empty string>)
 
   bf(Example:)
 tt(	write list = admin, root, @staff)
+
+label(writecachesize)
+dit(bf(write cache size (S)))
+
+This integer parameter (new with Samba 2.0.7) if set to non-zero causes Samba to create an in-memory
+cache for each oplocked file (it does bf(not) do this for non-oplocked filed). All
+writes that the client does not request to be flushed directly to disk will be
+stored in this cache if possible. The cache is flushed onto disk when a write
+comes in whose offset would not fit into the cache or when the file is closed
+by the client. Reads for the file are also served from this cache if the data
+is stored within it.
+
+This cache allows Samba to batch client writes into a more efficient write
+size for RAID disks (ie. writes may be tuned to be the RAID stripe size) and
+can improve performance on systems where the disk subsystem is a bottleneck
+but there is free memory for userspace programs.
+
+The integer parameter specifies the size of this cache (per oplocked file)
+in bytes.
+
+  bf(Default:)
+tt(     write cache size = 0)
+
+  bf(Example:)
+tt(	     write cache size = 262144)
+for a 256k cache size per file.
 
 label(writeok)
 dit(bf(write ok (S)))
