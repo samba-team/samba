@@ -4,7 +4,7 @@ dnl test for broken AIX getnameinfo
 
 AC_DEFUN([rk_BROKEN_GETNAMEINFO],[
 AC_CACHE_CHECK([if getnameinfo is broken], ac_cv_func_getnameinfo_broken,
-AC_RUN_IFELSE([AC_LANG_SOURCE([[#include <stdio.h>
+AC_RUN_IFELSE([AC_LANG_SOURCE([[[#include <stdio.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -25,4 +25,4 @@ main(int argc, char **argv)
   return getnameinfo((struct sockaddr*)&sin, sizeof(sin), host, sizeof(host),
 	      NULL, 0, 0);
 }
-]])], [ac_cv_func_getnameinfo_broken=no], [ac_cv_func_getnameinfo_broken=yes]))])
+]]])], [ac_cv_func_getnameinfo_broken=no], [ac_cv_func_getnameinfo_broken=yes]))])
