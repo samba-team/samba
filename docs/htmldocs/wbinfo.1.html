@@ -25,7 +25,8 @@
      
 <p><strong>wbinfo</strong> <a href="wbinfo.1.html#minusu">-u</a> [<a href="wbinfo.1.html#minusg">-g</a>] [<a href="wbinfo.1.html#minusn">-n name</a>]
 [<a href="wbinfo.1.html#minuss">-s sid</a>] [<a href="wbinfo.1.html#minusU">-U uid</a>] [<a href="wbinfo.1.html#minusG">-G gid</a>]
-[<a href="wbinfo.1.html#minusS">-S sid</a>] [<a href="wbinfo.1.html#minusY">-Y sid</a>] 
+[<a href="wbinfo.1.html#minusS">-S sid</a>] [<a href="wbinfo.1.html#minusY">-Y sid</a>] [<a href="wbinfo.1.html#minust">-t</a>]
+[<a href="wbinfo.1.html#minusm">-m</a>]
 <p><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -88,6 +89,16 @@ will fail.
 <p>Convert a SID to a UNIX group id.  If the SID does not correspond to a UNIX
 group mapped by <a href="winbindd.8.html"><strong>winbindd(8)</strong></a> then the operation
 will fail.
+<p><a name="minust"></a>
+<p></p><dt><strong><strong>-t</strong></strong><dd>
+<p>Verify that the workstation trust account created when the Samba server is
+added to the Windows NT domain is working.
+<p><a name="minusm"></a>
+<p></p><dt><strong><strong>-m</strong></strong><dd>
+<p>Produce a list of domains trusted by the Windows NT server
+<a href="winbindd.8.html"><strong>winbindd(8)</strong></a> contacts when resolving names.  This
+list does not include the Windows NT domain the server is a Primary Domain
+Controller for.
 <p></dl>
 <p><a name="EXITSTATUS"></a>
 <h2>EXIT STATUS</h2>

@@ -73,8 +73,8 @@ and 100 is for reams and reams. To submit a bug report to the Samba Team,
 use debug level 100 (see <strong>BUGS.txt</strong>).  
 <p><a name="minusi"></a>
 <p></p><dt><strong><strong>-i</strong></strong><dd>
-Tells winbindd to not become a daemon and detach from the current terminal.
-This option is used by developers when interactive debugging of winbindd is
+Tells <strong>winbindd</strong> to not become a daemon and detach from the current terminal.
+This option is used by developers when interactive debugging of <strong>winbindd</strong> is
 required.
 <p></dl>
 <p><a name="NAMEANDIDRESOLUTION"></a>
@@ -140,12 +140,12 @@ otherwise.
 <p><p></p><dt><strong>winbind cache time</strong><dd>
 <p>This parameter specifies the number of seconds the <strong>winbindd</strong> daemon will
 cache user and group information before querying a Windows NT server
-again. When a item in the cache is older than this time winbindd will ask
+again. When a item in the cache is older than this time <strong>winbindd</strong> will ask
 the domain controller for the sequence number of the servers account
 database. If the sequence number has not changed then the cached item is
 marked as valid for a further "winbind cache time" seconds.  Otherwise the
 item is fetched from the server. This means that as long as the account
-database is not actively changing winbindd will only have to send one
+database is not actively changing <strong>winbindd</strong> will only have to send one
 sequence number query packet every "winbind cache time" seconds.
 <p><strong>Default:</strong>
 <code>     winbind cache time = 15</code>
@@ -166,7 +166,7 @@ substituted with the user's Windows NT user name.
 <p><a name="EXAMPLESETUP"></a>
 <h2>EXAMPLE SETUP</h2>
     
-<p>To setup winbindd for user and group lookups plus authentication from
+<p>To setup <strong>winbindd</strong> for user and group lookups plus authentication from
 a domain controller use something like the following setup. This was
 tested on a RedHat 6.2 Linux box.
 <p>In <code>/etc/nsswitch.conf</code> put the following:
@@ -231,12 +231,12 @@ is called <code>MACHINE</code>.
 
 </pre>
 
-<p>Now start winbindd and you should find that your user and group
+<p>Now start <strong>winbindd</strong> and you should find that your user and group
 database is expanded to include your NT users and groups, and that you
 can login to your unix box as a domain user, using the <code>DOMAIN+user</code>
 syntax for the username. You may wish to use the commands "getent
 passwd" and "getent group" to confirm the correct operation of
-winbindd. 
+<strong>winbindd</strong>. 
 <p><a name="NOTES"></a>
 <h2>NOTES</h2>
     
@@ -245,10 +245,15 @@ winbindd.
 <p><p></p><dt><strong></strong><dd>
 <a href="nmbd.8.html"><strong>nmbd</strong></a> must be running on the local machine for
 <strong>winbindd</strong> to work.
+<p><p></p><dt><strong></strong><dd>
+<strong>winbindd</strong> queries the list of trusted domains for the Windows NT server
+on startup and when a SIGHUP is received.  Thus, for a running <strong>winbindd</strong>
+to become aware of new trust relationships between servers, it must be sent
+a SIGHUP signal.
 <p><p></p><dt><strong></strong><dd> 
 Client processes resolving names through the <strong>winbindd</strong> nsswitch module
 read an environment variable named <code>WINBINDD_DOMAIN</code>.  If this variable
-contains a comma separated list of Windows NT domain names, then winbindd
+contains a comma separated list of Windows NT domain names, then <strong>winbindd</strong>
 will only resolve users and groups within those Windows NT domains.
 <p><p></p><dt><strong></strong><dd>
 PAM is really easy to misconfigure.  Make sure you know what you are doing
@@ -270,7 +275,8 @@ is damaged or destroyed then the mappings will be lost.
 <p><p></p><dt><strong><code>SIGHUP</code></strong><dd>
 <p>Reload the <code>smb.conf</code> file and apply any parameter changes to the running
 version of <strong>winbindd</strong>.  This signal also clears any cached user and group
-information.
+information.  The list of other domains trusted by <strong>winbindd</strong> is also
+reloaded. 
 <p><p></p><dt><strong><code>SIGUSR1</code></strong><dd>
 <p>The <code>SIGUSR1</code> signal will cause <strong>winbindd</strong> to write status information
 to the winbind log file including information about the number of user and
@@ -304,7 +310,7 @@ directory is specified when Samba is initially compiled using the
 <h2>SEE ALSO</h2>
     
 <p><a href="samba.7.html"><strong>samba(7)</strong></a>, <a href="smb.conf.5.html"><strong>smb.conf(5)</strong></a>, 
-<strong>nsswitch.conf(5)</strong>
+<strong>nsswitch.conf(5)</strong>, <a href="wbinfo.1.html"><strong>wbinfo(1)</strong></a>
 <p><a name="AUTHOR"></a>
 <h2>AUTHOR</h2>
     
