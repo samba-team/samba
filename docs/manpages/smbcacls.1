@@ -23,7 +23,7 @@ smbcacls \- Set or get ACLs on an NT file or directory names
 .SH "SYNOPSIS"
 
 .nf
-\fBsmbcacls\fR {//server/share} {filename} [-D acls] [-M acls] [-A acls] [-S acls] [-C name] [-G name] [-n] [-t] [-U username] [-h] [-d]
+\fBsmbcacls\fR {//server/share} {filename} [-D acls] [-M acls] [-a acls] [-S acls] [-C name] [-G name] [-n] [-t] [-U username] [-h] [-d]
         
 .fi
 
@@ -41,7 +41,7 @@ The \fBsmbcacls\fR program manipulates NT Access Control Lists (ACLs) on SMB fil
 The following options are available to the \fBsmbcacls\fR program\&. The format of ACLs is described in the section ACL FORMAT
 
 .TP
--A acls
+-a acls
 Add the ACLs specified to the ACL list\&. Existing access control entries are unchanged\&.
 
 
@@ -98,7 +98,7 @@ Print a summary of command line options\&.
 
 .TP
 -V
-Prints the version number for \fBsmbd\fR\&.
+Prints the program version number\&.
 
 
 .TP
@@ -111,7 +111,7 @@ The file specified contains the configuration details required by the server\&. 
 \fIdebuglevel\fR is an integer from 0 to 10\&. The default value if this parameter is not specified is zero\&.
 
 
-The higher this value, the more detail will be logged to the log files about the activities of the server\&. At level 0, only critical errors and serious warnings will be logged\&. Level 1 is a reasonable level for day to day running - it generates a small amount of information about operations carried out\&.
+The higher this value, the more detail will be logged to the log files about the activities of the server\&. At level 0, only critical errors and serious warnings will be logged\&. Level 1 is a reasonable level for day-to-day running - it generates a small amount of information about operations carried out\&.
 
 
 Levels above 1 will generate considerable amounts of log data, and should only be used when investigating a problem\&. Levels above 3 are designed for use only by developers and generate HUGE amounts of log data, most of which is extremely cryptic\&.

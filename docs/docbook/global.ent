@@ -48,6 +48,46 @@
 
 <!ENTITY author.jht '<author>&person.jht;</author>'>
 
+<!ENTITY person.gd '
+<firstname>Guenther</firstname><surname>Deschner</surname>
+<affiliation>
+	<orgname>SuSE</orgname>
+	<address><email>gd@suse.de</email></address>
+</affiliation>
+'>
+
+<!ENTITY author.gd '<author>&person.gd;</author>'>
+
+<!ENTITY person.kauer '
+<firstname>Karl</firstname><surname>Auer</surname>
+<affiliation>
+	<orgname>Samba Team</orgname>
+	<address><email>kauer@biplane.com.au</email></address>
+</affiliation>
+'>
+
+<!ENTITY author.kauer '<author>&person.kauer;</author>'>
+
+<!ENTITY person.danshearer '
+<firstname>Dan</firstname><surname>Shearer</surname>
+<affiliation>
+	<orgname>Samba Team</orgname>
+	<address><email>dan@samba.org</email></address>
+</affiliation>
+'>
+
+<!ENTITY author.danshearer '<author>&person.danshearer;</author>'>
+
+<!ENTITY person.tpot '
+<firstname>Tim</firstname><surname>Potter</surname>
+<affiliation>
+	<orgname>Samba Team</orgname>
+	<address><email>tpot@samba.org</email></address>
+</affiliation>
+'>
+
+<!ENTITY author.tpot '<author>&person.tpot;</author>'>
+
 <!ENTITY author.tridge '
 <author>
 	<firstname>Andrew</firstname><surname>Tridgell</surname>
@@ -148,7 +188,7 @@ not specified is zero.</para>
 logged to the log files about the activities of the 
 server. At level 0, only critical errors and serious 
 warnings will be logged. Level 1 is a reasonable level for
-day to day running - it generates a small amount of 
+day-to-day running - it generates a small amount of 
 information about operations carried out.</para>
 
 <para>Levels above 1 will generate considerable 
@@ -451,6 +491,8 @@ an Active Directory environment.
 <!ENTITY MAN-SMBPASSWD SYSTEM "manpages/smbpasswd.8.xml">
 <!ENTITY MAN-SMBSH SYSTEM "manpages/smbsh.1.xml">
 <!ENTITY MAN-SMBTAR SYSTEM "manpages/smbtar.1.xml">
+<!ENTITY MAN-SMBTREE SYSTEM "manpages/smbtree.1.xml">
+<!ENTITY MAN-SMBCQUOTAS SYSTEM "manpages/smbcquotas.1.xml">
 <!ENTITY MAN-SMBSPOOL SYSTEM "manpages/smbspool.8.xml">
 <!ENTITY MAN-SMBSTATUS SYSTEM "manpages/smbstatus.1.xml">
 <!ENTITY MAN-SMBUMOUNT SYSTEM "manpages/smbumount.8.xml">
@@ -525,3 +567,5 @@ an Active Directory environment.
 <!ENTITY example.workstation.samba "BILBO">
 <!ENTITY example.pdc.samba "SAURON">
 <!ENTITY example.server.wins "noldor">
+
+<!ENTITY smbmdash "<?latex --- ?>">

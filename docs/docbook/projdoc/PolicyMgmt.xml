@@ -7,9 +7,9 @@
 <title>System and Account Policies</title>
 
 <para>
-This chapter summarises the current state of knowledge derived from personal
-practice and knowledge from samba mailing list subscribers. Before reproduction
-of posted information effort has been made to validate the information provided.
+This chapter summarizes the current state of knowledge derived from personal
+practice and knowledge from Samba mailing list subscribers. Before reproduction
+of posted information, every effort has been made to validate the information given.
 Where additional information was uncovered through this validation it is provided
 also.
 </para>
@@ -18,19 +18,22 @@ also.
 <title>Features and Benefits</title>
 
 <para>
-When MS Windows NT3.5 was introduced the hot new topic was the ability to implement
-Group Policies for users and group. Then along came MS Windows NT4 and a few sites
-started to adopt this capability. How do we know that? By way of the number of "booboos"
+When MS Windows NT 3.5 was introduced, the hot new topic was the ability to implement
+Group Policies for users and groups. Then along came MS Windows NT4 and a few sites
+started to adopt this capability. How do we know that? By the number of <quote>booboos</quote>
 (or mistakes) administrators made and then requested help to resolve.
 </para>
 
 <para>
+<indexterm><primary>group policies</primary></indexterm>
+<indexterm><primary>GPOs</primary></indexterm>
+<indexterm><primary>group policy objects</primary><see>GPOs</see></indexterm>
 By the time that MS Windows 2000 and Active Directory was released, administrators
 got the message: Group Policies are a good thing! They can help reduce administrative
-costs and actually can help to create happier users. But adoption of the true
+costs and actually make happier users. But adoption of the true
 potential of MS Windows 200x Active Directory and Group Policy Objects (GPOs) for users
-and machines were picked up on rather slowly. This was very obvious from the samba
-mailing list as in 2000 and 2001 there were very few postings regarding GPOs and
+and machines were picked up on rather slowly. This was obvious from the Samba
+mailing list as in 2000 and 2001 when there were few postings regarding GPOs and
 how to replicate them in a Samba environment.
 </para>
 
@@ -42,8 +45,9 @@ network client workstations.
 </para>
 
 <para>
-A tool new to Samba may become an important part of the future Samba Administrators'
-arsenal. The <command>editreg</command> tool is described in this document.
+A tool new to Samba &smbmdash; the <command>editreg</command> tool
+&smbmdash; may become an important part of the future Samba administrators'
+arsenal is described in this document.
 </para>
 
 </sect1>
@@ -53,118 +57,122 @@ arsenal. The <command>editreg</command> tool is described in this document.
 
 <para>
 Under MS Windows platforms, particularly those following the release of MS Windows
-NT4 and MS Windows 95) it is possible to create a type of file that would be placed
-in the NETLOGON share of a domain controller. As the client logs onto the network
+NT4 and MS Windows 95, it is possible to create a type of file that would be placed
+in the NETLOGON share of a Domain Controller. As the client logs onto the network,
 this file is read and the contents initiate changes to the registry of the client
 machine. This file allows changes to be made to those parts of the registry that
 affect users, groups of users, or machines.
 </para>
 
 <para>
-For MS Windows 9x/Me this file must be called <filename>Config.POL</filename> and may
+<indexterm><primary>Config.POL</primary></indexterm>
+For MS Windows 9x/ME, this file must be called <filename>Config.POL</filename> and may
 be generated using a tool called <filename>poledit.exe</filename>, better known as the
 Policy Editor. The policy editor was provided on the Windows 98 installation CD, but
 disappeared again with the introduction of MS Windows Me (Millennium Edition). From
-comments from MS Windows network administrators it would appear that this tool became
+comments of MS Windows network administrators, it would appear that this tool became
 a part of the MS Windows Me Resource Kit.
 </para>
 
 <para>
+<indexterm><primary>System Policy Editor</primary></indexterm>
 MS Windows NT4 Server products include the <emphasis>System Policy Editor</emphasis>
-under the <filename>Start -> Programs -> Administrative Tools</filename> menu item.
-For MS Windows NT4 and later clients this file must be called <filename>NTConfig.POL</filename>.
+under <guimenu>Start -> Programs -> Administrative Tools</guimenu>.
+For MS Windows NT4 and later clients, this file must be called <filename>NTConfig.POL</filename>.
 </para>
 
 <para>
 New with the introduction of MS Windows 2000 was the Microsoft Management Console
-or MMC.  This tool is the new wave in the ever changing landscape of Microsoft
+or MMC. This tool is the new wave in the ever-changing landscape of Microsoft
 methods for management of network access and security. Every new Microsoft product
-or technology seems to obsolete the old rules and to introduce newer and more
-complex tools and methods. To Microsoft's credit though, the MMC does appear to
+or technology seems to make the old rules obsolete and introduces newer and more
+complex tools and methods. To Microsoft's credit, the MMC does appear to
 be a step forward, but improved functionality comes at a great price.
 </para>
 
 <para>
-Before embarking on the configuration of network and system policies it is highly
-advisable to read the documentation available from Microsoft's web site regarding
+Before embarking on the configuration of network and system policies, it is highly
+advisable to read the documentation available from Microsoft's Web site regarding
 <ulink url="http://www.microsoft.com/ntserver/management/deployment/planguide/prof_policies.asp">
 Implementing Profiles and Policies in Windows NT 4.0</ulink> available from Microsoft.
 There are a large number of documents in addition to this old one that should also
-be read and understood. Try searching on the Microsoft web site for "Group Policies".
+be read and understood. Try searching on the Microsoft Web site for <quote>Group Policies</quote>.
 </para>
 
 <para>
-What follows is a very brief discussion with some helpful notes. The information provided
-here is incomplete - you are warned.
+What follows is a brief discussion with some helpful notes. The information provided
+here is incomplete &smbmdash; you are warned.
 </para>
 
 	<sect2>
-	<title>Windows 9x/Me Policies</title>
+	<title>Windows 9x/ME Policies</title>
 
 	<para>
-	You need the Win98 Group Policy Editor to set Group Profiles up under Windows 9x/Me.
-	It can be found on the Original full product Win98 installation CD under
-	<filename>tools/reskit/netadmin/poledit</filename>.  Install this using the
-	Add/Remove Programs facility and then click on the 'Have Disk' tab.
+	You need the Windows 98 Group Policy Editor to set up Group Profiles under Windows 9x/ME.
+	It can be found on the original full product Windows 98 installation CD under
+	<filename>tools/reskit/netadmin/poledit</filename>. Install this using the
+	Add/Remove Programs facility and then click on <guiicon>Have Disk</guiicon>.
 	</para>
 
+
 	<para>
+<indexterm><primary>NTConfig.POL</primary></indexterm>
 	Use the Group Policy Editor to create a policy file that specifies the location of
-	user profiles and/or the <filename>My Documents</filename> etc. Then save these
+	user profiles and/or <filename>My Documents</filename>, and so on. Then save these
 	settings in a file called <filename>Config.POL</filename> that needs to be placed in the
-	root of the <smbconfsection>[NETLOGON]</smbconfsection> share. If Win98 is configured to log onto
-	the Samba Domain, it will automatically read this file and update the Win9x/Me registry
+	root of the <smbconfsection>[NETLOGON]</smbconfsection> share. If Windows 98 is configured to log onto
+	the Samba Domain, it will automatically read this file and update the Windows 9x/Me registry
 	of the machine as it logs on.
 	</para>
 
 	<para>
-	Further details are covered in the Win98 Resource Kit documentation.
+	Further details are covered in the Windows 98 Resource Kit documentation.
 	</para>
 
 	<para>
-	If you do not take the right steps, then every so often Win9x/Me will check the
-	integrity of the registry and will restore it's settings from the back-up
-	copy of the registry it stores on each Win9x/Me machine. Hence, you will
+	If you do not take the correct steps, then every so often Windows 9x/ME will check the
+	integrity of the registry and restore its settings from the back-up
+	copy of the registry it stores on each Windows 9x/ME machine. So, you will
 	occasionally notice things changing back to the original settings.
 	</para>
 
 	<para>
-	Install the group policy handler for Win9x to pick up group policies. Look on the
-	Win98 CD in <filename>\tools\reskit\netadmin\poledit</filename>.
-	Install group policies on a Win9x client by double-clicking
+	Install the group policy handler for Windows 9x/Me to pick up Group Policies. Look on the
+	Windows 98 CDROM in <filename>\tools\reskit\netadmin\poledit</filename>.
+	Install group policies on a Windows 9x/Me client by double-clicking on
 	<filename>grouppol.inf</filename>. Log off and on again a couple of times and see
-	if Win98 picks up group policies.  Unfortunately this needs to be done on every
-	Win9x/Me machine that uses group policies.
+	if Windows 98 picks up Group Policies. Unfortunately, this needs to be done on every
+	Windows 9x/Me machine that uses Group Policies.
 	</para>
 
 	</sect2>
 	<sect2>
-	<title>Windows NT4 Style Policy Files</title>
+	<title>Windows NT4-Style Policy Files</title>
 
 	<para>
 	To create or edit <filename>ntconfig.pol</filename> you must use the NT Server
-	Policy Editor, <command>poledit.exe</command> which is included with NT4 Server
-	but <emphasis>not NT Workstation</emphasis>. There is a Policy Editor on a NT4
-	Workstation but it is not suitable for creating <emphasis>Domain Policies</emphasis>.
-	Further, although the Windows 95 Policy Editor can be installed on an NT4
+	Policy Editor, <command>poledit.exe</command>, which is included with NT4 Server
+	but not with NT Workstation. There is a Policy Editor on an NT4
+	Workstation but it is not suitable for creating domain policies.
+	Furthermore, although the Windows 95 Policy Editor can be installed on an NT4
 	Workstation/Server, it will not work with NT clients. However, the files from
 	the NT Server will run happily enough on an NT4 Workstation.
 	</para>
 
 	<para>
 	You need <filename>poledit.exe</filename>, <filename>common.adm</filename> and <filename>winnt.adm</filename>.
-	It is convenient to put the two *.adm files in  the <filename>c:\winnt\inf</filename> 
-	directory which is where the binary will look for them unless told otherwise. Note also that that
-	directory is normally 'hidden'.
+	It is convenient to put the two <filename>*.adm</filename> files in  the <filename>c:\winnt\inf</filename> 
+	directory, which is where the binary will look for them unless told otherwise. This
+	directory is normally <quote>hidden.</quote>
 	</para>
 
 	<para>
 	The Windows NT policy editor is also included with the Service Pack 3 (and
 	later) for Windows NT 4.0. Extract the files using <command>servicepackname /x</command>,
-	i.e. that's <command>Nt4sp6ai.exe /x</command> for service pack 6a.  The policy editor,
-	<command>poledit.exe</command> and the associated template files (*.adm) should
-	be extracted as well.  It is also possible to downloaded the policy template
-	files for Office97 and get a copy of the policy editor.  Another possible
+	that's <command>Nt4sp6ai.exe /x</command> for service pack 6a. The Policy Editor,
+	<command>poledit.exe</command>, and the associated template files (*.adm) should
+	be extracted as well. It is also possible to downloaded the policy template
+	files for Office97 and get a copy of the Policy Editor. Another possible
 	location is with the Zero Administration Kit available for download from Microsoft.
 	</para>
 
@@ -172,105 +180,106 @@ here is incomplete - you are warned.
 		<title>Registry Spoiling</title>
 
 			<para>
-			With NT4 style registry based policy changes, a large number of settings are not
-			automatically reversed as the user logs off. Since the settings that were in the
-			NTConfig.POL file were applied to the client machine registry and that apply to the
+			With NT4-style registry-based policy changes, a large number of settings are not
+			automatically reversed as the user logs off. The settings that were in the
+			<filename>NTConfig.POL</filename> file were applied to the client machine registry and apply to the
 			hive key HKEY_LOCAL_MACHINE are permanent until explicitly reversed. This is known
-			as tattooing. It can have serious consequences down-stream and the administrator must
+			as tattooing. It can have serious consequences downstream and the administrator must
 			be extremely careful not to lock out the ability to manage the machine at a later date.
 			</para>
-
 
 		</sect3>
 	</sect2>
 	<sect2>
-	<title>MS Windows 200x / XP Professional Policies</title>
+	<title>MS Windows 200x/XP Professional Policies</title>
 
 	<para>
-	Windows NT4 System policies allows setting of registry parameters specific to
-	users, groups and computers (client workstations) that are members of the NT4
-	style domain. Such policy file will work with MS Windows 2000 / XP clients also.
+	Windows NT4 system policies allow the setting of registry parameters specific to
+	users, groups and computers (client workstations) that are members of the NT4-style
+	domain. Such policy files will work with MS Windows 200x/XP clients also.
 	</para>
 
 	<para>
-	New to MS Windows 2000 Microsoft introduced a new style of group policy that confers
-	a superset of capabilities compared with NT4 style policies. Obviously, the tool used
-	to create them is different, and the mechanism for implementing them is much changed.
+	New to MS Windows 2000, Microsoft recently introduced a style of group policy that confers
+	a superset of capabilities compared with NT4-style policies. Obviously, the tool used
+	to create them is different, and the mechanism for implementing them is much improved.
 	</para>
 
 	<para>
-	The older NT4 style registry based policies are known as <emphasis>Administrative Templates</emphasis>
-	in MS Windows 2000/XP Group Policy Objects (GPOs). The later includes ability to set various security
+<indexterm><primary>GPOs</primary></indexterm>
+	The older NT4-style registry-based policies are known as <emphasis>Administrative Templates</emphasis>
+	in MS Windows 2000/XP Group Policy Objects (GPOs). The later includes the ability to set various security
 	configurations, enforce Internet Explorer browser settings, change and redirect aspects of the
-	users' desktop (including: the location of <filename>My Documents</filename> files (directory), as
+	users desktop (including the location of <filename>My Documents</filename> files (directory), as
 	well as intrinsics of where menu items will appear in the Start menu). An additional new
 	feature is the ability to make available particular software Windows applications to particular
 	users and/or groups.
 	</para>
 
 	<para>
-	Remember: NT4 policy files are named <filename>NTConfig.POL</filename> and are stored in the root
-	of the NETLOGON share on the domain controllers. A Windows NT4 user enters a username, a password
-	and selects the domain name to which the logon will attempt to take place. During the logon
-	process the client machine reads the NTConfig.POL file from the NETLOGON share on the authenticating
-	server, modifies the local registry values according to the settings in this file.
+	Remember, NT4 policy files are named <filename>NTConfig.POL</filename> and are stored in the root
+	of the NETLOGON share on the Domain Controllers. A Windows NT4 user enters a username, password
+	and selects the domain name to which the logon will attempt to take place. During the logon process,
+	the client machine reads the <filename>NTConfig.POL</filename> file from the NETLOGON share on
+	the authenticating server and modifies the local registry values according to the settings in this file.
 	</para>
 
 	<para>
-	Windows 2K GPOs are very feature rich. They are NOT stored in the NETLOGON share, rather part of
+	Windows 200x GPOs are feature-rich. They are not stored in the NETLOGON share, but rather part of
 	a Windows 200x policy file is stored in the Active Directory itself and the other part is stored
 	in a shared (and replicated) volume called the SYSVOL folder. This folder is present on all Active
-	Directory domain controllers. The part that is stored in the Active Directory itself is called the
-	group policy container (GPC), and the part that is stored in the replicated share called SYSVOL is
-	known as the group policy template (GPT).
+	Directory Domain Controllers. The part that is stored in the Active Directory itself is called the
+	Group Policy Container (GPC), and the part that is stored in the replicated share called SYSVOL is
+	known as the Group Policy Template (GPT).
 	</para>
 
 	<para>
-	With NT4 clients the policy file is read and executed upon only as each user logs onto the network.
-	MS Windows 200x policies are much more complex - GPOs are processed and applied at client machine
-	startup (machine specific part) and when the user logs onto the network the user specific part
-	is applied. In MS Windows 200x style policy management each machine and/or user may be subject
+	With NT4 clients, the policy file is read and executed only as each user logs onto the network.
+	MS Windows 200x policies are much more complex &smbmdash; GPOs are processed and applied at client machine
+	startup (machine specific part) and when the user logs onto the network, the user-specific part
+	is applied. In MS Windows 200x-style policy management, each machine and/or user may be subject
 	to any number of concurrently applicable (and applied) policy sets (GPOs). Active Directory allows
 	the administrator to also set filters over the policy settings. No such equivalent capability
-	exists with NT4 style policy files.
+	exists with NT4-style policy files.
 	</para>
 
 		<sect3>
-		<title>Administration of Win2K / XP Policies</title>
+		<title>Administration of Windows 200x/XP Policies</title>
 
 		<para>
+<indexterm><primary>GPOs</primary></indexterm>
+<indexterm><primary>System Policy Editor</primary></indexterm>
 		Instead of using the tool called <application>The System Policy Editor</application>, commonly called Poledit (from the
 		executable name <command>poledit.exe</command>), <acronym>GPOs</acronym> are created and managed using a 
 		<application>Microsoft Management Console</application> <acronym>(MMC)</acronym> snap-in as follows:</para>
 		<procedure>
-		<step>
-		<para>
-		Go to the Windows 200x / XP menu <guimenu>Start->Programs->Administrative Tools</guimenu>
-		and select the MMC snap-in called <guimenuitem>Active Directory Users and Computers</guimenuitem>
-		</para>
-		</step>
+			<step><para>
+			Go to the Windows 200x/XP menu <guimenu>Start->Programs->Administrative Tools</guimenu>
+			and select the MMC snap-in called <guimenuitem>Active Directory Users and Computers</guimenuitem>
+			</para></step>
 
-		<step><para>
-		Select the domain or organizational unit (OU) that you wish to manage, then right click
-		to open the context menu for that object, select the properties item.
-		</para></step>
+			<step><para>
+			Select the domain or organizational unit (OU) that you wish to manage, then right-click
+			to open the context menu for that object, and select the <guibutton>Properties</guibutton>.
+			</para></step>
 
-		<step><para>
-		Now left click on the <guilabel>Group Policy</guilabel> tab, then left click on the New tab. Type a name
-		for the new policy you will create.
-		</para></step>
+			<step><para>
+			Left-click on the <guilabel>Group Policy</guilabel> tab, then
+			left-click on the New tab. Type a name
+			for the new policy you will create.
+			</para></step>
 
-		<step><para>
-		Now left click on the <guilabel>Edit</guilabel> tab to commence the steps needed to create the GPO.
-		</para></step>
+			<step><para>
+			 Left-click on the <guilabel>Edit</guilabel> tab to commence the steps needed to create the GPO.
+			</para></step>
 		</procedure>
 
 		<para>
 		All policy configuration options are controlled through the use of policy administrative
-		templates. These files have a .adm extension, both in NT4 as well as in Windows 200x / XP.
-		Beware however, since the .adm files are NOT interchangeable across NT4 and Windows 200x.
-		The later introduces many new features as well as extended definition capabilities. It is
-		well beyond the scope of this documentation to explain how to program .adm files, for that
+		templates. These files have an .adm extension, both in NT4 as well as in Windows 200x/XP.
+		Beware, however, the .adm files are not interchangeable across NT4 and Windows 200x.
+		The latter introduces many new features as well as extended definition capabilities. It is
+		well beyond the scope of this documentation to explain how to program .adm files; for that
 		the administrator is referred to the Microsoft Windows Resource Kit for your particular
 		version of MS Windows.
 		</para>
@@ -297,56 +306,80 @@ the policy file. Separate policy files for each user, group, or computer are not
 </para>
 
 <para>
-If you create a policy that will be automatically downloaded from validating domain controllers,
-you should name the file NTconfig.POL. As system administrator, you have the option of renaming the
+<indexterm><primary>NTConfig.POL</primary></indexterm>
+If you create a policy that will be automatically downloaded from validating Domain Controllers,
+you should name the file <filename>NTConfig.POL</filename>. As system administrator, you have the option of renaming the
 policy file and, by modifying the Windows NT-based workstation, directing the computer to update
 the policy from a manual path. You can do this by either manually changing the registry or by using
-the System Policy Editor. This path can even be a local path such that each machine has its own policy file,
-but if a change is necessary to all machines, this change must be made individually to each workstation.
+the System Policy Editor. This can even be a local path such that each machine has its own policy file,
+but if a change is necessary to all machines, it must be made individually to each workstation.
 </para>
 
 <para>
-When a Windows NT4/200x/XP machine logs onto the network the NETLOGON share on the authenticating domain 
-controller for the presence of the NTConfig.POL file. If one exists it is downloaded, parsed and then
-applied to the user's part of the registry.
+When a Windows NT4/200x/XP machine logs onto the network, the client looks in the NETLOGON share on
+the authenticating domain controller for the presence of the NTConfig.POL file. If one exists it is 
+downloaded, parsed and then applied to the user's part of the registry.
 </para>
 
 <para>
-MS Windows 200x/XP clients that log onto an MS Windows Active Directory security domain may additionally,
+<indexterm><primary>GPOs</primary></indexterm>
+MS Windows 200x/XP clients that log onto an MS Windows Active Directory security domain may additionally
 acquire policy settings through Group Policy Objects (GPOs) that are defined and stored in Active Directory
 itself. The key benefit of using AS GPOs is that they impose no registry <emphasis>spoiling</emphasis> effect.
-This has considerable advantage compared with the use of NTConfig.POL (NT4) style policy updates.
+This has considerable advantage compared with the use of <filename>NTConfig.POL</filename> (NT4) style policy updates.
 </para>
 
 <para>
 In addition to user access controls that may be imposed or applied via system and/or group policies
 in a manner that works in conjunction with user profiles, the user management environment under
 MS Windows NT4/200x/XP allows per domain as well as per user account restrictions to be applied.
-Common restrictions that are frequently used includes:
+Common restrictions that are frequently used include:
 </para>
 
 <para>
+<indexterm><primary>Account Controls</primary></indexterm>
 <itemizedlist>
-	<listitem><para>Logon Hours</para></listitem>
-	<listitem><para>Password Aging</para></listitem>
-	<listitem><para>Permitted Logon from certain machines only</para></listitem>
-	<listitem><para>Account type (Local or Global)</para></listitem>
-	<listitem><para>User Rights</para></listitem>
+	<listitem>Logon hours</listitem>
+	<listitem>Password aging</listitem>
+	<listitem>Permitted logon from certain machines only</listitem>
+	<listitem>Account type (local or global)</listitem>
+	<listitem>User rights</listitem>
 </itemizedlist>
+</para>
+
+<para>
+Samba-3.0.0 doe not yet implement all account controls that are common to MS Windows NT4/200x/XP.
+While it is possible to set many controls using the Domain User Manager for MS Windows NT4, only password
+expirey is functional today. Most of the remaining controls at this time have only stub routines
+that may eventually be completed to provide actual control. Do not be misled by the fact that a
+parameter can be set using the NT4 Domain User Manager or in the <filename>NTConfig.POL</filename>.
+</para>
+
+</sect1>
+<sect1>
+<title>Management Tools</title>
+
+<para>
+Anyone who wishes to create or manage Group Policies will need to be familiar with a number of tools.
+The following sections describe a few key tools that will help you to create a low maintenance user
+environment.
 </para>
 
 	<sect2>
 	<title>Samba Editreg Toolset</title>
 
 	<para>
+<indexterm><primary>editreg</primary></indexterm>
+<indexterm><primary>NTUser.DAT</primary></indexterm>
+<indexterm><primary>NTConfig.POL</primary></indexterm>
 	A new tool called <command>editreg</command> is under development. This tool can be used
-	to edit registry files (called NTUser.DAT) that are stored in user and group profiles.
-	NTConfig.POL files have the same structure as the NTUser.DAT file and can be editted using
-	this tool. <command>editreg</command> is being built with the intent to enable NTConfig.POL
-	files to be saved in text format and to permit the building of new NTConfig.POL files with
-	extended capabilities. It is proving difficult to realise this capability, so do not be surprised
-	if this feature does not materialise. Formal capabilities will be announced at the time that
-	this tool is released for production use.
+	to edit registry files (called <filename>NTUser.DAT</filename>) that are stored in user
+	and group profiles. <filename>NTConfig.POL</filename> files have the same structure as the
+	<filename>NTUser.DAT</filename> file and can be edited using this tool. <command>editreg</command>
+	is being built with the intent to enable <filename>NTConfig.POL</filename> files to be saved in text format and to
+	permit the building of new <filename>NTConfig.POL</filename> files with extended capabilities. It is proving difficult
+	to realize this capability, so do not be surprised if this feature does not materialize. Formal
+	capabilities will be announced at the time that this tool is released for production use.
 	</para>
 
 	</sect2>
@@ -356,9 +389,9 @@ Common restrictions that are frequently used includes:
 
 	<para>
 	The tools that may be used to configure these types of controls from the MS Windows environment are:
-	The NT4 User Manager for domains, the NT4 System and Group Policy Editor, the registry editor (regedt32.exe).
-	Under MS Windows 200x/XP this is done using the Microsoft Management Console (MMC) with appropriate
-	"snap-ins", the registry editor, and potentially also the NT4 System and Group Policy Editor.
+	the NT4 User Manager for Domains, the NT4 System and Group Policy Editor, and the Registry Editor (regedt32.exe).
+	Under MS Windows 200x/XP, this is done using the Microsoft Management Console (MMC) with appropriate
+	<quote>snap-ins,</quote> the registry editor, and potentially also the NT4 System and Group Policy Editor.
 	</para>
 	</sect2>
 
@@ -366,10 +399,9 @@ Common restrictions that are frequently used includes:
 	<title>Samba PDC</title>
 
 	<para>
-	With a Samba Domain Controller, the new tools for managing of user account and policy information includes:
+	With a Samba Domain Controller, the new tools for managing user account and policy information include:
 	<command>smbpasswd</command>, <command>pdbedit</command>, <command>net</command>, <command>rpcclient</command>. 
-	The administrator should read the
-	man pages for these tools and become familiar with their use.
+	The administrator should read the man pages for these tools and become familiar with their use.
 	</para>
 
 	</sect2>
@@ -379,23 +411,24 @@ Common restrictions that are frequently used includes:
 <title>System Startup and Logon Processing Overview</title>
 
 <para>
-The following attempts to document the order of processing of system and user policies following a system
+The following attempts to document the order of processing the system and user policies following a system
 reboot and as part of the user logon:
 </para>
 
 <orderedlist>
 	<listitem><para>
 	Network starts, then Remote Procedure Call System Service (RPCSS) and Multiple Universal Naming
-	Convention Provider (MUP) start
+	Convention Provider (MUP) start.
 	</para></listitem>
 
 	<listitem><para>
 	Where Active Directory is involved, an ordered list of Group Policy Objects (GPOs) is downloaded
 	and applied. The list may include GPOs that:
 <itemizedlist>
-	<listitem><para>Apply to the location of machines in a Directory</para></listitem>
-	<listitem><para>Apply only when settings have changed</para></listitem>
-	<listitem><para>Depend on configuration of scope of applicability: local, site, domain, organizational unit, etc.</para></listitem>
+	<listitem><para>Apply to the location of machines in a Directory.</para></listitem>
+	<listitem><para>Apply only when settings have changed.</para></listitem>
+	<listitem><para>Depend on configuration of the scope of applicability: local,
+	site, domain, organizational unit, and so on.</para></listitem>
 </itemizedlist>
 	No desktop user interface is presented until the above have been processed.
 	</para></listitem>
@@ -405,21 +438,21 @@ reboot and as part of the user logon:
 	</para></listitem>
 
 	<listitem><para>
-	A keyboard action to affect start of logon (Ctrl-Alt-Del).
+	A keyboard action to effect start of logon (Ctrl-Alt-Del).
 	</para></listitem>
 
 	<listitem><para>
-	User credentials are validated, User profile is loaded (depends on policy settings).
+	User credentials are validated, user profile is loaded (depends on policy settings).
 	</para></listitem>
 
 	<listitem><para>
-	An ordered list of User GPOs is obtained. The list contents depends on what is configured in respect of:
+	An ordered list of user GPOs is obtained. The list contents depends on what is configured in respect of:
 
 <itemizedlist>
-	<listitem><para>Is user a domain member, thus subject to particular policies</para></listitem>
-	<listitem><para>Loopback enablement, and the state of the loopback policy (Merge or Replace)</para></listitem>
-	<listitem><para>Location of the Active Directory itself</para></listitem>
-	<listitem><para>Has the list of GPOs changed. No processing is needed if not changed.</para></listitem>
+	<listitem>Is the user a Domain Member, thus subject to particular policies?</listitem>
+	<listitem>Loopback enablement, and the state of the loopback policy (Merge or Replace).</listitem>
+	<listitem>Location of the Active Directory itself.</listitem>
+	<listitem>Has the list of GPOs changed? No processing is needed if not changed.</listitem>
 </itemizedlist>
 	</para></listitem>
 
@@ -428,14 +461,14 @@ reboot and as part of the user logon:
 	</para></listitem>
 
 	<listitem><para>
-	Logon scripts are run. New to Win2K and Active Directory, logon scripts may be obtained based on Group
-	Policy objects (hidden and executed synchronously). NT4 style logon scripts are then run in a normal
+	Logon scripts are run. New to Windows 200x and Active Directory, logon scripts may be obtained based on Group
+	Policy objects (hidden and executed synchronously). NT4-style logon scripts are then run in a normal
 	window.
 	</para></listitem>
 
 	<listitem><para>
-	The User Interface as determined from the GPOs is presented. Note: In a Samba domain (like and NT4
-	Domain) machine (system) policies are applied at start-up, User policies are applied at logon.
+	The User Interface as determined from the GPOs is presented. Note: In a Samba domain (like an NT4
+	Domain), machine (system) policies are applied at start-up; user policies are applied at logon.
 	</para></listitem>
 </orderedlist>
 
@@ -445,7 +478,7 @@ reboot and as part of the user logon:
 <title>Common Errors</title>
 
 <para>
-Policy related problems can be very difficult to diagnose and even more difficult to rectify. The following
+Policy-related problems can be quite difficult to diagnose and even more difficult to rectify. The following
 collection demonstrates only basic issues.
 </para>
 
@@ -453,15 +486,15 @@ collection demonstrates only basic issues.
 <title>Policy Does Not Work</title>
 
 <para>
-	<quote>We have created the <filename>config.pol</filename> file and put it in the <emphasis>NETLOGON</emphasis> share.
-It has made no difference to our Win XP Pro machines, they just don't see it. IT worked fine with Win 98 but does not
+<quote>We have created the <filename>Config.POL</filename> file and put it in the <emphasis>NETLOGON</emphasis> share.
+It has made no difference to our Win XP Pro machines, they just do not see it. It worked fine with Win 98 but does not
 work any longer since we upgraded to Win XP Pro. Any hints?</quote>
 </para>
 
 <para>
-Policy files are NOT portable between Windows 9x / Me and MS Windows NT4 / 200x / XP based
-platforms. You need to use the NT4 Group Policy Editor to create a file called <filename>NTConfig.POL</filename> so that
-it is in the correct format for your MS Windows XP Pro clients.
+Policy files are not portable between Windows 9x/Me and MS Windows NT4/200x/XP-based platforms. You need to
+use the NT4 Group Policy Editor to create a file called <filename>NTConfig.POL</filename> so it is in the
+correct format for your MS Windows XP Pro clients.
 </para>
 
 </sect2>
