@@ -16,9 +16,12 @@
 .Nd Heimdal logging functions
 .Sh SYNOPSIS
 .Fd #include <krb5.h>
-.Ft "typedef void (*krb5_log_log_func_t)(const char *time, const char *message, void *data);"
 
-.Ft "typedef void (*krb5_log_close_func_t)(void *data);"
+.\" ouch!
+.ds xx \\*(fP\fR(\fP\\*(lI*\\*(fP
+.ds xy \fR)\|\fP
+.Fn "\\*(lItypedef void \\*(xxkrb5_log_log_func_t\\*(xy" "const char *time" "const char *message" "void *data" 
+.Fn "\\*(lItypedef void \\*(xxkrb5_log_close_func_t\\*(xy" "void *data" 
 
 .Ft krb5_error_code
 .Fn krb5_addlog_dest "krb5_context context" "krb5_log_facility *facility" "const char *destination"
