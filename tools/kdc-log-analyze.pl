@@ -53,7 +53,8 @@ my @local_networks_re =
     ( 
       "130\.237",
       "193\.11\.3[0-9]\.",
-      "130.242.128"
+      "130.242.128",
+      "2001:6b0:5"
       );
 
 my $as_req = 0;
@@ -115,6 +116,9 @@ my %connection_closed_addr;
 my $pa_failed = 0;
 my %pa_failed_princ;
 my %pa_failed_addr;
+my %ip;
+
+$ip{'4'} = $ip{'6'} = 0;
 
 while (<>) {
 	process_line($_);
@@ -124,6 +128,9 @@ print "Kerberos KDC Log Report for ",
     hostname, " on ", scalar localtime, "\n\n";
 
 print "General Statistics\n\n";
+
+print "\tNumber of IPv4 requests: $ip{'4'}\n";
+print "\tNumber of IPv6 requests: $ip{'6'}\n\n";
 
 print "\tNumber of restarts: $restarts\n";
 print "\tNumber of V4 requests: $v4_req\n";
@@ -320,9 +327,10 @@ print "\tDistinct principals using DES: ", int(keys %princ_uses_des), "\n";
 print "\tTop ten principals using DES:\n";
 topten(\%princ_uses_des);
 
+print "\n";
+
 printf("Requests to forward non-forwardable ticket: $forward_non_forward\n");
 
-print "\n";
 
 exit 0;
 
@@ -335,33 +343,36 @@ sub process_line {
 	# Eat these lines that are output as a result of startup (but
 	# log the number of restarts)
 	#
-	if (/AS-REQ \(krb4\) (.*) from IPv[46]:([0-9\.:a-fA-F]+) for krbtgt.*$/){
+	if (/AS-REQ \(krb4\) (.*) from IPv([46]):([0-9\.:a-fA-F]+) for krbtgt.*$/){
 		$v4_req++;
-		$v4_req_addr{$2}++;
-		$v4_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
-		$last_addr = $2;
+		$v4_req_addr{$3}++;
+		$v4_req_addr_nonlocal{$3}++ if (!islocaladdr($3));
+		$last_addr = $3;
 		$last_principal = $1;
-	} elsif (/AS-REQ (.*) from IPv[46]:([0-9\.:a-fA-F]+) for (.*)$/) {
+		$ip{$2}++;
+	} elsif (/AS-REQ (.*) from IPv([46]):([0-9\.:a-fA-F]+) for (.*)$/) {
 		$as_req++;
 		$as_req_client{$1}++;
-		$as_req_server{$3}++;
-		$as_req_addr{$2}++;
-		$as_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
-		$last_addr = $2;
+		$as_req_server{$4}++;
+		$as_req_addr{$3}++;
+		$as_req_addr_nonlocal{$3}++ if (!islocaladdr($3));
+		$last_addr = $3;
 		$last_principal = $1;
+		$ip{$2}++;
 	} elsif (/TGS-REQ \(krb4\)/) {
 		#Nothing
-	} elsif (/TGS-REQ (.+) from IPv[46]:([0-9\.:a-fA-F]+) for (.*?)( \[.*\]){0,1}$/) {
+	} elsif (/TGS-REQ (.+) from IPv([46]):([0-9\.:a-fA-F]+) for (.*?)( \[.*\]){0,1}$/) {
 		$tgs_req++;
 		$tgs_req_client{$1}++;
-		$tgs_req_server{$3}++;
-		$tgs_req_addr{$2}++;
-		$tgs_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
-		$last_addr = $2;
+		$tgs_req_server{$4}++;
+		$tgs_req_addr{$3}++;
+		$tgs_req_addr_nonlocal{$3}++ if (!islocaladdr($3));
+		$last_addr = $3;
 		$last_principal = $1;
+		$ip{$2}++;
 
 		my $source = $1;
-		my $dest = $3;
+		my $dest = $4;
 		
 		if (!islocalrealm($source)) {
 			$tgs_xrealm_in++;
@@ -377,14 +388,15 @@ sub process_line {
 				$tgs_xrealm_out_princ{$source}++;
 			}
 		}
-	} elsif (/524-REQ (.*) from IPv[46]:([0-9\.:a-fA-F]+) for (.*)$/) {
+	} elsif (/524-REQ (.*) from IPv([46]):([0-9\.:a-fA-F]+) for (.*)$/) {
 		$five24_req++;
 		$five24_req_client{$1}++;
-		$five24_req_server{$3}++;
-		$five24_req_addr{$2}++;
-		$five24_req_addr_nonlocal{$2}++ if (!islocaladdr($2));
-		$last_addr = $2;
+		$five24_req_server{$4}++;
+		$five24_req_addr{$3}++;
+		$five24_req_addr_nonlocal{$3}++ if (!islocaladdr($3));
+		$last_addr = $3;
 		$last_principal = $1;
+		$ip{$2}++;
 	} elsif (/TCP data of strange type from IPv[46]:([0-9\.:a-fA-F]+)/) {
 		$strange_tcp_data{$1}++;
 	} elsif (/Lookup (.*) failed: No such entry in the database/) {
@@ -440,7 +452,7 @@ sub process_line {
 
 	} elsif (/Request to forward non-forwardable ticket/) {
 		$forward_non_forward++;
-	} elsif (/HTTP request:) {
+	} elsif (/HTTP request:/) {
 	} elsif (/krb_rd_req: Incorrect network address/) {
 	} elsif (/krb_rd_req: Ticket expired \(krb_rd_req\)/) {
 	} elsif (/Ticket expired \(.*\)/) {
