@@ -833,7 +833,7 @@ static BOOL init_structs(void )
 	if (!init_registry())
 		exit(1);
 
-	if (!idmap_init(lp_idmap_backend()))
+	if (!idmap_init())
 		exit(1);
 
 	if(!initialize_password_db(False))

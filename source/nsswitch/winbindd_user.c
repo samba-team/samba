@@ -36,25 +36,29 @@ static BOOL winbindd_fill_pwent(char *dom_name, char *user_name,
 	fstring output_username;
 	pstring homedir;
 	fstring sid_string;
+	unid_t id;
+	int id_type;
 	
 	if (!pw || !dom_name || !user_name)
 		return False;
 	
 	/* Resolve the uid number */
-	
-	if (!winbindd_idmap_get_uid_from_sid(user_sid, 
-					     &pw->pw_uid)) {
+
+	id_type = ID_USERID;
+	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, user_sid))) {
 		DEBUG(1, ("error getting user id for sid %s\n", sid_to_string(sid_string, user_sid)));
 		return False;
 	}
+	pw->pw_uid = id.uid;
 	
 	/* Resolve the gid number */   
-	
-	if (!winbindd_idmap_get_gid_from_sid(group_sid, 
-					     &pw->pw_gid)) {
+
+	id_type = ID_GROUPID;
+	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, group_sid))) {
 		DEBUG(1, ("error getting group id for sid %s\n", sid_to_string(sid_string, group_sid)));
 		return False;
 	}
+	pw->pw_gid = id.gid;
 
 	/* Username */
 
@@ -178,9 +182,10 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	fstring user_name;
 	enum SID_NAME_USE name_type;
 	WINBIND_USERINFO user_info;
-	gid_t gid;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
+	unid_t id;
+	int id_type;
 	
 	/* Bug out if the uid isn't in the winbind range */
 
@@ -193,8 +198,8 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 	
 	/* Get rid from uid */
 
-	if (!winbindd_idmap_get_sid_from_uid(state->request.data.uid, 
-					     &user_sid)) {
+	id.uid = state->request.data.uid;
+	if (NT_STATUS_IS_ERR(idmap_get_sid_from_id(&user_sid, id, ID_USERID))) {
 		DEBUG(1, ("could not convert uid %d to SID\n", 
 			  state->request.data.uid));
 		return WINBINDD_ERROR;
@@ -236,9 +241,10 @@ enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state)
 		return WINBINDD_ERROR;
 	}
 	
-	/* Resolve gid number */
+	/* Check group has a gid number */
 
-	if (!winbindd_idmap_get_gid_from_sid(user_info.group_sid, &gid)) {
+	id_type = ID_GROUPID;
+	if (NT_STATUS_IS_ERR(idmap_get_id_from_sid(&id, &id_type, user_info.group_sid))) {
 		DEBUG(1, ("error getting group id for user %s\n", user_name));
 		talloc_destroy(mem_ctx);
 		return WINBINDD_ERROR;

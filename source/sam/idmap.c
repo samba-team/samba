@@ -32,10 +32,7 @@ static struct {
 	struct idmap_methods *methods;
 
 } remote_idmap_functions[] = {
-
-	{ "winbind", idmap_reg_winbind, NULL },
 	{ NULL, NULL, NULL }
-
 };
 
 static struct idmap_methods *local_map;
@@ -63,8 +60,10 @@ static struct idmap_methods *get_methods(const char *name)
 }
 
 /* Initialize backend */
-BOOL idmap_init(const char *remote_backend)
+BOOL idmap_init(void)
 {
+	const char *remote_backend = lp_idmap_backend();
+
 	if (!local_map) {
 		idmap_reg_tdb(&local_map);
 		if (NT_STATUS_IS_ERR(local_map->init())) {
