@@ -77,10 +77,10 @@ void init_iconv(void)
 }
 
 /****************************************************************************
- Convert string from one encoding to another, makeing error checking etc
+ Convert string from one encoding to another, making error checking etc
  Parameters:
 	descriptor - conversion descriptor, created in init_iconv
- 	src - pointer to source string (multibute or singlebyte)
+ 	src - pointer to source string (multibyte or singlebyte)
 	srclen - length of the source string in bytes
 	dest - pointer to destination string (multibyte or singlebyte)
 	destlen - maximal length allowed for string
@@ -120,14 +120,14 @@ size_t convert_string(charset_t from, charset_t to,
 	if(retval==-1) 		
 	{    	char *reason="unknown error";
 		switch(errno)
-		{ case EINVAL: reason="Incomplete multybyte sequence"; break;
+		{ case EINVAL: reason="Incomplete multibyte sequence"; break;
 		  case E2BIG:  reason="No more room"; 
 		   	       DEBUG(0, ("Required %d, available %d\n",
 			       srclen, destlen));	
 		               break;
-		  case EILSEQ: reason="Illegal myltybyte sequence"; break;
+		  case EILSEQ: reason="Illegal myltibyte sequence"; break;
 		}
-		DEBUG(0,("Conversion error:%s(%s)\n",reason,inbuf));
+		DEBUG(0,("Conversion error: %s(%s)\n",reason,inbuf));
 		/* smb_panic(reason); */
 	}
 	return destlen-o_len;
@@ -336,7 +336,7 @@ int pull_ucs2_fstring(char *dest, const void *src)
 
 /****************************************************************************
 copy a string from a char* src to a unicode or ascii
-dos code page destination choosing unicode or ascii based on the 
+dos codepage destination choosing unicode or ascii based on the 
 flags in the SMB buffer starting at base_ptr
 return the number of bytes occupied by the string in the destination
 flags can have:

@@ -52,7 +52,8 @@ static int string_match(char *tok,char *s, char *invalid_char)
 	 * return True if the string is a (host) member of the
 	 * netgroup. Return True if the token fully matches the
 	 * string. If the token is a netnumber/netmask pair, return
-	 * True if the address is a member of the specified subnet.  */
+	 * True if the address is a member of the specified subnet.  
+	 */
 
 	if (tok[0] == '.') {			/* domain: match last fields */
 		if ((str_len = strlen(s)) > (tok_len = strlen(tok))
@@ -212,12 +213,12 @@ BOOL allow_access(char **deny_list,char **allow_list,
 	if (!allow_list || *allow_list == 0)
 		return(!list_match(deny_list,(char *)client,client_match));
 
-	/* if there are both type of list then allow all hosts on the
+	/* if there are both types of list then allow all hosts on the
            allow list */
 	if (list_match(allow_list,(char *)client,client_match))
 		return (True);
 
-	/* if there are both type of list and it's not on the allow then
+	/* if there are both types of list and it's not on the allow then
 	   allow it if its not on the deny */
 	if (list_match(deny_list,(char *)client,client_match))
 		return (False);

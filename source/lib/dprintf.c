@@ -24,7 +24,7 @@
   this module provides functions for printing internal strings in the "display charset"
   This charset may be quite different from the chosen unix charset
 
-  Eventually these functions will need to take care of column count constaints
+  Eventually these functions will need to take care of column count constraints
 
   The d_ prefix on print functions in Samba refers to the display character set
   conversion

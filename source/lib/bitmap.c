@@ -22,7 +22,7 @@
 #include "includes.h"
 
 /* these functions provide a simple way to allocate integers from a
-   pool without repitition */
+   pool without repetition */
 
 /****************************************************************************
 allocate a bitmap of the specified size

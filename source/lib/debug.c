@@ -26,7 +26,7 @@
  *
  *  FORMAT_BUFR_MAX - Index of the last byte of the format buffer;
  *                    format_bufr[FORMAT_BUFR_MAX] should always be reserved
- *                    for a terminating nul byte.
+ *                    for a terminating null byte.
  */
 
 #define FORMAT_BUFR_MAX ( sizeof( format_bufr ) - 1 )
@@ -125,10 +125,10 @@ static size_t     format_pos     = 0;
 static BOOL    log_overflow   = False;
 
 /*
-* Define all the debug class selection names here. Names *MUST NOT* contain 
-* white space. There must be one name for each DBGC_<class name>, and they 
-* must be in the table in the order of DBGC_<class name>.. 
-*/
+ * Define all the debug class selection names here. Names *MUST NOT* contain 
+ * white space. There must be one name for each DBGC_<class name>, and they 
+ * must be in the table in the order of DBGC_<class name>.. 
+ */
 char *classname_table[] = {
 	"all",               /* DBGC_ALL; index refs traditional DEBUGLEVEL */
 	"tdb",               /* DBGC_TDB	  */
@@ -183,7 +183,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 	/* Set the new debug level array to the current DEBUGLEVEL array */
 	memcpy(debuglevel_class, DEBUGLEVEL_CLASS, sizeof(DEBUGLEVEL_CLASS));
 
-	/* Allow DBGC_ALL to be specifies w/o requiring its class name e.g."10"  
+	/* Allow DBGC_ALL to be specified w/o requiring its class name e.g."10"  
 	 * v.s. "all:10", this is the traditional way to set DEBUGLEVEL 
 	 */
 	if (isdigit((int)params[0][0])) {
@@ -192,7 +192,7 @@ BOOL debug_parse_params(char **params, int *debuglevel_class,
 		i = 1; /* start processing at the next params */
 	}
 	else
-		i = 0; /* DBGC_ALL not specified  OR class name was included */
+		i = 0; /* DBGC_ALL not specified OR class name was included */
 
 	/* Fill in new debug class levels */
 	for (; i < DBGC_LAST && params[i]; i++) {
@@ -317,7 +317,8 @@ void setup_logging(char *pname, BOOL interactive)
 			pname = p + 1;
 #ifdef LOG_DAEMON
 		openlog( pname, LOG_PID, SYSLOG_FACILITY );
-#else /* for old systems that have no facility codes. */
+#else
+		/* for old systems that have no facility codes. */
 		openlog( pname, LOG_PID );
 #endif
 	}
@@ -457,12 +458,12 @@ void check_log_size( void )
 
 	if(dbf == NULL) {
 		/* This code should only be reached in very strange
-			circumstances. If we merely fail to open the new log we
-			should stick with the old one. ergo this should only be
-			reached when opening the logs for the first time: at
-			startup or when the log level is increased from zero.
-			-dwg 6 June 2000
-		*/
+		 * circumstances. If we merely fail to open the new log we
+		 * should stick with the old one. ergo this should only be
+		 * reached when opening the logs for the first time: at
+		 * startup or when the log level is increased from zero.
+		 * -dwg 6 June 2000
+		 */
 		dbf = x_fopen( "/dev/console", O_WRONLY, 0);
 		if(dbf) {
 			DEBUG(0,("check_log_size: open of debug file %s failed - using console.\n",
@@ -661,7 +662,7 @@ void dbgflush( void )
  * Print a Debug Header.
  *
  *  Input:  level - Debug level of the message (not the system-wide debug
- *                  level.
+ *                  level. )
  *          file  - Pointer to a string containing the name of the file
  *                  from which this function was called, or an empty string
  *                  if the __FILE__ macro is not implemented.
