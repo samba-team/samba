@@ -135,6 +135,10 @@ set (int argc, char **argv, int count, OtpAlgorithm *alg)
 
   ctx.alg = alg;
   ctx.user = strdup (pwd->pw_name);
+  if (ctx.user == NULL) {
+    fprintf (stderr, "%s: Out of memory\n", prog);
+    return 1;
+  }
   ctx.n = atoi (argv[0]);
   strncpy (ctx.seed, argv[1], sizeof(ctx.seed));
   ctx.seed[sizeof(ctx.seed) - 1] = '\0';
