@@ -8284,6 +8284,32 @@ EOF
 
     CFLAGS="-I/usr/local/ssl/include $CFLAGS"
 
+    if test "${with_sslinc+set}" = set; then
+
+        withval="$with_sslinc"
+        case "$withval" in
+        yes|no)
+          echo "configure: warning: --with-sslinc called without argument - will
+ use default" 1>&2
+          CFLAGS="-I/usr/local/ssl/include $CFLAGS"
+          LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+          LIBS="-lssl -lcrypto $LIBS"
+        ;;
+        * )
+          CFLAGS="-I${withval}/include $CFLAGS"
+          LDFLAGS="-L${withval}/lib $LDFLAGS"
+          LIBS="-lssl -lcrypto $LIBS"
+        ;;
+        esac
+
+    else
+
+        CFLAGS="-I/usr/local/ssl/include $CFLAGS"
+        LDFLAGS="-L/usr/local/ssl/lib $LDFLAGS"
+        LIBS="-lssl -lcrypto $LIBS"
+
+    fi
+
     ;;
   *)
     echo "$ac_t""no" 1>&6
