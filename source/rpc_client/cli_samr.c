@@ -1492,6 +1492,7 @@ BOOL samr_delete_dom_group(  POLICY_HND *group_pol)
 do a SAMR Create Domain Group
 ****************************************************************************/
 BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
+				uint32 access_mask,
 				POLICY_HND *group_pol, uint32 *rid)
 {
 	prs_struct data;
@@ -1510,7 +1511,7 @@ BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
 	DEBUG(4,("SAMR Create Domain Group. Name:%s\n", acct_name));
 
 	/* store the parameters */
-	make_samr_q_create_dom_group(&q_o, domain_pol, acct_name);
+	make_samr_q_create_dom_group(&q_o, domain_pol, acct_name, access_mask);
 
 	/* turn parameters into data stream */
 	if (samr_io_q_create_dom_group("", &q_o,  &data, 0) &&

@@ -2064,7 +2064,8 @@ static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR * ctr,
 makes a SAMR_Q_CREATE_DOM_GROUP structure.
 ********************************************************************/
 BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
-				  POLICY_HND *pol, const char *acct_desc)
+				  POLICY_HND *pol, const char *acct_desc,
+				  uint32 access_mask)
 {
 	int acct_len = acct_desc != NULL ? strlen(acct_desc) : 0;
 	if (q_e == NULL || pol == NULL)
@@ -2077,7 +2078,7 @@ BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
 	make_uni_hdr(&(q_e->hdr_acct_desc), acct_len);
 	make_unistr2(&(q_e->uni_acct_desc), acct_desc, acct_len);
 
-	q_e->access_mask = 0x00020001;
+	q_e->access_mask = access_mask;
 
 	return True;
 }

@@ -333,6 +333,7 @@ BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid);
 BOOL samr_delete_dom_user(  POLICY_HND *user_pol);
 BOOL samr_delete_dom_group(  POLICY_HND *group_pol);
 BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
+				uint32 access_mask,
 				POLICY_HND *group_pol, uint32 *rid);
 BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
 BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,

@@ -1444,7 +1444,7 @@ BOOL create_samr_domain_group( POLICY_HND *pol_open_domain,
 
 	/* send create group*/
 	if (!samr_create_dom_group( pol_open_domain,
-				acct_name,
+				acct_name, SEC_RIGHTS_MAXIMUM_ALLOWED,
 				&pol_open_group, rid))
 	{
 		return False;

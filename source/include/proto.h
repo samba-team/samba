@@ -2744,6 +2744,7 @@ BOOL samr_add_groupmem(  POLICY_HND *group_pol, uint32 rid);
 BOOL samr_delete_dom_user(  POLICY_HND *user_pol);
 BOOL samr_delete_dom_group(  POLICY_HND *group_pol);
 BOOL samr_create_dom_group(  POLICY_HND *domain_pol, const char *acct_name,
+				uint32 access_mask,
 				POLICY_HND *group_pol, uint32 *rid);
 BOOL samr_set_groupinfo(  POLICY_HND *group_pol, GROUP_INFO_CTR *ctr);
 BOOL samr_unknown_2d(  const POLICY_HND *domain_pol,
@@ -4026,7 +4027,8 @@ BOOL make_samr_group_info4(GROUP_INFO4 * gr4, const char *acct_desc);
 BOOL samr_io_group_info4(char *desc, GROUP_INFO4 * gr4,
 			 prs_struct *ps, int depth);
 BOOL make_samr_q_create_dom_group(SAMR_Q_CREATE_DOM_GROUP * q_e,
-				  POLICY_HND *pol, const char *acct_desc);
+				  POLICY_HND *pol, const char *acct_desc,
+				  uint32 access_mask);
 BOOL samr_io_q_create_dom_group(char *desc, SAMR_Q_CREATE_DOM_GROUP * q_e,
 				prs_struct *ps, int depth);
 BOOL samr_io_r_create_dom_group(char *desc, SAMR_R_CREATE_DOM_GROUP * r_u,
