@@ -537,7 +537,7 @@ Error was %s\n",
 		             fd, new_entry_length, strlen(new_entry), new_entry));
 #endif
 
-	if ((wr_len = write(fd, new_entry, strlen(new_entry))) != strlen((char *)new_entry))
+	if ((wr_len = write(fd, new_entry, strlen((char *)new_entry))) != strlen((char *)new_entry))
 	{
 		DEBUG(0, ("add_smbpwd_entry(write): %d Failed to add entry for user %s to file %s. \
 Error was %s\n", wr_len, pwd->smb_name, pfile, strerror(errno)));
