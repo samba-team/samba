@@ -966,7 +966,7 @@ static WERROR spoolss_OpenPrinterEx(struct dcesrv_call_state *dce_call, TALLOC_C
 	
 	/* Printername must start with \\ */
 
-	if (!strnequal(r->in.printername, "\\\\", 2))
+	if (strncmp(r->in.printername, "\\\\", 2) == 0)
 		return WERR_INVALID_PARAM;
 
 	if (strchr_m(r->in.printername + 2, '\\'))
