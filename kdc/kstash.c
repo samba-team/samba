@@ -38,7 +38,6 @@ RCSID("$Id$");
 krb5_context context;
 
 char *keyfile = HDB_DB_DIR "/m-key";
-char *v4_keyfile;
 int convert_flag;
 int help_flag;
 int version_flag;
@@ -50,10 +49,8 @@ char *enctype_str = "des3-cbc-sha1";
 struct getargs args[] = {
     { "enctype", 'e', arg_string, &enctype_str, "encryption type" },
     { "key-file", 'k', arg_string, &keyfile, "master key file", "file" },
-    { "version4-key-file", '4', arg_string, &v4_keyfile, 
-      "kerberos 4 master key file", "file" },
     { "convert-file", 0, arg_flag, &convert_flag, 
-      "just convert keyfile to now format" },
+      "just convert keyfile to new format" },
     { "master-key-fd", 0, arg_integer, &master_key_fd, 
       "filedescriptor to read passphrase from", "fd" },
     { "help", 'h', arg_flag, &help_flag },
