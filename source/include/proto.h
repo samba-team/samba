@@ -2551,7 +2551,8 @@ BOOL make_samr_q_open_group(SAMR_Q_OPEN_GROUP *q_c,
 BOOL samr_io_q_open_group(char *desc,  SAMR_Q_OPEN_GROUP *q_u, prs_struct *ps, int depth);
 BOOL samr_io_r_open_group(char *desc,  SAMR_R_OPEN_GROUP *r_u, prs_struct *ps, int depth);
 BOOL make_samr_group_info1(GROUP_INFO1 *gr1,
-				char *acct_name, char *acct_desc);
+				char *acct_name, char *acct_desc,
+				uint32 num_members);
 BOOL samr_io_group_info1(char *desc,  GROUP_INFO1 *gr1, prs_struct *ps, int depth);
 BOOL make_samr_group_info4(GROUP_INFO4 *gr4, const char *acct_desc);
 BOOL samr_io_group_info4(char *desc,  GROUP_INFO4 *gr4, prs_struct *ps, int depth);
@@ -3251,8 +3252,9 @@ BOOL sam_query_groupmem(struct cli_state *cli, uint16 fnum,
 uint32 msrpc_sam_enum_groups(struct client_info *info,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				void(*grp_mem_fn)(uint32, char*, uint32, uint32*, char**, uint32*),
-				BOOL request_group_info);
+				void (*grp_fn)(char*, DOM_SID*, uint32, char*),
+				void (*grp_inf_fn)(char*, DOM_SID*, uint32, GROUP_INFO_CTR *),
+				void(*grp_mem_fn)(char*, DOM_SID*, uint32, char*, uint32, uint32*, char**, uint32*));
 void cmd_sam_enum_groups(struct client_info *info);
 
 /*The following definitions come from  rpcclient/cmd_srvsvc.c  */
@@ -3340,6 +3342,9 @@ void display_alias_rid_info(FILE *out_hnd, enum action_type action,
 void display_group_members(FILE *out_hnd, enum action_type action,
 				uint32 num_mem, char **name, uint32 *type);
 void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *info1);
+void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *info4);
+void display_group_info_ctr(FILE *out_hnd, enum action_type action,
+				GROUP_INFO_CTR *ctr);
 void display_group_rid_info(FILE *out_hnd, enum action_type action,
 				uint32 num_gids, DOM_GID *gid);
 void display_alias_name_info(FILE *out_hnd, enum action_type action,

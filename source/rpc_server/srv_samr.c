@@ -1136,15 +1136,15 @@ static void samr_reply_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 			r_e.ptr = 1;
 			ctr.switch_value1 = 1;
 			make_samr_group_info1(&ctr.group.info1,
-			                      "account name",
-			                      "account description");
+			                      "fake account name",
+			                      "fake account description", 2);
 		}
 		else if (q_u->switch_level == 4)
 		{
 			r_e.ptr = 1;
 			ctr.switch_value1 = 4;
 			make_samr_group_info4(&ctr.group.info4,
-			                     "account description");
+			                     "fake account description");
 		}
 		else
 		{
@@ -1198,7 +1198,7 @@ static void samr_reply_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
 		{
 			r_e.ptr = 1;
 			ctr.switch_value1 = 3;
-			make_samr_alias_info3(&ctr.alias.info3, "<account description>");
+			make_samr_alias_info3(&ctr.alias.info3, "<fake account description>");
 		}
 		else
 		{

@@ -1215,8 +1215,6 @@ void display_group_members(FILE *out_hnd, enum action_type action,
 }
 
 
-#if 0
-
 /****************************************************************************
  display group info
  ****************************************************************************/
@@ -1231,9 +1229,85 @@ void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *in
 		}
 		case ACTION_ENUMERATE:
 		{
-			int i;
+			fstring temp;
 
-			fprintf(out_hnd, "\tGroup Name:\t%s\tDescription:\t%s\tunk1:\t%sunk2:%s\n",
+			unistr2_to_ascii(temp, &info1->uni_acct_name, sizeof(temp)-1);
+			fprintf(out_hnd, "\tGroup Name:\t%s\n", temp);
+			unistr2_to_ascii(temp, &info1->uni_acct_desc, sizeof(temp)-1);
+			fprintf(out_hnd, "\tDescription:\t%s\n", temp);
+			fprintf(out_hnd, "\tunk1:%d\n", info1->unknown_1);
+			fprintf(out_hnd, "\tNum Members:%d\n", info1->num_members);
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display group info
+ ****************************************************************************/
+void display_group_info4(FILE *out_hnd, enum action_type action, GROUP_INFO4 *info4)
+				
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			fstring desc;
+
+			unistr2_to_ascii(desc, &info4->uni_acct_desc, sizeof(desc)-1);
+			fprintf(out_hnd, "\tGroup Description:%s\n",
+			                  desc);
+			break;
+		}
+		case ACTION_FOOTER:
+		{
+			break;
+		}
+	}
+}
+
+/****************************************************************************
+ display sam sync structure
+ ****************************************************************************/
+void display_group_info_ctr(FILE *out_hnd, enum action_type action,
+				GROUP_INFO_CTR *ctr)
+{
+	switch (action)
+	{
+		case ACTION_HEADER:
+		{
+			fprintf(out_hnd, "\tSAM Group Info\n"); 
+			fprintf(out_hnd, "\t--------------\n");
+
+			break;
+		}
+		case ACTION_ENUMERATE:
+		{
+			switch (ctr->switch_value1)
+			{
+				case 1:
+				{
+					display_group_info1(out_hnd, ACTION_HEADER   , &ctr->group.info1);
+					display_group_info1(out_hnd, ACTION_ENUMERATE, &ctr->group.info1);
+					display_group_info1(out_hnd, ACTION_FOOTER   , &ctr->group.info1);
+					break;
+				}
+				case 4:
+				{
+					display_group_info4(out_hnd, ACTION_HEADER   , &ctr->group.info4);
+					display_group_info4(out_hnd, ACTION_ENUMERATE, &ctr->group.info4);
+					display_group_info4(out_hnd, ACTION_FOOTER   , &ctr->group.info4);
+					break;
+				}
+			}
 			break;
 		}
 		case ACTION_FOOTER:
@@ -1243,7 +1317,6 @@ void display_group_info1(FILE *out_hnd, enum action_type action, GROUP_INFO1 *in
 		}
 	}
 }
-#endif
 
 /****************************************************************************
  display group rid info

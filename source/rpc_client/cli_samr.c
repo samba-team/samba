@@ -358,7 +358,7 @@ BOOL get_samr_query_groupinfo(struct cli_state *cli, uint16 fnum,
 	/* send open domain (on group sid) */
 	if (!samr_open_group(cli, fnum,
 				pol_open_domain,
-				0x00000010, group_rid, &pol_open_group))
+				0x02000000, group_rid, &pol_open_group))
 	{
 		return False;
 	}

@@ -944,7 +944,7 @@ typedef struct samr_group_info1
 	UNIHDR hdr_acct_name;
 
 	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
-	uint32 unknown_2; /* 0x0000 0001 - number of group members? */
+	uint32 num_members; /* 0x0000 0001 - number of group members? */
 
 	UNIHDR hdr_acct_desc;
 
