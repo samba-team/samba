@@ -40,9 +40,9 @@ trusts.
 <indexterm><primary>winbind</primary></indexterm>
 <indexterm><primary>UID range</primary></indexterm>
 <indexterm><primary>GID range</primary></indexterm>
-The use of interdomain trusts requires use of <command>winbind</command> &smbmdash; this means
-that the <command>winbindd</command> daemon must be running. Winbind operation in this mode
-is dependant on the specification of a valid UID range and a valid GID range in the &smb.conf; file.
+The use of interdomain trusts requires use of <command>winbind</command>. Thus the
+<command>winbindd</command> daemon must be running. Winbind operation in this mode is
+dependant on the specification of a valid UID range and a valid GID range in the &smb.conf; file.
 These are specified respectively using 
 <smbconfoption><name>idmap uid</name><value>10000-20000</value></smbconfoption> and
 <smbconfoption><name>idmap gid</name><value>10000-20000</value></smbconfoption>.
