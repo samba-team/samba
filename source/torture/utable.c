@@ -141,7 +141,7 @@ BOOL torture_casetable(int dummy)
 
 		if (c == '.' || c == '\\') continue;
 
-		printf("%04x\n", c);
+		printf("%04x (%c)\n", c, isprint(c)?c:'.');
 
 		fname = form_name(c);
 		fnum = cli_nt_create_full(cli, fname, 
@@ -150,7 +150,10 @@ BOOL torture_casetable(int dummy)
 					  FILE_SHARE_NONE,
 					  FILE_OPEN_IF, 0);
 
-		if (fnum == -1) continue;
+		if (fnum == -1) {
+			printf("Failed to create file with char %04x\n", c);
+			continue;
+		}
 
 		size = 0;
 
