@@ -325,6 +325,29 @@ static int cmd_cd(const char **cmd_ptr)
 }
 
 
+BOOL mask_match(struct smbcli_state *c, const char *string, char *pattern, 
+		BOOL is_case_sensitive)
+{
+	fstring p2, s2;
+
+	if (strcmp(string,"..") == 0)
+		string = ".";
+	if (strcmp(pattern,".") == 0)
+		return False;
+	
+	if (is_case_sensitive)
+		return ms_fnmatch(pattern, string, 
+				  c->transport->negotiate.protocol) == 0;
+
+	fstrcpy(p2, pattern);
+	fstrcpy(s2, string);
+	strlower(p2); 
+	strlower(s2);
+	return ms_fnmatch(p2, s2, c->transport->negotiate.protocol) == 0;
+}
+
+
+
 /*******************************************************************
   decide if a file should be operated on
   ********************************************************************/
@@ -714,16 +737,16 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 		handle = fileno(stdout);
 	} else {
 		if (reget) {
-			handle = sys_open(lname, O_WRONLY|O_CREAT, 0644);
+			handle = open(lname, O_WRONLY|O_CREAT, 0644);
 			if (handle >= 0) {
-				start = sys_lseek(handle, 0, SEEK_END);
+				start = lseek(handle, 0, SEEK_END);
 				if (start == -1) {
 					d_printf("Error seeking local file\n");
 					return 1;
 				}
 			}
 		} else {
-			handle = sys_open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
+			handle = open(lname, O_WRONLY|O_CREAT|O_TRUNC, 0644);
 		}
 		newhandle = True;
 	}
@@ -832,6 +855,22 @@ static int cmd_get(const char **cmd_ptr)
 	return do_get(rname, lname, False);
 }
 
+/****************************************************************************
+ Put up a yes/no prompt.
+****************************************************************************/
+static BOOL yesno(char *p)
+{
+	pstring ans;
+	printf("%s",p);
+
+	if (!fgets(ans,sizeof(ans)-1,stdin))
+		return(False);
+
+	if (*ans == 'y' || *ans == 'Y')
+		return(True);
+
+	return(False);
+}
 
 /****************************************************************************
   do a mget operation on one file
@@ -1251,7 +1290,7 @@ static int cmd_put(const char **cmd_ptr)
 	dos_clean_name(rname);
 
 	{
-		SMB_STRUCT_STAT st;
+		struct stat st;
 		/* allow '-' to represent stdin
 		   jdblair, 24.jun.98 */
 		if (!file_exist(lname,&st) &&
@@ -1317,6 +1356,44 @@ static int cmd_select(const char **cmd_ptr)
 	next_token(cmd_ptr,fileselection,NULL,sizeof(fileselection));
 
 	return 0;
+}
+
+/*******************************************************************
+  A readdir wrapper which just returns the file name.
+ ********************************************************************/
+static const char *readdirname(DIR *p)
+{
+	struct dirent *ptr;
+	char *dname;
+
+	if (!p)
+		return(NULL);
+  
+	ptr = (struct smb_dirent *)readdir(p);
+	if (!ptr)
+		return(NULL);
+
+	dname = ptr->d_name;
+
+#ifdef NEXT2
+	if (telldir(p) < 0)
+		return(NULL);
+#endif
+
+#ifdef HAVE_BROKEN_READDIR
+	/* using /usr/ucb/cc is BAD */
+	dname = dname - 2;
+#endif
+
+	{
+		static pstring buf;
+		int len = NAMLEN(ptr);
+		memcpy(buf, dname, len);
+		buf[len] = 0;
+		dname = buf;
+	}
+
+	return(dname);
 }
 
 /****************************************************************************
@@ -1982,10 +2059,10 @@ static int cmd_newer(const char **cmd_ptr)
 {
 	fstring buf;
 	BOOL ok;
-	SMB_STRUCT_STAT sbuf;
+	struct stat sbuf;
 
 	ok = next_token(cmd_ptr,buf,NULL,sizeof(buf));
-	if (ok && (sys_stat(buf,&sbuf) == 0)) {
+	if (ok && (stat(buf,&sbuf) == 0)) {
 		newer_than = sbuf.st_mtime;
 		DEBUG(1,("Getting files newer than %s",
 			 asctime(localtime(&newer_than))));
@@ -2141,7 +2218,7 @@ static int cmd_reput(const char **cmd_ptr)
 	pstring remote_name;
 	fstring buf;
 	char *p = buf;
-	SMB_STRUCT_STAT st;
+	struct stat st;
 	
 	pstrcpy(remote_name, cur_dir);
 	pstrcat(remote_name, "\\");

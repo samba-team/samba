@@ -40,13 +40,13 @@ const char *tmpdir(void)
 /*******************************************************************
  Check if a file exists - call vfs_file_exist for samba files.
 ********************************************************************/
-BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
+BOOL file_exist(const char *fname, struct stat *sbuf)
 {
-	SMB_STRUCT_STAT st;
+	struct stat st;
 	if (!sbuf)
 		sbuf = &st;
   
-	if (sys_stat(fname,sbuf) != 0) 
+	if (stat(fname,sbuf) != 0) 
 		return(False);
 
 	return((S_ISREG(sbuf->st_mode)) || (S_ISFIFO(sbuf->st_mode)));
@@ -58,9 +58,9 @@ BOOL file_exist(const char *fname,SMB_STRUCT_STAT *sbuf)
 
 time_t file_modtime(const char *fname)
 {
-	SMB_STRUCT_STAT st;
+	struct stat st;
   
-	if (sys_stat(fname,&st) != 0) 
+	if (stat(fname,&st) != 0) 
 		return(0);
 
 	return(st.st_mtime);
@@ -70,15 +70,15 @@ time_t file_modtime(const char *fname)
  Check if a directory exists.
 ********************************************************************/
 
-BOOL directory_exist(const char *dname,SMB_STRUCT_STAT *st)
+BOOL directory_exist(const char *dname,struct stat *st)
 {
-	SMB_STRUCT_STAT st2;
+	struct stat st2;
 	BOOL ret;
 
 	if (!st)
 		st = &st2;
 
-	if (sys_stat(dname,st) != 0) 
+	if (stat(dname,st) != 0) 
 		return(False);
 
 	ret = S_ISDIR(st->st_mode);
@@ -90,12 +90,12 @@ BOOL directory_exist(const char *dname,SMB_STRUCT_STAT *st)
 /*******************************************************************
  Returns the size in bytes of the named file.
 ********************************************************************/
-SMB_OFF_T get_file_size(char *file_name)
+off_t get_file_size(char *file_name)
 {
-	SMB_STRUCT_STAT buf;
+	struct stat buf;
 	buf.st_size = 0;
-	if(sys_stat(file_name,&buf) != 0)
-		return (SMB_OFF_T)-1;
+	if(stat(file_name,&buf) != 0)
+		return (off_t)-1;
 	return(buf.st_size);
 }
 
@@ -120,9 +120,9 @@ void close_low_fds(BOOL stderr_too)
 		if (i == 2 && !stderr_too)
 			continue;
 
-		fd = sys_open("/dev/null",O_RDWR,0);
+		fd = open("/dev/null",O_RDWR,0);
 		if (fd < 0)
-			fd = sys_open("/dev/null",O_WRONLY,0);
+			fd = open("/dev/null",O_WRONLY,0);
 		if (fd < 0) {
 			DEBUG(0,("Can't open /dev/null\n"));
 			return;
@@ -155,13 +155,13 @@ int set_blocking(int fd, BOOL set)
 #endif
 #endif
 
-	if((val = sys_fcntl_long(fd, F_GETFL, 0)) == -1)
+	if((val = fcntl(fd, F_GETFL, 0)) == -1)
 		return -1;
 	if(set) /* Turn blocking on - ie. clear nonblock flag */
 		val &= ~FLAG_TO_SET;
 	else
 		val |= FLAG_TO_SET;
-	return sys_fcntl_long( fd, F_SETFL, val);
+	return fcntl( fd, F_SETFL, val);
 #undef FLAG_TO_SET
 }
 
@@ -198,7 +198,7 @@ void become_daemon(BOOL Fork)
 	setsid();
 #elif defined(TIOCNOTTY)
 	{
-		int i = sys_open("/dev/tty", O_RDWR, 0);
+		int i = open("/dev/tty", O_RDWR, 0);
 		if (i != -1) {
 			ioctl(i, (int) TIOCNOTTY, (char *)0);      
 			close(i);
@@ -509,9 +509,9 @@ BOOL process_exists(pid_t pid)
  is dealt with in posix.c
 ****************************************************************************/
 
-BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
+BOOL fcntl_lock(int fd, int op, off_t offset, off_t count, int type)
 {
-	SMB_STRUCT_FLOCK lock;
+	struct flock lock;
 	int ret;
 
 	DEBUG(8,("fcntl_lock %d %d %.0f %.0f %d\n",fd,op,(double)offset,(double)count,type));
@@ -522,13 +522,13 @@ BOOL fcntl_lock(int fd, int op, SMB_OFF_T offset, SMB_OFF_T count, int type)
 	lock.l_len = count;
 	lock.l_pid = 0;
 
-	ret = sys_fcntl_ptr(fd,op,&lock);
+	ret = fcntl(fd,op,&lock);
 
 	if (ret == -1 && errno != 0)
 		DEBUG(3,("fcntl_lock: fcntl lock gave errno %d (%s)\n",errno,strerror(errno)));
 
 	/* a lock query */
-	if (op == SMB_F_GETLK) {
+	if (op == F_GETLK) {
 		if ((ret != -1) &&
 				(lock.l_type != F_UNLCK) && 
 				(lock.l_pid != 0) && 

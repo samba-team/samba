@@ -37,7 +37,7 @@ pid_t pidfile_pid(const char *name)
 
 	slprintf(pidFile, sizeof(pidFile)-1, "%s/%s.pid", lp_piddir(), name);
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
+	fd = open(pidFile, O_NONBLOCK | O_RDONLY, 0644);
 	if (fd == -1) {
 		return 0;
 	}
@@ -54,7 +54,7 @@ pid_t pidfile_pid(const char *name)
 		goto noproc;
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_RDLCK)) {
+	if (fcntl_lock(fd,F_SETLK,0,1,F_RDLCK)) {
 		/* we could get the lock - it can't be a Samba process */
 		goto noproc;
 	}
@@ -85,14 +85,14 @@ void pidfile_create(const char *name)
 		exit(1);
 	}
 
-	fd = sys_open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
+	fd = open(pidFile, O_NONBLOCK | O_CREAT | O_WRONLY | O_EXCL, 0644);
 	if (fd == -1) {
 		DEBUG(0,("ERROR: can't open %s: Error was %s\n", pidFile, 
 			 strerror(errno)));
 		exit(1);
 	}
 
-	if (fcntl_lock(fd,SMB_F_SETLK,0,1,F_WRLCK)==False) {
+	if (fcntl_lock(fd,F_SETLK,0,1,F_WRLCK)==False) {
 		DEBUG(0,("ERROR: %s : fcntl lock of file %s failed. Error was %s\n",  
               name, pidFile, strerror(errno)));
 		exit(1);

@@ -429,7 +429,7 @@ NTSTATUS smbcli_unlock(struct smbcli_tree *tree, int fnum, uint32_t offset, uint
  Lock a file with 64 bit offsets.
 ****************************************************************************/
 NTSTATUS smbcli_lock64(struct smbcli_tree *tree, int fnum, 
-		    SMB_OFF_T offset, SMB_OFF_T len, int timeout, 
+		    off_t offset, off_t len, int timeout, 
 		    enum brl_type lock_type)
 {
 	union smb_lock parms;
@@ -464,8 +464,8 @@ NTSTATUS smbcli_lock64(struct smbcli_tree *tree, int fnum,
 /****************************************************************************
  Unlock a file with 64 bit offsets.
 ****************************************************************************/
-NTSTATUS smbcli_unlock64(struct smbcli_tree *tree, int fnum, SMB_OFF_T offset, 
-		      SMB_OFF_T len)
+NTSTATUS smbcli_unlock64(struct smbcli_tree *tree, int fnum, off_t offset, 
+			 off_t len)
 {
 	union smb_lock parms;
 	struct smb_lock_entry lock[1];

@@ -27,7 +27,7 @@
  /*******************************************************************
 ftruncate for operating systems that don't have it
 ********************************************************************/
- int ftruncate(int f,SMB_OFF_T l)
+ int ftruncate(int f,off_t l)
 {
       struct  flock   fl;
 
