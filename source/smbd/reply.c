@@ -577,21 +577,20 @@ user %s attempted down-level SMB connection\n",
 
 		if (!doencrypt)
 		{
-			/* both Win95 and WinNT stuff up the password lengths for
-			   non-encrypting systems. Uggh. 
-
-			   if passlen1==24 its a win95 system, and its setting the
-			   password length incorrectly. Luckily it still works with the
-			   default code because Win95 will null terminate the password
-			   anyway 
-
-			   if passlen1>0 and passlen2>0 then maybe its a NT box and its
-			   setting passlen2 to some random value which really stuffs
-			   things up. we need to fix that one.
-
-			   LKCLXXXX: the random value can be random 16 bit.  old test
-			   used to have ... && passlen <= 24) which of course fails
-			   most of the time.
+			/* both Win95 and WinNT stuff up the password
+			 * lengths for non-encrypting systems. Uggh. 
+			 * if passlen1==24 its a win95 system, and its 
+			 * setting the password length incorrectly. Luckily 
+			 * it still works with the default code because 
+			 * Win95 will null terminate the password anyway 
+			 * if passlen1>0 and passlen2>0 then maybe its a 
+			 * NT box and its setting passlen2 to some random
+			 * value which really stuffs things up. we need to 
+			 * fix that one.  
+			 *
+			 * LKCLXXXX: the random value can be random 16 bit.
+			 * old test used to have ... && passlen <= 24)
+			 * which of course fails most of the time.
 			 */
 
 			if (passlen1 > 0 && passlen2 > 0 && passlen2 != 1)
@@ -669,9 +668,10 @@ user %s attempted down-level SMB connection\n",
 
 	DEBUG(3, ("sesssetupX:name=[%s]\n", user));
 
-	/* If name ends in $ then I think it's asking about whether a */
-	/* computer with that name (minus the $) has access. For now */
-	/* say yes to everything ending in $. */
+	/*
+	 * If name ends in $ it's a trust account.
+	 */
+
 	if ((user[strlen(user) - 1] == '$') && (smb_apasslen == 24)
 	    && (smb_ntpasslen == 24))
 	{

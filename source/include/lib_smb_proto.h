@@ -33,23 +33,19 @@ BOOL policy_hnd_set_name(struct policy_cache *cache,
 const char *policy_hnd_get_name(struct policy_cache *cache,
 				const POLICY_HND *hnd);
 BOOL dup_policy_hnd(struct policy_cache *cache,
-				POLICY_HND *hnd,
-				const POLICY_HND *from);
+		    POLICY_HND *hnd, const POLICY_HND *from);
 BOOL register_policy_hnd(struct policy_cache *cache,
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd(struct policy_cache *cache, 
-				const vuser_key *key,
-				POLICY_HND *hnd,
-				uint32 access_mask);
-BOOL open_policy_hnd_link(struct policy_cache *cache, 
-				const POLICY_HND *parent_hnd,
-				POLICY_HND *hnd,
-				uint32 access_mask);
+			 const vuser_key * key,
+			 POLICY_HND *hnd, uint32 access_mask);
+BOOL open_policy_hnd(struct policy_cache *cache,
+		     const vuser_key * key,
+		     POLICY_HND *hnd, uint32 access_mask);
+BOOL open_policy_hnd_link(struct policy_cache *cache,
+			  const POLICY_HND *parent_hnd,
+			  POLICY_HND *hnd, uint32 access_mask);
 int find_policy_by_hnd(struct policy_cache *cache, const POLICY_HND *hnd);
-BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd, 
-				void(*fn)(void*), void *dev);
+BOOL set_policy_state(struct policy_cache *cache, POLICY_HND *hnd,
+		      void (*fn) (void *), void *dev);
 void *get_policy_state_info(struct policy_cache *cache, const POLICY_HND *hnd);
 BOOL policy_hnd_set_state_type(struct policy_cache *cache,
 			       POLICY_HND *hnd, int type);
@@ -59,11 +55,11 @@ BOOL policy_hnd_check_state_type(struct policy_cache *cache,
 				 const POLICY_HND *hnd, int type);
 BOOL close_policy_hnd(struct policy_cache *cache, POLICY_HND *hnd);
 BOOL policy_link_key(struct policy_cache *cache, const POLICY_HND *hnd,
-				POLICY_HND *to);
+		     POLICY_HND *to);
 const vuser_key *get_policy_vuser_key(struct policy_cache *cache,
-				const POLICY_HND *hnd);
+				      const POLICY_HND *hnd);
 BOOL pol_get_usr_sesskey(struct policy_cache *cache, const POLICY_HND *hnd,
-				uchar usr_sess_key[16]);
+			 uchar usr_sess_key[16]);
 
 /*The following definitions come from  lib/vuser.c  */
 
