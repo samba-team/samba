@@ -54,7 +54,8 @@ void send_browser_reset(int reset_type, char *to_name, int to_type, struct in_ad
   p++;
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname, 0x0, to_name, to_type, to_ip, FIRST_SUBNET->myip);
+                global_myname, 0x0, to_name, to_type, to_ip, 
+		FIRST_SUBNET->myip, DGRAM_PORT);
 }
 
 /****************************************************************************
@@ -84,7 +85,8 @@ to subnet %s\n", work->work_group, subrec->subnet_name));
   p = skip_string(p,1);
   
   send_mailslot(False, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-                global_myname, 0x0, work->work_group,0x1e, subrec->bcast_ip, subrec->myip);
+                global_myname, 0x0, work->work_group,0x1e, subrec->bcast_ip, 
+		subrec->myip, DGRAM_PORT);
 }
 
 /****************************************************************************
@@ -124,7 +126,8 @@ static void send_announcement(struct subnet_record *subrec, int announce_type,
   p = skip_string(p,1);
 
   send_mailslot(False,BROWSE_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                from_name, 0x0, to_name, to_type, to_ip, subrec->myip);
+                from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
+		DGRAM_PORT);
 }
 
 /****************************************************************************
@@ -155,7 +158,8 @@ static void send_lm_announcement(struct subnet_record *subrec, int announce_type
   p = skip_string(p,1);
 
   send_mailslot(False,LANMAN_MAILSLOT, outbuf, PTR_DIFF(p,outbuf),
-                from_name, 0x0, to_name, to_type, to_ip, subrec->myip);
+                from_name, 0x0, to_name, to_type, to_ip, subrec->myip,
+		DGRAM_PORT);
 }
 
 /****************************************************************************
@@ -601,6 +605,6 @@ for workgroup %s on subnet %s.\n", global_myworkgroup, FIRST_SUBNET->subnet_name
                  global_myname, inet_ntoa(addr) ));
 
     send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          global_myname, 0x0, "*", 0x0, addr, FIRST_SUBNET->myip);
+          global_myname, 0x0, "*", 0x0, addr, FIRST_SUBNET->myip, DGRAM_PORT);
   }
 }

@@ -112,7 +112,7 @@ logons are not enabled.\n", inet_ntoa(p->ip) ));
                     dgram->dest_name.name_type,
                     dgram->source_name.name,
                     dgram->source_name.name_type,
-                    p->ip, *iface_ip(p->ip));  
+                    p->ip, *iface_ip(p->ip), p->port);  
       break;
     }
 
@@ -167,7 +167,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
                   dgram->dest_name.name_type,
                   dgram->source_name.name,
                   dgram->source_name.name_type,
-                  p->ip, *iface_ip(p->ip));  
+                  p->ip, *iface_ip(p->ip), p->port);  
       return;
     }
 
@@ -243,7 +243,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
                    dgram->dest_name.name_type,
                    dgram->source_name.name,
                    dgram->source_name.name_type,
-                   p->ip, *iface_ip(p->ip));  
+                   p->ip, *iface_ip(p->ip), p->port);  
       break;
     }
 
