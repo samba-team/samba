@@ -4,7 +4,7 @@
 # Copyright tridge@samba.org 2000
 # released under the GNU GPL
 
-package eparser;
+package IdlEParser;
 
 use strict;
 
