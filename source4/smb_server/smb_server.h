@@ -219,7 +219,7 @@ struct smbsrv_connection {
 		struct smbsrv_tcon *tcons;
 
 		/* an id tree used to allocate tids */
-		void *idtree_tid;
+		struct idr_context *idtree_tid;
 	} tree;
 
 	/* the context associated with open files on an smb socket */
