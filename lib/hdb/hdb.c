@@ -78,7 +78,9 @@ hdb_process_master_key(krb5_context context, EncryptionKey key,
     if(key.keytype != ETYPE_DES_CBC_MD5)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
     schedule->length = sizeof(des_key_schedule);
-    schedule->data = malloc(schedule->length);
+    schedule->data   = malloc(schedule->length);
+    if (schedule->length != 0 && schedule->data == NULL)
+	return ENOMEM;
     
     des_set_key((des_cblock*)key.keyvalue.data, schedule->data);
     return 0;
