@@ -1048,7 +1048,7 @@ uint32 _samr_delete_dom_group(POLICY_HND *group_pol)
 uint32 _samr_query_groupmem(POLICY_HND *group_pol, 
 					uint32 *num_mem,
 					uint32 **rid,
-					uint32 **attr);
+					uint32 **attr)
 {
 	uint32 status = 0;
 

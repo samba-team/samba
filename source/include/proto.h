@@ -4275,23 +4275,6 @@ uint32 _samr_query_groupmem(POLICY_HND *group_pol,
 					uint32 *num_mem,
 					uint32 **rid,
 					uint32 **attr);
-{
-	uint32 status = 0;
-
-	DOMAIN_GRP_MEMBER *mem_grp = NULL;
-	int num_rids = 0;
-	DOM_SID group_sid;
-	uint32 group_rid;
-	fstring group_sid_str;
-
-	DEBUG(5,("samr_query_groupmem: %d\n", __LINE__));
-
-	(*rid) = NULL;
-	(*attr) = NULL;
-	(*num_mem) = 0;
-
-	/* find the policy handle.  open a policy on it. */
-	if (status == 0x0 && !get_policy_samr_sid(get_global_hnd_cache(), group_pol, &group_sid));
 uint32 _samr_query_groupinfo(SAMR_Q_QUERY_GROUPINFO *q_u,
 				prs_struct *rdata);
 uint32 _samr_query_aliasinfo(SAMR_Q_QUERY_ALIASINFO *q_u,
