@@ -242,6 +242,8 @@ done:
 	SAFE_FREE(acct_desc);
 	SAFE_FREE(workstations);
 	SAFE_FREE(munged_dial);
+	SAFE_FREE(unknown_str);
+	SAFE_FREE(hours);
 
 	return ret;
 }
