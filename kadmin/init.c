@@ -97,7 +97,7 @@ static int num_args = sizeof(args) / sizeof(args[0]);
 static void
 usage(void)
 {
-    arg_printusage (args, num_args, "ank", "principal");
+    arg_printusage (args, num_args, "init", "realm");
 }
 
 int
