@@ -36,6 +36,9 @@
 #ifndef _EXTERN_H_
 #define _EXTERN_H_
 
+#ifdef HAVE_SYS_TYPES_H
+#include <sys/types.h>
+#endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
@@ -49,8 +52,10 @@
 #ifdef HAVE_PWD_H
 #include <pwd.h>
 #endif
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
+
+#ifndef NBBY
+#include <limits.h>
+#define NBBY CHAR_BIT
 #endif
 
 void	abor(void);
