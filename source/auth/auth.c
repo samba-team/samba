@@ -75,7 +75,7 @@ static const uint8_t *get_ntlm_challenge(struct auth_context *auth_context)
 	}
 	
 	if (!challenge_set_by) {
-		uchar chal[8];
+		uint8_t chal[8];
 		
 		generate_random_buffer(chal, sizeof(chal), False);
 		auth_context->challenge = data_blob_talloc(auth_context->mem_ctx, 
@@ -381,7 +381,7 @@ NTSTATUS make_auth_context_subsystem(struct auth_context **auth_context)
  Make a auth_info struct with a fixed challenge
 ***************************************************************************/
 
-NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uchar chal[8]) 
+NTSTATUS make_auth_context_fixed(struct auth_context **auth_context, uint8_t chal[8]) 
 {
 	NTSTATUS nt_status;
 	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(auth_context))) {

@@ -24,8 +24,8 @@
 typedef struct 
 {
         struct MD5Context ctx;
-        uchar k_ipad[65];    
-        uchar k_opad[65];
+        uint8_t k_ipad[65];    
+        uint8_t k_opad[65];
 
 } HMACMD5Context;
 

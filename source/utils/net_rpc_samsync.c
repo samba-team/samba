@@ -55,8 +55,8 @@ static void display_alias_mem(uint32_t rid, SAM_ALIAS_MEM_INFO *a)
 static void display_account_info(uint32_t rid, SAM_ACCOUNT_INFO *a)
 {
 	fstring hex_nt_passwd, hex_lm_passwd;
-	uchar lm_passwd[16], nt_passwd[16];
-	static uchar zero_buf[16];
+	uint8_t lm_passwd[16], nt_passwd[16];
+	static uint8_t zero_buf[16];
 
 	/* Decode hashes from password hash (if they are not NULL) */
 	
@@ -153,7 +153,7 @@ int rpc_samdump(int argc, const char **argv)
 {
         NTSTATUS result;
 	struct cli_state *cli = NULL;
-	uchar trust_password[16];
+	uint8_t trust_password[16];
 	DOM_CRED ret_creds;
 	uint32_t neg_flags = 0x000001ff;
 
@@ -202,8 +202,8 @@ static NTSTATUS
 sam_account_from_delta(SAM_ACCOUNT *account, SAM_ACCOUNT_INFO *delta)
 {
 	fstring s;
-	uchar lm_passwd[16], nt_passwd[16];
-	static uchar zero_buf[16];
+	uint8_t lm_passwd[16], nt_passwd[16];
+	static uint8_t zero_buf[16];
 
 	/* Username, fullname, home dir, dir drive, logon script, acct
 	   desc, workstations, profile. */
@@ -673,7 +673,7 @@ int rpc_vampire(int argc, const char **argv)
 {
         NTSTATUS result;
 	struct cli_state *cli = NULL;
-	uchar trust_password[16];
+	uint8_t trust_password[16];
 	DOM_CRED ret_creds;
 	uint32_t neg_flags = 0x000001ff;
 	DOM_SID dom_sid;

@@ -30,12 +30,12 @@
 ****************************************************************************/
 
 static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
-				 const uchar *part_passwd,
+				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
-	uchar p24[24];
+	uint8_t p24[24];
 	
 	if (part_passwd == NULL) {
 		DEBUG(10,("No password set - DISALLOWING access\n"));
@@ -81,16 +81,16 @@ static BOOL smb_pwd_check_ntlmv1(const DATA_BLOB *nt_response,
 ****************************************************************************/
 
 static BOOL smb_pwd_check_ntlmv2(const DATA_BLOB *ntv2_response,
-				 const uchar *part_passwd,
+				 const uint8_t *part_passwd,
 				 const DATA_BLOB *sec_blob,
 				 const char *user, const char *domain,
 				 BOOL upper_case_domain, /* should the domain be transformed into upper case? */
 				 DATA_BLOB *user_sess_key)
 {
 	/* Finish the encryption of part_passwd. */
-	uchar kr[16];
-	uchar value_from_encryption[16];
-	uchar client_response[16];
+	uint8_t kr[16];
+	uint8_t value_from_encryption[16];
+	uint8_t client_response[16];
 	DATA_BLOB client_key_data;
 
 	if (part_passwd == NULL) {
@@ -247,8 +247,8 @@ NTSTATUS ntlm_password_check(TALLOC_CTX *mem_ctx,
 				 username));
 
 		} else if (lm_pw && lm_response->length) {
-			uchar dospwd[14]; 
-			uchar p16[16]; 
+			uint8_t dospwd[14]; 
+			uint8_t p16[16]; 
 			ZERO_STRUCT(dospwd);
 			
 			memcpy(dospwd, lm_response->data, MIN(lm_response->length, sizeof(dospwd)));

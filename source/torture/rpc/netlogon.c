@@ -596,10 +596,10 @@ static BOOL test_lm_ntlm_broken(struct samlogon_state *samlogon_state, enum ntlm
 	DATA_BLOB nt_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 	DATA_BLOB session_key = data_blob_talloc(samlogon_state->mem_ctx, NULL, 16);
 
-	uchar lm_key[8];
-	uchar user_session_key[16];
-	uchar lm_hash[16];
-	uchar nt_hash[16];
+	uint8_t lm_key[8];
+	uint8_t user_session_key[16];
+	uint8_t lm_hash[16];
+	uint8_t nt_hash[16];
 	
 	ZERO_STRUCT(lm_key);
 	ZERO_STRUCT(user_session_key);
@@ -693,9 +693,9 @@ static BOOL test_ntlm_in_lm(struct samlogon_state *samlogon_state, char **error_
 	NTSTATUS nt_status;
 	DATA_BLOB nt_response = data_blob_talloc(samlogon_state->mem_ctx, NULL, 24);
 
-	uchar lm_key[8];
-	uchar lm_hash[16];
-	uchar user_session_key[16];
+	uint8_t lm_key[8];
+	uint8_t lm_hash[16];
+	uint8_t user_session_key[16];
 	
 	ZERO_STRUCT(user_session_key);
 
@@ -818,7 +818,7 @@ static BOOL test_lmv2_ntlmv2_broken(struct samlogon_state *samlogon_state, enum 
 	DATA_BLOB ntlmv2_session_key = data_blob(NULL, 0);
 	DATA_BLOB names_blob = NTLMv2_generate_names_blob(samlogon_state->mem_ctx, lp_netbios_name(), lp_workgroup());
 
-	uchar user_session_key[16];
+	uint8_t user_session_key[16];
 
 	ZERO_STRUCT(user_session_key);
 	
@@ -922,9 +922,9 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	char *dospw;
 	smb_ucs2_t *unicodepw;
 
-	uchar user_session_key[16];
-	uchar lm_key[16];
-	static const uchar zeros[8];
+	uint8_t user_session_key[16];
+	uint8_t lm_key[16];
+	static const uint8_t zeros[8];
 	DATA_BLOB chall = data_blob_talloc(samlogon_state->mem_ctx, zeros, sizeof(zeros));
 
 	ZERO_STRUCT(user_session_key);

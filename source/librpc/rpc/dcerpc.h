@@ -29,16 +29,16 @@ struct dcerpc_security {
 	void *private;
 	NTSTATUS (*unseal_packet)(struct dcerpc_security *, 
 				  TALLOC_CTX *mem_ctx, 
-				  uchar *data, size_t length, DATA_BLOB *sig);
+				  uint8_t *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*check_packet)(struct dcerpc_security *, 
 				 TALLOC_CTX *mem_ctx, 
-				 const uchar *data, size_t length, const DATA_BLOB *sig);
+				 const uint8_t *data, size_t length, const DATA_BLOB *sig);
 	NTSTATUS (*seal_packet)(struct dcerpc_security *, 
 				TALLOC_CTX *mem_ctx, 
-				uchar *data, size_t length, DATA_BLOB *sig);
+				uint8_t *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*sign_packet)(struct dcerpc_security *, 
 				TALLOC_CTX *mem_ctx, 
-				const uchar *data, size_t length, DATA_BLOB *sig);
+				const uint8_t *data, size_t length, DATA_BLOB *sig);
 	NTSTATUS (*session_key)(struct dcerpc_security *, DATA_BLOB *session_key);
 	void (*security_end)(struct dcerpc_security *);
 };

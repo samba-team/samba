@@ -424,8 +424,8 @@ static BOOL rw_torture2(struct cli_state *c1, struct cli_state *c2)
 	int fnum1;
 	int fnum2;
 	int i;
-	uchar buf[131072];
-	uchar buf_rd[131072];
+	uint8_t buf[131072];
+	uint8_t buf_rd[131072];
 	BOOL correct = True;
 	ssize_t bytes_read, bytes_written;
 

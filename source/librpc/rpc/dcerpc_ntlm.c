@@ -27,7 +27,7 @@
 */
 static NTSTATUS ntlm_unseal_packet(struct dcerpc_security *dcerpc_security, 
 				   TALLOC_CTX *mem_ctx, 
-				   uchar *data, size_t length, DATA_BLOB *sig)
+				   uint8_t *data, size_t length, DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
 	return ntlmssp_unseal_packet(ntlmssp_state, mem_ctx, data, length, sig);
@@ -35,7 +35,7 @@ static NTSTATUS ntlm_unseal_packet(struct dcerpc_security *dcerpc_security,
 
 static NTSTATUS ntlm_check_packet(struct dcerpc_security *dcerpc_security, 
 				  TALLOC_CTX *mem_ctx, 
-				  const uchar *data, size_t length, 
+				  const uint8_t *data, size_t length, 
 				  const DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
@@ -44,7 +44,7 @@ static NTSTATUS ntlm_check_packet(struct dcerpc_security *dcerpc_security,
 
 static NTSTATUS ntlm_seal_packet(struct dcerpc_security *dcerpc_security, 
 				 TALLOC_CTX *mem_ctx, 
-				 uchar *data, size_t length, 
+				 uint8_t *data, size_t length, 
 				 DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;
@@ -53,7 +53,7 @@ static NTSTATUS ntlm_seal_packet(struct dcerpc_security *dcerpc_security,
 
 static NTSTATUS ntlm_sign_packet(struct dcerpc_security *dcerpc_security, 
 				 TALLOC_CTX *mem_ctx, 
-				 const uchar *data, size_t length, 
+				 const uint8_t *data, size_t length, 
 				 DATA_BLOB *sig)
 {
 	struct ntlmssp_state *ntlmssp_state = dcerpc_security->private;

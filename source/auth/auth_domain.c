@@ -290,7 +290,7 @@ static NTSTATUS find_connect_dc(struct cli_state **cli,
 static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       const auth_usersupplied_info *user_info, 
 				       const char *domain,
-				       uchar chal[8],
+				       uint8_t chal[8],
 				       auth_serversupplied_info **server_info, 
 				       const char *server, const char *setup_creds_as,
 				       uint16_t sec_chan,
@@ -447,7 +447,7 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 	password_server = lp_passwordserver();
 
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
-					   (uchar *)auth_context->challenge.data, 
+					   (uint8_t *)auth_context->challenge.data, 
 					   server_info, 
 					   password_server, lp_netbios_name(), SEC_CHAN_WKSTA, trust_passwd, last_change_time);
 	return nt_status;
@@ -534,7 +534,7 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 #endif
 
 	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
-					   (uchar *)auth_context->challenge.data, 
+					   (uint8_t *)auth_context->challenge.data, 
 					   server_info, "*" /* Do a lookup */, 
 					   lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
 	

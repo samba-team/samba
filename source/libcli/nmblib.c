@@ -74,7 +74,7 @@ static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
 
       for (j = 0; j < 16; j++)
 	{
-	  uchar x = res->rdata[i+j];
+	  uint8_t x = res->rdata[i+j];
 	  if (x < 32 || x > 127) x = '.';
 	  
 	  if (i+j >= res->rdlength) break;
@@ -86,7 +86,7 @@ static void debug_nmb_res_rec(struct res_rec *res, const char *hdr)
       for (j = 0; j < 16; j++)
 	{
 	  if (i+j >= res->rdlength) break;
-	  DEBUGADD(4, ("%02X", (uchar)res->rdata[i+j]));
+	  DEBUGADD(4, ("%02X", (uint8_t)res->rdata[i+j]));
 	}
       
       DEBUGADD(4, ("\n"));
@@ -146,7 +146,7 @@ void debug_nmb_packet(struct packet_struct *p)
 /*******************************************************************
   handle "compressed" name pointers
   ******************************************************************/
-static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
+static BOOL handle_name_ptrs(uint8_t *ubuf,int *offset,int length,
 			     BOOL *got_pointer,int *ret)
 {
   int loop_count=0;
@@ -169,7 +169,7 @@ static BOOL handle_name_ptrs(uchar *ubuf,int *offset,int length,
 static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
 {
   int m,n=0;
-  uchar *ubuf = (uchar *)inbuf;
+  uint8_t *ubuf = (uint8_t *)inbuf;
   int ret = 0;
   BOOL got_pointer=False;
   int loop_count=0;
@@ -196,7 +196,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
     ret += m + 2;
   offset++;
   while (m > 0) {
-    uchar c1,c2;
+    uint8_t c1,c2;
     c1 = ubuf[offset++]-'A';
     c2 = ubuf[offset++]-'A';
     if ((c1 & 0xF0) || (c2 & 0xF0) || (n > sizeof(name->name)-1))
@@ -209,7 +209,7 @@ static int parse_nmb_name(char *inbuf,int ofs,int length, struct nmb_name *name)
   if (n==16) {
     /* parse out the name type, 
        its always in the 16th byte of the name */
-    name->name_type = ((uchar)name->name[15]) & 0xff;
+    name->name_type = ((uint8_t)name->name[15]) & 0xff;
   
     /* remove trailing spaces */
     name->name[15] = 0;
@@ -385,7 +385,7 @@ static int put_res_rec(char *buf,int offset,struct res_rec *recs,int count)
 /*******************************************************************
   put a compressed name pointer record into a packet
   ******************************************************************/
-static int put_compressed_name_ptr(uchar *buf,int offset,struct res_rec *rec,int ptr_offset)
+static int put_compressed_name_ptr(uint8_t *buf,int offset,struct res_rec *rec,int ptr_offset)
 {  
   int ret=0;
   buf[offset] = (0xC0 | ((ptr_offset >> 8) & 0xFF));
@@ -769,7 +769,7 @@ static BOOL send_udp(int fd,char *buf,int len,struct in_addr ip,int port)
 static int build_dgram(char *buf,struct packet_struct *p)
 {
   struct dgram_packet *dgram = &p->packet.dgram;
-  uchar *ubuf = (uchar *)buf;
+  uint8_t *ubuf = (uint8_t *)buf;
   int offset=0;
 
   /* put in the header */
@@ -839,7 +839,7 @@ BOOL nmb_name_equal(struct nmb_name *n1, struct nmb_name *n2)
 static int build_nmb(char *buf,struct packet_struct *p)
 {
   struct nmb_packet *nmb = &p->packet.nmb;
-  uchar *ubuf = (uchar *)buf;
+  uint8_t *ubuf = (uint8_t *)buf;
   int offset=0;
 
   /* put in the header */
@@ -1036,7 +1036,7 @@ BOOL match_mailslot_name(struct packet_struct *p, const char *mailslot_name)
 /****************************************************************************
 return the number of bits that match between two 4 character buffers
   ***************************************************************************/
-int matching_quad_bits(uchar *p1, uchar *p2)
+int matching_quad_bits(uint8_t *p1, uint8_t *p2)
 {
 	int i, j, ret = 0;
 	for (i=0; i<4; i++) {
@@ -1055,12 +1055,12 @@ int matching_quad_bits(uchar *p1, uchar *p2)
 }
 
 
-static uchar sort_ip[4];
+static uint8_t sort_ip[4];
 
 /****************************************************************************
 compare two query reply records
   ***************************************************************************/
-static int name_query_comp(uchar *p1, uchar *p2)
+static int name_query_comp(uint8_t *p1, uint8_t *p2)
 {
 	return matching_quad_bits(p2+2, sort_ip) - matching_quad_bits(p1+2, sort_ip);
 }
@@ -1149,7 +1149,7 @@ static int name_interpret(char *in,char *out)
   while(*in) 
     {
       *out++ = '.'; /* Scope names are separated by periods */
-      len = *(uchar *)in++;
+      len = *(uint8_t *)in++;
       StrnCpy(out, in, len);
       out += len;
       *out=0;
@@ -1240,7 +1240,7 @@ find a pointer to a netbios name
 ****************************************************************************/
 static char *name_ptr(char *buf,int ofs)
 {
-  uchar c = *(uchar *)(buf+ofs);
+  uint8_t c = *(uint8_t *)(buf+ofs);
 
   if ((c & 0xC0) == 0xC0)
     {
@@ -1270,7 +1270,7 @@ return the total storage length of a mangled name
 int name_len(char *s1)
 {
 	/* NOTE: this argument _must_ be unsigned */
-	uchar *s = (uchar *)s1;
+	uint8_t *s = (uint8_t *)s1;
 	int len;
 
 	/* If the two high bits of the byte are set, return 2. */

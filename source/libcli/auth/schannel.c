@@ -26,12 +26,12 @@
  Encode or Decode the sequence number (which is symmetric)
  ********************************************************************/
 static void netsec_deal_with_seq_num(struct schannel_state *state,
-				     const uchar packet_digest[8],
-				     uchar seq_num[8])
+				     const uint8_t packet_digest[8],
+				     uint8_t seq_num[8])
 {
-	static const uchar zeros[4];
-	uchar sequence_key[16];
-	uchar digest1[16];
+	static const uint8_t zeros[4];
+	uint8_t sequence_key[16];
+	uint8_t digest1[16];
 
 	hmac_md5(state->session_key, zeros, sizeof(zeros), digest1);
 	hmac_md5(digest1, packet_digest, 8, sequence_key);
@@ -44,13 +44,13 @@ static void netsec_deal_with_seq_num(struct schannel_state *state,
 /*******************************************************************
  Calculate the key with which to encode the data payload 
  ********************************************************************/
-static void netsec_get_sealing_key(const uchar session_key[16],
-				   const uchar seq_num[8],
-				   uchar sealing_key[16]) 
+static void netsec_get_sealing_key(const uint8_t session_key[16],
+				   const uint8_t seq_num[8],
+				   uint8_t sealing_key[16]) 
 {
-	static const uchar zeros[4];
-	uchar digest2[16];
-	uchar sess_kf0[16];
+	static const uint8_t zeros[4];
+	uint8_t digest2[16];
+	uint8_t sess_kf0[16];
 	int i;
 
 	for (i = 0; i < 16; i++) {
@@ -66,14 +66,14 @@ static void netsec_get_sealing_key(const uchar session_key[16],
  Create a digest over the entire packet (including the data), and 
  MD5 it with the session key.
  ********************************************************************/
-static void schannel_digest(const uchar sess_key[16],
-			    const uchar netsec_sig[8],
-			    const uchar *confounder,
-			    const uchar *data, size_t data_len,
-			    uchar digest_final[16]) 
+static void schannel_digest(const uint8_t sess_key[16],
+			    const uint8_t netsec_sig[8],
+			    const uint8_t *confounder,
+			    const uint8_t *data, size_t data_len,
+			    uint8_t digest_final[16]) 
 {
-	uchar packet_digest[16];
-	static const uchar zeros[4];
+	uint8_t packet_digest[16];
+	static const uint8_t zeros[4];
 	struct MD5Context ctx;
 	
 	MD5Init(&ctx);
@@ -94,14 +94,14 @@ static void schannel_digest(const uchar sess_key[16],
 */
 NTSTATUS schannel_unseal_packet(struct schannel_state *state,
 				TALLOC_CTX *mem_ctx, 
-				uchar *data, size_t length, 
+				uint8_t *data, size_t length, 
 				DATA_BLOB *sig)
 {
-	uchar digest_final[16];
-	uchar confounder[8];
-	uchar seq_num[8];
-	uchar sealing_key[16];
-	static const uchar netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
+	uint8_t digest_final[16];
+	uint8_t confounder[8];
+	uint8_t seq_num[8];
+	uint8_t sealing_key[16];
+	static const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
 
 	if (sig->length != 32) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -141,12 +141,12 @@ NTSTATUS schannel_unseal_packet(struct schannel_state *state,
   check the signature on a packet
 */
 NTSTATUS schannel_check_packet(struct schannel_state *state, 
-			       const uchar *data, size_t length, 
+			       const uint8_t *data, size_t length, 
 			       const DATA_BLOB *sig)
 {
-	uchar digest_final[16];
-	uchar seq_num[8];
-	static const uchar netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
+	uint8_t digest_final[16];
+	uint8_t seq_num[8];
+	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
 
 	if (sig->length != 32) {
 		return NT_STATUS_ACCESS_DENIED;
@@ -185,14 +185,14 @@ NTSTATUS schannel_check_packet(struct schannel_state *state,
 */
 NTSTATUS schannel_seal_packet(struct schannel_state *state, 
 			      TALLOC_CTX *mem_ctx, 
-			      uchar *data, size_t length, 
+			      uint8_t *data, size_t length, 
 			      DATA_BLOB *sig)
 {
-	uchar digest_final[16];
-	uchar confounder[8];
-	uchar seq_num[8];
-	uchar sealing_key[16];
-	static const uchar netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
+	uint8_t digest_final[16];
+	uint8_t confounder[8];
+	uint8_t seq_num[8];
+	uint8_t sealing_key[16];
+	static const uint8_t netsec_sig[8] = NETSEC_SEAL_SIGNATURE;
 
 	generate_random_buffer(confounder, 8, False);
 
@@ -236,12 +236,12 @@ NTSTATUS schannel_seal_packet(struct schannel_state *state,
 */
 NTSTATUS schannel_sign_packet(struct schannel_state *state, 
 			      TALLOC_CTX *mem_ctx, 
-			      const uchar *data, size_t length, 
+			      const uint8_t *data, size_t length, 
 			      DATA_BLOB *sig)
 {
-	uchar digest_final[16];
-	uchar seq_num[8];
-	static const uchar netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
+	uint8_t digest_final[16];
+	uint8_t seq_num[8];
+	static const uint8_t netsec_sig[8] = NETSEC_SIGN_SIGNATURE;
 
 	RSIVAL(seq_num, 0, state->seq_num);
 	SIVAL(seq_num, 4, state->initiator?0x80:0);
