@@ -29,7 +29,7 @@ ac_help="$ac_help
 ac_help="$ac_help
   --with-krb4=base-dir    Include Kerberos IV support (default=no)"
 ac_help="$ac_help
-  --with-krb5=base-dir    Include Kerberos 5 support (defualt=no)"
+  --with-krb5=base-dir    Include Kerberos 5 support (default=no)"
 ac_help="$ac_help
   --with-automount        Include AUTOMOUNT support (default=no)"
 ac_help="$ac_help
