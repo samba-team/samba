@@ -107,7 +107,7 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 {
 	pstring command;
 	char *cmd = lp_wins_hook();
-	char *p;
+	char *p, *namestr;
 	int i;
 
 	if (!cmd || !*cmd) return;
@@ -119,11 +119,17 @@ static void wins_hook(const char *operation, struct name_record *namerec, int tt
 		}
 	}
 	
+	/* Use the name without the nametype (and scope) appended */
+
+	namestr = nmb_namestr(&namerec->name);
+	if ((p = strchr(namestr, '<')))
+		*p = 0;
+
 	p = command;
 	p += slprintf(p, sizeof(command)-1, "%s %s %s %02x %d", 
 		      cmd,
 		      operation, 
-		      nmb_namestr(&namerec->name),
+		      namestr,
 		      namerec->name.name_type,
 		      ttl);
 
