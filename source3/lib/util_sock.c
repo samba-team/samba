@@ -32,9 +32,6 @@ extern int DEBUGLEVEL;
 
 BOOL passive = False;
 
-/* the client file descriptor */
-int Client = -1;
-
 /* the last IP received from */
 struct in_addr lastip;
 
@@ -150,20 +147,6 @@ void set_socket_options(int fd, char *options)
 		if (ret != 0)
 			DEBUG(0,("Failed to set socket option %s (Error %s)\n",tok, strerror(errno) ));
 	}
-}
-
-/****************************************************************************
- Close the socket communication.
-****************************************************************************/
-
-void close_sockets(void )
-{
-#ifdef WITH_SSL
-  sslutil_disconnect(Client);
-#endif /* WITH_SSL */
-
-  close(Client);
-  Client = -1;
 }
 
 /****************************************************************************
@@ -725,7 +708,6 @@ BOOL send_null_session_msg(int fd)
     if (ret <= 0)
     {
       DEBUG(0,("send_null_session_msg: Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      close_sockets();
       exit(1);
     }
     nwritten += ret;
@@ -752,7 +734,6 @@ BOOL send_smb(int fd,char *buffer)
     if (ret <= 0)
     {
       DEBUG(0,("Error writing %d bytes to client. %d. Exiting\n",(int)len,(int)ret));
-      close_sockets();
       exit(1);
     }
     nwritten += ret;
@@ -951,14 +932,9 @@ connect_again:
  expanded if more variables need reseting.
  ******************************************************************/
 
-static BOOL global_client_name_done = False;
-static BOOL global_client_addr_done = False;
 
 void reset_globals_after_fork(void)
 {
-  global_client_name_done = False;
-  global_client_addr_done = False;
-
   /*
    * Re-seed the random crypto generator, so all smbd's
    * started from the same parent won't generate the same
@@ -969,71 +945,120 @@ void reset_globals_after_fork(void)
     generate_random_buffer( &dummy, 1, True);
   } 
 }
+
+/* the following 3 client_*() functions are nasty ways of allowing
+   some generic functions to get info that really should be hidden in
+   particular modules */
+static int client_fd = -1;
+
+void client_setfd(int fd)
+{
+	client_fd = fd;
+}
+
+char *client_name(void)
+{
+	return get_socket_name(client_fd);
+}
+
+char *client_addr(void)
+{
+	return get_socket_addr(client_fd);
+}
+
+/*******************************************************************
+ matchname - determine if host name matches IP address. Used to
+ confirm a hostname lookup to prevent spoof attacks
+ ******************************************************************/
+static BOOL matchname(char *remotehost,struct in_addr  addr)
+{
+	struct hostent *hp;
+	int     i;
+	
+	if ((hp = Get_Hostbyname(remotehost)) == 0) {
+		DEBUG(0,("Get_Hostbyname(%s): lookup failure.\n", remotehost));
+		return False;
+	} 
+
+	/*
+	 * Make sure that gethostbyname() returns the "correct" host name.
+	 * Unfortunately, gethostbyname("localhost") sometimes yields
+	 * "localhost.domain". Since the latter host name comes from the
+	 * local DNS, we just have to trust it (all bets are off if the local
+	 * DNS is perverted). We always check the address list, though.
+	 */
+	
+	if (strcasecmp(remotehost, hp->h_name)
+	    && strcasecmp(remotehost, "localhost")) {
+		DEBUG(0,("host name/name mismatch: %s != %s\n",
+			 remotehost, hp->h_name));
+		return False;
+	}
+	
+	/* Look up the host address in the address list we just got. */
+	for (i = 0; hp->h_addr_list[i]; i++) {
+		if (memcmp(hp->h_addr_list[i], (caddr_t) & addr, sizeof(addr)) == 0)
+			return True;
+	}
+	
+	/*
+	 * The host name does not map to the original host address. Perhaps
+	 * someone has compromised a name server. More likely someone botched
+	 * it, but that could be dangerous, too.
+	 */
+	
+	DEBUG(0,("host name/address mismatch: %s != %s\n",
+		 inet_ntoa(addr), hp->h_name));
+	return False;
+}
+
  
 /*******************************************************************
- return the DNS name of the client 
+ return the DNS name of the remote end of a socket
  ******************************************************************/
-
-char *client_name(int fd)
+char *get_socket_name(int fd)
 {
-	struct sockaddr sa;
-	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
-	int     length = sizeof(sa);
 	static pstring name_buf;
+	static fstring addr_buf;
 	struct hostent *hp;
-	static int last_fd=-1;
+	struct in_addr addr;
+	char *p;
 	
-	if (global_client_name_done && last_fd == fd) 
-		return name_buf;
-	
-	last_fd = fd;
-	global_client_name_done = False;
-	
+	p = get_socket_addr(fd);
+
+	/* it might be the same as the last one - save some DNS work */
+	if (strcmp(p, addr_buf) == 0) return name_buf;
+
 	pstrcpy(name_buf,"UNKNOWN");
-	
-	if (fd == -1) {
-		return name_buf;
-	}
-	
-	if (getpeername(fd, &sa, &length) < 0) {
-		DEBUG(0,("getpeername failed. Error was %s\n", strerror(errno) ));
-		return name_buf;
-	}
+	if (fd == -1) return name_buf;
+
+	fstrcpy(addr_buf, p);
+
+	if (inet_aton(p, &addr) == 0) return name_buf;
 	
 	/* Look up the remote host name. */
-	if ((hp = gethostbyaddr((char *) &sockin->sin_addr,
-				sizeof(sockin->sin_addr),
-				AF_INET)) == 0) {
-		DEBUG(1,("Gethostbyaddr failed for %s\n",client_addr(fd)));
-		StrnCpy(name_buf,client_addr(fd),sizeof(name_buf) - 1);
+	if ((hp = gethostbyaddr((char *)&addr.s_addr, sizeof(addr.s_addr), AF_INET)) == 0) {
+		DEBUG(1,("Gethostbyaddr failed for %s\n",p));
+		pstrcpy(name_buf, p);
 	} else {
-		StrnCpy(name_buf,(char *)hp->h_name,sizeof(name_buf) - 1);
-		if (!matchname(name_buf, sockin->sin_addr)) {
-			DEBUG(0,("Matchname failed on %s %s\n",name_buf,client_addr(fd)));
+		pstrcpy(name_buf,(char *)hp->h_name);
+		if (!matchname(name_buf, addr)) {
+			DEBUG(0,("Matchname failed on %s %s\n",name_buf,p));
 			pstrcpy(name_buf,"UNKNOWN");
 		}
 	}
-	global_client_name_done = True;
 	return name_buf;
 }
 
 /*******************************************************************
- return the IP addr of the client as a string 
+ return the IP addr of the remote end of a socket as a string 
  ******************************************************************/
-
-char *client_addr(int fd)
+char *get_socket_addr(int fd)
 {
 	struct sockaddr sa;
 	struct sockaddr_in *sockin = (struct sockaddr_in *) (&sa);
 	int     length = sizeof(sa);
 	static fstring addr_buf;
-	static int last_fd = -1;
-
-	if (global_client_addr_done && fd == last_fd) 
-		return addr_buf;
-
-	last_fd = fd;
-	global_client_addr_done = False;
 
 	fstrcpy(addr_buf,"0.0.0.0");
 
@@ -1048,7 +1073,6 @@ char *client_addr(int fd)
 	
 	fstrcpy(addr_buf,(char *)inet_ntoa(sockin->sin_addr));
 	
-	global_client_addr_done = True;
 	return addr_buf;
 }
 

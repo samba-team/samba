@@ -71,7 +71,6 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	struct connections_key key;
 	struct connections_data crec;
 	TDB_DATA kbuf, dbuf;
-	extern int Client;
 
 	if (max_connections <= 0)
 		return(True);
@@ -106,7 +105,7 @@ BOOL claim_connection(connection_struct *conn,char *name,int max_connections,BOO
 	crec.start = time(NULL);
 	
 	StrnCpy(crec.machine,remote_machine,sizeof(crec.machine)-1);
-	StrnCpy(crec.addr,conn?conn->client_address:client_addr(Client),sizeof(crec.addr)-1);
+	StrnCpy(crec.addr,conn?conn->client_address:client_addr(),sizeof(crec.addr)-1);
 
 	dbuf.dptr = (char *)&crec;
 	dbuf.dsize = sizeof(crec);
@@ -343,7 +342,6 @@ static void utmp_yield(pid_t pid, const connection_struct *conn)
 
 static void utmp_claim(const struct connect_record *crec, const connection_struct *conn)
 {
-	extern int Client;
 	struct utmp u;
 
 	if (conn == NULL) {
@@ -359,7 +357,7 @@ static void utmp_claim(const struct connect_record *crec, const connection_struc
 	DEBUG(2,("utmp_claim: conn: user:%s cnum:%d i:%d\n",
 	  conn->user, conn->cnum, i));
 	DEBUG(2,("utmp_claim: crec: pid:%d, cnum:%d name:%s addr:%s mach:%s DNS:%s\n",
-	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, client_name(Client)));
+	  crec->pid, crec->cnum, crec->name, crec->addr, crec->machine, client_name()));
 
 
 	memset((char *)&u, '\0', sizeof(struct utmp));

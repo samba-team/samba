@@ -195,7 +195,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	struct passwd *pass = NULL;
 	BOOL guest = False;
 	BOOL force = False;
-	extern int Client;
 	connection_struct *conn;
 	int ret;
 
@@ -203,7 +202,6 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 
 	snum = find_service(service);
 	if (snum < 0) {
-		extern int Client;
 		if (strequal(service,"IPC$")) {
 			DEBUG(3,("refusing IPC connection\n"));
 			*ecode = ERRnoipc;
@@ -211,7 +209,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
-			 remote_machine, client_addr(Client), service));
+			 remote_machine, client_addr(), service));
 		*ecode = ERRinvnetname;
 		return NULL;
 	}
@@ -247,7 +245,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	if (!lp_snum_ok(snum) || 
-	    !check_access(Client, 
+	    !check_access(smbd_server_fd(), 
 			  lp_hostsallow(snum), lp_hostsdeny(snum))) {    
 		*ecode = ERRaccess;
 		return NULL;
@@ -342,7 +340,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	conn->vuid = vuid;
 	conn->uid = pass->pw_uid;
 	conn->gid = pass->pw_gid;
-	safe_strcpy(conn->client_address, client_addr(Client), sizeof(conn->client_address)-1);
+	safe_strcpy(conn->client_address, client_addr(), sizeof(conn->client_address)-1);
 	conn->num_files_open = 0;
 	conn->lastused = time(NULL);
 	conn->service = snum;

@@ -21,7 +21,6 @@
 
 #include "includes.h"
 extern int DEBUGLEVEL;
-extern int Client;
 extern char *OutBuffer;
 
 /****************************************************************************
@@ -134,7 +133,7 @@ static void send_blocking_reply(char *outbuf, int outsize)
   if(outsize > 4)
     smb_setlen(outbuf,outsize - 4);
 
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
@@ -180,7 +179,7 @@ static void generic_blocking_lock_error(blocking_lock_record *blr, int eclass, i
     SSVAL(outbuf,smb_flg2, SVAL(outbuf,smb_flg2) | FLAGS2_32_BIT_ERROR_CODES);
 
   ERROR(eclass,ecode);
-  send_smb(Client,outbuf);
+  send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************

@@ -753,7 +753,6 @@ static files_struct *initial_break_processing(SMB_DEV_T dev, SMB_INO_T inode, st
 
 BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 {
-  extern int Client;
   extern uint32 global_client_caps;
   char outbuf[128];
   BOOL got_lock = False;
@@ -781,7 +780,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
     /* Prepare the SMBlockingX message. */
 
     prepare_break_message( outbuf, fsp, False);
-    send_smb(Client, outbuf);
+    send_smb(smbd_server_fd(), outbuf);
   }
 
   /*
@@ -832,7 +831,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
 {
   extern uint32 global_client_caps;
   extern struct current_user current_user;
-  extern int Client;
   char *inbuf = NULL;
   char *outbuf = NULL;
   files_struct *fsp = NULL;
@@ -923,7 +921,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   fsp->sent_oplock_break = using_levelII?
 	  LEVEL_II_BREAK_SENT:EXCLUSIVE_BREAK_SENT;
 
-  send_smb(Client, outbuf);
+  send_smb(smbd_server_fd(), outbuf);
 
   /* We need this in case a readraw crosses on the wire. */
   global_oplock_break = True;
@@ -958,7 +956,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   while((fsp = initial_break_processing(dev, inode, tval)) &&
         OPEN_FSP(fsp) && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type))
   {
-    if(receive_smb(Client,inbuf, timeout) == False)
+    if(receive_smb(smbd_server_fd(),inbuf, timeout) == False)
     {
       /*
        * Die if we got an error.
@@ -1019,7 +1017,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   {
     DEBUG( 0, ( "oplock_break: unable to re-become user!" ) );
     DEBUGADD( 0, ( "Shutting down server\n" ) );
-    close_sockets();
     close(oplock_sock);
     exit_server("unable to re-become user");
   }
@@ -1059,7 +1056,6 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   {
     DEBUG( 0, ( "oplock_break: client failure in break - " ) );
     DEBUGADD( 0, ( "shutting down this smbd.\n" ) );
-    close_sockets();
     close(oplock_sock);
     exit_server("oplock break failure");
   }
