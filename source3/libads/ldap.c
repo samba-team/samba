@@ -937,7 +937,7 @@ ADS_STATUS ads_del_dn(ADS_STRUCT *ads, char *del_dn)
 		return ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 	}
 	
-	ret = ldap_delete(ads->ld, utf8_dn);
+	ret = ldap_delete_s(ads->ld, utf8_dn);
 	return ADS_ERROR(ret);
 }
 
