@@ -2357,35 +2357,30 @@ BOOL samr_io_q_add_groupmem(char *desc, SAMR_Q_ADD_GROUPMEM * q_e,
 	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
 	  return False;
 
-	if(!prs_uint32("rid    ", ps, depth, &(q_e->rid)))
+	if(!prs_uint32("rid    ", ps, depth, &q_e->rid))
 	  return False;
-	if(!prs_uint32("unknown", ps, depth, &(q_e->unknown)))
+	if(!prs_uint32("unknown", ps, depth, &q_e->unknown))
 	  return False;
 
 	return True;
 }
-
 
 /*******************************************************************
 inits a SAMR_R_ADD_GROUPMEM structure.
 ********************************************************************/
+
 void init_samr_r_add_groupmem(SAMR_R_ADD_GROUPMEM * r_u, POLICY_HND *pol,
 			      uint32 status)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_add_groupmem\n"));
 
 	r_u->status = status;
-
-	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
 			    prs_struct *ps, int depth)
 {
@@ -2398,34 +2393,29 @@ BOOL samr_io_r_add_groupmem(char *desc, SAMR_R_ADD_GROUPMEM * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_Q_SET_GROUPINFO structure.
 ********************************************************************/
+
 void init_samr_q_set_groupinfo(SAMR_Q_SET_GROUPINFO * q_e,
 			       POLICY_HND *pol, GROUP_INFO_CTR * ctr)
 {
-	if (q_e == NULL || pol == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_set_groupinfo\n"));
 
 	q_e->pol = *pol;
 	q_e->ctr = ctr;
-
-	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
 			     prs_struct *ps, int depth)
 {
@@ -2436,35 +2426,32 @@ BOOL samr_io_q_set_groupinfo(char *desc, SAMR_Q_SET_GROUPINFO * q_e,
 	depth++;
 
 	if(!prs_align(ps))
-	  return False;
+		return False;
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
-
-	samr_group_info_ctr("ctr", q_e->ctr, ps, depth);
+	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
+		return False;
+	
+	if(!samr_group_info_ctr("ctr", q_e->ctr, ps, depth))
+		return False;
 
 	return True;
 }
-
 
 /*******************************************************************
 inits a SAMR_R_SET_GROUPINFO structure.
 ********************************************************************/
+
 void init_samr_r_set_groupinfo(SAMR_R_SET_GROUPINFO * r_u, uint32 status)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_set_groupinfo\n"));
 
 	r_u->status = status;
-
-	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
 			     prs_struct *ps, int depth)
 {
@@ -2477,7 +2464,7 @@ BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
@@ -2486,25 +2473,21 @@ BOOL samr_io_r_set_groupinfo(char *desc, SAMR_R_SET_GROUPINFO * r_u,
 /*******************************************************************
 inits a SAMR_Q_QUERY_GROUPINFO structure.
 ********************************************************************/
+
 void init_samr_q_query_groupinfo(SAMR_Q_QUERY_GROUPINFO * q_e,
 				 POLICY_HND *pol, uint16 switch_level)
 {
-	if (q_e == NULL || pol == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_query_groupinfo\n"));
 
 	q_e->pol = *pol;
 
 	q_e->switch_level = switch_level;
-
-	return True;
 }
-
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
 			       prs_struct *ps, int depth)
 {
@@ -2517,36 +2500,33 @@ BOOL samr_io_q_query_groupinfo(char *desc, SAMR_Q_QUERY_GROUPINFO * q_e,
 	if(!prs_align(ps))
 	  return False;
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
+	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
+		return False;
 
-	if(!prs_uint16("switch_level", ps, depth, &(q_e->switch_level)))
+	if(!prs_uint16("switch_level", ps, depth, &q_e->switch_level))
 	  return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_R_QUERY_GROUPINFO structure.
 ********************************************************************/
+
 void init_samr_r_query_groupinfo(SAMR_R_QUERY_GROUPINFO * r_u,
 				 GROUP_INFO_CTR * ctr, uint32 status)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_query_groupinfo\n"));
 
 	r_u->ptr = (status == 0x0 && ctr != NULL) ? 1 : 0;
 	r_u->ctr = ctr;
 	r_u->status = status;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 			       prs_struct *ps, int depth)
 {
@@ -2559,39 +2539,35 @@ BOOL samr_io_r_query_groupinfo(char *desc, SAMR_R_QUERY_GROUPINFO * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("ptr", ps, depth, &(r_u->ptr)))
+	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
 	  return False;
 
-	if (r_u->ptr != 0)
-	{
-		samr_group_info_ctr("ctr", r_u->ctr, ps, depth);
+	if (r_u->ptr != 0) {
+		if(!samr_group_info_ctr("ctr", r_u->ctr, ps, depth))
+			return False;
 	}
 
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_Q_QUERY_GROUPMEM structure.
 ********************************************************************/
+
 void init_samr_q_query_groupmem(SAMR_Q_QUERY_GROUPMEM * q_c, POLICY_HND *hnd)
 {
-	if (q_c == NULL || hnd == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_query_groupmem\n"));
 
 	q_c->group_pol = *hnd;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
 			      prs_struct *ps, int depth)
 {
@@ -2604,23 +2580,20 @@ BOOL samr_io_q_query_groupmem(char *desc, SAMR_Q_QUERY_GROUPMEM * q_u,
 	if(!prs_align(ps))
 	  return False;
 
-	return smb_io_pol_hnd("group_pol", &(q_u->group_pol), ps, depth);
+	return smb_io_pol_hnd("group_pol", &q_u->group_pol, ps, depth);
 }
 
 /*******************************************************************
 inits a SAMR_R_QUERY_GROUPMEM structure.
 ********************************************************************/
+
 void init_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 				uint32 num_entries, uint32 *rid,
 				uint32 *attr, uint32 status)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_query_groupmem\n"));
 
-	if (status == 0x0)
-	{
+	if (status == 0x0) {
 		r_u->ptr = 1;
 		r_u->num_entries = num_entries;
 
@@ -2632,9 +2605,7 @@ void init_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 
 		r_u->num_attrs = num_entries;
 		r_u->attr = attr;
-	}
-	else
-	{
+	} else {
 		r_u->ptr = 0;
 		r_u->num_entries = 0;
 	}
@@ -2647,6 +2618,7 @@ void init_samr_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 			      prs_struct *ps, int depth)
 {
@@ -2655,8 +2627,7 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 	if (r_u == NULL)
 		return False;
 
-	if (UNMARSHALLING(ps))
-	{
+	if (UNMARSHALLING(ps)) {
 		ZERO_STRUCTP(r_u);
 	}
 
@@ -2666,116 +2637,73 @@ BOOL samr_io_r_query_groupmem(char *desc, SAMR_R_QUERY_GROUPMEM * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("ptr", ps, depth, &(r_u->ptr)))
+	if(!prs_uint32("ptr", ps, depth, &r_u->ptr))
 	  return False;
-	if(!prs_uint32("num_entries ", ps, depth, &(r_u->num_entries)))
+	if(!prs_uint32("num_entries ", ps, depth, &r_u->num_entries))
 	  return False;
 
-	if (r_u->ptr != 0)
-	{
-	  if(!prs_uint32("ptr_rids ", ps, depth, &(r_u->ptr_rids)))
-	    return False;
-	  if(!prs_uint32("ptr_attrs", ps, depth, &(r_u->ptr_attrs)))
-	    return False;
+	if (r_u->ptr != 0) {
+		if(!prs_uint32("ptr_rids ", ps, depth, &r_u->ptr_rids))
+			return False;
+		if(!prs_uint32("ptr_attrs", ps, depth, &r_u->ptr_attrs))
+			return False;
 
-		if (r_u->ptr_rids != 0)
-		{
-		  if(!prs_uint32("num_rids", ps, depth, &(r_u->num_rids)))
-		    return False;
-			if (r_u->num_rids != 0)
-			{
-				r_u->rid = (uint32 *)Realloc(r_u->rid,
-							     sizeof(r_u->rid
-								    [0]) *
-							     r_u->num_rids);
+		if (r_u->ptr_rids != 0)	{
+			if(!prs_uint32("num_rids", ps, depth, &r_u->num_rids))
+				return False;
+			if (UNMARSHALLING(ps) && r_u->num_rids != 0) {
+				r_u->rid = (uint32 *)talloc(prs_get_mem_context(ps),
+						sizeof(r_u->rid[0])*r_u->num_rids);
 				if (r_u->rid == NULL)
-				{
-					samr_free_r_query_groupmem(r_u);
 					return False;
-				}
 			}
-			for (i = 0; i < r_u->num_rids; i++)
-			{
-			  if(!prs_uint32("", ps, depth, &(r_u->rid[i])))
-			    return False;
+
+			for (i = 0; i < r_u->num_rids; i++) {
+				if(!prs_uint32("", ps, depth, &r_u->rid[i]))
+					return False;
 			}
 		}
 
-		if (r_u->ptr_attrs != 0)
-		{
-		  if(!prs_uint32("num_attrs", ps, depth, &(r_u->num_attrs)))
-		    return False;
+		if (r_u->ptr_attrs != 0) {
+			if(!prs_uint32("num_attrs", ps, depth, &r_u->num_attrs))
+				return False;
 
-			if (r_u->num_attrs != 0)
-			{
-				r_u->attr = (uint32 *)Realloc(r_u->attr,
-							      sizeof
-							      (r_u->attr[0])
-							      *
-							      r_u->num_attrs);
+			if (UNMARSHALLING(ps) && r_u->num_attrs != 0) {
+				r_u->attr = (uint32 *)talloc(prs_get_mem_context(ps),
+							      sizeof(r_u->attr[0])*r_u->num_attrs);
 				if (r_u->attr == NULL)
-				{
-					samr_free_r_query_groupmem(r_u);
 					return False;
-				}
 			}
-			for (i = 0; i < r_u->num_attrs; i++)
-			{
-			  if(!prs_uint32("", ps, depth, &(r_u->attr[i])))
-			    return False;
+
+			for (i = 0; i < r_u->num_attrs; i++) {
+				if(!prs_uint32("", ps, depth, &r_u->attr[i]))
+					return False;
 			}
 		}
 	}
 
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
-
-	if (!ps->io)
-	{
-		/* storing.  memory no longer needed */
-		samr_free_r_query_groupmem(r_u);
-	}
 
 	return True;
-}
-
-
-/*******************************************************************
-frees a structure.
-********************************************************************/
-void samr_free_r_query_groupmem(SAMR_R_QUERY_GROUPMEM * r_u)
-{
-	if (r_u->rid != NULL)
-	{
-		free(r_u->rid);
-		r_u->rid = NULL;
-	}
-	if (r_u->attr != NULL)
-	{
-		free(r_u->attr);
-		r_u->attr = NULL;
-	}
 }
 
 /*******************************************************************
 inits a SAMR_Q_QUERY_USERGROUPS structure.
 ********************************************************************/
+
 void init_samr_q_query_usergroups(SAMR_Q_QUERY_USERGROUPS * q_u,
 				  POLICY_HND *hnd)
 {
-	if (q_u == NULL || hnd == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_query_usergroups\n"));
 
 	q_u->pol = *hnd;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
 				prs_struct *ps, int depth)
 {
@@ -2788,32 +2716,27 @@ BOOL samr_io_q_query_usergroups(char *desc, SAMR_Q_QUERY_USERGROUPS * q_u,
 	if(!prs_align(ps))
 	  return False;
 
-	return smb_io_pol_hnd("pol", &(q_u->pol), ps, depth);
+	return smb_io_pol_hnd("pol", &q_u->pol, ps, depth);
 }
 
 /*******************************************************************
 inits a SAMR_R_QUERY_USERGROUPS structure.
 ********************************************************************/
+
 void init_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 				  uint32 num_gids, DOM_GID * gid,
 				  uint32 status)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_query_usergroups\n"));
 
-	if (status == 0x0)
-	{
+	if (status == 0) {
 		r_u->ptr_0 = 1;
 		r_u->num_entries = num_gids;
 		r_u->ptr_1 = (num_gids != 0) ? 1 : 0;
 		r_u->num_entries2 = num_gids;
 
 		r_u->gid = gid;
-	}
-	else
-	{
+	} else {
 		r_u->ptr_0 = 0;
 		r_u->num_entries = 0;
 		r_u->ptr_1 = 0;
@@ -2821,13 +2744,12 @@ void init_samr_r_query_usergroups(SAMR_R_QUERY_USERGROUPS * r_u,
 	}
 
 	r_u->status = status;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
 		  prs_struct *ps, int depth)
 {
@@ -2844,28 +2766,20 @@ BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
 	if(!prs_uint32("num_gids", ps, depth, num_gids))
 	  return False;
 
-	if ((*num_gids) != 0)
-	{
-		if (UNMARSHALLING(ps))
-		{
-			(*gid) = g_renew(DOM_GID, (*gid), (*num_gids));
+	if ((*num_gids) != 0) {
+		if (UNMARSHALLING(ps)) {
+			(*gid) = (DOM_GID *)talloc(prs_get_mem_context(ps),
+						sizeof(DOM_GID)*(*num_gids));
 		}
 
-		if ((*gid) == NULL)
-		{
+		if ((*gid) == NULL) {
 			return False;
 		}
 
-		for (i = 0; i < (*num_gids); i++)
-		{
-			smb_io_gid("gids", &(*gid)[i], ps, depth);
+		for (i = 0; i < (*num_gids); i++) {
+			if(!smb_io_gid("gids", &(*gid)[i], ps, depth))
+				return False;
 		}
-	}
-	if (!ps->io)
-	{
-		/* storing.  memory no longer needed */
-		safe_free((*gid));
-		(*gid) = NULL;
 	}
 
 	return True;
@@ -2874,6 +2788,7 @@ BOOL samr_io_gids(char *desc, uint32 *num_gids, DOM_GID ** gid,
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
 				prs_struct *ps, int depth)
 {
@@ -2886,52 +2801,47 @@ BOOL samr_io_r_query_usergroups(char *desc, SAMR_R_QUERY_USERGROUPS * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("ptr_0       ", ps, depth, &(r_u->ptr_0)))
+	if(!prs_uint32("ptr_0       ", ps, depth, &r_u->ptr_0))
 	  return False;
 
-	if (r_u->ptr_0 != 0)
-	{
-	  if(!prs_uint32("num_entries ", ps, depth, &(r_u->num_entries)))
-	    return False;
-	  if(!prs_uint32("ptr_1       ", ps, depth, &(r_u->ptr_1)))
-	    return False;
+	if (r_u->ptr_0 != 0) {
+		if(!prs_uint32("num_entries ", ps, depth, &r_u->num_entries))
+			return False;
+		if(!prs_uint32("ptr_1       ", ps, depth, &r_u->ptr_1))
+			return False;
 
-		if (r_u->num_entries != 0 && r_u->ptr_1 != 0)
-		{
-			samr_io_gids("gids", &(r_u->num_entries2), &r_u->gid,
-				     ps, depth);
+		if (r_u->num_entries != 0 && r_u->ptr_1 != 0) {
+			if(!samr_io_gids("gids", &r_u->num_entries2, &r_u->gid, ps, depth))
+				return False;
 		}
 	}
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_Q_ENUM_DOMAINS structure.
 ********************************************************************/
+
 void init_samr_q_enum_domains(SAMR_Q_ENUM_DOMAINS * q_e,
 			      const POLICY_HND *pol,
 			      uint32 start_idx, uint32 size)
 {
-	if (q_e == NULL || pol == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_enum_domains\n"));
 
 	q_e->pol = *pol;
 
 	q_e->start_idx = start_idx;
 	q_e->max_size = size;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
 			    prs_struct *ps, int depth)
 {
@@ -2944,11 +2854,12 @@ BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
 	if(!prs_align(ps))
 	  return False;
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
+	if(!smb_io_pol_hnd("pol", &q_e->pol, ps, depth))
+		return False;
 
-	if(!prs_uint32("start_idx", ps, depth, &(q_e->start_idx)))
+	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 	  return False;
-	if(!prs_uint32("max_size ", ps, depth, &(q_e->max_size)))
+	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
 	  return False;
 
 	if(!prs_align(ps))
@@ -2957,42 +2868,35 @@ BOOL samr_io_q_enum_domains(char *desc, SAMR_Q_ENUM_DOMAINS * q_e,
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_R_ENUM_DOMAINS structure.
 ********************************************************************/
+
 void init_samr_r_enum_domains(SAMR_R_ENUM_DOMAINS * r_u,
 			      uint32 next_idx, uint32 num_sam_entries)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_enum_domains\n"));
 
 	r_u->next_idx = next_idx;
 
-	if (num_sam_entries != 0)
-	{
+	if (num_sam_entries != 0) {
 		r_u->ptr_entries1 = 1;
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
 
 		r_u->num_entries4 = num_sam_entries;
-	}
-	else
-	{
+	} else {
 		r_u->ptr_entries1 = 0;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 			    prs_struct *ps, int depth)
 {
@@ -3007,24 +2911,24 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx)))
+	if(!prs_uint32("next_idx    ", ps, depth, &r_u->next_idx))
 	  return False;
-	if(!prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1)))
+	if(!prs_uint32("ptr_entries1", ps, depth, &r_u->ptr_entries1))
 	  return False;
 
-	if (r_u->ptr_entries1 != 0)
-	{
-	  if(!prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2)))
-	    return False;
-	  if(!prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2)))
-	    return False;
-	  if(!prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3)))
-	    return False;
+	if (r_u->ptr_entries1 != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &r_u->num_entries2))
+			return False;
+		if(!prs_uint32("ptr_entries2", ps, depth, &r_u->ptr_entries2))
+			return False;
+		if(!prs_uint32("num_entries3", ps, depth, &r_u->num_entries3))
+			return False;
 
-		if (UNMARSHALLING(ps))
-		{
-			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
-			r_u->uni_dom_name = g_new(UNISTR2, r_u->num_entries2);
+		if (UNMARSHALLING(ps)) {
+			r_u->sam = (SAM_ENTRY *)talloc(prs_get_mem_context(ps),
+							sizeof(SAM_ENTRY)*r_u->num_entries2);
+			r_u->uni_dom_name = (UNISTR2 *)talloc(prs_get_mem_context(ps),
+							sizeof(UNISTR2)*r_u->num_entries2);
 		}
 
 		if ((r_u->sam == NULL || r_u->uni_dom_name == NULL)
@@ -3036,20 +2940,20 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 			return False;
 		}
 
-		for (i = 0; i < r_u->num_entries2; i++)
-		{
+		for (i = 0; i < r_u->num_entries2; i++)	{
 			fstring tmp;
 			slprintf(tmp, sizeof(tmp) - 1, "dom[%d]", i);
-			sam_io_sam_entry(tmp, &(r_u->sam[i]), ps, depth);
+			if(!sam_io_sam_entry(tmp, &r_u->sam[i], ps, depth))
+				return False;
 		}
 
-		for (i = 0; i < r_u->num_entries2; i++)
-		{
+		for (i = 0; i < r_u->num_entries2; i++)	{
 			fstring tmp;
 			slprintf(tmp, sizeof(tmp) - 1, "dom[%d]", i);
-			smb_io_unistr2(tmp, &(r_u->uni_dom_name[i]),
+			if(!smb_io_unistr2(tmp, &r_u->uni_dom_name[i],
 				       r_u->sam[i].hdr_name.buffer, ps,
-				       depth);
+				       depth))
+				return False;
 			if(!prs_align(ps))
 			  return False;
 		}
@@ -3059,38 +2963,34 @@ BOOL samr_io_r_enum_domains(char *desc, SAMR_R_ENUM_DOMAINS * r_u,
 
 	}
 
-	if(!prs_uint32("num_entries4", ps, depth, &(r_u->num_entries4)))
+	if(!prs_uint32("num_entries4", ps, depth, &r_u->num_entries4))
 	  return False;
-	if(!prs_uint32("status", ps, depth, &(r_u->status)))
+	if(!prs_uint32("status", ps, depth, &r_u->status))
 	  return False;
 
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_Q_ENUM_DOM_GROUPS structure.
 ********************************************************************/
+
 void init_samr_q_enum_dom_groups(SAMR_Q_ENUM_DOM_GROUPS * q_e,
 				 const POLICY_HND *pol,
 				 uint32 start_idx, uint32 size)
 {
-	if (q_e == NULL || pol == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_q_enum_dom_groups\n"));
 
 	q_e->pol = *pol;
 
 	q_e->start_idx = start_idx;
 	q_e->max_size = size;
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
 			       prs_struct *ps, int depth)
 {
@@ -3103,11 +3003,12 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
 	if(!prs_align(ps))
 	  return False;
 
-	smb_io_pol_hnd("pol", &(q_e->pol), ps, depth);
+	if(!smb_io_pol_hnd("pol", &(q_e->pol), ps, depth))
+		return False;
 
-	if(!prs_uint32("start_idx", ps, depth, &(q_e->start_idx)))
+	if(!prs_uint32("start_idx", ps, depth, &q_e->start_idx))
 	  return False;
-	if(!prs_uint32("max_size ", ps, depth, &(q_e->max_size)))
+	if(!prs_uint32("max_size ", ps, depth, &q_e->max_size))
 	  return False;
 
 	if(!prs_align(ps))
@@ -3116,42 +3017,35 @@ BOOL samr_io_q_enum_dom_groups(char *desc, SAMR_Q_ENUM_DOM_GROUPS * q_e,
 	return True;
 }
 
-
 /*******************************************************************
 inits a SAMR_R_ENUM_DOM_GROUPS structure.
 ********************************************************************/
+
 void init_samr_r_enum_dom_groups(SAMR_R_ENUM_DOM_GROUPS * r_u,
 				 uint32 next_idx, uint32 num_sam_entries)
 {
-	if (r_u == NULL)
-		return False;
-
 	DEBUG(5, ("init_samr_r_enum_dom_groups\n"));
 
 	r_u->next_idx = next_idx;
 
-	if (num_sam_entries != 0)
-	{
+	if (num_sam_entries != 0) {
 		r_u->ptr_entries1 = 1;
 		r_u->ptr_entries2 = 1;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->num_entries3 = num_sam_entries;
 
 		r_u->num_entries4 = num_sam_entries;
-	}
-	else
-	{
+	} else {
 		r_u->ptr_entries1 = 0;
 		r_u->num_entries2 = num_sam_entries;
 		r_u->ptr_entries2 = 1;
 	}
-
-	return True;
 }
 
 /*******************************************************************
 reads or writes a structure.
 ********************************************************************/
+
 BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 			       prs_struct *ps, int depth)
 {
@@ -3166,22 +3060,20 @@ BOOL samr_io_r_enum_dom_groups(char *desc, SAMR_R_ENUM_DOM_GROUPS * r_u,
 	if(!prs_align(ps))
 	  return False;
 
-	if(!prs_uint32("next_idx    ", ps, depth, &(r_u->next_idx)))
+	if(!prs_uint32("next_idx    ", ps, depth, &r_u->next_idx))
 	  return False;
-	if(!prs_uint32("ptr_entries1", ps, depth, &(r_u->ptr_entries1)))
+	if(!prs_uint32("ptr_entries1", ps, depth, &r_u->ptr_entries1))
 	  return False;
 
-	if (r_u->ptr_entries1 != 0)
-	{
-	  if(!prs_uint32("num_entries2", ps, depth, &(r_u->num_entries2)))
-	    return False;
-	  if(!prs_uint32("ptr_entries2", ps, depth, &(r_u->ptr_entries2)))
-	    return False;
-	  if(!prs_uint32("num_entries3", ps, depth, &(r_u->num_entries3)))
-	    return False;
+	if (r_u->ptr_entries1 != 0) {
+		if(!prs_uint32("num_entries2", ps, depth, &r_u->num_entries2))
+			return False;
+		if(!prs_uint32("ptr_entries2", ps, depth, &r_u->ptr_entries2))
+			return False;
+		if(!prs_uint32("num_entries3", ps, depth, &r_u->num_entries3))
+			return False;
 
-		if (UNMARSHALLING(ps))
-		{
+		if (UNMARSHALLING(ps)) {
 			r_u->sam = g_new(SAM_ENTRY, r_u->num_entries2);
 			r_u->uni_grp_name = g_new(UNISTR2, r_u->num_entries2);
 		}
