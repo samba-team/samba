@@ -16,6 +16,10 @@ Tue Mar 23 00:00:45 1999  Assar Westerlund  <assar@sics.se>
 	* configure.in (SunOS): set to a number KRB4, KRB5 conditionals:
  	remove the `dnl' to work around an automake flaw
 
+Sun Mar 21 15:08:49 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/get_default_realm.c: char* -> krb5_realm
+
 Sun Mar 21 14:08:30 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* lib/krb5/Makefile.am: create krb5-private.h
@@ -142,6 +146,16 @@ Wed Mar 17 03:04:38 1999  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/get_host_realm.c (krb5_get_host_realm): include leading
  	dot (if any) when looking up realms.
+
+Fri Mar 12 13:57:56 1999  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/get_host_realm.c: add dns support
+
+	* lib/krb5/set_default_realm.c: use krb5_free_host_realm
+
+	* lib/krb5/free_host_realm.c: check for NULL realmlist
+
+	* lib/krb5/context.c: don't print warning if there is no krb5.conf
 
 Wed Mar 10 19:29:46 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
