@@ -859,6 +859,9 @@
 /* Define to 1 if you have the <termio.h> header file. */
 #undef HAVE_TERMIO_H
 
+/* Define to 1 if you have the `timegm' function. */
+#undef HAVE_TIMEGM
+
 /* Whether Tru64 ACLs are available */
 #undef HAVE_TRU64_ACLS
 
@@ -1390,6 +1393,9 @@
 
 /* Whether to include experimental quota support */
 #undef WITH_QUOTAS
+
+/* Whether to build the new (experimental) SAM database */
+#undef WITH_SAM
 
 /* Whether to include sendfile() support */
 #undef WITH_SENDFILE
