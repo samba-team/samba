@@ -667,7 +667,7 @@ static NTSTATUS process_cmd(struct cli_state *cli, char *cmd)
 			break;
 		}
 		case 'I':
-		        if (!inet_aton(opt_ipaddr, &server_ip)) {
+		        if ( (server_ip.s_addr=inet_addr(opt_ipaddr)) == INADDR_NONE ) {
 				fprintf(stderr, "%s not a valid IP address\n",
 					opt_ipaddr);
 				return 1;
