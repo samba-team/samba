@@ -13,9 +13,9 @@
 # cvs should be submitted for inclusion in samba cvs.
 
 %define pkg_name	samba
-%define ver 		3.0alpha23
-%define rel 		4mdk
-%define vscanver 	0.3.2a
+%define ver 		3.0.0beta2
+%define rel 		3mdk
+%define vscanver 	0.3.3beta1
 %define libsmbmajor 	0
 
 # Version and release replaced by samba-team at release from samba cvs
@@ -97,12 +97,14 @@
 %define build_acl	0
 %define build_winbind	0
 %define build_wins	0
+%define build_ads	0
 %endif
 
 %if %build_mdk72
 %define build_acl	0
 %define build_winbind	0
 %define build_wins	0
+%define build_ads	0
 %endif
 
 
@@ -110,30 +112,30 @@
 # To use it, do rpm [-ba|--rebuild] --with 'xxx'
 # Check if the rpm was built with the defaults, otherwise we inform the user
 %define build_non_default 0
-%{?_with_system: %{expand: %%define build_system 1}}
-%{?_without_system: %{expand: %%define build_system 0}}
+%{?_with_system: %{expand: %%global build_system 1}}
+%{?_without_system: %{expand: %%global build_system 0}}
 %{?_with_acl: %{expand: %%global build_acl 1}}
-%{?_with_acl: %{expand: %%define build_non_default 1}}
+%{?_with_acl: %{expand: %%global build_non_default 1}}
 %{?_without_acl: %{expand: %%global build_acl 0}}
-%{?_without_acl: %{expand: %%define build_non_default 1}}
+%{?_without_acl: %{expand: %%global build_non_default 1}}
 %{?_with_winbind: %{expand: %%global build_winbind 1}}
-%{?_with_winbind: %{expand: %%define build_non_default 1}}
+%{?_with_winbind: %{expand: %%global build_non_default 1}}
 %{?_without_winbind: %{expand: %%global build_winbind 0}}
-%{?_without_winbind: %{expand: %%define build_non_default 1}}
+%{?_without_winbind: %{expand: %%global build_non_default 1}}
 %{?_with_wins: %{expand: %%global build_wins 1}}
-%{?_with_wins: %{expand: %%define build_non_default 1}}
+%{?_with_wins: %{expand: %%global build_non_default 1}}
 %{?_without_wins: %{expand: %%global build_wins 0}}
-%{?_without_wins: %{expand: %%define build_non_default 1}}
+%{?_without_wins: %{expand: %%global build_non_default 1}}
 %{?_with_ldap: %{expand: %%global build_ldap 1}}
-%{?_with_ldap: %{expand: %%define build_non_default 1}}
+%{?_with_ldap: %{expand: %%global build_non_default 1}}
 %{?_without_ldap: %{expand: %%global build_ldap 0}}
-%{?_without_ldap: %{expand: %%define build_non_default 1}}
+%{?_without_ldap: %{expand: %%global build_non_default 1}}
 %{?_with_ads: %{expand: %%global build_ads 1}}
-%{?_with_ads: %{expand: %%define build_non_default 1}}
+%{?_with_ads: %{expand: %%global build_non_default 1}}
 %{?_without_ads: %{expand: %%global build_ads 0}}
-%{?_without_ads: %{expand: %%define build_non_default 1}}
+%{?_without_ads: %{expand: %%global build_non_default 1}}
 %{?_with_scanners: %{expand: %%global build_scanners 1}}
-%{?_with_scanners: %{expand: %%define build_non_default 1}}
+%{?_with_scanners: %{expand: %%global build_non_default 1}}
 
 # As if that weren't enough, we're going to try building with antivirus
 # support as an option also
@@ -169,6 +171,11 @@
 %define message_bugzilla() %(echo -e -n "Please file bug reports for this package at Mandrake bugzilla \\n(http://qa.mandrakesoft.com) under the product name %{1}")
 %define message_system %(echo -e -n "NOTE: This is a prerelease of samba-%{samba_major}, not intended for production\\n use. Rather these packages are provided, parallel installable\\nwith samba-2.2.x, for testing purposes")
 
+%ifarch alpha
+%define build_expsam xml
+%else
+%define build_expsam mysql,xml
+%endif
 
 #Workaround missing macros in 8.x:
 %{!?perl_vendorlib: %{expand: %%global perl_vendorlib %{perl_sitearch}/../}}
@@ -208,9 +215,9 @@ Source: ftp://samba.org/pub/samba/samba-%{source_ver}.tar.bz2
 URL:	http://www.samba.org
 Source1: samba.log
 Source3: samba.xinetd
-Source4: swat_48.xpm.bz2
-Source5: swat_32.xpm.bz2
-Source6: swat_16.xpm.bz2
+Source4: swat_48.png.bz2
+Source5: swat_32.png.bz2
+Source6: swat_16.png.bz2
 Source7: README.%{name}-mandrake-rpm
 %if %build_vscan
 Source8: samba-vscan-%{vscanver}.tar.bz2
@@ -222,9 +229,7 @@ Patch3: samba-2.2.0-buildroot.patch.bz2
 Patch4: samba-3.0-smbmount-sbin.patch.bz2
 %if !%have_pversion
 # Version specific patches: current version
-Patch101: samba-Makefile-3.0alpha21.patch.bz2
-#Patch102: samba-3.0alpha22-mandrake-packaging.patch.bz2
-Patch110: samba-2.2.7a-fix-build.patch.bz2
+Patch100: samba-3.0.0beta2-mandrake-packaging.patch.bz2
 %else
 # Version specific patches: upcoming version
 %endif
@@ -233,10 +238,11 @@ Patch110: samba-2.2.7a-fix-build.patch.bz2
 %if %have_pversion && %have_pre
 %endif
 Requires: pam >= 0.64, samba-common = %{version}
-BuildRequires: pam-devel autoconf readline-devel
+BuildRequires: pam-devel readline-devel libncurses-devel popt-devel
 BuildRequires: libxml2-devel
+%ifnarch alpha
 BuildRequires: mysql-devel
-BuildRequires: autoconf2.5
+%endif
 %if %build_acl
 BuildRequires: libacl-devel
 %endif
@@ -519,6 +525,40 @@ the development of other software to access SMB shares.
 %message_bugzilla libsmbclient%{libsmbmajor}-devel
 %endif
 
+%if %build_system
+%package -n libsmbclient%{libsmbmajor}-static-devel
+URL:            http://www.samba.org
+Summary:        SMB Client Static Library Development files
+Group:          System/Libraries
+Provides:       libsmbclient-static-devel = %{version}-%{release}
+Requires:       libsmbclient%{libsmbmajor}-devel = %{version}-%{release}
+
+%description -n libsmbclient%{libsmbmajor}-static-devel
+This package contains the static development files for the SMB
+client library, part of the samba suite of networking software,
+allowing the development of other software to access SMB shares.
+%endif
+%if %have_pversion && %build_system
+%message_bugzilla libsmbclient%{libsmbmajor}-devel
+%endif
+
+#%package passdb-ldap
+#URL:		http://www.samba.org
+#Summary:	Samba password database plugin for MySQL
+#Group:		System/Libraries
+#
+#%description passdb-ldap
+#The passdb-ldap package for samba provides a password database
+#backend allowing samba to store account details in an LDAP
+#database
+#_if %have_pversion
+#_message_bugzilla samba3-passdb-ldap
+#_endif
+#_if !%build_system
+#_message_system
+#_endif
+
+%ifnarch alpha
 %package passdb-mysql
 URL:		http://www.samba.org
 Summary:	Samba password database plugin for MySQL
@@ -528,10 +568,11 @@ Group:		System/Libraries
 The passdb-mysql package for samba provides a password database
 backend allowing samba to store account details in a MySQL
 database
-%if %have_pversion
+%endif
+%ifnarch alpha && %have_pversion
 %message_bugzilla samba3-passdb-mysql
 %endif
-%if !%build_system
+%ifnarch alpha && !%build_system
 %message_system
 %endif
 
@@ -639,7 +680,6 @@ Trend antivirus software (which must be installed to use this).
 
 # Allow users to query build options with --with options:
 #%define opt_status(%1)	%(echo %{1})
-#%( [ -d %{1} ]||mkdir -p %{1}; [ -w %{1} ] && echo %{1})
 %if %{?_with_options:1}%{!?_with_options:0}
 %define opt_status(%{1})	%(if [ %{1} -eq 1 ];then echo enabled;else echo disabled;fi)
 #exit 1
@@ -673,34 +713,23 @@ exit 1
 %endif
 
 
-# Build a summary of how this RPM was built:
-%if %build_acl
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with acl"
-%else
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without acl"
-%endif
-%if %build_winbind
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with winbind"
-%else
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without winbind"
-%endif
-%if %build_wins
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with wins"
-%else
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without wins"
-%endif
-%if %build_ldap
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with ldap"
-%else
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without ldap"
-%endif
-%if %build_ads
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --with ads"
-%else
-RPM_EXTRA_OPTIONS="$RPM_EXTRA_OPTIONS --without ads"
-%endif
-
 %if %build_non_default
+RPM_EXTRA_OPTIONS="\
+%{?_with_system: --with system}\
+%{?_without_system: --without system}\
+%{?_with_acl: --with acl}\
+%{?_without_acl: --without acl}\
+%{?_with_winbind: --with winbind}\
+%{?_without_winbind: --without winbind}\
+%{?_with_wins: --with wins}\
+%{?_without_wins: --without wins}\
+%{?_with_ldap: --with ldap}\
+%{?_without_ldap: --without ldap}\
+%{?_with_ads: --with ads}\
+%{?_without_ads: --without ads}\
+%{?_with_scanners: --with scanners}\
+%{?_without_scanners: --without scanners}\
+"
 echo "Building a non-default rpm with the following command-line arguments:"
 echo "$RPM_EXTRA_OPTIONS"
 echo "This rpm was built with non-default options, thus, to build ">%{SOURCE7}
@@ -725,11 +754,7 @@ echo -e "\n%{name}-%{version}-%{release}\n">>%{SOURCE7}
 # Version specific patches: current version
 %if !%have_pversion
 echo "Applying patches for current version: %{ver}"
-(cd source
-%patch101
-)
-#%patch102 -p1 -b .mdk
-%patch110 -p1
+%patch100 -p1 -b .mdk
 %else
 # Version specific patches: upcoming version
 echo "Applying patches for new versions: %{pversion}"
@@ -773,8 +798,6 @@ perl -pi -e 's/%{pkg_name}/%{name}/g' source/auth/pampass.c
 %build
 #%serverbuild
 (cd source
-autoconf
-CPPFLAGS="-I/usr/include/openssl"; export CPPFLAGS
 CFLAGS="$RPM_OPT_FLAGS"
 # Don't use --with-fhs now, since it overrides libdir, it sets configdir, 
 # lockdir,piddir logfilebase,privatedir and swatdir
@@ -807,24 +830,25 @@ CFLAGS="$RPM_OPT_FLAGS"
 		--with-acl-support      \
 %endif
 		--disable-mysqltest \
-		--with-expsam=mysql,xml \
+		--with-expsam=%build_expsam \
 		--program-suffix=%{samba_major} 
+#		--with-shared-modules=pdb_ldap,idmap_ldap \
 #		--with-manpages-langs=en,ja,pl	\
-#%if !%build_system
+#_if !%build_system
 #                --with-smbwrapper \
-#%endif		
+#_endif		
 #		--with-nisplussam \
 #                --with-fhs \
 
-# For some reason passdb/pdb_xml.c doesn't like the flags below ...
-# and the samba team doesn't always make proto before release ...
+#Fix the make file so we don't create debug information on 9.2
+%if %build_mdk92
+perl -pi -e 's/-g //g' Makefile
+%endif
+
 make proto_exists
-#make passdb/pdb_xml.o torture
-# torture target broken in alpha22 (only on 9.0?)
-#make CFLAGS="$RPM_OPT_FLAGS -D_GNU_SOURCE -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE" \
-#	all libsmbclient smbfilter wins modules %{!?_without_debug: torture debug2html}
-%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html}
-#%make	all libsmbclient debug2html smbfilter wins torture modules
+%make	all libsmbclient smbfilter wins modules %{!?_without_test: torture debug2html} bin/editreg
+
+
 # Build VFS modules (experimental)
 #cd ../%vfsdir
 #_configure	--prefix=%{prefix} \
@@ -889,6 +913,8 @@ mkdir -p $RPM_BUILD_ROOT%{_libdir}/%{name}/vfs
 (cd source
 make DESTDIR=$RPM_BUILD_ROOT LIBDIR=%{_libdir}/%{name} install installclientlib installmodules)
 
+install -m755 source/bin/editreg %{buildroot}/%{_bindir}
+
 #need to stay
 mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,xinetd.d}
@@ -909,6 +935,8 @@ mkdir -p $RPM_BUILD_ROOT%{_datadir}/%{name}/scripts
 #install -m 755 source/bin/smbwrapper.so $RPM_BUILD_ROOT%{_libdir}/smbwrapper%{samba_major}.so
 install -m 755 source/bin/pam_smbpass.so $RPM_BUILD_ROOT/%{_lib}/security/pam_smbpass%{samba_major}.so
 install -m 755 source/nsswitch/pam_winbind.so $RPM_BUILD_ROOT/%{_lib}/security/pam_winbind%{samba_major}.so
+
+install -m755 source/bin/libsmbclient.a $RPM_BUILD_ROOT%{_libdir}/libsmbclient.a
 
 # smbsh forgotten
 #install -m 755 source/bin/smbsh $RPM_BUILD_ROOT%{_bindir}/
@@ -940,7 +968,6 @@ done
 ( cd $RPM_BUILD_ROOT/%{_lib}; ln -s libnss_wins%{samba_major}.so libnss_wins%{samba_major}.so.2; ln -s libnss_winbind%{samba_major}.so libnss_winbind%{samba_major}.so.2)
 
 %if %{?_without_test:0}%{!?_without_test:1}
-# Debugging stuff (broken in alpha22)
 for i in smbtorture msgtest masktest locktest locktest2 nsstest vfstest debug2html;do
   install -m755 source/bin/$i $RPM_BUILD_ROOT/%{_bindir}
 done
@@ -985,6 +1012,7 @@ done
 # Samba smbpasswd migration script:
 install -m700 examples/LDAP/export_smbpasswd.pl $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
 install -m700 examples/LDAP/import_smbpasswd.pl $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
+install -m755 examples/LDAP/convertSambaAccount $RPM_BUILD_ROOT/%{_datadir}/%{name}/scripts/
 
 
 
@@ -1023,19 +1051,27 @@ perl -pi -e 's/printcap name = lpstat/printcap name = cups/g' $RPM_BUILD_ROOT/et
 
 mkdir -p $RPM_BUILD_ROOT%{_menudir}
 cat > $RPM_BUILD_ROOT%{_menudir}/%{name}-swat << EOF
-?package(%{name}-swat):command="gnome-moz-remote http://localhost:901/" needs="gnome" \
-icon="swat%{samba_major}.xpm" section="Configuration/Networking" title="Samba Configuration" \
+?package(%{name}-swat):\
+command="gnome-moz-remote http://localhost:901/" \
+needs="gnome" \
+icon="swat%{samba_major}.png" \
+section="Configuration/Networking" \
+title="Samba Configuration (SWAT)" \
 longtitle="The Swat Samba Administration Tool"
-?package(%{name}-swat):command="sh -c '\$BROWSER http://localhost:901/'" needs="x11" \
-icon="swat%{samba_major}.xpm" section="Configuration/Networking" title="Samba Configuration" \
+?package(%{name}-swat):\
+command="sh -c '\$BROWSER http://localhost:901/'" \ 
+needs="x11" \
+icon="swat%{samba_major}.png" \
+section="Configuration/Networking" \
+title="Samba Configuration (SWAT)" \
 longtitle="The Swat Samba Administration Tool"
 EOF
 
 mkdir -p $RPM_BUILD_ROOT%{_liconsdir} $RPM_BUILD_ROOT%{_iconsdir} $RPM_BUILD_ROOT%{_miconsdir}
 
-bzcat %{SOURCE4} > $RPM_BUILD_ROOT%{_liconsdir}/swat%{samba_major}.xpm
-bzcat %{SOURCE5} > $RPM_BUILD_ROOT%{_iconsdir}/swat%{samba_major}.xpm
-bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat%{samba_major}.xpm
+bzcat %{SOURCE4} > $RPM_BUILD_ROOT%{_liconsdir}/swat%{samba_major}.png
+bzcat %{SOURCE5} > $RPM_BUILD_ROOT%{_iconsdir}/swat%{samba_major}.png
+bzcat %{SOURCE6} > $RPM_BUILD_ROOT%{_miconsdir}/swat%{samba_major}.png
 
 bzcat %{SOURCE10}> $RPM_BUILD_ROOT%{_datadir}/%{name}/scripts/print-pdf
 
@@ -1280,6 +1316,9 @@ fi
 %{_mandir}/man8/nmbd*.8*
 %{_mandir}/man8/pdbedit*.8*
 %{_mandir}/man1/smbcontrol*.1*
+%{_mandir}/man8/tdbbackup*.8*
+%{_mandir}/man1/profiles*.1*
+%{_mandir}/man1/editreg*.1*
 %attr(775,root,root) %dir %{_localstatedir}/%{name}/netlogon
 %attr(775,root,root) %dir %{_localstatedir}/%{name}/profiles
 %attr(775,root,root) %dir %{_localstatedir}/%{name}/printers
@@ -1292,6 +1331,7 @@ fi
 #%attr(0644,root,root) %{_datadir}/%{name}/scripts/smbldap_tools.pm
 #%{perl_vendorlib}/*.pm
 %attr(0700,root,root) %{_datadir}/%{name}/scripts/*port_smbpasswd.pl
+%attr(0755,root,root) %{_datadir}/%{name}/scripts/convertSambaAccount
 
 
 %files doc
@@ -1310,9 +1350,9 @@ fi
 #%attr(-,root,root) /sbin/*
 %{_sbindir}/swat%{samba_major}
 %{_menudir}/%{name}-swat
-%{_miconsdir}/*.xpm
-%{_liconsdir}/*.xpm
-%{_iconsdir}/*.xpm
+%{_miconsdir}/*.png
+%{_liconsdir}/*.png
+%{_iconsdir}/*.png
 %attr(-,root,root) %{_datadir}/swat%{samba_major}/help/*
 %attr(-,root,root) %{_datadir}/swat%{samba_major}/images/*
 %attr(-,root,root) %{_datadir}/swat%{samba_major}/include/*
@@ -1331,6 +1371,9 @@ fi
 %{_mandir}/man8/smbmnt*.8*
 %{_mandir}/man8/smbmount*.8*
 %{_mandir}/man8/smbumount*.8*
+%else
+%exclude %{_bindir}/smb*m*nt%{samba_major}
+%exclude %{_mandir}/man8/smb*m*nt*.8*
 %endif
 %{_bindir}/nmblookup%{samba_major}
 %{_bindir}/findsmb%{samba_major}
@@ -1379,13 +1422,16 @@ fi
 #%{_mandir}/man1/make_unicodemap*.1*
 %{_mandir}/man1/testparm*.1*
 %{_mandir}/man1/rpcclient*.1*
-%exclude %{_mandir}/man1/smbsh*.1*
 %{_mandir}/man1/testprns*.1*
 %{_mandir}/man5/smb.conf*.5*
 %{_mandir}/man5/lmhosts*.5*
 %{_mandir}/man8/smbpasswd*.8*
 %{_mandir}/man1/smbcacls*.1*
+%{_mandir}/man1/smbcquotas*.1*
 %{_mandir}/man8/net*.8*
+%{_mandir}/man1/smbtree*.1*
+%{_mandir}/man1/ntlm_auth*.1*
+%{_mandir}/man7/Samba*.7*
 
 %if %build_winbind
 %files winbind
@@ -1439,9 +1485,23 @@ fi
 %exclude %{_includedir}/*
 %endif
 
+%if %build_system
+%files -n libsmbclient%{libsmbmajor}-static-devel
+%defattr(-,root,root)
+%{_libdir}/libsmbclient.a
+%else
+%exclude %{_libdir}/libsmbclient.a
+%endif
+
+#%files passdb-ldap
+#%defattr(-,root,root)
+#%{_libdir}/%{name}/*/*ldap.so
+
+%ifnarch alpha
 %files passdb-mysql
 %defattr(-,root,root)
 %{_libdir}/%{name}/pdb/*mysql.so
+%endif
 
 %files passdb-xml
 %defattr(-,root,root)
@@ -1504,7 +1564,40 @@ fi
 %doc %{vfsdir}/%{vscandir}/INSTALL
 %endif
 
+%exclude %{_mandir}/man1/smbsh*.1*
+
 %changelog
+* Mon Jul 14 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta2.3mdk
+- place non-conditional excludes at the end of files list, to prevent causing
+  rpm in Mandrake <=8.2 from segfaulting when processing files.
+- Update default config  
+
+* Wed Jul 02 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta2.2mdk
+- 3.0.0beta2
+- manually build editreg
+- Add some new man pages
+
+* Tue Jun 10 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta1.3mdk
+- add provision for passdb-ldap subpackage (it doesn't build like that yet)
+- avoid debugging info on cooker/9.2 for the moment
+- We probably don't need to autoconf (and can thus build on 8.1)
+- We can probably build without kerberos support (and thus on 8.0)
+- Don't require mysql-devel on alpha's (maybe we want to be able to disable
+  mysql support for other arches?)
+- We shouldn't need to specifically add openssl to include path, since ssl
+  support is deprecated.
+- png icons, change menu title to not conflict with ksambaplugin  
+- update to samba-vscan-0.3.3beta1, but it still does not build the vscan
+  modules.
+- add -static-devel package
+- Add buildrequires for lib packages that are picked up if installed
+  (ncurses, popt) in an attempt to get slbd to build samba3
+- Fix default config (P100)
+
+* Sun Jun 08 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0.0-0.beta1.2mdk
+- Get packages into cooker (klama doesn't want to build this package ..)
+- samba-vscan-0.3.2b
+
 * Fri Jun 06 2003 Buchan Milne <bgmilne@linux-mandrake.com> 3.0-0.alpha24.2mdk
 - Rename debug package to test and other fixes for rpm-4.2
 - prepare for beta1
@@ -1607,7 +1700,7 @@ fi
   warning in description if built with these options.
 
 * Wed Jan 23 2002 Buchan Milne <bgmilne@cae.co.za> 3.0-alpha13-0.2mdk
-- Added %%if's for build_ads, which hopefully will add Active Directory
+- Added if's for build_ads, which hopefully will add Active Directory
   Support (by request).
 
 * Thu Jan 17 2002 Buchan Milne <bgmilne@cae.co.za> 3.0-alpha13-0.1mdk
@@ -1626,7 +1719,7 @@ fi
 - 3.0-alpha12
 - Sync up with changes made in 2.2.2 to support Mandrake 8.0, 7.2
 - Added new subpackage for swat
-- More %if's for ldap.
+- More if's for ldap.
 
 * Thu Dec 20 2001 Buchan Milne <bgmilne@cae.co.za> 3.0-alpha11-0.0mdk
 - 3.0-alpha11
