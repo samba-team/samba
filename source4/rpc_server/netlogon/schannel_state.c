@@ -120,7 +120,7 @@ NTSTATUS schannel_store_session_key(TALLOC_CTX *mem_ctx,
 */
 NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 				    const char *computer_name, 
-				    struct creds_CredentialState *creds)
+				    struct creds_CredentialState **creds)
 {
 	struct ldb_wrap *ldb;
 	time_t expiry;
@@ -129,7 +129,10 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 	const struct ldb_val *val;
 	char *expr=NULL;
 
-	ZERO_STRUCTP(creds);
+	*creds = talloc_zero_p(mem_ctx, struct creds_CredentialState);
+	if (!*creds) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	ldb = schannel_db_connect(mem_ctx);
 	if (ldb == NULL) {
@@ -161,7 +164,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	memcpy(creds->session_key, val->data, 16);
+	memcpy((*creds)->session_key, val->data, 16);
 
 	val = ldb_msg_find_ldb_val(res[0], "seed");
 	if (val == NULL || val->length != 8) {
@@ -169,7 +172,7 @@ NTSTATUS schannel_fetch_session_key(TALLOC_CTX *mem_ctx,
 		return NT_STATUS_INVALID_HANDLE;
 	}
 
-	memcpy(creds->seed.data, val->data, 8);
+	memcpy((*creds)->seed.data, val->data, 8);
 
 	talloc_free(ldb);
 

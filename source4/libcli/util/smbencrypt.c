@@ -374,15 +374,13 @@ static DATA_BLOB LMv2_generate_response(const uint8_t ntlm_v2_hash[16],
 	return final_response;
 }
 
-BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
-		      const DATA_BLOB *server_chal, 
-		      const DATA_BLOB *names_blob,
-		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
-		      DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) 
+BOOL SMBNTLMv2encrypt_hash(const char *user, const char *domain, const char nt_hash[16],
+			   const DATA_BLOB *server_chal, 
+			   const DATA_BLOB *names_blob,
+			   DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
+			   DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) 
 {
-	uint8_t nt_hash[16];
 	uint8_t ntlm_v2_hash[16];
-	E_md4hash(password, nt_hash);
 
 	/* We don't use the NT# directly.  Instead we use it mashed up with
 	   the username and domain.
@@ -418,6 +416,19 @@ BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password
 	}
 	
 	return True;
+}
+
+BOOL SMBNTLMv2encrypt(const char *user, const char *domain, const char *password, 
+		      const DATA_BLOB *server_chal, 
+		      const DATA_BLOB *names_blob,
+		      DATA_BLOB *lm_response, DATA_BLOB *nt_response, 
+		      DATA_BLOB *lm_session_key, DATA_BLOB *user_session_key) 
+{
+	uint8_t nt_hash[16];
+	E_md4hash(password, nt_hash);
+
+	return SMBNTLMv2encrypt_hash(user, domain, nt_hash, server_chal, names_blob,
+				     lm_response, nt_response, lm_session_key, user_session_key);
 }
 
 /***********************************************************
