@@ -75,7 +75,9 @@ extern struct printif	cups_printif;
 
 #define MAX_CACHE_VALID_TIME 3600
 
+#ifndef PRINT_SPOOL_PREFIX
 #define PRINT_SPOOL_PREFIX "smbprn."
+#endif
 #define PRINT_DATABASE_VERSION 5
 
 /* There can be this many printing tdb's open, plus any locked ones. */
