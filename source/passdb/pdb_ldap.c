@@ -25,11 +25,10 @@
 
 #ifdef WITH_LDAP
 /* TODO:
-*  persistent connections: deemed pointless
+*  persistent connections: if using NSS LDAP, many connections are made
+*      however, using only one within Samba would be nice
 *  
 *  Clean up SSL stuff, compile on OpenLDAP 1.x, 2.x, and Netscape SDK
-*
-*  Multiple ObjectClasses: sambaTrust, sambaAccount ??
 *
 *  Other LDAP based login attributes: accountExpires, etc.
 *  (should be the domain of Samba proper, but the sam_password/SAM_ACCOUNT
@@ -67,67 +66,59 @@ static struct ldap_enum_info global_ldap_ent;
 /*******************************************************************
  open a connection to the ldap server.
 ******************************************************************/
-static BOOL ldap_open_connection(LDAP ** ldap_struct)
+static BOOL
+ldap_open_connection (LDAP ** ldap_struct)
 {
 	int port;
 	int version, rc;
 	int tls = LDAP_OPT_X_TLS_HARD;
-	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389)
-	{
+	
+	if (lp_ldap_ssl() == LDAP_SSL_ON && lp_ldap_port() == 389) {
 		port = 636;
 	}
-	else
-	{
+	else {
 		port = lp_ldap_port();
 	}
-	if ((*ldap_struct = ldap_init(lp_ldap_server(), port)) == NULL)
-	{
+
+	if ((*ldap_struct = ldap_init(lp_ldap_server(), port)) == NULL)	{
 		DEBUG(0, ("The LDAP server is not responding !\n"));
 		return (False);
 	}
+
 	/* Connect to older servers using SSL and V2 rather than Start TLS */
-	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version)
-	    == LDAP_OPT_SUCCESS)
+	if (ldap_get_option(*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version) == LDAP_OPT_SUCCESS)
 	{
 		if (version != LDAP_VERSION2)
 		{
 			version = LDAP_VERSION2;
-			ldap_set_option(*ldap_struct,
-					LDAP_OPT_PROTOCOL_VERSION, &version);
+			ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, &version);
 		}
 	}
 
 	switch (lp_ldap_ssl())
 	{
 		case LDAP_SSL_START_TLS:
-			if (ldap_get_option
-			    (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION,
-			     &version) == LDAP_OPT_SUCCESS)
+			if (ldap_get_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION, 
+				&version) == LDAP_OPT_SUCCESS)
 			{
 				if (version < LDAP_VERSION3)
 				{
 					version = LDAP_VERSION3;
-					ldap_set_option(*ldap_struct,
-							LDAP_OPT_PROTOCOL_VERSION,
+					ldap_set_option (*ldap_struct, LDAP_OPT_PROTOCOL_VERSION,
 							&version);
 				}
 			}
-			if ((rc =
-			     ldap_start_tls_s(*ldap_struct, NULL,
-					      NULL)) != LDAP_SUCCESS)
+			if ((rc = ldap_start_tls_s (*ldap_struct, NULL, NULL)) != LDAP_SUCCESS)
 			{
 				DEBUG(0,
 				      ("Failed to issue the StartTLS instruction: %s\n",
 				       ldap_err2string(rc)));
 				return False;
 			}
-			DEBUG(2,
-			      ("StartTLS issued: using a TLS connection\n"));
+			DEBUG (2, ("StartTLS issued: using a TLS connection\n"));
 			break;
 		case LDAP_SSL_ON:
-			if (ldap_set_option
-			    (*ldap_struct, LDAP_OPT_X_TLS,
-			     &tls) != LDAP_SUCCESS)
+			if (ldap_set_option (*ldap_struct, LDAP_OPT_X_TLS, &tls) != LDAP_SUCCESS)
 			{
 				DEBUG(0, ("Failed to setup a TLS session\n"));
 			}
@@ -135,6 +126,7 @@ static BOOL ldap_open_connection(LDAP ** ldap_struct)
 		case LDAP_SSL_OFF:
 		default:
 	}
+
 	DEBUG(2, ("ldap_open_connection: connection opened\n"));
 	return (True);
 }
@@ -172,22 +164,21 @@ static BOOL ldap_connect_system(LDAP * ldap_struct)
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-static int ldap_search_one_user(LDAP * ldap_struct, char *filter, LDAPMessage ** result)
+static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMessage ** result)
 {
 	int scope = LDAP_SCOPE_SUBTREE;
 	int rc;
 
 	DEBUG(2, ("ldap_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s(ldap_struct, lp_ldap_suffix(), scope, filter, NULL,
-			   0, result);
+	rc = ldap_search_s (ldap_struct, lp_ldap_suffix (), scope, 
+		filter, NULL, 0, result);
 
-	if (rc != LDAP_SUCCESS)
-	{
-		DEBUG(0,
-		      ("Problem during the LDAP search: %s\n",
-		       ldap_err2string(rc)));
-		DEBUG(3, ("Query was: %s, %s\n", lp_ldap_suffix(), filter));
+	if (rc != LDAP_SUCCESS)	{
+		DEBUG(0,("ldap_search_one_user: Problem during the LDAP search: %s\n", 
+			ldap_err2string (rc)));
+		DEBUG(3,("ldap_search_one_user: Query was: %s, %s\n", lp_ldap_suffix(), 
+			filter));
 	}
 	return (rc);
 }
@@ -195,15 +186,17 @@ static int ldap_search_one_user(LDAP * ldap_struct, char *filter, LDAPMessage **
 /*******************************************************************
  run the search by name.
 ******************************************************************/
-static int ldap_search_one_user_by_name(LDAP * ldap_struct, char *user,
+static int ldap_search_one_user_by_name (LDAP * ldap_struct, const char *user,
 			     LDAPMessage ** result)
 {
 	pstring filter;
+	
 	/*
 	   in the filter expression, replace %u with the real name
 	   so in ldap filter, %u MUST exist :-)
 	 */
 	pstrcpy(filter, lp_ldap_filter());
+
 	/* have to use this here because $ is filtered out
 	   * in pstring_sub
 	 */
@@ -232,7 +225,7 @@ static int ldap_search_one_user_by_uid(LDAP * ldap_struct, int uid,
 /*******************************************************************
  run the search by rid.
 ******************************************************************/
-static int ldap_search_one_user_by_rid(LDAP * ldap_struct, uint32 rid,
+static int ldap_search_one_user_by_rid (LDAP * ldap_struct, uint32 rid,
 			    LDAPMessage ** result)
 {
 	pstring filter;
@@ -241,43 +234,39 @@ static int ldap_search_one_user_by_rid(LDAP * ldap_struct, uint32 rid,
 	/* check if the user rid exsists, if not, try searching on the uid */
 	snprintf(filter, sizeof(filter) - 1, "rid=%i", rid);
 	rc = ldap_search_one_user(ldap_struct, filter, result);
+	
 	if (rc != LDAP_SUCCESS)
-		rc = ldap_search_one_user_by_uid(ldap_struct,
-						 pdb_user_rid_to_uid(rid),
-						 result);
+		rc = ldap_search_one_user_by_uid(ldap_struct, 
+			pdb_user_rid_to_uid(rid), result);
+
 	return rc;
 }
 
 /*******************************************************************
 search an attribute and return the first value found.
 ******************************************************************/
-static void get_single_attribute(LDAP * ldap_struct, LDAPMessage * entry,
+static void get_single_attribute (LDAP * ldap_struct, LDAPMessage * entry,
 		     char *attribute, char *value)
 {
 	char **valeurs;
 
-	if ((valeurs =
-	     ldap_get_values(ldap_struct, entry, attribute)) != NULL)
-	{
+	if ((valeurs = ldap_get_values (ldap_struct, entry, attribute)) != NULL) {
 		pstrcpy(value, valeurs[0]);
 		ldap_value_free(valeurs);
-		DEBUG(2,
-		      ("get_single_attribute:	[%s] = [%s]\n",
-		       attribute, value));
+		DEBUG (2, ("get_single_attribute: [%s] = [%s]\n", attribute, value));
 	}
-	else
-	{
+	else {
 		value = NULL;
-		DEBUG(2,
-		      ("get_single_attribute:	[%s] = [NULL]\n", attribute));
+		DEBUG (2, ("get_single_attribute: [%s] = [NULL]\n", attribute));
 	}
 }
 
 /************************************************************************
 Routine to manage the LDAPMod structure array
 manage memory used by the array, by each struct, and values
+
 ************************************************************************/
-static void make_a_mod(LDAPMod *** modlist, int modop, char *attribute, char *value)
+static void make_a_mod (LDAPMod *** modlist, int modop, char *attribute, char *value)
 {
 	LDAPMod **mods;
 	int i;
@@ -291,7 +280,7 @@ static void make_a_mod(LDAPMod *** modlist, int modop, char *attribute, char *va
 	if (value == NULL || *value == '\0')
 		return;
 
-	if (mods == NULL)
+	if (mods == NULL) 
 	{
 		mods = (LDAPMod **) malloc(sizeof(LDAPMod *));
 		if (mods == NULL)
@@ -302,19 +291,14 @@ static void make_a_mod(LDAPMod *** modlist, int modop, char *attribute, char *va
 		mods[0] = NULL;
 	}
 
-	for (i = 0; mods[i] != NULL; ++i)
-	{
-		if (mods[i]->mod_op == modop &&
-		    !strcasecmp(mods[i]->mod_type, attribute))
-		{
+	for (i = 0; mods[i] != NULL; ++i) {
+		if (mods[i]->mod_op == modop && !strcasecmp(mods[i]->mod_type, attribute))
 			break;
-		}
 	}
 
 	if (mods[i] == NULL)
 	{
-		mods = (LDAPMod **) realloc(mods,
-					    (i + 2) * sizeof(LDAPMod *));
+		mods = (LDAPMod **) realloc (mods, (i + 2) * sizeof (LDAPMod *));
 		if (mods == NULL)
 		{
 			DEBUG(0, ("make_a_mod: out of memory!\n"));
@@ -335,17 +319,14 @@ static void make_a_mod(LDAPMod *** modlist, int modop, char *attribute, char *va
 	if (value != NULL)
 	{
 		j = 0;
-		if (mods[i]->mod_values != NULL)
-		{
+		if (mods[i]->mod_values != NULL) {
 			for (; mods[i]->mod_values[j] != NULL; j++);
 		}
 		mods[i]->mod_values = (char **)realloc(mods[i]->mod_values,
-						       (j +
-							2) * sizeof(char *));
-		if (mods[i]->mod_values == NULL)
-		{
-			DEBUG(0,
-			      ("make_a_mod: Memory allocation failure!\n"));
+					       (j + 2) * sizeof (char *));
+					       
+		if (mods[i]->mod_values == NULL) {
+			DEBUG (0, ("make_a_mod: Memory allocation failure!\n"));
 			return;
 		}
 		mods[i]->mod_values[j] = strdup(value);
@@ -360,14 +341,15 @@ static void make_a_mod(LDAPMod *** modlist, int modop, char *attribute, char *va
 Initialize SAM_ACCOUNT from an LDAP query
 (Based on init_sam_from_buffer in pdb_tdb.c)
 *********************************************************************/
-static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
+static BOOL init_sam_from_ldap (SAM_ACCOUNT * sampass,
 		   LDAP * ldap_struct, LDAPMessage * entry)
 {
-	time_t logon_time,
-		logoff_time,
-		kickoff_time,
-		pass_last_set_time, pass_can_change_time,
-		pass_must_change_time;
+	time_t  logon_time,
+			logoff_time,
+			kickoff_time,
+			pass_last_set_time, 
+			pass_can_change_time, 
+			pass_must_change_time;
 	static pstring username;
 	static pstring domain;
 	static pstring nt_username;
@@ -392,8 +374,7 @@ static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
 	DEBUG(2, ("Entry found for user: %s\n", username));
 
 	/* not sure about this for nt_username */
-	get_single_attribute(ldap_struct, entry, "sAMAccountName",
-			     nt_username);
+	get_single_attribute (ldap_struct, entry, "sAMAccountName", nt_username);
 	if (!nt_username)
 		pstrcpy(nt_username, username);
 
@@ -426,18 +407,17 @@ static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
 	 */
 
 	get_single_attribute(ldap_struct, entry, "gecos", fullname);
-	if (!fullname)
-		get_single_attribute(ldap_struct, entry, "displayName",
-				     fullname);
-	if (!fullname)
+
+	if (!fullname) {
+		get_single_attribute(ldap_struct, entry, "displayName", fullname);
 		get_single_attribute(ldap_struct, entry, "cn", fullname);
+	}
 
 	get_single_attribute(ldap_struct, entry, "homeDrive", dir_drive);
 	get_single_attribute(ldap_struct, entry, "scriptPath", logon_script);
 	get_single_attribute(ldap_struct, entry, "profilePath", profile_path);
 	get_single_attribute(ldap_struct, entry, "description", acct_desc);
-	get_single_attribute(ldap_struct, entry, "userWorkstations",
-			     workstations);
+	get_single_attribute (ldap_struct, entry, "userWorkstations", workstations);
 
 	get_single_attribute(ldap_struct, entry, "rid", temp);
 	user_rid = (uint32)strtol(temp, NULL, 16);
@@ -452,6 +432,8 @@ static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
 	   *  homeDirectory attribute
 	 */
 	sys_user = sys_getpwnam(username);
+	if (sys_user == NULL)
+		return False;
 	pstrcpy(homedir, sys_user->pw_dir);
 
 
@@ -461,38 +443,14 @@ static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
 	hours = malloc(sizeof(hours) * hours_len);
 	memset(hours, 0xff, hours_len);
 
-	switch (lp_ldap_schema())
-	{
-		case SCHEMA_COMPAT:
-			get_single_attribute(ldap_struct, entry, "lmPassword",
-					     temp);
-			pdb_gethexpwd(temp, smblmpwd);
-			memset((char *)temp, '\0', sizeof(temp));
-			get_single_attribute(ldap_struct, entry, "ntPassword",
-					     temp);
-			pdb_gethexpwd(temp, smbntpwd);
-			memset((char *)temp, '\0', sizeof(temp));
-			get_single_attribute(ldap_struct, entry, "acctFlags",
-					     temp);
-			acct_ctrl = pdb_decode_acct_ctrl(temp);
-			break;
-		case SCHEMA_AD:
-		case SCHEMA_SAMBA:
-		default:
-			/* must write appropriate decoding routines for dBCSPwd, unicodePwd, and userAccountControl */
-			get_single_attribute(ldap_struct, entry, "dBCSPwd",
-					     temp);
-			pdb_gethexpwd(temp, smblmpwd);
-			memset((char *)temp, '\0', sizeof(temp));
-			get_single_attribute(ldap_struct, entry, "unicodePwd",
-					     temp);
-			pdb_gethexpwd(temp, smbntpwd);
-			memset((char *)temp, '\0', sizeof(temp));
-			get_single_attribute(ldap_struct, entry,
-					     "userAccountControl", temp);
-			acct_ctrl = pdb_decode_acct_ctrl(temp);
-			DEBUG(0, ("Schema not yet implemented\n"));
-	}
+	get_single_attribute (ldap_struct, entry, "lmPassword", temp);
+	pdb_gethexpwd(temp, smblmpwd);
+	memset((char *)temp, '\0', sizeof(temp));
+	get_single_attribute (ldap_struct, entry, "ntPassword", temp);
+	pdb_gethexpwd(temp, smbntpwd);
+	memset((char *)temp, '\0', sizeof(temp));
+	get_single_attribute (ldap_struct, entry, "acctFlags", temp);
+	acct_ctrl = pdb_decode_acct_ctrl(temp);
 
 	if (acct_ctrl == 0)
 		acct_ctrl |= ACB_NORMAL;
@@ -544,14 +502,15 @@ static BOOL init_sam_from_ldap(SAM_ACCOUNT * sampass,
 Initialize SAM_ACCOUNT from an LDAP query
 (Based on init_buffer_from_sam in pdb_tdb.c)
 *********************************************************************/
-static BOOL init_ldap_from_sam(LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
+static BOOL init_ldap_from_sam (LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * sampass)
 {
 	pstring temp;
 
 	*mods = NULL;
 
-	/* took out adding "objectclass: sambaAccount"
-	   *  do this on a per-mod basis
+	/* 
+	 * took out adding "objectclass: sambaAccount"
+	 * do this on a per-mod basis
 	 */
 
 
@@ -559,15 +518,13 @@ static BOOL init_ldap_from_sam(LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * s
 	DEBUG(2, ("Setting entry for user: %s\n", pdb_get_username(sampass)));
 
 	/* not sure about using this for the nt_username */
-	make_a_mod(mods, ldap_state, "sAMAccountName",
-		   pdb_get_nt_username(sampass));
+	make_a_mod (mods, ldap_state, "sAMAccountName", pdb_get_nt_username(sampass));
 	make_a_mod(mods, ldap_state, "sambaDomain", pdb_get_domain(sampass));
 
 	slprintf(temp, sizeof(temp) - 1, "%i", pdb_get_uid(sampass));
 	make_a_mod(mods, ldap_state, "uidNumber", temp);
 
-	slprintf(temp, sizeof(temp) - 1, "%li",
-		 pdb_get_pass_last_set_time(sampass));
+	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_last_set_time(sampass));
 	make_a_mod(mods, ldap_state, "pwdLastSet", temp);
 
 	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logon_time(sampass));
@@ -576,16 +533,13 @@ static BOOL init_ldap_from_sam(LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * s
 	slprintf(temp, sizeof(temp) - 1, "%li", pdb_get_logoff_time(sampass));
 	make_a_mod(mods, ldap_state, "logoffTime", temp);
 
-	slprintf(temp, sizeof(temp) - 1, "%li",
-		 pdb_get_kickoff_time(sampass));
+	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_kickoff_time(sampass));
 	make_a_mod(mods, ldap_state, "kickoffTime", temp);
 
-	slprintf(temp, sizeof(temp) - 1, "%li",
-		 pdb_get_pass_can_change_time(sampass));
+	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_can_change_time(sampass));
 	make_a_mod(mods, ldap_state, "pwdCanChange", temp);
 
-	slprintf(temp, sizeof(temp) - 1, "%li",
-		 pdb_get_pass_must_change_time(sampass));
+	slprintf (temp, sizeof (temp) - 1, "%li", pdb_get_pass_must_change_time(sampass));
 	make_a_mod(mods, ldap_state, "pwdMustChange", temp);
 
 	/* displayName, cn, and gecos should all be the same
@@ -594,21 +548,15 @@ static BOOL init_ldap_from_sam(LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * s
 	   *  add-user script
 	 */
 
-	make_a_mod(mods, ldap_state, "displayName",
-		   pdb_get_fullname(sampass));
+	make_a_mod(mods, ldap_state, "displayName", pdb_get_fullname(sampass));
 	make_a_mod(mods, ldap_state, "cn", pdb_get_fullname(sampass));
 
-	make_a_mod(mods, ldap_state, "homeDirectory",
-		   pdb_get_homedir(sampass));
+	make_a_mod(mods, ldap_state, "homeDirectory", pdb_get_homedir(sampass));
 	make_a_mod(mods, ldap_state, "homeDrive", pdb_get_dirdrive(sampass));
-	make_a_mod(mods, ldap_state, "scriptPath",
-		   pdb_get_logon_script(sampass));
-	make_a_mod(mods, ldap_state, "profilePath",
-		   pdb_get_profile_path(sampass));
-	make_a_mod(mods, ldap_state, "description",
-		   pdb_get_acct_desc(sampass));
-	make_a_mod(mods, ldap_state, "userWorkstations",
-		   pdb_get_workstations(sampass));
+	make_a_mod(mods, ldap_state, "scriptPath", pdb_get_logon_script(sampass));
+	make_a_mod(mods, ldap_state, "profilePath", pdb_get_profile_path(sampass));
+	make_a_mod(mods, ldap_state, "description", pdb_get_acct_desc(sampass));
+	make_a_mod(mods, ldap_state, "userWorkstations", pdb_get_workstations(sampass));
 
 	slprintf(temp, sizeof(temp) - 1, "%i", sampass->user_rid);
 	make_a_mod(mods, ldap_state, "rid", temp);
@@ -617,37 +565,12 @@ static BOOL init_ldap_from_sam(LDAPMod *** mods, int ldap_state, SAM_ACCOUNT * s
 	make_a_mod(mods, ldap_state, "primaryGroupID", temp);
 
 	/* FIXME: Hours stuff goes in LDAP  */
-
-	switch (lp_ldap_schema())
-	{
-		case SCHEMA_COMPAT:
-			pdb_sethexpwd(temp, pdb_get_lanman_passwd(sampass),
-				      pdb_get_acct_ctrl(sampass));
-			make_a_mod(mods, ldap_state, "lmPassword", temp);
-			pdb_sethexpwd(temp, pdb_get_nt_passwd(sampass),
-				      pdb_get_acct_ctrl(sampass));
-			make_a_mod(mods, ldap_state, "ntPassword", temp);
-			make_a_mod(mods, ldap_state, "acctFlags",
-				   pdb_encode_acct_ctrl(pdb_get_acct_ctrl
-							(sampass),
-							NEW_PW_FORMAT_SPACE_PADDED_LEN));
-			break;
-		case SCHEMA_AD:
-		case SCHEMA_SAMBA:
-		default:
-			/* must write appropriate decoding routines for dBCSPwd, unicodePwd, and userAccountControl */
-			pdb_sethexpwd(temp, pdb_get_lanman_passwd(sampass),
-				      pdb_get_acct_ctrl(sampass));
-			make_a_mod(mods, ldap_state, "dBCSPwd", temp);
-			pdb_sethexpwd(temp, pdb_get_nt_passwd(sampass),
-				      pdb_get_acct_ctrl(sampass));
-			make_a_mod(mods, ldap_state, "unicodePwd", temp);
-			make_a_mod(mods, ldap_state, "userAccountControl",
-				   pdb_encode_acct_ctrl(pdb_get_acct_ctrl
-							(sampass),
-							NEW_PW_FORMAT_SPACE_PADDED_LEN));
-			DEBUG(0, ("Schema not yet implemented\n"));
-	}
+	pdb_sethexpwd (temp, pdb_get_lanman_passwd(sampass), pdb_get_acct_ctrl(sampass));
+	make_a_mod (mods, ldap_state, "lmPassword", temp);
+	pdb_sethexpwd (temp, pdb_get_nt_passwd(sampass), pdb_get_acct_ctrl(sampass));
+	make_a_mod (mods, ldap_state, "ntPassword", temp);
+	make_a_mod (mods, ldap_state, "acctFlags", pdb_encode_acct_ctrl (pdb_get_acct_ctrl(sampass),
+		NEW_PW_FORMAT_SPACE_PADDED_LEN));
 
 	return True;
 }
@@ -688,13 +611,11 @@ BOOL pdb_setsampwent(BOOL update)
 		return False;
 	}
 
-	DEBUG(2,
-	      ("%d entries in the base!\n",
-	       ldap_count_entries(global_ldap_ent.ldap_struct,
-				  global_ldap_ent.result)));
+	DEBUG(2, ("pdb_setsampwent: %d entries in the base!\n",
+		ldap_count_entries(global_ldap_ent.ldap_struct,
+		global_ldap_ent.result)));
 
-	global_ldap_ent.entry =
-		ldap_first_entry(global_ldap_ent.ldap_struct,
+	global_ldap_ent.entry = ldap_first_entry(global_ldap_ent.ldap_struct,
 				 global_ldap_ent.result);
 
 	return True;
@@ -882,8 +803,50 @@ Delete entry from LDAP for username
 *********************************************************************/
 BOOL pdb_delete_sam_account(char *sname)
 {
-	/* FIXME: make this work */
-	return False;
+	int rc;
+	char *dn;
+	LDAP *ldap_struct;
+	LDAPMessage *entry;
+	LDAPMessage *result;
+
+	if (!ldap_open_connection (&ldap_struct))
+		return False;
+
+	DEBUG (3, ("Deleting user %s from LDAP.\n", sname));
+	
+	if (!ldap_connect_system (ldap_struct)) {
+		ldap_unbind (ldap_struct);
+		DEBUG(0, ("Failed to delete user %s from LDAP.\n", sname));
+		return False;
+	}
+
+	rc = ldap_search_one_user_by_name (ldap_struct, sname, &result);
+	if (ldap_count_entries (ldap_struct, result) == 0) {
+		DEBUG (0, ("User doesn't exit!\n"));
+		ldap_msgfree (result);
+		ldap_unbind (ldap_struct);
+		return False;
+	}
+
+	entry = ldap_first_entry (ldap_struct, result);
+	dn = ldap_get_dn (ldap_struct, entry);
+
+	rc = ldap_delete_s (ldap_struct, dn);
+
+	ldap_memfree (dn);
+	if (rc != LDAP_SUCCESS) {
+		char *ld_error;
+		ldap_get_option (ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG (0,("failed to delete user with uid = %s with: %s\n\t%s\n",
+			sname, ldap_err2string (rc), ld_error));
+		free (ld_error);
+		ldap_unbind (ldap_struct);
+		return False;
+	}
+
+	DEBUG (2,("successfully deleted uid = %s from the LDAP database\n", sname));
+	ldap_unbind (ldap_struct);
+	return True;
 }
 
 /**********************************************************************
@@ -971,39 +934,43 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 		return False;
 	}
 
-	if (pdb_get_username(newpwd) != NULL)
-		slprintf(dn, sizeof(dn) - 1, "uid=%s,%s",
-			 pdb_get_username(newpwd), lp_ldap_suffix());
+	if (pdb_get_username(newpwd) != NULL) {
+		slprintf (dn, sizeof (dn) - 1, "uid=%s,%s", 
+			pdb_get_username(newpwd), lp_ldap_suffix ());
+	}
 	else
+	{
 		return False;
+	}
 
 
-	rc = ldap_search_one_user_by_name(ldap_struct,
-					  pdb_get_username(newpwd), &result);
+	rc = ldap_search_one_user_by_name (ldap_struct, pdb_get_username(newpwd), &result);
 
 	if (ldap_count_entries(ldap_struct, result) != 0)
 	{
-		DEBUG(0,
-		      ("User already in the base, with samba properties\n"));
+		DEBUG(0,("User already in the base, with samba properties\n"));
 		ldap_msgfree(result);
 		ldap_unbind(ldap_struct);
 		return False;
 	}
 	ldap_msgfree(result);
 
-	slprintf(filter, sizeof(filter) - 1, "uid=%s",
-		 pdb_get_username(newpwd));
+	slprintf (filter, sizeof (filter) - 1, "uid=%s", pdb_get_username(newpwd));
 	rc = ldap_search_one_user(ldap_struct, filter, &result);
 	if (ldap_count_entries(ldap_struct, result) == 1)
 	{
-		DEBUG(3,
-		      ("User exists without samba properties: adding them\n"));
+		char *tmp;
+		LDAPMessage *entry;
+		DEBUG(3,("User exists without samba properties: adding them\n"));
 		ldap_op = LDAP_MOD_REPLACE;
+		entry = ldap_first_entry (ldap_struct, result);
+		tmp = ldap_get_dn (ldap_struct, entry);
+		slprintf (dn, sizeof (dn) - 1, "%s", tmp);
+		ldap_memfree (tmp);
 	}
 	else
 	{
-		DEBUG(3,
-		      ("More than one user with that uid exists: bailing out!\n"));
+		DEBUG (3, ("More than one user with that uid exists: bailing out!\n"));
 		return False;
 	}
 
@@ -1012,32 +979,27 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 	init_ldap_from_sam(&mods, ldap_op, newpwd);
 	make_a_mod(&mods, LDAP_MOD_ADD, "objectclass", "sambaAccount");
 
-	if (ldap_op == LDAP_MOD_REPLACE)
-	{
+	if (ldap_op == LDAP_MOD_REPLACE) {
 		rc = ldap_modify_s(ldap_struct, dn, mods);
 	}
-	else
-	{
+	else {
 		rc = ldap_add_s(ldap_struct, dn, mods);
 	}
 
 	if (rc != LDAP_SUCCESS)
 	{
 		char *ld_error;
-		ldap_get_option(ldap_struct, LDAP_OPT_ERROR_STRING,
-				&ld_error);
-		DEBUG(0,
-		      ("failed to modify user with uid = %s with: %s\n\t%s\n",
-		       pdb_get_username(newpwd), ldap_err2string(rc),
-		       ld_error));
+
+		ldap_get_option (ldap_struct, LDAP_OPT_ERROR_STRING, &ld_error);
+		DEBUG(0,("failed to modify user with uid = %s with: %s\n\t%s\n",
+			pdb_get_username(newpwd), ldap_err2string (rc), ld_error));
 		free(ld_error);
 		ldap_mods_free(mods, 1);
 		ldap_unbind(ldap_struct);
 		return False;
 	}
-	DEBUG(2,
-	      ("added: uid = %s in the LDAP database\n",
-	       pdb_get_username(newpwd)));
+	
+	DEBUG(2,("added: uid = %s in the LDAP database\n", pdb_get_username(newpwd)));
 	ldap_mods_free(mods, 1);
 	ldap_unbind(ldap_struct);
 	return True;
@@ -1045,7 +1007,8 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd)
 
 #else
 void dummy_function(void);
-void dummy_function(void)
+void
+dummy_function (void)
 {
 }				/* stop some compilers complaining */
 #endif

@@ -1795,7 +1795,6 @@ char *lp_ldap_server(void);
 char *lp_ldap_suffix(void);
 char *lp_ldap_filter(void);
 char *lp_ldap_admin_dn(void);
-int lp_ldap_schema(void);
 int lp_ldap_port(void);
 int lp_ldap_ssl(void);
 char *lp_add_share_cmd(void);
@@ -2132,6 +2131,18 @@ BOOL pdb_set_unknown_3 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_unknown_5 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn);
 BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours);
+
+/*The following definitions come from  passdb/pdb_ldap.c  */
+
+BOOL pdb_setsampwent(BOOL update);
+void pdb_endsampwent(void);
+BOOL pdb_getsampwent(SAM_ACCOUNT * user);
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname);
+BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid);
+BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid);
+BOOL pdb_delete_sam_account(char *sname);
+BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override);
+BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd);
 
 /*The following definitions come from  passdb/pdb_smbpasswd.c  */
 

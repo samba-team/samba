@@ -209,7 +209,6 @@ typedef struct
 	int winbind_cache_time;
 #ifdef WITH_LDAP
 	int ldap_port;
-	int ldap_schema;
 	int ldap_ssl;
 	char *szLdapServer;
 	char *szLdapSuffix;
@@ -576,14 +575,6 @@ static struct enum_list enum_printing[] = {
 	{PRINT_TEST, "test"},
 	{PRINT_VLP, "vlp"},
 #endif /* DEVELOPER */
-	{-1, NULL}
-};
-
-static struct enum_list enum_ldap_schema[] = {
-	{SCHEMA_COMPAT, "compat"},
-	{SCHEMA_AD, "ad"},
-	{SCHEMA_AD, "active directory"},
-	{SCHEMA_SAMBA, "samba"},
 	{-1, NULL}
 };
 
@@ -975,7 +966,6 @@ static struct parm_struct parm_table[] = {
 	{"ldap suffix", P_STRING, P_GLOBAL, &Globals.szLdapSuffix, NULL, NULL, 0},
 	{"ldap filter", P_STRING, P_GLOBAL, &Globals.szLdapFilter, NULL, NULL, 0},
 	{"ldap admin dn", P_STRING, P_GLOBAL, &Globals.szLdapAdminDn, NULL, NULL, 0},
-	{"ldap schema", P_ENUM, P_GLOBAL, &Globals.ldap_schema, NULL, enum_ldap_schema, 0},
 	{"ldap ssl", P_ENUM, P_GLOBAL, &Globals.ldap_ssl, NULL, enum_ldap_ssl, 0},
 #endif /* WITH_LDAP */
 
@@ -1343,7 +1333,6 @@ static void init_globals(void)
 	string_set(&Globals.szLdapFilter, "(&(uid=%u)(objectclass=sambaAccount))");
 	string_set(&Globals.szLdapAdminDn, "");
 	Globals.ldap_port = 389;
-	Globals.ldap_schema = SCHEMA_COMPAT;
 	Globals.ldap_ssl = LDAP_SSL_OFF;
 #endif /* WITH_LDAP */
 /* these parameters are set to defaults that are more appropriate
@@ -1523,7 +1512,6 @@ FN_GLOBAL_STRING(lp_ldap_server, &Globals.szLdapServer)
 FN_GLOBAL_STRING(lp_ldap_suffix, &Globals.szLdapSuffix)
 FN_GLOBAL_STRING(lp_ldap_filter, &Globals.szLdapFilter)
 FN_GLOBAL_STRING(lp_ldap_admin_dn, &Globals.szLdapAdminDn)
-FN_GLOBAL_INTEGER(lp_ldap_schema, &Globals.ldap_schema)
 FN_GLOBAL_INTEGER(lp_ldap_port, &Globals.ldap_port)
 FN_GLOBAL_INTEGER(lp_ldap_ssl, &Globals.ldap_ssl)
 #endif /* WITH_LDAP */
