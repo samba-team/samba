@@ -302,7 +302,7 @@ static int update_tailer(TDB_CONTEXT *tdb, tdb_off offset,
 void tdb_printfreelist(TDB_CONTEXT *tdb)
 {
 	long total_free = 0;
-    tdb_off offset, rec_ptr, last_ptr;
+	tdb_off offset, rec_ptr, last_ptr;
 	struct list_struct rec, lastrec, newrec;
 
 	tdb_lock(tdb, -1, F_WRLCK);
@@ -421,13 +421,39 @@ static int tdb_free(TDB_CONTEXT *tdb, tdb_off offset, struct list_struct *rec)
 	return -1;
 }
 
+
+/* expand a file.  we prefer to use ftruncate, as that is what posix
+  says to use for mmap expansion */
+static int expand_file(int fd, tdb_off size, tdb_off addition)
+{
+	char buf[1024];
+#if HAVE_FTRUNCATE_EXTEND
+	if (ftruncate(fd, size+addition) != 0) return -1;
+#else
+	char b = 0;
+	if (lseek(fd, (size+addition) - 1, SEEK_SET) != (size+addition) - 1 || 
+	    write(fd, &b, 1) != 1) return -1;
+#endif
+	/* now fill the file with something. This ensures that the file isn't sparse, which would be
+	   very bad if we ran out of disk. This must be done with write, not via mmap */
+	memset(buf, 0x42, sizeof(buf));
+	if (lseek(fd, size, SEEK_SET) != size) return -1;
+	while (addition) {
+		int n = addition>sizeof(buf)?sizeof(buf):addition;
+		int ret = write(fd, buf, n);
+		if (ret != n) return -1;
+		addition -= n;
+	}
+	return 0;
+}
+
+
 /* expand the database at least size bytes by expanding the underlying
    file and doing the mmap again if necessary */
 static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 {
 	struct list_struct rec;
 	tdb_off offset;
-	char b = 0;
 
 	if (tdb_lock(tdb, -1, F_WRLCK) == -1) return 0;
 
@@ -449,10 +475,7 @@ static int tdb_expand(TDB_CONTEXT *tdb, tdb_off size)
 
 	/* expand the file itself */
 	if (!(tdb->flags & TDB_INTERNAL)) {
-		if (lseek(tdb->fd, tdb->map_size + size - 1, SEEK_SET)!=tdb->map_size + size - 1)
-			goto fail;
-		if (write(tdb->fd, &b, 1) != 1)
-			goto fail;
+		if (expand_file(tdb->fd, tdb->map_size, size) != 0) goto fail;
 	}
 
 	tdb->map_size += size;
