@@ -202,10 +202,14 @@ void save_re_uid(void)
 ****************************************************************************/
 void restore_re_uid(void)
 {
+#ifdef USE_SETRESUID
+	setresuid(saved_ruid, saved_euid, -1);
+#else
 	set_effective_uid(0);
 	set_effective_uid(saved_euid);
 	if (getuid() != saved_ruid) setuid(saved_ruid);
 	set_effective_uid(saved_euid);
+#endif
 
 	assert_uid(saved_ruid, saved_euid);
 }
