@@ -1,3 +1,12 @@
+2004-11-11  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/init_creds_pw.c: make krb5_get_init_creds_keytab work
+	again
+
+2004-11-10  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/hdb/hdb.asn1: use constrained integers
+	
 2004-11-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/krb5_get_init_creds.3: add description for opt_init,
