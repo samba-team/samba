@@ -24,11 +24,7 @@
 
 #include "includes.h"
 
-/*
- * Define this to get the real SMBCFILE and SMBCSRV structures 
- */
-#define _SMBC_INTERNAL
-#include "../include/libsmbclient.h"
+#include "../include/libsmb_internal.h"
 
 struct smbc_compat_fdlist {
 	SMBCFILE * file;
@@ -272,7 +268,7 @@ int smbc_open_print_job(const char *fname)
 	return (int) file;
 }
 
-int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn)
+int smbc_list_print_jobs(const char *purl, smbc_list_print_job_fn fn)
 {
 	return statcont->list_print_jobs(statcont, purl, fn);
 }

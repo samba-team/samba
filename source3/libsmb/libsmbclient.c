@@ -23,7 +23,7 @@
 
 #include "includes.h"
 
-#include "../include/libsmbclient.h"
+#include "../include/libsmb_internal.h"
 
 /*
  * Functions exported by libsmb_cache.c that we need here
@@ -219,7 +219,7 @@ int smbc_check_server(SMBCCTX * context, SMBCSRV * server)
 }
 
 /* 
- * Remove a server from the list server_table if it's unused.
+ * Remove a server from the cached server list it's unused.
  * On success, 0 is returned. 1 is returned if the server could not be removed.
  * 
  * Also useable outside libsmbclient
@@ -229,11 +229,12 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 	SMBCFILE * file;
 
 	/* are we being fooled ? */
-	if (!context || !context->_initialized || !srv) return 1;
+	if (!context || !context->internal ||
+	    !context->internal->_initialized || !srv) return 1;
 
 	
 	/* Check all open files/directories for a relation with this server */
-	for (file = context->_files; file; file=file->next) {
+	for (file = context->internal->_files; file; file=file->next) {
 		if (file->srv == srv) {
 			/* Still used */
 			DEBUG(3, ("smbc_remove_usused_server: %p still used by %p.\n", 
@@ -242,7 +243,7 @@ int smbc_remove_unused_server(SMBCCTX * context, SMBCSRV * srv)
 		}
 	}
 
-	DLIST_REMOVE(context->_servers, srv);
+	DLIST_REMOVE(context->internal->_servers, srv);
 
 	cli_shutdown(&srv->cli);
 
@@ -475,7 +476,8 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 	SMBCFILE *file = NULL;
 	int fd;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return NULL;
@@ -542,7 +544,7 @@ static SMBCFILE *smbc_open_ctx(SMBCCTX *context, const char *fname, int flags, m
 		file->offset  = 0;
 		file->file    = True;
 
-		DLIST_ADD(context->_files, file);
+		DLIST_ADD(context->internal->_files, file);
 		return file;
 
 	}
@@ -573,7 +575,8 @@ static int creat_bits = O_WRONLY | O_CREAT | O_TRUNC; /* FIXME: Do we need this 
 static SMBCFILE *smbc_creat_ctx(SMBCCTX *context, const char *path, mode_t mode)
 {
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return NULL;
@@ -591,7 +594,8 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
 {
 	int ret;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -600,7 +604,7 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
 
 	DEBUG(4, ("smbc_read(%p, %d)\n", file, (int)count));
 
-	if (!file || !DLIST_CONTAINS(context->_files, file)) {
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -641,14 +645,15 @@ static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_
 {
 	int ret;
 
-	if (!context || context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!file || !DLIST_CONTAINS(context->_files, file)) {
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -686,14 +691,15 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 {
         SMBCSRV *srv; 
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!file || !DLIST_CONTAINS(context->_files, file)) {
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
    
 		errno = EBADF;
 		return -1;
@@ -715,7 +721,7 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 		 * from the server cache if unused */
 		errno = smbc_errno(context, &file->srv->cli);  
 		srv = file->srv;
-		DLIST_REMOVE(context->_files, file);
+		DLIST_REMOVE(context->internal->_files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
 		context->callbacks.remove_unused_server_fn(context, srv);
@@ -737,7 +743,7 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 		 * from the server cache if unused */
 		errno = smbc_errno(context, &file->srv->cli);  
 		srv = file->srv;
-		DLIST_REMOVE(context->_files, file);
+		DLIST_REMOVE(context->internal->_files, file);
 		SAFE_FREE(file->fname);
 		SAFE_FREE(file);
 		context->callbacks.remove_unused_server_fn(context, srv);
@@ -745,7 +751,7 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
 		return -1;
 	}
 
-	DLIST_REMOVE(context->_files, file);
+	DLIST_REMOVE(context->internal->_files, file);
 	SAFE_FREE(file->fname);
 	SAFE_FREE(file);
 
@@ -762,7 +768,8 @@ static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path,
 		 SMB_INO_T *ino)
 {
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
  
 		errno = EINVAL;
  		return -1;
@@ -798,7 +805,8 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 	pstring path;
 	SMBCSRV *srv = NULL;
 
-	if (!context || context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -892,8 +900,10 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 	pstring path1, path2;
 	SMBCSRV *srv = NULL;
 
-	if (!ocontext || !ncontext ||
-	    !ocontext->_initialized || !ncontext->_initialized) {
+	if (!ocontext || !ncontext || 
+	    !ocontext->internal || !ncontext->internal ||
+	    !ocontext->internal->_initialized || 
+	    !ncontext->internal->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -961,14 +971,15 @@ static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int 
 {
 	size_t size;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 		
 	}
 
-	if (!file || !DLIST_CONTAINS(context->_files, file)) {
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -1021,7 +1032,8 @@ static
 ino_t smbc_inode(SMBCCTX *context, const char *name)
 {
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -1089,7 +1101,8 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;  /* Best I can think of ... */
 		return -1;
@@ -1172,14 +1185,15 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 	uint16 mode;
 	SMB_INO_T ino = 0;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!file || !DLIST_CONTAINS(context->_files, file)) {
+	if (!file || !DLIST_CONTAINS(context->internal->_files, file)) {
 
 		errno = EBADF;
 		return -1;
@@ -1272,9 +1286,6 @@ static int add_dirent(SMBCFILE *dir, const char *name, const char *comment, uint
 
 	ZERO_STRUCTP(dirent);
 
-	ZERO_STRUCTP(dirent);
-
-
 	if (dir->dir_list == NULL) {
 
 		dir->dir_list = malloc(sizeof(struct smbc_dir_list));
@@ -1355,8 +1366,6 @@ list_fn(const char *name, uint32 type, const char *comment, void *state)
 			dirent_type = SMBC_FILE_SHARE; /* FIXME, error? */
 			break;
 		}
-		ZERO_STRUCTP(dir->dir_list);
-
 	}
 	else dirent_type = dir->dir_type;
 
@@ -1391,9 +1400,9 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 	SMBCSRV *srv  = NULL;
 	SMBCFILE *dir = NULL;
 	struct in_addr rem_ip;
-	int slot = 0;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return NULL;
@@ -1489,7 +1498,6 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 			return NULL;
 
 		}
-		ZERO_STRUCTP(dir->dir_end);
 
 		dir->srv = srv;
 
@@ -1669,7 +1677,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 
 	}
 
-	DLIST_ADD(context->_files, dir);
+	DLIST_ADD(context->internal->_files, dir);
 	return dir;
 
 }
@@ -1681,14 +1689,15 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
 static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
 
-	if (!context || !context->_initialized) {
+        if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
+	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
@@ -1697,7 +1706,7 @@ static int smbc_closedir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 	smbc_remove_dir(dir); /* Clean it up */
 
-	DLIST_REMOVE(context->_files, dir);
+	DLIST_REMOVE(context->internal->_files, dir);
 
 	if (dir) {
 
@@ -1720,14 +1729,15 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 	/* Check that all is ok first ... */
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return NULL;
 
 	}
 
-	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
+	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
 
 		errno = EBADF;
 		return NULL;
@@ -1756,12 +1766,12 @@ struct smbc_dirent *smbc_readdir_ctx(SMBCCTX *context, SMBCFILE *dir)
 
 		/* Hmmm, do I even need to copy it? */
 
-		memcpy(context->_dirent, dirent, dirent->dirlen); /* Copy the dirent */
-		dirp = (struct smbc_dirent *)context->_dirent;
+		memcpy(context->internal->_dirent, dirent, dirent->dirlen); /* Copy the dirent */
+		dirp = (struct smbc_dirent *)context->internal->_dirent;
 		dirp->comment = (char *)(&dirp->name + dirent->namelen + 1);
 		dir->dir_next = dir->dir_next->next;
 
-		return (struct smbc_dirent *)context->_dirent;
+		return (struct smbc_dirent *)context->internal->_dirent;
 	}
 
 }
@@ -1778,14 +1788,15 @@ static int smbc_getdents_ctx(SMBCCTX *context, SMBCFILE *dir, struct smbc_dirent
 
 	/* Check that all is ok first ... */
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
+	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
@@ -1864,7 +1875,8 @@ static int smbc_mkdir_ctx(SMBCCTX *context, const char *fname, mode_t mode)
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal || 
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -1950,7 +1962,8 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal || 
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2047,14 +2060,15 @@ static int smbc_rmdir_ctx(SMBCCTX *context, const char *fname)
 static off_t smbc_telldir_ctx(SMBCCTX *context, SMBCFILE *dir)
 {
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
 
 	}
 
-	if (!dir || !DLIST_CONTAINS(context->_files, dir)) {
+	if (!dir || !DLIST_CONTAINS(context->internal->_files, dir)) {
 
 		errno = EBADF;
 		return -1;
@@ -2111,7 +2125,8 @@ static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
 	struct smbc_dirent *dirent = (struct smbc_dirent *)offset;
 	struct smbc_dir_list *list_ent = NULL;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2157,7 +2172,8 @@ static int smbc_lseekdir_ctx(SMBCCTX *context, SMBCFILE *dir, off_t offset)
 static int smbc_fstatdir_ctx(SMBCCTX *context, SMBCFILE *dir, struct stat *st)
 {
 
-	if (context || !context->_initialized) {
+	if (!context || !context->internal || 
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2179,7 +2195,8 @@ static SMBCFILE *smbc_open_print_job_ctx(SMBCCTX *context, const char *fname)
 	fstring server, share, user, password;
 	pstring path;
 	
-	if (!context || context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return NULL;
@@ -2216,8 +2233,8 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
 	int bytes, saverr, tot_bytes = 0;
 	char buf[4096];
 
-	if (!c_file || !c_file->_initialized || !c_print ||
-	    !c_print->_initialized) {
+	if (!c_file || !c_file->internal->_initialized || !c_print ||
+	    !c_print->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2286,13 +2303,14 @@ static int smbc_print_file_ctx(SMBCCTX *c_file, const char *fname, SMBCCTX *c_pr
  * Routine to list print jobs on a printer share ...
  */
 
-static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, void (*fn)(struct print_job_info *))
+static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, smbc_list_print_job_fn fn)
 {
 	SMBCSRV *srv;
 	fstring server, share, user, password, workgroup;
 	pstring path;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2322,7 +2340,7 @@ static int smbc_list_print_jobs_ctx(SMBCCTX *context, const char *fname, void (*
 
 	}
 
-	if (cli_print_queue(&srv->cli, fn) < 0) {
+	if (cli_print_queue(&srv->cli, (void (*)(struct print_job_info *))fn) < 0) {
 
 		errno = smbc_errno(context, &srv->cli);
 		return -1;
@@ -2344,7 +2362,8 @@ static int smbc_unlink_print_job_ctx(SMBCCTX *context, const char *fname, int id
 	pstring path;
 	int err;
 
-	if (!context || !context->_initialized) {
+	if (!context || !context->internal ||
+	    !context->internal->_initialized) {
 
 		errno = EINVAL;
 		return -1;
@@ -2395,14 +2414,23 @@ SMBCCTX * smbc_new_context(void)
 {
 	SMBCCTX * context;
 
-	context = malloc(sizeof(*context));
+	context = malloc(sizeof(SMBCCTX));
 	if (!context) {
 		errno = ENOMEM;
 		return NULL;
 	}
-	
+
 	ZERO_STRUCTP(context);
 
+	context->internal = malloc(sizeof(struct smbc_internal_data));
+	if (!context->internal) {
+		errno = ENOMEM;
+		return NULL;
+	}
+
+	ZERO_STRUCTP(context->internal);
+
+	
 	/* ADD REASONABLE DEFAULTS */
 	context->debug            = 0;
 	context->timeout          = 20000; /* 20 seconds */
@@ -2457,25 +2485,25 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
 		SMBCFILE * f;
 		DEBUG(1,("Performing aggressive shutdown.\n"));
 		
-		f = context->_files;
+		f = context->internal->_files;
 		while (f) {
 			context->close(context, f);
 			f = f->next;
 		}
-		context->_files = NULL;
+		context->internal->_files = NULL;
 
 		/* First try to remove the servers the nice way. */
 		if (context->callbacks.purge_cached_fn(context)) {
 			SMBCSRV * s;
 			DEBUG(1, ("Could not purge all servers, Nice way shutdown failed.\n"));
-			s = context->_servers;
+			s = context->internal->_servers;
 			while (s) {
 				cli_shutdown(&s->cli);
 				context->callbacks.remove_cached_srv_fn(context, s);
 				SAFE_FREE(s);
 				s = s->next;
 			}
-			context->_servers = NULL;
+			context->internal->_servers = NULL;
 		}
 	}
 	else {
@@ -2485,12 +2513,12 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
 			errno = EBUSY;
 			return 1;
 		}
-		if (context->_servers) {
+		if (context->internal->_servers) {
 			DEBUG(1, ("Active servers in context, free_context failed.\n"));
 			errno = EBUSY;
 			return 1;
 		}
-		if (context->_files) {
+		if (context->internal->_files) {
 			DEBUG(1, ("Active files in context, free_context failed.\n"));
 			errno = EBUSY;
 			return 1;
@@ -2503,6 +2531,7 @@ int smbc_free_context(SMBCCTX * context, int shutdown_ctx)
 	SAFE_FREE(context->user);
 	
 	DEBUG(3, ("Context %p succesfully freed\n", context));
+	SAFE_FREE(context->internal);
 	SAFE_FREE(context);
 	return 0;
 }
@@ -2521,13 +2550,13 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 	int pid;
 	char *user = NULL, *home = NULL;
 
-	if (!context) {
+	if (!context || !context->internal) {
 		errno = EBADF;
 		return NULL;
 	}
 
 	/* Do not initialise the same client twice */
-	if (context->_initialized) { 
+	if (context->internal->_initialized) { 
 		return 0;
 	}
 
@@ -2634,7 +2663,7 @@ SMBCCTX * smbc_init_context(SMBCCTX * context)
 	 * FIXME: Should we check the function pointers here? 
 	 */
 
-	context->_initialized = 1;
+	context->internal->_initialized = 1;
 	
 	return context;
 }
