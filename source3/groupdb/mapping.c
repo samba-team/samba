@@ -167,7 +167,7 @@ static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 	int len;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 	
@@ -198,7 +198,7 @@ BOOL add_initial_entry(gid_t gid, const char *sid, enum SID_NAME_USE sid_name_us
 	GROUP_MAP map;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 	
@@ -227,7 +227,7 @@ static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map)
 	int ret = 0;
 	
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -269,7 +269,7 @@ static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map)
 	int ret;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -319,7 +319,7 @@ static BOOL get_group_map_from_ntname(const char *name, GROUP_MAP *map)
 	int ret;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("get_group_map_from_ntname:failed to initialize group mapping"));
+		DEBUG(0,("get_group_map_from_ntname:failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -369,7 +369,7 @@ static BOOL group_map_remove(DOM_SID sid)
 	fstring string_sid;
 	
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -409,7 +409,7 @@ static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 	int entries=0;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -489,7 +489,7 @@ static NTSTATUS add_aliasmem(const DOM_SID *alias, const DOM_SID *member)
 	int result;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -540,7 +540,7 @@ static NTSTATUS enum_aliasmem(const DOM_SID *alias, DOM_SID **sids, int *num)
 	const char *p;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
@@ -741,7 +741,7 @@ BOOL get_domain_group_from_sid(DOM_SID sid, GROUP_MAP *map)
 	BOOL ret;
 	
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -790,7 +790,7 @@ BOOL get_local_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 	BOOL ret;
 	
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -850,7 +850,7 @@ BOOL get_builtin_group_from_sid(DOM_SID *sid, GROUP_MAP *map)
 	
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -887,7 +887,7 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	BOOL ret;
 
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
@@ -947,7 +947,7 @@ BOOL get_sid_list_of_group(gid_t gid, DOM_SID **sids, int *num_sids)
 	struct sys_pwent *user;
  
 	if(!init_group_mapping()) {
-		DEBUG(0,("failed to initialize group mapping"));
+		DEBUG(0,("failed to initialize group mapping\n"));
 		return(False);
 	}
 
