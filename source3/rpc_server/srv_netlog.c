@@ -252,7 +252,8 @@ static BOOL get_md4pw(char *md4pw, char *mach_name, char *mach_acct)
 	smb_pass = getsmbpwnam(mach_acct);
 	unbecome_root(True);
 
-	if (smb_pass != NULL)
+	if ((smb_pass) != NULL && !(smb_pass->acct_ctrl & ACB_DISABLED) &&
+        (smb_pass->smb_nt_passwd != NULL))
 	{
 		memcpy(md4pw, smb_pass->smb_nt_passwd, 16);
 		dump_data(5, md4pw, 16);
@@ -656,9 +657,9 @@ static void api_net_sam_logon( int uid,
     unbecome_root(True);
 
     if (smb_pass == NULL)
-    {
       status = 0xC0000000 | NT_STATUS_NO_SUCH_USER;
-    }
+    else if (smb_pass->acct_ctrl & ACB_DISABLED)
+      status =  0xC0000000 | NT_STATUS_ACCOUNT_DISABLED;
   }
 
   /* validate password. */
