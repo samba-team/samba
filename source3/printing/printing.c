@@ -228,7 +228,7 @@ static void print_unix_job(int snum, print_queue_struct *q)
 
 struct traverse_struct {
 	print_queue_struct *queue;
-	int qcount, snum, maxcount;
+	int qcount, snum, maxcount, total_jobs;
 };
 
 /* utility fn to delete any jobs that are no longer active */
@@ -244,17 +244,20 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 
 	if (strcmp(lp_servicename(ts->snum), pjob.qname)) {
 		/* this isn't for the queue we are looking at */
+		ts->total_jobs++;
 		return 0;
 	}
 
 	if (!pjob.smbjob) {
-		/* remove a unix job if it isn't in the system queue
-                   any more */
+		/* remove a unix job if it isn't in the system queue any more */
 
 		for (i=0;i<ts->qcount;i++) {
 			if (jobid == ts->queue[i].job + UNIX_JOB_START) break;
 		}
-		if (i == ts->qcount) tdb_delete(tdb, key);
+		if (i == ts->qcount)
+			tdb_delete(tdb, key);
+		else
+			ts->total_jobs++;
 		return 0;
 	}
 
@@ -263,9 +266,10 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		/* if a job is not spooled and the process doesn't
                    exist then kill it. This cleans up after smbd
                    deaths */
-		if (!process_exists(pjob.pid)) {
+		if (!process_exists(pjob.pid))
 			tdb_delete(tdb, key);
-		}
+		else
+			ts->total_jobs++;
 		return 0;
 	}
 
@@ -288,10 +292,13 @@ static int traverse_fn_delete(TDB_CONTEXT *t, TDB_DATA key, TDB_DATA data, void 
 		   A workaround is to not delete the job if it has been 
 		   submitted less than lp_lpqcachetime() seconds ago. */
 
-		if ((cur_t - pjob.starttime) > lp_lpqcachetime()) {
+		if ((cur_t - pjob.starttime) > lp_lpqcachetime())
 			tdb_delete(t, key);
-		}
+		else
+			ts->total_jobs++;
 	}
+	else
+		ts->total_jobs++;
 
 	return 0;
 }
@@ -412,10 +419,13 @@ static void print_queue_update(int snum)
 	tstruct.queue = queue;
 	tstruct.qcount = qcount;
 	tstruct.snum = snum;
+	tstruct.total_jobs = 0;
 
 	tdb_traverse(tdb, traverse_fn_delete, (void *)&tstruct);
 
 	safe_free(tstruct.queue);
+
+	tdb_store_int(tdb, "INFO/total_jobs", tstruct.total_jobs);
 
 	/*
 	 * Get the old print status. We will use this to compare the
@@ -745,7 +755,6 @@ static BOOL print_cache_expired(int snum)
 /****************************************************************************
  Get the queue status - do not update if db is out of date.
 ****************************************************************************/
-
 static int get_queue_status(int snum, print_status_struct *status)
 {
 	fstring keystr;
@@ -769,7 +778,6 @@ static int get_queue_status(int snum, print_status_struct *status)
 /****************************************************************************
  Determine the number of jobs in a queue.
 ****************************************************************************/
-
 static int print_queue_length(int snum)
 {
 	print_status_struct status;
@@ -779,6 +787,23 @@ static int print_queue_length(int snum)
 
 	/* also fetch the queue status */
 	return get_queue_status(snum, &status);
+}
+
+/****************************************************************************
+ Determine the number of jobs in all queues.
+****************************************************************************/
+static int get_total_jobs(int snum)
+{
+	int total_jobs;
+
+	/* make sure the database is up to date */
+	if (print_cache_expired(snum)) print_queue_update(snum);
+
+	total_jobs = tdb_fetch_int(tdb, "INFO/total_jobs");
+	if (total_jobs >0)
+		return total_jobs;
+	else
+		return 0;
 }
 
 /***************************************************************************
@@ -822,7 +847,14 @@ int print_job_start(struct current_user *user, int snum, char *jobname)
 		return -1;
 	}
 
+	/* Insure the maximum queue size is not violated */
 	if (lp_maxprintjobs(snum) && print_queue_length(snum) > lp_maxprintjobs(snum)) {
+		errno = ENOSPC;
+		return -1;
+	}
+
+	/* Insure the maximum print jobs in the system is not violated */
+	if (lp_totalprintjobs() && get_total_jobs(snum) > lp_totalprintjobs()) {
 		errno = ENOSPC;
 		return -1;
 	}
