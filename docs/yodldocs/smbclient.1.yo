@@ -31,18 +31,19 @@ to use on the server. A service name takes the form
 tt(//server/service) where em(server) is the NetBIOS name of the SMB/CIFS
 server offering the desired service and em(service) is the name
 of the service offered. Thus to connect to the service em(printer) on
-the SMB/CIFS server em(lanman), you would use the servicename
+the SMB/CIFS server em(smbserver), you would use the servicename
 
-tt(//lanman/printer)
+tt(//smbserver/printer)
 
-Note that the server name required is NOT necessarily the host name of
-the server! The name required is a NetBIOS server name, which may or
-may not be the same as the IP (DNS) hostname of the machine running
-the server.
+Note that the server name required is NOT necessarily the IP (DNS)
+host name of the server ! The name required is a NetBIOS server name,
+which may or may not be the same as the IP hostname of the machine
+running the server.
 
-The server name is looked up according to the bf(name resolve order)
-parameter in the smb.conf file, allowing an administrator to change
-the order and methods by which server names are looked up.
+The server name is looked up according to the link(bf(name resolve
+order))(name resolve order) parameter in the smb.conf file, allowing
+an administrator to change the order and methods by which server names
+are looked up.
 
 dit(bf(password)) password is the password required to access the
 specified service on the specified server. If this parameter is
@@ -68,8 +69,12 @@ file.
 
 dit(bf(-B IP addr)) The IP address to use when sending a broadcast packet.
 
-dit(bf(-O socket_options)) TCP socket options to set on the client socket.
+dit(bf(-O socket_options)) TCP socket options to set on the client
+socket. See the url(socket options)(smb.conf.5.html#socket options)
+parameter in the url(bf(smb.conf (5)))(smb.conf.5.html) manpage for
+the list of valid options.
 
+label(name resolve order)
 dit(bf(-R name resolve order)) This option allows the user of
 smbclient to determine what name resolution services to use when
 looking up the NetBIOS name of the host being connected to.
@@ -159,1085 +164,544 @@ and serious warnings will be logged. Level 1 is a reasonable level for
 day to day running - it generates a small amount of information about
 operations carried out.
 
-Levels above 1 will generate considerable amounts of log data, and should 
-only be used when investigating a problem. Levels above 3 are designed for 
-use only by developers and generate HUGE amounts of log data, most of which 
-is extremely cryptic.
-.RE
+Levels above 1 will generate considerable amounts of log data, and
+should only be used when investigating a problem. Levels above 3 are
+designed for use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic. If debuglevel is set to the
+letter 'A', then em(all) debug messages will be printed. This setting
+is for developers only (and people who em(really) want to know how the
+code works internally).
 
-
-
-  DEBUG(0,("\t-d debuglevel         set the debuglevel\n"));
-  DEBUG(0,("\t-P                    connect to service as a printer\n"));
-  DEBUG(0,("\t-p port               connect to the specified port\n"));
-  DEBUG(0,("\t-l log basename.      Basename for log/debug files\n"));
-  DEBUG(0,("\t-h                    Print this help message.\n"));
-  DEBUG(0,("\t-I dest IP            use this IP to connect to\n"));
-  DEBUG(0,("\t-E                    write messages to stderr instead of stdout\n"));
-  DEBUG(0,("\t-U username           set the network username\n"));
-  DEBUG(0,("\t-L host               get a list of shares available on a host\n"));
-  DEBUG(0,("\t-t terminal code      terminal i/o code {sjis|euc|jis7|jis8|junet|hex}\n"));
-  DEBUG(0,("\t-m max protocol       set the max protocol level\n"));
-  DEBUG(0,("\t-W workgroup          set the workgroup name\n"));
-  DEBUG(0,("\t-T<c|x>IXFqgbNan      command line tar\n"));
-  DEBUG(0,("\t-D directory          start from directory\n"));
-  DEBUG(0,("\t-c command string     execute semicolon separated commands\n"));
-
-.B \-R name resolve order
-
-.RS 3
-This parameter will override the default name resolution order of the
-server listed in the "name resolve order" parameter in smb.conf. This
-is useful to force name resolution to take place by a particular method.
-This command line parameter only exists in Samba 1.9.18p4 and above.
-.RE
-
-.B \-A
-
-.RS 3
-This parameter, if specified, causes the maximum debug level to be selected.
-Be warned that this generates prodigious amounts of debug data. There is also
-a security issue involved, as at the maximum debug level cleartext passwords
-may be written to some log files.
-.RE
-
-.B \-L
-
-.RS 3
-This option allows you to look at what services are available on a
-server. You use it as "smbclient -L host" and a list should appear.
-The
-.B \-I
-option may be useful if your NetBIOS names don't match your 
-tcp/ip host names or if you are trying to reach a host on another
-network. For example:
-
-smbclient -L ftp -I ftp.microsoft.com
-
-will list the shares available on Microsoft's public server.
-.RE
-
-.RS 3
-.RE
-
-.B \-E
-
-.RS 3
-This parameter, if specified, causes the client to write messages to the
-standard error stream (stderr) rather than to the standard output stream.
-
-By default, the client writes messages to standard output - typically the
-user's tty.
-.RE
-
-.B \-I
-.I IP number
-
-.RS 3
-.I IP number
-represents the IP number of the server to connect to. It should
-be specified in standard "a.b.c.d" notation.
-
-Normally the client will attempt to locate the specified Lan Manager server
-by looking it up - that is, broadcasting a request for the given server to
-identify itself. Using this parameter will force the client to assume that
-the server is on the machine with the specified IP number.
-
-There is no default for this parameter. If not supplied, it will be determined
-automatically by the client as described above.
-.RE
-
-.B \-O
-.I socket options
-
-.RS 3
-See the socket options section of
-.BR smb.conf (5)
-for details.
-.RE
-
-.B \-P
-
-.RS 3
-If specified, the service requested will be connected to as a printer service
-rather than as a normal filespace service. Operations such as put and get
-will not be applicable for such a connection.
+dit(bf(-P)) If this option is specified, the service requested will be
+connected to as a printer service rather than as a normal filespace
+service. Operations such as put and get will not be applicable for
+such a connection.
 
 By default, services will be connected to as NON-printer services.
-.RE
 
-.B \-U
-.I username
+dit(bf(-p port)) This number is the TCP port number that will be used
+when making connections to the server. The standard (well-known) TCP
+port number for an SMB/CIFS server is 139, which is the default.
 
-.RS 3
-.I username
-is the user name that will be used by the client to make a connection,
-assuming your server is running a protocol that allows for usernames.
+dit(bf(-l logfilename)) If specified, logfilename specifies a base
+filename into which operational data from the running client will be
+logged.
+
+The default base name is specified at compile time.
+
+The base name is used to generate actual log file names. For example,
+if the name specified was "log", the debug file would be
+tt(log.client).
+
+The log file generated is never removed by the client.
+
+dit(bf(-h)) Print the usage message for the client.
+
+dit(bf(-I IP address)) IP address is the address of the server to
+connect to. It should be specified in standard "a.b.c.d" notation.
+
+Normally the client would attempt to locate a named SMB/CIFS server by
+looking it up via the NetBIOS name resolution mechanism described
+above in the link(name resolve order)(name resolve order) parameter
+above. Using this parameter will force the client to assume that the
+server is on the machine with the specified IP address and the NetBIOS
+name component of the resource being connected to will be ignored.
+
+There is no default for this parameter. If not supplied, it will be
+determined automatically by the client as described above.
+
+dit(bf(-E)) This parameter causes the client to write messages to the
+standard error stream (stderr) rather than to the standard output
+stream.
+
+By default, the client writes messages to standard output - typically
+the user's tty.
+
+dit(bf(-U username)) This specifies the user name that will be used by
+the client to make a connection, assuming your server is not a downlevel
+server that is running a protocol level that uses passwords on shares,
+not on usernames.
 
 Some servers are fussy about the case of this name, and some insist
 that it must be a valid NetBIOS name.
 
-If no 
-.I username
-is supplied, it will default to an uppercase version of the 
-environment variable 
-.B USER
-or
-.B LOGNAME
-in that order.
-If no 
-.I username
-is supplied and neither environment variable exists the user name will
-be empty.
+If no username is supplied, it will default to an uppercase version of
+the environment variable tt(USER) or tt(LOGNAME) in that order.  If no
+username is supplied and neither environment variable exists the
+username "GUEST" will be used.
 
-If the USER environment variable containts a '%' character, everything
-after that will be treated as a password. This allows you to set the
-environment variable to be
-.B USER=username%password
-so that a password is not passed on the command line (where it may
-be seen by the ps command).
+If the tt(USER) environment variable containts a '%' character,
+everything after that will be treated as a password. This allows you
+to set the environment variable to be tt(USER=username%password) so
+that a password is not passed on the command line (where it may be
+seen by the ps command).
 
-If the service you are connecting to requires a password, it can be supplied
-using the
-.B \-U
-option, by appending a percent symbol ("%") then the password to 
-.I username.
-For example, to attach to a service as user "fred" with password "secret", you
-would specify
-.B \-U
-.I fred%secret
-on the command line. Note that there are no spaces around the percent symbol.
+If the service you are connecting to requires a password, it can be
+supplied using the bf(-U) option, by appending a percent symbol ("%")
+then the password to username.  For example, to attach to a service as
+user tt("fred") with password tt("secret"), you would specify. nl()
 
-If you specify the password as part of
-.I username
-then the 
-.B \-N
-option (suppress password prompt) is assumed.
+tt(-U fred%secret) nl()
 
-If you specify the password as a parameter AND as part of
-.I username
-then the password as part of
-.I username
-will take precedence. Putting nothing before or nothing after the percent 
-symbol will cause an empty username or an empty password to be used,
-respectively.
+on the command line. Note that there are no spaces around the percent
+symbol.
+
+If you specify the password as part of username then the bf(-N) option
+(suppress password prompt) is assumed.
+
+If you specify the password as a parameter em(AND) as part of username
+then the password as part of username will take precedence. Putting
+nothing before or nothing after the percent symbol will cause an empty
+username or an empty password to be used, respectively.
+
+The password may also be specified by setting up an environment
+variable called tt(PASSWORD) that contains the users password. Note
+that this may be very insecure on some systems but on others allows
+users to script smbclient commands without having a password appear in
+the command line of a process listing.
 
 Note: Some servers (including OS/2 and Windows for Workgroups) insist
 on an uppercase password. Lowercase or mixed case passwords may be
 rejected by these servers.
 
-Be cautious about including passwords in scripts.
-.RE
+Be cautious about including passwords in scripts or in the
+tt(PASSWORD) environment variable. Also, on many systems the command
+line of a running process may be seen via the tt(ps) command to be
+safe always allow smbclient to prompt for a password and type it in
+directly.
 
-.B \-l
-.I log basename
+dit(bf(-L)) This option allows you to look at what services are
+available on a server. You use it as tt("smbclient -L host") and a
+list should appear.  The bf(-I) option may be useful if your NetBIOS
+names don't match your tcp/ip dns host names or if you are trying to
+reach a host on another network.
 
-.RS 3
-If specified,
-.I log basename
-specifies a base filename into which operational data from the running client
-will be logged.
+dit(bf(-t terminal code)) This option tells smbclient how to interpret
+filenames coming from the remote server. Usually Asian language
+multibyte UNIX implementations use different character sets than
+SMB/CIFS servers (em(EUC) instead of em(SJIS) for example). Setting
+this parameter will let smbclient convert between the UNIX filenames
+and the SMB filenames correctly. This option has not been seriously
+tested and may have some problems.
 
-The default base name is specified at compile time.
+The terminal codes include tt(sjis), tt(euc), tt(jis7), tt(jis8),
+tt(junet), tt(hex), tt(cap). This is not a complete list, check the
+Samba source code for the complete list.
 
-The base name is used to generate actual log file names. For example, if the
-name specified was "log", the following files would be used for log data:
+dit(bf(-m max protocol level)) Normally, smbclient will negotiate with
+the server to use the most advanced version of the SMB/CIFS protocol
+that the server supports. Occasionaly it may be desirable to tell
+smbclient to negotiate a lower level of the protocol, hence this
+parameter. Valid options for the em(max protocol level) are :
 
-.RS 3
-log.client.debug (containing debugging information)
+startit()
 
-log.client.in (containing inbound transaction data)
+it() CORE
 
-log.client.out (containing outbound transaction data)
-.RE
+it() COREPLUS
 
-The log files generated are never removed by the client.
-.RE
+it() LANMAN1
 
-.B \-W
-.I workgroup
+it() LANMAN2
 
-.RS 3
-Override what workgroup is used for the connection. This may be needed
-to connect to some servers.
-.RE
+it() NT1
 
-.B \-p
-.I port number
+endit()
 
-.RS 3
-port number is a positive integer value.
+dit(bf(-W WORKGROUP)) Override the default workgroup specified in
+smb.conf for this connection. This may be needed to connect to some
+servers.
 
-The default value if this parameter is not specified is 139.
+label(minus_T) dit(bf(-T tar options)) smbclient may be used to create
+bf(tar (1)) compatible backups of all the files on an SMB/CIFS
+share. The secondary tar flags that can be given to this option are :
 
-This number is the port number that will be used when making connections to
-the server. The standard (well-known) port number for the server is 139, 
-hence the default.
+	startdit()
 
-This parameter is not normally specified.
-.RE
+	dit(bf(c)) Create a tar file on UNIX. Must be followed by the
+	name of a tar file, tape device or tt("-") for standard output. If
+	using standard output you must turn the log level to its lowest value
+        tt(-d0) to avoid corrupting your tar file. This flag is
+	mutually exclusive with the bf(x) flag.
 
-.B \-T
-.I tar options
+	dit(bf(x)) Extract (restore) a local tar file back to a
+	share. Unless the bf(-D) option is given, the tar files will be
+	restored from the top level of the share. Must be followed by the name
+	of the tar file, device or tt("-") for standard input. Mutually exclusive
+	with the bf(c) flag. Restored files have theuir creation times (mtime)
+	set to the date saved in the tar file. Directories currently do not
+	get their creation dates restored properly.
 
-.RS 3 
-where
-.I tar options
-consists of one or more of
-.BR c ,
-.BR x ,
-.BR I ,
-.BR X ,
-.BR b ,
-.BR g ,
-.BR q ,
-.BR N
-or
-.BR a ;
-used as:
-.LP
-smbclient 
-.B "\e\eserver\eshare"
-\-TcxIXbgNa
-[
-.IR blocksize
-]
-[
-.IR newer-file
-]
-.IR tarfile
-[
-.IR filenames ...
-]
+	dit(bf(I)) Include files and directories. Is the default
+	behaviour when filenames are specified above. Causes tar files to
+	be included in an extract or create (and therefore everything else to
+	be excluded). See example below.  Filename globbing does not work for
+	included files for extractions (yet).
 
-.RS 3
-.B c
-Create a tar file on UNIX. Must be followed by the name of a tar file,
-tape device or "\-" for standard output. (May be useful to set debugging
-low
-.RB ( -d0 ))
-to avoid corrupting your tar file if using "\-"). Mutually
-exclusive with the
-.B x
-flag.
+	dit(bf(X)) Exclude files and directories. Causes tar files to
+	be excluded from an extract or create. See example below.  Filename
+	globbing does not work for excluded files (yet).
 
-.B x
-Extract (restore) a local tar file back to a share. Unless the
-.B \-D
-option is given, the tar files will be restored from the top level of
-the share. Must be followed by the name of the tar file, device or "\-"
-for standard input. Mutually exclusive with the
-.B c
-flag. Restored files have theuir creation times (mtime) set to the date saved in
-the tar file. Directories currently do not get their creation dates restored 
-properly.
+	dit(bf(b)) Blocksize. Must be followed by a valid (greater than
+	zero) blocksize.  Causes tar file to be written out in
+	blocksize*TBLOCK (usually 512 byte) blocks.
 
-.B I
-Include files and directories. Is the default behaviour when
-.IR filenames
-are specified above. Causes tar files to be included in an extract or create
-(and therefore everything else to be excluded). See example below.
-Filename globbing does not work for included files for extractions (yet).
+	dit(bf(g)) Incremental. Only back up files that have the
+	archive bit set. Useful only with the bf(c) flag.
 
-.B X
-Exclude files and directories. Causes tar files to be excluded from
-an extract or create. See example below.
-Filename globbing does not work for excluded files (yet).
+	dit(bf(q)) Quiet. Keeps tar from printing diagnostics as it
+	works.  This is the same as tarmode quiet.
 
-.B b
-Blocksize. Must be followed by a valid (greater than zero) blocksize.
-Causes tar file to be written out in blocksize*TBLOCK (usually 512 byte)
-blocks.
+	dit(bf(N)) Newer than. Must be followed by the name of a file
+	whose date is compared against files found on the share during a
+	create. Only files newer than the file specified are backed up to the
+	tar file. Useful only with the bf(c) flag.
 
-.B g
-Incremental. Only back up files that have the archive bit set. Useful
-only with the
-.B c
-flag.
+	dit(bf(a)) Set archive bit. Causes the archive bit to be reset
+	when a file is backed up. Useful with the bf(g) and bf(c) flags.
 
-.B q
-Quiet. Keeps tar from printing diagnostics as it works.  This is the
-same as tarmode quiet.
+	enddit()
 
-.B N
-Newer than. Must be followed by the name of a file whose date is
-compared against files found on the share during a create. Only files
-newer than the file specified are backed up to the tar file. Useful
-only with the
-.B c
-flag.
+em(Tar Long File Names)
 
-.B a
-Set archive bit. Causes the archive bit to be reset when a file is backed
-up. Useful with the
-.B g
-(and
-.BR c )
-flags.
-.LP
+smbclient's tar option now supports long file names both on backup and
+restore. However, the full path name of the file must be less than
+1024 bytes.  Also, when a tar archive is created, smbclient's tar
+option places all files in the archive with relative names, not
+absolute names.
 
-.B Long File Names
+em(Tar Filenames)
 
-smbclient's tar option now supports long file names both on backup and 
-restore. However, the full path name of the file must be less than 1024 bytes.
-Also, when a tar archive is created, smbclient's tar option places all files 
-in the archive with relative names, not absolute names.
+All file names can be given as DOS path names (with tt(\) as the
+component separator) or as UNIX path names (with tt(/) as the
+component separator).
 
-.B Filenames ...
+em(Examples)
 
-All file names can be given as DOS path names (with \e as the component 
-separator) or as UNIX path names (with / as the component separator).
+startit()
 
-.B Examples
+it() Restore from tar file backup.tar into myshare on mypc (no password on share).
 
-smbclient \e\emypc\emyshare "" -N -Tx backup.tar
+	tt(smbclient //mypc/myshare "" -N -Tx backup.tar)
 
-Restore from tar file backup.tar into myshare on mypc (no password on share).
+it() Restore everything except users/docs
 
-smbclient \e\emypc\emyshare "" -N -TXx backup.tar users/docs
+	tt(smbclient //mypc/myshare "" -N -TXx backup.tar users/docs)
 
-Restore everything except users/docs
+it() Create a tar file of the files beneath users/docs.
 
-smbclient \e\emypc\emyshare "" -N -Tc backup.tar users/docs
+	tt(smbclient //mypc/myshare "" -N -Tc backup.tar users/docs)
 
-Create a tar file of the files beneath users/docs.
+it() Create the same tar file as above, but now use a DOS path name.
 
-smbclient \e\emypc\emyshare "" -N -tc backup.tar users\edocs
+	tt(smbclient //mypc/myshare "" -N -tc backup.tar users\edocs)
 
-Create the same tar file as above, but now use a DOS path name.
+it() Create a tar file of all the files and directories in the share.
 
-smbclient \e\emypc\emyshare "" -N -Tc backup.tar \e*
+	tt(smbclient //mypc/myshare "" -N -Tc backup.tar *)
 
-Create a tar file of all the files and directories in the share.
-.RE
-.RE
+endit()
 
-.B \-D
-.I initial directory
+dit(bf(-D initial directory)) Change to initial directory before
+starting. Probably only of any use with the tar bf(-T) option.
 
-.RS 3 
-Change to initial directory before starting. Probably only of any use
-with the tar
-.RB ( \-T )
-option.
-.RE
+dit(bf(-c command string)) command string is a semicolon separated
+list of commands to be executed instead of prompting from stdin.
+bf(-N) is implied by bf(-c).
 
-.B \-c
-.I command string
+This is particularly useful in scripts and for printing stdin to the
+server, e.g. tt(-c 'print -').
 
-.RS 3
-command string is a semicolon separated list of commands to be
-executed instead of prompting from stdin.
-.B \-N
-is implied by
-.BR \-c .
+enddit()
 
-This is particularly useful in scripts and for printing stdin to
-the server, e.g. \-c 'print \-'.
-.RE
-.SH OPERATIONS
-Once the client is running, the user is presented with a prompt, "smb: \e>".
-The backslash ("\e") indicates the current working directory on the server,
-and will change if the current working directory is changed.
+label(OPERATIONS)
+manpagesection(OPERATIONS)
 
-The prompt indicates that the client is ready and waiting to carry out a user
-command. Each command is a single word, optionally followed by parameters
-specific to that command. Command and parameters are space-delimited unless
-these notes specifically state otherwise. All commands are case-insensitive.
-Parameters to commands may or may not be case sensitive, depending on the
-command.
+Once the client is running, the user is presented with a prompt :
+
+tt(smb:\>)
+
+The backslash ("\") indicates the current working directory on the
+server, and will change if the current working directory is changed.
+
+The prompt indicates that the client is ready and waiting to carry out
+a user command. Each command is a single word, optionally followed by
+parameters specific to that command. Command and parameters are
+space-delimited unless these notes specifically state otherwise. All
+commands are case-insensitive.  Parameters to commands may or may not
+be case sensitive, depending on the command.
 
 You can specify file names which have spaces in them by quoting the
 name with double quotes, for example "a long file name".
 
-Parameters shown in square brackets (eg., "[parameter]") are optional. If not
-given, the command will use suitable defaults. Parameters shown in angle
-brackets (eg., "<parameter>") are required.
+Parameters shown in square brackets (eg., "[parameter]") are
+optional. If not given, the command will use suitable
+defaults. Parameters shown in angle brackets (eg., "<parameter>") are
+required.
 
-Note that all commands operating on the server are actually performed by
-issuing a request to the server. Thus the behaviour may vary from server to
-server, depending on how the server was implemented.
+Note that all commands operating on the server are actually performed
+by issuing a request to the server. Thus the behaviour may vary from
+server to server, depending on how the server was implemented.
 
 The commands available are given here in alphabetical order.
 
-.B ?
-.RS 3
-.B Parameters:
-.RS 3
-.I [command]
+startdit()
 
-.RE
-.B Description:
-.RS 3
-If
-.I command
-is specified, the
-.B ?
-command will display a brief informative message about the specified command.
+label(questionmark) dit(bf(? [command])) If "command" is specified,
+the bf(?) command will display a brief informative message about the
+specified command.  If no command is specified, a list of available
+commands will be displayed.
 
-If no command is specified, a list of available commands will be displayed.
-.RE
-.RE
+label(exclaimationmark) dit(bf(! [shell command])) If "shell command"
+is specified, the bf(!)  command will execute a shell locally and run
+the specified shell command. If no command is specified, a local shell
+will be run.
 
-.B !
-.RS 3
-.B Parameters:
-.RS 3
-.I [shell command]
+label(cd) dit(bf(cd [directory name])) If "directory name" is
+specified, the current working directory on the server will be changed
+to the directory specified. This operation will fail if for any reason
+the specified directory is inaccessible.
 
-.RE
-.B Description:
-.RS 3
-If
-.I shell command
-is specified, the
-.B !
-command will execute a shell locally and run the specified shell command. If
-no command is specified, a shell will be run.
-.RE
-.RE
+If no directory name is specified, the current working directory on
+the server will be reported.
 
-.B cd
-.RS 3
-.B Parameters:
-.RS 3
-.I [directory name]
+label(del) dit(bf(del <mask>)) The client will request that the server
+attempt to delete all files matching "mask" from the current working
+directory on the server.
 
-.RE
-.B Description:
-.RS 3
-If
-.I directory name
-is specified, the current working directory
-.B on the server
-will be changed to the directory specified. This operation will fail if for
+label(dir) dit(bf(dir <mask>)) A list of the files matching "mask" in
+the current working directory on the server will be retrieved from the
+server and displayed.
+
+label(exit) dit(bf(exit)) Terminate the connection with the server and
+exit from the program.
+
+label(get) dit(bf(get <remote file name> [local file name])) Copy the
+file called "remote file name" from the server to the machine running
+the client. If specified, name the local copy "local file name".  Note
+that all transfers in smbclient are binary. See also the
+link(bf(lowercase))(lowercase) command.
+
+label(help) dit(bf(help [command])) See the link(bf(?))(questionmark)
+command above.
+
+label(lcd) dit(bf(lcd [directory name])) If "directory name" is
+specified, the current working directory on the local machine will
+be changed to the directory specified. This operation will fail if for
 any reason the specified directory is inaccessible.
 
-If no directory name is specified, the current working directory
-.B on the server
-will be reported.
-.RE
-.RE
+If no directory name is specified, the name of the current working
+directory on the local machine will be reported.
 
-.B del
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(lowercase) dit(bf(lowercase)) Toggle lowercasing of filenames
+for the link(bf(get))(get) and link(bf(mget))(mget) commands.
 
-.RE
-.B Description:
-.RS 3
-The client will request that the server attempt to delete all files matching
-.I mask
-from the current working directory
-.B on the server.
-.RE
-.RE
+When lowercasing is toggled ON, local filenames are converted to
+lowercase when using the link(bf(get))(get) and link(bf(mget))(mget)
+commands. This is often useful when copying (say) MSDOS files from a
+server, because lowercase filenames are the norm on UNIX systems.
 
-.B dir
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(ls) dit(bf(ls <mask>)) See the link(bf(dir))(dir) command above.
 
-.RE
-.B Description:
-.RS 3
-A list of the files matching
-.I mask
-in the current working directory
-.B on the server
-will be retrieved from the server and displayed.
-.RE
-.RE
+label(mask) dit(bf(mask <mask>)) This command allows the user to set
+up a mask which will be used during recursive operation of the
+link(bf(mget))(mget) and link(bf(mput))(mput) commands.
 
-.B exit
-.RS 3
-.B Parameters:
-.RS 3
-None.
+The masks specified to the link(bf(mget))(mget) and
+link(bf(mput))(mput) commands act as filters for directories rather
+than files when recursion is toggled ON.
 
-.RE
-.B Description:
-.RS 3
-Terminate the connection with the server and exit from the program.
-.RE
-.RE
+The mask specified with the .B mask command is necessary to filter
+files within those directories. For example, if the mask specified in
+an link(bf(mget))(mget) command is "source*" and the mask specified
+with the mask command is "*.c" and recursion is toggled ON, the
+link(bf(mget))(mget) command will retrieve all files matching "*.c" in
+all directories below and including all directories matching "source*"
+in the current working directory.
 
-.B get
-.RS 3
-.B Parameters:
-.RS 3
-.I <remote file name> [local file name]
+Note that the value for mask defaults to blank (equivalent to "*") and
+remains so until the mask command is used to change it. It retains the
+most recently specified value indefinitely. To avoid unexpected
+results it would be wise to change the value of .I mask back to "*"
+after using the link(bf(mget))(mget) or link(bf(mput))(mput) commands.
 
-.RE
-.B Description:
-.RS 3
-Copy the file called
-.I remote file name
-from the server to the machine running the client. If specified, name the
-local copy
-.I local file name.
-Note that all transfers in
-.B smbclient
-are binary. See also the
-.B lowercase
+label(md) dit(bf(md <directory name>)) See the link(bf(mkdir))(mkdir)
 command.
-.RE
-.RE
 
-.B help
-.RS 3
-.B Parameters:
-.RS 3
-.I [command]
+label(mget) dit(bf(mget <mask>)) Copy all files matching mask from the
+server to the machine running the client.
 
-.RE
-.B Description:
-.RS 3
-See the
-.B ?
-command above.
-.RE
-.RE
+Note that mask is interpreted differently during recursive operation
+and non-recursive operation - refer to the link(bf(recurse))(recurse)
+and link(bf(mask))(mask) commands for more information. Note that all
+transfers in .B smbclient are binary. See also the
+link(bf(lowercase))(lowercase) command.
 
-.B lcd
-.RS 3
-.B Parameters:
-.RS 3
-.I [directory name]
+label(mkdir) dit(bf(mkdir <directory name>)) Create a new directory on
+the server (user access privileges permitting) with the specified
+name.
 
-.RE
-.B Description:
-.RS 3
-If
-.I directory name
-is specified, the current working directory
-.B on the local machine
-will be changed to the directory specified. This operation will fail if for
-any reason the specified directory is inaccessible.
+label(mput) dit(bf(mput <mask>)) Copy all files matching mask in
+the current working directory on the local machine to the current
+working directory on the server.
 
-If no directory name is specified, the name of the current working directory
-.B on the local machine
-will be reported.
-.RE
-.RE
+Note that mask is interpreted differently during recursive operation
+and non-recursive operation - refer to the link(bf(recurse))(recurse)
+and link(bf(mask))(mask) commands for more information. Note that all
+transfers in .B smbclient are binary.
 
-.B lowercase
-.RS 3
-.B Parameters:
-.RS 3
-None.
+label(print) dit(bf(print <file name>)) Print the specified file
+from the local machine through a printable service on the server.
 
-.RE
-.B Description:
-.RS 3
-Toggle lowercasing of filenames for the
-.B get
-and
-.B mget
+See also the link(bf(printmode))(printmode) command.
+
+label(printmode) dit(bf(printmode <graphics or text>)) Set the print
+mode to suit either binary data (such as graphical information) or
+text. Subsequent print commands will use the currently set print
+mode.
+
+label(prompt) dir(bf(prompt)) Toggle prompting for filenames during
+operation of the link(bf(mget))(mget) and link(bf(mput))(mput)
 commands.
 
-When lowercasing is toggled ON, local filenames are converted to lowercase
-when using the
-.B get
-and
-.B mget
-commands. This is often useful when copying (say) MSDOS files from a server,
-because lowercase filenames are the norm on UNIX systems.
-.RE
-.RE
+When toggled ON, the user will be prompted to confirm the transfer of
+each file during these commands. When toggled OFF, all specified files
+will be transferred without prompting.
 
-.B ls
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(put) dit(bf(put <local file name> [remote file name])) Copy the
+file called "local file name" from the machine running the client to
+the server. If specified, name the remote copy "remote file name".
+Note that all transfers in smbclient are binary. See also the
+link(bf(lowercase))(lowercase) command.
 
-.RE
-.B Description:
-.RS 3
-See the
-.B dir
-command above.
-.RE
-.RE
+label(queue) dir(bf(queue)) Displays the print queue, showing the job
+id, name, size and current status.
 
-.B mask
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(quit) dit(bf(quit)) See the link(bf(exit))(exit) command.
 
-.RE
-.B Description:
-.RS 3
-This command allows the user to set up a mask which will be used during
-recursive operation of the
-.B mget
-and
-.B mput
-commands.
-
-The masks specified to the
-.B mget
-and
-.B mput
-commands act as filters for directories
-rather than files when recursion is toggled ON.
-
-The mask specified with the
-.B mask
-command is necessary to filter files within those directories. For example,
-if the mask specified in an
-.B mget
-command is "source*"
-.I and
-the mask specified with the
-.B mask
-command is "*.c"
-.I and
-recursion is toggled ON, the
-.B mget
-command will retrieve all files matching "*.c" in all directories below
-and including all directories matching "source*" in the current working 
-directory.
-
-Note that the value for
-.I mask
-defaults to blank (equivalent to "*") and remains so until the
-.B mask
-command is used to change it. It retains the most recently specified value
-indefinitely. To avoid unexpected results it would be wise to change the
-value of
-.I mask
-back to "*" after using the
-.B mget
-or
-.B mput
-commands.
-.RE
-.RE
-
-.B md
-.RS 3
-.B Parameters:
-.RS 3
-.I <directory name>
-
-.RE
-.B Description:
-.RS 3
-See the
-.B mkdir
+label(rd) dir(bf(rd <directory name>)) See the link(bf(rmdir))(rmdir)
 command.
-.RE
-.RE
 
-.B mget
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(recurse) dir(bf(recurse)) Toggle directory recursion for the
+commands link(bf(mget))(mget) and link(bf(mput))(mput).
 
-.RE
-.B Description:
-.RS 3
-Copy all files matching
-.I mask
-from the server to the machine running the client.
-
-Note that
-.I mask
-is interpreted differently during recursive operation and non-recursive
-operation - refer to the
-.B recurse
-and
-.B mask
-commands for more information. Note that all transfers in
-.B smbclient
-are binary. See also the
-.B lowercase
-command.
-.RE
-.RE
-
-.B mkdir
-.RS 3
-.B Parameters:
-.RS 3
-.I <directory name>
-
-.RE
-.B Description:
-.RS 3
-Create a new directory 
-.B on the server
-(user access privileges permitting) with the specified name.
-.RE
-.RE
-
-.B mput
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
-
-.RE
-.B Description:
-.RS 3
-Copy all files matching
-.I mask
-in the current working directory
-.B on the local machine
-to the current working directory on the server.
-
-Note that
-.I mask
-is interpreted differently during recursive operation and non-recursive
-operation - refer to the
-.B recurse
-and
-.B mask
-commands for more information. Note that all transfers in
-.B smbclient
-are binary.
-.RE
-.RE
-
-.B print
-.RS 3
-.B Parameters:
-.RS 3
-.I <file name>
-
-.RE
-.B Description:
-.RS 3
-Print the specified file
-.B from the local machine
-through a printable service on the server.
-
-See also the
-.B printmode
-command.
-.RE
-.RE
-
-.B printmode
-.RS 3
-.B Parameters:
-.RS 3
-.I <graphics or text>
-
-.RE
-.B Description:
-.RS 3
-Set the print mode to suit either binary data (such as graphical information)
-or text. Subsequent
-.B print
-commands will use the currently set print mode.
-.RE
-.RE
-
-.B prompt
-.RS 3
-.B Parameters:
-.RS 3
-None.
-
-.RE
-.B Description:
-.RS 3
-Toggle prompting for filenames during operation of the
-.B mget
-and
-.B mput
-commands.
-
-When toggled ON, the user will be prompted to confirm the transfer of each
-file during these commands. When toggled OFF, all specified files will be
-transferred without prompting.
-.RE
-.RE
-
-.B put
-.RS 3
-.B Parameters:
-.RS 3
-.I <local file name> [remote file name]
-
-.RE
-.B Description:
-.RS 3
-Copy the file called
-.I local file name
-from the machine running the client to the server. If specified, name the
-remote copy
-.I remote file name.
-Note that all transfers in
-.B smbclient
-are binary. See also the
-.B lowercase
-command.
-.RE
-.RE
-
-.B queue
-.RS 3
-.B Parameters:
-.RS 3
-None.
-
-.RE
-.B Description:
-.RS 3
-Displays the print queue, showing the job id, name, size and current status.
-.RE
-.RE
-
-.B quit
-.RS 3
-.B Parameters:
-.RS 3
-None.
-
-.RE
-.B Description:
-.RS 3
-See the
-.B exit
-command.
-.RE
-.RE
-
-.B rd
-.RS 3
-.B Parameters:
-.RS 3
-.I <directory name>
-
-.RE
-.B Description:
-.RS 3
-See the
-.B rmdir
-command.
-.RE
-.RE
-
-.B recurse
-.RS 3
-.B Parameters:
-.RS 3
-None.
-
-.RE
-.B Description:
-.RS 3
-Toggle directory recursion for the commands
-.B mget
-and
-.BR mput .
-
-When toggled ON, these commands will process all directories in the source
-directory (i.e., the directory they are copying
-.IR from )
-and will recurse into any that match the mask specified to the command. Only
-files that match the mask specified using the
-.B mask
-command will be retrieved. See also the
-.B mask
-command.
+When toggled ON, these commands will process all directories in the
+source directory (i.e., the directory they are copying .IR from ) and
+will recurse into any that match the mask specified to the
+command. Only files that match the mask specified using the
+link(bf(mask))(mask) command will be retrieved. See also the
+link(bf(mask))(mask) command.
 
 When recursion is toggled OFF, only files from the current working
 directory on the source machine that match the mask specified to the
-.B mget
-or
-.B mput
-commands will be copied, and any mask specified using the
-.B mask
-command will be ignored.
-.RE
-.RE
+link(bf(mget))(mget) or link(bf(mput))(mput) commands will be copied,
+and any mask specified using the link(bf(mask))(mask) command will be
+ignored.
 
-.B rm
-.RS 3
-.B Parameters:
-.RS 3
-.I <mask>
+label(rm) dir(bf(rm <mask>)) Remove all files matching mask from
+the current working directory on the server.
 
-.RE
-.B Description:
-.RS 3
-Remove all files matching
-.I mask
-from the current working directory
-.B on the server.
-.RE
-.RE
+label(rmdir) dit(bf(rmdir <directory name>)) Remove the specified
+directory (user access privileges permitting) from the server.
 
-.B rmdir
-.RS 3
-.B Parameters:
-.RS 3
-.I <directory name>
+label(tar) dit(bf(tar <c|x>[IXbgNa])) Performs a tar operation - see
+the link(bf(-T))(minus_T) command line option above. Behaviour may be
+affected by the link(bf(tarmode))(tarmode) command (see below). Using
+g (incremental) and N (newer) will affect tarmode settings. Note that
+using the "-" option with tar x may not work - use the command line
+option instead.
 
-.RE
-.B Description:
-.RS 3
-Remove the specified directory (user access privileges permitting)
-.B from the server.
-.RE
-.RE
+label(blocksize) dit(bf(blocksize <blocksize>)) Blocksize. Must be
+followed by a valid (greater than zero) blocksize. Causes tar file to
+be written out in blocksize*TBLOCK (usually 512 byte) blocks.
 
-.B tar
-.RS 3
-.B Parameters:
-.RS 3
-.I <c|x>[IXbgNa]
+label(tarmode) dir(bf(tarmode <full|inc|reset|noreset>)) Changes tar's
+behaviour with regard to archive bits. In full mode, tar will back up
+everything regardless of the archive bit setting (this is the default
+mode). In incremental mode, tar will only back up files with the
+archive bit set. In reset mode, tar will reset the archive bit on all
+files it backs up (implies read/write share).
 
-.RE
-.B Description:
-.RS 3
-Performs a tar operation - see the
-.B \-T
-command line option above. Behaviour
-may be affected by the
-.B tarmode
-command (see below). Using g (incremental) and N (newer) will affect
-tarmode settings. Note that using the "\-" option with tar x may not
-work - use the command line option instead.
-.RE
-.RE
+label(setmode) dit(bf(setmode <filename> <perm=[+|\-]rsha>)) A version
+of the DOS attrib command to set file permissions. For example:
 
-.B blocksize
-.RS 3
-.B Parameters
-.RS 3
-.I <blocksize>
-
-.RE
-.B Description
-.RS 3
-Blocksize. Must be followed by a valid (greater than zero) blocksize.
-Causes tar file to be written out in blocksize*TBLOCK (usually 512 byte)
-blocks.
-.RE
-.RE
-
-.B tarmode
-.RS 3
-.B Parameters
-.RS 3
-.I <full|inc|reset|noreset>
-
-.RE
-.B Description
-.RS 3
-Changes tar's behaviour with regard to archive bits. In full mode,
-tar will back up everything regardless of the archive bit setting (this
-is the default mode). In incremental mode, tar will only back up files
-with the archive bit set. In reset mode, tar will reset the archive bit
-on all files it backs up (implies read/write share).
-.RE
-.RE
-
-.B setmode
-.RS 3
-.B Parameters
-.RS 3
-.I <filename> <perm=[+|\-]rsha>
-
-.RE
-.B Description
-.RS 3
-A version of the DOS attrib command to set file permissions. For example,
-
-setmode myfile +r
+tt(setmode myfile +r)
 
 would make myfile read only.
-.RE
-.RE
-.SH NOTES
-Some servers are fussy about the case of supplied usernames, passwords, share
-names (aka service names) and machine names. If you fail to connect try
-giving all parameters in uppercase.
 
-It is often necessary to use the
-.B \-n
-option when connecting to some types
-of servers. For example OS/2 LanManager insists on a valid NetBIOS name
-being used, so you need to supply a valid name that would be known to
-the server.
+enddit()
 
-.B smbclient
-supports long file names where the server supports the LANMAN2
-protocol.
-.SH FILES
-Not applicable.
-.SH ENVIRONMENT VARIABLES
-.B USER
-.RS 3
-The variable USER may contain the username of the person using the client.
-This information is used only if the protocol level is high enough to support
-session-level passwords.
-.RE
-.SH INSTALLATION
-The location of the client program is a matter for individual system 
+label(NOTES)
+manpagesection(NOTES)
+
+Some servers are fussy about the case of supplied usernames,
+passwords, share names (aka service names) and machine names. If you
+fail to connect try giving all parameters in uppercase.
+
+It is often necessary to use the -n option when connecting to some
+types of servers. For example OS/2 LanManager insists on a valid
+NetBIOS name being used, so you need to supply a valid name that would
+be known to the server.
+
+smbclient supports long file names where the server supports the
+LANMAN2 protocol or above.
+
+label(ENVIRONMENT VARIABLES)
+manpagesection(ENVIRONMENT VARIABLES)
+
+The variable bf(USER) may contain the username of the person using the
+client.  This information is used only if the protocol level is high
+enough to support session-level passwords.
+
+The variable bf(PASSWORD) may contain the password of the person using
+the client.  This information is used only if the protocol level is
+high enough to support session-level passwords.
+
+label(INSTALLATION)
+manpagesection(INSTALLATION)
+
+The location of the client program is a matter for individual system
 administrators. The following are thus suggestions only.
 
-It is recommended that the client software be installed under the
-/usr/local/samba
-hierarchy, in a directory readable by all, writeable only by root. The client
-program itself should be executable by all. The client should NOT be setuid 
-or setgid!
+It is recommended that the smbclient software be installed in the
+/usr/local/samba/bin or /usr/samba/bin directory, this directory
+readable by all, writeable only by root. The client program itself
+should be executable by all. The client should em(NOT) be setuid or
+setgid!
 
-The client log files should be put in a directory readable and writable only
-by the user.
+The client log files should be put in a directory readable and
+writable only by the user.
 
-To test the client, you will need to know the name of a running Lan manager
-server. It is possible to run
-.B smbd
-(see
-.BR smbd (8))
-as an ordinary user - running that server as a daemon on a
+To test the client, you will need to know the name of a running
+SMB/CIFS server. It is possible to run url(bf(smbd (8)))(smbd.8.html)
+an ordinary user - running that server as a daemon on a
 user-accessible port (typically any port number over 1024) would
 provide a suitable test server.
-.SH VERSION
-This man page is (mostly) correct for version 1.9.00 of the Samba suite, plus some
-of the recent patches to it. These notes will necessarily lag behind 
-development of the client software, so it is possible that your version of 
-the client has extensions or parameter semantics that differ from or are not 
-covered by this man page. Please notify these to the address below for 
-rectification.
-.SH SEE ALSO
-.BR smbd (8)
-.SH DIAGNOSTICS
-[This section under construction]
 
-Most diagnostics issued by the client are logged in a specified log file. The
-log file name is specified at compile time, but may be overridden on the
-command line.
+label(DIAGNOSTICS)
+manpagesection(DIAGNOSTICS)
 
-The number and nature of diagnostics available depends on the debug level used
-by the client. If you have problems, set the debug level to 3 and peruse the
-log files.
+Most diagnostics issued by the client are logged in a specified log
+file. The log file name is specified at compile time, but may be
+overridden on the command line.
 
-Most messages are reasonably self-explanatory. Unfortunately, at time of
-creation of this man page the source code is still too fluid to warrant
-describing each and every diagnostic. At this stage your best bet is still
-to grep the source code and inspect the conditions that gave rise to the 
-diagnostics you are seeing.
-.SH BUGS
-None known.
-.SH CREDITS
-The original Samba software and related utilities were created by 
-Andrew Tridgell (samba-bugs@samba.anu.edu.au). Andrew is also the Keeper
-of the Source for this project.
+The number and nature of diagnostics available depends on the debug
+level used by the client. If you have problems, set the debug level to
+3 and peruse the log files.
 
-See
-.BR smb.conf (5)
-for a full list of contributors and details on how to 
-submit bug reports, comments etc.
+label(AUTHOR)
+manpageauthor()
+
+The original Samba software and related utilities were created by
+Andrew Tridgell (samba-bugs@samba.anu.edu.au). Samba is now developed
+by the Samba Team as an Open Source project similar to the way the
+Linux kernel is developed.
+
+The original Samba man pages were written by Karl Auer. The man page
+sources were converted to YODL format (another excellent piece of Open
+Source software) and updated for the Samba2.0 release by Jeremy
+Allison.
+
+See url(bf(samba (8)))(samba.7.html) to find out how to get a full
+list of contributors and details on how to submit bug reports,
+comments etc.
