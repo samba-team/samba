@@ -5632,6 +5632,13 @@ rm -fr conftest*
 fi
 
 
+DUMMY_FILES=`cd ${srcdir-.} >/dev/null &&
+	     echo */. | sed 's, ,dummy ,g;s,$,dummy,'`
+
+DUMMY_BASE=:include/stamp-h.in
+
+
+DUMMY_GEN=`echo "$DUMMY_FILES" | sed "s, ,$DUMMY_BASE ,g;s,\$,$DUMMY_BASE,"`
 trap '' 1 2 15
 cat > confcache <<\EOF
 # This file is a shell script that caches the results of configure
@@ -5733,11 +5740,7 @@ done
 ac_given_srcdir=$srcdir
 ac_given_INSTALL="$INSTALL"
 
-trap 'rm -fr `echo "Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
-web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
-rpc_client/dummy rpc_parse/dummy locking/dummy passdb/dummy
-script/dummy include/dummy codepages/dummy libsmb/dummy bin/dummy
-utils/dummy printing/dummy include/stamp-h include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+trap 'rm -fr `echo "$DUMMY_GEN Makefile include/stamp-h include/config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -5792,6 +5795,8 @@ s%@AUTOCONF@%$AUTOCONF%g
 s%@AUTOHEADER@%$AUTOHEADER%g
 s%@CPP@%$CPP%g
 s%@LIBOBJS@%$LIBOBJS%g
+s%@DUMMY_FILES@%$DUMMY_FILES%g
+s%@DUMMY_BASE@%$DUMMY_BASE%g
 
 CEOF
 EOF
@@ -5833,11 +5838,7 @@ EOF
 
 cat >> $CONFIG_STATUS <<EOF
 
-CONFIG_FILES=\${CONFIG_FILES-"Makefile tests/dummy client/dummy lib/dummy ubiqx/dummy
-web/dummy param/dummy nmbd/dummy smbd/dummy rpc_server/dummy
-rpc_client/dummy rpc_parse/dummy locking/dummy passdb/dummy
-script/dummy include/dummy codepages/dummy libsmb/dummy bin/dummy
-utils/dummy printing/dummy include/stamp-h"}
+CONFIG_FILES=\${CONFIG_FILES-"$DUMMY_GEN Makefile include/stamp-h"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

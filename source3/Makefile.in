@@ -320,7 +320,7 @@ uninstallcp:
 	@$(SHELL) $(srcdir)/script/uninstallcp.sh $(CODEPAGEDIR) $(CODEPAGELIST)
 
 clean: 
-	-rm -f core */*~ *~ */*.o $(PROGS) $(SPROGS)
+	-rm -f core */*~ *~ */*.o
 
 proto:
 	@echo rebuilding include/proto.h
@@ -336,7 +336,7 @@ realclean: clean
 	-rm -f config.log $(PROGS) $(SPROGS)
 
 distclean: realclean
-	-rm -f include/config.h include/stamp-h */dummy Makefile
+	-rm -f include/config.h include/stamp-h Makefile */.dummy
 	-rm -f config.status config.cache
 	-rm -rf .deps
 
@@ -377,6 +377,13 @@ $(srcdir)/include/config.h.in: $(srcdir)/include/stamp-h.in
 $(srcdir)/include/stamp-h.in: @MAINT@ $(srcdir)/acconfig.h $(srcdir)/configure.in
 	cd $(srcdir) && $(AUTOHEADER)
 	@cd $(srcdir) && echo > include/stamp-h.in
+
+DUMMY_FILES = @DUMMY_FILES@
+DUMMY_BASE = @DUMMY_BASE@
+
+Makefile: $(DUMMY_FILES)
+$(DUMMY_FILES):
+	CONFIG_FILES=$@$(DUMMY_BASE) CONFIG_HEADERS= $(SHELL) ./config.status
 
 # automatic dependency tracking rules
 .deps/.dummy:
