@@ -684,7 +684,7 @@ static void usage(char *pname)
   DEBUG( 1, ( "Netbios nameserver version %s started.\n", VERSION ) );
   DEBUGADD( 1, ( "Copyright Andrew Tridgell 1994-1998\n" ) );
 
-  if( !get_myname( myhostname, NULL) )
+  if(!get_myname( myhostname))
   {
     DEBUG( 0, ( "Unable to get my hostname - exiting.\n" ) );
     return -1;

@@ -638,7 +638,7 @@ static void usage(char *pname)
 	 * Do this before reload_services.
 	 */
 
-	get_myname( myhostname, NULL);
+	get_myname( myhostname );
 
 	if (!reload_services(False))
 		return(-1);	
