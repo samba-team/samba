@@ -330,13 +330,13 @@ static BOOL ads_cleanup_expired_creds(krb5_context context,
 	   we're using creds obtained outside of our exectuable
 	*/
 	if (StrCaseCmp(krb5_cc_get_type(context, ccache), "FILE") == 0) {
-		DEBUG(5, ("We do not remove creds from a FILE ccache\n"));
+		DEBUG(5, ("ads_cleanup_expired_creds: We do not remove creds from a FILE ccache\n"));
 		return False;
 	}
 	
 	retval = krb5_cc_remove_cred(context, ccache, 0, credsp);
 	if (retval) {
-		DEBUG(1, ("krb5_cc_remove_cred failed, err %s\n",
+		DEBUG(1, ("ads_cleanup_expired_creds: krb5_cc_remove_cred failed, err %s\n",
 			  error_message(retval)));
 		/* If we have an error in this, we want to display it,
 		   but continue as though we deleted it */
@@ -363,7 +363,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	
 	retval = krb5_parse_name(context, principal, &server);
 	if (retval) {
-		DEBUG(1,("Failed to parse principal %s\n", principal));
+		DEBUG(1,("ads_krb5_mk_req: Failed to parse principal %s\n", principal));
 		return retval;
 	}
 	
@@ -376,7 +376,9 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	}
 	
 	if ((retval = krb5_cc_get_principal(context, ccache, &creds.client))) {
-		DEBUG(1,("krb5_cc_get_principal failed (%s)\n", 
+		/* This can commonly fail on smbd startup with no ticket in the cache.
+		 * Report at higher level than 1. */
+		DEBUG(3,("ads_krb5_mk_req: krb5_cc_get_principal failed (%s)\n", 
 			 error_message(retval)));
 		goto cleanup_creds;
 	}
@@ -384,7 +386,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	while(!creds_ready) {
 		if ((retval = krb5_get_credentials(context, 0, ccache, 
 						   &creds, &credsp))) {
-			DEBUG(1,("krb5_get_credentials failed for %s (%s)\n",
+			DEBUG(1,("ads_krb5_mk_req: krb5_get_credentials failed for %s (%s)\n",
 				 principal, error_message(retval)));
 			goto cleanup_creds;
 		}
@@ -393,7 +395,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 		if ((unsigned)credsp->times.starttime > time(NULL)) {
 			time_t t = time(NULL);
 			int time_offset =(unsigned)credsp->times.starttime-t;
-			DEBUG(4,("Advancing clock by %d seconds to cope with clock skew\n", time_offset));
+			DEBUG(4,("ads_krb5_mk_req: Advancing clock by %d seconds to cope with clock skew\n", time_offset));
 			krb5_set_real_time(context, t + time_offset + 1, 0);
 		}
 
@@ -401,7 +403,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 			creds_ready = True;
 	}
 
-	DEBUG(10,("Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
+	DEBUG(10,("ads_krb5_mk_req: Ticket (%s) in ccache (%s) is valid until: (%s - %d)\n",
 		  principal, krb5_cc_default_name(context),
 		  http_timestring((unsigned)credsp->times.endtime), 
 		  (unsigned)credsp->times.endtime));
@@ -410,7 +412,7 @@ static krb5_error_code ads_krb5_mk_req(krb5_context context,
 	retval = krb5_mk_req_extended(context, auth_context, ap_req_options, 
 				      &in_data, credsp, outbuf);
 	if (retval) {
-		DEBUG(1,("krb5_mk_req_extended failed (%s)\n", 
+		DEBUG(1,("ads_krb5_mk_req: krb5_mk_req_extended failed (%s)\n", 
 			 error_message(retval)));
 	}
 	
@@ -446,7 +448,7 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 	
 	retval = krb5_init_context(&context);
 	if (retval) {
-		DEBUG(1,("krb5_init_context failed (%s)\n", 
+		DEBUG(1,("cli_krb5_get_ticket: krb5_init_context failed (%s)\n", 
 			 error_message(retval)));
 		goto failed;
 	}
@@ -456,13 +458,13 @@ int cli_krb5_get_ticket(const char *principal, time_t time_offset,
 	}
 
 	if ((retval = krb5_cc_default(context, &ccdef))) {
-		DEBUG(1,("krb5_cc_default failed (%s)\n",
+		DEBUG(1,("cli_krb5_get_ticket: krb5_cc_default failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
 
 	if ((retval = krb5_set_default_tgs_ktypes(context, enc_types))) {
-		DEBUG(1,("krb5_set_default_tgs_ktypes failed (%s)\n",
+		DEBUG(1,("cli_krb5_get_ticket: krb5_set_default_tgs_ktypes failed (%s)\n",
 			 error_message(retval)));
 		goto failed;
 	}
