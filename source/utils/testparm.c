@@ -85,7 +85,7 @@ to a valid password server.\n", sec_setting );
 
 	
 	/*
-	 * Check 'hosts equiv' and 'use rhosts' compatability with 'hostname lookup' value.
+	 * Check 'hosts equiv' and 'use rhosts' compatibility with 'hostname lookup' value.
 	 */
 
 	if(*lp_hosts_equiv() && !lp_hostname_lookups()) {
