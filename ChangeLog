@@ -1,3 +1,16 @@
+Wed Jul  2 17:47:03 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/asn1/der_put.c (der_put_int): Return size correctly.
+
+	* admin/ank.c: Be compatible with the asn1 principal format.
+
+Wed Jul  1 23:52:20 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/asn1: Now all decode_* and encode_* functions now take a
+ 	final size_t* argument, that they return the size in. Return
+ 	values are zero for success, and anything else (such as some
+ 	ASN1_* constant) for error.
+
 Mon Jun 30 06:08:14 1997  Assar Westerlund  <assar@sics.se>
 
 	* appl/rsh: New program.
