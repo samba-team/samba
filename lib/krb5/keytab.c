@@ -10,7 +10,7 @@ krb5_kt_resolve(krb5_context context,
   if (strncmp (name, "FILE:", 5) != 0)
     return -1;
 
-  k = ALLOC(1, krb5_keytab);
+  k = ALLOC(1, krb5_keytab_data);
   if (k == NULL)
     return ENOMEM;
   k->filename = strdup(name + 5);
@@ -106,11 +106,10 @@ krb5_kt_get_entry(krb5_context context,
 {
   krb5_error_code r;
   krb5_kt_cursor cursor;
-  krb5_keytab_entry entry;
 
   r = krb5_kt_start_seq_get (context, id, &cursor);
-  while (krb5_kt_next_entry(context, id, &entry, &cursor) == 0) {
-
+  while (krb5_kt_next_entry(context, id, entry, &cursor) == 0) {
+      
   }
   return krb5_kt_end_seq_get (context, id, &cursor);
 }
