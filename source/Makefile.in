@@ -730,9 +730,9 @@ bin/profiles@EXEEXT@: $(PROFILES_OBJ) @BUILD_POPT@ bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(PROFILES_OBJ) $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
-bin/editreg@EXEEXT@: utils/editreg.o bin/.dummy
+bin/editreg@EXEEXT@: utils/editreg.o @BUILD_POP@ bin/.dummy
 	@echo Linking $@
-	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS)
+	@$(CC) $(FLAGS) -o $@ utils/editreg.o $(LDFLAGS) $(LIBS) @BUILD_POPT@
 
 bin/smbspool@EXEEXT@: $(CUPS_OBJ) bin/.dummy
 	@echo Linking $@
