@@ -930,8 +930,7 @@ uint32 _net_sam_logon(const DOM_SAM_INFO *sam_id,
 	}
 	
 	acb_info = ctr.info.id21->acb_info;
-	if (IS_BITS_SET_ALL(acb_info, ACB_DISABLED) &&
-	    IS_BITS_CLR_ALL(acb_info, ACB_PWNOTREQ))
+	if (IS_BITS_SET_ALL(acb_info, ACB_DISABLED))
 	{
 		return NT_STATUS_ACCOUNT_DISABLED;
 	}
