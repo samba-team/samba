@@ -40,8 +40,6 @@
 
 RCSID("$Id$");
 
-int issuid(void); /* XXX */
-
 #define INIT_FIELD(C, T, E, D, F)					\
     (C)->E = krb5_config_get_ ## T ## _default ((C), NULL, (D), 	\
 						"libdefaults", F, NULL)
