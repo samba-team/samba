@@ -41,6 +41,7 @@
 RCSID("$Id$");
 #endif
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <error.h>
 
@@ -54,6 +55,27 @@ com_right(struct error_table *list, long code)
     }
     return NULL;
 }
+
+void
+initialize_error_table(struct error_table **list, 
+		       const char **messages, 
+		       int num_errors,
+		       long base)
+{
+    struct error_table *et;
+    for(et = *list; et; et = et->next)
+        if(et->msgs == messages)
+            return;
+    et = malloc(sizeof(*et));
+    if (et == NULL)
+        return;
+    et->msgs = messages;
+    et->n_msgs = num_errors;
+    et->base = base;
+    et->next = *list;
+    *list = et;
+}
+			
 
 void
 free_error_table(struct error_table *et)
