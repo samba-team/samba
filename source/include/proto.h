@@ -260,6 +260,9 @@ int fnmatch (const char *pattern, const char *string, int flags);
 
 void generate_random_buffer( unsigned char *out, int len, BOOL re_seed);
 
+/*The following definitions come from  lib/getopt.c  */
+
+
 /*The following definitions come from  lib/getsmbpass.c  */
 
 char *getsmbpass(char *prompt)    ;
