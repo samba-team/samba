@@ -1,5 +1,19 @@
 2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
 
+	* lib/krb5/kuserok.c (krb5_kuserok): preserve old behviour of
+	function and return FALSE when there isn't a local account for
+	`luser'.
+
+	* lib/krb5/krb5_kuserok.3: fix prototype, spelling and more text
+	describing the function
+
+2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* lib/krb5/cache.c (krb5_cc_default): if krb5_cc_default_name
+	returned memory, don't return ENOMEM
+
+2003-03-11  Love Hörnquist Åstrand <lha@it.su.se>
+
 	* lib/krb5/krb5.3: add krb5_address stuff and sort
 	
 	* lib/krb5/krb5_address.3: fix krb5_addr2sockaddr description
