@@ -693,7 +693,7 @@ krb5_print_address (const krb5_address *addr,
 	s = str;
 	l = snprintf(s, len, "TYPE_%d:", addr->addr_type);
 	s += l;
-	len -= len;
+	len -= l;
 	for(i = 0; i < addr->address.length; i++) {
 	    l = snprintf(s, len, "%02x", ((char*)addr->address.data)[i]);
 	    len -= l;
