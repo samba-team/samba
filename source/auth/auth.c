@@ -244,10 +244,22 @@ static NTSTATUS check_ntlm_password(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 
 	for (auth_method = auth_context->auth_method_list;auth_method; auth_method = auth_method->next) {
+		NTSTATUS result;
+		
 		mem_ctx = talloc_init("%s authentication for user %s\\%s", auth_method->name, 
 					    user_info->domain.str, user_info->smb_name.str);
 
-		nt_status = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+		result = auth_method->auth(auth_context, auth_method->private_data, mem_ctx, user_info, server_info);
+
+		/* check if the module did anything */
+		if ( NT_STATUS_V(result) == NT_STATUS_V(NT_STATUS_NOT_IMPLEMENTED) ) {
+			DEBUG(10,("check_ntlm_password: %s had nothing to say\n", auth_method->name));
+			talloc_destroy(mem_ctx);
+			continue;
+		}
+
+		nt_status = result;
+
 		if (NT_STATUS_IS_OK(nt_status)) {
 			DEBUG(3, ("check_ntlm_password: %s authentication for user [%s] succeeded\n", 
 				  auth_method->name, user_info->smb_name.str));

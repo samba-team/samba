@@ -401,11 +401,12 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 					auth_serversupplied_info **server_info)
 {
 	NTSTATUS nt_status = NT_STATUS_LOGON_FAILURE;
-	char *password_server;
 	unsigned char trust_passwd[16];
 	time_t last_change_time;
 	const char *domain = lp_workgroup();
 	uint32 sec_channel_type = 0;
+	fstring dc_name;
+	struct in_addr dc_ip;
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_ntdomain_security: Critical variables not present.  Failing.\n"));
@@ -443,17 +444,15 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		}
 	}
 
-	/*
-	 * Treat each name in the 'password server =' line as a potential
-	 * PDC/BDC. Contact each in turn and try and authenticate.
-	 */
-
-	password_server = lp_passwordserver();
-
+	if ( !rpc_dc_name(user_info->domain.str, dc_name, &dc_ip) ) {
+		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
+			user_info->domain.str));
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+	
 	nt_status = domain_client_validate(mem_ctx, user_info, domain,
 					   (uchar *)auth_context->challenge.data, 
-					   server_info, 
-					   password_server, global_myname(), sec_channel_type,trust_passwd, last_change_time);
+					   server_info, dc_name, global_myname(), sec_channel_type,trust_passwd, last_change_time);
 	return nt_status;
 }
 
@@ -485,6 +484,8 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	char *trust_password;
 	time_t last_change_time;
 	DOM_SID sid;
+	fstring dc_name;
+	struct in_addr dc_ip;
 
 	if (!user_info || !server_info || !auth_context) {
 		DEBUG(1,("check_trustdomain_security: Critical variables not present.  Failing.\n"));
@@ -509,8 +510,14 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 
 	if(strequal(lp_workgroup(), (user_info->domain.str))) {
 		DEBUG(3,("check_trustdomain_security: Requested domain was for this domain.\n"));
-		return NT_STATUS_LOGON_FAILURE;
+		return NT_STATUS_NOT_IMPLEMENTED;
 	}
+
+	/* no point is bothering if this is not a trusted domain */
+	/* this return makes "map to guest = bad user" work again */
+	
+	if ( !is_trusted_domain( user_info->domain.str ) )
+		return NT_STATUS_NO_SUCH_USER;
 
 	/*
 	 * Get the trusted account password for the trusted domain
@@ -537,11 +544,17 @@ static NTSTATUS check_trustdomain_security(const struct auth_context *auth_conte
 	}
 #endif
 
+	if ( !rpc_dc_name(user_info->domain.str, dc_name, &dc_ip) ) {
+		DEBUG(5,("check_trustdomain_security: unable to locate a DC for domain %s\n",
+			user_info->domain.str));
+		return NT_STATUS_NO_LOGON_SERVERS;
+	}
+	
 	nt_status = domain_client_validate(mem_ctx, user_info, user_info->domain.str,
 					   (uchar *)auth_context->challenge.data, 
-					   server_info, "*" /* Do a lookup */, 
-					   lp_workgroup(), SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
-	
+					   server_info, dc_name, lp_workgroup(), 
+					   SEC_CHAN_DOMAIN, trust_md4_password, last_change_time);
+
 	return nt_status;
 }
 
