@@ -2866,34 +2866,50 @@ int set_maxfiles(int requested_max)
 {
 #if (defined(HAVE_GETRLIMIT) && defined(RLIMIT_NOFILE))
 	struct rlimit rlp;
+	int saved_current_limit;
+
 	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
 		DEBUG(0,("set_maxfiles: getrlimit (1) for RLIMIT_NOFILE failed with error %s\n",
 			strerror(errno) ));
 		/* just guess... */
 		return requested_max;
 	}
-	/* Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
+
+	/* 
+     * Set the fd limit to be real_max_open_files + MAX_OPEN_FUDGEFACTOR to
 	 * account for the extra fd we need 
 	 * as well as the log files and standard
-	 * handles etc.  */
-	rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
+	 * handles etc. Save the limit we want to set in case
+	 * we are running on an OS that doesn't support this limit (AIX)
+	 * which always returns RLIM_INFINITY for rlp.rlim_max.
+	 */
+
+	saved_current_limit = rlp.rlim_cur = MIN(requested_max,rlp.rlim_max);
 
 	if(setrlimit(RLIMIT_NOFILE, &rlp)) {
 		DEBUG(0,("set_maxfiles: setrlimit for RLIMIT_NOFILE for %d files failed with error %s\n", 
 			(int)rlp.rlim_cur, strerror(errno) ));
 		/* just guess... */
-		return requested_max;
+		return saved_current_limit;
 	}
 
 	if(getrlimit(RLIMIT_NOFILE, &rlp)) {
 		DEBUG(0,("set_maxfiles: getrlimit (2) for RLIMIT_NOFILE failed with error %s\n",
 			strerror(errno) ));
 		/* just guess... */
-		return requested_max;
+		return saved_current_limit;
     }
 
+#if defined(RLIM_INFINITY)
+	if(rlp.rlim_cur == RLIM_INFINITY)
+		return saved_current_limit;
+#endif
+
+    if((int)rlp.rlim_cur > saved_current_limit)
+		return saved_current_limit;
+
 	return rlp.rlim_cur;
-#else
+#else /* !defined(HAVE_GETRLIMIT) || !defined(RLIMIT_NOFILE) */
 	/*
 	 * No way to know - just guess...
 	 */
