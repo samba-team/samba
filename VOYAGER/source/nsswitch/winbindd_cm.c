@@ -243,7 +243,7 @@ static NTSTATUS cm_open_connection(const struct winbindd_domain *domain, const i
 
 		flags = CLI_FULL_CONNECTION_USE_KERBEROS;
 		if (domain->loopback)
-			flags |= CLI_FULL_CONNECTION_OFFER_WINBIND;
+			flags |= CLI_FULL_CONNECTION_IS_LOOPBACK;
 
 		result = cli_start_connection(&new_conn->cli, global_myname(), 
 					      new_conn->controller, 

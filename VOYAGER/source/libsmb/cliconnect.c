@@ -1028,13 +1028,6 @@ BOOL cli_negprot(struct cli_state *cli)
 	char *p;
 	int numprots;
 	int plength;
-	char *winbind_proto;
-
-	if (cli->am_winbind) {
-		winbind_proto = invent_winbind_proto();
-		if (winbind_proto == NULL)
-			return False;
-	}
 
 	if (cli->protocol < PROTOCOL_NT1)
 		cli->use_spnego = False;
@@ -1047,9 +1040,6 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++)
 		plength += strlen(prots[numprots].name)+2;
 
-	if (cli->am_winbind)
-		plength += strlen(winbind_proto)+2;
-    
 	set_message(cli->outbuf,0,plength,True);
 
 	p = smb_buf(cli->outbuf);
@@ -1058,12 +1048,6 @@ BOOL cli_negprot(struct cli_state *cli)
 	     numprots++) {
 		*p++ = 2;
 		p += clistr_push(cli, p, prots[numprots].name, -1, STR_TERMINATE);
-	}
-
-	if (cli->am_winbind) {
-		*p++ = 2;
-		p += clistr_push(cli, p, winbind_proto, -1, STR_TERMINATE);
-		SAFE_FREE(winbind_proto);
 	}
 
 	SCVAL(cli->outbuf,smb_com,SMBnegprot);
@@ -1291,6 +1275,22 @@ BOOL cli_connect(struct cli_state *cli, const char *host, struct in_addr *ip)
 
 	if (getenv("LIBSMB_PROG")) {
 		cli->fd = sock_exec(getenv("LIBSMB_PROG"));
+	} if (cli->is_loopback) {
+		struct sockaddr_un sunaddr;
+		ZERO_STRUCT(sunaddr);
+		sunaddr.sun_family = AF_UNIX;
+		strncpy(sunaddr.sun_path, "/tmp/.smbd-priv/smbd",
+			sizeof(sunaddr.sun_path) - 1);
+		
+		if ((cli->fd = socket(AF_UNIX, SOCK_STREAM, 0)) != -1) {
+			if (connect(cli->fd, (struct sockaddr *)&sunaddr, 
+				    sizeof(sunaddr)) == -1) {
+				DEBUG(1, ("Could not open socket: %s\n",
+					  strerror(errno)));
+				close(cli->fd);
+				cli->fd = -1;
+			}
+		}
 	} else {
 		/* try 445 first, then 139 */
 		int port = cli->port?cli->port:445;
@@ -1380,6 +1380,9 @@ NTSTATUS cli_start_connection(struct cli_state **output_cli,
 	else
 		ZERO_STRUCT(ip);
 
+	if (flags & CLI_FULL_CONNECTION_IS_LOOPBACK)
+		cli->is_loopback = True;
+
 again:
 
 	DEBUG(3,("Connecting to host=%s\n", dest_host));
@@ -1415,9 +1418,6 @@ again:
 		cli->use_spnego = False;
 	else if (flags & CLI_FULL_CONNECTION_USE_KERBEROS)
 		cli->use_kerberos = True;
-
-	if (flags & CLI_FULL_CONNECTION_OFFER_WINBIND)
-		cli->am_winbind = True;
 
 	if (!cli_negprot(cli)) {
 		DEBUG(1,("failed negprot\n"));

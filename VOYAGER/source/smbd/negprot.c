@@ -471,16 +471,9 @@ int reply_negprot(connection_struct *conn,
 			arch &= ( ARCH_WINNT | ARCH_OS2 );
 		else if (strcsequal(p,"Samba")) {
 			arch = ARCH_SAMBA;
+			break;
 		}
 
-		if (strncmp(p, "WB_PROTO", strlen("WB_PROTO")) == 0) {
-			char *key = secrets_fetch(p, NULL);
-			if (key != NULL) {
-				global_winbind_off();
-				SAFE_FREE(key);
-			}
-		}
- 
 		p += strlen(p) + 2;
 	}
     

@@ -145,7 +145,7 @@ struct cli_state {
 
 	BOOL use_kerberos;
 	BOOL use_spnego;
-	BOOL am_winbind;
+	BOOL is_loopback;
 
 	BOOL use_oplocks; /* should we use oplocks? */
 	BOOL use_level_II_oplocks; /* should we use level II oplocks? */
@@ -166,6 +166,6 @@ struct cli_state {
 #define CLI_FULL_CONNECTION_DONT_SPNEGO 0x0001
 #define CLI_FULL_CONNECTION_USE_KERBEROS 0x0002
 #define CLI_FULL_CONNECTION_ANNONYMOUS_FALLBACK 0x0004
-#define CLI_FULL_CONNECTION_OFFER_WINBIND 0x0008
+#define CLI_FULL_CONNECTION_IS_LOOPBACK 0x0008
 
 #endif /* _CLIENT_H */
