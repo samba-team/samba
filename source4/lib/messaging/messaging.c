@@ -208,7 +208,7 @@ static void messaging_listen_handler(struct event_context *ev, struct fd_event *
 		smb_panic("Unable to allocate messaging_rec");
 	}
 
-	status = socket_accept(msg->sock, &rec->sock, 0);
+	status = socket_accept(msg->sock, &rec->sock);
 	if (!NT_STATUS_IS_OK(status)) {
 		smb_panic("Unable to accept messaging_rec");
 	}
