@@ -468,6 +468,9 @@ static mode_t apply_default_perms(files_struct *fsp, mode_t perms, mode_t type)
 	mode_t and_bits = (mode_t)0;
 	mode_t or_bits = (mode_t)0;
 
+	if (!lp_restrict_acl_with_mask(snum))
+		return perms;
+
 	/* Get the initial bits to apply. */
 
 	if (fsp->is_directory) {
@@ -1172,6 +1175,9 @@ static mode_t create_default_mode(files_struct *fsp, BOOL interitable_mode)
 
 	if (fsp->is_directory)
 		mode |= (S_IWUSR|S_IXUSR);
+
+	if (!lp_restrict_acl_with_mask(snum))
+		return mode;
 
 	/*
 	 * Now AND with the create mode/directory mode bits then OR with the
