@@ -148,7 +148,7 @@ send_krb5_auth(int s, struct sockaddr_in thisaddr,
 				  ntohs(thataddr.sin_port),
 				  do_encrypt ? "-x " : "",
 				  cmd,
-				  local_user);
+				  remote_user);
 
     status = krb5_sendauth (context,
 			    &auth_context,
