@@ -73,6 +73,26 @@ void E_md4hash(const char *passwd, uchar p16[16])
 }
 
 /**
+ * Creates the MD5 Hash of a combination of 16 byte salt and 16 byte NT hash.
+ * @param 16 byte salt.
+ * @param 16 byte NT hash.
+ * @param 16 byte return hashed with md5, caller allocated 16 byte buffer
+ */
+
+void E_md5hash(const uchar salt[16], const uchar nthash[16], uchar hash_out[16])
+{
+	struct MD5Context tctx;
+	uchar array[32];
+	
+	memset(hash_out, '\0', 16);
+	memcpy(array, salt, 16);
+	memcpy(&array[16], nthash, 16);
+	MD5Init(&tctx);
+	MD5Update(&tctx, array, 32);
+	MD5Final(hash_out, &tctx);
+}
+
+/**
  * Creates the DES forward-only Hash of the users password in DOS ASCII charset
  * @param passwd password in 'unix' charset.
  * @param p16 return password hashed with DES, caller allocated 16 byte buffer

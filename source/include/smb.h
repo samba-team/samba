@@ -625,6 +625,11 @@ typedef struct {
 #define NT_HASH_LEN 16
 #define LM_HASH_LEN 16
 
+/* Password history contants. */
+#define PW_HISTORY_SALT_LEN 16
+#define SALTED_MD5_HASH_LEN 16
+#define PW_HISTORY_ENTRY_LEN (PW_HISTORY_SALT_LEN+SALTED_MD5_HASH_LEN)
+
 /*
  * Flags for account policy.
  */
