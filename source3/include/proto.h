@@ -1673,6 +1673,7 @@ void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out);
 void E_old_pw_hash( unsigned char *p14, unsigned char *in, unsigned char *out);
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key);
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key);
+void cred_hash3(unsigned char *out,unsigned char *in,unsigned char *key);
 void SamOEMhash( unsigned char *data, unsigned char *key, int val);
 
 /*The following definitions come from  smbencrypt.c  */
