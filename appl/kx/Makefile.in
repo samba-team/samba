@@ -71,9 +71,9 @@ dist: $(DISTFILES)
 	done
 
 kx: $(OBJECTS_KX)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KX) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
 
 kxd: $(OBJECTS_KXD)
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_KXD) -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
 
 $(OBJECTS): ../../config.h

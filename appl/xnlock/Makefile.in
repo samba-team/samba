@@ -70,6 +70,6 @@ dist: $(DISTFILES)
 
 
 xnlock: xnlock.o
-	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o -L../../lib/kafs -lkafs -L../../lib/krb -lkrb -L../../lib/des -ldes  $(LIBS)
+	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ xnlock.o -L../../lib/kafs -lkafs -L../../lib/krb -lkrb -L../../lib/des -ldes -L../../lib/roken -lroken $(LIBS)
 
 $(OBJECTS): ../../config.h
