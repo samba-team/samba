@@ -1,16 +1,22 @@
-		   =================================
-                   Release Notes for Samba 3.0.12rc1
-                             Mar 11, 2005
-                   ==================================
+                   ==============================
+                   Release Notes for Samba 3.0.12
+                            Mar 18, 2005
+                   ==============================
 
-This is a release candidate of the Samba 3.0.12 code base and is 
-provided for testing only.  While close to the final stable release, 
-this snapshot is *not* intended for production servers.  If all 
-goes well, this this version (or something very similar) will become
-the final 3.0.12 stable release. 
+This is the latest stable release of Samba. This is the version
+that production Samba servers should be running for all current
+bug-fixes.  Please read the following important changes in this
+release.
 
-Common bugs fixed in 3.0.12rc1 include:
+Common bugs fixed in 3.0.12 include:
 
+  o Winbind failures when using 'disable netbios = yes'
+  o Failure to establish a trust relationship via 'net rpc 
+    trust establish'
+  o Various portability & compiler issues.
+  o Read only file deletion failure caused by new delete 
+    semantics in Windows XP SP2 and the MS 04-044 security 
+    hotfix.
   o Error messages from shared Excel workbooks residing on Samba 
     file shares.
   o Missing files in the output of smbclient -c 'dir' when run 
@@ -18,8 +24,13 @@ Common bugs fixed in 3.0.12rc1 include:
   o Inability for Print Administrators to pause/resume/purge print 
     queues.
 
-Additional features introduced in Samba 3.0.12rc1:
+Additional features introduced in Samba 3.0.12:
 
+  o Performance enhancements when serving directories 
+    containing large number of files.
+  o MS-DFS support added to smbclient.
+  o More performance improvements when using Samba/OpenLDAP
+    based DC's via the 'ldapsam:trusted=yes' option.
   o Support for the Novell NDS universal password when using the
     ldapsam passdb backend.
   o New 'net rpc trustdom {add,del}' functionality to eventually 
@@ -27,6 +38,24 @@ Additional features introduced in Samba 3.0.12rc1:
   o New libsmbclient functionality.
 
 
+
+=======================
+Large Directory Support
+=======================
+
+Samba 3.0.12pre1 introduces a specific mechanism for dealing
+with file services that frequently contain a large number of files
+per directory.  Historically Samba's performance has suffered 
+in such environments due to the translation from case 
+insensitive lookups by Windows client to the case sensitive
+storage mechanisms used by UNIX filesystems.
+
+Configuration details along with a short HOWTO can be found at:
+
+http://www.samba.org/samba/ftp/HOWTO/Samba-LargeDirectory-HOWTO
+
+
+==================================
 libsmbclient Binary Compatibility
 ==================================
 
@@ -43,21 +72,106 @@ be necessary to recompile any applications linked against the
 Changes
 #######
 
-Changes since 3.0.12pre1
-------------------------
-
 smb.conf changes
 ----------------
 
     Parameter Name                      Action
     --------------                      ------
-    write cache				Deprecated
     allocation roundup size		New
+    log nt token command		New
+    write cache				Deprecated
 
+Changes since 3.0.12rc1
+-----------------------
+
+
+o   Jeremy Allison <jra@samba.org>
+    * Debug log message cleanups.
+    * Add case insensitive search for a principal match on logon 
+      verification in the system keytab (based on patch by 
+      Michael Brown <mbrown@fensystems.co.uk>).
+    * Revert the previous SMB signing change from Nalin Dahyabhai
+      when using DES keys.
+    * Add missing RESOLVE_DFSPATH() calls for older SMB commands.
+    * Fix FindFirst() server code to deal with resume names of ".."
+      and "." (found by Jim McDonough).
+    * BUG 2451: Fix missing functions in full audit VFS module.
+    * Ensure that smbd logs failures reported by DISK_FREE()
+      (reported by Ying Li <ying.li2@hp.com>).
+    * Ensure that smbclient obeys the max protocol argument again.
+    * BUG 2335: Return correct error code for OS/2 clients (based on
+      negotiated protocol level).
+    * BUG 2460, 2464: remove dead code and unused variables 
+      (reported by Jason Mader).
+
+
+o   Vince Brimhall <vbrimhall@novell.com>
+    * BUG 2453: Change the way pdb_nds.c handles users with no 
+      Universal or Simple Password.
+    * NDS schema file corrections.
+
+
+o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Various small compile fixes and cleanup warnings.
+    * BUG 2456: Fix compile failure on non-gcc platforms due to
+      non-standard pragma.
+
+
+o   Guenther Deschner <gd@samba.org>
+    * Add example perl script to check for multiple LDAP entries
+      after running 'net rpc vampire'.
+    * Add more output when listing printer forms via rpcclient.
+    * Debug log message cleanup.
+
+
+o   William Jojo <jojowil@hvcc.edu>
+    * BUG 2445: Patch to avoid default ACLson AIX.
+
+
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * Implement better solution for backwards binary compatibility
+      in libsmbclient while adding new fields to struct _SMBCCTX.
+
+
+o   Mark Loeser <halcy0n@gentoo.org>
+    * BUG 2443: Compile fix for gcc4.
+
+
+o   Jim McDonough <jmcd@us.ibm.com>
+    * BUG 2338: Fix coredump when OS/2 checks for long file name 
+      support (with .+,;=[].) (thanks to Guenter Kukkukk).
+
+
+o   John Terpstra <jht@samba.org>
+    * Add the capability to set account description using pdbedit.
+
+
+o   Doug VanLeuven <roamdad@sonic.net> 
+    * Add more case/realm/name permutations to the kerberos keytab.
+    
+    
+Changes since 3.0.11
+--------------------
 
 commits
 -------
 o   Jeremy Allison <jra@samba.org>
+    * BUG 2146: Return correct allocation sizes so as not to crash 
+      the VC++ compiler.
+    * BUG 962: Ensure that parsing of service names in smb.conf is 
+      multibyte safe.
+    * BUG 2201, 2227: Support new delete semantics used by MS04-044
+      and XP SP2.
+    * BUG 1525: Correctly timestamps interpreted on 64-bit time_t 
+      values (patch submitted by Jay Fenlason <fenlason@redhat.com>).
+    * Add special hooks when serving directories containing large
+      numbers of files.
+    * Ensure that WINS negative name query responses and WACK 
+      packets use the correct RR type of 0xA instead of reflecting 
+      back what the query RR type was (0x20).
+    * BUG 2310: Only do 16-bit normalization on small dfree request.
+    * BUG 2323: Correct authentication failure when using plaintext 
+      passwords from Windows XP clients.
     * BUG 2146: Add new smb.conf option 'allocation roundup size' to
       work around issues building MS Visual Studio 6.0 project 
       on a Samba file share while restoring the pre-3.0.21pre1 
@@ -75,6 +189,16 @@ o   Jeremy Allison <jra@samba.org>
       ke_miyata@itg.hitachi.co.jp).
       
 
+o   Andrew Bartlett <abartlet@samba.org>
+    * Avoid length-limited intermediate copy of NT and LM responses 
+      in NETLOGON client.
+    * Debug message cleanups in the NTLMSSP implementation.
+      
+
+o   Manuel Baena <mbaena@lcc.uma.es>
+    * Print actual error message in smbmnt.c:fullpath().
+
+
 o   Vince Brimhall <vbrimhall@novell.com>
     * Add support for Novell NDS universal password.
     * BUG 2424: Ensure that uidNumber and gidNumber use match 
@@ -82,6 +206,26 @@ o   Vince Brimhall <vbrimhall@novell.com>
     
     
 o   Gerald (Jerry) Carter <jerry@samba.org>
+    * Add trans2 client call for checking dfs referrals
+    * Convert smbclient to use TRANS_QPATHINFO(SMB_QUERY_FILE_BASIC_INFO) 
+      when checking directories on modern CIFS servers.
+    * Add MS-DFS support to smbclient.
+    * Code cleanup of adt_tree.[ch].
+    * Add missing checks to allow root to manage user rights.
+    * Allow domain admins to manage rights assignments on domain members
+      servers.
+    * BUG 2333: Use the lpq command to pass in the correct printer name 
+      for cups_queue_get().  CUPS backend now sets 'lpq command= %p' as 
+      the default.
+    * BUG 1439: make sure to initialize pointer to prevent invalid 
+      free()'s on exit.
+    * BUG 2329: fix to re-enable winbindd to locate DC's when 'disable 
+      netbios = yes'.
+    * Add cups-devel to BuidlRequires directive in Fedora spec file.
+    * BUG 858: Fix order of popt args evaluation so we don't crash 
+      when given no command line args.
+    * Remove dependency on bash for source/autogen.sh.
+    * Fix clitar.c compile issues caused by broken MIT 1.4 headers.
     * Implement MS-DFS for recursive directory listings in smbclient.
     * BUG 2394: Fix nmbd linking issue on IRIX.
     * Only display the publish check box in the client's printer 
@@ -109,180 +253,6 @@ o   Kevin Dalley <kevin@kelphead.org>
       target tarfile is /dev/null.
       
       
-o   Steve French <sfrench@us.ibm.com>
-    * On failed mount (ENXIO) retry share name in uppercase (fix
-      mount to FastConnect AIX SMB server).
-    * Add missing FILE_ATTRIBUTE_XXX defines to smb.h.
-    * Ignore user_xattr mount parm (mount.cifs) so as not to confuse
-      it with a user name.
-    * Update for new CIFS POSIX info levels.
-      
-      
-      
-o   Volker Lendecke <vl@samba.org>
-    * BUG 2401: Flush internal getpwnam() cache after deleting a 
-      user.
-    * BUG 1604: Make winbind work with more than 10 trusted domains.
-    * Cleanup various compiler warnings.
-    
-    
-o   Herb Lewis <herb@samba.org>
-    * BUG 2417: Add help lines for net rpc group addmem and 
-      delmem commands.
-      
-      
-o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
-    * Add support to libsmbclient for getting and setting DOS 
-      attributes using EA functions.
-    * Fix libsmbclient's URL encoding/decoding.
-    * Replace browse listing URI queries with an internal options 
-      structure (previous method violated the SMB URI syntax).
-    * Allow tree connects to be multiplexed over a single CIFS server 
-      connection context.
-    * Ensure that cli_tdis() sets the cnum field to -1 so that callers
-      can determine a dead tree connection.
-    
-
-o   Justin Ossevoort <justin@snt.utwente.nl>
-    * BUG 2316: Fix crashes in pdb_pgsql.
-    
-    
-o   Jim McDonough <jmcd@us.ibm.com>
-    * Fix 'net rpc trustdom add' to correctly add new domain trust 
-      accounts.  This will eventually replace 'smbpasswd -a -i'.
-    * Implement 'net rpc trustdom del', including client side of 
-      samr_remove_sid_from_foreign_domain.
-    * Bring IBM Directory Server schema up to date with openldap 
-      schema.
-    * Allow for better protection of sensitive attributes in IBM
-      Directory Server.
-
-    
-o   James Peach <jpeach@sgi.com>
-    * Fix oplock2 test in client smbtorture.
-    
-    
-o   Jelmer Vernooij <jelmer@samba.org>
-    * BUG 892: Default unknown_6 field to 1260 in mySQL pdb module.
-    * BUG 1957: Implement minimal update of fields in mySQL pdb 
-      module.
-    
-
-o   Torsten Werner <torsten.werner@assyst-intl.com>
-    * BUG 2405: Define 'lpstat' printcap output on HPUX.
-    
-
-Release Notes for older release follow:
-
-      --------------------------------------------------
-		   ==================================
-                   Release Notes for Samba 3.0.12pre1
-                             Feb 25, 2005
-                   ===================================
-
-Common bugs fixed in 3.0.12pre1 include:
-
-  o Winbind failures when using 'disable netbios = yes'
-  o Failure to establish a trust relationship via 'net rpc 
-    trust establish'
-  o Various portability & compiler issues.
-  o Read only file deletion failure caused by new delete 
-    semantics in Windows XP SP2 and the MS 04-044 security 
-    hotfix.
-
-Additional features introduced in Samba 3.0.12pre1:
-
-  o Performance enhancements when serving directories 
-    containing large number of files.
-  o MS-DFS support added to smbclient.
-  o More performance improvements when using Samba/OpenLDAP
-    based DC's via the 'ldapsam:trusted=yes' option.
-
-
-Large Directory Support
------------------------
-
-Samba 3.0.12pre1 introduces a specific mechanism for dealing
-with file services that frequently contain a large number of files
-per directory.  Historically Samba's performance has suffered 
-in such environments due to the translation from case 
-insensitive lookups by Windows client to the case sensitive
-storage mechanisms used by UNIX filesystems.
-
-Configuration details along with a short HOWTO can be found at:
-
-http://www.samba.org/samba/ftp/HOWTO/Samba-LargeDirectory-HOWTO
-
-    
-
-######################################################################
-Changes
-#######
-
-Changes since 3.0.11
---------------------
-smb.conf changes
-----------------
-
-    Parameter Name                      Action
-    --------------                      ------
-    log nt token command		New
-
-
-commits
--------
-o   Jeremy Allison <jra@samba.org>
-    * BUG 2146: Return correct allocation sizes so as not to crash 
-      the VC++ compiler.
-    * BUG 962: Ensure that parsing of service names in smb.conf is 
-      multibyte safe.
-    * BUG 2201, 2227: Support new delete semantics used by MS04-044
-      and XP SP2.
-    * BUG 1525: Correctly timestamps interpreted on 64-bit time_t 
-      values (patch submitted by Jay Fenlason <fenlason@redhat.com>).
-    * Add special hooks when serving directories containing large
-      numbers of files.
-    * Ensure that WINS negative name query responses and WACK 
-      packets use the correct RR type of 0xA instead of reflecting 
-      back what the query RR type was (0x20).
-    * BUG 2310: Only do 16-bit normalization on small dfree request.
-    * BUG 2323: Correct authentication failure when using plaintext 
-      passwords from Windows XP clients.
-    
-    
-o   Andrew Bartlett <abartlet@samba.org>
-    * Avoid length-limited intermediate copy of NT and LM responses 
-      in NETLOGON client.
-    * Debug message cleanups in the NTLMSSP implementation.
-      
-
-o   Manuel Baena <mbaena@lcc.uma.es>
-    * Print actual error message in smbmnt.c:fullpath().
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * Add trans2 client call for checking dfs referrals
-    * Convert smbclient to use TRANS_QPATHINFO(SMB_QUERY_FILE_BASIC_INFO) 
-      when checking directories on modern CIFS servers.
-    * Add MS-DFS support to smbclient.
-    * Code cleanup of adt_tree.[ch].
-    * Add missing checks to allow root to manage user rights.
-    * Allow domain admins to manage rights assignments on domain members
-      servers.
-    * BUG 2333: Use the lpq command to pass in the correct printer name 
-      for cups_queue_get().  CUPS backend now sets 'lpq command= %p' as 
-      the default.
-    * BUG 1439: make sure to initialize pointer to prevent invalid 
-      free()'s on exit.
-    * BUG 2329: fix to re-enable winbindd to locate DC's when 'disable 
-      netbios = yes'.
-    * Add cups-devel to BuidlRequires directive in Fedora spec file.
-    * BUG 858: Fix order of popt args evaluation so we don't crash 
-      when given no command line args.
-    * Remove dependency on bash for source/autogen.sh.
-    * Fix clitar.c compile issues caused by broken MIT 1.4 headers.
-     
-
 o   Guenther Deschner <gd@samba.org>
     * Fix crash bug in the client-spoolss enumdataex-call.
     * Expand the valid-workstation-scheme by expanding names 
@@ -295,9 +265,15 @@ o   Guenther Deschner <gd@samba.org>
     * BUG 2343: Build fixes.
     * Support get_user_info_7 in SAMR server RPC.
     * Fix server_role in the samr_query_dom_info calls. 
-    
-    
+
+
 o   Steve French <sfrench@us.ibm.com>
+    * On failed mount (ENXIO) retry share name in uppercase (fix
+      mount to FastConnect AIX SMB server).
+    * Add missing FILE_ATTRIBUTE_XXX defines to smb.h.
+    * Ignore user_xattr mount parm (mount.cifs) so as not to confuse
+      it with a user name.
+    * Update for new CIFS POSIX info levels.
     * Ignore users mount parm in mount.cifs.
 
 
@@ -306,10 +282,14 @@ o   SATOH Fumiyasu <fumiya@samba.gr.jp>
     
 
 o   S Murthy Kambhampaty <smk_va@yahoo.com>
-    * Add idmap_rid module to Fedora and RedHat spec files.
-
-
+    * Add idmap_rid module to Fedora and RedHat spec files.      
+      
+      
 o   Volker Lendecke <vl@samba.org>
+    * BUG 2401: Flush internal getpwnam() cache after deleting a 
+      user.
+    * BUG 1604: Make winbind work with more than 10 trusted domains.
+    * Cleanup various compiler warnings.
     * Fix a memory leaks in privileges code and passdb backends.
     * Fixes for samr_lookup_sids() client call.
     * Optimize _samr_query_groupmem with LDAP backend for large 
@@ -327,13 +307,31 @@ o   Volker Lendecke <vl@samba.org>
 
 o   Herb Lewis <herb@samba.org>
     * Fix build problem when HAVE_POSIX_ACL is not defined.
+    * BUG 2417: Add help lines for net rpc group addmem and 
+      delmem commands.
     
     
 o   Jason Mader <jason@ncac.gwu.edu>
     * Compiler warning fixes (BUGS BUG 2132, 2134, 2289, 2327, 2340, 2341, 
        2342)
     
-        
+    
+o   Derrell Lipman <derrell.lipman@unwireduniverse.com>
+    * Add support to libsmbclient for getting and setting DOS 
+      attributes using EA functions.
+    * Fix libsmbclient's URL encoding/decoding.
+    * Replace browse listing URI queries with an internal options 
+      structure (previous method violated the SMB URI syntax).
+    * Allow tree connects to be multiplexed over a single CIFS server 
+      connection context.
+    * Ensure that cli_tdis() sets the cnum field to -1 so that callers
+      can determine a dead tree connection.
+    
+
+o   Justin Ossevoort <justin@snt.utwente.nl>
+    * BUG 2316: Fix crashes in pdb_pgsql.
+    
+    
 o   Jim McDonough <jmcd@us.ibm.com>
     * Fixes for server schannel implementation when 'restrict 
       anonymous = 1' is set in smb.conf.
@@ -341,20 +339,29 @@ o   Jim McDonough <jmcd@us.ibm.com>
       on Windows clients.
     * Fix 'net rpc trustdom establish'.
     * BUG 2062: Turn off broadcast for all 390 NICs.
+    * Fix 'net rpc trustdom add' to correctly add new domain trust 
+      accounts.  This will eventually replace 'smbpasswd -a -i'.
+    * Implement 'net rpc trustdom del', including client side of 
+      samr_remove_sid_from_foreign_domain.
+    * Bring IBM Directory Server schema up to date with openldap 
+      schema.
+    * Allow for better protection of sensitive attributes in IBM
+      Directory Server.
 
 
 o   Stefan Metzmacher <metze@samba.org>    
     * Fix memleaks in the nttrans code.
 
-
+    
 o   Mike Nix <mnix@wanm.com.au>
     * Add SMBsplopen and SMBsplclose client calls.
     
 
 o   James Peach <jpeach@sgi.com>
     * Fixes in string handling code.
+    * Fix oplock2 test in client smbtorture.
     
-
+    
 o   Tim Potter <tpot@samba.org>
     * Fix up example pdb modules after prototype change for 
       setsampwent.
@@ -375,14 +382,26 @@ o   Simo Sorce <idra@samba.org>
       
 o   Doug VanLeuven <roamdad@sonic.net>
     * AIX compile fixes.
+
+
+o   Jelmer Vernooij <jelmer@samba.org>
+    * BUG 892: Default unknown_6 field to 1260 in mySQL pdb module.
+    * BUG 1957: Implement minimal update of fields in mySQL pdb 
+      module.
+    
+
+o   Torsten Werner <torsten.werner@assyst-intl.com>
+    * BUG 2405: Define 'lpstat' printcap output on HPUX.
     
 
 o   Shlomi Yaakobovich" <Shlomi@exanet.com>
     * Detect infinite loops when traversing tdbs.
-    
+
+
+Release Notes for older release follow:
 
       --------------------------------------------------
-		   ==============================
+      		   ==============================
                    Release Notes for Samba 3.0.11
                              Feb 5, 2005
                    ==============================
@@ -417,8 +436,9 @@ Additional features introduced in Samba 3.0.11:
   o New administrative options to the 'net rpc' command.
 
 
+============
 LDAP Changes
-------------
+============
 
 If "ldap user suffix" or "ldap machine suffix" are defined in
 smb.conf, all user-accounts must reside below the user suffix,
@@ -427,8 +447,9 @@ below the machine suffix.  Previous Samba releases would fall
 back to searching the 'ldap suffix' in some cases.
 
 
+===============
 Privilege Model
----------------
+===============
 
 Samba 3.0.11 supports the following assignable rights
 
@@ -447,67 +468,6 @@ Samba-HOWTO-Collection.
 ######################################################################
 Changes
 #######
-
-Changes since 3.0.11rc1
------------------------
-
-commits
--------
-o   Timur Bakeyev <timur@com.bat.ru>
-    * BUG 2263: Guard base64_encode_data_blob() against empty blobs.
-
-
-o   Gerald (Jerry) Carter <jerry@samba.org>
-    * BUG 2262: Add support in configure.in for *freebsd6*.
-    * BUG 2266: Portability fixes for quota code on FreeBSD4.
-    * BUG 2264: Remove shutdown and abortshutdown commands from 
-      rpcclient in favor of using the same functions in 'net'.
-    * BUG 2295: Prevent smbd from returning an empty server name
-      in certain lanman api calls.
-    * BUG 2290: Fix autogen.sh script in examples (based on original
-      patch from Lars Mueller).
-    * Fix bug enumerating domain trusts in security = ads.
-    * Fix segv in rpcclient's dsenumdomtrusts.
-    * Fix bug in expansion of %U and %G in included filenames.
-    * BUG 2291: Restrict creation of server trust and domain trust
-      accounts to members of the "Domain Admins" group.
-    
-
-o   Guenther Deschner <gd@samba.org>
-    * BUG 2291: Call the 'add machine script' for server trust and 
-      domain trust accounts as well as workstation accounts.
-
-
-o   Levente Farkas <lfarkas@lfarkas.org>
-    * BUG 2299: Better logrotate scripts for RedHat and Fedora 
-      packages.
-
-
-o   Jay Fenlason <fenlason@redhat.com>
-    * Several patches from RedHat's Fedora Core RPMS.
-
-
-o   Deryck Hodge <deryck@samba.org>
-    * Add -P (--password-only-menu) to SWAT for displaying only the
-      password change page to non-root users.
-
-
-o   Jason Mader <jason@ncac.gwu.edu>
-    * BUG 2113, 2289: Remove dead code.
-
-
-o   Tim Potter <tpot@samba.org>
-    * Compile fixes after new setsampwent() API.
-
-
-o   Richard Renard <rrenard@idealx.com>
-    * Update Netscape DS 5.2 LDAP schema.
-
-
-o   Simo Sorce <idra@samba.org>
-    * Log a warning in testparm if a print command is defined for
-      a print service using 'printing = cups'.
-
 
 Changes since 3.0.10
 --------------------
@@ -576,6 +536,7 @@ o   Jeremy Allison <jra@samba.org>
 
 o   Timur Bakeyev <timur@com.bat.ru>
     * BUG 2100: change the way we check for errors after a dlopen().
+    * BUG 2263: Guard base64_encode_data_blob() against empty blobs.
     
     
 o   Andrew Bartlett <abartlet@samba.org>
@@ -651,7 +612,19 @@ o   Gerald (Jerry) Carter <jerry@samba.org>
       SAMR objects.
     * BUG 2286: Fix typo OpenLDAP schema file for sambaConfig object 
       class.
-
+    * BUG 2262: Add support in configure.in for *freebsd6*.
+    * BUG 2266: Portability fixes for quota code on FreeBSD4.
+    * BUG 2264: Remove shutdown and abortshutdown commands from 
+      rpcclient in favor of using the same functions in 'net'.
+    * BUG 2295: Prevent smbd from returning an empty server name
+      in certain lanman api calls.
+    * BUG 2290: Fix autogen.sh script in examples (based on original
+      patch from Lars Mueller).
+    * Fix bug enumerating domain trusts in security = ads.
+    * Fix segv in rpcclient's dsenumdomtrusts.
+    * Fix bug in expansion of %U and %G in included filenames.
+    * BUG 2291: Restrict creation of server trust and domain trust
+      accounts to members of the "Domain Admins" group.
  
 o   Nadav Danieli <nadavd@exanet.com>
     * Short circuit some is_locked() tests if we are oplocked.
@@ -712,11 +685,19 @@ o   Guenther Deschner <gd@samba.org>
       the lookup fails rather than using the first name in the
       default 'admin users' list.
     * Enhance LDAP failure debug messages.
+    * BUG 2291: Call the 'add machine script' for server trust and 
+      domain trust accounts as well as workstation accounts.
     
     
+o   Levente Farkas <lfarkas@lfarkas.org>
+    * BUG 2299: Better logrotate scripts for RedHat and Fedora 
+      packages.
+
+
 o   Jay Fenlason <fenlason@redhat.com>
     * Fix crash in 'net join' due to calling free on 
       static buffers.
+    * Several patches from RedHat's Fedora Core RPMS.
 
 
 o   Rob Foehl <rwf@loonybin.net>.
@@ -736,6 +717,11 @@ o   Johann Hanne <jhml@gmx.net>
 
 o   Jeff Hardy <hardyjm@potsdam.edu>
     * Example script for 'add print command' when using CUPS.
+
+
+o   Deryck Hodge <deryck@samba.org>
+    * Add -P (--password-only-menu) to SWAT for displaying only the
+      password change page to non-root users.
 
 
 o   David Hu <david.hu@hp.com>
@@ -799,6 +785,10 @@ o   Volker Lendecke <vl@samba.org>
       domain local groups.
     
 
+o   Jason Mader <jason@ncac.gwu.edu>
+    * BUG 2113, 2289: Remove dead code.
+
+
 o   Jim McDonough <jmcd@us.ibm.com>
     * BUG 1952: Try INITSHUTDOWN pipe first, used by newer 
       clients.  If it fails, fall back to WINREG.
@@ -851,12 +841,19 @@ o   Tim Potter <tpot@samba.org>
     * Change the license for the winbindd external interface 
       more liberal.
     * HP-UX compile fixes.
+    * Compile fixes after new setsampwent() API.
+
+
+o   Richard Renard <rrenard@idealx.com>
+    * Update Netscape DS 5.2 LDAP schema.
 
 
 o   Simo Sorce <idra@samba.org>
     * Backport pdbedit changes from trunk.
     * Allows the add/change share command to create the shared 
       directory directory on disk.
+    * Log a warning in testparm if a print command is defined for
+      a print service using 'printing = cups'.
      
 o   Jelmer Vernooij <jelmer@samba.org>
     * Bug fixes for pdb_{xml,pqsql,xml}
@@ -883,10 +880,8 @@ Common bugs fixed in 3.0.10 include:
   o Fix for security issues described in CAN-2004-1154.
 
 
-      
 Changes since 3.0.9
 -------------------
-
 
 commits
 -------
@@ -1025,8 +1020,9 @@ New features included in the 3.0.8 release are:
   o Additional printer migration support for XP/2003 platforms.
 
 
+===========================
 Change in Winbindd Behavior
----------------------------
+===========================
 
 All usernames returned by winbindd are now converted to lower 
 case for better consistency.  This means any winbind installation
@@ -1037,8 +1033,9 @@ include mail spool files, home directories, valid user lines in
 smb.conf, etc....
 
 
+======================
 Change in Username Map
-----------------------
+======================
 
 Previous Samba releases would only support reading the fully qualified 
 username (e.g. DOMAIN\user) from the username map when performing a 
@@ -1643,9 +1640,10 @@ New features introduced in this release include:
   o Support for honoring the logon times for user in a 
     Samba domain.
 
---------------------------------------------
+
+============================================
 unix extensions = yes (default) and symlinks
---------------------------------------------
+============================================
 
 Beginning with Samba 3.0.6pre1 (formerly known as 3.0.5pre1), 
 clients supporting the UNIX extensions to the CIFS protocol 
@@ -1662,9 +1660,10 @@ out of a share in Samba may impact the server's performance due
 to the fact that smbd will now have to check each path additional 
 times before traversing it.
   
-------------------------
+
+========================
 Password History Support 
-------------------------
+========================
 
 The new password history feature allows smbd to check the new 
 password in password change requests against a list of the user's
@@ -2094,8 +2093,6 @@ o   Jelmer Vernooij <jelmer@samba.org>
     * BUG 1474: Fix build of --with-expsam stuff on Solaris.
       
 
-Changes for older versions follow below:
-
       --------------------------------------------------
       
                  =============================
@@ -2122,9 +2119,9 @@ It has been confirmed that versions of Samba 3 prior to v3.0.4
 are vulnerable to two potential buffer overruns.  The individual
 details are given below.
 
--------------
+=============
 CAN-2004-0600
--------------
+=============
 
 Affected Versions:      Samba 3.0.2 and later
 
@@ -2266,8 +2263,6 @@ o   Richard Sharpe <rsharpe@samba.org>
 o   Jelmer Vernooij <jelmer@samba.org>
     * Add additional NT_STATUS errorm mappings.
     
-
-Changes for older versions follow below:
 
     --------------------------------------------------
 
