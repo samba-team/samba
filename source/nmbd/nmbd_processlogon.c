@@ -136,10 +136,15 @@ logons are not enabled.\n",
 			else
 			{	/* A full length request */
 
-				if (dgram_unique)
+				if ((!dgram_unique) ||
+				      dgram->dest_name.name_type == 0x1b)
 				{
 					/* skip domain name */
-					q += 22;
+					int dom_len = CVAL(q, 0);
+					q+= 1;
+					DEBUG(10,("domain name :%s\n", q));
+					q += dom_len;
+					q += 16;
 				}
 
 				ntversion = IVAL(q, 0);
