@@ -341,44 +341,6 @@ static BOOL do_this_one(file_info *finfo)
 	return(True);
 }
 
-/*******************************************************************
- Return a string representing an attribute for a file.
-********************************************************************/
-static const char *attrib_string(uint16_t mode)
-{
-	static fstring attrstr;
-	int i, len;
-	const struct {
-		char c;
-		uint16_t attr;
-	} attr_strs[] = {
-		{'V', FILE_ATTRIBUTE_VOLUME},
-		{'D', FILE_ATTRIBUTE_DIRECTORY},
-		{'A', FILE_ATTRIBUTE_ARCHIVE},
-		{'H', FILE_ATTRIBUTE_HIDDEN},
-		{'S', FILE_ATTRIBUTE_SYSTEM},
-		{'R', FILE_ATTRIBUTE_READONLY},
-		{'d', FILE_ATTRIBUTE_DEVICE},
-		{'t', FILE_ATTRIBUTE_TEMPORARY},
-		{'s', FILE_ATTRIBUTE_SPARSE},
-		{'r', FILE_ATTRIBUTE_REPARSE_POINT},
-		{'c', FILE_ATTRIBUTE_COMPRESSED},
-		{'o', FILE_ATTRIBUTE_OFFLINE},
-		{'n', FILE_ATTRIBUTE_NONINDEXED},
-		{'e', FILE_ATTRIBUTE_ENCRYPTED}
-	};
-
-	for (len=i=0; i<ARRAY_SIZE(attr_strs); i++) {
-		if (mode & attr_strs[i].attr) {
-			attrstr[len++] = attr_strs[i].c;
-		}
-	}
-
-	attrstr[len] = 0;
-
-	return(attrstr);
-}
-
 /****************************************************************************
   display info about a file
   ****************************************************************************/
@@ -386,12 +348,14 @@ static void display_finfo(file_info *finfo)
 {
 	if (do_this_one(finfo)) {
 		time_t t = finfo->mtime; /* the time is assumed to be passed as GMT */
+		char *astr = attrib_string(NULL, finfo->mode);
 		d_printf("  %-30s%7.7s %8.0f  %s",
 			 finfo->name,
-			 attrib_string(finfo->mode),
+			 astr,
 			 (double)finfo->size,
 			 asctime(localtime(&t)));
 		dir_total += finfo->size;
+		talloc_free(astr);
 	}
 }
 
@@ -2402,7 +2366,7 @@ static int process_tok(fstring tok)
 			matches = 1;
 			cmd = i;
 			break;
-		} else if (strnequal(commands[i].name, tok, tok_len)) {
+		} else if (strncasecmp(commands[i].name, tok, tok_len) == 0) {
 			matches++;
 			cmd = i;
 		}
