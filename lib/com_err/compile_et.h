@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -45,8 +45,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <ctype.h>
-
-#include <roken.h>
 
 extern long base;
 extern int number;
