@@ -130,9 +130,11 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
 				SMB_STRUCT_STAT st;
 				const char *home_dir = pdb_get_homedir(server_info->sam_account);
 				/*
-				 * Also call smb_create_user if the users home directory
-				 * doesn't exist. Used with winbindd to allow the script to
-				 * create the home directory for a user mapped with winbindd.
+				 * Also call smb_create_user if the users
+				 * home directory doesn't exist. Used with
+				 * winbindd to allow the script to create
+				 * the home directory for a user mapped
+				 * with winbindd.
 				 */
 
 				if (home_dir && 
@@ -272,7 +274,7 @@ BOOL make_user_info_map(auth_usersupplied_info **user_info,
 
 /****************************************************************************
  Create an auth_usersupplied_data, making the DATA_BLOBs here. 
- Decrupt and encrypt the passwords.
+ Decrypt and encrypt the passwords.
 ****************************************************************************/
 
 BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info, 
@@ -311,7 +313,7 @@ BOOL make_user_info_netlogon_network(auth_usersupplied_info **user_info,
 
 /****************************************************************************
  Create an auth_usersupplied_data, making the DATA_BLOBs here. 
- Decrupt and encrypt the passwords.
+ Decrypt and encrypt the passwords.
 ****************************************************************************/
 
 BOOL make_user_info_netlogon_interactive(auth_usersupplied_info **user_info, 
@@ -423,8 +425,8 @@ BOOL make_user_info_winbind(auth_usersupplied_info **user_info,
 	if (*password) {
 		SMBencrypt( (const uchar *)password, chal, local_lm_response);
 		
-		/* This encrypts the lm_pwd field, which actualy contains
-		   the password rather than the nt_pwd field becouse that
+		/* This encrypts the lm_pwd field, which actually contains
+		   the password rather than the nt_pwd field because that
 		   contains nothing */
 		
 		/* WATCH OUT. This doesn't work if the incoming password is
@@ -572,7 +574,8 @@ BOOL make_user_info_for_reply(auth_usersupplied_info **user_info,
 		SMBencrypt( (const uchar *)plaintext_password.data, chal, local_lm_response);
 		local_lm_blob = data_blob(local_lm_response, 24);
 		
-		/* We can't do an NT hash here, as the password needs to be case insensitive */
+		/* We can't do an NT hash here, as the password needs to be
+		   case insensitive */
 		local_nt_blob = data_blob(NULL, 0); 
 		
 		ntlmssp_flags = NTLMSSP_NEGOTIATE_OEM;
