@@ -60,6 +60,7 @@ INIT_FUNCTION = \
 		dcerpc_mgmt_init \
 		dcerpc_protected_storage_init \
 		dcerpc_dcom_init \
+		dcom_dcom_init \
 		dcerpc_oxidresolver_init \
 		dcerpc_remact_init \
 		dcerpc_wzcsvc_init \
@@ -116,7 +117,49 @@ ADD_OBJ_FILES = \
 		librpc/gen_ndr/ndr_keysvc.o \
 		librpc/gen_ndr/ndr_krb5pac.o \
 		librpc/gen_ndr/ndr_xattr.o \
-		librpc/gen_ndr/ndr_schannel.o
+		librpc/gen_ndr/ndr_schannel.o \
+		librpc/gen_ndr/ndr_audiosrv_c.o \
+		librpc/gen_ndr/ndr_dcerpc_c.o \
+		librpc/gen_ndr/ndr_echo_c.o \
+		librpc/gen_ndr/ndr_exchange_c.o \
+		librpc/gen_ndr/ndr_dsbackup_c.o \
+		librpc/gen_ndr/ndr_efs_c.o \
+		librpc/gen_ndr/ndr_misc_c.o \
+		librpc/gen_ndr/ndr_lsa_c.o \
+		librpc/gen_ndr/ndr_lsads_c.o \
+		librpc/gen_ndr/ndr_dfs_c.o \
+		librpc/gen_ndr/ndr_drsuapi_c.o \
+		librpc/gen_ndr/ndr_policyagent_c.o \
+		librpc/gen_ndr/ndr_samr_c.o \
+		librpc/gen_ndr/ndr_spoolss_c.o \
+		librpc/gen_ndr/ndr_wkssvc_c.o \
+		librpc/gen_ndr/ndr_srvsvc_c.o \
+		librpc/gen_ndr/ndr_svcctl_c.o \
+		librpc/gen_ndr/ndr_atsvc_c.o \
+		librpc/gen_ndr/ndr_eventlog_c.o \
+		librpc/gen_ndr/ndr_epmapper_c.o \
+		librpc/gen_ndr/ndr_dbgidl_c.o \
+		librpc/gen_ndr/ndr_dssetup_c.o \
+		librpc/gen_ndr/ndr_msgsvc_c.o \
+		librpc/gen_ndr/ndr_wins_c.o \
+		librpc/gen_ndr/ndr_winreg_c.o \
+		librpc/gen_ndr/ndr_mgmt_c.o \
+		librpc/gen_ndr/ndr_protected_storage_c.o \
+		librpc/gen_ndr/ndr_dcom_c.o \
+		librpc/gen_ndr/ndr_oxidresolver_c.o \
+		librpc/gen_ndr/ndr_remact_c.o \
+		librpc/gen_ndr/ndr_wzcsvc_c.o \
+		librpc/gen_ndr/ndr_browser_c.o \
+		librpc/gen_ndr/ndr_w32time_c.o \
+		librpc/gen_ndr/ndr_scerpc_c.o \
+		librpc/gen_ndr/ndr_ntsvcs_c.o \
+		librpc/gen_ndr/ndr_netlogon_c.o \
+		librpc/gen_ndr/ndr_trkwks_c.o \
+		librpc/gen_ndr/ndr_keysvc_c.o \
+		librpc/gen_ndr/ndr_krb5pac_c.o \
+		librpc/gen_ndr/ndr_xattr_c.o \
+		librpc/gen_ndr/ndr_schannel_c.o
+
 # End SUBSYSTEM LIBNDR_GEN
 ################################################
 

@@ -17,6 +17,8 @@ use idl;
 use dump;
 use header;
 use server;
+use client;
+use proxy;
 use stub;
 use parser;
 use eparser;
@@ -31,6 +33,7 @@ my($opt_dump) = 0;
 my($opt_diff) = 0;
 my($opt_header) = 0;
 my($opt_template) = 0;
+my($opt_client) = 0;
 my($opt_server) = 0;
 my($opt_parser) = 0;
 my($opt_eparser) = 0;
@@ -68,6 +71,7 @@ sub ShowHelp()
              --dump                dump a pidl file back to idl
              --header              create a C header file
              --parser              create a C parser
+             --client              create a C client
              --server              create server boilerplate
              --template            print a template for a pipe
              --eparser             create an ethereal parser
@@ -88,6 +92,7 @@ GetOptions (
 	    'server' => \$opt_server,
 	    'template' => \$opt_template,
 	    'parser' => \$opt_parser,
+        'client' => \$opt_client,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
 	    'keep' => \$opt_keep,
@@ -136,6 +141,30 @@ sub process_file($)
 	if ($opt_header) {
 		my($header) = util::ChangeExtension($output, ".h");
 		util::FileSave($header, IdlHeader::Parse($pidl));
+	}
+
+	if ($opt_client) {
+		my ($client) = util::ChangeExtension($output, "_c.c");
+		my $res = "";
+		my $h_filename = util::ChangeExtension($output, ".h");
+		my $need_dcom_register = 0;
+
+		$res .= "#include \"includes.h\"\n";
+		$res .= "#include \"$h_filename\"\n\n";
+
+		foreach my $x (@{$pidl}) {
+			if (util::has_property($x, "object")) {
+				$res .= IdlProxy::ParseInterface($x);
+				$need_dcom_register = 1;
+			} else {
+				$res .= IdlClient::ParseInterface($x);
+			}
+		}
+
+		if ($need_dcom_register) {
+			$res .= IdlProxy::RegistrationFunction($pidl, $basename);
+		}
+		util::FileSave($client, $res);
 	}
 
 	if ($opt_server) {

@@ -4,6 +4,7 @@
 
    Copyright (C) Tim Potter 2003
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Jelmer Vernooij 2004
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -856,7 +857,7 @@ static int dcerpc_req_destructor(void *ptr)
   perform the send size of a async dcerpc request
 */
 struct rpc_request *dcerpc_request_send(struct dcerpc_pipe *p, 
-					struct GUID *object,
+					const struct GUID *object,
 					uint16_t opnum,
 					TALLOC_CTX *mem_ctx,
 					DATA_BLOB *stub_data)
@@ -1153,12 +1154,28 @@ static NTSTATUS dcerpc_ndr_validate_out(struct dcerpc_pipe *p,
 
 
 /*
+ send a rpc request given a dcerpc_call structure 
+ */
+struct rpc_request *dcerpc_ndr_request_table_send(struct dcerpc_pipe *p,
+						const struct GUID *object,
+						const struct dcerpc_interface_table *table,
+						uint32_t opnum, 
+						TALLOC_CTX *mem_ctx, 
+						void *r)
+{
+	const struct dcerpc_interface_call *call = &table->calls[opnum];
+	
+	return dcerpc_ndr_request_send(p, object, opnum, mem_ctx, call->ndr_push, call->ndr_pull, r, call->struct_size);
+}
+						
+
+/*
   send a rpc request with a given set of ndr helper functions
 
   call dcerpc_ndr_request_recv() to receive the answer
 */
 struct rpc_request *dcerpc_ndr_request_send(struct dcerpc_pipe *p,
-						struct GUID *object,
+						const struct GUID *object,
 					    uint32_t opnum,
 					    TALLOC_CTX *mem_ctx,
 					    NTSTATUS (*ndr_push)(struct ndr_push *, int, void *),

@@ -105,10 +105,7 @@ static struct rpc_request *dcom_proxy_$interface->{NAME}_$name\_send(struct dcom
 		NDR_PRINT_IN_DEBUG($name, r);		
 	}
 
-	return dcerpc_ndr_request_send(p, &d->ipid, DCERPC_$uname, mem_ctx,
-	(ndr_push_flags_fn_t) ndr_push_$name,
-	(ndr_pull_flags_fn_t) ndr_pull_$name,
-	r, sizeof(*r));
+	return dcerpc_ndr_request_table_send(p, &d->ipid, &dcerpc_table_$interface->{NAME}, DCERPC_$uname, mem_ctx, r);
 }
 
 static NTSTATUS dcom_proxy_$interface->{NAME}_$name(struct dcom_interface_p *d, TALLOC_CTX *mem_ctx, struct $name *r)
@@ -161,6 +158,37 @@ sub ParseInterface($)
 	}
 
 	ParseRegFunc($interface);
+}
+
+sub RegistrationFunction($$)
+{
+	my $idl = shift;
+	my $basename = shift;
+
+	my $res = "NTSTATUS dcom_$basename\_init(void)\n";
+	$res .= "{\n";
+	$res .="\tNTSTATUS status = NT_STATUS_OK;\n";
+	foreach my $interface (@{$idl}) {
+		next if $interface->{TYPE} ne "INTERFACE";
+		next if not util::has_property($interface, "object");
+
+		my $data = $interface->{INHERITED_DATA};
+		my $count = 0;
+		foreach my $d (@{$data}) {
+			if ($d->{TYPE} eq "FUNCTION") { $count++; }
+		}
+
+		next if ($count == 0);
+
+		$res .= "\tstatus = dcom_$interface->{NAME}_init();\n";
+		$res .= "\tif (NT_STATUS_IS_ERR(status)) {\n";
+		$res .= "\t\treturn status;\n";
+		$res .= "\t}\n\n";
+	}
+	$res .= "\treturn status;\n";
+	$res .= "}\n\n";
+
+	return $res;
 }
 
 1;
