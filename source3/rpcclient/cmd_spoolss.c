@@ -1,4 +1,4 @@
-/* 
+/*
    Unix SMB/CIFS implementation.
    RPC pipe client
 
@@ -453,9 +453,79 @@ static NTSTATUS cmd_spoolss_enum_ports(struct cli_state *cli,
 }
 
 /***********************************************************************
+ * Set printer comment - use a level2 set.
+ */
+static NTSTATUS cmd_spoolss_setprinter(struct cli_state *cli,
+                                       TALLOC_CTX *mem_ctx,
+                                       int argc, char **argv)
+{
+	POLICY_HND 	pol;
+	WERROR		result;
+	uint32 		needed;
+	uint32 		info_level = 2;
+	BOOL 		opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	fstring 	printername,
+			servername,
+			user,
+			comment;
+
+	if (argc == 1 || argc > 3) {
+		printf("Usage: %s printername comment\n", argv[0]);
+
+		return NT_STATUS_OK;
+	}
+
+	/* Open a printer handle */
+	if (argc == 3) {
+		fstrcpy(comment, argv[2]);
+	}
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	fstrcpy (printername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
+				MAXIMUM_ALLOWED_ACCESS, servername,
+				user, &pol);
+				
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	opened_hnd = True;
+
+	/* Get printer info */
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, info_level, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, info_level, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+
+
+	/* Modify the comment. */
+	init_unistr(&ctr.printers_2->comment, comment);
+	ctr.printers_2->devmode = NULL;
+	ctr.printers_2->secdesc = NULL;
+
+	result = cli_spoolss_setprinter(cli, mem_ctx, &pol, info_level, &ctr, 0);
+	if (W_ERROR_IS_OK(result))
+		printf("Success in setting comment.\n");
+
+ done:
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/***********************************************************************
  * Get printer information
  */
-static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli, 
+static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
                                        TALLOC_CTX *mem_ctx,
                                        int argc, char **argv)
 {
@@ -464,7 +534,7 @@ static NTSTATUS cmd_spoolss_getprinter(struct cli_state *cli,
 	uint32 		info_level = 1;
 	BOOL 		opened_hnd = False;
 	PRINTER_INFO_CTR ctr;
-	fstring 	printername, 
+	fstring 	printername,
 			servername,
 			user;
 	uint32 needed;
@@ -1014,7 +1084,7 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
 	if (W_ERROR_IS_OK(result)) {
 		rpcstr_pull(driver_name, info3.name.buffer, 
 			    sizeof(driver_name), 0, STR_TERMINATE);
-		printf ("Printer Driver %s successfully installed.\n", 
+		printf ("Printer Driver %s successfully installed.\n",
 			driver_name);
 	}
 
@@ -1023,7 +1093,7 @@ static NTSTATUS cmd_spoolss_addprinterdriver(struct cli_state *cli,
 
 
 static NTSTATUS cmd_spoolss_addprinterex(struct cli_state *cli, 
-                                         TALLOC_CTX *mem_ctx, 
+                                         TALLOC_CTX *mem_ctx,
                                          int argc, char **argv)
 {
 	WERROR result;
@@ -1109,7 +1179,7 @@ static NTSTATUS cmd_spoolss_setdriver(struct cli_state *cli,
 	/* Get a printer handle */
 
 	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "", 
-					     MAXIMUM_ALLOWED_ACCESS, 
+					     MAXIMUM_ALLOWED_ACCESS,
 					     servername, user, &pol);
 
 	if (!W_ERROR_IS_OK(result))
@@ -1152,7 +1222,7 @@ done:
 
 	if (opened_hnd)
 		cli_spoolss_close_printer(cli, mem_ctx, &pol);
-	
+
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1533,6 +1603,80 @@ static NTSTATUS cmd_spoolss_enum_forms(struct cli_state *cli,
 	return W_ERROR_IS_OK(werror) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+static NTSTATUS cmd_spoolss_setprinterdata(struct cli_state *cli,
+					    TALLOC_CTX *mem_ctx,
+					    int argc, char **argv)
+{
+	WERROR result;
+	uint32 needed;
+	fstring servername, printername, user;
+	POLICY_HND pol;
+	BOOL opened_hnd = False;
+	PRINTER_INFO_CTR ctr;
+	PRINTER_INFO_0 *info = NULL;
+
+	/* parse the command arguements */
+	if (argc != 4) {
+		printf ("Usage: %s <printer> <value> <data>\n", argv[0]);
+		return NT_STATUS_OK;
+        }
+
+	slprintf (servername, sizeof(fstring)-1, "\\\\%s", cli->desthost);
+	strupper (servername);
+	slprintf (printername, sizeof(fstring)-1, "%s\\%s", servername, argv[1]);
+	fstrcpy  (user, cli->user_name);
+
+	/* get a printer handle */
+	result = cli_spoolss_open_printer_ex(cli, mem_ctx, printername, "",
+					     MAXIMUM_ALLOWED_ACCESS, servername, 
+					     user, &pol);
+	if (!W_ERROR_IS_OK(result))
+		goto done;
+
+	opened_hnd = True;
+
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed,
+                                        &pol, 0, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+		
+	printf("%s\n", timestring(True));
+	printf("\tchange_id (before set)\t:[0x%x]\n", info->change_id);
+
+
+	/* Set the printer data */
+	
+	result = cli_spoolss_setprinterdata(cli, mem_ctx, &pol, argv[2], argv[3]);
+	if (!W_ERROR_IS_OK(result)) {
+		printf ("Unable to set [%s=%s]!\n", argv[2], argv[3]);
+		goto done;
+	}
+	printf("\tSetPrinterData succeeded [%s: %s]\n", argv[2], argv[3]);
+
+        result = cli_spoolss_getprinter(cli, mem_ctx, 0, &needed, &pol, 0, &ctr);
+
+        if (W_ERROR_V(result) == ERRinsufficientbuffer)
+                result = cli_spoolss_getprinter(cli, mem_ctx, needed, NULL, &pol, 0, &ctr);
+
+        if (!W_ERROR_IS_OK(result))
+                goto done;
+		
+	printf("%s\n", timestring(True));
+	printf("\tchange_id (after set)\t:[0x%x]\n", info->change_id);
+
+done:
+	/* cleanup */
+	if (opened_hnd)
+		cli_spoolss_close_printer(cli, mem_ctx, &pol);
+
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+
 /* List of commands exported by this module */
 struct cmd_set spoolss_commands[] = {
 
@@ -1550,14 +1694,17 @@ struct cmd_set spoolss_commands[] = {
 	{ "getdriver",		cmd_spoolss_getdriver,		PIPE_SPOOLSS, "Get print driver information",        "" },
 	{ "getdriverdir",	cmd_spoolss_getdriverdir,	PIPE_SPOOLSS, "Get print driver upload directory",   "" },
 	{ "getprinter", 	cmd_spoolss_getprinter, 	PIPE_SPOOLSS, "Get printer info",                    "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",       "" },
 	{ "openprinter",	cmd_spoolss_open_printer_ex,	PIPE_SPOOLSS, "Open printer handle",                 "" },
 	{ "setdriver",		cmd_spoolss_setdriver,		PIPE_SPOOLSS, "Set printer driver",                  "" },
-	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",          "" },
-	{ "addform",            cmd_spoolss_addform,            PIPE_SPOOLSS, "Add form", "" },
-	{ "setform",            cmd_spoolss_setform,            PIPE_SPOOLSS, "Set form", "" },
-	{ "getform",            cmd_spoolss_getform,            PIPE_SPOOLSS, "Get form", "" },
-	{ "deleteform",         cmd_spoolss_deleteform,         PIPE_SPOOLSS, "Delete form", "" },
-	{ "enumforms",          cmd_spoolss_enum_forms,         PIPE_SPOOLSS, "Enumerate forms", "" },
+	{ "getprintprocdir",	cmd_spoolss_getprintprocdir,    PIPE_SPOOLSS, "Get print processor directory",       "" },
+	{ "addform",            cmd_spoolss_addform,            PIPE_SPOOLSS, "Add form",                            "" },
+	{ "setform",            cmd_spoolss_setform,            PIPE_SPOOLSS, "Set form",                            "" },
+	{ "getform",            cmd_spoolss_getform,            PIPE_SPOOLSS, "Get form",                            "" },
+	{ "deleteform",         cmd_spoolss_deleteform,         PIPE_SPOOLSS, "Delete form",                         "" },
+	{ "enumforms",          cmd_spoolss_enum_forms,         PIPE_SPOOLSS, "Enumerate forms",                     "" },
+	{ "setprinter",	        cmd_spoolss_setprinter,         PIPE_SPOOLSS, "Set printer comment",                 "" },
+	{ "setprinterdata",	cmd_spoolss_setprinterdata,     PIPE_SPOOLSS, "Set REG_SZ printer data",             "" },
 
 	{ NULL }
 };
