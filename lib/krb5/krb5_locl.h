@@ -142,4 +142,10 @@ extract_ticket(krb5_context context,
 	       krb5_decrypt_proc decrypt_proc,
 	       krb5_const_pointer decryptarg);
 
+krb5_error_code
+krb5_init_etype (krb5_context context,
+		 unsigned *len,
+		 unsigned **val,
+		 const krb5_enctype *etypes);
+
 #endif /* __KRB5_LOCL_H__ */
