@@ -201,9 +201,6 @@ BOOL prs_grow(prs_struct *ps, uint32 extra_space)
 	if(UNMARSHALLING(ps) || !ps->is_dynamic) {
 		DEBUG(0,("prs_grow: Buffer overflow - unable to expand buffer by %u bytes.\n",
 				(unsigned int)extra_space));
-		/* JRATEST */
-		smb_panic("prs_grow");
-		/* JRATEST */
 		return False;
 	}
 	

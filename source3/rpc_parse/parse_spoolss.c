@@ -1420,8 +1420,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 		if(!prs_uint16("leading zero", ps, depth, &zero))
 			return False;
 
-		do
-		{	
+		while (p && (*p!=0)) {	
 			while (*q!=0)
 				q++;
 
@@ -1437,7 +1436,7 @@ static BOOL new_smb_io_relarraystr(char *desc, NEW_BUFFER *buffer, int depth, ui
 			q++;
 			p=q;
 
-		} while (*p!=0); /* end on the last leading 0 */
+		}
 		
 		prs_set_offset(ps, struct_offset);
 		

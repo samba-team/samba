@@ -154,8 +154,7 @@ static Printer_entry *find_printer_index_by_hnd(const POLICY_HND *hnd)
 
 	for(; find_printer; find_printer = (Printer_entry *)ubi_dlNext(find_printer)) {
 
-		if (memcmp(&(find_printer->printer_hnd), hnd, sizeof(*hnd)) == 0)
-		{
+		if (memcmp(&(find_printer->printer_hnd), hnd, sizeof(*hnd)) == 0) {
 			DEBUG(4,("Found printer handle \n"));
 			/*dump_data(4, hnd->data, sizeof(hnd->data));*/
 			return find_printer;
@@ -182,8 +181,7 @@ static BOOL close_printer_handle(POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
-	if (!OPEN_HANDLE(Printer))
-	{
+	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(3,("Error closing printer handle\n"));
 		return False;
 	}
@@ -212,8 +210,7 @@ static BOOL delete_printer_handle(POLICY_HND *hnd)
 {
 	Printer_entry *Printer = find_printer_index_by_hnd(hnd);
 
-	if (!OPEN_HANDLE(Printer))
-	{
+	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(3,("Error closing printer handle\n"));
 		return False;
 	}
@@ -267,7 +264,7 @@ static BOOL open_printer_hnd(POLICY_HND *hnd)
 	new_printer->open = True;
 	new_printer->notify.option=NULL;
 				
-	memcpy(&(new_printer->printer_hnd), hnd, sizeof(*hnd));
+	memcpy(&new_printer->printer_hnd, hnd, sizeof(*hnd));
 	
 	ubi_dlAddHead( &Printer_list, (ubi_dlNode *)new_printer);
 
@@ -1797,14 +1794,18 @@ static DEVICEMODE *construct_dev_mode(int snum, char *servername)
 	if (printer->info_2->devmode)
 		ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
 	else
-		ntdevmode = construct_nt_devicemode();
+		ntdevmode = construct_nt_devicemode(printer->info_2->printername);
 
 	if (ntdevmode == NULL)
 		goto fail;
 
 	DEBUGADD(8,("loading DEVICEMODE\n"));
-	snprintf(adevice, sizeof(adevice), "%s", printer->info_2->printername);
 
+#if 1 /* JRATEST */
+	snprintf(adevice, sizeof(adevice), "%s", ntdevmode->devicename);
+#else /* JRATEST */
+	snprintf(adevice, sizeof(adevice), "%s", printer->info_2->printername);
+#endif /* JRATEST */
 	init_unistr(&devmode->devicename, adevice);
 
 	snprintf(aform, sizeof(aform), ntdevmode->formname);
@@ -1912,7 +1913,7 @@ static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer
 	if((printer->devmode = construct_dev_mode(snum, servername)) == NULL)
 		goto err;
 
-	if (ntprinter->info_2->secdesc_buf->len != 0) {
+	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
 		/* steal the printer info sec_desc structure.  [badly done]. */
 		printer->secdesc = ntprinter->info_2->secdesc_buf->sec;
 		ntprinter->info_2->secdesc_buf->sec = NULL; /* Stolen memory. */
@@ -1957,7 +1958,7 @@ static BOOL construct_printer_info_3(fstring servername,
 	ZERO_STRUCTP(printer);
 	
 	printer->flags = 4; /* This is the offset to the SEC_DESC. */
-	if (ntprinter->info_2->secdesc_buf->len != 0) {
+	if (ntprinter->info_2->secdesc_buf && ntprinter->info_2->secdesc_buf->len != 0) {
 		/* steal the printer info sec_desc structure.  [badly done]. */
 		printer->secdesc = ntprinter->info_2->secdesc_buf->sec;
 		ntprinter->info_2->secdesc_buf->sec = NULL; /* Stolen the malloced memory. */
@@ -2574,6 +2575,7 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *whe
 			v = char_array[i];
 			if (!v) v = ""; /* hack to handle null lists */
 		}
+		if (strlen(v) == 0) break;
 		snprintf(line, sizeof(line)-1, "%s%s", where, v);
 		DEBUGADD(6,("%d:%s:%d\n", i, line, strlen(line)));
 		if((*uni_array=Realloc(*uni_array, (j+strlen(line)+2)*sizeof(uint16))) == NULL) {
@@ -2582,7 +2584,6 @@ static void init_unistr_array(uint16 **uni_array, fstring *char_array, char *whe
 		}
 		j += (dos_PutUniCode((char *)(*uni_array+j), line , sizeof(uint16)*strlen(line), True) / sizeof(uint16) );
 		i++;
-		if (strlen(v) == 0) break;
 	}
 	
 	if (*uni_array) {
@@ -2613,23 +2614,23 @@ static void fill_printer_driver_info_3(DRIVER_INFO_3 *info,
 
 	info->version=driver.info_3->cversion;
 
-	init_unistr( &(info->name),         driver.info_3->name );	
-	init_unistr( &(info->architecture), architecture );
+	init_unistr( &info->name,         driver.info_3->name );	
+	init_unistr( &info->architecture, architecture );
 	
 	snprintf(temp_driverpath, sizeof(temp_driverpath)-1, "%s%s", where, driver.info_3->driverpath);		 
-	init_unistr( &(info->driverpath), temp_driverpath );
+	init_unistr( &info->driverpath, temp_driverpath );
 	
 	snprintf(temp_datafile,   sizeof(temp_datafile)-1,   "%s%s", where, driver.info_3->datafile); 
-	init_unistr( &(info->datafile), temp_datafile );
+	init_unistr( &info->datafile, temp_datafile );
 	
 	snprintf(temp_configfile, sizeof(temp_configfile)-1, "%s%s", where, driver.info_3->configfile);
-	init_unistr( &(info->configfile), temp_configfile );	
+	init_unistr( &info->configfile, temp_configfile );	
 	
 	snprintf(temp_helpfile,   sizeof(temp_helpfile)-1,   "%s%s", where, driver.info_3->helpfile);
-	init_unistr( &(info->helpfile), temp_helpfile );
+	init_unistr( &info->helpfile, temp_helpfile );
 
-	init_unistr( &(info->monitorname), driver.info_3->monitorname );
-	init_unistr( &(info->defaultdatatype), driver.info_3->defaultdatatype );
+	init_unistr( &info->monitorname, driver.info_3->monitorname );
+	init_unistr( &info->defaultdatatype, driver.info_3->defaultdatatype );
 
 	info->dependentfiles=NULL;
 	init_unistr_array(&info->dependentfiles, driver.info_3->dependentfiles, where);
@@ -3014,25 +3015,34 @@ static uint32 update_printer(const POLICY_HND *handle, uint32 level,
 	if (!get_printer_snum(handle, &snum) )
 		return ERROR_INVALID_HANDLE;
 	
-	get_a_printer(&printer, 2, lp_servicename(snum));
+	if(get_a_printer(&printer, 2, lp_servicename(snum)) != 0)
+		return ERROR_INVALID_HANDLE;
 
 	DEBUGADD(8,("Converting info_2 struct\n"));
+
+	/*
+	 * convert_printer_info converts the incoming
+	 * info from the client and overwrites the info
+	 * just read from the tdb in the pointer 'printer'.
+	 */
+
 	convert_printer_info(info, printer, level);
 	
 	if (info->info_2->devmode_ptr != 0) {
-		NT_DEVICEMODE *ntdevmode = NULL;
 		/* we have a valid devmode
 		   convert it and link it*/
+
+		/*
+		 * Ensure printer->info_2->devmode is a valid pointer 
+		 * as we will be overwriting it in convert_devicemode().
+		 */
 		
+		if (printer->info_2->devmode == NULL)
+			printer->info_2->devmode = construct_nt_devicemode(printer->info_2->printername);
+
 		DEBUGADD(8,("Converting the devicemode struct\n"));
-		if (printer->info_2->devmode) {
-			ntdevmode = dup_nt_devicemode(printer->info_2->devmode);
-		} else {
-			ntdevmode = construct_nt_devicemode();
-		}
-				
-		convert_devicemode(devmode, ntdevmode);
-		free_nt_devicemode(&ntdevmode);
+		convert_devicemode(devmode, printer->info_2->devmode);
+
 	} else {
 		if (printer->info_2->devmode != NULL)
 			free_nt_devicemode(&printer->info_2->devmode);
