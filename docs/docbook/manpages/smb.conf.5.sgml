@@ -776,7 +776,6 @@
 		<listitem><para><link linkend="UPDATEENCRYPTED"><parameter>update encrypted</parameter></link></para></listitem>
 		<listitem><para><link linkend="USEMMAP"><parameter>use mmap</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERHOSTS"><parameter>use rhosts</parameter></link></para></listitem>
-		<listitem><para><link linkend="USESENDFILE"><parameter>use sendfile</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMELEVEL"><parameter>username level</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAMEMAP"><parameter>username map</parameter></link></para></listitem>
 		<listitem><para><link linkend="UTMP"><parameter>utmp</parameter></link></para></listitem>
@@ -898,6 +897,7 @@
 		<listitem><para><link linkend="PRINTERDRIVERLOCATION"><parameter>printer driver location</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTERNAME"><parameter>printer name</parameter></link></para></listitem>
 		<listitem><para><link linkend="PRINTING"><parameter>printing</parameter></link></para></listitem>
+		<listitem><para><link linkend="PROFILEACLS"><parameter>profile acls</parameter></link></para></listitem>
 		<listitem><para><link linkend="PUBLIC"><parameter>public</parameter></link></para></listitem>
 		<listitem><para><link linkend="QUEUEPAUSECOMMAND"><parameter>queuepause command</parameter></link></para></listitem>
 		<listitem><para><link linkend="QUEUERESUMECOMMAND"><parameter>queueresume command</parameter></link></para></listitem>
@@ -916,6 +916,7 @@
 		<listitem><para><link linkend="STRICTSYNC"><parameter>strict sync</parameter></link></para></listitem>
 		<listitem><para><link linkend="SYNCALWAYS"><parameter>sync always</parameter></link></para></listitem>
 		<listitem><para><link linkend="USECLIENTDRIVER"><parameter>use client driver</parameter></link></para></listitem>
+		<listitem><para><link linkend="USESENDFILE"><parameter>use sendfile</parameter></link></para></listitem>
 		<listitem><para><link linkend="USER"><parameter>user</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERNAME"><parameter>username</parameter></link></para></listitem>
 		<listitem><para><link linkend="USERS"><parameter>users</parameter></link></para></listitem>
@@ -6241,7 +6242,40 @@
 		</listitem>
 		</varlistentry>
 		
+
+
 				
+		<varlistentry>
+		<term><anchor id="PROFILEACLS">profile acls (S)</term>
+		<listitem><para>
+		This boolean parameter was added to fix the problems that people have been
+		having with storing user profiles on Samba shares from Windows 2000 or
+		Windows XP clients. New versions of Windows 2000 or Windows XP service
+		packs do security ACL checking on the owner and ability to write of the
+		profile directory stored on a local workstation when copied from a Samba
+		share. When not in domain mode with winbindd then the security info copied
+		onto the local workstation has no meaning to the logged in user (SID) on
+		that workstation so the profile storing fails. Adding this parameter
+		onto a share used for profile storage changes two things about the
+		returned Windows ACL. Firstly it changes the owner and group owner
+		of all reported files and directories to be BUILTIN\Administrators,
+		BUILTIN\Users respectively (SIDs S-1-5-32-544, S-1-5-32-545). Secondly
+		it adds an ACE entry of "Full Control" to the SID BUILTIN\Users to
+		every returned ACL. This will allow any Windows 2000 or XP workstation
+		user to access the profile. Note that if you have multiple users logging
+		on to a workstation then in order to prevent them from being able to access
+		each others profiles you must remove the "Bypass traverse checking" advanced
+		user right. This will prevent access to other users profile directories as
+		the top level profile directory (named after the user) is created by the
+		workstation profile code and has an ACL restricting entry to the directory
+		tree to the owning user.</para>
+		<para>If you didn't understand the above text, you probably should not set
+		this parameter :-).</para>
+		<para>Default <command>profile acls = no</command></para>
+		</listitem>
+		</varlistentry>
+
+
 		
 		
 		<varlistentry>
