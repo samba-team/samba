@@ -49,7 +49,7 @@ extern int      DEBUGLEVEL;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
-static VOLATILE SIG_ATOMIC_T gotalarm;
+static VOLATILE sig_atomic_t gotalarm;
 
 /***************************************************************
 

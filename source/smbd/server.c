@@ -208,7 +208,7 @@ max can be %d\n",
 		num = sys_select(FD_SETSIZE,&lfds,NULL);
 		
 		if (num == -1 && errno == EINTR) {
-			extern VOLATILE SIG_ATOMIC_T reload_after_sighup;
+			extern VOLATILE sig_atomic_t reload_after_sighup;
 
 			/* check for sighup processing */
 			if (reload_after_sighup) {
@@ -228,7 +228,7 @@ max can be %d\n",
 		   accept on these. */
 		for( ; num > 0; num--) {
 			struct sockaddr addr;
-			int in_addrlen = sizeof(addr);
+			socklen_t in_addrlen = sizeof(addr);
 			
 			s = -1;
 			for(i = 0; i < num_interfaces; i++) {
@@ -366,7 +366,7 @@ BOOL reload_services(BOOL test)
  Catch a sighup.
 ****************************************************************************/
 
-VOLATILE SIG_ATOMIC_T reload_after_sighup = False;
+VOLATILE sig_atomic_t reload_after_sighup = False;
 
 static void sig_hup(int sig)
 {
