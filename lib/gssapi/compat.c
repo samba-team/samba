@@ -51,8 +51,8 @@ check_compat(OM_uint32 *minor_status, gss_name_t name,
     if(p == NULL)
 	return 0;
 
+    match = NULL;
     for(q = p; *q; q++) {
-
 	ret = krb5_parse_name(gssapi_krb5_context, *q, &match);
 	if (ret)
 	    break;
@@ -63,7 +63,10 @@ check_compat(OM_uint32 *minor_status, gss_name_t name,
 	}
 	
 	krb5_free_principal(gssapi_krb5_context, match);
+	match = NULL;
     }
+    if (match)
+	krb5_free_principal(gssapi_krb5_context, match);
     krb5_config_free_strings(p);
 
     if (ret) {
