@@ -40,6 +40,12 @@
 #include <config.h>
 #endif
 #include "roken.h"
+#ifdef HAVE_ARPA_NAMESER_H
+#include <arpa/nameser.h>
+#endif
+#ifdef HAVE_RESOLV_H
+#include <resolv.h>
+#endif
 #include "resolve.h"
 
 RCSID("$Id$");
@@ -62,6 +68,8 @@ static struct stot{
     DECL(SRV),
     {NULL, 	0}
 };
+
+int _resolve_debug;
 
 static int
 string_to_type(const char *name)
@@ -255,20 +263,16 @@ dns_lookup(const char *domain, const char *type_name)
     u_long old_options = 0;
     
     type = string_to_type(type_name);
-#if 0
-    if (krb_dns_debug) {
+    if (_resolve_debug) {
         old_options = _res.options;
 	_res.options |= RES_DEBUG;
-	krb_warning("dns_lookup(%s, %s)\n", domain, type_name);
+	fprintf(stderr, "dns_lookup(%s, %s)\n", domain, type_name);
     }
-#endif
     len = res_search(domain, C_IN, type, reply, sizeof(reply));
-#if 0
-    if (krb_dns_debug) {
+    if (_resolve_debug) {
         _res.options = old_options;
-	krb_warning("dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
+	fprintf(stderr, "dns_lookup(%s, %s) --> %d\n", domain, type_name, len);
     }
-#endif
     if (len >= 0)
 	r = parse_reply(reply, len);
     return r;
