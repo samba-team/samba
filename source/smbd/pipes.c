@@ -114,7 +114,6 @@ int reply_open_pipe_and_X(connection_struct *conn,
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 {
 	pipes_struct *p = get_rpc_pipe_p(inbuf,smb_vwv2);
-	uint32 smb_offs = IVAL(inbuf,smb_vwv3);
 	size_t numtowrite = SVAL(inbuf,smb_vwv10);
 	int nwritten = -1;
 	int smb_doff = SVAL(inbuf, smb_vwv11);
