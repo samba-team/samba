@@ -32,11 +32,6 @@
 struct server_pipe_state {
 	struct netr_Credential client_challenge;
 	struct netr_Credential server_challenge;
-	BOOL authenticated;
-	char *account_name;
-	char *computer_name;  /* for logging only */
-	uint32_t acct_flags;
-	uint16_t sec_chan_type;
 	struct creds_CredentialState *creds;
 };
 
@@ -55,7 +50,6 @@ static NTSTATUS netlogon_schannel_setup(struct dcesrv_call_state *dce_call)
 		return NT_STATUS_NO_MEMORY;
 	}
 	ZERO_STRUCTP(state);
-	state->authenticated = True;
 	
 	if (dce_call->conn->auth_state.session_info == NULL) {
 		talloc_free(state);
@@ -102,16 +96,7 @@ static NTSTATUS netlogon_bind(struct dcesrv_call_state *dce_call, const struct d
 	return NT_STATUS_OK;
 }
 
-/* this function is called when the client disconnects the endpoint */
-static void netlogon_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *di) 
-{
-	struct server_pipe_state *pipe_state = context->private;
-	talloc_free(pipe_state);
-	context->private = NULL;
-}
-
 #define DCESRV_INTERFACE_NETLOGON_BIND netlogon_bind
-#define DCESRV_INTERFACE_NETLOGON_UNBIND netlogon_unbind
 
 static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 					struct netr_ServerReqChallenge *r)
@@ -132,10 +117,7 @@ static NTSTATUS netr_ServerReqChallenge(struct dcesrv_call_state *dce_call, TALL
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	pipe_state->authenticated = False;
 	pipe_state->creds = NULL;
-	pipe_state->account_name = NULL;
-	pipe_state->computer_name = NULL;
 
 	pipe_state->client_challenge = *r->in.credentials;
 
@@ -220,8 +202,6 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	pipe_state->acct_flags = acct_flags;
-	pipe_state->sec_chan_type = r->in.secure_channel_type;
 
 	*r->out.rid = samdb_result_rid_from_sid(mem_ctx, msgs[0], "objectSid", 0);
 
@@ -230,11 +210,12 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+	if (pipe_state->creds) {
+		talloc_free(pipe_state->creds);
+	}
+	pipe_state->creds = talloc_p(pipe_state, struct creds_CredentialState);
 	if (!pipe_state->creds) {
-		pipe_state->creds = talloc_p(pipe_state, struct creds_CredentialState);
-		if (!pipe_state->creds) {
-			return NT_STATUS_NO_MEMORY;
-		}
+		return NT_STATUS_NO_MEMORY;
 	}
 
 	creds_server_init(pipe_state->creds, &pipe_state->client_challenge, 
@@ -243,27 +224,19 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 			  *r->in.negotiate_flags);
 	
 	if (!creds_server_check(pipe_state->creds, r->in.credentials)) {
+		talloc_free(pipe_state->creds);
+		pipe_state->creds = NULL;
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	pipe_state->authenticated = True;
-
-	if (pipe_state->account_name) {
-		/* We don't want a memory leak on this long-lived talloc context */
-		talloc_free(pipe_state->account_name);
-	}
-
-	pipe_state->account_name = talloc_strdup(pipe_state, r->in.account_name);
+	pipe_state->creds->account_name = talloc_reference(pipe_state->creds, r->in.account_name);
 	
-	if (pipe_state->computer_name) {
-		/* We don't want a memory leak on this long-lived talloc context */
-		talloc_free(pipe_state->computer_name);
-	}
+	pipe_state->creds->computer_name = talloc_reference(pipe_state->creds, r->in.computer_name);
 
-	pipe_state->computer_name = talloc_strdup(pipe_state, r->in.computer_name);
+	pipe_state->creds->secure_channel_type = r->in.secure_channel_type;
 
 	/* remember this session key state */
-	nt_status = schannel_store_session_key(mem_ctx, pipe_state->computer_name, pipe_state->creds);
+	nt_status = schannel_store_session_key(mem_ctx, pipe_state->creds);
 
 	return nt_status;
 }
@@ -323,9 +296,6 @@ static NTSTATUS netr_creds_server_step_check(struct server_pipe_state *pipe_stat
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
-	if (!pipe_state->authenticated) {
-		return NT_STATUS_ACCESS_DENIED;
-	}
 	return creds_server_step_check(pipe_state->creds, 
 				       received_authenticator, 
 				       return_authenticator);
@@ -365,17 +335,17 @@ static NTSTATUS netr_ServerPasswordSet(struct dcesrv_call_state *dce_call, TALLO
 	/* pull the user attributes */
 	num_records = samdb_search(sam_ctx, mem_ctx, NULL, &msgs, attrs,
 				   "(&(sAMAccountName=%s)(objectclass=user))", 
-				   pipe_state->account_name);
+				   pipe_state->creds->account_name);
 
 	if (num_records == 0) {
 		DEBUG(3,("Couldn't find user [%s] in samdb.\n", 
-			 pipe_state->account_name));
+			 pipe_state->creds->account_name));
 		return NT_STATUS_NO_SUCH_USER;
 	}
 
 	if (num_records > 1) {
 		DEBUG(0,("Found %d records matching user [%s]\n", num_records, 
-			 pipe_state->account_name));
+			 pipe_state->creds->account_name));
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
@@ -643,6 +613,9 @@ static NTSTATUS netr_LogonSamLogonEx(struct dcesrv_call_state *dce_call, TALLOC_
 
 	r->out.authoritative = 1;
 
+	/* TODO: Describe and deal with these flags */
+	r->out.flags = 0;
+
 	return NT_STATUS_OK;
 }
 
@@ -681,6 +654,7 @@ static NTSTATUS netr_LogonSamLogonWithFlags(struct dcesrv_call_state *dce_call, 
 
 	r->out.validation = r2.out.validation;
 	r->out.authoritative = r2.out.authoritative;
+	r->out.flags = r2.out.flags;
 
 	return nt_status;
 }
