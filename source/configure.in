@@ -38,12 +38,23 @@ case "$host_os" in
       fi
       ;;
 #
-# AIX4.x is *so* broken. It doesn't even admit to having large
+# AIX4.x doesn't even admit to having large
 # files *at all* unless the -D_LARGE_FILE or -D_LARGE_FILE_API flags are set.
 #
     *aix4*)
       CPPFLAGS="$CPPFLAGS -D_LARGE_FILES"
       ;;    
+#
+# Defines needed for Solaris 2.6/2.7 aka 7.0 to make it admit
+# to the existance of large files..
+#
+	*solaris*)
+		case `uname -r` in
+			5.6*|5.7*)
+				CPPFLAGS="$CPPFLAGS -D_LARGEFILE_SOURCE -D_FILE_OFFSET_BITS=64"
+				;;
+		esac
+		;;
 #
 # Tests needed for SINIX large file support.
 #
@@ -156,9 +167,9 @@ fi
 # Do the same check for setresguid...
 #
 AC_CACHE_CHECK([for real setresgid],samba_cv_have_setresgid,[
-    AC_TRY_RUN([#include <errno.h>
-main() { setresgid(1,1,1); setresgid(2,2,2); exit(errno==EPERM?0:1);}],
-	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no,samba_cv_have_setresgid=cross)])
+    AC_TRY_COMPILE([#include <errno.h>
+main() { setresgid(1,1,1); exit(0);}],
+	samba_cv_have_setresgid=yes,samba_cv_have_setresgid=no)])
 if test x"$samba_cv_have_setresgid" = x"yes"; then
     AC_DEFINE(HAVE_SETRESGID)
 fi
