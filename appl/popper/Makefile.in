@@ -65,14 +65,14 @@ Wall:
 	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)
 	for x in $(PROG_LIBEXEC); do \
-	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	for x in $(PROG_LIBEXEC); do \
-	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 TAGS: $(SOURCES)
@@ -108,3 +108,5 @@ pop_debug$(EXECSUFFIX): $(POP_DEBUG_OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(POP_DEBUG_OBJECTS) $(KLIB) $(LIBROKEN) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

@@ -52,25 +52,35 @@ Wall:
 	$(CC) -c $(DEFS) -I../../include -I. -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(includedir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(includedir)
 	@for i in $(include_HEADERS); do \
 	if test -f "$(srcdir)/$$i" ; then x="$(srcdir)/$$i"; \
 	else x="$$i"; fi ;\
-	echo "$(INSTALL_DATA) $$x $(includedir)" ;\
-	$(INSTALL_DATA) $$x $(includedir) ; done
+	echo "$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$i" ;\
+	$(INSTALL_DATA) $$x $(DESTDIR)$(includedir)/$$i ; done
 
-	$(MKINSTALLDIRS) $(libdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	@for i in $(lib_LIBRARIES); do \
-	echo "$(INSTALL) -m 0555 $$i $(libdir)" ;\
-	$(INSTALL) -m 0555 $$i $(libdir) ; done
+	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
+	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
 
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	@for i in $(bin_PROGRAMS); do \
-	echo "$(INSTALL) -m 0555 $$i $(bindir)" ;\
-	$(INSTALL) -m 0555 $$i $(bindir) ; done
+	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(bindir)/$$i" ;\
+	$(INSTALL) -m 0555 $$i $(DESTDIR)$(bindir)/$$i ; done
 
 uninstall:
-	rm -f $(libdir)/$(LIB)
+	@for i in $(include_HEADERS); do \
+	echo "rm -f $(DESTDIR)$(includedir)/$$x" ;\
+	rm -f $(DESTDIR)$(includedir)/$$i ; done
+
+	@for i in $(lib_LIBRARIES); do \
+	echo "rm -f $(DESTDIR)$(libdir)/$$i" ;\
+	rm -f $(DESTDIR)$(libdir)/$$i ; done
+
+	@for i in $(bin_PROGRAMS); do \
+	echo "rm -f $(DESTDIR)$(bindir)/$$i" ;\
+	rm -f $(DESTDIR)$(bindir)/$$i ; done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -118,3 +128,5 @@ parse.c parse.h: $(srcdir)/parse.y
 lex.c: $(srcdir)/lex.l
 	$(LEX) $(srcdir)/lex.l
 	mv -f lex.yy.c lex.c
+
+.PHONY: all Wall install uninstall clean mostlyclean distclean realclean dist

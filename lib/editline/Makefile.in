@@ -43,11 +43,11 @@ Wall:
 	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
 
 uninstall:
-	rm -f $(libdir)/$(LIB)
+	rm -f $(DESTDIR)$(libdir)/$(LIB)
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -82,3 +82,5 @@ $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	$(LDSHARED) -o $@ $(OBJECTS)
 
 $(OBJECTS): ../../include/config.h
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

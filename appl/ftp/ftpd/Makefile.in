@@ -56,14 +56,14 @@ all: $(PROGS)
 	$(CC) -c -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(libexecdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)
 	for x in $(PROGS); do \
-	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	for x in $(PROGS); do \
-	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 ftpd$(EXECSUFFIX): $(ftpd_OBJS)
@@ -82,3 +82,5 @@ clean cleandir:
 
 distclean: 
 	rm -f Makefile
+
+.PHONY: all install uninstall clean cleandir distclean

@@ -41,12 +41,15 @@ Wall:
 	$(CC) -c $(DEFS) -I../../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(libdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	-if test "$(LIB)" != ""; then \
-	  $(INSTALL_DATA) -m 0555 $(LIB) $(libdir) ; \
+	  $(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB) ; \
 	fi
 
 uninstall:
+	-if test "$(LIB)" != ""; then \
+	  rm -f $(DESTDIR)$(libdir)/$(LIB) ; \
+	fi
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -77,3 +80,5 @@ $(LIB): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
 #	$(CC) -shared -Wl,-x -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

@@ -39,3 +39,5 @@ distclean:
 	for i in $(SUBDIRS); \
 	do (cd $$i && $(MAKE) $(MFLAGS) distclean); done
 	rm -f Makefile *~
+
+.PHONY: all install uninstall clean cleandir distclean

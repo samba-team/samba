@@ -44,20 +44,20 @@ all: $(PROGS)
 	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROG_BIN); do \
-	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	-for x in $(PROG_SUIDBIN); do \
-	  $(INSTALL_PROGRAM) -o root -m 04555 $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) -o root -m 04555 $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	for x in $(PROG_BIN); do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	for x in $(PROG_SUIDBIN); do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 TAGS: $(SOURCES)
@@ -86,3 +86,5 @@ otpprint$(EXECSUFFIX): $(OBJECTS_OTPPRINT)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS_OTPPRINT) $(OLIB) $(LIBROKEN) $(LIB_DBM) $(LIBS) $(LIBROKEN)
 
 $(OBJECTS): ../../include/config.h
+
+.PHONY: all install uninstall check clean mostlyclean distclean realclean

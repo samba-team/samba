@@ -45,15 +45,15 @@ Wall:
 	$(CC) -c $(DEFS) -I../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(libdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	@for i in $(LIB); do \
-	echo "$(INSTALL) -m 0555 $$i $(libdir)" ;\
-	$(INSTALL) -m 0555 $$i $(libdir) ; done
+	echo "$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i" ;\
+	$(INSTALL) -m 0555 $$i $(DESTDIR)$(libdir)/$$i ; done
 
 uninstall:
 	@for i in $(LIB); do \
-	echo "rm -f $(libdir)/$$i" ;\
-	rm -f $(libdir)/$$i ; done
+	echo "rm -f $(DESTDIR)$(libdir)/$$i" ;\
+	rm -f $(DESTDIR)$(libdir)/$$i ; done
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -93,3 +93,5 @@ afslib.so: afslib.o
 	ld -o $@ -bM:SRE -bI:$(srcdir)/afsl.exp -bE:$(srcdir)/afslib.exp @AFS_EXTRA_LD@ afslib.o
 
 $(OBJECTS): ../../include/config.h
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

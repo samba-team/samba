@@ -42,12 +42,15 @@ Wall:
 	$(CC) -c $(DEFS) -I../../../include -I$(srcdir) $(CFLAGS) $(CPPFLAGS) $(PICFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(libdir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
 	-if test "$(LIB)" != ""; then \
-	  $(INSTALL_DATA) -m 0555 $(LIB) $(libdir) ; \
+	  $(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB) ; \
 	fi
 
 uninstall:
+	-if test "$(LIB)" != ""; then \
+	  rm -f $(DESTDIR)$(libdir)/$(LIB) ; \
+	fi
 
 TAGS: $(SOURCES)
 	etags $(SOURCES)
@@ -77,3 +80,5 @@ $(OBJECTS): ../../../include/config.h
 $(LIB): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) -L../../kafs -lkafs -L../../kadm -lkadm -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken @LIB_getpwnam_r@ -lc
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

@@ -51,14 +51,14 @@ telnet$(EXECSUFFIX): $(OBJECTS)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ $(OBJECTS) -L../libtelnet -ltelnet $(KLIB) $(LIBROKEN) $(LIBS) @LIB_tgetent@ $(LIBROKEN)
 
 install: all
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS); do \
-	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	for x in $(PROGS); do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 TAGS: $(SOURCES)
@@ -69,3 +69,5 @@ clean cleandir:
 
 distclean: clean
 	rm -f Makefile *~
+
+.PHONY: all install uninstall clean cleandir distclean

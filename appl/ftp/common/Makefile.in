@@ -50,3 +50,5 @@ distclean:
 	rm -f Makefile
 
 $(OBJECTS): ../../../include/config.h
+
+.PHONY: all install uninstall clean cleandir distclean

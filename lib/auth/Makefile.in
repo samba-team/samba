@@ -51,3 +51,5 @@ realclean:
 		SUBDIRS=$(SUBDIRS); \
 		for i in $$SUBDIRS; \
 		do (cd $$i && $(MAKE) $(MFLAGS) realclean); done
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean

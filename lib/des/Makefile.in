@@ -74,17 +74,17 @@ des_enc.o: des_enc.c
 	fi
 
 install: all
-	$(MKINSTALLDIRS) $(libdir)
-	$(INSTALL_DATA) -m 0555 $(LIB) $(libdir)
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(libdir)
+	$(INSTALL_DATA) -m 0555 $(LIB) $(DESTDIR)$(libdir)/$(LIB)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS2INSTALL); do \
-	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
-	rm -f $(libdir)/$(LIB)
+	rm -f $(DESTDIR)$(libdir)/$(LIB)
 	for x in $(PROGS2INSTALL); do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 TAGS: $(LIBSRC)
@@ -149,3 +149,5 @@ speed$(EXECSUFFIX): speed.o $(LIB)
 	$(CC) $(LD_FLAGS) $(LDFLAGS) -o $@ speed.o -L. -ldes
 
 $(LIBOBJ): ../../include/config.h
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

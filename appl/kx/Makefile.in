@@ -54,20 +54,20 @@ Wall:
 	$(CC) -c $(DEFS) -I../../include -I$(srcdir) -I$(srcdir)/../kauth $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir) $(DESTDIR)$(libexecdir)
 	PROG_BIN='$(PROG_BIN)'; for x in $$PROG_BIN; do \
-	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	PROG_LIBEXEC='$(PROG_LIBEXEC)'; for x in $$PROG_LIBEXEC; do \
-	  $(INSTALL_PROGRAM) $$x $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	PROG_BIN='$(PROG_BIN)'; for x in $$PROG_BIN; do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 	PROG_LIBEXEC='$(PROG_LIBEXEC)'; for x in $$PROG_LIBEXEC; do \
-	  rm -f $(libexecdir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(libexecdir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 TAGS: $(SOURCES)
@@ -117,3 +117,5 @@ tenletxr: tenletxr.in
 	chmod +x $@
 
 $(OBJECTS): ../../include/config.h
+
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

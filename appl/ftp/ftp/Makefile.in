@@ -51,14 +51,14 @@ all: $(PROGS)
 	$(CC) -c -I$(srcdir) -I../../../include $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
-	$(MKINSTALLDIRS) $(bindir)
+	$(MKINSTALLDIRS) $(DESTDIR)$(bindir)
 	for x in $(PROGS); do \
-	  $(INSTALL_PROGRAM) $$x $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  $(INSTALL_PROGRAM) $$x $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 uninstall:
 	for x in $(PROGS); do \
-	  rm -f $(bindir)/`echo $$x | sed '$(transform)'`; \
+	  rm -f $(DESTDIR)$(bindir)/`echo $$x | sed '$(transform)'`; \
 	done
 
 ftp$(EXECSUFFIX): $(ftp_OBJS) # ../common/libcommon.a
@@ -74,3 +74,5 @@ distclean:
 	rm -f Makefile
 
 $(OBJECTS): ../../../include/config.h
+
+.PHONY: all install uninstall clean cleandir distclean
