@@ -164,5 +164,10 @@ setup(
               libraries = lib_list,
               library_dirs = ["/usr/kerberos/lib"],
               extra_objects = obj_list),
+
+    # tdbpack/unpack extensions.  Does not actually link to any Samba
+    # code, although it implements a compatible data format.
+    Extension(name = "tdbpack",
+              sources = [os.path.join(samba_srcdir, "python", "py_tdbpack.c")]),
     ],
 )
