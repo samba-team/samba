@@ -87,7 +87,7 @@ typedef struct HDB {
 	void *db;
 	void *dbc;
 	char *name;
-};
+} HDB;
 
 #include <hdb-protos.h>
 
