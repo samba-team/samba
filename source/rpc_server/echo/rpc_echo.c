@@ -163,11 +163,17 @@ static void op_disconnect(struct dcesrv_state *dce)
 }
 
 
+static int op_lookup_endpoints(TALLOC_CTX *mem_ctx, struct dcesrv_ep_iface **e)
+{
+	return dcesrv_lookup_endpoints(&dcerpc_table_rpcecho, mem_ctx, e);
+}
+
 static const struct dcesrv_endpoint_ops rpc_echo_ops = {
 	op_query_endpoint,
 	op_set_interface,
 	op_connect,
-	op_disconnect
+	op_disconnect,
+	op_lookup_endpoints
 };
 
 /*

@@ -82,9 +82,10 @@ interface dcerpc
 	} dcerpc_response;
 
 
-	const int DCERPC_FAULT_OP_RNG_ERROR = 0x1c010002;
-	const int DCERPC_FAULT_NDR          = 0x000006f7;
-	const int DCERPC_FAULT_OTHER        = 0x00000001;
+	const int DCERPC_FAULT_OP_RNG_ERROR       = 0x1c010002;
+	const int DCERPC_FAULT_NDR                = 0x000006f7;
+	const int DCERPC_FAULT_CONTEXT_MISMATCH   = 0x1c00001a;
+	const int DCERPC_FAULT_OTHER              = 0x00000001;
 
 	/* we return this fault when we haven't yet run the test
 	   to see what fault w2k3 returns in this case */

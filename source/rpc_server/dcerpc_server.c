@@ -89,12 +89,13 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	*p = talloc(mem_ctx, sizeof(struct dcesrv_state));
+	*p = talloc_p(mem_ctx, struct dcesrv_state);
 	if (! *p) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	(*p)->smb = smb;
 	(*p)->mem_ctx = mem_ctx;
 	(*p)->endpoint = *endpoint;
 	(*p)->ops = ops;
@@ -103,6 +104,7 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 	(*p)->cli_max_recv_frag = 0;
 	(*p)->ndr = NULL;
 	(*p)->dispatch = NULL;
+	(*p)->handles = NULL;
 
 	/* make sure the endpoint server likes the connection */
 	status = ops->connect(*p);
@@ -121,6 +123,14 @@ NTSTATUS dcesrv_endpoint_connect(struct server_context *smb,
 void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
 {
 	p->ops->disconnect(p);
+
+	/* destroy any handles */
+	while (p->handles) {
+		TALLOC_CTX *m = p->handles->mem_ctx;
+		DLIST_REMOVE(p->handles, p->handles);
+		talloc_destroy(m);
+	}
+	
 	talloc_destroy(p->mem_ctx);
 }
 
@@ -161,7 +171,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 		return status;
 	}
 
-	rep = talloc(call->mem_ctx, sizeof(*rep));
+	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -172,6 +182,22 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 
 	return NT_STATUS_OK;	
+}
+
+
+/*
+  return a dcerpc fault from a ntstatus code
+*/
+static NTSTATUS dcesrv_fault_nt(struct dcesrv_call_state *call, NTSTATUS status)
+{
+	uint32 fault_code = DCERPC_FAULT_OTHER;
+
+	/* TODO: we need to expand this table to include more mappings */
+	if (NT_STATUS_EQUAL(status, NT_STATUS_INVALID_HANDLE)) {
+		fault_code = DCERPC_FAULT_CONTEXT_MISMATCH;
+	}
+
+	return dcesrv_fault(call, fault_code);
 }
 
 
@@ -210,7 +236,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 		return status;
 	}
 
-	rep = talloc(call->mem_ctx, sizeof(*rep));
+	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -290,7 +316,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		pkt.u.bind_ack.secondary_address = "";
 	}
 	pkt.u.bind_ack.num_results = 1;
-	pkt.u.bind_ack.ctx_list = talloc(call->mem_ctx, sizeof(struct dcerpc_ack_ctx));
+	pkt.u.bind_ack.ctx_list = talloc_p(call->mem_ctx, struct dcerpc_ack_ctx);
 	if (!pkt.u.bind_ack.ctx_list) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -312,7 +338,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 		return status;
 	}
 
-	rep = talloc(call->mem_ctx, sizeof(*rep));
+	rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 	if (!rep) {
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -363,7 +389,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	/* call the dispatch function */
 	status = call->dce->dispatch[opnum](call->dce, call->mem_ctx, r);
 	if (!NT_STATUS_IS_OK(status)) {
-		return dcesrv_fault(call, DCERPC_FAULT_NDR);
+		return dcesrv_fault_nt(call, status);
 	}
 
 	/* form the reply NDR */
@@ -384,7 +410,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		struct dcesrv_call_reply *rep;
 		struct dcerpc_packet pkt;
 
-		rep = talloc(call->mem_ctx, sizeof(*rep));
+		rep = talloc_p(call->mem_ctx, struct dcesrv_call_reply);
 		if (!rep) {
 			return NT_STATUS_NO_MEMORY;
 		}
@@ -455,7 +481,7 @@ NTSTATUS dcesrv_input(struct dcesrv_state *dce, const DATA_BLOB *data)
 	if (!mem_ctx) {
 		return NT_STATUS_NO_MEMORY;
 	}
-	call = talloc(mem_ctx, sizeof(*call));
+	call = talloc_p(mem_ctx, struct dcesrv_call_state);
 	if (!call) {
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
@@ -613,10 +639,32 @@ BOOL dcesrv_table_query(const struct dcerpc_interface_table *table,
 
 
 /*
+  a useful function for implementing the lookup_endpoints op
+ */
+int dcesrv_lookup_endpoints(const struct dcerpc_interface_table *table,
+			    TALLOC_CTX *mem_ctx,
+			    struct dcesrv_ep_iface **e)
+{
+	*e = talloc_p(mem_ctx, struct dcesrv_ep_iface);
+	if (! *e) {
+		return -1;
+	}
+
+	(*e)->uuid = table->uuid;
+	(*e)->if_version = table->if_version;
+	(*e)->endpoint.type = ENDPOINT_SMB;
+	(*e)->endpoint.info.smb_pipe = table->endpoints->names[0];
+
+	return 1;
+}
+
+
+/*
   initialise the dcerpc server subsystem
 */
 BOOL dcesrv_init(struct server_context *smb)
 {
 	rpc_echo_init(smb);
+	rpc_epmapper_init(smb);
 	return True;
 }

@@ -88,6 +88,18 @@ DATA_BLOB data_blob_talloc(TALLOC_CTX *mem_ctx, const void *p, size_t length)
 }
 
 /*******************************************************************
+ construct a zero data blob, using supplied TALLOC_CTX. 
+ use this sparingly as it initialises data - better to initialise
+ yourself if you want specific data in the blob
+*******************************************************************/
+DATA_BLOB data_blob_talloc_zero(TALLOC_CTX *mem_ctx, size_t length)
+{
+	DATA_BLOB blob = data_blob_talloc(mem_ctx, NULL, length);
+	data_blob_clear(&blob);
+	return blob;
+}
+
+/*******************************************************************
 free a data blob
 *******************************************************************/
 void data_blob_free(DATA_BLOB *d)
