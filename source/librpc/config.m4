@@ -11,7 +11,6 @@ SMB_SUBSYSTEM(LIBNDR_RAW,[],
 		librpc/gen_ndr/ndr_echo.o
 		librpc/gen_ndr/ndr_exchange.o
 		librpc/gen_ndr/ndr_dsbackup.o
-		librpc/gen_ndr/ndr_dsrole.o
 		librpc/gen_ndr/ndr_efs.o
 		librpc/gen_ndr/ndr_misc.o
 		librpc/gen_ndr/ndr_lsa.o
