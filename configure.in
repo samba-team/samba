@@ -23,12 +23,7 @@ AC_CANONICAL_HOST
 CANONICAL_HOST=$host
 AC_SUBST(CANONICAL_HOST)
 
-AC_SYS_LARGEFILE
-dnl need to set this on the command line, since it might otherwise break
-dnl with generated code, such as lex
-if test "$enable_largefile" != no -a "$ac_cv_sys_large_files" != no; then
-	CPPFLAGS="$CPPFLAGS -D_LARGE_FILES=$ac_cv_sys_large_files"
-fi
+rk_SYS_LARGEFILE
 
 dnl
 dnl this is needed to run the configure tests against glibc
