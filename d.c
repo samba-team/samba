@@ -174,8 +174,7 @@ der_get_generalizedtime (Buffer *b, void *val)
      time_t *t = (time_t *)val;
      int len;
      krb5_data str;
-     struct tm tm;
-     extern long timezone;
+     struct tm tm, *tm2;
 
      len = der_get_octetstring (b, &str);
      sscanf (str.data, "%04d%02d%02d%02d%02d%02dZ",
@@ -186,8 +185,10 @@ der_get_generalizedtime (Buffer *b, void *val)
      tm.tm_isdst = 0;
 
      *t = mktime (&tm);
-     *t -= timezone;
 
+     tm2 = gmtime (t);
+
+     *t += *t - mktime (tm2);
      string_free (str);
      return len;
 }
