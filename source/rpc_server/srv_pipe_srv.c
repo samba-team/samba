@@ -515,6 +515,7 @@ static BOOL rpc_redir_local(rpcsrv_struct * l, prs_struct * req,
 	if (first)
 	{
 		prs_init(&l->data_i, 0, 4, True);
+		prs_set_packtype(&l->data_i, l->hdr.pack_type);
 	}
 	if (last)
 	{

@@ -82,6 +82,7 @@ typedef struct parse_struct
 	uint8 align;		/* data alignment */
 	BOOL io;		/* parsing in or out of data stream */
 	BOOL error;		/* error occurred while parsing (out of memory bounds) */
+	BOOL bigendian;		/* big-endian data */
 
 	struct parse_struct *next;
 

@@ -202,7 +202,10 @@ BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 	hdr->minor        = 0;               /* minor version 0 */
 	hdr->pkt_type     = pkt_type;        /* RPC packet type */
 	hdr->flags        = flags;           /* dce/rpc flags */
-	hdr->pack_type    = 0x10;            /* packed data representation */
+	hdr->pack_type[0] = 0x10;            /* packed data - intel-endian */
+	hdr->pack_type[1] = 0x0;             /* packed data representation */
+	hdr->pack_type[2] = 0x0;             /* packed data representation */
+	hdr->pack_type[3] = 0x0;             /* packed data representation */
 	hdr->frag_len     = data_len;        /* fragment length, fill in later */
 	hdr->auth_len     = auth_len;        /* authentication length */
 	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
@@ -220,14 +223,21 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 	prs_debug(ps, depth, desc, "smb_io_rpc_hdr");
 	depth++;
 
-	prs_uint8 ("major     ", ps, depth, &(rpc->major));
-	prs_uint8 ("minor     ", ps, depth, &(rpc->minor));
-	prs_uint8 ("pkt_type  ", ps, depth, &(rpc->pkt_type));
-	prs_uint8 ("flags     ", ps, depth, &(rpc->flags));
-	prs_uint32("pack_type ", ps, depth, &(rpc->pack_type));
-	prs_uint16("frag_len  ", ps, depth, &(rpc->frag_len));
-	prs_uint16("auth_len  ", ps, depth, &(rpc->auth_len));
-	prs_uint32("call_id   ", ps, depth, &(rpc->call_id));
+	prs_uint8 ("major     ", ps, depth, &rpc->major);
+	prs_uint8 ("minor     ", ps, depth, &rpc->minor);
+	prs_uint8 ("pkt_type  ", ps, depth, &rpc->pkt_type);
+	prs_uint8 ("flags     ", ps, depth, &rpc->flags);
+	prs_uint8s(False, "pack_type ", ps, depth, rpc->pack_type,
+	                                           sizeof(rpc->pack_type));
+	if (ps->io)
+	{
+		/* reading - set packed data representation type */
+		prs_set_packtype(ps, rpc->pack_type);
+	}
+
+	prs_uint16("frag_len  ", ps, depth, &rpc->frag_len);
+	prs_uint16("auth_len  ", ps, depth, &rpc->auth_len);
+	prs_uint32("call_id   ", ps, depth, &rpc->call_id);
 
 	return True;
 }

@@ -2056,6 +2056,7 @@ BOOL smb_io_rpc_auth_ntlmssp_chk(char *desc, RPC_AUTH_NTLMSSP_CHK *chk, prs_stru
 void prs_debug(prs_struct *ps, int depth, const char *desc, const char *fn_name);
 void prs_debug_out(const prs_struct *ps, char *msg, int level);
 void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io);
+void prs_set_packtype(prs_struct *ps, const uint8 *pack_type);
 void prs_create(prs_struct *ps, char *data, uint32 size, uint8 align, BOOL io);
 BOOL prs_copy(prs_struct *ps, const prs_struct *from);
 BOOL prs_alloc_data(prs_struct *buf, int size);

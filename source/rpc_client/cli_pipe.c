@@ -220,6 +220,8 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct * data,
 		return False;
 	}
 
+	prs_set_packtype(rdata, rhdr.pack_type);
+
 	if (rhdr.pkt_type != RPC_BINDACK)
 	{
 		return False;
@@ -232,30 +234,9 @@ static BOOL rpc_api_pipe_bind(struct cli_connection *con, prs_struct * data,
 		last = True;
 	}
 
-#if 0
-	if (rhdr.auth_len != 0)
-	{
-		cli_auth_fns *auth = cli_conn_get_authfns(con);
-		DEBUG(10,
-		      ("rpc_api_pipe_bind: auth_len: %d\n", rhdr.auth_len));
-		if (auth->cli_decode_pdu == NULL)
-		{
-			return False;
-		}
-		if (!auth->cli_decode_pdu
-		    (con, &rpdu, rhdr.frag_len, rhdr.auth_len))
-		{
-			return False;
-		}
-	}
-#endif
-
-	{
-		prs_append_data(rdata,
-				prs_data(&rpdu, rpdu.offset),
+	prs_append_data(rdata, prs_data(&rpdu, rpdu.offset),
 				rhdr.frag_len - rpdu.offset);
-		prs_free_data(&rpdu);
-	}
+	prs_free_data(&rpdu);
 
 	/* only one rpc fragment, and it has been read */
 	if (!first || !last)
@@ -359,6 +340,8 @@ BOOL rpc_api_pipe_req(struct cli_connection *con, uint8 opnum,
 	{
 		return False;
 	}
+
+	prs_set_packtype(rdata, rhdr.pack_type);
 
 	if (rhdr.pkt_type == RPC_BINDACK)
 	{
@@ -574,6 +557,8 @@ BOOL cli_send_and_rcv_pdu_trans(struct cli_connection *con,
 		return False;
 	}
 
+	prs_set_packtype(rdata, rhdr.pack_type);
+
 	if (rhdr.pkt_type == RPC_BINDACK)
 	{
 		if (!last && !first)
@@ -683,6 +668,8 @@ BOOL cli_send_and_rcv_pdu_rw(struct cli_connection *con,
 		return False;
 	}
 
+	prs_set_packtype(rdata, rhdr.pack_type);
+
 	if (rhdr.pkt_type == RPC_BINDACK)
 	{
 		if (!last && !first)
@@ -768,6 +755,8 @@ BOOL cli_rcv_pdu(struct cli_connection *con,
 	{
 		return False;
 	}
+
+	prs_set_packtype(rdata, rhdr.pack_type);
 
 	smb_io_rpc_hdr_resp("rpc_hdr_resp", &rhdr_resp, rdata, 0);
 

@@ -60,15 +60,17 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 	ps->align = align;
 	ps->offset = 0;
 	ps->error = False;
+	ps->bigendian = False;
 
 	ps->data = NULL;
 	ps->data_size = 0;
-	ps->struct_end = 0xdcdcdcdc;
 
 	ps->start = 0;
 	ps->end   = 0;
 
 	ps->next = NULL;
+
+	ps->struct_end = 0xdcdcdcdc;
 
 	if (size != 0)
 	{
@@ -77,6 +79,15 @@ void prs_init(prs_struct *ps, uint32 size, uint8 align,  BOOL io)
 	}
 
 	CHECK_STRUCT(ps);
+}
+
+/*******************************************************************
+ set the packed data representation type in a parse structure
+ ********************************************************************/
+void prs_set_packtype(prs_struct *ps, const uint8 *pack_type)
+{
+	CHECK_STRUCT(ps);
+	ps->bigendian = pack_type[0] == 0x0;
 }
 
 /*******************************************************************
@@ -104,6 +115,7 @@ BOOL prs_copy(prs_struct *ps, const prs_struct *from)
 	CHECK_STRUCT(ps);
 	CHECK_STRUCT(from);
 	prs_init(ps, len, from->align, from->io);
+	ps->bigendian = from->bigendian;
 	if (len != 0)
 	{
 		if (ps->data == NULL)
@@ -560,7 +572,7 @@ BOOL _prs_uint16(char *name, prs_struct *ps, int depth, uint16 *data16)
 		return False;
 	}
 
-	DBG_RW_SVAL(name, depth, ps->offset, ps->io, q, *data16)
+	DBG_RW_SVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data16)
 	ps->offset += 2;
 
 	return True;
@@ -614,7 +626,7 @@ BOOL _prs_uint32(char *name, prs_struct *ps, int depth, uint32 *data32)
 		return False;
 	}
 
-	DBG_RW_IVAL(name, depth, ps->offset, ps->io, q, *data32)
+	DBG_RW_IVAL(name, depth, ps->offset, ps->io, ps->bigendian, q, *data32)
 	ps->offset += 4;
 
 	return True;
@@ -683,7 +695,7 @@ BOOL _prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, data16s, len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data16s, len)
 	ps->offset = end_offset;
 
 	return True;
@@ -717,7 +729,7 @@ BOOL _prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *
 		return False;
 	}
 
-	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, q, data32s, len)
+	DBG_RW_PIVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, data32s, len)
 	ps->offset = end_offset;
 
 	return True;
@@ -822,7 +834,7 @@ BOOL _prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_str_len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->buffer, str->uni_str_len)
 	ps->offset = end_offset;
 
 	return True;
@@ -857,7 +869,7 @@ BOOL _prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int d
 		return False;
 	}
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->str.buffer, str->uni_str_len)
+	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, ps->bigendian, q, str->str.buffer, str->uni_str_len)
 	ps->offset = end_offset;
 
 	return True;
@@ -886,7 +898,7 @@ BOOL _prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 			prs_debug_out(ps, "_prs_unistr error", 5);
 			return False;
 		}
-		RW_SVAL(ps->io, q, str->buffer[i],0);
+		RW_SVAL(ps->io, ps->bigendian, q, str->buffer[i],0);
 	}
 	while ((((size_t)i) < sizeof(str->buffer) / sizeof(str->buffer[0])) &&
 		     (str->buffer[i] != 0));
