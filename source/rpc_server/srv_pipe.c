@@ -94,7 +94,7 @@ BOOL create_next_pdu(pipes_struct *p)
 	 */
 
 	if(p->fault_state) {
-		setup_fault_pdu(p);
+		setup_fault_pdu(p,0x1c010002);
 		return True;
 	}
 
@@ -628,7 +628,7 @@ static BOOL setup_bind_nak(pipes_struct *p)
  Marshall a fault pdu.
 *******************************************************************/
 
-BOOL setup_fault_pdu(pipes_struct *p)
+BOOL setup_fault_pdu(pipes_struct *p, uint32 status)
 {
 	prs_struct outgoing_pdu;
 	RPC_HDR fault_hdr;
@@ -660,7 +660,7 @@ BOOL setup_fault_pdu(pipes_struct *p)
 
 	memset((char *)&hdr_resp, '\0', sizeof(hdr_resp));
 
-	fault_resp.status = 0x1c010002;
+	fault_resp.status = status;
 	fault_resp.reserved = 0;
 
 	/*
@@ -1188,7 +1188,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		 * and not put the pipe into fault state. JRA.
 		 */
 		DEBUG(4, ("unknown\n"));
-		setup_fault_pdu(p);
+		setup_fault_pdu(p,0x1c010002);
 		return True;
 	}
 
@@ -1199,6 +1199,13 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name,
 		DEBUG(0,("api_rpcTNP: %s: %s failed.\n", rpc_name, api_rpc_cmds[fn_num].name));
 		prs_mem_free(&p->out_data.rdata);
 		return False;
+	}
+
+	if (p->bad_handle_fault_state) {
+		DEBUG(4,("api_rpcTNP: bad handle fault return.\n"));
+		p->bad_handle_fault_state = False;
+		setup_fault_pdu(p, 0x1C00001A);
+		return True;
 	}
 
 	slprintf(name, sizeof(name), "out_%s", rpc_name);

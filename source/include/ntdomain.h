@@ -216,6 +216,12 @@ typedef struct pipes_struct
 	BOOL fault_state;
 	
 	/*
+	 * Set to true when we should return fault PDU's for a bad hande (transient).
+	 */
+	
+	BOOL bad_handle_fault_state;
+	
+	/*
 	 * Struct to deal with multiple pdu inputs.
 	 */
 

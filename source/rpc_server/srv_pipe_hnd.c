@@ -149,7 +149,7 @@ pipes_struct *open_rpc_pipe_p(char *pipe_name,
 		is_spoolss_pipe = True;
 
 	if (is_spoolss_pipe && current_spoolss_pipes_open >= MAX_OPEN_SPOOLSS_PIPES) {
-		DEBUG(10,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
+		DEBUG(4,("open_rpc_pipe_p: spooler bug workaround. Denying open on pipe %s\n",
 			pipe_name ));
 		return NULL;
 	}
@@ -542,7 +542,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 		DEBUG(10,("process_complete_pdu: pipe %s in fault state.\n",
 			p->name ));
 		set_incoming_fault(p);
-		setup_fault_pdu(p);
+		setup_fault_pdu(p, 0x1c010002);
 		return (ssize_t)data_len;
 	}
 
@@ -579,7 +579,7 @@ static ssize_t process_complete_pdu(pipes_struct *p)
 	if (!reply) {
 		DEBUG(3,("process_complete_pdu: DCE/RPC fault sent on pipe %s\n", p->pipe_srv_name));
 		set_incoming_fault(p);
-		setup_fault_pdu(p);
+		setup_fault_pdu(p,0x1c010002);
 		prs_mem_free(&rpc_in);
 	} else {
 		/*
