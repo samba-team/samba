@@ -255,6 +255,8 @@ static TDB_DATA locking_key(SMB_DEV_T dev, SMB_INO_T inode)
 {
 	static struct locking_key key;
 	TDB_DATA kbuf;
+
+	memset(&key, '\0', sizeof(key));
 	key.dev = dev;
 	key.inode = inode;
 	kbuf.dptr = (char *)&key;
