@@ -3043,6 +3043,7 @@ static BOOL run_opentest(int dummy)
 	size_t fsize;
 	BOOL correct = True;
 	char *tmp_path;
+	uint16 attr;
 
 	printf("starting open test\n");
 	
@@ -3417,7 +3418,7 @@ static BOOL run_opentest(int dummy)
 
 	cli_unlink(&cli1, fname);
 
-	/* Test 8 - attributes test test... */
+	/* Test 8 - attributes test #1... */
 	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
 				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
 
@@ -3460,6 +3461,53 @@ static BOOL run_opentest(int dummy)
 	}
 
 	printf("Attribute open test #8 %s.\n", correct ? "passed" : "failed");
+
+	cli_unlink(&cli1, fname);
+
+	/*
+	 * Test #9. Open with NORMAL, close, then re-open with attribute
+	 * HIDDEN and request to truncate.
+	 */
+
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_WRITE_DATA, FILE_ATTRIBUTE_NORMAL,
+				   FILE_SHARE_NONE, FILE_OVERWRITE_IF, 0);
+
+	if (fnum1 == -1) {
+		printf("test 9 open 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 9 close 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	fnum1 = cli_nt_create_full(&cli1, fname,FILE_READ_DATA|FILE_WRITE_DATA, FILE_ATTRIBUTE_HIDDEN,
+				   FILE_SHARE_NONE, FILE_OVERWRITE, 0);
+
+	if (fnum1 == -1) {
+		printf("test 9 open 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!cli_close(&cli1, fnum1)) {
+		printf("test 9 close 2 of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return False;
+	}
+
+	/* Ensure we have attr hidden. */
+	if (!cli_getatr(&cli1, fname, &attr, NULL, NULL)) {
+		printf("test 9 getatr(2) failed (%s)\n", cli_errstr(&cli1));
+		return False;
+	}
+
+	if (!(attr & FILE_ATTRIBUTE_HIDDEN)) {
+		printf("test 9 getatr didn't have HIDDEN attribute\n");
+		cli_unlink(&cli1, fname);
+		return False;
+	}
+
+	printf("Attribute open test #9 %s.\n", correct ? "passed" : "failed");
 
 	cli_unlink(&cli1, fname);
 
