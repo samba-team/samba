@@ -107,6 +107,8 @@ create_random_entry(krb5_principal princ,
     return ret;
 }
 
+extern int local_flag;
+
 int
 init(struct init_options *opt, int argc, char **argv)
 {
@@ -114,6 +116,11 @@ init(struct init_options *opt, int argc, char **argv)
     int i;
     HDB *db;
     krb5_deltat max_life, max_rlife;
+
+    if(!local_flag) {
+	krb5_warnx(context, "init is only available in local (-l) mode");
+	return 0;
+    }
 
     if(argc == 0) {
 	printf("must have atleast one realm\n");

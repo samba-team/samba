@@ -36,6 +36,8 @@
 
 RCSID("$Id$");
 
+extern int local_flag;
+
 int
 stash(struct stash_options *opt, int argc, char **argv)
 {
@@ -44,6 +46,11 @@ stash(struct stash_options *opt, int argc, char **argv)
     krb5_enctype enctype;
     hdb_master_key mkey;
     
+    if(!local_flag) {
+	krb5_warnx(context, "stash is only available in local (-l) mode");
+	return 0;
+    }
+
     ret = krb5_string_to_enctype(context, opt->enctype_string, &enctype);
     if(ret)
 	krb5_warn(context, ret, "%s", opt->enctype_string);

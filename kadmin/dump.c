@@ -37,12 +37,21 @@
 
 RCSID("$Id$");
 
+extern int local_flag;
+
 int
 dump(struct dump_options *opt, int argc, char **argv)
 {
     krb5_error_code ret;
     FILE *f;
-    HDB *db = _kadm5_s_get_db(kadm_handle);
+    HDB *db;
+    
+    if(!local_flag) {
+	krb5_warnx(context, "dump is only available in local (-l) mode");
+	return 0;
+    }
+
+    db = _kadm5_s_get_db(kadm_handle);
 
     if(argc == 0)
 	f = stdout;
