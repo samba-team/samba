@@ -200,6 +200,19 @@ sub HeaderType($$$)
 }
 
 #####################################################################
+# parse a declare
+sub HeaderDeclare($)
+{
+	my($declare) = shift;
+
+	if ($declare->{DATA}->{TYPE} eq "ENUM") {
+		util::enum_bitmap($declare, $declare->{NAME});
+	} elsif ($declare->{DATA}->{TYPE} eq "BITMAP") {
+		util::register_bitmap($declare, $declare->{NAME});
+	}
+}
+
+#####################################################################
 # parse a typedef
 sub HeaderTypedef($)
 {
@@ -235,6 +248,23 @@ sub HeaderTypedefProto($)
 	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, int ndr_flags, int level, union $d->{NAME} *r);\n";
 	    if (!util::has_property($d, "noprint")) {
 		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, int level, union $d->{NAME} *r);\n";
+	    }
+    }
+
+    if ($d->{DATA}{TYPE} eq "ENUM") {
+	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, enum $d->{NAME} r);\n";
+	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, enum $d->{NAME} *r);\n";
+	    if (!util::has_property($d, "noprint")) {
+		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, enum $d->{NAME} r);\n";
+	    }
+    }
+
+    if ($d->{DATA}{TYPE} eq "BITMAP") {
+    	    my $type_decl = util::bitmap_type_decl($d->{DATA});
+	    $res .= "NTSTATUS ndr_push_$d->{NAME}(struct ndr_push *ndr, $type_decl r);\n";
+	    $res .= "NTSTATUS ndr_pull_$d->{NAME}(struct ndr_pull *ndr, $type_decl *r);\n";
+	    if (!util::has_property($d, "noprint")) {
+		    $res .= "void ndr_print_$d->{NAME}(struct ndr_print *ndr, const char *name, $type_decl r);\n";
 	    }
     }
 }
@@ -431,6 +461,8 @@ sub HeaderInterface($)
     foreach my $d (@{$data}) {
 	($d->{TYPE} eq "CONST") &&
 	    HeaderConst($d);
+	($d->{TYPE} eq "DECLARE") &&
+	    HeaderDeclare($d);
 	($d->{TYPE} eq "TYPEDEF") &&
 	    HeaderTypedef($d);
 	($d->{TYPE} eq "TYPEDEF") &&
@@ -438,7 +470,7 @@ sub HeaderInterface($)
 	($d->{TYPE} eq "FUNCTION") &&
 	    HeaderFunction($d);
 	($d->{TYPE} eq "FUNCTION") &&
-			HeaderFnProto($interface, $d);
+	    HeaderFnProto($interface, $d);
     }
 	
 	(util::has_property($interface, "object")) &&
