@@ -590,6 +590,9 @@ CLASS="VARIABLELIST"
 >the NetBIOS name of the server. This allows you 
 		to change your config based on what the client calls you. Your 
 		server can have a "dual personality".</P
+><P
+>Note that this paramater is not available when Samba listens
+                on port 445, as clients no longer send this information </P
 ></DD
 ><DT
 >%M</DT
@@ -686,7 +689,7 @@ CLASS="REPLACEABLE"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN202"
+NAME="AEN203"
 ></A
 ><H2
 >NAME MANGLING</H2
@@ -771,7 +774,7 @@ CLASS="VARIABLELIST"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN235"
+NAME="AEN236"
 ></A
 ><H2
 >NOTE ABOUT USERNAME/PASSWORD VALIDATION</H2
@@ -848,7 +851,7 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN254"
+NAME="AEN255"
 ></A
 ><H2
 >COMPLETE LIST OF GLOBAL PARAMETERS</H2
@@ -2169,6 +2172,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#PRIVATEDIR"
+><TT
+CLASS="PARAMETER"
+><I
+>private dir</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#PROTOCOL"
 ><TT
 CLASS="PARAMETER"
@@ -2987,7 +3002,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN966"
+NAME="AEN971"
 ></A
 ><H2
 >COMPLETE LIST OF SERVICE PARAMETERS</H2
@@ -4430,7 +4445,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1446"
+NAME="AEN1451"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5503,7 +5518,7 @@ NAME="CASESENSITIVE"
 ><DD
 ><P
 >See the discussion in the section <A
-HREF="#AEN202"
+HREF="#AEN203"
 >NAME MANGLING</A
 >.</P
 ><P
@@ -6100,7 +6115,7 @@ NAME="DEFAULTCASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 >. Also note the <A
 HREF="#SHORTPRESERVECASE"
@@ -9219,13 +9234,13 @@ TARGET="_top"
 		with Windows 2000. Note that due to Windows 2000 client redirector bugs
 		this requires Samba to be running on a 64-bit capable operating system such
 		as IRIX, Solaris or a Linux 2.4 kernel. Can improve performance by 10% with
-		Windows 2000 clients. Defaults to off. Not as tested as some other Samba
+		Windows 2000 clients. Defaults to on. Not as tested as some other Samba
 		code paths.
 		</P
 ><P
 >Default : <B
 CLASS="COMMAND"
->large readwrite = no</B
+>large readwrite = yes</B
 ></P
 ></DD
 ><DT
@@ -10715,7 +10730,7 @@ NAME="MANGLECASE"
 ><DD
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 ></P
 ><P
@@ -10787,7 +10802,7 @@ NAME="MANGLEDNAMES"
 		or whether non-DOS names should simply be ignored.</P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 > for details on how to control the mangling process.</P
 ><P
@@ -10908,7 +10923,7 @@ NAME="MANGLINGCHAR"
 		the <EM
 >magic</EM
 > character in <A
-HREF="#AEN202"
+HREF="#AEN203"
 >name mangling</A
 >. The default is a '~'
 		but this may interfere with some software. Use this option to set 
@@ -12647,6 +12662,135 @@ NAME="PASSDBBACKEND"
                 (eg --with-tdbsam) at configure time.
 		</P
 ><P
+>This paramater is in two parts, the backend's name, and a 'location'
+                string that has meaning only to that particular backed.  These are separated
+                by a : character.</P
+><P
+>Available backends can include:
+                <P
+></P
+><UL
+><LI
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd</B
+> - The default smbpasswd
+                        backend.  Takes a path to the smbpasswd file as an optional argument.</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>smbpasswd_nua</B
+> - The smbpasswd
+                        backend, but with support for 'not unix accounts'.  
+                        Takes a path to the smbpasswd file as an optional argument.</P
+><P
+>See also <A
+HREF="#NONUNIXACCOUNTRANGE"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>non unix account range</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>tdbsam</B
+> - The TDB based password storage
+                        backend.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <A
+HREF="#PRIVATEDIR"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>private dir</I
+></TT
+></A
+> directory.</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>tdbsam_nua</B
+> - The TDB based password storage
+                        backend, with non unix account support.  Takes a path to the TDB as an optional argument (defaults to passdb.tdb 
+                        in the <A
+HREF="#PRIVATEDIR"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>private dir</I
+></TT
+></A
+> directory.</P
+><P
+>See also <A
+HREF="#NONUNIXACCOUNTRANGE"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>non unix account range</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>ldapsam</B
+> - The LDAP based passdb 
+                        backend.  Takes an LDAP URL as an optional argument (defaults to 
+                        <B
+CLASS="COMMAND"
+>ldap://localhost</B
+>)</P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>ldapsam_nua</B
+> - The LDAP based passdb 
+                        backend, with non unix account support.  Takes an LDAP URL as an optional argument (defaults to 
+                        <B
+CLASS="COMMAND"
+>ldap://localhost</B
+>)</P
+><P
+>See also <A
+HREF="#NONUNIXACCOUNTRANGE"
+>                        <TT
+CLASS="PARAMETER"
+><I
+>non unix account range</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><B
+CLASS="COMMAND"
+>plugin</B
+> - Allows Samba to load an 
+                        arbitary passdb backend from the .so specified as a compulsary argument.
+                        </P
+><P
+>Any characters after the (optional) second : are passed to the plugin
+                        for its own processing</P
+></LI
+></UL
+>
+		</P
+><P
 >Default: <B
 CLASS="COMMAND"
 >passdb backend = smbpasswd</B
@@ -12654,7 +12798,17 @@ CLASS="COMMAND"
 ><P
 >Example: <B
 CLASS="COMMAND"
->passdb backend = tdbsam</B
+>passdb backend = tdbsam:/etc/samba/private/passdb.tdb</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>passdb backend = ldapsam_nua:ldaps://ldap.example.com</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>passdb backend = plugin:/usr/local/samba/lib/my_passdb.so:my_plugin_args</B
 ></P
 ></DD
 ><DT
@@ -13610,7 +13764,7 @@ CLASS="COMMAND"
 ></P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >NAME 
 		MANGLING</A
 > for a fuller discussion.</P
@@ -14281,6 +14435,29 @@ TARGET="_top"
 HREF="#AEN79"
 >		[printers]</A
 > section.</P
+></DD
+><DT
+><A
+NAME="PRIVATEDIR"
+></A
+>private dir (G)</DT
+><DD
+><P
+>This parameters defines the directory
+		smbd will use for storing such files as <TT
+CLASS="FILENAME"
+>smbpasswd</TT
+>
+		and <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+>.
+		</P
+><P
+>Default :<B
+CLASS="COMMAND"
+>private dir = ${prefix}/private</B
+></P
 ></DD
 ><DT
 ><A
@@ -15227,7 +15404,7 @@ CLASS="PARAMETER"
 		be used in granting access.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15308,7 +15485,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15384,7 +15561,7 @@ CLASS="PARAMETER"
 > parameter for details on doing this.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15499,7 +15676,7 @@ CLASS="COMMAND"
 		Domain Controller. This issue will be addressed in a future release.</P
 ><P
 >See also the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >		NOTE ABOUT USERNAME/PASSWORD VALIDATION</A
 >.</P
 ><P
@@ -15705,7 +15882,7 @@ CLASS="COMMAND"
 		names are lowered. </P
 ><P
 >See the section on <A
-HREF="#AEN202"
+HREF="#AEN203"
 >		NAME MANGLING</A
 >.</P
 ><P
@@ -17523,7 +17700,7 @@ CLASS="PARAMETER"
 		search.</P
 ><P
 >See the section <A
-HREF="#AEN235"
+HREF="#AEN236"
 >NOTE ABOUT 
 		USERNAME/PASSWORD VALIDATION</A
 > for more information on how 
@@ -18692,7 +18869,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5915"
+NAME="AEN5973"
 ></A
 ><H2
 >WARNINGS</H2
@@ -18722,7 +18899,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5921"
+NAME="AEN5979"
 ></A
 ><H2
 >VERSION</H2
@@ -18733,7 +18910,7 @@ NAME="AEN5921"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5924"
+NAME="AEN5982"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -18812,7 +18989,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN5944"
+NAME="AEN6002"
 ></A
 ><H2
 >AUTHOR</H2
