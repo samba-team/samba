@@ -205,80 +205,96 @@ open_file(struct facility *fac, char *filename, char *mode,
     fac->data = fd;
 }
 
+static int
+openlog_int(krb5_context context, const char *program, 
+	    krb5_log_facility *f, const char *p)
+{
+    struct facility *fp = NULL;
+    int min = 0, max = -1, n;
+    char c;
+    n = sscanf(p, "%d%c%d/", &min, &c, &max);
+    if(n == 2){
+	if(c == '/')
+	    if(min < 0){
+		max = -min;
+		min = 0;
+	    }else{
+		max = min;
+	    }
+    }
+    if(n){
+	p = strchr(p, '/');
+	if(p == NULL) return 0;
+	p++;
+    }
+    if(strcmp(p, "STDERR") == 0){
+	fp = log_realloc(f);
+	open_file(fp, NULL, NULL, stderr, 1);
+    }else if(strcmp(p, "CONSOLE") == 0){
+	fp = log_realloc(f);
+	open_file(fp, "/dev/console", "w", NULL, 0);
+    }else if(strncmp(p, "FILE:", 4) == 0 && (p[4] == ':' || p[4] == '=')){
+	char *fn;
+	FILE *file = NULL;
+	int keep_open = 0;
+	fp = log_realloc(f);
+	fn = strdup(p + 5);
+	if(p[4] == '='){
+	    int i = open(fn, O_WRONLY | O_CREAT | 
+			 O_TRUNC | O_APPEND, 0666);
+	    file = fdopen(i, "a");
+	    keep_open = 1;
+	}
+	open_file(fp, fn, "a", file, keep_open);
+    }else if(strncmp(p, "DEVICE=", 6) == 0){
+	fp = log_realloc(f);
+	open_file(fp, strdup(p + 7), "w", NULL, 0);
+    }else if(strncmp(p, "SYSLOG", 6) == 0){
+	char *severity;
+	char *facility;
+	severity = strchr(p, ':');
+	if(severity == NULL)
+	    severity = "ERR";
+	facility = strchr(severity, ':');
+	if(facility == NULL)
+	    facility = "AUTH";
+	fp = log_realloc(f);
+	open_syslog(program, severity, facility, fp);
+    }
+    if(fp){
+	fp->min = min; 
+	fp->max = max;
+    }
+    return 0;
+}
+
 krb5_error_code
 krb5_openlog(krb5_context context,
 	     const char *program,
 	     krb5_log_facility **fac)
 {
     const char *p;
-    const char *logname = program;
-    krb5_log_facility *f;
-    struct facility *fp;
+    krb5_log_facility *f = calloc(1, sizeof(*f));
     krb5_config_binding *binding = NULL;
-    f = calloc(1, sizeof(*f));
-    if(krb5_config_get_string(context->cf, "logging", program, NULL) == NULL)
-	logname = "default";
+    int done = 0;
     while(p = krb5_config_get_next(context->cf, &binding, STRING, 
 				   "logging",
-				   logname,
+				   program,
 				   NULL)){
-	struct facility *fp = NULL;
-	int min = 0, max = -1, n;
-	char c;
-	n = sscanf(p, "%d%c%d/", &min, &c, &max);
-	if(n == 2){
-	    if(c == '/')
-		if(min < 0){
-		    max = -min;
-		    min = 0;
-		}else{
-		    max = min;
-		}
-	}
-	if(n){
-	    p = strchr(p, '/');
-	    if(p == NULL) continue;
-	    p++;
-	}
-	if(strcmp(p, "STDERR") == 0){
-	    fp = log_realloc(f);
-	    open_file(fp, NULL, NULL, stderr, 1);
-	}else if(strcmp(p, "CONSOLE") == 0){
-	    fp = log_realloc(f);
-	    open_file(fp, "/dev/console", "w", NULL, 0);
-	}else if(strncmp(p, "FILE:", 4) == 0 && (p[4] == ':' || p[4] == '=')){
-	    char *fn;
-	    FILE *file = NULL;
-	    int keep_open = 0;
-	    fp = log_realloc(f);
-	    fn = strdup(p + 5);
-	    if(p[4] == '='){
-		int i = open(fn, O_WRONLY | O_CREAT | 
-			     O_TRUNC | O_APPEND, 0666);
-		file = fdopen(i, "a");
-		keep_open = 1;
-	    }
-	    open_file(fp, fn, "a", file, keep_open);
-	}else if(strncmp(p, "DEVICE=", 6) == 0){
-	    fp = log_realloc(f);
-	    open_file(fp, strdup(p + 7), "w", NULL, 0);
-	}else if(strncmp(p, "SYSLOG", 6) == 0){
-	    char *severity;
-	    char *facility;
-	    severity = strchr(p, ':');
-	    if(severity == NULL)
-		severity = "ERR";
-	    facility = strchr(severity, ':');
-	    if(facility == NULL)
-		facility = "AUTH";
-	    fp = log_realloc(f);
-	    open_syslog(program, severity, facility, fp);
-	}
-	if(fp){
-	    fp->min = min; 
-	    fp->max = max;
+	openlog_int(context, program, f, p);
+	done = 1;
+    }
+    if(!done){
+	while(p = krb5_config_get_next(context->cf, &binding, STRING, 
+				       "logging",
+				       "default",
+				       NULL)){
+	    openlog_int(context, program, f, p);
+	    done = 1;
 	}
     }
+    if(!done)
+	openlog_int(context, program, f, "SYSLOG");
     *fac = f;
     return 0;
 }
