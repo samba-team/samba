@@ -328,7 +328,7 @@ static struct {
 /****************************************************************************
 send one of the messages for the broadcast
 ****************************************************************************/
-static int traverse_fn(TDB_CONTEXT *tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
+static int traverse_fn(TDB_CONTEXT *the_tdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
 {
 	struct connections_data crec;
 
@@ -345,10 +345,10 @@ use it. When we need efficient broadcast we can add it.
 ****************************************************************************/
 BOOL message_send_all(int msg_type, void *buf, size_t len)
 {
-	TDB_CONTEXT *tdb;
+	TDB_CONTEXT *the_tdb;
 
-	tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
-	if (!tdb) {
+	the_tdb = tdb_open(lock_path("connections.tdb"), 0, 0, O_RDONLY, 0);
+	if (!the_tdb) {
 		DEBUG(2,("Failed to open connections database in message_send_all\n"));
 		return False;
 	}
@@ -357,7 +357,7 @@ BOOL message_send_all(int msg_type, void *buf, size_t len)
 	msg_all.buf = buf;
 	msg_all.len = len;
 
-	tdb_traverse(tdb, traverse_fn, NULL);
-	tdb_close(tdb);
+	tdb_traverse(the_tdb, traverse_fn, NULL);
+	tdb_close(the_tdb);
 	return True;
 }
