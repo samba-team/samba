@@ -145,10 +145,10 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	   from the winbind_lookup_by_name() call and use it in a
 	   winbind_lookup_userinfo() */
     
-        if (!(mem_ctx = talloc_init())) {
-                DEBUG(1, ("out of memory\n"));
-                return WINBINDD_ERROR;
-        }
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(1, ("out of memory\n"));
+		return WINBINDD_ERROR;
+	}
 
 	sid_split_rid(&user_sid, &user_rid);
 	
@@ -163,8 +163,8 @@ enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
 
-        talloc_destroy(mem_ctx);
-        user_info = NULL;
+	talloc_destroy(mem_ctx);
+	user_info = NULL;
 
 	/* Now take all this information and fill in a passwd structure */
 	
@@ -239,10 +239,10 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 
 	/* Get some user info */
 	
-        if (!(mem_ctx = talloc_init())) {
-                DEBUG(1, ("out of memory\n"));
-                return WINBINDD_ERROR;
-        }
+	if (!(mem_ctx = talloc_init())) {
+		DEBUG(1, ("out of memory\n"));
+		return WINBINDD_ERROR;
+	}
 
 	if (!winbindd_lookup_userinfo(domain, mem_ctx, user_rid, &user_info)) {
 		DEBUG(1, ("pwnam_from_uid(): error getting user info for "
@@ -254,8 +254,8 @@ enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state
 	unistr2_to_ascii(gecos_name, &user_info->info.id21->uni_full_name,
 			 sizeof(gecos_name) - 1);
 
-        talloc_destroy(mem_ctx);
-        user_info = NULL;
+	talloc_destroy(mem_ctx);
+	user_info = NULL;
 
 	/* Resolve gid number */
 
@@ -540,7 +540,7 @@ enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state)
 			/* No more domains */
 
 			if (!ent) 
-                                break;
+				break;
 		}
 
 		name_list = ent->sam_entries;
@@ -599,20 +599,20 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	uint32 num_entries = 0, total_entries = 0;
 	char *ted, *extra_data = NULL;
 	int extra_data_len = 0;
-        TALLOC_CTX *mem_ctx;
-        enum winbindd_result rv = WINBINDD_ERROR;
+	TALLOC_CTX *mem_ctx;
+	enum winbindd_result rv = WINBINDD_ERROR;
 
 	DEBUG(3, ("[%5d]: list users\n", state->pid));
 
-        if (!(mem_ctx = talloc_init()))
-                return WINBINDD_ERROR;
+	if (!(mem_ctx = talloc_init()))
+		return WINBINDD_ERROR;
 
 	/* Enumerate over trusted domains */
 
 	ctr.sam.info1 = &info1;
 
-        if (domain_list == NULL)
-                get_domain_info();
+	if (domain_list == NULL)
+		get_domain_info();
 
 	for (domain = domain_list; domain; domain = domain->next) {
 		NTSTATUS status;
@@ -647,9 +647,9 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 			if (!ted) {
 				DEBUG(0,("winbindd_list_users: failed to enlarge buffer!\n"));
 				SAFE_FREE(extra_data);
-                                goto done;
+				goto done;
 			} else 
-                                extra_data = ted;
+				extra_data = ted;
 			
 			/* Pack user list into extra data fields */
 			
@@ -693,7 +693,8 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	rv = WINBINDD_OK;
 
  done:
-        talloc_destroy(mem_ctx);
 
-        return rv;
+	talloc_destroy(mem_ctx);
+
+	return rv;
 }
