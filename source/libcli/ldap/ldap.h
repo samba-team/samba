@@ -169,7 +169,7 @@ struct ldap_ModifyDNRequest {
 struct ldap_CompareRequest {
 	const char *dn;
 	const char *attribute;
-	const char *value;
+	DATA_BLOB value;
 };
 
 struct ldap_AbandonRequest {
