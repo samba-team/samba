@@ -11,7 +11,7 @@ RCSID("$Id$");
 #if defined(KRB4) || defined(KRB5)
 
 static int
-net_read(POP *p, int fd, void *buf, size_t len)
+pop_net_read(POP *p, int fd, void *buf, size_t len)
 {
 #ifdef KRB5
     return krb5_net_read(p->context, &fd, buf, len);
@@ -33,8 +33,8 @@ krb4_authenticate (POP *p, int s, u_char *buf, struct sockaddr_in *addr)
   
     if (memcmp (buf, KRB_SENDAUTH_VERS, 4) != 0)
 	return -1;
-    if (net_read (p, s, buf + 4,
-		       KRB_SENDAUTH_VLEN - 4) != KRB_SENDAUTH_VLEN - 4)
+    if (pop_net_read (p, s, buf + 4,
+		      KRB_SENDAUTH_VLEN - 4) != KRB_SENDAUTH_VLEN - 4)
 	return -1;
     if (memcmp (buf, KRB_SENDAUTH_VERS, KRB_SENDAUTH_VLEN) != 0)
 	return -1;
@@ -126,7 +126,7 @@ krb_authenticate(POP *p, struct sockaddr_in *addr)
 #if defined(KRB4) || defined(KRB5)
     u_char buf[BUFSIZ];
 
-    if (net_read (p, 0, buf, 4) != 4) {
+    if (pop_net_read (p, 0, buf, 4) != 4) {
 	pop_msg(p, POP_FAILURE, "Reading four bytes: %s",
 		strerror(errno));
 	exit (1);
