@@ -43,11 +43,11 @@ RCSID("$Id$");
 #include <roken.h>
 
 enum format_flags {
-    minus_flag     = 0x01,
-    plus_flag      = 0x02,
-    space_flag     = 0x04,
-    alternate_flag = 0x08,
-    zero_flag      = 0x10
+    minus_flag     =  1,
+    plus_flag      =  2,
+    space_flag     =  4,
+    alternate_flag =  8,
+    zero_flag      = 16
 };
 
 /*
@@ -118,20 +118,13 @@ as_append_char (struct state *state, unsigned char c)
   }
 }
 
-#ifdef HAVE_LONG_LONG
-typedef unsigned long long ulong_type;
-#else
-typedef unsigned long ulong_type;
-#endif
-
 static int
 append_number(struct state *state,
-	      ulong_type num, unsigned base, char *rep,
+	      unsigned long num, unsigned base, char *rep,
 	      int width, int prec, int flags, int minusp)
 {
   int len = 0;
   int i;
-  ulong_type orig_num = num;
 
   /* given precision, ignore zero flag */
   if(prec != -1)
@@ -155,7 +148,7 @@ append_number(struct state *state,
     len++;
   }
   /* add length of alternate prefix (added later) to len */
-  if(orig_num && (flags & alternate_flag) && (base == 16 || base == 8))
+  if(flags & alternate_flag && (base == 16 || base == 8))
     len += base / 8;
   /* pad with zeros */
   if(flags & zero_flag){
@@ -169,11 +162,10 @@ append_number(struct state *state,
     }
   }
   /* add alternate prefix */
-  if(orig_num && (flags & alternate_flag) && (base == 16 || base == 8)){
-    if(base == 16) {
+  if(flags & alternate_flag && (base == 16 || base == 8)){
+    if(base == 16)
       if((*state->append_char)(state, rep[10] + 23)) /* XXX */
 	return 1;
-    }
     if((*state->append_char)(state, '0'))
       return 1;
   }
@@ -214,187 +206,6 @@ append_number(struct state *state,
     
   return 0;
 }
-
-#if !defined(NO_SNPRINTF_FLOAT) && 0
-
-#include <math.h>
-
-/*
- * alternate -> always decimal point
- *      [Gg] -> don't remove trailing zeros
- * zero/negative/space/plus
- */
-
-static int
-append_double (struct state *state, double num, int c,
-	       int width, int prec, int flags)
-{
-    int i;
-    int len = 0;
-    int n;
-    int sign = 1;
-    double l;
-    int trail_zero = 1;
-    int dec_point  = 0;
-
-    if (num < 0) {
-	sign = -1;
-	num  = -num;
-    }
-    if (prec == -1)
-	prec = 6;
-    if (prec == 0 && tolower(c) == 'g')
-	prec = 1;
-
-    if (flags & alternate_flag)
-	dec_point = 1;
-
-    if (tolower(c) == 'g' || tolower(c) == 'e') {
-	l = log10 (num);
-	if (tolower (c) == 'g') {
-	    if (l < -4.0 || l >= prec) {
-		c -= 'G' - 'E';
-		--prec;
-	    } else {
-		c = 'f';
-		n = num / pow (10, (int)l);
-		do {
-		    --prec;
-		    n /= 10;
-		} while (n > 0);
-	    }
-	    if (!(flags & alternate_flag))
-		trail_zero = 0;
-/*	    prec -= log10 (num + 1); */
-	}
-    }
-
-    if (tolower(c) == 'e') {
-	int sign_n = 1;
-	double d;
-
-	n = l;
-	num = ((num * pow (10, n)) + 0.5) / pow (10, n);
-	l = log10 (num);
-	n = l;
-	num /= pow (10, n);
-	if (num >= 10)
-	    abort ();
-	if (n < 0) {
-	    n = -n;
-	    sign_n = 1;
-	}
-	    
-	do {
-	    int digit = (int)(d + 0.5) % 10;
-
-	    if ((*state->append_char)(state, "012345678"[digit]))
-		return 1;
-	    ++len;
-	    d /= 10;
-	} while (d > 0);
-	if (len == 1) {
-	    if ((*state->append_char)(state, '0'))
-		return 1;
-	    ++len;
-	}
-
-	if (sign_n < 0) {
-	    if ((*state->append_char)(state, '-'))
-		return 1;
-	} else {
-	    if ((*state->append_char)(state, '+'))
-		return 1;
-	}
-	++len;
-	if ((*state->append_char)(state, c))
-	    return 1;
-	++len;
-    }
-
-
-    if (prec) {
-	double int_part, frac_part;
-
-	frac_part = modf (num, &int_part);
-	n = frac_part * pow (10, prec) + 0.5;
-	for (i = 0; i < prec; ++i) {
-	    int digit = n % 10;
-
-	    if (digit > 0 || trail_zero) {
-		if ((*state->append_char)(state, "0123456789"[digit]))
-		    return 1;
-		++len;
-		trail_zero = 1;
-		dec_point  = 1;
-	    }
-	    n /= 10;
-	}
-	n = int_part;
-    } else
-	n = num + 0.5;
-
-    if (dec_point) {
-	if ((*state->append_char)(state, '.'))
-	    return 1;
-	++len;
-    }
-
-    do {
-	if ((*state->append_char)(state, "0123456789"[n % 10]))
-	    return 1;
-	++len;
-	n /= 10;
-    } while (n > 0);
-
-    if (flags & zero_flag) {
-	width -= len;
-	if (sign < 0 || (flags & space_flag) || (flags & plus_flag))
-	    width--;
-	while (width-- > 0) {
-	    if((*state->append_char)(state, '0'))
-		return 1;
-	    len++;
-	}
-    }
-  if(sign < 0){
-    if((*state->append_char)(state, '-'))
-      return 1;
-    len++;
-  } else if(flags & plus_flag) {
-    if((*state->append_char)(state, '+'))
-      return 1;
-    len++;
-  } else if(flags & space_flag) {
-    if((*state->append_char)(state, ' '))
-      return 1;
-    len++;
-  }
-  if(flags & minus_flag)
-    /* swap before padding with spaces */
-    for(i = 0; i < len / 2; i++){
-      char c = state->s[-i-1];
-      state->s[-i-1] = state->s[-len+i];
-      state->s[-len+i] = c;
-    }
-  width -= len;
-  while(width-- > 0){
-    if((*state->append_char)(state,  ' '))
-      return 1;
-    len++;
-  }
-  if(!(flags & minus_flag))
-    /* swap after padding with spaces */
-    for(i = 0; i < len / 2; i++){
-      char c = state->s[-i-1];
-      state->s[-i-1] = state->s[-len+i];
-      state->s[-len+i] = c;
-    }
-    
-  return 0;
-}
-
-#endif /* WANT_SNPRINTF_FLOAT */
 
 static int
 append_string (struct state *state,
@@ -450,25 +261,13 @@ append_char(struct state *state,
  * This can't be made into a function...
  */
 
-#define PARSE_INT_FORMAT_VANILLA(res, arg, unsig)		\
-if (long_arg == 1)						\
-     res = (unsig long)va_arg(arg, unsig long);			\
-else if (short_flag)						\
-     res = (unsig short)va_arg(arg, unsig int);		\
-else								\
+#define PARSE_INT_FORMAT(res, arg, unsig) \
+if (long_flag) \
+     res = (unsig long)va_arg(arg, unsig long); \
+else if (short_flag) \
+     res = (unsig short)va_arg(arg, unsig int); \
+else \
      res = (unsig int)va_arg(arg, unsig int)
-
-#ifdef HAVE_LONG_LONG
-#define PARSE_INT_FORMAT(res, arg, unsig)			\
-if (long_arg == 2)						\
-     res = (unsig long long)va_arg(arg, unsig long long);	\
-else PARSE_INT_FORMAT_VANILLA(res, arg, unsig)
-
-#else /* !HAVE_LONG_LONG */
-#define PARSE_INT_FORMAT(res, arg, unsig)			\
-PARSE_INT_FORMAT_VANILLA(res, arg, unsig)
-
-#endif /* HAVE_LONG_LONG */
 
 /*
  * zyxprintf - return 0 or -1
@@ -485,7 +284,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
       int flags      = 0;
       int width      = 0;
       int prec       = -1;
-      int long_arg   = 0;
+      int long_flag  = 0;
       int short_flag = 0;
 
       /* flags */
@@ -542,7 +341,7 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	short_flag = 1;
 	c = *format++;
       } else if (c == 'l') {
-	++long_arg;
+	long_flag = 1;
 	c = *format++;
       }
 
@@ -626,17 +425,6 @@ xyzprintf (struct state *state, const char *char_format, va_list ap)
 	  return -1;
 	break;
       }
-#if !defined(NO_SNPRINTF_FLOAT) && 0
-      case 'e' :
-      case 'E' :
-      case 'f' :
-      case 'g' :
-      case 'G' :
-	  if (append_double (state, va_arg(ap, double), c,
-			    width, prec, flags))
-	      return -1;
-	  break;
-#endif
       case 'n' : {
 	int *arg = va_arg(ap, int*);
 	*arg = state->s - state->str;
