@@ -1,5 +1,6 @@
 1999-12-05  Assar Westerlund  <assar@sics.se>
 
+	* ftpd/ftpd.c (dolog): update prototype
 	* ftpd/ftpd.c (dolog): use getnameinfo_verified
 	* ftpd/ftpd.c: replace inaddr2str by getnameinfo
 
