@@ -25,8 +25,6 @@ static size_t ascii_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ascii_push(void *,char **, size_t *, char **, size_t *);
 static size_t  utf8_pull(void *,char **, size_t *, char **, size_t *);
 static size_t  utf8_push(void *,char **, size_t *, char **, size_t *);
-static size_t weird_pull(void *,char **, size_t *, char **, size_t *);
-static size_t weird_push(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_pull(void *,char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,char **, size_t *, char **, size_t *);
 static size_t iconv_copy(void *,char **, size_t *, char **, size_t *);
@@ -35,7 +33,6 @@ struct charset_functions builtin_functions[] = {
 		{"UCS-2LE",  iconv_copy, iconv_copy},
 		{"UTF8",   utf8_pull,  utf8_push},
 		{"ASCII", ascii_pull, ascii_push},
-		{"WEIRD", weird_pull, weird_push},
 		{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
 		{NULL, NULL, NULL}
 };
@@ -57,7 +54,7 @@ BOOL smb_register_charset(struct charset_functions *funcs)
 	}
 
 	funcs->next = funcs->prev = NULL;
-	DEBUG(5, ("Registered charset %s\n", c->name));
+	DEBUG(5, ("Registered charset %s\n", funcs->name));
 	DLIST_ADD(charsets, funcs);
 	return True;
 }
@@ -383,111 +380,6 @@ static size_t ucs2hex_push(void *cd, char **inbuf, size_t *inbytesleft,
 	return 0;
 }
 
-
-/* the "weird" character set is very useful for testing multi-byte
-   support and finding bugs. Don't use on a production system! 
-*/
-static struct {
-	char from;
-	char *to;
-	int len;
-} weird_table[] = {
-	{'q', "^q^", 3},
-	{'Q', "^Q^", 3},
-	{0, NULL}
-};
-
-static size_t weird_pull(void *cd, char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
-{
-	while (*inbytesleft >= 1 && *outbytesleft >= 2) {
-		int i;
-		int done = 0;
-		for (i=0;weird_table[i].from;i++) {
-			if (strncmp((*inbuf), 
-				    weird_table[i].to, 
-				    weird_table[i].len) == 0) {
-				if (*inbytesleft < weird_table[i].len) {
-					DEBUG(0,("ERROR: truncated weird string\n"));
-					/* smb_panic("weird_pull"); */
-
-				} else {
-					(*outbuf)[0] = weird_table[i].from;
-					(*outbuf)[1] = 0;
-					(*inbytesleft)  -= weird_table[i].len;
-					(*outbytesleft) -= 2;
-					(*inbuf)  += weird_table[i].len;
-					(*outbuf) += 2;
-					done = 1;
-					break;
-				}
-			}
-		}
-		if (done) continue;
-		(*outbuf)[0] = (*inbuf)[0];
-		(*outbuf)[1] = 0;
-		(*inbytesleft)  -= 1;
-		(*outbytesleft) -= 2;
-		(*inbuf)  += 1;
-		(*outbuf) += 2;
-	}
-
-	if (*inbytesleft > 0) {
-		errno = E2BIG;
-		return -1;
-	}
-	
-	return 0;
-}
-
-static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
-			 char **outbuf, size_t *outbytesleft)
-{
-	int ir_count=0;
-
-	while (*inbytesleft >= 2 && *outbytesleft >= 1) {
-		int i;
-		int done=0;
-		for (i=0;weird_table[i].from;i++) {
-			if ((*inbuf)[0] == weird_table[i].from &&
-			    (*inbuf)[1] == 0) {
-				if (*outbytesleft < weird_table[i].len) {
-					DEBUG(0,("No room for weird character\n"));
-					/* smb_panic("weird_push"); */
-				} else {
-					memcpy(*outbuf, weird_table[i].to, 
-					       weird_table[i].len);
-					(*inbytesleft)  -= 2;
-					(*outbytesleft) -= weird_table[i].len;
-					(*inbuf)  += 2;
-					(*outbuf) += weird_table[i].len;
-					done = 1;
-					break;
-				}
-			}
-		}
-		if (done) continue;
-
-		(*outbuf)[0] = (*inbuf)[0];
-		if ((*inbuf)[1]) ir_count++;
-		(*inbytesleft)  -= 2;
-		(*outbytesleft) -= 1;
-		(*inbuf)  += 2;
-		(*outbuf) += 1;
-	}
-
-	if (*inbytesleft == 1) {
-		errno = EINVAL;
-		return -1;
-	}
-
-	if (*inbytesleft > 1) {
-		errno = E2BIG;
-		return -1;
-	}
-	
-	return ir_count;
-}
 
 static size_t iconv_copy(void *cd, char **inbuf, size_t *inbytesleft,
 			 char **outbuf, size_t *outbytesleft)
