@@ -1035,3 +1035,35 @@ BOOL _prs_uint32_post(char *name, prs_struct *ps, int depth, uint32 *data32,
 	return True;
 }
 
+/*******************************************************************
+ prs_tdb_store.  stores prs_struct data by prs_struct key 
+ ********************************************************************/
+int prs_tdb_store(TDB_CONTEXT *tdb, int flgs, prs_struct *pk, prs_struct *pd)
+{
+	TDB_DATA key;
+	TDB_DATA data;
+
+	key.dptr = (char*)prs_data(pk, 0);
+	key.dsize = prs_buf_len(pk);
+
+	data.dptr = prs_data(pd, 0);
+	data.dsize = prs_buf_len(pd);
+
+	return tdb_store(tdb, key, data, flgs);
+}
+
+/*******************************************************************
+ prs_tdb_fetch.  fetches prs_struct data by prs_struct key 
+ ********************************************************************/
+void prs_tdb_fetch(TDB_CONTEXT *tdb, prs_struct *pk, prs_struct *pd)
+{
+	TDB_DATA key;
+	TDB_DATA data;
+
+	key.dptr = (char*)prs_data(pk, 0);
+	key.dsize = prs_buf_len(pk);
+
+	data = tdb_fetch(tdb, key);
+
+	prs_create(pd, data.dptr, data.dsize, 4, True);
+}

@@ -122,22 +122,29 @@ uint32 _samr_enum_domains(const POLICY_HND *pol, uint32 *start_idx,
 
 static BOOL create_domain(TDB_CONTEXT *tdb, char* domain, DOM_SID *sid)
 {
-	TDB_DATA key;
-	TDB_DATA data;
+	prs_struct key;
+	prs_struct data;
 	UNISTR2 uni_domain;
-	UNISTR2 uni_dom_upper;
 
 	DEBUG(10,("creating domain %s\n", domain));
 
 	make_unistr2(&uni_domain, domain, strlen(domain));
 
-	key.dptr = (char*)&uni_dom_upper;
-	key.dsize = sizeof(uni_dom_upper);
+	prs_init(&key, 0, 4, False);
+	prs_init(&data, 0, 4, False);
 
-	data.dptr = (char*)sid;
-	data.dsize = sizeof(*sid);
+	if (!smb_io_unistr2("dom", &uni_domain, True, &key, 0) ||
+	    !smb_io_dom_sid("sid", sid, &data, 0) ||
+	     prs_tdb_store(tdb, TDB_REPLACE, &key, &data) != 0)
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		return NT_STATUS_NO_MEMORY;
+	}
 
-	return tdb_store(tdb, key, data, TDB_REPLACE) == 0;
+	prs_free_data(&key);
+	prs_free_data(&data);
+	return 0x0;
 }
 
 /*******************************************************************
@@ -214,34 +221,33 @@ uint32 _samr_connect(const UNISTR2 *srv_name, uint32 access_mask,
 	return tdb_samr_connect(connect_pol, access_mask);
 }
 
-static BOOL tdb_lookup_domain(TDB_CONTEXT *tdb,
+static uint32 tdb_lookup_domain(TDB_CONTEXT *tdb,
 				const UNISTR2* uni_domain,
 				DOM_SID *sid)
 {
-	TDB_DATA key;
-	TDB_DATA data;
+	prs_struct key;
+	prs_struct data;
 	UNISTR2 uni_dom_copy;
 
 	copy_unistr2(&uni_dom_copy, uni_domain);
 
-	key.dptr = (char*)&uni_dom_copy;
-	key.dsize = sizeof(uni_dom_copy);
-
-	data = tdb_fetch(tdb, key);
-
-	if (data.dptr == NULL)
+	prs_init(&key, 0, 4, False);
+	if (!smb_io_unistr2("dom", &uni_dom_copy, True, &key, 0))
 	{
+		return NT_STATUS_NO_MEMORY;
+	}
+
+	prs_tdb_fetch(tdb, &key, &data);
+
+	if (!smb_io_dom_sid("sid", sid, &data, 0))
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
 		return NT_STATUS_NO_SUCH_DOMAIN;
 	}
 
-	if (data.dsize != sizeof(*sid))
-	{
-		free(data.dptr);
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	}
-
-	memcpy(sid, data.dptr, sizeof(*sid));
-	free(data.dptr);
+	prs_free_data(&key);
+	prs_free_data(&data);
 
 	return 0x0;
 }

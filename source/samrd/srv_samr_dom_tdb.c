@@ -158,6 +158,7 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 		return NT_STATUS_ACCESS_DENIED;
 	}
 
+#if 0
 	if (sid_equal(sid, &global_sam_sid))
 	{
 		if (grp_tdb == NULL || als_tdb == NULL)
@@ -166,6 +167,8 @@ uint32 _samr_open_domain(const POLICY_HND *connect_pol,
 			return NT_STATUS_ACCESS_DENIED;
 		}
 	}
+#endif
+
 	/* associate the domain SID with the (unique) handle. */
 	if (!set_tdbdomsid(get_global_hnd_cache(), domain_pol,
 	                   usr_tdb, grp_tdb, als_tdb, sid))
