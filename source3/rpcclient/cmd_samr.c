@@ -596,6 +596,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 start_idx, size, num_dom_groups, i;
 	struct acct_info *dom_groups;
+	BOOL got_connect_pol = False, got_domain_pol = False;
 
 	if (argc != 1) {
 		printf("Usage: %s\n", argv[0]);
@@ -606,36 +607,55 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
+
+	got_connect_pol = True;
 
 	/* Get domain policy handle */
+
 	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &domain_sid, &domain_pol);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
+
+	got_domain_pol = True;
 
 	/* Enumerate domain groups */
 
 	start_idx = 0;
 	size = 0xffff;
 
-	result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
-					  &start_idx, size,
-					  &dom_groups, &num_dom_groups);
+	do {
+		result = cli_samr_enum_dom_groups(
+			cli, mem_ctx, &domain_pol, &start_idx, size,
+			&dom_groups, &num_dom_groups);
 
-	for (i = 0; i < num_dom_groups; i++)
-		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
-		       dom_groups[i].rid);
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+
+			for (i = 0; i < num_dom_groups; i++)
+				printf("group:[%s] rid:[0x%x]\n", 
+				       dom_groups[i].acct_name,
+				       dom_groups[i].rid);
+		}
+
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
+	if (got_domain_pol)
+		cli_samr_close(cli, mem_ctx, &domain_pol);
+
+	if (got_connect_pol)
+		cli_samr_close(cli, mem_ctx, &connect_pol);
+
 	return result;
 }
 
-/* Enumerate domain groups */
+/* Enumerate alias groups */
 
 static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
@@ -643,9 +663,10 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	uint32 start_idx, size, num_dom_groups, i;
-	struct acct_info *dom_groups;
+	uint32 start_idx, size, num_als_groups, i;
+	struct acct_info *als_groups;
 	DOM_SID global_sid_Builtin;
+	BOOL got_connect_pol = False, got_domain_pol = False;
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
@@ -658,9 +679,11 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 
 	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
-	if (!NT_STATUS_IS_OK(result)) {
+
+	if (!NT_STATUS_IS_OK(result))
 		goto done;
-	}
+
+	got_connect_pol = True;
 
 	/* Get domain policy handle */
 
@@ -674,24 +697,39 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 					      &global_sid_Builtin, &domain_pol);
 	else
 		return NT_STATUS_OK;
-	if (!NT_STATUS_IS_OK(result)) {
-		goto done;
-	}
 
-	/* Enumerate domain groups */
+	if (!NT_STATUS_IS_OK(result))
+		goto done;
+
+	got_domain_pol = True;
+
+	/* Enumerate alias groups */
 
 	start_idx = 0;
-	size = 0xffff;
+	size = 0xffff;		/* Number of groups to retrieve */
 
-	result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
-					  &start_idx, size,
-					  &dom_groups, &num_dom_groups);
+	do {
+		result = cli_samr_enum_als_groups(
+			cli, mem_ctx, &domain_pol, &start_idx, size,
+			&als_groups, &num_als_groups);
 
-	for (i = 0; i < num_dom_groups; i++)
-		printf("group:[%s] rid:[0x%x]\n", dom_groups[i].acct_name,
-		       dom_groups[i].rid);
+		if (NT_STATUS_IS_OK(result) ||
+		    NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES)) {
+
+			for (i = 0; i < num_als_groups; i++)
+				printf("group:[%s] rid:[0x%x]\n", 
+				       als_groups[i].acct_name,
+				       als_groups[i].rid);
+		}
+	} while (NT_STATUS_V(result) == NT_STATUS_V(STATUS_MORE_ENTRIES));
 
  done:
+	if (got_domain_pol)
+		cli_samr_close(cli, mem_ctx, &domain_pol);
+	
+	if (got_connect_pol)
+		cli_samr_close(cli, mem_ctx, &connect_pol);
+	
 	return result;
 }
 
