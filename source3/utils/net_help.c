@@ -88,6 +88,8 @@ int net_help_group(int argc, const char **argv)
 {
 	d_printf("net [<method>] group [misc. options] [targets]"\
 		 "\n\tList user groups\n\n");
+	d_printf("net rpc group LIST [global|local|builtin]* [misc. options]"\
+		 "\n\tList specific user groups\n\n");
 	d_printf("net [<method>] group DELETE <name> "\
 		 "[misc. options] [targets]"\
 		 "\n\tDelete specified group\n");

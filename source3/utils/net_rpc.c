@@ -916,6 +916,26 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	uint32 start_idx=0, max_entries=250, num_entries, i, loop_count = 0;
 	struct acct_info *groups;
 	DOM_SID global_sid_Builtin;
+	BOOL global = False;
+	BOOL local = False;
+	BOOL builtin = False;
+
+	if (argc == 0) {
+		global = True;
+		local = True;
+		builtin = True;
+	}
+
+	for (i=0; i<argc; i++) {
+		if (strequal(argv[i], "global"))
+			global = True;
+
+		if (strequal(argv[i], "local"))
+			local = True;
+
+		if (strequal(argv[i], "builtin"))
+			builtin = True;
+	}
 
 	string_to_sid(&global_sid_Builtin, "S-1-5-32");
 
@@ -949,6 +969,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		ZERO_STRUCT(info3);
 		ctr.sam.info3 = &info3;
 
+		if (!global) break;
+
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
@@ -973,6 +995,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	/* query domain aliases */
 	start_idx = 0;
 	do {
+		if (!local) break;
+
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
@@ -1022,6 +1046,8 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	/* query builtin aliases */
 	start_idx = 0;
 	do {
+		if (!builtin) break;
+
 		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
@@ -1064,6 +1090,13 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	return result;
 }
 
+static int rpc_group_list(int argc, const char **argv)
+{
+	return run_rpc_command(NULL, PI_SAMR, 0,
+			       rpc_group_list_internals,
+			       argc, argv);
+}
+ 
 static NTSTATUS 
 rpc_group_members_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			    TALLOC_CTX *mem_ctx, int argc, const char **argv)
@@ -1176,6 +1209,7 @@ int net_rpc_group(int argc, const char **argv)
 		{"add", rpc_group_add},
 		{"delete", rpc_group_delete},
 #endif
+		{"list", rpc_group_list},
 		{"members", rpc_group_members},
 		{NULL, NULL}
 	};
