@@ -240,6 +240,10 @@ max can be %d\n",
 				DEBUG(1,("Reloading services after SIGHUP\n"));
 				reload_services(False);
 				reload_after_sighup = False;
+
+				/* Clear netbios name cache */
+
+				namecache_flush();
 			}
 
 			continue;

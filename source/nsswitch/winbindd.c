@@ -657,6 +657,8 @@ static void process_loop(int accept_sock)
 
 			flush_caches();
 			reload_services_file(True);
+			namecache_flush();
+
 			do_sighup = False;
 		}
 
