@@ -32,11 +32,6 @@
 #endif /* bcopy */
 #define bcopy(src,dest,size) __ERROR__XX__NEVER_USE_BCOPY___;
 
-#ifdef bzero
-#undef bzero
-#endif /* bzero */
-#define bzero(dest,size) __ERROR__XX__NEVER_USE_BZERO_USE_MEMSET_INSTEAD___;
-
 #ifdef strcpy
 #undef strcpy
 #endif /* strcpy */
