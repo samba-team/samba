@@ -3594,15 +3594,12 @@ inits a SAMR_Q_OPEN_ALIAS structure.
 ********************************************************************/
 
 void init_samr_q_open_alias(SAMR_Q_OPEN_ALIAS * q_u, POLICY_HND *pol,
-			    uint32 unknown_0, uint32 rid)
+			    uint32 access_mask, uint32 rid)
 {
 	DEBUG(5, ("init_samr_q_open_alias\n"));
 
 	q_u->dom_pol = *pol;
-
-	/* example values: 0x0000 0008 */
-	q_u->unknown_0 = unknown_0;
-
+	q_u->access_mask = access_mask;
 	q_u->rid_alias = rid;
 }
 
@@ -3625,7 +3622,7 @@ BOOL samr_io_q_open_alias(char *desc, SAMR_Q_OPEN_ALIAS * q_u,
 	if(!smb_io_pol_hnd("domain_pol", &q_u->dom_pol, ps, depth))
 		return False;
 
-	if(!prs_uint32("unknown_0", ps, depth, &q_u->unknown_0))
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 	if(!prs_uint32("rid_alias", ps, depth, &q_u->rid_alias))
 		return False;
