@@ -108,6 +108,104 @@ static BOOL test_loadfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
+/*
+  test a simple savefile/loadfile combination
+*/
+static BOOL test_fetchfile(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
+{
+	const char *fname = BASEDIR "\\test.txt";
+	NTSTATUS status;
+	struct smb_composite_savefile io1;
+	struct smb_composite_fetchfile io2;
+	struct smbcli_composite **c;
+	char *data;
+	int i;
+	size_t len = random() % 10000;
+	const int num_ops = 10;
+	struct event_context *event_ctx;
+	int *count = talloc_zero(mem_ctx, int);
+
+	data = talloc_array(mem_ctx, uint8_t, len);
+
+	generate_random_buffer(data, len);
+
+	io1.in.fname = fname;
+	io1.in.data  = data;
+	io1.in.size  = len;
+
+	printf("testing savefile\n");
+
+	status = smb_composite_savefile(cli->tree, &io1);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("savefile failed: %s\n", nt_errstr(status));
+		return False;
+	}
+
+	io2.in.dest_host = lp_parm_string(-1, "torture", "host");
+	io2.in.port = 0;
+	io2.in.called_name = lp_parm_string(-1, "torture", "host");
+	io2.in.calling_name = lp_netbios_name();
+	io2.in.service = lp_parm_string(-1, "torture", "share");
+	io2.in.service_type = "A:";
+	io2.in.user = lp_parm_string(-1, "torture", "username");
+	io2.in.domain = lp_parm_string(-1, "torture", "userdomain");
+	io2.in.password = lp_parm_string(-1, "torture", "password");
+	io2.in.filename = fname;
+
+	printf("testing parallel fetchfile with %d ops\n", num_ops);
+
+	event_ctx = event_context_init(mem_ctx);
+	c = talloc_array(mem_ctx, struct smbcli_composite *, num_ops);
+
+	for (i=0; i<num_ops; i++) {
+		c[i] = smb_composite_fetchfile_send(&io2, event_ctx);
+		c[i]->async.fn = loadfile_complete;
+		c[i]->async.private = count;
+	}
+
+	printf("waiting for completion\n");
+
+	while (*count != num_ops) {
+		event_loop_once(event_ctx);
+#if 0
+		/* Attempt to kill the event ... To fix -- vl */
+		for (i=0; i<num_ops; i++) {
+			if (!c[i]) continue;
+			if (c[i]->state == SMBCLI_REQUEST_ERROR) {
+				printf("error in %d\n", i); msleep(1000);
+				talloc_free(c[i]); c[i]=NULL;
+			}
+		}
+#endif
+		printf("count=%d\r", *count);
+		fflush(stdout);
+	}
+	printf("count=%d\n", *count);
+
+	for (i=0;i<num_ops;i++) {
+		status = smb_composite_fetchfile_recv(c[i], mem_ctx);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("loadfile[%d] failed - %s\n", i,
+			       nt_errstr(status));
+			return False;
+		}
+
+		if (io2.out.size != len) {
+			printf("wrong length in returned data - %d "
+			       "should be %d\n",
+			       io2.out.size, len);
+			return False;
+		}
+		
+		if (memcmp(io2.out.data, data, len) != 0) {
+			printf("wrong data in loadfile!\n");
+			return False;
+		}
+	}
+
+	return NT_STATUS_IS_OK(status);
+}
+
 /* 
    basic testing of libcli composite calls
 */
@@ -127,6 +225,7 @@ BOOL torture_raw_composite(void)
 		return False;
 	}
 
+	ret &= test_fetchfile(cli, mem_ctx);
 	ret &= test_loadfile(cli, mem_ctx);
 
 	smb_raw_exit(cli->session);
