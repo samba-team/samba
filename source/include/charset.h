@@ -1,0 +1,61 @@
+/* 
+   Unix SMB/Netbios implementation.
+   Version 1.9.
+   Character set handling
+   Copyright (C) Andrew Tridgell 1992-1995
+   
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+*/
+
+#ifndef CHARSET_C
+
+extern char *dos_char_map;
+extern char *upper_char_map;
+extern char *lower_char_map;
+extern void add_char_string(char *s);
+extern void charset_initialise(void);
+
+#ifdef toupper
+#undef toupper
+#endif
+
+#ifdef tolower
+#undef tolower
+#endif
+
+#ifdef isupper
+#undef isupper
+#endif
+
+#ifdef islower
+#undef islower
+#endif
+
+#ifdef isdoschar
+#undef isdoschar
+#endif
+
+#ifdef isspace
+#undef isspace
+#endif
+
+#define toupper(c) upper_char_map[(char)(c)]
+#define tolower(c) lower_char_map[(char)(c)]
+#define isupper(c) (((char)(c)) != tolower(c))
+#define islower(c) (((char)(c)) != toupper(c))
+#define isdoschar(c) (dos_char_map[(char)(c)] != 0)
+#define isspace(c) ((c)==' ' || (c) == '\t')
+#endif
+

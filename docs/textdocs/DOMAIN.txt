@@ -1,0 +1,68 @@
+Samba now supports domain logons and network logon scripts. The
+support is still experimental, but it seems to work.
+
+The support is also not complete. Samba does not yet support the
+sharing of the SAM database with other systems yet, or remote
+administration. Support for these kind of things should be added
+sometime in the future.
+
+The domain support only works for WfWg and Win95 clients. Support for
+NT and OS/2 clients is still being worked on.
+
+Using these features you can make your clients verify their logon via
+the Samba server and make clients run a batch file when they logon to
+the network. The latter is particularly useful.
+
+To use domain logons you need to do the following:
+
+1) Setup nmbd and smbd and configure the smb.conf so that Samba is
+acting as the master browser. See INSTALL.txt and BROWSING.txt for
+details. 
+
+2) create a share called [netlogon] in your smb.conf. This share should
+be readable by all users, and probably should not be writeable. This
+share will hold your network logon scripts.
+
+For example I have used:
+
+   [netlogon]
+    path = /data/dos/netlogon
+    writeable = no
+    guest ok = yes
+
+
+3) in the [global] section of smb.conf set the following:
+
+   domain logons = yes
+   logon script = %U.bat
+
+the choice of batch file is, of course, up to you. The above would
+give each user a separate batch file as the %U will be changed to
+their username automatically. The other standard % macros may also be
+used. You can make the btch files come from a subdirectory by using
+soemthing like:
+
+   logon script = scripts\%U.bat
+
+4) create the batch files to be run when the user logs in. If the batch
+file doesn't exist then no batch file will be run. 
+
+In the batch files you need to be careful to use DOS style cr/lf line
+endings. If you don't then DOS may get confused. I suggest you use a
+DOS editor to remotely edit the files if you don't know how to produce
+DOS style files under unix.
+
+5) Use smbclient with the -U option for some users to make sure that
+the \\server\NETLOGON share is available, the batch files are visible
+and they are readable by the users.
+
+6) you will probabaly find that your clients automatically mount the
+\\SERVER\NETLOGON share as drive z: while logging in. You can put some
+useful programs there to execute from the batch files.
+
+
+NOTE: You must be using "security = user" or "security = server" for
+domain logons to work correctly. Share level security won't work
+correctly.
+
+

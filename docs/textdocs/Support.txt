@@ -1,0 +1,376 @@
+The Samba Consultants List
+==========================
+
+This is a list of people who are prepared to install and support Samba.
+Note that in most countries nobody should admit to "supplying" Samba, since 
+there is then an implied warranty with possibly onerous legal obligations. 
+Just downloading and installing it isn't supply in this sense, but advertising 
+"run our Samba for best results" may be so.
+
+Being on this list does not imply any sort of endorsement by anyone, it is just
+provided in the hope that it will be useful.
+
+If you want to be added to the list, or want your entry modified then
+contact the address below. They are currently listed in the
+order that they were received. If it gets too big we may organise it
+by region. Please make sure to include a header line giving the region
+and country, eg CANBERRA  - AUSTRALIA. 
+
+You can contact the maintainers at samba-bugs@anu.edu.au
+
+
+------------------------------------------------------------------------------
+BRISBANE - AUSTRALIA
+
+Brett Worth
+Select Computer Technology - Brisbane
+431 Logan Road
+Stones Corner   QLD   4120
+E-Mail: brett@sct.com.au
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+CANBERRA - AUSTRALIA
+
+Paul Blackman (ictinus@lake.canberra.edu.au, Ph. 06 2012518) is
+available for consultation.  Paul's Samba background is with
+Solaris 2.3/4 and WFWG/Win95 machines.  Paul is also the maintainer
+of the SAMBA Web Pages.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+READING - ENGLAND
+
+Philip Hands                  |   E-Mail: info@hands.com
+Philip Hands Computing Ltd.   |   Tel: +44 1734 476287 Fax: 1734 474655
+Unit 1, Cherry Close, Caversham, Reading RG4 8UP  UK
+
+Samba experience:  SVR4,SVR3.2 & Linux <--> WfWg, W3.1, OS2 and MS-LanMan
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ILLONOIS - USA
+
+Information One, Inc.
+736 Hinman Ave, Suite 2W
+Evanston, IL 60202
+708-328-9137  708-328-0117 FAX  
+info@info1.com
+
+Providing custom Internet and networking solutions.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+Olympic Peninsula Consulting; 1241 Lansing Ave W., Bremerton, WA 98312-4343
+telephone 1+ 360 792 6938; mailto:opc@aa.net; http://www.aa.net/~opc;
+Unix Systems and TCP/IP Network design, programming, and administration.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SolutionS R Us has been in business for 3+ years providing viable 3rd
+party support in system/network administration. With our own Linux
+distribution which we're constantly improving to make it the best and
+using it to provide total solutions for companies which are open to
+using Linux.
+
+Mauro DePalma  <mauro@sru.com>
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+BIELEFELD - GERMANY
+
+I am located in Bielefeld/Germany and have been doing Unix consultancy
+work for the past 8 years throughout Germany and the rest of Europe. I
+can be contacted by email at <jpm@mens.de> or via phone at +49 521
+9225922 or telefax at +49 521 9225924.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+CANBERRA - AUSTRALIA
+
+Ben Elliston
+Faculty of Information Sciences and Engineering
+University of Canberra AUSTRALIA
+E-mail: ben@ise.canberra.edu.au (Uni)
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+PALERMO - ITALY
+
+Francesco Cardinale
+E-Mail: cardinal@palermo.italtel.it
+Samba experience: SVR3.2, SOLARIS, ULTRIX, LINUX <--> DOS LAN-MAN, WFW
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SYDNEY - AUSTRALIA
+
+John Terpstra - Aquasoft (jht@aquasoft.com.au)
+Business:  +612 524 4040
+Home:      +612 540 3154
+Shoephone: +612 414 334422  (aka 0414 334422)
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+ONTARIO - CANADA
+
+Strata Software Limited, Kanata Ontario CANADA
+Tel:   +1 (613) 591-1922   Fax:   +1 (613) 591-3485
+Email: sales@strataware.com   WWW: http://www.strataware.com/
+
+Strata Software Limited is a software development and consulting group
+specializing in data communications (TCP/IP and OSI), X.400, X.500 and
+LDAP, and X.509-based security.  We have Samba experience with Windows NT,
+Windows 95, and Windows for Workgroups clients with Linux, Unixware
+(SVR4), and HP-UX servers.
+------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+SYDNEY - AUSTRALIA
+
+We are a Unix & Windows developer with a consulting & support component.
+In business since 1981 with experience on Sun, hp, sgi, IBM rs6000 plus
+Windows, NT and Win95,  Using Samba since September 94.
+CodeSmiths,  22 Darley Road, MANLY 2095  NSW;  977 1979; fax: 977 2116
+philm@esi.com.au   (Australia; New South Wales; SYDNEY; North East)
+-----------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+EDINBUGH - SCOTLAND
+
+Charlie Hussey                            email charlie@edina.demon.co.uk
+Edina Software Limited                    tel   0131 657 1129
+4 James Street                            fax   0131 669 9092
+Edinburgh EH15 2DS
+
+SAMBA experience: SCO UNIX  <=> WfWg
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+LONDON - ENGLAND
+
+Mark H. Preston,
+Network Analyst,                    | Email : mpreston@sghms.ac.uk
+Computer Unit,                      | Tel   : +44 (0)181 725-5434
+St. George's Hospital Med School,   | Fax   : +44 (0)181 725-3583
+London SW17 ORE.                    | WWW   : http://www.sghms.ac.uk
+
+Samba Experience:
+Server: Solaris 2.3 & 2.4, Irix 5.2 & 5.3
+Client: WinNT, Win95, WfWg, Win3.1, Ms-LanMan, DHCP support
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+SYDNEY - AUSTRALIA
+
+Pacific ESI has used and installed Samba since 1.6 on a range
+of machines running SunOS, BSD/OS, SCO/UNIX, HP/UX, and Solaris,
+and WfWG and Windows95.  The largest system worked on to date
+involved an Australia wide network of machines with PCs and SUNs
+at the various nodes.  The in-house testing site is a wide area
+network with three sites, remotely connected with PPP and with
+SUN servers at each site to all of which are connected several
+PCs running mainly WfWG.
+
+Stefan Kjellberg                Pacific Engineering Systems
+International
+info@eram.esi.com.au            Voice:+61-2-9063377
+... Fax:+61-2-9063468
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+CHANTILLY - USA
+
+Intelligent Decisions, Inc.
+ATTN: Richard Bullington
+14121 Parke Long Ct. #104
+Chantilly, VA 22021
+U.S.A.
+(703) 803-8070
+rbullington@intdec.com
+
+Samba experience: Linux, DEC ULTRIX <=> WFWG 3.11, Windows NT 3.5
+Specializing in World Wide Web related UNIX-to-PC connectivity.
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+FORT COLLINS, CO - USA
+
+Granite Computing Solutions
+ATTN: Brian Grossman
+Box 270103
+Fort Collins, CO  80527-0103
+U.S.A.
+(970) 225-2370
+granite@fortnet.org
+
+Information services, including WfWG, NT, Apple <=> Unix interoperability.
+
+Our standard advertisement says:
+
+>               Unix workstations, servers and custom systems           <
+>>              WWW and Unix education                                   <<
+>>>             Enterprise and departmental computing solutions           <<<
+>>>             Backup & restore                                          <<<
+>>              Software forensics                                       <<
+>               Data translation                                        <
+------------------------------------------------------------------------------
+
+----------------------------------------------------------
+Adelaide, Australia
+
+NS Computer Software and Services P/L
+PO Box 86
+Ingle Farm
+SA 5098
+
+Contact: Richard Sharpe
+	 Ph: +61-8-281-0063 (08-281-0063) AH
+	 FAX:+61-8-250-2080 (08-250-2080)
+
+Experience with: ULTRIX, Digital UNIX, SunOS, WfW 3.11, Win95, WNT 3.51
+
+----------------------------------------------------------
+
+----------------------------------------------------------
+TECTONIC LIMITED
+WESTWOOD
+78 LOUGHBOROUGH ROAD
+QUORN
+LEICESTERSHIRE
+LE12 8DX
+
+TELEPHONE 01509-620922
+FAX       01509-620933
+
+CONTACT DAVID ROBINSON
+
+WE ARE UNIX ORIENTATED BUT ALSO SPECIALISE IN PC TO UNIX COMMUNICATIONS, WE 
+KNOW AND UNDERSTAND PC-NFS, (HENCE OUR INTEREST IN SAMBA).
+WE SUPPORT  SUNOS, SOLARIS 1.X AND 2.X, HP-UX 9.0 AND 10.0, OSF (or DEC UNIX, 
+whichever you prefer), WinNT, WfWG and Win95.
+
+WE ARE ALREADY TALKING TO A COUPLE OF VERY LARGE SAMBA USERS HERE IN THE UK. 
+WE WOULD LIKE TO SUPPORT THEM (AND MANY MORE), WOULD YOU PLEASE CONTACT ME ON:
+david@tectonic.demon.co.uk
+----------------------------------------------------------
+
+----------------------------------------------------------
+MIAMI, FL - USA
+
+Swaney & Associates, Inc.
+ATTN: 	Stephen Swaney
+	2543 Lincoln Avenue
+	Miami, Florida 33133
+	U.S.A
+	(305) 860-0570
+
+Specializing in:
+	High Availability system & networks
+	UNIX to PC connectivity
+	Market Data systems
+	Messaging Systems (Sendmail & Microsoft Exchange)
+----------------------------------------------------------
+
+------------------------------------------------------------------------------
+NEW JERSEY  - USA
+
+William J. Maggio                                       
+LAN & Computer Integrators, Inc.
+242 Old New Brunswick Road                              Email: bmaggio@lci.com
+Suite 440                                               Voice: 908-981-1991
+Piscataway, NJ 08855                                    Fax  : 908-981-1858
+
+   Specializing in Internet connectivity and security, Sun integration and 
+   high speed, enterprise network design and deployment.
+------------------------------------------------------------------------------
+
+FAREHAM - ENGLAND
+
+High Field Technology Ltd
+Little Park Farm Road, Segensworth West,
+Fareham, Hants PO15 5SJ, UK.
+sales@hft.co.uk        tel +44 148 957 0111 fax +44 148 957 0555
+
+Company skills: Real time hardware and software systems
+
+Samba experience:  BSD/OS, Linux, LynxOS <==> WFWG, NT                     
+
+------------------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+QUEBEC - CANADA
+
+Dataden Computer Systems
+Attn: Danny Arseneau
+arseneau@parkmed.com
+895 2nd Avenue
+Ile Bizard, Quebec
+Canada, H9C 1K3
+Tel: (514)891-2293
+Fax: (514)696-0848
+
+Dataden is company that specializes in Unix--TCP/IP networking.
+We have over 15 years of experience.  We have been installing,
+configuring and maintaining Samba for clients for 1-1/2 years now.  We
+have samba installations on Linx, SunOS and DEC OSF.  Our biggest site
+has 4 Suns and 3 Linux servers running Samba which are serving a network
+of about 50 PC's running WFWg and Win95.
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+CALIFORNIA - USA
+
+Ron Halstead
+Open Systems Consulting
+3098-4 Lakemont Drive
+San Ramon, CA 94583 (San Francisco Bay Area)
+(510) 735-7529
+halstead@ix.netcom.com
+-----------------------------------------------------------------------
+
+
+-----------------------------------------------------------------------
+MELBOURNE - AUSTRALIA
+
+Michael Ciavarella
+Cybersoruce Pty Ltd.
+8/140 Queen Street
+Melbourne  VIC 3000
+Phone:  +61-3-9642-5997
+Fax:    +61-3-9642-5998
+Email:  mikec@cyber.com.au
+WWW:    http://www.cyber.com.au
+
+Cybersource specialises in TCP/IP network integration and Open Systems
+administration.  Cybersource is an Australian-owned and operated 
+company, with clients including some of Australia's largest financial,
+petrochemical and state government organisations.  
+-----------------------------------------------------------------------
+
+-----------------------------------------------------------------------
+SOUTHERN CALIFORNIA - USA
+
+Michael St. Laurent
+Serving Los Angeles and Orange Counties.  Please contact via email.
+rowl@earthlink.net
+Michael St. Laurent
+Hartwell Corporation
+------------------------------------------------------------------------------
+WASHINGTON DC METRO - USA
+
+Asset Software, Inc. has been running Samba since the 1.6 release on various
+platforms, including SunOS 4.x, Solaris 2.x, IRIX 4.x and 5.x, Linux 1.1x,
+1.2x, and 1.3x, and BSD UNIX 4.3 and above.  We specialize in small office
+network solutions and provide services to enhance a small office's
+operations.  Primarily a custom software operation, our vast knowledge of
+Windows, DOS, Unix, Windows NT, MacOS, and OS/2 enable us to provide quality
+technical assistance to the small office environment at a reasonable price.
+Our upcoming multi-mailbox mail client, IQ Mail, enables users with more
+than one mailbox to send and retrieve their mail from a single, consistent
+mail client running in Windows.
+
+David J. Fenwick                                          Asset Software, Inc.
+President                                                      djf@assetsw.com
+------------------------------------------------------------------------------
+
