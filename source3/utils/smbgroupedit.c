@@ -239,14 +239,14 @@ int main (int argc, char **argv)
 		return 0;
 	}
 	
-	if(!initialize_password_db(True)) {
-		fprintf(stderr, "Can't setup password database vectors.\n");
-		exit(1);
-	}
-	
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);
+		exit(1);
+	}
+	
+	if(!initialize_password_db(True)) {
+		fprintf(stderr, "Can't setup password database vectors.\n");
 		exit(1);
 	}
 	
