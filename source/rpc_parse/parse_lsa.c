@@ -804,7 +804,7 @@ BOOL lsa_io_r_query(const char *desc, LSA_R_QUERY_INFO *r_q, prs_struct *ps,
 ********************************************************************/
 
 static void init_lsa_sid_enum(TALLOC_CTX *mem_ctx, LSA_SID_ENUM *sen, 
-		       int num_entries, DOM_SID *sids)
+		       int num_entries, const DOM_SID *sids)
 {
 	int i;
 
@@ -913,7 +913,7 @@ static BOOL lsa_io_sid_enum(const char *desc, LSA_SID_ENUM *sen, prs_struct *ps,
 ********************************************************************/
 
 void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l, 
-			POLICY_HND *hnd, int num_sids, DOM_SID *sids,
+			POLICY_HND *hnd, int num_sids, const DOM_SID *sids,
 			uint16 level)
 {
 	DEBUG(5, ("init_q_lookup_sids\n"));

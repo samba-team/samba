@@ -152,12 +152,13 @@ done:
 	return status;
 }
 
+
 /* convert a sid to a DN */
 
-NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
-		       TALLOC_CTX *mem_ctx,
-		       const DOM_SID *sid,
-		       char **dn)
+ADS_STATUS ads_sid_to_dn(ADS_STRUCT *ads,
+			 TALLOC_CTX *mem_ctx,
+			 const DOM_SID *sid,
+			 char **dn)
 {
 	ADS_STATUS rc;
 	LDAPMessage *msg = NULL;
@@ -165,24 +166,28 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 	char *ldap_exp;
 	char *sidstr = NULL;
 	int count;
-	char *dn2;
-	NTSTATUS status = NT_STATUS_UNSUCCESSFUL;
+	char *dn2 = NULL;
+
+	const char *attr[] = {
+		"dn",
+		NULL
+	};
 
 	if (!(sidstr = sid_binstring(sid))) {
 		DEBUG(1,("ads_sid_to_dn: sid_binstring failed!\n"));
-		status = NT_STATUS_NO_MEMORY;
+		rc = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
 	if(!(ldap_exp = talloc_asprintf(mem_ctx, "(objectSid=%s)", sidstr))) {
 		DEBUG(1,("ads_sid_to_dn: talloc_asprintf failed!\n"));
-		status = NT_STATUS_NO_MEMORY;
+		rc = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
-	rc = ads_search_retry(ads, (void **)&msg, ldap_exp, NULL);
+	rc = ads_search_retry(ads, (void **)&msg, ldap_exp, attr);
+
 	if (!ADS_ERR_OK(rc)) {
-		status = ads_ntstatus(rc);
 		DEBUG(1,("ads_sid_to_dn ads_search: %s\n", ads_errstr(rc)));
 		goto done;
 	}
@@ -191,7 +196,7 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 		fstring sid_string;
 		DEBUG(1,("ads_sid_to_dn (sid=%s): Not found (count=%d)\n", 
 			 sid_to_string(sid_string, sid), count));
-		status = NT_STATUS_UNSUCCESSFUL;
+		rc = ADS_ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 		goto done;
 	}
 
@@ -200,30 +205,30 @@ NTSTATUS ads_sid_to_dn(ADS_STRUCT *ads,
 	dn2 = ads_get_dn(ads, entry);
 
 	if (!dn2) {
-		status = NT_STATUS_NO_MEMORY;
+		rc = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
 	*dn = talloc_strdup(mem_ctx, dn2);
 
 	if (!*dn) {
-		SAFE_FREE(dn2);
-		status = NT_STATUS_NO_MEMORY;
+		ads_memfree(ads, dn2);
+		rc = ADS_ERROR_NT(NT_STATUS_NO_MEMORY);
 		goto done;
 	}
 
-	status = NT_STATUS_OK;
+	rc = ADS_ERROR_NT(NT_STATUS_OK);
 
 	DEBUG(3,("ads sid_to_dn mapped %s\n", dn2));
 
 	SAFE_FREE(dn2);
 done:
 	if (msg) ads_msgfree(ads, msg);
+	if (dn2) ads_memfree(ads, dn2);
 
 	SAFE_FREE(sidstr);
 
-	return status;
+	return rc;
 }
-
 
 #endif
