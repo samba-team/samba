@@ -29,10 +29,10 @@ int main(int argc, char *argv[])
 	prs_init(&ps, 0, 4, MARSHALL);
 	ps.is_dynamic=True;
 	prs_read(&ps, fd, st.st_size, 0);
-	dump_data(0, ps.data_p, ps.buffer_size);
 	ps.data_offset = 0;
 	ps.io = UNMARSHALL;
 	ret = TEST_FUNC(desc, &q_u, &ps, 1);
-	printf("ret=%d\n", ret);
+	printf("\nret=%s\n\n\n", ret?"OK":"Bad");
+	dump_data(0, ps.data_p, ps.buffer_size);
 	return !ret;
 }

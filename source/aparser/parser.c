@@ -198,101 +198,6 @@ BOOL prs_align(prs_struct *ps)
 	return True;
 }
 
-/*******************************************************************
- Reads or writes an NTTIME structure.
-********************************************************************/
-
-BOOL smb_io_time(char *desc, NTTIME *nttime, prs_struct *ps, int depth)
-{
-	if (nttime == NULL)
-		return False;
-
-	prs_debug(ps, depth, desc, "smb_io_time");
-	depth++;
-
-	if(!prs_align(ps))
-		return False;
-	
-	if(!prs_uint32("low ", ps, depth, &nttime->low)) /* low part */
-		return False;
-	if(!prs_uint32("high", ps, depth, &nttime->high)) /* high part */
-		return False;
-
-	return True;
-}
-
-
-/*******************************************************************
- Reads or writes a UNISTR2 structure.
- XXXX NOTE: UNISTR2 structures need NOT be null-terminated.
-   the uni_str_len member tells you how long the string is;
-   the uni_max_len member tells you how large the buffer is.
-********************************************************************/
-
-BOOL smb_io_unistr2(char *desc, UNISTR2 *uni2, uint32 buffer, prs_struct *ps, int depth)
-{
-	if (uni2 == NULL)
-		return False;
-
-	if (buffer) {
-
-		prs_debug(ps, depth, desc, "smb_io_unistr2");
-		depth++;
-
-		if(!prs_align(ps))
-			return False;
-		
-		if(!prs_uint32("uni_max_len", ps, depth, &uni2->uni_max_len))
-			return False;
-		if(!prs_uint32("undoc      ", ps, depth, &uni2->undoc))
-			return False;
-		if(!prs_uint32("uni_str_len", ps, depth, &uni2->uni_str_len))
-			return False;
-
-		/* oops! XXXX maybe issue a warning that this is happening... */
-		if (uni2->uni_max_len > MAX_UNISTRLEN)
-			uni2->uni_max_len = MAX_UNISTRLEN;
-		if (uni2->uni_str_len > MAX_UNISTRLEN)
-			uni2->uni_str_len = MAX_UNISTRLEN;
-
-		/* buffer advanced by indicated length of string
-		   NOT by searching for null-termination */
-		if(!prs_unistr2(True, "buffer     ", ps, depth, uni2))
-			return False;
-
-	} else {
-
-		prs_debug(ps, depth, desc, "smb_io_unistr2 - NULL");
-		depth++;
-		memset((char *)uni2, '\0', sizeof(*uni2));
-
-	}
-
-	return True;
-}
-
-/******************************************************************
- Stream a unicode string, length/buffer specified separately,
- in uint16 chars. We use DBG_RW_PCVAL, not DBG_RW_PSVAL here
- as the unicode string is already in little-endian format.
- ********************************************************************/
-
-BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
-{
-	char *p = (char *)str->buffer;
-	char *q = prs_mem_get(ps, str->uni_str_len * sizeof(uint16));
-	if (q == NULL)
-		return False;
-
-	/* If we're using big-endian, reverse to get little-endian. */
-	if(ps->bigendian_data)
-		DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, p, str->uni_str_len)
-	else
-		DBG_RW_PCVAL(charmode, name, depth, ps->data_offset, ps->io, q, p, str->uni_str_len * 2)
-	ps->data_offset += (str->uni_str_len * sizeof(uint16));
-
-	return True;
-}
 
 void print_asc(int level, unsigned char *buf,int len)
 {
@@ -358,39 +263,13 @@ void dump_data(int level,char *buf1,int len)
 }
 
 /*******************************************************************
- Stream a uint64_struct
+ Stream a pointer
  ********************************************************************/
-BOOL prs_uint64(char *desc, prs_struct *ps, int depth, UINT64_S *data64)
+BOOL prs_pointer(char *desc, prs_struct *ps, int depth, void **p)
 {
-	prs_debug(ps, depth, desc, "prs_uint64");
-	return prs_uint32("low", ps, depth+1, &data64->low) &&
-		prs_uint32("high", ps, depth+1, &data64->high);
-}
-
-
-
-/*******************************************************************
-reads or writes a BUFFER5 structure.
-the buf_len member tells you how large the buffer is.
-********************************************************************/
-BOOL smb_io_buffer5(char *desc, BUFFER5 *buf5, prs_struct *ps, int depth)
-{
-	prs_debug(ps, depth, desc, "smb_io_buffer5");
-	depth++;
-
-	if (buf5 == NULL) return False;
-
-	prs_align(ps);
-	prs_uint32("buf_len", ps, depth, &(buf5->buf_len));
-
-	/* reading: alloc the buffer first */
-	if ( ps->io )
-	{
-		buf5->buffer=(uint16 *)malloc( sizeof(uint16)*buf5->buf_len );
-	}
-	
-	prs_uint16s(True, "buffer", ps, depth, buf5->buffer, buf5->buf_len);
-
+	uint32 v;
+	if (!prs_uint32(desc, ps, depth, &v)) return False;
+	*p = (void *) (v ? 1 : 0);
 	return True;
 }
 
@@ -406,6 +285,22 @@ BOOL prs_uint16s(BOOL charmode, char *name, prs_struct *ps, int depth, uint16 *d
 
 	DBG_RW_PSVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data16s, len)
 	ps->data_offset += (len * sizeof(uint16));
+
+	return True;
+}
+
+/******************************************************************
+ Stream an array of uint32s. Length is number of uint32s.
+ ********************************************************************/
+
+BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *data32s, int len)
+{
+	char *q = prs_mem_get(ps, len * sizeof(uint32));
+	if (q == NULL)
+		return False;
+
+	DBG_RW_PIVAL(charmode, name, depth, ps->data_offset, ps->io, ps->bigendian_data, q, data32s, len)
+	ps->data_offset += (len * sizeof(uint32));
 
 	return True;
 }
