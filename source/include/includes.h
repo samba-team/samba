@@ -1220,10 +1220,6 @@ int smb_xvasprintf(char **ptr, const char *format, va_list ap) PRINTF_ATTRIBUTE(
 time_t timegm(struct tm *tm);
 #endif
 
-#if defined(VALGRIND)
-#define strlen(x) valgrind_strlen(x)
-#endif
-
 /*
  * Veritas File System.  Often in addition to native.
  * Quotas different.

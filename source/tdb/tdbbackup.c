@@ -303,13 +303,3 @@ static void usage(void)
 
 	return ret;
 }
-
-#ifdef VALGRIND
-size_t valgrind_strlen(const char *s)
-{
-	size_t count;
-	for(count = 0; *s++; count++)
-		;
-	return count;
-}
-#endif
