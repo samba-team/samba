@@ -1259,8 +1259,8 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	usr->logon_count = logon_count;
 	usr->bad_pw_count = bad_pw_count;
 
-	usr->user_id = pdb_get_user_rid(sampw);
-	usr->group_id = pdb_get_group_rid(sampw);
+	usr->user_rid = pdb_get_user_rid(sampw);
+	usr->group_rid = pdb_get_group_rid(sampw);
 	usr->num_groups = num_groups+1;
 	usr->buffer_groups = 1; /* indicates fill in groups, below, even if there are none */
 	usr->user_flgs = user_flgs;
@@ -1299,7 +1299,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	/* primary group **MUST** go first.  NT4's winmsd.exe will give
 	   "The Network statistics are currently not available.  9-5"
 	   What the heck is this?     -- jerry  */
-	usr->gids[0].g_rid = usr->group_id;
+	usr->gids[0].g_rid = usr->group_rid;
 	usr->gids[0].attr  = 0x07;
 	for (i = 0; i < num_groups; i++) 
 		usr->gids[i+1] = gids[i];	
@@ -1372,9 +1372,9 @@ static BOOL net_io_user_info3(char *desc, NET_USER_INFO_3 *usr, prs_struct *ps, 
 	if(!prs_uint16("bad_pw_count  ", ps, depth, &usr->bad_pw_count)) /* bad password count */
 		return False;
 
-	if(!prs_uint32("user_id       ", ps, depth, &usr->user_id))       /* User ID */
+	if(!prs_uint32("user_rid      ", ps, depth, &usr->user_rid))       /* User RID */
 		return False;
-	if(!prs_uint32("group_id      ", ps, depth, &usr->group_id))      /* Group ID */
+	if(!prs_uint32("group_rid     ", ps, depth, &usr->group_rid))      /* Group RID */
 		return False;
 	if(!prs_uint32("num_groups    ", ps, depth, &usr->num_groups))    /* num groups */
 		return False;
