@@ -352,23 +352,43 @@ char *talloc_strdup(TALLOC_CTX *t, const char *p)
  * Return a human-readable description of all talloc memory usage.
  * The result is allocated from @p t.
  **/
-char *talloc_describe_all(TALLOC_CTX *t)
+char *talloc_describe_all(TALLOC_CTX *rt)
 {
-	int n_pools = 0;
-	size_t total = 0;
-	TALLOC_CTX *titer;
+	int n_pools = 0, total_chunks = 0;
+	size_t total_bytes = 0;
+	TALLOC_CTX *it;
 	char *s;
 
-	s = talloc_asprintf(t, "global talloc allocations in pid%u:\n",
+	s = talloc_asprintf(rt, "global talloc allocations in pid%u:\n",
 			    (unsigned) getpid());
-	s = talloc_asprintf_append(t, s, "name\n----\n");
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "name", "chunks", "bytes");
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "----------------------------------------",
+				   "--------",
+				   "--------");	
 	
-	for (titer = list_head; titer; titer = titer->next_ctx) {
+	for (it = list_head; it; it = it->next_ctx) {
+		size_t bytes;
+		int n_chunks;
 		n_pools++;
-		s = talloc_asprintf_append(t, s, "\"%s\"\n", titer->name);
+		talloc_get_allocation(it, &bytes, &n_chunks);
+		s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
+					   it->name,
+					   (unsigned) n_chunks,
+					   (unsigned) bytes);
+		total_bytes += bytes;
+		total_chunks += n_chunks;
 	}
 
-	s = talloc_asprintf_append(t, s, "-----\nTotal %d pools\n", n_pools);				   
+	s = talloc_asprintf_append(rt, s, "%-40s %8s %8s\n",
+				   "----------------------------------------",
+				   "--------",
+				   "--------");	
+
+	s = talloc_asprintf_append(rt, s, "%-40s %8u %8u\n",
+				   "TOTAL",
+				   (unsigned) total_chunks, (unsigned) total_bytes);
 
 	return s;
 }
@@ -379,7 +399,20 @@ char *talloc_describe_all(TALLOC_CTX *t)
  * Return an estimated memory usage for the specified pool.  This does
  * not include memory used by the underlying malloc implementation.
  **/
+void talloc_get_allocation(TALLOC_CTX *t,
+			   size_t *total_bytes,
+			   int *n_chunks)
+{
+	struct talloc_chunk *chunk;
 
+	*total_bytes = 0;
+	*n_chunks = 0;
+
+	for (chunk = t->list; chunk; chunk = chunk->next) {
+		n_chunks[0]++;
+		*total_bytes += chunk->size;
+	}
+}
 
 
 /** @} */
