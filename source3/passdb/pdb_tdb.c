@@ -502,7 +502,9 @@ BOOL pdb_getsampwnam (SAM_ACCOUNT *user, char *sname)
 		return False;
 	}
 
-	fstrcpy (name, sname);
+	/* Data is stored in all lower-case */
+	unix_strlower(sname, -1, name, sizeof(name));
+
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
 	
@@ -648,8 +650,7 @@ BOOL pdb_delete_sam_account(char *sname)
 	uint32		rid;
 	fstring		name;
 	
-	fstrcpy (name, sname);
-	strlower (name);
+	unix_strlower(sname, -1, name, sizeof(name));
 	
 	get_private_directory(tdbfile);
 	pstrcat (tdbfile, PASSDB_FILE_NAME);
@@ -756,8 +757,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 	data.dptr = buf;
 
-	fstrcpy (name, pdb_get_username(newpwd));
-	strlower (name);
+	unix_strlower(pdb_get_username(newpwd), -1, name, sizeof(name));
 	
   	/* setup the USER index key */
 	slprintf(keystr, sizeof(keystr)-1, "%s%s", USERPREFIX, name);
@@ -771,11 +771,13 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 	}
 
  	/* open the account TDB passwd*/
-  	if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600))) {
+	pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR, 0600);
+  	if (!pwd_tdb) {
 		DEBUG(0, ("tdb_update_sam: Unable to open TDB passwd!\n"));
 		if (flag == TDB_INSERT) {
 			DEBUG(0, ("Unable to open TDB passwd, trying create new!\n"));
-			if (!(pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600))) {
+			pwd_tdb = tdb_open_log(tdbfile, 0, TDB_DEFAULT, O_RDWR | O_CREAT | O_EXCL, 0600);
+			if (!pwd_tdb) {
 				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
 				ret = False;
 				goto done;
