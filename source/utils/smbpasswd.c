@@ -184,6 +184,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	fstring dest_host, acct_name;
 	struct in_addr dest_ip;
 	TALLOC_CTX *mem_ctx;
+        uint32 acb_info;
 
 	/* rpc variables */
 
@@ -283,11 +284,14 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 
 	strlower(acct_name);
 
+        acb_info = (lp_server_role() == ROLE_DOMAIN_BDC) ? ACB_SVRTRUST :
+                ACB_WSTRUST;
+
 	{
 		uint32 unknown = 0xe005000b;
 
 		result = cli_samr_create_dom_user(&cli, mem_ctx, &domain_pol,
-						  acct_name, ACB_WSTRUST,
+						  acct_name, acb_info,
 						  unknown, &user_pol, 
 						  &user_rid);
 
@@ -389,7 +393,7 @@ static int join_domain_byuser(char *domain, char *remote_machine,
 	ctr.switch_value = 0x10;
 	ctr.info.id10 = &p10;
 
-	init_sam_user_info10(&p10, ACB_WSTRUST);
+	init_sam_user_info10(&p10, acb_info);
 
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
