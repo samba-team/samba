@@ -745,24 +745,21 @@ uninstallreg:
 
 # Swig extensions
 
-PYTHON_TDB_OBJ = lib/tdb/tdb.o lib/tdb/spinlock.o
-PYTHON_TDB_PICOBJ = \$(PYTHON_TDB_OBJ:.o=.po)
+PYTHON_TDB_OBJ = lib/tdb/common/tdb.o lib/tdb/common/spinlock.o
 
-swig: scripting/swig/python/_tdb.so
+swig: scripting/swig/_tdb.so
 
-swig_clean: 
-	-rm -f scripting/swig/python/_tdb.so scripting/swig/python/tdb.pyc \\
-		scripting/swig/python/tdb.py scripting/swig/python/tdb_wrap.c \\
-		scripting/swig/python/tdb_wrap.po
+swig_clean:
+	-rm -f scripting/swig/_tdb.so scripting/swig/tdb.pyc \\
+		scripting/swig/tdb.py scripting/swig/tdb_wrap.c \\
+		scripting/swig/tdb_wrap.o
 
-scripting/swig/python/tdb.py: scripting/swig/tdb.i
+scripting/swig/tdb.py: scripting/swig/tdb.i
 	swig -python scripting/swig/tdb.i
-	mv scripting/swig/tdb.py scripting/swig/python
-	mv scripting/swig/tdb_wrap.c scripting/swig/python
 
-scripting/swig/python/_tdb.so: scripting/swig/python/tdb.py scripting/swig/python/tdb_wrap.po \$(PYTHON_TDB_PICOBJ)
-	\$(SHLD) \$(LDSHFLAGS) -o scripting/swig/python/_tdb.so scripting/swig/python/tdb_wrap.po \\
-		\$(PYTHON_TDB_PICOBJ)
+scripting/swig/_tdb.so: scripting/swig/tdb.py scripting/swig/tdb_wrap.o \$(PYTHON_TDB_OBJ)
+	\$(SHLD) \$(SHLD_FLAGS) -o scripting/swig/_tdb.so scripting/swig/tdb_wrap.o \\
+		\$(PYTHON_TDB_OBJ)
 
 everything: all
 
