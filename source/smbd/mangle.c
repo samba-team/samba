@@ -995,7 +995,7 @@ BOOL name_map_mangle( char *OutName, BOOL need83, int snum )
 
     /* mangle it into 8.3 */
     tmp = strdup( OutName );
-    mangle_name_83( OutName, strlen(tmp) );
+    mangle_name_83( OutName, strlen(OutName) );
     if( tmp )
       {
       cache_mangled_name( OutName, tmp );  
