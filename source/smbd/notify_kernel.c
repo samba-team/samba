@@ -217,13 +217,14 @@ struct cnotify_fns *kernel_notify_init(void)
 
 	ZERO_STRUCT(act);
 
-        act.sa_handler = NULL;
-        act.sa_sigaction = signal_handler;
-        act.sa_flags = SA_SIGINFO;
-        if (sigaction(RT_SIGNAL_NOTIFY, &act, NULL) != 0) {
+	act.sa_handler = NULL;
+	act.sa_sigaction = signal_handler;
+	act.sa_flags = SA_SIGINFO;
+	sigemptyset( &act.sa_mask );
+	if (sigaction(RT_SIGNAL_NOTIFY, &act, NULL) != 0) {
 		DEBUG(0,("Failed to setup RT_SIGNAL_NOTIFY handler\n"));
 		return NULL;
-        }
+	}
 
 	if (!kernel_notify_available())
 		return NULL;
