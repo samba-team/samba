@@ -128,6 +128,10 @@ void start_async_dns(void)
 	fd_in = fd2[0];
 	fd_out = fd1[1];
 
+	signal(SIGUSR2, SIG_IGN);
+	signal(SIGUSR1, SIG_IGN);
+	signal(SIGHUP, SIG_IGN);
+
 	asyncdns_process();
 }
 
@@ -166,6 +170,11 @@ void run_dns_queue(void)
 
 	if (fd_in == -1)
 		return;
+
+	if (!process_exists(child_pid)) {
+		close(fd_in);
+		start_async_dns();
+	}
 
 	if ((size=read_data(fd_in, (char *)&r, sizeof(r))) != sizeof(r)) {
 		if (size) {
