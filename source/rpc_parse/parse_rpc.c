@@ -221,6 +221,22 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+reads or writes an RPC_HDR_FAULT structure.
+********************************************************************/
+BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth)
+{
+	if (rpc == NULL) return False;
+
+	prs_debug(ps, depth, desc, "smb_io_rpc_hdr_fault");
+	depth++;
+
+	prs_uint32("status  ", ps, depth, &(rpc->status  ));
+	prs_uint32("reserved", ps, depth, &(rpc->reserved));
+
+	return True;
+}
+
+/*******************************************************************
 reads or writes an RPC_IFACE structure.
 ********************************************************************/
 static BOOL smb_io_rpc_iface(char *desc,  RPC_IFACE *ifc, prs_struct *ps, int depth)

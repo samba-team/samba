@@ -74,17 +74,19 @@ typedef struct pipes_struct
 	fstring pipe_srv_name;
 
 	prs_struct rhdr; /* output header */
+	prs_struct rfault; /* fault */
 	prs_struct rdata; /* output data */
 	prs_struct rdata_i; /* output data (intermediate, for fragments) */
 	prs_struct rauth; /* output authentication verifier */
 	prs_struct rverf; /* output verifier */
 	prs_struct rntlm; /* output ntlmssp */
 
-	RPC_HDR     hdr;
-	RPC_HDR_BA  hdr_ba;
-	RPC_HDR_RB  hdr_rb;
-	RPC_HDR_REQ  hdr_req;
-	RPC_HDR_RESP hdr_resp;
+	RPC_HDR       hdr;
+	RPC_HDR_BA    hdr_ba;
+	RPC_HDR_RB    hdr_rb;
+	RPC_HDR_REQ   hdr_req;
+	RPC_HDR_RESP  hdr_resp;
+	RPC_HDR_FAULT hdr_fault;
 	RPC_HDR_AUTH  auth_info;
 	RPC_HDR_AUTHA autha_info;
 

@@ -3127,11 +3127,12 @@ static void api_rpc_trans_reply(char *outbuf,
 	{
 		/* all of data was sent: no need to wait for SMBreadX calls */
 		mem_free_data(p->rhdr .data);
-		mem_free_data(p->rdata.data);
+		mem_free_data(p->rfault .data);
+		mem_free_data(p->rdata  .data);
  		mem_free_data(p->rdata_i.data);		
-		mem_free_data(p->rauth.data);
-		mem_free_data(p->rverf.data);
- 		mem_free_data(p->rntlm.data);		
+		mem_free_data(p->rauth  .data);
+		mem_free_data(p->rverf  .data);
+ 		mem_free_data(p->rntlm  .data);		
 	}
 }
 

@@ -396,6 +396,45 @@ static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 	return api_pipe_ntlmssp(p, pd);
 }
 
+static BOOL api_pipe_fault_resp(pipes_struct *p, prs_struct *pd, uint32 status)
+{
+	DEBUG(5,("api_pipe_fault_resp: make response\n"));
+
+	prs_init(&(p->rhdr     ), 0x18, 4, 0, False);
+	prs_init(&(p->rfault   ), 0x8 , 4, 0, False);
+
+	/***/
+	/*** set up the header, response header and fault status ***/
+	/***/
+
+	p->hdr_fault.status   = status;
+	p->hdr_fault.reserved = 0x0;
+
+	p->hdr_resp.alloc_hint   = 0x0;
+	p->hdr_resp.cancel_count = 0x0;
+	p->hdr_resp.reserved     = 0x0;
+
+	make_rpc_hdr(&p->hdr, RPC_FAULT, RPC_FLG_NOCALL | RPC_FLG_FIRST | RPC_FLG_LAST,
+	             p->hdr.call_id,
+	             0x20,
+	             0);
+
+	smb_io_rpc_hdr      ("hdr"  , &(p->hdr      ), &(p->rhdr), 0);
+	smb_io_rpc_hdr_resp ("resp" , &(p->hdr_resp ), &(p->rhdr), 0);
+	smb_io_rpc_hdr_fault("fault", &(p->hdr_fault), &(p->rfault), 0);
+	mem_realloc_data(p->rhdr.data, p->rhdr.offset);
+	mem_realloc_data(p->rfault.data, p->rfault.offset);
+
+	/***/
+	/*** link rpc header and fault together ***/
+	/***/
+
+	prs_link(NULL    , &p->rhdr  , &p->rfault);
+	prs_link(&p->rhdr, &p->rfault, NULL      );
+
+	return True;
+}
+
 static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_PKT_TYPE pkt_type)
 {
 	uint16 assoc_gid;
@@ -669,6 +708,8 @@ static BOOL api_pipe_request(pipes_struct *p, prs_struct *pd)
 BOOL rpc_command(pipes_struct *p, prs_struct *pd)
 {
 	BOOL reply = False;
+	DEBUG(10,("rpc_command\n"));
+
 	if (pd->data == NULL) return False;
 
 	/* process the rpc header */
@@ -715,7 +756,7 @@ BOOL rpc_command(pipes_struct *p, prs_struct *pd)
 
 	if (!reply)
 	{
-		DEBUG(3,("rpc_command: DCE/RPC fault should be sent here\n"));
+		reply = api_pipe_fault_resp(p, pd, 0x1c010002);
 	}
 
 	return reply;

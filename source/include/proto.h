@@ -480,6 +480,9 @@ int set_maxfiles(int requested_max);
 void reg_get_subkey(char *full_keyname, char *key_name, char *subkey_name);
 BOOL reg_split_key(const char *full_keyname, uint32 *reg_type, char *key_name);
 BOOL become_user_permanently(uid_t uid, gid_t gid);
+
+/*The following definitions come from  lib/util_array.c  */
+
 void free_void_array(uint32 num_entries, void **entries,
 		void(free_item)(void*));
 void* add_item_to_array(uint32 *len, void ***array, const void *item,
@@ -2511,6 +2514,7 @@ BOOL reg_io_r_shutdown(char *desc,  REG_R_SHUTDOWN *r_q, prs_struct *ps, int dep
 BOOL make_rpc_hdr(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type, uint8 flags,
 				uint32 call_id, int data_len, int auth_len);
 BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth);
+BOOL smb_io_rpc_hdr_fault(char *desc,  RPC_HDR_FAULT *rpc, prs_struct *ps, int depth);
 BOOL make_rpc_hdr_rb(RPC_HDR_RB *rpc, 
 				uint16 max_tsize, uint16 max_rsize, uint32 assoc_gid,
 				uint32 num_elements, uint16 context_id, uint8 num_syntaxes,
@@ -3912,6 +3916,7 @@ BOOL domain_client_validate( char *user, char *domain,
 
 int reply_open_pipe_and_X(connection_struct *conn,
 			  char *inbuf,char *outbuf,int length,int bufsize);
+int reply_pipe_write(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_write_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_read_and_X(char *inbuf,char *outbuf,int length,int bufsize);
 int reply_pipe_close(connection_struct *conn, char *inbuf,char *outbuf);
