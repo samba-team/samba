@@ -749,14 +749,22 @@ int vfswrap_sys_acl_free_qualifier(vfs_handle_struct *handle, connection_struct 
 	return sys_acl_free_qualifier(qualifier, tagtype);
 }
 
-int vfswrap_get_quota(vfs_handle_struct *handle, connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+int vfswrap_get_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
 {
-	errno = ENOSYS;
-	return -1;	
+	int result;
+
+	START_PROFILE(syscall_get_quota);
+	result = sys_get_quota(conn->connectpath, qtype, id, qt);
+	END_PROFILE(syscall_get_quota);
+	return result;	
 }
 
-int vfswrap_set_quota(vfs_handle_struct *handle, connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
+int vfswrap_set_quota(struct vfs_handle_struct *handle, struct connection_struct *conn, enum SMB_QUOTA_TYPE qtype, unid_t id, SMB_DISK_QUOTA *qt)
 {
-	errno = ENOSYS;
-	return -1;
+	int result;
+
+	START_PROFILE(syscall_set_quota);
+	result = sys_set_quota(conn->connectpath, qtype, id, qt);
+	END_PROFILE(syscall_set_quota);
+	return result;	
 }

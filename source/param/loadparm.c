@@ -108,6 +108,8 @@ typedef struct
 	char *szRootdir;
 	char *szDefaultService;
 	char *szDfree;
+	char *szGetQuota;
+	char *szSetQuota;
 	char *szMsgCommand;
 	char *szHostsEquiv;
 	char *szServerString;
@@ -1060,6 +1062,8 @@ static struct parm_struct parm_table[] = {
 	{"default", P_STRING, P_GLOBAL, &Globals.szDefaultService, NULL, NULL,  FLAG_DEVELOPER},
 	{"message command", P_STRING, P_GLOBAL, &Globals.szMsgCommand, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"dfree command", P_STRING, P_GLOBAL, &Globals.szDfree, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"get quota command", P_STRING, P_GLOBAL, &Globals.szGetQuota, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
+	{"set quota command", P_STRING, P_GLOBAL, &Globals.szSetQuota, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"remote announce", P_STRING, P_GLOBAL, &Globals.szRemoteAnnounce, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"remote browse sync", P_STRING, P_GLOBAL, &Globals.szRemoteBrowseSync, NULL, NULL, FLAG_ADVANCED | FLAG_DEVELOPER},
 	{"socket address", P_STRING, P_GLOBAL, &Globals.szSocketAddress, NULL, NULL, FLAG_DEVELOPER},
@@ -1582,6 +1586,8 @@ FN_GLOBAL_STRING(lp_source_environment, &Globals.szSourceEnv)
 FN_GLOBAL_STRING(lp_defaultservice, &Globals.szDefaultService)
 FN_GLOBAL_STRING(lp_msg_command, &Globals.szMsgCommand)
 FN_GLOBAL_STRING(lp_dfree_command, &Globals.szDfree)
+FN_GLOBAL_STRING(lp_get_quota_command, &Globals.szGetQuota)
+FN_GLOBAL_STRING(lp_set_quota_command, &Globals.szSetQuota)
 FN_GLOBAL_STRING(lp_hosts_equiv, &Globals.szHostsEquiv)
 FN_GLOBAL_STRING(lp_auto_services, &Globals.szAutoServices)
 FN_GLOBAL_STRING(lp_passwd_program, &Globals.szPasswdProgram)

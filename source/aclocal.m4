@@ -678,3 +678,29 @@ dnl AC_DISABLE_STATIC - set the default static flag to --disable-static
 AC_DEFUN([AC_DISABLE_STATIC],
 [AC_BEFORE([$0],[AC_LIBTOOL_SETUP])dnl
 AC_ENABLE_STATIC(no)])
+
+dnl AC_TRY_RUN_STRICT(PROGRAM,CFLAGS,CPPFLAGS,LDFLAGS,
+dnl		[ACTION-IF-TRUE],[ACTION-IF-FALSE],
+dnl		[ACTION-IF-CROSS-COMPILING = RUNTIME-ERROR])
+AC_DEFUN( [AC_TRY_RUN_STRICT],
+[
+	old_CFLAGS="$CFLAGS";
+	CFLAGS="$2";
+	export CFLAGS;
+	old_CPPFLAGS="$CPPFLAGS";
+	CPPFLAGS="$3";
+	export CPPFLAGS;
+	old_LDFLAGS="$LDFLAGS";
+	LDFLAGS="$4";
+	export LDFLAGS;
+	AC_TRY_RUN([$1],[$5],[$6],[$7]);
+	CFLAGS="$old_CFLAGS";
+	old_CFLAGS="";
+	export CFLAGS;
+	CPPFLAGS="$old_CPPFLAGS";
+	old_CPPFLAGS="";
+	export CPPFLAGS;
+	LDFLAGS="$old_LDFLAGS";
+	old_LDFLAGS="";
+	export LDFLAGS;
+])

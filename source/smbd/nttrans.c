@@ -1,7 +1,8 @@
 /*
    Unix SMB/CIFS implementation.
    SMB NT transaction handling
-   Copyright (C) Jeremy Allison 1994-1998
+   Copyright (C) Jeremy Allison			1994-1998
+   Copyright (C) Stefan (metze) Metzmacher	2003
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -26,6 +27,7 @@ extern int global_oplock_break;
 extern BOOL case_sensitive;
 extern BOOL case_preserve;
 extern BOOL short_case_preserve;
+extern struct current_user current_user;
 
 static const char *known_nt_pipes[] = {
 	"\\LANMAN",
@@ -52,6 +54,24 @@ struct generic_mapping file_generic_mapping = {
 	FILE_GENERIC_EXECUTE,
 	FILE_GENERIC_ALL
 };
+
+char *nttrans_realloc(char **ptr, size_t size)
+{
+	char *tptr = NULL;
+	if (ptr==NULL)
+		smb_panic("nttrans_realloc() called with NULL ptr\n");
+		
+	tptr = Realloc_zero(*ptr, size);
+	if(tptr == NULL) {
+		*ptr = NULL;
+		return NULL;
+	}
+
+	*ptr = tptr;
+
+	return tptr;
+}
+
 
 /****************************************************************************
  Send the required number of replies back.
@@ -542,6 +562,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 {  
 	int result;
 	pstring fname;
+	enum FAKE_FILE_TYPE fake_file_type = 0;
 	uint32 flags = IVAL(inbuf,smb_ntcreate_Flags);
 	uint32 desired_access = IVAL(inbuf,smb_ntcreate_DesiredAccess);
 	uint32 file_attributes = IVAL(inbuf,smb_ntcreate_FileAttributes);
@@ -669,8 +690,21 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 */
 
 		if( strchr_m(fname, ':')) {
-			END_PROFILE(SMBntcreateX);
-			return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			
+			if ((fake_file_type=is_fake_file(fname))!=0) {
+				/*
+				 * here we go! support for changing the disk quotas --metze
+				 *
+				 * we need to fake up to open this MAGIC QUOTA file 
+				 * and return a valid FID
+				 *
+				 * w2k close this file directly after openening
+				 * xp also tries a QUERY_FILE_INFO on the file and then close it
+				 */
+			} else {
+				END_PROFILE(SMBntcreateX);
+				return ERROR_NT(NT_STATUS_OBJECT_PATH_NOT_FOUND);
+			}
 		}
 	}
 	
@@ -746,12 +780,21 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 		 * before issuing an oplock break request to
 		 * our client. JRA.  */
 
-		fsp = open_file_shared1(conn,fname,&sbuf,
+		if (fake_file_type==0) {
+			fsp = open_file_shared1(conn,fname,&sbuf,
 					desired_access,
 					smb_open_mode,
 					smb_ofun,unixmode, oplock_request,
 					&rmode,&smb_action);
-
+		} else {
+			/* to open a fake_file --metze */
+			fsp = open_fake_file_shared1(fake_file_type,conn,fname,&sbuf,
+					desired_access,
+					smb_open_mode,
+					smb_ofun,unixmode, oplock_request,
+					&rmode,&smb_action);
+		}
+		
 		if (!fsp) { 
 			/* We cheat here. There are two cases we
 			 * care about. One is a directory rename,
@@ -944,13 +987,9 @@ static int do_nt_transact_create_pipe( connection_struct *conn,
 		return ret;
 	
 	/* Realloc the size of parameters and data we will return */
-	params = Realloc(*ppparams, 69);
+	params = nttrans_realloc(ppparams, 69);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
-	
-	*ppparams = params;
-	
-	memset((char *)params,'\0',69);
 	
 	p = params;
 	SCVAL(p,0,NO_OPLOCK_RETURN);
@@ -1331,13 +1370,9 @@ static int call_nt_transact_create(connection_struct *conn,
 	}
 
 	/* Realloc the size of parameters and data we will return */
-	params = Realloc(*ppparams, 69);
+	params = nttrans_realloc(ppparams, 69);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
-
-	*ppparams = params;
-
-	memset((char *)params,'\0',69);
 
 	p = params;
 	if (extended_oplock_granted)
@@ -1543,11 +1578,9 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
 	DEBUG(3,("call_nt_transact_query_security_desc: file = %s\n", fsp->fsp_name ));
 
-	params = Realloc(*ppparams, 4);
+	params = nttrans_realloc(ppparams, 4);
 	if(params == NULL)
 		return ERROR_DOS(ERRDOS,ERRnomem);
-
-	*ppparams = params;
 
 	if ((mem_ctx = talloc_init("call_nt_transact_query_security_desc")) == NULL) {
 		DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
@@ -1584,15 +1617,11 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 	 * Allocate the data we will point this at.
 	 */
 
-	data = Realloc(*ppdata, sd_size);
+	data = nttrans_realloc(ppdata, sd_size);
 	if(data == NULL) {
 		talloc_destroy(mem_ctx);
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}
-
-	*ppdata = data;
-
-	memset(data, '\0', sd_size);
 
 	/*
 	 * Init the parse struct we will marshall into.
@@ -1686,6 +1715,7 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 {
 	unsigned fnum, control;
 	static BOOL logged_message;
+	char *pdata = *ppdata;
 
 	if (setup_count != 8) {
 		DEBUG(3,("call_nt_transact_ioctl: invalid setup count %d\n", setup_count));
@@ -1695,28 +1725,479 @@ static int call_nt_transact_ioctl(connection_struct *conn,
 	fnum = SVAL(*ppsetup, 4);
 	control = IVAL(*ppsetup, 0);
 
-	DEBUG(6,("call_nt_transact_ioctl: fnum=%d control=0x%x\n", 
+	DEBUG(10,("call_nt_transact_ioctl: fnum=%d control=0x%08x\n", 
 		 fnum, control));
 
 	switch (control) {
-	case NTIOCTL_SET_SPARSE:
+	case FSCTL_SET_SPARSE:
 		/* pretend this succeeded - tho strictly we should
 		   mark the file sparse (if the local fs supports it)
 		   so we can know if we need to pre-allocate or not */
+
+		DEBUG(10,("FSCTL_SET_SPARSE: fnum=%d control=0x%08x\n",fnum,control));
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return -1;
+	
+	case FSCTL_0x000900C0:
+		/* pretend this succeeded - don't know what this really is
+		   but works ok like this --metze
+		 */
+
+		DEBUG(1,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
 		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
 		return -1;
 
+	case FSCTL_GET_REPARSE_POINT:
+		/* pretend this fail - my winXP does it like this
+		 * --metze
+		 */
+
+		DEBUG(1,("FSCTL_GET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
+		return -1;
+
+	case FSCTL_SET_REPARSE_POINT:
+		/* pretend this fail - I'm assuming this because of the FSCTL_GET_REPARSE_POINT case.
+		 * --metze
+		 */
+
+		DEBUG(1,("FSCTL_SET_REPARSE_POINT: fnum=%d control=0x%08x\n",fnum,control));
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_NOT_A_REPARSE_POINT, NULL, 0, NULL, 0);
+		return -1;
+			
+	case FSCTL_FIND_FILES_BY_SID: /* I hope this name is right */
+	{
+		/* pretend this succeeded - 
+		 * 
+		 * we have to send back a list with all files owned by this SID
+		 *
+		 * but I have to check that --metze
+		 */ 
+		   
+		DOM_SID sid;
+		uid_t uid;
+		enum SID_NAME_USE sid_use = 0;
+		size_t sid_len=SID_MAX_SIZE;
+		
+		DEBUG(1,("FSCTL_FIND_FILES_BY_SID: fnum=%d control=0x%08x\n",fnum,control));
+		
+		/* this is not the length of the sid :-( so unknown 4 bytes */
+		/*sid_len = IVAL(pdata,0);	
+		DEBUGADD(0,("sid_len: (%u)\n",sid_len));*/
+		
+		sid_parse(pdata+4,sid_len,&sid);
+		DEBUGADD(2,("SID: %s\n",sid_string_static(&sid)));
+
+		if (!sid_to_uid(&sid, &uid, &sid_use)
+			||sid_use!=SID_NAME_USER) {
+			DEBUG(0,("sid_to_uid: failed, sid[%s] sid_use: %d\n",
+				sid_string_static(&sid),sid_use));
+			uid = (-1);
+		}
+		
+		/* we can take a look at the find source :-)
+		 *
+		 * find ./ -uid $uid  -name '*'   is what we need here
+		 *
+		 *
+		 * and send 4bytes len and then NULL terminated unicode strings
+		 * for each file
+		 *
+		 * but I don't know how to deal with the paged results
+		 *
+		 * we don't send all files at once
+		 * and at the next we should *not* start from the beginning, 
+		 * so we have to cache the result 
+		 *
+		 * --metze
+		 */
+		
+		/* this works for now... */
+		send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, NULL, 0, NULL, 0);
+		return -1;	
+	}	
 	default:
 		if (!logged_message) {
 			logged_message = True; /* Only print this once... */
-			DEBUG(3,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
+			DEBUG(0,("call_nt_transact_ioctl(0x%x): Currently not implemented.\n",
 				 control));
 		}
 	}
 
 	return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
 }
-   
+
+
+/****************************************************************************
+ Reply to get user quota 
+****************************************************************************/
+
+static int call_nt_transact_get_user_quota(connection_struct *conn,
+						char *inbuf, char *outbuf, 
+						int length, int bufsize, 
+						char **ppsetup, int setup_count,
+						char **ppparams, int params_count,
+						char **ppdata, int data_count)
+{
+	NTSTATUS nt_status = NT_STATUS_OK;
+	uint32 max_data_count = IVAL(inbuf,smb_nt_MaxDataCount);
+	char *params = *ppparams;
+	char *pdata = *ppdata;
+	char *entry;
+	int data_len=0,param_len=0;
+	int qt_len=0;
+	int entry_len = 0;
+	files_struct *fsp = NULL;
+	uint16 level = 0;
+	size_t sid_len;
+	DOM_SID sid;
+	BOOL start_enum = True;
+	SMB_NTQUOTA_STRUCT qt;
+	SMB_NTQUOTA_LIST *tmp_list;
+	SMB_NTQUOTA_HANDLE *qt_handle = NULL;
+
+	ZERO_STRUCT(qt);
+
+	/* access check */
+	if (conn->admin_user != True) {
+		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
+			lp_servicename(SNUM(conn)),conn->user));
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
+	}
+
+	/*
+	 * Ensure minimum number of parameters sent.
+	 */
+
+	if (params_count < 4) {
+		DEBUG(0,("TRANSACT_GET_USER_QUOTA: requires %d >= 4 bytes parameters\n",params_count));
+		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	}
+	
+	/* maybe we can check the quota_fnum */
+	fsp = file_fsp(params,0);
+	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	}
+
+	/* the NULL pointer cheking for fsp->fake_file_handle->pd
+	 * is done by CHECK_NTQUOTA_HANDLE_OK()
+	 */
+	qt_handle = (SMB_NTQUOTA_HANDLE *)fsp->fake_file_handle->pd;
+
+	level = SVAL(params,2);
+	
+	/* unknown 12 bytes leading in params */ 
+	
+	switch (level) {
+		case TRANSACT_GET_USER_QUOTA_LIST_CONTINUE:
+			/* seems that we should continue with the enum here --metze */
+
+			if (qt_handle->quota_list!=NULL && 
+			    qt_handle->tmp_list==NULL) {
+		
+				/* free the list */
+				free_ntquota_list(&(qt_handle->quota_list));
+
+				/* Realloc the size of parameters and data we will return */
+				param_len = 4;
+				params = nttrans_realloc(ppparams, param_len);
+				if(params == NULL)
+					return ERROR_DOS(ERRDOS,ERRnomem);
+
+				data_len = 0;
+				SIVAL(params,0,data_len);
+
+				break;
+			}
+
+			start_enum = False;
+
+		case TRANSACT_GET_USER_QUOTA_LIST_START:
+
+			if (qt_handle->quota_list==NULL &&
+				qt_handle->tmp_list==NULL) {
+				start_enum = True;
+			}
+
+			if (start_enum && vfs_get_user_ntquota_list(fsp,&(qt_handle->quota_list))!=0)
+				return ERROR_DOS(ERRSRV,ERRerror);
+
+			/* Realloc the size of parameters and data we will return */
+			param_len = 4;
+			params = nttrans_realloc(ppparams, param_len);
+			if(params == NULL)
+				return ERROR_DOS(ERRDOS,ERRnomem);
+
+			/* we should not trust the value in max_data_count*/
+			max_data_count = MIN(max_data_count,2048);
+			
+			pdata = nttrans_realloc(ppdata, max_data_count);/* should be max data count from client*/
+			if(pdata == NULL)
+				return ERROR_DOS(ERRDOS,ERRnomem);
+
+			entry = pdata;
+
+
+			/* set params Size of returned Quota Data 4 bytes*/
+			/* but set it later when we know it */
+		
+			/* for each entry push the data */
+
+			if (start_enum) {
+				qt_handle->tmp_list = qt_handle->quota_list;
+			}
+
+			tmp_list = qt_handle->tmp_list;
+
+			for (;((tmp_list!=NULL)&&((qt_len +40+SID_MAX_SIZE)<max_data_count));
+				tmp_list=tmp_list->next,entry+=entry_len,qt_len+=entry_len) {
+
+				sid_len = sid_size(&tmp_list->quotas->sid);
+				entry_len = 40 + sid_len;
+
+				/* nextoffset entry 4 bytes */
+				SIVAL(entry,0,entry_len);
+		
+				/* then the len of the SID 4 bytes */
+				SIVAL(entry,4,sid_len);
+				
+				/* unknown data 8 bytes SMB_BIG_UINT */
+				SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-metze*/
+				
+				/* the used disk space 8 bytes SMB_BIG_UINT */
+				SBIG_UINT(entry,16,tmp_list->quotas->usedspace);
+				
+				/* the soft quotas 8 bytes SMB_BIG_UINT */
+				SBIG_UINT(entry,24,tmp_list->quotas->softlim);
+				
+				/* the hard quotas 8 bytes SMB_BIG_UINT */
+				SBIG_UINT(entry,32,tmp_list->quotas->hardlim);
+				
+				/* and now the SID */
+				sid_linearize(entry+40, sid_len, &tmp_list->quotas->sid);
+			}
+			
+			qt_handle->tmp_list = tmp_list;
+			
+			/* overwrite the offset of the last entry */
+			SIVAL(entry-entry_len,0,0);
+
+			data_len = 4+qt_len;
+			/* overwrite the params quota_data_len */
+			SIVAL(params,0,data_len);
+
+			break;
+
+		case TRANSACT_GET_USER_QUOTA_FOR_SID:
+			
+			/* unknown 4 bytes IVAL(pdata,0) */	
+			
+			if (data_count < 8) {
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8));
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
+			}
+
+			sid_len = IVAL(pdata,4);
+
+			if (data_count < 8+sid_len) {
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: requires %d >= %d bytes data\n",data_count,8+sid_len));
+				return ERROR_DOS(ERRDOS,ERRunknownlevel);				
+			}
+
+			data_len = 4+40+sid_len;
+
+			if (max_data_count < data_len) {
+				DEBUG(0,("TRANSACT_GET_USER_QUOTA_FOR_SID: max_data_count(%d) < data_len(%d)\n",
+					max_data_count, data_len));
+				param_len = 4;
+				SIVAL(params,0,data_len);
+				data_len = 0;
+				nt_status = NT_STATUS_BUFFER_TOO_SMALL;
+				break;
+			}
+
+			sid_parse(pdata+8,sid_len,&sid);
+		
+
+			if (vfs_get_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
+				ZERO_STRUCT(qt);
+				/* 
+				 * we have to return zero's in all fields 
+				 * instead of returning an error here
+				 * --metze
+				 */
+			}
+
+			/* Realloc the size of parameters and data we will return */
+			param_len = 4;
+			params = nttrans_realloc(ppparams, param_len);
+			if(params == NULL)
+				return ERROR_DOS(ERRDOS,ERRnomem);
+
+			pdata = nttrans_realloc(ppdata, data_len);
+			if(pdata == NULL)
+				return ERROR_DOS(ERRDOS,ERRnomem);
+
+			entry = pdata;
+
+			/* set params Size of returned Quota Data 4 bytes*/
+			SIVAL(params,0,data_len);
+	
+			/* nextoffset entry 4 bytes */
+			SIVAL(entry,0,0);
+	
+			/* then the len of the SID 4 bytes */
+			SIVAL(entry,4,sid_len);
+			
+			/* unknown data 8 bytes SMB_BIG_UINT */
+			SBIG_UINT(entry,8,(SMB_BIG_UINT)0); /* this is not 0 in windows...-mezte*/
+			
+			/* the used disk space 8 bytes SMB_BIG_UINT */
+			SBIG_UINT(entry,16,qt.usedspace);
+			
+			/* the soft quotas 8 bytes SMB_BIG_UINT */
+			SBIG_UINT(entry,24,qt.softlim);
+			
+			/* the hard quotas 8 bytes SMB_BIG_UINT */
+			SBIG_UINT(entry,32,qt.hardlim);
+			
+			/* and now the SID */
+			sid_linearize(entry+40, sid_len, &sid);
+
+			break;
+
+		default:
+			DEBUG(0,("do_nt_transact_get_user_quota: fnum %d unknown level 0x%04hX\n",fsp->fnum,level));
+			return ERROR_DOS(ERRSRV,ERRerror);
+			break;
+	}
+
+	send_nt_replies(inbuf, outbuf, bufsize, nt_status, params, param_len, pdata, data_len);
+
+	return -1;
+}
+
+/****************************************************************************
+ Reply to set user quota
+****************************************************************************/
+
+static int call_nt_transact_set_user_quota(connection_struct *conn,
+						char *inbuf, char *outbuf, 
+						int length, int bufsize, 
+						char **ppsetup, int setup_count,
+						char **ppparams, int params_count,
+						char **ppdata, int data_count)
+{
+	char *params = *ppparams;
+	char *pdata = *ppdata;
+	int data_len=0,param_len=0;
+	SMB_NTQUOTA_STRUCT qt;
+	size_t sid_len;
+	DOM_SID sid;
+	files_struct *fsp = NULL;
+
+	ZERO_STRUCT(qt);
+
+	/* access check */
+	if (conn->admin_user != True) {
+		DEBUG(1,("set_user_quota: access_denied service [%s] user [%s]\n",
+			lp_servicename(SNUM(conn)),conn->user));
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
+	}
+
+	/*
+	 * Ensure minimum number of parameters sent.
+	 */
+
+	if (params_count < 2) {
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= 2 bytes parameters\n",params_count));
+		return ERROR_DOS(ERRDOS,ERRinvalidparam);
+	}
+	
+	/* maybe we can check the quota_fnum */
+	fsp = file_fsp(params,0);
+	if (!CHECK_NTQUOTA_HANDLE_OK(fsp,conn)) {
+		DEBUG(3,("TRANSACT_GET_USER_QUOTA: no valid QUOTA HANDLE\n"));
+		return ERROR_NT(NT_STATUS_INVALID_HANDLE);
+	}
+
+	if (data_count < 40) {
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40));
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
+	}
+
+	/* offset to next quota record.
+	 * 4 bytes IVAL(pdata,0)
+	 * unused here...
+	 */
+
+	/* sid len */
+	sid_len = IVAL(pdata,4);
+
+	if (data_count < 40+sid_len) {
+		DEBUG(0,("TRANSACT_SET_USER_QUOTA: requires %d >= %d bytes data\n",data_count,40+sid_len));
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);		
+	}
+
+	/* unknown 8 bytes in pdata 
+	 * maybe its the change time in NTTIME
+	 */
+
+	/* the used space 8 bytes (SMB_BIG_UINT)*/
+	qt.usedspace = (SMB_BIG_UINT)IVAL(pdata,16);
+#ifdef LARGE_SMB_OFF_T
+	qt.usedspace |= (((SMB_BIG_UINT)IVAL(pdata,20)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if ((IVAL(pdata,20) != 0)&&
+		((qt.usedspace != 0xFFFFFFFF)||
+		(IVAL(pdata,20)!=0xFFFFFFFF)))) {
+		/* more than 32 bits? */
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
+#endif /* LARGE_SMB_OFF_T */
+
+	/* the soft quotas 8 bytes (SMB_BIG_UINT)*/
+	qt.softlim = (SMB_BIG_UINT)IVAL(pdata,24);
+#ifdef LARGE_SMB_OFF_T
+	qt.softlim |= (((SMB_BIG_UINT)IVAL(pdata,28)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if ((IVAL(pdata,28) != 0)&&
+		((qt.softlim != 0xFFFFFFFF)||
+		(IVAL(pdata,28)!=0xFFFFFFFF)))) {
+		/* more than 32 bits? */
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
+#endif /* LARGE_SMB_OFF_T */
+
+	/* the hard quotas 8 bytes (SMB_BIG_UINT)*/
+	qt.hardlim = (SMB_BIG_UINT)IVAL(pdata,32);
+#ifdef LARGE_SMB_OFF_T
+	qt.hardlim |= (((SMB_BIG_UINT)IVAL(pdata,36)) << 32);
+#else /* LARGE_SMB_OFF_T */
+	if ((IVAL(pdata,36) != 0)&&
+		((qt.hardlim != 0xFFFFFFFF)||
+		(IVAL(pdata,36)!=0xFFFFFFFF)))) {
+		/* more than 32 bits? */
+		return ERROR_DOS(ERRDOS,ERRunknownlevel);
+	}
+#endif /* LARGE_SMB_OFF_T */
+	
+	sid_parse(pdata+40,sid_len,&sid);
+	DEBUGADD(8,("SID: %s\n",sid_string_static(&sid)));
+
+	/* 44 unknown bytes left... */
+
+	if (vfs_set_ntquota(fsp, SMB_USER_QUOTA_TYPE, &sid, &qt)!=0) {
+		return ERROR_DOS(ERRSRV,ERRerror);	
+	}
+
+	send_nt_replies(inbuf, outbuf, bufsize, NT_STATUS_OK, params, param_len, pdata, data_len);
+
+	return -1;
+}
+
 /****************************************************************************
  Reply to a SMBNTtrans.
 ****************************************************************************/
@@ -1960,6 +2441,24 @@ due to being in oplock break state.\n", (unsigned int)function_code ));
 					&setup, &params, &data);
 			END_PROFILE_NESTED(NT_transact_query_security_desc);
 			break;
+		case NT_TRANSACT_GET_USER_QUOTA:
+			START_PROFILE_NESTED(NT_transact_get_user_quota);
+			outsize = call_nt_transact_get_user_quota(conn, inbuf, outbuf, 
+						length, bufsize,
+						&setup, setup_count,
+						&params, parameter_count, 
+						&data, data_count);
+			END_PROFILE_NESTED(NT_transact_get_user_quota);
+			break;
+		case NT_TRANSACT_SET_USER_QUOTA:
+			START_PROFILE_NESTED(NT_transact_set_user_quota);
+			outsize = call_nt_transact_set_user_quota(conn, inbuf, outbuf, 
+						length, bufsize, 
+						&setup, setup_count,
+						&params, parameter_count, 
+						&data, data_count);
+			END_PROFILE_NESTED(NT_transact_set_user_quota);
+			break;					
 		default:
 			/* Error in request */
 			DEBUG(0,("reply_nttrans: Unknown request %d in nttrans call\n", function_code));

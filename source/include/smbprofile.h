@@ -108,6 +108,10 @@ struct profile_stats {
 	unsigned syscall_mknod_time;
 	unsigned syscall_realpath_count;
 	unsigned syscall_realpath_time;
+	unsigned syscall_get_quota_count;
+	unsigned syscall_get_quota_time;
+	unsigned syscall_set_quota_count;
+	unsigned syscall_set_quota_time;
 /* stat cache counters */
 	unsigned statcache_lookups;
 	unsigned statcache_misses;
@@ -326,6 +330,10 @@ struct profile_stats {
 	unsigned NT_transact_rename_time;
 	unsigned NT_transact_query_security_desc_count;
 	unsigned NT_transact_query_security_desc_time;
+	unsigned NT_transact_get_user_quota_count;
+	unsigned NT_transact_get_user_quota_time;
+	unsigned NT_transact_set_user_quota_count;
+	unsigned NT_transact_set_user_quota_time;
 /* These are ACL manipulation calls */
 	unsigned get_nt_acl_count;
 	unsigned get_nt_acl_time;
