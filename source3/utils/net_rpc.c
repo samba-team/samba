@@ -84,7 +84,14 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 					   domain_name, domain_sid);
 	if (!NT_STATUS_IS_OK(result)) {
-		goto error;
+ error:
+		fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
+
+		if (!NT_STATUS_IS_OK(result)) {
+			fprintf(stderr, "error: %s\n", nt_errstr(result));
+		}
+
+		exit(1);
 	}
 
 	cli_lsa_close(cli, mem_ctx, &pol);
@@ -92,15 +99,6 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	talloc_destroy(mem_ctx);
 
 	return domain_sid;
-
- error:
-	fprintf(stderr, "could not obtain sid for domain %s\n", cli->domain);
-
-	if (!NT_STATUS_IS_OK(result)) {
-		fprintf(stderr, "error: %s\n", nt_errstr(result));
-	}
-
-	exit(1);
 }
 
 /**
