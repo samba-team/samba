@@ -234,16 +234,15 @@ make all nsswitch/libnss_wins.so nsswitch/libnss_winbind.so torture nsswitch/pam
 VVS=packaging/%{Vendor}/%{Dist}
 
 mkdir -p $DESTDIR/etc/{{rc.d/init,logrotate,pam}.d,sysconfig/daemons}
-mkdir -p $DESTDIR%{EtcSamba}/codepages/src
+mkdir -p $DESTDIR%{EtcSamba}
 mkdir -p $DESTDIR/etc/skel/Samba
 mkdir -p $DESTDIR/home/samba
 mkdir -p $DESTDIR/lib/security
-mkdir -p $DESTDIR/lib/samba
 mkdir -p $DESTDIR/%{LSBservedir}/{netlogon,profiles,Public}
 mkdir -p $DESTDIR%{NKinetdir}
 mkdir -p $DESTDIR/{sbin,bin,usr/{sbin,bin}}
 mkdir -p $DESTDIR/%{SVIdir}
-mkdir -p $DESTDIR/usr/{include,lib}
+mkdir -p $DESTDIR/usr/{include,lib/samba/vfs}
 mkdir -p $DESTDIR/usr/share/samba/codepages/src
 mkdir -p $DESTDIR/usr/share/swat/using_samba/{gifs,figs}
 mkdir -p $DESTDIR/var/{lo{ck,g}/samba.d,spool/samba}
@@ -364,6 +363,8 @@ Samba/README.txt                        base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 libnss_*                                base
 pam_*                                   base
+vfs_*                                   base
+pdb_*                                   base
 %{_defaultdocdir}/samba-[^/]+/(COPYING|README$) base
 %{_defaultdocdir}/samba-                doc
 smb(mount|mnt|umount)                   smbfs
