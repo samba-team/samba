@@ -1,5 +1,7 @@
 2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
+	* sunos.m4: various sunos tests
+
 	* crypto.m4: try to extract the crypto compiler flags from
 	{INCLUDE,LIB}_krb4
 	(XXX this is really horrible)
