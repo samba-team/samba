@@ -7100,7 +7100,6 @@ static void fill_port_2(PORT_INFO_2 *port, const char *name)
 	init_unistr(&port->port_name, name);
 	init_unistr(&port->monitor_name, "Local Monitor");
 	init_unistr(&port->description, "Local Port");
-#define PORT_TYPE_WRITE 1
 	port->port_type=PORT_TYPE_WRITE;
 	port->reserved=0x0;	
 }

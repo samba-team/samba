@@ -78,8 +78,8 @@ enum netsec_direction
 #define AUTH_PIPE_NETSEC  0x0008
 
 /* Maximum PDU fragment size. */
-#define MAX_PDU_FRAG_LEN 0x1630
-/* #define MAX_PDU_FRAG_LEN 0x10b8		this is what w2k sets */
+/* #define MAX_PDU_FRAG_LEN 0x1630		this is what wnt sets */
+#define MAX_PDU_FRAG_LEN 0x10b8			/* this is what w2k sets */
 
 /*
  * Actual structure of a DCE UUID
