@@ -422,11 +422,11 @@ static int euc2sjis (int hi, int lo)
 static int sjis2euc (int hi, int lo)
 {
   int minidx = 0;
-  int maxidx = SJISCONVTBLSIZ;
+  int maxidx = SJISCONVTBLSIZ -1; /* max index 1 less than number of entries */
   int i = ( 0 + SJISCONVTBLSIZ ) % 2;
   int w = (int)((hi << 8) | lo);
 
-  if ( (sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ].end) ) {
+  if ( (sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ-1].end) ) {
     while (maxidx >= minidx) {
       if ( sjisconv[i].start > w ) {
 	maxidx = i-1;
@@ -778,11 +778,11 @@ static char *euc3_to_sj(char *from, BOOL overwrite)
 static int sjis2jis(int hi, int lo)
 {
   int minidx = 0;
-  int maxidx = SJISCONVTBLSIZ;
+  int maxidx = SJISCONVTBLSIZ -1; /* max index 1 less than number of entries */
   int i = (0 + SJISCONVTBLSIZ) % 2;
   int w = (int)((hi << 8) | lo);
 
-  if ((sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ].end)) {
+  if ((sjisconv[0].start < w) && (w < sjisconv[SJISCONVTBLSIZ-1].end)) {
     while (maxidx >= minidx) {
       if (sjisconv[i].start > w) {
 	maxidx = i-1;

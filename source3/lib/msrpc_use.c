@@ -148,7 +148,7 @@ static struct msrpc_use *msrpc_find(const char* pipe_name,
 			continue;
 		}
 		if (!usr_creds->reuse &&
-		    !pwd_compare(&usr_creds->ntc.pwd, &c->cli->usr.ntc.pwd))
+		    !pwd_compare((struct pwd_info *)&usr_creds->ntc.pwd, &c->cli->usr.ntc.pwd))
 		{
 			DEBUG(100,("password doesn't match\n"));
 			continue;

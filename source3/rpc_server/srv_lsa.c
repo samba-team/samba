@@ -298,7 +298,7 @@ static void init_lsa_trans_names(DOM_R_REF *ref, LSA_TRANS_NAME_ENUM *trn,
 		uint32 rid = 0xffffffff;
 		int dom_idx = -1;
 		fstring name, dom_name;
-		enum SID_NAME_USE sid_name_use = 0;
+		enum SID_NAME_USE sid_name_use = (enum SID_NAME_USE)0;
 
 		/* Lookup sid from winbindd */
 

@@ -2074,7 +2074,7 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 ********************************************************************/
 
 void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
-			uint32 num_rids, uint32 *rid, uint8 *type, uint32 status)
+			uint32 num_rids, uint32 *rid, enum SID_NAME_USE *type, uint32 status)
 {
 	int i;
 
