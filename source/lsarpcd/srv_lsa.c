@@ -204,7 +204,7 @@ static int make_dom_ref(DOM_R_REF *ref, char *dom_name, DOM_SID *dom_sid)
 make_lsa_rid2s
  ***************************************************************************/
 static uint32 get_remote_sid(const char *dom_name, char *find_name,
-			     DOM_SID *sid, uint32 *rid, uint8 *sid_name_use)
+			     DOM_SID *sid, uint32 *rid, uint32 *sid_name_use)
 {
 	fstring srv_name;
 	fstring dummy;

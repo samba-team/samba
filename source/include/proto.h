@@ -962,7 +962,7 @@ int name_len(char *s1);
 /*The following definitions come from  libsmb/nterr.c  */
 
 void get_safe_nt_error_msg(uint32 nt_code, char *msg, size_t len);
-char *get_nt_error_msg(uint32 nt_code);
+const char *get_nt_error_msg(uint32 nt_code);
 
 /*The following definitions come from  libsmb/passchange.c  */
 
@@ -2403,6 +2403,9 @@ uint32 check_domain_security(char *orig_user, char *domain,
 
 uint32 lookup_sam_domainname(const char *srv_name,
 			     const char *domain, DOM_SID *sid);
+uint32 lookup_sam_names(const char *domain, const DOM_SID *sid,
+			uint32 num_names, char **names,
+			uint32 *num_rids, uint32 **rids, uint8 **types);
 uint32 lookup_sam_name(const char *domain, DOM_SID *sid,
 				char *name, uint32 *rid, uint32 *type);
 uint32 lookup_sam_rid(const char *domain, DOM_SID *sid,
