@@ -37,7 +37,7 @@
 
 #undef strcpy
 
-PyObject *ntstatus_exception;
+PyObject *ntstatus_exception, *werror_exception;
 
 /* Set up return of a dcerpc.NTSTATUS exception */
 
@@ -47,6 +47,14 @@ void set_ntstatus_exception(int status)
 				nt_errstr(NT_STATUS(status)));
 
 	PyErr_SetObject(ntstatus_exception, obj);
+}
+
+void set_werror_exception(int status)
+{
+	PyObject *obj = Py_BuildValue("(i,s)", status, 
+				win_errstr(W_ERROR(status)));
+
+	PyErr_SetObject(werror_exception, obj);
 }
 
 /* Conversion functions for scalar types */
@@ -801,6 +809,7 @@ PyObject *DATA_BLOB_to_python(DATA_BLOB obj)
 
 %pythoncode %{
 	NTSTATUS = _dcerpc.NTSTATUS
+	WERROR = _dcerpc.WERROR
 %}
 
 %init  %{
@@ -808,7 +817,9 @@ PyObject *DATA_BLOB_to_python(DATA_BLOB obj)
 	lp_load(dyn_CONFIGFILE, True, False, False);
 	load_interfaces();
 	ntstatus_exception = PyErr_NewException("_dcerpc.NTSTATUS", NULL, NULL);
+	werror_exception = PyErr_NewException("_dcerpc.WERROR", NULL, NULL);
 	PyDict_SetItemString(d, "NTSTATUS", ntstatus_exception);
+	PyDict_SetItemString(d, "WERROR", werror_exception);
 %}
 
 %typemap(in, numinputs=0) struct dcerpc_pipe **OUT (struct dcerpc_pipe *temp_dcerpc_pipe) {
@@ -855,7 +866,9 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
                              const char *username,
                              const char *password);
 
-/* Run this test after each wrapped function */
+%include "librpc/gen_ndr/misc.i"
+
+/* Wrapped functions returning NTSTATUS */
 
 %exception {
 	$action
@@ -865,7 +878,17 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **OUT,
 	}
 }
 
-%include "librpc/gen_ndr/misc.i"
 %include "librpc/gen_ndr/lsa.i"
 %include "librpc/gen_ndr/samr.i"
+
+/* Wrapped functions returning WERROR */
+
+%exception {
+	$action
+	if (!W_ERROR_IS_OK(arg3->out.result)) {
+		set_werror_exception(W_ERROR_V(arg3->out.result));
+		return NULL;
+	}
+}
+
 %include "librpc/gen_ndr/winreg.i"
