@@ -32,6 +32,9 @@ BOOL surs_sam_sid_to_unixid(DOM_SID *sid, uint32 type, uint32 *id, BOOL create)
 #ifdef WITH_NT5LDAP
 	return surs_nt5ldap_sam_sid_to_unixid(id, type, sid, create);
 #endif
+#if WITH_SURSTDB
+	return surs_tdb_sam_sid_to_unixid(id, type, sid, create);
+#endif
 	return surs_algdomonly_sam_sid_to_unixid(sid, type, id, create);
 }
 
@@ -43,6 +46,9 @@ BOOL surs_unixid_to_sam_sid(uint32 id, uint32 type, DOM_SID *sid, BOOL create)
 {
 #ifdef WITH_NT5LDAP
 	return surs_nt5ldap_unixid_to_sam_sid(id, type, sid, create);
+#endif
+#if WITH_SURSTDB
+	return surs_tdb_unixid_to_sam_sid(id, type, sid, create);
 #endif
 	return surs_algdomonly_unixid_to_sam_sid(id, type, sid, create);
 }

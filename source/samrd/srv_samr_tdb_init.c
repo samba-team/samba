@@ -33,6 +33,11 @@ uint32 initialise_dom_tdb(const DOM_SID * sid)
 	pstring grp;
 	pstring als;
 	fstring tmp;
+	uint32 rid = 999;
+	uint32 k = 0;
+	prs_struct key;
+	prs_struct data;
+	TDB_CONTEXT *dom_tdb;
 
 	sid_to_string(tmp, sid);
 
@@ -46,6 +51,38 @@ uint32 initialise_dom_tdb(const DOM_SID * sid)
 
 	slprintf(als, sizeof(als) - 1, "%s/als", tmp);
 	mkdir(passdb_path(als), 0755);
+
+	safe_strcat(tmp, "/dom.tdb", sizeof(tmp)-1);
+	dom_tdb = tdb_open(passdb_path(tmp), 0, 0, O_RDWR, 0600);
+	if (dom_tdb != NULL)
+	{
+		tdb_close(dom_tdb);
+		return NT_STATUS_NOPROBLEMO;
+	}
+
+	dom_tdb = tdb_open(passdb_path(tmp), 0, 0, O_RDWR|O_CREAT, 0600);
+
+	if (dom_tdb == NULL)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	prs_init(&key, 0, 4, False);
+	prs_init(&data, 0, 4, False);
+
+	if (!_prs_uint32("key", &key, 0, &k) ||
+	    !_prs_uint32("rid", &data, 0, &rid) ||
+	    prs_tdb_store(dom_tdb, TDB_REPLACE, &key, &data) != 0)
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+		tdb_close(dom_tdb);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	prs_free_data(&key);
+	prs_free_data(&data);
+	tdb_close(dom_tdb);
 
 	return NT_STATUS_NOPROBLEMO;
 }

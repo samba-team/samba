@@ -717,6 +717,10 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	DOM_SID sid;
 	DOM_SID grp_sid;
 	TDB_CONTEXT *tdb_usr = NULL;
+	TDB_CONTEXT *tdb_dom = NULL;
+	fstring riddb;
+	prs_struct key;
+	prs_struct data;
 
 	SAM_USER_INFO_21 usr;
 	uint32 status1;
@@ -728,6 +732,8 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	struct passwd *pass = NULL;
 	uint32 group_rid;
 
+	uint32 k = 0;
+	uint32 unique_rid = 0;
 #if 0
 	uint32 num_gids = 0;
 	DOM_GID *gids = NULL;
@@ -739,18 +745,15 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 	(*unknown_0) = 0x30;
 	(*user_rid) = 0x0;
 
-	/* find the machine account: tell the caller if it exists.
-	   lkclXXXX i have *no* idea if this is a problem or not
-	   or even if you are supposed to construct a different
-	   reply if the account already exists...
-	 */
-
 	/* find the domain sid associated with the policy handle */
 	if (!get_tdbdomsid(get_global_hnd_cache(), domain_pol,
 			   NULL, NULL, NULL, NULL, NULL, &dom_sid))
 	{
 		return NT_STATUS_INVALID_HANDLE;
 	}
+
+	sid_to_string(riddb, &dom_sid);
+	safe_strcat(riddb, "/dom.tdb", sizeof(riddb)-1);
 
 	status1 = _samr_lookup_names(domain_pol, 1, 0x3e8, 1, uni_username,
 				     &num_rids, &rid, &num_types, &type);
@@ -841,14 +844,70 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 #endif
 	}
 
+	tdb_dom = tdb_open(passdb_path(riddb),0,0,O_RDWR, 600);
+	if (tdb_dom == NULL || tdb_writelock(tdb_dom) != 0)
+	{
+		tdb_close(tdb_dom);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	prs_init(&key, 0, 4, False);
+	k = 0;
+
+	if (!_prs_uint32("key", &key, 0, &k))
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+
+		tdb_writeunlock(tdb_dom);
+		tdb_close(tdb_dom);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	prs_tdb_fetch(tdb_dom, &key, &data);
+
+	if (!_prs_uint32("rid", &data, 0, &unique_rid))
+	{
+		prs_free_data(&key);
+		prs_free_data(&data);
+
+		tdb_writeunlock(tdb_dom);
+		tdb_close(tdb_dom);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	prs_free_data(&data);
+
+	/* up-me a rid */
+	unique_rid++;
+	(*user_rid) = unique_rid;
+	sid_copy(&usr_sid, &global_sam_sid);
+	sid_append_rid(&usr_sid, *user_rid);
+	sid_copy(&sid, &usr_sid);
+
 	/* create a User SID for the unix user */
 	if (!surs_unixid_to_sam_sid(pass->pw_uid, SID_NAME_USER, &usr_sid,
 				       True))
 	{
 		DEBUG(0, ("create user: unix uid %d to RID failed\n",
 			  pass->pw_uid));
+		tdb_writeunlock(tdb_dom);
+		tdb_close(tdb_dom);
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	if (sid_equal(&usr_sid, &sid))
+	{
+		/* you know that rid?  well, we dinna WAN' IT! } */
+		unique_rid--;
+	}
+
+	/* up-me a rid */
+	unique_rid++;
+	group_rid = unique_rid;
+	sid_copy(&grp_sid, &dom_sid);
+	sid_append_rid(&grp_sid, *user_rid);
+	sid_copy(&sid, &grp_sid);
 
 	/* create a Group SID for the unix user */
 	if (!surs_unixid_to_sam_sid
@@ -858,6 +917,25 @@ uint32 _samr_create_user(const POLICY_HND *domain_pol,
 			  pass->pw_uid));
 		return NT_STATUS_ACCESS_DENIED;
 	}
+
+	if (sid_equal(&grp_sid, &sid))
+	{
+		/* you know that rid?  well, we dinna WAN' IT! } */
+		unique_rid--;
+	}
+
+	prs_init(&data, 0, 4, False);
+
+	if (!_prs_uint32("rid", &data, 0, &unique_rid) ||
+	    prs_tdb_store(tdb_dom, TDB_REPLACE, &key, &data) != 0)
+	{
+		tdb_writeunlock(tdb_dom);
+		tdb_close(tdb_dom);
+		return NT_STATUS_ACCESS_DENIED;
+	}
+
+	tdb_writeunlock(tdb_dom);
+	tdb_close(tdb_dom);
 
 	sid_copy(&sid, &usr_sid);
 

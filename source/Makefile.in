@@ -402,7 +402,8 @@ SAMRD_OBJ = $(MSRPCD_OBJ) $(SAMRD_OBJ1) \
 		$(PROFILE_OBJ) 
 
 LIBSURS_OBJ = lib/surs.o lib/sursalgdomonly.o \
-		lib/sursalgnt5ldap.o
+		lib/sursalgnt5ldap.o \
+		lib/surstdb.o
 
 SAMRD_LIBS        = $(SAMBA_LIBS) $(UBIQXLIB) $(SAM_PWDB_LIB) $(LIBSURS)
 

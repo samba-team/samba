@@ -55,6 +55,7 @@
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
+#undef WITH_TDBSURS
 #undef WITH_NISPLUS
 #undef WITH_NISPLUS_HOME
 #undef WITH_AUTOMOUNT
