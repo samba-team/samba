@@ -293,3 +293,21 @@ char *rep_inet_ntoa(struct in_addr ip)
 	return buf;
 }
 #endif
+
+
+#ifndef HAVE_SETENV
+/*****************************************************************
+set an env variable - some systems don't have this
+*****************************************************************/  
+ int setenv(const char *name, const char *value, int overwrite)
+{
+	pstring s;
+
+	if (!overwrite && getenv(name)) return 0;
+
+	slprintf(s,sizeof(s)-1,"%s=%s", name, value);
+
+	return putenv(s);
+}
+
+#endif

@@ -27,6 +27,7 @@ fi
 LD_PRELOAD=$LIBDIR/smbwrapper.so
 export LD_PRELOAD
 
+PWD=`pwd`
 export PWD
 PS1='smbsh$ '
 export PS1

@@ -136,6 +136,15 @@
 /* The number of bytes in a short.  */
 #undef SIZEOF_SHORT
 
+/* Define if you have the __acl function.  */
+#undef HAVE___ACL
+
+/* Define if you have the __chdir function.  */
+#undef HAVE___CHDIR
+
+/* Define if you have the __close function.  */
+#undef HAVE___CLOSE
+
 /* Define if you have the __closedir function.  */
 #undef HAVE___CLOSEDIR
 
@@ -144,6 +153,15 @@
 
 /* Define if you have the __dup2 function.  */
 #undef HAVE___DUP2
+
+/* Define if you have the __facl function.  */
+#undef HAVE___FACL
+
+/* Define if you have the __fchdir function.  */
+#undef HAVE___FCHDIR
+
+/* Define if you have the __fcntl function.  */
+#undef HAVE___FCNTL
 
 /* Define if you have the __fstat function.  */
 #undef HAVE___FSTAT
@@ -154,14 +172,26 @@
 /* Define if you have the __getcwd function.  */
 #undef HAVE___GETCWD
 
+/* Define if you have the __getdents function.  */
+#undef HAVE___GETDENTS
+
+/* Define if you have the __lseek function.  */
+#undef HAVE___LSEEK
+
 /* Define if you have the __lstat function.  */
 #undef HAVE___LSTAT
 
 /* Define if you have the __lxstat function.  */
 #undef HAVE___LXSTAT
 
+/* Define if you have the __open function.  */
+#undef HAVE___OPEN
+
 /* Define if you have the __opendir function.  */
 #undef HAVE___OPENDIR
+
+/* Define if you have the __read function.  */
+#undef HAVE___READ
 
 /* Define if you have the __readdir function.  */
 #undef HAVE___READDIR
@@ -175,8 +205,20 @@
 /* Define if you have the __telldir function.  */
 #undef HAVE___TELLDIR
 
+/* Define if you have the __write function.  */
+#undef HAVE___WRITE
+
 /* Define if you have the __xstat function.  */
 #undef HAVE___XSTAT
+
+/* Define if you have the _acl function.  */
+#undef HAVE__ACL
+
+/* Define if you have the _chdir function.  */
+#undef HAVE__CHDIR
+
+/* Define if you have the _close function.  */
+#undef HAVE__CLOSE
 
 /* Define if you have the _closedir function.  */
 #undef HAVE__CLOSEDIR
@@ -187,17 +229,38 @@
 /* Define if you have the _dup2 function.  */
 #undef HAVE__DUP2
 
+/* Define if you have the _facl function.  */
+#undef HAVE__FACL
+
+/* Define if you have the _fchdir function.  */
+#undef HAVE__FCHDIR
+
+/* Define if you have the _fcntl function.  */
+#undef HAVE__FCNTL
+
 /* Define if you have the _fstat function.  */
 #undef HAVE__FSTAT
 
 /* Define if you have the _getcwd function.  */
 #undef HAVE__GETCWD
 
+/* Define if you have the _getdents function.  */
+#undef HAVE__GETDENTS
+
+/* Define if you have the _lseek function.  */
+#undef HAVE__LSEEK
+
 /* Define if you have the _lstat function.  */
 #undef HAVE__LSTAT
 
+/* Define if you have the _open function.  */
+#undef HAVE__OPEN
+
 /* Define if you have the _opendir function.  */
 #undef HAVE__OPENDIR
+
+/* Define if you have the _read function.  */
+#undef HAVE__READ
 
 /* Define if you have the _readdir function.  */
 #undef HAVE__READDIR
@@ -210,6 +273,9 @@
 
 /* Define if you have the _telldir function.  */
 #undef HAVE__TELLDIR
+
+/* Define if you have the _write function.  */
+#undef HAVE__WRITE
 
 /* Define if you have the atexit function.  */
 #undef HAVE_ATEXIT
@@ -342,6 +408,9 @@
 
 /* Define if you have the set_auth_parameters function.  */
 #undef HAVE_SET_AUTH_PARAMETERS
+
+/* Define if you have the setenv function.  */
+#undef HAVE_SETENV
 
 /* Define if you have the setgroups function.  */
 #undef HAVE_SETGROUPS
@@ -486,6 +555,9 @@
 
 /* Define if you have the <stropts.h> header file.  */
 #undef HAVE_STROPTS_H
+
+/* Define if you have the <sys/acl.h> header file.  */
+#undef HAVE_SYS_ACL_H
 
 /* Define if you have the <sys/capability.h> header file.  */
 #undef HAVE_SYS_CAPABILITY_H

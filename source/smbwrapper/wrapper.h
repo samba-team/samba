@@ -27,9 +27,14 @@
 #include <sys/syscall.h>
 #endif
 
+#ifdef HAVE_SYS_ACL_H
+#include <sys/acl.h>
+#endif
+
 #include <stdio.h>
 #include <dirent.h>
 #include <errno.h>
+#include <sys/fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>
