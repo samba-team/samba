@@ -247,22 +247,18 @@ void dump_names(void)
 
       if (f && ip_equal(d->bcast_ip, ipgrp) && n->source == REGISTER)
       {
-        fstring data;
-
       /* XXXX i have little imagination as to how to output nb_flags as
          anything other than as a hexadecimal number :-) */
 
-        sprintf(data, "%s#%02x %ld ",
+        fprintf(f, "%s#%02x %ld ",
 	       n->name.name,n->name.name_type, /* XXXX ignore scope for now */
 	       n->death_time);
-	    fprintf(f, "%s", data);
 
         for (i = 0; i < n->num_ips; i++)
         {
-           sprintf(data, "%s %2x ",
+           fprintf(f, "%s %2x ",
 						inet_ntoa(n->ip_flgs[i].ip),
 						n->ip_flgs[i].nb_flags);
-		   fprintf(f, "%s", data);
         }
 		fprintf(f, "\n");
       }
@@ -540,7 +536,7 @@ struct name_record *search_for_name(struct subnet_record **d,
   if (!n)
     {
       struct in_addr dns_ip;
-      unsigned long a;
+      uint32 a;
       
       /* only do DNS lookups if the query is for type 0x20 or type 0x0 */
       if (!dns_type && name_type != 0x1b)
