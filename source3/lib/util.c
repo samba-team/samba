@@ -2201,6 +2201,11 @@ int _Insure_trap_error(int a1, int a2, int a3, int a4, int a5, int a6)
 		static void *h;
 		h = dlopen("/usr/local/parasoft/insure++lite/lib.linux2/libinsure.so", RTLD_LAZY);
 		fn = dlsym(h, "_Insure_trap_error");
+
+		if (!h || h == _Insure_trap_error) {
+			h = dlopen("/usr/local/parasoft/lib.linux2/libinsure.so", RTLD_LAZY);
+			fn = dlsym(h, "_Insure_trap_error");
+		}		
 	}
 
 	ret = fn(a1, a2, a3, a4, a5, a6);
