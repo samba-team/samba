@@ -362,14 +362,6 @@ static BOOL cgi_handle_authorization(char *line)
 {
 	char *p, *user, *user_pass;
 	struct passwd *pass = NULL;
-	BOOL got_name = False;
-	BOOL tested_pass = False;
-	fstring default_user_lookup;
-	fstring default_user_pass;
-
-	/* Dummy user lookup to take the same time as a valid user. */
-	fstrcpy(default_user_lookup, "zzzz bibble");
-	fstrcpy(default_user_pass, "123456789");
 
 	if (strncasecmp(line,"Basic ", 6)) {
 		goto err;
@@ -387,55 +379,40 @@ static BOOL cgi_handle_authorization(char *line)
 	*p = 0;
 	user = line;
 	user_pass = p+1;
-
+	
 	/*
 	 * Try and get the user from the UNIX password file.
 	 */
-
-	if(!(pass = Get_Pwnam(user,False))) {
-		/*
-		 * Always give the same error so a cracker
-		 * cannot tell why we fail.
-		 */
-		got_name = True;
-		goto err;
-	}
-
+	
+	pass = sys_getpwnam(user);
+	
 	/*
 	 * Validate the password they have given.
 	 */
-
-	tested_pass = True;
-
-	if(pass_check(user, user_pass, strlen(user_pass), NULL) == True) {
-
-		/*
-		 * Password was ok.
-		 */
-
-		if(pass->pw_uid != 0) {
+	
+	if (pass_check(pass, user, user_pass, 
+		      strlen(user_pass), NULL, False)) {
+		
+		if (pass) {
 			/*
-			 * We have not authenticated as root,
-			 * become the user *permanently*.
+			 * Password was ok.
 			 */
-			become_user_permanently(pass->pw_uid, pass->pw_gid);
+			
+			if(pass->pw_uid != 0) {
+				/*
+				 * We have not authenticated as root,
+				 * become the user *permanently*.
+				 */
+				become_user_permanently(pass->pw_uid, pass->pw_gid);
+			}
+			
+			/* Save the users name */
+			C_user = strdup(user);
+			return True;
 		}
-
-		/* Save the users name */
-		C_user = strdup(user);
-		return True;
 	}
-
-  err:
-
-	/* Always take the same time. */
-	if (!got_name)
-		Get_Pwnam(default_user_lookup,False);
-
-	if (!tested_pass)
-		pass_check(default_user_lookup, default_user_pass,
-					strlen(default_user_pass), NULL);
-
+	
+err:
 	cgi_setup_error("401 Bad Authorization", "", 
 			"username or password incorrect");
 
