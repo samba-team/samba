@@ -6965,6 +6965,9 @@ WERROR _spoolss_addprinterdriverex(pipes_struct *p, SPOOL_Q_ADDPRINTERDRIVEREX *
 	if ( q_u->copy_flags != APD_COPY_NEW_FILES )
 		return WERR_ACCESS_DENIED;
 	
+	ZERO_STRUCT(q_u_local);
+	ZERO_STRUCT(r_u_local);
+
 	/* just pass the information off to _spoolss_addprinterdriver() */
 	q_u_local.server_name_ptr = q_u->server_name_ptr;
 	copy_unistr2(&q_u_local.server_name, &q_u->server_name);
