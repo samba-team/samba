@@ -178,7 +178,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	*ap_rep = data_blob(packet.data, packet.length);
 	free(packet.data);
 
-	get_krb5_smb_session_key(context, auth_context, session_key);
+	get_krb5_smb_session_key(context, auth_context, session_key, True);
 #ifdef DEBUG_PASSWORD
 	DEBUG(10,("SMB session key (from ticket) follows:\n"));
 	dump_data(10, session_key, 16);

@@ -330,6 +330,21 @@ static BOOL client_check_incoming_message(char *inbuf, struct smb_sign_info *si)
 		
 		DEBUG(5, ("client_check_incoming_message: BAD SIG: got SMB signature of\n"));
 		dump_data(5, server_sent_mac, 8);
+#if 0 /* JRATEST */
+		{
+			int i;
+			reply_seq_number -= 5;
+			for (i = 0; i < 10; i++, reply_seq_number++) {
+				simple_packet_signature(data, inbuf, reply_seq_number, calc_md5_mac);
+				if (memcmp(server_sent_mac, calc_md5_mac, 8) == 0) {
+					DEBUG(0,("client_check_incoming_message: out of seq. seq num %u matches.\n",
+							reply_seq_number ));
+					break;
+				}
+			}
+		}
+#endif /* JRATEST */
+
 	}
 	return signing_good(inbuf, si, good);
 }
