@@ -3,6 +3,8 @@
                  advanced="1" developer="1" hide="1"
                  xmlns:samba="http://samba.org/common">
 <listitem>
+	<para>This parameter is now an alias for <command moreinfo="none">idmap gid</command></para>
+
 	<para>The winbind gid parameter specifies the range of group 
 	ids that are allocated by the <citerefentry><refentrytitle>winbindd</refentrytitle>
 	<manvolnum>8</manvolnum></citerefentry> daemon.  This range of group ids should have no 
