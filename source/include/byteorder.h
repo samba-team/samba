@@ -47,8 +47,8 @@ CAREFUL_ALIGNMENT=0 on those processors as well.
 
 Ok, now to the macros themselves. I'll take a simple example, say we
 want to extract a 2 byte integer from a SMB packet and put it into a
-type called uint16 that is in the local machines byte order, and you
-want to do it with only the assumption that uint16 is _at_least_ 16
+type called uint16_t that is in the local machines byte order, and you
+want to do it with only the assumption that uint16_t is _at_least_ 16
 bits long (this last condition is very important for architectures
 that don't have any int types that are 2 bytes long)
 
@@ -58,10 +58,10 @@ You do this:
 #define PVAL(buf,pos) ((unsigned)CVAL(buf,pos))
 #define SVAL(buf,pos) (PVAL(buf,pos)|PVAL(buf,(pos)+1)<<8)
 
-then to extract a uint16 value at offset 25 in a buffer you do this:
+then to extract a uint16_t value at offset 25 in a buffer you do this:
 
 char *buffer = foo_bar();
-uint16 xx = SVAL(buffer,25);
+uint16_t xx = SVAL(buffer,25);
 
 We are using the byteoder independence of the ANSI C bitshifts to do
 the work. A good optimising compiler should turn this into efficient
@@ -117,11 +117,11 @@ it also defines lots of intermediate macros, just ignore those :-)
 #define IVAL(buf,pos) (SVAL(buf,pos)|SVAL(buf,(pos)+2)<<16)
 #define SSVALX(buf,pos,val) (CVAL_NC(buf,pos)=(unsigned char)((val)&0xFF),CVAL_NC(buf,pos+1)=(unsigned char)((val)>>8))
 #define SIVALX(buf,pos,val) (SSVALX(buf,pos,val&0xFFFF),SSVALX(buf,pos+2,val>>16))
-#define SVALS(buf,pos) ((int16)SVAL(buf,pos))
+#define SVALS(buf,pos) ((int16_t)SVAL(buf,pos))
 #define IVALS(buf,pos) ((int32_t)IVAL(buf,pos))
-#define SSVAL(buf,pos,val) SSVALX((buf),(pos),((uint16)(val)))
+#define SSVAL(buf,pos,val) SSVALX((buf),(pos),((uint16_t)(val)))
 #define SIVAL(buf,pos,val) SIVALX((buf),(pos),((uint32_t)(val)))
-#define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16)(val)))
+#define SSVALS(buf,pos,val) SSVALX((buf),(pos),((int16_t)(val)))
 #define SIVALS(buf,pos,val) SIVALX((buf),(pos),((int32_t)(val)))
 
 #else /* CAREFUL_ALIGNMENT */
@@ -129,24 +129,24 @@ it also defines lots of intermediate macros, just ignore those :-)
 /* this handles things for architectures like the 386 that can handle
    alignment errors */
 /*
-   WARNING: This section is dependent on the length of int16 and int32_t
+   WARNING: This section is dependent on the length of int16_t and int32_t
    being correct 
 */
 
 /* get single value from an SMB buffer */
-#define SVAL(buf,pos) (*(const uint16 *)((const char *)(buf) + (pos)))
-#define SVAL_NC(buf,pos) (*(uint16 *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define SVAL(buf,pos) (*(const uint16_t *)((const char *)(buf) + (pos)))
+#define SVAL_NC(buf,pos) (*(uint16_t *)((char *)(buf) + (pos))) /* Non const version of above. */
 #define IVAL(buf,pos) (*(const uint32_t *)((const char *)(buf) + (pos)))
 #define IVAL_NC(buf,pos) (*(uint32_t *)((char *)(buf) + (pos))) /* Non const version of above. */
-#define SVALS(buf,pos) (*(const int16 *)((const char *)(buf) + (pos)))
-#define SVALS_NC(buf,pos) (*(int16 *)((char *)(buf) + (pos))) /* Non const version of above. */
+#define SVALS(buf,pos) (*(const int16_t *)((const char *)(buf) + (pos)))
+#define SVALS_NC(buf,pos) (*(int16_t *)((char *)(buf) + (pos))) /* Non const version of above. */
 #define IVALS(buf,pos) (*(const int32_t *)((const char *)(buf) + (pos)))
 #define IVALS_NC(buf,pos) (*(int32_t *)((char *)(buf) + (pos))) /* Non const version of above. */
 
 /* store single value in an SMB buffer */
-#define SSVAL(buf,pos,val) SVAL_NC(buf,pos)=((uint16)(val))
+#define SSVAL(buf,pos,val) SVAL_NC(buf,pos)=((uint16_t)(val))
 #define SIVAL(buf,pos,val) IVAL_NC(buf,pos)=((uint32_t)(val))
-#define SSVALS(buf,pos,val) SVALS_NC(buf,pos)=((int16)(val))
+#define SSVALS(buf,pos,val) SVALS_NC(buf,pos)=((int16_t)(val))
 #define SIVALS(buf,pos,val) IVALS_NC(buf,pos)=((int32_t)(val))
 
 #endif /* CAREFUL_ALIGNMENT */

@@ -132,12 +132,12 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 ****************************************************************************/
 static struct cli_request *smb_raw_setfileinfo_blob_send(struct cli_tree *tree,
 							 TALLOC_CTX *mem_ctx,
-							 uint16 fnum,
-							 uint16 info_level,
+							 uint16_t fnum,
+							 uint16_t info_level,
 							 DATA_BLOB *blob)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_SETFILEINFO;
+	uint16_t setup = TRANSACT2_SETFILEINFO;
 	
 	tp.in.max_setup = 0;
 	tp.in.flags = 0; 
@@ -166,11 +166,11 @@ static struct cli_request *smb_raw_setfileinfo_blob_send(struct cli_tree *tree,
 static struct cli_request *smb_raw_setpathinfo_blob_send(struct cli_tree *tree,
 							 TALLOC_CTX *mem_ctx,
 							 const char *fname,
-							 uint16 info_level,
+							 uint16_t info_level,
 							 DATA_BLOB *blob)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_SETPATHINFO;
+	uint16_t setup = TRANSACT2_SETPATHINFO;
 	
 	tp.in.max_setup = 0;
 	tp.in.flags = 0; 

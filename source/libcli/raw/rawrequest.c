@@ -152,7 +152,7 @@ struct cli_request *cli_request_setup_session(struct cli_session *session,
 					      uint8 command, unsigned wct, unsigned buflen)
 {
 	struct cli_request *req;
-	uint16 flags2;
+	uint16_t flags2;
 	uint32_t capabilities;
 
 	req = cli_request_setup_transport(session->transport, command, wct, buflen);
@@ -341,8 +341,8 @@ static BOOL handle_oplock_break(struct cli_transport *transport, uint_t len, con
 	}
 
 	if (transport->oplock.handler) {
-		uint16 tid = SVAL(hdr, HDR_TID);
-		uint16 fnum = SVAL(vwv,VWV(2));
+		uint16_t tid = SVAL(hdr, HDR_TID);
+		uint16_t fnum = SVAL(vwv,VWV(2));
 		uint8 level = CVAL(vwv,VWV(3)+1);
 		transport->oplock.handler(transport, tid, fnum, level, transport->oplock.private);
 	}
@@ -370,7 +370,7 @@ BOOL cli_request_receive_next(struct cli_transport *transport)
 	char *buffer, *hdr, *vwv;
 	TALLOC_CTX *mem_ctx;
 	struct cli_request *req;
-	uint16 wct, mid = 0;
+	uint16_t wct, mid = 0;
 
 	len = cli_sock_read(transport->socket, header, 4);
 	if (len != 4) {
@@ -635,7 +635,7 @@ size_t cli_req_append_bytes(struct cli_request *req, const uint8 *bytes, size_t 
   append variable block (type 5 buffer) into the data portion of the request packet
   return the number of bytes added
 */
-size_t cli_req_append_var_block(struct cli_request *req, const uint8 *bytes, uint16 byte_len)
+size_t cli_req_append_var_block(struct cli_request *req, const uint8 *bytes, uint16_t byte_len)
 {
 	cli_req_grow_allocation(req, byte_len + 3 + req->out.data_size);
 	SCVAL(req->out.data + req->out.data_size, 0, 5);
@@ -831,7 +831,7 @@ BOOL cli_raw_pull_data(struct cli_request *req, const char *src, int len, char *
 /*
   put a NTTIME into a packet
 */
-void cli_push_nttime(void *base, uint16 offset, NTTIME t)
+void cli_push_nttime(void *base, uint16_t offset, NTTIME t)
 {
 	SBVAL(base, offset, t);
 }
@@ -839,7 +839,7 @@ void cli_push_nttime(void *base, uint16 offset, NTTIME t)
 /*
   pull a NTTIME from a packet
 */
-NTTIME cli_pull_nttime(void *base, uint16 offset)
+NTTIME cli_pull_nttime(void *base, uint16_t offset)
 {
 	NTTIME ret = BVAL(base, offset);
 	return ret;
@@ -967,7 +967,7 @@ size_t cli_blob_pull_string(struct cli_session *session,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *blob, 
 			    WIRE_STRING *dest, 
-			    uint16 len_offset, uint16 str_offset, 
+			    uint16_t len_offset, uint16_t str_offset, 
 			    unsigned flags)
 {
 	int extra;
@@ -1022,7 +1022,7 @@ size_t cli_blob_pull_unix_string(struct cli_session *session,
 			    TALLOC_CTX *mem_ctx,
 			    DATA_BLOB *blob, 
 			    const char **dest, 
-			    uint16 str_offset, 
+			    uint16_t str_offset, 
 			    unsigned flags)
 {
 	int extra = 0;

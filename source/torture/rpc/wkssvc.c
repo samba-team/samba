@@ -27,7 +27,7 @@ static BOOL test_NetWkstaGetInfo(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct wkssvc_NetWkstaGetInfo r;
-	uint16 levels[] = {100, 101, 102, 502};
+	uint16_t levels[] = {100, 101, 102, 502};
 	int i;
 	BOOL ret = True;
 

@@ -113,7 +113,7 @@ int cli_get_dfs_referral(struct cli_state *cli,const char *Fname, dfs_info* dinf
 	int i;
 	char *rparam=NULL, *rdata=NULL;
 	int param_len, data_len;	
-	uint16 setup;
+	uint16_t setup;
 	pstring param;
 	DATA_BLOB trans_param, trans_data;
 
@@ -381,7 +381,7 @@ int cli_dfs_open(struct cli_client* cluster, int *server,
 ****************************************************************************/
 
 NTSTATUS cli_nt_unlink(struct cli_client* cluster, int *server,
-	char *fname_src, uint16 FileAttributes)
+	char *fname_src, uint16_t FileAttributes)
 {
 	int referral_number;
 	dfs_info dinfo;

@@ -26,7 +26,7 @@ static BOOL test_GetPrinter(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct spoolss_GetPrinter r;
-	uint16 levels[] = {1, 2, 3, 4, 5, 6, 7};
+	uint16_t levels[] = {1, 2, 3, 4, 5, 6, 7};
 	int i;
 	BOOL ret = True;
 	
@@ -751,7 +751,7 @@ static BOOL test_EnumPrinters(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinters r;
 	NTSTATUS status;
-	uint16 levels[] = {1, 2, 4, 5};
+	uint16_t levels[] = {1, 2, 4, 5};
 	int i;
 	BOOL ret = True;
 
@@ -867,7 +867,7 @@ static BOOL test_EnumPrinterDrivers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct spoolss_EnumPrinterDrivers r;
 	NTSTATUS status;
-	uint16 levels[] = {1, 2, 3};
+	uint16_t levels[] = {1, 2, 3};
 	int i;
 	BOOL ret = True;
 

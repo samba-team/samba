@@ -34,7 +34,7 @@ struct user_context {
 	   request. Note that this may not be the same vuid as we
 	   received on the wire (for example, for share mode or guest
 	   access) */
-	uint16 vuid;
+	uint16_t vuid;
 
 	/* the domain name, user name etc - mostly used in % substitutions */
 	struct userdom_struct *user;
@@ -64,7 +64,7 @@ struct tcon_context {
 	/* a private structure used by the active NTVFS backend */
 	void *ntvfs_private;
 
-	uint16 cnum; /* an index passed over the wire (the TID) */
+	uint16_t cnum; /* an index passed over the wire (the TID) */
 	int service;
 	enum ntvfs_type type;
 	BOOL read_only;
@@ -99,10 +99,10 @@ struct request_context {
 	unsigned control_flags;
 
 	/* the smb pid is needed for locking contexts */
-	uint16 smbpid;
+	uint16_t smbpid;
 
 	/* the flags from the SMB request, in raw form (host byte order) */
-	uint16 flags, flags2;
+	uint16_t flags, flags2;
 
 	/* the system time when the request arrived */
 	struct timeval request_time;

@@ -23,7 +23,7 @@
 /****************************************************************************
 send an ack for an oplock break request
 ****************************************************************************/
-BOOL cli_oplock_ack(struct cli_tree *tree, uint16 fnum, uint16 ack_level)
+BOOL cli_oplock_ack(struct cli_tree *tree, uint16_t fnum, uint16_t ack_level)
 {
 	BOOL ret;
 	struct cli_request *req;

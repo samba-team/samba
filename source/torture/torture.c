@@ -665,8 +665,8 @@ static BOOL run_tcon_test(int dummy)
 	struct cli_state *cli;
 	const char *fname = "\\tcontest.tmp";
 	int fnum1;
-	uint16 cnum1, cnum2, cnum3;
-	uint16 vuid1, vuid2;
+	uint16_t cnum1, cnum2, cnum3;
+	uint16_t vuid1, vuid2;
 	char buf[4];
 	BOOL ret = True;
 	struct cli_tree *tree1;
@@ -2798,7 +2798,7 @@ static BOOL run_vuidtest(int dummy)
 	time_t c_time, a_time, m_time, w_time, m_time2;
 	BOOL correct = True;
 
-	uint16 orig_vuid;
+	uint16_t orig_vuid;
 	NTSTATUS result;
 
 	printf("starting vuid test\n");
@@ -3404,7 +3404,7 @@ static BOOL run_openattrtest(int dummy)
 	const char *fname = "\\openattr.file";
 	int fnum1;
 	BOOL correct = True;
-	uint16 attr;
+	uint16_t attr;
 	unsigned int i, j, k, l;
 	int failures = 0;
 
@@ -3596,7 +3596,7 @@ static void del_fn(file_info *finfo, const char *mask, void *state)
 BOOL torture_ioctl_test(int dummy)
 {
 	struct cli_state *cli;
-	uint16 device, function;
+	uint16_t device, function;
 	int fnum;
 	const char *fname = "\\ioctl.dat";
 	NTSTATUS status;

@@ -43,7 +43,7 @@ NTSTATUS ndr_pull_uint8(struct ndr_pull *ndr, uint8 *v)
 /*
   parse a uint16
 */
-NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16 *v)
+NTSTATUS ndr_pull_uint16(struct ndr_pull *ndr, uint16_t *v)
 {
 	NDR_PULL_ALIGN(ndr, 2);
 	NDR_PULL_NEED_BYTES(ndr, 2);
@@ -169,7 +169,7 @@ NTSTATUS ndr_pull_array_uint8(struct ndr_pull *ndr, int ndr_flags, char *data, u
 /*
   pull an array of uint16
 */
-NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16 *data, uint32_t n)
+NTSTATUS ndr_pull_array_uint16(struct ndr_pull *ndr, int ndr_flags, uint16_t *data, uint32_t n)
 {
 	uint32_t i;
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -210,7 +210,7 @@ NTSTATUS ndr_push_uint8(struct ndr_push *ndr, uint8 v)
 /*
   push a uint16
 */
-NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16 v)
+NTSTATUS ndr_push_uint16(struct ndr_push *ndr, uint16_t v)
 {
 	NDR_PUSH_ALIGN(ndr, 2);
 	NDR_PUSH_NEED_BYTES(ndr, 2);
@@ -309,7 +309,7 @@ NTSTATUS ndr_push_array_uint8(struct ndr_push *ndr, int ndr_flags, const char *d
 /*
   push an array of uint16
 */
-NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16 *data, uint32_t n)
+NTSTATUS ndr_push_array_uint16(struct ndr_push *ndr, int ndr_flags, const uint16_t *data, uint32_t n)
 {
 	int i;
 	if (!(ndr_flags & NDR_SCALARS)) {
@@ -376,7 +376,7 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 {
 	char *as=NULL;
 	uint32_t len1, ofs, len2;
-	uint16 len3;
+	uint16_t len3;
 	int ret;
 	int chset = CH_UCS2;
 
@@ -683,7 +683,7 @@ void ndr_print_uint8(struct ndr_print *ndr, const char *name, uint8 v)
 	ndr->print(ndr, "%-25s: 0x%02x (%u)", name, v, v);
 }
 
-void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16 v)
+void ndr_print_uint16(struct ndr_print *ndr, const char *name, uint16_t v)
 {
 	ndr->print(ndr, "%-25s: 0x%04x (%u)", name, v, v);
 }
@@ -743,12 +743,12 @@ void ndr_print_time_t(struct ndr_print *ndr, const char *name, time_t t)
 	}
 }
 
-void ndr_print_union(struct ndr_print *ndr, const char *name, uint16 level, const char *type)
+void ndr_print_union(struct ndr_print *ndr, const char *name, uint16_t level, const char *type)
 {
 	ndr->print(ndr, "%-25s: union %s(case %u)", name, type, level);
 }
 
-void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16 level)
+void ndr_print_bad_level(struct ndr_print *ndr, const char *name, uint16_t level)
 {
 	ndr->print(ndr, "UNKNOWN LEVEL %u", level);
 }
@@ -772,7 +772,7 @@ void ndr_print_array_uint32(struct ndr_print *ndr, const char *name,
 }
 
 void ndr_print_array_uint16(struct ndr_print *ndr, const char *name, 
-			    const uint16 *data, uint32_t count)
+			    const uint16_t *data, uint32_t count)
 {
 	int i;
 

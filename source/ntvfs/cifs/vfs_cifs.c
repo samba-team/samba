@@ -60,7 +60,7 @@ static void idle_func(struct cli_transport *transport, void *p_private)
   a handler for oplock break events from the server - these need to be passed
   along to the client
  */
-static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 fnum, uint8 level, void *p_private)
+static BOOL oplock_handler(struct cli_transport *transport, uint16_t tid, uint16_t fnum, uint8 level, void *p_private)
 {
 	struct cvfs_private *private = p_private;
 	
@@ -71,7 +71,7 @@ static BOOL oplock_handler(struct cli_transport *transport, uint16 tid, uint16 f
 /*
   a handler for read events on a connection to a backend server
 */
-static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16 flags)
+static void cifs_socket_handler(struct event_context *ev, struct fd_event *fde, time_t t, uint16_t flags)
 {
 	struct cvfs_private *private = fde->private;
 	struct tcon_context *conn = private->conn;

@@ -443,10 +443,12 @@ typedef int socklen_t;
 #endif
 
 /*
-   Samba needs type definitions for int16, int32_t, uint16 and uint32_t.
+   Samba needs type definitions for 
+   int8_t,  int16_t,  int32_t, int64_t 
+   uint8_t, uint16_t, uint32_t and uint64_t.
 
-   Normally these are signed and unsigned 16 and 32 bit integers, but
-   they actually only need to be at least 16 and 32 bits
+   Normally these are signed and unsigned 8, 16, 32 and 64 bit integers, but
+   they actually only need to be at least 8, 16, 32 and 64 bits
    respectively. Thus if your word size is 8 bytes just defining them
    as signed and unsigned int will work.
 */
@@ -456,20 +458,11 @@ typedef int socklen_t;
 #endif
 
 #if !defined(int16)
-#if (SIZEOF_SHORT == 4)
-#define int16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define int16 short
-#endif /* SIZEOF_SHORT != 4 */
+#define int16 int16_t
 #endif
 
-
 #if !defined(uint16)
-#if (SIZEOF_SHORT == 4)
-#define uint16 __ERROR___CANNOT_DETERMINE_TYPE_FOR_INT16;
-#else /* SIZEOF_SHORT != 4 */
-#define uint16 unsigned short
-#endif /* SIZEOF_SHORT != 4 */
+#define uint16 uint16_t
 #endif
 
 #if !defined(int32)

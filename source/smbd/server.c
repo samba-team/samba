@@ -38,7 +38,7 @@ void exit_server(struct server_context *smb, const char *reason)
  */
 static void setup_listen(struct event_context *events,
 			 const struct model_ops *model_ops, 
-			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16),
+			 void (*accept_handler)(struct event_context *,struct fd_event *,time_t,uint16_t),
 			 struct in_addr *ifip, unsigned port)
 {
 	struct fd_event fde;
@@ -302,7 +302,7 @@ static void setup_process_model(struct event_context *events,
 	/* Output the build options to the debug log */ 
 	build_options(False);
 
-	if (sizeof(uint16) < 2 || sizeof(uint32_t) < 4) {
+	if (sizeof(uint16_t) < 2 || sizeof(uint32_t) < 4) {
 		DEBUG(0,("ERROR: Samba is not configured correctly for the word size on your machine\n"));
 		exit(1);
 	}

@@ -33,7 +33,7 @@ static BOOL test_OpenPolicy(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	struct lsa_QosInfo qos;
 	struct lsa_OpenPolicy r;
 	NTSTATUS status;
-	uint16 system_name = '\\';
+	uint16_t system_name = '\\';
 
 	printf("\ntesting OpenPolicy\n");
 

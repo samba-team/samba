@@ -145,7 +145,7 @@ static const struct {
 
 
 /* return a dos error string given a error class and error code */
-const char *dos_errstr(uint8 class, uint16 code)
+const char *dos_errstr(uint8 class, uint16_t code)
 {
 	static char *msg;
 	int i, j;

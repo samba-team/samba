@@ -223,7 +223,7 @@ enum socket_error {SOCKET_READ_TIMEOUT,
  * SMB UCS2 (16-bit unicode) internal type.
  */
 
-typedef uint16 smb_ucs2_t;
+typedef uint16_t smb_ucs2_t;
 
 /* ucs2 string types. */
 typedef smb_ucs2_t wpstring[PSTRING_LEN];
@@ -919,7 +919,7 @@ struct pwd_info
 typedef struct user_struct
 {
 	struct user_struct *next, *prev;
-	uint16 vuid; /* Tag for this entry. */
+	uint16_t vuid; /* Tag for this entry. */
 
 	DATA_BLOB session_key;
 

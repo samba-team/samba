@@ -131,7 +131,7 @@ static const struct dcesrv_interface *find_interface_by_uuid(const struct dcesrv
 /*
   find a call that is pending in our call list
 */
-static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_conn, uint16 call_id)
+static struct dcesrv_call_state *dcesrv_find_call(struct dcesrv_connection *dce_conn, uint16_t call_id)
 {
 	struct dcesrv_call_state *c;
 	for (c=dce_conn->call_list;c;c=c->next) {
@@ -554,7 +554,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 {
 	struct ndr_pull *pull;
 	struct ndr_push *push;
-	uint16 opnum;
+	uint16_t opnum;
 	void *r;
 	NTSTATUS status;
 	DATA_BLOB stub;

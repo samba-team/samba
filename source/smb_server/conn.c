@@ -126,7 +126,7 @@ void conn_close_all(struct server_context *smb)
 /****************************************************************************
 clear a vuid out of the validity cache, and as the 'owner' of a connection.
 ****************************************************************************/
-void conn_clear_vuid_cache(struct server_context *smb, uint16 vuid)
+void conn_clear_vuid_cache(struct server_context *smb, uint16_t vuid)
 {
 	struct tcon_context *conn;
 	unsigned int i;

@@ -32,7 +32,7 @@
 static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 				TALLOC_CTX *mem_ctx,
 				const char *username,
-				uint16 acct_flags,
+				uint16_t acct_flags,
 				const uint8 lm_pw[16], const uint8 nt_pw[16],
 				const auth_usersupplied_info *user_info, 
 				DATA_BLOB *user_sess_key, 
@@ -68,7 +68,7 @@ static NTSTATUS sam_password_ok(const struct auth_context *auth_context,
 
 static NTSTATUS sam_account_ok(TALLOC_CTX *mem_ctx,
 			       const char *username,
-			       uint16 acct_flags,
+			       uint16_t acct_flags,
 			       NTTIME *acct_expiry,
 			       NTTIME *must_change_time,
 			       NTTIME *last_set_time,
@@ -173,7 +173,7 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 	struct ldb_message **msgs_domain;
 	void *sam_ctx;
 	char *username = user_info->internal_username.str;
-	uint16 acct_flags;
+	uint16_t acct_flags;
 	const char *workstation_list;
 	NTTIME acct_expiry;
 	NTTIME must_change_time;

@@ -571,7 +571,7 @@ struct samr_LogonHours samdb_result_logon_hours(TALLOC_CTX *mem_ctx, struct ldb_
 /*
   pull a set of account_flags from a result set. 
 */
-uint16 samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
+uint16_t samdb_result_acct_flags(struct ldb_message *msg, const char *attr)
 {
 	uint_t userAccountControl = ldb_msg_find_uint(msg, attr, 0);
 	return samdb_uf2acb(userAccountControl);

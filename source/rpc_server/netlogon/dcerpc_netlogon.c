@@ -31,7 +31,7 @@ struct server_pipe_state {
 	char *account_name;
 	char *computer_name;  /* for logging only */
 	uint32_t acct_flags;
-	uint16 sec_chan_type;
+	uint16_t sec_chan_type;
 	struct creds_CredentialState *creds;
 };
 
@@ -138,7 +138,7 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 						 TALLOC_CTX *mem_ctx,
 						 const char *account_name, 
 						 const char *computer_name, 
-						 uint16 secure_channel_type,
+						 uint16_t secure_channel_type,
 						 uint32_t in_flags,
 						 const struct netr_Credential *client_credentials,
 						 struct netr_Credential *server_credentials,
@@ -146,7 +146,7 @@ static NTSTATUS netr_ServerAuthenticateInternals(struct server_pipe_state *pipe_
 {
 	void *sam_ctx;
 	uint8 *mach_pwd;
-	uint16 acct_flags;
+	uint16_t acct_flags;
 	int num_records;
 	struct ldb_message **msgs;
 	NTSTATUS nt_status;

@@ -88,7 +88,7 @@ BOOL smbpasswd_gethexpwd(char *p, unsigned char *pwd)
 
 /*! Convert a 16-byte array into 32 hex characters. */
 
-void smbpasswd_sethexpwd(fstring p, unsigned char *pwd, uint16 acb_info)
+void smbpasswd_sethexpwd(fstring p, unsigned char *pwd, uint16_t acb_info)
 {
 	if (pwd != NULL) {
 		int i;
@@ -104,9 +104,9 @@ void smbpasswd_sethexpwd(fstring p, unsigned char *pwd, uint16 acb_info)
 
 /*! Decode the account control bits (ACB) info from a string. */
 
-uint16 smbpasswd_decode_acb_info(const char *p)
+uint16_t smbpasswd_decode_acb_info(const char *p)
 {
-	uint16 acb_info = 0;
+	uint16_t acb_info = 0;
 	BOOL finished = False;
 
 	/*
@@ -170,7 +170,7 @@ uint16 smbpasswd_decode_acb_info(const char *p)
 
 /*! Encode account control bits (ACBs) into a string. */
 
-char *smbpasswd_encode_acb_info(uint16 acb_info)
+char *smbpasswd_encode_acb_info(uint16_t acb_info)
 {
 	static fstring acct_str;
 	size_t i = 0;

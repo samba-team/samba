@@ -409,7 +409,7 @@ static BOOL test_AbortSystemShutdown(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	struct winreg_AbortSystemShutdown r;
 	NTSTATUS status;
-	uint16 server = 0x0;
+	uint16_t server = 0x0;
 
 	r.in.server = &server;
 	

@@ -357,7 +357,7 @@ int event_loop_wait(struct event_context *ev)
 				   which ones and call the handler, being careful to allow
 				   the handler to remove itself when called */
 				for (fe=ev->fd_events; fe; fe=fe->next) {
-					uint16 flags = 0;
+					uint16_t flags = 0;
 					if (FD_ISSET(fe->fd, &r_fds)) flags |= EVENT_FD_READ;
 					if (FD_ISSET(fe->fd, &w_fds)) flags |= EVENT_FD_WRITE;
 					if (fe->ref_count && flags) {

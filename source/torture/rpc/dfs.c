@@ -39,7 +39,7 @@ static BOOL test_Exist(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-static BOOL test_InfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 level,
+static BOOL test_InfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level,
 			   const char *root)
 {
 	NTSTATUS status;
@@ -64,7 +64,7 @@ static BOOL test_InfoLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 static BOOL test_Info(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *root)
 {
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 100, 101, 102, 200, 300};
+	uint16_t levels[] = {1, 2, 3, 4, 100, 101, 102, 200, 300};
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (!test_InfoLevel(p, mem_ctx, levels[i], root)) {
@@ -74,7 +74,7 @@ static BOOL test_Info(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, const char *ro
 	return ret;
 }
 
-static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 level)
+static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16_t level)
 {
 	NTSTATUS status;
 	struct dfs_Enum r;
@@ -120,7 +120,7 @@ static BOOL test_EnumLevel(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, uint16 le
 static BOOL test_Enum(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 {
 	BOOL ret = True;
-	uint16 levels[] = {1, 2, 3, 4, 200, 300};
+	uint16_t levels[] = {1, 2, 3, 4, 200, 300};
 	int i;
 	for (i=0;i<ARRAY_SIZE(levels);i++) {
 		if (!test_EnumLevel(p, mem_ctx, levels[i])) {

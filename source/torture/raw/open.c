@@ -265,7 +265,7 @@ static BOOL test_openx(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 	struct {
-		uint16 open_func;
+		uint16_t open_func;
 		BOOL with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {
@@ -454,7 +454,7 @@ static BOOL test_t2open(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	BOOL ret = True;
 	int i;
 	struct {
-		uint16 open_func;
+		uint16_t open_func;
 		BOOL with_file;
 		NTSTATUS correct_status;
 	} open_funcs[] = {

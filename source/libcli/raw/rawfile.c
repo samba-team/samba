@@ -111,10 +111,10 @@ static struct cli_request *smb_raw_t2mkdir_send(struct cli_tree *tree,
 						union smb_mkdir *parms)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_MKDIR;
+	uint16_t setup = TRANSACT2_MKDIR;
 	TALLOC_CTX *mem_ctx;
 	struct cli_request *req;
-	uint16 data_total;
+	uint16_t data_total;
 
 	mem_ctx = talloc_init("t2mkdir");
 
@@ -219,10 +219,10 @@ static struct cli_request *smb_raw_t2open_send(struct cli_tree *tree,
 					       union smb_open *parms)
 {
 	struct smb_trans2 t2;
-	uint16 setup = TRANSACT2_OPEN;
+	uint16_t setup = TRANSACT2_OPEN;
 	TALLOC_CTX *mem_ctx = talloc_init("smb_raw_t2open");
 	struct cli_request *req;
-	uint16 list_size;
+	uint16_t list_size;
 
 	list_size = ea_list_size(parms->t2open.in.num_eas, parms->t2open.in.eas);
 

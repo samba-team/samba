@@ -125,7 +125,7 @@ void reply_tcon_and_X(struct request_context *req)
 	NTSTATUS status;
 	union smb_tcon con;
 	char *p;
-	uint16 passlen;
+	uint16_t passlen;
 
 	con.tconx.level = RAW_TCON_TCONX;
 
@@ -1065,7 +1065,7 @@ void reply_write_and_X(struct request_context *req)
 
 	if (req->in.wct == 14) {
 		uint32_t offset_high = IVAL(req->in.vwv, VWV(12));
-		uint16 count_high = SVAL(req->in.vwv, VWV(9));
+		uint16_t count_high = SVAL(req->in.vwv, VWV(9));
 		io->writex.in.offset |= (((uint64_t)offset_high) << 32);
 		io->writex.in.count |= ((uint32_t)count_high) << 16;
 	}
@@ -1321,7 +1321,7 @@ void reply_tdis(struct request_context *req)
 ****************************************************************************/
 void reply_echo(struct request_context *req)
 {
-	uint16 count;
+	uint16_t count;
 	int i;
 
 	REQ_CHECK_WCT(req, 0);
@@ -1894,7 +1894,7 @@ static void reply_sesssetup_old(struct request_context *req)
 	NTSTATUS status;
 	union smb_sesssetup sess;
 	char *p;
-	uint16 passlen;
+	uint16_t passlen;
 
 	sess.old.level = RAW_SESSSETUP_OLD;
 
@@ -1952,7 +1952,7 @@ static void reply_sesssetup_nt1(struct request_context *req)
 	NTSTATUS status;
 	union smb_sesssetup sess;
 	char *p;
-	uint16 passlen1, passlen2;
+	uint16_t passlen1, passlen2;
 
 	sess.nt1.level = RAW_SESSSETUP_NT1;
 
@@ -2022,7 +2022,7 @@ static void reply_sesssetup_spnego(struct request_context *req)
 	NTSTATUS status;
 	union smb_sesssetup sess;
 	char *p;
-	uint16 blob_len;
+	uint16_t blob_len;
 
 	sess.spnego.level = RAW_SESSSETUP_SPNEGO;
 
@@ -2101,7 +2101,7 @@ void reply_sesssetup(struct request_context *req)
 ****************************************************************************/
 void reply_ulogoffX(struct request_context *req)
 {
-	uint16 vuid;
+	uint16_t vuid;
 
 	vuid = SVAL(req->in.hdr, HDR_UID);
 	
@@ -2199,7 +2199,7 @@ static void reply_ntcreate_and_X_send(struct request_context *req)
 void reply_ntcreate_and_X(struct request_context *req)
 {
 	union smb_open *io;
-	uint16 fname_len;
+	uint16_t fname_len;
 
 	/* parse the request */
 	REQ_CHECK_WCT(req, 24);

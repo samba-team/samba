@@ -25,7 +25,7 @@
 */
 static void mark_packet_signed(struct request_context *req) 
 {
-	uint16 flags2;
+	uint16_t flags2;
 	flags2 = SVAL(req->out.hdr, HDR_FLG2);
 	flags2 |= FLAGS2_SMB_SECURITY_SIGNATURES;
 	SSVAL(req->out.hdr, HDR_FLG2, flags2);

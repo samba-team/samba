@@ -81,7 +81,7 @@ static BOOL cli_list_new_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_new(struct cli_tree *tree, const char *Mask, uint16 attribute, 
+int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute, 
 		 void (*fn)(file_info *, const char *, void *), 
 		 void *caller_state)
 {
@@ -224,7 +224,7 @@ static BOOL cli_list_old_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_old(struct cli_tree *tree, const char *Mask, uint16 attribute, 
+int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute, 
 		 void (*fn)(file_info *, const char *, void *), 
 		 void *caller_state)
 {
@@ -307,7 +307,7 @@ int cli_list_old(struct cli_tree *tree, const char *Mask, uint16 attribute,
  This auto-switches between old and new style.
 ****************************************************************************/
 
-int cli_list(struct cli_tree *tree, const char *Mask,uint16 attribute, 
+int cli_list(struct cli_tree *tree, const char *Mask,uint16_t attribute, 
 	     void (*fn)(file_info *, const char *, void *), void *state)
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)

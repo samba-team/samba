@@ -123,7 +123,7 @@ static NTSTATUS rpc_resolve_dc(const char *server,
 static NTSTATUS connect_to_domain_password_server(struct cli_state **cli, 
 						  const char *server, 
 						  const char *setup_creds_as,
-						  uint16 sec_chan,
+						  uint16_t sec_chan,
 						  const unsigned char *trust_passwd,
 						  BOOL *retry)
 {
@@ -234,7 +234,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 				      const char *domain, 
 				      struct in_addr *ip, 
 				      const char *setup_creds_as, 
-				      uint16 sec_chan,
+				      uint16_t sec_chan,
 				      const unsigned char *trust_passwd)
 {
 	NTSTATUS ret = NT_STATUS_UNSUCCESSFUL;
@@ -265,7 +265,7 @@ static NTSTATUS attempt_connect_to_dc(struct cli_state **cli,
 static NTSTATUS find_connect_dc(struct cli_state **cli, 
 				 const char *domain,
 				 const char *setup_creds_as,
-				 uint16 sec_chan,
+				 uint16_t sec_chan,
 				 unsigned char *trust_passwd, 
 				 time_t last_change_time)
 {
@@ -293,7 +293,7 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 				       uchar chal[8],
 				       auth_serversupplied_info **server_info, 
 				       const char *server, const char *setup_creds_as,
-				       uint16 sec_chan,
+				       uint16_t sec_chan,
 				       unsigned char trust_passwd[16],
 				       time_t last_change_time)
 {

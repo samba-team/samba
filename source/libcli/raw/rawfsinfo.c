@@ -67,10 +67,10 @@ failed:
 ****************************************************************************/
 static struct cli_request *smb_raw_qfsinfo_send(struct cli_tree *tree,
 						TALLOC_CTX *mem_ctx,
-						uint16 info_level)
+						uint16_t info_level)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_QFSINFO;
+	uint16_t setup = TRANSACT2_QFSINFO;
 	
 	tp.in.max_setup = 0;
 	tp.in.flags = 0; 
@@ -133,7 +133,7 @@ struct cli_request *smb_raw_fsinfo_send(struct cli_tree *tree,
 					TALLOC_CTX *mem_ctx, 
 					union smb_fsinfo *fsinfo)
 {
-	uint16 info_level;
+	uint16_t info_level;
 
 	/* handle the only non-trans2 call separately */
 	if (fsinfo->generic.level == RAW_QFS_DSKATTR) {
@@ -144,7 +144,7 @@ struct cli_request *smb_raw_fsinfo_send(struct cli_tree *tree,
 	}
 
 	/* the headers map the trans2 levels direct to info levels */
-	info_level = (uint16)fsinfo->generic.level;
+	info_level = (uint16_t)fsinfo->generic.level;
 
 	return smb_raw_qfsinfo_send(tree, mem_ctx, info_level);
 }

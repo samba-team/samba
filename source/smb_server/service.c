@@ -210,7 +210,7 @@ static NTSTATUS make_connection_snum(struct request_context *req,
 ****************************************************************************/
 static NTSTATUS make_connection(struct request_context *req,
 				const char *service, DATA_BLOB password, 
-				const char *dev, uint16 vuid)
+				const char *dev, uint16_t vuid)
 {
 	int snum;
 	enum ntvfs_type type;

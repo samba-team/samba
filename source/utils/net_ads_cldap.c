@@ -48,8 +48,8 @@ struct cldap_netlogon_reply {
 	struct netlogon_string unk0;
 
 	uint32_t version;
-	uint16 lmnt_token;
-	uint16 lm20_token;
+	uint16_t lmnt_token;
+	uint16_t lm20_token;
 };
 
 /*

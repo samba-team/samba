@@ -119,9 +119,9 @@ NTSTATUS smb_raw_trans2_recv(struct cli_request *req,
 	}
 
 	while (1)  {
-		uint16 param_count, param_ofs, param_disp;
-		uint16 data_count, data_ofs, data_disp;
-		uint16 total_data2, total_param2;
+		uint16_t param_count, param_ofs, param_disp;
+		uint16_t data_count, data_ofs, data_disp;
+		uint16_t total_data2, total_param2;
 
 		/* parse out the total lengths again - they can shrink! */
 		total_data2 = SVAL(req->in.vwv, VWV(1));

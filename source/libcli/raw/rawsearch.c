@@ -25,7 +25,7 @@
 ****************************************************************************/
 static void smb_raw_search_backend(struct cli_request *req,
 				   TALLOC_CTX *mem_ctx,
-				   uint16 count, 
+				   uint16_t count, 
 				   void *private,
 				   BOOL (*callback)(void *private, union smb_search_data *file))
 
@@ -129,12 +129,12 @@ static NTSTATUS smb_raw_search_next_old(struct cli_tree *tree,
 static NTSTATUS smb_raw_search_first_blob(struct cli_tree *tree,
 					  TALLOC_CTX *mem_ctx,	/* used to allocate output blobs */
 					  union smb_search_first *io,
-					  uint16 info_level,
+					  uint16_t info_level,
 					  DATA_BLOB *out_param_blob,
 					  DATA_BLOB *out_data_blob)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_FINDFIRST;
+	uint16_t setup = TRANSACT2_FINDFIRST;
 	NTSTATUS status;
 	
 	tp.in.max_setup = 0;
@@ -181,12 +181,12 @@ static NTSTATUS smb_raw_search_first_blob(struct cli_tree *tree,
 static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 union smb_search_next *io,
-					 uint16 info_level,
+					 uint16_t info_level,
 					 DATA_BLOB *out_param_blob,
 					 DATA_BLOB *out_data_blob)
 {
 	struct smb_trans2 tp;
-	uint16 setup = TRANSACT2_FINDNEXT;
+	uint16_t setup = TRANSACT2_FINDNEXT;
 	NTSTATUS status;
 	
 	tp.in.max_setup = 0;
@@ -236,7 +236,7 @@ static NTSTATUS smb_raw_search_next_blob(struct cli_tree *tree,
 static int parse_trans2_search(struct cli_tree *tree,
 			       TALLOC_CTX *mem_ctx, 
 			       enum search_level level,
-			       uint16 flags,
+			       uint16_t flags,
 			       DATA_BLOB *blob,
 			       union smb_search_data *data)
 {
@@ -450,8 +450,8 @@ static int parse_trans2_search(struct cli_tree *tree,
 static NTSTATUS smb_raw_t2search_backend(struct cli_tree *tree,
 					 TALLOC_CTX *mem_ctx,
 					 enum search_level level,
-					 uint16 flags,
-					 int16 count,
+					 uint16_t flags,
+					 int16_t count,
 					 DATA_BLOB *blob,
 					 void *private,
 					 BOOL (*callback)(void *private, union smb_search_data *file))
@@ -495,7 +495,7 @@ NTSTATUS smb_raw_search_first(struct cli_tree *tree,
 			      union smb_search_first *io, void *private,
 			      BOOL (*callback)(void *private, union smb_search_data *file))
 {
-	uint16 info_level = 0;
+	uint16_t info_level = 0;
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
 			
@@ -505,7 +505,7 @@ NTSTATUS smb_raw_search_first(struct cli_tree *tree,
 	if (io->generic.level >= RAW_SEARCH_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
-	info_level = (uint16)io->generic.level;
+	info_level = (uint16_t)io->generic.level;
 
 	status = smb_raw_search_first_blob(tree, mem_ctx,
 					   io, info_level, &p_blob, &d_blob);
@@ -539,7 +539,7 @@ NTSTATUS smb_raw_search_next(struct cli_tree *tree,
 			     union smb_search_next *io, void *private,
 			     BOOL (*callback)(void *private, union smb_search_data *file))
 {
-	uint16 info_level = 0;
+	uint16_t info_level = 0;
 	DATA_BLOB p_blob, d_blob;
 	NTSTATUS status;
 
@@ -549,7 +549,7 @@ NTSTATUS smb_raw_search_next(struct cli_tree *tree,
 	if (io->generic.level >= RAW_SEARCH_GENERIC) {
 		return NT_STATUS_INVALID_LEVEL;
 	}
-	info_level = (uint16)io->generic.level;
+	info_level = (uint16_t)io->generic.level;
 
 	status = smb_raw_search_next_blob(tree, mem_ctx,
 					  io, info_level, &p_blob, &d_blob);

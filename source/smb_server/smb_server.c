@@ -25,7 +25,7 @@
 /*
   send an oplock break request to a client
 */
-BOOL req_send_oplock_break(struct tcon_context *conn, uint16 fnum, uint8 level)
+BOOL req_send_oplock_break(struct tcon_context *conn, uint16_t fnum, uint8 level)
 {
 	struct request_context *req;
 
@@ -436,7 +436,7 @@ onto the message queue
 static void switch_message(int type, struct request_context *req)
 {
 	int flags;
-	uint16 session_tag;
+	uint16_t session_tag;
 	struct server_context *smb = req->smb;
 
 	type &= 0xff;
@@ -598,10 +598,10 @@ static void construct_reply(struct request_context *req)
 */
 void chain_reply(struct request_context *req)
 {
-	uint16 chain_cmd, chain_offset;
+	uint16_t chain_cmd, chain_offset;
 	char *vwv, *data;
-	uint16 wct;
-	uint16 data_size;
+	uint16_t wct;
+	uint16_t data_size;
 
 	if (req->in.wct < 2 || req->out.wct < 2) {
 		req_reply_dos_error(req, ERRSRV, ERRerror);
@@ -682,7 +682,7 @@ void server_terminate(struct server_context *smb)
   called when a SMB socket becomes readable
 */
 void smbd_read_handler(struct event_context *ev, struct fd_event *fde, 
-		       time_t t, uint16 flags)
+		       time_t t, uint16_t flags)
 {
 	struct request_context *req;
 	struct server_context *smb = fde->private;
@@ -725,7 +725,7 @@ void smbd_process_async(struct server_context *smb)
   for reading from that socket
 */
 void init_smbsession(struct event_context *ev, struct model_ops *model_ops, int fd,
-		     void (*read_handler)(struct event_context *, struct fd_event *, time_t, uint16))
+		     void (*read_handler)(struct event_context *, struct fd_event *, time_t, uint16_t))
 {
 	struct server_context *smb;
 	TALLOC_CTX *mem_ctx;

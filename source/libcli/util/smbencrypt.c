@@ -66,7 +66,7 @@ void E_md4hash(const char *passwd, uchar p16[16])
 	/* Password must be converted to NT unicode - null terminated. */
 	push_ucs2(NULL, wpwd, (const char *)passwd, 256, STR_UNICODE|STR_NOALIGN|STR_TERMINATE);
 	/* Calculate length in bytes */
-	len = strlen_w(wpwd) * sizeof(int16);
+	len = strlen_w(wpwd) * sizeof(int16_t);
 
 	mdfour(p16, (unsigned char *)wpwd, len);
 	ZERO_STRUCT(wpwd);	

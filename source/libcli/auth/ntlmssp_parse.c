@@ -190,7 +190,7 @@ BOOL msrpc_parse(TALLOC_CTX *mem_ctx, const DATA_BLOB *blob,
 	const char **ps, *s;
 	DATA_BLOB *b;
 	size_t head_ofs = 0;
-	uint16 len1, len2;
+	uint16_t len1, len2;
 	uint32_t ptr;
 	uint32_t *v;
 	pstring p;

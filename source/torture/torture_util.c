@@ -304,7 +304,7 @@ BOOL split_username(const char *pair, char **user, char **pass)
 /*
   set a attribute on a file
 */
-BOOL torture_set_file_attribute(struct cli_tree *tree, const char *fname, uint16 attrib)
+BOOL torture_set_file_attribute(struct cli_tree *tree, const char *fname, uint16_t attrib)
 {
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;

@@ -46,7 +46,7 @@ struct cli_negotiate {
 	unsigned max_xmit;
 
 	/* maximum number of requests that can be multiplexed */
-	uint16 max_mux;
+	uint16_t max_mux;
 
 	/* the negotiatiated protocol */
 	enum protocol_types protocol;
@@ -116,7 +116,7 @@ struct cli_transport {
 
 	/* the next mid to be allocated - needed for signing and
 	   request matching */
-	uint16 next_mid;
+	uint16_t next_mid;
 	
 	/* negotiated protocol information */
 	struct cli_negotiate negotiate;
@@ -143,7 +143,7 @@ struct cli_transport {
 		union {
 			struct {
 				uint8 eclass;
-				uint16 ecode;
+				uint16_t ecode;
 			} dos;
 			NTSTATUS nt_status;
 			enum socket_error socket_error;
@@ -154,7 +154,7 @@ struct cli_transport {
 	struct {
 		/* a oplock break request handler */
 		BOOL (*handler)(struct cli_transport *transport, 
-				uint16 tid, uint16 fnum, uint8 level, void *private);
+				uint16_t tid, uint16_t fnum, uint8 level, void *private);
 		/* private data passed to the oplock handler */
 		void *private;
 	} oplock;
@@ -181,7 +181,7 @@ struct cli_session {
 	
 	/* after a session setup the server provides us with
 	   a vuid identifying the security context */
-	uint16 vuid;
+	uint16_t vuid;
 
 	/* default pid for this session */
 	uint32_t pid;
@@ -202,7 +202,7 @@ struct cli_tree {
 	/* session layer info */
 	struct cli_session *session;
 
-	uint16 tid;			/* tree id, aka cnum */
+	uint16_t tid;			/* tree id, aka cnum */
 	char *device;
 	char *fs_type;
 };
@@ -225,7 +225,7 @@ struct cli_request {
 
 	/* the flags2 from the SMB request, in raw form (host byte
 	   order). Used to parse strings */
-	uint16 flags2;
+	uint16_t flags2;
 
 	/* the NT status for this request. Set by packet receive code
 	   or code detecting error. */
@@ -239,7 +239,7 @@ struct cli_request {
 	unsigned int one_way_request:1;
 
 	/* the mid of this packet - used to match replies */
-	uint16 mid;
+	uint16_t mid;
 
 	struct {
 		/* the raw SMB buffer, including the 4 byte length header */
