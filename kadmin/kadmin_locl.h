@@ -99,4 +99,6 @@ DECL(exit_kadmin);
 
 #define ALLOC(X) ((X) = malloc(sizeof(*(X))))
 
+#define KADMIN_APPL_VERSION "KADM0.0" /* XXX get from kadm5_locl.h */
+
 #endif /* __ADMIN_LOCL_H__ */

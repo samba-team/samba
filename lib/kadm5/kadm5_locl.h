@@ -91,6 +91,8 @@ enum kadm_ops {
     kadm_randkey
 };
 
+#define KADMIN_APPL_VERSION "KADM0.0"
+
 kadm5_ret_t
 _kadm5_acl_check_permission __P((
 	kadm5_server_context *context,
