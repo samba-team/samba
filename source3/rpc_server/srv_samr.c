@@ -119,7 +119,6 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 static char *unmap_unixname(char *unix_user_name, int name_idx)
 {
 	char *mapfile = lp_username_map();
-	char *s;
 	char **lines;
 	static pstring tok;
 	int i;
@@ -136,7 +135,7 @@ static char *unmap_unixname(char *unix_user_name, int name_idx)
 	DEBUG(5,("unmap_unixname: scanning username map %s, index: %d\n", mapfile, name_idx));
 
 	for (i=0; lines[i]; i++) {
-		char *unixname = s;
+		char *unixname = lines[i];
 		char *dosname = strchr(unixname,'=');
 
 		if (!dosname)
