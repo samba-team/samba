@@ -1029,7 +1029,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 
 	if (!winbindd_lookup_sid_by_name(domain, domain->name, name_user, &user_sid, 
 					 &name_type)) {
-		DEBUG(1, ("user '%s' does not exist\n", name_user));
+		DEBUG(4, ("user '%s' does not exist\n", name_user));
 		goto done;
 	}
 
