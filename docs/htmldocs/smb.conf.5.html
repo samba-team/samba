@@ -597,6 +597,7 @@ parameter for details. Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#hostsdeny"><strong>hosts deny</strong></a>
 <p><br><li > <a href="smb.conf.5.html#include"><strong>include</strong></a>
 <p><br><li > <a href="smb.conf.5.html#invalidusers"><strong>invalid users</strong></a>
+<p><br><li > <a href="smb.conf.5.html#level2oplocks"><strong>level2 oplocks</strong></a>
 <p><br><li > <a href="smb.conf.5.html#locking"><strong>locking</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lppausecommand"><strong>lppause command</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lpqcommand"><strong>lpq command</strong></a>
@@ -1944,6 +1945,8 @@ data consistency between SMB/CIFS, NFS and local file access (and is a
 <p><br>This parameter defaults to <em>"On"</em> on systems that have the support,
 and <em>"off"</em> on systems that don't. You should never need to touch
 this parameter.
+<p><br>See also the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> and <a href="smb.conf.5.html#level2oplocks"><strong>"level2 oplocks"</strong></a>
+parameters.
 <p><br><a name="ldapfilter"></a>
 <li><strong><strong>ldap filter (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
@@ -2014,6 +2017,35 @@ that tells <a href="smbd.8.html"><strong>smbd</strong></a> to start from when se
 for an entry in the LDAP password database.
 <p><br><strong>Default:</strong>
 <code>	empty string.</code>
+<p><br><a name="level2oplocks"></a>
+<li><strong><strong>level2 oplocks (S)</strong></strong>
+<p><br>This parameter (new in Samba 2.0.5) controls whether Samba supports
+level2 (read-only) oplocks on a share. In Samba 2.0.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release.
+<p><br>Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks). This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application .EXE files).
+<p><br>Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches.
+<p><br>It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-).
+<p><br>For more discussions on level2 oplocks see the CIFS spec.
+<p><br>Currently, if <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> are supported
+then level2 oplocks are not granted (even if this parameter is set
+to <code>"true"</code>).
+<p><br>See also the <a href="smb.conf.5.html#oplocks"><strong>"oplocks"</strong></a> and <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> parameters.
+<p><br><strong>Default:</strong>
+<code> level2 oplocks = False</code>
+<p><br><strong>Example:</strong>
+<code> level2 oplocks = True</code>
 <p><br><a name="lmannounce"></a>
 <li><strong><strong>lm announce (G)</strong></strong>
 <p><br>This parameter determines if <a href="nmbd.8.html"><strong>nmbd</strong></a> will produce
@@ -2878,6 +2910,8 @@ by the underlying operating system. This allows data synchronization between
 all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process. See the <a href="smb.conf.5.html#kerneloplocks"><strong>kernel oplocks</strong></a> parameter
 for details.
+<p><br>See also the <a href="smb.conf.5.html#kerneloplocks"><strong>"kernel oplocks"</strong></a> and
+<a href="smb.conf.5.html#level2oplocks"><strong>"level2 oplocks"</strong></a> parameters.
 <p><br><strong>Default:</strong>
 <code>	oplocks = True</code>
 <p><br><strong>Example:</strong>

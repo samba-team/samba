@@ -1065,6 +1065,9 @@ linf(\fBdirectory security mask\fP)(directorysecuritymask)
 \fBinvalid users\fP
 .IP 
 .IP o 
+\fBlevel2 oplocks\fP
+.IP 
+.IP o 
 \fBlocking\fP
 .IP 
 .IP o 
@@ -2925,6 +2928,9 @@ This parameter defaults to \fI"On"\fP on systems that have the support,
 and \fI"off"\fP on systems that don\'t\&. You should never need to touch
 this parameter\&.
 .IP 
+See also the \fB"oplocks"\fP and \fB"level2 oplocks"\fP
+parameters\&.
+.IP 
 .IP "\fBldap filter (G)\fP" 
 .IP 
 This parameter is part of the \fIEXPERIMENTAL\fP Samba support for a
@@ -3015,6 +3021,44 @@ for an entry in the LDAP password database\&.
 .IP 
 \fBDefault:\fP
 \f(CW	empty string\&.\fP
+.IP 
+.IP "\fBlevel2 oplocks (S)\fP" 
+.IP 
+This parameter (new in Samba 2\&.0\&.5) controls whether Samba supports
+level2 (read-only) oplocks on a share\&. In Samba 2\&.0\&.4 this parameter
+defaults to "False" as the code is new, but will default to "True"
+in a later release\&.
+.IP 
+Level2, or read-only oplocks allow Windows NT clients that have an
+oplock on a file to downgrade from a read-write oplock to a read-only
+oplock once a second client opens the file (instead of releasing all
+oplocks on a second open, as in traditional, exclusive oplocks)\&. This
+allows all openers of the file that support level2 oplocks to cache
+the file for read-ahead only (ie\&. they may not cache writes or lock
+requests) and increases performance for many acesses of files that
+are not commonly written (such as application \&.EXE files)\&.
+.IP 
+Once one of the clients which have a read-only oplock writes to
+the file all clients are notified (no reply is needed or waited
+for) and told to break their oplocks to "none" and delete any
+read-ahead caches\&.
+.IP 
+It is recommended that this parameter be turned on to speed access
+to shared executables (and also to test the code :-)\&.
+.IP 
+For more discussions on level2 oplocks see the CIFS spec\&.
+.IP 
+Currently, if \fB"kernel oplocks"\fP are supported
+then level2 oplocks are not granted (even if this parameter is set
+to \f(CW"true"\fP)\&.
+.IP 
+See also the \fB"oplocks"\fP and \fB"kernel oplocks"\fP parameters\&.
+.IP 
+\fBDefault:\fP
+\f(CW level2 oplocks = False\fP
+.IP 
+\fBExample:\fP
+\f(CW level2 oplocks = True\fP
 .IP 
 .IP "\fBlm announce (G)\fP" 
 .IP 
@@ -4165,6 +4209,9 @@ by the underlying operating system\&. This allows data synchronization between
 all access to oplocked files, whether it be via Samba or NFS or a local
 UNIX process\&. See the \fBkernel oplocks\fP parameter
 for details\&.
+.IP 
+See also the \fB"kernel oplocks"\fP and
+\fB"level2 oplocks"\fP parameters\&.
 .IP 
 \fBDefault:\fP
 \f(CW	oplocks = True\fP
