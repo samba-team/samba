@@ -32,26 +32,26 @@ SAM_MODULE_VERSIONING_MAGIC
 
 /* General API */
 
-NTSTATUS sam_skel_get_sec_desc(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, SEC_DESC **sd)
+NTSTATUS sam_skel_get_sec_desc(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, SEC_DESC **sd)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_set_sec_desc(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, const SEC_DESC *sd)
+NTSTATUS sam_skel_set_sec_desc(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, const SEC_DESC *sd)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 	
-NTSTATUS sam_skel_lookup_sid(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type)
+NTSTATUS sam_skel_lookup_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID *sid, char **name, uint32 *type)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_lookup_name(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const char *name, DOM_SID **sid, uint32 *type)
+NTSTATUS sam_skel_lookup_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const char *name, DOM_SID **sid, uint32 *type)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -60,13 +60,13 @@ NTSTATUS sam_skel_lookup_name(const struct sam_methods *sam_method, const NT_USE
 	
 /* Domain API */
 
-NTSTATUS sam_skel_update_domain(const struct sam_methods *sam_method, const SAM_DOMAIN_HANDLE *domain)
+NTSTATUS sam_skel_update_domain(const SAM_METHODS *sam_method, const SAM_DOMAIN_HANDLE *domain)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_get_domain_handle(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, SAM_DOMAIN_HANDLE **domain)
+NTSTATUS sam_skel_get_domain_handle(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, SAM_DOMAIN_HANDLE **domain)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -75,44 +75,44 @@ NTSTATUS sam_skel_get_domain_handle(const struct sam_methods *sam_method, const 
 
 /* Account API */
 
-NTSTATUS sam_skel_create_account(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS sam_skel_create_account(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *group_name, uint16 acct_ctrl, SAM_ACCOUNT_HANDLE **account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_add_account(const struct sam_methods *sam_method, const SAM_ACCOUNT_HANDLE *account)
+NTSTATUS sam_skel_add_account(const SAM_METHODS *sam_method, const SAM_ACCOUNT_HANDLE *account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_update_account(const struct sam_methods *sam_method, const SAM_ACCOUNT_HANDLE *account)
+NTSTATUS sam_skel_update_account(const SAM_METHODS *sam_method, const SAM_ACCOUNT_HANDLE *account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_delete_account(const struct sam_methods *sam_method, const SAM_ACCOUNT_HANDLE *account)
+NTSTATUS sam_skel_delete_account(const SAM_METHODS *sam_method, const SAM_ACCOUNT_HANDLE *account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_enum_accounts(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, int32 *account_count, SAM_ACCOUNT_ENUM **accounts)
+NTSTATUS sam_skel_enum_accounts(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint16 acct_ctrl, uint32 *account_count, SAM_ACCOUNT_ENUM **accounts)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
-NTSTATUS sam_skel_get_account_by_sid(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS sam_skel_get_account_by_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *accountsid, SAM_ACCOUNT_HANDLE **account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_get_account_by_name(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *name, SAM_ACCOUNT_HANDLE **account)
+NTSTATUS sam_skel_get_account_by_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *name, SAM_ACCOUNT_HANDLE **account)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -121,69 +121,69 @@ NTSTATUS sam_skel_get_account_by_name(const struct sam_methods *sam_method, cons
 
 /* Group API */
 
-NTSTATUS sam_skel_create_group(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const uint32 type, SAM_GROUP_HANDLE **group)
+NTSTATUS sam_skel_create_group(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *account_name, uint16 group_ctrl, SAM_GROUP_HANDLE **group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_add_group(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group)
+NTSTATUS sam_skel_add_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_update_group(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group)
+NTSTATUS sam_skel_update_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_delete_group(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group)
+NTSTATUS sam_skel_delete_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_enum_groups(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 type, uint32 *groups_count, SAM_GROUP_ENUM **groups)
+NTSTATUS sam_skel_enum_groups(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint16 group_ctrl, uint32 *groups_count, SAM_GROUP_ENUM **groups)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_get_group_by_sid(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
+NTSTATUS sam_skel_get_group_by_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const DOM_SID *groupsid, SAM_GROUP_HANDLE **group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
-NTSTATUS sam_skel_get_group_by_name(const struct sam_methods *sam_method, const NT_USER_TOKEN *access_token, const uint32 access_desired, const char *name, SAM_GROUP_HANDLE **group)
-{
-	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-
-NTSTATUS sam_skel_add_member_to_group(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
-{
-	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS sam_skel_delete_member_from_group(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
-{
-	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
-	return NT_STATUS_NOT_IMPLEMENTED;
-}
-
-NTSTATUS sam_skel_enum_groupmembers(const struct sam_methods *sam_method, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members)
+NTSTATUS sam_skel_get_group_by_name(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, uint32 access_desired, const char *name, SAM_GROUP_HANDLE **group)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 
 
-NTSTATUS sam_skel_get_groups_of_account(const struct sam_methods *sam_method, const SAM_ACCOUNT_HANDLE *account, const uint32 type, uint32 *group_count, SAM_GROUP_ENUM **groups)
+NTSTATUS sam_skel_add_member_to_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
+{
+	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS sam_skel_delete_member_from_group(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, const SAM_GROUP_MEMBER *member)
+{
+	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+NTSTATUS sam_skel_enum_groupmembers(const SAM_METHODS *sam_method, const SAM_GROUP_HANDLE *group, uint32 *members_count, SAM_GROUP_MEMBER **members)
+{
+	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
+	return NT_STATUS_NOT_IMPLEMENTED;
+}
+
+
+NTSTATUS sam_skel_get_groups_of_sid(const SAM_METHODS *sam_method, const NT_USER_TOKEN *access_token, const DOM_SID **sids, uint16 group_ctrl, uint32 *group_count, SAM_GROUP_ENUM **groups)
 {
 	DEBUG(0,("sam_skel: %s was called!\n",__FUNCTION__));
 	return NT_STATUS_NOT_IMPLEMENTED;
@@ -238,7 +238,7 @@ NTSTATUS sam_init(const SAM_CONTEXT *sam_context, SAM_METHODS **sam_method, cons
 	(*sam_method)->sam_delete_member_from_group = sam_skel_delete_member_from_group;
 	(*sam_method)->sam_enum_groupmembers = sam_skel_enum_groupmembers;
 
-	(*sam_method)->sam_get_groups_of_account = sam_skel_get_groups_of_account;
+	(*sam_method)->sam_get_groups_of_sid = sam_skel_get_groups_of_sid;
 
 	(*sam_method)->free_private_data = NULL;
 

@@ -30,8 +30,11 @@
 #define SAM_ASSERT(x) SMB_ASSERT(x)
 #else
 #define SAM_ASSERT(x) while (0) { \
-	if (!(x)) return NT_STATUS_FAIL_CHECK;\
-        }
+	if (!(x)) {
+		DEBUG(0, ("SAM_ASSERT failed!\n"))
+		return NT_STATUS_FAIL_CHECK;\
+	} \
+    }
 #endif
 
 
