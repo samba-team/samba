@@ -73,6 +73,8 @@ RCSID("$Id$");
 #include <krb.h>
 #include <kafs.h>
 
+#include <resolve.h>
+
 #include "afssysdefs.h"
 
 #define AUTH_SUPERUSER "afs"
@@ -117,74 +119,41 @@ get_cred(char *princ, char *inst, char *krealm, CREDENTIALS *c, KTEXT_ST *tkt)
 static u_int32_t ip_aton(char *ip)
 {
   u_int32_t addr;
-  int a, b, c, d;
-  if(sscanf(ip, "%d.%d.%d.%d", &a, &b, &c, &d) != 4)
-    return 0;
-  if(a < 0 || a > 255 || 
-     b < 0 || b > 255 || 
-     c < 0 || c > 255 || 
-     d < 0 || d > 255)
-    return 0;
+  unsigned int a, b, c, d;
+  if(sscanf(ip, "%u.%u.%u.%u", &a, &b, &c, &d) != 4)
+      return 0;
+  if((a | b | c | d) > 255)
+      return 0;
   addr = (a << 24) | (b << 16) | (c << 8) | d;
   addr = htonl(addr);
   return addr;
 }
 
 /* Try to get a db-server for an AFS cell from a AFSDB record */
+
 static int
 dns_find_cell(char *cell, char *dbserver)
 {
-#if defined(HAVE_DN_EXPAND) && defined(HAVE_RES_SEARCH)
-#ifndef T_AFSDB
-#define T_AFSDB 18
-#endif
-    unsigned char data[1024];
-    unsigned char host[MaxHostNameLen];
-    int len;
-
-    int status;
-    unsigned char *p;
-
-    len = res_search(cell, C_IN, T_AFSDB, data, sizeof(data));
-    if(len < 0)
-	return -1;
-    p = data + sizeof(HEADER);
-    status = dn_expand(data, data + len, p, host, sizeof(host));
-    if(status < 0)
-	return -1;
-    p += status;
-    p += 4; /* type and class */
-    while(p < data + len){
-	int type, subtype, class, ttl, size;
-	status = dn_expand(data, data + len, p, host, sizeof(host));
-	if(status < 0)
-	    return -1;
-	p += status;
-	type = (p[0] << 8) | p[1];
-	p += 2;
-	class = (p[0] << 8) | p[1];
-	p += 2;
-	ttl = (p[0] << 24) | (p[1] << 16) | (p[2] << 8) | p[3];
-	p += 4;
-	size = (p[0] << 8) | p[1];
-	p += 2;
-	if(type == T_AFSDB){
-	    subtype = (p[0] << 8) | p[1];
-	    if(subtype == 1){
-		p += 2;
-		status = dn_expand(data, data + len, p, host, sizeof(host));
-		if(status < 0)
-		    return -1;
-		strncpy(dbserver, (char*)host, MaxHostNameLen);
-		dbserver[MaxHostNameLen] = 0;
-		return 0;
+    struct dns_reply *r;
+    int ok = -1;
+    r = dns_lookup(cell, "afsdb");
+    if(r){
+	struct resource_record *rr = r->head;
+	struct mx_record *afsdb;  /* afsdb and mx are identical */
+	while(rr){
+	    if(rr->type == T_AFSDB && rr->u.afsdb->preference == 1){
+		strncpy(dbserver, rr->u.afsdb->domain, MaxHostNameLen);
+		dbserver[MaxHostNameLen - 1] = 0;
+		ok = 0;
+		break;
 	    }
+	    rr = rr->next;
 	}
-	p += size;
+	dns_free_data(r);
     }
-#endif
-    return -1;
+    return ok;
 }
+
 
 /* Find the realm associated with cell. Do this by opening
    /usr/vice/etc/CellServDB and getting the realm-of-host for the
