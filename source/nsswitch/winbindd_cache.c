@@ -258,7 +258,7 @@ static NTSTATUS fetch_cache_seqnum( struct winbindd_domain *domain, time_t now )
 		
 	snprintf( key, sizeof(key), "SEQNUM/%s", domain->name );
 	
-	data = tdb_fetch_by_string( wcache->tdb, key );
+	data = tdb_fetch_bystring( wcache->tdb, key );
 	if ( !data.dptr || data.dsize!=8 ) {
 		DEBUG(10,("fetch_cache_seqnum: invalid data size key [%s]\n", key ));
 		return NT_STATUS_UNSUCCESSFUL;

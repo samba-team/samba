@@ -361,7 +361,7 @@ WINBINDD_PW* wb_getpwnam( const char * name )
 	
 	keystr = acct_userkey_byname( name );
 	
-	data = tdb_fetch_by_string( account_tdb, keystr );
+	data = tdb_fetch_bystring( account_tdb, keystr );
 	
 	pw = NULL;
 	
@@ -390,7 +390,7 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 		return NULL;
 	}
 	
-	data = tdb_fetch_by_string( account_tdb, acct_userkey_byuid(uid) );
+	data = tdb_fetch_bystring( account_tdb, acct_userkey_byuid(uid) );
 	if ( !data.dptr ) {
 		DEBUG(4,("wb_getpwuid: failed to locate uid == %d\n", uid));
 		return NULL;
@@ -399,7 +399,7 @@ WINBINDD_PW* wb_getpwuid( const uid_t uid )
 
 	SAFE_FREE( data.dptr );
 	
-	data = tdb_fetch_by_string( account_tdb, keystr );
+	data = tdb_fetch_bystring( account_tdb, keystr );
 	
 	pw = NULL;
 	
@@ -444,7 +444,7 @@ BOOL wb_storepwnam( const WINBINDD_PW *pw )
 	data.dptr = str;
 	data.dsize = strlen(str) + 1;	
 
-	if ( (tdb_store_by_string(account_tdb, namekey, data, TDB_REPLACE)) == -1 ) {
+	if ( (tdb_store_bystring(account_tdb, namekey, data, TDB_REPLACE)) == -1 ) {
 		DEBUG(0,("wb_storepwnam: Failed to store \"%s\"\n", str));
 		ret = -1;
 		goto done;
@@ -458,9 +458,9 @@ BOOL wb_storepwnam( const WINBINDD_PW *pw )
 	data.dptr = username;
 	data.dsize = strlen(username) + 1;
 	
-	if ( (tdb_store_by_string(account_tdb, uidkey, data, TDB_REPLACE)) == -1 ) {
+	if ( (tdb_store_bystring(account_tdb, uidkey, data, TDB_REPLACE)) == -1 ) {
 		DEBUG(0,("wb_storepwnam: Failed to store uid key \"%s\"\n", str));
-		tdb_delete_by_string(account_tdb, namekey);
+		tdb_delete_bystring(account_tdb, namekey);
 		ret = -1;
 		goto done;
 	}		
@@ -490,7 +490,7 @@ WINBINDD_GR* wb_getgrnam( const char * name )
 	
 	keystr = acct_groupkey_byname( name );
 	
-	data = tdb_fetch_by_string( account_tdb, keystr );
+	data = tdb_fetch_bystring( account_tdb, keystr );
 	
 	grp = NULL;
 	
@@ -519,7 +519,7 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 		return NULL;
 	}
 	
-	data = tdb_fetch_by_string( account_tdb, acct_groupkey_bygid(gid) );
+	data = tdb_fetch_bystring( account_tdb, acct_groupkey_bygid(gid) );
 	if ( !data.dptr ) {
 		DEBUG(4,("wb_getgrgid: failed to locate gid == %d\n", gid));
 		return NULL;
@@ -528,7 +528,7 @@ WINBINDD_GR* wb_getgrgid( gid_t gid )
 
 	SAFE_FREE( data.dptr );
 	
-	data = tdb_fetch_by_string( account_tdb, keystr );
+	data = tdb_fetch_bystring( account_tdb, keystr );
 	
 	grp = NULL;
 	
@@ -573,7 +573,7 @@ BOOL wb_storegrnam( const WINBINDD_GR *grp )
 	data.dptr = str;
 	data.dsize = strlen(str) + 1;	
 
-	if ( (tdb_store_by_string(account_tdb, namekey, data, TDB_REPLACE)) == -1 ) {
+	if ( (tdb_store_bystring(account_tdb, namekey, data, TDB_REPLACE)) == -1 ) {
 		DEBUG(0,("wb_storegrnam: Failed to store \"%s\"\n", str));
 		ret = -1;
 		goto done;
@@ -587,9 +587,9 @@ BOOL wb_storegrnam( const WINBINDD_GR *grp )
 	data.dptr = groupname;
 	data.dsize = strlen(groupname) + 1;
 	
-	if ( (tdb_store_by_string(account_tdb, gidkey, data, TDB_REPLACE)) == -1 ) {
+	if ( (tdb_store_bystring(account_tdb, gidkey, data, TDB_REPLACE)) == -1 ) {
 		DEBUG(0,("wb_storegrnam: Failed to store gid key \"%s\"\n", str));
-		tdb_delete_by_string(account_tdb, namekey);
+		tdb_delete_bystring(account_tdb, namekey);
 		ret = -1;
 		goto done;
 	}
@@ -674,6 +674,43 @@ static void free_winbindd_gr( WINBINDD_GR *grp )
 }
 
 /**********************************************************************
+**********************************************************************/
+
+static BOOL wb_delete_user( const char *name)
+{
+	char *namekey;
+	
+	if ( !account_tdb && !winbindd_accountdb_init() ) {
+		DEBUG(0,("wb_storepwnam: Failed to open winbindd account db\n"));
+		return False;
+	}
+
+	namekey = acct_userkey_byname( name );
+	
+	/* lock the main entry first */
+	
+	if ( tdb_lock_bystring(account_tdb, namekey, 0) == -1 ) {
+		DEBUG(0,("wb_delete_user: Failed to lock %s\n", namekey));
+		return False;
+	}
+	
+	
+	tdb_delete_bystring( account_tdb, namekey );
+	tdb_unlock_bystring( account_tdb, namekey );
+	
+	return True;
+}
+
+
+/**********************************************************************
+**********************************************************************/
+
+static BOOL wb_delete_group( const char *name)
+{
+	return False;
+}
+
+/**********************************************************************
  Create a new "UNIX" user for the system given a username
 **********************************************************************/
 
@@ -698,7 +735,7 @@ enum winbindd_result winbindd_create_user(struct winbindd_cli_state *state)
 	user  = state->request.data.acct_mgt.username;
 	group = state->request.data.acct_mgt.groupname;
 	
-	DEBUG(3, ("[%5d]: create_user user=>(%s), group=>(%s)\n", 
+	DEBUG(3, ("[%5d]: create_user: user=>(%s), group=>(%s)\n", 
 		state->pid, user, group));
 		
 	if ( !*group )
@@ -767,7 +804,7 @@ enum winbindd_result winbindd_create_group(struct winbindd_cli_state *state)
 	state->request.data.acct_mgt.groupname[sizeof(state->request.data.acct_mgt.groupname)-1]='\0';	
 	group = state->request.data.acct_mgt.groupname;
 	
-	DEBUG(3, ("[%5d]: create_group (%s)\n", state->pid, group));
+	DEBUG(3, ("[%5d]: create_group: (%s)\n", state->pid, group));
 	
 	/* get a new uid */
 	
@@ -810,7 +847,7 @@ enum winbindd_result winbindd_add_user_to_group(struct winbindd_cli_state *state
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  add_user_to_group add %s to %s\n", state->pid, 
+	DEBUG(3, ("[%5d]:  add_user_to_group: add %s to %s\n", state->pid, 
 		user, group));
 	
 	/* make sure it is a valid user */
@@ -858,7 +895,7 @@ enum winbindd_result winbindd_remove_user_from_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  remove_user_to_group delete %s from %s\n", state->pid, 
+	DEBUG(3, ("[%5d]:  remove_user_to_group: delete %s from %s\n", state->pid, 
 		user, group));
 	
 	/* don't worry about checking the username since we're removing it anyways */
@@ -901,7 +938,7 @@ enum winbindd_result winbindd_set_user_primary_group(struct winbindd_cli_state *
 	group = state->request.data.acct_mgt.groupname;
 	user = state->request.data.acct_mgt.username;
 	
-	DEBUG(3, ("[%5d]:  set_user_primary_group group %s for user %s\n", state->pid, 
+	DEBUG(3, ("[%5d]:  set_user_primary_grou:p group %s for user %s\n", state->pid, 
 		group, user));
 	
 	/* make sure it is a valid user */
@@ -926,21 +963,67 @@ enum winbindd_result winbindd_set_user_primary_group(struct winbindd_cli_state *
 }
 
 /**********************************************************************
- Set the primary group membership of a user
+ Delete a user from the winbindd account tdb.
 **********************************************************************/
 
 enum winbindd_result winbindd_delete_user(struct winbindd_cli_state *state)
 {
-	return WINBINDD_ERROR;
+	WINBINDD_PW *pw;
+	char *user;
+
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_delete_user: non-privileged access denied!\n"));
+		return WINBINDD_ERROR;
+	}
+	
+	/* Ensure null termination */
+	state->request.data.acct_mgt.username[sizeof(state->request.data.acct_mgt.username)-1]='\0';	
+	user = state->request.data.acct_mgt.username;
+	
+	DEBUG(3, ("[%5d]:  delete_user: %s\n", state->pid, user));
+	
+	/* make sure it is a valid user */
+	
+	if ( !(pw = wb_getpwnam( user )) ) {
+		DEBUG(4,("winbindd_delete_user: Cannot delete a non-existent user\n"));
+		return WINBINDD_ERROR;
+	}
+	
+	
+	return ( wb_delete_user(user) ? WINBINDD_OK : WINBINDD_ERROR );
 }
 
 /**********************************************************************
- Set the primary group membership of a user
+ Delete a group from winbindd's account tdb. 
 **********************************************************************/
 
 enum winbindd_result winbindd_delete_group(struct winbindd_cli_state *state)
 {
-	return WINBINDD_ERROR;
+	WINBINDD_GR *grp;
+	char *group;
+
+	if ( !state->privileged ) {
+		DEBUG(2, ("winbindd_delete_group: non-privileged access denied!\n"));
+		return WINBINDD_ERROR;
+	}
+	
+	/* Ensure null termination */
+	state->request.data.acct_mgt.username[sizeof(state->request.data.acct_mgt.groupname)-1]='\0';	
+	group = state->request.data.acct_mgt.groupname;
+	
+	DEBUG(3, ("[%5d]:  delete_group: %s\n", state->pid, group));
+	
+	/* make sure it is a valid group */
+	
+	if ( !(grp = wb_getgrnam( group )) ) {
+		DEBUG(4,("winbindd_delete_user: Cannot delete a non-existent group\n"));
+		return WINBINDD_ERROR;
+	}
+	
+	free_winbindd_gr( grp );
+	
+	return ( wb_delete_group(group) ? WINBINDD_OK : WINBINDD_ERROR );
 }
+
 
 
