@@ -1,3 +1,15 @@
+2004-08-20  Love Hörnquist Åstrand <lha@it.su.se>
+
+	* ftpd/{ftpd_locl.h, extern.h, ftpcmd.y, ftpd.8, ftpd.c}:
+	Remove all traces of setjmp/longjmp.
+	Handle those command that is needed in oobhandler,
+	those are ABOR, STAT, ENC, CONF, MIC.
+	add options to turn off insecure OOB handling and document the option
+
+	Changes inspired by openbsd and netbsd changes but quite diffrent is
+	most places since the code no longer look and is structured the same
+	way.
+
 2004-08-16  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftp/main.c: reverse help strings for --no-gss-bindings and
