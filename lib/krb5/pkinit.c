@@ -856,7 +856,7 @@ pk_verify_chain_standard(krb5_context context,
     int i;
     int ret;
 
-    ret = KRB5_KDC_ERR_CLIENT_NAME_MISMATCH;
+    ret = KRB5_KDC_ERROR_CLIENT_NAME_MISMATCH;
     for (i = 0; i < sk_X509_num(chain); i++) {
 	cert = sk_X509_value(chain, i);
 	if (pk_peer_compare(context, client, cert) == TRUE) {
@@ -896,7 +896,7 @@ pk_verify_chain_standard(krb5_context context,
 	ret = 0;
 	break;
     case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY:
-	ret = KRB5_KDC_ERR_CANT_VERIFY_CERTIFICATE;
+	ret = KRB5_KDC_ERROR_CANT_VERIFY_CERTIFICATE;
 	break;
     case X509_V_ERR_UNABLE_TO_DECODE_ISSUER_PUBLIC_KEY:
     case X509_V_ERR_CERT_SIGNATURE_FAILURE:
@@ -904,7 +904,7 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_NOT_YET_VALID:
     case X509_V_ERR_ERROR_IN_CERT_NOT_AFTER_FIELD:
     case X509_V_ERR_CERT_HAS_EXPIRED:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
 	break;
     case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT:
     case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN:
@@ -912,12 +912,12 @@ pk_verify_chain_standard(krb5_context context,
     case X509_V_ERR_CERT_CHAIN_TOO_LONG:
     case X509_V_ERR_PATH_LENGTH_EXCEEDED:
     case X509_V_ERR_INVALID_CA:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE;
+	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE;
 	krb5_set_error_string(context, "PKINIT: unknown CA or can't "
 			      "verify certificate");
 	break;
     default:
-	ret = KRB5_KDC_ERR_INVALID_CERTIFICATE; /* XXX */
+	ret = KRB5_KDC_ERROR_INVALID_CERTIFICATE; /* XXX */
 	break;
     }
     if (ret) {
