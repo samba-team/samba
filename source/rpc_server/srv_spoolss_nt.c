@@ -669,10 +669,8 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 				 POLICY_HND *handle)
 {
 	uint32 result = NT_STATUS_NO_PROBLEMO;
-	SEC_DESC_BUF *sec_desc = NULL;
-	uint32 acc_granted, status;
 	fstring name;
-	extern struct current_user current_user;
+	int snum;
 	
 	if (printername == NULL) {
 		result = ERROR_INVALID_PRINTER_NAME;
@@ -729,20 +727,12 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	}
 
 	/* NT doesn't let us connect to a printer if the connecting user
-	   doesn't have print permission.  If no security descriptor just
-	   return OK. */
+	   doesn't have print permission.  */
 
-	if (!nt_printing_getsec(name, &sec_desc)) {
-		goto done;
-	}
-	
-	/* Yuck - we should use the pipe_user rather than current_user but
-	   it doesn't seem to be filled in correctly. )-: */
+	if (!get_printer_snum(handle, &snum))
+		return ERROR_INVALID_HANDLE;
 
-	map_printer_permissions(sec_desc->sec);
-
-	if (!se_access_check(sec_desc->sec, &current_user, PRINTER_ACCESS_USE,
-			     &acc_granted, &status)) {
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_USE)) {
 		DEBUG(3, ("access DENIED for printer open\n"));
 		close_printer_handle(handle);
 		result = ERROR_ACCESS_DENIED;
@@ -750,8 +740,6 @@ uint32 _spoolss_open_printer_ex( const UNISTR2 *printername,
 	}
 
  done:
-	free_sec_desc_buf(&sec_desc);
-
 	return result;
 }
 
