@@ -188,6 +188,17 @@ static void sighup_handler(int signum)
 	sys_select_signal();
 }
 
+static void sigchld_handler(int signum)
+{
+	pid_t pid;
+	int status;
+
+	while ((pid = wait(&status)) != -1 || errno == EINTR) {
+		continue; /* Reap children */
+	}
+	sys_select_signal();
+}
+
 /* React on 'smbcontrol winbindd reload-config' in the same way as on SIGHUP*/
 static void msg_reload_services(int msg_type, pid_t src, void *buf, size_t len)
 {
@@ -888,12 +899,14 @@ int main(int argc, char **argv)
 	BlockSignals(False, SIGUSR1);
 	BlockSignals(False, SIGUSR2);
 	BlockSignals(False, SIGHUP);
+	BlockSignals(False, SIGCHLD);
 
 	/* Setup signal handlers */
 	
 	CatchSignal(SIGINT, termination_handler);      /* Exit on these sigs */
 	CatchSignal(SIGQUIT, termination_handler);
 	CatchSignal(SIGTERM, termination_handler);
+	CatchSignal(SIGCHLD, sigchld_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
 
