@@ -62,4 +62,5 @@ class printerdata_ex:
             return self.hnd.getprinterdataex(self.key, key)['data']
 
     def __getitem__(self, key):
-        return self.printerdata_ex_subkey(self.host, key, self.creds, access)
+        return self.printerdata_ex_subkey(
+            self.host, key, self.creds, self.access)
