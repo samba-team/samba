@@ -160,7 +160,8 @@ find the first type XX name in a node status reply - used for finding
 a servers name given its IP
 return the matched name in *name
 **************************************************************************/
-BOOL name_status_find(int type, struct in_addr to_ip, char *name)
+
+BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name)
 {
 	struct node_status *status;
 	struct nmb_name nname;
@@ -168,17 +169,22 @@ BOOL name_status_find(int type, struct in_addr to_ip, char *name)
 	int sock;
 
 	sock = open_socket_in(SOCK_DGRAM, 0, 3, interpret_addr(lp_socket_address()), True);
-	if (sock == -1) return False;
+	if (sock == -1)
+		return False;
 
-	make_nmb_name(&nname, "*", 0);
+	/* W2K PDC's seem not to respond to '*'#0. JRA */
+	make_nmb_name(&nname, q_name, q_type);
 	status = node_status_query(sock, &nname, to_ip, &count);
 	close(sock);
-	if (!status) return False;
+	if (!status)
+		return False;
 
 	for (i=0;i<count;i++) {
-		if (status[i].type == type) break;
+		if (status[i].type == type)
+			break;
 	}
-	if (i == count) return False;
+	if (i == count)
+		return False;
 
 	StrnCpy(name, status[i].name, 15);
 
@@ -979,7 +985,7 @@ BOOL lookup_pdc_name(const char *srcname, const char *domain, struct in_addr *pd
 
   *pdc_name = '\0';
 
-  ret = name_status_find(0x20,*pdc_ip,pdc_name);
+  ret = name_status_find(domain, 0x1b, 0x20,*pdc_ip,pdc_name);
 
   if(ret && *pdc_name) {
     fstrcpy(ret_name, pdc_name);
@@ -1170,9 +1176,50 @@ NT GETDC call, UNICODE, NT domain SID and uncle tom cobbley and all...
 /********************************************************
  Get the IP address list of the PDC/BDC's of a Domain.
 *********************************************************/
+
 BOOL get_dc_list(BOOL pdc_only, char *group, struct in_addr **ip_list, int *count)
 {
-	return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
+	/*
+	 * If we're looking for a PDC and it's our domain then
+	 * use the 'password server' parameter.
+	 */
+
+	if (pdc_only && strequal(group, lp_workgroup())) {
+		char *p;
+		char *pserver = lp_passwordserver();
+		fstring name;
+		int num_adresses = 0;
+		struct in_addr *return_iplist = NULL;
+
+		if (! *pserver)
+			return internal_resolve_name(group, 0x1B, ip_list, count);
+
+		p = pserver;
+		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+			if (strequal(name, "*"))
+				return internal_resolve_name(group, 0x1B, ip_list, count);
+			num_adresses++;
+		}
+		if (num_adresses == 0)
+			return internal_resolve_name(group, 0x1B, ip_list, count);
+
+		return_iplist = (struct in_addr *)malloc(num_adresses * sizeof(struct in_addr));
+		if(return_iplist == NULL) {
+			DEBUG(3,("get_dc_list: malloc fail !\n"));
+			return False;
+		}
+		p = pserver;
+		*count = 0;
+		while (next_token(&p,name,LIST_SEP,sizeof(name))) {
+			struct in_addr name_ip;
+			if (resolve_name( name, &name_ip, 0x20) == False)
+				continue;
+			return_iplist[*count++] = name_ip;
+		}
+		*ip_list = return_iplist;
+		return (*count != 0);
+	} else
+		return internal_resolve_name(group, pdc_only ? 0x1B : 0x1C, ip_list, count);
 }
 
 /********************************************************

@@ -23,6 +23,7 @@
 
 #include "winbindd.h"
 
+extern pstring debugf;
 pstring servicesf = CONFIGFILE;
 
 /* List of all connected clients */
@@ -49,6 +50,7 @@ static BOOL reload_services_file(BOOL test)
 	reopen_logs();
 	ret = lp_load(servicesf,False,False,True);
 
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	reopen_logs();
 	load_interfaces();
 
@@ -674,15 +676,16 @@ struct winbindd_state server_state;   /* Server state information */
 int main(int argc, char **argv)
 {
 	extern pstring global_myname;
-	extern pstring debugf;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
 
-        /* glibc (?) likes to print "User defined signal 1" and exit if a
-           SIGUSR1 is received before a handler is installed */
+	/* glibc (?) likes to print "User defined signal 1" and exit if a
+		SIGUSR1 is received before a handler is installed */
 
  	CatchSignal(SIGUSR1, SIG_IGN);
+
+	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 
 	/* Initialise for running in non-root mode */
 
@@ -722,7 +725,6 @@ int main(int argc, char **argv)
 		}
 	}
 
-	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);
 	reopen_logs();
 
@@ -736,7 +738,7 @@ int main(int argc, char **argv)
 	}
 
 	TimeInit();
-        charset_initialise(); /* For *&#^%'s sake don't remove this */
+	charset_initialise(); /* For *&#^%'s sake don't remove this */
 
 	if (!reload_services_file(False)) {
 		DEBUG(0, ("error opening config file\n"));

@@ -1267,7 +1267,7 @@ static BOOL connect_to_domain_password_server(struct cli_state *pcli,
           	return False;
 	  }
 
-	  if (!name_status_find(0x20, to_ip, remote_machine)) {
+	  if (!name_status_find("*", 0, 0x20, to_ip, remote_machine)) {
 		  DEBUG(1, ("connect_to_domain_password_server: Can't "
 			    "resolve name for IP %s\n", server));
 		  return False;

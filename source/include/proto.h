@@ -1195,7 +1195,7 @@ WERROR ntstatus_to_werror(NTSTATUS error);
 
 struct node_status *node_status_query(int fd,struct nmb_name *name,
 				      struct in_addr to_ip, int *num_names);
-BOOL name_status_find(int type, struct in_addr to_ip, char *name);
+BOOL name_status_find(const char *q_name, int q_type, int type, struct in_addr to_ip, char *name);
 BOOL name_register(int fd, const char *name, int name_type,
 		   struct in_addr name_ip, int opcode,
 		   BOOL bcast, 
