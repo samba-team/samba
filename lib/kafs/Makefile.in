@@ -103,7 +103,7 @@ afslib.so: afslib.o
 
 $(OBJECTS): ../../include/config.h roken_rename.h
 
-roken_rename.h: $(srcdir)/../krb/roken_rename.h
+roken_rename.h:
 	$(LN_S) $(srcdir)/../krb/roken_rename.h .
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
