@@ -3619,8 +3619,7 @@ int make_connection(char *service,char *user,char *password, int pwlen, char *de
 int find_free_file(void )
 {
   int i;
-  /* we start at 1 here for an obscure reason I can't now remember,
-     but I think is important :-) */
+  /* returning a file handle of 0 is a bad idea - so we start at 1 */
   for (i=1;i<MAX_OPEN_FILES;i++)
 	  if (!Files[i].open) {
 		  /* paranoia */
