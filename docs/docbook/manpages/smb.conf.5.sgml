@@ -594,10 +594,14 @@
 
 	<itemizedlist>
 		<listitem><para><link linkend="ABORTSHUTDOWNSCRIPT"><parameter>abort shutdown script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDGROUPSCRIPT"><parameter>add group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDUSERTOGROUPSCRIPT"><parameter>add user to group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEGROUPSCRIPT"><parameter>delete group script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADSSERVER"><parameter>ads server</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALGORITHMICRIDBASE"><parameter>algorithmic rid base</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
@@ -620,7 +624,9 @@
 		<listitem><para><link linkend="DELETEPRINTERCOMMAND"><parameter>delete printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETESHARECOMMAND"><parameter>delete share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="DELETEUSERSCRIPT"><parameter>delete user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="DELETEUSERFROMGROUPSCRIPT"><parameter>delete user from group script</parameter></link></para></listitem>
 		<listitem><para><link linkend="DFREECOMMAND"><parameter>dfree command</parameter></link></para></listitem>
+		<listitem><para><link linkend="DISABLENETBIOS"><parameter>disable netbios</parameter></link></para></listitem>
 		<listitem><para><link linkend="DISABLESPOOLSS"><parameter>disable spoolss</parameter></link></para></listitem>
 		<listitem><para><link linkend="DNSPROXY"><parameter>dns proxy</parameter></link></para></listitem>
 		<listitem><para><link linkend="DOMAINADMINGROUP"><parameter>domain admin group</parameter></link></para></listitem>
@@ -633,6 +639,7 @@
 		<listitem><para><link linkend="GETWDCACHE"><parameter>getwd cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="HIDELOCALUSERS"><parameter>hide local users</parameter></link></para></listitem>
 		<listitem><para><link linkend="HIDEUNREADABLE"><parameter>hide unreadable</parameter></link></para></listitem>
+		<listitem><para><link linkend="HIDEUNWRITEABLE"><parameter>hide unwriteable</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOMEDIRMAP"><parameter>homedir map</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTMSDFS"><parameter>host msdfs</parameter></link></para></listitem>
 		<listitem><para><link linkend="HOSTSEQUIV"><parameter>hosts equiv</parameter></link></para></listitem>
@@ -777,6 +784,7 @@
 		<listitem><para><link linkend="ALLOWHOSTS"><parameter>allow hosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="AVAILABLE"><parameter>available</parameter></link></para></listitem>
 		<listitem><para><link linkend="BLOCKINGLOCKS"><parameter>blocking locks</parameter></link></para></listitem>
+		<listitem><para><link linkend="BLOCKSIZE"><parameter>block size</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSABLE"><parameter>browsable</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSEABLE"><parameter>browseable</parameter></link></para></listitem>
 		<listitem><para><link linkend="CASESENSITIVE"><parameter>case sensitive</parameter></link></para></listitem>
@@ -835,6 +843,7 @@
 		<listitem><para><link linkend="MANGLEDMAP"><parameter>mangled map</parameter></link></para></listitem>
 		<listitem><para><link linkend="MANGLEDNAMES"><parameter>mangled names</parameter></link></para></listitem>
 		<listitem><para><link linkend="MANGLINGCHAR"><parameter>mangling char</parameter></link></para></listitem>
+		<listitem><para><link linkend="MANGLINGMETHOD"><parameter>mangling method</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPARCHIVE"><parameter>map archive</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPHIDDEN"><parameter>map hidden</parameter></link></para></listitem>
 		<listitem><para><link linkend="MAPSYSTEM"><parameter>map system</parameter></link></para></listitem>
@@ -919,7 +928,6 @@
 		<para>Example: <command>abort shutdown script = /sbin/shutdown -c</command></para>
 		</listitem>
 		</varlistentry>
-
 
 		<varlistentry>
 		<term><anchor id="ADDPRINTERCOMMAND">add printer command (G)</term>
@@ -1051,6 +1059,18 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="ADSSERVER">ads server (G)</term>
+		<listitem><para>If this option is specified, samba does 
+		not try to figure out what ads server to use itself, but 
+		uses the specified ads server. Either one DNS name or IP 
+		address can be used.</para>
+
+		<para>Default: <command>ads server = </command></para>
+
+		<para>Example: <command>ads server = 192.168.1.2</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="ADDUSERSCRIPT">add user script (G)</term>
@@ -1102,14 +1122,12 @@
 		%u</command></para>
 		</listitem>
 		</varlistentry>
-<varlistentry><term><anchor id="ADDGROUPSCRIPT">add group script (G)</term>
-<listitem><para>This is the full pathname to a script that will 
-		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8) when a new group is requested. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
-		</ulink> 
-
-</para></listitem>
-</varlistentry>
-
+		
+		<varlistentry><term><anchor id="ADDGROUPSCRIPT">add group script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)</ulink> when a new group is requested. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="ADMINUSERS">admin users (S)</term>
@@ -1126,8 +1144,23 @@
 		<para>Example: <command>admin users = jason</command></para>
 		</listitem>
 		</varlistentry>
-		
 
+		<varlistentry>
+		<term><anchor id="ADDUSERTOGROUPSCRIPT">add user to group script (G)</term>
+		<listitem><para>Full path to the script that will be called when 
+		a user is added to a group using the Windows NT domain administration 
+		tools. It will be run by <ulink url="smbd.8.html">smbd(8)</ulink> 
+		<emphasis>AS ROOT</emphasis>. Any <parameter>%g</parameter> will be 
+		replaced with the group name and any <parameter>%u</parameter> will 
+		be replaced with the user name.
+		</para>
+
+		<para>Default: <command>add user to group script = </command></para>
+
+		<para>Example: <command>add user to group script = /usr/sbin/adduser %u %g</command></para>
+		
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="ALLOWHOSTS">allow hosts (S)</term>
@@ -1182,8 +1215,6 @@
 		</listitem>
 		</varlistentry>
 		
-
-
 		<varlistentry>
 		<term><anchor id="ANNOUNCEAS">announce as (G)</term>
 		<listitem><para>This specifies what type of server 
@@ -1353,7 +1384,31 @@
 
 		</listitem>
 		</varlistentry>
+	
+		<varlistentry>
+		<term><anchor id="BLOCKSIZE">block size (S)</term>
+		<listitem><para>This parameter controls the behavior of 
+		<ulink url="smbd.8.html">smbd(8)</ulink> when reporting disk free 
+		sizes. By default, this reports a disk block size of 1024 bytes.
+		</para>        
 		
+		<para>Changing this parameter may have some effect on the
+		efficiency of client writes, this is not yet confirmed. This
+		parameter was added to allow advanced administrators to change
+		it (usually to a higher value) and test the effect it has on
+		client write performance without re-compiling the code. As this
+		is an experimental option it may be removed in a future release.
+		</para>
+
+		<para>Changing this option does not change the disk free reporting
+		size, just the block size unit reported to the client.</para>
+
+																		        <para>Default: <command>block size = 1024</command></para>
+																				        <para>Example: <command>block size = 65536</command></para>
+
+																						        </listitem>
+																								        </varlistentry>
+																										
 
 
 		<varlistentry>
@@ -1800,7 +1855,11 @@
 		</listitem>
 		</varlistentry>
 		
-
+		<varlistentry><term><anchor id="DELETEGROUPSCRIPT">delete group script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8)</ulink> when a group is requested to be deleted. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		</para></listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="DELETEPRINTERCOMMAND">delete printer command (G)</term>
@@ -1927,9 +1986,22 @@
 		%u</command></para></listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="DELETEUSERFROMGROUPSCRIPT">delete user from group script (G)</term>
+		<listitem><para>Full path to the script that will be called when 
+		a user is removed from a group using the Windows NT domain administration 
+		tools. It will be run by <ulink url="smbd.8.html">smbd(8)</ulink> 
+		<emphasis>AS ROOT</emphasis>. Any <parameter>%g</parameter> will be 
+		replaced with the group name and any <parameter>%u</parameter> will 
+		be replaced with the user name.
+		</para>
 
+		<para>Default: <command>delete user from group script = </command></para>
 
-
+		<para>Example: <command>delete user from group script = /usr/sbin/deluser %u %g</command></para>
+		
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="DELETEVETOFILES">delete veto files (S)</term>
@@ -2122,10 +2194,24 @@
 		</varlistentry>
 
 
+		<varlistentry>
+		<term><anchor id="DISABLENETBIOS">disable netbios (G)</term>
+		<listitem><para>Enabling this parameter will disable netbios support
+		in Samba. Netbios is the only available form of browsing in 
+		all windows versions except for 2000 and XP. </para>
+
+		<para>Note that clients that only support netbios won't be able to 
+		see your samba server when netbios support is disabled.
+		</para>
+
+		<para>Default: <command>disable netbios = no</command></para>
+		<para>Example: <command>disable netbios = yes</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="DISABLESPOOLSS">disable spoolss (G)</term>
-		<listitem><para>Enabling this parameter will disables Samba's support
+		<listitem><para>Enabling this parameter will disable Samba's support
 		for the SPOOLSS set of MS-RPC's and will yield identical behavior
 		as Samba 2.0.x.  Windows NT/2000 clients will downgrade to using
 		Lanman style printing commands. Windows 9x/ME will be uneffected by
@@ -2873,14 +2959,24 @@
 
 
 		<varlistentry>
-		<term><anchor id="HIDEUNREADABLE">hide unreadable (S)</term>
+		<term><anchor id="HIDEUNREADABLE">hide unreadable (G)</term>
 		<listitem><para>This parameter prevents clients from seeing the
 		existance of files that cannot be read. Defaults to off.</para>
 
-		<para>Default: <command>hide unreadable = no</command></para></listitem>
+		<para>Default: <command>hide unreadable = no</command></para>
+		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="HIDEUNWRITEABLE">hide unwriteable (G)</term>
+		<listitem><para>This parameter prevents clients from seeing
+		the existance of files that cannot be written to. Defaults to off.
+		Note that unwriteable directories are shown as usual.
+		</para>
 
+		<para>Default: <command>hide unwriteable = no</command></para>
+		</listitem>
+		</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="HOMEDIRMAP">homedir map (G)</term>
@@ -4131,8 +4227,22 @@
 		</listitem>
 		</varlistentry>
 
+		<varlistentry>
+		<term><anchor id="MANGLINGMETHOD">mangling mathod(G)</term>
+		<listitem><para> controls the algorithm used for the generating
+		the mangled names. Can take two different values, "hash" and
+		"hash2". "hash" is  the default and is the algorithm that has been
+		used in Samba for many years. "hash2" is a newer and considered
+		a better algorithm (generates less collisions) in the names.
+		However, many Win32 applications store the mangled names and so
+		changing to the new algorithm must not be done
+		lightly as these applications may break unless reinstalled.
+		New installations of Samba may set the default to hash2.</para>
+		<para>Default: <command>mangling method = hash</command></para>
+		<para>Example: <command>mangling method = hash2</command></para>
+		</listitem>
+		</varlistentry>
 
-		
 		<varlistentry>
 		<term><anchor id="MANGLEDSTACK">mangled stack (G)</term>
 		<listitem><para>This parameter controls the number of mangled names 
