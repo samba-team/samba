@@ -71,6 +71,30 @@ usage (void)
     exit (1);
 }
 
+/*
+ * Check expiration information
+ */
+
+static void
+print_expire (krb5_context context,
+	      krb5_kdc_rep *k)
+{
+    int i;
+    LastReq *lr = &k->part2.last_req;
+
+    for (i = 0; i < lr->len; ++i) {
+	if (lr->val[i].lr_type == 6) {
+	    printf ("Your password will expire at %s",
+		    ctime(&lr->val[i].lr_value));
+	    return;
+	}
+    }
+
+    if (k->part2.key_expiration)
+	printf ("Your password/account will expire at %s",
+		ctime(k->part2.key_expiration));
+}
+
 int
 main (int argc, char **argv)
 {
@@ -84,6 +108,7 @@ main (int argc, char **argv)
     int c;
     char *realm;
     char pwbuf[128];
+    krb5_kdc_rep kdc_rep;
     
     union {
 	krb5_flags i;
@@ -197,12 +222,15 @@ main (int argc, char **argv)
 					 pwbuf,
 					 ccache,
 					 &cred,
-					 NULL);
+					 &kdc_rep);
     memset(pwbuf, 0, sizeof(pwbuf));
     if (ret)
 	errx (1, "krb5_get_in_tkt_with_password: %s",
 	      krb5_get_err_text(context, ret));
 
+    print_expire (context, &kdc_rep);
+
+    krb5_free_kdc_rep (context, &kdc_rep);
     krb5_free_principal (context, principal);
     krb5_free_principal (context, server);
     krb5_free_ccache (context, ccache);
