@@ -231,7 +231,7 @@
 	<para><prompt>$ </prompt><userinput>smbclient -L 
 	<replaceable>yourhostname</replaceable></userinput></para>
 
-	<para>Your should get back a list of shares available on 
+	<para>You should get back a list of shares available on 
 	your server. If you don't then something is incorrectly setup. 
 	Note that this method can also be used to see what shares 
 	are available on other LanManager clients (such as WfWg).</para>
