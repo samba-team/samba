@@ -968,7 +968,11 @@ BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *rpc_in)
 	         BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
 
 	if (auth_seal) {
-		char *data = prs_data_p(rpc_in) + RPC_HEADER_LEN + RPC_HDR_REQ_LEN;
+		/*
+		 * The data in rpc_in doesn't contain the RPC_HEADER as this
+		 * has already been consumed.
+		 */
+		char *data = prs_data_p(rpc_in) + RPC_HDR_REQ_LEN;
 		NTLMSSPcalc_p(p, (uchar*)data, data_len);
 		crc32 = crc32_calc_buffer(data, data_len);
 	}
