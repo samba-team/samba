@@ -1,3 +1,9 @@
+2000-11-23  Johan Danielsson  <joda@pdc.kth.se>
+
+	* libtelnet/kerberos5.c: print the principal we're trying to use
+
+	* libtelnet/kerberos.c: print the principal we're trying to use
+
 2000-11-16  Assar Westerlund  <assar@sics.se>
 
 	* libtelnet/misc-proto.h (telnet_getenv): const-ize some
