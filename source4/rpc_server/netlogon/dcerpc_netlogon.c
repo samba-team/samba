@@ -260,7 +260,7 @@ static NTSTATUS netr_ServerAuthenticate3(struct dcesrv_call_state *dce_call, TAL
 	
 	if (pipe_state->computer_name) {
 		/* We don't want a memory leak on this long-lived talloc context */
-		talloc_free(pipe_state->account_name);
+		talloc_free(pipe_state->computer_name);
 	}
 
 	pipe_state->computer_name = talloc_strdup(pipe_state, r->in.computer_name);
