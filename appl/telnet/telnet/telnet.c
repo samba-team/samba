@@ -637,15 +637,21 @@ static char termbuf[1024];
 static int
 telnet_setupterm(const char *tname, int fd, int *errp)
 {
-	if (tgetent(termbuf, tname) == 1) {
-		termbuf[1023] = '\0';
-		if (errp)
-			*errp = 1;
-		return(0);
-	}
+#ifdef HAVE_TGETENT
+    if (tgetent(termbuf, tname) == 1) {
+	termbuf[1023] = '\0';
 	if (errp)
-		*errp = 0;
-	return(-1);
+	    *errp = 1;
+	return(0);
+    }
+    if (errp)
+	*errp = 0;
+    return(-1);
+#else
+    strlcpy(termbuf, tname, sizeof(termbuf));
+    if(errp) *errp = 1;
+    return 0;
+#endif
 }
 
 int resettermname = 1;
