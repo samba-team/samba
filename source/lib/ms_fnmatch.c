@@ -27,13 +27,13 @@
 
 #include "includes.h"
 
-static int null_match(const smb_ucs2_t *p)
+static int null_match(const char *p)
 {
 	for (;*p;p++) {
-		if (*p != UCS2_CHAR('*') &&
-		    *p != UCS2_CHAR('<') &&
-		    *p != UCS2_CHAR('"') &&
-		    *p != UCS2_CHAR('>')) return -1;
+		if (*p != '*' &&
+		    *p != '<' &&
+		    *p != '"' &&
+		    *p != '>') return -1;
 	}
 	return 0;
 }
@@ -44,8 +44,8 @@ static int null_match(const smb_ucs2_t *p)
   not grow exponentially
 */
 struct max_n {
-	const smb_ucs2_t *predot;
-	const smb_ucs2_t *postdot;
+	const char *predot;
+	const char *postdot;
 };
 
 
@@ -54,20 +54,24 @@ struct max_n {
   an optimisation only. The ldot pointer is NULL if the string does
   not contain a '.', otherwise it points at the last dot in 'n'.
 */
-static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n, 
-			   struct max_n *max_n, const smb_ucs2_t *ldot)
+static int ms_fnmatch_core(const char *p, const char *n, 
+			   struct max_n *max_n, const char *ldot)
 {
-	smb_ucs2_t c;
+	codepoint_t c, c2;
 	int i;
+	size_t size, size_n;
 
-	while ((c = *p++)) {
+	while ((c = next_codepoint(p, &size))) {
+		p += size;
+
 		switch (c) {
+		case '*':
 			/* a '*' matches zero or more characters of any type */
-		case UCS2_CHAR('*'):
 			if (max_n->predot && max_n->predot <= n) {
 				return null_match(p);
 			}
-			for (i=0; n[i]; i++) {
+			for (i=0; n[i]; i += size_n) {
+				next_codepoint(n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) {
 					return 0;
 				}
@@ -75,20 +79,21 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
 			return null_match(p);
 
+		case '<':
 			/* a '<' matches zero or more characters of
 			   any type, but stops matching at the last
 			   '.' in the string. */
-		case UCS2_CHAR('<'):
 			if (max_n->predot && max_n->predot <= n) {
 				return null_match(p);
 			}
 			if (max_n->postdot && max_n->postdot <= n && n <= ldot) {
 				return -1;
 			}
-			for (i=0; n[i]; i++) {
+			for (i=0; n[i]; i += size_n) {
+				next_codepoint(n+i, &size_n);
 				if (ms_fnmatch_core(p, n+i, max_n+1, ldot) == 0) return 0;
 				if (n+i == ldot) {
-					if (ms_fnmatch_core(p, n+i+1, max_n+1, ldot) == 0) return 0;
+					if (ms_fnmatch_core(p, n+i+size_n, max_n+1, ldot) == 0) return 0;
 					if (!max_n->postdot || max_n->postdot > n) max_n->postdot = n;
 					return -1;
 				}
@@ -96,39 +101,45 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 			if (!max_n->predot || max_n->predot > n) max_n->predot = n;
 			return null_match(p);
 
+		case '?':
 			/* a '?' matches any single character */
-		case UCS2_CHAR('?'):
 			if (! *n) {
 				return -1;
 			}
-			n++;
+			next_codepoint(n, &size_n);
+			n += size_n;
 			break;
 
-			/* a '?' matches any single character */
-		case UCS2_CHAR('>'):
-			if (n[0] == UCS2_CHAR('.')) {
+		case '>':
+			/* a '?' matches any single character, but
+			   treats '.' specially */
+			if (n[0] == '.') {
 				if (! n[1] && null_match(p) == 0) {
 					return 0;
 				}
 				break;
 			}
 			if (! *n) return null_match(p);
-			n++;
+			next_codepoint(n, &size_n);
+			n += size_n;
 			break;
 
-		case UCS2_CHAR('"'):
+		case '"':
+			/* a bit like a soft '.' */
 			if (*n == 0 && null_match(p) == 0) {
 				return 0;
 			}
-			if (*n != UCS2_CHAR('.')) return -1;
-			n++;
+			if (*n != '.') return -1;
+			next_codepoint(n, &size_n);
+			n += size_n;
 			break;
 
 		default:
-			if (c != *n && toupper_w(c) != toupper_w(*n)) {
+			c2 = next_codepoint(n, &size_n);
+			if (c != c2 && codepoint_cmpi(c, c2) != 0) {
 				return -1;
 			}
-			n++;
+			n += size_n;
 			break;
 		}
 	}
@@ -142,7 +153,6 @@ static int ms_fnmatch_core(const smb_ucs2_t *p, const smb_ucs2_t *n,
 
 int ms_fnmatch(const char *pattern, const char *string, enum protocol_types protocol)
 {
-	wpstring p, s;
 	int ret, count, i;
 	struct max_n *max_n = NULL;
 
@@ -156,31 +166,36 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 		return StrCaseCmp(pattern, string);
 	}
 
-	pstrcpy_wa(p, pattern);
-	pstrcpy_wa(s, string);
-
 	if (protocol <= PROTOCOL_LANMAN2) {
+		char *p = talloc_strdup(NULL, pattern);
+		if (p == NULL) {
+			return -1;
+		}
 		/*
 		  for older negotiated protocols it is possible to
 		  translate the pattern to produce a "new style"
 		  pattern that exactly matches w2k behaviour
 		*/
 		for (i=0;p[i];i++) {
-			if (p[i] == UCS2_CHAR('?')) {
-				p[i] = UCS2_CHAR('>');
-			} else if (p[i] == UCS2_CHAR('.') && 
-				   (p[i+1] == UCS2_CHAR('?') || 
-				    p[i+1] == UCS2_CHAR('*') ||
+			if (p[i] == '?') {
+				p[i] = '>';
+			} else if (p[i] == '.' && 
+				   (p[i+1] == '?' || 
+				    p[i+1] == '*' ||
 				    p[i+1] == 0)) {
-				p[i] = UCS2_CHAR('"');
-			} else if (p[i] == UCS2_CHAR('*') && p[i+1] == UCS2_CHAR('.')) {
-				p[i] = UCS2_CHAR('<');
+				p[i] = '"';
+			} else if (p[i] == '*' && 
+				   p[i+1] == '.') {
+				p[i] = '<';
 			}
 		}
+		ret = ms_fnmatch(p, string, PROTOCOL_NT1);
+		talloc_free(p);
+		return ret;
 	}
 
-	for (count=i=0;p[i];i++) {
-		if (p[i] == UCS2_CHAR('*') || p[i] == UCS2_CHAR('<')) count++;
+	for (count=i=0;pattern[i];i++) {
+		if (pattern[i] == '*' || pattern[i] == '<') count++;
 	}
 
 	max_n = talloc_array_p(NULL, struct max_n, count);
@@ -189,7 +204,7 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 	}
 	memset(max_n, 0, sizeof(struct max_n) * count);
 
-	ret = ms_fnmatch_core(p, s, max_n, strrchr_w(s, UCS2_CHAR('.')));
+	ret = ms_fnmatch_core(pattern, string, max_n, strrchr(string, '.'));
 
 	talloc_free(max_n);
 

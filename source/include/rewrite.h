@@ -49,27 +49,7 @@ typedef int BOOL;
 
 /* Debugging stuff */
 #include "debug.h"
-
 #include "doserr.h"
-
-/*
- * SMB UCS2 (16-bit unicode) internal type.
- */
-
-typedef uint16_t smb_ucs2_t;
-
-/* ucs2 string types. */
-typedef smb_ucs2_t wpstring[PSTRING_LEN];
-typedef smb_ucs2_t wfstring[FSTRING_LEN];
-
-#ifdef WORDS_BIGENDIAN
-#define UCS2_SHIFT 8
-#else
-#define UCS2_SHIFT 0
-#endif
-
-/* turn a 7 bit character into a ucs2 character */
-#define UCS2_CHAR(c) ((c) << UCS2_SHIFT)
 
 /* for compatibility */
 #define SID_NAME_USE samr_SidType

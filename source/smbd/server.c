@@ -65,8 +65,6 @@ static int binary_smbd_main(int argc,const char *argv[])
 	}
 	poptFreeContext(pc);
 
-	load_case_tables();
-
 	if (interactive) {
 		Fork = False;
 		log_stdout = True;

@@ -74,54 +74,37 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	return(True);
 }
 
-static uint16_t tmpbuf[sizeof(pstring)];
-
-
 /**
- Case insensitive string compararison.
-**/
-static int StrCaseCmp_slow(const char *s1, const char *s2)
-{
-	smb_ucs2_t *u1 = NULL;
-	smb_ucs2_t *u2;
-	int ret;
-
-	if (convert_string_talloc(NULL, CH_UNIX, CH_UTF16, s1, strlen(s1)+1, (void **)&u1) == -1 ||
-	    convert_string_talloc(u1, CH_UNIX, CH_UTF16, s2, strlen(s2)+1, (void **)&u2) == -1) {
-		talloc_free(u1);
-		/* fallback to a simple comparison */
-		return strcasecmp(s1, s2);
-	}
-
-	ret = strcasecmp_w(u1, u2);
-
-	talloc_free(u1);
-
-	return ret;
-}
-
-/**
- Case insensitive string compararison, accelerated version
+ Case insensitive string compararison
 **/
 int StrCaseCmp(const char *s1, const char *s2)
 {
-	while (*s1 && *s2 &&
-	       (*s1 & 0x80) == 0 && 
-	       (*s2 & 0x80) == 0) {
-		char u1 = toupper(*s1);
-		char u2 = toupper(*s2);
-		if (u1 != u2) {
-			return u1 - u2;
+	codepoint_t c1=0, c2=0;
+	size_t size1, size2;
+
+	while (*s1 && *s2) {
+		c1 = next_codepoint(s1, &size1);
+		c2 = next_codepoint(s2, &size2);
+
+		s1 += size1;
+		s2 += size2;
+
+		if (c1 == c2) {
+			continue;
 		}
-		s1++;
-		s2++;
+
+		if (c1 == INVALID_CODEPOINT ||
+		    c2 == INVALID_CODEPOINT) {
+			/* what else can we do?? */
+			return c1 - c2;
+		}
+
+		if (toupper_w(c1) != toupper_w(c2)) {
+			return c1 - c2;
+		}
 	}
 
-	if (*s1 == 0 || *s2 == 0) {
-		return *s1 - *s2;
-	}
-
-	return StrCaseCmp_slow(s1, s2);
+	return *s1 - *s2;
 }
 
 /**
@@ -136,27 +119,26 @@ BOOL strequal(const char *s1, const char *s2)
 	if (!s1 || !s2)
 		return(False);
   
-	return(StrCaseCmp(s1,s2)==0);
+	return StrCaseCmp(s1,s2) == 0;
 }
 
 /**
  Compare 2 strings (case sensitive).
 **/
-
 BOOL strcsequal(const char *s1,const char *s2)
 {
-  if (s1 == s2)
-	  return(True);
-  if (!s1 || !s2)
-	  return(False);
-  
-  return(strcmp(s1,s2)==0);
+	if (s1 == s2)
+		return(True);
+	if (!s1 || !s2)
+		return(False);
+	
+	return strcmp(s1,s2) == 0;
 }
+
 
 /**
 Do a case-insensitive, whitespace-ignoring string compare.
 **/
-
 int strwicmp(const char *psz1, const char *psz2)
 {
 	/* if BOTH strings are NULL, return TRUE, if ONE is NULL return */
@@ -187,20 +169,21 @@ int strwicmp(const char *psz1, const char *psz2)
  String replace.
  NOTE: oldc and newc must be 7 bit characters
 **/
-
-void string_replace(char *s,char oldc,char newc)
+void string_replace(char *s, char oldc, char newc)
 {
-	if (strchr(s, oldc)) {
-		push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-		string_replace_w(tmpbuf, UCS2_CHAR(oldc), UCS2_CHAR(newc));
-		pull_ucs2(s, tmpbuf, strlen(s)+1, sizeof(tmpbuf), STR_TERMINATE);
+	while (*s) {
+		size_t size;
+		codepoint_t c = next_codepoint(s, &size);
+		if (c == oldc) {
+			*s = newc;
+		}
+		s += size;
 	}
 }
 
 /**
  Trim the specified elements off the front and back of a string.
 **/
-
 BOOL trim_string(char *s,const char *front,const char *back)
 {
 	BOOL ret = False;
@@ -238,60 +221,26 @@ BOOL trim_string(char *s,const char *front,const char *back)
 }
 
 /**
- Does a string have any uppercase chars in it?
-**/
-
-BOOL strhasupper(const char *s)
-{
-	smb_ucs2_t *ptr;
-	push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(isupper_w(*ptr))
-			return True;
-	return(False);
-}
-
-/**
- Does a string have any lowercase chars in it?
-**/
-
-BOOL strhaslower(const char *s)
-{
-	smb_ucs2_t *ptr;
-	push_ucs2(tmpbuf,s, sizeof(tmpbuf), STR_TERMINATE);
-	for(ptr=tmpbuf;*ptr;ptr++)
-		if(islower_w(*ptr))
-			return True;
-	return(False);
-}
-
-/**
  Find the number of 'c' chars in a string
 **/
-
-size_t count_chars(const char *s,char c)
+size_t count_chars(const char *s, char c)
 {
-	smb_ucs2_t *ptr;
-	int count;
-	smb_ucs2_t *alloc_tmpbuf = NULL;
+	size_t count = 0;
 
-	if (push_ucs2_talloc(NULL, &alloc_tmpbuf, s) == (size_t)-1) {
-		return 0;
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint(s, &size);
+		if (c2 == c) count++;
+		s += size;
 	}
 
-	for(count=0,ptr=alloc_tmpbuf;*ptr;ptr++)
-		if(*ptr==UCS2_CHAR(c))
-			count++;
-
-	talloc_free(alloc_tmpbuf);
-	return(count);
+	return count;
 }
 
 /**
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
 **/
-
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
 	size_t len;
@@ -334,7 +283,6 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
  Safe string cat into a string. maxlength does not
  include the terminating zero.
 **/
-
 char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
 	size_t src_len, dest_len;
@@ -446,7 +394,6 @@ char *StrnCpy(char *dest,const char *src,size_t n)
  valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
 
 **/
-
 size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {
 	size_t i;
@@ -493,10 +440,10 @@ DATA_BLOB strhex_to_data_blob(const char *strhex)
 	return ret_blob;
 }
 
+
 /**
  * Routine to print a buffer as HEX digits, into an allocated string.
  */
-
 void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 {
 	int i;
@@ -512,7 +459,6 @@ void hex_encode(const unsigned char *buff_in, size_t len, char **out_hex_buffer)
 /**
  Check if a string is part of a list.
 **/
-
 BOOL in_list(const char *s, const char *list, BOOL casesensitive)
 {
 	pstring tok;
@@ -681,36 +627,31 @@ const char *octal_string(int i)
 
 
 /**
- Strchr and strrchr_m are very hard to do on general multi-byte strings. 
- We convert via ucs2 for now.
+ Strchr and strrchr_m are a bit complex on general multi-byte strings. 
 **/
-
 char *strchr_m(const char *s, char c)
 {
-	wpstring ws;
-	pstring s2;
-	smb_ucs2_t *p;
-
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
 	if ((c & 0xC0) == 0) {
 		return strchr(s, c);
 	}
 
-	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
-	p = strchr_w(ws, UCS2_CHAR(c));
-	if (!p)
-		return NULL;
-	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return discard_const_p(char, s+strlen(s2));
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint(s, &size);
+		if (c2 == c) {
+			return discard_const(s);
+		}
+		s += size;
+	}
+
+	return NULL;
 }
 
 char *strrchr_m(const char *s, char c)
 {
-	wpstring ws;
-	pstring s2;
-	smb_ucs2_t *p;
+	char *ret = NULL;
 
 	/* characters below 0x3F are guaranteed to not appear in
 	   non-initial position in multi-byte charsets */
@@ -718,69 +659,99 @@ char *strrchr_m(const char *s, char c)
 		return strrchr(s, c);
 	}
 
-	push_ucs2(ws, s, sizeof(ws), STR_TERMINATE);
-	p = strrchr_w(ws, UCS2_CHAR(c));
-	if (!p)
-		return NULL;
-	*p = 0;
-	pull_ucs2_pstring(s2, ws);
-	return discard_const_p(char, s+strlen(s2));
+	while (*s) {
+		size_t size;
+		codepoint_t c2 = next_codepoint(s, &size);
+		if (c2 == c) {
+			ret = discard_const(s);
+		}
+		s += size;
+	}
+
+	return ret;
 }
 
 /**
  Convert a string to lower case, allocated with talloc
 **/
-
 char *strlower_talloc(TALLOC_CTX *ctx, const char *src)
 {
-	size_t size;
-	smb_ucs2_t *buffer;
+	size_t size=0;
 	char *dest;
 
-	size = push_ucs2_talloc(ctx, &buffer, src);
-	if (size == -1) {
+	/* this takes advantage of the fact that upper/lower can't
+	   change the length of a character by more than 1 byte */
+	dest = talloc(ctx, 2*(strlen(src))+1);
+	if (dest == NULL) {
 		return NULL;
 	}
-	strlower_w(buffer);
 
-	size = pull_ucs2_talloc(ctx, &dest, buffer);
-	talloc_free(buffer);
+	while (*src) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(src, &c_size);
+		src += c_size;
+
+		c = tolower_w(c);
+
+		c_size = push_codepoint(dest+size, c);
+		if (c_size == -1) {
+			talloc_free(dest);
+			return NULL;
+		}
+		size += c_size;
+	}
+
+	dest[size] = 0;
+
 	return dest;
 }
 
 /**
  Convert a string to UPPER case, allocated with talloc
 **/
-
 char *strupper_talloc(TALLOC_CTX *ctx, const char *src)
 {
-	size_t size;
-	smb_ucs2_t *buffer;
+	size_t size=0;
 	char *dest;
 
-	size = push_ucs2_talloc(ctx, &buffer, src);
-	if (size == -1) {
+	/* this takes advantage of the fact that upper/lower can't
+	   change the length of a character by more than 1 byte */
+	dest = talloc(ctx, 2*(strlen(src))+1);
+	if (dest == NULL) {
 		return NULL;
 	}
-	strupper_w(buffer);
 
-	size = pull_ucs2_talloc(ctx, &dest, buffer);
-	talloc_free(buffer);
+	while (*src) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(src, &c_size);
+		src += c_size;
+
+		c = toupper_w(c);
+
+		c_size = push_codepoint(dest+size, c);
+		if (c_size == -1) {
+			talloc_free(dest);
+			return NULL;
+		}
+		size += c_size;
+	}
+
+	dest[size] = 0;
+
 	return dest;
 }
 
 /**
  Convert a string to lower case.
 **/
-
 void strlower_m(char *s)
 {
-	char *lower;
+	char *d;
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-
 	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
 		*s = tolower((uint8_t)*s);
 		s++;
@@ -789,27 +760,32 @@ void strlower_m(char *s)
 	if (!*s)
 		return;
 
-	/* I assume that lowercased string takes the same number of bytes
-	 * as source string even in UTF-8 encoding. (VIV) */
-	lower = strlower_talloc(NULL, s);
-	if (lower) {
-		safe_strcpy(s, lower, strlen(s));
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint(s, &c_size);
+		c_size2 = push_codepoint(d, tolower_w(c));
+		if (c_size2 > c_size) {
+			smb_panic("codepoint expansion in strlower_m\n");
+		}
+		s += c_size;
+		d += c_size2;
 	}
-	talloc_free(lower);
+	*d = 0;
 }
 
 /**
  Convert a string to UPPER case.
 **/
-
 void strupper_m(char *s)
 {
-	char *upper;
+	char *d;
+
 	/* this is quite a common operation, so we want it to be
 	   fast. We optimise for the ascii case, knowing that all our
 	   supported multi-byte character sets are ascii-compatible
 	   (ie. they match for the first 128 chars) */
-
 	while (*s && !(((uint8_t)s[0]) & 0x7F)) {
 		*s = toupper((uint8_t)*s);
 		s++;
@@ -818,13 +794,19 @@ void strupper_m(char *s)
 	if (!*s)
 		return;
 
-	/* I assume that uppercased string takes the same number of bytes
-	 * as source string even in UTF-8 encoding. (VIV) */
-	upper = strupper_talloc(NULL, s);
-	if (upper) {
-		safe_strcpy(s, upper, strlen(s));
+	d = s;
+
+	while (*s) {
+		size_t c_size, c_size2;
+		codepoint_t c = next_codepoint(s, &c_size);
+		c_size2 = push_codepoint(d, toupper_w(c));
+		if (c_size2 > c_size) {
+			smb_panic("codepoint expansion in strupper_m\n");
+		}
+		s += c_size;
+		d += c_size2;
 	}
-	talloc_free(upper);
+	*d = 0;
 }
 
 /**
@@ -832,13 +814,9 @@ void strupper_m(char *s)
  be the same as the number of bytes in a string for single byte strings,
  but will be different for multibyte.
 **/
-
 size_t strlen_m(const char *s)
 {
 	size_t count = 0;
-	smb_ucs2_t *tmp;
-
-	size_t len;
 
 	if (!s) {
 		return 0;
@@ -853,12 +831,18 @@ size_t strlen_m(const char *s)
 		return count;
 	}
 
-	SMB_ASSERT(push_ucs2_talloc(NULL, &tmp, s) != -1);
+	while (*s) {
+		size_t c_size;
+		codepoint_t c = next_codepoint(s, &c_size);
+		if (c < 0x10000) {
+			count += 1;
+		} else {
+			count += 2;
+		}
+		s += c_size;
+	}
 
-	len = count + strlen_w(tmp);
-	talloc_free(tmp);
-
-	return len;
+	return count;
 }
 
 /**
@@ -879,7 +863,6 @@ size_t strlen_m_term(const char *s)
  Used in LDAP filters.
  Caller must free.
 **/
-
 char *binary_string(char *buf, int len)
 {
 	char *s;
@@ -896,21 +879,6 @@ char *binary_string(char *buf, int len)
 	}
 	s[j] = 0;
 	return s;
-}
-
-/**
- Just a typesafety wrapper for snprintf into a pstring.
-**/
-
- int pstr_sprintf(pstring s, const char *fmt, ...)
-{
-	va_list ap;
-	int ret;
-
-	va_start(ap, fmt);
-	ret = vsnprintf(s, PSTRING_LEN, fmt, ap);
-	va_end(ap);
-	return ret;
 }
 
 #ifndef HAVE_STRNDUP
@@ -945,305 +913,6 @@ char *binary_string(char *buf, int len)
 }
 #endif
 
-/**
- List of Strings manipulation functions
-**/
-
-#define S_LIST_ABS 16 /* List Allocation Block Size */
-
-char **str_list_make(const char *string, const char *sep)
-{
-	char **list, **rlist;
-	const char *str;
-	char *s;
-	int num, lsize;
-	pstring tok;
-	
-	if (!string || !*string)
-		return NULL;
-	s = strdup(string);
-	if (!s) {
-		DEBUG(0,("str_list_make: Unable to allocate memory"));
-		return NULL;
-	}
-	if (!sep) sep = LIST_SEP;
-	
-	num = lsize = 0;
-	list = NULL;
-	
-	str = s;
-	while (next_token(&str, tok, sep, sizeof(tok))) {		
-		if (num == lsize) {
-			lsize += S_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
-			if (!rlist) {
-				DEBUG(0,("str_list_make: Unable to allocate memory"));
-				str_list_free(&list);
-				SAFE_FREE(s);
-				return NULL;
-			} else
-				list = rlist;
-			memset (&list[num], 0, ((sizeof(char**)) * (S_LIST_ABS +1)));
-		}
-		
-		list[num] = strdup(tok);
-		if (!list[num]) {
-			DEBUG(0,("str_list_make: Unable to allocate memory"));
-			str_list_free(&list);
-			SAFE_FREE(s);
-			return NULL;
-		}
-	
-		num++;	
-	}
-	
-	SAFE_FREE(s);
-	return list;
-}
-
-BOOL str_list_copy(char ***dest, const char **src)
-{
-	char **list, **rlist;
-	int num, lsize;
-	
-	*dest = NULL;
-	if (!src)
-		return False;
-	
-	num = lsize = 0;
-	list = NULL;
-		
-	while (src[num]) {
-		if (num == lsize) {
-			lsize += S_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
-			if (!rlist) {
-				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
-				str_list_free(&list);
-				return False;
-			} else
-				list = rlist;
-			memset (&list[num], 0, ((sizeof(char **)) * (S_LIST_ABS +1)));
-		}
-		
-		list[num] = strdup(src[num]);
-		if (!list[num]) {
-			DEBUG(0,("str_list_copy: Unable to allocate memory"));
-			str_list_free(&list);
-			return False;
-		}
-
-		num++;
-	}
-	
-	*dest = list;
-	return True;	
-}
-
-/**
- * Return true if all the elements of the list match exactly.
- **/
-BOOL str_list_compare(char **list1, char **list2)
-{
-	int num;
-	
-	if (!list1 || !list2)
-		return (list1 == list2); 
-	
-	for (num = 0; list1[num]; num++) {
-		if (!list2[num])
-			return False;
-		if (!strcsequal(list1[num], list2[num]))
-			return False;
-	}
-	if (list2[num])
-		return False; /* if list2 has more elements than list1 fail */
-	
-	return True;
-}
-
-void str_list_free(char ***list)
-{
-	char **tlist;
-	
-	if (!list || !*list)
-		return;
-	tlist = *list;
-	for(; *tlist; tlist++)
-		SAFE_FREE(*tlist);
-	SAFE_FREE(*list);
-}
-
-BOOL str_list_substitute(char **list, const char *pattern, const char *insert)
-{
-	char *p, *s, *t;
-	ssize_t ls, lp, li, ld, i, d;
-
-	if (!list)
-		return False;
-	if (!pattern)
-		return False;
-	if (!insert)
-		return False;
-
-	lp = (ssize_t)strlen(pattern);
-	li = (ssize_t)strlen(insert);
-	ld = li -lp;
-			
-	while (*list) {
-		s = *list;
-		ls = (ssize_t)strlen(s);
-
-		while ((p = strstr(s, pattern))) {
-			t = *list;
-			d = p -t;
-			if (ld) {
-				t = (char *) malloc(ls +ld +1);
-				if (!t) {
-					DEBUG(0,("str_list_substitute: Unable to allocate memory"));
-					return False;
-				}
-				memcpy(t, *list, d);
-				memcpy(t +d +li, p +lp, ls -d -lp +1);
-				SAFE_FREE(*list);
-				*list = t;
-				ls += ld;
-				s = t +d +li;
-			}
-			
-			for (i = 0; i < li; i++) {
-				switch (insert[i]) {
-					case '`':
-					case '"':
-					case '\'':
-					case ';':
-					case '$':
-					case '%':
-					case '\r':
-					case '\n':
-						t[d +i] = '_';
-						break;
-					default:
-						t[d +i] = insert[i];
-				}
-			}	
-		}
-		
-		list++;
-	}
-	
-	return True;
-}
-
-
-#define IPSTR_LIST_SEP	","
-
-/**
- * Add ip string representation to ipstr list. Used also
- * as part of @function ipstr_list_make
- *
- * @param ipstr_list pointer to string containing ip list;
- *        MUST BE already allocated and IS reallocated if necessary
- * @param ipstr_size pointer to current size of ipstr_list (might be changed
- *        as a result of reallocation)
- * @param ip IP address which is to be added to list
- * @return pointer to string appended with new ip and possibly
- *         reallocated to new length
- **/
-
-char* ipstr_list_add(char** ipstr_list, const struct in_addr *ip)
-{
-	char* new_ipstr = NULL;
-	
-	/* arguments checking */
-	if (!ipstr_list || !ip) return NULL;
-
-	/* attempt to convert ip to a string and append colon separator to it */
-	if (*ipstr_list) {
-		asprintf(&new_ipstr, "%s%s%s", *ipstr_list, IPSTR_LIST_SEP,inet_ntoa(*ip));
-		SAFE_FREE(*ipstr_list);
-	} else {
-		asprintf(&new_ipstr, "%s", inet_ntoa(*ip));
-	}
-	*ipstr_list = new_ipstr;
-	return *ipstr_list;
-}
-
-/**
- * Allocate and initialise an ipstr list using ip adresses
- * passed as arguments.
- *
- * @param ipstr_list pointer to string meant to be allocated and set
- * @param ip_list array of ip addresses to place in the list
- * @param ip_count number of addresses stored in ip_list
- * @return pointer to allocated ip string
- **/
- 
-char* ipstr_list_make(char** ipstr_list, const struct in_addr* ip_list, int ip_count)
-{
-	int i;
-	
-	/* arguments checking */
-	if (!ip_list && !ipstr_list) return 0;
-
-	*ipstr_list = NULL;
-	
-	/* process ip addresses given as arguments */
-	for (i = 0; i < ip_count; i++)
-		*ipstr_list = ipstr_list_add(ipstr_list, &ip_list[i]);
-	
-	return (*ipstr_list);
-}
-
-
-/**
- * Parse given ip string list into array of ip addresses
- * (as in_addr structures)
- *
- * @param ipstr ip string list to be parsed 
- * @param ip_list pointer to array of ip addresses which is
- *        allocated by this function and must be freed by caller
- * @return number of succesfully parsed addresses
- **/
- 
-int ipstr_list_parse(const char* ipstr_list, struct in_addr** ip_list)
-{
-	fstring token_str;
-	int count;
-
-	if (!ipstr_list || !ip_list) return 0;
-	
-	for (*ip_list = NULL, count = 0;
-	     next_token(&ipstr_list, token_str, IPSTR_LIST_SEP, FSTRING_LEN);
-	     count++) {
-	     
-		struct in_addr addr;
-
-		/* convert single token to ip address */
-		if ( (addr.s_addr = inet_addr(token_str)) == INADDR_NONE )
-			break;
-		
-		/* prepare place for another in_addr structure */
-		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct in_addr));
-		if (!*ip_list) return -1;
-		
-		(*ip_list)[count] = addr;
-	}
-	
-	return count;
-}
-
-
-/**
- * Safely free ip string list
- *
- * @param ipstr_list ip string list to be freed
- **/
-
-void ipstr_list_free(char* ipstr_list)
-{
-	SAFE_FREE(ipstr_list);
-}
 
 /**
  Unescape a URL encoded string, in place.

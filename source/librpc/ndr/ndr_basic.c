@@ -548,20 +548,16 @@ NTSTATUS ndr_pull_string(struct ndr_pull *ndr, int ndr_flags, const char **s)
 		break;
 
 	case LIBNDR_FLAG_STR_NULLTERM:
-		len1 = strnlen_w((const smb_ucs2_t *)(ndr->data+ndr->offset), 
-				 (ndr->data_size - ndr->offset)/2);
-		if (len1*2+2 <= ndr->data_size - ndr->offset) {
-			len1++;
-		}
+		len1 = utf16_len_n(ndr->data+ndr->offset, ndr->data_size - ndr->offset);
 		ret = convert_string_talloc(ndr, chset, CH_UNIX, 
 					    ndr->data+ndr->offset, 
-					    len1*2,
+					    len1,
 					    (void **)&as);
 		if (ret == -1) {
 			return ndr_pull_error(ndr, NDR_ERR_CHARCNV, 
 					      "Bad character conversion");
 		}
-		NDR_CHECK(ndr_pull_advance(ndr, len1*2));
+		NDR_CHECK(ndr_pull_advance(ndr, len1));
 		*s = as;
 		break;
 

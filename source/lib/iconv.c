@@ -113,7 +113,7 @@ static size_t sys_iconv(void *cd,
 			char **outbuf, size_t *outbytesleft)
 {
 	size_t ret = iconv((iconv_t)cd, 
-			   inbuf, inbytesleft, 
+			   discard_const_p(char *, inbuf), inbytesleft, 
 			   outbuf, outbytesleft);
 	if (ret == (size_t)-1) iconv(cd, NULL, NULL, NULL, NULL);
 	return ret;

@@ -38,3 +38,7 @@ struct charset_functions {
 	struct charset_functions *prev, *next;
 };
 
+/* this type is used for manipulating unicode codepoints */
+typedef uint32_t codepoint_t;
+
+#define INVALID_CODEPOINT ((codepoint_t)-1)

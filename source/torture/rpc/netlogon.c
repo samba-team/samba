@@ -778,7 +778,7 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 	DATA_BLOB lm_response = data_blob(NULL, 0);
 	char *password;
 	char *dospw;
-	smb_ucs2_t *unicodepw;
+	void *unicodepw;
 
 	uint8_t user_session_key[16];
 	uint8_t lm_key[16];
@@ -787,14 +787,13 @@ static BOOL test_plaintext(struct samlogon_state *samlogon_state, enum ntlm_brea
 
 	ZERO_STRUCT(user_session_key);
 	
-	if ((push_ucs2_talloc(samlogon_state->mem_ctx, (smb_ucs2_t **)&unicodepw, 
+	if ((push_ucs2_talloc(samlogon_state->mem_ctx, &unicodepw, 
 			      samlogon_state->password)) == -1) {
 		DEBUG(0, ("push_ucs2_allocate failed!\n"));
 		exit(1);
 	}
 
-	nt_response = data_blob_talloc(samlogon_state->mem_ctx, unicodepw, 
-				       strlen_w(((void *)unicodepw))*sizeof(smb_ucs2_t));
+	nt_response = data_blob_talloc(samlogon_state->mem_ctx, unicodepw, utf16_len(unicodepw));
 
 	password = strupper_talloc(samlogon_state->mem_ctx, samlogon_state->password);
 

@@ -27,8 +27,8 @@
 /*
   generate a UTF-16LE buffer for a given unicode codepoint
 */
-static int gen_codepoint(unsigned int codepoint,
-			  char *buf, size_t *size)
+static int gen_codepoint_utf16(unsigned int codepoint,
+			       char *buf, size_t *size)
 {
 	static iconv_t cd;
 	uint8_t in[4];
@@ -254,6 +254,45 @@ static int test_buffer(uint8_t *inbuf, size_t size, const char *charset)
 	return ok;
 }
 
+
+/*
+  test the push_codepoint() and next_codepoint() functions for a given
+  codepoint
+*/
+static int test_codepoint(unsigned int codepoint)
+{
+	uint8_t buf[10];
+	size_t size, size2;
+	codepoint_t c;
+
+	size = push_codepoint(buf, codepoint);
+	if (size == -1) {
+		if (codepoint < 0xd800 || codepoint > 0x10000) {
+			return 0;
+		}
+		return 1;
+	}
+	buf[size] = random();
+	buf[size+1] = random();
+	buf[size+2] = random();
+	buf[size+3] = random();
+
+	c = next_codepoint(buf, &size2);
+
+	if (c != codepoint) {
+		printf("next_codepoint(%u) failed - gave %u\n", codepoint, c);
+		return 0;
+	}
+
+	if (size2 != size) {
+		printf("next_codepoint(%u) gave wrong size %d (should be %d)\n", 
+		       codepoint, size2, size);
+		return 0;
+	}
+
+	return 1;
+}
+
 BOOL torture_local_iconv(int dummy) 
 {
 	size_t size;
@@ -263,13 +302,18 @@ BOOL torture_local_iconv(int dummy)
 
 	srandom(time(NULL));
 
+	printf("Testing next_codepoint()\n");
+	for (codepoint=0;ok && codepoint<(1<<20);codepoint++) {
+		ok = test_codepoint(codepoint);
+	}
+
 	printf("Testing first 1M codepoints\n");
 	for (codepoint=0;ok && codepoint<(1<<20);codepoint++) {
-		if (gen_codepoint(codepoint, inbuf, &size) != 0) {
+		if (gen_codepoint_utf16(codepoint, inbuf, &size) != 0) {
 			continue;
 		}
 
-		if (codepoint % 100 == 0) {
+		if (codepoint % 1000 == 0) {
 			printf("codepoint=%u   \r", codepoint);
 		}
 
@@ -279,7 +323,7 @@ BOOL torture_local_iconv(int dummy)
 
 	printf("Testing 5M random UTF-16LE sequences\n");
 	for (i=0;ok && i<500000;i++) {
-		if (i % 100 == 0) {
+		if (i % 1000 == 0) {
 			printf("i=%u              \r", i);
 		}
 

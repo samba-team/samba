@@ -583,6 +583,30 @@ static NTSTATUS password_check(const char *password)
 }
 
 
+/**
+ Does a string have any lowercase chars in it?
+**/
+static BOOL strhaslower(const char *s)
+{
+	while (*s) {
+		if (islower(*s)) return True;
+		s++;
+	}
+	return False;
+}
+
+/**
+ Does a string have any uppercase chars in it?
+**/
+static BOOL strhasupper(const char *s)
+{
+	while (*s) {
+		if (isupper(*s)) return True;
+		s++;
+	}
+	return False;
+}
+
 
 /****************************************************************************
 CHECK if a username/password is OK

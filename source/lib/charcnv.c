@@ -55,18 +55,6 @@ static const char *charset_name(charset_t ch)
 	return ret;
 }
 
-static void lazy_initialize_conv(void)
-{
-	static int initialized = False;
-
-	if (!initialized) {
-		initialized = True;
-		load_case_tables();
-		init_iconv();
-	}
-}
-
-
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
 /*
@@ -107,6 +95,7 @@ void init_iconv(void)
 
 }
 
+
 /**
  * Convert string from one encoding to another, making error checking etc
  *
@@ -128,8 +117,6 @@ ssize_t convert_string(charset_t from, charset_t to,
 
 	if (srclen == (size_t)-1)
 		srclen = strlen(src)+1;
-
-	lazy_initialize_conv();
 
 	descriptor = get_conv_handle(from, to);
 
@@ -193,8 +180,6 @@ ssize_t convert_string_talloc(TALLOC_CTX *ctx, charset_t from, charset_t to,
 
 	if (src == NULL || srclen == (size_t)-1 || srclen == 0)
 		return (size_t)-1;
-
-	lazy_initialize_conv();
 
 	descriptor = get_conv_handle(from, to);
 
@@ -271,27 +256,27 @@ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 {
 	size_t src_len;
 	ssize_t ret;
-	char *tmpbuf = NULL;
+
+	if (flags & STR_UPPER) {
+		char *tmpbuf = strupper_talloc(NULL, src);
+		if (tmpbuf == NULL) {
+			return -1;
+		}
+		ret = push_ascii(dest, tmpbuf, dest_len, flags & ~STR_UPPER);
+		talloc_free(tmpbuf);
+		return ret;
+	}
 
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
 
-	if (flags & STR_UPPER) {
-		tmpbuf = strupper_talloc(NULL, src);
-		if (!tmpbuf) {
-			return -1;
-		}
-		src = tmpbuf;
-	}
 	src_len = strlen(src);
 
 	if (flags & (STR_TERMINATE | STR_TERMINATE_ASCII))
 		src_len++;
 
-	ret = convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
-	talloc_free(tmpbuf);
-	return ret;
+	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
 /**
@@ -375,6 +360,16 @@ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 	size_t src_len = strlen(src);
 	size_t ret;
 
+	if (flags & STR_UPPER) {
+		char *tmpbuf = strupper_talloc(NULL, src);
+		if (tmpbuf == NULL) {
+			return -1;
+		}
+		ret = push_ucs2(dest, tmpbuf, dest_len, flags & ~STR_UPPER);
+		talloc_free(tmpbuf);
+		return ret;
+	}
+
 	/* treat a pstring as "unlimited" length */
 	if (dest_len == (size_t)-1)
 		dest_len = sizeof(pstring);
@@ -399,17 +394,6 @@ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
 
 	len += ret;
 
-	if (flags & STR_UPPER) {
-		smb_ucs2_t *dest_ucs2 = dest;
-		size_t i;
-		for (i = 0; i < (dest_len / 2) && dest_ucs2[i]; i++) {
-			smb_ucs2_t v = toupper_w(dest_ucs2[i]);
-			if (v != dest_ucs2[i]) {
-				dest_ucs2[i] = v;
-			}
-		}
-	}
-
 	return len;
 }
 
@@ -423,12 +407,11 @@ ssize_t push_ucs2(void *dest, const char *src, size_t dest_len, int flags)
  * @returns The number of bytes occupied by the string in the destination
  *         or -1 in case of error.
  **/
-ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, smb_ucs2_t **dest, const char *src)
+ssize_t push_ucs2_talloc(TALLOC_CTX *ctx, void **dest, const char *src)
 {
 	size_t src_len = strlen(src)+1;
-
 	*dest = NULL;
-	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, (void **)dest);
+	return convert_string_talloc(ctx, CH_UNIX, CH_UTF16, src, src_len, dest);
 }
 
 
@@ -474,12 +457,9 @@ size_t pull_ucs2(char *dest, const void *src, size_t dest_len, size_t src_len, i
 
 	if (flags & STR_TERMINATE) {
 		if (src_len == (size_t)-1) {
-			src_len = strlen_w(src)*2 + 2;
+			src_len = utf16_len(src);
 		} else {
-			size_t len = strnlen_w(src, src_len/2);
-			if (len < src_len/2)
-				len++;
-			src_len = len*2;
+			src_len = utf16_len_n(src, src_len);
 		}
 	}
 
@@ -507,9 +487,9 @@ ssize_t pull_ucs2_pstring(char *dest, const void *src)
  * @returns The number of bytes occupied by the string in the destination
  **/
 
-ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const smb_ucs2_t *src)
+ssize_t pull_ucs2_talloc(TALLOC_CTX *ctx, char **dest, const void *src)
 {
-	size_t src_len = (strlen_w(src)+1) * sizeof(smb_ucs2_t);
+	size_t src_len = utf16_len(src);
 	*dest = NULL;
 	return convert_string_talloc(ctx, CH_UTF16, CH_UNIX, src, src_len, (void **)dest);
 }
@@ -582,3 +562,131 @@ ssize_t pull_string(char *dest, const void *src, size_t dest_len, size_t src_len
 	}
 }
 
+
+/*
+  return the unicode codepoint for the next multi-byte CH_UNIX character
+  in the string
+
+  also return the number of bytes consumed (which tells the caller
+  how many bytes to skip to get to the next CH_UNIX character)
+
+  return INVALID_CODEPOINT if the next character cannot be converted
+*/
+codepoint_t next_codepoint(const char *str, size_t *size)
+{
+	/* it cannot occupy more than 4 bytes in UTF16 format */
+	uint8_t buf[4];
+	smb_iconv_t descriptor;
+	size_t ilen_orig;
+	size_t ilen;
+	size_t olen;
+	char *outbuf;
+
+	if ((str[0] & 0x80) == 0) {
+		*size = 1;
+		return (codepoint_t)str[0];
+	}
+
+	/* we assume that no multi-byte character can take
+	   more than 5 bytes. This is OK as we only
+	   support codepoints up to 1M */
+	ilen_orig = strnlen(str, 5);
+	ilen = ilen_orig;
+
+	descriptor = get_conv_handle(CH_UNIX, CH_UTF16);
+	if (descriptor == (smb_iconv_t)-1) {
+		*size = 1;
+		return INVALID_CODEPOINT;
+	}
+
+	/* this looks a little strange, but it is needed to cope
+	   with codepoints above 64k */
+	olen = 2;
+	outbuf = buf;
+	smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
+	if (olen == 2) {
+		olen = 4;
+		outbuf = buf;
+		smb_iconv(descriptor,  &str, &ilen, &outbuf, &olen);
+		if (olen == 4) {
+			/* we didn't convert any bytes */
+			*size = 1;
+			return INVALID_CODEPOINT;
+		}
+		olen = 4 - olen;
+	} else {
+		olen = 2 - olen;
+	}
+
+	*size = ilen_orig - ilen;
+
+	if (olen == 2) {
+		return (codepoint_t)SVAL(buf, 0);
+	}
+	if (olen == 4) {
+		/* decode a 4 byte UTF16 character manually */
+		return (codepoint_t)0x10000 + 
+			(buf[2] | ((buf[3] & 0x3)<<8) | 
+			 (buf[0]<<10) | ((buf[1] & 0x3)<<18));
+	}
+
+	/* no other length is valid */
+	return INVALID_CODEPOINT;
+}
+
+/*
+  push a single codepoint into a CH_UNIX string the target string must
+  be able to hold the full character, which is guaranteed if it is at
+  least 5 bytes in size. The caller may pass less than 5 bytes if they
+  are sure the character will fit (for example, you can assume that
+  uppercase/lowercase of a character will not add more than 1 byte)
+
+  return the number of bytes occupied by the CH_UNIX character, or
+  -1 on failure
+*/
+ssize_t push_codepoint(char *str, codepoint_t c)
+{
+	smb_iconv_t descriptor;
+	uint8_t buf[4];
+	size_t ilen, olen;
+	const char *inbuf;
+	
+	if (c < 128) {
+		*str = c;
+		return 1;
+	}
+
+	descriptor = get_conv_handle(CH_UTF16, CH_UNIX);
+	if (descriptor == (smb_iconv_t)-1) {
+		return -1;
+	}
+
+	if (c < 0x10000) {
+		ilen = 2;
+		olen = 5;
+		inbuf = buf;
+		SSVAL(buf, 0, c);
+		smb_iconv(descriptor, &inbuf, &ilen, &str, &olen);
+		if (ilen != 0) {
+			return -1;
+		}
+		return 5 - olen;
+	}
+
+	c -= 0x10000;
+
+	buf[0] = (c>>10) & 0xFF;
+	buf[1] = (c>>18) | 0xd8;
+	buf[2] = c & 0xFF;
+	buf[3] = ((c>>8) & 0x3) | 0xdc;
+
+	ilen = 4;
+	olen = 5;
+	inbuf = buf;
+
+	smb_iconv(descriptor, &inbuf, &ilen, &str, &olen);
+	if (ilen != 0) {
+		return -1;
+	}
+	return 5 - olen;
+}

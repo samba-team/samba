@@ -161,9 +161,10 @@ static void testpair(struct smbcli_state *cli, char *mask, char *file)
 	fstrcpy(short_name, "");
 	get_real_name(cli, long_name, short_name);
 	fstrcpy(res1, "---");
-	smbcli_list(cli->tree, mask, 
-		 FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
-		 listfn, NULL);
+	smbcli_list_new(cli->tree, mask, 
+			FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
+			RAW_SEARCH_BOTH_DIRECTORY_INFO,
+			listfn, NULL);
 
 	res2 = reg_test(cli, mask, long_name, short_name);
 
@@ -300,6 +301,8 @@ static void usage(void)
 	}
 
 	seed = time(NULL);
+
+	init_iconv();
 
 	while ((opt = getopt(argc, argv, "n:d:U:s:hm:f:aoW:M:vEl:")) != EOF) {
 		switch (opt) {

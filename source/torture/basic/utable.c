@@ -26,7 +26,7 @@ BOOL torture_utable(int dummy)
 	fstring fname;
 	const char *alt_name;
 	int fnum;
-	smb_ucs2_t c2;
+	char c2[4];
 	int c, len, fd;
 	int chars_allowed=0, alt_allowed=0;
 	uint8_t valid[0x10000];
@@ -47,11 +47,11 @@ BOOL torture_utable(int dummy)
 	for (c=1; c < 0x10000; c++) {
 		char *p;
 
-		SSVAL(&c2, 0, c);
+		SSVAL(c2, 0, c);
 		fstrcpy(fname, "\\utable\\x");
 		p = fname+strlen(fname);
 		len = convert_string(CH_UTF16, CH_UNIX, 
-				     &c2, 2, 
+				     c2, 2, 
 				     p, sizeof(fname)-strlen(fname));
 		p[len] = 0;
 		fstrcat(fname,"_a_long_extension");
@@ -99,16 +99,16 @@ BOOL torture_utable(int dummy)
 static char *form_name(int c)
 {
 	static fstring fname;
-	smb_ucs2_t c2;
+	char c2[4];
 	char *p;
 	int len;
 
 	fstrcpy(fname, "\\utable\\");
 	p = fname+strlen(fname);
-	SSVAL(&c2, 0, c);
+	SSVAL(c2, 0, c);
 
 	len = convert_string(CH_UTF16, CH_UNIX, 
-			     &c2, 2, 
+			     c2, 2, 
 			     p, sizeof(fname)-strlen(fname));
 	p[len] = 0;
 	return fname;
@@ -121,7 +121,7 @@ BOOL torture_casetable(int dummy)
 	int fnum;
 	int c, i;
 #define MAX_EQUIVALENCE 8
-	smb_ucs2_t equiv[0x10000][MAX_EQUIVALENCE];
+	codepoint_t equiv[0x10000][MAX_EQUIVALENCE];
 	printf("starting casetable\n");
 
 	if (!torture_open_connection(&cli)) {

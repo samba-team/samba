@@ -24,6 +24,7 @@ ADD_OBJ_FILES = \
 		lib/xfile.o \
 		lib/wins_srv.o \
 		lib/util_str.o \
+		lib/util_strlist.o \
 		lib/util_sid.o \
 		lib/util_secdesc.o \
 		lib/util_uuid.o \
