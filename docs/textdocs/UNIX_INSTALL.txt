@@ -1,10 +1,10 @@
 !==
-!== UNIX_INSTALL.txt for Samba release 1.9.18 08 Jan 1998
+!== UNIX_INSTALL.txt for Samba release 1.9.18p8 13 Jun 1998
 !==
 Contributor:	Andrew Tridgell <samba-bugs@samba.anu.edu.au>
 Date:		Unknown
 Status:		Current
-Updated:	August 25, 1997
+Updated:	July 5, 1998	<jht@samba.anu.edu.au>
 
 Subject:	HOW TO INSTALL AND TEST SAMBA
 ===============================================================================
@@ -78,6 +78,9 @@ in the Makefile for the logs etc, such as /usr/local/samba.
 
 Make sure you put the smb.conf file in the same place you specified in
 the Makefile.
+
+For more information about security settings for the [homes] share please
+refer to the document UNIX_SECURITY.txt
 
 STEP 4. Test your config file with testparm
 
