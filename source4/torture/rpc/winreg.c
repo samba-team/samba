@@ -160,6 +160,8 @@ static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+#if 0
+
 static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle)
 {
@@ -201,6 +203,8 @@ static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	return True;
 }
+
+#endif
 
 static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			  struct policy_handle *handle)
@@ -311,10 +315,15 @@ static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 		     struct policy_handle *handle, int depth)
 {
-	struct winreg_EnumKey r;
+	struct winreg_EnumKey ek;
 	struct winreg_EnumKeyNameRequest keyname;
 	struct winreg_String classname;
 	struct winreg_Time tm;
+	struct winreg_EnumValue ev;
+	struct winreg_EnumValueName name;
+	struct winreg_Uint8buf value;
+	struct winreg_Uint16buf buf;
+	uint32 type, requested_len, returned_len;
 	NTSTATUS status;
 
 	if (depth == MAX_DEPTH)
@@ -326,30 +335,30 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	/* Enumerate keys */
 
-	r.in.handle = handle;
-	r.in.key_index = 0;
-	r.in.key_name_len = r.out.key_name_len = 0;
-	r.in.unknown = r.out.unknown = 0x0414;
+	ek.in.handle = handle;
+	ek.in.key_index = 0;
+	ek.in.key_name_len = ek.out.key_name_len = 0;
+	ek.in.unknown = ek.out.unknown = 0x0414;
 	keyname.unknown = 0x0000020a;
 	init_winreg_String(&keyname.key_name, NULL);
 	init_winreg_String(&classname, NULL);
-	r.in.in_name = &keyname;
-	r.in.class = &classname;
+	ek.in.in_name = &keyname;
+	ek.in.class = &classname;
 	tm.low = tm.high = 0x7fffffff;
-	r.in.last_changed_time = &tm;
+	ek.in.last_changed_time = &tm;
 
 	do {
-		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
+		status = dcerpc_winreg_EnumKey(p, mem_ctx, &ek);
 
-		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
+		if (NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(ek.out.result)) {
 			struct policy_handle key_handle;
 
 			if (!test_OpenKey(
-				    p, mem_ctx, handle, r.out.out_name->name,
+				    p, mem_ctx, handle, ek.out.out_name->name,
 				    &key_handle)) {
 				printf("OpenKey(%s) failed - %s\n",
-				       r.out.out_name->name, 
-				       win_errstr(r.out.result));
+				       ek.out.out_name->name, 
+				       win_errstr(ek.out.result));
 				goto next_key;
 			}
 
@@ -358,10 +367,47 @@ static BOOL test_key(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 
 	next_key:
 
-		r.in.key_index++;
+		ek.in.key_index++;
 
-	} while (W_ERROR_IS_OK(r.out.result));
+	} while (W_ERROR_IS_OK(ek.out.result));
 
+	/* Enumerate values */
+
+	ev.in.handle = handle;
+	ev.in.val_index = 0;
+
+	buf.max_len = 0x7fff;
+	buf.offset = 0;
+	buf.len = 0;
+	buf.buffer = NULL;
+
+	name.len = 0;
+	name.max_len = buf.max_len * 2;
+	name.buf = &buf;
+
+	ev.in.name = ev.out.name = &name;
+	
+	type = 0;
+	ev.in.type = &type;
+
+	value.max_len = 0xffff;
+	value.offset = 0;
+	value.len = 0;
+	value.buffer = NULL;
+
+	ev.in.value = &value;
+
+	requested_len = value.max_len;
+	ev.in.requested_len = &requested_len;
+	returned_len = 0;
+	ev.in.returned_len = &returned_len;
+
+	do {
+
+		status = dcerpc_winreg_EnumValue(p, mem_ctx, &ev);
+		ev.in.val_index++;
+	} while (W_ERROR_IS_OK(ev.out.result));
+			
 	test_CloseKey(p, mem_ctx, handle);
 
 	return True;
@@ -389,7 +435,7 @@ static BOOL test_Open(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, void *fn)
 	}
 
 	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
-		printf("FlushKey failed\n");
+		printf("DeleteKey failed\n");
 		return False;
 	}
 
