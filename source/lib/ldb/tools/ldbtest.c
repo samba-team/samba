@@ -35,6 +35,7 @@
 #include "includes.h"
 
 static const char *ldb_url;
+static const char *base_dn = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 
 static struct timeval tp1,tp2;
 
@@ -254,10 +255,8 @@ static void search_uid(struct ldb_context *ldb, int nrecords, int nsearches)
 
 static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 {
-	const char *base = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
-
 	printf("Adding %d records\n", nrecords);
-	add_records(ldb, base, nrecords);
+	add_records(ldb, base_dn, nrecords);
 
 	printf("Starting search on uid\n");
 	start_timer();
@@ -265,10 +264,10 @@ static void start_test(struct ldb_context *ldb, int nrecords, int nsearches)
 	printf("uid search took %.2f seconds\n", end_timer());
 
 	printf("Modifying records\n");
-	modify_records(ldb, base, nrecords);
+	modify_records(ldb, base_dn, nrecords);
 
 	printf("Deleting records\n");
-	delete_records(ldb, base, nrecords);
+	delete_records(ldb, base_dn, nrecords);
 }
 
 
@@ -287,7 +286,6 @@ be indexed
 */
 static void start_test_index(struct ldb_context **ldb)
 {
-	const char *base = "ou=Ldb Test,ou=People,o=University of Michigan,c=US";
 	struct ldb_message msg;
 	struct ldb_message **res;
 	int ret;
@@ -306,7 +304,7 @@ static void start_test_index(struct ldb_context **ldb)
 	}
 
 	memset(&msg, 0, sizeof(msg));
-	asprintf(&msg.dn, "cn=%s,%s", "test", base);
+	asprintf(&msg.dn, "cn=%s,%s", "test", base_dn);
 	ldb_msg_add_string(*ldb, &msg, "cn", strdup("test"));
 	ldb_msg_add_string(*ldb, &msg, "sn", strdup("test"));
 	ldb_msg_add_string(*ldb, &msg, "uid", strdup("test"));
@@ -366,7 +364,7 @@ static void usage(void)
 
 	ldb_url = getenv("LDB_URL");
 
-	while ((opt = getopt(argc, argv, "hH:r:s:")) != EOF) {
+	while ((opt = getopt(argc, argv, "hH:r:s:b:")) != EOF) {
 		switch (opt) {
 		case 'H':
 			ldb_url = optarg;
@@ -374,6 +372,10 @@ static void usage(void)
 
 		case 'r':
 			nrecords = atoi(optarg);
+			break;
+
+		case 'b':
+			base_dn = optarg;
 			break;
 
 		case 's':
