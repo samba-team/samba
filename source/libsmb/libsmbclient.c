@@ -211,7 +211,7 @@ static int smbc_errno(SMBCCTX *context, struct cli_state *c)
  */
 int smbc_check_server(SMBCCTX * context, SMBCSRV * server) 
 {
-	if ( cli_send_keepalive(&server->cli) == False )
+	if ( send_keepalive(server->cli.fd) == False )
 		return 1;
 
 	/* connection is ok */
