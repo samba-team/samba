@@ -430,7 +430,7 @@ static void wcache_save_user(struct winbindd_domain *domain, NTSTATUS status, WI
 /* Query display info. This is the basic user list fn */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 				TALLOC_CTX *mem_ctx,
-				uint32 *start_ndx, uint32 *num_entries, 
+				uint32 *num_entries, 
 				WINBIND_USERINFO **info)
 {
 	struct winbind_cache *cache = get_cache(domain);
@@ -440,7 +440,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	if (!cache->tdb) goto do_query;
 
-	centry = wcache_fetch(cache, domain, "UL/%s/%d", domain->name, *start_ndx);
+	centry = wcache_fetch(cache, domain, "UL/%s", domain->name);
 	if (!centry) goto do_query;
 
 	*num_entries = centry_uint32(centry);
@@ -467,7 +467,7 @@ do_query:
 		return NT_STATUS_SERVER_DISABLED;
 	}
 
-	status = cache->backend->query_user_list(domain, mem_ctx, start_ndx, num_entries, info);
+	status = cache->backend->query_user_list(domain, mem_ctx, num_entries, info);
 
 	/* and save it */
 	refresh_sequence_number(domain, True);
@@ -492,7 +492,7 @@ do_query:
 			wcache_save_user(domain, NT_STATUS_OK, &(*info)[i]);
 		}
 	}	
-	centry_end(centry, "UL/%s/%d", domain->name, *start_ndx);
+	centry_end(centry, "UL/%s", domain->name);
 	centry_free(centry);
 
 skip_save:

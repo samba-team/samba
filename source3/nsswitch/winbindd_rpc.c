@@ -28,7 +28,7 @@
    application. */
 static NTSTATUS query_user_list(struct winbindd_domain *domain,
 			       TALLOC_CTX *mem_ctx,
-			       uint32 *start_ndx, uint32 *num_entries, 
+			       uint32 *num_entries, 
 			       WINBIND_USERINFO **info)
 {
 	CLI_POLICY_HND *hnd;
@@ -41,6 +41,7 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	int i;
 
 	*num_entries = 0;
+	*info = NULL;
 
 	/* Get sam handle */
 
@@ -59,28 +60,43 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 
 	ctr.sam.info1 = &info1;
 
-	/* Query display info level 1 */
-	result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
-					&dom_pol, start_ndx, 1,
-					num_entries, 0xffff, &ctr);
+	i = 0;
+	do {
+		uint32 count = 0, start=i;
+		int j;
+		
 
-	/* now map the result into the WINBIND_USERINFO structure */
-	(*info) = (WINBIND_USERINFO *)talloc(mem_ctx, (*num_entries)*sizeof(WINBIND_USERINFO));
-	if (!(*info)) {
-		return NT_STATUS_NO_MEMORY;
-	}
+		/* Query display info level 1 */
+		result = cli_samr_query_dispinfo(hnd->cli, mem_ctx,
+						 &dom_pol, &start, 1,
+						 &count, 0xFFFF, &ctr);
 
-	for (i=0;i<*num_entries;i++) {
-		(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_acct_name);
-		(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[i].uni_full_name);
-		(*info)[i].user_rid = info1.sam[i].rid_user;
-		/* For the moment we set the primary group for every user to be the
-		   Domain Users group.  There are serious problems with determining
-		   the actual primary group for large domains.  This should really
-		   be made into a 'winbind force group' smb.conf parameter or
-		   something like that. */ 
-		(*info)[i].group_rid = DOMAIN_GROUP_RID_USERS;
-	}
+		if (!NT_STATUS_IS_OK(result) && 
+		    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) break;
+
+		(*num_entries) += count;
+
+		/* now map the result into the WINBIND_USERINFO structure */
+		(*info) = talloc_realloc(mem_ctx, *info,
+					 (*num_entries)*sizeof(WINBIND_USERINFO));
+		if (!(*info)) {
+			return NT_STATUS_NO_MEMORY;
+		}
+
+		for (j=0;j<count;i++, j++) {
+			(*info)[i].acct_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_acct_name);
+			(*info)[i].full_name = unistr2_tdup(mem_ctx, &info1.str[j].uni_full_name);
+			(*info)[i].user_rid = info1.sam[j].rid_user;
+			/* For the moment we set the primary group for
+			   every user to be the Domain Users group.
+			   There are serious problems with determining
+			   the actual primary group for large domains.
+			   This should really be made into a 'winbind
+			   force group' smb.conf parameter or
+			   something like that. */
+			(*info)[i].group_rid = DOMAIN_GROUP_RID_USERS;
+		}
+	} while (NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES));
 
  done:
 

@@ -417,7 +417,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	TALLOC_CTX *mem_ctx;
 	BOOL result = False;
         
-	if (ent->got_all_sam_entries)
+	if (ent->got_all_grp_entries)
 		return False;
 
 	if (!(mem_ctx = talloc_init()))
@@ -477,7 +477,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 
 	ent->sam_entries = name_list;
 	ent->sam_entry_index = 0;
-	ent->got_all_sam_entries = (NT_STATUS_V(status) != 
+	ent->got_all_grp_entries = (NT_STATUS_V(status) != 
                                     NT_STATUS_V(STATUS_MORE_ENTRIES));
 
 	result = (ent->num_sam_entries > 0);
