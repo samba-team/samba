@@ -43,12 +43,9 @@ static struct getargs args[] = {
 };
 
 static void
-usage (int ret)
+usage (int ret, struct getargs *a, int num_args)
 {
-    arg_printusage (args,
-		    sizeof(args)/sizeof(*args),
-		    NULL,
-		    "[principal]");
+    arg_printusage (a, num_args, NULL, "[principal]");
     exit (ret);
 }
 
@@ -66,10 +63,10 @@ main (int argc, char **argv)
     char pwbuf[BUFSIZ];
 
     optind = krb5_program_setup(&context, argc, argv,
-				args, sizeof(args) / sizeof(args[0]), NULL);
+				args, sizeof(args) / sizeof(args[0]), usage);
 
     if (help_flag)
-	usage (0);
+	usage (0, args, sizeof(args) / sizeof(args[0]));
 
     if(version_flag){
 	print_version (NULL);
@@ -86,7 +83,7 @@ main (int argc, char **argv)
     argv += optind;
 
     if (argc > 1)
-	usage(1);
+	usage (1, args, sizeof(args) / sizeof(args[0]));
 
     ret = krb5_init_context (&context);
     if (ret)
