@@ -552,7 +552,7 @@ BOOL get_short_archi(char *short_archi, char *long_archi)
 	DEBUGADD(108,("long architecture: [%s]\n", long_archi));
 	DEBUGADD(108,("short architecture: [%s]\n", short_archi));
 	
-	return TRUE;
+	return True;
 }
 
 /****************************************************************************

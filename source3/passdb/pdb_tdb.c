@@ -755,7 +755,7 @@ static BOOL tdb_update_sam(SAM_ACCOUNT* newpwd, BOOL override, int flag)
 				DEBUG(0, ("Unable to create TDB passwd (passdb.tdb) !!!\n"));
 				return False;
 			}
-			newtdb = TRUE;
+			newtdb = True;
 		}
 	}
 
