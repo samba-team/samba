@@ -151,14 +151,10 @@ struct srvsvc_NetConnCtr1 {
 	struct srvsvc_NetConn1 *array;
 };
 
-struct srvsvc_NetConnCtrDefault {
-};
-
 union srvsvc_NetConnCtr {
 /* [case(0)] */ struct srvsvc_NetConnCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetConnCtr1 *ctr1;
-/* [case(default)] */ struct srvsvc_NetConnCtrDefault ctrDefault;
-};
+/* [case(default)] */ };
 
 struct srvsvc_NetConnEnum {
 	struct {
@@ -202,14 +198,10 @@ struct srvsvc_NetFileCtr3 {
 	struct srvsvc_NetFile3 *array;
 };
 
-struct srvsvc_NetFileCtrDefault {
-};
-
 union srvsvc_NetFileCtr {
 /* [case(2)] */ struct srvsvc_NetFileCtr2 *ctr2;
 /* [case(3)] */ struct srvsvc_NetFileCtr3 *ctr3;
-/* [case(default)] */ struct srvsvc_NetFileCtrDefault ctrDefault;
-};
+/* [case(default)] */ };
 
 struct srvsvc_NetFileEnum {
 	struct {
@@ -318,17 +310,13 @@ struct srvsvc_NetSessCtr502 {
 	struct srvsvc_NetSess502 *array;
 };
 
-struct srvsvc_NetSessCtrDefault {
-};
-
 union srvsvc_NetSessCtr {
 /* [case(0)] */ struct srvsvc_NetSessCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetSessCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetSessCtr2 *ctr2;
 /* [case(10)] */ struct srvsvc_NetSessCtr10 *ctr10;
 /* [case(502)] */ struct srvsvc_NetSessCtr502 *ctr502;
-/* [case(default)] */ struct srvsvc_NetSessCtrDefault ctrDefault;
-};
+/* [case(default)] */ };
 
 struct srvsvc_NetSessEnum {
 	struct {
@@ -437,17 +425,13 @@ struct srvsvc_NetShareCtr502 {
 	struct srvsvc_NetShare502 *array;
 };
 
-struct srvsvc_NetShareCtrDefault {
-};
-
 union srvsvc_NetShareCtr {
 /* [case(0)] */ struct srvsvc_NetShareCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetShareCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetShareCtr2 *ctr2;
 /* [case(501)] */ struct srvsvc_NetShareCtr501 *ctr501;
 /* [case(502)] */ struct srvsvc_NetShareCtr502 *ctr502;
-/* [case(default)] */ struct srvsvc_NetShareCtrDefault ctrDefault;
-};
+/* [case(default)] */ };
 
 struct srvsvc_NetShareEnumAll {
 	struct {
@@ -578,16 +562,12 @@ struct srvsvc_NetDiskCtr3 {
 	struct srvsvc_NetDisk3 *array;
 };
 
-struct srvsvc_NetDiskCtrDefault {
-};
-
 union srvsvc_NetDiskSubCtr {
 /* [case(0)] */ struct srvsvc_NetDiskCtr0 ctr0;
 /* [case(1)] */ struct srvsvc_NetDiskCtr1 ctr1;
 /* [case(2)] */ struct srvsvc_NetDiskCtr2 ctr2;
 /* [case(3)] */ struct srvsvc_NetDiskCtr3 ctr3;
-/* [case(default)] */ struct srvsvc_NetDiskCtrDefault ctrDefault;
-};
+/* [case(default)] */ };
 
 struct srvsvc_NetDiskCtr {
 	uint32 num1;
@@ -674,14 +654,10 @@ struct srvsvc_NetTransportCtr2 {
 	struct srvsvc_NetTransport2 *array;
 };
 
-struct srvsvc_NetTransportCtrDefault {
-};
-
 union srvsvc_NetTransportCtr {
 /* [case(0)] */ struct srvsvc_NetTransportCtr0 *ctr0;
 /* [case(1)] */ struct srvsvc_NetTransportCtr1 *ctr1;
 /* [case(2)] */ struct srvsvc_NetTransportCtr2 *ctr2;
-/* [case(default)] */ struct srvsvc_NetTransportCtrDefault ctrDefault;
 };
 
 struct srvsvc_NetTransportEnum {

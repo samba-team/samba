@@ -181,18 +181,18 @@
 	} samr_DomInfo13;
 
 	typedef union {
-		case(1) samr_DomInfo1 info1;
-		case(2) samr_DomInfo2 info2;
-		case(3) samr_DomInfo3 info3;
-		case(4) samr_DomInfo4 info4;
-		case(5) samr_DomInfo5 info5;
-		case(6) samr_DomInfo6 info6;
-		case(7) samr_DomInfo7 info7;
-		case(8) samr_DomInfo8 info8;
-		case(9) samr_DomInfo9 info9;
-		case(11) samr_DomInfo11 info11;
-		case(12) samr_DomInfo12 info12;
-		case(13) samr_DomInfo13 info13;
+		[case(1)] samr_DomInfo1 info1;
+		[case(2)] samr_DomInfo2 info2;
+		[case(3)] samr_DomInfo3 info3;
+		[case(4)] samr_DomInfo4 info4;
+		[case(5)] samr_DomInfo5 info5;
+		[case(6)] samr_DomInfo6 info6;
+		[case(7)] samr_DomInfo7 info7;
+		[case(8)] samr_DomInfo8 info8;
+		[case(9)] samr_DomInfo9 info9;
+		[case(11)] samr_DomInfo11 info11;
+		[case(12)] samr_DomInfo12 info12;
+		[case(13)] samr_DomInfo13 info13;
 	} samr_DomainInfo;
 
 	NTSTATUS samr_QueryDomainInfo(
@@ -314,10 +314,10 @@
 	} samr_GroupInfoDesciption;
 
 	typedef union {
-		case(1) samr_GroupInfoAll all;
-		case(2) samr_GroupInfoName name;
-		case(3) samr_GroupInfoX unknown;
-		case(4) samr_GroupInfoDesciption description;
+		[case(1)] samr_GroupInfoAll all;
+		[case(2)] samr_GroupInfoName name;
+		[case(3)] samr_GroupInfoX unknown;
+		[case(4)] samr_GroupInfoDesciption description;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
@@ -379,9 +379,9 @@
 	} samr_AliasInfoDescription;
 
 	typedef union {
-		case(1) samr_AliasInfoAll all;
-		case(2) samr_AliasInfoName name;
-		case(3) samr_AliasInfoDescription description;
+		[case(1)] samr_AliasInfoAll all;
+		[case(2)] samr_AliasInfoName name;
+		[case(3)] samr_AliasInfoDescription description;
 	} samr_AliasInfo;
 
 	NTSTATUS samr_QueryAliasInfo(
@@ -581,24 +581,24 @@
 	} samr_UserInfo21;
 
 	typedef union {
-		case(1) samr_UserInfo1 info1;
-		case(2) samr_UserInfo2 info2;
-		case(3) samr_UserInfo3 info3;
-		case(4) samr_UserInfo4 info4;
-		case(5) samr_UserInfo5 info5;
-		case(6) samr_UserInfo6 info6;
-		case(7) samr_UserInfo7 info7;
-		case(8) samr_UserInfo8 info8;
-		case(9) samr_UserInfo9 info9;
-		case(10) samr_UserInfo10 info10;
-		case(11) samr_UserInfo11 info11;
-		case(12) samr_UserInfo12 info12;
-		case(13) samr_UserInfo13 info13;
-		case(14) samr_UserInfo14 info14;
-		case(16) samr_UserInfo16 info16;
-		case(17) samr_UserInfo17 info17;
-		case(20) samr_UserInfo20 info20;
-		case(21) samr_UserInfo21 info21;
+		[case(1)] samr_UserInfo1 info1;
+		[case(2)] samr_UserInfo2 info2;
+		[case(3)] samr_UserInfo3 info3;
+		[case(4)] samr_UserInfo4 info4;
+		[case(5)] samr_UserInfo5 info5;
+		[case(6)] samr_UserInfo6 info6;
+		[case(7)] samr_UserInfo7 info7;
+		[case(8)] samr_UserInfo8 info8;
+		[case(9)] samr_UserInfo9 info9;
+		[case(10)] samr_UserInfo10 info10;
+		[case(11)] samr_UserInfo11 info11;
+		[case(12)] samr_UserInfo12 info12;
+		[case(13)] samr_UserInfo13 info13;
+		[case(14)] samr_UserInfo14 info14;
+		[case(16)] samr_UserInfo16 info16;
+		[case(17)] samr_UserInfo17 info17;
+		[case(20)] samr_UserInfo20 info20;
+		[case(21)] samr_UserInfo21 info21;
 	} samr_UserInfo;
 
 	NTSTATUS samr_QueryUserInfo(

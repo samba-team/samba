@@ -108,13 +108,13 @@
 	} spoolss_PrinterInfo7;
 
 	typedef [nodiscriminant,public] union {
-		case(1) spoolss_PrinterInfo1 info1;
-		case(2) spoolss_PrinterInfo2 info2;
-		case(3) spoolss_PrinterInfo3 info3;
-		case(4) spoolss_PrinterInfo4 info4;
-		case(5) spoolss_PrinterInfo5 info5;
-		case(6) spoolss_PrinterInfo6 info6;
-		case(7) spoolss_PrinterInfo7 info7;
+		[case(1)] spoolss_PrinterInfo1 info1;
+		[case(2)] spoolss_PrinterInfo2 info2;
+		[case(3)] spoolss_PrinterInfo3 info3;
+		[case(4)] spoolss_PrinterInfo4 info4;
+		[case(5)] spoolss_PrinterInfo5 info5;
+		[case(6)] spoolss_PrinterInfo6 info6;
+		[case(7)] spoolss_PrinterInfo7 info7;
 	} spoolss_PrinterInfo;
 
 	WERROR spoolss_EnumPrinters(
@@ -506,7 +506,7 @@
 	} spoolss_UserLevel1;
 
 	typedef union {
-		case(1)  spoolss_UserLevel1 *level1;
+		[case(1)]  spoolss_UserLevel1 *level1;
 	} spoolss_UserLevel;
 
 	/******************/
