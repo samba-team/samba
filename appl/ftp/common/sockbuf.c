@@ -50,7 +50,7 @@ void
 set_buffer_size(int fd, int read)
 {
 #if defined(SO_RCVBUF) && defined(SO_SNDBUF) && defined(HAVE_SETSOCKOPT)
-    size_t size = 1048576;
+    size_t size = 4194304;
     while(size >= 131072 && 
 	  setsockopt(fd, SOL_SOCKET, read ? SO_RCVBUF : SO_SNDBUF, 
 		     (void *)&size, sizeof(size)) < 0)
