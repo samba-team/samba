@@ -796,25 +796,32 @@ char *attrib_string(int mode)
 /*******************************************************************
   case insensitive string compararison
 ********************************************************************/
-int StrCaseCmp(char *s, char *t)
+int StrCaseCmp(char const *s, char const *t)
 {
-  for (; tolower(*s) == tolower(*t); ++s, ++t)
-    if (!*s) return 0;
+  /* compare until we run out of string, either t or s, or find a difference */
+  while (*s && *t && tolower(*s) == tolower(*t))
+  {
+    s++; t++;
+  }
 
-  return tolower(*s) - tolower(*t);
+  return(tolower(*s) - tolower(*t));
 }
 
 /*******************************************************************
   case insensitive string compararison, length limited
 ********************************************************************/
-int StrnCaseCmp(char *s, char *t, int n)
+int StrnCaseCmp(char const *s, char const *t, int n)
 {
-  while (n-- && *s && *t) {
-    if (tolower(*s) != tolower(*t)) return(tolower(*s) - tolower(*t));
+  /* compare until we run out of string, either t or s, or chars */
+  while (n-- && *s && *t && tolower(*s) == tolower(*t))
+  {
     s++; t++;
   }
+
+  /* not run out of chars - strings are different lengths */
   if (n) return(tolower(*s) - tolower(*t));
 
+  /* identical up to where we run out of chars, and strings are same length */
   return(0);
 }
 

@@ -51,6 +51,7 @@ char *smb_errstr(char *inbuf);
 /*The following definitions come from  clitar.c  */
 
 int strslashcmp(char *s1,char *s2);
+int padit(char *buf, int bufsize, int padsize);
 void cmd_block(void);
 void cmd_tarmode(void);
 void cmd_setmode(void);
@@ -139,6 +140,8 @@ char *lp_domain_controller(void);
 char *lp_username_map(void);
 char *lp_character_set(void);
 char *lp_logon_script(void);
+char *lp_logon_path(void);
+char *lp_veto_files(void);
 char *lp_remote_announce(void);
 char *lp_wins_server(void);
 char *lp_interfaces(void);
@@ -251,15 +254,9 @@ int lp_numservices(void);
 void lp_dump(void);
 int lp_servicenumber(char *pszServiceName);
 char *volume_label(int snum);
-BOOL is_vetoed_name(char *name);
-BOOL is_vetoed_path(char *name);
-char *lp_veto_files(void);
 
 /*The following definitions come from  locking.c  */
 
-BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
-int file_lock(char *name,int timeout);
-void file_unlock(int fd);
 BOOL is_locked(int fnum,int cnum,uint32 count,uint32 offset);
 BOOL do_lock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
 BOOL do_unlock(int fnum,int cnum,uint32 count,uint32 offset,int *eclass,uint32 *ecode);
@@ -538,7 +535,6 @@ BOOL pm_process(char *pszFileName,BOOL (*sfunc)(char *),BOOL (*pfunc)(char *,cha
 void generate_next_challenge(char *challenge);
 BOOL set_challenge(char *challenge);
 BOOL last_challenge(char *challenge);
-int valid_uid(int uid);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
@@ -659,14 +655,19 @@ int reply_getattrE(char *inbuf,char *outbuf);
 
 /*The following definitions come from  server.c  */
 
+void  *dflt_sig(void);
+void  killkids(void);
 mode_t unix_mode(int cnum,int dosmode);
 int dos_mode(int cnum,char *path,struct stat *sbuf);
 int dos_chmod(int cnum,char *fname,int dosmode,struct stat *st);
-BOOL unix_convert(char *name,int cnum,char *);
+BOOL unix_convert(char *name,int cnum,pstring saved_last_component);
 int disk_free(char *path,int *bsize,int *dfree,int *dsize);
 int sys_disk_free(char *path,int *bsize,int *dfree,int *dsize);
 BOOL check_name(char *name,int cnum);
-void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *st);
+int fd_attempt_open(char *fname, int flags, int mode);
+void fd_attempt_reopen(char *fname, int mode, file_fd_struct *fd_ptr);
+int fd_attempt_close(file_fd_struct *fd_ptr);
+void open_file(int fnum,int cnum,char *fname1,int flags,int mode, struct stat *sbuf);
 void sync_file(int fnum);
 void close_file(int fnum);
 BOOL check_file_sharing(int cnum,char *fname);
@@ -704,12 +705,9 @@ int construct_reply(char *inbuf,char *outbuf,int size,int bufsize);
 
 BOOL smb_shm_open( char *file_name, int size);
 BOOL smb_shm_close( void );
-smb_shm_offset_t smb_shm_alloc(int size);
 BOOL smb_shm_free(smb_shm_offset_t offset);
-smb_shm_offset_t smb_shm_get_userdef_off(void);
 BOOL smb_shm_set_userdef_off(smb_shm_offset_t userdef_off);
 void * smb_shm_offset2addr(smb_shm_offset_t offset);
-smb_shm_offset_t shm_addr2offset(void *addr);
 BOOL smb_shm_lock(void);
 BOOL smb_shm_unlock(void);
 BOOL smb_shm_get_usage(int *bytes_free,
@@ -926,6 +924,11 @@ char *gidtoname(int gid);
 void BlockSignals(BOOL block,int signum);
 void ajt_panic(void);
 char *readdirname(void *p);
+BOOL is_vetoed_name(char *name);
+BOOL is_vetoed_path(char *name);
+BOOL fcntl_lock(int fd,int op,uint32 offset,uint32 count,int type);
+int file_lock(char *name,int timeout);
+void file_unlock(int fd);
 
 /*The following definitions come from  vt_mode.c  */
 
