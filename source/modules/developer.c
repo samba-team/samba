@@ -125,8 +125,8 @@ static size_t weird_push(void *cd, char **inbuf, size_t *inbytesleft,
 
 struct charset_functions weird_functions = {"WEIRD", weird_pull, weird_push};
 
-int init_module(void)
+int charset_weird_init(void)
 {
 	smb_register_charset(&weird_functions);
-	return 1;
+	return True;
 }
