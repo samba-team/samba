@@ -906,7 +906,7 @@ void init_q_lookup_sids(TALLOC_CTX *mem_ctx, LSA_Q_LOOKUP_SIDS *q_l,
 	memcpy(&q_l->pol, hnd, sizeof(q_l->pol));
 	init_lsa_sid_enum(mem_ctx, &q_l->sids, num_sids, sids);
 	
-	q_l->level.value = level;
+	q_l->level = level;
 }
 
 /*******************************************************************
@@ -928,7 +928,10 @@ BOOL lsa_io_q_lookup_sids(const char *desc, LSA_Q_LOOKUP_SIDS *q_s, prs_struct *
 		return False;
 	if(!lsa_io_trans_names("names  ", &q_s->names, ps, depth)) /* translated names */
 		return False;
-	if(!smb_io_lookup_level("switch ", &q_s->level, ps, depth)) /* lookup level */
+
+	if(!prs_uint16("level", ps, depth, &q_s->level)) /* lookup level */
+		return False;
+	if(!prs_align(ps))
 		return False;
 
 	if(!prs_uint32("mapped_count", ps, depth, &q_s->mapped_count))

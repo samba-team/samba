@@ -46,6 +46,9 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	get_mydnsdomname(dnsdomain);
+	strlower_m(dnsdomain);
+
 	switch ( lp_server_role() ) {
 		case ROLE_STANDALONE:
 			basic->machine_role = DSROLE_STANDALONE_SRV;
@@ -58,16 +61,12 @@ static NTSTATUS fill_dsrole_dominfo_basic(TALLOC_CTX *ctx, DSROLE_PRIMARY_DOMAIN
 			basic->flags = DSROLE_PRIMARY_DS_RUNNING|DSROLE_PRIMARY_DS_MIXED_MODE;
 			if ( secrets_fetch_domain_guid( lp_workgroup(), &basic->domain_guid ) )
 				basic->flags |= DSROLE_PRIMARY_DOMAIN_GUID_PRESENT;
-			get_mydnsdomname(dnsdomain);
-			strlower_m(dnsdomain);
 			break;
 		case ROLE_DOMAIN_PDC:
 			basic->machine_role = DSROLE_PDC;
 			basic->flags = DSROLE_PRIMARY_DS_RUNNING|DSROLE_PRIMARY_DS_MIXED_MODE;
 			if ( secrets_fetch_domain_guid( lp_workgroup(), &basic->domain_guid ) )
 				basic->flags |= DSROLE_PRIMARY_DOMAIN_GUID_PRESENT;
-			get_mydnsdomname(dnsdomain);
-			strlower_m(dnsdomain);
 			break;
 	}
 

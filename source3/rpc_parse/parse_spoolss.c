@@ -550,23 +550,22 @@ static BOOL smb_io_notify_info(const char *desc, SPOOL_NOTIFY_INFO *info, prs_st
 /*******************************************************************
 ********************************************************************/  
 
-static BOOL spool_io_user_level_1(const char *desc, SPOOL_USER_1 *q_u, prs_struct *ps, int depth)
+BOOL spool_io_user_level_1( const char *desc, prs_struct *ps, int depth, SPOOL_USER_1 *q_u )
 {
 	prs_debug(ps, depth, desc, "");
 	depth++;
 
-	/* reading */
-	if (UNMARSHALLING(ps))
-		ZERO_STRUCTP(q_u);
-
 	if (!prs_align(ps))
 		return False;
+
 	if (!prs_uint32("size", ps, depth, &q_u->size))
 		return False;
-	if (!prs_uint32("client_name_ptr", ps, depth, &q_u->client_name_ptr))
+
+	if (!prs_io_unistr2_p("", ps, depth, &q_u->client_name))
 		return False;
-	if (!prs_uint32("user_name_ptr", ps, depth, &q_u->user_name_ptr))
+	if (!prs_io_unistr2_p("", ps, depth, &q_u->user_name))
 		return False;
+
 	if (!prs_uint32("build", ps, depth, &q_u->build))
 		return False;
 	if (!prs_uint32("major", ps, depth, &q_u->major))
@@ -576,11 +575,12 @@ static BOOL spool_io_user_level_1(const char *desc, SPOOL_USER_1 *q_u, prs_struc
 	if (!prs_uint32("processor", ps, depth, &q_u->processor))
 		return False;
 
-	if (!smb_io_unistr2("", &q_u->client_name, q_u->client_name_ptr, ps, depth))
+	if (!prs_io_unistr2("", ps, depth, q_u->client_name))
 		return False;
 	if (!prs_align(ps))
 		return False;
-	if (!smb_io_unistr2("", &q_u->user_name,   q_u->user_name_ptr,   ps, depth))
+
+	if (!prs_io_unistr2("", ps, depth, q_u->user_name))
 		return False;
 
 	return True;
@@ -600,21 +600,20 @@ static BOOL spool_io_user_level(const char *desc, SPOOL_USER_CTR *q_u, prs_struc
 	if (!prs_align(ps))
 		return False;
 
-	/* From looking at many captures in ethereal, it looks like
-	   the level and ptr fields should be transposed.  -tpot */
-
 	if (!prs_uint32("level", ps, depth, &q_u->level))
 		return False;
-	if (!prs_uint32("ptr", ps, depth, &q_u->ptr))
-		return False;
 	
-	switch (q_u->level) {	
-	case 1:
-		if (!spool_io_user_level_1("", &q_u->user1, ps, depth))
-			return False;
-		break;
-	default:
-		return False;	
+	switch ( q_u->level ) 
+	{	
+		case 1:
+			if ( !prs_pointer( "" , ps, depth, (void**)&q_u->user.user1, 
+				sizeof(SPOOL_USER_1), (PRS_POINTER_CAST)spool_io_user_level_1 )) 
+			{
+				return False;
+			}
+			break;
+		default:
+			return False;	
 	}	
 
 	return True;
@@ -899,30 +898,31 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 		const fstring user_name)
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
-	q_u->printername_ptr = (printername!=NULL)?1:0;
-	init_unistr2(&q_u->printername, printername, UNI_STR_TERMINATE);
+
+	q_u->printername = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	init_unistr2(q_u->printername, printername, UNI_STR_TERMINATE);
 
 	q_u->printer_default.datatype_ptr = 0;
-/*
-	q_u->printer_default.datatype_ptr = (datatype!=NULL)?1:0;
-	init_unistr2(&q_u->printer_default.datatype, datatype, UNI_FLAGS_NONE);
-*/
+
 	q_u->printer_default.devmode_cont.size=0;
 	q_u->printer_default.devmode_cont.devmode_ptr=0;
 	q_u->printer_default.devmode_cont.devmode=NULL;
 	q_u->printer_default.access_required=access_required;
-	q_u->user_switch=1;
-	q_u->user_ctr.level=1;
-	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.size=strlen(clientname)+strlen(user_name)+10;
-	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
-	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
-	q_u->user_ctr.user1.build=1381;
-	q_u->user_ctr.user1.major=2;
-	q_u->user_ctr.user1.minor=0;
-	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
+
+	q_u->user_switch = 1;
+	
+	q_u->user_ctr.level           = 1;
+	q_u->user_ctr.user.user1->size      = strlen(clientname) + strlen(user_name) + 10;
+	q_u->user_ctr.user.user1->build     = 1381;
+	q_u->user_ctr.user.user1->major     = 2;
+	q_u->user_ctr.user.user1->minor     = 0;
+	q_u->user_ctr.user.user1->processor = 0;
+
+	q_u->user_ctr.user.user1->client_name = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+	q_u->user_ctr.user.user1->user_name   = TALLOC_P( get_talloc_ctx(), UNISTR2 );
+
+	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
 	
 	return True;
 }
@@ -931,23 +931,19 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
  * init a structure.
  ********************************************************************/
 
-BOOL make_spoolss_q_addprinterex(
-	TALLOC_CTX *mem_ctx,
-	SPOOL_Q_ADDPRINTEREX *q_u, 
-	const char *srv_name,
-	const char* clientname, 
-	const char* user_name,
-	uint32 level, 
-	PRINTER_INFO_CTR *ctr)
+BOOL make_spoolss_q_addprinterex( TALLOC_CTX *mem_ctx, SPOOL_Q_ADDPRINTEREX *q_u, 
+	const char *srv_name, const char* clientname, const char* user_name,
+	uint32 level, PRINTER_INFO_CTR *ctr)
 {
 	DEBUG(5,("make_spoolss_q_addprinterex\n"));
 	
-	if (!ctr) return False;
+	if (!ctr) 
+		return False;
 
 	ZERO_STRUCTP(q_u);
 
-	q_u->server_name_ptr = (srv_name!=NULL)?1:0;
-	init_unistr2(&q_u->server_name, srv_name, UNI_FLAGS_NONE);
+	q_u->server_name = TALLOC_P( mem_ctx, UNISTR2 );
+	init_unistr2(q_u->server_name, srv_name, UNI_FLAGS_NONE);
 
 	q_u->level = level;
 	
@@ -967,18 +963,20 @@ BOOL make_spoolss_q_addprinterex(
 
 	q_u->user_switch=1;
 
-	q_u->user_ctr.level=1;
-	q_u->user_ctr.ptr=1;
-	q_u->user_ctr.user1.client_name_ptr = (clientname!=NULL)?1:0;
-	q_u->user_ctr.user1.user_name_ptr = (user_name!=NULL)?1:0;
-	q_u->user_ctr.user1.build=1381;
-	q_u->user_ctr.user1.major=2;
-	q_u->user_ctr.user1.minor=0;
-	q_u->user_ctr.user1.processor=0;
-	init_unistr2(&q_u->user_ctr.user1.client_name, clientname, UNI_STR_TERMINATE);
-	init_unistr2(&q_u->user_ctr.user1.user_name, user_name, UNI_STR_TERMINATE);
-	q_u->user_ctr.user1.size=q_u->user_ctr.user1.user_name.uni_str_len +
-	                         q_u->user_ctr.user1.client_name.uni_str_len + 2;
+	q_u->user_ctr.level                = 1;
+	q_u->user_ctr.user.user1->build     = 1381;
+	q_u->user_ctr.user.user1->major     = 2; 
+	q_u->user_ctr.user.user1->minor     = 0;
+	q_u->user_ctr.user.user1->processor = 0;
+
+	q_u->user_ctr.user.user1->client_name = TALLOC_P( mem_ctx, UNISTR2 );
+	q_u->user_ctr.user.user1->user_name   = TALLOC_P( mem_ctx, UNISTR2 );
+
+	init_unistr2(q_u->user_ctr.user.user1->client_name, clientname, UNI_STR_TERMINATE);
+	init_unistr2(q_u->user_ctr.user.user1->user_name, user_name, UNI_STR_TERMINATE);
+
+	q_u->user_ctr.user.user1->size = q_u->user_ctr.user.user1->user_name->uni_str_len +
+	                           q_u->user_ctr.user.user1->client_name->uni_str_len + 2;
 	
 	return True;
 }
@@ -1102,9 +1100,9 @@ BOOL spoolss_io_q_open_printer(const char *desc, SPOOL_Q_OPEN_PRINTER *q_u, prs_
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("printername_ptr", ps, depth, &q_u->printername_ptr))
+	if (!prs_io_unistr2_p("ptr", ps, depth, &q_u->printername))
 		return False;
-	if (!smb_io_unistr2("", &q_u->printername, q_u->printername_ptr, ps,depth))
+	if (!prs_io_unistr2("printername", ps, depth, q_u->printername))
 		return False;
 	
 	if (!prs_align(ps))
@@ -1158,9 +1156,9 @@ BOOL spoolss_io_q_open_printer_ex(const char *desc, SPOOL_Q_OPEN_PRINTER_EX *q_u
 	if (!prs_align(ps))
 		return False;
 
-	if (!prs_uint32("printername_ptr", ps, depth, &q_u->printername_ptr))
+	if (!prs_io_unistr2_p("ptr", ps, depth, &q_u->printername))
 		return False;
-	if (!smb_io_unistr2("", &q_u->printername, q_u->printername_ptr, ps,depth))
+	if (!prs_io_unistr2("printername", ps, depth, q_u->printername))
 		return False;
 	
 	if (!prs_align(ps))
@@ -4645,9 +4643,10 @@ BOOL spoolss_io_q_addprinterex(const char *desc, SPOOL_Q_ADDPRINTEREX *q_u, prs_
 
 	if(!prs_align(ps))
 		return False;
-	if(!prs_uint32("", ps, depth, &q_u->server_name_ptr))
+
+	if (!prs_io_unistr2_p("ptr", ps, depth, &q_u->server_name))
 		return False;
-	if(!smb_io_unistr2("", &q_u->server_name, q_u->server_name_ptr, ps, depth))
+	if (!prs_io_unistr2("servername", ps, depth, q_u->server_name))
 		return False;
 
 	if(!prs_align(ps))

@@ -765,6 +765,7 @@ BOOL check_bind_req(struct pipes_struct *p, RPC_IFACE* abstract,
 		
 	for ( i=0; pipe_names[i].client_pipe; i++ ) 
 	{
+		DEBUG(10,("checking %s\n", pipe_names[i].client_pipe));
 		if ( strequal(pipe_names[i].client_pipe, pname)
 			&& (abstract->version == pipe_names[i].abstr_syntax.version) 
 			&& (memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid, sizeof(struct uuid)) == 0)
@@ -1630,6 +1631,12 @@ void get_pipe_fns( int idx, struct api_struct **fns, int *n_fns )
 			break;
 		case PI_NETDFS:
 			netdfs_get_pipe_fns( &cmds, &n_cmds );
+			break;
+		case PI_SVCCTL:
+			svcctl_get_pipe_fns( &cmds, &n_cmds );
+			break;
+	        case PI_EVENTLOG:
+			eventlog_get_pipe_fns( &cmds, &n_cmds );
 			break;
 #ifdef DEVELOPER
 		case PI_ECHO:

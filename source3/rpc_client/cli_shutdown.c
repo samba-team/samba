@@ -36,9 +36,10 @@ NTSTATUS cli_shutdown_init(struct cli_state * cli, TALLOC_CTX *mem_ctx,
 	prs_struct rbuf; 
 	SHUTDOWN_Q_INIT q_s;
 	SHUTDOWN_R_INIT r_s;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_GENERAL_FAILURE;
 
-	if (msg == NULL) return NT_STATUS_INVALID_PARAMETER;
+	if (msg == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
@@ -63,7 +64,48 @@ done:
 	prs_mem_free(&rbuf);
 	prs_mem_free(&qbuf);
 
-	return result;
+	return werror_to_ntstatus(result);
+}
+
+/* Shutdown a server */
+
+NTSTATUS cli_shutdown_init_ex(struct cli_state * cli, TALLOC_CTX *mem_ctx,
+			   const char *msg, uint32 timeout, BOOL do_reboot,
+			   BOOL force, uint32 reason)
+{
+	prs_struct qbuf;
+	prs_struct rbuf; 
+	SHUTDOWN_Q_INIT_EX q_s;
+	SHUTDOWN_R_INIT_EX r_s;
+	WERROR result = WERR_GENERAL_FAILURE;
+
+	if (msg == NULL) 
+		return NT_STATUS_INVALID_PARAMETER;
+
+	ZERO_STRUCT (q_s);
+	ZERO_STRUCT (r_s);
+
+	prs_init(&qbuf , MAX_PDU_FRAG_LEN, mem_ctx, MARSHALL);
+	prs_init(&rbuf, 0, mem_ctx, UNMARSHALL);
+
+	/* Marshall data and send request */
+
+	init_shutdown_q_init_ex(&q_s, msg, timeout, do_reboot, force, reason);
+
+	if (!shutdown_io_q_init_ex("", &q_s, &qbuf, 0) ||
+	    !rpc_api_pipe_req(cli, PI_SHUTDOWN, SHUTDOWN_INIT_EX, &qbuf, &rbuf))
+		goto done;
+	
+	/* Unmarshall response */
+	
+	if(shutdown_io_r_init_ex("", &r_s, &rbuf, 0))
+		result = r_s.status;
+
+done:
+	prs_mem_free(&rbuf);
+	prs_mem_free(&qbuf);
+
+	return werror_to_ntstatus(result);
 }
 
 
@@ -75,7 +117,7 @@ NTSTATUS cli_shutdown_abort(struct cli_state * cli, TALLOC_CTX *mem_ctx)
 	prs_struct qbuf; 
 	SHUTDOWN_Q_ABORT q_s;
 	SHUTDOWN_R_ABORT r_s;
-	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
+	WERROR result = WERR_GENERAL_FAILURE;
 
 	ZERO_STRUCT (q_s);
 	ZERO_STRUCT (r_s);
@@ -100,5 +142,5 @@ done:
 	prs_mem_free(&rbuf);
 	prs_mem_free(&qbuf );
 
-	return result;
+	return werror_to_ntstatus(result);
 }
