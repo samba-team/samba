@@ -145,6 +145,32 @@ krb5_config_parse_file (const char *fname, krb5_config_section **res)
     return 0;
 }
 
+static void
+free_binding (krb5_config_binding *b)
+{
+    krb5_config_binding *next_b;
+
+    while (b) {
+	free (b->name);
+	if (b->type == STRING)
+	    free (b->u.string);
+	else if (b->type == LIST)
+	    free_binding (b->u.list);
+	else
+	    abort ();
+	next_b = b->next;
+	free (b);
+	b = next_b;
+    }
+}
+
+krb5_error_code
+krb5_config_file_free (krb5_config_section *s)
+{
+    free_binding (s);
+    return 0;
+}
+
 static int print_list (FILE *f, krb5_config_binding *l, unsigned level);
 static int print_binding (FILE *f, krb5_config_binding *b, unsigned level);
 static int print_section (FILE *f, krb5_config_section *s, unsigned level);
