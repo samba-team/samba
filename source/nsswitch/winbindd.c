@@ -169,11 +169,11 @@ static void termination_handler(int signum)
 	do_sigterm = True;
 }
 
-static BOOL do_sigusr1;
+static BOOL do_sigusr2;
 
-static void sigusr1_handler(int signum)
+static void sigusr2_handler(int signum)
 {
-	do_sigusr1 = True;
+	do_sigusr2 = True;
 }
 
 static BOOL do_sighup;
@@ -285,8 +285,8 @@ static struct dispatch_table dispatch_table[] = {
 	
 	/* User functions */
 
-	{ WINBINDD_GETPWNAM_FROM_USER, winbindd_getpwnam_from_user, "GETPWNAM_FROM_USER" },
-	{ WINBINDD_GETPWNAM_FROM_UID, winbindd_getpwnam_from_uid, "GETPWNAM_FROM_UID" },
+	{ WINBINDD_GETPWNAM, winbindd_getpwnam, "GETPWNAM" },
+	{ WINBINDD_GETPWUID, winbindd_getpwuid, "GETPWUID" },
 
 	{ WINBINDD_SETPWENT, winbindd_setpwent, "SETPWENT" },
 	{ WINBINDD_ENDPWENT, winbindd_endpwent, "ENDPWENT" },
@@ -296,8 +296,8 @@ static struct dispatch_table dispatch_table[] = {
 
 	/* Group functions */
 
-	{ WINBINDD_GETGRNAM_FROM_GROUP, winbindd_getgrnam_from_group, "GETGRNAM_FROM_GROUP" },
-	{ WINBINDD_GETGRNAM_FROM_GID, winbindd_getgrnam_from_gid, "GETGRNAM_FROM_GID" },
+	{ WINBINDD_GETGRNAM, winbindd_getgrnam, "GETGRNAM" },
+	{ WINBINDD_GETGRGID, winbindd_getgrgid, "GETGRGID" },
 	{ WINBINDD_SETGRENT, winbindd_setgrent, "SETGRENT" },
 	{ WINBINDD_ENDGRENT, winbindd_endgrent, "ENDGRENT" },
 	{ WINBINDD_GETGRENT, winbindd_getgrent, "GETGRENT" },
@@ -715,9 +715,9 @@ static void process_loop(int accept_sock)
 			do_sighup = False;
 		}
 
-		if (do_sigusr1) {
+		if (do_sigusr2) {
 			print_winbindd_status();
-			do_sigusr1 = False;
+			do_sigusr2 = False;
 		}
 	}
 }
@@ -737,9 +737,9 @@ int main(int argc, char **argv)
 	int opt, new_debuglevel = -1;
 
 	/* glibc (?) likes to print "User defined signal 1" and exit if a
-		SIGUSR1 is received before a handler is installed */
+	   SIGUSR2 is received before a handler is installed */
 
- 	CatchSignal(SIGUSR1, SIG_IGN);
+ 	CatchSignal(SIGUSR2, SIG_IGN);
 
 	fault_setup((void (*)(void *))fault_quit );
 
@@ -857,7 +857,7 @@ int main(int argc, char **argv)
 	BlockSignals(False, SIGINT);
 	BlockSignals(False, SIGQUIT);
 	BlockSignals(False, SIGTERM);
-	BlockSignals(False, SIGUSR1);
+	BlockSignals(False, SIGUSR2);
 	BlockSignals(False, SIGHUP);
 
 	/* Setup signal handlers */
@@ -867,8 +867,9 @@ int main(int argc, char **argv)
 	CatchSignal(SIGTERM, termination_handler);
 
 	CatchSignal(SIGPIPE, SIG_IGN);                 /* Ignore sigpipe */
+	CatchSignal(SIGUSR1, SIG_IGN);	               /* Samba messages */
 
-	CatchSignal(SIGUSR1, sigusr1_handler);         /* Debugging sigs */
+	CatchSignal(SIGUSR2, sigusr2_handler);         /* Debugging sigs */
 	CatchSignal(SIGHUP, sighup_handler);
 
 	/* Create UNIX domain socket */

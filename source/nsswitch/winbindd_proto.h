@@ -40,9 +40,8 @@ void winbindd_cm_status(void);
 
 /* The following definitions come from nsswitch/winbindd_group.c  */
 
-enum winbindd_result winbindd_getgrnam_from_group(struct winbindd_cli_state *state);
-enum winbindd_result winbindd_getgrnam_from_gid(struct winbindd_cli_state 
-                                                *state);
+enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_getgrgid(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endgrent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getgrent(struct winbindd_cli_state *state);
@@ -90,8 +89,8 @@ enum winbindd_result winbindd_gid_to_sid(struct winbindd_cli_state *state);
 
 /* The following definitions come from nsswitch/winbindd_user.c  */
 
-enum winbindd_result winbindd_getpwnam_from_user(struct winbindd_cli_state *state) ;
-enum winbindd_result winbindd_getpwnam_from_uid(struct winbindd_cli_state *state);
+enum winbindd_result winbindd_getpwnam(struct winbindd_cli_state *state) ;
+enum winbindd_result winbindd_getpwuid(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_endpwent(struct winbindd_cli_state *state);
 enum winbindd_result winbindd_getpwent(struct winbindd_cli_state *state);
