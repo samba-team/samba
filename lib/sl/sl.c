@@ -89,10 +89,13 @@ sl_help (SL_cmd *cmds, int argc, char **argv)
     } else { 
 	c = sl_match (cmds, argv[1], 0);
 	if (c == NULL)
-	    printf ("No such command: %s. Try \"help\" for a list of all commands\n",
+	    printf ("No such command: %s. "
+		    "Try \"help\" for a list of all commands\n",
 		    argv[1]);
 	else {
 	    printf ("%s\t%s", c->name, c->usage);
+	    if(c->help && *c->help)
+		printf ("%s\n", c->help);
 	    if((++c)->name && c->func == NULL) {
 		printf ("\nSynonyms:");
 		while (c->name && c->func == NULL)
