@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -873,8 +873,14 @@ decode_packet(krb5_context context,
 	return;
     }
 
-    krb5_425_conv_principal(context, ad.pname, ad.pinst, ad.prealm,
-			    &client);
+    ret = krb5_425_conv_principal(context, ad.pname, ad.pinst, ad.prealm,
+				  &client);
+    if (ret) {
+	krb5_warnx (context, "krb5_425_conv_principal: %d", ret);
+	make_you_loose_packet (KADM_NOMEM, reply);
+	return;
+    }
+
     krb5_unparse_name(context, client, &client_str);
 
     ret = kadm5_init_with_password_ctx(context, 
