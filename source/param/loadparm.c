@@ -172,6 +172,8 @@ typedef struct
   char *szUtmpDir;
 #endif /* WITH_UTMP */
   char *szSourceEnv;
+  char *szWinbindUID;
+  char *szWinbindGID;
   int max_log_size;
   int mangled_stack;
   int max_xmit;
@@ -523,6 +525,7 @@ static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 static BOOL handle_source_env(char *pszParmValue,char **ptr);
 static BOOL handle_netbios_name(char *pszParmValue,char **ptr);
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr);
 
 static void set_server_role(void);
 static void set_default_server_announce_type(void);
@@ -951,6 +954,11 @@ static struct parm_struct parm_table[] =
   {"host msdfs",      P_BOOL,    P_GLOBAL, &Globals.bHostMSDfs,        NULL,   NULL, FLAG_GLOBAL},
 #endif
 
+  {"Winbind options", P_SEP, P_SEPARATOR},
+
+  {"winbind uid", P_STRING, P_GLOBAL, &Globals.szWinbindUID, handle_winbind_id, NULL, 0},
+  {"winbind gid", P_STRING, P_GLOBAL, &Globals.szWinbindGID, handle_winbind_id, NULL, 0},
+
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -1374,6 +1382,9 @@ FN_GLOBAL_STRING(lp_wins_hook,&Globals.szWINSHook)
 
 FN_GLOBAL_STRING(lp_nt_forms,&Globals.szNtForms)
 FN_GLOBAL_STRING(lp_nt_drivers_file,&Globals.szNtDriverFile)
+
+FN_GLOBAL_STRING(lp_winbind_uid,&Globals.szWinbindUID)
+FN_GLOBAL_STRING(lp_winbind_gid,&Globals.szWinbindGID)
 
 #if defined(WITH_LDAP) || defined(WITH_NT5LDAP)
 FN_GLOBAL_STRING(lp_ldap_server,&Globals.szLdapServer);
@@ -2379,6 +2390,45 @@ static BOOL handle_copy(char *pszParmValue,char **ptr)
    return (bRetval);
 }
 
+/***************************************************************************
+ Handle winbind uid and gid allocation parameters.  The format of these
+ parameters is:
+
+ [global]
+
+        winbind uid = ACSYS-NTDOM:1000-1999, BUILTIN:2000-2999
+        winbind gid = BUILTIN:600-699, ACSYS-NTDOM:700-899
+
+ We only do simple parsing checks here.  The strings are parsed into useful
+ structures in the winbind daemon code.
+
+***************************************************************************/
+
+/* Do some simple checks on "winbind [ug]id" parameter value */
+
+static BOOL handle_winbind_id(char *pszParmValue, char **ptr)
+{
+    fstring temp;
+    char *p;
+
+    fstrcpy(temp, pszParmValue);
+
+    /* Check list values are of form DOMAIN:id1 or DOMAIN:id1-id2 */
+        
+    for (p = strtok(temp, LIST_SEP); p; p = strtok(NULL, LIST_SEP)) {
+        int value;
+
+        if ((sscanf(p, "%*[^/]/%d", &value) != 1) &&
+            (sscanf(p, "%*[^/]/%*d-%d", &value) != 1)) {
+            return False;
+        }
+    }
+
+    /* Parse OK */
+
+    string_set(ptr,pszParmValue);
+    return True;
+}
 
 /***************************************************************************
 initialise a copymap
