@@ -4444,7 +4444,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     }
 
     DEBUG(10,("reply_lockingX: unlock start=%.0f, len=%.0f for pid %u, file %s\n",
-          (unsigned int)lock_pid, (double)offset, (double)count, fsp->fsp_name ));
+          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
     if(!do_unlock(fsp,conn,lock_pid,count,offset, &eclass, &ecode)) {
       END_PROFILE(SMBlockingX);
@@ -4475,7 +4475,7 @@ no oplock granted on this file (%s).\n", fsp->fnum, fsp->fsp_name));
     }
  
     DEBUG(10,("reply_lockingX: lock start=%.0f, len=%.0f for pid %u, file %s\n",
-          (unsigned int)lock_pid, (double)offset, (double)count, fsp->fsp_name ));
+          (double)offset, (double)count, (unsigned int)lock_pid, fsp->fsp_name ));
 
     if(!do_lock(fsp,conn,lock_pid, count,offset, ((locktype & 1) ? READ_LOCK : WRITE_LOCK),
                 &eclass, &ecode)) {
