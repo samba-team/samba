@@ -40,6 +40,11 @@
 
 RCSID("$Id$");
 
+static int help_flag;
+static int version_flag;
+static int verbose_flag;
+static char *keytab_string; 
+
 static int
 kt_list(int argc, char **argv)
 {
@@ -374,6 +379,89 @@ kt_get(int argc, char **argv)
     return 0;
 }
 
+static int
+kt_copy (int argc, char **argv)
+{
+    krb5_error_code ret;
+    int help_flag = 0;
+    int optind = 0;
+    krb5_keytab src_keytab, dst_keytab;
+    krb5_kt_cursor cursor;
+    krb5_keytab_entry entry;
+
+    struct getargs args[] = {
+	{ "help", 'h', arg_flag, NULL}
+    };
+
+    int num_args = sizeof(args) / sizeof(args[0]);
+    int i = 0;
+
+    args[i++].value = &help_flag;
+
+    if(getarg(args, num_args, argc, argv, &optind)) {
+	arg_printusage(args, num_args, "ktutil copy",
+		       "keytab-src keytab-dest");
+	return 0;
+    }
+    if (help_flag) {
+	arg_printusage(args, num_args, "ktutil copy",
+		       "keytab-src keytab-dest");
+	return 0;
+    }
+
+    argv += optind;
+    argc -= optind;
+
+    if (argc != 2) {
+	arg_printusage(args, num_args, "ktutil copy",
+		       "keytab-src keytab-dest");
+	return 0;
+    }
+
+    ret = krb5_kt_resolve (context, argv[0], &src_keytab);
+    if (ret) {
+	krb5_warn (context, ret, "resolving src keytab `%s'", argv[0]);
+	return 0;
+    }
+
+    ret = krb5_kt_resolve (context, argv[1], &dst_keytab);
+    if (ret) {
+	krb5_kt_close (context, src_keytab);
+	krb5_warn (context, ret, "resolving dst keytab `%s'", argv[1]);
+	return 0;
+    }
+
+    ret = krb5_kt_start_seq_get (context, src_keytab, &cursor);
+    if (ret) {
+	krb5_warn (context, ret, "krb5_kt_start_seq_get");
+	goto fail;
+    }
+
+    while((ret = krb5_kt_next_entry(context, src_keytab,
+				    &entry, &cursor)) == 0) {
+	ret = krb5_kt_add_entry (context, dst_keytab, &entry);
+	if (verbose_flag) {
+	    char *name_str;
+
+	    krb5_unparse_name (context, entry.principal, &name_str);
+	    printf ("copying %s\n", name_str);
+	    free (name_str);
+	}
+
+	krb5_kt_free_entry (context, &entry);
+	if (ret) {
+	    krb5_warn (context, ret, "krb5_kt_add_entry");
+	    break;
+	}
+    }
+    krb5_kt_end_seq_get (context, src_keytab, &cursor);
+
+fail:
+    krb5_kt_close (context, src_keytab);
+    krb5_kt_close (context, dst_keytab);
+    return 0;
+}
+
 static int help(int argc, char **argv);
 
 static SL_cmd cmds[] = {
@@ -391,13 +479,11 @@ static SL_cmd cmds[] = {
       "create key in database and add to keytab" },
     { "remove", 	kt_remove,	"remove",
       "remove key from keytab" },
+    { "copy",		kt_copy,	"copy src dst",
+      "copy one keytab to another" },
     { "help",		help,		"help",			"" },
     { NULL, 	NULL,		NULL, 			NULL }
 };
-
-static int help_flag;
-static int version_flag;
-static char *keytab_string; 
 
 static struct getargs args[] = {
     { 
@@ -424,6 +510,14 @@ static struct getargs args[] = {
 	"keytab", 
 	"keytab to operate on" 
     },
+    {
+	"verbose",
+	'v',
+	arg_flag,
+	&verbose_flag,
+	"verbose",
+	"run verbosely"
+    }
 };
 
 static int num_args = sizeof(args) / sizeof(args[0]);
