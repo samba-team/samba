@@ -22,7 +22,6 @@
 #include "includes.h"
 #include "libcli/raw/libcliraw.h"
 #include "auth/auth.h"
-#include "asn_1.h"
 
 #define SETUP_REQUEST_SESSION(cmd, wct, buflen) do { \
 	req = smbcli_request_setup_session(session, cmd, wct, buflen); \
@@ -445,10 +444,10 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	}
 
 	if (session->transport->negotiate.secblob.length) {
-		chosen_oid = OID_SPNEGO;
+		chosen_oid = GENSEC_OID_SPNEGO;
 	} else {
 		/* without a sec blob, means raw NTLMSSP */
-		chosen_oid = OID_NTLMSSP;
+		chosen_oid = GENSEC_OID_NTLMSSP;
 	}
 
 	status = gensec_start_mech_by_oid(session->gensec, chosen_oid);

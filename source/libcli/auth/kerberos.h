@@ -21,6 +21,13 @@
 
 #if defined(HAVE_KRB5)
 
+/* not really ASN.1, but RFC 1964 */
+#define TOK_ID_KRB_AP_REQ	"\x01\x00"
+#define TOK_ID_KRB_AP_REP	"\x02\x00"
+#define TOK_ID_KRB_ERROR	"\x03\x00"
+#define TOK_ID_GSS_GETMIC	"\x01\x01"
+#define TOK_ID_GSS_WRAP		"\x02\x01"
+
 #ifdef HAVE_KRB5_KEYBLOCK_KEYVALUE
 #define KRB5_KEY_TYPE(k)	((k)->keytype)
 #define KRB5_KEY_LENGTH(k)	((k)->keyvalue.length)
