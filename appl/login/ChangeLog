@@ -1,3 +1,9 @@
+Sun Apr 18 14:12:28 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* login.c: check _PATH_NOLOGIN
+
+	* login_locl.h: _PATH_NOLOGIN
+
 1999-04-11  Assar Westerlund  <assar@sics.se>
 
 	* login.c (main): use print_version
