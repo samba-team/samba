@@ -31,7 +31,7 @@ Region                             Number of entries
     ASIA                                          1
     AUSTRALIA & NEW ZEALAND                      18
     CANADA                                        6
-    EUROPE                                       23
+    EUROPE                                       25
 
 
 AFRICA
@@ -876,6 +876,25 @@ access, to the extent that the laws of your country permit.
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
+CAMBRIDGE - ENGLAND
+
+Mark Ayliffe MBCS, Technical Consultant
+Protechnic Computers Limited                 http://www.prot.demon.co.uk
+7 Signet Court                               Tel +44 1223 314855
+Swann's Road                                 Fax +44 1223 368168
+Cambridge CB5 8LA
+England
+
+
+Protechnic Computers Limited has experience of installing and 
+maintaining Samba on the following platforms:
+
+HP/UX 9.0x, 10.1x & 10.2x
+DG/UX, Motorola and Intel
+Digital UNIX
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
 CORNWALL - ENGLAND
 
 Starstream Communications Ltd
@@ -1109,6 +1128,35 @@ PALERMO - ITALY
 Francesco Cardinale
 E-Mail: cardinal@palermo.italtel.it
 Samba experience: SVR3.2, SOLARIS, ULTRIX, LINUX <--> DOS LAN-MAN, WFW
+------------------------------------------------------------------------------
+
+------------------------------------------------------------------------------
+PISA - ITALY
+
+I3 ICUBE s.r.l.
+Via Pascoli 8
+56125 PISA (PI)
+ITALY
+tel: 050/503202
+fax: 050/504617
+contact person: Marco Bizzarri
+e-mail: m.bizzarri@icube.it
+www: http://www.icube.it/
+
+Our company offers commercial support to integrate eterogenous networks. 
+We can provide support for the following architectures:
+
+Windows:
+Windows for Workgroup
+Windows 95
+Windows NT
+
+Unix:
+Linux
+Solaris
+Digital Unix
+
+Macintosh
 ------------------------------------------------------------------------------
 
 ------------------------------------------------------------------------------
