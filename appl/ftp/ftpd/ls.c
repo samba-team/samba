@@ -30,13 +30,27 @@
  * OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF
  * ADVISED OF THE POSSIBILITY OF SUCH DAMAGE. */
 
+#ifndef TEST
 #include "ftpd_locl.h"
 
 RCSID("$Id$");
 
-#ifdef TEST
+#else
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <time.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <pwd.h>
+#include <grp.h>
+#include <errno.h>
+
 #define sec_fprintf2 fprintf
 #define sec_fflush fflush
+void
+builtin_ls(FILE *out, const char *file);
 int
 main(int argc, char **argv)
 {
@@ -336,11 +350,16 @@ log10(int num)
  * have to fetch them.
  */
 
+#ifdef KRB4
+static int do_the_afs_dance = 1;
+#endif
+
 static int
 lstat_file (const char *file, struct stat *sb)
 {
 #ifdef KRB4
-    if (k_hasafs() 
+    if (do_the_afs_dance &&
+	k_hasafs() 
 	&& strcmp(file, ".")
 	&& strcmp(file, "..")
 	&& strcmp(file, "/"))
@@ -372,7 +391,7 @@ lstat_file (const char *file, struct stat *sb)
 	    else
 		a_params.in = last + 1;
 	    while(last > path_bkp && *--last == '/');
-	    if(last != path_bkp) {
+	    if(*last != '/' || last != path_bkp) {
 		*++last = '\0';
 		dir = path_bkp;
 	    } else
