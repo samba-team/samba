@@ -56,7 +56,7 @@ krb5_init_context(krb5_context *context)
     /* init error tables */
     krb5_init_ets(p);
 
-    if(getuid() == geteuid() && getgid() == getegid())
+    if(!issuid())
 	config_file = getenv("KRB5_CONFIG");
     if (config_file != NULL)
 	krb5_config_parse_file (config_file, &p->cf);
