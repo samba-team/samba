@@ -20,6 +20,7 @@
 */
 
 #include "includes.h"
+#include "rpc_server/dcerpc_server.h"
 
 struct dcesrv_remote_private {
 	struct dcerpc_pipe *c_pipe;
