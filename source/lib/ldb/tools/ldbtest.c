@@ -59,7 +59,8 @@ static void add_records(struct ldb_context *ldb,
 		struct ldb_message_element el[6];
 		struct ldb_val vals[6][1];
 		char *name;
-		
+		int j;
+
 		asprintf(&name, "Test%d", i);
 
 		asprintf(&msg.dn, "cn=%s,%s", name, basedn);
@@ -67,42 +68,42 @@ static void add_records(struct ldb_context *ldb,
 		msg.elements = el;
 
 		el[0].flags = 0;
-		el[0].name = "cn";
+		el[0].name = strdup("cn");
 		el[0].num_values = 1;
 		el[0].values = vals[0];
 		vals[0][0].data = name;
 		vals[0][0].length = strlen(name);
 
 		el[1].flags = 0;
-		el[1].name = "title";
+		el[1].name = strdup("title");
 		el[1].num_values = 1;
 		el[1].values = vals[1];
 		asprintf((char **)&vals[1][0].data, "The title of %s", name);
 		vals[1][0].length = strlen(vals[1][0].data);
 
 		el[2].flags = 0;
-		el[2].name = "uid";
+		el[2].name = strdup("uid");
 		el[2].num_values = 1;
 		el[2].values = vals[2];
 		vals[2][0].data = ldb_casefold(ldb, name);
 		vals[2][0].length = strlen(vals[2][0].data);
 
 		el[3].flags = 0;
-		el[3].name = "mail";
+		el[3].name = strdup("mail");
 		el[3].num_values = 1;
 		el[3].values = vals[3];
 		asprintf((char **)&vals[3][0].data, "%s@example.com", name);
 		vals[3][0].length = strlen(vals[3][0].data);
 
 		el[4].flags = 0;
-		el[4].name = "objectClass";
+		el[4].name = strdup("objectClass");
 		el[4].num_values = 1;
 		el[4].values = vals[4];
-		vals[4][0].data = "OpenLDAPperson";
+		vals[4][0].data = strdup("OpenLDAPperson");
 		vals[4][0].length = strlen(vals[4][0].data);
 
 		el[5].flags = 0;
-		el[5].name = "sn";
+		el[5].name = strdup("sn");
 		el[5].num_values = 1;
 		el[5].values = vals[5];
 		vals[5][0].data = name;
@@ -118,11 +119,15 @@ static void add_records(struct ldb_context *ldb,
 		printf("adding uid %s\r", name);
 		fflush(stdout);
 
+		for (j=0;j<msg.num_elements;j++) {
+			free(el[j].name);
+		}
 		free(name);
 		free(msg.dn);
 		free(vals[1][0].data);
 		ldb_free(ldb, vals[2][0].data);
 		free(vals[3][0].data);
+		free(vals[4][0].data);
 	}
 
 	printf("\n");
@@ -139,6 +144,7 @@ static void modify_records(struct ldb_context *ldb,
 		struct ldb_message_element el[3];
 		struct ldb_val vals[3];
 		char *name;
+		int j;
 		
 		asprintf(&name, "Test%d", i);
 		asprintf(&msg.dn, "cn=%s,%s", name, basedn);
@@ -147,18 +153,18 @@ static void modify_records(struct ldb_context *ldb,
 		msg.elements = el;
 
 		el[0].flags = LDB_FLAG_MOD_DELETE;
-		el[0].name = "mail";
+		el[0].name = strdup("mail");
 		el[0].num_values = 0;
 
 		el[1].flags = LDB_FLAG_MOD_ADD;
-		el[1].name = "mail";
+		el[1].name = strdup("mail");
 		el[1].num_values = 1;
 		el[1].values = &vals[1];
 		asprintf((char **)&vals[1].data, "%s@other.example.com", name);
 		vals[1].length = strlen(vals[1].data);
 
 		el[2].flags = LDB_FLAG_MOD_REPLACE;
-		el[2].name = "mail";
+		el[2].name = strdup("mail");
 		el[2].num_values = 1;
 		el[2].values = &vals[2];
 		asprintf((char **)&vals[2].data, "%s@other2.example.com", name);
@@ -172,6 +178,9 @@ static void modify_records(struct ldb_context *ldb,
 		printf("Modifying uid %s\r", name);
 		fflush(stdout);
 
+		for (j=0;j<msg.num_elements;j++) {
+			free(el[j].name);
+		}
 		free(name);
 		free(msg.dn);
 		free(vals[1].data);

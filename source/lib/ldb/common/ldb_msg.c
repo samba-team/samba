@@ -132,6 +132,53 @@ int ldb_msg_add(struct ldb_context *ldb,
 }
 
 /*
+  add a value to a message
+*/
+int ldb_msg_add_value(struct ldb_context *ldb,
+		      struct ldb_message *msg, 
+		      char *attr_name,
+		      struct ldb_val *val)
+{
+	struct ldb_message_element *el;
+	struct ldb_val *vals;
+
+	el = ldb_msg_find_element(msg, attr_name);
+	if (!el) {
+		ldb_msg_add_empty(ldb, msg, attr_name, 0);
+		el = ldb_msg_find_element(msg, attr_name);
+	}
+	if (!el) {
+		return -1;
+	}
+
+	vals = ldb_realloc_p(ldb, el->values, struct ldb_val, el->num_values+1);
+	if (!vals) {
+		errno = ENOMEM;
+		return -1;
+	}
+	el->values = vals;
+	el->values[el->num_values] = *val;
+	el->num_values++;
+
+	return 0;
+}
+
+
+/*
+  add a string element to a message
+*/
+int ldb_msg_add_string(struct ldb_context *ldb, struct ldb_message *msg, 
+		       char *attr_name, char *str)
+{
+	struct ldb_val val;
+
+	val.data = str;
+	val.length = strlen(str);
+
+	return ldb_msg_add_value(ldb, msg, attr_name, &val);
+}
+
+/*
   compare two ldb_message_element structures
   assumes case senistive comparison
 */
