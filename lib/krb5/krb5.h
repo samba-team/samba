@@ -84,8 +84,10 @@ typedef enum krb5_enctype {
   ETYPE_ARCFOUR_HMAC_MD5	= 23,
   ETYPE_ARCFOUR_HMAC_MD5_56	= 24,
   ETYPE_ENCTYPE_PK_CROSS	= 48,
-  ETYPE_DES_CBC_NONE		= 0x1000,
-  ETYPE_DES3_CBC_NONE		= 0x1001
+  ETYPE_DES_CBC_NONE		= -0x1000,
+  ETYPE_DES3_CBC_NONE		= -0x1001,
+  ETYPE_DES_CFB64_NONE		= -0x1002,
+  ETYPE_DES_PCBC_NONE		= -0x1003
 } krb5_enctype;
 
 typedef PADATA_TYPE krb5_preauthtype;
@@ -215,6 +217,11 @@ struct krb5_cc_ops;
 #define KRB5_DEFAULT_CCFILE_ROOT "/tmp/krb5cc_"
 
 #define KRB5_DEFAULT_CCROOT "FILE:" KRB5_DEFAULT_CCFILE_ROOT
+
+#define KRB5_ACCEPT_NULL_ADDRESSES(C) 					 \
+    krb5_config_get_bool_default((C), NULL, TRUE, 			 \
+				 "libdefaults", "accept_null_addresses", \
+				 NULL)
 
 typedef void *krb5_cc_cursor;
 
