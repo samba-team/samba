@@ -168,12 +168,14 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
 }
 
-void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
+static void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 {
 	fstring tmp;
 
+	printf("index: 0x%x ", e1->user_idx);
 	printf("RID: 0x%x ", e1->rid_user);
-	
+	printf("acb: 0x%x ", e1->acb_info);
+
 	unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
 	printf("Account: %s\t", tmp);
 
@@ -184,7 +186,39 @@ void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 	printf("Desc: %s\n", tmp);
 }
 
-void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
+static void display_sam_info_2(SAM_ENTRY2 *e2, SAM_STR2 *s2)
+{
+	fstring tmp;
+
+	printf("index: 0x%x ", e2->user_idx);
+	printf("RID: 0x%x ", e2->rid_user);
+	printf("acb: 0x%x ", e2->acb_info);
+	
+	unistr2_to_ascii(tmp, &s2->uni_srv_name, sizeof(tmp)-1);
+	printf("Account: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s2->uni_srv_desc, sizeof(tmp)-1);
+	printf("Name: %s\n", tmp);
+
+}
+
+static void display_sam_info_3(SAM_ENTRY3 *e3, SAM_STR3 *s3)
+{
+	fstring tmp;
+
+	printf("index: 0x%x ", e3->grp_idx);
+	printf("RID: 0x%x ", e3->rid_grp);
+	printf("attr: 0x%x ", e3->attr);
+	
+	unistr2_to_ascii(tmp, &s3->uni_grp_name, sizeof(tmp)-1);
+	printf("Account: %s\t", tmp);
+
+	unistr2_to_ascii(tmp, &s3->uni_grp_desc, sizeof(tmp)-1);
+	printf("Name: %s\n", tmp);
+
+}
+
+static void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
 {
 	int i;
 
@@ -196,6 +230,20 @@ void display_sam_info_4(SAM_ENTRY4 *e4, SAM_STR4 *s4)
 	printf("\n");
 
 }
+
+static void display_sam_info_5(SAM_ENTRY5 *e5, SAM_STR5 *s5)
+{
+	int i;
+
+	printf("index: 0x%x ", e5->grp_idx);
+	
+	printf("Account: ");
+	for (i=0; i<s5->grp_name.str_str_len; i++)
+		printf("%c", s5->grp_name.buffer[i]);
+	printf("\n");
+
+}
+
 /**********************************************************************
  * Query user information 
  */
@@ -721,6 +769,10 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 	int info_level = 1;
 	SAM_DISPINFO_CTR ctr;
 	SAM_DISPINFO_1 info1;
+	SAM_DISPINFO_2 info2;
+	SAM_DISPINFO_3 info3;
+	SAM_DISPINFO_4 info4;
+	SAM_DISPINFO_5 info5;
 
 	if (argc > 4) {
 		printf("Usage: %s [info level] [start index] [max entries]\n", argv[0]);
@@ -756,27 +808,56 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 	ZERO_STRUCT(ctr);
 	ZERO_STRUCT(info1);
-
-	ctr.sam.info1 = &info1;
-
-	result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
-					 &start_idx, info_level,
-					 &num_entries, max_entries, &ctr);
-
-        if (!NT_STATUS_IS_OK(result))
-                goto done;
-
-	for (i = 0; i < num_entries; i++) {
-		switch (info_level) {
-		case 1:
-			display_sam_info_1(&ctr.sam.info1->sam[i], &ctr.sam.info1->str[i]);
-			break;
-		case 4:
-			display_sam_info_4(&ctr.sam.info4->sam[i], &ctr.sam.info4->str[i]);
-			break;
-		}
+	
+	switch (info_level) {
+	case 1:
+		ZERO_STRUCT(info1);
+		ctr.sam.info1 = &info1;
+		break;
+	case 2:
+		ZERO_STRUCT(info2);
+		ctr.sam.info2 = &info2;
+		break;
+	case 3:
+		ZERO_STRUCT(info3);
+		ctr.sam.info3 = &info3;
+		break;
+	case 4:
+		ZERO_STRUCT(info4);
+		ctr.sam.info4 = &info4;
+		break;
+	case 5:
+		ZERO_STRUCT(info5);
+		ctr.sam.info5 = &info5;
+		break;
 	}
 
+
+	do {	
+		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+						 &start_idx, info_level,
+						 &num_entries, max_entries, &ctr);
+
+		for (i = 0; i < num_entries; i++) {
+			switch (info_level) {
+			case 1:
+				display_sam_info_1(&ctr.sam.info1->sam[i], &ctr.sam.info1->str[i]);
+				break;
+			case 2:
+				display_sam_info_2(&ctr.sam.info2->sam[i], &ctr.sam.info2->str[i]);
+				break;
+			case 3:
+				display_sam_info_3(&ctr.sam.info3->sam[i], &ctr.sam.info3->str[i]);
+				break;
+			case 4:
+				display_sam_info_4(&ctr.sam.info4->sam[i], &ctr.sam.info4->str[i]);
+				break;
+			case 5:
+				display_sam_info_5(&ctr.sam.info5->sam[i], &ctr.sam.info5->str[i]);
+				break;
+			}
+		}
+	} while (!NT_STATUS_IS_OK(result));
  done:
 	return result;
 }
