@@ -215,11 +215,10 @@ sub bitmapbase($)
 {
     my $e = shift;
 
-    return "32", if util::has_property($e->{DATA}, "bitmap32bit");
     return "16", if util::has_property($e->{DATA}, "bitmap16bit");
     return "8", if util::has_property($e->{DATA}, "bitmap8bit");
 
-    die("can't calculate bitmap size for $e->{NAME}");
+    return "32";
 }
 
 sub NeededTypedef($)
