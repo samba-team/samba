@@ -472,9 +472,7 @@ static struct api_cmd api_fd_commands[] =
     { "srvsvc",   "ntsvcs",  api_srvsvc_rpc },
     { "wkssvc",   "ntsvcs",  api_wkssvc_rpc },
     { "NETLOGON", "lsass",   api_netlog_rpc },
-#if 1 /* DISABLED_IN_2_0 JRATEST */
     { "winreg",   "winreg",  api_reg_rpc },
-#endif
     { "spoolss",  "spoolss", api_spoolss_rpc },
     { NULL,       NULL,      NULL }
 };
@@ -665,6 +663,43 @@ BOOL setup_fault_pdu(pipes_struct *p)
 }
 
 /*******************************************************************
+ Ensure a bind request has the correct abstract & transfer interface.
+ Used to reject unknown binds from Win2k.
+*******************************************************************/
+
+BOOL check_bind_req(char* pipe_name, RPC_IFACE* abstract,
+					RPC_IFACE* transfer)
+{
+	extern struct pipe_id_info pipe_names[];
+	int i=0;
+	fstring pname;
+	fstrcpy(pname,"\\PIPE\\");
+	fstrcat(pname,pipe_name);
+
+	for(i=0;pipe_names[i].client_pipe; i++) {
+		if(strequal(pipe_names[i].client_pipe, pname))
+			break;
+	}
+
+	if(pipe_names[i].client_pipe == NULL)
+		return False;
+
+	/* check the abstract interface */
+	if((abstract->version != pipe_names[i].abstr_syntax.version) ||
+		(memcmp(&abstract->uuid, &pipe_names[i].abstr_syntax.uuid,
+			sizeof(RPC_UUID)) != 0))
+		return False;
+
+	/* check the transfer interface */
+	if((transfer->version != pipe_names[i].trans_syntax.version) ||
+		(memcmp(&transfer->uuid, &pipe_names[i].trans_syntax.uuid,
+			sizeof(RPC_UUID)) != 0))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
  Respond to a pipe bind request.
 *******************************************************************/
 
@@ -823,13 +858,29 @@ BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *rpc_in_p)
 	 * Create the bind response struct.
 	 */
 
-	init_rpc_hdr_ba(&hdr_ba,
+	/* If the requested abstract synt uuid doesn't match our client pipe,
+		reject the bind_ack & set the transfer interface synt to all 0's,
+		ver 0 (observed when NT5 attempts to bind to abstract interfaces
+		unknown to NT4)
+		Needed when adding entries to a DACL from NT5 - SK */
+
+	if(check_bind_req(p->name, &hdr_rb.abstract, &hdr_rb.transfer)) {
+		init_rpc_hdr_ba(&hdr_ba,
 	                MAX_PDU_FRAG_LEN,
 	                MAX_PDU_FRAG_LEN,
 	                assoc_gid,
 	                ack_pipe_name,
 	                0x1, 0x0, 0x0,
 	                &hdr_rb.transfer);
+	} else {
+		RPC_IFACE null_interface;
+		ZERO_STRUCT(null_interface);
+		/* Rejection reason: abstract syntax not supported */
+		init_rpc_hdr_ba(&hdr_ba, MAX_PDU_FRAG_LEN,
+					MAX_PDU_FRAG_LEN, assoc_gid,
+					ack_pipe_name, 0x1, 0x2, 0x1,
+					&null_interface);
+	}
 
 	/*
 	 * and marshall it.
