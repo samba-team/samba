@@ -457,8 +457,8 @@ static ADS_STATUS do_krb5_kpasswd_request(krb5_context context,
 	return ADS_SUCCESS;
 }
 
-ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char *newpw, 
-			     int time_offset)
+ADS_STATUS ads_krb5_set_password(const char *kdc_host, const char *princ, 
+				 const char *newpw, int time_offset)
 {
 
 	ADS_STATUS aret;
@@ -651,8 +651,8 @@ ADS_STATUS kerberos_set_password(const char *kpasswd_server,
 	return krb5_chg_password(kpasswd_server, target_principal,
 				    auth_password, new_password, time_offset);
     else
-    	return krb5_set_password(kpasswd_server, target_principal,
-				 new_password, time_offset);
+    	return ads_krb5_set_password(kpasswd_server, target_principal,
+				     new_password, time_offset);
 }
 
 
@@ -679,7 +679,8 @@ ADS_STATUS ads_set_machine_password(ADS_STRUCT *ads,
 	 */
 	asprintf(&principal, "%s$@%s", host, ads->config.realm);
 	
-	status = krb5_set_password(ads->auth.kdc_server, principal, password, ads->auth.time_offset);
+	status = ads_krb5_set_password(ads->auth.kdc_server, principal, 
+				       password, ads->auth.time_offset);
 	
 	free(host);
 	free(principal);
