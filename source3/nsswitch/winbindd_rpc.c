@@ -40,6 +40,8 @@ static NTSTATUS query_user_list(struct winbindd_domain *domain,
 	SAM_DISPINFO_1 info1;
 	int i;
 
+	*num_entries = 0;
+
 	/* Get sam handle */
 
 	if (!(hnd = cm_get_sam_handle(domain->name)))
@@ -255,6 +257,8 @@ static NTSTATUS lookup_usergroups(struct winbindd_domain *domain,
 	DOM_GID *user_groups;
 	int i;
 
+	*num_groups = 0;
+
 	/* Get sam handle */
 	if (!(hnd = cm_get_sam_handle(domain->name)))
 		goto done;
@@ -314,6 +318,8 @@ static NTSTATUS lookup_groupmem(struct winbindd_domain *domain,
         POLICY_HND dom_pol, group_pol;
         uint32 des_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
         BOOL got_dom_pol = False, got_group_pol = False;
+
+	*num_names = 0;
 
         /* Get sam handle */
 
@@ -470,6 +476,8 @@ static NTSTATUS trusted_domains(struct winbindd_domain *domain,
 	CLI_POLICY_HND *hnd;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint32 enum_ctx = 0;
+
+	*num_domains = 0;
 
 	if (!(hnd = cm_get_lsa_handle(lp_workgroup())))
 		goto done;
