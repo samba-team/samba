@@ -93,7 +93,7 @@ while ( !$ldif->eof ) {
 	
 
 	foreach $key ( keys %attr_map ) {
-		if ( $entry->get_value($key) ) {
+		if ( defined($entry->get_value($key)) ) {
 			$entry->add( $attr_map{$key} => $entry->get_value($key) );
 			$entry->delete( $key );
 		}
