@@ -2190,7 +2190,8 @@ static BOOL init_group_from_ldap(struct ldapsam_privates *ldap_state,
 		temp[0] = '\0';
 		if (!get_single_attribute(ldap_state->ldap_struct, entry, "cn",
 					  temp)) {
-			DEBUG(0, ("Attributes displayName and cn not found for gidNumber(%i)\n",map->gid));
+			DEBUG(0, ("Attributes cn not found either "
+				  "for gidNumber(%i)\n",map->gid));
 			return False;
 		}
 	}
@@ -2312,8 +2313,8 @@ static NTSTATUS ldapsam_getgrnam(struct pdb_methods *methods, GROUP_MAP *map,
 	/* TODO: Escaping of name? */
 
 	snprintf(filter, sizeof(filter)-1,
-		 "(&(objectClass=sambaGroupMapping)(|(displayName=%s)(cn=%s))",
-		 name,name);
+		 "(&(objectClass=sambaGroupMapping)(|(displayName=%s)(cn=%s)))",
+		 name, name);
 
 	return ldapsam_getgroup(methods, filter, map);
 }
