@@ -110,6 +110,7 @@ int main(int argc,char *argv[])
   BOOL lookup_by_ip = False;
   BOOL recursion_desired = False;
   BOOL translate_addresses = False;
+  int commandline_debuglevel = -2;
 
   DEBUGLEVEL = 1;
   *lookup = 0;
@@ -152,7 +153,7 @@ int main(int argc,char *argv[])
 	recursion_desired = True;
 	break;
       case 'd':
-	DEBUGLEVEL = atoi(optarg);
+	commandline_debuglevel = DEBUGLEVEL = atoi(optarg);
 	break;
       case 's':
 	pstrcpy(servicesf, optarg);
@@ -182,6 +183,14 @@ int main(int argc,char *argv[])
   if (!lp_load(servicesf,True,False,False)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
+
+  /*
+   * Ensure we reset DEBUGLEVEL if someone specified it
+   * on the command line.
+   */
+
+  if(commandline_debuglevel != -2)
+    DEBUGLEVEL = commandline_debuglevel;
 
   load_interfaces();
   if (!open_sockets()) return(1);
