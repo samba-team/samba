@@ -1,0 +1,67 @@
+The main Samba ftp site is samba.anu.edu.au in pub/samba/. Contact
+samba-bugs@samba.anu.edu.au for help with this site.
+
+Mirror sites include:
+
+Source Only
+===========
+--- Australia ---
+	ftp://samba.anu.edu.au/pub/samba/
+	ftp://nimbus.anu.edu.au/pub/tridge/samba/
+	ftp://choc.satech.net.au/pub/samba/
+--- USA Educational ---  
+	ftp://ftp.micro.caltech.edu/pub/samba/
+	ftp://ftp.cs.ucr.edu/pub/software/samba/
+	ftp://sunsite.unc.edu/pub/Linux/system/Network/samba/
+--- Czech Republic ---  
+	ftp://sunsite.mff.cuni.cz/Net/Protocols/Samba/
+--- Germany ---  
+	ftp://ftp.uni-trier.de/pub/unix/network/samba/
+--- Japan ---  
+	ftp://ring.asahi-net.or.jp/archives/net/samba/
+	ftp://ring.aist.go.jp/archives/net/samba/
+	ftp://ftp.win.or.jp/pub/network/samba/
+--- Korea (South) ---  
+	ftp://CAIR-archive.kaist.ac.kr/pub/samba/
+--- Network ---  
+	ftp://ftp.gbnet.net/pub/samba/
+	ftp://ftp.ntrl.net/pub/mirror/samba/
+	ftp://despair.capecod.net/pub/Samba/
+--- Portugal ---  
+	ftp://ftp.ua.pt/pub/misc/samba/
+--- Russian Federation ---  
+	ftp://ftp.uic.nsu.ru/pub/vendors/samba/
+--- United Kingdom ---  
+	ftp://ftp.demon.co.uk/pub/mirrors/samba/
+	ftp://src.doc.ic.ac.uk/packages/samba/
+
+Sources & Binaries
+==================
+--- Austria ---  
+	ftp://gd.tuwien.ac.at/pub/infosys/servers/samba/
+--- Denmark ---  
+	ftp://sunsite.auc.dk/pub/unix/networking/samba/
+--- USA Educational ---  
+	ftp://sunsite.unc.edu/pub/packages/samba/
+--- Italy ---  
+	http://www.inferentia.it/archives/samba/
+--- United Kingdom ---  
+	ftp://sunsite.doc.ic.ac.uk/packages/samba/
+
+SCO binaries available from:
+	http://www.math.u-szeged.hu/hardsoft/hsdetail.htm
+
+AIX and DEC OSF/1 binaries are available from:
+	ftp://www.inferentia.it/archives/samba (built by davide.migliavacca@inferentia.it)
+
+QNX binaries and source code:
+	ftp://quics.qnx.com/usr/free/staging/samba
+
+There are several others. Give archie a try.
+
+Http sites include:
+===================
+http://samba.canberra.edu.au/pub/samba
+http://www.choc.satech.net.au/pub/samba/
+
+
