@@ -3390,7 +3390,6 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
   	pstring pathname;
 	int reply_size = 0;
 	int max_referral_level;
-	NTSTATUS status = NT_STATUS_OK;
 
 	DEBUG(10,("call_trans2getdfsreferral\n"));
 
@@ -3402,11 +3401,7 @@ static int call_trans2getdfsreferral(connection_struct *conn, char* inbuf,
 	if(!lp_host_msdfs())
 		return ERROR_DOS(ERRDOS,ERRbadfunc);
 
-	srvstr_get_path(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE, &status);
-	if (!NT_STATUS_IS_OK(status)) {
-		return ERROR_NT(status);
-	}
-
+	srvstr_pull(inbuf, pathname, &params[2], sizeof(pathname), -1, STR_TERMINATE);
 	if((reply_size = setup_dfs_referral(conn, pathname,max_referral_level,ppdata)) < 0)
 		return UNIXERROR(ERRDOS,ERRbadfile);
     
