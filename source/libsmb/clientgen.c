@@ -2556,6 +2556,24 @@ struct cli_state *cli_initialise(struct cli_state *cli)
 }
 
 /****************************************************************************
+close the socket descriptor
+****************************************************************************/
+void cli_close_socket(struct cli_state *cli)
+{
+#ifdef WITH_SSL
+	if (cli->fd != -1)
+	{
+		sslutil_disconnect(cli->fd);
+	}
+#endif /* WITH_SSL */
+	if (cli->fd != -1) 
+	{
+		close(cli->fd);
+	}
+	cli->fd = -1;
+}
+
+/****************************************************************************
 shutdown a client structure
 ****************************************************************************/
 void cli_shutdown(struct cli_state *cli)
@@ -2569,14 +2587,7 @@ void cli_shutdown(struct cli_state *cli)
 	{
 		free(cli->inbuf);
 	}
-#ifdef WITH_SSL
-    if (cli->fd != -1)
-      sslutil_disconnect(cli->fd);
-#endif /* WITH_SSL */
-	if (cli->fd != -1) 
-	{
-		close(cli->fd);
-	}
+	cli_close_socket(cli);
 	memset(cli, 0, sizeof(*cli));
 }
 
@@ -2703,14 +2714,18 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 
 	if (cli->cnum != 0)
 	{
+		do_tcon = True;
+	}
+
+	if (do_tcon)
+	{
 		fstrcpy(share, cli->share);
 		fstrcpy(dev  , cli->dev);
-		do_tcon = True;
 	}
 
 	memcpy(&called , &(cli->called ), sizeof(called ));
 	memcpy(&calling, &(cli->calling), sizeof(calling));
-	fstrcpy(dest_host, cli->full_dest_host_name);
+	fstrcpy(dest_host, cli->desthost);
 
 	DEBUG(5,("cli_reestablish_connection: %s connecting to %s (ip %s) - %s [%s]\n",
 		 nmb_namestr(&calling), nmb_namestr(&called), 
@@ -2728,7 +2743,7 @@ BOOL cli_reestablish_connection(struct cli_state *cli)
 		{
 			if (dup2(cli->fd, oldfd) == oldfd)
 			{
-				close(cli->fd);
+				cli_close_socket(cli);
 			}
 		}
 		return True;
@@ -2873,6 +2888,13 @@ BOOL cli_establish_connection(struct cli_state *cli,
 			{
 				DEBUG(10,("NTLMv2 failed.  Using NTLMv1\n"));
 				cli->use_ntlmv2 = False;
+				if (do_tcon)
+				{
+					fstrcpy(cli->share, service);
+					fstrcpy(cli->dev, service_type);
+				}
+				fstrcpy(cli->desthost, dest_host);
+				cli_close_socket(cli);
 				return cli_establish_connection(cli, 
 					dest_host, dest_ip,
 					calling, called,
