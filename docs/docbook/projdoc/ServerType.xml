@@ -12,7 +12,7 @@ This chapter provides information regarding the types of server that Samba may b
 configured to be. A Microsoft network administrator who wishes to migrate to or to
 use Samba will want to know what within a Samba context, terms familiar to MS Windows
 adminstrator mean. This means that it is essential also to define how critical security
-contexts function BEFORE we get into the details of how to configure the server itself.
+modes function BEFORE we get into the details of how to configure the server itself.
 </para>
 
 <para>
@@ -27,7 +27,7 @@ features and benefits. These may be for or against Samba.
 </para>
 
 <sect1>
-<title>Samba Features and Benefits</title>
+<title>Features and Benefits</title>
 
 <para>
 Two men were walking down a dusty road, when one suddenly kicked up a small red stone. It
@@ -129,6 +129,17 @@ In this section the function and purpose of Samba's <emphasis>security</emphasis
 modes are described. An acurate understanding of how Samba implements each security
 mode as well as how to configure MS Windows clients for each mode will significantly
 reduce user complaints and administrator heartache.
+</para>
+
+<para>
+There are in the SMB/CIFS networking world only two types of security: <emphasis>USER Level</emphasis>
+and <emphasis>SHARE Level</emphasis>. We refer to these collectively as <emphasis>security levels</emphasis>. In implementing these two <emphasis>security levels</emphasis> samba provides flexibilities
+that are not available with Microsoft Windows NT4 / 200x servers. Samba knows of fice (5)
+ways that allow the security levels to be implemented. In actual fact, Samba implements
+<emphasis>SHARE Levl</emphasis> security only one way, but has for ways of implementing
+<emphasis>USER Level</emphasis> security. Collectively, we call the samba implementations
+<emphasis>Security Modes</emphasis>. These are: <emphasis>SHARE, USER, DOMAIN, ADS, and SERVER</emphasis>
+modes. They are documented in this chapter.
 </para>
 
 <para>
@@ -244,7 +255,7 @@ with share mode security servers. You are strongly discouraged from use of this 
 </sect2>
 
 <sect2>
-<title>Domain Level Security</title>
+<title>Domain Security Mode (User Level Security)</title>
 
 <para>
 When samba is operating in <emphasis>security = domain</emphasis> mode this means that
@@ -313,12 +324,12 @@ in this HOWTO collection.
 </sect2>
 
 <sect2>
-<title>ADS Level Security</title>
+<title>ADS Security Mode (User Level Security)</title>
 
 <para>
 Samba-2.2.x could join and Active Directory domain so long as the Active Directory domain
 controller is configured for mixed mode operation, and is running NetBIOS over TCP/IP. MS
-Windows 2000 and later can be configured to run without NEtBIOS over TCP/IP, instead it
+Windows 2000 and later can be configured to run without NetBIOS over TCP/IP, instead it
 can run SMB natively over TCP/IP.
 </para>
 
@@ -334,7 +345,7 @@ to be a native Active Directory member server.
 
 <para>
 <programlisting>
-	realm = your.kerberos.realm
+	realm = your.kerberos.REALM
 	security = ADS
 	encrypt passwords = Yes
 
@@ -353,7 +364,7 @@ regarding this configuration option.
 </sect2>
 
 <sect2>
-<title>Server Level Security</title>
+<title>Server Security (User Level Security)</title>
 
 <para>
 Server level security is a left over from the time when Samba was not capable of acting
