@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,26 +42,35 @@ RCSID("$Id$");
 
 #include <version.h>
 
-/*
- * All decoding functions take a pointer `p' to first position in
- * which to read, from the left, `len' which means the maximum
- * number of characters we are able to read and return an int
- * indicating how many actually got read, or <0 in case of errors.
- */
-
 /* 
  * All decoding functions take a pointer `p' to first position in
  * which to read, from the left, `len' which means the maximum number
- * of characters we are able to read and return the status as an int
+ * of characters we are able to read, `ret' were the value will be
+ * returned and `size' where the number of used bytes is stored.
+ * Either 0 or an error code is returned.
  */
 
-
-int
-der_get_int (unsigned char *p, size_t len, unsigned *ret, size_t *size)
+static int
+der_get_unsigned (unsigned char *p, size_t len, unsigned *ret, size_t *size)
 {
     unsigned val = 0;
     size_t oldlen = len;
 
+    while (len--)
+	val = val * 256 + *p++;
+    *ret = val;
+    if(size) *size = oldlen;
+    return 0;
+}
+
+int
+der_get_int (unsigned char *p, size_t len, int *ret, size_t *size)
+{
+    int val = 0;
+    size_t oldlen = len;
+
+    if (len--)
+	val = (signed char)*p++;
     while (len--)
 	val = val * 256 + *p++;
     *ret = val;
@@ -94,7 +103,7 @@ der_get_length (unsigned char *p, size_t len, size_t *val, size_t *size)
 	v &= 0x7F;
 	if (len < v)
 	    return ASN1_OVERRUN;
-	e = der_get_int (p, v, &tmp, &l);
+	e = der_get_unsigned (p, v, &tmp, &l);
 	if(e) return e;
 	*val = tmp;
 	if(size) *size = l + 1;
@@ -206,7 +215,7 @@ der_match_tag_and_length (unsigned char *p, size_t len,
 }
 
 int
-decode_integer (unsigned char *p, size_t len, unsigned *num, size_t *size)
+decode_integer (unsigned char *p, size_t len, int *num, size_t *size)
 {
     size_t ret = 0;
     size_t l, reallen;
