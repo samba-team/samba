@@ -578,6 +578,12 @@ int print_job_start(int snum, char *jobname)
 		}
 	}
 
+	/* for autoloaded printers, check that the printcap entry still exists */
+	if (lp_autoloaded(snum) && !pcap_printername_ok(lp_servicename(snum), NULL)) {
+		errno = ENOENT;
+		return -1;
+	}
+
 	/* create the database entry */
 	ZERO_STRUCT(pjob);
 	pjob.pid = local_pid;
