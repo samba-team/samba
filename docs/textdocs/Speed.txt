@@ -1,5 +1,5 @@
 !==
-!== Speed.txt for Samba release 1.9.18alpha3 22 Oct 1997
+!== Speed.txt for Samba release samba-1.9.18alpha4 25 Oct 1997
 !==
 Contributor:	Andrew Tridgell
 Date:		January 1995
