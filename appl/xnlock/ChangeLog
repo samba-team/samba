@@ -1,3 +1,7 @@
+2003-08-25  Johan Danielsson  <joda@pdc.kth.se>
+
+	* Makefile.am: fix automake conditional foo
+	
 2003-08-16  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* Makefile.am: Don't do local checks on xnlock, it only passes if
