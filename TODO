@@ -32,6 +32,10 @@ make it happy with reading and parsing kdc.conf
 
 is in need of a major cleanup
 
+* kpasswdd
+
+figure out what's the deal with do_sequence and the MIT client
+
 * lib
 
 ** lib/asn1
