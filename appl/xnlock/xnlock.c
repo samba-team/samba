@@ -568,6 +568,35 @@ verify_krb5(const char *password)
 			   NULL);
     if (ret == 0){
 #ifdef KRB4
+	if (krb5_config_get_bool(context, NULL,
+				 "libdefaults",
+				 "krb4_get_tickets",
+				 NULL)) {
+	    CREDENTIALS c;
+	    krb5_creds mcred, cred;
+	    krb5_realm realm;
+	    char krb4tkfile[MAXPATHLEN];
+
+	    krb5_get_default_realm(context, &realm);
+	    krb5_make_principal(context, &mcred.server, realm,
+				"krbtgt",
+				realm,
+				NULL);
+	    free (realm);
+	    ret = krb5_cc_retrieve_cred(context, id, 0, &mcred, &cred);
+	    if(ret == 0) {
+		ret = krb524_convert_creds_kdc(context, id, &cred, &c);
+		if(ret == 0) {
+		    snprintf(krb4tkfile, sizeof(krb4tkfile), "%s%d", TKT_ROOT,
+			     getuid());
+		    krb_set_tkt_string(krb4tkfile);
+		    tf_setup(&c, c.pname, c.pinst);
+		}
+		memset(&c, 0, sizeof(c));
+		krb5_free_creds_contents(context, &cred);
+	    }
+	    krb5_free_principal(context, mcred.server);
+	}
 	if (k_hasafs())
 	    krb5_afslog(context, id, NULL, NULL);
 #endif
