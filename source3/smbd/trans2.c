@@ -2685,8 +2685,9 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 			if (total_data < 1)
 				return(ERROR_DOS(ERRDOS,ERRinvalidparam));
 
+			/* Just ignore this set on a path. */
 			if (tran_call != TRANSACT2_SETFILEINFO)
-				return ERROR_DOS(ERRDOS,ERRunknownlevel);
+				break;
 
 			if (fsp == NULL)
 				return(UNIXERROR(ERRDOS,ERRbadfid));
