@@ -39,6 +39,10 @@
 #ifndef _GLOB_H_
 #define	_GLOB_H_
 
+#define glob_t rk_glob_t
+#define	glob rk_glob
+#define	globfree rk_globfree
+
 struct stat;
 typedef struct {
 	int gl_pathc;		/* Count of total paths so far. */
