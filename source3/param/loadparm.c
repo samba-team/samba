@@ -299,6 +299,8 @@ typedef struct
   char *writelist;
   char *volume;
   char *fstype;
+  char *szVfsObjectFile;
+  char *szVfsOptions;
   int  iMinPrintSpace;
   int  iWriteCacheSize;
   int  iCreate_mask;
@@ -405,6 +407,8 @@ static service sDefault =
   NULL,    /* writelist */
   NULL,    /* volume */
   NULL,    /* fstype */
+  NULL,    /* vfs object */
+  NULL,    /* vfs options */
   0,       /* iMinPrintSpace */
   0,       /* iWriteCacheSize */
   0744,    /* iCreate_mask */
@@ -486,6 +490,7 @@ static BOOL handle_copy(char *pszParmValue, char **ptr);
 static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 static BOOL handle_client_code_page(char *pszParmValue,char **ptr);
+static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 
 static void set_default_server_announce_type(void);
 
@@ -856,6 +861,10 @@ static struct parm_struct parm_table[] =
   {"fake directory create times", P_BOOL,P_LOCAL,  &sDefault.bFakeDirCreateTimes, NULL,   NULL, FLAG_SHARE|FLAG_GLOBAL},
   {"panic action",     P_STRING,  P_GLOBAL, &Globals.szPanicAction,     NULL,   NULL,  0},
 
+  {"VFS options", P_SEP, P_SEPARATOR},
+
+  {"vfs object",       P_STRING,  P_LOCAL,  &sDefault.szVfsObjectFile,  handle_vfs_object,   NULL,  0},
+  {"vfs options",      P_STRING,  P_LOCAL,  &sDefault.szVfsOptions,     NULL,   NULL,  0}, 
   {NULL,               P_BOOL,    P_NONE,   NULL,                       NULL,   NULL, 0}
 };
 
@@ -1340,6 +1349,7 @@ FN_LOCAL_STRING(lp_force_group,force_group)
 FN_LOCAL_STRING(lp_readlist,readlist)
 FN_LOCAL_STRING(lp_writelist,writelist)
 FN_LOCAL_STRING(lp_fstype,fstype)
+FN_LOCAL_STRING(lp_vfsobj,szVfsObjectFile)
 static FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
 FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
@@ -1885,6 +1895,21 @@ BOOL lp_file_list_changed(void)
     f = f->next;
   }
   return(False);
+}
+
+/***************************************************************************
+  handle the interpretation of the vfs object parameter
+  *************************************************************************/
+static BOOL handle_vfs_object(char *pszParmValue,char **ptr)
+{
+    /* Set string value */
+
+    string_set(ptr,pszParmValue);
+
+    /* Do any other initialisation required for vfs.  Note that
+       anything done here may have linking repercussions in nmbd. */
+
+    return True;
 }
 
 /***************************************************************************
