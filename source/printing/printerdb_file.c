@@ -420,6 +420,9 @@ int file_get_forms(nt_forms_struct **list)
 		uint8_t *buf;
 		size_t len;
 
+		if (!temp_list->file_path)
+			break;
+
 		if (!read_complete_file(mem_ctx, temp_list->file_path,
 					&buf, &len))
 			goto done;
