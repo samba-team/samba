@@ -83,7 +83,8 @@ static void nbt_name_socket_send(struct nbt_name_socket *nbtsock)
 		size_t len;
 		
 		if (DEBUGLVL(10)) {
-			DEBUG(10,("Sending nbt packet:\n"));
+			DEBUG(10,("Sending nbt packet to %s:%d\n", 
+				  req->dest_addr, req->dest_port));
 			NDR_PRINT_DEBUG(nbt_name_packet, req->request);
 		}
 
@@ -156,6 +157,7 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 		return;
 	}
 	talloc_steal(tmp_ctx, src_addr);
+	blob.length = nread;
 
 	packet = talloc(tmp_ctx, struct nbt_name_packet);
 	if (packet == NULL) {
@@ -173,7 +175,8 @@ static void nbt_name_socket_recv(struct nbt_name_socket *nbtsock)
 	}
 
 	if (DEBUGLVL(10)) {
-		DEBUG(10,("Received nbt packet:\n"));
+		DEBUG(10,("Received nbt packet of length %d from %s:%d\n", 
+			  blob.length, src_addr, src_port));
 		NDR_PRINT_DEBUG(nbt_name_packet, packet);
 	}
 
