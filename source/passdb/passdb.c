@@ -883,6 +883,16 @@ account without a valid local system user.\n", user_name);
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
+	if(local_flags & LOCAL_DELETE_USER) {
+		if (!pdb_delete_sam_account(user_name)) {
+			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
+			pdb_free_sam(sam_pass);
+			return False;
+		}
+		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
+		pdb_free_sam(sam_pass);
+		return True;
+	}
 	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		pdb_free_sam(sam_pass);
 		
@@ -975,26 +985,17 @@ account without a valid local system user.\n", user_name);
 		}
 	}
 	
-	if(local_flags & LOCAL_DELETE_USER) {
-		if (!pdb_delete_sam_account(user_name)) {
-			slprintf(err_str,err_str_len-1, "Failed to delete entry for user %s.\n", user_name);
-			pdb_free_sam(sam_pass);
-			return False;
-		}
-		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
-	} else {
-		if(!pdb_update_sam_account(sam_pass, True)) {
-			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
-			pdb_free_sam(sam_pass);
-			return False;
-		}
-		if(local_flags & LOCAL_DISABLE_USER)
-			slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
-		else if (local_flags & LOCAL_ENABLE_USER)
-			slprintf(msg_str, msg_str_len-1, "Enabled user %s.\n", user_name);
-		else if (local_flags & LOCAL_SET_NO_PASSWORD)
-			slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
+	if(!pdb_update_sam_account(sam_pass, True)) {
+		slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
+		pdb_free_sam(sam_pass);
+		return False;
 	}
+	if(local_flags & LOCAL_DISABLE_USER)
+		slprintf(msg_str, msg_str_len-1, "Disabled user %s.\n", user_name);
+	else if (local_flags & LOCAL_ENABLE_USER)
+		slprintf(msg_str, msg_str_len-1, "Enabled user %s.\n", user_name);
+	else if (local_flags & LOCAL_SET_NO_PASSWORD)
+		slprintf(msg_str, msg_str_len-1, "User %s password set to none.\n", user_name);
 
 	pdb_free_sam(sam_pass);
 	return True;
