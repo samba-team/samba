@@ -266,7 +266,6 @@ int ltdb_has_wildcard(struct ldb_context *ldb, const char *attr_name,
 void ltdb_search_dn1_free(struct ldb_context *ldb, struct ldb_message *msg)
 {
 	unsigned int i;
-	ldb_free(ldb, msg->dn);
 	ldb_free(ldb, msg->private_data);
 	for (i=0;i<msg->num_elements;i++) {
 		ldb_free(ldb, msg->elements[i].values);

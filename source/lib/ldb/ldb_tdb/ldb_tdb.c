@@ -608,7 +608,6 @@ static int ltdb_rename(struct ldb_context *ldb, const char *olddn, const char *n
 		goto failed;
 	}
 
-	ldb_free(ldb, msg.dn);
 	msg.dn = ldb_strdup(ldb,newdn);
 	if (!msg.dn) {
 		ltdb_search_dn1_free(ldb, &msg);
@@ -617,9 +616,11 @@ static int ltdb_rename(struct ldb_context *ldb, const char *olddn, const char *n
 
 	ret = ltdb_add(ldb, &msg);
 	if (ret == -1) {
+		ldb_free(ldb, msg.dn);
 		ltdb_search_dn1_free(ldb, &msg);
 		goto failed;
 	}
+	ldb_free(ldb, msg.dn);
 	ltdb_search_dn1_free(ldb, &msg);
 
 	ret = ltdb_delete(ldb, olddn);
