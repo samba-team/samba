@@ -341,18 +341,14 @@ static BOOL get_sam_user_entries(struct getent_state *ent)
 		return True;
 	}
 
-	/* Get hardcoded group rid */
+	/* For the moment we set the primary group for every user to be the
+	   Domain Users group.  There are serious problems with determining
+	   the actual primary group for large domains.  This should really
+	   be made into a 'winbind force group' smb.conf parameter or
+	   something like that. */ 
 
-	slprintf(group_name, sizeof(group_name), "%s\\Domain Users", 
-		 ent->domain->name);
-	
-	if (!winbindd_lookup_sid_by_name(group_name, &group_sid, &name_type)) {
-		DEBUG(1, ("%s group does not exist\n", group_name));
-		group_rid = -1;
-	} else {
-		sid_split_rid(&group_sid, &group_rid);
-	}
-	
+	group_rid = DOMAIN_GROUP_RID_USERS;
+
 	/* Fetch the user entries */
 	
 	if (!domain_handles_open(ent->domain)) {
