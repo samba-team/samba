@@ -1,3 +1,17 @@
+2004-01-25  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gssapi.h: add gss_krb5_ccache_name
+	
+	* Makefile.am (libgssapi_la_SOURCES): += ccache_name.c
+	
+	* ccache_name.c (gss_krb5_ccache_name): help function enable to
+	set krb5 name, using out_name argument makes function no longer
+	thread-safe
+
+	* gssapi.3: add missing gss_krb5_ references
+	
+	* gss_acquire_cred.3: document gss_krb5_ccache_name
+	
 2003-12-12  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* cfx.c: make rrc a modulus operation if its longer then the
