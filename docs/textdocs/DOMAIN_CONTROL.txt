@@ -1,11 +1,11 @@
 !==
-!== DOMAIN_CONTROL.txt for Samba release 1.9.18 08 Jan 1998
+!== DOMAIN_CONTROL.txt for Samba release 1.9.18p8 13 Jun 1998
 !==
 Initial Release:	August 22, 1996
 Contributor:		John H Terpstra <samba-bugs@samba.anu.edu.au>
 			Copyright (C) 1996-1997 - John H Terpstra
-Updated:		August 25, 1997
-Status:			Current - New Content
+Updated:		July 5, 1998
+Status:			Current
 
 Subject:     Windows NT Domain Control & Samba
 ============================================================================
@@ -106,3 +106,16 @@ redirect all access authentication to that server. This way you can
 use Windows NT to act as your password server with full support for
 Microsoft encrypted passwords.
 
+Note also, that since release of samba-1.9.18 we now support native encrypted
+passwords too. To enable encrypted password handling several things need to be
+done:
+	1) In smb.conf [globals]:
+		encrypt passwords = yes
+		smbpasswd file = /path/smbpasswd
+the standard path is /usr/local/samba/private/smbpasswd but this may be
+platform specific.
+
+	2) Use "smbpasswd -a" to add all users to the smbpasswd file.
+
+Above all read all the documentation for encrypted password support - you will
+need it!
