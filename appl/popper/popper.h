@@ -80,6 +80,7 @@
 #endif
 #include "version.h"
 
+#include <err.h>
 #include <roken.h>
 
 #define KERBEROS
