@@ -24,7 +24,7 @@
 #include <security/pam_appl.h>
 
 /* PAM -> NT_STATUS map */
-static struct {
+const static struct {
 	int pam_code;
 	NTSTATUS ntstatus;
 } pam_to_nt_status_map[] = {
@@ -55,7 +55,7 @@ static struct {
 };
 
 /* NT_STATUS -> PAM map */
-static struct {
+const static struct {
 	NTSTATUS ntstatus;
 	int pam_code;
 } nt_status_to_pam_map[] = {

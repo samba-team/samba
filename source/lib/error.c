@@ -22,7 +22,7 @@
 
 /* Mapping between Unix, DOS and NT error numbers */
 
-struct unix_error_map unix_dos_nt_errmap[] = {
+const struct unix_error_map unix_dos_nt_errmap[] = {
 	{ EPERM, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
 	{ EACCES, ERRDOS, ERRnoaccess, NT_STATUS_ACCESS_DENIED },
 	{ ENOENT, ERRDOS, ERRbadfile, NT_STATUS_NO_SUCH_FILE },
