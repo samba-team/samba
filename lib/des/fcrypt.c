@@ -99,10 +99,14 @@
 #define STATIC	static
 #endif
 
-/* It is really only FreeBSD that still suffers from MD5 based crypts */
-#ifdef __FreeBSD__
+/* It used to be Only FreeBSD that had MD5 based crypts, but now it's
+ * also the case on Redhat linux 6.0 and OpenBSD so we always include
+ * this code.  That solves the problem of making the test program
+ * conditional as well.
+ */
+
 #define MD5_CRYPT_SUPPORT 1
-#endif
+
 #if     MD5_CRYPT_SUPPORT
 /*
  * ----------------------------------------------------------------------------
