@@ -2620,15 +2620,64 @@ char *volume_label(int snum)
 ********************************************************************/
 static void set_default_server_announce_type(void)
 {
-  default_server_announce = (SV_TYPE_WORKSTATION | SV_TYPE_SERVER |
-                              SV_TYPE_SERVER_UNIX | SV_TYPE_PRINTQ_SERVER);
-  if(lp_announce_as() == ANNOUNCE_AS_NT)
-    default_server_announce |= (SV_TYPE_SERVER_NT | SV_TYPE_NT);
-  else if(lp_announce_as() == ANNOUNCE_AS_WIN95)
-    default_server_announce |= SV_TYPE_WIN95_PLUS;
-  else if(lp_announce_as() == ANNOUNCE_AS_WFW)
-    default_server_announce |= SV_TYPE_WFW;
-  default_server_announce |= (lp_time_server() ? SV_TYPE_TIME_SOURCE : 0);
+	default_server_announce = 0;
+	default_server_announce |= SV_TYPE_WORKSTATION;
+	default_server_announce |= SV_TYPE_SERVER;
+	default_server_announce |= SV_TYPE_SERVER_UNIX;
+	default_server_announce |= SV_TYPE_PRINTQ_SERVER;
+
+	switch (lp_announce_as())
+	{
+		case ANNOUNCE_AS_NT:
+		{
+			default_server_announce |= SV_TYPE_SERVER_NT;
+			default_server_announce |= SV_TYPE_NT;
+			break;
+		}
+		case ANNOUNCE_AS_WIN95:
+		{
+			default_server_announce |= SV_TYPE_WIN95_PLUS;
+			break;
+		}
+		case ANNOUNCE_AS_WFW:
+		{
+			default_server_announce |= SV_TYPE_WFW;
+			break;
+		}
+		default:
+		{
+			break;
+		}
+	}
+
+	switch (lp_server_role())
+	{
+		case ROLE_DOMAIN_MEMBER:
+		{
+			default_server_announce |= SV_TYPE_DOMAIN_MEMBER;
+			break;
+		}
+		case ROLE_DOMAIN_PDC:
+		{
+			default_server_announce |= SV_TYPE_DOMAIN_CTRL;
+			break;
+		}
+		case ROLE_DOMAIN_BDC:
+		{
+			default_server_announce |= SV_TYPE_DOMAIN_BAKCTRL;
+			break;
+		}
+		case ROLE_DOMAIN_NONE:
+		default:
+		{
+			break;
+		}
+	}
+
+	if (lp_time_server())
+	{
+		default_server_announce |= SV_TYPE_TIME_SOURCE;
+	}
 }
 
 
