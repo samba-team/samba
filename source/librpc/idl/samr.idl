@@ -148,7 +148,7 @@
 		samr_Name comment;
 		samr_Name domain;  /* domain name */
 		samr_Name primary; /* PDC name if this is a BDC */
-		HYPER_T sequence_num;
+		uint64 sequence_num;
 		uint32 unknown2;
 		uint32 role;
 		uint32 unknown3;
@@ -190,17 +190,7 @@
 	} samr_DomInfo9;
 
 	typedef struct {
-		uint64 force_logoff_time;
-		samr_Name comment;
-		samr_Name domain;
-		samr_Name primary;
-		HYPER_T sequence_num;
-		uint32 unknown2;  /* w2k3 returns 1 */
-		uint32 role;
-		uint32 unknown3;  /* w2k3 returns 1 */
-		uint32 num_users;
-		uint32 num_groups;
-		uint32 num_aliases;
+		samr_DomInfo2 info2;
 		HYPER_T lockout_duration;
 		HYPER_T lockout_window;
 		uint16 lockout_threshold;
@@ -405,10 +395,11 @@
 	} samr_GroupInfoDesciption;
 
 	typedef enum {
-		GroupInfoAll = 1,
-		GroupInfoName,
-		GroupInfoX,
-		GroupInfoDescription
+		GroupInfoAll          = 1,
+		GroupInfoName         = 2,
+		GroupInfoX            = 3,
+		GroupInfoDescription  = 4,
+		GroupInfoAll2         = 5
 	} GroupInfo;
 
 	typedef union {
@@ -416,6 +407,7 @@
 		[case(GroupInfoName)]        samr_Name            name;
 		[case(GroupInfoX)]           samr_GroupInfoX      unknown;
 		[case(GroupInfoDescription)] samr_Name            description;
+		[case(GroupInfoAll2)]        samr_GroupInfoAll    all2;
 	} samr_GroupInfo;
 
 	NTSTATUS samr_QueryGroupInfo(
@@ -456,24 +448,15 @@
 
 	/************************/
 	/* Function    0x19     */
-	/*
-	  this isn't really valid IDL, but it does work. I suspect
-	  I need to do some more pidl work to get this really right
-	*/
 	typedef struct {
 		uint32 count;
-		uint32 v[count];
-	} samr_intArray;
-
-	typedef struct {
-		samr_intArray *rids;
-		samr_intArray *unknown7;
+		[size_is(count)] uint32 *rids;
+		[size_is(count)] uint32 *unknown;
 	} samr_ridArray;
 
 	NTSTATUS samr_QueryGroupMember(
 		[in,ref]  policy_handle *group_handle,
-		[out]     uint32 *count,
-		[out]     samr_ridArray rids
+		[out]     samr_ridArray *rids
 		);
 
 
