@@ -22,10 +22,14 @@ kauth_LDADD = \
 	$(top_builddir)/lib/asn1/libasn1.la \
 	$(top_builddir)/lib/roken/libroken.la
 
-kinit_LDADD = $(kauth_LDADD)
+kinit_LDADD	= $(kauth_LDADD)
+
+kdestroy_LDADD	= $(kauth_LDADD)
+
+kuser_LDADD	= $(kauth_LDADD)
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
-	$(top_builddir)/lib/des/libdes.la \
-	$(top_builddir)/lib/asn1/libasn1.la \
-	$(top_builddir)/lib/roken/libroken.la
+ 	$(top_builddir)/lib/des/libdes.la \
+ 	$(top_builddir)/lib/asn1/libasn1.la \
+ 	$(top_builddir)/lib/roken/libroken.la
