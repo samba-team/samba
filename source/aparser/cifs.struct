@@ -327,7 +327,7 @@ typedef struct {
 	USHORT Pid;      /* PID of process "owning" lock */
 	ULONG Offset;    /* Offset to bytes to [un]lock */
 	ULONG Length;    /* Number of bytes to [un]lock */
-} LOCKING_ANDX_RANGE;
+} LOCKING_ANDX_RANGE_SHORT;
 
 typedef struct {
 	USHORT Pid;       /* PID of process "owning" lock */
@@ -338,6 +338,13 @@ typedef struct {
 	ULONG LengthLow;  /* Number of bytes to [un]lock (low) */
 
 } LOCKING_ANDX_RANGE_LARGE;
+
+/* typedef struct { */
+	/* union ctr[LockType&0x10] { */
+		/* case 0    LOCKING_ANDX_RANGE_SHORT ls; */
+		/* case 0x10 LOCKING_ANDX_RANGE_LARGE ll; */
+	/* } */
+/* } LOCKING_ANDX_RANGE; */
 
 typedef struct {
 	ANDX_INFO andx;
@@ -350,8 +357,8 @@ typedef struct {
 	USHORT NumberOfLocks;   /* Num. lock range structs following */
 
 	USHORT ByteCount;       /* Count of data bytes */
-	LOCKING_ANDX_RANGE Unlocks[NumberOfUnlocks];      /* Unlock ranges */
-	LOCKING_ANDX_RANGE Locks[NumberOfLocks];        /* Lock ranges */
+	LOCKING_ANDX_RANGE_SHORT Unlocks[NumberOfUnlocks]; /* Unlock ranges */
+	LOCKING_ANDX_RANGE_SHORT Locks[NumberOfLocks];     /* Lock ranges */
 
 } Q_LOCKING_8;
 
@@ -547,6 +554,84 @@ typedef struct _Q_WRITE_ANDX {
 	}
 } Q_WRITE_ANDX;
 
+
+typedef struct _Q_TRANS2_15 {
+	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
+	USHORT TotalDataCount;           /* Total data bytes being sent */
+	USHORT MaxParameterCount;        /* Max parameter bytes to return */
+	USHORT MaxDataCount;             /* Max data bytes to return */
+	UCHAR MaxSetupCount;             /* Max setup words to return */
+	UCHAR Reserved;
+	USHORT Flags;                    /* Additional information: */
+				  /* bit 0 - also disconnect TID in TID */
+	ULONG Timeout;
+	USHORT Reserved2;
+	USHORT ParameterCount;           /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;          /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT DataCount;                /* Data bytes sent this buffer */
+	USHORT DataOffset;               /* Offset (from header start) to data */
+	UCHAR SetupCount;                /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
+	USHORT ByteCount;                /* Count of data bytes */
+	fstring Name;                    /* Must be NULL */
+	UCHAR Pad[];                     /* Pad to SHORT or LONG */
+	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
+	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
+	UCHAR Data[DataCount];           /* Data bytes (# = DataCount) */
+
+} Q_TRANS2_15;
+
+typedef struct _Q_TRANS2 {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 15 Q_TRANS2_15 q15;
+	}
+} Q_TRANS2;
+
+typedef struct _Q_TRANS_16 {
+	USHORT TotalParameterCount;      /* Total parameter bytes being sent */
+	USHORT TotalDataCount;           /* Total data bytes being sent */
+	USHORT MaxParameterCount;        /* Max parameter bytes to return */
+	USHORT MaxDataCount;             /* Max data bytes to return */
+	UCHAR MaxSetupCount;             /* Max setup words to return */
+	UCHAR Reserved;
+	USHORT Flags;                    /* Additional information: */
+				  /* bit 0 - also disconnect TID in TID */
+	ULONG Timeout;
+	USHORT Reserved2;
+	USHORT ParameterCount;           /* Parameter bytes sent this buffer */
+	USHORT ParameterOffset;          /* Offset (from header start) to */
+				  /* Parameters */
+	USHORT DataCount;                /* Data bytes sent this buffer */
+	USHORT DataOffset;               /* Offset (from header start) to data */
+	UCHAR SetupCount;                /* Count of setup words */
+	UCHAR Reserved3;                 /* Reserved (pad above to word) */
+	USHORT Setup[SetupCount];        /* Setup words (# = SetupWordCount) */
+	USHORT ByteCount;                /* Count of data bytes */
+	fstring Name;                    /* Must be NULL */
+	UCHAR Pad[];                     /* Pad to SHORT or LONG */
+	UCHAR Parameters[ParameterCount];/* Parameter bytes (# = ParameterCount) */ 
+	UCHAR Pad1[];                    /* Pad to SHORT or LONG */
+	UCHAR Data[DataCount];           /* Data bytes (# = DataCount) */
+
+} Q_TRANS_16;
+
+typedef struct _Q_TRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 16 Q_TRANS_16 q16;
+	}
+} Q_TRANS;
+
+typedef struct _R_TRANS {
+	uint8 wcount;
+	union ctr[wcount] {
+		case 10 Q_TRANS_16 q10;
+	}
+} R_TRANS;
+
 typedef struct _Q_NT_CREATE_ANDX{
 	uint8 wcount;
 	ANDX_INFO andx;
@@ -586,8 +671,7 @@ typedef struct {
 
 } R_NT_CREATE_ANDX;
 
-typedef struct _R_SMB {
-	ULONG nbhdr;
+typedef struct {
 	ULONG smbhdr;
 	uint8 com;
 	uint8 rcls;
@@ -602,10 +686,16 @@ typedef struct _R_SMB {
 	uint16 pid;
 	uint16 uid;
 	uint16 mid;
-	union ctr[com] {
+} SMB_HDR;
+
+typedef struct _R_SMB {
+	ULONG nbhdr;
+	SMB_HDR hdr;
+	union ctr[hdr.com] {
 		case 4   R_CLOSE      r4;
 		case 6   R_UNLINK     r6;
 		case 36  R_LOCKING_ANDX r36;
+		case 37  R_TRANS r37;
 		case 45  R_OPEN_ANDX r45;
 		case 46  R_READ_ANDX r46;
 		case 47  R_WRITE_ANDX r47;
@@ -619,27 +709,16 @@ typedef struct _R_SMB {
 
 typedef struct _Q_SMB {
 	ULONG nbhdr;
-	ULONG smbhdr;
-	uint8 com;
-	uint8 rcls;
-	uint8 reh;
-	uint16 err;
-	uint8 flg;
-	uint16 flg2;
-	uint16 reserved;
-	uint8 SecuritySignature[8]; 
-	uint16 pad;
-	uint16 tid;
-	uint16 pid;
-	uint16 uid;
-	uint16 mid;
-	union ctr[com] {
+	SMB_HDR hdr;
+	union ctr[hdr.com] {
 		case 4   Q_CLOSE      q4;
 		case 6   Q_UNLINK     q6;
 		case 36  Q_LOCKING_ANDX q36;
+		case 37  Q_TRANS q37;
 		case 45  Q_OPEN_ANDX q45;
 		case 46  Q_READ_ANDX q46;
 		case 47  Q_WRITE_ANDX q47;
+		case 50  Q_TRANS2 q50;
 		case 113 Q_TDIS    q113;
 		case 114 Q_NEGPROT q114;
 		case 115 Q_SESSION_SETUP_ANDX q115;
