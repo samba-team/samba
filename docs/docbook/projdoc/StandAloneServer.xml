@@ -72,7 +72,8 @@ Through the use of PAM (Pluggable Authentication Modules) and nsswitch
 (the name service switcher) the source of authentication may reside on 
 another server. We would be inclined to call this the authentication server.
 This means that the samba server may use the local Unix/Linux system password database
-(/etc/passwd or /etc/shadow), may use a local smbpasswd file, or may use
+(<filename>/etc/passwd</filename> or <filename>/etc/shadow</filename>), may use a
+local smbpasswd file, or may use
 an LDAP back end, or even via PAM and Winbind another CIFS/SMB server
 for authentication.
 </para>
@@ -99,9 +100,7 @@ nobody. No home directories are shared, that are no users in the <filename>/etc/
 Unix system database. This is a very simple system to administer.
 </para>
 
-<para>
 <programlisting>
-	<title>Share Mode Read Only Stand-Alone Server</title>
 	# Global parameters
 	[global]
 		workgroup = MYGROUP
@@ -115,7 +114,6 @@ Unix system database. This is a very simple system to administer.
 		path = /export
 		guest only = Yes
 </programlisting>
-</para>
 
 <para>
 In the above example the machine name is set to REFDOCS, the workgroup is set to the name
@@ -172,9 +170,9 @@ the anonymous (guest) user two things will be required:
 	The default for this is usually the account <command>nobody</command>.
 	To find the correct name to use for your version of Samba do the 
 	following:
-	<programlisting>
-		testparm -s -v | grep "guest account"
-	</programlisting>
+	<screen>
+<prompt>$ </prompt><userinput>testparm -s -v | grep "guest account"</userinput>
+	</screen>
 	Then make sure that this account exists in your system password
 	database (<filename>/etc/passwd</filename>).
 	</para></listitem>
@@ -183,17 +181,16 @@ the anonymous (guest) user two things will be required:
 	The directory into which Samba will spool the file must have write
 	access for the guest account. The following commands will ensure that
 	this directory is available for use:
-	<programlisting>
-		mkdir /var/spool/samba
-		chown nobody.nobody /var/spool/samba
-		chmod a+rwt /var/spool/samba
-	</programlisting>
+	<screen>
+&rootprompt;<userinput>mkdir /var/spool/samba</userinput>
+&rootprompt;<userinput>chown nobody.nobody /var/spool/samba</userinput>
+&rootprompt;<userinput>chmod a+rwt /var/spool/samba</userinput>
+	</screen>
 	</para></listitem>
 </itemizedlist>
 
 <para>
 <programlisting>
-	<title>Simple Central Print Server</title>
 	# Global parameters
 	[global]
 		workgroup = MYGROUP

@@ -452,14 +452,16 @@ example of what you would not want to see would be:
 <sect1>
 <title>Common Errors</title>
 
-<para>
-I've compiled Samba-3 from the CVS and the two binaries (smbd and nmbd)
-are very large files (40 Mg and 20 Mg). I've the same result with
---enable-shared  ?
+<para><quote>
+I'm using gcc 3 and I've compiled Samba-3 from the CVS and the 
+binaries are very large files (40 Mb and 20 Mb). I've the same result with
+<option>--enable-shared</option>  ?
+</quote>
 </para>
 
 <para>
-Answer: Strip the binaries (or dond't compile with -g).
+The dwarf format used by GCC 3 for storing debugging symbols is very inefficient.	
+Strip the binaries, don't compile with -g or compile with -gstabs.
 </para>
 
 </sect1>
