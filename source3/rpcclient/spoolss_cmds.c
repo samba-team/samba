@@ -35,7 +35,6 @@ static const struct command_set spl_commands[] = {
 	 "Enumerate Printers",
 	 {NULL, NULL}},
 
-#if 0	/* commented out by JERRY */
 	{"spoolenumdatas", cmd_spoolss_enum_printerdata,
 	 "<printer name> Enumerate Printer datas",
 	 {NULL, NULL}},
@@ -63,7 +62,6 @@ static const struct command_set spl_commands[] = {
 	{"spoolgetprinterdriverdir", cmd_spoolss_getprinterdriverdir,
 	 "Spool get printer driver directory",
 	 {NULL, NULL}},
-#endif
 	/*
 	 * oop!
 	 */
