@@ -1,3 +1,15 @@
+Thu Apr  8 14:35:34 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* afskauthlib/verify.c: add krb5 support
+
+	* afskauthlib/Makefile.am: build afskauthlib.so
+
+Wed Apr  7 14:06:22 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* sia/sia.c: make it compile w/o krb4
+
+	* sia/Makefile.am: make it compile w/o krb4
+
 Thu Apr  1 18:09:23 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* sia/sia_locl.h: POSIX_GETPWNAM_R is defined in config.h
