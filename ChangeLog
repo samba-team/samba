@@ -12,6 +12,8 @@ Mon Sep  8 02:57:14 1997  Assar Westerlund  <assar@sics.se>
 
 Mon Sep  8 02:20:16 1997  Johan Danielsson  <joda@blubb.pdc.kth.se>
 
+	* lib/krb5/verify_init.c: fix ap_req_nofail semantics
+
 	* lib/krb5/transited.c: something that might resemble
  	domain-x500-compress
 
