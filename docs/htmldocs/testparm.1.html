@@ -24,7 +24,7 @@
 <p><br><a name="SYNOPSIS"></a>
 <h2>SYNOPSIS</h2>
      
-<p><br><strong>testparm</strong> [<a href="testparm.1.html#minuss">-s</a>] [<a href="testparm.1.html#configfilename">configfilename</a>] [<a href="testparm.1.html#hostname">hostname</a> <a href="testparm.1.html#hostIP">hostIP</a>]
+<p><br><strong>testparm</strong> [<a href="testparm.1.html#minuss">-s</a>] [<a href="testparm.1.html#minush">-h</a>] [<a href="testparm.1.html#minusL">-L servername</a>] [<a href="testparm.1.html#configfilename">configfilename</a>] [<a href="testparm.1.html#hostname">hostname</a> <a href="testparm.1.html#hostIP">hostIP</a>]
 <p><br><a name="DESCRIPTION"></a>
 <h2>DESCRIPTION</h2>
     
@@ -51,6 +51,11 @@ an exit code of 0. This allows shell scripts to test the output from
 <li><strong><strong>-s</strong></strong> Without this option, <strong>testparm</strong> will prompt for a
 carriage return after printing the service names and before dumping
 the service definitions.
+<p><br><a name="minush"></a>
+<li><strong><strong>-h</strong></strong> Print usage message
+<p><br><a name="minusL"></a>
+<li><strong><strong>-L servername</strong></strong> Sets the value of the %L macro to servername. This
+is useful for testing include files specified with the %L macro.
 <p><br><a name="configfilename"></a>
 <li><strong><strong>configfilename</strong></strong> This is the name of the configuration file to
 check. If this parameter is not present then the default

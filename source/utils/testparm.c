@@ -146,10 +146,24 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 	return ret;
 }   
 
+static void usage(char *pname)
+{
+	printf("Usage: %s [-sh] [-L servername] [configfilename] [hostname hostIP]\n", pname);
+	printf("\t-s                  Suppress prompt for enter\n");
+	printf("\t-h                  Print usage\n");
+	printf("\t-L servername       Set %%L macro to servername\n");
+	printf("\tconfigfilename      Configuration file to test\n");
+	printf("\thostname hostIP.    Hostname and Host IP address to test\n");
+	printf("\t                    against \"host allow\" and \"host deny\"\n");
+	printf("\n");
+}
+
+
 int main(int argc, char *argv[])
 {
   extern char *optarg;
   extern int optind;
+  extern fstring local_machine;
   pstring configfile;
   int opt;
   int s;
@@ -162,10 +176,22 @@ int main(int argc, char *argv[])
   
   charset_initialise();
 
-  while ((opt = getopt(argc, argv,"s")) != EOF) {
+  while ((opt = getopt(argc, argv,"shL:")) != EOF) {
   switch (opt) {
     case 's':
       silent_mode = True;
+      break;
+    case 'L':
+      fstrcpy(local_machine,optarg);
+      break;
+    case 'h':
+      usage(argv[0]);
+      exit(0);
+      break;
+    default:
+      printf("Incorrect program usage\n");
+      usage(argv[0]);
+      exit(1);
       break;
     }
   }
