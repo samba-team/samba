@@ -59,7 +59,8 @@ struct smbsrv_tcon {
 	/* the server context that this was created on */
 	struct smbsrv_connection *smb_conn;
 
-	uint16_t cnum; /* an index passed over the wire (the TID) */
+	uint16_t tid; /* an index passed over the wire (the TID) */
+
 	int service;
 	BOOL read_only;
 	BOOL admin_user;

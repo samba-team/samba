@@ -140,7 +140,7 @@ NTSTATUS smbcli_send_tconX(struct smbcli_state *cli, const char *sharename,
 	
 	status = smb_tree_connect(cli->tree, mem_ctx, &tcon);
 
-	cli->tree->tid = tcon.tconx.out.cnum;
+	cli->tree->tid = tcon.tconx.out.tid;
 
 	talloc_free(mem_ctx);
 
