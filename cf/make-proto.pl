@@ -64,11 +64,25 @@ while(<>) {
     if($brace == 0) {
 	$line = $line . " " . $_;
     }
-};
+}
 
 print "/* This is a generated file */\n\n";
 print "#ifndef __krb5_protos_h__\n";
 print "#define __krb5_protos_h__\n\n";
+
+print '
+#ifdef __STDC__
+#include <stdarg.h>
+#ifndef __P
+#define __P(x) x
+#endif
+#else
+#ifndef __P
+#define __P(x)
+#endif
+#endif
+
+';
 
 foreach(sort keys %funcs){
     if(/^(main)$/) { next }
