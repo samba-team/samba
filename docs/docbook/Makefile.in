@@ -103,7 +103,11 @@ HOWTO: $(HOWTOSRC)
 ##
 proj-doc: 
 	echo Building Samba-HOWTO-Collections...
-	@(cd projdoc; $(JADE) -t sgml -i html -V nochunks -d  ../stylesheets/ldp.dsl\#html samba-doc.sgml > ../samba-doc.html)
+	@$(PERL) scripts/collateindex.pl -N -o projdoc/index.sgml
+	@$(JADE) -t sgml -V html-index -d $(SGML_SHARE)/dsssl/docbook/html/docbook.dsl projdoc/samba-doc.sgml
+	@$(PERL) scripts/collateindex.pl -o projdoc/index.sgml HTML.index
+	@/bin/rm HTML.index *.htm
+	@$(JADE) -t sgml -i html -V nochunks -d stylesheets/ldp.dsl\#html projdoc/samba-doc.sgml > samba-doc.html
 	@(cd scripts; ./ldp_print ../samba-doc.html)
 	@mv -f samba-doc.pdf ../Samba-HOWTO-Collection.pdf
 	@/bin/mv -f samba-doc.html ../htmldocs/Samba-HOWTO-Collection.html

@@ -1,4 +1,4 @@
-<chapter>
+<chapter id="samba-pdc">
 
 
 <chapterinfo>
@@ -66,7 +66,8 @@ Both documents are superseded by this one.
 
 <para>
 Version of Samba prior to release 2.2 had marginal capabilities to
-act as a Windows NT 4.0 Primary Domain Controller (PDC).  Beginning with 
+act as a Windows NT 4.0 Primary DOmain Controller <indexterm><primary>Primary 
+Domain Controller</primary></indexterm> (PDC).  Beginning with 
 Samba 2.2.0, we are proud to announce official support for Windows NT 4.0 
 style domain logons from Windows NT 4.0 (through SP6) and Windows 2000 (through 
 SP1) clients.  This article outlines the steps necessary for configuring Samba 
