@@ -2194,6 +2194,10 @@ int reply_negprot(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize);
 
+/*The following definitions come from  smbd/noquotas.c  */
+
+BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
+
 /*The following definitions come from  smbd/nttrans.c  */
 
 int reply_ntcreate_and_X(connection_struct *conn,
@@ -2282,15 +2286,6 @@ char *smb_fn_name(int type);
 void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void smbd_process(void);
-
-/*The following definitions come from  smbd/quotas.c  */
-
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
-BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize);
 
 /*The following definitions come from  smbd/reply.c  */
 

@@ -762,6 +762,26 @@ AC_ARG_WITH(netatalk,
   AC_MSG_RESULT(no)
 )
 
+#################################################
+# check for experimental disk-quotas support
+QUOTAOBJS=noquotas.o
+
+AC_MSG_CHECKING(whether to support disk-quotas)
+AC_ARG_WITH(quotas,
+[  --with-quotas     Include experimental disk-quota support
+  --without-quotas  Don't include experimental disk-quota support (default)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    QUOTAOBJS=quotas.o
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
+AC_SUBST(QUOTAOBJS)
 
 #################################################
 # these tests are taken from the GNU fileutils package

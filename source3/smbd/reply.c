@@ -447,10 +447,42 @@ static int session_trust_account(connection_struct *conn, char *inbuf, char *out
   return(ERROR(0, 0xc0000000|NT_STATUS_LOGON_FAILURE));
 }
 
+/****************************************************************************
+ Check for a valid username and password in security=server mode.
+****************************************************************************/
+
+static BOOL check_server_security(char *orig_user, char *domain, 
+                                  char *smb_apasswd, int smb_apasslen,
+                                  char *smb_ntpasswd, int smb_ntpasslen)
+{
+  if(lp_security() != SEC_SERVER)
+    return False;
+
+  return server_validate(orig_user, domain, 
+                            smb_apasswd, smb_apasslen, 
+                            smb_ntpasswd, smb_ntpasslen);
+}
+
+/****************************************************************************
+ Check for a valid username and password in security=domain mode.
+****************************************************************************/
+
+static BOOL check_domain_security(char *orig_user, char *domain, 
+                                  char *smb_apasswd, int smb_apasslen,
+                                  char *smb_ntpasswd, int smb_ntpasslen)
+{
+  if(lp_security() != SEC_DOMAIN)
+    return False;
+
+  return domain_client_validate(orig_user, domain,
+                                smb_apasswd, smb_apasslen,
+                                smb_ntpasswd, smb_ntpasslen);
+}
 
 /****************************************************************************
 reply to a session setup command
 ****************************************************************************/
+
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int length,int bufsize)
 {
   uint16 sess_vuid;
@@ -582,12 +614,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   /* If no username is sent use the guest account */
   if (!*user)
-    {
-      pstrcpy(user,lp_guestaccount(-1));
-      /* If no user and no password then set guest flag. */
-      if( *smb_apasswd == 0)
-        guest = True;
-    }
+  {
+    pstrcpy(user,lp_guestaccount(-1));
+    /* If no user and no password then set guest flag. */
+    if( *smb_apasswd == 0)
+      guest = True;
+  }
 
   strlower(user);
 
@@ -631,48 +663,58 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
   if(!guest && strequal(user,lp_guestaccount(-1)) && (*smb_apasswd == 0))
     guest = True;
 
-  if (!guest && !(lp_security() == SEC_SERVER && 
-      /* Check with orig_user for security=server and
-         security=domain. */
-      server_validate(orig_user, domain, 
-                      smb_apasswd, smb_apasslen, 
-                      smb_ntpasswd, smb_ntpasslen)) &&
-      !(lp_security() == SEC_DOMAIN &&
-      domain_client_validate(orig_user, domain,
+  /* 
+   * Check with orig_user for security=server and
+   * security=domain.
+   */
+
+  if (!guest && 
+      !check_server_security(orig_user, domain,
                              smb_apasswd, smb_apasslen,
-                            smb_ntpasswd, smb_ntpasslen)) &&
+                             smb_ntpasswd, smb_ntpasslen) &&
+      !check_domain_security(orig_user, domain,
+                             smb_apasswd, smb_apasslen,
+                             smb_ntpasswd, smb_ntpasslen) &&
       !check_hosts_equiv(user)
      )
-    {
+  {
 
-      /* now check if it's a valid username/password */
-      /* If an NT password was supplied try and validate with that
-	 first. This is superior as the passwords are mixed case 
-         128 length unicode */
-      if(smb_ntpasslen)
-	{
-	  if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
-	    DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
-	  else
-	    valid_nt_password = True;
-	} 
-      if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
-	{
-	  if (lp_security() >= SEC_USER) {
+    /* 
+     * If we get here then the user wasn't guest and the remote
+     * authentication methods failed. Check the authentication
+     * methods on this local server.
+     *
+     * If an NT password was supplied try and validate with that
+     * first. This is superior as the passwords are mixed case 
+     * 128 length unicode.
+      */
+
+    if(smb_ntpasslen)
+    {
+      if(!password_ok(user, smb_ntpasswd,smb_ntpasslen,NULL))
+        DEBUG(0,("NT Password did not match ! Defaulting to Lanman\n"));
+      else
+        valid_nt_password = True;
+    } 
+
+    if (!valid_nt_password && !password_ok(user, smb_apasswd,smb_apasslen,NULL))
+    {
+      if (lp_security() >= SEC_USER) 
+      {
 #if (GUEST_SESSSETUP == 0)
-	    return(ERROR(ERRSRV,ERRbadpw));
+        return(ERROR(ERRSRV,ERRbadpw));
 #endif
 #if (GUEST_SESSSETUP == 1)
-	    if (Get_Pwnam(user,True))
-	      return(ERROR(ERRSRV,ERRbadpw));
+       if (Get_Pwnam(user,True))
+          return(ERROR(ERRSRV,ERRbadpw));
 #endif
-	  }
- 	  if (*smb_apasswd || !Get_Pwnam(user,True))
-	    pstrcpy(user,lp_guestaccount(-1));
-	  DEBUG(3,("Registered username %s for guest access\n",user));
-	  guest = True;
-	}
+      }
+      if (*smb_apasswd || !Get_Pwnam(user,True))
+         pstrcpy(user,lp_guestaccount(-1));
+      DEBUG(3,("Registered username %s for guest access\n",user));
+      guest = True;
     }
+  }
 
   if (!Get_Pwnam(user,True)) {
     DEBUG(3,("No such user %s - using guest account\n",user));
@@ -682,12 +724,12 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,int 
 
   if (!strequal(user,lp_guestaccount(-1)) &&
       lp_servicenumber(user) < 0)      
-    {
-      int homes = lp_servicenumber(HOMES_NAME);
-      char *home = get_home_dir(user);
-      if (homes >= 0 && home)
-	lp_add_home(user,homes,home);
-    }
+  {
+    int homes = lp_servicenumber(HOMES_NAME);
+    char *home = get_home_dir(user);
+    if (homes >= 0 && home)
+      lp_add_home(user,homes,home);
+  }
 
 
   /* it's ok - setup a reply */
