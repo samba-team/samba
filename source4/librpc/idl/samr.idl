@@ -194,7 +194,13 @@
 
 	/************************/
 	/* Function    0x0b     */
-	NTSTATUS samr_ENUM_DOM_GROUPS();
+	NTSTATUS samr_EnumDomainGroups(
+		[in,ref]      policy_handle *handle,
+		[in,out,ref]  uint32 *resume_handle,
+		[in]          uint32 max_size,
+		[out]         samr_SamArray *sam,
+		[out,ref]     uint32 num_entries
+		);
 
 	/************************/
 	/* Function    0x0c     */
@@ -202,7 +208,14 @@
 
 	/************************/
 	/* Function    0x0d     */
-	NTSTATUS samr_ENUM_DOM_USERS();
+	NTSTATUS samr_EnumDomainUsers(
+		[in,ref]      policy_handle *handle,
+		[in,out,ref]  uint32 *resume_handle,
+		[in]          uint32 acct_flags,
+		[in]          uint32 max_size,
+		[out]         samr_SamArray *sam,
+		[out,ref]     uint32 num_entries
+		);
 
 	/************************/
 	/* Function    0x0e     */

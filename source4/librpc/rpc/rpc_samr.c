@@ -157,12 +157,12 @@ NTSTATUS dcerpc_samr_CREATE_DOM_GROUP(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_ENUM_DOM_GROUPS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_ENUM_DOM_GROUPS *r)
+NTSTATUS dcerpc_samr_EnumDomainGroups(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_EnumDomainGroups *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUM_DOM_GROUPS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_ENUM_DOM_GROUPS,
-				    (ndr_pull_fn_t) ndr_pull_samr_ENUM_DOM_GROUPS,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUMDOMAINGROUPS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_EnumDomainGroups,
+				    (ndr_pull_fn_t) ndr_pull_samr_EnumDomainGroups,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -185,12 +185,12 @@ NTSTATUS dcerpc_samr_CREATE_USER_IN_DOMAIN(struct dcerpc_pipe *p, TALLOC_CTX *me
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_ENUM_DOM_USERS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_ENUM_DOM_USERS *r)
+NTSTATUS dcerpc_samr_EnumDomainUsers(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_EnumDomainUsers *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUM_DOM_USERS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_ENUM_DOM_USERS,
-				    (ndr_pull_fn_t) ndr_pull_samr_ENUM_DOM_USERS,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_ENUMDOMAINUSERS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_EnumDomainUsers,
+				    (ndr_pull_fn_t) ndr_pull_samr_EnumDomainUsers,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
