@@ -2748,6 +2748,7 @@ static BOOL is_binding_string(const char *binding_string)
 		char *host = NULL, *share = NULL;
 
 		if (!parse_unc(argv_new[1], &host, &share)) {
+			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
 			usage(pc);
 		}
 
