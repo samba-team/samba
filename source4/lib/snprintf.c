@@ -81,6 +81,15 @@
 #include <stdlib.h>
 #endif
 
+#ifndef VA_COPY
+#ifdef HAVE_VA_COPY
+#define VA_COPY(dest, src) __va_copy(dest, src)
+#else
+#define VA_COPY(dest, src) (dest) = (src)
+#endif
+#endif
+
+
 #if defined(HAVE_SNPRINTF) && defined(HAVE_VSNPRINTF) && defined(HAVE_C99_VSNPRINTF)
 /* only include stdio.h if we are not re-defining snprintf or vsnprintf */
 #include <stdio.h>
@@ -103,14 +112,6 @@
 /* free memory if the pointer is valid and zero the pointer */
 #ifndef SAFE_FREE
 #define SAFE_FREE(x) do { if ((x) != NULL) {free((x)); (x)=NULL;} } while(0)
-#endif
-
-#ifndef VA_COPY
-#ifdef HAVE_VA_COPY
-#define VA_COPY(dest, src) __va_copy(dest, src)
-#else
-#define VA_COPY(dest, src) (dest) = (src)
-#endif
 #endif
 
 static size_t dopr(char *buffer, size_t maxlen, const char *format, 

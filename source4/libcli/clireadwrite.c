@@ -42,6 +42,7 @@ ssize_t cli_read(struct cli_state *cli, int fnum, char *buf, off_t offset, size_
 	 * rounded down to a multiple of 1024.
 	 */
 	readsize = (cli->transport->negotiate.max_xmit - (MIN_SMB_SIZE+32)) & ~1023;
+	if (readsize > 0xFFFF) readsize = 0xFFFF;
 
 	while (total < size) {
 		NTSTATUS status;
@@ -91,6 +92,9 @@ ssize_t cli_write(struct cli_state *cli,
 		return 0;
 	}
 
+	if (block > 0xFFFF) block = 0xFFFF;
+
+
 	parms.writex.level = RAW_WRITE_WRITEX;
 	parms.writex.in.fnum = fnum;
 	parms.writex.in.wmode = write_mode;
@@ -133,6 +137,7 @@ ssize_t cli_smbwrite(struct cli_state *cli,
 	
 	do {
 		size_t size = MIN(size1, cli->transport->negotiate.max_xmit - 48);
+		if (size > 0xFFFF) size = 0xFFFF;
 		
 		parms.write.in.fnum = fnum;
 		parms.write.in.offset = offset;
