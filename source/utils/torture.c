@@ -23,10 +23,40 @@
 
 #include "includes.h"
 
-static fstring host, workgroup, share, password, username, myname;
+#define  MAX_USERS  10
+#define  MAX_TIDS   10
+#define  MAX_FIDS_PER_TID MAX_USERS
+
+typedef struct test_vuser {
+  
+  struct cli_state cli;
+  
+  fstring username;
+  fstring password;
+  BOOL    gotpass;
+  fstring fname;
+
+  int vuid;
+  
+  struct {
+    int     tid;
+    int     fnum[MAX_FIDS_PER_TID];
+  } per_tid[MAX_TIDS];
+  
+} TEST_VUSERS;
+
+fstring shares[MAX_TIDS];
+static TEST_VUSERS vusers[MAX_USERS];  
+
+static fstring host, workgroup, myname;
+static char *username = vusers[0].username;
+static char *password = vusers[0].password;
+static char *share    = shares[0];
+  
 static int max_protocol = PROTOCOL_NT1;
 static char *sockops="TCP_NODELAY";
 static int nprocs=1, numops=100;
+static int nusers=1, nshares=0;
 static int procnum; /* records process count number when forking */
 static struct cli_state current_cli;
 static fstring randomfname;
@@ -1714,6 +1744,595 @@ static BOOL run_fdpasstest(int dummy)
 	return True;
 }
 
+/*test multiple users over a single tcp connection*/
+/*test multiple users over a single tcp connection ~~~~~~~~~~~~~~~~~~~~~~~~~~*/
+/*test multiple users over a single tcp connection*/
+
+static BOOL run_vusertest_create_files_and_write(void) {
+
+  /*create a file and write a message into it*/
+
+  int i, j;
+
+  for(i = 0; i < nusers; i++) {
+
+    fstring msg;
+    int msglen;
+
+    snprintf(vusers[i].fname, sizeof(vusers[i].fname), "muserconn_%d", i);
+
+    for(j = 0; j < nshares; j++) {
+
+      vusers[i].cli.cnum = vusers[i].per_tid[j].tid;
+
+      printf("create file %s for user %s(%d) on share %s tid %d\n", 
+	     vusers[i].fname, 
+	     vusers[i].username, 
+	     vusers[i].vuid,
+	     shares[j], 
+	     vusers[i].cli.cnum);
+
+      cli_unlink(&vusers[i].cli, vusers[i].fname);
+
+      vusers[i].per_tid[j].fnum[i] = cli_open(&vusers[i].cli, vusers[i].fname, O_RDWR|O_CREAT, DENY_NONE);
+      if (vusers[i].per_tid[j].fnum[i] == -1) {
+	printf("open of %s failed (%s)\n", vusers[i].fname, cli_errstr(&vusers[i].cli));
+	return False;
+      }
+
+      snprintf(msg, sizeof(msg), "written by user %s(%d). on file %d on tid %d.", 
+	       vusers[i].username, 
+	       vusers[i].vuid,
+	       vusers[i].per_tid[j].fnum[i], 
+	       vusers[i].cli.cnum);
+    
+      msglen = strlen(msg)+1;
+
+      //printf("write size(%d) to file.\n", msglen);
+
+      if (cli_write(&vusers[i].cli, vusers[i].per_tid[j].fnum[i], 0, (char *)&msglen, 0, sizeof(msglen)) != sizeof(msglen)) {
+	printf("write failed (%s)\n", cli_errstr(&vusers[i].cli));
+	return False;
+      }
+    
+      //printf("write \"%s\" to file.\n", msg);
+
+      if (cli_write(&vusers[i].cli, vusers[i].per_tid[j].fnum[i], 0, msg, sizeof(msglen), msglen) != msglen) {
+	printf("write failed (%s)\n", cli_errstr(&vusers[i].cli));
+	return False;
+      }
+    }
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_close(void) {
+
+  int i, j;
+
+  for(i = 0; i < nusers; i++) {
+
+    for(j = 0; j < nshares; j++) {
+
+      vusers[i].cli.cnum = vusers[i].per_tid[j].tid;
+
+      if(!cli_close(&vusers[i].cli, vusers[i].per_tid[j].fnum[i])) {
+
+	printf("close file %d failed for user %s(%d) on tid %d (%s)\n", 
+	       vusers[i].per_tid[j].fnum[i],
+	       vusers[i].username,
+	       vusers[i].vuid,
+	       vusers[i].cli.cnum,
+	       cli_errstr(&vusers[i].cli));
+      }
+    }
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_cross_op_and_open_and_read(const char *opname, BOOL (*op)(int i), BOOL open_file) {
+
+  int i, j, k;
+
+  for(j = 0; j < nshares; j++) {
+
+    for(i = 0; i < nusers; i++) {
+
+      vusers[i].cli.cnum = vusers[i].per_tid[j].tid;
+
+      printf("cross_op_and_open_and_read: op %s for user %s(%d) share %s tid %d.\n", 
+	     opname, 
+	     vusers[i].username, 
+	     vusers[i].vuid,
+	     shares[j], 
+	     vusers[i].cli.cnum);
+
+      if(!op(i)) {
+
+	printf("cross_op_and_open_and_read: op %s failed for user %s(%d) share %s tid %d.\n", 
+	       opname, 
+	       vusers[i].username, 
+	       vusers[i].vuid,
+	       shares[j], 
+	       vusers[i].cli.cnum);
+      }
+
+      for(k = 0; k < nusers; k++) {
+
+	BOOL file_is_open = True;
+
+	fstring msg;
+	int msglen = 0;
+      
+	vusers[k].cli.cnum = vusers[i].per_tid[j].tid;
+
+	if(open_file) {
+      
+	  printf("readonly open file %s[%s(%d)] for user %s(%d) on share %s tid %d.\n", 
+		 vusers[i].fname, 
+		 vusers[i].username, 
+		 vusers[i].vuid, 
+		 vusers[k].username, 
+		 vusers[k].vuid,
+		 shares[j], 
+		 vusers[k].cli.cnum);
+
+	  vusers[k].per_tid[j].fnum[i] = cli_open(&vusers[k].cli, vusers[i].fname, O_RDONLY, DENY_NONE);
+	  if (vusers[k].per_tid[j].fnum[i] == -1) {
+
+	    printf("open of %s failed (%s)\n", 
+		   vusers[i].fname, 
+		   cli_errstr(&vusers[k].cli));
+	    
+	    file_is_open = False;
+	  }
+	}
+
+	if(file_is_open) {
+
+	  //printf("read length from file.\n");
+	  
+	  if (cli_read(&vusers[k].cli, vusers[k].per_tid[j].fnum[i], (char *)&msglen, 0, sizeof(msglen)) != sizeof(msglen)) {
+	
+	    printf("read failed (%s)\n", cli_errstr(&vusers[k].cli));
+	  } else {
+
+	    //printf("read %d characters from file.\n", msglen);
+
+	    if (cli_read(&vusers[k].cli, vusers[k].per_tid[j].fnum[i], msg, sizeof(msglen), msglen) != msglen) {
+
+	      printf("read failed (%s)\n", cli_errstr(&vusers[k].cli));
+	    } else {
+
+	      printf("readonly read file %s[%s(%d)] for user %s(%d) on share %s tid %d. fid %d msg \"%s\".\n",
+		     vusers[i].fname, 
+		     vusers[i].username, 
+		     vusers[i].vuid, 
+		     vusers[k].username, 
+		     vusers[k].vuid, 
+		     shares[j], 
+		     vusers[k].cli.cnum,
+		     vusers[k].per_tid[j].fnum[i],
+		     msg);
+	    }
+	  }
+	}
+      }
+    }
+  }
+
+  return True;
+}
+
+static void run_vusertest_cross_close(void) {
+
+  int i, j, k;
+
+  for(j = 0; j < nshares; j++) {
+
+    for(i = 0; i < nusers; i++) {
+
+      for(k = 0; k < nusers; k++) {
+
+	vusers[k].cli.cnum = vusers[i].per_tid[j].tid;
+
+	if(!cli_close(&vusers[k].cli, vusers[k].per_tid[j].fnum[i])) {
+
+	  printf("close file %d[%s(%d)] failed for user %s(%d) on tid %d (%s)\n", 
+		 vusers[k].per_tid[j].fnum[i],
+		 vusers[i].username,
+		 vusers[i].vuid,
+		 vusers[k].username,
+		 vusers[k].vuid,
+		 vusers[k].cli.cnum,
+		 cli_errstr(&vusers[k].cli));
+	}
+      }
+    }
+  }
+}
+
+static BOOL run_vusertest_op_null(int i) {
+
+  return True;
+}
+
+static BOOL run_vusertest_op_dis(int i) {
+
+  if(!cli_tdis(&vusers[i].cli)) {
+
+    printf("tdis failed (%s)\n", cli_errstr(&vusers[i].cli));
+
+    return False;
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_op_ulogoff(int i) {
+
+  if(!cli_ulogoff(&vusers[i].cli)) {
+
+    printf("ulogoff failed (%s)\n", cli_errstr(&vusers[i].cli));
+
+    return False;
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_tcon(void) {
+
+  int i, j;
+
+  for(i = 0; i < nusers; i++) {
+
+    for(j = 0; j < nshares; j++) {
+
+      printf("connect user[%d] %s(%d) session to share %s.\n", 
+	     i, 
+	     vusers[i].username, 
+	     vusers[i].vuid,
+	     shares[j]);
+
+      vusers[i].per_tid[j].tid = -1;
+
+      if (!cli_send_tconX(&vusers[i].cli, shares[j], "?????", vusers[i].password, strlen(vusers[i].password)+1)) {
+      
+	printf("%s refused tree connect on share %s (%s)\n", host, shares[j], cli_errstr(&vusers[i].cli));
+	/*cli_shutdown(vusers[i].cli);
+	  return False;*/
+	continue;
+      }
+
+      vusers[i].per_tid[j].tid = vusers[i].cli.cnum;
+    }
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_session_setup(struct cli_state *seed) {
+
+  int i;
+
+  for(i = 0; i < nusers; i++) {
+
+    printf("open session[%d] for user %s.\n", 
+	   i, 
+	   vusers[i].username);
+
+    vusers[i].cli = *seed;
+
+    vusers[i].vuid = -1;
+
+    if (!cli_session_setup(&vusers[i].cli, 
+			   vusers[i].username, 
+			   vusers[i].password, strlen(vusers[i].password), 
+			   vusers[i].password, strlen(vusers[i].password), workgroup)) {
+      printf("%s rejected the session setup (%s)\n", host, cli_errstr(&vusers[i].cli));
+      /*cli_shutdown(&vusers[i].cli);
+	return False;*/
+      continue;
+    }
+
+    vusers[i].vuid = vusers[i].cli.vuid;
+  }
+
+  return True;
+}
+
+static BOOL run_vusertest_session_setup_and_tcon(struct cli_state *seed) {
+
+  int i, j;
+
+  for(i = 0; i < nusers; i++) {
+
+    printf("open session[%d] for user %s.\n", 
+	   i, 
+	   vusers[i].username);
+
+    vusers[i].cli = *seed;
+
+    if (!cli_session_setup(&vusers[i].cli, 
+			   vusers[i].username, 
+			   vusers[i].password, strlen(vusers[i].password), 
+			   vusers[i].password, strlen(vusers[i].password), workgroup)) {
+      printf("%s rejected the sessionsetup (%s)\n", host, cli_errstr(&vusers[i].cli));
+      /*cli_shutdown(&vusers[i].cli);
+	return False;*/
+      vusers[i].vuid = -1;
+    } else {
+      
+      vusers[i].vuid = vusers[i].cli.vuid;
+    }
+
+    for(j = 0; j < nshares; j++) {
+
+      printf("open session[%d] for user(%d) %s and connect to share %s.\n", 
+	     i, 
+	     vusers[i].vuid, 
+	     vusers[i].username, 
+	     shares[j]);
+
+      vusers[i].per_tid[j].tid = -1;
+
+      /*does this really have to follow immediately after a session setup?*/
+  
+      if (!cli_send_tconX(&vusers[i].cli, shares[j], "?????", vusers[i].password, strlen(vusers[i].password)+1)) {
+	printf("%s refused tree connect on share %s (%s)\n", host, shares[j], cli_errstr(&vusers[i].cli));
+	/*cli_shutdown(&vusers[i].cli);
+	  return False;*/
+	continue;
+      }
+
+      vusers[i].per_tid[j].tid = vusers[i].cli.cnum;
+    }
+  }
+
+  return True;
+}
+
+/*
+  Check relationship between:
+
+  files open
+
+  session logoff      (Samba closes all files for vuid)
+
+  tree disconnection  (Samba set conn->used to False then calls close_cnum(conn, vuid), this flushes dir cache, closes files on the conn, frees the conn structure)
+
+  1. can a tid be shared between user sessions
+  2. does a disconnect disable a tid with no files open on it
+  3. does a disconnect disable a tid with files open on it
+  4. can a user session exist with no tid
+  5. does a logoff disable a tid with no files open on it
+  6. does a logoff disable a tid with files open on it
+  7. after all users have disconnected from a session can they create new sessions and access their old tids / files
+
+*/
+
+static BOOL run_vusertest(int dummy)
+{
+  static struct cli_state *cli = &vusers[0].cli;
+
+  ZERO_STRUCTP(cli);
+  
+  printf("\nopen nbt connection\n");
+
+  if (!open_nbt_connection(cli)) {
+
+    return False;
+  }
+
+  cli_sockopt(cli, sockops);
+
+  printf("\nnegotiate protocol\n");
+
+  /*the CIFS spec says this should be done only once on a VC and W2K doesn't like it more than once.  Samba doesn't mind*/
+
+  if (!cli_negprot(cli)) {
+    printf("%s rejected the negprot (%s)\n",host, cli_errstr(cli));
+    cli_shutdown(cli);
+    return False;
+  }
+
+  printf("\nnegotiate protocol again.\n");
+
+  if (!cli_negprot(cli)) {
+
+    printf("%s rejected a second negprot (%s)\n",host, cli_errstr(cli));
+
+    printf("\nshutdown client\n");
+
+    cli_shutdown(cli);
+
+    ZERO_STRUCTP(cli);
+
+    printf("\nopen new nbt session\n");
+
+    if (!open_nbt_connection(cli)) {
+
+      return False;
+    }
+
+    cli_sockopt(cli, sockops);
+
+    printf("\nre negotiate protocol\n");
+
+    if (!cli_negprot(cli)) {
+      printf("%s rejected the negprot (%s)\n",host, cli_errstr(cli));
+      cli_shutdown(cli);
+      return False;
+    }
+  }
+
+  printf("starting vusertest with %d users and %d shares.\n", nusers, nshares);
+
+  /***********************************************************/
+  /***********************************************************/
+  /*session setup and initial tcon*/
+
+  printf("\nsetup sessions\n");
+
+  run_vusertest_session_setup(cli);
+
+  printf("\nconnect to shares\n\n");
+
+  run_vusertest_tcon();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  printf("\nTEST:create and write files\n\n");
+
+  run_vusertest_create_files_and_write();
+
+  /*close files*/
+
+  run_vusertest_close();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  /*with all files closed. for each share, foreach user U1, foreach user U2,  U2 opens and reads U1's file on U1's tid*/
+
+  printf("\nTEST:Basic open and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, True);
+
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  printf("\nTEST:Files closed, disconnect open and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("disconnect", run_vusertest_op_dis, True);
+
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /*reconnect*/
+
+  run_vusertest_tcon();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  printf("\nTEST:Files open, disconnect and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, True);
+
+  /*disconnect and try and read open files*/
+
+  run_vusertest_cross_op_and_open_and_read("disconnect", run_vusertest_op_dis, False);
+
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /*reconnect*/
+
+  run_vusertest_tcon();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  printf("\nTEST:Files open, disconnect open and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, True);
+
+  /*with all files open disconnect each tree then open and read from a file on each tid*/
+
+  run_vusertest_cross_op_and_open_and_read("disconnect", run_vusertest_op_dis, True);
+
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /*reconnect*/
+
+  run_vusertest_tcon();
+
+  /***********************************************************/
+  /***********************************************************/
+
+  /*with all files closed logoff then open and read from each tid*/
+
+  printf("\nTEST:Files closed, connected, logoff open and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("ulogoff", run_vusertest_op_ulogoff, True);
+
+  /***********************************************************/
+  /***********************************************************/
+  /*try to access open files on old tids*/
+
+  /*with all files open logoff then read from each tid*/
+
+  printf("\nTEST:Files open, new session, no reconnect, read\n\n");
+
+  /*set up the sessions again*/
+
+  run_vusertest_session_setup(cli);
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, False);
+  
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /***********************************************************/
+  /***********************************************************/
+  /*open files on old tids*/
+
+  printf("\nTEST:Files open, logoff and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, True);
+  
+  /*with all files open logoff then read from each tid*/
+
+  run_vusertest_cross_op_and_open_and_read("ulogoff", run_vusertest_op_ulogoff, False);
+  
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /*set up the sessions again*/
+
+  run_vusertest_session_setup(cli);
+
+  /***********************************************************/
+  /***********************************************************/
+  /*open files on old tids*/
+
+  printf("\nTEST:Files open, logoff open and read\n\n");
+
+  run_vusertest_cross_op_and_open_and_read("NULL", run_vusertest_op_null, True);
+  
+  /*with all files open logoff then open and read from each tid*/
+
+  run_vusertest_cross_op_and_open_and_read("ulogoff", run_vusertest_op_ulogoff, True);
+  
+  /*close the files*/
+
+  run_vusertest_cross_close();
+
+  /*set up the sessions again*/
+
+  run_vusertest_session_setup(cli);
+
+  /***********************************************************/
+  /***********************************************************/
+  
+  printf("finished vusertest.\n");
+  return True;
+}
 
 /*
   This test checks that 
@@ -2146,12 +2765,51 @@ static BOOL new_trans(struct cli_state *pcli, int fnum, int level)
 	return correct;
 }
 
+/****************************************************************************
+ Set or clear the delete on close flag.
+****************************************************************************/
+ 
+int cli_setfileinfo_test(struct cli_state *cli, int fnum, int level, char *data, int data_len)
+{
+    int param_len = 6;
+    uint16 setup = TRANSACT2_SETFILEINFO;
+    pstring param;
+    char *rparam=NULL, *rdata=NULL;
+ 
+    memset(param, 0, param_len);
+    SSVAL(param,0,fnum);
+    SSVAL(param,2,level);
+ 
+    if (!cli_send_trans(cli, SMBtrans2,
+                        NULL,                        /* name */
+                        -1, 0,                          /* fid, flags */
+                        &setup, 1, 0,                   /* setup, length, max */
+                        param, param_len, 2,            /* param, length, max */
+                        data,  data_len, cli->max_xmit /* data, length, max */
+                        )) {
+        return False;
+    }
+ 
+    if (!cli_receive_trans(cli, SMBtrans2,
+                        &rparam, &param_len,
+                        &rdata, &data_len)) {
+        return False;
+    }
+ 
+    if (rdata) free(rdata);
+    if (rparam) free(rparam);
+ 
+    return True;
+}
+
 static BOOL run_w2ktest(int dummy)
 {
 	static struct cli_state cli;
 	int fnum;
 	char *fname = "\\w2ktest\\w2k.tst";
+	char *fname1 = "\\w2ktest\\w2k.dir";
 	int level;
+	char data;
 	BOOL correct = True;
 
 	printf("starting w2k test\n");
@@ -2170,6 +2828,24 @@ static BOOL run_w2ktest(int dummy)
 	}
 
 	cli_close(&cli, fnum);
+	cli_unlink(&cli, fname);
+
+	/* Check the strange 1013 setinfo call. */
+	cli_mkdir(&cli, fname1);
+	fnum = cli_nt_create_full( &cli, fname1, 0x60080, 0, 7,
+								1, 0);
+
+	data = 1;
+	if (!cli_setfileinfo_test( &cli, fnum, 1013, &data, 1)) {
+		printf("setfileinfo test 1 failed with %s\n", cli_errstr(&cli));
+	}
+	data = 0;
+	if (!cli_setfileinfo_test( &cli, fnum, 1013, &data, 1)) {
+		printf("setfileinfo test 2 failed with %s\n", cli_errstr(&cli));
+	}
+
+	cli_close(&cli, fnum);
+	cli_rmdir(&cli, fname1);
 
 	if (!close_connection(&cli)) {
 		correct = False;
@@ -3054,6 +3730,8 @@ static double create_procs(BOOL (*fn)(int), BOOL *result)
 
 
 #define FLAG_MULTIPROC 1
+#define FLAG_MULTIUSER  2
+#define FLAG_MULTISHARE 3
 
 static struct {
 	char *name;
@@ -3088,6 +3766,7 @@ static struct {
 	{"OPEN", run_opentest, 0},
 	{"DELETE", run_deletetest, 0},
 	{"W2K", run_w2ktest, 0},
+	{"VU",     run_vusertest, FLAG_MULTIUSER | FLAG_MULTISHARE},
 	{NULL, NULL, 0}};
 
 
