@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -231,8 +231,12 @@ fcc_initialize(krb5_context context,
     unlink (filename);
   
     fd = open(filename, O_RDWR | O_CREAT | O_EXCL | O_BINARY, 0600);
-    if(fd == -1)
-	return errno;
+    if(fd == -1) {
+	ret = errno;
+	krb5_set_error_string(context, "open(%s): %s", filename,
+			      strerror(ret));
+	return ret;
+    }
     {
 	krb5_storage *sp;    
 	sp = krb5_storage_from_fd(fd);
@@ -298,8 +302,11 @@ fcc_store_cred(krb5_context context,
     f = FILENAME(id);
 
     fd = open(f, O_WRONLY | O_APPEND | O_BINARY);
-    if(fd < 0)
-	return errno;
+    if(fd < 0) {
+	ret = errno;
+	krb5_set_error_string (context, "open(%s): %s", f, strerror(ret));
+	return ret;
+    }
     {
 	krb5_storage *sp;
 	sp = krb5_storage_from_fd(fd);
@@ -339,8 +346,12 @@ init_fcc (krb5_context context,
     krb5_error_code ret;
 
     fd = open(fcache->filename, O_RDONLY | O_BINARY);
-    if(fd < 0)
-	return errno;
+    if(fd < 0) {
+	ret = errno;
+	krb5_set_error_string(context, "open(%s): %s", fcache->filename,
+			      strerror(ret));
+	return ret;
+    }
     sp = krb5_storage_from_fd(fd);
     ret = krb5_ret_int8(sp, &pvno);
     if(ret == KRB5_CC_END)

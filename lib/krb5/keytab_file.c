@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1998, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -280,8 +280,12 @@ fkt_start_seq_get_int(krb5_context context,
     struct fkt_data *d = id->data;
     
     c->fd = open (d->filename, flags);
-    if (c->fd < 0)
-	return errno;
+    if (c->fd < 0) {
+	ret = errno;
+	krb5_set_error_string(context, "open(%s): %s", d->filename,
+			      strerror(ret));
+	return ret;
+    }
     c->sp = krb5_storage_from_fd(c->fd);
     ret = krb5_ret_int8(c->sp, &pvno);
     if(ret) {
@@ -391,8 +395,12 @@ fkt_add_entry(krb5_context context,
     fd = open (d->filename, O_RDWR | O_BINARY);
     if (fd < 0) {
 	fd = open (d->filename, O_RDWR | O_CREAT | O_BINARY, 0600);
-	if (fd < 0)
-	    return errno;
+	if (fd < 0) {
+	    ret = errno;
+	    krb5_set_error_string(context, "open(%s): %s", d->filename,
+				  strerror(ret));
+	    return ret;
+	}
 	sp = krb5_storage_from_fd(fd);
 	ret = krb5_store_int8(sp, 5);
 	if(ret) {
