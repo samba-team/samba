@@ -600,7 +600,7 @@ static struct enum_list enum_ldap_ssl[] = {
 	{LDAP_SSL_OFF, "off"},
 	{LDAP_SSL_OFF, "Off"},
 	{LDAP_SSL_START_TLS, "start tls"},
-	{LDAP_SSL_START_TLS, "start_tls"},
+	{LDAP_SSL_START_TLS, "Start_tls"},
 	{-1, NULL}
 };
 
@@ -1185,7 +1185,7 @@ static void init_printer_values(void)
 				   "lp -i %p-%j -H hold");
 			string_set(&sDefault.szLpresumecommand,
 				   "lp -i %p-%j -H resume");
-#endif /* SYSV */
+#endif /* HPUX */
 			break;
 
 		case PRINT_QNX:
