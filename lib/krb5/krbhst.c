@@ -550,6 +550,12 @@ kpasswd_get_next(krb5_context context,
 	    if(get_next(kd, host))
 		return 0;
 	}
+	if((kd->flags & KD_SRV_TCP) == 0) {
+	    srv_get_hosts(context, kd, "tcp", "kpasswd");
+	    kd->flags |= KD_SRV_TCP;
+	    if(get_next(kd, host))
+		return 0;
+	}
     }
 
     /* no matches -> try admin */
