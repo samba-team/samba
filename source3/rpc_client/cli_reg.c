@@ -42,10 +42,9 @@ BOOL reg_connect( const char* srv_name,
 	BOOL res = True;
 	uint32 reg_type = 0;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(srv_name, PIPE_WINREG, &cli, &fnum))
+	if (!cli_connection_init(srv_name, PIPE_WINREG, &con))
 	{
 		return False;
 	}
@@ -72,7 +71,7 @@ BOOL reg_connect( const char* srv_name,
 	{
 		case HKEY_CLASSES_ROOT:
 		{
-			res = res ? reg_open_hkcr(cli, fnum,
+			res = res ? reg_open_hkcr(con, 
 					0x5428, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -80,7 +79,7 @@ BOOL reg_connect( const char* srv_name,
 	
 		case HKEY_LOCAL_MACHINE:
 		{
-			res = res ? reg_open_hklm(cli, fnum,
+			res = res ? reg_open_hklm(con, 
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -88,7 +87,7 @@ BOOL reg_connect( const char* srv_name,
 	
 		case HKEY_USERS:
 		{
-			res = res ? reg_open_hku(cli, fnum,
+			res = res ? reg_open_hku(con, 
 					0x84E0, 0x02000000,
 					reg_hnd) : False;
 			break;
@@ -103,10 +102,10 @@ BOOL reg_connect( const char* srv_name,
 	if (res)
 	{
 		if (!register_policy_hnd(reg_hnd) ||
-		    !set_policy_cli_state(reg_hnd, cli, fnum,
-						 cli_state_free))
+		    !set_policy_con(reg_hnd, con, 
+						 cli_connection_unlink))
 		{
-			cli_state_free(cli, fnum);
+			cli_connection_unlink(con);
 			return False;
 		}
 	}
@@ -117,7 +116,7 @@ BOOL reg_connect( const char* srv_name,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hkcr( struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
@@ -141,7 +140,7 @@ BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
 	reg_io_q_open_hkcr("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKCR, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, REG_OPEN_HKCR, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKCR r_o;
 		BOOL p;
@@ -175,7 +174,7 @@ BOOL reg_open_hkcr( struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a REG Open Policy
 ****************************************************************************/
-BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hklm( struct cli_connection *con,
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
@@ -199,7 +198,7 @@ BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
 	reg_io_q_open_hklm("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKLM, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, REG_OPEN_HKLM, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKLM r_o;
 		BOOL p;
@@ -233,7 +232,7 @@ BOOL reg_open_hklm( struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a REG Open HKU
 ****************************************************************************/
-BOOL reg_open_hku( struct cli_state *cli, uint16 fnum,
+BOOL reg_open_hku( struct cli_connection *con, 
 				uint16 unknown_0, uint32 level,
 				POLICY_HND *hnd)
 {
@@ -257,7 +256,7 @@ BOOL reg_open_hku( struct cli_state *cli, uint16 fnum,
 	reg_io_q_open_hku("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_OPEN_HKU, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, REG_OPEN_HKU, &buf, &rbuf))
 	{
 		REG_R_OPEN_HKU r_o;
 		BOOL p;
@@ -1053,10 +1052,9 @@ BOOL reg_open_entry( POLICY_HND *hnd,
 
 		if (p)
 		{
-			struct cli_state *cli = NULL;
-			uint16 fnum = 0xffff;
+			struct cli_connection *con = NULL;
 
-			if (!cli_state_get(hnd, &cli, &fnum))
+			if (!cli_connection_get(hnd, &con))
 			{
 				return False;
 			}
@@ -1155,10 +1153,9 @@ BOOL reg_shutdown(const char *srv_name,
 	REG_Q_SHUTDOWN q_o;
 	BOOL valid_shutdown = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(srv_name, PIPE_LSARPC, &cli, &fnum))
+	if (!cli_connection_init(srv_name, PIPE_LSARPC, &con))
 	{
 		return False;
 	}
@@ -1178,7 +1175,7 @@ BOOL reg_shutdown(const char *srv_name,
 	reg_io_q_shutdown("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, REG_SHUTDOWN, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, REG_SHUTDOWN, &buf, &rbuf))
 	{
 		REG_R_SHUTDOWN r_o;
 		BOOL p;
@@ -1204,7 +1201,7 @@ BOOL reg_shutdown(const char *srv_name,
 	prs_mem_free(&rbuf);
 	prs_mem_free(&buf );
 
-	cli_state_free(cli, fnum);
+	cli_connection_unlink(con);
 
 	return valid_shutdown;
 }

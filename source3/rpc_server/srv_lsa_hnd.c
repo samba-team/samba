@@ -50,11 +50,10 @@ struct samr_info
     uint32 status; /* some sort of flag.  best to record it.  comes from opnum 0x39 */
 };
 
-struct cli_info
+struct con_info
 {
-	struct cli_state *cli;
-	uint16 fnum;
-	void (*free)(struct cli_state*, uint16 fnum);
+	struct cli_connection *con;
+	void (*free)(struct cli_connection*);
 };
 
 static struct policy
@@ -68,7 +67,7 @@ static struct policy
 	union {
 		struct samr_info *samr;
 		struct reg_info *reg;
-		struct cli_info *cli;
+		struct con_info *con;
 
 	} dev;
 
@@ -368,56 +367,50 @@ BOOL get_policy_reg_name(POLICY_HND *hnd, fstring name)
 }
 
 /****************************************************************************
-  set cli state
+  set con state
 ****************************************************************************/
-BOOL set_policy_cli_state(POLICY_HND *hnd, struct cli_state *cli, uint16 fnum,
-				void (*free_fn)(struct cli_state *, uint16))
+BOOL set_policy_con(POLICY_HND *hnd, struct cli_connection *con,
+				void (*free_fn)(struct cli_connection *))
 {
 	struct policy *p = find_policy(hnd);
 
 	if (p && p->open)
 	{
-		DEBUG(3,("Setting policy cli state pnum=%x\n", p->pnum));
+		DEBUG(3,("Setting policy con state pnum=%x\n", p->pnum));
 
-		if (p->dev.cli == NULL)
+		if (p->dev.con == NULL)
 		{
 			p->type = POL_CLI_INFO;
-			p->dev.cli = (struct cli_info*)malloc(sizeof(*p->dev.cli));
+			p->dev.con = (struct con_info*)malloc(sizeof(*p->dev.con));
 		}
-		if (p->dev.cli == NULL)
+		if (p->dev.con == NULL)
 		{
 			return False;
 		}
-		p->dev.cli->cli  = cli;
-		p->dev.cli->free = free_fn;
-		p->dev.cli->fnum = fnum;
+		p->dev.con->con  = con;
+		p->dev.con->free = free_fn;
 		return True;
 	}
 
-	DEBUG(3,("Error setting policy cli state\n"));
+	DEBUG(3,("Error setting policy con state\n"));
 
 	return False;
 }
 
 /****************************************************************************
-  get cli state
+  get con state
 ****************************************************************************/
-BOOL get_policy_cli_state(const POLICY_HND *hnd, struct cli_state **cli,
-	uint16 *fnum)
+BOOL get_policy_con(const POLICY_HND *hnd, struct cli_connection **con)
 {
 	struct policy *p = find_policy(hnd);
 
 	if (p != NULL && p->open)
 	{
-		DEBUG(3,("Getting cli state pnum=%x\n", p->pnum));
+		DEBUG(3,("Getting con state pnum=%x\n", p->pnum));
 
-		if (cli != NULL)
+		if (con != NULL)
 		{
-			(*cli ) = p->dev.cli->cli;
-		}
-		if (fnum != NULL)
-		{
-			(*fnum) = p->dev.cli->fnum;
+			(*con ) = p->dev.con->con;
 		}
 
 		return True;
@@ -463,12 +456,11 @@ BOOL close_policy_hnd(POLICY_HND *hnd)
 		}
 		case POL_CLI_INFO:
 		{
-			if (p->dev.cli->free != NULL)
+			if (p->dev.con->free != NULL)
 			{
-				p->dev.cli->free(p->dev.cli->cli,
-				                 p->dev.cli->fnum);
+				p->dev.con->free(p->dev.con->con);
 			}
-			free(p->dev.cli);
+			free(p->dev.con);
 			break;
 		}
 	}

@@ -31,29 +31,10 @@
 
 extern int DEBUGLEVEL;
 
-#if 0
-		if (p)
-		{
-			/* ok, at last: we're happy. return the policy handle */
-			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
-			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_cli_state(hnd, cli, fnum,
-			                                 cli_state_free);
-		}
-
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
-
-	if (!cli_state_get(connect_pol, &cli, &fnum))
-	{
-		return False;
-	}
-#endif
-
 /****************************************************************************
 do a SAMR change user password command
 ****************************************************************************/
-BOOL samr_chgpasswd_user( struct cli_state *cli, uint16 fnum,
+BOOL samr_chgpasswd_user( struct cli_connection *con, 
 		char *srv_name, char *user_name,
 		char nt_newpass[516], uchar nt_oldhash[16],
 		char lm_newpass[516], uchar lm_oldhash[16])
@@ -80,7 +61,7 @@ BOOL samr_chgpasswd_user( struct cli_state *cli, uint16 fnum,
 	samr_io_q_chgpasswd_user("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SAMR_CHGPASSWD_USER, &data, &rdata))
+	if (rpc_con_pipe_req(con, SAMR_CHGPASSWD_USER, &data, &rdata))
 	{
 		SAMR_R_CHGPASSWD_USER r_e;
 		BOOL p;
@@ -104,7 +85,7 @@ BOOL samr_chgpasswd_user( struct cli_state *cli, uint16 fnum,
 	prs_mem_free(&data   );
 	prs_mem_free(&rdata  );
 
-	cli_state_free(cli, fnum);
+	cli_connection_unlink(con);
 
 	return valid_pwc;
 }
@@ -113,7 +94,7 @@ BOOL samr_chgpasswd_user( struct cli_state *cli, uint16 fnum,
 /****************************************************************************
 do a SAMR unknown 0x38 command
 ****************************************************************************/
-BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name)
+BOOL samr_unknown_38(struct cli_connection *con, char *srv_name)
 {
 	prs_struct data;
 	prs_struct rdata;
@@ -134,7 +115,7 @@ BOOL samr_unknown_38(struct cli_state *cli, uint16 fnum, char *srv_name)
 	samr_io_q_unknown_38("", &q_e, &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SAMR_GET_DOM_PWINFO, &data, &rdata))
+	if (rpc_con_pipe_req(con, SAMR_GET_DOM_PWINFO, &data, &rdata))
 	{
 		SAMR_R_UNKNOWN_38 r_e;
 		BOOL p;
@@ -639,10 +620,9 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 	SAMR_Q_CONNECT q_o;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(srv_name, PIPE_SAMR, &cli, &fnum))
+	if (!cli_connection_init(srv_name, PIPE_SAMR, &con))
 	{
 		return False;
 	}
@@ -664,7 +644,7 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 	samr_io_q_connect("", &q_o,  &data, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, SAMR_CONNECT, &data, &rdata))
+	if (rpc_con_pipe_req(con, SAMR_CONNECT, &data, &rdata))
 	{
 		SAMR_R_CONNECT r_o;
 		BOOL p;
@@ -683,8 +663,8 @@ BOOL samr_connect(  const char *srv_name, uint32 unknown_0,
 		{
 			memcpy(connect_pol, &r_o.connect_pol, sizeof(r_o.connect_pol));
 			valid_pol = register_policy_hnd(connect_pol) &&
-			            set_policy_cli_state(connect_pol, cli, fnum,
-			                                 cli_state_free);
+			            set_policy_con(connect_pol, con,
+			                                 cli_connection_unlink);
 		}
 	}
 

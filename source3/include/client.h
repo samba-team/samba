@@ -160,4 +160,6 @@ struct cli_state
 	uint16 max_recv_frag;
 };
 
+struct cli_connection;
+
 #endif /* _CLIENT_H */

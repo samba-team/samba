@@ -39,7 +39,7 @@ BOOL get_domain_sids(const char *myname,
 {
 	POLICY_HND pol;
 	fstring srv_name;
-	struct cli_state cli;
+	struct cli_connection *con = NULL;
 	BOOL res = True;
 	fstring dom3;
 	fstring dom5;
@@ -56,7 +56,7 @@ BOOL get_domain_sids(const char *myname,
 		return False;
 	}
 
-	if (!cli_connect_serverlist(&cli, servers))
+	if (!cli_connection_init_list(servers, PIPE_LSARPC, &con))
 	{
 		DEBUG(0,("get_domain_sids: unable to initialise client connection.\n"));
 		return False;
@@ -101,8 +101,7 @@ BOOL get_domain_sids(const char *myname,
 	res = res ? lsa_close(&pol) : False;
 
 	/* close the session */
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
+	cli_connection_unlink(con);
 
 	if (res)
 	{
@@ -136,7 +135,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 {
 	POLICY_HND pol;
 	fstring srv_name;
-	struct cli_state cli;
+	struct cli_connection *con = NULL;
 	BOOL res = True;
 	BOOL res1 = True;
 	DOM_SID sid3;
@@ -151,7 +150,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	ZERO_STRUCT(usr);
 	pwd_set_nullpwd(&usr.pwd);
 
-	if (!cli_connect_serverlist(&cli, server))
+	if (!cli_connection_init_list(server, PIPE_LSARPC, &con))
 	{
 		DEBUG(0,("get_trust_sid: unable to initialise client connection.\n"));
 		return False;
@@ -179,8 +178,7 @@ BOOL get_trust_sid_and_domain(const char* myname, char *server,
 	res = res ? lsa_close(&pol) : False;
 
 	/* close the session */
-	cli_ulogoff(&cli);
-	cli_shutdown(&cli);
+	cli_connection_unlink(con);
 
 	if (res1)
 	{
@@ -224,10 +222,9 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 	LSA_Q_OPEN_POL q_o;
 	LSA_SEC_QOS qos;
 	BOOL valid_pol = False;
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(server_name, PIPE_LSARPC, &cli, &fnum))
+	if (!cli_connection_init(server_name, PIPE_LSARPC, &con))
 	{
 		return False;
 	}
@@ -256,7 +253,7 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 	lsa_io_q_open_pol("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_api_pipe_req(cli, fnum, LSA_OPENPOLICY, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL r_o;
 		BOOL p;
@@ -277,8 +274,8 @@ BOOL lsa_open_policy(const char *server_name, POLICY_HND *hnd,
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			
 			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_cli_state(hnd, cli, fnum,
-			                                 cli_state_free);
+			            set_policy_con(hnd, con, 
+			                                 cli_connection_unlink);
 		}
 	}
 
@@ -300,10 +297,9 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 	LSA_SEC_QOS qos;
 	BOOL valid_pol = False;
 
-	struct cli_state *cli = NULL;
-	uint16 fnum = 0xffff;
+	struct cli_connection *con = NULL;
 
-	if (!cli_state_init(server_name, PIPE_LSARPC, &cli, &fnum))
+	if (!cli_connection_init(server_name, PIPE_LSARPC, &con))
 	{
 		return False;
 	}
@@ -352,8 +348,8 @@ BOOL lsa_open_policy2( const char *server_name, POLICY_HND *hnd,
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd, r_o.pol.data, sizeof(hnd->data));
 			valid_pol = register_policy_hnd(hnd) &&
-			            set_policy_cli_state(hnd, cli, fnum,
-			                                 cli_state_free);
+			            set_policy_con(hnd, con, 
+			                                 cli_connection_unlink);
 		}
 	}
 

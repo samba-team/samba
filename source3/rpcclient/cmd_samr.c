@@ -33,7 +33,6 @@ extern int DEBUGLEVEL;
 
 #define DEBUG_TESTING
 
-extern struct cli_state *smb_cli;
 extern struct user_credentials *usr_creds;
 
 extern FILE* out_hnd;
@@ -121,7 +120,6 @@ SAM password change
 ****************************************************************************/
 void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -135,6 +133,8 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	uchar lm_newhash[16];
 	uchar lm_hshhash[16];
 	uchar lm_oldhash[16];
+
+	struct cli_connection *con = NULL;
 
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
@@ -158,8 +158,7 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 	E_old_pw_hash(lm_newhash, lm_oldhash, lm_hshhash);
 	E_old_pw_hash(lm_newhash, nt_oldhash, nt_hshhash);
 
-	cli_nt_set_ntlmssp_flgs(smb_cli,
-		                    NTLMSSP_NEGOTIATE_UNICODE |
+	usr_creds->ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		                    NTLMSSP_NEGOTIATE_OEM |
 		                    NTLMSSP_NEGOTIATE_SIGN |
 		                    NTLMSSP_NEGOTIATE_SEAL |
@@ -167,21 +166,21 @@ void cmd_sam_ntchange_pwd(struct client_info *info, int argc, char *argv[])
 		                    NTLMSSP_NEGOTIATE_NTLM |
 		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		                    NTLMSSP_NEGOTIATE_00001000 |
-		                    NTLMSSP_NEGOTIATE_00002000);
+		                    NTLMSSP_NEGOTIATE_00002000;
 
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
+	res = res ? cli_connection_init(srv_name, PIPE_SAMR, &con) : False;
 
 	/* establish a connection. */
-	res = res ? samr_unknown_38(smb_cli, fnum, srv_name) : False;
+	res = res ? samr_unknown_38(con, srv_name) : False;
 
 	/* establish a connection. */
-	res = res ? samr_chgpasswd_user(smb_cli, fnum,
+	res = res ? samr_chgpasswd_user(con,
 	                                   srv_name, usr_creds->user_name,
 	                                   nt_newpass, nt_hshhash,
 	                                   lm_newpass, lm_hshhash) : False;
 	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	cli_connection_unlink(con);
 
 	if (res)
 	{
@@ -199,7 +198,7 @@ experimental SAM encryted rpc test connection
 ****************************************************************************/
 void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 {
-	uint16 fnum;
+	struct cli_connection *con = NULL;
 	fstring srv_name;
 	fstring domain;
 	fstring sid;
@@ -221,8 +220,7 @@ void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 
 	report(out_hnd, "SAM Encryption Test\n");
 
-	cli_nt_set_ntlmssp_flgs(smb_cli,
-		                    NTLMSSP_NEGOTIATE_UNICODE |
+	usr_creds->ntlmssp_flags = NTLMSSP_NEGOTIATE_UNICODE |
 		                    NTLMSSP_NEGOTIATE_OEM |
 		                    NTLMSSP_NEGOTIATE_SIGN |
 		                    NTLMSSP_NEGOTIATE_SEAL |
@@ -230,16 +228,13 @@ void cmd_sam_test(struct client_info *info, int argc, char *argv[])
 		                    NTLMSSP_NEGOTIATE_NTLM |
 		                    NTLMSSP_NEGOTIATE_ALWAYS_SIGN |
 		                    NTLMSSP_NEGOTIATE_00001000 |
-		                    NTLMSSP_NEGOTIATE_00002000);
+		                    NTLMSSP_NEGOTIATE_00002000;
 
 	/* open SAMR session.  */
-	res = res ? cli_nt_session_open(smb_cli, PIPE_SAMR, &fnum) : False;
-
-	/* establish a connection. */
-	res = res ? samr_unknown_38(smb_cli, fnum, srv_name) : False;
+	res = res ? cli_connection_init(srv_name, PIPE_SAMR, &con) : False;
 
 	/* close the session */
-	cli_nt_session_close(smb_cli, fnum);
+	cli_connection_unlink(con);
 
 	if (res)
 	{
