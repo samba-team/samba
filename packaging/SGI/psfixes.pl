@@ -9,14 +9,12 @@ while (<>) {
 	    s/.$//;
 	    print;
 	}
+	elsif (/^\/VM?/) {
+	    print "/VM? { pop } bind def\n";
+	    $found_vm = 1;
+	}
 	else {
-	    if (/^\/VM?/) {
-		print "/VM? { pop } bind def\n";
-		$found_vm = 1;
-	    }
-	    else {
-		print;
-	    }
+	    print;
 	}
     }
   }
