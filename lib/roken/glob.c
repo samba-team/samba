@@ -505,8 +505,12 @@ glob1(Char *pattern, glob_t *pglob)
  * meta characters.
  */
 
-#if !defined(S_ISLNK) && defined(S_IFLNK) && defined(S_IFMT)
+#ifndef S_ISLNK
+#if defined(S_IFLNK) && defined(S_IFMT)
 #define S_ISLNK(mode) (((mode) & S_IFMT) == S_IFLNK)
+#else
+#define S_ISLNK(mode) 0
+#endif
 #endif
 
 static int
