@@ -29,7 +29,7 @@
 BOOL torture_dcom_simple(void)
 {
 	NTSTATUS status;
-	struct dcerpc_pipe *p;
+	struct dcerpc_pipe *p = NULL;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	struct GUID IID[2];

@@ -546,8 +546,8 @@ NTSTATUS pvfs_resolve_partial(struct pvfs_state *pvfs, TALLOC_CTX *mem_ctx,
 NTSTATUS pvfs_resolve_name_fd(struct pvfs_state *pvfs, int fd,
 			      struct pvfs_filename *name)
 {
-	dev_t device;
-	ino_t inode;
+	dev_t device = 0;
+	ino_t inode = 0;
 
 	if (name->exists) {
 		device = name->st.st_dev;

@@ -99,7 +99,7 @@ static BOOL test_stream_io(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	const char *fname = BASEDIR "\\stream.txt";
 	const char *sname1, *sname2;
 	BOOL ret = True;
-	int fnum;
+	int fnum = -1;
 	ssize_t retsize;
 
 	sname1 = talloc_asprintf(mem_ctx, "%s:%s", fname, "Stream One");

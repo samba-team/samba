@@ -368,6 +368,8 @@ NTSTATUS ntlmssp_sign_init(struct ntlmssp_state *ntlmssp_state)
 			recv_sign_const = CLI_SIGN;
 			recv_seal_const = CLI_SEAL;
 			break;
+		default:
+			return NT_STATUS_INTERNAL_ERROR;
 		}
 		
 		/**

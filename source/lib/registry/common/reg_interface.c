@@ -614,7 +614,7 @@ WERROR reg_key_get_parent(TALLOC_CTX *mem_ctx, struct registry_key *key, struct 
 {
 	char *parent_name;
 	char *last;
-	struct registry_key *root;
+	struct registry_key *root = NULL;
 	WERROR error;
 
 	parent_name = strdup(key->path);

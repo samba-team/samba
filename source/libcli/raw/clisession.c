@@ -393,7 +393,7 @@ static NTSTATUS smb_raw_session_setup_generic_spnego(struct smbcli_session *sess
 	union smb_sesssetup s2;
 	DATA_BLOB session_key = data_blob(NULL, 0);
 	DATA_BLOB null_data_blob = data_blob(NULL, 0);
-	const char *chosen_oid;
+	const char *chosen_oid = NULL;
 
 	s2.generic.level = RAW_SESSSETUP_SPNEGO;
 	s2.spnego.in.bufsize = session->transport->options.max_xmit;

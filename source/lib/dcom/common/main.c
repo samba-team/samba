@@ -209,7 +209,7 @@ static WERROR dcom_create_object_remote(struct dcom_context *ctx, struct GUID *c
 
 WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface_p ***ip, WERROR *results)
 {
-	struct dcom_interface_p *factory, *iunk;
+	struct dcom_interface_p *factory, *iunk = NULL;
 	struct QueryInterface qr;
 	struct Release rr;
 	struct CreateInstance cr;

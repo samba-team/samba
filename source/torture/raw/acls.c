@@ -41,7 +41,7 @@ static BOOL test_sd(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\sd.txt";
 	BOOL ret = True;
-	int fnum;
+	int fnum = -1;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_ace ace;
@@ -249,7 +249,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\creator.txt";
 	BOOL ret = True;
-	int fnum;
+	int fnum = -1;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig, *sd2;
@@ -323,7 +323,7 @@ static BOOL test_creator_sid(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 
 	printf("set a sec desc allowing no write by owner\n");
 	sd = security_descriptor_create(mem_ctx,
-					NULL, NULL,
+					owner_sid, NULL,
 					owner_sid,
 					SEC_ACE_TYPE_ACCESS_ALLOWED,
 					SEC_RIGHTS_FILE_READ | SEC_STD_ALL,
@@ -440,7 +440,7 @@ static BOOL test_generic_bits(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 	union smb_open io;
 	const char *fname = BASEDIR "\\generic.txt";
 	BOOL ret = True;
-	int fnum, i;
+	int fnum = -1, i;
 	union smb_fileinfo q;
 	union smb_setfileinfo set;
 	struct security_descriptor *sd, *sd_orig, *sd2;
