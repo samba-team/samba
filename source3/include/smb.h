@@ -392,7 +392,6 @@ typedef struct files_struct
 	BOOL modified;
 	BOOL is_directory;
 	BOOL directory_delete_on_close;
-	BOOL stat_open;
 	char *fsp_name;
 } files_struct;
 

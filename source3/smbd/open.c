@@ -60,7 +60,7 @@ static int fd_open(struct connection_struct *conn, char *fname,
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
 	if (fsp->fd == -1)
-		return -1;
+		return 0; /* what we used to call a stat open. */
 	return fd_close_posix(conn, fsp);
 }
 
@@ -87,7 +87,7 @@ static void check_for_pipe(char *fname)
 ****************************************************************************/
 
 static BOOL open_file(files_struct *fsp,connection_struct *conn,
-		      char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode)
+		      char *fname1,SMB_STRUCT_STAT *psbuf,int flags,mode_t mode, uint32 desired_access)
 {
 	extern struct current_user current_user;
 	pstring fname;
@@ -149,18 +149,30 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 
 	local_flags &= ~O_TRUNC;
 
-	/* actually do the open */
-	fsp->fd = fd_open(conn, fname, local_flags, mode);
+	if (desired_access == 0 || (desired_access & (FILE_READ_DATA|FILE_WRITE_DATA|FILE_APPEND_DATA|FILE_EXECUTE)) ||
+			(local_flags & O_CREAT)) {
 
-	if (fsp->fd == -1)  {
-		DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
-			 fname,strerror(errno),local_flags,flags));
-		check_for_pipe(fname);
-		return False;
+		/* actually do the open */
+		fsp->fd = fd_open(conn, fname, local_flags, mode);
+
+		if (fsp->fd == -1)  {
+			DEBUG(3,("Error opening file %s (%s) (local_flags=%d) (flags=%d)\n",
+				 fname,strerror(errno),local_flags,flags));
+			check_for_pipe(fname);
+			return False;
+		}
 	}
+		fsp->fd == -1; /* What we used to call a stat open. */
 
 	if (!VALID_STAT(*psbuf)) {
-		if (vfs_fstat(fsp,fsp->fd,psbuf) == -1) {
+		int ret;
+
+		if (fsp->fd == -1)
+			ret = vfs_stat(conn, fname, psbuf);
+		else
+			ret = vfs_fstat(fsp,fsp->fd,psbuf);
+
+		if (ret == -1) {
 			DEBUG(0,("Error doing fstat on open file %s (%s)\n", fname,strerror(errno) ));
 			fd_close(conn, fsp);
 			return False;
@@ -194,7 +206,6 @@ static BOOL open_file(files_struct *fsp,connection_struct *conn,
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,fname);
@@ -783,7 +794,8 @@ files_struct *open_file_shared1(connection_struct *conn,char *fname, SMB_STRUCT_
 			 * we can do. We also ensure we're not going to create or tuncate
 			 * the file as we only want an access decision at this stage. JRA.
 			 */
-			fsp_open = open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC|O_CREAT)),mode);
+			fsp_open = open_file(fsp,conn,fname,psbuf,
+						flags|(flags2&~(O_TRUNC|O_CREAT)),mode,desired_access);
 
 			DEBUG(4,("open_file_shared : share_mode deny - calling open_file with \
 flags=0x%X flags2=0x%X mode=0%o returned %d\n",
@@ -816,10 +828,10 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 * open_file strips any O_TRUNC flags itself.
 	 */
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,mode);
+	fsp_open = open_file(fsp,conn,fname,psbuf,flags|flags2,mode,desired_access);
 
 	if (!fsp_open && (flags == O_RDWR) && (errno != ENOENT) && fcbopen) {
-		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode)) == True)
+		if((fsp_open = open_file(fsp,conn,fname,psbuf,O_RDONLY,mode,desired_access)) == True)
 			flags = O_RDONLY;
 	}
 
@@ -978,65 +990,6 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 }
 
 /****************************************************************************
- Open a file for permissions read only. Return a pseudo file entry
- with the 'stat_open' flag set 
-****************************************************************************/
-
-files_struct *open_file_stat(connection_struct *conn, char *fname,
-							SMB_STRUCT_STAT *psbuf, int smb_ofun, int *action)
-{
-	extern struct current_user current_user;
-	files_struct *fsp = NULL;
-
-	if (!VALID_STAT(*psbuf)) {
-		DEBUG(0,("open_file_stat: unable to stat name = %s. Error was %s\n", fname, strerror(errno) ));
-		return NULL;
-	}
-
-	if(S_ISDIR(psbuf->st_mode)) {
-		DEBUG(0,("open_file_stat: %s is a directory !\n", fname ));
-		return NULL;
-	}
-
-	fsp = file_new(conn);
-	if(!fsp)
-		return NULL;
-
-	*action = FILE_WAS_OPENED;
-	
-	DEBUG(5,("open_file_stat: opening file %s as a stat entry\n", fname));
-
-	/*
-	 * Setup the files_struct for it.
-	 */
-	
-	fsp->mode = psbuf->st_mode;
-	fsp->inode = psbuf->st_ino;
-	fsp->dev = psbuf->st_dev;
-	fsp->size = psbuf->st_size;
-	fsp->vuid = current_user.vuid;
-	fsp->pos = -1;
-	fsp->can_lock = False;
-	fsp->can_read = False;
-	fsp->can_write = False;
-	fsp->share_mode = 0;
-	fsp->print_file = False;
-	fsp->modified = False;
-	fsp->oplock_type = NO_OPLOCK;
-	fsp->sent_oplock_break = NO_BREAK_SENT;
-	fsp->is_directory = False;
-	fsp->stat_open = True;
-	fsp->directory_delete_on_close = False;
-	fsp->conn = conn;
-	string_set(&fsp->fsp_name,fname);
-	fsp->wcp = NULL; /* Write cache pointer. */
-
-	conn->num_files_open++;
-
-	return fsp;
-}
-
-/****************************************************************************
  Open a file for for write to ensure that we can fchmod it.
 ****************************************************************************/
 
@@ -1052,7 +1005,7 @@ files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_
 	if(!fsp)
 		return NULL;
 
-	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0);
+	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0,0);
 
 	/* 
 	 * This is not a user visible file open.

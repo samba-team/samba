@@ -329,12 +329,10 @@ static int map_create_disposition( uint32 create_disposition)
  Utility function to map share modes.
 ****************************************************************************/
 
-static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_options,
+static int map_share_mode( char *fname, uint32 create_options,
 			uint32 *desired_access, uint32 share_access, uint32 file_attributes)
 {
 	int smb_open_mode = -1;
-
-	*pstat_open_only = False;
 
 	/*
 	 * Convert GENERIC bits to specific bits.
@@ -374,9 +372,6 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 
 	if (smb_open_mode == -1) {
 
-		if(*desired_access == WRITE_DAC_ACCESS || *desired_access == READ_CONTROL_ACCESS)
-			*pstat_open_only = True;
-
 		if(*desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
 					FILE_EXECUTE|FILE_READ_ATTRIBUTES|
 					FILE_READ_EA|FILE_WRITE_EA|SYSTEM_SECURITY_ACCESS|
@@ -389,7 +384,6 @@ static int map_share_mode( BOOL *pstat_open_only, char *fname, uint32 create_opt
 			 * and map to a stat open.
 			 */
 
-			*pstat_open_only = True;
 			smb_open_mode = DOS_OPEN_RDONLY;
 
 		} else {
@@ -569,7 +563,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	BOOL bad_path = False;
 	files_struct *fsp=NULL;
 	char *p = NULL;
-	BOOL stat_open_only = False;
 	time_t c_time;
 	START_PROFILE(SMBntcreateX);
 
@@ -655,7 +648,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 	 */
 	RESOLVE_DFSPATH(fname, conn, inbuf, outbuf);
 
-	if((smb_open_mode = map_share_mode(&stat_open_only, fname, create_options, &desired_access, 
+	if((smb_open_mode = map_share_mode(fname, create_options, &desired_access, 
 					   share_access, 
 					   file_attributes)) == -1) {
 		END_PROFILE(SMBntcreateX);
@@ -770,26 +763,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 					END_PROFILE(SMBntcreateX);
 					return(UNIXERROR(ERRDOS,ERRnoaccess));
 				}
-#ifdef EROFS
-			} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
-#else /* !EROFS */
-			} else if (errno == EACCES && stat_open_only) {
-#endif
-				/*
-				 * We couldn't open normally and all we want
-				 * are the permissions. Try and do a stat open.
-				 */
-
-				oplock_request = 0;
-
-				fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
-
-				if(!fsp) {
-					restore_case_semantics(file_attributes);
-					END_PROFILE(SMBntcreateX);
-					return(UNIXERROR(ERRDOS,ERRnoaccess));
-				}
-
 			} else {
 
 				if((errno == ENOENT) && bad_path) {
@@ -1059,7 +1032,6 @@ static int call_nt_transact_create(connection_struct *conn,
   BOOL bad_path = False;
   files_struct *fsp = NULL;
   char *p = NULL;
-  BOOL stat_open_only = False;
   uint32 flags;
   uint32 desired_access;
   uint32 file_attributes;
@@ -1172,7 +1144,7 @@ static int call_nt_transact_create(connection_struct *conn,
    * and the share access.
    */
 
-  if((smb_open_mode = map_share_mode( &stat_open_only, fname, create_options, &desired_access,
+  if((smb_open_mode = map_share_mode( fname, create_options, &desired_access,
                                       share_access, file_attributes)) == -1)
     return ERROR_DOS(ERRDOS,ERRbadaccess);
 
@@ -1250,25 +1222,6 @@ static int call_nt_transact_create(connection_struct *conn,
 					unix_ERR_class = ERRDOS;
 					unix_ERR_code = ERRbadpath;
 				}
-				return(UNIXERROR(ERRDOS,ERRnoaccess));
-			}
-#ifdef EROFS
-		} else if (((errno == EACCES) || (errno == EROFS)) && stat_open_only) {
-#else /* !EROFS */
-		} else if (errno == EACCES && stat_open_only) {
-#endif
-
-			/*
-			 * We couldn't open normally and all we want
-			 * are the permissions. Try and do a stat open.
-			 */
-
-			oplock_request = 0;
-
-			fsp = open_file_stat(conn,fname,&sbuf,smb_open_mode,&smb_action);
-
-			if(!fsp) {
-				restore_case_semantics(file_attributes);
 				return(UNIXERROR(ERRDOS,ERRnoaccess));
 			}
 		} else {

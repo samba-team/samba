@@ -1452,7 +1452,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
 
 		DEBUG(3,("call_trans2qfilepathinfo: TRANSACT2_QFILEINFO: level = %d\n", info_level));
 
-		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
 			/*
 			 * This is actually a QFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems
@@ -1871,11 +1871,6 @@ NTSTATUS set_delete_on_close_internal(files_struct *fsp, BOOL delete_on_close)
 		fsp->directory_delete_on_close = delete_on_close;
 		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, directory %s\n",
 			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-	} else if(fsp->stat_open) {
-
-		DEBUG(10, ("set_delete_on_close_internal: %s delete on close flag for fnum = %d, stat open %s\n",
-			delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
-
 	} else {
 
 		files_struct *iterate_fsp;
@@ -1959,7 +1954,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
 		fsp = file_fsp(params,0);
 		info_level = SVAL(params,2);    
 
-		if(fsp && (fsp->is_directory || fsp->stat_open)) {
+		if(fsp && (fsp->is_directory || fsp->fd == -1)) {
 			/*
 			 * This is actually a SETFILEINFO on a directory
 			 * handle (returned from an NT SMB). NT5.0 seems

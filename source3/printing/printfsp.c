@@ -68,7 +68,6 @@ files_struct *print_fsp_open(connection_struct *conn, char *fname)
 	fsp->oplock_type = NO_OPLOCK;
 	fsp->sent_oplock_break = NO_BREAK_SENT;
 	fsp->is_directory = False;
-	fsp->stat_open = False;
 	fsp->directory_delete_on_close = False;
 	fsp->conn = conn;
 	string_set(&fsp->fsp_name,print_job_fname(jobid));

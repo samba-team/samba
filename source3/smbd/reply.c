@@ -2230,10 +2230,9 @@ int reply_close(connection_struct *conn, char *inbuf,char *outbuf, int size,
 		return ERROR_DOS(ERRDOS,ERRbadfid);
 	}
 
-	if(fsp->is_directory || fsp->stat_open) {
+	if(fsp->is_directory) {
 		/*
-		 * Special case - close NT SMB directory or stat file
-		 * handle.
+		 * Special case - close NT SMB directory handle.
 		 */
 		DEBUG(3,("close %s fnum=%d\n", fsp->is_directory ? "directory" : "stat file open", fsp->fnum));
 		close_file(fsp,True);
@@ -3969,54 +3968,55 @@ int reply_readbmpx(connection_struct *conn, char *inbuf,char *outbuf,int length,
 
 int reply_setattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-  struct utimbuf unix_times;
-  int outsize = 0;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  START_PROFILE(SMBsetattrE);
+	struct utimbuf unix_times;
+	int outsize = 0;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBsetattrE);
 
-  outsize = set_message(outbuf,0,0,True);
+	outsize = set_message(outbuf,0,0,True);
 
-  CHECK_FSP(fsp,conn);
+	if(!fsp || (fsp->conn != conn)) {
+		END_PROFILE(SMBgetattrE);
+		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
-  /* Convert the DOS times into unix times. Ignore create
-     time as UNIX can't set this.
-     */
-  unix_times.actime = make_unix_date2(inbuf+smb_vwv3);
-  unix_times.modtime = make_unix_date2(inbuf+smb_vwv5);
+	/*
+	 * Convert the DOS times into unix times. Ignore create
+	 * time as UNIX can't set this.
+	 */
+
+	unix_times.actime = make_unix_date2(inbuf+smb_vwv3);
+	unix_times.modtime = make_unix_date2(inbuf+smb_vwv5);
   
-  /* 
-   * Patch from Ray Frush <frush@engr.colostate.edu>
-   * Sometimes times are sent as zero - ignore them.
-   */
+	/* 
+	 * Patch from Ray Frush <frush@engr.colostate.edu>
+	 * Sometimes times are sent as zero - ignore them.
+	 */
 
-  if ((unix_times.actime == 0) && (unix_times.modtime == 0)) 
-  {
-    /* Ignore request */
-    if( DEBUGLVL( 3 ) )
-      {
-      dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
-      dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
-      }
-    END_PROFILE(SMBsetattrE);
-    return(outsize);
-  }
-  else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) 
-  {
-    /* set modify time = to access time if modify time was 0 */
-    unix_times.modtime = unix_times.actime;
-  }
+	if ((unix_times.actime == 0) && (unix_times.modtime == 0)) {
+		/* Ignore request */
+		if( DEBUGLVL( 3 ) ) {
+			dbgtext( "reply_setattrE fnum=%d ", fsp->fnum);
+			dbgtext( "ignoring zero request - not setting timestamps of 0\n" );
+		}
+		END_PROFILE(SMBsetattrE);
+		return(outsize);
+	} else if ((unix_times.actime != 0) && (unix_times.modtime == 0)) {
+		/* set modify time = to access time if modify time was 0 */
+		unix_times.modtime = unix_times.actime;
+	}
 
-  /* Set the date on this file */
-  if(file_utime(conn, fsp->fsp_name, &unix_times)) {
-    END_PROFILE(SMBsetattrE);
-    return ERROR_DOS(ERRDOS,ERRnoaccess);
-  }
+	/* Set the date on this file */
+	if(file_utime(conn, fsp->fsp_name, &unix_times)) {
+		END_PROFILE(SMBsetattrE);
+		return ERROR_DOS(ERRDOS,ERRnoaccess);
+	}
   
-  DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
-            fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
+	DEBUG( 3, ( "reply_setattrE fnum=%d actime=%d modtime=%d\n",
+		fsp->fnum, (int)unix_times.actime, (int)unix_times.modtime ) );
 
-  END_PROFILE(SMBsetattrE);
-  return(outsize);
+	END_PROFILE(SMBsetattrE);
+	return(outsize);
 }
 
 
@@ -4217,44 +4217,48 @@ int reply_writebs(connection_struct *conn, char *inbuf,char *outbuf, int dum_siz
 
 int reply_getattrE(connection_struct *conn, char *inbuf,char *outbuf, int size, int dum_buffsize)
 {
-  SMB_STRUCT_STAT sbuf;
-  int outsize = 0;
-  int mode;
-  files_struct *fsp = file_fsp(inbuf,smb_vwv0);
-  START_PROFILE(SMBgetattrE);
+	SMB_STRUCT_STAT sbuf;
+	int outsize = 0;
+	int mode;
+	files_struct *fsp = file_fsp(inbuf,smb_vwv0);
+	START_PROFILE(SMBgetattrE);
 
-  outsize = set_message(outbuf,11,0,True);
+	outsize = set_message(outbuf,11,0,True);
 
-  CHECK_FSP(fsp,conn);
+	if(!fsp || (fsp->conn != conn)) {
+		END_PROFILE(SMBgetattrE);
+		return ERROR_DOS(ERRDOS,ERRbadfid);
+	}
 
-  /* Do an fstat on this file */
-  if(vfs_fstat(fsp,fsp->fd, &sbuf)) {
-    END_PROFILE(SMBgetattrE);
-    return(UNIXERROR(ERRDOS,ERRnoaccess));
-  }
+	/* Do an fstat on this file */
+	if(fsp_stat(fsp, &sbuf)) {
+		END_PROFILE(SMBgetattrE);
+		return(UNIXERROR(ERRDOS,ERRnoaccess));
+	}
   
-  mode = dos_mode(conn,fsp->fsp_name,&sbuf);
+	mode = dos_mode(conn,fsp->fsp_name,&sbuf);
   
-  /* Convert the times into dos times. Set create
-     date to be last modify date as UNIX doesn't save
-     this */
-  put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
-  put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
-  put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
-  if (mode & aDIR)
-    {
-      SIVAL(outbuf,smb_vwv6,0);
-      SIVAL(outbuf,smb_vwv8,0);
-    }
-  else
-    {
-      SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
-      SIVAL(outbuf,smb_vwv8,SMB_ROUNDUP(sbuf.st_size,1024));
-    }
-  SSVAL(outbuf,smb_vwv10, mode);
+	/*
+	 * Convert the times into dos times. Set create
+	 * date to be last modify date as UNIX doesn't save
+	 * this.
+	 */
+
+	put_dos_date2(outbuf,smb_vwv0,get_create_time(&sbuf,lp_fake_dir_create_times(SNUM(conn))));
+	put_dos_date2(outbuf,smb_vwv2,sbuf.st_atime);
+	put_dos_date2(outbuf,smb_vwv4,sbuf.st_mtime);
+
+	if (mode & aDIR) {
+		SIVAL(outbuf,smb_vwv6,0);
+		SIVAL(outbuf,smb_vwv8,0);
+	} else {
+		SIVAL(outbuf,smb_vwv6,(uint32)sbuf.st_size);
+		SIVAL(outbuf,smb_vwv8,SMB_ROUNDUP(sbuf.st_size,1024));
+	}
+	SSVAL(outbuf,smb_vwv10, mode);
   
-  DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
+	DEBUG( 3, ( "reply_getattrE fnum=%d\n", fsp->fnum));
   
-  END_PROFILE(SMBgetattrE);
-  return(outsize);
+	END_PROFILE(SMBgetattrE);
+	return(outsize);
 }
