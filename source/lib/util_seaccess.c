@@ -24,18 +24,44 @@
 
 extern int DEBUGLEVEL;
 
-static uint32 acemask(uint32 mask, uint32 acc_req, uint32 *acc_grant)
+static uint32 acegrant(uint32 mask, uint32 *acc_req, uint32 *acc_grant, uint32 *acc_deny)
 {
 	/* maximum allowed: grant what's in the ace */
-	if (acc_req == SEC_RIGHTS_MAXIMUM_ALLOWED)
+	if ((*acc_req) == SEC_RIGHTS_MAXIMUM_ALLOWED)
 	{
-		(*acc_grant) = mask;
-		return NT_STATUS_NOPROBLEMO;
+		(*acc_grant) |= mask & ~(*acc_deny);
 	}
+	else
+	{
+		(*acc_grant) |= (*acc_req) & mask;
+		(*acc_req) &= ~(*acc_grant);
+	}
+	if ((*acc_req) == 0x0)
+	{
+		return NT_STATUS_ACCESS_DENIED;
+	}
+	return NT_STATUS_NOPROBLEMO;
+}
 
-	/* check no more being requested than what's allowed in mask */
-	(*acc_grant) = acc_req & mask;
-	if ((*acc_grant) != acc_req)
+static uint32 acedeny(uint32 mask, uint32 *acc_req, uint32 *acc_grant, uint32 *acc_deny)
+{
+	/* maximum allowed: grant what's in the ace */
+	if ((*acc_req) == SEC_RIGHTS_MAXIMUM_ALLOWED)
+	{
+		(*acc_deny) |= mask & ~(*acc_grant);
+	}
+	else
+	{
+		if ((*acc_req) & mask)
+		{
+			return NT_STATUS_ACCESS_DENIED;
+		}
+#if 0
+		(*acc_deny) |= (*acc_req) & mask;
+		(*acc_req) &= ~(*acc_deny);
+#endif
+	}
+	if ((*acc_req) == 0x0)
 	{
 		return NT_STATUS_ACCESS_DENIED;
 	}
@@ -44,11 +70,18 @@ static uint32 acemask(uint32 mask, uint32 acc_req, uint32 *acc_grant)
 
 static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 			const DOM_SID *sid,
-			uint32 acc_req,
+			uint32 *acc_req,
 			uint32 *acc_grant,
+			uint32 *acc_deny,
 			uint32 *status)
 {
 	uint32 mask = ace->info.mask;
+
+	if (ace->flags & SEC_ACE_FLAG_INHERIT_ONLY)
+	{
+		/* inherit only is ignored */
+		return False;
+	}
 
 	/* only owner allowed write-owner rights */
 	if (!is_owner)
@@ -64,8 +97,12 @@ static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 			if (sid_equal(&ace->sid, &global_sid_S_1_1_0) ||
 			    sid_equal(&ace->sid, sid))
 			{
-				(*status) = acemask(mask, acc_req, acc_grant);
-				return True;
+				(*status) = acegrant(mask, acc_req, acc_grant, acc_deny);
+				if ((*status) != NT_STATUS_NOPROBLEMO)
+				{
+					return True;
+				}
+
 			}
 			break;
 		}
@@ -75,8 +112,11 @@ static BOOL check_ace(const SEC_ACE *ace, BOOL is_owner,
 			if (sid_equal(&ace->sid, &global_sid_S_1_1_0) ||
 			    sid_equal(&ace->sid, sid))
 			{
-				(*status) = acemask(~mask, acc_req, acc_grant);
-				return True;
+				(*status) = acedeny(mask, acc_req, acc_grant, acc_deny);
+				if ((*status) != NT_STATUS_NOPROBLEMO)
+				{
+					return True;
+				}
 			}
 			break;
 		}
@@ -112,9 +152,15 @@ BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
 	BOOL is_owner;
 	BOOL is_system;
 	const SEC_ACL *acl = NULL;
+	uint32 grnt;
+	uint32 deny;
 
+	if (acc_req == 0x0)
+	{
+		return False;
+	}
 	/* we must know the owner sid and the user acl */
-	if (sd->dacl == NULL || sd->dacl->ace == NULL)
+	if (sd->dacl == NULL || sd->dacl->ace == NULL || sd->dacl->num_aces == 0)
 	{
 		return False;
 	}
@@ -129,10 +175,7 @@ BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
 		return False;
 	}
 
-	if (acc_grant != NULL)
-	{
-		(*acc_grant) = 0x0;
-	}
+	(*status) = NT_STATUS_NOPROBLEMO;
 
 	/* create user sid */
 	sid_copy(&grp_sid, &user->dom_sid.sid);
@@ -164,31 +207,55 @@ BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
 		acl = sd->dacl;
 	}
 
+	/* acl must have something in it */
+	if (acl == NULL || acl->ace == NULL || acl->num_aces == 0)
+	{
+		return False;
+	}
+
+	/*
+	 * OK!  we have an ACE, it has at least one thing in it,
+	 * we have a user sid, we have an array of group sids.
+	 * let's go!
+	 */
+
+	deny = 0;
+	grnt = 0;
+
 	/* check each ace */
 	for (num_aces = 0; num_aces < acl->num_aces; num_aces++)
 	{
 		const SEC_ACE *ace = &acl->ace[num_aces];
 
 		/* first check the user sid */
-		if (check_ace(ace, is_owner, &usr_sid, acc_req,
-			      acc_grant, status))
+		if (check_ace(ace, is_owner, &usr_sid, &acc_req,
+			      &grnt, &deny, status))
 		{
 			free_sid_array(ngrp_sids, grp_sids);
-			return (*status) == 0x0;
+			return (*status) != NT_STATUS_NOPROBLEMO;
 		}
 		/* now check the group sids */
 		for (num_groups = 0; num_groups < ngrp_sids; num_groups++)
 		{
 			if (check_ace(ace, False, grp_sids[num_groups],
-					acc_req, acc_grant, status))
+					&acc_req, &grnt, &deny, status))
 			{
 				free_sid_array(ngrp_sids, grp_sids);
-				return (*status) == 0x0;
+				return (*status) != NT_STATUS_NOPROBLEMO;
 			}
 		}
 	}
 
+	if (grnt == 0x0 && (*status) == NT_STATUS_NOPROBLEMO)
+	{
+		(*status) = NT_STATUS_ACCESS_DENIED;
+	}
+	else if (acc_grant != NULL)
+	{
+		(*acc_grant) = grnt;
+	}
+
 	free_sid_array(ngrp_sids, grp_sids);
-	return False;
+	return (*status) != NT_STATUS_NOPROBLEMO;
 }
 
