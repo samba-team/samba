@@ -123,6 +123,9 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 
 #endif 
 
+#ifndef LDAP_PORT
+#define LDAP_PORT 389
+#endif
 
 /*
   initialise a ADS_STRUCT, ready for some ads_ ops
