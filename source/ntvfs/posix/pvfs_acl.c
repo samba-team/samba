@@ -372,6 +372,10 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* expand the generic access bits to file specific bits */
+	*access_mask = pvfs_translate_mask(*access_mask);
+	*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
+
 	status = pvfs_acl_load(pvfs, name, -1, acl);
 	if (NT_STATUS_EQUAL(status, NT_STATUS_NOT_FOUND)) {
 		talloc_free(acl);
@@ -388,11 +392,6 @@ NTSTATUS pvfs_access_check(struct pvfs_state *pvfs,
 	default:
 		return NT_STATUS_INVALID_ACL;
 	}
-
-	/* expand the generic access bits to file specific bits */
-	*access_mask = pvfs_translate_mask(*access_mask);
-
-	*access_mask &= ~SEC_FILE_READ_ATTRIBUTE;
 
 	/* check the acl against the required access mask */
 	status = sec_access_check(sd, token, *access_mask, access_mask);
