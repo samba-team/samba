@@ -617,6 +617,25 @@ makes Samba act as a domain member. Read the manufacturers manual before the war
 
 </sect2>
 
+
+<sect2>
+<title>Constantly Losing Connections to Password Server</title>
+
+<para>
+Why does server_validate() simply give up rather than re-establishing its connection to the
+password server?  Though I am not fluent in the SMB protocol, perhaps the cluster server
+process passes along to its client workstation the session key it receives from the password
+server, which means the password hashes submitted by the client would not work on a subsequent
+connection, whose session key would be different.  So server_validate() must give up.
+</para>
+
+<para>
+Indeed. That's why security = server is at best a nasty hack. Please use security = domain.
+<parameter>security = server<parameter> mode is also known as pass-through authentication.
+</para>
+
+</sect2>
+
 </sect1>
 
 </chapter>
