@@ -894,9 +894,10 @@ bin/libbigballofmud.@SHLIBEXT@: $(LIBBIGBALLOFMUD_PICOBJS)
 	$(SHLD) $(LDSHFLAGS) -o $@ $(LIBBIGBALLOFMUD_PICOBJS) $(LIBS) \
 		@SONAMEFLAG@`basename $@`.$(LIBBIGBALLOFMUD_MAJOR)
 
-bin/libbigballofmud.a: $(LIBBIGBALLOFMUD_OBJS)
-	@echo Linking bigballofmud non-shared library $@
-	-$(AR) -rc $@ $(LIBBIGBALLOFMUD_OBJS)
+# It would be nice to build a static bigballofmud too, but when I try
+# I get linker errors about dl_open and similar things.  I'm not sure
+# if it can be fixed or if they just can't be called from a static
+# library.
 
 libsmbclient: $(LIBSMBCLIENT)
 
@@ -1026,6 +1027,9 @@ bin/libmsrpc.a: $(LIBMSRPC_PICOBJ)
 bin/tdbbackup@EXEEXT@: $(TDBBACKUP_OBJ) bin/.dummy
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(TDBBACKUP_OBJ)
+
+bin/t_stringoverflow: bin/libbigballofmud.@SHLIBEXT@ torture/t_stringoverflow.o
+	$(CC) $(FLAGS) -o $@ torture/t_stringoverflow.o -L./bin -lbigballofmud
 
 install: installbin installman installscripts installdat installswat 
 
