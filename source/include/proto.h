@@ -288,6 +288,8 @@ char *get_user_home_dir(char *user);
 BOOL map_username(char *user);
 struct passwd *Get_Pwnam(char *user,BOOL allow_change);
 BOOL user_in_list(char *user,char *list);
+struct passwd *smb_getpwnam(char *user, char *domain, BOOL allow_change);
+int smb_initgroups(char *user, char *domain, gid_t group);
 
 /*The following definitions come from  lib/util.c  */
 
@@ -2039,7 +2041,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 	DOM_GID *gids,
 	uint32 user_flgs,
 
-	char sess_key[16],
+	char *sess_key,
 
 	char *logon_srv,
 	char *logon_dom,
@@ -3182,8 +3184,11 @@ BOOL set_challenge(unsigned char *challenge);
 user_struct *get_valid_user_struct(uint16 vuid);
 void invalidate_vuid(uint16 vuid);
 char *validated_username(uint16 vuid);
-int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest);
+char *validated_domain(uint16 vuid);
+int setup_groups(char *user, char *domain, 
+		 uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups);
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		     char *domain,BOOL guest);
 void add_session_user(char *user);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
 BOOL smb_password_ok(struct smb_passwd *smb_pass, uchar chal[8],

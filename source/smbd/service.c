@@ -293,7 +293,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 
 	/* find out some info about the user */
-	pass = Get_Pwnam(user,True);
+	pass = smb_getpwnam(user,validated_domain(vuid),True);
 
 	if (pass == NULL) {
 		DEBUG(0,( "Couldn't find account %s\n",user));
@@ -504,7 +504,7 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	if (!IS_IPC(conn)) {
 		/* Find all the groups this uid is in and
 		   store them. Used by become_user() */
-		setup_groups(conn->user,conn->uid,conn->gid,
+		setup_groups(conn->user,validated_domain(vuid),conn->uid,conn->gid,
 			     &conn->ngroups,&conn->groups);
 		
 		/* check number of connections */

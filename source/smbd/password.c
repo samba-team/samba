@@ -137,23 +137,35 @@ return a validated username
 ****************************************************************************/
 char *validated_username(uint16 vuid)
 {
-  user_struct *vuser = get_valid_user_struct(vuid);
-  if (vuser == NULL)
-    return 0;
-  return(vuser->user.unix_name);
+	user_struct *vuser = get_valid_user_struct(vuid);
+	if (vuser == NULL)
+		return 0;
+	return(vuser->user.unix_name);
+}
+
+/****************************************************************************
+return a validated domain
+****************************************************************************/
+char *validated_domain(uint16 vuid)
+{
+	user_struct *vuser = get_valid_user_struct(vuid);
+	if (vuser == NULL)
+		return 0;
+	return(vuser->user.domain);
 }
 
 
 /****************************************************************************
 Setup the groups a user belongs to.
 ****************************************************************************/
-int setup_groups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
+int setup_groups(char *user, char *domain, 
+		 uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
 {
 	int i,ngroups;
 	gid_t grp = 0;
 	gid_t *groups = NULL;
 
-	if (-1 == initgroups(user,gid))
+	if (-1 == smb_initgroups(user,domain,gid))
 	{
 		DEBUG(0,("Unable to initgroups. Error was %s\n", strerror(errno) ));
 		if (getuid() == 0)
@@ -199,7 +211,8 @@ register a uid/name pair as being valid and that a valid password
 has been given. vuid is biased by an offset. This allows us to
 tell random client vuid's (normally zero) from valid vuids.
 ****************************************************************************/
-uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, BOOL guest)
+uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name, 
+		     char *domain,BOOL guest)
 {
   user_struct *vuser;
   struct passwd *pwfile; /* for getting real name from passwd file */
@@ -248,13 +261,14 @@ uint16 register_vuid(uid_t uid,gid_t gid, char *unix_name, char *requested_name,
   vuser->guest = guest;
   fstrcpy(vuser->user.unix_name,unix_name);
   fstrcpy(vuser->user.smb_name,requested_name);
+  fstrcpy(vuser->user.domain,domain);
 
   vuser->n_groups = 0;
   vuser->groups  = NULL;
 
   /* Find all the groups this uid is in and store them. 
      Used by become_user() */
-  setup_groups(unix_name,uid,gid,
+  setup_groups(unix_name,domain,uid,gid,
 	       &vuser->n_groups,
 	       &vuser->groups);
 
