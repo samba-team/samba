@@ -232,7 +232,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  unixmode = unix_mode(conn,open_attr | aARCH);
+  unixmode = unix_mode(conn,open_attr | aARCH, fname);
       
   open_file_shared(fsp,conn,fname,open_mode,open_ofun,unixmode,
 		   oplock_request, &rmode,&smb_action);
@@ -2014,7 +2014,7 @@ static int call_trans2mkdir(connection_struct *conn,
 
   unix_convert(directory,conn,0,&bad_path,NULL);
   if (check_name(directory,conn))
-    ret = dos_mkdir(directory,unix_mode(conn,aDIR));
+    ret = dos_mkdir(directory,unix_mode(conn,aDIR,directory));
   
   if(ret < 0)
     {

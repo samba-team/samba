@@ -726,7 +726,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return(UNIXERROR(ERRDOS,ERRnoaccess));
 	} 
 		
-	unixmode = unix_mode(conn,smb_attr | aARCH);
+	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
 	/* 
 	 * If it's a request for a directory open, deal with it separately.
@@ -1073,7 +1073,7 @@ static int call_nt_transact_create(connection_struct *conn,
       return(UNIXERROR(ERRDOS,ERRnoaccess));
     } 
   
-    unixmode = unix_mode(conn,smb_attr | aARCH);
+    unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
     /*
      * If it's a request for a directory open, deal with it separately.
@@ -1834,7 +1834,7 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
        * ACE entries. These are the permissions a file would get when
        * being created in the directory.
        */
-      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE);
+      mode_t mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
 
       owner_access = map_unix_perms(&owner_acl_type, mode,
                             S_IRUSR, S_IWUSR, S_IXUSR, fsp->is_directory);
