@@ -937,6 +937,14 @@ static BOOL parse_lpq_entry(int snum,char *line,
     if (p) *p = 0;
   }
 
+  /* in the LPRNG case, we skip lines starting by a space.*/
+  if (line && !ret && (lp_printing(snum)==PRINT_LPRNG) )
+  {
+  	if (line[0]==' ')
+		return ret;
+  }
+
+
   if (status && !ret)
     {
       /* a few simple checks to see if the line might be a
