@@ -102,7 +102,7 @@ send_reply (int s,
     msghdr.msg_controllen = 0;
 #endif
 
-    iov[0].iov_base       = header;
+    iov[0].iov_base       = (char *)header;
     iov[0].iov_len        = 6;
     if (ap_rep_len) {
 	iov[1].iov_base   = ap_rep->data;
