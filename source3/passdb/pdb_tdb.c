@@ -766,7 +766,7 @@ static BOOL tdb_update_sam(struct pdb_methods *my_methods, SAM_ACCOUNT* newpwd, 
 	if (!(user_rid = pdb_get_user_rid(newpwd))) {
 		if ((flag & TDB_INSERT) && tdb_state->permit_non_unix_accounts) {
 			uint32 lowrid, highrid;
-			if (!idmap_get_free_rid_range(&lowrid, &highrid)) {
+			if (!pdb_get_free_rid_range(&lowrid, &highrid)) {
 				/* should never happen */
 				DEBUG(0, ("tdbsam: something messed up, no high/low rids but nua enabled ?!\n"));
 				ret = False;
