@@ -112,11 +112,11 @@
 	/* Function    0x08     */
 
 	typedef struct {
-		uint16 min_length_password;
+		uint16 min_pwd_len;
 		uint16 password_history;
-		uint32 flag;
-		NTTIME expire;
-		NTTIME min_passwordage;
+		uint32 password_properties;
+		ULONG8 max_password_age;
+		ULONG8 min_password_age;
 	} samr_DomInfo1;
 
 	typedef struct {
@@ -1128,6 +1128,13 @@
 
 	/************************/
 	/* Function    0x3f     */
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		uint32 unknown3;
+	} samr_ChangeReject;
+
 	NTSTATUS samr_ChangePasswordUser3(
 		[in]              samr_Name *server,
 		[in,ref]          samr_Name *account,
@@ -1137,8 +1144,8 @@
 		[in]              samr_CryptPassword *lm_password,
 		[in]              samr_Hash *lm_verifier,
 		[in]              samr_CryptPassword *password3,
-		[out]             uint32 unknown1,
-		[out]             uint32 unknown2
+		[out]             samr_DomInfo1 *dominfo,
+		[out]             samr_ChangeReject *reject
 		);
 
 	/************************/
