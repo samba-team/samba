@@ -19,6 +19,8 @@ Cambridge, MA 02139, USA.  */
 /* Modified to use with samba by Jeremy Allison, 8th July 1995. */
 
 #include "includes.h"
+#include "include/system/terminal.h"
+#include "include/system/wait.h"
 
 #ifdef REPLACE_GETPASS
 
@@ -40,16 +42,16 @@ static struct termio t;
 #define TCSANOW 0
 #endif
 
-static int tcgetattr(int fd, struct termio *t)
+static int tcgetattr(int fd, struct termio *_t)
 {
-	return ioctl(fd, TCGETA, t);
+	return ioctl(fd, TCGETA, _t);
 }
 
-static int tcsetattr(int fd, int flags, struct termio *t)
+static int tcsetattr(int fd, int flags, struct termio *_t)
 {
 	if(flags & TCSAFLUSH)
 		ioctl(fd, TCFLSH, TCIOFLUSH);
-	return ioctl(fd, TCSETS, t);
+	return ioctl(fd, TCSETS, _t);
 }
 
 #elif !defined(TCSAFLUSH)
@@ -65,14 +67,14 @@ static struct sgttyb t;
 #define TCSAFLUSH 1
 #define TCSANOW 0
 
-static int tcgetattr(int fd, struct sgttyb *t)
+static int tcgetattr(int fd, struct sgttyb *_t)
 {
-	return ioctl(fd, TIOCGETP, (char *)t);
+	return ioctl(fd, TIOCGETP, (char *)_t);
 }
 
-static int tcsetattr(int fd, int flags, struct sgttyb *t)
+static int tcsetattr(int fd, int flags, struct sgttyb *_t)
 {
-	return ioctl(fd, TIOCSETP, (char *)t);
+	return ioctl(fd, TIOCSETP, (char *)_t);
 }
 
 #else /* POSIX TERMIO HANDLING */
