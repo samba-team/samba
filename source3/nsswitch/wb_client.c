@@ -25,7 +25,7 @@
 
 #include "includes.h"
 
-int winbindd_request(int req_type, struct winbindd_request *request,
+ int winbindd_request(int req_type, struct winbindd_request *request,
 		     struct winbindd_response *response);
 
 /* Copy of parse_domain_user from winbindd_util.c.  Parse a string of the
