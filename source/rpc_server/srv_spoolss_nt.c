@@ -697,18 +697,26 @@ static BOOL srv_spoolss_sendnotify(POLICY_HND *handle)
  *
  * called from the spoolss dispatcher
  ********************************************************************/
-uint32 _spoolss_open_printer_ex( const UNISTR2 *printername, pipes_struct *p,
-				 PRINTER_DEFAULT *printer_default,
-				 uint32  user_switch, SPOOL_USER_CTR user_ctr,
-				 POLICY_HND *handle)
+
+uint32 _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, SPOOL_R_OPEN_PRINTER_EX *r_u)
 {
 #if 0
 	uint32 result = NT_STATUS_NO_PROBLEMO;
 #endif
+
+	UNISTR2 *printername = NULL;
+	PRINTER_DEFAULT *printer_default = &q_u->printer_default;
+/*	uint32 user_switch = q_u->user_switch; - notused */
+/*	SPOOL_USER_CTR user_ctr = q_u->user_ctr; - notused */
+	POLICY_HND *handle = &r_u->handle;
+
 	fstring name;
 	int snum;
 	struct current_user user;
-	
+
+	if (q_u->printername_ptr != 0)
+		printername = &q_u->printername;
+
 	if (printername == NULL)
 		return ERROR_INVALID_PRINTER_NAME;
 
@@ -985,12 +993,17 @@ BOOL convert_devicemode(char *printername, const DEVICEMODE *devmode,
 /********************************************************************
  * api_spoolss_closeprinter
  ********************************************************************/
-uint32 _spoolss_closeprinter(POLICY_HND *handle)
+
+uint32 _spoolss_closeprinter(pipes_struct *p, SPOOL_Q_CLOSEPRINTER *q_u, SPOOL_R_CLOSEPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter(handle);          /* print job was not closed */
+
+	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	if (!close_printer_handle(handle))
 		return ERROR_INVALID_HANDLE;	
@@ -1000,14 +1013,20 @@ uint32 _spoolss_closeprinter(POLICY_HND *handle)
 
 /********************************************************************
  * api_spoolss_deleteprinter
+
  ********************************************************************/
-uint32 _spoolss_deleteprinter(POLICY_HND *handle)
+
+uint32 _spoolss_deleteprinter(pipes_struct *p, SPOOL_Q_DELETEPRINTER *q_u, SPOOL_R_DELETEPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 	uint32 result;
 
 	if (Printer && Printer->document_started)
 		_spoolss_enddocprinter(handle);  /* print job was not closed */
+
+	memcpy(&r_u->handle, &q_u->handle, sizeof(r_u->handle));
 
 	result = delete_printer_handle(handle);
 
@@ -1155,13 +1174,17 @@ static BOOL getprinterdata_printer(POLICY_HND *handle,
 /********************************************************************
  * spoolss_getprinterdata
  ********************************************************************/
-uint32 _spoolss_getprinterdata(pipes_struct *p, POLICY_HND *handle, UNISTR2 *valuename,
-				uint32 in_size,
-				uint32 *type,
-				uint32 *out_size,
-				uint8 **data,
-				uint32 *needed)
+
+uint32 _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPOOL_R_GETPRINTERDATA *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	UNISTR2 *valuename = &q_u->valuename;
+	uint32 in_size = q_u->size;
+	uint32 *type = &r_u->type;
+	uint32 *out_size = &r_u->size;
+	uint8 **data = &r_u->data;
+	uint32 *needed = &r_u->needed;
+
 	fstring value;
 	BOOL found=False;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
@@ -1252,10 +1275,16 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
  * in fact ReplyOpenPrinter is the changenotify equivalent on the spoolss pipe
  * called from api_spoolss_rffpcnex
  ********************************************************************/
-uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
-			 const UNISTR2 *localmachine, uint32 printerlocal,
-			 SPOOL_NOTIFY_OPTION *option)
+
+uint32 _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNEX *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	uint32 flags = q_u->flags;
+	uint32 options = q_u->options;
+	UNISTR2 *localmachine = &q_u->localmachine;
+	uint32 printerlocal = q_u->printerlocal;
+	SPOOL_NOTIFY_OPTION *option = q_u->option;
+
 	/* store the notify value in the printer struct */
 
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
@@ -1283,6 +1312,7 @@ uint32 _spoolss_rffpcnex(POLICY_HND *handle, uint32 flags, uint32 options,
 /*******************************************************************
  * fill a notify_info_data with the servername
  ********************************************************************/
+
 static void spoolss_notify_server_name(int snum, 
 				       SPOOL_NOTIFY_INFO_DATA *data, 
 				       print_queue_struct *queue,
@@ -2330,11 +2360,19 @@ static uint32 printer_notify_info(POLICY_HND *hnd, SPOOL_NOTIFY_INFO *info,
 /********************************************************************
  * spoolss_rfnpcnex
  ********************************************************************/
-uint32 _spoolss_rfnpcnex( pipes_struct *p, POLICY_HND *handle, uint32 change,
-			  SPOOL_NOTIFY_OPTION *option, SPOOL_NOTIFY_INFO *info)
+
+uint32 _spoolss_rfnpcnex( pipes_struct *p, SPOOL_Q_RFNPCNEX *q_u, SPOOL_R_RFNPCNEX *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+/*	uint32 change = q_u->change; - notused. */
+/*	SPOOL_NOTIFY_OPTION *option = q_u->option; - notused. */
+	SPOOL_NOTIFY_INFO *info = &r_u->info;
+
 	Printer_entry *Printer=find_printer_index_by_hnd(handle);
 	uint32 result = ERROR_INVALID_HANDLE;
+
+	/* we always have a NOTIFY_INFO struct */
+	r_u->info_ptr=0x1;
 
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("_spoolss_rfnpcnex: Invalid handle (%s).\n",
@@ -2874,6 +2912,7 @@ static BOOL enum_all_printers_info_1_remote(fstring name, NEW_BUFFER *buffer, ui
 /********************************************************************
  enum_all_printers_info_1_network.
 *********************************************************************/
+
 static BOOL enum_all_printers_info_1_network(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	DEBUG(4,("enum_all_printers_info_1_network\n"));	
@@ -2886,6 +2925,7 @@ static BOOL enum_all_printers_info_1_network(NEW_BUFFER *buffer, uint32 offered,
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
+
 static BOOL enum_all_printers_info_2(NEW_BUFFER *buffer, uint32 offered, uint32 *needed, uint32 *returned)
 {
 	int snum;
@@ -3010,12 +3050,23 @@ static uint32 enumprinters_level5( uint32 flags, fstring servername,
  *
  * called from api_spoolss_enumprinters (see this to understand)
  ********************************************************************/
-uint32 _spoolss_enumprinters( uint32 flags, const UNISTR2 *servername, uint32 level,
-			      NEW_BUFFER *buffer, uint32 offered,
-			      uint32 *needed, uint32 *returned)
+
+uint32 _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_R_ENUMPRINTERS *r_u)
 {
+	uint32 flags = q_u->flags;
+	UNISTR2 *servername = &q_u->servername;
+	uint32 level = q_u->level;
+	NEW_BUFFER *buffer = NULL;
+	uint32 offered = q_u->offered;
+	uint32 *needed = &r_u->needed;
+	uint32 *returned = &r_u->returned;
+
 	fstring name;
 	
+	/* that's an [in out] buffer */
+	new_spoolss_move_buffer(q_u->buffer, &r_u->buffer);
+	buffer = r_u->buffer;
+
 	DEBUG(4,("_spoolss_enumprinters\n"));
 
 	*needed=0;
@@ -3900,8 +3951,10 @@ static uint32 control_printer(POLICY_HND *handle, uint32 command,
  * api_spoolss_abortprinter
  ********************************************************************/
 
-uint32 _spoolss_abortprinter(POLICY_HND *handle, pipes_struct *p)
+uint32 _spoolss_abortprinter(pipes_struct *p, SPOOL_Q_ABORTPRINTER *q_u, SPOOL_R_ABORTPRINTER *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+
 	return control_printer(handle, PRINTER_CONTROL_PURGE, p);
 }
 
@@ -5859,8 +5912,12 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 /****************************************************************************
 ****************************************************************************/
-uint32 _spoolss_deleteprinterdata( POLICY_HND *handle, const UNISTR2 *value)
+
+uint32 _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_u, SPOOL_R_DELETEPRINTERDATA *r_u)
 {
+	POLICY_HND *handle = &q_u->handle;
+	UNISTR2 *value = &q_u->valuename;
+
 	NT_PRINTER_INFO_LEVEL *printer = NULL;
 	NT_PRINTER_PARAM param;
 	int snum=0;
