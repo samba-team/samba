@@ -60,7 +60,8 @@ static int findpty(char **slave)
   int master;
 #ifndef HAVE_GRANTPT
   static fstring line;
-  void *dirp;
+  DIR *dirp;
+  struct dirent *dentry;
   char *dpname;
 #endif /* !HAVE_GRANTPT */
   
@@ -82,10 +83,11 @@ static int findpty(char **slave)
 #else /* HAVE_GRANTPT */
   fstrcpy( line, "/dev/ptyXX" );
 
-  dirp = OpenDir(NULL, "/dev", False);
+  dirp = opendir("/dev");
   if (!dirp)
     return(-1);
-  while ((dpname = ReadDirName(dirp)) != NULL) {
+  while ((dentry = readdir(dirp)) != NULL) {
+    dpname = dentry->d_name;
     if (strncmp(dpname, "pty", 3) == 0 && strlen(dpname) == 5) {
       DEBUG(3,("pty: try to open %s, line was %s\n", dpname, line ) );
       line[8] = dpname[3];
@@ -94,12 +96,12 @@ static int findpty(char **slave)
         DEBUG(3,("pty: opened %s\n", line ) );
         line[5] = 't';
         *slave = line;
-        CloseDir(dirp);
+        closedir(dirp);
         return (master);
       }
     }
   }
-  CloseDir(dirp);
+  closedir(dirp);
 #endif /* HAVE_GRANTPT */
   return (-1);
 }
