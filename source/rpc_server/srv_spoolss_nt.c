@@ -2298,6 +2298,7 @@ static BOOL spoolss_connect_to_client(struct cli_state *the_cli, char *remote_ma
 	if (!attempt_netbios_session_request(the_cli, global_myname, remote_machine, &the_cli->dest_ip)) {
 		DEBUG(0,("connect_to_client: machine %s rejected the NetBIOS session request.\n", 
 			remote_machine));
+		cli_shutdown(the_cli);
 		return False;
 	}
 
