@@ -154,6 +154,7 @@ typedef struct
   int ReadSize;
   int shmem_size;
   int shmem_hash_size;
+  int client_code_page;
   BOOL bWINSsupport;
   BOOL bWINSproxy;
   BOOL bLocalMaster;
@@ -435,6 +436,7 @@ struct parm_struct
 #ifdef KANJI
   {"coding system",    P_INTEGER, P_GLOBAL, &coding_system, handle_coding_system},
 #endif /* KANJI */
+  {"client code page", P_INTEGER, P_GLOBAL, &Globals.client_code_page,	NULL},
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL},
   {"max ttl",          P_INTEGER, P_GLOBAL, &Globals.max_ttl,           NULL},
   {"wins support",     P_BOOL,    P_GLOBAL, &Globals.bWINSsupport,      NULL},
@@ -618,6 +620,7 @@ static void init_globals(void)
 #ifdef KANJI
   coding_system = interpret_coding_system (KANJI, SJIS_CODE);
 #endif /* KANJI */
+  Globals.client_code_page = DEFAULT_CLIENT_CODE_PAGE;
 
 /* these parameters are set to defaults that are more appropriate
    for the increasing samba install base:
@@ -830,6 +833,7 @@ FN_GLOBAL_INTEGER(lp_printing,&Globals.printing)
 FN_GLOBAL_INTEGER(lp_maxdisksize,&Globals.maxdisksize)
 FN_GLOBAL_INTEGER(lp_lpqcachetime,&Globals.lpqcachetime)
 FN_GLOBAL_INTEGER(lp_syslog,&Globals.syslog)
+FN_GLOBAL_INTEGER(lp_client_code_page,&Globals.client_code_page)
 
 FN_LOCAL_STRING(lp_preexec,szPreExec)
 FN_LOCAL_STRING(lp_postexec,szPostExec)

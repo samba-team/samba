@@ -183,16 +183,18 @@ AWK = awk
 FLAGSM = -DLINUX
 LIBSM = 
 
-# Use this for Linux with shadow passwords and quota
-# contributed by xeno@mix.hive.no
-# Tested on the 1.3.57 kernel and ext2fs filesystem.
-# Notes:
-# /usr/include/sys/quota.h must be a symlink to /usr/include/linux/quota.h
-# The directory quota here must be a symlink to your quota package.
-# I just do 'ln -sf /usr/src/quota-1.50 quota' in this directory to get it to work.
-# FLAGSM = -O3 -m486 -DLINUX -DSHADOW_PWD -DQUOTAS
-# LIBSM = -lshadow
+# Use this for Linux with quotas and without shadow passwords
+# contributed by Andrew.Tridgell@anu.edu.au
+# AXPROC defines DEC Alpha Processor
+# FLAGSM = -DLINUX -DAXPROC -DQUOTAS
+# FLAGSM = -DLINUX -DQUOTAS
+# LIBSM = 
 
+# Use this for Linux with quota and glibc2
+# contributed by xeno@mix.hive.no
+# Tested on the 2.0.30 kernel and ext2fs filesystem.
+# FLAGSM = -DLINUX -DQUOTAS -DNO_ASMSIGNALH -DGLIBC2
+# LIBSM = -L/lib/libc5-compat -lcrypt
 
 # This is for SUNOS5.4 and later (also known as Solaris 2.4 and later)
 # contributed by Andrew.Tridgell@anu.edu.au

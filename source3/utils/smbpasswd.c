@@ -235,7 +235,7 @@ static void usage(char *name)
 
   setup_logging(argv[0],True);
   
-  charset_initialise();
+  charset_initialise(0);
   
 #ifndef DEBUG_PASSWORD
   /* Check the effective uid */

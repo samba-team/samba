@@ -14,7 +14,7 @@ int interpret_character_set(char *str, int def);
 
 /*The following definitions come from  charset.c  */
 
-void charset_initialise(void);
+void charset_initialise(int client_codepage);
 void add_char_string(char *s);
 
 /*The following definitions come from  chgpasswd.c  */
@@ -186,6 +186,7 @@ int lp_printing(void);
 int lp_maxdisksize(void);
 int lp_lpqcachetime(void);
 int lp_syslog(void);
+int lp_client_code_page(void);
 char *lp_preexec(int );
 char *lp_postexec(int );
 char *lp_rootpreexec(int );

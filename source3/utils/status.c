@@ -155,7 +155,7 @@ locking version (was %d, should be %d).\n",fname,
   TimeInit();
   setup_logging(argv[0],True);
 
-  charset_initialise();
+  charset_initialise(0);
 
   DEBUGLEVEL = 0;
   dbf = fopen("/dev/null","w");

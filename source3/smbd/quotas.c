@@ -33,47 +33,43 @@ extern int DEBUGLEVEL;
 
 #ifdef LINUX
 
-#ifdef __KERNEL__
-# undef __KERNEL__
-# include <sys/quota.h>
-# define __KERNEL__
-#else
-# include <sys/quota.h>
-#endif
+#include <sys/types.h>
+#include <asm/types.h>
+#include <sys/quota.h>
 
 #include <mntent.h>
+#include <linux/unistd.h>
+
+_syscall4(int, quotactl, int, cmd, const char *, special, int, id, caddr_t, addr);
 
 /****************************************************************************
 try to get the disk space from disk quotas (LINUX version)
 ****************************************************************************/
-/*
-If you didn't make the symlink to the quota package, too bad :(
-*/
-#include "quota/quotactl.c"
-#include "quota/hasquota.c"
+
 BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
 {
   uid_t euser_id;
+  int r;
+  char dev_disk[256];
   struct dqblk D;
   struct stat S;
-  dev_t devno ;
-  struct mntent *mnt;
   FILE *fp;
-  int found ;
-  int qcmd, fd ;
-  char *qfpathname;
+  struct mntent *mnt;
+  int devno;
+  int found;
   
   /* find the block device file */
   
-  if ( stat(path, &S) == -1 )
+  if ( stat(path, &S) == -1 ) {
     return(False) ;
+  }
 
   devno = S.st_dev ;
   
   fp = setmntent(MOUNTED,"r");
   found = False ;
   
-  while ((mnt = getmntent(fp)) != (struct mntent *) 0) {
+  while ((mnt = getmntent(fp))) {
     if ( stat(mnt->mnt_dir,&S) == -1 )
       continue ;
     if (S.st_dev == devno) {
@@ -83,47 +79,41 @@ BOOL disk_quotas(char *path, int *bsize, int *dfree, int *dsize)
   }
   endmntent(fp) ;
   
-  if ( ! found )
-    return(False) ;
-  
-  qcmd = QCMD(Q_GETQUOTA, USRQUOTA);
-  
-  if (hasmntopt(mnt, MNTOPT_NOAUTO) || hasmntopt(mnt, MNTOPT_NOQUOTA))
-    return(False) ;
-  
-  if (!hasquota(mnt, USRQUOTA, &qfpathname))
-    return(False) ;
-  
-  euser_id = geteuid();
-  seteuid(0);
-  
-  if (quotactl(qcmd, mnt->mnt_fsname, euser_id, (caddr_t)&D) != 0) {
-    if ((fd = open(qfpathname, O_RDONLY)) < 0) {
-      seteuid(euser_id);
+  if (!found) {
       return(False);
     }
-    lseek(fd, (long) dqoff(euser_id), L_SET);
-    switch (read(fd, &D, sizeof(struct dqblk))) {
-    case 0:/* EOF */
-      memset((caddr_t)&D, 0, sizeof(struct dqblk));
-      break;
-    case sizeof(struct dqblk):   /* OK */
-      break;
-    default:   /* ERROR */
-      close(fd);
-      seteuid(euser_id);
-      return(False);
-    }
-  }
-  seteuid(euser_id);
-  *bsize=1024;
 
-  if (D.dqb_bsoftlimit==0)
-    return(False);
-  if ((D.dqb_curblocks>D.dqb_bsoftlimit)||(D.dqb_curinodes>D.dqb_isoftlimit))
+  euser_id=geteuid();
+  seteuid(0);  
+  r=quotactl(QCMD(Q_GETQUOTA,USRQUOTA), mnt->mnt_fsname, euser_id, (caddr_t)&D);
+      seteuid(euser_id);
+
+  /* Use softlimit to determine disk space, except when it has been exceeded */
+  *bsize = 1024;
+  if (r)
+    {
+      if (errno == EDQUOT) 
+       {
+         *dfree =0;
+         *dsize =D.dqb_curblocks;
+         return (True);
+    }
+      else return(False);
+  }
+  /* Use softlimit to determine disk space, except when it has been exceeded */
+  if (
+      (D.dqb_bsoftlimit && D.dqb_curblocks>=D.dqb_bsoftlimit) ||
+      (D.dqb_bhardlimit && D.dqb_curblocks>=D.dqb_bhardlimit) ||
+      (D.dqb_isoftlimit && D.dqb_curinodes>=D.dqb_isoftlimit) ||
+      (D.dqb_ihardlimit && D.dqb_curinodes>=D.dqb_ihardlimit)
+     )
     {
       *dfree = 0;
       *dsize = D.dqb_curblocks;
+    }
+  else if (D.dqb_bsoftlimit==0 && D.dqb_bhardlimit==0)
+    {
+      return(False);
     }
   else {
     *dfree = D.dqb_bsoftlimit - D.dqb_curblocks;

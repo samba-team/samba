@@ -421,7 +421,7 @@ static void usage(char *pname)
 
   setup_logging(argv[0],False);
 
-  charset_initialise();
+  charset_initialise(-1);
 
 #ifdef LMHOSTSFILE
   strcpy(host_file,LMHOSTSFILE);
@@ -498,11 +498,18 @@ static void usage(char *pname)
   if (!reload_services(False))
     return(-1);	
 
+  charset_initialise(lp_client_code_page());
+
   init_structs();
 
   reload_services(True);
 
   strcpy(myworkgroup, lp_workgroup());
+
+  if (strequal(myworkgroup,"*")) {
+    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
+    exit(1);
+  }
 
   set_samba_nb_type();
 
@@ -546,26 +553,21 @@ static void usage(char *pname)
 
   if (!open_sockets(is_daemon,port)) return 1;
 
-  if (*host_file) {
-    load_hosts_file(host_file);
-    DEBUG(3,("Loaded hosts file\n"));
-  }
-
   load_interfaces();
   add_my_subnets(myworkgroup);
 
   add_my_names();
-
-  if (strequal(myworkgroup,"*")) {
-    DEBUG(0,("ERROR: a workgroup name of * is no longer supported\n"));
-    exit(1);
-  }
 
   DEBUG(3,("Checked names\n"));
   
   load_netbios_names();
 
   DEBUG(3,("Loaded names\n"));
+
+  if (*host_file) {
+    load_hosts_file(host_file);
+    DEBUG(3,("Loaded hosts file\n"));
+  }
 
   write_browse_list(time(NULL));
 
