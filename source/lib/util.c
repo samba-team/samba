@@ -2922,7 +2922,7 @@ char *align2(char *q, char *base)
 	return q;
 }
 
-void out_ascii(FILE *f, unsigned char *buf,int len)
+void out_ascii(FILE *f, const unsigned char *buf,int len)
 {
 	int i;
 	for (i=0;i<len;i++)
@@ -2931,9 +2931,9 @@ void out_ascii(FILE *f, unsigned char *buf,int len)
 	}
 }
 
-void out_struct(FILE *f,char *buf1,int len, int per_line)
+void out_struct(FILE *f, const char *buf1,int len, int per_line)
 {
-	unsigned char *buf = (unsigned char *)buf1;
+	const unsigned char *buf = (unsigned char *)buf1;
 	int i;
 
 	if (len<=0)
@@ -2958,9 +2958,9 @@ void out_struct(FILE *f,char *buf1,int len, int per_line)
 	fprintf(f, "\n};\n");    
 }
 
-void out_data(FILE *f,char *buf1,int len, int per_line)
+void out_data(FILE *f, const char *buf1,int len, int per_line)
 {
-	unsigned char *buf = (unsigned char *)buf1;
+	const unsigned char *buf = (const unsigned char *)buf1;
 	int i=0;
 	if (len<=0)
 	{
