@@ -1125,7 +1125,7 @@ void lp_talloc_free(void)
  callers without affecting the source string.
 ********************************************************************/
 
-static char *lp_string(const char *s)
+static const char *lp_string(const char *s)
 {
 #if 0  /* until REWRITE done to make thread-safe */
 	size_t len = s ? strlen(s) : 0;
@@ -1172,7 +1172,7 @@ static char *lp_string(const char *s)
 */
 
 #define FN_GLOBAL_STRING(fn_name,ptr) \
- char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
+ const char *fn_name(void) {return(lp_string(*(char **)(ptr) ? *(char **)(ptr) : ""));}
 #define FN_GLOBAL_CONST_STRING(fn_name,ptr) \
  const char *fn_name(void) {return(*(const char **)(ptr) ? *(const char **)(ptr) : "");}
 #define FN_GLOBAL_LIST(fn_name,ptr) \
@@ -1185,7 +1185,7 @@ static char *lp_string(const char *s)
  int fn_name(void) {return(*(int *)(ptr));}
 
 #define FN_LOCAL_STRING(fn_name,val) \
- char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
+ const char *fn_name(int i) {return(lp_string((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val));}
 #define FN_LOCAL_CONST_STRING(fn_name,val) \
  const char *fn_name(int i) {return (const char *)((LP_SNUM_OK(i) && ServicePtrs[(i)]->val) ? ServicePtrs[(i)]->val : sDefault.val);}
 #define FN_LOCAL_LIST(fn_name,val) \
@@ -1500,7 +1500,7 @@ static int lp_enum(const char *s,const struct enum_list *_enum)
 /* Parametric option has following syntax: 'Type: option = value' */
 /* Returned value is allocated in 'lp_talloc' context */
 
-char *lp_parm_string(int lookup_service, const char *type, const char *option)
+const char *lp_parm_string(int lookup_service, const char *type, const char *option)
 {
 	const char *value = get_parametrics(lookup_service, type, option);
 	
@@ -2990,7 +2990,7 @@ BOOL lp_snum_ok(int iService)
  Auto-load some home services.
 ***************************************************************************/
 
-static void lp_add_auto_services(char *str)
+static void lp_add_auto_services(const char *str)
 {
 	return;
 }
@@ -3325,9 +3325,9 @@ int lp_servicenumber(const char *pszServiceName)
 /*******************************************************************
  A useful volume label function. 
 ********************************************************************/
-char *volume_label(int snum)
+const char *volume_label(int snum)
 {
-	char *ret = lp_volume(snum);
+	const char *ret = lp_volume(snum);
 	if (!*ret)
 		return lp_servicename(snum);
 	return (ret);
@@ -3431,7 +3431,7 @@ void lp_remove_service(int snum)
 
 void lp_copy_service(int snum, const char *new_name)
 {
-	char *oldname = lp_servicename(snum);
+	const char *oldname = lp_servicename(snum);
 	do_section(new_name);
 	if (snum >= 0) {
 		snum = lp_servicenumber(new_name);
@@ -3458,7 +3458,7 @@ int lp_major_announce_version(void)
 {
 	static BOOL got_major = False;
 	static int major_version = DEFAULT_MAJOR_VERSION;
-	char *vers;
+	const char *vers;
 	char *p;
 
 	if (got_major)
@@ -3480,7 +3480,7 @@ int lp_minor_announce_version(void)
 {
 	static BOOL got_minor = False;
 	static int minor_version = DEFAULT_MINOR_VERSION;
-	char *vers;
+	const char *vers;
 	char *p;
 
 	if (got_minor)

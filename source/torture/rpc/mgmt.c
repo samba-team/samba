@@ -173,7 +173,7 @@ BOOL torture_rpc_mgmt(int dummy)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	int i;
-	char *binding = lp_parm_string(-1, "torture", "binding");
+	const char *binding = lp_parm_string(-1, "torture", "binding");
 	struct dcerpc_binding b;
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
