@@ -65,9 +65,6 @@
 #define MSG_SMB_UNLOCK       3005
 
 /* winbind messages */
-#define MSG_WINBIND_FINISHED 4001
-
-/* winbind messages */
 #define MSG_WINBIND_FINISHED     4001
 #define MSG_WINBIND_FORGET_STATE 4002
 
