@@ -20,6 +20,7 @@ main (int argc, char **argv)
     krb5_cc_cursor cursor;
     krb5_creds creds;
     char *str;
+    struct timeval now;
 
     err = krb5_init_context (&context);
     if (err)
@@ -37,6 +38,7 @@ main (int argc, char **argv)
     if (err)
 	abort ();
 
+    printf ("Credentials cache: %s\n", krb5_cc_get_name(context, ccache));
     printf ("\tPrincipal: %s\n\n", str);
     free (str);
 
@@ -44,12 +46,19 @@ main (int argc, char **argv)
     if (err)
 	abort ();
 
+    printf("  %-15s  %-15s  %s\n", "Issued", "Expires", "Principal");
+
+    gettimeofday(&now, NULL);
+
     while (krb5_cc_next_cred (context,
 			      ccache,
 			      &creds,
 			      &cursor) == 0) {
 	printf ("%s  ", printable_time(creds.times.authtime));
-	printf ("%s  ", printable_time(creds.times.endtime));
+	if(creds.times.endtime > now.tv_sec)
+	    printf ("%s  ", printable_time(creds.times.endtime));
+	else
+	    printf ("%-15s  ", ">>>Expired<<<");
 	err = krb5_unparse_name (context, creds.server, &str);
 	if (err)
 	    abort ();
