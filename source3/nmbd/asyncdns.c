@@ -35,16 +35,16 @@ static struct name_record *add_dns_result(struct nmb_name *question, struct in_a
   if (!addr.s_addr) {
     /* add the fail to WINS cache of names. give it 1 hour in the cache */
     DEBUG(3,("add_dns_result: Negative DNS answer for %s\n", qname));
-    add_name_to_subnet(wins_server_subnet,qname,name_type,
-                       NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr);
-    return NULL;
+    (void)add_name_to_subnet( wins_server_subnet, qname, name_type,
+                              NB_ACTIVE, 60*60, DNSFAIL_NAME, 1, &addr );
+    return( NULL );
   }
 
   /* add it to our WINS cache of names. give it 2 hours in the cache */
   DEBUG(3,("add_dns_result: DNS gave answer for %s of %s\n", qname, inet_ntoa(addr)));
 
-  return add_name_to_subnet(wins_server_subnet,qname,name_type,
-                            NB_ACTIVE, 2*60*60, DNS_NAME, 1, &addr);
+  return( add_name_to_subnet( wins_server_subnet, qname, name_type,
+                              NB_ACTIVE, 2*60*60, DNS_NAME, 1, &addr ) );
 }
 
 
