@@ -6,7 +6,8 @@
   endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]", "ncacn_ip_tcp:", "ncalrpc:"),
   authservice("ldap"),
   helpstring("Active Directory Replication"),
-  pointer_default(unique)
+  pointer_default(unique),
+  depends(security)
 ] 
 interface drsuapi
 {
@@ -114,12 +115,12 @@ interface drsuapi
 	/*****************/
 	/* Function 0x02 */
 	typedef [gensize,flag(NDR_PAHEX)] struct {
-		[value(ndr_size_drsuapi_DsReplicaSyncRequest1Info(r, ndr->flags)-4)] uint32 __ndr_size;
-		uint32 unknown1;
-		GUID guid1;
-		uint8 byte_array[28];
-		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string nc_dn;
-	} drsuapi_DsReplicaSyncRequest1Info;
+		[value(ndr_size_drsuapi_DsReplicaObjectIdentifier(r, ndr->flags)-4)] uint32 __ndr_size;
+		[value(ndr_length_dom_sid(&r->sid))]  uint32 __ndr_size_sid;
+		GUID guid;
+		[subcontext_size(28),subcontext(0)] dom_sid sid;
+		[flag(STR_SIZE4|STR_CHARLEN|STR_CONFORMANT)] string dn;
+	} drsuapi_DsReplicaObjectIdentifier;
 
 	typedef bitmap {
 		DRSUAPI_DS_REPLICA_SYNC_ASYNCHRONOUS_OPERATION	= 0x00000001,
@@ -149,7 +150,7 @@ interface drsuapi
 	} drsuapi_DsReplicaSyncOptions;
 
 	typedef struct {
-		drsuapi_DsReplicaSyncRequest1Info *info;
+		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		GUID guid1;
 		astring *string1;
 		drsuapi_DsReplicaSyncOptions options;
@@ -189,7 +190,7 @@ interface drsuapi
 	typedef struct {
 		GUID guid1;
 		GUID guid2;
-		[ref] drsuapi_DsReplicaSyncRequest1Info *sync_req_info1;
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsGetNCChangesUsnTriple usn1;
 		drsuapi_DsReplicaCoursor05Ctr *coursor;
 		uint32 unknown1;
@@ -217,7 +218,7 @@ interface drsuapi
 	typedef struct {
 		GUID guid1;
 		GUID guid2;
-		[ref] drsuapi_DsReplicaSyncRequest1Info *sync_req_info1;
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsGetNCChangesUsnTriple usn1;
 		drsuapi_DsReplicaCoursor05Ctr *coursor;
 		uint32 unknown1;
@@ -249,9 +250,76 @@ interface drsuapi
 	} drsuapi_DsReplicaCoursorEx05Ctr;
 
 	typedef struct {
+		uint32 version;
+		NTTIME_1sec time;
+		GUID guid;
+		hyper usn;
+	} drsuapi_DsReplicaMetaData;
+
+	typedef struct {
+		[range(0,1048576)] uint32 count;
+		[size_is(count)] drsuapi_DsReplicaMetaData meta_data[];
+	} drsuapi_DsReplicaMetaDataCtr;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		[range(0,10485760)] uint32 length;
+		DATA_BLOB *data;
+	} drsuapi_DsReplicaAttributeValue;
+
+	typedef struct {
+		[range(0,10485760)] uint32 num_values;
+		[size_is(num_values)] drsuapi_DsReplicaAttributeValue *values[];
+	} drsuapi_DsReplicaAttributeValueCtr;
+
+	typedef [v1_enum] enum {
+		DRSUAPI_ATTR_objectClass		= 0x00000000,
+		DRSUAPI_ATTR_description		= 0x0000000d,
+		DRSUAPI_ATTR_ntSecurityDescriptor	= 0x00020119,
+		DRSUAPI_ATTR_objectSid			= 0x00090092
+	} drsuapi_DsAttributeId;
+
+	typedef [flag(NDR_PAHEX)] struct {
+		drsuapi_DsAttributeId attid;
+		drsuapi_DsReplicaAttributeValueCtr value_ctr;
+	} drsuapi_DsReplicaAttribute;
+
+	typedef struct {
+		[range(0,1048576)] uint32 num_attributes;
+		[size_is(num_attributes)]  drsuapi_DsReplicaAttribute *attributes[];
+	} drsuapi_DsReplicaAttributeCtr;
+
+	typedef struct {
+		drsuapi_DsReplicaObjectIdentifier *identifier;
+		uint32 unknown1;
+		drsuapi_DsReplicaAttributeCtr attribute_ctr;
+	} drsuapi_DsReplicaObject;
+
+	typedef struct {
+	/* TODO: fix ndr_print for next_info! */
+		[print_option(linked_list_next)]  drsuapi_DsGetNCChangesInfo1 *next;
+		drsuapi_DsReplicaObject object;
+		uint32 unknown1;
+		GUID *guid;
+		drsuapi_DsReplicaMetaDataCtr *meta_data_ctr;
+	} drsuapi_DsGetNCChangesInfo1;
+
+	typedef struct {
 		GUID guid1;
 		GUID guid2;
-		drsuapi_DsReplicaSyncRequest1Info *sync_req_info1;
+		drsuapi_DsReplicaObjectIdentifier *naming_context;
+		drsuapi_DsGetNCChangesUsnTriple usn1;
+		drsuapi_DsGetNCChangesUsnTriple usn2;
+		drsuapi_DsReplicaCoursorEx05Ctr *coursor_ex;
+		drsuapi_DsGetNCChangesRequest_Ctr12 ctr12;
+		uint32 u1[3];
+		drsuapi_DsGetNCChangesInfo1 *info1;
+		uint32 u2;
+	} drsuapi_DsGetNCChangesCtr1;
+
+	typedef struct {
+		GUID guid1;
+		GUID guid2;
+		drsuapi_DsReplicaObjectIdentifier *naming_context;
 		drsuapi_DsGetNCChangesUsnTriple usn1;
 		drsuapi_DsGetNCChangesUsnTriple usn2;
 		drsuapi_DsReplicaCoursorEx05Ctr *coursor_ex;
@@ -265,9 +333,19 @@ interface drsuapi
 	} drsuapi_DsGetNCChangesCtr6;
 
 	typedef struct {
+		uint32 u1;/* decompressed_length ? */
+		uint32 compressed_length;
+		DATA_BLOB *compressed;
+	} drsuapi_DsGetNCChangesCtr7CompressedInfo;
+
+	typedef struct {
+		uint32 u1;
+		uint16 u2; /* enum */
+		drsuapi_DsGetNCChangesCtr7CompressedInfo info;
 	} drsuapi_DsGetNCChangesCtr7;
 
 	typedef [switch_type(int32)] union {
+		[case(1)] drsuapi_DsGetNCChangesCtr1 ctr1;
 		[case(6)] drsuapi_DsGetNCChangesCtr6 ctr6;
 		[case(7)] drsuapi_DsGetNCChangesCtr7 ctr7;
 	} drsuapi_DsGetNCChangesCtr;
@@ -290,12 +368,10 @@ interface drsuapi
 	} drsuapi_DsReplicaUpdateRefsOptions;
 
 	typedef struct {
-		uint32 unknown1;
-		uint32 unknown2;
+		[ref] drsuapi_DsReplicaObjectIdentifier *naming_context;
+		[ref] ascstr *dest_dsa_dns_name;
 		GUID dest_dsa_guid;
 		drsuapi_DsReplicaUpdateRefsOptions options;
-		drsuapi_DsReplicaSyncRequest1Info sync_req_info1;
-		ascstr dest_dsa_dns_name;
 	} drsuapi_DsReplicaUpdateRefsRequest1;
 
 	typedef [switch_type(int32)] union {
@@ -534,10 +610,16 @@ interface drsuapi
 		[size_is(count)] drsuapi_DsGetDCInfo01 *array[];
 	} drsuapi_DsGetDCInfoCtr01;
 
-	typedef [switch_type(int32)] union {
-		[case(1)] drsuapi_DsGetDCInfoCtr1 ctr1;
-		[case(2)] drsuapi_DsGetDCInfoCtr2 ctr2;
-		[case(-1)] drsuapi_DsGetDCInfoCtr01 ctr01;
+	typedef [v1_enum] enum {
+		DRSUAPI_DC_INFO_CTR_1  = 1,
+		DRSUAPI_DC_INFO_CTR_2  = 2,
+		DRSUAPI_DC_INFO_CTR_01 = -1
+	} drsuapi_DsGetDCInfoCtrLevels;
+
+        typedef [switch_type(int32)] union {
+		[case(DRSUAPI_DC_INFO_CTR_1)]  drsuapi_DsGetDCInfoCtr1  ctr1;
+		[case(DRSUAPI_DC_INFO_CTR_2)]  drsuapi_DsGetDCInfoCtr2  ctr2;
+		[case(DRSUAPI_DC_INFO_CTR_01)] drsuapi_DsGetDCInfoCtr01 ctr01;
 	} drsuapi_DsGetDCInfoCtr;
 
 	WERROR drsuapi_DsGetDomainControllerInfo(
