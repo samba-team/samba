@@ -37,10 +37,10 @@
 RCSID("$Id$");
 #endif
 
-#include <des.h>
 #ifdef KRB5
 #include <krb5-types.h>
 #endif
+#include <des.h>
 
 #include <string.h>
 
