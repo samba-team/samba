@@ -41,12 +41,13 @@
 #if 0
 static char sccsid[] = "@(#)popen.c	8.3 (Berkeley) 4/6/94";
 #else
-static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
+static char xrcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 #endif
 #endif /* not lint */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>
+RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
@@ -68,16 +69,16 @@ static char rcsid[] = "$NetBSD: popen.c,v 1.5 1995/04/11 02:45:00 cgd Exp $";
 
 #include <roken.h>
 
-/*
- * Special version of popen which avoids call to shell.  This ensures noone
- * may create a pipe to a hidden program as a side effect of a list or dir
- * command.
+/* 
+ * Special version of popen which avoids call to shell.  This ensures
+ * no one may create a pipe to a hidden program as a side effect of a
+ * list or dir command.
  */
 static int *pids;
 static int fds;
 
 FILE *
-ftpd_popen(char *program, char *type)
+ftpd_popen(char *program, char *type, int do_stderr)
 {
 	char *cp;
 	FILE *iop;
@@ -126,24 +127,25 @@ ftpd_popen(char *program, char *type)
 	iop = NULL;
 	switch(pid = fork()) {
 	case -1:			/* error */
-		(void)close(pdes[0]);
-		(void)close(pdes[1]);
+		close(pdes[0]);
+		close(pdes[1]);
 		goto pfree;
 		/* NOTREACHED */
 	case 0:				/* child */
 		if (*type == 'r') {
 			if (pdes[1] != STDOUT_FILENO) {
 				dup2(pdes[1], STDOUT_FILENO);
-				(void)close(pdes[1]);
+				close(pdes[1]);
 			}
-			dup2(STDOUT_FILENO, STDERR_FILENO); /* stderr too! */
-			(void)close(pdes[0]);
+			if(do_stderr)
+			    dup2(STDOUT_FILENO, STDERR_FILENO);
+			close(pdes[0]);
 		} else {
 			if (pdes[0] != STDIN_FILENO) {
 				dup2(pdes[0], STDIN_FILENO);
-				(void)close(pdes[0]);
+				close(pdes[0]);
 			}
-			(void)close(pdes[1]);
+			close(pdes[1]);
 		}
 		execv(gargv[0], gargv);
 		_exit(1);
@@ -151,10 +153,10 @@ ftpd_popen(char *program, char *type)
 	/* parent; assume fdopen can't fail...  */
 	if (*type == 'r') {
 		iop = fdopen(pdes[0], type);
-		(void)close(pdes[1]);
+		close(pdes[1]);
 	} else {
 		iop = fdopen(pdes[1], type);
-		(void)close(pdes[0]);
+		close(pdes[0]);
 	}
 	pids[fileno(iop)] = pid;
 
@@ -177,7 +179,7 @@ ftpd_pclose(FILE *iop)
 	 */
 	if (pids == 0 || pids[fdes = fileno(iop)] == 0)
 		return (-1);
-	(void)fclose(iop);
+	fclose(iop);
 	sigemptyset(&sigset);
 	sigaddset(&sigset, SIGINT);
 	sigaddset(&sigset, SIGQUIT);

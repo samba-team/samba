@@ -53,7 +53,7 @@ void	delete(char *);
 void	dologout(int);
 void	fatal(char *);
 int	ftpd_pclose(FILE *);
-FILE   *ftpd_popen(char *, char *);
+FILE   *ftpd_popen(char *, char *, int);
 char   *getline(char *, int);
 void	logwtmp(char *, char *, char *);
 void	lreply(int, const char *, ...);
