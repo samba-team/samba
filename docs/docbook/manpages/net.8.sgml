@@ -201,21 +201,29 @@ the remote server using <command>/bin/date</command>. </para>
 </refsect2>
 
 <refsect2>
-<title>[RPC|ADS] JOIN [OLDSTYLE] [-U username[%password]] [options]</title>
+<title>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [options]</title>
 
 <para>
-Join a domain with specified username and password. Password 
-will be prompted if none is specified. If no 
-user name is specified, a domain created in server manager 
-can be joined.
-</para>
+Join a domain.  If the account already exists on the server, and 
+[TYPE] is MEMBER, the machine will attempt to join automatically. 
+(Assuming that the machine has been created in server manager)
+Otherwise, a password will be prompted for, and a new account may
+be created.</param>
 
-<para>Specify [OLDSTYLE] to join the domain using the old 
-style of domain joining - you need to create a trust 
+<para>
+[TYPE] may be PDC, BDC or MEMBER to specify the type of server
+joining the domain.
+</para>
+</refsect2>
+
+<refsect2>
+<title>[RPC] OLDJOIN [options]</title>
+
+<para>Join a domain. Use the OLDJOIN option to join the domain 
+using the old style of domain joining - you need to create a trust 
 account in server manager first.</para>
 </refsect2>
-	
-<refsect2>
+
 <title>[RPC|ADS] USER</title>
 
 <refsect3>
