@@ -114,7 +114,7 @@ static BOOL string_match(const char *tok,const char *s, char *invalid_char)
 	} else if (strequal(tok, "LOCAL")) {	/* local: no dots */
 		if (strchr_m(s, '.') == 0 && !strequal(s, "unknown"))
 			return (True);
-	} else if (!strequal(tok, s)) {   /* match host name or address */
+	} else if (strequal(tok, s)) {   /* match host name or address */
 		return (True);
 	} else if (tok[(tok_len = strlen(tok)) - 1] == '.') {	/* network */
 		if (strncmp(tok, s, tok_len) == 0)
