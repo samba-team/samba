@@ -84,7 +84,6 @@ void *talloc(TALLOC_CTX *t, size_t size)
 /* a talloc version of realloc */
 void *talloc_realloc(TALLOC_CTX *t, void *ptr, size_t size)
 {
-	void *p;
 	struct talloc_chunk *tc;
 
 	for (tc=t->list; tc; tc=tc->next) {
