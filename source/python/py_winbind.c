@@ -428,7 +428,7 @@ static PyObject *py_auth_crap(PyObject *self, PyObject *args, PyObject *kw)
 	ZERO_STRUCT(response);
 
 	if (push_utf8_fstring(request.data.auth_crap.user, username) == -1) {
-		PyErr_SetString("unable to create utf8 string");
+		PyErr_SetString(winbind_error, "unable to create utf8 string");
 		return NULL;
 	}
 
