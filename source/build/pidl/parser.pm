@@ -605,9 +605,13 @@ sub ParseUnionPull($)
 	$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
 	$res .= "\tswitch (*level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}:\n";
+		$res .= "\tcase $el->{CASE}: {\n";
+		my $e2 = $el->{DATA};
+		if ($e2->{POINTERS}) {
+			$res .= "\t\tuint32 _ptr_$e2->{NAME};\n";
+		}
 		ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");		
-		$res .= "\tbreak;\n\n";
+		$res .= "\tbreak; }\n\n";
 	}
 	$res .= "\tdefault:\n";
 	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
