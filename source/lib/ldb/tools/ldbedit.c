@@ -260,7 +260,7 @@ static int do_edit(struct ldb_context *ldb, struct ldb_message **msgs1, int coun
 
 static void usage(void)
 {
-	printf("Usage: ldbedit <options> <expression>\n");
+	printf("Usage: ldbedit <options> <expression> <attributes ...>\n");
 	printf("Options:\n");
 	printf("  -H ldb_url       choose the database (or $LDB_URL)\n");
 	printf("  -s base|sub|one  choose search scope\n");
@@ -281,6 +281,7 @@ static void usage(void)
 	int opt;
 	enum ldb_scope scope = LDB_SCOPE_SUBTREE;
 	const char *editor;
+	const char * const * attrs = NULL;
 
 	ldb_url = getenv("LDB_URL");
 
@@ -342,6 +343,12 @@ static void usage(void)
 			usage();
 		}
 		expression = argv[0];
+		argc--;
+		argv++;
+	}
+
+	if (argc > 0) {
+		attrs = (const char * const *)argv;
 	}
 
 	ldb = ldb_connect(ldb_url, 0, NULL);
@@ -353,7 +360,7 @@ static void usage(void)
 
 	ldb_set_debug_stderr(ldb);
 
-	ret = ldb_search(ldb, basedn, scope, expression, NULL, &msgs);
+	ret = ldb_search(ldb, basedn, scope, expression, attrs, &msgs);
 
 	if (ret == -1) {
 		printf("search failed - %s\n", ldb_errstring(ldb));
