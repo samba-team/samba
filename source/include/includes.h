@@ -434,6 +434,9 @@ typedef int socklen_t;
 #define int32 long
 #elif (SIZEOF_SHORT == 4)
 #define int32 short
+#else
+/* uggh - no 32 bit type?? probably a CRAY. just hope this works ... */
+#define uint32 int
 #endif
 #endif
 
