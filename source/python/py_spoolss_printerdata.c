@@ -156,5 +156,45 @@ PyObject *spoolss_setprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 
 PyObject *spoolss_enumprinterdata(PyObject *self, PyObject *args, PyObject *kw)
 {
-	return NULL;
+	spoolss_policy_hnd_object *hnd = (spoolss_policy_hnd_object *)self;
+	static char *kwlist[] = { NULL };
+	uint32 data_needed, value_needed, ndx = 0, data_size, data_type;
+	char *value, *data;
+	WERROR werror;
+	PyObject *result;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kw, "", kwlist))
+		return NULL;
+
+	/* Get max buffer sizes for value and data */
+
+	werror = cli_spoolss_enumprinterdata(
+		hnd->cli, hnd->mem_ctx, &hnd->pol, ndx, 0, 0,
+		&value_needed, &data_needed, NULL, NULL, NULL, NULL);
+
+	if (!W_ERROR_IS_OK(werror)) {
+		PyErr_SetObject(spoolss_werror, py_werror_tuple(werror));
+		return NULL;
+	}
+
+	/* Iterate over all printerdata */
+
+	result = PyDict_New();
+
+	while (W_ERROR_IS_OK(werror)) {
+		PyObject *obj;
+
+		werror = cli_spoolss_enumprinterdata(
+			hnd->cli, hnd->mem_ctx, &hnd->pol, ndx,
+			value_needed, data_needed, NULL, NULL,
+			&value, &data_type, &data, &data_size); 
+
+		if (py_from_printerdata(&obj, value, data_type, data, 
+					data_size))
+			PyDict_SetItemString(result, value, obj);
+
+		ndx++;
+	}
+
+	return result;
 }
