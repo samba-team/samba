@@ -421,8 +421,8 @@ onto the message queue
 static void switch_message(int type, struct smbsrv_request *req)
 {
 	int flags;
-	uint16_t session_tag;
 	struct smbsrv_connection *smb_conn = req->smb_conn;
+	uint16_t session_tag;
 
 	type &= 0xff;
 
@@ -436,22 +436,28 @@ static void switch_message(int type, struct smbsrv_request *req)
 
 	flags = smb_messages[type].flags;
 
-	/* In share mode security we must ignore the vuid. */
-	session_tag = (lp_security() == SEC_SHARE) ? 
-		UID_FIELD_INVALID : 
-		SVAL(req->in.hdr,HDR_UID);
-
 	req->tcon = conn_find(smb_conn, SVAL(req->in.hdr,HDR_TID));
 
-	/* setup the user context for this request */
-	req->session = smbsrv_session_find(req->smb_conn, session_tag);
+	if (req->session == NULL) {
+		/* setup the user context for this request if it
+		   hasn't already been initialised (to cope with SMB
+		   chaining) */
 
-	/* Ensure this value is replaced in the incoming packet. */
-	SSVAL(req->in.hdr,HDR_UID,session_tag);
+		/* In share mode security we must ignore the vuid. */
+		if (lp_security() == SEC_SHARE) {
+			session_tag = UID_FIELD_INVALID;
+		} else {
+			session_tag = SVAL(req->in.hdr,HDR_UID);
+		}
 
-	if (req->session) {
-		req->session->vuid = session_tag;
+		req->session = smbsrv_session_find(req->smb_conn, session_tag);
+		if (req->session) {
+			req->session->vuid = session_tag;
+		}
+	} else {
+		session_tag = req->session->vuid;
 	}
+
 	DEBUG(3,("switch message %s (task_id %d)\n",smb_fn_name(type), smb_conn->connection->service->model_ops->get_id(req)));
 
 	/* does this protocol need to be run as root? */
