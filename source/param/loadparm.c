@@ -2870,7 +2870,7 @@ BOOL lp_do_parameter(int snum, const char *pszParmName, const char *pszParmValue
 			pstr_sprintf(vfskey, "%s:%s:", 
 				(snum >= 0) ? lp_servicename(snum) : "global", pszParmName);
 			slen = strlen(vfskey);
-			safe_strcat(vfskey, sep+1, sizeof(pstring));
+			pstrcat(vfskey, sep+1);
 			trim_string(vfskey+slen, " ", " ");
 			paramo = smb_xmalloc(sizeof(param_opt_struct));
 			paramo->key = strdup(vfskey);
