@@ -1,43 +1,29 @@
-Copyright (C) 1997-1999 - Samba-Team
+Copyright (C) 1997-2003 Samba-Team
 
 The Samba-Team are committed to an aggressive program to deliver quality
 controlled software to a well defined roadmap.
 
-The current Samba release 2.0.4 is called the "NT Security update".
-
-It correctly implements the Windows NT specific SMB calls,
-and will operate correctly as a client in a Windows NT
-Domain environment.
-
-In addition, the first implementation of the Web-based GUI
-management tool ships with 2.0.0, thus fullfilling some of
-the commitments made in the 1.9.18 release Roadmap document.
-
-Some work has been done on ensuring compatibility with
-Windows NT 5.0 (now Windows 2000 :-) although this is
-a somewhat (slowly) moving target.
+The current Samba Beta series of Samba 3.0.0 is called the "Domain Integration"
+release.
 
 The following development objectives for future releases
-are in place:
-
+are in progress:
 ----------------------------------------------------------------------------
-2.0.x       -   "NT Security update" - Allowing Windows NT Clients to
-                manipulate file security and ownership using native tools.
+Samba-3.0.0		The Domain Integration Release
 
-Note that the "NT Security update" part of the Roadmap has been
-achieved with the Samba 2.0.4 release.
+Samba-3.0.x		Refinments to the User and Group IDMAP facility and
+			general code stabilization work.
 
-2.0.xx      -   "Thin Server" mode, allowing a Samba server to be
-                inserted into a network with no UNIX setup required.
-                Some management capabilities for Samba using native NT tools.
-                Provision of command-line equivalents to native NT tools.
+Samba-3.x.x		Improvements in Management and Migration tools, 
+			the introduction of further integration capabilities.
 
-2.X         -   "Domain Controller" - able to serve as a Windows NT PDC.
+Samba-4			Danger Will Robinson, a big code clean up with major
+			system redesign. More will be announced as this work
+			starts to take shape.
 
-X.XX        -   "Full Domain Integration" - allowing both PDC and BDC modes.
 
-Note that it is a given that the Samba Team will continue to track
-Windows (NT/2000) update releases, ensuring that Samba will work
+Note that it is a given that the Samba-Team will continue to track
+Windows (NT/200x) update releases, ensuring that Samba will work
 well with whatever "Beta" releases Redmond throws our way :-).
 
 You may also note that the release numbers get fuzzier the
