@@ -1655,9 +1655,11 @@ encrypt_internal(krb5_context context,
     if(ret) {
 	memset(p, 0, block_sz);
 	free(p);
+	free_Checksum(&cksum);
 	return ret;
     }
     memcpy(p + et->confoundersize, cksum.checksum.data, cksum.checksum.length);
+    free_Checksum(&cksum);
     ret = _key_schedule(context, &crypto->key);
     if(ret) {
 	memset(p, 0, block_sz);
