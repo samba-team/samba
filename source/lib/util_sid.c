@@ -91,8 +91,9 @@ static const struct {
 	{SID_NAME_DELETED, "Deleted Account"},
 	{SID_NAME_INVALID, "Invalid Account"},
 	{SID_NAME_UNKNOWN, "UNKNOWN"},
+	{SID_NAME_COMPUTER, "Computer"},
 
- 	{SID_NAME_USE_NONE, NULL}
+ 	{0, NULL}
 };
 
 const char *sid_type_lookup(uint32 sid_type) 
