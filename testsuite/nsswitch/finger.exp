@@ -1,5 +1,5 @@
 #
-# @(#) Test builtin domain users resolve using the finger command
+# @(#) Test default domain users resolve using the finger command
 #
 
 load_lib util-defs.exp

@@ -1,5 +1,5 @@
 #
-# @(#) Test builtin domain users resolve using getpwnam()
+# @(#) Test default domain users resolve using getpwnam()
 #
 
 load_lib util-defs.exp
