@@ -37,12 +37,6 @@
  * codepoints in UTF-8).  This may have to change at some point
  **/
 
-/* This is used to get reduce other const warnings to just this fn */
-static void * ads_unconst_ptr(const void *const_ptr)
-{
-	return const_ptr;
-}
-
 /**
  * Connect to the LDAP server
  * @param ads Pointer to an existing ADS_STRUCT
@@ -115,6 +109,81 @@ ADS_STATUS ads_connect(ADS_STRUCT *ads)
 	return ads_sasl_bind(ads);
 }
 
+/*
+  Duplicate a struct berval into talloc'ed memory
+ */
+static struct berval *dup_berval(TALLOC_CTX *ctx, const struct berval *in_val)
+{
+	struct berval *value;
+
+	if (!in_val) return NULL;
+
+	value = talloc_zero(ctx, sizeof(struct berval));
+	if (in_val->bv_len == 0) return value;
+
+	value->bv_len = in_val->bv_len;
+	value->bv_val = talloc_memdup(ctx, in_val->bv_val, in_val->bv_len);
+	return value;
+}
+
+/*
+  Make a values list out of an array of (struct berval *)
+ */
+static struct berval **ads_dup_values(TALLOC_CTX *ctx, 
+				      const struct berval **in_vals)
+{
+	struct berval **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = (struct berval **) talloc_zero(ctx, 
+						(i+1)*sizeof(struct berval *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		values[i] = dup_berval(ctx, in_vals[i]);
+	}
+	return values;
+}
+
+/*
+  UTF8-encode a values list out of an array of (char *)
+ */
+static char **ads_push_strvals(TALLOC_CTX *ctx, const char **in_vals)
+{
+	char **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = (char ** ) talloc_zero(ctx, (i+1)*sizeof(char *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		push_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+	}
+	return values;
+}
+
+/*
+  Pull a (char *) array out of a UTF8-encoded values list
+ */
+static char **ads_pull_strvals(TALLOC_CTX *ctx, const char **in_vals)
+{
+	char **values;
+	int i;
+       
+	if (!in_vals) return NULL;
+	for (i=0; in_vals[i]; i++); /* count values */
+	values = (char **) talloc_zero(ctx, (i+1)*sizeof(char *));
+	if (!values) return NULL;
+
+	for (i=0; in_vals[i]; i++) {
+		pull_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
+	}
+	return values;
+}
 
 /**
  * Do a search with paged results.  cookie must be null on the first
@@ -136,17 +205,45 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 			       int *count, void **cookie)
 {
 	int rc, i, version;
-	char *utf8_exp, *utf8_path;
+	char *utf8_exp, *utf8_path, **search_attrs;
 	LDAPControl PagedResults, NoReferrals, *controls[3], **rcontrols; 
 	BerElement *cookie_be = NULL;
 	struct berval *cookie_bv= NULL;
+	TALLOC_CTX *ctx;
 
 	*res = NULL;
 
+	if (!(ctx = talloc_init()))
+		return ADS_ERROR(LDAP_NO_MEMORY);
+
+	/* 0 means the conversion worked but the result was empty 
+	   so we only fail if it's negative.  In any case, it always 
+	   at least nulls out the dest */
+	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+		rc = LDAP_NO_MEMORY;
+		goto done;
+	}
+
+	if (!attrs || !(*attrs))
+		search_attrs = NULL;
+	else {
+		/* This would be the utf8-encoded version...*/
+		/* if (!(search_attrs = ads_push_strvals(ctx, attrs))) */
+			if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		{
+			rc = LDAP_NO_MEMORY;
+			goto done;
+		}
+	}
+		
+		
 	/* Paged results only available on ldap v3 or later */
 	ldap_get_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-	if (version < LDAP_VERSION3) 
-		return ADS_ERROR(LDAP_NOT_SUPPORTED);
+	if (version < LDAP_VERSION3) {
+		rc =  LDAP_NOT_SUPPORTED;
+		goto done;
+	}
 
 	cookie_be = ber_alloc_t(LBER_USE_DER);
 	if (cookie && *cookie) {
@@ -184,32 +281,23 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 	*/
 	ldap_set_option(ads->ld, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
 
-	if (!push_utf8_allocate((void **) &utf8_exp, exp))
-		utf8_exp = ads_unconst_ptr(exp);
-	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
-		utf8_path = ads_unconst_ptr(bind_path);
-
 	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp, 
-			       ads_unconst_ptr(attrs), 0, controls,
+			       search_attrs, 0, controls,
 			       NULL, NULL, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
-	if (utf8_exp != exp)
-		SAFE_FREE(utf8_exp);
-	if (utf8_path != bind_path)
-		SAFE_FREE(utf8_path);
 	ber_free(cookie_be, 1);
 	ber_bvfree(cookie_bv);
 
 	if (rc) {
 		DEBUG(3,("ldap_search_ext_s(%s) -> %s\n", exp, ldap_err2string(rc)));
-		return ADS_ERROR(rc);
+		goto done;
 	}
 
 	rc = ldap_parse_result(ads->ld, *res, NULL, NULL, NULL,
 					NULL, &rcontrols,  0);
 
 	if (!rcontrols) {
-		return ADS_ERROR(rc);
+		goto done;
 	}
 
 	for (i=0; rcontrols[i]; i++) {
@@ -229,7 +317,12 @@ ADS_STATUS ads_do_paged_search(ADS_STRUCT *ads, const char *bind_path,
 		}
 	}
 	ldap_controls_free(rcontrols);
-			
+
+done:
+	talloc_destroy(ctx);
+	/* if/when we decide to utf8-encode attrs, take out this next line */
+	str_list_free(&search_attrs);
+
 	return ADS_ERROR(rc);
 }
 
@@ -340,30 +433,50 @@ ADS_STATUS ads_do_search(ADS_STRUCT *ads, const char *bind_path, int scope,
 {
 	struct timeval timeout;
 	int rc;
-	char *utf8_exp, *utf8_path;
+	char *utf8_exp, *utf8_path, **search_attrs = NULL;
+	TALLOC_CTX *ctx;
+
+	if (!(ctx = talloc_init()))
+		return ADS_ERROR(LDAP_NO_MEMORY);
+
+	/* 0 means the conversion worked but the result was empty 
+	   so we only fail if it's negative.  In any case, it always 
+	   at least nulls out the dest */
+	if ((push_utf8_talloc(ctx, (void **) &utf8_exp, exp) < 0) ||
+	    (push_utf8_talloc(ctx, (void **) &utf8_path, bind_path) < 0)) {
+		rc = LDAP_NO_MEMORY;
+		goto done;
+	}
+
+	if (!attrs || !(*attrs))
+		search_attrs = NULL;
+	else {
+		/* This would be the utf8-encoded version...*/
+		/* if (!(search_attrs = ads_push_strvals(ctx, attrs)))  */
+		if (!(str_list_copy(&search_attrs, (char **) attrs)))
+		{
+			rc = LDAP_NO_MEMORY;
+			goto done;
+		}
+	}
 
 	timeout.tv_sec = ADS_SEARCH_TIMEOUT;
 	timeout.tv_usec = 0;
 	*res = NULL;
 
-	if (!push_utf8_allocate((void **) &utf8_exp, exp))
-		utf8_exp = ads_unconst_ptr(exp);
-	if (!push_utf8_allocate((void **) &utf8_path, bind_path))
-		utf8_path = ads_unconst_ptr(bind_path);
-
 	rc = ldap_search_ext_s(ads->ld, utf8_path, scope, utf8_exp,
-			       ads_unconst_ptr(attrs), 0, NULL, NULL, 
+			       search_attrs, 0, NULL, NULL, 
 			       &timeout, LDAP_NO_LIMIT, (LDAPMessage **)res);
 
-	if (utf8_exp != exp)
-		SAFE_FREE(utf8_exp);
-	if (utf8_path != bind_path)
-		SAFE_FREE(utf8_path);
 	if (rc == LDAP_SIZELIMIT_EXCEEDED) {
 		DEBUG(3,("Warning! sizelimit exceeded in ldap. Truncating.\n"));
 		rc = 0;
 	}
 
+ done:
+	talloc_destroy(ctx);
+	/* if/when we decide to utf8-encode attrs, take out this next line */
+	str_list_free(&search_attrs);
 	return ADS_ERROR(rc);
 }
 /**
@@ -474,86 +587,13 @@ ADS_MODLIST ads_init_mods(TALLOC_CTX *ctx)
 	return mods;
 }
 
-/*
-  Duplicate a struct berval into talloc'ed memory
- */
-static struct berval *dup_berval(TALLOC_CTX *ctx, struct berval *in_val)
-{
-	struct berval *value;
-
-	if (!in_val) return NULL;
-
-	value = talloc_zero(ctx, sizeof(struct berval));
-	if (in_val->bv_len == 0) return value;
-
-	value->bv_len = in_val->bv_len;
-	value->bv_val = talloc_memdup(ctx, in_val->bv_val, in_val->bv_len);
-	return value;
-}
-
-/*
-  Make a values list out of an array of (struct berval *)
- */
-static struct berval **ads_dup_values(TALLOC_CTX *ctx, struct berval **in_vals)
-{
-	struct berval **values;
-	int i;
-       
-	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (struct berval **) talloc_zero(ctx, 
-						(i+1)*sizeof(struct berval *));
-	if (!values) return NULL;
-
-	for (i=0; in_vals[i]; i++) {
-		values[i] = dup_berval(ctx, in_vals[i]);
-	}
-	return values;
-}
-
-/*
-  UTF8-encode a values list out of an array of (char *)
- */
-static char **ads_push_strvals(TALLOC_CTX *ctx, char **in_vals)
-{
-	char **values;
-	int i;
-       
-	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char ** ) talloc_zero(ctx, (i+1)*sizeof(char *));
-	if (!values) return NULL;
-
-	for (i=0; in_vals[i]; i++) {
-		push_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
-	}
-	return values;
-}
-
-/*
-  Pull a (char *) array out of a UTF8-encoded values list
- */
-static char **ads_pull_strvals(TALLOC_CTX *ctx, char **in_vals)
-{
-	char **values;
-	int i;
-       
-	if (!in_vals) return NULL;
-	for (i=0; in_vals[i]; i++); /* count values */
-	values = (char **) talloc_zero(ctx, (i+1)*sizeof(char *));
-	if (!values) return NULL;
-
-	for (i=0; in_vals[i]; i++) {
-		pull_utf8_talloc(ctx, (void **) &values[i], in_vals[i]);
-	}
-	return values;
-}
 
 /*
   add an attribute to the list, with values list already constructed
 */
 static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
-				  int mod_op, const char *name, void **invals)
+				  int mod_op, const char *name, 
+				  const void **invals)
 {
 	int curmod;
 	LDAPMod **modlist = (LDAPMod **) *mods;
@@ -565,10 +605,10 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	} else {
 		if (mod_op & LDAP_MOD_BVALUES)
 			values = (void **) ads_dup_values(ctx, 
-						   (struct berval **)invals);
+					   (const struct berval **)invals);
 		else
 			values = (void **) ads_push_strvals(ctx, 
-							    (char **) invals);
+						   (const char **) invals);
 	}
 
 	/* find the first empty slot */
@@ -586,7 +626,7 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 		
 	if (!(modlist[curmod] = talloc_zero(ctx, sizeof(LDAPMod))))
 		return ADS_ERROR(LDAP_NO_MEMORY);
-	modlist[curmod]->mod_type = ads_unconst_ptr(name);
+	modlist[curmod]->mod_type = talloc_strdup(ctx, name);
 	if (mod_op & LDAP_MOD_BVALUES)
 		modlist[curmod]->mod_bvalues = (struct berval **) values;
 	else
@@ -606,11 +646,11 @@ static ADS_STATUS ads_modlist_add(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_mod_str(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const char *val)
 {
-	char *values[2] = {ads_unconst_ptr(val), NULL};
+	const char *values[2] = {val, NULL};
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, name, 
-			       (void **) values);
+			       (const void **) values);
 }
 
 /**
@@ -627,7 +667,7 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 	if (!vals)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE, 
-			       ads_unconst_ptr(name), ads_unconst_ptr(vals));
+			       name, (const void **) vals);
 }
 
 /**
@@ -641,11 +681,11 @@ ADS_STATUS ads_mod_strlist(TALLOC_CTX *ctx, ADS_MODLIST *mods,
 ADS_STATUS ads_mod_ber(TALLOC_CTX *ctx, ADS_MODLIST *mods, 
 		       const char *name, const struct berval *val)
 {
-	struct berval *values[2] = {ads_unconst_ptr(val), NULL};
+	const struct berval *values[2] = {val, NULL};
 	if (!val)
 		return ads_modlist_add(ctx, mods, LDAP_MOD_DELETE, name, NULL);
 	return ads_modlist_add(ctx, mods, LDAP_MOD_REPLACE|LDAP_MOD_BVALUES,
-			       name, (void **) values);
+			       name, (const void **) values);
 }
 
 /**
@@ -962,7 +1002,8 @@ void ads_process_results(ADS_STRUCT *ads, void *res,
 			if (string) {
 				utf8_vals = ldap_get_values(ads->ld,
 					       	 (LDAPMessage *)msg, field);
-				str_vals = ads_pull_strvals(ctx, utf8_vals);
+				str_vals = ads_pull_strvals(ctx, 
+						  (const char **) utf8_vals);
 				fn(field, (void **) str_vals, data_area);
 				ldap_value_free(utf8_vals);
 			} else {
