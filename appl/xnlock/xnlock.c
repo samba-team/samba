@@ -56,10 +56,6 @@ static char STRING[] = "****************";
 #define XNLOCK_CTRL 1
 #define XNLOCK_NOCTRL 0
 
-#ifndef min
-#define min(x,y) (((x)<(y))?(x):(y))
-#endif
-
 static XtAppContext	app;
 static Display        *dpy;
 static unsigned short	Width, Height;
