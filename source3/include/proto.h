@@ -341,6 +341,7 @@ struct tm *LocalTime(time_t *t);
 time_t nt_time_to_unix(NTTIME *nt);
 time_t interpret_long_date(char *p);
 void unix_to_nt_time(NTTIME *nt, time_t t);
+void init_nt_time(NTTIME *nt);
 void put_long_date(char *p,time_t t);
 BOOL null_mtime(time_t mtime);
 void put_dos_date(char *buf,int offset,time_t unixdate);

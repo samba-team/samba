@@ -298,13 +298,6 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 {
 	double d;
 
-	if (t==0)
-	{
-		nt->low = 0;
-		nt->high = 0;
-		return;
-	}
-
 	/* this converts GMT to kludge-GMT */
 	t -= LocTimeDiff(t) - serverzone; 
 
@@ -316,6 +309,15 @@ void unix_to_nt_time(NTTIME *nt, time_t t)
 	nt->low  = (uint32)(d - ((double)nt->high)*4.0*(double)(1<<30));
 }
 
+/****************************************************************************
+initialise an NTTIME to -1, which means "unknown" or "don't expire"
+****************************************************************************/
+
+void init_nt_time(NTTIME *nt)
+{
+	nt->high = 0x7FFFFFFF;
+	nt->low = 0xFFFFFFFF;
+}
 
 /****************************************************************************
 take an NTTIME structure, containing high / low time.  convert to unix time.
