@@ -2355,10 +2355,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	SSVAL(params,0,0);
 
-    if (fsp) {
+	if (fsp) {
 		/* the pending modtime overrides the current modtime */
 		sbuf.st_mtime = fsp->pending_modtime;
-    }
+	}
 
 	size = sbuf.st_size;
 	tvs.modtime = sbuf.st_mtime;
@@ -2368,12 +2368,6 @@ static int call_trans2setfilepathinfo(connection_struct *conn, char *inbuf, char
 
 	set_owner = VALID_STAT(sbuf) ? sbuf.st_uid : (uid_t)SMB_UID_NO_CHANGE;
 	set_grp = VALID_STAT(sbuf) ? sbuf.st_gid : (gid_t)SMB_GID_NO_CHANGE;
-
-	if (total_data > 4 && IVAL(pdata,0) == total_data) {
-		/* uggh, EAs for OS2 */
-		DEBUG(4,("Rejecting EA request with total_data=%d\n",total_data));
-		return ERROR_DOS(ERRDOS,ERReasnotsupported);
-	}
 
 	switch (info_level) {
 		case SMB_INFO_STANDARD:
