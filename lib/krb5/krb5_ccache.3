@@ -178,14 +178,17 @@ Kerberos 5 Library (libkrb5, -lkrb5)
 .Sh DESCRIPTION
 The
 .Li krb5_ccache
-structure holding a kerberos credential cache, there is no component
-known inside that is directly referable.
+structure holds a kerberos credential cache.
 .Pp
 The
 .Li krb5_cc_cursor
-structure the current possition in a credential cache when iterating
-over it, there is no component known inside that is directly
-referable.
+structure the holds current position in a credential cache when
+iterating over the cache.
+.Pp
+There is no component inside neither
+.Li krb5_cc_cursor
+nor
+.Li krb5_cc_cursor that is directly referable.
 .Pp
 The
 .Li krb5_creds
@@ -215,7 +218,8 @@ finds and allocates a ccache in
 .Fa id
 from the specification in 
 .Fa residual .
-If the ccache name doesn't contain any colon, interpret it as a file name.
+If the ccache name doesn't contain any colon (:), interpret it as a
+file name.
 Return 0 or an error code.
 .Pp
 .Fn krb5_cc_initialize
@@ -228,7 +232,7 @@ Return 0 or an error code.
 .Fn krb5_cc_close
 stops using the ccache 
 .Fa id
-and free the related resources.
+and frees the related resources.
 Return 0 or an error code.
 .Fn krb5_cc_destroy
 removes the ccache 
@@ -263,6 +267,11 @@ returns the version of
 .Fa id .
 .Pp
 .Fn krb5_cc_register
+Adds a new ccache type with operations 
+.Fa ops ,
+overwriting any existing one if
+.Fa override .
+Return an error code or 0.
 .Pp
 .Fn krb5_cc_remove_cred
 removes the credential identified by
@@ -294,6 +303,7 @@ from
 in
 .Fa creds .
 Return 0 or an error code.
+.Pp
 .Fn krb5_cc_next_cred
 retrieves the next cred pointed to by
 .Fa ( id ,
@@ -303,8 +313,9 @@ in
 and advance
 .Fa cursor .
 Return 0 or an error code.
+.Pp
 .Fn krb5_cc_end_seq_get
-Destroy the cursor
+Destroys the cursor
 .Fa cursor .
 .Sh SEE ALSO
 .Xr krb5 3 ,
