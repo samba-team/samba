@@ -5256,10 +5256,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 *usr,
 
 	bzero(usr->padding1, sizeof(usr->padding1));
 
-	dump_data_pw("user_name:", user_name, sizeof(*user_name));
-
 	copy_unistr2(&(usr->uni_user_name   ), user_name);
-	dump_data_pw("user_name:", &usr->uni_user_name, sizeof(*user_name));
 	copy_unistr2(&(usr->uni_full_name   ), full_name);
 	copy_unistr2(&(usr->uni_home_dir    ), home_dir );
 	copy_unistr2(&(usr->uni_dir_drive   ), dir_drive);
