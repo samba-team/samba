@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2003 Kungliga Tekniska Högskolan
+ * Copyright (c) 2003 - 2004 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -41,12 +41,6 @@ RCSID("$Id$");
 #include <rfc2459_asn1.h>
 #include <cms_asn1.h>
 #include <pkinit_asn1.h>
-
-#define KRB5_AP_ERR_NO_CERT_OR_KEY EINVAL
-#define KRB5_AP_ERR_NO_VALID_CA EINVAL
-#define KRB5_AP_ERR_CERT EINVAL
-#define KRB5_AP_ERR_PRIVATE_KEY EINVAL
-#define KRB5_AP_ERR_OPENSSL EINVAL
 
 #include <openssl/evp.h>
 #include <openssl/x509.h>
@@ -102,7 +96,7 @@ struct pk_principal_mapping {
         (BL) = i2d_##T((S), &p);					\
         if ((BL) <= 0) {						\
            free((B));                                          		\
-           (R) = KRB5_AP_ERR_OPENSSL;					\
+           (R) = ASN1_OVERRUN;						\
         }								\
     }									\
   }									\
@@ -140,7 +134,7 @@ pk_check_pkauthenticator(krb5_context context,
     krb5_timeofday (context, &now);
 
     /* XXX cusec */
-    if (a->ctime == NULL || abs(a->ctime - now) > context->max_skew) {
+    if (a->ctime == 0 || abs(a->ctime - now) > context->max_skew) {
 	krb5_clear_error_string(context);
 	return KRB5KRB_AP_ERR_SKEW;
     }
@@ -319,7 +313,7 @@ generate_dh_keyblock(krb5_context context, pk_client_params *client_params,
 }
 
 static BIGNUM *
-any_to_BN(krb5_context context, const char *field, heim_any *f)
+big_integer_to_BN(krb5_context context, const char *field, heim_big_integer *f)
 {
     unsigned char *p = f->data;
     ASN1_INTEGER *i;
@@ -384,24 +378,24 @@ get_dh_param(krb5_context context, SubjectPublicKeyInfo *dh_key_info,
 	goto out;
     }
     ret = KRB5_BADMSGTYPE;
-    dh->p = any_to_BN(context, "DH prime", &dhparam.p);
+    dh->p = big_integer_to_BN(context, "DH prime", &dhparam.p);
     if (dh->p == NULL)
 	goto out;
-    dh->g = any_to_BN(context, "DH base", &dhparam.g);
+    dh->g = big_integer_to_BN(context, "DH base", &dhparam.g);
     if (dh->g == NULL)
 	goto out;
-    dh->q = any_to_BN(context, "DH p-1 factor", &dhparam.q);
+    dh->q = big_integer_to_BN(context, "DH p-1 factor", &dhparam.q);
     if (dh->g == NULL)
 	goto out;
 
     {
-	heim_any glue;
+	heim_big_integer glue;
 	glue.data = dh_key_info->subjectPublicKey.data;
 	glue.length = dh_key_info->subjectPublicKey.length;
 
-	client_params->dh_public_key = any_to_BN(context,
-						 "subjectPublicKey",
-						 &glue);
+	client_params->dh_public_key = big_integer_to_BN(context,
+							 "subjectPublicKey",
+							 &glue);
 	if (client_params->dh_public_key == NULL) {
 	    krb5_clear_error_string(context);
 	    goto out;
@@ -613,6 +607,7 @@ pk_mk_pa_reply_enckey(krb5_context context,
     krb5_enctype enctype = ETYPE_DES3_CBC_NONE;
     heim_oid *enc_type_oid = NULL;
     X509_NAME *issuer_name;
+    heim_big_integer *serial;
 
     size_t size;
 
@@ -700,12 +695,19 @@ pk_mk_pa_reply_enckey(krb5_context context,
 	krb5_clear_error_string(context);
 	goto out;
     }
-    ri->rid.u.issuerAndSerialNumber.serialNumber = 
-	ASN1_INTEGER_get(
-	    X509_get_serialNumber(client_params->certificate->cert));
-
     ri->rid.u.issuerAndSerialNumber.issuer.data = buf.data;
     ri->rid.u.issuerAndSerialNumber.issuer.length = buf.length;
+
+    serial = &ri->rid.u.issuerAndSerialNumber.serialNumber;
+    OPENSSL_ASN1_MALLOC_ENCODE(ASN1_INTEGER,
+			       serial->data,
+			       serial->length,
+			       X509_get_serialNumber(client_params->certificate->cert),
+			       ret);
+    if (ret) {
+	krb5_clear_error_string(context);
+	goto out;
+    }
 
     {
 	heim_oid *pk_enc_key_oid;
@@ -809,7 +811,7 @@ pk_mk_pa_reply_dh(krb5_context context,
     if (dh_pub_key == NULL) {
 	krb5_set_error_string(context, "BN_to_ASN1_INTEGER() failed (%s)",
 			      ERR_error_string(ERR_get_error(), NULL));
-	ret = KRB5_AP_ERR_OPENSSL;
+	ret = ENOMEM;
 	goto out;
     }
 
