@@ -170,12 +170,13 @@ int main(int argc,char *argv[])
     exit(1);
   }
 
+  init_structs();
+
   if (!lp_load(servicesf,True)) {
     fprintf(stderr, "Can't load %s - run testparm to debug it\n", servicesf);
   }
 
   load_interfaces();
-  init_structs();
   if (!open_sockets()) return(1);
 
   if (!got_bcast)

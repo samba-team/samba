@@ -43,6 +43,12 @@ static void show_connections(void)
 	FILE *f;
 	struct connect_record crec;
 
+	if(!get_myname(myhostname,NULL))
+	{
+	    printf("Failed to get my hostname.\n");
+	    return;
+	}
+
 	if (!lp_load(servicesf,False)) {
 		printf("Can't load %s - run testparm to debug it\n", servicesf);
 		return;
