@@ -104,12 +104,6 @@
  * Static data...
  */
 
-static char ModuleID[] = 
-"ubi_Cache\n\
-\tRevision: 0.0\n\
-\tDate: 1997/12/18 06:24:33 GMT\n\
-\tAuthor: crh\n";
-
 /* -------------------------------------------------------------------------- **
  * Internal functions...
  */
