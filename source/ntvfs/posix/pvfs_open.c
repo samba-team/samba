@@ -55,6 +55,14 @@ static int pvfs_dir_fd_destructor(void *p)
 	struct pvfs_file *f = p;
 	DLIST_REMOVE(f->pvfs->open_files, f);
 	idr_remove(f->pvfs->idtree_fnum, f->fnum);
+
+	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (rmdir(f->name->full_name) != 0) {
+			DEBUG(0,("pvfs_close: failed to rmdir '%s'\n", 
+				 f->name->full_name));
+		}
+	}
+
 	return 0;
 }
 
@@ -106,6 +114,12 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
+	if (fnum == -1) {
+		talloc_free(f);
+		return NT_STATUS_TOO_MANY_OPENED_FILES;
+	}
+
 	f->fnum = fnum;
 	f->fd = -1;
 	f->name = talloc_steal(f, name);
@@ -117,12 +131,6 @@ static NTSTATUS pvfs_open_directory(struct pvfs_state *pvfs,
 	f->locking_key = data_blob(NULL, 0);
 	f->create_options = io->generic.in.create_options;
 	f->share_access = io->generic.in.share_access;
-
-	fnum = idr_get_new(pvfs->idtree_fnum, f, UINT16_MAX);
-	if (fnum == -1) {
-		talloc_free(f);
-		return NT_STATUS_TOO_MANY_OPENED_FILES;
-	}
 
 	DLIST_ADD(pvfs->open_files, f);
 
@@ -196,14 +204,21 @@ static int pvfs_fd_destructor(void *p)
 
 	lck = odb_lock(f, f->pvfs->odb_context, &f->locking_key);
 	if (lck == NULL) {
-		DEBUG(0,("Unabled to lock opendb for close\n"));
+		DEBUG(0,("Unable to lock opendb for close\n"));
 		return 0;
 	}
 
 	status = odb_close_file(lck, f->fnum);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(0,("Unabled to remove opendb entry for '%s' - %s\n", 
+		DEBUG(0,("Unable to remove opendb entry for '%s' - %s\n", 
 			 f->name->full_name, nt_errstr(status)));
+	}
+
+	if (f->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) {
+		if (unlink(f->name->full_name) != 0) {
+			DEBUG(0,("pvfs_close: failed to delete '%s'\n", 
+				 f->name->full_name));
+		}
 	}
 
 	return 0;
@@ -386,6 +401,15 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return pvfs_open_directory(pvfs, req, name, io);
 	}
 
+	create_options = io->generic.in.create_options;
+	share_access   = io->generic.in.share_access;
+	access_mask    = io->generic.in.access_mask;
+
+	/* certain create options are not allowed */
+	if ((create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) &&
+	    !(share_access & NTCREATEX_SHARE_ACCESS_DELETE)) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
 
 	switch (io->generic.in.open_disposition) {
 	case NTCREATEX_DISP_SUPERSEDE:
@@ -481,10 +505,6 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 	}
 
-	create_options = io->generic.in.create_options;
-	share_access   = io->generic.in.share_access;
-	access_mask    = io->generic.in.access_mask;
-
 	/* see if we are allowed to open at the same time as existing opens */
 	status = odb_open_file(lck, fnum, share_access, create_options, access_mask);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -492,22 +512,8 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 		return status;
 	}
 
-	/* do the actual open */
-	fd = open(name->full_name, flags);
-	if (fd == -1) {
-		return pvfs_map_errno(pvfs, errno);
-	}
-
-	/* re-resolve the open fd */
-	status = pvfs_resolve_name_fd(pvfs, fd, name);
-	if (!NT_STATUS_IS_OK(status)) {
-		close(fd);
-		idr_remove(pvfs->idtree_fnum, fnum);
-		return status;
-	}
-
 	f->fnum = fnum;
-	f->fd = fd;
+	f->fd = -1;
 	f->name = talloc_steal(f, name);
 	f->session = req->session;
 	f->smbpid = req->smbpid;
@@ -523,6 +529,20 @@ NTSTATUS pvfs_open(struct ntvfs_module_context *ntvfs,
 	/* setup a destructor to avoid file descriptor leaks on
 	   abnormal termination */
 	talloc_set_destructor(f, pvfs_fd_destructor);
+
+	/* do the actual open */
+	fd = open(name->full_name, flags);
+	if (fd == -1) {
+		return pvfs_map_errno(pvfs, errno);
+	}
+
+	f->fd = fd;
+
+	/* re-resolve the open fd */
+	status = pvfs_resolve_name_fd(pvfs, fd, name);
+	if (!NT_STATUS_IS_OK(status)) {
+		return status;
+	}
 
 	io->generic.out.oplock_level  = NO_OPLOCK;
 	io->generic.out.fnum          = f->fnum;
@@ -618,4 +638,32 @@ NTSTATUS pvfs_exit(struct ntvfs_module_context *ntvfs,
 	}
 
 	return NT_STATUS_OK;
+}
+
+
+/*
+  change the create options on an already open file
+*/
+NTSTATUS pvfs_change_create_options(struct pvfs_state *pvfs,
+				    struct smbsrv_request *req, 
+				    struct pvfs_file *f, uint32_t create_options)
+{
+	struct odb_lock *lck;
+	NTSTATUS status;
+
+	if (f->create_options == create_options) {
+		return NT_STATUS_OK;
+	}
+
+	lck = odb_lock(req, pvfs->odb_context, &f->locking_key);
+	if (lck == NULL) {
+		return NT_STATUS_INTERNAL_DB_CORRUPTION;
+	}
+
+	status = odb_set_create_options(lck, f->fnum, create_options);
+	if (NT_STATUS_IS_OK(status)) {
+		f->create_options = create_options;
+	}
+
+	return status;
 }

@@ -169,6 +169,17 @@ static BOOL share_conflict(struct odb_entry *e1, struct odb_entry *e2)
 		return True;
 	}
 
+	if ((e1->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE) ||
+	    (e2->create_options & NTCREATEX_OPTIONS_DELETE_ON_CLOSE)) {
+		return True;
+	}
+
+	if ((e1->access_mask & STD_RIGHT_DELETE_ACCESS) &&
+	    !(e2->share_access & NTCREATEX_SHARE_ACCESS_DELETE)) {
+		return True;
+	}
+	    
+
 	return False;
 }
 
@@ -256,7 +267,8 @@ NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
 		    odb->server == elist[i].server &&
 		    odb->tid == elist[i].tid) {
 			if (i < count-1) {
-				memmove(elist+i, elist+i+1, count - (i+1));
+				memmove(elist+i, elist+i+1, 
+					(count - (i+1)) * sizeof(struct odb_entry));
 			}
 			break;
 		}
@@ -275,6 +287,48 @@ NTSTATUS odb_close_file(struct odb_lock *lck, uint16_t fnum)
 		if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
 			status = NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
+	}
+
+	free(dbuf.dptr);
+
+	return status;
+}
+
+
+/*
+  update create options on an open file
+*/
+NTSTATUS odb_set_create_options(struct odb_lock *lck, 
+				uint16_t fnum, uint32_t create_options)
+{
+	struct odb_context *odb = lck->odb;
+	TDB_DATA dbuf;
+	struct odb_entry *elist;
+	int i, count;
+	NTSTATUS status;
+
+	dbuf = tdb_fetch(odb->w->tdb, lck->key);
+	if (dbuf.dptr == NULL) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
+
+	elist = (struct odb_entry *)dbuf.dptr;
+	count = dbuf.dsize / sizeof(struct odb_entry);
+
+	/* find the entry, and modify it */
+	for (i=0;i<count;i++) {
+		if (fnum == elist[i].fnum &&
+		    odb->server == elist[i].server &&
+		    odb->tid == elist[i].tid) {
+			elist[i].create_options = create_options;
+			break;
+		}
+	}
+
+	if (tdb_store(odb->w->tdb, lck->key, dbuf, TDB_REPLACE) != 0) {
+		status = NT_STATUS_INTERNAL_DB_CORRUPTION;
+	} else {
+		status = NT_STATUS_OK;
 	}
 
 	free(dbuf.dptr);

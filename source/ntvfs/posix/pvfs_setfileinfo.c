@@ -33,6 +33,7 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 	struct pvfs_state *pvfs = ntvfs->private_data;
 	struct utimbuf unix_times;
 	struct pvfs_file *f;
+	uint32_t create_options;
 
 	f = pvfs_find_fd(pvfs, req, info->generic.file.fnum);
 	if (!f) {
@@ -65,6 +66,18 @@ NTSTATUS pvfs_setfileinfo(struct ntvfs_module_context *ntvfs,
 			return NT_STATUS_ACCESS_DENIED;
 		}
   		break;
+	case RAW_SFILEINFO_DISPOSITION_INFO:
+		if (!(f->access_mask & STD_RIGHT_DELETE_ACCESS)) {
+			return NT_STATUS_ACCESS_DENIED;
+		}
+		create_options = f->create_options;
+		if (info->disposition_info.in.delete_on_close) {
+			create_options |= NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+		} else {
+			create_options &= ~NTCREATEX_OPTIONS_DELETE_ON_CLOSE;
+		}
+		return pvfs_change_create_options(pvfs, req, f, create_options);
 	}
+
 	return NT_STATUS_OK;
 }
