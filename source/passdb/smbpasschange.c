@@ -41,7 +41,9 @@ static BOOL add_new_user(char *user_name, uid_t uid, int local_flags,
 	
 	if(local_flags & LOCAL_DISABLE_USER) {
 		new_smb_pwent.acct_ctrl |= ACB_DISABLED;
-	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
+	}
+	
+	if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		new_smb_pwent.acct_ctrl |= ACB_PWNOTREQ;
 	} else {
 		new_smb_pwent.smb_passwd = new_p16;

@@ -1826,25 +1826,37 @@ static BOOL api_samr_query_dom_info(pipes_struct *p)
 	return True;
 }
 
+
 /*******************************************************************
  api_samr_create_user
  ********************************************************************/
 static BOOL api_samr_create_user(pipes_struct *p)
 {
-	uint32 status = 0;
 	struct sam_passwd *sam_pass;
 	fstring mach_acct;
+	pstring err_str;
+	pstring msg_str;
+	int local_flags=0;
+	
 	prs_struct *data = &p->in_data.data;
 	prs_struct *rdata = &p->out_data.rdata;
-	int i;
 
 	SAMR_Q_CREATE_USER q_u;
 	SAMR_R_CREATE_USER r_u;
+
+	ZERO_STRUCT(q_u);
+	ZERO_STRUCT(r_u);
 
 	DEBUG(5,("api_samr_create_user: %d\n", __LINE__));
 
 	/* grab the samr create user */
 	samr_io_q_create_user("", &q_u, data, 0);
+
+	/* find the policy handle.  open a policy on it. */
+	if ((find_lsa_policy_by_hnd(&q_u.pol) == -1)) {
+		r_u.status = NT_STATUS_INVALID_HANDLE;
+		goto out;
+	}
 
 	/* find the machine account: tell the caller if it exists.
 	   lkclXXXX i have *no* idea if this is a problem or not
@@ -1853,31 +1865,58 @@ static BOOL api_samr_create_user(pipes_struct *p)
 	 */
 
 	fstrcpy(mach_acct, dos_unistrn2(q_u.uni_mach_acct.buffer, q_u.uni_mach_acct.uni_str_len));
+	strlower(mach_acct);
 
 	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root();
-
 	if (sam_pass != NULL) {
 		/* machine account exists: say so */
-		status = 0xC0000000 | NT_STATUS_USER_EXISTS;
-	} else {
-		/* this could cause trouble... */
-		DEBUG(0,("trouble!\n"));
-		status = 0;
+		r_u.status = NT_STATUS_USER_EXISTS;
+		goto out;
 	}
 
-	/* set up the SAMR create_user response */
-	memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
-	if (status == 0) {
-		for (i = 4; i < POL_HND_SIZE; i++) {
-			r_u.pol.data[i] = i+1;
-		}
+	/* get a (unique) handle.  open a policy on it. */
+	if (!open_lsa_policy_hnd(&r_u.pol)) {
+		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		goto out;
 	}
 
-	init_dom_rid4(&(r_u.rid4), 0x0030, 0, 0);
-	r_u.status    = status;
+	local_flags=LOCAL_ADD_USER|LOCAL_DISABLE_USER|LOCAL_SET_NO_PASSWORD;
+	local_flags|= (q_u.acb_info & ACB_WSTRUST) ? LOCAL_TRUST_ACCOUNT:0;
 
+	if (!local_password_change(mach_acct, local_flags, NULL, err_str, sizeof(err_str), msg_str, sizeof(msg_str))) {
+		DEBUG(0, ("%s\n", err_str));
+		r_u.status = NT_STATUS_ACCESS_DENIED;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	become_root();
+	sam_pass = getsam21pwnam(mach_acct);
+	unbecome_root();
+	if (sam_pass == NULL) {
+		/* account doesn't exist: say so */
+		r_u.status = NT_STATUS_ACCESS_DENIED;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	/* associate the RID with the (unique) handle. */
+	if (!set_lsa_policy_samr_rid(&r_u.pol, sam_pass->user_rid)) {
+		/* oh, whoops.  don't know what error message to return, here */
+		r_u.status = NT_STATUS_OBJECT_NAME_NOT_FOUND;
+		close_lsa_policy_hnd(&r_u.pol);
+		memset((char *)r_u.pol.data, '\0', POL_HND_SIZE);
+		goto out;
+	}
+
+	r_u.unknown_0=0x000703ff;
+	r_u.user_rid=sam_pass->user_rid;
+
+ out:	
 	/* store the response in the SMB stream */
 	if(!samr_io_r_create_user("", &r_u, rdata, 0))
 		return False;
