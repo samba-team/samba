@@ -244,7 +244,6 @@ typedef struct
 	BOOL bStatCache;
 	BOOL bKernelOplocks;
 	BOOL bAllowTrustedDomains;
-	BOOL bRestrictAnonymous;
 	BOOL bLanmanAuth;
 	BOOL bNTLMAuth;
 	BOOL bDebugHiresTimestamp;
@@ -256,6 +255,7 @@ typedef struct
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
 	BOOL bUseSpnego;
+	int restrict_anonymous;
 }
 global;
 
@@ -706,7 +706,7 @@ static struct parm_struct parm_table[] = {
 	{"password level", P_INTEGER, P_GLOBAL, &Globals.pwordlevel, NULL, NULL, 0},
 	{"username level", P_INTEGER, P_GLOBAL, &Globals.unamelevel, NULL, NULL, 0},
 	{"unix password sync", P_BOOL, P_GLOBAL, &Globals.bUnixPasswdSync, NULL, NULL, 0},
-	{"restrict anonymous", P_BOOL, P_GLOBAL, &Globals.bRestrictAnonymous, NULL, NULL, 0},
+	{"restrict anonymous", P_INTEGER, P_GLOBAL, &Globals.restrict_anonymous, NULL, NULL, 0},
 	{"lanman auth", P_BOOL, P_GLOBAL, &Globals.bLanmanAuth, NULL, NULL, 0},
 	{"ntlm auth", P_BOOL, P_GLOBAL, &Globals.bNTLMAuth, NULL, NULL, 0},
 	
@@ -1287,7 +1287,7 @@ static void init_globals(void)
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
-	Globals.bRestrictAnonymous = False;
+	Globals.restrict_anonymous = 0;
 	Globals.bLanmanAuth = True;	/* Do use the LanMan hash if it is available */
 	Globals.bNTLMAuth = True;	/* Do use NTLMv1 if it is available (otherwise NTLMv2) */
 	Globals.map_to_guest = 0;	/* By Default, "Never" */
@@ -1557,7 +1557,7 @@ FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
 FN_GLOBAL_BOOL(lp_allow_trusted_domains, &Globals.bAllowTrustedDomains)
-FN_GLOBAL_BOOL(lp_restrict_anonymous, &Globals.bRestrictAnonymous)
+FN_GLOBAL_INTEGER(lp_restrict_anonymous, &Globals.restrict_anonymous)
 FN_GLOBAL_BOOL(lp_lanman_auth, &Globals.bLanmanAuth)
 FN_GLOBAL_BOOL(lp_ntlm_auth, &Globals.bNTLMAuth)
 FN_GLOBAL_BOOL(lp_host_msdfs, &Globals.bHostMSDfs)
