@@ -249,7 +249,7 @@ static BOOL init_group_mapping(void)
 
 /****************************************************************************
 ****************************************************************************/
-BOOL add_mapping_entry(GROUP_MAP *map, int flag)
+static BOOL add_mapping_entry(GROUP_MAP *map, int flag)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key, buf;
@@ -505,7 +505,7 @@ BOOL remove_privilege(PRIVILEGE_SET *priv_set, LUID_ATTR set)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
+static BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -569,7 +569,7 @@ BOOL get_group_map_from_sid(DOM_SID sid, GROUP_MAP *map, BOOL with_priv)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
+static BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -634,7 +634,7 @@ BOOL get_group_map_from_gid(gid_t gid, GROUP_MAP *map, BOOL with_priv)
  Return the sid and the type of the unix group.
 ****************************************************************************/
 
-BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
+static BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
 	fstring string_sid;
@@ -701,7 +701,7 @@ BOOL get_group_map_from_ntname(char *name, GROUP_MAP *map, BOOL with_priv)
  Remove a group mapping entry.
 ****************************************************************************/
 
-BOOL group_map_remove(DOM_SID sid)
+static BOOL group_map_remove(DOM_SID sid)
 {
 	TDB_DATA kbuf, dbuf;
 	pstring key;
@@ -736,7 +736,7 @@ BOOL group_map_remove(DOM_SID sid)
  Enumerate the group mapping.
 ****************************************************************************/
 
-BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
+static BOOL enum_group_mapping(enum SID_NAME_USE sid_name_use, GROUP_MAP **rmap,
 			int *num_entries, BOOL unix_only, BOOL with_priv)
 {
 	TDB_DATA kbuf, dbuf, newkey;
