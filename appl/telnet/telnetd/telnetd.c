@@ -169,7 +169,7 @@ main(int argc, char **argv)
     highpty = getnpty();
 #endif /* CRAY */
 
-    while ((ch = getopt(argc, argv, valid_opts)) != EOF) {
+    while ((ch = getopt(argc, argv, valid_opts)) != -1) {
 	switch(ch) {
 
 #ifdef	AUTHENTICATION

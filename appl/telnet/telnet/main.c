@@ -161,7 +161,7 @@ main(int argc, char **argv)
 	autologin = -1;
 
 	while((ch = getopt(argc, argv,
-			   "78DEKLS:X:abcde:fFk:l:n:rxG")) != EOF) {
+			   "78DEKLS:X:abcde:fFk:l:n:rxG")) != -1) {
 		switch(ch) {
 		case '8':
 			eight = 3;	/* binary output and input */
