@@ -118,9 +118,9 @@ NTSTATUS sam_init_user(SAM_USER_HANDLE **user)
 }
 
 /**
- * Free the contets of the SAM_USER_HANDLE, but not the structure.
+ * Free the contents of the SAM_USER_HANDLE, but not the structure.
  *
- * Also wipes the LM and NT hashes and plaintext passwrod from 
+ * Also wipes the LM and NT hashes and plaintext password from 
  * memory.
  *
  * @param user SAM_USER_HANDLE to free members of.
