@@ -145,7 +145,8 @@ init(int argc, char **argv)
 	const char *realm = argv[i];
 
 	/* Create `krbtgt/REALM' */
-	krb5_make_principal(context, &princ, realm, "krbtgt", realm, NULL);
+	krb5_make_principal(context, &princ, realm,
+			    KRB5_TGS_NAME, realm, NULL);
 	if (realm_max_life == NULL) {
 	    max_life = 0;
 	    edit_deltat ("Realm max ticket life", &max_life, NULL, 0);
@@ -184,6 +185,14 @@ init(int argc, char **argv)
 			    KRB5_KDB_DISALLOW_TGT_BASED|
 			    KRB5_KDB_PWCHANGE_SERVICE);
 
+	krb5_free_principal(context, princ);
+
+	/* Create `kadmin/hprop' for database propagation */
+	krb5_make_principal(context, &princ, realm,
+			    "kadmin", "hprop", NULL);
+	create_random_entry(princ, 60*60, 60*60,
+			    KRB5_KDB_REQUIRES_PRE_AUTH|
+			    KRB5_KDB_DISALLOW_TGT_BASED);
 	krb5_free_principal(context, princ);
 
 	/* Create `default' */
