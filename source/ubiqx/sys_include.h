@@ -38,8 +38,8 @@
  * used before the headers that define them.  These headers are not needed
  * in the ubiqx modules anyway.
  */
-#define _NAMESERV_H_
 #define _PROTO_H_
+#define _NAMESERV_H_
 
 /* The main Samba system-adaptive header file.
  */

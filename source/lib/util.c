@@ -404,6 +404,46 @@ void putip(void *dest,void *src)
 }
 
 
+#define TRUNCATE_NETBIOS_NAME 1
+
+/*******************************************************************
+ convert, possibly using a stupid microsoft-ism which has destroyed
+ the transport independence of netbios (for CIFS vendors that usually
+ use the Win95-type methods, not for NT to NT communication, which uses
+ DCE/RPC and therefore full-length unicode strings...) a dns name into
+ a netbios name.
+
+ the netbios name (NOT necessarily null-terminated) is truncated to 15
+ characters.
+
+ ******************************************************************/
+char *dns_to_netbios_name(char *dns_name)
+{
+	static char netbios_name[16];
+	int i;
+	StrnCpy(netbios_name, dns_name, 15);
+	netbios_name[15] = 0;
+	
+#ifdef TRUNCATE_NETBIOS_NAME
+	/* ok.  this is because of a stupid microsoft-ism.  if the called host
+	   name contains a '.', microsoft clients expect you to truncate the
+	   netbios name up to and including the '.'  this even applies, by
+	   mistake, to workgroup (domain) names, which is _really_ daft.
+	 */
+	for (i = 15; i >= 0; i--)
+	{
+		if (netbios_name[i] == '.')
+		{
+			netbios_name[i] = 0;
+			break;
+		}
+	}
+#endif /* TRUNCATE_NETBIOS_NAME */
+
+	return netbios_name;
+}
+
+
 /****************************************************************************
 interpret the weird netbios "name". Return the name type
 ****************************************************************************/

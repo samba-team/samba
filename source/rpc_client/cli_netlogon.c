@@ -30,6 +30,7 @@
 #include "includes.h"
 
 extern int DEBUGLEVEL;
+extern pstring scope;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
 
@@ -474,8 +475,8 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
                           unsigned char orig_trust_passwd_hash[16],
                           unsigned char new_trust_passwd_hash[16])
 {
-  struct in_addr dest_ip;
   struct cli_state cli;
+  struct nmb_name calling, called;
 
   ZERO_STRUCT(cli);
   if(cli_initialise(&cli) == False) {
@@ -483,24 +484,29 @@ static BOOL modify_trust_password( char *domain, char *remote_machine,
     return False;
   }
 
-  if(!resolve_name( remote_machine, &dest_ip)) {
+  if(!resolve_name( remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: Can't resolve address for %s\n", remote_machine));
     return False;
   }
 
-  if (ismyip(dest_ip)) {
+  if (ismyip(cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: Machine %s is one of our addresses. Cannot add \
 to ourselves.\n", remote_machine));
     return False;
   }
 
-  if (!cli_connect(&cli, remote_machine, &dest_ip)) {
+  if (!cli_connect(&cli, remote_machine, &cli.dest_ip)) {
     DEBUG(0,("modify_trust_password: unable to connect to SMB server on \
 machine %s. Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     return False;
   }
     
-  if (!cli_session_request(&cli, remote_machine, 0x20, global_myname)) {
+  
+	make_nmb_name(&calling, global_myname , 0x0 , scope);
+	make_nmb_name(&called , remote_machine, 0x20, scope);
+
+	if (!cli_session_request(&cli, &calling, &called))
+	{
     DEBUG(0,("modify_trust_password: machine %s rejected the session setup. \
 Error was : %s.\n", remote_machine, cli_errstr(&cli) ));
     cli_shutdown(&cli);

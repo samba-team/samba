@@ -97,6 +97,41 @@ void E_md4hash(uchar *passwd, uchar *p16)
 	mdfour(p16, (unsigned char *)wpwd, len);
 }
 
+/* Does both the NT and LM owfs of a user's password */
+void nt_lm_owf_gen(char *pwd, uchar nt_p16[16], uchar p16[16])
+{
+	char passwd[130];
+	StrnCpy(passwd, pwd, sizeof(passwd)-1);
+
+	/* Calculate the MD4 hash (NT compatible) of the password */
+	memset(nt_p16, '\0', 16);
+	E_md4hash((uchar *)passwd, nt_p16);
+
+	/* Mangle the passwords into Lanman format */
+	passwd[14] = '\0';
+	strupper(passwd);
+
+	/* Calculate the SMB (lanman) hash functions of the password */
+
+	memset(p16, '\0', 16);
+	E_P16((uchar *) passwd, (uchar *)p16);
+
+	/* clear out local copy of user's password (just being paranoid). */
+	bzero(passwd, sizeof(passwd));
+}
+
+/* Does the des encryption from the NT or LM MD4 hash. */
+void SMBOWFencrypt(uchar passwd[16], uchar *c8, uchar p24[24])
+{
+	uchar p21[21];
+ 
+	memset(p21,'\0',21);
+ 
+	memcpy(p21, passwd, 16);    
+	E_P24(p21, c8, p24);
+}
+
+
 /* Does the NT MD4 hash then des encryption. */
  
 void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24)

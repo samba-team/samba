@@ -74,7 +74,7 @@ FLAGS  = $(FLAGS5) $(PASSWD_FLAGS)
 
 SPROGS = bin/smbd bin/nmbd bin/swat
 PROGS1 = bin/smbclient bin/testparm bin/testprns bin/smbrun bin/smbstatus 
-PROGS2 = bin/smbpasswd bin/make_smbcodepage
+PROGS2 = bin/rpcclient bin/smbpasswd bin/make_smbcodepage
 PROGS = $(PROGS1) $(PROGS2) bin/nmblookup bin/make_printerdef 
 
 SCRIPTS = script/smbtar script/addtosmbpass
@@ -89,7 +89,7 @@ LIB_OBJ = lib/charcnv.o lib/charset.o lib/debug.o lib/fault.o \
           lib/membuffer.o lib/netmask.o lib/pidfile.o lib/replace.o \
           lib/signal.o lib/slprintf.o lib/system.o lib/time.o lib/ufc.o \
           lib/util.o lib/genrand.o lib/username.o lib/access.o lib/smbrun.o \
-	  lib/bitmap.o
+	  lib/bitmap.o 
 
 UBIQX_OBJ = ubiqx/ubi_BinTree.o ubiqx/ubi_Cache.o ubiqx/ubi_SplayTree.o \
             ubiqx/ubi_dLinkList.o ubiqx/ubi_sLinkList.o
@@ -98,7 +98,7 @@ PARAM_OBJ = param/loadparm.o param/params.o
 
 LIBSMB_OBJ = libsmb/clientgen.o libsmb/namequery.o libsmb/nmblib.o \
              libsmb/nterr.o libsmb/smbdes.o libsmb/smbencrypt.o \
-             libsmb/smberr.o libsmb/credentials.o 
+             libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o
 
 RPC_SERVER_OBJ = rpc_server/srv_ldap_helpers.o rpc_server/srv_lsa.o \
                  rpc_server/srv_lsa_hnd.o rpc_server/srv_netlog.o \
@@ -113,7 +113,7 @@ RPC_PARSE_OBJ = rpc_parse/parse_lsa.o rpc_parse/parse_misc.o \
                 rpc_parse/parse_wks.o
 
 RPC_CLIENT_OBJ = rpc_client/cli_login.o rpc_client/cli_netlogon.o \
-                 rpc_client/cli_pipe.o 
+                 rpc_client/cli_pipe.o rpc_client/cli_lsarpc.o
 
 LOCKING_OBJ = locking/locking.o locking/locking_shm.o locking/locking_slow.o \
               locking/shmem.o locking/shmem_sysv.o
@@ -177,6 +177,15 @@ TESTPRNS_OBJ = utils/testprns.o $(PARAM_OBJ) $(PRINTING_OBJ) $(UBIQX_OBJ) \
 SMBPASSWD_OBJ = utils/smbpasswd.o $(PARAM_OBJ) $(LIBSMB_OBJ) $(PASSDB_OBJ) \
                 $(UBIQX_OBJ) $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(LIB_OBJ)
 
+RPCCLIENT_OBJ = rpcclient/rpcclient.o \
+             rpcclient/cmd_lsarpc.o \
+             $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ) \
+             $(RPC_CLIENT_OBJ) $(RPC_PARSE_OBJ) $(PASSDB_OBJ)
+#             rpcclient/cmd_netlogon.o \
+#             rpcclient/cmd_samr.o \
+#             rpcclient/cmd_srvsvc.o \
+#             rpcclient/cmd_wkssvc.o \
+
 CLIENT_OBJ = client/client.o client/clientutil.o client/clitar.o \
              $(PARAM_OBJ) $(LIBSMB_OBJ) $(UBIQX_OBJ) $(LIB_OBJ)
 
@@ -186,7 +195,7 @@ NMBLOOKUP_OBJ = utils/nmblookup.o $(PARAM_OBJ) $(UBIQX_OBJ) \
 SMBTORTURE_OBJ = utils/torture.o $(LIBSMB_OBJ) $(PARAM_OBJ) \
                  $(UBIQX_OBJ) $(LIB_OBJ)
 
-PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ)
+PROTO_OBJ = $(SMBD_OBJ) $(NMBD_OBJ) $(SWAT_OBJ) $(CLIENT_OBJ) $(RPCCLIENT_OBJ)
 
 ######################################################################
 # now the rules...
@@ -223,6 +232,10 @@ bin/swat: $(SWAT_OBJ)
 bin/smbrun: $(SMBRUN_OBJ)
 	@echo Linking $@
 	@$(CC) $(FLAGS) -o $@ $(SMBRUN_OBJ) $(LIBS)
+
+bin/rpcclient: $(RPCCLIENT_OBJ) 
+	@echo Linking $@
+	@$(CC) $(FLAGS) -o $@ $(RPCCLIENT_OBJ) $(LIBS)
 
 bin/smbclient: $(CLIENT_OBJ) 
 	@echo Linking $@

@@ -81,13 +81,8 @@ typedef struct pipes_struct
 	uint32 hdr_offsets;
 	uint32 frag_len_left;
 	uint32 next_frag_start;
-} pipes_struct;
 
-struct acct_info
-{  
-	fstring acct_name; /* account name */
-	uint32 smb_userid; /* domain-relative RID */
-};
+} pipes_struct;
 
 struct api_struct
 {  
