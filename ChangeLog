@@ -1,3 +1,7 @@
+2000-07-28  Assar Westerlund  <assar@juguete.sics.se>
+
+	* Release 0.3a
+
 2000-07-27  Assar Westerlund  <assar@sics.se>
 
 	* kdc/hprop.c (dump_database): write an empty message to signal
