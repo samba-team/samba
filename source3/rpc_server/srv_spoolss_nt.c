@@ -5847,7 +5847,6 @@ static WERROR update_printer_sec(POLICY_HND *handle, uint32 level,
 				 pipes_struct *p, SEC_DESC_BUF *secdesc_ctr)
 {
 	SEC_DESC_BUF *new_secdesc_ctr = NULL, *old_secdesc_ctr = NULL;
-	struct current_user user;
 	WERROR result;
 	int snum;
 
