@@ -782,7 +782,7 @@ BOOL spoolss_io_devmode(char *desc, prs_struct *ps, int depth, DEVICEMODE *devmo
 
 	while ((available_space > 0) && (i < DM_NUM_OPTIONAL_FIELDS))
 	{
-		DEBUG(10, ("spoolss_io_devmode: [%d] bytes left to parse in devmode\n", available_space));
+		DEBUG(11, ("spoolss_io_devmode: [%d] bytes left to parse in devmode\n", available_space));
 		if (!prs_uint32(opt_fields[i].name, ps, depth, opt_fields[i].field))
 			return False;
 		available_space -= sizeof(uint32);

@@ -900,7 +900,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 	TALLOC_CTX		 *mem_ctx = notify_ctr_getctx( ctr );
 	SPOOLSS_NOTIFY_MSG_GROUP *msg_group = notify_ctr_getgroup( ctr, idx );
 	SPOOLSS_NOTIFY_MSG       *messages;
-	
+	int			 sending_msg_count;
 	
 	if ( !msg_group ) {
 		DEBUG(5,("send_notify2_changes() called with no msg group!\n"));
@@ -949,6 +949,8 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 		
 		/* build the array of change notifications */
 		
+		sending_msg_count = 0;
+		
 		for ( i=0; i<msg_group->num_msgs; i++ ) {
 			SPOOLSS_NOTIFY_MSG	*msg = &messages[i];
 			
@@ -956,6 +958,8 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 
 			if (!is_monitoring_event(p, msg->type, msg->field))
 				continue;
+				
+			sending_msg_count++;
 			
 			
 			DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
@@ -1012,9 +1016,11 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			data_len++;
 		}
 
-		/* send last bit */
-		cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
-			data_len, data, p->notify.change, 0 );
+		if ( sending_msg_count ) {
+			/* send last bit */
+			cli_spoolss_rrpcn( &notify_cli, mem_ctx, &p->notify.client_hnd, 
+				data_len, data, p->notify.change, 0 );
+		}
 	}
 	
 done:
@@ -5842,6 +5848,9 @@ static WERROR update_printer(pipes_struct *p, POLICY_HND *handle, uint32 level,
 		goto done;
 	}
 
+	/* FIXME!!! If the driver has changed we really should verify that 
+	   it is installed before doing much else   --jerry */
+
 	/* Check calling user has permission to update printer description */
 
 	if (Printer->access_granted != PRINTER_ACCESS_ADMINISTER) {
@@ -7105,6 +7114,9 @@ static WERROR spoolss_addprinterex_level_2( pipes_struct *p, const UNISTR2 *uni_
 		free_a_printer(&printer, 2);
 		return WERR_PRINTER_ALREADY_EXISTS;
 	}
+	
+	/* FIXME!!!  smbd should check to see if the driver is installed before
+	   trying to add a printer like this  --jerry */
 
 	if (*lp_addprinter_cmd() ) {
 		if ( !add_printer_hook(printer) ) {
