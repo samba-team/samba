@@ -74,37 +74,123 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-PDC"
 ></A
->Chapter 6. Samba as an NT4 or Win2k Primary Domain Controller</H1
+>Chapter 7. Samba as an NT4 or Win2k Primary Domain Controller</H1
 ><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN878"
->6.1. Prerequisite Reading</A
-></H1
-><P
->Before you continue reading in this chapter, please make sure 
-that you are comfortable with configuring basic files services
-in smb.conf and how to enable and administer password 
-encryption in Samba.  Theses two topics are covered in the
-<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-><TT
-CLASS="FILENAME"
->smb.conf(5)</TT
-></A
-> 
-manpage.</P
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>7.1. <A
+HREF="samba-pdc.html#AEN1010"
+>Prerequisite Reading</A
+></DT
+><DT
+>7.2. <A
+HREF="samba-pdc.html#AEN1014"
+>Background</A
+></DT
+><DT
+>7.3. <A
+HREF="samba-pdc.html#AEN1054"
+>Configuring the Samba Domain Controller</A
+></DT
+><DT
+>7.4. <A
+HREF="samba-pdc.html#AEN1096"
+>Creating Machine Trust Accounts and Joining Clients to the Domain</A
+></DT
+><DD
+><DL
+><DT
+>7.4.1. <A
+HREF="samba-pdc.html#AEN1142"
+>Manual Creation of Machine Trust Accounts</A
+></DT
+><DT
+>7.4.2. <A
+HREF="samba-pdc.html#AEN1183"
+>"On-the-Fly" Creation of Machine Trust Accounts</A
+></DT
+><DT
+>7.4.3. <A
+HREF="samba-pdc.html#AEN1192"
+>Joining the Client to the Domain</A
+></DT
+></DL
+></DD
+><DT
+>7.5. <A
+HREF="samba-pdc.html#AEN1212"
+>Common Problems and Errors</A
+></DT
+><DD
+><DL
+><DT
+>7.5.1. <A
+HREF="samba-pdc.html#AEN1214"
+>I cannot include a '$' in a machine name</A
+></DT
+><DT
+>7.5.2. <A
+HREF="samba-pdc.html#AEN1220"
+>I get told "You already have a connection to the Domain...." 
+or "Cannot join domain, the credentials supplied conflict with an 
+existing set.." when creating a machine trust account.</A
+></DT
+><DT
+>7.5.3. <A
+HREF="samba-pdc.html#AEN1227"
+>The system can not log you on (C000019B)....</A
+></DT
+><DT
+>7.5.4. <A
+HREF="samba-pdc.html#AEN1231"
+>The machine trust account for this computer either does not 
+exist or is not accessible.</A
+></DT
+><DT
+>7.5.5. <A
+HREF="samba-pdc.html#AEN1237"
+>When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+I get a message about my account being disabled.</A
+></DT
+></DL
+></DD
+><DT
+>7.6. <A
+HREF="samba-pdc.html#AEN1241"
+>Domain Control for Windows 9x/ME</A
+></DT
+></DL
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN883"
->6.2. Background</A
+NAME="AEN1010"
+>7.1. Prerequisite Reading</A
+></H1
+><P
+>Before you continue reading in this chapter, please make sure 
+that you are comfortable with configuring basic files services
+in smb.conf and how to enable and administer password 
+encryption in Samba.  Theses two topics are covered in the
+<TT
+CLASS="FILENAME"
+>smb.conf</TT
+> manpage.</P
+></DIV
+><DIV
+CLASS="SECT1"
+><H1
+CLASS="SECT1"
+><A
+NAME="AEN1014"
+>7.2. Background</A
 ></H1
 ><P
 >This article outlines the steps necessary for configuring Samba as a PDC.
@@ -250,19 +336,17 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN923"
->6.3. Configuring the Samba Domain Controller</A
+NAME="AEN1054"
+>7.3. Configuring the Samba Domain Controller</A
 ></H1
 ><P
 >The first step in creating a working Samba PDC is to 
 understand the parameters necessary in smb.conf. Here we
 attempt to explain the parameters that are covered in
-<A
-HREF="smb.conf.5.html"
-TARGET="_top"
-> the smb.conf
-man page</A
->.</P
+the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> man page.</P
 ><P
 >Here is an example <TT
 CLASS="FILENAME"
@@ -414,7 +498,7 @@ TARGET="_top"
 >	Encrypted passwords must be enabled.  For more details on how 
 	to do this, refer to <A
 HREF="passdb.html"
->ENCRYPTION.html</A
+>the User Database chapter</A
 >.
 	</P
 ></LI
@@ -446,8 +530,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN965"
->6.4. Creating Machine Trust Accounts and Joining Clients to the Domain</A
+NAME="AEN1096"
+>7.4. Creating Machine Trust Accounts and Joining Clients to the Domain</A
 ></H1
 ><P
 >A machine trust account is a Samba account that is used to
@@ -549,7 +633,10 @@ CLASS="EMPHASIS"
 	file allows the creation of arbitrary user and machine accounts without
 	requiring that account to be added to the system (/etc/passwd) file. It
 	too requires the specification of the "non unix account range" option
-	in the [globals] section of the smb.conf file.
+	in the [globals] section of the <TT
+CLASS="FILENAME"
+>smb.conf</TT
+> file.
 	</P
 ></LI
 ><LI
@@ -577,6 +664,12 @@ CLASS="EMPHASIS"
 	</P
 ></LI
 ></UL
+><P
+>Read the chapter about the <A
+HREF="passdb.html"
+>User Database</A
+> 
+for details.</P
 ><P
 >A Samba PDC, however, stores each machine trust account in two parts,
 as follows:
@@ -632,8 +725,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1008"
->6.4.1. Manual Creation of Machine Trust Accounts</A
+NAME="AEN1142"
+>7.4.1. Manual Creation of Machine Trust Accounts</A
 ></H2
 ><P
 >The first step in manually creating a machine trust account is to
@@ -738,12 +831,12 @@ as shown here:</P
 ><SAMP
 CLASS="PROMPT"
 >root# </SAMP
-><B
-CLASS="COMMAND"
+><KBD
+CLASS="USERINPUT"
 >smbpasswd -a -m <VAR
 CLASS="REPLACEABLE"
 >machine_name</VAR
-></B
+></KBD
 ></P
 ><P
 >where <VAR
@@ -802,8 +895,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1049"
->6.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
+NAME="AEN1183"
+>7.4.2. "On-the-Fly" Creation of Machine Trust Accounts</A
 ></H2
 ><P
 >The second (and recommended) way of creating machine trust accounts is
@@ -839,8 +932,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1058"
->6.4.3. Joining the Client to the Domain</A
+NAME="AEN1192"
+>7.4.3. Joining the Client to the Domain</A
 ></H2
 ><P
 >The procedure for joining a client to the domain varies with the
@@ -899,6 +992,22 @@ CLASS="EMPHASIS"
 	(i.e., you must supply a Samba administrative account when
 	prompted).</P
 ></LI
+><LI
+><P
+><SPAN
+CLASS="emphasis"
+><I
+CLASS="EMPHASIS"
+>Samba</I
+></SPAN
+></P
+><P
+>Joining a samba client to a domain is documented in 
+	the <A
+HREF="domain-member.html"
+>Domain Member</A
+> chapter.</P
+></LI
 ></UL
 ></DIV
 ></DIV
@@ -907,627 +1016,141 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1073"
->6.5. Common Problems and Errors</A
+NAME="AEN1212"
+>7.5. Common Problems and Errors</A
 ></H1
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1214"
+>7.5.1. I cannot include a '$' in a machine name</A
+></H2
 ><P
-></P
-><P
-></P
-><UL
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->I cannot include a '$' in a machine name.</I
-></SPAN
->
-	</P
-><P
->	A 'machine name' in (typically) <TT
+>A 'machine name' in (typically) <TT
 CLASS="FILENAME"
 >/etc/passwd</TT
 > 	
-	of the machine name with a '$' appended. FreeBSD (and other BSD 
-	systems?) won't create a user with a '$' in their name.
-	</P
+of the machine name with a '$' appended. FreeBSD (and other BSD 
+systems?) won't create a user with a '$' in their name.</P
 ><P
->	The problem is only in the program used to make the entry, once 
-	made, it works perfectly. So create a user without the '$' and 
-	use <B
+>The problem is only in the program used to make the entry, once 
+made, it works perfectly. So create a user without the '$' and 
+use <B
 CLASS="COMMAND"
 >vipw</B
 > to edit the entry, adding the '$'. Or create 
-	the whole entry with vipw if you like, make sure you use a 
-	unique User ID !
-	</P
-></LI
-><LI
+the whole entry with vipw if you like, make sure you use a 
+unique User ID !</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1220"
+>7.5.2. I get told "You already have a connection to the Domain...." 
+or "Cannot join domain, the credentials supplied conflict with an 
+existing set.." when creating a machine trust account.</A
+></H2
 ><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->I get told "You already have a connection to the Domain...." 
-	or "Cannot join domain, the credentials supplied conflict with an 
-	existing set.." when creating a machine trust account.</I
-></SPAN
->
-	</P
+>This happens if you try to create a machine trust account from the 
+machine itself and already have a connection (e.g. mapped drive) 
+to a share (or IPC$) on the Samba PDC.  The following command
+will remove all network drive connections:</P
 ><P
->	This happens if you try to create a machine trust account from the 
-	machine itself and already have a connection (e.g. mapped drive) 
-	to a share (or IPC$) on the Samba PDC.  The following command
-	will remove all network drive connections:
-	</P
-><P
->	<SAMP
+><SAMP
 CLASS="PROMPT"
 >C:\WINNT\&#62;</SAMP
 > <B
 CLASS="COMMAND"
 >net use * /d</B
->
-	</P
+></P
 ><P
->	Further, if the machine is a already a 'member of a workgroup' that 
-	is the same name as the domain you are joining (bad idea) you will 
-	get this message.  Change the workgroup name to something else, it 
-	does not matter what, reboot, and try again.
-	</P
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->The system can not log you on (C000019B)....</I
-></SPAN
->
-	</P
+>Further, if the machine is a already a 'member of a workgroup' that 
+is the same name as the domain you are joining (bad idea) you will 
+get this message.  Change the workgroup name to something else, it 
+does not matter what, reboot, and try again.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1227"
+>7.5.3. The system can not log you on (C000019B)....</A
+></H2
 ><P
 >I joined the domain successfully but after upgrading 
-	to a newer version of the Samba code I get the message, "The system 
-	can not log you on (C000019B), Please try again or consult your 
-	system administrator" when attempting to logon.
-	</P
+to a newer version of the Samba code I get the message, "The system 
+can not log you on (C000019B), Please try again or consult your 
+system administrator" when attempting to logon.</P
 ><P
->	This occurs when the domain SID stored in the secrets.tdb database
-	is changed. The most common cause of a change in domain SID is when
-	the domain name and/or the server name (netbios name) is changed.
- 	The only way to correct the problem is to restore the original domain 
-	SID or remove the domain client from the domain and rejoin. The domain
-	SID may be reset using either the smbpasswd or rpcclient utilities.
-	</P
-></LI
-><LI
+>This occurs when the domain SID stored in the secrets.tdb database
+is changed. The most common cause of a change in domain SID is when
+the domain name and/or the server name (netbios name) is changed.
+The only way to correct the problem is to restore the original domain 
+SID or remove the domain client from the domain and rejoin. The domain
+SID may be reset using either the smbpasswd or rpcclient utilities.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1231"
+>7.5.4. The machine trust account for this computer either does not 
+exist or is not accessible.</A
+></H2
 ><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->The machine trust account for this computer either does not 
-	exist or is not accessible.</I
-></SPAN
->
-	</P
+>When I try to join the domain I get the message "The machine account 
+for this computer either does not exist or is not accessible". What's 
+wrong?</P
 ><P
->	When I try to join the domain I get the message "The machine account 
-	for this computer either does not exist or is not accessible". What's 
-	wrong?
-	</P
-><P
->	This problem is caused by the PDC not having a suitable machine trust account. 
-	If you are using the <VAR
+>This problem is caused by the PDC not having a suitable machine trust account. 
+If you are using the <VAR
 CLASS="PARAMETER"
 >add user script</VAR
 > method to create 
-	accounts then this would indicate that it has not worked. Ensure the domain 
-	admin user system is working.
-	</P
+accounts then this would indicate that it has not worked. Ensure the domain 
+admin user system is working.</P
 ><P
->	Alternatively if you are creating account entries manually then they 
-	have not been created correctly. Make sure that you have the entry 
-	correct for the machine trust account in smbpasswd file on the Samba PDC. 
-	If you added the account using an editor rather than using the smbpasswd 
-	utility, make sure that the account name is the machine NetBIOS name 
-	with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
-	in both /etc/passwd and the smbpasswd file. Some people have reported 
-	that inconsistent subnet masks between the Samba server and the NT 
-	client have caused this problem.   Make sure that these are consistent 
-	for both client and server.
-	</P
-></LI
-><LI
+>Alternatively if you are creating account entries manually then they 
+have not been created correctly. Make sure that you have the entry 
+correct for the machine trust account in smbpasswd file on the Samba PDC. 
+If you added the account using an editor rather than using the smbpasswd 
+utility, make sure that the account name is the machine NetBIOS name 
+with a '$' appended to it ( i.e. computer_name$ ). There must be an entry 
+in both /etc/passwd and the smbpasswd file. Some people have reported 
+that inconsistent subnet masks between the Samba server and the NT 
+client have caused this problem.   Make sure that these are consistent 
+for both client and server.</P
+></DIV
+><DIV
+CLASS="SECT2"
+><H2
+CLASS="SECT2"
+><A
+NAME="AEN1237"
+>7.5.5. When I attempt to login to a Samba Domain from a NT4/W2K workstation,
+I get a message about my account being disabled.</A
+></H2
 ><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->When I attempt to login to a Samba Domain from a NT4/W2K workstation,
-	I get a message about my account being disabled.</I
-></SPAN
->
-	</P
-><P
->	This problem is caused by a PAM related bug in Samba 2.2.0.  This bug is 
-	fixed in 2.2.1.  Other symptoms could be unaccessible shares on 
-	NT/W2K member servers in the domain or the following error in your smbd.log:
-	passdb/pampass.c:pam_account(268) PAM: UNKNOWN ERROR for User: %user%
-	</P
-><P
->	At first be ensure to enable the useraccounts with <B
+>At first be ensure to enable the useraccounts with <B
 CLASS="COMMAND"
 >smbpasswd -e 
-	%user%</B
->, this is normally done, when you create an account.
-	</P
-><P
->	In order to work around this problem in 2.2.0, configure the 
-	<VAR
-CLASS="PARAMETER"
->account</VAR
-> control flag in 
-	<TT
-CLASS="FILENAME"
->/etc/pam.d/samba</TT
-> file as follows:
-	</P
-><P
-><PRE
-CLASS="PROGRAMLISTING"
->	account required        pam_permit.so
-	</PRE
-></P
-><P
->	If you want to remain backward compatibility to samba 2.0.x use
-	<TT
-CLASS="FILENAME"
->pam_permit.so</TT
->, it's also possible to use 
-	<TT
-CLASS="FILENAME"
->pam_pwdb.so</TT
->. There are some bugs if you try to 
-	use <TT
-CLASS="FILENAME"
->pam_unix.so</TT
->, if you need this, be ensure to use
-	the most recent version of this file.
-	</P
-></LI
-></UL
+%user%</B
+>, this is normally done, when you create an account.</P
+></DIV
 ></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1119"
->6.6. What other help can I get?</A
-></H1
-><P
->There are many sources of information available in the form 
-of mailing lists, RFC's and documentation.  The docs that come 
-with the samba distribution contain very good explanations of 
-general SMB topics such as browsing.</P
-><P
-></P
-><UL
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->What are some diagnostics tools I can use to debug the domain logon 
-	process and where can I	find them?</I
-></SPAN
->
-	</P
-><P
->	One of the best diagnostic tools for debugging problems is Samba itself.  
-	You can use the -d option for both smbd and nmbd to specify what 
-	'debug level' at which to run.  See the man pages on smbd, nmbd  and 
-	smb.conf for more information on debugging options.  The debug 
-	level can range from 1 (the default) to 10 (100 for debugging passwords).
-	</P
-><P
->	Another helpful method of debugging is to compile samba using the 
-	<B
-CLASS="COMMAND"
->gcc -g </B
-> flag.   This will include debug 
-	information in the binaries and allow you to attach gdb to the 
-	running smbd / nmbd process.  In order to attach gdb to an smbd 
-	process for an NT workstation, first get the workstation to make the 
-	connection. Pressing ctrl-alt-delete and going down to the domain box 
-	is sufficient (at least, on the first time you join the domain) to 
-	generate a 'LsaEnumTrustedDomains'. Thereafter, the workstation 
-	maintains an open connection, and therefore there will be an smbd 
-	process running (assuming that you haven't set a really short smbd 
-	idle timeout)  So, in between pressing ctrl alt delete, and actually 
-	typing in your password, you can gdb attach and continue.
-	</P
-><P
->	Some useful samba commands worth investigating:
-	</P
-><P
-></P
-><UL
-><LI
-><P
->testparam | more</P
-></LI
-><LI
-><P
->smbclient -L //{netbios name of server}</P
-></LI
-></UL
-><P
->	An SMB enabled version of tcpdump is available from 
-	<A
-HREF="http://www.tcpdump.org/"
-TARGET="_top"
->http://www.tcpdup.org/</A
->.
-	Ethereal, another good packet sniffer for Unix and Win32
-	hosts, can be downloaded from <A
-HREF="http://www.ethereal.com/"
-TARGET="_top"
->http://www.ethereal.com</A
->.
-	</P
-><P
->	For tracing things on the Microsoft Windows NT, Network Monitor 
-	(aka. netmon) is available on the Microsoft Developer Network CD's, 
-	the Windows NT Server install CD and the SMS CD's.  The version of 
-	netmon that ships with SMS allows for dumping packets between any two 
-	computers (i.e. placing the network interface in promiscuous mode).  
-	The version on the NT Server install CD will only allow monitoring 
-	of network traffic directed to the local NT box and broadcasts on the 
-	local subnet.  Be aware that Ethereal can read and write netmon 
-	formatted files.
-	</P
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->How do I install 'Network Monitor' on an NT Workstation 
-	or a Windows 9x box?</I
-></SPAN
->
-	</P
-><P
->	Installing netmon on an NT workstation requires a couple 
-	of steps.  The following are for installing Netmon V4.00.349, which comes 
-	with Microsoft Windows NT Server 4.0, on Microsoft Windows NT 
-	Workstation 4.0.  The process should be similar for other version of 
-	Windows NT / Netmon.  You will need both the Microsoft Windows 
-	NT Server 4.0 Install CD and the Workstation 4.0 Install CD.
-	</P
-><P
->	Initially you will need to install 'Network Monitor Tools and Agent' 
-	on the NT Server.  To do this 
-	</P
-><P
-></P
-><UL
-><LI
-><P
->Goto Start - Settings - Control Panel - 
-		Network - Services - Add </P
-></LI
-><LI
-><P
->Select the 'Network Monitor Tools and Agent' and 
-		click on 'OK'.</P
-></LI
-><LI
-><P
->Click 'OK' on the Network Control Panel.
-		</P
-></LI
-><LI
-><P
->Insert the Windows NT Server 4.0 install CD 
-		when prompted.</P
-></LI
-></UL
-><P
->	At this point the Netmon files should exist in 
-	<TT
-CLASS="FILENAME"
->%SYSTEMROOT%\System32\netmon\*.*</TT
->.    
-	Two subdirectories exist as well, <TT
-CLASS="FILENAME"
->parsers\</TT
-> 
-	which contains the necessary DLL's for parsing the netmon packet 
-	dump, and <TT
-CLASS="FILENAME"
->captures\</TT
->.
-	</P
-><P
->	In order to install the Netmon tools on an NT Workstation, you will 
-	first need to install the 'Network  Monitor Agent' from the Workstation 
-	install CD.
-	</P
-><P
-></P
-><UL
-><LI
-><P
->Goto Start - Settings - Control Panel - 
-		Network - Services - Add</P
-></LI
-><LI
-><P
->Select the 'Network Monitor Agent' and click 
-		on 'OK'.</P
-></LI
-><LI
-><P
->Click 'OK' on the Network Control Panel.
-		</P
-></LI
-><LI
-><P
->Insert the Windows NT Workstation 4.0 install 
-		CD when prompted.</P
-></LI
-></UL
-><P
->	Now copy the files from the NT Server in %SYSTEMROOT%\System32\netmon\*.* 
-	to %SYSTEMROOT%\System32\netmon\*.* on the Workstation and set 
-	permissions as  you deem appropriate for your site. You will need 
-	administrative rights on the NT box to run netmon.
-	</P
-><P
->	To install Netmon on a Windows 9x box install the network monitor agent 
-	from the Windows 9x CD (\admin\nettools\netmon).  There is a readme 
-	file located with the netmon driver files on the CD if you need 
-	information on how to do this.  Copy the files from a working 
-	Netmon installation.
-	</P
-></LI
-><LI
-><P
->	The following is a list if helpful URLs and other links:
-	</P
-><P
-></P
-><UL
-><LI
-><P
->Home of Samba site <A
-HREF="http://samba.org"
-TARGET="_top"
->        http://samba.org</A
->. We have a mirror near you !</P
-></LI
-><LI
-><P
-> The <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->Development</I
-></SPAN
-> document 
-	on the Samba mirrors might mention your problem. If so,
-	it might mean that the developers are working on it.</P
-></LI
-><LI
-><P
->See how Scott Merrill simulates a BDC behavior at 
-        <A
-HREF="http://www.skippy.net/linux/smb-howto.html"
-TARGET="_top"
->        http://www.skippy.net/linux/smb-howto.html</A
->. </P
-></LI
-><LI
-><P
->Although 2.0.7 has almost had its day as a PDC, David Bannon will
-        keep the 2.0.7 PDC pages at <A
-HREF="http://bioserve.latrobe.edu.au/samba"
-TARGET="_top"
->        http://bioserve.latrobe.edu.au/samba</A
-> going for a while yet.</P
-></LI
-><LI
-><P
->Misc links to CIFS information 
-        <A
-HREF="http://samba.org/cifs/"
-TARGET="_top"
->http://samba.org/cifs/</A
-></P
-></LI
-><LI
-><P
->NT Domains for Unix <A
-HREF="http://mailhost.cb1.com/~lkcl/ntdom/"
-TARGET="_top"
->        http://mailhost.cb1.com/~lkcl/ntdom/</A
-></P
-></LI
-><LI
-><P
->FTP site for older SMB specs: 
-        <A
-HREF="ftp://ftp.microsoft.com/developr/drg/CIFS/"
-TARGET="_top"
->        ftp://ftp.microsoft.com/developr/drg/CIFS/</A
-></P
-></LI
-></UL
-></LI
-></UL
-><P
-></P
-><UL
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->How do I get help from the mailing lists?</I
-></SPAN
->
-	</P
-><P
->	There are a number of Samba related mailing lists. Go to <A
-HREF="http://samba.org"
-TARGET="_top"
->http://samba.org</A
->, click on your nearest mirror
-	and then click on <B
-CLASS="COMMAND"
->Support</B
-> and then click on <B
-CLASS="COMMAND"
->	Samba related mailing lists</B
->.
-	</P
-><P
->	For questions relating to Samba TNG go to
-	<A
-HREF="http://www.samba-tng.org/"
-TARGET="_top"
->http://www.samba-tng.org/</A
-> 
-	It has been requested that you don't post questions about Samba-TNG to the
-	main stream Samba lists.</P
-><P
->	If you post a message to one of the lists please observe the following guide lines :
-	</P
-><P
-></P
-><UL
-><LI
-><P
-> Always remember that the developers are volunteers, they are 
-		not paid and they never guarantee to produce a particular feature at 
-		a particular time. Any time lines are 'best guess' and nothing more.
-		</P
-></LI
-><LI
-><P
-> Always mention what version of samba you are using and what 
-		operating system its running under. You should probably list the
-        relevant sections of your smb.conf file, at least the options 
-        in [global] that affect PDC support.</P
-></LI
-><LI
-><P
->In addition to the version, if you obtained Samba via
-        CVS mention the date when you last checked it out.</P
-></LI
-><LI
-><P
-> Try and make your question clear and brief, lots of long, 
-		convoluted questions get deleted before	they are completely read ! 
-		Don't post html encoded messages (if you can select colour or font 
-		size its html).</P
-></LI
-><LI
-><P
-> If you run one of those nifty 'I'm on holidays' things when 
-		you are away, make sure its configured	to not answer mailing lists.
-		</P
-></LI
-><LI
-><P
-> Don't cross post. Work out which is the best list to post to 
-		and see what happens, i.e. don't post to both samba-ntdom and samba-technical.
-        Many people active on the lists subscribe to more 
-		than one list and get annoyed to see the same message two or more times. 
-		Often someone will see a message and thinking it would be better dealt 
-		with on another, will forward it on for you.</P
-></LI
-><LI
-><P
->You might include <SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->partial</I
-></SPAN
->
-        log files written at a debug level set to as much as 20.  
-        Please don't send the entire log but enough to give the context of the 
-        error messages.</P
-></LI
-><LI
-><P
->(Possibly) If you have a complete netmon trace ( from the opening of 
-        the pipe to the error ) you can send the *.CAP file as well.</P
-></LI
-><LI
-><P
->Please think carefully before attaching a document to an email.
-        Consider pasting the relevant parts into the body of the message. The samba
-        mailing lists go to a huge number of people, do they all need a copy of your 
-        smb.conf in their attach directory?</P
-></LI
-></UL
-></LI
-><LI
-><P
->	<SPAN
-CLASS="emphasis"
-><I
-CLASS="EMPHASIS"
->How do I get off the mailing lists?</I
-></SPAN
->
-	</P
-><P
->To have your name removed from a samba mailing list, go to the
-	same place you went to to get on it. Go to <A
-HREF="http://lists.samba.org/"
-TARGET="_top"
->http://lists.samba.org</A
->, 
-	click on your nearest mirror and then click on <B
-CLASS="COMMAND"
->Support</B
-> and 
-	then click on <B
-CLASS="COMMAND"
-> Samba related mailing lists</B
->. Or perhaps see 
-	<A
-HREF="http://lists.samba.org/mailman/roster/samba-ntdom"
-TARGET="_top"
->here</A
->
-	</P
-><P
->	Please don't post messages to the list asking to be removed, you will just
-	be referred to the above address (unless that process failed in some way...)
-	</P
-></LI
-></UL
-></DIV
-><DIV
-CLASS="SECT1"
-><H1
-CLASS="SECT1"
-><A
-NAME="AEN1233"
->6.7. Domain Control for Windows 9x/ME</A
+NAME="AEN1241"
+>7.6. Domain Control for Windows 9x/ME</A
 ></H1
 ><P
 >A domain and a workgroup are exactly the same thing in terms of network
@@ -1625,8 +1248,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1256"
->6.7.1. Configuration Instructions:	Network Logons</A
+NAME="AEN1264"
+>7.6.1. Configuration Instructions:	Network Logons</A
 ></H2
 ><P
 >The main difference between a PDC and a Windows 9x logon 

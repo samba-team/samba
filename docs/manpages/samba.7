@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SAMBA" "7" "07 april 2003" "" ""
+.TH "SAMBA" "7" "17 April 2003" "" ""
 
 .SH NAME
 Samba \- A Windows SMB/CIFS fileserver for UNIX
@@ -70,6 +70,89 @@ priviledges for that group, such as saAddUser, etc.
 The \fBsmbpasswd\fR
 command is a tool for changing LanMan and Windows NT 
 password hashes on Samba and Windows NT servers.
+.TP
+\fBsmbcacls(1)\fR
+The \fBsmbcacls\fR command is 
+a tool to set ACL's on remote CIFS servers. 
+.TP
+\fBsmbsh(1)\fR
+The \fBsmbsh\fR command is 
+a program that allows you to run a unix shell with 
+with an overloaded VFS.
+.TP
+\fBsmbtree(1)\fR
+The \fBsmbtree\fR command 
+is a text-based network neighborhood tool.
+.TP
+\fBsmbtar(1)\fR
+The \fBsmbtar\fR can make 
+backups of data on CIFS/SMB servers.
+.TP
+\fBsmbspool(8)\fR
+\fBsmbspool\fR is a 
+helper utility for printing on printers connected 
+to CIFS servers. 
+.TP
+\fBsmbcontrol(1)\fR
+\fBsmbcontrol\fR is a utility
+that can change the behaviour of running samba daemons.
+.TP
+\fBrpcclient(1)\fR
+\fBrpcclient\fR is a utility
+that can be used to execute RPC commands on remote 
+CIFS servers.
+.TP
+\fBpdbedit(8)\fR
+The \fBpdbedit\fR command 
+can be used to maintain the local user database on 
+a samba server.
+.TP
+\fBfindsmb(1)\fR
+The \fBfindsmb\fR command 
+can be used to find SMB servers on the local network.
+.TP
+\fBnet(8)\fR
+The \fBnet\fR command 
+is supposed to work similar to the DOS/Windows
+NET.EXE command.
+.TP
+\fBswat(8)\fR
+\fBswat\fR is a web-based
+interface to configuring \fIsmb.conf\fR.
+.TP
+\fBwinbindd(8)\fR
+\fBwinbindd\fR is a daemon 
+that is used for integrating authentication and 
+the user database into unix.
+.TP
+\fBwbinfo(1)\fR
+\fBwbinfo\fR is a utility 
+that retrieves and stores information related to winbind.
+.TP
+\fBeditreg(1)\fR
+\fBeditreg\fR is a command-line
+utility that can edit windows registry files.
+.TP
+\fBprofiles(1)\fR
+\fBprofiles\fR is a command-line
+utility that can be used to replace all occurences of 
+a certain SID with another SID.
+.TP
+\fBvfstest(1)\fR
+\fBvfstest\fR is a utility
+that can be used to test vfs modules.
+.TP
+\fBntlm_auth(1)\fR
+\fBntlm_auth\fR is a helper-utility
+for external programs wanting to do NTLM-authentication.
+.TP
+\fBsmbmount(8), smbumount(8), smbmount(8)\fR
+\fBsmbmount\fR,\fBsmbmnt\fR and \fBsmbmnt\fR are commands that can be used to 
+mount CIFS/SMB shares on Linux.
+.TP
+\fBsmbcquotas(1)\fR
+\fBsmbcquotas\fR is a tool that 
+can set remote QUOTA's on server with NTFS 5. 
 .SH "COMPONENTS"
 .PP
 The Samba suite is made up of several components. Each 

@@ -74,14 +74,78 @@ CLASS="CHAPTER"
 ><A
 NAME="IMPROVED-BROWSING"
 ></A
->Chapter 23. Improved browsing in samba</H1
+>Chapter 24. Improved browsing in samba</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>24.1. <A
+HREF="improved-browsing.html#AEN3875"
+>Overview of browsing</A
+></DT
+><DT
+>24.2. <A
+HREF="improved-browsing.html#AEN3881"
+>Browsing support in samba</A
+></DT
+><DT
+>24.3. <A
+HREF="improved-browsing.html#AEN3896"
+>Problem resolution</A
+></DT
+><DT
+>24.4. <A
+HREF="improved-browsing.html#AEN3908"
+>Browsing across subnets</A
+></DT
+><DT
+>24.5. <A
+HREF="improved-browsing.html#AEN3949"
+>Setting up a WINS server</A
+></DT
+><DT
+>24.6. <A
+HREF="improved-browsing.html#AEN3972"
+>Setting up Browsing in a WORKGROUP</A
+></DT
+><DT
+>24.7. <A
+HREF="improved-browsing.html#AEN3998"
+>Setting up Browsing in a DOMAIN</A
+></DT
+><DT
+>24.8. <A
+HREF="improved-browsing.html#BROWSE-FORCE-MASTER"
+>Forcing samba to be the master</A
+></DT
+><DT
+>24.9. <A
+HREF="improved-browsing.html#AEN4033"
+>Making samba the domain master</A
+></DT
+><DT
+>24.10. <A
+HREF="improved-browsing.html#AEN4055"
+>Note about broadcast addresses</A
+></DT
+><DT
+>24.11. <A
+HREF="improved-browsing.html#AEN4058"
+>Multiple interfaces</A
+></DT
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3804"
->23.1. Overview of browsing</A
+NAME="AEN3875"
+>24.1. Overview of browsing</A
 ></H1
 ><P
 >SMB networking provides a mechanism by which clients can access a list
@@ -112,8 +176,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3810"
->23.2. Browsing support in samba</A
+NAME="AEN3881"
+>24.2. Browsing support in samba</A
 ></H1
 ><P
 >Samba facilitates browsing.  The browsing is supported by <SPAN
@@ -198,8 +262,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3825"
->23.3. Problem resolution</A
+NAME="AEN3896"
+>24.3. Problem resolution</A
 ></H1
 ><P
 >If something doesn't work then hopefully the log.nmb file will help
@@ -250,8 +314,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3837"
->23.4. Browsing across subnets</A
+NAME="AEN3908"
+>24.4. Browsing across subnets</A
 ></H1
 ><P
 >Since the release of Samba 1.9.17(alpha1) Samba has been
@@ -284,8 +348,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN3843"
->23.4.1. How does cross subnet browsing work ?</A
+NAME="AEN3914"
+>24.4.1. How does cross subnet browsing work ?</A
 ></H2
 ><P
 >Cross subnet browsing is a complicated dance, containing multiple
@@ -495,8 +559,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3878"
->23.5. Setting up a WINS server</A
+NAME="AEN3949"
+>24.5. Setting up a WINS server</A
 ></H1
 ><P
 >Either a Samba machine or a Windows NT Server machine may be set up
@@ -590,8 +654,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3901"
->23.6. Setting up Browsing in a WORKGROUP</A
+NAME="AEN3972"
+>24.6. Setting up Browsing in a WORKGROUP</A
 ></H1
 ><P
 >To set up cross subnet browsing on a network containing machines
@@ -700,8 +764,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3927"
->23.7. Setting up Browsing in a DOMAIN</A
+NAME="AEN3998"
+>24.7. Setting up Browsing in a DOMAIN</A
 ></H1
 ><P
 >If you are adding Samba servers to a Windows NT Domain then
@@ -775,7 +839,7 @@ CLASS="SECT1"
 CLASS="SECT1"
 ><A
 NAME="BROWSE-FORCE-MASTER"
->23.8. Forcing samba to be the master</A
+>24.8. Forcing samba to be the master</A
 ></H1
 ><P
 >Who becomes the <B
@@ -849,8 +913,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3962"
->23.9. Making samba the domain master</A
+NAME="AEN4033"
+>24.9. Making samba the domain master</A
 ></H1
 ><P
 >The domain master is responsible for collating the browse lists of
@@ -934,8 +998,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3984"
->23.10. Note about broadcast addresses</A
+NAME="AEN4055"
+>24.10. Note about broadcast addresses</A
 ></H1
 ><P
 >If your network uses a "0" based broadcast address (for example if it
@@ -948,8 +1012,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN3987"
->23.11. Multiple interfaces</A
+NAME="AEN4058"
+>24.11. Multiple interfaces</A
 ></H1
 ><P
 >Samba now supports machines with multiple network interfaces.  If you

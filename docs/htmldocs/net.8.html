@@ -26,7 +26,8 @@ NAME="AEN5"
 ><H2
 >Name</H2
 >net&nbsp;--&nbsp;Tool for administration of Samba and remote
-	CIFS servers.</DIV
+	CIFS servers.
+	</DIV
 ><DIV
 CLASS="REFSYNOPSISDIV"
 ><A
@@ -38,12 +39,12 @@ NAME="AEN8"
 ><B
 CLASS="COMMAND"
 >net</B
->  {&#60;ads|rap|rpc&#62;} [-h] [-w workgroup] [-W myworkgroup] [-U user] [-I ip-address] [-p port] [-n myname] [-s conffile] [-S server] [-C comment] [-M maxusers] [-F flags] [-j jobid] [-l] [-r] [-f] [-t timeout] [-P] [-D debuglevel]</P
+>  {&#60;ads|rap|rpc&#62;} [-h] [-w workgroup] [-W myworkgroup] [-U user] [-I ip-address] [-p port] [-n myname] [-s conffile] [-S server] [-l] [-P] [-D debuglevel]</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN31"
+NAME="AEN24"
 ></A
 ><H2
 >DESCRIPTION</H2
@@ -57,12 +58,18 @@ CLASS="REFENTRYTITLE"
 > suite.</P
 ><P
 >The samba net utility is meant to work just like the net utility 
-	available for windows and DOS.</P
+	available for windows and DOS. The first argument should be used 
+	to specify the protocol to use when executing a certain command. 
+	ADS is used for ActiveDirectory, RAP is using for old (Win9x/NT3) 
+	clients and RPC can be used for NT4 and Windows 2000. If this 
+	argument is omitted, net will try to determine it automatically. 
+	Not all commands are available on all protocols.
+	</P
 ></DIV
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN38"
+NAME="AEN31"
 ></A
 ><H2
 >OPTIONS</H2
@@ -72,12 +79,10 @@ NAME="AEN38"
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->-h</DT
+>-h|--help</DT
 ><DD
 ><P
->		Display summary of all available options.
-		
-		</P
+>Print a summary of command line options.</P
 ></DD
 ><DT
 >-w target-workgroup</DT
@@ -106,29 +111,67 @@ CLASS="VARIABLELIST"
 ><DD
 ><P
 >		IP address of target server to use. You have to
-		specify either this option or a target workgroup or a target server.
+		specify either this option or a target workgroup or
+		a target server.
 		</P
 ></DD
 ><DT
 >-p port</DT
 ><DD
 ><P
->		Port on the target server to connect to.
+>		Port on the target server to connect to (usually 139 or 445). 
+		Defaults to trying 445 first, then 139.
 		</P
 ></DD
 ><DT
->-n myname</DT
+>-n &#60;primary NetBIOS name&#62;</DT
 ><DD
 ><P
->		Sets name of the client.
-		</P
+>This option allows you to override
+the NetBIOS name that Samba uses for itself. This is identical
+to setting the <A
+HREF="smb.conf.5.html#netbiosname"
+TARGET="_top"
+><VAR
+CLASS="PARAMETER"
+>NetBIOS
+name</VAR
+></A
+> parameter in the <SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+> file.  However, a command
+line setting will take precedence over settings in
+<SPAN
+CLASS="CITEREFENTRY"
+><SPAN
+CLASS="REFENTRYTITLE"
+>smb.conf</SPAN
+>(5)</SPAN
+>.</P
 ></DD
 ><DT
->-s conffile</DT
+>-s &#60;configuration file&#62;</DT
 ><DD
 ><P
->		Specify alternative configuration file that should be loaded.
-		</P
+>The file specified contains the 
+configuration details required by the server.  The 
+information in this file includes server-specific
+information such as what printcap file to use, as well 
+as descriptions of all the services that the server is 
+to provide. See <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
+CLASS="FILENAME"
+>smb.conf(5)</TT
+></A
+> for more information.
+The default configuration file name is determined at 
+compile time.</P
 ></DD
 ><DT
 >-S server</DT
@@ -139,59 +182,10 @@ CLASS="VARIABLELIST"
 		</P
 ></DD
 ><DT
->-C comment</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
->-M maxusers</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
->-F flags</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
->-j jobid</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
 >-l</DT
 ><DD
 ><P
->		FIXME
-		</P
-></DD
-><DT
->-r</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
->-f</DT
-><DD
-><P
->		FIXME
-		</P
-></DD
-><DT
->-t timeout</DT
-><DD
-><P
->		FIXME
+>		When listing data, give more information on each item.
 		</P
 ></DD
 ><DT
@@ -202,17 +196,43 @@ CLASS="VARIABLELIST"
 		</P
 ></DD
 ><DT
->-D debuglevel</DT
+>-d|--debug=debuglevel</DT
 ><DD
 ><P
->set the debuglevel. Debug level 0 is the lowest
-		and 100 being the highest. This should be set to 100 if you are
-		planning on submitting a bug report to the Samba team (see
-		<TT
+><VAR
+CLASS="REPLACEABLE"
+>debuglevel</VAR
+> is an integer 
+from 0 to 10.  The default value if this parameter is 
+not specified is zero.</P
+><P
+>The higher this value, the more detail will be 
+logged to the log files about the activities of the 
+server. At level 0, only critical errors and serious 
+warnings will be logged. Level 1 is a reasonable level for
+day to day running - it generates a small amount of 
+information about operations carried out.</P
+><P
+>Levels above 1 will generate considerable 
+amounts of log data, and should only be used when 
+investigating a problem. Levels above 3 are designed for 
+use only by developers and generate HUGE amounts of log
+data, most of which is extremely cryptic.</P
+><P
+>Note that specifying this parameter here will 
+override the <A
+HREF="smb.conf.5.html#loglevel"
+TARGET="_top"
+>log
+level</A
+> parameter in the <A
+HREF="smb.conf.5.html"
+TARGET="_top"
+><TT
 CLASS="FILENAME"
->BUGS.txt</TT
->).
-		</P
+>smb.conf(5)</TT
+></A
+> file.</P
 ></DD
 ></DL
 ></DIV
@@ -220,171 +240,1325 @@ CLASS="FILENAME"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN118"
+NAME="AEN99"
 ></A
 ><H2
->TIME</H2
+>COMMANDS</H2
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN101"
+></A
+><H3
+>TIME</H3
 ><P
 >The <B
 CLASS="COMMAND"
 >NET TIME</B
 > command allows you to view the time on a remote server
 	or synchronise the time on the local server with the time on the remote server.</P
-><P
-></P
 ><DIV
-CLASS="VARIABLELIST"
-><DL
-><DT
-></DT
-><DD
+CLASS="REFSECT3"
+><A
+NAME="AEN105"
+></A
+><H4
+>TIME</H4
 ><P
->		Without any options, the <B
+>Without any options, the <B
 CLASS="COMMAND"
 >NET TIME</B
 > command 
-		displays the time on the remote server.
-		</P
-></DD
-><DT
->SYSTEM</DT
-><DD
+displays the time on the remote server.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN109"
+></A
+><H4
+>TIME SYSTEM</H4
 ><P
->		Displays the time on the remote server in a format ready for <B
+> Displays the time on the remote server in a format ready for <B
 CLASS="COMMAND"
 >/bin/date</B
->
-		</P
-></DD
-><DT
->SET</DT
-><DD
+></P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN113"
+></A
+><H4
+>TIME SET</H4
 ><P
->		Tries to set the date and time of the local server to that on 
-		the remote server using <B
+>Tries to set the date and time of the local server to that on 
+the remote server using <B
 CLASS="COMMAND"
 >/bin/date</B
->.
-		</P
-></DD
-><DT
->ZONE</DT
-><DD
+>. </P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN117"
+></A
+><H4
+>TIME ZONE</H4
 ><P
->		Displays the timezone in hours from GMT on the remote computer.
-		</P
-></DD
-></DL
+>Displays the timezone in hours from GMT on the remote computer.</P
 ></DIV
 ></DIV
 ><DIV
-CLASS="REFSECT1"
+CLASS="REFSECT2"
 ><A
-NAME="AEN142"
+NAME="AEN120"
 ></A
-><H2
->RPC</H2
+><H3
+>[RPC|ADS] JOIN [TYPE] [-U username[%password]] [options]</H3
 ><P
->The <B
-CLASS="COMMAND"
->NET RPC</B
-> command allows you to do various 
-	NT4 operations.</P
+>Join a domain.  If the account already exists on the server, and 
+[TYPE] is MEMBER, the machine will attempt to join automatically. 
+(Assuming that the machine has been created in server manager)
+Otherwise, a password will be prompted for, and a new account may
+be created.</P
+><P
+>[TYPE] may be PDC, BDC or MEMBER to specify the type of server
+joining the domain.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN124"
+></A
+><H3
+>[RPC] OLDJOIN [options]</H3
+><P
+>Join a domain. Use the OLDJOIN option to join the domain 
+using the old style of domain joining - you need to create a trust 
+account in server manager first.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN127"
+></A
+><H3
+>[RPC|ADS] USER</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN129"
+></A
+><H4
+>[RPC|ADS] USER DELETE <VAR
+CLASS="REPLACEABLE"
+>target</VAR
+></H4
+><P
+>Delete specified user</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN133"
+></A
+><H4
+>[RPC|ADS] USER LIST</H4
+><P
+>List all users</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN136"
+></A
+><H4
+>[RPC|ADS] USER INFO <VAR
+CLASS="REPLACEABLE"
+>target</VAR
+></H4
+><P
+>List the domain groups of a the specified user.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN140"
+></A
+><H4
+>[RPC|ADS] USER ADD <VAR
+CLASS="REPLACEABLE"
+>name</VAR
+> [password] [-F user flags] [-C comment]</H4
+><P
+>Add specified user.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN144"
+></A
+><H3
+>[RPC|ADS] GROUP</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN146"
+></A
+><H4
+>[RPC|ADS] GROUP [misc options] [targets]</H4
+><P
+>List user groups.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN149"
+></A
+><H4
+>[RPC|ADS] GROUP DELETE <VAR
+CLASS="REPLACEABLE"
+>name</VAR
+> [misc. options]</H4
+><P
+>Delete specified group.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN153"
+></A
+><H4
+>[RPC|ADS] GROUP ADD <VAR
+CLASS="REPLACEABLE"
+>name</VAR
+> [-C comment]</H4
+><P
+>Create specified group.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN157"
+></A
+><H3
+>[RAP|RPC] SHARE</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN159"
+></A
+><H4
+>[RAP|RPC] SHARE [misc. options] [targets]</H4
+><P
+>Enumerates all exported resources (network shares) on target server.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN162"
+></A
+><H4
+>[RAP|RPC] SHARE ADD <VAR
+CLASS="REPLACEABLE"
+>name=serverpath</VAR
+> [-C comment] [-M maxusers] [targets]</H4
+><P
+>Adds a share from a server (makes the export active). Maxusers 
+specifies the number of users that can be connected to the 
+share simultaneously.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN166"
+></A
+><H4
+>SHARE DELETE <VAR
+CLASS="REPLACEABLE"
+>sharenam</VAR
+></H4
+><P
+>Delete specified share.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN170"
+></A
+><H3
+>[RPC|RAP] FILE</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN172"
+></A
+><H4
+>[RPC|RAP] FILE</H4
+><P
+>List all open files on remote server.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN175"
+></A
+><H4
+>[RPC|RAP] FILE CLOSE <VAR
+CLASS="REPLACEABLE"
+>fileid</VAR
+></H4
+><P
+>Close file with specified <VAR
+CLASS="REPLACEABLE"
+>fileid</VAR
+> on 
+remote server.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN180"
+></A
+><H4
+>[RPC|RAP] FILE INFO <VAR
+CLASS="REPLACEABLE"
+>fileid</VAR
+></H4
+><P
+>Print information on specified <VAR
+CLASS="REPLACEABLE"
+>fileid</VAR
+>. 
+Currently listed are: file-id, username, locks, path, permissions.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN185"
+></A
+><H4
+>[RAP|RPC] FILE USER</H4
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN189"
+></A
+><H3
+>SESSION</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN191"
+></A
+><H4
+>RAP SESSION</H4
+><P
+>Without any other options, SESSION enumerates all active SMB/CIFS 
+sessions on the target server.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN194"
+></A
+><H4
+>RAP SESSION DELETE|CLOSE <VAR
+CLASS="REPLACEABLE"
+>CLIENT_NAME</VAR
+></H4
+><P
+>Close the specified sessions.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN198"
+></A
+><H4
+>RAP SESSION INFO <VAR
+CLASS="REPLACEABLE"
+>CLIENT_NAME</VAR
+></H4
+><P
+>Give a list with all the open files in specified session.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN202"
+></A
+><H3
+>RAP SERVER <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H3
+><P
+>List all servers in specified domain or workgroup. Defaults
+to local domain.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN206"
+></A
+><H3
+>RAP DOMAIN</H3
+><P
+>Lists all domains and workgroups visible on the 
+current network.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN209"
+></A
+><H3
+>RAP PRINTQ</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN211"
+></A
+><H4
+>RAP PRINTQ LIST <VAR
+CLASS="REPLACEABLE"
+>QUEUE_NAME</VAR
+></H4
+><P
+>Lists the specified print queue and print jobs on the server.
+If the <VAR
+CLASS="REPLACEABLE"
+>QUEUE_NAME</VAR
+> is omitted, all 
+queues are listed.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN216"
+></A
+><H4
+>RAP PRINTQ DELETE <VAR
+CLASS="REPLACEABLE"
+>JOBID</VAR
+></H4
+><P
+>Delete job with specified id.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN220"
+></A
+><H3
+>RAP VALIDATE <VAR
+CLASS="REPLACEABLE"
+>user</VAR
+> [<VAR
+CLASS="REPLACEABLE"
+>password</VAR
+>]</H3
+><P
+>Validate whether the specified user can log in to the 
+remote server. If the password is not specified on the commandline, it 
+will be prompted. </P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN227"
+></A
+><H3
+>RAP GROUPMEMBER</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN229"
+></A
+><H4
+>RAP GROUPMEMBER LIST <VAR
+CLASS="REPLACEABLE"
+>GROUP</VAR
+></H4
+><P
+>List all members of the specified group.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN233"
+></A
+><H4
+>RAP GROUPMEMBER DELETE <VAR
+CLASS="REPLACEABLE"
+>GROUP</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>USER</VAR
+></H4
+><P
+>Delete member from group.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN238"
+></A
+><H4
+>RAP GROUPMEMBER ADD <VAR
+CLASS="REPLACEABLE"
+>GROUP</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>USER</VAR
+></H4
+><P
+>Add member to group.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN243"
+></A
+><H3
+>RAP ADMIN <VAR
+CLASS="REPLACEABLE"
+>command</VAR
+></H3
+><P
+>Execute the specified <VAR
+CLASS="REPLACEABLE"
+>command</VAR
+> on 
+the remote server. Only works with OS/2 servers.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN250"
+></A
+><H3
+>RAP SERVICE</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN252"
+></A
+><H4
+>RAP SERVICE START <VAR
+CLASS="REPLACEABLE"
+>NAME</VAR
+> [arguments...]</H4
+><P
+>Start the specified service on the remote server. Not implemented yet.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN258"
+></A
+><H4
+>RAP SERVICE STOP</H4
+><P
+>Stop the specified service on the remote server.</P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN263"
+></A
+><H3
+>RAP PASSWORD <VAR
+CLASS="REPLACEABLE"
+>USER</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>OLDPASS</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>NEWPASS</VAR
+></H3
+><P
+>Change password of <VAR
+CLASS="REPLACEABLE"
+>USER</VAR
+> from <VAR
+CLASS="REPLACEABLE"
+>OLDPASS</VAR
+> to <VAR
+CLASS="REPLACEABLE"
+>NEWPASS</VAR
+>.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN272"
+></A
+><H3
+>LOOKUP</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN274"
+></A
+><H4
+>LOOKUP HOST <VAR
+CLASS="REPLACEABLE"
+>HOSTNAME</VAR
+> [<VAR
+CLASS="REPLACEABLE"
+>TYPE</VAR
+>]</H4
+><P
+>Lookup the IP address of the given host with the specified type (netbios suffix). 
+The type defaults to 0x20 (workstation).</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN279"
+></A
+><H4
+>LOOKUP LDAP [<VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H4
+><P
+>Give IP address of LDAP server of specified <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+>. Defaults to local domain.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN284"
+></A
+><H4
+>LOOKUP KDC [<VAR
+CLASS="REPLACEABLE"
+>REALM</VAR
+>]</H4
+><P
+>Give IP address of KDC for the specified <VAR
+CLASS="REPLACEABLE"
+>REALM</VAR
+>.
+Defaults to local realm.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN289"
+></A
+><H4
+>LOOKUP DC [<VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+>]</H4
+><P
+>Give IP's of Domain Controllers for specified <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+>. Defaults to local domain.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN294"
+></A
+><H4
+>LOOKUP MASTER <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H4
+><P
+>Give IP of master browser for specified <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+>
+or workgroup. Defaults to local domain.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN299"
+></A
+><H3
+>CACHE</H3
+><P
+>Samba uses a general caching interface called 'gencache'. It 
+can be controlled using 'NET CACHE'.</P
+><P
+>All the timeout parameters support the suffixes:
+
+<P
+></P
+><TABLE
+BORDER="0"
+><TBODY
+><TR
+><TD
+>s - Seconds</TD
+></TR
+><TR
+><TD
+>m - Minutes</TD
+></TR
+><TR
+><TD
+>h - Hours</TD
+></TR
+><TR
+><TD
+>d - Days</TD
+></TR
+><TR
+><TD
+>w - Weeks</TD
+></TR
+></TBODY
+></TABLE
+><P
+></P
+>&#13;</P
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN309"
+></A
+><H4
+>CACHE ADD <VAR
+CLASS="REPLACEABLE"
+>key</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>data</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>time-out</VAR
+></H4
+><P
+>Add specified key+data to the cache with the given timeout.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN315"
+></A
+><H4
+>CACHE DEL <VAR
+CLASS="REPLACEABLE"
+>key</VAR
+></H4
+><P
+>Delete key from the cache.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN319"
+></A
+><H4
+>CACHE SET <VAR
+CLASS="REPLACEABLE"
+>key</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>data</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>time-out</VAR
+></H4
+><P
+>Update data of existing cache entry.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN325"
+></A
+><H4
+>CACHE SEARCH <VAR
+CLASS="REPLACEABLE"
+>PATTERN</VAR
+></H4
+><P
+>Search for the specified pattern in the cache data.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN329"
+></A
+><H4
+>CACHE LIST</H4
+><P
+>List all current items in the cache.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN332"
+></A
+><H4
+>CACHE FLUSH</H4
+><P
+>Remove all the current items from the cache.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN335"
+></A
+><H3
+>GETLOCALSID [DOMAIN]</H3
+><P
+>Print the SID of the specified domain, or if the parameter is 
+omitted, the SID of the domain the local server is in.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN338"
+></A
+><H3
+>SETLOCALSID S-1-5-21-x-y-z</H3
+><P
+>Sets domain sid for the local server to the specified SID.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN341"
+></A
+><H3
+>MAXRID</H3
+><P
+>Prints out the highest RID currently in use on the local 
+server (by the active 'passdb backend').</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN344"
+></A
+><H3
+>RPC INFO</H3
+><P
+>Print information about the domain of the remote server, 
+such as domain name, domain sid and number of users and groups.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN347"
+></A
+><H3
+>[RPC|ADS] TESTJOIN</H3
+><P
+>Check whether participation in a domain is still valid.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN350"
+></A
+><H3
+>[RPC|ADS] CHANGETRUSTPW</H3
+><P
+>Force change of domain trust password.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN353"
+></A
+><H3
+>RPC TRUSTDOM</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN355"
+></A
+><H4
+>RPC TRUSTDOM ADD <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H4
+><P
+>Add a interdomain trust account for 
+<VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+> to the remote server. </P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN360"
+></A
+><H4
+>RPC TRUSTDOM DEL <VAR
+CLASS="REPLACEABLE"
+>DOMAIM</VAR
+></H4
+><P
+>Remove interdomain trust account for 
+<VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+> from the remote server. </P
+><DIV
+CLASS="NOTE"
+><P
+></P
+><TABLE
+CLASS="NOTE"
+WIDTH="100%"
+BORDER="0"
+><TR
+><TD
+WIDTH="25"
+ALIGN="CENTER"
+VALIGN="TOP"
+><IMG
+SRC="/usr/share/sgml/docbook/stylesheet/dsssl/modular/images/note.gif"
+HSPACE="5"
+ALT="Note"></TD
+><TD
+ALIGN="LEFT"
+VALIGN="TOP"
+><P
+>Currently NOT implemented.</P
+></TD
+></TR
+></TABLE
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN367"
+></A
+><H4
+>RPC TRUSTDOM ESTABLISH <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H4
+><P
+>Establish a trust relationship to a trusting domain. 
+Interdomain account must already be created on the remote PDC.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN371"
+></A
+><H4
+>RPC TRUSTDOM REVOKE <VAR
+CLASS="REPLACEABLE"
+>DOMAIN</VAR
+></H4
+><P
+>Abandon relationship to trusted domain</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN375"
+></A
+><H4
+>RPC TRUSTDOM LIST</H4
+><P
+>List all current interdomain trust relationships.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN378"
+></A
+><H3
+>RPC ABORTSHUTDOWN</H3
+><P
+>Abort the shutdown of a remote server.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN381"
+></A
+><H3
+>SHUTDOWN [-t timeout] [-r] [-f] [-C message]</H3
+><P
+>Shut down the remote server.</P
 ><P
 ></P
 ><DIV
 CLASS="VARIABLELIST"
 ><DL
 ><DT
->JOIN -U username[%password] [options]</DT
+>-r</DT
 ><DD
 ><P
->		Join a domain with specified username and password. Password 
-		will be prompted if none is specified.</P
+>Reboot after shutdown.</P
 ></DD
 ><DT
->JOIN [options except -U]</DT
+>-f</DT
 ><DD
 ><P
->		to join a domain created in server manager
-		</P
+>Force shutting down all applications.</P
 ></DD
 ><DT
->USER [misc. options] [targets]</DT
+>-t timeout</DT
 ><DD
 ><P
->		List users
-		</P
+>Timeout before system will be shut down. An interactive 
+user of the system can use this time to cancel the shutdown.</P
 ></DD
 ><DT
->USER DELETE &#60;name&#62; [misc options]</DT
+>-C message</DT
 ><DD
 ><P
->		delete specified user
-		</P
-></DD
-><DT
->USER INFO &#60;name&#62; [misc options]</DT
-><DD
-><P
->		list the domain groups of the specified user
-		</P
-></DD
-><DT
->USER ADD &#60;name&#62; [password] [-F user flags] [misc. options]</DT
-><DD
-><P
->		Add specified user
-		</P
-></DD
-><DT
->GROUP [misc options] [targets]</DT
-><DD
-><P
->		List user groups
-		</P
-></DD
-><DT
->GROUP DELETE &#60;name&#62; [misc. options] [targets]</DT
-><DD
-><P
->		Delete specified group
-		</P
-></DD
-><DT
->GROUP ADD &#60;name&#62; [-C comment]</DT
-><DD
-><P
->		Create specified group
-		</P
-></DD
-><DT
->SHARE [misc. options] [targets]</DT
-><DD
-><P
->		enumerates all exported resources (network shares) on target server
-		</P
-></DD
-><DT
->SHARE ADD &#60;name=serverpath&#62; [misc. options] [targets]</DT
-><DD
-><P
->		Adds a share from a server (makes the export active)
-		</P
-></DD
-><DT
->SHARE DELETE &#60;sharenam</DT
-><DD
-><P
-></P
+>Display the specified message on the screen to 
+announce the shutdown.</P
 ></DD
 ></DL
 ></DIV
 ></DIV
 ><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN401"
+></A
+><H3
+>SAMDUMP</H3
+><P
+>Print out sam database of remote server. You need
+to run this on either a BDC. </P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN404"
+></A
+><H3
+>VAMPIRE</H3
+><P
+>Export users, aliases and groups from remote server to 
+local server. Can only be run an a BDC.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN407"
+></A
+><H3
+>GETSID</H3
+><P
+>Fetch domain SID and store it in the local <TT
+CLASS="FILENAME"
+>secrets.tdb</TT
+>. </P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN411"
+></A
+><H3
+>ADS LEAVE</H3
+><P
+>Make the remote host leave the domain it is part of. </P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN414"
+></A
+><H3
+>ADS STATUS</H3
+><P
+>Print out status of machine account of the local machine in ADS.
+Prints out quite some debug info. Aimed at developers, regular 
+users should use <B
+CLASS="COMMAND"
+>NET ADS TESTJOIN</B
+>.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN418"
+></A
+><H3
+>ADS PRINTER</H3
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN420"
+></A
+><H4
+>ADS PRINTER INFO [<VAR
+CLASS="REPLACEABLE"
+>PRINTER</VAR
+>] [<VAR
+CLASS="REPLACEABLE"
+>SERVER</VAR
+>]</H4
+><P
+>Lookup info for <VAR
+CLASS="REPLACEABLE"
+>PRINTER</VAR
+> on <VAR
+CLASS="REPLACEABLE"
+>SERVER</VAR
+>. The printer name defaults to "*", the 
+server name defaults to the local host.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN427"
+></A
+><H4
+>ADS PRINTER PUBLISH <VAR
+CLASS="REPLACEABLE"
+>PRINTER</VAR
+></H4
+><P
+>Publish specified printer using ADS.</P
+></DIV
+><DIV
+CLASS="REFSECT3"
+><A
+NAME="AEN431"
+></A
+><H4
+>ADS PRINTER REMOVE <VAR
+CLASS="REPLACEABLE"
+>PRINTER</VAR
+></H4
+><P
+>Remove specified printer from ADS directory.</P
+></DIV
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN435"
+></A
+><H3
+>ADS SEARCH <VAR
+CLASS="REPLACEABLE"
+>EXPRESSION</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>ATTRIBUTES...</VAR
+></H3
+><P
+>Perform a raw LDAP search on a ADS server and dump the results. The 
+expression is a standard LDAP search expression, and the 
+attributes are a list of LDAP fields to show in the results.</P
+><P
+>Example: <KBD
+CLASS="USERINPUT"
+>net ads search '(objectCategory=group)' sAMAccountName</KBD
+></P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN442"
+></A
+><H3
+>ADS DN <VAR
+CLASS="REPLACEABLE"
+>DN</VAR
+> <VAR
+CLASS="REPLACEABLE"
+>(attributes)</VAR
+></H3
+><P
+>Perform a raw LDAP search on a ADS server and dump the results. The 
+DN standard LDAP DN, and the attributes are a list of LDAP fields 
+to show in the result. </P
+><P
+>Example: <KBD
+CLASS="USERINPUT"
+>net ads dn 'CN=administrator,CN=Users,DC=my,DC=domain' SAMAccountName</KBD
+></P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN449"
+></A
+><H3
+>WORKGROUP</H3
+><P
+>Print out workgroup name for specified kerberos realm.</P
+></DIV
+><DIV
+CLASS="REFSECT2"
+><A
+NAME="AEN452"
+></A
+><H3
+>HELP [COMMAND]</H3
+><P
+>Gives usage information for the specified command.</P
+></DIV
+></DIV
+><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN195"
+NAME="AEN455"
 ></A
 ><H2
 >VERSION</H2
@@ -395,7 +1569,7 @@ NAME="AEN195"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN198"
+NAME="AEN458"
 ></A
 ><H2
 >AUTHOR</H2
@@ -405,9 +1579,7 @@ NAME="AEN198"
 	by the Samba Team as an Open Source project similar 
 	to the way the Linux kernel is developed.</P
 ><P
->The original Samba man pages were written by Karl Auer.
-	The current set of manpages and documentation is maintained
-	by the Samba Team in the same fashion as the Samba source code.</P
+>The net manpage was written by Jelmer Vernooij.</P
 ></DIV
 ></BODY
 ></HTML

@@ -74,14 +74,76 @@ CLASS="CHAPTER"
 ><A
 NAME="SAMBA-BDC"
 ></A
->Chapter 7. Samba Backup Domain Controller to Samba Domain Control</H1
+>Chapter 8. Samba Backup Domain Controller to Samba Domain Control</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>8.1. <A
+HREF="samba-bdc.html#AEN1294"
+>Prerequisite Reading</A
+></DT
+><DT
+>8.2. <A
+HREF="samba-bdc.html#AEN1298"
+>Background</A
+></DT
+><DT
+>8.3. <A
+HREF="samba-bdc.html#AEN1306"
+>What qualifies a Domain Controller on the network?</A
+></DT
+><DD
+><DL
+><DT
+>8.3.1. <A
+HREF="samba-bdc.html#AEN1309"
+>How does a Workstation find its domain controller?</A
+></DT
+><DT
+>8.3.2. <A
+HREF="samba-bdc.html#AEN1312"
+>When is the PDC needed?</A
+></DT
+></DL
+></DD
+><DT
+>8.4. <A
+HREF="samba-bdc.html#AEN1315"
+>Can Samba be a Backup Domain Controller to an NT PDC?</A
+></DT
+><DT
+>8.5. <A
+HREF="samba-bdc.html#AEN1320"
+>How do I set up a Samba BDC?</A
+></DT
+><DD
+><DL
+><DT
+>8.5.1. <A
+HREF="samba-bdc.html#AEN1337"
+>How do I replicate the smbpasswd file?</A
+></DT
+><DT
+>8.5.2. <A
+HREF="samba-bdc.html#AEN1341"
+>Can I do this all with LDAP?</A
+></DT
+></DL
+></DD
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1286"
->7.1. Prerequisite Reading</A
+NAME="AEN1294"
+>8.1. Prerequisite Reading</A
 ></H1
 ><P
 >Before you continue reading in this chapter, please make sure
@@ -97,8 +159,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1290"
->7.2. Background</A
+NAME="AEN1298"
+>8.2. Background</A
 ></H1
 ><P
 >What is a Domain Controller? It is a machine that is able to answer
@@ -142,8 +204,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1298"
->7.3. What qualifies a Domain Controller on the network?</A
+NAME="AEN1306"
+>8.3. What qualifies a Domain Controller on the network?</A
 ></H1
 ><P
 >Every machine that is a Domain Controller for the domain SAMBA has to
@@ -159,8 +221,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1301"
->7.3.1. How does a Workstation find its domain controller?</A
+NAME="AEN1309"
+>8.3.1. How does a Workstation find its domain controller?</A
 ></H2
 ><P
 >A NT workstation in the domain SAMBA that wants a local user to be
@@ -178,8 +240,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1304"
->7.3.2. When is the PDC needed?</A
+NAME="AEN1312"
+>8.3.2. When is the PDC needed?</A
 ></H2
 ><P
 >Whenever a user wants to change his password, this has to be done on
@@ -194,8 +256,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1307"
->7.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
+NAME="AEN1315"
+>8.4. Can Samba be a Backup Domain Controller to an NT PDC?</A
 ></H1
 ><P
 >With version 2.2, no. The native NT SAM replication protocols have
@@ -217,8 +279,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1312"
->7.5. How do I set up a Samba BDC?</A
+NAME="AEN1320"
+>8.5. How do I set up a Samba BDC?</A
 ></H1
 ><P
 >Several things have to be done:</P
@@ -284,8 +346,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1329"
->7.5.1. How do I replicate the smbpasswd file?</A
+NAME="AEN1337"
+>8.5.1. How do I replicate the smbpasswd file?</A
 ></H2
 ><P
 >Replication of the smbpasswd file is sensitive. It has to be done
@@ -305,8 +367,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1333"
->7.5.2. Can I do this all with LDAP?</A
+NAME="AEN1341"
+>8.5.2. Can I do this all with LDAP?</A
 ></H2
 ><P
 >The simple answer is YES.  Samba's pdb_ldap code supports

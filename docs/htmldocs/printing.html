@@ -74,14 +74,145 @@ CLASS="CHAPTER"
 ><A
 NAME="PRINTING"
 ></A
->Chapter 12. Printing Support</H1
+>Chapter 13. Printing Support</H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>13.1. <A
+HREF="printing.html#AEN1745"
+>Introduction</A
+></DT
+><DT
+>13.2. <A
+HREF="printing.html#AEN1767"
+>Configuration</A
+></DT
+><DD
+><DL
+><DT
+>13.2.1. <A
+HREF="printing.html#AEN1775"
+>Creating [print$]</A
+></DT
+><DT
+>13.2.2. <A
+HREF="printing.html#AEN1810"
+>Setting Drivers for Existing Printers</A
+></DT
+><DT
+>13.2.3. <A
+HREF="printing.html#AEN1826"
+>Support a large number of printers</A
+></DT
+><DT
+>13.2.4. <A
+HREF="printing.html#AEN1841"
+>Adding New Printers via the Windows NT APW</A
+></DT
+><DT
+>13.2.5. <A
+HREF="printing.html#AEN1871"
+>Samba and Printer Ports</A
+></DT
+></DL
+></DD
+><DT
+>13.3. <A
+HREF="printing.html#AEN1879"
+>The Imprints Toolset</A
+></DT
+><DD
+><DL
+><DT
+>13.3.1. <A
+HREF="printing.html#AEN1883"
+>What is Imprints?</A
+></DT
+><DT
+>13.3.2. <A
+HREF="printing.html#AEN1893"
+>Creating Printer Driver Packages</A
+></DT
+><DT
+>13.3.3. <A
+HREF="printing.html#AEN1896"
+>The Imprints server</A
+></DT
+><DT
+>13.3.4. <A
+HREF="printing.html#AEN1900"
+>The Installation Client</A
+></DT
+></DL
+></DD
+><DT
+>13.4. <A
+HREF="printing.html#AEN1922"
+>Diagnosis</A
+></DT
+><DD
+><DL
+><DT
+>13.4.1. <A
+HREF="printing.html#AEN1924"
+>Introduction</A
+></DT
+><DT
+>13.4.2. <A
+HREF="printing.html#AEN1940"
+>Debugging printer problems</A
+></DT
+><DT
+>13.4.3. <A
+HREF="printing.html#AEN1949"
+>What printers do I have?</A
+></DT
+><DT
+>13.4.4. <A
+HREF="printing.html#AEN1957"
+>Setting up printcap and print servers</A
+></DT
+><DT
+>13.4.5. <A
+HREF="printing.html#AEN1985"
+>Job sent, no output</A
+></DT
+><DT
+>13.4.6. <A
+HREF="printing.html#AEN1996"
+>Job sent, strange output</A
+></DT
+><DT
+>13.4.7. <A
+HREF="printing.html#AEN2008"
+>Raw PostScript printed</A
+></DT
+><DT
+>13.4.8. <A
+HREF="printing.html#AEN2011"
+>Advanced Printing</A
+></DT
+><DT
+>13.4.9. <A
+HREF="printing.html#AEN2014"
+>Real debugging</A
+></DT
+></DL
+></DD
+></DL
+></DIV
 ><DIV
 CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1736"
->12.1. Introduction</A
+NAME="AEN1745"
+>13.1. Introduction</A
 ></H1
 ><P
 >Beginning with the 2.2.0 release, Samba supports 
@@ -163,8 +294,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1758"
->12.2. Configuration</A
+NAME="AEN1767"
+>13.2. Configuration</A
 ></H1
 ><DIV
 CLASS="WARNING"
@@ -225,8 +356,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1766"
->12.2.1. Creating [print$]</A
+NAME="AEN1775"
+>13.2.1. Creating [print$]</A
 ></H2
 ><P
 >In order to support the uploading of printer driver 
@@ -442,8 +573,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1801"
->12.2.2. Setting Drivers for Existing Printers</A
+NAME="AEN1810"
+>13.2.2. Setting Drivers for Existing Printers</A
 ></H2
 ><P
 >The initial listing of printers in the Samba host's 
@@ -514,8 +645,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1817"
->12.2.3. Support a large number of printers</A
+NAME="AEN1826"
+>13.2.3. Support a large number of printers</A
 ></H2
 ><P
 >One issue that has arisen during the development
@@ -590,8 +721,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1832"
->12.2.4. Adding New Printers via the Windows NT APW</A
+NAME="AEN1841"
+>13.2.4. Adding New Printers via the Windows NT APW</A
 ></H2
 ><P
 >By default, Samba offers all printer shares defined in <TT
@@ -745,8 +876,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1862"
->12.2.5. Samba and Printer Ports</A
+NAME="AEN1871"
+>13.2.5. Samba and Printer Ports</A
 ></H2
 ><P
 >Windows NT/2000 print servers associate a port with each printer.  These normally
@@ -780,8 +911,8 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1870"
->12.3. The Imprints Toolset</A
+NAME="AEN1879"
+>13.3. The Imprints Toolset</A
 ></H1
 ><P
 >The Imprints tool set provides a UNIX equivalent of the 
@@ -798,8 +929,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1874"
->12.3.1. What is Imprints?</A
+NAME="AEN1883"
+>13.3.1. What is Imprints?</A
 ></H2
 ><P
 >Imprints is a collection of tools for supporting the goals 
@@ -830,8 +961,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1884"
->12.3.2. Creating Printer Driver Packages</A
+NAME="AEN1893"
+>13.3.2. Creating Printer Driver Packages</A
 ></H2
 ><P
 >The process of creating printer driver packages is beyond
@@ -846,8 +977,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1887"
->12.3.3. The Imprints server</A
+NAME="AEN1896"
+>13.3.3. The Imprints server</A
 ></H2
 ><P
 >The Imprints server is really a database server that 
@@ -870,8 +1001,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1891"
->12.3.4. The Installation Client</A
+NAME="AEN1900"
+>13.3.4. The Installation Client</A
 ></H2
 ><P
 >More information regarding the Imprints installation client 
@@ -964,16 +1095,16 @@ CLASS="SECT1"
 ><H1
 CLASS="SECT1"
 ><A
-NAME="AEN1913"
->12.4. Diagnosis</A
+NAME="AEN1922"
+>13.4. Diagnosis</A
 ></H1
 ><DIV
 CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1915"
->12.4.1. Introduction</A
+NAME="AEN1924"
+>13.4.1. Introduction</A
 ></H2
 ><P
 >This is a short description of how to debug printing problems with
@@ -1047,8 +1178,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1931"
->12.4.2. Debugging printer problems</A
+NAME="AEN1940"
+>13.4.2. Debugging printer problems</A
 ></H2
 ><P
 >One way to debug printing problems is to start by replacing these
@@ -1104,8 +1235,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1940"
->12.4.3. What printers do I have?</A
+NAME="AEN1949"
+>13.4.3. What printers do I have?</A
 ></H2
 ><P
 >You can use the 'testprns' program to check to see if the printer
@@ -1133,8 +1264,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1948"
->12.4.4. Setting up printcap and print servers</A
+NAME="AEN1957"
+>13.4.4. Setting up printcap and print servers</A
 ></H2
 ><P
 >You may need to set up some printcaps for your Samba system to use.
@@ -1217,8 +1348,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1976"
->12.4.5. Job sent, no output</A
+NAME="AEN1985"
+>13.4.5. Job sent, no output</A
 ></H2
 ><P
 >This is the most frustrating part of printing.  You may have sent the
@@ -1262,8 +1393,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1987"
->12.4.6. Job sent, strange output</A
+NAME="AEN1996"
+>13.4.6. Job sent, strange output</A
 ></H2
 ><P
 >Once you have the job printing, you can then start worrying about
@@ -1308,8 +1439,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN1999"
->12.4.7. Raw PostScript printed</A
+NAME="AEN2008"
+>13.4.7. Raw PostScript printed</A
 ></H2
 ><P
 >This is a problem that is usually caused by either the print spooling
@@ -1323,8 +1454,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2002"
->12.4.8. Advanced Printing</A
+NAME="AEN2011"
+>13.4.8. Advanced Printing</A
 ></H2
 ><P
 >Note that you can do some pretty magic things by using your
@@ -1339,8 +1470,8 @@ CLASS="SECT2"
 ><H2
 CLASS="SECT2"
 ><A
-NAME="AEN2005"
->12.4.9. Real debugging</A
+NAME="AEN2014"
+>13.4.9. Real debugging</A
 ></H2
 ><P
 >If the above debug tips don't help, then maybe you need to bring in
