@@ -230,9 +230,8 @@ static BOOL rpc_fetch_subkeys(REG_KEY *parent, int *count, REG_KEY ***subkeys)
 static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values) 
 {
 	struct winreg_EnumValue r;
-	struct winreg_EnumValueName name;
 	struct winreg_Uint8buf value;
-	struct winreg_Uint16buf buf;
+	struct winreg_String valuename;
 	struct rpc_data *mydata = parent->handle->backend_data;
 	TALLOC_CTX *mem_ctx;
 	uint32 type, requested_len, returned_len;
@@ -241,6 +240,12 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 
 	(*count) = 0;
 
+	/* Root */
+	if(parent->backend_data == parent->handle->backend_data) {
+		*values = ar;
+		return True;
+	}
+	
 	if(!parent->backend_data) parent->backend_data = rpc_get_key_handle(parent->handle, reg_key_get_path(parent));
 
 	if(!parent->backend_data) return False;
@@ -248,16 +253,8 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 	r.in.handle = parent->backend_data;
 	r.in.enum_index = 0;
 
-	buf.max_len = 0x7fff;
-	buf.offset = 0;
-	buf.len = 0;
-	buf.buffer = NULL;
-
-	name.len = 0;
-	name.max_len = buf.max_len *2;
-	name.buf = &buf;
-
-	r.in.name = r.out.name = &name;
+	init_winreg_String(&valuename, NULL);
+	r.in.name = r.out.name = &valuename;
 
 	type = 0;
 	r.in.type = r.out.type = &type;
@@ -280,7 +277,7 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 		if(NT_STATUS_IS_OK(status) && W_ERROR_IS_OK(r.out.result)) {
 			r.in.enum_index++;
 			ar[(*count)] = reg_val_new(parent, NULL);
-			ar[(*count)]->name = strdup((char *)name.buf);
+			ar[(*count)]->name = strdup(r.out.name->name);
 			ar[(*count)]->data_type = *r.out.type;
 			ar[(*count)]->data_len = value.len;
 			ar[(*count)]->data_blk = malloc(value.len);
@@ -291,6 +288,8 @@ static BOOL rpc_fetch_values(REG_KEY *parent, int *count, REG_VAL ***values)
 	} 
 	
 	talloc_destroy(mem_ctx);
+
+	*values = ar;
 
 	return True;
 }

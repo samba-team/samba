@@ -172,7 +172,7 @@ static struct cmd_line *get_cmd_line(int fd)
 
   while ((rc = read(fd, &ch, 1)) == 1 && ch != '\n') {
     if (ch == '\r') continue; /* skip CR */
-    if (i == cl->len) {
+    if (i == cl->len-1) {
       /*
        * Allocate some more memory
        */
@@ -193,6 +193,7 @@ static struct cmd_line *get_cmd_line(int fd)
     return NULL;
   }
 
+  cl->line[i] = '\0';
   cl->line_len = i;
 
   return cl;
@@ -276,9 +277,9 @@ static char *parse_value(struct cmd_line *cl, int *vtype, char **val)
   char *p1 = NULL, *p2 = NULL, *nstr = NULL, *tstr = NULL, *vstr = NULL;
   
   if (!cl || !vtype || !val) return NULL;
-  if (!cl->line_len) return NULL;
+  if (!cl->line[0]) return NULL;
 
-  p1 = strndup(cl->line, cl->line_len);
+  p1 = strdup(cl->line);
   /* FIXME: Better return codes etc ... */
   if (!p1) return NULL;
   p2 = strchr(p1, '=');
@@ -380,7 +381,7 @@ static int regedit4_file_type(int fd)
 
   cur_ofs = lseek(fd, 0, SEEK_CUR); /* Get current offset */
   if (cur_ofs < 0) {
-    DEBUG(0, ("Unable to get current offset: %s\n", strerror(errno)));
+    DEBUG(0, ("Unable to get current offset: (%d) %s\n", cur_ofs, strerror(errno)));
     exit(1);  /* FIXME */
   }
 
@@ -398,8 +399,7 @@ static int regedit4_file_type(int fd)
   if (strcmp(desc, FMT_STRING_REGEDIT4) == 0) {
     if (cur_ofs) {
       lseek(fd, cur_ofs, SEEK_SET);
-    }
-    else {
+    } else {
       skip_to_eol(fd);
     }
     return FMT_REGEDIT4;
@@ -420,43 +420,9 @@ static void strip_comment(struct cmd_line *cl)
 
   for (i = 0; i < cl->line_len; i++) {
     if (cl->line[i] == ';') {
+		cl->line[i] = '\0';
       cl->line_len = i;
       return;
-    }
-  }
-}
-
-/* 
- * trim leading space
- */
-
-static void trim_leading_spaces(struct cmd_line *cl)
-{
-  int i;
-
-  if (!cl) return;
-
-  for (i = 0; i < cl->line_len; i++) {
-    if (cl->line[i] != ' '){
-      if (i) memcpy(cl->line, &cl->line[i], cl->line_len - i);
-      return;
-    }
-  }
-}
-
-/* 
- * trim trailing spaces
- */
-static void trim_trailing_spaces(struct cmd_line *cl)
-{
-  int i;
-
-  if (!cl) return;
-
-  for (i = cl->line_len; i == 0; i--) {
-    if (cl->line[i-1] != ' ' &&
-	cl->line[i-1] != '\t') {
-      cl->line_len = i;
     }
   }
 }
@@ -497,10 +463,9 @@ static CMD *regedit4_get_cmd(int fd)
     } 
 
     strip_comment(cl);     /* remove anything beyond a comment char */
-    trim_trailing_spaces(cl);
-    trim_leading_spaces(cl);
+	trim_string(cl->line, " \t", " \t");
 
-    if (cl->line_len == 0) {    /* An empty line */
+    if (!cl->line[0]) {    /* An empty line */
       free_cmd_line(cl);
     }
     else {                 /* Else, non-empty ... */
@@ -625,7 +590,7 @@ typedef struct command_file_s {
  * Create a new command file structure
  */
 
-static CMD_FILE *cmd_file_create(char *file)
+static CMD_FILE *cmd_file_create(const char *file)
 {
   CMD_FILE *tmp;
   struct stat sbuf;
@@ -637,7 +602,7 @@ static CMD_FILE *cmd_file_create(char *file)
    */
 
   if (stat(file, &sbuf) < 0) { /* Not able to access file */
-
+	DEBUG(0,("Stat on %s failed\n", file));
     return NULL;
   }
 
@@ -650,6 +615,7 @@ static CMD_FILE *cmd_file_create(char *file)
   tmp->name = strdup(file);
 
   if ((tmp->fd = open(file, O_RDONLY, 666)) < 0) {
+	DEBUG(0,("Error opening %s\n", file));
     free(tmp);
     return NULL;
   }
@@ -673,6 +639,7 @@ static CMD_FILE *cmd_file_create(char *file)
    */
 
   free(tmp);
+  DEBUG(0,("Unknown type\n"));
   return NULL;
 }
 
@@ -711,49 +678,51 @@ int nt_apply_reg_command_file(REG_HANDLE *regf, const char *cmd_file_name)
 		 */
 		switch (cmd->cmd) {
 		case CMD_ADD_KEY: {
-							  REG_KEY *tmp = NULL;
-							  tmp = reg_open_key(reg_get_root(regf), cmd->key);
-							  /* If we found it, apply the other bits, else create such a key */
-							  if (!tmp) {
-								  if(reg_key_add_name(reg_get_root(regf), cmd->key)) {
-									  tmp = reg_open_key(reg_get_root(regf), cmd->key);
-								  }
-								  modified = 1;
-							  }
+		  REG_KEY *tmp = NULL;
+		  tmp = reg_open_key(reg_get_root(regf), cmd->key);
+		  /* If we found it, apply the other bits, else create such a key */
+		  if (!tmp) {
+			  if(reg_key_add_name_recursive(reg_get_root(regf), cmd->key)) {
+				  tmp = reg_open_key(reg_get_root(regf), cmd->key);
+			  } else {
+					DEBUG(0, ("Error adding new key '%s'\n", cmd->key));
+			  }
+			  modified = 1;
+		  }
 
-							  while (cmd->val_count) {
-								  VAL_SPEC_LIST *val = cmd->val_spec_list;
-								  REG_VAL *reg_val = NULL;
+		  while (cmd->val_count) {
+			  VAL_SPEC_LIST *val = cmd->val_spec_list;
+			  REG_VAL *reg_val = NULL;
 
-								  if (val->type == REG_DELETE) {
-									  reg_val = reg_key_get_value_by_name( tmp, val->name);
-									  reg_val_del(reg_val);
-									  modified = 1;
-								  }
-								  else {
-									  /* FIXME 
-									  reg_val = nt_add_reg_value(tmp, val->name, val->type,
-																 val->val); */
-									  modified = 1;
-								  }
+			  if (val->type == REG_DELETE) {
+				  reg_val = reg_key_get_value_by_name( tmp, val->name);
+				  reg_val_del(reg_val);
+				  modified = 1;
+			  }
+			  else {
+				  /* FIXME 
+					 reg_val = nt_add_reg_value(tmp, val->name, val->type,
+					 val->val); */
+				  modified = 1;
+			  }
 
-								  cmd->val_spec_list = val->next;
-								  free_val_spec_list(val);
-								  cmd->val_count--;
-							  }
+			  cmd->val_spec_list = val->next;
+			  free_val_spec_list(val);
+			  cmd->val_count--;
+		  }
 
-							  break;
+		  break;
 						  }
 
 		case CMD_DEL_KEY:
-						  /* 
-						   * Any value does not matter ...
-						   * Find the key if it exists, and delete it ...
-						   */
+		  /* 
+		   * Any value does not matter ...
+		   * Find the key if it exists, and delete it ...
+		   */
 
-						  reg_key_del_recursive(reg_open_key(reg_get_root(regf), cmd->key));
-						  modified = 1;
-						  break;
+		  reg_key_del_recursive(reg_open_key(reg_get_root(regf), cmd->key));
+		  modified = 1;
+		  break;
 		}
 	}
 	free_cmd(cmd);
@@ -779,7 +748,7 @@ int main (int argc, char **argv)
 	};
 
 	pc = poptGetContext(argv[0], argc, (const char **) argv, long_options,0);
-	
+
 	while((opt = poptGetNextOpt(pc)) != -1) {
 	}
 
@@ -797,12 +766,11 @@ int main (int argc, char **argv)
 		return 1;
 	}
 
-	poptFreeContext(pc);
-
 	patch = poptGetArg(pc);
 	if(!patch) patch = "/dev/stdin";
+	poptFreeContext(pc);
 
 	nt_apply_reg_command_file(h, patch);
-	
+
 	return 0;
 }

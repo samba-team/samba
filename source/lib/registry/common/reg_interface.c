@@ -187,6 +187,8 @@ REG_VAL *reg_key_get_value_by_index(REG_KEY *key, int idx)
 
 int reg_key_num_subkeys(REG_KEY *key)
 {
+	if(!key) return 0;
+	
 	if(!key->handle->functions->num_subkeys) {
 		if(!key->cache_subkeys) 
 			key->handle->functions->fetch_subkeys(key, &key->cache_subkeys_count, &key->cache_subkeys);
@@ -306,8 +308,12 @@ REG_VAL *reg_key_get_value_by_name(REG_KEY *key, const char *name)
 
 BOOL reg_key_del(REG_KEY *key)
 {
-	if(key->handle->functions->del_key)
-		return key->handle->functions->del_key(key);
+	if(key->handle->functions->del_key) {
+		if(key->handle->functions->del_key(key)) {
+			free_cached_keys(key);		
+			return True;
+		}
+	}
 
 	return False;
 }
@@ -349,17 +355,53 @@ BOOL reg_val_del(REG_VAL *val)
 		return False;
 	}
 	
-	return val->handle->functions->del_value(val);
+	if(val->handle->functions->del_value(val)) {
+		free_cached_values(val->parent);
+		return True;
+	} 
+	return False;
+}
+
+BOOL reg_key_add_name_recursive(REG_KEY *parent, const char *path)
+{
+	REG_KEY *cur, *prevcur = parent;
+	char *begin = (char *)path, *end;
+
+	while(1) { 
+		end = strchr(begin, '\\');
+		if(end) *end = '\0';
+		cur = reg_key_get_subkey_by_name(prevcur, begin);
+		if(!cur) {
+			if(!reg_key_add_name(prevcur, begin)) { printf("foo\n"); return False; }
+			cur = reg_key_get_subkey_by_name(prevcur, begin);
+			if(!cur) {
+				DEBUG(0, ("Can't find key after adding it : %s\n", begin));
+				return False;
+			}
+		}
+		
+		if(!end) break;
+		*end = '\\';
+		begin = end+1;
+		prevcur = cur;
+	}
+	return True;
 }
 
 BOOL reg_key_add_name(REG_KEY *parent, const char *name)
 {
+	if (!parent) return False;
+	
 	if (!parent->handle->functions->add_key) {
 		DEBUG(1, ("Backend '%s' doesn't support method add_key\n", parent->handle->functions->name));
 		return False;
 	}
 
-	return parent->handle->functions->add_key(parent, name);
+	if(parent->handle->functions->add_key(parent, name)) {
+		free_cached_keys(parent);
+		return True;
+	} 
+	return False;
 }
 
 BOOL reg_val_update(REG_VAL *val, int type, void *data, int len)
@@ -377,6 +419,7 @@ BOOL reg_val_update(REG_VAL *val, int type, void *data, int len)
 		
 		new = val->handle->functions->add_value(val->parent, val->name, type, data, len);
 		memcpy(val, new, sizeof(REG_VAL));
+		free_cached_values(val->parent);
 		return True;
 	}
 		
@@ -419,5 +462,19 @@ REG_VAL *reg_key_add_value(REG_KEY *key, const char *name, int type, void *value
 	ret = key->handle->functions->add_value(key, name, type, value, vallen);
 	ret->parent = key;
 	ret->handle = key->handle;
+	free_cached_values(key);
 	return ret;
+}
+
+void free_cached_values(REG_KEY *key) 
+{
+	free(key->cache_values); key->cache_values = NULL;
+	key->cache_values_count = 0;
+}
+
+
+void free_cached_keys(REG_KEY *key) 
+{
+	free(key->cache_subkeys); key->cache_subkeys = NULL;
+	key->cache_subkeys_count = 0;
 }

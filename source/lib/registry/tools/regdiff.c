@@ -23,14 +23,22 @@
 
 void writediff(REG_KEY *oldkey, REG_KEY *newkey, FILE *out)
 {
-	int i, numvals1, numvals2, numkeys2;
+	int i, numkeys1, numvals1, numvals2, numkeys2;
+
+	numkeys1 = reg_key_num_subkeys(oldkey);
+	for(i = 0; i < numkeys1; i++) {
+		REG_KEY *t1 = reg_key_get_subkey_by_index(oldkey, i);
+		if(!reg_key_get_subkey_by_name(newkey, reg_key_name(t1))) {
+			fprintf(out, "-%s\n", reg_key_get_path(t1)+1);
+		}
+	}
 
 	numkeys2 = reg_key_num_subkeys(newkey);
 	for(i = 0; i < numkeys2; i++) {
 		REG_KEY *t1 = reg_key_get_subkey_by_index(newkey, i);
 		REG_KEY *t2 = reg_key_get_subkey_by_name(oldkey, reg_key_name(t1));
 		if(!t2) {
-			fprintf(out, "[%s]\n", reg_key_get_path(t1));
+			fprintf(out, "\n[%s]\n", reg_key_get_path(t1)+1);
 		}
 		writediff(t2, t1, out);
 	}

@@ -21,27 +21,11 @@
 #include "includes.h"
 #include "lib/registry/common/registry.h"
 
-static DIR *reg_dir_dir(REG_HANDLE *h, const char *base, const char *name)
-{
-	char *path = NULL;
-	DIR *d;
-	asprintf(&path, "%s/%s/%s", h->location, base, name);
-	path = reg_path_win2unix(path);
-	
-	d = opendir(path);
-	if(!d) {
-		printf("Unable to open '%s'\n", path);
-		return NULL;
-	}
-	SAFE_FREE(path);
-	return d;
-}
-
 static BOOL reg_dir_add_key(REG_KEY *parent, const char *name)
 {
 	char *path;
 	int ret;
-	asprintf(&path, "%s/%s/%s", parent->handle->location, reg_key_get_path(parent), name);
+	asprintf(&path, "%s%s\\%s", parent->handle->location, reg_key_get_path(parent), name);
 	path = reg_path_win2unix(path);
 	ret = mkdir(path, 0700);
 	free(path);
@@ -50,13 +34,7 @@ static BOOL reg_dir_add_key(REG_KEY *parent, const char *name)
 
 static BOOL reg_dir_del_key(REG_KEY *k)
 {
-	char *path;
-	int ret;
-	asprintf(&path, "%s/%s", k->handle->location, reg_key_get_path(k));
-	path = reg_path_win2unix(path);
-	ret = rmdir(path);
-	free(path);
-	return (ret == 0);
+	return (rmdir((char *)k->backend_data) == 0);
 }
 
 static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
@@ -67,32 +45,41 @@ static REG_KEY *reg_dir_open_key(REG_HANDLE *h, const char *name)
 		DEBUG(0, ("NULL pointer passed as directory name!"));
 		return NULL;
 	}
-	fullpath = reg_path_win2unix(strdup(name));
-	d = reg_dir_dir(h, "", fullpath);
-	free(fullpath);
+	asprintf(&fullpath, "%s%s", h->location, name);
+	fullpath = reg_path_win2unix(fullpath);
 	
-	if(d) return reg_key_new_abs(name, h, d);
-	return NULL;
+	d = opendir(fullpath);
+	if(!d) {
+		DEBUG(3,("Unable to open '%s': %s\n", fullpath, strerror(errno)));
+		SAFE_FREE(fullpath);
+		return NULL;
+	}
+	closedir(d);
+	
+	return reg_key_new_abs(name, h, fullpath);
 }
 
 static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 {
-	DIR *d = (DIR *)k->backend_data;
 	struct dirent *e;
 	int max = 200;
+	char *fullpath = k->backend_data;
 	REG_KEY **ar;
-	if(!d) return False;
-	rewinddir(d);
+	DIR *d;
 	(*count) = 0;
 	ar = malloc(sizeof(REG_KEY *) * max);
+
+	d = opendir(fullpath);
+
+	if(!d) return False;
 	
 	while((e = readdir(d))) {
 		if(e->d_type == DT_DIR && 
 		   strcmp(e->d_name, ".") &&
 		   strcmp(e->d_name, "..")) {
-			char *fullpath = reg_path_win2unix(strdup(k->path));
-			ar[(*count)] = reg_key_new_rel(e->d_name, k, reg_dir_dir(k->handle, fullpath, e->d_name));
-			free(fullpath);
+			char *newfullpath;
+			asprintf(&newfullpath, "%s/%s", fullpath, e->d_name);
+			ar[(*count)] = reg_key_new_rel(e->d_name, k, newfullpath);
 			if(ar[(*count)])(*count)++;
 
 			if((*count) == max) {
@@ -101,6 +88,8 @@ static BOOL reg_dir_fetch_subkeys(REG_KEY *k, int *count, REG_KEY ***r)
 			}
 		}
 	}
+
+	closedir(d);
 	
 	*r = ar;
 	return True;
@@ -113,7 +102,7 @@ static BOOL reg_dir_open(REG_HANDLE *h, const char *loc, BOOL try) {
 
 static void dir_free(REG_KEY *k) 
 {
-	closedir((DIR *)k->backend_data);
+	free(k->backend_data);
 }
 
 static REG_VAL *reg_dir_add_value(REG_KEY *p, const char *name, int type, void *data, int len)
@@ -132,7 +121,7 @@ static REG_VAL *reg_dir_add_value(REG_KEY *p, const char *name, int type, void *
 
 static BOOL reg_dir_del_value(REG_VAL *v)
 {
-	char *fullpath = reg_path_win2unix(strdup(reg_val_get_path(v)));
+	/* FIXME*/
 	return False;
 }
 

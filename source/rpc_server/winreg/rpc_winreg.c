@@ -22,10 +22,6 @@
 
 #include "includes.h"
 
-REG_HANDLE *get_registry_handle() {
-	return reg_open("nt4", "/home/aurelia/jelmer/NTUSER.dat", False);
-}
-
 /* 
   winreg_OpenHKCR 
 */
@@ -42,15 +38,6 @@ static NTSTATUS winreg_OpenHKCR(struct dcesrv_call_state *dce_call, TALLOC_CTX *
 static NTSTATUS winreg_OpenHKCU(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 		       struct winreg_OpenHKCU *r)
 {
-	REG_KEY *hkcu = reg_open_key(get_registry_handle(), "\\HKEY_CURRENT_USER");
-
-	if(!hkcu) {
-		r->out.result = WERR_NO_MORE_ITEMS;
-		return NT_STATUS_OK;
-	}
-
-	r->out.result = WERR_OK;
-	
 	return NT_STATUS_NOT_IMPLEMENTED;
 }
 

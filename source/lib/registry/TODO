@@ -3,7 +3,6 @@
 - use memory pools?
 - get rid of all the nasty memory leaks..
 - security stuff
-- finish 'regpatch'
 - clean up code
 - rpc_server
 
@@ -22,6 +21,3 @@ reg_backend_ldb:
 
 reg_backend_wine.c:
  - implement
-
-regpatch.c: 
- - test/finish
