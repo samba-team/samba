@@ -6,6 +6,7 @@
 
 package IdlEParser;
 
+use strict;
 use Data::Dumper;
 
 my($res);
