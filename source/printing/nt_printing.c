@@ -346,7 +346,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 								   struct current_user *user, uint32 *perr)
 {
 	int               cversion;
-	int               access;
+	int               access_mode;
 	int               action;
 	int               ecode;
 	char              buf[PE_HEADER_SIZE];
@@ -408,7 +408,7 @@ static uint32 get_correct_cversion(fstring architecture, fstring driverpath_in,
 	fsp = open_file_shared(conn, driverpath, &st,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		DEBUG(3,("get_correct_cversion: Can't open file [%s], errno = %d\n",
 				driverpath, errno));
@@ -688,6 +688,8 @@ static void convert_level_6_to_level3(NT_PRINTER_DRIVER_INFO_LEVEL_3 *dst, NT_PR
     dst->dependentfiles = src->dependentfiles;
 }
 
+#if 0 /* Debugging function */
+
 static char* ffmt(unsigned char *c){
 	int i;
 	static char ffmt_str[17];
@@ -701,6 +703,8 @@ static char* ffmt(unsigned char *c){
     ffmt_str[16]='\0';
 	return ffmt_str;
 }
+
+#endif
 
 /****************************************************************************
 Version information in Microsoft files is held in a VS_VERSION_INFO structure.
@@ -813,7 +817,7 @@ static BOOL get_file_version(files_struct *fsp, char *fname,uint32 *major,
 					/* Scan for 1st 3 unicoded bytes followed by word aligned magic value */
 					if (buf[i] == 'V' && buf[i+1] == '\0' && buf[i+2] == 'S') {
 						/* Align to next long address */
-						int pos = i + sizeof(VS_SIGNATURE)*2 + 3 & 0xfffffffc;
+						int pos = (i + sizeof(VS_SIGNATURE)*2 + 3) & 0xfffffffc;
 
 						if (IVAL(buf,pos) == VS_MAGIC_VALUE) {
 							*major = IVAL(buf,pos+VS_MAJOR_OFFSET);
@@ -937,7 +941,6 @@ the modification date). Otherwise chose the numerically larger version number.
 static int file_version_is_newer(connection_struct *conn, fstring new_file,
 								fstring old_file)
 {
-	int    service;
 	BOOL   use_version = True;
 	pstring filepath;
 
@@ -949,7 +952,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	uint32 old_minor;
 	time_t old_create_time;
 
-	int access;
+	int access_mode;
 	int action;
 	files_struct    *fsp = NULL;
 	SMB_STRUCT_STAT st;
@@ -962,7 +965,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		/* Old file not found, so by definition new file is in fact newer */
 		DEBUG(10,("file_version_is_newer: Can't open old file [%s], errno = %d\n",
@@ -979,7 +982,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			use_version = False;
 			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
 			old_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %d sec\n", old_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", old_create_time));
 		}
 	}
 	fsp->conn->vfs_ops.close(fsp, fsp->fd);
@@ -992,7 +995,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 	fsp = open_file_shared(conn, filepath, &stat_buf,
 						   SET_OPEN_MODE(DOS_OPEN_RDONLY),
 						   (FILE_FAIL_IF_NOT_EXIST|FILE_EXISTS_OPEN),
-						   0, 0, &access, &action);
+						   0, 0, &access_mode, &action);
 	if (!fsp) {
 		/* New file not found, this shouldn't occur if the caller did its job */
 		DEBUG(3,("file_version_is_newer: Can't open new file [%s], errno = %d\n",
@@ -1009,7 +1012,7 @@ static int file_version_is_newer(connection_struct *conn, fstring new_file,
 			use_version = False;
 			if (fsp->conn->vfs_ops.fstat(fsp, fsp->fd, &st) == -1) goto error_exit;
 			new_create_time = st.st_mtime;
-			DEBUGADD(6,("file_version_is_newer: mod time = %d sec\n", new_create_time));
+			DEBUGADD(6,("file_version_is_newer: mod time = %ld sec\n", new_create_time));
 		}
 	}
 	fsp->conn->vfs_ops.close(fsp, fsp->fd);

@@ -2614,7 +2614,6 @@ static uint32 getprinter_level_2(int snum, NEW_BUFFER *buffer, uint32 offered, u
 static uint32 getprinter_level_3(int snum, NEW_BUFFER *buffer, uint32 offered, uint32 *needed)
 {
 	PRINTER_INFO_3 *printer=NULL;
-	fstring temp;
 
 	if (!construct_printer_info_3(&printer, snum))
 		return ERROR_NOT_ENOUGH_MEMORY;
