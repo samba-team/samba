@@ -38,16 +38,14 @@ struct smbcli_session *smbcli_session_init(struct smbcli_transport *transport)
 	uint16_t flags2;
 	uint32_t capabilities;
 
-	session = talloc_p(transport, struct smbcli_session);
+	session = talloc_zero(transport, struct smbcli_session);
 	if (!session) {
 		return NULL;
 	}
 
-	ZERO_STRUCTP(session);
 	session->transport = talloc_reference(session, transport);
 	session->pid = (uint16_t)getpid();
 	session->vuid = UID_FIELD_INVALID;
-
 	
 	capabilities = transport->negotiate.capabilities;
 

@@ -89,8 +89,6 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 				   const char *hostname, 
 				   const char *sharename)
 {
-	BOOL retry;
-	int flags = 0;
 	NTSTATUS status;
 	const char *username = lp_parm_string(-1, "torture", "username");
 	const char *userdomain = lp_parm_string(-1, "torture", "userdomain");
@@ -98,10 +96,10 @@ BOOL torture_open_connection_share(struct smbcli_state **c,
 
 	status = smbcli_full_connection(NULL,
 					c, lp_netbios_name(),
-					hostname, NULL, 
-					sharename, "?????", 
+					hostname, 
+					sharename, NULL,
 					username, username[0]?userdomain:"",
-					password, flags, &retry);
+					password);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to open connection - %s\n", nt_errstr(status));
 		return False;
@@ -745,8 +743,6 @@ static BOOL tcon_devtest(struct smbcli_state *cli,
 static BOOL run_tcon_devtype_test(void)
 {
 	struct smbcli_state *cli1 = NULL;
-	BOOL retry;
-	int flags = 0;
 	NTSTATUS status;
 	BOOL ret = True;
 	const char *host = lp_parm_string(-1, "torture", "host");
@@ -757,10 +753,10 @@ static BOOL run_tcon_devtype_test(void)
 	
 	status = smbcli_full_connection(NULL,
 					&cli1, lp_netbios_name(),
-					host, NULL, 
-					share, "?????",
+					host, 
+					share, NULL,
 					username, userdomain,
-					password, flags, &retry);
+					password);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("could not open connection\n");
@@ -1054,7 +1050,7 @@ static BOOL run_negprot_nowait(void)
 	for (i=0;i<10000;i++) {
 		struct smbcli_request *req;
 		time_t t1 = time(NULL);
-		req = smb_negprot_send(cli->transport, PROTOCOL_NT1);
+		req = smb_raw_negotiate_send(cli->transport, PROTOCOL_NT1);
 		while (req->state == SMBCLI_REQUEST_SEND && time(NULL) < t1+5) {
 			smbcli_transport_process(cli->transport);
 		}
@@ -2155,30 +2151,6 @@ BOOL torture_chkpath_test(void)
 }
 
 
-/*
-  parse a //server/share type UNC name
-*/
-static BOOL parse_unc(const char *unc_name, char **hostname, char **sharename)
-{
-	char *p;
-
-	if (strncmp(unc_name, "//", 2)) {
-		return False;
-	}
-
-	*hostname = strdup(&unc_name[2]);
-	p = strchr_m(&(*hostname)[2],'/');
-	if (!p) {
-		return False;
-	}
-	*p = 0;
-	*sharename = strdup(p+1);
-
-	return True;
-}
-
-
-
 static void sigcont(int sig)
 {
 }
@@ -2234,7 +2206,7 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
-			char *hostname=NULL, *sharename;
+			const char *hostname=NULL, *sharename;
 
 			pid_t mypid = getpid();
 			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
@@ -2245,8 +2217,8 @@ double torture_create_procs(BOOL (*fn)(struct smbcli_state *, int), BOOL *result
 
 
 			if (unc_list) {
-				if (!parse_unc(unc_list[i % num_unc_names],
-					       &hostname, &sharename)) {
+				if (!smbcli_parse_unc(unc_list[i % num_unc_names],
+						      NULL, &hostname, &sharename)) {
 					printf("Failed to parse UNC name %s\n",
 					       unc_list[i % num_unc_names]);
 					exit(1);
@@ -2746,9 +2718,9 @@ static BOOL is_binding_string(const char *binding_string)
 		lp_set_cmdline("torture:binding", argv_new[1]);
 	} else {
 		char *binding = NULL;
-		char *host = NULL, *share = NULL;
+		const char *host = NULL, *share = NULL;
 
-		if (!parse_unc(argv_new[1], &host, &share)) {
+		if (!smbcli_parse_unc(argv_new[1], NULL, &host, &share)) {
 			d_printf("Invalid option: %s is not a valid torture target (share or binding string)\n\n", argv_new[1]);
 			usage(pc);
 		}

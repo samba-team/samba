@@ -108,7 +108,6 @@ static struct smbcli_state *connect_one(char *share, int snum)
 {
 	struct smbcli_state *c;
 	fstring server, myname;
-	uint_t flags = 0;
 	NTSTATUS status;
 	int retries = 10;
 
@@ -122,10 +121,10 @@ static struct smbcli_state *connect_one(char *share, int snum)
 
 	do {
 		status = smbcli_full_connection(NULL, &c, myname,
-					     server, NULL,  
-					     share, "?????", 
-					     servers[snum].username, lp_workgroup(), 
-					     servers[snum].password, flags, NULL);
+						server, 
+						share, NULL,
+						servers[snum].username, lp_workgroup(), 
+						servers[snum].password);
 		if (!NT_STATUS_IS_OK(status)) {
 			sleep(2);
 		}

@@ -827,7 +827,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
-	BOOL retry;
 	struct smbcli_state *cli;
 	const char *pipe_name = NULL;
 	TALLOC_CTX *tmp_ctx;
@@ -866,15 +865,15 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 	if (!username || !username[0] || 
 	    (binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = smbcli_full_connection(p->conn, &cli, lp_netbios_name(),
-						binding->host, NULL, 
-						"ipc$", "?????", 
-						"", "", NULL, 0, &retry);
+						binding->host, 
+						"ipc$", NULL, 
+						"", "", NULL);
 	} else {
 		status = smbcli_full_connection(p->conn, &cli, lp_netbios_name(),
-						binding->host, NULL, 
-						"ipc$", "?????", 
+						binding->host, 
+						"ipc$", NULL,
 						username, domain,
-						password, 0, &retry);
+						password);
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));

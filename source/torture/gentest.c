@@ -177,11 +177,12 @@ static BOOL connect_servers(void)
 			       servers[i].server_name, servers[i].share_name, 
 			       servers[i].username, j);
 			status = smbcli_full_connection(NULL, &servers[i].cli[j],
-						     "gentest",
-						     servers[i].server_name, NULL, 
-						     servers[i].share_name, "?????", 
-						     servers[i].username, lp_workgroup(),
-						     servers[i].password, 0, NULL);
+							"gentest",
+							servers[i].server_name, 
+							servers[i].share_name, NULL,
+							servers[i].username, 
+							lp_workgroup(),
+							servers[i].password);
 			if (!NT_STATUS_IS_OK(status)) {
 				printf("Failed to connect to \\\\%s\\%s - %s\n",
 				       servers[i].server_name, servers[i].share_name,

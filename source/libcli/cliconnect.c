@@ -57,7 +57,7 @@ BOOL smbcli_transport_establish(struct smbcli_state *cli,
 /* wrapper around smb_raw_negotiate() */
 NTSTATUS smbcli_negprot(struct smbcli_state *cli)
 {
-	return smb_raw_negotiate(cli->transport);
+	return smb_raw_negotiate(cli->transport, lp_maxprotocol());
 }
 
 /* wrapper around smb_raw_session_setup() */
@@ -155,14 +155,11 @@ NTSTATUS smbcli_full_connection(TALLOC_CTX *parent_ctx,
 				struct smbcli_state **ret_cli, 
 				const char *myname,
 				const char *host,
-				struct ipv4_addr *ip,
 				const char *sharename,
 				const char *devtype,
 				const char *username,
 				const char *domain,
-				const char *password,
-				uint_t flags,
-				BOOL *retry)
+				const char *password)
 {
 	struct smbcli_tree *tree;
 	NTSTATUS status;
@@ -231,3 +228,31 @@ void smbcli_shutdown(struct smbcli_state *cli)
 {
 	talloc_free(cli);
 }
+
+/*
+  parse a //server/share type UNC name
+*/
+BOOL smbcli_parse_unc(const char *unc_name, TALLOC_CTX *mem_ctx,
+		      const char **hostname, const char **sharename)
+{
+	char *p;
+
+	if (strncmp(unc_name, "\\\\", 2) &&
+	    strncmp(unc_name, "//", 2)) {
+		return False;
+	}
+
+	*hostname = talloc_strdup(mem_ctx, &unc_name[2]);
+	p = strchr_m(&(*hostname)[2],'/');
+	if (!p) {
+		p = strchr_m(&(*hostname)[2],'\\');
+		if (!p) return False;
+	}
+	*p = 0;
+	*sharename = talloc_strdup(mem_ctx, p+1);
+
+	return True;
+}
+
+
+
