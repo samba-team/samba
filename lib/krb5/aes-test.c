@@ -754,6 +754,38 @@ krb_enc_test(krb5_context context)
 }
 
 
+static int
+random_to_key(krb5_context context)
+{
+    krb5_error_code ret;
+    krb5_keyblock key;
+
+    ret = krb5_random_to_key(context,
+			     ETYPE_DES3_CBC_SHA1,
+			     "\x21\x39\x04\x58\x6A\xBD\x7F"
+			     "\x21\x39\x04\x58\x6A\xBD\x7F"
+			     "\x21\x39\x04\x58\x6A\xBD\x7F",
+			     21,
+			     &key);
+    if (ret){
+	krb5_warn(context, ret, "random_to_key");
+	return 1;
+    }
+    if (key.keyvalue.length != 24)
+	return 1;
+
+    if (memcmp(key.keyvalue.data,
+	       "\x20\x38\x04\x58\x6b\xbc\x7f\xc7"
+	       "\x20\x38\x04\x58\x6b\xbc\x7f\xc7"
+	       "\x20\x38\x04\x58\x6b\xbc\x7f\xc7",
+	       24) != 0)
+	return 1;
+
+    krb5_free_keyblock_contents(context, &key);
+
+    return 0;
+}
+
 
 int
 main(int argc, char **argv)
@@ -775,6 +807,7 @@ main(int argc, char **argv)
 			   encs2, sizeof(encs2)/sizeof(encs2[0]));
 #endif
     val |= krb_enc_test(context);
+    val |= random_to_key(context);
 
     if (verbose && val == 0)
 	printf("all ok\n");
