@@ -1175,9 +1175,9 @@ machine %s in domain %s.\n", global_myname(), lp_workgroup() ));
       return True;
     }
 
-    pstrcpy(remote_machine_list, lp_passwordserver());
-
-    change_trust_account_password( lp_workgroup(), remote_machine_list);
+    /* always just contact the PDC here */
+    
+    change_trust_account_password( lp_workgroup(), NULL);
     global_machine_password_needs_changing = False;
     secrets_lock_trust_account_password(lp_workgroup(), False);
   }
