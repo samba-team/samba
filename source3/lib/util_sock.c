@@ -497,9 +497,10 @@ ssize_t read_smb_length(int fd,char *inbuf,unsigned int timeout)
  BUFFER_SIZE+SAFETY_MARGIN.
  The timeout is in milliseconds. 
  This function will return on receipt of a session keepalive packet.
+ Doesn't check the MAC on signed packets.
 ****************************************************************************/
 
-BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
+BOOL receive_smb_raw(int fd,char *buffer, unsigned int timeout)
 {
 	ssize_t len,ret;
 
@@ -509,7 +510,7 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 
 	len = read_smb_length_return_keepalive(fd,buffer,timeout);
 	if (len < 0) {
-		DEBUG(10,("receive_smb: length < 0!\n"));
+		DEBUG(10,("receive_smb_raw: length < 0!\n"));
 
 		/*
 		 * Correct fix. smb_read_error may have already been
@@ -550,6 +551,20 @@ BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
 				smb_read_error = READ_ERROR;
 			return False;
 		}
+	}
+
+	return True;
+}
+
+/****************************************************************************
+ Wrapper for receive_smb_raw().
+ Checks the MAC on signed packets.
+****************************************************************************/
+
+BOOL receive_smb(int fd,char *buffer, unsigned int timeout)
+{
+	if (!receive_smb_raw(fd, buffer, timeout)) {
+		return False;
 	}
 
 	/* Check the incoming SMB signature. */
