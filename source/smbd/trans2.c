@@ -343,7 +343,7 @@ static int get_lanman2_dir_entry(int cnum,char *path_mask,int dirtype,int info_l
 	  size = sbuf.st_size;
 	  mdate = sbuf.st_mtime;
 	  adate = sbuf.st_atime;
-	  cdate = sbuf.st_ctime;
+	  cdate = sbuf.st_mtime;
 	  if(mode & aDIR)
 	    size = 0;
 
@@ -915,10 +915,10 @@ static int call_trans2qfsinfo(char *inbuf, char *outbuf, int length, int bufsize
       /* Return volume name */
       int volname_len = MIN(strlen(vname),11);
       data_len = l2_vol_szVolLabel + volname_len + 1;
-      put_dos_date2(pdata,l2_vol_fdateCreation,st.st_ctime);
+      put_dos_date2(pdata,l2_vol_fdateCreation,st.st_mtime);
       SCVAL(pdata,l2_vol_cch,volname_len);
       StrnCpy(pdata+l2_vol_szVolLabel,vname,volname_len);
-      DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_ctime,volname_len,
+      DEBUG(5,("call_trans2qfsinfo : time = %x, namelen = %d, name = %s\n",st.st_mtime, volname_len,
 	       pdata+l2_vol_szVolLabel));
       break;
     }
@@ -1070,21 +1070,21 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
 
   switch (info_level) 
     {
-    case 1:
-    case 2:
+    case SMB_INFO_STANDARD:
+    case SMB_INFO_QUERY_EA_SIZE:
       data_size = (info_level==1?22:26);
-      put_dos_date2(pdata,l1_fdateCreation,sbuf.st_ctime);
-      put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime);
-      put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime);
+      put_dos_date2(pdata,l1_fdateCreation,sbuf.st_mtime); /* create = mod */
+      put_dos_date2(pdata,l1_fdateLastAccess,sbuf.st_atime); /* access time */
+      put_dos_date2(pdata,l1_fdateLastWrite,sbuf.st_mtime); /* write time */
       SIVAL(pdata,l1_cbFile,size);
       SIVAL(pdata,l1_cbFileAlloc,ROUNDUP(size,1024));
       SSVAL(pdata,l1_attrFile,mode);
       SIVAL(pdata,l1_attrFile+2,4); /* this is what OS2 does */
       break;
 
-    case 3:
+    case SMB_INFO_QUERY_EAS_FROM_LIST:
       data_size = 24;
-      put_dos_date2(pdata,0,sbuf.st_ctime);
+      put_dos_date2(pdata,0,sbuf.st_mtime); /* create time = mod time */
       put_dos_date2(pdata,4,sbuf.st_atime);
       put_dos_date2(pdata,8,sbuf.st_mtime);
       SIVAL(pdata,12,size);
@@ -1092,7 +1092,7 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       SIVAL(pdata,20,mode);
       break;
 
-    case 4:
+    case SMB_INFO_QUERY_ALL_EAS:
       data_size = 4;
       SIVAL(pdata,0,data_size);
       break;
@@ -1101,12 +1101,20 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       return(ERROR(ERRDOS,ERRbadfunc)); /* os/2 needs this */      
 
     case SMB_QUERY_FILE_BASIC_INFO:
-      data_size = 36;
-      put_long_date(pdata,sbuf.st_ctime);
-      put_long_date(pdata+8,sbuf.st_atime);
-      put_long_date(pdata+16,sbuf.st_mtime);
-      put_long_date(pdata+24,sbuf.st_mtime);
+      data_size = 40; /* w95 returns 40 bytes not 36. */
+      put_long_date(pdata,sbuf.st_mtime); /* create time = mod time */
+      put_long_date(pdata+8,sbuf.st_atime); /* access time */
+      put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+      put_long_date(pdata+24,sbuf.st_ctime); /* change time */
       SIVAL(pdata,32,mode);
+
+      DEBUG(5,("SMB_QFBI - "));
+      DEBUG(5,("create: %s ", ctime(&sbuf.st_mtime)));
+      DEBUG(5,("access: %s ", ctime(&sbuf.st_atime)));
+      DEBUG(5,("write: %s ", ctime(&sbuf.st_mtime)));
+      DEBUG(5,("change: %s ", ctime(&sbuf.st_ctime)));
+      DEBUG(5,("mode: %x\n", mode));
+
       break;
 
     case SMB_QUERY_FILE_STANDARD_INFO:
@@ -1135,10 +1143,10 @@ static int call_trans2qfilepathinfo(char *inbuf, char *outbuf, int length,
       break;
 
     case SMB_QUERY_FILE_ALL_INFO:
-      put_long_date(pdata,sbuf.st_ctime);
-      put_long_date(pdata+8,sbuf.st_atime);
-      put_long_date(pdata+16,sbuf.st_mtime);
-      put_long_date(pdata+24,sbuf.st_mtime);
+      put_long_date(pdata,sbuf.st_mtime); /* create time = mod time */
+      put_long_date(pdata+8,sbuf.st_atime); /* access time */
+      put_long_date(pdata+16,sbuf.st_mtime); /* write time */
+      put_long_date(pdata+24,sbuf.st_ctime); /* change time */
       SIVAL(pdata,32,mode);
       pdata += 40;
       SIVAL(pdata,0,size);
@@ -1257,29 +1265,33 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
   }
 
   switch (info_level)
+  {
+    case SMB_INFO_STANDARD:
+    case SMB_INFO_QUERY_EA_SIZE:
     {
-    case 1:
+      /* access time */
       tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
+
+      /* write time */
       tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
+
       mode = SVAL(pdata,l1_attrFile);
       size = IVAL(pdata,l1_cbFile);
       break;
+    }
 
-    case 2:
-      tvs.actime = make_unix_date2(pdata+l1_fdateLastAccess);
-      tvs.modtime = make_unix_date2(pdata+l1_fdateLastWrite);
-      mode = SVAL(pdata,l1_attrFile);
-      size = IVAL(pdata,l1_cbFile);
-      break;
-
-    case 3:
+    /* XXXX um, i don't think this is right.
+       it's also not in the cifs6.txt spec.
+     */
+    case SMB_INFO_QUERY_EAS_FROM_LIST:
       tvs.actime = make_unix_date2(pdata+8);
       tvs.modtime = make_unix_date2(pdata+12);
       size = IVAL(pdata,16);
       mode = IVAL(pdata,24);
       break;
 
-    case 4:
+    /* XXXX nor this.  not in cifs6.txt, either. */
+    case SMB_INFO_QUERY_ALL_EAS:
       tvs.actime = make_unix_date2(pdata+8);
       tvs.modtime = make_unix_date2(pdata+12);
       size = IVAL(pdata,16);
@@ -1287,48 +1299,79 @@ static int call_trans2setfilepathinfo(char *inbuf, char *outbuf, int length,
       break;
 
     case SMB_SET_FILE_BASIC_INFO:
-      pdata += 8;		/* create time */
-      tvs.actime = interpret_long_date(pdata); pdata += 8;
-      tvs.modtime=MAX(interpret_long_date(pdata),interpret_long_date(pdata+8));
-      pdata += 16;
-      mode = IVAL(pdata,0);
+    {
+      /* create time */
+
+      /* access time */
+      tvs.actime = interpret_long_date(pdata+8);
+
+      /* write time + changed time, combined. */
+      tvs.modtime=MAX(interpret_long_date(pdata+16),
+                      interpret_long_date(pdata+24));
+
+      /* attributes */
+      mode = IVAL(pdata,32);
       break;
+    }
 
     case SMB_SET_FILE_END_OF_FILE_INFO:
+    {
       if (IVAL(pdata,4) != 0)	/* more than 32 bits? */
-	return(ERROR(ERRDOS,ERRunknownlevel));
+         return(ERROR(ERRDOS,ERRunknownlevel));
       size = IVAL(pdata,0);
       break;
+    }
 
     case SMB_SET_FILE_DISPOSITION_INFO: /* not supported yet */
     case SMB_SET_FILE_ALLOCATION_INFO: /* not supported yet */
     default:
+    {
       return(ERROR(ERRDOS,ERRunknownlevel));
     }
+  }
 
+  DEBUG(3,("actime: %s " , ctime(&tvs.actime)));
+  DEBUG(3,("modtime: %s ", ctime(&tvs.modtime)));
+  DEBUG(3,("size: %x "   , size));
+  DEBUG(3,("mode: %x\n"  , mode));
 
+  /* get some defaults (no modifications) if any info is zero. */
   if (!tvs.actime) tvs.actime = st.st_atime;
   if (!tvs.modtime) tvs.modtime = st.st_mtime;
   if (!size) size = st.st_size;
 
-  /* Try and set the times, size and mode of this file - if they are different 
-   from the current values */
-  if(st.st_mtime != tvs.modtime || st.st_atime != tvs.actime) {
+  /* Try and set the times, size and mode of this file -
+     if they are different from the current values
+   */
+  if (st.st_mtime != tvs.modtime || st.st_atime != tvs.actime)
+  {
     if(sys_utime(fname, &tvs)!=0)
+    {
       return(ERROR(ERRDOS,ERRnoaccess));
+    }
   }
-  if(mode != dos_mode(cnum,fname,&st) && dos_chmod(cnum,fname,mode,NULL)) {
+
+  /* check the mode isn't different, before changing it */
+  if (mode != dos_mode(cnum, fname, &st) && dos_chmod(cnum, fname, mode, NULL))
+  {
     DEBUG(2,("chmod of %s failed (%s)\n", fname, strerror(errno)));
     return(ERROR(ERRDOS,ERRnoaccess));
   }
-  if(size != st.st_size) {
-    if (fd == -1) {
+
+  if(size != st.st_size)
+  {
+    if (fd == -1)
+    {
       fd = sys_open(fname,O_RDWR,0);
       if (fd == -1)
-	return(ERROR(ERRDOS,ERRbadpath));
+      {
+        return(ERROR(ERRDOS,ERRbadpath));
+      }
       set_filelen(fd, size);
       close(fd);
-    } else {
+    }
+    else
+    {
       set_filelen(fd, size);
     }
   }
