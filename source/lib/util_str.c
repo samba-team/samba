@@ -1063,19 +1063,21 @@ enough room!
 This routine looks for pattern in s and replaces it with 
 insert. It may do multiple replacements.
 
-any of " ; ' or ` in the insert string are replaced with _
+any of " ; ' $ or ` in the insert string are replaced with _
 if len==0 then no length check is performed
 ****************************************************************************/
 void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
-	char *p;
-	ssize_t ls,lp,li, i;
+	char *p, *s1;
+	ssize_t ls,lp,li, lm, i;
 
 	if (!insert || !pattern || !s) return;
 
+	s1 = s;
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
+	lm = ls + 1 - lp;
 
 	if (!*pattern) return;
 	
@@ -1086,13 +1088,16 @@ void string_sub(char *s,const char *pattern,const char *insert, size_t len)
 				 pattern, (int)len));
 			break;
 		}
-		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		if (li != lp) {
+			memmove(p+li,p+lp,lm - PTR_DIFF(p, s1));
+		}
 		for (i=0;i<li;i++) {
 			switch (insert[i]) {
 			case '`':
 			case '"':
 			case '\'':
 			case ';':
+			case '$':
 				p[i] = '_';
 				break;
 			default:
@@ -1121,14 +1126,16 @@ if len==0 then no length check is performed
 ****************************************************************************/
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
-	char *p;
-	ssize_t ls,lp,li;
+	char *p, *s1;
+	ssize_t ls,lp,li, lm;
 
 	if (!insert || !pattern || !s) return;
 
+	s1 = s;
 	ls = (ssize_t)strlen(s);
 	lp = (ssize_t)strlen(pattern);
 	li = (ssize_t)strlen(insert);
+	lm = ls + 1 - lp;
 
 	if (!*pattern) return;
 	
@@ -1139,7 +1146,9 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 				 pattern, (int)len));
 			break;
 		}
-		memmove(p+li,p+lp,ls + 1 - (PTR_DIFF(p,s) + lp));
+		if (li != lp) {
+			memmove(p+li,p+lp,lm - PTR_DIFF(p, s1));
+		}
 		memcpy(p, insert, li);
 		s = p + li;
 		ls += (li-lp);
