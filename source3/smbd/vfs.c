@@ -94,7 +94,8 @@ int vfs_init_default(connection_struct *conn)
 #ifdef HAVE_LIBDL
 BOOL vfs_init_custom(connection_struct *conn)
 {
-    struct vfs_ops *ops, *(*fptr)(struct vfs_options *options);
+	int vfs_version = -1;
+    struct vfs_ops *ops, *(*init_fptr)(int *);
 
     DEBUG(3, ("Initialising custom vfs hooks from %s\n",
 	      lp_vfsobj(SNUM(conn))));
@@ -108,21 +109,26 @@ BOOL vfs_init_custom(connection_struct *conn)
 
     /* Get handle on vfs_init() symbol */
 
-    fptr = (struct vfs_ops *(*)(struct vfs_options *))
-	    dlsym(conn->dl_handle, "vfs_init");
+    init_fptr = (struct vfs_ops *(*)(int *))dlsym(conn->dl_handle, "vfs_init");
 
-    if (fptr == NULL) {
-	DEBUG(0, ("No vfs_init() symbol found in %s\n", 
+    if (init_fptr == NULL) {
+		DEBUG(0, ("No vfs_init() symbol found in %s\n", 
 		  lp_vfsobj(SNUM(conn))));
-	return False;
+		return False;
     }
 
     /* Initialise vfs_ops structure */
 
-    if ((ops = fptr(NULL)) == NULL) {
+    if ((ops = init_fptr(&vfs_version)) == NULL) {
         DEBUG(0, ("vfs_init function from %s failed\n", lp_vfsobj(SNUM(conn))));
-	return False;
+		return False;
     }
+
+	if (vfs_version != SMB_VFS_INTERFACE_VERSION) {
+		DEBUG(0, ("vfs_init returned wrong interface version info (was %d, should be %d)\n",
+			vfs_version, SMB_VFS_INTERFACE_VERSION ));
+		return False;
+	}
 
     /* Fill in unused operations with default (disk based) ones.
        There's probably a neater way to do this then a whole bunch of

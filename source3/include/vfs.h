@@ -33,6 +33,14 @@
  * structs in the vfs - then anyone writing a vfs must include includes.h...
  */
 
+/*
+ * This next constant specifies the version number of the VFS interface
+ * this smbd will load. Increment this if *ANY* changes are made to the
+ * vfs_ops below. JRA.
+ */
+
+#define SMB_VFS_INTERFACE_VERSION 1
+
 /* VFS operations structure */
 
 struct connection_struct;
