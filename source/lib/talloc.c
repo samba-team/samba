@@ -146,7 +146,7 @@ static int talloc_reference_destructor(void *ptr)
 void *talloc_reference(const void *context, const void *ptr)
 {
 	void **handle;
-	handle = _talloc(context, sizeof(void *));
+	handle = talloc_named_const(context, sizeof(void *), ".reference");
 	if (handle == NULL) {
 		return NULL;
 	}
@@ -169,6 +169,9 @@ static void talloc_set_name_v(const void *ptr, const char *fmt, va_list ap)
 {
 	struct talloc_chunk *tc = talloc_chunk_from_ptr(ptr);
 	tc->name = talloc_vasprintf(ptr, fmt, ap);
+	if (tc->name) {
+		talloc_set_name_const(tc->name, ".name");
+	}
 }
 
 /*
@@ -267,7 +270,6 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 }
 
 
-
 /* 
    free a talloc pointer. This also frees all child pointers of this 
    pointer recursively
@@ -278,7 +280,7 @@ void *talloc_init(const char *fmt, ...) _PRINTF_ATTRIBUTE(1,2)
 */
 int talloc_free(void *ptr)
 {
-	struct talloc_chunk *tc;
+	struct talloc_chunk *tc, *tc2, *next;
 
 	if (ptr == NULL) {
 		return -1;
@@ -286,23 +288,26 @@ int talloc_free(void *ptr)
 
 	tc = talloc_chunk_from_ptr(ptr);
 
-	tc->ref_count--;
-	if (tc->ref_count != 0) {
+	if (tc->ref_count > 1) {
+		tc->ref_count--;
 		return -1;
 	}
 
-	if (tc->destructor && tc->destructor(ptr) == -1) {
-		tc->ref_count++;
-		return -1;
-	}
-
-	while (tc->child) {
-		if (talloc_free(tc->child + 1) != 0) {
-			tc->child->parent = NULL;
-			break;
+	/* while processing the free, increase the reference count
+	   so we don't recurse into this function */
+	tc->ref_count++;
+	if (tc->destructor) {
+		if (tc->destructor(ptr) == -1) {
+			tc->ref_count--;
+			return -1;
 		}
 	}
 
+	for (tc2=tc->child;tc2;tc2=next) {
+		next = tc2->next;
+		talloc_free(tc2 + 1);
+	}
+	
 	if (tc->parent) {
 		DLIST_REMOVE(tc->parent->child, tc);
 		if (tc->parent->child) {
@@ -311,6 +316,10 @@ int talloc_free(void *ptr)
 	} else {
 		if (tc->prev) tc->prev->next = tc->next;
 		if (tc->next) tc->next->prev = tc->prev;
+	}
+
+	if (tc->child) {
+		tc->child->parent = tc->parent;
 	}
 
 	tc->magic = TALLOC_MAGIC_FREE;
@@ -445,12 +454,20 @@ static void talloc_report_depth(const void *ptr, FILE *f, int depth)
 	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
 
 	for (c=tc->child;c;c=c->next) {
-		fprintf(f, "%*s%-30s contains %6lu bytes in %3lu blocks\n", 
-			depth*2, "",
-			talloc_get_name(c+1),
-			(unsigned long)talloc_total_size(c+1),
-			(unsigned long)talloc_total_blocks(c+1));
-		talloc_report_depth(c+1, f, depth+1);
+		const char *name = talloc_get_name(c+1);
+		if (strcmp(name, ".reference") == 0) {
+			void **handle = (void *)(c+1);
+			const char *name2 = talloc_get_name(*handle);
+			fprintf(f, "%*sreference to: %s\n", depth*4, "", name2);
+		} else {
+			fprintf(f, "%*s%-30s contains %6lu bytes in %3lu blocks (ref %d)\n", 
+				depth*4, "",
+				name,
+				(unsigned long)talloc_total_size(c+1),
+				(unsigned long)talloc_total_blocks(c+1),
+				c->ref_count);
+			talloc_report_depth(c+1, f, depth+1);
+		}
 	}
 
 }
@@ -460,6 +477,11 @@ static void talloc_report_depth(const void *ptr, FILE *f, int depth)
 */
 void talloc_report_full(const void *ptr, FILE *f)
 {
+	if (ptr == NULL) {
+		ptr = null_context;
+	}
+	if (ptr == NULL) return;
+
 	fprintf(f,"full talloc report on '%s' (total %lu bytes in %lu blocks)\n", 
 		talloc_get_name(ptr), 
 		(unsigned long)talloc_total_size(ptr),
@@ -473,12 +495,19 @@ void talloc_report_full(const void *ptr, FILE *f)
 */
 void talloc_report(const void *ptr, FILE *f)
 {
-	struct talloc_chunk *c, *tc = talloc_chunk_from_ptr(ptr);
+	struct talloc_chunk *c, *tc;
 
+	if (ptr == NULL) {
+		ptr = null_context;
+	}
+	if (ptr == NULL) return;
+       
 	fprintf(f,"talloc report on '%s' (total %lu bytes in %lu blocks)\n", 
 		talloc_get_name(ptr), 
 		(unsigned long)talloc_total_size(ptr),
 		(unsigned long)talloc_total_blocks(ptr));
+
+	tc = talloc_chunk_from_ptr(ptr);
 
 	for (c=tc->child;c;c=c->next) {
 		fprintf(f, "\t%-30s contains %6lu bytes in %3lu blocks\n", 
