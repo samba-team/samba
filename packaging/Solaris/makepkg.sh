@@ -11,37 +11,6 @@ INSTALL_BASE=/usr/local
 
 add_dynamic_entries() 
 {
-  # First build the codepages and append codepage entries to prototype
-  echo "#\n# Codepages \n#"
-  echo d none samba/lib/codepages 0755 root other
-
-  CODEPAGELIST="437 737 850 852 861 932 866 949 950 936"
-  # Check if make_smbcodepage exists
-  if [ ! -f $DISTR_BASE/source/bin/make_smbcodepage ]; then
-    echo "Could not find $DISTR_BASE/source/bin/make_smbcodepage to generate codepages.\n\
-     Please create the binaries before packaging." >&2
-    exit 1
-  fi
-
-  for p in $CODEPAGELIST; do
-    $DISTR_BASE/source/bin/make_smbcodepage c $p $DISTR_BASE/source/codepages/codepage_def.$p $DISTR_BASE/source/codepages/codepage.$p
-    echo f none samba/lib/codepages/codepage.$p=source/codepages/codepage.$p 0644 root other
-  done
-
-  # Create unicode maps
-  if [ ! -f $DISTR_BASE/source/bin/make_unicodemap ]; then
-    echo "Missing $DISTR_BASE/source/bin/make_unicodemap. Aborting." >&2
-    exit 1
-  fi
-
-  # Pull in all the unicode map files from source/codepages/CP*.TXT
-  list=`find $DISTR_BASE/source/codepages -name "CP*.TXT" | sed 's|^.*CP\(.*\)\.TXT|\1|'`
-  for umap in $list
-  do
-    $DISTR_BASE/source/bin/make_unicodemap $umap $DISTR_BASE/source/codepages/CP$umap.TXT $DISTR_BASE/source/codepages/unicode_map.$umap
-    echo f none samba/lib/codepages/unicode_map.$umap=source/codepages/unicode_map.$umap 0644 root other
-  done
-
   # Add the binaries, docs and SWAT files
 
   echo "#\n# Binaries \n#"
