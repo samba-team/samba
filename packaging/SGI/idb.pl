@@ -156,6 +156,14 @@ while(@bins) {
     elsif ($filename eq "smbprint") {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/packaging/SGI/$filename $PKG.sw.base\n";
     }
+    elsif ($filename eq "smbd") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+    }
+    elsif ($filename eq "nmbd") {
+      print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
+      print IDB "f 0755 root sys usr/samba/bin/$filename.profile $SRCPFX/source/$nextfile.profile $PKG.sw.base \n";
+    }
     else {
       print IDB "f 0755 root sys usr/samba/bin/$filename $SRCPFX/source/$nextfile $PKG.sw.base \n";
     }
