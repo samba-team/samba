@@ -182,6 +182,19 @@ static BOOL test_Map(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 		}
 	}
 
+	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_UDP;
+	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
+	twr->tower.floors[3].rhs.http.port = 0;
+
+	status = dcerpc_epm_Map(p, mem_ctx, &r);
+	if (NT_STATUS_IS_OK(status) && r.out.result == 0) {
+		for (i=0;i<r.out.num_towers;i++) {
+			if (r.out.towers[i].twr) {
+				display_tower(mem_ctx, &r.out.towers[i].twr->tower);
+			}
+		}
+	}
+
 	twr->tower.floors[3].lhs.protocol = EPM_PROTOCOL_SMB;
 	twr->tower.floors[3].lhs.info.lhs_data = data_blob(NULL, 0);
 	twr->tower.floors[3].rhs.smb.unc = "";

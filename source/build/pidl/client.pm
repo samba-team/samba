@@ -35,8 +35,8 @@ struct rpc_request *dcerpc_$name\_send(struct dcom_interface *d, TALLOC_CTX *mem
 	}
 
 	ZERO_STRUCT(r->in.ORPCthis);
-	r->in.ORPCthis.version.MajorVersion = 5;
-	r->in.ORPCthis.version.MinorVersion = 1;
+	r->in.ORPCthis.version.MajorVersion = COM_MAJOR_VERSION;
+	r->in.ORPCthis.version.MinorVersion = COM_MINOR_VERSION;
 
 ";
 	} else {

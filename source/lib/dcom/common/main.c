@@ -115,6 +115,13 @@ WERROR dcom_init(struct dcom_context **ctx, const char *domain, const char *user
 	return WERR_OK;
 }
 
+WERROR dcom_ping(struct dcom_context *ctx)
+{
+	/* FIXME: If OID's waiting in queue, do a ComplexPing call */
+	/* FIXME: otherwise, do a SimplePing call */
+	return WERR_OK;
+}
+
 WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const char *server, int num_ifaces, struct GUID *iid, struct dcom_interface **ip, WERROR *results)
 {
 	struct dcom_oxid_mapping *m;
@@ -131,8 +138,8 @@ WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const ch
 	}
 
 	ZERO_STRUCT(r.in);
-	r.in.this.version.MajorVersion = 5;
-	r.in.this.version.MinorVersion = 1;
+	r.in.this.version.MajorVersion = COM_MAJOR_VERSION;
+	r.in.this.version.MinorVersion = COM_MINOR_VERSION;
 	uuid_generate_random(&r.in.this.cid);
 	r.in.Clsid = *clsid;
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;
@@ -171,7 +178,7 @@ WERROR dcom_create_object(struct dcom_context *ctx, struct GUID *clsid, const ch
 	m->oxid = r.out.pOxid;
 	m->bindings = *r.out.pdsaOxidBindings;
 	DLIST_ADD(ctx->oxids, m);
-
+	
 	return WERR_OK;
 }
 
@@ -191,8 +198,8 @@ WERROR dcom_get_class_object(struct dcom_context *ctx, struct GUID *clsid, const
 	}
 
 	ZERO_STRUCT(r.in);
-	r.in.this.version.MajorVersion = 5;
-	r.in.this.version.MinorVersion = 1;
+	r.in.this.version.MajorVersion = COM_MAJOR_VERSION;
+	r.in.this.version.MinorVersion = COM_MINOR_VERSION;
 	uuid_generate_random(&r.in.this.cid);
 	r.in.Clsid = *clsid;
 	r.in.ClientImpLevel = RPC_C_IMP_LEVEL_IDENTIFY;

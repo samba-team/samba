@@ -17,36 +17,8 @@
 	void dcomu_UpdateResolverBindings();
 }
 
-[
-	uuid("99fcfe60-5260-101b-bbcb-00aa0021347a"),
-	pointer_default(unique)
-]
 interface ObjectRpcBaseTypes
 {
-	WERROR stub();
-	
-	/* Machine Identifier */
-#define MID HYPER_T
-
-	/* Object Exporter Identifier */
-#define OXID HYPER_T
-	
-	/* Object Identifer */
-#define OID HYPER_T
-	
-	/* Interface Pointer Identifier */
-#define IPID GUID
-	
-	/* Causality Identifier */
-#define CID GUID
-
-	/* Interface identifier */
-#define IID GUID
-
-#define LCID uint32
-
-#define DISPID uint32
-
 	/*//////////////////////////////////////////////////////////////// */
 	/* ORPC Call Packet Format */
 	/*//////////////////////////////////////////////////////////////// */
@@ -70,7 +42,7 @@ interface ObjectRpcBaseTypes
 
 	/* current version */
 	const uint16 COM_MAJOR_VERSION = 5;
-	const uint16 COM_MINOR_VERSION = 6;
+	const uint16 COM_MINOR_VERSION = 1;
 
 	/* Body Extensions */
 	const string dcom_ext_debugging = "f1f19680-4d2a-11ce-a66a-0020af6e72f4";
@@ -83,17 +55,6 @@ interface ObjectRpcBaseTypes
 		uint16 MajorVersion; /* Major version number */
 		uint16 MinorVersion; /* Minor version number */
 	} COMVERSION;
-
-	typedef [public] struct 
-	{
-		uint32 reserved1;
-		uint32 reserved2;
-	} COSERVERINFO;
-
-	typedef [public] struct
-	{
-		uint32 FIXME;
-	} MULTI_QI;
 
 	/* enumeration of additional information present in the call packet. */
 	/* Should be an enum but DCE IDL does not support sparse enumerators. */
@@ -133,7 +94,7 @@ interface ObjectRpcBaseTypes
 		COMVERSION version; /* COM version number */
 		uint32 flags; /* ORPCF flags for presence of other data */
 		uint32 reserved1; /* set to zero */
-		CID cid; /* causality id of caller */
+		GUID cid; /* causality id of caller */
 		/* Extensions. */
 		[unique] ORPC_EXTENT_ARRAY *extensions;
 	} 	ORPCTHIS;
@@ -198,9 +159,9 @@ interface ObjectRpcBaseTypes
 	{
 		uint32 flags; /* STDOBJREF flags (see above) */
 		uint32 cPublicRefs; /* count of references passed */
-		OXID oxid; /* oxid of server with this oid */
-		OID oid; /* oid of object with this ipid */
-		IPID ipid; /* ipid of interface pointer to this object */
+		HYPER_T oxid; /* oxid of server with this oid */
+		HYPER_T oid; /* oid of object with this ipid */
+		GUID ipid; /* ipid of interface pointer to this object */
 	} 	STDOBJREF;
 
 	typedef struct
@@ -221,7 +182,7 @@ interface ObjectRpcBaseTypes
 		GUID clsid; /* Clsid of unmarshaling code */
 		uint32 cbExtension; /* size of extension data */
 		uint32 size; /* size of data that follows */
-		[size_is(size)] uint8 pData[]; /* extension + class specific data */
+		uint8 pData[size]; /* extension + class specific data */
 	} u_custom;
 
 	typedef struct
@@ -265,7 +226,7 @@ interface IUnknown
 	/* Function 0x00 */
 	/* Returns the interface with the specified IID 
 	   if implemented by this object */
-	[local] WERROR IUnknown_QueryInterface([in] IID *riid,
+	[local] WERROR IUnknown_QueryInterface([in] GUID *iid,
 	   [out,iid_is(riid)] MInterfacePointer *data);
 
 	/*****************/
@@ -285,7 +246,7 @@ interface IUnknown
 ] interface IClassFactory : IUnknown
 {
 	[local] WERROR CreateInstance(/*FIXME[in] IUnknown *pUnknown*/, 
-			       [in] IID *riid,
+			       [in] GUID *iid,
 			       [out, iid_is(riid)] MInterfacePointer *ppv);
 
 	[call_as(CreateInstance)] WERROR RemoteCreateInstance();
@@ -321,16 +282,16 @@ interface IRemUnknown : IUnknown
 	REMQIRESULT;
 
 	[call_as(QueryInterface)] WERROR RemQueryInterface (
-		[in] IPID *ripid, /* interface to QI on */
+		[in] GUID *ripid, /* interface to QI on */
 		[in] uint32 cRefs, /* count of AddRefs requested */
 		[in] uint16 cIids, /* count of IIDs that follow */
-		[in, size_is(cIids)] IID* iids, /*, // IIDs to QI for */
+		[in, size_is(cIids)] GUID* iids, /*, // IIDs to QI for */
 		[out, size_is(cIids)] MInterfacePointer *ip
 		);
 
 	typedef struct 
 	{
-		IPID ipid; /* ipid to AddRef/Release */
+		GUID ipid; /* ipid to AddRef/Release */
 		uint32 cPublicRefs;
 		uint32 cPrivateRefs;
 	} REMINTERFACEREF;
@@ -354,7 +315,7 @@ interface IRemUnknown : IUnknown
 {
 	void GetClassObject([in] GUID clsid, 
 		                [in] uint32 context,
-						[in] LCID locale,
+						[in] uint32 locale,
 						[in] GUID iid,
 						[out, iid_is(iid)] MInterfacePointer data);
 }
@@ -395,9 +356,9 @@ interface IRemUnknown : IUnknown
 interface IRemUnknown2 : IRemUnknown
 {
 	[call_as(QueryInterface2)] WERROR RemQueryInterface2 (
-		 [in] IPID *ripid,
+		 [in] GUID *ripid,
 		 [in] uint16 cIids,
-		 [in, size_is(cIids)] IID *iids,
+		 [in, size_is(cIids)] GUID*iids,
 		 [out, size_is(cIids)] WERROR *phr,
 		 [out, size_is(cIids)] MInterfacePointer *ppMIF
 		);
@@ -428,17 +389,17 @@ object,
 	/* Function 0x04 */
 	WERROR GetTypeInfo (
 			[in] uint16 iTInfo,
-			[in] LCID lcid,
+			[in] uint32 lcid,
 			[out] REF_ITypeInfo *ppTInfo);
 
 	/*****************/
 	/* Function 0x05 */
 	WERROR GetIDsOfNames(
-			[in] IID *riid,
+			[in] GUID *riid,
 			/*FIXME[in,size_is(cNames)] OLESTR *rgszNames[], */
 			[in] uint16 cNames,
-			[in] LCID lcid,
-			[out,size_is(cNames)] DISPID *rgDispId);
+			[in] uint32 lcid,
+			[out,size_is(cNames)] uint32 *rgDispId);
 
 	typedef struct {
 		uint16 vartype;
@@ -457,9 +418,9 @@ object,
 	/*****************/
 	/* Function 0x06 */
 	WERROR Invoke(
-			[in] DISPID dispIdMember,
-			[in] IID *riid,
-			[in] LCID lcid,
+			[in] uint32 dispIdMember,
+			[in] GUID *riid,
+			[in] uint32 lcid,
 			[in] uint16 wFlags,
 			[out,in] DISPPARAMS *pDispParams,
 			[out] VARIANT *pVarResult,
