@@ -368,16 +368,6 @@ ssize_t push_ascii(void *dest, const char *src, size_t dest_len, int flags)
 	return convert_string(CH_UNIX, CH_DOS, src, src_len, dest, dest_len);
 }
 
-ssize_t push_ascii_fstring(void *dest, const char *src)
-{
-	return push_ascii(dest, src, sizeof(fstring), STR_TERMINATE);
-}
-
-ssize_t push_ascii_pstring(void *dest, const char *src)
-{
-	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
-}
-
 ssize_t push_pstring(void *dest, const char *src)
 {
 	return push_ascii(dest, src, sizeof(pstring), STR_TERMINATE);
@@ -422,16 +412,6 @@ ssize_t pull_ascii(char *dest, const void *src, size_t dest_len, size_t src_len,
 		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
-}
-
-ssize_t pull_ascii_pstring(char *dest, const void *src)
-{
-	return pull_ascii(dest, src, sizeof(pstring), -1, STR_TERMINATE);
-}
-
-ssize_t pull_ascii_fstring(char *dest, const void *src)
-{
-	return pull_ascii(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
 /**
@@ -550,16 +530,6 @@ ssize_t push_utf8(void *dest, const char *src, size_t dest_len, int flags)
 	return convert_string(CH_UNIX, CH_UTF8, src, src_len, dest, dest_len);
 }
 
-ssize_t push_utf8_fstring(void *dest, const char *src)
-{
-	return push_utf8(dest, src, sizeof(fstring), STR_TERMINATE);
-}
-
-ssize_t push_utf8_pstring(void *dest, const char *src)
-{
-	return push_utf8(dest, src, sizeof(pstring), STR_TERMINATE);
-}
-
 /**
  * Copy a string from a unix char* src to a UTF-8 destination, allocating a buffer using talloc
  *
@@ -643,11 +613,6 @@ ssize_t pull_ucs2_pstring(char *dest, const void *src)
 	return pull_ucs2(NULL, dest, src, sizeof(pstring), -1, STR_TERMINATE);
 }
 
-ssize_t pull_ucs2_fstring(char *dest, const void *src)
-{
-	return pull_ucs2(NULL, dest, src, sizeof(fstring), -1, STR_TERMINATE);
-}
-
 /**
  * Copy a string from a UCS2 src to a unix char * destination, allocating a buffer using talloc
  *
@@ -711,16 +676,6 @@ ssize_t pull_utf8(char *dest, const void *src, size_t dest_len, size_t src_len, 
 		dest[MIN(ret, dest_len-1)] = 0;
 
 	return src_len;
-}
-
-ssize_t pull_utf8_pstring(char *dest, const void *src)
-{
-	return pull_utf8(dest, src, sizeof(pstring), -1, STR_TERMINATE);
-}
-
-ssize_t pull_utf8_fstring(char *dest, const void *src)
-{
-	return pull_utf8(dest, src, sizeof(fstring), -1, STR_TERMINATE);
 }
 
 /**
