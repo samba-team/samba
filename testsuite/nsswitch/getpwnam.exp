@@ -1,0 +1,29 @@
+#
+# @(#) Test builtin domain users resolve using getpwnam()
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+# Compile getpwnam.c
+
+set output [target_compile "$srcdir/$subdir/getpwnam.c" \
+        "$srcdir/$subdir/getpwnam" executable {additional_flags="-g"}]
+
+if {$output != ""} {
+    perror "compile getpwnam"
+    puts $output
+    return
+}
+
+# Test domain users
+
+foreach {user} $domain_users {
+    set output [util_start "$srcdir/$subdir/getpwnam" "\"$user\"" ""]
+    if {[regexp "PASS:" $output]} {
+        pass "getpwnam $user"
+    } else {
+        fail "getpwnam $user"
+    }
+}

@@ -1,0 +1,45 @@
+#
+# @(#) Test the getent command returns builtin domain/local users and groups
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+#
+# Test getent passwd
+#
+
+set output [util_start "getent" "passwd" ""]
+
+# Test output for domain users
+
+foreach {user} $domain_users {
+    if {![regexp "$user" $output]} {
+        fail "getent passwd $user"
+    } else {
+        pass "getent passwd $user"
+    }
+}
+
+#
+# Test getent group
+#
+
+set output [util_start "getent" "group" ""]
+
+foreach {group} $domain_groups {
+    if {![regexp "$group" $output]} {
+        fail "getent group $group"
+    } else {
+        pass "getent group $group"
+    }
+}
+
+foreach {group} $local_groups {
+    if {![regexp "$group" $output]} {
+        fail "getent group $group"
+    } else {
+        pass "getent group $group"
+    }
+}

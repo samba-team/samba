@@ -1,0 +1,54 @@
+#
+# @(#) Test reverse lookup of group ids from getent match getgrgid() output
+#
+
+load_lib util-defs.exp
+load_lib "$srcdir/config/env.exp"
+load_lib "$srcdir/config/default-nt-names.exp"
+
+# Compile getpwuid.c
+
+set output [target_compile "$srcdir/$subdir/getgrgid.c" \
+        "$srcdir/$subdir/getgrgid" executable {additional_flags="-g"}]
+
+if {$output != ""} {
+    perror "compile getgrgid"
+    puts $output
+    return
+}
+
+# Get list of uids using getent
+
+set output [util_start "getent" "group" ""]
+set got_entries 0
+
+foreach {line} [split $output "\n"] {
+
+    # Process user
+
+    set grp_entry [split $line ":"]
+    set group [lindex $grp_entry 0]
+
+    if {[regexp "^($domain|BUILTIN)/" $group]} {
+
+        set got_entries 1
+
+        # Only lookup winbindd users
+
+        set gid [lindex $grp_entry 2]
+
+        # Test lookup of gid succeeds
+
+        set output [util_start "$srcdir/$subdir/getgrgid" "$gid" ""]
+        if {[regexp "PASS:" $output]} {
+            pass "getgrgid $gid ($group)"
+        } else {
+            fail "getgrgid $gid ($group)"
+        }            
+    }
+
+}
+
+if {!$got_entries} {
+    perror "No domain or builtin groups returned from getent"
+}
