@@ -798,6 +798,10 @@ NTSTATUS dcerpc_ndr_request(struct dcerpc_pipe *p,
 		goto failed;
 	}
 
+	if (pull->offset != pull->data_size) {
+		DEBUG(0,("Warning! %d unread bytes\n", pull->data_size - pull->offset));
+	}
+
 failed:
 	ndr_push_free(push);
 	return status;

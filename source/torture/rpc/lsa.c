@@ -183,7 +183,7 @@ static BOOL test_LookupNames(struct dcerpc_pipe *p,
 	r.out.sids = &sids;
 
 	status = dcerpc_lsa_LookupNames(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 		printf("LookupNames failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -238,7 +238,7 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	r.out.names = &names;
 
 	status = dcerpc_lsa_LookupSids(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
+	if (!NT_STATUS_IS_OK(status) && !NT_STATUS_EQUAL(status, STATUS_SOME_UNMAPPED)) {
 		printf("LookupSids failed - %s\n", nt_errstr(status));
 		return False;
 	}
@@ -265,6 +265,31 @@ static BOOL test_LookupSids(struct dcerpc_pipe *p,
 	printf("\n");
 
 	if (!test_LookupNames(p, mem_ctx, handle, &names)) {
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_OpenAccount(struct dcerpc_pipe *p, 
+			     TALLOC_CTX *mem_ctx, 
+			     struct policy_handle *handle,
+			     struct dom_sid *sid)
+{
+	NTSTATUS status;
+	struct lsa_OpenAccount r;
+	struct policy_handle acct_handle;
+
+	printf("Testing account %s\n", lsa_sid_string_talloc(mem_ctx, sid));
+
+	r.in.handle = handle;
+	r.in.sid = sid;
+	r.in.desired_access = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.acct_handle = &acct_handle;
+
+	status = dcerpc_lsa_OpenAccount(p, mem_ctx, &r);
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenAccount failed - %s\n", nt_errstr(status));
 		return False;
 	}
 
@@ -305,6 +330,12 @@ static BOOL test_EnumAccounts(struct dcerpc_pipe *p,
 	if (!test_LookupSids(p, mem_ctx, handle, &sids1)) {
 		return False;
 	}
+
+	printf("testing all accounts\n");
+	for (i=0;i<sids1.num_sids;i++) {
+		test_OpenAccount(p, mem_ctx, handle, sids1.sids[i].sid);
+	}
+	printf("\n");
 	
 	if (sids1.num_sids < 3) {
 		return True;
@@ -376,12 +407,14 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 	NTSTATUS status;
 	int i;
 	uint32 resume_handle = 0;
+	struct lsa_RefDomainList domains;
 
 	printf("\nTesting EnumTrustDom\n");
 
 	r.in.handle = handle;
 	r.in.resume_handle = &resume_handle;
 	r.in.num_entries = 1000;
+	r.out.domains = &domains;
 	r.out.resume_handle = &resume_handle;
 
 	status = dcerpc_lsa_EnumTrustDom(p, mem_ctx, &r);
@@ -390,15 +423,13 @@ static BOOL test_EnumTrustDom(struct dcerpc_pipe *p,
 		return False;
 	}
 
-	if (r.out.domains) {
-		printf("lookup gave %d domains (max_count=%d)\n", 
-		       r.out.domains->count,
-		       r.out.domains->max_count);
-		for (i=0;i<r.out.domains->count;i++) {
-			printf("name='%s' sid=%s\n", 
-			       r.out.domains->domains[i].name.name,
-			       lsa_sid_string_talloc(mem_ctx, r.out.domains->domains[i].sid));
-		}
+	printf("lookup gave %d domains (max_count=%d)\n", 
+	       domains.count,
+	       domains.max_count);
+	for (i=0;i<r.out.domains->count;i++) {
+		printf("name='%s' sid=%s\n", 
+		       domains.domains[i].name.name,
+		       lsa_sid_string_talloc(mem_ctx, domains.domains[i].sid));
 	}
 
 	return True;
@@ -431,10 +462,13 @@ static BOOL test_Close(struct dcerpc_pipe *p,
 {
 	NTSTATUS status;
 	struct lsa_Close r;
+	struct policy_handle handle2;
 
 	printf("\ntesting Close\n");
 
 	r.in.handle = handle;
+	r.out.handle = &handle2;
+
 	status = dcerpc_lsa_Close(p, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Close failed - %s\n", nt_errstr(status));
