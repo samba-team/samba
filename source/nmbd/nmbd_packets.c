@@ -2,9 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1994-1997 
-   Copyright (C) Jeremy Allison 1994-1997
+   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1994-1998
+   Copyright (C) Jeremy Allison 1994-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1794,7 +1794,7 @@ BOOL send_mailslot(BOOL unique, char *mailslot,char *buf,int len,
   dgram->header.dgm_length = 0; /* Let build_dgram() handle this. */
   dgram->header.packet_offset = 0;
   
-  make_nmb_name(&dgram->source_name,srcname,0,scope);
+  make_nmb_name(&dgram->source_name,srcname,src_type,scope);
   make_nmb_name(&dgram->dest_name,dstname,dest_type,scope);
 
   ptr = &dgram->data[0];

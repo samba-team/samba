@@ -2,9 +2,9 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    NBT netbios routines and daemon - version 2
-   Copyright (C) Andrew Tridgell 1994-1997
-   Copyright (C) Luke Kenneth Casson Leighton 1994-1997 
-   Copyright (C) Jeremy Allison 1994-1997
+   Copyright (C) Andrew Tridgell 1994-1998
+   Copyright (C) Luke Kenneth Casson Leighton 1994-1998
+   Copyright (C) Jeremy Allison 1994-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -252,7 +252,7 @@ Do not announce to ourselves.\n", work->work_group ));
 to %s for workgroup %s.\n", namestr(&work->dmb_name), work->work_group ));
 
   send_mailslot(True, BROWSE_MAILSLOT, outbuf,PTR_DIFF(p,outbuf),
-          myname, 0x0, work->dmb_name.name, 0x20, work->dmb_addr, FIRST_SUBNET->myip);
+          myname, 0x0, work->dmb_name.name, 0x0, work->dmb_addr, FIRST_SUBNET->myip);
 
 }
 

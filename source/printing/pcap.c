@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    printcap parsing
-   Copyright (C) Karl Auer 1993-1997
+   Copyright (C) Karl Auer 1993-1998
 
    Re-working by Martin Kiff, 1994
    

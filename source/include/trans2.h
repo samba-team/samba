@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    SMB transaction2 handling
-   Copyright (C) Jeremy Allison 1994-1997
+   Copyright (C) Jeremy Allison 1994-1998
 
    Extensively modified by Andrew Tridgell, 1995
 

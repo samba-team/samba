@@ -3,7 +3,7 @@
    Version 1.9.
    Create codepage files from codepage_def.XXX files.
 
-   Copyright (C) Jeremy Allison 1997
+   Copyright (C) Jeremy Allison 1997-1998.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

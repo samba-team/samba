@@ -5,7 +5,7 @@
    a partial implementation of DES designed for use in the 
    SMB authentication protocol
 
-   Copyright (C) Andrew Tridgell 1997
+   Copyright (C) Andrew Tridgell 1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -178,7 +178,7 @@ static void xor(char *out, char *in1, char *in2, int n)
 		out[i] = in1[i] ^ in2[i];
 }
 
-static void dohash(char *out, char *in, char *key)
+static void dohash(char *out, char *in, char *key, int forw)
 {
 	int i, j, k;
 	char pk1[56];
@@ -222,7 +222,7 @@ static void dohash(char *out, char *in, char *key)
 
 		permute(er, r, perm4, 48);
 
-		xor(erk, er, ki[i], 48);
+		xor(erk, er, ki[forw ? i : 15 - i], 48);
 
 		for (j=0;j<8;j++)
 			for (k=0;k<6;k++)
@@ -275,7 +275,7 @@ static void str_to_key(unsigned char *str,unsigned char *key)
 }
 
 
-static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
+static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key, int forw)
 {
 	int i;
 	char outb[64];
@@ -291,7 +291,7 @@ static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
 		outb[i] = 0;
 	}
 
-	dohash(outb, inb, keyb);
+	dohash(outb, inb, keyb, forw);
 
 	for (i=0;i<8;i++) {
 		out[i] = 0;
@@ -306,23 +306,29 @@ static void smbhash(unsigned char *out, unsigned char *in, unsigned char *key)
 void E_P16(unsigned char *p14,unsigned char *p16)
 {
 	unsigned char sp8[8] = {0x4b, 0x47, 0x53, 0x21, 0x40, 0x23, 0x24, 0x25};
-	smbhash(p16, sp8, p14);
-	smbhash(p16+8, sp8, p14+7);
+	smbhash(p16, sp8, p14, 1);
+	smbhash(p16+8, sp8, p14+7, 1);
 }
 
 void E_P24(unsigned char *p21, unsigned char *c8, unsigned char *p24)
 {
-	smbhash(p24, c8, p21);
-	smbhash(p24+8, c8, p21+7);
-	smbhash(p24+16, c8, p21+14);
+	smbhash(p24, c8, p21, 1);
+	smbhash(p24+8, c8, p21+7, 1);
+	smbhash(p24+16, c8, p21+14, 1);
+}
+
+void D_P16(unsigned char *p14, unsigned char *in, unsigned char *out)
+{
+	smbhash(out, in, p14, 0);
+        smbhash(out+8, in+8, p14+7, 0);
 }
 
 void cred_hash1(unsigned char *out,unsigned char *in,unsigned char *key)
 {
 	unsigned char buf[8];
 
-	smbhash(buf, in, key);
-	smbhash(out, buf, key+9);
+	smbhash(buf, in, key, 1);
+	smbhash(out, buf, key+9, 1);
 }
 
 void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
@@ -330,8 +336,8 @@ void cred_hash2(unsigned char *out,unsigned char *in,unsigned char *key)
 	unsigned char buf[8];
 	static unsigned char key2[8];
 
-	smbhash(buf, in, key);
+	smbhash(buf, in, key, 1);
 	key2[0] = key[7];
-	smbhash(out, buf, key2);
+	smbhash(out, buf, key2, 1);
 }
 

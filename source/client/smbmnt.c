@@ -1,7 +1,7 @@
 /*
  *  smbmount.c
  *
- *  Copyright (C) 1995, 1996 by Paal-Kr. Engstad and Volker Lendecke
+ *  Copyright (C) 1995-1998 by Paal-Kr. Engstad and Volker Lendecke
  *
  */
 

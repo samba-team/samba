@@ -2,10 +2,10 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Inter-process communication and named pipe handling
-   Copyright (C) Andrew Tridgell 1992-1997
+   Copyright (C) Andrew Tridgell 1992-1998
 
    SMB Version handling
-   Copyright (C) John H Terpstra 1995-1997
+   Copyright (C) John H Terpstra 1995-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1141,7 +1141,7 @@ static BOOL api_RNetServerEnum(int cnum, uint16 vuid, char *param, char *data,
   uint32 servertype = IVAL(p,4);
   char *p2;
   int data_len, fixed_len, string_len;
-  int f_len, s_len;
+  int f_len = 0, s_len = 0;
   struct srv_info_struct *servers=NULL;
   int counted=0,total=0;
   int i,missed;
@@ -1421,7 +1421,7 @@ static BOOL api_RNetShareEnum(int cnum,uint16 vuid, char *param,char *data,
   int total=0,counted=0;
   int i;
   int data_len, fixed_len, string_len;
-  int f_len, s_len;
+  int f_len = 0, s_len = 0;
  
   if (!prefix_ok(str1,"WrLeh")) return False;
   if (!check_share_info(uLevel,str2)) return False;
@@ -1532,8 +1532,8 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 
   p = skip_string(p,1);
 
-  StrnCpy(pass1,p,16);
-  StrnCpy(pass2,p+16,16);
+  memcpy(pass1,p,16);
+  memcpy(pass2,p+16,16);
 
   *rparam_len = 4;
   *rparam = REALLOC(*rparam,*rparam_len);
@@ -1545,10 +1545,32 @@ static BOOL api_SetUserPassword(int cnum,uint16 vuid, char *param,char *data,
 
   DEBUG(3,("Set password for <%s>\n",user));
 
+  /*
+   * Attempt the plaintext password change first.
+   * Older versions of Windows seem to do this.
+   */
+
   if (password_ok(user,pass1,strlen(pass1),NULL) &&
       chgpasswd(user,pass1,pass2))
   {
     SSVAL(*rparam,0,NERR_Success);
+  }
+
+  /*
+   * If the plaintext change failed, attempt
+   * the encrypted. NT will generate this
+   * after trying the samr method.
+   */
+
+  if(SVAL(*rparam,0) != NERR_Success)
+  {
+    struct smb_passwd *smbpw = NULL;
+
+    if(check_lanman_password(user,(unsigned char *)pass1,(unsigned char *)pass2, &smbpw) && 
+       change_lanman_password(smbpw,(unsigned char *)pass1,(unsigned char *)pass2))
+    {
+      SSVAL(*rparam,0,NERR_Success);
+    }
   }
 
   bzero(pass1,sizeof(fstring));

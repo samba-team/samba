@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Samba utility functions
-   Copyright (C) Andrew Tridgell 1992-1997
+   Copyright (C) Andrew Tridgell 1992-1998
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -398,3 +398,86 @@ BOOL chgpasswd(char *name,char *oldpass,char *newpass)
   return(False);
 }
 #endif
+
+/***********************************************************
+ Code to check the lanman hashed password.
+************************************************************/
+
+BOOL check_lanman_password(char *user, unsigned char *pass1, 
+                           unsigned char *pass2, struct smb_passwd **psmbpw)
+{
+  unsigned char unenc_new_pw[16];
+  unsigned char unenc_old_pw[16];
+  struct smb_passwd *smbpw;
+
+  *psmbpw = NULL;
+
+  become_root(0);
+  smbpw = get_smbpwd_entry(user, 0);
+  unbecome_root(0);
+
+  if(smbpw == NULL)
+  {
+    DEBUG(0,("check_lanman_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->smb_passwd == NULL)
+  {
+    DEBUG(0,("check_lanman_password: no lanman password !\n"));
+    return False;
+  }
+
+  /* Get the new lanman hash. */
+  D_P16(smbpw->smb_passwd, pass2, unenc_new_pw);
+
+  /* Use this to get the old lanman hash. */
+  D_P16(unenc_new_pw, pass1, unenc_old_pw);
+
+  /* Check that the two old passwords match. */
+  if(memcmp(smbpw->smb_passwd, unenc_old_pw, 16))
+  {
+    DEBUG(0,("check_lanman_password: old password doens't match.\n"));
+    return False;
+  }
+
+  *psmbpw = smbpw;
+  return True;
+}
+
+/***********************************************************
+ Code to change the lanman hashed password.
+ It nulls out the NT hashed password as it will
+ no longer be valid.
+************************************************************/
+
+BOOL change_lanman_password(struct smb_passwd *smbpw, char *pass1, char *pass2)
+{
+  char unenc_new_pw[16];
+  BOOL ret;
+
+  if(smbpw == NULL)
+  { 
+    DEBUG(0,("change_lanman_password: get_smbpwd_entry returned NULL\n"));
+    return False;
+  }
+
+  if(smbpw->smb_passwd == NULL)
+  {
+    DEBUG(0,("change_lanman_password: no lanman password !\n"));
+    return False;
+  }
+
+  /* Get the new lanman hash. */
+  D_P16(smbpw->smb_passwd, pass2, unenc_new_pw);
+
+  smbpw->smb_passwd = unenc_new_pw;
+  smbpw->smb_nt_passwd = NULL; /* We lose the NT hash. Sorry. */
+
+  /* Now write it into the file. */
+  become_root(0);
+  ret = mod_smbpwd_entry(smbpw);
+  unbecome_root(0);
+    
+  return ret;
+}

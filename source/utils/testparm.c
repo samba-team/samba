@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Test validity of smb.conf
-   Copyright (C) Karl Auer 1993, 1994-1997
+   Copyright (C) Karl Auer 1993, 1994-1998
 
    Extensively modified by Andrew Tridgell, 1995
    

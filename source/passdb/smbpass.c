@@ -1,6 +1,6 @@
 /*
  * Unix SMB/Netbios implementation. Version 1.9. SMB parameters and setup
- * Copyright (C) Andrew Tridgell 1992-1997 Modified by Jeremy Allison 1995.
+ * Copyright (C) Andrew Tridgell 1992-1998 Modified by Jeremy Allison 1995.
  * 
  * This program is free software; you can redistribute it and/or modify it under
  * the terms of the GNU General Public License as published by the Free
@@ -788,12 +788,15 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 		return False;
 	}
 
+        /* The following check is wrong - the NT hash is optional. */
+#if 0
 	if (*p == '*' || *p == 'X')
 	{
 		fclose(fp);
 		pw_file_unlock(lockfd);
 		return False;
 	}
+#endif
 
 	/* whew.  entry is correctly formed. */
 
@@ -838,19 +841,20 @@ BOOL mod_smbpwd_entry(struct smb_passwd* pwd)
 	{
 		sprintf(&ascii_p16[i*2], "%02X", (uchar) pwd->smb_passwd[i]);
 	}
+	/* Add on the NT md4 hash */
+	ascii_p16[32] = ':';
+	wr_len = 65;
 	if (pwd->smb_nt_passwd != NULL)
 	{
-		/* Add on the NT md4 hash */
-		ascii_p16[32] = ':';
 		for (i = 0; i < 16; i++)
 		{
 			sprintf(&ascii_p16[(i*2)+33], "%02X", (uchar) pwd->smb_nt_passwd[i]);
 		}
-		wr_len = 65;
 	}
 	else	
 	{
-		wr_len = 32;
+		/* No NT hash - write out an 'invalid' string. */
+		strcpy(&ascii_p16[33], "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 	}
 
 #ifdef DEBUG_PASSWORD

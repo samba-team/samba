@@ -1,11 +1,11 @@
 /* -------------------------------------------------------------------------- **
  * Microsoft Network Services for Unix, AKA., Andrew Tridgell's SAMBA.
  *
- * This module Copyright (C) 1990, 1991, 1992, 1993, 1994 Karl Auer
+ * This module Copyright (C) 1990-1998 Karl Auer
  *
  * Rewritten almost completely by Christopher R. Hertel
  * at the University of Minnesota, September, 1997.
- * This module Copyright (C) 1997 by the University of Minnesota
+ * This module Copyright (C) 1997-1998 by the University of Minnesota
  * -------------------------------------------------------------------------- **
  *
  * This program is free software; you can redistribute it and/or modify
