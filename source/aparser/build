@@ -2,6 +2,12 @@
 
 file=$1
 
-igawk -f main.awk $file
+if ! igawk -f main.awk $file; then
+    echo parse failed;
+    exit 1;
+fi
 
+echo compiling vluke
 gcc -Wall -g -o vluke parser.c vluke.c
+echo done.
+
