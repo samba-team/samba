@@ -23,7 +23,8 @@
 #include "includes.h"
 
 uint32 global_client_caps = 0;
-static struct auth_context *ntlmssp_auth_context = NULL;
+
+static struct auth_ntlmssp_state *global_ntlmssp_state;
 
 /*
   on a logon error possibly map the error to success if "map to guest"
@@ -65,6 +66,37 @@ static void add_signature(char *outbuf)
 	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
 	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
 	set_message_end(outbuf,p);
+}
+
+/****************************************************************************
+send a security blob via a session setup reply
+****************************************************************************/
+static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
+				 DATA_BLOB blob, NTSTATUS nt_status)
+{
+	char *p;
+
+	set_message(outbuf,4,0,True);
+
+	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
+	   that we aren't finished yet */
+
+	nt_status = nt_status_squash(nt_status);
+	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
+	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+	SSVAL(outbuf, smb_vwv3, blob.length);
+	p = smb_buf(outbuf);
+
+	/* should we cap this? */
+	memcpy(p, blob.data, blob.length);
+	p += blob.length;
+
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+
+	return send_smb(smbd_server_fd(),outbuf);
 }
 
 /****************************************************************************
@@ -209,30 +241,54 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 
 /****************************************************************************
-send a security blob via a session setup reply
-****************************************************************************/
-static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob, uint32 errcode)
+ send a session setup reply, wrapped in SPNEGO.
+ get vuid and check first.
+ end the NTLMSSP exchange context if we are OK/complete fail
+***************************************************************************/
+static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
+				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
+				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
-	char *p;
+	BOOL ret;
+	DATA_BLOB response;
+	struct auth_serversupplied_info *server_info;
+	server_info = (*auth_ntlmssp_state)->server_info;
 
-	set_message(outbuf,4,0,True);
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		nt_status = do_map_to_guest(nt_status, 
+					    &server_info, 
+					    (*auth_ntlmssp_state)->ntlmssp_state->user, 
+					    (*auth_ntlmssp_state)->ntlmssp_state->domain);
+	}
 
-	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
-	   that we aren't finished yet */
+	if (NT_STATUS_IS_OK(nt_status)) {
+		int sess_vuid;
+		sess_vuid = register_vuid(server_info, (*auth_ntlmssp_state)->ntlmssp_state->user /* check this for weird */);
+		
+		if (sess_vuid == -1) {
+			nt_status = NT_STATUS_LOGON_FAILURE;
+		} else {
+			
+			set_message(outbuf,4,0,True);
+			SSVAL(outbuf, smb_vwv3, 0);
+			
+			if ((*auth_ntlmssp_state)->server_info->guest) {
+				SSVAL(outbuf,smb_vwv2,1);
+			}
+			
+			SSVAL(outbuf,smb_uid,sess_vuid);
+		}
+	}
 
-	SIVAL(outbuf, smb_rcls, errcode);
-	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
-	SSVAL(outbuf, smb_vwv3, blob.length);
-	p = smb_buf(outbuf);
-	memcpy(p, blob.data, blob.length);
-	p += blob.length;
-	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
-	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
-	set_message_end(outbuf,p);
-	
-	return send_smb(smbd_server_fd(),outbuf);
+        response = spnego_gen_auth_response(ntlmssp_blob, nt_status);
+	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
+	data_blob_free(&response);
+
+	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		auth_ntlmssp_end(&global_ntlmssp_state);
+	}
+
+	return ret;
 }
 
 /****************************************************************************
@@ -247,12 +303,9 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	char *OIDs[ASN1_MAX_OIDS];
 	DATA_BLOB secblob;
 	int i;
-	uint32 ntlmssp_command, neg_flags, chal_flags;
-	DATA_BLOB chal, spnego_chal;
-	const uint8 *cryptkey;
+	DATA_BLOB chal;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
-	char *cliname=NULL, *domname=NULL;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -278,95 +331,26 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	}
 #endif
 
-	/* parse the NTLMSSP packet */
-#if 0
-	file_save("secblob.dat", secblob.data, secblob.length);
-#endif
-
-	if (!msrpc_parse(&secblob, "CddAA",
-			 "NTLMSSP",
-			 &ntlmssp_command,
-			 &neg_flags,
-			 &cliname,
-			 &domname)) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-       
-	data_blob_free(&secblob);
-
-	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	if (global_ntlmssp_state) {
+		auth_ntlmssp_end(&global_ntlmssp_state);
 	}
 
-	debug_ntlmssp_flags(neg_flags);
-
-	if (ntlmssp_auth_context) {
-		(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
-	}
-
-	if (!NT_STATUS_IS_OK(nt_status = make_auth_context_subsystem(&ntlmssp_auth_context))) {
+	nt_status = auth_ntlmssp_start(&global_ntlmssp_state);
+	if (!NT_STATUS_IS_OK(nt_status)) {
 		return ERROR_NT(nt_status);
 	}
 
-	cryptkey = ntlmssp_auth_context->get_ntlm_challenge(ntlmssp_auth_context);
+	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
+					secblob, &chal);
 
-	/* Give them the challenge. For now, ignore neg_flags and just
-	   return the flags we want. Obviously this is not correct */
-	
-	chal_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_128 | 
-		NTLMSSP_NEGOTIATE_NTLM |
-		NTLMSSP_CHAL_TARGET_INFO;
-	
-	{
-		DATA_BLOB domain_blob, struct_blob;
-		fstring dnsname, dnsdomname;
+	data_blob_free(&secblob);
+
+	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+			     &chal, nt_status);
 		
-		msrpc_gen(&domain_blob, 
-			  "U",
-			  lp_workgroup());
-
-		fstrcpy(dnsdomname, (SEC_ADS == lp_security())?lp_realm():"");
-		strlower(dnsdomname);
-
-		fstrcpy(dnsname, global_myname());
-		fstrcat(dnsname, ".");
-		fstrcat(dnsname, dnsdomname);
-		strlower(dnsname);
-
-		msrpc_gen(&struct_blob, "aaaaa",
-			  2, lp_workgroup(),
-			  1, global_myname(),
-			  4, dnsdomname,
-			  3, dnsname,
-			  0, "");
-
-		msrpc_gen(&chal, "CdUdbddB",
-			  "NTLMSSP", 
-			  NTLMSSP_CHALLENGE,
-			  lp_workgroup(),
-			  chal_flags,
-			  cryptkey, 8,
-			  0, 0,
-			  struct_blob.data, struct_blob.length);
-
-		data_blob_free(&domain_blob);
-		data_blob_free(&struct_blob);
-	}
-
-	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
-		DEBUG(3,("Failed to generate challenge\n"));
-		data_blob_free(&chal);
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	/* now tell the client to send the auth packet */
-	reply_sesssetup_blob(conn, outbuf, spnego_chal, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
-
 	data_blob_free(&chal);
-	data_blob_free(&spnego_chal);
 
-	/* and tell smbd that we have already replied to this packet */
+	/* already replied */
 	return -1;
 }
 
@@ -378,23 +362,8 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     int length, int bufsize,
 			     DATA_BLOB blob1)
 {
-	DATA_BLOB auth, response;
-	char *workgroup = NULL, *user = NULL, *machine = NULL;
-	DATA_BLOB lmhash, nthash, sess_key;
-	DATA_BLOB plaintext_password = data_blob(NULL, 0);
-	uint32 ntlmssp_command, neg_flags;
+	DATA_BLOB auth, auth_reply;
 	NTSTATUS nt_status;
-	int sess_vuid;
-	BOOL as_guest;
-	uint32 auth_flags = AUTH_FLAG_NONE;
-	auth_usersupplied_info *user_info = NULL;
-	auth_serversupplied_info *server_info = NULL;
-
-	/* we must have setup the auth context by now */
-	if (!ntlmssp_auth_context) {
-		DEBUG(2,("ntlmssp_auth_context is NULL in reply_spnego_auth\n"));
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
 
 	if (!spnego_parse_auth(blob1, &auth)) {
 #if 0
@@ -403,107 +372,15 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	/* now the NTLMSSP encoded auth hashes */
-	if (!msrpc_parse(&auth, "CdBBUUUBd", 
-			 "NTLMSSP", 
-			 &ntlmssp_command, 
-			 &lmhash,
-			 &nthash,
-			 &workgroup, 
-			 &user, 
-			 &machine,
-			 &sess_key,
-			 &neg_flags)) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
+	nt_status = auth_ntlmssp_update(global_ntlmssp_state, 
+					  auth, &auth_reply);
 
 	data_blob_free(&auth);
-	data_blob_free(&sess_key);
-	
-	DEBUG(3,("Got user=[%s] workgroup=[%s] machine=[%s] len1=%d len2=%d\n",
-		 user, workgroup, machine, lmhash.length, nthash.length));
 
-	/* the client has given us its machine name (which we otherwise would not get on port 445).
-	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
-
-	set_remote_machine_name(machine);
-
-	/* setup the string used by %U */
-	sub_set_smb_name(user);
-
-	reload_services(True);
-
-#if 0
-	file_save("nthash1.dat", nthash.data, nthash.length);
-	file_save("lmhash1.dat", lmhash.data, lmhash.length);
-#endif
-
-	if (lmhash.length) {
-		auth_flags |= AUTH_FLAG_LM_RESP;
-	}
-
-	if (nthash.length == 24) {
-		auth_flags |= AUTH_FLAG_NTLM_RESP;
-	} else if (nthash.length > 24) {
-		auth_flags |= AUTH_FLAG_NTLMv2_RESP;
-	};
-
-	nt_status = make_user_info_map(&user_info, user, workgroup, machine, 
-	                               lmhash, nthash, plaintext_password, 
-	                               auth_flags, True);
-
-	/* it looks a bit weird, but this function returns int type... */
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ERROR_NT(NT_STATUS_NO_MEMORY);
-	}
-
-	nt_status = ntlmssp_auth_context->check_ntlm_password(ntlmssp_auth_context, user_info, &server_info); 
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		nt_status = do_map_to_guest(nt_status, &server_info, user, workgroup);
-	}
-
-	SAFE_FREE(workgroup);
-	SAFE_FREE(machine);
-			
-	(ntlmssp_auth_context->free)(&ntlmssp_auth_context);
-
-	free_user_info(&user_info);
-	
-	data_blob_free(&lmhash);
-	
-	data_blob_free(&nthash);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		SAFE_FREE(user);
-		return ERROR_NT(nt_status_squash(nt_status));
-	}
-
-	as_guest = server_info->guest;
-
-	sess_vuid = register_vuid(server_info, user);
-	free_server_info(&server_info);
-
-	SAFE_FREE(user);
-  
-	if (sess_vuid == -1) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	set_message(outbuf,4,0,True);
-	SSVAL(outbuf, smb_vwv3, 0);
-
-	if (as_guest) {
-		SSVAL(outbuf,smb_vwv2,1);
-	}
-
-	add_signature(outbuf);
- 
-	SSVAL(outbuf,smb_uid,sess_vuid);
-	SSVAL(inbuf,smb_uid,sess_vuid);
-
-        response = spnego_gen_auth_response();
-	reply_sesssetup_blob(conn, outbuf, response, 0);
+	reply_spnego_ntlmssp(conn, outbuf, &global_ntlmssp_state,
+			     &auth_reply, nt_status);
+		
+	data_blob_free(&auth_reply);
 
 	/* and tell smbd that we have already replied to this packet */
 	return -1;
@@ -511,49 +388,16 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 
 
 /****************************************************************************
-reply to a session setup spnego anonymous packet
-****************************************************************************/
-static int reply_spnego_anonymous(connection_struct *conn, char *inbuf, char *outbuf,
-				  int length, int bufsize)
-{
-	int sess_vuid;
-	auth_serversupplied_info *server_info = NULL;
-	NTSTATUS nt_status;
-
-	nt_status = check_guest_password(&server_info);
-
-	if (!NT_STATUS_IS_OK(nt_status)) {
-		return ERROR_NT(nt_status_squash(nt_status));
-	}
-
-	sess_vuid = register_vuid(server_info, lp_guestaccount());
-
-	free_server_info(&server_info);
-  
-	if (sess_vuid == -1) {
-		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
-	}
-
-	set_message(outbuf,4,0,True);
-	SSVAL(outbuf, smb_vwv3, 0);
-	add_signature(outbuf);
- 
-	SSVAL(outbuf,smb_uid,sess_vuid);
-	SSVAL(inbuf,smb_uid,sess_vuid);
-	
-	return chain_reply(inbuf,outbuf,length,bufsize);
-}
-
-
-/****************************************************************************
 reply to a session setup command
 ****************************************************************************/
-static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,char *outbuf,
+static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
+					char *outbuf,
 					int length,int bufsize)
 {
 	uint8 *p;
 	DATA_BLOB blob1;
 	int ret;
+	size_t bufrem;
 
 	DEBUG(3,("Doing spnego session setup\n"));
 
@@ -564,12 +408,13 @@ static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,cha
 	p = (uint8 *)smb_buf(inbuf);
 
 	if (SVAL(inbuf, smb_vwv7) == 0) {
-		/* an anonymous request */
-		return reply_spnego_anonymous(conn, inbuf, outbuf, length, bufsize);
+		/* an invalid request */
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
+	bufrem = smb_bufrem(inbuf, p);
 	/* pull the spnego blob */
-	blob1 = data_blob(p, SVAL(inbuf, smb_vwv7));
+	blob1 = data_blob(p, MIN(bufrem, SVAL(inbuf, smb_vwv7)));
 
 #if 0
 	file_save("negotiate.dat", blob1.data, blob1.length);
@@ -786,6 +631,10 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		nt_status = check_guest_password(&server_info);
 
 	} else if (doencrypt) {
+		if (!negprot_global_auth_context) {
+			DEBUG(0, ("reply_sesssetup_and_X:  Attempted encrypted session setup without negprot denied!\n"));
+			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+		}
 		nt_status = make_user_info_for_reply_enc(&user_info, user, domain,
 		                                         lm_resp, nt_resp);
 		if (NT_STATUS_IS_OK(nt_status)) {
@@ -830,10 +679,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	}
 	
 	/* it's ok - setup a reply */
-	if (Protocol < PROTOCOL_NT1) {
-		set_message(outbuf,3,0,True);
-	} else {
-		set_message(outbuf,3,0,True);
+	set_message(outbuf,3,0,True);
+	if (Protocol >= PROTOCOL_NT1) {
 		add_signature(outbuf);
 		/* perhaps grab OS version here?? */
 	}

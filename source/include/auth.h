@@ -149,4 +149,13 @@ struct auth_init_function_entry {
 
 	auth_init_function init;
 };
+
+typedef struct auth_ntlmssp_state
+{
+	TALLOC_CTX *mem_ctx;
+	struct auth_context *auth_context;
+	struct auth_serversupplied_info *server_info;
+	struct ntlmssp_state *ntlmssp_state;
+} AUTH_NTLMSSP_STATE;
+
 #endif /* _SMBAUTH_H_ */
