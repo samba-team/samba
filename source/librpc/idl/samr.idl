@@ -222,7 +222,14 @@
 
 	/************************/
 	/* Function    0x0a     */
-	NTSTATUS samr_CREATE_DOM_GROUP();
+	NTSTATUS samr_CreateDomainGroup(
+		[in,ref]      policy_handle *handle,
+		[in,ref]      samr_Name *name,
+		[in]          uint32 access_mask,
+		[out,ref]     policy_handle *group_handle,
+		[out,ref]     uint32 *rid
+		);
+		
 
 	/************************/
 	/* Function    0x0b     */
@@ -375,7 +382,9 @@
 
 	/************************/
 	/* Function    0x17     */
-	NTSTATUS samr_DELETE_DOM_GROUP();
+	NTSTATUS samr_DeleteDomainGroup(
+		[in,out,ref]   policy_handle *handle
+		);
 
 	/************************/
 	/* Function    0x18     */
