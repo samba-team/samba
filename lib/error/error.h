@@ -49,7 +49,7 @@ struct error_table {
 };
 
 const char *com_right(struct error_table *list, long code);
-void initialize_error_table_r(struct error_table**, const char**, int, long);
+void initialize_error_table(struct error_table**, const char**, int, long);
 void free_error_table(struct error_table*);
 
 #endif /* __ERROR_H__ */
