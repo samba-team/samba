@@ -256,7 +256,7 @@ create_user_edit_dialog (void)
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (0), 0, 0);
 
-	combo_homedrive = gtk_combo_new();
+	combo_homedrive = gtk_combo_box_new();
 	gtk_table_attach (GTK_TABLE (table3), combo_homedrive, 1, 2, 1, 2,
 					  (GtkAttachOptions) (GTK_FILL),
 					  (GtkAttachOptions) (GTK_FILL), 0, 0);
