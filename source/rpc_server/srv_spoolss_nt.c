@@ -6163,10 +6163,28 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 
 	convert_specific_param(&param, value , type, data, real_len);
 
-    /* Check if we are making any changes or not.  Return true if
-	   nothing is actually changing. */
-	
-    ZERO_STRUCT(old_param);
+	ZERO_STRUCT(old_param);
+
+	/* 
+	 * Access check : NT returns "access denied" if you make a 
+	 * SetPrinterData call without the necessary privildge.
+	 * we were originally returning OK if nothing changed
+	 * which made Win2k issue **a lot** of SetPrinterData
+	 * when connecting to a printer  --jerry
+	 */
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		status = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+
+
+	/* Check if we are making any changes or not.  Return true if
+	   nothing is actually changing.  This is not needed anymore but
+	   has been left in as an optimization to keep from from
+	   writing to disk as often  --jerry  */
 
 	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 			       &old_param.type, (uint32 *)&old_param.data_len)) {
@@ -6180,15 +6198,6 @@ uint32 _spoolss_setprinterdata( pipes_struct *p, SPOOL_Q_SETPRINTERDATA *q_u, SP
 			status = ERRsuccess;
 			goto done;
 		}
-	}
-
-	/* Access check */
-
-	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
-		DEBUG(3, ("security descriptor change denied by existing "
-			  "security descriptor\n"));
-		status = ERRnoaccess;
-		goto done;
 	}
 
 	unlink_specific_param_if_exist(printer->info_2, param);
