@@ -198,7 +198,8 @@ static int server_destructor(void *ptr)
 struct server_connection *server_setup_connection(struct event_context *ev, 
 						  struct server_socket *server_socket, 
 						  struct socket_context *sock, 
-						  time_t t)
+						  time_t t,
+						  servid_t server_id)
 {
 	struct fd_event fde;
 	struct timed_event idle;
@@ -206,7 +207,7 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 
 	srv_conn = talloc_p(server_socket, struct server_connection);
 	if (!srv_conn) {
-		DEBUG(0,("talloc_p(mem_ctx, struct server_service_connection) failed\n"));
+		DEBUG(0,("talloc_p(mem_ctx, struct server_connection) failed\n"));
 		return NULL;
 	}
 
@@ -229,6 +230,7 @@ struct server_connection *server_setup_connection(struct event_context *ev,
 	srv_conn->server_socket		= server_socket;
 	srv_conn->service		= server_socket->service;
 	srv_conn->socket		= sock;
+	srv_conn->server_id		= server_id;
 
 	/* create a smb server context and add it to out event
 	   handling */

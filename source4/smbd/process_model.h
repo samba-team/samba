@@ -23,8 +23,6 @@
 #ifndef SAMBA_PROCESS_MODEL_H
 #define SAMBA_PROCESS_MODEL_H
 
-struct server_service_connection;
-
 /* modules can use the following to determine if the interface has changed
  * please increment the version number after each interface change
  * with a comment and maybe update struct process_model_critical_sizes.

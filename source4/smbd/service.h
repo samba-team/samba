@@ -93,6 +93,19 @@ struct server_service {
 	struct server_context *srv_ctx;
 };
 
+/* the concept of whether two operations are on the same server
+   connection or different connections is an important one in SMB, especially
+   for locking and share modes. We will use a servid_t to distinguish different
+   connections 
+
+   this means that (for example) a unique open file is distinguished by the triple
+   of 
+      servid_t server;
+      uint16   tid;
+      uint16   fnum;
+*/
+typedef uint32_t servid_t;
+
 struct server_connection {
 	struct server_connection *next,*prev;
 	void *private_data;
@@ -103,6 +116,8 @@ struct server_connection {
 		struct timed_event *idle;
 		time_t idle_time;
 	} event;
+
+	servid_t server_id;
 
 	struct socket_context *socket;
 
