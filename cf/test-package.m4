@@ -100,7 +100,7 @@ dnl Try to find lib
   if test -n "$$1_include"; then
     INCLUDE_$1="-I$$1_include"
   fi
-  AC_SUBST(INCLUDE_$1])
+  AC_SUBST(INCLUDE_$1)
   foo[INCLUDE]="$INCLUDE_$1"
   AC_SUBST(foo[INCLUDE])
   if test -n "$$1_lib"; then
