@@ -211,63 +211,6 @@ void locking_close_file(files_struct *fsp)
 }
 
 /****************************************************************************
- Delete a record if it is for a dead process, if check_self is true, then
- delete any records belonging to this pid also (there shouldn't be any).
- This function is only called on locking startup and shutdown.
-****************************************************************************/
-
-static int delete_fn(TDB_CONTEXT *ttdb, TDB_DATA kbuf, TDB_DATA dbuf, void *state)
-{
-	struct locking_data *data;
-	share_mode_entry *shares;
-	int i, del_count=0;
-	pid_t mypid = sys_getpid();
-	BOOL check_self = *(BOOL *)state;
-	int ret = 0;
-
-	tdb_chainlock(tdb, kbuf);
-
-	data = (struct locking_data *)dbuf.dptr;
-	shares = (share_mode_entry *)(dbuf.dptr + sizeof(*data));
-
-	for (i=0;i<data->u.num_share_mode_entries;) {
-
-		if (check_self && (shares[i].pid == mypid)) {
-			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Shutting down and a record for my pid (%u) exists !\n",
-					(unsigned int)shares[i].pid ));
-		} else if (!process_exists(shares[i].pid)) {
-			DEBUG(0,("locking : delete_fn. LOGIC ERROR ! Entry for pid %u and it no longer exists !\n",
-					(unsigned int)shares[i].pid ));
-		} else {
-			/* Process exists, leave this record alone. */
-			i++;
-			continue;
-		}
-
-		data->u.num_share_mode_entries--;
-		memmove(&shares[i], &shares[i+1],
-		dbuf.dsize - (sizeof(*data) + (i+1)*sizeof(*shares)));
-		del_count++;
-
-	}
-
-	/* the record has shrunk a bit */
-	dbuf.dsize -= del_count * sizeof(*shares);
-
-	/* store it back in the database */
-	if (data->u.num_share_mode_entries == 0) {
-		if (tdb_delete(ttdb, kbuf) == -1)
-			ret = -1;
-	} else {
-		if (tdb_store(ttdb, kbuf, dbuf, TDB_REPLACE) == -1)
-			ret = -1;
-	}
-
-	tdb_chainunlock(tdb, kbuf);
-	return ret;
-}
-
-/****************************************************************************
  Initialise the locking functions.
 ****************************************************************************/
 
