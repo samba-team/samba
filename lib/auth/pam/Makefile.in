@@ -26,6 +26,9 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
+LIB_DEPS = -L../../kafs -L../../krb -L../../des -L../../roken \
+	   -lkafs -lkrb -ldes -lroken -lc
+
 LIB = pam_krb4.$(SHLIBEXT)
 
 SOURCES = pam.c
@@ -78,7 +81,7 @@ $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(OBJECTS) $(LD_FLAGS) -L../../kafs -L../../krb -L../../des -L../../roken -lkafs -lkrb -ldes -lroken
+	$(LDSHARED) -o $@ $(OBJECTS) $(LD_FLAGS) $(LIB_DEPS)
 #	$(CC) -shared -Wl,-x -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist

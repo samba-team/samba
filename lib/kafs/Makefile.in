@@ -23,6 +23,8 @@ libdir = @libdir@
 
 PICFLAGS = @PICFLAGS@
  
+LIB_DEPS = -lc
+
 LIBNAME = $(LIBPREFIX)kafs
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
@@ -85,7 +87,7 @@ $(LIBNAME).a: $(OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(OBJECTS)
+	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
 
 # AIX: this almost works with gcc, but somehow it fails to use the
 # correct ld, use ld instead

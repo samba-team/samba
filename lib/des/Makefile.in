@@ -29,6 +29,8 @@ EXECSUFFIX=@EXECSUFFIX@
 
 PICFLAGS = @PICFLAGS@
  
+LIB_DEPS = -lc
+
 PROGS = destest$(EXECSUFFIX) \
 	mdtest$(EXECSUFFIX) \
 	des$(EXECSUFFIX) \
@@ -118,7 +120,7 @@ $(LIBNAME).a: $(LIBOBJ)
 
 $(LIBNAME).$(SHLIBEXT): $(LIBOBJ)
 	rm -f $@
-	$(LDSHARED) -o $@ $(LIBOBJ)
+	$(LDSHARED) -o $@ $(LIBOBJ) $(LIB_DEPS)
 
 # To make psoriaris make happy we have to mention these files in some
 # rule, so we might as well put them here.

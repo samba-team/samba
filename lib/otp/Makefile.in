@@ -25,6 +25,8 @@ libdir = @libdir@
 
 PICFLAGS = @PICFLAGS@
  
+LIB_DEPS = $(LIB_DBM) -lc
+
 LIBNAME = $(LIBPREFIX)otp
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
@@ -91,7 +93,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(LIB_OBJECTS)
+	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
 
 $(OBJECTS): ../../include/config.h
 

@@ -30,6 +30,8 @@ LIBPREFIX = @LIBPREFIX@
 LDSHARED = @LDSHARED@
 LIB = $(LIBNAME).$(LIBEXT)
 
+LIB_DEPS = @LIB_tgetent@ -lc
+
 SOURCES = edit_compat.c editline.c complete.c sysunix.c
 
 OBJECTS = @editline_OBJS@
@@ -79,7 +81,7 @@ $(LIBNAME).a: $(OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(OBJECTS)
+	$(LDSHARED) -o $@ $(OBJECTS) $(LIB_DEPS)
 
 $(OBJECTS): ../../include/config.h
 

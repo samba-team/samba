@@ -25,6 +25,8 @@ libdir = @libdir@
 bindir = @bindir@
 includedir = @includedir@
 
+LIB_DEPS = @LIB_readline@ -lc
+
 PICFLAGS = @PICFLAGS@
 EXECSUFFIX = @EXECSUFFIX@
  
@@ -92,7 +94,7 @@ $(LIBNAME).a: $(LIB_OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(LIB_OBJECTS)
 	rm -f $@
-	$(LDSHARED) -o $@ $(LIB_OBJECTS)
+	$(LDSHARED) -o $@ $(LIB_OBJECTS) $(LIB_DEPS)
 
 $(OBJECTS): ../../include/config.h
 

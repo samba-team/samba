@@ -31,6 +31,8 @@ includedir = @includedir@
 
 PICFLAGS = @PICFLAGS@
  
+LIB_DEPS = -lc
+
 LIBNAME = $(LIBPREFIX)com_err
 LIBEXT = @LIBEXT@
 SHLIBEXT = @SHLIBEXT@
@@ -112,7 +114,7 @@ $(LIBNAME).a: $(OBJECTS)
 
 $(LIBNAME).$(SHLIBEXT): $(OBJECTS) $(LDOBJ)
 	rm -f $@
-	$(LDSHARED) -o $@ $(OBJECTS) $(LDOBJ) $(LIBDES)
+	$(LDSHARED) -o $@ $(OBJECTS) $(LDOBJ) $(LIB_DEPS)
 
 
 COBJ = compile_et.o parse.o lex.o

@@ -27,6 +27,14 @@ LDSHARED = @LDSHARED@
 SHLIBEXT = @REAL_SHLIBEXT@
 LD_FLAGS = @REAL_LD_FLAGS@
  
+LIB_DEPS = -L../../kafs -lkafs			\
+	   -L../../kadm -lkadm			\
+	   -L../../krb -lkrb			\
+	   -L../../des -ldes			\
+	   -L../../roken -lroken		\
+	   @LIB_getpwnam_r@			\
+	   -lc
+
 LIB = libsia_krb4.$(SHLIBEXT)
 
 SOURCES = sia.c
@@ -79,6 +87,6 @@ $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
-	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) -L../../kafs -lkafs -L../../kadm -lkadm -L../../krb -lkrb -L../../des -ldes -L../../roken -lroken @LIB_getpwnam_r@ -lc
+	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) $(LIB_DEPS)
 
 .PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
