@@ -2,7 +2,7 @@
    Unix SMB/Netbios implementation.
    Version 1.9.
    Password and authentication handling
-   Copyright (C) Jeremy Allison 		1996-1998
+   Copyright (C) Jeremy Allison 		1996-2001
    Copyright (C) Luke Kenneth Casson Leighton 	1996-1998
    Copyright (C) Gerald (Jerry) Carter		2000-2001
       
@@ -35,62 +35,29 @@ extern DOM_SID global_sam_sid;
 
 struct passdb_ops *pdb_ops;
 
+#if 0	/* JERRY */
 static void* pdb_handle = NULL;
+#endif
 
 /***************************************************************
  Initialize the password db operations.
 ***************************************************************/
+
 BOOL initialize_password_db(BOOL reload)
-{
-	/* This function is unfinished right now, so just 
-	   ignore the details and always return True.  It is here 
-	   only as a placeholder --jerry */
+{	
+	/* 
+	 * This function is unfinished right now, so just 
+	 * ignore the details and always return True.  It 
+	 * is here only as a placeholder          --jerry 
+	 */
 	return True;
-
-#if _NOT_YET_	
-	char*	modulename = lp_passdb_module_path();
 	
-	/* load another module? */
-	if (reload && pdb_handle)
-	{
-		sys_dlclose (pdb_handle);
-		pdb_handle = NULL;
-	}
-	
-	/* do we have a module defined or use the default? */
-	if (strlen (modulename) != 0)
-	{
-		if ((pdb_handle=sys_dlopen (modulename, RTLD_LAZY)) == NULL)
-		{
-			DEBUG(0,("initialize_password_db: ERROR - Unable to open passdb module \"%s\"!\n%s\n",
-				modulename, sys_dlerror()));
-		}
-		else
-			DEBUG(1,("initialize_password_db: passdb module \"%s\" loaded successfully\n", modulename));
-	}	
-	
-	/* either no module name defined or the one that was failed 
-	   to open.  Let's try the default */
-	if (pdb_handle == NULL)
-	{
-		if ((pdb_handle=sys_dlopen ("libpdbfile.so", RTLD_LAZY)) == NULL)
-		{
-			DEBUG(0,("initialize_password_db: ERROR - Unable to open \"libpdbfile.so\" passdb module!  No user authentication possible!\n%s\n",
-				sys_dlerror()));
-			return False;
-		}
-		else
-			DEBUG(1,("initialize_password_db: passdb module \"libpdbfile.so\" loaded successfully\n"));
-	}
-					
-
-	return (pdb_handle != NULL);
-#endif
 }
 
 /*************************************************************
- initialises a struct sam_disp_info.
+ Initialises a struct sam_disp_info.
  **************************************************************/
+
 static void pdb_init_dispinfo(struct sam_disp_info *user)
 {
 	if (user == NULL) 
@@ -99,8 +66,9 @@ static void pdb_init_dispinfo(struct sam_disp_info *user)
 }
 
 /*************************************************************
- alloc memory and initialises a struct sam_passwd.
+ Alloc memory and initialises a struct sam_passwd.
  ************************************************************/
+
 BOOL pdb_init_sam(SAM_ACCOUNT **user)
 {
 	if (*user != NULL) {
@@ -138,8 +106,9 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 }
 
 /************************************************************
- free the SAM_ACCOUNT and the NT/LM hashes.
+ Free the SAM_ACCOUNT and the NT/LM hashes.
  ***********************************************************/
+
 BOOL pdb_free_sam(SAM_ACCOUNT *user)
 {
 	if (user == NULL) {
@@ -158,7 +127,7 @@ BOOL pdb_free_sam(SAM_ACCOUNT *user)
 }
 
 /************************************************************
- reset the SAM_ACCOUNT and the NT/LM hashes.
+ Reset the SAM_ACCOUNT and the NT/LM hashes.
  ***********************************************************/
 
 BOOL pdb_reset_sam(SAM_ACCOUNT *user)
@@ -169,7 +138,7 @@ BOOL pdb_reset_sam(SAM_ACCOUNT *user)
 	}
 	
 	SAFE_FREE(user->nt_pw);
-	SAFE_FREE(user->lm_pw);	
+	SAFE_FREE(user->lm_pw);
 	ZERO_STRUCTP(user);
 
 	return True;
@@ -178,6 +147,7 @@ BOOL pdb_reset_sam(SAM_ACCOUNT *user)
 /*************************************************************************
  Routine to return the next entry in the sam passwd list.
  *************************************************************************/
+
 struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user)
 {
 	static struct sam_disp_info disp_info;
@@ -194,20 +164,146 @@ struct sam_disp_info *pdb_sam_to_dispinfo(SAM_ACCOUNT *user)
 	return &disp_info;
 }
 
+/**********************************************************
+ Encode the account control bits into a string.
+ length = length of string to encode into (including terminating
+ null). length *MUST BE MORE THAN 2* !
+ **********************************************************/
+
+char *pdb_encode_acct_ctrl(uint16 acct_ctrl, size_t length)
+{
+	static fstring acct_str;
+	size_t i = 0;
+
+	acct_str[i++] = '[';
+
+	if (acct_ctrl & ACB_PWNOTREQ ) acct_str[i++] = 'N';
+	if (acct_ctrl & ACB_DISABLED ) acct_str[i++] = 'D';
+	if (acct_ctrl & ACB_HOMDIRREQ) acct_str[i++] = 'H';
+	if (acct_ctrl & ACB_TEMPDUP  ) acct_str[i++] = 'T'; 
+	if (acct_ctrl & ACB_NORMAL   ) acct_str[i++] = 'U';
+	if (acct_ctrl & ACB_MNS      ) acct_str[i++] = 'M';
+	if (acct_ctrl & ACB_WSTRUST  ) acct_str[i++] = 'W';
+	if (acct_ctrl & ACB_SVRTRUST ) acct_str[i++] = 'S';
+	if (acct_ctrl & ACB_AUTOLOCK ) acct_str[i++] = 'L';
+	if (acct_ctrl & ACB_PWNOEXP  ) acct_str[i++] = 'X';
+	if (acct_ctrl & ACB_DOMTRUST ) acct_str[i++] = 'I';
+
+	for ( ; i < length - 2 ; i++ )
+		acct_str[i] = ' ';
+
+	i = length - 2;
+	acct_str[i++] = ']';
+	acct_str[i++] = '\0';
+
+	return acct_str;
+}     
+
+/**********************************************************
+ Decode the account control bits from a string.
+ **********************************************************/
+
+uint16 pdb_decode_acct_ctrl(const char *p)
+{
+	uint16 acct_ctrl = 0;
+	BOOL finished = False;
+
+	/*
+	 * Check if the account type bits have been encoded after the
+	 * NT password (in the form [NDHTUWSLXI]).
+	 */
+
+	if (*p != '[')
+		return 0;
+
+	for (p++; *p && !finished; p++) {
+		switch (*p) {
+			case 'N': { acct_ctrl |= ACB_PWNOTREQ ; break; /* 'N'o password. */ }
+			case 'D': { acct_ctrl |= ACB_DISABLED ; break; /* 'D'isabled. */ }
+			case 'H': { acct_ctrl |= ACB_HOMDIRREQ; break; /* 'H'omedir required. */ }
+			case 'T': { acct_ctrl |= ACB_TEMPDUP  ; break; /* 'T'emp account. */ } 
+			case 'U': { acct_ctrl |= ACB_NORMAL   ; break; /* 'U'ser account (normal). */ } 
+			case 'M': { acct_ctrl |= ACB_MNS      ; break; /* 'M'NS logon user account. What is this ? */ } 
+			case 'W': { acct_ctrl |= ACB_WSTRUST  ; break; /* 'W'orkstation account. */ } 
+			case 'S': { acct_ctrl |= ACB_SVRTRUST ; break; /* 'S'erver account. */ } 
+			case 'L': { acct_ctrl |= ACB_AUTOLOCK ; break; /* 'L'ocked account. */ } 
+			case 'X': { acct_ctrl |= ACB_PWNOEXP  ; break; /* No 'X'piry on password */ } 
+			case 'I': { acct_ctrl |= ACB_DOMTRUST ; break; /* 'I'nterdomain trust account. */ }
+            case ' ': { break; }
+			case ':':
+			case '\n':
+			case '\0': 
+			case ']':
+			default:  { finished = True; }
+		}
+	}
+
+	return acct_ctrl;
+}
+
+/*************************************************************
+ Routine to set 32 hex password characters from a 16 byte array.
+**************************************************************/
+
+void pdb_sethexpwd(char *p, unsigned char *pwd, uint16 acct_ctrl)
+{
+	if (pwd != NULL) {
+		int i;
+		for (i = 0; i < 16; i++)
+			slprintf(&p[i*2], 3, "%02X", pwd[i]);
+	} else {
+		if (acct_ctrl & ACB_PWNOTREQ)
+			safe_strcpy(p, "NO PASSWORDXXXXXXXXXXXXXXXXXXXXX", 33);
+		else
+			safe_strcpy(p, "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX", 33);
+	}
+}
+
+/*************************************************************
+ Routine to get the 32 hex characters and turn them
+ into a 16 byte array.
+**************************************************************/
+
+BOOL pdb_gethexpwd(char *p, unsigned char *pwd)
+{
+	int i;
+	unsigned char   lonybble, hinybble;
+	char           *hexchars = "0123456789ABCDEF";
+	char           *p1, *p2;
+	
+	if (!p)
+		return (False);
+	
+	for (i = 0; i < 32; i += 2) {
+		hinybble = toupper(p[i]);
+		lonybble = toupper(p[i + 1]);
+
+		p1 = strchr(hexchars, hinybble);
+		p2 = strchr(hexchars, lonybble);
+
+		if (!p1 || !p2)
+			return (False);
+
+		hinybble = PTR_DIFF(p1, hexchars);
+		lonybble = PTR_DIFF(p2, hexchars);
+
+		pwd[i / 2] = (hinybble << 4) | lonybble;
+	}
+	return (True);
+}
+
 /*******************************************************************
  Group and User RID username mapping function
  ********************************************************************/
+
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 {
 	struct passwd *pw = Get_Pwnam(user_name, False);
 
 	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
-	{
 		return False;
-	}
 
-	if (!pw)
-	{
+	if (!pw) {
 		DEBUG(1,("Username %s is invalid on this system\n", user_name));
 		return False;
 	}
@@ -225,6 +321,7 @@ BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid)
 /*******************************************************************
  Converts NT user RID to a UNIX uid.
  ********************************************************************/
+
 uid_t pdb_user_rid_to_uid(uint32 user_rid)
 {
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
@@ -269,6 +366,7 @@ static BOOL pdb_rid_is_well_known(uint32 rid)
 /*******************************************************************
  Decides if a RID is a user or group RID.
  ********************************************************************/
+
 BOOL pdb_rid_is_user(uint32 rid)
 {
   /* lkcl i understand that NT attaches an enumeration to a RID
@@ -291,9 +389,9 @@ BOOL pdb_rid_is_user(uint32 rid)
 /*******************************************************************
  Convert a rid into a name. Used in the lookup SID rpc.
  ********************************************************************/
+
 BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 {
-
 	BOOL is_user = pdb_rid_is_user(rid);
 
 	DEBUG(5,("local_lookup_rid: looking up %s RID %u.\n", is_user ? "user" :
@@ -341,10 +439,9 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		}
 
 	} else {
-		gid_t gid=-1;
+		gid_t gid;
 		struct group *gr; 
-		GROUP_MAP map;
-		DOM_SID sid;
+
 		/* 
 		 * Don't try to convert the rid to a name if running
 		 * in appliance mode
@@ -353,30 +450,11 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 		if (lp_hide_local_users()) 
 			return False;
 		
-		/*
-		 * First try the TDB. If the RID exists and is mapped to a unix group,
-		 * return the NT name and the type.
-		 */
-		
-		sid_copy(&sid, &global_sam_sid);
-		sid_append_rid(&sid, rid);
-		if (get_group_map_from_sid(sid, &map) && map.gid!=-1) {
-			*psid_name_use = map.sid_name_use;
-			fstrcpy(name, map.nt_name);
-
-			DEBUG(5,("local_lookup_rid: found NT group %s mapped to Unix gid %u for rid %u\n",
-			          name, (unsigned int)map.gid, (unsigned int)rid ));
-
-			if(!getgrgid(map.gid))
-				return False;
-			else
-				return True;
-		}
+		gid = pdb_user_rid_to_gid(rid);
+		gr = getgrgid(gid);
 
 		*psid_name_use = SID_NAME_ALIAS;
-		gid = pdb_user_rid_to_gid(rid);
-		
-		gr = getgrgid(gid);
+
 		DEBUG(5,("local_local_rid: looking up gid %u %s\n", (unsigned int)gid,
 			gr ? "succeeded" : "failed" ));
 
@@ -387,7 +465,8 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 
 		fstrcpy( name, gr->gr_name);
 
-		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name, (unsigned int)rid ));
+		DEBUG(5,("local_lookup_rid: found group %s for rid %u\n", name,
+			(unsigned int)rid ));
 	}
 
 	return True;
@@ -441,27 +520,13 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 		/*
 		 * Maybe it was a group ?
 		 */
-		GROUP_MAP map;
-		struct group *grp = NULL;
+		struct group *grp = getgrnam(user);
 
-		/* It can be a mapped group */
-		if (get_group_map_from_ntname(user, &map) && map.gid!=-1) {
+		if(!grp)
+			return False;
 
-			grp=getgrgid(map.gid);
-			if (!grp)
-				return False;
-
-			sid_copy(&local_sid, &map.sid);
-			*psid_name_use = map.sid_name_use;
-		} else {
-			/* It wasn't mapped, it can be a Unix group */
-			grp=getgrnam(user);
-			if(!grp)
-				return False;
-
-			sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
-			*psid_name_use = SID_NAME_ALIAS;
-		}
+		sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
+		*psid_name_use = SID_NAME_ALIAS;
 	}
 
 	sid_copy( psid, &local_sid);
@@ -472,6 +537,7 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 /****************************************************************************
  Convert a uid to SID - locally.
 ****************************************************************************/
+
 DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 {
 	extern DOM_SID global_sam_sid;
@@ -482,10 +548,10 @@ DOM_SID *local_uid_to_sid(DOM_SID *psid, uid_t uid)
 	return psid;
 }
 
-
 /****************************************************************************
  Convert a SID to uid - locally.
 ****************************************************************************/
+
 BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
 	extern DOM_SID global_sam_sid;
@@ -527,6 +593,7 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 /****************************************************************************
  Convert a gid to SID - locally.
 ****************************************************************************/
+
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
     extern DOM_SID global_sam_sid;
@@ -540,6 +607,7 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 /****************************************************************************
  Convert a SID to gid - locally.
 ****************************************************************************/
+
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
     extern DOM_SID global_sam_sid;
@@ -582,12 +650,13 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 static void select_name(pstring string, const UNISTR2 *from)
 {
 	if (from->buffer != 0)
-		unistr2_to_ascii(string, from, sizeof(string));
+		unistr2_to_ascii(string, from, sizeof(*string));
 }
 
 /*************************************************************
- copies a SAM_USER_INFO_23 to a SAM_ACCOUNT
+ Copies a SAM_USER_INFO_23 to a SAM_ACCOUNT
  **************************************************************/
+
 void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 {
 
@@ -627,8 +696,9 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 }
 
 /*************************************************************
- copies a sam passwd.
+ Copies a sam passwd.
  **************************************************************/
+
 void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 {
 	if (from == NULL || to == NULL) 
@@ -669,19 +739,20 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	to->unknown_6 = from->unknown_6;
 }
 
-
 /*************************************************************
- copies a sam passwd.
+ Copies a SAM_ACCOUNT.
  **************************************************************/
+
 void copy_sam_passwd(SAM_ACCOUNT *to, const SAM_ACCOUNT *from)
 {
-	if (!from || !to) return;
+	if (!from || !to)
+		return;
 
 	memcpy(to, from, sizeof(SAM_ACCOUNT));
 }
 
 /*************************************************************
- change a password entry in the local smbpasswd file
+ Change a password entry in the local smbpasswd file.
 
  FIXME!!  The function needs to be abstracted into the
  passdb interface or something.  It is currently being called
@@ -723,8 +794,7 @@ account without a valid local system user.\n", user_name);
 
 	/* Get the smb passwd entry for this user */
 	pdb_init_sam(&sam_pass);
-	if(!pdb_getsampwnam(sam_pass, user_name))
-	{
+	if(!pdb_getsampwnam(sam_pass, user_name)) {
 		pdb_free_sam(sam_pass);
 		
 		if(!(local_flags & LOCAL_ADD_USER)) {
@@ -780,25 +850,21 @@ account without a valid local system user.\n", user_name);
 	 * and the valid last change time.
 	 */
 
-	if(local_flags & LOCAL_DISABLE_USER) 
+	if(local_flags & LOCAL_DISABLE_USER) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_DISABLED);
-	else if (local_flags & LOCAL_ENABLE_USER) 
-		{
+	} else if (local_flags & LOCAL_ENABLE_USER) {
 		if(pdb_get_lanman_passwd(sam_pass) == NULL) {
 			pdb_set_lanman_passwd (sam_pass, new_p16);
 			pdb_set_nt_passwd     (sam_pass, new_nt_p16);
 		}
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)&(~ACB_DISABLED));
-	}
-	else if (local_flags & LOCAL_SET_NO_PASSWORD) {
+	} else if (local_flags & LOCAL_SET_NO_PASSWORD) {
 		pdb_set_acct_ctrl (sam_pass, pdb_get_acct_ctrl(sam_pass)|ACB_PWNOTREQ);
 		
 		/* This is needed to preserve ACB_PWNOTREQ in mod_smbfilepwd_entry */
 		pdb_set_lanman_passwd (sam_pass, NULL);
 		pdb_set_nt_passwd     (sam_pass, NULL);
-	} 
-	else 
-	{
+	} else {
 		/*
 		 * If we're dealing with setting a completely empty user account
 		 * ie. One with a password of 'XXXX', but not set disabled (like
@@ -822,9 +888,7 @@ account without a valid local system user.\n", user_name);
 			return False;
 		}
 		slprintf(msg_str, msg_str_len-1, "Deleted user %s.\n", user_name);
-	} 
-	else 
-	{
+	} else {
 		if(!pdb_update_sam_account(sam_pass, True)) {
 			slprintf(err_str, err_str_len-1, "Failed to modify entry for user %s.\n", user_name);
 			pdb_free_sam(sam_pass);
@@ -842,10 +906,10 @@ account without a valid local system user.\n", user_name);
 	return True;
 }
 
-
 /*********************************************************************
- collection of get...() functions for SAM_ACCOUNT_INFO
+ Collection of get...() functions for SAM_ACCOUNT_INFO.
  ********************************************************************/
+
 uint16 pdb_get_acct_ctrl (SAM_ACCOUNT *sampass)
 {
 	if (sampass)
@@ -941,7 +1005,6 @@ uint8* pdb_get_lanman_passwd (SAM_ACCOUNT *sampass)
 	else
 		return (NULL);
 }
-
 
 uint32 pdb_get_user_rid (SAM_ACCOUNT *sampass)
 {
@@ -1088,15 +1151,15 @@ uint32 pdb_get_unknown6 (SAM_ACCOUNT *sampass)
 }
 
 /*********************************************************************
- collection of set...() functions for SAM_ACCOUNT_INFO
+ Collection of set...() functions for SAM_ACCOUNT_INFO.
  ********************************************************************/
+
 BOOL pdb_set_acct_ctrl (SAM_ACCOUNT *sampass, uint16 flags)
 {
 	if (!sampass)
 		return False;
 		
-	if (sampass)
-	{
+	if (sampass) {
 		sampass->acct_ctrl = flags;
 		return True;
 	}
@@ -1213,11 +1276,15 @@ BOOL pdb_set_group_rid (SAM_ACCOUNT *sampass, uint32 grid)
 }
 
 /*********************************************************************
- set the user's UNIX name
+ Set the user's UNIX name.
  ********************************************************************/
+
 BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
 {	
-	if (!sampass || !username)
+	if (!sampass)
+		return False;
+	*sampass->username = '\0';
+	if (!username)
 		return False;
 
 	StrnCpy (sampass->username, username, strlen(username));
@@ -1226,11 +1293,15 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, char *username)
 }
 
 /*********************************************************************
- set the domain name
+ Set the domain name.
  ********************************************************************/
+
 BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
 {	
-	if (!sampass || !domain)
+	if (!sampass)
+		return False;
+	*sampass->domain = '\0';
+	if (!domain)
 		return False;
 
 	StrnCpy (sampass->domain, domain, strlen(domain));
@@ -1239,11 +1310,15 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, char *domain)
 }
 
 /*********************************************************************
- set the user's NT name
+ Set the user's NT name.
  ********************************************************************/
+
 BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
 {
-	if (!sampass || !nt_username)
+	if (!sampass)
+		return False;
+	*sampass->nt_username = '\0';
+	if (!nt_username)
 		return False;
 
 	StrnCpy (sampass->nt_username, nt_username, strlen(nt_username));
@@ -1252,11 +1327,15 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, char *nt_username)
 }
 
 /*********************************************************************
- set the user's full name
+ Set the user's full name.
  ********************************************************************/
+
 BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
 {
-	if (!sampass || !fullname)
+	if (!sampass)
+		return False;
+	*sampass->full_name = '\0';
+	if (!fullname)
 		return False;
 
 	StrnCpy (sampass->full_name, fullname, strlen(fullname));
@@ -1265,11 +1344,15 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, char *fullname)
 }
 
 /*********************************************************************
- set the user's logon script
+ Set the user's logon script.
  ********************************************************************/
+
 BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 {
-	if (!sampass || !logon_script)
+	if (!sampass)
+		return False;
+	*sampass->logon_script = '\0';
+	if (!logon_script)
 		return False;
 
 	StrnCpy (sampass->logon_script, logon_script, strlen(logon_script));
@@ -1278,11 +1361,15 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, char *logon_script)
 }
 
 /*********************************************************************
- set the user's profile path
+ Set the user's profile path.
  ********************************************************************/
+
 BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 {
-	if (!sampass || !profile_path)
+	if (!sampass)
+		return False;
+	*sampass->profile_path = '\0';
+	if (!profile_path)
 		return False;
 	
 	StrnCpy (sampass->profile_path, profile_path, strlen(profile_path));
@@ -1291,11 +1378,15 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, char *profile_path)
 }
 
 /*********************************************************************
- set the user's directory drive
+ Set the user's directory drive.
  ********************************************************************/
+
 BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 {
-	if (!sampass || !dir_drive)
+	if (!sampass)
+		return False;
+	*sampass->dir_drive = '\0';
+	if (!dir_drive)
 		return False;
 
 	StrnCpy (sampass->dir_drive, dir_drive, strlen(dir_drive));
@@ -1304,11 +1395,15 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, char *dir_drive)
 }
 
 /*********************************************************************
- set the user's home directory
+ Set the user's home directory.
  ********************************************************************/
+
 BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 {
-	if (!sampass || !homedir)
+	if (!sampass)
+		return False;
+	*sampass->home_dir = '\0';
+	if (!homedir)
 		return False;
 	
 	StrnCpy (sampass->home_dir, homedir, strlen(homedir));
@@ -1317,11 +1412,15 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, char *homedir)
 }
 
 /*********************************************************************
- set the user's account description
+ Set the user's account description.
  ********************************************************************/
+
 BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
 {
-	if (!sampass || !acct_desc)
+	if (!sampass)
+		return False;
+	*sampass->acct_desc = '\0';
+	if (!acct_desc)
 		return False;
 	
 	StrnCpy (sampass->acct_desc, acct_desc, strlen(acct_desc));
@@ -1330,11 +1429,16 @@ BOOL pdb_set_acct_desc (SAM_ACCOUNT *sampass, char *acct_desc)
 }
 
 /*********************************************************************
- set the user's workstation allowed list
+ Set the user's workstation allowed list.
  ********************************************************************/
+
 BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
 {
-	if (!sampass || !workstations) return False;
+	if (!sampass)
+		return False;
+	*sampass->workstations = '\0';
+	if (!workstations)
+		return False;
 
 	StrnCpy (sampass->workstations, workstations, strlen(workstations));
 
@@ -1342,11 +1446,16 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, char *workstations)
 }
 
 /*********************************************************************
- set the user's dial string
+ Set the user's dial string.
  ********************************************************************/
+
 BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 {
-	if (!sampass || !munged_dial) return False;
+	if (!sampass)
+		return False;
+	*sampass->munged_dial = '\0';
+	if (!munged_dial)
+		return False;
 
 	StrnCpy (sampass->munged_dial, munged_dial, strlen(munged_dial));
 
@@ -1354,14 +1463,16 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, char *munged_dial)
 }
 
 /*********************************************************************
- set the user's NT hash
+ Set the user's NT hash.
  ********************************************************************/
+
 BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !pwd) return False;
+	if (!sampass || !pwd)
+		return False;
 	
 	if (sampass->nt_pw!=NULL)
-		DEBUG(0,("pdb_set_nt_passwd: NT hash non NULL overwriting ?\n"));
+		DEBUG(4,("pdb_set_nt_passwd: NT hash non NULL overwritting ?\n"));
 	else
 		sampass->nt_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
 	
@@ -1374,14 +1485,16 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 }
 
 /*********************************************************************
- set the user's LM hash
+ Set the user's LM hash.
  ********************************************************************/
+
 BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 {
-	if (!sampass || !pwd) return False;
+	if (!sampass || !pwd)
+		return False;
 	
 	if (sampass->lm_pw!=NULL)
-		DEBUG(0,("pdb_set_lanman_passwd: LM hash non NULL overwriting ?\n"));
+		DEBUG(4,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));
 	else
 		sampass->lm_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
 	
@@ -1422,10 +1535,10 @@ BOOL pdb_set_unknown_6 (SAM_ACCOUNT *sampass, uint32 unkn)
 
 BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 {
-	if (!sampass) return False;
+	if (!sampass)
+		return False;
 
-	if (!hours) 
-	{
+	if (!hours) {
 		memset ((char *)sampass->hours, 0, MAX_HOURS_LEN);
 		return True;
 	}
@@ -1434,4 +1547,3 @@ BOOL pdb_set_hours (SAM_ACCOUNT *sampass, uint8 *hours)
 
 	return True;
 }
-

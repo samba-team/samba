@@ -448,7 +448,9 @@ static void cgi_download(char *file)
 	char buf[1024];
 	int fd, l, i;
 	char *p;
+#if I18N_SWAT
 	int nLangDesc;
+#endif
 
 	/* sanitise the filename */
 	for (i=0;file[i];i++) {

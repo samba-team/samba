@@ -22,7 +22,7 @@
 
 #include "includes.h"
 
-#ifdef USE_SMBPASS_DB
+#ifdef WITH_SMBPASSWD_SAM
 
 
 /* 
@@ -53,10 +53,6 @@ extern struct passdb_ops pdb_ops;
 /* used for maintain locks on the smbpasswd file */
 static int 	pw_file_lock_depth;
 static void 	*global_vp;
-
-/* static memory area used by all passdb search functions
-   in this module */
-/*static SAM_ACCOUNT 	global_sam_pass;*/
 
 
 enum pwf_access_type { PWF_READ, PWF_UPDATE, PWF_CREATE };
@@ -414,7 +410,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
       pw_buf.smb_passwd = NULL;
       pw_buf.acct_ctrl |= ACB_PWNOTREQ;
     } else {
-      if (!smbpasswd_gethexpwd((char *)p, smbpwd)) {
+      if (!pdb_gethexpwd((char *)p, smbpwd)) {
         DEBUG(0, ("getsmbfilepwent: Malformed Lanman password entry (non hex chars)\n"));
         continue;
       }
@@ -431,7 +427,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
                 the lanman password. */
     if ((linebuf_len >= (PTR_DIFF(p, linebuf) + 33)) && (p[32] == ':')) {
       if (*p != '*' && *p != 'X') {
-        if(smbpasswd_gethexpwd((char *)p,smbntpwd))
+        if(pdb_gethexpwd((char *)p,smbntpwd))
           pw_buf.smb_nt_passwd = smbntpwd;
       }
       p += 33; /* Move to the first character of the line after
@@ -444,7 +440,7 @@ static struct smb_passwd *getsmbfilepwent(void *vp)
     if (*p == '[')
 	{
       unsigned char *end_p = (unsigned char *)strchr_m((char *)p, ']');
-      pw_buf.acct_ctrl = smbpasswd_decode_acb_info((char*)p);
+      pw_buf.acct_ctrl = pdb_decode_acct_ctrl((char*)p);
 
       /* Must have some account type set. */
       if(pw_buf.acct_ctrl == 0)
@@ -545,8 +541,8 @@ static char *format_new_smbpasswd_entry(struct smb_passwd *newpwd)
   *p++ = ':';
 
   /* Add the account encoding and the last change time. */
-  slprintf((char *)p, new_entry_length - 1 - (p - new_entry), "%s:LCT-%08X:\n",
-           smbpasswd_encode_acb_info(newpwd->acct_ctrl),
+  slprintf((char *)p, new_entry_length - 1 - (p - new_entry),  "%s:LCT-%08X:\n",
+           pdb_encode_acct_ctrl(newpwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN),
            (uint32)newpwd->pass_last_set_time);
 
   return new_entry;
@@ -640,11 +636,11 @@ Error was %s. Password file may be corrupt ! Please examine by hand !\n",
     	}
 
 	endsmbfilepwent(fp, &pw_file_lock_depth);
-	SAFE_FREE(new_entry);
+	free(new_entry);
 	return False;
   }
 
-  SAFE_FREE(new_entry);
+  free(new_entry);
   endsmbfilepwent(fp, &pw_file_lock_depth);
   return True;
 }
@@ -903,7 +899,7 @@ static BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override)
        * acct ctrl field. Encode the given acct ctrl
        * bits into it.
        */
-      fstrcpy(encode_bits, smbpasswd_encode_acb_info(pwd->acct_ctrl));
+      fstrcpy(encode_bits, pdb_encode_acct_ctrl(pwd->acct_ctrl, NEW_PW_FORMAT_SPACE_PADDED_LEN));
     } else {
       /*
        * If using the old format and the ACB_DISABLED or
@@ -1121,11 +1117,11 @@ Error was %s\n", pwd->smb_name, pfile2, strerror(errno)));
       	unlink(pfile2);
 	endsmbfilepwent(fp, &pw_file_lock_depth);
 	endsmbfilepwent(fp_write, &pfile2_lockdepth);
-	SAFE_FREE(new_entry);
+	free(new_entry);
 	return False;
     }
 
-    SAFE_FREE(new_entry);
+    free(new_entry);
   }
 
   /*
@@ -1298,7 +1294,6 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 {
 	struct smb_passwd *pw_buf=NULL;
 	BOOL done = False;
-
 	DEBUG(5,("pdb_getsampwent\n"));
 
 	if (user==NULL) {
@@ -1308,11 +1303,6 @@ BOOL pdb_getsampwent(SAM_ACCOUNT *user)
 #endif
 		return False;
 	}
-
-	/* do we have an entry? */
-	pw_buf = getsmbfilepwent(global_vp);
-	if (pw_buf == NULL) 
-		return False;
 
 	while (!done)
 	{
@@ -1530,4 +1520,4 @@ BOOL pdb_delete_sam_account (char* username)
 #else
  /* Do *NOT* make this function static. It breaks the compile on gcc. JRA */
  void smbpass_dummy_function(void) { } /* stop some compilers complaining */
-#endif /* USE_SMBPASS_DB */
+#endif /* WTH_SMBPASSWD_SAM*/
