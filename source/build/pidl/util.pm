@@ -198,8 +198,7 @@ sub type_align($)
     my($e) = shift;
     my $type = $e->{TYPE};
 
-    if ($e->{POINTERS} || array_size($e)) {
-	    # FIXME: we really should recurse here
+    if (need_wire_pointer($e)) {
 	    return 4;
     }
 
@@ -214,6 +213,7 @@ sub type_align($)
     return 2, if ($type eq "wchar_t");
     return 4, if ($type eq "DATA_BLOB");
 
+    # it must be an external type - all we can do is guess 
     return 4;
 }
 

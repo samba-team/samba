@@ -12,6 +12,7 @@ my($res);
 
 # the list of needed functions
 my %needed;
+my %structs;
 
 #####################################################################
 # parse a properties list
@@ -27,6 +28,30 @@ sub ParseProperties($)
 	    }
 	}
     }
+}
+
+###################################
+# find a sibling var in a structure
+sub find_sibling($$)
+{
+	my($e) = shift;
+	my($name) = shift;
+	my($fn) = $e->{PARENT};
+
+	if ($fn->{TYPE} eq "FUNCTION") {
+		for my $e2 (@{$fn->{DATA}}) {
+			if ($e2->{NAME} eq $name) {
+				return $e2;
+			}
+		}
+	}
+
+	for my $e2 (@{$fn->{ELEMENTS}}) {
+		if ($e2->{NAME} eq $name) {
+			return $e2;
+		}
+	}
+	die "invalid sibling '$name'";
 }
 
 ####################################################################
@@ -49,16 +74,15 @@ sub find_size_var($$)
 		return "r->$size";
 	}
 
-	for my $e2 (@{$fn->{DATA}}) {
-		if ($e2->{NAME} eq $size) {
-			if (util::has_property($e2, "in")) {
-				return "r->in.$size";
-			}
-			if (util::has_property($e2, "out")) {
-				return "r->out.$size";
-			}
-		}
+	my $e2 = find_sibling($e, $size);
+
+	if (util::has_property($e2, "in")) {
+		return "r->in.$size";
 	}
+	if (util::has_property($e2, "out")) {
+		return "r->out.$size";
+	}
+
 	die "invalid variable in $size for element $e->{NAME} in $fn->{NAME}\n";
 }
 
@@ -77,15 +101,61 @@ sub fn_prefix($)
 
 #####################################################################
 # work out the correct alignment for a structure
-sub struct_alignment($)
+sub struct_alignment
 {
 	my $s = shift;
+
 	my $align = 1;
 	for my $e (@{$s->{ELEMENTS}}) {
-		if ($align < util::type_align($e)) {
-			$align = util::type_align($e);
+		my $a = 1;
+
+		if (!util::need_wire_pointer($e)
+		    && defined $structs{$e->{TYPE}}) {
+			if ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "STRUCT") {
+				$a = struct_alignment($structs{$e->{TYPE}}->{DATA});
+			} elsif ($structs{$e->{TYPE}}->{DATA}->{TYPE} eq "UNION") {
+				$a = union_alignment($structs{$e->{TYPE}}->{DATA});
+			}
+		} else {
+			$a = util::type_align($e);
+		}
+
+		if ($align < $a) {
+			$align = $a;
 		}
 	}
+
+	return $align;
+}
+
+#####################################################################
+# work out the correct alignment for a union
+sub union_alignment
+{
+	my $u = shift;
+
+	my $align = 1;
+
+	foreach my $e (@{$u->{DATA}}) {
+		my $a = 1;
+
+		if (!util::need_wire_pointer($e)
+		    && defined $structs{$e->{DATA}->{TYPE}}) {
+			my $s = $structs{$e->{DATA}->{TYPE}};
+			if ($s->{DATA}->{TYPE} eq "STRUCT") {
+				$a = struct_alignment($s->{DATA});
+			} elsif ($s->{DATA}->{TYPE} eq "UNION") {
+				$a = union_alignment($s->{DATA});
+			}
+		} else {
+			$a = util::type_align($e->{DATA});
+		}
+
+		if ($align < $a) {
+			$align = $a;
+		}
+	}
+
 	return $align;
 }
 
@@ -256,17 +326,24 @@ sub ParseElementPullSwitch($$$$)
 
 	my $cprefix = util::c_pull_prefix($e);
 
-	$res .= "\t{ uint16 _level = $switch_var;\n";
+	my $utype = $structs{$e->{TYPE}};
+	if (!defined $utype ||
+	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
+		my $e2 = find_sibling($e, $switch);
+		$res .= "\tif (($ndr_flags) & NDR_SCALARS) {\n";
+		$res .= "\t\t $e2->{TYPE} _level;\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_$e2->{TYPE}(ndr, &_level));\n";
+		$res .= "\t\tif (_level != $switch_var) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
+		$res .= "\t}\n";
+	}
 
 	if (util::has_property($e, "subcontext")) {
-		$res .= "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, &_level, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+		$res .= "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
 	} else {
-		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
+		$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
 	}
 
 
-	$res .= "\tif ((($ndr_flags) & NDR_SCALARS) && (_level != $switch_var)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
-	$res .= "\t}\n";
 }
 
 #####################################################################
@@ -279,6 +356,13 @@ sub ParseElementPushSwitch($$$$)
 	my $switch = shift;
 	my $switch_var = find_size_var($e, $switch);
 	my $cprefix = util::c_push_prefix($e);
+
+	my $utype = $structs{$e->{TYPE}};
+	if (!defined $utype ||
+	    !util::has_property($utype->{DATA}, "nodiscriminant")) {
+		my $e2 = find_sibling($e, $switch);
+		$res .= "\tNDR_CHECK(ndr_push_$e2->{TYPE}(ndr, $switch_var));\n";
+	}
 
 	if (util::has_property($e, "subcontext")) {
 		$res .= "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_pull_$e->{TYPE}));\n";
@@ -590,9 +674,9 @@ sub ParseUnionPush($)
 
 	$res .= "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
 
-	if (!util::has_property($e, "nodiscriminant")) {
-		$res .= "\tNDR_CHECK(ndr_push_uint16(ndr, level));\n";
-	}
+#	my $align = union_alignment($e);
+#	$res .= "\tNDR_CHECK(ndr_push_align(ndr, $align));\n";
+
 	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
@@ -665,10 +749,10 @@ sub ParseUnionPull($)
 
 	$res .= "\tNDR_CHECK(ndr_pull_struct_start(ndr));\n";
 
-	if (!util::has_property($e, "nodiscriminant")) {
-		$res .= "\tNDR_CHECK(ndr_pull_uint16(ndr, level));\n";
-	}
-	$res .= "\tswitch (*level) {\n";
+#	my $align = union_alignment($e);
+#	$res .= "\tNDR_CHECK(ndr_pull_align(ndr, $align));\n";
+
+	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
 			$res .= "\tdefault: {\n";
@@ -685,13 +769,13 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		$res .= "\tdefault:\n";
-		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	$res .= "\t}\n";
 	$res .= "\tndr_pull_struct_end(ndr);\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
-	$res .= "\tswitch (*level) {\n";
+	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
 		if ($el->{CASE} eq "default") {
 			$res .= "\tdefault:\n";
@@ -703,7 +787,7 @@ sub ParseUnionPull($)
 	}
 	if (! $have_default) {
 		$res .= "\tdefault:\n";
-		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
 	}
 	$res .= "\t}\n";
 	$res .= "done:\n";
@@ -802,7 +886,7 @@ sub ParseTypedefPull($)
 	}
 
 	if ($e->{DATA}->{TYPE} eq "UNION") {
-		$res .= "$static" . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union $e->{NAME} *r)";
+		$res .= "$static" . "NTSTATUS ndr_pull_$e->{NAME}(struct ndr_pull *ndr, int ndr_flags, uint16 level, union $e->{NAME} *r)";
 		$res .= "\n{\n";
 		ParseTypePull($e->{DATA});
 		$res .= "\treturn NT_STATUS_OK;\n";
@@ -959,6 +1043,15 @@ sub ParseInterface($)
 {
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
+
+	foreach my $d (@{$data}) {
+		if ($d->{TYPE} eq "TYPEDEF") {
+		    $structs{$d->{NAME}} = $d;
+	    }
+	}
+
+
+
 	foreach my $d (@{$data}) {
 		($d->{TYPE} eq "TYPEDEF") &&
 		    ParseTypedefPush($d);
