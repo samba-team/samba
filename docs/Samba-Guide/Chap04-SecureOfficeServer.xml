@@ -773,7 +773,7 @@ $IPTABLES -P OUTPUT ACCEPT
 $IPTABLES -F OUTPUT
 $IPTABLES -P FORWARD DROP
 $IPTABLES -F FORWARD
-$IPTABLES -t nat -F
+
 $IPTABLES -A INPUT -i lo -j ACCEPT
 $IPTABLES -A INPUT -i $INTIFA -j ACCEPT
 $IPTABLES -A INPUT -i $INTIFB -j ACCEPT
@@ -781,7 +781,7 @@ $IPTABLES -A INPUT -i $EXTIF -m state --state ESTABLISHED,RELATED -j ACCEPT
 # Enable incoming traffic for: SSH, SMTP, DNS(tcp), HTTP, HTTPS
 for i in 22 25 53 80 443
 do
-        $IPTABLES -A INPUT -i $EXTIF -p tcp -dport $i  -j ACCEPT
+        $IPTABLES -A INPUT -i $EXTIF -p tcp --dport $i  -j ACCEPT
 done
 # Allow DNS(udp)
 $IPTABLES -A INPUT -i $EXTIF -p udp -dport 53  -j ACCEPT
