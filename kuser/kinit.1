@@ -4,8 +4,7 @@
 .Dt KINIT 1
 .Os HEIMDAL
 .Sh NAME
-.Nm kinit ,
-.Nm kauth
+.Nm kinit
 .Nd acquire initial tickets
 .Sh SYNOPSIS
 .Nm kinit
@@ -163,20 +162,15 @@ issued to an anonymous principal, typically
 .Pp
 The following options are only available if
 .Nm 
-has been compiled with support for Kerberos 4. The 
-.Nm kauth
-program is identical to
-.Nm kinit ,
-but has these options enabled by
-default.
+has been compiled with support for Kerberos 4. 
 .Bl -tag -width Ds
 .It Xo
 .Fl 4 Ns ,
 .Fl -524init
 .Xc
-Try to convert the obtained Kerberos 5 krbtgt to a version 4 compatible
-ticket. It will store this ticket in the default Kerberos 4 ticket
-file.
+Try to convert the obtained Kerberos 5 krbtgt to a version 4
+compatible ticket. It will store this ticket in the default Kerberos 4
+ticket file.
 .It Xo
 .Fl 9 Ns ,
 .Fl -524convert
