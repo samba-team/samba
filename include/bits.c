@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     fprintf(f, "\n");
     for(i = 0; i < sizeof(sizes) / sizeof(sizes[0]); i++){
 	len = sizes[i];
-	BITSIZE(char);
+	BITSIZE(signed char);
 	BITSIZE(short);
 	BITSIZE(int);
 	BITSIZE(long);
