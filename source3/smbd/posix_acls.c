@@ -21,6 +21,10 @@
 
 #include "includes.h"
 
+/****************************************************************************
+ Data structures representing the internal ACE format.
+****************************************************************************/
+
 enum ace_owner {UID_ACE, GID_ACE, WORLD_ACE};
 enum ace_attribute {ALLOW_ACE, DENY_ACE}; /* Used for incoming NT ACLS. */
 
@@ -40,9 +44,40 @@ typedef struct canon_ace {
 	posix_id unix_ug; 
 } canon_ace;
 
-static void free_canon_ace_list( canon_ace *list_head );
+#define ALL_ACE_PERMS (S_IRUSR|S_IWUSR|S_IXUSR)
 
-#if !defined(HAVE_NO_ACLS)
+/****************************************************************************
+ Functions to manipulate the internal ACE format.
+****************************************************************************/
+
+/****************************************************************************
+ Count a linked list of canonical ACE entries.
+****************************************************************************/
+
+static size_t count_canon_ace_list( canon_ace *list_head )
+{
+	size_t count = 0;
+	canon_ace *ace;
+
+	for (ace = list_head; ace; ace = ace->next)
+		count++;
+
+	return count;
+}
+
+/****************************************************************************
+ Free a linked list of canonical ACE entries.
+****************************************************************************/
+
+static void free_canon_ace_list( canon_ace *list_head )
+{
+	while (list_head) {
+		canon_ace *old_head = list_head;
+		DLIST_REMOVE(list_head, list_head);
+		free(old_head);
+	}
+}
+
 /****************************************************************************
  Function to duplicate a canon_ace entry.
 ****************************************************************************/
@@ -58,7 +93,6 @@ static canon_ace *dup_canon_ace( canon_ace *src_ace)
 	dst_ace->prev = dst_ace->next = NULL;
 	return dst_ace;
 }
-#endif /* HAVE_NO_ACLS */
 
 /****************************************************************************
  Function to create owner and group SIDs from a SMB_STRUCT_STAT.
@@ -78,7 +112,7 @@ static void print_canon_ace(canon_ace *ace, int num)
 {
 	fstring str;
 
-	dbgtext( "canon_ace index %d. Type = %s", num, ace->attr == ALLOW_ACE ? "allow" : "deny" );
+	dbgtext( "canon_ace index %d. Type = %s ", num, ace->attr == ALLOW_ACE ? "allow" : "deny" );
     dbgtext( "SID = %s ", sid_to_string( str, &ace->sid));
 	if (ace->owner_type == UID_ACE) {
 		struct passwd *pass = sys_getpwuid(ace->unix_ug.uid);
@@ -112,6 +146,118 @@ static void print_canon_ace(canon_ace *ace, int num)
 }
 
 /****************************************************************************
+ Merge aces with a common sid - if both are allow or deny, OR the permissions together and
+ delete the second one. If the first is deny, mask the permissions off and delete the allow
+ if the permissions become zero, delete the deny if the permissions are non zero.
+****************************************************************************/
+
+static void merge_aces( canon_ace **pp_list_head )
+{
+	canon_ace *list_head = *pp_list_head;
+	canon_ace *curr_ace_outer;
+	canon_ace *curr_ace_outer_next;
+
+	/*
+	 * First, merge allow entries with identical SIDs, and deny entries
+	 * with identical SIDs.
+	 */
+
+	for (curr_ace_outer = list_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
+		canon_ace *curr_ace;
+		canon_ace *curr_ace_next;
+
+		curr_ace_outer_next = curr_ace_outer->next; /* Save the link in case we delete. */
+
+		for (curr_ace = curr_ace_outer->next; curr_ace; curr_ace = curr_ace_next) {
+
+			curr_ace_next = curr_ace->next; /* Save the link in case of delete. */
+
+			if (sid_equal(&curr_ace->sid, &curr_ace_outer->sid) &&
+				(curr_ace->attr == curr_ace_outer->attr)) {
+
+				if( DEBUGLVL( 10 )) {
+					dbgtext("merge_aces: Merging ACE's\n");
+					print_canon_ace( curr_ace_outer, 0);
+					print_canon_ace( curr_ace, 0);
+				}
+
+				/* Merge two allow or two deny ACE's. */
+
+				curr_ace_outer->perms |= curr_ace->perms;
+				DLIST_REMOVE(list_head, curr_ace);
+				free(curr_ace);
+				curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
+			}
+		}
+	}
+
+	/*
+	 * Now go through and mask off allow permissions with deny permissions.
+	 * We can delete either the allow or deny here as we know that each SID
+	 * appears only once in the list.
+	 */
+
+	for (curr_ace_outer = list_head; curr_ace_outer; curr_ace_outer = curr_ace_outer_next) {
+		canon_ace *curr_ace;
+		canon_ace *curr_ace_next;
+
+		curr_ace_outer_next = curr_ace_outer->next; /* Save the link in case we delete. */
+
+		for (curr_ace = curr_ace_outer->next; curr_ace; curr_ace = curr_ace_next) {
+
+			curr_ace_next = curr_ace->next; /* Save the link in case of delete. */
+
+			/*
+			 * Subtract ACE's with different entries. Due to the ordering constraints
+			 * we've put on the ACL, we know the deny must be the first one.
+			 */
+
+			if ((curr_ace_outer->attr == DENY_ACE) && (curr_ace->attr == ALLOW_ACE)) {
+
+				if( DEBUGLVL( 10 )) {
+					dbgtext("merge_aces: Masking ACE's\n");
+					print_canon_ace( curr_ace_outer, 0);
+					print_canon_ace( curr_ace, 0);
+				}
+
+				curr_ace->perms &= ~curr_ace_outer->perms;
+
+				if (curr_ace->perms == 0) {
+
+					/*
+					 * The deny overrides the allow. Remove the allow.
+					 */
+
+					DLIST_REMOVE(list_head, curr_ace);
+					free(curr_ace);
+					curr_ace_outer_next = curr_ace_outer->next; /* We may have deleted the link. */
+
+				} else {
+
+					/*
+					 * Even after removing permissions, there
+					 * are still allow permissions - delete the deny.
+					 * It is safe to delete the deny here,
+					 * as we are guarenteed by the deny first
+					 * ordering that all the deny entries for
+					 * this SID have already been merged into one
+					 * before we can get to an allow ace.
+					 */
+
+					DLIST_REMOVE(list_head, curr_ace_outer);
+					free(curr_ace_outer);
+				}
+			}
+
+		} /* end for curr_ace */
+	} /* end for curr_ace_outer */
+
+	/* We may have modified the list. */
+
+	*pp_list_head = list_head;
+}
+
+/****************************************************************************
  Map canon_ace perms to permission bits NT.
  The attr element is not used here - we only process deny entries on set,
  not get. Deny entries are implicit on get with ace->perms = 0.
@@ -124,9 +270,9 @@ static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon
 
 	*pacl_type = SEC_ACE_TYPE_ACCESS_ALLOWED;
 
-	if((ace->perms & (S_IRUSR|S_IWUSR|S_IXUSR)) == (S_IRUSR|S_IWUSR|S_IXUSR)) {
+	if ((ace->perms & ALL_ACE_PERMS) == ALL_ACE_PERMS) {
 			nt_mask = UNIX_ACCESS_RWX;
-	} else if((ace->perms & (S_IRUSR|S_IWUSR|S_IXUSR)) == 0) {
+	} else if ((ace->perms & ALL_ACE_PERMS) == (mode_t)0) {
 		/*
 		 * Here we differentiate between the owner and any other user.
 		 */
@@ -249,36 +395,6 @@ static BOOL unpack_nt_owners(SMB_STRUCT_STAT *psbuf, uid_t *puser, gid_t *pgrp, 
 	return True;
 }
 
-#if !defined(HAVE_NO_ACLS)
-/****************************************************************************
- Merge aces with a common user.
-****************************************************************************/
-
-static BOOL merge_aces( canon_ace *list_head, canon_ace *p_ace)
-{
-	canon_ace *curr_ace;
-
-	for (curr_ace = list_head; curr_ace; curr_ace = curr_ace->next) {
-		if (curr_ace == p_ace)
-			continue;
-
-		if ((curr_ace->type == p_ace->type) && (curr_ace->attr == p_ace->attr) &&
-						sid_equal(&curr_ace->sid, &p_ace->sid)) {
-			if( DEBUGLVL( 10 )) {
-				dbgtext("Merging ACE's\n");
-				print_canon_ace( p_ace, 0);
-				print_canon_ace( curr_ace, 0);
-			}
-			p_ace->perms |= curr_ace->perms;
-			DLIST_REMOVE(list_head, curr_ace);
-			free(curr_ace);
-			return True;
-		}
-	}
-
-	return False;
-}
-
 /****************************************************************************
  Create a default mode for a directory default ACE.
 ****************************************************************************/
@@ -312,6 +428,7 @@ static mode_t get_default_ace_mode(files_struct *fsp, int type)
 /****************************************************************************
  A well formed POSIX file or default ACL has at least 3 entries, a 
  SMB_ACL_USER_OBJ, SMB_ACL_GROUP_OBJ, SMB_ACL_OTHER_OBJ.
+ In addition, the owner must always have at least read access.
 ****************************************************************************/
 
 static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
@@ -328,9 +445,12 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 	BOOL got_other = False;
 
 	for (pace = *pp_ace; pace; pace = pace->next) {
-		if (pace->type == SMB_ACL_USER_OBJ)
+		if (pace->type == SMB_ACL_USER_OBJ) {
+			/* Ensure owner has read access. */
+			if (pace->perms == (mode_t)0)
+				pace->perms = S_IRUSR;
 			got_user = True;
-		else if (pace->type == SMB_ACL_GROUP_OBJ)
+		} else if (pace->type == SMB_ACL_GROUP_OBJ)
 			got_grp = True;
 		else if (pace->type == SMB_ACL_OTHER)
 			got_other = True;
@@ -389,62 +509,38 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 
 	return True;
 }
-#endif /* HAVE_NO_ACLS */
 
 /****************************************************************************
- Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
- succeeding.
+ Unpack a SEC_DESC into two canonical ace lists.
 ****************************************************************************/
 
-static BOOL unpack_canon_ace(files_struct *fsp, 
-							SMB_STRUCT_STAT *pst,
+static BOOL create_canon_ace_lists(files_struct *fsp, 
 							DOM_SID *pfile_owner_sid,
 							DOM_SID *pfile_grp_sid,
 							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
-							uint32 security_info_sent, SEC_DESC *psd)
+							SEC_ACL *dacl)
 {
-#if !defined(HAVE_NO_ACLS)
 	extern DOM_SID global_sid_World;
 	BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
 	canon_ace *file_ace = NULL;
 	canon_ace *dir_ace = NULL;
+	canon_ace *tmp_ace = NULL;
 	canon_ace *current_ace = NULL;
-	enum SID_NAME_USE sid_type;
+	BOOL got_dir_allow = False;
+	BOOL got_file_allow = False;
 	int i;
-#endif /* HAVE_NO_ACLS */
-	SEC_ACL *dacl = psd->dacl;
 
 	*ppfile_ace = NULL;
 	*ppdir_ace = NULL;
 
-	if(security_info_sent == 0) {
-		DEBUG(0,("unpack_canon_ace: no security info sent !\n"));
-		return False;
-	}
-
-	/*
-	 * If no DACL then this is a chown only security descriptor.
-	 */
-
-	if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !dacl)
-		return True;
-
-#if defined(HAVE_NO_ACLS)
-
-	/* No point in doing this if we have no ACL support. */
-	return False;
-
-#else /* HAVE_NO_ACLS */
-
-	/*
-	 * Now go through the DACL and create the canon_ace lists.
-	 */
-
 	for(i = 0; i < dacl->num_aces; i++) {
+		enum SID_NAME_USE sid_type;
 		SEC_ACE *psa = &dacl->ace[i];
 
 		if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) && (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
-			DEBUG(3,("unpack_canon_ace: unable to set anything but an ALLOW or DENY ACE.\n"));
+			free_canon_ace_list(file_ace);
+			free_canon_ace_list(dir_ace);
+			DEBUG(3,("create_canon_ace_lists: unable to set anything but an ALLOW or DENY ACE.\n"));
 			return False;
 		}
 
@@ -468,7 +564,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		if ((current_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL) {
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
-			DEBUG(0,("unpack_canon_ace: malloc fail.\n"));
+			DEBUG(0,("create_canon_ace_lists: malloc fail.\n"));
 			return False;
 		}
 
@@ -494,7 +590,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			free_canon_ace_list(file_ace);
 			free_canon_ace_list(dir_ace);
 			free(current_ace);
-			DEBUG(0,("unpack_canon_ace: unable to map SID %s to uid or gid.\n",
+			DEBUG(0,("create_canon_ace_lists: unable to map SID %s to uid or gid.\n",
 				sid_to_string(str, &current_ace->sid) ));
 			return False;
 		}
@@ -504,13 +600,8 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 * S_I(R|W|X)USR bits.
 		 */
 
-		if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
-			current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
-			current_ace->attr = ALLOW_ACE;
-		} else {
-			current_ace->perms = 0;
-			current_ace->attr = DENY_ACE;
-		}
+		current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
+		current_ace->attr = (psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) ? ALLOW_ACE : DENY_ACE;
 
 		/*
 		 * Now note what kind of a POSIX ACL this should map to.
@@ -534,20 +625,43 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			current_ace->type = (current_ace->owner_type == UID_ACE) ? SMB_ACL_USER : SMB_ACL_GROUP;
 		}
 
+		/*
+		 * Now add the created ace to either the file list, the directory
+		 * list, or both. We *MUST* preserve the order here (hence we use
+		 * DLIST_ADD_END) as NT ACLs are order dependent.
+		 */
+
 		if (fsp->is_directory) {
 
 			/*
 			 * We can only add to the default POSIX ACE list if the ACE is
 			 * designed to be inherited by both files and directories.
 			 */
+
 			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
 
-				DLIST_ADD(dir_ace, current_ace);
+				DLIST_ADD_END(dir_ace, current_ace, tmp_ace);
 
+				/*
+				 * Note if this was an allow ace. We can't process
+				 * any further deny ace's after this.
+				 */
+
+				if (current_ace->attr == ALLOW_ACE)
+					got_dir_allow = True;
+
+				if ((current_ace->attr == DENY_ACE) && got_dir_allow) {
+					DEBUG(0,("create_canon_ace_lists: malformed ACL in inheritable ACL ! \
+Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
+					free_canon_ace_list(file_ace);
+					free_canon_ace_list(dir_ace);
+					free(current_ace);
+					return False;
+				}	
 
 				if( DEBUGLVL( 10 )) {
-					dbgtext("unpack_canon_ace: adding dir ACL:\n");
+					dbgtext("create_canon_ace_lists: adding dir ACL:\n");
 					print_canon_ace( current_ace, 0);
 				}
 
@@ -560,7 +674,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 					canon_ace *dup_ace = dup_canon_ace(current_ace);
 
 					if (!dup_ace) {
-						DEBUG(0,("unpack_canon_ace: malloc fail !\n"));
+						DEBUG(0,("create_canon_ace_lists: malloc fail !\n"));
 						free_canon_ace_list(file_ace);
 						free_canon_ace_list(dir_ace);
 						return False;
@@ -578,13 +692,35 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 */
 
 		if (!(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY)) {
-			DLIST_ADD(file_ace, current_ace);
+			DLIST_ADD_END(file_ace, current_ace, tmp_ace);
+
+			/*
+			 * Note if this was an allow ace. We can't process
+			 * any further deny ace's after this.
+			 */
+
+			if (current_ace->attr == ALLOW_ACE)
+				got_file_allow = True;
+
+			if ((current_ace->attr == DENY_ACE) && got_file_allow) {
+				DEBUG(0,("create_canon_ace_lists: malformed ACL in file ACL ! \
+Deny entry after Allow entry. Failing to set on file %s.\n", fsp->fsp_name ));
+				free_canon_ace_list(file_ace);
+				free_canon_ace_list(dir_ace);
+				free(current_ace);
+				return False;
+			}	
+
+			if( DEBUGLVL( 10 )) {
+				dbgtext("create_canon_ace_lists: adding file ACL:\n");
+				print_canon_ace( current_ace, 0);
+			}
 			all_aces_are_inherit_only = False;
 			current_ace = NULL;
 		}
 
 		/*
-		 * Free if ACE was not addedd.
+		 * Free if ACE was not added.
 		 */
 
 		if (current_ace)
@@ -598,27 +734,374 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 * there was no DACL sent. JRA.
 		 */
 
-		DEBUG(10,("unpack_canon_ace: Win2k inherit acl traverse. Ignoring DACL.\n"));
+		DEBUG(10,("create_canon_ace_lists: Win2k inherit acl traverse. Ignoring DACL.\n"));
+		free_canon_ace_list(file_ace);
+		free_canon_ace_list(dir_ace);
+		file_ace = NULL;
+		dir_ace = NULL;
+	}
+
+	*ppfile_ace = file_ace;
+	*ppdir_ace = dir_ace;
+
+	return True;
+}
+
+/****************************************************************************
+ Check if a given uid/SID is in a group gid/SID. This is probably very
+ expensive and will need optimisation. A *lot* of optimisation :-). JRA.
+****************************************************************************/
+
+static BOOL uid_entry_in_group( canon_ace *uid_ace, canon_ace *group_ace )
+{
+	extern DOM_SID global_sid_World;
+	struct passwd *pass = NULL;
+	struct group *gptr = NULL;
+
+	/* "Everyone" always matches every uid. */
+
+	if (sid_equal(&group_ace->sid, &global_sid_World))
+		return True;
+
+	if (!(pass = sys_getpwuid(uid_ace->unix_ug.uid)))
+		return False;
+
+	if (!(gptr = getgrgid(uid_ace->unix_ug.gid)))
+		return False;
+
+	/*
+	 * Due to the winbind interfaces we need to do this via names,
+	 * not uids/gids.
+	 */
+
+	return user_in_group_list(pass->pw_name, gptr->gr_name );
+}
+
+/****************************************************************************
+ ASCII art time again... JRA :-).
+
+ We have 3 cases to process when moving from an NT ACL to a POSIX ACL. Firstly,
+ we insist the ACL is in canonical form (ie. all DENY entries preceede ALLOW
+ entries). Secondly, the merge code has ensured that all duplicate SID entries for
+ allow or deny have been merged, so the same SID can only appear once in the deny
+ list or once in the allow list.
+
+ We then process as follows :
+
+ ---------------------------------------------------------------------------
+ First pass - look for a Everyone DENY entry.
+
+ If it is deny all (rwx) trunate the list at this point.
+ Else, walk the list from this point and use the deny permissions of this
+ entry as a mask on all following allow entries. Finally, delete
+ the Everyone DENY entry (we have applied it to everything possible).
+
+ In addition, in this pass we remove any DENY entries that have 
+ no permissions (ie. they are a DENY nothing).
+ ---------------------------------------------------------------------------
+ Second pass - only deal with deny user entries.
+
+ DENY user1 (perms XXX)
+
+ new_perms = 0
+ for all following allow group entries where user1 is in group
+	new_perms |= group_perms;
+
+ user1 entry perms = new_perms & ~ XXX;
+
+ Convert the deny entry to an allow entry with the new perms and
+ push to the end of the list. Note if the user was in no groups
+ this maps to a specific allow nothing entry for this user.
+
+ The common case from the NT ACL choser (userX deny all) is
+ optimised so we don't do the group lookup - we just map to
+ an allow nothing entry.
+
+ What we're doing here is inferring the allow permissions the
+ person setting the ACE on user1 wanted by looking at the allow
+ permissions on the groups the user is currently in. This will
+ be a snapshot, depending on group membership but is the best
+ we can do and has the advantage of failing closed rather than
+ open.
+ ---------------------------------------------------------------------------
+ Third pass - only deal with deny group entries.
+
+ DENY group1 (perms XXX)
+
+ for all following allow user entries where user is in group1
+   user entry perms = user entry perms & ~ XXX;
+
+ If there is a group Everyone allow entry with permissions YYY,
+ convert the group1 entry to an allow entry and modify its
+ permissions to be :
+
+ new_perms = YYY & ~ XXX
+
+ and push to the end of the list.
+
+ If there is no group Everyone allow entry then convert the
+ group1 entry to a allow nothing entry and push to the end of the list.
+
+ Note that the common case from the NT ACL choser (groupX deny all)
+ cannot be optimised here as we need to modify user entries who are
+ in the group to change them to a deny all also.
+
+ What we're doing here is modifying the allow permissions of
+ user entries (which are more specific in POSIX ACLs) to mask
+ out the explicit deny set on the group they are in. This will
+ be a snapshot depending on current group membership but is the
+ best we can do and has the advantage of failing closed rather
+ than open.
+ ---------------------------------------------------------------------------
+
+ Note we *MUST* do the deny user pass first as this will convert deny user
+ entries into allow user entries which can then be processed by the deny
+ group pass.
+
+ The above algorithm took a *lot* of thinking about - hence this
+ explaination :-). JRA.
+****************************************************************************/
+
+/****************************************************************************
+ Process a canon_ace list entries. This is very complex code. We need
+ to go through and remove the "deny" permissions from any allow entry that matches
+ the id of this entry. We have already refused any NT ACL that wasn't in correct
+ order (DENY followed by ALLOW). If any allow entry ends up with zero permissions,
+ we just remove it (to fail safe). We have already removed any duplicate ace
+ entries. Treat an "Everyone" DENY_ACE as a special case - use it to mask all
+ allow entries.
+****************************************************************************/
+
+static void process_deny_list( canon_ace **pp_ace_list )
+{
+	extern DOM_SID global_sid_World;
+	canon_ace *ace_list = *pp_ace_list;
+	canon_ace *curr_ace = NULL;
+	canon_ace *curr_ace_next = NULL;
+
+	/* Pass 1 above - look for an Everyone, deny entry. */
+
+	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
+		canon_ace *allow_ace_p;
+
+		curr_ace_next = curr_ace->next; /* So we can't lose the link. */
+
+		if (curr_ace->attr != DENY_ACE)
+			continue;
+
+		if (curr_ace->perms == (mode_t)0) {
+
+			/* Deny nothing entry - delete. */
+
+			DLIST_REMOVE(ace_list, curr_ace);
+			continue;
+		}
+
+		if (!sid_equal(&curr_ace->sid, &global_sid_World))
+			continue;
+
+		/* JRATEST - assert. */
+		SMB_ASSERT(curr_ace->owner_type == WORLD_ACE);
+
+		if (curr_ace->perms == ALL_ACE_PERMS) {
+
+			/*
+			 * Optimisation. This is a DENY_ALL to Everyone. Truncate the
+			 * list at this point including this entry.
+			 */
+
+			canon_ace *prev_entry = curr_ace->prev;
+
+			free_canon_ace_list( curr_ace );
+			if (prev_entry)
+				prev_entry->next = NULL;
+			else {
+				/* We deleted the entire list. */
+				ace_list = NULL;
+			}
+			break;
+		}
+
+		for (allow_ace_p = curr_ace->next; allow_ace_p; allow_ace_p = allow_ace_p->next) {
+
+			/* 
+			 * Only mask off allow entries.
+			 */
+
+			if (allow_ace_p->attr != ALLOW_ACE)
+				continue;
+
+			allow_ace_p->perms &= ~curr_ace->perms;
+		}
+
+		/*
+		 * Now it's been applied, remove it.
+		 */
+
+		DLIST_REMOVE(ace_list, curr_ace);
+	}
+
+	/* Pass 2 above - deal with deny user entries. */
+
+	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
+		mode_t new_perms = (mode_t)0;
+		canon_ace *allow_ace_p;
+		canon_ace *tmp_ace;
+
+		curr_ace_next = curr_ace->next; /* So we can't lose the link. */
+
+		if (curr_ace->attr != DENY_ACE)
+			continue;
+
+		if (curr_ace->owner_type != UID_ACE)
+			continue;
+
+		if (curr_ace->perms == ALL_ACE_PERMS) {
+
+			/*
+			 * Optimisation - this is a deny everything to this user.
+			 * Convert to an allow nothing and push to the end of the list.
+			 */
+
+			curr_ace->attr = ALLOW_ACE;
+			curr_ace->perms = (mode_t)0;
+			DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
+			continue;
+		}
+
+		for (allow_ace_p = curr_ace->next; allow_ace_p; allow_ace_p = allow_ace_p->next) {
+
+			if (allow_ace_p->attr != ALLOW_ACE)
+				continue;
+
+			/* We process GID_ACE and WORLD_ACE entries only. */
+
+			if (allow_ace_p->owner_type == UID_ACE)
+				continue;
+
+			if (uid_entry_in_group( curr_ace, allow_ace_p))
+				new_perms |= allow_ace_p->perms;
+		}
+
+		/*
+		 * Convert to a allow entry, modify the perms and push to the end
+		 * of the list.
+		 */
+
+		curr_ace->attr = ALLOW_ACE;
+		curr_ace->perms = (new_perms & ~curr_ace->perms);
+		DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
+	}
+
+	/* Pass 3 above - deal with deny group entries. */
+
+	for (curr_ace = ace_list; curr_ace; curr_ace = curr_ace_next) {
+		canon_ace *tmp_ace;
+		canon_ace *allow_ace_p;
+		canon_ace *allow_everyone_p = NULL;
+
+		curr_ace_next = curr_ace->next; /* So we can't lose the link. */
+
+		if (curr_ace->attr != DENY_ACE)
+			continue;
+
+		if (curr_ace->owner_type != GID_ACE)
+			continue;
+
+		for (allow_ace_p = curr_ace->next; allow_ace_p; allow_ace_p = allow_ace_p->next) {
+
+			if (allow_ace_p->attr != ALLOW_ACE)
+				continue;
+
+			/* Store a pointer to the Everyone allow, if it exists. */
+			if (allow_ace_p->owner_type == WORLD_ACE)
+				allow_everyone_p = allow_ace_p;
+
+			/* We process UID_ACE entries only. */
+
+			if (allow_ace_p->owner_type != UID_ACE)
+				continue;
+
+			/* Mask off the deny group perms. */
+
+			if (uid_entry_in_group( allow_ace_p, curr_ace))
+				allow_ace_p->perms &= ~curr_ace->perms;
+		}
+
+		/*
+		 * Convert the deny to an allow with the correct perms and
+		 * push to the end of the list.
+		 */
+
+		curr_ace->attr = ALLOW_ACE;
+		if (allow_everyone_p)
+			curr_ace->perms = allow_everyone_p->perms & ~curr_ace->perms;
+		else
+			curr_ace->perms = (mode_t)0;
+		DLIST_DEMOTE(ace_list, curr_ace, tmp_ace);
+
+	}
+
+	*pp_ace_list = ace_list;
+}
+
+/****************************************************************************
+ Unpack a SEC_DESC into two canonical ace lists. We don't depend on this
+ succeeding.
+****************************************************************************/
+
+static BOOL unpack_canon_ace(files_struct *fsp, 
+							SMB_STRUCT_STAT *pst,
+							DOM_SID *pfile_owner_sid,
+							DOM_SID *pfile_grp_sid,
+							canon_ace **ppfile_ace, canon_ace **ppdir_ace,
+							uint32 security_info_sent, SEC_DESC *psd)
+{
+	canon_ace *file_ace = NULL;
+	canon_ace *dir_ace = NULL;
+	canon_ace *current_ace = NULL;
+	int i;
+
+	*ppfile_ace = NULL;
+	*ppdir_ace = NULL;
+
+	if(security_info_sent == 0) {
+		DEBUG(0,("unpack_canon_ace: no security info sent !\n"));
+		return False;
 	}
 
 	/*
-	 * Now go through the canon_ace lists and merge entries
-	 * belonging to identical users.
+	 * If no DACL then this is a chown only security descriptor.
 	 */
 
-  again_file:
+	if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !psd->dacl)
+		return True;
 
-	for (current_ace = file_ace; current_ace; current_ace = current_ace->next ) {
-		if (merge_aces( file_ace, current_ace))
-			goto again_file;
-	}
+	/*
+	 * Now go through the DACL and create the canon_ace lists.
+	 */
 
-  again_dir:
+	if (!create_canon_ace_lists( fsp, pfile_owner_sid, pfile_grp_sid,
+								&file_ace, &dir_ace, psd->dacl))
+		return False;
 
-	for (current_ace = dir_ace; current_ace; current_ace = current_ace->next ) {
-		if (merge_aces( dir_ace, current_ace))
-			goto again_dir;
-	}
+	/*
+	 * Go through the canon_ace list and merge entries
+	 * belonging to identical users of identical allow or deny type.
+	 * We can do this as all deny entries come first, followed by
+	 * all allow entries (we have mandated this before accepting this acl).
+	 */
+
+	merge_aces( &file_ace );
+	merge_aces( &dir_ace );
+
+	/*
+	 * NT ACLs are order dependent. Go through the acl lists and
+	 * process DENY entries by masking the allow entries.
+	 */
+
+	process_deny_list( &file_ace);
+	process_deny_list( &dir_ace);
 
 	/*
 	 * A well formed POSIX file or default ACL has at least 3 entries, a 
@@ -654,188 +1137,6 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 	*ppdir_ace = dir_ace;
 	return True;
 
-#endif /* HAVE_NO_ACLS */
-}
-
-/****************************************************************************
- Unpack a SEC_DESC into a set of standard POSIX permissions.
-****************************************************************************/
-
-static BOOL unpack_posix_permissions(files_struct *fsp, SMB_STRUCT_STAT *psbuf, mode_t *pmode,
-								uint32 security_info_sent, SEC_DESC *psd, BOOL posix_acls)
-{
-  extern DOM_SID global_sid_World;
-  connection_struct *conn = fsp->conn;
-  DOM_SID file_owner_sid;
-  DOM_SID file_grp_sid;
-  SEC_ACL *dacl = psd->dacl;
-  BOOL all_aces_are_inherit_only = (fsp->is_directory ? True : False);
-  int i;
-
-  *pmode = 0;
-
-  if(security_info_sent == 0) {
-    DEBUG(0,("unpack_posix_permissions: no security info sent !\n"));
-    return False;
-  }
-
-  /*
-   * Windows 2000 sends the owner and group SIDs as the logged in
-   * user, not the connected user. But it still sends the file
-   * owner SIDs on an ACL set. So we need to check for the file
-   * owner and group SIDs as well as the owner SIDs. JRA.
-   */
- 
-  create_file_sids(psbuf, &file_owner_sid, &file_grp_sid);
-
-  /*
-   * If no DACL then this is a chown only security descriptor.
-   */
-
-  if(!(security_info_sent & DACL_SECURITY_INFORMATION) || !dacl) {
-    *pmode = 0;
-    return True;
-  }
-
-  /*
-   * Now go through the DACL and ensure that
-   * any owner/group sids match.
-   */
-
-  for(i = 0; i < dacl->num_aces; i++) {
-    DOM_SID ace_sid;
-    SEC_ACE *psa = &dacl->ace[i];
-
-    if((psa->type != SEC_ACE_TYPE_ACCESS_ALLOWED) &&
-       (psa->type != SEC_ACE_TYPE_ACCESS_DENIED)) {
-      DEBUG(3,("unpack_posix_permissions: unable to set anything but an ALLOW or DENY ACE.\n"));
-      return False;
-    }
-
-    /*
-     * Ignore or remove bits we don't care about on a directory ACE.
-     */
-
-    if(fsp->is_directory) {
-      if(psa->flags & SEC_ACE_FLAG_INHERIT_ONLY) {
-        DEBUG(3,("unpack_posix_permissions: ignoring inherit only ACE.\n"));
-        continue;
-      }
-
-      /*
-       * At least one of the ACE entries wasn't inherit only.
-       * Flag this so we know the returned mode is valid.
-       */
-
-      all_aces_are_inherit_only = False;
-    }
-
-    /*
-     * Windows 2000 sets these flags even on *file* ACE's. This is wrong
-     * but we can ignore them for now. Revisit this when we go to POSIX
-     * ACLs on directories.
-     */
-
-    psa->flags &= ~(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT|SEC_ACE_FLAG_INHERITED_ACE);
-
-    if(psa->flags != 0) {
-      DEBUG(1,("unpack_posix_permissions: unable to set ACE flags (%x).\n", 
-            (unsigned int)psa->flags));
-      return False;
-    }
-
-    /*
-     * The security mask may be UNIX_ACCESS_NONE which should map into
-     * no permissions (we overload the WRITE_OWNER bit for this) or it
-     * should be one of the ALL/EXECUTE/READ/WRITE bits. Arrange for this
-     * to be so. Any other bits override the UNIX_ACCESS_NONE bit.
-     */
-
-    psa->info.mask &= (GENERIC_ALL_ACCESS|GENERIC_EXECUTE_ACCESS|GENERIC_WRITE_ACCESS|
-                     GENERIC_READ_ACCESS|UNIX_ACCESS_NONE|FILE_ALL_ATTRIBUTES);
-
-    if(psa->info.mask != UNIX_ACCESS_NONE)
-      psa->info.mask &= ~UNIX_ACCESS_NONE;
-
-    sid_copy(&ace_sid, &psa->sid);
-
-    if(sid_equal(&ace_sid, &file_owner_sid)) {
-      /*
-       * Map the desired permissions into owner perms.
-       */
-
-      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-        *pmode |= map_nt_perms( psa->info, S_IRUSR);
-      else
-        *pmode &= ~(map_nt_perms( psa->info, S_IRUSR));
-
-      
-    } else if( sid_equal(&ace_sid, &file_grp_sid)) {
-      /*
-       * Map the desired permissions into group perms.
-       */
-
-      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-        *pmode |= map_nt_perms( psa->info, S_IRGRP);
-      else
-        *pmode &= ~(map_nt_perms( psa->info, S_IRGRP));
-
-    } else if( sid_equal(&ace_sid, &global_sid_World)) {
-      /*
-       * Map the desired permissions into other perms.
-       */
-
-      if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-        *pmode |= map_nt_perms( psa->info, S_IROTH);
-      else
-        *pmode &= ~(map_nt_perms( psa->info, S_IROTH));
-
-    } else {
-      /*
-       * Only bother printing the level zero error if we didn't get any
-       * POSIX ACLS.
-       */
-      if (!posix_acls)
-        DEBUG(0,("unpack_posix_permissions: unknown SID used in ACL.\n"));
-      return False;
-    }
-  }
-
-  if (fsp->is_directory && all_aces_are_inherit_only) {
-    /*
-     * Windows 2000 is doing one of these weird 'inherit acl'
-     * traverses to conserve NTFS ACL resources. Just pretend
-     * there was no DACL sent. JRA.
-     */
-
-    DEBUG(10,("unpack_posix_permissions: Win2k inherit acl traverse. Ignoring DACL.\n"));
-  }
-
-  /*
-   * Check to see if we need to change anything.
-   * Enforce limits on modified bits *only*. Don't enforce masks
-   * on bits not changed by the user.
-   */
-
-  if(fsp->is_directory) {
-
-    *pmode &= (lp_dir_security_mask(SNUM(conn)) | psbuf->st_mode);
-    *pmode |= (lp_force_dir_security_mode(SNUM(conn)) & ( *pmode ^ psbuf->st_mode ));
-
-  } else {
-
-    *pmode &= (lp_security_mask(SNUM(conn)) | psbuf->st_mode); 
-    *pmode |= (lp_force_security_mode(SNUM(conn)) & ( *pmode ^ psbuf->st_mode ));
-
-  }
-
-  /*
-   * Preserve special bits.
-   */
-
-  *pmode |= (psbuf->st_mode & ~0777);
-
-  return True;
 }
 
 /****************************************************************************
@@ -895,39 +1196,24 @@ static int map_acl_perms_to_permset(mode_t mode, SMB_ACL_PERMSET_T *p_permset)
 	return 0;
 }
 
-/****************************************************************************
- Count a linked list of canonical ACE entries.
-****************************************************************************/
-
-static size_t count_canon_ace_list( canon_ace *list_head )
-{
-	size_t count = 0;
-	canon_ace *ace;
-
-	for (ace = list_head; ace; ace = ace->next)
-		count++;
-
-	return count;
-}
-
-/****************************************************************************
- Free a linked list of canonical ACE entries.
-****************************************************************************/
-
-static void free_canon_ace_list( canon_ace *list_head )
-{
-	while (list_head) {
-		canon_ace *old_head = list_head;
-		DLIST_REMOVE(list_head, list_head);
-		free(old_head);
-	}
-}
-
 /******************************************************************************
  When returning permissions, try and fit NT display
  semantics if possible. Note the the canon_entries here must have been malloced.
  The list format should be - first entry = owner, followed by group and other user
  entries, last entry = other.
+
+ Note that this doesn't exactly match the NT semantics for an ACL. As POSIX entries
+ are not ordered, and match on the most specific entry rather than walking a list,
+ then a simple POSIX permission of rw-r--r-- should really map to 6 entries,
+
+ Entry 0: owner : deny all except read and write.
+ Entry 1: group : deny all except read.
+ Entry 2: Everyone : deny all except read.
+ Entry 3: owner : allow read and write.
+ Entry 4: group : allow read.
+ Entry 5: Everyone : allow read.
+
+ But NT cannot display this in their ACL editor !
 ********************************************************************************/
 
 static void arrange_posix_perms( char *filename, canon_ace **pp_list_head)
@@ -1221,7 +1507,7 @@ static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_
 
 	/*
 	 * Now go through the list, masking the permissions with the
-	 * acl_mask.
+	 * acl_mask. Ensure all DENY Entries are at the start of the list.
 	 */
 
 	DEBUG(10,("canonicalize_acl: ace entries before arrange :\n"));
@@ -1281,14 +1567,15 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	SMB_ACL_TYPE_T the_acl_type = (default_ace ? SMB_ACL_TYPE_DEFAULT : SMB_ACL_TYPE_ACCESS);
 
 	if (the_acl == NULL) {
-#if !defined(HAVE_NO_ACLS)
-		/*
-		 * Only print this error message if we have some kind of ACL
-		 * support that's not working. Otherwise we would always get this.
-		 */
-		DEBUG(0,("set_canon_ace_list: Unable to init %s ACL. (%s)\n",
-			default_ace ? "default" : "file", strerror(errno) ));
-#endif
+
+		if (errno != ENOSYS) {
+			/*
+			 * Only print this error message if we have some kind of ACL
+			 * support that's not working. Otherwise we would always get this.
+			 */
+			DEBUG(0,("set_canon_ace_list: Unable to init %s ACL. (%s)\n",
+				default_ace ? "default" : "file", strerror(errno) ));
+		}
 		*pacl_set_support = False;
 		return False;
 	}
@@ -1438,6 +1725,63 @@ static BOOL set_canon_ace_list(files_struct *fsp, canon_ace *the_ace, BOOL defau
 	    sys_acl_free_acl(the_acl);
 
 	return ret;
+}
+
+/****************************************************************************
+ Convert a canon_ace to a generic 3 element permission - if possible.
+****************************************************************************/
+
+#define MAP_PERM(p,mask,result) (((p) & (mask)) ? (result) : 0 )
+
+static BOOL convert_canon_ace_to_posix_perms( files_struct *fsp, canon_ace *file_ace_list, mode_t *posix_perms)
+{
+	size_t ace_count = count_canon_ace_list(file_ace_list);
+	canon_ace *ace_p;
+	canon_ace *owner_ace = NULL;
+	canon_ace *group_ace = NULL;
+	canon_ace *other_ace = NULL;
+
+	if (ace_count != 3) {
+		DEBUG(3,("convert_canon_ace_to_posix_perms: Too many ACE entries for file %s to convert to \
+posix perms.\n", fsp->fsp_name ));
+		return False;
+	}
+
+	for (ace_p = file_ace_list; ace_p; ace_p = ace_p->next) {
+		if (ace_p->owner_type == UID_ACE)
+			owner_ace = ace_p;
+		else if (ace_p->owner_type == GID_ACE)
+			group_ace = ace_p;
+		else if (ace_p->owner_type == WORLD_ACE)
+			other_ace = ace_p;
+	}
+
+	if (!owner_ace || !group_ace || !other_ace) {
+		DEBUG(3,("convert_canon_ace_to_posix_perms: Can't get standard entries for file %s.\n",
+				fsp->fsp_name ));
+		return False;
+	}
+
+	*posix_perms = (mode_t)0;
+
+	*posix_perms |= owner_ace->perms;
+	*posix_perms |= MAP_PERM(group_ace->perms, S_IRUSR, S_IRGRP);
+	*posix_perms |= MAP_PERM(group_ace->perms, S_IWUSR, S_IWGRP);
+	*posix_perms |= MAP_PERM(group_ace->perms, S_IXUSR, S_IXGRP);
+	*posix_perms |= MAP_PERM(other_ace->perms, S_IRUSR, S_IROTH);
+	*posix_perms |= MAP_PERM(other_ace->perms, S_IWUSR, S_IWOTH);
+	*posix_perms |= MAP_PERM(other_ace->perms, S_IXUSR, S_IXOTH);
+
+	/* The owner must have at least read access. */
+
+	if (*posix_perms == (mode_t)0)
+		*posix_perms = S_IRUSR;
+
+	DEBUG(10,("convert_canon_ace_to_posix_perms: converted u=%o,g=%o,w=%o to perm=0%o for file %s.\n",
+		(int)owner_ace->perms, (int)group_ace->perms, (int)other_ace->perms, (int)*posix_perms,
+		fsp->fsp_name ));
+
+	return True;
 }
 
 /****************************************************************************
@@ -1596,14 +1940,12 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 	connection_struct *conn = fsp->conn;
 	uid_t user = (uid_t)-1;
 	gid_t grp = (gid_t)-1;
-	mode_t perms = 0;
 	SMB_STRUCT_STAT sbuf;  
 	DOM_SID file_owner_sid;
 	DOM_SID file_grp_sid;
 	canon_ace *file_ace_list = NULL;
 	canon_ace *dir_ace_list = NULL;
-	BOOL posix_perms;
-	BOOL acl_perms;
+	BOOL acl_perms = False;
 
 	DEBUG(10,("set_nt_acl: called for file %s\n", fsp->fsp_name ));
 
@@ -1668,14 +2010,9 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 
 	acl_perms = unpack_canon_ace( fsp, &sbuf, &file_owner_sid, &file_grp_sid,
 									&file_ace_list, &dir_ace_list, security_info_sent, psd);
-	posix_perms = unpack_posix_permissions( fsp, &sbuf, &perms, security_info_sent, psd, acl_perms);
 
-	if (!posix_perms && !acl_perms) {
-		/*
-		 * Neither method of setting permissions can work. Fail here.
-		 */
-
-		DEBUG(3,("set_nt_acl: cannot set normal POSIX permissions or POSIX ACL permissions\n"));
+	if (!acl_perms) {
+		DEBUG(3,("set_nt_acl: cannot set permissions\n"));
 		free_canon_ace_list(file_ace_list);
 		free_canon_ace_list(dir_ace_list); 
 		return False;
@@ -1691,7 +2028,7 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		BOOL ret = False;
 
 		/*
-		 * Try using the POSIX ACL set first. All back to chmod if
+		 * Try using the POSIX ACL set first. Fall back to chmod if
 		 * we have no ACL support on this filesystem.
 		 */
 
@@ -1718,20 +2055,29 @@ BOOL set_nt_acl(files_struct *fsp, uint32 security_info_sent, SEC_DESC *psd)
 		 * If we cannot set using POSIX ACLs we fall back to checking if we need to chmod.
 		 */
 
-		if(!acl_set_support && posix_perms && (sbuf.st_mode != perms)) {
+		if(!acl_set_support && acl_perms) {
+			mode_t posix_perms;
 
-			free_canon_ace_list(file_ace_list);
-			free_canon_ace_list(dir_ace_list); 
-			file_ace_list = NULL;
-			dir_ace_list = NULL;
-
-			DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
-				fsp->fsp_name, (unsigned int)perms ));
-
-			if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), perms) == -1) {
-				DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
-						fsp->fsp_name, (unsigned int)perms, strerror(errno) ));
+			if (!convert_canon_ace_to_posix_perms( fsp, file_ace_list, &posix_perms)) {
+				free_canon_ace_list(file_ace_list);
+				free_canon_ace_list(dir_ace_list);
+				DEBUG(3,("set_nt_acl: failed to convert file acl to posix permissions for file %s.\n",
+					fsp->fsp_name ));
 				return False;
+			}
+
+			if (sbuf.st_mode != posix_perms) {
+
+				DEBUG(3,("set_nt_acl: chmod %s. perms = 0%o.\n",
+					fsp->fsp_name, (unsigned int)posix_perms ));
+
+				if(conn->vfs_ops.chmod(conn,dos_to_unix(fsp->fsp_name, False), posix_perms) == -1) {
+					DEBUG(3,("set_nt_acl: chmod %s, 0%o failed. Error = %s.\n",
+							fsp->fsp_name, (unsigned int)posix_perms, strerror(errno) ));
+					free_canon_ace_list(file_ace_list);
+					free_canon_ace_list(dir_ace_list);
+					return False;
+				}
 			}
 		}
 	}
