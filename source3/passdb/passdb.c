@@ -1501,7 +1501,7 @@ BOOL pdb_set_nt_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	if (!sampass || !pwd) return False;
 	
 	if (sampass->nt_pw!=NULL)
-		DEBUG(0,("pdb_set_nt_passwd: NT hash non NULL overwritting ?\n"));
+		DEBUG(0,("pdb_set_nt_passwd: NT hash non NULL overwriting ?\n"));
 	else
 		sampass->nt_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
 	
@@ -1521,7 +1521,7 @@ BOOL pdb_set_lanman_passwd (SAM_ACCOUNT *sampass, uint8 *pwd)
 	if (!sampass || !pwd) return False;
 	
 	if (sampass->lm_pw!=NULL)
-		DEBUG(0,("pdb_set_lanman_passwd: LM hash non NULL overwritting ?\n"));
+		DEBUG(0,("pdb_set_lanman_passwd: LM hash non NULL overwriting ?\n"));
 	else
 		sampass->lm_pw=(unsigned char *)malloc(sizeof(unsigned char)*16);
 	
