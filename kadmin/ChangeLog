@@ -1,3 +1,8 @@
+2003-03-31  Love Hörquist Åstrand <lha@it.su.se>
+
+	* kadmin.c: principal, not pricipal. From Thomas Klausner
+	<wiz@netbsd.org>
+
 2003-02-04  Love Hörquist Åstrand <lha@it.su.se>
 
 	* kadmind.8: spelling, from jmc <jmc@prioris.mini.pw.edu.pl>
