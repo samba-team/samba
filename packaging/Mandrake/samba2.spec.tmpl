@@ -64,8 +64,9 @@ NUMCPU=`grep processor /proc/cpuinfo | wc -l`
 CFLAGS="$RPM_OPT_FLAGS $EXTRA" ./configure \
         --prefix=%{prefix} \
 	--with-fhs \
-        --libdir=/etc \
+        --libdir=/etc/samba \
 	--localstatedir=/var \
+	--with-codepagedir=%{prefix}/share/samba/codepages \
 	--with-configdir=/etc \
         --with-lockdir=/var/lock/samba \
         --with-swatdir=%{prefix}/share/swat \
@@ -84,13 +85,14 @@ make -j${NUMCPU} all smbfilter nsswitch/libnss_wins.so debug2html
 %install
 rm -rf $RPM_BUILD_ROOT
 mkdir -p $RPM_BUILD_ROOT
-mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d,codepages/src}
+mkdir -p $RPM_BUILD_ROOT/etc/{logrotate.d,pam.d,samba,xinetd.d}
 mkdir -p $RPM_BUILD_ROOT/etc/rc.d/init.d
 mkdir -p $RPM_BUILD_ROOT/lib/security
 mkdir -p $RPM_BUILD_ROOT%{prefix}/{bin,sbin}
 mkdir -p $RPM_BUILD_ROOT/home/samba
 mkdir -p $RPM_BUILD_ROOT/sbin
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/{images,help,include}
+mkdir -p $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src 
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/swat/using_samba/{figs,gifs}
 mkdir -p $RPM_BUILD_ROOT%{prefix}/share/man/{man1,man5,man7,man8}
 mkdir -p $RPM_BUILD_ROOT/var/lock/samba
@@ -128,11 +130,11 @@ done
 # Install codepage source files
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 source/codepages/codepage_def.$i $RPM_BUILD_ROOT%{prefix}/share/samba/codepages/src
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROOT/etc/codepages/src
+install -m644 source/codepages/CP$i.TXT $RPM_BUILD_ROO%{prefix}/share/samba/codepages/src
 done
 
 # Install the nsswitch library extenstion file
@@ -185,8 +187,8 @@ install -m644 docs/manpages/smbmount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbmnt.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 docs/manpages/smbumount.8 $RPM_BUILD_ROOT%{prefix}/share/man/man8
 install -m644 swat/README $RPM_BUILD_ROOT%{prefix}/share/swat
-install -m644 packaging/Mandrake/smb.con* $RPM_BUILD_ROOT/etc/
-install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/smbusers
+install -m644 packaging/Mandrake/smb.con* $RPM_BUILD_ROOT/etc/samba/
+install -m644 packaging/Mandrake/smbusers $RPM_BUILD_ROOT/etc/samba/smbusers
 install -m755 packaging/Mandrake/smbprint $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/findsmb $RPM_BUILD_ROOT%{prefix}/bin
 install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT/etc/rc.d/init.d/smb
@@ -194,7 +196,7 @@ install -m755 packaging/Mandrake/smb.init $RPM_BUILD_ROOT%{prefix}/sbin/samba
 install -m644 packaging/Mandrake/samba.pamd $RPM_BUILD_ROOT/etc/pam.d/samba
 install -m644 packaging/Mandrake/samba.log $RPM_BUILD_ROOT/etc/logrotate.d/samba
 install -m644 packaging/Mandrake/samba.xinetd $RPM_BUILD_ROOT/etc/xinetd.d/swat
-echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/lmhosts
+echo 127.0.0.1 localhost > $RPM_BUILD_ROOT/etc/samba/lmhosts
 
 # Link smbmount to /sbin/mount.smb and /sbin/mount.smbfs
 ln -sf %{prefix}/sbin/smbmount $RPM_BUILD_ROOT/sbin/mount.smb
@@ -208,14 +210,14 @@ rm -rf $RPM_BUILD_ROOT
 /sbin/chkconfig smb off
 
 # Build codepage load files
-cd /etc
+cd %{prefix}/share/samba/codepages
 for i in 437 737 775 850 852 861 866 932 936 949 950 1251
 do
-%{prefix}/bin/make_smbcodepage c $i /etc/codepages/src/codepage_def.$i /etc/codepages/codepage.$i
+%{prefix}/bin/make_smbcodepage c $i %{prefix}/share/samba/codepages/src/codepage_def.$i %{prefix}/share/samba/codepages/codepage.$i
 done
 for i in 437 737 850 852 861 866 932 936 949 950 ISO8859-1 ISO8859-2 ISO8859-5 ISO8859-7 KOI8-R
 do
-%{prefix}/bin/make_unicodemap $i /etc/codepages/src/CP$i.TXT /etc/codepages/unicode_map.$i
+%{prefix}/bin/make_unicodemap $i %{prefix}/share/samba/codepages/src/CP$i.TXT %{prefix}/share/samba/codepages/unicode_map.$i
 done
 
 # Add swat entry to /etc/services if not already there
@@ -282,8 +284,9 @@ fi
 %attr(-,root,root) %{prefix}/share/man/man5/*
 %attr(-,root,root) %{prefix}/share/man/man7/*
 %attr(-,root,root) %{prefix}/share/man/man8/*
-%attr(-,root,root) %dir /etc/codepages/*
-%attr(-,root,root) %dir /etc/codepages/src/*
+%attr(-,root,root) %dir /etc/samba/
+%attr(-,root,root) %dir /usr/share/samba/codepages
+%attr(-,root,root) %dir /usr/share/samba/codepages/src
 %attr(-,root,root) %dir /var/lock/samba
 %attr(-,root,root) %dir /var/log/samba
 %attr(1777,root,root) %dir /var/spool/samba
