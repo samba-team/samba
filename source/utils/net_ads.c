@@ -758,7 +758,7 @@ static int net_ads_printer_publish(int argc, const char **argv)
 	if (argc < 1)
 		return net_ads_printer_usage(argc, argv);
 	
-	if (argc = 2)
+	if (argc == 2)
 		servername = argv[1];
 	else
 		servername = global_myname();
