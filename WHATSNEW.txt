@@ -6,6 +6,17 @@ production Samba servers should be running for all current bug-fixes.
 
 There have been several fixes and internal enhancements which include:
 
+* Improved support for 
+
+              =========================================
+
+Older releases notes for 2.2.x distributions follow
+
+-----------------------------------------------------------------------------
+The release notes for 2.2.4 follow :
+
+There have been several fixes and internal enhancements which include:
+
  * More/better SPOOLSS printing functionality for Windows
    NT/2k/XP clients.
  * Several fixes relating to serving PC database files such
@@ -131,24 +142,6 @@ See the cvs log for SAMBA_2_2 for more details
 58) many small documentation updates
 59) removed many compiler warnings
 
-
-
-Known Bugs
-----------
-
-* Under certain conditions when serving the MS Access 2000
-  executable file and an Access database from a Samba share,
-  it is possible to experience data corruption.  This bug does not
-  occur when the database is served from a Samba file share
-  but the Access *.exe is stored on the client's local file system.
-  The exact reason for this bug is unknown at this time.
-
-              =========================================
-
-
-
-
-Older release notes for Samba 2.2.x follow.
 
 -----------------------------------------------------------------------------
 The release notes for 2.2.3a follow :

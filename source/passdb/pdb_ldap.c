@@ -69,6 +69,43 @@ static struct ldap_enum_info global_ldap_ent;
 extern pstring samlogon_user;
 extern BOOL sam_logon_in_ssb;
 
+/* 
+ * attributes needed from sambaAccount
+ * 
+ * objectclass ( 1.3.6.1.4.1.7165.2.2.3 NAME 'sambaAccount' SUP top AUXILIARY
+ *       DESC 'Samba Auxilary Account'
+ *       MUST ( uid $ rid )
+ *       MAY  ( cn $ lmPassword $ ntPassword $ pwdLastSet $ logonTime $
+ *              logoffTime $ kickoffTime $ pwdCanChange $ pwdMustChange $ acctFlags $
+ *              displayName $ smbHome $ homeDrive $ scriptPath $ profilePath $
+ *              description $ userWorkstations $ primaryGroupID $ domain ))
+ */
+
+char* attribs[] = {
+	"uid",	
+	"rid",
+	"cn",
+	"lmPassword",
+	"ntPassword",
+	"pwdLastSet",
+	"logonTime",
+	"logoffTime",
+	"kickoffTime",
+	"pwdCanChange",
+	"pwdMustChange",
+	"acctFlags",
+	"displayName",
+	"smbHome",
+	"homeDrive",
+	"scriptPath",
+	"profilePath",
+	"description",
+	"userWorkstations",
+	"primaryGroupID",
+	"domain",
+	NULL
+};
+
 
 /*******************************************************************
  open a connection to the ldap server.
@@ -224,7 +261,7 @@ static int ldap_search_one_user (LDAP * ldap_struct, const char *filter, LDAPMes
 
 	DEBUG(2, ("ldap_search_one_user: searching for:[%s]\n", filter));
 
-	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, (char*)filter, NULL, 0, result);
+	rc = ldap_search_s(ldap_struct, lp_ldap_suffix (), scope, (char*)filter, attribs, 0, result);
 
 	if (rc != LDAP_SUCCESS)	{
 		DEBUG(0,("ldap_search_one_user: Problem during the LDAP search: %s\n", 
@@ -730,7 +767,7 @@ BOOL pdb_setsampwent(BOOL update)
 	all_string_sub(filter, "%u", "*", sizeof(pstring));
 
 	rc = ldap_search_s(global_ldap_ent.ldap_struct, lp_ldap_suffix(),
-			   LDAP_SCOPE_SUBTREE, filter, NULL, 0,
+			   LDAP_SCOPE_SUBTREE, filter, attribs, 0,
 			   &global_ldap_ent.result);
 
 	if (rc != LDAP_SUCCESS)

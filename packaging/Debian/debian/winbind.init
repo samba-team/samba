@@ -2,7 +2,6 @@
 #
 # Start/stops the winbindd daemon.
 #
-# $Id: winbind.init,v 1.1.4.1 2002/05/02 20:20:28 jerry Exp $
 #
 
 PATH=/sbin:/bin:/usr/sbin:/usr/bin

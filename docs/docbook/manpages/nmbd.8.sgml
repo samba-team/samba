@@ -314,6 +314,21 @@
 	at a normally low log level.</para>
 </refsect1>
 
+<refsect1>
+        <title>TROUBLESHOOTING</title>
+
+        <para>
+        One of the common causes of difficulty when installing Samba and SWAT
+        is the existsnece of some type of firewall or port filtering software
+        on the Samba server.  Make sure that the appropriate ports
+        outlined in this man page are available on the server and are not currently
+        being blocked by some type of security software such as iptables or
+        "port sentry".  For more troubleshooting information, refer to the additional
+        documentation included in the Samba distribution.
+        </para>
+</refsect1>
+
+
 
 <refsect1>
 	<title>VERSION</title>

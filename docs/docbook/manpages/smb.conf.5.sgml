@@ -809,6 +809,7 @@
 		<listitem><para><link linkend="ALLOWHOSTS"><parameter>allow hosts</parameter></link></para></listitem>
 		<listitem><para><link linkend="AVAILABLE"><parameter>available</parameter></link></para></listitem>
 		<listitem><para><link linkend="BLOCKINGLOCKS"><parameter>blocking locks</parameter></link></para></listitem>
+		<listitem><para><link linkend="BLOCKSIZE"><parameter>block size</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSABLE"><parameter>browsable</parameter></link></para></listitem>
 		<listitem><para><link linkend="BROWSEABLE"><parameter>browseable</parameter></link></para></listitem>
 		<listitem><para><link linkend="CASESENSITIVE"><parameter>case sensitive</parameter></link></para></listitem>
@@ -1289,6 +1290,32 @@
 
 
 
+		<varlistentry>
+		<term><anchor id="BLOCKSIZE">block size (S)</term>
+		<listitem><para>This parameter controls the behavior of <ulink 
+		url="smbd.8.html">smbd(8)</ulink> when reporting disk free sizes.
+		By default, this reports a disk block size of 1024 bytes.</para>
+		
+		<para>Changing this parameter may have some effect on the
+		efficiency of client writes, this is not yet confirmed. This
+		parameter was added to allow advanced administrators to change
+		it (usually to a higher value) and test the effect it has on
+		client write performance without re-compiling the code. As this
+		is an experimental option it may be removed in a future release.
+		</para>
+
+		<para>Changing this option does not change the disk free reporting
+		size, just the block size unit reported to the client.</para>
+
+		<para>Default: <command>block size = 1024</command></para>
+		<para>Example: <command>block size = 65536</command></para>
+
+		</listitem>
+		</varlistentry>
+		
+
+
+		
 		<varlistentry>
 		<term><anchor id="BLOCKINGLOCKS">blocking locks (S)</term>
 		<listitem><para>This parameter controls the behavior of <ulink 

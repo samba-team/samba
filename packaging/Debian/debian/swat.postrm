@@ -1,6 +1,5 @@
 #!/bin/sh
 #
-# $Id: swat.postrm,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $
 #
 
 case "$1" in

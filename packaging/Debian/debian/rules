@@ -4,7 +4,6 @@
 #	solve build problems) introduced in Samba 2.2.1a-5. These
 #	modification were made by Steve Langasek <vorlon@netexpress.net>.
 #
-# $Id: rules,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $
 #
 
 # Uncomment this to turn on verbose mode. 
@@ -76,7 +75,8 @@ configure-stamp:
 		--with-pam_smbpass \
 		--with-libsmbclient \
 		--with-winbind \
-		--with-msdfs)
+		--with-msdfs \
+		--with-automount)
 
 	touch configure-stamp
 

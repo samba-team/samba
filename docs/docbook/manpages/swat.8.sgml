@@ -120,6 +120,41 @@
 	</refsect2>
 
 
+	<refsect2> 
+		<title>Xinetd Installation</title>
+
+		<para>Newer Linux systems ship with a more secure implementation
+		of the inetd meta-daemon.  The <command>xinetd</command> daemon
+		can read configuration inf9ormation from a single file (i.e.
+		<filename>/etc/xinetd.conf</filename>) or from a collection
+		of service control files in the <filename>xinetd.d/</filename> directory.
+		These directions assume the latter configuration.
+		</para>
+
+		<para>
+		The following file should be created as <filename>/etc/xientd.d/swat</filename>.
+		It is then be neccessary cause the meta-daemon to reload its configuration files.
+		Refer to the xinetd man page for details on how to accomplish this.
+		</para>
+
+<para><programlisting>
+## /etc/xinetd.d/swat
+service swat
+{
+        port    = 901
+        socket_type     = stream
+        wait    = no
+        only_from = localhost
+        user    = root
+        server  = /usr/local/samba/bin/swat
+        log_on_failure  += USERID
+        disable =  No
+}
+</programlisting></para>
+
+	</refsect2>
+
+
 	<refsect2>
 		<title>Launching</title>
 
@@ -131,6 +166,21 @@
 		connection open to password sniffing as passwords will be sent 
 		in the clear over the wire. </para>
 	</refsect2>
+
+</refsect1>
+
+<refsect1>
+	<title>TROUBLESHOOTING</title>
+
+	<para>
+	One of the common causes of difficulty when installing Samba and SWAT
+	is the existsnece of some type of firewall or port filtering software 
+	on the Samba server.  Make sure that the appropriate ports
+	outlined in this man page are available on the server and are not currently 
+	being blocked by some type of security software such as iptables or 
+	"port sentry".  For more troubleshooting information, refer to the additional 
+	documentation included in the Samba distribution.
+	</para>
 </refsect1>
 
 <refsect1>
@@ -141,6 +191,12 @@
 		<term><filename>/etc/inetd.conf</filename></term>
 		<listitem><para>This file must contain suitable startup 
 		information for the meta-daemon.</para></listitem>
+		</varlistentry>
+
+		<varlistentry>
+		<term><filename>/etc/xinetd.d/swat</filename></term>
+		<listitem><para>This file must contain suitable startup 
+		information for the <command>xinetd</command> meta-daemon.</para></listitem>
 		</varlistentry>
 
 		<varlistentry>
@@ -185,7 +241,7 @@
 	<title>SEE ALSO</title>
 	<para><command>inetd(5)</command>,
 	<ulink url="smbd.8.html"><command>smbd(8)</command></ulink>, 
-	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>
+	<ulink url="smb.conf.5.html">smb.conf(5)</ulink>, <command>xinetd(8)</command>
 	</para>
 </refsect1>
 

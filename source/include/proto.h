@@ -2141,6 +2141,7 @@ int lp_printing(int );
 int lp_oplock_contention_limit(int );
 int lp_csc_policy(int );
 int lp_write_cache_size(int );
+int lp_block_size(int );
 char lp_magicchar(int );
 int lp_winbind_cache_time(void);
 BOOL lp_hide_local_users(void);

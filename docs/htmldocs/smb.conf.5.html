@@ -3129,6 +3129,18 @@ CLASS="PARAMETER"
 ><LI
 ><P
 ><A
+HREF="#BLOCKSIZE"
+><TT
+CLASS="PARAMETER"
+><I
+>block size</I
+></TT
+></A
+></P
+></LI
+><LI
+><P
+><A
 HREF="#BROWSABLE"
 ><TT
 CLASS="PARAMETER"
@@ -4559,7 +4571,7 @@ CLASS="PARAMETER"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN1488"
+NAME="AEN1492"
 ></A
 ><H2
 >EXPLANATION OF EACH PARAMETER</H2
@@ -5419,6 +5431,41 @@ CLASS="COMMAND"
 >Default: <B
 CLASS="COMMAND"
 >bind interfaces only = no</B
+></P
+></DD
+><DT
+><A
+NAME="BLOCKSIZE"
+></A
+>block size (S)</DT
+><DD
+><P
+>This parameter controls the behavior of <A
+HREF="smbd.8.html"
+TARGET="_top"
+>smbd(8)</A
+> when reporting disk free sizes.
+		By default, this reports a disk block size of 1024 bytes.</P
+><P
+>Changing this parameter may have some effect on the
+		efficiency of client writes, this is not yet confirmed. This
+		parameter was added to allow advanced administrators to change
+		it (usually to a higher value) and test the effect it has on
+		client write performance without re-compiling the code. As this
+		is an experimental option it may be removed in a future release.
+		</P
+><P
+>Changing this option does not change the disk free reporting
+		size, just the block size unit reported to the client.</P
+><P
+>Default: <B
+CLASS="COMMAND"
+>block size = 1024</B
+></P
+><P
+>Example: <B
+CLASS="COMMAND"
+>block size = 65536</B
 ></P
 ></DD
 ><DT
@@ -19590,7 +19637,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6192"
+NAME="AEN6208"
 ></A
 ><H2
 >WARNINGS</H2
@@ -19620,7 +19667,7 @@ TARGET="_top"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6198"
+NAME="AEN6214"
 ></A
 ><H2
 >VERSION</H2
@@ -19631,7 +19678,7 @@ NAME="AEN6198"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6201"
+NAME="AEN6217"
 ></A
 ><H2
 >SEE ALSO</H2
@@ -19710,7 +19757,7 @@ CLASS="COMMAND"
 ><DIV
 CLASS="REFSECT1"
 ><A
-NAME="AEN6221"
+NAME="AEN6237"
 ></A
 ><H2
 >AUTHOR</H2

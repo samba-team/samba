@@ -2,7 +2,6 @@
 #
 # Post-installation script for the Samba package for Debian GNU/Linux
 #
-# $Id: samba.postinst,v 1.2.2.2 2002/05/02 20:20:28 jerry Exp $
 #
 
 case "$1" in
@@ -90,6 +89,13 @@ do
 	fi
 done
 
+# Beginning with Samba 2.2.5-1, we also move the domain secrets file
+# to a more suitable location, since no one really edits this by hand.
+if [ -e /etc/samba/secrets.tdb -a ! -e /var/lib/samba/secrets.tdb ]
+then
+	mv /etc/samba/secrets.tdb /var/lib/samba/
+fi
+
 # --- End of FHS migration code ---
 
 # ------------------------- Debconf questions start ---------------------
@@ -138,12 +144,13 @@ else
 	update-inetd --enable netbios-ssn
 fi
 
-# Start Samba: nothing wrong should happen if Samba is running from inetd
-#	and /etc/init.d/samba is run.
+# Start Samba: we don't want to call /etc/init.d/samba if we are
+# running from inetd because a nasty help message would be printed out.
 
 # Run the init script if this is a first-time install, or if it's an
-# upgrade and Samba was running before.
-if [ -z "$2" -o ! -f /tmp/samba-was-not-running ]; then
+# upgrade and Samba was running before, _and_ we're not running from inetd.
+if [ \( -z "$2" -o ! -f /tmp/samba-was-not-running \) -a \
+		"$RUN_MODE" = "daemons" ]; then
 	# Check the script is executable before running it.
 	[ -x /etc/init.d/samba ] && /etc/init.d/samba start
 fi

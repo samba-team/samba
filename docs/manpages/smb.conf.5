@@ -1081,6 +1081,9 @@ each parameter for details. Note that some are synonyms.
 \fIblocking locks\fR
 .TP 0.2i
 \(bu
+\fIblock size\fR
+.TP 0.2i
+\(bu
 \fIbrowsable\fR
 .TP 0.2i
 \(bu
@@ -1722,6 +1725,24 @@ Not adding \fB127.0.0.1\fR will cause \fB smbd\fR and \fBnmbd\fR to always show
 and \fBnmbd\fR.
 
 Default: \fBbind interfaces only = no\fR
+.TP
+\fBblock size (S)\fR
+This parameter controls the behavior of smbd(8)when reporting disk free sizes.
+By default, this reports a disk block size of 1024 bytes.
+
+Changing this parameter may have some effect on the
+efficiency of client writes, this is not yet confirmed. This
+parameter was added to allow advanced administrators to change
+it (usually to a higher value) and test the effect it has on
+client write performance without re-compiling the code. As this
+is an experimental option it may be removed in a future release.
+
+Changing this option does not change the disk free reporting
+size, just the block size unit reported to the client.
+
+Default: \fBblock size = 1024\fR
+
+Example: \fBblock size = 65536\fR
 .TP
 \fBblocking locks (S)\fR
 This parameter controls the behavior of smbd(8)when given a request by a client 
