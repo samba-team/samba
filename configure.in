@@ -703,6 +703,7 @@ AC_CONFIG_FILES(Makefile 		\
 	appl/popper/Makefile		\
 	appl/push/Makefile		\
 	appl/rsh/Makefile		\
+	appl/rcp/Makefile		\
 	appl/su/Makefile		\
 	appl/xnlock/Makefile		\
 	appl/telnet/Makefile		\
