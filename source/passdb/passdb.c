@@ -119,6 +119,8 @@ BOOL pdb_init_sam(SAM_ACCOUNT **user)
 BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 {
 	pstring str;
+	GROUP_MAP map;
+	uint32 rid;
 	extern BOOL sam_logon_in_ssb;
 	extern pstring samlogon_user;
 
@@ -139,7 +141,14 @@ BOOL pdb_init_sam_pw(SAM_ACCOUNT **new_sam_acct, const struct passwd *pwd)
 	pdb_set_gid(*new_sam_acct, &pwd->pw_gid);
 
 	pdb_set_user_rid(*new_sam_acct, pdb_uid_to_user_rid(pwd->pw_uid));
-	pdb_set_group_rid(*new_sam_acct, pdb_gid_to_group_rid(pwd->pw_gid));
+
+	/* call the mapping code here */
+	if(get_group_map_from_gid(pwd->pw_gid, &map)) {
+		free_privilege(&map.priv_set);
+		sid_peek_rid(&map.sid, &rid);
+	} else
+		rid=pdb_gid_to_group_rid(pwd->pw_gid);
+	pdb_set_group_rid(*new_sam_acct, rid);
 
 	/* UGLY, UGLY HACK!!! */
 	pstrcpy(samlogon_user, pwd->pw_name);
@@ -379,6 +388,7 @@ BOOL pdb_gethexpwd(const char *p, unsigned char *pwd)
 
 BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
 {
+	GROUP_MAP map;
 	struct passwd *pw = Get_Pwnam(user_name);
 
 	if (u_rid == NULL || g_rid == NULL || user_name == NULL)
@@ -394,7 +404,12 @@ BOOL pdb_name_to_rid(const char *user_name, uint32 *u_rid, uint32 *g_rid)
 	*u_rid = pdb_uid_to_user_rid(pw->pw_uid);
 
 	/* absolutely no idea what to do about the unix GID to Domain RID mapping */
-	*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
+	/* map it ! */
+	if (get_group_map_from_gid(pw->pw_gid, &map)) {
+		free_privilege(&map.priv_set);
+		sid_peek_rid(&map.sid, g_rid);
+	} else 
+		*g_rid = pdb_gid_to_group_rid(pw->pw_gid);
 
 	return True;
 }
@@ -408,14 +423,6 @@ uid_t pdb_user_rid_to_uid(uint32 user_rid)
 	return (uid_t)(((user_rid & (~USER_RID_TYPE))- 1000)/RID_MULTIPLIER);
 }
 
-/*******************************************************************
- Converts NT user RID to a UNIX gid.
- ********************************************************************/
-
-gid_t pdb_user_rid_to_gid(uint32 user_rid)
-{
-	return (uid_t)(((user_rid & (~GROUP_RID_TYPE))- 1000)/RID_MULTIPLIER);
-}
 
 /*******************************************************************
  Converts NT group RID to a UNIX gid.
@@ -437,6 +444,10 @@ uint32 pdb_uid_to_user_rid(uid_t uid)
 
 /*******************************************************************
  converts NT Group RID to a UNIX uid.
+ 
+ warning: you must not call that function only
+ you must do a call to the group mapping first.
+ there is not anymore a direct link between the gid and the rid.
  ********************************************************************/
 
 uint32 pdb_gid_to_group_rid(gid_t gid)
@@ -560,7 +571,7 @@ BOOL local_lookup_rid(uint32 rid, char *name, enum SID_NAME_USE *psid_name_use)
 			}
 		}
 		
-		gid = pdb_user_rid_to_gid(rid);
+		gid = pdb_group_rid_to_gid(rid);
 		gr = getgrgid(gid);
 
 		*psid_name_use = SID_NAME_ALIAS;
@@ -643,10 +654,31 @@ BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, 
 				sid_copy(&local_sid, &map.sid);
 				*psid_name_use = map.sid_name_use;
 			}
+			else
+				/* it's a correct name but not mapped so it points to nothing*/
+				return False;
 		} else {
+			/* it's not a mapped group */
 			grp = getgrnam(user);
 			if(!grp)
 				return False;
+
+			/* 
+			 *check if it's mapped, if it is reply it doesn't exist
+			 *
+			 * that's to prevent this case:
+			 *
+			 * unix group ug is mapped to nt group ng
+			 * someone does a lookup on ug
+			 * we must not reply as it doesn't "exist" anymore
+			 * for NT. For NT only ng exists.
+			 * JFM, 30/11/2001
+			 */
+			
+			if(get_group_map_from_gid(grp->gr_gid, &map)){
+				free_privilege(&map.priv_set);
+				return False;
+			}
 
 			sid_append_rid( &local_sid, pdb_gid_to_group_rid(grp->gr_gid));
 			*psid_name_use = SID_NAME_ALIAS;
@@ -722,10 +754,18 @@ BOOL local_sid_to_uid(uid_t *puid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 {
-    extern DOM_SID global_sam_sid;
+	extern DOM_SID global_sam_sid;
+	GROUP_MAP map;
 
 	sid_copy(psid, &global_sam_sid);
-	sid_append_rid(psid, pdb_gid_to_group_rid(gid));
+	
+	if (get_group_map_from_gid(gid, &map)) {
+		free_privilege(&map.priv_set);
+		sid_copy(psid, &map.sid);
+	}
+	else {
+		sid_append_rid(psid, pdb_gid_to_group_rid(gid));
+	}
 
 	return psid;
 }
@@ -736,11 +776,12 @@ DOM_SID *local_gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 {
-    extern DOM_SID global_sam_sid;
+	extern DOM_SID global_sam_sid;
 	DOM_SID dom_sid;
 	uint32 rid;
 	fstring str;
 	struct group *grp;
+	GROUP_MAP map;
 
 	*name_type = SID_NAME_UNKNOWN;
 
@@ -750,6 +791,8 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	/*
 	 * We can only convert to a gid if this is our local
 	 * Domain SID (ie. we are the controling authority).
+	 *
+	 * Or in the Builtin SID too. JFM, 11/30/2001
 	 */
 
 	if (!sid_equal(&global_sam_sid, &dom_sid))
@@ -758,7 +801,19 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 	if (pdb_rid_is_user(rid))
 		return False;
 
-	*pgid = pdb_user_rid_to_gid(rid);
+	if (get_group_map_from_sid(*psid, &map)) {
+		free_privilege(&map.priv_set);
+
+		/* the SID is in the mapping table but not mapped */
+		if (map.gid==-1)
+			return False;
+
+		sid_peek_rid(&map.sid, pgid);
+		*name_type = map.sid_name_use;
+	} else {
+		*pgid = pdb_group_rid_to_gid(rid);
+		*name_type = SID_NAME_ALIAS;
+	}
 
 	/*
 	 * Ensure this gid really does exist.
@@ -769,8 +824,6 @@ BOOL local_sid_to_gid(gid_t *pgid, DOM_SID *psid, enum SID_NAME_USE *name_type)
 
 	DEBUG(10,("local_sid_to_gid: SID %s -> gid (%u) (%s).\n", sid_to_string( str, psid),
 		(unsigned int)*pgid, grp->gr_name ));
-
-	*name_type = SID_NAME_ALIAS;
 
 	return True;
 }
@@ -918,7 +971,8 @@ account without a valid local system user.\n", user_name);
 		}
 
 		/* set account flags. Note that the default is non-expiring accounts */
-		if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL|ACB_PWNOEXP) )) {
+		/*if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL|ACB_PWNOEXP) )) {*/
+		if (!pdb_set_acct_ctrl(sam_pass,((local_flags & LOCAL_TRUST_ACCOUNT) ? ACB_WSTRUST : ACB_NORMAL) )) {
 			slprintf(err_str, err_str_len-1, "Failed to set 'trust account' flags for user %s.\n", user_name);
 			pdb_free_sam(&sam_pass);
 			return False;

@@ -493,9 +493,24 @@ static BOOL init_nisp_from_sam(nis_object *obj, const SAM_ACCOUNT *sampass,
 	   pdb_get_user_rid(sampass)? pdb_get_user_rid(sampass):
 	   pdb_uid_to_user_rid(pdb_get_uid(sampass))); 
   slprintf(gid, sizeof(gid)-1, "%u", pdb_get_gid(sampass));
-  slprintf(group_rid, sizeof(group_rid)-1, "%u",
-	   pdb_get_group_rid(sampass)? pdb_get_group_rid(sampass):
-	   pdb_gid_to_group_rid(pdb_get_gid(sampass)));
+
+	{
+		uint32 rid;
+		GROUP_MAP map;
+	
+		rid=pdb_get_group_rid(sampass);
+
+		if (rid==0) {
+			if (get_group_map_from_gid(pdb_get_gid(sampass), &map)) {
+				free_privilege(&map.priv_set);
+				sid_peek_rid(&map.sid, &rid);
+			} else 
+				rid=pdb_gid_to_group_rid(pdb_get_gid(sampass));
+		}
+
+  		slprintf(group_rid, sizeof(group_rid)-1, "%u", rid);
+	}
+	 
   acb = pdb_encode_acct_ctrl(pdb_get_acct_ctrl(sampass),
 			     NEW_PW_FORMAT_SPACE_PADDED_LEN);
   pdb_sethexpwd (smb_passwd, pdb_get_lanman_passwd(sampass),

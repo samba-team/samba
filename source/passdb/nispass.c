@@ -302,9 +302,20 @@ static BOOL make_sam_from_nisp_object(struct sam_passwd *pw_buf, nis_object *obj
 	  sam_logon_in_ssb = True;
 	  
 	  get_single_attribute(obj, NPF_GROUP_RID, temp, sizeof(pstring));
-	  pw_buf->group_rid = (strlen(temp) > 0) ?
-	    strtol(temp, NULL, 16) : pdb_gid_to_group_rid (pw_buf->smb_grpid);
 	  
+	  if (strlen(temp) > 0)
+	  	pw_buf->group_rid = strtol(temp, NULL, 16);
+	  else {
+	  	GROUP_MAP map;
+		
+		if (get_group_map_from_gid(pw_buf->smb_grpid, &map)) {
+			free_privileges(&map.priv_set);
+			pw_buf->group_rid = map.rid;
+		}
+		else
+			pw_buf->group_rid = pdb_gid_to_group_rid(pw_buf->smb_grpid);
+	  }
+
 	  get_single_attribute(obj, NPF_FULL_NAME, full_name, sizeof(pstring));
 #if 1
 	  /* It seems correct to use the global values - but in that case why
