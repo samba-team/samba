@@ -60,6 +60,8 @@ static int fd_open(struct connection_struct *conn, char *fname,
 
 int fd_close(struct connection_struct *conn, files_struct *fsp)
 {
+	if (fsp->fd == -1)
+		return -1;
 	return fd_close_posix(conn, fsp);
 }
 
@@ -699,9 +701,15 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 			 * we can do. We also ensure we're not going to create or tuncate
 			 * the file as we only want an access decision at this stage. JRA.
 			 */
-			open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC|O_CREAT)),mode);
+			fsp_open = open_file(fsp,conn,fname,psbuf,flags|(flags2&~(O_TRUNC|O_CREAT)),mode);
+
+			DEBUG(4,("open_file_shared : share_mode deny - calling open_file with \
+flags=0x%X flags2=0x%X mode=0%o returned %d\n",
+				flags,(flags2&~(O_TRUNC|O_CREAT)),(int)mode,(int)fsp_open ));
 
 			unlock_share_entry(conn, dev, inode);
+			if (fsp_open)
+				fd_close(conn, fsp);
 			file_free(fsp);
 			return NULL;
 		}
