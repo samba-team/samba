@@ -324,7 +324,6 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 	/* Store the user group information in the server_info returned to the caller. */
 	
 	if (NT_STATUS_IS_OK(nt_status) && (info3.num_groups2 != 0)) {
-		DOM_SID domain_sid;
 		int i;
 		NT_USER_TOKEN *ptok;
 		auth_serversupplied_info *pserver_info = *server_info;
@@ -346,21 +345,12 @@ static NTSTATUS domain_client_validate(TALLOC_CTX *mem_ctx,
 			goto done;
 		}
  
-		if (!secrets_fetch_domain_sid(lp_workgroup(), &domain_sid)) {
-			DEBUG(0, ("domain_client_validate: unable to fetch domain sid.\n"));
-			nt_status = NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
-			free_server_info(server_info);
-			goto done;
-		}
- 
 		for (i = 0; i < ptok->num_sids; i++) {
-			sid_copy(&ptok->user_sids[i], &domain_sid);
+			sid_copy(&ptok->user_sids[i], &info3.dom_sid.sid);
 			sid_append_rid(&ptok->user_sids[i], info3.gids[i].g_rid);
 		}
 		
-		become_root();
 		uni_group_cache_store_netlogon(mem_ctx, &info3);
-		unbecome_root();
 	}
 
 #if 0
@@ -423,10 +413,9 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	become_root();
-
 	/*
 	 * Get the machine account password for our primary domain
+	 * No need to become_root() as secrets_init() is done at startup.
 	 */
 
 	if (!secrets_fetch_trust_account_password(domain, trust_passwd, &last_change_time))
@@ -435,8 +424,6 @@ static NTSTATUS check_ntdomain_security(const struct auth_context *auth_context,
 		unbecome_root();
 		return NT_STATUS_CANT_ACCESS_DOMAIN_INFO;
 	}
-
-	unbecome_root();
 
 	/* Test if machine password is expired and need to be changed */
 	if (time(NULL) > last_change_time + lp_machine_password_timeout())
@@ -470,4 +457,3 @@ BOOL auth_init_ntdomain(struct auth_context *auth_context, auth_methods **auth_m
 	(*auth_method)->auth = check_ntdomain_security;
 	return True;
 }
-

@@ -37,18 +37,24 @@ static TDB_CONTEXT *netlogon_unigrp_tdb = NULL;
     array of uint32 where array[0] is number of elements
     and elements are array[1] ... array[array[0]]
 */
+
+BOOL uni_group_cache_init(void)
+{
+	if (!netlogon_unigrp_tdb) {
+		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
+						   TDB_NOLOCK, O_RDWR | O_CREAT, 0644);
+	}
+
+	return (netlogon_unigrp_tdb != NULL);
+}
+
 void uni_group_cache_store_netlogon(TALLOC_CTX *mem_ctx, NET_USER_INFO_3 *user)
 {
 	TDB_DATA key,data;
         fstring keystr;
         int i;
-	
-	if (!netlogon_unigrp_tdb) {
-		netlogon_unigrp_tdb = tdb_open_log(lock_path("netlogon_unigrp.tdb"), 0,
-                				    TDB_NOLOCK, O_RDWR | O_CREAT, 0644);
-	}
 
-	if (!netlogon_unigrp_tdb) {
+	if (!uni_group_cache_init()) {
 		DEBUG(0,("uni_group_cache_store_netlogon: cannot open netlogon_unigrp.tdb for write!\n"));
 		return;
 	}
@@ -145,8 +151,8 @@ uint32* uni_group_cache_fetch(DOM_SID *domain, uint32 user_rid,
 /* Shutdown netlogon_unigrp database */
 void uni_group_cache_shutdown(void)
 {
-    if(netlogon_unigrp_tdb) {
-	tdb_close(netlogon_unigrp_tdb);
-    }
+	if(netlogon_unigrp_tdb) {
+		tdb_close(netlogon_unigrp_tdb);
+	}
 }
 

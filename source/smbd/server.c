@@ -556,6 +556,7 @@ static void init_structs(void )
 	init_dptrs();
 
 	secrets_init();
+
 }
 
 /****************************************************************************
@@ -841,6 +842,8 @@ static void usage(char *pname)
 	if(!initialize_password_db(False))
 		exit(1);
 
+	uni_group_cache_init(); /* Non-critical */
+	
 	/* possibly reload the services file. */
 	reload_services(True);
 
