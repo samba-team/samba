@@ -64,7 +64,7 @@ gssapi.c:
 	$(LN_S) $(srcdir)/../ftp/gssapi.c .
 
 .c.o:
-	$(CC) -c -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
+	$(CC) -c -DFTP_SERVER -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
 
 install: all
 	$(MKINSTALLDIRS) $(DESTDIR)$(libexecdir)
