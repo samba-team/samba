@@ -2431,7 +2431,7 @@ static WERROR getprinterdata_printer_server(TALLOC_CTX *ctx, fstring value, uint
 	if (!StrCaseCmp(value, "DNSMachineName")) {			
 		pstring hostname;
 		
-		if (!get_myfullname(hostname))
+		if (!get_mydnsfullname(hostname))
 			return WERR_BADFILE;
 		*type = 0x1;			
 		*needed = 2*(strlen(hostname)+1);	

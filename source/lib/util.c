@@ -932,26 +932,33 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
- Get my own name, including domain.
+ Get my own canonical name, including domain.
 ****************************************************************************/
 
-BOOL get_myfullname(char *my_name)
+BOOL get_mydnsfullname(fstring my_dnsname)
 {
-	pstring hostname;
+	static fstring dnshostname;
+	struct hostent *hp;
 
-	*hostname = 0;
+	if (!*dnshostname) {
+		/* get my host name */
+		if (gethostname(dnshostname, sizeof(dnshostname)) == -1) {
+			*dnshostname = '\0';
+			DEBUG(0,("gethostname failed\n"));
+			return False;
+		} 
 
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
-		return False;
-	} 
+		/* Ensure null termination. */
+		dnshostname[sizeof(dnshostname)-1] = '\0';
 
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-	if (my_name)
-		fstrcpy(my_name, hostname);
+		/* Ensure we get the cannonical name. */
+		if (!(hp = sys_gethostbyname(dnshostname))) {
+			*dnshostname = '\0';
+			return False;
+		}
+		fstrcpy(dnshostname, hp->h_name);
+	}
+	fstrcpy(my_dnsname, dnshostname);
 	return True;
 }
 
@@ -959,44 +966,19 @@ BOOL get_myfullname(char *my_name)
  Get my own domain name.
 ****************************************************************************/
 
-BOOL get_mydomname(fstring my_domname)
+BOOL get_mydnsdomname(fstring my_domname)
 {
-	pstring hostname;
+	fstring domname;
 	char *p;
-	struct hostent *hp;
 
-	*hostname = 0;
-	/* get my host name */
-	if (gethostname(hostname, sizeof(hostname)) == -1) {
-		DEBUG(0,("gethostname failed\n"));
+	*my_domname = '\0';
+	if (!get_mydnsfullname(domname)) {
 		return False;
-	} 
-
-	/* Ensure null termination. */
-	hostname[sizeof(hostname)-1] = '\0';
-
-		
-	p = strchr_m(hostname, '.');
-
+	}	
+	p = strchr_m(domname, '.');
 	if (p) {
 		p++;
-		
-		if (my_domname)
-			fstrcpy(my_domname, p);
-	}
-
-	if (!(hp = sys_gethostbyname(hostname))) {
-		return False;
-	}
-	
-	p = strchr_m(hp->h_name, '.');
-
-	if (p) {
-		p++;
-		
-		if (my_domname)
-			fstrcpy(my_domname, p);
-		return True;
+		fstrcpy(my_domname, p);
 	}
 
 	return False;
