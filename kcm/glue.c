@@ -87,7 +87,6 @@ static krb5_error_code
 kcmss_close(krb5_context context,
 	    krb5_ccache id)
 {
-    krb5_error_code ret;
     kcm_ccache c = KCMCACHE(id);
 
     KCM_ASSERT_VALID(c);
@@ -95,7 +94,7 @@ kcmss_close(krb5_context context,
     id->data.data = NULL;
     id->data.length = 0;
 
-    return ret;
+    return 0;
 }
 
 static krb5_error_code
