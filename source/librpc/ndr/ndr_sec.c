@@ -53,19 +53,19 @@ NTSTATUS ndr_push_dom_sid2(struct ndr_push *ndr, int ndr_flags, struct dom_sid *
 /*
   convert a dom_sid to a string
 */
-const char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
+char *dom_sid_string(TALLOC_CTX *mem_ctx, const struct dom_sid *sid)
 {
 	int i, ofs, maxlen;
 	uint32 ia;
 	char *ret;
 	
 	if (!sid) {
-		return "(NULL SID)";
+		return talloc_strdup(mem_ctx, "(NULL SID)");
 	}
 
 	maxlen = sid->num_auths * 11 + 25;
 	ret = talloc(mem_ctx, maxlen);
-	if (!ret) return "(SID ERR)";
+	if (!ret) return talloc_strdup(mem_ctx, "(SID ERR)");
 
 	ia = (sid->id_auth[5]) +
 		(sid->id_auth[4] << 8 ) +
