@@ -83,19 +83,13 @@ kadm5_s_create_principal(void *server_handle,
 
     ret = _kadm5_setup_entry(&ent, princ, mask);
 
-    {
-	krb5_data salt;
-	ent.keys.len = 1;
-	ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
-	ent.keys.val[0].mkvno = 0;
-	ret = krb5_get_salt (ent.principal, &salt);
-	krb5_string_to_key(password, 
-			   &salt,
-			   KEYTYPE_DES,
-			   &ent.keys.val[0].key);
-	krb5_data_free(&salt);
-	ent.keys.val[0].salt = NULL;
-    }
+    /* XXX this should be fixed */
+    ent.keys.len = 2;
+    ent.keys.val = calloc(ent.keys.len, sizeof(*ent.keys.val));
+    ent.keys.val[0].key.keytype = KEYTYPE_DES;
+    ent.keys.val[1].key.keytype = KEYTYPE_DES;
+
+    ret = _kadm5_set_keys(context, &ent, password);
 
     ent.created_by.time = time(NULL);
     ret = krb5_copy_principal(context->context, context->caller, 
