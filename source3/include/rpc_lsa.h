@@ -34,16 +34,16 @@ enum SID_NAME_USE
 };
 
 /* ntlsa pipe */
-#define LSA_OPENPOLICY         0x2c
+#define LSA_CLOSE              0x00
 #define LSA_QUERYINFOPOLICY    0x07
 #define LSA_ENUMTRUSTDOM       0x0d
-#define LSA_CLOSE              0x00
-#define LSA_OPENSECRET         0x1C
+#define LSA_LOOKUPNAMES        0x0e
 #define LSA_LOOKUPSIDS         0x0f
+#define LSA_OPENPOLICY         0x2c
+#define LSA_OPENSECRET         0x1C
 
 /* XXXX these are here to get a compile! */
 #define LSA_LOOKUPRIDS      0xFD
-#define LSA_LOOKUPNAMES     0xFC
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32

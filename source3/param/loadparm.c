@@ -585,7 +585,6 @@ static struct parm_struct parm_table[] =
 
   {"Domain Options", P_SEP, P_SEPARATOR},
   {"domain sid",       P_USTRING, P_GLOBAL, &Globals.szDomainSID,       NULL,   NULL,  0},
-  {"domain other sids",P_STRING,  P_GLOBAL, &Globals.szDomainOtherSIDs, NULL,   NULL,  0},
   {"domain groups",    P_STRING,  P_GLOBAL, &Globals.szDomainGroups,    NULL,   NULL,  0},
   {"domain controller",P_BOOL  ,  P_GLOBAL, &Globals.bDomainController,NULL,   NULL,  0},
   {"domain admin group",P_STRING, P_GLOBAL, &Globals.szDomainAdminGroup, NULL,   NULL,  0},

@@ -414,7 +414,7 @@ static void samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	got_aliases = True;
 	num_entries = 1;
 	make_unistr2(&(pass[0].uni_user_name), dummy_alias, strlen(dummy_alias));
-	pass[0].user_rid = DOMAIN_ALIAS_RID_ADMINS;
+	pass[0].user_rid = BUILTIN_ALIAS_RID_ADMINS;
 
 	if (r_e.status == 0 && got_aliases)
 	{
@@ -637,7 +637,7 @@ static void samr_reply_lookup_ids(SAMR_Q_LOOKUP_IDS *q_u,
 #endif
 
 	num_rids = 1;
-	rid[0] = DOMAIN_ALIAS_RID_USERS;
+	rid[0] = BUILTIN_ALIAS_RID_USERS;
 
 	make_samr_r_lookup_ids(&r_u, num_rids, rid, status);
 

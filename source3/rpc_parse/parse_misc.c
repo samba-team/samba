@@ -423,7 +423,9 @@ void make_unistr2(UNISTR2 *str, char *buf, int len)
 	/* set up string lengths. add one if string is not null-terminated */
 	str->uni_max_len = len+1;
 	str->undoc       = 0;
-	str->uni_str_len = len+1;
+
+/* JRATEST - I believe this should be len, not len-1. JRA.*/
+	str->uni_str_len = len;
 
 	/* store the string (null-terminated 8 bit chars into 16 bit chars) */
 	struni2(str->buffer, buf);

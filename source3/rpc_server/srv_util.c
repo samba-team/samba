@@ -48,16 +48,16 @@ extern int DEBUGLEVEL;
    i.e the DOMAIN_GROUP_RID_ADMIN/USER/GUEST.  */
 rid_name domain_alias_rids[] = 
 {
-	{ DOMAIN_ALIAS_RID_ADMINS       , "admins" },
-	{ DOMAIN_ALIAS_RID_USERS        , "users" },
-	{ DOMAIN_ALIAS_RID_GUESTS       , "guests" },
-	{ DOMAIN_ALIAS_RID_POWER_USERS  , "power_users" },
+	{ BUILTIN_ALIAS_RID_ADMINS       , "admins" },
+	{ BUILTIN_ALIAS_RID_USERS        , "users" },
+	{ BUILTIN_ALIAS_RID_GUESTS       , "guests" },
+	{ BUILTIN_ALIAS_RID_POWER_USERS  , "power_users" },
 
-	{ DOMAIN_ALIAS_RID_ACCOUNT_OPS  , "account_ops" },
-	{ DOMAIN_ALIAS_RID_SYSTEM_OPS   , "system_ops" },
-	{ DOMAIN_ALIAS_RID_PRINT_OPS    , "print_ops" },
-	{ DOMAIN_ALIAS_RID_BACKUP_OPS   , "backup_ops" },
-	{ DOMAIN_ALIAS_RID_REPLICATOR   , "replicator" },
+	{ BUILTIN_ALIAS_RID_ACCOUNT_OPS  , "account_ops" },
+	{ BUILTIN_ALIAS_RID_SYSTEM_OPS   , "system_ops" },
+	{ BUILTIN_ALIAS_RID_PRINT_OPS    , "print_ops" },
+	{ BUILTIN_ALIAS_RID_BACKUP_OPS   , "backup_ops" },
+	{ BUILTIN_ALIAS_RID_REPLICATOR   , "replicator" },
 	{ 0                             , NULL }
 };
 
