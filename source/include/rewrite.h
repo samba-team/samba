@@ -78,7 +78,6 @@ typedef smb_ucs2_t wfstring[FSTRING_LEN];
 typedef struct data_blob {
 	uint8_t *data;
 	size_t length;
-	void (*free)(struct data_blob *data_blob);
 } DATA_BLOB;
 
 #include "enums.h"
