@@ -40,7 +40,10 @@ struct dcerpc_pipe {
 	uint_t flags;
 	struct dcerpc_security security_state;
 	const char *binding_string;
-	
+
+	struct dcerpc_syntax_id syntax;
+	struct dcerpc_syntax_id transfer_syntax;
+
 	struct dcerpc_transport {
 		enum dcerpc_transport_t transport;
 		void *private;
