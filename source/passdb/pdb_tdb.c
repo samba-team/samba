@@ -625,7 +625,7 @@ static BOOL tdbsam_getsampwrid (struct pdb_context *context, SAM_ACCOUNT *user, 
 	/* get the record */
 	data = tdb_fetch (pwd_tdb, key);
 	if (!data.dptr) {
-		DEBUG(5,("pdb_getsampwrid (TDB): error fetching database.\n"));
+		DEBUG(5,("pdb_getsampwrid (TDB): error looking up RID %d by key %s.\n", rid, keystr));
 		DEBUGADD(5, (" Error: %s\n", tdb_errorstr(pwd_tdb)));
 		tdb_close (pwd_tdb);
 		return False;
