@@ -141,6 +141,27 @@ static const char *display_time(NTTIME nttime)
 	return (string);
 }
 
+static const char* server_role_str(uint32 server_role)
+{
+	switch(server_role) {
+		case ROLE_STANDALONE:
+			return strdup("ROLE_STANDALONE");
+			break;
+		case ROLE_DOMAIN_MEMBER:
+			return strdup("ROLE_DOMAIN_MEMBER");
+			break;
+		case ROLE_DOMAIN_BDC:
+			return strdup("ROLE_DOMAIN_BDC");
+			break;
+		case ROLE_DOMAIN_PDC:
+			return strdup("ROLE_DOMAIN_PDC");
+			break;
+		default:
+			return strdup("Unknown -- internal error?");
+			break;
+	}
+}
+
 static void display_sam_unk_info_1(SAM_UNK_INFO_1 *info1)
 {
 	
@@ -159,10 +180,10 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	fstring name;
 
 	unistr2_to_ascii(name, &info2->uni_domain, sizeof(name) - 1); 
-	printf("Domain:\t%s\n", name);
+	printf("Domain:\t\t%s\n", name);
 
 	unistr2_to_ascii(name, &info2->uni_server, sizeof(name) - 1); 
-	printf("Server:\t%s\n", name);
+	printf("Server:\t\t%s\n", name);
 
 	unistr2_to_ascii(name, &info2->uni_comment, sizeof(name) - 1); 
 	printf("Comment:\t%s\n", name);
@@ -176,8 +197,13 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 	printf("Force Logoff:\t%d\n", (int)nt_time_to_unix_abs(&info2->logout));
 
 	printf("Unknown 4:\t0x%x\n", info2->unknown_4);
-	printf("Unknown 5:\t0x%x\n", info2->unknown_5);
+	printf("Server Role:\t%s\n", server_role_str(info2->server_role));
 	printf("Unknown 6:\t0x%x\n", info2->unknown_6);
+}
+
+static void display_sam_unk_info_7(SAM_UNK_INFO_7 *info7)
+{
+	printf("Server Role:\t%s\n", server_role_str(info7->server_role));
 }
 
 static void display_sam_unk_info_8(SAM_UNK_INFO_8 *info8)
@@ -1160,6 +1186,9 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 		break;
 	case 2:
 		display_sam_unk_info_2(&ctr.info.inf2);
+		break;
+	case 7:
+		display_sam_unk_info_7(&ctr.info.inf7);
 		break;
 	case 8:
 		display_sam_unk_info_8(&ctr.info.inf8);

@@ -564,9 +564,9 @@ static BOOL sam_io_unk_info6(const char *desc, SAM_UNK_INFO_6 * u_6,
 inits a structure.
 ********************************************************************/
 
-void init_unk_info7(SAM_UNK_INFO_7 * u_7)
+void init_unk_info7(SAM_UNK_INFO_7 * u_7, uint32 server_role)
 {
-	u_7->unknown_0 = 0x0003;
+	u_7->server_role = server_role;
 }
 
 /*******************************************************************
@@ -582,7 +582,7 @@ static BOOL sam_io_unk_info7(const char *desc, SAM_UNK_INFO_7 * u_7,
 	prs_debug(ps, depth, desc, "sam_io_unk_info7");
 	depth++;
 
-	if(!prs_uint16("unknown_0", ps, depth, &u_7->unknown_0)) /* 0x0003 */
+	if(!prs_uint16("server_role", ps, depth, &u_7->server_role))
 		return False;
 
 	return True;
@@ -697,7 +697,7 @@ inits a structure.
 
 void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 			const char *comment, const char *domain, const char *server,
-			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout)
+			uint32 seq_num, uint32 num_users, uint32 num_groups, uint32 num_alias, NTTIME nt_logout, uint32 server_role)
 {
 	u_2->logout.low = nt_logout.low;
 	u_2->logout.high = nt_logout.high;
@@ -707,7 +707,7 @@ void init_unk_info2(SAM_UNK_INFO_2 * u_2,
 
 
 	u_2->unknown_4 = 0x00000001;
-	u_2->unknown_5 = 0x00000003;
+	u_2->server_role = server_role;
 	u_2->unknown_6 = 0x00000001;
 	u_2->num_domain_usrs = num_users;
 	u_2->num_domain_grps = num_groups;
@@ -754,7 +754,7 @@ static BOOL sam_io_unk_info2(const char *desc, SAM_UNK_INFO_2 * u_2,
 
 	if(!prs_uint32("unknown_4 ", ps, depth, &u_2->unknown_4)) /* 0x0000 0001 */
 		return False;
-	if(!prs_uint32("unknown_5 ", ps, depth, &u_2->unknown_5)) /* 0x0000 0003 */
+	if(!prs_uint32("server_role ", ps, depth, &u_2->server_role))
 		return False;
 	if(!prs_uint32("unknown_6 ", ps, depth, &u_2->unknown_6)) /* 0x0000 0001 */
 		return False;
