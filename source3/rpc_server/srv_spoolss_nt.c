@@ -4,7 +4,7 @@
  *  Copyright (C) Andrew Tridgell              1992-2000,
  *  Copyright (C) Luke Kenneth Casson Leighton 1996-2000,
  *  Copyright (C) Jean François Micouleau      1998-2000,
- *  Copyright (C) Jeremy Allison		    2001,
+ *  Copyright (C) Jeremy Allison               2001-2002,
  *  Copyright (C) Gerald Carter		       2000-2002,
  *  Copyright (C) Tim Potter                   2001-2002.
  *
@@ -170,41 +170,6 @@ static void free_spool_notify_option(SPOOL_NOTIFY_OPTION **pp)
 	SAFE_FREE(*pp);
 }
 
-/****************************************************************************
- wrapper function to maintain a reference count to the number of
- open change notification handles we have
-****************************************************************************/
-
-static BOOL spooler_message_flags( BOOL doreg )
-{
-	static uint32 ref_count = 0;
-	BOOL result = True;
-
-	/* 
-	 * check for boundary counditions ....
-	 * if ref_count == 0 and we want to register OR
-	 * if ref_count == 1 and we want to deregister, THEN
-	 * OK.
-	 */
-	
-	if ( ((ref_count == 0) && doreg) || ((ref_count == 1) && !doreg) )
-		result = register_message_flags( doreg, FLAG_MSG_PRINTING );
-
-	/* increment/decrement reference count */
-
-	if ( doreg )
-		ref_count++;
-	else {
-		/* minimum is always 0 */
-		if ( ref_count ) 
-			ref_count--;
-	}
-
-	DEBUG(10,("spooler_message_flags: ref_count == %d\n", ref_count));
-
-	return result;
-}
-
 /***************************************************************************
  Disconnect from the client
 ****************************************************************************/
@@ -231,12 +196,12 @@ static void srv_spoolss_replycloseprinter(POLICY_HND *handle)
 		cli_ulogoff(&notify_cli);
 		cli_shutdown(&notify_cli);
 		message_deregister(MSG_PRINTER_NOTIFY2);
+
+        	/* Tell the connections db we're no longer interested in
+		 * printer notify messages. */
+
+		register_message_flags( False, FLAG_MSG_PRINTING );
 	}
-
-        /* Tell the connections db we're not interested in printer notify messages. */
-	/* reference count is handled by spooler_message_flags() */
-
-        spooler_message_flags( False );	
 
 	smb_connections--;
 }
@@ -2217,6 +2182,9 @@ static BOOL srv_spoolss_replyopenprinter(char *printer, uint32 localprinter, uin
 			return False;
 			
 		message_register(MSG_PRINTER_NOTIFY2, receive_notify2_message_list);
+		/* Tell the connections db we're now interested in printer
+		 * notify messages. */
+		register_message_flags( True, FLAG_MSG_PRINTING );
 	}
 
 	smb_connections++;
