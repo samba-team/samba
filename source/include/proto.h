@@ -1775,9 +1775,9 @@ BOOL parse_lpq_entry(int snum,char *line,
 BOOL nt_printing_init(void);
 int get_ntforms(nt_forms_struct **list);
 int write_ntforms(nt_forms_struct **list, int number);
-BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count);
+BOOL add_a_form(nt_forms_struct **list, const FORM *form, int *count, uint32 *ret);
 BOOL delete_a_form(nt_forms_struct **list, UNISTR2 *del_name, int *count, uint32 *ret);
-void update_a_form(nt_forms_struct **list, const FORM *form, int count);
+BOOL update_a_form(nt_forms_struct **list, const FORM *form, int count, uint32 *ret);
 int get_ntdrivers(fstring **list, char *architecture, uint32 version);
 BOOL get_short_archi(char *short_archi, char *long_archi);
 uint32 clean_up_driver_struct(NT_PRINTER_DRIVER_INFO_LEVEL driver_abstract,

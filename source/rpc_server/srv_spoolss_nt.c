@@ -5914,6 +5914,7 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 				const FORM *form)
 {
 	int count=0;
+	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
@@ -5925,13 +5926,12 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 	}
 
 	count=get_ntforms(&list);
-	if(!add_a_form(&list, form, &count))
-		return ERROR_NOT_ENOUGH_MEMORY;
-	write_ntforms(&list, count);
+	if(add_a_form(&list, form, &count, &ret))
+    	write_ntforms(&list, count);
 
 	safe_free(list);
 
-	return 0x0;
+	return ret;
 }
 
 /****************************************************************************
@@ -5951,8 +5951,7 @@ uint32 _spoolss_deleteform( POLICY_HND *handle, UNISTR2 *form_name)
 	}
 
 	count = get_ntforms(&list);
-	if(!delete_a_form(&list, form_name, &count, &ret))
-		return ERROR_INVALID_PARAMETER;
+	delete_a_form(&list, form_name, &count, &ret);
 
 	safe_free(list);
 
@@ -5967,6 +5966,7 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 				const FORM *form)
 {
 	int count=0;
+	uint32 ret = 0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
 
@@ -5977,12 +5977,12 @@ uint32 _spoolss_setform( POLICY_HND *handle,
 		return ERROR_INVALID_HANDLE;
 	}
 	count=get_ntforms(&list);
-	update_a_form(&list, form, count);
-	write_ntforms(&list, count);
+	if (update_a_form(&list, form, count, &ret))
+    	write_ntforms(&list, count);
 
 	safe_free(list);
 
-	return 0x0;
+	return ret;
 }
 
 /****************************************************************************
