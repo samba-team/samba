@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2003 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -47,7 +47,8 @@ krb5_mk_error(krb5_context context,
 	      krb5_data *reply)
 {
     KRB_ERROR msg;
-    int32_t sec, usec;
+    krb5_timestamp sec;
+    int32_t usec;
     size_t len;
     krb5_error_code ret = 0;
 
