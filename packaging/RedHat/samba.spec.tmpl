@@ -279,6 +279,7 @@ fi
 %preun
 if [ $1 = 0 ] ; then
 	/sbin/chkconfig --del smb
+	/sbin/chkconfig --del winbind
 
 	# We want to remove the browse.dat and wins.dat files so they can not interfer with a new version of samba!
 	if [ -e /var/cache/samba/browse.dat ]; then
