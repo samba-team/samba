@@ -65,7 +65,7 @@ psyslog(int level, const char *format, ...)
   va_list args;
   va_start(args, format);
   openlog("pam_krb4", LOG_CONS|LOG_PID, LOG_AUTH);
-  vsyslog(level | LOG_AUTH, format, args);
+  vsyslog(level, format, args);
   va_end(args);
   closelog();
 }
@@ -128,8 +128,8 @@ pdeb(const char *format, ...)
   if (ctrl_off(KRB4_DEBUG))
     return;
   va_start(args, format);
-  openlog("pam_krb4", LOG_PID, LOG_AUTH);
-  vsyslog(LOG_DEBUG | LOG_AUTH, format, args);
+  openlog("pam_krb4", LOG_CONS|LOG_PID, LOG_AUTH);
+  vsyslog(LOG_DEBUG, format, args);
   va_end(args);
   closelog();
 }
@@ -185,11 +185,11 @@ verify_pass(pam_handle_t *pamh,
   pdeb("krb_verify_user(`%s', `%s', `%s', pw, %d, NULL) returns %s",
        name, inst, realm, krb_verify,
        krb_get_err_text(ret));
-  if (setreuid(old_ruid, old_euid) != 0
-      ||  getuid() != old_ruid
-      || geteuid() != old_euid)
+  setreuid(old_ruid, old_euid);
+  if (getuid() != old_ruid || geteuid() != old_euid)
     {
-      psyslog(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
+      psyslog(LOG_ALERT , "setreuid(%d, %d) failed at line %d",
+	      old_ruid, old_euid, __LINE__);
       exit(1);
     }
     
@@ -279,8 +279,8 @@ pam_sm_authenticate(pam_handle_t *pamh,
   char realm[REALM_SZ];
   realm[0] = 0;
 
-  ENTRY("pam_sm_authenticate");
   parse_ctrl(argc, argv);
+  ENTRY("pam_sm_authenticate");
 
   ret = pam_get_user(pamh, &user, "login: ");
   if (ret != PAM_SUCCESS)
@@ -344,11 +344,11 @@ pam_sm_authenticate(pam_handle_t *pamh,
 		  name, inst, realm, user);
 	}
 
-      if (setreuid(old_ruid, old_euid) != 0
-	  ||  getuid() != old_ruid
-	  || geteuid() != old_ruid)
+      setreuid(old_ruid, old_euid);
+      if (getuid() != old_ruid || geteuid() != old_euid)
 	{
-	  psyslog(LOG_ALERT , "setreuid(%d, %d) failed", old_ruid, old_euid);
+	  psyslog(LOG_ALERT , "setreuid(%d, %d) failed at line %d",
+		  old_ruid, old_euid, __LINE__);
 	  exit(1);
 	}
     }
@@ -383,15 +383,15 @@ pam_sm_authenticate(pam_handle_t *pamh,
 int 
 pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  ENTRY("pam_sm_setcred");
   parse_ctrl(argc, argv);
+  ENTRY("pam_sm_setcred");
 
   switch (flags & ~PAM_SILENT) {
   case 0:
   case PAM_ESTABLISH_CRED:
     if (k_hasafs())
       k_setpag();
-    /* Fill PAG with credentials below. */
+    /* Fall through, fill PAG with credentials below. */
   case PAM_REINITIALIZE_CRED:
   case PAM_REFRESH_CRED:
     if (k_hasafs())
@@ -423,8 +423,8 @@ pam_sm_setcred(pam_handle_t *pamh, int flags, int argc, const char **argv)
 int
 pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 {
-  ENTRY("pam_sm_open_session");
   parse_ctrl(argc, argv);
+  ENTRY("pam_sm_open_session");
 
   return PAM_SUCCESS;
 }
@@ -433,8 +433,8 @@ pam_sm_open_session(pam_handle_t *pamh, int flags, int argc, const char **argv)
 int
 pam_sm_close_session(pam_handle_t *pamh, int flags, int argc, const char**argv)
 {
-  ENTRY("pam_sm_close_session");
   parse_ctrl(argc, argv);
+  ENTRY("pam_sm_close_session");
 
   /* This isn't really kosher, but it's handy. */
   pam_sm_setcred(pamh, PAM_DELETE_CRED, argc, argv);
