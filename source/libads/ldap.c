@@ -1582,6 +1582,32 @@ BOOL ads_pull_uint32(ADS_STRUCT *ads,
 }
 
 /**
+ * pull a single objectGUID from an ADS result
+ * @param ads connection to ADS server
+ * @param msg results of search
+ * @param guid 37-byte area to receive text guid
+ * @return boolean indicating success
+ **/
+BOOL ads_pull_guid(ADS_STRUCT *ads,
+		   void *msg, GUID *guid)
+{
+	char **values;
+
+	values = ldap_get_values(ads->ld, msg, "objectGUID");
+	if (!values) return False;
+	
+	if (values[0]) {
+		memcpy(guid, values[0], sizeof(GUID));
+		ldap_value_free(values);
+		return True;
+	}
+	ldap_value_free(values);
+	return False;
+
+}
+
+
+/**
  * pull a single DOM_SID from a ADS result
  * @param ads connection to ads server
  * @param msg Results of search
