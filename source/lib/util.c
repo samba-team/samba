@@ -975,6 +975,62 @@ BOOL get_myname(char *my_name)
 }
 
 /****************************************************************************
+ Get my own name, including domain.
+****************************************************************************/
+
+BOOL get_myfullname(char *my_name)
+{
+	pstring hostname;
+
+	*hostname = 0;
+
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
+
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
+
+	if (my_name)
+		fstrcpy(my_name, hostname);
+	return True;
+}
+
+/****************************************************************************
+ Get my own domain name.
+****************************************************************************/
+
+BOOL get_mydomname(char *my_domname)
+{
+	pstring hostname;
+	char *p;
+
+	*hostname = 0;
+	/* get my host name */
+	if (gethostname(hostname, sizeof(hostname)) == -1) {
+		DEBUG(0,("gethostname failed\n"));
+		return False;
+	} 
+
+	/* Ensure null termination. */
+	hostname[sizeof(hostname)-1] = '\0';
+
+	p = strchr_m(hostname, '.');
+
+	if (!p)
+		return False;
+
+	p++;
+	
+	if (my_domname)
+		fstrcpy(my_domname, p);
+
+	return True;
+}
+
+/****************************************************************************
  Interpret a protocol description string, with a default.
 ****************************************************************************/
 
