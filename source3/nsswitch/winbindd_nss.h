@@ -27,6 +27,7 @@
 
 #define WINBINDD_SOCKET_NAME "pipe"            /* Name of PF_UNIX socket */
 #define WINBINDD_SOCKET_DIR  "/tmp/.winbindd"  /* Name of PF_UNIX dir */
+
 #define WINBINDD_DOMAIN_ENV  "WINBINDD_DOMAIN" /* Environment variables */
 #define WINBINDD_DONT_ENV    "_NO_WINBINDD"
 
@@ -40,6 +41,7 @@ enum winbindd_cmd {
 	WINBINDD_GETPWNAM_FROM_UID,
 	WINBINDD_GETGRNAM_FROM_GROUP,
 	WINBINDD_GETGRNAM_FROM_GID,
+	WINBINDD_INITGROUPS,
 
 	/* Enumerate users and groups */
 
@@ -139,7 +141,6 @@ struct winbindd_response {
 			fstring pw_gecos;
 			fstring pw_dir;
 			fstring pw_shell;
-			int pwent_ndx;
 		} pw;
 
 		/* getgrnam, getgrgid */
@@ -149,7 +150,7 @@ struct winbindd_response {
 			fstring gr_passwd;
 			gid_t gr_gid;
 			int num_gr_mem;
-			int grent_ndx;
+			int gr_mem_ofs;   /* offset to group membership */
 		} gr;
 
 		uint32 num_entries; /* getpwent, getgrent */
