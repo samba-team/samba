@@ -186,7 +186,7 @@ static void get_username (char *username)
 
 /* Fetch the SID for this computer */
 
-void fetch_machine_sid(struct cli_state *cli)
+static void fetch_machine_sid(struct cli_state *cli)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_OK;

@@ -22,7 +22,7 @@
 #include "printing.h"
 
 /* Current printer interface */
-struct printif *current_printif = &generic_printif;
+static struct printif *current_printif = &generic_printif;
 
 /* 
    the printing backend revolves around a tdb database that stores the

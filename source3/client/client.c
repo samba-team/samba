@@ -34,7 +34,7 @@ extern BOOL in_client;
 extern BOOL AllowDebugChange;
 static int port = 0;
 pstring cur_dir = "\\";
-pstring cd_path = "";
+static pstring cd_path = "";
 static pstring service;
 static pstring desthost;
 extern pstring global_myname;
@@ -61,9 +61,9 @@ static int cmd_help(void);
 #define FID_UNUSED (0xFFFF)
 
 time_t newer_than = 0;
-int archive_level = 0;
+static int archive_level = 0;
 
-BOOL translation = False;
+static BOOL translation = False;
 
 static BOOL have_ip;
 
@@ -74,30 +74,30 @@ extern BOOL tar_reset;
 /* clitar bits end */
  
 
-mode_t myumask = 0755;
+static mode_t myumask = 0755;
 
-BOOL prompt = True;
+static BOOL prompt = True;
 
-int printmode = 1;
+static int printmode = 1;
 
 static BOOL recurse = False;
 BOOL lowercase = False;
 
-struct in_addr dest_ip;
+static struct in_addr dest_ip;
 
 #define SEPARATORS " \t\n\r"
 
-BOOL abort_mget = True;
+static BOOL abort_mget = True;
 
-pstring fileselection = "";
+static pstring fileselection = "";
 
 extern file_info def_finfo;
 
 /* timing globals */
 int get_total_size = 0;
 int get_total_time_ms = 0;
-int put_total_size = 0;
-int put_total_time_ms = 0;
+static int put_total_size = 0;
+static int put_total_time_ms = 0;
 
 /* totals globals */
 static double dir_total;
@@ -1958,7 +1958,7 @@ static BOOL list_servers(char *wk_grp)
  *       field is NULL, and NULL in that field is used in process_tok()
  *       (below) to indicate the end of the list.  crh
  */
-struct
+static struct
 {
   char *name;
   int (*fn)(void);
@@ -2238,7 +2238,7 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-struct cli_state *do_connect(const char *server, const char *share)
+static struct cli_state *do_connect(const char *server, const char *share)
 {
 	struct cli_state *c;
 	struct nmb_name called, calling;

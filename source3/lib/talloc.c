@@ -82,7 +82,7 @@ struct talloc_ctx {
  * @todo We should turn the global list off when using Insure++,
  * otherwise all the memory will be seen as still reachable.
  **/
-TALLOC_CTX *list_head = NULL;
+static TALLOC_CTX *list_head = NULL;
 
 
 /**

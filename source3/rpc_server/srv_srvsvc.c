@@ -495,7 +495,7 @@ static BOOL api_srv_net_file_set_secdesc(pipes_struct *p)
 \PIPE\srvsvc commands
 ********************************************************************/
 
-struct api_struct api_srv_cmds[] =
+static const struct api_struct api_srv_cmds[] =
 {
 	{ "SRV_NET_CONN_ENUM"       ,  SRV_NET_CONN_ENUM       ,   api_srv_net_conn_enum    },
 	{ "SRV_NET_SESS_ENUM"       ,  SRV_NET_SESS_ENUM       ,   api_srv_net_sess_enum    },

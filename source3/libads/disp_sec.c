@@ -52,7 +52,7 @@ static struct perm_mask_str {
 };
 
 /* convert a security permissions into a string */
-void ads_disp_perms(uint32 type)
+static void ads_disp_perms(uint32 type)
 {
 	int i = 0;
 	int j = 0;
@@ -82,20 +82,8 @@ void ads_disp_perms(uint32 type)
 	puts("");
 }
 
-/* Check if ACE has OBJECT type */
-BOOL ads_ace_object(uint8 type)
-{
-	if (type == SEC_ACE_TYPE_ACCESS_ALLOWED_OBJECT ||
-            type == SEC_ACE_TYPE_ACCESS_DENIED_OBJECT ||
-            type == SEC_ACE_TYPE_SYSTEM_AUDIT_OBJECT ||
-            type == SEC_ACE_TYPE_SYSTEM_ALARM_OBJECT) {
-		return True;
-	}
-	return False;
-}
-
 /* display ACE */
-void ads_disp_ace(SEC_ACE *sec_ace)
+static void ads_disp_ace(SEC_ACE *sec_ace)
 {
 	char *access_type = "UNKNOWN";
 
@@ -135,7 +123,7 @@ void ads_disp_ace(SEC_ACE *sec_ace)
 }
 
 /* display ACL */
-void ads_disp_acl(SEC_ACL *sec_acl, char *type)
+static void ads_disp_acl(SEC_ACL *sec_acl, char *type)
 {
         if (!sec_acl)
 		printf("------- (%s) ACL not present\n", type);

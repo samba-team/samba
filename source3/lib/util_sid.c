@@ -34,16 +34,16 @@ DOM_SID global_sid_Builtin; 				/* Local well-known domain */
 DOM_SID global_sid_World_Domain;	    	/* Everyone domain */
 DOM_SID global_sid_World;    				/* Everyone */
 DOM_SID global_sid_Creator_Owner_Domain;    /* Creator Owner domain */
-DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
-DOM_SID global_sid_Creator_Group;              /* Creator Group */
 DOM_SID global_sid_NT_Authority;    		/* NT Authority */
 DOM_SID global_sid_NULL;            		/* NULL sid */
 DOM_SID global_sid_Builtin_Guests;			/* Builtin guest users */
 DOM_SID global_sid_Authenticated_Users;		/* All authenticated rids */
 DOM_SID global_sid_Network;					/* Network rids */
-DOM_SID global_sid_Anonymous;				/* Anonymous login */
 
-const DOM_SID *global_sid_everyone = &global_sid_World;
+static DOM_SID global_sid_Creator_Owner;    		/* Creator Owner */
+static DOM_SID global_sid_Creator_Group;              /* Creator Group */
+static DOM_SID global_sid_Anonymous;				/* Anonymous login */
+static const DOM_SID *global_sid_everyone = &global_sid_World;
 
 /*
  * An NT compatible anonymous token.
@@ -302,24 +302,6 @@ void sid_copy(DOM_SID *dst, const DOM_SID *src)
 		dst->sub_auths[i] = src->sub_auths[i];
 }
 
-/*****************************************************************
- Duplicates a sid - mallocs the target.
-*****************************************************************/
-
-DOM_SID *sid_dup(DOM_SID *src)
-{
-  DOM_SID *dst;
-
-  if(!src)
-    return NULL;
-
-  if((dst = malloc(sizeof(DOM_SID))) != NULL) {
-	memset(dst, '\0', sizeof(DOM_SID));
-	sid_copy( dst, src);
-  }
-
-  return dst;
-}
 
 /*****************************************************************
  Write a sid out into on-the-wire format.
@@ -361,7 +343,7 @@ BOOL sid_parse(char *inbuf, size_t len, DOM_SID *sid)
 /*****************************************************************
  Compare the auth portion of two sids.
 *****************************************************************/  
-int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
+static int sid_compare_auth(const DOM_SID *sid1, const DOM_SID *sid2)
 {
 	int i;
 

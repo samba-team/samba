@@ -44,11 +44,6 @@ int extra_time_offset = 0;
  External access to time_t_min and time_t_max.
 ********************************************************************/
 
-time_t get_time_t_min(void)
-{
-	return TIME_T_MIN;
-}
-
 time_t get_time_t_max(void)
 {
 	return TIME_T_MAX;
