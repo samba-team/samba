@@ -78,7 +78,7 @@ static NTSTATUS sam_sync(struct cli_state *cli, unsigned char trust_passwd[16],
 
                         a = &deltas[i].account_info;
 
-                        unistr2_to_ascii(acct_name, &a->uni_acct_name,
+                        unistr2_to_unix(acct_name, &a->uni_acct_name,
                                          sizeof(acct_name) - 1);
 
                         /* Decode hashes from password hash */

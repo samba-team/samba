@@ -566,7 +566,7 @@ NTSTATUS cli_samr_enum_dom_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		(*dom_groups)[i].rid = r.sam[i].rid;
 
 		if (r.sam[i].hdr_name.buffer) {
-			unistr2_to_ascii((*dom_groups)[i].acct_name,
+			unistr2_to_unix((*dom_groups)[i].acct_name,
 					 &r.uni_grp_name[name_idx],
 					 sizeof(fstring) - 1);
 			name_idx++;
@@ -644,7 +644,7 @@ NTSTATUS cli_samr_enum_als_groups(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		(*dom_groups)[i].rid = r.sam[i].rid;
 
 		if (r.sam[i].hdr_name.buffer) {
-			unistr2_to_ascii((*dom_groups)[i].acct_name,
+			unistr2_to_unix((*dom_groups)[i].acct_name,
 					 &r.uni_grp_name[name_idx],
 					 sizeof(fstring) - 1);
 			name_idx++;
@@ -937,7 +937,7 @@ NTSTATUS cli_samr_lookup_rids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < r.num_names1; i++) {
 		fstring tmp;
 
-		unistr2_to_ascii(tmp, &r.uni_name[i], sizeof(tmp) - 1);
+		unistr2_to_unix(tmp, &r.uni_name[i], sizeof(tmp) - 1);
 		(*names)[i] = talloc_strdup(mem_ctx, tmp);
 		(*name_types)[i] = r.type[i];
 	}

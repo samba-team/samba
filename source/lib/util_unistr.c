@@ -310,11 +310,11 @@ void unistr_to_ascii(char *dest, const uint16 *src, int len)
 }
 
 /*******************************************************************
- Convert a (little-endian) UNISTR2 structure to an ASCII string
- Warning: this version does DOS codepage.
+ Convert a (little-endian) UNISTR2 structure to an ASCII string, either
+ DOS or UNIX codepage.
 ********************************************************************/
 
-void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
+static void unistr2_to_mbcp(char *dest, const UNISTR2 *str, size_t maxlen, uint16 *ucs2_to_mbcp)
 {
 	char *p;
 	uint16 *src;
@@ -335,7 +335,7 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 
 	for (p = dest; (p-dest < maxlen-3) && (src - str->buffer < str->uni_str_len) && *src; src++) {
 		uint16 ucs2_val = SVAL(src,0);
-		uint16 cp_val = ucs2_to_doscp[ucs2_val];
+		uint16 cp_val = ucs2_to_mbcp[ucs2_val];
 
 		if (cp_val < 256)
 			*p++ = (char)cp_val;
@@ -349,18 +349,23 @@ void unistr2_to_ascii(char *dest, const UNISTR2 *str, size_t maxlen)
 }
 
 /*******************************************************************
- duplicate a UNISTR2 string into a null terminated char*
- using a talloc context
+ Convert a (little-endian) UNISTR2 structure to an ASCII string
+ Warning: this version does DOS codepage.
 ********************************************************************/
-char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+
+void unistr2_to_dos(char *dest, const UNISTR2 *str, size_t maxlen)
 {
-	char *s;
-	int maxlen = (str->uni_str_len+1)*4;
-	if (!str->buffer) return NULL;
-	s = (char *)talloc(ctx, maxlen); /* convervative */
-	if (!s) return NULL;
-	unistr2_to_ascii(s, str, maxlen);
-	return s;
+	unistr2_to_mbcp(dest, str, maxlen, ucs2_to_doscp);
+}
+
+/*******************************************************************
+ Convert a (little-endian) UNISTR2 structure to an ASCII string
+ Warning: this version does UNIX codepage.
+********************************************************************/
+
+void unistr2_to_unix(char *dest, const UNISTR2 *str, size_t maxlen)
+{
+	unistr2_to_mbcp(dest, str, maxlen, ucs2_to_unixcp);
 }
 
 /*******************************************************************

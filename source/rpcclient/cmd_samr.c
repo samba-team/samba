@@ -34,34 +34,34 @@ static void display_sam_user_info_21(SAM_USER_INFO_21 *usr)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &usr->uni_user_name, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_user_name, sizeof(temp)-1);
 	printf("\tUser Name   :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_full_name, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_full_name, sizeof(temp)-1);
 	printf("\tFull Name   :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_home_dir, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_home_dir, sizeof(temp)-1);
 	printf("\tHome Drive  :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_dir_drive, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_dir_drive, sizeof(temp)-1);
 	printf("\tDir Drive   :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_profile_path, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_profile_path, sizeof(temp)-1);
 	printf("\tProfile Path:\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_logon_script, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_logon_script, sizeof(temp)-1);
 	printf("\tLogon Script:\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_acct_desc, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_acct_desc, sizeof(temp)-1);
 	printf("\tDescription :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_workstations, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_workstations, sizeof(temp)-1);
 	printf("\tWorkstations:\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_unknown_str, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_unknown_str, sizeof(temp)-1);
 	printf("\tUnknown Str :\t%s\n", temp);
 	
-	unistr2_to_ascii(temp, &usr->uni_munged_dial, sizeof(temp)-1);
+	unistr2_to_unix(temp, &usr->uni_munged_dial, sizeof(temp)-1);
 	printf("\tRemote Dial :\t%s\n", temp);
 	
 	printf("\tLogon Time               :\t%s\n", 
@@ -146,10 +146,10 @@ static void display_sam_unk_info_2(SAM_UNK_INFO_2 *info2)
 {
 	fstring name;
 
-	unistr2_to_ascii(name, &info2->uni_domain, sizeof(name) - 1); 
+	unistr2_to_unix(name, &info2->uni_domain, sizeof(name) - 1); 
 	printf("Domain:\t%s\n", name);
 
-	unistr2_to_ascii(name, &info2->uni_server, sizeof(name) - 1); 
+	unistr2_to_unix(name, &info2->uni_server, sizeof(name) - 1); 
 	printf("Server:\t%s\n", name);
 
 	printf("Total Users:\t%d\n", info2->num_domain_usrs);
@@ -175,13 +175,13 @@ static void display_sam_info_1(SAM_ENTRY1 *e1, SAM_STR1 *s1)
 	printf("RID: 0x%x ", e1->rid_user);
 	printf("acb: 0x%x ", e1->acb_info);
 	
-	unistr2_to_ascii(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s1->uni_acct_name, sizeof(tmp)-1);
 	printf("Account: %s\t", tmp);
 
-	unistr2_to_ascii(tmp, &s1->uni_full_name, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s1->uni_full_name, sizeof(tmp)-1);
 	printf("Name: %s\t", tmp);
 
-	unistr2_to_ascii(tmp, &s1->uni_acct_desc, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s1->uni_acct_desc, sizeof(tmp)-1);
 	printf("Desc: %s\n", tmp);
 }
 
@@ -193,10 +193,10 @@ static void display_sam_info_2(SAM_ENTRY2 *e2, SAM_STR2 *s2)
 	printf("RID: 0x%x ", e2->rid_user);
 	printf("acb: 0x%x ", e2->acb_info);
 	
-	unistr2_to_ascii(tmp, &s2->uni_srv_name, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s2->uni_srv_name, sizeof(tmp)-1);
 	printf("Account: %s\t", tmp);
 
-	unistr2_to_ascii(tmp, &s2->uni_srv_desc, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s2->uni_srv_desc, sizeof(tmp)-1);
 	printf("Name: %s\n", tmp);
 
 }
@@ -209,10 +209,10 @@ static void display_sam_info_3(SAM_ENTRY3 *e3, SAM_STR3 *s3)
 	printf("RID: 0x%x ", e3->rid_grp);
 	printf("attr: 0x%x ", e3->attr);
 	
-	unistr2_to_ascii(tmp, &s3->uni_grp_name, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s3->uni_grp_name, sizeof(tmp)-1);
 	printf("Account: %s\t", tmp);
 
-	unistr2_to_ascii(tmp, &s3->uni_grp_desc, sizeof(tmp)-1);
+	unistr2_to_unix(tmp, &s3->uni_grp_desc, sizeof(tmp)-1);
 	printf("Name: %s\n", tmp);
 
 }
@@ -308,9 +308,9 @@ static void display_group_info1(GROUP_INFO1 *info1)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &info1->uni_acct_name, sizeof(temp)-1);
+	unistr2_to_unix(temp, &info1->uni_acct_name, sizeof(temp)-1);
 	printf("\tGroup Name:\t%s\n", temp);
-	unistr2_to_ascii(temp, &info1->uni_acct_desc, sizeof(temp)-1);
+	unistr2_to_unix(temp, &info1->uni_acct_desc, sizeof(temp)-1);
 	printf("\tDescription:\t%s\n", temp);
 	printf("\tunk1:%d\n", info1->unknown_1);
 	printf("\tNum Members:%d\n", info1->num_members);
@@ -323,7 +323,7 @@ static void display_group_info4(GROUP_INFO4 *info4)
 {
 	fstring desc;
 
-	unistr2_to_ascii(desc, &info4->uni_acct_desc, sizeof(desc)-1);
+	unistr2_to_unix(desc, &info4->uni_acct_desc, sizeof(desc)-1);
 	printf("\tGroup Description:%s\n", desc);
 }
 

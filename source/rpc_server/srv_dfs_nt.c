@@ -62,9 +62,9 @@ WERROR _dfs_add(pipes_struct *p, DFS_Q_DFS_ADD* q_u, DFS_R_DFS_ADD *r_u)
 	return WERR_ACCESS_DENIED;
   }
 
-  unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
-  unistr2_to_ascii(servername, &q_u->ServerName, sizeof(servername)-1);
-  unistr2_to_ascii(sharename, &q_u->ShareName, sizeof(sharename)-1);
+  unistr2_to_dos(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
+  unistr2_to_dos(servername, &q_u->ServerName, sizeof(servername)-1);
+  unistr2_to_dos(sharename, &q_u->ShareName, sizeof(sharename)-1);
 
   DEBUG(5,("init_reply_dfs_add: Request to add %s -> %s\\%s.\n",
 	   dfspath, servername, sharename));
@@ -126,12 +126,12 @@ WERROR _dfs_remove(pipes_struct *p, DFS_Q_DFS_REMOVE *q_u,
 	return WERR_ACCESS_DENIED;
   }
 
-  unistr2_to_ascii(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
+  unistr2_to_dos(dfspath, &q_u->DfsEntryPath, sizeof(dfspath)-1);
   if(q_u->ptr_ServerName)
-    unistr2_to_ascii(servername, &q_u->ServerName, sizeof(servername)-1);
+    unistr2_to_dos(servername, &q_u->ServerName, sizeof(servername)-1);
 
   if(q_u->ptr_ShareName)
-    unistr2_to_ascii(sharename, &q_u->ShareName, sizeof(sharename)-1);
+    unistr2_to_dos(sharename, &q_u->ShareName, sizeof(sharename)-1);
 
   if(q_u->ptr_ServerName && q_u->ptr_ShareName)
     {
@@ -359,7 +359,7 @@ WERROR _dfs_get_info(pipes_struct *p, DFS_Q_DFS_GET_INFO *q_u,
   pstring path;
   struct junction_map jn;
 
-  unistr2_to_ascii(path, uni_path, sizeof(path)-1);
+  unistr2_to_dos(path, uni_path, sizeof(path)-1);
   if(!create_junction(path, &jn))
      return WERR_DFS_NO_SUCH_SERVER;
   

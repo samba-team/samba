@@ -989,7 +989,7 @@ WERROR _spoolss_open_printer_ex( pipes_struct *p, SPOOL_Q_OPEN_PRINTER_EX *q_u, 
 
 	/* some sanity check because you can open a printer or a print server */
 	/* aka: \\server\printer or \\server */
-	unistr2_to_ascii(name, printername, sizeof(name)-1);
+	unistr2_to_dos(name, printername, sizeof(name)-1);
 
 	DEBUGADD(3,("checking name: %s\n",name));
 
@@ -1437,8 +1437,8 @@ WERROR _spoolss_deleteprinterdriver(pipes_struct *p, SPOOL_Q_DELETEPRINTERDRIVER
 	NT_PRINTER_DRIVER_INFO_LEVEL	info;
 	int				version;
 	 
-	unistr2_to_ascii(driver, &q_u->driver, sizeof(driver)-1 );
-	unistr2_to_ascii(arch,   &q_u->arch,   sizeof(arch)-1   );
+	unistr2_to_dos(driver, &q_u->driver, sizeof(driver)-1 );
+	unistr2_to_dos(arch,   &q_u->arch,   sizeof(arch)-1   );
 	
 	/* check that we have a valid driver name first */
 	if ((version=get_version_id(arch)) == -1) {
@@ -1651,7 +1651,7 @@ WERROR _spoolss_getprinterdata(pipes_struct *p, SPOOL_Q_GETPRINTERDATA *q_u, SPO
 		return WERR_BADFID;
 	}
 	
-	unistr2_to_ascii(value, valuename, sizeof(value)-1);
+	unistr2_to_dos(value, valuename, sizeof(value)-1);
 	
 	if (Printer->printer_type == PRINTER_HANDLE_IS_PRINTSERVER)
 		found=getprinterdata_printer_server(p->mem_ctx, value, type, data, needed, *out_size);
@@ -1758,7 +1758,7 @@ WERROR _spoolss_rffpcnex(pipes_struct *p, SPOOL_Q_RFFPCNEX *q_u, SPOOL_R_RFFPCNE
 
 	Printer->notify.option=dup_spool_notify_option(option);
 
-	unistr2_to_ascii(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
+	unistr2_to_dos(Printer->notify.localmachine, localmachine, sizeof(Printer->notify.localmachine)-1);
 
 	/* connect to the client machine and send a ReplyOpenPrinter */
 	if(srv_spoolss_replyopenprinter(Printer->notify.localmachine,
@@ -3689,7 +3689,7 @@ WERROR _spoolss_enumprinters( pipes_struct *p, SPOOL_Q_ENUMPRINTERS *q_u, SPOOL_
 	 * Level 5: same as Level 2
 	 */
 
-	unistr2_to_ascii(name, servername, sizeof(name)-1);
+	unistr2_to_dos(name, servername, sizeof(name)-1);
 	strupper(name);
 
 	switch (level) {
@@ -4488,7 +4488,7 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 	*serverminorversion=0;
 
 	pstrcpy(servername, get_called_name());
-	unistr2_to_ascii(architecture, uni_arch, sizeof(architecture)-1);
+	unistr2_to_dos(architecture, uni_arch, sizeof(architecture)-1);
 
 	if (!get_printer_snum(p, handle, &snum))
 		return WERR_BADFID;
@@ -4585,7 +4585,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 	 */
 	
 	if (info_1->p_datatype != 0) {
-		unistr2_to_ascii(datatype, &info_1->datatype, sizeof(datatype));
+		unistr2_to_dos(datatype, &info_1->datatype, sizeof(datatype));
 		if (strcmp(datatype, "RAW") != 0) {
 			(*jobid)=0;
 			return WERR_INVALID_DATATYPE;
@@ -4597,7 +4597,7 @@ WERROR _spoolss_startdocprinter(pipes_struct *p, SPOOL_Q_STARTDOCPRINTER *q_u, S
 		return WERR_BADFID;
 	}
 
-	unistr2_to_ascii(jobname, &info_1->docname, sizeof(jobname));
+	unistr2_to_dos(jobname, &info_1->docname, sizeof(jobname));
 	
 	Printer->jobid = print_job_start(&user, snum, jobname);
 
@@ -5964,7 +5964,7 @@ WERROR _spoolss_enumprinterdrivers( pipes_struct *p, SPOOL_Q_ENUMPRINTERDRIVERS 
 	*needed=0;
 	*returned=0;
 
-	unistr2_to_ascii(architecture, environment, sizeof(architecture)-1);
+	unistr2_to_dos(architecture, environment, sizeof(architecture)-1);
 
 	switch (level) {
 	case 1:
@@ -6120,7 +6120,7 @@ WERROR _spoolss_getform(pipes_struct *p, SPOOL_Q_GETFORM *q_u, SPOOL_R_GETFORM *
 	spoolss_move_buffer(q_u->buffer, &r_u->buffer);
 	buffer = r_u->buffer;
 
-	unistr2_to_ascii(form_name, uni_formname, sizeof(form_name)-1);
+	unistr2_to_dos(form_name, uni_formname, sizeof(form_name)-1);
 
 	DEBUG(4,("_spoolss_getform\n"));
 	DEBUGADD(5,("Offered buffer size [%d]\n", offered));
@@ -6713,7 +6713,7 @@ static WERROR getprinterdriverdir_level_1(UNISTR2 *name, UNISTR2 *uni_environmen
 	pstring short_archi;
 	DRIVER_DIRECTORY_1 *info=NULL;
 
-	unistr2_to_ascii(long_archi, uni_environment, sizeof(long_archi)-1);
+	unistr2_to_dos(long_archi, uni_environment, sizeof(long_archi)-1);
 
 	if (get_short_archi(short_archi, long_archi)==False)
 		return WERR_INVALID_ENVIRONMENT;
@@ -7068,7 +7068,7 @@ WERROR _spoolss_deleteprinterdata(pipes_struct *p, SPOOL_Q_DELETEPRINTERDATA *q_
 		return status;
 
 	ZERO_STRUCTP(&param);
-	unistr2_to_ascii(param.value, value, sizeof(param.value)-1);
+	unistr2_to_dos(param.value, value, sizeof(param.value)-1);
 
 	if(!unlink_specific_param_if_exist(printer->info_2, &param))
 		status = WERR_INVALID_PARAM;
@@ -7678,8 +7678,8 @@ WERROR _spoolss_getprinterdataex(pipes_struct *p, SPOOL_Q_GETPRINTERDATAEX *q_u,
 
 	DEBUG(4,("_spoolss_getprinterdataex\n"));
 
-        unistr2_to_ascii(key, &q_u->keyname, sizeof(key) - 1);
-        unistr2_to_ascii(value, &q_u->valuename, sizeof(value) - 1);
+        unistr2_to_dos(key, &q_u->keyname, sizeof(key) - 1);
+        unistr2_to_dos(value, &q_u->valuename, sizeof(value) - 1);
 
 	/* in case of problem, return some default values */
 	*needed=0;
@@ -7757,7 +7757,7 @@ WERROR _spoolss_setprinterdataex(pipes_struct *p, SPOOL_Q_SETPRINTERDATAEX *q_u,
         /* From MSDN documentation of SetPrinterDataEx: pass request to
            SetPrinterData if key is "PrinterDriverData" */
 
-        unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+        unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
 
         if (strcmp(key, "PrinterDriverData") != 0)
 	        return WERR_INVALID_PARAM;
@@ -7795,7 +7795,7 @@ WERROR _spoolss_enumprinterkey(pipes_struct *p, SPOOL_Q_ENUMPRINTERKEY *q_u, SPO
 
 	DEBUG(4,("_spoolss_enumprinterkey\n"));
 
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
 
 	/* 
 	 * we only support enumating all keys (key == "")
@@ -7880,7 +7880,7 @@ WERROR _spoolss_enumprinterdataex(pipes_struct *p, SPOOL_Q_ENUMPRINTERDATAEX *q_
 	 * _spoolss_getprinterdataex() for details    --jerry
 	 */
    
-	unistr2_to_ascii(key, &q_u->key, sizeof(key) - 1);
+	unistr2_to_dos(key, &q_u->key, sizeof(key) - 1);
 	if (strcmp(key, "PrinterDriverData") != 0)
 	{
 		DEBUG(10,("_spoolss_enumprinterdataex: Unknown keyname [%s]\n", key));
@@ -7983,7 +7983,7 @@ static WERROR getprintprocessordirectory_level_1(UNISTR2 *name,
 	pstring short_archi;
 	PRINTPROCESSOR_DIRECTORY_1 *info=NULL;
 
-	unistr2_to_ascii(long_archi, environment, sizeof(long_archi)-1);
+	unistr2_to_dos(long_archi, environment, sizeof(long_archi)-1);
 
 	if (get_short_archi(short_archi, long_archi)==False)
 		return WERR_INVALID_ENVIRONMENT;

@@ -308,8 +308,8 @@ NTSTATUS cli_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 		if (dom_idx != 0xffffffff) {
 
-			unistr2_to_ascii(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)- 1);
-			unistr2_to_ascii(name, &t_names.uni_name[i], sizeof(name) - 1);
+			unistr2_to_unix(dom_name, &ref.ref_dom[dom_idx].uni_dom_name, sizeof(dom_name)- 1);
+			unistr2_to_unix(name, &t_names.uni_name[i], sizeof(name) - 1);
 
 			(*names)[i] = talloc_strdup(mem_ctx, name);
 			(*domains)[i] = talloc_strdup(mem_ctx, dom_name);
@@ -488,7 +488,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	case 3:
 		if (r.dom.id3.buffer_dom_name != 0) {
-			unistr2_to_ascii(domain_name,
+			unistr2_to_unix(domain_name,
 					 &r.dom.id3.
 					 uni_domain_name,
 					 sizeof (fstring) - 1);
@@ -503,7 +503,7 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	case 5:
 		
 		if (r.dom.id5.buffer_dom_name != 0) {
-			unistr2_to_ascii(domain_name, &r.dom.id5.
+			unistr2_to_unix(domain_name, &r.dom.id5.
 					 uni_domain_name,
 					 sizeof (fstring) - 1);
 		}
@@ -604,7 +604,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 		for (i = 0; i < r.num_domains; i++) {
 			fstring tmp;
 
-			unistr2_to_ascii(tmp, &r.uni_domain_name[i], 
+			unistr2_to_unix(tmp, &r.uni_domain_name[i], 
 					 sizeof(tmp) - 1);
 			(*domain_names)[i] = talloc_strdup(mem_ctx, tmp);
 			sid_copy(&(*domain_sids)[i], &r.domain_sid[i].sid);
@@ -688,7 +688,7 @@ NTSTATUS cli_lsa_enum_privilege(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	for (i = 0; i < r.count; i++) {
 		fstring name;
 
-		unistr2_to_ascii( name, &r.privs[i].name, sizeof(name)-1);
+		unistr2_to_unix( name, &r.privs[i].name, sizeof(name)-1);
 
 		(*privs_name)[i] = talloc_strdup(mem_ctx, name);
 
@@ -745,7 +745,7 @@ NTSTATUS cli_lsa_get_dispname(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Return output parameters */
 	
-	unistr2_to_ascii(description ,&r.desc, sizeof(description)-1);
+	unistr2_to_unix(description ,&r.desc, sizeof(description)-1);
 	*lang_id_desc = r.lang_id;
 
  done:

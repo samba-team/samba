@@ -142,8 +142,8 @@ static void display_srv_info_101(SRV_INFO_101 *sv101)
 	fstring name;
 	fstring comment;
 
-	unistr2_to_ascii(name, &sv101->uni_name, sizeof(name) - 1);
-	unistr2_to_ascii(comment, &sv101->uni_comment, sizeof(comment) - 1);
+	unistr2_to_unix(name, &sv101->uni_name, sizeof(name) - 1);
+	unistr2_to_unix(comment, &sv101->uni_comment, sizeof(comment) - 1);
 
 	display_server(name, sv101->srv_type, comment);
 
@@ -160,9 +160,9 @@ static void display_srv_info_102(SRV_INFO_102 *sv102)
 	fstring comment;
 	fstring usr_path;
 	
-	unistr2_to_ascii(name, &sv102->uni_name, sizeof(name) - 1);
-	unistr2_to_ascii(comment, &sv102->uni_comment, sizeof(comment) - 1);
-	unistr2_to_ascii(usr_path, &sv102->uni_usr_path, sizeof(usr_path) - 1);
+	unistr2_to_unix(name, &sv102->uni_name, sizeof(name) - 1);
+	unistr2_to_unix(comment, &sv102->uni_comment, sizeof(comment) - 1);
+	unistr2_to_unix(usr_path, &sv102->uni_usr_path, sizeof(usr_path) - 1);
 
 	display_server(name, sv102->srv_type, comment);
 

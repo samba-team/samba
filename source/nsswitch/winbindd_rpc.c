@@ -23,6 +23,24 @@
 
 #include "winbindd.h"
 
+/*******************************************************************
+ Duplicate a UNISTR2 string into a UNIX codepage null terminated char*
+ using a talloc context
+********************************************************************/
+
+static char *unistr2_tdup(TALLOC_CTX *ctx, const UNISTR2 *str)
+{
+	char *s;
+	int maxlen = (str->uni_str_len+1)*4;
+	if (!str->buffer)
+		return NULL;
+	s = (char *)talloc(ctx, maxlen); /* convervative */
+	if (!s)
+		return NULL;
+	unistr2_to_unix(s, str, maxlen);
+	return s;
+}
+
 /* Query display info for a domain.  This returns enough information plus a
    bit extra to give an overview of domain users for the User Manager
    application. */

@@ -94,7 +94,7 @@ static void display_dfs_info_1(DFS_INFO_1 *info1)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &info1->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info1->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 }
 
@@ -104,10 +104,10 @@ static void display_dfs_info_2(DFS_INFO_2 *info2)
 {
 	fstring temp;
 
-	unistr2_to_ascii(temp, &info2->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info2->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 
-	unistr2_to_ascii(temp, &info2->comment, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info2->comment, sizeof(temp) - 1);
 	printf("\tcomment: %s\n", temp);
 
 	printf("\tstate: %d\n", info2->state);
@@ -121,10 +121,10 @@ static void display_dfs_info_3(DFS_INFO_3 *info3)
 	fstring temp;
 	int i;
 
-	unistr2_to_ascii(temp, &info3->entrypath, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info3->entrypath, sizeof(temp) - 1);
 	printf("entrypath: %s\n", temp);
 
-	unistr2_to_ascii(temp, &info3->comment, sizeof(temp) - 1);
+	unistr2_to_unix(temp, &info3->comment, sizeof(temp) - 1);
 	printf("\tcomment: %s\n", temp);
 
 	printf("\tstate: %d\n", info3->state);
@@ -133,10 +133,10 @@ static void display_dfs_info_3(DFS_INFO_3 *info3)
 	for (i = 0; i < info3->num_storages; i++) {
 		DFS_STORAGE_INFO *dsi = &info3->storages[i];
 
-		unistr2_to_ascii(temp, &dsi->servername, sizeof(temp) - 1);
+		unistr2_to_unix(temp, &dsi->servername, sizeof(temp) - 1);
 		printf("\t\tstorage[%d] servername: %s\n", i, temp);
 
-		unistr2_to_ascii(temp, &dsi->sharename, sizeof(temp) - 1);
+		unistr2_to_unix(temp, &dsi->sharename, sizeof(temp) - 1);
 		printf("\t\tstorage[%d] sharename: %s\n", i, temp);
 	}
 }

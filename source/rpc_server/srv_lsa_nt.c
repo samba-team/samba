@@ -595,7 +595,7 @@ NTSTATUS _lsa_priv_get_dispname(pipes_struct *p, LSA_Q_PRIV_GET_DISPNAME *q_u, L
 	if (!find_policy_by_hnd(p, &q_u->pol, NULL))
 		return NT_STATUS_INVALID_HANDLE;
 
-	unistr2_to_ascii(name_asc, &q_u->name, sizeof(name_asc));
+	unistr2_to_dos(name_asc, &q_u->name, sizeof(name_asc));
 
 	DEBUG(0,("_lsa_priv_get_dispname: %s", name_asc));
 
