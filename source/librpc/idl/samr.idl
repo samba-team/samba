@@ -374,7 +374,11 @@
 
 	/************************/
 	/* Function    0x15     */
-	NTSTATUS samr_SET_GROUPINFO();
+	NTSTATUS samr_SetGroupInfo(
+		[in,ref]                  policy_handle *handle,
+		[in]                      uint16 level,
+		[in,switch_is(level),ref] samr_GroupInfo *info
+		);
 
 	/************************/
 	/* Function    0x16     */

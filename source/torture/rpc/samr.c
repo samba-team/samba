@@ -859,7 +859,9 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 {
 	NTSTATUS status;
 	struct samr_QueryGroupInfo r;
+	struct samr_SetGroupInfo s;
 	uint16 levels[] = {1, 2, 3, 4};
+	uint16 set_ok[] = {0, 1, 1, 1};
 	int i;
 	BOOL ret = True;
 
@@ -874,6 +876,29 @@ static BOOL test_QueryGroupInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("QueryGroupInfo level %u failed - %s\n", 
 			       levels[i], nt_errstr(status));
 			ret = False;
+		}
+
+		printf("Testing SetGroupInfo level %u\n", levels[i]);
+
+		s.in.handle = handle;
+		s.in.level = levels[i];
+		s.in.info = r.out.info;
+
+		status = dcerpc_samr_SetGroupInfo(p, mem_ctx, &s);
+		if (set_ok[i]) {
+			if (!NT_STATUS_IS_OK(status)) {
+				printf("SetGroupInfo level %u failed - %s\n", 
+				       r.in.level, nt_errstr(status));
+				ret = False;
+				continue;
+			}
+		} else {
+			if (!NT_STATUS_EQUAL(NT_STATUS_INVALID_INFO_CLASS, status)) {
+				printf("SetGroupInfo level %u gave %s - should have been NT_STATUS_INVALID_INFO_CLASS\n", 
+				       r.in.level, nt_errstr(status));
+				ret = False;
+				continue;
+			}
 		}
 	}
 
