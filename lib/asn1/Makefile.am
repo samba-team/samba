@@ -54,6 +54,7 @@ asn1_compile_LDADD = -L../roken -lroken @LEXLIB@
 CLEANFILES = lex.c parse.c parse.h asn1.h $(BUILT_SOURCES) $(foo) asn1_files
 
 lex.o: parse.h
+parse.c: parse.h
 
 $(foo) asn1.h: asn1_files
 
