@@ -72,8 +72,7 @@ krb4_authenticate (kx_context *kc, int s)
     const char *host = kc->host;
 
     if (kc->thisaddr->sa_family != AF_INET) {
-	warnx ("%s: used Kerberos v4 authentiocation on on non-IP4 address", 
-	       host);
+	warnx ("%s: used Kerberos v4 authentiocation on non-IP4 address", host);
 	return -1;
     }
 
