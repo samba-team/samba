@@ -1,5 +1,7 @@
 2003-09-19  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/init_creds.c (krb5_get_init_creds_opt_copy): add
+	
 	* lib/krb5/rd_req.c (krb5_rd_req): allow caller to pass in a key
 	in the auth_context, they way processes that doesn't use the
 	keytab can still pass in the key of the service (matches behavior
