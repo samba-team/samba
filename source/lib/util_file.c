@@ -371,6 +371,8 @@ char *file_load(char *fname, size_t *size)
 	int fd;
 	SMB_STRUCT_STAT sbuf;
 	char *p;
+
+	if (!fname || !*fname) return NULL;
 	
 	fd = open(fname,O_RDONLY);
 	if (fd == -1) return NULL;
