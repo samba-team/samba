@@ -1847,6 +1847,7 @@ dologout(int status)
 	ftpd_logwtmp(ttyline, "", "");
 #ifdef KRB4
 	cond_kdestroy();
+#endif
     }
     /* beware of flushing buffers after a SIGPIPE */
 #ifdef XXX
