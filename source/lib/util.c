@@ -769,7 +769,7 @@ SMB_OFF_T transfer_file(int infd,int outfd,SMB_OFF_T n)
  Sleep for a specified number of milliseconds.
 ********************************************************************/
 
-void msleep(unsigned int t)
+void smb_msleep(unsigned int t)
 {
 	unsigned int tdiff=0;
 	struct timeval tval,t1,t2;  

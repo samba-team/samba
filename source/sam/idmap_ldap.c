@@ -351,7 +351,7 @@ static NTSTATUS ldap_next_rid(struct ldap_idmap_state *state, uint32 *rid,
 			attempts += 1;
 			
 			sleeptime %= 100;
-			msleep(sleeptime);
+			smb_msleep(sleeptime);
 		}
 	}
 

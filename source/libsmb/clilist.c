@@ -232,7 +232,7 @@ int cli_list_new(struct cli_state *cli,const char *Mask,uint16 attribute,
 			cli_dos_error(cli, &eclass, &ecode);
 			if (eclass != ERRSRV || ecode != ERRerror)
 				break;
-			msleep(100);
+			smb_msleep(100);
 			continue;
 		}
 
