@@ -53,10 +53,10 @@ static NTSTATUS do_map_to_guest(NTSTATUS status, auth_serversupplied_info **serv
 	return status;
 }
 
-
 /****************************************************************************
  Add the standard 'Samba' signature to the end of the session setup.
 ****************************************************************************/
+
 static int add_signature(char *outbuf, char *p)
 {
 	char *start = p;
@@ -72,8 +72,9 @@ static int add_signature(char *outbuf, char *p)
 }
 
 /****************************************************************************
-send a security blob via a session setup reply
+ Send a security blob via a session setup reply.
 ****************************************************************************/
+
 static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 				 DATA_BLOB blob, NTSTATUS nt_status)
 {
@@ -101,6 +102,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 /****************************************************************************
  Do a 'guest' logon, getting back the 
 ****************************************************************************/
+
 static NTSTATUS check_guest_password(auth_serversupplied_info **server_info) 
 {
 	struct auth_context *auth_context;
@@ -267,12 +269,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 }
 #endif
 
-
 /****************************************************************************
- send a session setup reply, wrapped in SPNEGO.
- get vuid and check first.
- end the NTLMSSP exchange context if we are OK/complete fail
+ Send a session setup reply, wrapped in SPNEGO.
+ Get vuid and check first.
+ End the NTLMSSP exchange context if we are OK/complete fail
 ***************************************************************************/
+
 static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
@@ -326,8 +328,9 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 }
 
 /****************************************************************************
-reply to a session setup spnego negotiate packet
+ Reply to a session setup spnego negotiate packet.
 ****************************************************************************/
+
 static int reply_spnego_negotiate(connection_struct *conn, 
 				  char *inbuf,
 				  char *outbuf,
@@ -387,11 +390,11 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	/* already replied */
 	return -1;
 }
-
 	
 /****************************************************************************
-reply to a session setup spnego auth packet
+ Reply to a session setup spnego auth packet.
 ****************************************************************************/
+
 static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     int length, int bufsize,
 			     DATA_BLOB blob1)
@@ -425,10 +428,10 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	return -1;
 }
 
-
 /****************************************************************************
-reply to a session setup command
+ Reply to a session setup command.
 ****************************************************************************/
+
 static int reply_sesssetup_and_X_spnego(connection_struct *conn, char *inbuf,
 					char *outbuf,
 					int length,int bufsize)
@@ -509,8 +512,9 @@ static void setup_new_vc_session(void)
 }
 
 /****************************************************************************
-reply to a session setup command
+ Reply to a session setup command.
 ****************************************************************************/
+
 int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			  int length,int bufsize)
 {

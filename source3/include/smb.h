@@ -45,6 +45,7 @@
 #define False (0)
 #define True (1)
 #define Auto (2)
+#define Required (3)
 
 #ifndef _BOOL
 typedef int BOOL;

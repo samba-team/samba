@@ -66,7 +66,7 @@ typedef struct smb_sign_info {
 	BOOL negotiated_smb_signing;
 	BOOL allow_smb_signing;
 	BOOL doing_signing;
-	BOOL mandetory_signing;
+	BOOL mandatory_signing;
 } smb_sign_info;
 
 struct cli_state {
