@@ -36,6 +36,9 @@ enum winbindd_result winbindd_lookupsid(struct winbindd_cli_state *state)
 	fstring name;
 	fstring dom_name;
 
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
 	DEBUG(3, ("[%5d]: lookupsid %s\n", state->pid, 
 		  state->request.data.sid));
 
@@ -79,6 +82,12 @@ enum winbindd_result winbindd_lookupname(struct winbindd_cli_state *state)
 	DOM_SID sid;
 	struct winbindd_domain *domain;
 
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.dom_name)-1]='\0';
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.name.name)-1]='\0';
+
 	DEBUG(3, ("[%5d]: lookupname %s%s%s\n", state->pid,
 		  state->request.data.name.dom_name, 
 		  lp_winbind_separator(),
@@ -112,6 +121,9 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
 
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
+
 	DEBUG(3, ("[%5d]: sid to uid %s\n", state->pid,
 		  state->request.data.sid));
 
@@ -138,6 +150,9 @@ enum winbindd_result winbindd_sid_to_uid(struct winbindd_cli_state *state)
 enum winbindd_result winbindd_sid_to_gid(struct winbindd_cli_state *state)
 {
 	DOM_SID sid;
+
+	/* Ensure null termination */
+	state->request.data.sid[sizeof(state->request.data.sid)-1]='\0';
 
 	DEBUG(3, ("[%5d]: sid to gid %s\n", state->pid, 
 		  state->request.data.sid));

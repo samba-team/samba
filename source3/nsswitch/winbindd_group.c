@@ -196,6 +196,9 @@ enum winbindd_result winbindd_getgrnam(struct winbindd_cli_state *state)
 	gid_t gid;
 	int gr_mem_len;
 	
+	/* Ensure null termination */
+	state->request.data.groupname[sizeof(state->request.data.groupname)-1]='\0';
+
 	DEBUG(3, ("[%5d]: getgrnam %s\n", state->pid,
 		  state->request.data.groupname));
 
@@ -783,6 +786,9 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	int i;
 	TALLOC_CTX *mem_ctx;
 	
+	/* Ensure null termination */
+	state->request.data.username[sizeof(state->request.data.username)-1]='\0';
+
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
 

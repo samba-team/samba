@@ -122,6 +122,9 @@ enum winbindd_result winbindd_wins_byip(struct winbindd_cli_state *state)
 	int i, count, maxlen, size;
 	struct node_status *status;
 
+	/* Ensure null termination */
+	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
+
 	DEBUG(3, ("[%5d]: wins_byip %s\n", state->pid,
 		state->request.data.winsreq));
 
@@ -165,6 +168,9 @@ enum winbindd_result winbindd_wins_byname(struct winbindd_cli_state *state)
 	int i, count, maxlen, size;
 	fstring response;
 	char * addr;
+
+	/* Ensure null termination */
+	state->request.data.winsreq[sizeof(state->request.data.winsreq)-1]='\0';
 
 	DEBUG(3, ("[%5d]: wins_byname %s\n", state->pid,
 		state->request.data.winsreq));
