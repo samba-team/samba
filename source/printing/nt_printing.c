@@ -1374,14 +1374,12 @@ uint32 nt_printing_setsec(char *printername, SEC_DESC_BUF *secdesc_ctr)
 	fstring key;
 	uint32 status;
 
-	prs_init(&ps, 0, 4, MARSHALL);
-	ps.is_dynamic = True;
+	prs_init(&ps, (uint32)sec_desc_size(secdesc_ctr->sec), 4, MARSHALL);
 
 	if (!sec_io_desc_buf("nt_printing_setsec", &secdesc_ctr, &ps, 1)) {
 		status = ERROR_INVALID_FUNCTION;
 		goto out;
 	}
-
 
 	slprintf(key, sizeof(key), "SECDESC/%s", printername);
 

@@ -251,17 +251,40 @@ BOOL sec_io_acl(char *desc, SEC_ACL **ppsa, prs_struct *ps, int depth)
 }
 
 /*******************************************************************
+ Works out the linearization size of a SEC_DESC.
+********************************************************************/
+
+size_t sec_desc_size(SEC_DESC *psd)
+{
+	size_t offset = SD_HEADER_SIZE;
+
+	if (psd->owner_sid != NULL)
+		offset += ((sid_size(psd->owner_sid) + 3) & ~3);
+
+	if (psd->grp_sid != NULL)
+		offset += ((sid_size(psd->grp_sid) + 3) & ~3);
+
+	if (psd->sacl != NULL)
+		offset += ((psd->sacl->size + 3) & ~3);
+
+	if (psd->dacl != NULL)
+		offset += ((psd->dacl->size + 3) & ~3);
+
+	return offset;
+}
+
+/*******************************************************************
  Creates a SEC_DESC structure
 ********************************************************************/
 
 SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 			DOM_SID *owner_sid, DOM_SID *grp_sid,
-			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sec_desc_size)
+			SEC_ACL *sacl, SEC_ACL *dacl, size_t *sd_size)
 {
 	SEC_DESC *dst;
 	uint32 offset;
 
-	*sec_desc_size = 0;
+	*sd_size = 0;
 
 	if(( dst = (SEC_DESC *)malloc(sizeof(SEC_DESC))) == NULL)
 		return NULL;
@@ -288,7 +311,7 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 	if(dacl && ((dst->dacl = dup_sec_acl(dacl)) == NULL))
 		goto error_exit;
 		
-	offset = 0x0;
+	offset = 0;
 
 	/*
 	 * Work out the linearization sizes.
@@ -330,12 +353,12 @@ SEC_DESC *make_sec_desc(uint16 revision, uint16 type,
 		offset += ((dacl->size + 3) & ~3);
 	}
 
-	*sec_desc_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
+	*sd_size = (size_t)((offset == 0) ? SD_HEADER_SIZE : offset);
 	return dst;
 
 error_exit:
 
-	*sec_desc_size = 0;
+	*sd_size = 0;
 	free_sec_desc(&dst);
 	return NULL;
 }
@@ -382,10 +405,10 @@ void free_sec_desc(SEC_DESC **ppsd)
 ********************************************************************/
 
 SEC_DESC *make_standard_sec_desc(DOM_SID *owner_sid, DOM_SID *grp_sid,
-				 SEC_ACL *dacl, size_t *sec_desc_size)
+				 SEC_ACL *dacl, size_t *sd_size)
 {
 	return make_sec_desc(1, SEC_DESC_SELF_RELATIVE|SEC_DESC_DACL_PRESENT,
-			     owner_sid, grp_sid, NULL, dacl, sec_desc_size);
+			     owner_sid, grp_sid, NULL, dacl, sd_size);
 }
 
 
