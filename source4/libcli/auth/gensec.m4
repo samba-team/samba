@@ -1,5 +1,6 @@
 if test t$SMB_EXT_LIB_ENABLE_KRB5 = tYES; then
-	SMB_MODULE_DEFAULT(gensec_krb5, STATIC)
+	/* enable this when krb5 is fully working */
+	SMB_MODULE_DEFAULT(gensec_krb5, NOT)
 fi
 
 SMB_SUBSYSTEM_MK(GENSEC,libcli/auth/gensec.mk)
