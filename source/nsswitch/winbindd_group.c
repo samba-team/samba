@@ -168,8 +168,8 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	*gr_mem = buf;
 	*gr_mem_len = buf_len;
 
-	DEBUG(10, ("fill_grent_mem(): num_mem = %d, len = %d, mem = %s\n", *num_gr_mem,
-		   buf_len, buf));
+	DEBUG(10, ("fill_grent_mem(): num_mem = %d, len = %d, mem = %s\n", 
+                   *num_gr_mem, buf_len, num_gr_mem ? buf : "NULL"));
 
 	result = True;
 
@@ -393,6 +393,9 @@ enum winbindd_result winbindd_setgrent(struct winbindd_cli_state *state)
 	
 	/* Create sam pipes for each domain we know about */
 	
+        if (domain_list == NULL)
+                get_domain_info();
+
 	for (tmp = domain_list; tmp != NULL; tmp = tmp->next) {
 		struct getent_state *domain_state;
 		
@@ -756,6 +759,9 @@ enum winbindd_result winbindd_list_groups(struct winbindd_cli_state *state)
         /* Enumerate over trusted domains */
 
 	ZERO_STRUCT(groups);
+
+        if (domain_list == NULL)
+                get_domain_info();
 
         for (domain = domain_list; domain; domain = domain->next) {
 
