@@ -22,7 +22,7 @@ krb5_rd_priv(krb5_context context,
       r = KRB5KRB_AP_ERR_BADVERSION;
       goto failure;
   }
-  if (priv.msg_type != krb_safe) {
+  if (priv.msg_type != krb_priv) {
       r = KRB5KRB_AP_ERR_MSG_TYPE;
       goto failure;
   }
