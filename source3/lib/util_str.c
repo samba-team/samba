@@ -21,13 +21,13 @@
 
 #include "includes.h"
 
-/****************************************************************************
- Get the next token from a string, return False if none found.
- Handles double-quotes. 
- Based on a routine by GJC@VILLAGE.COM. 
- Extensively modified by Andrew.Tridgell@anu.edu.au
-****************************************************************************/
-
+/**
+ * Get the next token from a string, return False if none found.
+ * Handles double-quotes.
+ * 
+ * Based on a routine by GJC@VILLAGE.COM. 
+ * Extensively modified by Andrew.Tridgell@anu.edu.au
+ **/
 BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 {
 	const char *s;
@@ -67,11 +67,11 @@ BOOL next_token(const char **ptr,char *buff, const char *sep, size_t bufsize)
 	return(True);
 }
 
-/****************************************************************************
+/**
 This is like next_token but is not re-entrant and "remembers" the first 
 parameter so you can pass NULL. This is useful for user interface code
 but beware the fact that it is not re-entrant!
-****************************************************************************/
+**/
 
 static char *last_ptr=NULL;
 
@@ -93,10 +93,10 @@ void set_first_token(char *ptr)
 	last_ptr = ptr;
 }
 
-/****************************************************************************
+/**
  Convert list of tokens to array; dependent on above routine.
  Uses last_ptr from above - bit of a hack.
-****************************************************************************/
+**/
 
 char **toktocliplist(int *ctok, const char *sep)
 {
@@ -139,9 +139,9 @@ char **toktocliplist(int *ctok, const char *sep)
 	return ret;
 }
 
-/*******************************************************************
+/**
  Case insensitive string compararison.
-********************************************************************/
+**/
 
 int StrCaseCmp(const char *s, const char *t)
 {
@@ -151,9 +151,9 @@ int StrCaseCmp(const char *s, const char *t)
 	return strcmp(buf1,buf2);
 }
 
-/*******************************************************************
+/**
  Case insensitive string compararison, length limited.
-********************************************************************/
+**/
 
 int StrnCaseCmp(const char *s, const char *t, size_t n)
 {
@@ -163,9 +163,9 @@ int StrnCaseCmp(const char *s, const char *t, size_t n)
 	return strncmp(buf1,buf2,n);
 }
 
-/*******************************************************************
+/**
  Compare 2 strings.
-********************************************************************/
+**/
 
 BOOL strequal(const char *s1, const char *s2)
 {
@@ -177,9 +177,9 @@ BOOL strequal(const char *s1, const char *s2)
 	return(StrCaseCmp(s1,s2)==0);
 }
 
-/*******************************************************************
+/**
  Compare 2 strings up to and including the nth char.
-******************************************************************/
+**/
 
 BOOL strnequal(const char *s1,const char *s2,size_t n)
 {
@@ -191,9 +191,9 @@ BOOL strnequal(const char *s1,const char *s2,size_t n)
   return(StrnCaseCmp(s1,s2,n)==0);
 }
 
-/*******************************************************************
+/**
  Compare 2 strings (case sensitive).
-********************************************************************/
+**/
 
 BOOL strcsequal(const char *s1,const char *s2)
 {
@@ -205,9 +205,9 @@ BOOL strcsequal(const char *s1,const char *s2)
   return(strcmp(s1,s2)==0);
 }
 
-/***************************************************************************
+/**
 Do a case-insensitive, whitespace-ignoring string compare.
-***************************************************************************/
+**/
 
 int strwicmp(const char *psz1, const char *psz2)
 {
@@ -236,9 +236,9 @@ int strwicmp(const char *psz1, const char *psz2)
 }
 
 
-/*******************************************************************
+/**
  Convert a string to upper case, but don't modify it.
-********************************************************************/
+**/
 
 char *strupper_static(const char *s)
 {
@@ -250,9 +250,9 @@ char *strupper_static(const char *s)
 	return str;
 }
 
-/*******************************************************************
+/**
  Convert a string to "normal" form.
-********************************************************************/
+**/
 
 void strnorm(char *s)
 {
@@ -263,9 +263,9 @@ void strnorm(char *s)
 		strlower(s);
 }
 
-/*******************************************************************
+/**
  Check if a string is in "normal" case.
-********************************************************************/
+**/
 
 BOOL strisnormal(const char *s)
 {
@@ -277,10 +277,10 @@ BOOL strisnormal(const char *s)
 }
 
 
-/****************************************************************************
+/**
  String replace.
  NOTE: oldc and newc must be 7 bit characters
-****************************************************************************/
+**/
 
 void string_replace(char *s,char oldc,char newc)
 {
@@ -289,9 +289,9 @@ void string_replace(char *s,char oldc,char newc)
 	pull_ucs2(NULL, s, tmpbuf, -1, sizeof(tmpbuf), STR_TERMINATE);
 }
 
-/*******************************************************************
+/**
  Skip past some strings in a buffer.
-********************************************************************/
+**/
 
 char *skip_string(char *buf,size_t n)
 {
@@ -300,11 +300,11 @@ char *skip_string(char *buf,size_t n)
 	return(buf);
 }
 
-/*******************************************************************
+/**
  Count the number of characters in a string. Normally this will
  be the same as the number of bytes in a string for single byte strings,
  but will be different for multibyte.
-********************************************************************/
+**/
 
 size_t str_charnum(const char *s)
 {
@@ -313,11 +313,11 @@ size_t str_charnum(const char *s)
 	return strlen_w(tmpbuf2);
 }
 
-/*******************************************************************
+/**
  Count the number of characters in a string. Normally this will
  be the same as the number of bytes in a string for single byte strings,
  but will be different for multibyte.
-********************************************************************/
+**/
 
 size_t str_ascii_charnum(const char *s)
 {
@@ -326,9 +326,9 @@ size_t str_ascii_charnum(const char *s)
 	return strlen(tmpbuf2);
 }
 
-/*******************************************************************
+/**
  Trim the specified elements off the front and back of a string.
-********************************************************************/
+**/
 
 BOOL trim_string(char *s,const char *front,const char *back)
 {
@@ -364,9 +364,9 @@ BOOL trim_string(char *s,const char *front,const char *back)
 	return ret;
 }
 
-/****************************************************************************
+/**
  Does a string have any uppercase chars in it?
-****************************************************************************/
+**/
 
 BOOL strhasupper(const char *s)
 {
@@ -378,9 +378,9 @@ BOOL strhasupper(const char *s)
 	return(False);
 }
 
-/****************************************************************************
+/**
  Does a string have any lowercase chars in it?
-****************************************************************************/
+**/
 
 BOOL strhaslower(const char *s)
 {
@@ -392,9 +392,9 @@ BOOL strhaslower(const char *s)
 	return(False);
 }
 
-/****************************************************************************
+/**
  Find the number of 'c' chars in a string
-****************************************************************************/
+**/
 
 size_t count_chars(const char *s,char c)
 {
@@ -407,9 +407,9 @@ size_t count_chars(const char *s,char c)
 	return(count);
 }
 
-/*******************************************************************
+/**
 Return True if a string consists only of one particular character.
-********************************************************************/
+**/
 
 BOOL str_is_all(const char *s,char c)
 {
@@ -428,10 +428,10 @@ BOOL str_is_all(const char *s,char c)
 	return True;
 }
 
-/*******************************************************************
+/**
  Safe string copy into a known length string. maxlength does not
  include the terminating zero.
-********************************************************************/
+**/
 
 char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 {
@@ -468,10 +468,10 @@ char *safe_strcpy(char *dest,const char *src, size_t maxlength)
 	return dest;
 }  
 
-/*******************************************************************
+/**
  Safe string cat into a string. maxlength does not
  include the terminating zero.
-********************************************************************/
+**/
 
 char *safe_strcat(char *dest, const char *src, size_t maxlength)
 {
@@ -503,12 +503,12 @@ char *safe_strcat(char *dest, const char *src, size_t maxlength)
 	return dest;
 }
 
-/*******************************************************************
+/**
  Paranoid strcpy into a buffer of given length (includes terminating
  zero. Strips out all but 'a-Z0-9' and the character in other_safe_chars
  and replaces with '_'. Deliberately does *NOT* check for multibyte
  characters. Don't change it !
-********************************************************************/
+**/
 
 char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, size_t maxlength)
 {
@@ -544,10 +544,10 @@ char *alpha_strcpy(char *dest, const char *src, const char *other_safe_chars, si
 	return dest;
 }
 
-/****************************************************************************
+/**
  Like strncpy but always null terminates. Make sure there is room!
  The variable n should always be one less than the available size.
-****************************************************************************/
+**/
 
 char *StrnCpy(char *dest,const char *src,size_t n)
 {
@@ -564,10 +564,10 @@ char *StrnCpy(char *dest,const char *src,size_t n)
 	return(dest);
 }
 
-/****************************************************************************
+/**
  Like strncpy but copies up to the character marker.  always null terminates.
  returns a pointer to the character marker in the source string (src).
-****************************************************************************/
+**/
 
 char *strncpyn(char *dest, const char *src, size_t n, char c)
 {
@@ -587,7 +587,7 @@ char *strncpyn(char *dest, const char *src, size_t n, char c)
 	return p;
 }
 
-/*************************************************************
+/**
  Routine to get hex characters and turn them into a 16 byte array.
  the array can be variable length, and any non-hex-numeric
  characters are skipped.  "0xnn" or "0Xnn" is specially catered
@@ -595,7 +595,7 @@ char *strncpyn(char *dest, const char *src, size_t n, char c)
 
  valid examples: "0A5D15"; "0x15, 0x49, 0xa2"; "59\ta9\te3\n"
 
-**************************************************************/
+**/
 
 size_t strhex_to_str(char *p, size_t len, const char *strhex)
 {
@@ -632,9 +632,9 @@ size_t strhex_to_str(char *p, size_t len, const char *strhex)
 	return num_chars;
 }
 
-/****************************************************************************
+/**
  Check if a string is part of a list.
-****************************************************************************/
+**/
 
 BOOL in_list(char *s,char *list,BOOL casesensitive)
 {
@@ -659,9 +659,9 @@ BOOL in_list(char *s,char *list,BOOL casesensitive)
 /* this is used to prevent lots of mallocs of size 1 */
 static char *null_string = NULL;
 
-/****************************************************************************
+/**
  Set a string value, allocing the space for the string
-****************************************************************************/
+**/
 
 static BOOL string_init(char **dest,const char *src)
 {
@@ -690,9 +690,9 @@ static BOOL string_init(char **dest,const char *src)
 	return(True);
 }
 
-/****************************************************************************
+/**
  Free a string value.
-****************************************************************************/
+**/
 
 void string_free(char **s)
 {
@@ -703,10 +703,10 @@ void string_free(char **s)
 	SAFE_FREE(*s);
 }
 
-/****************************************************************************
+/**
  Set a string value, deallocating any existing space, and allocing the space
  for the string
-****************************************************************************/
+**/
 
 BOOL string_set(char **dest,const char *src)
 {
@@ -714,7 +714,7 @@ BOOL string_set(char **dest,const char *src)
 	return(string_init(dest,src));
 }
 
-/****************************************************************************
+/**
  Substitute a string for a pattern in another string. Make sure there is 
  enough room!
 
@@ -724,7 +724,7 @@ BOOL string_set(char **dest,const char *src)
  Any of " ; ' $ or ` in the insert string are replaced with _
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
-****************************************************************************/
+**/
 
 void string_sub(char *s,const char *pattern, const char *insert, size_t len)
 {
@@ -782,12 +782,12 @@ void pstring_sub(char *s,const char *pattern,const char *insert)
 	string_sub(s, pattern, insert, sizeof(pstring));
 }
 
-/****************************************************************************
+/**
  Similar to string_sub, but it will accept only allocated strings
  and may realloc them so pay attention at what you pass on no
  pointers inside strings, no pstrings or const may be passed
  as string.
-****************************************************************************/
+**/
 
 char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 {
@@ -848,12 +848,12 @@ char *realloc_string_sub(char *string, const char *pattern, const char *insert)
 	return string;
 }
 
-/****************************************************************************
+/**
  Similar to string_sub() but allows for any character to be substituted. 
  Use with caution!
  if len==0 then the string cannot be extended. This is different from the old
  use of len==0 which was for no length checks to be done.
-****************************************************************************/
+**/
 
 void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 {
@@ -889,12 +889,12 @@ void all_string_sub(char *s,const char *pattern,const char *insert, size_t len)
 	}
 }
 
-/****************************************************************************
+/**
  Similar to all_string_sub but for unicode strings.
  Return a new allocated unicode string.
  similar to string_sub() but allows for any character to be substituted.
  Use with caution!
-****************************************************************************/
+**/
 
 smb_ucs2_t *all_string_sub_w(const smb_ucs2_t *s, const smb_ucs2_t *pattern,
 				const smb_ucs2_t *insert)
@@ -954,9 +954,9 @@ smb_ucs2_t *all_string_sub_wa(smb_ucs2_t *s, const char *pattern,
 	return all_string_sub_w(s, p, i);
 }
 
-/****************************************************************************
+/**
  Splits out the front and back at a separator.
-****************************************************************************/
+**/
 
 void split_at_last_component(char *path, char *front, char sep, char *back)
 {
@@ -978,9 +978,9 @@ void split_at_last_component(char *path, char *front, char sep, char *back)
 	}
 }
 
-/****************************************************************************
+/**
  Write an octal as a string.
-****************************************************************************/
+**/
 
 const char *octal_string(int i)
 {
@@ -992,9 +992,9 @@ const char *octal_string(int i)
 }
 
 
-/****************************************************************************
+/**
  Truncate a string at a specified length.
-****************************************************************************/
+**/
 
 char *string_truncate(char *s, int length)
 {
@@ -1003,10 +1003,10 @@ char *string_truncate(char *s, int length)
 	return s;
 }
 
-/****************************************************************************
+/**
  Strchr and strrchr_m are very hard to do on general multi-byte strings. 
  We convert via ucs2 for now.
-****************************************************************************/
+**/
 
 char *strchr_m(const char *s, char c)
 {
@@ -1038,9 +1038,9 @@ char *strrchr_m(const char *s, char c)
 	return (char *)(s+strlen(s2));
 }
 
-/*******************************************************************
+/**
  Convert a string to lower case.
-********************************************************************/
+**/
 
 void strlower_m(char *s)
 {
@@ -1062,9 +1062,9 @@ void strlower_m(char *s)
 	unix_strlower(s,strlen(s)+1,s,strlen(s)+1);	
 }
 
-/*******************************************************************
+/**
  Duplicate convert a string to lower case.
-********************************************************************/
+**/
 
 char *strdup_lower(const char *s)
 {
@@ -1077,9 +1077,9 @@ char *strdup_lower(const char *s)
 	return t;
 }
 
-/*******************************************************************
+/**
  Convert a string to upper case.
-********************************************************************/
+**/
 
 void strupper_m(char *s)
 {
@@ -1101,9 +1101,9 @@ void strupper_m(char *s)
 	unix_strupper(s,strlen(s)+1,s,strlen(s)+1);	
 }
 
-/*******************************************************************
+/**
  Convert a string to upper case.
-********************************************************************/
+**/
 
 char *strdup_upper(const char *s)
 {
@@ -1116,11 +1116,11 @@ char *strdup_upper(const char *s)
 	return t;
 }
 
-/*******************************************************************
+/**
  Return a RFC2254 binary string representation of a buffer.
  Used in LDAP filters.
  Caller must free.
-********************************************************************/
+**/
 
 char *binary_string(char *buf, int len)
 {
@@ -1140,9 +1140,9 @@ char *binary_string(char *buf, int len)
 	return s;
 }
 
-/*******************************************************************
+/**
  Just a typesafety wrapper for snprintf into a pstring.
-********************************************************************/
+**/
 
  int pstr_sprintf(pstring s, const char *fmt, ...)
 {
@@ -1155,9 +1155,9 @@ char *binary_string(char *buf, int len)
 	return ret;
 }
 
-/*******************************************************************
+/**
  Just a typesafety wrapper for snprintf into a fstring.
-********************************************************************/
+**/
 
  int fstr_sprintf(fstring s, const char *fmt, ...)
 {
@@ -1171,9 +1171,9 @@ char *binary_string(char *buf, int len)
 }
 
 #ifndef HAVE_STRNDUP
-/*******************************************************************
+/**
  Some platforms don't have strndup.
-********************************************************************/
+**/
 
  char *strndup(const char *s, size_t n)
 {
@@ -1191,9 +1191,9 @@ char *binary_string(char *buf, int len)
 #endif
 
 #ifndef HAVE_STRNLEN
-/*******************************************************************
+/**
  Some platforms don't have strnlen
-********************************************************************/
+**/
 
  size_t strnlen(const char *s, size_t n)
 {
@@ -1204,9 +1204,9 @@ char *binary_string(char *buf, int len)
 }
 #endif
 
-/***********************************************************
+/**
  List of Strings manipulation functions
-***********************************************************/
+**/
 
 #define S_LIST_ABS 16 /* List Allocation Block Size */
 
@@ -1299,10 +1299,9 @@ BOOL str_list_copy(char ***dest, const char **src)
 	return True;	
 }
 
-/***********************************************************
- Return true if all the elements of the list match exactly.
-***********************************************************/
-
+/**
+ * Return true if all the elements of the list match exactly.
+ **/
 BOOL str_list_compare(char **list1, char **list2)
 {
 	int num;
@@ -1507,9 +1506,9 @@ void ipstr_list_free(char* ipstr_list)
 }
 
 
-/***********************************************************
+/**
  Unescape a URL encoded string, in place.
-***********************************************************/
+**/
 
 void rfc1738_unescape(char *buf)
 {
@@ -1549,9 +1548,9 @@ void rfc1738_unescape(char *buf)
 
 static const char *b64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/***************************************************************************
-decode a base64 string into a DATA_BLOB - simple and slow algorithm
-  ***************************************************************************/
+/**
+ * Decode a base64 string into a DATA_BLOB - simple and slow algorithm
+ **/
 DATA_BLOB base64_decode_data_blob(const char *s)
 {
 	int bit_offset, byte_offset, idx, i, n;
@@ -1583,9 +1582,9 @@ DATA_BLOB base64_decode_data_blob(const char *s)
 	return decoded;
 }
 
-/***************************************************************************
-decode a base64 string in-place - wrapper for the above
-***************************************************************************/
+/**
+ * Decode a base64 string in-place - wrapper for the above
+ **/
 void base64_decode(char *s)
 {
 	DATA_BLOB decoded = base64_decode_data_blob(s);
@@ -1596,11 +1595,11 @@ void base64_decode(char *s)
 	s[decoded.length] = '\0';
 }
 
-/***************************************************************************
-encode a base64 string into a malloc()ed string caller to free.
-
-From SQUID: adopted from http://ftp.sunet.se/pub2/gnu/vm/base64-encode.c with adjustments
-***************************************************************************/
+/**
+ * Encode a base64 string into a malloc()ed string caller to free.
+ *
+ *From SQUID: adopted from http://ftp.sunet.se/pub2/gnu/vm/base64-encode.c with adjustments
+ **/
 char * base64_encode_data_blob(DATA_BLOB data)
 {
 	int bits = 0;
