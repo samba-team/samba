@@ -3,6 +3,7 @@
    Version 1.9.
    file opening and share modes
    Copyright (C) Andrew Tridgell 1992-1998
+   Copyright (C) Jeremy Allison 2001
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -542,8 +543,8 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
            * as exlusive.... The process *must* be dead.... 
            */
 
-          DEBUG(0,("open_mode_check: exlusive oplock left after break ! For file %s,
-dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (double)inode));
+          DEBUG(0,("open_mode_check: exlusive oplock left by process %d after break ! For file %s,
+dev = %x, inode = %.0f. Deleting it to continue...\n", (int)broken_entry.pid, fname, (unsigned int)dev, (double)inode));
 
           if (process_exists(broken_entry.pid)) {
             pstring errmsg;
@@ -553,12 +554,21 @@ dev = %x, inode = %.0f\n", fname, (unsigned int)dev, (double)inode));
             smb_panic(errmsg);
           }
 
-          if (!clear_share_entry(dev, inode, &broken_entry)) {
+          if (del_share_entry(dev, inode, &broken_entry, NULL) == -1) {
             errno = EACCES;
             unix_ERR_class = ERRDOS;
             unix_ERR_code = ERRbadshare;
             return -1;
           }
+
+          /*
+           * We must reload the share modes after deleting the 
+           * other process's entry.
+           */
+
+          free((char *)old_shares);
+          num_share_modes = get_share_modes(conn, dev, inode, &old_shares);
+          break;
         }
       } /* end for paranoia... */
     } /* end if broke_oplock */
