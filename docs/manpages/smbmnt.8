@@ -9,7 +9,7 @@
 smbmnt \- helper utility for mounting SMB filesystems
 .SH SYNOPSIS
 
-\fBsmbmnt\fR \fBmount-point\fR [ \fB-s <share>\fR ] [ \fB-r\fR ] [ \fB-u <uid>\fR ] [ \fB-g <gid>\fR ] [ \fB-f <mask>\fR ] [ \fB-d <mask>\fR ] [ \fB-o <options>\fR ]
+\fBsmbmnt\fR \fBmount-point\fR [ \fB-s <share>\fR ] [ \fB-r\fR ] [ \fB-u <uid>\fR ] [ \fB-g <gid>\fR ] [ \fB-f <mask>\fR ] [ \fB-d <mask>\fR ] [ \fB-o <options>\fR ] [ \fB-h\fR ]
 
 .SH "DESCRIPTION"
 .PP
@@ -49,6 +49,9 @@ applied
 \fB-o options\fR
 list of options that are passed as-is to smbfs, if this
 command is run on a 2.4 or higher Linux kernel.
+.TP
+\fB-h|--help\fR
+Print a summary of command line options.
 .SH "AUTHOR"
 .PP
 Volker Lendecke, Andrew Tridgell, Michael H. Warfield 

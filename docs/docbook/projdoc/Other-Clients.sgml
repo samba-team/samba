@@ -339,4 +339,14 @@ create accounts on the Samba host for Domain users.</emphasis></para>
 
 </sect1>
 
+<sect1>
+<title>Windows NT 3.1</title>
+
+<para>If you have problems communicating across routers with Windows 
+NT 3.1 workstations, read <ulink url="http://support.microsoft.com/default.aspx?scid=kb;[LN];Q103765">this Microsoft Knowledge Base article</ulink>.
+
+</para>
+
+</sect1>
+
 </chapter>

@@ -172,56 +172,146 @@ options.
 \fB-h|--help\fR
 Print a summary of command line options.
 .SH "COMMANDS"
-.PP
-\fBLSARPC\fR
-.TP 0.2i
-\(bu
+.SS "LSARPC"
+.TP
 \fBlsaquery\fR
-.TP 0.2i
-\(bu
-\fBlookupsids\fR - Resolve a list 
+Query info policy
+.TP
+\fBlookupsids\fR
+Resolve a list 
 of SIDs to usernames.
-.TP 0.2i
-\(bu
-\fBlookupnames\fR - Resolve a list 
+.TP
+\fBlookupnames\fR
+Resolve a list 
 of usernames to SIDs.
-.TP 0.2i
-\(bu
+.TP
 \fBenumtrusts\fR
+Enumerate trusted domains
+.TP
+\fBenumprivs\fR
+Enumerate privileges
+.TP
+\fBgetdispname\fR
+Get the privilege name
+.TP
+\fBlsaenumsid\fR
+Enumerate the LSA SIDS
+.TP
+\fBlsaenumprivsaccount\fR
+Enumerate the privileges of an SID
+.TP
+\fBlsaenumacctrights\fR
+Enumerate the rights of an SID
+.TP
+\fBlsaenumacctwithright\fR
+Enumerate accounts with a right
+.TP
+\fBlsaaddacctrights\fR
+Add rights to an account
+.TP
+\fBlsaremoveacctrights\fR
+Remove rights from an account
+.TP
+\fBlsalookupprivvalue\fR
+Get a privilege value given its name
+.TP
+\fBlsaquerysecobj\fR
+Query LSA security object
+.SS "LSARPC-DS"
+.TP
+\fBdsroledominfo\fR
+Get Primary Domain Information
 .PP
 .PP
-\fBSAMR\fR
-.TP 0.2i
-\(bu
+\fBDFS\fR
+.TP
+\fBdfsexist\fR
+Query DFS support
+.TP
+\fBdfsadd\fR
+Add a DFS share
+.TP
+\fBdfsremove\fR
+Remove a DFS share
+.TP
+\fBdfsgetinfo\fR
+Query DFS share info
+.TP
+\fBdfsenum\fR
+Enumerate dfs shares
+.SS "REG"
+.TP
+\fBshutdown\fR
+Remote Shutdown
+.TP
+\fBabortshutdown\fR
+Abort Shutdown
+.SS "SRVSVC"
+.TP
+\fBsrvinfo\fR
+Server query info
+.TP
+\fBnetshareenum\fR
+Enumerate shares
+.TP
+\fBnetfileenum\fR
+Enumerate open files
+.TP
+\fBnetremotetod\fR
+Fetch remote time of day
+.SS "SAMR"
+.TP
 \fBqueryuser\fR
-.TP 0.2i
-\(bu
+Query user info
+.TP
 \fBquerygroup\fR
-.TP 0.2i
-\(bu
+Query group info
+.TP
 \fBqueryusergroups\fR
-.TP 0.2i
-\(bu
+Query user groups
+.TP
 \fBquerygroupmem\fR
-.TP 0.2i
-\(bu
+Query group membership
+.TP
 \fBqueryaliasmem\fR
-.TP 0.2i
-\(bu
+Query alias membership
+.TP
 \fBquerydispinfo\fR
-.TP 0.2i
-\(bu
+Query display info
+.TP
 \fBquerydominfo\fR
-.TP 0.2i
-\(bu
+Query domain info
+.TP
+\fBenumdomusers\fR
+Enumerate domain users
+.TP
 \fBenumdomgroups\fR
-.PP
-.PP
-\fBSPOOLSS\fR
-.TP 0.2i
-\(bu
-\fBadddriver <arch> <config>\fR 
-- Execute an AddPrinterDriver() RPC to install the printer driver 
+Enumerate domain groups
+.TP
+\fBenumalsgroups\fR
+Enumerate alias groups
+.TP
+\fBcreatedomuser\fR
+Create domain user
+.TP
+\fBsamlookupnames\fR
+Look up names
+.TP
+\fBsamlookuprids\fR
+Look up names
+.TP
+\fBdeletedomuser\fR
+Delete domain user
+.TP
+\fBsamquerysecobj\fR
+Query SAMR security object
+.TP
+\fBgetdompwinfo\fR
+Retrieve domain password info
+.SS "SPOOLSS"
+.TP
+\fBadddriver <arch> <config>\fR
+Execute an AddPrinterDriver() RPC to install the printer driver 
 information on the server.  Note that the driver files should 
 already exist in the directory returned by  
 \fBgetdriverdir\fR.  Possible values for 
@@ -250,111 +340,149 @@ use of a bi-directional link for communication.  This field should
 be "NULL".   On a remote NT print server, the Print Monitor for a 
 driver must already be installed prior to adding the driver or 
 else the RPC will fail. 
-.TP 0.2i
-\(bu
-\fBaddprinter <printername> 
-<sharename> <drivername> <port>\fR 
-- Add a printer on the remote server.  This printer 
+.TP
+\fBaddprinter <printername>  <sharename> <drivername> <port>\fR
+Add a printer on the remote server.  This printer 
 will be automatically shared.  Be aware that the printer driver 
 must already be installed on the server (see \fBadddriver\fR) 
 and the \fIport\fRmust be a valid port name (see
 \fBenumports\fR.
-.TP 0.2i
-\(bu
-\fBdeldriver\fR - Delete the 
+.TP
+\fBdeldriver\fR
+Delete the 
 specified printer driver for all architectures.  This
 does not delete the actual driver files from the server,
 only the entry from the server's list of drivers.
-.TP 0.2i
-\(bu
-\fBenumdata\fR - Enumerate all 
+.TP
+\fBenumdata\fR
+Enumerate all 
 printer setting data stored on the server. On Windows NT  clients, 
 these values are stored  in the registry, while Samba servers 
 store them in the printers TDB.  This command corresponds
 to the MS Platform SDK GetPrinterData() function (* This
 command is currently unimplemented).
-.TP 0.2i
-\(bu
-\fBenumjobs <printer>\fR 
-- List the jobs and status of a given printer. 
+.TP
+\fBenumdataex\fR
+Enumerate printer data for a key
+.TP
+\fBenumjobs <printer>\fR
+List the jobs and status of a given printer. 
 This command corresponds to the MS Platform SDK EnumJobs() 
-function (* This command is currently unimplemented).
-.TP 0.2i
-\(bu
-\fBenumports [level]\fR 
-- Executes an EnumPorts() call using the specified 
+function 
+.TP
+\fBenumkey\fR
+Enumerate printer keys
+.TP
+\fBenumports [level]\fR
+Executes an EnumPorts() call using the specified 
 info level. Currently only info levels 1 and 2 are supported. 
-.TP 0.2i
-\(bu
-\fBenumdrivers [level]\fR 
-- Execute an EnumPrinterDrivers() call.  This lists the various installed 
+.TP
+\fBenumdrivers [level]\fR
+Execute an EnumPrinterDrivers() call.  This lists the various installed 
 printer drivers for all architectures.  Refer to the MS Platform SDK 
 documentation for more details of the various flags and calling 
 options. Currently supported info levels are 1, 2, and 3.
-.TP 0.2i
-\(bu
-\fBenumprinters [level]\fR 
-- Execute an EnumPrinters() call.  This lists the various installed 
+.TP
+\fBenumprinters [level]\fR
+Execute an EnumPrinters() call.  This lists the various installed 
 and share printers.  Refer to the MS Platform SDK documentation for 
 more details of the various flags and calling options. Currently
 supported info levels are 0, 1, and 2.
-.TP 0.2i
-\(bu
-\fBgetdata <printername>\fR 
-- Retrieve the data for a given printer setting.  See 
+.TP
+\fBgetdata <printername> <valuename;>\fR
+Retrieve the data for a given printer setting.  See 
 the  \fBenumdata\fR command for more information.  
 This command corresponds to the GetPrinterData() MS Platform 
-SDK function (* This command is currently unimplemented). 
-.TP 0.2i
-\(bu
-\fBgetdriver <printername>\fR 
-- Retrieve the printer driver information (such as driver file, 
+SDK function. 
+.TP
+\fBgetdataex\fR
+Get printer driver data with keyname
+.TP
+\fBgetdriver <printername>\fR
+Retrieve the printer driver information (such as driver file, 
 config file, dependent files, etc...) for 
 the given printer. This command corresponds to the GetPrinterDriver()
 MS Platform  SDK function. Currently info level 1, 2, and 3 are supported.
-.TP 0.2i
-\(bu
-\fBgetdriverdir <arch>\fR 
-- Execute a GetPrinterDriverDirectory()
+.TP
+\fBgetdriverdir <arch>\fR
+Execute a GetPrinterDriverDirectory()
 RPC to retrieve the SMB share name and subdirectory for 
 storing printer driver files for a given architecture.  Possible 
 values for \fIarch\fR are "Windows 4.0" 
 (for Windows 95/98), "Windows NT x86", "Windows NT PowerPC", "Windows
 Alpha_AXP", and "Windows NT R4000". 
-.TP 0.2i
-\(bu
-\fBgetprinter <printername>\fR 
-- Retrieve the current printer information.  This command 
+.TP
+\fBgetprinter <printername>\fR
+Retrieve the current printer information.  This command 
 corresponds to the GetPrinter() MS Platform SDK function. 
-.TP 0.2i
-\(bu
-\fBopenprinter <printername>\fR 
-- Execute an OpenPrinterEx() and ClosePrinter() RPC 
+.TP
+\fBgetprintprocdir\fR
+Get print processor directory
+.TP
+\fBopenprinter <printername>\fR
+Execute an OpenPrinterEx() and ClosePrinter() RPC 
 against a given printer. 
-.TP 0.2i
-\(bu
-\fBsetdriver <printername>
-<drivername>\fR
-- Execute a SetPrinter() command to update the printer driver
+.TP
+\fBsetdriver <printername> <drivername>\fR
+Execute a SetPrinter() command to update the printer driver
 associated with an installed printer.  The printer driver must
 already be correctly installed on the print server.  
 
 See also the \fBenumprinters\fR and 
 \fBenumdrivers\fR commands for obtaining a list of
 of installed printers and drivers.
-.PP
-\fBGENERAL OPTIONS\fR
-.TP 0.2i
-\(bu
-\fBdebuglevel\fR - Set the current
+.TP
+\fBaddform\fR
+Add form
+.TP
+\fBsetform\fR
+Set form
+.TP
+\fBgetform\fR
+Get form
+.TP
+\fBdeleteform\fR
+Delete form
+.TP
+\fBenumforms\fR
+Enumerate form
+.TP
+\fBsetprinter\fR
+Set printer comment
+.TP
+\fBsetprinterdata\fR
+Set REG_SZ printer data
+.TP
+\fBrffpcnex\fR
+Rffpcnex test
+.SS "NETLOGON"
+.TP
+\fBlogonctrl2\fR
+Logon Control 2
+.TP
+\fBlogonctrl\fR
+Logon Control
+.TP
+\fBsamsync\fR
+Sam Synchronisation
+.TP
+\fBsamdeltas\fR
+Query Sam Deltas
+.TP
+\fBsamlogon\fR
+Sam Logon
+.SS "GENERAL COMMANDS"
+.TP
+\fBdebuglevel\fR
+Set the current
 debug level used to log information.
-.TP 0.2i
-\(bu
-\fBhelp (?)\fR - Print a listing of all 
+.TP
+\fBhelp (?)\fR
+Print a listing of all 
 known commands or extended help  on a particular command. 
-.TP 0.2i
-\(bu
-\fBquit (exit)\fR - Exit \fBrpcclient
+.TP
+\fBquit (exit)\fR
+Exit \fBrpcclient
 \fR.
 .SH "BUGS"
 .PP
