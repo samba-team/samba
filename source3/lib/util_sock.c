@@ -789,7 +789,7 @@ BOOL send_one_packet(char *buf,int len,struct in_addr ip,int port,int type)
 	     len,inet_ntoa(ip),port,type==SOCK_DGRAM?"DGRAM":"STREAM"));
 	
   /* send it */
-  ret = (sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
+  ret = (sys_sendto(out_fd,buf,len,0,(struct sockaddr *)&sock_out,sizeof(sock_out)) >= 0);
 
   if (!ret)
     DEBUG(0,("Packet send to %s(%d) failed ERRNO=%s\n",
