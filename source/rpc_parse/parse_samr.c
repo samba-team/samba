@@ -22,11 +22,9 @@
  *  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-
 #include "includes.h"
 
 extern int DEBUGLEVEL;
-
 
 /*******************************************************************
  Inits a SAMR_Q_CLOSE_HND structure.
@@ -93,14 +91,14 @@ BOOL samr_io_r_close_hnd(char *desc,  SAMR_R_CLOSE_HND *r_u, prs_struct *ps, int
  Reads or writes a structure.
 ********************************************************************/
 
-void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
-				POLICY_HND *connect_pol, uint32 rid,
-				DOM_SID *sid)
+void init_samr_q_open_domain(SAMR_Q_OPEN_DOMAIN *q_u, 
+			     POLICY_HND *connect_pol, 
+			     uint32 access_mask, DOM_SID *sid)
 {
 	DEBUG(5,("samr_init_q_open_domain\n"));
 
-	memcpy(&q_u->connect_pol, connect_pol, sizeof(q_u->connect_pol));
-	q_u->rid = rid;
+	q_u->pol = *connect_pol;
+	q_u->access_mask = access_mask;
 	init_dom_sid2(&q_u->dom_sid, sid);
 }
 
@@ -119,12 +117,12 @@ BOOL samr_io_q_open_domain(char *desc, SAMR_Q_OPEN_DOMAIN *q_u, prs_struct *ps, 
 	if(!prs_align(ps))
 		return False;
 
-	if(!smb_io_pol_hnd("connect_pol", &q_u->connect_pol, ps, depth))
+	if(!smb_io_pol_hnd("pol", &q_u->pol, ps, depth))
 		return False;
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("rid", ps, depth, &q_u->rid))
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 
 	if(!smb_io_dom_sid2("sid", &q_u->dom_sid, ps, depth))
@@ -2293,7 +2291,6 @@ BOOL samr_io_q_lookup_names(char *desc,  SAMR_Q_LOOKUP_NAMES *q_u, prs_struct *p
 /*******************************************************************
  Inits a SAMR_R_LOOKUP_NAMES structure.
 ********************************************************************/
-
 void init_samr_r_lookup_names(SAMR_R_LOOKUP_NAMES *r_u,
 			uint32 num_rids, uint32 *rid, enum SID_NAME_USE *type, uint32 status)
 {
@@ -2553,23 +2550,22 @@ BOOL samr_io_r_lookup_rids(char *desc, SAMR_R_LOOKUP_RIDS *r_u, prs_struct *ps, 
  Inits a SAMR_Q_OPEN_USER struct.
 ********************************************************************/
 
-void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u,
-				POLICY_HND *pol,
-				uint32 unk_0, uint32 rid)
+void init_samr_q_open_user(SAMR_Q_OPEN_USER *q_u, POLICY_HND *pol,
+			   uint32 access_mask, uint32 rid)
 {
-	DEBUG(5,("samr_init_q_open_user\n"));
+	DEBUG(5,("init_samr_q_open_user\n"));
 
-	memcpy(&q_u->domain_pol, pol, sizeof(q_u->domain_pol));
-	
-	q_u->unknown_0 = unk_0;
-	q_u->user_rid  = rid;
+	q_u->domain_pol = *pol;
+	q_u->access_mask = access_mask;
+	q_u->user_rid = rid;
 }
 
 /*******************************************************************
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int depth)
+BOOL samr_io_q_open_user(char *desc, SAMR_Q_OPEN_USER *q_u, 
+			 prs_struct *ps, int depth)
 {
 	if (q_u == NULL)
 		return False;
@@ -2585,7 +2581,7 @@ BOOL samr_io_q_open_user(char *desc,  SAMR_Q_OPEN_USER *q_u, prs_struct *ps, int
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown_0", ps, depth, &q_u->unknown_0))
+	if(!prs_uint32("access_mask", ps, depth, &q_u->access_mask))
 		return False;
 	if(!prs_uint32("user_rid ", ps, depth, &q_u->user_rid))
 		return False;
@@ -3167,17 +3163,17 @@ static BOOL sam_io_user_info21(char *desc, SAM_USER_INFO_21 *usr, prs_struct *ps
 		return False;
 	if(!prs_align_needed(ps, usr->hdr_munged_dial.buffer))
 		return False;
-	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial .buffer, ps, depth)) /* worksations user can log on from */
+	if(!smb_io_unistr2("uni_munged_dial ", &usr->uni_munged_dial, usr->hdr_munged_dial.buffer, ps, depth)) /* worksations user can log on from */
 		return False;
 
 	if (usr->ptr_logon_hrs) {
 	
-	if(!prs_align(ps))
-		return False;
-	if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
-		return False;
-	if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
-		return False;
+		if(!prs_align(ps))
+			return False;
+		if(!prs_uint32("unknown_6     ", ps, depth, &usr->unknown_6))
+			return False;
+		if(!prs_uint32("padding4      ", ps, depth, &usr->padding4))
+			return False;
 
 		if(!sam_io_logon_hrs("logon_hrs", &usr->logon_hrs, ps, depth))
 			return False;
@@ -3230,7 +3226,8 @@ void init_samr_r_query_userinfo(SAMR_R_QUERY_USERINFO *r_u,
  Reads or writes a structure.
 ********************************************************************/
 
-BOOL samr_io_r_query_userinfo(char *desc,  SAMR_R_QUERY_USERINFO *r_u, prs_struct *ps, int depth)
+BOOL samr_io_r_query_userinfo(char *desc, SAMR_R_QUERY_USERINFO *r_u, 
+			      prs_struct *ps, int depth)
 {
 	if (r_u == NULL)
 		return False;
@@ -3363,19 +3360,18 @@ BOOL samr_io_r_create_user(char *desc, SAMR_R_CREATE_USER *r_u, prs_struct *ps, 
  Inits a SAMR_Q_CONNECT structure.
 ********************************************************************/
 
-void init_samr_q_connect(SAMR_Q_CONNECT *q_u,
-				char *srv_name, uint32 unknown_0)
+void init_samr_q_connect(SAMR_Q_CONNECT *q_u, char *srv_name, 
+			 uint32 access_mask)
 {
 	int len_srv_name = strlen(srv_name);
 
 	DEBUG(5,("init_q_connect\n"));
 
 	/* make PDC server name \\server */
-	q_u->ptr_srv_name = len_srv_name > 0 ? 1 : 0; 
-	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name+1);  
+	q_u->ptr_srv_name = len_srv_name > 0; 
+	init_unistr2(&q_u->uni_srv_name, srv_name, len_srv_name + 1);  
 
-	/* example values: 0x0000 0002 */
-	q_u->unknown_0 = unknown_0; 
+	q_u->access_mask = access_mask;
 }
 
 /*******************************************************************
@@ -3401,7 +3397,7 @@ BOOL samr_io_q_connect(char *desc,  SAMR_Q_CONNECT *q_u, prs_struct *ps, int dep
 	if(!prs_align(ps))
 		return False;
 
-	if(!prs_uint32("unknown_0   ", ps, depth, &q_u->unknown_0))
+	if(!prs_uint32("access_mask ", ps, depth, &q_u->access_mask))
 		return False;
 
 	return True;

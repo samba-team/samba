@@ -703,7 +703,7 @@ BOOL make_spoolss_q_open_printer_ex(SPOOL_Q_OPEN_PRINTER_EX *q_u,
 {
 	DEBUG(5,("make_spoolss_q_open_printer_ex\n"));
 	q_u->printername_ptr = (printername!=NULL)?1:0;
-	init_unistr2(&q_u->printername, printername, strlen(printername));
+	init_unistr2(&q_u->printername, printername, strlen(printername)+1);
 
 	q_u->printer_default.datatype_ptr = 0;
 /*

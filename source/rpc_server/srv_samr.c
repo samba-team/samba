@@ -40,11 +40,9 @@ extern rid_name builtin_alias_rids[];
   dynamically returns the correct user info..... JRA.
  ********************************************************************/
 
-static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
-				int start_idx,
+static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf, int start_idx,
                                 int *total_entries, int *num_entries,
-                                int max_num_entries,
-                                uint16 acb_mask)
+                                int max_num_entries, uint16 acb_mask)
 {
 	void *vp = NULL;
 	struct sam_passwd *pwd = NULL;
@@ -52,7 +50,8 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 	(*num_entries) = 0;
 	(*total_entries) = 0;
 
-	if (pw_buf == NULL) return False;
+	if (pw_buf == NULL) 
+		return False;
 
 	vp = startsmbpwent(False);
 	if (!vp) {
@@ -91,7 +90,9 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		if (acb_mask == 0 || (pwd->acct_ctrl & acb_mask)) {
 			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
 			(*num_entries)++;
-		} else {
+		} 
+		else 
+		{
 			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
 		}
 
@@ -341,7 +342,7 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 		mapped_idx = 0;
 	}
 
- done:
+done:
 	return (*num_entries) > 0;
 }
 
@@ -410,7 +411,7 @@ static BOOL samr_reply_open_domain(SAMR_Q_OPEN_DOMAIN *q_u,
 	r_u.status = 0x0;
 
 	/* find the connection policy handle. */
-	if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->connect_pol)) == -1))
+	if (r_u.status == 0x0 && (find_lsa_policy_by_hnd(&(q_u->pol)) == -1))
 	{
 		r_u.status = 0xC0000000 | NT_STATUS_INVALID_HANDLE;
 	}
@@ -743,7 +744,7 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	fstring sid_str;
 	fstring sam_sid_str;
 	struct group *grp;
-
+	
 	ZERO_STRUCT(r_e);
 
 	/* find the policy handle.  open a policy on it. */
@@ -761,7 +762,6 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	if (strequal(sid_str, "S-1-5-32"))
 	{
 		char *name;
-
 		while (!lp_hide_local_users() &&
 		       num_entries < MAX_SAM_ENTRIES && 
 		       ((name = builtin_alias_rids[num_entries].name) != NULL))
@@ -773,33 +773,33 @@ static BOOL samr_reply_enum_dom_aliases(SAMR_Q_ENUM_DOM_ALIASES *q_u,
 	}
 	else if (strequal(sid_str, sam_sid_str) && !lp_hide_local_users())
 	{
-	    char *name;
-	    char *sep;
+		char *name;
+		char *sep;
 
-	    sep = lp_winbind_separator();
+		sep = lp_winbind_separator();
 
-	    /* local aliases */
-	    /* we return the UNIX groups here.  This seems to be the right */
-	    /* thing to do, since NT member servers return their local     */
-	    /* groups in the same situation.                               */
-	    setgrent();
+		/* local aliases */
+		/* we return the UNIX groups here.  This seems to be the right */
+		/* thing to do, since NT member servers return their local     */
+                /* groups in the same situation.                               */
+		setgrent();
 
-	    while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
-	    {
-		    name = grp->gr_name;
+		while (num_entries < MAX_SAM_ENTRIES && ((grp = getgrent()) != NULL))
+		{
+			name = grp->gr_name;
 
-		    /* Don't return winbind groups as they are not local! */
+			/* Don't return winbind groups as they are not local! */
 
-		    if (strchr(name, *sep) != NULL) {
-			    continue;
-		    }
+			if (strchr(name, *sep) != NULL) {
+				continue;
+			}
 
-		    init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
-		    pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
-		    num_entries++;
-	    }
+			init_unistr2(&(pass[num_entries].uni_user_name), name, strlen(name)+1);
+			pass[num_entries].user_rid = pdb_gid_to_group_rid(grp->gr_gid);
+			num_entries++;
+		}
 
-	    endgrent();
+		endgrent();
 	}
 		
 	init_samr_r_enum_dom_aliases(&r_e, num_entries, pass, r_e.status);
@@ -1859,7 +1859,8 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 	become_root();
 	sam_pass = getsam21pwnam(mach_acct);
 	unbecome_root();
-	if (sam_pass != NULL) {
+	if (sam_pass != NULL) 
+	{
 		/* machine account exists: say so */
 		return NT_STATUS_USER_EXISTS;
 	}
@@ -1883,7 +1884,9 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 		smb_create_user(mach_acct,NULL);
 
 	/* add the user in the smbpasswd file or the Samba authority database */
-	if (!local_password_change(mach_acct, local_flags, NULL, err_str, sizeof(err_str), msg_str, sizeof(msg_str))) {
+	if (!local_password_change(mach_acct, local_flags, NULL, err_str, 
+	     sizeof(err_str), msg_str, sizeof(msg_str))) 
+	{
 		DEBUG(0, ("%s\n", err_str));
 		close_lsa_policy_hnd(user_pol);
 		return NT_STATUS_ACCESS_DENIED;
@@ -1917,8 +1920,8 @@ static BOOL _api_samr_create_user(POLICY_HND dom_pol, UNISTR2 user_account, uint
 		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 	}
 
-	*unknown0=0x000703ff;
 	*user_rid=sam_pass->user_rid;
+	*unknown0 = 0x000703ff;
 
 	return NT_STATUS_NO_PROBLEMO;
 }
@@ -2034,7 +2037,7 @@ static BOOL samr_reply_connect(SAMR_Q_CONNECT *q_u, prs_struct *rdata)
 	}
 
 	/* associate the domain SID with the (unique) handle. */
-	if (r_u.status == 0x0 && !set_lsa_policy_samr_pol_status(&(r_u.connect_pol), q_u->unknown_0))
+	if (r_u.status == 0x0 && !set_lsa_policy_samr_pol_status(&(r_u.connect_pol), q_u->access_mask))
 	{
 		/* oh, whoops.  don't know what error message to return, here */
 		r_u.status = 0xC0000000 | NT_STATUS_OBJECT_NAME_NOT_FOUND;
@@ -2251,7 +2254,7 @@ static BOOL set_user_info_10(const SAM_USER_INFO_10 *id10, uint32 rid)
 /*******************************************************************
  set_user_info_12
  ********************************************************************/
-static BOOL set_user_info_12(const SAM_USER_INFO_12 *id12, uint32 rid)
+static BOOL set_user_info_12(SAM_USER_INFO_12 *id12, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -2284,7 +2287,7 @@ static BOOL set_user_info_12(const SAM_USER_INFO_12 *id12, uint32 rid)
 /*******************************************************************
  set_user_info_21
  ********************************************************************/
-static BOOL set_user_info_21(SAM_USER_INFO_21 * id21, uint32 rid)
+static BOOL set_user_info_21 (SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	struct sam_passwd *pwd = getsam21pwrid(rid);
 	struct sam_passwd new_pwd;
@@ -2300,6 +2303,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 * id21, uint32 rid)
 		return False;
 
 	pdb_init_sam(&new_pwd);
+	/* we make a copy so that we can modify stuff */	
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id21_to_sam_passwd(&new_pwd, id21);
 
@@ -2317,7 +2321,7 @@ static BOOL set_user_info_21(SAM_USER_INFO_21 * id21, uint32 rid)
 
 	if(!mod_sam21pwd_entry(&new_pwd, True))
 		return False;
-
+	
 	return True;
 }
 
@@ -2345,7 +2349,7 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 	copy_sam_passwd(&new_pwd, pwd);
 	copy_id23_to_sam_passwd(&new_pwd, id23);
 
-	if (!decode_pw_buffer((char *)id23->pass, buf, 256, &len))
+	if (!decode_pw_buffer((char*)id23->pass, buf, 256, &len))
 		return False;
 
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
@@ -2386,10 +2390,11 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 *id24, uint32 rid)
 
 	memset(buf, 0, sizeof(buf));
 
-	if (!decode_pw_buffer((char *)id24->pass, buf, 256, &len))
+	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len))
 		return False;
 
-DEBUG(0,("set_user_info_24:nt_lm_owf_gen\n"));
+	DEBUG(0,("set_user_info_24:nt_lm_owf_gen\n"));
+
 	nt_lm_owf_gen(buf, nt_hash, lm_hash);
 
 	new_pwd.smb_passwd = lm_hash;
@@ -2401,7 +2406,8 @@ DEBUG(0,("set_user_info_24:nt_lm_owf_gen\n"));
 			return False;
 
 	memset(buf, 0, sizeof(buf));
-DEBUG(0,("set_user_info_24:mod_sam21pwd_entry\n"));
+	
+	DEBUG(0,("set_user_info_24: pdb_update_sam_account()\n"));
 
 	/* update the SAMBA password */
 	if(!mod_sam21pwd_entry(&new_pwd, True))
@@ -2413,7 +2419,8 @@ DEBUG(0,("set_user_info_24:mod_sam21pwd_entry\n"));
 /*******************************************************************
  samr_reply_set_userinfo
  ********************************************************************/
-static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERINFO_CTR *ctr, pipes_struct *p)
+static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, 
+                                 SAM_USERINFO_CTR *ctr, pipes_struct *p)
 {
 	uint32 rid = 0x0;
 	DOM_SID sid;
@@ -2423,9 +2430,12 @@ static uint32 _samr_set_userinfo(POLICY_HND *pol, uint16 switch_value, SAM_USERI
 
 	DEBUG(5, ("_samr_set_userinfo: %d\n", __LINE__));
 
-	if (p->ntlmssp_auth_validated) {
+	if (p->ntlmssp_auth_validated) 
+	{
 		memcpy(&user, &p->pipe_user, sizeof(user));
-	} else {
+	} 
+	else 
+	{
 		extern struct current_user current_user;
 		memcpy(&user, &current_user, sizeof(user));
 	}

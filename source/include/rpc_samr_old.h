@@ -463,8 +463,8 @@ SAMR_Q_OPEN_DOMAIN - unknown_0 values seen associated with SIDs:
 /* SAMR_Q_OPEN_DOMAIN */
 typedef struct q_samr_open_domain_info
 {
-	POLICY_HND connect_pol;   /* policy handle */
-	uint32 rid;               /* 0x2000 0000; 0x0000 0211; 0x0000 0280; 0x0000 0200 - a RID? */
+	POLICY_HND pol;           /* policy handle */
+	uint32 access_mask;
 	DOM_SID2 dom_sid;         /* domain SID */
 
 } SAMR_Q_OPEN_DOMAIN;
@@ -992,7 +992,7 @@ typedef struct r_samr_lookup_rids_info
 typedef struct q_samr_open_user_info
 {
 	POLICY_HND domain_pol;       /* policy handle */
-	uint32 unknown_0;     /* 32 bit unknown - 0x02011b */
+	uint32 access_mask;
 	uint32 user_rid;      /* user RID */
 
 } SAMR_Q_OPEN_USER;
@@ -1097,7 +1097,7 @@ typedef struct q_samr_connect_info
 	uint32 ptr_srv_name;         /* pointer (to server name?) */
 	UNISTR2 uni_srv_name;        /* unicode server name starting with '\\' */
 
-	uint32 unknown_0;            /* 32 bit unknown */
+	uint32 access_mask;
 
 } SAMR_Q_CONNECT;
 
