@@ -125,7 +125,7 @@ help(int argc, char **argv)
     return 0;
 }
 
-void
+static void
 usage(int status)
 {
     arg_printusage(args, num_args, "command");

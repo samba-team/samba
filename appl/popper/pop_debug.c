@@ -41,7 +41,7 @@
 #include "popper.h"
 RCSID("$Id$");
 
-void
+static void
 loop(int s)
 {
     char cmd[1024];
@@ -118,6 +118,7 @@ doit_v4 (char *host, int port)
 	return 1;
     }
     loop(s);
+    return 0;
 }
 #endif
 
@@ -165,6 +166,7 @@ doit_v5 (char *host, int port)
 	 return 1;
      }
      loop (s);
+     return 0;
 }
 #endif
 

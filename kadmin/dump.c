@@ -73,7 +73,7 @@ append_hex(char *str, krb5_data *data)
     free(p);
 }
 
-int
+static int
 hdb_entry2string(hdb_entry *ent, char **str)
 {
     char *p;
@@ -155,7 +155,7 @@ hdb_entry2string(hdb_entry *ent, char **str)
     return 0;
 }
 
-krb5_error_code
+static krb5_error_code
 print_entry(krb5_context context, HDB *db, hdb_entry *entry, void *data)
 {
     char *p;
