@@ -86,7 +86,7 @@ guest = *
     they don't own the print job.</para>
 
    <para>
-   Samab versions prior to 3.0.8 would only support reading the fully qualified
+   Samba versions prior to 3.0.8 would only support reading the fully qualified
    username (e.g.: DOMAIN\user) from the username map when performing a
    kerberos login from a client.  However, when looking up a map
    entry for a user authenticated by NTLM[SSP], only the login name would be
