@@ -1086,7 +1086,7 @@ static void dcesrv_exit(struct server_service *service, const char *reason)
 
 /* the list of currently registered DCERPC endpoint servers.
  */
-static struct {
+static struct ep_server {
 	struct dcesrv_endpoint_server *ep_server;
 } *ep_servers = NULL;
 static int num_ep_servers;
@@ -1110,7 +1110,7 @@ NTSTATUS dcerpc_register_ep_server(const void *_ep_server)
 		return NT_STATUS_OBJECT_NAME_COLLISION;
 	}
 
-	ep_servers = Realloc(ep_servers, sizeof(ep_servers[0]) * (num_ep_servers+1));
+	ep_servers = realloc_p(ep_servers, struct ep_server, num_ep_servers+1);
 	if (!ep_servers) {
 		smb_panic("out of memory in dcerpc_register");
 	}

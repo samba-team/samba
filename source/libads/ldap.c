@@ -1592,7 +1592,7 @@ char **ads_pull_strings(ADS_STRUCT *ads,
 
 	*num_values = ldap_count_values(values);
 
-	ret = talloc(mem_ctx, sizeof(char *) * (*num_values+1));
+	ret = talloc_array_p(mem_ctx, char *, *num_values+1);
 	if (!ret) {
 		ldap_value_free(values);
 		return NULL;
@@ -1839,7 +1839,7 @@ int ads_pull_sids(ADS_STRUCT *ads, TALLOC_CTX *mem_ctx,
 	for (i=0; values[i]; i++)
 		/* nop */ ;
 
-	(*sids) = talloc(mem_ctx, sizeof(DOM_SID) * i);
+	(*sids) = talloc_array_p(mem_ctx, DOM_SID, i);
 	if (!(*sids)) {
 		ldap_value_free_len(values);
 		return 0;
