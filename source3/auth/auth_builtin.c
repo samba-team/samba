@@ -1,6 +1,6 @@
 /* 
    Unix SMB/CIFS implementation.
-   Generic authenticaion types
+   Generic authentication types
    Copyright (C) Andrew Bartlett         2001-2002
    Copyright (C) Jelmer Vernooij              2002
    
