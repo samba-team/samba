@@ -1,5 +1,7 @@
 2002-08-28  Johan Danielsson  <joda@pdc.kth.se>
 
+	* krb-readline.m4: add LIB_tgetent to LIB_readline if we have to
+
 	* sunos.m4: various sunos tests
 
 	* crypto.m4: try to extract the crypto compiler flags from
