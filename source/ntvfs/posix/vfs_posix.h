@@ -32,27 +32,17 @@ struct pvfs_state {
 	const char *share_name;
 	uint_t flags;
 
-	struct {
-		/* a linked list of open searches */
-		struct pvfs_search_state *open_searches;
-
-		/* search handles are returned to the clients so they
-		   can continue searches */
-		uint16_t next_search_handle;
-
-		/* count of active searches */
-		uint_t num_active_searches;
-
-		/* during trans2 search continuations we need to use
-		   the initial search attributes */
-		uint16_t search_attrib;
-	} search;
-
 	struct pvfs_file *open_files;
 
 	struct pvfs_mangle_context *mangle_ctx;
 
 	void *brl_context;
+
+	/* an id tree mapping open search ID to a pvfs_search_state structure */
+	void *idtree_search;
+
+	/* an id tree mapping open file handle -> struct pvfs_file */
+	void *idtree_fnum;
 };
 
 
@@ -95,7 +85,7 @@ struct pvfs_dir {
 
 /* the state of a search started with pvfs_search_first() */
 struct pvfs_search_state {
-	struct pvfs_search_state *next, *prev;
+	struct pvfs_state *pvfs;
 	uint16_t handle;
 	uint_t current_index;
 	uint16_t search_attrib;
@@ -126,6 +116,10 @@ struct pvfs_file {
 
 	/* a list of pending locks - used for locking cancel operations */
 	struct pvfs_pending_lock *pending_list;
+
+	/* a count of active locks - used to avoid calling brl_close on
+	   file close */
+	uint64_t lock_count;
 };
 
 
