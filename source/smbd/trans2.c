@@ -3523,6 +3523,7 @@ int reply_trans2(connection_struct *conn,
 		/* We need to send an interim response then receive the rest
 		   of the parameter/data bytes */
 		outsize = set_message(outbuf,0,0,True);
+		srv_signing_trans_stop();
 		if (!send_smb(smbd_server_fd(),outbuf))
 			exit_server("reply_trans2: send_smb failed.");
 
@@ -3536,6 +3537,13 @@ int reply_trans2(connection_struct *conn,
 
 			ret = receive_next_smb(inbuf,bufsize,SMB_SECONDARY_WAIT);
 			
+			/*
+			 * The sequence number for the trans reply is always
+			 * based on the last secondary received.
+			 */
+
+			srv_signing_trans_start(SVAL(inbuf,smb_mid));
+
 			if ((ret && 
 			     (CVAL(inbuf, smb_com) != SMBtranss2)) || !ret) {
 				outsize = set_message(outbuf,0,0,True);
