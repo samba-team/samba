@@ -185,11 +185,11 @@ verify_krb5(struct passwd *login_info, struct passwd *su_info,
 	    ret = krb5_cc_copy_cache(context, ccache, ccache2);
 	    if (seteuid(0))
 		krb5_err (context, 1, errno, "seteuid");
-	    ret = krb5_cc_close(context, ccache2);
 
 	    asprintf(&cc_name, "%s:%s", krb5_cc_get_type(context, ccache2),
 		     krb5_cc_get_name(context, ccache2));
 	    setenv("KRB5CCNAME", cc_name, 1);
+	    ret = krb5_cc_close(context, ccache2);
 	}
 	krb5_cc_destroy(context, ccache);
 	return 0;
