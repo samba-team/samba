@@ -1611,7 +1611,7 @@ recv_ayt()
 {
 #if	defined(SIGINFO) && defined(TCSIG)
 	if (slctab[SLC_AYT].sptr && *slctab[SLC_AYT].sptr != _POSIX_VDISABLE) {
-		(void) ioctl(pty, TCSIG, (char *)SIGINFO);
+		(void) ioctl(ourpty, TCSIG, (char *)SIGINFO);
 		return;
 	}
 #endif
