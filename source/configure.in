@@ -2194,6 +2194,9 @@ fi
   AC_CHECK_LIB(krb5, krb5_auth_con_setkey, [AC_DEFINE(HAVE_KRB5_AUTH_CON_SETKEY,1,[Whether krb5_auth_con_setkey is available])])
   AC_CHECK_LIB(krb5, krb5_auth_con_setuseruserkey, [AC_DEFINE(HAVE_KRB5_AUTH_CON_SETUSERUSERKEY,1,[Whether krb5_auth_con_setuseruserkey is available])])
   AC_CHECK_LIB(krb5, krb5_locate_kdc, [AC_DEFINE(HAVE_KRB5_LOCATE_KDC,1,[Whether krb5_locate_kdc is available])])
+  AC_CHECK_LIB(krb5, krb5_get_permitted_enctypes, [AC_DEFINE(HAVE_KRB5_GET_PERMITTED_ENCTYPES,1,[Whether krb5_get_permitted_enctypes is available])])
+  AC_CHECK_LIB(krb5, krb5_get_default_in_tkt_etypes, [AC_DEFINE(HAVE_KRB5_GET_DEFAULT_IN_TKT_ETYPES,1,[Whether krb5_get_default_in_tkt_etypes is available])])
+  AC_CHECK_LIB(krb5, krb5_free_ktypes, [AC_DEFINE(HAVE_KRB5_FREE_KTYPES,1,[Whether krb5_free_ktypes is available])])
 
 AC_CACHE_CHECK([for addrtype in krb5_address],samba_cv_HAVE_ADDRTYPE_IN_KRB5_ADDRESS,[
 AC_TRY_COMPILE([#include <krb5.h>],
