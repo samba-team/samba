@@ -40,6 +40,10 @@ sub find_size_var($$)
 	if (util::is_constant($size)) {
 		return $size;
 	}
+
+	if ($size =~ /ndr->/) {
+		return $size;
+	}
 	
 	if ($fn->{TYPE} ne "FUNCTION") {
 		return "r->$size";
@@ -582,6 +586,7 @@ sub ParseStructPull($)
 sub ParseUnionPush($)
 {
 	my $e = shift;
+	my $have_default = 0;
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
 	$res .= "\tNDR_CHECK(ndr_push_struct_start(ndr));\n";
@@ -591,24 +596,37 @@ sub ParseUnionPush($)
 	}
 	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}:\n";
+		if ($el->{CASE} eq "default") {
+			$res .= "\tdefault:\n";
+			$have_default = 1;
+		} else {
+			$res .= "\tcase $el->{CASE}:\n";
+		}
 		ParseElementPushScalar($el->{DATA}, "r->", "NDR_SCALARS");		
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	if (! $have_default) {
+		$res .= "\tdefault:\n";
+		$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	}
 	$res .= "\t}\n";
 	$res .= "\tndr_push_struct_end(ndr);\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}:\n";
+		if ($el->{CASE} eq "default") {
+			$res .= "\tdefault:\n";
+		} else {
+			$res .= "\tcase $el->{CASE}:\n";
+		}
 		ParseElementPushBuffer($el->{DATA}, "r->", "ndr_flags");
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	if (! $have_default) {
+		$res .= "\tdefault:\n";
+		$res .= "\t\treturn ndr_push_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", level);\n";
+	}
 	$res .= "\t}\n";
 	$res .= "done:\n";
 }
@@ -618,14 +636,22 @@ sub ParseUnionPush($)
 sub ParseUnionPrint($)
 {
 	my $e = shift;
+	my $have_default = 0;
 
 	$res .= "\tswitch (level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}:\n";
+		if ($el->{CASE} eq "default") {
+			$have_default = 1;
+			$res .= "\tdefault:\n";
+		} else {
+			$res .= "\tcase $el->{CASE}:\n";
+		}
 		ParseElementPrintScalar($el->{DATA}, "r->");
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n\t\tndr_print_bad_level(ndr, name, level);\n";
+	if (! $have_default) {
+		$res .= "\tdefault:\n\t\tndr_print_bad_level(ndr, name, level);\n";
+	}
 	$res .= "\t}\n";
 }
 
@@ -634,6 +660,7 @@ sub ParseUnionPrint($)
 sub ParseUnionPull($)
 {
 	my $e = shift;
+	my $have_default = 0;
 
 	$res .= "\tif (!(ndr_flags & NDR_SCALARS)) goto buffers;\n";
 
@@ -644,7 +671,12 @@ sub ParseUnionPull($)
 	}
 	$res .= "\tswitch (*level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}: {\n";
+		if ($el->{CASE} eq "default") {
+			$res .= "\tdefault: {\n";
+			$have_default = 1;
+		} else {
+			$res .= "\tcase $el->{CASE}: {\n";
+		}
 		my $e2 = $el->{DATA};
 		if ($e2->{POINTERS}) {
 			$res .= "\t\tuint32 _ptr_$e2->{NAME};\n";
@@ -652,20 +684,28 @@ sub ParseUnionPull($)
 		ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");		
 		$res .= "\tbreak; }\n\n";
 	}
-	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+	if (! $have_default) {
+		$res .= "\tdefault:\n";
+		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+	}
 	$res .= "\t}\n";
 	$res .= "\tndr_pull_struct_end(ndr);\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
 	$res .= "\tswitch (*level) {\n";
 	foreach my $el (@{$e->{DATA}}) {
-		$res .= "\tcase $el->{CASE}:\n";
+		if ($el->{CASE} eq "default") {
+			$res .= "\tdefault:\n";
+		} else {
+			$res .= "\tcase $el->{CASE}:\n";
+		}
 		ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n";
-	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+	if (! $have_default) {
+		$res .= "\tdefault:\n";
+		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value \%u\", *level);\n";
+	}
 	$res .= "\t}\n";
 	$res .= "done:\n";
 }

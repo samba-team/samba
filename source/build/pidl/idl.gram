@@ -66,6 +66,12 @@ union_element: '[' 'case' '(' constant ')' ']' base_element ';'
 		"CASE" => $item{constant},
 		"DATA" => $item{base_element}
 	 }}
+         | 'default' base_element ';'
+	 {{
+		"TYPE" => "UNION_ELEMENT",
+		"CASE" => "default",
+		"DATA" => $item{base_element}
+	 }}
 
 base_element: property_list(s?) type pointer(s?) identifier array_len(?) 
 	      {{
@@ -82,8 +88,8 @@ array_len:
 	 { "*" }
 	 | '[' '*' ']'
 	 { "*" }
-	 | '[' <commit> text ']' 
-         { "$item{text}" }
+	 | '[' <commit> anytext ']' 
+         { "$item{anytext}" }
          | <error?>
 
 element_list1: base_element(s? /;/) ';' 
