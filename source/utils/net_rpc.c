@@ -613,7 +613,7 @@ static int rpc_user_info(int argc, const char **argv)
 /** 
  * List users on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All paramaters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -867,6 +867,21 @@ static int rpc_share_usage(int argc, const char **argv)
 	return net_help_share(argc, argv);
 }
 
+/** 
+ * Add a share on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
 static NTSTATUS 
 rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
@@ -900,6 +915,21 @@ static int rpc_share_add(int argc, const char **argv)
 			       argc, argv);
 }
 
+/** 
+ * Delete a share on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
 static NTSTATUS 
 rpc_share_del_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
@@ -910,6 +940,16 @@ rpc_share_del_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
+/** 
+ * Delete a share on a remote RPC server
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
 static int rpc_share_delete(int argc, const char **argv)
 {
 	if (argc < 1) {
@@ -921,7 +961,12 @@ static int rpc_share_delete(int argc, const char **argv)
 			       argc, argv);
 }
 
-
+/**
+ * Formatted print of share info
+ *
+ * @param info1  pointer to SRV_SHARE_INFO_1 to format
+ **/
+ 
 static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 {
 	fstring netname = "", remark = "";
@@ -941,7 +986,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
 /** 
  * List shares on a remote RPC server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All paramaters are provided by the run_rpc_command function, except for
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
@@ -1015,6 +1060,58 @@ static int rpc_file_usage(int argc, const char **argv)
 	return net_help_file(argc, argv);
 }
 
+/** 
+ * Close a file on a remote RPC server
+ *
+ * All paramaters are provided by the run_rpc_command function, except for
+ * argc, argv which are passes through. 
+ *
+ * @param domain_sid The domain sid acquired from the remote server
+ * @param cli A cli_state connected to the server.
+ * @param mem_ctx Talloc context, destoyed on completion of the function.
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return Normal NTSTATUS return.
+ **/
+static NTSTATUS 
+rpc_file_close_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
+{
+	WERROR result;
+	result = cli_srvsvc_net_file_close(cli, mem_ctx, atoi(argv[0]));
+	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
+}
+
+/** 
+ * Close a file on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_file_close(int argc, const char **argv)
+{
+	if (argc < 1) {
+		DEBUG(1, ("No fileid given on close\n"));
+		return(rpc_file_usage(argc, argv));
+	}
+
+	return run_rpc_command(PIPE_SRVSVC, 0, 
+			       rpc_file_close_internals,
+			       argc, argv);
+}
+
+/** 
+ * Formatted print of open file info 
+ *
+ * @param info3  FILE_INFO_3 contents
+ * @param str3   strings for FILE_INFO_3
+ **/
+
 static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
 {
 	fstring user = "", path = "";
@@ -1050,11 +1147,16 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	WERROR result;
 	ENUM_HND hnd;
 	uint32 preferred_len = 0xffffffff, i;
+	char *username=NULL;
 
 	init_enum_hnd(&hnd, 0);
 
+	/* if argc > 0, must be user command */
+	if (argc > 0)
+		username = argv[0];
+		
 	result = cli_srvsvc_net_file_enum(
-		cli, mem_ctx, 3, &ctr, preferred_len, &hnd);
+		cli, mem_ctx, 3, username, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
 		goto done;
@@ -1074,6 +1176,28 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 
 /** 
+ * List files for a user on a remote RPC server
+ *
+ * @param argc  Standard main() style argc
+ * @param argv  Standard main() style argv.  Initial components are already
+ *              stripped
+ *
+ * @return A shell status integer (0 for success)
+ **/
+static int rpc_file_user(int argc, const char **argv)
+{
+	if (argc < 1) {
+		DEBUG(1, ("No username given\n"));
+		return(rpc_file_usage(argc, argv));
+	}
+
+	return run_rpc_command(PIPE_SRVSVC, 0, 
+			       rpc_file_list_internals,
+			       argc, argv);
+}
+
+
+/** 
  * 'net rpc file' entrypoint.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1083,8 +1207,10 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 int net_rpc_file(int argc, const char **argv) 
 {
 	struct functable func[] = {
-#if 0
 		{"close", rpc_file_close},
+		{"user", rpc_file_user},
+#if 0
+		{"info", rpc_file_info},
 #endif
 		{NULL, NULL}
 	};
@@ -1104,14 +1230,14 @@ int net_rpc_file(int argc, const char **argv)
 /** 
  * ABORT the shutdown of a remote RPC Server
  *
- * All paramaters are provided by the run_rpc_command funcion, except for
+ * All paramaters are provided by the run_rpc_command function, except for
  * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
  * @param cli A cli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return Normal NTSTATUS return.
@@ -1137,7 +1263,7 @@ static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct c
  * ABORT the Shut down of a remote RPC server
  *
  * @param argc  Standard main() style argc
- * @param argc  Standard main() style argv.  Initial components are already
+ * @param argv  Standard main() style argv.  Initial components are already
  *              stripped
  *
  * @return A shell status integer (0 for success)
@@ -1663,7 +1789,7 @@ int net_rpc_usage(int argc, const char **argv)
 	d_printf("  net rpc join \t\t\tto join a domain \n");
 	d_printf("  net rpc user \t\t\tto add, delete and list users\n");
 	d_printf("  net rpc group \t\tto list groups\n");
-	d_printf("  net rpc share \t\tto list shares\n");
+	d_printf("  net rpc share \t\tto add, delete, and list shares\n");
 	d_printf("  net rpc file \t\t\tto list open files\n");
 	d_printf("  net rpc changetrustpw \tto change the trust account password\n");
 	d_printf("  net rpc trustdom \t\tto create trusting domain's account\n"
