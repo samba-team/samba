@@ -817,6 +817,8 @@ it() link(bf(directory mask))(directorymask)
 
 it() link(bf(directory mode))(directorymode)
 
+it() linf(bf(directory security mask))(directorysecuritymask)
+
 it() link(bf(dont descend))(dontdescend)
 
 it() link(bf(dos filetime resolution))(dosfiletimeresolution)
@@ -835,7 +837,11 @@ it() link(bf(force create mode))(forcecreatemode)
 
 it() link(bf(force directory mode))(forcedirectorymode)
 
+it() link(bf(force directory security mode))(forcedirectorysecuritymode)
+
 it() link(bf(force group))(forcegroup)
+
+it() link(bf(force security mode))(forcesecuritymode)
 
 it() link(bf(force user))(forceuser)
 
@@ -944,6 +950,8 @@ it() link(bf(revalidate))(revalidate)
 it() link(bf(root postexec))(rootpostexec)
 
 it() link(bf(root preexec))(rootpreexec)
+
+it() link(bf(security mask))(securitymask)
 
 it() link(bf(set directory))(setdirectory)
 
@@ -1827,7 +1835,8 @@ See the link(bf("force directory mode"))(forcedirectorymode) parameter
 to cause particular mode bits to always be set on created directories.
 
 See also the link(bf("create mode"))(createmode) parameter for masking
-mode bits on created files.
+mode bits on created files, and the link(bf("directory security mask"))(directorysecuritymask)
+parameter.
 
   bf(Default:)
 tt(	directory mask = 0755)
@@ -1839,6 +1848,39 @@ label(directorymode)
 dit(bf(directory mode (S)))
 
 Synonym for link(bf(directory mask))(directorymask).
+
+label(directorysecuritymask)
+dit(bf(directory security mask (S)))
+
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+directory using the native NT security dialog box.
+
+This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(directory mask))(directorymask) parameter. To allow a user to
+modify all the user/group/world permissions on a directory, set this
+parameter to 0777.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(security
+mask))(securitymask), link(bf(force security mode))(forcesecuritymode)
+parameters.
+
+  bf(Default:)
+tt(	directory security mask = <same as directory mask>)
+
+  bf(Example:)
+tt(	directory security mask = 0777)
 
 label(dnsproxy)
 dit(bf(dns proxy (G)))
@@ -2170,6 +2212,39 @@ would force all created directories to have read and execute
 permissions set for 'group' and 'other' as well as the
 read/write/execute bits set for the 'user'.
 
+label(forcedirectorysecuritymode)
+dit(bf(force directory security mode (S)))
+
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a directory
+using the native NT security dialog box.
+
+This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a directory,
+the user has always set to be 'on'.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(force directory mode))(forcedirectorymode) parameter. To allow
+a user to modify all the user/group/world permissions on a directory,
+with restrictions set this parameter to 000.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+
+See also the link(bf(directory security mask))(directorysecuritymask),
+link(bf(security mask))(securitymask), link(bf(force security
+mode))(forcesecuritymode) parameters.
+
+  bf(Default:)
+tt(	force directory security mode = <same as force directory mode>)
+
+  bf(Example:)
+tt(	force directory security mode = 0)
+
 label(forcegroup)
 dit(bf(force group (S)))
 
@@ -2181,11 +2256,63 @@ permissions for this group to the files and directories within this
 service the Samba administrator can restrict or allow sharing of these
 files.
 
+In Samba 2.0.5 and above this parameter has extended functionality in the following
+way. If the group name listed here has a '+' character prepended to it
+then the current user accessing the share only has the primary group 
+default assigned to this group if they are already assigned as a member
+of that group. This allows an administrator to decide that only users
+who are already in a particular group will create files with group 
+ownership set to that group. This gives a finer granularity of ownership
+assignment. For example, the setting tt(force group = +sys) means
+that only users who are already in group sys will have their default
+primary group assigned to sys when accessing this Samba share. All
+other users will retain their ordinary primary group.
+
+If the link(bf("force user"))(forceuser) parameter is also set the
+group specified in bf(force group) will override the primary group
+set in link(bf("force user"))(forceuser).
+
+See also link(bf("force user"))(forceuser)
+
   bf(Default:)
 tt(	no forced group)
 
   bf(Example:)
 tt(	force group = agroup)
+
+label(forcesecuritymode)
+dit(bf(force security mode (S)))
+
+This parameter controls what UNIX permission bits can be modified when
+a Windows NT client is manipulating the UNIX permission on a file
+using the native NT security dialog box.
+
+This parameter is applied as a mask (OR'ed with) to the changed
+permission bits, thus forcing any bits in this mask that the user may
+have modified to be on. Essentially, one bits in this mask may be
+treated as a set of bits that, when modifying security on a file, the
+user has always set to be 'on'.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(force create mode))(forcecreatemode) parameter. To allow
+a user to modify all the user/group/world permissions on a file,
+with no restrictions set this parameter to 000.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0000.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(directory security
+mask))(directorysecuritymask), link(bf(security mask))(securitymask)
+parameters.
+
+  bf(Default:)
+tt(	force security mode = <same as force create mode>)
+
+  bf(Example:)
+tt(	force security mode = 0)
 
 label(forceuser)
 dit(bf(force user (S)))
@@ -2201,6 +2328,13 @@ password. Once connected, all file operations will be performed as the
 tt("forced user"), no matter what username the client connected as.
 
 This can be very useful.
+
+In Samba 2.0.5 and above this parameter also causes the primary
+group of the forced user to be used as the primary group for all
+file activity. Prior to 2.0.5 the primary group was left as the
+primary group of the connecting user (this was a bug).
+
+See also link(bf("force group"))(forcegroup)
 
   bf(Default:)
 tt(	no forced user)
@@ -2394,35 +2528,30 @@ described in the man page bf(hosts_access (5)). Note that this man
 page may not be present on your system, so a brief description will
 be given here also.
 
-em(NOTE:) IF you wish to allow the url(bf(smbpasswd
-(8)))(smbpasswd.html.8) program to be run by local users to change
-their Samba passwords using the local url(bf(smbd (8)))(smbd.8.html)
-daemon, then you em(MUST) ensure that the localhost is listed in your
-bf(hosts allow) list, as url(bf(smbpasswd (8)))(smbpasswd.html.8) runs
-in client-server mode and is seen by the local
-url(bf(smbd))(smbd.8.html) process as just another client.
+Note that the localhost address 127.0.0.1 will always be allowed
+access unless specifically denied by a "hosts deny" option.
 
 You can also specify hosts by network/netmask pairs and by netgroup
 names if your system supports netgroups. The em(EXCEPT) keyword can also
 be used to limit a wildcard list. The following examples may provide
 some help:
 
-bf(Example 1): allow localhost and all IPs in 150.203.*.* except one
+bf(Example 1): allow all IPs in 150.203.*.* except one
 
-tt(	hosts allow = localhost, 150.203. EXCEPT 150.203.6.66)
+tt(	hosts allow = 150.203. EXCEPT 150.203.6.66)
 
-bf(Example 2): allow localhost and hosts that match the given network/netmask
+bf(Example 2): allow hosts that match the given network/netmask
 
-tt(	hosts allow = localhost, 150.203.15.0/255.255.255.0)
+tt(	hosts allow = 150.203.15.0/255.255.255.0)
 
-bf(Example 3): allow a localhost plus a couple of hosts
+bf(Example 3): allow a couple of hosts
 
-tt(	hosts allow = localhost, lapland, arvidsjaur)
+tt(	hosts allow = lapland, arvidsjaur)
 
-bf(Example 4): allow only hosts in NIS netgroup "foonet" or localhost, but 
+bf(Example 4): allow only hosts in NIS netgroup "foonet", but 
 deny access from one particular host
 
-tt( 	hosts allow = @foonet, localhost)
+tt( 	hosts allow = @foonet)
 
 tt( 	hosts deny = pirate)
 
@@ -2435,7 +2564,7 @@ host access to see if it does what you expect.
 tt(	none (i.e., all hosts permitted access))
 
   bf(Example:)
-tt(	allow hosts = 150.203.5. localhost myhost.mynet.edu.au)
+tt(	allow hosts = 150.203.5. myhost.mynet.edu.au)
 
 
 label(hostsdeny)
@@ -3889,7 +4018,7 @@ tt(	oplocks = True)
 tt(	oplocks = False)
 
 label(oplockbreakwaittime)
-dit(bf(oplock break wait time (G))
+dit(bf(oplock break wait time (G)))
 
 This is a tuning parameter added due to bugs in both Windows 9x and WinNT.
 If Samba responds to a client too quickly when that client issues an SMB that
@@ -5124,7 +5253,7 @@ users into the link(bf("guest account"))(guestaccount). See the
 link(bf("map to guest"))(maptoguest) parameter for details on
 doing this.
 
-e,(BUG:) There is currently a bug in the implementation of
+em(BUG:) There is currently a bug in the implementation of
 bf("security=domain) with respect to multi-byte character
 set usernames. The communication with a Domain Controller
 must be done in UNICODE and Samba currently does not widen
@@ -5145,6 +5274,40 @@ tt( 	security = USER)
 
   bf(Example:)
 tt( 	security = DOMAIN)
+
+label(securitymask)
+dit(bf(security mask (S)))
+
+This parameter controls what UNIX permission bits can be modified
+when a Windows NT client is manipulating the UNIX permission on a
+file using the native NT security dialog box.
+
+This parameter is applied as a mask (AND'ed with) to the changed
+permission bits, thus preventing any bits not in this mask from
+being modified. Essentially, zero bits in this mask may be treated
+as a set of bits the user is not allowed to change.
+
+If not set explicitly this parameter is set to the same value as the
+link(bf(create mask))(createmask) parameter. To allow a user to
+modify all the user/group/world permissions on a file, set this
+parameter to 0777.
+
+em(Note) that users who can access the Samba server through other
+means can easily bypass this restriction, so it is primarily
+useful for standalone "appliance" systems.  Administrators of
+most normal systems will probably want to set it to 0777.
+
+See also the link(bf(force directory security
+mode))(forcedirectorysecuritymode), link(bf(directory security
+mask))(directorysecuritymask), link(bf(force security
+mode))(forcesecuritymode) parameters.
+
+  bf(Default:)
+tt(	security mask = <same as create mask>)
+
+  bf(Example:)
+tt(	security mask = 0777)
+
 
 label(serverstring)
 dit(bf(server string (G)))
@@ -6365,6 +6528,8 @@ verb(
  	writeable = yes
  	write ok = yes
 )
+
+endit()
 
 label(WARNINGS)
 manpagesection(WARNINGS)
