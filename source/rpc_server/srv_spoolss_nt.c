@@ -6303,6 +6303,11 @@ WERROR _spoolss_addform( pipes_struct *p, SPOOL_Q_ADDFORM *q_u, SPOOL_R_ADDFORM 
 		return WERR_BADFID;
 	}
 
+	/* 
+	 * FIXME!!  Feels like there should be an access check here, but haven't
+	 * had time to verify.  --jerry
+	 */
+
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
 		return WERR_INVALID_PARAM;

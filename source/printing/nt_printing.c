@@ -2688,7 +2688,39 @@ WERROR mod_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 	{
 		case 2:
 		{
-			printer.info_2->c_setprinter++;
+			/*
+			 * Update the changestamp.  Emperical tests show that the
+			 * ChangeID is always updated,but c_setprinter is only 
+			 * incremented on a SetPrinter() call.
+			 */
+
+			time_t time_unix = time(NULL);
+
+			/* ChangeID **must** be increasing over the lifetime
+			   of client's spoolss service in order for the 
+			   client's cache to show updates */
+
+			printer.info_2->changeid = time_unix * 100;
+
+			/*
+			 * Because one day someone will ask:
+			 * NT->NT	An admin connection to a remote
+			 * 		printer show changes imeediately in
+			 * 		the properities dialog
+			 * 	
+			 * 		A non-admin connection will only show the
+			 * 		changes after viewing the properites page
+			 * 		2 times.  Seems to be related to a
+			 * 		race condition in the client between the spooler
+			 * 		updating the local cache and the Explorer.exe GUI
+			 *		actually displaying the properties.
+			 *
+			 *		This is fixed in Win2k.  admin/non-admin
+			 * 		connections both display changes immediately.
+			 *
+			 * 14/12/01	--jerry
+			 */
+
 			result=update_a_printer_2(printer.info_2);
 			break;
 		}
@@ -2716,17 +2748,13 @@ WERROR add_a_printer(NT_PRINTER_INFO_LEVEL printer, uint32 level)
 		case 2:
 		{
 			/*
-			 * Update the changestamp.
-			 * Note we must *not* do this in mod_a_printer().
+			 * Update the changestamp.  See comments in mod_a_printer()
+			 * --jerry
 			 */
-			NTTIME time_nt;
-			time_t time_unix = time(NULL);
-			unix_to_nt_time(&time_nt, time_unix);
-			if (printer.info_2->changeid==time_nt.low)
-				printer.info_2->changeid++;
-			else
-				printer.info_2->changeid=time_nt.low;
 
+			time_t time_unix = time(NULL);
+
+			printer.info_2->changeid = time_unix * 100;
 			printer.info_2->c_setprinter++;
 
 			result=update_a_printer_2(printer.info_2);
