@@ -2647,10 +2647,14 @@ static WERROR get_a_printer_2(NT_PRINTER_INFO_LEVEL_2 **info_ptr, fstring sharen
 	info.attributes |= (PRINTER_ATTRIBUTE_SHARED | PRINTER_ATTRIBUTE_NETWORK); 
 
 	/* Restore the stripped strings. */
-	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", 
-		 get_called_name());
+	slprintf(info.servername, sizeof(info.servername)-1, "\\\\%s", get_called_name());
 	strupper(info.servername);
 
+	slprintf(printername, sizeof(printername)-1, "\\\\%s\\", get_called_name());
+	strupper(printername);
+	fstrcat(printername, info.printername);
+	fstrcpy(info.printername, printername);
+	
 	len += unpack_devicemode(&info.devmode,dbuf.dptr+len, dbuf.dsize-len);
 
 	/*
@@ -4010,6 +4014,7 @@ BOOL print_time_access_check(int snum)
 	return ok;
 }
 
+#if 0	/* JERRY - not used */
 /****************************************************************************
  Attempt to write a default device.
 *****************************************************************************/
@@ -4081,3 +4086,4 @@ WERROR printer_write_default_dev(int snum, const PRINTER_DEFAULT *printer_defaul
 	free_a_printer(&printer, 2);
 	return result;
 }
+#endif	/* JERRY */
