@@ -22,8 +22,7 @@
 
 enum wins_record_state {
 	WINS_REC_RELEASED =0,
-	WINS_REC_ACTIVE   =1,
-	WINS_REC_EXPIRED  =2
+	WINS_REC_ACTIVE   =1
 };
 
 /*

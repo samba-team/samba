@@ -14,7 +14,8 @@ ADD_OBJ_FILES = \
 		nbt_server/defense.o \
 		nbt_server/packet.o \
 		nbt_server/winsserver.o \
-		nbt_server/winsdb.o
+		nbt_server/winsdb.o \
+		nbt_server/winswack.o
 REQUIRED_SUBSYSTEMS = \
 		LIBCLI_NBT
 # End SUBSYSTEM SMB
