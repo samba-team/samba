@@ -178,9 +178,11 @@ BOOL prs_uint32s(BOOL charmode, char *name, prs_struct *ps, int depth, uint32 *d
 BOOL prs_buffer2(BOOL charmode, char *name, prs_struct *ps, int depth, BUFFER2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
+    char *p = (char *)str->buffer;
+
 	if (q == NULL) return False;
 
-	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->buf_len)
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->buf_len)
 	ps->offset += str->buf_len;
 
 	return True;
@@ -203,14 +205,17 @@ BOOL prs_string2(BOOL charmode, char *name, prs_struct *ps, int depth, STRING2 *
 
 /******************************************************************
  stream a unicode string, length/buffer specified separately,
- in uint16 chars.
+ in uint16 chars. We use DBG_RW_PCVAL, not DBG_RW_PSVAL here
+ as the unicode string is already in little-endian format.
  ********************************************************************/
 BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
+    char *p = (char *)str->buffer;
+
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->buffer, str->uni_str_len)
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
 	ps->offset += str->uni_str_len * sizeof(uint16);
 
 	return True;
@@ -218,34 +223,43 @@ BOOL prs_unistr2(BOOL charmode, char *name, prs_struct *ps, int depth, UNISTR2 *
 
 /******************************************************************
  stream a unicode string, length/buffer specified separately,
- in uint16 chars.
+ in uint16 chars. We use DBG_RW_PCVAL, not DBG_RW_PSVAL here
+ as the unicode string is already in little-endian format.
  ********************************************************************/
 BOOL prs_unistr3(BOOL charmode, char *name, UNISTR3 *str, prs_struct *ps, int depth)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
+    char *p = (char *)str->str.buffer;
+
 	if (q == NULL) return False;
 
-	DBG_RW_PSVAL(charmode, name, depth, ps->offset, ps->io, q, str->str.buffer, str->uni_str_len)
+	DBG_RW_PCVAL(charmode, name, depth, ps->offset, ps->io, q, p, str->uni_str_len * 2)
 	ps->offset += str->uni_str_len * sizeof(uint16);
 
 	return True;
 }
 
 /*******************************************************************
- stream a unicode  null-terminated string
+ stream a unicode  null-terminated string. As the string is already
+ in little-endian format then do it as a stream of bytes.
  ********************************************************************/
 BOOL prs_unistr(char *name, prs_struct *ps, int depth, UNISTR *str)
 {
 	char *q = mem_data(&(ps->data), ps->offset);
 	int i = 0;
 	uint8 *start = (uint8*)q;
+    unsigned char *p = (unsigned char *)str->buffer;
 
 	if (q == NULL) return False;
 
 	do 
 	{
-		RW_SVAL(ps->io, q, str->buffer[i],0);
-		q += 2;
+		RW_CVAL(ps->io, q, *p, 0);
+        p++;
+        q++;
+		RW_CVAL(ps->io, q, *p, 0);
+        p++;
+        q++;
 		i++;
 
 	} while ((i < sizeof(str->buffer) / sizeof(str->buffer[0])) &&

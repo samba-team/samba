@@ -123,7 +123,6 @@ typedef struct unihdr2_info
 typedef struct unistr_info
 {
   uint16 buffer[MAX_UNISTRLEN]; /* unicode characters. ***MUST*** be null-terminated */
-
 } UNISTR;
 
 /* BUFHDR - buffer header */
