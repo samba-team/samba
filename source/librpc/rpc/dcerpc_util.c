@@ -666,3 +666,25 @@ NTSTATUS dcerpc_secondary_smb(struct dcerpc_pipe *p, struct dcerpc_pipe **p2,
 
 	return NT_STATUS_OK;
 }
+
+
+/*
+  fetch the user session key for the underlying transport. Currently
+  only works for the ncacn_np transport
+*/
+NTSTATUS dcerpc_fetch_session_key(struct dcerpc_pipe *p,
+				  uint8 session_key[16])
+{
+	struct cli_tree *tree;
+
+	tree = dcerpc_smb_tree(p);
+	if (!tree) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	memcpy(session_key, 
+	       tree->session->transport->negotiate.user_session_key,
+	       16);
+	
+	return NT_STATUS_OK;
+}

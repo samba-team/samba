@@ -18,13 +18,14 @@ SMB_SUBSYSTEM(LIBCLI_UTILS,[],
 		libcli/util/smberr.o \
 		libcli/util/doserr.o libcli/util/errormap.o \
 		libcli/util/pwd_cache.o libcli/util/clierror.o libcli/util/cliutil.o \
-		libcli/util/nterr.o libcli/util/smbdes.o libcli/util/smbencrypt.o],
+		libcli/util/nterr.o libcli/util/smbdes.o libcli/util/smbencrypt.o \
+		libcli/util/dom_sid.o],
 		libcli/util/libcli_utils_public_proto.h)
 
 SMB_SUBSYSTEM(LIBCLI_AUTH,[],
 		[libcli/auth/ntlmssp.o libcli/auth/ntlmssp_parse.o \
 		libcli/auth/ntlmssp_sign.o libcli/auth/schannel.o \
-		libcli/auth/credentials.o],
+		libcli/auth/credentials.o libcli/auth/session.o],
 		libcli/auth/libcli_auth_public_proto.h)
 
 SMB_SUBSYSTEM(LIBCLI_NMB,[],
