@@ -692,6 +692,12 @@ NTSTATUS ntlmssp_client_start(NTLMSSP_CLIENT_STATE **ntlmssp_state)
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_NEGOTIATE_NTLM2 |
 		NTLMSSP_NEGOTIATE_KEY_EXCH |
+		/*
+		 * We need to set this to allow a later SetPassword
+		 * via the SAMR pipe to succeed. Strange.... We could
+		 * also add  NTLMSSP_NEGOTIATE_SEAL here. JRA.
+		 * */
+		NTLMSSP_NEGOTIATE_SIGN |
 		NTLMSSP_REQUEST_TARGET;
 
 	(*ntlmssp_state)->ref_count = 1;
