@@ -267,7 +267,31 @@ def test_EnumPrinterData(pipe, handle):
  
         enum_index += 1
 
-    sys.exit(1)
+def test_SetPrinterData(pipe, handle):
+
+    print 'testing spoolss_SetPrinterData'
+
+    valuename = '__printerdatatest__'
+    data = '12345'
+    
+    r = {}
+    r['handle'] = handle
+    r['value_name'] = valuename
+    r['type'] = 3                       # REG_BINARY
+    r['buffer'] = data
+    r['real_len'] = 5
+
+    dcerpc.spoolss_SetPrinterData(pipe, r)
+
+    s = {}
+    s['handle'] = handle
+    s['value_name'] = valuename
+
+    result = ResizeBufferCall(dcerpc.spoolss_GetPrinterData, pipe, r)
+
+    if result['buffer'] != data:
+        print 'SetPrinterData: mismatch'
+        sys.exit(1)
 
 
 def test_EnumPrinters(pipe):
@@ -321,6 +345,7 @@ def test_EnumPrinters(pipe):
         test_AddForm(pipe, handle)
         test_EnumJobs(pipe, handle)
         test_EnumPrinterData(pipe, handle)
+        test_SetPrinterData(pipe, handle)
         test_ClosePrinter(pipe, handle)
 
 
