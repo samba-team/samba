@@ -5,7 +5,7 @@
    Copyright (C) Gerald Carter			2001-2003
    Copyright (C) Shahms King			2001
    Copyright (C) Andrew Bartlett		2002-2003
-   Copyright (C) Stefan (metze) Metzmacher	2002
+   Copyright (C) Stefan (metze) Metzmacher	2002-2003
     
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -34,6 +34,8 @@
 
 #define SMBLDAP_DONT_PING_TIME 10	/* ping only all 10 seconds */
 #define SMBLDAP_NUM_RETRIES 8	        /* retry only 8 times */
+
+#define SMBLDAP_IDLE_TIME 150		/* After 2.5 minutes disconnect */
 
 
 /* attributes used by Samba 2.2 */
@@ -925,6 +927,8 @@ int smbldap_search(struct smbldap_state *ldap_state,
 		smbldap_close(ldap_state);	
 	}
 
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_filter);
 	return rc;
 }
@@ -954,6 +958,8 @@ int smbldap_modify(struct smbldap_state *ldap_state, const char *dn, LDAPMod *at
 		smbldap_close(ldap_state);	
 	}
 	
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -983,6 +989,8 @@ int smbldap_add(struct smbldap_state *ldap_state, const char *dn, LDAPMod *attrs
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1012,6 +1020,8 @@ int smbldap_delete(struct smbldap_state *ldap_state, const char *dn)
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	SAFE_FREE(utf8_dn);
 	return rc;
 }
@@ -1041,6 +1051,8 @@ int smbldap_extended_operation(struct smbldap_state *ldap_state,
 		smbldap_close(ldap_state);	
 	}
 		
+	ldap_state->last_use = time(NULL);
+
 	return rc;
 }
 
@@ -1071,6 +1083,24 @@ int smbldap_search_suffix (struct smbldap_state *ldap_state, const char *filter,
 	return rc;
 }
 
+static void smbldap_idle_fn(void **data, time_t *interval, time_t now)
+{
+	struct smbldap_state *state = (struct smbldap_state *)(*data);
+
+	if (state->ldap_struct == NULL) {
+		DEBUG(10,("ldap connection not connected...\n"));
+		return;
+	}
+		
+	if ((state->last_use+SMBLDAP_IDLE_TIME) > now) {
+		DEBUG(10,("ldap connection not idle...\n"));
+		return;
+	}
+		
+	DEBUG(7,("ldap connection idle...closing connection\n"));
+	smbldap_close(state);
+}
+
 /**********************************************************************
  Housekeeping
  *********************************************************************/
@@ -1085,6 +1115,8 @@ void smbldap_free_struct(struct smbldap_state **ldap_state)
 
 	SAFE_FREE((*ldap_state)->bind_dn);
 	SAFE_FREE((*ldap_state)->bind_secret);
+
+	smb_unregister_idle_event((*ldap_state)->event_id);
 
 	*ldap_state = NULL;
 
@@ -1109,6 +1141,16 @@ NTSTATUS smbldap_init(TALLOC_CTX *mem_ctx, const char *location, struct smbldap_
 	} else {
 		(*smbldap_state)->uri = "ldap://localhost";
 	}
+
+	(*smbldap_state)->event_id =
+		smb_register_idle_event(smbldap_idle_fn, (void *)(*smbldap_state),
+					SMBLDAP_IDLE_TIME);
+
+	if ((*smbldap_state)->event_id == SMB_EVENT_ID_INVALID) {
+		DEBUG(0,("Failed to register LDAP idle event!\n"));
+		return NT_STATUS_INVALID_HANDLE;
+	}
+
 	return NT_STATUS_OK;
 }
 
