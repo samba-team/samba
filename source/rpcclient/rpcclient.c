@@ -708,6 +708,8 @@ static void usage(void)
 		}
 	}
 
+	poptFreeContext(pc);
+
 	/* the following functions are part of the Samba debugging
 	   facilities.  See lib/debug.c */
 	setup_logging("rpcclient", interactive);
