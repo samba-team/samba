@@ -33,16 +33,16 @@
 /*
   test unlink ops
 */
-static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_unlink(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct smb_unlink io;
 	NTSTATUS status;
 	BOOL ret = True;
 	const char *fname = BASEDIR "\\test.txt";
 
-	if (cli_deltree(cli->tree, BASEDIR) == -1 ||
-	    NT_STATUS_IS_ERR(cli_mkdir(cli->tree, BASEDIR))) {
-		printf("Unable to setup %s - %s\n", BASEDIR, cli_errstr(cli->tree));
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1 ||
+	    NT_STATUS_IS_ERR(smbcli_mkdir(cli->tree, BASEDIR))) {
+		printf("Unable to setup %s - %s\n", BASEDIR, smbcli_errstr(cli->tree));
 		return False;
 	}
 
@@ -52,7 +52,7 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	status = smb_raw_unlink(cli->tree, &io);
 	CHECK_STATUS(status, NT_STATUS_OBJECT_NAME_NOT_FOUND);
 
-	cli_close(cli->tree, cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
+	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 
 	io.in.pattern = fname;
 	io.in.attrib = 0;
@@ -60,7 +60,7 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_OK);
 
 	printf("Trying a hidden file\n");
-	cli_close(cli->tree, cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
+	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 	torture_set_file_attribute(cli->tree, fname, FILE_ATTRIBUTE_HIDDEN);
 
 	io.in.pattern = fname;
@@ -101,7 +101,7 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	CHECK_STATUS(status, NT_STATUS_FILE_IS_A_DIRECTORY);
 
 	printf("Trying wildcards\n");
-	cli_close(cli->tree, cli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
+	smbcli_close(cli->tree, smbcli_open(cli->tree, fname, O_RDWR|O_CREAT, DENY_NONE));
 	io.in.pattern = BASEDIR "\\t*.t";
 	io.in.attrib = 0;
 	status = smb_raw_unlink(cli->tree, &io);
@@ -128,7 +128,7 @@ static BOOL test_unlink(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	return ret;
 }
 
@@ -138,7 +138,7 @@ done:
 */
 BOOL torture_raw_unlink(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

@@ -113,9 +113,9 @@ static void usr1_handler(int x)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *do_connection(char *the_service)
+static struct smbcli_state *do_connection(char *the_service)
 {
-	struct cli_state *c;
+	struct smbcli_state *c;
 	struct nmb_name called, calling;
 	char *server_n;
 	struct in_addr ip;
@@ -146,11 +146,11 @@ static struct cli_state *do_connection(char *the_service)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_initialise(NULL)) || (cli_set_port(c, smb_port) != smb_port) ||
-	    !cli_connect(c, server_n, &ip)) {
+	if (!(c=smbcli_initialise(NULL)) || (smbcli_set_port(c, smb_port) != smb_port) ||
+	    !smbcli_connect(c, server_n, &ip)) {
 		DEBUG(0,("%d: Connection to %s failed\n", sys_getpid(), server_n));
 		if (c) {
-			cli_shutdown(c);
+			smbcli_shutdown(c);
 		}
 		return NULL;
 	}
@@ -165,11 +165,11 @@ static struct cli_state *do_connection(char *the_service)
 	/* Use kerberos authentication if specified */
 	c->use_kerberos = use_kerberos;
 
-	if (!cli_session_request(c, &calling, &called)) {
+	if (!smbcli_session_request(c, &calling, &called)) {
 		char *p;
 		DEBUG(0,("%d: session request to %s failed (%s)\n", 
-			 sys_getpid(), called.name, cli_errstr(c)));
-		cli_shutdown(c);
+			 sys_getpid(), called.name, smbcli_errstr(c)));
+		smbcli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -183,9 +183,9 @@ static struct cli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: session request ok\n", sys_getpid()));
 
-	if (!cli_negprot(c)) {
+	if (!smbcli_negprot(c)) {
 		DEBUG(0,("%d: protocol negotiation failed\n", sys_getpid()));
-		cli_shutdown(c);
+		smbcli_shutdown(c);
 		return NULL;
 	}
 
@@ -209,17 +209,17 @@ static struct cli_state *do_connection(char *the_service)
 	    c->force_dos_errors = True;
 	}
 
-	if (!cli_session_setup(c, username, 
+	if (!smbcli_session_setup(c, username, 
 			       password, strlen(password),
 			       password, strlen(password),
 			       workgroup)) {
 		/* if a password was not supplied then try again with a
 			null username */
 		if (password[0] || !username[0] ||
-				!cli_session_setup(c, "", "", 0, "", 0, workgroup)) {
+				!smbcli_session_setup(c, "", "", 0, "", 0, workgroup)) {
 			DEBUG(0,("%d: session setup failed: %s\n",
-				sys_getpid(), cli_errstr(c)));
-			cli_shutdown(c);
+				sys_getpid(), smbcli_errstr(c)));
+			smbcli_shutdown(c);
 			return NULL;
 		}
 		DEBUG(0,("Anonymous login successful\n"));
@@ -227,11 +227,11 @@ static struct cli_state *do_connection(char *the_service)
 
 	DEBUG(4,("%d: session setup ok\n", sys_getpid()));
 
-	if (!cli_send_tconX(c, share, "?????",
+	if (!smbcli_send_tconX(c, share, "?????",
 			    password, strlen(password)+1)) {
 		DEBUG(0,("%d: tree connect failed: %s\n",
-			 sys_getpid(), cli_errstr(c)));
-		cli_shutdown(c);
+			 sys_getpid(), smbcli_errstr(c)));
+		smbcli_shutdown(c);
 		return NULL;
 	}
 
@@ -326,7 +326,7 @@ static void smb_umount(char *mount_point)
  * not exit after open_sockets() or send_login() errors,
  * as the smbfs mount would then have no way to recover.
  */
-static void send_fs_socket(char *the_service, char *mount_point, struct cli_state *c)
+static void send_fs_socket(char *the_service, char *mount_point, struct smbcli_state *c)
 {
 	int fd, closed = 0, res = 1;
 	pid_t parentpid = getppid();
@@ -379,7 +379,7 @@ static void send_fs_socket(char *the_service, char *mount_point, struct cli_stat
 
 		   If we don't do this we will "leak" sockets and memory on
 		   each reconnection we have to make. */
-		cli_shutdown(c);
+		smbcli_shutdown(c);
 		c = NULL;
 
 		if (!closed) {
@@ -427,7 +427,7 @@ static void init_mount(void)
 	char mount_point[MAXPATHLEN+1];
 	pstring tmp;
 	pstring svc2;
-	struct cli_state *c;
+	struct smbcli_state *c;
 	char *args[20];
 	int i, status;
 

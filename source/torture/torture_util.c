@@ -39,7 +39,7 @@ double end_timer(void)
 /*
   create a directory, returning a handle to it
 */
-int create_directory_handle(struct cli_tree *tree, const char *dname)
+int create_directory_handle(struct smbcli_tree *tree, const char *dname)
 {
 	NTSTATUS status;
 	union smb_open io;
@@ -74,7 +74,7 @@ int create_directory_handle(struct cli_tree *tree, const char *dname)
   sometimes we need a fairly complex file to work with, so we can test
   all possible attributes. 
 */
-int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *fname)
+int create_complex_file(struct smbcli_state *cli, TALLOC_CTX *mem_ctx, const char *fname)
 {
 	int fnum;
 	char buf[7] = "abc";
@@ -83,8 +83,8 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 	time_t t = (time(NULL) & ~1);
 	NTSTATUS status;
 
-	cli_unlink(cli->tree, fname);
-	fnum = cli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
+	smbcli_unlink(cli->tree, fname);
+	fnum = smbcli_nt_create_full(cli->tree, fname, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS,
 				  FILE_ATTRIBUTE_NORMAL,
 				  NTCREATEX_SHARE_ACCESS_DELETE|
 				  NTCREATEX_SHARE_ACCESS_READ|
@@ -93,7 +93,7 @@ int create_complex_file(struct cli_state *cli, TALLOC_CTX *mem_ctx, const char *
 				  0, 0);
 	if (fnum == -1) return -1;
 
-	cli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
+	smbcli_write(cli->tree, fnum, 0, buf, 0, sizeof(buf));
 
 	/* setup some EAs */
 	setfile.generic.level = RAW_SFILEINFO_EA_SET;
@@ -242,7 +242,7 @@ void dump_all_info(TALLOC_CTX *mem_ctx, union smb_fileinfo *finfo)
 /*
   dump file infor by name
 */
-void torture_all_info(struct cli_tree *tree, const char *fname)
+void torture_all_info(struct smbcli_tree *tree, const char *fname)
 {
 	TALLOC_CTX *mem_ctx = talloc_init(fname);
 	union smb_fileinfo finfo;
@@ -304,7 +304,7 @@ BOOL split_username(const char *pair, char **user, char **pass)
 /*
   set a attribute on a file
 */
-BOOL torture_set_file_attribute(struct cli_tree *tree, const char *fname, uint16_t attrib)
+BOOL torture_set_file_attribute(struct smbcli_tree *tree, const char *fname, uint16_t attrib)
 {
 	union smb_setfileinfo sfinfo;
 	NTSTATUS status;
@@ -322,7 +322,7 @@ BOOL torture_set_file_attribute(struct cli_tree *tree, const char *fname, uint16
 /*
   set a file descriptor as sparse
 */
-NTSTATUS torture_set_sparse(struct cli_tree *tree, int fnum)
+NTSTATUS torture_set_sparse(struct smbcli_tree *tree, int fnum)
 {
 	union smb_ioctl nt;
 	NTSTATUS status;

@@ -90,7 +90,7 @@ done:
 	/* We have the netbios name and IP address of a domain controller.
 	   Ideally we should sent a SAMLOGON request to determine whether
 	   the DC is alive and kicking.  If we can catch a dead DC before
-	   performing a cli_connect() we can avoid a 30-second timeout. */
+	   performing a smbcli_connect() we can avoid a 30-second timeout. */
 
 	DEBUG(3, ("rpc_find_dc: Returning DC %s (%s) for domain %s\n", srv_name,
 		  inet_ntoa(dc_ip), domain));

@@ -77,7 +77,7 @@ static void one_file_fn(const char *pPath, const char *pUser, uint16_t perms,
 
 static int rap_file_close(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\nMissing fileid of file to close\n\n");
@@ -87,14 +87,14 @@ static int rap_file_close(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	ret = cli_NetFileClose(cli, atoi(argv[0]));
-	cli_shutdown(cli);
+	ret = smbcli_NetFileClose(cli, atoi(argv[0]));
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_file_info(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc == 0)
 		return net_rap_file_usage(argc, argv);
@@ -102,8 +102,8 @@ static int rap_file_info(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	ret = cli_NetFileGetInfo(cli, atoi(argv[0]), one_file_fn);
-	cli_shutdown(cli);
+	ret = smbcli_NetFileGetInfo(cli, atoi(argv[0]), one_file_fn);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -126,7 +126,7 @@ int net_rap_file(int argc, const char **argv)
 	};
 	
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		int ret;
 		
 		if (!(cli = net_make_ipc_connection(0))) 
@@ -137,8 +137,8 @@ int net_rap_file(int argc, const char **argv)
 		 "\nEnumerating open files on remote server:\n\n"\
 		 "\nFileId  Opened by            Perms  Locks  Path \n"\
 		 "------  ---------            -----  -----  ---- \n");
-		ret = cli_NetFileEnum(cli, NULL, NULL, file_fn);
-		cli_shutdown(cli);
+		ret = smbcli_NetFileEnum(cli, NULL, NULL, file_fn);
+		smbcli_shutdown(cli);
 		return ret;
 	}
 	
@@ -165,7 +165,7 @@ static void share_fn(const char *share_name, uint32_t type,
 
 static int rap_share_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (argc == 0) {
@@ -176,14 +176,14 @@ static int rap_share_delete(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	ret = cli_NetShareDelete(cli, argv[0]);
-	cli_shutdown(cli);
+	ret = smbcli_NetShareDelete(cli, argv[0]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_share_add(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	RAP_SHARE_INFO_2 sinfo;
@@ -212,8 +212,8 @@ static int rap_share_add(int argc, const char **argv)
 	memset(sinfo.password, '\0', sizeof(sinfo.password));
 	sinfo.reserved2 = '\0';
 	
-	ret = cli_NetShareAdd(cli, &sinfo);
-	cli_shutdown(cli);
+	ret = smbcli_NetShareAdd(cli, &sinfo);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -228,7 +228,7 @@ int net_rap_share(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		int ret;
 		
 		if (!(cli = net_make_ipc_connection(0))) 
@@ -239,10 +239,10 @@ int net_rap_share(int argc, const char **argv)
 	"\nEnumerating shared resources (exports) on remote server:\n\n"\
 	"\nShare name   Type     Description\n"\
 	"----------   ----     -----------\n");
-			ret = cli_RNetShareEnum(cli, long_share_fn, NULL);
+			ret = smbcli_RNetShareEnum(cli, long_share_fn, NULL);
 		}
-		ret = cli_RNetShareEnum(cli, share_fn, NULL);
-		cli_shutdown(cli);
+		ret = smbcli_RNetShareEnum(cli, share_fn, NULL);
+		smbcli_shutdown(cli);
 		return ret;
 	}
 
@@ -310,7 +310,7 @@ static void display_conns_func(uint16_t conn_id, uint16_t conn_type, uint16_t op
 static int rap_session_info(int argc, const char **argv)
 {
 	const char *sessname;
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -321,22 +321,22 @@ static int rap_session_info(int argc, const char **argv)
 
 	sessname = argv[0];
 
-	ret = cli_NetSessionGetInfo(cli, sessname, display_session_func);
+	ret = smbcli_NetSessionGetInfo(cli, sessname, display_session_func);
 	if (ret < 0) {
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
                 return ret;
 	}
 
 	d_printf("Share name     Type     # Opens\n-------------------------"\
 		 "-----------------------------------------------------\n");
-	ret = cli_NetConnectionEnum(cli, sessname, display_conns_func);
-	cli_shutdown(cli);
+	ret = smbcli_NetConnectionEnum(cli, sessname, display_conns_func);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_session_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -345,8 +345,8 @@ static int rap_session_delete(int argc, const char **argv)
 	if (argc == 0) 
                 return net_rap_session_usage(argc, argv);
 
-	ret = cli_NetSessionDel(cli, argv[0]);
-	cli_shutdown(cli);
+	ret = smbcli_NetSessionDel(cli, argv[0]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -360,7 +360,7 @@ int net_rap_session(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		int ret;
 		
 		if (!(cli = net_make_ipc_connection(0))) 
@@ -370,9 +370,9 @@ int net_rap_session(int argc, const char **argv)
 			 "Client Type        Opens Idle time\n"\
 			 "------------------------------------------"\
 			 "------------------------------------\n");
-		ret = cli_NetSessionEnum(cli, list_sessions_func);
+		ret = smbcli_NetSessionEnum(cli, list_sessions_func);
 
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return ret;
 	}
 
@@ -402,7 +402,7 @@ int net_rap_server_usage(int argc, const char **argv)
 		    
 int net_rap_server(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -412,9 +412,9 @@ int net_rap_server(int argc, const char **argv)
 		 "\tServer name          Server description\n"\
 		 "\t-------------        ----------------------------\n");
 
-	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, 
+	ret = smbcli_NetServerEnum(cli, cli->server_domain, SV_TYPE_ALL, 
 				display_server_func,NULL); 
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 	return ret;	
 }
 		      
@@ -430,7 +430,7 @@ int net_rap_domain_usage(int argc, const char **argv)
 		  
 int net_rap_domain(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (!(cli = net_make_ipc_connection(0))) 
@@ -440,9 +440,9 @@ int net_rap_domain(int argc, const char **argv)
 		 "\tDomain name          Server name of Browse Master\n"\
 		 "\t-------------        ----------------------------\n");
 
-	ret = cli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
+	ret = smbcli_NetServerEnum(cli, cli->server_domain, SV_TYPE_DOMAIN_ENUM,
 				display_server_func,NULL);	
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 	return ret;	
 }
 		      
@@ -525,7 +525,7 @@ static void enum_jobs(uint16_t jobid, const char *ownername,
 
 static int rap_printq_info(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (argc == 0) 
@@ -535,14 +535,14 @@ static int rap_printq_info(int argc, const char **argv)
                 return -1;
 
 	d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
-	ret = cli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
-	cli_shutdown(cli);
+	ret = smbcli_NetPrintQGetInfo(cli, argv[0], enum_queue, enum_jobs);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_printq_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (argc == 0) 
@@ -551,14 +551,14 @@ static int rap_printq_delete(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	ret = cli_printjob_del(cli, atoi(argv[0]));
-	cli_shutdown(cli);
+	ret = smbcli_printjob_del(cli, atoi(argv[0]));
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 int net_rap_printq(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	struct functable func[] = {
@@ -572,8 +572,8 @@ int net_rap_printq(int argc, const char **argv)
 			return -1;
 
 		d_printf(PRINTQ_ENUM_DISPLAY, cli->desthost); /* list header */
-		ret = cli_NetPrintQEnum(cli, enum_queue, enum_jobs);
-		cli_shutdown(cli);
+		ret = smbcli_NetPrintQEnum(cli, enum_queue, enum_jobs);
+		smbcli_shutdown(cli);
 		return ret;
 	}
 
@@ -608,7 +608,7 @@ static void group_member_fn(const char *user_name, void *state)
 
 static int rap_user_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (argc == 0) {
@@ -619,14 +619,14 @@ static int rap_user_delete(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0))) 
                 return -1;
 
-	ret = cli_NetUserDelete(cli, argv[0]);
-	cli_shutdown(cli);
+	ret = smbcli_NetUserDelete(cli, argv[0]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_user_add(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	RAP_USER_INFO_1 userinfo;
 
@@ -649,15 +649,15 @@ static int rap_user_add(int argc, const char **argv)
 	userinfo.home_dir = NULL;
 	userinfo.logon_script = NULL;
 
-	ret = cli_NetUserAdd(cli, &userinfo);
+	ret = smbcli_NetUserAdd(cli, &userinfo);
 
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_user_info(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nUser name not specified\n");
@@ -667,8 +667,8 @@ static int rap_user_info(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 
-	ret = cli_NetUserGetGroups(cli, argv[0], group_member_fn, NULL);
-	cli_shutdown(cli);
+	ret = smbcli_NetUserGetGroups(cli, argv[0], group_member_fn, NULL);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -683,18 +683,18 @@ int net_rap_user(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		if (!(cli = net_make_ipc_connection(0)))
                         goto done;
 		if (opt_long_list_entries) {
 			d_printf("\nUser name             Comment"\
 				 "\n-----------------------------\n");
-			ret = cli_RNetUserEnum(cli, long_user_fn, NULL);
-			cli_shutdown(cli);
+			ret = smbcli_RNetUserEnum(cli, long_user_fn, NULL);
+			smbcli_shutdown(cli);
 			goto done;
 		}
-		ret = cli_RNetUserEnum(cli, user_fn, NULL); 
-		cli_shutdown(cli);
+		ret = smbcli_RNetUserEnum(cli, user_fn, NULL); 
+		smbcli_shutdown(cli);
 		goto done;
 	}
 
@@ -725,7 +725,7 @@ static void group_fn(const char *group_name, const char *comment, void *state)
 
 static int rap_group_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nGroup name not specified\n");
@@ -735,14 +735,14 @@ static int rap_group_delete(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 
-	ret = cli_NetGroupDelete(cli, argv[0]);
-	cli_shutdown(cli);
+	ret = smbcli_NetGroupDelete(cli, argv[0]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_group_add(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	RAP_GROUP_INFO_1 grinfo;
 
@@ -759,8 +759,8 @@ static int rap_group_add(int argc, const char **argv)
 	grinfo.reserved1 = '\0';
 	grinfo.comment = smb_xstrdup(opt_comment);
 	
-	ret = cli_NetGroupAdd(cli, &grinfo);
-	cli_shutdown(cli);
+	ret = smbcli_NetGroupAdd(cli, &grinfo);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -773,19 +773,19 @@ int net_rap_group(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		int ret;
 		if (!(cli = net_make_ipc_connection(0)))
                         return -1;
 		if (opt_long_list_entries) {
 			d_printf("Group name            Comment\n");
 			d_printf("-----------------------------\n");
-			ret = cli_RNetGroupEnum(cli, long_group_fn, NULL);
-			cli_shutdown(cli);
+			ret = smbcli_RNetGroupEnum(cli, long_group_fn, NULL);
+			smbcli_shutdown(cli);
 			return ret;
 		}
-		ret = cli_RNetGroupEnum(cli, group_fn, NULL); 
-		cli_shutdown(cli);
+		ret = smbcli_RNetGroupEnum(cli, group_fn, NULL); 
+		smbcli_shutdown(cli);
 		return ret;
 	}
 
@@ -809,7 +809,7 @@ int net_rap_groupmember_usage(int argc, const char **argv)
 
 static int rap_groupmember_add(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc != 2) {
 		d_printf("\n\nGroup or user name not specified\n");
@@ -819,14 +819,14 @@ static int rap_groupmember_add(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 
-	ret = cli_NetGroupAddUser(cli, argv[0], argv[1]);
-	cli_shutdown(cli);
+	ret = smbcli_NetGroupAddUser(cli, argv[0], argv[1]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_groupmember_delete(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc != 2) {
 		d_printf("\n\nGroup or user name not specified\n");
@@ -836,14 +836,14 @@ static int rap_groupmember_delete(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 
-	ret = cli_NetGroupDelUser(cli, argv[0], argv[1]);
-	cli_shutdown(cli);
+	ret = smbcli_NetGroupDelUser(cli, argv[0], argv[1]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 
 static int rap_groupmember_list(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	if (argc == 0) {
 		d_printf("\n\nGroup name not specified\n");
@@ -853,8 +853,8 @@ static int rap_groupmember_list(int argc, const char **argv)
 	if (!(cli = net_make_ipc_connection(0)))
                 return -1;
 
-	ret = cli_NetGroupGetUsers(cli, argv[0], group_member_fn, NULL ); 
-	cli_shutdown(cli);
+	ret = smbcli_NetGroupGetUsers(cli, argv[0], group_member_fn, NULL ); 
+	smbcli_shutdown(cli);
 	return ret;
 }
 
@@ -918,7 +918,7 @@ int net_rap_service(int argc, const char **argv)
 	};
 
 	if (argc == 0) {
-		struct cli_state *cli;
+		struct smbcli_state *cli;
 		int ret;
 		if (!(cli = net_make_ipc_connection(0))) 
 			return -1;
@@ -926,10 +926,10 @@ int net_rap_service(int argc, const char **argv)
 		if (opt_long_list_entries) {
 			d_printf("Service name          Comment\n");
 			d_printf("-----------------------------\n");
-			ret = cli_RNetServiceEnum(cli, long_group_fn, NULL);
+			ret = smbcli_RNetServiceEnum(cli, long_group_fn, NULL);
 		}
-		ret = cli_RNetServiceEnum(cli, group_fn, NULL); 
-		cli_shutdown(cli);
+		ret = smbcli_RNetServiceEnum(cli, group_fn, NULL); 
+		smbcli_shutdown(cli);
 		return ret;
 	}
 
@@ -948,7 +948,7 @@ int net_rap_password_usage(int argc, const char **argv)
 
 int net_rap_password(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int ret;
 	
 	if (argc < 3) 
@@ -958,8 +958,8 @@ int net_rap_password(int argc, const char **argv)
                 return -1;
 
 	/* BB Add check for password lengths? */
-	ret = cli_oem_change_password(cli, argv[0], argv[2], argv[1]);
-	cli_shutdown(cli);
+	ret = smbcli_oem_change_password(cli, argv[0], argv[2], argv[1]);
+	smbcli_shutdown(cli);
 	return ret;
 }
 

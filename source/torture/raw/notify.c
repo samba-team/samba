@@ -52,14 +52,14 @@
 */
 BOOL torture_raw_notify(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 	struct smb_notify notify;
 	union smb_open io;
 	int fnum = -1;
-	struct cli_request *req;
+	struct smbcli_request *req;
 		
 	if (!torture_open_connection(&cli)) {
 		return False;
@@ -68,7 +68,7 @@ BOOL torture_raw_notify(int dummy)
 	mem_ctx = talloc_init("torture_raw_notify");
 
 	/* cleanup */
-	if (cli_deltree(cli->tree, BASEDIR) == -1) {
+	if (smbcli_deltree(cli->tree, BASEDIR) == -1) {
 		printf("Failed to cleanup " BASEDIR "\n");
 		ret = False;
 		goto done;
@@ -103,7 +103,7 @@ BOOL torture_raw_notify(int dummy)
 	printf("testing notify mkdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
-	cli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -115,7 +115,7 @@ BOOL torture_raw_notify(int dummy)
 	printf("testing notify rmdir\n");
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
-	cli_rmdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_rmdir(cli->tree, BASEDIR "\\subdir-name");
 
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_OK);
@@ -127,13 +127,13 @@ BOOL torture_raw_notify(int dummy)
 
 	req = smb_raw_changenotify_send(cli->tree, &notify);
 	smb_raw_ntcancel(req);
-	cli_mkdir(cli->tree, BASEDIR "\\subdir-name");
+	smbcli_mkdir(cli->tree, BASEDIR "\\subdir-name");
 	status = smb_raw_changenotify_recv(req, mem_ctx, &notify);
 	CHECK_STATUS(status, NT_STATUS_CANCELLED);
 
 done:
 	smb_raw_exit(cli->session);
-	cli_deltree(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);
 	return ret;

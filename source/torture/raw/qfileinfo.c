@@ -149,7 +149,7 @@ static union smb_fileinfo *fname_find(const char *name)
 */
 BOOL torture_raw_qfileinfo(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	int i;
 	BOOL ret = True;
 	int count;
@@ -171,7 +171,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
 	if (fnum == -1) {
-		printf("ERROR: open of %s failed (%s)\n", fname, cli_errstr(cli->tree));
+		printf("ERROR: open of %s failed (%s)\n", fname, smbcli_errstr(cli->tree));
 		ret = False;
 		goto done;
 	}
@@ -552,8 +552,8 @@ BOOL torture_raw_qfileinfo(int dummy)
 	NAME_CHECK("ALT_NAME_INFORMATION", alt_name_info, fname, STR_UNICODE);
 
 	/* and make sure we can open by alternate name */
-	cli_close(cli->tree, fnum);
-	fnum = cli_nt_create_full(cli->tree, correct_name, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, 
+	smbcli_close(cli->tree, fnum);
+	fnum = smbcli_nt_create_full(cli->tree, correct_name, 0, GENERIC_RIGHTS_FILE_ALL_ACCESS, 
 				  FILE_ATTRIBUTE_NORMAL,
 				  NTCREATEX_SHARE_ACCESS_DELETE|
 				  NTCREATEX_SHARE_ACCESS_READ|
@@ -561,7 +561,7 @@ BOOL torture_raw_qfileinfo(int dummy)
 				  NTCREATEX_DISP_OVERWRITE_IF, 
 				  0, 0);
 	if (fnum == -1) {
-		printf("Unable to open by alt_name - %s\n", cli_errstr(cli->tree));
+		printf("Unable to open by alt_name - %s\n", smbcli_errstr(cli->tree));
 		ret = False;
 	}
 
@@ -704,8 +704,8 @@ BOOL torture_raw_qfileinfo(int dummy)
 	
 
 done:
-	cli_close(cli->tree, fnum);
-	cli_unlink(cli->tree, fname);
+	smbcli_close(cli->tree, fnum);
+	smbcli_unlink(cli->tree, fname);
 
 	torture_close_connection(cli);
 	talloc_destroy(mem_ctx);

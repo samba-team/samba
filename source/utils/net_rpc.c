@@ -37,18 +37,18 @@
 
 
 /* A function of this type is passed to the 'run_rpc_command' wrapper */
-typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct cli_state *, TALLOC_CTX *, int, const char **);
+typedef NTSTATUS (*rpc_command_fn)(const DOM_SID *, struct smbcli_state *, TALLOC_CTX *, int, const char **);
 
 /**
  * Many of the RPC functions need the domain sid.  This function gets
  *  it at the start of every run 
  *
- * @param cli A cli_state already connected to the remote machine
+ * @param cli A smbcli_state already connected to the remote machine
  *
  * @return The Domain SID of the remote machine.
  **/
 
-static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
+static DOM_SID *net_get_remote_domain_sid(struct smbcli_state *cli)
 {
 	DOM_SID *domain_sid;
 	POLICY_HND pol;
@@ -69,26 +69,26 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
 	}
 
 
-	if (!cli_nt_session_open (cli, PI_LSARPC)) {
+	if (!smbcli_nt_session_open (cli, PI_LSARPC)) {
 		fprintf(stderr, "could not initialise lsa pipe\n");
 		goto error;
 	}
 	
-	result = cli_lsa_open_policy(cli, mem_ctx, True, 
+	result = smbcli_lsa_open_policy(cli, mem_ctx, True, 
 				     SEC_RIGHTS_MAXIMUM_ALLOWED,
 				     &pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
-	result = cli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
+	result = smbcli_lsa_query_info_policy(cli, mem_ctx, &pol, info_class, 
 					   domain_name, domain_sid);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto error;
 	}
 
-	cli_lsa_close(cli, mem_ctx, &pol);
-	cli_nt_session_close(cli);
+	smbcli_lsa_close(cli, mem_ctx, &pol);
+	smbcli_nt_session_close(cli);
 	talloc_destroy(mem_ctx);
 
 	return domain_sid;
@@ -115,20 +115,20 @@ static DOM_SID *net_get_remote_domain_sid(struct cli_state *cli)
  * @return A shell status integer (0 for success)
  */
 
-static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int conn_flags,
+static int run_rpc_command(struct smbcli_state *smbcli_arg, const int pipe_idx, int conn_flags,
                            rpc_command_fn fn,
                            int argc, const char **argv) 
 {
-	struct cli_state *cli = NULL;
+	struct smbcli_state *cli = NULL;
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	DOM_SID *domain_sid;
 
-	/* make use of cli_state handed over as an argument, if possible */
-	if (!cli_arg)
+	/* make use of smbcli_state handed over as an argument, if possible */
+	if (!smbcli_arg)
 		cli = net_make_ipc_connection(conn_flags);
 	else
-		cli = cli_arg;
+		cli = smbcli_arg;
 
 	if (!cli) {
 		return -1;
@@ -140,11 +140,11 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 	
 	if (!(mem_ctx = talloc_init("run_rpc_command"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return -1;
 	}
 	
-	if (!cli_nt_session_open(cli, pipe_idx)) {
+	if (!smbcli_nt_session_open(cli, pipe_idx)) {
 		DEBUG(0, ("Could not initialise pipe\n"));
 	}
 	
@@ -158,11 +158,11 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
 		
 	    
 	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 	
 	/* close the connection only if it was opened here */
-	if (!cli_arg)
-		cli_shutdown(cli);
+	if (!smbcli_arg)
+		smbcli_shutdown(cli);
 	
 	talloc_destroy(mem_ctx);
 
@@ -180,7 +180,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
@@ -189,7 +189,7 @@ static int run_rpc_command(struct cli_state *cli_arg, const int pipe_idx, int co
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_changetrustpw_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) {
 	
 	return trust_pw_find_change_and_store_it(cli, mem_ctx, opt_target_workgroup);
@@ -226,7 +226,7 @@ static int rpc_changetrustpw(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
@@ -235,7 +235,7 @@ static int rpc_changetrustpw(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_join_oldstyle_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) {
 	
 	fstring trust_passwd;
@@ -335,7 +335,7 @@ int net_rpc_join(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -345,7 +345,7 @@ int net_rpc_join(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_info_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -356,14 +356,14 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	sid_to_string(sid_str, domain_sid);
 
 	/* Get sam policy handle */	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -371,7 +371,7 @@ rpc_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	}
 
 	ZERO_STRUCT(ctr);
-	result = cli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_query_dom_info(cli, mem_ctx, &domain_pol,
 					 2, &ctr);
 	if (NT_STATUS_IS_OK(result)) {
 		TALLOC_CTX *ctx = talloc_init("rpc_info_internals");
@@ -410,7 +410,7 @@ int net_rpc_info(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -420,7 +420,7 @@ int net_rpc_info(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_getsid_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_getsid_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 		   TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	fstring sid_str;
@@ -473,7 +473,7 @@ static int rpc_user_usage(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -482,7 +482,7 @@ static int rpc_user_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) {
 	
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -501,7 +501,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 
 	/* Get sam policy handle */
 	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -509,7 +509,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	
 	/* Get domain policy handle */
 	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -521,7 +521,7 @@ static NTSTATUS rpc_user_add_internals(const DOM_SID *domain_sid, struct cli_sta
 	acb_info = ACB_NORMAL;
 	unknown = 0xe005000b; /* No idea what this is - a permission mask? */
 
-	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
 					  acct_name, acb_info, unknown,
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -561,7 +561,7 @@ static int rpc_user_add(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -571,7 +571,7 @@ static int rpc_user_add(int argc, const char **argv)
  **/
 
 static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid, 
-				       struct cli_state *cli, 
+				       struct smbcli_state *cli, 
 				       TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv)
 {
@@ -585,14 +585,14 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 	}
 	/* Get sam policy and domain handles */
 
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 
@@ -606,7 +606,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 		uint32_t *user_rids, num_rids, *name_types;
 		uint32_t flags = 0x000003e8; /* Unknown */
 
-		result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 					       flags, 1, &argv[0],
 					       &num_rids, &user_rids,
 					       &name_types);
@@ -615,7 +615,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 			goto done;
 		}
 
-		result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_open_user(cli, mem_ctx, &domain_pol,
 					    MAXIMUM_ALLOWED_ACCESS,
 					    user_rids[0], &user_pol);
 
@@ -626,7 +626,7 @@ static NTSTATUS rpc_user_del_internals(const DOM_SID *domain_sid,
 
 	/* Delete user */
 
-	result = cli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
+	result = smbcli_samr_delete_dom_user(cli, mem_ctx, &user_pol);
 
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -662,7 +662,7 @@ static int rpc_user_delete(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -672,7 +672,7 @@ static int rpc_user_delete(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_user_info_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -690,31 +690,31 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	}
 	/* Get sam policy handle */
 	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 	
 	/* Get domain policy handle */
 	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
 	/* Get handle on user */
 
-	result = cli_samr_lookup_names(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_lookup_names(cli, mem_ctx, &domain_pol,
 				       flags, 1, &argv[0],
 				       &num_rids, &rids, &name_types);
 
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = cli_samr_open_user(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_open_user(cli, mem_ctx, &domain_pol,
 				    MAXIMUM_ALLOWED_ACCESS,
 				    rids[0], &user_pol);
 	if (!NT_STATUS_IS_OK(result)) goto done;
 
-	result = cli_samr_query_usergroups(cli, mem_ctx, &user_pol,
+	result = smbcli_samr_query_usergroups(cli, mem_ctx, &user_pol,
 					   &num_rids, &user_gids);
 
 	/* Look up rids */
@@ -724,7 +724,7 @@ rpc_user_info_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	for (i = 0; i < num_rids; i++)
                 rids[i] = user_gids[i].g_rid;
 
-	result = cli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_lookup_rids(cli, mem_ctx, &domain_pol,
 				      flags, num_rids, rids,
 				      &num_names, &names, &name_types);
 
@@ -764,7 +764,7 @@ static int rpc_user_info(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -774,7 +774,7 @@ static int rpc_user_info(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_user_list_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -785,7 +785,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 	/* Get sam policy handle */
 	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -793,7 +793,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	
 	/* Get domain policy handle */
 	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -814,7 +814,7 @@ rpc_user_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		get_query_dispinfo_params(
 			loop_count, &max_entries, &max_size);
 
-		result = cli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_query_dispinfo(cli, mem_ctx, &domain_pol,
 						 &start_idx, 1, &num_entries,
 						 max_entries, max_size, &ctr);
 		loop_count++;
@@ -885,7 +885,7 @@ static int rpc_group_usage(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -895,7 +895,7 @@ static int rpc_group_usage(int argc, const char **argv)
  **/
 
 static NTSTATUS 
-rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_group_list_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	POLICY_HND connect_pol, domain_pol;
@@ -908,7 +908,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 	/* Get sam policy handle */
 	
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS, 
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
@@ -916,7 +916,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	
 	/* Get domain policy handle */
 	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -928,7 +928,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		d_printf("\nGroup name            Comment"\
 			 "\n-----------------------------\n");
 	do {
-		result = cli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_enum_dom_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 						 
@@ -943,7 +943,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	} while (!NT_STATUS_IS_OK(result));
 	/* query domain aliases */
 	do {
-		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 						 
@@ -956,10 +956,10 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 				printf("%-21.21s\n", groups[i].acct_name);
 		}
 	} while (!NT_STATUS_IS_OK(result));
-	cli_samr_close(cli, mem_ctx, &domain_pol);
+	smbcli_samr_close(cli, mem_ctx, &domain_pol);
 	/* Get builtin policy handle */
 	
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      &global_sid_Builtin, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -967,7 +967,7 @@ rpc_group_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	}
 	/* query builtin aliases */
 	do {
-		result = cli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
+		result = smbcli_samr_enum_als_groups(cli, mem_ctx, &domain_pol,
 						  &start_idx, max_entries,
 						  &groups, &num_entries);
 						 
@@ -1028,7 +1028,7 @@ static int rpc_share_usage(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1037,7 +1037,7 @@ static int rpc_share_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_add_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
 {
 	WERROR result;
@@ -1052,7 +1052,7 @@ rpc_share_add_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 		return NT_STATUS_UNSUCCESSFUL;
 	*path++ = '\0';
 
-	result = cli_srvsvc_net_share_add(cli, mem_ctx, sharename, type,
+	result = smbcli_srvsvc_net_share_add(cli, mem_ctx, sharename, type,
 					  opt_comment, perms, opt_maxusers,
 					  num_users, path, password);
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
@@ -1076,7 +1076,7 @@ static int rpc_share_add(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1085,12 +1085,12 @@ static int rpc_share_add(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_share_del_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_del_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			TALLOC_CTX *mem_ctx,int argc, const char **argv)
 {
 	WERROR result;
 
-	result = cli_srvsvc_net_share_del(cli, mem_ctx, argv[0]);
+	result = smbcli_srvsvc_net_share_del(cli, mem_ctx, argv[0]);
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1144,7 +1144,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1154,7 +1154,7 @@ static void display_share_info_1(SRV_SHARE_INFO_1 *info1)
  **/
 
 static NTSTATUS 
-rpc_share_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_share_list_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SRV_SHARE_INFO_CTR ctr;
@@ -1164,7 +1164,7 @@ rpc_share_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 
 	init_enum_hnd(&hnd, 0);
 
-	result = cli_srvsvc_net_share_enum(
+	result = smbcli_srvsvc_net_share_enum(
 		cli, mem_ctx, 1, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
@@ -1221,7 +1221,7 @@ static int rpc_file_usage(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1230,11 +1230,11 @@ static int rpc_file_usage(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 static NTSTATUS 
-rpc_file_close_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_file_close_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			 TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	WERROR result;
-	result = cli_srvsvc_net_file_close(cli, mem_ctx, atoi(argv[0]));
+	result = smbcli_srvsvc_net_file_close(cli, mem_ctx, atoi(argv[0]));
 	return W_ERROR_IS_OK(result) ? NT_STATUS_OK : NT_STATUS_UNSUCCESSFUL;
 }
 
@@ -1284,7 +1284,7 @@ static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid acquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1294,7 +1294,7 @@ static void display_file_info_3(FILE_INFO_3 *info3, FILE_INFO_3_STR *str3)
  **/
 
 static NTSTATUS 
-rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
+rpc_file_list_internals(const DOM_SID *domain_sid, struct smbcli_state *cli,
 			TALLOC_CTX *mem_ctx, int argc, const char **argv)
 {
 	SRV_FILE_INFO_CTR ctr;
@@ -1309,7 +1309,7 @@ rpc_file_list_internals(const DOM_SID *domain_sid, struct cli_state *cli,
 	if (argc > 0)
 		username = smb_xstrdup(argv[0]);
 		
-	result = cli_srvsvc_net_file_enum(
+	result = smbcli_srvsvc_net_file_enum(
 		cli, mem_ctx, 3, username, &ctr, preferred_len, &hnd);
 
 	if (!W_ERROR_IS_OK(result))
@@ -1388,7 +1388,7 @@ int net_rpc_file(int argc, const char **argv)
  * argc, argv which are passed through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
  * @param argc  Standard main() style argc
  * @param argv  Standard main() style argv.  Initial components are already
@@ -1397,12 +1397,12 @@ int net_rpc_file(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_shutdown_abort_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 					     int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	
-	result = cli_reg_abort_shutdown(cli, mem_ctx);
+	result = smbcli_reg_abort_shutdown(cli, mem_ctx);
 	
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("cmd_reg_abort_shutdown: query succeeded\n"));
@@ -1436,7 +1436,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * argc, argv which are passes through. 
  *
  * @param domain_sid The domain sid aquired from the remote server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on compleation of the function.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
@@ -1445,7 +1445,7 @@ static int rpc_shutdown_abort(int argc, const char **argv)
  * @return Normal NTSTATUS return.
  **/
 
-static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
 				       int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1484,7 +1484,7 @@ static NTSTATUS rpc_shutdown_internals(const DOM_SID *domain_sid, struct cli_sta
 	}
 
 	/* create an entry */
-	result = cli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
+	result = smbcli_reg_shutdown(cli, mem_ctx, msg, timeout, opt_reboot, opt_force);
 
 	if (NT_STATUS_IS_OK(result))
 		DEBUG(5,("Shutdown of remote machine succeeded\n"));
@@ -1521,7 +1521,7 @@ static int rpc_shutdown(int argc, const char **argv)
  * function.
  *
  * @param domain_sid The domain sid acquired from the server
- * @param cli A cli_state connected to the server.
+ * @param cli A smbcli_state connected to the server.
  * @param mem_ctx Talloc context, destoyed on completion of the function.
  * @param argc  Standard main() style argc
  * @param argc  Standard main() style argv.  Initial components are already
@@ -1530,7 +1530,7 @@ static int rpc_shutdown(int argc, const char **argv)
  * @return normal NTSTATUS return code
  */
 
-static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx, 
+static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx, 
                                            int argc, const char **argv) {
 
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -1555,14 +1555,14 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	strupper(acct_name);
 
 	/* Get samr policy handle */
-	result = cli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
+	result = smbcli_samr_connect(cli, mem_ctx, MAXIMUM_ALLOWED_ACCESS,
 				  &connect_pol);
 	if (!NT_STATUS_IS_OK(result)) {
 		goto done;
 	}
 	
 	/* Get domain policy handle */
-	result = cli_samr_open_domain(cli, mem_ctx, &connect_pol,
+	result = smbcli_samr_open_domain(cli, mem_ctx, &connect_pol,
 				      MAXIMUM_ALLOWED_ACCESS,
 				      domain_sid, &domain_pol);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1574,7 +1574,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid, struct cli
 	unknown = 0xe005000b; /* No idea what this is - a permission mask?
 	                         mimir: yes, most probably it is */
 
-	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
 					  acct_name, acb_info, unknown,
 					  &user_pol, &user_rid);
 	if (!NT_STATUS_IS_OK(result)) {
@@ -1630,7 +1630,7 @@ static int rpc_trustdom_del(int argc, const char **argv)
 
 static int rpc_trustdom_establish(int argc, const char **argv)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	struct in_addr server_ip;
 	POLICY_HND connect_hnd;
 	TALLOC_CTX *mem_ctx;
@@ -1699,7 +1699,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Use NetServerEnum2 to make sure we're talking to a proper server
 	 */
 	 
-	if (!cli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
+	if (!smbcli_get_pdc_name(cli, domain_name, (char*)pdc_name)) {
 		DEBUG(0, ("NetServerEnum2 error: Couldn't find primary domain controller\
 			 for domain %s\n", domain_name));
 	}
@@ -1709,7 +1709,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * note: It is now used only to get unicode domain name
 	 */
 	
-	if (!cli_nt_session_open(cli, PI_WKSSVC)) {
+	if (!smbcli_nt_session_open(cli, PI_WKSSVC)) {
 		DEBUG(0, ("Couldn't not initialise wkssvc pipe\n"));
 		return -1;
 	}
@@ -1717,11 +1717,11 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	if (!(mem_ctx = talloc_init("establishing trust relationship to domain %s",
 	                domain_name))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return -1;
 	}
 	
-   	nt_status = cli_wks_query_info(cli, mem_ctx, &wks_info);
+   	nt_status = smbcli_wks_query_info(cli, mem_ctx, &wks_info);
 	
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("WksQueryInfo call failed.\n"));
@@ -1729,7 +1729,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 
 
 	/*
@@ -1738,17 +1738,17 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 
 	if (!(mem_ctx = talloc_init("rpc_trustdom_establish"))) {
 		DEBUG(0, ("talloc_init() failed\n"));
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return -1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+	if (!smbcli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return -1;
 	}
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = smbcli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
 	                                 &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -1758,7 +1758,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 
 	/* Querying info level 5 */
 	
-	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
+	nt_status = smbcli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
 	                                      5 /* info level */, domain_name,
 	                                      &domain_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
@@ -1788,7 +1788,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	 * Close the pipes and clean up
 	 */
 	 
-	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+	nt_status = smbcli_lsa_close(cli, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't close LSA pipe. Error was %s\n",
 			nt_errstr(nt_status)));
@@ -1796,7 +1796,7 @@ static int rpc_trustdom_establish(int argc, const char **argv)
 	}
 
 	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 	 
 	talloc_destroy(mem_ctx);
 	 
@@ -1853,7 +1853,7 @@ static int rpc_trustdom_usage(int argc, const char **argv)
 }
 
 
-static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS rpc_query_domain_sid(const DOM_SID *domain_sid, struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
                               int argc, const char **argv)
 {
 	fstring str_sid;
@@ -1867,7 +1867,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 {
 	/* common variables */
 	TALLOC_CTX* mem_ctx;
-	struct cli_state *cli, *remote_cli;
+	struct smbcli_state *cli, *remote_cli;
 	NTSTATUS nt_status;
 	const char *domain_name = NULL;
 	DOM_SID queried_dom_sid;
@@ -1913,12 +1913,12 @@ static int rpc_trustdom_list(int argc, const char **argv)
 		return -1;
 	};
 
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+	if (!smbcli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Could not initialise lsa pipe\n"));
 		return -1;
 	};
 
-	nt_status = cli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
+	nt_status = smbcli_lsa_open_policy2(cli, mem_ctx, True, SEC_RIGHTS_QUERY_VALUE,
 					&connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't open policy handle. Error was %s\n",
@@ -1927,7 +1927,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	};
 	
 	/* query info level 5 to obtain sid of a domain being queried */
-	nt_status = cli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
+	nt_status = smbcli_lsa_query_info_policy(cli, mem_ctx, &connect_hnd,
 					5 /* info level */, domain_name, &queried_dom_sid);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("LSA Query Info failed. Returned error was %s\n",
@@ -1943,7 +1943,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	d_printf("Trusted domains list:\n\n");
 
 	do {
-		nt_status = cli_lsa_enum_trust_dom(cli, mem_ctx, &connect_hnd, &enum_ctx,
+		nt_status = smbcli_lsa_enum_trust_dom(cli, mem_ctx, &connect_hnd, &enum_ctx,
 						   &num_domains,
 						   &trusted_dom_names, &domain_sids);
 		
@@ -1974,14 +1974,14 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close this connection before doing next one */
-	nt_status = cli_lsa_close(cli, mem_ctx, &connect_hnd);
+	nt_status = smbcli_lsa_close(cli, mem_ctx, &connect_hnd);
 	if (NT_STATUS_IS_ERR(nt_status)) {
 		DEBUG(0, ("Couldn't properly close lsa policy handle. Error was %s\n",
 			nt_errstr(nt_status)));
 		return -1;
 	};
 	
-	cli_nt_session_close(cli);
+	smbcli_nt_session_close(cli);
 
 	/*
 	 * Listing trusting domains (stored in passdb backend, if local)
@@ -1992,13 +1992,13 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	/*
 	 * Open \PIPE\samr and get needed policy handles
 	 */
-	if (!cli_nt_session_open(cli, PI_SAMR)) {
+	if (!smbcli_nt_session_open(cli, PI_SAMR)) {
 		DEBUG(0, ("Could not initialise samr pipe\n"));
 		return -1;
 	};
 	
 	/* SamrConnect */
-	nt_status = cli_samr_connect(cli, mem_ctx, SA_RIGHT_SAM_OPEN_DOMAIN,
+	nt_status = smbcli_samr_connect(cli, mem_ctx, SA_RIGHT_SAM_OPEN_DOMAIN,
 								 &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't open SAMR policy handle. Error was %s\n",
@@ -2008,7 +2008,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	
 	/* SamrOpenDomain - we have to open domain policy handle in order to be
 	   able to enumerate accounts*/
-	nt_status = cli_samr_open_domain(cli, mem_ctx, &connect_hnd,
+	nt_status = smbcli_samr_open_domain(cli, mem_ctx, &connect_hnd,
 									 SA_RIGHT_DOMAIN_ENUM_ACCOUNTS,
 									 &queried_dom_sid, &domain_hnd);									 
 	if (!NT_STATUS_IS_OK(nt_status)) {
@@ -2024,7 +2024,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	enum_ctx = 0;	/* reset enumeration context from last enumeration */
 	do {
 			
-		nt_status = cli_samr_enum_dom_users(cli, mem_ctx, &domain_hnd,
+		nt_status = smbcli_samr_enum_dom_users(cli, mem_ctx, &domain_hnd,
 		                                    &enum_ctx, ACB_DOMTRUST, 0xffff,
 		                                    &trusting_dom_names, &trusting_dom_rids,
 		                                    &num_domains);
@@ -2066,7 +2066,7 @@ static int rpc_trustdom_list(int argc, const char **argv)
 				if (run_rpc_command(remote_cli, PI_LSARPC, 0, rpc_query_domain_sid, argc, argv))
 					d_printf("couldn't get domain's sid\n");
 
-				cli_shutdown(remote_cli);
+				smbcli_shutdown(remote_cli);
 			
 			} else {
 				d_printf("domain controller is not responding\n");
@@ -2078,19 +2078,19 @@ static int rpc_trustdom_list(int argc, const char **argv)
 	} while (NT_STATUS_EQUAL(nt_status, STATUS_MORE_ENTRIES));
 
 	/* close opened samr and domain policy handles */
-	nt_status = cli_samr_close(cli, mem_ctx, &domain_hnd);
+	nt_status = smbcli_samr_close(cli, mem_ctx, &domain_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close domain policy handle for domain %s\n", domain_name));
 	};
 	
-	nt_status = cli_samr_close(cli, mem_ctx, &connect_hnd);
+	nt_status = smbcli_samr_close(cli, mem_ctx, &connect_hnd);
 	if (!NT_STATUS_IS_OK(nt_status)) {
 		DEBUG(0, ("Couldn't properly close samr policy handle for domain %s\n", domain_name));
 	};
 	
 	/* close samr pipe and connection to IPC$ */
-	cli_nt_session_close(cli);
-	cli_shutdown(cli);
+	smbcli_nt_session_close(cli);
+	smbcli_shutdown(cli);
 
 	talloc_destroy(mem_ctx);	 
 	return 0;
@@ -2133,7 +2133,7 @@ static int rpc_trustdom(int argc, const char **argv)
  */
 BOOL net_rpc_check(uint_t flags)
 {
-	struct cli_state cli;
+	struct smbcli_state cli;
 	BOOL ret = False;
 	struct in_addr server_ip;
 	char *server_name = NULL;
@@ -2143,22 +2143,22 @@ BOOL net_rpc_check(uint_t flags)
 		return False;
 
 	ZERO_STRUCT(cli);
-	if (cli_initialise(&cli) == False)
+	if (smbcli_initialise(&cli) == False)
 		return False;
 
-	if (!cli_connect(&cli, server_name, &server_ip))
+	if (!smbcli_connect(&cli, server_name, &server_ip))
 		goto done;
 	if (!attempt_netbios_session_request(&cli, lp_netbios_name(), 
 					     server_name, &server_ip))
 		goto done;
-	if (!cli_negprot(&cli))
+	if (!smbcli_negprot(&cli))
 		goto done;
 	if (cli.protocol < PROTOCOL_NT1)
 		goto done;
 
 	ret = True;
  done:
-	cli_shutdown(&cli);
+	smbcli_shutdown(&cli);
 	return ret;
 }
 

@@ -44,7 +44,7 @@
  **/
 int net_rpc_join_ok(const char *domain)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	uint8_t stored_md4_trust_password[16];
 	int retval = 1;
 	uint32_t channel;
@@ -56,7 +56,7 @@ int net_rpc_join_ok(const char *domain)
 		return 1;
 	}
 
-	if (!cli_nt_session_open(cli, PI_NETLOGON)) {
+	if (!smbcli_nt_session_open(cli, PI_NETLOGON)) {
 		DEBUG(0,("Error connecting to NETLOGON pipe\n"));
 		goto done;
 	}
@@ -74,7 +74,7 @@ int net_rpc_join_ok(const char *domain)
 		channel = SEC_CHAN_WKSTA;
 	}
 
-	CHECK_RPC_ERR(cli_nt_setup_creds(cli, 
+	CHECK_RPC_ERR(smbcli_nt_setup_creds(cli, 
 					 channel,
 					 stored_md4_trust_password, &neg_flags, 2),
 			  "error in domain join verification");
@@ -84,9 +84,9 @@ int net_rpc_join_ok(const char *domain)
 done:
 	/* Close down pipe - this will clean up open policy handles */
 	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 
 	return retval;
 }
@@ -106,7 +106,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* libsmb variables */
 
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx;
         uint32_t acb_info;
 
@@ -148,38 +148,38 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
 	/* Fetch domain sid */
 
-	if (!cli_nt_session_open(cli, PI_LSARPC)) {
+	if (!smbcli_nt_session_open(cli, PI_LSARPC)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}
 
 
-	CHECK_RPC_ERR(cli_lsa_open_policy(cli, mem_ctx, True,
+	CHECK_RPC_ERR(smbcli_lsa_open_policy(cli, mem_ctx, True,
 					  SEC_RIGHTS_MAXIMUM_ALLOWED,
 					  &lsa_pol),
 		      "error opening lsa policy handle");
 
-	CHECK_RPC_ERR(cli_lsa_query_info_policy(cli, mem_ctx, &lsa_pol,
+	CHECK_RPC_ERR(smbcli_lsa_query_info_policy(cli, mem_ctx, &lsa_pol,
 						5, domain, &domain_sid),
 		      "error querying info policy");
 
-	cli_lsa_close(cli, mem_ctx, &lsa_pol);
+	smbcli_lsa_close(cli, mem_ctx, &lsa_pol);
 
-	cli_nt_session_close(cli); /* Done with this pipe */
+	smbcli_nt_session_close(cli); /* Done with this pipe */
 
 	/* Create domain user */
-	if (!cli_nt_session_open(cli, PI_SAMR)) {
+	if (!smbcli_nt_session_open(cli, PI_SAMR)) {
 		DEBUG(0, ("Error connecting to SAM pipe\n"));
 		goto done;
 	}
 
-	CHECK_RPC_ERR(cli_samr_connect(cli, mem_ctx, 
+	CHECK_RPC_ERR(smbcli_samr_connect(cli, mem_ctx, 
 				       SEC_RIGHTS_MAXIMUM_ALLOWED,
 				       &sam_pol),
 		      "could not connect to SAM database");
 
 	
-	CHECK_RPC_ERR(cli_samr_open_domain(cli, mem_ctx, &sam_pol,
+	CHECK_RPC_ERR(smbcli_samr_open_domain(cli, mem_ctx, &sam_pol,
 					   SEC_RIGHTS_MAXIMUM_ALLOWED,
 					   &domain_sid, &domain_pol),
 		      "could not open domain");
@@ -191,7 +191,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 
         acb_info = ((lp_server_role() == ROLE_DOMAIN_BDC) || lp_server_role() == ROLE_DOMAIN_PDC) ? ACB_SVRTRUST : ACB_WSTRUST;
 
-	result = cli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
+	result = smbcli_samr_create_dom_user(cli, mem_ctx, &domain_pol,
 					  acct_name, acb_info,
 					  0xe005000b, &user_pol, 
 					  &user_rid);
@@ -213,9 +213,9 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* We *must* do this.... don't ask... */
 
 	if (NT_STATUS_IS_OK(result))
-		cli_samr_close(cli, mem_ctx, &user_pol);
+		smbcli_samr_close(cli, mem_ctx, &user_pol);
 
-	CHECK_RPC_ERR_DEBUG(cli_samr_lookup_names(cli, mem_ctx,
+	CHECK_RPC_ERR_DEBUG(smbcli_samr_lookup_names(cli, mem_ctx,
 						  &domain_pol, flags,
 						  1, &const_acct_name, 
 						  &num_rids,
@@ -233,7 +233,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Open handle on user */
 
 	CHECK_RPC_ERR_DEBUG(
-		cli_samr_open_user(cli, mem_ctx, &domain_pol,
+		smbcli_samr_open_user(cli, mem_ctx, &domain_pol,
 				   SEC_RIGHTS_MAXIMUM_ALLOWED,
 				   user_rid, &user_pol),
 		("could not re-open existing user %s: %s\n",
@@ -264,7 +264,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	ctr.switch_value = 24;
 	ctr.info.id24 = &p24;
 
-	CHECK_RPC_ERR(cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
+	CHECK_RPC_ERR(smbcli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24, 
 					    cli->user_session_key, &ctr),
 		      "error setting trust account password");
 
@@ -286,7 +286,7 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	/* Ignoring the return value is necessary for joining a domain
 	   as a normal user with "Add workstation to domain" privilege. */
 
-	result = cli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 0x10, 
+	result = smbcli_samr_set_userinfo2(cli, mem_ctx, &user_pol, 0x10, 
 					sess_key, &ctr);
 
 	/* Now store the secret in the secrets database */
@@ -303,8 +303,8 @@ int net_rpc_join_newstyle(int argc, const char **argv)
 	}
 
 	/* Now check the whole process from top-to-bottom */
-	cli_samr_close(cli, mem_ctx, &user_pol);
-	cli_nt_session_close(cli); /* Done with this pipe */
+	smbcli_samr_close(cli, mem_ctx, &user_pol);
+	smbcli_nt_session_close(cli); /* Done with this pipe */
 
 	retval = net_rpc_join_ok(domain);
 	
@@ -312,7 +312,7 @@ done:
 	/* Close down pipe - this will clean up open policy handles */
 
 	if (cli->nt_pipe_fnum)
-		cli_nt_session_close(cli);
+		smbcli_nt_session_close(cli);
 
 	/* Display success or failure */
 
@@ -323,7 +323,7 @@ done:
 		printf("Joined domain %s.\n",domain);
 	}
 	
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 
 	SAFE_FREE(clear_trust_password);
 

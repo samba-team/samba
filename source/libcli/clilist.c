@@ -77,7 +77,7 @@ static BOOL interpret_long_filename(enum smb_search_level level,
 }
 
 /* callback function used for trans2 search */
-static BOOL cli_list_new_callback(void *private, union smb_search_data *file)
+static BOOL smbcli_list_new_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	file_info *tdl;
@@ -101,7 +101,7 @@ static BOOL cli_list_new_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute, 
+int smbcli_list_new(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
 		 void (*fn)(file_info *, const char *, void *), 
 		 void *caller_state)
 {
@@ -118,7 +118,7 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 
 	/* initialize state for search */
 	state.dirlist = NULL;
-	state.mem_ctx = talloc_init("cli_list_new");
+	state.mem_ctx = talloc_init("smbcli_list_new");
 	state.dirlist_len = 0;
 	state.total_received = 0;
 	
@@ -144,7 +144,7 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 			
 			status = smb_raw_search_first(tree, 
 						      state.mem_ctx, &first_parms,
-						      (void*)&state, cli_list_new_callback);
+						      (void*)&state, smbcli_list_new_callback);
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
 				return -1;
@@ -172,7 +172,7 @@ int cli_list_new(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 						     state.mem_ctx,
 						     &next_parms,
 						     (void*)&state, 
-						     cli_list_new_callback);
+						     smbcli_list_new_callback);
 			
 			if (!NT_STATUS_IS_OK(status)) {
 				return -1;
@@ -219,7 +219,7 @@ static BOOL interpret_short_filename(int level,
 }
 
 /* callback function used for smb_search */
-static BOOL cli_list_old_callback(void *private, union smb_search_data *file)
+static BOOL smbcli_list_old_callback(void *private, union smb_search_data *file)
 {
 	struct search_private *state = (struct search_private*) private;
 	file_info *tdl;
@@ -243,7 +243,7 @@ static BOOL cli_list_old_callback(void *private, union smb_search_data *file)
 	return True;
 }
 
-int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute, 
+int smbcli_list_old(struct smbcli_tree *tree, const char *Mask, uint16_t attribute, 
 		 void (*fn)(file_info *, const char *, void *), 
 		 void *caller_state)
 {
@@ -259,7 +259,7 @@ int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 
 	/* initialize state for search */
 	state.dirlist = NULL;
-	state.mem_ctx = talloc_init("cli_list_old");
+	state.mem_ctx = talloc_init("smbcli_list_old");
 	state.dirlist_len = 0;
 	state.total_received = 0;
 	
@@ -278,7 +278,7 @@ int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 			status = smb_raw_search_first(tree, state.mem_ctx, 
 						      &first_parms,
 						      (void*)&state, 
-						      cli_list_old_callback);
+						      smbcli_list_old_callback);
 
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
@@ -299,7 +299,7 @@ int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute,
 			status = smb_raw_search_next(tree, state.mem_ctx,
 						     &next_parms,
 						     (void*)&state, 
-						     cli_list_old_callback);
+						     smbcli_list_old_callback);
 			
 			if (!NT_STATUS_IS_OK(status)) {
 				talloc_destroy(state.mem_ctx);
@@ -326,10 +326,10 @@ int cli_list_old(struct cli_tree *tree, const char *Mask, uint16_t attribute,
  This auto-switches between old and new style.
 ****************************************************************************/
 
-int cli_list(struct cli_tree *tree, const char *Mask,uint16_t attribute, 
+int smbcli_list(struct smbcli_tree *tree, const char *Mask,uint16_t attribute, 
 	     void (*fn)(file_info *, const char *, void *), void *state)
 {
 	if (tree->session->transport->negotiate.protocol <= PROTOCOL_LANMAN1)
-		return cli_list_old(tree, Mask, attribute, fn, state);
-	return cli_list_new(tree, Mask, attribute, fn, state);
+		return smbcli_list_old(tree, Mask, attribute, fn, state);
+	return smbcli_list_new(tree, Mask, attribute, fn, state);
 }

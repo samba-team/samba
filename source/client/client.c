@@ -26,7 +26,7 @@
 #define REGISTER 0
 #endif
 
-struct cli_state *cli;
+struct smbcli_state *cli;
 extern BOOL in_client;
 static int port = 0;
 pstring cur_dir = "\\";
@@ -94,7 +94,7 @@ static double dir_total;
 #define USENMB
 
 /* some forward declarations */
-static struct cli_state *do_connect(const char *server, const char *share);
+static struct smbcli_state *do_connect(const char *server, const char *share);
 
 
 /*******************************************************************
@@ -191,8 +191,8 @@ static void send_message(void)
 	int total_len = 0;
 	int grp_id;
 
-	if (!cli_message_start(cli->tree, desthost, username, &grp_id)) {
-		d_printf("message start: %s\n", cli_errstr(cli->tree));
+	if (!smbcli_message_start(cli->tree, desthost, username, &grp_id)) {
+		d_printf("message start: %s\n", smbcli_errstr(cli->tree));
 		return;
 	}
 
@@ -213,8 +213,8 @@ static void send_message(void)
 			msg[l] = c;   
 		}
 
-		if (!cli_message_text(cli->tree, msg, l, grp_id)) {
-			d_printf("SMBsendtxt failed (%s)\n",cli_errstr(cli->tree));
+		if (!smbcli_message_text(cli->tree, msg, l, grp_id)) {
+			d_printf("SMBsendtxt failed (%s)\n",smbcli_errstr(cli->tree));
 			return;
 		}      
 		
@@ -226,8 +226,8 @@ static void send_message(void)
 	else
 		d_printf("sent %d bytes\n",total_len);
 
-	if (!cli_message_end(cli->tree, grp_id)) {
-		d_printf("SMBsendend failed (%s)\n",cli_errstr(cli->tree));
+	if (!smbcli_message_end(cli->tree, grp_id)) {
+		d_printf("SMBsendend failed (%s)\n",smbcli_errstr(cli->tree));
 		return;
 	}      
 }
@@ -241,8 +241,8 @@ static int do_dskattr(void)
 {
 	int total, bsize, avail;
 
-	if (NT_STATUS_IS_ERR(cli_dskattr(cli->tree, &bsize, &total, &avail))) {
-		d_printf("Error in dskattr: %s\n",cli_errstr(cli->tree)); 
+	if (NT_STATUS_IS_ERR(smbcli_dskattr(cli->tree, &bsize, &total, &avail))) {
+		d_printf("Error in dskattr: %s\n",smbcli_errstr(cli->tree)); 
 		return 1;
 	}
 
@@ -290,8 +290,8 @@ static int do_cd(char *newdir)
 	dos_clean_name(cur_dir);
 	
 	if (!strequal(cur_dir,"\\")) {
-		if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, dname))) {
-			d_printf("cd %s: %s\n", dname, cli_errstr(cli->tree));
+		if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, dname))) {
+			d_printf("cd %s: %s\n", dname, smbcli_errstr(cli->tree));
 			pstrcpy(cur_dir,saved_dir);
 		}
 	}
@@ -564,7 +564,7 @@ static void do_list_helper(file_info *f, const char *mask, void *state)
 
 
 /****************************************************************************
-a wrapper around cli_list that adds recursion
+a wrapper around smbcli_list that adds recursion
   ****************************************************************************/
 void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL rec, BOOL dirs)
 {
@@ -591,14 +591,14 @@ void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL re
 		{
 			/*
 			 * Need to copy head so that it doesn't become
-			 * invalid inside the call to cli_list.  This
+			 * invalid inside the call to smbcli_list.  This
 			 * would happen if the list were expanded
 			 * during the call.
 			 * Fix from E. Jay Berkenbilt (ejb@ql.org)
 			 */
 			pstring head;
 			pstrcpy(head, do_list_queue_head());
-			cli_list(cli->tree, head, attribute, do_list_helper, NULL);
+			smbcli_list(cli->tree, head, attribute, do_list_helper, NULL);
 			remove_do_list_queue_head();
 			if ((! do_list_queue_empty()) && (fn == display_finfo))
 			{
@@ -622,9 +622,9 @@ void do_list(const char *mask,uint16_t attribute,void (*fn)(file_info *),BOOL re
 	}
 	else
 	{
-		if (cli_list(cli->tree, mask, attribute, do_list_helper, NULL) == -1)
+		if (smbcli_list(cli->tree, mask, attribute, do_list_helper, NULL) == -1)
 		{
-			d_printf("%s listing %s\n", cli_errstr(cli->tree), mask);
+			d_printf("%s listing %s\n", smbcli_errstr(cli->tree), mask);
 		}
 	}
 
@@ -727,10 +727,10 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 		strlower(lname);
 	}
 
-	fnum = cli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
+	fnum = smbcli_open(cli->tree, rname, O_RDONLY, DENY_NONE);
 
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
+		d_printf("%s opening remote file %s\n",smbcli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -757,11 +757,11 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 
-	if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, 
+	if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, 
 			   &attr, &size, NULL, NULL, NULL, NULL, NULL)) &&
-	    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, 
+	    NT_STATUS_IS_ERR(smbcli_getattrE(cli->tree, fnum, 
 			  &attr, &size, NULL, NULL, NULL))) {
-		d_printf("getattrib: %s\n",cli_errstr(cli->tree));
+		d_printf("getattrib: %s\n",smbcli_errstr(cli->tree));
 		return 1;
 	}
 
@@ -770,12 +770,12 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 
 	if(!(data = (char *)malloc(read_size))) { 
 		d_printf("malloc fail for size %d\n", read_size);
-		cli_close(cli->tree, fnum);
+		smbcli_close(cli->tree, fnum);
 		return 1;
 	}
 
 	while (1) {
-		int n = cli_read(cli->tree, fnum, data, nread + start, read_size);
+		int n = smbcli_read(cli->tree, fnum, data, nread + start, read_size);
 
 		if (n <= 0) break;
  
@@ -797,8 +797,8 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 
 	SAFE_FREE(data);
 	
-	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
-		d_printf("Error %s closing remote file\n",cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
+		d_printf("Error %s closing remote file\n",smbcli_errstr(cli->tree));
 		rc = 1;
 	}
 
@@ -807,7 +807,7 @@ static int do_get(char *rname, const char *lname, BOOL reget)
 	}
 
 	if (archive_level >= 2 && (attr & FILE_ATTRIBUTE_ARCHIVE)) {
-		cli_setatr(cli->tree, rname, attr & ~(uint16_t)FILE_ATTRIBUTE_ARCHIVE, 0);
+		smbcli_setatr(cli->tree, rname, attr & ~(uint16_t)FILE_ATTRIBUTE_ARCHIVE, 0);
 	}
 
 	{
@@ -1013,9 +1013,9 @@ static NTSTATUS do_mkdir(char *name)
 {
 	NTSTATUS status;
 
-	if (NT_STATUS_IS_ERR(status = cli_mkdir(cli->tree, name))) {
+	if (NT_STATUS_IS_ERR(status = smbcli_mkdir(cli->tree, name))) {
 		d_printf("%s making remote directory %s\n",
-			 cli_errstr(cli->tree),name);
+			 smbcli_errstr(cli->tree),name);
 		return status;
 	}
 
@@ -1028,9 +1028,9 @@ show 8.3 name of a file
 static BOOL do_altname(char *name)
 {
 	const char *altname;
-	if (!NT_STATUS_IS_OK(cli_qpathinfo_alt_name(cli->tree, name, &altname))) {
+	if (!NT_STATUS_IS_OK(smbcli_qpathinfo_alt_name(cli->tree, name, &altname))) {
 		d_printf("%s getting alt name for %s\n",
-			 cli_errstr(cli->tree),name);
+			 smbcli_errstr(cli->tree),name);
 		return(False);
 	}
 	d_printf("%s\n", altname);
@@ -1044,7 +1044,7 @@ static BOOL do_altname(char *name)
 ****************************************************************************/
 static int cmd_quit(void)
 {
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 	exit(0);
 	/* NOTREACHED */
 	return 0;
@@ -1079,7 +1079,7 @@ static int cmd_mkdir(void)
 		p = strtok(ddir,"/\\");
 		while (p) {
 			pstrcat(ddir2,p);
-			if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, ddir2))) { 
+			if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, ddir2))) { 
 				do_mkdir(ddir2);
 			}
 			pstrcat(ddir2,"\\");
@@ -1133,21 +1133,21 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	GetTimeOfDay(&tp_start);
 
 	if (reput) {
-		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT, DENY_NONE);
+		fnum = smbcli_open(cli->tree, rname, O_RDWR|O_CREAT, DENY_NONE);
 		if (fnum >= 0) {
-			if (NT_STATUS_IS_ERR(cli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL)) &&
-			    NT_STATUS_IS_ERR(cli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL))) {
-				d_printf("getattrib: %s\n",cli_errstr(cli->tree));
+			if (NT_STATUS_IS_ERR(smbcli_qfileinfo(cli->tree, fnum, NULL, &start, NULL, NULL, NULL, NULL, NULL)) &&
+			    NT_STATUS_IS_ERR(smbcli_getattrE(cli->tree, fnum, NULL, &start, NULL, NULL, NULL))) {
+				d_printf("getattrib: %s\n",smbcli_errstr(cli->tree));
 				return 1;
 			}
 		}
 	} else {
-		fnum = cli_open(cli->tree, rname, O_RDWR|O_CREAT|O_TRUNC, 
+		fnum = smbcli_open(cli->tree, rname, O_RDWR|O_CREAT|O_TRUNC, 
 				DENY_NONE);
 	}
   
 	if (fnum == -1) {
-		d_printf("%s opening remote file %s\n",cli_errstr(cli->tree),rname);
+		d_printf("%s opening remote file %s\n",smbcli_errstr(cli->tree),rname);
 		return 1;
 	}
 
@@ -1196,10 +1196,10 @@ static int do_put(char *rname, char *lname, BOOL reput)
 			break;
 		}
 
-		ret = cli_write(cli->tree, fnum, 0, buf, nread + start, n);
+		ret = smbcli_write(cli->tree, fnum, 0, buf, nread + start, n);
 
 		if (n != ret) {
-			d_printf("Error writing file: %s\n", cli_errstr(cli->tree));
+			d_printf("Error writing file: %s\n", smbcli_errstr(cli->tree));
 			rc = 1;
 			break;
 		} 
@@ -1207,8 +1207,8 @@ static int do_put(char *rname, char *lname, BOOL reput)
 		nread += n;
 	}
 
-	if (NT_STATUS_IS_ERR(cli_close(cli->tree, fnum))) {
-		d_printf("%s closing remote file %s\n",cli_errstr(cli->tree),rname);
+	if (NT_STATUS_IS_ERR(smbcli_close(cli->tree, fnum))) {
+		d_printf("%s closing remote file %s\n",smbcli_errstr(cli->tree),rname);
 		x_fclose(f);
 		SAFE_FREE(buf);
 		return 1;
@@ -1238,7 +1238,7 @@ static int do_put(char *rname, char *lname, BOOL reput)
 	}
 
 	if (f == x_stdin) {
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		exit(0);
 	}
 	
@@ -1453,7 +1453,7 @@ static int cmd_mput(void)
 	      				SAFE_FREE(rname);
 					if(asprintf(&rname, "%s%s", cur_dir, lname) < 0) break;
 					dos_format(rname);
-					if (NT_STATUS_IS_ERR(cli_chkpath(cli->tree, rname)) && 
+					if (NT_STATUS_IS_ERR(smbcli_chkpath(cli->tree, rname)) && 
 					    NT_STATUS_IS_ERR(do_mkdir(rname))) {
 						DEBUG (0, ("Unable to make dir, skipping..."));
 						/* Skip the directory */
@@ -1570,8 +1570,8 @@ static void do_del(file_info *finfo)
 	if (finfo->mode & FILE_ATTRIBUTE_DIRECTORY) 
 		return;
 
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, mask))) {
-		d_printf("%s deleting remote file %s\n",cli_errstr(cli->tree),mask);
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, mask))) {
+		d_printf("%s deleting remote file %s\n",smbcli_errstr(cli->tree),mask);
 	}
 }
 
@@ -1618,10 +1618,10 @@ static int cmd_deltree(void)
 	}
 	pstrcat(dname,buf);
 
-	ret = cli_deltree(cli->tree, dname);
+	ret = smbcli_deltree(cli->tree, dname);
 
 	if (ret == -1) {
-		printf("Failed to delete tree %s - %s\n", dname, cli_errstr(cli->tree));
+		printf("Failed to delete tree %s - %s\n", dname, smbcli_errstr(cli->tree));
 		return -1;
 	}
 
@@ -1760,9 +1760,9 @@ static int cmd_acl(void)
 	}
 	pstrcat(fname,buf);
 
-	fnum = cli_open(cli->tree, fname, O_RDONLY, DENY_NONE);
+	fnum = smbcli_open(cli->tree, fname, O_RDONLY, DENY_NONE);
 	if (fnum == -1) {
-		d_printf("%s - %s\n", fname, cli_errstr(cli->tree));
+		d_printf("%s - %s\n", fname, smbcli_errstr(cli->tree));
 		return -1;
 	}
 
@@ -1800,7 +1800,7 @@ static int cmd_open(void)
 	}
 	pstrcat(mask,buf);
 
-	cli_open(cli->tree, mask, O_RDWR, DENY_ALL);
+	smbcli_open(cli->tree, mask, O_RDWR, DENY_ALL);
 
 	return 0;
 }
@@ -1822,9 +1822,9 @@ static int cmd_rmdir(void)
 	}
 	pstrcat(mask,buf);
 
-	if (NT_STATUS_IS_ERR(cli_rmdir(cli->tree, mask))) {
+	if (NT_STATUS_IS_ERR(smbcli_rmdir(cli->tree, mask))) {
 		d_printf("%s removing remote directory file %s\n",
-			 cli_errstr(cli->tree),mask);
+			 smbcli_errstr(cli->tree),mask);
 	}
 	
 	return 0;
@@ -1855,8 +1855,8 @@ static int cmd_link(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (NT_STATUS_IS_ERR(cli_unix_hardlink(cli->tree, src, dest))) {
-		d_printf("%s linking files (%s -> %s)\n", cli_errstr(cli->tree), src, dest);
+	if (NT_STATUS_IS_ERR(smbcli_unix_hardlink(cli->tree, src, dest))) {
+		d_printf("%s linking files (%s -> %s)\n", smbcli_errstr(cli->tree), src, dest);
 		return 1;
 	}  
 
@@ -1889,9 +1889,9 @@ static int cmd_symlink(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (NT_STATUS_IS_ERR(cli_unix_symlink(cli->tree, src, dest))) {
+	if (NT_STATUS_IS_ERR(smbcli_unix_symlink(cli->tree, src, dest))) {
 		d_printf("%s symlinking files (%s -> %s)\n",
-			cli_errstr(cli->tree), src, dest);
+			smbcli_errstr(cli->tree), src, dest);
 		return 1;
 	} 
 
@@ -1924,9 +1924,9 @@ static int cmd_chmod(void)
 	mode = (mode_t)strtol(buf, NULL, 8);
 	pstrcat(src,buf2);
 
-	if (NT_STATUS_IS_ERR(cli_unix_chmod(cli->tree, src, mode))) {
+	if (NT_STATUS_IS_ERR(smbcli_unix_chmod(cli->tree, src, mode))) {
 		d_printf("%s chmod file %s 0%o\n",
-			cli_errstr(cli->tree), src, (uint_t)mode);
+			smbcli_errstr(cli->tree), src, (uint_t)mode);
 		return 1;
 	} 
 
@@ -1962,9 +1962,9 @@ static int cmd_chown(void)
 	gid = (gid_t)atoi(buf2);
 	pstrcat(src,buf3);
 
-	if (NT_STATUS_IS_ERR(cli_unix_chown(cli->tree, src, uid, gid))) {
+	if (NT_STATUS_IS_ERR(smbcli_unix_chown(cli->tree, src, uid, gid))) {
 		d_printf("%s chown file %s uid=%d, gid=%d\n",
-			cli_errstr(cli->tree), src, (int)uid, (int)gid);
+			smbcli_errstr(cli->tree), src, (int)uid, (int)gid);
 		return 1;
 	} 
 
@@ -1991,8 +1991,8 @@ static int cmd_rename(void)
 	pstrcat(src,buf);
 	pstrcat(dest,buf2);
 
-	if (NT_STATUS_IS_ERR(cli_rename(cli->tree, src, dest))) {
-		d_printf("%s renaming files\n",cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_rename(cli->tree, src, dest))) {
+		d_printf("%s renaming files\n",smbcli_errstr(cli->tree));
 		return 1;
 	}
 	
@@ -2563,7 +2563,7 @@ static char **remote_completion(const char *text, int len)
 	} else
 		snprintf(dirmask, sizeof(dirmask), "%s*", cur_dir);
 
-	if (cli_list(cli->tree, dirmask, 
+	if (smbcli_list(cli->tree, dirmask, 
 		     FILE_ATTRIBUTE_DIRECTORY | FILE_ATTRIBUTE_SYSTEM | FILE_ATTRIBUTE_HIDDEN, 
 		     completion_remote_filter, &info) < 0)
 		goto cleanup;
@@ -2686,10 +2686,10 @@ static void readline_callback(void)
 
 	last_t = t;
 
-	cli_transport_process(cli->transport);
+	smbcli_transport_process(cli->transport);
 
 	if (cli->tree) {
-		cli_chkpath(cli->tree, "\\");
+		smbcli_chkpath(cli->tree, "\\");
 	}
 }
 
@@ -2740,9 +2740,9 @@ static void process_stdin(void)
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *do_connect(const char *server, const char *share)
+static struct smbcli_state *do_connect(const char *server, const char *share)
 {
-	struct cli_state *c;
+	struct smbcli_state *c;
 	struct nmb_name called, calling;
 	const char *server_n;
 	struct in_addr ip;
@@ -2775,16 +2775,16 @@ static struct cli_state *do_connect(const char *server, const char *share)
 	if (have_ip) ip = dest_ip;
 
 	/* have to open a new connection */
-	if (!(c=cli_state_init()) || !cli_socket_connect(c, server_n, &ip)) {
+	if (!(c=smbcli_state_init()) || !smbcli_socket_connect(c, server_n, &ip)) {
 		d_printf("Connection to %s failed\n", server_n);
 		return NULL;
 	}
 
-	if (!cli_transport_establish(c, &calling, &called)) {
+	if (!smbcli_transport_establish(c, &calling, &called)) {
 		char *p;
 		d_printf("session request to %s failed (%s)\n", 
-			 called.name, cli_errstr(c->tree));
-		cli_shutdown(c);
+			 called.name, smbcli_errstr(c->tree));
+		smbcli_shutdown(c);
 		if ((p=strchr_m(called.name, '.'))) {
 			*p = 0;
 			goto again;
@@ -2798,9 +2798,9 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	DEBUG(4,(" session request ok\n"));
 
-	if (NT_STATUS_IS_ERR(cli_negprot(c))) {
+	if (NT_STATUS_IS_ERR(smbcli_negprot(c))) {
 		d_printf("protocol negotiation failed\n");
-		cli_shutdown(c);
+		smbcli_shutdown(c);
 		return NULL;
 	}
 
@@ -2811,16 +2811,16 @@ static struct cli_state *do_connect(const char *server, const char *share)
 		}
 	}
 
-	status = cli_session_setup(c, username, password, lp_workgroup());
+	status = smbcli_session_setup(c, username, password, lp_workgroup());
 	if (NT_STATUS_IS_ERR(status)) {
 		d_printf("authenticated session setup failed: %s\n", nt_errstr(status));
 		/* if a password was not supplied then try again with a null username */
 		if (password[0] || !username[0] || use_kerberos) {
-			status = cli_session_setup(c, "", "", lp_workgroup());
+			status = smbcli_session_setup(c, "", "", lp_workgroup());
 		}
 		if (NT_STATUS_IS_ERR(status)) {
 			d_printf("session setup failed: %s\n", nt_errstr(status));
-			cli_shutdown(c);
+			smbcli_shutdown(c);
 			return NULL;
 		}
 		d_printf("Anonymous login successful\n");
@@ -2828,9 +2828,9 @@ static struct cli_state *do_connect(const char *server, const char *share)
 
 	DEBUG(4,(" session setup ok\n"));
 
-	if (NT_STATUS_IS_ERR(cli_send_tconX(c, sharename, "?????", password))) {
-		d_printf("tree connect failed: %s\n", cli_errstr(c->tree));
-		cli_shutdown(c);
+	if (NT_STATUS_IS_ERR(smbcli_send_tconX(c, sharename, "?????", password))) {
+		d_printf("tree connect failed: %s\n", smbcli_errstr(c->tree));
+		smbcli_shutdown(c);
 		return NULL;
 	}
 
@@ -2860,7 +2860,7 @@ static int process(char *base_directory)
 		process_stdin();
 	}
   
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 	return rc;
 }
 
@@ -2895,7 +2895,7 @@ static int do_tar_op(char *base_directory)
 	
 	ret=process_tar();
 
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 
 	return(ret);
 }
@@ -2920,19 +2920,19 @@ static int do_message_op(void)
 	zero_ip(&ip);
 	if (have_ip) ip = dest_ip;
 
-	if (!(cli=cli_state_init()) || !cli_socket_connect(cli, server_name, &ip)) {
+	if (!(cli=smbcli_state_init()) || !smbcli_socket_connect(cli, server_name, &ip)) {
 		d_printf("Connection to %s failed\n", desthost);
 		return 1;
 	}
 
-	if (!cli_transport_establish(cli, &calling, &called)) {
+	if (!smbcli_transport_establish(cli, &calling, &called)) {
 		d_printf("session request failed\n");
-		cli_shutdown(cli);
+		smbcli_shutdown(cli);
 		return 1;
 	}
 
 	send_message();
-	cli_shutdown(cli);
+	smbcli_shutdown(cli);
 
 	return 0;
 }

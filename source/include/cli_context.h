@@ -21,16 +21,16 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 */
 
-#ifndef _CLI_CONTEXT_H
-#define _CLI_CONTEXT_H
+#ifndef _SMBCLI_CONTEXT_H
+#define _SMBCLI_CONTEXT_H
 
-struct cli_tree;  /* forward declare */
-struct cli_request;  /* forward declare */
-struct cli_session;  /* forward declare */
-struct cli_transport;  /* forward declare */
+struct smbcli_tree;  /* forward declare */
+struct smbcli_request;  /* forward declare */
+struct smbcli_session;  /* forward declare */
+struct smbcli_transport;  /* forward declare */
 
 /* context that will be and has been negotiated between the client and server */
-struct cli_negotiate {
+struct smbcli_negotiate {
 	/* 
 	 * negotiated maximum transmit size - this is given to us by the server
 	 */
@@ -49,9 +49,9 @@ struct cli_negotiate {
 	uint32_t sesskey;
 	
 	struct {
-		void (*sign_outgoing_message)(struct cli_request *req);
-		BOOL (*check_incoming_message)(struct cli_request *req);
-		void (*free_signing_context)(struct cli_transport *transport);
+		void (*sign_outgoing_message)(struct smbcli_request *req);
+		BOOL (*check_incoming_message)(struct smbcli_request *req);
+		void (*free_signing_context)(struct smbcli_transport *transport);
 		void *signing_context;
 		BOOL negotiated_smb_signing;
 		BOOL allow_smb_signing;
@@ -72,7 +72,7 @@ struct cli_negotiate {
 };
 	
 /* this is the context for a SMB socket associated with the socket itself */
-struct cli_socket {
+struct smbcli_socket {
 	TALLOC_CTX *mem_ctx;  	/* life of socket pool */
 
 	/* when the reference count reaches zero then the socket is destroyed */
@@ -103,31 +103,31 @@ struct cli_socket {
   this structure allows applications to control the behaviour of the
   client library
 */
-struct cli_options {
+struct smbcli_options {
 	uint_t use_oplocks:1;
 	uint_t use_level2_oplocks:1;
 	uint_t use_spnego:1;
 };
 
 /* this is the context for the client transport layer */
-struct cli_transport {
+struct smbcli_transport {
 	TALLOC_CTX *mem_ctx;
 
 	/* when the reference count reaches zero then the transport is destroyed */
 	int reference_count;
 
 	/* socket level info */
-	struct cli_socket *socket;
+	struct smbcli_socket *socket;
 
 	/* the next mid to be allocated - needed for signing and
 	   request matching */
 	uint16_t next_mid;
 	
 	/* negotiated protocol information */
-	struct cli_negotiate negotiate;
+	struct smbcli_negotiate negotiate;
 
 	/* options to control the behaviour of the client code */
-	struct cli_options options;
+	struct smbcli_options options;
 
 	/* is a readbraw pending? we need to handle that case
 	   specially on receiving packets */
@@ -137,7 +137,7 @@ struct cli_transport {
 	   called once every period seconds while we are waiting
 	   for a packet */
 	struct {
-		void (*func)(struct cli_transport *, void *);
+		void (*func)(struct smbcli_transport *, void *);
 		void *private;
 		uint_t period;
 	} idle;
@@ -162,17 +162,17 @@ struct cli_transport {
 
 	struct {
 		/* a oplock break request handler */
-		BOOL (*handler)(struct cli_transport *transport, 
+		BOOL (*handler)(struct smbcli_transport *transport, 
 				uint16_t tid, uint16_t fnum, uint8_t level, void *private);
 		/* private data passed to the oplock handler */
 		void *private;
 	} oplock;
 
 	/* a list of async requests that are pending for send on this connection */
-	struct cli_request *pending_send;
+	struct smbcli_request *pending_send;
 
 	/* a list of async requests that are pending for receive on this connection */
-	struct cli_request *pending_recv;
+	struct smbcli_request *pending_recv;
 
 	/* remember the called name - some sub-protocols require us to
 	   know the server name */
@@ -197,14 +197,14 @@ struct cli_transport {
 /* this is the context for the user */
 
 /* this is the context for the session layer */
-struct cli_session {	
+struct smbcli_session {	
 	TALLOC_CTX *mem_ctx;  	/* life of session */
 
 	/* when the reference count reaches zero then the session is destroyed */
 	int reference_count;	
 	
 	/* transport layer info */
-	struct cli_transport *transport;
+	struct smbcli_transport *transport;
 	
 	/* after a session setup the server provides us with
 	   a vuid identifying the security context */
@@ -220,9 +220,9 @@ struct cli_session {
 };
 
 /* 
-   cli_tree context: internal state for a tree connection. 
+   smbcli_tree context: internal state for a tree connection. 
  */
-struct cli_tree {
+struct smbcli_tree {
 	/* life of tree tree */
 	TALLOC_CTX *mem_ctx;
 
@@ -230,7 +230,7 @@ struct cli_tree {
 	int reference_count;	
 
 	/* session layer info */
-	struct cli_session *session;
+	struct smbcli_session *session;
 
 	uint16_t tid;			/* tree id, aka cnum */
 	char *device;
@@ -241,30 +241,30 @@ struct cli_tree {
 /*
   a client request moves between the following 4 states.
 */
-enum cli_request_state {CLI_REQUEST_INIT, /* we are creating the request */
-			CLI_REQUEST_SEND, /* the request is in the outgoing socket Q */
-			CLI_REQUEST_RECV, /* we are waiting for a matching reply */
-			CLI_REQUEST_DONE, /* the request is finished */
-			CLI_REQUEST_ERROR}; /* a packet or transport level error has occurred */
+enum smbcli_request_state {SMBCLI_REQUEST_INIT, /* we are creating the request */
+			SMBCLI_REQUEST_SEND, /* the request is in the outgoing socket Q */
+			SMBCLI_REQUEST_RECV, /* we are waiting for a matching reply */
+			SMBCLI_REQUEST_DONE, /* the request is finished */
+			SMBCLI_REQUEST_ERROR}; /* a packet or transport level error has occurred */
 
 /* the context for a single SMB request. This is passed to any request-context 
  * functions (similar to context.h, the server version).
  * This will allow requests to be multi-threaded. */
-struct cli_request {
+struct smbcli_request {
 	/* allow a request to be part of a list of requests */
-	struct cli_request *next, *prev;
+	struct smbcli_request *next, *prev;
 
 	/* a talloc context for the lifetime of this request */
 	TALLOC_CTX *mem_ctx;
 	
 	/* each request is in one of 4 possible states */
-	enum cli_request_state state;
+	enum smbcli_request_state state;
 	
 	/* a request always has a transport context, nearly always has
 	   a session context and usually has a tree context */
-	struct cli_transport *transport;
-	struct cli_session *session;
-	struct cli_tree *tree;
+	struct smbcli_transport *transport;
+	struct smbcli_session *session;
+	struct smbcli_tree *tree;
 
 	/* the flags2 from the SMB request, in raw form (host byte
 	   order). Used to parse strings */
@@ -299,34 +299,34 @@ struct cli_request {
 	   library (the application), not private to the library
 	*/
 	struct {
-		void (*fn)(struct cli_request *);
+		void (*fn)(struct smbcli_request *);
 		void *private;
 	} async;
 };
 
 /* 
-   cli_state: internal state used in libcli library for single-threaded callers, 
+   smbcli_state: internal state used in libcli library for single-threaded callers, 
    i.e. a single session on a single socket. 
  */
-struct cli_state {
+struct smbcli_state {
 	TALLOC_CTX *mem_ctx;  	/* life of client pool */
-	struct cli_transport *transport;
-	struct cli_session *session;
-	struct cli_tree *tree;
+	struct smbcli_transport *transport;
+	struct smbcli_session *session;
+	struct smbcli_tree *tree;
 	struct substitute_context substitute;
 };
 
 /* useful way of catching wct errors with file and line number */
-#define CLI_CHECK_MIN_WCT(req, wcount) if ((req)->in.wct < (wcount)) { \
+#define SMBCLI_CHECK_MIN_WCT(req, wcount) if ((req)->in.wct < (wcount)) { \
       DEBUG(1,("Unexpected WCT %d at %s(%d) - expected min %d\n", (req)->in.wct, __FILE__, __LINE__, wcount)); \
       req->status = NT_STATUS_INVALID_PARAMETER; \
       goto failed; \
 }
 
-#define CLI_CHECK_WCT(req, wcount) if ((req)->in.wct != (wcount)) { \
+#define SMBCLI_CHECK_WCT(req, wcount) if ((req)->in.wct != (wcount)) { \
       DEBUG(1,("Unexpected WCT %d at %s(%d) - expected %d\n", (req)->in.wct, __FILE__, __LINE__, wcount)); \
       req->status = NT_STATUS_INVALID_PARAMETER; \
       goto failed; \
 }
 
-#endif /* _CLI_CONTEXT_H */
+#endif /* _SMBCLI_CONTEXT_H */

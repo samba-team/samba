@@ -41,13 +41,13 @@ static const struct {
 /****************************************************************************
  Send a negprot command.
 ****************************************************************************/
-struct cli_request *smb_negprot_send(struct cli_transport *transport, int maxprotocol)
+struct smbcli_request *smb_negprot_send(struct smbcli_transport *transport, int maxprotocol)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	int i;
 	uint16_t flags2 = 0;
 
-	req = cli_request_setup_transport(transport, SMBnegprot, 0, 0);
+	req = smbcli_request_setup_transport(transport, SMBnegprot, 0, 0);
 	if (!req) {
 		return NULL;
 	}
@@ -66,12 +66,12 @@ struct cli_request *smb_negprot_send(struct cli_transport *transport, int maxpro
 
 	/* setup the protocol strings */
 	for (i=0; i < ARRAY_SIZE(prots) && prots[i].prot <= maxprotocol; i++) {
-		cli_req_append_bytes(req, "\2", 1);
-		cli_req_append_string(req, prots[i].name, STR_TERMINATE | STR_ASCII);
+		smbcli_req_append_bytes(req, "\2", 1);
+		smbcli_req_append_string(req, prots[i].name, STR_TERMINATE | STR_ASCII);
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -81,9 +81,9 @@ struct cli_request *smb_negprot_send(struct cli_transport *transport, int maxpro
 /****************************************************************************
  Send a negprot command.
 ****************************************************************************/
-NTSTATUS smb_raw_negotiate(struct cli_transport *transport) 
+NTSTATUS smb_raw_negotiate(struct smbcli_transport *transport) 
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	int protocol;
 
 	req = smb_negprot_send(transport, PROTOCOL_NT1);
@@ -91,18 +91,18 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
-		return cli_request_destroy(req);
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
+		return smbcli_request_destroy(req);
 	}
 
-	CLI_CHECK_MIN_WCT(req, 1);
+	SMBCLI_CHECK_MIN_WCT(req, 1);
 
 	protocol = SVALS(req->in.vwv, VWV(0));
 
 	if (protocol >= ARRAY_SIZE(prots) || protocol < 0) {
 		req->status = NT_STATUS_UNSUCCESSFUL;
-		return cli_request_destroy(req);
+		return smbcli_request_destroy(req);
 	}
 
 	transport->negotiate.protocol = prots[protocol].prot;
@@ -111,7 +111,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		NTTIME ntt;
 
 		/* NT protocol */
-		CLI_CHECK_WCT(req, 17);
+		SMBCLI_CHECK_WCT(req, 17);
 		transport->negotiate.sec_mode = CVAL(req->in.vwv,VWV(1));
 		transport->negotiate.max_mux  = SVAL(req->in.vwv,VWV(1)+1);
 		transport->negotiate.max_xmit = IVAL(req->in.vwv,VWV(3)+1);
@@ -119,7 +119,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		transport->negotiate.capabilities = IVAL(req->in.vwv,VWV(9)+1);
 
 		/* this time arrives in real GMT */
-		ntt = cli_pull_nttime(req->in.vwv, VWV(11)+1);
+		ntt = smbcli_pull_nttime(req->in.vwv, VWV(11)+1);
 		transport->negotiate.server_time = nt_time_to_unix(ntt);		
 		transport->negotiate.server_zone = SVALS(req->in.vwv,VWV(15)+1) * 60;
 		transport->negotiate.key_len = CVAL(req->in.vwv,VWV(16)+1);
@@ -128,14 +128,14 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 			if (req->in.data_size < 16) {
 				goto failed;
 			}
-			transport->negotiate.server_guid = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, 16);
-			transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data + 16, req->in.data_size - 16);
+			transport->negotiate.server_guid = smbcli_req_pull_blob(req, transport->mem_ctx, req->in.data, 16);
+			transport->negotiate.secblob = smbcli_req_pull_blob(req, transport->mem_ctx, req->in.data + 16, req->in.data_size - 16);
 		} else {
 			if (req->in.data_size < (transport->negotiate.key_len)) {
 				goto failed;
 			}
-			transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, req->in.data, transport->negotiate.key_len);
-			cli_req_pull_string(req, transport->mem_ctx, &transport->negotiate.server_domain,
+			transport->negotiate.secblob = smbcli_req_pull_blob(req, transport->mem_ctx, req->in.data, transport->negotiate.key_len);
+			smbcli_req_pull_string(req, transport->mem_ctx, &transport->negotiate.server_domain,
 					    req->in.data+transport->negotiate.key_len,
 					    req->in.data_size-transport->negotiate.key_len, STR_UNICODE|STR_NOALIGN);
 			/* here comes the server name */
@@ -146,7 +146,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 			transport->negotiate.writebraw_supported = True;
 		}
 	} else if (transport->negotiate.protocol >= PROTOCOL_LANMAN1) {
-		CLI_CHECK_WCT(req, 13);
+		SMBCLI_CHECK_WCT(req, 13);
 		transport->negotiate.sec_mode = SVAL(req->in.vwv,VWV(1));
 		transport->negotiate.max_xmit = SVAL(req->in.vwv,VWV(2));
 		transport->negotiate.sesskey =  IVAL(req->in.vwv,VWV(6));
@@ -161,7 +161,7 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 		if ((SVAL(req->in.vwv,VWV(5)) & 0x2)) {
 			transport->negotiate.writebraw_supported = 1;
 		}
-		transport->negotiate.secblob = cli_req_pull_blob(req, transport->mem_ctx, 
+		transport->negotiate.secblob = smbcli_req_pull_blob(req, transport->mem_ctx, 
 								 req->in.data, req->in.data_size);
 	} else {
 		/* the old core protocol */
@@ -172,10 +172,10 @@ NTSTATUS smb_raw_negotiate(struct cli_transport *transport)
 	}
 
 	/* a way to force ascii SMB */
-	if (getenv("CLI_FORCE_ASCII")) {
+	if (getenv("SMBCLI_FORCE_ASCII")) {
 		transport->negotiate.capabilities &= ~CAP_UNICODE;
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }

@@ -26,15 +26,15 @@
 /* transport private information used by SMB pipe transport */
 struct smb_private {
 	uint16_t fnum;
-	struct cli_tree *tree;
+	struct smbcli_tree *tree;
 };
 
-static struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blob)
+static struct smbcli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blob)
 {
 	struct smb_private *smb = p->transport.private;
 	struct smb_trans2 trans;
 	uint16_t setup[2];
-	struct cli_request *req;
+	struct smbcli_request *req;
 	TALLOC_CTX *mem_ctx;
 
 	mem_ctx = talloc_init("dcerpc_raw_send");
@@ -64,7 +64,7 @@ static struct cli_request *dcerpc_raw_send(struct dcerpc_pipe *p, DATA_BLOB *blo
 
 
 static NTSTATUS dcerpc_raw_recv(struct dcerpc_pipe *p, 
-				struct cli_request *req,
+				struct smbcli_request *req,
 				TALLOC_CTX *mem_ctx,
 				DATA_BLOB *blob)
 {
@@ -154,7 +154,7 @@ static NTSTATUS smb_full_request(struct dcerpc_pipe *p,
 				 DATA_BLOB *request_blob,
 				 DATA_BLOB *reply_blob)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 	req = dcerpc_raw_send(p, request_blob);
 	return dcerpc_raw_recv(p, req, mem_ctx, reply_blob);
 }
@@ -282,7 +282,7 @@ static NTSTATUS smb_shutdown_pipe(struct dcerpc_pipe *p)
 	c.close.in.fnum = smb->fnum;
 	c.close.in.write_time = 0;
 	smb_raw_close(smb->tree, &c);
-	cli_tree_close(smb->tree);
+	smbcli_tree_close(smb->tree);
 
 	return NT_STATUS_OK;
 }
@@ -300,7 +300,7 @@ static const char *smb_peer_name(struct dcerpc_pipe *p)
    open a rpc connection to a named pipe 
 */
 NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p, 
-			      struct cli_tree *tree,
+			      struct smbcli_tree *tree,
 			      const char *pipe_name)
 {
 	struct smb_private *smb;
@@ -380,7 +380,7 @@ NTSTATUS dcerpc_pipe_open_smb(struct dcerpc_pipe **p,
 /*
   return the SMB tree used for a dcerpc over SMB pipe
 */
-struct cli_tree *dcerpc_smb_tree(struct dcerpc_pipe *p)
+struct smbcli_tree *dcerpc_smb_tree(struct dcerpc_pipe *p)
 {
 	struct smb_private *smb = p->transport.private;
 

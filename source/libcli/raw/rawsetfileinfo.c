@@ -24,7 +24,7 @@
 /****************************************************************************
  Handle setfileinfo/setpathinfo trans2 backend.
 ****************************************************************************/
-static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
+static BOOL smb_raw_setinfo_backend(struct smbcli_tree *tree,
 				    TALLOC_CTX *mem_ctx,
 				    union smb_setfileinfo *parms, 
 				    DATA_BLOB *blob)
@@ -61,10 +61,10 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 	case RAW_SFILEINFO_BASIC_INFO:
 	case RAW_SFILEINFO_BASIC_INFORMATION:
 		NEED_BLOB(40);
-		cli_push_nttime(blob->data,  0, parms->basic_info.in.create_time);
-		cli_push_nttime(blob->data,  8, parms->basic_info.in.access_time);
-		cli_push_nttime(blob->data, 16, parms->basic_info.in.write_time);
-		cli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
+		smbcli_push_nttime(blob->data,  0, parms->basic_info.in.create_time);
+		smbcli_push_nttime(blob->data,  8, parms->basic_info.in.access_time);
+		smbcli_push_nttime(blob->data, 16, parms->basic_info.in.write_time);
+		smbcli_push_nttime(blob->data, 24, parms->basic_info.in.change_time);
 		SIVAL(blob->data,           32, parms->basic_info.in.attrib);
 		SIVAL(blob->data,           36, 0); /* padding */
 		return True;
@@ -73,9 +73,9 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 		NEED_BLOB(92);
 		SBVAL(blob->data, 0, parms->unix_basic.in.end_of_file);
 		SBVAL(blob->data, 8, parms->unix_basic.in.num_bytes);
-		cli_push_nttime(blob->data, 16, parms->unix_basic.in.status_change_time);
-		cli_push_nttime(blob->data, 24, parms->unix_basic.in.access_time);
-		cli_push_nttime(blob->data, 32, parms->unix_basic.in.change_time);
+		smbcli_push_nttime(blob->data, 16, parms->unix_basic.in.status_change_time);
+		smbcli_push_nttime(blob->data, 24, parms->unix_basic.in.access_time);
+		smbcli_push_nttime(blob->data, 32, parms->unix_basic.in.change_time);
 		SBVAL(blob->data, 40, parms->unix_basic.in.uid);
 		SBVAL(blob->data, 48, parms->unix_basic.in.gid);
 		SIVAL(blob->data, 56, parms->unix_basic.in.file_type);
@@ -107,7 +107,7 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 		NEED_BLOB(12);
 		SIVAL(blob->data, 0, parms->rename_information.in.overwrite);
 		SIVAL(blob->data, 4, parms->rename_information.in.root_fid);
-		len = cli_blob_append_string(tree->session, mem_ctx, blob,
+		len = smbcli_blob_append_string(tree->session, mem_ctx, blob,
 					     parms->rename_information.in.new_name, 
 					     STR_UNICODE|STR_TERMINATE);
 		SIVAL(blob->data, 8, len - 2);
@@ -130,7 +130,7 @@ static BOOL smb_raw_setinfo_backend(struct cli_tree *tree,
 /****************************************************************************
  Very raw set file info - takes data blob (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_setfileinfo_blob_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_setfileinfo_blob_send(struct smbcli_tree *tree,
 							 TALLOC_CTX *mem_ctx,
 							 uint16_t fnum,
 							 uint16_t info_level,
@@ -163,7 +163,7 @@ static struct cli_request *smb_raw_setfileinfo_blob_send(struct cli_tree *tree,
 /****************************************************************************
  Very raw set path info - takes data blob
 ****************************************************************************/
-static struct cli_request *smb_raw_setpathinfo_blob_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_setpathinfo_blob_send(struct smbcli_tree *tree,
 							 TALLOC_CTX *mem_ctx,
 							 const char *fname,
 							 uint16_t info_level,
@@ -186,7 +186,7 @@ static struct cli_request *smb_raw_setpathinfo_blob_send(struct cli_tree *tree,
 	}
 	SSVAL(tp.in.params.data, 0, info_level);
 	SSVAL(tp.in.params.data, 2, 0);
-	cli_blob_append_string(tree->session, mem_ctx, 
+	smbcli_blob_append_string(tree->session, mem_ctx, 
 			       &tp.in.params,
 			       fname, STR_TERMINATE);
 
@@ -198,23 +198,23 @@ static struct cli_request *smb_raw_setpathinfo_blob_send(struct cli_tree *tree,
 /****************************************************************************
  Handle setattr (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_setattr_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_setattr_send(struct smbcli_tree *tree,
 						union smb_setfileinfo *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup(tree, SMBsetatr, 8, 0);
+	req = smbcli_request_setup(tree, SMBsetatr, 8, 0);
 	if (!req) return NULL;
 	
 	SSVAL(req->out.vwv,         VWV(0), parms->setattr.in.attrib);
 	raw_push_dos_date3(tree->session->transport, 
 			  req->out.vwv, VWV(1), parms->setattr.in.write_time);
 	memset(req->out.vwv + VWV(3), 0, 10); /* reserved */
-	cli_req_append_ascii4(req, parms->setattr.file.fname, STR_TERMINATE);
-	cli_req_append_ascii4(req, "", STR_TERMINATE);
+	smbcli_req_append_ascii4(req, parms->setattr.file.fname, STR_TERMINATE);
+	smbcli_req_append_ascii4(req, "", STR_TERMINATE);
 	
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -224,12 +224,12 @@ static struct cli_request *smb_raw_setattr_send(struct cli_tree *tree,
 /****************************************************************************
  Handle setattrE. (async send)
 ****************************************************************************/
-static struct cli_request *smb_raw_setattrE_send(struct cli_tree *tree,
+static struct smbcli_request *smb_raw_setattrE_send(struct smbcli_tree *tree,
 						 union smb_setfileinfo *parms)
 {
-	struct cli_request *req;
+	struct smbcli_request *req;
 
-	req = cli_request_setup(tree, SMBsetattrE, 7, 0);
+	req = smbcli_request_setup(tree, SMBsetattrE, 7, 0);
 	if (!req) return NULL;
 	
 	SSVAL(req->out.vwv,         VWV(0), parms->setattre.file.fnum);
@@ -240,8 +240,8 @@ static struct cli_request *smb_raw_setattrE_send(struct cli_tree *tree,
 	raw_push_dos_date2(tree->session->transport, 
 			  req->out.vwv, VWV(5), parms->setattre.in.write_time);
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -251,12 +251,12 @@ static struct cli_request *smb_raw_setattrE_send(struct cli_tree *tree,
 /****************************************************************************
  Set file info (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_setfileinfo_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_setfileinfo_send(struct smbcli_tree *tree,
 					     union smb_setfileinfo *parms)
 {
 	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	if (parms->generic.level == RAW_SFILEINFO_SETATTRE) {
 		return smb_raw_setattrE_send(tree, parms);
@@ -287,23 +287,23 @@ struct cli_request *smb_raw_setfileinfo_send(struct cli_tree *tree,
 /****************************************************************************
  Set file info (async send)
 ****************************************************************************/
-NTSTATUS smb_raw_setfileinfo(struct cli_tree *tree,
+NTSTATUS smb_raw_setfileinfo(struct smbcli_tree *tree,
 			     union smb_setfileinfo *parms)
 {
-	struct cli_request *req = smb_raw_setfileinfo_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_setfileinfo_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }
 
 
 /****************************************************************************
  Set path info (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_setpathinfo_send(struct cli_tree *tree,
+struct smbcli_request *smb_raw_setpathinfo_send(struct smbcli_tree *tree,
 					     union smb_setfileinfo *parms)
 {
 	DATA_BLOB blob;
 	TALLOC_CTX *mem_ctx;
-	struct cli_request *req;
+	struct smbcli_request *req;
 
 	if (parms->generic.level == RAW_SFILEINFO_SETATTR) {
 		return smb_raw_setattr_send(tree, parms);
@@ -334,9 +334,9 @@ struct cli_request *smb_raw_setpathinfo_send(struct cli_tree *tree,
 /****************************************************************************
  Set path info (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_setpathinfo(struct cli_tree *tree,
+NTSTATUS smb_raw_setpathinfo(struct smbcli_tree *tree,
 			     union smb_setfileinfo *parms)
 {
-	struct cli_request *req = smb_raw_setpathinfo_send(tree, parms);
-	return cli_request_simple_recv(req);
+	struct smbcli_request *req = smb_raw_setpathinfo_send(tree, parms);
+	return smbcli_request_simple_recv(req);
 }

@@ -123,7 +123,7 @@ static int ms_fnmatch_lanman(const char *pattern, const char *string)
 	return ms_fnmatch_lanman_core(pattern, string);
 }
 
-static BOOL reg_match_one(struct cli_state *cli, const char *pattern, const char *file)
+static BOOL reg_match_one(struct smbcli_state *cli, const char *pattern, const char *file)
 {
 	/* oh what a weird world this is */
 	if (old_list && strcmp(pattern, "*.*") == 0) return True;
@@ -139,7 +139,7 @@ static BOOL reg_match_one(struct cli_state *cli, const char *pattern, const char
 	return ms_fnmatch(pattern, file, cli->transport->negotiate.protocol)==0;
 }
 
-static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, char *short_name)
+static char *reg_test(struct smbcli_state *cli, char *pattern, char *long_name, char *short_name)
 {
 	static fstring ret;
 	fstrcpy(ret, "---");
@@ -157,9 +157,9 @@ static char *reg_test(struct cli_state *cli, char *pattern, char *long_name, cha
 /***************************************************** 
 return a connection to a server
 *******************************************************/
-static struct cli_state *connect_one(char *share)
+static struct smbcli_state *connect_one(char *share)
 {
-	struct cli_state *c;
+	struct smbcli_state *c;
 	fstring server;
 	uint_t flags = 0;
 	NTSTATUS status;
@@ -170,7 +170,7 @@ static struct cli_state *connect_one(char *share)
 	*share = 0;
 	share++;
 
-	status = cli_full_connection(&c, "masktest",
+	status = smbcli_full_connection(&c, "masktest",
 				     server, NULL, 
 				     share, "?????", 
 				     username, lp_workgroup(), 
@@ -204,7 +204,7 @@ static void listfn(file_info *f, const char *s, void *state)
 	f_info_hit = True;
 }
 
-static void get_real_name(struct cli_state *cli, 
+static void get_real_name(struct smbcli_state *cli, 
 			  pstring long_name, fstring short_name)
 {
 	const char *mask;
@@ -216,7 +216,7 @@ static void get_real_name(struct cli_state *cli,
 
 	f_info_hit = False;
 
-	cli_list_new(cli->tree, mask, 
+	smbcli_list_new(cli->tree, mask, 
 		     FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
 		     listfn, NULL);
 
@@ -232,7 +232,7 @@ static void get_real_name(struct cli_state *cli,
 	}
 }
 
-static void testpair(struct cli_state *cli, char *mask, char *file)
+static void testpair(struct smbcli_state *cli, char *mask, char *file)
 {
 	int fnum;
 	fstring res1;
@@ -245,18 +245,18 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 
 	fstrcpy(res1, "---");
 
-	fnum = cli_open(cli->tree, file, O_CREAT|O_TRUNC|O_RDWR, 0);
+	fnum = smbcli_open(cli->tree, file, O_CREAT|O_TRUNC|O_RDWR, 0);
 	if (fnum == -1) {
 		DEBUG(0,("Can't create %s\n", file));
 		return;
 	}
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 
 	resultp = res1;
 	fstrcpy(short_name, "");
 	get_real_name(cli, long_name, short_name);
 	fstrcpy(res1, "---");
-	cli_list(cli->tree, mask, 
+	smbcli_list(cli->tree, mask, 
 		 FILE_ATTRIBUTE_HIDDEN | FILE_ATTRIBUTE_DIRECTORY, 
 		 listfn, NULL);
 
@@ -268,22 +268,22 @@ static void testpair(struct cli_state *cli, char *mask, char *file)
 		if (die_on_error) exit(1);
 	}
 
-	cli_unlink(cli->tree, file);
+	smbcli_unlink(cli->tree, file);
 
 	if (count % 100 == 0) DEBUG(0,("%d\n", count));
 }
 
 static void test_mask(int argc, char *argv[], 
-		      struct cli_state *cli)
+		      struct smbcli_state *cli)
 {
 	pstring mask, file;
 	int l1, l2, i, l;
 	int mc_len = strlen(maskchars);
 	int fc_len = strlen(filechars);
 
-	cli_mkdir(cli->tree, "\\masktest");
+	smbcli_mkdir(cli->tree, "\\masktest");
 
-	cli_unlink(cli->tree, "\\masktest\\*");
+	smbcli_unlink(cli->tree, "\\masktest\\*");
 
 	if (argc >= 2) {
 		while (argc >= 2) {
@@ -326,7 +326,7 @@ static void test_mask(int argc, char *argv[],
 	}
 
  finished:
-	cli_rmdir(cli->tree, "\\masktest");
+	smbcli_rmdir(cli->tree, "\\masktest");
 }
 
 
@@ -361,7 +361,7 @@ static void usage(void)
  int main(int argc,char *argv[])
 {
 	char *share;
-	struct cli_state *cli;	
+	struct smbcli_state *cli;	
 	int opt;
 	char *p;
 	int seed;

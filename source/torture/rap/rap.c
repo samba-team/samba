@@ -155,7 +155,7 @@ static NTSTATUS rap_pull_string(TALLOC_CTX *mem_ctx, struct ndr_pull *ndr,
 	return NT_STATUS_OK;
 }
 
-static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+static NTSTATUS rap_cli_do_call(struct smbcli_state *cli, TALLOC_CTX *mem_ctx,
 				struct rap_call *call)
 {
 	NTSTATUS result;
@@ -212,7 +212,7 @@ static NTSTATUS rap_cli_do_call(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 				goto done; \
                         } while (0)
 
-static NTSTATUS cli_rap_netshareenum(struct cli_state *cli,
+static NTSTATUS smbcli_rap_netshareenum(struct smbcli_state *cli,
 				     TALLOC_CTX *mem_ctx,
 				     struct rap_NetShareEnum *r)
 {
@@ -282,7 +282,7 @@ static NTSTATUS cli_rap_netshareenum(struct cli_state *cli,
 	return result;
 }
 
-static BOOL test_netshareenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_netshareenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct rap_NetShareEnum r;
 	int i;
@@ -290,7 +290,7 @@ static BOOL test_netshareenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	r.in.level = 1;
 	r.in.bufsize = 8192;
 
-	if (!NT_STATUS_IS_OK(cli_rap_netshareenum(cli, mem_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netshareenum(cli, mem_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -302,7 +302,7 @@ static BOOL test_netshareenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	return True;
 }
 
-static NTSTATUS cli_rap_netserverenum2(struct cli_state *cli,
+static NTSTATUS smbcli_rap_netserverenum2(struct smbcli_state *cli,
 				       TALLOC_CTX *mem_ctx,
 				       struct rap_NetServerEnum2 *r)
 {
@@ -377,7 +377,7 @@ static NTSTATUS cli_rap_netserverenum2(struct cli_state *cli,
 	return result;
 }
 
-static BOOL test_netserverenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_netserverenum(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	struct rap_NetServerEnum2 r;
 	int i;
@@ -388,7 +388,7 @@ static BOOL test_netserverenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 	r.in.servertype = 0x80000000;
 	r.in.domain = NULL;
 
-	if (!NT_STATUS_IS_OK(cli_rap_netserverenum2(cli, mem_ctx, &r)))
+	if (!NT_STATUS_IS_OK(smbcli_rap_netserverenum2(cli, mem_ctx, &r)))
 		return False;
 
 	for (i=0; i<r.out.count; i++) {
@@ -409,7 +409,7 @@ static BOOL test_netserverenum(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 
 
-static BOOL test_rap(struct cli_state *cli, TALLOC_CTX *mem_ctx)
+static BOOL test_rap(struct smbcli_state *cli, TALLOC_CTX *mem_ctx)
 {
 	BOOL res = True;
 
@@ -424,7 +424,7 @@ static BOOL test_rap(struct cli_state *cli, TALLOC_CTX *mem_ctx)
 
 BOOL torture_raw_rap(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 

@@ -23,7 +23,7 @@
 /****************************************************************************
 fetch file ACL (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_query_secdesc_send(struct cli_tree *tree, 
+struct smbcli_request *smb_raw_query_secdesc_send(struct smbcli_tree *tree, 
 					       struct smb_query_secdesc *query)
 {
 	struct smb_nttrans nt;
@@ -52,7 +52,7 @@ struct cli_request *smb_raw_query_secdesc_send(struct cli_tree *tree,
 /****************************************************************************
 fetch file ACL (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_query_secdesc_recv(struct cli_request *req, 
+NTSTATUS smb_raw_query_secdesc_recv(struct smbcli_request *req, 
 				    TALLOC_CTX *mem_ctx, 
 				    struct smb_query_secdesc *query)
 {
@@ -91,11 +91,11 @@ NTSTATUS smb_raw_query_secdesc_recv(struct cli_request *req,
 /****************************************************************************
 fetch file ACL (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_query_secdesc(struct cli_tree *tree, 
+NTSTATUS smb_raw_query_secdesc(struct smbcli_tree *tree, 
 			       TALLOC_CTX *mem_ctx, 
 			       struct smb_query_secdesc *query)
 {
-	struct cli_request *req = smb_raw_query_secdesc_send(tree, query);
+	struct smbcli_request *req = smb_raw_query_secdesc_send(tree, query);
 	return smb_raw_query_secdesc_recv(req, mem_ctx, query);
 }
 
@@ -104,13 +104,13 @@ NTSTATUS smb_raw_query_secdesc(struct cli_tree *tree,
 /****************************************************************************
 set file ACL (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_set_secdesc_send(struct cli_tree *tree, 
+struct smbcli_request *smb_raw_set_secdesc_send(struct smbcli_tree *tree, 
 					     struct smb_set_secdesc *set)
 {
 	struct smb_nttrans nt;
 	uint8_t params[8];
 	struct ndr_push *ndr;
-	struct cli_request *req;
+	struct smbcli_request *req;
 	NTSTATUS status;
 
 	nt.in.max_setup = 0;

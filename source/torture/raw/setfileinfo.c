@@ -28,7 +28,7 @@
 */
 BOOL torture_raw_sfileinfo(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	BOOL ret = True;
 	TALLOC_CTX *mem_ctx;
 	int fnum_saved, d_fnum, fnum2, fnum = -1;
@@ -55,22 +55,22 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 	mem_ctx = talloc_init("torture_sfileinfo");
 
-	cli_deltree(cli->tree, BASEDIR);
-	cli_mkdir(cli->tree, BASEDIR);
+	smbcli_deltree(cli->tree, BASEDIR);
+	smbcli_mkdir(cli->tree, BASEDIR);
 
 #define RECREATE_FILE(fname) do { \
-	if (fnum != -1) cli_close(cli->tree, fnum); \
+	if (fnum != -1) smbcli_close(cli->tree, fnum); \
 	fnum = create_complex_file(cli, mem_ctx, fname); \
 	if (fnum == -1) { \
 		printf("(%d) ERROR: open of %s failed (%s)\n", \
-		       __LINE__, fname, cli_errstr(cli->tree)); \
+		       __LINE__, fname, smbcli_errstr(cli->tree)); \
 		ret = False; \
 		goto done; \
 	}} while (0)
 
 #define RECREATE_BOTH do { \
 		RECREATE_FILE(path_fname); \
-		cli_close(cli->tree, fnum); \
+		smbcli_close(cli->tree, fnum); \
 		RECREATE_FILE(fnum_fname); \
 	} while (0)
 
@@ -408,8 +408,8 @@ BOOL torture_raw_sfileinfo(int dummy)
 	CHECK_VALUE(MODE_INFORMATION, mode_information, mode, 0);
 #if 1
 	printf("finally the rename_information level\n");
-	cli_close(cli->tree, create_complex_file(cli, mem_ctx, fnum_fname_new));
-	cli_close(cli->tree, create_complex_file(cli, mem_ctx, path_fname_new));
+	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, fnum_fname_new));
+	smbcli_close(cli->tree, create_complex_file(cli, mem_ctx, path_fname_new));
 
 	sfinfo.rename_information.in.overwrite = 0;
 	sfinfo.rename_information.in.root_fid  = 0;
@@ -444,7 +444,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 	printf("Trying rename with dest file open and delete_on_close\n");
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_ACCESS_DENIED);
 
-	cli_close(cli->tree, fnum2);
+	smbcli_close(cli->tree, fnum2);
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname);
 
@@ -459,7 +459,7 @@ BOOL torture_raw_sfileinfo(int dummy)
 	sfinfo.rename_information.in.overwrite = 0;
 	CHECK_CALL_FNUM(RENAME_INFORMATION, NT_STATUS_OK);
 	CHECK_STR(NAME_INFO, name_info, fname.s, fnum_fname_new);
-	cli_close(cli->tree, fnum2);
+	smbcli_close(cli->tree, fnum2);
 
 	sfinfo.rename_information.in.new_name  = fnum_fname+strlen(BASEDIR)+1;
 	sfinfo.rename_information.in.overwrite = 0;
@@ -499,12 +499,12 @@ BOOL torture_raw_sfileinfo(int dummy)
 
 done:
 	smb_raw_exit(cli->session);
-	cli_close(cli->tree, fnum);
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, fnum_fname))) {
-		printf("Failed to delete %s - %s\n", fnum_fname, cli_errstr(cli->tree));
+	smbcli_close(cli->tree, fnum);
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, fnum_fname))) {
+		printf("Failed to delete %s - %s\n", fnum_fname, smbcli_errstr(cli->tree));
 	}
-	if (NT_STATUS_IS_ERR(cli_unlink(cli->tree, path_fname))) {
-		printf("Failed to delete %s - %s\n", path_fname, cli_errstr(cli->tree));
+	if (NT_STATUS_IS_ERR(smbcli_unlink(cli->tree, path_fname))) {
+		printf("Failed to delete %s - %s\n", path_fname, smbcli_errstr(cli->tree));
 	}
 
 	torture_close_connection(cli);
@@ -518,7 +518,7 @@ done:
 */
 BOOL torture_raw_sfileinfo_bug(int dummy)
 {
-	struct cli_state *cli;
+	struct smbcli_state *cli;
 	TALLOC_CTX *mem_ctx;
 	const char *fname = "\\bug3.txt";
 	union smb_setfileinfo sfinfo;
@@ -537,7 +537,7 @@ BOOL torture_raw_sfileinfo_bug(int dummy)
 	mem_ctx = talloc_init("torture_sfileinfo");
 
 	fnum = create_complex_file(cli, mem_ctx, fname);
-	cli_close(cli->tree, fnum);
+	smbcli_close(cli->tree, fnum);
 
 	sfinfo.generic.level = RAW_SFILEINFO_STANDARD;
 	sfinfo.generic.file.fname = fname;

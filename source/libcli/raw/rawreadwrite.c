@@ -22,7 +22,7 @@
 #include "includes.h"
 
 #define SETUP_REQUEST(cmd, wct, buflen) do { \
-	req = cli_request_setup(tree, cmd, wct, buflen); \
+	req = smbcli_request_setup(tree, cmd, wct, buflen); \
 	if (!req) return NULL; \
 } while (0)
 
@@ -30,10 +30,10 @@
 /****************************************************************************
  low level read operation (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_read_send(struct cli_tree *tree, union smb_read *parms)
+struct smbcli_request *smb_raw_read_send(struct smbcli_tree *tree, union smb_read *parms)
 {
 	BOOL bigoffset = False;
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	switch (parms->generic.level) {
 	case RAW_READ_GENERIC:
@@ -90,8 +90,8 @@ struct cli_request *smb_raw_read_send(struct cli_tree *tree, union smb_read *par
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-		cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+		smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -107,10 +107,10 @@ struct cli_request *smb_raw_read_send(struct cli_tree *tree, union smb_read *par
 /****************************************************************************
  low level read operation (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_read_recv(struct cli_request *req, union smb_read *parms)
+NTSTATUS smb_raw_read_recv(struct smbcli_request *req, union smb_read *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
 		goto failed;
 	}
 
@@ -130,10 +130,10 @@ NTSTATUS smb_raw_read_recv(struct cli_request *req, union smb_read *parms)
 		break;
 		
 	case RAW_READ_LOCKREAD:
-		CLI_CHECK_WCT(req, 5);
+		SMBCLI_CHECK_WCT(req, 5);
 		parms->lockread.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->lockread.out.nread > parms->lockread.in.count ||
-		    !cli_raw_pull_data(req, req->in.data+3, 
+		    !smbcli_raw_pull_data(req, req->in.data+3, 
 				       parms->lockread.out.nread, parms->lockread.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -141,10 +141,10 @@ NTSTATUS smb_raw_read_recv(struct cli_request *req, union smb_read *parms)
 
 	case RAW_READ_READ:
 		/* there are 4 reserved words in the reply */
-		CLI_CHECK_WCT(req, 5);
+		SMBCLI_CHECK_WCT(req, 5);
 		parms->read.out.nread = SVAL(req->in.vwv, VWV(0));
 		if (parms->read.out.nread > parms->read.in.count ||
-		    !cli_raw_pull_data(req, req->in.data+3, 
+		    !smbcli_raw_pull_data(req, req->in.data+3, 
 				       parms->read.out.nread, parms->read.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
 		}
@@ -152,12 +152,12 @@ NTSTATUS smb_raw_read_recv(struct cli_request *req, union smb_read *parms)
 
 	case RAW_READ_READX:
 		/* there are 5 reserved words in the reply */
-		CLI_CHECK_WCT(req, 12);
+		SMBCLI_CHECK_WCT(req, 12);
 		parms->readx.out.remaining       = SVAL(req->in.vwv, VWV(2));
 		parms->readx.out.compaction_mode = SVAL(req->in.vwv, VWV(3));
 		parms->readx.out.nread = SVAL(req->in.vwv, VWV(5));
 		if (parms->readx.out.nread > MAX(parms->readx.in.mincnt, parms->readx.in.maxcnt) ||
-		    !cli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
+		    !smbcli_raw_pull_data(req, req->in.hdr + SVAL(req->in.vwv, VWV(6)), 
 				       parms->readx.out.nread, 
 				       parms->readx.out.data)) {
 			req->status = NT_STATUS_BUFFER_TOO_SMALL;
@@ -166,15 +166,15 @@ NTSTATUS smb_raw_read_recv(struct cli_request *req, union smb_read *parms)
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /****************************************************************************
  low level read operation (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_read(struct cli_tree *tree, union smb_read *parms)
+NTSTATUS smb_raw_read(struct smbcli_tree *tree, union smb_read *parms)
 {
-	struct cli_request *req = smb_raw_read_send(tree, parms);
+	struct smbcli_request *req = smb_raw_read_send(tree, parms);
 	return smb_raw_read_recv(req, parms);
 }
 
@@ -182,10 +182,10 @@ NTSTATUS smb_raw_read(struct cli_tree *tree, union smb_read *parms)
 /****************************************************************************
  raw write interface (async send)
 ****************************************************************************/
-struct cli_request *smb_raw_write_send(struct cli_tree *tree, union smb_write *parms)
+struct smbcli_request *smb_raw_write_send(struct smbcli_tree *tree, union smb_write *parms)
 {
 	BOOL bigoffset = False;
-	struct cli_request *req; 
+	struct smbcli_request *req; 
 
 	switch (parms->generic.level) {
 	case RAW_WRITE_GENERIC:
@@ -264,8 +264,8 @@ struct cli_request *smb_raw_write_send(struct cli_tree *tree, union smb_write *p
 		break;
 	}
 
-	if (!cli_request_send(req)) {
-cli_request_destroy(req);
+	if (!smbcli_request_send(req)) {
+smbcli_request_destroy(req);
 		return NULL;
 	}
 
@@ -276,10 +276,10 @@ cli_request_destroy(req);
 /****************************************************************************
  raw write interface (async recv)
 ****************************************************************************/
-NTSTATUS smb_raw_write_recv(struct cli_request *req, union smb_write *parms)
+NTSTATUS smb_raw_write_recv(struct smbcli_request *req, union smb_write *parms)
 {
-	if (!cli_request_receive(req) ||
-	    cli_request_is_error(req)) {
+	if (!smbcli_request_receive(req) ||
+	    smbcli_request_is_error(req)) {
 		goto failed;
 	}
 
@@ -287,19 +287,19 @@ NTSTATUS smb_raw_write_recv(struct cli_request *req, union smb_write *parms)
 	case RAW_WRITE_GENERIC:
 		break;
 	case RAW_WRITE_WRITEUNLOCK:
-		CLI_CHECK_WCT(req, 1);		
+		SMBCLI_CHECK_WCT(req, 1);		
 		parms->writeunlock.out.nwritten = SVAL(req->in.vwv, VWV(0));
 		break;
 	case RAW_WRITE_WRITE:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->write.out.nwritten = SVAL(req->in.vwv, VWV(0));
 		break;
 	case RAW_WRITE_WRITECLOSE:
-		CLI_CHECK_WCT(req, 1);
+		SMBCLI_CHECK_WCT(req, 1);
 		parms->writeclose.out.nwritten = SVAL(req->in.vwv, VWV(0));
 		break;
 	case RAW_WRITE_WRITEX:
-		CLI_CHECK_WCT(req, 6);
+		SMBCLI_CHECK_WCT(req, 6);
 		parms->writex.out.nwritten  = SVAL(req->in.vwv, VWV(2));
 		parms->writex.out.nwritten += (CVAL(req->in.vwv, VWV(4)) << 16);
 		parms->writex.out.remaining = SVAL(req->in.vwv, VWV(3));
@@ -309,14 +309,14 @@ NTSTATUS smb_raw_write_recv(struct cli_request *req, union smb_write *parms)
 	}
 
 failed:
-	return cli_request_destroy(req);
+	return smbcli_request_destroy(req);
 }
 
 /****************************************************************************
  raw write interface (sync interface)
 ****************************************************************************/
-NTSTATUS smb_raw_write(struct cli_tree *tree, union smb_write *parms)
+NTSTATUS smb_raw_write(struct smbcli_tree *tree, union smb_write *parms)
 {
-	struct cli_request *req = smb_raw_write_send(tree, parms);
+	struct smbcli_request *req = smb_raw_write_send(tree, parms);
 	return smb_raw_write_recv(req, parms);
 }
