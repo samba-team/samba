@@ -154,6 +154,14 @@ BOOL get_unixgroup_members(struct group *grp,
 
 /*************************************************************************
  Routine to return the next entry in the domain group list.
+
+ if we are not a PDC or BDC, then we do NOT support Domain groups, only
+ aliases.  try running MUSRMGR.EXE or running USRMGR.EXE selected on a
+ workstation, you will find that no Domain groups are listed: only aliases.
+
+ so, as a PDC or BDC, all unix groups not explicitly mapped using
+ map_group_gid() are treated as Domain groups.
+
  *************************************************************************/
 static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_mem)
 {
@@ -182,8 +190,17 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 	while ((unix_grp = getgrent()) != NULL)
 	{
 		DOM_SID sid;
+		BOOL is_alias;
+
 		DEBUG(10,("getgrpunixpwent: enum unix group entry %s\n",
 		           unix_grp->gr_name));
+		is_alias = map_alias_gid(unix_grp->gr_gid, &sid, NULL, NULL);
+		if (is_alias)
+		{
+			sid_split_rid(&sid, NULL);
+			is_alias = sid_equal(&sid, &global_sam_sid);
+		}
+
 		if (map_group_gid(unix_grp->gr_gid, &sid, gp_buf.name, NULL))
 		{
 			/*
@@ -194,7 +211,12 @@ static DOMAIN_GRP *getgrpunixpwent(void *vp, DOMAIN_GRP_MEMBER **mem, int *num_m
 			sid_split_rid(&sid, &gp_buf.rid);
 			if (sid_equal(&sid, &global_sam_sid))
 			{
-				break; /* hooray. */
+				if (!is_alias)
+				{
+					break; /* hooray. */
+				}
+				DEBUG(0,("configuration mistake: unix group %s is mapped to both an NT alias and an NT group\n",
+				          gp_buf.name));
 			}
 		}
 		else

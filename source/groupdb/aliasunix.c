@@ -66,7 +66,7 @@ static BOOL setalsunixpwpos(void *vp, SMB_BIG_UINT tok)
 }
 
 /*************************************************************************
- maps a unix alias to a rid, domain sid and an nt alias name.  
+ maps a unix group to a rid, domain sid and an nt alias name.  
 *************************************************************************/
 static void map_unix_als_to_nt_als(struct group *unix_als, char *nt_name, DOM_SID *sid, uint32 *rid)
 {
@@ -74,7 +74,7 @@ static void map_unix_als_to_nt_als(struct group *unix_als, char *nt_name, DOM_SI
 	{
 		/*
 		 * find the NT name represented by this UNIX gid.
-		 * then, only accept NT aliass that are in our domain
+		 * then, only accept NT aliases that are in our domain
 		 */
 
 		sid_split_rid(sid, rid);
@@ -150,6 +150,18 @@ BOOL get_unixalias_members(struct group *als,
 
 /*************************************************************************
  Routine to return the next entry in the domain alias list.
+
+ when we are a PDC or BDC, then unix groups that are explicitly NOT mapped
+ to aliases (map_alias_gid) are treated as DOMAIN groups (see groupunix.c).
+
+ when we are a member of a domain (not a PDC or BDC) then unix groups
+ that are explicitly NOT mapped to aliases (map_alias_gid) are treated
+ as LOCAL groups.
+
+ the reasoning behind this is to make it as simple as possible (not an easy
+ task) for people to set up a domain-aware samba server, in each role that
+ the server can take.
+
  *************************************************************************/
 static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem)
 {
@@ -157,13 +169,11 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 	static LOCAL_GRP gp_buf;
 	struct group *unix_grp;
 
-	if (lp_server_role() == ROLE_DOMAIN_NONE || 
-	    lp_server_role() == ROLE_DOMAIN_MEMBER)
+	if (lp_server_role() == ROLE_DOMAIN_NONE)
 	{
 		/*
-		 * only PDC and BDC have domain aliass in the SAM.
-		 * (however as member of domain you can have LOCAL aliass,
-		 * but that's dealt with in the aliasdb...)
+		 * no domain role, no domain aliases (or domain groups,
+		 * but that's dealt with by groupdb...).
 		 */
 
 		return NULL;
@@ -173,7 +183,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 
 	fstrcpy(gp_buf.comment, "");
 
-	/* cycle through unix aliass */
+	/* cycle through unix groups */
 	while ((unix_grp = getgrent()) != NULL)
 	{
 		DOM_SID sid;
@@ -181,7 +191,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		{
 			/*
 			 * find the NT name represented by this UNIX gid.
-			 * then, only accept NT aliass that are in our domain
+			 * then, only accept NT aliases that are in our domain
 			 */
 
 			sid_split_rid(&sid, &gp_buf.rid);
@@ -190,9 +200,10 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 				break; /* hooray. */
 			}
 		}
-		else
+		else if (lp_server_role() == ROLE_DOMAIN_MEMBER)
 		{
 			/*
+			 * if we are a member of a domain,
 			 * assume that the UNIX alias is an NT alias with
 			 * the same name.  convert gid to a alias rid.
 			 */
@@ -207,7 +218,7 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		return NULL;
 	}
 
-	/* get the user's domain aliass.  there are a maximum of 32 */
+	/* get the user's domain aliases.  there are a maximum of 32 */
 
 	if (mem != NULL && num_mem != NULL)
 	{
@@ -217,13 +228,11 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
 		get_unixalias_members(unix_grp, num_mem, mem);
 	}
 
-#if 0
 	{
 		pstring linebuf;
 		make_alias_line(linebuf, sizeof(linebuf), &gp_buf, mem, num_mem);
 		DEBUG(10,("line: '%s'\n", linebuf));
 	}
-#endif
 
 	return &gp_buf;
 }
@@ -232,9 +241,9 @@ static LOCAL_GRP *getalsunixpwent(void *vp, LOCAL_GRP_MEMBER **mem, int *num_mem
  Routine to add an entry to the alspasswd file.
 *************************************************************************/
 
-static BOOL add_alsunixals_entry(LOCAL_GRP *newals)
+static BOOL add_alsunixgrp_entry(LOCAL_GRP *newals)
 {
-	DEBUG(0, ("add_alsunixals_entry: NOT IMPLEMENTED\n"));
+	DEBUG(0, ("add_alsunixgrp_entry: NOT IMPLEMENTED\n"));
 	return False;
 }
 
@@ -247,9 +256,9 @@ static BOOL add_alsunixals_entry(LOCAL_GRP *newals)
  override = True, override XXXXXXXX'd out alias or NO PASS
 ************************************************************************/
 
-static BOOL mod_alsunixals_entry(LOCAL_GRP* als)
+static BOOL mod_alsunixgrp_entry(LOCAL_GRP* als)
 {
-	DEBUG(0, ("mod_alsunixals_entry: NOT IMPLEMENTED\n"));
+	DEBUG(0, ("mod_alsunixgrp_entry: NOT IMPLEMENTED\n"));
 	return False;
 }
 
@@ -266,8 +275,8 @@ static struct aliasdb_ops unix_ops =
 	iterate_getaliasrid,          /* In aliasdb.c */
 	getalsunixpwent,
 
-	add_alsunixals_entry,
-	mod_alsunixals_entry,
+	add_alsunixgrp_entry,
+	mod_alsunixgrp_entry,
 
 	iterate_getuseraliasnam      /* in aliasdb.c */
 };
