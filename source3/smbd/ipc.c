@@ -439,7 +439,7 @@ static void PackDriverData(struct pack_desc* desc)
 }
 
 static int check_printq_info(struct pack_desc* desc,
- 			     int uLevel, const char* id1, const char* id2)
+ 			     int uLevel, char *id1, const char* id2)
 {
   desc->subformat = NULL;
   switch( uLevel ) {
@@ -812,10 +812,7 @@ static int get_server_info(uint32 servertype,
     if (!next_token(&ptr,s->name   , NULL)) continue;
     if (!next_token(&ptr,stype     , NULL)) continue;
     if (!next_token(&ptr,s->comment, NULL)) continue;
-    if (!next_token(&ptr,s->domain , NULL)) {
-      /* this allows us to cope with an old nmbd */
-      strcpy(s->domain,lp_workgroup()); 
-    }
+    if (!next_token(&ptr,s->domain , NULL)) continue;
     
     if (sscanf(stype,"%X",&s->type) != 1) { 
       DEBUG(4,("r:host file ")); 
@@ -983,8 +980,22 @@ static BOOL api_RNetServerEnum(int cnum, int uid, char *param, char *data,
 
   if (strcmp(str1, "WrLehDz") == 0) {
     StrnCpy(domain, p, sizeof(fstring)-1);
-  } else {
-    StrnCpy(domain, lp_workgroup(), sizeof(fstring)-1);    
+  }
+  else
+  {
+    /* a server will connect to us under one of samba's NetBIOS
+       name aliases, and by not giving us a domain name it
+       assumes we know which domain it's talking about.
+       do a look-up for the workgroup name against the name
+       the host connected to us as.
+     */
+       
+    char *work_alias;
+
+	work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
+
+	if (work_alias)
+      StrnCpy(domain, work_alias, sizeof(fstring)-1);    
   }
 
   if (lp_browse_list())
@@ -1349,7 +1360,7 @@ static BOOL api_SetUserPassword(int cnum,int uid, char *param,char *data,
 
   DEBUG(3,("Set password for <%s>\n",user));
 
-  if (password_ok(user,pass1,strlen(pass1),NULL,False) &&
+  if (password_ok(user,pass1,strlen(pass1),NULL) &&
       chgpasswd(user,pass1,pass2))
   {
     SSVAL(*rparam,0,NERR_Success);
@@ -1668,9 +1679,19 @@ static BOOL api_RNetServerGetInfo(int cnum,int uid, char *param,char *data,
       pstring comment;
       uint32 servertype=DFLT_SERVER_TYPE;
 
+      char *work_alias;
+	  char domain[16];
+  
+	  work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
+  
+	  if (work_alias)
+        StrnCpy(domain, work_alias, sizeof(fstring)-1);    
+      else
+        *domain = 0;
+
       strcpy(comment,lp_serverstring());
 
-      if ((count=get_server_info(SV_TYPE_ALL,&servers,lp_workgroup()))>0) {
+      if ((count=get_server_info(SV_TYPE_ALL,&servers,domain))>0) {
 	for (i=0;i<count;i++)
 	  if (strequal(servers[i].name,local_machine)) {
 	    servertype = servers[i].type;
@@ -1723,6 +1744,14 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   char *p2;
   extern pstring sesssetup_user;
   int level = SVAL(p,0);
+  char domain[17];
+
+  char *work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
+
+  if (work_alias)
+      StrnCpy(domain, work_alias, 16);
+  else
+      StrnCpy(domain, lp_workgroup(), 16);
 
   DEBUG(4,("NetWkstaGetInfo level %d\n",level));
 
@@ -1753,7 +1782,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   p += 4;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,lp_workgroup());
+  StrCpy(p2,domain);
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -1762,7 +1791,7 @@ static BOOL api_NetWkstaGetInfo(int cnum,int uid, char *param,char *data,
   p += 2;
 
   SIVAL(p,0,PTR_DIFF(p2,*rdata));
-  strcpy(p2,lp_workgroup());	/* login domain?? */
+  strcpy(p2,domain);	/* login domain?? */
   p2 = skip_string(p2,1);
   p += 4;
 
@@ -1985,6 +2014,14 @@ static BOOL api_WWkstaUserLogon(int cnum,int uid, char *param,char *data,
   int uLevel;
   struct pack_desc desc;
   char* name;
+  char domain[17];
+
+  char *work_alias = conf_alias_to_workgroup(local_machine); /* look-up */
+
+  if (work_alias)
+      StrnCpy(domain, work_alias, 16);
+  else
+      StrnCpy(domain, lp_workgroup(), 16);
 
   uLevel = SVAL(p,0);
   name = p + 2;
@@ -2027,7 +2064,7 @@ static BOOL api_WWkstaUserLogon(int cnum,int uid, char *param,char *data,
       strupper(mypath);
       PACKS(&desc,"z",mypath); /* computer */
     }
-    PACKS(&desc,"z",lp_workgroup());/* domain */
+    PACKS(&desc,"z",domain);/* domain */
     PACKS(&desc,"z",lp_logon_script());		/* script path */
     PACKI(&desc,"D",0);		/* reserved */
   }

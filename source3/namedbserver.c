@@ -50,7 +50,7 @@ extern BOOL updatedlists;
   remove_all_servers indicates everybody dies.
   ******************************************************************/
 void remove_old_servers(struct work_record *work, time_t t,
-					BOOL remove_all)
+                    BOOL remove_all)
 {
   struct server_record *s;
   struct server_record *nexts;
@@ -59,23 +59,23 @@ void remove_old_servers(struct work_record *work, time_t t,
   for (s = work->serverlist; s; s = nexts)
     {
       if (remove_all || (s->death_time && (t == -1 || s->death_time < t)))
-	{
-	  DEBUG(3,("Removing dead server %s\n",s->serv.name));
-	  updatedlists = True;
-	  nexts = s->next;
-	  
-	  if (s->prev) s->prev->next = s->next;
-	  if (s->next) s->next->prev = s->prev;
-	  
-	  if (work->serverlist == s) 
-	    work->serverlist = s->next; 
+    {
+      DEBUG(3,("Removing dead server %s\n",s->serv.name));
+      updatedlists = True;
+      nexts = s->next;
+      
+      if (s->prev) s->prev->next = s->next;
+      if (s->next) s->next->prev = s->prev;
+      
+      if (work->serverlist == s) 
+        work->serverlist = s->next; 
 
-	  free(s);
-	}
+      free(s);
+    }
       else
-	{
-	  nexts = s->next;
-	}
+    {
+      nexts = s->next;
+    }
     }
 }
 
@@ -107,17 +107,17 @@ static void add_server(struct work_record *work,struct server_record *s)
   **************************************************************************/
 struct server_record *find_server(struct work_record *work, char *name)
 {
-	struct server_record *ret;
+    struct server_record *ret;
   
-	if (!work) return NULL;
+    if (!work) return NULL;
 
-	for (ret = work->serverlist; ret; ret = ret->next)
-	{
-		if (strequal(ret->serv.name,name))
-		{
-			return ret;
-		}
-	}
+    for (ret = work->serverlist; ret; ret = ret->next)
+    {
+        if (strequal(ret->serv.name,name))
+        {
+            return ret;
+        }
+    }
     return NULL;
 }
 
@@ -126,14 +126,15 @@ struct server_record *find_server(struct work_record *work, char *name)
   add a server entry
   ****************************************************************************/
 struct server_record *add_server_entry(struct subnet_record *d, 
-				       struct work_record *work,
-				       char *name,int servertype, 
-				       int ttl,char *comment,
-				       BOOL replace)
+                       struct work_record *work,
+                       char *name,int servertype, 
+                       int ttl,char *comment,
+                       BOOL replace)
 {
   BOOL newentry=False;
   struct server_record *s;
-  
+  int token = conf_workgroup_name_to_token(work->work_group, myname);
+
   if (name[0] == '*')
   {
       return (NULL);
@@ -160,16 +161,14 @@ struct server_record *add_server_entry(struct subnet_record *d,
     bzero((char *)s,sizeof(*s));
   }
   
-  
-  if (strequal(lp_workgroup(),work->work_group))
-    {
-	  if (servertype)
-        servertype |= SV_TYPE_LOCAL_LIST_ONLY;
-    }
+  if (conf_should_workgroup_member(token))
+  {
+    if (servertype) servertype |= SV_TYPE_LOCAL_LIST_ONLY;
+  }
   else
-    {
+  {
       servertype &= ~SV_TYPE_LOCAL_LIST_ONLY;
-    }
+  }
   
   /* update the entry */
   StrnCpy(s->serv.name,name,sizeof(s->serv.name)-1);
@@ -194,8 +193,8 @@ struct server_record *add_server_entry(struct subnet_record *d,
     }
   
   DEBUG(3,("server entry %s of type %x (%s) to %s %s\n",
-	   name,servertype,comment,
-	   work->work_group,inet_ntoa(d->bcast_ip)));
+       name,servertype,comment,
+       work->work_group,inet_ntoa(d->bcast_ip)));
   
   return(s);
 }
@@ -213,9 +212,9 @@ void expire_servers(time_t t)
       struct work_record *work;
       
       for (work = d->workgrouplist; work; work = work->next)
-	{
-	  remove_old_servers(work, t, False);
-	}
+    {
+      remove_old_servers(work, t, False);
+    }
     }
 }
 

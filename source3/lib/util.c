@@ -598,7 +598,7 @@ char *StrCpy(char *dest,char *src)
 /****************************************************************************
 line strncpy but always null terminates. Make sure there is room!
 ****************************************************************************/
-char *StrnCpy(char *dest,const char *src,int n)
+char *StrnCpy(char *dest,char *src,int n)
 {
   char *d = dest;
   if (!dest) return(NULL);

@@ -21,7 +21,11 @@
    Revision History:
 
    14 jan 96: lkcl@pires.co.uk
-   added multiple workgroup domain master support
+   added domain master browser support
+
+   30 aug 96: lkcl@pires.co.uk
+   added multiple domain logon support, using extensions to David Chappell's
+   multiple domain master browser code.
 
 */
 
@@ -29,12 +33,7 @@
 
 extern int ClientDGRAM;
 
-#define TEST_CODE /* want to debug unknown browse packets */
-
 extern int DEBUGLEVEL;
-
-extern pstring myname;
-
 
 /****************************************************************************
    process a domain logon packet
@@ -54,14 +53,18 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   pstring outbuf;
   int code,reply_code;
   struct work_record *work;
-  
+  char *my_name;
+
   if (!d) return;
   
   if (!(work = find_workgroupstruct(d,dgram->dest_name.name, False))) 
     return;
   
-  if (!lp_domain_logons()) {
-    DEBUG(3,("No domain logons\n"));
+  if ((my_name = conf_browsing_alias(work->token)) == NULL) return;
+  
+  if (!conf_should_domain_logon(work->token))
+  {
+    DEBUG(3,("No domain logons for %s (%s)\n", work->work_group, my_name));
     return;
   }
   
@@ -73,7 +76,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       char *user = skip_string(machine,1);
       logname = skip_string(user,1);
       reply_code = 6;
-      strcpy(reply_name,myname); 
+      strcpy(reply_name, my_name); 
       strupper(reply_name);
       add_slashes = True;
       DEBUG(3,("Domain login request from %s(%s) user=%s\n",
@@ -87,7 +90,7 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
       reply_code = 7;
       strcpy(reply_name,lp_domain_controller()); 
       if (!*reply_name) {
-	strcpy(reply_name,myname); 
+	strcpy(reply_name,my_name); 
         reply_code = 0xC;
       }
       strupper(reply_name);
@@ -121,8 +124,8 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
    PutUniCode(q,reply_name);
    q += 2*(strlen(reply_name) + 1);
 
-   PutUniCode(q,lp_workgroup());
-   q += 2*(strlen(lp_workgroup()) + 1);
+   PutUniCode(q,work->work_group);
+   q += 2*(strlen(work->work_group) + 1);
 
    SIVAL(q,0,1);
    q += 4;
@@ -134,6 +137,6 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len)
   q += 2;
   
   send_mailslot_reply(logname,ClientDGRAM,outbuf,PTR_DIFF(q,outbuf),
- 		      myname,&dgram->source_name.name[0],0x20,0,p->ip,
+ 		      my_name,&dgram->source_name.name[0],0x20,0,p->ip,
 		      *iface_ip(p->ip));  
 }

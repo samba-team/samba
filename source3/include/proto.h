@@ -51,7 +51,7 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  clitar.c  */
 
-int strslashcmp(const char *s1, const char *s2);
+int strslashcmp(char *s1,char *s2);
 void cmd_block(void);
 void cmd_tarmode(void);
 void cmd_setmode(void);
@@ -124,6 +124,7 @@ char *lp_smbrun(void);
 char *lp_configfile(void);
 char *lp_smb_passwd_file(void);
 char *lp_serverstring(void);
+char *lp_server_comment(void);
 char *lp_printcapname(void);
 char *lp_lockdir(void);
 char *lp_rootdir(void);
@@ -146,6 +147,7 @@ char *lp_interfaces(void);
 char *lp_socket_address(void);
 BOOL lp_wins_support(void);
 BOOL lp_wins_proxy(void);
+BOOL lp_local_master(void);
 BOOL lp_domain_master(void);
 BOOL lp_domain_logons(void);
 BOOL lp_preferred_master(void);
@@ -292,20 +294,22 @@ int reply_sendend(char *inbuf,char *outbuf);
 /*The following definitions come from  nameannounce.c  */
 
 void announce_request(struct work_record *work, struct in_addr ip);
-void do_announce_request(char *info, char *to_name, int announce_type, 
-			 int from,
-			 int to, struct in_addr dest_ip);
+void do_announce_request(char *info, char *from_name, char *to_name,
+             int announce_type, int from, int to, struct in_addr dest_ip);
 void sync_server(enum state_type state, char *serv_name, char *work_name, 
-		 int name_type,
-		 struct in_addr ip);
+         int name_type,
+         struct in_addr ip);
 void do_announce_host(int command,
-		char *from_name, int from_type, struct in_addr from_ip,
-		char *to_name  , int to_type  , struct in_addr to_ip,
-		time_t announce_interval,
-		char *server_name, int server_type, char *server_comment);
+        char *from_name, int from_type, struct in_addr from_ip,
+        char *to_name  , int to_type  , struct in_addr to_ip,
+        time_t announce_interval,
+        char *server_name, int server_type, 
+		char major_version, char minor_version,
+        uint16 browse_version, uint16 browse_sig,
+		char *server_comment);
 void remove_my_servers(void);
 void announce_server(struct subnet_record *d, struct work_record *work,
-		     char *name, char *comment, time_t ttl, int server_type);
+             char *name, char *comment, time_t ttl, int server_type);
 void announce_host(void);
 void announce_master(void);
 void announce_remote(void);
@@ -314,8 +318,24 @@ void announce_remote(void);
 
 void expire_browse_cache(time_t t);
 struct browse_cache_record *add_browser_entry(char *name, int type, char *wg,
-					      time_t ttl, struct in_addr ip, BOOL local);
+                          time_t ttl, struct in_addr ip, BOOL local);
 void do_browser_lists(void);
+
+/*The following definitions come from  nameconf.c  */
+
+int get_num_workgroups(void);
+int conf_workgroup_name_to_token(char *workgroup_name,char *default_name);
+char *conf_workgroup_name(int token);
+int conf_should_preferred_master(int token);
+int conf_should_workgroup_member(int token);
+int conf_should_local_master(int token);
+int conf_should_domain_logon(int token);
+int conf_should_domain_master(int token);
+char *conf_browsing_alias(int token);
+char *conf_browsing_alias_comment(int token);
+char *conf_alias_to_workgroup(char *alias);
+int conf_alias_to_token(char *alias);
+void read_smbbrowse_conf(char *default_name);
 
 /*The following definitions come from  namedbname.c  */
 
@@ -324,24 +344,24 @@ BOOL name_equal(struct nmb_name *n1,struct nmb_name *n2);
 BOOL ms_browser_name(char *name, int type);
 void remove_name(struct subnet_record *d, struct name_record *n);
 struct name_record *find_name(struct name_record *n,
-			struct nmb_name *name,
-			int search);
+            struct nmb_name *name,
+            int search);
 struct name_record *find_name_search(struct subnet_record **d,
-			struct nmb_name *name,
-			int search, struct in_addr ip);
+            struct nmb_name *name,
+            int search, struct in_addr ip);
 void dump_names(void);
 void load_netbios_names(void);
 void remove_netbios_name(struct subnet_record *d,
-			char *name,int type, enum name_source source,
-			 struct in_addr ip);
+            char *name,int type, enum name_source source,
+             struct in_addr ip);
 struct name_record *add_netbios_entry(struct subnet_record *d,
-		char *name, int type, int nb_flags, 
-		int ttl, enum name_source source, struct in_addr ip,
-		BOOL new_only,BOOL wins);
-void expire_names(time_t t);
+        char *name, int type, int nb_flags, 
+        int ttl, enum name_source source, struct in_addr ip,
+        BOOL new_only,BOOL wins);
+void check_expire_names(time_t t);
 struct name_record *search_for_name(struct subnet_record **d,
-					struct nmb_name *question,
-				    struct in_addr ip, int Time, int search);
+                    struct nmb_name *question,
+                    struct in_addr ip, int Time, int search);
 
 /*The following definitions come from  namedbresp.c  */
 
@@ -350,8 +370,9 @@ void add_response_record(struct subnet_record *d,
 void remove_response_record(struct subnet_record *d,
 				struct response_record *n);
 struct response_record *make_response_queue_record(enum state_type state,
-				int id,uint16 fd,
-				int quest_type, char *name,int type, int nb_flags, time_t ttl,
+				int id,uint16 fd, int quest_type,
+                int token, char *name,int type,
+				enum name_source source, int nb_flags, time_t ttl,
 				int server_type, char *my_name, char *my_comment,
 				BOOL bcast,BOOL recurse,
 				struct in_addr send_ip, struct in_addr reply_to_ip);
@@ -361,13 +382,13 @@ struct response_record *find_response_record(struct subnet_record **d,
 /*The following definitions come from  namedbserver.c  */
 
 void remove_old_servers(struct work_record *work, time_t t,
-					BOOL remove_all);
+                    BOOL remove_all);
 struct server_record *find_server(struct work_record *work, char *name);
 struct server_record *add_server_entry(struct subnet_record *d, 
-				       struct work_record *work,
-				       char *name,int servertype, 
-				       int ttl,char *comment,
-				       BOOL replace);
+                       struct work_record *work,
+                       char *name,int servertype, 
+                       int ttl,char *comment,
+                       BOOL replace);
 void expire_servers(time_t t);
 
 /*The following definitions come from  namedbsubnet.c  */
@@ -375,19 +396,21 @@ void expire_servers(time_t t);
 struct subnet_record *find_subnet(struct in_addr bcast_ip);
 struct subnet_record *find_req_subnet(struct in_addr ip, BOOL bcast);
 void add_subnet_interfaces(void);
-void add_my_subnets(char *group);
+void add_workgroup_to_subnet(char *group, struct in_addr bcast_ip,
+						struct in_addr mask_ip);
+void add_workgroups_to_subnets();
 struct subnet_record *add_subnet_entry(struct in_addr bcast_ip, 
-				       struct in_addr mask_ip,
-				       char *name, BOOL add, BOOL lmhosts);
+                       struct in_addr mask_ip,
+                       char *name, BOOL add, BOOL lmhosts);
 void write_browse_list(void);
 
 /*The following definitions come from  namedbwork.c  */
 
 struct work_record *remove_workgroup(struct subnet_record *d, 
-				     struct work_record *work,
-					 BOOL remove_all_servers);
+                     struct work_record *work,
+                     BOOL remove_all_servers);
 struct work_record *find_workgroupstruct(struct subnet_record *d, 
-					 fstring name, BOOL add);
+                     fstring name, BOOL add);
 void dump_workgroups(void);
 
 /*The following definitions come from  nameelect.c  */
@@ -395,13 +418,14 @@ void dump_workgroups(void);
 void check_master_browser(void);
 void browser_gone(char *work_name, struct in_addr ip);
 void send_election(struct subnet_record *d, char *group,uint32 criterion,
-		   int timeup,char *name);
+           int timeup,char *name);
 void name_unregister_work(struct subnet_record *d, char *name, int name_type);
-void name_register_work(struct subnet_record *d, char *name, int name_type,
-				int nb_flags, time_t ttl, struct in_addr ip, BOOL bcast);
+void name_register_work(struct subnet_record *d, int token,
+                char *name, int name_type, enum name_source source,
+                struct nmb_ip *data, time_t ttl, struct in_addr ip, BOOL bcast);
 void become_master(struct subnet_record *d, struct work_record *work);
 void become_nonmaster(struct subnet_record *d, struct work_record *work,
-				int remove_type);
+                int remove_type);
 void run_elections(void);
 void process_election(struct packet_struct *p,char *buf);
 BOOL check_elections(void);
@@ -413,20 +437,20 @@ void process_logon_packet(struct packet_struct *p,char *buf,int len);
 /*The following definitions come from  namepacket.c  */
 
 void debug_browse_data(char *outbuf, int len);
-void initiate_netbios_packet(uint16 *id,
-				int fd,int quest_type,char *name,int name_type,
-			    int nb_flags,BOOL bcast,BOOL recurse,
-			    struct in_addr to_ip);
+BOOL initiate_netbios_packet(uint16 id,
+                int fd,int quest_type,char *name,int name_type,
+                int nb_flags,BOOL bcast,BOOL recurse,
+                struct in_addr to_ip);
 void reply_netbios_packet(struct packet_struct *p1,int trn_id,
-				int rcode, int rcv_code, int opcode, BOOL recurse,
-				struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
-				char *data,int len);
+                int rcode, int rcv_code, int opcode, BOOL recurse,
+                struct nmb_name *rr_name,int rr_type,int rr_class,int ttl,
+                char *data,int len);
 void queue_packet(struct packet_struct *packet);
 void run_packet_queue();
 void listen_for_packets(BOOL run_election);
 BOOL send_mailslot_reply(char *mailslot,int fd,char *buf,int len,char *srcname,
-			 char *dstname,int src_type,int dest_type,
-			 struct in_addr dest_ip,struct in_addr src_ip);
+             char *dstname,int src_type,int dest_type,
+             struct in_addr dest_ip,struct in_addr src_ip);
 
 /*The following definitions come from  namequery.c  */
 
@@ -439,27 +463,30 @@ BOOL name_query(int fd,char *name,int name_type,
 
 /*The following definitions come from  nameresp.c  */
 
+void update_name_trn_id(void);
 void expire_netbios_response_entries();
-struct response_record *queue_netbios_pkt_wins(struct subnet_record *d,
-				int fd,int quest_type,enum state_type state,
-			    char *name,int name_type,int nb_flags, time_t ttl,
-				int server_type, char *my_name, char *my_comment,
-			    BOOL bcast,BOOL recurse,
-				struct in_addr send_ip, struct in_addr reply_to_ip);
-struct response_record *queue_netbios_packet(struct subnet_record *d,
-			int fd,int quest_type,enum state_type state,char *name,
-			int name_type,int nb_flags, time_t ttl,
-			int server_type, char *my_name, char *my_comment,
-		    BOOL bcast,BOOL recurse,
-			struct in_addr send_ip, struct in_addr reply_to_ip);
+void queue_netbios_pkt_wins(struct subnet_record *d,
+                int fd,int quest_type,enum state_type state,
+                int token, char *name,int name_type,
+				enum name_source source, int nb_flags, time_t ttl,
+                int server_type, char *my_name, char *my_comment,
+                BOOL bcast,BOOL recurse,
+                struct in_addr send_ip, struct in_addr reply_to_ip);
+void queue_netbios_packet(struct subnet_record *d,
+            int fd,int quest_type,enum state_type state,
+            int token, char *name, int name_type,
+			enum name_source source, int nb_flags, time_t ttl,
+            int server_type, char *my_name, char *my_comment,
+            BOOL bcast,BOOL recurse,
+            struct in_addr send_ip, struct in_addr reply_to_ip);
 
 /*The following definitions come from  nameserv.c  */
 
-void remove_name_entry(struct subnet_record *d, char *name,int type);
-void add_my_name_entry(struct subnet_record *d,char *name,int type,int nb_flags);
+void remove_name_entry(struct subnet_record *d, int token, char *name,int type);
+void add_my_name_entry(struct subnet_record *d, int token,
+                       char *name,int type,int nb_flags);
 void add_my_names(void);
 void remove_my_names();
-void refresh_my_names(time_t t);
 void query_refresh_names(void);
 
 /*The following definitions come from  nameservreply.c  */
@@ -481,13 +508,18 @@ void reply_name_query(struct packet_struct *p);
 /*The following definitions come from  nameservresp.c  */
 
 void debug_state_type(int state);
+void response_process(struct in_addr ip, struct subnet_record *d,
+                struct response_record *n, 
+                int rcode, char *nmb_data, struct nmb_name *q_name,
+                time_t ttl, BOOL bcast, struct nmb_name *ans_name);
 void response_netbios_packet(struct packet_struct *p);
 
 /*The following definitions come from  namework.c  */
 
-void reset_server(char *name, int state, struct in_addr ip);
+void reset_server(struct work_record *work, char *name, int state, struct in_addr ip);
 void tell_become_backup(void);
 BOOL same_context(struct dgram_packet *dgram);
+BOOL listening_name(struct work_record *work, struct nmb_name *n);
 void process_browse_packet(struct packet_struct *p,char *buf,int len);
 
 /*The following definitions come from  nmbd.c  */
@@ -513,7 +545,7 @@ int main(int argc,char *argv[]);
 
 char *getsmbpass(char *pass);
 void sync_browse_lists(struct subnet_record *d, struct work_record *work,
-		char *name, int nm_type, struct in_addr ip, BOOL local);
+        char *name, int nm_type, struct in_addr ip, BOOL local);
 
 /*The following definitions come from  params.c  */
 
@@ -533,7 +565,7 @@ void add_session_user(char *user);
 void dfs_unlogin(void);
 BOOL password_check(char *password);
 BOOL smb_password_check(char *password, unsigned char *part_passwd, unsigned char *c8);
-BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd, BOOL is_nt_password);
+BOOL password_ok(char *user,char *password, int pwlen, struct passwd *pwd);
 BOOL user_ok(char *user,int snum);
 BOOL authorise_login(int snum,char *user,char *password, int pwlen, 
 		     BOOL *guest,BOOL *force,int vuid);
@@ -737,6 +769,7 @@ unsigned int   Ucrit_checkPid(int pid);
 int sys_select(fd_set *fds,struct timeval *tval);
 int sys_select(fd_set *fds,struct timeval *tval);
 int sys_unlink(char *fname);
+unsigned int sys_random(int max_range);
 int sys_open(char *fname,int flags,int mode);
 DIR *sys_opendir(char *dname);
 int sys_stat(char *fname,struct stat *sbuf);
@@ -813,7 +846,7 @@ void set_socket_options(int fd, char *options);
 void close_sockets(void );
 BOOL in_group(gid_t group, int current_gid, int ngroups, int *groups);
 char *StrCpy(char *dest,char *src);
-char *StrnCpy(char *dest,const char *src,int n);
+char *StrnCpy(char *dest,char *src,int n);
 void putip(void *dest,void *src);
 int name_mangle(char *In,char *Out,char name_type);
 BOOL file_exist(char *fname,struct stat *sbuf);
