@@ -312,17 +312,28 @@ main(int argc, char **argv)
 	int i;
 	char **args;
 	char *p;
-	args = malloc((1 + argc - optind + 1) * sizeof(*args));
+
 	p = strrchr(shell, '/');
 	if(p)
 	    p++;
 	else
 	    p = shell;
+
+	if (strcmp(p, "csh") != 0)
+	    csh_f_flag = 0;
+
+	args = malloc((1 + argc - optind + 1 + csh_f_flag) * sizeof(*args));
+	if (args == NULL)
+	    err (1, "malloc");
+	i = 0;
 	if(full_login)
-	    asprintf(&args[0], "-%s", p);
+	    asprintf(&args[i++], "-%s", p);
 	else
-	    args[0] = p;
-	for(i = 1; i < argc - optind  + 1; i++)
+	    args[i++] = p;
+	if (csh_f_flag)
+	    args[i++] = "-f";
+
+	for(; i < argc - optind  + i; i++)
 	    args[i] = argv[optind + i - 1];
 	args[i] = NULL;
 	if(setgid(su_info->pw_gid) < 0)
