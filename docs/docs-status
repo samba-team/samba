@@ -43,6 +43,11 @@ docs/docbook/manpages/smbumount.8.sgml
 docs/docbook/manpages/testparm.1.sgml
 docs/docbook/manpages/testprns.1.sgml
 
+These need documentation:
+ntlm_auth
+wrepld
+editreg
+
 Stuff that needs to be documented:
 Windows NT 4.0 Style Trust Relationship
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
