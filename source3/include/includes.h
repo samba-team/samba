@@ -492,7 +492,7 @@
 #endif
 
 /* this should really be a 64 bit type if possible */
-#define br_off SMB_OFF_T
+#define br_off SMB_BIG_UINT
 
 #define SMB_OFF_T_BITS (sizeof(SMB_OFF_T)*8)
 
