@@ -12,9 +12,13 @@ SOURCES = cache.c principal.c principal_p.c data.c context.c misc.c \
 
 OBJECTS = $(SOURCES:%.c=%.o) config_file.o
 
+all: kinit klist
 
 kinit: kinit.o libkrb5.a
 	$(CC) -o kinit kinit.o libkrb5.a -L/usr/local/lib -ldes
+
+klist: klist.o libkrb5.a
+	$(CC) -o klist klist.o libkrb5.a -L/usr/local/lib -ldes
 
 tt: test.o libkrb5.a
 	$(CC) -o tt test.o libkrb5.a

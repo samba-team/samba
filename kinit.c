@@ -52,5 +52,7 @@ main (int argc, char **argv)
 				       NULL);
   if (err)
     abort ();
+
+  krb5_free_context (context);
   return 0;
 }
