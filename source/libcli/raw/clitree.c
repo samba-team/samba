@@ -272,9 +272,8 @@ NTSTATUS cli_tree_full_connection(struct cli_tree **ret_tree,
 	/* connect to a share using a tree connect */
 	tcon.generic.level = RAW_TCON_TCONX;
 	tcon.tconx.in.flags = 0;
-	tcon.tconx.in.password = data_blob(NULL, 0);
-	
-	asprintf(in_path, "\\\\%s\\%s", dest_host, service);
+	tcon.tconx.in.password = data_blob(NULL, 0);	
+	asprintf(&in_path, "\\\\%s\\%s", dest_host, service);
 	tcon.tconx.in.path = in_path;
 	if (!service_type) {
 		if (strequal(service, "IPC$"))
