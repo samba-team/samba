@@ -590,6 +590,7 @@
 		<listitem><para><link linkend="ADDPRINTERCOMMAND"><parameter>add printer command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDSHARECOMMAND"><parameter>add share command</parameter></link></para></listitem>
 		<listitem><para><link linkend="ADDUSERSCRIPT"><parameter>add user script</parameter></link></para></listitem>
+		<listitem><para><link linkend="ADDMACHINESCRIPT"><parameter>add machine script</parameter></link></para></listitem>
 		<listitem><para><link linkend="ALLOWTRUSTEDDOMAINS"><parameter>allow trusted domains</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEAS"><parameter>announce as</parameter></link></para></listitem>
 		<listitem><para><link linkend="ANNOUNCEVERSION"><parameter>announce version</parameter></link></para></listitem>
@@ -1012,6 +1013,25 @@
 		</listitem>
 		</varlistentry>
 
+
+
+		<varlistentry>
+		<term><anchor id="ADDMACHINESCRIPT">add machine script (G)</term>
+		<listitem><para>This is the full pathname to a script that will 
+		be run by <ulink url="smbd.8.html">smbd(8)</ulink>  when a machine is added
+                to it's domain using the administrator username and password method.
+
+		<para>This option is only required when using sam back-ends tied to the
+                Unix uid method of RID calculation such as smbpasswd.  This option is only
+                available in Samba 3.0.</para>
+
+		<para>Default: <command>add machine script = &lt;empty string&gt;
+		</command></para>	
+
+		<para>Example: <command>add machine script = /usr/sbin/adduser -n -g machines -c Machine -d /dev/null -s /bin/false %u
+                </command></para>
+		</listitem>
+		</varlistentry>
 
 
 		<varlistentry>
