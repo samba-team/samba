@@ -4,6 +4,7 @@
    server side dcerpc authentication code
 
    Copyright (C) Andrew Tridgell 2003
+   Copyright (C) Stefan (metze) Metzmacher 2004
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +22,48 @@
 */
 
 #include "includes.h"
+
+/*
+  startup the cryptographic side of an authenticated dcerpc server
+*/
+NTSTATUS dcesrv_crypto_select_type(struct dcesrv_connection *dce_conn,
+			       struct dcesrv_auth *auth)
+{
+	NTSTATUS status;
+	if (auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_INTEGRITY &&
+	    auth->auth_info->auth_level != DCERPC_AUTH_LEVEL_PRIVACY) {
+		DEBUG(2,("auth_level %d not supported in dcesrv auth\n", 
+			 auth->auth_info->auth_level));
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+
+	if (auth->gensec_security != NULL) {
+		/* TODO:
+		 * this this function should not be called
+		 * twice per dcesrv_connection!
+		 * 
+		 * so we need to find out the right
+		 * dcerpc error to return
+		 */
+	}
+
+	status = gensec_server_start(&auth->gensec_security);
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC server code: %s\n", nt_errstr(status)));
+		return status;
+	}
+
+	status = gensec_start_mech_by_authtype(auth->gensec_security, auth->auth_info->auth_type);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		DEBUG(1, ("Failed to start GENSEC mech-specific server code (%d): %s\n", 
+			  (int)auth->auth_info->auth_type,
+			  nt_errstr(status)));
+		return status;
+	}
+
+	return status;
+}
 
 /*
   parse any auth information from a dcerpc bind request
@@ -56,40 +99,43 @@ BOOL dcesrv_auth_bind(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = dcesrv_crypto_start(&dce_conn->auth_state, &dce_conn->auth_state.auth_info->credentials);
-	if (!NT_STATUS_IS_OK(status)) {
-		return False;
-	}
-
 	return True;
 }
 
 /*
-  add any auth information needed in a bind ack
+  add any auth information needed in a bind ack, and process the authentication
+  information found in the bind.
 */
 BOOL dcesrv_auth_bind_ack(struct dcesrv_call_state *call, struct dcerpc_packet *pkt)
 {
 	struct dcesrv_connection *dce_conn = call->conn;
 	NTSTATUS status;
 
-	if (!call->conn->auth_state.crypto_ctx.ops) {
+	if (!call->conn->auth_state.gensec_security) {
 		return True;
 	}
 
-	status = dcesrv_crypto_update(&dce_conn->auth_state,
-				      call->mem_ctx,
-				      dce_conn->auth_state.auth_info->credentials, 
-				      &dce_conn->auth_state.auth_info->credentials);
-	if (!NT_STATUS_IS_OK(status) && 
-	    !NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	status = gensec_update(dce_conn->auth_state.gensec_security,
+			       call->mem_ctx,
+			       dce_conn->auth_state.auth_info->credentials, 
+			       &dce_conn->auth_state.auth_info->credentials);
+	
+	if (NT_STATUS_IS_OK(status)) {
+		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     &dce_conn->auth_state.session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
+			return False;
+		}
+		return True;
+	} else if (NT_STATUS_EQUAL(status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+		dce_conn->auth_state.auth_info->auth_pad_length = 0;
+		dce_conn->auth_state.auth_info->auth_reserved = 0;
+		return True;
+	} else {
 		DEBUG(2, ("Failed to start dcesrv auth negotiate: %s\n", nt_errstr(status)));
 		return False;
 	}
-
-	dce_conn->auth_state.auth_info->auth_pad_length = 0;
-	dce_conn->auth_state.auth_info->auth_reserved = 0;
-				     
-	return True;
 }
 
 
@@ -103,7 +149,7 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.crypto_ctx.ops ||
+	    !dce_conn->auth_state.gensec_security ||
 	    pkt->u.auth.auth_info.length == 0) {
 		return False;
 	}
@@ -116,11 +162,19 @@ BOOL dcesrv_auth_auth3(struct dcesrv_call_state *call)
 		return False;
 	}
 
-	status = dcesrv_crypto_update(&dce_conn->auth_state,
-				      call->mem_ctx,
-				      dce_conn->auth_state.auth_info->credentials, 
-				      &dce_conn->auth_state.auth_info->credentials);
-	if (!NT_STATUS_IS_OK(status)) {
+	status = gensec_update(dce_conn->auth_state.gensec_security,
+			       call->mem_ctx,
+			       dce_conn->auth_state.auth_info->credentials, 
+			       &dce_conn->auth_state.auth_info->credentials);
+	if (NT_STATUS_IS_OK(status)) {
+		status = gensec_session_info(dce_conn->auth_state.gensec_security,
+					     &dce_conn->auth_state.session_info);
+		if (!NT_STATUS_IS_OK(status)) {
+			DEBUG(1, ("Failed to establish session_info: %s\n", nt_errstr(status)));
+			return False;
+		}
+		return True;
+	} else {
 		DEBUG(4, ("dcesrv_auth_auth3: failed to authenticate: %s\n", 
 			  nt_errstr(status)));
 		return False;
@@ -143,7 +197,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	NTSTATUS status;
 
 	if (!dce_conn->auth_state.auth_info ||
-	    !dce_conn->auth_state.crypto_ctx.ops) {
+	    !dce_conn->auth_state.gensec_security) {
 		return True;
 	}
 
@@ -177,7 +231,7 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 	/* check signature or unseal the packet */
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = dcesrv_crypto_unseal(&dce_conn->auth_state,
+		status = gensec_unseal_packet(dce_conn->auth_state.gensec_security,
 					      call->mem_ctx,
 					      pkt->u.request.stub_and_verifier.data, 
 					      pkt->u.request.stub_and_verifier.length, 
@@ -185,11 +239,11 @@ BOOL dcesrv_auth_request(struct dcesrv_call_state *call)
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = dcesrv_crypto_check_sig(&dce_conn->auth_state,
-						 call->mem_ctx,
-						 pkt->u.request.stub_and_verifier.data, 
-						 pkt->u.request.stub_and_verifier.length,
-						 &auth.credentials);
+		status = gensec_check_packet(dce_conn->auth_state.gensec_security,
+					     call->mem_ctx,
+					     pkt->u.request.stub_and_verifier.data, 
+					     pkt->u.request.stub_and_verifier.length,
+					     &auth.credentials);
 		break;
 
 	default:
@@ -218,7 +272,7 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	struct ndr_push *ndr;
 
 	/* non-signed packets are simple */
-	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.crypto_ctx.ops) {
+	if (!dce_conn->auth_state.auth_info || !dce_conn->auth_state.gensec_security) {
 		status = dcerpc_push_auth(blob, call->mem_ctx, pkt, NULL);
 		return NT_STATUS_IS_OK(status);
 	}
@@ -244,15 +298,15 @@ BOOL dcesrv_auth_response(struct dcesrv_call_state *call,
 	/* sign or seal the packet */
 	switch (dce_conn->auth_state.auth_info->auth_level) {
 	case DCERPC_AUTH_LEVEL_PRIVACY:
-		status = dcesrv_crypto_seal(&dce_conn->auth_state, 
-					    call->mem_ctx,
-					    ndr->data + DCERPC_REQUEST_LENGTH, 
-					    ndr->offset - DCERPC_REQUEST_LENGTH,
-					    &dce_conn->auth_state.auth_info->credentials);
+		status = gensec_seal_packet(dce_conn->auth_state.gensec_security, 
+					      call->mem_ctx,
+					      ndr->data + DCERPC_REQUEST_LENGTH, 
+					      ndr->offset - DCERPC_REQUEST_LENGTH,
+					      &dce_conn->auth_state.auth_info->credentials);
 		break;
 
 	case DCERPC_AUTH_LEVEL_INTEGRITY:
-		status = dcesrv_crypto_sign(&dce_conn->auth_state, 
+		status = gensec_sign_packet(dce_conn->auth_state.gensec_security, 
 					    call->mem_ctx,
 					    ndr->data + DCERPC_REQUEST_LENGTH, 
 					    ndr->offset - DCERPC_REQUEST_LENGTH,

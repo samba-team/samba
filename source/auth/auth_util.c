@@ -590,6 +590,7 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
+	(*session_info)->refcount = 1;
 	(*session_info)->mem_ctx = server_info->mem_ctx;
 	server_info->mem_ctx = NULL; /* make sure not to accidentily destory it, 
 					and this information is now constant */
@@ -609,6 +610,22 @@ NTSTATUS make_session_info(struct auth_serversupplied_info *server_info,
 					 &(*session_info)->nt_user_token);
 	
 	return nt_status;
+}
+
+/***************************************************************************
+ Clear out a server_info struct that has been allocated
+***************************************************************************/
+
+void free_session_info(struct auth_session_info **session_info)
+{
+	DEBUG(5,("attempting to free a session_info structure\n"));
+	if (!*session_info) {
+		(*session_info)->refcount--;
+		if ((*session_info)->refcount <= 0) {
+			talloc_destroy((*session_info)->mem_ctx);
+		}
+	}
+	*session_info = NULL;
 }
 
 /**

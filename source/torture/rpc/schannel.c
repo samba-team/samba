@@ -92,7 +92,10 @@ static BOOL test_schannel(TALLOC_CTX *mem_ctx,
 		goto failed;
 	}
 
-	test_samr_ops(p, mem_ctx);
+	if (!test_samr_ops(p, mem_ctx)) {
+		printf("Failed to process schannel secured ops\n");
+		goto failed;
+	}
 
 	torture_leave_domain(join_ctx);
 	return True;

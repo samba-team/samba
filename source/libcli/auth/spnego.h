@@ -23,12 +23,6 @@
 
 #ifndef SAMBA_SPNEGO_H
 #define SAMBA_SPNEGO_H
-/* SPNEGO mode */
-enum spnego_role
-{
-	SPNEGO_SERVER,
-	SPNEGO_CLIENT
-};
 
 #define SPNEGO_DELEG_FLAG    0x01
 #define SPNEGO_MUTUAL_FLAG   0x02
@@ -68,25 +62,6 @@ struct spnego_data {
 enum spnego_message_type {
 	SPNEGO_NEG_TOKEN_INIT = 0, 
 	SPNEGO_NEG_TOKEN_TARG = 1,
-};
-
-enum spnego_state_position {
-	SPNEGO_SERVER_START,
-	SPNEGO_CLIENT_GET_MECHS,
-	SPNEGO_CLIENT_SEND_MECHS,
-	SPNEGO_TARG,
-	SPNEGO_FALLBACK,
-	SPNEGO_DONE
-};
-
-struct spnego_state {
-	TALLOC_CTX *mem_ctx;
-	uint_t ref_count;
-	enum spnego_role role;
-	enum spnego_message_type expected_packet;
-	enum spnego_message_type state_position;
-	negResult_t result;
-	struct gensec_security sub_sec_security;
 };
 
 #endif
