@@ -13,6 +13,7 @@ DIR_des=
 
 AC_MSG_CHECKING([for crypto library])
 
+openssl=no
 if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 
   save_CPPFLAGS="$CPPFLAGS"
@@ -51,7 +52,7 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
     des_cbc_encrypt(0, 0, 0, schedule, 0, 0);
     RC4(0, 0, 0, 0);
   ], [
-  crypto_lib=libcrypto
+  crypto_lib=libcrypto openssl=yes
   AC_DEFINE([HAVE_OPENSSL], 1, [define to use openssl's libcrypto])
   AC_MSG_RESULT([libcrypto])])
   CPPFLAGS="$save_CPPFLAGS"
@@ -59,44 +60,117 @@ if test "$crypto_lib" = "unknown" -a "$with_openssl" != "no"; then
 fi
 
 if test "$crypto_lib" = "unknown" -a "$with_krb4" != "no"; then
+	save_CPPFLAGS="$CPPFLAGS"
+	save_LIBS="$LIBS"
 
-  save_CPPFLAGS="$CPPFLAGS"
-  save_LIBS="$LIBS"
-  INCLUDE_des="${INCLUDE_krb4}"
-  LIB_des=
-  if test "$krb4_libdir"; then
-    LIB_des="-L${krb4_libdir}"
-  fi
-  LIB_des="${LIB_des} -ldes"
-  CPPFLAGS="${CPPFLAGS} ${INCLUDE_des}"
-  LIBS="${LIBS} ${LIB_des}"
-  LIB_des_a="$LIB_des"
-  LIB_des_so="$LIB_des"
-  LIB_des_appl="$LIB_des"
-  LIBS="${LIBS} ${LIB_des}"
-  AC_TRY_LINK([
-  #undef KRB5 /* makes md4.h et al unhappy */
-  #define KRB4
-  #include <md4.h>
-  #include <md5.h>
-  #include <sha.h>
-  #include <des.h>
-  #include <rc4.h>
-  ],
-  [
-    MD4_CTX md4;
-    MD5_CTX md5;
-    SHA_CTX sha1;
+	cdirs= clibs=
+	for i in $LIB_krb4; do
+		case "$i" in
+		-L*) cdirs="$cdirs $i";;
+		-l*) clibs="$clibs $i";;
+		esac
+	done
 
-    MD4_Init(&md4);
-    MD5_Init(&md5);
-    SHA1_Init(&sha1);
+	ires=
+	for i in $INCLUDE_krb4; do
+		CFLAGS="$i $save_CFLAGS"
+		AC_TRY_COMPILE([
+			#undef KRB5 /* makes md4.h et al unhappy */
+			#define KRB4
+			#include <openssl/md4.h>
+			#include <openssl/md5.h>
+			#include <openssl/sha.h>
+			#include <openssl/des.h>
+			#include <openssl/rc4.h>
+			], [
+			MD4_CTX md4;
+			MD5_CTX md5;
+			SHA_CTX sha1;
 
-    des_cbc_encrypt(0, 0, 0, 0, 0, 0);
-    RC4(0, 0, 0, 0);
-  ], [crypto_lib=krb4; AC_MSG_RESULT([krb4's libdes])])
-  CPPFLAGS="$save_CPPFLAGS"
-  LIBS="$save_LIBS"
+			MD4_Init(&md4);
+			MD5_Init(&md5);
+			SHA1_Init(&sha1);
+
+			des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+			RC4(0, 0, 0, 0);],openssl=yes ires="$i"; break)
+		AC_TRY_COMPILE([
+			#undef KRB5 /* makes md4.h et al unhappy */
+			#define KRB4
+			#include <md4.h>
+			#include <md5.h>
+			#include <sha.h>
+			#include <des.h>
+			#include <rc4.h>
+			], [
+			MD4_CTX md4;
+			MD5_CTX md5;
+			SHA_CTX sha1;
+
+			MD4_Init(&md4);
+			MD5_Init(&md5);
+			SHA1_Init(&sha1);
+
+			des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+			RC4(0, 0, 0, 0);],ires="$i"; break)
+	done
+	lres=
+	for i in $cdirs; do
+		for j in $clibs; do
+			LIBS="$i $j $save_LIBS"
+			if test "$openssl" = yes; then
+			AC_TRY_LINK([
+				#undef KRB5 /* makes md4.h et al unhappy */
+				#define KRB4
+				#include <openssl/md4.h>
+				#include <openssl/md5.h>
+				#include <openssl/sha.h>
+				#include <openssl/des.h>
+				#include <openssl/rc4.h>
+				], [
+				MD4_CTX md4;
+				MD5_CTX md5;
+				SHA_CTX sha1;
+	
+				MD4_Init(&md4);
+				MD5_Init(&md5);
+				SHA1_Init(&sha1);
+	
+				des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+				RC4(0, 0, 0, 0);],lres="$i $j"; break 2)
+			else
+			AC_TRY_LINK([
+				#undef KRB5 /* makes md4.h et al unhappy */
+				#define KRB4
+				#include <md4.h>
+				#include <md5.h>
+				#include <sha.h>
+				#include <des.h>
+				#include <rc4.h>
+				], [
+				MD4_CTX md4;
+				MD5_CTX md5;
+				SHA_CTX sha1;
+	
+				MD4_Init(&md4);
+				MD5_Init(&md5);
+				SHA1_Init(&sha1);
+	
+				des_cbc_encrypt(0, 0, 0, 0, 0, 0);
+				RC4(0, 0, 0, 0);],lres="$i $j"; break 2)
+			fi
+		done
+	done
+	CFLAGS="$save_CFLAGS"
+	LIBS="$save_LIBS"
+	if test "$ires" -a "$lres"; then
+		INCLUDE_des="$ires"
+		LIB_des="$lres"
+		crypto_lib=krb4
+		AC_MSG_RESULT([same as krb4])
+		LIB_des_a='$(LIB_des)'
+		LIB_des_so='$(LIB_des)'
+		LIB_des_appl='$(LIB_des)'
+	fi
 fi
 
 if test "$crypto_lib" = "unknown"; then
@@ -111,7 +185,7 @@ if test "$crypto_lib" = "unknown"; then
 
 fi
 
-AM_CONDITIONAL(HAVE_OPENSSL, test "$crypto_lib" = libcrypto)dnl
+AM_CONDITIONAL(HAVE_OPENSSL, test "$openssl" = yes)dnl
 
 AC_SUBST(DIR_des)
 AC_SUBST(INCLUDE_des)
