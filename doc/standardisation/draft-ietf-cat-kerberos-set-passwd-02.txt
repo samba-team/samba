@@ -1,7 +1,7 @@
 
 INTERNET-DRAFT                                        Mike Swift 
-draft-ietf-cat-kerberos-set-passwd-01.txt             Microsoft               
-February 2000                                         Jonathan Trostle
+draft-ietf-cat-kerberos-set-passwd-02.txt             Microsoft
+March 2000                                            Jonathan Trostle
                                                       Cisco Systems
                                                       John Brezak
                                                       Microsoft
@@ -132,9 +132,11 @@ Request Message
                        }
 
    NewPasswdOrKeys :: = CHOICE {
-                       passwords[0]  KeySequence,       
-                       keyseq[1]     PasswordSequence
+                       passwords[0]  PasswordSequence,       
+                       keyseq[1]     KeySequences
+   }
                          
+   KeySequences :: = SEQUENCE OF KeySequence
 
    KeySequence :: = SEQUENCE {
                        key[0]        EncryptionKey,
@@ -146,7 +148,7 @@ Request Message
                        newpasswd[0]  OCTET STRING,
                        oldpasswd[1]  OCTET STRING OPTIONAL
                          -- oldpasswd always present for change password
-                         -- but not set password 
+                         -- but not present for set password 
    }
 
    The server must verify the AP-REQ message, check whether the client 
@@ -295,7 +297,7 @@ Reply Message
 
 5. Expiration Date
 
-   This draft expires in August 2000.
+   This draft expires in September 2000.
 
 6. Authors' Addresses
 
@@ -317,5 +319,7 @@ Reply Message
 
    Bill Gossman
    Cybersafe Corporation
+   1605 NW Sammamish Rd.
+   Issaquah, WA 98027-5378
    Email: bill.gossman@cybersafe.com
 

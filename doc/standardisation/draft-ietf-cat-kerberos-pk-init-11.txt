@@ -1,12 +1,12 @@
 INTERNET-DRAFT                                                Brian Tung
-draft-ietf-cat-kerberos-pk-init-10.txt                   Clifford Neuman
-Updates: RFC 1510                                                    ISI
-expires April 30, 2000                                       Matthew Hur
+draft-ietf-cat-kerberos-pk-init-11.txt                   Clifford Neuman
+Updates: RFC 1510                                                USC/ISI
+expires September 15, 2000                                   Matthew Hur
                                                    CyberSafe Corporation
                                                            Ari Medvinsky
-                                                                  Excite
+                                                          Keen.com, Inc.
                                                          Sasha Medvinsky
-                                                      General Instrument
+                                                                Motorola
                                                                John Wray
                                                    Iris Associates, Inc.
                                                         Jonathan Trostle
@@ -41,7 +41,7 @@ expires April 30, 2000                                       Matthew Hur
     munnari.oz.au (Pacific Rim).
 
     The distribution of this memo is unlimited.  It is filed as
-    draft-ietf-cat-kerberos-pk-init-10.txt, and expires April 30,
+    draft-ietf-cat-kerberos-pk-init-11.txt, and expires September 15,
     2000.  Please send comments to the authors.
 
 1.  Abstract
@@ -181,7 +181,7 @@ expires April 30, 2000                                       Matthew Hur
 
     In many cases, PKINIT requires the encoding of the X.500 name of a
     certificate authority as a Realm.  When such a name appears as
-    a ream it will be represented using the "other" form of the realm
+    a realm it will be represented using the "other" form of the realm
     name as specified in the naming constraints section of RFC1510.
     For a realm derived from an X.500 name, NAMETYPE will have the value
     X500-RFC2253.  The full realm name will appear as follows:
@@ -235,12 +235,62 @@ expires April 30, 2000                                       Matthew Hur
                         name-string[1]   SEQUENCE OF GeneralString
         }
 
-    For the purposes of encoding an X.500 name within this structure,
-    the name-string shall be encoded as a single GeneralString.
+    For the purposes of encoding an X.500 name as a Kerberos name for
+    use in Kerberos structures, the name-string shall be encoded as a
+    single GeneralString.  The name-type should be KRB_NT_X500_PRINCIPAL,
+    as noted above.  All Kerberos names must conform to validity
+    requirements as given in RFC 1510.  Note that name mapping may be
+    required or optional, based on policy.
 
-    Note that name mapping may be required or optional based on
-    policy.  All names must conform to validity requirements as given
-    in RFC 1510.
+    We also define the following similar ASN.1 structure:
+
+        CertPrincipalName ::= SEQUENCE {
+                        name-type[0]     INTEGER,
+                        name-string[1]   SEQUENCE OF UTF8String
+        }
+
+    When a Kerberos PrincipalName is to be placed within an X.509 data
+    structure, the CertPrincipalName structure is to be used, with the
+    name-string encoded as a single UTF8String.  The name-type should be
+    as identified in the original PrincipalName structure.  The mapping
+    between the GeneralString and UTF8String formats can be found in
+    [19].
+
+    The following rules relate to the the matching of PrincipalNames (or
+    corresponding CertPrincipalNames) with regard to the PKI name
+    constraints for CAs as laid out in RFC 2459 [15].  In order to be
+    regarded as a match (for permitted and excluded name trees), the
+    following must be satisfied.
+
+        1.  If the constraint is given as a user plus realm name, or
+            as a user plus instance plus realm name (as specified in
+            RFC 1510), the realm name must be valid (see 2.a-d below)
+            and the match must be exact, byte for byte.
+
+        2.  If the constraint is given only as a realm name, matching
+            depends on the type of the realm:
+
+            a.  If the realm contains a colon (':') before any equal
+                sign ('='), it is treated as a realm of type Other,
+                and must match exactly, byte for byte.
+
+            b.  Otherwise, if the realm contains an equal sign, it
+                is treated as an X.500 name.  In order to match, every
+                component in the constraint MUST be in the principal
+                name, and have the same value.  For example, 'C=US'
+                matches 'C=US/O=ISI' but not 'C=UK'.
+
+            c.  Otherwise, if the realm name conforms to rules regarding
+                the format of DNS names, it is considered a realm name of
+                type Domain.  The constraint may be given as a realm
+                name 'FOO.BAR', which matches any PrincipalName within
+                the realm 'FOO.BAR' but not those in subrealms such as
+                'CAR.FOO.BAR'.  A constraint of the form '.FOO.BAR'
+                matches PrincipalNames in subrealms of the form
+                'CAR.FOO.BAR' but not the realm 'FOO.BAR' itself.
+
+            d.  Otherwise, the realm name is invalid and does not match
+                under any conditions.
 
 3.1.1.  Encryption and Key Formats
 
@@ -330,16 +380,18 @@ expires April 30, 2000                                       Matthew Hur
     PA-PK-AS-REQ ::= SEQUENCE {
                                 -- PA TYPE 14
         signedAuthPack          [0] SignedData
-                                    -- defined in CMS [11]
-                                    -- AuthPack (below) defines the data
-                                    -- that is signed
+                                    -- Defined in CMS [11];
+                                    -- AuthPack (below) defines the
+                                    -- data that is signed.
         trustedCertifiers       [1] SEQUENCE OF TrustedCas OPTIONAL,
-                                    -- CAs that the client trusts
+                                    -- This is a list of CAs that the
+                                    -- client trusts and that certify
+                                    -- KDCs.
         kdcCert                 [2] IssuerAndSerialNumber OPTIONAL
-                                    -- as defined in CMS [11]
+                                    -- As defined in CMS [11];
                                     -- specifies a particular KDC
                                     -- certificate if the client
-                                    -- already has it;
+                                    -- already has it.
         encryptionCert          [3] IssuerAndSerialNumber OPTIONAL
                                     -- For example, this may be the
                                     -- client's Diffie-Hellman
@@ -361,29 +413,38 @@ expires April 30, 2000                                       Matthew Hur
     }
 
     Usage of SignedData:
-    The SignedData data type is specified in the Cryptographic
-    Message Syntax, a product of the S/MIME working group of the IETF.
-    - The encapContentInfo field must contain the PKAuthenticator
-      and, optionally, the client's Diffie Hellman public value.
-      - The eContentType field shall contain the OID value for
-        id-data: iso(1) member-body(2) us(840) rsadsi(113549)
-        pkcs(1) pkcs7(7) data(1)
-      - The eContent field is data of the type AuthPack (below).
-    - The signerInfos field contains the signature of AuthPack.
-    - The Certificates field, when non-empty, contains the client's
-      certificate chain.  If present, the KDC uses the public key from
-      the client's certificate to verify the signature in the request.
-      Note that the client may pass different certificates that are used
-      for signing or for encrypting.  Thus, the KDC may utilize a
-      different client certificate for signature verification than the
-      one it uses to encrypt the reply to the client.  For example, the
-      client may place a Diffie-Hellman certificate in this field in
-      order to convey its static Diffie Hellman certificate to the KDC to
-      enable static-ephemeral Diffie-Hellman mode for the reply; in this
-      case, the client does NOT place its public value in the AuthPack
-      (defined below).  As another example, the client may place an RSA
-      encryption certificate in this field.  However, there must always
-      be (at least) a signature certificate.
+
+        The SignedData data type is specified in the Cryptographic
+        Message Syntax, a product of the S/MIME working group of the
+        IETF.  The following describes how to fill in the fields of
+        this data:
+
+        1.  The encapContentInfo field must contain the PKAuthenticator
+            and, optionally, the client's Diffie Hellman public value.
+
+            a.  The eContentType field shall contain the OID value for
+                pkdata: iso (1) org (3) dod (6) internet (1) security (5)
+                kerberosv5 (2) pkinit (3) pkdata (1)
+
+            b.  The eContent field is data of the type AuthPack (below).
+
+        2.  The signerInfos field contains the signature of AuthPack.
+
+        3.  The Certificates field, when non-empty, contains the client's
+            certificate chain.  If present, the KDC uses the public key
+            from the client's certificate to verify the signature in the
+            request.  Note that the client may pass different certificate
+            chains that are used for signing or for encrypting.  Thus,
+            the KDC may utilize a different client certificate for
+            signature verification than the one it uses to encrypt the
+            reply to the client.  For example, the client may place a
+            Diffie-Hellman certificate in this field in order to convey
+            its static Diffie Hellman certificate to the KDC to enable
+            static-ephemeral Diffie-Hellman mode for the reply; in this
+            case, the client does NOT place its public value in the
+            AuthPack (defined below).  As another example, the client may
+            place an RSA encryption certificate in this field.  However,
+            there must always be (at least) a signature certificate.
 
     AuthPack ::= SEQUENCE {
         pkAuthenticator         [0] PKAuthenticator,
@@ -503,7 +564,13 @@ expires April 30, 2000                                       Matthew Hur
 
     Even if all succeeds, the KDC may--for policy reasons--decide not
     to trust the client.  In this case, the KDC returns an error message
-    of type KDC_ERR_CLIENT_NOT_TRUSTED.
+    of type KDC_ERR_CLIENT_NOT_TRUSTED.  One specific case of this is
+    the presence or absence of an Enhanced Key Usage (EKU) OID within
+    the certificate extensions.  The rules regarding acceptability of
+    an EKU sequence (or the absence of any sequence) are a matter of
+    local policy.  For the benefit of implementers, we define a PKINIT
+    EKU OID as the following: iso (1) org (3) dod (6) internet (1)
+    security (5) kerberosv5 (2) pkinit (3) pkekuoid (2).
 
     If a trust relationship exists, the KDC then verifies the client's
     signature on AuthPack.  If that fails, the KDC returns an error
@@ -554,7 +621,7 @@ expires April 30, 2000                                       Matthew Hur
     the subjectAltName version 3 extension , that name may utilize
     KerberosName as defined below, or, in the case of an S/MIME
     certificate [17], may utilize the email address.  If the KDC
-    is presented with as S/MIME certificate, then the email address
+    is presented with an S/MIME certificate, then the email address
     within subjectAltName will be interpreted as a principal and realm
     separated by the "@" sign, or as a name that needs to be
     canonicalized.  If the resulting name does not correspond to a
@@ -604,34 +671,47 @@ expires April 30, 2000                                       Matthew Hur
     }
 
     Usage of SignedData:
-    If the Diffie-Hellman option is used, dhSignedData in PA-PK-AS-REP
-    provides authenticated Diffie-Hellman parameters of the KDC.  The
-    reply key used to encrypt part of the KDC reply message is derived
-    from the Diffie-Hellman exchange:
-    - Both the KDC and the client calculate a secret value (g^ab mod p),
-      where a is the client's private exponent and b is the KDC's
-      private exponent.
-    - Both the KDC and the client take the first N bits of this secret
-      value and convert it into a reply key.  N depends on the reply key
-      type.
-    - If the reply key is DES, N=64 bits, where some of the bits are
-      replaced with parity bits, according to FIPS PUB 74.
-    - If the reply key is (3-key) 3-DES, N=192 bits, where some of the
-      bits are replaced with parity bits, according to FIPS PUB 74.
-    - The encapContentInfo field must contain the KdcDHKeyInfo as
-      defined below.
-      - The eContentType field shall contain the OID value for
-        id-data: iso(1) member-body(2) us(840) rsadsi(113549)
-        pkcs(1) pkcs7(7) data(1)
-    - The certificates field must contain the certificates necessary
-      for the client to establish trust in the KDC's certificate
-      based on the list of trusted certifiers sent by the client in
-      the PA-PK-AS-REQ.  This field may be empty if the client did
-      not send to the KDC a list of trusted certifiers (the
-      trustedCertifiers field was empty, meaning that the client
-      already possesses the KDC's certificate).
-    - The signerInfos field is a SET that must contain at least one
-      member, since it contains the actual signature.
+
+        When the Diffie-Hellman option is used, dhSignedData in
+        PA-PK-AS-REP provides authenticated Diffie-Hellman parameters
+        of the KDC.  The reply key used to encrypt part of the KDC reply
+        message is derived from the Diffie-Hellman exchange:
+
+        1.  Both the KDC and the client calculate a secret value
+            (g^ab mod p), where a is the client's private exponent and
+            b is the KDC's private exponent.
+
+        2.  Both the KDC and the client take the first N bits of this
+            secret value and convert it into a reply key.  N depends on
+            the reply key type.
+
+        3.  If the reply key is DES, N=64 bits, where some of the bits
+            are replaced with parity bits, according to FIPS PUB 74.
+
+        4.  If the reply key is (3-key) 3-DES, N=192 bits, where some
+            of the bits are replaced with parity bits, according to
+            FIPS PUB 74.
+
+        5.  The encapContentInfo field must contain the KdcDHKeyInfo as
+            defined below.
+
+            a.  The eContentType field shall contain the OID value for
+                pkdata: iso (1) org (3) dod (6) internet (1) security (5)
+                kerberosv5 (2) pkinit (3) pkdata (1)
+
+            b.  The eContent field is data of the type KdcDHKeyInfo
+                (below).
+
+        6.  The certificates field must contain the certificates
+            necessary for the client to establish trust in the KDC's
+            certificate based on the list of trusted certifiers sent by
+            the client in the PA-PK-AS-REQ.  This field may be empty if
+            the client did not send to the KDC a list of trusted
+            certifiers (the trustedCertifiers field was empty, meaning
+            that the client already possesses the KDC's certificate).
+
+        7.  The signerInfos field is a SET that must contain at least
+            one member, since it contains the actual signature.
 
     KdcDHKeyInfo ::= SEQUENCE {
                               -- used only when utilizing Diffie-Hellman
@@ -644,42 +724,60 @@ expires April 30, 2000                                       Matthew Hur
     }
 
     Usage of EnvelopedData:
-    The EnvelopedData data type is specified in the Cryptographic
-    Message Syntax, a product of the S/MIME working group of the IETF.
-    It contains an temporary key encrypted with the PKINIT
-    client's public key.  It also contains a signed and encrypted
-    reply key.
-    - The originatorInfo field is not required, since that information
-      may be presented in the signedData structure that is encrypted
-      within the encryptedContentInfo field.
-    - The optional unprotectedAttrs field is not required for PKINIT.
-    - The recipientInfos field is a SET which must contain exactly one
-      member of the KeyTransRecipientInfo type for encryption
-      with an RSA public key.
-         - The encryptedKey field (in KeyTransRecipientInfo) contains
-           the temporary key which is encrypted with the PKINIT client's
-           public key.
-    - The encryptedContentInfo field contains the signed and encrypted
-      reply key.
-      - The contentType field shall contain the OID value for
-        id-signedData: iso(1) member-body(2) us(840) rsadsi(113549)
-        pkcs(1) pkcs7(7) signedData(2)
-      - The encryptedContent field is encrypted data of the CMS type
-        signedData as specified below.
-        - The encapContentInfo field must contains the ReplyKeyPack.
-          - The eContentType field shall contain the OID value for
-            id-data: iso(1) member-body(2) us(840) rsadsi(113549)
-            pkcs(1) pkcs7(7) data(1)
-          - The eContent field is data of the type ReplyKeyPack (below).
-        - The certificates field must contain the certificates necessary
-          for the client to establish trust in the KDC's certificate
-          based on the list of trusted certifiers sent by the client in
-          the PA-PK-AS-REQ.  This field may be empty if the client did
-          not send to the KDC a list of trusted certifiers (the
-          trustedCertifiers field was empty, meaning that the client
-          already possesses the KDC's certificate).
-        - The signerInfos field is a SET that must contain at least one
-          member, since it contains the actual signature.
+
+        The EnvelopedData data type is specified in the Cryptographic
+        Message Syntax, a product of the S/MIME working group of the
+        IETF.  It contains a temporary key encrypted with the PKINIT
+        client's public key.  It also contains a signed and encrypted
+        reply key.
+
+        1.  The originatorInfo field is not required, since that
+            information may be presented in the signedData structure
+            that is encrypted within the encryptedContentInfo field.
+
+        2.  The optional unprotectedAttrs field is not required for
+            PKINIT.
+
+        3.  The recipientInfos field is a SET which must contain exactly
+            one member of the KeyTransRecipientInfo type for encryption
+            with an RSA public key.
+
+            a.  The encryptedKey field (in KeyTransRecipientInfo)
+                contains the temporary key which is encrypted with the
+                PKINIT client's public key.
+
+        4.  The encryptedContentInfo field contains the signed and
+            encrypted reply key.
+
+            a.  The contentType field shall contain the OID value for
+                id-signedData: iso (1) member-body (2) us (840)
+                rsadsi (113549) pkcs (1) pkcs7 (7) signedData (2)
+
+            b.  The encryptedContent field is encrypted data of the CMS
+                type signedData as specified below.
+
+                i.  The encapContentInfo field must contains the
+                    ReplyKeyPack.
+
+                    * The eContentType field shall contain the OID value
+                      for pkdata: iso (1) org (3) dod (6) internet (1)
+                      security (5) kerberosv5 (2) pkinit (3) pkdata (1)
+
+                    * The eContent field is data of the type ReplyKeyPack
+                      (below).
+
+                ii.  The certificates field must contain the certificates
+                     necessary for the client to establish trust in the
+                     KDC's certificate based on the list of trusted
+                     certifiers sent by the client in the PA-PK-AS-REQ.
+                     This field may be empty if the client did not send
+                     to the KDC a list of trusted certifiers (the
+                     trustedCertifiers field was empty, meaning that the
+                     client already possesses the KDC's certificate).
+
+                iii.  The signerInfos field is a SET that must contain at
+                      least one member, since it contains the actual
+                      signature.
 
     ReplyKeyPack ::= SEQUENCE {
                               -- not used for Diffie-Hellman
@@ -715,26 +813,27 @@ expires April 30, 2000                                       Matthew Hur
         GeneralNames ::= SEQUENCE SIZE(1..MAX) OF GeneralName
 
         GeneralName ::= CHOICE {
-            otherName       [0] INSTANCE OF OTHER-NAME,
+            otherName       [0] OtherName,
             ...
         }
 
-        OTHER-NAME ::= TYPE-IDENTIFIER
+        OtherName ::= SEQUENCE {
+            type-id         OBJECT IDENTIFIER,
+            value           [0] EXPLICIT ANY DEFINED BY type-id
+        }
 
-    In this definition, otherName is a name of any form defined as an
-    instance of the OTHER-NAME information object class. For the purpose
-    of specifying a Kerberos principal name, INSTANCE OF OTHER-NAME will
-    be chosen and replaced by the type KerberosName:
+    For the purpose of specifying a Kerberos principal name, the value
+    in OtherName shall be a KerberosName as defined in RFC 1510, but with
+    the PrincipalName replaced by CertPrincipalName as mentioned in
+    Section 3.1:
 
         KerberosName ::= SEQUENCE {
-          realm           [0] Realm,
-                              -- as defined in RFC 1510
-          principalName   [1] PrincipalName,
-                              -- as defined in RFC 1510
+            realm           [0] Realm,
+            principalName   [1] CertPrincipalName  -- defined above
         }
 
     This specific syntax is identified within subjectAltName by setting
-    the OID id-ce-subjectAltName to krb5PrincipalName, where (from the
+    the type-id in OtherName to krb5PrincipalName, where (from the
     Kerberos specification) we have
 
         krb5 OBJECT IDENTIFIER ::= { iso (1)
@@ -765,11 +864,11 @@ expires April 30, 2000                                       Matthew Hur
     to be implemented in order to comply with the proposed standard.
     Below is a list of the required algorithms:
 
-    - Diffie-Hellman public/private key pairs
-      - utilizing Diffie-Hellman ephemeral-ephemeral mode
-    - SHA1 digest and DSA for signatures
-    - 3-key triple DES keys derived from the Diffie-Hellman Exchange
-    - 3-key triple DES Temporary and Reply keys
+    * Diffie-Hellman public/private key pairs
+        * utilizing Diffie-Hellman ephemeral-ephemeral mode
+    * SHA1 digest and DSA for signatures
+    * 3-key triple DES keys derived from the Diffie-Hellman Exchange
+    * 3-key triple DES Temporary and Reply keys
 
 4.  Logistics and Policy
 
@@ -793,11 +892,12 @@ expires April 30, 2000                                       Matthew Hur
 
     First of all, PKINIT introduces a new trust model, where KDCs do not
     (necessarily) certify the identity of those for whom they issue
-    tickets.  PKINIT does allow KDCs to act as their own CAs, in order
-    to simplify key management, but one of the additional benefits is to
-    align Kerberos authentication with a global public key
-    infrastructure.  Anyone using PKINIT in this way must be aware of
-    how the certification infrastructure they are linking to works.
+    tickets.  PKINIT does allow KDCs to act as their own CAs, in the
+    limited capacity of self-signing their certificates, but one of the
+    additional benefits is to align Kerberos authentication with a global
+    public key infrastructure.  Anyone using PKINIT in this way must be
+    aware of how the certification infrastructure they are linking to
+    works.
 
     Secondly, PKINIT also introduces the possibility of interactions
     between different cryptosystems, which may be of widely varying
@@ -837,16 +937,14 @@ expires April 30, 2000                                       Matthew Hur
 
     [3] B. Tung, T. Ryutov, C. Neuman, G. Tsudik, B. Sommerfeld,
     A. Medvinsky, M. Hur.  Public Key Cryptography for Cross-Realm
-    Authentication in Kerberos.
-    draft-ietf-cat-kerberos-pk-cross-04.txt
+    Authentication in Kerberos.  draft-ietf-cat-kerberos-pk-cross-04.txt
 
     [4] A. Medvinsky, J. Cargille, M. Hur.  Anonymous Credentials in
-    Kerberos.
-    draft-ietf-cat-kerberos-anoncred-00.txt
+    Kerberos.  draft-ietf-cat-kerberos-anoncred-00.txt
 
-    [5] A. Medvinsky, M. Hur, B. Clifford Neuman.  Public Key Utilizing
-    Tickets for Application Servers (PKTAPP).
-    draft-ietf-cat-pktapp-00.txt
+    [5] Ari Medvinsky, M. Hur, Alexander Medvinsky, B. Clifford Neuman.
+    Public Key Utilizing Tickets for Application Servers (PKTAPP).
+    draft-ietf-cat-pktapp-02.txt
 
     [6] M. Sirbu, J. Chuang.  Distributed Authentication in Kerberos
     Using Public Key Cryptography.  Symposium On Network and Distributed
@@ -898,6 +996,10 @@ expires April 30, 2000                                       Matthew Hur
     [18] M. Wahl, T. Howes, S. Kille.  Lightweight Directory Access
     Protocol (v3), December 1997.  Request for Comments 2251.
 
+    [19] ITU-T (formerly CCITT) Information Processing Systems - Open
+    Systems Interconnection - Specification of Abstract Syntax Notation
+    One (ASN.1) Rec. X.680 ISO/IEC 8824-1
+
 8.  Acknowledgements
 
     Some of the ideas on which this proposal is based arose during
@@ -912,7 +1014,7 @@ expires April 30, 2000                                       Matthew Hur
 
 9.  Expiration Date
 
-    This draft expires April 30, 2000.
+    This draft expires September 15, 2000.
 
 10. Authors
 
@@ -932,14 +1034,14 @@ expires April 30, 2000                                       Matthew Hur
     E-mail: matt.hur@cybersafe.com
 
     Ari Medvinsky
-    Excite
-    555 Broadway
-    Redwood City, CA 94063
-    Phone +1 650 569 2119
-    E-mail: amedvins@excitecorp.com
+    Keen.com, Inc.
+    150 Independence Drive
+    Menlo Park CA 94025
+    Phone: +1 650 289 3134
+    E-mail: ari@keen.com
 
     Sasha Medvinsky
-    General Instrument
+    Motorola
     6450 Sequence Drive
     San Diego, CA 92121
     Phone +1 619 404 2825
@@ -955,4 +1057,3 @@ expires April 30, 2000                                       Matthew Hur
     170 W. Tasman Dr.
     San Jose, CA 95134
     E-mail: jtrostle@cisco.com
-
