@@ -71,6 +71,84 @@ reinit_descrs (struct descr *d, int n)
 }
 
 /*
+ * Update peer credentials from socket.
+ *
+ * SCM_CREDS can only be updated the first time there is read data to
+ * read from the filedescriptor, so if we read do it before this
+ * point, the cred data might not be is not there yet.
+ */
+
+static int
+update_client_creds(int s, kcm_client *peer)
+{
+#ifdef SO_PEERCRED
+    {
+	socklen_t pclen;
+	struct ucred pc;
+
+	if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
+		       &pclen) != 0) {
+	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
+	    return 1;
+	}
+	peer->uid = pc.uid;
+	peer->gid = pc.gid;
+	peer->pid = pc.pid;
+	return 0;
+    }
+#endif
+#if defined(SOCKCREDSIZE) && defined(SCM_CREDS)
+    if (peer->uid == -1) {
+	struct msghdr msg;
+	socklen_t crmsgsize;
+	void *crmsg;
+	struct cmsghdr *cmp;
+	struct sockcred *sc;
+	
+	memset(&msg, 0, sizeof(msg));
+	crmsgsize = CMSG_SPACE(SOCKCREDSIZE(NGROUPS));
+	if (crmsgsize == 0)
+	    return 1 ;
+
+	crmsg = malloc(crmsgsize);
+	if (crmsg == NULL)
+	    return 1;
+
+	memset(crmsg, 0, crmsgsize);
+	
+	msg.msg_control = crmsg;
+	msg.msg_controllen = crmsgsize;
+	
+	if (recvmsg(s, &msg, 0) < 0) {
+	    free(crmsg);
+	    return 1;
+	}	
+	
+	if (msg.msg_controllen == 0 || (msg.msg_flags & MSG_CTRUNC) != 0) {
+	    free(crmsg);
+	    return 1;
+	}	
+	
+	cmp = CMSG_FIRSTHDR(&msg);
+	if (cmp->cmsg_level != SOL_SOCKET || cmp->cmsg_type != SCM_CREDS) {
+	    free(crmsg);
+	    return 1;
+	}	
+	
+	sc = (struct sockcred *)(void *)CMSG_DATA(cmp);
+	
+	peer->uid = sc->sc_euid;
+	peer->gid = sc->sc_egid;
+	peer->pid = 0;
+	
+	free(crmsg);
+    }
+#endif
+    return 0;
+}
+
+
+/*
  * Create the socket (family, type, port) in `d'
  */
 
@@ -267,6 +345,10 @@ add_new_stream (struct descr *d, int parent, int child)
     if (child == -1)
 	return;
 
+    d[child].peercred.pid = -1;
+    d[child].peercred.uid = -1;
+    d[child].peercred.gid = -1;
+
     d[child].sock_len = sizeof(d[child].__ss);
     s = accept(d[parent].s, d[child].sa, &d[child].sock_len);
     if(s < 0) {
@@ -333,28 +415,17 @@ handle_stream(struct descr *d, int index, int min_free)
 	return;
     }
 
-    d[index].peercred.pid = 0;
-    d[index].peercred.uid = -1;
-    d[index].peercred.gid = -1;
-
-#ifdef SO_PEERCRED
-    {
-	socklen_t pclen;
-	struct ucred pc;
-
-	if (getsockopt(d[index].s, SOL_SOCKET, SO_PEERCRED, (void *)&pc,
-		       &pclen) != 0) {
-	    krb5_warn(kcm_context, errno, "failed to determine peer identity");
-	    return;
-	}
-	d[index].peercred.uid = pc.uid;
-	d[index].peercred.gid = pc.gid;
-	d[index].peercred.pid = pc.pid;
+    if (update_client_creds(d[index].s, &d[index].peercred)) {
+	krb5_warnx(kcm_context, "failed to update peer identity");
+	clear_descr(d + index);
+	return;
     }
-#else
-    krb5_warnx(kcm_context, "code unimplemented to get peer identity");
-    return;
-#endif
+
+    if (d[index].peercred.uid == -1) {
+	krb5_warnx(kcm_context, "failed to determine peer identity");
+	clear_descr (d + index);
+	return;
+    }
 
     n = recvfrom(d[index].s, buf, sizeof(buf), 0, NULL, NULL);
     if (n < 0) {
@@ -465,6 +536,7 @@ kcm_loop(void)
 		}
 	    }
 	    kcm_run_events(kcm_context, time(NULL));
+	    break;
 	}
     }
     if (d->path != NULL)
