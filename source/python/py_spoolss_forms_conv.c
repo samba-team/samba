@@ -74,6 +74,11 @@ BOOL py_to_FORM(FORM *form, PyObject *dict)
 	if (!to_struct(form, dict_copy, py_FORM))
 		goto done;
 
+	/* Careful!  We can't call PyString_AsString(obj) then delete
+	   obj and still expect to have our pointer pointing somewhere
+	   useful. */
+
+	obj = PyDict_GetItemString(dict, "name");
 	name = PyString_AsString(obj);
 
 	init_unistr2(&form->name, name, strlen(name) + 1);
