@@ -115,6 +115,11 @@ implemented */
 #define GET_DELETE_ON_CLOSE_FLAG(x) (((x) & DELETE_ON_CLOSE_FLAG) ? True : False)
 #define SET_DELETE_ON_CLOSE_FLAG(x) ((x) ? DELETE_ON_CLOSE_FLAG : 0)
 
+/* was delete access requested in NT open ? */
+#define DELETE_ACCESS_REQUESTED (1<<17)
+#define GET_DELETE_ACCESS_REQUESTED(x) (((x) & DELETE_ACCESS_REQUESTED) ? True : False)
+#define SET_DELETE_ACCESS_REQUESTED(x) ((x) ? DELETE_ACCESS_REQUESTED : 0)
+
 /* open disposition values */
 #define FILE_EXISTS_FAIL 0
 #define FILE_EXISTS_OPEN 1
