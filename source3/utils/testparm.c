@@ -168,6 +168,14 @@ via the %%o substitution. With encrypted passwords this is not possible.\n", lp_
 		printf("'winbind separator = +' might cause problems with group membership.\n");
 	}
 
+	if (lp_algorithmic_rid_base() < 1000) {
+		printf("'algorithmic rid base' must be equal or above 1000.\n");
+	}
+
+	if (lp_algorithmic_rid_base() & 1) {
+		printf("'algorithmic rid base' must be even.\n");
+	}
+
 	return ret;
 }   
 
