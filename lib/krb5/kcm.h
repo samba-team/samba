@@ -88,7 +88,7 @@ _krb5_kcm_get_ticket(krb5_context /*context*/,
 		     krb5_enctype /*enctype*/,
 		     krb5_principal /*server*/);
 
-#define _PATH_KCM_SOCKET      "/var/run/kcm"
+#define _PATH_KCM_SOCKET      "/var/run/.kcm_socket"
 
 #endif /* __KCM_H__ */
 
