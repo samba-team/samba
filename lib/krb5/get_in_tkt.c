@@ -80,20 +80,25 @@ cleanup:
 
 static krb5_error_code
 decrypt_tkt (krb5_context context,
-	     const krb5_keyblock *key,
+	     krb5_keyblock *key,
+	     unsigned usage,
 	     krb5_const_pointer decrypt_arg,
 	     krb5_kdc_rep *dec_rep)
 {
     krb5_error_code ret;
     krb5_data data;
     size_t size;
+    krb5_crypto crypto;
 
-    ret = krb5_decrypt (context,
-			dec_rep->kdc_rep.enc_part.cipher.data,
-			dec_rep->kdc_rep.enc_part.cipher.length,
-			dec_rep->kdc_rep.enc_part.etype,
-			key,
-			&data);
+    krb5_crypto_init(context, key, 0, &crypto);
+
+    ret = krb5_decrypt_EncryptedData (context,
+				      crypto,
+				      usage,
+				      &dec_rep->kdc_rep.enc_part,
+				      &data);
+    krb5_crypto_destroy(context, crypto);
+
     if (ret)
 	return ret;
 
@@ -119,6 +124,7 @@ _krb5_extract_ticket(krb5_context context,
 		     krb5_creds *creds,		
 		     krb5_keyblock *key,
 		     krb5_const_pointer keyseed,
+		     krb5_key_usage key_usage,
 		     krb5_addresses *addrs,
 		     unsigned nonce,
 		     krb5_boolean allow_server_mismatch,
@@ -147,12 +153,16 @@ _krb5_extract_ticket(krb5_context context,
     
     /* extract ticket */
     {
-	unsigned char buf[1024];
+	unsigned char *buf;
 	size_t len;
-	encode_Ticket(buf + sizeof(buf) - 1, sizeof(buf), 
-			    &rep->kdc_rep.ticket, &len);
-	creds->ticket.data = malloc(len);
-	memcpy(creds->ticket.data, buf + sizeof(buf) - len, len);
+	len = length_Ticket(&rep->kdc_rep.ticket);
+	buf = malloc(len);
+	if(buf == NULL) {
+	    ret = ENOMEM;
+	    goto out;
+	}
+	encode_Ticket(buf + len - 1, len, &rep->kdc_rep.ticket, &len);
+	creds->ticket.data = buf;
 	creds->ticket.length = len;
 	creds->second_ticket.length = 0;
 	creds->second_ticket.data   = NULL;
@@ -183,7 +193,7 @@ _krb5_extract_ticket(krb5_context context,
     if (decrypt_proc == NULL)
 	decrypt_proc = decrypt_tkt;
     
-    ret = (*decrypt_proc)(context, key, decryptarg, rep);
+    ret = (*decrypt_proc)(context, key, key_usage, decryptarg, rep);
     if (ret)
 	goto out;
 
@@ -294,6 +304,7 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     krb5_error_code ret;
     int32_t sec, usec;
     unsigned usec2;
+    krb5_crypto crypto;
     
     krb5_us_timeofday (context, &sec, &usec);
     p.patimestamp = sec;
@@ -307,13 +318,15 @@ make_pa_enc_timestamp(krb5_context context, PA_DATA *pa,
     if (ret)
 	return ret;
 
+    krb5_crypto_init(context, key, 0, &crypto);
     ret = krb5_encrypt_EncryptedData(context, 
+				     crypto,
+				     KRB5_KU_PA_ENC_TIMESTAMP,
 				     buf + sizeof(buf) - len,
 				     len,
-				     etype,
 				     0,
-				     key,
 				     &encdata);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
 		    
@@ -338,31 +351,29 @@ add_padata(krb5_context context,
 	   krb5_principal client,
 	   krb5_key_proc key_proc,
 	   krb5_const_pointer keyseed,
-	   krb5_keytype keytype, 
-	   krb5_data *salt)
+	   krb5_enctype enctype, 
+	   krb5_salt *salt)
 {
     krb5_error_code ret;
     PA_DATA *pa2;
     krb5_keyblock *key;
-    krb5_enctype etype;
-    krb5_data salt2;
+    krb5_salt salt2;
     
-    krb5_data_zero(&salt2);
     if(salt == NULL) {
 	/* default to standard salt */
-	ret = krb5_get_salt (client, &salt2);
+	ret = krb5_get_pw_salt (context, client, &salt2);
 	salt = &salt2;
     }
-    ret = (*key_proc)(context, keytype, salt, keyseed, &key);
-    krb5_data_free(&salt2);
+    ret = (*key_proc)(context, enctype, *salt, keyseed, &key);
+    if(salt == &salt2)
+	krb5_free_salt(context, salt2);
     if (ret)
 	return ret;
     pa2 = realloc(md->val, (md->len + 1) * sizeof(*md->val));
     if(pa2 == NULL)
 	return ENOMEM;
     md->val = pa2;
-    krb5_keytype_to_etype(context, keytype, &etype);
-    ret = make_pa_enc_timestamp(context, &md->val[md->len], etype, key);
+    ret = make_pa_enc_timestamp(context, &md->val[md->len], enctype, key);
     krb5_free_keyblock (context, key);
     if(ret)
 	return ret;
@@ -384,7 +395,7 @@ init_as_req (krb5_context context,
 	     AS_REQ *a)
 {
     krb5_error_code ret;
-    krb5_data salt;
+    krb5_salt salt;
     krb5_enctype etype;
 
     memset(a, 0, sizeof(*a));
@@ -478,29 +489,30 @@ init_as_req (krb5_context context,
 		}
 		a->padata->val = tmp;
 		for(j = 0; j < preauth->val[i].info.len; j++) {
-		    krb5_keytype keytype = preauth->val[i].info.val[j].etype;
-		    if(preauth->val[i].info.val[j].salttype && 
-		       *preauth->val[i].info.val[j].salttype == 
-		       KRB5_PA_AFS3_SALT) {
-			if(keytype != KEYTYPE_DES) {
-			    ret = KRB5_PROG_KEYTYPE_NOSUPP;
-			    goto fail;
-			}
-			keytype = KEYTYPE_DES_AFS3;
-		    }
+		    krb5_salt *sp = &salt;
+		    if(preauth->val[i].info.val[j].salttype)
+			salt.salttype = *preauth->val[i].info.val[j].salttype;
+		    else
+			salt.salttype = KRB5_PW_SALT;
+		    if(preauth->val[i].info.val[j].salt)
+			salt.saltvalue = *preauth->val[i].info.val[j].salt;
+		    else
+			if(salt.salttype == KRB5_PW_SALT)
+			    sp = NULL;
+			else
+			    krb5_data_zero(&salt.saltvalue);
 		    add_padata(context, a->padata, creds->client, 
-			       key_proc, keyseed, keytype, 
-			       preauth->val[i].info.val[j].salt);
+			       key_proc, keyseed, 
+			       preauth->val[i].info.val[j].etype,
+			       sp);
 		}
 	    }
 	}
-	
     } else 
     /* not sure this is the way to use `ptypes' */
     if (ptypes == NULL || *ptypes == KRB5_PADATA_NONE)
 	a->padata = NULL;
     else if (*ptypes ==  KRB5_PADATA_ENC_TIMESTAMP) {
-	krb5_keytype keytype;
 	ALLOC(a->padata, 1);
 	if (a->padata == NULL) {
 	    ret = ENOMEM;
@@ -509,18 +521,15 @@ init_as_req (krb5_context context,
 	a->padata->len = 0;
 	a->padata->val = NULL;
 
-	ret = krb5_etype_to_keytype(context, etype, &keytype);
-	if(ret)
-	    goto fail;
-
 	/* make a v5 salted pa-data */
 	add_padata(context, a->padata, creds->client, 
-		   key_proc, keyseed, keytype, NULL);
+		   key_proc, keyseed, etype, NULL);
 	
 	/* make a v4 salted pa-data */
-	krb5_data_zero(&salt);
+	salt.salttype = KRB5_PW_SALT;
+	krb5_data_zero(&salt.saltvalue);
 	add_padata(context, a->padata, creds->client, 
-		   key_proc, keyseed, keytype, &salt);
+		   key_proc, keyseed, etype, &salt);
     } else {
 	ret = KRB5_PREAUTH_BAD_TYPE;
 	goto fail;
@@ -550,7 +559,7 @@ krb5_get_in_cred(krb5_context context,
     krb5_kdc_rep rep;
     krb5_data req, resp;
     char buf[BUFSIZ];
-    krb5_data salt;
+    krb5_salt salt;
     krb5_keyblock *key;
     size_t size;
     krb5_kdc_flags opts;
@@ -627,32 +636,33 @@ krb5_get_in_cred(krb5_context context,
 	}
     }
     if(pa) {
-	krb5_keytype keytype;
-	ret = krb5_etype_to_keytype(context, etype, &keytype);
-	if(pa->padata_type == pa_afs3_salt){
-	    if(keytype != KEYTYPE_DES)
-		return KRB5_PROG_KEYTYPE_NOSUPP;
-	    keytype = KEYTYPE_DES_AFS3;
-	}
-	ret = (*key_proc)(context, keytype, &pa->padata_value, keyseed, &key);
+	salt.salttype = pa->padata_type;
+	salt.saltvalue = pa->padata_value;
+	
+	ret = (*key_proc)(context, etype, salt, keyseed, &key);
     } else {
 	/* make a v5 salted pa-data */
-	krb5_keytype keytype;
-	salt.length = 0;
-	salt.data = NULL;
-	ret = krb5_get_salt (creds->client, &salt);
+	ret = krb5_get_pw_salt (context, creds->client, &salt);
 	
 	if (ret)
 	    return ret;
-	ret = krb5_etype_to_keytype(context, etype, &keytype);
-	ret = (*key_proc)(context, keytype, &salt, keyseed, &key);
-	krb5_data_free (&salt);
+	ret = (*key_proc)(context, etype, salt, keyseed, &key);
+	krb5_free_salt(context, salt);
     }
     if (ret)
 	return ret;
 	
-    ret = _krb5_extract_ticket(context, &rep, creds, key, keyseed, 
-			      NULL, nonce, FALSE, decrypt_proc, decryptarg);
+    ret = _krb5_extract_ticket(context, 
+			       &rep, 
+			       creds, 
+			       key, 
+			       keyseed, 
+			       KRB5_KU_AS_REP_ENC_PART,
+			       NULL, 
+			       nonce, 
+			       FALSE, 
+			       decrypt_proc, 
+			       decryptarg);
     memset (key->keyvalue.data, 0, key->keyvalue.length);
     krb5_free_keyblock_contents (context, key);
     free (key);

@@ -42,19 +42,22 @@ RCSID("$Id$");
 
 static krb5_error_code
 decrypt_tkt_enc_part (krb5_context context,
-		      const krb5_keyblock *key,
+		      krb5_keyblock *key,
 		      EncryptedData *enc_part,
 		      EncTicketPart *decr_part)
 {
     krb5_error_code ret;
     krb5_data plain;
     size_t len;
+    krb5_crypto crypto;
 
-    ret = krb5_decrypt (context,
-			enc_part->cipher.data,
-			enc_part->cipher.length,
-			enc_part->etype,
-			key, &plain);
+    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_decrypt_EncryptedData (context,
+				      crypto,
+				      KRB5_KU_TICKET,
+				      enc_part,
+				      &plain);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
 
@@ -73,12 +76,15 @@ decrypt_authenticator (krb5_context context,
     krb5_error_code ret;
     krb5_data plain;
     size_t len;
+    krb5_crypto crypto;
 
-    ret = krb5_decrypt (context,
-			enc_part->cipher.data,
-			enc_part->cipher.length,
-			enc_part->etype,
-			key, &plain);
+    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_decrypt_EncryptedData (context,
+				      crypto,
+				      KRB5_KU_AP_REQ_AUTH,
+				      enc_part,
+				      &plain);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	return ret;
 
@@ -143,6 +149,45 @@ krb5_decrypt_ticket(krb5_context context,
     else
 	free_EncTicketPart(&t);
     return 0;
+}
+
+krb5_error_code
+krb5_verify_authenticator_checksum(krb5_context context,
+				   krb5_auth_context ac,
+				   void *data,
+				   size_t len)
+{
+    krb5_error_code ret;
+    krb5_keyblock *key;
+    krb5_authenticator authenticator;
+    krb5_crypto crypto;
+    
+    ret = krb5_auth_getauthenticator (context,
+				      ac,
+				      &authenticator);
+    if(ret)
+	return ret;
+    if(authenticator->cksum == NULL)
+	return -17;
+    ret = krb5_auth_con_getkey(context, ac, &key);
+    if(ret) {
+	krb5_free_authenticator(context, &authenticator);
+	return ret;
+    }
+    ret = krb5_crypto_init(context, key, 0, &crypto);
+    if(ret)
+	goto out;
+    ret = krb5_verify_checksum (context,
+				crypto,
+				KRB5_KU_AP_REQ_AUTH_CKSUM,
+				data,
+				len,
+				authenticator->cksum);
+    krb5_crypto_destroy(context, crypto);
+out:
+    krb5_free_authenticator(context, &authenticator);
+    krb5_free_keyblock(context, key);
+    return ret;
 }
 
 krb5_error_code
@@ -303,7 +348,6 @@ get_key_from_keytab(krb5_context context,
     krb5_keytab_entry entry;
     krb5_error_code ret;
     int kvno;
-    krb5_keytype keytype;
     krb5_keytab real_keytab;
 
     if(keytab == NULL)
@@ -316,17 +360,11 @@ get_key_from_keytab(krb5_context context,
     else
 	kvno = 0;
 
-    ret = krb5_etype_to_keytype (context,
-				 ap_req->ticket.enc_part.etype,
-				 &keytype);
-    if (ret)
-	goto out;
-
     ret = krb5_kt_get_entry (context,
 			     real_keytab,
 			     server,
 			     kvno,
-			     keytype,
+			     ap_req->ticket.enc_part.etype,
 			     &entry);
     if(ret)
 	goto out;

@@ -55,6 +55,7 @@ char *renew_life	= NULL;
 char *server		= NULL;
 char *cred_cache	= NULL;
 char *start_str		= NULL;
+struct getarg_strings etype_str;
 int use_keytab		= 0;
 char *keytab_str	= NULL;
 #ifdef KRB4
@@ -70,9 +71,6 @@ struct getargs args[] = {
     { "afslog", 	0  , arg_flag, &do_afslog,
       "obtain afs tokens"  },
 #endif
-    { "cache", 		'c', arg_string, &cred_cache,
-      "credentials cache", "cachename" },
-
     { "cache", 		'c', arg_string, &cred_cache,
       "credentials cache", "cachename" },
 
@@ -108,6 +106,9 @@ struct getargs args[] = {
 
     { "validate",	'v', arg_flag, &validate_flag,
       "validate TGT" },
+
+    { "enctypes",	'e', arg_strings, &etype_str,
+      "encryption type to use", "enctype" },
 
     { "version", 	0,   arg_flag, &version_flag },
     { "help",		0,   arg_flag, &help_flag }
@@ -270,6 +271,23 @@ main (int argc, char **argv)
 	    errx (1, "unparsable time: %s", start_str);
 
 	start_time = tmp;
+    }
+
+    if(etype_str.num_strings) {
+	krb5_enctype *enctype = NULL;
+	int i;
+	enctype = malloc(etype_str.num_strings * sizeof(*enctype));
+	if(enctype == NULL)
+	    errx(1, "out of memory");
+	for(i = 0; i < etype_str.num_strings; i++) {
+	    ret = krb5_string_to_enctype(context, 
+					 etype_str.strings[i], 
+					 &enctype[i]);
+	    if(ret)
+		errx(1, "unrecognized enctype: %s", etype_str.strings[i]);
+	}
+	krb5_get_init_creds_opt_set_etype_list(&opt, enctype, 
+					       etype_str.num_strings);
     }
 
     argc -= optind;

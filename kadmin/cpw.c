@@ -61,17 +61,21 @@ usage(void)
 static int
 do_cpw_entry(krb5_principal principal, void *data)
 {
-    char *pw, pwbuf[128], prompt[128], *pr;
+    char *pw, pwbuf[128];
     struct cpw_entry_data *e = data;
     krb5_error_code ret = 0;
     
     pw = e->password;
     if(e->random == 0){
 	if(pw == NULL){
-	    krb5_unparse_name(context, principal, &pr);
-	    snprintf(prompt, sizeof(prompt), "%s's Password: ", pr);
-	    free(pr);
+	    char *princ_name;
+	    char *prompt;
+
+	    krb5_unparse_name(context, principal, &princ_name);
+	    asprintf(&prompt, "%s's Password: ", princ_name);
+	    free (princ_name);
 	    ret = des_read_pw_string(pwbuf, sizeof(pwbuf), prompt, 1);
+	    free (prompt);
 	    if(ret){
 		return 0; /* XXX error code? */
 	    }

@@ -41,65 +41,31 @@
 RCSID("$Id$");
 
 krb5_error_code
-hdb_next_keytype2key(krb5_context context,
+hdb_next_enctype2key(krb5_context context,
 		     hdb_entry *e,
-		     krb5_keytype keytype,
+		     krb5_enctype enctype,
 		     Key **key)
 {
-    int i;
-    if(*key) 
-	i = *key - e->keys.val + 1;
-    else
-	i = 0;
-    for(; i < e->keys.len; i++)
-	if(e->keys.val[i].key.keytype == keytype){
-	    *key = &e->keys.val[i];
+    Key *k;
+    
+    for (k = *key ? *key : e->keys.val; 
+	 k < e->keys.val + e->keys.len; 
+	 k++)
+	if(k->key.keytype == enctype){
+	    *key = k;
 	    return 0;
 	}
     return KRB5_PROG_ETYPE_NOSUPP; /* XXX */
 }
 
 krb5_error_code
-hdb_keytype2key(krb5_context context, 
+hdb_enctype2key(krb5_context context, 
 		hdb_entry *e, 
-		krb5_keytype keytype, 
+		krb5_enctype enctype, 
 		Key **key)
 {
     *key = NULL;
-    return hdb_next_keytype2key(context,e, keytype, key);
-}
-
-krb5_error_code
-hdb_next_etype2key(krb5_context context,
-		   hdb_entry *e,
-		   krb5_enctype etype,
-		   Key **key)
-{
-    krb5_keytype keytype;
-    krb5_error_code ret;
-    if(e->etypes) {
-	/* check if the etype is listed as `supported' by this principal */
-	int i;
-	for(i = 0; i < e->etypes->len; i++)
-	    if(etype == e->etypes->val[i])
-		break;
-	if(i == e->etypes->len)
-	    return KRB5_PROG_ETYPE_NOSUPP;
-    }
-    ret = krb5_etype_to_keytype(context, etype, &keytype);
-    if(ret)
-	return ret;
-    return hdb_next_keytype2key(context, e, keytype, key);
-}
-
-krb5_error_code
-hdb_etype2key(krb5_context context, 
-	      hdb_entry *e, 
-	      krb5_enctype etype, 
-	      Key **key)
-{
-    *key = NULL;
-    return hdb_next_etype2key(context,e, etype, key);
+    return hdb_next_enctype2key(context, e, enctype, key);
 }
 
 /* this is a bit ugly, but will get better when the crypto framework
@@ -109,7 +75,7 @@ krb5_error_code
 hdb_process_master_key(krb5_context context, EncryptionKey key, 
 		       krb5_data *schedule)
 {
-    if(key.keytype != KEYTYPE_DES)
+    if(key.keytype != ETYPE_DES_CBC_MD5)
 	return KRB5_PROG_KEYTYPE_NOSUPP;
     schedule->length = sizeof(des_key_schedule);
     schedule->data = malloc(schedule->length);

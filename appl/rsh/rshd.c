@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -43,6 +43,7 @@ enum auth_method auth_method;
 
 krb5_context context;
 krb5_keyblock *keyblock;
+krb5_crypto crypto;
 des_key_schedule schedule;
 des_cblock iv;
 
@@ -225,7 +226,6 @@ recv_krb5_auth (int s, u_char *buf,
     krb5_auth_context auth_context = NULL;
     krb5_ticket *ticket;
     krb5_error_code status;
-    krb5_authenticator authenticator;
     krb5_data cksum_data;
     krb5_principal server;
 
@@ -269,33 +269,31 @@ recv_krb5_auth (int s, u_char *buf,
 
     status = krb5_auth_con_getkey (context, auth_context, &keyblock);
     if (status)
-	syslog_and_die ("krb5_auth_con_getkey: %s",
-			krb5_get_err_text(context, status));
+       syslog_and_die ("krb5_auth_con_getkey: %s",
+                       krb5_get_err_text(context, status));
 
-    status = krb5_auth_getauthenticator (context,
-					 auth_context,
-					 &authenticator);
-    if (status)
-	syslog_and_die ("krb5_auth_getauthenticator: %s",
-			krb5_get_err_text(context, status));
+    status = krb5_crypto_init(context, keyblock, 0, &crypto);
+    if(status)
+	syslog_and_die("krb5_crypto_init: %s", 
+		       krb5_get_err_text(context, status));
 
+    
     cksum_data.length = asprintf ((char **)&cksum_data.data,
 				  "%u:%s%s",
 				  ntohs(thisaddr.sin_port),
 				  cmd,
 				  server_username);
 
-    status = krb5_verify_checksum (context,
-				   cksum_data.data,
-				   cksum_data.length,
-				   keyblock,
-				   authenticator->cksum);
+    status = krb5_verify_authenticator_checksum(context, 
+						auth_context,
+						cksum_data.data, 
+						cksum_data.length);
+
     if (status)
-	syslog_and_die ("krb5_verify_checksum: %s",
+	syslog_and_die ("krb5_verify_authenticator_checksum: %s",
 			krb5_get_err_text(context, status));
 
     free (cksum_data.data);
-    krb5_free_authenticator (context, &authenticator);
 
     recv_krb5_creds (s, auth_context, server_username, ticket->client);
 

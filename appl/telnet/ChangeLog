@@ -4,6 +4,18 @@ Mon Feb  1 04:08:36 1999  Assar Westerlund  <assar@sics.se>
  	if we actually have IPv6.  From "Brandon S. Allbery KF8NH"
  	<allbery@kf8nh.apk.net>
 
+Sat Nov 21 16:51:00 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* telnetd/sys_term.c (cleanup): don't call vhangup() on sgi:s
+
+Fri Aug 14 16:29:18 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* libtelnet/kerberos.c: krb_put_int -> KRB_PUT_INT
+
+Thu Jul 23 20:29:05 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* libtelnet/kerberos5.c: use krb5_verify_authenticator_checksum
+
 Wed May 27 04:19:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* telnet/sys_bsd.c (process_rings): correct call to `stilloob'

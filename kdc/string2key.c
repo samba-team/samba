@@ -47,7 +47,7 @@ int afs;
 char *principal;
 char *cell;
 char *password;
-char *keytype_str = "des";
+char *keytype_str = "des-cbc-md5";
 int version;
 int help;
 
@@ -73,12 +73,15 @@ usage(int status)
 }
 
 static void
-tokey(krb5_context context, const char *password, krb5_data *salt, 
-      krb5_keytype keytype, const char *label)
+tokey(krb5_context context, 
+      krb5_enctype enctype, 
+      const char *password, 
+      krb5_salt salt, 
+      const char *label)
 {
     int i;
     krb5_keyblock key;
-    krb5_string_to_key(password, salt, keytype, &key);
+    krb5_string_to_key_salt(context, enctype, password, salt, &key);
     printf("%s: ", label);
     for(i = 0; i < key.keyvalue.length; i++)
 	printf("%02x", ((unsigned char*)key.keyvalue.data)[i]);
@@ -91,10 +94,10 @@ main(int argc, char **argv)
 {
     krb5_context context;
     krb5_principal princ;
-    krb5_data salt;
+    krb5_salt salt;
     int optind;
     char buf[1024];
-    krb5_keytype keytype;
+    krb5_enctype etype;
     krb5_error_code ret;
 
     set_progname(argv[0]);
@@ -120,11 +123,21 @@ main(int argc, char **argv)
     if(!version5 && !version4 && !afs)
 	version5 = 1;
 
-    ret = krb5_string_to_keytype(context, keytype_str, &keytype);
+    ret = krb5_string_to_enctype(context, keytype_str, &etype);
+#if 0
+    if(ret) {
+	krb5_keytype keytype;
+	ret = krb5_string_to_keytype(context, keytype_str, &keytype);
+	ret = krb5_keytype_to_enctype(context, keytype, &etype);
+    }
+#endif
     if(ret)
-	krb5_err(context, 1, ret, "%s", keytype);
+	krb5_err(context, 1, ret, "%s", keytype_str);
     
-    if(keytype != KEYTYPE_DES && (afs || version4))
+    if((etype != ETYPE_DES_CBC_CRC &&
+	etype != ETYPE_DES_CBC_MD4 &&
+	etype != ETYPE_DES_CBC_MD5) &&
+       (afs || version4))
 	krb5_errx(context, 1, 
 		  "DES is the only valid keytype for AFS and Kerberos 4");
     
@@ -150,20 +163,21 @@ main(int argc, char **argv)
 	
     if(version5){
 	krb5_parse_name(context, principal, &princ);
-	salt.length = 0;
-	salt.data = NULL;
-	krb5_get_salt(princ, &salt);
-	tokey(context, password, &salt, keytype, "Kerberos v5 key");
+	krb5_get_pw_salt(context, princ, &salt);
+	tokey(context, etype, password, salt, "Kerberos v5 key");
+	krb5_free_salt(context, salt);
     }
     if(version4){
-	salt.length = 0;
-	salt.data = NULL;
-	tokey(context, password, &salt, KEYTYPE_DES, "Kerberos v4 key");
+	salt.salttype = KRB5_PW_SALT;
+	salt.saltvalue.length = 0;
+	salt.saltvalue.data = NULL;
+	tokey(context, ETYPE_DES_CBC_MD5, password, salt, "Kerberos v4 key");
     }
     if(afs){
-	salt.length = strlen(cell);
-	salt.data = cell;
-	tokey(context, password, &salt, KEYTYPE_DES_AFS3, "AFS key");
+	salt.salttype = KRB5_AFS3_SALT;
+	salt.saltvalue.length = strlen(cell);
+	salt.saltvalue.data = cell;
+	tokey(context, ETYPE_DES_CBC_MD5, password, salt, "AFS key");
     }
     return 0;
 }

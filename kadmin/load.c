@@ -147,10 +147,14 @@ parse_keys(hdb_entry *ent, char *str)
 	    key->salt->type = type;
 		
 	    if (p_len) {
-		krb5_data_alloc(&key->salt->salt, (p_len - 1) / 2 + 1);
-		for(i = 0; i < p_len; i += 2){
-		    sscanf(p + i, "%02x", &tmp);
-		    ((u_char*)key->salt->salt.data)[i / 2] = tmp;
+		if(*p == '\"'){
+		    krb5_data_copy(&key->salt->salt, p + 1, p_len - 2);
+		}else{
+		    krb5_data_alloc(&key->salt->salt, (p_len - 1) / 2 + 1);
+		    for(i = 0; i < p_len; i += 2){
+			sscanf(p + i, "%02x", &tmp);
+			((u_char*)key->salt->salt.data)[i / 2] = tmp;
+		    }
 		}
 	    } else
 		krb5_data_zero (&key->salt->salt);
@@ -184,11 +188,12 @@ parse_hdbflags2int(char *str)
     return int2HDBFlags(i);
 }
 
+#if 0
 static void
 parse_etypes(char *str, unsigned **val, unsigned *len)
 {
     unsigned v;
-	
+    
     *val = NULL;
     *len = 0;
     while(sscanf(str, "%u", &v) == 1) {
@@ -200,6 +205,7 @@ parse_etypes(char *str, unsigned **val, unsigned *len)
 	str++;
     }
 }
+#endif
 
 static void
 doit(char *filename, int merge)
@@ -292,12 +298,14 @@ doit(char *filename, int merge)
 	ent.max_life = parse_integer(NULL, e.max_life);
 	ent.max_renew = parse_integer(NULL, e.max_renew);
 	ent.flags = parse_hdbflags2int(e.flags);
+#if 0
 	ALLOC(ent.etypes);
 	parse_etypes(e.etypes, &ent.etypes->val, &ent.etypes->len);
 	if(ent.etypes->len == 0) {
 	    free(ent.etypes);
 	    ent.etypes = NULL;
 	}
+#endif
 
 	db->store(context, db, 1, &ent);
 	hdb_free_entry (context, &ent);

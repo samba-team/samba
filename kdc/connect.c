@@ -289,6 +289,7 @@ process_request(unsigned char *buf,
     else if(maybe_version4(buf, len)){
 	*sendlength = 0; /* elbitapmoc sdrawkcab XXX */
 	do_version4(buf, len, reply, from, (struct sockaddr_in*)addr);
+	return 0;
     }else if(decode_Ticket(buf, len, &ticket, &i) == 0){
 	ret = do_524(&ticket, reply, from);
 	free_Ticket(&ticket);

@@ -44,6 +44,7 @@ int do_encrypt;
 int do_forward;
 krb5_context context;
 krb5_keyblock *keyblock;
+krb5_crypto crypto;
 des_key_schedule schedule;
 des_cblock iv;
 
@@ -277,6 +278,11 @@ send_krb5_auth(int s,
     if (status)
       errx (1, "krb5_auth_con_getkey: %s",
 	    krb5_get_err_text(context, status));
+
+    krb5_crypto_init(context, keyblock, 0, &crypto);
+    if(status)
+	errx (1, "krb5_crypto_init: %s",
+	      krb5_get_err_text(context, status));
 
     len = strlen(remote_user) + 1;
     if (net_write (s, remote_user, len) != len)

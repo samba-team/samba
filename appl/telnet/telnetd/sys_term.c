@@ -1602,7 +1602,9 @@ cleanup(int sig)
 #if defined(HAVE_UTMPX_H) || !defined(HAVE_LOGWTMP)
     rmut();
 #ifdef HAVE_VHANGUP
+#ifndef __sgi
     vhangup(); /* XXX */
+#endif
 #endif
 #else
     char *p;

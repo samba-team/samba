@@ -53,6 +53,7 @@ krb5_rd_priv(krb5_context context,
   size_t len;
   krb5_data plain;
   krb5_keyblock *key;
+  krb5_crypto crypto;
 
   memset(&priv, 0, sizeof(priv));
   ret = decode_KRB_PRIV (inbuf->data, inbuf->length, &priv, &len);
@@ -76,12 +77,13 @@ krb5_rd_priv(krb5_context context,
   else
       key = auth_context->keyblock;
 
-  ret = krb5_decrypt (context,
-		      priv.enc_part.cipher.data,
-		      priv.enc_part.cipher.length,
-		      priv.enc_part.etype,
-		      key,
-		      &plain);
+  krb5_crypto_init(context, key, 0, &crypto);
+  ret = krb5_decrypt_EncryptedData(context,
+				   crypto,
+				   KRB5_KU_KRB_PRIV,
+				   &priv.enc_part,
+				   &plain);
+  krb5_crypto_destroy(context, crypto);
   if (ret) 
       goto failure;
 

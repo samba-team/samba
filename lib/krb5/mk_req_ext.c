@@ -41,20 +41,19 @@
 RCSID("$Id$");
 
 krb5_error_code
-krb5_mk_req_extended(krb5_context context,
+krb5_mk_req_internal(krb5_context context,
 		     krb5_auth_context *auth_context,
 		     const krb5_flags ap_req_options,
 		     krb5_data *in_data,
 		     krb5_creds *in_creds,
-		     krb5_data *outbuf)
+		     krb5_data *outbuf,
+		     krb5_key_usage usage)
 {
   krb5_error_code ret;
   krb5_data authenticator;
   Checksum c;
   Checksum *c_opt;
-  krb5_cksumtype cksumtype;
   krb5_auth_context ac;
-  krb5_enctype enctype;
 
   if(auth_context) {
       if(*auth_context == NULL)
@@ -67,6 +66,7 @@ krb5_mk_req_extended(krb5_context context,
   if(ret)
       return ret;
       
+#if 0
   {
       /* This is somewhat bogus since we're possibly overwriting a
          value specified by the user, but it's the easiest way to make
@@ -78,9 +78,9 @@ krb5_mk_req_extended(krb5_context context,
 			  in_creds->ticket.length, 
 			  &ticket, 
 			  NULL);
-      krb5_etype_to_keytype (context,
-			     ticket.enc_part.etype,
-			     &ticket_keytype);
+      krb5_enctype_to_keytype (context,
+			       ticket.enc_part.etype,
+			       &ticket_keytype);
 
       if (ticket_keytype == in_creds->session.keytype)
 	  krb5_auth_setenctype(context, 
@@ -88,32 +88,22 @@ krb5_mk_req_extended(krb5_context context,
 			       ticket.enc_part.etype);
       free_Ticket(&ticket);
   }
+#endif
 
   krb5_free_keyblock(context, ac->keyblock);
   krb5_copy_keyblock(context, &in_creds->session, &ac->keyblock);
   
-  if (ac->enctype)
-      enctype = ac->enctype;
-  else {
-      ret = krb5_keytype_to_etype(context,
-				  ac->keyblock->keytype,
-				  &enctype);
-      if (ret)
-	  return ret;
-  }
-
-  if (ac->cksumtype)
-      cksumtype = ac->cksumtype;
-  else
-      krb5_keytype_to_cksumtype (context, ac->keyblock->keytype, &cksumtype);
-
   if (in_data) {
-      ret = krb5_create_checksum (context,
-				  cksumtype,
-				  in_data->data,
-				  in_data->length,
-				  ac->keyblock,
-				  &c);
+      krb5_crypto crypto;
+      krb5_crypto_init(context, ac->keyblock, 0, &crypto);
+      ret = krb5_create_checksum(context, 
+				 crypto,
+				 usage,
+				 in_data->data,
+				 in_data->length,
+				 &c);
+      
+      krb5_crypto_destroy(context, crypto);
       c_opt = &c;
   } else {
       c_opt = NULL;
@@ -121,7 +111,7 @@ krb5_mk_req_extended(krb5_context context,
   
   ret = krb5_build_authenticator (context,
 				  ac,
-				  enctype,
+				  ac->keyblock->keytype,
 				  in_creds,
 				  c_opt,
 				  NULL,
@@ -131,9 +121,26 @@ krb5_mk_req_extended(krb5_context context,
   if (ret)
     return ret;
 
-  ret = krb5_build_ap_req (context, enctype, in_creds, ap_req_options,
-			   authenticator, outbuf);
+  ret = krb5_build_ap_req (context, ac->keyblock->keytype, 
+			   in_creds, ap_req_options, authenticator, outbuf);
   if(auth_context == NULL)
       krb5_auth_con_free(context, ac);
   return ret;
+}
+
+krb5_error_code
+krb5_mk_req_extended(krb5_context context,
+		     krb5_auth_context *auth_context,
+		     const krb5_flags ap_req_options,
+		     krb5_data *in_data,
+		     krb5_creds *in_creds,
+		     krb5_data *outbuf)
+{
+    return krb5_mk_req_internal (context,
+				 auth_context,
+				 ap_req_options,
+				 in_data,
+				 in_creds,
+				 outbuf,
+				 KRB5_KU_AP_REQ_AUTH_CKSUM);
 }

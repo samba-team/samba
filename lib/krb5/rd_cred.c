@@ -51,6 +51,7 @@ krb5_rd_cred (krb5_context      context,
     KRB_CRED cred;
     EncKrbCredPart enc_krb_cred_part;
     krb5_data enc_krb_cred_part_data;
+    krb5_crypto crypto;
     int i;
 
     ret = decode_KRB_CRED (in_data->data, in_data->length,
@@ -68,12 +69,13 @@ krb5_rd_cred (krb5_context      context,
 	goto out;
     }
 
-    ret = krb5_decrypt (context,
-			cred.enc_part.cipher.data,
-			cred.enc_part.cipher.length,
-			cred.enc_part.etype,
-			auth_context->remote_subkey,
-			&enc_krb_cred_part_data);
+    krb5_crypto_init(context, auth_context->remote_subkey, 0, &crypto);
+    ret = krb5_decrypt_EncryptedData(context,
+				     crypto,
+				     KRB5_KU_KRB_CRED,
+				     &cred.enc_part,
+				     &enc_krb_cred_part_data);
+    krb5_crypto_destroy(context, crypto);
     if (ret)
 	goto out;
     

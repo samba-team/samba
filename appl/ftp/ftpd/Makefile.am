@@ -40,7 +40,7 @@ gssapi.c:
 CLEANFILES = security.c security.h krb4.c gssapi.c
 
 if KRB4
-afslib = $(top_builddir)/lib/kafs/libkafs.a
+afslib = $(top_builddir)/lib/kafs/libkafs.a $(AIX_EXTRA_KAFS)
 else
 afslib =
 endif

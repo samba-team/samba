@@ -1,6 +1,6 @@
 dnl $Id$
 dnl
-dnl AC_TEST_PACKAGE(package,header,lib,linkline)
+dnl AC_TEST_PACKAGE(package,header,lib,linkline,default location)
 AC_DEFUN(AC_TEST_PACKAGE,
 [
 AC_MSG_CHECKING(for $1)
@@ -32,16 +32,20 @@ define([foo], translit($1, [a-z], [A-Z]))
 @@@syms="$syms foo"@@@
 END
 
-if test -n "$with_$1"; then
-  AC_DEFINE([foo])
-  if test "$with_$1" != "yes"; then
-    $1_dir=$with_$1
+if test -n "$with_$1" -o -n "$5"; then
+dnl  AC_DEFINE([foo])
+  if test -n "$with_$1" -a "$with_$1" != "yes"; then
+    $1_dir="$with_$1"
+  elif test -n "$5"; then
+    $1_dir="$5"
   fi
 dnl Try to find include
   if test -n "$with_$1_include"; then
     trydir=$with_$1_include
-  elif test "$with_$1" != "yes"; then
+  elif test -n "$with_$1" -a "$with_$1" != "yes"; then
     trydir="$with_$1 $with_$1/include"
+  elif test -n "$5"; then
+    trydir="$5/include"
   else
     trydir=
   fi
@@ -57,14 +61,16 @@ dnl Try to find include
   done
   if test -n "$found"; then
     $1_include=$res
-  else
+  elif test -n "$with_$1"; then
     AC_MSG_ERROR(Cannot find $2)
   fi
 dnl Try to find lib
   if test -n "$with_$1_lib"; then
     trydir=$with_$1_lib
-  elif test "$with_$1" != "yes"; then
+  elif test -n "$with_$1" -a "$with_$1" != "yes"; then
     trydir="$with_$1 $with_$1/lib"
+  elif test -n "$5"; then
+    trydir="$5/lib"
   else
     trydir=
   fi
@@ -83,11 +89,18 @@ dnl Try to find lib
   done
   if test -n "$found"; then
     $1_lib=$res
-  else
+  elif test -n "$with_$1"; then
     AC_MSG_ERROR(Cannot find $3)
   fi
-  AC_MSG_RESULT([headers $$1_include, libraries $$1_lib])
-  AC_DEFINE_UNQUOTED(foo)
+  if test -n "$$1_include" -o -n "$$1_lib"; then
+    AC_MSG_RESULT([headers $$1_include, libraries $$1_lib])
+    AC_DEFINE_UNQUOTED(foo)
+    if test "$with_$1" = "" -a "$5"; then
+      with_$1="$5"
+    fi
+  else
+    AC_MSG_RESULT(no)
+  fi
   if test -n "$$1_include"; then
     foo[INCLUDE]="-I$$1_include"
   fi

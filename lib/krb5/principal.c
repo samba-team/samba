@@ -186,6 +186,8 @@ unparse_name_fixed(krb5_context context,
 	if(i)
 	    add_char(name, index, len, '/');
 	index = quote_string(princ_ncomp(principal, i), name, index, len);
+	if(index == len)
+	    return ERANGE;
     } 
     /* add realm if different from default realm */
     if(short_form) {
@@ -202,7 +204,7 @@ unparse_name_fixed(krb5_context context,
 	add_char(name, index, len, '@');
 	index = quote_string(princ_realm(principal), name, index, len);
 	if(index == len)
-	    return ENOMEM; /* XXX */
+	    return ERANGE;
     }
     return 0;
 }

@@ -1,6 +1,14 @@
+Tue Dec  1 14:45:15 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* Makefile.am: fix AIX linkage
+
 Sun Nov 22 10:40:44 1998  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.in (WFLAGS): set
+
+Sat Nov 21 16:55:19 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* afskrb5.c: add homedir support
 
 Sun Sep  6 20:16:27 1998  Assar Westerlund  <assar@sics.se>
 

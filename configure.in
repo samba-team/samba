@@ -3,6 +3,10 @@ AC_REVISION($Revision$)
 AC_INIT(lib/krb5/send_to_kdc.c)
 AM_CONFIG_HEADER(include/config.h)
 
+AC_CONFIG_AUX_DIR_DEFAULT
+if test "`uname`" = AIX; then
+	INSTALL="$ac_install_sh"
+fi
 AM_INIT_AUTOMAKE(heimdal,0.0u)
 
 AC_PREFIX_DEFAULT(/usr/heimdal)
@@ -19,6 +23,8 @@ case "$host" in
 	AC_DEFINE(SunOS, 5)
 	;;
 esac
+
+test -z "$CFLAGS" && CFLAGS="-g"
 
 dnl Checks for programs.
 AC_PROG_CC
@@ -39,7 +45,6 @@ if test "$GCC" = "yes"; then
 fi
 AC_SUBST(WFLAGS)
 AC_SUBST(WFLAGS_NOUNUSED)
-test -z "$CFLAGS" && CFLAGS="-g"
 
 berkeley_db=db
 AC_ARG_WITH(berkeley-db,
@@ -49,7 +54,7 @@ if test "$withval" = no; then
 fi
 ])
 
-AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb)
+AC_TEST_PACKAGE(krb4,krb.h,libkrb.a,-lkrb,/usr/athena)
 
 if test "$with_krb4"; then
 	AC_DEFINE(KRB4, 1)
@@ -57,11 +62,45 @@ if test "$with_krb4"; then
 	INCLUDE_krb4="$KRB4INCLUDE"
 	EXTRA_LIB45=lib45.a
 	AC_SUBST(EXTRA_LIB45)
+	AC_CACHE_CHECK(for four valued krb_put_int, ac_cv_func_krb_put_int_four,
+		[save_CFLAGS="$CFLAGS"
+		CFLAGS="$CFLAGS $INCLUDE_krb4"
+		AC_TRY_COMPILE([#include <krb.h>],[
+		char tmp[4];
+		krb_put_int(17, tmp, 4, sizeof(tmp));],
+		ac_cv_func_krb_put_int_four=yes,
+		ac_cv_func_krb_put_int_four=no)
+		CFLAGS="$save_CFLAGS"
+	])
+	if test "$ac_cv_func_krb_put_int_four" = yes; then
+		AC_DEFINE(HAVE_FOUR_VALUED_KRB_PUT_INT, 1)
+	fi
 fi
 AM_CONDITIONAL(KRB4, test "$with_krb4")dnl
 AC_SUBST(LIB_krb4)dnl
 AC_SUBST(INCLUDE_krb4)dnl
-AM_CONDITIONAL(AIX, test `uname` = AIX)dnl
+AM_CONDITIONAL(AIX, test "`uname`" = AIX)dnl
+AM_CONDITIONAL(AIX4, test "`uname`" = AIX -a "`uname -v`" = 4)
+aix_dynamic_afs=yes
+AM_CONDITIONAL(AIX_DYNAMIC_AFS, test "$aix_dynamic_afs" = yes)dnl
+
+if test "`uname`" = AIX ;then
+	if test "$aix_dynamic_afs" = yes; then
+		AC_FIND_FUNC_NO_LIBS(dlopen, dl)
+		if test "$ac_cv_funclib_dlopen" = yes; then
+			AIX_EXTRA_KAFS=
+		elif test "$ac_cv_funclib_dlopen" != no; then
+			AIX_EXTRA_KAFS="$ac_cv_funclib_dlopen"
+		else
+			AIX_EXTRA_KAFS=-lld
+		fi
+	else
+		AIX_EXTRA_KAFS=
+	fi
+fi
+AM_CONDITIONAL(HAVE_DLOPEN, test "$ac_cv_funclib_dlopen" != no)dnl
+AC_SUBST(AFS_EXTRA_LD)dnl
+AC_SUBST(AIX_EXTRA_KAFS)dnl
 
 AC_ARG_ENABLE(kaserver,
 [  --enable-kaserver	  if you want the KDC to try to emulate a kaserver],
@@ -85,7 +124,7 @@ fi
 
 otp=yes
 AC_ARG_ENABLE(otp,
-[  --disable-otp	  if you don't want OTP support],
+[  --disable-otp          if you don't want OTP support],
 [
 if test "$enableval" = "no"; then
 	otp=no
@@ -98,6 +137,18 @@ if test "$otp" = "yes"; then
 fi
 AC_SUBST(LIB_otp)
 AC_SUBST(OTP_dir)
+
+new_des3_code=no
+AC_ARG_ENABLE(new-des3-code,
+[  --enable-new-des3-code to make new key-deriving des3 the default],
+[
+if test "$enableval" = "yes"; then
+	new_des3_code=yes
+fi
+])
+if test "$new_des3_code" = "yes"; then
+	AC_DEFINE(NEW_DES3_CODE, 1)
+fi
 
 AC_PATH_PROG(NROFF, nroff)
 AC_PATH_PROG(GROFF, groff)
@@ -547,6 +598,17 @@ dnl Tests for editline
 dnl
 
 AC_FIND_FUNC_NO_LIBS(el_init, edit)
+if test "$ac_cv_func_el_init" = yes ; then
+	AC_CACHE_CHECK(for four argument el_init, ac_cv_func_el_init_four,[
+		AC_TRY_COMPILE([#include <stdio.h>
+			#include <histedit.h>],
+			[el_init("", NULL, NULL, NULL);],
+			ac_cv_func_el_init_four=yes,
+			ac_cv_func_el_init_four=no)])
+	if test "$ac_cv_func_el_init_four" = yes; then
+		AC_DEFINE(HAVE_FOUR_VALUED_EL_INIT, 1)
+	fi
+fi
 AC_FIND_FUNC_NO_LIBS(readline, edit readline)
 ac_foo=no
 if test "$with_readline"; then

@@ -111,6 +111,18 @@ db_fetch4(const char *name, const char *instance, const char *realm)
     return ent;
 }
 
+krb5_error_code
+get_des_key(hdb_entry *principal, Key **key)
+{
+    krb5_error_code ret;
+    ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD5, key);
+    if(ret)
+	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_MD4, key);
+    if(ret)
+	ret = hdb_enctype2key(context, principal, ETYPE_DES_CBC_CRC, key);
+    return ret;
+}
+
 #define RCHECK(X, L) if(X){make_err_reply(reply, KFAILURE, "Packet too short"); goto L;}
 
 krb5_error_code
@@ -172,7 +184,7 @@ do_version4(unsigned char *buf,
 	    goto out1;
 	}
 
-	ret = hdb_keytype2key(context, client, KEYTYPE_DES, &ckey);
+	ret = get_des_key(client, &ckey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -195,7 +207,7 @@ do_version4(unsigned char *buf,
 	}
 #endif
 	
-	ret = hdb_keytype2key(context, server, KEYTYPE_DES, &skey);
+	ret = get_des_key(server, &skey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -275,7 +287,7 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 
-	ret = hdb_keytype2key(context, tgt, KEYTYPE_DES, &tkey);
+	ret = get_des_key(tgt, &tkey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
@@ -283,7 +295,6 @@ do_version4(unsigned char *buf,
 			   "No DES key in database (krbtgt)");
 	    goto out2;
 	}
-	
 
 	RCHECK(krb5_ret_int8(sp, &ticket_len), out2);
 	RCHECK(krb5_ret_int8(sp, &req_len), out2);
@@ -347,12 +358,12 @@ do_version4(unsigned char *buf,
 	    goto out2;
 	}
 
-	ret = hdb_keytype2key(context, server, KEYTYPE_DES, &skey);
+	ret = get_des_key(server, &skey);
 	if(ret){
 	    kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	    /* XXX */
 	    make_err_reply(reply, KDC_NULL_KEY, 
-			   "Server has no DES key");
+			   "No DES key in database (server)");
 	    goto out2;
 	}
 
@@ -513,7 +524,9 @@ encode_v4_ticket(void *buf, size_t len, EncTicketPart *et,
 	sp->store(sp, tmp, sizeof(tmp));
     }
 
-    if(et->key.keytype != KEYTYPE_DES || 
+    if((et->key.keytype != ETYPE_DES_CBC_MD5 &&
+	et->key.keytype != ETYPE_DES_CBC_MD4 &&
+	et->key.keytype != ETYPE_DES_CBC_CRC) || 
        et->key.keyvalue.length != 8)
 	return -1;
     sp->store(sp, et->key.keyvalue.data, 8);

@@ -76,6 +76,40 @@ find_padata(KDC_REQ *req, int *start, int type)
     return NULL;
 }
 
+#if 0
+
+static krb5_error_code
+find_keys(hdb_entry *client, 
+	  hdb_entry *server, 
+	  Key **ckey, 
+	  krb5_enctype *cetype,
+	  Key **skey,
+	  krb5_enctype *setype,
+	  unsigned *etypes, 
+	  unsigned num_etypes)
+{
+    int i;
+    krb5_error_code ret;
+    for(i = 0; i < num_etypes; i++) {
+	if(client){
+	    ret = hdb_enctype2key(context, client, etypes[i], ckey);
+	    if(ret)
+		continue;
+	}
+	if(server){
+	    ret = hdb_enctype2key(context, server, etypes[i], skey);
+	    if(ret)
+		continue;
+	}
+	if(etype)
+	    *cetype = *setype = etypes[i];
+	return 0;
+    }
+    return KRB5KDC_ERR_ETYPE_NOSUPP;
+}
+
+#else
+
 static krb5_error_code
 find_etype(hdb_entry *princ, unsigned *etypes, unsigned len, 
 	   Key **key, int *index)
@@ -83,49 +117,21 @@ find_etype(hdb_entry *princ, unsigned *etypes, unsigned len,
     int i;
     krb5_error_code ret = -1;
     for(i = 0; i < len ; i++)
-	if((ret = hdb_etype2key(context, princ, etypes[i], key)) == 0)
+	if((ret = hdb_enctype2key(context, princ, etypes[i], key)) == 0)
 	    break;
     if(index) *index = i;
     return ret;
 }
 
 static krb5_error_code
-find_keys1(hdb_entry *client, hdb_entry *server, 
-	   Key **ckey, krb5_enctype *cetype,
-	   Key **skey, krb5_enctype *setype, 
-	   krb5_enctype *sess_ktype,
-	   unsigned *etypes, unsigned num_etypes)
-{
-    int i;
-    krb5_error_code ret;
-    for(i = 0; i < num_etypes; i++) {
-	if(client){
-	    ret = hdb_etype2key(context, client, etypes[i], ckey);
-	    if(ret)
-		continue;
-	}
-	if(server){
-	    ret = hdb_etype2key(context, server, etypes[i], skey);
-	    if(ret)
-		continue;
-	}
-	if(cetype)
-	    *cetype = etypes[i];
-	if(setype)
-	    *setype = etypes[i];
-	if(sess_ktype)
-	    *sess_ktype = etypes[i];
-	return 0;
-    }
-    return KRB5KDC_ERR_ETYPE_NOSUPP;
-}
-
-static krb5_error_code
-find_keys2(hdb_entry *client, hdb_entry *server, 
-	   Key **ckey, krb5_enctype *cetype,
-	   Key **skey, krb5_enctype *setype, 
-	   krb5_keytype *sess_ktype,
-	   unsigned *etypes, unsigned num_etypes)
+find_keys(hdb_entry *client,
+	  hdb_entry *server, 
+	  Key **ckey,
+	  krb5_enctype *cetype,
+	  Key **skey,
+	  krb5_enctype *setype, 
+	  unsigned *etypes,
+	  unsigned num_etypes)
 {
     int i;
     krb5_error_code ret;
@@ -140,43 +146,29 @@ find_keys2(hdb_entry *client, hdb_entry *server,
     }
 
     if(server){
-	/* find session key type */
+	/* find server key */
 	ret = find_etype(server, etypes, num_etypes, skey, NULL);
 	if(ret){
 	    kdc_log(0, "Server has no support for etypes");
 	    return KRB5KDC_ERR_ETYPE_NOSUPP;
 	}
-	*sess_ktype = (*skey)->key.keytype;
-    }
-    if(server){
-	/* find server key */
-	*skey = NULL;
-#define is_better(x, y) ((x) > (y))
-	for(i = 0; i < server->keys.len; i++){
-	    if(*skey == NULL || is_better(server->keys.val[i].key.keytype, 
-					  (*skey)->key.keytype))
-		*skey = &server->keys.val[i];
-	}
-	if(*skey == NULL){
-	    kdc_log(0, "No key found for server");
-	    return KRB5KDC_ERR_NULL_KEY;
-	}
-	ret = krb5_keytype_to_etype(context, (*skey)->key.keytype, setype);
-	if(ret)
-	    return ret;
+	*setype = (*skey)->key.keytype;
     }
     return 0;
 }
+#endif
 
 static krb5_error_code
 encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek, 
-	     krb5_enctype setype, int skvno, EncryptionKey *skey,
-	     krb5_enctype cetype, int ckvno, EncryptionKey *ckey,
+	     krb5_enctype etype, 
+	     int skvno, EncryptionKey *skey,
+	     int ckvno, EncryptionKey *ckey,
 	     krb5_data *reply)
 {
     unsigned char buf[8192]; /* XXX The data could be indefinite */
     size_t len;
     krb5_error_code ret;
+    krb5_crypto crypto;
 
     ret = encode_EncTicketPart(buf + sizeof(buf) - 1, sizeof(buf), et, &len);
     if(ret) {
@@ -185,13 +177,18 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
 	return ret;
     }
     
+
+    krb5_crypto_init(context, skey, etype, &crypto);
+
     krb5_encrypt_EncryptedData(context, 
+			       crypto,
+			       KRB5_KU_TICKET,
 			       buf + sizeof(buf) - len,
 			       len,
-			       setype,
 			       skvno,
-			       skey,
 			       &rep->ticket.enc_part);
+
+    krb5_crypto_destroy(context, crypto);
     
     if(rep->msg_type == krb_as_rep && !encode_as_rep_as_tgs_rep)
 	ret = encode_EncASRepPart(buf + sizeof(buf) - 1, sizeof(buf), 
@@ -204,18 +201,27 @@ encode_reply(KDC_REP *rep, EncTicketPart *et, EncKDCRepPart *ek,
 		krb5_get_err_text(context, ret));
 	return ret;
     }
-    krb5_encrypt_EncryptedData(context,
-			       buf + sizeof(buf) - len,
-			       len,
-			       cetype,
-			       ckvno,
-			       ckey,
-			       &rep->enc_part);
-	
-    if(rep->msg_type == krb_as_rep)
+    krb5_crypto_init(context, ckey, 0, &crypto);
+    if(rep->msg_type == krb_as_rep) {
+	krb5_encrypt_EncryptedData(context,
+				   crypto,
+				   KRB5_KU_AS_REP_ENC_PART,
+				   buf + sizeof(buf) - len,
+				   len,
+				   ckvno,
+				   &rep->enc_part);
 	ret = encode_AS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep, &len);
-    else
+    } else {
+	krb5_encrypt_EncryptedData(context,
+				   crypto,
+				   KRB5_KU_TGS_REP_ENC_PART_SESSION,
+				   buf + sizeof(buf) - len,
+				   len,
+				   ckvno,
+				   &rep->enc_part);
 	ret = encode_TGS_REP(buf + sizeof(buf) - 1, sizeof(buf), rep, &len);
+    }
+    krb5_crypto_destroy(context, crypto);
     if(ret) {
 	kdc_log(0, "Failed to encode KDC-REP: %s", 
 		krb5_get_err_text(context, ret));
@@ -243,51 +249,47 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client)
     krb5_error_code ret = 0;
     int i;
     ETYPE_INFO pa;
-    ETYPE_INFO_ENTRY *tmp;
     unsigned char *buf;
     size_t len;
     
-    pa.val = NULL;
-    pa.len = 0;
-    for(i = 0; i < client->keys.len; i++){
-	krb5_enctype *etypes, *e;
-	krb5_enctype ex[2];
 
-	ex[0] = client->keys.val[i].key.keytype;
-	ex[1] = 0;
-	if(context->ktype_is_etype)
-	    ret = krb5_keytype_to_etypes(context, 
-					 client->keys.val[i].key.keytype,
-					 &etypes);
-	else
-	    etypes = ex;
-	for(e = etypes; *e; e++){
-	    tmp = realloc(pa.val, (pa.len + 1) * sizeof(*pa.val));
-	    if(tmp == NULL) {
-		free_ETYPE_INFO(&pa);
-		return ret;
-	    }
-	    pa.val = tmp;
-	    pa.val[pa.len].etype = *e;
-	    ALLOC(pa.val[pa.len].salttype);
-	    if(client->keys.val[i].salt){
-		*pa.val[pa.len].salttype = client->keys.val[i].salt->type;
-		ALLOC(pa.val[pa.len].salt);
-		ret = copy_octet_string(&client->keys.val[i].salt->salt,
-					pa.val[pa.len].salt);
-		if(tmp == NULL) {
-		    free_ETYPE_INFO(&pa);
-		    return ret;
-		}
-	    }
+    pa.len = client->keys.len;
+    pa.val = malloc(pa.len * sizeof(*pa.val));
+    if(pa.val == NULL)
+	return ENOMEM;
+    for(i = 0; i < client->keys.len; i++) {
+	pa.val[i].etype = client->keys.val[i].key.keytype;
+	ALLOC(pa.val[i].salttype);
+	if(client->keys.val[i].salt){
+#if 0
+	    if(client->keys.val[i].salt->type == hdb_pw_salt)
+		*pa.val[i].salttype = 0; /* or 1? or NULL? */
+	    else if(client->keys.val[i].salt->type == hdb_afs3_salt)
+		*pa.val[i].salttype = 2;
 	    else {
-		*pa.val[pa.len].salttype = pa_pw_salt;
-		pa.val[pa.len].salt = NULL;
+		free_ETYPE_INFO(&pa);
+		kdc_log(0, "unknown salt-type: %d", 
+			client->keys.val[i].salt->type);
+		return KRB5KRB_ERR_GENERIC;
 	    }
-	    pa.len++;
+	    /* according to `the specs', we can't send a salt if
+	       we have AFS3 salted key, but that requires that you
+	       *know* what cell you are using (e.g by assuming
+	       that the cell is the same as the realm in lower
+	       case) */
+#else
+	    *pa.val[i].salttype = client->keys.val[i].salt->type;
+#endif
+	    krb5_copy_data(context, &client->keys.val[i].salt->salt,
+			   &pa.val[i].salt);
+	} else {
+#if 0
+	    *pa.val[i].salttype = 1; /* or 0 with salt? */
+#else
+	    *pa.val[i].salttype = pa_pw_salt;
+#endif
+	    pa.val[i].salt = NULL;
 	}
-	if(context->ktype_is_etype)
-	    free(etypes);
     }
     len = length_ETYPE_INFO(&pa);
     buf = malloc(len);
@@ -313,29 +315,29 @@ check_flags(hdb_entry *client, const char *client_name,
 	    hdb_entry *server, const char *server_name,
 	    krb5_boolean is_as_req)
 {
-    /* check client */
-    if (client != NULL) {
+    if(client != NULL) {
+	/* check client */
 	if (client->flags.invalid) {
 	    kdc_log(0, "Client (%s) has invalid bit set", client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
-
+	
 	if(!client->flags.client){
 	    kdc_log(0, "Principal may not act as client -- %s", 
 		    client_name);
 	    return KRB5KDC_ERR_POLICY;
 	}
-
+	
 	if (client->valid_start && *client->valid_start > kdc_time) {
 	    kdc_log(0, "Client not yet valid -- %s", client_name);
 	    return KRB5KDC_ERR_CLIENT_NOTYET;
 	}
-
+	
 	if (client->valid_end && *client->valid_end < kdc_time) {
 	    kdc_log(0, "Client expired -- %s", client_name);
 	    return KRB5KDC_ERR_NAME_EXP;
 	}
-
+	
 	if (client->pw_end && *client->pw_end < kdc_time
 	    && !server->flags.change_pw) {
 	    kdc_log(0, "Client's key has expired -- %s", client_name);
@@ -410,17 +412,13 @@ as_rep(KDC_REQ *req,
     KDCOptions f = b->kdc_options;
     hdb_entry *client = NULL, *server = NULL;
     krb5_enctype cetype, setype;
-#ifndef KTYPE_IS_ETYPE
-    krb5_keytype sess_ktype;
-#else
-    krb5_enctype sess_ktype;
-#endif
     EncTicketPart et;
     EncKDCRepPart ek;
     krb5_principal client_princ, server_princ;
     char *client_name, *server_name;
     krb5_error_code ret = 0;
     const char *e_text = NULL;
+    krb5_crypto crypto;
 
     Key *ckey, *skey;
 
@@ -495,7 +493,7 @@ as_rep(KDC_REQ *req,
 		goto out;
 	    }
 	    
-	    ret = hdb_etype2key(context, client, enc_data.etype, &pa_key);
+	    ret = hdb_enctype2key(context, client, enc_data.etype, &pa_key);
 	    if(ret){
 		e_text = "No key matches pa-data";
 		ret = KRB5KDC_ERR_PREAUTH_FAILED;
@@ -505,10 +503,13 @@ as_rep(KDC_REQ *req,
 		continue;
 	    }
 	    
+	    krb5_crypto_init(context, &pa_key->key, 0, &crypto);
 	    ret = krb5_decrypt_EncryptedData (context,
+					      crypto,
+					      KRB5_KU_PA_ENC_TIMESTAMP,
 					      &enc_data,
-					      &pa_key->key,
 					      &ts_data);
+	    krb5_crypto_destroy(context, crypto);
 	    free_EncryptedData(&enc_data);
 	    if(ret){
 		e_text = "Failed to decrypt PA-DATA";
@@ -567,7 +568,7 @@ as_rep(KDC_REQ *req,
 	pa->padata_value.length	= 0;
 	pa->padata_value.data	= NULL;
 
-	ret = get_pa_etype_info(&method_data, client);
+	ret = get_pa_etype_info(&method_data, client); /* XXX check ret */
 	
 	len = length_METHOD_DATA(&method_data);
 	buf = malloc(len);
@@ -593,35 +594,22 @@ as_rep(KDC_REQ *req,
 	ret = 0;
 	goto out2;
     }
-
-    if(context->ktype_is_etype)
-	ret = find_keys1(client, server, &ckey, &cetype, &skey, &setype, 
-			 &sess_ktype, b->etype.val, b->etype.len);
-    else
-	ret = find_keys2(client, server, &ckey, &cetype, &skey, &setype, 
-			 &sess_ktype, b->etype.val, b->etype.len);
+    
+    ret = find_keys(client, server, &ckey, &cetype, &skey, &setype,
+		    b->etype.val, b->etype.len);
     if(ret) {
 	kdc_log(0, "Server/client has no support for etypes");
 	goto out;
     }
 	
     {
-	char *cet, *set = NULL, *skt = NULL;
-	krb5_etype_to_string(context, cetype, &cet);
-	if(context->ktype_is_etype){
-		kdc_log(5, "Using %s", cet);
-	}else{
-	    if(cetype != setype)
-		krb5_etype_to_string(context, setype, &set);
-	    krb5_keytype_to_string(context, sess_ktype, &skt);
-	    if(set)
-		kdc_log(5, "Using %s/%s/%s", cet, set, skt);
-	    else
-		kdc_log(5, "Using %s/%s", cet, skt);
-	}
-	free(skt);
-	free(set);
+	char *cet;
+	char *set;
+	krb5_enctype_to_string(context, cetype, &cet);
+	krb5_enctype_to_string(context, setype, &set);
+	kdc_log(5, "Using %s/%s", cet, set);
 	free(cet);
+	free(set);
     }
     
 
@@ -678,13 +666,7 @@ as_rep(KDC_REQ *req,
 	goto out;
     }
 
-    if(context->ktype_is_etype) {
-	krb5_keytype kt;
-	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
-	krb5_generate_random_keyblock(context, kt, &et.key);
-	et.key.keytype = sess_ktype;
-    }else
-	krb5_generate_random_keyblock(context, sess_ktype, &et.key);
+    krb5_generate_random_keyblock(context, setype, &et.key);
     copy_PrincipalName(b->cname, &et.cname);
     copy_Realm(&b->realm, &et.crealm);
     
@@ -774,12 +756,12 @@ as_rep(KDC_REQ *req,
     ek.nonce = b->nonce;
     if (client->valid_end || client->pw_end) {
 	ALLOC(ek.key_expiration);
-	if (client->valid_end)
+	if (client->valid_end) {
 	    if (client->pw_end)
 		*ek.key_expiration = min(*client->valid_end, *client->pw_end);
 	    else
 		*ek.key_expiration = *client->valid_end;
-	else
+	} else
 	    *ek.key_expiration = *client->pw_end;
     } else
 	ek.key_expiration = NULL;
@@ -803,7 +785,7 @@ as_rep(KDC_REQ *req,
 
     set_salt_padata (&rep.padata, ckey->salt);
     ret = encode_reply(&rep, &et, &ek, setype, server->kvno, &skey->key,
-		       cetype, client->kvno, &ckey->key, reply);
+		       client->kvno, &ckey->key, reply);
     free_EncTicketPart(&et);
     free_EncKDCRepPart(&ek);
     free_AS_REP(&rep);
@@ -1017,21 +999,16 @@ tgs_make_reply(KDC_REQ_BODY *b,
     EncTicketPart et;
     KDCOptions f = b->kdc_options;
     krb5_error_code ret;
-    krb5_enctype setype;
+    krb5_enctype etype;
     Key *skey;
     EncryptionKey *ekey;
-#ifndef KTYPE_IS_ETYPE
-    krb5_keytype sess_ktype;
-#else
-    krb5_enctype sess_ktype;
-#endif
     
     if(adtkt) {
 	int i;
 	krb5_keytype kt;
 	ekey = &adtkt->key;
 	for(i = 0; i < b->etype.len; i++){
-	    ret = krb5_etype_to_keytype(context, b->etype.val[i], &kt);
+	    ret = krb5_enctype_to_keytype(context, b->etype.val[i], &kt);
 	    if(ret)
 		continue;
 	    if(adtkt->key.keytype == kt)
@@ -1039,18 +1016,10 @@ tgs_make_reply(KDC_REQ_BODY *b,
 	}
 	if(i == b->etype.len)
 	    return KRB5KDC_ERR_ETYPE_NOSUPP;
-	setype = b->etype.val[i];
-	if(context->ktype_is_etype)
-	    sess_ktype = b->etype.val[i];
-	else
-	    sess_ktype = kt;
+	etype = b->etype.val[i];
     }else{
-	if(context->ktype_is_etype)
-	    ret = find_keys1(NULL, server, NULL, NULL, &skey, &setype, 
-			     &sess_ktype, b->etype.val, b->etype.len);
-	else
-	    ret = find_keys2(NULL, server, NULL, NULL, &skey, &setype, 
-			     &sess_ktype, b->etype.val, b->etype.len);
+	ret = find_keys(NULL, server, NULL, NULL, &skey, &etype, 
+			b->etype.val, b->etype.len);
 	if(ret) {
 	    kdc_log(0, "Server has no support for etypes");
 	    return ret;
@@ -1146,13 +1115,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
     /* XXX Check enc-authorization-data */
     et.authorization_data = auth_data;
 
-    if(context->ktype_is_etype) {
-	krb5_keytype kt;
-	ret = krb5_etype_to_keytype(context, sess_ktype, &kt);
-	krb5_generate_random_keyblock(context, kt, &et.key);
-	et.key.keytype = sess_ktype;
-    }else
-	krb5_generate_random_keyblock(context, sess_ktype, &et.key);
+    krb5_generate_random_keyblock(context, etype, &et.key);
     et.crealm = tgt->crealm;
     et.cname = tgt->cname;
 	    
@@ -1179,8 +1142,8 @@ tgs_make_reply(KDC_REQ_BODY *b,
        CAST session key. Should the DES3 etype be added to the
        etype list, even if we don't want a session key with
        DES3? */
-    ret = encode_reply(&rep, &et, &ek, setype, adtkt ? 0 : server->kvno, ekey,
-		       cetype, 0, &tgt->key, reply);
+    ret = encode_reply(&rep, &et, &ek, etype, adtkt ? 0 : server->kvno, ekey,
+		       0, &tgt->key, reply);
 out:
     free_TGS_REP(&rep);
     free_TransitedEncoding(&et.transited);
@@ -1196,12 +1159,14 @@ out:
 
 static krb5_error_code
 tgs_check_authenticator(krb5_auth_context ac,
-			KDC_REQ_BODY *b, krb5_keyblock *key)
+			KDC_REQ_BODY *b, 
+			krb5_keyblock *key)
 {
     krb5_authenticator auth;
     size_t len;
     unsigned char buf[8192];
     krb5_error_code ret;
+    krb5_crypto crypto;
     
     krb5_auth_getauthenticator(context, ac, &auth);
     if(auth->cksum == NULL){
@@ -1215,10 +1180,10 @@ tgs_check_authenticator(krb5_auth_context ac,
      */
     if (
 #if 0
-!krb5_checksum_is_keyed(auth->cksum->cksumtype)
+!krb5_checksum_is_keyed(context, auth->cksum->cksumtype)
 	||
 #endif
- !krb5_checksum_is_collision_proof(auth->cksum->cksumtype)) {
+ !krb5_checksum_is_collision_proof(context, auth->cksum->cksumtype)) {
 	kdc_log(0, "Bad checksum type in authenticator: %d", 
 		auth->cksum->cksumtype);
 	ret =  KRB5KRB_AP_ERR_INAPP_CKSUM;
@@ -1233,9 +1198,14 @@ tgs_check_authenticator(krb5_auth_context ac,
 		krb5_get_err_text(context, ret));
 	goto out;
     }
-    ret = krb5_verify_checksum(context, buf + sizeof(buf) - len, len,
-			       key,
+    krb5_crypto_init(context, key, 0, &crypto);
+    ret = krb5_verify_checksum(context,
+			       crypto,
+			       KRB5_KU_TGS_REQ_AUTH_CKSUM,
+			       buf + sizeof(buf) - len, 
+			       len,
 			       auth->cksum);
+    krb5_crypto_destroy(context, crypto);
     if(ret){
 	kdc_log(0, "Failed to verify checksum: %s", 
 		krb5_get_err_text(context, ret));
@@ -1282,6 +1252,7 @@ tgs_rep2(KDC_REQ_BODY *b,
     krb5_ticket *ticket = NULL;
     krb5_flags ap_req_options;
     const char *e_text = NULL;
+    krb5_crypto crypto;
 
     hdb_entry *krbtgt = NULL;
     EncTicketPart *tgt;
@@ -1335,10 +1306,10 @@ tgs_rep2(KDC_REQ_BODY *b,
 	goto out2;
     }
 
-    ret = hdb_etype2key(context, krbtgt, ap_req.ticket.enc_part.etype, &tkey);
+    ret = hdb_enctype2key(context, krbtgt, ap_req.ticket.enc_part.etype, &tkey);
     if(ret){
 	char *str;
-	krb5_etype_to_string(context, ap_req.ticket.enc_part.etype, &str);
+	krb5_enctype_to_string(context, ap_req.ticket.enc_part.etype, &str);
 	kdc_log(0, "No server key found for %s", str);
 	free(str);
 	ret = KRB5KRB_AP_ERR_BADKEYVER;
@@ -1390,10 +1361,13 @@ tgs_rep2(KDC_REQ_BODY *b,
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
 	    goto out2;
 	}
+	krb5_crypto_init(context, subkey, 0, &crypto);
 	ret = krb5_decrypt_EncryptedData (context,
+					  crypto,
+					  KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY,
 					  b->enc_authorization_data,
-					  subkey,
 					  &ad);
+	krb5_crypto_destroy(context, crypto);
 	if(ret){
 	    kdc_log(0, "Failed to decrypt enc-authorization-data");
 	    ret = KRB5KRB_AP_ERR_BAD_INTEGRITY; /* ? */
@@ -1455,7 +1429,7 @@ tgs_rep2(KDC_REQ_BODY *b,
 		ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
 		goto out;
 	    }
-	    ret = hdb_etype2key(context, uu, t->enc_part.etype, &tkey);
+	    ret = hdb_enctype2key(context, uu, t->enc_part.etype, &tkey);
 	    if(ret){
 		ret = KRB5KDC_ERR_ETYPE_NOSUPP; /* XXX */
 		goto out;

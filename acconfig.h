@@ -17,6 +17,14 @@
 #undef HAVE_U_INT32_T
 #undef HAVE_U_INT64_T
 
+#undef HAVE_FOUR_VALUED_KRB_PUT_INT
+
+#ifdef HAVE_FOUR_VALUED_KRB_PUT_INT
+#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L), (S))
+#else
+#define KRB_PUT_INT(F, T, L, S) krb_put_int((F), (T), (L))
+#endif
+
 /* Define this to the type ssize_t should be */
 #undef ssize_t
 
@@ -178,6 +186,9 @@
 /* Define if you have a readline compatible library */
 #undef HAVE_READLINE
 
+/* define if el_init takes four arguments */
+#undef HAVE_FOUR_VALUED_EL_INIT
+
 /* Define if you have hesiod */
 #undef HESIOD
 
@@ -228,6 +239,12 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 #if defined(ENCRYPTION) && !defined(AUTHENTICATION)
 #define AUTHENTICATION 1
 #endif
+
+/* Define if you have hesiod */
+#undef HESIOD
+
+/* define if you want key-deriving des3 code */
+#undef NEW_DES3_CODE
 
 /* Set this if you want des encryption */
 #undef DES_ENCRYPTION

@@ -104,17 +104,26 @@ print_cred_verbose(krb5_context context, krb5_creds *cred)
 	size_t len;
 	char *s;
 	decode_Ticket(cred->ticket.data, cred->ticket.length, &t, &len);
-	krb5_etype_to_string(context, t.enc_part.etype, &s);
+	krb5_enctype_to_string(context, t.enc_part.etype, &s);
 	printf("Ticket etype: %s", s);
 	free(s);
 	if(t.enc_part.kvno)
 	    printf(", kvno %d", *t.enc_part.kvno);
 	printf("\n");
+	if(cred->session.keytype != t.enc_part.etype) {
+	    ret = krb5_keytype_to_string(context, cred->session.keytype, &str);
+	    if(ret == KRB5_PROG_KEYTYPE_NOSUPP)
+		ret = krb5_enctype_to_string(context, cred->session.keytype, 
+					     &str);
+	    if(ret)
+		krb5_warn(context, ret, "session keytype");
+	    else {
+		printf("Session key: %s\n", str);
+		free(str);
+	    }
+	}
 	free_Ticket(&t);
     }
-    krb5_keytype_to_string(context, cred->session.keytype, &str);
-    printf("Session key: %s\n", str);
-    free(str);
     printf("Auth time:  %s\n", printable_time_long(cred->times.authtime));
     if(cred->times.authtime != cred->times.starttime)
 	printf("Start time: %s\n", printable_time_long(cred->times.starttime));

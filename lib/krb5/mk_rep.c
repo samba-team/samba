@@ -48,10 +48,10 @@ krb5_mk_rep(krb5_context context,
   krb5_error_code ret;
   AP_REP ap;
   EncAPRepPart body;
-  krb5_enctype etype;
   u_char *buf = NULL;
   size_t buf_size;
   size_t len;
+  krb5_crypto crypto;
 
   ap.pvno = 5;
   ap.msg_type = krb_ap_rep;
@@ -72,86 +72,50 @@ krb5_mk_rep(krb5_context context,
   } else
     body.seq_number = NULL;
 
-  krb5_keytype_to_etype(context, (*auth_context)->keyblock->keytype, &etype);
-  ap.enc_part.etype = etype;
+  ap.enc_part.etype = (*auth_context)->keyblock->keytype;
   ap.enc_part.kvno  = NULL;
 
-  buf_size = 1024;
+  buf_size = length_EncAPRepPart(&body);
   buf = malloc (buf_size);
   if (buf == NULL) {
       free_EncAPRepPart (&body);
       return ENOMEM;
   }
 
-  do {
-      ret = krb5_encode_EncAPRepPart (context, buf + buf_size - 1,
-				      buf_size,
-				      &body, &len);
-      if (ret) {
-	  if (ret == ASN1_OVERFLOW) {
-	      u_char *tmp;
+  ret = krb5_encode_EncAPRepPart (context, 
+				  buf + buf_size - 1,
+				  buf_size,
+				  &body, 
+				  &len);
 
-	      buf_size *= 2;
-	      tmp = realloc (buf, buf_size);
-	      if (tmp == NULL) {
-		  free(buf);
-		  free_EncAPRepPart (&body);
-		  return ENOMEM;
-	      }
-	      buf = tmp;
-	  } else {
-	      free_EncAPRepPart (&body);
-	      free(buf);
-	      return ret;
-	  }
-      }
-  } while(ret == ASN1_OVERFLOW);
-
+  free_EncAPRepPart (&body);
+  krb5_crypto_init(context, (*auth_context)->keyblock, 
+		   0 /* ap.enc_part.etype */, &crypto);
   ret = krb5_encrypt (context,
-		      buf + buf_size - len, len,
-		      ap.enc_part.etype,
-		      (*auth_context)->keyblock,
+		      crypto,
+		      KRB5_KU_AP_REQ_ENC_PART,
+		      buf + buf_size - len, 
+		      len,
 		      &ap.enc_part.cipher);
+  krb5_crypto_destroy(context, crypto);
   if (ret) {
       free(buf);
-      free_EncAPRepPart (&body);
       return ret;
   }
 
-  do {
-      ret = encode_AP_REP (buf + buf_size - 1, buf_size, &ap, &len);
-      if (ret) {
-	  if (ret == ASN1_OVERFLOW) {
-	      u_char *tmp;
-
-	      buf_size *= 2;
-	      tmp = realloc (buf, buf_size);
-	      if (tmp == NULL) {
-		  free_AP_REP (&ap);
-		  free_EncAPRepPart (&body);
-		  free (buf);
-		  return ENOMEM;
-	      }
-	      buf = tmp;
-	  } else {
-	      free_AP_REP (&ap);
-	      free_EncAPRepPart (&body);
-	      free(buf);
-	      return ret;
-	  }
-      }
-  } while (ret == ASN1_OVERFLOW);
-
-  free_AP_REP (&ap);
-  free_EncAPRepPart (&body);
-
-  outbuf->length = len;
-  outbuf->data = malloc(len);
-  if (outbuf->data == NULL) {
-      free (buf);
+  buf_size = length_AP_REP(&ap);
+  buf = realloc(buf, buf_size);
+  if(buf == NULL) {
+      free_AP_REP (&ap);
       return ENOMEM;
   }
-  memcpy(outbuf->data, buf + buf_size - len, len);
-  free (buf);
+  ret = encode_AP_REP (buf + buf_size - 1, buf_size, &ap, &len);
+  
+  free_AP_REP (&ap);
+
+  if(len != buf_size)
+      abort();
+  outbuf->data = buf;
+  outbuf->length = len;
   return 0;
 }

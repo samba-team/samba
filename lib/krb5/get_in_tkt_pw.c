@@ -42,28 +42,25 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_password_key_proc (krb5_context context,
-			krb5_keytype type,
-			krb5_data *salt,
+			krb5_enctype type,
+			krb5_salt salt,
 			krb5_const_pointer keyseed,
 			krb5_keyblock **key)
 {
-     krb5_error_code ret;
-     char *password = (char *)keyseed;
-     char buf[BUFSIZ];
+    krb5_error_code ret;
+    char *password = (char *)keyseed;
+    char buf[BUFSIZ];
      
-     *key = malloc (sizeof (**key));
-     if (*key == NULL)
-	  return ENOMEM;
-     (*key)->keytype = type;
-     (*key)->keyvalue.length = 0;
-     (*key)->keyvalue.data   = NULL;
-     if (password == NULL) {
-	  des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
-	  password = buf;
-     }
-     ret = krb5_string_to_key (password, salt, type, *key);
-     memset (buf, 0, sizeof(buf));
-     return ret;
+    *key = malloc (sizeof (**key));
+    if (*key == NULL)
+	return ENOMEM;
+    if (password == NULL) {
+	des_read_pw_string (buf, sizeof(buf), "Password: ", 0);
+	password = buf;
+    }
+    ret = krb5_string_to_key_salt (context, type, password, salt, *key);
+    memset (buf, 0, sizeof(buf));
+    return ret;
 }
 
 krb5_error_code

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -93,7 +93,7 @@ krb5_cc_resolve(krb5_context context,
 	if(ret) return ret;
     }
 
-    for(i = 0; context->cc_ops[i].prefix && i < context->num_ops; i++)
+    for(i = 0; i < context->num_ops && context->cc_ops[i].prefix; i++)
 	if(strncmp(context->cc_ops[i].prefix, residual, 
 		   strlen(context->cc_ops[i].prefix)) == 0){
 	    krb5_ccache p;
@@ -187,9 +187,6 @@ krb5_cc_close(krb5_context context,
 {
     krb5_error_code ret;
     ret = id->ops->close(context, id);
-#if 0 /* XXX */
-    free(id->residual);
-#endif
     free(id);
     return ret;
 }

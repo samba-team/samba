@@ -50,6 +50,7 @@ krb5_rd_rep(krb5_context context,
   AP_REP ap_rep;
   size_t len;
   krb5_data data;
+  krb5_crypto crypto;
 
   krb5_data_zero (&data);
   ret = 0;
@@ -66,10 +67,13 @@ krb5_rd_rep(krb5_context context,
     goto out;
   }
 
+  krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
   ret = krb5_decrypt_EncryptedData (context, 
+				    crypto,	
+				    KRB5_KU_AP_REQ_ENC_PART,
 				    &ap_rep.enc_part,
-				    auth_context->keyblock,
 				    &data);
+  krb5_crypto_destroy(context, crypto);
   if (ret)
       goto out;
 

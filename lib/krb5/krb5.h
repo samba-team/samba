@@ -71,6 +71,9 @@ typedef const void *krb5_const_pointer;
 
 typedef octet_string krb5_data;
 
+struct krb5_crypto_data;
+typedef struct krb5_crypto_data *krb5_crypto;
+
 typedef enum krb5_cksumtype { 
   CKSUMTYPE_NONE		= 0,
   CKSUMTYPE_CRC32		= 1,
@@ -93,11 +96,20 @@ typedef enum krb5_enctype {
   ETYPE_DES_CBC_MD4		= 2,
   ETYPE_DES_CBC_MD5		= 3,
   ETYPE_DES3_CBC_MD5		= 5,
-  ETYPE_DES3_CBC_SHA1		= 7,
+#if NEW_DES3_CODE
+  ETYPE_NEW_DES3_CBC_SHA1	= 7,
+  ETYPE_DES3_CBC_SHA1		= ETYPE_NEW_DES3_CBC_SHA1,
+#else
+  ETYPE_OLD_DES3_CBC_SHA1	= 7,
+  ETYPE_NEW_DES3_CBC_SHA1	= 99,
+  ETYPE_DES3_CBC_SHA1		= ETYPE_OLD_DES3_CBC_SHA1,
+#endif
   ETYPE_SIGN_DSA_GENERATE	= 8,
   ETYPE_ENCRYPT_RSA_PRIV	= 9,
   ETYPE_ENCRYPT_RSA_PUB		= 10,
-  ETYPE_ENCTYPE_PK_CROSS	= 48
+  ETYPE_ENCTYPE_PK_CROSS	= 48,
+  ETYPE_DES_CBC_NONE		= 0x1000,
+  ETYPE_DES3_CBC_NONE		= 0x1001
 } krb5_enctype;
 
 typedef enum krb5_preauthtype {
@@ -108,10 +120,72 @@ typedef enum krb5_preauthtype {
   KRB5_PADATA_ENC_SECURID
 } krb5_preauthtype;
 
+typedef enum krb5_key_usage {
+    KRB5_KU_PA_ENC_TIMESTAMP = 1,
+    /* AS-REQ PA-ENC-TIMESTAMP padata timestamp, encrypted with the
+       client key (section 5.4.1) */
+    KRB5_KU_TICKET = 2,
+    /* AS-REP Ticket and TGS-REP Ticket (includes tgs session key or
+       application session key), encrypted with the service key
+       (section 5.4.2) */
+    KRB5_KU_AS_REP_ENC_PART = 3,
+    /* AS-REP encrypted part (includes tgs session key or application
+       session key), encrypted with the client key (section 5.4.2) */
+    KRB5_KU_TGS_REQ_AUTH_DAT_SESSION = 4,
+    /* TGS-REQ KDC-REQ-BODY AuthorizationData, encrypted with the tgs
+       session key (section 5.4.1) */
+    KRB5_KU_TGS_REQ_AUTH_DAT_SUBKEY = 5,
+    /* TGS-REQ KDC-REQ-BODY AuthorizationData, encrypted with the tgs
+          authenticator subkey (section 5.4.1) */
+    KRB5_KU_TGS_REQ_AUTH_CKSUM = 6,
+    /* TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator cksum, keyed
+       with the tgs session key (sections 5.3.2, 5.4.1) */
+    KRB5_KU_TGS_REQ_AUTH = 7,
+    /* TGS-REQ PA-TGS-REQ padata AP-REQ Authenticator (includes tgs
+       authenticator subkey), encrypted with the tgs session key
+       (section 5.3.2) */
+    KRB5_KU_TGS_REP_ENC_PART_SESSION = 8,
+    /* TGS-REP encrypted part (includes application session key),
+       encrypted with the tgs session key (section 5.4.2) */
+    KRB5_KU_TGS_REP_ENC_PART_SUB_KEY = 9,
+    /* TGS-REP encrypted part (includes application session key),
+       encrypted with the tgs authenticator subkey (section 5.4.2) */
+    KRB5_KU_AP_REQ_AUTH_CKSUM = 10,
+    /* AP-REQ Authenticator cksum, keyed with the application session
+       key (section 5.3.2) */
+    KRB5_KU_AP_REQ_AUTH = 11,
+    /* AP-REQ Authenticator (includes application authenticator
+       subkey), encrypted with the application session key (section
+       5.3.2) */
+    KRB5_KU_AP_REQ_ENC_PART = 12,
+    /* AP-REP encrypted part (includes application session subkey),
+       encrypted with the application session key (section 5.5.2) */
+    KRB5_KU_KRB_PRIV = 13,
+    /* KRB-PRIV encrypted part, encrypted with a key chosen by the
+       application (section 5.7.1) */
+    KRB5_KU_KRB_CRED = 14,
+    /* KRB-CRED encrypted part, encrypted with a key chosen by the
+       application (section 5.8.1) */
+    KRB5_KU_KRB_SAFE_CKSUM = 15,
+    /* KRB-SAFE cksum, keyed with a key chosen by the application
+       (section 5.6.1) */
+    KRB5_KU_OTHER_ENCRYPTED = 16,
+    /* Data which is defined in some specification outside of
+       Kerberos to be encrypted using an RFC1510 encryption type. */
+    KRB5_KU_OTHER_CKSUM = 17
+    /* Data which is defined in some specification outside of
+       Kerberos to be checksummed using an RFC1510 checksum type. */
+} krb5_key_usage;
+
 typedef enum krb5_salttype {
-    KRB5_PA_PW_SALT = pa_pw_salt,
-    KRB5_PA_AFS3_SALT = pa_afs3_salt
+    KRB5_PW_SALT = pa_pw_salt,
+    KRB5_AFS3_SALT = pa_afs3_salt
 }krb5_salttype;
+
+typedef struct krb5_salt {
+    krb5_salttype salttype;
+    krb5_data saltvalue;
+} krb5_salt;
 
 typedef ETYPE_INFO krb5_preauthinfo;
 
@@ -139,14 +213,10 @@ typedef HostAddress krb5_address;
 
 typedef HostAddresses krb5_addresses;
 
-#define KEYTYPE_USE_AFS3_SALT 0x10000 /* XXX */
-#define KEYTYPE_KEYTYPE_MASK 0xffff /* XXX */
-
 typedef enum krb5_keytype { 
     KEYTYPE_NULL = 0,
     KEYTYPE_DES = 1,
-    KEYTYPE_DES3 = 7,
-    KEYTYPE_DES_AFS3 = KEYTYPE_DES | KEYTYPE_USE_AFS3_SALT
+    KEYTYPE_DES3 = 7
 } krb5_keytype;
 
 typedef EncryptionKey krb5_keyblock;
@@ -158,7 +228,6 @@ struct krb5_cc_ops;
 #define KRB5_DEFAULT_CCROOT "FILE:/tmp/krb5cc_"
 
 typedef struct krb5_ccache_data {
-    char *residual;
     struct krb5_cc_ops *ops;
     krb5_data data;
 }krb5_ccache_data;
@@ -289,7 +358,6 @@ typedef struct krb5_context_data {
     struct krb5_log_facility *warn_dest;
     krb5_cc_ops *cc_ops;
     int num_ops;
-    krb5_boolean ktype_is_etype;
     const char *http_proxy;
     const char *time_fmt;
     krb5_boolean log_utc;
@@ -351,7 +419,7 @@ struct krb5_keytab_data {
     krb5_error_code (*get_name)(krb5_context, krb5_keytab, char*, size_t);
     krb5_error_code (*close)(krb5_context, krb5_keytab);
     krb5_error_code (*get)(krb5_context, krb5_keytab, krb5_const_principal, 
-			   krb5_kvno, krb5_keytype, krb5_keytab_entry*);
+			   krb5_kvno, krb5_enctype, krb5_keytab_entry*);
     krb5_error_code (*start_seq_get)(krb5_context, krb5_keytab, krb5_kt_cursor*);
     krb5_error_code (*next_entry)(krb5_context, krb5_keytab, 
 				  krb5_keytab_entry*, krb5_kt_cursor*);
@@ -378,9 +446,7 @@ enum {
 };
 
 typedef struct krb5_auth_context_data {
-    int32_t flags;
-    krb5_cksumtype cksumtype;
-    krb5_enctype enctype;
+    unsigned int flags;
 
     krb5_address *local_address;
     krb5_address *remote_address;
@@ -443,12 +509,13 @@ typedef int (*krb5_prompter_fct)(krb5_context context,
 				 krb5_prompt prompts[]);
 
 typedef krb5_error_code (*krb5_key_proc)(krb5_context context,
-					 krb5_keytype type,
-					 krb5_data *salt,
+					 krb5_enctype type,
+					 krb5_salt salt,
 					 krb5_const_pointer keyseed,
 					 krb5_keyblock **key);
 typedef krb5_error_code (*krb5_decrypt_proc)(krb5_context context,
-					     const krb5_keyblock *key,
+					     krb5_keyblock *key,
+					     krb5_key_usage usage,
 					     krb5_const_pointer decrypt_arg,
 					     krb5_kdc_rep *dec_rep);
 

@@ -40,9 +40,13 @@
 
 RCSID("$Id$");
 
-/* these functions convert does what the normal asn.1-functions does,
-   but converts the keytype to/from the on-the-wire enctypes */
+/* these functions does what the normal asn.1-functions does, but
+   converts the keytype to/from the on-the-wire enctypes */
 
+#if 1
+#define DECODE(T, K) return decode_ ## T((void*)data, length, t, len)
+#define ENCODE(T, K) return encode_ ## T(data, length, t, len)
+#else
 #define DECODE(T, K)					\
 {							\
     krb5_error_code ret;				\
@@ -63,6 +67,7 @@ RCSID("$Id$");
 	return ret;					\
     return encode_ ## T(data, length, t, len);		\
 }
+#endif
 
 krb5_error_code
 krb5_decode_EncTicketPart (krb5_context context,
@@ -171,6 +176,9 @@ krb5_decode_EncKrbCredPart (krb5_context context,
 			    EncKrbCredPart *t,
 			    size_t *len)
 {
+#if 1
+    return decode_EncKrbCredPart((void*)data, length, t, len);
+#else
     krb5_error_code ret;
     int i;
     ret = decode_EncKrbCredPart((void*)data, length, t, len);
@@ -180,6 +188,7 @@ krb5_decode_EncKrbCredPart (krb5_context context,
 	if((ret = krb5_decode_keyblock(context, &t->ticket_info.val[i].key, 1)))
 	    break;
     return ret;
+#endif
 }
 
 krb5_error_code
@@ -189,6 +198,7 @@ krb5_encode_EncKrbCredPart (krb5_context context,
 			    EncKrbCredPart *t,
 			    size_t *len)
 {
+#if 0
     krb5_error_code ret = 0;
     int i;
 
@@ -196,6 +206,7 @@ krb5_encode_EncKrbCredPart (krb5_context context,
 	if((ret = krb5_decode_keyblock(context, &t->ticket_info.val[i].key, 0)))
 	    break;
     if(ret) return ret;
+#endif
     return encode_EncKrbCredPart (data, length, t, len);
 }
 
@@ -206,6 +217,9 @@ krb5_decode_ETYPE_INFO (krb5_context context,
 			ETYPE_INFO *t,
 			size_t *len)
 {
+#if 1
+    return decode_ETYPE_INFO((void*)data, length, t, len);
+#else
     krb5_error_code ret;
     int i;
 
@@ -217,6 +231,7 @@ krb5_decode_ETYPE_INFO (krb5_context context,
 	    break;
     }
     return ret;
+#endif
 }
 
 krb5_error_code
@@ -226,6 +241,7 @@ krb5_encode_ETYPE_INFO (krb5_context context,
 			ETYPE_INFO *t,
 			size_t *len)
 {
+#if 0
     krb5_error_code ret = 0;
 
     int i;
@@ -235,5 +251,6 @@ krb5_encode_ETYPE_INFO (krb5_context context,
 	if((ret = krb5_decode_keytype(context, &t->val[i].etype, 0)))
 	    break;
     if(ret) return ret;
+#endif
     return encode_ETYPE_INFO (data, length, t, len);
 }

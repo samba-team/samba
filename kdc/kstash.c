@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -71,18 +71,23 @@ int main(int argc, char **argv)
 	krb5_errx(context, 0, "%s", heimdal_version);
 
 
-    key.keytype = KEYTYPE_DES;
-    key.keyvalue.length = sizeof(des_cblock);
-    key.keyvalue.data = malloc(key.keyvalue.length);
+    key.keytype = ETYPE_DES_CBC_MD5; /* XXX */
     if(v4_keyfile){
 	f = fopen(v4_keyfile, "r");
 	if(f == NULL)
 	    krb5_err(context, 1, errno, "fopen(%s)", v4_keyfile);
+	key.keyvalue.length = sizeof(des_cblock);
+	key.keyvalue.data = malloc(key.keyvalue.length);
 	fread(key.keyvalue.data, 1, key.keyvalue.length, f);
 	fclose(f);
     }else{
+	krb5_salt salt;
+	salt.salttype = KRB5_PW_SALT;
+	/* XXX better value? */
+	salt.saltvalue.data = NULL;
+	salt.saltvalue.length = 0;
 	des_read_pw_string(buf, sizeof(buf), "Master key: ", 1);
-	des_string_to_key(buf, key.keyvalue.data);
+	krb5_string_to_key_salt(context, key.keytype, buf, salt, &key);
     }
     
 #ifdef HAVE_UMASK

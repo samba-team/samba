@@ -42,8 +42,8 @@ RCSID("$Id$");
 
 krb5_error_code
 krb5_keytab_key_proc (krb5_context context,
-		      krb5_keytype type,
-		      krb5_data *salt,
+		      krb5_enctype enctype,
+		      krb5_salt salt,
 		      krb5_const_pointer keyseed,
 		      krb5_keyblock **key)
 {
@@ -60,7 +60,7 @@ krb5_keytab_key_proc (krb5_context context,
 	real_keytab = keytab;
 
     ret = krb5_kt_get_entry (context, real_keytab, principal,
-			     0, type, &entry);
+			     0, enctype, &entry);
 
     if (keytab == NULL)
 	krb5_kt_close (context, real_keytab);

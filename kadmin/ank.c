@@ -88,7 +88,15 @@ add_new_key(int argc, char **argv)
 	password = "hemlig";
     }
     if(password == NULL){
-	if(des_read_pw_string(pwbuf, sizeof(pwbuf), "Password: ", 1))
+	char *princ_name;
+	char *prompt;
+
+	krb5_unparse_name(context, princ_ent, &princ_name);
+	asprintf (&prompt, "%s's Password: ", princ_name);
+	free (princ_name);
+	ret = des_read_pw_string (pwbuf, sizeof(pwbuf), prompt, 1);
+	free (prompt);
+	if (ret)
 	    goto out;
 	password = pwbuf;
     }

@@ -21,9 +21,9 @@ libroken_la_SOURCES =		\
 	issuid.c		\
 	k_getpwnam.c		\
 	k_getpwuid.c		\
+	mini_inetd.c		\
 	net_read.c		\
 	net_write.c		\
-	mini_inetd.c		\
 	parse_time.c		\
 	parse_units.c		\
 	print_version.c		\

@@ -50,7 +50,7 @@ RCSID("$Id$");
   	kvno
 	keys...
 		mkvno (unused)
-		keytype
+		enctype
 		keyvalue
 		salt (- means use normal salt)
   creation date and principal
@@ -67,10 +67,24 @@ RCSID("$Id$");
 static void
 append_hex(char *str, krb5_data *data)
 {
-    int i;
-    char *p = calloc(1, data->length * 2 + 1);
+    int i, s = 1;
+    char *p;
+    p = data->data;
     for(i = 0; i < data->length; i++)
-	sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
+	if(!isalnum(p[i]) && p[i] != '.'){
+	    s = 0;
+	    break;
+	}
+    if(s){
+	p = calloc(1, data->length + 2 + 1);
+	p[0] = '\"';
+	p[data->length + 1] = '\"';
+	memcpy(p + 1, data->data, data->length);
+    }else{
+	p = calloc(1, data->length * 2 + 1);
+	for(i = 0; i < data->length; i++)
+	    sprintf(p + 2 * i, "%02x", ((u_char*)data->data)[i]);
+    }
     strcat(str, p);
     free(p);
 }
@@ -117,6 +131,20 @@ hdb_entry2string(hdb_entry *ent, char **str)
 		 ent->keys.val[i].key.keytype);
 	strcat(buf, p);
 	free(p);
+#if 0
+	if(ent->keys.val[i].enctypes != NULL) {
+	    int j;
+	    for(j = 0; j < ent->keys.val[i].enctypes->len; j++) {
+		char tmp[16];
+		snprintf(tmp, sizeof(tmp), "%u", 
+			 ent->keys.val[i].enctypes->val[j]);
+		if(j > 0)
+		    strcat(buf, ",");
+		strcat(buf, tmp);
+	    }
+	}
+	strcat(buf, ":");
+#endif
 	append_hex(buf, &ent->keys.val[i].key.keyvalue);
 	strcat(buf, ":");
 	if(ent->keys.val[i].salt){
@@ -174,6 +202,7 @@ hdb_entry2string(hdb_entry *ent, char **str)
     asprintf(&p, "%d", HDBFlags2int(ent->flags));
     strcat(buf, p);
     free(p);
+#if 0
 
     strcat(buf, " ");
     if(ent->etypes == NULL || ent->etypes->len == 0)
@@ -187,6 +216,7 @@ hdb_entry2string(hdb_entry *ent, char **str)
 		strcat(buf, ":");
 	}
     }
+#endif
 
     *str = strdup(buf);
     

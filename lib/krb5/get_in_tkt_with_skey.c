@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -42,8 +42,8 @@ RCSID("$Id$");
 
 static krb5_error_code
 krb5_skey_key_proc (krb5_context context,
-		    krb5_keytype type,
-		    krb5_data *salt,
+		    krb5_enctype type,
+		    krb5_salt salt,
 		    krb5_const_pointer keyseed,
 		    krb5_keyblock **key)
 {

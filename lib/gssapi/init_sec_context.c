@@ -182,15 +182,19 @@ init_auth
     goto failure;
   }
 
+#if 1
+  enctype = (*context_handle)->auth_context->keyblock->keytype;
+#else
   if ((*context_handle)->auth_context->enctype)
       enctype = (*context_handle)->auth_context->enctype;
   else {
-      kret = krb5_keytype_to_etype(gssapi_krb5_context,
+      kret = krb5_keytype_to_enctype(gssapi_krb5_context,
 				  (*context_handle)->auth_context->keyblock->keytype,
 				  &enctype);
       if (kret)
 	  return kret;
   }
+#endif
 
 
 

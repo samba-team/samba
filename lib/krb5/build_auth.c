@@ -54,6 +54,7 @@ krb5_build_authenticator (krb5_context context,
   size_t buf_size;
   size_t len;
   krb5_error_code ret;
+  krb5_crypto crypto;
 
   auth = malloc(sizeof(*auth));
   if (auth == NULL)
@@ -129,10 +130,14 @@ krb5_build_authenticator (krb5_context context,
       }
   } while(ret == ASN1_OVERFLOW);
 
-  ret = krb5_encrypt (context, buf + buf_size - len, len,
-		      enctype,
-		      &cred->session,
+  ret = krb5_crypto_init(context, &cred->session, enctype, &crypto);
+  ret = krb5_encrypt (context,
+		      crypto,
+		      KRB5_KU_AP_REQ_AUTH,
+		      buf + buf_size - len, 
+		      len,
 		      result);
+  krb5_crypto_destroy(context, crypto);
 
   if (ret)
       goto fail;

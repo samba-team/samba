@@ -212,7 +212,7 @@ change (krb5_auth_context auth_context,
     char *c;
     kadm5_principal_ent_rec ent;
     krb5_key_data *kd;
-    krb5_data salt;
+    krb5_salt salt;
     krb5_keyblock new_keyblock;
     char *pwd_reason;
     int unchanged;
@@ -247,15 +247,17 @@ change (krb5_auth_context auth_context,
      */
 
     kd = &ent.key_data[0];
-
-    salt.length = kd->key_data_length[1];
-    salt.data   = kd->key_data_contents[1];
+    
+    salt.salttype = KRB5_PW_SALT;
+    salt.saltvalue.length = kd->key_data_length[1];
+    salt.saltvalue.data   = kd->key_data_contents[1];
 
     memset (&new_keyblock, 0, sizeof(new_keyblock));
-    krb5_string_to_key_data (pwd_data,
-			     &salt,
-			     kd->key_data_type[0],
-			     &new_keyblock);
+    krb5_string_to_key_data_salt (context,
+				  kd->key_data_type[0],
+				  *pwd_data,
+				  salt,
+				  &new_keyblock);
 
     unchanged = new_keyblock.keytype == kd->key_data_type[0]
 	&& new_keyblock.keyvalue.length == kd->key_data_length[0]

@@ -114,7 +114,7 @@ make_path(struct tr_realm *r, const char *from, const char *to)
 		return ENOMEM;
 	    }
 	    strncpy(path->realm, from, p - from);
-	    path->realm[p - from] = 0;
+	    path->realm[p - from] = '\0';
 	    p--;
 	}
     }else
@@ -136,8 +136,8 @@ make_paths(struct tr_realm *realms, const char *client_realm,
 	/* it *might* be that you can have more than one empty
 	   component in a row, at least that's how I interpret the
 	   "," exception in 1510 */
-	if(r->realm[0] == 0){
-	    while(r->next && r->next->realm[0] == 0)
+	if(r->realm[0] == '\0'){
+	    while(r->next && r->next->realm[0] == '\0')
 		r = r->next;
 	    if(r->next)
 		next_realm = r->next->realm;
@@ -218,11 +218,11 @@ make_realm(char *realm)
 	    quote = 1;
 	    continue;
 	}
-	if(p[0] == '.' && p[1] == 0)
+	if(p[0] == '.' && p[1] == '\0')
 	    r->trailing_dot = 1;
 	*q++ = *p;
     }
-    *q = 0;
+    *q = '\0';
     return r;
 }
 
@@ -262,7 +262,7 @@ decode_realms(const char *tr, int length, struct tr_realm **realms)
 	if(tr[i] == ','){
 	    tmp = malloc(tr + i - start + 1);
 	    strncpy(tmp, start, tr + i - start);
-	    tmp[tr + i - start] = 0;
+	    tmp[tr + i - start] = '\0';
 	    r = make_realm(tmp);
 	    if(r == NULL){
 		free_realms(*realms);
@@ -274,7 +274,7 @@ decode_realms(const char *tr, int length, struct tr_realm **realms)
     }
     tmp = malloc(tr + i - start + 1);
     strncpy(tmp, start, tr + i - start);
-    tmp[tr + i - start] = 0;
+    tmp[tr + i - start] = '\0';
     r = make_realm(tmp);
     if(r == NULL){
 	free_realms(*realms);
@@ -311,7 +311,7 @@ krb5_domain_x500_decode(krb5_data tr, char ***realms, int *num_realms,
     /* remove empty components */
     q = &r;
     for(p = r; p; ){
-	if(p->realm[0] == 0){
+	if(p->realm[0] == '\0'){
 	    free(p->realm);
 	    *q = p->next;
 	    free(p);
@@ -354,7 +354,7 @@ krb5_domain_x500_encode(char **realms, int num_realms, krb5_data *encoding)
     }
     len += num_realms - 1;
     s = malloc(len + 1);
-    *s = 0;
+    *s = '\0';
     for(i = 0; i < num_realms; i++){
 	if(i && i < num_realms - 1)
 	    strcat(s, ",");

@@ -107,6 +107,10 @@ Sun Nov 29 01:56:21 1998  Assar Westerlund  <assar@sics.se>
 
 	* configure.in: add hesiod
 
+Wed Nov 25 11:37:48 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/krb5_err.et: add some codes from kerberos-revisions-03
+
 Mon Nov 23 12:53:48 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/kadm5/log.c: rename delete -> remove
@@ -135,6 +139,10 @@ Sun Nov 22 06:54:48 1998  Assar Westerlund  <assar@sics.se>
 	* lib/krb5/get_cred.c: re-structure code.  remove limits on ASN1
  	generated bits.
 
+Sun Nov 22 01:49:50 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kdc/hprop.c (v4_prop): fix bogus indexing
+
 Sat Nov 21 23:12:27 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/free.c (krb5_xfree): new function
@@ -155,9 +163,81 @@ Sat Nov 21 23:12:27 1998  Assar Westerlund  <assar@sics.se>
 
 	* admin/ktutil.c (kt_remove): some more type correctness.
 
+Sat Nov 21 16:49:20 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kuser/klist.c: try to list enctypes as keytypes
+
+	* kuser/kinit.c: remove extra `--cache' option, add `--enctypes'
+ 	to set list of enctypes to use
+
+	* kadmin/load.c: load strings as hex
+
+	* kadmin/dump.c: dump hex as string is possible
+
+	* admin/ktutil.c: use print_version()
+
+	* configure.in, acconfig.h: test for hesiod
+
+Sun Nov 15 17:28:19 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* lib/krb5/crypto.c: add some crypto debug code
+
+	* lib/krb5/get_in_tkt.c (_krb5_extract_ticket): don't use fixed
+ 	buffer when encoding ticket
+
+	* lib/krb5/auth_context.c (re-)implement `krb5_auth_setenctype'
+
+	* kdc/kerberos5.c: allow mis-match of tgt session key, and service
+ 	session key
+
+	* admin/ktutil.c: keytype -> enctype
+
 Fri Nov 13 05:35:48 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/krb5.h (KRB5_TGS_NAME, KRB5_TGS_NAME_SIZE): added
+
+Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
+
+	* lib/krb5/rd_req.c: adapt to new crypto api
+
+	* lib/krb5/rd_rep.c: adapt to new crypto api
+
+	* lib/krb5/rd_priv.c: adopt to new crypto api
+
+	* lib/krb5/rd_cred.c: adopt to new crypto api
+
+	* lib/krb5/principal.c: ENOMEM -> ERANGE
+
+	* lib/krb5/mk_safe.c: cleanup and adopt to new crypto api
+
+	* lib/krb5/mk_req_ext.c: adopt to new crypto api
+
+	* lib/krb5/mk_req.c: get enctype from auth_context keyblock
+
+	* lib/krb5/mk_rep.c: cleanup and adopt to new crypto api
+
+	* lib/krb5/mk_priv.c: adopt to new crypto api
+
+	* lib/krb5/keytab.c: adopt to new crypto api
+
+	* lib/krb5/get_in_tkt_with_skey.c: adopt to new crypto api
+
+	* lib/krb5/get_in_tkt_with_keytab.c: adopt to new crypto api
+
+	* lib/krb5/get_in_tkt_pw.c: adopt to new crypto api
+
+	* lib/krb5/get_in_tkt.c: adopt to new crypto api
+
+	* lib/krb5/get_cred.c: adopt to new crypto api
+
+	* lib/krb5/generate_subkey.c: use new crypto api
+
+	* lib/krb5/context.c: rename etype functions to enctype ditto
+
+	* lib/krb5/build_auth.c: use new crypto api
+
+	* lib/krb5/auth_context.c: remove enctype and cksumtype from
+ 	auth_context
 
 Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
@@ -167,6 +247,10 @@ Mon Nov  2 01:15:06 1998  Assar Westerlund  <assar@sics.se>
 
 	* appl/rsh/rshd.c (recv_krb5_auth): disable `do_encrypt' if not
  	encrypting.
+
+Tue Sep 15 18:41:38 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* admin/ktutil.c: fix printing of unrecognized keytypes
 
 Tue Sep 15 17:02:33 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
@@ -188,6 +272,70 @@ Tue Aug 25 23:30:52 1998  Assar Westerlund  <assar@sics.se>
 	* lib/krb5/context.c (krb5_get_use_admin_kdc,
  	krb5_set_use_admin_kdc): new functions
 
+Tue Aug 18 22:24:12 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/crypto.c: remove all calls to abort(); check return
+ 	value from _key_schedule;
+	(RSA_MD[45]_DES_verify): zero tmp and res;
+	(RSA_MD5_DES3_{verify,checksum}): implement
+
+Mon Aug 17 20:18:46 1998  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kerberos4.c (swap32): conditionalize
+
+	* lib/krb5/mk_req_ext.c (krb5_mk_req_internal): new function
+
+	* lib/krb5/get_host_realm.c (krb5_get_host_realm): if the hostname
+ 	returned from gethostby*() isn't a FQDN, try with the original
+ 	hostname
+
+	* lib/krb5/get_cred.c (make_pa_tgs_req): use krb5_mk_req_internal
+ 	and correct key usage
+
+	* lib/krb5/crypto.c (verify_checksum): make static
+
+	* admin/ktutil.c (kt_list): use krb5_enctype_to_string
+
+Sun Aug 16 20:57:56 1998  Assar Westerlund  <assar@sics.se>
+
+	* kadmin/cpw.c (do_cpw_entry): use asprintf for the prompt
+
+	* kadmin/ank.c (ank): print principal name in prompt
+
+	* lib/krb5/crypto.c (hmac): always allocate space for checksum.
+  	never trust c.checksum.length
+	(_get_derived_key): try to return the derived key
+
+Sun Aug 16 19:48:42 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/crypto.c (hmac): fix some peculiarities and bugs
+	(get_checksum_key): assume usage is `formatted'
+	(create_checksum,verify_checksum): moved the guts of the krb5_*
+	functions here, both take `formatted' key-usages
+	(encrypt_internal_derived): fix various bogosities
+	(derive_key): drop key_type parameter (already given by the
+	encryption_type)
+
+	* kdc/kerberos5.c (check_flags): handle case where client is NULL
+
+	* kdc/connect.c (process_request): return zero after processing
+ 	kerberos 4 request
+
+Sun Aug 16 18:38:15 1998  Johan Danielsson  <joda@blubb.pdc.kth.se>
+
+	* lib/krb5/crypto.c: merge x-*.[ch] into one file
+
+	* lib/krb5/cache.c: remove residual from krb5_ccache_data
+
+Fri Aug 14 16:28:23 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/x-crypto.c (derive_key): move DES3 specific code to
+ 	separate function (will eventually end up someplace else)
+
+	* lib/krb5/x-crypto.c (krb5_string_to_key_derived): allocate key
+
+	* configure.in, acconfig.h: test for four valued krb_put_int
+
 Thu Aug 13 23:46:29 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
 
 	* Release 0.0t
@@ -196,6 +344,14 @@ Thu Aug 13 22:40:17 1998  Assar Westerlund  <assar@sics.se>
 
 	* lib/krb5/config_file.c (parse_binding): remove trailing
  	whitespace
+
+Wed Aug 12 20:15:11 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* lib/krb5/x-checksum.c (krb5_verify_checksum): pass checksum type
+ 	to krb5_create_checksum
+
+	* lib/krb5/x-key.c: implement DES3_string_to_key_derived; fix a
+ 	few typos
 
 Wed Aug  5 12:39:54 1998  Assar Westerlund  <assar@emma.pdc.kth.se>
 
@@ -206,6 +362,58 @@ Thu Jul 30 23:12:17 1998  Assar Westerlund  <assar@sics.se>
 	* appl/rsh/rsh.c: kludges for parsing `rsh hostname -l user'
 
 	* lib/krb5/mk_error.c (krb5_mk_error): realloc until you die
+
+Thu Jul 23 19:49:03 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* kdc/kdc_locl.h: proto for `get_des_key'
+
+	* configure.in: test for four valued el_init
+
+	* kuser/klist.c: keytype -> enctype
+
+	* kpasswd/kpasswdd.c (change): use new `krb5_string_to_key*'
+
+	* kdc/hprop.c (v4_prop, ka_convert): convert to a set of keys
+
+	* kdc/kaserver.c: use `get_des_key'
+
+	* kdc/524.c: use new crypto api
+
+	* kdc/kerberos4.c: use new crypto api
+
+	* kdc/kerberos5.c: always treat keytypes as enctypes; use new
+ 	crypto api
+
+	* kdc/kstash.c: adapt to new crypto api
+
+	* kdc/string2key.c: adapt to new crypto api
+
+	* admin/srvconvert.c: add keys for all possible enctypes
+
+	* admin/ktutil.c: keytype -> enctype
+
+	* appl/rsh/rshd.c: use krb5_verify_authenticator_checksum
+
+	* lib/gssapi/init_sec_context.c: get enctype from auth_context
+ 	keyblock
+
+	* lib/hdb/hdb.c: remove hdb_*_keytype2key
+
+	* lib/kadm5/set_keys.c: adapt to new crypto api
+
+	* lib/kadm5/rename_s.c: adapt to new crypto api
+
+	* lib/kadm5/get_s.c: adapt to new crypto api
+
+	* lib/kadm5/create_s.c: add keys for des-cbc-crc, des-cbc-md4,
+ 	des-cbc-md5, and des3-cbc-sha1
+
+	* lib/krb5/heim_err.et: error message for unsupported salt
+
+	* lib/krb5/codec.c: short-circuit these functions, since they are
+ 	not needed any more
+
+	* lib/krb5/rd_safe.c: cleanup and adapt to new crypto api
 
 Mon Jul 13 23:00:59 1998  Assar Westerlund  <assar@sics.se>
 

@@ -65,12 +65,15 @@ krb5_get_host_realm(krb5_context context,
     const krb5_config_binding *l;
     struct in_addr addr;
     struct hostent *hostent;
+    char *orig_host;
 
     if (host == NULL) {
 	if (gethostname (hostname, sizeof(hostname)))
 	    return errno;
 	host = hostname;
     }
+
+    orig_host = host;
 
     addr.s_addr = inet_addr(host);
     hostent = roken_gethostbyname (host);
@@ -110,6 +113,9 @@ krb5_get_host_realm(krb5_context context,
 	}
     } else {
 	const char *dot = strchr (host, '.');
+
+	if (dot == NULL)
+	    dot = strchr (orig_host, '.');
 
 	if (dot != NULL) {
 	    (*realms)[0] = strdup (dot + 1);

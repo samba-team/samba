@@ -620,13 +620,13 @@ pack_cred(CREDENTIALS *cred, unsigned char *buf)
     p += REALM_SZ;
     memcpy(p, cred->session, 8);
     p += 8;
-    p += krb_put_int(cred->lifetime, p, 4, 4);
-    p += krb_put_int(cred->kvno, p, 4, 4);
-    p += krb_put_int(cred->ticket_st.length, p, 4, 4);
+    p += KRB_PUT_INT(cred->lifetime, p, 4, 4);
+    p += KRB_PUT_INT(cred->kvno, p, 4, 4);
+    p += KRB_PUT_INT(cred->ticket_st.length, p, 4, 4);
     memcpy(p, cred->ticket_st.dat, cred->ticket_st.length);
     p += cred->ticket_st.length;
-    p += krb_put_int(0, p, 4, 4);
-    p += krb_put_int(cred->issue_date, p, 4, 4);
+    p += KRB_PUT_INT(0, p, 4, 4);
+    p += KRB_PUT_INT(cred->issue_date, p, 4, 4);
     memcpy (p, cred->pname, ANAME_SZ);
     p += ANAME_SZ;
     memcpy (p, cred->pinst, INST_SZ);

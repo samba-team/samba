@@ -122,6 +122,7 @@ extern enum auth_method auth_method;
 extern int do_encrypt;
 extern krb5_context context;
 extern krb5_keyblock *keyblock;
+extern krb5_crypto crypto;
 extern des_key_schedule schedule;
 extern des_cblock iv;
 

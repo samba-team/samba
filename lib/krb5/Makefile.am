@@ -24,7 +24,6 @@ libkrb5_la_SOURCES = \
 	build_auth.c \
 	cache.c \
 	changepw.c \
-	checksum.c \
 	codec.c \
 	config_file.c \
 	convert_creds.c \
@@ -32,8 +31,8 @@ libkrb5_la_SOURCES = \
 	context.c \
 	crc.c \
 	creds.c \
+	crypto.c \
 	data.c \
-	encrypt.c \
 	fcache.c \
 	free.c \
 	free_host_realm.c \
@@ -67,6 +66,7 @@ libkrb5_la_SOURCES = \
 	mk_safe.c \
 	net_read.c \
 	net_write.c \
+	n-fold.c \
 	padata.c \
 	principal.c \
 	prog_setup.c \
@@ -87,7 +87,6 @@ libkrb5_la_SOURCES = \
 	store_emem.c \
 	store_fd.c \
 	store_mem.c \
-	str2key.c \
 	ticket.c \
 	time.c \
 	transited.c \

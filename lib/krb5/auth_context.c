@@ -58,8 +58,6 @@ krb5_auth_con_init(krb5_context context,
     memset (p->authenticator, 0, sizeof(*p->authenticator));
     p->flags = KRB5_AUTH_CONTEXT_DO_TIME;
 
-    p->cksumtype = CKSUMTYPE_NONE; /* CKSUMTYPE_RSA_MD5_DES */
-    p->enctype   = ETYPE_NULL; /* ETYPE_DES_CBC_MD5 */
     p->local_address = NULL;
     p->remote_address = NULL;
     *auth_context = p;
@@ -282,8 +280,7 @@ krb5_auth_setcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype cksumtype)
 {
-    auth_context->cksumtype = cksumtype;
-    return 0;
+    abort();
 }
 
 krb5_error_code
@@ -291,8 +288,7 @@ krb5_auth_getcksumtype(krb5_context context,
 		       krb5_auth_context auth_context,
 		       krb5_cksumtype *cksumtype)
 {
-    *cksumtype = auth_context->cksumtype;
-    return 0;
+    abort();
 }
 
 krb5_error_code
@@ -300,7 +296,12 @@ krb5_auth_setenctype(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_enctype etype)
 {
-    auth_context->enctype = etype;
+    if(auth_context->keyblock)
+	krb5_free_keyblock(context, auth_context->keyblock);
+    ALLOC(auth_context->keyblock, 1);
+    if(auth_context->keyblock == NULL)
+	return ENOMEM;
+    auth_context->keyblock->keytype = etype;
     return 0;
 }
 
@@ -309,8 +310,7 @@ krb5_auth_getenctype(krb5_context context,
 		     krb5_auth_context auth_context,
 		     krb5_enctype *etype)
 {
-    *etype = auth_context->enctype;
-    return 0;
+    abort();
 }
 
 krb5_error_code

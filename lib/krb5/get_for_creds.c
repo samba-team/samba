@@ -95,17 +95,7 @@ krb5_get_forwarded_creds (krb5_context	    context,
     u_char buf[1024];
     int32_t sec, usec;
     krb5_kdc_flags kdc_flags;
-    krb5_enctype enctype;
-
-    if (auth_context->enctype)
-	enctype = auth_context->enctype;
-    else {
-	ret = krb5_keytype_to_etype (context,
-				     auth_context->local_subkey->keytype,
-				     &enctype);
-	if (ret)
-	    return ret;
-    }
+    krb5_crypto crypto;
 
     addrs.len = 0;
     addrs.val = NULL;
@@ -226,13 +216,15 @@ krb5_get_forwarded_creds (krb5_context	    context,
 	return ret;
     }    
 
+    krb5_crypto_init(context, auth_context->local_subkey, 0, &crypto);
     ret = krb5_encrypt_EncryptedData (context,
+				      crypto,
+				      KRB5_KU_KRB_CRED,
 				      buf + sizeof(buf) - len,
 				      len,
-				      enctype,
 				      0,
-				      auth_context->local_subkey,
 				      &cred.enc_part);
+    krb5_crypto_destroy(context, crypto);
     if (ret) {
 	free_KRB_CRED(&cred);
 	return ret;

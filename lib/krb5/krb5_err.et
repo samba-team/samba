@@ -38,31 +38,33 @@ error_code SERVER_NOMATCH,	"Requested server and ticket don't match"
 
 # 27-30 are reserved
 index 31
-prefix KRB5KRB_AP_ERR
-error_code BAD_INTEGRITY,	"Decrypt integrity check failed"
-error_code TKT_EXPIRED,		"Ticket expired"
-error_code TKT_NYV,		"Ticket not yet valid"
-error_code REPEAT,		"Request is a replay"
-error_code NOT_US,		"The ticket isn't for us"
-error_code BADMATCH,		"Ticket/authenticator don't match"
-error_code SKEW,		"Clock skew too great"
-error_code BADADDR,		"Incorrect net address"
-error_code BADVERSION,		"Protocol version mismatch"
-error_code MSG_TYPE,		"Invalid message type"
-error_code MODIFIED,		"Message stream modified"
-error_code BADORDER,		"Message out of order"
-error_code ILL_CR_TKT,		"Illegal cross-realm ticket"
-error_code BADKEYVER,		"Key version is not available"
-error_code NOKEY,		"Service key not available"
-error_code MUT_FAIL,		"Mutual authentication failed"
-error_code BADDIRECTION,	"Incorrect message direction"
-error_code METHOD,		"Alternative authentication method required"
-error_code BADSEQ,		"Incorrect sequence number in message"
-error_code INAPP_CKSUM,		"Inappropriate type of checksum in message"
+prefix KRB5KRB_AP
+error_code ERR_BAD_INTEGRITY,	"Decrypt integrity check failed"
+error_code ERR_TKT_EXPIRED,	"Ticket expired"
+error_code ERR_TKT_NYV,		"Ticket not yet valid"
+error_code ERR_REPEAT,		"Request is a replay"
+error_code ERR_NOT_US,		"The ticket isn't for us"
+error_code ERR_BADMATCH,	"Ticket/authenticator don't match"
+error_code ERR_SKEW,		"Clock skew too great"
+error_code ERR_BADADDR,		"Incorrect net address"
+error_code ERR_BADVERSION,	"Protocol version mismatch"
+error_code ERR_MSG_TYPE,	"Invalid message type"
+error_code ERR_MODIFIED,	"Message stream modified"
+error_code ERR_BADORDER,	"Message out of order"
+error_code ERR_ILL_CR_TKT,	"Illegal cross-realm ticket"
+error_code ERR_BADKEYVER,	"Key version is not available"
+error_code ERR_NOKEY,		"Service key not available"
+error_code ERR_MUT_FAIL,	"Mutual authentication failed"
+error_code ERR_BADDIRECTION,	"Incorrect message direction"
+error_code ERR_METHOD,		"Alternative authentication method required"
+error_code ERR_BADSEQ,		"Incorrect sequence number in message"
+error_code ERR_INAPP_CKSUM,	"Inappropriate type of checksum in message"
+error_code PATH_NOT_ACCEPTED,	"Policy rejects transited path"
 
-# 51-59 are reserved
-index 60
 prefix KRB5KRB_ERR
+error_code RESPONSE_TOO_BIG,	"Response too big for UDP, retry with TCP"
+# 53-59 are reserved
+index 60
 error_code GENERIC,		"Generic error (see e-text)"
 error_code FIELD_TOOLONG,	"Field is too long for this implementation"
 

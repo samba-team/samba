@@ -151,7 +151,6 @@ srvconv(int argc, char **argv)
 	}
 	
 	entry.vno = kvno;
-	entry.keyblock.keytype = KEYTYPE_DES;
 	entry.keyblock.keyvalue.data = key;
 	entry.keyblock.keyvalue.length = 8;
 	
@@ -168,6 +167,11 @@ srvconv(int argc, char **argv)
 	    }
 				    
 	}
+	entry.keyblock.keytype = ETYPE_DES_CBC_MD5;
+	ret = krb5_kt_add_entry(context, keytab, &entry);
+	entry.keyblock.keytype = ETYPE_DES_CBC_MD4;
+	ret = krb5_kt_add_entry(context, keytab, &entry);
+	entry.keyblock.keytype = ETYPE_DES_CBC_CRC;
 	ret = krb5_kt_add_entry(context, keytab, &entry);
 	krb5_free_principal(context, entry.principal);
 	if(ret) {

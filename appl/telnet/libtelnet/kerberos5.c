@@ -256,7 +256,6 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
     krb5_keyblock *key_block;
     char *name;
     krb5_principal server;
-    krb5_authenticator authenticator;
     int zero = 0;
 
     if (cnt-- < 1)
@@ -327,55 +326,29 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 	    free (errbuf);
 	    return;
 	}
-
-	ret = krb5_auth_con_getkey(context, auth_context, &key_block);
-	if (ret) {
-	    Data(ap, KRB_REJECT, "krb5_auth_con_getkey failed", -1);
-	    auth_finished(ap, AUTH_REJECT);
-	    if (auth_debug_mode)
-		printf("Kerberos V5: "
-		       "krb5_auth_con_getkey failed (%s)\r\n",
-		       krb5_get_err_text(context, ret));
-	    return;
-	}
 	
-	ret = krb5_auth_getauthenticator (context,
-					  auth_context,
-					  &authenticator);
-	if (ret) {
-	    Data(ap, KRB_REJECT, "krb5_auth_getauthenticator failed", -1);
-	    auth_finished(ap, AUTH_REJECT);
-	    if (auth_debug_mode)
-		printf("Kerberos V5: "
-		       "krb5_auth_getauthenticator failed (%s)\r\n",
-		       krb5_get_err_text(context, ret));
-	    return;
-	}
-
-	if (authenticator->cksum) {
+	{
 	    char foo[2];
-
+	    
 	    foo[0] = ap->type;
 	    foo[1] = ap->way;
+	    
+	    ret = krb5_verify_authenticator_checksum(context,
+						     auth_context,
+						     foo, 
+						     sizeof(foo));
 
-	    ret = krb5_verify_checksum (context,
-					foo,
-					sizeof(foo),
-					key_block,
-					authenticator->cksum);
 	    if (ret) {
-		Data(ap, KRB_REJECT, "No checksum", -1);
+		char *errbuf;
+		asprintf(&errbuf, "Bad checksum: %s", 
+			 krb5_get_err_text(context, ret));
+		Data(ap, KRB_REJECT, errbuf, -1);
 		if (auth_debug_mode)
-		    printf ("No checksum\r\n");
-		krb5_free_authenticator (context,
-					 &authenticator);
-		
+		    printf ("%s\r\n", errbuf);
+		free(errbuf);
 		return;
 	    }
 	}
-	krb5_free_authenticator (context,
-				 &authenticator);
-
 	ret = krb5_auth_con_getremotesubkey (context,
 					     auth_context,
 					     &key_block);
@@ -416,7 +389,9 @@ kerberos5_is(Authenticator *ap, unsigned char *data, int cnt)
 		       name ? name : "");
 	    }
 
-	    if(key_block->keytype == KEYTYPE_DES) {
+	    if(key_block->keytype == ETYPE_DES_CBC_MD5 ||
+	       key_block->keytype == ETYPE_DES_CBC_MD4 ||
+	       key_block->keytype == ETYPE_DES_CBC_CRC) {
 		Session_Key skey;
 
 		skey.type = SK_DES;

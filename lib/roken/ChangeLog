@@ -31,6 +31,10 @@ Tue Sep  8 05:18:31 1998  Assar Westerlund  <assar@sics.se>
 
 	* recvmsg.c (recvmsg): patch from bpreece@unity.ncsu.edu
 
+Fri Sep  4 16:29:27 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* vsyslog.c: asprintf -> vasprintf
+
 Tue Aug 18 22:25:52 1998  Assar Westerlund  <assar@sics.se>
 
 	* getarg.h (arg_printusage): new signature
@@ -46,6 +50,10 @@ Fri Jul 24 21:56:02 1998  Assar Westerlund  <assar@sics.se>
 
 	* simple_exec.c (simple_execvp): loop around waitpid when errno ==
  	EINTR
+
+Thu Jul 23 20:24:35 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* Makefile.am: net_{read,write}.c
 
 Wed Jul 22 21:38:35 1998  Assar Westerlund  <assar@sics.se>
 

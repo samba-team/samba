@@ -121,8 +121,9 @@ kadm5_s_get_principal(void *server_handle,
 	int i;
 	Key *key;
 	krb5_key_data *kd;
-	krb5_data salt, *sp;
-	krb5_get_salt(ent.principal, &salt);
+	krb5_salt salt;
+	krb5_data *sp;
+	krb5_get_pw_salt(context->context, ent.principal, &salt);
 	out->key_data = malloc(ent.keys.len * sizeof(*out->key_data));
 	for(i = 0; i < ent.keys.len; i++){
 	    key = &ent.keys.val[i];
@@ -147,7 +148,7 @@ kadm5_s_get_principal(void *server_handle,
 	    if(key->salt)
 		sp = &key->salt->salt;
 	    else
-		sp = &salt;
+		sp = &salt.saltvalue;
 	    kd->key_data_length[1] = sp->length;
 	    kd->key_data_contents[1] = malloc(kd->key_data_length[1]);
 	    if(kd->key_data_length[1] != 0
@@ -159,7 +160,7 @@ kadm5_s_get_principal(void *server_handle,
 	    memcpy(kd->key_data_contents[1], sp->data, kd->key_data_length[1]);
 	    out->n_key_data = i + 1;
 	}
-	krb5_data_free(&salt);
+	krb5_free_salt(context->context, salt);
     }
     if(ret){
 	kadm5_free_principal_ent(context, out);

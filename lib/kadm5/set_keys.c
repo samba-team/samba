@@ -42,14 +42,13 @@ RCSID("$Id$");
 
 kadm5_ret_t
 _kadm5_set_keys(kadm5_server_context *context,
-		hdb_entry *ent, const char *password)
+		hdb_entry *ent, 
+		const char *password)
 {
     int i;
-    krb5_data salt;
     kadm5_ret_t ret = 0;
     Key *key;
 
-    krb5_get_salt(ent->principal, &salt);
     for(i = 0; i < ent->keys.len; i++) {
 	key = &ent->keys.val[i];
 	if(key->salt && 
@@ -62,21 +61,27 @@ _kadm5_set_keys(kadm5_server_context *context,
 	    key->salt = NULL;
 	}
 	krb5_free_keyblock_contents(context->context, &key->key);
-	{
-	    krb5_keytype kt = key->key.keytype;
-	    if(kt == KEYTYPE_DES && 
-	       key->salt && 
-	       key->salt->type == hdb_afs3_salt)
-		kt |= KEYTYPE_USE_AFS3_SALT;
-	    ret = krb5_string_to_key(password, 
-				     key->salt ? &key->salt->salt : &salt,
-				     kt,
+	/* XXX check for DES key and AFS3 salt? */
+	if(key->salt) {
+	    krb5_salt salt;
+	    salt.salttype = key->salt->type;
+	    salt.saltvalue = key->salt->salt;
+	    ret = krb5_string_to_key_salt(context->context,
+					  key->key.keytype,
+					  password, 
+					  salt,
+					  &key->key);
+	} else
+	    ret = krb5_string_to_key(context->context,
+				     key->key.keytype,
+				     password, 
+				     ent->principal,
 				     &key->key);
-	}
-	if(ret)
+	if(ret) {
+	    krb5_warn(context->context, ret, "string-to-key failed");
 	    break;
+	}
     }
     ent->kvno++;
-    krb5_data_free(&salt);
     return ret;
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -82,9 +82,8 @@ krb5_mk_req(krb5_context context,
   if (r)
     return r;
   this_cred.times.endtime = 0;
-  if (auth_context && *auth_context && (*auth_context)->enctype)
-      krb5_etype_to_keytype(context, (*auth_context)->enctype,
-			    &this_cred.session.keytype);
+  if (auth_context && *auth_context && (*auth_context)->keyblock)
+      this_cred.session.keytype = (*auth_context)->keyblock->keytype;
 
   r = krb5_get_credentials (context, 0, ccache, &this_cred, &cred);
   if (r)

@@ -54,7 +54,7 @@ vsyslog(int pri, const char *fmt, va_list ap)
 {
     char *p;
 
-    asprintf (&p, fmt, ap);
+    vasprintf (&p, fmt, ap);
     syslog (pri, "%s", p);
     free (p);
 }

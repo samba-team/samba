@@ -15,7 +15,7 @@ kauth_SOURCES = kinit.c kauth_options.c
 noinst_PROGRAMS = kfoo kverify
 
 if KRB4
-AFSLIB=$(top_builddir)/lib/kafs/libkafs.a 
+AFSLIB=$(top_builddir)/lib/kafs/libkafs.a $(AIX_EXTRA_KAFS)
 else
 AFSLIB=
 endif

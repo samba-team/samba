@@ -47,6 +47,7 @@ do_524(Ticket *t, krb5_data *reply, const char *from)
 {
     krb5_error_code ret = 0;
     krb5_principal sprinc = NULL;
+    krb5_crypto crypto;
     hdb_entry *server;
     Key *skey;
     krb5_data et_data;
@@ -65,18 +66,19 @@ do_524(Ticket *t, krb5_data *reply, const char *from)
 		from, spn);
 	goto out;
     }
-    ret = hdb_etype2key(context, server, t->enc_part.etype, &skey);
+    ret = hdb_enctype2key(context, server, t->enc_part.etype, &skey);
     if(ret){
 	kdc_log(0, "No suitable key found for server (%s) "
 		"when converting ticket from ", spn, from);
 	goto out;
     }
-    ret = krb5_decrypt (context,
-			t->enc_part.cipher.data,
-			t->enc_part.cipher.length,
-			t->enc_part.etype,
-			&skey->key,
-			&et_data);
+    krb5_crypto_init(context, &skey->key, 0, &crypto);
+    ret = krb5_decrypt_EncryptedData (context,
+				      crypto,
+				      KRB5_KU_TICKET,
+				      &t->enc_part,
+				      &et_data);
+    krb5_crypto_destroy(context, crypto);
     if(ret){
 	kdc_log(0, "Failed to decrypt ticket from %s for %s", from, spn);
 	goto out;
@@ -118,7 +120,7 @@ do_524(Ticket *t, krb5_data *reply, const char *from)
 	kdc_log(0, "Failed to encode v4 ticket (%s)", spn);
 	goto out;
     }
-    ret = hdb_etype2key(context, server, KEYTYPE_DES, &skey);
+    ret = get_des_key(server, &skey);
     if(ret){
 	kdc_log(0, "No DES key for server (%s)", spn);
 	goto out;

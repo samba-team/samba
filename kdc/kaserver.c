@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997, 1998 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -422,7 +422,7 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = hdb_keytype2key(context, client_entry, KEYTYPE_DES, &ckey);
+    ret = get_des_key(client_entry, &ckey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -430,7 +430,7 @@ do_authenticate (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = hdb_keytype2key(context, server_entry, KEYTYPE_DES, &skey);
+    ret = get_des_key(server_entry, &skey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -595,7 +595,7 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = hdb_keytype2key(context, krbtgt_entry, KEYTYPE_DES, &kkey);
+    ret = get_des_key(krbtgt_entry, &kkey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);
@@ -603,7 +603,7 @@ do_getticket (struct rx_header *hdr,
     }
 
     /* find a DES key */
-    ret = hdb_keytype2key(context, server_entry, KEYTYPE_DES, &skey);
+    ret = get_des_key(server_entry, &skey);
     if(ret){
 	kdc_log(0, "%s", krb5_get_err_text(context, ret));
 	make_error_reply (hdr, KANOKEYS, reply);

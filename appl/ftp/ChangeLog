@@ -1,3 +1,7 @@
+Tue Dec  1 14:44:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* ftpd/Makefile.am: link with extra libs for aix
+
 Sun Nov 22 10:28:20 1998  Assar Westerlund  <assar@sics.se>
 
 	* ftpd/ftpd.c (retrying): support on-the-fly decompression
@@ -32,6 +36,10 @@ Mon Nov  2 01:57:49 1998  Assar Westerlund  <assar@sics.se>
 Tue Sep  1 16:56:42 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* ftp/cmds.c (quote1): fix % quoting bug
+
+Fri Aug 14 17:10:06 1998  Johan Danielsson  <joda@emma.pdc.kth.se>
+
+	* ftp/krb4.c: krb_put_int -> KRB_PUT_INT
 
 Tue Jun 30 18:07:15 1998  Assar Westerlund  <assar@sics.se>
 

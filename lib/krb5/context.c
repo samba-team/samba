@@ -40,6 +40,8 @@
 
 RCSID("$Id$");
 
+int issuid(void); /* XXX */
+
 krb5_error_code
 krb5_init_context(krb5_context *context)
 {
@@ -86,9 +88,6 @@ krb5_init_context(krb5_context *context)
     if (val >= 0)
 	p->max_retries = val;
 
-    p->ktype_is_etype = krb5_config_get_bool(p, NULL, "libdefaults", 
-					     "ktype_is_etype", NULL);
-
     p->http_proxy = krb5_config_get_string(p, NULL, "libdefaults", 
 					   "http_proxy", NULL);
 
@@ -101,7 +100,7 @@ krb5_init_context(krb5_context *context)
 	    for(i = 0; etypes[i]; i++);
 	    p->etypes = malloc((i+1) * sizeof(*p->etypes));
 	    for(j = 0, k = 0; j < i; j++) {
-		if(krb5_string_to_etype(p, etypes[j], &p->etypes[k]) == 0)
+		if(krb5_string_to_enctype(p, etypes[j], &p->etypes[k]) == 0)
 		    k++;
 	    }
 	    p->etypes[k] = ETYPE_NULL;
@@ -169,24 +168,24 @@ krb5_error_code
 krb5_set_default_in_tkt_etypes(krb5_context context, 
 			       const krb5_enctype *etypes)
 {
-  int i;
-  krb5_enctype *p = NULL;
+    int i;
+    krb5_enctype *p = NULL;
 
-  if(etypes) {
-    i = 0;
-    while(etypes[i])
-      if(!krb5_etype_valid(context, etypes[i++]))
-	return KRB5_PROG_ETYPE_NOSUPP;
-    ++i;
-    ALLOC(p, i);
-    if(!p)
-      return ENOMEM;
-    memmove(p, etypes, i * sizeof(krb5_enctype));
-  }
-  if(context->etypes)
-    free(context->etypes);
-  context->etypes = p;
-  return 0;
+    if(etypes) {
+	i = 0;
+	while(etypes[i])
+	    if(!krb5_enctype_valid(context, etypes[i++]))
+		return KRB5_PROG_ETYPE_NOSUPP;
+	++i;
+	ALLOC(p, i);
+	if(!p)
+	    return ENOMEM;
+	memmove(p, etypes, i * sizeof(krb5_enctype));
+    }
+    if(context->etypes)
+	free(context->etypes);
+    context->etypes = p;
+    return 0;
 }
 
 

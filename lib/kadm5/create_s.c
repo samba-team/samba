@@ -91,15 +91,16 @@ kadm5_s_create_principal(void *server_handle,
 	kadm5_free_principal_ent(server_handle, defent);
     
     /* XXX this should be fixed */
-    ent.keys.len = 2;
+    ent.keys.len = 4;
     ent.keys.val = calloc(ent.keys.len, sizeof(*ent.keys.val));
-    ent.keys.val[0].key.keytype = KEYTYPE_DES;
+    ent.keys.val[0].key.keytype = ETYPE_DES_CBC_CRC;
     /* flag as version 4 compatible salt; ignored by _kadm5_set_keys
        if we don't want to be compatible */
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = hdb_pw_salt;
-    ent.keys.val[1].key.keytype = KEYTYPE_DES3;
-
+    ent.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    ent.keys.val[2].key.keytype = ETYPE_DES_CBC_MD5;
+    ent.keys.val[3].key.keytype = ETYPE_DES3_CBC_SHA1;
     ret = _kadm5_set_keys(context, &ent, password);
 
     ent.created_by.time = time(NULL);

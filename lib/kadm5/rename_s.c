@@ -68,8 +68,10 @@ kadm5_s_rename_principal(void *server_handle,
 	/* fix salt */
 	int i;
 	Salt salt;
-	krb5_get_salt(source, &salt.salt);
+	krb5_salt salt2;
+	krb5_get_pw_salt(context->context, source, &salt2);
 	salt.type = hdb_pw_salt;
+	salt.salt = salt2.saltvalue;
 	for(i = 0; i < ent.keys.len; i++){
 	    if(ent.keys.val[i].salt == NULL){
 		ent.keys.val[i].salt = malloc(sizeof(*ent.keys.val[i].salt));
@@ -78,7 +80,7 @@ kadm5_s_rename_principal(void *server_handle,
 		    break;
 	    }
 	}
-	free_Salt(&salt);
+	krb5_free_salt(context->context, salt2);
     }
     if(ret)
 	goto out2;

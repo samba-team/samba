@@ -152,7 +152,7 @@ krb4_adat(void *app_data, void *buf, size_t len)
     cs = auth_dat.checksum + 1;
     {
 	unsigned char tmp[4];
-	krb_put_int(cs, tmp, 4, sizeof(tmp));
+	KRB_PUT_INT(cs, tmp, 4, sizeof(tmp));
 	tmp_len = krb_mk_safe(tmp, msg, 4, &d->key, &LOCAL_ADDR, &REMOTE_ADDR);
     }
     if(tmp_len < 0){

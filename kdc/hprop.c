@@ -149,13 +149,13 @@ v4_prop(void *arg, Principal *p)
 	free(s);
     }
 
-    ent.keys.len = 1;
-    ALLOC(ent.keys.val);
+    ent.kvno = p->key_version;
+    ent.keys.len = 3;
+    ent.keys.val = malloc(ent.keys.len * sizeof(*ent.keys.val));
     ent.keys.val[0].mkvno = p->kdc_key_ver;
     ent.keys.val[0].salt = calloc(1, sizeof(*ent.keys.val[0].salt));
     ent.keys.val[0].salt->type = pa_pw_salt;
-    ent.kvno = p->key_version;
-    ent.keys.val[0].key.keytype = KEYTYPE_DES;
+    ent.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
     krb5_data_alloc(&ent.keys.val[0].key.keyvalue, sizeof(des_cblock));
     
     {
@@ -170,6 +170,10 @@ v4_prop(void *arg, Principal *p)
 	    ent.flags.invalid = 1;
 	}
     }
+    copy_Key(&ent.keys.val[0], &ent.keys.val[1]);
+    ent.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    copy_Key(&ent.keys.val[0], &ent.keys.val[2]);
+    ent.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
     ALLOC(ent.max_life);
     *ent.max_life = krb_life_to_time(0, p->max_life);
@@ -270,17 +274,21 @@ ka_convert(struct prop_data *pd, int fd, struct ka_entry *ent, const char *cell)
 	krb5_warn(pd->context, ret, "krb5_425_conv_principal");
 	return 0;
     }
-    hdb.keys.len = 1;
-    ALLOC(hdb.keys.val);
+    hdb.kvno = ntohl(ent->kvno);
+    hdb.keys.len = 3;
+    hdb.keys.val = malloc(hdb.keys.len * sizeof(*hdb.keys.val));
     hdb.keys.val[0].mkvno = 0; /* XXX */
     hdb.keys.val[0].salt = calloc(1, sizeof(*hdb.keys.val[0].salt));
     hdb.keys.val[0].salt->type = hdb_afs3_salt;
     hdb.keys.val[0].salt->salt.data = strdup(cell);
     hdb.keys.val[0].salt->salt.length = strlen(cell);
     
-    hdb.kvno = ntohl(ent->kvno);
-    hdb.keys.val[0].key.keytype = KEYTYPE_DES;
+    hdb.keys.val[0].key.keytype = ETYPE_DES_CBC_MD5;
     krb5_data_copy(&hdb.keys.val[0].key.keyvalue, ent->key, sizeof(ent->key));
+    copy_Key(&hdb.keys.val[0], &hdb.keys.val[1]);
+    hdb.keys.val[1].key.keytype = ETYPE_DES_CBC_MD4;
+    copy_Key(&hdb.keys.val[0], &hdb.keys.val[2]);
+    hdb.keys.val[2].key.keytype = ETYPE_DES_CBC_CRC;
 
     ALLOC(hdb.max_life);
     *hdb.max_life = ntohl(ent->max_life);

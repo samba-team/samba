@@ -50,48 +50,36 @@ verify_checksum(krb5_context context,
     size_t buf_size;
     size_t len;
     Checksum c;
+    krb5_crypto crypto;
 
     c = safe->cksum;
     safe->cksum.cksumtype       = 0;
     safe->cksum.checksum.data   = NULL;
     safe->cksum.checksum.length = 0;
 
-    buf_size = 1024;
-    buf = malloc (buf_size);
+
+    buf_size = length_KRB_SAFE(safe);
+    buf = malloc(buf_size);
+
     if (buf == NULL) {
-	free_Checksum(&c);
-	return ENOMEM;
+	ret = ENOMEM;
+	goto out;
     }
 
-    do { 
-	ret = encode_KRB_SAFE (buf + buf_size - 1,
-			       buf_size,
-			       safe,
-			       &len);
-	if (ret) {
-	    if (ret == ASN1_OVERFLOW) {
-		u_char *tmp;
-
-		buf_size *= 2;
-		tmp = realloc (buf, buf_size);
-		if (tmp == NULL) {
-		    ret = ENOMEM;
-		    goto out;
-		}
-		buf = tmp;
-	    } else {
-		goto out;
-	    }
-	}
-    } while(ret == ASN1_OVERFLOW);
-
+    ret = encode_KRB_SAFE (buf + buf_size - 1,
+			   buf_size,
+			   safe,
+			   &len);
+    krb5_crypto_init(context, auth_context->keyblock, 0, &crypto);
     ret = krb5_verify_checksum (context,
+				crypto,
+				KRB5_KU_KRB_SAFE_CKSUM,
 				buf + buf_size - len,
 				len,
-				auth_context->keyblock,
 				&c);
+    krb5_crypto_destroy(context, crypto);
 out:
-    free_Checksum (&c);
+    safe->cksum = c;
     free (buf);
     return ret;
 }
@@ -118,8 +106,8 @@ krb5_rd_safe(krb5_context context,
       ret = KRB5KRB_AP_ERR_MSG_TYPE;
       goto failure;
   }
-  if (!krb5_checksum_is_keyed(safe.cksum.cksumtype)
-      || !krb5_checksum_is_collision_proof(safe.cksum.cksumtype)) {
+  if (!krb5_checksum_is_keyed(context, safe.cksum.cksumtype)
+      || !krb5_checksum_is_collision_proof(context, safe.cksum.cksumtype)) {
       ret = KRB5KRB_AP_ERR_INAPP_CKSUM;
       goto failure;
   }

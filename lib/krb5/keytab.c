@@ -132,7 +132,7 @@ krb5_kt_read_service_key(krb5_context context,
 			 krb5_pointer keyprocarg,
 			 krb5_principal principal,
 			 krb5_kvno vno,
-			 krb5_keytype keytype,
+			 krb5_enctype enctype,
 			 krb5_keyblock **key)
 {
     krb5_keytab keytab;
@@ -147,7 +147,7 @@ krb5_kt_read_service_key(krb5_context context,
     if (r)
 	return r;
 
-    r = krb5_kt_get_entry (context, keytab, principal, vno, keytype, &entry);
+    r = krb5_kt_get_entry (context, keytab, principal, vno, enctype, &entry);
     krb5_kt_close (context, keytab);
     if (r)
 	return r;
@@ -191,14 +191,14 @@ kt_compare(krb5_context context,
 	   krb5_keytab_entry *entry, 
 	   krb5_const_principal principal,
 	   krb5_kvno vno,
-	   krb5_keytype keytype)
+	   krb5_enctype enctype)
 {
     if(principal != NULL && 
        !krb5_principal_compare(context, entry->principal, principal))
 	return FALSE;
     if(vno && vno != entry->vno)
 	return FALSE;
-    if(keytype && keytype != entry->keyblock.keytype)
+    if(enctype && enctype != entry->keyblock.keytype)
 	return FALSE;
     return TRUE;
 }
@@ -208,14 +208,14 @@ krb5_kt_get_entry(krb5_context context,
 		  krb5_keytab id,
 		  krb5_const_principal principal,
 		  krb5_kvno kvno,
-		  krb5_keytype keytype,
+		  krb5_enctype enctype,
 		  krb5_keytab_entry *entry)
 {
     krb5_keytab_entry tmp;
     krb5_error_code r;
     krb5_kt_cursor cursor;
 
-    if(id->get) return (*id->get)(context, id, principal, kvno, keytype, entry);
+    if(id->get) return (*id->get)(context, id, principal, kvno, enctype, entry);
 
     r = krb5_kt_start_seq_get (context, id, &cursor);
     if (r)
@@ -223,7 +223,7 @@ krb5_kt_get_entry(krb5_context context,
 
     entry->vno = 0;
     while (krb5_kt_next_entry(context, id, &tmp, &cursor) == 0) {
-	if (kt_compare(context, &tmp, principal, 0, keytype)) {
+	if (kt_compare(context, &tmp, principal, 0, enctype)) {
 	    if (kvno == tmp.vno) {
 		krb5_kt_copy_entry_contents (context, &tmp, entry);
 		krb5_kt_free_entry (context, &tmp);

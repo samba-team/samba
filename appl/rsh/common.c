@@ -68,9 +68,12 @@ do_read (int fd,
 	    ret = krb5_net_read (context, &fd, buf, outer_len);
 	    if (ret != outer_len)
 		return ret;
-	    status = krb5_decrypt(context, buf, outer_len,
-				  ETYPE_DES_CBC_CRC, /* XXX */
-				  keyblock, &data);
+
+	    
+
+	    status = krb5_decrypt(context, crypto, KRB5_KU_OTHER_ENCRYPTED, 
+				  buf, outer_len, &data);
+	    
 	    if (status)
 		errx (1, "%s", krb5_get_err_text (context, status));
 	    memcpy (buf, data.data, len);
@@ -98,12 +101,9 @@ do_write (int fd, void *buf, size_t sz)
 	    u_int32_t len;
 	    int ret;
 
-	    status = krb5_encrypt (context,
-				   buf,
-				   sz,
-				   ETYPE_DES_CBC_CRC, /* XXX */
-				   keyblock,
-				   &data);
+	    status = krb5_encrypt(context, crypto, KRB5_KU_OTHER_ENCRYPTED,
+				  buf, sz, &data);
+	    
 	    if (status)
 		errx (1, "%s", krb5_get_err_text(context, status));
 	    len = htonl(sz);
