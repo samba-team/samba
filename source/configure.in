@@ -1757,7 +1757,7 @@ fi
 # check for a TDB password database
 AC_MSG_CHECKING(whether to use TDB password database)
 AC_ARG_WITH(tdbsam,
-[  --with-tdbsam           Include TDB password database (default=no)],
+[  --with-tdbsam           Include experimental TDB SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1774,7 +1774,7 @@ AC_ARG_WITH(tdbsam,
 # check for a LDAP password database
 AC_MSG_CHECKING(whether to use LDAP password database)
 AC_ARG_WITH(ldap,
-[  --with-ldapsam          Include Experimental LDAP-Sam support (default=no)],
+[  --with-ldapsam          Include experimental LDAP SAM support (default=no)],
 [ case "$withval" in
   yes)
     AC_MSG_RESULT(yes)
@@ -1791,20 +1791,20 @@ AC_ARG_WITH(ldap,
 #################################################
 ## commented out by --jerry
 # check for a NISPLUS password database
-#AC_MSG_CHECKING(whether to use NISPLUS password database)
-#AC_ARG_WITH(nisplus,
-#[  --with-nisplus          Include NISPLUS password database support (default=no)],
-#[ case "$withval" in
-#  yes)
-#    AC_MSG_RESULT(yes)
-#    AC_DEFINE(WITH_NISPLUS)
-#    ;;
-#  *)
-#    AC_MSG_RESULT(no)
-#    ;;
-#  esac ],
-#  AC_MSG_RESULT(no)
-#)
+AC_MSG_CHECKING(whether to use NISPLUS password database)
+AC_ARG_WITH(nisplussam,
+[  --with-nisplussam       Include NISPLUS SAM support (default=no)],
+[ case "$withval" in
+  yes)
+    AC_MSG_RESULT(yes)
+    AC_DEFINE(WITH_NISPLUSSAM)
+    ;;
+  *)
+    AC_MSG_RESULT(no)
+    ;;
+  esac ],
+  AC_MSG_RESULT(no)
+)
 
 #################################################
 # check for a NISPLUS_HOME support 

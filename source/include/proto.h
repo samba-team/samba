@@ -2127,6 +2127,18 @@ BOOL pdb_delete_sam_account(char *sname);
 BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override);
 BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd);
 
+/*The following definitions come from  passdb/pdb_nisplus.c  */
+
+BOOL pdb_setsampwent(BOOL update);
+void pdb_endsampwent(void);
+BOOL pdb_getsampwent(SAM_ACCOUNT *user);
+BOOL pdb_getsampwnam(SAM_ACCOUNT * user, char *sname);
+BOOL pdb_getsampwrid(SAM_ACCOUNT * user, uint32 rid);
+BOOL pdb_getsampwuid(SAM_ACCOUNT * user, uid_t uid);
+BOOL pdb_delete_sam_account(char *sname);
+BOOL pdb_add_sam_account(SAM_ACCOUNT * newpwd);
+BOOL pdb_update_sam_account(SAM_ACCOUNT * newpwd, BOOL override);
+
 /*The following definitions come from  passdb/pdb_smbpasswd.c  */
 
 BOOL pdb_setsampwent (BOOL update);
@@ -4118,6 +4130,10 @@ int reply_negprot(connection_struct *conn,
 		  char *inbuf,char *outbuf, int dum_size, 
 		  int dum_buffsize);
 
+/*The following definitions come from  smbd/noquotas.c  */
+
+BOOL disk_quotas(char *path,SMB_BIG_UINT *bsize,SMB_BIG_UINT *dfree,SMB_BIG_UINT *dsize);
+
 /*The following definitions come from  smbd/notify.c  */
 
 void remove_pending_change_notify_requests_by_fid(files_struct *fsp);
@@ -4245,16 +4261,6 @@ void construct_reply_common(char *inbuf,char *outbuf);
 int chain_reply(char *inbuf,char *outbuf,int size,int bufsize);
 void check_reload(int t);
 void smbd_process(void);
-
-/*The following definitions come from  smbd/quotas.c  */
-
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
-BOOL disk_quotas_vxfs(const pstring name, char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize);
 
 /*The following definitions come from  smbd/reply.c  */
 

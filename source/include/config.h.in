@@ -123,7 +123,7 @@
 #undef WITH_PROFILE
 #undef WITH_SSL
 #undef WITH_LDAP
-#undef WITH_NISPLUS
+#undef WITH_NISPLUSSAM
 #undef WITH_TDBPWD
 #undef WITH_PAM
 #undef WITH_PAM_SMBPASS
