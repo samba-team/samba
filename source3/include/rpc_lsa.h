@@ -43,7 +43,7 @@ enum SID_NAME_USE
 
 #define LSA_CLOSE              0x00
 #define LSA_DELETE             0x01
-#define LSA_ENUMPRIVS          0x02
+#define LSA_ENUM_PRIVS         0x02
 #define LSA_QUERYSECOBJ        0x03
 #define LSA_SETSECOBJ          0x04
 #define LSA_CHANGEPASSWORD     0x05
