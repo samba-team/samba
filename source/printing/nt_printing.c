@@ -1817,8 +1817,8 @@ uint32 get_a_printer_driver_9x_compatible(pstring line, fstring model)
 	DEBUGADD(10,("info3->configfile      [%s]\n", info3->configfile));
 
 	/*pstrcat(line, info3->name);             pstrcat(line, ":");*/
-	trim_string(info3->configfile, "\\print$\\WIN40\\0\\", 0);
-	pstrcat(line, info3->configfile);
+	trim_string(info3->driverpath, "\\print$\\WIN40\\0\\", 0);
+	pstrcat(line, info3->driverpath);
 	pstrcat(line, ":");
 	trim_string(info3->datafile, "\\print$\\WIN40\\0\\", 0);
 	pstrcat(line, info3->datafile);
