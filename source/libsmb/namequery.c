@@ -883,11 +883,11 @@ BOOL resolve_name(const char *name, struct in_addr *return_ip, int name_type)
 
 	if(internal_resolve_name(name, name_type, &ip_list, &count)) {
 		*return_ip = ip_list[0];
-		SAFE_FREE((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 	if(ip_list != NULL)
-		SAFE_FREE((char *)ip_list);
+		SAFE_FREE(ip_list);
 	return False;
 }
 
@@ -948,16 +948,16 @@ BOOL find_master_ip(char *group, struct in_addr *master_ip)
 
 	if (internal_resolve_name(group, 0x1D, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		SAFE_FREE((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 	if(internal_resolve_name(group, 0x1B, &ip_list, &count)) {
 		*master_ip = ip_list[0];
-		SAFE_FREE((char *)ip_list);
+		SAFE_FREE(ip_list);
 		return True;
 	}
 
-	SAFE_FREE((char *)ip_list);
+	SAFE_FREE(ip_list);
 	return False;
 }
 
