@@ -906,7 +906,7 @@ main(int argc, char **argv)
 
     if(priv_socket1 < 0) {
 	if (use_only_broken)
-	    errx ("unable to bind reserved port: is rsh setuid root?");
+	    errx (1, "unable to bind reserved port: is rsh setuid root?");
 	use_broken = 0;
     }
 
