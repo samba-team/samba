@@ -352,6 +352,7 @@ void init_samr_r_get_usrdom_pwinfo(SAMR_R_GET_USRDOM_PWINFO *r_u, NTSTATUS statu
 	 * but for trusts.
 	 */
 	r_u->unknown_1 = 0x01D1;
+	r_u->unknown_1 = 0x0015;
 
 	r_u->unknown_2 = 0x00000000;
 
@@ -2199,6 +2200,38 @@ BOOL samr_io_group_info1(char *desc, GROUP_INFO1 * gr1,
 }
 
 /*******************************************************************
+inits a GROUP_INFO3 structure.
+********************************************************************/
+
+void init_samr_group_info3(GROUP_INFO3 *gr3)
+{
+	DEBUG(5, ("init_samr_group_info3\n"));
+
+	gr3->unknown_1 = 0x3;
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+
+BOOL samr_io_group_info3(char *desc, GROUP_INFO3 *gr3, prs_struct *ps, int depth)
+{
+	if (gr3 == NULL)
+		return False;
+
+	prs_debug(ps, depth, desc, "samr_io_group_info3");
+	depth++;
+
+	if(!prs_align(ps))
+		return False;
+
+	if(!prs_uint32("unknown_1", ps, depth, &gr3->unknown_1))
+		return False;
+
+	return True;
+}
+
+/*******************************************************************
 inits a GROUP_INFO4 structure.
 ********************************************************************/
 
@@ -2255,18 +2288,18 @@ static BOOL samr_group_info_ctr(char *desc, GROUP_INFO_CTR **ctr,
 
 	if(!prs_uint16("switch_value1", ps, depth, &(*ctr)->switch_value1))
 		return False;
-	if(!prs_uint16("switch_value2", ps, depth, &(*ctr)->switch_value2))
-		return False;
 
 	switch ((*ctr)->switch_value1) {
 	case 1:
-		if(!samr_io_group_info1("group_info1",
-				  &(*ctr)->group.info1, ps, depth))
+		if(!samr_io_group_info1("group_info1", &(*ctr)->group.info1, ps, depth))
+			return False;
+		break;
+	case 3:
+		if(!samr_io_group_info3("group_info3", &(*ctr)->group.info3, ps, depth))
 			return False;
 		break;
 	case 4:
-		if(!samr_io_group_info4("group_info4",
-				  &(*ctr)->group.info4, ps, depth))
+		if(!samr_io_group_info4("group_info4", &(*ctr)->group.info4, ps, depth))
 			return False;
 		break;
 	default:
@@ -2405,6 +2438,9 @@ BOOL samr_io_r_delete_dom_group(char *desc, SAMR_R_DELETE_DOM_GROUP * r_u,
 	depth++;
 
 	if(!prs_align(ps))
+		return False;
+
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
 		return False;
 
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
@@ -4760,6 +4796,8 @@ BOOL samr_io_r_delete_dom_user(char *desc, SAMR_R_DELETE_DOM_USER * r_u,
 	if(!prs_align(ps))
 		return False;
 
+	if(!smb_io_pol_hnd("pol", &r_u->pol, ps, depth))
+		return False;
 	if(!prs_ntstatus("status", ps, depth, &r_u->status))
 		return False;
 

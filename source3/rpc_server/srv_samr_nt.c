@@ -1181,10 +1181,8 @@ NTSTATUS _samr_query_dispinfo(pipes_struct *p, SAMR_Q_QUERY_DISPINFO *q_u, SAMR_
 
 NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAMR_R_QUERY_ALIASINFO *r_u)
 {
-	fstring alias_desc = "Local Unix group";
-	fstring alias="";
-	enum SID_NAME_USE type;
 	struct samr_info *info = NULL;
+	GROUP_MAP map;
 
 	r_u->status = NT_STATUS_OK;
 
@@ -1198,14 +1196,14 @@ NTSTATUS _samr_query_aliasinfo(pipes_struct *p, SAMR_Q_QUERY_ALIASINFO *q_u, SAM
 	    !sid_check_is_in_builtin(&info->sid))
 		return NT_STATUS_OBJECT_TYPE_MISMATCH;
 
-	if(!local_lookup_sid(&info->sid, alias, &type))
+	if(!get_local_group_from_sid(info->sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_ALIAS;
 
 	switch (q_u->switch_level) {
 	case 3:
 		r_u->ptr = 1;
 		r_u->ctr.switch_value1 = 3;
-		init_samr_alias_info3(&r_u->ctr.alias.info3, alias_desc);
+		init_samr_alias_info3(&r_u->ctr.alias.info3, map.comment);
 		break;
 	default:
 		return NT_STATUS_INVALID_INFO_CLASS;
@@ -2981,8 +2979,62 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 
 NTSTATUS _samr_del_aliasmem(pipes_struct *p, SAMR_Q_DEL_ALIASMEM *q_u, SAMR_R_DEL_ALIASMEM *r_u)
 {
-	DEBUG(0,("_samr_del_aliasmem: Not yet implemented.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID alias_sid;
+	fstring alias_sid_str;
+	struct group *grp;
+	fstring grp_name;
+	uint32 rid;
+	GROUP_MAP map;
+	SAM_ACCOUNT *sam_pass=NULL;
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	sid_to_string(alias_sid_str, &alias_sid);
+	DEBUG(10, ("_samr_del_aliasmem:sid is %s\n", alias_sid_str));
+
+	if (!sid_check_is_in_our_domain(&alias_sid) &&
+	    !sid_check_is_in_builtin(&alias_sid)) {
+		DEBUG(10, ("_samr_del_aliasmem:invalid alias group\n"));
+		return NT_STATUS_NO_SUCH_ALIAS;
+	}
+
+	if( !get_local_group_from_sid(alias_sid, &map, MAPPING_WITHOUT_PRIV))
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	if ((grp=getgrgid(map.gid)) == NULL)
+		return NT_STATUS_NO_SUCH_ALIAS;
+
+	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
+	sid_peek_rid(&q_u->sid.sid, &rid);
+
+	/* check if the user exists before trying to remove it from the group */
+	pdb_init_sam(&sam_pass);
+	if(!pdb_getsampwrid(sam_pass, rid)) {
+		DEBUG(5,("_samr_del_aliasmem:User %d doesn't exist.\n", sam_pass->username));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* if the user is not in the group */
+	if(!user_in_group_list(sam_pass->username, grp_name)) {
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_MEMBER_IN_ALIAS;
+	}
+
+	smb_delete_user_group(grp_name, sam_pass->username);
+
+	/* check if the user has been removed then ... */
+	if(user_in_group_list(sam_pass->username, grp_name)) {
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_MEMBER_NOT_IN_ALIAS;	/* don't know what to reply else */
+	}
+
+	pdb_free_sam(&sam_pass);
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************
@@ -3047,8 +3099,62 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 
 NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DEL_GROUPMEM *r_u)
 {
-	DEBUG(0,("_samr_del_groupmem: Not yet implemented.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID group_sid;
+	SAM_ACCOUNT *sam_pass=NULL;
+	uint32 rid;
+	GROUP_MAP map;
+	fstring grp_name;
+	struct group *grp;
+
+	/*
+	 * delete the group member named q_u->rid
+	 * who is a member of the sid associated with the handle
+	 * the rid is a user's rid as the group is a domain group.
+	 */
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if(!sid_check_is_in_our_domain(&group_sid))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	rid=q_u->rid;
+
+	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	if ((grp=getgrgid(map.gid)) == NULL)
+		return NT_STATUS_NO_SUCH_GROUP;
+
+	/* we need to copy the name otherwise it's overloaded in user_in_group_list */
+	fstrcpy(grp_name, grp->gr_name);
+
+	/* check if the user exists before trying to remove it from the group */
+	pdb_init_sam(&sam_pass);
+	if(!pdb_getsampwrid(sam_pass, rid)) {
+		DEBUG(5,("User %d doesn't exist.\n", sam_pass->username));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* if the user is not in the group */
+	if(!user_in_group_list(sam_pass->username, grp_name)) {
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_MEMBER_NOT_IN_GROUP;
+	}
+
+	smb_delete_user_group(grp_name, sam_pass->username);
+
+	/* check if the user has been removed then ... */
+	if(user_in_group_list(sam_pass->username, grp_name)) {
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_ACCESS_DENIED;		/* don't know what to reply else */
+	}
+	
+	pdb_free_sam(&sam_pass);
+	return NT_STATUS_OK;
+
 }
 
 /*********************************************************************
@@ -3057,8 +3163,50 @@ NTSTATUS _samr_del_groupmem(pipes_struct *p, SAMR_Q_DEL_GROUPMEM *q_u, SAMR_R_DE
 
 NTSTATUS _samr_delete_dom_user(pipes_struct *p, SAMR_Q_DELETE_DOM_USER *q_u, SAMR_R_DELETE_DOM_USER *r_u )
 {
-	DEBUG(0,("_samr_delete_dom_user: Not yet implemented.\n"));
-	return NT_STATUS_NOT_IMPLEMENTED;
+	DOM_SID user_sid;
+	SAM_ACCOUNT *sam_pass=NULL;
+	uint32 rid;
+
+	DEBUG(5, ("_samr_delete_dom_user: %d\n", __LINE__));
+
+	/* Find the policy handle. Open a policy on it. */
+	if (!get_lsa_policy_samr_sid(p, &q_u->user_pol, &user_sid)) 
+		return NT_STATUS_INVALID_HANDLE;
+
+	if (!sid_check_is_in_our_domain(&user_sid))
+		return NT_STATUS_CANNOT_DELETE;
+
+	sid_peek_rid(&user_sid, &rid);
+
+	/* check if the user exists before trying to delete */
+	pdb_init_sam(&sam_pass);
+	if(!pdb_getsampwrid(sam_pass, rid)) {
+		DEBUG(5,("_samr_delete_dom_user:User %d doesn't exist.\n", sam_pass->username));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_NO_SUCH_USER;
+	}
+
+	/* delete the unix side */
+	/*
+	 * note: we don't check if the delete really happened
+	 * as the script is not necessary present
+	 * and maybe the sysadmin doesn't want to delete the unix side
+	 */
+	smb_delete_user(sam_pass->username);
+
+	/* and delete the samba side */
+	if (!pdb_delete_sam_account(sam_pass->username)) {
+		DEBUG(5,("_samr_delete_dom_user:Failed to delete entry for user %s.\n", sam_pass->username));
+		pdb_free_sam(&sam_pass);
+		return NT_STATUS_CANNOT_DELETE;
+	}
+	
+	pdb_free_sam(&sam_pass);
+
+	if (!close_policy_hnd(p, &q_u->user_pol))
+		return NT_STATUS_OBJECT_NAME_INVALID;
+
+	return NT_STATUS_OK;
 }
 
 /*********************************************************************
@@ -3094,7 +3242,7 @@ NTSTATUS _samr_delete_dom_group(pipes_struct *p, SAMR_Q_DELETE_DOM_GROUP *q_u, S
 	DEBUG(10, ("lookup on Domain SID\n"));
 
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
-		return NT_STATUS_NO_SUCH_ALIAS;
+		return NT_STATUS_NO_SUCH_GROUP;
 
 	gid=map.gid;
 
@@ -3326,6 +3474,10 @@ NTSTATUS _samr_query_groupinfo(pipes_struct *p, SAMR_Q_QUERY_GROUPINFO *q_u, SAM
 				return NT_STATUS_NO_SUCH_GROUP;
 			init_samr_group_info1(&ctr->group.info1, map.nt_name, map.comment, num_uids);
 			SAFE_FREE(uid);
+			break;
+		case 3:
+			ctr->switch_value1 = 3;
+			init_samr_group_info3(&ctr->group.info3);
 			break;
 		case 4:
 			ctr->switch_value1 = 4;

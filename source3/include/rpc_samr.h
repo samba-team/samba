@@ -1033,6 +1033,12 @@ typedef struct samr_group_info1
 
 } GROUP_INFO1;
 
+typedef struct samr_group_info3
+{
+	uint32 unknown_1; /* 0x0000 0003 - number of group members? */
+
+} GROUP_INFO3;
+
 typedef struct samr_group_info4
 {
 	UNIHDR hdr_acct_desc;
@@ -1044,12 +1050,12 @@ typedef struct samr_group_info4
 typedef struct group_info_ctr
 {
 	uint16 switch_value1;
-	uint16 switch_value2;
 
 	union
  	{
-		GROUP_INFO4 info4;
 		GROUP_INFO1 info1;
+		GROUP_INFO3 info3;
+		GROUP_INFO4 info4;
 
 	} group;
 
@@ -1488,7 +1494,6 @@ typedef struct r_samr_query_groupmem_info
 typedef struct q_samr_del_group_mem_info
 {
 	POLICY_HND pol;       /* policy handle */
-
 	uint32 rid;         /* rid */
 
 } SAMR_Q_DEL_GROUPMEM;

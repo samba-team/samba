@@ -50,7 +50,7 @@ static int smb_create_user(const char *unix_user, const char *homedir)
  Delete a UNIX user on demand.
 ****************************************************************************/
 
-static int smb_delete_user(char *unix_user)
+int smb_delete_user(char *unix_user)
 {
 	pstring del_script;
 	int ret;
