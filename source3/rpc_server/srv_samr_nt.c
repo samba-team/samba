@@ -2259,10 +2259,10 @@ static BOOL set_user_info_23(SAM_USER_INFO_23 *id23, uint32 rid)
 }
 
 /*******************************************************************
- set_user_info_24
+ set_user_info_pw
  ********************************************************************/
 
-static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
+static BOOL set_user_info_pw(char *pass, uint32 rid)
 {
 	SAM_ACCOUNT *pwd = NULL;
 	uchar nt_hash[16];
@@ -2282,7 +2282,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
 
 	memset(buf, 0, sizeof(buf));
  
-	if (!decode_pw_buffer((char*)id24->pass, buf, 256, &len, nt_hash, lm_hash)) {
+	if (!decode_pw_buffer(pass, buf, 256, &len, nt_hash, lm_hash)) {
 		pdb_free_sam(pwd);
 		return False;
  	}
@@ -2306,7 +2306,7 @@ static BOOL set_user_info_24(SAM_USER_INFO_24 *id24, uint32 rid)
  
 	memset(buf, 0, sizeof(buf));
  
-	DEBUG(0,("set_user_info_24: pdb_update_sam_account()\n"));
+	DEBUG(5,("set_user_info_pw: pdb_update_sam_account()\n"));
  
 	/* update the SAMBA password */
 	if(!pdb_update_sam_account(pwd, True)) {
@@ -2390,13 +2390,39 @@ uint32 _samr_set_userinfo(pipes_struct *p, SAMR_Q_SET_USERINFO *q_u, SAMR_R_SET_
 			break;
 
 		case 24:
-			SamOEMhash(ctr->info.id24->pass, sess_key, 1);
-			if (!set_user_info_24(ctr->info.id24, rid))
+			SamOEMhash(ctr->info.id24->pass, sess_key, 516);
+
+			dump_data(100, (char *)ctr->info.id24->pass, 516);
+
+			if (!set_user_info_pw(ctr->info.id24->pass, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
 
+		case 25:
+#if 0
+			/*
+			 * Currently we don't really know how to unmarshall
+			 * the level 25 struct, and the password encryption
+			 * is different. This is a placeholder for when we
+			 * do understand it. In the meantime just return INVALID
+			 * info level and W2K SP2 drops down to level 23... JRA.
+			 */
+
+			SamOEMhash(ctr->info.id25->pass, sess_key, 532);
+
+			dump_data(100, (char *)ctr->info.id25->pass, 532);
+
+			if (!set_user_info_pw(ctr->info.id25->pass, rid))
+				return NT_STATUS_ACCESS_DENIED;
+			break;
+#endif
+			return NT_STATUS_INVALID_INFO_CLASS;
+
 		case 23:
-			SamOEMhash(ctr->info.id23->pass, sess_key, 1);
+			SamOEMhash(ctr->info.id23->pass, sess_key, 516);
+
+			dump_data(100, (char *)ctr->info.id23->pass, 516);
+
 			if (!set_user_info_23(ctr->info.id23, rid))
 				return NT_STATUS_ACCESS_DENIED;
 			break;
