@@ -1,5 +1,9 @@
 2000-12-15  Johan Danielsson  <joda@pdc.kth.se>
 
+	* admin/Makefile.am: merge srvconvert and srvcreate with copy
+
+	* admin/copy.c: merge srvconvert and srvcreate with copy
+
 	* lib/krb5/Makefile.am: always build keytab_krb4.c
 
 	* lib/krb5/context.c: always register the krb4 keytab functions
