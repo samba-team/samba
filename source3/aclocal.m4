@@ -610,10 +610,9 @@ AC_DEFUN(jm_ICONV,
   fi
 ])
 
-AC_DEFUN(rjs_CHARSET
-[
+AC_DEFUN(rjs_CHARSET,[
   dnl Find out if we can convert from $1 to UCS2-LE
-  AC_MSG_CHECKING(we can convert from $1 to UCS2-LE)
+  AC_MSG_CHECKING([can we convert from $1 to UCS2-LE?])
   AC_TRY_RUN([
 #include <$jm_cv_include>
 main(){
@@ -623,10 +622,8 @@ main(){
     }
     return 0;
 }
-  ],ICONV_CHARSET=$1,ICONV_CHARSET="",])
-  if test x"$ICONV_CHARSET" != x; then
-     AC_MSG_RESULT($ICONV_CHARSET)
-  fi
+  ],ICONV_CHARSET=$1,ICONV_CHARSET=no,ICONV_CHARSET=cross)
+  AC_MSG_RESULT($ICONV_CHARSET)
 ])
 
 dnl CFLAGS_ADD_DIR(CFLAGS, $INCDIR)
