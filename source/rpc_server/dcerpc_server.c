@@ -614,6 +614,11 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	/* carry over the pointer count to the reply in case we are
+	   using full pointer. See NDR specification for full
+	   pointers */
+	push->ptr_count = pull->ptr_count;
+
 	if (lp_rpc_big_endian()) {
 		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
