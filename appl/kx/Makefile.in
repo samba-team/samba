@@ -1,0 +1,77 @@
+SHELL = /bin/sh
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+AR = ar
+DEFS = @DEFS@
+CFLAGS = @CFLAGS@
+INSTALL = @INSTALL@
+LIBS = @LIBS@
+MKDIRHIER = @top_srcdir@/mkdirhier-sh
+
+prefix = @prefix@
+exec_prefix = $(prefix)
+libdir = $(exec_prefix)/lib
+libexecdir = $(exec_prefix)/libexec
+bindir = $(exec_prefix)/bin
+
+PROG_BIN	= kx
+PROG_LIBEXEC	= kxd
+PROGS = $(PROG_BIN) $(PROG_LIBEXEC)
+
+SOURCES_KX     = kx.c
+SOURCES_KXD    = kxd.c
+
+OBJECTS_KX     = kx.o
+OBJECTS_KXD    = kxd.o
+
+OBJECTS = $(OBJECTS_KX) $(OBJECTS_KXD)
+SOURCES = $(SOURCES_KX) $(SOURCES_KXD)
+
+all: $(PROGS)
+
+Wall:
+	make CFLAGS="-g -Wall -Wmissing-prototypes -Wmissing-declarations -D__USE_FIXED_PROTOTYPES__"
+
+.c.o:
+	$(CC) -c $(CPPFLAGS) $(DEFS) -I../.. -I../../include -I$(srcdir) -I$(srcdir)/../../include $(CFLAGS) $<
+
+install: all
+	$(MKDIRHIER) $(bindir)
+	for x in $(PROG_BIN); do $(INSTALL) $$x $(bindir); done
+	for x in $(PROG_LIBEXEC); do $(INSTALL) $$x $(libexecdir); done
+
+uninstall:
+
+TAGS: $(SOURCES)
+	etags $(SOURCES)
+
+check:
+
+clean:
+	rm -f *.a *.o $(PROGS)
+
+mostlyclean: clean
+
+distclean: clean
+	rm -f Makefile *.tab.c *~
+	rm -rf CVS
+
+realclean: distclean
+	rm -f TAGS
+
+dist: $(DISTFILES)
+	for file in $(DISTFILES); do \
+	  ln $$file ../`cat ../.fname`/lib \
+	    || cp -p $$file ../`cat ../.fname`/lib; \
+	done
+
+kx: $(OBJECTS_KX)
+	$(CC) $(LDFLAGS) -o $@ $(OBJECTS_KX) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+
+kxd: $(OBJECTS_KXD)
+	$(CC) $(LDFLAGS) -o $@ $(OBJECTS_KXD) -L../../lib/krb -lkrb -L../../lib/des -ldes $(LIBS)
+
+$(OBJECTS): ../../config.h
