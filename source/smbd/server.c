@@ -1637,13 +1637,15 @@ BOOL check_file_sharing(int cnum,char *fname, BOOL rename_op)
           {
             DEBUG(0,("check_file_sharing: NT redirector workaround - rename attempted on \
 batch oplocked file %s, dev = %x, inode = %x\n", fname, dev, inode));
-#if 0
             /* 
              * This next line is a test that allows the deny-mode
-             * processing to be skipped. JRA.
+             * processing to be skipped. This seems to be needed as
+             * NT insists on the rename succeeding (in Office 9x no less !).
+             * This should be removed as soon as (a) MS fix the redirector
+             * bug or (b) NT SMB support in Samba makes NT not issue the
+             * call (as is my fervent hope). JRA.
              */ 
             continue;
-#endif
           }
           else
           {

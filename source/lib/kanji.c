@@ -693,7 +693,39 @@ static char *sj_to_hex(char *from, BOOL overwrite)
 }
 
 /*******************************************************************
-  kanji/kana -> ":xx" 
+  CAP <-> SJIS
+********************************************************************/
+/* ":xx" CAP -> a byte */
+static char *cap_to_sj(char *from, BOOL overwrite)
+{
+    char *sp, *dp;
+
+    sp = (char *) from;
+    dp = cvtbuf;
+    while (*sp) {
+        /*
+         * The only change between this and hex_to_sj is here. sj_to_cap only
+         * translates characters greater or equal to 0x80 - make sure that here
+         * we only do the reverse (that's why the strchr is used rather than
+         * isxdigit. Based on fix from ado@elsie.nci.nih.gov (Arthur David Olson).
+         */
+        if (*sp == hex_tag && (strchr ("89abcdefABCDEF", sp[1]) != NULL) && isxdigit (sp[2])) {
+            *dp++ = (hex2bin (sp[1])<<4) | (hex2bin (sp[2]));
+            sp += 3;
+        } else
+            *dp++ = *sp++;
+    }
+    *dp = '\0';
+    if (overwrite) {
+        strcpy ((char *) from, (char *) cvtbuf);
+        return (char *) from;
+    } else {
+        return cvtbuf;
+    }
+}
+
+/*******************************************************************
+  kanji/kana -> ":xx" - CAP format.
 ********************************************************************/
 static char *sj_to_cap(char *from, BOOL overwrite)
 {
@@ -778,7 +810,7 @@ static int setup_string_function(int codes)
 
     case CAP_CODE:
 	_dos_to_unix = sj_to_cap;
-	_unix_to_dos = hex_to_sj;
+	_unix_to_dos = cap_to_sj;
 	break;
     }
     return codes;

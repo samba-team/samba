@@ -437,7 +437,7 @@ BOOL check_lanman_password(char *user, unsigned char *pass1,
   /* Check that the two old passwords match. */
   if(memcmp(smbpw->smb_passwd, unenc_old_pw, 16))
   {
-    DEBUG(0,("check_lanman_password: old password doens't match.\n"));
+    DEBUG(0,("check_lanman_password: old password doesn't match.\n"));
     return False;
   }
 
