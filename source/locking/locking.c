@@ -380,6 +380,38 @@ void unlock_share_entry_fsp(files_struct *fsp)
 }
 
 /*******************************************************************
+ Print out a share mode.
+********************************************************************/
+
+static char *share_mode_str(int num, share_mode_entry *e)
+{
+	static pstring share_str;
+
+	slprintf(share_str, sizeof(share_str)-1, "share_mode_entry[%d]: \
+pid = %u, share_mode = 0x%x, port = 0x%x, type= 0x%x, file_id = %lu, dev = 0x%x, inode = %.0f",
+	num, e->pid, e->share_mode, e->op_port, e->op_type, e->share_file_id,
+	(unsigned int)e->dev, (double)e->inode );
+
+	return share_str;
+}
+
+/*******************************************************************
+ Print out a share mode table.
+********************************************************************/
+
+static void print_share_mode_table(struct locking_data *data)
+{
+	int num_share_modes = data->u.num_share_mode_entries;
+	share_mode_entry *shares = (share_mode_entry *)(data + 1);
+	int i;
+
+	for (i = 0; i < num_share_modes; i++) {
+		share_mode_entry *entry_p = &shares[i];
+		DEBUG(10,("print_share_mode_table: %s\n", share_mode_str(i, entry_p) ));
+	}
+}
+
+/*******************************************************************
  Get all share mode entries for a dev/inode pair.
 ********************************************************************/
 
@@ -405,7 +437,7 @@ int get_share_modes(connection_struct *conn,
 		int del_count = 0;
 
 		shares = (share_mode_entry *)memdup(dbuf.dptr + sizeof(*data),	
-								num_share_modes * sizeof(share_mode_entry));
+						num_share_modes * sizeof(share_mode_entry));
 
 		if (!shares) {
 			SAFE_FREE(dbuf.dptr);
@@ -418,11 +450,13 @@ int get_share_modes(connection_struct *conn,
 
 		for (i = 0; i < num_share_modes; ) {
 			share_mode_entry *entry_p = &shares[i];
-			if (process_exists(entry_p->pid))
+			if (process_exists(entry_p->pid)) {
+				DEBUG(10,("get_share_modes: %s\n", share_mode_str(i, entry_p) ));
 				i++;
-			else {
+			} else {
+				DEBUG(10,("get_share_modes: deleted %s\n", share_mode_str(i, entry_p) ));
 				memcpy( &shares[i], &shares[i+1],
-							sizeof(share_mode_entry) * (num_share_modes - i - 1));
+					sizeof(share_mode_entry) * (num_share_modes - i - 1));
 				num_share_modes--;
 				del_count++;
 			}
@@ -535,6 +569,8 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 
 	for (i=0;i<data->u.num_share_mode_entries;) {
 		if (share_modes_identical(&shares[i], entry)) {
+			DEBUG(10,("del_share_entry: deleted %s\n",
+				share_mode_str(i, &shares[i]) ));
 			if (ppse)
 				*ppse = memdup(&shares[i], sizeof(*shares));
 			data->u.num_share_mode_entries--;
@@ -564,6 +600,8 @@ ssize_t del_share_entry( SMB_DEV_T dev, SMB_INO_T inode,
 				count = -1;
 		}
 	}
+	DEBUG(10,("del_share_entry: Remaining table.\n"));
+	print_share_mode_table((struct locking_data *)dbuf.dptr);
 	SAFE_FREE(dbuf.dptr);
 	return count;
 }
@@ -623,6 +661,9 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 		dbuf.dsize = size;
 		if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 			ret = False;
+
+		print_share_mode_table((struct locking_data *)p);
+
 		SAFE_FREE(p);
 		return ret;
 	}
@@ -648,6 +689,7 @@ BOOL set_share_mode(files_struct *fsp, uint16 port, uint16 op_type)
 	dbuf.dsize = size;
 	if (tdb_store(tdb, locking_key_fsp(fsp), dbuf, TDB_REPLACE) == -1)
 		ret = False;
+	print_share_mode_table((struct locking_data *)p);
 	SAFE_FREE(p);
 	return ret;
 }
