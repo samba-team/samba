@@ -314,7 +314,7 @@ uint32 cli_samr_open_group(struct cli_state *cli, POLICY_HND *domain_pol,
 	/* Return output parameters */
 
 	if ((result = r.status) == NT_STATUS_NOPROBLEMO) {
-		*group_pol = r.group_pol;
+		*group_pol = r.pol;
 	}
 
  done:
