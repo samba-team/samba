@@ -42,7 +42,9 @@ char *hstrerror(int herr);
 
 #ifndef HAVE_INET_ATON
 /* Minimal implementation of inet_aton. Doesn't handle hex numbers. */
+#ifndef __GNUC__
 int inet_aton(char *cp, struct in_addr *adr);
+#endif
 #endif
 
 #endif /*  __ROKEN_H__ */

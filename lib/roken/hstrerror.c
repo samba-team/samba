@@ -2,6 +2,8 @@
 #include <config.h>
 #endif
 
+#include "roken.h"
+
 #ifndef HAVE_HSTRERROR
 
 #include <stdio.h>

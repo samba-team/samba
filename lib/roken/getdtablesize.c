@@ -2,6 +2,8 @@
 #include <config.h>
 #endif
 
+#include "roken.h"
+
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/param.h>

@@ -4,7 +4,10 @@
 
 RCSID("$Id$");
 
+#include "roken.h"
+
 #include <stdlib.h>
+#include <string.h>
 
 /*
  * This is the easy way out, use putenv to implement setenv. We might

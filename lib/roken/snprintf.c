@@ -2,10 +2,12 @@
 #include <config.h>
 #endif
 
+RCSID("$Id$");
+
+#include "roken.h"
+
 #include <stdio.h>
 #include <stdarg.h>
-
-RCSID("$Id$");
 
 int snprintf(char *s, int n, const char *fmt, ...)
 {

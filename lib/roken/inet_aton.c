@@ -2,7 +2,10 @@
 #include <config.h>
 #endif
 
+#include "roken.h"
+
 #include <sys/types.h>
+#include <stdio.h>
 #include <netinet/in.h>
 #include <netdb.h>
 
