@@ -453,7 +453,7 @@ kadm5_s_get_principal __P((
 kadm5_ret_t
 kadm5_s_get_principals __P((
 	void *server_handle,
-	char *exp,
+	const char *exp,
 	char ***princs,
 	int *count));
 
