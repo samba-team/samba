@@ -1875,7 +1875,7 @@ struct cli_state *do_connect(char *server, char *share, int smb_port)
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password)); 
+	ZERO_STRUCT(password); 
 
 	smb_cli->use_ntlmv2 = lp_client_ntlmv2();
 

@@ -316,7 +316,7 @@ BOOL cli_send_trans(struct cli_state *cli, int trans,
 	this_lparam = MIN(lparam,cli->max_xmit - (500+lsetup*2)); /* hack */
 	this_ldata = MIN(ldata,cli->max_xmit - (500+lsetup*2+this_lparam));
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,14+lsetup,0,True);
 	CVAL(cli->outbuf,smb_com) = trans;
 	SSVAL(cli->outbuf,smb_tid, cli->cnum);
@@ -788,7 +788,7 @@ BOOL cli_session_setup_x(struct cli_state *cli,
 	}
 
 	/* send a session setup command */
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 
 	if (cli->protocol < PROTOCOL_NT1)
 	{
@@ -1059,7 +1059,7 @@ BOOL cli_ulogoff(struct cli_state *cli)
 		return True;
 	}
 
-        bzero(cli->outbuf,smb_size);
+        memset(cli->outbuf, 0, smb_size);
         set_message(cli->outbuf,2,0,True);
         CVAL(cli->outbuf,smb_com) = SMBulogoffX;
         cli_setup_packet(cli);
@@ -1081,8 +1081,8 @@ BOOL cli_send_tconX(struct cli_state *cli,
 {
 	fstring fullshare, pword;
 	char *p;
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	fstrcpy(cli->share, share);
 
@@ -1158,7 +1158,7 @@ send a tree disconnect
 ****************************************************************************/
 BOOL cli_tdis(struct cli_state *cli)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBtdis;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -1178,8 +1178,8 @@ BOOL cli_rename(struct cli_state *cli, char *fname_src, char *fname_dst)
 {
         char *p;
 
-        bzero(cli->outbuf,smb_size);
-        bzero(cli->inbuf,smb_size);
+        memset(cli->outbuf, 0, smb_size);
+        memset(cli->inbuf, 0, smb_size);
 
         set_message(cli->outbuf,1, 4 + strlen(fname_src) + strlen(fname_dst), True);
 
@@ -1215,8 +1215,8 @@ BOOL cli_unlink(struct cli_state *cli, char *fname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,1, 2 + strlen(fname),True);
 
@@ -1249,8 +1249,8 @@ BOOL cli_mkdir(struct cli_state *cli, char *dname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,0, 2 + strlen(dname),True);
 
@@ -1281,8 +1281,8 @@ BOOL cli_rmdir(struct cli_state *cli, char *dname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,0, 2 + strlen(dname),True);
 
@@ -1315,8 +1315,8 @@ int cli_nt_create(struct cli_state *cli, const char *fname)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,24,1 + strlen(fname),True);
 
@@ -1391,8 +1391,8 @@ int cli_open(struct cli_state *cli, const char *fname,
 	}
 #endif /* O_SYNC */
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,15,1 + strlen(fname),True);
 
@@ -1432,8 +1432,8 @@ int cli_open(struct cli_state *cli, const char *fname,
 ****************************************************************************/
 BOOL cli_close(struct cli_state *cli, int fnum)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,3,0,True);
 
@@ -1465,8 +1465,8 @@ BOOL cli_lock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int ti
 	char *p;
         int saved_timeout = cli->timeout;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,8,10,True);
 
@@ -1510,8 +1510,8 @@ BOOL cli_unlock(struct cli_state *cli, int fnum, uint32 offset, uint32 len, int 
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,8,10,True);
 
@@ -1551,8 +1551,8 @@ issue a single SMBread and don't wait for a reply
 static void cli_issue_read(struct cli_state *cli, int fnum, off_t offset, 
 			   size_t size, int i)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,10,0,True);
 		
@@ -1695,8 +1695,8 @@ static void cli_issue_write(struct cli_state *cli, int fnum, off_t offset, uint1
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,12,size,True);
 	
@@ -1801,8 +1801,8 @@ BOOL cli_getattrE(struct cli_state *cli, int fd,
 		  uint16 *attr, size_t *size, 
 		  time_t *c_time, time_t *a_time, time_t *m_time)
 {
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,2,0,True);
 
@@ -1853,8 +1853,8 @@ BOOL cli_getatr(struct cli_state *cli, char *fname,
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,0,strlen(fname)+2,True);
 
@@ -1899,8 +1899,8 @@ BOOL cli_setatr(struct cli_state *cli, char *fname, uint16 attr, time_t t)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
-	bzero(cli->inbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
+	memset(cli->inbuf, 0, smb_size);
 
 	set_message(cli->outbuf,8,strlen(fname)+4,True);
 
@@ -2517,7 +2517,7 @@ BOOL cli_negprot(struct cli_state *cli)
 	int numprots;
 	int plength;
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 
 	/* setup the protocol strings */
 	for (plength=0,numprots=0;
@@ -3650,7 +3650,7 @@ int cli_printjob_del(struct cli_state *cli, int job)
 	int rdrcnt,rprcnt, ret = -1;
 	pstring param;
 
-	bzero(param,sizeof(param));
+	ZERO_STRUCT(param);
 
 	p = param;
 	SSVAL(p,0,81);		/* DosPrintJobDel() */
@@ -3691,7 +3691,7 @@ int cli_print_queue(struct cli_state *cli,
 	int result_code=0;
 	int i = -1;
 	
-	bzero(param,sizeof(param));
+	ZERO_STRUCT(param);
 
 	p = param;
 	SSVAL(p,0,76);         /* API function number 76 (DosPrintJobEnum) */
@@ -3760,7 +3760,7 @@ BOOL cli_chkpath(struct cli_state *cli, char *path)
 	trim_string(path2,NULL,"\\");
 	if (!*path2) *path2 = '\\';
 	
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,0,4 + strlen(path2),True);
 	SCVAL(cli->outbuf,smb_com,SMBchkpth);
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3790,7 +3790,7 @@ BOOL cli_message_start(struct cli_state *cli, char *host, char *username,
 	char *p;
 
 	/* send a SMBsendstrt command */
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendstrt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3827,7 +3827,7 @@ BOOL cli_message_text(struct cli_state *cli, char *msg, int len, int grp)
 {
 	char *p;
 
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,1,len+3,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendtxt;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3855,7 +3855,7 @@ end a message
 ****************************************************************************/
 BOOL cli_message_end(struct cli_state *cli, int grp)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,1,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBsendend;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);
@@ -3881,7 +3881,7 @@ query disk space
 ****************************************************************************/
 BOOL cli_dskattr(struct cli_state *cli, int *bsize, int *total, int *avail)
 {
-	bzero(cli->outbuf,smb_size);
+	memset(cli->outbuf, 0, smb_size);
 	set_message(cli->outbuf,0,0,True);
 	CVAL(cli->outbuf,smb_com) = SMBdskattr;
 	SSVAL(cli->outbuf,smb_tid,cli->cnum);

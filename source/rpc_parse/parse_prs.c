@@ -158,7 +158,7 @@ BOOL prs_alloc_data(prs_struct * buf, int size)
 		return False;
 	}
 
-	bzero(buf->data, buf->data_size);
+	memset(buf->data, 0,  buf->data_size);
 	buf->end = buf->start + size;
 
 	CHECK_STRUCT(buf);

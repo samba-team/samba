@@ -1540,7 +1540,7 @@ static BOOL lsa_io_dom_query(char *desc,  DOM_QUERY *d_q, prs_struct *ps, int de
 	}
 	else
 	{
-		bzero(&(d_q->dom_sid), sizeof(d_q->dom_sid));
+		ZERO_STRUCT(d_q->dom_sid);
 	}
 
 	return True;

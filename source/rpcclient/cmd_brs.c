@@ -41,7 +41,7 @@ void cmd_brs_query_info(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_brs, "\\\\");
 	fstrcat(dest_brs, info->dest_host);

@@ -541,7 +541,7 @@ oplocks. Returning success.\n"));
     /* Send the message back after OR'ing in the 'REPLY' bit. */
     SSVAL(msg_start,OPBRK_MESSAGE_CMD_OFFSET,OPLOCK_BREAK_CMD | CMD_REPLY);
 
-    bzero((char *)&toaddr,sizeof(toaddr));
+    ZERO_STRUCT(toaddr);
     toaddr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
     toaddr.sin_port = htons(from_port);
     toaddr.sin_family = AF_INET;
@@ -663,7 +663,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval)
   }
 
   /* Prepare the SMBlockingX message. */
-  bzero(outbuf,smb_size);
+  memset(outbuf, 0, smb_size);
   set_message(outbuf,8,0,True);
 
   SCVAL(outbuf,smb_com,SMBlockingX);
@@ -883,7 +883,7 @@ should be %d\n", pid, share_entry->op_port, global_oplock_port));
 #endif /* LARGE_SMB_INO_T */
 
   /* set the address and port */
-  bzero((char *)&addr_out,sizeof(addr_out));
+  ZERO_STRUCT(addr_out);
   addr_out.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
   addr_out.sin_port = htons( share_entry->op_port );
   addr_out.sin_family = AF_INET;

@@ -238,7 +238,7 @@ BOOL make_owf_info(OWF_INFO *hash, const uint8 data[16])
 	}
 	else
 	{
-		bzero(hash->data, sizeof(hash->data));
+		ZERO_STRUCT(hash->data);
 	}
 
 	return True;
@@ -1357,7 +1357,7 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 	}
 	else
 	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+		ZERO_STRUCT(usr->user_sess_key);
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
@@ -1365,7 +1365,7 @@ BOOL make_net_user_info2W(NET_USER_INFO_2 * usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	ZERO_STRUCT(usr->padding);
 	if (padding != NULL)
 	{
 		memcpy(usr->padding, padding, 8);
@@ -1467,7 +1467,7 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 	}
 	else
 	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+		ZERO_STRUCT(usr->user_sess_key);
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
@@ -1475,7 +1475,7 @@ BOOL make_net_user_info2(NET_USER_INFO_2 * usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	ZERO_STRUCT(usr->padding);
 	if (padding != NULL)
 	{
 		memcpy(usr->padding, padding, 8);
@@ -1732,7 +1732,7 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 	}
 	else
 	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+		ZERO_STRUCT(usr->user_sess_key);
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
@@ -1740,7 +1740,7 @@ BOOL make_net_user_info3W(NET_USER_INFO_3 * usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	ZERO_STRUCT(usr->padding);
 	if (padding != NULL)
 	{
 		memcpy(usr->padding, padding, 8);
@@ -1850,7 +1850,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 	}
 	else
 	{
-		bzero(usr->user_sess_key, sizeof(usr->user_sess_key));
+		ZERO_STRUCT(usr->user_sess_key);
 	}
 
 	make_uni_hdr(&(usr->hdr_logon_srv), len_logon_srv);
@@ -1858,7 +1858,7 @@ BOOL make_net_user_info3(NET_USER_INFO_3 * usr,
 
 	usr->buffer_dom_id = dom_sid ? 1 : 0;	/* yes, we're bothering to put a domain SID in */
 
-	bzero(usr->padding, sizeof(usr->padding));
+	ZERO_STRUCT(usr->padding);
 	if (padding != NULL)
 	{
 		memcpy(usr->padding, padding, 8);

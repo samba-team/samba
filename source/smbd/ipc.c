@@ -393,7 +393,7 @@ int reply_trans(connection_struct *conn, char *inbuf,char *outbuf, int size, int
 	int dsoff = SVAL(inbuf,smb_vwv12);
 	int suwcnt = CVAL(inbuf,smb_vwv13);
 
-	bzero(name, sizeof(name));
+	ZERO_STRUCT(name);
 	fstrcpy(name,smb_buf(inbuf));
 
 	if (dscnt > tdscnt || pscnt > tpscnt) {

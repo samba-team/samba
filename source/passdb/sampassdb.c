@@ -307,7 +307,7 @@ struct sam_passwd *getsam21pwrid(uint32 rid)
 static void pwdb_init_dispinfo(struct sam_disp_info *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	ZERO_STRUCTP(user);
 	user->user_rid = 0xffffffff;
 }
 
@@ -317,7 +317,7 @@ static void pwdb_init_dispinfo(struct sam_disp_info *user)
 void pwdb_init_sam(struct sam_passwd *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	ZERO_STRUCTP(user);
 
 	init_nt_time(&user->logon_time);
 	init_nt_time(&user->logoff_time);

@@ -1038,7 +1038,7 @@ int get_printqueue(int snum, connection_struct *conn, const vuser_key *key,
 			break;
 		}
 
-		bzero((char *)&(*queue)[count],sizeof(**queue));
+		memset((char *)&(*queue)[count], 0, sizeof(**queue));
 	  
 		/* parse it */
 		if (!parse_lpq_entry(snum,line,

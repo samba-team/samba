@@ -40,7 +40,7 @@ void cmd_wks_query_info(struct client_info *info, int argc, char *argv[])
 
 	BOOL res = True;
 
-	bzero(&ctr, sizeof(ctr));
+	ZERO_STRUCT(ctr);
 
 	fstrcpy(dest_wks, "\\\\");
 	fstrcat(dest_wks, info->dest_host);

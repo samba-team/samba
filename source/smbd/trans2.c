@@ -273,7 +273,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
   if(params == NULL)
     return(ERROR(ERRDOS,ERRnomem));
 
-  bzero(params,28);
+  memset(params, 0, 28);
   SSVAL(params,0,fsp->fnum);
   SSVAL(params,2,fmode);
   put_dos_date2(params,4, mtime);
@@ -709,7 +709,7 @@ static int call_trans2findfirst(connection_struct *conn,
   pdata = *ppdata = Realloc(*ppdata, max_data_bytes + 1024);
   if(!*ppdata)
     return(ERROR(ERRDOS,ERRnomem));
-  bzero(pdata,max_data_bytes);
+  memset(pdata, 0, max_data_bytes);
 
   /* Realloc the params space */
   params = *pparams = Realloc(*pparams, 10);
@@ -892,7 +892,7 @@ resume_key = %d resume name = %s continue=%d level = %d\n",
   pdata = *ppdata = Realloc( *ppdata, max_data_bytes + 1024);
   if(!*ppdata)
     return(ERROR(ERRDOS,ERRnomem));
-  bzero(pdata,max_data_bytes);
+  memset(pdata, 0, max_data_bytes);
 
   /* Realloc the params space */
   params = *pparams = Realloc(*pparams, 6*SIZEOFWORD);
@@ -1088,7 +1088,7 @@ static int call_trans2qfsinfo(connection_struct *conn,
     return (ERROR(ERRSRV,ERRinvdevice));
   }
 
-  pdata = *ppdata = Realloc(*ppdata, 1024); bzero(pdata,1024);
+  pdata = *ppdata = Realloc(*ppdata, 1024); memset(pdata, 0, 1024);
 
   switch (info_level) 
   {
@@ -1336,7 +1336,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
   /* from now on we only want the part after the / */
   fname = p;
   
-  params = *pparams = Realloc(*pparams,2); bzero(params,2);
+  params = *pparams = Realloc(*pparams,2); memset(params, 0, 2);
   data_size = 1024;
   pdata = *ppdata = Realloc(*ppdata, data_size); 
 
@@ -1346,7 +1346,7 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
     return(ERROR(ERRDOS,ERROR_EAS_NOT_SUPPORTED));
   }
 
-  bzero(pdata,data_size);
+  memset(pdata, 0, data_size);
 
   switch (info_level) 
     {
@@ -2143,7 +2143,7 @@ static int call_trans2getdfsreferral(connection_struct *conn,
 
 	/* allocate memory for the reply data */	
 	pdata = *ppdata = Realloc(*ppdata, bytesreq + 1024); 
-	bzero(*ppdata, bytesreq+22);
+	memset(*ppdata, 0,  bytesreq+22);
 
 	pdata = *ppdata;
 	pheader = pdata;

@@ -425,7 +425,7 @@ uint32 _net_req_chal(const UNISTR2 *uni_logon_server,
 	memcpy(dc.srv_cred.challenge.data, srv_chal->data,
 	       sizeof(srv_chal->data));
 
-	bzero(dc.sess_key, sizeof(dc.sess_key));
+	ZERO_STRUCT(dc.sess_key);
 
 	/* from client / server challenges and md4 password, generate sess key */
 	cred_session_key(&(dc.clnt_chal), &(dc.srv_chal),

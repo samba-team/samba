@@ -646,7 +646,7 @@ char *smb_fn_name(int type)
 
 void construct_reply_common(char *inbuf,char *outbuf)
 {
-  bzero(outbuf,smb_size);
+  memset(outbuf, 0, smb_size);
 
   set_message(outbuf,0,0,True);
   CVAL(outbuf,smb_com) = CVAL(inbuf,smb_com);

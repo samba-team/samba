@@ -4957,7 +4957,7 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 
 	if (lm_pwd == NULL)
 	{
-		bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+		ZERO_STRUCT(usr->lm_pwd);
 		usr->lm_pwd_active = 0;
 	}
 	else
@@ -4968,7 +4968,7 @@ BOOL make_sam_user_info12(SAM_USER_INFO_12 * usr,
 
 	if (nt_pwd == NULL)
 	{
-		bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+		ZERO_STRUCT(usr->nt_pwd);
 		usr->nt_pwd_active = 0;
 	}
 	else
@@ -5057,20 +5057,20 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 	len_mach_acct = strlen(mach_acct);
 
 	memcpy(&(usr->expiry), expiry, sizeof(usr->expiry));	/* expiry time or something? */
-	bzero(usr->padding_1, sizeof(usr->padding_1));	/* 0 - padding 24 bytes */
+	ZERO_STRUCT(usr->padding_1);	/* 0 - padding 24 bytes */
 
 	make_uni_hdr(&(usr->hdr_mach_acct), len_mach_acct);	/* unicode header for machine account */
 	usr->padding_2 = 0;	/* 0 - padding 4 bytes */
 
 	usr->ptr_1 = 1;		/* pointer */
-	bzero(usr->padding_3, sizeof(usr->padding_3));	/* 0 - padding 32 bytes */
+	ZERO_STRUCT(usr->padding_3);	/* 0 - padding 32 bytes */
 	usr->padding_4 = 0;	/* 0 - padding 4 bytes */
 
 	usr->ptr_2 = 1;		/* pointer */
 	usr->padding_5 = 0;	/* 0 - padding 4 bytes */
 
 	usr->ptr_3 = 1;		/* pointer */
-	bzero(usr->padding_6, sizeof(usr->padding_6));	/* 0 - padding 32 bytes */
+	ZERO_STRUCT(usr->padding_6);	/* 0 - padding 32 bytes */
 
 	usr->rid_user = rid_user;
 	usr->rid_group = rid_group;
@@ -5081,7 +5081,7 @@ BOOL make_sam_user_info11(SAM_USER_INFO_11 * usr,
 	usr->unknown_4 = 0x003f;	/* 0x003f      - 16 bit unknown */
 	usr->unknown_5 = 0x003c;	/* 0x003c      - 16 bit unknown */
 
-	bzero(usr->padding_7, sizeof(usr->padding_7));	/* 0 - padding 16 bytes */
+	ZERO_STRUCT(usr->padding_7);	/* 0 - padding 16 bytes */
 	usr->padding_8 = 0;	/* 0 - padding 4 bytes */
 
 	make_unistr2(&(usr->uni_mach_acct), mach_acct, len_mach_acct);	/* unicode string for machine account */
@@ -5248,8 +5248,8 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 	make_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
 	make_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
 
-	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
-	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	ZERO_STRUCT(usr->nt_pwd);
+	ZERO_STRUCT(usr->lm_pwd);
 
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
@@ -5259,7 +5259,7 @@ BOOL make_sam_user_info23W(SAM_USER_INFO_23 * usr, const NTTIME * logon_time,	/*
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
-	bzero(usr->padding1, sizeof(usr->padding1));
+	ZERO_STRUCT(usr->padding1);
 
 	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
 
@@ -5344,8 +5344,8 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	make_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
 	make_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
 
-	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
-	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	ZERO_STRUCT(usr->nt_pwd);
+	ZERO_STRUCT(usr->lm_pwd);
 
 	usr->user_rid = user_rid;	/* 0x0000 0000 */
 	usr->group_rid = group_rid;
@@ -5355,7 +5355,7 @@ BOOL make_sam_user_info23A(SAM_USER_INFO_23 * usr, NTTIME * logon_time,	/* all z
 	usr->logon_divs = logon_divs;	/* should be 168 (hours/week) */
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 
-	bzero(usr->padding1, sizeof(usr->padding1));
+	ZERO_STRUCT(usr->padding1);
 
 	usr->unknown_5 = unknown_5;	/* 0x0001 0000 */
 
@@ -5563,7 +5563,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 
 	if (lm_pwd == NULL)
 	{
-		bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+		ZERO_STRUCT(usr->lm_pwd);
 	}
 	else
 	{
@@ -5571,7 +5571,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	}
 	if (nt_pwd == NULL)
 	{
-		bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
+		ZERO_STRUCT(usr->nt_pwd);
 	}
 	else
 	{
@@ -5587,7 +5587,7 @@ BOOL make_sam_user_info21W(SAM_USER_INFO_21 * usr,
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 	usr->unknown_5 = unknown_5;	/* 0x0002 0000 */
 
-	bzero(usr->padding1, sizeof(usr->padding1));
+	ZERO_STRUCT(usr->padding1);
 
 	copy_unistr2(&(usr->uni_user_name), user_name);
 	copy_unistr2(&(usr->uni_full_name), full_name);
@@ -5677,8 +5677,8 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	make_uni_hdr(&(usr->hdr_unknown_str), len_unknown_str);
 	make_uni_hdr(&(usr->hdr_munged_dial), len_munged_dial);
 
-	bzero(usr->nt_pwd, sizeof(usr->nt_pwd));
-	bzero(usr->lm_pwd, sizeof(usr->lm_pwd));
+	ZERO_STRUCT(usr->nt_pwd);
+	ZERO_STRUCT(usr->lm_pwd);
 
 	usr->user_rid = user_rid;
 	usr->group_rid = group_rid;
@@ -5689,7 +5689,7 @@ BOOL make_sam_user_info21A(SAM_USER_INFO_21 * usr,
 	usr->ptr_logon_hrs = hrs ? 1 : 0;
 	usr->unknown_5 = unknown_5;	/* 0x0002 0000 */
 
-	bzero(usr->padding1, sizeof(usr->padding1));
+	ZERO_STRUCT(usr->padding1);
 
 	make_unistr2(&(usr->uni_user_name), user_name, len_user_name);
 	make_unistr2(&(usr->uni_full_name), full_name, len_full_name);

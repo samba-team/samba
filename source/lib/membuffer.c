@@ -125,7 +125,7 @@ BOOL mem_alloc_data(struct mem_buf *buf, int size)
 		return False;
 	}
 
-	bzero(buf->data, buf->data_size);
+	memset(buf->data, 0,  buf->data_size);
 	buf->offset.end   = buf->offset.start + size;
 
 	CHECK_STRUCT(buf);

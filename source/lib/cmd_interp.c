@@ -1007,7 +1007,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 		}
 
 		/* paranoia: destroy the local copy of the password */
-		bzero(password, sizeof(password));
+		ZERO_STRUCT(password);
 
 		report(out_hnd, "Server:\t%s:\tUser:\t%s\tDomain:\t%s\n",
 		       srv_name, usr.ntc.user_name, usr.ntc.domain);
@@ -1050,7 +1050,7 @@ static void cmd_use(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password));
+	ZERO_STRUCT(password);
 }
 
 /******************************************************************
@@ -1334,7 +1334,7 @@ static void cmd_set(struct client_info *info, int argc, char *argv[])
 	}
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password));
+	ZERO_STRUCT(password);
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, cli_info.dest_host);
@@ -1392,7 +1392,7 @@ static void read_user_env(struct ntuser_creds *u)
 	set_user_password(u, True, password);
 
 	/* paranoia: destroy the local copy of the password */
-	bzero(password, sizeof(password));
+	ZERO_STRUCT(password);
 }
 
 void readline_init(void)

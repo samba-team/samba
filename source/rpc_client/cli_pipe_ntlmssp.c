@@ -547,7 +547,7 @@ static BOOL create_ntlmssp_bind_cont(struct cli_connection *con,
 		a->ntlmssp_hash[256] = 0;
 		a->ntlmssp_hash[257] = 0;
 	}
-	bzero(lm_hash, sizeof(lm_hash));
+	ZERO_STRUCT(lm_hash);
 
 	prs_init(dataa, 0, 4, False);
 	ret = prs_copy(dataa, &hdra);

@@ -250,7 +250,7 @@ uint32 _samr_close(POLICY_HND *hnd)
 	/* close the policy handle */
 	if (close_policy_hnd(get_global_hnd_cache(), hnd))
 	{
-		bzero(hnd, sizeof(*hnd));
+		ZERO_STRUCTP(hnd);
 		return NT_STATUS_NOPROBLEMO;
 	}
 	return NT_STATUS_OBJECT_NAME_INVALID;

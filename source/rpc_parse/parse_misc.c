@@ -781,7 +781,7 @@ BOOL smb_io_buffer2(char *desc,  BUFFER2 *buf2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_buffer2 - NULL");
 		depth++;
-		bzero(buf2, sizeof(*buf2));
+		ZERO_STRUCTP(buf2);
 	}
 
 	return True;
@@ -879,7 +879,7 @@ BOOL smb_io_string2(char *desc,  STRING2 *str2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_string2 - NULL");
 		depth++;
-		bzero(str2, sizeof(*str2));
+		ZERO_STRUCTP(str2);
 	}
 
 	return True;
@@ -928,7 +928,7 @@ BOOL smb_io_unistr2(char *desc,  UNISTR2 *uni2, uint32 buffer, prs_struct *ps, i
 	{
 		prs_debug(ps, depth, desc, "smb_io_unistr2 - NULL");
 		depth++;
-		bzero(uni2, sizeof(*uni2));
+		ZERO_STRUCTP(uni2);
 	}
 
 	return True;

@@ -102,9 +102,9 @@ void writedefaultafp(int fd, SambaAfpInfo *safp, int writeit)
 	safp->afp.afpi_Version = AFP_Version;     			/* Must be 0x00010000 */
 	safp->afp.afpi_Reserved1 = 0;
 	safp->afp.afpi_BackupTime = AFP_BackupTime;  		/* Backup time for the file/dir */
-	bzero(safp->afp.afpi_FinderInfo, AFP_FinderSize);	/* Finder Info (32 bytes) */
-	bzero(safp->afp.afpi_ProDosInfo, 6);	/* ProDos Info (6 bytes) # */
-	bzero(safp->afp.afpi_Reserved2, 6);
+	memset(safp->afp.afpi_FinderInfo, 0,  AFP_FinderSize);	/* Finder Info (32 bytes) */
+	memset(safp->afp.afpi_ProDosInfo, 0,  6);	/* ProDos Info (6 bytes) # */
+	memset(safp->afp.afpi_Reserved2, 0,  6);
 	safp->createtime = time(NULL);
 	if (writeit) (void)write(fd, safp, sizeof(*safp));
 }

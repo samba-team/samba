@@ -478,7 +478,7 @@ BOOL svc_io_r_enum_svcs_status(char *desc, SVC_R_ENUM_SVCS_STATUS *svc, prs_stru
 			return False;
 		}
 
-		bzero(svc->svcs, svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
+		memset(svc->svcs, 0,  svc->num_svcs * sizeof(ENUM_SRVC_STATUS));
 
 		for (i = 0; i < svc->num_svcs; i++)
 		{

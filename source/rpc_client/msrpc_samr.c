@@ -1727,7 +1727,7 @@ BOOL get_samr_query_groupinfo(
 
 	if (pol_open_domain == NULL || ctr == NULL) return False;
 
-	bzero(ctr, sizeof(*ctr));
+	ZERO_STRUCTP(ctr);
 
 	/* send open domain (on group sid) */
 	if (!samr_open_group( pol_open_domain,
@@ -1760,7 +1760,7 @@ BOOL get_samr_query_aliasinfo(
 
 	if (pol_open_domain == NULL || ctr == NULL) return False;
 
-	bzero(ctr, sizeof(*ctr));
+	ZERO_STRUCTP(ctr);
 
 	/* send open domain (on alias sid) */
 	if (!samr_open_alias( pol_open_domain,

@@ -261,7 +261,7 @@ struct smb_passwd *getsmbpwuid(uid_t unix_uid)
 void pwdb_init_smb(struct smb_passwd *user)
 {
 	if (user == NULL) return;
-	bzero(user, sizeof(*user));
+	ZERO_STRUCTP(user);
 	user->pass_last_set_time    = (time_t)-1;
 	user->unix_uid = (uid_t)-1;
 	user->user_rid = 0xffffffff;

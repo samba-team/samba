@@ -148,7 +148,7 @@ static void init_chartest( void )
   char          *illegalchars = "*\\/?<>|\":";
   unsigned char *s;
   
-  bzero( (char *)chartest, 256 );
+  memset( (char *)chartest, 0,  256 );
 
   for( s = (unsigned char *)illegalchars; *s; s++ )
     chartest[*s] = ILLEGAL_MASK;

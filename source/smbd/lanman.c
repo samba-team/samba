@@ -544,7 +544,7 @@ static void fill_printq_info(connection_struct *conn, const vuser_key *key,
       return;
     }
 
-    bzero(p, 8192*sizeof(char));
+    memset(p, 0,  8192*sizeof(char));
     q=p;
 
     /* lookup the long printer driver name in the file description */
@@ -699,8 +699,8 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 
   VUSER_KEY;
   
-  bzero(&status,sizeof(status));
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(status);
+  ZERO_STRUCT(desc);
  
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -799,7 +799,7 @@ static BOOL api_DosPrintQEnum(connection_struct *conn, uint16 vuid, char* param,
   int queuecnt, subcnt=0, succnt=0;
 	VUSER_KEY;
  
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   DEBUG(3,("DosPrintQEnum uLevel=%d\n",uLevel));
  
@@ -948,7 +948,7 @@ static int get_server_info(uint32 servertype,
       (*servers) = (struct srv_info_struct *)
 	Realloc(*servers,sizeof(**servers)*alloced);
       if (!(*servers)) return(0);
-      bzero((char *)((*servers)+count),sizeof(**servers)*(alloced-count));
+      memset((char *)((*servers)+count), 0, sizeof(**servers)*(alloced-count));
     }
     s = &(*servers)[count];
     
@@ -1188,7 +1188,7 @@ static BOOL api_RNetServerEnum(connection_struct *conn, uint16 vuid, char *param
 
   *rdata_len = fixed_len + string_len;
   *rdata = REALLOC(*rdata,*rdata_len);
-  bzero(*rdata,*rdata_len);
+  memset(*rdata, 0, *rdata_len);
   
   p2 = (*rdata) + fixed_len;	/* auxilliary data (strings) will go here */
   p = *rdata;
@@ -2534,7 +2534,7 @@ static BOOL api_WWkstaUserLogon(connection_struct *conn,uint16 vuid, char *param
   uLevel = SVAL(p,0);
   name = p + 2;
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   DEBUG(3,("WWkstaUserLogon uLevel=%d name=%s\n",uLevel,name));
 
@@ -2649,8 +2649,8 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
 
   uLevel = SVAL(p,2);
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  ZERO_STRUCT(desc);
+  ZERO_STRUCT(status);
 
   DEBUG(3,("WPrintJobGetInfo uLevel=%d uJobId=0x%X\n",uLevel,SVAL(p,0)));
 
@@ -2711,8 +2711,8 @@ static BOOL api_WPrintJobEnumerate(connection_struct *conn,uint16 vuid, char *pa
   print_status_struct status;
 	VUSER_KEY;
 
-  bzero(&desc,sizeof(desc));
-  bzero(&status,sizeof(status));
+  ZERO_STRUCT(desc);
+  ZERO_STRUCT(status);
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2824,7 +2824,7 @@ static BOOL api_WPrintDestGetInfo(connection_struct *conn,uint16 vuid, char *par
   struct pack_desc desc;
   int snum;
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   p = skip_string(p,1);
   uLevel = SVAL(p,0);
@@ -2883,7 +2883,7 @@ static BOOL api_WPrintDestEnum(connection_struct *conn,uint16 vuid, char *param,
   struct pack_desc desc;
   int services = lp_numservices();
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   uLevel = SVAL(p,0);
 
@@ -2938,7 +2938,7 @@ static BOOL api_WPrintDriverEnum(connection_struct *conn,uint16 vuid, char *para
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   uLevel = SVAL(p,0);
 
@@ -2982,7 +2982,7 @@ static BOOL api_WPrintQProcEnum(connection_struct *conn,uint16 vuid, char *param
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   uLevel = SVAL(p,0);
 
@@ -3027,7 +3027,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   int succnt;
   struct pack_desc desc;
 
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
 
   uLevel = SVAL(p,0);
 
@@ -3038,7 +3038,7 @@ static BOOL api_WPrintPortEnum(connection_struct *conn,uint16 vuid, char *param,
   if (uLevel != 0 || strcmp(str2,"B9") != 0) return False;
 
   if (mdrcnt > 0) *rdata = REALLOC(*rdata,mdrcnt);
-  bzero(&desc,sizeof(desc));
+  ZERO_STRUCT(desc);
   desc.base = *rdata;
   desc.buflen = mdrcnt;
   desc.format = str2;
@@ -3180,8 +3180,8 @@ int api_reply(connection_struct *conn,uint16 vuid,char *outbuf,char *data,char *
         break;
       }
 
-  rdata = (char *)malloc(1024); if (rdata) bzero(rdata,1024);
-  rparam = (char *)malloc(1024); if (rparam) bzero(rparam,1024);
+  rdata = (char *)malloc(1024); if (rdata) memset(rdata, 0, 1024);
+  rparam = (char *)malloc(1024); if (rparam) memset(rparam, 0, 1024);
 
   if (!rdata || !rparam) {
     DEBUG(0,("api_reply: malloc fail !\n"));

@@ -127,7 +127,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 * pw_buf,
 		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name),
 			     user_name_len);
 		pw_buf[(*num_entries)].user_rid = pwd->user_rid;
-		bzero(pw_buf[(*num_entries)].nt_pwd, 16);
+		memset(pw_buf[(*num_entries)].nt_pwd, 0,  16);
 
 		/* Now check if the NT compatible password is available. */
 		if (pwd->smb_nt_passwd != NULL)
