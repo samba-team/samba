@@ -38,7 +38,6 @@ enum squid_mode {
 
 extern int winbindd_fd;
 
-static const char *helper_protocol;
 static const char *opt_username;
 static const char *opt_domain;
 static const char *opt_workstation;
@@ -48,7 +47,6 @@ static DATA_BLOB opt_lm_response;
 static DATA_BLOB opt_nt_response;
 static int request_lm_key;
 static int request_nt_key;
-static int diagnostics;
 
 
 static char winbind_separator(void)
@@ -184,7 +182,7 @@ static NTSTATUS contact_winbind_auth_crap(const char *username,
 					  const DATA_BLOB *lm_response, 
 					  const DATA_BLOB *nt_response, 
 					  uint32 flags, 
-					  uint8 lm_key[16], 
+					  uint8 lm_key[8], 
 					  uint8 nt_key[16], 
 					  char **error_string) 
 {
@@ -483,13 +481,18 @@ static BOOL test_lm(void)
 	DATA_BLOB lm_response = data_blob(NULL, 24);
 
 	uchar lm_key[8];
+	uchar nt_key[16];
 	uchar lm_hash[16];
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
-	flags |= WINBIND_PAM_LMKEY;
+	ZERO_STRUCT(lm_key);
+	ZERO_STRUCT(nt_key);
 
-	SMBencrypt(opt_password,chall.data,lm_response.data);
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	SMBencrypt(opt_password, chall.data, lm_response.data);
 	E_deshash(opt_password, lm_hash); 
 
 	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, opt_workstation,
@@ -498,7 +501,7 @@ static BOOL test_lm(void)
 					      NULL,
 					      flags,
 					      lm_key, 
-					      NULL,
+					      nt_key,
 					      &error_string);
 	
 	data_blob_free(&lm_response);
@@ -515,6 +518,13 @@ static BOOL test_lm(void)
 		DEBUG(1, ("LM Key does not match expectations!\n"));
  		DEBUG(1, ("lm_key:\n"));
 		dump_data(1, lm_key, 8);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+	}
+	if (memcmp(lm_hash, nt_key, 8) != 0) {
+		DEBUG(1, ("Session Key (first 8, lm hash) does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 8);
  		DEBUG(1, ("expected:\n"));
 		dump_data(1, lm_hash, 8);
 	}
@@ -537,6 +547,9 @@ static BOOL test_lm_ntlm(void)
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
+	ZERO_STRUCT(lm_key);
+	ZERO_STRUCT(nt_key);
+
 	flags |= WINBIND_PAM_LMKEY;
 	flags |= WINBIND_PAM_NTKEY;
 
@@ -602,6 +615,8 @@ static BOOL test_ntlm(void)
 	DATA_BLOB chall = get_challenge();
 	char *error_string;
 	
+	ZERO_STRUCT(nt_key);
+
 	flags |= WINBIND_PAM_NTKEY;
 
 	SMBNTencrypt(opt_password,chall.data,nt_response.data);
@@ -640,6 +655,351 @@ static BOOL test_ntlm(void)
         return pass;
 }
 
+static BOOL test_ntlm_in_lm(void) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB nt_response = data_blob(NULL, 24);
+
+	uchar lm_key[8];
+	uchar lm_hash[16];
+	uchar nt_key[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+	
+	ZERO_STRUCT(nt_key);
+
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	SMBNTencrypt(opt_password,chall.data,nt_response.data);
+
+	E_deshash(opt_password, lm_hash); 
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &nt_response,
+					      NULL,
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&nt_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+	if (memcmp(lm_hash, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 8);
+		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+		pass = False;
+	}
+	if (memcmp(lm_hash, nt_key, 8) != 0) {
+		DEBUG(1, ("Session Key (first 8 lm hash) does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+		pass = False;
+	}
+        return pass;
+}
+
+static BOOL test_ntlm_in_both(void) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB nt_response = data_blob(NULL, 24);
+	DATA_BLOB session_key = data_blob(NULL, 16);
+
+	char lm_key[8];
+	char lm_hash[16];
+	char nt_key[16];
+	char nt_hash[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+	
+	ZERO_STRUCT(lm_key);
+	ZERO_STRUCT(nt_key);
+
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	SMBNTencrypt(opt_password,chall.data,nt_response.data);
+	E_md4hash(opt_password, nt_hash);
+	SMBsesskeygen_ntv1(nt_hash, NULL, session_key.data);
+
+	E_deshash(opt_password, lm_hash); 
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &nt_response,
+					      &nt_response,
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&nt_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+	if (memcmp(lm_hash, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 8);
+		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_hash, 8);
+		pass = False;
+	}
+	if (memcmp(session_key.data, nt_key, 
+		   sizeof(nt_key)) != 0) {
+		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, session_key.data, session_key.length);
+		pass = False;
+	}
+
+
+        return pass;
+}
+
+static BOOL test_ntlmv2(void) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+
+	uchar lm_key[16];
+	uchar nt_key[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+
+	ZERO_STRUCT(lm_key);
+	ZERO_STRUCT(nt_key);
+	
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+			      &lmv2_response, &ntlmv2_response, 
+			      &lm_session_key, &nt_session_key)) {
+		return False;
+	}
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      NULL, 
+					      &ntlmv2_response,
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&lmv2_response);
+	data_blob_free(&ntlmv2_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+#if 0
+	if (memcmp(lm_session_key.data, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_session_key.data, lm_session_key.length);
+		pass = False;
+	}
+	if (memcmp(nt_session_key.data, nt_key, 
+		   sizeof(nt_key)) != 0) {
+		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, nt_session_key.data, nt_session_key.length);
+		pass = False;
+	}
+#endif
+        return pass;
+}
+
+static BOOL test_lmv2_ntlmv2(void) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+
+	uchar lm_key[16];
+	uchar nt_key[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+
+	ZERO_STRUCT(nt_key);
+	ZERO_STRUCT(lm_key);
+	
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+			      &lmv2_response, &ntlmv2_response, 
+			      &lm_session_key, &nt_session_key)) {
+		return False;
+	}
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &lmv2_response,
+					      &ntlmv2_response,
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&lmv2_response);
+	data_blob_free(&ntlmv2_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+#if 0
+	if (memcmp(lm_session_key.data, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_session_key.data, lm_session_key.length);
+		pass = False;
+	}
+	if (memcmp(nt_session_key.data, nt_key, 
+		   sizeof(nt_key)) != 0) {
+		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, nt_session_key.data, nt_session_key.length);
+		pass = False;
+	}
+#endif
+        return pass;
+}
+
+static BOOL test_lmv2(void) 
+{
+	BOOL pass = True;
+	NTSTATUS nt_status;
+	uint32 flags = 0;
+	DATA_BLOB ntlmv2_response = data_blob(NULL, 0);
+	DATA_BLOB lmv2_response = data_blob(NULL, 0);
+	DATA_BLOB nt_session_key = data_blob(NULL, 0);
+	DATA_BLOB lm_session_key = data_blob(NULL, 0);
+
+	uchar lm_key[16];
+	uchar nt_key[16];
+	DATA_BLOB chall = get_challenge();
+	char *error_string;
+
+	ZERO_STRUCT(nt_key);
+	ZERO_STRUCT(lm_key);
+	
+	flags |= WINBIND_PAM_LMKEY;
+	flags |= WINBIND_PAM_NTKEY;
+
+	if (!SMBNTLMv2encrypt(opt_username, opt_domain, opt_password, chall,
+			      &lmv2_response, &ntlmv2_response, 
+			      &lm_session_key, &nt_session_key)) {
+		return False;
+	}
+
+	nt_status = contact_winbind_auth_crap(opt_username, opt_domain, 
+					      opt_workstation,
+					      &chall,
+					      &lmv2_response,
+					      NULL, 
+					      flags,
+					      lm_key,
+					      nt_key,
+					      &error_string);
+	
+	data_blob_free(&lmv2_response);
+	data_blob_free(&ntlmv2_response);
+
+	if (!NT_STATUS_IS_OK(nt_status)) {
+		d_printf("%s (0x%x)\n", 
+			 error_string,
+			 NT_STATUS_V(nt_status));
+		SAFE_FREE(error_string);
+		return False;
+	}
+
+#if 0	
+	if (memcmp(lm_session_key.data, lm_key, 
+		   sizeof(lm_key)) != 0) {
+		DEBUG(1, ("LM Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("lm_key:\n"));
+		dump_data(1, lm_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, lm_session_key.data, lm_session_key.length);
+		pass = False;
+	}
+	if (memcmp(nt_session_key.data, nt_key, 
+		   sizeof(nt_key)) != 0) {
+		DEBUG(1, ("NT Session Key does not match expectations!\n"));
+ 		DEBUG(1, ("nt_key:\n"));
+		dump_data(1, nt_key, 16);
+ 		DEBUG(1, ("expected:\n"));
+		dump_data(1, nt_session_key.data, nt_session_key.length);
+		pass = False;
+	}
+#endif
+        return pass;
+}
+
 /* 
    Tests:
    
@@ -661,10 +1021,12 @@ struct ntlm_tests {
 } test_table[] = {
 	{test_lm, "test LM"},
 	{test_lm_ntlm, "test LM and NTLM"},
-	{test_ntlm, "test NTLM"}
-/*	{test_lm_ntlmv2, "test NTLMv2"}, */
-/*	{test_lm_ntlmv2, "test NTLMv2 and LMv2"}, */
-/*	{test_lm_ntlmv2, "test LMv2"} */
+	{test_ntlm, "test NTLM"},
+	{test_ntlm_in_lm, "test NTLM in LM"},
+	{test_ntlm_in_both, "test NTLM in both"},
+	{test_ntlmv2, "test NTLMv2"},
+	{test_lmv2_ntlmv2, "test NTLMv2 and LMv2"},
+	{test_lmv2, "test LMv2"}
 };
 
 static BOOL diagnose_ntlm_auth(void)
@@ -701,6 +1063,8 @@ enum {
  int main(int argc, const char **argv)
 {
 	int opt;
+	static const char *helper_protocol;
+	static int diagnostics;
 
 	static const char *hex_challenge;
 	static const char *hex_lm_response;
