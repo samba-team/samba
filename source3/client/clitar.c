@@ -492,7 +492,7 @@ static int strslashcmp(char *s1, char *s2)
   if (!*s2 && (*s1 == '/' || *s1 == '\\') && !*(s1+1)) return 0;
 
   /* check for s1 is an "initial" string of s2 */
-  if (*s2 == '/' || *s2 == '\\') return 0;
+  if ((*s2 == '/' || *s2 == '\\') && !*s1) return 0;
 
   return *s1-*s2;
 }
