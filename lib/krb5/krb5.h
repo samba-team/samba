@@ -102,8 +102,9 @@ typedef krb5_context_data *krb5_context;
 typedef time_t krb5_time;
 
 typedef struct krb5_times{
-  krb5_time endtime;
+  krb5_time authtime;
   krb5_time starttime;
+  krb5_time endtime;
   krb5_time renew_till;
 } krb5_times;
 
@@ -149,6 +150,7 @@ typedef struct krb5_creds {
 
   krb5_ticket second_ticket; /* ? */
   krb5_data authdata; /* ? */
+  krb5_addresses addresses;
   
 } krb5_creds;
 
