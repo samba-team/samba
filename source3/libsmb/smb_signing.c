@@ -112,7 +112,7 @@ static void cli_simple_sign_outgoing_message(struct cli_state *cli)
 	 * Firstly put the sequence number into the first 4 bytes.
 	 * and zero out the next 4 bytes.
 	 *
-	 * We put the sequence into the packet, becouse we are going
+	 * We put the sequence into the packet, because we are going
 	 * to copy over it anyway.
 	 */
 	SIVAL(cli->outbuf, smb_ss_field, 

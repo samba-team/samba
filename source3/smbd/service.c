@@ -790,7 +790,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		if(lp_security() != SEC_SHARE) {
 			DATA_BLOB no_pw = data_blob(NULL, 0);
 			if (vuser->homes_snum == -1) {
-				DEBUG(2, ("[homes] share not available for this user becouse it was not found or created at session setup time\n"));
+				DEBUG(2, ("[homes] share not available for this user because it was not found or created at session setup time\n"));
 				*status = NT_STATUS_BAD_NETWORK_NAME;
 				return NULL;
 			}

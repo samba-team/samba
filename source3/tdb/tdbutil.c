@@ -311,7 +311,7 @@ int32 tdb_change_int32_atomic(TDB_CONTEXT *tdb, const char *keystr, int32 *oldva
 	if ((val = tdb_fetch_int32(tdb, keystr)) == -1) {
 		/* The lookup failed */
 		if (tdb_error(tdb) != TDB_ERR_NOEXIST) {
-			/* but not becouse it didn't exist */
+			/* but not because it didn't exist */
 			goto err_out;
 		}
 		
@@ -352,7 +352,7 @@ BOOL tdb_change_uint32_atomic(TDB_CONTEXT *tdb, const char *keystr, uint32 *oldv
 	if (!tdb_fetch_uint32(tdb, keystr, &val)) {
 		/* It failed */
 		if (tdb_error(tdb) != TDB_ERR_NOEXIST) { 
-			/* and not becouse it didn't exist */
+			/* and not because it didn't exist */
 			goto err_out;
 		}
 

@@ -980,10 +980,10 @@ NTSTATUS change_oem_password(SAM_ACCOUNT *hnd, char *old_passwd, char *new_passw
 	 * the /etc/passwd database first. Return failure if this cannot
 	 * be done.
 	 *
-	 * This occurs before the oem change, becouse we don't want to
+	 * This occurs before the oem change, because we don't want to
 	 * update it if chgpasswd failed.
 	 *
-	 * Conditional on lp_unix_password_sync() becouse we don't want
+	 * Conditional on lp_unix_password_sync() because we don't want
 	 * to touch the unix db unless we have admin permission.
 	 */
 	
