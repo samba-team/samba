@@ -405,9 +405,7 @@ get_pa_etype_info(METHOD_DATA *md, hdb_entry *client,
  *
  */
 
-#ifdef ENABLE_AES
 extern int _krb5_AES_string_to_default_iterator;
-#endif
 
 static krb5_error_code
 make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
@@ -424,7 +422,6 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
     ent->s2kparams = NULL;
 
     switch (key->key.keytype) {
-#ifdef ENABLE_AES
     case KEYTYPE_AES128:
     case KEYTYPE_AES256:
 	ALLOC(ent->s2kparams);
@@ -438,7 +435,6 @@ make_etype_info2_entry(ETYPE_INFO2_ENTRY *ent, Key *key)
 		      _krb5_AES_string_to_default_iterator, 
 		      ent->s2kparams->length);
 	break;
-#endif
     default:
 	break;
     }
