@@ -494,6 +494,8 @@ void init_unistr(UNISTR *str, const char *buf)
 	if (str->buffer == NULL)
 		smb_panic("init_unistr: malloc fail\n");
 
+	memset(str->buffer, '\0', len);
+
 	/* store the string (null-terminated copy) */
 	dos_struni2((char *)str->buffer, buf, len);
 }
