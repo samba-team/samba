@@ -311,7 +311,7 @@ static NTSTATUS pvfs_create_file(struct pvfs_state *pvfs,
 		return NT_STATUS_TOO_MANY_OPENED_FILES;
 	}
 
-	mode = pvfs_fileperms(pvfs, io->ntcreatex.in.file_attr);
+	mode = pvfs_fileperms(pvfs, io->ntcreatex.in.file_attr | FILE_ATTRIBUTE_ARCHIVE);
 
 	/* create the file */
 	fd = open(name->full_name, flags | O_CREAT | O_EXCL, mode);
