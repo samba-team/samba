@@ -450,7 +450,7 @@
 	typedef struct {
 		samr_Name username;
 		samr_Name full_name;
-		uint32 primary_group_rid;
+		uint32 primary_gid;
 		samr_Name description;
 		samr_Name comment;
 	} samr_UserInfo1;
@@ -466,7 +466,7 @@
 		samr_Name username;
 		samr_Name full_name;
 		uint32 Rid;
-		uint32 primary_group_rid;
+		uint32 primary_gid;
 		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
@@ -493,7 +493,7 @@
 		samr_Name username;
 		samr_Name full_name;
 		uint32 rid;
-		uint32 primary_group_rid;
+		uint32 primary_gid;
 		samr_Name home_directory;
 		samr_Name home_drive;
 		samr_Name logon_script;
@@ -525,7 +525,7 @@
 	} samr_UserInfo8;
 
 	typedef struct {
-		uint32 PrimaryGroupRid;
+		uint32 primary_gid;
 	} samr_UserInfo9;
 
 	typedef struct {
@@ -584,7 +584,7 @@
 		uint32 buf_count;
 		[size_is(buf_count)] uint8 *buffer;
 		uint32 rid;
-		uint32 primary_group_rid;
+		uint32 primary_gid;
 		uint32 acct_flags;
 		uint32 fields_present;
 		uint32 units_per_week;
