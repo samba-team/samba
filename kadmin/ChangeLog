@@ -1,3 +1,8 @@
+2001-08-24  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: rename variable name to avoid error from current
+	automake
+
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
 	* kadmin_locl.h: include libutil.h if it exists

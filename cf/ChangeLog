@@ -1,3 +1,8 @@
+2001-08-24  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am.common: change one += to = to AM_CFLAGS to avoid an
+	error with recent automake
+
 2001-08-22  Assar Westerlund  <assar@sics.se>
 
 	* crypto.m4: SHA1_CTX should be SHA_CTX
