@@ -1017,6 +1017,17 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
 {
 	int ret;
 
+        /*
+         * offset:
+         *
+         * Compiler bug (possibly) -- gcc (GCC) 3.3.5 (Debian 1:3.3.5-2) --
+         * appears to pass file->offset (which is type off_t) differently than
+         * a local variable of type off_t.  Using local variable "offset" in
+         * the call to cli_read() instead of file->offset fixes a problem
+         * retrieving data at an offset greater than 4GB.
+         */
+        off_t offset = file->offset;
+
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
 
@@ -1043,7 +1054,7 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
 
 	}
 
-	ret = cli_read(&file->srv->cli, file->cli_fd, buf, file->offset, count);
+	ret = cli_read(&file->srv->cli, file->cli_fd, buf, offset, count);
 
 	if (ret < 0) {
 
@@ -1067,6 +1078,7 @@ static ssize_t smbc_read_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t
 static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_t count)
 {
 	int ret;
+        off_t offset = file->offset; /* See "offset" comment in smbc_read_ctx() */
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1092,7 +1104,7 @@ static ssize_t smbc_write_ctx(SMBCCTX *context, SMBCFILE *file, void *buf, size_
 
 	}
 
-	ret = cli_write(&file->srv->cli, file->cli_fd, 0, buf, file->offset, count);
+	ret = cli_write(&file->srv->cli, file->cli_fd, 0, buf, offset, count);
 
 	if (ret <= 0) {
 
@@ -1165,7 +1177,7 @@ static int smbc_close_ctx(SMBCCTX *context, SMBCFILE *file)
  * and if that fails, use getatr, as Win95 sometimes refuses qpathinfo
  */
 static BOOL smbc_getatr(SMBCCTX * context, SMBCSRV *srv, char *path, 
-		 uint16 *mode, size_t *size, 
+		 uint16 *mode, SMB_OFF_T *size, 
 		 time_t *c_time, time_t *a_time, time_t *m_time,
 		 SMB_INO_T *ino)
 {
@@ -1272,7 +1284,7 @@ static int smbc_unlink_ctx(SMBCCTX *context, const char *fname)
 		if (errno == EACCES) { /* Check if the file is a directory */
 
 			int saverr = errno;
-			size_t size = 0;
+			SMB_OFF_T size = 0;
 			uint16 mode = 0;
 			time_t m_time = 0, a_time = 0, c_time = 0;
 			SMB_INO_T ino = 0;
@@ -1396,7 +1408,7 @@ static int smbc_rename_ctx(SMBCCTX *ocontext, const char *oname,
 
 static off_t smbc_lseek_ctx(SMBCCTX *context, SMBCFILE *file, off_t offset, int whence)
 {
-	size_t size;
+	SMB_OFF_T size;
 
 	if (!context || !context->internal ||
 	    !context->internal->_initialized) {
@@ -1482,7 +1494,8 @@ ino_t smbc_inode(SMBCCTX *context, const char *name)
  */
 
 static
-int smbc_setup_stat(SMBCCTX *context, struct stat *st, char *fname, size_t size, int mode)
+int smbc_setup_stat(SMBCCTX *context, struct stat *st, char *fname,
+                    SMB_OFF_T size, int mode)
 {
 	
 	st->st_mode = 0;
@@ -1532,7 +1545,7 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 	fstring server, share, user, password, workgroup;
 	pstring path;
 	time_t m_time = 0, a_time = 0, c_time = 0;
-	size_t size = 0;
+	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
 
@@ -1602,7 +1615,7 @@ static int smbc_stat_ctx(SMBCCTX *context, const char *fname, struct stat *st)
 static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 {
 	time_t c_time, a_time, m_time;
-	size_t size;
+	SMB_OFF_T size;
 	uint16 mode;
 	SMB_INO_T ino = 0;
 
@@ -1629,15 +1642,12 @@ static int smbc_fstat_ctx(SMBCCTX *context, SMBCFILE *file, struct stat *st)
 
 	if (!cli_qfileinfo(&file->srv->cli, file->cli_fd,
 			   &mode, &size, &c_time, &a_time, &m_time, NULL, &ino)) {
-	    SMB_BIG_UINT b_size = size;
 	    if (!cli_getattrE(&file->srv->cli, file->cli_fd,
-			  &mode, &b_size, &c_time, &a_time, &m_time)) {
+			  &mode, &size, &c_time, &a_time, &m_time)) {
 
 		errno = EINVAL;
 		return -1;
-	    } else
-		size = b_size;
-
+	    }
 	}
 
 	st->st_ino = ino;
@@ -1960,7 +1970,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                 }
 
                 for (i = 0; i < count && i < max_lmb_count; i++) {
-                        DEBUG(99, ("Found master browser %s\n", inet_ntoa(ip_list[i].ip)));
+                        DEBUG(99, ("Found master browser %d of %d: %s\n", i+1, MAX(count, max_lmb_count), inet_ntoa(ip_list[i].ip)));
                         
                         cli = get_ipc_connect_master_ip(&ip_list[i], workgroup, &u_info);
 			/* cli == NULL is the master browser refused to talk or 
@@ -1983,12 +1993,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         srv = smbc_server(context, server,
                                           "IPC$", workgroup, user, password);
                         if (!srv) {
-                                
-                                if (dir) {
-                                        SAFE_FREE(dir->fname);
-                                        SAFE_FREE(dir);
-                                }
-                                return NULL;
+                                continue;
                         }
                 
                         dir->srv = srv;
@@ -1999,13 +2004,7 @@ static SMBCFILE *smbc_opendir_ctx(SMBCCTX *context, const char *fname)
                         if (!cli_NetServerEnum(&srv->cli, workgroup, SV_TYPE_DOMAIN_ENUM, list_unique_wg_fn,
                                                (void *)dir)) {
                                 
-                                if (dir) {
-                                        SAFE_FREE(dir->fname);
-                                        SAFE_FREE(dir);
-                                }
-                                
-                                return NULL;
-                                
+                                continue;
                         }
                 }
         } else { 
@@ -3233,7 +3232,7 @@ static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
                                      SMBCSRV *srv)
 {
         time_t m_time = 0, a_time = 0, c_time = 0;
-        size_t size = 0;
+        SMB_OFF_T size = 0;
         uint16 mode = 0;
 	SMB_INO_T inode = 0;
         DOS_ATTR_DESC *ret;
@@ -3245,7 +3244,7 @@ static DOS_ATTR_DESC *dos_attr_query(SMBCCTX *context,
         }
 
         /* Obtain the DOS attributes */
-        if (!smbc_getatr(context, srv, filename, &mode, &size, 
+        if (!smbc_getatr(context, srv, (char *) filename, &mode, &size, 
                          &c_time, &a_time, &m_time, &inode)) {
         
                 errno = smbc_errno(context, &srv->cli);
@@ -3331,7 +3330,7 @@ static int cacl_get(SMBCCTX *context, TALLOC_CTX *ctx, SMBCSRV *srv,
 	fstring sidstr;
         char *p;
 	time_t m_time = 0, a_time = 0, c_time = 0;
-	size_t size = 0;
+	SMB_OFF_T size = 0;
 	uint16 mode = 0;
 	SMB_INO_T ino = 0;
         struct cli_state *cli = &srv->cli;
@@ -3840,7 +3839,7 @@ static int cacl_set(TALLOC_CTX *ctx, struct cli_state *cli,
                         the_acl = p + 1;
                 }
 
-                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, the_acl);
+                sd = sec_desc_parse(ctx, ipc_cli, pol, numeric, (char *) the_acl);
 
                 if (!sd) {
                         errno = EINVAL;
@@ -4368,7 +4367,7 @@ int smbc_getxattr_ctx(SMBCCTX *context,
                 /* Yup. */
                 ret = cacl_get(context, ctx, srv,
                                ipc_srv == NULL ? NULL : &ipc_srv->cli, 
-                               &pol, path, name, (char *) value, size);
+                               &pol, path, (char*)name, (char *) value, size);
                 if (ret < 0 && errno == 0) {
                         errno = smbc_errno(context, &srv->cli);
                 }
