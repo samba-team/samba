@@ -1,3 +1,7 @@
+2000-01-06  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump version to 5:0:0
+
 1999-12-30  Assar Westerlund  <assar@sics.se>
 
 	* Makefile.am (strpftime_test_SOURCES): correct source file name

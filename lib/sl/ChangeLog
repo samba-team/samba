@@ -1,3 +1,7 @@
+2000-01-06  Assar Westerlund  <assar@sics.se>
+
+	* Makefile.am: bump both versions to 0:1:0
+
 1999-12-16  Assar Westerlund  <assar@sics.se>
 
 	* parse.y (name2number): not used here.  remove.
