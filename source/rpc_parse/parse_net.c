@@ -1296,7 +1296,7 @@ void init_net_user_info3(TALLOC_CTX *ctx, NET_USER_INFO_3 *usr, SAM_ACCOUNT *sam
 	usr->num_groups2 = num_groups;
 
 	usr->gids = (DOM_GID *)talloc_zero(ctx,sizeof(DOM_GID) * (num_groups));
-	if (usr->gids == NULL)
+	if (usr->gids == NULL && num_groups>0)
 		return;
 
 	for (i = 0; i < num_groups; i++) 
