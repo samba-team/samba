@@ -1116,6 +1116,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 	/* call the backend */
 	status = req->tcon->ntvfs_ops->search_first(req, &search, &state, find_callback);
 	if (!NT_STATUS_IS_OK(status)) {
+		trans2_setup_reply(req, trans, 0, 0, 0);
 		return status;
 	}
 
@@ -1126,7 +1127,7 @@ static NTSTATUS trans2_findfirst(struct smbsrv_request *req, struct smb_trans2 *
 	SSVAL(param, VWV(2), search.t2ffirst.out.end_of_search);
 	SSVAL(param, VWV(3), 0);
 	SSVAL(param, VWV(4), state.last_entry_offset);
-	
+
 	return NT_STATUS_OK;
 }
 
