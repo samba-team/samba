@@ -25,11 +25,6 @@
 #
 #    -t  now causes translate to be used when sending files
 #
-# Further modifications by Alfred Perlstein to fix some problems and
-# improve the quality of the code (3-Dec-2001).
-#
-# More hacking by Richard Sharpe to improve portability. 9-Dec-2001.
-#
 # In order for this to work the /etc/printcap entry must include an 
 # accounting file (af=...):
 #
@@ -51,10 +46,12 @@
 #   service=CJET_371
 #   password=""
 
-#smbclient=/usr/pkg/bin/smbclient
-# Assume that smbclient will be in the same place as smbprint
+#
+# Debugging log file, change to /dev/null if you like.
+#
+logfile=/tmp/smb-print.log
+# logfile=/dev/null
 
-smbclient="`dirname $0`/smbclient"
 
 #
 # The last parameter to the filter is the accounting file name.
@@ -70,76 +67,29 @@ config_file=$spool_dir/.config
 #   server
 #   service
 #   password
-#   username (optional)
-#   IP (optional)
-#   debug (optional)
-#   debugsmb (optional)
-#   debugfile (optional)
-. $config_file
+eval `cat $config_file`
 
-if [ "x$password" = "x" ] ; then
-	password="-N"
-fi
+while getopts t c; do
+  case $c in
+    t)
+       TRANS=1
+       ;;
 
-if [ "x$username" == "x" ] ; then
-	username="$server";
-fi
-
-while test $# -gt 0; do
-	case "$1" in
-	-t)
-		TRANS=1
-		;;
-
-	 *)   # Bad Parameters, ignore them ...
-		;;
-	 esac
-	 shift
+    '?')  # Bad parameters, ignore it ...
+       ;;
+  esac
 done
-
-command="print - ;"
-if [ $TRANS -eq 1 ]; then
-	command="translate;$command";
-fi
-
-debugfile="/tmp/smb-print.log"
-if [ "x$debug" = "x" ] ; then 
-		debugfile=/dev/null debugargs=
-else
-        if [ $debug -eq 0 ] ; then
-		debugfile=/dev/null debugargs=
-	else
-		set -x; exec >>$debugfile 2>&1
-		debugargs="$debugfile."
-		#[ "x$debugsmb" == "x" ] || debugargs="$debugargs -d $debugsmb"
-	fi
-fi
-
-if [ "x$smbconf" != "x" ]; then
-
-	smbconf="-s $smbconf"
-
-fi
-
-if [ "x$IP" != "x" ]; then
-
-	IP="-I $IP"
-
-fi
-
-if [ "x$debugargs" != "x" ]; then
-
-	debugargs="-l $debugargs"
-
-fi
-
-$smbclient \
-	"\\\\$server\\$service" \
-	$password \
-	$smbconf \
-	$IP \
-	$debugargs \
-	-U $username \
-	-P \
-	-c "$command"
 #
+# Some debugging help, change the >> to > if you want to same space.
+#
+echo "server $server, service $service" >> $logfile
+
+(
+# NOTE You may wish to add the line `echo translate' if you want automatic
+# CR/LF translation when printing.
+	if [ $TRANS -eq 1 ]; then
+          echo translate
+        fi
+	echo "print -"
+	cat
+) | /usr/local/samba/bin/smbclient "\\\\$server\\$service" $password -U $server -N -P >> $logfile
