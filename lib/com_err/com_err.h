@@ -38,18 +38,6 @@
 #ifndef __COM_ERR_H__
 #define __COM_ERR_H__
 
-#ifdef __STDC__
-#include <stdarg.h>
-#endif
-
-#ifndef __P
-#ifdef __STDC__
-#define __P(X) X
-#else
-#define __P(X) ()
-#endif
-#endif
-
 #include <com_right.h>
 
 typedef void (*errf) __P((const char *, long, const char *, va_list));
