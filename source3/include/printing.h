@@ -71,6 +71,6 @@ extern struct printif	cups_printif;
 #define MAX_CACHE_VALID_TIME 3600
 
 #define PRINT_SPOOL_PREFIX "smbprn."
-#define PRINT_DATABASE_VERSION 2
+#define PRINT_DATABASE_VERSION 3
 
 #endif /* PRINTING_H_ */
