@@ -168,6 +168,8 @@ static int net_groupmap_list(int argc, const char **argv)
 		for (i=0; i<entries; i++) {
 			print_map_entry( map[i], long_list );
 		}
+
+		SAFE_FREE(map);
 	}
 
 	return 0;
