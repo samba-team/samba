@@ -1,3 +1,21 @@
+2000-07-15  Johan Danielsson  <joda@pdc.kth.se>
+
+	* check-var.m4: workaround feature of newer autoconf
+
+	* find-func-no-libs2.m4: use cleaner autoheader trick
+
+	* have-type.m4: use cleaner autoheader trick
+
+	* have-types.m4: use cleaner autoheader trick
+
+	* test-package.m4: add 6th parameter for now
+
+	* broken.m4: use cleaner autoheader trick
+
+	* retsigtype.m4: test for signal handler return type
+
+	* broken-realloc.m4: test for broken realloc
+
 2000-07-08  Assar Westerlund  <assar@sics.se>
 
 	* roken.m4: set CPPFLAGS_roken and call AC_CONFIG_SUBDIRS
