@@ -454,7 +454,9 @@ sub ParseElementPullSwitch($$$$)
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
-		pidl "\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+		pidl "\tif (($ndr_flags) & NDR_SCALARS) {\n";
+		pidl "\t\tNDR_CHECK(ndr_pull_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_pull_union_fn_t) ndr_pull_$e->{TYPE}));\n";
+		pidl "\t}\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
 	}
@@ -484,7 +486,9 @@ sub ParseElementPushSwitch($$$$)
 
 	my $sub_size = util::has_property($e, "subcontext");
 	if (defined $sub_size) {
-		pidl "\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_push_$e->{TYPE}));\n";
+		pidl "\tif(($ndr_flags) & NDR_SCALARS) {\n";
+		pidl "\t\tNDR_CHECK(ndr_push_subcontext_union_fn(ndr, $sub_size, $switch_var, $cprefix$var_prefix$e->{NAME}, (ndr_push_union_fn_t) ndr_push_$e->{TYPE}));\n";
+		pidl "\t}\n";
 	} else {
 		pidl "\tNDR_CHECK(ndr_push_$e->{TYPE}(ndr, $ndr_flags, $switch_var, $cprefix$var_prefix$e->{NAME}));\n";
 	}
