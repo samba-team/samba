@@ -50,7 +50,7 @@ static NTSTATUS check_guest_security(const struct auth_context *auth_context,
 
 /* Guest modules initialisation */
 
-NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
+static NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -60,6 +60,7 @@ NTSTATUS auth_init_guest(struct auth_context *auth_context, const char *options,
 	return NT_STATUS_OK;
 }
 
+#ifdef DEVELOPER
 /** 
  * Return an error based on username
  *
@@ -101,7 +102,7 @@ static NTSTATUS check_name_to_ntstatus_security(const struct auth_context *auth_
 
 /** Module initialisation function */
 
-NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_name_to_ntstatus(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -150,7 +151,7 @@ static DATA_BLOB auth_get_fixed_challenge(const struct auth_context *auth_contex
 
 /** Module initailisation function */
 
-NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
+static NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char *param, auth_methods **auth_method) 
 {
 	if (!make_auth_methods(auth_context, auth_method))
 		return NT_STATUS_NO_MEMORY;
@@ -160,6 +161,7 @@ NTSTATUS auth_init_fixed_challenge(struct auth_context *auth_context, const char
 	(*auth_method)->name = "fixed_challenge";
 	return NT_STATUS_OK;
 }
+#endif /* DEVELOPER */
 
 int auth_builtin_init(void)
 {
