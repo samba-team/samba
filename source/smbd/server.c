@@ -133,7 +133,7 @@ static BOOL open_sockets_inetd(void)
 	smbd_set_server_fd(dup(0));
 	
 	/* close our standard file descriptors */
-	close_low_fds();
+	close_low_fds(False); /* Don't close stderr */
 	
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 	set_socket_options(smbd_server_fd(), user_socket_options);
@@ -151,7 +151,7 @@ static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets(BOOL is_daemon,int port)
+static BOOL open_sockets_smbd(BOOL is_daemon,int port)
 {
 	int num_interfaces = iface_count();
 	int fd_listenset[FD_SETSIZE];
@@ -187,7 +187,7 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 		*/
 		
 		if(num_interfaces > FD_SETSIZE) {
-			DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
+			DEBUG(0,("open_sockets_smbd: Too many interfaces specified to bind to. Number was %d \
 max can be %d\n", 
 				 num_interfaces, FD_SETSIZE));
 			return False;
@@ -199,7 +199,7 @@ max can be %d\n",
 			struct in_addr *ifip = iface_n_ip(i);
 			
 			if(ifip == NULL) {
-				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
+				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
 				continue;
 			}
 			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
@@ -233,7 +233,7 @@ max can be %d\n",
 		set_socket_options(s,user_socket_options);
 
 		if (listen(s, 5) == -1) {
-			DEBUG(0,("open_sockets: listen: %s\n",
+			DEBUG(0,("open_sockets_smbd: listen: %s\n",
 				 strerror(errno)));
 			close(s);
 			return False;
@@ -309,7 +309,7 @@ max can be %d\n",
 				continue;
 			
 			if (smbd_server_fd() == -1) {
-				DEBUG(0,("open_sockets: accept: %s\n",
+				DEBUG(0,("open_sockets_smbd: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
@@ -323,7 +323,7 @@ max can be %d\n",
 				
 				/* close our standard file
 				   descriptors */
-				close_low_fds();
+				close_low_fds(False);
 				am_parent = 0;
 				
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
@@ -837,7 +837,7 @@ static void usage(char *pname)
 	   start_background_queue(); 
 	*/
 
-	if (!open_sockets(is_daemon,port))
+	if (!open_sockets_smbd(is_daemon,port))
 		exit(1);
 
 	/*
