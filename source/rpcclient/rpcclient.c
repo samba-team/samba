@@ -106,6 +106,7 @@ struct
 } commands[] = 
 {
   {"regenum",    cmd_reg_enum,         "<keyname> Registry Enumeration (keys, values)"},
+  {"regdeletekey",cmd_reg_delete_key,  "<parentname> <keyname> Registry Key Delete"},
   {"regcreatekey",cmd_reg_create_key,  "<parentname> <keyname> [keyclass] Registry Key Create"},
   {"regquerykey",cmd_reg_query_key,    "<keyname> Registry Key Query"},
   {"regcreateval",cmd_reg_create_val,  "<parentname> <valname> <valtype> <value> Registry Key Create"},

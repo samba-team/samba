@@ -234,6 +234,57 @@ void reg_io_r_create_key(char *desc,  REG_R_CREATE_KEY *r_r, prs_struct *ps, int
 /*******************************************************************
 creates a structure.
 ********************************************************************/
+void make_reg_q_delete_key(REG_Q_DELETE_KEY *q_c, POLICY_HND *hnd,
+				char *name)
+{
+	int len_name  = name  != NULL ? strlen(name ) + 1: 0;
+	ZERO_STRUCTP(q_c);
+
+	memcpy(&(q_c->pnt_pol), hnd, sizeof(q_c->pnt_pol));
+
+	make_uni_hdr(&(q_c->hdr_name), len_name, len_name, 1);
+	make_unistr2(&(q_c->uni_name), name, len_name);
+}
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_q_delete_key(char *desc,  REG_Q_DELETE_KEY *r_q, prs_struct *ps, int depth)
+{
+	if (r_q == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_q_delete_key");
+	depth++;
+
+	prs_align(ps);
+	
+	smb_io_pol_hnd("", &(r_q->pnt_pol), ps, depth);
+
+	smb_io_unihdr ("", &(r_q->hdr_name), ps, depth);
+	smb_io_unistr2("", &(r_q->uni_name), r_q->hdr_name.buffer, ps, depth);
+	prs_align(ps);
+}
+
+
+/*******************************************************************
+reads or writes a structure.
+********************************************************************/
+void reg_io_r_delete_key(char *desc,  REG_R_DELETE_KEY *r_r, prs_struct *ps, int depth)
+{
+	if (r_r == NULL) return;
+
+	prs_debug(ps, depth, desc, "reg_io_r_delete_key");
+	depth++;
+
+	prs_align(ps);
+	
+	prs_uint32("status", ps, depth, &(r_r->status));
+}
+
+
+/*******************************************************************
+creates a structure.
+********************************************************************/
 void make_reg_q_query_key(REG_Q_QUERY_KEY *q_o, POLICY_HND *hnd,
 				uint32 max_class_len)
 {
