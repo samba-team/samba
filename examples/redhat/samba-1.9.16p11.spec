@@ -35,15 +35,19 @@ make RPM_OPT_FLAGS="$RPM_OPT_FLAGS"
 %install
 cd source
 cd ..
-for i in addtosmbpass mksmbpasswd.sh nmblookup smbclient smbpasswd smbrun smbstatus smbtar testparm testprn
+for i in nmblookup smbclient smbpasswd smbrun smbstatus testparm testprns
 do
 	install -m755 -s -g 0 -o 0 source/$i /usr/bin
+done
+for i in addtosmbpass mksmbpasswd.sh smbtar 
+do
+	install -m755 -g 0 -o 0 source/$i /usr/bin
 done
 for i in smbd nmbd
 do
 	install -m755 -s -g 0 -o 0 source/$i /usr/sbin
 done
-for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprn.1
+for i in smbclient.1 smbrun.1 smbstatus.1 smbtar.1 testparm.1 testprns.1
 do
 	install -m644 -g 0 -o 0 docs/$i /usr/man/man1
 done
