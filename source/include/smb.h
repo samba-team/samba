@@ -427,6 +427,7 @@ typedef struct
 
 /* Include VFS stuff */
 
+#include "smb_acls.h"
 #include "vfs.h"
 
 typedef struct connection_struct
@@ -1640,7 +1641,6 @@ struct unix_error_map {
 #define SAFE_NETBIOS_CHARS ". -_"
 
 #include "nsswitch/winbindd_nss.h"
-#include "smb_acls.h"
 
 /* generic iconv conversion structure */
 typedef struct {

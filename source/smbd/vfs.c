@@ -79,13 +79,36 @@ static struct vfs_ops default_vfs_ops = {
 	vfswrap_fset_nt_acl,
 	vfswrap_set_nt_acl,
 
+	/* POSIX ACL operations. */
 #if defined(HAVE_NO_ACLS)
 	NULL,
-	NULL
+	NULL,
 #else
 	vfswrap_chmod_acl,
 	vfswrap_fchmod_acl
 #endif
+	vfswrap_sys_acl_get_entry,
+	vfswrap_sys_acl_get_tag_type,
+	vfswrap_sys_acl_get_permset,
+	vfswrap_sys_acl_get_qualifier,
+	vfswrap_sys_acl_get_file,
+	vfswrap_sys_acl_get_fd,
+	vfswrap_sys_acl_clear_perms,
+	vfswrap_sys_acl_add_perm,
+	vfswrap_sys_acl_to_text,
+	vfswrap_sys_acl_init,
+	vfswrap_sys_acl_create_entry,
+	vfswrap_sys_acl_set_tag_type,
+	vfswrap_sys_acl_set_qualifier,
+	vfswrap_sys_acl_set_permset,
+	vfswrap_sys_acl_valid,
+	vfswrap_sys_acl_set_file,
+	vfswrap_sys_acl_set_fd,
+	vfswrap_sys_acl_delete_def_file,
+	vfswrap_sys_acl_get_perm,
+	vfswrap_sys_acl_free_text,
+	vfswrap_sys_acl_free_acl,
+	vfswrap_sys_acl_free_qualifier
 };
 
 /****************************************************************************

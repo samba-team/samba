@@ -806,7 +806,7 @@ flags=0x%X flags2=0x%X mode=0%o returned %d\n",
 	 */
 
         if ((flags2 & O_CREAT) && lp_inherit_acls(SNUM(conn)) &&
-			(def_acl = directory_has_default_acl(parent_dirname(fname))))
+			(def_acl = directory_has_default_acl(conn, parent_dirname(fname))))
                 mode = 0777;
 
 	DEBUG(4,("calling open_file with flags=0x%X flags2=0x%X mode=0%o\n",
