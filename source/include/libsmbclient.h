@@ -237,7 +237,7 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
  *                  - EINVAL if an invalid parameter passed, like no 
- *                  file.
+ *                  file, or smbc_init not called.
  *                  - EEXIST  pathname already exists and O_CREAT and 
  *                  O_EXCL were used.
  *                  - EISDIR  pathname  refers  to  a  directory  and  
@@ -248,7 +248,6 @@ int smbc_init(smbc_get_auth_data_fn fn, int debug);
  *                  - ENOTDIR A file on the path is not a directory
  *                  - ENOENT  A directory component in pathname does 
  *                  not exist.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_creat()
  *
@@ -280,7 +279,7 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  * @return          Valid file handle, < 0 on error with errno set:
  *                  - ENOMEM  Out of memory
  *                  - EINVAL if an invalid parameter passed, like no 
- *                  file.
+ *                  file, or smbc_init not called.
  *                  - EEXIST  pathname already exists and O_CREAT and
  *                  O_EXCL were used.
  *                  - EISDIR  pathname  refers  to  a  directory  and
@@ -290,7 +289,6 @@ int smbc_open(const char *furl, int flags, mode_t mode);
  *                  - ENOENT  A directory component in pathname does 
  *                  not exist.
  *                  - ENODEV The requested share does not exist.
- *                  - EUCLEAN smbc_init() failed or has not been called
  * @see             smbc_open()
  *
 */
@@ -311,8 +309,8 @@ int smbc_creat(const char *furl, mode_t mode);
  *                  - EBADF  fd  is  not  a valid file descriptor or 
  *                  is not open for reading.
  *                  - EINVAL fd is attached to an object which is 
- *                  unsuitable for reading, or no buffer passed.
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  unsuitable for reading, or no buffer passed or
+ *		    smbc_init not called.
  *
  * @see             smbc_open(), smbc_write()
  *
@@ -334,8 +332,9 @@ ssize_t smbc_read(int fd, void *buf, size_t bufsize);
  *                  - EBADF  fd  is  not  a valid file descriptor or 
  *                  is not open for reading.
  *                  - EINVAL fd is attached to an object which is 
- *                  unsuitable for reading, or no buffer passed.
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  unsuitable for reading, or no buffer passed or
+ *		    smbc_init not called.
+ *
  * @see             smbc_open(), smbc_read()
  *
  */
@@ -363,8 +362,8 @@ ssize_t smbc_write(int fd, void *buf, size_t bufsize);
  *                  of (off_t)-1 is returned and errno is set to 
  *                  indicate the error:
  *                  - EBADF  Fildes is not an open file descriptor.
- *                  - EINVAL Whence is not a proper value.  
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL Whence is not a proper value or smbc_init
+ *		      not called.
  *
  * @todo Are all the whence values really supported?
  * 
@@ -380,7 +379,7 @@ off_t smbc_lseek(int fd, off_t offset, int whence);
  *
  * @return          0 on success, < 0 on error with errno set:
  *                  - EBADF  fd isn't a valid open file descriptor
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL smbc_init() failed or has not been called
  *
  * @see             smbc_open(), smbc_creat()
 */
@@ -399,10 +398,10 @@ int smbc_close(int fd);
  *                  search (execute) permission
  *                  - ENOENT A directory component in pathname does
  *                  not exist
- *                  - EINVAL NULL was passed in the file param
+ *                  - EINVAL NULL was passed in the file param or
+ *		      smbc_init not called.
  *                  - EACCES You do not have access to the file
  *                  - ENOMEM Insufficient kernel memory was available
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_rmdir()s
  *
@@ -428,7 +427,8 @@ int smbc_unlink(const char *furl);
  *                  i.e., contains entries other than "." and ".."
  *                  - EINVAL The  new  url  contained  a path prefix 
  *                  of the old, or, more generally, an  attempt was
- *                  made  to make a directory a subdirectory of itself.
+ *                  made  to make a directory a subdirectory of itself
+ *		    or smbc_init not called.
  *                  - ENOTDIR A component used as a directory in ourl 
  *                  or nurl path is not, in fact, a directory.  Or, 
  *                  ourl  is a directory, and newpath exists but is not
@@ -443,7 +443,6 @@ int smbc_unlink(const char *furl);
  *                  does not exist.
  *                  - EXDEV Rename across shares not supported.
  *                  - ENOMEM Insufficient kernel memory was available.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *                  - EEXIST The target file, nurl, already exists.
  *
  *
@@ -462,14 +461,14 @@ int smbc_rename(const char *ourl, const char *nurl);
  * @return          Valid directory handle. < 0 on error with errno set:
  *                  - EACCES Permission denied.
  *                  - EINVAL A NULL file/URL was passed, or the URL would
- *                  not parse, or was of incorrect form.
+ *                  not parse, or was of incorrect form or smbc_init not
+ *                  called.
  *                  - ENOENT durl does not exist, or name is an 
  *                  - ENOMEM Insufficient memory to complete the 
  *                  operation.                              
  *                  - ENOTDIR name is not a directory.
  *                  - EPERM the workgroup could not be found.
  *                  - ENODEV the workgroup or server could not be found.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_getdents(), smbc_readdir(), smbc_closedir()
  *
@@ -507,9 +506,9 @@ int smbc_closedir(int dh);
  *                  total size. If there were no more dirents available,
  *                  0 is returned. < 0 indicates an error.
  *                  - EBADF  Invalid directory handle
- *                  - EINVAL Result buffer is too small
+ *                  - EINVAL Result buffer is too small or smbc_init
+ *		    not called.
  *                  - ENOENT No such directory.
- *                  - EUCLEAN smbc_init() failed or has not been called
  * @see             , smbc_dirent, smbc_readdir(), smbc_open()
  *
  * @todo Are errno values complete and correct?
@@ -527,7 +526,7 @@ int smbc_getdents(unsigned int dh, struct smbc_dirent *dirp, int count);
  * @return          A pointer to a smbc_dirent structure, or NULL if an
  *                  error occurs or end-of-directory is reached:
  *                  - EBADF Invalid directory handle
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL smbc_init() failed or has not been called
  *
  * @see             smbc_dirent, smbc_getdents(), smbc_open()
 */
@@ -548,7 +547,7 @@ struct smbc_dirent* smbc_readdir(unsigned int dh);
  *                  handle that allows the library to find the entry
  *                  later.
  *                  - EBADF dh is not a valid directory handle
- *                  - EUCLEAN smbc_init() failed or has not been called
+ *                  - EINVAL smbc_init() failed or has not been called
  *                  - ENOTDIR if dh is not a directory
  *
  * @see             smbc_readdir()
@@ -569,10 +568,10 @@ off_t smbc_telldir(int dh);
  *                  NULL, in which case we will rewind
  *
  * @return          0 on success, -1 on failure
- *                  - EUCLEAN smbc_init() failed or has not been called
  *                  - EBADF dh is not a valid directory handle
  *                  - ENOTDIR if dh is not a directory
- *                  - EINVAL offset did not refer to a valid dirent
+ *                  - EINVAL offset did not refer to a valid dirent or
+ *		      smbc_init not called.
  *
  * @see             smbc_telldir()
  *
@@ -596,9 +595,8 @@ int smbc_lseekdir(int fd, off_t offset);
  *                  permission to the process, or one of the directories
  *                  - ENOENT A directory component in pathname does not
  *                  exist.
- *                  - EINVAL NULL durl passed.
+ *                  - EINVAL NULL durl passed or smbc_init not called.
  *                  - ENOMEM Insufficient memory was available.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_rmdir()
  *
@@ -614,12 +612,11 @@ int smbc_mkdir(const char *durl, mode_t mode);
  * @return          0 on success, < 0 on error with errno set:
  *                  - EACCES or EPERM Write access to the directory
  *                  containing pathname was not allowed.
- *                  - EINVAL durl is NULL.
+ *                  - EINVAL durl is NULL or smbc_init not called.
  *                  - ENOENT A directory component in pathname does not
  *                  exist.
  *                  - ENOTEMPTY directory contains entries.
  *                  - ENOMEM Insufficient kernel memory was available.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_mkdir(), smbc_unlink() 
  *
@@ -639,11 +636,10 @@ int smbc_rmdir(const char *durl);
  * @return          0 on success, < 0 on error with errno set:
  *                  - ENOENT A component of the path file_name does not
  *                  exist.
- *                  - EINVAL a NULL url was passed.
+ *                  - EINVAL a NULL url was passed or smbc_init not called.
  *                  - EACCES Permission denied.
  *                  - ENOMEM Out of memory
  *                  - ENOTDIR The target dir, url, is not a directory.
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             Unix stat()
  *
@@ -662,9 +658,9 @@ int smbc_stat(const char *url, struct stat *st);
  * @return          EBADF  filedes is bad.
  *                  - EACCES Permission denied.
  *                  - EBADF fd is not a valid file descriptor
- *                  - EINVAL Problems occurred in the underlying routines.
+ *                  - EINVAL Problems occurred in the underlying routines
+ *		      or smbc_init not called.
  *                  - ENOMEM Out of memory
- *                  - EUCLEAN smbc_init() failed or has not been called
  *
  * @see             smbc_stat(), Unix stat()
  *
@@ -731,8 +727,8 @@ int smbc_chmod(const char *url, mode_t mode);
  *
  * @return          0 on success, < 0 on error with errno set:         
  *
- *                  - EUCLEAN smbc_init() failed or has not been called
- *                  - EINVAL fname or printq was NULL
+ *                  - EINVAL fname or printq was NULL or smbc_init not
+ * 		      not called.
  *                  and errors returned by smbc_open
  *
 */                                     
@@ -747,8 +743,7 @@ int smbc_print_file(const char *fname, const char *printq);
  *
  * @returns         A file handle for the print file if successful.
  *                  Returns -1 if an error ocurred and errno has the values
- *                  - EUCLEAN smbc_init() failed or has not been called
- *                  - EINVAL fname was NULL
+ *                  - EINVAL fname was NULL or smbc_init not called.
  *                  - all errors returned by smbc_open
  *
  */
@@ -762,8 +757,7 @@ int smbc_open_print_job(const char *fname);
  * @param fn        Callback function the receives printjob info
  * 
  * @return          0 on success, < 0 on error with errno set: 
- *                  - EUCLEAN smbc_init() failed or has not been called
- *                  - EINVAL fname was NULL
+ *                  - EINVAL fname was NULL or smbc_init not called
  *                  - EACCES ???
  */
 int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn);
@@ -776,8 +770,7 @@ int smbc_list_print_jobs(const char *purl, smbc_get_print_job_info fn);
  * @param id        The id of the job to delete
  *
  * @return          0 on success, < 0 on error with errno set: 
- *                  - EUCLEAN smbc_init() failed or has not been called
- *                  - EINVAL fname was NULL
+ *                  - EINVAL fname was NULL or smbc_init not called
  *
  * @todo    what errno values are possible here?
  */
