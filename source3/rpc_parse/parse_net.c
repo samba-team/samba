@@ -635,7 +635,7 @@ static int init_dom_sid2s(char *sids_str, DOM_SID2 *sids, int max_sids)
 void init_id_info1(NET_ID_INFO_1 *id, char *domain_name,
 				uint32 param_ctrl, uint32 log_id_low, uint32 log_id_high,
 				char *user_name, char *wksta_name,
-				char sess_key[16],
+				char *sess_key,
 				unsigned char lm_cypher[16], unsigned char nt_cypher[16])
 {
 	int len_domain_name = strlen(domain_name);
@@ -994,7 +994,7 @@ void init_net_user_info3(NET_USER_INFO_3 *usr,
 	DOM_GID *gids,
 	uint32 user_flgs,
 
-	char sess_key[16],
+	char *sess_key,
 
 	char *logon_srv,
 	char *logon_dom,
