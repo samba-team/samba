@@ -56,7 +56,7 @@ typedef struct {
   OtpAlgID id;
   char *name;
   int hashsize;
-  int (*hash)(char *s, size_t len, char *res);
+  int (*hash)(char *s, size_t len, unsigned char *res);
   int (*init)(OtpKey key, char *pwd, char *seed);
   int (*next)(OtpKey key);
 } OtpAlgorithm;
