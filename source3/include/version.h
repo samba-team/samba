@@ -1,1 +1,1 @@
-#define VERSION "samba-1.9.18alpha4"
+#define VERSION "1.9.18alpha4"
