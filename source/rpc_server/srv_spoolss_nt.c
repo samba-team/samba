@@ -1026,7 +1026,7 @@ static void send_notify2_changes( SPOOLSS_NOTIFY_MSG_CTR *ctr, uint32 idx )
 			sending_msg_count++;
 			
 			
-			DEBUG(10,("process_notify2_message: Sending message type [%x] field [%x] for printer [%s]\n",
+			DEBUG(10,("process_notify2_message: Sending message type [0x%x] field [0x%2x] for printer [%s]\n",
 				msg->type, msg->field, p->dev.handlename));
 
 			/* 
@@ -5573,6 +5573,12 @@ WERROR _spoolss_getprinterdriver2(pipes_struct *p, SPOOL_Q_GETPRINTERDRIVER2 *q_
 		return getprinterdriver2_level3(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
 	case 6:
 		return getprinterdriver2_level6(servername, architecture, clientmajorversion, snum, buffer, offered, needed);
+#if 0	/* JERRY */
+	case 101: 
+		/* apparently this call is the equivalent of 
+		   EnumPrinterDataEx() for the DsDriver key */
+		break;
+#endif
 	}
 
 	return WERR_UNKNOWN_LEVEL;
@@ -5934,7 +5940,9 @@ static BOOL check_printer_ok(NT_PRINTER_INFO_LEVEL_2 *info, int snum)
 	slprintf(info->printername, sizeof(info->printername)-1, "\\\\%s\\%s",
 		 get_called_name(), p );
 		 
-	info->attributes = PRINTER_ATTRIBUTE_SAMBA;
+	info->attributes |= PRINTER_ATTRIBUTE_SAMBA;
+	info->attributes &= ~PRINTER_ATTRIBUTE_NOT_SAMBA;
+	
 	
 	
 	return True;
