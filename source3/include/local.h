@@ -10,6 +10,15 @@
 #define WORKGROUP "WORKGROUP"
 #endif
 
+/* the maximum debug level to compile into the code. This assumes a good 
+   optimising compiler that can remove unused code 
+   for embedded or low-memory systems set this to a value like 2 to get
+   only important messages. This gives *much* smaller binaries
+*/
+#ifndef MAX_DEBUG_LEVEL
+#define MAX_DEBUG_LEVEL 1000
+#endif
+
 /* This defines the section name in the configuration file that will contain */
 /* global parameters - that is, parameters relating to the whole server, not */
 /* just services. This name is then reserved, and may not be used as a       */
