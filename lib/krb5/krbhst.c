@@ -221,6 +221,9 @@ append_host_string(krb5_context context, struct krb5_krbhst_data *kd,
     return 0;
 }
 
+/*
+ * return a readable representation of `host' in `hostname, hostlen'
+ */
 
 krb5_error_code
 krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host, 
@@ -239,7 +242,7 @@ krb5_krbhst_format_string(krb5_context context, const krb5_krbhst_info *host,
 }
 
 /*
- * create a getaddrinfo `hints' based on 
+ * create a getaddrinfo `hints' based on `proto'
  */
 
 static void
@@ -362,8 +365,9 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	kd->flags |= KD_FALLBACK;
     } else {
 	struct krb5_krbhst_info *hi;
+	size_t hostlen = strlen(host);
 
-	hi = calloc(1, sizeof(*hi) + strlen(host));
+	hi = calloc(1, sizeof(*hi) + hostlen);
 	if(hi == NULL) {
 	    free(host);
 	    return ENOMEM;
@@ -372,7 +376,8 @@ fallback_get_hosts(krb5_context context, struct krb5_krbhst_data *kd,
 	hi->proto = proto;
 	hi->port  = hi->def_port = def_port;
 	hi->ai    = ai;
-	strcpy(hi->hostname, host);
+	memmove(hi->hostname, host, hostlen - 1);
+	hi->hostname[hostlen - 1] = '\0';
 	free(host);
 	append_host_hostinfo(kd, hi);
 	kd->fallback_count++;
