@@ -21,9 +21,8 @@
 
 #define SMBW_PREFIX "/smb/"
 
-#define SMBW_FD_OFFSET 700
 #define SMBW_CLI_FD 512
-#define SMBW_MAX_OPEN 2048
+#define SMBW_MAX_OPEN 8192
 
 #define SMBW_FILE_MODE (S_IFREG | 0644)
 #define SMBW_DIR_MODE (S_IFDIR | 0755)

@@ -175,9 +175,15 @@ int smbw_dir_open(const char *fname)
 
 	cur_dir = NULL;
 	
-	fd = bitmap_find(smbw_file_bmap, 0);
+	fd = open("/dev/null", O_WRONLY);
 	if (fd == -1) {
 		errno = EMFILE;
+		goto failed;
+	}
+
+	if (bitmap_query(smbw_file_bmap, fd)) {
+		DEBUG(0,("ERROR: fd used in smbw_dir_open\n"));
+		errno = EIO;
 		goto failed;
 	}
 
@@ -185,7 +191,7 @@ int smbw_dir_open(const char *fname)
 	
 	bitmap_set(smbw_file_bmap, fd);
 
-	dir->fd = fd + SMBW_FD_OFFSET;
+	dir->fd = fd;
 	dir->srv = srv;
 	dir->path = strdup(s);
 
@@ -241,7 +247,8 @@ int smbw_dir_close(int fd)
 		return -1;
 	}
 
-	bitmap_clear(smbw_file_bmap, dir->fd - SMBW_FD_OFFSET);
+	bitmap_clear(smbw_file_bmap, dir->fd);
+	close(dir->fd);
 	
 	DLIST_REMOVE(smbw_dirs, dir);
 

@@ -95,7 +95,7 @@ determine if a file descriptor is a smb one
 int smbw_fd(int fd)
 {
 	if (smbw_busy) return 0;
-	return (fd >= SMBW_FD_OFFSET);
+	return smbw_file_bmap && bitmap_query(smbw_file_bmap, fd);
 }
 
 /***************************************************** 
@@ -523,16 +523,19 @@ int smbw_open(const char *fname, int flags, mode_t mode)
 		goto failed;
 	}
 	file->srv = srv;
-	file->fd = bitmap_find(smbw_file_bmap, 0);
-
+	file->fd = open("/dev/null", O_WRONLY);
 	if (file->fd == -1) {
 		errno = EMFILE;
 		goto failed;
 	}
 
-	bitmap_set(smbw_file_bmap, file->fd);
+	if (bitmap_query(smbw_file_bmap, file->fd)) {
+		DEBUG(0,("ERROR: fd used in smbw_open\n"));
+		errno = EIO;
+		goto failed;
+	}
 
-	file->fd += SMBW_FD_OFFSET;
+	bitmap_set(smbw_file_bmap, file->fd);
 
 	DLIST_ADD(smbw_files, file);
 
@@ -648,7 +651,8 @@ int smbw_close(int fd)
 	}
 
 
-	bitmap_clear(smbw_file_bmap, file->fd - SMBW_FD_OFFSET);
+	bitmap_clear(smbw_file_bmap, file->fd);
+	close(file->fd);
 	
 	DLIST_REMOVE(smbw_files, file);
 
