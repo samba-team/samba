@@ -61,7 +61,7 @@ BOOL hash_table_init(hash_table *table, int num_buckets, compare_function compar
 	table->size = 2;
 	table->comp_func = compare_func;
 	while (table->size < num_buckets) 
-	table->size <<= 1;
+		table->size <<= 1;
 	for (i = 0; i < NUM_PRIMES; i++) {
 		if (primes[i] > table->size) {
 			table->size = primes[i];
@@ -301,7 +301,7 @@ static BOOL enlarge_hash_table(hash_table *table)
  *************************************************************************
  */
 
-void hash_clear(hash_table *table)
+BOOL hash_clear(hash_table *table)
 {
 	int i;
 	ubi_dlList	*bucket = table->buckets;
@@ -315,6 +315,14 @@ void hash_clear(hash_table *table)
 				free((char *)hash_elem);
 		}
 	}
+	table->size = 0;
 	if(table->buckets)
 		free((char *) table->buckets);
+	table->buckets = NULL;
+
+	/* Reinitialize the hash table. */
+	if(!hash_table_init(table, 0, table->comp_func))
+		return False;
+
+	return True;
 }
