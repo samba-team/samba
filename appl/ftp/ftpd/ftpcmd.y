@@ -49,10 +49,6 @@
 
 RCSID("$Id$");
 
-#ifdef SOCKS
-#include <socks.h>
-#endif
-
 #ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
 #endif
@@ -97,10 +93,15 @@ RCSID("$Id$");
 #include <bsd/bsd.h>
 #endif
 
+#include <roken.h>
+
+#ifdef SOCKS
+#include <socks.h>
+extern int LIBPREFIX(fclose)      __P((FILE *));
+#endif
+
 #include "extern.h"
 #include "auth.h"
-
-#include <roken.h>
 
 off_t	restart_point;
 
