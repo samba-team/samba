@@ -728,7 +728,7 @@
 		<listitem><para><link linkend="SOCKETADDRESS"><parameter>socket address</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOCKETOPTIONS"><parameter>socket options</parameter></link></para></listitem>
 		<listitem><para><link linkend="SOURCEENVIRONMENT"><parameter>source environment</parameter></link></para></listitem>
-
+                <listitem><para><link linkend="SPNEGO"><parameter>use spnego</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATCACHE"><parameter>stat cache</parameter></link></para></listitem>
 		<listitem><para><link linkend="STATCACHESIZE"><parameter>stat cache size</parameter></link></para></listitem>
 		<listitem><para><link linkend="STRIPDOT"><parameter>strip dot</parameter></link></para></listitem>
@@ -1102,7 +1102,13 @@
 		%u</command></para>
 		</listitem>
 		</varlistentry>
+<varlistentry><term><anchor id="ADDGROUPSCRIPT">add group script (G)</term>
+<listitem><para>This is the full pathname to a script that will 
+		be run <emphasis>AS ROOT</emphasis> by <ulink url="smbd.8.html">smbd(8) when a new group is requested. It will expand any <parameter>%g</parameter> to the group name passed.  This script is only useful for installations using the Windows NT domain administration tools.
+		</ulink> 
 
+</para></listitem>
+</varlistentry>
 
 
 		<varlistentry>
@@ -1910,6 +1916,7 @@
                 <para>This script is called when a remote client removes a user
                 from the server, normally using 'User Manager for Domains' or
                 <command>rpcclient</command>.
+		</para>
 
 		<para>This script should delete the given UNIX username. 
 		</para>
@@ -3281,10 +3288,9 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPADMINDN">ldap admin dn (G)</term>
-		<para>
-		The <parameter>ldap admin dn</parameter> defines the Distinguished 
-		Name (DN) name used by Samba to contact the <link linkend="LDAPSERVER">ldap
-		server</link> when retreiving user account information. The <parameter>ldap
+		<listitem><para> The <parameter>ldap admin dn</parameter> defines the Distinguished 
+		Name (DN) name used by Samba to contact the ldap server when retreiving 
+		user account information. The <parameter>ldap
 		admin dn</parameter> is used in conjunction with the admin dn password
 		stored in the <filename>private/secrets.tdb</filename> file.  See the
 		<ulink url="smbpasswd.8.html"><command>smbpasswd(8)</command></ulink> man
@@ -3301,8 +3307,7 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPFILTER">ldap filter (G)</term>
-		<para>
-		This parameter specifies the RFC 2254 compliant LDAP search filter.
+		<listitem><para>This parameter specifies the RFC 2254 compliant LDAP search filter.
 		The default is to match the login name with the <constant>uid</constant> 
 		attribute for all entries matching the <constant>sambaAccount</constant>		
 		objectclass.  Note that this filter should only return one entry.
@@ -3316,10 +3321,9 @@
 
 		<varlistentry>
 		<term><anchor id="LDAPSSL">ldap ssl (G)</term>
-		<para>
-		This option is used to define whether or not Samba should
-		use SSL when connecting to the <link linkend="LDAPSERVER"><parameter>ldap
-		server</parameter></link>.  This is <emphasis>NOT</emphasis> related to
+		<listitem><para>This option is used to define whether or not Samba should
+		use SSL when connecting to the ldap server
+		This is <emphasis>NOT</emphasis> related to
 		Samba's previous SSL support which was enabled by specifying the 
 		<command>--with-ssl</command> option to the <filename>configure</filename> 
 		script.
@@ -3365,7 +3369,7 @@
 
 
 		<varlistentry>
-		<term><anchor id="LDAPSUFFIX">ldap machine suffix (G)</term>
+		<term><anchor id="LDAPMACHINESUFFIX">ldap machine suffix (G)</term>
 		<listitem><para>It specifies where machines should be 
                 added to the ldap tree.
 		</para>
@@ -6962,7 +6966,12 @@
 		/usr/local/smb_env_vars</command></para>
 		</listitem>
 		</varlistentry>
-
+<varlistentry>
+<term><anchor id="SPNEGO">use spnego (G)</term>
+<listitem><para> This variable controls controls whether samba will try to use Simple and Protected NEGOciation (as specified by rfc2478) with WindowsXP and Windows2000sp2 clients to agree upon an authentication mechanism.  As of samba 3.0alpha it must be set to "no" for these clients to join a samba domain controller.  It can be set to "yes" to allow samba to participate in an AD domain controlled by a Windows2000 domain controller.</para>
+<para>Default:  <emphasis>use spnego = yes</emphasis></para>
+</listitem>
+</varlistentry>
 
 		<varlistentry>
 		<term><anchor id="STATCACHE">stat cache (G)</term>
