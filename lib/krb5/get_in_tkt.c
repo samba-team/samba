@@ -223,7 +223,8 @@ _krb5_extract_ticket(krb5_context context,
     /* set kdc-offset */
 
     krb5_timeofday (context, &sec_now);
-    if (context->kdc_sec_offset == 0
+    if (rep->enc_part.flags.initial
+	&& context->kdc_sec_offset == 0
 	&& krb5_config_get_bool (context, NULL,
 				 "libdefaults",
 				 "kdc_timesync",
