@@ -43,11 +43,11 @@ struct preset {
 	int start, len;
 	int rw;
 } preset[] = {
-{86, 37, 0, 1, 0, 29+41, WRITE_LOCK},
-{46, 21, 0, 1, 55, 7, READ_LOCK},
-{51, 35, 0, 0, 79, 2, WRITE_LOCK},
-{69, 97, 0, 1, 0, 0, 0},
-{35, 27, 1, 1, 1, 31+45, READ_LOCK},
+{86, 37, 0, 1,  0, 3, WRITE_LOCK},
+{46, 21, 0, 1,  1, 1, READ_LOCK},
+{51, 35, 0, 0, 10, 1, WRITE_LOCK},
+{69, 97, 0, 1,  0, 0, 0},
+{35, 27, 1, 1,  0, 3, READ_LOCK},
 	};
 
 /* each server has two connections open to it. Each connection has two file
