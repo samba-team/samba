@@ -332,6 +332,7 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   BOOL guest=False;
   BOOL computer_id=False;
   static BOOL done_sesssetup = False;
+  BOOL doencrypt = SMBENCRYPT();
 
   *smb_apasswd = 0;
   
@@ -345,10 +346,12 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
     smb_apasslen = SVAL(inbuf,smb_vwv7);
     memcpy(smb_apasswd,smb_buf(inbuf),smb_apasslen);
     StrnCpy(user,smb_buf(inbuf)+smb_apasslen,sizeof(user)-1);
+
+    if (lp_security() != SEC_SERVER && !doencrypt)
+      smb_apasslen = strlen(smb_apasswd);
   } else {
     uint16 passlen1 = SVAL(inbuf,smb_vwv7);
     uint16 passlen2 = SVAL(inbuf,smb_vwv8);
-    BOOL doencrypt = SMBENCRYPT();
     char *p = smb_buf(inbuf);    
 
     if (passlen1 != 24 && passlen2 != 24)
@@ -369,10 +372,11 @@ int reply_sesssetup_and_X(char *inbuf,char *outbuf,int length,int bufsize)
 	 default code because Win95 will null terminate the password
 	 anyway 
 
-	 if passlen1>0 and passlen2>0 then its a NT box and its
+	 if passlen1>0 and passlen2>0 then maybe its a NT box and its
 	 setting passlen2 to some random value which really stuffs
 	 things up. we need to fix that one.  */
-      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24) {
+      if (passlen1 > 0 && passlen2 > 0 && passlen2 != 24 &&
+	  passlen2 != 1) {
 	passlen2 = 0;
       }
       /* we use the first password that they gave */
