@@ -1,3 +1,7 @@
+2001-02-05  Assar Westerlund  <assar@sics.se>
+
+	* kdc/kaserver.c: update to new db_fetch4
+
 2001-02-05  Assar Westerlund  <assar@assaris.sics.se>
 
 	* Release 0.3e
