@@ -46,15 +46,15 @@ FILE *headerfile, *codefile, *logfile;
 
 static char *orig_filename;
 static char header[1024];
-static char basename[1024] = STEM;
+static char headerbase[1024] = STEM;
 
 void
 init_generate (char *filename, char *base)
 {
     orig_filename = filename;
     if(base)
-	strcpy(basename, base);
-    sprintf(header, "%s.h", basename);
+	strcpy(headerbase, base);
+    sprintf(header, "%s.h", headerbase);
     headerfile = fopen (header, "w");
     if (headerfile == NULL)
 	err (1, "open %s", header);
@@ -64,7 +64,7 @@ init_generate (char *filename, char *base)
 	     filename);
     fprintf (headerfile, 
 	     "#ifndef __%s_h__\n"
-	     "#define __%s_h__\n\n", basename, basename);
+	     "#define __%s_h__\n\n", headerbase, headerbase);
     fprintf (headerfile, 
 	     "#include <stddef.h>\n"
 	     "#include <time.h>\n\n");
@@ -95,7 +95,7 @@ init_generate (char *filename, char *base)
 void
 close_generate ()
 {
-    fprintf (headerfile, "#endif /* __%s_h__ */\n", basename);
+    fprintf (headerfile, "#endif /* __%s_h__ */\n", headerbase);
 
     fclose (headerfile);
     fprintf (logfile, "\n");
