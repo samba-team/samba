@@ -38,7 +38,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	krb5_ticket *tkt = NULL;
 	krb5_data salt;
 	krb5_encrypt_block eblock;
-	int ret;
+	int ret, i;
 	krb5_keyblock * key;
 	krb5_principal host_princ;
 	char *host_princ_s;
@@ -46,6 +46,7 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	fstring myname;
 	char *password_s;
 	krb5_data password;
+	krb5_enctype *enctypes = NULL;
 
 	if (!secrets_init()) {
 		DEBUG(1,("secrets_init failed\n"));
@@ -70,7 +71,6 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 	ret = krb5_set_default_realm(context, ads->auth.realm);
 	if (ret) {
 		DEBUG(1,("krb5_set_default_realm failed (%s)\n", error_message(ret)));
-		ads_destroy(&ads);
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
@@ -102,29 +102,43 @@ NTSTATUS ads_verify_ticket(ADS_STRUCT *ads, const DATA_BLOB *ticket,
 		return NT_STATUS_NO_MEMORY;
 	}
 	
-	krb5_use_enctype(context, &eblock, ENCTYPE_DES_CBC_MD5);
-	
-	ret = krb5_string_to_key(context, &eblock, key, &password, &salt);
-	if (ret) {
-		DEBUG(1,("krb5_string_to_key failed (%s)\n", error_message(ret)));
+	if ((ret = krb5_get_permitted_enctypes(context, &enctypes))) {
+		DEBUG(1,("krb5_get_permitted_enctypes failed (%s)\n", 
+			 error_message(ret)));
 		return NT_STATUS_LOGON_FAILURE;
 	}
 
-	krb5_auth_con_setuseruserkey(context, auth_context, key);
+	/* we need to setup a auth context with each possible encoding type in turn */
+	for (i=0;enctypes[i];i++) {
+		krb5_use_enctype(context, &eblock, enctypes[i]);
 
-	packet.length = ticket->length;
-	packet.data = (krb5_pointer)ticket->data;
+		ret = krb5_string_to_key(context, &eblock, key, &password, &salt);
+		if (ret) {
+			continue;
+		}
+
+		krb5_auth_con_setuseruserkey(context, auth_context, key);
+
+		packet.length = ticket->length;
+		packet.data = (krb5_pointer)ticket->data;
+
+		if (!(ret = krb5_rd_req(context, &auth_context, &packet, 
+				       NULL, keytab, NULL, &tkt))) {
+			krb5_free_ktypes(context, enctypes);
+			break;
+		}
+	}
+
+	if (!enctypes[i]) {
+		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
+			 error_message(ret)));
+		return NT_STATUS_LOGON_FAILURE;
+	}
 
 #if 0
 	file_save("/tmp/ticket.dat", ticket->data, ticket->length);
 #endif
 
-	if ((ret = krb5_rd_req(context, &auth_context, &packet, 
-			       NULL, keytab, NULL, &tkt))) {
-		DEBUG(3,("krb5_rd_req with auth failed (%s)\n", 
-			 error_message(ret)));
-		return NT_STATUS_LOGON_FAILURE;
-	}
 
 	if (tkt->enc_part2) {
 		*auth_data = data_blob(tkt->enc_part2->authorization_data[0]->contents,
