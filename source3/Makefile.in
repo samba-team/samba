@@ -181,7 +181,8 @@ LIB_OBJ = lib/version.o lib/charcnv.o lib/debug.o lib/fault.o \
 	  nsswitch/wb_client.o nsswitch/wb_common.o \
 	  lib/pam_errors.o intl/lang_tdb.o lib/account_pol.o \
 	  lib/adt_tree.o lib/gencache.o $(TDB_OBJ) \
-	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@
+	  lib/module.o lib/ldap_escape.o @CHARSET_STATIC@ \
+	  lib/privileges.o lib/secdesc.o lib/secace.o lib/secacl.o
 
 LIB_SMBD_OBJ = lib/system_smbd.o lib/util_smbd.o 
 
@@ -218,7 +219,7 @@ LIBSMB_OBJ = libsmb/clientgen.o libsmb/cliconnect.o libsmb/clifile.o \
 	     libsmb/clirap.o libsmb/clierror.o libsmb/climessage.o \
 	     libsmb/clireadwrite.o libsmb/clilist.o libsmb/cliprint.o \
 	     libsmb/clitrans.o libsmb/clisecdesc.o libsmb/clidgram.o \
-	     libsmb/clistr.o \
+	     libsmb/clistr.o lib/util_seaccess.o \
 	     libsmb/cliquota.o libsmb/clifsinfo.o \
              libsmb/smberr.o libsmb/credentials.o libsmb/pwd_cache.o \
 	     libsmb/clioplock.o libsmb/errormap.o libsmb/clirap2.o \
@@ -345,7 +346,7 @@ SMBD_OBJ_SRV = smbd/files.o smbd/chgpasswd.o smbd/connection.o \
 	       smbd/vfs.o smbd/vfs-wrap.o smbd/statcache.o \
                smbd/posix_acls.o lib/sysacls.o lib/server_mutex.o \
 	       smbd/process.o smbd/service.o smbd/error.o \
-	       printing/printfsp.o lib/util_seaccess.o \
+	       printing/printfsp.o \
                lib/sysquotas.o smbd/change_trust_pw.o smbd/fake_file.o \
 	       smbd/quotas.o smbd/ntquotas.o lib/afs.o \
 	       $(MANGLE_OBJ) @VFS_STATIC@

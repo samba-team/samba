@@ -53,6 +53,8 @@ typedef struct LUID_ATTR
 
 typedef struct privilege_set
 {
+	TALLOC_CTX *mem_ctx;
+	BOOL ext_ctx;
 	uint32 count;
 	uint32 control;
 	LUID_ATTR *set;

@@ -1809,14 +1809,20 @@ static BOOL lsa_io_privilege_set(const char *desc, PRIVILEGE_SET *r_c, prs_struc
 	return True;
 }
 
-void init_lsa_r_enum_privsaccount(LSA_R_ENUMPRIVSACCOUNT *r_u, LUID_ATTR *set, uint32 count, uint32 control)
+NTSTATUS init_lsa_r_enum_privsaccount(TALLOC_CTX *mem_ctx, LSA_R_ENUMPRIVSACCOUNT *r_u, LUID_ATTR *set, uint32 count, uint32 control)
 {
-	r_u->ptr=1;
-	r_u->count=count;
-	r_u->set.set=set;
-	r_u->set.count=count;
-	r_u->set.control=control;
-	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set.count));
+	NTSTATUS ret;
+
+	r_u->ptr = 1;
+	r_u->count = count;
+
+	if (!NT_STATUS_IS_OK(ret = init_priv_with_ctx(mem_ctx, &(r_u->set))))
+		return ret;
+	
+	if (!NT_STATUS_IS_OK(ret = dupalloc_luid_attr(r_u->set->mem_ctx, &(r_u->set->set), set)))
+		return ret;
+
+	DEBUG(10,("init_lsa_r_enum_privsaccount: %d %d privileges\n", r_u->count, r_u->set->count));
 }
 
 /*******************************************************************
@@ -1840,13 +1846,16 @@ BOOL lsa_io_r_enum_privsaccount(const char *desc, LSA_R_ENUMPRIVSACCOUNT *r_c, p
 
 		/* malloc memory if unmarshalling here */
 
-		if (UNMARSHALLING(ps) && r_c->count!=0) {
-			if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+		if (UNMARSHALLING(ps) && r_c->count != 0) {
+			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+				return False;
+
+			if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
 				return False;
 
 		}
 		
-		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+		if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
 			return False;
 	}
 
@@ -2008,11 +2017,14 @@ BOOL lsa_io_q_addprivs(const char *desc, LSA_Q_ADDPRIVS *r_c, prs_struct *ps, in
 		return False;
 
 	if (UNMARSHALLING(ps) && r_c->count!=0) {
-		if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+		if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+			return False;
+		
+		if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps, sizeof(LUID_ATTR) * r_c->count)))
 			return False;
 	}
 	
-	if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+	if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
 		return False;
 	
 	return True;
@@ -2067,11 +2079,14 @@ BOOL lsa_io_q_removeprivs(const char *desc, LSA_Q_REMOVEPRIVS *r_c, prs_struct *
 			return False;
 
 		if (UNMARSHALLING(ps) && r_c->count!=0) {
-			if (!(r_c->set.set = (LUID_ATTR *)prs_alloc_mem(ps,sizeof(LUID_ATTR) * r_c->count)))
+			if (!NT_STATUS_IS_OK(init_priv_with_ctx(ps->mem_ctx, &(r_c->set))))
+				return False;
+
+			if (!(r_c->set->set = (LUID_ATTR *)prs_alloc_mem(ps, sizeof(LUID_ATTR) * r_c->count)))
 				return False;
 		}
 
-		if(!lsa_io_privilege_set(desc, &r_c->set, ps, depth))
+		if(!lsa_io_privilege_set(desc, r_c->set, ps, depth))
 			return False;
 	}
 

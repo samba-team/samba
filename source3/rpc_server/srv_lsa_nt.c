@@ -955,7 +955,7 @@ NTSTATUS _lsa_open_account(pipes_struct *p, LSA_Q_OPENACCOUNT *q_u, LSA_R_OPENAC
  For a given SID, enumerate all the privilege this account has.
  ***************************************************************************/
 
-NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
+NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, prs_struct *ps, LSA_Q_ENUMPRIVSACCOUNT *q_u, LSA_R_ENUMPRIVSACCOUNT *r_u)
 {
 	struct lsa_info *info=NULL;
 	GROUP_MAP map;
@@ -971,29 +971,29 @@ NTSTATUS _lsa_enum_privsaccount(pipes_struct *p, LSA_Q_ENUMPRIVSACCOUNT *q_u, LS
 		return NT_STATUS_NO_SUCH_GROUP;
 
 #if 0 /* privileges currently not implemented! */
-	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set.count));
-	if (map.priv_set.count!=0) {
+	DEBUG(10,("_lsa_enum_privsaccount: %d privileges\n", map.priv_set->count));
+	if (map.priv_set->count!=0) {
 	
-		set=(LUID_ATTR *)talloc(p->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
+		set=(LUID_ATTR *)talloc(map.priv_set->mem_ctx, map.priv_set.count*sizeof(LUID_ATTR));
 		if (set == NULL) {
-			free_privilege(&map.priv_set);	
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_MEMORY;
 		}
 
-		for (i=0; i<map.priv_set.count; i++) {
-			set[i].luid.low=map.priv_set.set[i].luid.low;
-			set[i].luid.high=map.priv_set.set[i].luid.high;
-			set[i].attr=map.priv_set.set[i].attr;
+		for (i = 0; i < map.priv_set.count; i++) {
+			set[i].luid.low = map.priv_set->set[i].luid.low;
+			set[i].luid.high = map.priv_set->set[i].luid.high;
+			set[i].attr = map.priv_set->set[i].attr;
 			DEBUG(10,("_lsa_enum_privsaccount: priv %d: %d:%d:%d\n", i, 
 				   set[i].luid.high, set[i].luid.low, set[i].attr));
 		}
 	}
 
-	init_lsa_r_enum_privsaccount(r_u, set, map.priv_set.count, 0);	
-	free_privilege(&map.priv_set);	
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, map.priv_set->count, 0);	
+	destroy_privilege(&map.priv_set);	
 #endif
 
-	init_lsa_r_enum_privsaccount(r_u, set, 0, 0);
+	init_lsa_r_enum_privsaccount(ps->mem_ctx, r_u, set, 0, 0);
 
 	return r_u->status;
 }
@@ -1059,11 +1059,11 @@ NTSTATUS _lsa_setsystemaccount(pipes_struct *p, LSA_Q_SETSYSTEMACCOUNT *q_u, LSA
 NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u)
 {
 #if 0
-	struct lsa_info *info=NULL;
+	struct lsa_info *info = NULL;
 	GROUP_MAP map;
-	int i=0;
-	LUID_ATTR *luid_attr=NULL;
-	PRIVILEGE_SET *set=NULL;
+	int i = 0;
+	LUID_ATTR *luid_attr = NULL;
+	PRIVILEGE_SET *set = NULL;
 #endif
 
 	r_u->status = NT_STATUS_OK;
@@ -1076,24 +1076,24 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	set=&q_u->set;
+	set = &q_u->set;
 
-	for (i=0; i<set->count; i++) {
-		luid_attr=&set->set[i];
+	for (i = 0; i < set->count; i++) {
+		luid_attr = &set->set[i];
 		
 		/* check if the privilege is already there */
-		if (check_priv_in_privilege(&map.priv_set, *luid_attr)){
-			free_privilege(&map.priv_set);
+		if (check_priv_in_privilege(map.priv_set, *luid_attr)){
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 		
-		add_privilege(&map.priv_set, *luid_attr);
+		add_privilege(map.priv_set, *luid_attr);
 	}
 
 	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
-	free_privilege(&map.priv_set);	
+	destroy_privilege(&map.priv_set);	
 
 #endif
 	return r_u->status;
@@ -1106,11 +1106,11 @@ NTSTATUS _lsa_addprivs(pipes_struct *p, LSA_Q_ADDPRIVS *q_u, LSA_R_ADDPRIVS *r_u
 NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEPRIVS *r_u)
 {
 #if 0
-	struct lsa_info *info=NULL;
+	struct lsa_info *info = NULL;
 	GROUP_MAP map;
 	int i=0;
-	LUID_ATTR *luid_attr=NULL;
-	PRIVILEGE_SET *set=NULL;
+	LUID_ATTR *luid_attr = NULL;
+	PRIVILEGE_SET *set = NULL;
 #endif
 
 	r_u->status = NT_STATUS_OK;
@@ -1123,37 +1123,37 @@ NTSTATUS _lsa_removeprivs(pipes_struct *p, LSA_Q_REMOVEPRIVS *q_u, LSA_R_REMOVEP
 	if (!pdb_getgrsid(&map, info->sid))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	if (q_u->allrights!=0) {
+	if (q_u->allrights != 0) {
 		/* log it and return, until I see one myself don't do anything */
 		DEBUG(5,("_lsa_removeprivs: trying to remove all privileges ?\n"));
 		return NT_STATUS_OK;
 	}
 
-	if (q_u->ptr==0) {
+	if (q_u->ptr == 0) {
 		/* log it and return, until I see one myself don't do anything */
 		DEBUG(5,("_lsa_removeprivs: no privileges to remove ?\n"));
 		return NT_STATUS_OK;
 	}
 
-	set=&q_u->set;
+	set = &q_u->set;
 
-	for (i=0; i<set->count; i++) {
-		luid_attr=&set->set[i];
+	for (i = 0; i < set->count; i++) {
+		luid_attr = &set->set[i];
 		
 		/* if we don't have the privilege, we're trying to remove, give up */
 		/* what else can we do ??? JFM. */
-		if (!check_priv_in_privilege(&map.priv_set, *luid_attr)){
-			free_privilege(&map.priv_set);
+		if (!check_priv_in_privilege(map.priv_set, *luid_attr)){
+			destroy_privilege(&map.priv_set);
 			return NT_STATUS_NO_SUCH_PRIVILEGE;
 		}
 		
-		remove_privilege(&map.priv_set, *luid_attr);
+		remove_privilege(map.priv_set, *luid_attr);
 	}
 
 	if(!pdb_update_group_mapping_entry(&map))
 		return NT_STATUS_NO_SUCH_GROUP;
 	
-	free_privilege(&map.priv_set);	
+	destroy_privilege(&map.priv_set);	
 #endif
 	return r_u->status;
 }
