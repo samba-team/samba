@@ -1847,7 +1847,7 @@ static int cmd_lookup(const char **cmd_ptr)
 	struct dom_sid *sid;
 
 	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("lookup <name|sid>\n");
+		d_printf("lookup <sid|name>\n");
 		talloc_free(mem_ctx);
 		return 1;
 	}
@@ -1939,7 +1939,7 @@ static int cmd_addprivileges(const char **cmd_ptr)
 	struct lsa_RightSet rights;
 
 	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("addprivileges <sid> <privilege...>\n");
+		d_printf("addprivileges <sid|name> <privilege...>\n");
 		talloc_free(mem_ctx);
 		return 1;
 	}
@@ -1989,7 +1989,7 @@ static int cmd_delprivileges(const char **cmd_ptr)
 	struct lsa_RightSet rights;
 
 	if (!next_token(cmd_ptr,buf,NULL,sizeof(buf))) {
-		d_printf("delprivileges <sid> <privilege...>\n");
+		d_printf("delprivileges <sid|name> <privilege...>\n");
 		talloc_free(mem_ctx);
 		return 1;
 	}
@@ -2577,7 +2577,7 @@ static struct
 } commands[] = 
 {
   {"?",cmd_help,"[command] give help on a command",{COMPL_NONE,COMPL_NONE}},
-  {"addprivileges",cmd_addprivileges,"<sid|user> <privilege...> add privileges for a user",{COMPL_NONE,COMPL_NONE}},
+  {"addprivileges",cmd_addprivileges,"<sid|name> <privilege...> add privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"altname",cmd_altname,"<file> show alt name",{COMPL_NONE,COMPL_NONE}},
   {"acl",cmd_acl,"<file> show file ACL",{COMPL_NONE,COMPL_NONE}},
   {"allinfo",cmd_allinfo,"<file> show all possible info about a file",{COMPL_NONE,COMPL_NONE}},
@@ -2587,7 +2587,7 @@ static struct
   {"chmod",cmd_chmod,"<src> <mode> chmod a file using UNIX permission",{COMPL_REMOTE,COMPL_REMOTE}},
   {"chown",cmd_chown,"<src> <uid> <gid> chown a file using UNIX uids and gids",{COMPL_REMOTE,COMPL_REMOTE}},
   {"del",cmd_del,"<mask> delete all matching files",{COMPL_REMOTE,COMPL_NONE}},
-  {"delprivileges",cmd_delprivileges,"<sid|user> <privilege...> remove privileges for a user",{COMPL_NONE,COMPL_NONE}},
+  {"delprivileges",cmd_delprivileges,"<sid|name> <privilege...> remove privileges for a user",{COMPL_NONE,COMPL_NONE}},
   {"deltree",cmd_deltree,"<dir> delete a whole directory tree",{COMPL_REMOTE,COMPL_NONE}},
   {"dir",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"du",cmd_du,"<mask> computes the total size of the current directory",{COMPL_REMOTE,COMPL_NONE}},
@@ -2597,7 +2597,7 @@ static struct
   {"history",cmd_history,"displays the command history",{COMPL_NONE,COMPL_NONE}},
   {"lcd",cmd_lcd,"[directory] change/report the local current working directory",{COMPL_LOCAL,COMPL_NONE}},
   {"link",cmd_link,"<src> <dest> create a UNIX hard link",{COMPL_REMOTE,COMPL_REMOTE}},
-  {"lookup",cmd_lookup,"<name|sid> show SID for name or name for SID",{COMPL_NONE,COMPL_NONE}},
+  {"lookup",cmd_lookup,"<sid|name> show SID for name or name for SID",{COMPL_NONE,COMPL_NONE}},
   {"lowercase",cmd_lowercase,"toggle lowercasing of filenames for get",{COMPL_NONE,COMPL_NONE}},  
   {"ls",cmd_dir,"<mask> list the contents of the current directory",{COMPL_REMOTE,COMPL_NONE}},
   {"mask",cmd_select,"<mask> mask all filenames against this",{COMPL_REMOTE,COMPL_NONE}},
