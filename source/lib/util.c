@@ -1700,17 +1700,59 @@ BOOL is_myname(const char *s)
 
 BOOL is_myname_or_ipaddr(const char *s)
 {
+	fstring name, dnsname;
+	char *servername;
+
+	if ( !s )
+		return False;
+
+	/* santize the string from '\\name' */
+
+	fstrcpy( name, s );
+
+	servername = strrchr_m( name, '\\' );
+	if ( !servername )
+		servername = name;
+	else
+		servername++;
+
 	/* optimize for the common case */
-	if (strequal(s, global_myname())) 
+
+	if (strequal(servername, global_myname())) 
 		return True;
 
+	/* check for an alias */
+
+	if (is_myname(servername))
+		return True;
+		
+	/* maybe it's my dns name */
+
+	if ( get_mydnsfullname( dnsname ) )
+		if ( strequal( servername, dnsname ) )
+			return True;
+		
+	/* handle possible CNAME records */
+
+	if ( !is_ipaddress( servername ) ) {
+		/* use DNS to resolve the name, but only the first address */
+		struct hostent *hp;
+
+		if (((hp = sys_gethostbyname(name)) != NULL) && (hp->h_addr != NULL)) {
+			struct in_addr return_ip;
+			putip( (char*)&return_ip, (char*)hp->h_addr );
+			fstrcpy( name, inet_ntoa( return_ip ) );
+			servername = name;
+		}	
+	}
+		
 	/* maybe its an IP address? */
-	if (is_ipaddress(s)) {
+	if (is_ipaddress(servername)) {
 		struct iface_struct nics[MAX_INTERFACES];
 		int i, n;
 		uint32 ip;
 		
-		ip = interpret_addr(s);
+		ip = interpret_addr(servername);
 		if ((ip==0) || (ip==0xffffffff))
 			return False;
 			
@@ -1721,10 +1763,6 @@ BOOL is_myname_or_ipaddr(const char *s)
 		}
 	}	
 
-	/* check for an alias */
-	if (is_myname(s))
-		return True;
-	
 	/* no match */
 	return False;
 }
