@@ -197,7 +197,14 @@ remove_slave (krb5_context context, slave *s, slave **root)
 }
 
 static int
-send_diffs (krb5_context context, slave *s, int log_fd)
+send_complete (krb5_context context, slave *s)
+{
+    abort ();
+}
+
+static int
+send_diffs (krb5_context context, slave *s, int log_fd,
+	    u_int32_t current_version)
 {
     krb5_storage *sp, *data_sp;
     u_int32_t ver;
@@ -210,14 +217,23 @@ send_diffs (krb5_context context, slave *s, int log_fd)
     int ret = 0;
     u_char buf[4];
 
+    if (s->version == current_version)
+	return 0;
+
     sp = kadm5_log_goto_end (log_fd);
     right = sp->seek(sp, 0, SEEK_CUR);
+    printf ("%ld, looking for %d\n", right, s->version);
     for (;;) {
 	if (kadm5_log_previous (sp, &ver, &timestamp, &op, &len))
 	    abort ();
+	printf ("version = %d\n", ver);
 	left = sp->seek(sp, -16, SEEK_CUR);
+	if (ver == s->version)
+	    return 0;
 	if (ver == s->version + 1)
 	    break;
+	if (left == 0)
+	    return send_complete (context, s);
     }
     krb5_data_alloc (&data, right - left + 4);
     sp->fetch (sp, (char *)data.data + 4, data.length - 4);
@@ -233,55 +249,30 @@ send_diffs (krb5_context context, slave *s, int log_fd)
 	krb5_warn (context, ret, "krb_mk_priv");
 	return 0;
     }
-    buf[0] = (priv_data.length >> 24) & 0xFF;
-    buf[1] = (priv_data.length >> 16) & 0xFF;
-    buf[2] = (priv_data.length >>  8) & 0xFF;
-    buf[3] = (priv_data.length >>  0) & 0xFF;
-    ret = krb5_net_write (context, &s->fd, buf, 4);
-    if (ret < 0) {
-	krb5_data_free (&priv_data);
-	krb5_warn (context, ret, "krb_net_write");
-	return 1;
-    }
-    ret = krb5_net_write (context, &s->fd, priv_data.data, priv_data.length);
+
+    ret = krb5_write_message (context, &s->fd, &priv_data);
     krb5_data_free (&priv_data);
-    if (ret < 0) {
-	krb5_warn (context, ret, "krb_net_write");
+    if (ret) {
+	krb5_warn (context, ret, "krb5_write_message");
 	return 1;
     }
     return 0;
 }
 
 static int
-process_msg (krb5_context context, slave *s, int log_fd)
+process_msg (krb5_context context, slave *s, int log_fd,
+	     u_int32_t current_version)
 {
     int ret = 0;
-    u_int32_t len;
     krb5_data in, out;
     krb5_storage *sp;
     int32_t tmp;
     u_char buf[8];
 
-    ret = krb5_net_read (context, &s->fd, buf, 4);
-    if (ret == 0) {
+    ret = krb5_read_message (context, &s->fd, &in);
+    if (ret)
 	return 1;
-    }
-    if (ret < 0) {
-	krb5_warn(context, errno, "krb5_net_read");
-	return 1;
-    }
-    len = (buf[0] << 24) | (buf[1] << 16) | (buf[2] << 8) | buf[3];
-    ret = krb5_data_alloc (&in, len);
-    if (ret) {
-	krb5_warn (context, ret, "krb5_data_alloc");
-	return 1;
-    }
-    ret = krb5_net_read(context, &s->fd, in.data, in.length);
-    if (ret < 0) {
-	krb5_warn(context, errno, "krb5_net_read");
-	krb5_data_free (&in);
-	return 1;
-    }
+
     ret = krb5_rd_priv (context, s->ac, &in, &out, NULL);
     krb5_data_free (&in);
     if (ret) {
@@ -295,7 +286,7 @@ process_msg (krb5_context context, slave *s, int log_fd)
     case I_HAVE :
 	krb5_ret_int32 (sp, &tmp);
 	s->version = tmp;
-	ret = send_diffs (context, s, log_fd);
+	ret = send_diffs (context, s, log_fd, current_version);
 	break;
     case FOR_YOU :
     default :
@@ -370,9 +361,19 @@ main(int argc, char **argv)
 	    else
 		krb5_err (context, 1, errno, "select");
 	}
+
+	if (ret == 0) {
+	    old_version = current_version;
+	    kadm5_log_get_version (log_fd, &current_version);
+
+	    if (current_version > old_version)
+		for (p = slaves; p != NULL; p = p->next)
+		    send_diffs (context, p, log_fd, current_version);
+	}
+
 	if (ret && FD_ISSET(signal_fd, &readset)) {
 	    struct sockaddr_un peer_addr;
-	    size_t peer_len = sizeof(peer_addr);
+	    int peer_len = sizeof(peer_addr);
 
 	    if(recvfrom(signal_fd, &vers, sizeof(vers), 0,
 			(struct sockaddr *)&peer_addr, &peer_len) < 0) {
@@ -381,19 +382,17 @@ main(int argc, char **argv)
 	    }
 	    printf ("signal: %u\n", vers);
 	    --ret;
+	    old_version = current_version;
+	    kadm5_log_get_version (log_fd, &current_version);
+	    for (p = slaves; p != NULL; p = p->next)
+		send_diffs (context, p, log_fd, current_version);
 	}
-	kadm5_log_get_version (log_fd, &current_version);
 
 	for(p = slaves; p != NULL && ret--; p = p->next)
 	    if (FD_ISSET(p->fd, &readset)) {
-		if(process_msg (context, p, log_fd))
+		if(process_msg (context, p, log_fd, current_version))
 		    remove_slave (context, p, &slaves);
 	    }
-
-	if (current_version > old_version) {
-	    for (p = slaves; p != NULL; p = p->next)
-		send_diffs (context, p, log_fd);
-	}
 
 	if (ret && FD_ISSET(listen_fd, &readset)) {
 	    add_slave (context, &slaves, listen_fd);
