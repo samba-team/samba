@@ -68,12 +68,20 @@ sub_wrap_size (
 	    int extrasize
            )
 {
-  size_t len, total_len, padlength;
-  padlength = blocksize - (req_output_size % blocksize);
-  len = req_output_size + 8 + padlength + extrasize;
-  gssapi_krb5_encap_length(len, &len, &total_len);
-  *max_input_size = (OM_uint32)total_len;
-  return GSS_S_COMPLETE;
+    size_t len, total_len; 
+
+    len = 8 + req_output_size + blocksize + extrasize;
+
+    gssapi_krb5_encap_length(len, &len, &total_len);
+
+    total_len -= req_output_size; /* token length */
+    if (total_len < req_output_size) {
+        *max_input_size = (req_output_size - total_len);
+        (*max_input_size) &= (~(OM_uint32)(blocksize - 1));
+    } else {
+        *max_input_size = 0;
+    }
+    return GSS_S_COMPLETE;
 }
 
 OM_uint32
