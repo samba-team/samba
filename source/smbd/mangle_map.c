@@ -150,36 +150,45 @@ static void mangled_map(char *s, const char *MangledMap)
 		}
 		DEBUG( 5, ("End of first in pair '%s'\n", end) );
 		if( (match_string = map_filename( s, start, end-start )) ) {
+			int size_left = sizeof(new_string) - 1;
 			DEBUG( 5, ("Found a match\n") );
 			/* Found a match. */
 			start = end + 1; /* Point to start of what it is to become. */
 			DEBUG( 5, ("Start of second in pair '%s'\n", start) );
 			end = start;
 			np = new_string;
-			while( (*end)             /* Not the end of string. */
+			while( (*end && size_left > 0)    /* Not the end of string. */
 			       && (*end != ')')      /* Not the end of the pattern. */
-			       && (*end != '*') )    /* Not a wildcard. */
+			       && (*end != '*') ) {   /* Not a wildcard. */
 				*np++ = *end++;
+				size_left--;
+			}
 
 			if( !*end ) {
 				start = end;
 				continue;               /* Always check for the end. */
 			}
 			if( *end == '*' ) {
-				pstrcpy( np, match_string );
+				if (size_left > 0 )
+					safe_strcpy( np, match_string, size_left );
 				np += strlen( match_string );
+				size_left -= strlen( match_string );
 				end++;                  /* Skip the '*' */
-				while ((*end)           /* Not the end of string. */
+				while ((*end && size_left >  0)   /* Not the end of string. */
 				       && (*end != ')') /* Not the end of the pattern. */
-				       && (*end != '*'))/* Not a wildcard. */
+				       && (*end != '*')) { /* Not a wildcard. */
 					*np++ = *end++;
+					size_left--;
+				}
 			}
 			if (!*end) {
 				start = end;
 				continue;               /* Always check for the end. */
 			}
-			*np++ = '\0';             /* NULL terminate it. */
+			if (size_left > 0)
+				*np++ = '\0';             /* NULL terminate it. */
 			DEBUG(5,("End of second in pair '%s'\n", end));
+			new_string[sizeof(new_string)-1] = '\0';
 			pstrcpy( s, new_string );  /* Substitute with the new name. */
 			DEBUG( 5, ("s is now '%s'\n", s) );
 		}
