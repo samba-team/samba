@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1999 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -46,12 +46,17 @@ copy_hostname(krb5_context context,
     return 0;
 }
 
+/*
+ * Try to make `orig_hostname' into a more canonical one in the newly
+ * allocated space returned in `new_hostname'.
+ */
+
 krb5_error_code
 krb5_expand_hostname (krb5_context context,
 		      const char *orig_hostname,
 		      char **new_hostname)
 {
-    struct addrinfo *ai, hints;
+    struct addrinfo *ai, *a, hints;
     int error;
 
     memset (&hints, 0, sizeof(hints));
@@ -60,13 +65,16 @@ krb5_expand_hostname (krb5_context context,
     error = getaddrinfo (orig_hostname, NULL, &hints, &ai);
     if (error)
 	return copy_hostname (context, orig_hostname, new_hostname);
-    if (ai->ai_canonname == NULL) {
-	freeaddrinfo (ai);
-	return copy_hostname (context, orig_hostname, new_hostname);
+    for (a = ai; a != NULL; a = a->ai_next) {
+	if (a->ai_canonname != NULL) {
+	    *new_hostname = strdup (a->ai_canonname);
+	    freeaddrinfo (ai);
+	    if (*new_hostname == NULL)
+		return ENOMEM;
+	    else
+		return 0;
+	}
     }
-    *new_hostname = strdup(ai->ai_canonname);
     freeaddrinfo (ai);
-    if (*new_hostname == NULL)
-	return ENOMEM;
-    return 0;
+    return copy_hostname (context, orig_hostname, new_hostname);
 }
