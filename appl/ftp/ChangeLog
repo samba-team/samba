@@ -1,3 +1,10 @@
+2002-02-28  Johan Danielsson  <joda@pdc.kth.se>
+
+	* ftpd/ftpd.c: if builtin_ls failes, return error
+
+	* ftpd/ls.c (builtin_ls): return status; also don't print fatal
+	error messages to the output stream, instead use syslog
+
 2001-09-13  Johan Danielsson  <joda@pdc.kth.se>
 
 	* ftpd/ftpd.c (dataconn): don't wait forever on accept
