@@ -1253,7 +1253,7 @@ BOOL lp_add_home(char *pszHomename, int iDefaultService, char *pszHomedir)
   if (!(*(iSERVICE(i).comment)))
     {
       pstring comment;
-      slprintf(comment,sizeof(comment),
+      slprintf(comment,sizeof(comment)-1,
 	       "Home directory of %s",pszHomename);
       string_set(&iSERVICE(i).comment,comment);
     }
@@ -1285,7 +1285,7 @@ static BOOL lp_add_ipc(void)
   if (i < 0)
     return(False);
 
-  slprintf(comment,sizeof(comment),
+  slprintf(comment,sizeof(comment)-1,
 	   "IPC Service (%s)", Globals.szServerString );
 
   string_set(&iSERVICE(i).szPath,tmpdir());

@@ -419,7 +419,7 @@ uint32 lookup_user_name(uint32 rid, char *user_name, uint32 *type)
 
 	/* ok, it's a user.  find the user account */
 	become_root(True);
-	smb_pass = getsampwuid(rid); /* lkclXXXX SHOULD use rid mapping here! */
+	smb_pass = getsmbpwuid(rid); /* lkclXXXX SHOULD use rid mapping here! */
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
@@ -481,7 +481,7 @@ uint32 lookup_user_rid(char *user_name, uint32 *rid)
 
 	/* find the user account */
 	become_root(True);
-	smb_pass = getsampwnam(user_name);
+	smb_pass = getsmbpwnam(user_name);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)

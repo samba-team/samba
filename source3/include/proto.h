@@ -36,12 +36,12 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL chgpasswd(char *name,char *oldpass,char *newpass, BOOL as_root);
 BOOL check_lanman_password(char *user, unsigned char *pass1, 
-                           unsigned char *pass2, struct smb_passwd **psampw);
-BOOL change_lanman_password(struct smb_passwd *sampw, unsigned char *pass1, unsigned char *pass2);
+                           unsigned char *pass2, struct smb_passwd **psmbpw);
+BOOL change_lanman_password(struct smb_passwd *smbpw, unsigned char *pass1, unsigned char *pass2);
 BOOL check_oem_password(char *user, unsigned char *data,
-                        struct smb_passwd **psampw, char *new_passwd,
+                        struct smb_passwd **psmbpw, char *new_passwd,
                         int new_passwd_size);
-BOOL change_oem_password(struct smb_passwd *sampw, char *new_passwd, BOOL override);
+BOOL change_oem_password(struct smb_passwd *smbpw, char *new_passwd, BOOL override);
 
 /*The following definitions come from  client.c  */
 
@@ -1572,21 +1572,21 @@ BOOL pm_process( char *FileName,
 
 /*The following definitions come from  passdb.c  */
 
-void *startsampwent(BOOL update);
-void endsampwent(void *vp);
-struct smb_passwd *getsampwent(void *vp);
+void *startsmbpwent(BOOL update);
+void endsmbpwent(void *vp);
+struct smb_passwd *getsmbpwent(void *vp);
+unsigned long getsmbpwpos(void *vp);
+BOOL setsmbpwpos(void *vp, unsigned long tok);
+BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
+BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+struct smb_passwd *getsmbpwnam(char *name);
+struct smb_passwd *getsmbpwuid(uid_t smb_userid);
 struct sam_disp_info *getsamdispent(void *vp);
 struct sam_passwd *getsam21pwent(void *vp);
-unsigned long getsampwpos(void *vp);
-BOOL setsampwpos(void *vp, unsigned long tok);
-BOOL add_sampwd_entry(struct smb_passwd *newpwd);
 BOOL add_sam21pwd_entry(struct sam_passwd *newpwd);
-BOOL mod_sampwd_entry(struct smb_passwd* pwd, BOOL override);
 BOOL mod_sam21pwd_entry(struct sam_passwd* pwd, BOOL override);
 struct sam_passwd *getsam21pwnam(char *name);
-struct smb_passwd *getsampwnam(char *name);
-struct smb_passwd *getsampwuid(uid_t smb_userid);
-struct sam_passwd *getsam21pwrid(uint32 rid);
+struct sam_passwd *getsam21pwuid(uint32 uid);
 void pdb_init_dispinfo(struct sam_disp_info *user);
 void pdb_init_smb(struct smb_passwd *user);
 void pdb_init_sam(struct sam_passwd *user);
@@ -1600,10 +1600,11 @@ uint16 pdb_decode_acct_ctrl(char *p);
 int pdb_gethexpwd(char *p, char *pwd);
 BOOL pdb_name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 BOOL pdb_generate_machine_sid(void);
-uid_t pdb_user_rid_to_uid(uint32 u_rid);
-uid_t pdb_group_rid_to_uid(uint32 u_gid);
+uint32 pdb_user_rid_to_uid(uint32 u_rid);
+uint32 pdb_group_rid_to_gid(uint32 u_gid);
 uint32 pdb_uid_to_user_rid(uint32 uid);
 uint32 pdb_gid_to_group_rid(uint32 gid);
+BOOL pdb_rid_is_user(uint32 rid);
 
 /*The following definitions come from  password.c  */
 
@@ -1804,7 +1805,6 @@ struct shmem_ops *sysv_shm_open(int ronly);
 /*The following definitions come from  slprintf.c  */
 
 int vslprintf(char *str, int n, char *format, va_list ap);
-int slprintf(char *str, int n, char *format, ...);
 
 /*The following definitions come from  smbdes.c  */
 
@@ -1830,16 +1830,16 @@ char *smb_errstr(char *inbuf);
 
 /*The following definitions come from  smbpass.c  */
 
-void *startsmbpwent(BOOL update);
-void endsmbpwent(void *vp);
-struct sam_passwd *getsmb21pwent(void *vp);
-struct smb_passwd *getsmbpwent(void *vp);
-unsigned long getsmbpwpos(void *vp);
-BOOL setsmbpwpos(void *vp, unsigned long tok);
-BOOL add_smb21pwd_entry(struct sam_passwd *newpwd);
-BOOL add_smbpwd_entry(struct smb_passwd *newpwd);
-BOOL mod_smb21pwd_entry(struct sam_passwd* pwd, BOOL override);
-BOOL mod_smbpwd_entry(struct smb_passwd* pwd, BOOL override);
+void *startsmbfilepwent(BOOL update);
+void endsmbfilepwent(void *vp);
+struct sam_passwd *getsmbfile21pwent(void *vp);
+struct smb_passwd *getsmbfilepwent(void *vp);
+unsigned long getsmbfilepwpos(void *vp);
+BOOL setsmbfilepwpos(void *vp, unsigned long tok);
+BOOL add_smbfile21pwd_entry(struct sam_passwd *newpwd);
+BOOL add_smbfilepwd_entry(struct smb_passwd *newpwd);
+BOOL mod_smbfile21pwd_entry(struct sam_passwd* pwd, BOOL override);
+BOOL mod_smbfilepwd_entry(struct smb_passwd* pwd, BOOL override);
 
 /*The following definitions come from  smbpassfile.c  */
 

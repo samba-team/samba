@@ -201,7 +201,7 @@ reporting %s domain %s 0x%x ntversion=%x lm_nt token=%x lm_20 token=%x\n",
       fstrcpy(reply_name,"\\\\"); /* Here it wants \\LOGONSERVER. */
       fstrcpy(reply_name+2,my_name); 
 
-      smb_pass = getsampwnam(ascuser);
+      smb_pass = getsmbpwnam(ascuser);
 
       if(!smb_pass )
       {

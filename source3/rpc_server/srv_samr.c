@@ -53,14 +53,14 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 	if (pw_buf == NULL) return False;
 
-	vp = startsampwent(False);
+	vp = startsmbpwent(False);
 	if (!vp)
 	{
-		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password file.\n"));
+		DEBUG(0, ("get_sampwd_entries: Unable to open SMB password database.\n"));
 		return False;
 	}
 
-	while (((pwd = getsampwent(vp)) != NULL) && (*num_entries) < max_num_entries)
+	while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
 	{
 		int user_name_len = strlen(pwd->smb_name);
 		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
@@ -77,7 +77,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 
 		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
-		DEBUG(5, ("get_sampwd_entries: idx: %d user %s, uid %d, acb %x",
+		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
 		(*num_entries), pwd->smb_name, pwd->smb_userid, pwd->acct_ctrl));
 
 		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
@@ -93,7 +93,7 @@ static BOOL get_sampwd_entries(SAM_USER_INFO_21 *pw_buf,
 		(*total_entries)++;
 	}
 
-	endsampwent(vp);
+	endsmbpwent(vp);
 
 	return (*num_entries) > 0;
 }
@@ -812,7 +812,7 @@ static void samr_reply_open_user(SAMR_Q_OPEN_USER *q_u,
 	}
 
 	become_root(True);
-	smb_pass = getsampwuid(q_u->user_rid);
+	smb_pass = getsmbpwuid(q_u->user_rid);
 	unbecome_root(True);
 
 	/* check that the RID exists in our domain. */
@@ -864,13 +864,37 @@ static BOOL get_user_info_21(SAM_USER_INFO_21 *id21, uint32 rid)
 {
 	NTTIME dummy_time;
 	struct sam_passwd *sam_pass;
-
 	LOGON_HRS hrs;
 	int i;
 
-	become_root(True);
-	sam_pass = getsam21pwrid(rid);
-	unbecome_root(True);
+    /*
+     * Convert from rid to either a uid or gid as soon as
+     * possible. JRA.
+     */
+
+    if(pdb_rid_is_user(rid))
+    {
+      uint32 uid = pdb_user_rid_to_uid(rid);
+	  become_root(True);
+      sam_pass = getsam21pwuid(uid);
+      unbecome_root(True);
+    }
+    else
+    {
+      struct group *grent;
+      uint32 gid;
+      gid = pdb_group_rid_to_gid(rid);
+      if((grent = getgrgid(gid)) == NULL) 
+      {
+        DEBUG(0,("get_user_info_21: Unable to get group info.\n"));
+        return False;
+      }
+      /* TODO - at this point we need to convert from
+         a UNIX struct group into a user info 21 structure.
+         Punt for now. JRA.
+       */
+      return False;
+    }
 
 	if (sam_pass == NULL)
 	{
@@ -1047,7 +1071,7 @@ static void samr_reply_query_usergroups(SAMR_Q_QUERY_USERGROUPS *q_u,
 	if (status == 0x0)
 	{
 		become_root(True);
-		smb_pass = getsampwuid(rid);
+		smb_pass = getsmbpwuid(rid);
 		unbecome_root(True);
 
 		if (smb_pass == NULL)
@@ -1146,7 +1170,7 @@ static void api_samr_unknown_32( int uid, prs_struct *data, prs_struct *rdata)
 	                            q_u.uni_mach_acct.uni_str_len));
 
 	become_root(True);
-	smb_pass = getsampwnam(mach_acct);
+	smb_pass = getsmbpwnam(mach_acct);
 	unbecome_root(True);
 
 	if (smb_pass != NULL)
