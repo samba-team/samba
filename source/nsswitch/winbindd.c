@@ -647,6 +647,7 @@ int main(int argc, char **argv)
 {
 	extern pstring global_myname;
 	extern pstring debugf;
+	extern BOOL append_log;
 	int accept_sock;
 	BOOL interactive = False;
 	int opt, new_debuglevel = -1;
@@ -670,6 +671,11 @@ int main(int argc, char **argv)
 			exit(1);
 		}
 	}
+
+	/* Append to log file by default as we are a single process daemon
+	   program. */
+
+	append_log = True;
 
 	snprintf(debugf, sizeof(debugf), "%s/log.winbindd", LOGFILEBASE);
 	setup_logging("winbindd", interactive);
