@@ -257,7 +257,7 @@ size_t convertperms_unix_to_sd(const SMB_STRUCT_STAT * sbuf,
 			{
 				safe_free(ace_list);
 			}
-			if (!make_sec_acl(psa, 3, num_acls, ace_list))
+			if (!make_sec_acl(psa, 2, num_acls, ace_list))
 			{
 				DEBUG(0, ("get_nt_acl: Unable to malloc "
 					  "space for acl.\n"));

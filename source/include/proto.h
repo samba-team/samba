@@ -3267,6 +3267,11 @@ void display_sam_sync(FILE *out_hnd, enum action_type action,
 				SAM_DELTA_CTR *const ctr, 
 				uint32 num);
 
+/*The following definitions come from  rpcclient/display_wks.c  */
+
+void display_wks_info_100(FILE * out_hnd, enum action_type action,
+			  const WKS_INFO_100 * const svc);
+
 /*The following definitions come from  rpcclient/eventlog.c  */
 
 int main(int argc, char *argv[]);
