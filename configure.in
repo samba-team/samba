@@ -154,6 +154,8 @@ AC_SUBST(CATMANEXT)
 
 AC_TEST_PACKAGE(readline,readline.h,libreadline.a,-lreadline)
 
+AC_TEST_PACKAGE(hesiod,hesiod.h,libhesiod.a,-lhesiod)
+
 AC_C_BIGENDIAN
 AC_C_INLINE
 
