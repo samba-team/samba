@@ -151,7 +151,6 @@ static PyObject *winbind_enum_domain_users(PyObject *self, PyObject *args)
 
 static PyObject *winbind_enum_domain_groups(PyObject *self, PyObject *args)
 {
-	struct winbindd_request request;
 	struct winbindd_response response;
 	PyObject *result = NULL;
 
@@ -180,6 +179,104 @@ static PyObject *winbind_enum_domain_groups(PyObject *self, PyObject *args)
 }
 
 /*
+ * Miscellaneous domain related
+ */
+
+/* Enumerate domain groups */
+
+static PyObject *winbind_enum_trust_dom(PyObject *self, PyObject *args)
+{
+	struct winbindd_response response;
+	PyObject *result = NULL;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+
+	ZERO_STRUCT(response);
+
+	if (winbindd_request(WINBINDD_LIST_TRUSTDOM, NULL, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	result = PyList_New(0);
+
+	if (response.extra_data) {
+		char *extra_data = response.extra_data;
+		fstring name;
+
+		while (next_token(&extra_data, name, ",", sizeof(fstring)))
+			PyList_Append(result, PyString_FromString(name));
+	}
+
+	return result;
+}
+
+/* Check machine account password */
+
+static PyObject *winbind_check_secret(PyObject *self, PyObject *args)
+{
+	struct winbindd_response response;
+
+	if (!PyArg_ParseTuple(args, ""))
+		return NULL;
+
+	ZERO_STRUCT(response);
+
+	if (winbindd_request(WINBINDD_CHECK_MACHACC, NULL, &response) 
+	    != NSS_STATUS_SUCCESS) {
+		PyErr_SetString(winbind_error, "lookup failed");
+		return NULL;		
+	}
+
+	return PyInt_FromLong(response.data.num_entries);
+}
+
+/*
+ * Return a dictionary consisting of all the winbind related smb.conf
+ * parameters.  This is stored in the module object.
+ */
+
+static PyObject *winbind_config_dict(void)
+{
+	PyObject *result;
+	uid_t ulow, uhi;
+	gid_t glow, ghi;
+	
+	if (!(result = PyDict_New()))
+		return NULL;
+
+	/* Various string parameters */
+
+	PyDict_SetItemString(result, "workgroup", 
+			     PyString_FromString(lp_workgroup()));
+
+	PyDict_SetItemString(result, "separator", 
+			     PyString_FromString(lp_winbind_separator()));
+
+	PyDict_SetItemString(result, "template homedir", 
+			     PyString_FromString(lp_template_homedir()));
+
+	PyDict_SetItemString(result, "template shell", 
+			     PyString_FromString(lp_template_shell()));
+
+	/* Winbind uid/gid range */
+
+	if (lp_winbind_uid(&ulow, &uhi)) {
+		PyDict_SetItemString(result, "uid low", PyInt_FromLong(ulow));
+		PyDict_SetItemString(result, "uid high", PyInt_FromLong(uhi));
+	}
+
+	if (lp_winbind_gid(&glow, &ghi)) {
+		PyDict_SetItemString(result, "gid low", PyInt_FromLong(glow));
+		PyDict_SetItemString(result, "gid high", PyInt_FromLong(ghi));
+	}
+
+	return result;
+}
+
+/*
  * Method dispatch table
  */
 
@@ -201,6 +298,14 @@ static PyMethodDef winbind_methods[] = {
 	{ "enum_domain_groups", winbind_enum_domain_groups, METH_VARARGS,
 	  "Enumerate domain groups" },
 
+	/* Miscellaneous */
+
+	{ "check_secret", winbind_check_secret, METH_VARARGS,
+	  "Check machine account password" },
+
+	{ "enum_trust_dom", winbind_enum_trust_dom, METH_VARARGS,
+	  "Enumerate trusted domains" },
+
 	{ NULL }
 };
 
@@ -220,5 +325,11 @@ void initwinbind(void)
 	winbind_error = PyErr_NewException("winbind.error", NULL, NULL);
 	PyDict_SetItemString(dict, "error", winbind_error);
 
+	/* Do samba initialisation */
+
 	py_samba_init();
+
+	/* Insert configuration dictionary */
+
+	PyDict_SetItemString(dict, "config", winbind_config_dict());
 }
