@@ -211,7 +211,7 @@ key-name you have to change the hash-value too!
 The "sk"-block
 ==============
 (due to the complexity of the SAM-info, not clear jet)
-(This is just a security descriptor in the data. R Sharpe.) 
+(This is just a self-relative security descriptor in the data. R Sharpe.) 
 
 
 Offset      Size      Contents
@@ -440,11 +440,13 @@ typedef struct sec_desc_s {
 #define SEC_DESC_RES 1
 #define SEC_DESC_OCU 2
 #define SEC_DESC_NBK 3
+typedef struct sk_struct SK_HDR;
 struct key_sec_desc_s {
   struct key_sec_desc_s *prev, *next;
   int ref_cnt;
   int state;
   int offset;
+  SK_HDR *sk_hdr;     /* This means we must keep the registry in memory */
   SEC_DESC *sec_desc;
 }; 
 
@@ -520,7 +522,7 @@ typedef struct nk_struct {
 
 #define REG_SK_ID 0x6B73
 
-typedef struct sk_struct {
+struct sk_struct {
   WORD SK_ID;
   WORD uk1;
   DWORD prev_off;
@@ -528,7 +530,7 @@ typedef struct sk_struct {
   DWORD ref_cnt;
   DWORD rec_size;
   char sec_desc[1];
-} SK_HDR;
+};
 
 typedef struct ace_struct {
     unsigned char type;
@@ -2652,6 +2654,15 @@ unsigned int sec_desc_size(SEC_DESC *sd)
 }
 
 /*
+ * Flatten and store the Sec Desc 
+ */
+unsigned int nt_store_sec_desc(REGF *regf, SEC_DESC *sd, char *locn)
+{
+
+  return 0;
+}
+
+/*
  * Store the security information
  *
  * If it has already been stored, just get its offset from record
@@ -2677,10 +2688,23 @@ unsigned int nt_store_security(REGF *regf, KEY_SEC_DESC *sec)
   /* Allocate that much space */
 
   sk_hdr = nt_alloc_regf_space(regf, size, &sk_off);
+  sec->sk_hdr = sk_hdr;
 
   if (!sk_hdr) return 0;
 
   /* Now, lay out the sec_desc in the space provided */
+
+  sk_hdr->SK_ID = REG_SK_ID;
+  
+  /* 
+   * We can't deal with the next and prev offset in the SK_HDRs until the
+   * whole tree has been stored, then we can go and deal with them
+   */
+
+  sk_hdr->ref_cnt = sec->ref_cnt;
+  sk_hdr->rec_size = size;       /* Is this correct */
+
+  /* Now, lay out the sec_desc */
 
   return 0;
 
