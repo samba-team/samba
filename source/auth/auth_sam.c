@@ -335,7 +335,8 @@ static NTSTATUS check_sam_security(const struct auth_context *auth_context,
 					 "(&(member=%s)(sAMAccountType=*))", 
 					 dn);
 		
-		if (!(groupSIDs = talloc_realloc_p((*server_info)->mem_ctx, groupSIDs, 
+		if (group_ret > 0 && 
+		    !(groupSIDs = talloc_realloc_p((*server_info)->mem_ctx, groupSIDs, 
 						   struct dom_sid *, group_ret))) {
 			talloc_destroy((*server_info)->mem_ctx);
 			samdb_close(sam_ctx);
