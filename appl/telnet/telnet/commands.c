@@ -1691,6 +1691,7 @@ env_init()
 	}
 	env_export((unsigned char *)"DISPLAY");
 	env_export((unsigned char *)"PRINTER");
+	env_export((unsigned char *)"XAUTHORITY");
 }
 
 	struct env_lst *
