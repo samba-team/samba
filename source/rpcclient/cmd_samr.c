@@ -3048,16 +3048,8 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	if (!split_domain_name(argv[1], domain, alias_name))
-	{
-		safe_strcpy(alias_name, argv[1], sizeof(alias_name) - 1);
-		fstrcpy(domain, info->dom.level5_dom);
-		sid_copy(&sid, &info->dom.level5_sid);
-	}
-	else
-	{
-		fill_domain_sid(srv_name, domain, domain, &sid);
-	}
+	fstrcpy(domain, info->dom.level5_dom);
+	sid_copy(&sid, &info->dom.level5_sid);
 
 	if (sid.num_auths == 0)
 	{
@@ -3067,6 +3059,16 @@ void cmd_sam_query_aliasmem(struct client_info *info, int argc, char *argv[])
 			       "please use 'lsaquery' first, to ascertain the SID\n");
 			return;
 		}
+	}
+
+	if (strchr(argv[1], '\\')
+	    && split_domain_name(argv[1], domain, alias_name))
+	{
+		fill_domain_sid(srv_name, domain, domain, &sid);
+	}
+	else
+	{
+		safe_strcpy(alias_name, argv[1], sizeof(alias_name)-1);
 	}
 
 	sid_to_string(sid_str, &sid);
