@@ -33,7 +33,7 @@ GtkListStore *store_vals;
 GtkWidget *tree_keys;
 GtkWidget *tree_vals;
 GtkWidget *mainwin;
-GtkWidget *mnu_add_key, *mnu_add_value, *mnu_del_key, *mnu_del_value, *mnu_find;
+GtkWidget *mnu_add_key, *mnu_set_value, *mnu_del_key, *mnu_del_value, *mnu_find;
 TALLOC_CTX *mem_ctx; /* FIXME: Split up */
 
 GtkWidget *save;
@@ -121,7 +121,7 @@ static GtkWidget* create_FindDialog (void)
   return FindDialog;
 }
 
-static GtkWidget* create_SetValueDialog (void)
+static GtkWidget* create_SetValueDialog (GtkWidget **entry_name, GtkWidget **entry_type, GtkWidget **entry_data)
 {
   GtkWidget *SetValueDialog;
   GtkWidget *dialog_vbox1;
@@ -165,17 +165,25 @@ static GtkWidget* create_SetValueDialog (void)
                     (GtkAttachOptions) (0), 0, 0);
   gtk_misc_set_alignment (GTK_MISC (label5), 0, 0.5);
 
-  entry_value_name = gtk_entry_new ();
+  *entry_name = entry_value_name = gtk_entry_new ();
   gtk_table_attach (GTK_TABLE (table1), entry_value_name, 1, 2, 0, 1,
                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                     (GtkAttachOptions) (0), 0, 0);
 
-  value_data = gtk_entry_new ();
+  *entry_data = value_data = gtk_entry_new ();
   gtk_table_attach (GTK_TABLE (table1), value_data, 1, 2, 2, 3,
                     (GtkAttachOptions) (GTK_EXPAND | GTK_FILL),
                     (GtkAttachOptions) (0), 0, 0);
 
-  combo_data_type = gtk_combo_box_entry_new_text ();
+  *entry_type = combo_data_type = gtk_combo_box_new_text ();
+
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_NONE");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_SZ");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_EXPAND_SZ");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_BINARY");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_DWORD_LE");
+  gtk_combo_box_append_text(GTK_COMBO_BOX(combo_data_type), "REG_DWORD_BE");
+  
   gtk_table_attach (GTK_TABLE (table1), combo_data_type, 1, 2, 1, 2,
                     (GtkAttachOptions) (GTK_FILL),
                     (GtkAttachOptions) (GTK_FILL), 0, 0);
@@ -293,6 +301,7 @@ static void expand_key(GtkTreeView *treeview, GtkTreeIter *parent, GtkTreePath *
 static void registry_load_hive(struct registry_key *root)
 {
 	GtkTreeIter iter, tmpiter;
+	gtk_list_store_clear(store_vals);
 	/* Add the root */
 	gtk_tree_store_append(store_keys, &iter, NULL);
 	gtk_tree_store_set (store_keys,
@@ -315,6 +324,7 @@ static void registry_load_root(void)
 	uint32_t i = 0;
 	if(!registry) return;
 
+	gtk_list_store_clear(store_vals);
 	gtk_tree_store_clear(store_keys);
 
 	for(i = HKEY_CLASSES_ROOT; i <= HKEY_PERFORMANCE_NLSTEXT; i++) 
@@ -449,15 +459,15 @@ static void on_delete_value_activate                     (GtkMenuItem     *menui
 {
 	WERROR error;
 	GtkTreeIter iter;
-	struct registry_value *value;
+	const char *value;
 
 	if (!gtk_tree_selection_get_selected (gtk_tree_view_get_selection(GTK_TREE_VIEW(tree_vals)), NULL, &iter)) {
 		return;
 	}
 
-	gtk_tree_model_get(GTK_TREE_MODEL(store_vals), &iter, 1, &value, -1);
+	gtk_tree_model_get(GTK_TREE_MODEL(store_vals), &iter, 0, &value, -1);
 	
-	error = reg_del_value(current_key, value->name);
+	error = reg_del_value(current_key, value);
 
 	if (!W_ERROR_IS_OK(error)) {
 		gtk_show_werror(NULL, error);
@@ -510,12 +520,61 @@ static void on_add_key_activate                     (GtkMenuItem     *menuitem,
     gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
-static void on_add_value_activate                     (GtkMenuItem     *menuitem,
+static void on_value_activate(GtkTreeView *treeview, GtkTreePath *arg1,
+         GtkTreeViewColumn *arg2, gpointer user_data)
+{
+	GtkWidget *entry_name, *entry_type, *entry_value;
+    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
+	GtkTreeIter iter;
+	struct registry_value *value;
+    gint result;
+
+	gtk_tree_model_get_iter(GTK_TREE_MODEL(store_vals), &iter, arg1);
+
+	gtk_tree_model_get(GTK_TREE_MODEL(store_vals), &iter, 3, &value, -1);
+
+	gtk_widget_set_sensitive(entry_name, FALSE);
+	gtk_entry_set_text(GTK_ENTRY(entry_name), value->name);
+	gtk_entry_set_text(GTK_ENTRY(entry_value), reg_val_data_string(mem_ctx, value));
+	gtk_combo_box_set_active(GTK_COMBO_BOX(entry_type), value->data_type);
+	
+	result = gtk_dialog_run(addwin);
+	if (result == GTK_RESPONSE_OK) 
+	{
+		WERROR error;
+		struct registry_value *val;
+		
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
+		
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
+
+		if (!W_ERROR_IS_OK(error)) {
+			gtk_show_werror(NULL, error);
+		}
+	}
+    gtk_widget_destroy(GTK_WIDGET(addwin));
+
+}
+
+static void on_set_value_activate                     (GtkMenuItem     *menuitem,
 										gpointer         user_data)
 {
-    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog());
+	GtkWidget *entry_name, *entry_type, *entry_value;
+    GtkDialog *addwin = GTK_DIALOG(create_SetValueDialog(&entry_name, &entry_type, &entry_value));
     gint result = gtk_dialog_run(addwin);
-	/* FIXME */
+	if (result == GTK_RESPONSE_OK) 
+	{
+		WERROR error;
+		struct registry_value *val;
+		
+		reg_string_to_val(mem_ctx,str_regtype(gtk_combo_box_get_active(GTK_COMBO_BOX(entry_type))), gtk_entry_get_text(GTK_ENTRY(entry_value)), &val);
+		
+		error = reg_val_set(current_key, gtk_entry_get_text(GTK_ENTRY(entry_name)), val->data_type, val->data_blk, val->data_len);
+
+		if (!W_ERROR_IS_OK(error)) {
+			gtk_show_werror(NULL, error);
+		}
+	}
     gtk_widget_destroy(GTK_WIDGET(addwin));
 }
 
@@ -549,7 +608,7 @@ gboolean on_key_activate(GtkTreeSelection *selection,
 	GtkTreeIter parent;
 
 	gtk_widget_set_sensitive(mnu_add_key, !path_currently_selected);
-	gtk_widget_set_sensitive(mnu_add_value, !path_currently_selected);
+	gtk_widget_set_sensitive(mnu_set_value, !path_currently_selected);
 	gtk_widget_set_sensitive(mnu_del_key, !path_currently_selected);
 	gtk_widget_set_sensitive(mnu_del_value, !path_currently_selected);
 	gtk_widget_set_sensitive(mnu_find, !path_currently_selected);
@@ -707,10 +766,10 @@ static GtkWidget* create_mainwin (void)
 	gtk_widget_set_sensitive(mnu_add_key, False);
 	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_add_key);
 
-	mnu_add_value = gtk_image_menu_item_new_with_mnemonic("Add _Value");
-	gtk_widget_set_sensitive(mnu_add_value, False);
-	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_add_value), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
-	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_add_value);
+	mnu_set_value = gtk_image_menu_item_new_with_mnemonic("Set _Value");
+	gtk_widget_set_sensitive(mnu_set_value, False);
+	gtk_image_menu_item_set_image (GTK_IMAGE_MENU_ITEM (mnu_set_value), gtk_image_new_from_stock ("gtk-add", GTK_ICON_SIZE_MENU));
+	gtk_container_add (GTK_CONTAINER (men_key_menu), mnu_set_value);
 
 	mnu_find = gtk_image_menu_item_new_from_stock ("gtk-find", accel_group);
 	gtk_widget_set_sensitive(mnu_find, False);
@@ -815,8 +874,8 @@ static GtkWidget* create_mainwin (void)
 	g_signal_connect ((gpointer) mnu_add_key, "activate",
 					  G_CALLBACK (on_add_key_activate),
 					  NULL);
-	g_signal_connect ((gpointer) mnu_add_value, "activate",
-					  G_CALLBACK (on_add_value_activate),
+	g_signal_connect ((gpointer) mnu_set_value, "activate",
+					  G_CALLBACK (on_set_value_activate),
 					  NULL);
 	g_signal_connect ((gpointer) mnu_find, "activate",
 					  G_CALLBACK (on_find_activate),
@@ -830,6 +889,11 @@ static GtkWidget* create_mainwin (void)
 	g_signal_connect ((gpointer) about, "activate",
 					  G_CALLBACK (on_about_activate),
 					  NULL);
+
+	g_signal_connect ((gpointer) tree_vals, "row-activated",
+					  G_CALLBACK (on_value_activate),
+					  NULL);
+
 
 	gtk_window_add_accel_group (GTK_WINDOW (mainwin), accel_group);
 
