@@ -3045,7 +3045,7 @@ krb5_oid_to_enctype(krb5_context context,
 {
     int i;
     for(i = 0; i < num_etypes; i++) {
-	if(heim_oid_cmp(etypes[i]->oid, oid) == 0) {
+	if(etypes[i]->oid && heim_oid_cmp(etypes[i]->oid, oid) == 0) {
 	    *etype = etypes[i]->type;
 	    return 0;
 	}
