@@ -1,5 +1,7 @@
 Fri Mar 14 11:29:00 1997  Assar Westerlund  <assar@sics.se>
 
+	* configure.in: look for *dbm?
+
 	* lib/asn1/gen.c: Fix filename in generated files. Check fopens.
   	Put trailing newline in asn1_files.
 
