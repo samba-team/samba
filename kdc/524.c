@@ -37,13 +37,133 @@ RCSID("$Id$");
 
 #ifdef KRB4
 
+/*
+ * fetch the server from `t', returning the name in malloced memory in
+ * `spn' and the entry itself in `server'
+ */
+
+static krb5_error_code
+fetch_server (const Ticket *t,
+	      char **spn,
+	      hdb_entry **server,
+	      const char *from)
+{
+    krb5_error_code ret;
+    krb5_principal sprinc;
+
+    ret = principalname2krb5_principal(&sprinc, t->sname, t->realm);
+    if (ret) {
+	kdc_log(0, "principalname2krb5_principal: %s",
+		krb5_get_err_text(context, ret));
+	return ret;
+    }
+    ret = krb5_unparse_name(context, sprinc, spn);
+    if (ret) {
+	krb5_free_principal(context, sprinc);
+	kdc_log(0, "krb5_unparse_name: %s", krb5_get_err_text(context, ret));
+	return ret;
+    }
+    *server = db_fetch(sprinc);
+    krb5_free_principal(context, sprinc);
+    if(*server == NULL){
+	kdc_log(0, "Request to convert ticket from %s for unknown principal %s",
+		from, *spn);
+	return KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
+    }
+    return 0;
+}
+
+static krb5_error_code
+log_524 (const EncTicketPart *et,
+	 const char *from,
+	 const char *spn)
+{
+    krb5_principal client;
+    char *cpn;
+    krb5_error_code ret;
+
+    ret = principalname2krb5_principal(&client, et->cname, et->crealm);
+    if (ret) {
+	kdc_log(0, "principalname2krb5_principal: %s",
+		krb5_get_err_text (context, ret));
+	return ret;
+    }
+    ret = krb5_unparse_name(context, client, &cpn);
+    if (ret) {
+	krb5_free_principal(context, client);
+	kdc_log(0, "krb5_unparse_name: %s",
+		krb5_get_err_text (context, ret));
+	return ret;
+    }
+    kdc_log(1, "524-REQ %s from %s for %s", cpn, from, spn);
+    free(cpn);
+    krb5_free_principal(context, client);
+    return 0;
+}
+
+static krb5_error_code
+verify_flags (const EncTicketPart *et,
+	      const char *spn)
+{
+    if(et->endtime < kdc_time){
+	kdc_log(0, "Ticket expired (%s)", spn);
+	return KRB5KRB_AP_ERR_TKT_EXPIRED;
+    }
+    if(et->flags.invalid){
+	kdc_log(0, "Ticket not valid (%s)", spn);
+	return KRB5KRB_AP_ERR_TKT_NYV;
+    }
+    return 0;
+}
+
+/*
+ * set the `et->caddr' to the most appropriate address to use, where
+ * `addr' is the address the request was received from.  */
+
+static krb5_error_code
+set_address (EncTicketPart *et,
+	     struct sockaddr *addr,
+	     const char *from)
+{
+    krb5_error_code ret;
+    krb5_address v4_addr;
+
+    ret = krb5_sockaddr2address(addr, &v4_addr);
+    if(ret) {
+	kdc_log(0, "Failed to convert address (%s)", from);
+	return ret;
+    }
+	    
+    if (et->caddr && !krb5_address_search (context, &v4_addr, et->caddr)) {
+	kdc_log(0, "Incorrect network address (%s)", from);
+	krb5_free_address(context, &v4_addr);
+	return KRB5KRB_AP_ERR_BADADDR;
+    }
+    if(v4_addr.addr_type == KRB5_ADDRESS_INET) {
+	/* we need to collapse the addresses in the ticket to a
+	   single address; best guess is to use the address the
+	   connection came from */
+	
+	free_HostAddresses(et->caddr);
+	et->caddr->val = &v4_addr;
+	et->caddr->len = 1;
+    } else
+	krb5_free_address(context, &v4_addr);
+    return 0;
+}
+
+/*
+ * process a 5->4 request, based on `t', and received `from, addr',
+ * returning the reply in `reply'
+ */
+
 krb5_error_code
-do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
+do_524(const Ticket *t, krb5_data *reply,
+       const char *from, struct sockaddr *addr)
 {
     krb5_error_code ret = 0;
-    krb5_principal sprinc = NULL;
     krb5_crypto crypto;
-    hdb_entry *server;
+    hdb_entry *server = NULL;
     Key *skey;
     krb5_data et_data;
     EncTicketPart et;
@@ -59,18 +179,14 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
 	goto out;
     }
 
-    principalname2krb5_principal(&sprinc, t->sname, t->realm);
-    krb5_unparse_name(context, sprinc, &spn);
-    server = db_fetch(sprinc);
-    if(server == NULL){
-        ret = KRB5KDC_ERR_S_PRINCIPAL_UNKNOWN;
-	kdc_log(0, "Request to convert ticket from %s for unknown principal %s",
-		from, spn);
+    ret = fetch_server (t, &spn, &server, from);
+    if (ret) {
 	goto out;
     }
+
     ret = hdb_enctype2key(context, server, t->enc_part.etype, &skey);
     if(ret){
-	kdc_log(0, "No suitable key found for server (%s) "
+	kdc_log(0, "No suitable key found for server (%s) from %s "
 		"when converting ticket from ", spn, from);
 	goto out;
     }
@@ -97,60 +213,26 @@ do_524(Ticket *t, krb5_data *reply, const char *from, struct sockaddr *addr)
 	kdc_log(0, "Failed to decode ticket from %s for %s", from, spn);
 	goto out;
     }
-    {
-	krb5_principal client;
-	char *cpn;
-	principalname2krb5_principal(&client, et.cname, et.crealm);
-	krb5_unparse_name(context, client, &cpn);
-	kdc_log(1, "524-REQ %s from %s for %s", cpn, from, spn);
-	free(cpn);
-	krb5_free_principal(context, client);
-    }
 
-    if(et.endtime < kdc_time){
-	kdc_log(0, "Ticket expired (%s)", spn);
+    ret = log_524 (&et, from, spn);
+    if (ret) {
 	free_EncTicketPart(&et);
-	ret = KRB5KRB_AP_ERR_TKT_EXPIRED;
 	goto out;
     }
-    if(et.flags.invalid){
-	kdc_log(0, "Ticket not valid (%s)", spn);
+
+    ret = verify_flags (&et, spn);
+    if (ret) {
 	free_EncTicketPart(&et);
-	ret = KRB5KRB_AP_ERR_TKT_NYV;
 	goto out;
     }
-    {
-	krb5_addresses *save_caddr, new_addr;
-	krb5_address v4_addr;
 
-	ret = krb5_sockaddr2address(addr, &v4_addr);
-	if(ret) {
-	    kdc_log(0, "Failed to convert address (%s)", spn);
-	    free_EncTicketPart(&et);
-	    goto out;
-	}
-	    
-	if (et.caddr && !krb5_address_search (context, &v4_addr, et.caddr)) {
-	    kdc_log(0, "Incorrect network address (%s)", spn);
-	    free_EncTicketPart(&et);
-	    krb5_free_address(context, &v4_addr);
-	    ret = KRB5KRB_AP_ERR_BADADDR;
-	    goto out;
-	}
-	if(v4_addr.addr_type == KRB5_ADDRESS_INET) {
-	    /* we need to collapse the addresses in the ticket to a
-	       single address; best guess is to use the address the
-	       connection came from */
-	    save_caddr = et.caddr;
-	    new_addr.len = 1;
-	    new_addr.val = &v4_addr;
-	    et.caddr = &new_addr;
-	}
-	ret  = encode_v4_ticket(buf + sizeof(buf) - 1, sizeof(buf),
-				&et, &t->sname, &len);
-	if(v4_addr.addr_type == KRB5_ADDRESS_INET)
-	    et.caddr = save_caddr;
+    ret = set_address (&et, addr, from);
+    if (ret) {
+	free_EncTicketPart(&et);
+	goto out;
     }
+    ret = encode_v4_ticket(buf + sizeof(buf) - 1, sizeof(buf),
+			   &et, &t->sname, &len);
     free_EncTicketPart(&et);
     if(ret){
 	kdc_log(0, "Failed to encode v4 ticket (%s)", spn);
@@ -185,13 +267,9 @@ out:
     
     if(spn)
 	free(spn);
-    if(sprinc)
-	krb5_free_principal(context, sprinc);
-    if(server) {
-	hdb_free_entry(context, server);
-	free(server);
-    }
+    if(server)
+	free_ent (server);
     return ret;
 }
 
-#endif
+#endif /* KRB4 */
