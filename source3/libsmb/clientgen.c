@@ -766,9 +766,11 @@ int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
 		accessmode |= 1;
 	} 
 
+#if defined(O_SYNC)
 	if ((flags & O_SYNC) == O_SYNC) {
 		accessmode |= (1<<14);
 	}
+#endif /* O_SYNC */
 
 	bzero(cli->outbuf,smb_size);
 	bzero(cli->inbuf,smb_size);
@@ -1300,8 +1302,11 @@ BOOL cli_oem_change_password(struct cli_state *cli, char *user, char *new_passwo
 
   /*
    * Now setup the data area.
+   * We need to generate a random fill
+   * for this area to make it harder to
+   * decrypt. JRA.
    */
-  memset(data, '\0', sizeof(data));
+  generate_random_buffer(data, sizeof(data), False);
   fstrcpy( &data[512 - new_pw_len], new_password);
   SIVAL(data, 512, new_pw_len);
 
