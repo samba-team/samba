@@ -824,7 +824,7 @@ BOOL pdb_add_sam_account(SAM_ACCOUNT *sam_acct)
 	   been allowed by the  ACB_PWNOTREQ bit */
 
 	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_nt_passwd( sam_acct );
 	acb_flags = pdb_get_acct_ctrl( sam_acct );
 	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
 		acb_flags |= ACB_DISABLED;
@@ -849,7 +849,7 @@ BOOL pdb_update_sam_account(SAM_ACCOUNT *sam_acct)
 	   been allowed by the  ACB_PWNOTREQ bit */
 	
 	lm_pw = pdb_get_lanman_passwd( sam_acct );
-	nt_pw = pdb_get_lanman_passwd( sam_acct );
+	nt_pw = pdb_get_nt_passwd( sam_acct );
 	acb_flags = pdb_get_acct_ctrl( sam_acct );
 	if ( !lm_pw && !nt_pw && !(acb_flags&ACB_PWNOTREQ) ) {
 		acb_flags |= ACB_DISABLED;
