@@ -1,4 +1,4 @@
-2003-01-23  Love  <lha@stacken.kth.se>
+2003-01-23  Love Hörquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: add [kdc]use_2b
 
@@ -19,7 +19,7 @@
 	* lib/asn1/check-der.c: move out the generic asn1/der functions to
 	a common file
 
-2003-01-22  Love  <lha@it.su.se>
+2003-01-22  Love Hörquist Åstrand <lha@it.su.se>
 
 	* doc/misc.texi: more text about afs, how to get get your KeyFile,
 	and how to start use 2b tokens
@@ -32,7 +32,7 @@
 	* kuser/kuser_locl.h: include crypto-headers.h for
 	des_read_pw_string prototype
 
-2003-01-16  Love  <lha@it.su.se>
+2003-01-16  Love Hörquist Åstrand <lha@it.su.se>
 
 	* admin/ktutil.8: document -v, --verbose
 
@@ -42,7 +42,7 @@
 	* admin/copy.c (kt_copy): remove adding verbose_flag to args
 	struct, since it will overrun the args array (from Sumit Bose)
 	
-2003-01-15  Love  <lha@it.su.se>
+2003-01-15  Love Hörquist Åstrand <lha@it.su.se>
 
 	* lib/krb5/krb5.conf.5: write more about [realms] REALM = { kdc =
 	... }
@@ -76,7 +76,7 @@
 	* lib/krb5/krb5.h (krb5_keytype): add KEYTYPE_AES128,
 	KEYTYPE_AES256
 
-2003-01-14  Love  <lha@it.su.se>
+2003-01-14  Love Hörquist Åstrand <lha@it.su.se>
 
 	* lib/hdb/common.c (_hdb_fetch): handle error code from
 	hdb_value2entry
