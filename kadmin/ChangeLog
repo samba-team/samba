@@ -1,5 +1,24 @@
 2000-09-10  Johan Danielsson  <joda@pdc.kth.se>
 
+	* kadmin.c: add option parsing, and add `privs' as an alias for
+	`privileges'
+
+	* init.c: complain if there's no realm name specified
+
+	* rename.c: add option parsing
+
+	* load.c: add option parsing
+
+	* get.c: make `get' and `list' aliases to each other, but with
+	different defaults
+
+	* del_enctype.c: add option parsing
+
+	* del.c: add option parsing
+
+	* ank.c: calling the command `add' make more sense from an english
+	pov
+
 	* Makefile.am: add kadmin manpage
 
 	* kadmin.8: short manpage
