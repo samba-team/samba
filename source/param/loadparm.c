@@ -129,6 +129,7 @@ typedef struct
   char *szCharacterSet;
   char *szLogonScript;
   char *szLogonPath;
+  char *szVetoFiles;
   char *szSmbrun;
   char *szWINSserver;
   char *szInterfaces;
@@ -212,8 +213,6 @@ typedef struct
   char *szMagicScript;
   char *szMagicOutput;
   char *szMangledMap;
-  char *szVetoFiles;
-  char *szHideFiles;
   char *comment;
   char *force_user;
   char *force_group;
@@ -291,8 +290,6 @@ static service sDefault =
   NULL,    /* szMagicScript */
   NULL,    /* szMagicOutput */
   NULL,    /* szMangledMap */
-  NULL,    /* szVetoFiles */
-  DEFAULT_FILES_TO_HIDE,    /* szHideFiles */
   NULL,    /* comment */
   NULL,    /* force user */
   NULL,    /* force group */
@@ -397,6 +394,7 @@ struct parm_struct
   {"socket options",   P_GSTRING, P_GLOBAL, user_socket_options,        NULL},
   {"netbios name",     P_UGSTRING,P_GLOBAL, myname,                     NULL},
   {"smbrun",           P_STRING,  P_GLOBAL, &Globals.szSmbrun,          NULL},
+  {"veto files",       P_STRING,  P_GLOBAL, &Globals.szVetoFiles,       NULL},
   {"log file",         P_STRING,  P_GLOBAL, &Globals.szLogFile,         NULL},
   {"config file",      P_STRING,  P_GLOBAL, &Globals.szConfigFile,      NULL},
   {"smb passwd file",  P_STRING,  P_GLOBAL, &Globals.szSMBPasswdFile,   NULL},
@@ -509,8 +507,6 @@ struct parm_struct
   {"set directory",    P_BOOLREV, P_LOCAL,  &sDefault.bNo_set_dir,      NULL},
   {"status",           P_BOOL,    P_LOCAL,  &sDefault.status,           NULL},
   {"hide dot files",   P_BOOL,    P_LOCAL,  &sDefault.bHideDotFiles,    NULL},
-  {"veto files",       P_STRING,  P_LOCAL,  &sDefault.szVetoFiles,      NULL},
-  {"hide files",       P_STRING,  P_LOCAL,  &sDefault.szHideFiles,      NULL},
   {"guest only",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
   {"only guest",       P_BOOL,    P_LOCAL,  &sDefault.bGuest_only,      NULL},
   {"guest ok",         P_BOOL,    P_LOCAL,  &sDefault.bGuest_ok,        NULL},
@@ -799,6 +795,7 @@ FN_GLOBAL_STRING(lp_username_map,&Globals.szUsernameMap)
 FN_GLOBAL_STRING(lp_character_set,&Globals.szCharacterSet) 
 FN_GLOBAL_STRING(lp_logon_script,&Globals.szLogonScript) 
 FN_GLOBAL_STRING(lp_logon_path,&Globals.szLogonPath) 
+FN_GLOBAL_STRING(lp_veto_files,&Globals.szVetoFiles)
 FN_GLOBAL_STRING(lp_remote_announce,&Globals.szRemoteAnnounce) 
 FN_GLOBAL_STRING(lp_wins_server,&Globals.szWINSserver)
 FN_GLOBAL_STRING(lp_interfaces,&Globals.szInterfaces)
@@ -878,8 +875,6 @@ FN_LOCAL_STRING(lp_readlist,readlist)
 FN_LOCAL_STRING(lp_writelist,writelist)
 FN_LOCAL_STRING(lp_volume,volume)
 FN_LOCAL_STRING(lp_mangled_map,szMangledMap)
-FN_LOCAL_STRING(lp_veto_files,szVetoFiles)
-FN_LOCAL_STRING(lp_hide_files,szHideFiles)
 
 FN_LOCAL_BOOL(lp_alternate_permissions,bAlternatePerm)
 FN_LOCAL_BOOL(lp_revalidate,bRevalidate)
