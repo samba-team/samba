@@ -1597,7 +1597,7 @@ NTSTATUS _srv_net_file_query_secdesc(pipes_struct *p, SRV_Q_NET_FILE_QUERY_SECDE
 	BOOL bad_path;
 	int access_mode;
 	int action;
-	uint32 ecode;
+	int ecode;
 	struct current_user user;
 	fstring user_name;
 	connection_struct *conn = NULL;
