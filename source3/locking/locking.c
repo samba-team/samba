@@ -102,10 +102,11 @@ static BOOL add_fd_to_close_entry(struct pending_closes *pc, int fd)
  Deal with pending closes needed by POSIX locking support.
 ****************************************************************************/
 
-BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp)
+int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 {
 	struct pending_closes *pc;
 	int saved_errno = 0;
+	int ret;
 	size_t i;
 
 	if (!lp_posix_locking(SNUM(conn)))
@@ -116,9 +117,11 @@ BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp)
 	if (!pc) {
 		/* 
 		 * No other open with a POSIX lock on this dev/inode within this smbd.
-		 * Just exit.
+		 * Just close the fd.
 		 */
-		return True;
+		ret = conn->vfs_ops.close(fsp->fd);
+		fsp->fd = -1;
+		return ret;
 	}
 
 	if (pc->num_posix_locks) {
@@ -132,10 +135,10 @@ BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp)
 			return False;
 
 		fsp->fd = -1;
-		return True;
+		return 0;
 	}
 
-	DEBUG(10,("fd_close_posix_locks: doing close on %u fd's.\n", (unsigned int)pc->fd_array_size ));
+	DEBUG(10,("fd_close_posix: doing close on %u fd's.\n", (unsigned int)pc->fd_array_size ));
 
 	/*
 	 * This is the last close. If there are pending fd's close them
@@ -157,11 +160,16 @@ BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp)
 
 	free((char *)pc);
 
+	ret = conn->vfs_ops.close(fsp->fd);
+
 	if (saved_errno != 0) {
         errno = saved_errno;
+		ret = -1;
     } 
 
-	return True;
+	fsp->fd = -1;
+
+	return ret;
 }
 
 /****************************************************************************
@@ -497,8 +505,10 @@ static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 	 * pretend it was successful.
 	 */
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
+	if(!posix_lock_in_range(&offset, &count, u_offset, u_count)) {
+		increment_posix_lock_list(fsp);
 		return True;
+	}
 
 	/*
 	 * Note that setting multiple overlapping read locks on different
@@ -510,42 +520,55 @@ static BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UIN
 
     ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,map_posix_lock_type(fsp,lock_type)); 
 
+	if (ret)
+		increment_posix_lock_list(fsp);
+
 	return ret;
 }
 
 /****************************************************************************
- POSIX function to release a lock. Returns True if the
+ POSIX function to release a lock given a list. Returns True if the
  lock could be released, False if not.
 ****************************************************************************/
 
-static BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_count)
+static BOOL release_posix_lock(files_struct *fsp, struct unlock_list *ulist)
 {
-	SMB_OFF_T offset;
-	SMB_OFF_T count;
 	BOOL ret = True;
 
-	DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
-			fsp->fsp_name, (double)u_offset, (double)u_count ));
+	for(; ulist; ulist = ulist->next) {
+		SMB_OFF_T offset = ulist->start;
+		SMB_OFF_T count = ulist->size;
 
-	if(u_count == 0) {
+		DEBUG(5,("release_posix_lock: File %s, offset = %.0f, count = %.0f\n",
+			fsp->fsp_name, (double)offset, (double)count ));
+
+		if(count == 0) {
+
+			/*
+			 * This lock must overlap with an existing read-only lock
+			 * held by another fd. Don't do any POSIX call.
+			 */
+
+			continue;
+		}
 
 		/*
-		 * This lock must overlap with an existing read-only lock
-		 * help by another fd. Don't do any POSIX call.
+		 * If the requested lock won't fit in the POSIX range, we will
+		 * pretend it was successful.
 		 */
 
-		return True;
+		if(!posix_lock_in_range(&offset, &count, offset, count))
+			continue;
+
+		ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
 	}
 
 	/*
-	 * If the requested lock won't fit in the POSIX range, we will
-	 * pretend it was successful.
-	 */
+	 * We treat this as one unlock request for POSIX accounting purposes even
+	 * if it may have been split into multiple smaller POSIX unlock ranges.
+	 */ 
 
-	if(!posix_lock_in_range(&offset, &count, u_offset, u_count))
-		return True;
-
-	ret = fcntl_lock(fsp->fd,SMB_F_SETLK,offset,count,F_UNLCK);
+	decrement_posix_lock_list(fsp);
 
 	return ret;
 }
@@ -610,7 +633,7 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			      offset, count, 
 			      lock_type);
 
-		if(ok && lp_posix_locking(SNUM(conn))) {
+		if (ok && lp_posix_locking(SNUM(conn))) {
 
 			/*
 			 * Try and get a POSIX lock on this range.
@@ -618,9 +641,9 @@ BOOL do_lock(files_struct *fsp,connection_struct *conn,
 			 * overlapping on a different fd. JRA.
 			 */
 
-			if((ok = set_posix_lock(fsp, offset, count, lock_type)) == True)
-				increment_posix_lock_list(fsp);
-			else {
+			ok = set_posix_lock(fsp, offset, count, lock_type);
+
+			if (!ok) {
 				/*
 				 * We failed to map - we must now remove the brl
 				 * lock entry.
@@ -725,17 +748,9 @@ BOOL do_unlock(files_struct *fsp,connection_struct *conn,
 	 * Release the POSIX locks on the list of ranges returned.
 	 */
 
-	for(; ulist; ulist = ulist->next)
-		(void)release_posix_lock(fsp, ulist->start, ulist->size);
+	(void)release_posix_lock(fsp, ulist);
 
 	talloc_destroy(ul_ctx);
-
-	/*
-	 * We treat this as one unlock request for POSIX accounting purposes even
-	 * if it may have been split into multiple smaller POSIX unlock ranges.
-	 */
-
-	decrement_posix_lock_list(fsp);
 
 	return True; /* Did unlock */
 }

@@ -831,7 +831,7 @@ int brl_forall(BRLOCK_FN(fn));
 
 /*The following definitions come from  locking/locking.c  */
 
-BOOL fd_close_posix_locks(struct connection_struct *conn, files_struct *fsp);
+int fd_close_posix(struct connection_struct *conn, files_struct *fsp);
 BOOL is_locked(files_struct *fsp,connection_struct *conn,
 	       SMB_BIG_UINT count,SMB_BIG_UINT offset, 
 	       enum brl_type lock_type);
