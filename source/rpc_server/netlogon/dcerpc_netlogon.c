@@ -938,7 +938,7 @@ static NTSTATUS netr_LogonGetDomainInfo(struct dcesrv_call_state *dce_call, TALL
 	NTSTATUS status;
 
 	status = netr_creds_server_step_check(pipe_state, 
-					      r->in.credential, r->out.credential);
+					      r->in.credential, r->out.return_authenticator);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

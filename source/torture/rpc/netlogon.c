@@ -1094,13 +1094,10 @@ static BOOL test_GetDomainInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
-	r.in.unknown1 = 512;
 	r.in.level = 1;
 	r.in.credential = &a;
-	r.out.credential = &a;
-
-	r.in.i1[0] = 0;
-	r.in.i1[1] = 0;
+	r.in.return_authenticator = &a;
+	r.out.return_authenticator = &a;
 
 	r.in.query.query1 = &q1;
 	ZERO_STRUCT(q1);
@@ -1164,13 +1161,10 @@ static BOOL test_GetDomainInfo_async(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	ZERO_STRUCT(r);
 	r.in.server_name = talloc_asprintf(mem_ctx, "\\\\%s", dcerpc_server_name(p));
 	r.in.computer_name = TEST_MACHINE_NAME;
-	r.in.unknown1 = 512;
 	r.in.level = 1;
 	r.in.credential = &a;
-	r.out.credential = &a;
-
-	r.in.i1[0] = 0;
-	r.in.i1[1] = 0;
+	r.in.return_authenticator = &a;
+	r.out.return_authenticator = &a;
 
 	r.in.query.query1 = &q1;
 	ZERO_STRUCT(q1);
