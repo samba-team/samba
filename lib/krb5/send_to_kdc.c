@@ -42,6 +42,7 @@ RCSID("$Id$");
 
 static int
 send_and_recv (int fd,
+	       time_t tmout,
 	       struct sockaddr_in *addr,
 	       const krb5_data *send,
 	       krb5_data *recv)
@@ -56,7 +57,7 @@ send_and_recv (int fd,
 	  return -1;
      FD_ZERO(&fdset);
      FD_SET(fd, &fdset);
-     timeout.tv_sec  = 3;
+     timeout.tv_sec  = tmout;
      timeout.tv_usec = 0;
      ret = select (fd + 1, &fdset, NULL, NULL, &timeout);
      if (ret <= 0)
@@ -132,7 +133,8 @@ krb5_sendto_kdc (krb5_context context,
 			 a.sin_port   = port;
 		    a.sin_addr   = *((struct in_addr *)addr);
 		    
-		    if (send_and_recv (fd, &a, send, receive) == 0) {
+		    if (send_and_recv (fd, context->kdc_timeout, 
+				       &a, send, receive) == 0) {
 			 close (fd);
 			 krb5_free_krbhst (context, hostlist);
 			 return 0;
