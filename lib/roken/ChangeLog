@@ -1,5 +1,7 @@
 Thu Dec  4 02:51:46 1997  Assar Westerlund  <assar@sics.se>
 
+	* iruserok.c: moved here.
+
 	* snprintf.c (sn_append_char): don't write any terminating zero.
 	(as_reserve): don't loop.  better heuristic for how much space to
  	realloc.
