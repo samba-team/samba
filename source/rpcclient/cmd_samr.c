@@ -1100,6 +1100,10 @@ uint32 cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 				break;
 			}
 		        case 'L':
+				if (getuid() != 0) {
+					report(out_hnd, "you must be root to use the -L option\n");
+					return NT_STATUS_INVALID_PARAMETER;
+				}
 				lsa_local = True;
 				break;
 		}
