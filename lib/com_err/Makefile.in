@@ -48,8 +48,8 @@ include_HEADERS = com_right.h com_err.h
 
 SOURCES = error.c com_err.c compile_et.c
 OBJECTS = error.o com_err.o $(LIBADD)
-EXTRA_SOURCES = snprintf.c
-LIBADD = snprintf.o
+EXTRA_SOURCES = snprintf.c strcpy_truncate.c strcat_truncate.c
+LIBADD = snprintf.o strcpy_truncate.o strcat_truncate.o
 
 all: $(lib_LIBRARIES) $(bin_PROGRAMS) $(include_HEADERS)
 
@@ -136,5 +136,11 @@ lex.c: $(srcdir)/lex.l
 
 snprintf.c:
 	$(LN_S) $(srcdir)/../roken/snprintf.c .
+
+strcat_truncate.c:
+	$(LN_S) $(srcdir)/../roken/strcat_truncate.c .
+
+strcpy_truncate.c:
+	$(LN_S) $(srcdir)/../roken/strcpy_truncate.c .
 
 .PHONY: all Wall install uninstall clean mostlyclean distclean realclean
