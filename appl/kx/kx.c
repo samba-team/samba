@@ -40,8 +40,6 @@
 
 RCSID("$Id$");
 
-char *prog;
-
 static int nchild;
 static int donep;
 
@@ -117,7 +115,7 @@ connect_host (char *host, char *user, des_cblock *key,
 
      hostent = gethostbyname (host);
      if (hostent == NULL) {
-	 warnx ("%s: gethostbyname '%s' failed: %s", prog, host,
+	 warnx ("gethostbyname '%s' failed: %s", host,
 #ifdef HAVE_H_ERRNO
 		hstrerror(h_errno)
 #else
@@ -135,10 +133,10 @@ connect_host (char *host, char *user, des_cblock *key,
 
 	 s = socket (AF_INET, SOCK_STREAM, 0);
 	 if (s < 0)
-	     err (1, "%s: socket failed", prog);
+	     err (1, "socket");
 
 	 if (connect (s, (struct sockaddr *)thataddr, sizeof(*thataddr)) < 0) {
-	     warn ("%s: connect(%s) failed", prog, host);
+	     warn ("connect(%s)", host);
 	     close (s);
 	     continue;
 	 } else {
@@ -151,14 +149,13 @@ connect_host (char *host, char *user, des_cblock *key,
      addrlen = sizeof(*thisaddr);
      if (getsockname (s, (struct sockaddr *)thisaddr, &addrlen) < 0 ||
 	 addrlen != sizeof(*thisaddr))
-	 err(1, "%s: getsockname(%s) failed",
-	     prog, host);
+	 err(1, "getsockname(%s)", host);
      status = krb_sendauth (KOPT_DO_MUTUAL, s, &text, "rcmd",
 			    host, krb_realmofhost (host),
 			    getpid(), &msg, &cred, schedule,
 			    thisaddr, thataddr, KX_VERSION);
      if (status != KSUCCESS) {
-	 warnx ("%s: %s: %s\n", prog, host, krb_get_err_text(status));
+	 warnx ("%s: %s\n", host, krb_get_err_text(status));
 	 return -1;
      }
      memcpy(key, cred.session, sizeof(des_cblock));
@@ -200,7 +197,7 @@ status_output (int debugp)
 	
 	pid = fork();
 	if (pid < 0) {
-	    err(1, "%s: fork", prog);
+	    err(1, "fork");
 	} else if (pid > 0) {
 	    printf ("%u\t%s\t%s\n", (unsigned)pid, display, xauthfile);
 	    exit (0);
@@ -252,18 +249,18 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
      *p++ = PASSIVE | (keepalivep ? KEEP_ALIVE : 0);
      if (write_encrypted (otherside, msg, p - msg, schedule,
 			  &key, &me, &him) < 0)
-	 err (1, "%s: write to %s failed", prog, host);
+	 err (1, "write to %s", host);
      len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			   schedule, &key, &him, &me);
      if (len < 0)
-	 err (1, "%s: read from %s failed", prog, host);
+	 err (1, "read from %s", host);
      p = (u_char *)ret;
      if (*p == ERROR) {
 	 p++;
 	 p += krb_get_int (p, &tmp, 4, 0);
-	 errx (1, "%s: %s: %.*s", prog, host, tmp, p);
+	 errx (1, "%s: %.*s", host, tmp, p);
      } else if (*p != ACK) {
-	 errx (1, "%s: %s: strange msg %d", prog, host, *p);
+	 errx (1, "%s: strange msg %d", host, *p);
      } else
 	 p++;
      p += krb_get_int (p, &tmp, 4, 0);
@@ -284,7 +281,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	 len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			       schedule, &key, &him, &me);
 	 if (len < 0)
-	     err (1, "%s: read from %s failed", prog, host);
+	     err (1, "read from %s", host);
 	 else if (len == 0)
 	     return 0;
 
@@ -292,9 +289,9 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	 if (*p == ERROR) {
 	     p++;
 	     p += krb_get_int (p, &tmp, 4, 0);
-	     errx (1, "%s: %s: %.*s", prog, host, tmp, p);
+	     errx (1, "%s: %.*s", host, tmp, p);
 	 } else if(*p != NEW_CONN) {
-	     errx (1, "%s: %s: strange msg %d", prog, host, *p);
+	     errx (1, "%s: strange msg %d", host, *p);
 	 } else {
 	     p++;
 	     p += krb_get_int (p, &tmp, 4, 0);
@@ -303,7 +300,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	 ++nchild;
 	 child = fork ();
 	 if (child < 0) {
-	     warn("%s: fork", prog);
+	     warn("fork");
 	     continue;
 	 } else if (child == 0) {
 	     struct sockaddr_in addr;
@@ -317,7 +314,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 	     addr.sin_port = htons(tmp);
 	     fd = socket (AF_INET, SOCK_STREAM, 0);
 	     if (fd < 0)
-		 err(1, "%s: socket", prog);
+		 err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	     {
 		 int one = 1;
@@ -336,7 +333,7 @@ doit_passive (char *host, char *user, int debugp, int keepalivep,
 #endif
 
 	     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		 err(1, "%s: connect", prog);
+		 err(1, "connect(%s)", host);
 	     xserver = connect_local_xsocket (0);
 	     if (xserver < 0)
 		 return 1;
@@ -403,19 +400,19 @@ doit_active (char *host, char *user,
 
     if (write_encrypted (otherside, msg, p - msg, schedule,
 			 &key, &me, &him) < 0)
-	err (1, "%s: write to %s failed", prog, host);
+	err (1, "write to %s", host);
 
     len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			  schedule, &key, &him, &me);
     if (len < 0)
-	err (1, "%s: read from %s failed", prog, host);
+	err (1, "read from %s", host);
     p = (u_char *)ret;
     if (*p == ERROR) {
 	p++;
 	p += krb_get_int (p, &tmp, 4, 0);
-	errx (1, "%s: %s: %.*s", prog, host, tmp, p);
+	errx (1, "%s: %.*s", host, tmp, p);
     } else if (*p != ACK) {
-	errx (1, "%s: %s: strange msg %d", prog, host, *p);
+	errx (1, "%s: strange msg %d", host, *p);
     } else
 	p++;
 
@@ -457,24 +454,24 @@ doit_active (char *host, char *user,
 	    if (errno == EINTR)
 		continue;
 	    else
-		err(1, "%s: accept", prog);
+		err(1, "accept");
 
 	p = msg;
 	*p++ = NEW_CONN;
 	if (write_encrypted (otherside, msg, p - msg, schedule,
 			     &key, &me, &him) < 0)
-	    err (1, "%s: write to %s failed", prog, host);
+	    err (1, "write to %s", host);
 	len = read_encrypted (otherside, msg, sizeof(msg), &ret,
 			      schedule, &key, &him, &me);
 	if (len < 0)
-	    err (1, "%s: read from %s failed", prog, host);
+	    err (1, "read from %s", host);
 	p = (u_char *)ret;
 	if (*p == ERROR) {
 	    p++;
 	    p += krb_get_int (p, &tmp, 4, 0);
-	    errx (1, "%s: %s: %.*s", prog, host, tmp, p);
+	    errx (1, "%s: %.*s", host, tmp, p);
 	} else if (*p != NEW_CONN) {
-	    errx (1, "%s: %s: strange msg %d", prog, host, *p);
+	    errx (1, "%s: strange msg %d", host, *p);
 	} else {
 	    p++;
 	    p += krb_get_int (p, &tmp, 4, 0);
@@ -483,7 +480,7 @@ doit_active (char *host, char *user,
 	++nchild;
 	child = fork ();
 	if (child < 0) {
-	    warn("%s: fork", prog);
+	    warn("fork");
 	    continue;
 	} else if (child == 0) {
 	    int s;
@@ -502,7 +499,7 @@ doit_active (char *host, char *user,
 	    addr.sin_port = htons(tmp);
 	    s = socket (AF_INET, SOCK_STREAM, 0);
 	    if (s < 0)
-		err(1, "%s: socket", prog);
+		err(1, "socket");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	    {
 		int one = 1;
@@ -521,7 +518,7 @@ doit_active (char *host, char *user,
 #endif
 
 	    if (connect (s, (struct sockaddr *)&addr, sizeof(addr)) < 0)
-		err(1, "%s: connect", prog);
+		err(1, "connect");
 
 	    return active_session (fd, s, &key, schedule);
 	} else {
@@ -534,7 +531,7 @@ static void
 usage(void)
 {
     fprintf (stderr, "Usage: %s [-p port] [-d] [-t] [-l remoteuser] host\n",
-	     prog);
+	     __progname);
     exit (1);
 }
 
@@ -553,7 +550,7 @@ main(int argc, char **argv)
      int c;
      int port = 0;
 
-     prog = argv[0];
+     set_progname (argv[0]);
      while((c = getopt(argc, argv, "ktdl:p:")) != EOF) {
 	 switch(c) {
 	 case 'd' :
@@ -585,7 +582,7 @@ main(int argc, char **argv)
      if (user == NULL) {
 	  struct passwd *p = k_getpwuid (getuid ());
 	  if (p == NULL)
-	      errx(1, "%s: Who are you?\n", prog);
+	      errx(1, "Who are you?");
 	  user = strdup (p->pw_name);
      }
      if (port == 0)

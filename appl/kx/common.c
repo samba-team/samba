@@ -61,8 +61,8 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
      if (ret == 0)
 	  return 0;
      if (ret < 0) {
-	  fprintf (stderr, "%s: read: %s\n", prog, strerror (errno));
-	  return ret;
+	 warn ("read");
+	 return ret;
      }
 #ifndef NOENCRYPTION
      des_cfb64_encrypt (buf, buf, ret, schedule, iv,
@@ -70,8 +70,8 @@ do_enccopy (int fd1, int fd2, int mode, des_cblock *iv,
 #endif
      ret = krb_net_write (fd2, buf, ret);
      if (ret < 0) {
-	  fprintf (stderr, "%s: write: %s\n", prog, strerror (errno));
-	  return ret;
+	 warn ("write");
+	 return ret;
      }
      return 1;
 }
@@ -100,8 +100,8 @@ copy_encrypted (int fd1, int fd2, des_cblock *iv,
 
 	  ret = select (max(fd1, fd2)+1, &fdset, NULL, NULL, NULL);
 	  if (ret < 0 && errno != EINTR) {
-	       fprintf (stderr, "%s: select: %s\n", prog, strerror (errno));
-	       return 1;
+	      warn ("select");
+	      return 1;
 	  }
 	  if (FD_ISSET(fd1, &fdset)) {
 	       ret = do_enccopy (fd1, fd2, DES_ENCRYPT, &iv1, schedule, &num1);
@@ -155,10 +155,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 
      for(dpy = 4; dpy < 256; ++dpy) {
 	 unixfd = socket (AF_UNIX, SOCK_STREAM, 0);
-	 if (unixfd < 0) {
-	     fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
-	     return -1;
-	 }    
+	 if (unixfd < 0)
+	     err (1, "socket AF_UNIX");
 	 memset (&unixaddr, 0, sizeof(unixaddr));
 	 unixaddr.sun_family = AF_UNIX;
 	 sprintf (unixaddr.sun_path, X_UNIX_PATH "%u", dpy);
@@ -177,12 +175,8 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	     int one = 1;
 
 	     tcpfd = socket (AF_INET, SOCK_STREAM, 0);
-	     if (tcpfd < 0) {
-		 fprintf (stderr, "%s: socket: %s\n", prog,
-			  strerror(errno));
-		 close (unixfd);
-		 return -1;
-	     }
+	     if (tcpfd < 0)
+		 err (1, "socket AF_INET");
 #if defined(TCP_NODELAY) && defined(HAVE_SETSOCKOPT)
 	     setsockopt (tcpfd, IPPROTO_TCP, TCP_NODELAY, (void *)&one,
 			 sizeof(one));
@@ -203,21 +197,13 @@ get_xsockets (int *unix_socket, int *tcp_socket)
 	 }
 	 break;
      }
-     if (dpy == 256) {
-	  fprintf (stderr, "%s: no free x-servers\n", prog);
-	  return -1;
-     }
-     if (listen (unixfd, SOMAXCONN) < 0) {
-	  fprintf (stderr, "%s: listen: %s\n", prog,
-		   strerror(errno));
-	  return -1;
-     }
+     if (dpy == 256)
+	 errx ("no free x-servers");
+     if (listen (unixfd, SOMAXCONN) < 0)
+	 err (1, "listen");
      if (tcp_socket)
-	 if (listen (tcpfd, SOMAXCONN) < 0) {
-	     fprintf (stderr, "%s: listen: %s\n", prog,
-		      strerror(errno));
-	     return -1;
-	 }
+	 if (listen (tcpfd, SOMAXCONN) < 0)
+	     err (1, "listen");
      strcpy(x_socket, unixaddr.sun_path);
      *unix_socket = unixfd;
      if (tcp_socket)
@@ -236,17 +222,12 @@ connect_local_xsocket (unsigned dnr)
      struct sockaddr_un addr;
 
      fd = socket (AF_UNIX, SOCK_STREAM, 0);
-     if (fd < 0) {
-	  fprintf (stderr, "%s: socket: %s\n", prog, strerror(errno));
-	  return fd;
-     }    
+     if (fd < 0)
+	 err (1, "socket AF_UNIX");
      addr.sun_family = AF_UNIX;
      sprintf (addr.sun_path, "/tmp/.X11-unix/X%u", dnr);
-     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0) {
-	  fprintf (stderr, "%s: connect: %s\n", prog,
-		   strerror(errno));
-	  return -1;
-     }
+     if (connect (fd, (struct sockaddr *)&addr, sizeof(addr)) < 0)
+	 err (1, "connect");
      return fd;
 }
 

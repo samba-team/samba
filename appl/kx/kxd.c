@@ -40,8 +40,6 @@
 
 RCSID("$Id$");
 
-char *prog;
-
 /*
  * Signal handler that justs waits for the children when they die.
  */
@@ -132,8 +130,8 @@ recv_conn (int sock, des_cblock *key, des_key_schedule schedule,
 			    thataddr, thisaddr, &auth, "", schedule,
 			    version);
      if (status != KSUCCESS)
-	 errx(1, "%s: krb_recvauth: %s",
-	      prog, krb_get_err_text(status));
+	 syslog (LOG_ERR, "krb_recvauth: %s",
+		 krb_get_err_text(status));
      if( strncmp(version, KX_VERSION, KRB_SENDAUTH_VLEN) != 0)
 	 fatal(sock, key, schedule, thisaddr, thataddr,
 	       "Bad version %s", version);
@@ -464,7 +462,7 @@ doit(int sock, int tcpp)
 static void
 usage (void)
 {
-     fprintf (stderr, "Usage: %s [-i] [-t] [-p port]\n", prog);
+     fprintf (stderr, "Usage: %s [-i] [-t] [-p port]\n", __progname);
      exit (1);
 }
 
@@ -480,7 +478,7 @@ main (int argc, char **argv)
      int tcpp = 0;
      int port = 0;
 
-     prog = argv[0];
+     set_progname (argv[0]);
 
      while( (c = getopt (argc, argv, "itp:")) != EOF) {
 	  switch (c) {
@@ -502,7 +500,7 @@ main (int argc, char **argv)
      if (no_inetd)
 	  mini_inetd (port ? port : k_getportbyname("kx", "tcp",
 						    htons(KX_PORT)));
-     openlog(prog, LOG_PID|LOG_CONS, LOG_DAEMON);
+     openlog(__progname, LOG_PID|LOG_CONS, LOG_DAEMON);
      signal (SIGCHLD, childhandler);
      return doit(STDIN_FILENO, tcpp);
 }
