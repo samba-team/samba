@@ -840,7 +840,7 @@ static BOOL oplock_break(SMB_DEV_T dev, SMB_INO_T inode, struct timeval *tval, B
   connection_struct *saved_conn;
   int saved_vuid;
   pstring saved_dir; 
-  int timeout = OPLOCK_BREAK_TIMEOUT;
+  int timeout = (OPLOCK_BREAK_TIMEOUT * 1000);
   pstring file_name;
   BOOL using_levelII;
 
