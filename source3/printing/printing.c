@@ -128,15 +128,17 @@ static BOOL print_job_store(int jobid, struct printjob *pjob)
 
 /****************************************************************************
 run a given print command 
+a null terminated list of value/substitute pairs is provided
+for local substitution strings
 ****************************************************************************/
 static int print_run_command(int snum,char *command, 
 			     char *outfile,
-			     char *a1, char *v1, 
-			     char *a2, char *v2)
+			     ...)
 {
 	pstring syscmd;
-	char *p;
+	char *p, *arg;
 	int ret;
+	va_list ap;
 
 	if (!command || !*command) return -1;
 
@@ -146,8 +148,13 @@ static int print_run_command(int snum,char *command,
 	}
 
 	pstrcpy(syscmd, command);
-	if (a1) pstring_sub(syscmd, a1, v1);
-	if (a2) pstring_sub(syscmd, a2, v2);
+
+	va_start(ap, outfile);
+	while ((arg = va_arg(ap, char *))) {
+		char *value = va_arg(ap,char *);
+		pstring_sub(syscmd, arg, value);
+	}
+	va_end(ap);
   
 	p = PRINTERNAME(snum);
 	if (!p || !*p) p = SERVICE(snum);
@@ -294,7 +301,7 @@ static void print_queue_update(int snum)
 
 	unlink(tmp_file);
 	print_run_command(snum, cmd, tmp_file,
-			  NULL, NULL, NULL, NULL);
+			  NULL);
 
 	numlines = 0;
 	qlines = file_lines_load(tmp_file, &numlines);
@@ -463,10 +470,8 @@ static BOOL print_job_delete1(int jobid)
 		print_run_command(snum, 
 				  lp_lprmcommand(snum), NULL,
 				  "%j", jobstr,
-				  /*
 				  "%T", http_timestring(pjob->starttime),
-				  */
-				  NULL, NULL);
+				  NULL);
 	}
 
 	return True;
@@ -508,7 +513,7 @@ BOOL print_job_pause(int jobid)
 	ret = print_run_command(snum, 
 				lp_lppausecommand(snum), NULL,
 				"%j", jobstr,
-				NULL, NULL);
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -535,7 +540,7 @@ BOOL print_job_resume(int jobid)
 	ret = print_run_command(snum, 
 				lp_lpresumecommand(snum), NULL,
 				"%j", jobstr,
-				NULL, NULL);
+				NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -669,6 +674,7 @@ BOOL print_job_end(int jobid)
 	pstring current_directory;
 	pstring print_directory;
 	char *wd, *p;
+	pstring jobname;
 
 	if (!pjob) return False;
 
@@ -700,12 +706,16 @@ BOOL print_job_end(int jobid)
 
 	if (chdir(print_directory) != 0) return False;
 
+	pstrcpy(jobname, pjob->jobname);
+	pstring_sub(jobname, "'", "_");
+
 	/* send it to the system spooler */
 	print_run_command(snum, 
 			  lp_printcommand(snum), NULL,
 			  "%s", p,
-  /*			  "%J", stripquote(pjob->jobname), */
-			  "%f", p);
+  			  "%J", jobname,
+			  "%f", p,
+			  NULL);
 
 	chdir(wd);
 
@@ -822,8 +832,7 @@ BOOL print_queue_pause(int snum)
 {
 	int ret = print_run_command(snum, 
 				    lp_queuepausecommand(snum), NULL,
-				    NULL, NULL,
-				    NULL, NULL);
+				    NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
@@ -838,8 +847,7 @@ BOOL print_queue_resume(int snum)
 {
 	int ret = print_run_command(snum, 
 				    lp_queueresumecommand(snum), NULL,
-				    NULL, NULL,
-				    NULL, NULL);
+				    NULL);
 
 	/* force update the database */
 	print_cache_flush(snum);
