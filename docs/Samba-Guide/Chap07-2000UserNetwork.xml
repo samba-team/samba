@@ -797,7 +797,7 @@ passdb backend = ldapsam:ldap://master.abmas.biz
 	<link linkend="ch7singleLDAP"/>.
 	<image id="ch7singleLDAP">
 		<imagedescription>Samba Configuration to Use a Single LDAP Server</imagedescription>
-		<imagefile scale="55">ch7-singleLDAP</imagefile>
+		<imagefile scale="65">ch7-singleLDAP</imagefile>
 	</image>
 	<indexterm>
 	  <primary>LDAP</primary>
@@ -819,7 +819,7 @@ passdb backend = ldapsam:"ldap://master.abmas.biz \
 	as shown in <link linkend="ch7dualLDAP"/>.
 	<image id="ch7dualLDAP">
 		<imagedescription>Samba Configuration to Use a Dual (Fail-over) LDAP Server</imagedescription>
-		<imagefile scale="55">ch7-fail-overLDAP</imagefile>
+		<imagefile scale="65">ch7-fail-overLDAP</imagefile>
 	</image>
       </para>
 
@@ -1076,7 +1076,7 @@ include     /etc/openldap/schema/samba.schema
 pidfile     /var/run/slapd/slapd.pid
 argsfile    /var/run/slapd/slapd.args
 
-database    ldbm
+database    bdb
 suffix      "dc=abmas,dc=biz"
 rootdn      "cn=Manager,dc=abmas,dc=biz"
 
@@ -1124,7 +1124,7 @@ include     /etc/openldap/schema/samba.schema
 pidfile     /var/run/slapd/slapd.pid
 argsfile    /var/run/slapd/slapd.args
 
-database    ldbm
+database    bdb
 suffix      "dc=abmas,dc=biz"
 rootdn      "cn=Manager,dc=abmas,dc=biz"
 
