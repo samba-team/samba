@@ -75,7 +75,7 @@ void dcerpc_set_frag_length(DATA_BLOB *blob, uint16 v)
 	}
 }
 
-uint16 dcerpc_get_frag_length(DATA_BLOB *blob)
+uint16 dcerpc_get_frag_length(const DATA_BLOB *blob)
 {
 	if (CVAL(blob->data,DCERPC_DREP_OFFSET) & DCERPC_DREP_LE) {
 		return SVAL(blob->data, DCERPC_FRAG_LEN_OFFSET);
@@ -108,8 +108,8 @@ static NTSTATUS dcerpc_pull(DATA_BLOB *blob, TALLOC_CTX *mem_ctx,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= DCERPC_PULL_BIGENDIAN;
+	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	return ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, pkt);
@@ -137,8 +137,8 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= DCERPC_PULL_BIGENDIAN;
+	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	/* pull the basic packet */
@@ -169,8 +169,8 @@ static NTSTATUS dcerpc_pull_request_sign(struct dcerpc_pipe *p,
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	if (! (CVAL(blob, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
-		ndr->flags |= DCERPC_PULL_BIGENDIAN;
+	if (! (CVAL(blob->data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	status = ndr_pull_dcerpc_auth(ndr, NDR_SCALARS|NDR_BUFFERS, &auth);
@@ -225,7 +225,7 @@ static NTSTATUS dcerpc_push_request_sign(struct dcerpc_pipe *p,
 
 	/* non-signed packets are simpler */
 	if (!p->auth_info || !p->ntlmssp_state) {
-		return dcerpc_push_auth(blob, mem_ctx, pkt, p->auth_info, p->flags);
+		return dcerpc_push_auth(blob, mem_ctx, pkt, p->auth_info);
 	}
 
 	ndr = ndr_push_init_ctx(mem_ctx);
@@ -353,7 +353,7 @@ NTSTATUS dcerpc_bind(struct dcerpc_pipe *p,
 	pkt.u.bind.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info, p->flags);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
@@ -412,7 +412,7 @@ NTSTATUS dcerpc_auth3(struct dcerpc_pipe *p,
 	pkt.u.auth.auth_info = data_blob(NULL, 0);
 
 	/* construct the NDR form of the packet */
-	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info, p->flags);
+	status = dcerpc_push_auth(&blob, mem_ctx, &pkt, p->auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}

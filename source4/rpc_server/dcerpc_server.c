@@ -178,6 +178,20 @@ void dcesrv_endpoint_disconnect(struct dcesrv_state *p)
 	talloc_destroy(p->mem_ctx);
 }
 
+static void dcesrv_init_hdr(struct dcerpc_packet *pkt)
+{
+	pkt->rpc_vers = 5;
+	pkt->rpc_vers_minor = 0;
+	if (lp_rpc_big_endian()) {
+		pkt->drep[0] = 0;
+	} else {
+		pkt->drep[0] = DCERPC_DREP_LE;
+	}
+	pkt->drep[1] = 0;
+	pkt->drep[2] = 0;
+	pkt->drep[3] = 0;
+}
+
 /*
   return a dcerpc fault
 */
@@ -188,12 +202,7 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 	NTSTATUS status;
 
 	/* setup a bind_ack */
-	pkt.rpc_vers = 5;
-	pkt.rpc_vers_minor = 0;
-	pkt.drep[0] = 0x10; /* Little endian */
-	pkt.drep[1] = 0;
-	pkt.drep[2] = 0;
-	pkt.drep[3] = 0;
+	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_FAULT;
@@ -208,12 +217,12 @@ static NTSTATUS dcesrv_fault(struct dcesrv_call_state *call, uint32 fault_code)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL, 0);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 
@@ -247,12 +256,7 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 	NTSTATUS status;
 
 	/* setup a bind_ack */
-	pkt.rpc_vers = 5;
-	pkt.rpc_vers_minor = 0;
-	pkt.drep[0] = 0x10; /* Little endian */
-	pkt.drep[1] = 0;
-	pkt.drep[2] = 0;
-	pkt.drep[3] = 0;
+	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_NAK;
@@ -265,12 +269,12 @@ static NTSTATUS dcesrv_bind_nak(struct dcesrv_call_state *call, uint32 reason)
 		return NT_STATUS_NO_MEMORY;
 	}
 
-	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL, 0);
+	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, NULL);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 
@@ -328,12 +332,7 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	/* setup a bind_ack */
-	pkt.rpc_vers = 5;
-	pkt.rpc_vers_minor = 0;
-	pkt.drep[0] = 0x10; /* Little endian */
-	pkt.drep[1] = 0;
-	pkt.drep[2] = 0;
-	pkt.drep[3] = 0;
+	dcesrv_init_hdr(&pkt);
 	pkt.auth_length = 0;
 	pkt.call_id = call->pkt.call_id;
 	pkt.ptype = DCERPC_PKT_BIND_ACK;
@@ -368,12 +367,12 @@ static NTSTATUS dcesrv_bind(struct dcesrv_call_state *call)
 	}
 
 	status = dcerpc_push_auth(&rep->data, call->mem_ctx, &pkt, 
-				  call->dce->auth_state.auth_info, 0);
+				  call->dce->auth_state.auth_info);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
-	SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+	dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 	DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 	DLIST_ADD_END(call->dce->call_list, call, struct dcesrv_call_state *);
@@ -428,6 +427,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	if (!(call->pkt.drep[0] & DCERPC_DREP_LE)) {
+		pull->flags |= LIBNDR_FLAG_BIGENDIAN;
+	}
+
 	/* unravel the NDR for the packet */
 	status = call->dce->ndr->calls[opnum].ndr_pull(pull, NDR_IN, r);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -444,6 +447,10 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 	push = ndr_push_init_ctx(call->mem_ctx);
 	if (!push) {
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (lp_rpc_big_endian()) {
+		push->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	status = call->dce->ndr->calls[opnum].ndr_push(push, NDR_OUT, r);
@@ -471,12 +478,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 		}
 
 		/* form the dcerpc response packet */
-		pkt.rpc_vers = 5;
-		pkt.rpc_vers_minor = 0;
-		pkt.drep[0] = 0x10; /* Little endian */
-		pkt.drep[1] = 0;
-		pkt.drep[2] = 0;
-		pkt.drep[3] = 0;
+		dcesrv_init_hdr(&pkt);
 		pkt.auth_length = 0;
 		pkt.call_id = call->pkt.call_id;
 		pkt.ptype = DCERPC_PKT_RESPONSE;
@@ -497,7 +499,7 @@ static NTSTATUS dcesrv_request(struct dcesrv_call_state *call)
 			return dcesrv_fault(call, DCERPC_FAULT_OTHER);		
 		}
 
-		SSVAL(rep->data.data,  DCERPC_FRAG_LEN_OFFSET, rep->data.length);
+		dcerpc_set_frag_length(&rep->data, rep->data.length);
 
 		DLIST_ADD_END(call->replies, rep, struct dcesrv_call_reply *);
 		
@@ -519,7 +521,7 @@ static BOOL dce_full_packet(const DATA_BLOB *data)
 	if (data->length < DCERPC_FRAG_LEN_OFFSET+2) {
 		return False;
 	}
-	if (SVAL(data->data, DCERPC_FRAG_LEN_OFFSET) > data->length) {
+	if (dcerpc_get_frag_length(data) > data->length) {
 		return False;
 	}
 	return True;
@@ -570,13 +572,17 @@ NTSTATUS dcesrv_input_process(struct dcesrv_state *dce)
 	call->replies = NULL;
 
 	blob = dce->partial_input;
-	blob.length = SVAL(blob.data, DCERPC_FRAG_LEN_OFFSET);
+	blob.length = dcerpc_get_frag_length(&blob);
 
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);
 	if (!ndr) {
 		talloc_free(dce->mem_ctx, dce->partial_input.data);
 		talloc_destroy(mem_ctx);
 		return NT_STATUS_NO_MEMORY;
+	}
+
+	if (!(CVAL(blob.data, DCERPC_DREP_OFFSET) & DCERPC_DREP_LE)) {
+		ndr->flags |= LIBNDR_FLAG_BIGENDIAN;
 	}
 
 	status = ndr_pull_dcerpc_packet(ndr, NDR_SCALARS|NDR_BUFFERS, &call->pkt);
