@@ -1,5 +1,5 @@
 !==
-!== Support.txt for Samba release 1.9.18p5 09 May 1998
+!== Support.txt for Samba release 1.9.18p6 11 May 1998
 !==
 The Samba Consultants List
 ==========================

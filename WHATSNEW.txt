@@ -1,5 +1,6 @@
-          WHATS NEW IN 1.9.18p6 - May 8th 1998.
-          =====================================
+
+          WHATS NEW IN 1.9.18p6 - May 11th 1998.
+          ======================================
 
 This is the latest stable release of Samba. This is the
 version that all production Samba servers should be running
