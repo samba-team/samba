@@ -442,7 +442,7 @@ char *prs_mem_get(prs_struct *ps, uint32 extra_size)
 		 * Writing - grow the buffer if needed.
 		 */
 		if(!prs_grow(ps, extra_size))
-			return False;
+			return NULL;
 	}
 	return &ps->data_p[ps->data_offset];
 }
