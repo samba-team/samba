@@ -32,6 +32,13 @@ for f in $SRCDIR../swat/help/*.html; do
       chmod 0644 $FNAME
 done
 
+for f in $SRCDIR../docs/htmldocs/*.html; do
+      FNAME=$SWATDIR/help/`basename $f`
+      echo $FNAME
+      cp $f $FNAME || echo Cannot install $FNAME. Does $USER have privileges?
+      chmod 0644 $FNAME
+done
+
 for f in $SRCDIR../swat/include/*.html; do
       FNAME=$SWATDIR/include/`basename $f`
       echo $FNAME
