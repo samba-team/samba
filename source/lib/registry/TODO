@@ -4,6 +4,9 @@
 
 reg_backend_dir:
  - value support
+
+reg_backend_w95.c:
+ - write support
  
 reg_backend_nt4:
  - write support

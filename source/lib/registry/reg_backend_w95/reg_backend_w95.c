@@ -204,6 +204,10 @@ static WERROR w95_get_subkey_by_index (REG_KEY *parent, int n, REG_KEY **key)
 			RGDB_KEY *rgdb_key;
 			char *name;
 			rgdb_key = LOCN_RGDB_KEY(creg, child->id.rgdb, child->id.id);
+			if(!rgdb_key) {
+				DEBUG(0, ("Can't find %d,%d in RGDB table!\n", child->id.rgdb, child->id.id));
+				return WERR_FOOBAR;
+			}
 			name = strndup((char *)rgdb_key + sizeof(RGDB_KEY), rgdb_key->name_len);
 			*key = reg_key_new_rel(name, parent, child);
 			SAFE_FREE(name);

@@ -47,6 +47,9 @@ void reg_val_free( REG_VAL *val )
 	if ( !val )
 		return;
 
+	val->ref--;
+	if(val->ref) return;
+
 	if(val->handle->functions->free_val_backend_data)
 		val->handle->functions->free_val_backend_data(val);
 		

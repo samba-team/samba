@@ -45,10 +45,10 @@ char *reg_val_data_string(REG_VAL *v)
   switch (reg_val_type(v)) {
   case REG_SZ:
 	  /* FIXME: Convert to ascii */
-	  return strdup(reg_val_data_blk(v));
+	  return strndup(reg_val_data_blk(v), reg_val_size(v));
 
   case REG_EXPAND_SZ:
-	  return strdup(reg_val_data_blk(v));
+	  return strndup(reg_val_data_blk(v), reg_val_size(v));
 
   case REG_BINARY:
 	  ret = malloc(reg_val_size(v) * 3 + 2);
