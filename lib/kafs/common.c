@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997 - 2001 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2002 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -168,7 +168,7 @@ dns_find_cell(const char *cell, char *dbserver, size_t len)
  * Try to find the cells we should try to klog to in "file".
  */
 static void
-find_cells(char *file, char ***cells, int *index)
+find_cells(const char *file, char ***cells, int *index)
 {
     FILE *f;
     char cell[64];
@@ -362,8 +362,7 @@ _kafs_get_cred(kafs_data *data,
     /* comments on the ordering of these tests */
 
     /* If the user passes a realm, she probably knows something we don't
-     * know and we should try afs@realm_hint (otherwise we're talking with a
-     * blondino and she might as well have it.)
+     * know and we should try afs@realm_hint.
      */
   
     if (realm_hint) {
@@ -392,6 +391,12 @@ _kafs_get_cred(kafs_data *data,
      */
     ret = (*data->get_cred)(data, AUTH_SUPERUSER, cell, realm, c);
     if (ret == 0) return 0;
+
+    /* try this case again, if cell and realm differs */
+    if(strcmp(CELL, realm) != 0) {
+	ret = (*data->get_cred)(data, AUTH_SUPERUSER, "", realm, c);
+	if (ret == 0) return 0;
+    }
 
     /*
      * We failed to get ``first class tickets'' for afs,
