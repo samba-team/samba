@@ -1043,6 +1043,7 @@ int reply_open(connection_struct *conn, char *inbuf,char *outbuf, int dum_size, 
 		END_PROFILE(SMBopen);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1136,6 +1137,7 @@ int reply_open_and_X(connection_struct *conn, char *inbuf,char *outbuf,int lengt
 		END_PROFILE(SMBopenX);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1265,6 +1267,7 @@ int reply_mknew(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBcreate);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1344,6 +1347,7 @@ int reply_ctemp(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBctemp);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return set_bad_path_error(errno, bad_path, outbuf, ERRDOS, ERRnoaccess);
@@ -1640,6 +1644,7 @@ int reply_unlink(connection_struct *conn, char *inbuf,char *outbuf, int dum_size
 	if (!NT_STATUS_IS_OK(status)) {
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
@@ -3965,6 +3970,7 @@ int reply_mv(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 		END_PROFILE(SMBmv);
 		if (open_was_deferred(SVAL(inbuf,smb_mid))) {
 			/* We have re-scheduled this call. */
+			clear_cached_errors();
 			return -1;
 		}
 		return ERROR_NT(status);
