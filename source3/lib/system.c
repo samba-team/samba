@@ -190,7 +190,7 @@ int sys_waitpid(pid_t pid,int *status,int options)
 /*******************************************************************
 don't forget lstat() that calls dos_to_unix.
 ********************************************************************/
-int dos_lstat(char *fname,struct stat *sbuf)
+int dos_lstat(char *fname,SMB_STRUCT_STAT *sbuf)
 {
   return(lstat(dos_to_unix(fname,False),sbuf));
 }
@@ -247,7 +247,7 @@ for rename across filesystems Patch from Warren Birnbaum
 
 static int copy_reg(char *source, const char *dest)
 {
-  struct stat source_stats;
+  SMB_STRUCT_STAT source_stats;
   int ifd;
   int ofd;
   char *buf;
