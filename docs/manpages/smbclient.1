@@ -3,7 +3,7 @@
 .\" <http://shell.ipoline.com/~elmert/comp/docbook2X/> 
 .\" Please send any bug reports, improvements, comments, patches, 
 .\" etc. to Steve Cheng <steve@ggi-project.org>.
-.TH "SMBCLIENT" "1" "24 March 2003" "" ""
+.TH "SMBCLIENT" "1" "03 april 2003" "" ""
 
 .SH NAME
 smbclient \- ftp-like client to access SMB/CIFS resources  on servers
@@ -290,10 +290,10 @@ domain   = <value>
 Make certain that the permissions on the file restrict 
 access from unwanted users. 
 .TP
-\fB-U|--user=username[&%;password]\fR
+\fB-U|--user=username[%password]\fR
 Sets the SMB username or username and password. 
 
-If &%;password is not specified, the user will be prompted. The
+If %password is not specified, the user will be prompted. The
 client will first check the \fBUSER\fR environment variable, then the
 \fBLOGNAME\fR variable and if either exists, the
 string is uppercased. If these environmental variables are not

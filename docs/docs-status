@@ -7,7 +7,6 @@ docs/history - needs updating (is current up to 1998 - merge with 10year.html ?)
 docs/docbook/manpages/net.8.sgml - Still not finished
 docs/docbook/manpages/rpcclient.1.sgml - Command documentation might be outdated
 docs/docbook/manpages/samba.7.sgml - Listing of samba programs is not complete
-docs/docbook/manpages/smbcontrol.1.sgml - Document -s, samsync, samrepl, pool-usage, dmalloc-mark, dmalloc-log-changed, shutdown, change_id
 docs/docbook/manpages/smb.conf.5.sgml - 'restrict anonymous' isn't documented properly
 docs/docbook/projdoc/Integrating-with-Windows.sgml - Should slowly go a way. Contains a little bit information about wins, a little bit about domain membership, a little about winbind, etc
 docs/docbook/projdoc/PAM-Authentication-And-Samba.sgml
@@ -23,18 +22,7 @@ docs/textdocs/CUPS-PrintingInfo.txt - needs to be converted to sgml - Kurt Pfeif
 docs/textdocs/PROFILES.txt - needs to be converted to sgml
 docs/textdocs/README.jis - Seems to need updating - possibly obsoleted by a newer japanese howto?
 docs/textdocs/RoutedNetworks.txt - still valid, but shouldn't this go into Other_clients.sgml ? This text originally comes from microsoft, what about copyright?
-docs/docbook/manpages/ntlm_auth.1.sgml - Is very basic at the moment, parameters need better descriptions
-
-These still need to be checked:
-docs/docbook/manpages/smbmnt.8.sgml
-docs/docbook/manpages/smbmount.8.sgml
-docs/docbook/manpages/smbpasswd.8.sgml
-docs/docbook/manpages/smbsh.1.sgml
-docs/docbook/manpages/smbspool.8.sgml
-docs/docbook/manpages/smbstatus.1.sgml
-docs/docbook/manpages/smbtar.1.sgml
-docs/docbook/manpages/smbumount.8.sgml
-docs/docbook/manpages/testprns.1.sgml
+docs/docbook/manpages/ntlm_auth.1.sgml - Is very basic at the moment, parameters need better descriptions - abartlet
 
 Stuff that needs to be documented:
 wrepld
@@ -42,8 +30,6 @@ Windows NT 4.0 Style Trust Relationship
 Winbind in a samba controlled domain
 One Time Migration script from a Windows NT 4.0 PDC to a Samba PDC
 ldap passwd sync
-
-http://www.unav.es/cti/ldap-smb/smb-ldap-3-howto.html
 
 Not release-critical:
 docs/docbook/devdoc/* - most of these docs are outdated and need updates...
