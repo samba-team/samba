@@ -122,10 +122,10 @@ static BOOL parse_uint16(char *buf, uint16 *uip)
  * Print a parse error and exit.
  */
 
-static void parse_error(const char *buf, const char *msg)
+static void parse_error(const char *buf, const char *input_file, const char *msg)
 {
-  fprintf(stderr, "%s: %s whilst parsing line \n%s\n", prog_name,
-          msg, buf);
+  fprintf(stderr, "%s: In file %s : %s whilst parsing line \n%s\n", prog_name,
+          input_file, msg, buf);
   exit(1);
 }
     
@@ -133,7 +133,7 @@ static void parse_error(const char *buf, const char *msg)
  * Create a compiled unicode map file from a unicode map definition file.
  */
 
-static int do_compile(int codepage, char *input_file, char *output_file)
+static int do_compile(int codepage, const char *input_file, const char *output_file)
 {
   FILE *fp = NULL;
   size_t size = 0;
@@ -191,7 +191,8 @@ static int do_compile(int codepage, char *input_file, char *output_file)
    */
 
   memset(cp_to_ucs2, '\0', sizeof(cp_to_ucs2));
-  for (i = 0; i < 65536; i++)
+  ucs2_to_cp[0] = 0;
+  for (i = 1; i < 65536; i++)
     ucs2_to_cp[i] = (uint16)'_';
 
   /* Now convert the lines into the compiled form. */
@@ -204,18 +205,30 @@ static int do_compile(int codepage, char *input_file, char *output_file)
 
     /* Get the codepage value. */
     if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
-      parse_error(buf, "cannot parse first value");
+      parse_error(buf, input_file, "cannot parse first value");
+
     if(!parse_uint16( token_buf, &cp))
-      parse_error(buf, "first value doesn't resolve to an unsigned 16 bit integer");
+      parse_error(buf, input_file, "first value doesn't resolve to an unsigned 16 bit integer");
 
     if(cp > 255)
       multibyte_code_page = True;
 
     /* Get the ucs2 value. */
-    if(!next_token(&p, token_buf, NULL, sizeof(token_buf)))
-      parse_error(buf, "cannot parse second value");
+
+    if(!next_token(&p, token_buf, NULL, sizeof(token_buf))) {
+
+      /*
+       * Some of the multibyte codepage to unicode map files
+       * list a single byte as a leading multibyte and have no
+       * second value.
+       */
+
+      buf += (strlen(buf) + 1);
+      continue;
+    }
+
     if(!parse_uint16( token_buf, &ucs2))
-      parse_error(buf, "second value doesn't resolve to an unsigned 16 bit integer");
+      parse_error(buf, input_file, "second value doesn't resolve to an unsigned 16 bit integer");
 
     /*
      * Set up the cross reference in little-endian format.
