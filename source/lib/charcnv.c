@@ -27,8 +27,6 @@ static pstring cvtbuf;
 
 static smb_iconv_t conv_handles[NUM_CHARSETS][NUM_CHARSETS];
 
-static int initialized;
-
 /****************************************************************************
 return the name of a charset to give to iconv()
 ****************************************************************************/
@@ -43,6 +41,19 @@ static char *charset_name(charset_t ch)
 
 	if (!ret || !*ret) ret = "ASCII";
 	return ret;
+}
+
+
+static void lazy_initialize_conv(void)
+{
+	static int initialized = False;
+
+	if (!initialized) {
+		initialized = True;
+		load_case_tables();
+		init_iconv();
+		init_valid_table();
+	}
 }
 
 /****************************************************************************
@@ -112,12 +123,7 @@ size_t convert_string(charset_t from, charset_t to,
 
 	if (srclen == -1) srclen = strlen(src)+1;
 
-	if (!initialized) {
-		initialized = 1;
-		load_case_tables();
-		init_iconv();
-		init_valid_table();
-	}
+	lazy_initialize_conv();
 
 	descriptor = conv_handles[from][to];
 
@@ -174,11 +180,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 
 	if (src == NULL || srclen == -1) return -1;
 
-	if (!initialized) {
-		initialized = 1;
-		load_case_tables();
-		init_iconv();
-	}
+	lazy_initialize_conv();
 
 	descriptor = conv_handles[from][to];
 
