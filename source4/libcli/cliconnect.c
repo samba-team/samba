@@ -216,7 +216,7 @@ struct smbcli_state *smbcli_state_init(TALLOC_CTX *mem_ctx)
 {
 	struct smbcli_state *cli;
 
-	cli = talloc_p(mem_ctx, struct smbcli_state);
+	cli = talloc_zero_p(mem_ctx, struct smbcli_state);
 	if (cli) {
 		ZERO_STRUCTP(cli);
 	}

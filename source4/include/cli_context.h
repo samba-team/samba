@@ -28,4 +28,5 @@ struct smbcli_state {
 	struct smbcli_session *session;
 	struct smbcli_tree *tree;
 	struct substitute_context *substitute;
+	struct smblsa_state *lsa;
 };
