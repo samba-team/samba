@@ -22,6 +22,9 @@
 #include "includes.h"
 
 
+/*
+  ask the server what interface IDs are available on this endpoint
+*/
 static BOOL test_inq_if_ids(struct dcerpc_pipe *p, 
 			    TALLOC_CTX *mem_ctx)
 {
@@ -166,11 +169,14 @@ BOOL torture_rpc_mgmt(int dummy)
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
 	int i;
+	char *host = lp_parm_string(-1, "torture", "host");
+	uint32 port;
 
 	mem_ctx = talloc_init("torture_rpc_mgmt");
 
-	for (i=0;dcerpc_pipes[i];i++) {
-		
+	for (i=0;dcerpc_pipes[i];i++) {		
+		char *transport = lp_parm_string(-1, "torture", "transport");
+
 		/* some interfaces are not mappable */
 		if (dcerpc_pipes[i]->num_calls == 0 ||
 		    strcmp(dcerpc_pipes[i]->name, "mgmt") == 0) {
@@ -178,6 +184,21 @@ BOOL torture_rpc_mgmt(int dummy)
 		}
 
 		printf("\nTesting pipe '%s'\n", dcerpc_pipes[i]->name);
+
+		/* on TCP we need to find the right endpoint */
+		if (strcasecmp(transport, "ncacn_ip_tcp") == 0) {
+			status = dcerpc_epm_map_tcp_port(host, 
+							 dcerpc_pipes[i]->uuid, 
+							 dcerpc_pipes[i]->if_version, 
+							 &port);
+			if (!NT_STATUS_IS_OK(status)) {
+				ret = False;
+				continue;
+			}
+
+			lp_set_cmdline("torture:share", 
+				       talloc_asprintf(mem_ctx, "%u", port));
+		}
 
 		status = torture_rpc_connection(&p, 
 						dcerpc_pipes[i]->name,

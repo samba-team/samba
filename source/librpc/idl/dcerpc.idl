@@ -78,7 +78,13 @@ interface dcerpc
 		[flag(NDR_REMAINING)] DATA_BLOB stub_and_verifier;
 	} dcerpc_response;
 
+
+	const int DCERPC_FAULT_OP_RNG_ERROR = 0x1c010002;
+
 	typedef struct {
+		uint32 alloc_hint;
+		uint16 context_id;
+		uint8 cancel_count;
 		uint32 status;
 	} dcerpc_fault;
 

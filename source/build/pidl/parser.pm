@@ -1246,13 +1246,17 @@ sub FunctionTable($)
 	my($interface) = shift;
 	my($data) = $interface->{DATA};
 	my $count = 0;
+	my $uname = uc $interface->{NAME};
 
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "FUNCTION") { $count++; }
 	}
 
+	if ($count == 0) {
+		return;
+	}
 
-	pidl "static const struct dcerpc_interface_call calls[] = {\n";
+	pidl "static const struct dcerpc_interface_call $interface->{NAME}\_calls[] = {\n";
 	foreach my $d (@{$data}) {
 		if ($d->{TYPE} eq "FUNCTION") {
 			pidl "\t{\n";
@@ -1266,7 +1270,7 @@ sub FunctionTable($)
 	}
 	pidl "\t{ NULL, 0, NULL, NULL }\n};\n\n";
 
-	pidl "\nstruct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {\"$interface->{NAME}\", $count,calls};\n\n";
+	pidl "\nconst struct dcerpc_interface_table dcerpc_table_$interface->{NAME} = {\"$interface->{NAME}\", DCERPC_$uname\_UUID, DCERPC_$uname\_VERSION, $count, $interface->{NAME}\_calls};\n\n";
 }
 
 

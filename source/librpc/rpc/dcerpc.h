@@ -78,6 +78,8 @@ struct dcerpc_interface_call {
 
 struct dcerpc_interface_table {
 	const char *name;
+	const char *uuid;
+	uint32 if_version;
 	uint32 num_calls;
 	const struct dcerpc_interface_call *calls;
 };
