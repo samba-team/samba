@@ -583,12 +583,9 @@ files_struct *open_file_shared(connection_struct *conn,char *fname, SMB_STRUCT_S
 		return print_fsp_open(conn, fname);
 	}
 
-	fsp = file_new();
+	fsp = file_new(conn);
 	if(!fsp)
 		return NULL;
-
-	fsp->fd = -1;
-	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
 
 	DEBUG(10,("open_file_shared: fname = %s, share_mode = %x, ofun = %x, mode = %o, oplock request = %d\n",
 		fname, share_mode, ofun, (int)mode,  oplock_request ));
@@ -870,7 +867,7 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 		return NULL;
 	}
 
-	fsp = file_new();
+	fsp = file_new(conn);
 	if(!fsp)
 		return NULL;
 
@@ -919,6 +916,49 @@ files_struct *open_file_stat(connection_struct *conn, char *fname,
 }
 
 /****************************************************************************
+ Open a file for for write to ensure that we can fchmod it.
+****************************************************************************/
+
+files_struct *open_file_fchmod(connection_struct *conn, char *fname, SMB_STRUCT_STAT *psbuf)
+{
+	files_struct *fsp = NULL;
+	BOOL fsp_open;
+
+	if (!VALID_STAT(*psbuf))
+		return NULL;
+
+	fsp = file_new(conn);
+	if(!fsp)
+		return NULL;
+
+	fsp_open = open_file(fsp,conn,fname,psbuf,O_WRONLY,0);
+
+	/* 
+	 * This is not a user visible file open.
+	 * Don't set a share mode and don't increment
+	 * the conn->num_files_open.
+	 */
+
+	if (!fsp_open) {
+		file_free(fsp);
+		return NULL;
+	}
+
+	return fsp;
+}
+
+/****************************************************************************
+ Close the fchmod file fd - ensure no locks are lost.
+****************************************************************************/
+
+int close_file_fchmod(files_struct *fsp)
+{
+	int ret = fd_close(fsp->conn, fsp);
+	file_free(fsp);
+	return ret;
+}
+
+/****************************************************************************
  Open a directory from an NT SMB call.
 ****************************************************************************/
 
@@ -927,12 +967,12 @@ files_struct *open_directory(connection_struct *conn, char *fname,
 {
 	extern struct current_user current_user;
 	BOOL got_stat = False;
-	files_struct *fsp = file_new();
+	files_struct *fsp = file_new(conn);
 
 	if(!fsp)
 		return NULL;
 
-	fsp->conn = conn; /* THe vfs_fXXX() macros need this. */
+	fsp->conn = conn; /* The vfs_fXXX() macros need this. */
 
 	if (VALID_STAT(*psbuf))
 		got_stat = True;

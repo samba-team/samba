@@ -78,7 +78,9 @@ struct vfs_ops {
     int (*lstat)(struct connection_struct *conn, char *path, SMB_STRUCT_STAT *sbuf);
     int (*unlink)(struct connection_struct *conn, char *path);
     int (*chmod)(struct connection_struct *conn, char *path, mode_t mode);
+    int (*fchmod)(struct files_struct *fsp, int fd, mode_t mode);
 	int (*chown)(struct connection_struct *conn, char *path, uid_t uid, gid_t gid);
+	int (*fchown)(struct files_struct *fsp, int fd, uid_t uid, gid_t gid);
 	int (*chdir)(struct connection_struct *conn, char *path);
 	char *(*getwd)(struct connection_struct *conn, char *buf);
     int (*utime)(struct connection_struct *conn, char *path, struct utimbuf *times);

@@ -184,7 +184,6 @@ chmod a file - but preserve some bits
 ********************************************************************/
 int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *st)
 {
-	extern struct current_user current_user;
 	SMB_STRUCT_STAT st1;
 	int mask=0;
 	mode_t tmp;
@@ -250,16 +249,21 @@ int file_chmod(connection_struct *conn,char *fname,int dosmode,SMB_STRUCT_STAT *
 
 	/* Check if we have write access. */
 	if (CAN_WRITE(conn)) {
-		if (((st->st_mode & S_IWOTH) ||
-				conn->admin_user ||
-				((st->st_mode & S_IWUSR) && current_user.uid==st->st_uid) ||
-				((st->st_mode & S_IWGRP) &&
-				in_group(st->st_gid,current_user.gid, current_user.ngroups,current_user.groups)))) {
-					/* We are allowed to become root and change the file mode. */
-					become_root();
-					ret = vfs_chmod(conn,fname,unixmode);
-					unbecome_root();
-		}
+		/*
+		 * We need to open the file with write access whilst
+		 * still in our current user context. This ensures we
+		 * are not violating security in doing the fchmod.
+		 * This file open does *not* break any oplocks we are
+		 * holding. We need to review this.... may need to
+		 * break batch oplocks open by others. JRA.
+		 */
+		files_struct *fsp = open_file_fchmod(conn,fname,st);
+		if (!fsp)
+			return -1;
+		become_root();
+		ret = conn->vfs_ops.fchmod(fsp, fsp->fd, unixmode);
+		unbecome_root();
+		close_file_fchmod(fsp);
 	}
 
 	return( ret );

@@ -369,6 +369,34 @@ int vfswrap_chmod(connection_struct *conn, char *path, mode_t mode)
     return result;
 }
 
+int vfswrap_fchmod(files_struct *fsp, int fd, mode_t mode)
+{
+    int result;
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
+	
+    START_PROFILE(syscall_fchmod);
+
+	/*
+	 * We need to do this due to the fact that the default POSIX ACL
+	 * chmod modifies the ACL *mask* for the group owner, not the
+	 * group owner bits directly. JRA.
+	 */
+	
+	if (vfs_ops->fchmod_acl != NULL) {
+		int saved_errno = errno; /* We might get ENOSYS */
+		if ((result = vfs_ops->fchmod_acl(fsp, fd, mode)) == 0) {
+			END_PROFILE(syscall_chmod);
+			return result;
+		}
+		/* Error - return the old errno. */
+		errno = saved_errno;
+	}
+
+    result = fchmod(fd, mode);
+    END_PROFILE(syscall_fchmod);
+    return result;
+}
+
 int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
 {
     int result;
@@ -383,6 +411,17 @@ int vfswrap_chown(connection_struct *conn, char *path, uid_t uid, gid_t gid)
 
     result = sys_chown(path, uid, gid);
     END_PROFILE(syscall_chown);
+    return result;
+}
+
+int vfswrap_fchown(files_struct *fsp, int fd, uid_t uid, gid_t gid)
+{
+    int result;
+
+    START_PROFILE(syscall_fchown);
+
+    result = fchown(fd, uid, gid);
+    END_PROFILE(syscall_fchown);
     return result;
 }
 
@@ -452,7 +491,7 @@ int vfswrap_ftruncate(files_struct *fsp, int fd, SMB_OFF_T len)
 		extend a file with ftruncate. Provide alternate implementation
 		for this */
 
-	struct vfs_ops *vfs_ops = fsp->conn->vfs_ops;
+	struct vfs_ops *vfs_ops = &fsp->conn->vfs_ops;
 	SMB_STRUCT_STAT st;
 	char c = 0;
 	SMB_OFF_T currpos;

@@ -466,6 +466,12 @@
 /* Define if you have the execl function.  */
 #undef HAVE_EXECL
 
+/* Define if you have the fchmod function.  */
+#undef HAVE_FCHMOD
+
+/* Define if you have the fchown function.  */
+#undef HAVE_FCHOWN
+
 /* Define if you have the fcvt function.  */
 #undef HAVE_FCVT
 

@@ -111,7 +111,7 @@ static int close_filestruct(files_struct *fsp)
 }    
 
 /****************************************************************************
- Close a file - possibly invalidating the read prediction.
+ Close a file.
 
  If normal_close is 1 then this came from a normal SMBclose (or equivalent)
  operation otherwise it came as the result of some other operation such as
