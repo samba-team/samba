@@ -531,36 +531,75 @@ do_v4 (char *host,
 }
 #endif /* KRB4 */
 
+#ifdef HESIOD
+
+#ifdef HESIOD_INTERFACES
+
+static char *
+hesiod_get_pobox (char **user)
+{
+    void *context;
+    struct hesiod_postoffice *hpo;
+    char *ret = NULL;
+
+    if(hesiod_init (&context) != 0)
+	err (1, "hesiod_init");
+
+    hpo = hesiod_getmailhost (context, *user);
+    if (hpo == NULL) {
+	warn ("hesiod_getmailhost %s", *user);
+    } else {
+	if (strcasecmp(hpo->hesiod_po_type, "pop") != 0)
+	    errx (1, "Unsupported po type %s", hpo->hesiod_po_type);
+
+	ret = strdup(hpo->hesiod_po_host);
+	if(ret == NULL)
+	    errx (1, "strdup: out of memory");
+	*user = strdup(hpo->hesiod_po_name);
+	if (*user == NULL)
+	    errx (1, "strdup: out of memory");
+	hesiod_free_postoffice (context, hpo);
+    }
+    hesiod_end (context);
+    return ret;
+}
+
+#else /* !HESIOD_INTERFACES */
+
+static char *
+hesiod_get_pobox (char **user)
+{
+    char *ret = NULL;
+    struct hes_postoffice *hpo;
+
+    hpo = hes_getmailhost (*user);
+    if (hpo == NULL) {
+	warn ("hes_getmailhost %s", *user);
+    } else {
+	if (strcasecmp(hpo->po_type, "pop") != 0)
+	    errx (1, "Unsupported po type %s", hpo->po_type);
+
+	ret = strdup(hpo->po_host);
+	if(ret == NULL)
+	    errx (1, "strdup: out of memory");
+	*user = strdup(hpo->po_name);
+	if (*user == NULL)
+	    errx (1, "strdup: out of memory");
+    }
+    return ret;
+}
+
+#endif /* HESIOD_INTERFACES */
+
+#endif /* HESIOD */
+
 static char *
 get_pobox (char **user)
 {
     char *ret = NULL;
 
 #ifdef HESIOD
-    {
-	void *context;
-	struct hesiod_postoffice *hpo;
-
-	if(hesiod_init (&context) != 0)
-	    err (1, "hesiod_init");
-
-	hpo = hesiod_getmailhost (context, *user);
-	if (hpo == NULL) {
-	    warn ("hesiod_getmailhost %s", *user);
-	} else {
-	    if (strcasecmp(hpo->hesiod_po_type, "pop") != 0)
-		errx (1, "Unsupported po type %s", hpo->hesiod_po_type);
-
-	    ret = strdup(hpo->hesiod_po_host);
-	    if(ret == NULL)
-		errx (1, "strdup: out of memory");
-	    *user = strdup(hpo->hesiod_po_name);
-	    if (*user == NULL)
-		errx (1, "strdup: out of memory");
-	    hesiod_free_postoffice (context, hpo);
-	}
-	hesiod_end (context);
-    }
+    ret = hesiod_get_pobox (user);
 #endif
 
     if (ret == NULL)
