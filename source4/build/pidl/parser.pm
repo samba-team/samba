@@ -76,10 +76,12 @@ sub struct_alignment($)
 
 #####################################################################
 # parse an array - push side
-sub ParseArrayPush($$)
+sub ParseArrayPush($$$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
+	my $ndr_flags = shift;
+
 	my $size = find_size_var($e, util::array_size($e));
 
 	if (defined $e->{CONFORMANT_SIZE}) {
@@ -113,10 +115,12 @@ sub ParseArrayPrint($$)
 
 #####################################################################
 # parse an array - pull side
-sub ParseArrayPull($$)
+sub ParseArrayPull($$$)
 {
 	my $e = shift;
 	my $var_prefix = shift;
+	my $ndr_flags = shift;
+
 	my $size = find_size_var($e, util::array_size($e));
 	my $alloc_size = $size;
 
@@ -150,7 +154,7 @@ sub ParseArrayPull($$)
 	if (util::is_scalar_type($e->{TYPE})) {
 		$res .= "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_array(ndr, $ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
 }
 
@@ -296,7 +300,7 @@ sub ParseElementPushBuffer($$$)
 	}
 	    
 	if (util::array_size($e)) {
-		ParseArrayPush($e, "r->");
+		ParseArrayPush($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
 			ParseElementPushSwitch($e, $var_prefix, "NDR_BUFFERS|NDR_SCALARS", $switch);
@@ -362,7 +366,7 @@ sub ParseElementPullBuffer($$$)
 	}
 	    
 	if (util::array_size($e)) {
-		ParseArrayPull($e, "r->");
+		ParseArrayPull($e, "r->", "NDR_SCALARS|NDR_BUFFERS");
 	} elsif (my $switch = util::has_property($e, "switch_is")) {
 		if ($e->{POINTERS}) {
 			ParseElementPullSwitch($e, $var_prefix, "NDR_SCALARS|NDR_BUFFERS", $switch);
@@ -771,7 +775,7 @@ sub ParseFunctionPush($)
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
 				}
-				ParseArrayPush($e, "r->in.");
+				ParseArrayPush($e, "r->in.", "ndr_flags");
 				$res .= "\t}\n";
 			} else {
 				ParseElementPushScalar($e, "r->in.", "NDR_SCALARS|NDR_BUFFERS");
@@ -809,7 +813,7 @@ sub ParseFunctionPull($)
 				if (!util::is_scalar_type($e->{TYPE})) {
 					$res .= "\t\tint ndr_flags = NDR_SCALARS|NDR_BUFFERS;\n";
 				}
-				ParseArrayPull($e, "r->out.");
+				ParseArrayPull($e, "r->out.", "ndr_flags");
 				$res .= "\t}\n";
 			} else {
 				ParseElementPullScalar($e, "r->out.", "NDR_SCALARS|NDR_BUFFERS");
