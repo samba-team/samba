@@ -203,8 +203,16 @@ read_master_encryptionkey(krb5_context context, const char *filename,
     memset(buf, 0, sizeof(buf));
     if(ret)
 	return ret;
+
+    /* Originally, the keytype was just that, and later it got changed
+       to des-cbc-md5, but we always used des in cfb64 mode. This
+       should cover all cases, but will break if someone has hacked
+       this code to really use des-cbc-md5 -- but then that's not my
+       problem. */
+    if(key.keytype == KEYTYPE_DES || key.keytype == ETYPE_DES_CBC_MD5)
+	key.keytype = ETYPE_DES_CFB64_NONE;
     
-    ret = hdb_process_master_key(context, 0, &key, ETYPE_DES_CFB64_NONE, mkey);
+    ret = hdb_process_master_key(context, 0, &key, 0, mkey);
     return ret;
 }
 
