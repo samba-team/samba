@@ -369,7 +369,7 @@ change_password (krb5_context context,
     krb5_get_init_creds_opt_set_tkt_life (&options, 60);
     krb5_get_init_creds_opt_set_forwardable (&options, FALSE);
     krb5_get_init_creds_opt_set_proxiable (&options, FALSE);
-    if (old_options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST)
+    if (old_options && old_options->flags & KRB5_GET_INIT_CREDS_OPT_PREAUTH_LIST)
 	krb5_get_init_creds_opt_set_preauth_list (&options,
 						  old_options->preauth_list,
 						  old_options->preauth_list_length);					      
