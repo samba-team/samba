@@ -1,3 +1,7 @@
+Thu Oct  1 23:02:29 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
+
+	* kx.h: case MAY_HAVE_X11_PIPES with Solaris
+
 Mon Sep 28 18:04:03 1998  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* common.c (try_pipe): return -1 if I_PUSH fails with ENOSYS
