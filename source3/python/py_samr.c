@@ -283,9 +283,15 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 	NTSTATUS ntstatus;
 
 	if (!PyArg_ParseTupleAndKeywords(
-		    args, kw, "s|O!i", kwlist, &server, &PyDict_Type,
-		    &creds, &desired_access)) 
+		    args, kw, "s|Oi", kwlist, &server, &creds,
+		    &desired_access)) 
 		return NULL;
+
+	if (creds && creds != Py_None && !PyDict_Check(creds)) {
+		PyErr_SetString(PyExc_TypeError, 
+				"credentials must be dictionary or None");
+		return NULL;
+	}
 
 	if (!(cli = open_pipe_creds(server, creds, PIPE_SAMR, &errstr))) {
 		PyErr_SetString(samr_error, errstr);
