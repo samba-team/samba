@@ -1821,8 +1821,8 @@ int dos_fnmatch(char *string, char *pattern)
 	if (strcmp(pattern, "*.*"))
 		return 1;
 
-	if (strequal(mask, "????????.???"))       
-		pstrcpy(mask, "*");
+	if (strequal(pattern, "????????.???"))       
+		pstrcpy(pattern, "*");
 
 	return ms_fnmatch(string, pattern);
 }
