@@ -63,17 +63,8 @@ struct Principal;
 
 typedef struct Principal *gss_name_t;
 
-typedef struct gss_ctx_id_t_desc_struct {
-  struct krb5_auth_context_data *auth_context;
-  gss_name_t source, target;
-  OM_uint32 flags;
-  enum { LOCAL = 1, OPEN = 2, 
-	 COMPAT_OLD_DES3 = 4, COMPAT_OLD_DES3_SELECTED = 8 } more_flags;
-  struct krb5_ticket *ticket;
-  time_t lifetime;
-} gss_ctx_id_t_desc;
-
-typedef gss_ctx_id_t_desc *gss_ctx_id_t;
+struct gss_ctx_id_t_desc_struct;
+typedef struct gss_ctx_id_t_desc_struct *gss_ctx_id_t;
 
 typedef struct gss_OID_desc_struct {
       OM_uint32 length;
@@ -91,16 +82,8 @@ struct krb5_ccache_data;
 
 typedef int gss_cred_usage_t;
 
-typedef struct gss_cred_id_t_desc_struct {
-  gss_name_t principal;
-  struct krb5_keytab_data *keytab;
-  OM_uint32 lifetime;
-  gss_cred_usage_t usage;
-  gss_OID_set mechanisms;
-  struct krb5_ccache_data *ccache;
-} gss_cred_id_t_desc;
-
-typedef gss_cred_id_t_desc *gss_cred_id_t;
+struct gss_cred_id_t_desc_struct;
+typedef struct gss_cred_id_t_desc_struct *gss_cred_id_t;
 
 typedef struct gss_buffer_desc_struct {
       size_t length;

@@ -35,31 +35,54 @@
 
 RCSID("$Id$");
 
+OM_uint32
+gssapi_lifetime_left(OM_uint32 *minor_status, 
+		     OM_uint32 lifetime,
+		     OM_uint32 *lifetime_rec)
+{
+    krb5_timestamp timeret;
+    krb5_error_code kret;
+
+    kret = krb5_timeofday(gssapi_krb5_context, &timeret);
+    if (kret) {
+	*minor_status = kret;
+	gssapi_krb5_set_error_string ();
+	return GSS_S_FAILURE;
+    }
+
+    if (lifetime < timeret) 
+	*lifetime_rec = 0;
+    else
+	*lifetime_rec = lifetime - timeret;
+
+    return GSS_S_COMPLETE;
+}
+
+
 OM_uint32 gss_context_time
            (OM_uint32 * minor_status,
             const gss_ctx_id_t context_handle,
             OM_uint32 * time_rec
            )
 {
-    krb5_error_code kret;
     krb5_timestamp timeret;
+    OM_uint32 lifetime;
+    OM_uint32 major_status;
 
     GSSAPI_KRB5_INIT ();
 
-    kret = krb5_timeofday(gssapi_krb5_context, &timeret);
-    if (kret) {
-	*minor_status = kret;
-	gssapi_krb5_set_error_string ();
-        return GSS_S_FAILURE;
-    }
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
+    lifetime = context_handle->lifetime;
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
+
+    major_status = gssapi_lifetime_left(minor_status, lifetime, time_rec);
+    if (major_status != GSS_S_COMPLETE)
+	return major_status;
 
     *minor_status = 0;
 
-    if (context_handle->lifetime < timeret) {
-	*time_rec = 0;
+    if (*time_rec == 0)
 	return GSS_S_CONTEXT_EXPIRED;
-    }
-
-    *time_rec = context_handle->lifetime - timeret;
+	
     return GSS_S_COMPLETE;
 }

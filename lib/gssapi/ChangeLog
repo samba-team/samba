@@ -1,3 +1,8 @@
+2003-05-21  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* gss_acquire_cred.3: document argument lifetime_rec to function
+	gss_inquire_context
+
 2003-05-17  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* test_acquire_cred.c: test gss_add_cred more then once

@@ -83,12 +83,16 @@ _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx)
     if ((ctx->more_flags & COMPAT_OLD_DES3_SELECTED) == 0) {
 	ret = check_compat(minor_status, ctx->target, 
 			   "broken_des3_mic", &use_compat, TRUE);
-	if (ret)
+	if (ret) {
+	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	    return ret;
+	}
 	ret = check_compat(minor_status, ctx->target, 
 			   "correct_des3_mic", &use_compat, FALSE);
-	if (ret)
+	if (ret) {
+	    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 	    return ret;
+	}
 
 	if (use_compat)
 	    ctx->more_flags |= COMPAT_OLD_DES3;
@@ -102,12 +106,14 @@ gss_krb5_compat_des3_mic(OM_uint32 *minor_status, gss_ctx_id_t ctx, int on)
 {
     *minor_status = 0;
 
+    HEIMDAL_MUTEX_lock(&ctx->ctx_id_mutex);
     if (on) {
 	ctx->more_flags |= COMPAT_OLD_DES3;
     } else {
 	ctx->more_flags &= ~COMPAT_OLD_DES3;
     }
     ctx->more_flags |= COMPAT_OLD_DES3_SELECTED;
+    HEIMDAL_MUTEX_unlock(&ctx->ctx_id_mutex);
 
     return 0;
 }

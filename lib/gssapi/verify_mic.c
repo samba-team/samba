@@ -94,6 +94,7 @@ verify_mic_des
 
   /* verify sequence number */
   
+  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
   krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				&seq_number);
@@ -121,6 +122,7 @@ verify_mic_des
   krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
+  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   *minor_status = 0;
   return GSS_S_COMPLETE;
@@ -203,6 +205,7 @@ retry:
 	  goto retry;
   }
 
+  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
   krb5_auth_getremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				&seq_number);
@@ -254,6 +257,7 @@ retry:
   krb5_auth_con_setremoteseqnumber (gssapi_krb5_context,
 				context_handle->auth_context,
 				++seq_number);
+  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   krb5_crypto_destroy (gssapi_krb5_context, crypto);
   *minor_status = 0;

@@ -48,6 +48,8 @@ OM_uint32 gss_delete_sec_context
 	output_token->value  = NULL;
     }
 
+    HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
+
     krb5_auth_con_free (gssapi_krb5_context,
 			(*context_handle)->auth_context);
     if((*context_handle)->source)
@@ -62,6 +64,9 @@ OM_uint32 gss_delete_sec_context
 	free((*context_handle)->ticket);
     }
 
+    HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+    HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
+    memset(*context_handle, 0, sizeof(**context_handle));
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
     *minor_status = 0;

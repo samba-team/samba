@@ -64,7 +64,9 @@ OM_uint32 gss_inquire_cred_by_mech (
     if (ret == 0 && cred_handle != GSS_C_NO_CREDENTIAL) {
 	gss_cred_usage_t usage;
 
+	HEIMDAL_MUTEX_lock(&cred_handle->cred_id_mutex);
 	usage = cred_handle->usage;
+	HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
 
 	if (initiator_lifetime) {
 	    if (usage == GSS_C_INITIATE || usage == GSS_C_BOTH)

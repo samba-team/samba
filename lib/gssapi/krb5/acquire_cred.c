@@ -41,6 +41,8 @@ get_keytab(krb5_keytab *keytab)
     char kt_name[256];
     krb5_error_code kret;
 
+    HEIMDAL_MUTEX_lock(&gssapi_keytab_mutex);
+
     if (gssapi_krb5_keytab != NULL) {
 	kret = krb5_kt_get_name(gssapi_krb5_context,
 				gssapi_krb5_keytab,
@@ -49,6 +51,9 @@ get_keytab(krb5_keytab *keytab)
 	    kret = krb5_kt_resolve(gssapi_krb5_context, kt_name, keytab);
     } else
 	kret = krb5_kt_default(gssapi_krb5_context, keytab);
+
+    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
+
     return (kret);
 }
 
@@ -253,11 +258,13 @@ OM_uint32 gss_acquire_cred
     }
 
     memset(handle, 0, sizeof (*handle));
+    HEIMDAL_MUTEX_init(&handle->cred_id_mutex);
 
     if (desired_name != GSS_C_NO_NAME) {
 	ret = gss_duplicate_name(minor_status, desired_name,
 	    &handle->principal);
 	if (ret != GSS_S_COMPLETE) {
+	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	    free(handle);
 	    return (ret);
 	}
@@ -266,6 +273,7 @@ OM_uint32 gss_acquire_cred
 	ret = acquire_initiator_cred(minor_status, desired_name, time_req,
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
     	if (ret != GSS_S_COMPLETE) {
+	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	    free(handle);
 	    return (ret);
 	}
@@ -273,10 +281,12 @@ OM_uint32 gss_acquire_cred
 	ret = acquire_acceptor_cred(minor_status, desired_name, time_req,
 	    desired_mechs, cred_usage, handle, actual_mechs, time_rec);
 	if (ret != GSS_S_COMPLETE) {
+	    HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	    free(handle);
 	    return (ret);
 	}
     } else {
+	HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	free(handle);
 	*minor_status = GSS_KRB5_S_G_BAD_USAGE;
 	return GSS_S_FAILURE;
@@ -291,6 +301,7 @@ OM_uint32 gss_acquire_cred
     if (ret != GSS_S_COMPLETE) {
 	if (handle->mechanisms != NULL)
 		gss_release_oid_set(NULL, &handle->mechanisms);
+	HEIMDAL_MUTEX_destroy(&handle->cred_id_mutex);
 	free(handle);
 	return (ret);
     } 

@@ -42,12 +42,16 @@ gss_krb5_copy_ccache(OM_uint32 *minor_status,
 {
     krb5_error_code kret;
 
+    HEIMDAL_MUTEX_lock(&cred->cred_id_mutex);
+
     if (cred->ccache == NULL) {
+	HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
 	*minor_status = EINVAL;
 	return GSS_S_FAILURE;
     }
 
     kret = krb5_cc_copy_cache(gssapi_krb5_context, cred->ccache, out);
+    HEIMDAL_MUTEX_unlock(&cred->cred_id_mutex);
     if (kret) {
 	*minor_status = kret;
 	gssapi_krb5_set_error_string ();

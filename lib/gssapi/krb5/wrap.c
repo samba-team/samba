@@ -41,6 +41,7 @@ gss_krb5_get_localkey(const gss_ctx_id_t context_handle,
 {
     krb5_keyblock *skey;
 
+    HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
     krb5_auth_con_getlocalsubkey(gssapi_krb5_context,
 				 context_handle->auth_context, 
 				 &skey);
@@ -52,6 +53,7 @@ gss_krb5_get_localkey(const gss_ctx_id_t context_handle,
 	krb5_auth_con_getkey(gssapi_krb5_context,
 			     context_handle->auth_context, 
 			     &skey);
+    HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
     if(skey == NULL)
 	return GSS_S_FAILURE;
     *key = skey;
@@ -188,6 +190,7 @@ wrap_des
   memcpy (p - 8, hash, 8);
 
   /* sequence number */
+  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
   krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
 			       &seq_number);
@@ -208,6 +211,7 @@ wrap_des
   krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
 			       ++seq_number);
+  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   /* encrypt the data */
   p += 16;
@@ -322,6 +326,7 @@ wrap_des3
   memcpy (p + 8, cksum.checksum.data, cksum.checksum.length);
   free_Checksum (&cksum);
 
+  HEIMDAL_MUTEX_lock(&context_handle->ctx_id_mutex);
   /* sequence number */
   krb5_auth_con_getlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
@@ -370,6 +375,7 @@ wrap_des3
   krb5_auth_con_setlocalseqnumber (gssapi_krb5_context,
 			       context_handle->auth_context,
 			       ++seq_number);
+  HEIMDAL_MUTEX_unlock(&context_handle->ctx_id_mutex);
 
   /* encrypt the data */
   p += 28;

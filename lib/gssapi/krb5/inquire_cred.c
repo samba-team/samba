@@ -57,26 +57,40 @@ OM_uint32 gss_inquire_cred
         return GSS_S_FAILURE;
     }
 
+    HEIMDAL_MUTEX_lock(&cred_handle->cred_id_mutex);
+
     if (name != NULL) {
 	if (cred_handle->principal != NULL) {
             ret = gss_duplicate_name(minor_status, cred_handle->principal,
 		name);
-            if (ret)
+            if (ret) {
+		HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
         	return ret;
+	    }
 	} else if (cred_handle->usage == GSS_C_ACCEPT) {
 	    *minor_status = krb5_sname_to_principal(gssapi_krb5_context, NULL,
 		NULL, KRB5_NT_SRV_HST, name);
-	    if (*minor_status)
+	    if (*minor_status) {
+		HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
 		return GSS_S_FAILURE;
+	    }
 	} else {
 	    *minor_status = krb5_get_default_principal(gssapi_krb5_context,
 		name);
-	    if (*minor_status)
+	    if (*minor_status) {
+		HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
 		return GSS_S_FAILURE;
+	    }
 	}
     }
     if (lifetime != NULL) {
-        *lifetime = cred_handle->lifetime;
+	ret = gssapi_lifetime_left(minor_status, 
+				   cred_handle->lifetime,
+				   lifetime);
+	if (ret) {
+	    HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
+	    return ret;
+	}
     }
     if (cred_usage != NULL) {
         *cred_usage = cred_handle->usage;
@@ -84,14 +98,17 @@ OM_uint32 gss_inquire_cred
     if (mechanisms != NULL) {
         ret = gss_create_empty_oid_set(minor_status, mechanisms);
         if (ret) {
+	    HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
             return ret;
         }
         ret = gss_add_oid_set_member(minor_status,
 				     &cred_handle->mechanisms->elements[0],
 				     mechanisms);
         if (ret) {
+	    HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
             return ret;
         }
     }
+    HEIMDAL_MUTEX_unlock(&cred_handle->cred_id_mutex);
     return GSS_S_COMPLETE;
 }

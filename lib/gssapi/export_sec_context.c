@@ -52,13 +52,18 @@ gss_export_sec_context (
     krb5_error_code kret;
 
     GSSAPI_KRB5_INIT ();
+
+    HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
+
     if (!((*context_handle)->flags & GSS_C_TRANS_FLAG)) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	*minor_status = 0;
 	return GSS_S_UNAVAILABLE;
     }
 
     sp = krb5_storage_emem ();
     if (sp == NULL) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	*minor_status = ENOMEM;
 	return GSS_S_FAILURE;
     }
@@ -206,11 +211,13 @@ gss_export_sec_context (
     kret = krb5_storage_to_data (sp, &data);
     krb5_storage_free (sp);
     if (kret) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	*minor_status = kret;
 	return GSS_S_FAILURE;
     }
     interprocess_token->length = data.length;
     interprocess_token->value  = data.data;
+    HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
     ret = gss_delete_sec_context (minor_status, context_handle,
 				  GSS_C_NO_BUFFER);
     if (ret != GSS_S_COMPLETE)
@@ -218,6 +225,7 @@ gss_export_sec_context (
     *minor_status = 0;
     return ret;
  failure:
+    HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
     krb5_storage_free (sp);
     return ret;
 }

@@ -48,6 +48,8 @@ OM_uint32 gss_release_cred
 
     GSSAPI_KRB5_INIT ();
 
+    HEIMDAL_MUTEX_lock(&(*cred_handle)->cred_id_mutex);
+
     if ((*cred_handle)->principal != NULL)
         krb5_free_principal(gssapi_krb5_context, (*cred_handle)->principal);
     if ((*cred_handle)->keytab != NULL)
@@ -55,6 +57,9 @@ OM_uint32 gss_release_cred
     if ((*cred_handle)->ccache != NULL)
 	krb5_cc_close(gssapi_krb5_context, (*cred_handle)->ccache);
     gss_release_oid_set(NULL, &(*cred_handle)->mechanisms);
+    HEIMDAL_MUTEX_unlock(&(*cred_handle)->cred_id_mutex);
+    HEIMDAL_MUTEX_destroy(&(*cred_handle)->cred_id_mutex);
+    memset(*cred_handle, 0, sizeof(**cred_handle));
     free(*cred_handle);
     *cred_handle = GSS_C_NO_CREDENTIAL;
     return GSS_S_COMPLETE;

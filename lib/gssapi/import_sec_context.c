@@ -73,6 +73,7 @@ gss_import_sec_context (
 	return GSS_S_FAILURE;
     }
     memset (*context_handle, 0, sizeof(**context_handle));
+    HEIMDAL_MUTEX_init(&(*context_handle)->ctx_id_mutex);
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -206,6 +207,7 @@ failure:
 	krb5_free_address (gssapi_krb5_context, localp);
     if (remotep)
 	krb5_free_address (gssapi_krb5_context, remotep);
+    HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     *context_handle = GSS_C_NO_CONTEXT;
     return ret;

@@ -44,9 +44,43 @@
 #include <gssapi.h>
 #include <assert.h>
 
+/*
+ *
+ */
+
+typedef struct gss_ctx_id_t_desc_struct {
+  struct krb5_auth_context_data *auth_context;
+  gss_name_t source, target;
+  OM_uint32 flags;
+  enum { LOCAL = 1, OPEN = 2, 
+	 COMPAT_OLD_DES3 = 4, COMPAT_OLD_DES3_SELECTED = 8 } more_flags;
+  struct krb5_ticket *ticket;
+  time_t lifetime;
+  HEIMDAL_MUTEX ctx_id_mutex;
+} gss_ctx_id_t_desc;
+
+typedef struct gss_cred_id_t_desc_struct {
+  gss_name_t principal;
+  struct krb5_keytab_data *keytab;
+  OM_uint32 lifetime;
+  gss_cred_usage_t usage;
+  gss_OID_set mechanisms;
+  struct krb5_ccache_data *ccache;
+  HEIMDAL_MUTEX cred_id_mutex;
+} gss_cred_id_t_desc;
+
+/*
+ *
+ */
+
 extern krb5_context gssapi_krb5_context;
 
 extern krb5_keytab gssapi_krb5_keytab;
+extern HEIMDAL_MUTEX gssapi_keytab_mutex;
+
+/*
+ * Prototypes
+ */
 
 krb5_error_code gssapi_krb5_init (void);
 
@@ -144,5 +178,8 @@ gssapi_krb5_get_error_string (void);
 
 OM_uint32
 _gss_DES3_get_mic_compat(OM_uint32 *minor_status, gss_ctx_id_t ctx);
+
+OM_uint32
+gssapi_lifetime_left(OM_uint32 *, OM_uint32, OM_uint32 *);
 
 #endif

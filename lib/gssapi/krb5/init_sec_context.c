@@ -212,6 +212,7 @@ init_auth
     (*context_handle)->more_flags   = 0;
     (*context_handle)->ticket       = NULL;
     (*context_handle)->lifetime     = GSS_C_INDEFINITE;
+    HEIMDAL_MUTEX_init(&(*context_handle)->ctx_id_mutex);
 
     kret = krb5_auth_con_init (gssapi_krb5_context,
 			       &(*context_handle)->auth_context);
@@ -428,6 +429,7 @@ init_auth
     if((*context_handle)->target)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
+    HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     krb5_data_free (&outbuf);
     *context_handle = GSS_C_NO_CONTEXT;
@@ -459,20 +461,25 @@ repl_mutual
     output_token->length = 0;
     output_token->value = NULL;
 
+    HEIMDAL_MUTEX_lock(&(*context_handle)->ctx_id_mutex);
+
     if (actual_mech_type)
 	*actual_mech_type = GSS_KRB5_MECHANISM;
 
     ret = gssapi_krb5_decapsulate (minor_status, input_token, &indata,
 				   "\x02\x00");
-    if (ret)
-				/* XXX - Handle AP_ERROR */
+    if (ret) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
+	/* XXX - Handle AP_ERROR */
 	return ret;
+    }
 
     kret = krb5_rd_rep (gssapi_krb5_context,
 			(*context_handle)->auth_context,
 			&indata,
 			&repl);
     if (kret) {
+	HEIMDAL_MUTEX_unlock(&(*context_handle)->ctx_id_mutex);
 	gssapi_krb5_set_error_string ();
 	*minor_status = kret;
 	return GSS_S_FAILURE;

@@ -35,6 +35,7 @@
 
 RCSID("$Id$");
 
+HEIMDAL_MUTEX gssapi_keytab_mutex = HEIMDAL_MUTEX_INITIALIZER;
 krb5_keytab gssapi_krb5_keytab;
 
 OM_uint32
@@ -47,15 +48,20 @@ gsskrb5_register_acceptor_identity (const char *identity)
     if(ret)
 	return GSS_S_FAILURE;
     
+    HEIMDAL_MUTEX_lock(&gssapi_keytab_mutex);
+
     if(gssapi_krb5_keytab != NULL) {
 	krb5_kt_close(gssapi_krb5_context, gssapi_krb5_keytab);
 	gssapi_krb5_keytab = NULL;
     }
     asprintf(&p, "FILE:%s", identity);
-    if(p == NULL)
+    if(p == NULL) {
+	HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
 	return GSS_S_FAILURE;
+    }
     ret = krb5_kt_resolve(gssapi_krb5_context, p, &gssapi_krb5_keytab);
     free(p);
+    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
     if(ret)
 	return GSS_S_FAILURE;
     return GSS_S_COMPLETE;
@@ -105,6 +111,7 @@ gss_accept_sec_context
 	}
     }
 
+    HEIMDAL_MUTEX_init(&(*context_handle)->ctx_id_mutex);
     (*context_handle)->auth_context =  NULL;
     (*context_handle)->source = NULL;
     (*context_handle)->target = NULL;
@@ -208,6 +215,8 @@ gss_accept_sec_context
     if (ret)
 	goto failure;
 
+    HEIMDAL_MUTEX_lock(&gssapi_keytab_mutex);
+
     if (acceptor_cred_handle == GSS_C_NO_CREDENTIAL) {
 	if (gssapi_krb5_keytab != NULL) {
 	    keytab = gssapi_krb5_keytab;
@@ -224,6 +233,9 @@ gss_accept_sec_context
 			keytab,
 			&ap_options,
 			&ticket);
+
+    HEIMDAL_MUTEX_unlock(&gssapi_keytab_mutex);
+
     if (kret) {
 	ret = GSS_S_FAILURE;
 	*minor_status = kret;
@@ -421,6 +433,7 @@ gss_accept_sec_context
     if((*context_handle)->target)
 	krb5_free_principal (gssapi_krb5_context,
 			     (*context_handle)->target);
+    HEIMDAL_MUTEX_destroy(&(*context_handle)->ctx_id_mutex);
     free (*context_handle);
     if (src_name != NULL) {
 	gss_release_name (&minor, src_name);
