@@ -422,8 +422,8 @@ NTSTATUS _samr_open_domain(pipes_struct *p, SAMR_Q_OPEN_DOMAIN *q_u, SAMR_R_OPEN
 static uint32 get_lsa_policy_samr_rid(struct samr_info *info)
 {
 	if (!info) {
-    	DEBUG(3,("Error getting policy\n"));
-	    return 0xffffffff;
+		DEBUG(3,("Error getting policy\n"));
+		return 0xffffffff;
 	}
 
 	return info->sid.sub_auths[info->sid.num_auths-1];
@@ -1981,21 +1981,21 @@ NTSTATUS _samr_connect_anon(pipes_struct *p, SAMR_Q_CONNECT_ANON *q_u, SAMR_R_CO
 {
 	struct samr_info *info = NULL;
 
-    /* set up the SAMR connect_anon response */
+	/* set up the SAMR connect_anon response */
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    /* associate the user's SID with the new handle. */
-    if ((info = get_samr_info_by_sid(NULL)) == NULL)
-        return NT_STATUS_NO_MEMORY;
+	/* associate the user's SID with the new handle. */
+	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-    info->status = q_u->unknown_0;
+	info->status = q_u->unknown_0;
 
-    /* get a (unique) handle.  open a policy on it. */
-    if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /*******************************************************************
@@ -2006,23 +2006,23 @@ NTSTATUS _samr_connect(pipes_struct *p, SAMR_Q_CONNECT *q_u, SAMR_R_CONNECT *r_u
 {
 	struct samr_info *info = NULL;
 
-    DEBUG(5,("_samr_connect: %d\n", __LINE__));
+	DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
-    r_u->status = NT_STATUS_OK;
+	r_u->status = NT_STATUS_OK;
 
-    /* associate the user's SID with the new handle. */
-    if ((info = get_samr_info_by_sid(NULL)) == NULL)
-        return NT_STATUS_NO_MEMORY;
+	/* associate the user's SID with the new handle. */
+	if ((info = get_samr_info_by_sid(NULL)) == NULL)
+		return NT_STATUS_NO_MEMORY;
 
-    info->status = q_u->access_mask;
+	info->status = q_u->access_mask;
 
-    /* get a (unique) handle.  open a policy on it. */
-    if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
-        return NT_STATUS_OBJECT_NAME_NOT_FOUND;
+	/* get a (unique) handle.  open a policy on it. */
+	if (!create_policy_hnd(p, &r_u->connect_pol, free_samr_info, (void *)info))
+		return NT_STATUS_OBJECT_NAME_NOT_FOUND;
 
-    DEBUG(5,("_samr_connect: %d\n", __LINE__));
+	DEBUG(5,("_samr_connect: %d\n", __LINE__));
 
-    return r_u->status;
+	return r_u->status;
 }
 
 /**********************************************************************
@@ -2134,9 +2134,9 @@ NTSTATUS _api_samr_open_alias(pipes_struct *p, SAMR_Q_OPEN_ALIAS *q_u, SAMR_R_OP
 	 * JFM.
 	 */
 
-    /* associate the user's SID with the new handle. */
-    if ((info = get_samr_info_by_sid(&sid)) == NULL)
-        return NT_STATUS_NO_MEMORY;
+	/* associate the user's SID with the new handle. */
+	if ((info = get_samr_info_by_sid(&sid)) == NULL)
+		return NT_STATUS_NO_MEMORY;
 
 	/* get a (unique) handle.  open a policy on it. */
 	if (!create_policy_hnd(p, alias_pol, free_samr_info, (void *)info))
