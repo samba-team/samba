@@ -6,7 +6,6 @@
 package IdlClient;
 
 use strict;
-use Data::Dumper;
 
 my($res);
 

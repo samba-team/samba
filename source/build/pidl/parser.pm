@@ -7,7 +7,6 @@
 package IdlParser;
 
 use strict;
-use Data::Dumper;
 use client;
 
 # the list of needed functions

@@ -6,8 +6,6 @@
 package IdlValidator;
 
 use strict;
-use Data::Dumper;
-
 
 #####################################################################
 # signal a fatal validation error

@@ -8,7 +8,6 @@
 package IdlServer;
 
 use strict;
-use Data::Dumper;
 
 my($res);
 
