@@ -2574,7 +2574,7 @@ static void store_printer_guid(NT_PRINTER_INFO_LEVEL_2 *info2, GUID guid)
 static WERROR publish_it(NT_PRINTER_INFO_LEVEL *printer)
 {
 	ADS_STATUS ads_rc;
-	TALLOC_CTX *ctx = talloc_init();
+	TALLOC_CTX *ctx = talloc_init("publish_it");
 	ADS_MODLIST mods = ads_init_mods(ctx);
 	char *prt_dn = NULL, *srv_dn, **srv_cn;
 	void *res = NULL;
@@ -3713,7 +3713,7 @@ static WERROR save_driver_init_2(NT_PRINTER_INFO_LEVEL *printer, uint8 *data, ui
 		 * saved to tdb.
 		 */
 
-		if ((ctx = talloc_init()) == NULL)
+		if ((ctx = talloc_init("save_driver_init_2")) == NULL)
 			return WERR_NOMEM;
 
 		if ((nt_devmode = (NT_DEVICEMODE*)malloc(sizeof(NT_DEVICEMODE))) == NULL) {
@@ -4397,7 +4397,7 @@ WERROR nt_printing_setsec(const char *printername, SEC_DESC_BUF *secdesc_ctr)
 	fstring key;
 	WERROR status;
 
-	mem_ctx = talloc_init();
+	mem_ctx = talloc_init("nt_printing_setsec");
 	if (mem_ctx == NULL)
 		return WERR_NOMEM;
 
@@ -4744,7 +4744,7 @@ BOOL print_access_check(struct current_user *user, int snum, int access_type)
 
 	/* Get printer security descriptor */
 
-	if(!(mem_ctx = talloc_init())) {
+	if(!(mem_ctx = talloc_init("print_access_check"))) {
 		errno = ENOMEM;
 		return False;
 	}

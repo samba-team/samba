@@ -139,7 +139,7 @@ NTSTATUS pdb_init_sam(SAM_ACCOUNT **user)
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS nt_status;
 	
-	mem_ctx = talloc_init_named("passdb internal SAM_ACCOUNT allocation");
+	mem_ctx = talloc_init("passdb internal SAM_ACCOUNT allocation");
 
 	if (!mem_ctx) {
 		DEBUG(0,("pdb_init_sam: error while doing talloc_init()\n"));

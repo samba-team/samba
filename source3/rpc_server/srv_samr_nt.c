@@ -134,7 +134,7 @@ static struct samr_info *get_samr_info_by_sid(DOM_SID *psid)
 		fstrcpy(sid_str,"(NULL)");
 	}
 
-	mem_ctx = talloc_init_named("samr_info for domain sid %s", sid_str);
+	mem_ctx = talloc_init("samr_info for domain sid %s", sid_str);
 
 	if ((info = (struct samr_info *)talloc(mem_ctx, sizeof(struct samr_info))) == NULL)
 		return NULL;

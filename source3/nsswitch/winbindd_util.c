@@ -166,7 +166,7 @@ void rescan_trusted_domains(void)
 
 	DEBUG(1, ("scanning trusted domain list\n"));
 
-	if (!(mem_ctx = talloc_init_named("init_domain_list")))
+	if (!(mem_ctx = talloc_init("init_domain_list")))
 		return;
 
 	for (domain = _domain_list; domain; domain = domain->next) {
@@ -335,7 +335,7 @@ BOOL winbindd_lookup_name_by_sid(DOM_SID *sid,
 
 	/* Lookup name */
 
-	if (!(mem_ctx = talloc_init_named("winbindd_lookup_name_by_sid")))
+	if (!(mem_ctx = talloc_init("winbindd_lookup_name_by_sid")))
 		return False;
         
 	result = domain->methods->sid_to_name(domain, mem_ctx, sid, &names, type);

@@ -1003,7 +1003,7 @@ BOOL set_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u_cou
 	 * semantics that if a write lock is added, then it will be first in the array.
 	 */
 	
-	if ((l_ctx = talloc_init()) == NULL) {
+	if ((l_ctx = talloc_init("set_posix_lock")) == NULL) {
 		DEBUG(0,("set_posix_lock: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}
@@ -1149,7 +1149,7 @@ BOOL release_posix_lock(files_struct *fsp, SMB_BIG_UINT u_offset, SMB_BIG_UINT u
 		}
 	}
 
-	if ((ul_ctx = talloc_init()) == NULL) {
+	if ((ul_ctx = talloc_init("release_posix_lock")) == NULL) {
 		DEBUG(0,("release_posix_lock: unable to init talloc context.\n"));
 		return True; /* Not a fatal error. */
 	}

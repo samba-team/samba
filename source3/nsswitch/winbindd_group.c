@@ -64,7 +64,7 @@ static BOOL fill_grent_mem(struct winbindd_domain *domain,
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS status;
 
-	if (!(mem_ctx = talloc_init_named("fill_grent_mem(%s)", domain->name)))
+	if (!(mem_ctx = talloc_init("fill_grent_mem(%s)", domain->name)))
 		return False;
 
 	/* Initialise group membership information */
@@ -408,7 +408,7 @@ static BOOL get_sam_group_entries(struct getent_state *ent)
 	if (ent->got_sam_entries)
 		return False;
 
-	if (!(mem_ctx = talloc_init_named("get_sam_group_entries(%s)",
+	if (!(mem_ctx = talloc_init("get_sam_group_entries(%s)",
 					  ent->domain_name))) {
 		DEBUG(1, ("get_sam_group_entries: could not create talloc context!\n")); 
 		return False;
@@ -820,7 +820,7 @@ enum winbindd_result winbindd_getgroups(struct winbindd_cli_state *state)
 	DEBUG(3, ("[%5d]: getgroups %s\n", state->pid,
 		  state->request.data.username));
 
-	if (!(mem_ctx = talloc_init_named("winbindd_getgroups(%s)",
+	if (!(mem_ctx = talloc_init("winbindd_getgroups(%s)",
 					  state->request.data.username)))
 		return WINBINDD_ERROR;
 

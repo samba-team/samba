@@ -463,6 +463,25 @@ BOOL reload_services(BOOL test)
 	return(ret);
 }
 
+/*******************************************************************
+ Print out all talloc memory info.
+********************************************************************/
+
+void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
+{
+	TALLOC_CTX *ctx = talloc_init("info context");
+	char *info = NULL;
+
+	if (!ctx)
+		return;
+
+	info = talloc_describe_all(ctx);
+	if (info)
+		DEBUG(10,(info));
+	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1 : 0, True);
+	talloc_destroy(ctx);
+}
+
 #if DUMP_CORE
 /*******************************************************************
 prepare to dump a core file - carefully!
@@ -759,19 +778,18 @@ static BOOL init_structs(void )
 		setpgid( (pid_t)0, (pid_t)0);
 #endif
 
-	if (!directory_exist(lp_lockdir(), NULL)) {
+	if (!directory_exist(lp_lockdir(), NULL))
 		mkdir(lp_lockdir(), 0755);
-	}
 
-	if (is_daemon) {
+	if (is_daemon)
 		pidfile_create("smbd");
-	}
 
-	if (!message_init()) {
+	if (!message_init())
 		exit(1);
-	}
+
 	register_msg_pool_usage();
 	register_dmalloc_msgs();
+	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
 	if (!print_backend_init())
 		exit(1);
@@ -840,7 +858,6 @@ static BOOL init_structs(void )
 
 	/* register our message handlers */
 	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	talloc_init_named("dummy!");
 
 	smbd_process();
 	

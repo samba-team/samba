@@ -985,7 +985,7 @@ static NTSTATUS set_sd(files_struct *fsp, char *data, uint32 sd_len, uint32 secu
 	 * Init the parse struct we will unmarshall from.
 	 */
 
-	if ((mem_ctx = talloc_init()) == NULL) {
+	if ((mem_ctx = talloc_init("set_sd")) == NULL) {
 		DEBUG(0,("set_sd: talloc_init failed.\n"));
 		return NT_STATUS_NO_MEMORY;
 	}
@@ -1538,7 +1538,7 @@ static int call_nt_transact_query_security_desc(connection_struct *conn,
 
 	*ppparams = params;
 
-	if ((mem_ctx = talloc_init()) == NULL) {
+	if ((mem_ctx = talloc_init("call_nt_transact_query_security_desc")) == NULL) {
 		DEBUG(0,("call_nt_transact_query_security_desc: talloc_init failed.\n"));
 		return ERROR_DOS(ERRDOS,ERRnomem);
 	}

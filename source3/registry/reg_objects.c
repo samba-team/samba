@@ -33,7 +33,7 @@
 void regsubkey_ctr_init( REGSUBKEY_CTR *ctr )
 {
 	if ( !ctr->ctx )
-		ctr->ctx = talloc_init();
+		ctr->ctx = talloc_init("regsubkey_ctr_init for ctr %p", ctr);
 }
 
 /***********************************************************************
@@ -114,7 +114,7 @@ void regsubkey_ctr_destroy( REGSUBKEY_CTR *ctr )
 void regval_ctr_init( REGVAL_CTR *ctr )
 {
 	if ( !ctr->ctx )
-		ctr->ctx = talloc_init();
+		ctr->ctx = talloc_init("regval_ctr_init for ctr %p", ctr);
 }
 
 /***********************************************************************
