@@ -5925,7 +5925,7 @@ uint32 _spoolss_setprinterdata( POLICY_HND *handle,
 
 	convert_specific_param(&param, value , type, data, real_len);
 
-    if (get_specific_param(*printer, 2, param->value, &old_param.data,
+    	if (get_specific_param(*printer, 2, param->value, &old_param.data,
 		&old_param.type, (unsigned int *)&old_param.data_len)) {
 	
 		if (param->type == old_param.type &&
@@ -6028,27 +6028,57 @@ uint32 _spoolss_addform( POLICY_HND *handle,
 	int count=0;
 	nt_forms_struct *list=NULL;
 	Printer_entry *Printer = find_printer_index_by_hnd(handle);
+	int snum;
+	uint32 result = NT_STATUS_NO_PROBLEMO;
 
 	DEBUG(5,("spoolss_addform\n"));
 
 	if (!OPEN_HANDLE(Printer)) {
 		DEBUG(0,("_spoolss_addform: Invalid handle (%s).\n", OUR_HANDLE(handle)));
-		return ERROR_INVALID_HANDLE;
+		result = ERROR_INVALID_HANDLE;
+		goto done;
 	}
+
+	
+
+#if 0	/* JERRY */
+	/*
+	 * Feels like we need an access check here, but I've not
+	 * had enough time to verify what response NT sends back
+	 * and all that jazz.  Leaving commented out for now.
+	 * --jerry
+	 */
+	if (!get_printer_snum(handle, &snum))
+		return ERROR_INVALID_HANDLE;
+
+	if (!print_access_check(NULL, snum, PRINTER_ACCESS_ADMINISTER)) {
+		DEBUG(3, ("security descriptor change denied by existing "
+			  "security descriptor\n"));
+		result = ERROR_ACCESS_DENIED;
+		goto done;
+	}
+#endif
+
 
 	/* can't add if builtin */
 	if (get_a_builtin_ntform(&form->name,&tmpForm)) {
-		return ERROR_INVALID_PARAMETER;
+		result = ERROR_INVALID_PARAMETER;
+		goto done;
 	}
 
 	count=get_ntforms(&list);
 	if(!add_a_form(&list, form, &count))
-		return ERROR_NOT_ENOUGH_MEMORY;
+	{
+		result = ERROR_NOT_ENOUGH_MEMORY;
+		goto done;
+	}
+
 	write_ntforms(&list, count);
 
+done:
 	safe_free(list);
 
-	return 0x0;
+	return result;
 }
 
 /****************************************************************************
