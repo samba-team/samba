@@ -148,6 +148,8 @@ SamrTestPrivateFunctionsUser
 
 typedef struct logon_hours_info
 {
+	uint32 max_len; /* normally 1260 bytes */
+	uint32 offset;
 	uint32 len; /* normally 21 bytes */
 	uint8 hours[32];
 
@@ -211,9 +213,6 @@ typedef struct sam_user_info_23
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
 	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel no */
-
-	uint32 unknown_6; /* 0x0000 04ec */
-	uint32 padding4;
 
 	LOGON_HRS logon_hrs;
 
@@ -335,9 +334,6 @@ typedef struct sam_user_info_21
 	UNISTR2 uni_workstations; /* login from workstations unicode string */
 	UNISTR2 uni_unknown_str ; /* don't know what this is, yet. */
 	UNISTR2 uni_munged_dial ; /* munged path name and dial-back tel number */
-
-	uint32 unknown_6; /* 0x0000 04ec */
-	uint32 padding4;
 
 	LOGON_HRS logon_hrs;
 

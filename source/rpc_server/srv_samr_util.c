@@ -268,12 +268,6 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 		if (!strequal(old, new)) {
 			pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 		}
-
-		/* This is max logon hours */
-		DEBUG(10,("INFO_21 UNKNOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
-		if (from->unknown_6 != pdb_get_unknown_6(to)) {
-			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
-		}
 	}
 
 	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
@@ -296,8 +290,6 @@ void copy_id21_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_21 *from)
 	}
 
 	DEBUG(10,("INFO_21 PADDING_2: %02X\n",from->padding2));
-
-	DEBUG(10,("INFO_21 PADDING_4: %08X\n",from->padding4));
 }
 
 
@@ -499,11 +491,6 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 		/* Fix me: only update if it changes --metze */
 		pdb_set_hours(to, from->logon_hrs.hours, PDB_CHANGED);
 
-		/* This is max logon hours */
-		DEBUG(10,("INFO_23 UNKOWN_6: %08X -> %08X\n",pdb_get_unknown_6(to),from->unknown_6));
-		if (from->unknown_6 != pdb_get_unknown_6(to)) {
-			pdb_set_unknown_6(to, from->unknown_6, PDB_CHANGED);
-		}
 	}
 
 	if (from->fields_present & ACCT_BAD_PWD_COUNT) {
@@ -526,6 +513,4 @@ void copy_id23_to_sam_passwd(SAM_ACCOUNT *to, SAM_USER_INFO_23 *from)
 	}
 
 	DEBUG(10,("INFO_23 PADDING_2: %02X\n",from->padding2));
-
-	DEBUG(10,("INFO_23 PADDING_4: %08X\n",from->padding4));
 }

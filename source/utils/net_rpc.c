@@ -4377,7 +4377,7 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 	}
 
 	/* Create trusting domain's account */
-	acb_info = ACB_DOMTRUST;
+	acb_info = ACB_NORMAL; 
 	unknown = 0xe00500b0; /* No idea what this is - a permission mask?
 	                         mimir: yes, most probably it is */
 
@@ -4390,20 +4390,34 @@ static NTSTATUS rpc_trustdom_add_internals(const DOM_SID *domain_sid,
 
 	{
 		SAM_USERINFO_CTR ctr;
-		SAM_USER_INFO_24 p24;
+		SAM_USER_INFO_23 p23;
+		NTTIME notime;
+		char nostr[] = "";
+		LOGON_HRS hrs;
 		uchar pwbuf[516];
 
 		encode_pw_buffer((char *)pwbuf, argv[1], STR_UNICODE);
 
 		ZERO_STRUCT(ctr);
-		ZERO_STRUCT(p24);
+		ZERO_STRUCT(p23);
+		ZERO_STRUCT(notime);
+		hrs.max_len = 1260;
+		hrs.offset = 0;
+		hrs.len = 21;
+		memset(hrs.hours, 0xFF, sizeof(hrs.hours));
+		acb_info = ACB_DOMTRUST;
 
-		init_sam_user_info24(&p24, (char *)pwbuf, 24);
+		init_sam_user_info23A(&p23, &notime, &notime, &notime,
+				      &notime, &notime, &notime,
+				      nostr, nostr, nostr, nostr, nostr,
+				      nostr, nostr, nostr, nostr, nostr,
+				      0, 0, acb_info, ACCT_FLAGS, 168, &hrs, 
+				      0, 0, (char *)pwbuf);
+		ctr.switch_value = 23;
+		ctr.info.id23 = &p23;
+		p23.passmustchange = 0;
 
-		ctr.switch_value = 24;
-		ctr.info.id24 = &p24;
-
-		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 24,
+		result = cli_samr_set_userinfo(cli, mem_ctx, &user_pol, 23,
 					       &cli->user_session_key, &ctr);
 
 		if (!NT_STATUS_IS_OK(result)) {
