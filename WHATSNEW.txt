@@ -57,6 +57,11 @@ o   Steve French <sfrench@us.ibm.com>
     * Added missing nosetuid and noexec options.
 
     
+o   Bostjan Golob <golob@gimb.org>
+    * BUG 1046: Don't overwrite usernames of entries returned 
+      by getpwent_list().
+
+
 o   Sebastian Krahmer <krahmer@suse.de>
     * Fixed potential crash bug in NTLMSSP parsing code.
 
