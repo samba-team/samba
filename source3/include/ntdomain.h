@@ -87,11 +87,11 @@ typedef struct pipes_struct
 	RPC_HDR_AUTH  auth_info;
 	RPC_HDR_AUTHA autha_info;
 
-	RPC_AUTH_VERIFIER     auth_verifier;
-	RPC_AUTH_NTLMSSP_NEG  ntlmssp_neg;
-	RPC_AUTH_NTLMSSP_CHAL ntlmssp_chal;
-	RPC_AUTH_NTLMSSP_RESP ntlmssp_resp;
-	RPC_AUTH_NTLMSSP_CHK  ntlmssp_chk;
+	RPC_AUTH_NTLMSSP_VERIFIER auth_verifier;
+	RPC_AUTH_NTLMSSP_NEG      ntlmssp_neg;
+	RPC_AUTH_NTLMSSP_CHAL     ntlmssp_chal;
+	RPC_AUTH_NTLMSSP_RESP     ntlmssp_resp;
+	RPC_AUTH_NTLMSSP_CHK      ntlmssp_chk;
 
 	BOOL ntlmssp_auth;
 	BOOL ntlmssp_validated;

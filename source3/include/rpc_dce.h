@@ -26,7 +26,6 @@
 
 #include "rpc_misc.h" /* this only pulls in STRHDR */
 
-
 /* DCE/RPC packet types */
 
 enum RPC_PKT_TYPE
@@ -218,13 +217,13 @@ typedef struct rpc_hdr_ba_info
 
 } RPC_HDR_BA;
 
-/* RPC_AUTH_VERIFIER */
-typedef struct rpc_auth_verif_info
+/* RPC_AUTH_NTLMSSP_VERIFIER */
+typedef struct rpc_auth_ntlmssp_verif_info
 {
 	fstring signature; /* "NTLMSSP" */
 	uint32  msg_type; /* NTLMSSP_MESSAGE_TYPE (1,2,3) */
 
-} RPC_AUTH_VERIFIER;
+} RPC_AUTH_NTLMSSP_VERIFIER;
 
 /* this is TEMPORARILY coded up as a specific structure */
 /* this structure comes after the bind request */

@@ -388,10 +388,10 @@ static BOOL api_pipe_bind_auth_resp(pipes_struct *p, prs_struct *pd)
 
 	if (!rpc_hdr_auth_chk(&(p->auth_info))) return False;
 
-	smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
+	smb_io_rpc_auth_ntlmssp_verifier("", &p->auth_verifier, pd, 0);
 	if (pd->offset == 0) return False;
 
-	if (!rpc_auth_verifier_chk(&(p->auth_verifier), "NTLMSSP", NTLMSSP_AUTH)) return False;
+	if (!rpc_auth_ntlmssp_verifier_chk(&(p->auth_verifier), "NTLMSSP", NTLMSSP_AUTH)) return False;
 	
 	return api_pipe_ntlmssp(p, pd);
 }
@@ -436,7 +436,7 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 
 		if (p->ntlmssp_auth)
 		{
-			smb_io_rpc_auth_verifier("", &p->auth_verifier, pd, 0);
+			smb_io_rpc_auth_ntlmssp_verifier("", &p->auth_verifier, pd, 0);
 			if (pd->offset == 0) return False;
 
 			p->ntlmssp_auth = strequal(p->auth_verifier.signature, "NTLMSSP");
@@ -521,9 +521,9 @@ static BOOL api_pipe_bind_and_alt_req(pipes_struct *p, prs_struct *pd, enum RPC_
 
 		/*** NTLMSSP verifier ***/
 
-		make_rpc_auth_verifier(&p->auth_verifier,
+		make_rpc_auth_ntlmssp_verifier(&p->auth_verifier,
 		                       "NTLMSSP", NTLMSSP_CHALLENGE);
-		smb_io_rpc_auth_verifier("", &p->auth_verifier, &p->rauth, 0);
+		smb_io_rpc_auth_ntlmssp_verifier("", &p->auth_verifier, &p->rauth, 0);
 		mem_realloc_data(p->rauth.data, p->rauth.offset);
 
 		/* NTLMSSP challenge ***/

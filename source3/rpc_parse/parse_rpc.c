@@ -505,7 +505,8 @@ checks an RPC_HDR_AUTH structure.
 ********************************************************************/
 BOOL rpc_hdr_auth_chk(RPC_HDR_AUTH *rai)
 {
-	return (rai->auth_type == 0x0a && rai->auth_level == 0x06);
+	return ((rai->auth_type == 0x0a || rai->auth_type == 0x44) &&
+	         rai->auth_level == 0x06);
 }
 
 /*******************************************************************
@@ -545,18 +546,18 @@ void smb_io_rpc_hdr_auth(char *desc, RPC_HDR_AUTH *rai, prs_struct *ps, int dept
 }
 
 /*******************************************************************
-checks an RPC_AUTH_VERIFIER structure.
+checks an RPC_AUTH_NTLMSSP_VERIFIER structure.
 ********************************************************************/
-BOOL rpc_auth_verifier_chk(RPC_AUTH_VERIFIER *rav,
+BOOL rpc_auth_ntlmssp_verifier_chk(RPC_AUTH_NTLMSSP_VERIFIER *rav,
 				char *signature, uint32 msg_type)
 {
 	return (strequal(rav->signature, signature) && rav->msg_type == msg_type);
 }
 
 /*******************************************************************
-creates an RPC_AUTH_VERIFIER structure.
+creates an RPC_AUTH_NTLMSSP_VERIFIER structure.
 ********************************************************************/
-void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
+void make_rpc_auth_ntlmssp_verifier(RPC_AUTH_NTLMSSP_VERIFIER *rav,
 				char *signature, uint32 msg_type)
 {
 	if (rav == NULL) return;
@@ -566,9 +567,9 @@ void make_rpc_auth_verifier(RPC_AUTH_VERIFIER *rav,
 }
 
 /*******************************************************************
-reads or writes an RPC_AUTH_VERIFIER structure.
+reads or writes an RPC_AUTH_NTLMSSP_VERIFIER structure.
 ********************************************************************/
-void smb_io_rpc_auth_verifier(char *desc, RPC_AUTH_VERIFIER *rav, prs_struct *ps, int depth)
+void smb_io_rpc_auth_ntlmssp_verifier(char *desc, RPC_AUTH_NTLMSSP_VERIFIER *rav, prs_struct *ps, int depth)
 {
 	if (rav == NULL) return;
 
