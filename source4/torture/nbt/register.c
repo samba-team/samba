@@ -60,6 +60,7 @@ static BOOL nbt_register_own(TALLOC_CTX *mem_ctx, struct nbt_name *name,
 	io.in.nb_flags = NBT_NODE_B | NBT_NM_ACTIVE;
 	io.in.register_demand = False;
 	io.in.broadcast = True;
+	io.in.multi_homed = False;
 	io.in.ttl = 1234;
 	io.in.timeout = 3;
 	io.in.retries = 0;
