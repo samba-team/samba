@@ -27,13 +27,13 @@
 #define TIME_OFFSET_HIGH 0x01B21DD2
 #define TIME_OFFSET_LOW  0x13814000
 
-void smb_uuid_pack(const struct uuid *uu, UUID_FLAT *ptr)
+void smb_uuid_pack(const struct uuid uu, UUID_FLAT *ptr)
 {
-	SIVAL(ptr, 0, uu->time_low);
-	SSVAL(ptr, 4, uu->time_mid);
-	SSVAL(ptr, 6, uu->time_hi_and_version);
-	memcpy(ptr+8, uu->clock_seq, 2);
-	memcpy(ptr+10, uu->node, 6);
+	SIVAL(ptr, 0, uu.time_low);
+	SSVAL(ptr, 4, uu.time_mid);
+	SSVAL(ptr, 6, uu.time_hi_and_version);
+	memcpy(ptr+8, uu.clock_seq, 2);
+	memcpy(ptr+10, uu.node, 6);
 }
 
 void smb_uuid_unpack(const UUID_FLAT in, struct uuid *uu)
