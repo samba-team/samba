@@ -226,12 +226,12 @@ tv_sec = %x, tv_usec = %x\n",
 
 void release_file_oplock(files_struct *fsp)
 {
-	if (koplocks)
+	if ((fsp->oplock_type != NO_OPLOCK) && koplocks)
 		koplocks->release_oplock(fsp);
 
 	if (fsp->oplock_type == LEVEL_II_OPLOCK)
 		level_II_oplocks_open--;
-	else
+	else if (fsp->oplock_type)
 		exclusive_oplocks_open--;
 	
 	fsp->oplock_type = NO_OPLOCK;
@@ -270,7 +270,7 @@ BOOL remove_oplock(files_struct *fsp, BOOL break_to_none)
 	if (lock_share_entry_fsp(fsp) == False) {
 		DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
 			 fsp->fsp_name ));
-		ret = False;
+		return False;
 	}
 
 	if (fsp->sent_oplock_break == EXCLUSIVE_BREAK_SENT || break_to_none) {
@@ -626,11 +626,10 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
 		DEBUG(0,("oplock_break_level2: unable to remove level II oplock for file %s\n", fsp->fsp_name ));
 	}
 
+	release_file_oplock(fsp);
+
 	if (!local_request && got_lock)
 		unlock_share_entry_fsp(fsp);
-
-	fsp->oplock_type = NO_OPLOCK;
-	level_II_oplocks_open--;
 
 	if(level_II_oplocks_open < 0) {
 		DEBUG(0,("oplock_break_level2: level_II_oplocks_open < 0 (%d). PANIC ERROR\n",
