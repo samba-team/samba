@@ -88,7 +88,7 @@
 #elif SYS_seekdir
 #define real_seekdir(d,l)		(syscall(SYS_seekdir,(d),(l)))
 #elif HAVE___SEEKDIR
-#define real_seekdir(d)            	(__seekdir(d,l))
+#define real_seekdir(d,l)            	(__seekdir(d,l))
 #else
 #define NO_SEEKDIR_WRAPPER
 #endif
