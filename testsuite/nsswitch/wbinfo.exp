@@ -295,10 +295,10 @@ proc check_errcode { args } {
     }
 }
 
-set gooduser_name [lindex $user_list 0]
+set gooduser_name [lindex [split [lindex $user_list 0] ":"] 0]
 set gooduser_sid [util_start "bin/wbinfo" "-n $gooduser_name"]
 
-set goodgroup_name [lindex $group_list 0]
+set goodgroup_name [lindex [split [lindex $group_list 0] ":"] 0]
 set goodgroup_sid [util_start "bin/wbinfo" "-n $goodgroup_name"]
 
 # Some conditions not tested:
