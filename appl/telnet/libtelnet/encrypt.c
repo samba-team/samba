@@ -69,6 +69,7 @@ RCSID("$Id$");
 
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 
 /*
  * These functions pointers point to the current routines

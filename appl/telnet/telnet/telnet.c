@@ -57,7 +57,7 @@ RCSID("$Id$");
 #include "externs.h"
 #include "types.h"
 #include "general.h"
-
+#include <roken.h>
 
 #define	strip(x) ((my_want_state_is_wont(TELOPT_BINARY)) ? ((x)&0x7f) : (x))
 

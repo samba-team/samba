@@ -70,6 +70,7 @@ RCSID("$Id$");
 #endif
 #include <stdlib.h>
 #include <string.h>
+#include <roken.h>
 
 #include "encrypt.h"
 #include "auth.h"

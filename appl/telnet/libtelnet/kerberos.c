@@ -307,7 +307,10 @@ kerberos4_is(Authenticator *ap, unsigned char *data, int cnt)
 	    struct passwd *pw = getpwnam(UserNameRequested);
 
 	    if(pw){
-		snprintf(ts, sizeof(ts), "%s%u", TKT_ROOT, pw->pw_uid);
+		snprintf(ts, sizeof(ts),
+			 "%s%u",
+			 TKT_ROOT,
+			 (unsigned)pw->pw_uid);
 		setenv("KRBTKFILE", ts, 1);
 	    }
 	    Data(ap, KRB_ACCEPT, NULL, 0);

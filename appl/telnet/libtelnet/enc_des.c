@@ -48,6 +48,7 @@ RCSID("$Id$");
 
 #include "encrypt.h"
 #include "misc-proto.h"
+#include <roken.h>
 
 #include <des.h>
 
