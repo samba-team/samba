@@ -347,6 +347,12 @@ BOOL unix_convert(char *name,connection_struct *conn,char *saved_last_component,
   extern char magic_char;
 #endif
 
+  if (conn->printer) {
+	  /* we don't ever use the filenames on a printer share as a
+	     filename - so don't convert them */
+	  return True;
+  }
+
   DEBUG(5, ("unix_convert called on file \"%s\"\n", name));
 
   *dirpath = 0;

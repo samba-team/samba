@@ -280,22 +280,22 @@ static BOOL set_kernel_oplock(files_struct *fsp, int oplock_type)
 #if defined(HAVE_KERNEL_OPLOCKS)
   if(lp_kernel_oplocks()) {
 
-    if(fcntl(fsp->fd_ptr->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
+    if(fcntl(fsp->fd, F_OPLKREG, oplock_pipe_write) < 0 ) {
       if(errno != EAGAIN) {
         DEBUG(0,("set_file_oplock: Unable to get kernel oplock on file %s, dev = %x, \
 inode = %.0f. Error was %s\n", 
-              fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
+              fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
                strerror(errno) ));
       } else {
         DEBUG(5,("set_file_oplock: Refused oplock on file %s, fd = %d, dev = %x, \
 inode = %.0f. Another process had the file open.\n",
-              fsp->fsp_name, fsp->fd_ptr->fd, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode ));
+              fsp->fsp_name, fsp->fd, (unsigned int)fsp->dev, (double)fsp->inode ));
       }
       return False;
     }
 
     DEBUG(10,("set_file_oplock: got kernel oplock on file %s, dev = %x, inode = %.0f\n",
-          fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode));
+          fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode));
 
   }
 #endif /* HAVE_KERNEL_OPLOCKS */
@@ -320,7 +320,7 @@ BOOL set_file_oplock(files_struct *fsp, int oplock_type)
     exclusive_oplocks_open++;
 
   DEBUG(5,("set_file_oplock: granted oplock on file %s, dev = %x, inode = %.0f, tv_sec = %x, tv_usec = %x\n",
-        fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, (double)fsp->fd_ptr->inode,
+        fsp->fsp_name, (unsigned int)fsp->dev, (double)fsp->inode,
         (int)fsp->open_time.tv_sec, (int)fsp->open_time.tv_usec ));
 
   return True;
@@ -342,24 +342,24 @@ static void release_kernel_oplock(files_struct *fsp)
        * Check and print out the current kernel
        * oplock state of this file.
        */
-      int state = fcntl(fsp->fd_ptr->fd, F_OPLKACK, -1);
+      int state = fcntl(fsp->fd, F_OPLKACK, -1);
       dbgtext("release_kernel_oplock: file %s, dev = %x, inode = %.0f has kernel \
-oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev,
-                        (double)fsp->fd_ptr->inode, state );
+oplock state of %x.\n", fsp->fsp_name, (unsigned int)fsp->dev,
+                        (double)fsp->inode, state );
     }
 
     /*
      * Remove the kernel oplock on this file.
      */
 
-    if(fcntl(fsp->fd_ptr->fd, F_OPLKACK, OP_REVOKE) < 0)
+    if(fcntl(fsp->fd, F_OPLKACK, OP_REVOKE) < 0)
     {
       if( DEBUGLVL( 0 ))
       {
         dbgtext("release_kernel_oplock: Error when removing kernel oplock on file " );
         dbgtext("%s, dev = %x, inode = %.0f. Error was %s\n",
-                 fsp->fsp_name, (unsigned int)fsp->fd_ptr->dev, 
-                 (double)fsp->fd_ptr->inode, strerror(errno) );
+                 fsp->fsp_name, (unsigned int)fsp->dev, 
+                 (double)fsp->inode, strerror(errno) );
       }
     }
   }
@@ -406,12 +406,12 @@ static void downgrade_file_oplock(files_struct *fsp)
 
 BOOL remove_oplock(files_struct *fsp)
 {
-  SMB_DEV_T dev = fsp->fd_ptr->dev;
-  SMB_INO_T inode = fsp->fd_ptr->inode;
+  SMB_DEV_T dev = fsp->dev;
+  SMB_INO_T inode = fsp->inode;
   BOOL ret = True;
 
   /* Remove the oplock flag from the sharemode. */
-  if (lock_share_entry(fsp->conn, dev, inode) == False) {
+  if (lock_share_entry_fsp(fsp) == False) {
     DEBUG(0,("remove_oplock: failed to lock share entry for file %s\n",
           fsp->fsp_name ));
     ret = False;
@@ -446,7 +446,7 @@ dev = %x, inode = %.0f\n", fsp->fsp_name, fsp->fnum, (unsigned int)dev, (double)
     downgrade_file_oplock(fsp);
   }
 
-  unlock_share_entry(fsp->conn, dev, inode);
+  unlock_share_entry_fsp(fsp);
   return ret;
 }
 
@@ -757,8 +757,8 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
   extern uint32 global_client_caps;
   char outbuf[128];
   BOOL got_lock = False;
-  SMB_DEV_T dev = fsp->fd_ptr->dev;
-  SMB_INO_T inode = fsp->fd_ptr->inode;
+  SMB_DEV_T dev = fsp->dev;
+  SMB_INO_T inode = fsp->inode;
 
   /*
    * We can have a level II oplock even if the client is not
@@ -791,7 +791,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
    * the existing lock on the shared memory area.
    */
 
-  if(!local_request && lock_share_entry(fsp->conn, dev, inode) == False) {
+  if(!local_request && lock_share_entry_fsp(fsp) == False) {
       DEBUG(0,("oplock_break_level2: unable to lock share entry for file %s\n", fsp->fsp_name ));
   } else {
     got_lock = True;
@@ -802,7 +802,7 @@ BOOL oplock_break_level2(files_struct *fsp, BOOL local_request, int token)
   }
 
   if (!local_request && got_lock)
-    unlock_share_entry(fsp->conn, dev, inode);
+    unlock_share_entry_fsp(fsp);
 
   fsp->oplock_type = NO_OPLOCK;
   level_II_oplocks_open--;
@@ -1308,14 +1308,12 @@ BOOL attempt_close_oplocked_file(files_struct *fsp)
 
   DEBUG(5,("attempt_close_oplocked_file: checking file %s.\n", fsp->fsp_name));
 
-  if (fsp->open && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd_ptr != NULL)) {
-
-    /* Try and break the oplock. */
-    file_fd_struct *fd_ptr = fsp->fd_ptr;
-    if(oplock_break( fd_ptr->dev, fd_ptr->inode, &fsp->open_time, True)) {
-      if(!fsp->open) /* Did the oplock break close the file ? */
-        return True;
-    }
+  if (fsp->open && EXCLUSIVE_OPLOCK_TYPE(fsp->oplock_type) && !fsp->sent_oplock_break && (fsp->fd != -1)) {
+	  /* Try and break the oplock. */
+	  if (oplock_break(fsp->dev, fsp->inode, &fsp->open_time, True)) {
+		  if(!fsp->open) /* Did the oplock break close the file ? */
+			  return True;
+	  }
   }
 
   return False;

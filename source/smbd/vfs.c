@@ -251,11 +251,10 @@ ssize_t vfs_write_data(files_struct *fsp,char *buffer,size_t N)
 {
   size_t total=0;
   ssize_t ret;
-  int fd = fsp->fd_ptr->fd;
 
   while (total < N)
   {
-    ret = fsp->conn->vfs_ops.write(fd,buffer + total,N - total);
+    ret = fsp->conn->vfs_ops.write(fsp->fd,buffer + total,N - total);
 
     if (ret == -1) return -1;
     if (ret == 0) return total;
@@ -331,13 +330,13 @@ SMB_OFF_T vfs_transfer_file(int in_fd, files_struct *in_fsp,
 
     if (s > ret) {
       ret += in_fsp ? 
-	  in_fsp->conn->vfs_ops.read(in_fsp->fd_ptr->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
+	  in_fsp->conn->vfs_ops.read(in_fsp->fd,buf1+ret,s-ret) : read(in_fd,buf1+ret,s-ret);
     }
 
     if (ret > 0)
     {
 	if (out_fsp) {
-	    ret2 = out_fsp->conn->vfs_ops.write(out_fsp->fd_ptr->fd,buf1,ret);
+	    ret2 = out_fsp->conn->vfs_ops.write(out_fsp->fd,buf1,ret);
 	} else {
 	    ret2= (out_fd != -1) ? write_data(out_fd,buf1,ret) : ret;
 	}

@@ -754,18 +754,6 @@ int reply_ntcreate_and_X(connection_struct *conn,
 		return(ERROR(ERRSRV,ERRnofids));
 	}
 		
-	if (!check_name(fname,conn)) { 
-		if((errno == ENOENT) && bad_path) {
-			unix_ERR_class = ERRDOS;
-			unix_ERR_code = ERRbadpath;
-		}
-		file_free(fsp);
-		
-		restore_case_semantics(file_attributes);
-		
-		return(UNIXERROR(ERRDOS,ERRnoaccess));
-	} 
-		
 	unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
 	/* 
@@ -889,7 +877,7 @@ int reply_ntcreate_and_X(connection_struct *conn,
 			return(ERROR(ERRDOS,ERRnoaccess));
 		}
 	} else {
-		if (conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+		if (conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
 			close_file(fsp,False);
 			restore_case_semantics(file_attributes);
 			return(ERROR(ERRDOS,ERRnoaccess));
@@ -1128,18 +1116,6 @@ static int call_nt_transact_create(connection_struct *conn,
 	    return(ERROR(ERRSRV,ERRnofids));
     }
 
-    if (!check_name(fname,conn)) { 
-      if((errno == ENOENT) && bad_path) {
-        unix_ERR_class = ERRDOS;
-        unix_ERR_code = ERRbadpath;
-      }
-      file_free(fsp);
-
-      restore_case_semantics(file_attributes);
-
-      return(UNIXERROR(ERRDOS,ERRnoaccess));
-    } 
-  
     unixmode = unix_mode(conn,smb_attr | aARCH, fname);
     
     /*
@@ -1244,7 +1220,7 @@ static int call_nt_transact_create(connection_struct *conn,
               return(ERROR(ERRDOS,ERRnoaccess));
           }
       } else {
-          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+          if (!fsp->stat_open && conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
               close_file(fsp,False);
               restore_case_semantics(file_attributes);
               return(ERROR(ERRDOS,ERRnoaccess));
@@ -1869,12 +1845,12 @@ static size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
     sid_copy( &group_sid, &global_sid_World);
   } else {
 
-    if(fsp->is_directory || fsp->fd_ptr == NULL) {
+    if(fsp->is_directory || fsp->fd == -1) {
       if(dos_stat(fsp->fsp_name, &sbuf) != 0) {
         return 0;
       }
     } else {
-      if(fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if(fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
         return 0;
       }
     }
@@ -2391,10 +2367,10 @@ security descriptor.\n"));
 
     int ret;
 
-    if(fsp->fd_ptr == NULL)
+    if(fsp->fd == -1)
       ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
     else
-      ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
+      ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
 
     if(ret != 0) {
       free_sec_desc(&psd);
@@ -2444,10 +2420,10 @@ security descriptor.\n"));
 
       int ret;
     
-      if(fsp->fd_ptr == NULL)
+      if(fsp->fd == -1)
         ret = conn->vfs_ops.stat(dos_to_unix(fsp->fsp_name,False), &sbuf);
       else
-        ret = conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf);
+        ret = conn->vfs_ops.fstat(fsp->fd,&sbuf);
   
       if(ret != 0)
         return(UNIXERROR(ERRDOS,ERRnoaccess));

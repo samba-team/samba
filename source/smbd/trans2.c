@@ -253,7 +253,7 @@ static int call_trans2open(connection_struct *conn, char *inbuf, char *outbuf,
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
 
-  if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+  if (fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
     close_file(fsp,False);
     return(UNIXERROR(ERRDOS,ERRnoaccess));
   }
@@ -1332,14 +1332,14 @@ static int call_trans2qfilepathinfo(connection_struct *conn,
       CHECK_ERROR(fsp);
 
       fname = fsp->fsp_name;
-      if (fsp->conn->vfs_ops.fstat(fsp->fd_ptr->fd,&sbuf) != 0) {
+      if (fsp->conn->vfs_ops.fstat(fsp->fd,&sbuf) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
         return(UNIXERROR(ERRDOS,ERRbadfid));
       }
-      if((pos = fsp->conn->vfs_ops.lseek(fsp->fd_ptr->fd,0,SEEK_CUR)) == -1)
+      if((pos = fsp->conn->vfs_ops.lseek(fsp->fd,0,SEEK_CUR)) == -1)
         return(UNIXERROR(ERRDOS,ERRnoaccess));
 
-      delete_pending = fsp->fd_ptr->delete_on_close;
+      delete_pending = fsp->delete_on_close;
     }
   } else {
     /* qpathinfo */
@@ -1612,7 +1612,7 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       CHECK_ERROR(fsp);
 
       fname = fsp->fsp_name;
-      fd = fsp->fd_ptr->fd;
+      fd = fsp->fd;
 
       if (fsp->conn->vfs_ops.fstat(fd,&st) != 0) {
         DEBUG(3,("fstat of fnum %d failed (%s)\n",fsp->fnum, strerror(errno)));
@@ -1811,12 +1811,12 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
             {
               int i;
               files_struct *iterate_fsp;
-              SMB_DEV_T dev = fsp->fd_ptr->dev;
-              SMB_INO_T inode = fsp->fd_ptr->inode;
+              SMB_DEV_T dev = fsp->dev;
+              SMB_INO_T inode = fsp->inode;
               int num_share_modes;
               share_mode_entry *current_shares = NULL;
 
-              if(lock_share_entry(fsp->conn, dev, inode) == False)
+              if (lock_share_entry_fsp(fsp) == False)
                 return(ERROR(ERRDOS,ERRnoaccess));
 
               /*
@@ -1838,7 +1838,7 @@ file %s as a share exists that was not opened with FILE_DELETE access.\n",
                    * Release the lock.
                    */
 
-                  unlock_share_entry(fsp->conn, dev, inode);
+                  unlock_share_entry_fsp(fsp);
 
                   /*
                    * current_shares was malloced by get_share_modes - free it here.
@@ -1893,9 +1893,9 @@ dev = %x, inode = %.0f\n", iterate_fsp->fnum, (unsigned int)dev, (double)inode))
                * counted struct. Delete when the last reference
                * goes away.
                */
-             fsp->fd_ptr->delete_on_close = delete_on_close;
+             fsp->delete_on_close = delete_on_close;
 
-             unlock_share_entry(fsp->conn, dev, inode);
+             unlock_share_entry_fsp(fsp);
 
              DEBUG(10, ("call_trans2setfilepathinfo: %s delete on close flag for fnum = %d, file %s\n",
                    delete_on_close ? "Added" : "Removed", fsp->fnum, fsp->fsp_name ));
