@@ -3195,7 +3195,7 @@ static int api_fd_reply(connection_struct *conn,uint16 vuid,char *outbuf,
 	DEBUG(5,("api_fd_reply\n"));
 
  	/* make a static data parsing structure from the api_fd_reply data */
- 	prs_init(&pd, 0, 4, True, 0);
+ 	prs_init(&pd, 0, 4, 0, True);
  	mem_create(pd.data, data, 0, tdscnt, 0, False);
 
 	/* First find out the name of this file. */

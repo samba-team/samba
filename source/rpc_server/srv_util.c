@@ -166,18 +166,29 @@ BOOL create_rpc_reply(pipes_struct *p,
 				uint32 data_start, uint32 data_end)
 {
 	char *data;
+	BOOL auth_verify = IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SIGN);
+	BOOL auth_seal   = IS_BITS_SET_ALL(p->ntlmssp_chal.neg_flags, NTLMSSP_NEGOTIATE_SEAL);
 	uint32 data_len;
+	uint32 auth_len;
 
 	DEBUG(5,("create_rpc_reply: data_start: %d data_end: %d max_tsize: %d\n",
 	          data_start, data_end, p->hdr_ba.bba.max_tsize));
 
-	mem_buf_init(&(p->rhdr.data), 0);
-	mem_alloc_data(p->rhdr.data, 0x18);
+	auth_len = p->hdr.auth_len;
 
-	p->rhdr.align = 4;
-	p->rhdr.io = False;
+	if (p->ntlmssp_auth)
+	{
+		DEBUG(10,("create_rpc_reply: auth\n"));
+		if (auth_len != 16)
+		{
+			return False;
+		}
+	}
 
-	p->hdr_resp.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
+	prs_init(&p->rhdr , 0x18, 4, 0, False);
+	prs_init(&p->rauth, 1024, 4, 0, False);
+	prs_init(&p->rverf, 0x08, 4, 0, False);
+
 	p->hdr.pkt_type = RPC_RESPONSE; /* mark header as an rpc response */
 
 	/* set up rpc header (fragmentation issues) */
@@ -190,6 +201,8 @@ BOOL create_rpc_reply(pipes_struct *p,
 		p->hdr.flags = 0;
 	}
 
+	p->hdr_resp.alloc_hint = data_end - data_start; /* calculate remaining data to be sent */
+
 	if (p->hdr_resp.alloc_hint + 0x18 <= p->hdr_ba.bba.max_tsize)
 	{
 		p->hdr.flags |= RPC_FLG_LAST;
@@ -200,30 +213,83 @@ BOOL create_rpc_reply(pipes_struct *p,
 		p->hdr.frag_len = p->hdr_ba.bba.max_tsize;
 	}
 
-	data_len = p->hdr.frag_len;
+	if (p->ntlmssp_auth)
+	{
+		p->hdr_resp.alloc_hint -= auth_len - 16;
+	}
+
+	if (p->ntlmssp_auth)
+	{
+		data_len = p->hdr.frag_len - auth_len - (auth_verify ? 8 : 0) - 0x18;
+	}
+	else
+	{
+		data_len = p->hdr.frag_len;
+	}
 
 	p->rhdr.data->offset.start = 0;
 	p->rhdr.data->offset.end   = 0x18;
 
 	/* store the header in the data stream */
-	p->rhdr.offset = 0;
-	smb_io_rpc_hdr   ("hdr", &(p->hdr   ), &(p->rhdr), 0);
+	smb_io_rpc_hdr     ("hdr" , &(p->hdr     ), &(p->rhdr), 0);
 	smb_io_rpc_hdr_resp("resp", &(p->hdr_resp), &(p->rhdr), 0);
 
+	/* don't use rdata: use rdata_i instead, which moves... */
+	/* make a pointer to the rdata data, NOT A COPY */
+
+	p->rdata_i.data = NULL;
+	prs_init(&p->rdata_i, 0, p->rdata.align, p->rdata.data->margin, p->rdata.io);
+	data = mem_data(&(p->rdata.data), data_start);
+	mem_create(p->rdata_i.data, data, 0, data_len, 0, False); 
+	p->rdata_i.offset = data_len;
+
+	if (auth_len > 0)
+	{
+		uint32 crc32;
+
+		DEBUG(5,("create_rpc_reply: sign: %s seal: %s data %d auth %d\n",
+			 BOOLSTR(auth_verify), BOOLSTR(auth_seal), data_len, auth_len));
+
+		if (auth_seal)
+		{
+			NTLMSSPcalc(p->ntlmssp_hash, data, data_len);
+			crc32 = crc32_calc_buffer(data_len, data);
+		}
+
+		if (auth_seal || auth_verify)
+		{
+			make_rpc_hdr_auth(&p->auth_info, 0x0a, 0x06, 0x08, (auth_verify ? 1 : 0));
+			smb_io_rpc_hdr_auth("hdr_auth", &p->auth_info, &p->rauth, 0);
+		}
+
+		if (auth_verify)
+		{
+			char *auth_data;
+			make_rpc_auth_ntlmssp_chk(&p->ntlmssp_chk, NTLMSSP_SIGN_VERSION, crc32, p->ntlmssp_seq_num);
+			smb_io_rpc_auth_ntlmssp_chk("auth_sign", &(p->ntlmssp_chk), &p->rverf, 0);
+			auth_data = (uchar*)mem_data(&p->rverf.data, 4);
+			NTLMSSPcalc(p->ntlmssp_hash, auth_data, 12);
+		}
+	}
+
+	/* set up the data chain */
+	if (p->ntlmssp_auth)
+	{
+		prs_link(NULL       , &p->rhdr   , &p->rdata_i);
+		prs_link(&p->rhdr   , &p->rdata_i, &p->rauth  );
+		prs_link(&p->rdata_i, &p->rauth  , &p->rverf  );
+		prs_link(&p->rauth  , &p->rverf  , NULL       );
+	}
+	else
+	{
+		prs_link(NULL    , &p->rhdr   , &p->rdata_i);
+		prs_link(&p->rhdr, &p->rdata_i, NULL       );
+	}
+
+	/* indicate to subsequent data reads where we are up to */
 	p->frag_len_left   = p->hdr.frag_len - p->file_offset;
 	p->next_frag_start = p->hdr.frag_len; 
 	
-	/* don't use rdata: use rdata_i instead, which moves... */
-	/* make a pointer to the rdata data.  NOT A COPY */
-
-	prs_init(&p->rdata_i, 0, p->rdata.align, p->rdata.data->margin, p->rdata.io);
-	data = mem_data(&(p->rdata.data), data_start);
-	mem_create(p->rdata_i.data, data, data_start, data_len, 0, False); 
-
-	/* set up the data chain */
-	prs_link(NULL    , &p->rhdr   , &p->rdata_i);
-	prs_link(&p->rhdr, &p->rdata_i, NULL       );
-
 	return p->rhdr.data != NULL && p->rhdr.offset == 0x18;
 }
 
@@ -271,7 +337,8 @@ static BOOL api_pipe_ntlmssp_verify(pipes_struct *p)
 #endif
 	become_root(True);
 	p->ntlmssp_validated = pass_check_smb(p->user_name, p->domain,
-	                      p->ntlmssp_chal.challenge, (uchar*)lm_owf, (uchar*)nt_owf, NULL);
+	                      (uchar*)p->ntlmssp_chal.challenge,
+	                      (char*)lm_owf, (char*)nt_owf, NULL);
 	smb_pass = getsmbpwnam(p->user_name);
 	unbecome_root(True);
 
@@ -418,7 +485,7 @@ static BOOL api_pipe_bind_req(pipes_struct *p, prs_struct *pd)
 	DEBUG(5,("api_pipe_bind_req: make response. %d\n", __LINE__));
 
 	prs_init(&(p->rdata), 1024, 4, 0, False);
-	prs_init(&(p->rhdr ), 0x10, 4, 0, False);
+	prs_init(&(p->rhdr ), 0x18, 4, 0, False);
 	prs_init(&(p->rauth), 1024, 4, 0, False);
 	prs_init(&(p->rverf), 0x08, 4, 0, False);
 	prs_init(&(p->rntlm), 1024, 4, 0, False);
@@ -561,6 +628,7 @@ static BOOL api_pipe_auth_process(pipes_struct *p, prs_struct *pd)
 		{
 			return False;
 		}
+		p->ntlmssp_seq_num = 0;
 	}
 
 	pd->offset = old_offset;
@@ -671,17 +739,9 @@ static BOOL api_rpc_command(pipes_struct *p,
 	}
 
 	/* start off with 1024 bytes, and a large safety margin too */
-	mem_buf_init(&(p->rdata.data), SAFETY_MARGIN);
-	mem_alloc_data(p->rdata.data, 1024);
-
-	p->rdata.io = False;
-	p->rdata.align = 4;
-
-	p->rdata.data->offset.start = 0;
-	p->rdata.data->offset.end   = 0xffffffff;
+	prs_init(&p->rdata, 1024, 4, SAFETY_MARGIN, False);
 
 	/* do the actual command */
-	p->rdata.offset = 0; 
 	api_rpc_cmds[fn_num].fn(p->vuid, data, &(p->rdata));
 
 	if (p->rdata.data == NULL || p->rdata.offset == 0)
@@ -717,7 +777,7 @@ BOOL api_rpcTNP(pipes_struct *p, char *rpc_name, struct api_struct *api_rpc_cmds
 	}
 
 	/* create the rpc header */
-	if (!create_rpc_reply(p, 0, p->rdata.offset))
+	if (!create_rpc_reply(p, 0, p->rdata.offset + (p->ntlmssp_auth ? (16 + 16) : 0)))
 	{
 		return False;
 	}
