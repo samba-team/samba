@@ -110,6 +110,15 @@ krb5_mk_req_internal(krb5_context context,
 				     in_data->data,
 				     in_data->length,
 				     &c);
+      } else if(ac->keyblock->keytype == ETYPE_ARCFOUR_HMAC_MD5) {
+	  /* this is to make MS kdc happy */ 
+	  ret = krb5_create_checksum(context, 
+				     NULL,
+				     0,
+				     CKSUMTYPE_RSA_MD5,
+				     in_data->data,
+				     in_data->length,
+				     &c);
       } else {
 	  krb5_crypto crypto;
 
