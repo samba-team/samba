@@ -113,6 +113,9 @@ map_syscall_name_to_number (const char *str, int *res)
     if (f == NULL)
 	return -1;
     while (fgets (buf, sizeof(buf), f) != NULL) {
+	if (buf[0] == '#')
+	    continue;
+
 	if (strncmp (str, buf, str_len) == 0) {
 	    char *begptr = buf + str_len;
 	    char *endptr;
