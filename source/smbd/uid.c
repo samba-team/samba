@@ -591,16 +591,16 @@ DOM_SID *gid_to_sid(DOM_SID *psid, gid_t gid)
 
 BOOL sid_to_uid(DOM_SID *psid, uid_t *puid, enum SID_NAME_USE *sidtype)
 {
-	fstring dom_name, name, sid_str;
-	enum SID_NAME_USE name_type;
-
-	*sidtype = SID_NAME_UNKNOWN;
-
+	fstring sid_str;
 
 /* (tridge) I commented out the slab of code below in order to support foreign SIDs
    Do we really need to validate the type of SID we have in this case? 
 */
 #if 0
+	fstring dom_name, name;
+	enum SID_NAME_USE name_type;
+
+	*sidtype = SID_NAME_UNKNOWN;
 	/*
 	 * First we must look up the name and decide if this is a user sid.
 	 */
