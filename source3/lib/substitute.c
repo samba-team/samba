@@ -343,42 +343,6 @@ void standard_sub_conn(connection_struct *conn, char *str)
 }
 
 /****************************************************************************
- Like standard_sub but for a homes share where snum still points to the [homes]
- share. No user specific snum created yet so servicename should be the username.
-****************************************************************************/
-
-void standard_sub_home(int snum, const char *share, 
-		       const char *user, const char *homedir, pstring str)
-{
-	char *p, *s;
-
-	for (s=str; (p=strchr_m(s, '%'));s=p) {
-		int l = sizeof(pstring) - (int)(p-str);
-		
-		switch (*(p+1)) {
-		case 'H': 
-			string_sub(p,"%H", homedir, l); 
-			break;
-			
-		case 'S': 
-			string_sub(p,"%S", share, l); 
-			break;
-		case 'p': 
-			string_sub(p,"%p", automount_path(user), l); 
-			break;
-		case '\0': 
-			p++; 
-			break; /* don't run off the end of the string */
-			
-		default: p+=2; 
-			break;
-		}
-	}
-
-        standard_sub_advanced(snum, user, "", -1, current_user_info.smb_name, str);
-}
-
-/****************************************************************************
  Like standard_sub but by snum.
 ****************************************************************************/
 
