@@ -159,8 +159,8 @@ typedef enum krb5_key_usage {
     /* seal in GSSAPI krb5 mechanism */
     KRB5_KU_USAGE_SIGN = 23,
     /* sign in GSSAPI krb5 mechanism */
-    KRB5_KU_USAGE_MIC = 24
-    /* MIC in GSSAPI krb5 mechanism */
+    KRB5_KU_USAGE_SEQ = 24
+    /* SEQ in GSSAPI krb5 mechanism */
 } krb5_key_usage;
 
 typedef enum krb5_salttype {
