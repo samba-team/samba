@@ -2548,16 +2548,6 @@ posix perms.\n", fsp->fsp_name ));
 	return True;
 }
 
-static int nt_ace_comp( SEC_ACE *a1, SEC_ACE *a2)
-{
-	if (a1->type == a2->type)
-		return 0;
-
-	if (a1->type == SEC_ACE_TYPE_ACCESS_DENIED && a2->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
-		return -1;
-	return 1;
-}
-
 /****************************************************************************
   Incoming NT ACLs on a directory can be split into a default POSIX acl (CI|OI|IO) and
   a normal POSIX acl. Win2k needs these split acls re-merging into one ACL
@@ -2653,7 +2643,8 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 	canon_ace *dir_ace = NULL;
 	size_t num_profile_acls = 0;
 	struct pai_val *pal = NULL;
- 
+	SEC_DESC *psd = NULL;
+
 	*ppdesc = NULL;
 
 	DEBUG(10,("get_nt_acl: called for file %s\n", fsp->fsp_name ));
@@ -2858,12 +2849,6 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 
 			num_aces = merge_default_aces(nt_ace_list, num_aces);
 
-			/*
-			 * Sort to force deny entries to the front.
-			 */
-	
-			if (num_aces)
-				qsort( nt_ace_list, num_aces, sizeof(nt_ace_list[0]), QSORT_CAST nt_ace_comp);
 		}
 
 		if (num_aces) {
@@ -2874,13 +2859,13 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		}
 	} /* security_info & DACL_SECURITY_INFORMATION */
 
-	*ppdesc = make_standard_sec_desc( main_loop_talloc_get(),
+	psd = make_standard_sec_desc( main_loop_talloc_get(),
 			(security_info & OWNER_SECURITY_INFORMATION) ? &owner_sid : NULL,
 			(security_info & GROUP_SECURITY_INFORMATION) ? &group_sid : NULL,
 			psa,
 			&sd_size);
 
-	if(!*ppdesc) {
+	if(!psd) {
 		DEBUG(0,("get_nt_acl: Unable to malloc space for security descriptor.\n"));
 		sd_size = 0;
 	} else {
@@ -2894,8 +2879,13 @@ size_t get_nt_acl(files_struct *fsp, uint32 security_info, SEC_DESC **ppdesc)
 		 * flag doesn't seem to bother Windows NT.
 		 */
 		if (get_protected_flag(pal))
-			(*ppdesc)->type |= SE_DESC_DACL_PROTECTED;
+			psd->type |= SE_DESC_DACL_PROTECTED;
 	}
+
+	if (psd->dacl)
+		dacl_sort_into_canonical_order(psd->dacl->ace, (unsigned int)psd->dacl->num_aces);
+
+	*ppdesc = psd;
 
  done:
 
