@@ -2,6 +2,11 @@
 
 	* init_c.c (get_cred_cache): use get_default_username
 
+1999-05-23  Assar Westerlund  <assar@sics.se>
+
+	* create_s.c (create_principal): if there's no default entry the
+	mask should be zero.
+
 1999-05-21  Assar Westerlund  <assar@sics.se>
 
 	* init_c.c (get_cred_cache): use $USERNAME
