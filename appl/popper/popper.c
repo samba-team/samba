@@ -64,8 +64,7 @@ main (int argc, char **argv)
     pop_init(&p,argc,argv);
 
     /*  Tell the user that we are listenting */
-    pop_msg(&p,POP_SUCCESS,
-        "UCB based pop server (version %s at %s) starting.",VERSION,p.myhost);
+    pop_msg(&p,POP_SUCCESS, "POP3 server ready");
 
     /*  State loop.  The POP server is always in a particular state in 
         which a specific suite of commands can be executed.  The following 
