@@ -41,13 +41,13 @@ If only one WINS server is used then the use of the "remote announce" and the
 
 Samba WINS does not support MS-WINS replication. This means that when setting up
 Samba as a WINS server there must only be one nmbd configured as a WINS server
-on the network. Some sites have used multiple Samba WINS servers for redundency
+on the network. Some sites have used multiple Samba WINS servers for redundancy
 (one server per subnet) and then used "remote browse sync" and "remote announce"
-to affect browse list collation across all segments. Note that this means clients
-will only resolve local names, and must be configured to use DNS to resolve names
-on other subnets in order to resolve the IP addresses of the servers they can see
-on other subnets. This setup is not recommended, but is mentioned as a practical
-consideration (ie. an 'if all else fails' scenario).
+to affect browse list collation across all segments. Note that this means
+clients will only resolve local names, and must be configured to use DNS to
+resolve names on other subnets in order to resolve the IP addresses of the
+servers they can see on other subnets. This setup is not recommended, but is
+mentioned as a practical consideration (ie: an 'if all else fails' scenario).
 
 Lastly, take note that browse lists are a collection of unreliable broadcast
 messages that are repeated at intervals of not more than 15 minutes. This means
