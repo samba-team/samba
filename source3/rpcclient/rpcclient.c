@@ -628,13 +628,15 @@ out_free:
         if (cmdstr && cmdstr[0]) {
                 char    *cmd;
                 char    *p = cmdstr;
+		int result = 0;
  
                 while((cmd=next_command(&p)) != NULL) {
-                        process_cmd(cli, cmd);
+                        NTSTATUS cmd_result = process_cmd(cli, cmd);
+			result = NT_STATUS_IS_ERR(cmd_result);
                 }
 		
 		cli_shutdown(cli);
-                return 0;
+                return result;
         }
 
 	/* Loop around accepting commands */
