@@ -81,16 +81,18 @@ sub ParseArrayPush($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = find_size_var($e, util::array_size($e));
-	my $const = "";
 
-	if (util::is_constant($size)) {
-		$const = "_const";
+	if (defined $e->{CONFORMANT_SIZE}) {
+		# the conformant size has already been pushed
+	} elsif (!util::is_constant($size)) {
+		# we need to emit the array size
+		$res .= "\t\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
 	}
 
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_push$const\_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_push$const\_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_push_array(ndr, ndr_flags, $var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_push_flags_fn_t)ndr_push_$e->{TYPE}));\n";
 	}
 }
 
@@ -116,19 +118,39 @@ sub ParseArrayPull($$)
 	my $e = shift;
 	my $var_prefix = shift;
 	my $size = find_size_var($e, util::array_size($e));
-	my $const = "";
+	my $alloc_size = $size;
 
-	if (util::is_constant($size)) {
-		$const = "_const";
+	# if this is a conformant array then we use that size to allocate, and make sure
+	# we allocate enough to pull the elements
+	if (defined $e->{CONFORMANT_SIZE}) {
+		$alloc_size = $e->{CONFORMANT_SIZE};
+
+		$res .= "\tif ($size > $alloc_size) {\n";
+		$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_CONFORMANT_SIZE, \"Bad conformant size %u should be %u\", $alloc_size, $size);\n";
+		$res .= "\t}\n";
+	} elsif (!util::is_constant($size)) {
+		# non fixed arrays encode the size just before the array
+		$res .= "\t{\n";
+		$res .= "\t\tuint32 _array_size;\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_uint32(ndr, &_array_size));\n";
+		$res .= "\t\tif ($size > _array_size) {\n";
+		$res .= "\t\t\treturn ndr_pull_error(ndr, NDR_ERR_ARRAY_SIZE, \"Bad array size %u should be %u\", _array_size, $size);\n";
+		$res .= "\t\t}\n";
+		$res .= "\t}\n";
 	}
 
 	if (util::need_alloc($e) && !util::is_constant($size)) {
-		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $size, sizeof($var_prefix$e->{NAME}\[0]));\n";
+		$res .= "\t\tNDR_ALLOC_N_SIZE(ndr, $var_prefix$e->{NAME}, $alloc_size, sizeof($var_prefix$e->{NAME}\[0]));\n";
 	}
+
+	if (util::has_property($e, "length_is")) {
+		die "we don't handle varying arrays yet";
+	}
+
 	if (util::is_scalar_type($e->{TYPE})) {
-		$res .= "\t\tNDR_CHECK(ndr_pull$const\_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_array_$e->{TYPE}(ndr, $var_prefix$e->{NAME}, $size));\n";
 	} else {
-		$res .= "\t\tNDR_CHECK(ndr_pull$const\_array(ndr, ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
+		$res .= "\t\tNDR_CHECK(ndr_pull_array(ndr, ndr_flags, (void **)$var_prefix$e->{NAME}, sizeof($var_prefix$e->{NAME}\[0]), $size, (ndr_pull_flags_fn_t)ndr_pull_$e->{TYPE}));\n";
 	}
 }
 
@@ -191,7 +213,7 @@ sub ParseElementPullSwitch($$$$)
 
 	$res .= "\t{ uint16 _level;\n";
 	$res .= "\tNDR_CHECK(ndr_pull_$e->{TYPE}(ndr, $ndr_flags, &_level, $cprefix$var_prefix$e->{NAME}));\n";
-	$res .= "\tif (_level != $switch_var) return NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\tif (_level != $switch_var) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\");\n";
 	$res .= "\t}\n";
 }
 
@@ -322,6 +344,7 @@ sub ParseStructPush($)
 {
 	my($struct) = shift;
 	my($struct_len);
+	my $conform_e;
 
 	if (! defined $struct->{ELEMENTS}) {
 		return;
@@ -339,6 +362,19 @@ sub ParseStructPush($)
 	if (defined $struct_len) {
 		$res .= "\tstruct ndr_push_save _save1, _save2, _save3;\n";
 		$res .= "\tndr_push_save(ndr, &_save1);\n";
+	}
+
+	# see if the structure contains a conformant array. If it
+	# does, then it must be the last element of the structure, and
+	# we need to push the conformant length early, as it fits on
+	# the wire before the structure (and even before the structure
+	# alignment)
+	my $e = $struct->{ELEMENTS}[-1];
+	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
+		my $size = find_size_var($e, util::array_size($e));
+		$e->{CONFORMANT_SIZE} = $size;
+		$conform_e = $e;
+		$res .= "\tNDR_CHECK(ndr_push_uint32(ndr, $size));\n";
 	}
 
 	my $align = struct_alignment($struct);
@@ -394,9 +430,22 @@ sub ParseStructPull($)
 {
 	my($struct) = shift;
 	my($struct_len);
+	my $conform_e;
 
 	if (! defined $struct->{ELEMENTS}) {
 		return;
+	}
+
+	# see if the structure contains a conformant array. If it
+	# does, then it must be the last element of the structure, and
+	# we need to pull the conformant length early, as it fits on
+	# the wire before the structure (and even before the structure
+	# alignment)
+	my $e = $struct->{ELEMENTS}[-1];
+	if (defined $e->{ARRAY_LEN} && $e->{ARRAY_LEN} eq "*") {
+		$conform_e = $e;
+		$res .= "\tuint32 _conformant_size;\n";
+		$conform_e->{CONFORMANT_SIZE} = "_conformant_size";
 	}
 
 	# declare any internal pointers we need
@@ -424,6 +473,10 @@ sub ParseStructPull($)
 		$res .= "\tuint32 _size;\n";
 		$res .= "\tstruct ndr_pull_save _save;\n";
 		$res .= "\tndr_pull_save(ndr, &_save);\n";
+	}
+
+	if (defined $conform_e) {
+		$res .= "\tNDR_CHECK(ndr_pull_uint32(ndr, &$conform_e->{CONFORMANT_SIZE}));\n";
 	}
 
 	my $align = struct_alignment($struct);
@@ -490,7 +543,8 @@ sub ParseUnionPull($)
 		ParseElementPullScalar($el->{DATA}, "r->", "NDR_SCALARS");		
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n\t\treturn NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\tdefault:\n";
+	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", *level);\n";
 	$res .= "\t}\n";
 	$res .= "buffers:\n";
 	$res .= "\tif (!(ndr_flags & NDR_BUFFERS)) goto done;\n";
@@ -500,7 +554,8 @@ sub ParseUnionPull($)
 		ParseElementPullBuffer($el->{DATA}, "r->", "NDR_BUFFERS");
 		$res .= "\tbreak;\n\n";
 	}
-	$res .= "\tdefault:\n\t\treturn NT_STATUS_INVALID_LEVEL;\n";
+	$res .= "\tdefault:\n";
+	$res .= "\t\treturn ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, \"Bad switch value %u in $e->{NAME}\", *level);\n";
 	$res .= "\t}\n";
 	$res .= "done:\n";
 }
