@@ -1,3 +1,17 @@
+2003-05-07  Love  <lha@stacken.kth.se>
+
+	* ftp/cmdtab.c: include afslog in both the krb4 and krb5 case
+	
+	* ftp/kauth.c: include afslog in both the krb4 and krb5 case
+	
+	* ftp/Makefile.am: always include auth.c
+	
+2003-05-07  Love Hörnquist Åstrand <lha@it.su.se>
+	
+	* ftpd/Makefile.am: always include auth.c
+
+	* ftpd/kauth.c: do afslog in the krb5 case too
+	
 2003-04-22  Love Hörnquist Åstrand <lha@it.su.se>
 
 	* ftp/ftp.1: replace > with \*[Gt]
