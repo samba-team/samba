@@ -40,7 +40,6 @@
 #include <netdb.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
-#include <net/if.h>
 
 #ifndef AUTOCONF_TEST
 #include "lib/netif/netif.h"
