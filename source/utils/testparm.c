@@ -35,6 +35,8 @@
 #include "includes.h"
 #include "smb.h"
 
+extern BOOL AllowDebugChange;
+
 /***********************************************
  Here we do a set of 'hard coded' checks for bad
  configuration settings.
@@ -216,6 +218,7 @@ int main(int argc, char *argv[])
 
   dbf = x_stdout;
   DEBUGLEVEL = 2;
+  AllowDebugChange = False;
 
   printf("Load smb config files from %s\n",configfile);
 

@@ -32,6 +32,7 @@
 #include "includes.h"
 
 extern pstring global_myname;
+extern BOOL AllowDebugChange;
 
 /*
  * Next two lines needed for SunOS and don't
@@ -568,6 +569,9 @@ int main (int argc, char **argv)
 		exit(1);
 	}
 	
+	DEBUGLEVEL = 1;
+	AllowDebugChange = False;
+
 	if (!lp_load(dyn_CONFIGFILE,True,False,False)) {
 		fprintf(stderr, "Can't load %s - run testparm to debug it\n", 
 			dyn_CONFIGFILE);

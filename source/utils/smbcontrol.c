@@ -22,6 +22,8 @@
 
 #include "includes.h"
 
+extern BOOL AllowDebugChange;
+
 static struct {
 	char *name;
 	int value;
@@ -422,6 +424,9 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 	char temp[255];
 	extern int optind;
 	BOOL interactive = False;
+
+	AllowDebugChange = False;
+	DEBUGLEVEL = 0;
 
 	setup_logging(argv[0],True);
 	

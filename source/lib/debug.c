@@ -86,6 +86,7 @@ BOOL    append_log = False;
 int     DEBUGLEVEL_CLASS[DBGC_LAST];
 BOOL    DEBUGLEVEL_CLASS_ISSET[DBGC_LAST];
 int     DEBUGLEVEL = DEBUGLEVEL_CLASS;
+BOOL	AllowDebugChange = True;
 
 
 /* -------------------------------------------------------------------------- **
@@ -222,6 +223,8 @@ BOOL debug_parse_levels(char *params_str)
 	int  debuglevel_class[DBGC_LAST];	
 	BOOL debuglevel_class_isset[DBGC_LAST];
 
+	if (AllowDebugChange == False)
+		return True;
 	ZERO_ARRAY(params);
 	ZERO_ARRAY(debuglevel_class);
 	ZERO_ARRAY(debuglevel_class_isset);

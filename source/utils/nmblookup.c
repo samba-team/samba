@@ -24,6 +24,8 @@
 
 #include "includes.h"
 
+extern BOOL AllowDebugChange;
+
 static BOOL use_bcast = True;
 static BOOL got_bcast = False;
 static struct in_addr bcast_addr;
@@ -195,6 +197,9 @@ int main(int argc,char *argv[])
   int commandline_debuglevel = -2;
 
   DEBUGLEVEL = 1;
+  /* Prevent smb.conf setting from overridding */
+  AllowDebugChange = False;
+
   *lookup = 0;
 
   setup_logging(argv[0],True);
