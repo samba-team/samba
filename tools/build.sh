@@ -35,6 +35,24 @@ logerror () {
     exit 1
 }
 
+find_unzip_prog () {
+    unzip_prog=
+    oldIFS="$IFS"
+    IFS=:
+    set -- $PATH
+    IFS="$oldIFS"
+    for a in $* ; do
+	if [ -x $a/gzip ] ; then
+	    unzip_prog="$a/gzip -dc"
+	    break
+	elif [ -x $a/gunzip ] ; then
+	    unzip_prog="$a/gunzip -c"
+	    break
+	fi
+    done
+    test "$unzip_prog" = "" && logerror failed to find unzip program
+}
+
 do_build_p () {
     for a in ${dont_build} ; do
 	expr "$1" : "${a}" > /dev/null 2>&1 && return 1
@@ -45,7 +63,7 @@ do_build_p () {
 unpack_tar () {
     for a in ${distdirs} ; do
 	if [ -f $a/$1 ] ; then
-	    ${opt_n} gzip -dc ${a}/$1 | ${opt_n} tar xf -
+	    ${opt_n} ${unzip_prog} ${a}/$1 | ${opt_n} tar xf -
 	    return 0
 	fi
     done
@@ -85,6 +103,8 @@ logprint using host `hostname`
 logprint `uname -a`
 logprint clearing logfile
 > ${logfile}
+
+find_unzip_prog
 
 logprint using target dir ${targetdir}
 mkdir -p ${targetdir}/src
