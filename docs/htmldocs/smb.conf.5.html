@@ -435,10 +435,9 @@ parameter for details.  Note that some are synonyms.
 <p><br><li > <a href="smb.conf.5.html#interfaces"><strong>interfaces</strong></a>
 <p><br><li > <a href="smb.conf.5.html#keepalive"><strong>keepalive</strong></a>
 <p><br><li > <a href="smb.conf.5.html#kerneloplocks"><strong>kernel oplocks</strong></a>
-<p><br><li > <a href="smb.conf.5.html#ldapfilter"><strong>ldap filter</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ldapbindas"><strong>ldap bind as</strong></a>
+<p><br><li > <a href="smb.conf.5.html#ldappasswdfile"><strong>ldap passwd file</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapport"><strong>ldap port</strong></a>
-<p><br><li > <a href="smb.conf.5.html#ldaproot"><strong>ldap root</strong></a>
-<p><br><li > <a href="smb.conf.5.html#ldaprootpasswd"><strong>ldap root passwd</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapserver"><strong>ldap server</strong></a>
 <p><br><li > <a href="smb.conf.5.html#ldapsuffix"><strong>ldap suffix</strong></a>
 <p><br><li > <a href="smb.conf.5.html#lmannounce"><strong>lm announce</strong></a>
@@ -1281,8 +1280,8 @@ The line can be either of the form:
 or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>,
 the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
-<p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are assumed
-to be Domain Groups, but it depends on the role of the Samba Server.
+<p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are assumed to
+be either Local or Domain Groups, depending on the role of the Samba Server.
 <p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
 will present <em>ALL</em> such unspecified UNIX groups as its own NT Domain
 Groups, with the same name.
@@ -1374,7 +1373,11 @@ if this parameter is set and <a href="nmbd.8.html"><strong>nmbd</strong></a> cla
 special name for a <a href="smb.conf.5.html#workgroup"><strong>workgroup</strong></a> before a Windows NT
 PDC is able to do so then cross subnet browsing will behave strangely
 and may fail.
+<p><br>By default ("auto") Samba will attempt to become the domain master
+browser only if it is the Primary Domain Controller.
 <p><br><strong>Default:</strong>
+<code>	domain master = auto</code>
+<p><br><strong>Example:</strong>
 <code>	domain master = no</code>
 <p><br><a name="domainusermap"></a>
 <li><strong><strong>domain user map (G)</strong></strong>
@@ -1411,7 +1414,7 @@ Samba Server.
 <p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
 will present <em>ALL</em> such unspecified UNIX users as its own NT Domain
 Users, with the same name.
-<p><br>In the case where Samba is member of a domain using
+<p><br>In the case where Samba is a member of a domain using
 <a href="smb.conf.5.html#security"><strong>"security = domain"</strong></a>, Samba will check the UNIX name with
 its Domain Controller (see <a href="smb.conf.5.html#passwordserver"><strong>"password server"</strong></a>)
 as if it was an NT Domain User.  If the Domain Controller says that it is not,
@@ -1847,55 +1850,42 @@ data consistency between SMB/CIFS, NFS and local file access (and is a
 <p><br>This parameter defaults to <em>"On"</em> on systems that have the support,
 and <em>"off"</em> on systems that don't. You should never need to touch
 this parameter.
-<p><br><a name="ldapfilter"></a>
-<li><strong><strong>ldap filter (G)</strong></strong>
+<p><br><a name="ldapbindas"></a>
+<li><strong><strong>ldap bind as (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies an LDAP search filter used to search for a
-user name in the LDAP database. It must contain the string
-<a href="smb.conf.5.html#percentU"><strong>%u</strong></a> which will be replaced with the user being
-searched for.
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the <strong>--with-ldap</strong>
+option.
+<p><br>This parameter specifies the entity to bind to an LDAP directory as.
+Usually it should be safe to use the LDAP root account; for larger
+installations it may be preferable to restrict Samba's access. See also
+<a href="smb.conf.5.html#ldappasswdfile"><strong>ldap passwd file</strong></a>.
 <p><br><strong>Default:</strong>
-<code>	empty string.</code>
+<code>	none (bind anonymously)</code>
+<p><br><strong>Example:</strong>
+<code>	ldap bind as = "uid=root, dc=mydomain, dc=org"</code>
+<p><br><a name="ldappasswdfile"></a>
+<li><strong><strong>ldap passwd file (G)</strong></strong>
+<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the <strong>--with-ldap</strong>
+option.
+<p><br>This parameter specifies a file containing the password with which
+Samba should bind to an LDAP server. For obvious security reasons
+this file must be set to mode 700 or less.
+<p><br><strong>Default:</strong>
+<code>	none (bind anonymously)</code>
+<p><br><strong>Example:</strong>
+<code>	ldap passwd file = /usr/local/samba/private/ldappasswd</code>
 <p><br><a name="ldapport"></a>
 <li><strong><strong>ldap port (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies the TCP port number to use to contact
-the LDAP server on.
+password database stored on an LDAP server. These options are only
+available if your version of Samba was configured with the <strong>--with-ldap</strong>
+option.
+<p><br>This parameter specifies the TCP port number of the LDAP server.
 <p><br><strong>Default:</strong>
 <code>	ldap port = 389.</code>
-<p><br><a name="ldaproot"></a>
-<li><strong><strong>ldap root (G)</strong></strong>
-<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies the entity to bind to the LDAP server
-as (essentially the LDAP username) in order to be able to perform
-queries and modifications on the LDAP database.
-<p><br>See also <a href="smb.conf.5.html#ldaprootpasswd"><strong>ldap root passwd</strong></a>.
-<p><br><strong>Default:</strong>
-<code>	empty string (no user defined)</code>
-<p><br><a name="ldaprootpasswd"></a>
-<li><strong><strong>ldap root passwd (G)</strong></strong>
-<p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
-password database stored on an LDAP server back-end. These options
-are only available if your version of Samba was configured with
-the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies the password for the entity to bind to the
-LDAP server as (the password for this LDAP username) in order to be
-able to perform queries and modifications on the LDAP database.
-<p><br><em>BUGS:</em> This parameter should <em>NOT</em> be a readable parameter
-in the <strong>smb.conf</strong> file and will be removed once a correct
-storage place is found.
-<p><br>See also <a href="smb.conf.5.html#ldaproot"><strong>ldap root</strong></a>.
-<p><br><strong>Default:</strong>
-<code>	empty string.</code>
 <p><br><a name="ldapserver"></a>
 <li><strong><strong>ldap server (G)</strong></strong>
 <p><br>This parameter is part of the <em>EXPERIMENTAL</em> Samba support for a
@@ -1903,7 +1893,8 @@ password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the <strong>--with-ldap</strong> option.
 <p><br>This parameter specifies the DNS name of the LDAP server to use
-for SMB/CIFS authentication purposes.
+when storing and retrieving information about Samba users and
+groups.
 <p><br><strong>Default:</strong>
 <code>	ldap server = localhost</code>
 <p><br><a name="ldapsuffix"></a>
@@ -1912,11 +1903,13 @@ for SMB/CIFS authentication purposes.
 password database stored on an LDAP server back-end. These options
 are only available if your version of Samba was configured with
 the <strong>--with-ldap</strong> option.
-<p><br>This parameter specifies the <code>"dn"</code> or LDAP <em>"distinguished name"</em>
-that tells <a href="smbd.8.html"><strong>smbd</strong></a> to start from when searching
-for an entry in the LDAP password database.
+<p><br>This parameter specifies the node of the LDAP tree beneath which
+Samba should store its information. This parameter MUST be provided
+when using LDAP with Samba.
 <p><br><strong>Default:</strong>
-<code>	empty string.</code>
+<code>	none</code>
+<p><br><strong>Example:</strong>
+<code>	ldap suffix = "dc=mydomain, dc=org"</code>
 <p><br><a name="lmannounce"></a>
 <li><strong><strong>lm announce (G)</strong></strong>
 <p><br>This parameter determines if <a href="nmbd.8.html"><strong>nmbd</strong></a> will produce
@@ -1984,7 +1977,7 @@ or it is a member of a domain using <a href="smb.conf.5.html#security"><strong>"
 the latter format can be used: the default Domain name is the Samba Server's
 Domain name, specified by <a href="smb.conf.5.html#workgroup"><strong>"workgroup = MYGROUP"</strong></a>.
 <p><br>Any UNIX groups that are <em>NOT</em> specified in this map file are treated
-as Local Groups depending on the role of the Samba Server.
+as either Local or Domain Groups depending on the role of the Samba Server.
 <p><br>In the case when Samba is an <strong>EXPERIMENTAL</strong> Domain Controller, Samba
 will present <em>ALL</em> unspecified UNIX groups as its own NT Domain
 Groups, with the same name, and <em>NOT</em> as Local Groups.
@@ -2805,11 +2798,11 @@ for details.
 browse elections. The value of this parameter determines whether
 <a href="nmbd.8.html"><strong>nmbd</strong></a> has a chance of becoming a local master
 browser for the <a href="smb.conf.5.html#workgroup"><strong>WORKGROUP</strong></a> in the local broadcast
-area. The default is zero, which means <a href="nmbd.8.html"><strong>nmbd</strong></a> will
-lose elections to Windows machines. See BROWSING.txt in the Samba
-docs/ directory for details.
+area. Setting this to zero will cause <a href="nmbd.8.html"><strong>nmbd</strong></a> to
+always lose elections to Windows machines. See BROWSING.txt in the
+Samba docs/ directory for details.
 <p><br><strong>Default:</strong>
-<code>	os level = 0</code>
+<code>	os level = 32</code>
 <p><br><strong>Example:</strong>
 <code>	os level = 65    ; This will win against any NT Server</code>
 <p><br><a name="packetsize"></a>
@@ -3069,7 +3062,8 @@ force an election, and it will have a slight advantage in winning the
 election.  It is recommended that this parameter is used in
 conjunction with <a href="smb.conf.5.html#domainmaster"><strong>"domain master = yes"</strong></a>, so
 that <a href="nmbd.8.html"><strong>nmbd</strong></a> can guarantee becoming a domain
-master.
+master. Indeed the default ("auto") enables "preferred master" if
+Samba is configured as the domain master browser.
 <p><br>Use this option with caution, because if there are several hosts
 (whether Samba servers, Windows 95 or NT) that are preferred master
 browsers on the same subnet, they will each periodically and
@@ -3078,7 +3072,7 @@ result in unnecessary broadcast traffic and reduced browsing
 capabilities.
 <p><br>See also <a href="smb.conf.5.html#oslevel"><strong>os level</strong></a>.
 <p><br><strong>Default:</strong>
-<code> 	preferred master = no</code>
+<code> 	preferred master = auto</code>
 <p><br><strong>Example:</strong>
 <code> 	preferred master = yes</code>
 <p><br><a name="preferedmaster"></a>
@@ -3273,7 +3267,7 @@ command"</strong></a>.
 <strong>"printing=SYSV"</strong>,<strong>"printing="HPUX"</strong>,<strong>"printing=QNX"</strong> and
 <strong>"printing=SOFTQ"</strong>.
 <p><br>To see what the defaults are for the other print commands when using
-these three options use the <a href="testparm"><strong>"testparm"</strong></a> program.
+these three options use the <a href="testparm.1.html"><strong>"testparm"</strong></a> program.
 <p><br>This option can be set on a per printer basis
 <p><br>See also the discussion in the <a href="smb.conf.5.html#printers"><strong>[printers]</strong></a> section.
 <p><br><a name="protocol"></a>

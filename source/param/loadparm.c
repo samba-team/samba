@@ -441,6 +441,7 @@ static int iNumServices = 0;
 static int iServiceIndex = 0;
 static BOOL bInGlobalSection = True;
 static BOOL bGlobalOnly = False;
+static int server_role;
 static int default_server_announce;
 
 #define NUMPARAMETERS (sizeof(parm_table) / sizeof(struct parm_struct))
@@ -453,6 +454,7 @@ static BOOL handle_character_set(char *pszParmValue,char **ptr);
 static BOOL handle_coding_system(char *pszParmValue,char **ptr);
 static BOOL handle_vfs_object(char *pszParmValue, char **ptr);
 
+static void set_server_role(void);
 static void set_default_server_announce_type(void);
 
 static struct enum_list enum_protocol[] = {{PROTOCOL_NT1, "NT1"}, {PROTOCOL_LANMAN2, "LANMAN2"}, 
@@ -475,7 +477,7 @@ static struct enum_list enum_announce_as[] = {{ANNOUNCE_AS_NT, "NT"}, {ANNOUNCE_
 
 static struct enum_list enum_case[] = {{CASE_LOWER, "lower"}, {CASE_UPPER, "upper"}, {-1, NULL}};
 
-static struct enum_list enum_lm_announce[] = {{0, "False"}, {1, "True"}, {2, "Auto"}, {-1, NULL}};
+static struct enum_list enum_bool_auto[] = {{False, "False"}, {True, "True"}, {Auto, "Auto"}, {-1, NULL}};
 
 /* 
    Do you want session setups at user level security with a invalid
@@ -719,12 +721,12 @@ static struct parm_struct parm_table[] =
   {"Browse Options", P_SEP, P_SEPARATOR},
 
   {"os level",         P_INTEGER, P_GLOBAL, &Globals.os_level,          NULL,   NULL,  FLAG_BASIC},
-  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_lm_announce, 0},
+  {"lm announce",      P_ENUM,    P_GLOBAL, &Globals.lm_announce,       NULL,   enum_bool_auto, 0},
   {"lm interval",      P_INTEGER, P_GLOBAL, &Globals.lm_interval,       NULL,   NULL,  0},
-  {"preferred master", P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL,  FLAG_BASIC},
-  {"prefered master",  P_BOOL,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   NULL,  0},
+  {"preferred master", P_ENUM,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   enum_bool_auto,  FLAG_BASIC},
+  {"prefered master",  P_ENUM,    P_GLOBAL, &Globals.bPreferredMaster,  NULL,   enum_bool_auto,  FLAG_HIDE},
   {"local master",     P_BOOL,    P_GLOBAL, &Globals.bLocalMaster,      NULL,   NULL,  FLAG_BASIC},
-  {"domain master",    P_BOOL,    P_GLOBAL, &Globals.bDomainMaster,     NULL,   NULL,  FLAG_BASIC},
+  {"domain master",    P_ENUM,    P_GLOBAL, &Globals.bDomainMaster,     NULL,   enum_bool_auto,  FLAG_BASIC},
   {"browse list",      P_BOOL,    P_GLOBAL, &Globals.bBrowseList,       NULL,   NULL,  0},
   {"browseable",       P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
   {"browsable",        P_BOOL,    P_LOCAL,  &sDefault.bBrowseable,      NULL,   NULL,  0},
@@ -902,7 +904,7 @@ static void init_globals(void)
   Globals.syslog = 1;
   Globals.bSyslogOnly = False;
   Globals.bTimestampLogs = True;
-  Globals.os_level = 0;
+  Globals.os_level = 32;
   Globals.max_ttl = 60*60*24*3; /* 3 days default. */
   Globals.max_wins_ttl = 60*60*24*6; /* 6 days default. */
   Globals.min_wins_ttl = 60*60*6; /* 6 hours default. */
@@ -974,9 +976,9 @@ static void init_globals(void)
 
 */
 
-  Globals.bPreferredMaster = False;
+  Globals.bPreferredMaster = Auto; /* depending on bDomainMaster */
   Globals.bLocalMaster = True;
-  Globals.bDomainMaster = False;
+  Globals.bDomainMaster = Auto; /* depending on bDomainLogons */
   Globals.bDomainLogons = False;
   Globals.bBrowseList = True;
   Globals.bWINSsupport = False;
@@ -1214,9 +1216,7 @@ FN_GLOBAL_BOOL(lp_wins_support,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_we_are_a_wins_server,&Globals.bWINSsupport)
 FN_GLOBAL_BOOL(lp_wins_proxy,&Globals.bWINSproxy)
 FN_GLOBAL_BOOL(lp_local_master,&Globals.bLocalMaster)
-FN_GLOBAL_BOOL(lp_domain_master,&Globals.bDomainMaster)
 FN_GLOBAL_BOOL(lp_domain_logons,&Globals.bDomainLogons)
-FN_GLOBAL_BOOL(lp_preferred_master,&Globals.bPreferredMaster)
 FN_GLOBAL_BOOL(lp_load_printers,&Globals.bLoadPrinters)
 FN_GLOBAL_BOOL(lp_use_rhosts,&Globals.bUseRhosts)
 FN_GLOBAL_BOOL(lp_readprediction,&Globals.bReadPrediction)
@@ -2581,6 +2581,7 @@ BOOL lp_load(char *pszFname,BOOL global_only, BOOL save_defaults, BOOL add_ipc)
   if (add_ipc)
 	  lp_add_ipc();
 
+  set_server_role();
   set_default_server_announce_type();
 
   bLoaded = True;
@@ -2664,6 +2665,50 @@ char *volume_label(int snum)
   return(ret);
 }
 
+
+/*******************************************************************
+ Set the server type we will announce as via nmbd.
+********************************************************************/
+static void set_server_role(void)
+{
+	server_role = ROLE_DOMAIN_NONE;
+
+	switch (lp_security())
+	{
+		case SEC_SHARE:
+		{
+			if (lp_domain_logons())
+			{
+				DEBUG(0,("Server's Role (logon server) conflicts with share-level security\n"));
+			}
+			break;
+		}
+		case SEC_SERVER:
+		case SEC_DOMAIN:
+		{
+			if (lp_domain_logons())
+			{
+				server_role = ROLE_DOMAIN_BDC;
+				break;
+			}
+			server_role = ROLE_DOMAIN_MEMBER;
+			break;
+		}
+		case SEC_USER:
+		{
+			if (lp_domain_logons())
+			{
+				server_role = ROLE_DOMAIN_PDC;
+				break;
+			}
+			break;
+		}
+		default:
+		{
+			DEBUG(0,("Server's Role undefined due to unknown security mode\n"));
+		}
+	}
+}
 
 /*******************************************************************
  Set the server type we will announce as via nmbd.
@@ -2852,39 +2897,32 @@ BOOL lp_kernel_oplocks(void)
 /***********************************************************
  returns role of Samba server
 ************************************************************/
+
 int lp_server_role(void)
 {
-	switch (lp_security())
-	{
-		case SEC_SHARE:
-		{
-			if (lp_domain_logons())
-			{
-				DEBUG(0,("Server's Role (logon server) conflicts with share-level security\n"));
-			}
-			return ROLE_DOMAIN_NONE;
-		}
-		case SEC_SERVER:
-		case SEC_DOMAIN:
-		{
-			if (lp_domain_logons())
-			{
-				return ROLE_DOMAIN_BDC;
-			}
-			return ROLE_DOMAIN_MEMBER;
-		}
-		case SEC_USER:
-		{
-			if (lp_domain_logons())
-			{
-				return ROLE_DOMAIN_PDC;
-			}
-			return ROLE_DOMAIN_NONE;
-		}
-		default:
-		{
-			DEBUG(0,("Server's Role undefined due to unknown security mode\n"));
-			return ROLE_DOMAIN_NONE;
-		}
-	}
+  return server_role;
+}
+
+/***********************************************************
+ If we are PDC then prefer us as DMB
+************************************************************/
+
+BOOL lp_domain_master(void)
+{
+	if (Globals.bDomainMaster == Auto)
+		return (server_role == ROLE_DOMAIN_PDC);
+
+	return Globals.bDomainMaster;
+}
+
+/***********************************************************
+ If we are DMB then prefer us as LMB
+************************************************************/
+
+BOOL lp_preferred_master(void)
+{
+	if (Globals.bPreferredMaster == Auto)
+		return (lp_local_master() && lp_domain_master());
+
+	return Globals.bPreferredMaster;
 }
