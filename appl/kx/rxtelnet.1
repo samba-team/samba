@@ -1,0 +1,44 @@
+.\" $Id$
+.\"
+.Dd September 27, 1996
+.Dt RXTELNET 1
+.Os KTH_KRB
+.Sh NAME
+.Nm rxtelnet
+.Nd
+start a telnet and forward X-connections.
+.Sh SYNOPSIS
+.Nm rxtelnet
+.Ar host
+.Sh DESCRIPTION
+The
+.Nm
+program starts a
+.Nm xterm
+window with a telnet to host
+.Ar host.
+From this window you will also be able to run X clients that will be
+able to connect securily to your X server.
+.Sh EXAMPLE
+To login from host
+.Va foo
+(where your display is)
+to host
+.Va bar ,
+you might do the following.
+.Bl -enum
+.It
+On foo: 
+.Nm
+.Va bar
+.It
+You will get a new window with a
+.Nm telnet
+to
+.Va bar .
+In this window you will be able to start X clients.
+.El
+.Sh SEE ALSO
+.Xr rxterm 1 ,
+.Xr kx 1 ,
+.Xr kxd 8
