@@ -334,7 +334,7 @@ void pwd_make_lm_nt_owf2(struct pwd_info *pwd, const uchar srv_key[8],
 	dump_data(100, pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 
 	DEBUG(100,("session key:\n"));
-	dump_data(100, sess_key, sizeof(sess_key));
+	dump_data(100, sess_key, 16);
 #endif
 	pwd->crypted = True;
 
@@ -379,7 +379,7 @@ void pwd_make_lm_nt_owf(struct pwd_info *pwd, uchar cryptkey[8],
 	dump_data(100, pwd->smb_lm_pwd, sizeof(pwd->smb_lm_pwd));
 
 	DEBUG(100,("session key:\n"));
-	dump_data(100, sess_key, sizeof(sess_key));
+	dump_data(100, sess_key, 16);
 #endif
 
 	pwd->crypted = True;

@@ -192,7 +192,7 @@ nt lsa query secret
 ****************************************************************************/
 BOOL msrpc_lsa_set_secret(const char* srv_name,
 				const char* secret_name,
-				const STRING2 *secret)
+				const char* data, int len)
 {
 	BOOL res = True;
 	BOOL res1;
@@ -200,16 +200,25 @@ BOOL msrpc_lsa_set_secret(const char* srv_name,
 
 	POLICY_HND pol_sec;
 	POLICY_HND lsa_pol;
+	STRING2 secret;
+
+	secret.str_max_len = len+8;
+	secret.undoc       = 0;
+	secret.str_str_len = len+8;
+
+	SIVAL(secret.buffer, 0, len+8);
+	SIVAL(secret.buffer, 4, len+8);
+	memcpy(secret.buffer+8, data, len);
 
 	/* lookup domain controller; receive a policy handle */
 	res = res ? lsa_open_policy2( srv_name,
-				&lsa_pol, False, 0x02000000) : False;
+				&lsa_pol, True, 0x02000000) : False;
 
 	/* lookup domain controller; receive a policy handle */
 	res1 = res ? lsa_open_secret( &lsa_pol,
-				secret_name, 0x02000000, &pol_sec) : False;
+				secret_name, 0x020003, &pol_sec) : False;
 
-	res2 = res1 ? (lsa_set_secret(&pol_sec, secret) == NT_STATUS_NOPROBLEMO) : False;
+	res2 = res1 ? (lsa_set_secret(&pol_sec, &secret) == NT_STATUS_NOPROBLEMO) : False;
 
 	res1 = res1 ? lsa_close(&pol_sec) : False;
 

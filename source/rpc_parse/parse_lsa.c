@@ -411,6 +411,8 @@ BOOL lsa_io_q_open_pol2(char *desc,  LSA_Q_OPEN_POL2 *r_q, prs_struct *ps, int d
 	prs_uint32("ptr       ", ps, depth, &(r_q->ptr       ));
 
 	smb_io_unistr2 ("", &(r_q->uni_server_name), r_q->ptr, ps, depth);
+	prs_align(ps);
+
 	lsa_io_obj_attr("", &(r_q->attr           ), ps, depth);
 
 	if (r_q->attr.ptr_sec_qos == 0)
@@ -664,12 +666,8 @@ BOOL lsa_io_q_set_secret(char *desc, LSA_Q_SET_SECRET *q_q, prs_struct *ps, int 
 
 	smb_io_pol_hnd("", &(q_q->pol), ps, depth);
 
-	prs_uint32("ptr_value ", ps, depth, &(q_q->ptr_value ));
-
-	if (q_q->ptr_value != 0)
-	{
-		lsa_io_secret_value("", &(q_q->value), ps, depth);
-	}
+	lsa_io_secret_value("", &(q_q->value), ps, depth);
+	prs_uint32("unknown", ps, depth, &(q_q->unknown));
 
 	return True;
 }

@@ -47,8 +47,8 @@ enum SID_NAME_USE
 #define LSA_OPENPOLICY         0x06
 #define LSA_OPENPOLICY2        0x2c
 #define LSA_OPENSECRET         0x1c
+#define LSA_SETSECRET          0x1d
 #define LSA_QUERYSECRET        0x1e
-#define LSA_SETSECRET        0x1f
 
 #define LSA_MAX_GROUPS 32
 #define LSA_MAX_SIDS 32
@@ -216,8 +216,8 @@ typedef struct lsa_q_set_secret_info
 {
 	POLICY_HND pol;
 
-	uint32 ptr_value;
 	LSA_SECRET_VALUE value;
+	uint32 unknown;
 
 } LSA_Q_SET_SECRET;
 

@@ -339,8 +339,9 @@ nt lsa query
 void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
 {
 	char *secret_name;
-	STRING2 secret;
 	fstring srv_name;
+	char *data;
+	int len;
 
 	fstrcpy(srv_name, "\\\\");
 	fstrcat(srv_name, info->dest_host);
@@ -353,10 +354,10 @@ void cmd_lsa_set_secret(struct client_info *info, int argc, char *argv[])
 	}
 
 	secret_name = argv[1];
+	data = argv[2];
+	len = strlen(argv[2]);
 
-	make_string2(&secret, argv[2], strlen(argv[2]));
-
-	if (msrpc_lsa_set_secret(srv_name, secret_name, &secret))
+	if (msrpc_lsa_set_secret(srv_name, secret_name, data, len))
 	{
 		report(out_hnd, "LSA Set Secret: OK\n");
 	}

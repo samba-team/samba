@@ -2545,7 +2545,7 @@ uint32 lookup_lsa_sid(const char *domain,
 				DOM_SID *sid, char *name, uint32 *type);
 BOOL msrpc_lsa_set_secret(const char* srv_name,
 				const char* secret_name,
-				const STRING2 *secret);
+				const char* data, int len);
 BOOL msrpc_lsa_query_secret(const char* srv_name,
 				const char* secret_name,
 				STRING2 *secret,

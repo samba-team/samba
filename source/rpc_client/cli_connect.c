@@ -189,6 +189,7 @@ static struct cli_connection *cli_con_get(const char* srv_name,
 					cli_connection_free(con);
 					return NULL;
 				}
+				dump_data_pw("sess key:", con->msrpc.smb->cli->nt.usr_sess_key, 16);
 			}
 			else
 			{
@@ -434,6 +435,7 @@ BOOL cli_pol_link(POLICY_HND *to, const POLICY_HND *from)
 
 	if (!cli_connection_get(from, &con))
 	{
+		DEBUG(0,("cli_pol_link: no connection\n"));
 		return False;
 	}
 
@@ -457,14 +459,17 @@ BOOL cli_get_usr_sesskey(const POLICY_HND *pol, uchar usr_sess_key[16])
 	}
 	if (con == NULL)
 	{
+		DEBUG(0,("cli_get_usr_sesskey: no connection\n"));
 		return False;
 	}
 	nt = cli_conn_get_ntinfo(con);
-	if (nt != NULL)
+	if (nt == NULL)
 	{
-		memcpy(usr_sess_key,nt->usr_sess_key,sizeof(nt->usr_sess_key));
+		DEBUG(0,("cli_get_usr_sesskey: no ntdom_info\n"));
+		return False;
 	}
-
+	
+	memcpy(usr_sess_key,nt->usr_sess_key,sizeof(nt->usr_sess_key));
 
 	return True;
 }
@@ -583,6 +588,8 @@ BOOL cli_get_con_sesskey(struct cli_connection *con, uchar sess_key[16])
 	}
 	nt = cli_conn_get_ntinfo(con);
 	memcpy(sess_key, nt->sess_key, sizeof(nt->sess_key));
+
+	dump_data_pw("sess_key:", sess_key, 16);
 
 	return True;
 }

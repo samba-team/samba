@@ -317,7 +317,7 @@ BOOL lsa_open_policy2( const char *system_name, POLICY_HND *hnd,
 	lsa_io_q_open_pol2("", &q_o, &buf, 0);
 
 	/* send the data on \PIPE\ */
-	if (rpc_con_pipe_req(con, LSA_OPENPOLICY, &buf, &rbuf))
+	if (rpc_con_pipe_req(con, LSA_OPENPOLICY2, &buf, &rbuf))
 	{
 		LSA_R_OPEN_POL2 r_o;
 		BOOL p;
@@ -399,7 +399,7 @@ BOOL lsa_open_secret( const POLICY_HND *hnd,
 		{
 			/* ok, at last: we're happy. return the policy handle */
 			memcpy(hnd_secret, r_o.pol.data, sizeof(hnd_secret->data));
-			valid_pol = True;
+			valid_pol = cli_pol_link(hnd_secret, hnd);
 		}
 	}
 
@@ -431,11 +431,12 @@ uint32 lsa_set_secret(POLICY_HND *hnd, const STRING2 *secret)
 	DEBUG(4,("LSA Set Secret\n"));
 
 	memcpy(&q_q.pol, hnd, sizeof(q_q.pol));
-	q_q.ptr_value = 1;
+	q_q.unknown = 0x0;
+	q_q.value.ptr_secret = 0x1;
 	make_strhdr2(&q_q.value.hdr_secret, secret->str_str_len,
 	                                    secret->str_max_len, 1);
 
-	if (!cli_get_sesskey(hnd, sess_key))
+	if (!cli_get_usr_sesskey(hnd, sess_key))
 	{
 		return NT_STATUS_INVALID_PARAMETER;
 	}
@@ -528,13 +529,11 @@ BOOL lsa_query_secret(POLICY_HND *hnd, STRING2 *secret,
 			STRING2 enc_secret;
 			memcpy(&enc_secret,  &(r_q.info.value.enc_secret), sizeof(STRING2));
 			memcpy(last_update, &(r_q.info.last_update),      sizeof(NTTIME));
-			if (!cli_get_sesskey(hnd, sess_key))
+			if (!cli_get_usr_sesskey(hnd, sess_key))
 			{
 				return False;
 			}
-#ifdef DEBUG_PASSWORD
-			dump_data(100, sess_key, 16);
-#endif
+			dump_data_pw("sess key:", sess_key, 16);
 			valid_info = nt_decrypt_string2(secret, &enc_secret,
 			             sess_key);
 		}
