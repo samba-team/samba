@@ -4578,7 +4578,7 @@ int reply_lockingX(connection_struct *conn, char *inbuf,char *outbuf,int length,
 		/* we don't support these - and CANCEL_LOCK makes w2k
 		   and XP reboot so I don't really want to be
 		   compatible! (tridge) */
-		return ERROR_NT(NT_STATUS_NOT_SUPPORTED);
+		return ERROR_NT(NT_STATUS_UNSUCCESSFUL);
 	}
 	
 	if (locktype & LOCKING_ANDX_CANCEL_LOCK) {
