@@ -315,33 +315,20 @@ krb5_openlog(krb5_context context,
 	     krb5_log_facility **fac)
 {
     krb5_error_code ret;
-    const char *p;
-    krb5_config_binding *binding = NULL;
-    int done = 0;
+    char **p, **q;
 
     ret = krb5_initlog(context, program, fac);
     if(ret)
 	return ret;
-    
 
-    while(p = krb5_config_get_next(context->cf, &binding, krb5_config_string, 
-				   "logging",
-				   program,
-				   NULL)){
-	ret = krb5_addlog_dest(context, *fac, p);
-	done = 1;
-    }
-    if(!done){
-	while(p = krb5_config_get_next(context->cf, &binding, 
-				       krb5_config_string, 
-				       "logging",
-				       "default",
-				       NULL)){
-	    ret = krb5_addlog_dest(context, *fac, p);
-	    done = 1;
-	}
-    }
-    if(!done)
+    p = krb5_config_get_strings(context->cf, "logging", program, NULL);
+    if(p == NULL)
+	p = krb5_config_get_strings(context->cf, "logging", "default", NULL);
+    if(p){
+	for(q = p; *q == NULL; q++)
+	    ret = krb5_addlog_dest(context, *fac, *q);
+	krb5_config_free_strings(p);
+    }else
 	ret = krb5_addlog_dest(context, *fac, "SYSLOG");
     return 0;
 }
