@@ -10,6 +10,8 @@ if test "x$PDFLATEX" = x; then
 fi
 
 AC_PATH_PROG(XMLTO, xmlto)
+AC_PATH_PROG(LATEX, latex)
+AC_PATH_PROG(DVIPS, dvips)
 
 DOC_BUILD_DATE=`date '+%d-%m-%Y'`
 AC_SUBST(DOC_BUILD_DATE)
