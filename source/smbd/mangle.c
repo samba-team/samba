@@ -253,7 +253,7 @@ smb_ucs2_t *mangle(const smb_ucs2_t *unmangled)
 
 	/* if it is a valid 8_3 do not mangle again */
 	if (NT_STATUS_IS_OK(is_8_3_w(unmangled)))
-		return strdup_w(unmangled);
+		return NULL;
 
 	if (NT_STATUS_IS_ERR(mangle_get_prefix(unmangled, &umpref, &ext)))
 		return NULL;

@@ -171,7 +171,7 @@ size_t convert_string_allocate(charset_t from, charset_t to,
 		return -1;
 	}
 
-	destlen = MAX(srclen, 1024);
+	destlen = MAX(srclen, 512);
 	outbuf = NULL;
 convert:
 	destlen = destlen * 2;
@@ -208,15 +208,13 @@ convert:
 	}
 	
 	destlen = destlen - o_len;
-	*dest = (char *)malloc(destlen);
+	*dest = (char *)realloc(outbuf,destlen);
 	if (!*dest) {
 		DEBUG(0, ("convert_string_allocate: out of memory!\n"));
 		free(outbuf);
 		return -1;
 	}
-	memcpy(*dest, outbuf, destlen);
-	free(outbuf);
-	
+
 	return destlen;
 }
 
@@ -477,4 +475,42 @@ int align_string(const void *base_ptr, const char *p, int flags)
 		return ucs2_align(base_ptr, p, flags);
 	}
 	return 0;
+}
+
+
+
+/****************************************************************************
+convert from ucs2 to unix charset and return the
+allocated and converted string or NULL if an error occurred.
+you must provide a zero terminated string.
+the returning string will be zero terminated.
+****************************************************************************/
+char *acnv_u2ux(const smb_ucs2_t *src)
+{
+	size_t slen;
+	size_t dlen;
+	void *dest;
+	
+	slen = strlen_w(src) + 1;
+	dlen = convert_string_allocate(CH_UCS2, CH_UNIX, src, slen, &dest);
+	if (dlen == -1) return NULL;
+	else return dest;
+}
+
+/****************************************************************************
+convert from ucs2 to unix charset and return the
+allocated and converted string or NULL if an error occurred.
+you must provide a zero terminated string.
+the returning string will be zero terminated.
+****************************************************************************/
+smb_ucs2_t *acnv_uxu2(const char *src)
+{
+	size_t slen;
+	size_t dlen;
+	void *dest;
+	
+	slen = strlen(src) + 1;
+	dlen = convert_string_allocate(CH_UNIX, CH_UCS2, src, slen, &dest);
+	if (dlen == -1) return NULL;
+	else return dest;
 }
