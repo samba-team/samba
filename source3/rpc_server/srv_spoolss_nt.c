@@ -1794,7 +1794,7 @@ static BOOL construct_dev_mode(DEVICEMODE *devmode, int snum, char *servername)
  * construct_printer_info_2
  * fill a printer_info_2 struct
  ********************************************************************/
-static BOOL construct_printer_info_2(pstring servername, PRINTER_INFO_2 *printer, int snum)
+static BOOL construct_printer_info_2(fstring servername, PRINTER_INFO_2 *printer, int snum)
 {
 	pstring chaine;
 	pstring chaine2;
