@@ -18,6 +18,18 @@ sub DumpProperties($)
 
     foreach my $d ($props) {
 	foreach my $k (keys %{$d}) {
+	    if ($k eq "in") {
+		$res .= "[in] ";
+		next;
+	    }
+	    if ($k eq "out") {
+		$res .= "[out] ";
+		next;
+	    }
+	    if ($k eq "ref") {
+		$res .= "[ref] ";
+		next;
+	    }
 	    $res .= "[$k($d->{$k})] ";
 	}
     }
