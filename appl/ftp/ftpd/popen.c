@@ -41,7 +41,14 @@ RCSID("$Id$");
 #endif
 
 #include <sys/types.h>
+#ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
+#include <time.h>
+#elif defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
 #endif

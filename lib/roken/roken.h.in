@@ -204,13 +204,11 @@ int rcmd(char **ahost, unsigned short inport, const char *locuser,
 #ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
 #include <time.h>
-#else
-#ifdef HAVE_SYS_TIME_H
+#elif defined(HAVE_SYS_TIME_H)
 #include <sys/time.h>
 #else
 #include <time.h>
-#endif /* !HAVE_SYS_TIME_H */
-#endif /* !TIME_WITH_SYS_TIME */
+#endif
 
 time_t tm2time (struct tm tm, int local);
 

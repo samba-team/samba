@@ -44,8 +44,17 @@ RCSID("$Id$");
 #include "roken.h"
 
 #include <sys/types.h>
+#ifdef TIME_WITH_SYS_TIME
 #include <sys/time.h>
+#include <time.h>
+#elif defined(HAVE_SYS_TIME_H)
+#include <sys/time.h>
+#else
+#include <time.h>
+#endif
+#ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
+#endif
 #include <unistd.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
