@@ -860,6 +860,7 @@ static void shares_page(void)
 	d_printf("<FORM name=\"swatform\" method=post>\n");
 
 	d_printf("<table>\n");
+
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
 	if ( cgi_variable("BasicMode"))
@@ -867,6 +868,8 @@ static void shares_page(void)
 	if ( cgi_variable("AdvMode"))
 		mode = 1;
 	if ( cgi_variable("DevMode"))
+		mode = 2;
+
 	ViewModeBoxes( mode );
 	switch ( mode ) {
 		case 0:
@@ -1207,6 +1210,13 @@ static void printers_page(void)
 
 	if ( cgi_variable("ViewMode") )
 		mode = atoi(cgi_variable("ViewMode"));
+        if ( cgi_variable("BasicMode"))
+                mode = 0;
+        if ( cgi_variable("AdvMode"))
+                mode = 1;
+        if ( cgi_variable("DevMode"))
+                mode = 2;
+
 	ViewModeBoxes( mode );
 	switch ( mode ) {
 		case 0:
