@@ -440,14 +440,17 @@ krb5_realm_compare(krb5_context context,
 }
 
 krb5_error_code
-krb5_425_conv_principal(krb5_context context,
-			const char *name,
-			const char *instance,
-			const char *realm,
-			krb5_principal *princ)
+krb5_425_conv_principal_ext(krb5_context context,
+			    const char *name,
+			    const char *instance,
+			    const char *realm,
+			    krb5_boolean (*func)(krb5_context, krb5_principal),
+			    krb5_boolean resolve,
+			    krb5_principal *princ)
 {
     const char *p;
     krb5_error_code ret;
+    krb5_principal pr;
     char host[128];
 
     /* do the following: if the name is found in the
@@ -469,34 +472,69 @@ krb5_425_conv_principal(krb5_context context,
     if(p == NULL)
 	p = krb5_config_get_string(context->cf, "libdefaults", 
 				   "v4_name_convert", "host", name, NULL);
+    if(p == NULL)
+	goto no_host;
+    name = p;
+    p = krb5_config_get_string(context->cf, "realms", realm, 
+			       "v4_instance_convert", instance, NULL);
     if(p){
-	name = p;
-	p = krb5_config_get_string(context->cf, "realms", realm, 
-				   "v4_instance_convert", instance, NULL);
-	if(p){
-	    instance = p;
-	    goto done;
+	instance = p;
+	ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
+	if(func == NULL || (*func)(context, pr)){
+	    *princ = pr;
+	    return 0;
 	}
-	if(krb5_config_get_bool(context->cf, "libdefaults", 
-				"v4_instance_resolve", NULL)){
-	    struct hostent *hp = gethostbyname(instance);
-	    if(hp){
-		instance = hp->h_name;
-		goto done;
-	    }
-	}
-	p = krb5_config_get_string(context->cf, "realms", realm, 
-				   "default_domain", NULL);
-	if(p == NULL){
-	    /* should this be an error or should it silently
-	       succeed? */
-	    return HEIM_ERR_V4_PRINC_NO_CONV;
-	}
-	
-	snprintf(host, sizeof(host), "%s.%s", instance, p);
-	instance = host;
-	goto done;
+	krb5_free_principal(context, pr);
+	*princ = NULL;
+	return HEIM_ERR_V4_PRINC_NO_CONV;
     }
+    if(resolve){
+	struct hostent *hp = gethostbyname(instance);
+	if(hp){
+	    instance = hp->h_name;
+	    ret = krb5_make_principal(context, &pr, 
+				      realm, name, instance, NULL);
+	    if(func == NULL || (*func)(context, pr)){
+		*princ = pr;
+		return 0;
+	    }
+	    krb5_free_principal(context, pr);
+	}
+    }
+    {
+	char **domains, **d;
+	domains = krb5_config_get_strings(context->cf, "realms", realm,
+					  "v4_domains", NULL);
+	for(d = domains; d && *d; d++){
+	    snprintf(host, sizeof(host), "%s.%s", instance, *d);
+	    ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+	    if(func == NULL || (*func)(context, pr)){
+		*princ = pr;
+		krb5_config_free_strings(domains);
+		return 0;
+	    }
+	    krb5_free_principal(context, pr);
+	}
+	krb5_config_free_strings(domains);
+    }
+    
+    
+    p = krb5_config_get_string(context->cf, "realms", realm, 
+			       "default_domain", NULL);
+    if(p == NULL){
+	/* should this be an error or should it silently
+	   succeed? */
+	return HEIM_ERR_V4_PRINC_NO_CONV;
+    }
+	
+    snprintf(host, sizeof(host), "%s.%s", instance, p);
+    ret = krb5_make_principal(context, &pr, realm, name, host, NULL);
+    if(func == NULL || (*func)(context, pr)){
+	*princ = pr;
+	return 0;
+    }
+    krb5_free_principal(context, pr);
+    return HEIM_ERR_V4_PRINC_NO_CONV;
 no_host:
     p = krb5_config_get_string(context->cf,
 			       "realms",
@@ -515,9 +553,31 @@ no_host:
     if(p)
 	name = p;
     
-done:		
-    return krb5_make_principal(context, princ, realm, name, instance, NULL);
+    ret = krb5_make_principal(context, &pr, realm, name, instance, NULL);
+    if(func == NULL || (*func)(context, pr)){
+	*princ = pr;
+	return 0;
+    }
+    krb5_free_principal(context, pr);
+    return HEIM_ERR_V4_PRINC_NO_CONV;
 }
+
+krb5_error_code
+krb5_425_conv_principal(krb5_context context,
+			const char *name,
+			const char *instance,
+			const char *realm,
+			krb5_principal *princ)
+{
+    krb5_boolean resolve = krb5_config_get_bool(context->cf, 
+						"libdefaults", 
+						"v4_instance_resolve", 
+						NULL);
+
+    return krb5_425_conv_principal_ext(context, name, instance, realm, 
+				       NULL, resolve, princ);
+}
+
 
 static char*
 name_convert(krb5_context context, const char *name, const char *realm, 
