@@ -518,7 +518,7 @@ static void cb_wholenet(GtkWidget *item, gchar *signame)
 /* Should put up a dialog box to ask the user for username and password */
 
 static void 
-auth_fn(char *server, char *share,
+auth_fn(const char *server, const char *share,
 	char *workgroup, int wgmaxlen, char *username, int unmaxlen,
 	char *password, int pwmaxlen)
 {
@@ -546,7 +546,7 @@ int main( int   argc,
 
   /* Init the smbclient library */
 
-  err = smbc_init(auth_fn, "", 10);
+  err = smbc_init(auth_fn, 10);
 
   /* a generic toplevel window */
   window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
