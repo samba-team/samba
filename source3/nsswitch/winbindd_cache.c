@@ -296,13 +296,14 @@ static struct cache_entry *wcache_fetch(struct winbind_cache *cache,
 
 	if (centry_expired(domain, centry)) {
 		extern BOOL opt_dual_daemon;
+
 		if (opt_dual_daemon) {
 			extern BOOL backgroud_process;
 			backgroud_process = True;
 		} else {
-		centry_free(centry);
-		return NULL;
-	}
+			centry_free(centry);
+			return NULL;
+		}
 	}
 
 	return centry;
