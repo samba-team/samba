@@ -45,16 +45,18 @@
  * @sa Samba Developers Guide
  **/
 
-static size_t ascii_pull(void *,const char **, size_t *, char **, size_t *);
-static size_t ascii_push(void *,const char **, size_t *, char **, size_t *);
-static size_t  utf8_pull(void *,const char **, size_t *, char **, size_t *);
-static size_t  utf8_push(void *,const char **, size_t *, char **, size_t *);
+static size_t ascii_pull  (void *,const char **, size_t *, char **, size_t *);
+static size_t ascii_push  (void *,const char **, size_t *, char **, size_t *);
+static size_t utf8_pull   (void *,const char **, size_t *, char **, size_t *);
+static size_t utf8_push   (void *,const char **, size_t *, char **, size_t *);
 static size_t ucs2hex_pull(void *,const char **, size_t *, char **, size_t *);
 static size_t ucs2hex_push(void *,const char **, size_t *, char **, size_t *);
-static size_t iconv_copy(void *,const char **, size_t *, char **, size_t *);
+static size_t iconv_copy  (void *,const char **, size_t *, char **, size_t *);
+static size_t iconv_swab  (void *,const char **, size_t *, char **, size_t *);
 
 static struct charset_functions builtin_functions[] = {
 	{"UCS-2LE",  iconv_copy, iconv_copy},
+	{"UCS-2BE",  iconv_swab, iconv_swab},
 	{"UTF8",   utf8_pull,  utf8_push},
 	{"ASCII", ascii_pull, ascii_push},
 	{"UCS2-HEX", ucs2hex_pull, ucs2hex_push},
@@ -401,6 +403,31 @@ static size_t ucs2hex_push(void *cd, const char **inbuf, size_t *inbytesleft,
 		return -1;
 	}
 	
+	return 0;
+}
+
+static size_t iconv_swab(void *cd, const char **inbuf, size_t *inbytesleft,
+			 char **outbuf, size_t *outbytesleft)
+{
+	int n;
+
+	n = MIN(*inbytesleft, *outbytesleft);
+
+	swab(*inbuf, *outbuf, (n&~1));
+	if (n&1) {
+		(*outbuf)[n-1] = 0;
+	}
+
+	(*inbytesleft) -= n;
+	(*outbytesleft) -= n;
+	(*inbuf) += n;
+	(*outbuf) += n;
+
+	if (*inbytesleft > 0) {
+		errno = E2BIG;
+		return -1;
+	}
+
 	return 0;
 }
 
