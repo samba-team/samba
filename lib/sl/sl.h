@@ -54,5 +54,7 @@ typedef struct sl_cmd SL_cmd;
 
 void sl_help (SL_cmd *, int argc, char **argv);
 int  sl_loop (SL_cmd *, char *prompt);
+int  sl_command (SL_cmd *cmds, int argc, char **argv);
+
 
 #endif /* _SL_H */
