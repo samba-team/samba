@@ -39,8 +39,11 @@ enum auth_method auth_method;
 krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
+
+#ifdef KRB4
 des_key_schedule schedule;
 des_cblock iv;
+#endif
 
 krb5_ccache ccache, ccache2;
 int kerberos_status = 0;

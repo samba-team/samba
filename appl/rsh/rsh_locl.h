@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1997, 1999 Kungliga Tekniska Högskolan
+ * Copyright (c) 1997 - 2000 Kungliga Tekniska Högskolan
  * (Royal Institute of Technology, Stockholm, Sweden). 
  * All rights reserved. 
  *
@@ -123,8 +123,10 @@ extern int do_encrypt;
 extern krb5_context context;
 extern krb5_keyblock *keyblock;
 extern krb5_crypto crypto;
+#ifdef KRB4
 extern des_key_schedule schedule;
 extern des_cblock iv;
+#endif
 
 #define KCMD_VERSION "KCMDV0.1"
 

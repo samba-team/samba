@@ -44,8 +44,10 @@ char tkfile[MAXPATHLEN];
 krb5_context context;
 krb5_keyblock *keyblock;
 krb5_crypto crypto;
+#ifdef KRB4
 des_key_schedule schedule;
 des_cblock iv;
+#endif
 
 
 /*
