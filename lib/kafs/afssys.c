@@ -119,7 +119,8 @@ k_afsklog(char *realm)
 #define SINGLE_ENTRY_POINT	1
 #define MULTIPLE_ENTRY_POINT	2
 #define SINGLE_ENTRY_POINT2	3
-#define UNKNOWN_ENTRY_POINT	4
+#define AIX_ENTRY_POINTS	4
+#define UNKNOWN_ENTRY_POINT	5
 static int afs_entry_point = UNKNOWN_ENTRY_POINT;
 
 int
@@ -144,6 +145,10 @@ k_pioctl(char *a_path,
   if (afs_entry_point == SINGLE_ENTRY_POINT2)
     return syscall(AFS_SYSCALL2, AFSCALL_PIOCTL,
 		   a_path, o_opcode, a_paramsP, a_followSymlinks);
+#endif
+
+#ifdef _AIX
+  return lpioctl(a_path, o_opcode, a_paramsP, a_followSymlinks);
 #endif
 
   errno = ENOSYS;
@@ -175,6 +180,10 @@ k_setpag(void)
 #ifdef AFS_SYSCALL2
   if (afs_entry_point == SINGLE_ENTRY_POINT2)
     return syscall(AFS_SYSCALL2, AFSCALL_SETPAG);
+#endif
+
+#ifdef _AIX
+  return lsetpag();
 #endif
 
   errno = ENOSYS;
@@ -253,6 +262,18 @@ k_hasafs(void)
 	}
     }
 #endif /* AFS_SYSCALL */
+
+#ifdef _AIX
+  if (setjmp(catch_SIGSYS) == 0)
+    {
+      lpioctl(0, 0, 0, 0);
+      if (errno == EINVAL)
+	{
+	  afs_entry_point = AIX_ENTRY_POINTS;
+	  goto done;
+	}
+    }
+#endif
 
  done:
   (void) signal(SIGSYS, saved_func);
