@@ -1002,6 +1002,17 @@ LDAP_message2entry(krb5_context context, HDB * db, LDAPMessage * msg,
 
 	ent->keys.len++;
 
+	if (ent->etypes == NULL) {
+	    ent->etypes = malloc(sizeof(*(ent->etypes)));
+	    if (ent->etypes == NULL) {
+		krb5_set_error_string(context, "malloc: out of memory");
+		ret = ENOMEM;
+		goto out;
+	    }
+	    ent->etypes->val = NULL;
+	    ent->etypes->len = 0;
+	}
+
 	etypes = realloc(ent->etypes->val, 
 			 (ent->etypes->len + 1) * sizeof(ent->etypes->val[0]));
 	if (etypes == NULL) {
