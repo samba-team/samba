@@ -2,6 +2,7 @@
    Unix SMB/CIFS implementation.
    Copyright (C) Andrew Tridgell 1992-2001
    Copyright (C) Andrew Bartlett      2002
+   Copyright (C) Rafal Szczesniak     2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -383,25 +384,31 @@ BOOL secrets_store_ldap_pw(char* dn, char* pw)
  * The linked list is allocated on the supplied talloc context, caller gets to destory
  * when done.
  *
- * @param start_idx starting index, eg. we can start fetching
- *	  at third or sixth trusted domain entry
- * @param num_domains number of domain entries to fetch at one call
+ * @param ctx Allocation context
+ * @param enum_ctx Starting index, eg. we can start fetching at third
+ *        or sixth trusted domain entry. Zero is the first index.
+ *        Value it is set to is the enum context for the next enumeration.
+ * @param num_domains Number of domain entries to fetch at one call
+ * @param domains Pointer to array of trusted domain structs to be filled up
  *
- * @return list of trusted domains structs (unicode name, sid and password)
+ * @return nt status code of rpc response
  **/ 
 
-NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int start_idx, int max_num_domains, int *num_domains, TRUSTDOM ***domains)
+NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int* enum_ctx, int max_num_domains, int *num_domains, TRUSTDOM ***domains)
 {
 	TDB_LIST_NODE *keys, *k;
 	TRUSTDOM *dom = NULL;
 	char *pattern;
+	int start_idx;
 	uint32 idx = 0;
 	size_t size;
 	struct trusted_dom_pass *pass;
+	NTSTATUS status;
 
 	secrets_init();
 
 	*num_domains = 0;
+	start_idx = *enum_ctx;
 
 	/* generate searching pattern */
 	if (!(pattern = talloc_asprintf(ctx, "%s/*", SECRETS_DOMTRUST_ACCT_PASS))) {
@@ -410,12 +417,18 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int start_idx, int max_num
 	}
 
 	DEBUG(5, ("secrets_get_trusted_domains: looking for %d domains, starting at index %d\n", 
-		  max_num_domains, start_idx));
+		  max_num_domains, *enum_ctx));
 
 	*domains = talloc_zero(ctx, sizeof(**domains)*max_num_domains);
 
 	/* fetching trusted domains' data and collecting them in a list */
 	keys = tdb_search_keys(tdb, pattern);
+
+	/* 
+	 * if there's no keys returned ie. no trusted domain,
+	 * return "no more entries" code
+	 */
+	status = NT_STATUS_NO_MORE_ENTRIES;
 
 	/* searching for keys in sectrets db -- way to go ... */
 	for (k = keys; k; k = k->next) {
@@ -447,17 +460,26 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int start_idx, int max_num
 				return NT_STATUS_NO_MEMORY;
 			}
 			
-				/* copy domain sid */
+			/* copy domain sid */
 			SMB_ASSERT(sizeof(dom->sid) == sizeof(pass->domain_sid));
 			memcpy(&(dom->sid), &(pass->domain_sid), sizeof(dom->sid));
 			
-				/* copy unicode domain name */
+			/* copy unicode domain name */
 			dom->name = talloc_strdup_w(ctx, pass->uni_name);
 			
-			(*domains)[*num_domains] = dom;
+			(*domains)[idx - start_idx] = dom;
 
+			*enum_ctx = idx + 1;
 			(*num_domains)++;
-			
+		
+			/* set proper status code to return */
+			if (k->next) {
+				/* there are yet some entries to enumerate */
+				status = STATUS_MORE_ENTRIES;
+			} else {
+				/* this is the last entry in the whole enumeration */
+				status = NT_STATUS_OK;
+			}
 		}
 		
 		idx++;
@@ -466,12 +488,11 @@ NTSTATUS secrets_get_trusted_domains(TALLOC_CTX* ctx, int start_idx, int max_num
 		SAFE_FREE(pass);
 	}
 	
-	DEBUG(5, ("secrets_get_trusted_domains: got %d of %d domains\n", 
-		  *num_domains, max_num_domains));
+	DEBUG(5, ("secrets_get_trusted_domains: got %d domains\n", *num_domains));
 
 	/* free the results of searching the keys */
 	tdb_search_list_free(keys);
 
-	return NT_STATUS_OK;
+	return status;
 }
 

@@ -5,7 +5,8 @@
    Copyright (C) Andrew Tridgell              1992-1997,2000,
    Copyright (C) Luke Kenneth Casson Leighton 1996-1997,2000,
    Copyright (C) Paul Ashton                       1997,2000,
-   Copyright (C) Elrond                                 2000.
+   Copyright (C) Elrond                                 2000,
+   Copyright (C) Rafal Szczesniak                       2002
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -537,12 +538,25 @@ NTSTATUS cli_lsa_query_info_policy(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 	return result;
 }
 
-/** Enumerate list of trusted domains */
+/**
+ * Enumerate list of trusted domains
+ *
+ * @param cli client state (cli_state) structure of the connection
+ * @param mem_ctx memory context
+ * @param pol opened lsa policy handle
+ * @param enum_ctx enumeration context ie. index of first returned domain entry
+ * @param pref_num_domains preferred max number of entries returned in one response
+ * @param num_domains total number of trusted domains returned by response
+ * @param domain_names returned trusted domain names
+ * @param domain_sids returned trusted domain sids
+ *
+ * @return nt status code of response
+ **/
 
 NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
                                 POLICY_HND *pol, uint32 *enum_ctx, 
-                                uint32 *num_domains, char ***domain_names, 
-                                DOM_SID **domain_sids)
+                                uint32 *pref_num_domains, uint32 *num_domains,
+				char ***domain_names, DOM_SID **domain_sids)
 {
 	prs_struct qbuf, rbuf;
 	LSA_Q_ENUM_TRUST_DOM q;
@@ -560,7 +574,7 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	/* Marshall data and send request */
 
-        init_q_enum_trust_dom(&q, pol, *enum_ctx, 0xffffffff);
+        init_q_enum_trust_dom(&q, pol, *enum_ctx, *pref_num_domains);
 
 	if (!lsa_io_q_enum_trust_dom("", &q, &qbuf, 0) ||
 	    !rpc_api_pipe_req(cli, LSA_ENUMTRUSTDOM, &qbuf, &rbuf)) {
@@ -577,15 +591,14 @@ NTSTATUS cli_lsa_enum_trust_dom(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	result = r.status;
 
-	if (!NT_STATUS_IS_OK(result) && 
-	    NT_STATUS_V(result) != NT_STATUS_V(NT_STATUS_NO_MORE_ENTRIES)) {
+	if (!NT_STATUS_IS_OK(result) &&
+	    !NT_STATUS_EQUAL(result, NT_STATUS_NO_MORE_ENTRIES) &&
+	    !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) {
 
 		/* An actual error ocured */
 
 		goto done;
 	}
-
-	result = NT_STATUS_OK;
 
 	/* Return output parameters */
 
