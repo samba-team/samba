@@ -3515,6 +3515,67 @@ static BOOL process(char *base_directory)
   return(True);
 }
 
+/****************************************************************************
+LSA Request Challenge on the NETLOGON pipe.
+****************************************************************************/
+static BOOL cli_lsa_req_chal(void)
+{
+	char *rparam = NULL;
+	char *rdata = NULL;
+	char *p;
+	int rdrcnt,rprcnt;
+	int count = 0;
+	pstring param; /* only 1024 bytes */
+	LSA_Q_REQ_CHAL q_c;
+	DOM_CHAL clnt_chal;
+	int call_id = 0x1;
+
+	/* create and send a MSRPC command with api LSA_REQCHAL */
+
+	clnt_chal.data[0] = 0x11111111;
+	clnt_chal.data[1] = 0x22222222;
+
+	DEBUG(4,("LSA Request Challenge from %s to %s: %lx %lx\n",
+	          desthost, myhostname, clnt_chal.data[0], clnt_chal.data[1]));
+
+	/* store the parameters */
+	make_q_req_chal(&q_c, desthost, myhostname, &clnt_chal);
+
+	/* turn parameters into data stream */
+	p = lsa_io_q_req_chal(False, &q_c, param + 0x18, param, 4, 5);
+
+	/* create the request RPC_HDR _after_ the main data: length is now known */
+	create_rpc_request(call_id, LSA_REQCHAL, param, PTR_DIFF(p, param));
+
+	/* send the data on \PIPE\NETLOGON */
+	if (cli_call_api(PIPE_NETLOGON, PTR_DIFF(p, param),0,
+				1024,BUFFER_SIZE,
+				&rprcnt,&rdrcnt,
+				param,NULL,
+				&rparam,&rdata))
+	{
+#if 0
+		/* oh, now what??? */
+
+		int res = SVAL(rparam,0);
+		int converter=SVAL(rparam,2);
+		int i;
+		BOOL long_share_name=False;
+
+		if (res == 0)
+		{
+			count=SVAL(rparam,4);
+			p = rdata;
+
+		}
+#endif
+	}
+
+	if (rparam) free(rparam);
+	if (rdata) free(rdata);
+
+	return(count>0);
+}
 
 /****************************************************************************
 usage on the program
@@ -3559,6 +3620,7 @@ static void usage(char *pname)
   extern int optind;
   pstring query_host;
   BOOL message = False;
+  BOOL nt_domain_logon = False;
   extern char tar_type;
   static pstring servicesf = CONFIGFILE;
   pstring term_code;
@@ -3658,7 +3720,7 @@ static void usage(char *pname)
     }
 
   while ((opt = 
-	  getopt(argc, argv,"s:B:O:M:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
+	  getopt(argc, argv,"s:B:O:M:S:i:Nn:d:Pp:l:hI:EB:U:L:t:m:W:T:D:c:")) != EOF)
     switch (opt)
       {
       case 'm':
@@ -3667,6 +3729,11 @@ static void usage(char *pname)
       case 'O':
 	strcpy(user_socket_options,optarg);
 	break;	
+      case 'S':
+	strcpy(desthost,optarg);
+	strupper(desthost);
+	nt_domain_logon = True;
+	break;
       case 'M':
 	name_type = 0x03; /* messages are sent to NetBIOS name type 0x3 */
 	strcpy(desthost,optarg);
@@ -3822,7 +3889,7 @@ static void usage(char *pname)
       return(1);
   }
   
-  if (*query_host)
+  if (*query_host && !nt_domain_logon)
     {
       int ret = 0;
       sprintf(service,"\\\\%s\\IPC$",query_host);
@@ -3870,6 +3937,35 @@ static void usage(char *pname)
 
       return(ret);
     }
+
+	if (nt_domain_logon)
+	{
+		int ret = 0;
+		sprintf(service,"\\\\%s\\IPC$",query_host);
+		strupper(service);
+		connect_as_ipc = True;
+
+		DEBUG(5,("NT Domain Logon.  Service: %s\n", service));
+
+		if (cli_open_sockets(port))
+		{
+			if (!cli_send_login(NULL,NULL,True,True))
+			{
+				return(1);
+			}
+
+			cli_lsa_req_chal();
+#if 0
+			cli_lsa_auth2();
+			cli_lsa_sam_logon();
+			cli_lsa_sam_logoff();
+#endif
+			cli_send_logout();
+			close_sockets();
+		}
+
+		return(ret);
+	}
 
   if (cli_open_sockets(port))
     {

@@ -123,51 +123,6 @@ char *dom_sid_to_string(DOM_SID *sid)
   return sidstr;
 }
 
-/* BIG NOTE: this function only does SIDS where the identauth is not >= 2^32 */
-/* identauth >= 2^32 can be detected because it will be specified in hex */
-void make_dom_sid(DOM_SID *sid, char *domsid)
-{
-	int identauth;
-	char *p;
-
-	if (sid == NULL) return;
-
-	if (domsid == NULL)
-	{
-		DEBUG(4,("netlogon domain SID: none\n"));
-		sid->sid_rev_num = 0;
-		sid->num_auths = 0;
-		return;
-	}
-		
-	DEBUG(4,("netlogon domain SID: %s\n", domsid));
-
-	/* assume, but should check, that domsid starts "S-" */
-	p = strtok(domsid+2,"-");
-	sid->sid_rev_num = atoi(p);
-
-	/* identauth in decimal should be <  2^32 */
-	/* identauth in hex     should be >= 2^32 */
-	identauth = atoi(strtok(0,"-"));
-
-	DEBUG(4,("netlogon rev %d\n", sid->sid_rev_num));
-	DEBUG(4,("netlogon %s ia %d\n", p, identauth));
-
-	sid->id_auth[0] = 0;
-	sid->id_auth[1] = 0;
-	sid->id_auth[2] = (identauth & 0xff000000) >> 24;
-	sid->id_auth[3] = (identauth & 0x00ff0000) >> 16;
-	sid->id_auth[4] = (identauth & 0x0000ff00) >> 8;
-	sid->id_auth[5] = (identauth & 0x000000ff);
-
-	sid->num_auths = 0;
-
-	while ((p = strtok(0, "-")) != NULL)
-	{
-		sid->sub_auths[sid->num_auths++] = atoi(p);
-	}
-}
-
 int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids)
 {
 	char *ptr;
@@ -262,77 +217,21 @@ int make_dom_gids(char *gids_str, DOM_GID *gids)
 	return count;
 }
 
-void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len)
+int create_rpc_request(uint32 call_id, uint16 op_num, char *q, int data_len)
 {
-	if (hdr == NULL) return;
-
-	hdr->major        = 5;               /* RPC version 5 */
-	hdr->minor        = 0;               /* minor version 0 */
-	hdr->pkt_type     = 2;               /* RPC response packet */
-	hdr->frag         = 3;               /* first frag + last frag */
-	hdr->pack_type    = 0x10;            /* packed data representation */
-	hdr->frag_len     = data_len;        /* fragment length, fill in later */
-	hdr->auth_len     = 0;               /* authentication length */
-	hdr->call_id      = call_id;         /* call identifier - match incoming RPC */
-	hdr->alloc_hint   = data_len - 0x18; /* allocation hint (no idea) */
-	hdr->context_id   = 0;               /* presentation context identifier */
-	hdr->cancel_count = 0;               /* cancel count */
-	hdr->reserved     = 0;               /* reserved */
-}
-
-int make_rpc_reply(char *inbuf, char *q, int data_len)
-{
-	uint32 callid = IVAL(inbuf, 12);
 	RPC_HDR hdr;
 
-	create_rpc_reply(&hdr, callid, data_len);
+	/* XXXX cheat - use cancel count to store opnum */
+	make_rpc_header(&hdr, RPC_RESPONSE, call_id, data_len, op_num);
 	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
 }
 
-void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate)
+int create_rpc_reply(uint32 call_id, char *q, int data_len)
 {
-	hdr->uni_max_len = 2 * max_len;
-	hdr->uni_str_len = 2 * len;
-	hdr->undoc       = terminate;
+	RPC_HDR hdr;
+
+	/* XXXX cheat - use cancel count to store opnum */
+	make_rpc_header(&hdr, RPC_RESPONSE, call_id, data_len, 0);
+	return smb_io_rpc_hdr(False, &hdr, q, q, 4, 0) - q;
 }
 
-void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate)
-{
-	make_uni_hdr(&(hdr->unihdr), max_len, len, terminate);
-	hdr->undoc_buffer = len > 0 ? 1 : 0;
-}
-
-void make_unistr(UNISTR *str, char *buf)
-{
-	/* store the string (null-terminated copy) */
-	PutUniCode((char *)(str->buffer), buf);
-}
-
-void make_unistr2(UNISTR2 *str, char *buf, int len)
-{
-	/* set up string lengths. add one if string is not null-terminated */
-	str->uni_max_len = len;
-	str->undoc       = 0;
-	str->uni_str_len = len;
-
-	/* store the string (null-terminated copy) */
-	PutUniCode((char *)str->buffer, buf);
-}
-
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid)
-{
-	rid2->type    = 0x5;
-	rid2->undoc   = 0x5;
-	rid2->rid     = rid;
-	rid2->rid_idx = 0;
-}
-
-void make_dom_sid2(DOM_SID2 *sid2, char *sid_str)
-{
-	int len_sid_str = strlen(sid_str);
-
-	sid2->type = 0x5;
-	sid2->undoc = 0;
-	make_uni_hdr2(&(sid2->hdr), len_sid_str, len_sid_str, 0);
-	make_unistr  (&(sid2->str), sid_str);
-}

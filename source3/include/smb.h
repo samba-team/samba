@@ -268,6 +268,14 @@ typedef fstring string;
 
 /* NETLOGON opcodes and data structures */
 
+enum RPC_PKT_TYPE
+{
+	RPC_REQUEST = 0x00,
+	RPC_RESPONSE = 0x02,
+	RPC_BIND     = 0x0B,
+	RPC_BINDACK  = 0x0C
+};
+
 #define NET_QUERYFORPDC	     7 /* Query for PDC */
 #define NET_QUERYFORPDC_R   12 /* Response to Query for PDC */
 #define NET_SAMLOGON        18

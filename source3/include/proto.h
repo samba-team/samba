@@ -372,6 +372,9 @@ char* lsa_io_q_lookup_sids(BOOL io, LSA_Q_LOOKUP_SIDS *q_s, char *q, char *base,
 char* lsa_io_r_lookup_sids(BOOL io, LSA_R_LOOKUP_SIDS *r_s, char *q, char *base, int align, int depth);
 char* lsa_io_q_lookup_rids(BOOL io, LSA_Q_LOOKUP_RIDS *q_r, char *q, char *base, int align, int depth);
 char* lsa_io_r_lookup_rids(BOOL io, LSA_R_LOOKUP_RIDS *r_r, char *q, char *base, int align, int depth);
+void make_q_req_chal(LSA_Q_REQ_CHAL *q_c,
+				char *logon_srv, char *logon_clnt,
+				DOM_CHAL *clnt_chal);
 char* lsa_io_q_req_chal(BOOL io, LSA_Q_REQ_CHAL *q_c, char *q, char *base, int align, int depth);
 char* lsa_io_r_req_chal(BOOL io, LSA_R_REQ_CHAL *r_c, char *q, char *base, int align, int depth);
 char* lsa_io_q_auth_2(BOOL io, LSA_Q_AUTH_2 *q_a, char *q, char *base, int align, int depth);
@@ -708,17 +711,10 @@ void initrpcreply(char *inbuf, char *q);
 void endrpcreply(char *inbuf, char *q, int datalen, int rtnval, int *rlen);
 BOOL name_to_rid(char *user_name, uint32 *u_rid, uint32 *g_rid);
 char *dom_sid_to_string(DOM_SID *sid);
-void make_dom_sid(DOM_SID *sid, char *domsid);
 int make_dom_sids(char *sids_str, DOM_SID *sids, int max_sids);
 int make_dom_gids(char *gids_str, DOM_GID *gids);
-void create_rpc_reply(RPC_HDR *hdr, uint32 call_id, int data_len);
-int make_rpc_reply(char *inbuf, char *q, int data_len);
-void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
-void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
-void make_unistr(UNISTR *str, char *buf);
-void make_unistr2(UNISTR2 *str, char *buf, int len);
-void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
-void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
+int create_rpc_request(uint32 call_id, uint16 op_num, char *q, int data_len);
+int create_rpc_reply(uint32 call_id, char *q, int data_len);
 
 /*The following definitions come from  predict.c  */
 
@@ -893,12 +889,19 @@ void SMBNTencrypt(uchar *passwd, uchar *c8, uchar *p24);
 
 char* smb_io_utime(BOOL io, UTIME *t, char *q, char *base, int align, int depth);
 char* smb_io_time(BOOL io, NTTIME *nttime, char *q, char *base, int align, int depth);
+void make_dom_sid(DOM_SID *sid, char *domsid);
 char* smb_io_dom_sid(BOOL io, DOM_SID *sid, char *q, char *base, int align, int depth);
+void make_uni_hdr(UNIHDR *hdr, int max_len, int len, uint16 terminate);
 char* smb_io_unihdr(BOOL io, UNIHDR *hdr, char *q, char *base, int align, int depth);
+void make_uni_hdr2(UNIHDR2 *hdr, int max_len, int len, uint16 terminate);
 char* smb_io_unihdr2(BOOL io, UNIHDR2 *hdr2, char *q, char *base, int align, int depth);
+void make_unistr(UNISTR *str, char *buf);
 char* smb_io_unistr(BOOL io, UNISTR *uni, char *q, char *base, int align, int depth);
+void make_unistr2(UNISTR2 *str, char *buf, int len);
 char* smb_io_unistr2(BOOL io, UNISTR2 *uni2, char *q, char *base, int align, int depth);
+void make_dom_sid2(DOM_SID2 *sid2, char *sid_str);
 char* smb_io_dom_sid2(BOOL io, DOM_SID2 *sid2, char *q, char *base, int align, int depth);
+void make_dom_rid2(DOM_RID2 *rid2, uint32 rid);
 char* smb_io_dom_rid2(BOOL io, DOM_RID2 *rid2, char *q, char *base, int align, int depth);
 char* smb_io_clnt_srv(BOOL io, DOM_CLNT_SRV *log, char *q, char *base, int align, int depth);
 char* smb_io_log_info(BOOL io, DOM_LOG_INFO *log, char *q, char *base, int align, int depth);
@@ -911,6 +914,8 @@ char* smb_io_arc4_owf(BOOL io, ARC4_OWF *hash, char *q, char *base, int align, i
 char* smb_io_id_info1(BOOL io, DOM_ID_INFO_1 *id, char *q, char *base, int align, int depth);
 char* smb_io_sam_info(BOOL io, DOM_SAM_INFO *sam, char *q, char *base, int align, int depth);
 char* smb_io_gid(BOOL io, DOM_GID *gid, char *q, char *base, int align, int depth);
+void make_rpc_header(RPC_HDR *hdr, enum RPC_PKT_TYPE pkt_type,
+				uint32 call_id, int data_len, int opnum);
 char* smb_io_rpc_hdr(BOOL io, RPC_HDR *rpc, char *q, char *base, int align, int depth);
 char* smb_io_pol_hnd(BOOL io, LSA_POL_HND *pol, char *q, char *base, int align, int depth);
 char* smb_io_dom_query_3(BOOL io, DOM_QUERY_3 *d_q, char *q, char *base, int align, int depth);

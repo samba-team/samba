@@ -300,10 +300,12 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		     char **rdata,char **rparam,
 		     int *rdata_len,int *rparam_len)
 {
-	uint16 opnum = SVAL(data,22);
+	/* really should decode these using an RPC_HDR structure */
+	int    pkttype = CVAL(data,  2);
+	uint32 call_id = CVAL(data, 12);
+	uint16 opnum   = SVAL(data, 22);
 
-	int pkttype = CVAL(data, 2);
-	if (pkttype == 0x0b) /* RPC BIND */
+	if (pkttype == RPC_BIND) /* RPC BIND */
 	{
 		DEBUG(4,("netlogon rpc bind %x\n",pkttype));
 		LsarpcTNP1(data,rdata,rdata_len);
@@ -317,7 +319,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENPOLICY\n"));
 			api_lsa_open_policy(param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -326,7 +328,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 			DEBUG(3,("LSA_QUERYINFOPOLICY\n"));
 
 			api_lsa_query_info(param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -394,7 +396,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_OPENSECRET\n"));
 			api_lsa_lookup_sids(param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
@@ -402,7 +404,7 @@ BOOL api_ntLsarpcTNP(int cnum,int uid, char *param,char *data,
 		{
 			DEBUG(3,("LSA_LOOKUPNAMES\n"));
 			api_lsa_lookup_names(param, data, rdata, rdata_len);
-			make_rpc_reply(data, *rdata, *rdata_len);
+			create_rpc_reply(call_id, *rdata, *rdata_len);
 			break;
 		}
 
