@@ -975,9 +975,12 @@ create_options = 0x%x root_dir_fid = 0x%x\n", flags, desired_access, file_attrib
 	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
-	p += 12;
+	p += 8;
+	if (flags & EXTENDED_RESPONSE_REQUIRED)
+		SSVAL(p,2,0x7);
+	p += 4;
 	SCVAL(p,0,fsp->is_directory ? 1 : 0);
-	
+
 	DEBUG(5,("reply_ntcreate_and_X: fnum = %d, open name = %s\n", fsp->fnum, fsp->fsp_name));
 
 	result = chain_reply(inbuf,outbuf,length,bufsize);
@@ -1455,6 +1458,11 @@ static int call_nt_transact_create(connection_struct *conn, char *inbuf, char *o
 	SOFF_T(p, 0, get_allocation_size(fsp,&sbuf));
 	p += 8;
 	SOFF_T(p,0,file_len);
+	p += 8;
+	if (flags & EXTENDED_RESPONSE_REQUIRED)
+		SSVAL(p,2,0x7);
+	p += 4;
+	SCVAL(p,0,fsp->is_directory ? 1 : 0);
 
 	DEBUG(5,("call_nt_transact_create: open name = %s\n", fname));
 
