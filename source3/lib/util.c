@@ -2321,6 +2321,55 @@ BOOL process_exists(int pid)
 }
 
 
+/****************************************************************************
+Setup the groups a user belongs to.
+****************************************************************************/
+int get_unixgroups(char *user, uid_t uid, gid_t gid, int *p_ngroups, gid_t **p_groups)
+{
+	int i,ngroups;
+	gid_t grp = 0;
+	gid_t *groups = NULL;
+
+	if (-1 == initgroups(user,gid))
+	{
+		if (getuid() == 0)
+		{
+			DEBUG(0,("Unable to initgroups!\n"));
+			if (gid < 0 || gid > 16000 || uid < 0 || uid > 16000)
+			{
+				DEBUG(0,("This is probably a problem with the account %s\n", user));
+			}
+		}
+		return -1;
+	}
+
+	ngroups = sys_getgroups(0,&grp);
+	if (ngroups <= 0)
+	{
+		ngroups = 32;
+	}
+
+	if((groups = (gid_t *)malloc(sizeof(gid_t)*ngroups)) == NULL)
+	{
+		DEBUG(0,("get_unixgroups malloc fail !\n"));
+		return -1;
+	}
+
+	ngroups = sys_getgroups(ngroups,groups);
+
+	(*p_ngroups) = ngroups;
+	(*p_groups) = groups;
+
+	DEBUG( 3, ( "%s is in %d groups: ", user, ngroups ) );
+	for (i = 0; i < ngroups; i++ )
+	{
+		DEBUG( 3, ( "%s%d", (i ? ", " : ""), (int)groups[i] ) );
+	}
+	DEBUG( 3, ( "\n" ) );
+
+	return 0;
+}
+
 /*******************************************************************
 turn a uid into a user name
 ********************************************************************/
