@@ -22,6 +22,7 @@
 #include "includes.h"
 
 enum ace_owner {UID_ACE, GID_ACE, WORLD_ACE};
+enum ace_attribute {ALLOW_ACE, DENY_ACE}; /* Used for incoming NT ACLS. */
 
 typedef union posix_id {
 		uid_t uid;
@@ -35,6 +36,7 @@ typedef struct canon_ace {
 	mode_t perms; /* Only use S_I(R|W|X)USR mode bits here. */
 	DOM_SID sid;
 	enum ace_owner owner_type;
+	enum ace_attribute attr;
 	posix_id unix_ug; 
 } canon_ace;
 
@@ -76,7 +78,7 @@ static void print_canon_ace(canon_ace *ace, int num)
 {
 	fstring str;
 
-	dbgtext( "canon_ace index %d.", num );
+	dbgtext( "canon_ace index %d. Type = %s", num, ace->attr == ALLOW_ACE ? "allow" : "deny" );
     dbgtext( "SID = %s ", sid_to_string( str, &ace->sid));
 	if (ace->owner_type == UID_ACE) {
 		struct passwd *pass = sys_getpwuid(ace->unix_ug.uid);
@@ -111,6 +113,8 @@ static void print_canon_ace(canon_ace *ace, int num)
 
 /****************************************************************************
  Map canon_ace perms to permission bits NT.
+ The attr element is not used here - we only process deny entries on set,
+ not get. Deny entries are implicit on get with ace->perms = 0.
 ****************************************************************************/
 
 static SEC_ACCESS map_canon_ace_perms(int *pacl_type, DOM_SID *powner_sid, canon_ace *ace)
@@ -258,7 +262,8 @@ static BOOL merge_aces( canon_ace *list_head, canon_ace *p_ace)
 		if (curr_ace == p_ace)
 			continue;
 
-		if (curr_ace->type == p_ace->type && sid_equal(&curr_ace->sid, &p_ace->sid)) {
+		if ((curr_ace->type == p_ace->type) && (curr_ace->attr == p_ace->attr) &&
+						sid_equal(&curr_ace->sid, &p_ace->sid)) {
 			if( DEBUGLVL( 10 )) {
 				dbgtext("Merging ACE's\n");
 				print_canon_ace( p_ace, 0);
@@ -343,6 +348,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.uid = pst->st_uid;
 		pace->sid = *pfile_owner_sid;
 		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRUSR): 0;
+		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -359,6 +365,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.uid = pst->st_gid;
 		pace->sid = *pfile_grp_sid;
 		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IRGRP): 0;
+		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -375,6 +382,7 @@ static BOOL ensure_canon_entry_valid(canon_ace **pp_ace,
 		pace->unix_ug.world = -1;
 		pace->sid = global_sid_World;
 		pace->perms = default_acl ? get_default_ace_mode(fsp, S_IROTH): 0;
+		pace->attr = ALLOW_ACE;
 
 		DLIST_ADD(*pp_ace, pace);
 	}
@@ -496,10 +504,13 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 		 * S_I(R|W|X)USR bits.
 		 */
 
-		if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED)
+		if(psa->type == SEC_ACE_TYPE_ACCESS_ALLOWED) {
 			current_ace->perms |= map_nt_perms( psa->info, S_IRUSR);
-		else
+			current_ace->attr = ALLOW_ACE;
+		} else {
 			current_ace->perms = 0;
+			current_ace->attr = DENY_ACE;
+		}
 
 		/*
 		 * Now note what kind of a POSIX ACL this should map to.
@@ -531,6 +542,7 @@ static BOOL unpack_canon_ace(files_struct *fsp,
 			 */
 			if ((psa->flags & (SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) ==
 				(SEC_ACE_FLAG_OBJECT_INHERIT|SEC_ACE_FLAG_CONTAINER_INHERIT)) {
+
 				DLIST_ADD(dir_ace, current_ace);
 
 
@@ -912,11 +924,101 @@ static void free_canon_ace_list( canon_ace *list_head )
 }
 
 /******************************************************************************
+ When returning permissions, try and fit NT display
+ semantics if possible. Note the the canon_entries here must have been malloced.
+ The list format should be - first entry = owner, followed by group and other user
+ entries, last entry = other.
+********************************************************************************/
+
+static void arrange_posix_perms( char *filename, canon_ace *list_head)
+{
+	extern DOM_SID global_sid_World;
+	canon_ace *owner_ace = NULL;
+	canon_ace *other_ace = NULL;
+	canon_ace *ace = NULL;
+	mode_t owner_perms = 0;
+	mode_t group_perms = 0;
+	mode_t other_perms = 0;
+
+	for (ace = list_head; ace; ace = ace->next) {
+		if (ace->type == SMB_ACL_USER_OBJ)
+			owner_ace = ace;
+		else if (ace->type == SMB_ACL_OTHER) {
+			/* Last ace - this is "other" */
+			other_ace = ace;
+		} else {
+			/* Get the union of all the group and supplementary user perms. */
+			group_perms |= ace->perms;
+		}
+	}
+		
+	if (!owner_ace || !other_ace) {
+		DEBUG(0,("arrange_posix_perms: Invalid POSIX permissions for file %s, missing owner or other.\n",
+			filename ));
+		return;
+	}
+
+	/*
+	 * The POSIX algorithm applies to owner first, and other last,
+	 * so ensure they are arranged in this order.
+	 */
+
+	if (owner_ace) {
+		DLIST_PROMOTE(list_head, owner_ace);
+	}
+
+	if (other_ace) {
+		DLIST_DEMOTE(list_head, other_ace, ace);
+	}
+
+	owner_perms = owner_ace->perms;
+	other_perms = other_ace->perms;
+
+	/*
+	 * We have to be clever here. NT4.x won't display anything other
+	 * Than an "Everyone, No access" DENY acl. Truncate blank perms
+	 * from the end, but we can't truncate blank permissions from
+	 * anywhere except the end, as they have an effect on allowing access
+	 * under POSIX.
+	 */
+
+	if ((owner_perms || group_perms) && !other_perms) {
+		DLIST_REMOVE(list_head, other_ace);
+		safe_free(other_ace);
+	}
+
+	if (owner_perms && !group_perms && !other_perms) {
+		/* Free everything except the list head. */
+		free_canon_ace_list(owner_ace->next);
+		owner_ace->next = NULL;
+	}
+
+	if (!owner_perms && !group_perms && !other_perms) {
+		/*
+		 * Special case - no one has any access.
+		 * Return a 1 element ACL - other has "no access".
+		 */
+
+		if (owner_ace->next) {
+			free_canon_ace_list(owner_ace->next);
+			owner_ace->next = NULL;
+		}
+
+		owner_ace->type = SMB_ACL_OTHER;
+		owner_ace->sid = global_sid_World;
+		owner_ace->unix_ug.world = -1;
+		owner_ace->owner_type = WORLD_ACE;
+		owner_ace->attr = DENY_ACE;
+		owner_ace->perms = 0;
+	}
+}
+		
+/******************************************************************************
  Fall back to the generic 3 element UNIX permissions.
 ********************************************************************************/
 
 static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbuf,
-										DOM_SID *powner, DOM_SID *pgroup, BOOL is_directory)
+										DOM_SID *powner, DOM_SID *pgroup, BOOL default_acl)
 {
 	extern DOM_SID global_sid_World;
 	canon_ace *list_head = NULL;
@@ -924,6 +1026,9 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	canon_ace *group_ace = NULL;
 	canon_ace *other_ace = NULL;
 	mode_t mode;
+
+	if (default_acl)
+		return NULL;
 
 	/*
 	 * Create 3 linked list entries.
@@ -946,55 +1051,36 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 	owner_ace->sid = *powner;
 	owner_ace->unix_ug.uid = psbuf->st_uid;
 	owner_ace->owner_type = UID_ACE;
+	owner_ace->attr = ALLOW_ACE;
 
 	group_ace->type = SMB_ACL_GROUP_OBJ;
 	group_ace->sid = *pgroup;
 	group_ace->unix_ug.gid = psbuf->st_gid;
 	group_ace->owner_type = GID_ACE;
+	group_ace->attr = ALLOW_ACE;
 
 	other_ace->type = SMB_ACL_OTHER;
 	other_ace->sid = global_sid_World;
 	other_ace->unix_ug.world = -1;
 	other_ace->owner_type = WORLD_ACE;
+	other_ace->attr = ALLOW_ACE;
 
-	if (is_directory)
-		mode = unix_mode( fsp->conn, FILE_ATTRIBUTE_ARCHIVE, fsp->fsp_name);
-	else
-		mode = psbuf->st_mode;
+	mode = psbuf->st_mode;
 
 	owner_ace->perms = unix_perms_to_acl_perms(mode, S_IRUSR, S_IWUSR, S_IXUSR);
+	owner_ace->attr = owner_ace->perms ? ALLOW_ACE : DENY_ACE;
+	
 	group_ace->perms = unix_perms_to_acl_perms(mode, S_IRGRP, S_IWGRP, S_IXGRP);
+	group_ace->attr = group_ace->perms ? ALLOW_ACE : DENY_ACE;
+
 	other_ace->perms = unix_perms_to_acl_perms(mode, S_IROTH, S_IWOTH, S_IXOTH);
+	other_ace->attr = other_ace->perms ? ALLOW_ACE : DENY_ACE;
 
-	if (other_ace->perms) {
-		DLIST_ADD(list_head, other_ace);
-	} else
-		safe_free(other_ace);
-	if (group_ace->perms) {
-		DLIST_ADD(list_head, group_ace);
-	} else
-		safe_free(group_ace);
-	if (owner_ace->perms) {
-		DLIST_ADD(list_head, owner_ace);
-	} else
-		safe_free(owner_ace);
+	DLIST_ADD(list_head, other_ace);
+	DLIST_ADD(list_head, group_ace);
+	DLIST_ADD(list_head, owner_ace);
 
-	if (list_head == NULL) {
-		/*
-		 * Return an "Everyone" NO ACCESS ace.
-		 */
-
-		if ((other_ace = (canon_ace *)malloc(sizeof(canon_ace))) == NULL)
-			goto fail;
-
-		other_ace->type = SMB_ACL_OTHER;
-		other_ace->sid = global_sid_World;
-		other_ace->unix_ug.world = -1;
-		other_ace->owner_type = WORLD_ACE;
-		other_ace->perms = (mode_t)0;
-		
-		DLIST_ADD(list_head, other_ace);
-	}
+	arrange_posix_perms(fsp->fsp_name,list_head );
 
 	return list_head;
 
@@ -1008,19 +1094,26 @@ static canon_ace *unix_canonicalise_acl(files_struct *fsp, SMB_STRUCT_STAT *psbu
 }
 
 /****************************************************************************
- Create a linked list of canonical ACE entries. This is sorted so that DENY
- entries are at the front of the list, as NT requires.
+ Create a linked list of canonical ACE entries.
 ****************************************************************************/
 
-static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
+static canon_ace *canonicalise_acl( files_struct *fsp, SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf,
+									DOM_SID *powner, DOM_SID *pgroup, BOOL default_acl)
 {
 	extern DOM_SID global_sid_World;
 	mode_t acl_mask = (S_IRUSR|S_IWUSR|S_IXUSR);
 	canon_ace *list_head = NULL;
 	canon_ace *ace = NULL;
 	canon_ace *next_ace = NULL;
+	canon_ace *owner_ace = NULL;
+	canon_ace *group_ace = NULL;
+	canon_ace *other_ace = NULL;
 	int entry_id = SMB_ACL_FIRST_ENTRY;
 	SMB_ACL_ENTRY_T entry;
+	size_t ace_count;
+
+	if (posix_acl == NULL)
+		return unix_canonicalise_acl( fsp, psbuf, powner, pgroup, default_acl);
 
 	while ( sys_acl_get_entry(posix_acl, entry_id, &entry) == 1) {
 		SMB_ACL_TAG_T tagtype;
@@ -1102,29 +1195,43 @@ static canon_ace *canonicalise_acl( SMB_ACL_T posix_acl, SMB_STRUCT_STAT *psbuf)
 		ZERO_STRUCTP(ace);
 		ace->type = tagtype;
 		ace->perms = convert_permset_to_mode_t(permset);
+		ace->attr = ace->perms ? ALLOW_ACE : DENY_ACE;
 		ace->sid = sid;
 		ace->unix_ug = unix_ug;
 		ace->owner_type = owner_type;
+
+		/*
+		 * Remember the user/group/other ACE entries.
+		 */
+
+		if (tagtype == SMB_ACL_USER_OBJ)
+			owner_ace = ace;
+		else if (tagtype == SMB_ACL_GROUP_OBJ)
+			group_ace = ace;
+		else if (tagtype == SMB_ACL_OTHER)
+			other_ace = ace;
 
 		DLIST_ADD(list_head, ace);
 	}
 
 	/*
 	 * Now go through the list, masking the permissions with the
-	 * acl_mask. If the permissions are 0 it should be listed
-	 * first.
+	 * acl_mask.
 	 */
 
-	for ( ace = list_head; ace; ace = next_ace) {
+	for ( ace_count = 0, ace = list_head; ace; ace = next_ace, ace_count++) {
 		next_ace = ace->next;
 
 		/* Masks are only applied to entries other than USER_OBJ and OTHER. */
 		if (ace->type != SMB_ACL_OTHER && ace->type != SMB_ACL_USER_OBJ)
 			ace->perms &= acl_mask;
 
-		if (ace->perms == 0)
+		if (ace->perms == 0) {
 			DLIST_PROMOTE(list_head, ace);
+		}
 	}
+
+	arrange_posix_perms(fsp->fsp_name,list_head );
 
 	if( DEBUGLVL( 10 ) ) {
 		char *acl_text = sys_acl_to_text( posix_acl, NULL);
@@ -1385,31 +1492,28 @@ size_t get_nt_acl(files_struct *fsp, SEC_DESC **ppdesc)
 	create_file_sids(&sbuf, &owner_sid, &group_sid);
 
 	/* Create the canon_ace lists. */
-	if (posix_acl)
-		file_ace = canonicalise_acl( posix_acl, &sbuf);
-	else
-		file_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid, False);
-
+	file_ace = canonicalise_acl( fsp, posix_acl, &sbuf,  &owner_sid, &group_sid, False);
 	num_acls = count_canon_ace_list(file_ace);
 
-	if (fsp->is_directory) { 
-		if (dir_acl)
-			dir_ace = canonicalise_acl( dir_acl, &sbuf);
-		else
-			dir_ace = unix_canonicalise_acl(fsp, &sbuf, &owner_sid, &group_sid, True);
+	/* We must have *some* ACLS. */
 
+	if (num_acls == 0) {
+		DEBUG(0,("get_nt_acl : No ACLs on file (%s) !\n", fsp->fsp_name ));
+		return 0;
+	}
+
+	if (fsp->is_directory) { 
+		dir_ace = canonicalise_acl(fsp, dir_acl, &sbuf, &owner_sid, &group_sid, True);
 		num_dir_acls = count_canon_ace_list(dir_ace);
 	}
 
-	if ((num_acls + num_dir_acls) != 0) {
-		/* Allocate the ace list. */
-		if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
-			DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
-			goto done;
-		}
-
-		memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
+	/* Allocate the ace list. */
+	if ((nt_ace_list = (SEC_ACE *)malloc((num_acls + num_dir_acls)* sizeof(SEC_ACE))) == NULL) {
+		DEBUG(0,("get_nt_acl: Unable to malloc space for nt_ace_list.\n"));
+		goto done;
 	}
+
+	memset(nt_ace_list, '\0', (num_acls + num_dir_acls) * sizeof(SEC_ACE) );
 
 	/*
 	 * Create the NT ACE list from the canonical ace lists.
