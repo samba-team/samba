@@ -193,16 +193,15 @@ static int negprot_spnego(char *p)
 		return 16;
 	}
 #endif
-	{
+	if (lp_security() != SEC_ADS) {
+		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
+	} else {
 		ADS_STRUCT *ads;
 		ads = ads_init(NULL, NULL, NULL, NULL);
-		
 		/* win2000 uses host$@REALM, which we will probably use eventually,
 		   but for now this works */
 		asprintf(&principal, "HOST/%s@%s", guid, ads->realm);
-		blob = spnego_gen_negTokenInit(guid, 
-					       lp_security()==SEC_ADS ? OIDs_krb5 : OIDs_plain, 
-					       principal);
+		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, principal);
 		free(principal);
 		ads_destroy(&ads);
 	}
