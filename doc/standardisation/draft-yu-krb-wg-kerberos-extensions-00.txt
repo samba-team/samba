@@ -1,0 +1,3585 @@
+
+
+INTERNET-DRAFT                                                    Tom Yu
+draft-yu-krb-wg-kerberos-extensions-00.txt                           MIT
+Expires: 09 August 2004                                 09 February 2004
+
+        The Kerberos Network Authentication Service (Version 5)
+
+Status of This Memo
+
+   This document is an Internet-Draft and is in full conformance with
+   all provisions of Section 10 of RFC 2026.
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as Internet-
+   Drafts.
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+   The list of current Internet-Drafts can be accessed at
+
+      http://www.ietf.org/ietf/1id-abstracts.txt
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+
+      http://www.ietf.org/shadow.html
+
+
+Copyright Notice
+
+   Copyright (C) The Internet Society (2004).  All Rights Reserved.
+
+Abstract
+
+   This document describes version 5 of the Kerberos network
+   authentication protocol.  It describes changes to the protocol which
+   allow for extensions to be made to the protocol without creating
+   interoperability problems.
+
+   [ This document is a VERY rough draft.  Many sections are not yet
+   fully filled out.  The main purpose is to illustrate the beginnings
+   of a new document structure as a starting point. ]
+
+Key Words for Requirements
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", and "MAY" in this document are
+   to be interpreted as described in RFC 2119.
+
+
+Yu                          Expires: Aug 2004                   [Page 1]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+Table of Contents
+
+   Status of This Memo .......................................  1
+   Copyright Notice ..........................................  1
+   Abstract ..................................................  1
+   Key Words for Requirements ................................  1
+   Table of Contents .........................................  2
+   1.  Introduction ..........................................  4
+   1.1.  Kerberos Protocol Overview ..........................  4
+   1.2.  Overview of Document ................................  5
+   2.  Extensibility .........................................  5
+   3.  Criticality ...........................................  6
+   4.  Use of ASN.1 ..........................................  6
+   4.1.  Module Header .......................................  6
+   4.2.  Top-Level Type ......................................  7
+   4.3.  Parameterized Types .................................  7
+   4.4.  Constraints .........................................  8
+   4.5.  New Types ...........................................  8
+   5.  Basic Types ...........................................  8
+   5.1.  Constrained Integer Types ...........................  8
+   5.2.  KerberosTime ........................................  9
+   5.3.  KerberosString ......................................  9
+   6.  Principals ............................................ 10
+   6.1.  Name Types .......................................... 10
+   6.2.  Principal Name Reuse ................................ 11
+   7.  Types Relating to Encryption .......................... 11
+   7.1.  EncryptedData ....................................... 11
+   7.2.  EncryptionKey ....................................... 13
+   7.3.  Checksums ........................................... 13
+   7.3.1.  ChecksumOf ........................................ 14
+   7.3.2.  Signed ............................................ 15
+   8.  Tickets ............................................... 15
+   8.1.  Timestamps .......................................... 16
+   8.2.  Ticket Flags ........................................ 16
+   8.2.1.  Flags Relating to Initial Ticket Acquisition ...... 17
+   8.2.2.  Invalid Tickets ................................... 17
+   8.2.3.  OK as Delegate .................................... 18
+   8.3.  Renewable Tickets ................................... 18
+   8.4.  Postdated Tickets ................................... 19
+   8.5.  Proxiable and Proxy Tickets ......................... 20
+   8.6.  Forwardable Tickets ................................. 21
+   8.7.  Transited Realms .................................... 21
+   8.8.  Authorization Data .................................. 21
+   8.9.  Encrypted Part of Ticket ............................ 21
+   8.10.  Cleartext Part of Ticket ........................... 22
+   9.  Credential Acquisition ................................ 23
+   9.1.  KDC-REQ ............................................. 24
+   9.2.  PA-DATA ............................................. 26
+   9.3.  KDC-REQ Processing .................................. 26
+   9.3.1.  Handling Replays .................................. 26
+   9.3.2.  Request Validation ................................ 26
+
+Yu                          Expires: Aug 2004                   [Page 2]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   9.3.2.1.  AS-REQ Authentication ........................... 27
+   9.3.2.2.  TGS-REQ Authentication .......................... 27
+   9.3.2.3.  Principal Validation ............................ 27
+   9.3.3.  Timestamp Handling ................................ 27
+   9.3.3.1.  AS-REQ Timestamp Processing ..................... 28
+   9.3.3.2.  TGS-REQ Timestamp Processing .................... 29
+   9.3.4.  Key Selection ..................................... 29
+   9.3.5.  Checking For Revoked Tickets ...................... 30
+   9.4.  Reply Validation .................................... 30
+   10.  Application Authentication ........................... 30
+   11.  Session Key Use ...................................... 30
+   11.1.  KRB-SAFE ........................................... 30
+   11.2.  KRB-PRIV ........................................... 30
+   11.3.  KRB-CRED ........................................... 30
+   12.  Security Considerations .............................. 30
+   12.1.  Time Synchronization ............................... 30
+   12.2.  Replays ............................................ 30
+   12.3.  Principal Name Reuse ............................... 30
+   12.4.  Password Guessing .................................. 30
+   12.5.  Forward Secrecy .................................... 30
+   12.6.  Authorization ...................................... 31
+   12.7.  Login Authentication ............................... 31
+   Appendices ................................................ 31
+   A.  ASN.1 Module (Normative) .............................. 31
+   B.  Kerberos and Character Encodings (Informative) ........ 60
+   C.  Kerberos History (Informative) ........................ 62
+   Normative References ...................................... 62
+   Informative References .................................... 63
+   Acknowledgments ........................................... 63
+   Author's Address .......................................... 63
+   Full Copyright Statement .................................. 63
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                   [Page 3]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+1.  Introduction
+
+   The Kerberos network authentication protocol is a trusted third-party
+   protocol utilizing symmetric-key cryptography.  It assumes that all
+   communications between parties in the protocol may be arbitrarily
+   tampered with or monitored, and that the security of the overall
+   system depends only on the effectiveness of the cryptographic
+   techniques and the secrecy of the keys used.  The protocol
+   authenticates an application client's identity to an application
+   server, and likewise authenticates the application server's identity
+   to the application client.  These assurances are made possible by the
+   client and the server sharing secrets with the trusted third party:
+   the Kerberos server, also known as the Key Distribution Center (KDC).
+   In addition, the protocol establishes an ephemeral shared secret (the
+   session key) between the client and the server, allowing the
+   protection of further communications between them.
+
+1.1.  Kerberos Protocol Overview
+
+   Kerberos comprises three main sub-protocols: credentials acquisition,
+   application authentication, and session key usage.  A client acquires
+   credentials by asking the for KDC a credential for a service; the KDC
+   issues the credential, consisting of a ticket and a session key.  The
+   ticket, containing the client's identity, timestamps, expiration
+   time, and a session key, is a encrypted in a key known to the
+   application server.  The KDC encrypts the credential using a key
+   known to the client, and transmits the credential to the client.
+
+   There are two means of requesting credentials: the Authentication
+   Service (AS) exchange, and the Ticket-Granting Service (TGS)
+   exchange.  The AS exchange typically involves a client using a
+   password-derived key to decrypt the response.  The TGS exchange
+   involves the KDC behaving as an application, which the client
+   authenticates to using a Ticket-Granting Ticket (TGT).  The client
+   usually obtains the TGT by using the AS exchange.
+
+   Application authentication consists of the client establishing the
+   session key with the application server by transmitting the ticket to
+   the application server, along with an authenticator.  The
+   authenticator contains a timestamp and additional data encrypted
+   using the ticket's session key.  The application server decrypts the
+   ticket, extracting the session key.  The application server then uses
+   the session key to decrypt the authenticator.  Upon successful
+   decryption of the authenticator, the application server knows that
+   the data in the authenticator were sent by the client named in the
+   associated ticket.  Additionally, since authenticators expire more
+   quickly than tickets, the application server has some assurance that
+   the transaction is not a replay.  The application server may send an
+   encrypted acknowledgment to the client, verifying its identity to the
+   client.
+
+
+Yu                          Expires: Aug 2004                   [Page 4]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   Once application authentication has occurred, the client and server
+   may use the established session key to protect further traffic.  This
+   protection may consist of protection of integrity only, or of
+   protection of confidentiality and integrity.  Additional measures
+   exist for a client to forward credentials to a server.
+
+   The entire scheme depends on loosely synchronized clocks.
+   Synchronization of the clock on the KDC with the application server
+   clock allows the application server to accurately determine whether a
+   credential is expired.  Likewise, synchronization of the clock on the
+   client with the application server clock prevents replay attacks
+   utilizing the same credential.  Careful design of the application
+   protocol may allow replay prevention without requiring client-server
+   clock synchronization.
+
+   Following the establishment of a session key between the application
+   client and the application server, the Kerberos protocol provides
+   messages that use the session key to protect the integrity or
+   confidentiality of communications between the client and the server.
+   Additionally, the client may forward credentials to the application
+   server.
+
+   The credentials acquisition protocol takes place over specific,
+   defined transports (UDP and TCP).  Application protocols define which
+   transport to use for the session key establishment protocol and for
+   messages using the session key; the application may choose to perform
+   its own encapsulation of the Kerberos messages, for example.
+
+1.2.  Overview of Document
+
+   The remainder of this document begins by describing the general
+   frameworks for protocol extensibility, including whether to interpret
+   unknown extensions as critical.  It then defines the protocol
+   messages and exchanges.
+
+   The definition of the Kerberos protocol uses Abstract Syntax Notation
+   One (ASN.1) [X680], which specifies notation for describing the
+   abstract content of protocol messages.  This document defines a
+   number of base types using ASN.1; these base types subsequently
+   appear in multiple types which define actual protocol messages.
+   Definitions of principal names and of tickets, which are central to
+   the protocol, also appear preceding the protocol message definitions.
+
+2.  Extensibility
+
+   As originally defined in [RFC1510], the Kerberos protocol does not
+   readily allow for backwards-compatible extensions to the protocol.
+   Various proposals to extend the Kerberos protocol have appeared since
+   RFC 1510, many of them creating problems for backwards compatibility.
+   This document adopts the technique of creating new extensible types
+   which encode to messages which are very similar to RFC 1510 messages
+
+Yu                          Expires: Aug 2004                   [Page 5]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   on the wire.  This similarity allows implementors to use shared code
+   paths for encoding and decoding both new and old messages.
+
+   The protocol defined in RFC 1510 already contains some elements
+   allowing for limited backwards-compatible extensions to the protocol.
+   Most of these elements consist of "typed holes"; these are octet
+   strings whose contents have types defined by an assigned number.
+   This document adds a number of typed holes to types which have
+   previously lacked typed holes.  This document also describes
+   procedures for the IETF to use the extensibility model of ASN.1 make
+   further backwards-compatible extensions of the Kerberos protocol, if
+   typed holes prove inadequate for some desired extension.
+
+3.  Criticality
+
+   In general, implementations SHOULD treat unknown extension, flags,
+   etc. as non-critical; i.e., they should ignore them when they do not
+   understand them.  Exceptions are clearly marked.  An implementation
+   SHOULD NOT reject a request merely because it does not understand
+   some element of the request.  As a related consequence,
+   implementations SHOULD handle talking to other implementations which
+   do not implement some requested options.  This may require designers
+   of extensions or options to provide means detect whether extensions
+   or options are rejected, or whether such extensions or options are
+   merely not understood, or (perhaps maliciously) deleted in transit.
+
+4.  Use of ASN.1
+
+   Kerberos uses the ASN.1 Distinguished Encoding Rules (DER) [X690].
+   Even though ASN.1 theoretically allows the description of protocol
+   messages to be independent of the encoding rules used to encode the
+   messages, Kerberos messages MUST be encoded with DER.  Subtleties in
+   the semantics of the notation, such as whether tags carry any
+   semantic content to the application, may cause the use of other ASN.1
+   encoding rules to be problematic.
+
+   Implementors not using existing ASN.1 compilers or support libraries
+   are cautioned to thoroughly read and understand the actual ASN.1
+   specification to ensure correct implementation behavior.  There is
+   more complexity in the notation than is immediately obvious, and some
+   tutorials and guides to ASN.1 are misleading or erroneous.
+
+4.1.  Module Header
+
+   The type definitions in this section assume an ASN.1 module
+   definition of the following form:
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                   [Page 6]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KerberosV5Spec3 {
+          iso(1) identified-organization(3) dod(6) internet(1)
+          security(5) kerberosV5(2) modules(4) krb5spec3(4)
+      } DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+      -- Rest of definitions here
+
+      END
+
+   This specifies that the tagging context for the module will be
+   explicit and that automatic tagging is not done.
+
+   Some other publications [RFC1510] [RFC1964] erroneously specify an
+   object identifier (OID) having an incorrect value of "5" for the
+   "dod" component of the OID.  In the case of RFC 1964, use of the
+   "correct" OID value would result in a change in the wire protocol;
+   therefore, the RFC 1964 OID remains unchanged for now.
+
+4.2.  Top-Level Type
+
+   The ASN.1 type "KRB-PDU" is a CHOICE over all the types (Protocol
+   Data Units or PDUs) which an application may directly reference.
+   Applications SHOULD NOT transmit any types other than those which are
+   alternatives of the KRB-PDU CHOICE.
+
+      -- top-level type
+      --
+      -- Applications should not directly reference any types
+      -- other than KRB-PDU and its component types.
+      --
+      KRB-PDU         ::= CHOICE {
+          ticket      Ticket,
+          as-req      AS-REQ,
+          as-rep      AS-REP,
+          tgs-req     TGS-REQ,
+          tgs-rep     TGS-REP,
+          ap-req      AP-REQ,
+          ap-rep      AP-REP,
+          krb-safe    KRB-SAFE,
+          krb-priv    KRB-PRIV,
+          krb-cred    KRB-CRED,
+          tgt-req     TGT-REQ,
+          krb-error   KRB-ERROR,
+          ...
+      }
+
+
+4.3.  Parameterized Types
+
+   This document uses ASN.1 parameterized types [X683] to make
+   definitions of types more readable.  For some types, some or all of
+
+Yu                          Expires: Aug 2004                   [Page 7]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   the parameters are advisory, i.e., they are not encoded in any form
+   for transmission in a protocol message.  These advisory parameters
+   can describe implementation behavior associated with the type.
+
+4.4.  Constraints
+
+   This document uses ASN.1 constraints, including the
+   "UserDefinedConstraint" syntax [X682].  Some constraints can be
+   handled automatically by tools that can parse them.  Uses of the
+   "UserDefinedConstraint" syntax (the "CONSTRAINED BY" syntax) will
+   typically need to have behavior manually coded; these uses provide a
+   formalized way of conveying intended implementation behavior.
+
+4.5.  New Types
+
+   This document defines a number of new ASN.1 types.  The names of
+   these types will typically have a suffix like "Ext", indicating that
+   the types are intended to support extensibility.  Types original to
+   RFC 1510 have been renamed to have a suffix like "1510".  The "Ext"
+   and "1510" types often contain a number of common elements; these
+   common elements have a suffix like "Common".  The "1510" types have
+   various ASN.1 constraints applied to them; the constraints limit the
+   possible values of the "1510" types to those permitted by RFC 1510 or
+   by [KCLAR].  The "Ext" types may have different constraints,
+   typically to force string values to be sent as UTF-8.
+
+5.  Basic Types
+
+   Certain ASN.1 types in Kerberos appear in numerous other types.
+
+5.1.  Constrained Integer Types
+
+   In [RFC1510], many types contained references to the unconstrained
+   INTEGER type.  Since an unconstrained INTEGER may contain any
+   possible abstract integer value, most of the unconstrained references
+   to INTEGER in [RFC1510] have been constrained to 32 bits or smaller.
+
+      -- signed values representable in 32 bits
+      --
+      -- These are often used as assigned numbers for various things.
+      Int32           ::= INTEGER (-2147483648..2147483647)
+
+      -- unsigned 32 bit values
+      UInt32          ::= INTEGER (0..4294967295)
+
+   The "Int32" type often contains an assigned number identifying the
+   type of a protocol element.  Unless otherwise stated, non-negative
+   values are registered, and negative values are available for local
+   use.
+
+
+
+Yu                          Expires: Aug 2004                   [Page 8]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- microseconds
+      Microseconds    ::= INTEGER (0..999999)
+
+
+      -- sequence numbers
+      --
+      -- We may want to increase this to 2**64 and define a UInt64
+      -- type.
+      SeqNum          ::= UInt32
+
+
+      -- nonces
+      --
+      -- Likewise, we may want to make this UInt64.
+      Nonce           ::= UInt32
+
+   While these types have different abstract types from their
+   equivalents in [RFC1510], their DER encodings remain identical.
+
+5.2.  KerberosTime
+
+      -- must not have fractional seconds
+      KerberosTime    ::= GeneralizedTime
+
+   The timestamps used in Kerberos are encoded as GeneralizedTimes. A
+   KerberosTime value MUST NOT include any fractional portions of the
+   seconds.  As required by the DER, it further MUST NOT include any
+   separators, and it specifies the UTC time zone (Z). Example: The only
+   valid format for UTC time 6 minutes, 27 seconds after 9 pm on 6
+   November 1985 is "19851106210627Z".
+
+5.3.  KerberosString
+
+      -- used for names and for error messages
+      KerberosString  ::= CHOICE {
+          ia5         GeneralString (IA5String),
+          utf8        UTF8String,
+          ...         -- no extension may be sent
+                      -- to an rfc1510 implementation --
+      }
+
+   The KerberosString type is used for strings in various places in the
+   Kerberos protocol.  For compatibility with RFC 1510, GeneralString
+   values constrained to IA5String (US-ASCII) are permitted in messages
+   exchanged with RFC 1510 implementations.  The new protocol messages
+   contain strings encoded as UTF-8.  KerberosString values are present
+   in principal names and in error messages.  Control characters SHOULD
+   NOT be used in principal names, and used with caution in error
+   messages.
+
+
+
+Yu                          Expires: Aug 2004                   [Page 9]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   For detailed background regarding the history of character string use
+   in Kerberos, as well as discussion of some compatibility issues, see
+   Appendix B.
+
+6.  Principals
+
+   Principals are participants in the Kerberos protocol.  A "realm"
+   consists of principals in one administrative domain, served by one
+   KDC (or one replicated set of KDCs).  Each principal name has an
+   arbitrary number of components, though typical principal names will
+   only have one or two components.  A principal name is meant to be
+   readable by and meaningful to humans, especially in a realm lacking a
+   centrally adminstered authorization infrastructure.
+
+      Realm           ::= KerberosString
+
+      PrincipalName   ::= SEQUENCE {
+          name-type   [0] NameType,
+          -- May have zero elements, or individual elements may be
+          -- zero-length, but this is not recommended.
+          name-string [1] SEQUENCE OF KerberosString
+      }
+
+      -- assigned numbers for name types (used in principal names)
+      NameType        ::= Int32
+
+
+   Kerberos realm names are KerberosStrings.  Realms MUST NOT contain a
+   character with the code 0 (the US-ASCII NUL).  Most realms will
+   usually consist of several components separated by periods (.), in
+   the style of Internet Domain Names, or separated by slashes (/) in
+   the style of X.500 names.
+
+   name-type
+        Specifies the type of name that follows.  The name-type SHOULD
+        be treated as a hint. Ignoring the name type, no two names can
+        be the same (i.e., at least one of the components, or the realm,
+        must be different).
+
+   name-string
+        Encodes a sequence of components that form a name, each
+        component encoded as a KerberosString.  Taken together, a
+        PrincipalName and a Realm form a principal identifier.  Most
+        PrincipalNames will have only a few components (typically one or
+        two).
+
+6.1.  Name Types
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 10]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- Name type not known
+      nt-unknown              NameType ::= 0
+      -- Just the name of the principal as in DCE, or for users
+      nt-principal            NameType ::= 1
+      -- Service and other unique instance (krbtgt)
+      nt-srv-inst             NameType ::= 2
+      -- Service with host name as instance (telnet, rcommands)
+      nt-srv-hst              NameType ::= 3
+      -- Service with host as remaining components
+      nt-srv-xhst             NameType ::= 4
+      -- Unique ID
+      nt-uid                  NameType ::= 5
+      -- Encoded X.509 Distingished name [RFC 2253]
+      nt-x500-principal       NameType ::= 6
+      -- Name in form of SMTP email name (e.g. user@foo.com)
+      nt-smtp-name            NameType ::= 7
+      -- Enterprise name - may be mapped to principal name
+      nt-enterprise           NameType ::= 10
+
+
+6.2.  Principal Name Reuse
+
+   Realm administrators SHOULD use extreme caution when considering
+   reusing a principal name.  A service administrator might explicitly
+   enter principal names into a local access control list (ACL) for the
+   service.  If such local ACLs exist independently of a centrally
+   administered authorization infrastructure, realm administrators
+   SHOULD NOT reuse principal names until confirming that all extant ACL
+   entries referencing that principal name have been updated.  Failure
+   to perform this check can result in a security vulnerability, as a
+   new principal can inadvertently inherit unauthorized privileges upon
+   receiving a reused principal name.  An organization whose Kerberos-
+   authenticated services all use a centrally-adminstered authorization
+   infrastructure may not need to take these precautions regarding
+   principal name reuse.
+
+7.  Types Relating to Encryption
+
+   Many Kerberos protocol messages contain encryptions of various data
+   types.  Kerberos protocol messages also contain checksums
+   (signatures) of various types.
+
+7.1.  EncryptedData
+
+   The "EncryptedData" type contains the encryption of another data
+   type.  The recipient uses fields within EncryptedData to determine
+   which key to use for decryption.
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 11]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- "Type" specifies which ASN.1 type is encrypted to the
+      -- ciphertext in the EncryptedData.  "Keys" specifies a set of
+      -- keys of which one key may be used to encrypt the data.
+      -- "KeyUsages" specifies a set of key usages, one of which may
+      -- be used to encrypt.
+      --
+      -- None of the parameters is transmitted over the wire.
+      EncryptedData { Type, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      SEQUENCE {
+          etype       [0] EType,
+          kvno        [1] UInt32 OPTIONAL,
+          cipher      [2] OCTET STRING (CONSTRAINED BY {
+              -- must be encryption of --
+              OCTET STRING (CONTAINING Type),
+              -- with one of the keys -- KeyToUse:Keys,
+              -- with key usage being one of --
+              KeyUsage:KeyUsages
+          }),
+          ...
+      }
+
+      -- Assigned numbers denoting encryption mechanisms.
+      EType ::= Int32
+
+      -- Assigned numbers denoting key usages.
+      KeyUsage ::= UInt32
+
+
+   EType
+        Integer type for assigned numbers for encryption algorithms.
+        Defined in [KCRYPTO]
+
+   KeyUsage
+        Integer type for assigned numbers for key usages.  Key usage
+        values are inputs to the encryption and decryption functions
+        described in [KCRYPTO].
+
+   Type
+        Advisory parameter indicating the ASN.1 type whose DER encoding
+        is the plaintext encrypted into the EncryptedData.
+
+   Keys
+        Advisory parameter indicating which key to use to perform the
+        encryption.  If "Keys" indicate multiple "KeyToUse" values, the
+        detailed description of the containing message will indicate
+        which key to use under which conditions.
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 12]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+           -- KeyToUse identifies which key is to be used to encrypt or
+           -- sign a given value.
+           --
+           -- Values of KeyToUse are never actually transmitted over the
+           -- wire, or even used directly by the implementation in any
+           -- way, as key usages are; it exists primarily to identify
+           -- which key gets used for what purpose.  Thus, the specific
+           -- numeric values associated with this type are irrelevant.
+           KeyToUse        ::= ENUMERATED {
+               -- unspecified
+               key-unspecified,
+               -- server long term key
+               key-server,
+               -- client long term key
+               key-client,
+               -- key selected by KDC for encryption of a KDC-REP
+               key-kdc-rep,
+               -- session key from ticket
+               key-session,
+               -- subsession key negotiated via AP-REQ/AP-REP
+               key-subsession,
+               ...
+           }
+
+
+   KeyUsages
+        Advisory parameter indicating which "KeyUsage" value is used to
+        encrypt.  If "KeyUsages" indicates multiple "KeyUsage" values,
+        the detailed description of the containing message will indicate
+        which key usage to use under which conditions.
+
+7.2.  EncryptionKey
+
+   The "EncryptionKey" type holds an encryption key.
+
+      EncryptionKey   ::= SEQUENCE {
+          keytype     [0] EType,
+          keyvalue    [1] OCTET STRING
+      }
+
+
+   keytype
+        This "EType" identifies the encryption algorithm, described in
+        [KCRYPTO].
+
+   keyvalue
+        Contains the actual key.
+
+7.3.  Checksums
+
+
+
+Yu                          Expires: Aug 2004                  [Page 13]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   Several types contain checksums (actually signatures) of data.
+
+      CksumType       ::= Int32
+
+      -- The parameters specify which key to use to produce the
+      -- signature, as well as which key usage to use.  The
+      -- parameters are not actually sent over the wire.
+      Checksum { KeyToUse:Keys, KeyUsage:KeyUsages } ::= SEQUENCE {
+          cksumtype   [0] CksumType,
+          checksum    [1] OCTET STRING (CONSTRAINED BY {
+              -- signed using one of the keys --
+              KeyToUse:Keys,
+              -- with key usage being one of --
+              KeyUsage:KeyUsages
+          })
+      }
+
+
+   CksumType
+        Integer type for assigned numbers for signature algorithms.
+        Defined in [KCRYPTO]
+
+   Keys
+        As in EncryptedData
+
+   KeyUsages
+        As in EncryptedData
+
+   cksumtype
+        Signature algorithm used to produce the signature.
+
+   checksum
+        The actual checksum.
+
+7.3.1.  ChecksumOf
+
+   ChecksumOf is like "Checksum", but specifies which type is signed.
+
+      -- a Checksum that must contain the checksum of a particular type
+      ChecksumOf { Type, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      Checksum { Keys, KeyUsages }
+      (WITH COMPONENTS {
+          ...,
+          checksum (CONSTRAINED BY {
+              -- must be checksum of --
+              OCTET STRING (CONTAINING Type)
+          })
+      })
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 14]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   Type
+        Indicates the ASN.1 type whose DER encoding is signed.
+
+7.3.2.  Signed
+
+   Signed is like "ChecksumOf", but contains an actual instance of the
+   type being signed in addition to the signature.
+
+      -- parameterized type for wrapping authenticated plaintext
+      Signed { InnerType, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      SEQUENCE {
+          cksum       [0] ChecksumOf
+                              { InnerType, Keys, KeyUsages } OPTIONAL,
+          inner       [1] InnerType,
+          ...
+      }
+
+
+8.  Tickets
+
+   The important fields of a ticket are in the encrypted part.  The
+   components in common between the RFC 1510 and the extensible versions
+   are
+
+      EncTicketPartCommon ::= SEQUENCE {
+          flags               [0] TicketFlags,
+          key                 [1] EncryptionKey,
+          crealm              [2] Realm,
+          cname               [3] PrincipalName,
+          transited           [4] TransitedEncoding,
+          authtime            [5] KerberosTime,
+          starttime           [6] KerberosTime OPTIONAL,
+          endtime             [7] KerberosTime,
+          renew-till          [8] KerberosTime OPTIONAL,
+          caddr               [9] HostAddresses OPTIONAL,
+          authorization-data  [10] AuthorizationData OPTIONAL,
+          ...
+      }
+
+
+   crealm
+        This field contains the client's realm.
+
+   cname
+        This field contains the client's name.
+
+   caddr
+        This field lists the network addresses (if absent, all addresses
+        are permitted) from which the ticket is valid.
+
+
+
+Yu                          Expires: Aug 2004                  [Page 15]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   Descriptions of the other fields appear in the following sections.
+
+8.1.  Timestamps
+
+   Three of the ticket timestamps may be requested from the KDC.  The
+   timestamps may differ from those requested, depending on site policy.
+
+   authtime
+        The time at which the client authenticated, as recorded by the
+        KDC.
+
+   starttime
+        The earliest time when the ticket is valid.  If not present, the
+        ticket is valid starting at the authtime.  This is requested as
+        the "from" field of KDC-REQ-BODY-COMMON.
+
+   endtime
+        This time is requested in the "till" field of KDC-REQ-BODY-
+        COMMON.  Contains the time after which the ticket will not be
+        honored (its expiration time).  Note that individual services
+        MAY place their own limits on the life of a ticket and MAY
+        reject tickets which have not yet expired.  As such, this is
+        really an upper bound on the expiration time for the ticket.
+
+   renew-till
+        This time is requested in the "rtime" field of KDC-REQ-BODY-
+        COMMON.  It is only present in tickets that have the "renewable"
+        flag set in the flags field.  It indicates the maximum endtime
+        that may be included in a renewal.  It can be thought of as the
+        absolute expiration time for the ticket, including all renewals.
+
+8.2.  Ticket Flags
+
+   A number of flags may be set in the ticket, further defining some of
+   its capabilities.  Some of these flags map to flags in a KDC request.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 16]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      TicketFlags     ::= KerberosFlags { TicketFlagsBits }
+
+      TicketFlagsBits ::= BIT STRING {
+          reserved            (0),
+          forwardable         (1),
+          forwarded           (2),
+          proxiable           (3),
+          proxy               (4),
+          may-postdate        (5),
+          postdated           (6),
+          invalid             (7),
+          renewable           (8),
+          initial             (9),
+          pre-authent         (10),
+          hw-authent          (11),
+          transited-policy-checked (12),
+          ok-as-delegate      (13),
+          anonymous           (14),
+          cksummed-ticket     (15)
+      }
+
+
+8.2.1.  Flags Relating to Initial Ticket Acquisition
+
+   [ adapted KCLAR 2.1. ]
+
+   Several flags indicate the details of how the initial ticket was
+   acquired.
+
+   initial
+        The "initial" flag indicates that a ticket was issued using the
+        AS protocol, rather than issued based on a ticket-granting
+        ticket.  Application servers (e.g., a password-changing program)
+        requiring a client's definite knowledge of its secret keycan
+        insist that this flag be set in any tickets they accept, and
+        thus be assured that the client's key was recently presented to
+        the application client.
+
+   pre-authent
+        The "pre-authent" flag indicates that some sort of pre-
+        authentication was used during the AS exchange.
+
+   hw-authent
+        The "hw-authent" flag indicates that some sort of hardware-based
+        pre-authentication occurred during the AS exchange.
+
+   Both the "pre-authent" and the "hw-authent" flags may be present with
+   or without the "initial" flag; such tickets with the "initial" flag
+   clear are ones which are derived from initial tickets with the "pre-
+   authent" or "hw-authent" flags set.
+
+
+Yu                          Expires: Aug 2004                  [Page 17]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+8.2.2.  Invalid Tickets
+
+   [ KCLAR 2.2. ]
+
+   The "invalid" flag indicates that a ticket is invalid.  Application
+   servers MUST reject tickets which have this flag set.  A postdated
+   ticket will be issued in this form.  Invalid tickets MUST be
+   validated by the KDC before use, by presenting them to the KDC in a
+   TGS request with the "validate" option specified.  The KDC will only
+   validate tickets after their starttime has passed.  The validation is
+   required so that postdated tickets which have been stolen before
+   their starttime can be rendered permanently invalid (through a hot-
+   list mechanism -- see Section 9.3.5).
+
+8.2.3.  OK as Delegate
+
+   [ KCLAR 2.8. ]
+
+   For some applications a client may need to delegate authority to a
+   server to act on its behalf in contacting other services.  This
+   requires that the client forward credentials to an intermediate
+   server.  The ability for a client to obtain a service ticket to a
+   server conveys no information to the client about whether the server
+   should be trusted to accept delegated credentials.  The "ok-as-
+   delegate" flag provides a way for a KDC to communicate local realm
+   policy to a client regarding whether an intermediate server is
+   trusted to accept such credentials.
+
+   The copy of the ticket flags visible to the client may have the "ok-
+   as-delegate" flag set to indicate to the client that the server
+   specified in the ticket has been determined by policy of the realm to
+   be a suitable recipient of delegation.  A client can use the presence
+   of this flag to help it make a decision whether to delegate
+   credentials (either grant a proxy or a forwarded ticket-granting
+   ticket) to this server.  It is acceptable to ignore the value of this
+   flag.  When setting this flag, an administrator should consider the
+   security and placement of the server on which the service will run,
+   as well as whether the service requires the use of delegated
+   credentials.
+
+8.3.  Renewable Tickets
+
+   [ adapted KCLAR 2.3. ]
+
+   Renewable tickets can be used to mitigate the consequences of ticket
+   theft.  Applications may desire to hold tickets which can be valid
+   for long periods of time.  However, this can expose their credentials
+   to potential theft for equally long periods, and those stolen
+   credentials would be valid until the expiration time of the
+   ticket(s).  Simply using short-lived tickets and obtaining new ones
+   periodically would require the client to have long-term access to its
+
+Yu                          Expires: Aug 2004                  [Page 18]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   secret key, an even greater risk.
+
+   Renewable tickets have two "expiration times": the first is when the
+   current instance of the ticket expires, and the second is the latest
+   permissible value for an individual expiration time.  An application
+   client must periodically (i.e., before it expires) present a
+   renewable ticket to the KDC, with the "renew" option set in the KDC
+   request.  The KDC will issue a new ticket with a new session key and
+   a later expiration time.  All other fields of the ticket are left
+   unmodified by the renewal process.  When the latest permissible
+   expiration time arrives, the ticket expires permanently.  At each
+   renewal, the KDC MAY consult a hot-list to determine if the ticket
+   had been reported stolen since its last renewal; it will refuse to
+   renew such stolen tickets, and thus the usable lifetime of stolen
+   tickets is reduced.
+
+   The "renewable" flag in a ticket is normally only interpreted by the
+   ticket-granting service.  It can usually be ignored by application
+   servers.  However, some particularly careful application servers MAY
+   disallow renewable tickets.
+
+   If a renewable ticket is not renewed by its expiration time, the KDC
+   will not renew the ticket.  The "renewable" flag is clear by default,
+   but a client can request it be set by setting the "renewable" option
+   in the AS-REQ message. If it is set, then the "renew-till" field in
+   the ticket contains the time after which the ticket may not be
+   renewed.
+
+8.4.  Postdated Tickets
+
+   [ KCLAR 2.4. ]
+
+   Applications may occasionally need to obtain tickets for use much
+   later, e.g., a batch submission system would need tickets to be valid
+   at the time the batch job is serviced.  However, it is dangerous to
+   hold valid tickets in a batch queue, since they will be on-line
+   longer and more prone to theft.  Postdated tickets provide a way to
+   obtain these tickets from the KDC at job submission time, but to
+   leave them "dormant" until they are activated and validated by a
+   further request of the KDC. If a ticket theft were reported in the
+   interim, the KDC would refuse to validate the ticket, and the thief
+   would be foiled.
+
+   The "may-postdate" flag in a ticket is normally only interpreted by
+   the TGS. It can be ignored by application servers.  This flag MUST be
+   set in a ticket-granting ticket in order for the KDC to issue a
+   postdated ticket based on the presented ticket.  It is reset by
+   default; it MAY be requested by a client by setting the "allow-
+   postdate" option in the AS-REQ [?also TGS-REQ?] message.  This flag
+   does not allow a client to obtain a postdated ticket-granting ticket;
+   postdated ticket-granting tickets can only by obtained by requesting
+
+Yu                          Expires: Aug 2004                  [Page 19]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   the postdating in the AS-REQ message.  The life (endtime-starttime)
+   of a postdated ticket will be the remaining life of the ticket-
+   granting ticket at the time of the request, unless the "renewable"
+   option is also set, in which case it can be the full life (endtime-
+   starttime) of the ticket-granting ticket. The KDC MAY limit how far
+   in the future a ticket may be postdated.
+
+   The "postdated" flag indicates that a ticket has been postdated. The
+   application server can check the authtime field in the ticket to see
+   when the original authentication occurred.  Some services MAY choose
+   to reject postdated tickets, or they may only accept them within a
+   certain period after the original authentication. When the KDC issues
+   a "postdated" ticket, it will also be marked as "invalid", so that
+   the application client MUST present the ticket to the KDC for
+   validation before use.
+
+8.5.  Proxiable and Proxy Tickets
+
+   [ KCLAR 2.5. ]
+
+   At times it may be necessary for a principal to allow a service to
+   perform an operation on its behalf.  The service must be able to take
+   on the identity of the client, but only for a particular purpose. A
+   principal can allow a service to take on the principal's identity for
+   a particular purpose by granting it a proxy.
+
+   The process of granting a proxy using the "proxy" and "proxiable"
+   flags is used to provide credentials for use with specific services.
+   Though conceptually also a proxy, users wishing to delegate their
+   identity in a form usable for all purposes MUST use the ticket
+   forwarding mechanism described in the next section to forward a
+   ticket-granting ticket.
+
+   The "proxiable" flag in a ticket is normally only interpreted by the
+   ticket-granting service.  It can be ignored by application servers.
+   When set, this flag tells the ticket-granting server that it is OK to
+   issue a new ticket (but not a ticket-granting ticket) with a
+   different network address based on this ticket.  This flag is set if
+   requested by the client on initial authentication.  By default, the
+   client will request that it be set when requesting a ticket-granting
+   ticket, and reset when requesting any other ticket.
+
+   This flag allows a client to pass a proxy to a server to perform a
+   remote request on its behalf (e.g. a print service client can give
+   the print server a proxy to access the client's files on a particular
+   file server in order to satisfy a print request).
+
+   In order to complicate the use of stolen credentials, Kerberos
+   tickets may contain a set of network addresses from which they are
+   valid. When granting a proxy, the client MUST specify the new network
+   address from which the proxy is to be used, or indicate that the
+
+Yu                          Expires: Aug 2004                  [Page 20]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   proxy is to be issued for use from any address.
+
+   The "proxy" flag is set in a ticket by the TGS when it issues a proxy
+   ticket.  Application servers MAY check this flag and at their option
+   they MAY require additional authentication from the agent presenting
+   the proxy in order to provide an audit trail.
+
+8.6.  Forwardable Tickets
+
+   [ KCLAR 2.6. ]
+
+8.7.  Transited Realms
+
+   [ KCLAR 2.7., plus new stuff ]
+
+8.8.  Authorization Data
+
+8.9.  Encrypted Part of Ticket
+
+   The complete definition of the encrypted part is
+
+      -- Encrypted part of ticket
+      EncTicketPart ::= CHOICE {
+          rfc1510     [APPLICATION 3] EncTicketPart1510,
+          ext         [APPLICATION 5] EncTicketPartExt
+      }
+
+
+      EncTicketPart1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF EncTicketPartCommon
+      } (WITH COMPONENTS {
+          ...,
+          -- explicitly force IA5 in strings
+          crealm (WITH COMPONENTS { ia5 PRESENT }),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          })
+      })
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 21]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      EncTicketPartExt ::= EncTicketPartCommon
+      (WITH COMPONENTS {
+          ...,
+          -- explicitly force UTF-8 in strings
+          crealm (WITH COMPONENTS { ia5 ABSENT }),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          }),
+          -- explicitly constrain caddr to be non-empty if present
+          caddr (SIZE (1..MAX)),
+          -- explicitly constrain authorization-data to be non-empty
+          -- if present
+          authorization-data (SIZE (1..MAX))
+      })
+
+
+8.10.  Cleartext Part of Ticket
+
+      Ticket          ::= CHOICE {
+          rfc1510     [APPLICATION 1] Ticket1510,
+          ext         [APPLICATION 4] Signed {
+              TicketExt, { key-server }, { ku-Ticket-cksum }
+          }
+      }
+
+
+      -- takes a parameter specifying which type gets encrypted
+      TicketCommon { EncPart } ::= SEQUENCE {
+          tkt-vno     [0] INTEGER (5),
+          realm       [1] Realm,
+          sname       [2] PrincipalName,
+          enc-part    [3] EncryptedData {
+              EncPart, { key-server }, { ku-Ticket }
+          },
+          extensions          [4] TicketExtensions OPTIONAL,
+          ...
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 22]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      Ticket1510 ::= SEQUENCE {
+          -- "COMPONENTS OF" drops the extension marker from
+          -- TicketCommon
+          COMPONENTS OF TicketCommon { EncTicketPart1510 }
+      } (WITH COMPONENTS {
+          ...,
+          -- explicitly force IA5 in strings
+          realm (WITH COMPONENTS { ia5 PRESENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          }),
+          extensions ABSENT
+      })
+
+
+      -- APPLICATION tag goes inside Signed{} as well as outside,
+      -- to prevent possible substitution attacks.
+      TicketExt ::= [APPLICATION 4] TicketCommon
+      (WITH COMPONENTS {
+          ...,
+          -- explicitly force UTF-8 in strings
+          realm (WITH COMPONENTS { ia5 ABSENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          })
+      })
+
+
+      TEType                  ::= Int32
+
+      TICKETEXTENSION         ::= TYPEDHOLE { TEType }
+
+      -- ticket extensions: for TicketExt only
+      TicketExtensions        ::= SEQUENCE (SIZE (1..MAX)) OF SEQUENCE {
+          te-type             [0] TICKETEXTENSION.&id
+                                      ({TicketExtension-Set}),
+          te-data             [1] OCTET STRING (TICKETEXTENSION.&Type)
+                                      ({TicketExtension-Set}{@te-type})
+      }
+
+      -- no mandatory ticket extensions currently
+      TicketExtensionSet TICKETEXTENSION ::= { ... }
+
+
+9.  Credential Acquisition
+
+
+
+Yu                          Expires: Aug 2004                  [Page 23]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   There are two exchanges that can be used for acquiring credentials:
+   the AS exchange and the TGS exchange.  These exchanges have many
+   similarities, and this document describes them in parallel, noting
+   which behaviors are specific to one type of exchange.  The AS request
+   (AS-REQ) and TGS request (TGS-REQ) are both forms of KDC requests
+   (KDC-REQ).  Likewise, the AS reply (AS-REP) and TGS reply (TGS-REP)
+   are forms of KDC replies (KDC-REP).
+
+9.1.  KDC-REQ
+
+   The KDC-REQ has a large number of fields in common between the RFC
+   1510 and the extensible versions.
+
+      KDC-REQ-COMMON  ::= SEQUENCE {
+      -- NOTE: first tag is [1], not [0]
+          pvno        [1] INTEGER (5),
+          msg-type    [2] INTEGER (10 -- AS-REQ.rfc1510 --
+                                   | 12 -- TGS-REQ.rfc1510 --
+                                   | 6 -- AS-REQ.ext --
+                                   | 8 -- TGS-REQ.ext -- ),
+          padata      [3] SEQUENCE OF PA-DATA OPTIONAL
+          -- NOTE: not empty
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 24]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KDC-REQ-BODY-COMMON     ::= SEQUENCE {
+          kdc-options         [0] KDCOptions,
+          cname               [1] PrincipalName OPTIONAL
+          -- Used only in AS-REQ --,
+
+          realm               [2] Realm
+          -- Server's realm; also client's in AS-REQ --,
+
+          sname               [3] PrincipalName OPTIONAL,
+          from                [4] KerberosTime OPTIONAL,
+          till                [5] KerberosTime OPTIONAL
+          -- was required in rfc1510;
+          -- still required for compat versions
+          -- of messages --,
+
+          rtime               [6] KerberosTime OPTIONAL,
+          nonce               [7] Nonce,
+          etype               [8] SEQUENCE OF EType
+          -- in preference order --,
+
+          addresses           [9] HostAddresses OPTIONAL,
+          enc-authorization-data      [10] EncryptedData {
+              AuthorizationData, { key-session | key-subsession },
+              { ku-TGSReqAuthData-subkey |
+                ku-TGSReqAuthData-sesskey }
+          } OPTIONAL,
+
+          additional-tickets  [11] SEQUENCE OF Ticket OPTIONAL
+          -- NOTE: not empty --,
+          ...
+      }
+
+
+   Many fields of KDC-REQ-BODY-COMMON correspond directly to fields of
+   an EncTicketPartCommon.  The KDC copies most of them unchanged,
+   provided that their values meet site policy.
+
+   kdc-options
+        These flags do not correspond directly to "flags" in
+        EncTicketPartCommon.  [ insert mapping table here ]
+
+   cname
+        This field is copied to the "cname" field in
+        EncTicketPartCommon.  The "cname" field is required in an AS-
+        REQ; the client places its own name here.  In a TGS-REQ, the
+        "cname" in the ticket in the AP-REQ takes precedence.
+
+   realm
+        This field is the server's realm, and also holds the client's
+        realm in an AS-REQ.
+
+
+Yu                          Expires: Aug 2004                  [Page 25]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   The "from", "till", and "rtime" fields correspond to the "starttime",
+   "endtime", and "renew-till" fields of EncTicketPartCommon.
+
+   addresses
+        This field corresponds to the "caddr" field of
+        EncTicketPartCommon.
+
+   enc-authorization-data
+        For TGS-REQ, this field contains authorization data encrypted
+        using either the TGT session key or the AP-REQ subsession key;
+        these may be copied into the "authorization-data" field of
+        EncTicketPartCommon if policy permits.
+
+9.2.  PA-DATA
+
+   PA-DATA have multiple uses in the Kerberos protocol.  They may pre-
+   authenticate an AS-REQ; they may also modify several of the
+   encryption keys used in a KDC-REP.  PA-DATA may also provide "hints"
+   to the client about which long-term key (usually password-derived) to
+   use.  PA-DATA may also include "hints" about which pre-authentication
+   mechanisms to use, or include data for input into a pre-
+   authentication mechanism.
+
+9.3.  KDC-REQ Processing
+
+   Processing of a KDC-REQ proceeds through several steps.  An
+   implementation need not perform these steps exactly as described, as
+   long as the resulting behavior is as if the steps were performed as
+   described.  The KDC performs replay handling on receipt of the
+   request; it then validates the request, adjusts timestamps, and
+   selects the keys used in the reply.  It copies data from the request
+   into the issued ticket, adjusting for policy.  The KDC then transmits
+   the reply to the client.
+
+9.3.1.  Handling Replays
+
+   Because Kerberos can run over unreliable transports such as UDP, the
+   KDC MUST be prepared to retransmit responses in case they are lost.
+   If a KDC receives a request identical to one it has recently
+   successfully processed, the KDC MUST respond with an KDC-REP message
+   rather than a replay error.  In order to reduce the amount of
+   ciphertext given to a potential attacker, KDCs MAY send the same
+   response generated when the request was first handled.  KDCs MUST
+   obey this replay behavior even if the actual transport in use is
+   reliable.  If the AP-REQ which authenticates a TGS-REQ is a replay,
+   and the entire request is not identical to a recently successfully
+   processed request, the KDC SHOULD return "krb-ap-err-repeat", as is
+   appropriate for AP-REQ processing.
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 26]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+9.3.2.  Request Validation
+
+9.3.2.1.  AS-REQ Authentication
+
+   Site policy determines whether a given client principal is required
+   to provide some pre-authentication prior to receiving an AS-REP.
+   Since the default reply key is typically the client's long-term
+   password-based key, an attacker may easily request known plaintext
+   (in the form of an AS-REP) upon which to mount a dictionary attack.
+   Pre-authentication can limit the possibility of such an attack.
+
+   If site policy requires pre-authentication for a client principal,
+   and no pre-authentication is provided, the KDC returns the error
+   "kdc-err-preauth-required".  Accompanying this error are "e-data"
+   which include hints telling the client which pre-authentication
+   mechanisms to use, or data for input to pre-authentication mechanisms
+   (e.g., input to challenge-response systems).  If pre-authentication
+   fails, the KDC returns the error "kdc-err-preauth-failed".
+
+   [ may need additional changes based on Sam's preauth draft ]
+
+9.3.2.2.  TGS-REQ Authentication
+
+   A TGS-REQ has an accompanying AP-REQ, which is included in the "pa-
+   tgs-req".  The KDC MUST validate the checksum in the Authenticator of
+   the AP-REQ, which is computed over the KDC-REQ-BODY-1510 or KDC-REQ-
+   BODY-EXT (for TGS-REQ-1510 or TGS-REQ-EXT, respectively) of the
+   request.  [ padata not signed by authenticator! ] Any error from the
+   AP-REQ validation process SHOULD be returned in a KRB-ERROR message.
+   The service principal in the ticket of the AP-REQ may be a ticket-
+   granting service principal, or a normal application service
+   principal.  An AP-REQ ticket which is not a ticket-granting ticket
+   MUST NOT be used to issue a ticket for any service other than the one
+   named in the ticket.  In this case, the "renew", "validate", or
+   "proxy" [?also forwarded?]  option must be set in the request.
+
+9.3.2.3.  Principal Validation
+
+   If the client principal in an AS-REQ is unknown, the KDC returns the
+   error "kdc-err-c-principal-unknown".  If the server principal is
+   unknown, the KDC returns the error "kdc-err-c-principal-unknown".
+
+9.3.3.  Timestamp Handling
+
+   [ some aspects of timestamp handling, especially regarding postdating
+   and renewal, are difficult to read in KCLAR... needs closer
+   examination here ]
+
+   For the AS exchange, the "authtime" of a ticket is set to the local
+   time at the KDC.  For the TGS exchange, the KDC sets the "authtime"
+   to that of the ticket in the AP-REQ authenticating the TGS-REQ.
+
+Yu                          Expires: Aug 2004                  [Page 27]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   [?application server can spoof the authtime.  security issues for
+   hot-list?] [ MIT implementation may change authtime of renewed
+   tickets; needs check... ]
+
+   Processing of "starttime" (requested in the "from" field) differs
+   depending on whether the "postdated" option is set in the request.
+   If the "postdated" option is not set, and the requested "starttime"
+   is in the future beyond the window of acceptable clock skew, the KDC
+   returns the error "kdc-err-cannot-postdate".  If the "postdated"
+   option is not set, and the requested "starttime" is absent or does
+   not indicate a time in the future beyond the acceptable clock skew,
+   the KDC sets the "starttime" to the KDC's current time.  The
+   "postdated" option MUST NOT be honored if the ticket is being
+   requested by TGS-REQ and the "may-postdate" is not set in the TGT.
+   Otherwise, if the "postdated" option is set, and site policy permits,
+   the KDC sets the "starttime" as requested, and sets the "invalid"
+   flag in the new ticket.
+
+9.3.3.1.  AS-REQ Timestamp Processing
+
+   The "endtime" of the ticket will be set to the earlier of the
+   requested "till" time and a time determined by local policy, possibly
+   determined using factors specific to the realm or principal. For
+   example, the expiration time MAY be set to the earliest of the
+   following:
+
+   *    The expiration time (till) requested.
+
+   *    The ticket's start time plus the maximum allowable lifetime
+        associated with the client principal from the authentication
+        server's database.
+
+   *    The ticket's start time plus the maximum allowable lifetime
+        associated with the server principal.
+
+   *    The ticket's start time plus the maximum lifetime set by the
+        policy of the local realm.
+
+   If the requested expiration time minus the start time (as determined
+   above) is less than a site-determined minimum lifetime, an error
+   message with code "kdc-err-never-valid" is returned. If the requested
+   expiration time for the ticket exceeds what was determined as above,
+   and if the "renewable-ok" option was requested, then the "renewable"
+   flag is set in the new ticket, and the "renew-till" value is set as
+   if the "renewable" option were requested.
+
+   If the "renewable" option has been requested or if the "renewable-ok"
+   option has been set and a renewable ticket is to be issued, then the
+   renew-till field MAY be set to the earliest of:
+
+
+
+Yu                          Expires: Aug 2004                  [Page 28]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   *    Its requested value.
+
+   *    The start time of the ticket plus the minimum of the two maximum
+        renewable lifetimes associated with the principals' database
+        entries.
+
+   *    The start time of the ticket plus the maximum renewable lifetime
+        set by the policy of the local realm.
+
+9.3.3.2.  TGS-REQ Timestamp Processing
+
+   If the TGS-REQ has the TGT in its AP-REQ, and the TGS-REQ requests an
+   "endtime" (in the "till" field), then the "endtime" of the new ticket
+   is set to the minimum of (a) the requested "endtime" value, (b) the
+   "endtime" in the TGT, and (c) an "endtime" determined by site policy
+   on ticket lifetimes.  If the new ticket is a renewal, the "endtime"
+   of the new ticket is bounded by (a) the requested "endtime" value,
+   (b) the value of the "renew-till" value of the old, and (c) the
+   "starttime" of the new ticket plus the life (endtime - starttime) of
+   the old ticket.  [ the previous sentence is a bit confusing; adapted
+   from KCLAR 3.3.3. ]
+
+   When handling a TGS-REQ, a KDC MUST NOT issue a postdated ticket with
+   a "starttime", "endtime", or "renew-till" time later than the "renew-
+   till" time of the TGT.
+
+9.3.4.  Key Selection
+
+   Three keys are involved in creating a KDC-REP.  The reply key is used
+   to encrypt the encrypted part of the KDC-REP.  The session key is
+   stored in the encrypted part of the ticket, and is also present in
+   the part of the reply which is visible to the client.  The ticket key
+   is used to encrypt the ticket.  These keys all have initial values
+   for a given exchange; pre-authentication and other extension
+   mechanisms may change the value used for any of these keys.
+
+   [ again, may need changes based on Sam's preauth draft ]
+
+   The set of encryption types the client will understand appears in the
+   "etype" field of KDC-REQ-BODY-COMMON.  The KDC limits the set of
+   possible reply keys and the set of session key encryption types based
+   on the "etype" field.
+
+   For the AS exchange, the reply key is initially a long-term key of
+   the client, limited to those encryption types specified by the
+   "etype" field.  The KDC SHOULD use the first valid strong "etype" for
+   which an encryption key is available.  For the TGS exchange, the
+   reply key is initially the subsession key of the Authenticator, or,
+   if that is not present, the session key of the ticket used to
+   authenticate the TGS-REQ.
+
+
+Yu                          Expires: Aug 2004                  [Page 29]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   The ticket key is initially the long-term key of the service.  User-
+   to-user authentication sets the ticket key to be the session key of
+   the additional ticket in the request.
+
+   The session key is initially randomly generated, and has an
+   encryption type which both the client and the server will understand.
+   Typically, the KDC has prior knowledge of which encryption types the
+   server will understand.  It selects the first valid strong "etype"
+   listed the request which the server also will understand.
+
+9.3.5.  Checking For Revoked Tickets
+
+9.4.  Reply Validation
+
+10.  Application Authentication
+
+11.  Session Key Use
+
+11.1.  KRB-SAFE
+
+11.2.  KRB-PRIV
+
+11.3.  KRB-CRED
+
+12.  Security Considerations
+
+12.1.  Time Synchronization
+
+   Time synchronization between the KDC and application servers is
+   necessary to prevent acceptance of expired tickets.
+
+   Time synchronization is needed between application servers and
+   clients to prevent replay attacks if a replay cache is being used.
+   If negotiated subsession keys are used to encrypt application data,
+   replay caches may not be necessary.
+
+12.2.  Replays
+
+12.3.  Principal Name Reuse
+
+   See Section 6.2.
+
+12.4.  Password Guessing
+
+12.5.  Forward Secrecy
+
+   [from KCLAR 10.; needs some rewriting]
+
+   The Kerberos protocol in its basic form does not provide perfect
+   forward secrecy for communications.  If traffic has been recorded by
+   an eavesdropper, then messages encrypted using the KRB-PRIV message,
+
+Yu                          Expires: Aug 2004                  [Page 30]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   or messages encrypted using application-specific encryption under
+   keys exchanged using Kerberos can be decrypted if any of the user's,
+   application server's, or KDC's key is subsequently discovered.  This
+   is because the session key used to encrypt such messages is
+   transmitted over the network encrypted in the key of the application
+   server, and also encrypted under the session key from the user's
+   ticket-granting ticket when returned to the user in the TGS-REP
+   message.  The session key from the ticket-granting ticket was sent to
+   the user in the AS-REP message encrypted in the user's secret key,
+   and embedded in the ticket-granting ticket, which was encrypted in
+   the key of the KDC.  Application requiring perfect forward secrecy
+   must exchange keys through mechanisms that provide such assurance,
+   but may use Kerberos for authentication of the encrypted channel
+   established through such other means.
+
+12.6.  Authorization
+
+   As an authentication service, Kerberos provides a means of verifying
+   the identity of principals on a network.  Kerberos does not, by
+   itself, provide authorization.  Applications SHOULD NOT accept the
+   mere issuance of a service ticket by the Kerberos server as granting
+   authority to use the service.
+
+12.7.  Login Authentication
+
+   Some applications, particularly those which provide login access when
+   provided with a password, SHOULD NOT treat successful acquisition of
+   credentials as sufficient proof of the user's identity.  An attacker
+   posing as a user could generate an illegitimate KDC-REP message which
+   decrypts properly.  To authenticate a user logging on to a local
+   system, the credentials obtained SHOULD be used in a TGS exchange to
+   obtain credentials for a local service.  Successful use of those
+   credentials to authenticate to the local service assures that the
+   initially obtained credentials are from a valid KDC.
+
+Appendices
+
+A.  ASN.1 Module (Normative)
+
+      KerberosV5Spec3 {
+          iso(1) identified-organization(3) dod(6) internet(1)
+          security(5) kerberosV5(2) modules(4) krb5spec3(4)
+      } DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 31]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- OID arc for KerberosV5
+      --
+      -- This OID may be used to identify Kerberos protocol messages
+      -- encapsulated in other protocols.
+      --
+      -- This OID also designates the OID arc for KerberosV5-related
+      -- OIDs.
+      --
+      -- NOTE: RFC 1510 had an incorrect value (5) for "dod" in its
+      -- OID.
+      id-krb5         OBJECT IDENTIFIER ::= {
+          iso(1) identified-organization(3) dod(6) internet(1)
+          security(5) kerberosV5(2)
+      }
+
+
+      -- top-level type
+      --
+      -- Applications should not directly reference any types
+      -- other than KRB-PDU and its component types.
+      --
+      KRB-PDU         ::= CHOICE {
+          ticket      Ticket,
+          as-req      AS-REQ,
+          as-rep      AS-REP,
+          tgs-req     TGS-REQ,
+          tgs-rep     TGS-REP,
+          ap-req      AP-REQ,
+          ap-rep      AP-REP,
+          krb-safe    KRB-SAFE,
+          krb-priv    KRB-PRIV,
+          krb-cred    KRB-CRED,
+          tgt-req     TGT-REQ,
+          krb-error   KRB-ERROR,
+          ...
+      }
+
+
+      --
+      -- *** basic types
+      --
+
+
+      -- signed values representable in 32 bits
+      --
+      -- These are often used as assigned numbers for various things.
+      Int32           ::= INTEGER (-2147483648..2147483647)
+
+      -- unsigned 32 bit values
+      UInt32          ::= INTEGER (0..4294967295)
+
+
+Yu                          Expires: Aug 2004                  [Page 32]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- microseconds
+      Microseconds    ::= INTEGER (0..999999)
+
+
+      -- sequence numbers
+      --
+      -- We may want to increase this to 2**64 and define a UInt64
+      -- type.
+      SeqNum          ::= UInt32
+
+
+      -- nonces
+      --
+      -- Likewise, we may want to make this UInt64.
+      Nonce           ::= UInt32
+
+
+      -- must not have fractional seconds
+      KerberosTime    ::= GeneralizedTime
+
+
+      -- used for names and for error messages
+      KerberosString  ::= CHOICE {
+          ia5         GeneralString (IA5String),
+          utf8        UTF8String,
+          ...         -- no extension may be sent
+                      -- to an rfc1510 implementation --
+      }
+
+
+      -- used for language tags
+      LangTag ::= PrintableString (FROM ("A".."Z" | "a".."z" | "0".."9" | "-"))
+
+
+      Realm           ::= KerberosString
+
+      PrincipalName   ::= SEQUENCE {
+          name-type   [0] NameType,
+          -- May have zero elements, or individual elements may be
+          -- zero-length, but this is not recommended.
+          name-string [1] SEQUENCE OF KerberosString
+      }
+
+      -- assigned numbers for name types (used in principal names)
+      NameType        ::= Int32
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 33]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- Name type not known
+      nt-unknown              NameType ::= 0
+      -- Just the name of the principal as in DCE, or for users
+      nt-principal            NameType ::= 1
+      -- Service and other unique instance (krbtgt)
+      nt-srv-inst             NameType ::= 2
+      -- Service with host name as instance (telnet, rcommands)
+      nt-srv-hst              NameType ::= 3
+      -- Service with host as remaining components
+      nt-srv-xhst             NameType ::= 4
+      -- Unique ID
+      nt-uid                  NameType ::= 5
+      -- Encoded X.509 Distingished name [RFC 2253]
+      nt-x500-principal       NameType ::= 6
+      -- Name in form of SMTP email name (e.g. user@foo.com)
+      nt-smtp-name            NameType ::= 7
+      -- Enterprise name - may be mapped to principal name
+      nt-enterprise           NameType ::= 10
+
+
+      -- Yet another refinement to kludge around historical
+      -- implementation bugs... we still send at least 32 bits, but
+      -- this parameterized type allows us to actually use named bit
+      -- string syntax to define flags, sort of.
+      KerberosFlags { NamedBits }
+          ::= BIT STRING (SIZE (32..MAX))
+          (CONSTRAINED BY {
+          -- must be a valid value of -- NamedBits
+          -- but if the value to be sent would otherwise be shorter
+          -- than 32 bits, it must be padded with trailing zero bits
+          -- to 32 bits.  Otherwise, no trailing zero bits may be
+          -- present.
+      })
+
+
+      AddrType        ::= Int32
+
+      HostAddress     ::= SEQUENCE  {
+          addr-type   [0] AddrType,
+          address     [1] OCTET STRING
+      }
+
+      -- NOTE: HostAddresses is always used as an OPTIONAL field and
+      -- should not be a zero-length SEQUENCE OF.
+      --
+      -- The extensible messages explicitly constrain this to be
+      -- non-empty.
+      HostAddresses   ::= SEQUENCE OF HostAddress
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 34]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      --
+      -- *** typed hole support
+      --
+
+
+      -- Object class for generic typed holes, e.g., padata,
+      -- authorizationdata.
+      --
+      -- Its parameter specifies the name of integer type used as a
+      -- unique identifier; usually this type is an aliased Int32.
+      --
+      -- Usually, the &Type field will be an OctetstringHole, but if
+      -- there is a need to use a non-ASN.1 encoded type, it may be
+      -- simply an OCTET STRING, possibly with some comments
+      -- describing its contents.
+      TYPEDHOLE { IntType } ::= CLASS {
+          &id-int     IntType UNIQUE,
+          &id-oid     RELATIVE-OID UNIQUE OPTIONAL,
+          &Type,
+          &desc       ObjectDescriptor OPTIONAL
+      } WITH SYNTAX {
+          SYNTAX              &Type
+          IDENTIFIED BY       &id-int
+          [ OID               &id-oid ]
+          [ DESCRIPTION       &desc ]
+      }
+
+
+      -- An octet string wrapping another ASN.1 type.
+      OctetstringHole { Type } ::= OCTET STRING (CONTAINING Type)
+
+
+      --
+      -- *** crypto-related types and assignments
+      --
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 35]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      --
+      -- Actual identifier names are provisional and subject to
+      -- change.
+      --
+      ku-pa-enc-ts                    KeyUsage ::= 1
+      ku-Ticket                       KeyUsage ::= 2
+      ku-EncASRepPart                 KeyUsage ::= 3
+      ku-TGSReqAuthData-sesskey       KeyUsage ::= 4
+      ku-TGSReqAuthData-subkey        KeyUsage ::= 5
+      ku-pa-TGSReq-cksum              KeyUsage ::= 6
+      ku-pa-TGSReq-authenticator      KeyUsage ::= 7
+      ku-EncTGSRepPart-sesskey        KeyUsage ::= 8
+      ku-EncTGSRepPart-subkey         KeyUsage ::= 9
+      ku-Authenticator-cksum          KeyUsage ::= 10
+      ku-APReq-authenticator          KeyUsage ::= 11
+      ku-EncAPRepPart                 KeyUsage ::= 12
+      ku-EncKrbPrivPart               KeyUsage ::= 13
+      ku-EncKrbCredPart               KeyUsage ::= 14
+      ku-KrbSafe-cksum                KeyUsage ::= 15
+      ku-ad-KDCIssued-cksum           KeyUsage ::= 19
+
+
+      -- The following numbers are provisional... conflicts may exist elsewhere.
+      ku-Ticket-cksum                 KeyUsage ::= 25
+      ku-ASReq-cksum                  KeyUsage ::= 26
+      ku-TGSReq-cksum                 KeyUsage ::= 27
+      ku-ASRep-cksum                  KeyUsage ::= 28
+      ku-TGSRep-cksum                 KeyUsage ::= 29
+      ku-APReq-cksum                  KeyUsage ::= 30
+      ku-APRep-cksum                  KeyUsage ::= 31
+      ku-KrbCred-cksum                KeyUsage ::= 32
+      ku-KrbError-cksum               KeyUsage ::= 33
+      ku-KDCRep-cksum                 KeyUsage ::= 34
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 36]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- assigned numbers for encryption schemes
+      et-des-cbc-crc                  EType ::= 1
+      et-des-cbc-md4                  EType ::= 2
+      et-des-cbc-md5                  EType ::= 3
+      --     [reserved]                         4
+      et-des3-cbc-md5                 EType ::= 5
+      --     [reserved]                         6
+      et-des3-cbc-sha1                EType ::= 7
+      et-dsaWithSHA1-CmsOID           EType ::= 9
+      et-md5WithRSAEncryption-CmsOID  EType ::= 10
+      et-sha1WithRSAEncryption-CmsOID EType ::= 11
+      et-rc2CBC-EnvOID                EType ::= 12
+      et-rsaEncryption-EnvOID         EType ::= 13
+      et-rsaES-OAEP-ENV-OID           EType ::= 14
+      et-des-ede3-cbc-Env-OID         EType ::= 15
+      et-des3-cbc-sha1-kd             EType ::= 16
+      et-aes128-cts-hmac-sha1-96      EType ::= 17 -- AES
+      et-aes256-cts-hmac-sha1-96      EType ::= 18 -- AES
+      et-rc4-hmac                     EType ::= 23 -- Microsoft
+      et-rc4-hmac-exp                 EType ::= 24 -- Microsoft
+      et-subkey-keymaterial           EType ::= 65 -- opaque; PacketCable
+
+
+      -- "Type" specifies which ASN.1 type is encrypted to the
+      -- ciphertext in the EncryptedData.  "Keys" specifies a set of
+      -- keys of which one key may be used to encrypt the data.
+      -- "KeyUsages" specifies a set of key usages, one of which may
+      -- be used to encrypt.
+      --
+      -- None of the parameters is transmitted over the wire.
+      EncryptedData { Type, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      SEQUENCE {
+          etype       [0] EType,
+          kvno        [1] UInt32 OPTIONAL,
+          cipher      [2] OCTET STRING (CONSTRAINED BY {
+              -- must be encryption of --
+              OCTET STRING (CONTAINING Type),
+              -- with one of the keys -- KeyToUse:Keys,
+              -- with key usage being one of --
+              KeyUsage:KeyUsages
+          }),
+          ...
+      }
+
+      -- Assigned numbers denoting encryption mechanisms.
+      EType ::= Int32
+
+      -- Assigned numbers denoting key usages.
+      KeyUsage ::= UInt32
+
+
+
+Yu                          Expires: Aug 2004                  [Page 37]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- KeyToUse identifies which key is to be used to encrypt or
+      -- sign a given value.
+      --
+      -- Values of KeyToUse are never actually transmitted over the
+      -- wire, or even used directly by the implementation in any
+      -- way, as key usages are; it exists primarily to identify
+      -- which key gets used for what purpose.  Thus, the specific
+      -- numeric values associated with this type are irrelevant.
+      KeyToUse        ::= ENUMERATED {
+          -- unspecified
+          key-unspecified,
+          -- server long term key
+          key-server,
+          -- client long term key
+          key-client,
+          -- key selected by KDC for encryption of a KDC-REP
+          key-kdc-rep,
+          -- session key from ticket
+          key-session,
+          -- subsession key negotiated via AP-REQ/AP-REP
+          key-subsession,
+          ...
+      }
+
+
+      EncryptionKey   ::= SEQUENCE {
+          keytype     [0] EType,
+          keyvalue    [1] OCTET STRING
+      }
+
+
+      CksumType       ::= Int32
+
+      -- The parameters specify which key to use to produce the
+      -- signature, as well as which key usage to use.  The
+      -- parameters are not actually sent over the wire.
+      Checksum { KeyToUse:Keys, KeyUsage:KeyUsages } ::= SEQUENCE {
+          cksumtype   [0] CksumType,
+          checksum    [1] OCTET STRING (CONSTRAINED BY {
+              -- signed using one of the keys --
+              KeyToUse:Keys,
+              -- with key usage being one of --
+              KeyUsage:KeyUsages
+          })
+      }
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 38]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- a Checksum that must contain the checksum of a particular type
+      ChecksumOf { Type, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      Checksum { Keys, KeyUsages }
+      (WITH COMPONENTS {
+          ...,
+          checksum (CONSTRAINED BY {
+              -- must be checksum of --
+              OCTET STRING (CONTAINING Type)
+          })
+      })
+
+
+      -- parameterized type for wrapping authenticated plaintext
+      Signed { InnerType, KeyToUse:Keys, KeyUsage:KeyUsages } ::=
+      SEQUENCE {
+          cksum       [0] ChecksumOf
+                              { InnerType, Keys, KeyUsages } OPTIONAL,
+          inner       [1] InnerType,
+          ...
+      }
+
+
+      --
+      -- *** Tickets
+      --
+
+
+      Ticket          ::= CHOICE {
+          rfc1510     [APPLICATION 1] Ticket1510,
+          ext         [APPLICATION 4] Signed {
+              TicketExt, { key-server }, { ku-Ticket-cksum }
+          }
+      }
+
+
+      -- takes a parameter specifying which type gets encrypted
+      TicketCommon { EncPart } ::= SEQUENCE {
+          tkt-vno     [0] INTEGER (5),
+          realm       [1] Realm,
+          sname       [2] PrincipalName,
+          enc-part    [3] EncryptedData {
+              EncPart, { key-server }, { ku-Ticket }
+          },
+          extensions          [4] TicketExtensions OPTIONAL,
+          ...
+      }
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 39]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      Ticket1510 ::= SEQUENCE {
+          -- "COMPONENTS OF" drops the extension marker from
+          -- TicketCommon
+          COMPONENTS OF TicketCommon { EncTicketPart1510 }
+      } (WITH COMPONENTS {
+          ...,
+          -- explicitly force IA5 in strings
+          realm (WITH COMPONENTS { ia5 PRESENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          }),
+          extensions ABSENT
+      })
+
+
+      -- APPLICATION tag goes inside Signed{} as well as outside,
+      -- to prevent possible substitution attacks.
+      TicketExt ::= [APPLICATION 4] TicketCommon
+      (WITH COMPONENTS {
+          ...,
+          -- explicitly force UTF-8 in strings
+          realm (WITH COMPONENTS { ia5 ABSENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          })
+      })
+
+
+      -- Encrypted part of ticket
+      EncTicketPart ::= CHOICE {
+          rfc1510     [APPLICATION 3] EncTicketPart1510,
+          ext         [APPLICATION 5] EncTicketPartExt
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 40]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      EncTicketPartCommon ::= SEQUENCE {
+          flags               [0] TicketFlags,
+          key                 [1] EncryptionKey,
+          crealm              [2] Realm,
+          cname               [3] PrincipalName,
+          transited           [4] TransitedEncoding,
+          authtime            [5] KerberosTime,
+          starttime           [6] KerberosTime OPTIONAL,
+          endtime             [7] KerberosTime,
+          renew-till          [8] KerberosTime OPTIONAL,
+          caddr               [9] HostAddresses OPTIONAL,
+          authorization-data  [10] AuthorizationData OPTIONAL,
+          ...
+      }
+
+
+      EncTicketPart1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF EncTicketPartCommon
+      } (WITH COMPONENTS {
+          ...,
+          -- explicitly force IA5 in strings
+          crealm (WITH COMPONENTS { ia5 PRESENT }),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          })
+      })
+
+
+      EncTicketPartExt ::= EncTicketPartCommon
+      (WITH COMPONENTS {
+          ...,
+          -- explicitly force UTF-8 in strings
+          crealm (WITH COMPONENTS { ia5 ABSENT }),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          }),
+          -- explicitly constrain caddr to be non-empty if present
+          caddr (SIZE (1..MAX)),
+          -- explicitly constrain authorization-data to be non-empty
+          -- if present
+          authorization-data (SIZE (1..MAX))
+      })
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 41]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      --
+      -- *** Authorization Data
+      --
+
+
+      ADType          ::= Int32
+
+      AUTHDATA        ::= TYPEDHOLE { ADType }
+
+      -- NOTE: AuthorizationData is always used as an OPTIONAL field and
+      -- should not be a zero-length SEQUENCE OF.
+      --
+      -- The extensible messages explicitly constrain this to be non-empty.
+      AuthorizationData       ::= SEQUENCE OF SEQUENCE {
+          ad-type             [0] AUTHDATA.&id-int ({Authdata-Set}),
+          ad-data             [1] OCTET STRING (AUTHDATA.&Type)
+                                      ({Authdata-Set}{@ad-type})
+      }
+
+
+      -- Mandatory AuthorizationData
+      Authdata-Set AUTHDATA ::= {
+          ad-if-relevant |
+          ad-kdcissued |
+          ad-and-or |
+          ad-mandatory-for-kdc ,
+          ...
+      }
+
+
+      ad-if-relevant AUTHDATA ::= {
+          SYNTAX              OctetstringHole { AuthorizationData }
+          IDENTIFIED BY       1
+          DESCRIPTION
+          "Encapsulates another AuthorizationData.
+      Intended for application servers; receiving application servers
+      MAY ignore."
+      }
+
+
+      ad-kdcissued AUTHDATA ::= {
+          SYNTAX              OctetstringHole { AD-KDCIssued }
+          IDENTIFIED BY       4
+          DESCRIPTION "KDC-issued privilege attributes"
+      }
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 42]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      AD-KDCIssued            ::= SEQUENCE {
+          ad-checksum [0] ChecksumOf {
+              AuthorizationData, { key-session },
+              { ku-ad-KDCIssued-cksum }},
+          i-realm     [1] Realm OPTIONAL,
+          i-sname     [2] PrincipalName OPTIONAL,
+          elements    [3] AuthorizationData
+      }
+
+
+      AD-AND-OR               ::= SEQUENCE {
+          condition-count     [0] INTEGER,
+          elements            [1] AuthorizationData
+      }
+
+
+      AD-MANDATORY-FOR-KDC    ::= AuthorizationData
+
+
+      ad-and-or AUTHDATA ::= {
+          SYNTAX              OctetstringHole { AD-AND-OR }
+          IDENTIFIED BY       5
+          DESCRIPTION "And/Or"
+      }
+
+      AD-AND-OR               ::= SEQUENCE {
+              condition-count [0] INTEGER,
+              elements        [1] AuthorizationData
+      }
+
+
+      ad-mandatory-for-kdc AUTHDATA ::= {
+          SYNTAX              OctetstringHole { AuthorizationData }
+          IDENTIFIED BY       8
+          DESCRIPTION "KDCs MUST interpret any AuthorizationData
+      wrapped in this."
+      }
+
+
+      TrType                  ::= Int32 -- must be registered
+
+      -- encoded Transited field
+      TransitedEncoding       ::= SEQUENCE {
+          tr-type     [0] TrType,
+          contents    [1] OCTET STRING
+      }
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 43]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      TEType                  ::= Int32
+
+      TICKETEXTENSION         ::= TYPEDHOLE { TEType }
+
+      -- ticket extensions: for TicketExt only
+      TicketExtensions        ::= SEQUENCE (SIZE (1..MAX)) OF SEQUENCE {
+          te-type             [0] TICKETEXTENSION.&id
+                                      ({TicketExtension-Set}),
+          te-data             [1] OCTET STRING (TICKETEXTENSION.&Type)
+                                      ({TicketExtension-Set}{@te-type})
+      }
+
+      -- no mandatory ticket extensions currently
+      TicketExtensionSet TICKETEXTENSION ::= { ... }
+
+
+      TicketFlags     ::= KerberosFlags { TicketFlagsBits }
+
+      TicketFlagsBits ::= BIT STRING {
+          reserved            (0),
+          forwardable         (1),
+          forwarded           (2),
+          proxiable           (3),
+          proxy               (4),
+          may-postdate        (5),
+          postdated           (6),
+          invalid             (7),
+          renewable           (8),
+          initial             (9),
+          pre-authent         (10),
+          hw-authent          (11),
+          transited-policy-checked (12),
+          ok-as-delegate      (13),
+          anonymous           (14),
+          cksummed-ticket     (15)
+      }
+
+
+      --
+      -- *** KDC protocol
+      --
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 44]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      AS-REQ  ::= CHOICE {
+          rfc1510     [APPLICATION 10] KDC-REQ-1510
+          (WITH COMPONENTS {
+              ...,
+              msg-type (10),
+              -- AS-REQ must include client name
+              req-body (WITH COMPONENTS { ..., cname PRESENT })
+          }),
+          ext         [APPLICATION 6]  Signed {
+              -- APPLICATION tag goes inside Signed{} as well as outside,
+              -- to prevent possible substitution attacks.
+              [APPLICATION 6] KDC-REQ-EXT,
+              -- not sure this is correct key to use; do we even want
+              -- to sign AS-REQ?
+              { key-client },
+              { ku-ASReq-cksum }
+          }
+          (WITH COMPONENTS {
+              ...,
+              msg-type  (6),
+              -- AS-REQ must include client name
+              req-body (WITH COMPONENTS { ..., cname PRESENT })
+          })
+      }
+
+
+      TGS-REQ ::= CHOICE {
+          rfc1510     [APPLICATION 12] KDC-REQ-1510
+          (WITH COMPONENTS {
+              ...,
+              msg-type (12),
+              -- client name optional in TGS-REQ
+              req-body (WITH COMPONENTS { ..., cname ABSENT })
+          }),
+          ext         [APPLICATION 8]  Signed {
+              -- APPLICATION tag goes inside Signed{} as well as outside,
+              -- to prevent possible substitution attacks.
+              [APPLICATION 8] KDC-REQ-EXT,
+              { key-session }, { ku-TGSReq-cksum }
+          }
+          (WITH COMPONENTS {
+              ...,
+              msg-type  (8),
+              -- client name optional in TGS-REQ
+              req-body (WITH COMPONENTS { ..., cname ABSENT })
+          })
+      }
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 45]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KDC-REQ-COMMON  ::= SEQUENCE {
+      -- NOTE: first tag is [1], not [0]
+          pvno        [1] INTEGER (5),
+          msg-type    [2] INTEGER (10 -- AS-REQ.rfc1510 --
+                                   | 12 -- TGS-REQ.rfc1510 --
+                                   | 6 -- AS-REQ.ext --
+                                   | 8 -- TGS-REQ.ext -- ),
+          padata      [3] SEQUENCE OF PA-DATA OPTIONAL
+          -- NOTE: not empty
+      }
+
+
+      KDC-REQ-1510    ::= SEQUENCE {
+          COMPONENTS OF KDC-REQ-COMMON,
+          req-body    [4] KDC-REQ-BODY-1510
+      } (WITH COMPONENTS { ..., msg-type (10 | 12) })
+
+
+      -- APPLICATION tag goes inside Signed{} as well as outside,
+      -- to prevent possible substitution attacks.
+      KDC-REQ-EXT     ::= SEQUENCE {
+          COMPONENTS OF KDC-REQ-COMMON,
+          req-body    [4] KDC-REQ-BODY-EXT,
+          lang-tags   [5] SEQUENCE (SIZE (1..MAX)) OF LangTag OPTIONAL,
+          ...
+      } (WITH COMPONENTS {
+          ...,
+          msg-type (6 | 8),
+          padata (SIZE (1..MAX))
+      })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 46]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KDC-REQ-BODY-COMMON     ::= SEQUENCE {
+          kdc-options         [0] KDCOptions,
+          cname               [1] PrincipalName OPTIONAL
+          -- Used only in AS-REQ --,
+
+          realm               [2] Realm
+          -- Server's realm; also client's in AS-REQ --,
+
+          sname               [3] PrincipalName OPTIONAL,
+          from                [4] KerberosTime OPTIONAL,
+          till                [5] KerberosTime OPTIONAL
+          -- was required in rfc1510;
+          -- still required for compat versions
+          -- of messages --,
+
+          rtime               [6] KerberosTime OPTIONAL,
+          nonce               [7] Nonce,
+          etype               [8] SEQUENCE OF EType
+          -- in preference order --,
+
+          addresses           [9] HostAddresses OPTIONAL,
+          enc-authorization-data      [10] EncryptedData {
+              AuthorizationData, { key-session | key-subsession },
+              { ku-TGSReqAuthData-subkey |
+                ku-TGSReqAuthData-sesskey }
+          } OPTIONAL,
+
+          additional-tickets  [11] SEQUENCE OF Ticket OPTIONAL
+          -- NOTE: not empty --,
+          ...
+      }
+
+
+      KDC-REQ-BODY-1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF KDC-REQ-BODY-COMMON
+      } (WITH COMPONENTS {
+          ...,
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          }),
+          realm (WITH COMPONENTS { ia5 PRESENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          }),
+          till PRESENT
+      })
+
+Yu                          Expires: Aug 2004                  [Page 47]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KDC-REQ-BODY-EXT        ::= KDC-REQ-BODY-COMMON
+      (WITH COMPONENTS {
+          ...,
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          }),
+          realm (WITH COMPONENTS { ia5 ABSENT }),
+          sname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          }),
+          addresses (SIZE (1..MAX)),
+          enc-authorization-data (EncryptedData {
+              AuthorizationData (SIZE (1..MAX)),
+              { key-session | key-subsession },
+              { ku-TGSReqAuthData-subkey |
+                ku-TGSReqAuthData-sesskey }
+          }),
+          additional-tickets (SIZE (1..MAX))
+      })
+
+
+      KDCOptions      ::= KerberosFlags { KDCOptionsBits }
+      KDCOptionsBits ::= BIT STRING {
+          reserved            (0),
+          forwardable         (1),
+          forwarded           (2),
+          proxiable           (3),
+          proxy               (4),
+          allow-postdate      (5),
+          postdated           (6),
+          unused7             (7),
+          renewable           (8),
+          unused9             (9),
+          unused10            (10),
+          unused11            (11),
+          unused12            (12),
+          unused13            (13),
+          requestanonymous    (14),
+          canonicalize        (15),
+          disable-transited-check (26),
+          renewable-ok        (27),
+          enc-tkt-in-skey     (28),
+          renew               (30),
+          validate            (31)
+          -- XXX need "need ticket1" flag?
+      }
+
+
+Yu                          Expires: Aug 2004                  [Page 48]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      AS-REP          ::= CHOICE {
+          rfc1510     [APPLICATION 11] KDC-REP-1510 { EncASRepPart }
+          (WITH COMPONENTS { ..., msg-type (11) }),
+          ext         [APPLICATION  7]  Signed {
+              [APPLICATION 7] KDC-REP-EXT { EncASRepPart },
+              { key-reply }, { ku-ASRep-cksum }
+          } (WITH COMPONENTS { ..., msg-type (7) })
+      }
+
+
+      TGS-REP         ::= CHOICE {
+          rfc1510     [APPLICATION 13] KDC-REP-1510 { EncTGSRepPart }
+          (WITH COMPONENTS { ..., msg-type (13) }),
+          ext         [APPLICATION  9]  Signed {
+              [APPLICATION 9] KDC-REP-EXT { EncTGSRepPart },
+              { key-reply }, { ku-TGSRep-cksum }
+          } (WITH COMPONENTS { ..., msg-type (9) })
+      }
+
+
+      KDC-REP-COMMON { EncPart } ::= SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (11 -- AS-REP.rfc1510 -- |
+                                   13 -- TGS.rfc1510 -- |
+                                   7 -- AS-REP.ext -- |
+                                   9 -- TGS-REP.ext -- ),
+          padata      [2] SEQUENCE OF PA-DATA OPTIONAL,
+          crealm      [3] Realm,
+          cname       [4] PrincipalName,
+          ticket      [5] Ticket,
+          enc-part    [6] EncryptedData {
+              EncPart,
+              { key-reply },
+              -- maybe reach into EncryptedData in AS-REP/TGS-REP definitions
+              -- to apply constraints on key usages?
+              { ku-EncASRepPart -- if AS-REP -- |
+                ku-EncTGSRepPart-subkey -- if TGS-REP and using --
+                                        -- Authenticator session key -- |
+                ku-EncTGSRepPart-sesskey -- if TGS-REP and using --
+                                         -- subsession key -- }
+          },
+          -- In extensible version, KDC signs original request
+          -- to avoid replay attacks agaginst client.
+          req-cksum   [7] ChecksumOf { CHOICE {
+              as-req          AS-REQ,
+              tgs-req         TGS-REQ
+          }, { key-reply }, { ku-KDCRep-cksum }} OPTIONAL,
+          lang-tag    [8] LangTag OPTIONAL,
+          ...
+      }
+
+
+Yu                          Expires: Aug 2004                  [Page 49]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KDC-REP-1510 { EncPart } ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF KDC-REP-COMMON { EncPart }
+      } (WITH COMPONENTS {
+          ...,
+          msg-type (11 | 13),
+          crealm (WITH COMPONENTS { ia5 PRESENT}),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 PRESENT }))
+          }),
+          req-cksum ABSENT,
+          lang-tag ABSENT
+      })
+
+
+      KDC-REP-EXT { EncPart } ::= KDC-REP-COMMON { EncPart }
+      (WITH COMPONENTS {
+          ...,
+          msg-type (7 | 9),
+          crealm (WITH COMPONENTS { ia5 ABSENT }),
+          cname (WITH COMPONENTS {
+              ...,
+              name-string (WITH COMPONENT
+                           (WITH COMPONENTS { ia5 ABSENT }))
+          })
+      })
+
+
+      EncASRepPart    ::= [APPLICATION 25] EncKDCRepPart
+      EncTGSRepPart   ::= [APPLICATION 26] EncKDCRepPart
+
+      EncKDCRepPart   ::= SEQUENCE {
+          key                 [0] EncryptionKey,
+          last-req            [1] LastReq,
+          nonce               [2] Nonce,
+          key-expiration      [3] KerberosTime OPTIONAL,
+          flags               [4] TicketFlags,
+          authtime            [5] KerberosTime,
+          starttime           [6] KerberosTime OPTIONAL,
+          endtime             [7] KerberosTime,
+          renew-till          [8] KerberosTime OPTIONAL,
+          srealm              [9] Realm,
+          sname               [10] PrincipalName,
+          caddr               [11] HostAddresses OPTIONAL,
+          ...         -- ASN.1 extensions must be excluded
+                      -- when sending to rfc1510 implementation
+      }
+
+
+
+Yu                          Expires: Aug 2004                  [Page 50]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- convert to use object class?
+      LRType          ::=     Int32
+      LastReq         ::=     SEQUENCE OF SEQUENCE {
+          lr-type     [0] LRType,
+          lr-value    [1] KerberosTime
+      }
+
+
+      --
+      -- *** preauth
+      --
+
+
+      PaDataType ::= Int32
+
+      -- TYPEDHOLE class that uses PaDataType as its unique ID type.
+      PADATA-OBJ ::= TYPEDHOLE { PaDataType }
+
+      PA-DATA ::= SEQUENCE {
+          -- NOTE: first tag is [1], not [0]
+          padata-type         [1] CHOICE {
+              -- example of possible use of RELATIVE-OIDs
+              int     PADATA-OBJ.&id-int ({PaDataSet}),
+              oid     PADATA-OBJ.&id-oid ({PaDataSet}{@int})
+          },
+          padata-value        [2] OCTET STRING (PADATA-OBJ.&Type)
+                                      ({PaDataSet}{@padata-type.int})
+      }
+
+
+      PaDataSet PADATA-OBJ ::= {
+          pa-tgs-req |
+          pa-enc-timestamp |
+          pa-etype-info |
+          pa-etype-info2 |
+          pa-pw-salt |
+          pa-as-req ,
+          ...
+      }
+
+
+      pa-tgs-req PADATA-OBJ ::= {
+          SYNTAX              OctetstringHole { AP-REQ }
+          IDENTIFIED BY       1
+          DESCRIPTION
+          "AP-REQ authenticating a TGS-REQ"
+      }
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 51]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      pa-enc-timestamp PADATA-OBJ ::= {
+          SYNTAX              OctetstringHole { PA-ENC-TIMESTAMP }
+          IDENTIFIED BY       2
+          DESCRIPTION
+          "Encrypted timestamp preauth;
+      Encryption key used is client's long-term key."
+      }
+
+      PA-ENC-TIMESTAMP ::= EncryptedData {
+          PA-ENC-TS-ENC, { key-client }, { ku-pa-enc-ts }
+      }
+
+      PA-ENC-TS-ENC           ::= SEQUENCE {
+              patimestamp     [0] KerberosTime -- client's time --,
+              pausec          [1] Microseconds OPTIONAL
+      }
+
+
+      pa-etype-info PADATA-OBJ ::= {
+          SYNTAX              OctetstringHole { ETYPE-INFO }
+          IDENTIFIED BY       11
+          DESCRIPTION
+          "Hints returned in AS-REP or KRB-ERROR to help client
+      choose a password-derived key, either for preauthentication or
+      for decryption of the reply."
+      }
+
+      ETYPE-INFO              ::= SEQUENCE OF ETYPE-INFO-ENTRY
+
+      ETYPE-INFO-ENTRY        ::= SEQUENCE {
+              etype           [0] EType,
+              salt            [1] OCTET STRING OPTIONAL
+      }
+
+
+      pa-etype-info2 PADATA-OBJ ::= {
+          SYNTAX              OctetstringHole { ETYPE-INFO2 }
+          IDENTIFIED BY       19
+          DESCRIPTION
+          "Similar to etype-info, but with parameters provided for
+      the string-to-key function."
+      }
+
+      ETYPE-INFO2             ::= SEQUENCE (SIZE (1..MAX))
+                                      OF ETYPE-INFO-ENTRY
+
+      ETYPE-INFO2-ENTRY       ::= SEQUENCE {
+              etype           [0] EType,
+              salt            [1] KerberosString OPTIONAL,
+              s2kparams       [2] OCTET STRING OPTIONAL
+      }
+
+Yu                          Expires: Aug 2004                  [Page 52]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      pa-pw-salt PADATA-OBJ ::= {
+          SYNTAX              OCTET STRING (CONSTRAINED BY {
+            -- Must consist of the salt string to be used by the
+            -- client, in an unspecified character encoding. -- })
+          IDENTIFIED BY       3
+          DESCRIPTION
+          "Obsolescent.  Salt for client's long-term key.
+      Its character encoding is unspecified."
+      }
+
+
+      pa-as-req PADATA-OBJ ::= {
+          SYNTAX              OctetstringHole { AS-REQ
+                                                (WITH COMPONENTS {
+                                                    ext }) }
+          IDENTIFIED BY       42 -- provisional
+          DESCRIPTION
+          "An extensible AS-REQ may be sent as a padata in a
+      non-extensible AS-REQ to allow for backwards compatibility."
+      }
+
+
+      --
+      -- *** Application session setup
+      --
+
+
+      AP-REQ          ::= CHOICE {
+          rfc1510     [APPLICATION 14] AP-REQ-1510,
+          ext         [APPLICATION 18] Signed {
+              AP-REQ-EXT, { key-session }, { ku-APReq-cksum }
+          }
+      }
+
+
+      AP-REQ-COMMON   ::= SEQUENCE {
+          pvno                [0] INTEGER (5),
+          msg-type            [1] INTEGER (14 | 18),
+          ap-options          [2] APOptions,
+          ticket              [3] Ticket,
+          authenticator       [4] EncryptedData {
+              Authenticator,
+              { key-session },
+              { ku-APReq-authenticator |
+                ku-pa-TGSReq-authenticator }
+          },
+          extensions          [5] ApReqExtensions OPTIONAL,
+          ...
+      }
+
+
+
+Yu                          Expires: Aug 2004                  [Page 53]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      AP-REQ-1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF AP-REQ-COMMON
+      } (WITH COMPONENTS {
+          ...,
+          msg-type (14),
+          extensions ABSENT
+      })
+
+
+      AP-REQ-EXT      ::= AP-REQ-COMMON
+      (WITH COMPONENTS {
+          ...,
+          msg-type (18),
+          -- The following constraints on Authenticator assume that
+          -- we want to restrict the use of AP-REQ-EXT with TicketExt only,
+          -- since that is the only way we can enforce UTF-8.
+          authenticator (EncryptedData {
+              Authenticator (WITH COMPONENTS {
+                  ...,
+                  crealm (WITH COMPONENTS { ia5 ABSENT }),
+                  cname (WITH COMPONENTS {
+                      ...,
+                      name-string (WITH COMPONENT
+                                   (WITH COMPONENTS { ia5 ABSENT }))
+                  }),
+                  authorization-data (SIZE (1..MAX))
+              }), { key-session }, { ku-APReq-authenticator }})
+      })
+
+
+      ApReqExtType    ::= Int32
+
+      ApReqExtensions ::= SEQUENCE (SIZE (1..MAX)) OF SEQUENCE {
+          apReqExt-Type       [0] ApReqExtType,
+          apReqExt-Data       [1] OCTET STRING
+      }
+
+
+      APOptions       ::= KerberosFlags { APOptionsBits }
+
+      APOptionsBits ::= BIT STRING {
+          reserved            (0),
+          use-session-key     (1),
+          mutual-required     (2)
+      }
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 54]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- plaintext of authenticator
+      Authenticator   ::= [APPLICATION 2] SEQUENCE  {
+          authenticator-vno   [0] INTEGER (5),
+          crealm              [1] Realm,
+          cname               [2] PrincipalName,
+          cksum               [3] Checksum {{ key-session },
+              { ku-Authenticator-cksum |
+                ku-pa-TGSReq-cksum }} OPTIONAL,
+          cusec               [4] Microseconds,
+          ctime               [5] KerberosTime,
+          subkey              [6] EncryptionKey OPTIONAL,
+          seq-number          [7] SeqNum OPTIONAL,
+          authorization-data  [8] AuthorizationData OPTIONAL
+      }
+
+
+      AP-REP          ::= CHOICE {
+          rfc1510     [APPLICATION 15] AP-REP-1510,
+          ext         [APPLICATION 19] Signed {
+              AP-REP-EXT,
+              { key-session | key-subsession }, { ku-APRep-cksum }}
+      }
+
+
+      AP-REP-COMMON { EncPart }       ::= SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (15 | 19),
+          enc-part    [2] EncryptedData {
+              EncPart,
+              { key-session | key-subsession }, { ku-EncAPRepPart }},
+          extensions          [3] ApRepExtensions OPTIONAL,
+          ...
+      }
+
+
+      AP-REP-1510     ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF AP-REP-COMMON { EncAPRepPart1510 }
+      } (WITH COMPONENTS {
+          ...,
+          msg-type (15),
+          extensions ABSENT
+      })
+
+
+      AP-REP-EXT      ::= [APPLICATION 19] AP-REP-COMMON {
+          EncAPRepPartExt }
+      (WITH COMPONENTS { ..., msg-type (19) })
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 55]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      ApRepExtType    ::= Int32
+
+      -- convert to use object class?
+      ApRepExtensions ::= SEQUENCE (SIZE (1..MAX)) OF SEQUENCE {
+          apRepExt-Type       [0] ApRepExtType,
+          apRepExt-Data       [1] OCTET STRING
+      }
+
+
+      EncAPRepPart    ::= CHOICE {
+          rfc1510     [APPLICATION 27] EncAPRepPart1510,
+          ext         [APPLICATION 31] EncAPRepPartExt
+      }
+
+
+      EncAPRepPart1510        ::= SEQUENCE {
+          COMPONENTS OF ENCAPRepPartCom
+      } (WITH COMPONENTS {
+          ...,
+          authorization-data ABSENT
+      })
+
+
+      EncAPRepPartExt         ::= EncAPRepPartCom
+
+
+      EncAPRepPartCom          ::= SEQUENCE {
+          ctime               [0] KerberosTime,
+          cusec               [1] Microseconds,
+          subkey              [2] EncryptionKey OPTIONAL,
+          seq-number          [3] SeqNum OPTIONAL,
+          authorization-data  [4] AuthorizationData OPTIONAL,
+          ...
+      }
+
+
+      --
+      -- *** Application messages
+      --
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 56]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      -- Do we chew up another tag for KRB-SAFE-EXT?  That would allow us to
+      -- make safe-body optional, allowing for a GSS-MIC sort of message.
+      KRB-SAFE        ::= [APPLICATION 20] SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (20),
+          safe-body   [2] KRB-SAFE-BODY,
+          cksum       [3] ChecksumOf {
+              KRB-SAFE-BODY,
+              { key-session | key-subsession }, { ku-KrbSafe-cksum }},
+          ...         -- ASN.1 extensions must be excluded
+                      -- when sending to rfc1510 implementations
+      }
+
+
+      KRB-SAFE-BODY   ::= SEQUENCE {
+          user-data   [0] OCTET STRING,
+          timestamp   [1] KerberosTime OPTIONAL,
+          usec        [2] Microseconds OPTIONAL,
+          seq-number  [3] SeqNum OPTIONAL,
+          s-address   [4] HostAddress,
+          r-address   [5] HostAddress OPTIONAL,
+          ...         -- ASN.1 extensions must be excluded
+                      -- when sending to rfc1510 implementations
+      }
+
+
+      KRB-PRIV        ::= [APPLICATION 21] SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (21),
+          enc-part    [3] EncryptedData {
+              EncKrbPrivPart,
+              { key-session | key-subsession }, { ku-EncKrbPrivPart }},
+          ...
+      }
+
+
+      EncKrbPrivPart  ::= [APPLICATION 28] SEQUENCE {
+          user-data   [0] OCTET STRING,
+          timestamp   [1] KerberosTime OPTIONAL,
+          usec        [2] Microseconds OPTIONAL,
+          seq-number  [3] SeqNum OPTIONAL,
+          s-address   [4] HostAddress -- sender's addr --,
+          r-address   [5] HostAddress OPTIONAL -- recip's addr --,
+          ...         -- ASN.1 extensions must be excluded
+                      -- when sending to rfc1510 implementations
+      }
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 57]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KRB-CRED        ::= CHOICE {
+          rfc1510     [APPLICATION 22] KRB-CRED-1510,
+          ext         [APPLICATION 24] Signed {
+              KRB-CRED-EXT,
+              { key-session | key-subsession }, { ku-KrbCred-cksum }}
+      }
+
+
+      KRB-CRED-COMMON ::= SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (22 | 24),
+          tickets     [2] SEQUENCE OF Ticket,
+          enc-part    [3] EncryptedData {
+              EncKrbCredPart,
+              { key-session | key-subsession }, { ku-EncKrbCredPart }},
+          ...
+      }
+
+
+      KRB-CRED-1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF KRB-CRED-COMMON
+      } (WITH COMPONENTS { ..., msg-type (22) })
+
+
+      KRB-CRED-EXT    ::= [APPLICATION 24] KRB-CRED-COMMON
+      (WITH COMPONENTS { ..., msg-type (24) })
+
+
+      EncKrbCredPart  ::= [APPLICATION 29] SEQUENCE {
+          ticket-info [0] SEQUENCE OF KrbCredInfo,
+          nonce       [1] Nonce OPTIONAL,
+          timestamp   [2] KerberosTime OPTIONAL,
+          usec        [3] Microseconds OPTIONAL,
+          s-address   [4] HostAddress OPTIONAL,
+          r-address   [5] HostAddress OPTIONAL
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 58]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KrbCredInfo     ::= SEQUENCE {
+          key         [0] EncryptionKey,
+          prealm      [1] Realm OPTIONAL,
+          pname       [2] PrincipalName OPTIONAL,
+          flags       [3] TicketFlags OPTIONAL,
+          authtime    [4] KerberosTime OPTIONAL,
+          starttime   [5] KerberosTime OPTIONAL,
+          endtime     [6] KerberosTime OPTIONAL,
+          renew-till  [7] KerberosTime OPTIONAL,
+          srealm      [8] Realm OPTIONAL,
+          sname       [9] PrincipalName OPTIONAL,
+          caddr       [10] HostAddresses OPTIONAL
+      }
+
+
+      TGT-REQ         ::= [APPLICATION 16] SEQUENCE {
+          pvno            [0] INTEGER (5),
+          msg-type        [1] INTEGER (16),
+          sname           [2] PrincipalName OPTIONAL,
+          srealm          [3] Realm OPTIONAL,
+          ...
+      }
+
+
+      --
+      -- *** Error messages
+      --
+
+
+      ErrCode ::= Int32
+
+      KRB-ERROR       ::= CHOICE {
+          rfc1510     [APPLICATION 30] KRB-ERROR-1510,
+          ext         [APPLICATION 23] Signed {
+              KRB-ERROR-EXT, { ku-KrbError-cksum } }
+      }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 59]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+      KRB-ERROR-COMMON ::= SEQUENCE {
+          pvno        [0] INTEGER (5),
+          msg-type    [1] INTEGER (30 | 23),
+          ctime       [2] KerberosTime OPTIONAL,
+          cusec       [3] Microseconds OPTIONAL,
+          stime       [4] KerberosTime,
+          susec       [5] Microseconds,
+          error-code  [6] ErrCode,
+          crealm      [7] Realm OPTIONAL,
+          cname       [8] PrincipalName OPTIONAL,
+          realm       [9] Realm -- Correct realm --,
+          sname       [10] PrincipalName -- Correct name --,
+          e-text      [11] KerberosString OPTIONAL,
+          e-data      [12] OCTET STRING OPTIONAL,
+          typed-data          [13] TYPED-DATA OPTIONAL,
+          nonce               [14] Nonce OPTIONAL,
+          lang-tag            [15] LangTag OPTIONAL,
+          ...
+      }
+
+
+      KRB-ERROR-1510 ::= SEQUENCE {
+          -- effectively drops the extension marker
+          COMPONENTS OF KRB-ERROR-COMMON
+      } (WITH COMPONENTS {
+          ...,
+          msg-type (30),
+          typed-data ABSENT,
+          nonce ABSENT,
+          lang-tag ABSENT
+      })
+
+
+      KRB-ERROR-EXT ::= [APPLICATION 23] KRB-ERROR-COMMON
+      (WITH COMPONENTS { ..., msg-type (23) })
+
+
+      TDType ::= Int32
+
+      -- convert to information object class later
+      TYPED-DATA      ::= SEQUENCE SIZE (1..MAX) OF SEQUENCE {
+          data-type   [0] TDType,
+          data-value  [1] OCTET STRING OPTIONAL
+      }
+
+
+      END
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 60]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+B.  Kerberos and Character Encodings (Informative)
+
+   [adapted from KCLAR 5.2.1]
+
+   The original specification of the Kerberos protocol in RFC 1510 uses
+   GeneralString in numerous places for human-readable string data.
+   Historical implementations of Kerberos cannot utilize the full power
+   of GeneralString.  This ASN.1 type requires the use of designation
+   and invocation escape sequences as specified in ISO-2022/ECMA-35
+   [ISO-2022/ECMA-35] to switch character sets, and the default
+   character set that is designated as G0 is the ISO-646/ECMA-6
+   [ISO-646,ECMA-6] International Reference Version (IRV) (aka U.S.
+   ASCII), which mostly works.
+
+   ISO-2022/ECMA-35 defines four character-set code elements (G0..G3)
+   and two Control-function code elements (C0..C1).  DER previously
+   prohibited the designation of character sets as any but the G0 and C0
+   sets.  This had the side effect of prohibiting the use of ISO-8859
+   (ISO Latin) [ISO-8859] character-sets or any other character-sets
+   that utilize a 96-character set, since it is prohibited by
+   ISO-2022/ECMA-35 to designate them as the G0 code element.  Recent
+   revisions to the ASN.1 standards resolve this contradiction.
+
+   In practice, many implementations treat RFC 1510 GeneralStrings as if
+   they were 8-bit strings of whichever character set the implementation
+   defaults to, without regard for correct usage of character-set
+   designation escape sequences.  The default character set is often
+   determined by the current user's operating system dependent locale.
+   At least one major implementation places unescaped UTF-8 encoded
+   Unicode characters in the GeneralString.  This failure to conform to
+   the GeneralString specifications results in interoperability issues
+   when conflicting character encodings are utilized by the Kerberos
+   clients, services, and KDC.
+
+   This unfortunate situation is the result of improper documentation of
+   the restrictions of the ASN.1 GeneralString type in prior Kerberos
+   specifications.
+
+   [the following should probably be rewritten and moved into the
+   principal name section]
+
+   For compatibility, implementations MAY choose to accept GeneralString
+   values that contain characters other than those permitted by
+   IA5String, but they should be aware that character set designation
+   codes will likely be absent, and that the encoding should probably be
+   treated as locale-specific in almost every way. Implementations MAY
+   also choose to emit GeneralString values that are beyond those
+   permitted by IA5String, but should be aware that doing so is
+   extraordinarily risky from an interoperability perspective.
+
+
+
+Yu                          Expires: Aug 2004                  [Page 61]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   Some existing implementations use GeneralString to encode unescaped
+   locale-specific characters. This is a violation of the ASN.1
+   standard. Most of these implementations encode US-ASCII in the left-
+   hand half, so as long the implementation transmits only US-ASCII, the
+   ASN.1 standard is not violated in this regard. As soon as such an
+   implementation encodes unescaped locale-specific characters with the
+   high bit set, it violates the ASN.1 standard.
+
+   Other implementations have been known to use GeneralString to contain
+   a UTF-8 encoding.  This also violates the ASN.1 standard, since UTF-8
+   is a different encoding, not a 94 or 96 character "G" set as defined
+   by ISO 2022.  It is believed that these implementations do not even
+   use the ISO 2022 escape sequence to change the character encoding.
+   Even if implementations were to announce the change of encoding by
+   using that escape sequence, the ASN.1 standard prohibits the use of
+   any escape sequences other than those used to designate/invoke "G" or
+   "C" sets allowed by GeneralString.
+
+C.  Kerberos History (Informative)
+
+   [Adapted from KCLAR "BACKGROUND"]
+
+   The Kerberos model is based in part on Needham and Schroeder's
+   trusted third-party authentication protocol [NS78] and on
+   modifications suggested by Denning and Sacco [DS81].  The original
+   design and implementation of Kerberos Versions 1 through 4 was the
+   work of two former Project Athena staff members, Steve Miller of
+   Digital Equipment Corporation and Clifford Neuman (now at the
+   Information Sciences Institute of the University of Southern
+   California), along with Jerome Saltzer, Technical Director of Project
+   Athena, and Jeffrey Schiller, MIT Campus Network Manager.  Many other
+   members of Project Athena have also contributed to the work on
+   Kerberos.
+
+   Version 5 of the Kerberos protocol (described in this document) has
+   evolved from Version 4 based on new requirements and desires for
+   features not available in Version 4. The design of Version 5 of the
+   Kerberos protocol was led by Clifford Neuman and John Kohl with much
+   input from the community.  The development of the MIT reference
+   implementation was led at MIT by John Kohl and Theodore Ts'o, with
+   help and contributed code from many others. Since RFC1510 was issued,
+   extensions and revisions to the protocol have been proposed by many
+   individuals.  Some of these proposals are reflected in this document.
+   Where such changes involved significant effort, the document cites
+   the contribution of the proposer.
+
+   Reference implementations of both version 4 and version 5 of Kerberos
+   are publicly available and commercial implementations have been
+   developed and are widely used. Details on the differences between
+   Kerberos Versions 4 and 5 can be found in [KNT94].
+
+
+Yu                          Expires: Aug 2004                  [Page 62]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+Normative References
+
+   [KCRYPTO]
+
+   [RFC2119]
+
+   [X680]
+
+   [X681]
+
+   [X682]
+
+   [X683]
+
+   [X690]
+
+Informative References
+
+   [DS81]
+
+   [KCLAR]
+
+   [KNT94]
+
+   [NS78]
+
+   [RFC1510]
+
+   [RFC1964]
+
+   [ISO8859]
+
+Acknowledgments
+
+   Some stuff lifted from draft-ietf-krb-wg-kerberos-clarifications-04.
+
+Author's Address
+
+   Tom Yu
+   77 Massachusetts Ave
+   Cambridge, MA 02139
+   USA
+   tlyu@mit.edu
+
+Full Copyright Statement
+
+   Copyright (C) The Internet Society (2004).  All Rights Reserved.
+
+   This document and translations of it may be copied and furnished to
+   others, and derivative works that comment on or otherwise explain it
+   or assist in its implementation may be prepared, copied, published
+
+Yu                          Expires: Aug 2004                  [Page 63]
+
+Internet-Draft            yu-krb-extensions-00               09 Feb 2004
+
+   and distributed, in whole or in part, without restriction of any
+   kind, provided that the above copyright notice and this paragraph are
+   included on all such copies and derivative works.  However, this
+   document itself may not be modified in any way, such as by removing
+   the copyright notice or references to the Internet Society or other
+   Internet organizations, except as needed for the purpose of
+   developing Internet standards in which case the procedures for
+   copyrights defined in the Internet Standards process must be
+   followed, or as required to translate it into languages other than
+   English.
+
+   The limited permissions granted above are perpetual and will not be
+   revoked by the Internet Society or its successors or assigns.
+
+   This document and the information contained herein is provided on an
+   "AS IS" basis and THE INTERNET SOCIETY AND THE INTERNET ENGINEERING
+   TASK FORCE DISCLAIMS ALL WARRANTIES, EXPRESS OR IMPLIED, INCLUDING
+   BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE INFORMATION
+   HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED WARRANTIES OF
+   MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Yu                          Expires: Aug 2004                  [Page 64]
+
+
