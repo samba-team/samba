@@ -200,7 +200,7 @@ void rescan_trusted_domains( void )
   rescan our domains looking for new trusted domains
 ********************************************************************/
 
-void add_trusted_domains( struct winbindd_domain *domain )
+static void add_trusted_domains( struct winbindd_domain *domain )
 {
 	TALLOC_CTX *mem_ctx;
 	NTSTATUS result;
