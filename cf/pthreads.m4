@@ -34,7 +34,7 @@ case "$host" in
 	;;
 esac
 fi
-if test "$enable_pthread_support" = no; then
+if test "$enable_pthread_support" != no; then
     AC_DEFINE(ENABLE_PTHREAD_SUPPORT, 1,
 	[Define if you want have a thread safe libraries])
 else
