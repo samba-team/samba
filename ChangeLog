@@ -1,5 +1,23 @@
 2003-09-03  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* lib/krb5/krb5-v4compat.h: assume session key is a char array of
+	length 8
+
+	* lib/krb5/prompter_posix.c:
+	s/des_read_pw_string/UI_UTIL_read_pw_string/
+
+	* kuser/kinit.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* kdc/string2key.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* kdc/kstash.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* admin/add.c: s/des_read_pw_string/UI_UTIL_read_pw_string/
+	
+	* lib/krb5/crypto.c: switch from the des_ to the DES_ api
+	
+	* kdc/hprop.c: use DES_KEY_SZ instead of sizeof(des_block)
+	
 	* kuser/kverify.c: use
 	krb5_get_init_creds_opt_alloc/krb5_get_init_creds_opt_free
 
