@@ -53,9 +53,12 @@ DB_close(krb5_context context, HDB *db)
 static krb5_error_code
 DB_destroy(krb5_context context, HDB *db)
 {
+    krb5_error_code ret;
+
+    ret = hdb_clear_master_key (context, db);
     free(db->name);
     free(db);
-    return 0;
+    return ret;
 }
 
 static krb5_error_code
@@ -219,6 +222,8 @@ DB_open(krb5_context context, HDB *db, int flags, mode_t mode)
     krb5_error_code ret;
 
     asprintf(&fn, "%s.db", db->name);
+    if (fn == NULL)
+	return ENOMEM;
     db->db = dbopen(fn, flags, mode, DB_BTREE, NULL);
     free(fn);
     /* try to open without .db extension */
