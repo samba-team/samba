@@ -57,12 +57,12 @@ flexible way of handling this.
 Gives an upper limit on the size of the requests that the kdc is
 willing to handle.
 .It Xo
-.Fl H Ns ,
+.Fl H ,
 .Fl -enable-http
 .Xc
 Makes the kdc listen on port 80 and handle requests encapsulated in HTTP.
 .It Xo
-.Fl K Ns ,
+.Fl K ,
 .Fl -no-kaserver
 .Xc
 Disables kaserver emulation (in case it's compiled in).
@@ -76,7 +76,7 @@ explicitly specified. The default is whatever is returned by
 This option is only availabe if the KDC has been compiled with version
 4 support.
 .It Xo
-.Fl P Ar string Ns ,
+.Fl P Ar string ,
 .Fl -ports= Ns Ar string
 .Xc
 Specifies the set of ports the KDC should listen on.  It is given as a

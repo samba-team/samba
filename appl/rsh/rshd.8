@@ -22,14 +22,14 @@ program. It provides an authenticated remote command execution
 service.  Supported options are:
 .Bl -tag -width Ds
 .It Xo
-.Fl n Ns ,
+.Fl n ,
 .Fl -no-keepalive
 .Xc
 Disables keep-alive messages. Keep-alives are packets sent a certain
 interval to make sure that the client is still there, even when it
 doesn't send any data.
 .It Xo
-.Fl k Ns ,
+.Fl k ,
 .Fl -kerberos
 .Xc
 Assume that clients connecting to this server will use some form of
@@ -39,21 +39,21 @@ section for a sample
 .Xr inetd.conf 5 
 configuration.
 .It Xo
-.Fl x Ns ,
+.Fl x ,
 .Fl -encrypt
 .Xc
 For Kerberos 4 this means that the connections are encrypted. Kerberos
 5 will negotiate encryption inline. This option implies
 .Fl k .
 .\".It Xo
-.\".Fl l Ns ,
+.\".Fl l ,
 .\".Fl -no-rhosts
 .\".Xc
 .\"When using old port-based authentication, the user's
 .\".Pa .rhosts
 .\"files are normally checked. This options disables this.
 .It Xo
-.Fl v Ns ,
+.Fl v ,
 .Fl -vacuous
 .Xc
 If the connecting client does not use any Kerberised authentication,
@@ -71,7 +71,7 @@ call, so all tokens will be put in the default (uid-based) PAG, making
 it possible to share tokens between sessions. This is only useful in
 peculiar environments, such as some batch systems.
 .It Xo
-.Fl i Ns ,
+.Fl i ,
 .Fl -no-inetd
 .Xc
 The 
@@ -82,7 +82,7 @@ to create a socket, instead of assuming that its stdin came from
 .Xr inetd 8 .
 This is mostly useful for debugging.
 .It Xo
-.Fl p Ar port Ns ,
+.Fl p Ar port ,
 .Fl -port= Ns Ar port
 .Xc
 Port to use with 

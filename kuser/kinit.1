@@ -80,12 +80,12 @@ Supported options:
 The credentials cache to put the acquired ticket in, if other than
 default.
 .It Xo
-.Fl f Ns ,
+.Fl f ,
 .Fl -forwardable
 .Xc
 Get ticket that can be forwarded to another host.
 .It Xo
-.Fl t Ar keytabname Ns ,
+.Fl t Ar keytabname ,
 .Fl -keytab= Ns Ar keytabname
 .Xc
 Don't ask for a password, but instead get the key from the specified
@@ -98,12 +98,12 @@ Specifies the lifetime of the ticket. The argument can either be in
 seconds, or a more human readable string like
 .Sq 1h .
 .It Xo
-.Fl p Ns ,
+.Fl p ,
 .Fl -proxiable
 .Xc
 Request tickets with the proxiable flag set.
 .It Xo
-.Fl R Ns ,
+.Fl R ,
 .Fl -renew
 .Xc
 Try to renew ticket. The ticket must have the
@@ -114,17 +114,17 @@ The same as
 .Fl -renewable-life ,
 with an infinite time.
 .It Xo
-.Fl r Ar time Ns ,
+.Fl r Ar time ,
 .Fl -renewable-life= Ns Ar time
 .Xc
 The max renewable ticket life.
 .It Xo
-.Fl S Ar principal Ns ,
+.Fl S Ar principal ,
 .Fl -server= Ns Ar principal
 .Xc
 Get a ticket for a service other than krbtgt/LOCAL.REALM.
 .It Xo
-.Fl s Ar time Ns ,
+.Fl s Ar time ,
 .Fl -start-time= Ns Ar time
 .Xc
 Obtain a ticket that starts to be valid
@@ -133,7 +133,7 @@ Obtain a ticket that starts to be valid
 .Sq 1h )
 seconds into the future.
 .It Xo
-.Fl k Ns ,
+.Fl k ,
 .Fl -use-keytab
 .Xc
 The same as
@@ -141,7 +141,7 @@ The same as
 but with the default keytab name (normally
 .Ar FILE:/etc/krb5.keytab ) .
 .It Xo
-.Fl v Ns ,
+.Fl v ,
 .Fl -validate
 .Xc
 Try to validate an invalid ticket.
@@ -183,14 +183,14 @@ The following options are only available if
 has been compiled with support for Kerberos 4. 
 .Bl -tag -width Ds
 .It Xo
-.Fl 4 Ns ,
+.Fl 4 ,
 .Fl -524init
 .Xc
 Try to convert the obtained Kerberos 5 krbtgt to a version 4
 compatible ticket. It will store this ticket in the default Kerberos 4
 ticket file.
 .It Xo
-.Fl 9 Ns ,
+.Fl 9 ,
 .Fl -524convert
 .Xc
 only convert ticket to version 4

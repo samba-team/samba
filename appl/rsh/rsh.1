@@ -30,7 +30,7 @@ output and error of the remote command to its own.
 Valid options are:
 .Bl -tag -width Ds
 .It Xo
-.Fl 4 Ns ,
+.Fl 4 ,
 .Fl -krb4
 .Xc
 The 
@@ -39,7 +39,7 @@ option requests Kerberos 4 authentication. Normally all supported
 authentication mechanisms will be tried, but in some cases more
 explicit control is desired.
 .It Xo
-.Fl 5 Ns ,
+.Fl 5 ,
 .Fl -krb5
 .Xc
 The 
@@ -48,7 +48,7 @@ option requests Kerberos 5 authentication. This is analogous to the
 .Fl 4
 option.
 .It Xo
-.Fl K Ns ,
+.Fl K ,
 .Fl -broken
 .Xc
 The 
@@ -57,7 +57,7 @@ option turns off all Kerberos authentication. The long name implies
 that this is more or less totally unsecure. The security in this mode
 relies on reserved ports, which is not very secure.
 .It Xo
-.Fl n Ns ,
+.Fl n ,
 .Fl -no-input
 .Xc
 The 
@@ -68,13 +68,13 @@ device (see the
 .Sx BUGS
 section of this manual page).
 .It Xo
-.Fl e Ns ,
+.Fl e ,
 .Fl -no-stderr
 .Xc
 Don't use a separate socket for the stderr stream. This can be
 necessary if rsh-ing through a NAT bridge.
 .It Xo
-.Fl x Ns ,
+.Fl x ,
 .Fl -encrypt
 .Xc
 The
@@ -94,7 +94,7 @@ Kerberos 5, by setting the
 option in
 .Xr krb5.conf 5 .
 .It Xo
-.Fl f Ns ,
+.Fl f ,
 .Fl -forward
 .Xc
 Forward Kerberos 5 credentials to the remote host. Also controlled by 
@@ -107,7 +107,7 @@ in
 The opposite of 
 .Fl f .
 .It Xo
-.Fl F Ns ,
+.Fl F ,
 .Fl -forwardable
 .Xc
 Make the forwarded credentials re-forwardable. Also controlled by 
@@ -115,20 +115,20 @@ Make the forwarded credentials re-forwardable. Also controlled by
 in 
 .Xr krb5.conf 5 .
 .It Xo
-.Fl u Ns ,
+.Fl u ,
 .Fl -unique
 .Xc
 Make sure the remote credentials cache is unique, that is, don't reuse
 any existing cache. Mutually exclusive to
 .Fl U .
 .It Xo
-.Fl U Pa string Ns ,
+.Fl U Pa string ,
 .Fl -tkfile= Ns Pa string
 .Xc
 Name of the remote credentials cache. Mutually exclusive to
 .Fl u .
 .It Xo
-.Fl p Ar number-or-service Ns ,
+.Fl p Ar number-or-service ,
 .Fl -port= Ns Ar number-or-service
 .Xc
 Connect to this port instead of the default (which is 514 when using
@@ -137,7 +137,7 @@ Kerberos 4, and 545 for encrytpted Kerberos 4; subject of course to
 the contents of
 .Pa /etc/services ) .
 .It Xo
-.Fl l Ar string Ns ,
+.Fl l Ar string ,
 .Fl -user= Ns Ar string
 .Xc
 By default the remote username is the same as the local. The
