@@ -524,28 +524,10 @@ connection_struct *make_connection(char *service,char *user,char *password, int 
 	}
 	/* Initialise VFS function pointers */
 
-	if (*lp_vfsobj(SNUM(conn))) {
-
-#ifdef HAVE_LIBDL
-
-	    /* Loadable object file */
-
-	    if (!vfs_init_custom(conn)) {
-	    	DEBUG(0, ("vfs_init failed\n"));
-		    conn_free(conn);
-			return NULL;
-	    }
-#else
-	    DEBUG(0, ("No libdl present - cannot use VFS objects\n"));
-	    conn_free(conn);
-	    return NULL;
-#endif
-
-	} else {
-
-	    /* Normal share - initialise with disk access functions */
-
-	    vfs_init_default(conn);
+	if (!vfs_init(conn)) {
+		DEBUG(0, ("vfs_init failed for service %s\n", lp_servicename(SNUM(conn))));
+		conn_free(conn);
+		return NULL;
 	}
 
 	/* execute any "root preexec = " line */
