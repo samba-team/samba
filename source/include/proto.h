@@ -1194,6 +1194,7 @@ BOOL lookup_known_rid(DOM_SID *sid, uint32 rid, char *name, enum SID_NAME_USE *p
 BOOL map_domain_name_to_sid(DOM_SID *sid, char *nt_domain);
 void split_domain_name(const char *fullname, char *domain, char *name);
 char *sid_to_string(fstring sidstr_out, DOM_SID *sid);
+const char *sid_string_static(DOM_SID *sid);
 BOOL string_to_sid(DOM_SID *sidout, const char *sidstr);
 BOOL sid_append_rid(DOM_SID *sid, uint32 rid);
 BOOL sid_split_rid(DOM_SID *sid, uint32 *rid);

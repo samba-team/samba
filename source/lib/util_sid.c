@@ -24,6 +24,9 @@
 #include "includes.h"
 
 
+/* NOTE! the global_sam_sid is the SID of our local SAM. This is only
+   equal to the domain SID when we are a DC, otherwise its our
+   workstation SID */
 DOM_SID global_sam_sid;
 extern pstring global_myname;
 extern fstring global_myworkgroup;
@@ -358,6 +361,16 @@ char *sid_to_string(fstring sidstr_out, DOM_SID *sid)
   }
 
   return sidstr_out;
+}
+
+/*
+  useful function for debug lines
+*/
+const char *sid_string_static(DOM_SID *sid)
+{
+	static fstring sid_str;
+	sid_to_string(sid_str, sid);
+	return sid_str;
 }
 
 /*****************************************************************

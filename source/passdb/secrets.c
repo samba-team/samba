@@ -94,6 +94,7 @@ BOOL secrets_store_domain_sid(char *domain, DOM_SID *sid)
 	fstring key;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
 	return secrets_store(key, sid, sizeof(DOM_SID));
 }
 
@@ -104,6 +105,7 @@ BOOL secrets_fetch_domain_sid(char *domain, DOM_SID *sid)
 	size_t size;
 
 	slprintf(key, sizeof(key)-1, "%s/%s", SECRETS_DOMAIN_SID, domain);
+	strupper(key);
 	dos_to_unix(key, True);                /* Convert key to unix-codepage */
 	dyn_sid = (DOM_SID *)secrets_fetch(key, &size);
 
@@ -136,6 +138,7 @@ char *trust_keystr(char *domain)
 	slprintf(keystr,sizeof(keystr)-1,"%s/%s", 
 		 SECRETS_MACHINE_ACCT_PASS, dos_domain);
 
+	strupper(keystr);
 	return keystr;
 }
 
