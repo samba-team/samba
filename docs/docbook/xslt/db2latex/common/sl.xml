@@ -1,0 +1,104 @@
+<localization language="sl">
+
+<gentext key="abstract"       text="Povzetek"/>
+<gentext key="answer"         text="O:"/>
+<gentext key="appendix"       text="Dodatek"/>
+<gentext key="article"        text="&#x010C;lanek"/>
+<gentext key="bibliography"   text="Literatura"/>
+<gentext key="book"           text="Knjiga"/>
+<gentext key="caution"        text="OPOZORILO"/>
+<gentext key="caution"        text="Opozorilo"/>
+<gentext key="chapter"        text="Poglavje"/>
+<gentext key="colophon"       text="Kolofon"/>
+<gentext key="copyright"      text="Pravna za&#x0161;&#x010D;ita"/>
+<gentext key="dedication"     text="Posvetilo"/>
+<gentext key="edition"        text="Izdaja"/>
+<gentext key="equation"       text="Ena&#x010D;ba"/>
+<gentext key="example"        text="Primer"/>
+<gentext key="figure"         text="Slika"/>
+<gentext key="glosssee"       text="glej"/>
+<gentext key="glossseealso"   text="glej tudi"/>
+<gentext key="glossary"       text="Slovar&#x010D;ek"/>
+<gentext key="important"      text="POMEMBNO"/>
+<gentext key="isbn"           text="ISBN"/>
+<gentext key="important"      text="Pomembno"/>
+<gentext key="index"          text="Stvarno kazalo"/>
+<gentext key="legalnotice"    text="Pravno sporo&#x010D;ilo"/>
+<gentext key="msgaud"         text="Ob&#x010D;instvo"/>
+<gentext key="msglevel"       text="Raven"/>
+<gentext key="msgorig"        text="Izvor"/>
+<gentext key="note"           text="OPOMBA"/>
+<gentext key="note"           text="Opomba"/>
+<gentext key="part"           text="Del"/>
+<gentext key="preface"        text="Predgovor"/>
+<gentext key="procedure"      text="Postopek"/>
+<gentext key="published"      text="Izdano"/>
+<gentext key="question"       text="V:"/>
+<gentext key="refentry"       text=""/>
+<gentext key="reference"      text="Sklic"/>
+<gentext key="refname"        text="Ime"/>
+<gentext key="refsection"     text=""/>
+<gentext key="refsynopsisdiv" text="Sinopsis"/>
+<gentext key="revision"       text="Razli&#x010D;ica"/>
+<gentext key="revhistory"     text="Zgodovina razli&#x010D;ic"/>
+<gentext key="section"        text="Razdelek"/>
+<gentext key="see"            text="glej"/>
+<gentext key="seealso"        text="glej tudi"/>
+<gentext key="set"            text="Postavi"/>                  <!-- ? -->
+<gentext key="setindex"       text="Postavi stvarno kazalo"/>   <!-- ? -->
+<gentext key="sidebar"        text=""/>
+<gentext key="step"           text="Korak"/>
+<gentext key="tip"            text="NAMIG"/>
+<gentext key="table"          text="Tabela"/>
+<gentext key="tip"            text="Namig"/>
+<gentext key="warning"        text="POZOR"/>
+<gentext key="warning"        text="Pozor"/>
+<gentext key="appendix"       text="dodatek"/>
+<gentext key="chapter"        text="poglavje"/>
+<gentext key="section"        text="razdelek"/>
+<gentext key="sidebar"        text="sidebar"/>   <!-- ? -->
+<gentext key="step"           text="korak"/>
+<gentext key="seealso"        text="Glej tudi"/>
+
+<gentext key="TableofContents" text="Kazalo"/>
+<gentext key="in" text="v"/>
+<gentext key="by" text="od"/>              <!-- ? -->
+<gentext key="Edited" text="Urejeno"/>         <!-- ? -->
+<gentext key="Editedby" text="Urejeno od"/>   <!-- ? -->
+<gentext key="and" text="in"/>
+<gentext key="Notes" text="Notes"/>           <!-- ? -->
+<gentext key="TableNotes" text="Notes"/>           <!-- ? -->
+<gentext key="nonexistantelement" text="neobstoje&#x010D;i element"/>
+<gentext key="Pgs" text="Str."/>
+<gentext key="unsupported" text="nepodprto"/>
+<gentext key="xrefto" text="xref na"/>         <!-- ? -->
+<gentext key="unexpectedelementname" text="Nepri&#x010D;akovano ime elementa"/>
+<gentext key="Revisedby" text="Revised by: "/>
+
+<gentext key="ListofTables" text="Seznam tabel"/>
+<gentext key="ListofExamples" text="Seznam primerov"/>
+<gentext key="ListofFigures" text="Seznam slik"/>
+<gentext key="ListofEquations" text="Seznam ena&#x010D;b"/>
+<gentext key="ListofUnknown" text="Seznam neznanih stvari"/>   <!-- ? -->
+
+<gentext key="nav-prev" text="Nazaj"/>
+<gentext key="nav-prev-sibling" text="Hitro nazaj"/>
+<gentext key="nav-next-sibling" text="Hitro naprej"/>
+<gentext key="nav-next" text="Naprej"/>
+<gentext key="nav-up" text="Gor"/>
+<gentext key="nav-home" text="Domov"/>
+
+<dingbat key="startquote" text='&#8220;'/>
+<dingbat key="endquote" text='&#8221;'/>
+<dingbat key="nestedstartquote" text="`"/>
+<dingbat key="nestedendquote" text="'"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

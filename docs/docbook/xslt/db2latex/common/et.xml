@@ -1,0 +1,104 @@
+<localization language="et">
+
+<gentext key="abstract"       text="&#220;levaade"/>
+<gentext key="answer"         text="V:"/>
+<gentext key="appendix"       text="Lisa"/>
+<gentext key="article"        text="Artikkel"/>
+<gentext key="bibliography"   text="Bibliograafia"/>
+<gentext key="book"           text="Raamat"/>
+<gentext key="caution"        text="ETTEVAATUST"/>
+<gentext key="caution"        text="Ettevaatust"/>
+<gentext key="chapter"        text="Peat&#252;kk"/>
+<gentext key="colophon"       text="L&#245;pum&#228;rgis"/>
+<gentext key="copyright"      text="Autori&#245;igus"/>
+<gentext key="dedication"     text="P&#252;hendus"/>
+<gentext key="edition"        text="V&#228;ljaanne"/>
+<gentext key="equation"       text="Valem"/>
+<gentext key="example"        text="N&#228;ide"/>
+<gentext key="figure"         text="Joonis"/>
+<gentext key="glosssee"       text="Vt."/>
+<gentext key="glossseealso"   text="Vt. ka"/>
+<gentext key="glossary"       text="S&#245;nastik"/>
+<gentext key="important"      text="OLULINE"/>
+<gentext key="isbn"           text="ISBN"/>
+<gentext key="important"      text="Oluline"/>
+<gentext key="index"          text="Aineregister"/>
+<gentext key="legalnotice"    text="Autori&#245;iguse m&#228;rge"/>
+<gentext key="msgaud"         text="Auditoorium"/>
+<gentext key="msglevel"       text="Tase"/>
+<gentext key="msgorig"        text="Algallikas"/>
+<gentext key="note"           text="M&#196;RKUS"/>
+<gentext key="note"           text="M&#228;rkus"/>
+<gentext key="part"           text="Osa"/>
+<gentext key="preface"        text="Eess&#245;na"/>
+<gentext key="procedure"      text="Protseduur"/>
+<gentext key="published"      text="Avaldatud"/>
+<gentext key="question"       text="K:"/>
+<gentext key="refentry"       text=""/>
+<gentext key="reference"      text="Viide"/>
+<gentext key="refname"        text="Nimi"/>
+<gentext key="refsection"     text="L&#245;ik"/>
+<gentext key="refsynopsisdiv" text="S&#252;nopsis"/>
+<gentext key="revision"       text="Vigade parandus"/>
+<gentext key="revhistory"     text="Vigade paranduste ajalugu"/>
+<gentext key="section"        text="Sektsioon"/>
+<gentext key="see"            text="Vt."/>
+<gentext key="seealso"        text="Vt. ka"/>
+<gentext key="set"            text="Sea"/>
+<gentext key="setindex"       text="Sea indeks"/>
+<gentext key="sidebar"        text=""/>
+<gentext key="step"           text="Samm"/>
+<gentext key="tip"            text="VIHJE"/>
+<gentext key="table"          text="Tabel"/>
+<gentext key="tip"            text="Vihje"/>
+<gentext key="warning"        text="HOIATUS"/>
+<gentext key="warning"        text="Hoiatus"/>
+<gentext key="appendix"       text="lisa"/>
+<gentext key="chapter"        text="peat&#252;kk"/>
+<gentext key="section"        text="l&#245;ik"/>
+<gentext key="sidebar"        text="k&#252;lgriba"/>
+<gentext key="step"           text="samm"/>
+<gentext key="seealso"        text="Vt. ka"/>
+
+<gentext key="TableofContents" text="Sisukord"/>
+<gentext key="in" text=""/>
+<gentext key="by" text=""/>
+<gentext key="Edited" text="Redaktsioon"/>
+<gentext key="Editedby" text="Redaktsiooni autor(id)"/>
+<gentext key="and" text="ja"/>
+<gentext key="Notes" text="M&#228;rkused"/>
+<gentext key="TableNotes" text="M&#228;rkused"/>
+<gentext key="nonexistantelement" text="mitte eksisteeriv element"/>
+<gentext key="Pgs" text="Lk."/>
+<gentext key="unsupported" text="toetuseta"/>
+<gentext key="xrefto" text="viide"/>
+<gentext key="unexpectedelementname" text="Ootamatu elemendi nimi"/>
+<gentext key="Revisedby" text="&#220;le vaadanud: "/>
+
+<gentext key="ListofTables" text="Tabelite nimekiri"/>
+<gentext key="ListofExamples" text="N&#228;idete nimekiri"/>
+<gentext key="ListofFigures" text="Jooniste nimekiri"/>
+<gentext key="ListofEquations" text="Valemite nimekiri"/>
+<gentext key="ListofUnknown" text="Tundmatute nimekiri"/>
+
+<gentext key="nav-prev" text="Eelmine"/>
+<gentext key="nav-prev-sibling" text="Kiiresti tagasi"/>
+<gentext key="nav-next-sibling" text="Kiiresti edasi"/>
+<gentext key="nav-next" text="J&#228;rgmine"/>
+<gentext key="nav-up" text="&#220;les"/>
+<gentext key="nav-home" text="Koju"/>
+
+<dingbat key="startquote" text='&#8220;'/>
+<dingbat key="endquote" text='&#8221;'/>
+<dingbat key="nestedstartquote" text="`"/>
+<dingbat key="nestedendquote" text="'"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

@@ -1,0 +1,1126 @@
+<chapter id="ProfileMgmt">
+<chapterinfo>
+	&author.jht;
+    <pubdate>April 3 2003</pubdate>
+</chapterinfo>
+
+<title>Desktop Profile Management</title>
+
+<sect1>
+<title>Roaming Profiles</title>
+
+<warning>
+<para>
+Roaming profiles support is different for Win9x / Me and Windows NT4/200x.
+</para>
+</warning>
+
+<para>
+Before discussing how to configure roaming profiles, it is useful to see how
+Windows 9x / Me and Windows NT4/200x clients implement these features.
+</para>
+
+<para>
+Windows 9x / Me clients send a NetUserGetInfo request to the server to get the user's
+profiles location. However, the response does not have room for a separate
+profiles location field, only the user's home share. This means that Win9X/Me
+profiles are restricted to being stored in the user's home directory.
+</para>
+
+
+<para>
+Windows NT4/200x  clients send a NetSAMLogon RPC request, which contains many fields,
+including a separate field for the location of the user's profiles.
+</para>
+
+<sect2>
+<title>Samba Configuration for Profile Handling</title>
+
+<para>
+This section documents how to configure Samba for MS Windows client profile support.
+</para>
+
+<sect3>
+<title>NT4/200x User Profiles</title>
+
+<para>
+To support Windowns NT4/200x clients, in the [global] section of smb.conf set the
+following (for example):
+</para>
+
+<para>
+<programlisting>
+	logon path = \\profileserver\profileshare\profilepath\%U\moreprofilepath
+</programlisting>
+
+	This is typically implemented like:
+
+<programlisting>
+		logon path = \\%L\Profiles\%u
+</programlisting>
+where %L translates to the name of the Samba server and %u translates to the user name
+</para>
+
+<para>
+The default for this option is \\%N\%U\profile, namely \\sambaserver\username\profile. 
+The \\N%\%U service is created automatically by the [homes] service.  If you are using
+a samba server for the profiles, you _must_ make the share specified in the logon path
+browseable. Please refer to the man page for smb.conf in respect of the different
+symantics of %L and %N, as well as %U and %u.
+</para>
+
+<note>
+<para>
+MS Windows NT/2K clients at times do not disconnect a connection to a server
+between logons. It is recommended to NOT use the <command>homes</command>
+meta-service name as part of the profile share path.
+</para>
+</note>
+</sect3>
+
+<sect3>
+<title>Windows 9x / Me User Profiles</title>
+
+<para>
+To support Windows 9x / Me clients, you must use the "logon home" parameter. Samba has
+now been fixed so that <userinput>net use /home</userinput> now works as well, and it, too, relies
+on the <command>logon home</command> parameter.
+</para>
+
+<para>
+By using the logon home parameter, you are restricted to putting Win9x / Me
+profiles in the user's home directory.   But wait! There is a trick you
+can use. If you set the following in the <command>[global]</command> section of your &smb.conf; file:
+</para>
+<para><programlisting>
+	logon home = \\%L\%U\.profiles
+</programlisting></para>
+
+<para>
+then your Windows 9x / Me clients will dutifully put their clients in a subdirectory
+of your home directory called <filename>.profiles</filename> (thus making them hidden).
+</para>
+
+<para>
+Not only that, but <userinput>net use /home</userinput> will also work, because of a feature in
+Windows 9x / Me. It removes any directory stuff off the end of the home directory area
+and only uses the server and share portion. That is, it looks like you
+specified \\%L\%U for <command>logon home</command>.
+</para>
+</sect3>
+
+<sect3>
+<title>Mixed Windows 9x / Me and Windows NT4/200x User Profiles</title>
+
+<para>
+You can support profiles for both Win9X and WinNT clients by setting both the
+<command>logon home</command> and <command>logon path</command> parameters. For example:
+</para>
+
+<para><programlisting>
+	logon home = \\%L\%u\.profiles
+	logon path = \\%L\profiles\%u
+</programlisting></para>
+
+</sect3>
+<sect3>
+<title>Disabling Roaming Profile Support</title>
+
+<para>
+A question often asked is "How may I enforce use of local profiles?" or
+"How do I disable Roaming Profiles?"
+</para>
+
+<para>
+There are three ways of doing this:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	<command>In smb.conf:</command> affect the following settings and ALL clients
+	will be forced to use a local profile:
+	<programlisting>
+		logon home =
+		logon path =
+	</programlisting></para></listitem>
+
+	<listitem><para>
+	<command>MS Windows Registry:</command> by using the Microsoft Management Console
+	gpedit.msc to instruct your MS Windows XP machine to use only a local profile. This
+	of course modifies registry settings. The full path to the option is:
+	<programlisting>
+	Local Computer Policy\
+		Computer Configuration\
+			Administrative Templates\
+				System\
+					User Profiles\
+
+	Disable:	Only Allow Local User Profiles
+	Disable:	Prevent Roaming Profile Change from Propogating to the Server
+	</programlisting>
+	</para>
+	</listitem>
+
+	<listitem><para>
+	<command>Change of Profile Type:</command> From the start menu right click on the
+	MY Computer icon, select <emphasis>Properties</emphasis>, click on the "<emphasis>User Profiles</emphasis>
+	tab, select the profile you wish to change from Roaming type to Local, click <emphasis>Change Type</emphasis>.
+	</para></listitem>
+</itemizedlist>
+
+<para>
+Consult the MS Windows registry guide for your particular MS Windows version for more
+information about which registry keys to change to enforce use of only local user
+profiles.
+</para>
+
+<note><para>
+The specifics of how to convert a local profile to a roaming profile, or a roaming profile
+to a local one vary according to the version of MS Windows you are running. Consult the
+Microsoft MS Windows Resource Kit for your version of Windows for specific information.
+</para></note>
+
+</sect3>
+</sect2>
+
+<sect2>
+<title>Windows Client Profile Configuration Information</title>
+
+<sect3>
+<title>Windows 9x / Me Profile Setup</title>
+
+<para>
+When a user first logs in on Windows 9X, the file user.DAT is created,
+as are folders "Start Menu", "Desktop", "Programs" and "Nethood".
+These directories and their contents will be merged with the local
+versions stored in c:\windows\profiles\username on subsequent logins,
+taking the most recent from each.  You will need to use the [global]
+options "preserve case = yes", "short preserve case = yes" and
+"case sensitive = no" in order to maintain capital letters in shortcuts
+in any of the profile folders.
+</para>
+
+<para>
+The user.DAT file contains all the user's preferences.  If you wish to
+enforce a set of preferences, rename their user.DAT file to user.MAN,
+and deny them write access to this file.
+</para>
+
+<orderedlist>
+	<listitem>
+        <para>
+        On the Windows 9x / Me machine, go to Control Panel -> Passwords and
+        select the User Profiles tab.  Select the required level of
+        roaming preferences.  Press OK, but do _not_ allow the computer
+        to reboot.
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        On the Windows 9x / Me machine, go to Control Panel -> Network ->
+        Client for Microsoft Networks -> Preferences.  Select 'Log on to
+        NT Domain'.  Then, ensure that the Primary Logon is 'Client for
+        Microsoft Networks'.  Press OK, and this time allow the computer
+        to reboot.
+        </para>
+	</listitem>
+</orderedlist>
+
+<para>
+Under Windows 9x / Me Profiles are downloaded from the Primary Logon.
+If you have the Primary Logon as 'Client for Novell Networks', then
+the profiles and logon script will be downloaded from your Novell
+Server.  If you have the Primary Logon as 'Windows Logon', then the
+profiles will be loaded from the local machine - a bit against the
+concept of roaming profiles, it would seem!
+</para>
+
+<para>
+You will now find that the Microsoft Networks Login box contains
+[user, password, domain] instead of just [user, password].  Type in
+the samba server's domain name (or any other domain known to exist,
+but bear in mind that the user will be authenticated against this
+domain and profiles downloaded from it, if that domain logon server
+supports it), user name and user's password.
+</para>
+
+<para>
+Once the user has been successfully validated, the Windows 9x / Me machine
+will inform you that 'The user has not logged on before' and asks you
+if you wish to save the user's preferences?  Select 'yes'.
+</para>
+
+<para>
+Once the Windows 9x / Me client comes up with the desktop, you should be able
+to examine the contents of the directory specified in the "logon path"
+on the samba server and verify that the "Desktop", "Start Menu",
+"Programs" and "Nethood" folders have been created.
+</para>
+
+<para>
+These folders will be cached locally on the client, and updated when
+the user logs off (if you haven't made them read-only by then).
+You will find that if the user creates further folders or short-cuts,
+that the client will merge the profile contents downloaded with the
+contents of the profile directory already on the local client, taking
+the newest folders and short-cuts from each set.
+</para>
+
+<para>
+If you have made the folders / files read-only on the samba server,
+then you will get errors from the Windows 9x / Me machine on logon and logout, as
+it attempts to merge the local and the remote profile.  Basically, if
+you have any errors reported by the Windows 9x / Me machine, check the Unix file
+permissions and ownership rights on the profile directory contents,
+on the samba server.
+</para>
+
+<para>
+If you have problems creating user profiles, you can reset the user's
+local desktop cache, as shown below.  When this user then next logs in,
+they will be told that they are logging in "for the first time".
+</para>
+
+<orderedlist>
+	<listitem>
+        <para>
+        instead of logging in under the [user, password, domain] dialog,
+        press escape.
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        run the regedit.exe program, and look in:
+        </para>
+
+        <para>
+        HKEY_LOCAL_MACHINE\Windows\CurrentVersion\ProfileList
+        </para>
+
+        <para>
+        you will find an entry, for each user, of ProfilePath.  Note the
+        contents of this key (likely to be c:\windows\profiles\username),
+        then delete the key ProfilePath for the required user.
+
+        [Exit the registry editor].
+
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        <emphasis>WARNING</emphasis> - before deleting the contents of the
+        directory listed in the ProfilePath (this is likely to be
+	<filename>c:\windows\profiles\username)</filename>, ask them if they
+	have any important files stored on their desktop or in their start menu. 
+	Delete the contents of the directory ProfilePath (making a backup if any
+	of the files are needed).
+        </para>
+
+        <para>
+	This will have the effect of removing the local (read-only hidden
+	system file) user.DAT in their profile directory, as well as the
+	local "desktop", "nethood", "start menu" and "programs" folders.
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        search for the user's .PWL password-caching file in the c:\windows
+        directory, and delete it.
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        log off the windows 9x / Me client.
+        </para>
+	</listitem>
+
+	<listitem>
+        <para>
+        check the contents of the profile path (see "logon path" described
+        above), and delete the user.DAT or user.MAN file for the user,
+        making a backup if required.
+        </para>
+	</listitem>
+
+</orderedlist>
+
+<para>
+If all else fails, increase samba's debug log levels to between 3 and 10,
+and / or run a packet trace program such as ethereal or netmon.exe, and
+look for error messages.
+</para>
+
+<para>
+If you have access to an Windows NT4/200x server, then first set up roaming profiles
+and / or netlogons on the Windows NT4/200x server.  Make a packet trace, or examine
+the example packet traces provided with Windows NT4/200x server, and see what the
+differences are with the equivalent samba trace.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Windows NT4 Workstation</title>
+
+<para>
+When a user first logs in to a Windows NT Workstation, the profile
+NTuser.DAT is created.  The profile location can be now specified
+through the "logon path" parameter.
+</para>
+
+<para>
+There is a parameter that is now available for use with NT Profiles:
+"logon drive".  This should be set to <filename>H:</filename> or any other drive, and
+should be used in conjunction with the new "logon home" parameter.
+</para>
+
+<para>
+The entry for the NT4 profile is a _directory_ not a file.  The NT
+help on profiles mentions that a directory is also created with a .PDS
+extension.  The user, while logging in, must have write permission to
+create the full profile path (and the folder with the .PDS extension
+for those situations where it might be created.)
+</para>
+
+<para>
+In the profile directory, Windows NT4 creates more folders than Windows 9x / Me. 
+It creates "Application Data" and others, as well as "Desktop", "Nethood",
+"Start Menu" and "Programs".  The profile itself is stored in a file
+NTuser.DAT.  Nothing appears to be stored in the .PDS directory, and
+its purpose is currently unknown.
+</para>
+
+<para>
+You can use the System Control Panel to copy a local profile onto
+a samba server (see NT Help on profiles: it is also capable of firing
+up the correct location in the System Control Panel for you).  The
+NT Help file also mentions that renaming NTuser.DAT to NTuser.MAN
+turns a profile into a mandatory one.
+</para>
+
+<para>
+The case of the profile is significant.  The file must be called
+NTuser.DAT or, for a mandatory profile, NTuser.MAN.
+</para>
+</sect3>
+
+<sect3>
+<title>Windows 2000/XP Professional</title>
+
+<para>
+You must first convert the profile from a local profile to a domain
+profile on the MS Windows workstation as follows:
+</para>
+
+<itemizedlist>
+	<listitem><para>
+	Log on as the LOCAL workstation administrator.
+	</para></listitem>
+
+	<listitem><para>
+	Right click on the 'My Computer' Icon, select 'Properties'
+	</para></listitem>
+
+	<listitem><para>
+	Click on the 'User Profiles' tab
+	</para></listitem>
+
+	<listitem><para>
+	Select the profile you wish to convert (click on it once)
+	</para></listitem>
+
+	<listitem><para>
+	Click on the button 'Copy To'
+	</para></listitem>
+
+	<listitem><para>
+	In the "Permitted to use" box, click on the 'Change' button.
+	</para></listitem>
+
+	<listitem><para>
+	Click on the 'Look in" area that lists the machine name, when you click
+	here it will open up a selection box. Click on the domain to which the
+	profile must be accessible.
+	</para>
+
+	<note><para>You will need to log on if a logon box opens up. Eg: In the connect
+	as: MIDEARTH\root, password: mypassword.</para></note>
+	</listitem>
+
+	<listitem><para>
+	To make the profile capable of being used by anyone select 'Everyone'
+	</para></listitem>
+
+	<listitem><para>
+	Click OK. The Selection box will close.
+	</para></listitem>
+
+	<listitem><para>
+	Now click on the 'Ok' button to create the profile in the path you
+	nominated.
+	</para></listitem>
+</itemizedlist>
+
+<para>
+Done. You now have a profile that can be editted using the samba-3.0.0
+<filename>profiles</filename> tool.
+</para>
+
+<note>
+<para>
+Under NT/2K the use of mandotory profiles forces the use of MS Exchange
+storage of mail data. That keeps desktop profiles usable.
+</para>
+</note>
+
+<note>
+<itemizedlist>
+<listitem><para>
+This is a security check new to Windows XP (or maybe only
+Windows XP service pack 1).  It can be disabled via a group policy in
+Active Directory.  The policy is:</para>
+
+<para>"Computer Configuration\Administrative Templates\System\User
+Profiles\Do not check for user ownership of Roaming Profile Folders"</para>
+
+<para>...and it should be set to "Enabled".
+Does the new version of samba have an Active Directory analogue?  If so,
+then you may be able to set the policy through this.
+</para>
+
+<para>
+If you cannot set group policies in samba, then you may be able to set
+the policy locally on each machine.  If you want to try this, then do
+the following (N.B. I don't know for sure that this will work in the
+same way as a domain group policy):
+</para>
+
+</listitem>
+
+<listitem><para>
+On the XP workstation log in with an Administrator account.
+</para></listitem>
+
+	<listitem><para>Click: "Start", "Run"</para></listitem>
+	<listitem><para>Type: "mmc"</para></listitem>
+	<listitem><para>Click: "OK"</para></listitem>
+
+	<listitem><para>A Microsoft Management Console should appear.</para></listitem>
+	<listitem><para>Click: File, "Add/Remove Snap-in...", "Add"</para></listitem>
+	<listitem><para>Double-Click: "Group Policy"</para></listitem>
+	<listitem><para>Click: "Finish", "Close"</para></listitem>
+	<listitem><para>Click: "OK"</para></listitem>
+
+	<listitem><para>In the "Console Root" window:</para></listitem>
+	<listitem><para>Expand: "Local Computer Policy", "Computer Configuration",</para></listitem>
+	<listitem><para>"Administrative Templates", "System", "User Profiles"</para></listitem>
+	<listitem><para>Double-Click: "Do not check for user ownership of Roaming Profile</para></listitem>
+	<listitem><para>Folders"</para></listitem>
+	<listitem><para>Select: "Enabled"</para></listitem>
+	<listitem><para>Click: OK"</para></listitem>
+
+	<listitem><para>Close the whole console.  You do not need to save the settings (this
+	refers to the console settings rather than the policies you have
+	changed).</para></listitem>
+
+	<listitem><para>Reboot</para></listitem>
+</itemizedlist>
+</note>
+</sect3>
+</sect2>
+
+<sect2>
+<title>Sharing Profiles between W9x/Me and NT4/200x/XP workstations</title>
+
+<para>
+Sharing of desktop profiles between Windows versions is NOT recommended.
+Desktop profiles are an evolving phenomenon and profiles for later versions
+of MS Windows clients add features that may interfere with earlier versions
+of MS Windows clients. Probably the more salient reason to NOT mix profiles
+is that when logging off an earlier version of MS Windows the older format
+of profile contents may overwrite information that belongs to the newer
+version resulting in loss of profile information content when that user logs
+on again with the newer version of MS Windows.
+</para>
+
+<para>
+If you then want to share the same Start Menu / Desktop with W9x/Me, you will
+need to specify a common location for the profiles. The smb.conf parameters
+that need to be common are <emphasis>logon path</emphasis> and
+<emphasis>logon home</emphasis>.
+</para>
+
+<para>
+If you have this set up correctly, you will find separate user.DAT and
+NTuser.DAT files in the same profile directory.
+</para>
+
+</sect2>
+
+<sect2>
+<title>Profile Migration from Windows NT4/200x Server to Samba</title>
+
+<para>
+There is nothing to stop you specifying any path that you like for the
+location of users' profiles.  Therefore, you could specify that the
+profile be stored on a samba server, or any other SMB server, as long as
+that SMB server supports encrypted passwords.
+</para>
+
+<sect3>
+<title>Windows NT4 Profile Management Tools</title>
+
+<para>
+Unfortunately, the Resource Kit information is specific to the version of MS Windows
+NT4/200x. The correct resource kit is required for each platform.
+</para>
+
+<para>
+Here is a quick guide:
+</para>
+
+<itemizedlist>
+
+<listitem><para>
+On your NT4 Domain Controller, right click on 'My Computer', then
+select the tab labelled 'User Profiles'.
+</para></listitem>
+
+<listitem><para>
+Select a user profile you want to migrate and click on it.
+</para>
+
+<note><para>I am using the term &quot;migrate&quot; lossely. You can copy a profile to
+create a group profile. You can give the user 'Everyone' rights to the
+profile you copy this to. That is what you need to do, since your samba
+domain is not a member of a trust relationship with your NT4 PDC.</para></note>
+</listitem>
+
+	<listitem><para>Click the 'Copy To' button.</para></listitem>
+
+	<listitem><para>In the box labelled 'Copy Profile to' add your new path, eg:
+	<filename>c:\temp\foobar</filename></para></listitem>
+
+	<listitem><para>Click on the button labelled 'Change' in the "Permitted to use" box.</para></listitem>
+
+	<listitem><para>Click on the group 'Everyone' and then click OK. This closes the
+	'chose user' box.</para></listitem>
+
+	<listitem><para>Now click OK.</para></listitem>
+</itemizedlist>
+
+<para>
+Follow the above for every profile you need to migrate.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Side bar Notes</title>
+
+<para>
+You should obtain the SID of your NT4 domain. You can use smbpasswd to do
+this. Read the man page.</para>
+
+<para>
+With Samba-3.0.0 alpha code you can import all you NT4 domain accounts
+using the net samsync method. This way you can retain your profile
+settings as well as all your users.
+</para>
+
+</sect3>
+
+<sect3>
+<title>moveuser.exe</title>
+
+<para>
+The W2K professional resource kit has moveuser.exe. moveuser.exe changes
+the security of a profile from one user to another.  This allows the account
+domain to change, and/or the user name to change.
+</para>
+
+</sect3>
+
+<sect3>
+<title>Get SID</title>
+
+<para>
+You can identify the SID by using GetSID.exe from the Windows NT Server 4.0
+Resource Kit.
+</para>
+
+<para>
+Windows NT 4.0 stores the local profile information in the registry under
+the following key:
+HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList
+</para>
+
+<para>
+Under the ProfileList key, there will be subkeys named with the SIDs of the
+users who have logged on to this computer. (To find the profile information
+for the user whose locally cached profile you want to move, find the SID for
+the user with the GetSID.exe utility.) Inside of the appropriate user's
+subkey, you will see a string value named ProfileImagePath.
+</para>
+
+</sect3>
+</sect2>
+</sect1>
+
+<sect1>
+<title>Mandatory profiles</title>
+
+<para>
+A Mandatory Profile is a profile that the user does NOT have the ability to overwrite.
+During the user's session it may be possible to change the desktop environment, but
+as the user logs out all changes made will be lost. If it is desired to NOT allow the
+user any ability to change the desktop environment then this must be done through
+policy settings. See previous chapter.
+</para>
+
+<note>
+<para>
+Under NO circumstances should the profile directory (or it's contents) be made read-only
+as this may render the profile un-usable.
+</para>
+</note>
+
+<para>
+For MS Windows NT4/200x/XP the above method can be used to create mandatory profiles
+also. To convert a group profile into a mandatory profile simply locate the NTUser.DAT
+file in the copied profile and rename it to NTUser.MAN.
+</para>
+
+<para>
+For MS Windows 9x / Me it is the User.DAT file that must be renamed to User.MAN to
+affect a mandatory profile.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Creating/Managing Group Profiles</title>
+
+<para>
+Most organisations are arranged into departments. There is a nice benenfit in
+this fact since usually most users in a department will require the same desktop
+applications and the same desktop layout. MS Windows NT4/200x/XP will allow the
+use of Group Profiles. A Group Profile is a profile that is created firstly using
+a template (example) user. Then using the profile migration tool (see above) the
+profile is assigned access rights for the user group that needs to be given access
+to the group profile.
+</para>
+
+<para>
+The next step is rather important. PLEASE NOTE: Instead of assigning a group profile
+to users (ie: Using User Manager) on a "per user" basis, the group itself is assigned
+the now modified profile.
+</para>
+
+<note>
+	<para>
+	Be careful with group profiles, if the user who is a member of a group also
+	has a personal profile, then the result will be a fusion (merge) of the two.
+	</para>
+</note>
+
+</sect1>
+
+<sect1>
+<title>Default Profile for Windows Users</title>
+
+<para>
+MS Windows 9x / Me and NT4/200x/XP will use a default profile for any user for whom
+a profile does not already exist. Armed with a knowledge of where the default profile
+is located on the Windows workstation, and knowing which registry keys affect the path
+from which the default profile is created, it is possible to modify the default profile
+to one that has been optimised for the site. This has significant administrative 
+advantages.
+</para>
+
+<sect2>
+<title>MS Windows 9x/Me</title>
+
+<para>
+To enable default per use profiles in Windows 9x / Me you can either use the Windows 98 System
+Policy Editor or change the registry directly.
+</para>
+
+<para>
+To enable default per user profiles in Windows 9x / Me, launch the System Policy Editor, then
+select File -> Open Registry, then click on the Local Computer icon, click on Windows 98 System,
+select User Profiles, click on the enable box. Do not forget to save the registry changes.
+</para>
+
+<para>
+To modify the registry directly, launch the Registry Editor (regedit.exe), select the hive
+<filename>HKEY_LOCAL_MACHINE\Network\Logon</filename>. Now add a DWORD type key with the name
+"User Profiles", to enable user profiles set the value to 1, to disable user profiles set it to 0.
+</para>
+
+<sect3>
+<title>How User Profiles Are Handled in Windows 9x / Me?</title>
+
+<para>
+When a user logs on to a Windows 9x / Me machine, the local profile path, 
+<filename>HKEY_LOCAL_MACHINE\Software\Microsoft\Windows\CurrentVersion\ProfileList</filename>, is checked
+for an existing entry for that user:
+</para>
+
+<para>
+If the user has an entry in this registry location, Windows 9x / Me checks for a locally cached
+version of the user profile. Windows 9x / Me also checks the user's home directory (or other
+specified directory if the location has been modified) on the server for the User Profile.
+If a profile exists in both locations, the newer of the two is used. If the User Profile exists
+on the server, but does not exist on the local machine, the profile on the server is downloaded
+and used. If the User Profile only exists on the local machine, that copy is used.
+</para>
+
+<para>
+If a User Profile is not found in either location, the Default User Profile from the Windows 9x / Me
+machine is used and is copied to a newly created folder for the logged on user. At log off, any
+changes that the user made are written to the user's local profile. If the user has a roaming
+profile, the changes are written to the user's profile on the server.
+</para>
+
+</sect3>
+</sect2>
+
+<sect2>
+<title>MS Windows NT4 Workstation</title>
+
+<para>
+On MS Windows NT4 the default user profile is obtained from the location
+<filename>%SystemRoot%\Profiles</filename> which in a default installation will translate to
+<filename>C:\WinNT\Profiles</filename>. Under this directory on a clean install there will be
+three (3) directories: <filename>Administrator, All Users, Default User</filename>.
+</para>
+
+<para>
+The <filename>All Users</filename> directory contains menu settings that are common across all 
+system users. The <filename>Default User</filename> directory contains menu entries that are
+customisable per user depending on the profile settings chosen/created.
+</para>
+
+<para>
+When a new user first logs onto an MS Windows NT4 machine a new profile is created from:
+</para>
+
+<simplelist>
+	<member>All Users settings</member>
+	<member>Default User settings (contains the default NTUser.DAT file)</member>
+</simplelist>
+
+<para>
+When a user logs onto an MS Windows NT4 machine that is a member of a Microsoft security domain
+the following steps are followed in respect of profile handling:
+</para>
+
+<orderedlist>
+	<listitem>
+	<para>
+	The users' account information which is obtained during the logon process contains
+	the location of the users' desktop profile. The profile path may be local to the
+	machine or it may be located on a network share. If there exists a profile at the location
+	of the path from the user account, then this profile is copied to the location
+	<filename>%SystemRoot%\Profiles\%USERNAME%</filename>. This profile then inherits the
+	settings in the <filename>All Users</filename> profile in the <filename>%SystemRoot%\Profiles</filename>
+	location.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	If the user account has a profile path, but at it's location a profile does not exist,
+	then a new profile is created in the <filename>%SystemRoot%\Profiles\%USERNAME%</filename>
+	directory from reading the <filename>Default User</filename> profile.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	If the NETLOGON share on the authenticating server (logon server) contains a policy file
+	(<filename>NTConfig.POL</filename>) then it's contents are applied to the <filename>NTUser.DAT</filename>
+	which is applied to the <filename>HKEY_CURRENT_USER</filename> part of the registry. 
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	When the user logs out, if the profile is set to be a roaming profile it will be written
+	out to the location of the profile. The <filename>NTuser.DAT</filename> file is then
+	re-created from the contents of the <filename>HKEY_CURRENT_USER</filename> contents.
+	Thus, should there not exist in the NETLOGON share an <filename>NTConfig.POL</filename> at the
+	next logon, the effect of the provious <filename>NTConfig.POL</filename> will still be held
+	in the profile. The effect of this is known as <emphasis>tatooing</emphasis>.
+	</para>
+	</listitem>
+</orderedlist>
+
+<para>
+MS Windows NT4 profiles may be <emphasis>Local</emphasis> or <emphasis>Roaming</emphasis>. A Local profile
+will stored in the <filename>%SystemRoot%\Profiles\%USERNAME%</filename> location. A roaming profile will
+also remain stored in the same way, unless the following registry key is created:
+</para>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\
+	"DeleteRoamingCache"=dword:00000001
+</programlisting>
+
+In which case, the local copy (in <filename>%SystemRoot%\Profiles\%USERNAME%</filename>) will be
+deleted on logout.
+</para>
+
+<para>
+Under MS Windows NT4 default locations for common resources (like <filename>My Documents</filename>
+may be redirected to a network share by modifying the following registry keys. These changes may be affected
+via use of the System Policy Editor (to do so may require that you create your owns template extension
+for the policy editor to allow this to be done through the GUI. Another way to do this is by way of first
+creating a default user profile, then while logged in as that user, run regedt32 to edit the key settings.
+</para>
+
+<para>
+The Registry Hive key that affects the behaviour of folders that are part of the default user profile
+are controlled by entries on Windows NT4 is:
+</para>
+
+<para>
+<programlisting>
+        HKEY_CURRENT_USER
+                \Software
+                        \Microsoft
+                                \Windows
+                                        \CurrentVersion
+                                                \Explorer
+                                                        \User Shell Folders\
+</programlisting>
+</para>
+
+<para>
+The above hive key contains a list of automatically managed folders. The default entries are:
+</para>
+
+        <para>
+        <programlisting>
+        Name            Default Value
+        --------------  -----------------------------------------
+        AppData         %USERPROFILE%\Application Data
+        Desktop         %USERPROFILE%\Desktop
+        Favorites       %USERPROFILE%\Favorites
+        NetHood         %USERPROFILE%\NetHood
+        PrintHood       %USERPROFILE%\PrintHood
+        Programs        %USERPROFILE%\Start Menu\Programs
+        Recent          %USERPROFILE%\Recent
+        SendTo          %USERPROFILE%\SendTo
+        Start Menu      %USERPROFILE%\Start Menu
+        Startup         %USERPROFILE%\Start Menu\Programs\Startup
+        </programlisting>
+        </para>
+
+<para>
+The registry key that contains the location of the default profile settings is:
+
+<programlisting>
+	HKEY_LOCAL_MACHINE
+		\SOFTWARE
+			\Microsoft
+				\Windows
+					\CurrentVersion
+						\Explorer
+							\User Shell Folders
+</programlisting>
+
+The default entries are:
+
+<programlisting>
+	Common Desktop		%SystemRoot%\Profiles\All Users\Desktop
+	Common Programs		%SystemRoot%\Profiles\All Users\Programs
+	Common Start Menu	%SystemRoot%\Profiles\All Users\Start Menu
+	Common Startup		%SystemRoot%\Profiles\All Users\Start Menu\Progams\Startup
+</programlisting>
+</para>
+
+</sect2>
+
+<sect2>
+<title>MS Windows 200x/XP</title>
+
+	<note>
+	<para>
+	MS Windows XP Home Edition does use default per user profiles, but can not participate
+	in domain security, can not log onto an NT/ADS style domain, and thus can obtain the profile
+	only from itself. While there are benefits in doing this the beauty of those MS Windows
+	clients that CAN participate in domain logon processes allows the administrator to create
+	a global default profile and to enforce it through the use of Group Policy Objects (GPOs).
+	</para>
+	</note>
+
+<para>
+When a new user first logs onto MS Windows 200x/XP machine the default profile is obtained from
+<filename>C:\Documents and Settings\Default User</filename>. The administrator can modify (or change
+the contents of this location and MS Windows 200x/XP will gladly use it. This is far from the optimum
+arrangement since it will involve copying a new default profile to every MS Windows 200x/XP client
+workstation. 
+</para>
+
+<para>
+When MS Windows 200x/XP participate in a domain security context, and if the default user
+profile is not found, then the client will search for a default profile in the NETLOGON share
+of the authenticating server. ie: In MS Windows parlance:
+<filename>%LOGONSERVER%\NETLOGON\Default User</filename> and if one exits there it will copy this
+to the workstation to the <filename>C:\Documents and Settings\</filename> under the Windows
+login name of the user.
+</para>
+
+	<note>
+	<para>
+	This path translates, in Samba parlance, to the smb.conf [NETLOGON] share. The directory
+	should be created at the root of this share and must be called <filename>Default Profile</filename>.
+	</para>
+	</note>
+
+<para>
+If a default profile does not exist in this location then MS Windows 200x/XP will use the local
+default profile.
+</para>
+
+<para>
+On loging out, the users' desktop profile will be stored to the location specified in the registry
+settings that pertain to the user. If no specific policies have been created, or passed to the client
+during the login process (as Samba does automatically), then the user's profile will be written to
+the local machine only under the path <filename>C:\Documents and Settings\%USERNAME%</filename>.
+</para>
+
+<para>
+Those wishing to modify the default behaviour can do so through three methods:
+</para>
+
+<itemizedlist>
+	<listitem>
+	<para>
+	Modify the registry keys on the local machine manually and place the new default profile in the
+	NETLOGON share root - NOT recommended as it is maintenance intensive.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	Create an NT4 style NTConfig.POL file that specified this behaviour and locate this file
+	in the root of the NETLOGON share along with the new default profile.
+	</para>
+	</listitem>
+
+	<listitem>
+	<para>
+	Create a GPO that enforces this through Active Directory, and place the new default profile
+	in the NETLOGON share.
+	</para>
+	</listitem>
+</itemizedlist>
+
+<para>
+The Registry Hive key that affects the behaviour of folders that are part of the default user profile
+are controlled by entries on Windows 200x/XP is:
+</para>
+
+<para>
+<programlisting>
+	HKEY_CURRENT_USER
+		\Software
+			\Microsoft
+				\Windows
+					\CurrentVersion
+						\Explorer
+							\User Shell Folders\
+</programlisting>
+</para>
+
+<para>
+The above hive key contains a list of automatically managed folders. The default entries are:
+</para>
+
+	<para>
+	<programlisting>
+	Name		Default Value
+	--------------	-----------------------------------------
+	AppData		%USERPROFILE%\Application Data
+	Cache		%USERPROFILE%\Local Settings\Temporary Internet Files
+	Cookies		%USERPROFILE%\Cookies
+	Desktop		%USERPROFILE%\Desktop
+	Favorites	%USERPROFILE%\Favorites
+	History		%USERPROFILE%\Local Settings\History
+	Local AppData	%USERPROFILE%\Local Settings\Application Data
+	Local Settings	%USERPROFILE%\Local Settings
+	My Pictures	%USERPROFILE%\My Documents\My Pictures
+	NetHood		%USERPROFILE%\NetHood
+	Personal	%USERPROFILE%\My Documents
+	PrintHood	%USERPROFILE%\PrintHood
+	Programs	%USERPROFILE%\Start Menu\Programs
+	Recent		%USERPROFILE%\Recent
+	SendTo		%USERPROFILE%\SendTo
+	Start Menu	%USERPROFILE%\Start Menu
+	Startup		%USERPROFILE%\Start Menu\Programs\Startup
+	Templates	%USERPROFILE%\Templates
+	</programlisting>
+	</para>
+
+<para>
+There is also an entry called "Default" that has no value set. The default entry is of type REG_SZ, all
+the others are of type REG_EXPAND_SZ.
+</para>
+
+<para>
+It makes a huge difference to the speed of handling roaming user profiles if all the folders are
+stored on a dedicated location on a network server. This means that it will NOT be necessary to
+write the Outlook PST file over the network for every login and logout.
+</para>
+
+<para>
+To set this to a network location you could use the following examples:
+
+<programlisting>
+	%LOGONSERVER%\%USERNAME%\Default Folders
+</programlisting>
+
+This would store the folders in the user's home directory under a directory called "Default Folders"
+
+You could also use:
+
+<programlisting>
+	\\SambaServer\FolderShare\%USERNAME%
+</programlisting>
+
+in which case the default folders will be stored in the server named <emphasis>SambaServer</emphasis>
+in the share called <emphasis>FolderShare</emphasis> under a directory that has the name of the MS Windows
+user as seen by the Linux/Unix file system.
+</para>
+
+<para>
+Please note that once you have created a default profile share, you MUST migrate a user's profile
+(default or custom) to it.
+</para>
+
+<para>
+MS Windows 200x/XP profiles may be <emphasis>Local</emphasis> or <emphasis>Roaming</emphasis>.
+A roaming profile will be cached locally unless the following registry key is created:
+</para>
+
+<para>
+<programlisting>
+	HKEY_LOCAL_MACHINE\SYSTEM\Software\Microsoft\Windows NT\CurrentVersion\winlogon\
+	"DeleteRoamingCache"=dword:00000001
+</programlisting>
+
+In which case, the local cache copy will be deleted on logout.
+</para>
+</sect2>
+</sect1>
+
+</chapter>

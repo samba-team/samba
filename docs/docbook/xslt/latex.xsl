@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version='1.0'>
+<xsl:import href="db2latex/docbook.xsl"/>
+<xsl:import href="table.mod.xsl"/>
+<xsl:import href="lists.mod.xsl"/>
+
+<xsl:output method="text" encoding="ISO-8859-1" indent="yes"/>
+<xsl:variable name="latex.documentclass">xslt/latex/sambadoc</xsl:variable>
+<xsl:variable name="latex.documentclass.common">english,final,titlepage</xsl:variable>
+<xsl:variable name="latex.documentclass.book"></xsl:variable>
+<xsl:variable name="latex.hyperref.param.pdftex">hyperfigures,hyperindex,citecolor=blue,urlcolor=blue</xsl:variable>
+<xsl:variable name="latex.document.font">default</xsl:variable>
+<xsl:variable name="latex.admonition.path">xslt/figures</xsl:variable>
+<xsl:variable name="latex.hyphenation.tttricks">1</xsl:variable>
+<xsl:variable name="latex.use.tabularx">1</xsl:variable>
+<xsl:param name="latex.babel.language">english</xsl:param>
+<xsl:param name="ulink.url">1</xsl:param>
+
+<xsl:variable name="latex.book.preamble.post">\fancyhf{}
+\fancyhead[RE]{\slshape \rightmark}
+\fancyhead[LO]{\slshape \leftmark}
+\fancyfoot[R]{\thepage}
+</xsl:variable>
+
+<xsl:template match="//title/filename|//title/command">
+  <xsl:variable name="content">
+    <xsl:apply-templates/>
+  </xsl:variable>
+  <xsl:if test="$content != ''">
+    <xsl:value-of select="$content" />
+  </xsl:if>
+</xsl:template>
+
+</xsl:stylesheet>
+

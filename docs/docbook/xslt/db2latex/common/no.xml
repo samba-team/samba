@@ -1,0 +1,97 @@
+<localization language="no">
+
+<gentext key="abstract"                 text="Abstract"/>
+<gentext key="appendix"                 text="Tillegg"/>
+<gentext key="article"                  text=""/>
+<gentext key="bibliography"             text="Bibliografi"/>
+<gentext key="book"                     text=""/>
+<gentext key="caution"                  text="OBS"/>
+<gentext key="caution"                  text="Obs"/>
+<gentext key="chapter"                  text="Kapittel"/>
+<gentext key="copyright"                text="Copyright"/>
+<gentext key="dedication"               text="Dedikasjon"/>
+<gentext key="edition"                  text=""/>
+<gentext key="equation"                 text="Formel"/>
+<gentext key="example"                  text="Eksempel"/>
+<gentext key="figure"                   text="Figur"/>
+<gentext key="glosssee"                 text="Se"/>
+<gentext key="glossseealso"             text="Se Ogs&#x00E5;"/>
+<gentext key="glossary"                 text="Ordliste"/>
+<gentext key="important"                text="VIKTIG"/>
+<gentext key="isbn"                     text="ISBN"/>
+<gentext key="important"                text="Viktig"/>
+<gentext key="index"                    text="Indeks"/>
+<gentext key="legalnotice"              text=""/>
+<gentext key="msgaud"                   text="Publikum"/>
+<gentext key="msglevel"                 text="Niv&#x00E5;"/>
+<gentext key="msgorig"                  text="Opphav"/>
+<gentext key="note"                     text="NOTAT"/>
+<gentext key="note"                     text="Notat"/>
+<gentext key="part"                     text="Del"/>
+<gentext key="preface"                  text="Forord"/>
+<gentext key="procedure"                text="Prosedyre"/>
+<gentext key="published"                text=""/>
+<gentext key="refname"                  text="Navn"/>
+<gentext key="reference"                text="Referanse"/>
+<gentext key="revision"                 text="Revisjon"/>
+<gentext key="revhistory"               text="Revisjonshistorie"/>
+<gentext key="section"                  text="Seksjon"/>
+<gentext key="see"                      text="Se"/>
+<gentext key="seealso"                  text="Se Ogs&#x00E5;"/>
+<gentext key="set"                      text=""/>
+<gentext key="setindex"                 text="Indeks"/>
+<gentext key="sidebar"                  text=""/>
+<gentext key="step"                     text="Steg"/>
+<gentext key="tip"                      text="TIPS"/>
+<gentext key="table"                    text="Tabell"/>
+<gentext key="tip"                      text="Tips"/>
+<gentext key="warning"                  text="ADVARSEL"/>
+<gentext key="warning"                  text="Advarsel"/>
+<gentext key="appendix"                 text="Tillegg"/>
+<gentext key="chapter"                  text="Kapittel"/>
+<gentext key="section"                  text="seksjon"/>
+<gentext key="step"                     text="steg"/>
+<gentext key="seealso"                  text="Se ogs&#x00E5;"/>
+
+<gentext key="TableofContents"          text="Innholdsfortegnelse"/>
+<gentext key="in"                       text="i"/>
+<gentext key="by"                       text="av"/>
+<gentext key="Edited"                   text="Redigert"/>
+<gentext key="Editedby"                 text="Redigert av"/>
+<gentext key="and"                      text="og"/>
+<gentext key="Notes"                    text="Sluttnotater"/>
+<gentext key="TableNotes"               text="Notater"/>
+<gentext key="nonexistantelement"       text="ikke-eksisterende element"/>
+<gentext key="Pgs"                      text="Sdr."/>
+<gentext key="unsupported"              text="ikke st&#x2298;ttet"/>
+<gentext key="xrefto"                   text="xref til"/>
+<gentext key="unexpectedelementname"    text="UVENTET-ELEMENTNAVN"/>
+<gentext key="Revisedby"                text="Revised by: "/>
+
+<gentext key="ListofTables"             text="Tabelloversikt"/>
+<gentext key="ListofExamples"           text="Eksempeloversikt"/>
+<gentext key="ListofFigures"            text="Figuroversikt"/>
+<gentext key="ListofEquations"          text="Formeloversikt"/>
+<gentext key="ListofUnknown"            text="???-oversikt"/>
+
+<gentext key="nav-prev"                 text="Forrige"/>
+<gentext key="nav-prev-sibling"         text="Raskt Bakover"/>
+<gentext key="nav-next-sibling"         text="Raskt Fremover"/>
+<gentext key="nav-next"                 text="Neste"/>
+<gentext key="nav-up"                   text="Opp"/>
+<gentext key="nav-home"                 text="Hjem"/>
+
+<dingbat key="startquote" text="&#x201C;"/>
+<dingbat key="endquote" text="&#x201D;"/>
+<dingbat key="nestedstartquote" text="&#x2018;"/>
+<dingbat key="nestedendquote" text="&#x2019;"/>
+<dingbat key="bullet" text="&#2022;"/>
+
+<xref element="bibliography" text="%t"/>
+<xref element="chapter" text="%g %n, %t"/>
+<xref element="dedication" text="%t"/>
+<xref element="glossary" text="%t"/>
+<xref element="index" text="%t"/>
+<xref element="preface" text="%t"/>
+
+</localization>

@@ -1,0 +1,36 @@
+<chapter id="upgrading-to-3.0">
+<chapterinfo>
+	&author.jelmer;
+	<pubdate>25 October 2002</pubdate>
+</chapterinfo>
+
+<title>Issues when upgrading from 2.2 to 3.0</title>
+
+<sect1>
+<title>Charsets</title>
+
+<para>You might experience problems with special characters 
+when communicating with old DOS clients. Codepage 
+support has changed in samba 3.0. Read the chapter
+<link linkend="unicode">Unicode support</link> for details.
+</para>
+
+</sect1>
+
+<sect1>
+<title>Obsolete configuration options</title>
+
+<para>
+In 3.0, the following configuration options have been removed.
+</para>
+
+<simplelist>
+<member>printer driver (replaced by new driver procedures) </member>
+<member>printer driver file (replaced by new driver procedures)</member>
+<member>printer driver location (replaced by new driver procedures)</member>
+<member>use rhosts</member>
+<member>postscript</member>
+<member>client code page (replaced by dos charset)</member>
+</simplelist>
+</sect1>
+</chapter>
