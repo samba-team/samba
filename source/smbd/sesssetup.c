@@ -69,6 +69,37 @@ static void add_signature(char *outbuf)
 }
 
 /****************************************************************************
+send a security blob via a session setup reply
+****************************************************************************/
+static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
+				 DATA_BLOB blob, NTSTATUS nt_status)
+{
+	char *p;
+
+	set_message(outbuf,4,0,True);
+
+	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
+	   that we aren't finished yet */
+
+	nt_status = nt_status_squash(nt_status);
+	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
+	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
+	SSVAL(outbuf, smb_vwv3, blob.length);
+	p = smb_buf(outbuf);
+
+	/* should we cap this? */
+	memcpy(p, blob.data, blob.length);
+	p += blob.length;
+
+	p += srvstr_push(outbuf, p, "Unix", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, "Samba", -1, STR_TERMINATE);
+	p += srvstr_push(outbuf, p, lp_workgroup(), -1, STR_TERMINATE);
+	set_message_end(outbuf,p);
+
+	return send_smb(smbd_server_fd(),outbuf);
+}
+
+/****************************************************************************
  Do a 'guest' logon, getting back the 
 ****************************************************************************/
 static NTSTATUS check_guest_password(auth_serversupplied_info **server_info) 
@@ -210,31 +241,6 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 
 /****************************************************************************
-send a security blob via a session setup reply
-****************************************************************************/
-static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob, NTSTATUS nt_status)
-{
-	char *p;
-
-	set_message(outbuf,4,0,True);
-
-	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
-	   that we aren't finished yet */
-
-	nt_status = nt_status_squash(nt_status);
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(nt_status));
-	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
-	SSVAL(outbuf, smb_vwv3, blob.length);
-	p = smb_buf(outbuf);
-	memcpy(p, blob.data, blob.length);
-
-	add_signature(outbuf);
-	
-	return send_smb(smbd_server_fd(),outbuf);
-}
-
-/****************************************************************************
  send a session setup reply, wrapped in SPNEGO.
  get vuid and check first.
  end the NTLMSSP exchange context if we are OK/complete fail
@@ -243,6 +249,7 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 				 AUTH_NTLMSSP_STATE **auth_ntlmssp_state,
 				 DATA_BLOB *ntlmssp_blob, NTSTATUS nt_status) 
 {
+	BOOL ret;
 	DATA_BLOB response;
 	struct auth_serversupplied_info *server_info;
 	server_info = (*auth_ntlmssp_state)->server_info;
@@ -274,14 +281,14 @@ static BOOL reply_spnego_ntlmssp(connection_struct *conn, char *outbuf,
 	}
 
         response = spnego_gen_auth_response(ntlmssp_blob, nt_status);
-	reply_sesssetup_blob(conn, outbuf, response, nt_status);
+	ret = reply_sesssetup_blob(conn, outbuf, response, nt_status);
 	data_blob_free(&response);
 
-	if (!NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
+	if (!ret || !NT_STATUS_EQUAL(nt_status, NT_STATUS_MORE_PROCESSING_REQUIRED)) {
 		auth_ntlmssp_end(&global_ntlmssp_state);
 	}
 
-	return True;
+	return ret;
 }
 
 /****************************************************************************
