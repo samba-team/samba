@@ -127,13 +127,8 @@ extern int LIBPREFIX(fclose)      __P((FILE *));
 #include "common.h"
 #include "pathnames.h"
 
-#include <des.h>
-
-#include <krb.h>
-
-#include "krb4.h"
-
 #include "roken.h"
+#include "security.h"
 
 #if defined(__sun__) && !defined(__svr4)
 int fclose(FILE*);

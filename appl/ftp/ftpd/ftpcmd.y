@@ -42,73 +42,15 @@
 
 %{
 
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include "ftpd_locl.h"
 RCSID("$Id$");
-
-#ifdef HAVE_SYS_TYPES_H
-#include <sys/types.h>
-#endif
-
-#ifdef HAVE_SYS_PARAM_H
-#include <sys/param.h>
-#endif
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_SYS_STAT_H
-#include <sys/stat.h>
-#endif
-
-#ifdef HAVE_NETINET_IN_H
-#include <netinet/in.h>
-#endif
-#ifdef HAVE_ARPA_FTP_H
-#include <arpa/ftp.h>
-#endif
-
-#include <ctype.h>
-#include <errno.h>
-#include <glob.h>
-#ifdef HAVE_PWD_H
-#include <pwd.h>
-#endif
-#include <setjmp.h>
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#ifdef HAVE_SYSLOG_H
-#include <syslog.h>
-#endif
-#include <time.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif
-
-#ifdef HAVE_BSD_BSD_H
-#include <bsd/bsd.h>
-#endif
-
-#include <roken.h>
-
-#ifdef SOCKS
-#include <socks.h>
-extern int LIBPREFIX(fclose)      __P((FILE *));
-#endif
-
-#include "extern.h"
-#include "auth.h"
 
 off_t	restart_point;
 
 static	int cmd_type;
 static	int cmd_form;
 static	int cmd_bytesz;
-char	cbuf[512];
+char	cbuf[2048];
 char	*fromname;
 
 struct tab {
@@ -170,7 +112,7 @@ static int	 yylex (void);
 %token	<s> STRING
 %token	<i> NUMBER
 
-%type	<i> check_login check_login_no_guest octal_number byte_size
+%type	<i> check_login check_login_no_guest check_secure octal_number byte_size
 %type	<i> struct_code mode_code type_code form_code
 %type	<s> pathstring pathname password username
 
@@ -218,12 +160,17 @@ cmd
 		}
 	| MIC SP STRING CRLF
 		{
-			mic($3);
+			mec($3, prot_safe);
 			free($3);
 		}
 	| CONF SP STRING CRLF
 		{
-			conf($3);
+			mec($3, prot_confidential);
+			free($3);
+		}
+	| ENC SP STRING CRLF
+		{
+			mec($3, prot_private);
 			free($3);
 		}
 	| PASS SP password CRLF
@@ -704,11 +651,6 @@ rcmd
 			      (long)restart_point,
 			      "Send STORE or RETRIEVE to initiate transfer.");
 		}
-	| ENC SP STRING CRLF
-		{
-			enc($3);
-			free($3);
-		}
 	;
 
 username
@@ -893,19 +835,24 @@ check_login_no_guest : check_login
 		}
 	;
 
-check_login
-	: /* empty */
+check_login : check_secure
 		{
-		    if(auth_complete && prot_level == prot_clear){
-			reply(533, "Command protection level denied for paranoid reasons.");
-			$$ = 0;
-		    }else
-			if (logged_in)
-			    $$ = 1;
-			else {
+		    if($1) {
+			if(($$ = logged_in) == 0)
 			    reply(530, "Please login with USER and PASS.");
-			    $$ = 0;
-			}
+		    } else
+			$$ = 0;
+		}
+	;
+
+check_secure : /* empty */
+		{
+		    $$ = 1;
+		    if(sec_complete && !secure_command()) {
+			$$ = 0;
+			reply(533, "Command protection level denied "
+			      "for paranoid reasons.");
+		    }
 		}
 	;
 
@@ -1014,8 +961,6 @@ lookup(struct tab *p, char *cmd)
 	return (0);
 }
 
-#include <arpa/telnet.h>
-
 /*
  * getline - a hacked up version of fgets to ignore TELNET escape codes.
  */
@@ -1036,7 +981,6 @@ getline(char *s, int n)
 #endif
 	  return s;
 	}
-	prot_level = prot_clear;
 	while ((c = getc(stdin)) != EOF) {
 		c &= 0377;
 		if (c == IAC) {
@@ -1127,10 +1071,10 @@ yylex(void)
 				dologout(0);
 			}
 			alarm(0);
-#ifdef HASSETPROCTITLE
+#ifdef HAVE_SETPROCTITLE
 			if (strncasecmp(cbuf, "PASS", 4) != NULL)
 				setproctitle("%s: %s", proctitle, cbuf);
-#endif /* HASSETPROCTITLE */
+#endif
 			if ((cp = strchr(cbuf, '\r'))) {
 				*cp++ = '\n';
 				*cp = '\0';

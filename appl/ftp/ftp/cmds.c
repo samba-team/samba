@@ -1484,7 +1484,7 @@ disconnect(int argc, char **argv)
 	}
 	cout = NULL;
 	connected = 0;
-	krb4_quit();
+	sec_end();
 	data = -1;
 	if (!proxy) {
 		macnum = 0;

@@ -44,13 +44,24 @@ LIBROKEN= -L$(LIBTOP)/roken -lroken
 
 PROGS = ftpd$(EXECSUFFIX)
 
-ftpd_SOURCES = ftpd.c ftpcmd.c logwtmp.c popen.c auth.c krb4.c kauth.c
-ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o auth.o krb4.o kauth.o
+ftpd_SOURCES = ftpd.c ftpcmd.c logwtmp.c popen.c security.c krb4.c kauth.c
+ftpd_OBJS = ftpd.o ftpcmd.o logwtmp.o popen.o security.o krb4.o kauth.o
 
 SOURCES = $(ftpd_SOURCES)
 OBJECTS = $(ftpd_OBJS)
 
 all: $(PROGS)
+
+$(ftpd_OBJS): security.h
+
+security.c:
+	$(LN_S) $(srcdir)/../ftp/security.c .
+security.h:
+	$(LN_S) $(srcdir)/../ftp/security.h .
+krb4.c:
+	$(LN_S) $(srcdir)/../ftp/krb4.c .
+gssapi.c:
+	$(LN_S) $(srcdir)/../ftp/gssapi.c .
 
 .c.o:
 	$(CC) -c -I$(srcdir) -I$(srcdir)/../common -I$(INCTOP) $(DEFS) $(CFLAGS) $(CPPFLAGS) $<
@@ -77,8 +88,10 @@ ftpcmd.c: ftpcmd.y
 TAGS: $(SOURCES)
 	etags $(SOURCES)
 
+CLEANFILES = ftpd$(EXECSUFFIX) ftpcmd.c security.c security.h krb4.c gssapi.c
+
 clean cleandir:
-	rm -f *~ *.o core ftpd$(EXECSUFFIX) ftpcmd.c \#*
+	rm -f *~ *.o core \#* $(CLEANFILES)
 
 distclean: 
 	rm -f Makefile

@@ -174,7 +174,7 @@ lostpeer(int sig)
     }
     proxflag = 0;
     pswitch(0);
-    krb4_quit();
+    sec_end();
     SIGRETURN(0);
 }
 

@@ -177,7 +177,7 @@ login(char *host)
 
     user = pass = acct = 0;
 
-    if(do_klogin(host))
+    if(sec_login(host))
 	printf("\n*** Using plaintext user and password ***\n\n");
     else{
 	printf("Kerberos authentication successful.\n\n");
@@ -202,7 +202,7 @@ login(char *host)
     strcpy(username, user);
     n = command("USER %s", user);
     if (n == CONTINUE) {
-	if(auth_complete)
+	if(sec_complete)
 	    pass = myname;
 	else if (pass == NULL) {
 	    char prompt[128];
@@ -281,10 +281,7 @@ command(char *fmt, ...)
 	    vfprintf(stdout, fmt, ap);
 	va_start(ap, fmt);
     }
-    if(auth_complete)
-	krb4_write_enc(cout, fmt, ap);
-    else
-	vfprintf(cout, fmt, ap);
+    sec_vfprintf(cout, fmt, ap);
     va_end(ap);
     if(debug){
 	printf("\n");
@@ -348,16 +345,18 @@ getreply(int expecteof)
 	    if(isdigit(buf[0])){
 		sscanf(buf, "%d", &code);
 		if(code == 631){
-		    krb4_read_mic(buf);
+		    sec_read_msg(buf, prot_safe);
 		    sscanf(buf, "%d", &code);
 		    lead_string = "S:";
 		} else if(code == 632){
-		    krb4_read_enc(buf);
+		    sec_read_msg(buf, prot_private);
 		    sscanf(buf, "%d", &code);
 		    lead_string = "P:";
 		}else if(code == 633){
-		    printf("Received confidential reply!\n");
-		}else if(auth_complete)
+		    sec_read_msg(buf, prot_confidential);
+		    sscanf(buf, "%d", &code);
+		    lead_string = "C:";
+		}else if(sec_complete)
 		    lead_string = "!!";
 		else
 		    lead_string = "";
@@ -393,7 +392,7 @@ getreply(int expecteof)
 		}
 	    }else{
 		if(verbose > 0 || (verbose > -1 && code > 499)){
-		    if(auth_complete)
+		    if(sec_complete)
 			fprintf(stdout, "!!");
 		    fprintf(stdout, "%s\n", buf);
 		}
@@ -499,11 +498,13 @@ getreply(int expecteof)
 	    continue;
 	}
 	*cp = '\0';
-	if(auth_complete){
+	if(sec_complete){
 	    if(code == 631)
-		krb4_read_mic(reply_string);
-	    else
-		krb4_read_enc(reply_string);
+		sec_read_msg(reply_string, prot_safe);
+	    else if(code == 632)
+		sec_read_msg(reply_string, prot_private);
+	    else if(code == 633)
+		sec_read_msg(reply_string, prot_confidential);
 	    n = code / 100 + '0';
 	}
 
