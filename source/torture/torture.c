@@ -82,13 +82,13 @@ static struct cli_state *open_nbt_connection(void)
 	return cli;
 }
 
-BOOL torture_open_connection(struct cli_state **c)
+BOOL torture_open_connection_share(struct cli_state **c, 
+				   const char *hostname, 
+				   const char *sharename)
 {
 	BOOL retry;
 	int flags = 0;
 	NTSTATUS status;
-	char *host = lp_parm_string(-1, "torture", "host");
-	char *share = lp_parm_string(-1, "torture", "share");
 	char *username = lp_parm_string(-1, "torture", "username");
 	char *password = lp_parm_string(-1, "torture", "password");
 
@@ -96,8 +96,8 @@ BOOL torture_open_connection(struct cli_state **c)
 		flags |= CLI_FULL_CONNECTION_USE_KERBEROS;
 
 	status = cli_full_connection(c, lp_netbios_name(),
-				     host, NULL, 
-				     share, "?????", 
+				     hostname, NULL, 
+				     sharename, "?????", 
 				     username, username[0]?lp_workgroup():"",
 				     password, flags, &retry);
 	if (!NT_STATUS_IS_OK(status)) {
@@ -111,6 +111,16 @@ BOOL torture_open_connection(struct cli_state **c)
 
 	return True;
 }
+
+BOOL torture_open_connection(struct cli_state **c)
+{
+	char *host = lp_parm_string(-1, "torture", "host");
+	char *share = lp_parm_string(-1, "torture", "share");
+
+	return torture_open_connection_share(c, host, share);
+}
+
+
 
 BOOL torture_close_connection(struct cli_state *c)
 {
@@ -3699,6 +3709,30 @@ static BOOL run_deny3test(int dummy)
 	return True;
 }
 
+/*
+  parse a //server/share type UNC name
+*/
+static BOOL parse_unc(const char *unc_name, char **hostname, char **sharename)
+{
+	char *p;
+
+	if (strncmp(unc_name, "//", 2)) {
+		return False;
+	}
+
+	*hostname = strdup(&unc_name[2]);
+	p = strchr_m(&(*hostname)[2],'/');
+	if (!p) {
+		return False;
+	}
+	*p = 0;
+	*sharename = strdup(p+1);
+
+	return True;
+}
+
+
+
 static void sigcont(void)
 {
 }
@@ -3711,6 +3745,9 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 	int synccount;
 	int tries = 8;
 	double start_time_limit = 10 + (torture_nprocs * 1.5);
+	char **unc_list = NULL;
+	char *p;
+	int num_unc_names = 0;
 
 	synccount = 0;
 
@@ -3728,6 +3765,15 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 		return -1;
 	}
 
+	p = lp_parm_string(-1, "torture", "unclist");
+	if (p) {
+		unc_list = file_lines_load(p, &num_unc_names);
+		if (!unc_list || num_unc_names <= 0) {
+			printf("Failed to load unc names list from %s\n", p);
+			exit(1);
+		}
+	}
+
 	for (i = 0; i < torture_nprocs; i++) {
 		child_status[i] = 0;
 		child_status_out[i] = True;
@@ -3739,6 +3785,8 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 		procnum = i;
 		if (fork() == 0) {
 			char *myname;
+			char *hostname=NULL, *sharename;
+
 			pid_t mypid = getpid();
 			sys_srandom(((int)mypid) ^ ((int)time(NULL)));
 
@@ -3746,8 +3794,26 @@ double torture_create_procs(BOOL (*fn)(struct cli_state *, int), BOOL *result)
 			lp_set_cmdline("netbios name", myname);
 			free(myname);
 
+
+			if (unc_list) {
+				if (!parse_unc(unc_list[i % num_unc_names],
+					       &hostname, &sharename)) {
+					printf("Failed to parse UNC name %s\n",
+					       unc_list[i % num_unc_names]);
+					exit(1);
+				}
+			}
+
 			while (1) {
-				if (torture_open_connection(&current_cli)) break;
+				if (hostname) {
+					if (torture_open_connection_share(&current_cli,
+									  hostname, 
+									  sharename)) {
+						break;
+					}
+				} else if (torture_open_connection(&current_cli)) {
+						break;
+				}
 				if (tries-- == 0) {
 					printf("pid %d failed to start\n", (int)getpid());
 					_exit(1);
@@ -3997,6 +4063,7 @@ static void usage(void)
 	printf("\t-L use oplocks\n");
 	printf("\t-c CLIENT.TXT   specify client load file for NBENCH\n");
 	printf("\t-t timelimit    specify NBENCH time limit (seconds)\n");
+	printf("\t-C filename     specifies file with list of UNCs for connections\n");
 	printf("\t-A showall\n");
 	printf("\t-p port\n");
 	printf("\t-s seed\n");
@@ -4048,18 +4115,11 @@ static void usage(void)
 		lp_set_cmdline("torture:binding", argv[1]);
 	} else {
 		char *binding = NULL;
-		if (strncmp(argv[1], "//", 2)) {
+
+		if (!parse_unc(argv[1], &host, &share)) {
 			usage();
 		}
 
-		host = strdup(&argv[1][2]);
-		p = strchr_m(&host[2],'/');
-		if (!p) {
-			usage();
-		}
-		*p = 0;
-		share = strdup(p+1);
-		
 		lp_set_cmdline("torture:host", host);
 		lp_set_cmdline("torture:share", share);
 		lp_set_cmdline("torture:password", "");
@@ -4078,7 +4138,7 @@ static void usage(void)
 
 	srandom(time(NULL));
 
-	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:")) != EOF) {
+	while ((opt = getopt(argc, argv, "p:hW:U:n:N:O:o:e:m:Ld:Ac:ks:f:s:t:C:")) != EOF) {
 		switch (opt) {
 		case 'p':
 			lp_set_cmdline("smb ports", optarg);
@@ -4119,6 +4179,9 @@ static void usage(void)
 			break;
 		case 'c':
 			lp_set_cmdline("torture:loadfile", optarg);
+			break;
+		case 'C':
+			lp_set_cmdline("torture:unclist", optarg);
 			break;
 		case 't':
 			lp_set_cmdline("torture:timelimit", optarg);
