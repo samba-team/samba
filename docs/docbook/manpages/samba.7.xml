@@ -341,21 +341,14 @@
 	
 	<para>Contributors to the project are now too numerous 
 	to mention here but all deserve the thanks of all Samba 
-	users. To see a full list, look at <ulink
-	url="ftp://samba.org/pub/samba/alpha/change-log">
-	ftp://samba.org/pub/samba/alpha/change-log</ulink>
+	users. To see a full list, look at the
+	<filename>change-log</filename> in the source package 
 	for the pre-CVS changes and at <ulink 
-	url="ftp://samba.org/pub/samba/alpha/cvs.log">
-	ftp://samba.org/pub/samba/alpha/cvs.log</ulink>
+	url="http://cvs.samba.org/">
+	http://cvs.samba.org/</ulink>
 	for the contributors to Samba post-CVS. CVS is the Open Source 
 	source code control system used by the Samba Team to develop 
 	Samba. The project would have been unmanageable without it.</para>
-	
-	<para>In addition, several commercial organizations now help 
-	fund the Samba Team with money and equipment. For details see 
-	the Samba Web pages at <ulink
-	url="http://samba.org/samba/samba-thanks.html">
-	http://samba.org/samba/samba-thanks.html</ulink>.</para> 
 </refsect1>
 
 <refsect1>
