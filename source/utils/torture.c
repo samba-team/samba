@@ -2132,14 +2132,14 @@ static void run_deletetest(int dummy)
 	cli_unlink(&cli1, fname);
 
 	fnum1 = cli_nt_create_full(&cli1, fname, GENERIC_ALL_ACCESS, FILE_ATTRIBUTE_NORMAL,
-			FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE, FILE_OVERWRITE_IF, 0);
+			FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_OVERWRITE_IF, 0);
 
 	if (fnum1 == -1) {
 		printf("[3] open - 1 of %s failed (%s)\n", fname, cli_errstr(&cli1));
 		return;
 	}
 
-	/* This should fail with a sharing violation - SHARE_DELETE is only compatible
+	/* This should fail with a sharing violation - open for delete is only compatible
 	   with SHARE_DELETE. */
 
 	fnum2 = cli_nt_create_full(&cli1, fname, GENERIC_READ_ACCESS, FILE_ATTRIBUTE_NORMAL,
@@ -2230,6 +2230,57 @@ static void run_deletetest(int dummy)
         printf("[4] close - 2 failed (%s)\n", cli_errstr(&cli1));
         return;
     }
+
+	/* Test 5 ... */
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+    fnum1 = cli_open(&cli1, fname, O_RDWR|O_CREAT, DENY_NONE);
+	if (fnum1 == -1) {
+		printf("[5] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	/* This should fail - only allowed on NT opens with DELETE access. */
+
+	if (cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[5] setting delete_on_close on OpenX file succeeded - should fail !\n");
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[5] close - 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	printf("fifth delete on close test succeeded.\n");
+
+	/* Test 6 ... */
+	cli_setatr(&cli1, fname, 0, 0);
+	cli_unlink(&cli1, fname);
+
+	fnum1 = cli_nt_create_full(&cli1, fname, FILE_READ_DATA|FILE_WRITE_DATA,
+			FILE_ATTRIBUTE_NORMAL, FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,
+			FILE_OVERWRITE_IF, 0);
+								
+	if (fnum1 == -1) {
+		printf("[6] open of %s failed (%s)\n", fname, cli_errstr(&cli1));
+		return;
+	}
+
+	/* This should fail - only allowed on NT opens with DELETE access. */
+
+	if (cli_nt_delete_on_close(&cli1, fnum1, True)) {
+        printf("[6] setting delete_on_close on file with no delete access succeeded - should fail !\n");
+        return;
+    }
+
+    if (!cli_close(&cli1, fnum1)) {
+        printf("[6] close - 2 failed (%s)\n", cli_errstr(&cli1));
+        return;
+    }
+
+	printf("sixth delete on close test succeeded.\n");
 
 	cli_setatr(&cli1, fname, 0, 0);
 	cli_unlink(&cli1, fname);
