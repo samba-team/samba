@@ -1,3 +1,8 @@
+2003-12-03  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/crypto.c (decrypt_internal_derived): move up padsize to
+	avoid memory leak
+
 2003-12-02  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* lib/krb5/crypto.c: require cipher-text to be padded to padsize
