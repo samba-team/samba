@@ -244,6 +244,13 @@ static BOOL wbinfo_lookupname(char *name)
 	struct winbindd_request request;
 	struct winbindd_response response;
 
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(name, *lp_winbind_separator()))
+		return False;
+
 	/* Send off request */
 
 	ZERO_STRUCT(request);
@@ -270,6 +277,13 @@ static BOOL wbinfo_auth(char *username)
 	struct winbindd_response response;
         enum winbindd_result result;
         char *p;
+
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(username, *lp_winbind_separator()))
+		return False;
 
 	/* Send off request */
 
@@ -305,6 +319,13 @@ static BOOL wbinfo_auth_crap(char *username)
         enum winbindd_result result;
         fstring pass;
         char *p;
+
+	/*
+	 * Don't do the lookup if the name has no separator.
+	 */
+ 
+	if (!strchr(username, *lp_winbind_separator()))
+		return False;
 
 	/* Send off request */
 
