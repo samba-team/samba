@@ -479,7 +479,7 @@ static NTSTATUS gensec_spnego_update(struct gensec_security *gensec_security, TA
 			spnego_out.type = SPNEGO_NEG_TOKEN_INIT;
 			spnego_out.negTokenInit.mechTypes = mechlist;
 			spnego_out.negTokenInit.reqFlags = 0;
-			spnego_out.negTokenInit.mechListMIC = data_blob(mechListMIC, strlen(mechListMIC));
+			spnego_out.negTokenInit.mechListMIC = data_blob_string_const(mechListMIC);
 			spnego_out.negTokenInit.mechToken = unwrapped_out;
 			
 			if (spnego_write_data(out_mem_ctx, out, &spnego_out) == -1) {
