@@ -285,6 +285,7 @@ bucket (number of entries now = %d)\n",
        share_array[num_entries_copied].share_mode = entry_scanner_p->share_mode;
 #ifdef USE_OPLOCKS
        share_array[num_entries_copied].op_port = entry_scanner_p->op_port;
+       share_array[num_entries_copied].op_type = entry_scanner_p->op_type;
 #endif /* USE_OPLOCKS */
        memcpy(&share_array[num_entries_copied].time, &entry_scanner_p->time,
               sizeof(struct timeval));
@@ -464,7 +465,7 @@ dev = %d, inode = %d in hash bucket %d\n", dev, inode, hash_entry));
 /*******************************************************************
 set the share mode of a file. Return False on fail, True on success.
 ********************************************************************/
-BOOL set_share_mode(share_lock_token token, int fnum, uint16 port)
+BOOL set_share_mode(share_lock_token token, int fnum, uint16 port, uint16 op_type)
 {
   files_struct *fs_p = &Files[fnum];
   int32 dev, inode;
@@ -557,6 +558,7 @@ inode %d in hash bucket %d\n", fs_p->name, dev, inode, hash_entry));
   new_entry_p->share_mode = fs_p->share_mode;
 #ifdef USE_OPLOCKS
   new_entry_p->op_port = port;
+  new_entry_p->op_type = op_type;
 #endif /* USE_OPLOCKS */
   memcpy( (char *)&new_entry_p->time, (char *)&fs_p->open_time, sizeof(struct timeval));
 
@@ -892,6 +894,7 @@ it left a share mode entry with mode 0x%X in share file %s\n",
     share_array[num_entries_copied].pid = pid;
 #ifdef USE_OPLOCKS
     share_array[num_entries_copied].op_port = SVAL(p,SME_PORT_OFFSET);
+    share_array[num_entries_copied].op_type = SVAL(p,SME_OPLOCK_TYPE_OFFSET);
 #endif /* USE_OPLOCKS */
 
     num_entries_copied++;
@@ -939,6 +942,7 @@ position 0 for share mode file %s (%s)\n", fname, strerror(errno)));
       SIVAL(p,SME_USEC_OFFSET,share_array[i].time.tv_usec);
 #ifdef USE_OPLOCKS
       SIVAL(p,SME_PORT_OFFSET,share_array[i].op_port);
+      SIVAL(p,SME_OPLOCK_TYPE_OFFSET,share_array[i].op_type);
 #endif /* USE_OPLOCKS */
     }
 
@@ -1120,7 +1124,7 @@ mode file %s to size %d (%s)\n", fname, newsize, strerror(errno)));
 /*******************************************************************
 set the share mode of a file
 ********************************************************************/
-BOOL set_share_mode(share_lock_token token,int fnum, uint16 port)
+BOOL set_share_mode(share_lock_token token,int fnum, uint16 port, uint16 op_type)
 {
   files_struct *fs_p = &Files[fnum];
   pstring fname;
@@ -1222,6 +1226,7 @@ deleting it.\n", fname));
   SIVAL(p,SME_PID_OFFSET,pid);
 #ifdef USE_OPLOCKS
   SSVAL(p,SME_PORT_OFFSET,port);
+  SSVAL(p,SME_OPLOCK_TYPE_OFFSET,op_type);
 #endif /* USE_OPLOCKS */
 
   num_entries++;

@@ -299,13 +299,13 @@ BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token tok
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token, int fnum, uint16 port);
+BOOL set_share_mode(share_lock_token token, int fnum, uint16 port, uint16 op_type);
 BOOL lock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token *ptok);
 BOOL unlock_share_entry(int cnum, uint32 dev, uint32 inode, share_lock_token token);
 int get_share_modes(int cnum, share_lock_token token, uint32 dev, uint32 inode, 
                     min_share_mode_entry **old_shares);
 void del_share_mode(share_lock_token token, int fnum);
-BOOL set_share_mode(share_lock_token token,int fnum, uint16 port);
+BOOL set_share_mode(share_lock_token token,int fnum, uint16 port, uint16 op_type);
 
 /*The following definitions come from  mangle.c  */
 
@@ -707,8 +707,10 @@ int fd_attempt_close(file_fd_struct *fd_ptr);
 void sync_file(int fnum);
 void close_file(int fnum);
 BOOL check_file_sharing(int cnum,char *fname);
+int check_share_mode( min_share_mode_entry *share, int deny_mode, char *fname,
+                      BOOL fcbopen, int *flags);
 void open_file_shared(int fnum,int cnum,char *fname,int share_mode,int ofun,
-		      int mode,int *Access,int *action);
+		      int mode,int oplock_request, int *Access,int *action);
 int seek_file(int fnum,uint32 pos);
 int read_file(int fnum,char *data,uint32 pos,int n);
 int write_file(int fnum,char *data,int n);
@@ -979,3 +981,5 @@ void file_unlock(int fd);
 BOOL is_myname(char *s);
 void set_remote_arch(enum remote_arch_types type);
 enum remote_arch_types get_remote_arch();
+void fstrcpy(char *dest, char *src);
+void pstrcpy(char *dest, char *src);

@@ -166,7 +166,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   char *params = *pparams;
   int16 open_mode = SVAL(params, 2);
   int16 open_attr = SVAL(params,6);
-  BOOL oplock_request = BITSETW(params,1);
+  BOOL oplock_request = (((SVAL(params,0)|(1<<1))>>1) | ((SVAL(params,0)|(1<<2))>>1));
 #if 0
   BOOL return_additional_info = BITSETW(params,0);
   int16 open_sattr = SVAL(params, 4);
@@ -213,7 +213,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
       
       
   open_file_shared(fnum,cnum,fname,open_mode,open_ofun,unixmode,
-		   &rmode,&smb_action);
+		   oplock_request, &rmode,&smb_action);
       
   if (!Files[fnum].open)
   {
@@ -252,7 +252,7 @@ static int call_trans2open(char *inbuf, char *outbuf, int bufsize, int cnum,
   SSVAL(params,12,rmode);
 
   if (oplock_request && lp_fake_oplocks(SNUM(cnum))) {
-    smb_action |= (1<<15);
+    smb_action |= EXTENDED_OPLOCK_GRANTED;
   }
 
   SSVAL(params,18,smb_action);

@@ -127,7 +127,7 @@ int reply_open_pipe_and_X(char *inbuf,char *outbuf,int length,int bufsize)
   unixmode = unix_mode(cnum,smb_attr);
       
   open_file_shared(fnum,cnum,fname,smb_mode,smb_ofun,unixmode,
-		   &rmode,&smb_action);
+		   0, &rmode,&smb_action);
       
   if (!Files[fnum].open)
   {
