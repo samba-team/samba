@@ -60,7 +60,7 @@
  * Instead, all routines call "dbm_next" instead.
  */
 
-#ifndef NDBM
+#if !defined(NDBM) && !defined(HAVE_DB_H)
 typedef char DBM;
 
 #define dbm_open(file, flags, mode) ((dbminit(file) == 0)?"":((char *)0))
