@@ -1,3 +1,7 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* telnet/commands.c (*): handle ai_canonname not being set
+
 1999-12-04  Assar Westerlund  <assar@sics.se>
 
 	* telnetd/telnetd.c (doit): use getnameinfo_verified

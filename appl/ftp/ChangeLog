@@ -1,3 +1,9 @@
+1999-12-16  Assar Westerlund  <assar@sics.se>
+
+	* ftp/ruserpass.c (guess_domain): handle ai_canonname not being
+	set
+	* ftp/ftp.c (hookup): handle ai_canonname not being set
+
 1999-12-06  Assar Westerlund  <assar@sics.se>
 
 	* ftp/krb4.c (krb4_auth): the nat-IP address might not be realm
