@@ -21,6 +21,7 @@
 
 #include "includes.h"
 
+#define TEST_USERNAME "samrtorturetest"
 
 static BOOL test_QueryUserInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			       struct policy_handle *handle);
@@ -278,7 +279,7 @@ static BOOL test_CreateUser(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	struct samr_Name name;
 	BOOL ret = True;
 
-	init_samr_Name(&name, "samrtorturetest");
+	init_samr_Name(&name, TEST_USERNAME);
 
 	r.in.handle = handle;
 	r.in.username = &name;
@@ -657,19 +658,24 @@ static BOOL test_QueryDisplayInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	NTSTATUS status;
 	struct samr_QueryDisplayInfo r;
 	BOOL ret = True;
+	uint16 levels[] = {1, 2, 3, 4, 5};
+	int i;
 
-	printf("Testing QueryDisplayInfo\n");
+	for (i=0;i<ARRAY_SIZE(levels);i++) {
+		printf("Testing QueryDisplayInfo level %u\n", levels[i]);
 
-	r.in.handle = handle;
-	r.in.level = 1;
-	r.in.start_idx = 0;
-	r.in.max_entries = 100;
-	r.in.buf_size = (uint32)-1;
+		r.in.handle = handle;
+		r.in.level = levels[i];
+		r.in.start_idx = 0;
+		r.in.max_entries = 1000;
+		r.in.buf_size = (uint32)-1;
 
-	status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
-	if (!NT_STATUS_IS_OK(status)) {
-		printf("QueryDisplayInfo failed - %s\n", nt_errstr(status));
-		return False;
+		status = dcerpc_samr_QueryDisplayInfo(p, mem_ctx, &r);
+		if (!NT_STATUS_IS_OK(status)) {
+			printf("QueryDisplayInfo level %u failed - %s\n", 
+			       levels[i], nt_errstr(status));
+			ret = False;
+		}
 	}
 	
 	return ret;	

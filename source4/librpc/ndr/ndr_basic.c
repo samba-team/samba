@@ -338,6 +338,22 @@ NTSTATUS ndr_push_unistr(struct ndr_push *ndr, const char *s)
 }
 
 /*
+  push a comformant, variable ascii string onto the wire from a C string
+  TODO: need to look at what charset this should be in
+*/
+NTSTATUS ndr_push_ascstr(struct ndr_push *ndr, const char *s)
+{
+	ssize_t len = s?strlen(s):0;
+	NDR_CHECK(ndr_push_uint32(ndr, len));
+	NDR_CHECK(ndr_push_uint32(ndr, 0));
+	NDR_CHECK(ndr_push_uint32(ndr, len?len+1:0));
+	if (s) {
+		NDR_CHECK(ndr_push_bytes(ndr, s, len));
+	}
+	return NT_STATUS_OK;
+}
+
+/*
   push a comformant, variable ucs2 string onto the wire from a C string
   don't send the null
 */
@@ -379,6 +395,29 @@ NTSTATUS ndr_pull_unistr(struct ndr_pull *ndr, const char **s)
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 	*s = as;
+	return NT_STATUS_OK;
+}
+
+/*
+  pull a comformant, variable ascii string from the wire into a C string
+  TODO: check what charset this is in
+*/
+NTSTATUS ndr_pull_ascstr(struct ndr_pull *ndr, const char **s)
+{
+	uint32 len1, ofs, len2;
+	char *as;
+
+	NDR_CHECK(ndr_pull_uint32(ndr, &len1));
+	NDR_CHECK(ndr_pull_uint32(ndr, &ofs));
+	NDR_CHECK(ndr_pull_uint32(ndr, &len2));
+	if (len2 > len1) {
+		return NT_STATUS_INVALID_PARAMETER;
+	}
+	NDR_ALLOC_N(ndr, as, (len1+1));
+	NDR_CHECK(ndr_pull_bytes(ndr, as, len2));
+	as[len2] = 0;
+	as[len1] = 0;
+	(*s) = as;
 	return NT_STATUS_OK;
 }
 
@@ -494,6 +533,11 @@ void ndr_print_unistr(struct ndr_print *ndr, const char *name, const char *s)
 }
 
 void ndr_print_unistr_noterm(struct ndr_print *ndr, const char *name, const char *s)
+{
+	ndr_print_unistr(ndr, name, s);
+}
+
+void ndr_print_ascstr(struct ndr_print *ndr, const char *name, const char *s)
 {
 	ndr_print_unistr(ndr, name, s);
 }
@@ -701,27 +745,6 @@ NTSTATUS ndr_pull_DATA_BLOB(struct ndr_pull *ndr, DATA_BLOB *blob)
 	NDR_PULL_NEED_BYTES(ndr, length);
 	*blob = data_blob_talloc(ndr->mem_ctx, ndr->data+ndr->offset, length);
 	ndr->offset += length;
-	return NT_STATUS_OK;
-}
-
-
-/*
-  parse a policy handle
-*/
-NTSTATUS ndr_pull_policy_handle(struct ndr_pull *ndr, 
-				struct policy_handle *r)
-{
-	NDR_CHECK(ndr_pull_bytes(ndr, r->data, 20));
-	return NT_STATUS_OK;
-}
-
-/*
-  push a policy handle
-*/
-NTSTATUS ndr_push_policy_handle(struct ndr_push *ndr, 
-				struct policy_handle *r)
-{
-	NDR_CHECK(ndr_push_bytes(ndr, r->data, 20));
 	return NT_STATUS_OK;
 }
 
