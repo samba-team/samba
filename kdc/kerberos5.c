@@ -996,13 +996,8 @@ as_rep(KDC_REQ *req,
 	copy_HostAddresses(b->addresses, et.caddr);
     }
     
-    {
-	krb5_data empty_string;
-      
-	krb5_data_zero(&empty_string); 
-	et.transited.tr_type = DOMAIN_X500_COMPRESS;
-	et.transited.contents = empty_string;
-    }
+    et.transited.tr_type = DOMAIN_X500_COMPRESS;
+    krb5_data_zero(&et.transited.contents); 
      
     copy_EncryptionKey(&et.key, &ek.key);
 
@@ -1212,32 +1207,34 @@ check_tgs_flags(KDC_REQ_BODY *b, EncTicketPart *tgt, EncTicketPart *et)
 
 static krb5_error_code
 fix_transited_encoding(TransitedEncoding *tr, 
+		       EncTicketPart *et, 
+		       KDCOptions *f,
 		       const char *client_realm, 
 		       const char *server_realm, 
 		       const char *tgt_realm)
 {
     krb5_error_code ret = 0;
-    if(strcmp(client_realm, tgt_realm) && strcmp(server_realm, tgt_realm)){
-	char **realms = NULL, **tmp;
-	int num_realms = 0;
-	int i;
-	if(tr->tr_type && tr->contents.length != 0) {
-	    if(tr->tr_type != DOMAIN_X500_COMPRESS){
-		kdc_log(0, "Unknown transited type: %u", 
-			tr->tr_type);
-		return KRB5KDC_ERR_TRTYPE_NOSUPP;
-	    }
-	    ret = krb5_domain_x500_decode(context, 
-					  tr->contents,
-					  &realms, 
-					  &num_realms,
-					  client_realm,
-					  server_realm);
-	    if(ret){
-		krb5_warn(context, ret, "Decoding transited encoding");
-		return ret;
-	    }
-	}
+    char **realms, **tmp;
+    int num_realms;
+    int i;
+
+    if(tr->tr_type != DOMAIN_X500_COMPRESS) {
+	kdc_log(0, "Unknown transited type: %u", tr->tr_type);
+	return KRB5KDC_ERR_TRTYPE_NOSUPP;
+    }
+
+    ret = krb5_domain_x500_decode(context, 
+				  tr->contents,
+				  &realms, 
+				  &num_realms,
+				  client_realm,
+				  server_realm);
+    if(ret){
+	krb5_warn(context, ret, "Decoding transited encoding");
+	return ret;
+    }
+    if(strcmp(client_realm, tgt_realm) && strcmp(server_realm, tgt_realm)) {
+	/* not us, so add the previous realm to transited set */
 	if (num_realms < 0 || num_realms + 1 > UINT_MAX/sizeof(*realms)) {
 	    ret = ERANGE;
 	    goto free_realms;
@@ -1254,16 +1251,41 @@ fix_transited_encoding(TransitedEncoding *tr,
 	    goto free_realms;
 	}
 	num_realms++;
-	free_TransitedEncoding(tr);
-	tr->tr_type = DOMAIN_X500_COMPRESS;
-	ret = krb5_domain_x500_encode(realms, num_realms, &tr->contents);
-	if(ret)
-	    krb5_warn(context, ret, "Encoding transited encoding");
-    free_realms:
-	for(i = 0; i < num_realms; i++)
-	    free(realms[i]);
-	free(realms);
     }
+    if(!f->disable_transited_check) {
+	ret = krb5_check_transited(context, client_realm, 
+				   server_realm, 
+				   realms, num_realms, NULL);
+	if(ret) {
+	    size_t l = 0;
+	    char *rs;
+	    krb5_warn(context, ret, "cross-realm from %s to %s", 
+		      client_realm, server_realm);
+	    for(i = 0; i < num_realms; i++)
+		l += strlen(realms[i]) + 2;
+	    rs = malloc(l);
+	    if(rs != NULL) {
+		*rs = '\0';
+		for(i = 0; i < num_realms; i++) {
+		    if(i > 0)
+			strlcat(rs, ", ", l);
+		    strlcat(rs, realms[i], l);
+		}
+		krb5_warnx(context, "transited realms: %s", rs);
+		free(rs);
+	    }
+	    
+	    goto free_realms;
+	}
+	et->flags.transited_policy_checked = 1;
+    }
+    ret = krb5_domain_x500_encode(realms, num_realms, &et->transited.contents);
+    if(ret)
+	krb5_warn(context, ret, "Encoding transited encoding");
+  free_realms:
+    for(i = 0; i < num_realms; i++)
+	free(realms[i]);
+    free(realms);
     return ret;
 }
 
@@ -1331,8 +1353,7 @@ tgs_make_reply(KDC_REQ_BODY *b,
     if(ret)
 	goto out;
 
-    copy_TransitedEncoding(&tgt->transited, &et.transited);
-    ret = fix_transited_encoding(&et.transited,
+    ret = fix_transited_encoding(&tgt->transited, &et, &f, 
 				 *krb5_princ_realm(context, client_principal),
 				 *krb5_princ_realm(context, server->principal),
 				 *krb5_princ_realm(context, krbtgt->principal));
