@@ -135,13 +135,20 @@ krb5_compare_creds(krb5_context context, krb5_flags whichfields,
 		   const krb5_creds *mcreds, const krb5_creds *creds)
 {
     krb5_boolean match;
+    krb5_error_code (*matchfun)(krb5_context, 
+				krb5_const_principal, 
+				krb5_const_principal);
 
     if(whichfields & KRB5_TC_DONT_MATCH_REALM)
-	match = krb5_principal_compare_any_realm(context, 
-						 mcreds->server, 
-						 creds->server);
+	matchfun = krb5_principal_compare_any_realm;
     else
-	match = krb5_principal_compare(context, mcreds->server, creds->server);
+	matchfun = krb5_principal_compare;
+
+    match = (*matchfun)(context, mcreds->server, creds->server);
+
+    if (match && mcreds->client)
+	match = (*matchfun)(context, mcreds->client, creds->client);
+
     if(match && (whichfields & KRB5_TC_MATCH_KEYTYPE) &&
        !krb5_enctypes_compatible_keys (context,
 				       mcreds->session.keytype,
