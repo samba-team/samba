@@ -40,17 +40,23 @@
 
 RCSID("$Id$");
 
-void
+int
 copy_general_string (const general_string *from, general_string *to)
 {
     *to = malloc(strlen(*from) + 1);
+    if(*to == NULL)
+	return ENOMEM;
     strcpy(*to, *from);
+    return 0;
 }
 
-void
+int
 copy_octet_string (const octet_string *from, octet_string *to)
 {
     to->length = from->length;
     to->data = malloc(to->length);
+    if(to->data == NULL)
+	return ENOMEM;
     memcpy(to->data, from->data, to->length);
+    return 0;
 }
