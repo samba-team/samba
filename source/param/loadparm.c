@@ -280,7 +280,6 @@ typedef struct
 	BOOL bDebugPid;
 	BOOL bDebugUid;
 	BOOL bHostMSDfs;
-	BOOL bUnicode;
 	BOOL bUseMmap;
 	BOOL bHostnameLookups;
 	BOOL bUnixExtensions;
@@ -880,7 +879,6 @@ static struct parm_struct parm_table[] = {
 	{"large readwrite", P_BOOL, P_GLOBAL, &Globals.bLargeReadwrite, NULL, NULL, FLAG_ADVANCED}, 
 	{"max protocol", P_ENUM, P_GLOBAL, &Globals.maxprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
 	{"min protocol", P_ENUM, P_GLOBAL, &Globals.minprotocol, NULL, enum_protocol, FLAG_ADVANCED}, 
-	{"unicode", P_BOOL, P_GLOBAL, &Globals.bUnicode, NULL, NULL, FLAG_ADVANCED}, 
 	{"read bmpx", P_BOOL, P_GLOBAL, &Globals.bReadbmpx, NULL, NULL, FLAG_ADVANCED}, 
 	{"read raw", P_BOOL, P_GLOBAL, &Globals.bReadRaw, NULL, NULL, FLAG_ADVANCED}, 
 	{"write raw", P_BOOL, P_GLOBAL, &Globals.bWriteRaw, NULL, NULL, FLAG_ADVANCED}, 
@@ -1420,7 +1418,6 @@ static void init_globals(void)
 	Globals.bPamPasswordChange = False;
 	Globals.bPasswdChatDebug = False;
 	Globals.iPasswdChatTimeout = 2; /* 2 second default. */
-	Globals.bUnicode = True;	/* Do unicode on the wire by default */
 	Globals.bNTPipeSupport = True;	/* Do NT pipes by default. */
 	Globals.bNTStatusSupport = True; /* Use NT status by default. */
 	Globals.bStatCache = True;	/* use stat cache by default */
@@ -1735,7 +1732,6 @@ FN_GLOBAL_BOOL(lp_pam_password_change, &Globals.bPamPasswordChange)
 FN_GLOBAL_BOOL(lp_unix_password_sync, &Globals.bUnixPasswdSync)
 FN_GLOBAL_BOOL(lp_passwd_chat_debug, &Globals.bPasswdChatDebug)
 FN_GLOBAL_INTEGER(lp_passwd_chat_timeout, &Globals.iPasswdChatTimeout)
-FN_GLOBAL_BOOL(lp_unicode, &Globals.bUnicode)
 FN_GLOBAL_BOOL(lp_nt_pipe_support, &Globals.bNTPipeSupport)
 FN_GLOBAL_BOOL(lp_nt_status_support, &Globals.bNTStatusSupport)
 FN_GLOBAL_BOOL(lp_stat_cache, &Globals.bStatCache)
