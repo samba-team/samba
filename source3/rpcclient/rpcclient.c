@@ -155,6 +155,23 @@ static void read_authfile (
 	return;
 }
 
+static char* next_command (char** cmdstr)
+{
+	static pstring 		command;
+	char			*p;
+	
+	if (!cmdstr || !(*cmdstr))
+		return NULL;
+	
+	p = strchr(*cmdstr, ';');
+	if (p)
+		*p = '\0';
+	pstrcpy(command, *cmdstr);
+	*cmdstr = p;
+	
+	return command;
+}
+
 static void get_username (char *username)
 {
         if (getenv("USER"))
@@ -648,18 +665,17 @@ static void usage(char *pname)
 		cmd_set++;
 	}
 
-	/* Do anything specified with -c */
-
-	if (cmdstr[0]) {
-		fstring cmd;
-		char 	*p = cmdstr;
-
-		while(next_token(&p, cmd, ";", sizeof(fstring))) {
-			process_cmd(&cli, cmd);
-		}
-
-		return 0;
-	}
+        /* Do anything specified with -c */
+        if (cmdstr[0]) {
+                char    *cmd;
+                char    *p = cmdstr;
+ 
+                while((cmd=next_command(&p)) != NULL) {
+                        process_cmd(&cli, cmd);
+                }
+ 
+                return 0;
+        }
 
 	/* Loop around accepting commands */
 
