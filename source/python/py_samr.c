@@ -38,7 +38,72 @@ static void py_samr_connect_hnd_dealloc(PyObject* self)
 	PyObject_Del(self);
 }
 
+PyObject *new_samr_domain_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
+				     POLICY_HND *pol)
+{
+	samr_domain_hnd_object *o;
+
+	o = PyObject_New(samr_domain_hnd_object, &samr_domain_hnd_type);
+
+	o->cli = cli;
+	o->mem_ctx = mem_ctx;
+	memcpy(&o->domain_pol, pol, sizeof(POLICY_HND));
+
+	return (PyObject*)o;
+}
+
+static PyObject *samr_open_domain(PyObject *self, PyObject *args, PyObject *kw)
+{
+	samr_connect_hnd_object *connect_hnd = (samr_connect_hnd_object *)self;
+	static char *kwlist[] = { "sid", "access", NULL };
+	uint32 desired_access = MAXIMUM_ALLOWED_ACCESS;
+	char *sid_str;
+	DOM_SID sid;
+	TALLOC_CTX *mem_ctx = NULL;
+	POLICY_HND domain_pol;
+	NTSTATUS ntstatus;
+	PyObject *result = NULL;
+
+	if (!PyArg_ParseTupleAndKeywords(
+		    args, kw, "s|i", kwlist, &sid_str, &desired_access))
+		return NULL;
+
+	if (!string_to_sid(&sid, sid_str)) {
+		PyErr_SetString(PyExc_TypeError, "string is not a sid");
+		return NULL;
+	}
+
+	if (!(mem_ctx = talloc_init())) {
+		PyErr_SetString(samr_error, "unable to init talloc context");
+		return NULL;
+	}
+
+	ntstatus = cli_samr_open_domain(
+		connect_hnd->cli, mem_ctx, &connect_hnd->connect_pol,
+		desired_access, &sid, &domain_pol);
+					
+	if (!NT_STATUS_IS_OK(ntstatus)) {
+		PyErr_SetObject(samr_ntstatus, py_ntstatus_tuple(ntstatus));
+		goto done;
+	}
+
+	result = new_samr_domain_hnd_object(
+		connect_hnd->cli, mem_ctx, &domain_pol);
+
+done:
+	if (!result) {
+		if (mem_ctx)
+			talloc_destroy(mem_ctx);
+	}
+
+	return result;
+}
+
 static PyMethodDef samr_connect_methods[] = {
+	{ "open_domain", (PyCFunction)samr_open_domain,
+	  METH_VARARGS | METH_KEYWORDS,
+	  "Open a handle on a domain" },
+
 	{ NULL }
 };
 
@@ -74,7 +139,7 @@ PyObject *new_samr_connect_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx
 
 	o->cli = cli;
 	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+	memcpy(&o->connect_pol, pol, sizeof(POLICY_HND));
 
 	return (PyObject*)o;
 }
@@ -112,20 +177,6 @@ PyTypeObject samr_domain_hnd_type = {
 	0,          /*tp_as_mapping*/
 	0,          /*tp_hash */
 };
-
-PyObject *new_samr_domain_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-				      POLICY_HND *pol)
-{
-	samr_domain_hnd_object *o;
-
-	o = PyObject_New(samr_domain_hnd_object, &samr_domain_hnd_type);
-
-	o->cli = cli;
-	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
-
-	return (PyObject*)o;
-}
 
 /* SAMR user handle object */
 
@@ -170,7 +221,7 @@ PyObject *new_samr_user_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	o->cli = cli;
 	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+	memcpy(&o->user_pol, pol, sizeof(POLICY_HND));
 
 	return (PyObject*)o;
 }
@@ -218,7 +269,7 @@ PyObject *new_samr_group_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	o->cli = cli;
 	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+	memcpy(&o->group_pol, pol, sizeof(POLICY_HND));
 
 	return (PyObject*)o;
 }
@@ -266,7 +317,7 @@ PyObject *new_samr_alias_hnd_object(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 	o->cli = cli;
 	o->mem_ctx = mem_ctx;
-	memcpy(&o->pol, pol, sizeof(POLICY_HND));
+	memcpy(&o->alias_pol, pol, sizeof(POLICY_HND));
 
 	return (PyObject*)o;
 }
@@ -286,6 +337,13 @@ static PyObject *samr_connect(PyObject *self, PyObject *args, PyObject *kw)
 		    args, kw, "s|Oi", kwlist, &server, &creds,
 		    &desired_access)) 
 		return NULL;
+
+	if (server[0] != '\\' || server[1] != '\\') {
+		PyErr_SetString(PyExc_ValueError, "UNC name required");
+		return NULL;
+	}
+
+	server += 2;
 
 	if (creds && creds != Py_None && !PyDict_Check(creds)) {
 		PyErr_SetString(PyExc_TypeError, 
@@ -322,7 +380,7 @@ done:
 			cli_shutdown(cli);
 
 		if (mem_ctx)
-			talloc_destroy(cli);
+			talloc_destroy(mem_ctx);
 	}
 
 	return result;
