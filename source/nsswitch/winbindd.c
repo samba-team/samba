@@ -82,7 +82,7 @@ void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
 	info = talloc_describe_all(ctx);
 	if (info)
 		DEBUG(10,(info));
-	message_send_pid(src_pid, MSG_POOL_USAGE, info, info ? strlen(info) : 0, True);
+	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1: 0, True);
 	talloc_destroy(ctx);
 }
 
@@ -917,7 +917,7 @@ int main(int argc, char **argv)
 		exit(1);
 	}
 
-	message_register(MSG_REQ_POOL_USAGE, return_all_talloc_info);
+	message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
 	/* Loop waiting for requests */
 

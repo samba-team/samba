@@ -36,7 +36,7 @@ static struct {
 	{"close-share", MSG_SMB_FORCE_TDIS},
 	{"printnotify", MSG_PRINTER_NOTIFY2 },
 	{"drvupgrade", MSG_PRINTER_DRVUPGRADE},
-	{"tallocdump", MSG_REQ_POOL_USAGE},
+	{"tallocdump", MSG_REQ_TALLOC_USAGE},
 	{NULL, -1}
 };
 
@@ -297,13 +297,13 @@ static BOOL do_command(char *dest, char *msg_name, int iparams, char **params)
 		}
 		break;
 
-	case MSG_REQ_POOL_USAGE:
+	case MSG_REQ_TALLOC_USAGE:
 		if (!poolusage_registered) {
-		    message_register(MSG_POOL_USAGE, tallocdump_function);
+		    message_register(MSG_TALLOC_USAGE, tallocdump_function);
 		    poolusage_registered = True;
 		}
 		got_pool = False;
-		retval = send_message(dest, MSG_REQ_POOL_USAGE, NULL, 0, True);
+		retval = send_message(dest, MSG_REQ_TALLOC_USAGE, NULL, 0, True);
 		if (retval) {
 			timeout_start = time(NULL);
 			while (!got_pool) {

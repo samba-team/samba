@@ -113,7 +113,7 @@ void return_all_talloc_info(int msg_type, pid_t src_pid, void *buf, size_t len)
 	info = talloc_describe_all(ctx);
 	if (info)
 		DEBUG(10,(info));
-	message_send_pid(src_pid, MSG_POOL_USAGE, info, info ? strlen(info) : 0, True);
+	message_send_pid(src_pid, MSG_TALLOC_USAGE, info, info ? strlen(info) + 1 : 0, True);
 	talloc_destroy(ctx);
 }
 
@@ -835,7 +835,7 @@ static void usage(char *pname)
   message_register(MSG_FORCE_ELECTION, nmbd_message_election);
   message_register(MSG_WINS_NEW_ENTRY, nmbd_wins_new_entry);
   message_register(MSG_SHUTDOWN, nmbd_terminate);
-  message_register(MSG_REQ_POOL_USAGE, return_all_talloc_info);
+  message_register(MSG_REQ_TALLOC_USAGE, return_all_talloc_info);
 
   DEBUG( 3, ( "Opening sockets %d\n", global_nmb_port ) );
 
