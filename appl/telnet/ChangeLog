@@ -1,3 +1,10 @@
+2005-03-23  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* telnetd/telnetd.c: remove setting of DES_check_key, all code
+	uses DES_set_key_checked
+
+	* libtelnet/enc_des.c: use DES_set_key_checked
+	
 2005-01-09  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* telnet/telnet.c: cast argument to toupper to unsigned char
