@@ -12,6 +12,7 @@ typedef struct {
 	int ldap_port;
 	char *bind_path;
 	time_t last_attempt;
+	char *password;
 } ADS_STRUCT;
 
 

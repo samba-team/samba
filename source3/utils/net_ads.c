@@ -44,7 +44,7 @@ static ADS_STRUCT *ads_startup(void)
 {
 	ADS_STRUCT *ads;
 	int rc;
-	ads = ads_init(NULL, NULL, NULL);
+	ads = ads_init(NULL, NULL, NULL, NULL);
 
 	rc = ads_connect(ads);
 	if (rc) {

@@ -70,6 +70,10 @@ int ads_connect(ADS_STRUCT *ads)
 	}
 	ldap_set_option(ads->ld, LDAP_OPT_PROTOCOL_VERSION, &version);
 
+	if (ads->password) {
+		kerberos_kinit_password(ads);
+	}
+
 	rc = ldap_sasl_interactive_bind_s(ads->ld, NULL, NULL, NULL, NULL, 
 					  LDAP_SASL_QUIET,
 					  sasl_interact, NULL);

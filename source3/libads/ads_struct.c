@@ -134,7 +134,8 @@ static char *find_ldap_server(ADS_STRUCT *ads)
 */
 ADS_STRUCT *ads_init(const char *realm, 
 		     const char *ldap_server,
-		     const char *bind_path)
+		     const char *bind_path,
+		     const char *password)
 {
 	ADS_STRUCT *ads;
 	
@@ -145,6 +146,7 @@ ADS_STRUCT *ads_init(const char *realm,
 	ads->ldap_server = ldap_server? strdup(ldap_server) : NULL;
 	ads->bind_path = bind_path? strdup(bind_path) : NULL;
 	ads->ldap_port = LDAP_PORT;
+	if (password) ads->password = strdup(password);
 
 	if (!ads->realm) {
 		ads->realm = strdup(lp_realm());
@@ -181,6 +183,7 @@ void ads_destroy(ADS_STRUCT **ads)
 		SAFE_FREE((*ads)->ldap_server);
 		SAFE_FREE((*ads)->kdc_server);
 		SAFE_FREE((*ads)->bind_path);
+		SAFE_FREE((*ads)->password);
 		ZERO_STRUCTP(*ads);
 		SAFE_FREE(*ads);
 	}
