@@ -357,9 +357,11 @@ getreply(int expecteof)
 		    return code / 100;
 		}
 	    }else{
-		if(auth_complete)
-		    fprintf(stdout, "!!");
-		fprintf(stdout, "%s\n", buf);
+		if(verbose > 0 || (verbose > -1 && code > 499)){
+		    if(auth_complete)
+			fprintf(stdout, "!!");
+		    fprintf(stdout, "%s\n", buf);
+		}
 	    }
 	    p = buf;
 	    continue;
