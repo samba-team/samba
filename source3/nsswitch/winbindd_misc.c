@@ -140,6 +140,9 @@ enum winbindd_result winbindd_list_trusted_domains(struct winbindd_cli_state
 
 	DEBUG(3, ("[%5d]: list trusted domains\n", state->pid));
 
+        if (domain_list == NULL)
+                get_domain_info();
+
 	for(domain = domain_list; domain; domain = domain->next) {
 
 		/* Skip own domain */

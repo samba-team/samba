@@ -302,6 +302,9 @@ enum winbindd_result winbindd_setpwent(struct winbindd_cli_state *state)
         
         /* Create sam pipes for each domain we know about */
         
+        if (domain_list == NULL)
+                get_domain_info();
+
         for(tmp = domain_list; tmp != NULL; tmp = tmp->next) {
                 struct getent_state *domain_state;
                 
@@ -607,6 +610,9 @@ enum winbindd_result winbindd_list_users(struct winbindd_cli_state *state)
 	/* Enumerate over trusted domains */
 
 	ctr.sam.info1 = &info1;
+
+        if (domain_list == NULL)
+                get_domain_info();
 
 	for (domain = domain_list; domain; domain = domain->next) {
 		NTSTATUS status;
