@@ -48,16 +48,16 @@ int detach_from_console = -1;
 #define DETACH_IS_DEFAULT FALSE
 #endif
 
-static char *system_cache_name = NULL;
-static char *system_keytab = NULL;
-static char *system_principal = NULL;
-static char *system_server = NULL;
-static char *system_perms = NULL;
-static char *system_user = NULL;
-static char *system_group = NULL;
+static const char *system_cache_name = NULL;
+static const char *system_keytab = NULL;
+static const char *system_principal = NULL;
+static const char *system_server = NULL;
+static const char *system_perms = NULL;
+static const char *system_user = NULL;
+static const char *system_group = NULL;
 
-static char *renew_life = NULL;
-static char *ticket_life = NULL;
+static const char *renew_life = NULL;
+static const char *ticket_life = NULL;
 
 int name_constraints = -1;
 
@@ -197,11 +197,21 @@ static int parse_owners(kcm_ccache ccache)
     return 0;
 }
 
+static const char *
+kcm_system_config_get_string(const char *string)
+{
+    return krb5_config_get_string(kcm_context, NULL, "kcm",
+				  "system_ccache", string, NULL);
+}
+
 static krb5_error_code
 ccache_init_system(void)
 {
     kcm_ccache ccache;
     krb5_error_code ret;
+
+    if (system_cache_name == NULL)
+	system_cache_name = kcm_system_config_get_string("cc_name");
 
     ret = kcm_ccache_new(kcm_context,
 			 system_cache_name ? system_cache_name : "SYSTEM",
@@ -222,6 +232,9 @@ ccache_init_system(void)
 	return ret;
     }
 
+    if (system_server == NULL)
+	system_server = kcm_system_config_get_string("server");
+
     if (system_server != NULL) {
 	ret = krb5_parse_name(kcm_context, system_server, &ccache->server);
 	if (ret) {
@@ -229,6 +242,9 @@ ccache_init_system(void)
 	    return ret;
 	}
     }
+
+    if (system_keytab == NULL)
+	system_keytab = kcm_system_config_get_string("keytab_name");
 
     if (system_keytab != NULL) {
 	ret = krb5_kt_resolve(kcm_context, system_keytab, &ccache->key.keytab);
@@ -241,6 +257,9 @@ ccache_init_system(void)
     }
 
     if (renew_life == NULL)
+	renew_life = kcm_system_config_get_string("renew_life");
+
+    if (renew_life == NULL)
 	renew_life = "1 month";
 
     if (renew_life != NULL) {
@@ -251,6 +270,9 @@ ccache_init_system(void)
 	}
     }
 
+    if (ticket_life == NULL)
+	ticket_life = kcm_system_config_get_string("ticket_life");
+
     if (ticket_life != NULL) {
 	ccache->tkt_life = parse_time(ticket_life, "s");
 	if (ccache->tkt_life < 0) {
@@ -258,6 +280,9 @@ ccache_init_system(void)
 	    return EINVAL;
 	}
     }
+
+    if (system_perms == NULL)
+	system_perms = kcm_system_config_get_string("mode");
 
     if (system_perms != NULL) {
 	int mode;
@@ -327,6 +352,10 @@ kcm_configure(int argc, char **argv)
 				    NULL);
 	if(p)
 	    max_request = parse_bytes(p, NULL);
+    }
+
+    if (system_principal == NULL) {
+	system_principal = kcm_system_config_get_string("principal");
     }
 
     if (system_principal != NULL) {

@@ -243,6 +243,10 @@ kcm_password_key_proc(krb5_context context,
     krb5_error_code ret;
     struct kcm_keyseed_data *s = (struct kcm_keyseed_data *)keyseed;
 
+    /* we may be called multiple times */
+    krb5_free_salt(context, s->salt);
+    krb5_data_zero(&s->salt.saltvalue);
+
     /* stash the salt */
     s->salt.salttype = salt.salttype;
 
@@ -285,7 +289,10 @@ get_salt_and_kvno(krb5_context context,
 
     memset(&creds, 0, sizeof(creds));
     memset(&reply, 0, sizeof(reply));
-    memset(&s, 0, sizeof(s));
+
+    s.password = NULL;
+    s.salt.salttype = ETYPE_NULL;
+    krb5_data_zero(&s.salt.saltvalue);
 
     *kvno = 0;
     kcm_internal_ccache(context, ccache, &ccdata);
@@ -495,7 +502,7 @@ change_pw_and_update_keytab(krb5_context context,
 
     /* Add SPN aliases, if any */
     spns = krb5_config_get_strings(context, NULL, "kcm",
-				   "spn_aliases", NULL);
+				   "system_ccache", "spn_aliases", NULL);
     if (spns != NULL) {
 	for (i = 0; spns[i] != NULL; i++) {
 	    ret = update_keytab_entries(context, ccache, etypes, cpn,
