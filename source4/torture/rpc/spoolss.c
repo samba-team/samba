@@ -122,26 +122,6 @@ BOOL test_GetForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 			printf("No form info returned");
 			return False;
 		}
-
-		{
-			struct spoolss_AddForm af;
-			struct spoolss_AddFormInfo1 form;
-
-			af.in.handle = handle;
-			af.in.level = 1;
-			form.flags = 2;
-			form.name = "testform3";
-			form.width = r.out.info->info1.width;
-			form.length = r.out.info->info1.length;
-			form.left = r.out.info->info1.left;
-			form.top = r.out.info->info1.top;
-			form.right = r.out.info->info1.right;
-			form.bottom = r.out.info->info1.bottom;
-			af.in.info.info1 = &form;
-
-			status = dcerpc_spoolss_AddForm(
-				p, mem_ctx, &af);
-		}
 	}
 
 	return True;
@@ -203,6 +183,66 @@ BOOL test_EnumForms(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
 		printf("EnumForms failed - %s/%s\n", 
 		       nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL test_DeleteForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		     struct policy_handle *handle, char *formname)
+{
+	NTSTATUS status;
+	struct spoolss_DeleteForm r;
+
+	r.in.handle = handle;
+	r.in.formname = formname;
+
+	status = dcerpc_spoolss_DeleteForm(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status) || !W_ERROR_IS_OK(r.out.result)) {
+		printf("DeleteForm failed - %s/%s\n", 
+		       nt_errstr(status), win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+BOOL test_AddForm(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+		  struct policy_handle *handle)
+{
+	struct spoolss_AddForm r;
+	struct spoolss_AddFormInfo1 form;
+	NTSTATUS status;
+	char *formname = "testform3";
+
+	r.in.handle = handle;
+	r.in.level = 1;
+	form.flags = 2;		/* User form */
+	form.name = formname;
+	form.width = 1;
+	form.length = 2;
+	form.left = 3;
+	form.top = 4;
+	form.right = 5;
+	form.bottom = 6;
+	r.in.info.info1 = &form;
+	
+	status = dcerpc_spoolss_AddForm(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("AddForm failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("AddForm failed - %s\n", nt_errstr(status));
+		/* Fall through to delete form */
+	}
+
+	if (!test_DeleteForm(p, mem_ctx, handle, formname)) {
+		printf("DeleteForm failed\n");
 		return False;
 	}
 
@@ -335,6 +375,10 @@ static BOOL test_OpenPrinterEx(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	}
 
 	if (!test_EnumForms(p, mem_ctx, &handle)) {
+		ret = False;
+	}
+
+	if (!test_AddForm(p, mem_ctx, &handle)) {
 		ret = False;
 	}
 
