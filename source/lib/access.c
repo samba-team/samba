@@ -201,6 +201,15 @@ BOOL allow_access(char *deny_list,char *allow_list,
 	client[0] = cname;
 	client[1] = caddr;  
 
+	/* if it is loopback then always allow unless specifically denied */
+	if (strcmp(caddr, "127.0.0.1") == 0) {
+		if (deny_list && 
+		    list_match(deny_list,(char *)client,client_match)) {
+			return False;
+		}
+		return True;
+	}
+
 	/* if theres no deny list and no allow list then allow access */
 	if ((!deny_list || *deny_list == 0) && 
 	    (!allow_list || *allow_list == 0)) {
