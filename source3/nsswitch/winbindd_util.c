@@ -341,7 +341,7 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 
 /* Given a domain sid, return the struct winbindd domain info for it */
 
-struct winbindd_domain *find_our_domain()
+struct winbindd_domain *find_our_domain(void)
 {
 	struct winbindd_domain *domain;
 
