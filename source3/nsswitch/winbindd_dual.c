@@ -35,7 +35,7 @@
 #define DBGC_CLASS DBGC_WINBIND
 
 extern BOOL opt_dual_daemon;
-BOOL backgroud_process = False;
+BOOL background_process = False;
 int dual_daemon_pipe = -1;
 
 
@@ -82,7 +82,7 @@ void dual_select(fd_set *fds)
 		return;
 	}
 
-	n = write(dual_daemon_pipe, 
+	n = sys_write(dual_daemon_pipe, 
 		  &dual_list->data[dual_list->offset],
 		  dual_list->length - dual_list->offset);
 
@@ -114,7 +114,7 @@ void dual_send_request(struct winbindd_cli_state *state)
 {
 	struct dual_list *list;
 
-	if (!backgroud_process) return;
+	if (!background_process) return;
 
 	list = malloc(sizeof(*list));
 	if (!list) return;
@@ -132,7 +132,7 @@ void dual_send_request(struct winbindd_cli_state *state)
 		dual_list_end = list;
 	}
 
-	backgroud_process = False;
+	background_process = False;
 }
 
 
