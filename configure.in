@@ -222,7 +222,6 @@ AC_CHECK_HEADERS(sys/sysctl.h sys/time.h sys/timeb.h sys/times.h)
 AC_CHECK_HEADERS(sys/termio.h sys/tty.h sys/types.h sys/uio.h sys/un.h)
 AC_CHECK_HEADERS(sys/utsname.h sys/wait.h syslog.h termio.h)
 AC_CHECK_HEADERS(termios.h time.h tmpdir.h unistd.h util.h utmp.h utmpx.h)
-AC_CHECK_HEADERS(winsock.h)
 
 if test "$ac_cv_header_err_h" = no; then
 	EXTRA_HDRS="$EXTRA_HDRS err.h"
@@ -240,7 +239,7 @@ AC_FIND_FUNC(gethostbyname, nsl)
 AC_FIND_FUNC(syslog, syslog)
 
 AC_FIND_FUNC_NO_LIBS(logwtmp, util)
-AC_FIND_FUNC_NO_LIBS(tgetent, termcap)
+AC_FIND_FUNC_NO_LIBS(tgetent, termcap ncurses curses)
 AC_FIND_FUNC(gethostbyname2, inet6 ip6)
 AC_FIND_FUNC(inet_ntop, inet6 ip6)
 AC_CHECK_FUNCS(inet_pton)
@@ -264,7 +263,7 @@ AC_SUBST(DBLIB)dnl
 AC_CHECK_FUNCS(_getpty _scrsize asnprintf asprintf dn_expand fcntl)
 AC_CHECK_FUNCS(gethostname getlogin)
 AC_CHECK_FUNCS(getmsg getrlimit getspnam getspuid gettimeofday getuid)
-AC_CHECK_FUNCS(grantpt mktime ptsname rand random)
+AC_CHECK_FUNCS(grantpt innetgr mktime ptsname rand random)
 AC_CHECK_FUNCS(revoke res_search select setitimer setlogin setpcred setpgid)
 AC_CHECK_FUNCS(setregid setresgid setresuid setreuid setutent)
 AC_CHECK_FUNCS(setsid setsockopt sigaction strstr)
@@ -293,7 +292,7 @@ fi
 
 AC_BROKEN(chown daemon err errx fchown flock fnmatch getcwd)
 AC_BROKEN(getdtablesize getopt getusershell inet_aton)
-AC_BROKEN(initgroups innetgr iruserok lstat memmove mkstemp)
+AC_BROKEN(initgroups iruserok lstat memmove mkstemp)
 AC_BROKEN(putenv rcmd readv setegid setenv setenv seteuid)
 AC_BROKEN(seteuid strcasecmp strncasecmp strcpy_truncate strdup strerror)
 AC_BROKEN(strftime strlwr strnlen strsep strtok_r strupr swab)
