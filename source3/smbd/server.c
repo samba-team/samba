@@ -38,8 +38,6 @@ extern pstring user_socket_options;
 extern int dcelogin_atmost_once;
 #endif /* WITH_DFS */
 
-extern fstring remote_machine;
-
 /* really we should have a top level context structure that has the
    client file descriptor as an element. That would require a major rewrite :(
 
@@ -133,7 +131,7 @@ static BOOL open_sockets_inetd(void)
 	smbd_set_server_fd(dup(0));
 	
 	/* close our standard file descriptors */
-	close_low_fds();
+	close_low_fds(False); /* Don't close stderr */
 	
 	set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 	set_socket_options(smbd_server_fd(), user_socket_options);
@@ -151,13 +149,15 @@ static void msg_exit_server(int msg_type, pid_t src, void *buf, size_t len)
  Open the socket communication.
 ****************************************************************************/
 
-static BOOL open_sockets(BOOL is_daemon,int port)
+static BOOL open_sockets_smbd(BOOL is_daemon,const char *smb_ports)
 {
 	int num_interfaces = iface_count();
+	int num_sockets = 0;
 	int fd_listenset[FD_SETSIZE];
 	fd_set listen_set;
 	int s;
 	int i;
+	char *ports;
 
 	if (!is_daemon) {
 		return open_sockets_inetd();
@@ -176,72 +176,105 @@ static BOOL open_sockets(BOOL is_daemon,int port)
 
 	/* Stop zombies */
 	CatchChild();
-		
-		
+				
 	FD_ZERO(&listen_set);
 
-	if(lp_interfaces() && lp_bind_interfaces_only()) {
+	/* use a reasonable default set of ports - listing on 445 and 139 */
+	if (!smb_ports) {
+		ports = lp_smb_ports();
+		if (!ports || !*ports) {
+			ports = SMB_PORTS;
+		}
+		ports = strdup(ports);
+	} else {
+		ports = strdup(smb_ports);
+	}
+
+	if (lp_interfaces() && lp_bind_interfaces_only()) {
 		/* We have been given an interfaces line, and been 
 		   told to only bind to those interfaces. Create a
 		   socket per interface and bind to only these.
 		*/
 		
-		if(num_interfaces > FD_SETSIZE) {
-			DEBUG(0,("open_sockets: Too many interfaces specified to bind to. Number was %d \
-max can be %d\n", 
-				 num_interfaces, FD_SETSIZE));
-			return False;
-		}
-		
 		/* Now open a listen socket for each of the
 		   interfaces. */
 		for(i = 0; i < num_interfaces; i++) {
 			struct in_addr *ifip = iface_n_ip(i);
-			
+			fstring tok;
+			char *ptr;
+
 			if(ifip == NULL) {
-				DEBUG(0,("open_sockets: interface %d has NULL IP address !\n", i));
+				DEBUG(0,("open_sockets_smbd: interface %d has NULL IP address !\n", i));
 				continue;
 			}
-			s = fd_listenset[i] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
-			if(s == -1)
-				return False;
 
-			/* ready to listen */
-			set_socket_options(s,"SO_KEEPALIVE"); 
-			set_socket_options(s,user_socket_options);
+			for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+				unsigned port = atoi(tok);
+				if (port == 0) continue;
+				s = fd_listenset[num_sockets] = open_socket_in(SOCK_STREAM, port, 0, ifip->s_addr, True);
+				if(s == -1)
+					return False;
+
+				/* ready to listen */
+				set_socket_options(s,"SO_KEEPALIVE"); 
+				set_socket_options(s,user_socket_options);
       
-			if (listen(s, 5) == -1) {
-				DEBUG(0,("listen: %s\n",strerror(errno)));
-				close(s);
-				return False;
+				if (listen(s, 5) == -1) {
+					DEBUG(0,("listen: %s\n",strerror(errno)));
+					close(s);
+					return False;
+				}
+				FD_SET(s,&listen_set);
+
+				num_sockets++;
+				if (num_sockets >= FD_SETSIZE) {
+					DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
+					return False;
+				}
 			}
-			FD_SET(s,&listen_set);
 		}
 	} else {
 		/* Just bind to 0.0.0.0 - accept connections
 		   from anywhere. */
+
+		fstring tok;
+		char *ptr;
+
 		num_interfaces = 1;
 		
-		/* open an incoming socket */
-		s = open_socket_in(SOCK_STREAM, port, 0,
-				   interpret_addr(lp_socket_address()),True);
-		if (s == -1)
-			return(False);
+		for (ptr=ports; next_token(&ptr, tok, NULL, sizeof(tok)); ) {
+			unsigned port = atoi(tok);
+			if (port == 0) continue;
+			/* open an incoming socket */
+			s = open_socket_in(SOCK_STREAM, port, 0,
+					   interpret_addr(lp_socket_address()),True);
+			if (s == -1)
+				return(False);
 		
-		/* ready to listen */
-		set_socket_options(s,"SO_KEEPALIVE"); 
-		set_socket_options(s,user_socket_options);
+			/* ready to listen */
+			set_socket_options(s,"SO_KEEPALIVE"); 
+			set_socket_options(s,user_socket_options);
+			
+			if (listen(s, 5) == -1) {
+				DEBUG(0,("open_sockets_smbd: listen: %s\n",
+					 strerror(errno)));
+				close(s);
+				return False;
+			}
 
-		if (listen(s, 5) == -1) {
-			DEBUG(0,("open_sockets: listen: %s\n",
-				 strerror(errno)));
-			close(s);
-			return False;
+			fd_listenset[num_sockets] = s;
+			FD_SET(s,&listen_set);
+
+			num_sockets++;
+
+			if (num_sockets >= FD_SETSIZE) {
+				DEBUG(0,("open_sockets_smbd: Too many sockets to bind to\n"));
+				return False;
+			}
 		}
-		
-		fd_listenset[0] = s;
-		FD_SET(s,&listen_set);
 	} 
+
+	SAFE_FREE(ports);
 
         /* Listen to messages */
 
@@ -293,7 +326,7 @@ max can be %d\n",
 			socklen_t in_addrlen = sizeof(addr);
 			
 			s = -1;
-			for(i = 0; i < num_interfaces; i++) {
+			for(i = 0; i < num_sockets; i++) {
 				if(FD_ISSET(fd_listenset[i],&lfds)) {
 					s = fd_listenset[i];
 					/* Clear this so we don't look
@@ -309,7 +342,7 @@ max can be %d\n",
 				continue;
 			
 			if (smbd_server_fd() == -1) {
-				DEBUG(0,("open_sockets: accept: %s\n",
+				DEBUG(0,("open_sockets_smbd: accept: %s\n",
 					 strerror(errno)));
 				continue;
 			}
@@ -318,16 +351,20 @@ max can be %d\n",
 				/* Child code ... */
 				
 				/* close the listening socket(s) */
-				for(i = 0; i < num_interfaces; i++)
+				for(i = 0; i < num_sockets; i++)
 					close(fd_listenset[i]);
 				
 				/* close our standard file
 				   descriptors */
-				close_low_fds();
+				close_low_fds(False);
 				am_parent = 0;
 				
 				set_socket_options(smbd_server_fd(),"SO_KEEPALIVE");
 				set_socket_options(smbd_server_fd(),user_socket_options);
+				
+				/* this is needed so that we get decent entries
+				   in smbstatus for port 445 connects */
+				set_remote_machine_name(get_socket_addr(smbd_server_fd()));
 				
 				/* Reset global variables in util.c so
 				   that client substitutions will be
@@ -382,8 +419,6 @@ BOOL reload_services(BOOL test)
 {
 	BOOL ret;
 	
-	set_register_printer_fn();
-
 	if (lp_loaded()) {
 		pstring fname;
 		pstrcpy(fname,lp_configfile());
@@ -611,7 +646,7 @@ static void usage(char *pname)
 	BOOL is_daemon = False;
 	BOOL interactive = False;
 	BOOL specified_logfile = False;
-	int port = SMB_PORT;
+	char *ports = NULL;
 	int opt;
 	pstring logfile;
 
@@ -666,7 +701,7 @@ static void usage(char *pname)
 			break;
 
 		case 'p':
-			port = atoi(optarg);
+			ports = optarg;
 			break;
 
 		case 'h':
@@ -705,7 +740,7 @@ static void usage(char *pname)
 		lp_set_logfile(logfile);
 	}
 
-	fstrcpy(remote_machine, "smbd");
+	set_remote_machine_name("smbd");
 
 	setup_logging(argv[0],interactive);
 
@@ -773,11 +808,6 @@ static void usage(char *pname)
 
 	init_structs();
 
-	/* don't call winbind for our domain if we are the DC */
-	if (lp_domain_logons()) {
-		winbind_exclude_domain(lp_workgroup());
-	}
-	
 #ifdef WITH_PROFILE
 	if (!profile_setup(False)) {
 		DEBUG(0,("ERROR: failed to setup profiling\n"));
@@ -839,12 +869,14 @@ static void usage(char *pname)
 	   start_background_queue(); 
 	*/
 
-	if (!open_sockets(is_daemon,port))
+	if (!open_sockets_smbd(is_daemon,ports))
 		exit(1);
 
 	/*
 	 * everything after this point is run after the fork()
 	 */ 
+
+	namecache_enable();
 
 	if (!locking_init(0))
 		exit(1);
@@ -888,6 +920,13 @@ static void usage(char *pname)
 	/* Setup change notify */
 	if (!init_change_notify())
 		exit(1);
+
+	/* re-initialise the timezone */
+	TimeInit();
+
+	/* register our message handlers */
+	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
+	talloc_init_named("dummy!");
 
 	smbd_process();
 	

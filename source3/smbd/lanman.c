@@ -443,7 +443,7 @@ static void fill_printjob_info(connection_struct *conn, int snum, int uLevel,
   /* the client expects localtime */
   t -= TimeDiff(t);
 
-  PACKI(desc,"W",queue->job); /* uJobId */
+  PACKI(desc,"W",pjobid_to_rap(snum,queue->job)); /* uJobId */
   if (uLevel == 1) {
     PACKS(desc,"B21",queue->fs_user); /* szUserName */
     PACKS(desc,"B","");		/* pad */
@@ -933,7 +933,7 @@ static BOOL api_DosPrintQGetInfo(connection_struct *conn,
 	if (!mdrcnt && lp_disable_spoolss())
 		desc.errcode = ERRbuftoosmall;
  
-    *rdata_len = desc.usedlen;
+	*rdata_len = desc.usedlen;
 	*rparam_len = 6;
 	*rparam = REALLOC(*rparam,*rparam_len);
 	SSVALS(*rparam,0,desc.errcode);
@@ -2181,11 +2181,14 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	int jobid, errcode;
+	uint32 jobid;
+	int snum;
+	int errcode;
 	extern struct current_user current_user;
 	WERROR werr = WERR_OK;
 
-	jobid = SVAL(p,0);
+	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+		return False;
 
 	/* check it's a supported varient */
 	if (!(strcsequal(str1,"W") && strcsequal(str2,"")))
@@ -2195,7 +2198,7 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	*rparam = REALLOC(*rparam,*rparam_len);	
 	*rdata_len = 0;
 
-	if (!print_job_exists(jobid)) {
+	if (!print_job_exists(snum, jobid)) {
 		errcode = NERR_JobNotFound;
 		goto out;
 	}
@@ -2204,15 +2207,15 @@ static BOOL api_RDosPrintJobDel(connection_struct *conn,uint16 vuid, char *param
 	
 	switch (function) {
 	case 81:		/* delete */ 
-		if (print_job_delete(&current_user, jobid, &werr)) 
+		if (print_job_delete(&current_user, snum, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 82:		/* pause */
-		if (print_job_pause(&current_user, jobid, &werr)) 
+		if (print_job_pause(&current_user, snum, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	case 83:		/* resume */
-		if (print_job_resume(&current_user, jobid, &werr)) 
+		if (print_job_resume(&current_user, snum, jobid, &werr)) 
 			errcode = NERR_Success;
 		break;
 	}
@@ -2313,12 +2316,14 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	char *str1 = param+2;
 	char *str2 = skip_string(str1,1);
 	char *p = skip_string(str2,1);
-	int jobid;
+	uint32 jobid;
+	int snum;
 	int uLevel = SVAL(p,2);
 	int function = SVAL(p,4);
 	int place, errcode;
 
-	jobid = SVAL(p,0);
+	if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+		return False;
 	*rparam_len = 4;
 	*rparam = REALLOC(*rparam,*rparam_len);
   
@@ -2329,7 +2334,7 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 	    (!check_printjob_info(&desc,uLevel,str2)))
 		return(False);
 
-	if (!print_job_exists(jobid)) {
+	if (!print_job_exists(snum, jobid)) {
 		errcode=NERR_JobNotFound;
 		goto out;
 	}
@@ -2341,14 +2346,14 @@ static BOOL api_PrintJobInfo(connection_struct *conn,uint16 vuid,char *param,cha
 		/* change job place in the queue, 
 		   data gives the new place */
 		place = SVAL(data,0);
-		if (print_job_set_place(jobid, place)) {
+		if (print_job_set_place(snum, jobid, place)) {
 			errcode=NERR_Success;
 		}
 		break;
 
 	case 0xb:   
 		/* change print job name, data gives the name */
-		if (print_job_set_name(jobid, data)) {
+		if (print_job_set_name(snum, jobid, data)) {
 			errcode=NERR_Success;
 		}
 		break;
@@ -2994,7 +2999,7 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   int count;
   int i;
   int snum;
-  int job;
+  uint32 jobid;
   struct pack_desc desc;
   print_queue_struct *queue=NULL;
   print_status_struct status;
@@ -3011,14 +3016,14 @@ static BOOL api_WPrintJobGetInfo(connection_struct *conn,uint16 vuid, char *para
   if (strcmp(str1,"WWrLh") != 0) return False;
   if (!check_printjob_info(&desc,uLevel,str2)) return False;
 
-  job = SVAL(p,0);
-  snum = print_job_snum(job);
+  if(!rap_to_pjobid(SVAL(p,0),&snum,&jobid))
+    return False;
 
   if (snum < 0 || !VALID_SNUM(snum)) return(False);
 
   count = print_queue_status(snum,&queue,&status);
   for (i = 0; i < count; i++) {
-    if (queue[i].job == job) break;
+    if (queue[i].job == jobid) break;
   }
 
   if (mdrcnt > 0) {
@@ -3549,7 +3554,7 @@ static BOOL api_Unsupported(connection_struct *conn,uint16 vuid, char *param,cha
 
 
 
-struct
+const static struct
 {
   char *name;
   int id;

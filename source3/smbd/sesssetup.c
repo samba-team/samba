@@ -3,6 +3,7 @@
    handle SMBsessionsetup
    Copyright (C) Andrew Tridgell 1998-2001
    Copyright (C) Andrew Bartlett      2001
+   Copyright (C) Jim McDonough        2002
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -122,6 +123,12 @@ static int reply_spnego_kerberos(connection_struct *conn,
 
 	ads = ads_init_simple();
 
+	if (!ads) {
+		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
+	}
+
+	ads->auth.realm = strdup(lp_realm());
+
 	ret = ads_verify_ticket(ads, &ticket, &client, &auth_data);
 	if (!NT_STATUS_IS_OK(ret)) {
 		DEBUG(1,("Failed to verify incoming ticket!\n"));	
@@ -139,7 +146,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 	}
 
 	*p = 0;
-	if (strcasecmp(p+1, ads->realm) != 0) {
+	if (strcasecmp(p+1, ads->auth.realm) != 0) {
 		DEBUG(3,("Ticket for foreign realm %s@%s\n", client, p+1));
 		if (!lp_allow_trusted_domains()) {
 			return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -200,7 +207,7 @@ static int reply_spnego_kerberos(connection_struct *conn,
 send a security blob via a session setup reply
 ****************************************************************************/
 static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
-				 DATA_BLOB blob)
+				 DATA_BLOB blob, uint32 errcode)
 {
 	char *p;
 
@@ -209,7 +216,7 @@ static BOOL reply_sesssetup_blob(connection_struct *conn, char *outbuf,
 	/* we set NT_STATUS_MORE_PROCESSING_REQUIRED to tell the other end
 	   that we aren't finished yet */
 
-	SIVAL(outbuf, smb_rcls, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
+	SIVAL(outbuf, smb_rcls, errcode);
 	SSVAL(outbuf, smb_vwv0, 0xFF); /* no chaining possible */
 	SSVAL(outbuf, smb_vwv3, blob.length);
 	p = smb_buf(outbuf);
@@ -236,11 +243,12 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DATA_BLOB secblob;
 	int i;
 	uint32 ntlmssp_command, neg_flags, chal_flags;
-	DATA_BLOB chal, spnego_chal, extra_data;
+	DATA_BLOB chal, spnego_chal;
 	const uint8 *cryptkey;
 	BOOL got_kerberos = False;
 	NTSTATUS nt_status;
 	extern pstring global_myname;
+	char *cliname=NULL, *domname=NULL;
 
 	/* parse out the OIDs and the first sec blob */
 	if (!parse_negTokenTarg(blob1, OIDs, &secblob)) {
@@ -258,7 +266,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	DEBUG(3,("Got secblob of size %d\n", secblob.length));
 
 #ifdef HAVE_KRB5
-	if (got_kerberos) {
+	if (got_kerberos && (SEC_ADS == lp_security())) {
 		int ret = reply_spnego_kerberos(conn, inbuf, outbuf, 
 						length, bufsize, &secblob);
 		data_blob_free(&secblob);
@@ -271,19 +279,16 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	file_save("secblob.dat", secblob.data, secblob.length);
 #endif
 
-	if (!msrpc_parse(&secblob, "CddB",
+	if (!msrpc_parse(&secblob, "CddAA",
 			 "NTLMSSP",
 			 &ntlmssp_command,
 			 &neg_flags,
-			 &extra_data)) {
+			 &cliname,
+			 &domname)) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
        
-	DEBUG(5, ("Extra data: \n"));
-	dump_data(5, extra_data.data, extra_data.length);
-
 	data_blob_free(&secblob);
-	data_blob_free(&extra_data);
 
 	if (ntlmssp_command != NTLMSSP_NEGOTIATE) {
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
@@ -307,41 +312,44 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	   return the flags we want. Obviously this is not correct */
 	
 	chal_flags = NTLMSSP_NEGOTIATE_UNICODE | 
-		NTLMSSP_NEGOTIATE_LM_KEY | 
+		NTLMSSP_NEGOTIATE_128 | 
 		NTLMSSP_NEGOTIATE_NTLM |
 		NTLMSSP_CHAL_TARGET_INFO;
 	
 	{
-		DATA_BLOB domain_blob, netbios_blob, realm_blob;
+		DATA_BLOB domain_blob, struct_blob;
+		fstring dnsname, dnsdomname;
 		
 		msrpc_gen(&domain_blob, 
 			  "U",
 			  lp_workgroup());
 
-		msrpc_gen(&netbios_blob, 
-			  "U",
-			  global_myname);
-		
-		msrpc_gen(&realm_blob, 
-			  "U",
-			  lp_realm());
-		
+		fstrcpy(dnsdomname, lp_realm());
+		strlower(dnsdomname);
 
-		msrpc_gen(&chal, "CddddbBBBB",
+		fstrcpy(dnsname, global_myname);
+		fstrcat(dnsname, ".");
+		fstrcat(dnsname, lp_realm());
+		strlower(dnsname);
+
+		msrpc_gen(&struct_blob, "aaaaa",
+			  2, lp_workgroup(),
+			  1, global_myname,
+			  4, dnsdomname,
+			  3, dnsname,
+			  0, "");
+
+		msrpc_gen(&chal, "CdUdbddB",
 			  "NTLMSSP", 
 			  NTLMSSP_CHALLENGE,
-			  0,
-			  0x30, /* ?? */
+			  lp_workgroup(),
 			  chal_flags,
 			  cryptkey, 8,
-			  domain_blob.data, domain_blob.length,
-			  domain_blob.data, domain_blob.length,
-			  netbios_blob.data, netbios_blob.length,
-			  realm_blob.data, realm_blob.length);
+			  0, 0,
+			  struct_blob.data, struct_blob.length);
 
 		data_blob_free(&domain_blob);
-		data_blob_free(&netbios_blob);
-		data_blob_free(&realm_blob);
+		data_blob_free(&struct_blob);
 	}
 
 	if (!spnego_gen_challenge(&spnego_chal, &chal, &chal)) {
@@ -351,7 +359,7 @@ static int reply_spnego_negotiate(connection_struct *conn,
 	}
 
 	/* now tell the client to send the auth packet */
-	reply_sesssetup_blob(conn, outbuf, spnego_chal);
+	reply_sesssetup_blob(conn, outbuf, spnego_chal, NT_STATUS_V(NT_STATUS_MORE_PROCESSING_REQUIRED));
 
 	data_blob_free(&chal);
 	data_blob_free(&spnego_chal);
@@ -368,7 +376,7 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 			     int length, int bufsize,
 			     DATA_BLOB blob1)
 {
-	DATA_BLOB auth;
+	DATA_BLOB auth, response;
 	char *workgroup = NULL, *user = NULL, *machine = NULL;
 	DATA_BLOB lmhash, nthash, sess_key;
 	DATA_BLOB plaintext_password = data_blob(NULL, 0);
@@ -412,6 +420,13 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
 	
 	DEBUG(3,("Got user=[%s] workgroup=[%s] machine=[%s] len1=%d len2=%d\n",
 		 user, workgroup, machine, lmhash.length, nthash.length));
+
+	/* the client has given us its machine name (which we otherwise would not get on port 445).
+	   we need to possibly reload smb.conf if smb.conf includes depend on the machine name */
+
+	set_remote_machine_name(machine);
+
+	reload_services(True);
 
 #if 0
 	file_save("nthash1.dat", nthash.data, nthash.length);
@@ -481,8 +496,12 @@ static int reply_spnego_auth(connection_struct *conn, char *inbuf, char *outbuf,
  
 	SSVAL(outbuf,smb_uid,sess_vuid);
 	SSVAL(inbuf,smb_uid,sess_vuid);
-	
-	return chain_reply(inbuf,outbuf,length,bufsize);
+
+        response = spnego_gen_auth_response();
+	reply_sesssetup_blob(conn, outbuf, response, 0);
+
+	/* and tell smbd that we have already replied to this packet */
+	return -1;
 }
 
 
@@ -594,7 +613,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 	extern BOOL global_encrypted_passwords_negotiated;
 	extern BOOL global_spnego_negotiated;
 	extern int Protocol;
-	extern fstring remote_machine;
 	extern userdom_struct current_user_info;
 	extern int max_send;
 
@@ -630,8 +648,8 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 
 	if (Protocol < PROTOCOL_NT1) {
 		uint16 passlen1 = SVAL(inbuf,smb_vwv7);
-		if (passlen1 > MAX_PASS_LEN) {
-			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
+		if ((passlen1 > MAX_PASS_LEN) || (passlen1 > smb_bufrem(inbuf, smb_buf(inbuf)))) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
 		}
 
 		if (doencrypt) {
@@ -665,13 +683,6 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 			}
 		}
 		
-		if (passlen1 > MAX_PASS_LEN) {
-			return ERROR_DOS(ERRDOS,ERRbuftoosmall);
-		}
-
-		passlen1 = MIN(passlen1, MAX_PASS_LEN);
-		passlen2 = MIN(passlen2, MAX_PASS_LEN);
-
 		if (!doencrypt) {
 			/* both Win95 and WinNT stuff up the password lengths for
 			   non-encrypting systems. Uggh. 
@@ -689,19 +700,29 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 				passlen2 = 0;
 		}
 		
+		/* check for nasty tricks */
+		if (passlen1 > MAX_PASS_LEN || passlen1 > smb_bufrem(inbuf, p)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
+		if (passlen2 > MAX_PASS_LEN || passlen2 > smb_bufrem(inbuf, p+passlen1)) {
+			return ERROR_NT(NT_STATUS_INVALID_PARAMETER);
+		}
+
 		/* Save the lanman2 password and the NT md4 password. */
 		
 		if ((doencrypt) && (passlen1 != 0) && (passlen1 != 24)) {
 			doencrypt = False;
 		}
-		
+
 		if (doencrypt) {
 			lm_resp = data_blob(p, passlen1);
 			nt_resp = data_blob(p+passlen1, passlen2);
 		} else {
-			plaintext_password = data_blob(p, passlen1+1);
-			/* Ensure null termination */
-			plaintext_password.data[passlen1] = 0;
+			pstring pass;
+			srvstr_pull(inbuf, pass, smb_buf(inbuf), 
+				    sizeof(pass),  passlen1, STR_TERMINATE);
+			plaintext_password = data_blob(pass, strlen(pass)+1);
 		}
 		
 		p += passlen1 + passlen2;
@@ -720,7 +741,7 @@ int reply_sesssetup_and_X(connection_struct *conn, char *inbuf,char *outbuf,
 		return ERROR_NT(NT_STATUS_LOGON_FAILURE);
 	}
 
-	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, remote_machine));
+	DEBUG(3,("sesssetupX:name=[%s]\\[%s]@[%s]\n", domain, user, get_remote_machine_name()));
 
 	if (*user) {
 		if (global_spnego_negotiated) {

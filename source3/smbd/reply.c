@@ -38,7 +38,6 @@ extern pstring global_myname;
 extern int global_oplock_break;
 unsigned int smb_echo_count = 0;
 
-extern fstring remote_machine;
 extern BOOL global_encrypted_passwords_negotiated;
 
 
@@ -53,10 +52,11 @@ int reply_special(char *inbuf,char *outbuf)
 	int msg_flags = CVAL(inbuf,1);
 	pstring name1,name2;
 
-	extern fstring local_machine;
 	int len;
 	char name_type = 0;
 	
+	static BOOL already_got_session = False;
+
 	*name1 = *name2 = 0;
 	
 	memset(outbuf,'\0',smb_size);
@@ -65,6 +65,11 @@ int reply_special(char *inbuf,char *outbuf)
 	
 	switch (msg_type) {
 	case 0x81: /* session request */
+		
+		if (already_got_session) {
+			exit_server("multiple session request not permitted");
+		}
+		
 		SCVAL(outbuf,0,0x82);
 		SCVAL(outbuf,3,0);
 		if (name_len(inbuf+4) > 50 || 
@@ -77,24 +82,19 @@ int reply_special(char *inbuf,char *outbuf)
 		DEBUG(2,("netbios connect: name1=%s name2=%s\n",
 			 name1,name2));      
 
-		fstrcpy(remote_machine,name2);
-		remote_machine[15] = 0;
-		trim_string(remote_machine," "," ");
-		strlower(remote_machine);
-		alpha_strcpy(remote_machine,remote_machine,SAFE_NETBIOS_CHARS,sizeof(remote_machine)-1);
+		name1[15] = 0;
 
-		fstrcpy(local_machine,name1);
-		len = strlen(local_machine);
+		len = strlen(name2);
 		if (len == 16) {
-			name_type = local_machine[15];
-			local_machine[15] = 0;
+			name_type = name2[15];
+			name2[15] = 0;
 		}
-		trim_string(local_machine," "," ");
-		strlower(local_machine);
-		alpha_strcpy(local_machine,local_machine,SAFE_NETBIOS_CHARS,sizeof(local_machine)-1);
+
+		set_local_machine_name(name1);
+		set_remote_machine_name(name2);
 
 		DEBUG(2,("netbios connect: local=%s remote=%s\n",
-			local_machine, remote_machine ));
+			get_local_machine_name(), get_remote_machine_name() ));
 
 		if (name_type == 'R') {
 			/* We are being asked for a pathworks session --- 
@@ -107,7 +107,7 @@ int reply_special(char *inbuf,char *outbuf)
 		   of possibly valid usernames if we are operating
 		   in share mode security */
 		if (lp_security() == SEC_SHARE) {
-			add_session_user(remote_machine);
+			add_session_user(get_remote_machine_name());
 		}
 
 		reload_services(True);
@@ -115,6 +115,7 @@ int reply_special(char *inbuf,char *outbuf)
 
 		claim_connection(NULL,"",MAXSTATUS,True);
 
+		already_got_session = True;
 		break;
 		
 	case 0x89: /* session keepalive request 
@@ -148,7 +149,8 @@ int reply_special(char *inbuf,char *outbuf)
 int reply_tcon(connection_struct *conn,
 	       char *inbuf,char *outbuf, int dum_size, int dum_buffsize)
 {
-	pstring service;
+	const char *service;
+	pstring service_buf;
 	pstring password;
 	pstring dev;
 	int outsize = 0;
@@ -160,17 +162,19 @@ int reply_tcon(connection_struct *conn,
 	
 	START_PROFILE(SMBtcon);
 
-	*service = *password = *dev = 0;
+	*service_buf = *password = *dev = 0;
 
 	p = smb_buf(inbuf)+1;
-	p += srvstr_pull_buf(inbuf, service, p, sizeof(service), STR_TERMINATE) + 1;
+	p += srvstr_pull_buf(inbuf, service_buf, p, sizeof(service), STR_TERMINATE) + 1;
 	pwlen = srvstr_pull_buf(inbuf, password, p, sizeof(password), STR_TERMINATE) + 1;
 	p += pwlen;
 	p += srvstr_pull_buf(inbuf, dev, p, sizeof(dev), STR_TERMINATE) + 1;
 
-	p = strrchr_m(service,'\\');
+	p = strrchr_m(service_buf,'\\');
 	if (p) {
-		pstrcpy(service, p+1);
+		service = p+1;
+	} else {
+		service = service_buf;
 	}
 
 	password_blob = data_blob(password, pwlen+1);
@@ -354,10 +358,13 @@ int reply_ioctl(connection_struct *conn,
 	switch (ioctl_code)
 	{
 	    case IOCTL_QUERY_JOB_INFO:		    
-		SSVAL(p,0,fsp->print_jobid);             /* Job number */
+	   {
+		uint16 rap_jobid = pjobid_to_rap(SNUM(fsp->conn), fsp->print_jobid);
+		SSVAL(p,0,rap_jobid);             /* Job number */
 		srvstr_push(outbuf, p+2, global_myname, 15, STR_TERMINATE|STR_ASCII);
 		srvstr_push(outbuf, p+18, lp_servicename(SNUM(conn)), 13, STR_TERMINATE|STR_ASCII);
 		break;
+	   }
 	}
 
 	END_PROFILE(SMBioctl);
@@ -2743,6 +2750,8 @@ int reply_mkdir(connection_struct *conn, char *inbuf,char *outbuf, int dum_size,
 	START_PROFILE(SMBmkdir);
  
 	srvstr_pull_buf(inbuf, directory, smb_buf(inbuf) + 1, sizeof(directory), STR_TERMINATE);
+
+	RESOLVE_DFSPATH(directory, conn, inbuf, outbuf);
 
 	status = mkdir_internal(conn, directory);
 	if (!NT_STATUS_IS_OK(status))

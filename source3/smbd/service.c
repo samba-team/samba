@@ -27,9 +27,7 @@ extern BOOL short_case_preserve;
 extern BOOL case_mangle;
 extern BOOL case_sensitive;
 extern BOOL use_mangled_map;
-extern fstring remote_machine;
 extern userdom_struct current_user_info;
-extern fstring remote_machine;
 
 
 /****************************************************************************
@@ -104,7 +102,9 @@ int add_home_service(const char *service, const char *username, const char *home
 		}
 	}
 
-	lp_add_home(service, iHomeService, username, homedir);
+	if (!lp_add_home(service, iHomeService, username, homedir)) {
+		return -1;
+	}
 	
 	return lp_servicenumber(service);
 
@@ -347,7 +347,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	}
 
 	if (lp_guest_only(snum)) {
-		char *guestname = lp_guestaccount();
+		const char *guestname = lp_guestaccount();
 		guest = True;
 		force = True;
 		pass = getpwnam_alloc(guestname);
@@ -521,7 +521,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 		pstrcpy(s,lp_pathname(snum));
 		standard_sub_conn(conn,s,sizeof(s));
 		string_set(&conn->connectpath,s);
-		DEBUG(3,("Connect path is %s\n",s));
+		DEBUG(3,("Connect path is '%s' for service [%s]\n",s, lp_servicename(snum)));
 	}
 
 	/* groups stuff added by ih */
@@ -634,7 +634,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	   I have disabled this chdir check (tridge) */
 	if (vfs_ChDir(conn,conn->connectpath) != 0) {
 		DEBUG(0,("%s (%s) Can't change directory to %s (%s)\n",
-			 remote_machine, conn->client_address,
+			 get_remote_machine_name(), conn->client_address,
 			 conn->connectpath,strerror(errno)));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
@@ -645,7 +645,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 #else
 	/* the alternative is just to check the directory exists */
 	if (stat(conn->connectpath, &st) != 0 || !S_ISDIR(st.st_mode)) {
-		DEBUG(0,("%s is not a directory\n", conn->connectpath));
+		DEBUG(0,("'%s' is not a directory, when connecting to [%s]\n", conn->connectpath, lp_servicename(SNUM(conn))));
 		change_to_root_user();
 		yield_connection(conn, lp_servicename(SNUM(conn)));
 		conn_free(conn);
@@ -674,7 +674,7 @@ static connection_struct *make_connection_snum(int snum, user_struct *vuser,
 	 */
 
 	if( DEBUGLVL( IS_IPC(conn) ? 3 : 1 ) ) {
-		dbgtext( "%s (%s) ", remote_machine, conn->client_address );
+		dbgtext( "%s (%s) ", get_remote_machine_name(), conn->client_address );
 		dbgtext( "connect to service %s ", lp_servicename(SNUM(conn)) );
 		dbgtext( "initially as user %s ", user );
 		dbgtext( "(uid=%d, gid=%d) ", (int)geteuid(), (int)getegid() );
@@ -759,6 +759,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		vuser = get_valid_user_struct(vuid);
 		if (!vuser) {
 			DEBUG(1,("make_connection: refusing to connect with no session setup\n"));
+			*status = NT_STATUS_ACCESS_DENIED;
 			return NULL;
 		}
 	}
@@ -773,12 +774,15 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 	if (strequal(service_in,HOMES_NAME)) {
 		if(lp_security() != SEC_SHARE) {
 			DATA_BLOB no_pw = data_blob(NULL, 0);
-			if (vuser->homes_snum != -1) {
-				DEBUG(5, ("making a connection to [homes] service created at session setup time\n"));
-					return make_connection_snum(vuser->homes_snum,
-								    vuser, no_pw, 
-							    dev, status);
+			if (vuser->homes_snum == -1) {
+				DEBUG(2, ("[homes] share not available for this user becouse it was not found or created at session setup time\n"));
+				*status = NT_STATUS_BAD_NETWORK_NAME;
+				return NULL;
 			}
+			DEBUG(5, ("making a connection to [homes] service created at session setup time\n"));
+			return make_connection_snum(vuser->homes_snum,
+						    vuser, no_pw, 
+						    dev, status);
 		} else {
 			/* Security = share. Try with current_user_info.smb_name
 			 * as the username.  */
@@ -797,7 +801,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 			}
 		}
 	} else if ((lp_security() != SEC_SHARE) && (vuser->homes_snum != -1)
-		   && strequal(service, lp_servicename(vuser->homes_snum))) {
+		   && strequal(service_in, lp_servicename(vuser->homes_snum))) {
 		DATA_BLOB no_pw = data_blob(NULL, 0);
 		DEBUG(5, ("making a connection to 'homes' service [%s] created at session setup time\n", service));
 		return make_connection_snum(vuser->homes_snum,
@@ -819,7 +823,7 @@ connection_struct *make_connection(const char *service_in, DATA_BLOB password,
 		}
 
 		DEBUG(0,("%s (%s) couldn't find service %s\n",
-			 remote_machine, client_addr(), service));
+			 get_remote_machine_name(), client_addr(), service));
 		*status = NT_STATUS_BAD_NETWORK_NAME;
 		return NULL;
 	}
@@ -841,7 +845,7 @@ void close_cnum(connection_struct *conn, uint16 vuid)
 	change_to_root_user();
 
 	DEBUG(IS_IPC(conn)?3:1, ("%s (%s) closed connection to service %s\n",
-				 remote_machine,conn->client_address,
+				 get_remote_machine_name(),conn->client_address,
 				 lp_servicename(SNUM(conn))));
 
 	if (conn->vfs_ops.disconnect != NULL) {

@@ -152,7 +152,7 @@ static void async_processing(char *buffer, int buffer_len)
   Returns False on timeout or error.
   Else returns True.
 
-The timeout is in milli seconds
+The timeout is in milliseconds
 ****************************************************************************/
 
 static BOOL receive_message_or_smb(char *buffer, int buffer_len, int timeout)
@@ -341,9 +341,9 @@ force write permissions on print services.
    functions. Any message that has a NULL function is unimplemented -
    please feel free to contribute implementations!
 */
-static struct smb_message_struct
+const static struct smb_message_struct
 {
-  char *name;
+  const char *name;
   int (*fn)(connection_struct *conn, char *, char *, int, int);
   int flags;
 }
@@ -386,7 +386,7 @@ static struct smb_message_struct
 /* 0x22 */ { "SMBsetattrE",reply_setattrE,AS_USER | NEED_WRITE },
 /* 0x23 */ { "SMBgetattrE",reply_getattrE,AS_USER },
 /* 0x24 */ { "SMBlockingX",reply_lockingX,AS_USER },
-/* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC | QUEUE_IN_OPLOCK},
+/* 0x25 */ { "SMBtrans",reply_trans,AS_USER | CAN_IPC },
 /* 0x26 */ { "SMBtranss",NULL,AS_USER | CAN_IPC},
 /* 0x27 */ { "SMBioctl",reply_ioctl,0},
 /* 0x28 */ { "SMBioctls",NULL,AS_USER},
@@ -399,7 +399,7 @@ static struct smb_message_struct
 /* 0x2f */ { "SMBwriteX",reply_write_and_X,AS_USER | CAN_IPC },
 /* 0x30 */ { NULL, NULL, 0 },
 /* 0x31 */ { NULL, NULL, 0 },
-/* 0x32 */ { "SMBtrans2", reply_trans2, AS_USER | QUEUE_IN_OPLOCK | CAN_IPC },
+/* 0x32 */ { "SMBtrans2", reply_trans2, AS_USER | CAN_IPC },
 /* 0x33 */ { "SMBtranss2", reply_transs2, AS_USER},
 /* 0x34 */ { "SMBfindclose", reply_findclose,AS_USER},
 /* 0x35 */ { "SMBfindnclose", reply_findnclose, AS_USER},
@@ -611,7 +611,7 @@ static struct smb_message_struct
 /*******************************************************************
 dump a prs to a file
  ********************************************************************/
-static void smb_dump(char *name, int type, char *data, ssize_t len)
+static void smb_dump(const char *name, int type, char *data, ssize_t len)
 {
 	int fd, i;
 	pstring fname;
@@ -896,7 +896,7 @@ void process_smb(char *inbuf, char *outbuf)
 /****************************************************************************
 return a string containing the function name of a SMB command
 ****************************************************************************/
-char *smb_fn_name(int type)
+const char *smb_fn_name(int type)
 {
 	static char *unknown_name = "SMBunknown";
 
@@ -1227,13 +1227,6 @@ void smbd_process(void)
 		return;
 
 	max_recv = MIN(lp_maxxmit(),BUFFER_SIZE);
-
-	/* re-initialise the timezone */
-	TimeInit();
-
-	/* register our message handlers */
-	message_register(MSG_SMB_FORCE_TDIS, msg_force_tdis);
-	talloc_init_named("dummy!");
 
 	while (True) {
 		int deadtime = lp_deadtime()*60;

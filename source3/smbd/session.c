@@ -27,21 +27,22 @@
 
 #include "includes.h"
 
-extern fstring remote_machine;
-
 static TDB_CONTEXT *tdb;
 /* called when a session is created */
 BOOL session_claim(user_struct *vuser)
 {
-	int i;
+	int i = 0;
 	TDB_DATA data;
 	struct sessionid sessionid;
 	uint32 pid = (uint32)sys_getpid();
 	TDB_DATA key;		
 	fstring keystr;
 	char * hostname;
+	int tdb_store_flag;  /* If using utmp, we do an inital 'lock hold' store,
+				but we don't need this if we are just using the 
+				(unique) pid/vuid combination */
 
-	vuser->session_id = 0;
+	vuser->session_keystr = NULL;
 
 	/* don't register sessions for the guest user - its just too
 	   expensive to go through pam session code for browsing etc */
@@ -63,18 +64,37 @@ BOOL session_claim(user_struct *vuser)
 	data.dptr = NULL;
 	data.dsize = 0;
 
-	for (i=1;i<MAX_SESSION_ID;i++) {
-		slprintf(keystr, sizeof(keystr)-1, "ID/%d", i);
+#if WITH_UTMP
+	if (lp_utmp()) {
+		for (i=1;i<MAX_SESSION_ID;i++) {
+			slprintf(keystr, sizeof(keystr)-1, "ID/%d", i);
+			key.dptr = keystr;
+			key.dsize = strlen(keystr)+1;
+			
+			if (tdb_store(tdb, key, data, TDB_INSERT) == 0) break;
+		}
+		
+		if (i == MAX_SESSION_ID) {
+			DEBUG(1,("session_claim: out of session IDs (max is %d)\n", 
+				 MAX_SESSION_ID));
+			return False;
+		}
+		slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_UTMP_TEMPLATE, i);
+		tdb_store_flag = TDB_MODIFY;
+	} else
+#endif
+	{
+		slprintf(keystr, sizeof(keystr)-1, "ID/%lu/%u", 
+			 (long unsigned int)sys_getpid(), 
+			 vuser->vuid);
+		slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, 
+			 SESSION_TEMPLATE, (long unsigned int)sys_getpid(), 
+			 vuser->vuid);
+
 		key.dptr = keystr;
 		key.dsize = strlen(keystr)+1;
-
-		if (tdb_store(tdb, key, data, TDB_INSERT) == 0) break;
-	}
-
-	if (i == MAX_SESSION_ID) {
-		DEBUG(1,("session_claim: out of session IDs (max is %d)\n", 
-			 MAX_SESSION_ID));
-		return False;
+			
+		tdb_store_flag = TDB_REPLACE;
 	}
 
 	/* If 'hostname lookup' == yes, then do the DNS lookup.  This is
@@ -90,24 +110,25 @@ BOOL session_claim(user_struct *vuser)
 
 	fstrcpy(sessionid.username, vuser->user.unix_name);
 	fstrcpy(sessionid.hostname, hostname);
-	slprintf(sessionid.id_str, sizeof(sessionid.id_str)-1, SESSION_TEMPLATE, i);
-	sessionid.id_num = i;
+	sessionid.id_num = i;  /* Only valid for utmp sessions */
 	sessionid.pid = pid;
 	sessionid.uid = vuser->uid;
 	sessionid.gid = vuser->gid;
-	fstrcpy(sessionid.remote_machine, remote_machine);
+	fstrcpy(sessionid.remote_machine, get_remote_machine_name());
 	fstrcpy(sessionid.ip_addr, client_addr());
 
 	if (!smb_pam_claim_session(sessionid.username, sessionid.id_str, sessionid.hostname)) {
 		DEBUG(1,("pam_session rejected the session for %s [%s]\n",
 				sessionid.username, sessionid.id_str));
-		tdb_delete(tdb, key);
+		if (tdb_store_flag == TDB_MODIFY) {
+			tdb_delete(tdb, key);
+		}
 		return False;
 	}
 
 	data.dptr = (char *)&sessionid;
 	data.dsize = sizeof(sessionid);
-	if (tdb_store(tdb, key, data, TDB_MODIFY) != 0) {
+	if (tdb_store(tdb, key, data, tdb_store_flag) != 0) {
 		DEBUG(1,("session_claim: unable to create session id record\n"));
 		return False;
 	}
@@ -119,7 +140,11 @@ BOOL session_claim(user_struct *vuser)
 	}
 #endif
 
-	vuser->session_id = i;
+	vuser->session_keystr = strdup(keystr);
+	if (!vuser->session_keystr) {
+		DEBUG(0, ("session_claim:  strdup() failed for session_keystr\n"));
+		return False;
+	}
 	return True;
 }
 
@@ -129,18 +154,15 @@ void session_yield(user_struct *vuser)
 	TDB_DATA dbuf;
 	struct sessionid sessionid;
 	TDB_DATA key;		
-	fstring keystr;
 
 	if (!tdb) return;
 
-	if (vuser->session_id == 0) {
+	if (!vuser->session_keystr) {
 		return;
 	}
 
-	slprintf(keystr, sizeof(keystr)-1, "ID/%d", vuser->session_id);
-
-	key.dptr = keystr;
-	key.dsize = strlen(keystr)+1;
+	key.dptr = vuser->session_keystr;
+	key.dsize = strlen(vuser->session_keystr)+1;
 
 	dbuf = tdb_fetch(tdb, key);
 

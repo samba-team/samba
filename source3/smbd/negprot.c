@@ -23,7 +23,6 @@
 extern int Protocol;
 extern int max_recv;
 extern fstring global_myworkgroup;
-extern fstring remote_machine;
 BOOL global_encrypted_passwords_negotiated = False;
 BOOL global_spnego_negotiated = False;
 struct auth_context *negprot_global_auth_context = NULL;
@@ -200,14 +199,11 @@ static int negprot_spnego(char *p)
 	if (lp_security() != SEC_ADS) {
 		blob = spnego_gen_negTokenInit(guid, OIDs_plain, "NONE");
 	} else {
-		ADS_STRUCT *ads;
-		ads = ads_init_simple();
 		/* win2000 uses host$@REALM, which we will probably use eventually,
 		   but for now this works */
-		asprintf(&principal, "HOST/%s@%s", guid, ads->realm);
+		asprintf(&principal, "HOST/%s@%s", guid, lp_realm());
 		blob = spnego_gen_negTokenInit(guid, OIDs_krb5, principal);
 		free(principal);
-		ads_destroy(&ads);
 	}
 	memcpy(p, blob.data, blob.length);
 	len = blob.length;
@@ -288,10 +284,12 @@ static int reply_nt1(char *inbuf, char *outbuf)
 	if (!negotiate_spnego) {
 		/* Create a token value and add it to the outgoing packet. */
 		if (global_encrypted_passwords_negotiated) {
+			/* note that we do not send a challenge at all if
+			   we are using plaintext */
 			get_challenge(p);
+			SSVALS(outbuf,smb_vwv16+1,8);
+			p += 8;
 		}
-		SSVALS(outbuf,smb_vwv16+1,8);
-		p += 8;
 		p += srvstr_push(outbuf, p, global_myworkgroup, -1, 
 				 STR_UNICODE|STR_TERMINATE|STR_NOALIGN);
 		DEBUG(3,("not using SPNEGO\n"));
@@ -412,7 +410,16 @@ int reply_negprot(connection_struct *conn,
 	char *p;
 	int bcc = SVAL(smb_buf(inbuf),-2);
 	int arch = ARCH_ALL;
+
+	static BOOL done_negprot = False;
+
 	START_PROFILE(SMBnegprot);
+
+	if (done_negprot) {
+		END_PROFILE(SMBnegprot);
+		exit_server("multiple negprot's are not permitted");
+	}
+	done_negprot = True;
 
 	p = smb_buf(inbuf)+1;
 	while (p < (smb_buf(inbuf) + bcc)) { 
