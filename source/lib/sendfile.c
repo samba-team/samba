@@ -209,7 +209,8 @@ ssize_t sys_sendfile(int tofd, int fromfd, const DATA_BLOB *header, SMB_OFF_T of
 				hdtrl[0].iov_len = 0;
 			} else {
 				nwritten = 0;
-				hdtrl[0].iov_base += nwritten;
+				/* iov_base is defined as a void *... */
+				hdtrl[0].iov_base = ((char *)hdtrl[0].iov_base) + nwritten;
 				hdtrl[0].iov_len -= nwritten;
 			}
 		}

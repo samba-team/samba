@@ -2793,7 +2793,61 @@ samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
 		AC_MSG_RESULT(no);
 	fi
 	;;
-        *)
+
+	*hpux*)
+		AC_CACHE_CHECK([for hpux sendfile64 support],samba_cv_HAVE_SENDFILE64,[
+		AC_TRY_LINK([\
+#include <sys/socket.h>
+#include <sys/uio.h>],
+[\
+	int fromfd, tofd;
+	size_t total=0;
+	struct iovec hdtrl[2];
+	ssize_t nwritten;
+	off64_t offset;
+
+	hdtrl[0].iov_base = 0;
+	hdtrl[0].iov_len = 0;
+
+	nwritten = sendfile64(tofd, fromfd, offset, total, &hdtrl[0], 0);
+],
+samba_cv_HAVE_SENDFILE64=yes,samba_cv_HAVE_SENDFILE64=no)])
+	if test x"$samba_cv_HAVE_SENDFILE64" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE64)
+		AC_DEFINE(HPUX_SENDFILE_API)
+		AC_DEFINE(WITH_SENDFILE)
+	else
+		AC_MSG_RESULT(no);
+	fi
+
+		AC_CACHE_CHECK([for hpux sendfile support],samba_cv_HAVE_SENDFILE,[
+		AC_TRY_LINK([\
+#include <sys/socket.h>
+#include <sys/uio.h>],
+[\
+	int fromfd, tofd;
+	size_t total=0;
+	struct iovec hdtrl[2];
+	ssize_t nwritten;
+	off_t offset;
+
+	hdtrl[0].iov_base = 0;
+	hdtrl[0].iov_len = 0;
+
+	nwritten = sendfile(tofd, fromfd, offset, total, &hdtrl[0], 0);
+],
+samba_cv_HAVE_SENDFILE=yes,samba_cv_HAVE_SENDFILE=no)])
+	if test x"$samba_cv_HAVE_SENDFILE" = x"yes"; then
+    		AC_DEFINE(HAVE_SENDFILE)
+		AC_DEFINE(HPUX_SENDFILE_API)
+		AC_DEFINE(WITH_SENDFILE)
+	else
+		AC_MSG_RESULT(no);
+	fi
+
+	;;
+
+	*)
 	;;
         esac
         ;;
