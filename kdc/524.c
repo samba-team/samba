@@ -42,7 +42,7 @@ RCSID("$Id$");
 
 #ifdef KRB4
 
-void
+krb5_error_code
 do_524(Ticket *t, krb5_data *reply, const char *from)
 {
     krb5_error_code ret;
@@ -154,6 +154,7 @@ out:
 	krb5_free_principal(context, sprinc);
     hdb_free_entry(context, server);
     free(server);
+    return ret;
 }
 
 #endif
