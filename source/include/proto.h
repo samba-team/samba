@@ -1318,8 +1318,8 @@ char *client_addr(void);
 char *get_socket_name(int fd);
 char *get_socket_addr(int fd);
 int create_pipe_sock(const char *socket_dir,
-					const char *socket_name,
-					mode_t dir_perms);
+		     const char *socket_name,
+		     mode_t dir_perms);
 int sock_exec(const char *prog);
 
 /* The following definitions come from lib/util_str.c  */
@@ -4731,6 +4731,7 @@ void init_sec_ctx(void);
 
 int smbd_server_fd(void);
 void smbd_set_server_fd(int fd);
+BOOL allowable_number_of_smbd_processes(void);
 BOOL reload_services(BOOL test);
 int32 increment_smbd_process_count(void);
 void exit_server(char *reason);
