@@ -1327,6 +1327,34 @@ char *enum_field_to_str(uint32 type, struct field_info *bs, BOOL first_default)
 }
 
 /****************************************************************************
+opposite to above: convert string to enum.  Default/error return passed in.
+****************************************************************************/
+uint32 str_to_enum_field(char *in, struct field_info *bs, uint32 def)
+{
+	uint32 i = 0;
+
+	if (in == NULL || bs == NULL)
+	{
+		return def;
+	}
+
+	if (sscanf(in, "%li", (long*)&i))
+	{
+		return i;
+	}
+
+	for (i=0; bs[i].str != NULL; i++)
+	{
+		if (!strcasecmp(bs[i].str, in))
+		{
+			return bs[i].bits;
+		}
+	}
+
+	return def;
+}
+
+/****************************************************************************
 write an octal as a string
 ****************************************************************************/
 char *octal_string(int i)

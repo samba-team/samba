@@ -503,6 +503,13 @@ void cmd_reg_query_key(struct client_info *info, int argc, char *argv[])
 	}
 }
 
+static struct field_info reg_val_types[] =
+{
+	{ 1, "UNISTR" },
+	{ 3, "BYTES" },
+	{ 4, "DWORD" },
+};
+
 /****************************************************************************
 nt registry create value
 ****************************************************************************/
@@ -537,8 +544,8 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 
 	if (argc < 4)
 	{
-		report(out_hnd, "regcreate <val_name> <val_type (1|3|4)> <val>\n");
-		report(out_hnd, "(val_type 1=UNISTR, 3=BYTES, 4=DWORD supported\n");
+		report(out_hnd, "regcreate <val_name> <val_type> <val>\n");
+		report(out_hnd, "(val_type UNISTR, BYTES, DWORD supported\n");
 		return;
 	}
 
@@ -563,11 +570,11 @@ void cmd_reg_create_val(struct client_info *info, int argc, char *argv[])
 	argc--;
 	argv++;
 
-	val_type = atoi(argv[0]);
+	val_type = str_to_enum_field(argv[0], &reg_val_types, 0);
 
 	if (val_type != 1 && val_type != 3 && val_type != 4)
 	{
-		report(out_hnd, "val_type 1=UNISTR, 3=BYTES, 4=DWORD supported\n");
+		report(out_hnd, "val_type UNISTR, BYTES, DWORD supported\n");
 		return;
 	}
 
