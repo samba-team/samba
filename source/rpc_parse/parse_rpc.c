@@ -187,6 +187,11 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 		return False;
 	if(!prs_uint8 ("flags     ", ps, depth, &rpc->flags))
 		return False;
+
+	/* We always marshall in little endian format. */
+	if (MARSHALLING(ps))
+		rpc->pack_type[0] = 0x10;
+
 	if(!prs_uint8("pack_type0", ps, depth, &rpc->pack_type[0]))
 		return False;
 	if(!prs_uint8("pack_type1", ps, depth, &rpc->pack_type[1]))
@@ -201,7 +206,7 @@ BOOL smb_io_rpc_hdr(char *desc,  RPC_HDR *rpc, prs_struct *ps, int depth)
 	 * format. Set the flag in the prs_struct to specify reverse-endainness.
 	 */
 
-	if (ps->io && rpc->pack_type[0] == 0) {
+	if (UNMARSHALLING(ps) && rpc->pack_type[0] == 0) {
 		DEBUG(10,("smb_io_rpc_hdr: PDU data format is big-endian. Setting flag.\n"));
 		prs_set_endian_data(ps, RPC_BIG_ENDIAN);
 	}
