@@ -3763,3 +3763,12 @@ BOOL lp_list_substitute(char **list, const char *pattern, const char *insert)
 	
 	return True;
 }
+
+/****************************************************************
+ Compatibility fn. for 2.2.2 code.....
+*****************************************************************/
+
+void get_private_directory(pstring privdir)
+{
+	pstrcpy (privdir, lp_private_dir());
+}

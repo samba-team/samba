@@ -6,7 +6,7 @@
 msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
-"POT-Creation-Date: 2001-06-09 13:08+0900\n"
+"POT-Creation-Date: 2001-09-25 13:07-0700\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -19,1543 +19,1681 @@ msgstr ""
 msgid "ERROR: Can't open %s\n"
 msgstr ""
 
-#: web/swat.c:208
+#: web/swat.c:204
 msgid "Help"
 msgstr ""
 
-#: web/swat.c:215 web/swat.c:223 web/swat.c:231 web/swat.c:240 web/swat.c:249
-#: web/swat.c:255 web/swat.c:261 web/swat.c:271
+#: web/swat.c:210 web/swat.c:224 web/swat.c:239 web/swat.c:247 web/swat.c:256
+#: web/swat.c:265 web/swat.c:271 web/swat.c:277 web/swat.c:290
 msgid "Set Default"
 msgstr ""
 
-#: web/swat.c:387
-#, c-format
-msgid "failed to open %s for writing\n"
-msgstr ""
-
-#: web/swat.c:399
-#, c-format
-msgid "Can't reload %s\n"
-msgstr ""
-
-#: web/swat.c:478
+#: web/swat.c:493
 #, c-format
 msgid "Logged in as <b>%s</b><p>\n"
 msgstr ""
 
-#: web/swat.c:481
+#: web/swat.c:496
 msgid "Home"
 msgstr ""
 
-#: web/swat.c:483
+#: web/swat.c:498
 msgid "Globals"
 msgstr ""
 
-#: web/swat.c:484
+#: web/swat.c:499
 msgid "Shares"
 msgstr ""
 
-#: web/swat.c:485
+#: web/swat.c:500
 msgid "Printers"
 msgstr ""
 
-#: web/swat.c:488
+#: web/swat.c:503
 msgid "Status"
 msgstr ""
 
-#: web/swat.c:489
+#: web/swat.c:504
 msgid "View Config"
 msgstr ""
 
-#: web/swat.c:491
+#: web/swat.c:506
 msgid "Password Management"
 msgstr ""
 
-#: web/swat.c:515
+#: web/swat.c:530
 msgid "Current Config"
 msgstr ""
 
-#: web/swat.c:519
+#: web/swat.c:534
 msgid "Normal View"
 msgstr ""
 
-#: web/swat.c:521
+#: web/swat.c:536
 msgid "Full View"
 msgstr ""
 
-#: web/swat.c:537
+#: web/swat.c:552
 msgid "Global Variables"
 msgstr ""
 
-#: web/swat.c:551 web/swat.c:651 web/swat.c:998
+#: web/swat.c:566 web/swat.c:662 web/swat.c:1004
 msgid "Commit Changes"
 msgstr ""
 
-#: web/swat.c:555 web/swat.c:654 web/swat.c:1000
+#: web/swat.c:570 web/swat.c:665 web/swat.c:1006
 msgid "Reset Values"
 msgstr ""
 
-#: web/swat.c:557 web/swat.c:656 web/swat.c:1002
+#: web/swat.c:572 web/swat.c:667 web/swat.c:1008
 msgid "Advanced View"
 msgstr ""
 
-#: web/swat.c:559 web/swat.c:658 web/swat.c:1004
+#: web/swat.c:574 web/swat.c:669 web/swat.c:1010
 msgid "Basic View"
 msgstr ""
 
-#: web/swat.c:588
+#: web/swat.c:604
 msgid "Share Parameters"
 msgstr ""
 
-#: web/swat.c:622
+#: web/swat.c:633
 msgid "Choose Share"
 msgstr ""
 
-#: web/swat.c:636
+#: web/swat.c:647
 msgid "Delete Share"
 msgstr ""
 
-#: web/swat.c:643
+#: web/swat.c:654
 msgid "Create Share"
 msgstr ""
 
-#: web/swat.c:688
+#: web/swat.c:699
 msgid "password change in demo mode rejected\n"
 msgstr ""
 
-#: web/swat.c:701
-msgid "Can't setup password database vectors.\n"
-msgstr ""
-
-#: web/swat.c:727
+#: web/swat.c:738
 msgid " Must specify \"User Name\" \n"
 msgstr ""
 
-#: web/swat.c:743
+#: web/swat.c:754
 msgid " Must specify \"Old Password\" \n"
 msgstr ""
 
-#: web/swat.c:749
+#: web/swat.c:760
 msgid " Must specify \"Remote Machine\" \n"
 msgstr ""
 
-#: web/swat.c:756
+#: web/swat.c:767
 msgid " Must specify \"New, and Re-typed Passwords\" \n"
 msgstr ""
 
-#: web/swat.c:762
+#: web/swat.c:773
 msgid " Re-typed password didn't match new password\n"
 msgstr ""
 
-#: web/swat.c:792
+#: web/swat.c:803
 #, c-format
 msgid " The passwd for '%s' has been changed. \n"
 msgstr ""
 
-#: web/swat.c:794
+#: web/swat.c:805
 #, c-format
 msgid " The passwd for '%s' has NOT been changed. \n"
 msgstr ""
 
-#: web/swat.c:818
+#: web/swat.c:829
 msgid "Server Password Management"
 msgstr ""
 
 #.
 #. * Create all the dialog boxes for data collection
 #.
-#: web/swat.c:827 web/swat.c:874
+#: web/swat.c:838 web/swat.c:885
 msgid " User Name : "
 msgstr ""
 
-#: web/swat.c:830 web/swat.c:876
+#: web/swat.c:841 web/swat.c:887
 msgid " Old Password : "
 msgstr ""
 
-#: web/swat.c:833 web/swat.c:878
+#: web/swat.c:844 web/swat.c:889
 msgid " New Password : "
 msgstr ""
 
-#: web/swat.c:835 web/swat.c:880
+#: web/swat.c:846 web/swat.c:891
 msgid " Re-type New Password : "
 msgstr ""
 
-#: web/swat.c:843 web/swat.c:891
+#: web/swat.c:854 web/swat.c:902
 msgid "Change Password"
 msgstr ""
 
-#: web/swat.c:846
+#: web/swat.c:857
 msgid "Add New User"
 msgstr ""
 
-#: web/swat.c:848
+#: web/swat.c:859
 msgid "Delete User"
 msgstr ""
 
-#: web/swat.c:850
+#: web/swat.c:861
 msgid "Disable User"
 msgstr ""
 
-#: web/swat.c:852
+#: web/swat.c:863
 msgid "Enable User"
 msgstr ""
 
-#: web/swat.c:865
+#: web/swat.c:876
 msgid "Client/Server Password Management"
 msgstr ""
 
-#: web/swat.c:882
+#: web/swat.c:893
 msgid " Remote Machine : "
 msgstr ""
 
-#: web/swat.c:920
+#: web/swat.c:931
 msgid "Printer Parameters"
 msgstr ""
 
-#: web/swat.c:922
+#: web/swat.c:933
 msgid "Important Note:"
 msgstr ""
 
-#: web/swat.c:923
+#: web/swat.c:934
 msgid "Printer names marked with [*] in the Choose Printer drop-down box "
 msgstr ""
 
-#: web/swat.c:924
+#: web/swat.c:935
 msgid "are autoloaded printers from "
 msgstr ""
 
-#: web/swat.c:925
+#: web/swat.c:936
 msgid "Printcap Name"
 msgstr ""
 
-#: web/swat.c:926
+#: web/swat.c:937
 msgid "Attempting to delete these printers from SWAT will have no effect.\n"
 msgstr ""
 
-#: web/swat.c:964
+#: web/swat.c:970
 msgid "Choose Printer"
 msgstr ""
 
-#: web/swat.c:983
+#: web/swat.c:989
 msgid "Delete Printer"
 msgstr ""
 
-#: web/swat.c:990
+#: web/swat.c:996
 msgid "Create Printer"
 msgstr ""
 
-#: web/statuspage.c:38
+#: web/statuspage.c:40
 msgid "DENY_NONE"
 msgstr ""
 
-#: web/statuspage.c:39
+#: web/statuspage.c:41
 msgid "DENY_ALL   "
 msgstr ""
 
-#: web/statuspage.c:40
+#: web/statuspage.c:42
 msgid "DENY_DOS   "
 msgstr ""
 
-#: web/statuspage.c:41
+#: web/statuspage.c:43
 msgid "DENY_READ  "
 msgstr ""
 
-#: web/statuspage.c:42
+#: web/statuspage.c:44
 msgid "DENY_WRITE "
 msgstr ""
 
-#: web/statuspage.c:48
+#: web/statuspage.c:50
 msgid "RDONLY     "
 msgstr ""
 
-#: web/statuspage.c:49
+#: web/statuspage.c:51
 msgid "WRONLY     "
 msgstr ""
 
-#: web/statuspage.c:50
+#: web/statuspage.c:52
 msgid "RDWR       "
 msgstr ""
 
-#: web/statuspage.c:58
+#: web/statuspage.c:60
 msgid "EXCLUSIVE+BATCH "
 msgstr ""
 
-#: web/statuspage.c:60
+#: web/statuspage.c:62
 msgid "EXCLUSIVE       "
 msgstr ""
 
-#: web/statuspage.c:62
+#: web/statuspage.c:64
 msgid "BATCH           "
 msgstr ""
 
-#: web/statuspage.c:64
+#: web/statuspage.c:66
 msgid "LEVEL_II        "
 msgstr ""
 
-#: web/statuspage.c:66
+#: web/statuspage.c:68
 msgid "NONE            "
 msgstr ""
 
-#: web/statuspage.c:146
+#: web/statuspage.c:194
 msgid "Server Status"
 msgstr ""
 
-#: web/statuspage.c:151
+#: web/statuspage.c:199
 msgid "Auto Refresh"
 msgstr ""
 
-#: web/statuspage.c:152 web/statuspage.c:157
+#: web/statuspage.c:200 web/statuspage.c:205
 msgid "Refresh Interval: "
 msgstr ""
 
-#: web/statuspage.c:156
+#: web/statuspage.c:204
 msgid "Stop Refreshing"
 msgstr ""
 
-#: web/statuspage.c:168
-msgid "You need to have status=yes in your smb config file\n"
-msgstr ""
-
-#: web/statuspage.c:174
+#: web/statuspage.c:219
 msgid "version:"
 msgstr ""
 
-#: web/statuspage.c:177
+#: web/statuspage.c:222
 msgid "smbd:"
 msgstr ""
 
-#: web/statuspage.c:177 web/statuspage.c:189
+#: web/statuspage.c:222 web/statuspage.c:234
 msgid "running"
 msgstr ""
 
-#: web/statuspage.c:177 web/statuspage.c:189
+#: web/statuspage.c:222 web/statuspage.c:234
 msgid "not running"
 msgstr ""
 
-#: web/statuspage.c:180
+#: web/statuspage.c:225
 msgid "Stop smbd"
 msgstr ""
 
-#: web/statuspage.c:182
+#: web/statuspage.c:227
 msgid "Start smbd"
 msgstr ""
 
-#: web/statuspage.c:184
+#: web/statuspage.c:229
 msgid "Restart smbd"
 msgstr ""
 
-#: web/statuspage.c:189
+#: web/statuspage.c:234
 msgid "nmbd:"
 msgstr ""
 
-#: web/statuspage.c:192
+#: web/statuspage.c:237
 msgid "Stop nmbd"
 msgstr ""
 
-#: web/statuspage.c:194
+#: web/statuspage.c:239
 msgid "Start nmbd"
 msgstr ""
 
-#: web/statuspage.c:196
+#: web/statuspage.c:241
 msgid "Restart nmbd"
 msgstr ""
 
-#: web/statuspage.c:203
+#: web/statuspage.c:248
 msgid "Active Connections"
 msgstr ""
 
-#: web/statuspage.c:205 web/statuspage.c:236 web/statuspage.c:256
+#: web/statuspage.c:250 web/statuspage.c:263 web/statuspage.c:271
 msgid "PID"
 msgstr ""
 
-#: web/statuspage.c:205 web/statuspage.c:236
+#: web/statuspage.c:250 web/statuspage.c:263
 msgid "Client"
 msgstr ""
 
-#: web/statuspage.c:205
+#: web/statuspage.c:250
 msgid "IP address"
 msgstr ""
 
-#: web/statuspage.c:205 web/statuspage.c:236 web/statuspage.c:256
+#: web/statuspage.c:250 web/statuspage.c:263 web/statuspage.c:271
 msgid "Date"
 msgstr ""
 
-#: web/statuspage.c:207
+#: web/statuspage.c:252
 msgid "Kill"
 msgstr ""
 
-#: web/statuspage.c:233
+#: web/statuspage.c:260
 msgid "Active Shares"
 msgstr ""
 
-#: web/statuspage.c:236
+#: web/statuspage.c:263
 msgid "Share"
 msgstr ""
 
-#: web/statuspage.c:236
+#: web/statuspage.c:263
 msgid "User"
 msgstr ""
 
-#: web/statuspage.c:236
+#: web/statuspage.c:263
 msgid "Group"
 msgstr ""
 
-#: web/statuspage.c:254
+#: web/statuspage.c:269
 msgid "Open Files"
 msgstr ""
 
-#: web/statuspage.c:256
+#: web/statuspage.c:271
 msgid "Sharing"
 msgstr ""
 
-#: web/statuspage.c:256
+#: web/statuspage.c:271
 msgid "R/W"
 msgstr ""
 
-#: web/statuspage.c:256
+#: web/statuspage.c:271
 msgid "Oplock"
 msgstr ""
 
-#: web/statuspage.c:256
+#: web/statuspage.c:271
 msgid "File"
 msgstr ""
 
-#: param/loadparm.c:571
+#: param/loadparm.c:641
 msgid "Base Options"
 msgstr ""
 
-#: param/loadparm.c:572
-msgid "coding system"
-msgstr ""
-
-#: param/loadparm.c:573
-msgid "client code page"
-msgstr ""
-
-#: param/loadparm.c:574
-msgid "comment"
-msgstr ""
-
-#: param/loadparm.c:575
-msgid "path"
-msgstr ""
-
-#: param/loadparm.c:576
-msgid "directory"
-msgstr ""
-
-#: param/loadparm.c:577
-msgid "workgroup"
-msgstr ""
-
-#: param/loadparm.c:578
-msgid "netbios name"
-msgstr ""
-
-#: param/loadparm.c:579
-msgid "netbios aliases"
-msgstr ""
-
-#: param/loadparm.c:580
-msgid "netbios scope"
-msgstr ""
-
-#: param/loadparm.c:581
-msgid "server string"
-msgstr ""
-
-#: param/loadparm.c:582
-msgid "interfaces"
-msgstr ""
-
-#: param/loadparm.c:583
-msgid "bind interfaces only"
-msgstr ""
-
-#: param/loadparm.c:585
-msgid "Security Options"
-msgstr ""
-
-#: param/loadparm.c:586
-msgid "security"
-msgstr ""
-
-#: param/loadparm.c:587
-msgid "encrypt passwords"
-msgstr ""
-
-#: param/loadparm.c:588
-msgid "update encrypted"
-msgstr ""
-
-#: param/loadparm.c:589
-msgid "allow trusted domains"
-msgstr ""
-
-#: param/loadparm.c:590
-msgid "alternate permissions"
-msgstr ""
-
-#: param/loadparm.c:591
-msgid "hosts equiv"
-msgstr ""
-
-#: param/loadparm.c:592
-msgid "min password length"
-msgstr ""
-
-#: param/loadparm.c:593
-msgid "min passwd length"
-msgstr ""
-
-#: param/loadparm.c:594
-msgid "map to guest"
-msgstr ""
-
-#: param/loadparm.c:595
-msgid "null passwords"
-msgstr ""
-
-#: param/loadparm.c:596
-msgid "password server"
-msgstr ""
-
-#: param/loadparm.c:597
-msgid "smb passwd file"
-msgstr ""
-
-#: param/loadparm.c:598
-msgid "root directory"
-msgstr ""
-
-#: param/loadparm.c:599
-msgid "root dir"
-msgstr ""
-
-#: param/loadparm.c:600
-msgid "root"
-msgstr ""
-
-#: param/loadparm.c:601
-msgid "passwd program"
-msgstr ""
-
-#: param/loadparm.c:602
-msgid "passwd chat"
-msgstr ""
-
-#: param/loadparm.c:603
-msgid "passwd chat debug"
-msgstr ""
-
-#: param/loadparm.c:604
-msgid "username map"
-msgstr ""
-
-#: param/loadparm.c:605
-msgid "password level"
-msgstr ""
-
-#: param/loadparm.c:606
-msgid "username level"
-msgstr ""
-
-#: param/loadparm.c:607
-msgid "unix password sync"
-msgstr ""
-
-#: param/loadparm.c:608
-msgid "restrict anonymous"
-msgstr ""
-
-#: param/loadparm.c:609
-msgid "revalidate"
-msgstr ""
-
-#: param/loadparm.c:610
-msgid "use rhosts"
-msgstr ""
-
-#: param/loadparm.c:611
-msgid "username"
-msgstr ""
-
-#: param/loadparm.c:612
-msgid "user"
-msgstr ""
-
-#: param/loadparm.c:613
-msgid "users"
-msgstr ""
-
-#: param/loadparm.c:614
-msgid "guest account"
-msgstr ""
-
-#: param/loadparm.c:615
-msgid "invalid users"
-msgstr ""
-
-#: param/loadparm.c:616
-msgid "valid users"
-msgstr ""
-
-#: param/loadparm.c:617
-msgid "admin users"
-msgstr ""
-
-#: param/loadparm.c:618
-msgid "read list"
-msgstr ""
-
-#: param/loadparm.c:619
-msgid "write list"
-msgstr ""
-
-#: param/loadparm.c:620
-msgid "force user"
-msgstr ""
-
-#: param/loadparm.c:621
-msgid "force group"
-msgstr ""
-
-#: param/loadparm.c:622
-msgid "group"
-msgstr ""
-
-#: param/loadparm.c:623
-msgid "writeable"
-msgstr ""
-
-#: param/loadparm.c:624
-msgid "write ok"
-msgstr ""
-
-#: param/loadparm.c:625
-msgid "writable"
-msgstr ""
-
-#: param/loadparm.c:626
-msgid "read only"
-msgstr ""
-
-#: param/loadparm.c:627
-msgid "create mask"
-msgstr ""
-
-#: param/loadparm.c:628
-msgid "create mode"
-msgstr ""
-
-#: param/loadparm.c:629
-msgid "force create mode"
-msgstr ""
-
-#: param/loadparm.c:630
-msgid "security mask"
-msgstr ""
-
-#: param/loadparm.c:631
-msgid "force security mode"
-msgstr ""
-
-#: param/loadparm.c:632
-msgid "directory mask"
-msgstr ""
-
-#: param/loadparm.c:633
-msgid "directory mode"
-msgstr ""
-
-#: param/loadparm.c:634
-msgid "force directory mode"
-msgstr ""
-
-#: param/loadparm.c:635
-msgid "directory security mask"
-msgstr ""
-
-#: param/loadparm.c:636
-msgid "force directory security mode"
-msgstr ""
-
-#: param/loadparm.c:637
-msgid "inherit permissions"
-msgstr ""
-
-#: param/loadparm.c:638
-msgid "guest only"
-msgstr ""
-
-#: param/loadparm.c:639
-msgid "only guest"
-msgstr ""
-
-#: param/loadparm.c:640
-msgid "guest ok"
-msgstr ""
-
-#: param/loadparm.c:641
-msgid "public"
-msgstr ""
-
-#: param/loadparm.c:642
-msgid "only user"
-msgstr ""
-
 #: param/loadparm.c:643
-msgid "hosts allow"
+msgid "dos charset"
 msgstr ""
 
 #: param/loadparm.c:644
-msgid "allow hosts"
+msgid "unix charset"
 msgstr ""
 
 #: param/loadparm.c:645
-msgid "hosts deny"
+msgid "display charset"
 msgstr ""
 
 #: param/loadparm.c:646
-msgid "deny hosts"
+msgid "comment"
+msgstr ""
+
+#: param/loadparm.c:647
+msgid "path"
+msgstr ""
+
+#: param/loadparm.c:648
+msgid "directory"
 msgstr ""
 
 #: param/loadparm.c:649
-msgid "Secure Socket Layer Options"
+msgid "workgroup"
 msgstr ""
 
 #: param/loadparm.c:650
-msgid "ssl"
+msgid "netbios name"
 msgstr ""
 
 #: param/loadparm.c:651
-msgid "ssl hosts"
+msgid "netbios aliases"
 msgstr ""
 
 #: param/loadparm.c:652
-msgid "ssl hosts resign"
+msgid "netbios scope"
 msgstr ""
 
 #: param/loadparm.c:653
-msgid "ssl CA certDir"
+msgid "server string"
 msgstr ""
 
 #: param/loadparm.c:654
-msgid "ssl CA certFile"
+msgid "interfaces"
 msgstr ""
 
 #: param/loadparm.c:655
-msgid "ssl server cert"
-msgstr ""
-
-#: param/loadparm.c:656
-msgid "ssl server key"
+msgid "bind interfaces only"
 msgstr ""
 
 #: param/loadparm.c:657
-msgid "ssl client cert"
-msgstr ""
-
-#: param/loadparm.c:658
-msgid "ssl client key"
+msgid "Security Options"
 msgstr ""
 
 #: param/loadparm.c:659
-msgid "ssl require clientcert"
+msgid "security"
 msgstr ""
 
 #: param/loadparm.c:660
-msgid "ssl require servercert"
+msgid "encrypt passwords"
 msgstr ""
 
 #: param/loadparm.c:661
-msgid "ssl ciphers"
+msgid "update encrypted"
 msgstr ""
 
 #: param/loadparm.c:662
-msgid "ssl version"
+msgid "allow trusted domains"
 msgstr ""
 
 #: param/loadparm.c:663
-msgid "ssl compatibility"
+msgid "alternate permissions"
+msgstr ""
+
+#: param/loadparm.c:664
+msgid "hosts equiv"
+msgstr ""
+
+#: param/loadparm.c:665
+msgid "min passwd length"
 msgstr ""
 
 #: param/loadparm.c:666
-msgid "Logging Options"
+msgid "min password length"
 msgstr ""
 
 #: param/loadparm.c:667
-msgid "debug level"
+msgid "map to guest"
 msgstr ""
 
 #: param/loadparm.c:668
-msgid "log level"
+msgid "null passwords"
 msgstr ""
 
 #: param/loadparm.c:669
-msgid "syslog"
+msgid "obey pam restrictions"
 msgstr ""
 
 #: param/loadparm.c:670
-msgid "syslog only"
+msgid "password server"
 msgstr ""
 
 #: param/loadparm.c:671
-msgid "log file"
+msgid "smb passwd file"
 msgstr ""
 
 #: param/loadparm.c:672
-msgid "max log size"
+msgid "private dir"
 msgstr ""
 
 #: param/loadparm.c:673
-msgid "debug timestamp"
+msgid "passdb module path"
 msgstr ""
 
 #: param/loadparm.c:674
-msgid "timestamp logs"
+msgid "root directory"
 msgstr ""
 
 #: param/loadparm.c:675
-msgid "debug hires timestamp"
+msgid "root dir"
 msgstr ""
 
 #: param/loadparm.c:676
-msgid "debug pid"
-msgstr ""
-
-#: param/loadparm.c:677
-msgid "debug uid"
+msgid "root"
 msgstr ""
 
 #: param/loadparm.c:678
-msgid "status"
+msgid "pam password change"
+msgstr ""
+
+#: param/loadparm.c:679
+msgid "passwd program"
 msgstr ""
 
 #: param/loadparm.c:680
-msgid "Protocol Options"
+msgid "passwd chat"
 msgstr ""
 
 #: param/loadparm.c:681
-msgid "protocol"
+msgid "passwd chat debug"
 msgstr ""
 
 #: param/loadparm.c:682
-msgid "read bmpx"
+msgid "username map"
 msgstr ""
 
 #: param/loadparm.c:683
-msgid "read raw"
+msgid "password level"
 msgstr ""
 
 #: param/loadparm.c:684
-msgid "write raw"
+msgid "username level"
 msgstr ""
 
 #: param/loadparm.c:685
-msgid "nt smb support"
+msgid "unix password sync"
 msgstr ""
 
 #: param/loadparm.c:686
-msgid "nt pipe support"
+msgid "restrict anonymous"
 msgstr ""
 
 #: param/loadparm.c:687
-msgid "nt acl support"
+msgid "lanman auth"
 msgstr ""
 
 #: param/loadparm.c:688
-msgid "announce version"
+msgid "ntlm auth"
 msgstr ""
 
 #: param/loadparm.c:689
-msgid "announce as"
+msgid "plaintext to smbpasswd"
 msgstr ""
 
 #: param/loadparm.c:690
-msgid "max mux"
-msgstr ""
-
-#: param/loadparm.c:691
-msgid "max xmit"
+msgid "use rhosts"
 msgstr ""
 
 #: param/loadparm.c:692
-msgid "name resolve order"
+msgid "username"
 msgstr ""
 
 #: param/loadparm.c:693
-msgid "packet size"
+msgid "user"
 msgstr ""
 
 #: param/loadparm.c:694
-msgid "max packet"
-msgstr ""
-
-#: param/loadparm.c:695
-msgid "max ttl"
+msgid "users"
 msgstr ""
 
 #: param/loadparm.c:696
-msgid "max wins ttl"
+msgid "guest account"
 msgstr ""
 
 #: param/loadparm.c:697
-msgid "min wins ttl"
+msgid "invalid users"
 msgstr ""
 
 #: param/loadparm.c:698
-msgid "time server"
+msgid "valid users"
+msgstr ""
+
+#: param/loadparm.c:699
+msgid "admin users"
 msgstr ""
 
 #: param/loadparm.c:700
-msgid "Tuning Options"
+msgid "read list"
 msgstr ""
 
 #: param/loadparm.c:701
-msgid "change notify timeout"
+msgid "write list"
 msgstr ""
 
 #: param/loadparm.c:702
-msgid "deadtime"
+msgid "printer admin"
 msgstr ""
 
 #: param/loadparm.c:703
-msgid "getwd cache"
+msgid "force user"
 msgstr ""
 
 #: param/loadparm.c:704
-msgid "keepalive"
+msgid "force group"
 msgstr ""
 
 #: param/loadparm.c:705
-msgid "lpq cache time"
-msgstr ""
-
-#: param/loadparm.c:706
-msgid "max connections"
+msgid "group"
 msgstr ""
 
 #: param/loadparm.c:707
-msgid "max disk size"
+msgid "read only"
 msgstr ""
 
 #: param/loadparm.c:708
-msgid "max open files"
+msgid "write ok"
 msgstr ""
 
 #: param/loadparm.c:709
-msgid "min print space"
+msgid "writeable"
 msgstr ""
 
 #: param/loadparm.c:710
-msgid "read prediction"
-msgstr ""
-
-#: param/loadparm.c:711
-msgid "read size"
+msgid "writable"
 msgstr ""
 
 #: param/loadparm.c:712
-msgid "shared mem size"
+msgid "create mask"
 msgstr ""
 
 #: param/loadparm.c:713
-msgid "socket options"
+msgid "create mode"
 msgstr ""
 
 #: param/loadparm.c:714
-msgid "stat cache size"
+msgid "force create mode"
 msgstr ""
 
 #: param/loadparm.c:715
-msgid "strict sync"
+msgid "security mask"
 msgstr ""
 
 #: param/loadparm.c:716
-msgid "sync always"
+msgid "force security mode"
 msgstr ""
 
 #: param/loadparm.c:717
-msgid "write cache size"
+msgid "directory mask"
+msgstr ""
+
+#: param/loadparm.c:718
+msgid "directory mode"
 msgstr ""
 
 #: param/loadparm.c:719
-msgid "Printing Options"
+msgid "force directory mode"
 msgstr ""
 
 #: param/loadparm.c:720
-msgid "load printers"
+msgid "directory security mask"
 msgstr ""
 
 #: param/loadparm.c:721
-msgid "printcap name"
+msgid "force directory security mode"
 msgstr ""
 
 #: param/loadparm.c:722
-msgid "printcap"
+msgid "inherit permissions"
 msgstr ""
 
 #: param/loadparm.c:723
-msgid "printer driver file"
+msgid "guest only"
 msgstr ""
 
 #: param/loadparm.c:724
-msgid "printable"
-msgstr ""
-
-#: param/loadparm.c:725
-msgid "print ok"
+msgid "only guest"
 msgstr ""
 
 #: param/loadparm.c:726
-msgid "postscript"
+msgid "guest ok"
 msgstr ""
 
 #: param/loadparm.c:727
-msgid "printing"
-msgstr ""
-
-#: param/loadparm.c:728
-msgid "print command"
+msgid "public"
 msgstr ""
 
 #: param/loadparm.c:729
-msgid "lpq command"
+msgid "only user"
 msgstr ""
 
 #: param/loadparm.c:730
-msgid "lprm command"
+msgid "hosts allow"
 msgstr ""
 
 #: param/loadparm.c:731
-msgid "lppause command"
+msgid "allow hosts"
 msgstr ""
 
 #: param/loadparm.c:732
-msgid "lpresume command"
+msgid "hosts deny"
 msgstr ""
 
 #: param/loadparm.c:733
-msgid "queuepause command"
-msgstr ""
-
-#: param/loadparm.c:734
-msgid "queueresume command"
+msgid "deny hosts"
 msgstr ""
 
 #: param/loadparm.c:736
-msgid "printer"
+msgid "Secure Socket Layer Options"
 msgstr ""
 
 #: param/loadparm.c:737
-msgid "printer name"
-msgstr ""
-
-#: param/loadparm.c:738
-msgid "printer driver"
+msgid "ssl"
 msgstr ""
 
 #: param/loadparm.c:739
-msgid "printer driver location"
+msgid "ssl hosts"
+msgstr ""
+
+#: param/loadparm.c:740
+msgid "ssl hosts resign"
+msgstr ""
+
+#: param/loadparm.c:741
+msgid "ssl CA certDir"
 msgstr ""
 
 #: param/loadparm.c:742
-msgid "Filename Handling"
+msgid "ssl CA certFile"
 msgstr ""
 
 #: param/loadparm.c:743
-msgid "strip dot"
+msgid "ssl server cert"
 msgstr ""
 
 #: param/loadparm.c:744
-msgid "character set"
+msgid "ssl server key"
 msgstr ""
 
 #: param/loadparm.c:745
-msgid "mangled stack"
+msgid "ssl client cert"
 msgstr ""
 
 #: param/loadparm.c:746
-msgid "default case"
+msgid "ssl client key"
 msgstr ""
 
 #: param/loadparm.c:747
-msgid "case sensitive"
+msgid "ssl require clientcert"
 msgstr ""
 
 #: param/loadparm.c:748
-msgid "casesignames"
+msgid "ssl require servercert"
 msgstr ""
 
 #: param/loadparm.c:749
-msgid "preserve case"
+msgid "ssl ciphers"
 msgstr ""
 
 #: param/loadparm.c:750
-msgid "short preserve case"
+msgid "ssl version"
 msgstr ""
 
 #: param/loadparm.c:751
-msgid "mangle case"
-msgstr ""
-
-#: param/loadparm.c:752
-msgid "mangling char"
-msgstr ""
-
-#: param/loadparm.c:753
-msgid "hide dot files"
+msgid "ssl compatibility"
 msgstr ""
 
 #: param/loadparm.c:754
-msgid "delete veto files"
+msgid "Logging Options"
 msgstr ""
 
 #: param/loadparm.c:755
-msgid "veto files"
+msgid "log level"
 msgstr ""
 
 #: param/loadparm.c:756
-msgid "hide files"
+msgid "debuglevel"
 msgstr ""
 
 #: param/loadparm.c:757
-msgid "veto oplock files"
+msgid "syslog"
 msgstr ""
 
 #: param/loadparm.c:758
-msgid "map system"
+msgid "syslog only"
 msgstr ""
 
 #: param/loadparm.c:759
-msgid "map hidden"
-msgstr ""
-
-#: param/loadparm.c:760
-msgid "map archive"
+msgid "log file"
 msgstr ""
 
 #: param/loadparm.c:761
-msgid "mangled names"
+msgid "max log size"
 msgstr ""
 
 #: param/loadparm.c:762
-msgid "mangled map"
+msgid "timestamp logs"
 msgstr ""
 
 #: param/loadparm.c:763
-msgid "stat cache"
+msgid "debug timestamp"
+msgstr ""
+
+#: param/loadparm.c:764
+msgid "debug hires timestamp"
 msgstr ""
 
 #: param/loadparm.c:765
-msgid "Domain Options"
+msgid "debug pid"
 msgstr ""
 
 #: param/loadparm.c:766
-msgid "domain groups"
-msgstr ""
-
-#: param/loadparm.c:767
-msgid "domain admin group"
+msgid "debug uid"
 msgstr ""
 
 #: param/loadparm.c:768
-msgid "domain guest group"
-msgstr ""
-
-#: param/loadparm.c:769
-msgid "domain admin users"
+msgid "Protocol Options"
 msgstr ""
 
 #: param/loadparm.c:770
-msgid "domain guest users"
+msgid "protocol"
+msgstr ""
+
+#: param/loadparm.c:771
+msgid "large readwrite"
 msgstr ""
 
 #: param/loadparm.c:772
-msgid "groupname map"
+msgid "max protocol"
+msgstr ""
+
+#: param/loadparm.c:773
+msgid "min protocol"
 msgstr ""
 
 #: param/loadparm.c:774
-msgid "machine password timeout"
+msgid "unicode"
+msgstr ""
+
+#: param/loadparm.c:775
+msgid "read bmpx"
 msgstr ""
 
 #: param/loadparm.c:776
-msgid "Logon Options"
+msgid "read raw"
 msgstr ""
 
 #: param/loadparm.c:777
-msgid "add user script"
-msgstr ""
-
-#: param/loadparm.c:778
-msgid "delete user script"
+msgid "write raw"
 msgstr ""
 
 #: param/loadparm.c:779
-msgid "logon script"
+msgid "nt pipe support"
 msgstr ""
 
 #: param/loadparm.c:780
-msgid "logon path"
+msgid "nt acl support"
 msgstr ""
 
 #: param/loadparm.c:781
-msgid "logon drive"
+msgid "announce version"
 msgstr ""
 
 #: param/loadparm.c:782
-msgid "logon home"
+msgid "announce as"
 msgstr ""
 
 #: param/loadparm.c:783
-msgid "domain logons"
+msgid "max mux"
 msgstr ""
 
-#: param/loadparm.c:785
-msgid "Browse Options"
+#: param/loadparm.c:784
+msgid "max xmit"
 msgstr ""
 
 #: param/loadparm.c:786
-msgid "os level"
+msgid "name resolve order"
 msgstr ""
 
 #: param/loadparm.c:787
-msgid "lm announce"
+msgid "max packet"
 msgstr ""
 
 #: param/loadparm.c:788
-msgid "lm interval"
+msgid "packet size"
 msgstr ""
 
 #: param/loadparm.c:789
-msgid "preferred master"
+msgid "max ttl"
 msgstr ""
 
 #: param/loadparm.c:790
-msgid "prefered master"
+msgid "max wins ttl"
 msgstr ""
 
 #: param/loadparm.c:791
-msgid "local master"
+msgid "min wins ttl"
 msgstr ""
 
 #: param/loadparm.c:792
-msgid "domain master"
-msgstr ""
-
-#: param/loadparm.c:793
-msgid "browse list"
+msgid "time server"
 msgstr ""
 
 #: param/loadparm.c:794
-msgid "browseable"
+msgid "Tuning Options"
 msgstr ""
 
-#: param/loadparm.c:795
-msgid "browsable"
+#: param/loadparm.c:796
+msgid "change notify timeout"
 msgstr ""
 
 #: param/loadparm.c:797
-msgid "WINS Options"
+msgid "deadtime"
 msgstr ""
 
 #: param/loadparm.c:798
-msgid "dns proxy"
+msgid "getwd cache"
 msgstr ""
 
 #: param/loadparm.c:799
-msgid "wins proxy"
-msgstr ""
-
-#: param/loadparm.c:800
-msgid "wins server"
+msgid "keepalive"
 msgstr ""
 
 #: param/loadparm.c:801
-msgid "wins support"
+msgid "lpq cache time"
 msgstr ""
 
 #: param/loadparm.c:802
-msgid "wins hook"
+msgid "max smbd processes"
+msgstr ""
+
+#: param/loadparm.c:803
+msgid "max connections"
 msgstr ""
 
 #: param/loadparm.c:804
-msgid "Locking Options"
+msgid "paranoid server security"
 msgstr ""
 
 #: param/loadparm.c:805
-msgid "blocking locks"
+msgid "max disk size"
 msgstr ""
 
 #: param/loadparm.c:806
-msgid "fake oplocks"
+msgid "max open files"
 msgstr ""
 
 #: param/loadparm.c:807
-msgid "kernel oplocks"
+msgid "min print space"
 msgstr ""
 
 #: param/loadparm.c:808
-msgid "locking"
+msgid "read size"
 msgstr ""
 
 #: param/loadparm.c:810
-msgid "utmp"
+msgid "socket options"
+msgstr ""
+
+#: param/loadparm.c:811
+msgid "stat cache size"
 msgstr ""
 
 #: param/loadparm.c:812
-msgid "ole locking compatibility"
+msgid "strict allocate"
 msgstr ""
 
 #: param/loadparm.c:813
-msgid "oplocks"
+msgid "strict sync"
 msgstr ""
 
 #: param/loadparm.c:814
-msgid "level2 oplocks"
+msgid "sync always"
 msgstr ""
 
 #: param/loadparm.c:815
-msgid "oplock break wait time"
+msgid "use mmap"
 msgstr ""
 
 #: param/loadparm.c:816
-msgid "oplock contention limit"
+msgid "hostname lookups"
 msgstr ""
 
 #: param/loadparm.c:817
-msgid "strict locking"
+msgid "write cache size"
 msgstr ""
 
-#: param/loadparm.c:818
-msgid "share modes"
+#: param/loadparm.c:819
+msgid "Printing Options"
 msgstr ""
 
 #: param/loadparm.c:821
-msgid "Ldap Options"
+msgid "total print jobs"
 msgstr ""
 
 #: param/loadparm.c:822
-msgid "ldap server"
+msgid "max print jobs"
 msgstr ""
 
 #: param/loadparm.c:823
-msgid "ldap port"
+msgid "load printers"
 msgstr ""
 
 #: param/loadparm.c:824
-msgid "ldap suffix"
+msgid "printcap name"
 msgstr ""
 
 #: param/loadparm.c:825
-msgid "ldap filter"
+msgid "printcap"
 msgstr ""
 
 #: param/loadparm.c:826
-msgid "ldap root"
+msgid "printable"
 msgstr ""
 
 #: param/loadparm.c:827
-msgid "ldap root passwd"
+msgid "print ok"
+msgstr ""
+
+#: param/loadparm.c:828
+msgid "postscript"
+msgstr ""
+
+#: param/loadparm.c:829
+msgid "printing"
+msgstr ""
+
+#: param/loadparm.c:830
+msgid "print command"
 msgstr ""
 
 #: param/loadparm.c:831
-msgid "Miscellaneous Options"
+msgid "disable spoolss"
 msgstr ""
 
 #: param/loadparm.c:832
-msgid "smbrun"
+msgid "lpq command"
 msgstr ""
 
 #: param/loadparm.c:833
-msgid "config file"
+msgid "lprm command"
 msgstr ""
 
 #: param/loadparm.c:834
-msgid "auto services"
+msgid "lppause command"
 msgstr ""
 
 #: param/loadparm.c:835
-msgid "preload"
+msgid "lpresume command"
 msgstr ""
 
 #: param/loadparm.c:836
-msgid "lock directory"
+msgid "queuepause command"
 msgstr ""
 
 #: param/loadparm.c:837
-msgid "lock dir"
+msgid "queueresume command"
 msgstr ""
 
 #: param/loadparm.c:839
-msgid "utmp directory"
+msgid "enumports command"
 msgstr ""
 
 #: param/loadparm.c:840
-msgid "utmp dir"
+msgid "addprinter command"
 msgstr ""
 
 #: param/loadparm.c:841
-msgid "wtmp directory"
+msgid "deleteprinter command"
 msgstr ""
 
 #: param/loadparm.c:842
-msgid "wtmp dir"
+msgid "show add printer wizard"
 msgstr ""
 
 #: param/loadparm.c:843
-msgid "utmp hostname"
+msgid "os2 driver map"
 msgstr ""
 
-#: param/loadparm.c:844
-msgid "utmp consolidate"
+#: param/loadparm.c:845
+msgid "printer name"
 msgstr ""
 
 #: param/loadparm.c:846
-msgid "default service"
+msgid "printer"
 msgstr ""
 
 #: param/loadparm.c:847
-msgid "default"
+msgid "use client driver"
 msgstr ""
 
 #: param/loadparm.c:848
-msgid "message command"
+msgid "printer driver"
 msgstr ""
 
 #: param/loadparm.c:849
-msgid "dfree command"
+msgid "printer driver file"
 msgstr ""
 
 #: param/loadparm.c:850
-msgid "valid chars"
-msgstr ""
-
-#: param/loadparm.c:851
-msgid "remote announce"
+msgid "printer driver location"
 msgstr ""
 
 #: param/loadparm.c:852
-msgid "remote browse sync"
+msgid "Filename Handling"
 msgstr ""
 
 #: param/loadparm.c:853
-msgid "socket address"
-msgstr ""
-
-#: param/loadparm.c:854
-msgid "homedir map"
+msgid "strip dot"
 msgstr ""
 
 #: param/loadparm.c:855
-msgid "time offset"
+msgid "mangled stack"
 msgstr ""
 
 #: param/loadparm.c:856
-msgid "unix realname"
+msgid "default case"
 msgstr ""
 
 #: param/loadparm.c:857
-msgid "NIS homedir"
+msgid "case sensitive"
 msgstr ""
 
 #: param/loadparm.c:858
-msgid "-valid"
+msgid "casesignames"
 msgstr ""
 
 #: param/loadparm.c:859
-msgid "copy"
+msgid "preserve case"
 msgstr ""
 
 #: param/loadparm.c:860
-msgid "include"
+msgid "short preserve case"
 msgstr ""
 
 #: param/loadparm.c:861
-msgid "preexec"
+msgid "mangle case"
 msgstr ""
 
 #: param/loadparm.c:862
-msgid "exec"
+msgid "mangling char"
 msgstr ""
 
 #: param/loadparm.c:863
-msgid "preexec close"
+msgid "hide dot files"
 msgstr ""
 
 #: param/loadparm.c:864
-msgid "postexec"
+msgid "hide unreadable"
 msgstr ""
 
 #: param/loadparm.c:865
-msgid "root preexec"
+msgid "delete veto files"
 msgstr ""
 
 #: param/loadparm.c:866
-msgid "root preexec close"
+msgid "veto files"
 msgstr ""
 
 #: param/loadparm.c:867
-msgid "root postexec"
+msgid "hide files"
 msgstr ""
 
 #: param/loadparm.c:868
-msgid "available"
+msgid "veto oplock files"
 msgstr ""
 
 #: param/loadparm.c:869
-msgid "volume"
+msgid "map system"
 msgstr ""
 
 #: param/loadparm.c:870
-msgid "fstype"
+msgid "map hidden"
 msgstr ""
 
 #: param/loadparm.c:871
-msgid "set directory"
+msgid "map archive"
 msgstr ""
 
 #: param/loadparm.c:872
-msgid "source environment"
+msgid "mangled names"
 msgstr ""
 
 #: param/loadparm.c:873
-msgid "wide links"
+msgid "mangled map"
 msgstr ""
 
 #: param/loadparm.c:874
-msgid "follow symlinks"
-msgstr ""
-
-#: param/loadparm.c:875
-msgid "dont descend"
+msgid "stat cache"
 msgstr ""
 
 #: param/loadparm.c:876
-msgid "magic script"
-msgstr ""
-
-#: param/loadparm.c:877
-msgid "magic output"
+msgid "Domain Options"
 msgstr ""
 
 #: param/loadparm.c:878
-msgid "delete readonly"
+msgid "domain admin group"
 msgstr ""
 
 #: param/loadparm.c:879
-msgid "dos filetimes"
-msgstr ""
-
-#: param/loadparm.c:880
-msgid "dos filetime resolution"
+msgid "domain guest group"
 msgstr ""
 
 #: param/loadparm.c:882
+msgid "groupname map"
+msgstr ""
+
+#: param/loadparm.c:885
+msgid "machine password timeout"
+msgstr ""
+
+#: param/loadparm.c:887
+msgid "Logon Options"
+msgstr ""
+
+#: param/loadparm.c:889
+msgid "add user script"
+msgstr ""
+
+#: param/loadparm.c:890
+msgid "delete user script"
+msgstr ""
+
+#: param/loadparm.c:891
+msgid "add group script"
+msgstr ""
+
+#: param/loadparm.c:892
+msgid "delete group script"
+msgstr ""
+
+#: param/loadparm.c:893
+msgid "add user to group script"
+msgstr ""
+
+#: param/loadparm.c:894
+msgid "delete user from group script"
+msgstr ""
+
+#: param/loadparm.c:895
+msgid "add machine script"
+msgstr ""
+
+#: param/loadparm.c:896
+msgid "shutdown script"
+msgstr ""
+
+#: param/loadparm.c:897
+msgid "abort shutdown script"
+msgstr ""
+
+#: param/loadparm.c:899
+msgid "logon script"
+msgstr ""
+
+#: param/loadparm.c:900
+msgid "logon path"
+msgstr ""
+
+#: param/loadparm.c:901
+msgid "logon drive"
+msgstr ""
+
+#: param/loadparm.c:902
+msgid "logon home"
+msgstr ""
+
+#: param/loadparm.c:903
+msgid "domain logons"
+msgstr ""
+
+#: param/loadparm.c:905
+msgid "Browse Options"
+msgstr ""
+
+#: param/loadparm.c:907
+msgid "os level"
+msgstr ""
+
+#: param/loadparm.c:908
+msgid "lm announce"
+msgstr ""
+
+#: param/loadparm.c:909
+msgid "lm interval"
+msgstr ""
+
+#: param/loadparm.c:910
+msgid "preferred master"
+msgstr ""
+
+#: param/loadparm.c:911
+msgid "prefered master"
+msgstr ""
+
+#: param/loadparm.c:912
+msgid "local master"
+msgstr ""
+
+#: param/loadparm.c:913
+msgid "domain master"
+msgstr ""
+
+#: param/loadparm.c:914
+msgid "browse list"
+msgstr ""
+
+#: param/loadparm.c:915
+msgid "browseable"
+msgstr ""
+
+#: param/loadparm.c:916
+msgid "browsable"
+msgstr ""
+
+#: param/loadparm.c:917
+msgid "enhanced browsing"
+msgstr ""
+
+#: param/loadparm.c:919
+msgid "WINS Options"
+msgstr ""
+
+#: param/loadparm.c:920
+msgid "dns proxy"
+msgstr ""
+
+#: param/loadparm.c:921
+msgid "wins proxy"
+msgstr ""
+
+#: param/loadparm.c:923
+msgid "wins server"
+msgstr ""
+
+#: param/loadparm.c:924
+msgid "wins support"
+msgstr ""
+
+#: param/loadparm.c:925
+msgid "wins hook"
+msgstr ""
+
+#: param/loadparm.c:927
+msgid "Locking Options"
+msgstr ""
+
+#: param/loadparm.c:929
+msgid "blocking locks"
+msgstr ""
+
+#: param/loadparm.c:930
+msgid "fake oplocks"
+msgstr ""
+
+#: param/loadparm.c:931
+msgid "kernel oplocks"
+msgstr ""
+
+#: param/loadparm.c:932
+msgid "locking"
+msgstr ""
+
+#: param/loadparm.c:934
+msgid "oplocks"
+msgstr ""
+
+#: param/loadparm.c:935
+msgid "level2 oplocks"
+msgstr ""
+
+#: param/loadparm.c:936
+msgid "oplock break wait time"
+msgstr ""
+
+#: param/loadparm.c:937
+msgid "oplock contention limit"
+msgstr ""
+
+#: param/loadparm.c:938
+msgid "posix locking"
+msgstr ""
+
+#: param/loadparm.c:939
+msgid "strict locking"
+msgstr ""
+
+#: param/loadparm.c:940
+msgid "share modes"
+msgstr ""
+
+#: param/loadparm.c:943
+msgid "Ldap Options"
+msgstr ""
+
+#: param/loadparm.c:945
+msgid "ldap server"
+msgstr ""
+
+#: param/loadparm.c:946
+msgid "ldap port"
+msgstr ""
+
+#: param/loadparm.c:947
+msgid "ldap suffix"
+msgstr ""
+
+#: param/loadparm.c:948
+msgid "ldap filter"
+msgstr ""
+
+#: param/loadparm.c:949
+msgid "ldap root"
+msgstr ""
+
+#: param/loadparm.c:950
+msgid "ldap root passwd"
+msgstr ""
+
+#: param/loadparm.c:953
+msgid "Miscellaneous Options"
+msgstr ""
+
+#: param/loadparm.c:954
+msgid "add share command"
+msgstr ""
+
+#: param/loadparm.c:955
+msgid "change share command"
+msgstr ""
+
+#: param/loadparm.c:956
+msgid "delete share command"
+msgstr ""
+
+#: param/loadparm.c:958
+msgid "config file"
+msgstr ""
+
+#: param/loadparm.c:959
+msgid "preload"
+msgstr ""
+
+#: param/loadparm.c:960
+msgid "auto services"
+msgstr ""
+
+#: param/loadparm.c:961
+msgid "lock dir"
+msgstr ""
+
+#: param/loadparm.c:962
+msgid "lock directory"
+msgstr ""
+
+#: param/loadparm.c:964
+msgid "utmp directory"
+msgstr ""
+
+#: param/loadparm.c:965
+msgid "wtmp directory"
+msgstr ""
+
+#: param/loadparm.c:966
+msgid "utmp"
+msgstr ""
+
+#: param/loadparm.c:969
+msgid "default service"
+msgstr ""
+
+#: param/loadparm.c:970
+msgid "default"
+msgstr ""
+
+#: param/loadparm.c:971
+msgid "message command"
+msgstr ""
+
+#: param/loadparm.c:972
+msgid "dfree command"
+msgstr ""
+
+#: param/loadparm.c:973
+msgid "remote announce"
+msgstr ""
+
+#: param/loadparm.c:974
+msgid "remote browse sync"
+msgstr ""
+
+#: param/loadparm.c:975
+msgid "socket address"
+msgstr ""
+
+#: param/loadparm.c:976
+msgid "homedir map"
+msgstr ""
+
+#: param/loadparm.c:977
+msgid "time offset"
+msgstr ""
+
+#: param/loadparm.c:978
+msgid "NIS homedir"
+msgstr ""
+
+#: param/loadparm.c:979
+msgid "-valid"
+msgstr ""
+
+#: param/loadparm.c:981
+msgid "copy"
+msgstr ""
+
+#: param/loadparm.c:982
+msgid "include"
+msgstr ""
+
+#: param/loadparm.c:983
+msgid "exec"
+msgstr ""
+
+#: param/loadparm.c:984
+msgid "preexec"
+msgstr ""
+
+#: param/loadparm.c:986
+msgid "preexec close"
+msgstr ""
+
+#: param/loadparm.c:987
+msgid "postexec"
+msgstr ""
+
+#: param/loadparm.c:988
+msgid "root preexec"
+msgstr ""
+
+#: param/loadparm.c:989
+msgid "root preexec close"
+msgstr ""
+
+#: param/loadparm.c:990
+msgid "root postexec"
+msgstr ""
+
+#: param/loadparm.c:991
+msgid "available"
+msgstr ""
+
+#: param/loadparm.c:992
+msgid "volume"
+msgstr ""
+
+#: param/loadparm.c:993
+msgid "fstype"
+msgstr ""
+
+#: param/loadparm.c:994
+msgid "set directory"
+msgstr ""
+
+#: param/loadparm.c:995
+msgid "source environment"
+msgstr ""
+
+#: param/loadparm.c:996
+msgid "wide links"
+msgstr ""
+
+#: param/loadparm.c:997
+msgid "follow symlinks"
+msgstr ""
+
+#: param/loadparm.c:998
+msgid "dont descend"
+msgstr ""
+
+#: param/loadparm.c:999
+msgid "magic script"
+msgstr ""
+
+#: param/loadparm.c:1000
+msgid "magic output"
+msgstr ""
+
+#: param/loadparm.c:1001
+msgid "delete readonly"
+msgstr ""
+
+#: param/loadparm.c:1002
+msgid "dos filemode"
+msgstr ""
+
+#: param/loadparm.c:1003
+msgid "dos filetimes"
+msgstr ""
+
+#: param/loadparm.c:1004
+msgid "dos filetime resolution"
+msgstr ""
+
+#: param/loadparm.c:1006
 msgid "fake directory create times"
 msgstr ""
 
-#: param/loadparm.c:883
+#: param/loadparm.c:1007
 msgid "panic action"
+msgstr ""
+
+#: param/loadparm.c:1008
+msgid "hide local users"
+msgstr ""
+
+#: param/loadparm.c:1011
+msgid "VFS options"
+msgstr ""
+
+#: param/loadparm.c:1013
+msgid "vfs object"
+msgstr ""
+
+#: param/loadparm.c:1014
+msgid "vfs options"
+msgstr ""
+
+#: param/loadparm.c:1017
+msgid "msdfs root"
+msgstr ""
+
+#: param/loadparm.c:1018
+msgid "host msdfs"
+msgstr ""
+
+#: param/loadparm.c:1020
+msgid "Winbind options"
+msgstr ""
+
+#: param/loadparm.c:1022
+msgid "winbind uid"
+msgstr ""
+
+#: param/loadparm.c:1023
+msgid "winbind gid"
+msgstr ""
+
+#: param/loadparm.c:1024
+msgid "template homedir"
+msgstr ""
+
+#: param/loadparm.c:1025
+msgid "template shell"
+msgstr ""
+
+#: param/loadparm.c:1026
+msgid "winbind separator"
+msgstr ""
+
+#: param/loadparm.c:1027
+msgid "winbind cache time"
+msgstr ""
+
+#: param/loadparm.c:1028
+msgid "winbind enum users"
+msgstr ""
+
+#: param/loadparm.c:1029
+msgid "winbind enum groups"
 msgstr ""

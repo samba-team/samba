@@ -196,7 +196,6 @@ static void show_parameter(int snum, struct parm_struct *parm)
 {
 	int i;
 	void *ptr = parm->ptr;
-	char* str;
 
 	if (parm->class == P_LOCAL && snum >= 0) {
 		ptr = lp_local_ptr(snum, ptr);
