@@ -138,4 +138,3 @@ eval $SMBCLIENT "'\\\\$server\\$service'" "'$password'" -U "'$username'" \
 -E -N $log -D "'$cdcmd'" \
 -T${tarcmd}${tarargs} $blocksize $newer $tapefile $* $verbose
 
-
