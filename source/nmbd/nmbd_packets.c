@@ -1159,14 +1159,14 @@ static void process_dgram(struct packet_struct *p)
   /* Datagram packet received for the domain logon mailslot */
   if (strequal(smb_buf(buf),NET_LOGON_MAILSLOT))
   {
-    process_logon_packet(p,buf2,len,NET_LOGON_MAILSLOT);
+    process_logon_packet(p,buf2,len);
     return;
   }
 
   /* Datagram packet received for the NT domain logon mailslot */
   if (strequal(smb_buf(buf),NT_LOGON_MAILSLOT))
   {
-    process_logon_packet(p,buf2,len,NT_LOGON_MAILSLOT);
+    process_logon_packet(p,buf2,len);
     return;
   }
 }
