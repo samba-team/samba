@@ -141,6 +141,14 @@ static NTSTATUS ipv4_tcp_accept(struct socket_context *sock, struct socket_conte
 		return map_nt_error_from_unix(errno);
 	}
 
+	if (!(flags & SOCKET_FLAG_BLOCK)) {
+		int ret = set_blocking(new_fd, False);
+		if (ret == -1) {
+			close(new_fd);
+			return map_nt_error_from_unix(errno);
+		}
+	}
+
 	/* TODO: we could add a 'accept_check' hook here
 	 *	 which get the black/white lists via socket_set_accept_filter()
 	 *	 or something like that
