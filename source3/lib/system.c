@@ -265,6 +265,34 @@ char *sys_getwd(char *s)
 }
 
 /*******************************************************************
+system wrapper for symlink
+********************************************************************/
+
+int sys_symlink(const char *oldpath, const char *newpath)
+{
+#ifndef HAVE_SYMLINK
+	errno = ENOSYS;
+	return -1;
+#else
+	return symlink(oldpath, newpath);
+#endif
+}
+
+/*******************************************************************
+system wrapper for readlink
+********************************************************************/
+
+int sys_readlink(const char *path, char *buf, size_t bufsiz)
+{
+#ifndef HAVE_READLINK
+	errno = ENOSYS;
+	return -1;
+#else
+	return readlink(path, buf, bufsiz);
+#endif
+}
+
+/*******************************************************************
 chown isn't used much but OS/2 doesn't have it
 ********************************************************************/
 

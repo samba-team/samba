@@ -558,6 +558,38 @@ BOOL vfswrap_lock(files_struct *fsp, int fd, int op, SMB_OFF_T offset, SMB_OFF_T
     return result;
 }
 
+int vfswrap_symlink(connection_struct *conn, const char *oldpath, const char *newpath)
+{
+    int result;
+
+    START_PROFILE(syscall_symlink);
+
+#ifdef VFS_CHECK_NULL
+    if ((oldpath == NULL) || (newpath == NULL))
+		smb_panic("NULL pointer passed to vfswrap_symlink()\n");
+#endif
+
+    result = sys_symlink(oldpath, newpath);
+    END_PROFILE(syscall_symlink);
+    return result;
+}
+
+int vfswrap_readlink(connection_struct *conn, const char *path, char *buf, size_t bufsiz)
+{
+    int result;
+
+    START_PROFILE(syscall_readlink);
+
+#ifdef VFS_CHECK_NULL
+    if ((path == NULL) || (buf == NULL))
+		smb_panic("NULL pointer passed to vfswrap_readlink()\n");
+#endif
+
+    result = sys_readlink(path, buf, bufsiz);
+    END_PROFILE(syscall_readlink);
+    return result;
+}
+
 size_t vfswrap_fget_nt_acl(files_struct *fsp, int fd, SEC_DESC **ppdesc)
 {
 	return get_nt_acl(fsp, ppdesc);
