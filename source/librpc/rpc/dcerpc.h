@@ -48,6 +48,9 @@ struct dcerpc_pipe {
 		NTSTATUS (*shutdown_pipe)(struct dcerpc_pipe *);
 		const char *(*peer_name)(struct dcerpc_pipe *);
 	} transport;
+
+	/* the last fault code from a DCERPC fault */
+	uint32 last_fault_code;
 };
 
 /* dcerpc pipe flags */

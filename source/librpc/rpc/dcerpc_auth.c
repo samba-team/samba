@@ -136,6 +136,7 @@ done:
 
 	if (!NT_STATUS_IS_OK(status)) {
 		p->ntlmssp_state = NULL;
+		p->auth_info = NULL;
 	}
 
 	return status;
