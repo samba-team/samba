@@ -1,3 +1,7 @@
+1999-08-12  Johan Danielsson  <joda@pdc.kth.se>
+
+	* pop_dele.c: implement XDELE to delete a range of messages
+
 1999-08-05  Assar Westerlund  <assar@sics.se>
 
 	* pop_init.c: v6-ify
