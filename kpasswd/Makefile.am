@@ -10,6 +10,8 @@ kpasswd_SOURCES = kpasswd.c kpasswd_locl.h
 
 libexec_PROGRAMS = kpasswdd
 
+noinst_PROGRAMS = kpasswd-generator
+
 kpasswdd_SOURCES = kpasswdd.c kpasswd_locl.h
 
 kpasswdd_LDADD = \
