@@ -6,8 +6,7 @@ dnl
 
 AC_DEFUN([rk_C_VARARRAY], [
 	AC_CACHE_CHECK([if the compiler supports variable-length arrays],[rk_cv_c_vararray],[
-	AC_TRY_COMPILE([],
-		[int x = 0; { int y[x]; }],
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[]],[[int x = 0; { int y[x]; }]])],
 		[rk_cv_c_vararray=yes],
 		[rk_cv_c_vararray=no])])
 	if test "$rk_cv_c_vararray" = yes; then

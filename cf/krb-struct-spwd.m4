@@ -5,14 +5,13 @@ dnl Test for `struct spwd'
 AC_DEFUN([AC_KRB_STRUCT_SPWD], [
 AC_MSG_CHECKING(for struct spwd)
 AC_CACHE_VAL(ac_cv_struct_spwd, [
-AC_TRY_COMPILE(
-[#include <pwd.h>
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <pwd.h>
 #ifdef HAVE_SHADOW_H
 #include <shadow.h>
-#endif],
-[struct spwd foo;],
-ac_cv_struct_spwd=yes,
-ac_cv_struct_spwd=no)
+#endif]],[[struct spwd foo;]])],
+[ac_cv_struct_spwd=yes],
+[ac_cv_struct_spwd=no])
 ])
 AC_MSG_RESULT($ac_cv_struct_spwd)
 

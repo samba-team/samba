@@ -101,7 +101,7 @@ if test "$with_$1" != no; then
 		ires= lres=
 		for i in $header_dirs; do
 			CFLAGS="-I$i $save_CFLAGS"
-			AC_TRY_COMPILE([$2],,ires=$i;break)
+			AC_COMPILE_IFELSE([AC_LANG_SOURCE([[$2]],[[]])],[ires=$i;break])
 		done
 		for i in $lib_dirs; do
 			LIBS="-L$i $3 $4 $save_LIBS"
