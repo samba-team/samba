@@ -395,7 +395,8 @@ static int map_share_mode( char *fname, uint32 desired_access, uint32 share_acce
 
   if (smb_open_mode == -1) {
     if(desired_access & (DELETE_ACCESS|WRITE_DAC_ACCESS|WRITE_OWNER_ACCESS|
-                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|FILE_READ_EA|
+                              FILE_EXECUTE|FILE_READ_ATTRIBUTES|
+                              FILE_READ_EA|FILE_WRITE_EA|
                               FILE_WRITE_ATTRIBUTES|READ_CONTROL_ACCESS))
       smb_open_mode = DOS_OPEN_RDONLY;
     else {
