@@ -199,6 +199,8 @@ typedef enum krb5_key_usage {
     /* Checksum for the SAM-CHECKSUM field */
     KRB5_KU_SAM_ENC_TRACK_ID = 26,
     /* Encryption of the SAM-TRACK-ID field */
+    KRB5_KU_PA_SERVER_REFERRAL = 26,
+    /* Keyusage for the server referral in a TGS req */
     KRB5_KU_SAM_ENC_NONCE_SAD = 27
     /* Encryption of the SAM-NONCE-OR-SAD field */
 } krb5_key_usage;
