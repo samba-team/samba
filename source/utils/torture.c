@@ -994,7 +994,6 @@ static BOOL run_locktest2(int dummy)
 		if (!check_error(&cli, ERRDOS, ERRlock, 0)) return False;
 	}
 
-#if 1 /* JRATEST */
 	if (!cli_lock(&cli, fnum1, 100, 4, 0, WRITE_LOCK)) {
 		printf("lock at 100 failed (%s)\n", cli_errstr(&cli));
 	}
@@ -1002,10 +1001,7 @@ static BOOL run_locktest2(int dummy)
 	if (cli_unlock(&cli, fnum1, 100, 4)) {
 		printf("unlock at 100 succeeded! This is a locking bug\n");
 		correct = False;
-	} else {
-		printf("unlock at 100 failed with error %s\n", cli_errstr(&cli) );
 	}
-#endif
 
 	if (cli_unlock(&cli, fnum1, 0, 4)) {
 		printf("unlock1 succeeded! This is a locking bug\n");
