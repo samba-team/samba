@@ -44,6 +44,7 @@ Internet File Transfer Protocol server
 .Nm ftpd
 .Op Fl a Ar authmode
 .Op Fl dilv
+.Op Fl g Ar umask
 .Op Fl p Ar port 
 .Op Fl T Ar maxtimeout
 .Op Fl t Ar timeout
@@ -94,6 +95,9 @@ Ignored.
 .El
 .It Fl d
 Debugging information is written to the syslog using LOG_FTP.
+.It Fl g
+Anonymous users will get a umask of
+.Ar umask .
 .It Fl i
 Open a socket and wait for a connection. This is mainly used for
 debugging when ftpd isn't started by inetd.
@@ -396,7 +400,10 @@ The following restrictions apply to anonymous users:
 .It
 Directories created will have mode 700.
 .It
-Uploaded files will have mode 000.
+Uploaded files will be created with an umask of 777, if not changed
+with the
+.Fl g
+option.
 .It
 These command are not accessible: 
 .Ic DELE , RMD , RNTO , RNFR , 
