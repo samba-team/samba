@@ -357,7 +357,7 @@ struct samr_OpenGroup {
 struct samr_GroupInfoAll {
 	struct samr_Name name;
 	uint32 unknown;
-	uint32 members;
+	uint32 num_members;
 	struct samr_Name description;
 };
 
@@ -453,21 +453,48 @@ struct samr_SET_MEMBER_ATTRIBUTES_OF_GROUP {
 
 };
 
-struct samr_OPEN_ALIAS {
+struct samr_OpenAlias {
 	struct {
+		struct policy_handle *handle;
+		uint32 access_mask;
+		uint32 rid;
 	} in;
 
 	struct {
+		struct policy_handle *acct_handle;
 		NTSTATUS result;
 	} out;
 
 };
 
-struct samr_QUERY_ALIASINFO {
+struct samr_AliasInfoAll {
+	struct samr_Name name;
+	uint32 num_members;
+	struct samr_Name description;
+};
+
+struct samr_AliasInfoName {
+	struct samr_Name name;
+};
+
+struct samr_AliasInfoDescription {
+	struct samr_Name description;
+};
+
+union samr_AliasInfo {
+/* [case(1)] */ struct samr_AliasInfoAll all;
+/* [case(2)] */ struct samr_AliasInfoName name;
+/* [case(3)] */ struct samr_AliasInfoDescription description;
+};
+
+struct samr_QueryAliasInfo {
 	struct {
+		struct policy_handle *handle;
+		uint16 level;
 	} in;
 
 	struct {
+		union samr_AliasInfo *info;
 		NTSTATUS result;
 	} out;
 
@@ -1074,8 +1101,8 @@ struct samr_VALIDATE_PASSWORD {
 #define DCERPC_SAMR_DEL_GROUPMEM 24
 #define DCERPC_SAMR_QUERY_GROUPMEM 25
 #define DCERPC_SAMR_SET_MEMBER_ATTRIBUTES_OF_GROUP 26
-#define DCERPC_SAMR_OPEN_ALIAS 27
-#define DCERPC_SAMR_QUERY_ALIASINFO 28
+#define DCERPC_SAMR_OPENALIAS 27
+#define DCERPC_SAMR_QUERYALIASINFO 28
 #define DCERPC_SAMR_SET_ALIASINFO 29
 #define DCERPC_SAMR_DELETE_DOM_ALIAS 30
 #define DCERPC_SAMR_ADD_ALIASMEM 31

@@ -381,12 +381,12 @@ NTSTATUS dcerpc_samr_SET_MEMBER_ATTRIBUTES_OF_GROUP(struct dcerpc_pipe *p, TALLO
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_OPEN_ALIAS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OPEN_ALIAS *r)
+NTSTATUS dcerpc_samr_OpenAlias(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_OpenAlias *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPEN_ALIAS, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_OPEN_ALIAS,
-				    (ndr_pull_fn_t) ndr_pull_samr_OPEN_ALIAS,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_OPENALIAS, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_OpenAlias,
+				    (ndr_pull_fn_t) ndr_pull_samr_OpenAlias,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -395,12 +395,12 @@ NTSTATUS dcerpc_samr_OPEN_ALIAS(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, stru
 	return r->out.result;
 }
 
-NTSTATUS dcerpc_samr_QUERY_ALIASINFO(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QUERY_ALIASINFO *r)
+NTSTATUS dcerpc_samr_QueryAliasInfo(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, struct samr_QueryAliasInfo *r)
 {
 	NTSTATUS status;
-	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERY_ALIASINFO, mem_ctx,
-				    (ndr_push_fn_t) ndr_push_samr_QUERY_ALIASINFO,
-				    (ndr_pull_fn_t) ndr_pull_samr_QUERY_ALIASINFO,
+	status = dcerpc_ndr_request(p, DCERPC_SAMR_QUERYALIASINFO, mem_ctx,
+				    (ndr_push_fn_t) ndr_push_samr_QueryAliasInfo,
+				    (ndr_pull_fn_t) ndr_pull_samr_QueryAliasInfo,
 				    r);
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;

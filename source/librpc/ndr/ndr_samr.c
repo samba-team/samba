@@ -210,14 +210,19 @@ NTSTATUS ndr_push_samr_SET_MEMBER_ATTRIBUTES_OF_GROUP(struct ndr_push *ndr, stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_OPEN_ALIAS(struct ndr_push *ndr, struct samr_OPEN_ALIAS *r)
+NTSTATUS ndr_push_samr_OpenAlias(struct ndr_push *ndr, struct samr_OpenAlias *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.access_mask));
+	NDR_CHECK(ndr_push_uint32(ndr, r->in.rid));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_push_samr_QUERY_ALIASINFO(struct ndr_push *ndr, struct samr_QUERY_ALIASINFO *r)
+NTSTATUS ndr_push_samr_QueryAliasInfo(struct ndr_push *ndr, struct samr_QueryAliasInfo *r)
 {
+	NDR_CHECK(ndr_push_policy_handle(ndr, r->in.handle));
+	NDR_CHECK(ndr_push_uint16(ndr, r->in.level));
 
 	return NT_STATUS_OK;
 }
@@ -1039,7 +1044,7 @@ static NTSTATUS ndr_pull_samr_GroupInfoAll(struct ndr_pull *ndr, int ndr_flags, 
 	NDR_CHECK(ndr_pull_align(ndr, 4));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
 	NDR_CHECK(ndr_pull_uint32(ndr, &r->unknown));
-	NDR_CHECK(ndr_pull_uint32(ndr, &r->members));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_members));
 	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
 buffers:
 	if (!(ndr_flags & NDR_BUFFERS)) goto done;
@@ -1196,15 +1201,110 @@ NTSTATUS ndr_pull_samr_SET_MEMBER_ATTRIBUTES_OF_GROUP(struct ndr_pull *ndr, stru
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_OPEN_ALIAS(struct ndr_pull *ndr, struct samr_OPEN_ALIAS *r)
+NTSTATUS ndr_pull_samr_OpenAlias(struct ndr_pull *ndr, struct samr_OpenAlias *r)
 {
+	NDR_CHECK(ndr_pull_policy_handle(ndr, r->out.acct_handle));
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
 }
 
-NTSTATUS ndr_pull_samr_QUERY_ALIASINFO(struct ndr_pull *ndr, struct samr_QUERY_ALIASINFO *r)
+static NTSTATUS ndr_pull_samr_AliasInfoAll(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoAll *r)
 {
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
+	NDR_CHECK(ndr_pull_uint32(ndr, &r->num_members));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_AliasInfoName(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoName *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->name));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->name));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_AliasInfoDescription(struct ndr_pull *ndr, int ndr_flags, struct samr_AliasInfoDescription *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_align(ndr, 4));
+	NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_SCALARS, &r->description));
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+		NDR_CHECK(ndr_pull_samr_Name(ndr, NDR_BUFFERS, &r->description));
+done:
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS ndr_pull_samr_AliasInfo(struct ndr_pull *ndr, int ndr_flags, uint16 *level, union samr_AliasInfo *r)
+{
+	if (!(ndr_flags & NDR_SCALARS)) goto buffers;
+	NDR_CHECK(ndr_pull_uint16(ndr, level));
+	switch (*level) {
+	case 1: {
+	NDR_CHECK(ndr_pull_samr_AliasInfoAll(ndr, NDR_SCALARS, &r->all));
+	break; }
+
+	case 2: {
+	NDR_CHECK(ndr_pull_samr_AliasInfoName(ndr, NDR_SCALARS, &r->name));
+	break; }
+
+	case 3: {
+	NDR_CHECK(ndr_pull_samr_AliasInfoDescription(ndr, NDR_SCALARS, &r->description));
+	break; }
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+buffers:
+	if (!(ndr_flags & NDR_BUFFERS)) goto done;
+	switch (*level) {
+	case 1:
+		NDR_CHECK(ndr_pull_samr_AliasInfoAll(ndr, NDR_BUFFERS, &r->all));
+	break;
+
+	case 2:
+		NDR_CHECK(ndr_pull_samr_AliasInfoName(ndr, NDR_BUFFERS, &r->name));
+	break;
+
+	case 3:
+		NDR_CHECK(ndr_pull_samr_AliasInfoDescription(ndr, NDR_BUFFERS, &r->description));
+	break;
+
+	default:
+		return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u", *level);
+	}
+done:
+	return NT_STATUS_OK;
+}
+
+NTSTATUS ndr_pull_samr_QueryAliasInfo(struct ndr_pull *ndr, struct samr_QueryAliasInfo *r)
+{
+	uint32 _ptr_info;
+	NDR_CHECK(ndr_pull_uint32(ndr, &_ptr_info));
+	if (_ptr_info) {
+		NDR_ALLOC(ndr, r->out.info);
+	} else {
+		r->out.info = NULL;
+	}
+	if (r->out.info) {
+	{ uint16 _level;
+	NDR_CHECK(ndr_pull_samr_AliasInfo(ndr, NDR_SCALARS|NDR_BUFFERS, &_level, r->out.info));
+	if (((NDR_SCALARS|NDR_BUFFERS) & NDR_SCALARS) && (_level != r->in.level)) return ndr_pull_error(ndr, NDR_ERR_BAD_SWITCH, "Bad switch value %u in info");
+	}
+	}
 	NDR_CHECK(ndr_pull_NTSTATUS(ndr, &r->out.result));
 
 	return NT_STATUS_OK;
@@ -2317,7 +2417,7 @@ void ndr_print_samr_GroupInfoAll(struct ndr_print *ndr, const char *name, struct
 	ndr->depth++;
 	ndr_print_samr_Name(ndr, "name", &r->name);
 	ndr_print_uint32(ndr, "unknown", r->unknown);
-	ndr_print_uint32(ndr, "members", r->members);
+	ndr_print_uint32(ndr, "num_members", r->num_members);
 	ndr_print_samr_Name(ndr, "description", &r->description);
 	ndr->depth--;
 }
@@ -2364,6 +2464,53 @@ void ndr_print_samr_GroupInfo(struct ndr_print *ndr, const char *name, uint16 le
 
 	case 4:
 	ndr_print_samr_GroupInfoDesciption(ndr, "description", &r->description);
+	break;
+
+	default:
+		ndr_print_bad_level(ndr, name, level);
+	}
+}
+
+void ndr_print_samr_AliasInfoAll(struct ndr_print *ndr, const char *name, struct samr_AliasInfoAll *r)
+{
+	ndr_print_struct(ndr, name, "samr_AliasInfoAll");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "name", &r->name);
+	ndr_print_uint32(ndr, "num_members", r->num_members);
+	ndr_print_samr_Name(ndr, "description", &r->description);
+	ndr->depth--;
+}
+
+void ndr_print_samr_AliasInfoName(struct ndr_print *ndr, const char *name, struct samr_AliasInfoName *r)
+{
+	ndr_print_struct(ndr, name, "samr_AliasInfoName");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "name", &r->name);
+	ndr->depth--;
+}
+
+void ndr_print_samr_AliasInfoDescription(struct ndr_print *ndr, const char *name, struct samr_AliasInfoDescription *r)
+{
+	ndr_print_struct(ndr, name, "samr_AliasInfoDescription");
+	ndr->depth++;
+	ndr_print_samr_Name(ndr, "description", &r->description);
+	ndr->depth--;
+}
+
+void ndr_print_samr_AliasInfo(struct ndr_print *ndr, const char *name, uint16 level, union samr_AliasInfo *r)
+{
+	ndr_print_union(ndr, name, level, "samr_AliasInfo");
+	switch (level) {
+	case 1:
+	ndr_print_samr_AliasInfoAll(ndr, "all", &r->all);
+	break;
+
+	case 2:
+	ndr_print_samr_AliasInfoName(ndr, "name", &r->name);
+	break;
+
+	case 3:
+	ndr_print_samr_AliasInfoDescription(ndr, "description", &r->description);
 	break;
 
 	default:
