@@ -397,6 +397,8 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 	int rc = -1;
 	int ldap_op;
 	fstring sid_string;
+	char **values;
+	int i;
 
 	sid_to_string( sid_string, sid );
 
@@ -422,9 +424,23 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 
 	snprintf(id_str, sizeof(id_str), "%u", ((id_type & ID_USERID) ? id.uid : id.gid));	
 	
-	smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-			 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
-	
+	values = ldap_get_values(ldap_state.smbldap_state->ldap_struct, entry, "objectClass");
+	if (values) {
+		BOOL found_idmap = False;
+		for (i=0; values[i]; i++) {
+			if (StrCaseCmp(values[i], LDAP_OBJ_IDMAP_ENTRY) == 0) {
+				found_idmap = True;
+				break;
+			}
+		}
+		if (!found_idmap)
+			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+					 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+	} else {
+		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+				 "objectClass", LDAP_OBJ_IDMAP_ENTRY );
+	}
+
 	smbldap_make_mod( ldap_state.smbldap_state->ldap_struct, 
 			  entry, &mods, type, id_str );
 
@@ -433,19 +449,24 @@ static NTSTATUS ldap_set_mapping_internals(const DOM_SID *sid, unid_t id,
 			  get_attr_key2string(sidmap_attr_list, LDAP_ATTR_SID), 
 			  sid_string );
 
-	switch(ldap_op)
-	{
-	case LDAP_MOD_ADD: 
-		smbldap_set_mod( &mods, LDAP_MOD_ADD, 
-				 "objectClass", LDAP_OBJ_SID_ENTRY );
-		rc = smbldap_add(ldap_state.smbldap_state, dn, mods);
-		break;
-	case LDAP_MOD_REPLACE: 
-		rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
-		break;
+	/* There may well be nothing at all to do */
+	if (mods) {
+		switch(ldap_op)
+		{
+		case LDAP_MOD_ADD: 
+			smbldap_set_mod( &mods, LDAP_MOD_ADD, 
+					 "objectClass", LDAP_OBJ_SID_ENTRY );
+			rc = smbldap_add(ldap_state.smbldap_state, dn, mods);
+			break;
+		case LDAP_MOD_REPLACE: 
+			rc = smbldap_modify(ldap_state.smbldap_state, dn, mods);
+			break;
+		}
+		
+		ldap_mods_free( mods, True );	
+	} else {
+		rc = LDAP_SUCCESS;
 	}
-
-	ldap_mods_free( mods, True );	
 
 	if (rc != LDAP_SUCCESS) {
 		char *ld_error = NULL;
