@@ -1,5 +1,18 @@
 Sun Aug 17 01:40:20 1997  Assar Westerlund  <assar@sics.se>
 
+	* lib/gssapi/accept_sec_context.c (gss_accept_sec_context): don't
+ 	always pass server == NULL to krb5_rd_req.
+
+	* lib/gssapi: new files: canonicalize_name.c export_name.c
+ 	context_time.c compare_name.c release_cred.c acquire_cred.c
+ 	inquire_cred.c, from Luke Howard <lukeh@xedoc.com.au>
+
+	* lib/krb5/config_file.c: Add netinfo support from Luke Howard
+ 	<lukeh@xedoc.com.au>
+
+	* lib/editline/sysunix.c: sgtty-support from Luke Howard
+ 	<lukeh@xedoc.com.au>
+
 	* lib/krb5/principal.c: krb5_sname_to_principal fix from Luke
  	Howard <lukeh@xedoc.com.au>
 
