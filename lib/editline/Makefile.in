@@ -82,12 +82,6 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
-
 $(LIBNAME).a: $(libeditline_a_OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(libeditline_a_OBJECTS)
@@ -109,4 +103,4 @@ $(OBJECTS): ../../include/config.h
 strdup.c:
 	$(LN_S) $(srcdir)/../roken/strdup.c .
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean

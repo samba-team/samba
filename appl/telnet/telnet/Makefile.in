@@ -29,10 +29,10 @@ EXECSUFFIX=@EXECSUFFIX@
 
 SOURCES=authenc.c commands.c main.c network.c ring.c \
 	sys_bsd.c telnet.c terminal.c \
-	utilities.c $(GETOPT_SRC)
+	utilities.c
 
 OBJECTS=authenc.o commands.o main.o network.o ring.o sys_bsd.o \
-	telnet.o terminal.o utilities.o $(GETOPT_OBJ)
+	telnet.o terminal.o utilities.o
 
 libtop=@libtop@
 

@@ -72,13 +72,6 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
-
-
 $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
@@ -86,4 +79,4 @@ $(LIB): $(OBJECTS)
 	$(LDSHARED) -o $@ $(OBJECTS) $(LD_FLAGS) $(LIB_DEPS)
 #	$(LINK) -shared -Wl,-x -o $(LIB) $(OBJECTS)  ../../kafs/libkafs.a ../../krb/libkrb.a ../../des/libdes.a
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean

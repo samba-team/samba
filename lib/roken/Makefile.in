@@ -145,7 +145,7 @@ check:
 
 clean:
 	rm -f $(LIB) *.o *.a roken.h make-roken$(EXECSUFFIX) make-roken.c \
-		make-print-version$(EXECSUFFIC) print_version.h
+		make-print-version$(EXECSUFFIX) print_version.h
 
 mostlyclean: clean
 
@@ -154,12 +154,6 @@ distclean: clean
 
 realclean: distclean
 	rm -f TAGS
-
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
 
 $(LIBNAME).a: $(OBJECTS)
 	rm -f $@
@@ -183,8 +177,8 @@ make-roken.c: roken.h.in roken.awk
 
 print_version.o: print_version.h
 
-print_version.h: make-print-version$(EXECSUFFIC)
-	@./make-print-version$(EXECSUFFIC) print_version.h
+print_version.h: make-print-version$(EXECSUFFIX)
+	@./make-print-version$(EXECSUFFIX) print_version.h
 
 make-print-version$(EXECSUFFIX): make-print-version.o
 	$(LINK) $(CFLAGS) -o $@ make-print-version.o
@@ -197,4 +191,4 @@ install-roken-h: roken.h
 
 $(OBJECTS): ../../include/config.h roken.h
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist install-roken-h
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean install-roken-h

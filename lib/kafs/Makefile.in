@@ -80,12 +80,6 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
-
 $(LIBNAME).a: $(OBJECTS)
 	rm -f $@
 	$(AR) cr $@ $(OBJECTS)
@@ -107,7 +101,7 @@ $(OBJECTS): ../../include/config.h roken_rename.h
 roken_rename.h:
 	$(LN_S) $(srcdir)/../krb/roken_rename.h .
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
 
 issuid.c:
 	$(LN_S) $(srcdir)/../roken/issuid.c .

@@ -92,12 +92,6 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
-
 KLIB=-L../../lib/krb -lkrb -L../../lib/des -ldes
 LIBROKEN=-L../../lib/roken -lroken
 OTPLIB=@LIB_otp@
@@ -110,4 +104,4 @@ pop_debug$(EXECSUFFIX): $(POP_DEBUG_OBJECTS)
 
 $(OBJECTS): ../../include/config.h
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean

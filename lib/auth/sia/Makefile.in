@@ -78,17 +78,10 @@ distclean: clean
 realclean: distclean
 	rm -f TAGS
 
-dist: $(DISTFILES)
-	for file in $(DISTFILES); do \
-	  ln $$file ../`cat ../.fname`/lib \
-	    || cp -p $$file ../`cat ../.fname`/lib; \
-	done
-
-
 $(OBJECTS): ../../../include/config.h
 
 $(LIB): $(OBJECTS)
 	rm -f $@
 	$(LDSHARED) -shared -o $@ -rpath $(libdir) -hidden -exported_symbol siad_\* $(OBJECTS) $(LIB_DEPS)
 
-.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean dist
+.PHONY: all Wall install uninstall check clean mostlyclean distclean realclean
