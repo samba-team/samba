@@ -514,20 +514,23 @@ struct winbindd_domain *find_domain_from_sid(DOM_SID *sid)
 
 void free_getent_state(struct getent_state *state)
 {
+    struct getent_state *temp;
+
     /* Iterate over state list */
 
-    while(state != NULL) {
-        struct getent_state *next = state->next;
+    temp = state;
 
-        /* Free any sam entries */
+    while(temp != NULL) {
+        struct getent_state *next;
 
-        if (state->sam_entries != NULL) free(state->sam_entries);
+        /* Free sam entries then list entry */
 
-        /* Remove from list */
-
+        safe_free(state->sam_entries);
         DLIST_REMOVE(state, state);
+        next = temp->next;
 
-        state = next;
+        free(temp);
+        temp = next;
     }
 }
 
@@ -548,7 +551,7 @@ static BOOL parse_id_list(char *paramstr, BOOL is_user)
                     &id_high) != 3) && 
             (sscanf(p, "%[^/]/%u", domain_name, &id_low) != 2)) {
 
-            DEBUG(0, ("surs_init(): winbid %s parameter invalid\n",
+            DEBUG(0, ("winbid %s parameter invalid\n", 
                       is_user ? "uid" : "gid"));
             return False;
         }
