@@ -4482,6 +4482,7 @@ void unbecome_root(void);
 BOOL become_user(connection_struct *conn, uint16 vuid);
 BOOL unbecome_user(void);
 void add_supplementary_nt_login_groups(int *n_groups, gid_t **pp_groups, NT_USER_TOKEN **pptok);
+BOOL name_is_local(const char *name);
 BOOL lookup_name(const char *name, DOM_SID *psid, enum SID_NAME_USE *name_type);
 BOOL lookup_sid(DOM_SID *sid, fstring dom_name, fstring name, enum SID_NAME_USE *name_type);
 DOM_SID *uid_to_sid(DOM_SID *psid, uid_t uid);

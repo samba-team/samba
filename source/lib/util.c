@@ -972,7 +972,8 @@ char *uidtoname(uid_t uid)
 		return name;
 
 	pass = sys_getpwuid(uid);
-	if (pass) return(pass->pw_name);
+	if (pass)
+		return(pass->pw_name);
 	slprintf(name, sizeof(name) - 1, "%d",(int)uid);
 	return(name);
 }
@@ -991,7 +992,8 @@ char *gidtoname(gid_t gid)
 		return name;
 
 	grp = getgrgid(gid);
-	if (grp) return(grp->gr_name);
+	if (grp)
+		return(grp->gr_name);
 	slprintf(name,sizeof(name) - 1, "%d",(int)gid);
 	return(name);
 }
