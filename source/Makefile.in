@@ -199,22 +199,20 @@ AUTH_OBJ = auth/auth.o auth/auth_sam.o \
 
 SMBD_OBJ_MAIN = smbd/server.o
 
+SMB_OBJS = @SMB_OBJS@
+SMB_LIBS = @SMB_LIBS@
+
 NTVFS_OBJS = @NTVFS_OBJS@
 NTVFS_LIBS = @NTVFS_LIBS@
 
 DCERPC_OBJS = @DCERPC_OBJS@
 DCERPC_LIBS = @DCERPC_LIBS@
 
-SMBD_OBJ_SRV = smbd/connection.o \
-		smbd/session.o smbd/process.o \
-		smbd/password.o smbd/conn.o \
-		smbd/negprot.o smbd/request.o \
-		smbd/reply.o smbd/sesssetup.o \
-		smbd/trans2.o smbd/search.o smbd/nttrans.o \
+SMBD_OBJ_SRV =	smbd/process.o \
 		lib/server_mutex.o \
-		smbd/build_options.o smbd/service.o \
-		smbd/rewrite.o $(DCERPC_OBJS) \
-		$(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
+		smbd/build_options.o \
+		smbd/rewrite.o \
+		$(DCERPC_OBJS) $(SMB_OBJS) $(NTVFS_OBJS) @SMBD_EXTRA_OBJS@
 
 PROCESS_MODEL_OBJS = @PROCESS_MODEL_OBJS@
 PROCESS_MODEL_LIBS = @PROCESS_MODEL_LIBS@
