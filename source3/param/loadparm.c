@@ -339,6 +339,7 @@ typedef struct
 	BOOL bCaseMangle;
 	BOOL bHideDotFiles;
 	BOOL bHideUnReadable;
+	BOOL bHideUnWriteable;
 	BOOL bBrowseable;
 	BOOL bAvailable;
 	BOOL bRead_only;
@@ -457,6 +458,7 @@ static service sDefault = {
 	False,			/* case mangle */
 	True,			/* bHideDotFiles */
 	False,			/* bHideUnReadable */
+	False,			/* bHideUnable */
 	True,			/* bBrowseable */
 	True,			/* bAvailable */
 	True,			/* bRead_only */
@@ -875,6 +877,7 @@ static struct parm_struct parm_table[] = {
 	{"mangling char", P_CHAR, P_LOCAL, &sDefault.magic_char, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"hide dot files", P_BOOL, P_LOCAL, &sDefault.bHideDotFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"hide unreadable", P_BOOL, P_LOCAL, &sDefault.bHideUnReadable, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
+	{"hide unwriteable", P_BOOL, P_LOCAL, &sDefault.bHideUnWriteable, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"delete veto files", P_BOOL, P_LOCAL, &sDefault.bDeleteVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL},
 	{"veto files", P_STRING, P_LOCAL, &sDefault.szVetoFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL },
 	{"hide files", P_STRING, P_LOCAL, &sDefault.szHideFiles, NULL, NULL, FLAG_SHARE | FLAG_GLOBAL },
@@ -1661,6 +1664,7 @@ FN_LOCAL_BOOL(lp_shortpreservecase, bShortCasePreserve)
 FN_LOCAL_BOOL(lp_casemangle, bCaseMangle)
 FN_LOCAL_BOOL(lp_hide_dot_files, bHideDotFiles)
 FN_LOCAL_BOOL(lp_hideunreadable, bHideUnReadable)
+FN_LOCAL_BOOL(lp_hideunwriteable, bHideUnWriteable)
 FN_LOCAL_BOOL(lp_browseable, bBrowseable)
 FN_LOCAL_BOOL(lp_readonly, bRead_only)
 FN_LOCAL_BOOL(lp_no_set_dir, bNo_set_dir)
