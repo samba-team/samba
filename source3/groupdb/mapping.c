@@ -629,6 +629,7 @@ Returns a GROUP_MAP struct based on the gid.
 BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 {
 	struct group *grp;
+	BOOL ret;
 
 	if(!init_group_mapping()) {
 		DEBUG(0,("failed to initialize group mapping"));
@@ -641,7 +642,12 @@ BOOL get_group_from_gid(gid_t gid, GROUP_MAP *map)
 	/*
 	 * make a group map from scratch if doesn't exist.
 	 */
-	if (!pdb_getgrgid(map, gid)) {
+	
+	become_root();
+	ret = pdb_getgrgid(map, gid);
+	unbecome_root();
+	
+	if ( !ret ) {
 		map->gid=gid;
 		map->sid_name_use=SID_NAME_ALIAS;
 

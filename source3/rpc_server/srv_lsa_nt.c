@@ -845,6 +845,7 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 	int num_entries=0;
 	LSA_SID_ENUM *sids=&r_u->sids;
 	int i=0,j=0;
+	BOOL ret;
 
 	if (!find_policy_by_hnd(p, &q_u->pol, (void **)&handle))
 		return NT_STATUS_INVALID_HANDLE;
@@ -858,8 +859,14 @@ NTSTATUS _lsa_enum_accounts(pipes_struct *p, LSA_Q_ENUM_ACCOUNTS *q_u, LSA_R_ENU
 		return NT_STATUS_ACCESS_DENIED;
 
 	/* get the list of mapped groups (domain, local, builtin) */
-	if(!pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED))
+	become_root();
+	ret = pdb_enum_group_mapping(SID_NAME_UNKNOWN, &map, &num_entries, ENUM_ONLY_MAPPED);
+	unbecome_root();
+	if( !ret ) {
+		DEBUG(3,("_lsa_enum_accounts: enumeration of groups failed!\n"));
 		return NT_STATUS_OK;
+	}
+	
 
 	if (q_u->enum_context >= num_entries)
 		return NT_STATUS_NO_MORE_ENTRIES;
