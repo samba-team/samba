@@ -104,7 +104,7 @@ void send_trans_reply(char *outbuf,
 	{
 		/* issue a buffer size warning.  on a DCE/RPC pipe, expect an SMBreadX... */
 		SIVAL(outbuf, smb_flg2, FLAGS2_32_BIT_ERROR_CODES);
-		SIVAL(outbuf, smb_rcls, 0x80000000 | NT_STATUS_ACCESS_VIOLATION);
+		SIVAL(outbuf, smb_rcls, 0x80000000 | STATUS_BUFFER_OVERFLOW);
 	}
 
 	copy_trans_params_and_data(outbuf, align,
