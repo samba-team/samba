@@ -746,7 +746,7 @@ BOOL pass_oem_change(const char *user,
 
 	/* 
 	 * At this point we have the new case-sensitive plaintext
-	 * password in the fstring new_passwd. If we wanted to synchronise
+	 * password in the UNISTR2 new_passwd. If we wanted to synchronise
 	 * with UNIX passwords we would call a UNIX password changing 
 	 * function here. However it would have to be done as root
 	 * as the plaintext of the old users password is not 
@@ -755,7 +755,11 @@ BOOL pass_oem_change(const char *user,
 
 	if (ret && lp_unix_password_sync())
 	{
-		ret = chgpasswd(user, "", (char *)new_passwd.buffer, True);
+		/* chgpasswd takes ascii... */
+		fstring asc;
+		unistr2_to_ascii(asc, &new_passwd, sizeof(asc)-1);
+		ret = chgpasswd(user, "", asc, True);
+		ZERO_STRUCT(asc);
 	}
 
 	if (ret)
