@@ -238,7 +238,7 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 
 		if (!add_fd_to_close_entry(fsp)) {
 			SAFE_FREE(entries);
-			return False;
+			return -1;
 		}
 
 		SAFE_FREE(entries);
@@ -281,9 +281,9 @@ int fd_close_posix(struct connection_struct *conn, files_struct *fsp)
 	ret = SMB_VFS_CLOSE(fsp,fsp->fd);
 
 	if (saved_errno != 0) {
-        errno = saved_errno;
+		errno = saved_errno;
 		ret = -1;
-    } 
+	} 
 
 	fsp->fd = -1;
 
