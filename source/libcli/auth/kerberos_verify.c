@@ -115,8 +115,7 @@ static BOOL ads_keytab_verify_ticket(krb5_context context, krb5_auth_context aut
 				copy_EncryptionKey(&kt_entry.keyblock, keyblock);
 #else
 				keytype = (unsigned int) kt_entry.key.enctype;
-				/* I'not sure if that works --metze*/
-				copy_EncryptionKey(&kt_entry.key, keyblock);
+				/* TODO: copy the keyblock on MIT krb5*/
 #endif
 				DEBUG(10,("ads_keytab_verify_ticket: enc type [%u] decrypted message !\n",
 					  keytype));
@@ -214,7 +213,7 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 			break;
 		}
 
-		free_EncryptionKey(keyblock);
+		krb5_free_keyblock(context, keyblock);
 
 		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
