@@ -45,7 +45,7 @@ extern BOOL global_encrypted_passwords_negotiated;
  set.
 ****************************************************************************/
 
-static NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
+NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 {
 	char *d = destname;
 	const char *s = srcname;
@@ -122,12 +122,30 @@ static NTSTATUS check_path_syntax(pstring destname, const pstring srcname)
 				 */
 
 				uint16 ucs2_val;
-				if (convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2) == 2) {
+
+				/*
+				 * We know the following will return 2 bytes. What
+				 * we need to know was if errno was set.
+				 * Note that if CH_UNIX is utf8 a string may be 3
+				 * bytes, but this is ok as mb utf8 characters don't
+				 * contain embedded directory separators. We are really checking
+				 * for mb UNIX asian characters like Japanese (SJIS) here.
+				 * JRA.
+				 */
+
+				errno = 0;
+				convert_string(CH_UNIX, CH_UCS2, s, 1, &ucs2_val, 2);
+				if (errno == 0) {
 					;
-				} else if (convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2) == 2) {
-					*d++ = *s++;
 				} else {
-					smb_panic("check_path_syntax: directory separator assumptions invalid !\n");
+					errno = 0;
+					convert_string(CH_UNIX, CH_UCS2, s, 2, &ucs2_val, 2);
+					if (errno == 0) {
+						*d++ = *s++;
+					} else {
+						DEBUG(0,("check_path_syntax: directory separator assumptions invalid !\n"));
+						return NT_STATUS_INVALID_PARAMETER;
+					}
 				}
 			}
 			/* Just copy the char (or the second byte of the mb char). */
