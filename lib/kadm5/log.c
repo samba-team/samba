@@ -54,13 +54,12 @@ RCSID("$Id$");
  */
 
 kadm5_ret_t
-kadm5_log_get_version (kadm5_server_context *context,
+kadm5_log_get_version (int fd,
 		       u_int32_t *ver)
 {
     int ret;
     krb5_storage *sp;
     int32_t old_version;
-    int fd = context->log_context.log_fd;
 
     ret = lseek (fd, 0, SEEK_END);
     if(ret < 0)
@@ -95,7 +94,7 @@ kadm5_log_init (kadm5_server_context *context)
 	return errno;
     }
 
-    ret = kadm5_log_get_version (context, &log_context->version);
+    ret = kadm5_log_get_version (fd, &log_context->version);
     if (ret)
 	return ret;
 
