@@ -681,6 +681,8 @@ extern int errno;
 
 #include "asn1.h"
 
+#include "popt.h"
+
 #ifndef MAXCODEPAGELINES
 #define MAXCODEPAGELINES 256
 #endif

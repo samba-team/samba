@@ -2476,6 +2476,36 @@ AC_SUBST(WINBIND_LTARGETS)
 AC_SUBST(WINBIND_PAM_PROGS)
 
 #################################################
+# Check to see if we should use the included popt 
+
+AC_MSG_CHECKING(whether to use included popt)
+AC_ARG_WITH(included-popt,
+[  --with-included-popt    use bundled popt library, not from system],
+[ 
+  case "$withval" in
+	yes)
+		INCLUDED_POPT=yes
+		;;
+        no)
+		INCLUDED_POPT=no
+                ;;
+  esac ],
+)
+if test x"$INCLUDED_POPT" = x"no"; then
+    AC_CHECK_LIB(popt, poptGetContext, ,INCLUDED_POPT=yes)
+fi
+
+if test x"$INCLUDED_POPT" = x"yes"; then
+    AC_MSG_RESULT($srcdir/popt)
+    BUILD_POPT='$(POPT_OBJS)'
+    CFLAGS="$CFLAGS -I$srcdir/popt"
+else
+    AC_MSG_RESULT(no)
+    LIBS="$LIBS -lpopt"
+fi
+AC_SUBST(BUILD_POPT)
+
+#################################################
 # final configure stuff
 
 echo "checking configure summary"
