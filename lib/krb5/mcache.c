@@ -166,10 +166,7 @@ mcc_get_first (krb5_context context,
 	       krb5_cc_cursor *cursor)
 {
     krb5_mcache *m = (krb5_mcache *)id->data.data;
-
-    *cursor = malloc(sizeof(struct link*));
-
-    MCC_CURSOR(*cursor) = m->creds;
+    *cursor = m->creds;
     return 0;
 }
 
@@ -181,9 +178,9 @@ mcc_get_next (krb5_context context,
 {
     struct link *l;
 
-    l = MCC_CURSOR(*cursor);
+    l = *cursor;
     if (l != NULL) {
-	MCC_CURSOR(*cursor) = l->next;
+	*cursor = l->next;
 	return krb5_copy_creds_contents (context,
 					 &l->cred,
 					 creds);
@@ -196,7 +193,6 @@ mcc_end_get (krb5_context context,
 	     krb5_ccache id,
 	     krb5_cc_cursor *cursor)
 {
-    free(*cursor);
     return 0;
 }
 
