@@ -21,6 +21,7 @@ use client;
 use proxy;
 use stub;
 use ndr;
+use odl;
 use eparser;
 use validator;
 use typelist;
@@ -40,6 +41,7 @@ my($opt_parser) = 0;
 my($opt_eparser) = 0;
 my($opt_keep) = 0;
 my($opt_swig) = 0;
+my($opt_odl) = 0;
 my($opt_output);
 
 my $idl_parser = new idl;
@@ -79,6 +81,7 @@ sub ShowHelp()
              --swig                create swig wrapper file
              --diff                run diff on the idl and dumped output
              --keep                keep the .pidl file
+             --odl                 accept ODL input
            \n";
     exit(0);
 }
@@ -96,6 +99,7 @@ GetOptions (
         'client' => \$opt_client,
 	    'eparser' => \$opt_eparser,
 	    'diff' => \$opt_diff,
+		'odl' => \$opt_odl,
 	    'keep' => \$opt_keep,
 	    'swig' => \$opt_swig
 	    );
@@ -109,6 +113,7 @@ sub process_file($)
 {
 	my $idl_file = shift;
 	my $output;
+	my $podl;
 	my $pidl;
 
 	my $basename = basename($idl_file, ".idl");
@@ -141,6 +146,11 @@ sub process_file($)
 
 	if ($opt_header || $opt_parser) {
 		typelist::LoadIdl($pidl);
+	}
+
+	if ($opt_odl) {
+		$podl = $pidl;
+		$pidl = ODL::ODL2IDL($podl);
 	}
 
 	if ($opt_header) {
