@@ -64,7 +64,7 @@ sub HeaderElement($)
 	    for (my($i)=$element->{POINTERS}; $i > 0; $i--) {
 		    pidl "*";
 	    }
-    } elsif (NdrParser::is_surrounding_array($element) || 
+    } elsif (Ndr::is_surrounding_array($element) || 
 		defined $element->{ARRAY_LEN} && !util::is_constant($element->{ARRAY_LEN})) {
 	    # surrounding arrays are ugly! I choose to implement them with
 	    # pointers instead of the [1] method
