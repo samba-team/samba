@@ -53,7 +53,7 @@ char **str_list_make(const char *string, const char *sep)
 	while (next_token(&str, tok, sep, sizeof(tok))) {		
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			rlist = realloc_p(list, char *, lsize + 1);
 			if (!rlist) {
 				DEBUG(0,("str_list_make: Unable to allocate memory"));
 				str_list_free(&list);
@@ -94,7 +94,7 @@ BOOL str_list_copy(char ***dest, const char **src)
 	while (src[num]) {
 		if (num == lsize) {
 			lsize += S_LIST_ABS;
-			rlist = (char **)Realloc(list, ((sizeof(char **)) * (lsize +1)));
+			rlist = realloc_p(list, char *, lsize + 1);
 			if (!rlist) {
 				DEBUG(0,("str_list_copy: Unable to re-allocate memory"));
 				str_list_free(&list);
@@ -302,7 +302,7 @@ int ipstr_list_parse(const char* ipstr_list, struct ipv4_addr** ip_list)
 			break;
 		
 		/* prepare place for another in_addr structure */
-		*ip_list = Realloc(*ip_list, (count + 1) * sizeof(struct ipv4_addr));
+		*ip_list = realloc_p(*ip_list, struct ipv4_addr, count + 1);
 		if (!*ip_list) return -1;
 		
 		(*ip_list)[count] = addr;

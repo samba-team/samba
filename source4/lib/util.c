@@ -216,31 +216,6 @@ void become_daemon(BOOL Fork)
 
 
 /****************************************************************************
- Expand a pointer to be a particular size.
-****************************************************************************/
-
-void *Realloc(void *p,size_t size)
-{
-	void *ret=NULL;
-
-	if (size == 0) {
-		SAFE_FREE(p);
-		DEBUG(5,("Realloc asked for 0 bytes\n"));
-		return NULL;
-	}
-
-	if (!p)
-		ret = (void *)malloc(size);
-	else
-		ret = (void *)realloc(p,size);
-
-	if (!ret)
-		DEBUG(0,("Memory allocation error: failed to expand to %d bytes\n",(int)size));
-
-	return(ret);
-}
-
-/****************************************************************************
  Free memory, checks for NULL.
  Use directly SAFE_FREE()
  Exists only because we need to pass a function pointer somewhere --SSS

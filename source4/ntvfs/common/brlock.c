@@ -229,9 +229,8 @@ NTSTATUS brl_lock(struct brl_context *brl,
 		  void *notify_ptr)
 {
 	TDB_DATA kbuf, dbuf;
-	int count, i;
-	struct lock_struct lock, *locks;
-	char *tp;
+	int count=0, i;
+	struct lock_struct lock, *locks=NULL;
 	NTSTATUS status;
 
 	kbuf.dptr = (char *)file_key->data;
@@ -279,14 +278,14 @@ NTSTATUS brl_lock(struct brl_context *brl,
 	}
 
 	/* no conflicts - add it to the list of locks */
-	tp = Realloc(dbuf.dptr, dbuf.dsize + sizeof(*locks));
-	if (!tp) {
+	locks = realloc_p(locks, struct lock_struct, count+1);
+	if (!locks) {
 		status = NT_STATUS_NO_MEMORY;
 		goto fail;
 	} else {
-		dbuf.dptr = tp;
+		dbuf.dptr = (char *)locks;
 	}
-	memcpy(dbuf.dptr + dbuf.dsize, &lock, sizeof(lock));
+	locks[count] = lock;
 	dbuf.dsize += sizeof(lock);
 
 	if (tdb_store(brl->w->tdb, kbuf, dbuf, TDB_REPLACE) != 0) {
