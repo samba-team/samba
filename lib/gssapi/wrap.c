@@ -1,6 +1,4 @@
 #include "gssapi_locl.h"
-#include <des.h>
-#include <md5.h>
 
 RCSID("$Id$");
 
@@ -21,8 +19,14 @@ OM_uint32 gss_wrap
   des_key_schedule schedule;
   des_cblock key;
   des_cblock zero;
+  size_t padlength;
+  int i;
+  int32_t seq_number;
 
-  len = input_message_buffer->length + 28 + GSS_KRB5_MECHANISM->length;
+  padlength = 8 - (input_message_buffer->length % 8);
+
+  len = input_message_buffer->length + 8 + padlength + 28
+    + GSS_KRB5_MECHANISM->length;
   output_message_buffer->length = len;
   output_message_buffer->value  = malloc (len);
   if (output_message_buffer->value == NULL)
@@ -33,23 +37,33 @@ OM_uint32 gss_wrap
   p += 4;
   memcpy (p, GSS_KRB5_MECHANISM->elements, GSS_KRB5_MECHANISM->length);
   p += GSS_KRB5_MECHANISM->length;
+  /* TOK_ID */
   memcpy (p, "\x02\x01", 2);
   p += 2;
+  /* SGN_ALG */
   memcpy (p, "\x00\x00", 2);
   p += 2;
-  memcpy (p, "\xff\xff", 2);
+  /* SEAL_ALG */
+  memcpy (p, "\x00\x00", 2);
   p += 2;
+  /* Filler */
   memcpy (p, "\xff\xff", 2);
   p += 2;
 
+  /* fill in later */
   memset (p, 0, 16);
   p += 16;
-  memcpy (p, input_message_buffer->value,
+
+  /* confounder + data + pad */
+  des_new_random_key((des_cblock*)p);
+  memcpy (p + 8, input_message_buffer->value,
 	  input_message_buffer->length);
-  
+  memset (p + 8 + input_message_buffer->length, padlength, padlength);
+
+  /* checksum */
   md5_init (&md5);
   md5_update (&md5, p - 24, 8);
-  md5_update (&md5, p, input_message_buffer->length);
+  md5_update (&md5, p + 8, input_message_buffer->length + padlength);
   md5_finito (&md5, hash);
 
   memset (&zero, 0, sizeof(zero));
@@ -59,5 +73,46 @@ OM_uint32 gss_wrap
   des_cbc_cksum ((des_cblock *)hash,
 		 (des_cblock *)hash, sizeof(hash), schedule, &zero);
   memcpy (p - 8, hash, 8);
+
+  /* sequence number */
+  krb5_auth_getlocalseqnumber (gssapi_krb5_context,
+			       context_handle->auth_context,
+			       &seq_number);
+
+  p -= 16;
+  p[0] = (seq_number >> 0)  & 0xFF;
+  p[1] = (seq_number >> 8)  & 0xFF;
+  p[2] = (seq_number >> 16) & 0xFF;
+  p[3] = (seq_number >> 24) & 0xFF;
+  memset (p + 4,
+	  (context_handle->more_flags & LOCAL) ? 0 : 0xFF,
+	  4);
+
+  des_set_key (&key, schedule);
+  des_cbc_encrypt (p, p, 8, schedule, p + 16, DES_ENCRYPT);
+
+  krb5_auth_setlocalseqnumber (gssapi_krb5_context,
+			       context_handle->auth_context,
+			       ++seq_number);
+
+  /* encrypt the data */
+  p += 16;
+
+  memset (&zero, 0, sizeof(zero));
+  memcpy (&key, context_handle->auth_context->key.keyvalue.data,
+	  sizeof(key));
+  for (i = 0; i < sizeof(key); ++i)
+    key[i] ^= 0xf0;
+  des_set_key (&key, schedule);
+  des_cbc_encrypt ((des_cblock *)p,
+		   (des_cblock *)p,
+		   8 + input_message_buffer->length + padlength,
+		   schedule,
+		   &zero,
+		   DES_ENCRYPT);
+
+  memset (key, 0, sizeof(key));
+  memset (schedule, 0, sizeof(schedule));
+
   return GSS_S_COMPLETE;
 }
