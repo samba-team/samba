@@ -1,0 +1,1155 @@
+NETWORK WORKING GROUP                                             L. Zhu
+Internet-Draft                                             K. Jaganathan
+Obsoletes: 2478 (if approved)                                    R. Ward
+Expires: April 18, 2005                            Microsoft Corporation
+                                                        October 18, 2004
+
+
+
+         The Simple and Protected GSS-API Negotiation Mechanism
+                      draft-zhu-spnego-2478bis-00
+
+
+Status of this Memo
+
+
+   This document is an Internet-Draft and is subject to all provisions
+   of section 3 of RFC 3667.  By submitting this Internet-Draft, each
+   author represents that any applicable patent or other IPR claims of
+   which he or she is aware have been or will be disclosed, and any of
+   which he or she become aware will be disclosed, in accordance with
+   RFC 3668.
+
+
+   Internet-Drafts are working documents of the Internet Engineering
+   Task Force (IETF), its areas, and its working groups.  Note that
+   other groups may also distribute working documents as
+   Internet-Drafts.
+
+
+   Internet-Drafts are draft documents valid for a maximum of six months
+   and may be updated, replaced, or obsoleted by other documents at any
+   time.  It is inappropriate to use Internet-Drafts as reference
+   material or to cite them other than as "work in progress."
+
+
+   The list of current Internet-Drafts can be accessed at
+   http://www.ietf.org/ietf/1id-abstracts.txt.
+
+
+   The list of Internet-Draft Shadow Directories can be accessed at
+   http://www.ietf.org/shadow.html.
+
+
+   This Internet-Draft will expire on April 18, 2005.
+
+
+Copyright Notice
+
+
+   Copyright (C) The Internet Society (2004).
+
+
+Abstract
+
+
+   This document specifies a security negotiation mechanism for the
+   Generic Security Service Application Program Interface (GSS-API)
+   which is described in RFC 2743.
+
+
+   This mechanism allows negotiating and choosing one security mechanism
+   from a common set of security mechanisms shared by GSS-API peers.
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 1]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+   Once the common security mechanism is identified, the security
+   mechanism MAY also negotiate mechanism-specific options during its
+   context establishment, but that will be inside the mechanism tokens,
+   and invisible to this protocol.
+
+
+Table of Contents
+
+
+   1.  Introduction . . . . . . . . . . . . . . . . . . . . . . . . .  3
+   2.  Conventions Used in This Document  . . . . . . . . . . . . . .  4
+   3.  Negotiation Model  . . . . . . . . . . . . . . . . . . . . . .  5
+     3.1   Negotiation Description  . . . . . . . . . . . . . . . . .  5
+     3.2   Negotiation Procedure  . . . . . . . . . . . . . . . . . .  6
+   4.  Data Elements  . . . . . . . . . . . . . . . . . . . . . . . . 11
+     4.1   Mechanism Type . . . . . . . . . . . . . . . . . . . . . . 11
+     4.2   Negotiation Tokens . . . . . . . . . . . . . . . . . . . . 11
+       4.2.1   negTokenInit . . . . . . . . . . . . . . . . . . . . . 12
+       4.2.2   negTokenResp . . . . . . . . . . . . . . . . . . . . . 13
+   5.  Security Considerations  . . . . . . . . . . . . . . . . . . . 15
+   6.  Acknowledgments  . . . . . . . . . . . . . . . . . . . . . . . 16
+   7.  References . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+       Authors' Addresses . . . . . . . . . . . . . . . . . . . . . . 16
+   A.  Changes since RFC2478  . . . . . . . . . . . . . . . . . . . . 17
+       Intellectual Property and Copyright Statements . . . . . . . . 18
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 2]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+1.  Introduction
+
+
+   The GSS-API [RFC2743] provides a generic interface which can be
+   layered atop different security mechanisms such that if communicating
+   peers acquire GSS-API credentials for the same security mechanism,
+   then a security context MAY be established between them (subject to
+   policy).  However, GSS-API doesn't prescribe the method by which
+   GSS-API peers can establish whether they have a common security
+   mechanism.
+
+
+   The Simple and Protected GSS-API Negotiation (SPNEGO) mechanism
+   defined here is a pseudo-security mechanism, represented by the
+   object identifier iso.org.dod.internet.security.mechanism.snego
+   (1.3.6.1.5.5.2) which enables GSS-API peers to determine in-band
+   whether their credentials share common GSS-API security mechanism(s),
+   and if so, to invoke normal security context establishment for a
+   selected common security mechanism.  This is most useful for
+   applications that are based on GSS-API implementations which support
+   multiple security mechanisms.
+
+
+   The simple and protected GSS-API mechanism negotiation is based on
+   the following negotiation model: the initiator proposes one security
+   mechanism or a list of security mechanisms in its preference order
+   (favorite choice first), the acceptor (the target) either accepts the
+   proposed security mechanism, or chooses one from the offered list, or
+   rejects the proposed value(s).  The target then informs the initiator
+   of its choice.
+
+
+   In order to avoid an extra round trip, the initial security token of
+   the preferred mechanism for the initiator SHOULD be embedded in the
+   initial negotiation token (as defined in Section 4.2).  If the target
+   preferred mechanism matches the initiator's preferred mechanism, no
+   additional round trips may be incurred by using the negotiation
+   protocol.
+
+
+   The negotiation is protected and all the underlying mechanisms
+   offered by the initiator MUST be capable of integrity protection.
+
+
+   The Simple and Protected GSS-API Negotiation Mechanism uses the
+   concepts developed in the GSS-API specification [RFC2743].  The
+   negotiation data is encapsulated in context-level tokens.  Therefore,
+   callers of the GSS-API do not need to be aware of the existence of
+   the negotiation tokens but only of the new pseudo-security mechanism.
+   A failure in the negotiation phase causes a major status code to be
+   returned: GSS_S_BAD_MECH.
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 3]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+2.  Conventions Used in This Document
+
+
+   The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT",
+   "SHOULD", "SHOULD NOT", "RECOMMENDED", "MAY", and "OPTIONAL" in this
+   document are to be interpreted as described in [RFC2119].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 4]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+3.  Negotiation Model
+
+
+3.1  Negotiation Description
+
+
+   Each OID represents one GSS-API mechanism or one variant of it.
+
+
+   The first negotiation token sent by the initiator contains an ordered
+   list of mechanisms (in preference order, favorite choice first), and
+   OPTIONALLY the initial security token for the preferred mechanism of
+   the initiator (i.e.  the first of the list).
+
+
+   The target then processes the token from the initiator.  This will
+   result in one of three possible states (as defined in Section 4.2.2):
+   accept_completed, accept_incomplete, or reject.  A reject state will
+   terminate the negotiation.  An accept_completed state indicates that
+   not only was the initiator-selected mechanism acceptable to the
+   target, but that the initial token was sufficient to complete the
+   authentication.  An accept_incomplete state indicates that the target
+   has selected a different mechanism or the preferred mechanism is
+   acceptable, but this mechanism requires at least one additional
+   message to complete the authentication.  The target MAY produce a
+   context level token for a reject state.
+
+
+   The first negotiation token sent by the acceptor contains the result
+   of the negotiation (accept_completed, accept_incomplete or reject)
+   and, in case of accept, the agreed security mechanism.  It MUST also
+   include the response mechanism token to the initial mechanism token
+   from the initiator, when the first proposed mechanism of the
+   initiator has been selected and an initial mechanism token was
+   provided by the initiator.  However, if the initiator's preferred
+   mechanism is not possible, the target will not emit a response
+   mechanism token in the first reply.
+
+
+   The policy by which the target chooses a mechanism is an
+   implementation-specific local matter.  In the absence of other
+   policy, the target MUST choose the first mechanism in the list for
+   which valid credentials are available.
+
+
+   The first negotiation token is the negTokenInit message and all
+   subsequent negotiation tokens are the negTokenResp message, as
+   defined in Section 4.2.
+
+
+   The use of partially-established contexts (as indicated by the
+   prot_ready_state in [RFC2743]), either for this mechanism or
+   mechanisms negotiated using this mechanism, is prohibited.
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 5]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+3.2  Negotiation Procedure
+
+
+   The negotiation procedure is summarized as follows:
+
+
+   (a) The GSS-API initiator invokes GSS_Init_sec_context() as normal,
+      but requests (either explicitly, with the negotiation mechanism,
+      or through accepting a default, when the default is the
+      negotiation mechanism) that the Simple and Protected GSS-API
+      Negotiation Mechanism is used;
+
+
+   (b) The initiator GSS-API implementation emits a negotiation token
+      containing a list of supported security mechanisms for the
+      credentials used for this context establishment, and OPTIONALLY an
+      initial security token for the first mechanism from that list
+      (i.e.  the preferred mechanism), and indicates
+      GSS_S_CONTINUE_NEEDED status;
+
+
+   (c) The GSS-API initiator application sends the token to the target
+      application;
+
+
+   (d) The GSS-API target application deposits the token through
+      invoking GSS_Accept_sec_context.  The target GSS-API application
+      will do one of the following:
+
+
+      (I) If the initiator's preferred mechanism is accepted by the
+         target, an initial token is included in the first token from
+         the initiator, no further mechanism token from the initiator is
+         needed for the chosen mechanism to establish the security
+         context, (e.g.  when the authentication mechanism is unilateral
+         or mutual authentication has been performed and involves a
+         single token in either direction), and the initiator has not
+         sent a MIC token (the output token of the GSS_GetMIC() call
+         [RFC2743], the input to GSS_GetMIC() is the OTCET STRING field
+         representing the MechTypes in the initial NegTokenInit token),
+         of the mechanism list, the acceptor will do one of the
+         following:
+
+
+         1) If the initiator's preferred mechanism is accepted and there
+            is no policy on the target such that a different mechanism
+            other than the initiator's preferred mechanism could have
+            been selected given a different list of mechanisms,
+            GSS_Accept_sec_context() MUST indicate GSS_S_COMPLETE and it
+            MUST produce a negotiation token with the accept_completed
+            state, and with no MIC of the mechanism list.  This is
+            referred in this document as the Safe to Omit MIC (SOMIC)
+            rule number 1.  The resulting negotiation token MUST include
+            the security token if one is returned by the selected
+            mechanism;
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 6]
+
+
+         2) If the initiator's preferred mechanism is accepted and there
+            is policy exists on the target such that a different
+            mechanism other than the initiator's preferred mechanism
+            could have been selected given a different list of
+            mechanisms, GSS_Accept_sec_context() MUST indicate
+            GSS_S_CONTINUE_NEEDED with the accept_incomplete state, and
+            a MIC MUST be generated by the target.  This MIC is to be
+            verified by the initiator and the result will be sent back
+            to the acceptor.  This is referred in this document as the
+            Safe to Omit MIC (SOMIC) rule number 2.  The resulting
+            negotiation token MUST include the security token if one is
+            returned by the selected mechanism.
+
+
+         3) If there is a MIC token and it is correct,
+            GSS_Accept_sec_context() MUST indicate GSS_S_COMPLETE with
+            no output token; If there is an incorrect MIC token,
+            GSS_Accept_sec_context() must indicate GSS_S_BAD_MIC status,
+            OPTIONALLY returning a negotiation token with the reject
+            state.
+
+
+      (II) If the initiator's preferred mechanism is accepted, and an
+         initial token from this mechanism is sent by the initiator, but
+         a failure is returned by the chosen mechanism,
+         GSS_Accept_sec_context() MUST report the failure and the
+         mech_type output parameter indicates the selected mechanism.
+         The target MUST produce a negotiation token with the reject
+         state if the selected mechanism returns a response token (e.g.
+         a KRB_ERROR when the Kerberos Version 5 GSS-API mechanism is
+         chosen [GSSAPICFX]);
+
+
+      (III) If the initiator's preferred mechanism is accepted, and an
+         initial token from this mechanism is sent by the initiator, but
+         at last one more initiator token need to be transferred to
+         establish the context, GSS_Accept_sec_context() MUST indicate
+         GSS_S_CONTINUE_NEEDED status, returning a negotiation token
+         with the accept_incomplete state, the response mechanism token,
+         and no MIC token.
+
+
+      (IV) If the initiator's preferred mechanism is accepted, but no
+         initial token from this mechanism is sent by the initiator,
+         GSS_Accept_sec_context() MUST indicate GSS_S_CONTINUE_NEEDED
+         status, returning a negotiation token with the
+         accept_incomplete state, the selected mechanism, no response
+         mechanism token or MIC token.
+
+
+      (V) If a proposed mechanism is accepted, and it is not the
+         initiator's preferred mechanism, GSS_Accept_sec_context() MUST
+         indicate GSS_S_CONTINUE_NEEDED status, returning a negotiation
+         token with the accept_incomplete state, the selected mechanism,
+         no response mechanism token or MIC token.  The negotiation will
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 7]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+         be the agreed security mechanism if the negotiation is
+         successful.
+
+
+   (e) The GSS-API target application returns the negotiation token to
+      the initiator application;
+
+
+   (f) The GSS-API initiator application deposits the token through
+      invoking GSS_Init_sec_context().  The initiator will do one of the
+      following:
+
+
+      (I) When the negotiation token carries an accept_completed result,
+         the initiator MUST do one of the following:
+
+
+         1) If the selected mechanism is the initiator's preferred
+            mechanism, the initiator SHALL NOT reject the negotiation if
+            no MIC token is present.  This is referred in this document
+            as the Safe to Omit MIC ("SOMIC") rule number 3.  The
+            initiator MUST deposit the security token if one is
+            included, GSS_Init_sec_context() MUST indicate
+            GSS_S_BAD_MECH status if the context is not established
+            after this GSS_Init_sec_context() call.  If a MIC token is
+            present, the initiator MUST verify it and a GSS_S_BAD_MIC
+            must be returned if the MIC is incorrect;
+
+
+         2) If the selected mechanism is not the initiator's preferred
+            mechanism, and there is no or an incorrect MIC token,
+            GSS_Init_sec_context() MUST indicate GSS_S_BAD_MIC status.
+            This is referred in this document as the Safe to Omit MIC
+            ("SOMIC") rule number 4.
+
+
+      (II) When the negotiation token carries a reject result without a
+         response security token, GSS_Init_sec_context() MUST indicate
+         GSS_S_BAD_MECH status;
+
+
+      (III) When the negotiation token carries a reject result with a
+         response security token, the initiator MUST deposit the
+         security token, and GSS_Init_sec_context() MUST indicate a
+         failure status reported by the underlying mechanism, and the
+         output mech_type indicates the selected mechanism;
+
+
+      (IV) When the negotiation token carries an accept_incomplete
+         result and further mechanism tokens from the acceptor must be
+         transferred in order to complete context establishment,
+         GSS_Init_sec_context() MUST indicate GSS_S_CONTINUE_NEEDED
+         status, returning an output token with the accept_incomplete,
+         and the selected mechanism's context level token;
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 8]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+      (V) When the negotiation token carries an accept_incomplete
+         result, no further mechanism token need to be transferred from
+         the acceptor to complete the context establishment, the
+         initiator MUST do one of the following:
+
+
+         1) If a MIC token was included, the initiator MUST verify it
+            and GSS_Init_sec_context() MUST indicate GSS_S_BAD_MIC if
+            the MIC is incorrect; GSS_Init_sec_context() MUST indicate
+            GSS_S_COMPLETE and produce a negotiation with the
+            accept_completed state if the MIC is correct.  This is
+            referred in this document as the Safe to Omit MIC ("SOMIC")
+            rule number 5;
+
+
+         2) If no MIC token was present, GSS_Init_sec_context() MUST
+            indicate GSS_S_BAD_MIC statue, This is referred in this
+            document as the Safe to Omit MIC ("SOMIC") rule number 6.
+
+
+   (g) The initiator application then sends the output_token to the
+      target if one is returned.  The security context initialization is
+      then continued according to the standard GSS-API conventions for
+      the selected mechanism, where the tokens of the selected mechanism
+      are encapsulated until the GSS_S_COMPLETE is returned for both the
+      initiator and the target.  When no further mechanism token is
+      needed to be transferred and the context for the chosen mechanism
+      is established, the initiator and the acceptor will need to either
+      apply the "SOMIC" rules above and skip MIC generation and
+      verification, or generate and verify the MIC token to protect the
+      negotiation.
+
+
+   (h) When GSS_S_CONTINUE_NEEDED is returned, the mech_type output
+      parameter is not yet valid.  When GSS_S_COMPLETE is returned, the
+      mech_type output parameter indicates the selected mechanism.
+
+
+   Note that the *_req_flag input parameters for context establishment
+   are relative to the selected mechanism, as are the *_state output
+   parameters.  i.e., these parameters are not applicable to the
+   negotiation process per se.
+
+
+   On receipt of a negotiation token on the target side, a GSS-API
+   implementation that does not support negotiation would indicate the
+   GSS_S_BAD_MECH status as if a particular basic security mechanism had
+   been requested but was not supported.
+
+
+   When GSS_Acquire_cred is invoked with the negotiation mechanism as
+   desired_mechs, an implementation-specific default credential is used
+   to carry on the negotiation.  A set of mechanisms as specified
+   locally by the system administrator is then available for
+   negotiation.  If there is a desire for the caller to make its own
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                 [Page 9]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+   choice, then an additional API has to be used as defined in [PRTSTK].
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 10]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+4.  Data Elements
+
+
+   The type definitions in this section assume an ASN.1 module
+   definition of the following form:
+
+
+      SPNEGOASNOneSpec {
+            iso(1) identified-organization(3) dod(6) internet(1)
+            security(5) mechanism(5) snego (2)
+      } DEFINITIONS EXPLICIT TAGS ::= BEGIN
+
+
+      -- rest of definitions here
+
+
+      END
+
+
+   This specifies that the tagging context for the module will be
+   explicit and non-automatic.
+
+
+   The encoding of SPNEGO protocol messages shall obey the Distinguished
+   Encoding Rules (DER) of ASN.1 as described in [X690].
+
+
+4.1  Mechanism Type
+
+
+           MechType ::= OBJECT IDENTIFIER
+             -- OID represents each security mechanism as suggested by
+             -- [RFC2743]
+
+
+
+4.2  Negotiation Tokens
+
+
+   The syntax of the initial negotiation tokens follows the
+   InitialContextToken syntax defined in [RFC2743].  The security
+   mechanism of the initial negotiation token is identified by the
+   Object Identifier in Section 1.  All subsequent tokens are not
+   encapsulated in the above generic token framing.
+
+
+   This section specifies the syntax of initial and subsequent context
+   level tokens.
+
+
+           NegotiationToken ::= CHOICE {
+               negTokenInit    [0] NegTokenInit,
+               negTokenResp    [1] negTokenResp
+           }
+
+
+           MechTypeList ::= SEQUENCE OF MechType
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 11]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+4.2.1  negTokenInit
+
+
+           NegTokenInit ::= SEQUENCE {
+               mechTypes       [0] MechTypeList,
+               reqFlags        [1] ContextFlags  OPTIONAL,
+               mechToken       [2] OCTET STRING  OPTIONAL,
+               mechListMIC     [3] OCTET STRING  OPTIONAL,
+               ...
+           }
+
+
+           ContextFlags ::= BIT STRING {
+               delegFlag       (0),
+               mutualFlag      (1),
+               replayFlag      (2),
+               sequenceFlag    (3),
+               anonFlag        (4),
+               confFlag        (5),
+               integFlag       (6)
+           }
+
+
+   This is the message for the initial negotiation token.
+
+
+   mechTypes
+
+
+         This field contains one or more security mechanisms in the
+         preference order (favorite choice first) supported by the
+         initiator (as indicated in the field mechTypes).
+
+
+   reqFlags
+
+
+         This field, if present, contains the service options that are
+         requested to establish the context.  The context flags SHOULD
+         be filled in from the req_flags parameter of
+         GSS_Init_sec_context().  This field SHALL NOT influence the
+         outcome of the negotiation.
+
+
+   mechToken
+
+
+         This field, is present, contains an optimistic negotiation
+         response.
+
+
+   mechListMIC
+
+
+         This field, if present, contains the result of a GSS_GetMIC()
+         [RFC2743] of the MechTypes field in the initial NegTokenInit
+         token.  It allows verifying that the list initially sent by the
+         initiator has been received unmodified by the target.
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 12]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+4.2.2  negTokenResp
+
+
+               NegTokenResp ::= SEQUENCE {
+                   negResult       [0] ENUMERATED {
+                       accept_completed    (0),
+                       accept_incomplete   (1),
+                       reject              (2)
+                       },
+                   supportedMech   [1] MechType      OPTIONAL,
+                   responseToken   [2] OCTET STRING  OPTIONAL,
+                   mechListMIC     [3] OCTET STRING  OPTIONAL,
+                       -- used only by the acceptor
+                   ...
+               }
+
+
+   This is the message for all the subsequent tokens.
+
+
+   negResult
+
+
+         Result of the negotiation exchange, specified by the target.
+         This can be:
+
+
+         accept_completed
+            A security mechanism is selected, and the context is
+            established for the sender;
+
+
+         accept_incomplete
+            Further exchanges are necessary;
+
+
+         reject
+            The sender reject the proposed security mechanism(s).
+
+
+         accept_completed indicates that a context has been successfully
+         established, while the result accept_incomplete indicates that
+         additional token exchanges are needed.
+
+
+         For those targets that support piggybacking the initial
+         mechToken, an optimistic negotiation response is possible and
+         includes in that case a responseToken which MAY continue the
+         authentication exchange (e.g.  when mutual authentication has
+         been requested or when unilateral authentication requires
+         several round trips).  Otherwise the responseToken is used to
+         carry the tokens specific to the mechanism selected.
+
+
+         The mechListMIC, when present, is a MIC computed over the
+         MechTypes using the mechanism list field in the initial token
+         (encoded in DER).
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 13]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+   supportedMech
+
+
+         This field is present and only present in the first
+         negTokenResp token.  It is a choice from the mechanisms offered
+         by the initiator.
+
+
+   responseToken
+
+
+         This field, if present, contains the security token of the
+         selected mechanism.
+
+
+   mechListMIC
+
+
+         This field, if present, contains the result of a GSS_GetMIC()
+         [RFC2743] of the MechTypes field in the initial NegTokenInit
+         token.  It allows verifying that the list initially sent by the
+         initiator has been received unmodified by the target.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 14]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+5.  Security Considerations
+
+
+   In order to produce the MIC for the mechanism list, the mechanism
+   MUST provide integirty protection.  When one of the mechanisms
+   proposed by the initiator does not support integrity protection, then
+   the negotiation is exposed to all threats a non secured service is
+   exposed.  In particular, an active attacker can force to use a
+   security mechanism which is not the common preferred one (when
+   multiple security mechanisms are shared between peers) but which is
+   acceptable anyway to the target, thus this mechanism does not support
+   selecting a mechanism that does not support integrity protection.
+
+
+   In any case, the communicating peers MAY be exposed to the denial of
+   service threat.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 15]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+6.  Acknowledgments
+
+
+   The authors wish to thank Paul Leach and Todd Stecher for theirs
+   comments and suggestions on earlier versions of this document.
+
+
+   Eric Baize and Denis Pinkas wrote the original SPNEGO specification
+   [RFC2478], of which some of the text has been retained in this
+   document.
+
+
+7  References
+
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119, March 1997.
+
+
+   [RFC2478]  Baize, E. and D. Pinkas, "The Simple and Protected GSS-API
+              Negotiation Mechanism", RFC 2478, December 1998.
+
+
+   [RFC2743]  Linn, J., "Generic Security Service Application Program
+              Interface Version 2, Update 1", RFC 2743, January 2000.
+
+
+   [PRTSTK]   RFC-Editor: To be replaced by RFC number for draft-williams
+              -gssapi-stackable-pseudo-mechs.  Work in progress.
+              
+   [X690]     ASN.1 encoding rules: Specification of Basic Encoding Rules 
+              (BER), Canonical Encoding Rules (CER) and Distinguished 
+              Encoding Rules (DER), ITU-T Recommendation X.690 (1997) | 
+              ISO/IEC International Standard 8825-1:1998.
+
+
+Authors' Addresses
+
+
+   Larry Zhu
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+
+   EMail: lzhu@microsoft.com
+
+
+
+   Karthik Jaganathan
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+
+   EMail: karthikj@microsoft.com
+
+
+
+   Richard B. Ward
+   Microsoft Corporation
+   One Microsoft Way
+   Redmond, WA  98052
+   US
+
+
+   EMail: richardw@microsoft.com
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 16]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+Appendix A.  Changes since RFC2478
+
+
+      The following changes are designed to be compatible with an
+      incorrect implementation of RFC 2478 shipped in Windows 2000.  A
+      correct implementation of this protocol that negotiates the 2 leg
+      Kerberos GSS-API mechanism as the only available security
+      mechanism should be ale to interoperate with the implementation of
+      Windows 2000 when the mangled OID (1.2.840.48018.1.2.2) can be
+      used to identify Kerberos.
+
+
+      *  The negTokenTarg is changed to negTokenResp and it is now the
+         format for all subsequent negotiation messages.
+      *  negTokenInit is the message for the initial token and that
+         token only.
+      *  mechTypes in negTokenInit is no longer optional.
+      *  negResult is no longer optional in the negTokenResp token.
+      *  The initiator does not send the MIC token.
+      *  Add rules when it is safe to omit the MIC token.  Search for
+         SOMIC.
+
+
+      The following changes are to address the problems in RFC 2478.
+
+
+      *  reqFlags is not protected therefore it should not impact the
+         negotiation.
+      *  BER encoding is required.
+      *  GSS_GetMIC() input is clarified.
+      *  Nico's stackable pseudo mechanism draft is used to replace the
+         support APIs.
+      *  We no longer support negotiating mechanisms that do not provide
+         for integrity.  That support does not add security values but
+         blows up the interoperability test matrix.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 17]
+Internet-Draft       GSS-API Negotiation Mechanism          October 2004
+
+
+
+Intellectual Property Statement
+
+
+   The IETF takes no position regarding the validity or scope of any
+   Intellectual Property Rights or other rights that might be claimed to
+   pertain to the implementation or use of the technology described in
+   this document or the extent to which any license under such rights
+   might or might not be available; nor does it represent that it has
+   made any independent effort to identify any such rights.  Information
+   on the procedures with respect to rights in RFC documents can be
+   found in BCP 78 and BCP 79.
+
+
+   Copies of IPR disclosures made to the IETF Secretariat and any
+   assurances of licenses to be made available, or the result of an
+   attempt made to obtain a general license or permission for the use of
+   such proprietary rights by implementers or users of this
+   specification can be obtained from the IETF on-line IPR repository at
+   http://www.ietf.org/ipr.
+
+
+   The IETF invites any interested party to bring to its attention any
+   copyrights, patents or patent applications, or other proprietary
+   rights that may cover technology that may be required to implement
+   this standard.  Please address the information to the IETF at
+   ietf-ipr@ietf.org.
+
+
+
+Disclaimer of Validity
+
+
+   This document and the information contained herein are provided on an
+   "AS IS" basis and THE CONTRIBUTOR, THE ORGANIZATION HE/SHE REPRESENTS
+   OR IS SPONSORED BY (IF ANY), THE INTERNET SOCIETY AND THE INTERNET
+   ENGINEERING TASK FORCE DISCLAIM ALL WARRANTIES, EXPRESS OR IMPLIED,
+   INCLUDING BUT NOT LIMITED TO ANY WARRANTY THAT THE USE OF THE
+   INFORMATION HEREIN WILL NOT INFRINGE ANY RIGHTS OR ANY IMPLIED
+   WARRANTIES OF MERCHANTABILITY OR FITNESS FOR A PARTICULAR PURPOSE.
+
+
+
+Copyright Statement
+
+
+   Copyright (C) The Internet Society (2004).  This document is subject
+   to the rights, licenses and restrictions contained in BCP 78, and
+   except as set forth therein, the authors retain all their rights.
+
+
+
+Acknowledgment
+
+
+   Funding for the RFC Editor function is currently provided by the
+   Internet Society.
+
+
+
+
+
+Zhu, et al.              Expires April 18, 2005                [Page 18]
