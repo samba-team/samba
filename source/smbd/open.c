@@ -530,7 +530,7 @@ static void open_file(files_struct *fsp,connection_struct *conn,
     }
       
     DEBUG(2,("%s opened file %s read=%s write=%s (numopen=%d)\n",
-	     *sesssetup_user ? sesssetup_user : conn->user,fname,
+	     *sesssetup_user ? sesssetup_user : conn->user,fsp->fsp_name,
 	     BOOLSTR(fsp->can_read), BOOLSTR(fsp->can_write),
 	     conn->num_files_open));
 

@@ -1566,8 +1566,10 @@ static int call_trans2setfilepathinfo(connection_struct *conn,
       break;
     }
 
+    case SMB_SET_FILE_ALLOCATION_INFO:
+      break; /* We don't need to do anything for this call. */
+
     case SMB_SET_FILE_DISPOSITION_INFO: /* not supported yet */
-    case SMB_SET_FILE_ALLOCATION_INFO: /* not supported yet */
     default:
     {
       return(ERROR(ERRDOS,ERRunknownlevel));
