@@ -291,6 +291,11 @@ static BOOL get_passwd_entries(SAM_USER_INFO_21 *pw_buf,
 			}
 
 			user_name_len = strlen(pwd->pw_name);
+			
+			/* skip the trust account stored in the /etc/passwd file */
+			if (pwd->pw_name[user_name_len-1]=='$')
+				continue;
+			
 			pw_rid = pdb_uid_to_user_rid(pwd->pw_uid);
 			ZERO_STRUCTP(&pw_buf[(*num_entries)]);
 			init_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->pw_name, user_name_len);
