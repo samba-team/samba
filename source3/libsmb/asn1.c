@@ -32,14 +32,14 @@ BOOL asn1_write(ASN1_DATA *data, const void *p, int len)
 {
 	if (data->has_error) return False;
 	if (data->length < data->ofs+len) {
-		uint8 *p;
-		p = Realloc(data->data, data->ofs+len);
-		if (!p) {
+		uint8 *newp;
+		newp = Realloc(data->data, data->ofs+len);
+		if (!newp) {
 			SAFE_FREE(data->data);
 			data->has_error = True;
 			return False;
 		}
-		data->data = p;
+		data->data = newp;
 		data->length = data->ofs+len;
 	}
 	memcpy(data->data + data->ofs, p, len);
@@ -112,20 +112,27 @@ BOOL asn1_pop_tag(ASN1_DATA *data)
 BOOL asn1_write_OID(ASN1_DATA *data, const char *OID)
 {
 	unsigned v, v2;
-	char *p = (char *)OID;
+	const char *p = (const char *)OID;
+	char *newp;
 
-	if (!asn1_push_tag(data, ASN1_OID)) return False;
-	v = strtol(p, &p, 10);
-	v2 = strtol(p, &p, 10);
-	if (!asn1_write_uint8(data, 40*v + v2)) return False;
+	if (!asn1_push_tag(data, ASN1_OID))
+		return False;
+	v = strtol(p, &newp, 10);
+	p = newp;
+	v2 = strtol(p, &newp, 10);
+	p = newp;
+	if (!asn1_write_uint8(data, 40*v + v2))
+		return False;
 
 	while (*p) {
-		v = strtol(p, &p, 10);
+		v = strtol(p, &newp, 10);
+		p = newp;
 		if (v >= (1<<28)) asn1_write_uint8(data, 0x80 | ((v>>28)&0xff));
 		if (v >= (1<<21)) asn1_write_uint8(data, 0x80 | ((v>>21)&0xff));
 		if (v >= (1<<14)) asn1_write_uint8(data, 0x80 | ((v>>14)&0xff));
 		if (v >= (1<<7)) asn1_write_uint8(data, 0x80 | ((v>>7)&0xff));
-		if (!asn1_write_uint8(data, v&0x7f)) return False;
+		if (!asn1_write_uint8(data, v&0x7f))
+			return False;
 	}
 	return asn1_pop_tag(data);
 }

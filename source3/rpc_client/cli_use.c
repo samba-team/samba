@@ -170,7 +170,7 @@ static struct cli_use *cli_find(const char *srv_name,
 		{
 			continue;
 		}
-		if (!reuse && !pwd_compare((struct pwd_info *)&usr_creds->pwd, &c->cli->pwd))
+		if (!reuse && !pwd_compare(&usr_creds->pwd, &c->cli->pwd))
 		{
 			DEBUG(100, ("password doesn't match\n"));
 			continue;

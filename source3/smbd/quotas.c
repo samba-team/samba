@@ -114,7 +114,7 @@ static int get_smb_linux_quota(char *path, uid_t euser_id, LINUX_SMB_DISK_QUOTA 
 try to get the disk space from disk quotas (LINUX version)
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	int r;
 	SMB_STRUCT_STAT S;
@@ -199,7 +199,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 try to get the disk space from disk quotas (CRAY VERSION)
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   struct mntent *mnt;
   FILE *fd;
@@ -479,7 +479,7 @@ try to get the disk space from disk quotas (SunOS & Solaris2 version)
 Quota code by Peter Urbanec (amiga@cse.unsw.edu.au).
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
 	uid_t euser_id;
 	int ret;
@@ -639,7 +639,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 try to get the disk space from disk quotas - OSF1 version
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   int r, save_errno;
   struct dqblk D;
@@ -705,7 +705,7 @@ try to get the disk space from disk quotas (IRIX 6.2 version)
 #include <sys/quota.h>
 #include <mntent.h>
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   uid_t euser_id;
   int r;
@@ -843,7 +843,7 @@ BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_U
 try to get the disk space from disk quotas - default version
 ****************************************************************************/
 
-BOOL disk_quotas(char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
+BOOL disk_quotas(const char *path, SMB_BIG_UINT *bsize, SMB_BIG_UINT *dfree, SMB_BIG_UINT *dsize)
 {
   int r;
   struct dqblk D;

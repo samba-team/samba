@@ -117,7 +117,7 @@ char *validated_domain(uint16 vuid)
  Create the SID list for this user.
 ****************************************************************************/
 
-NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest)
+NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups, BOOL is_guest, NT_USER_TOKEN *sup_tok)
 {
 	extern DOM_SID global_sid_World;
 	extern DOM_SID global_sid_Network;
@@ -137,6 +137,9 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	/* We always have uid/gid plus World and Network and Authenticated Users or Guest SIDs. */
 	num_sids = 5 + ngroups;
 
+	if (sup_tok && sup_tok->num_sids)
+		num_sids += sup_tok->num_sids;
+
 	if ((token->user_sids = (DOM_SID *)malloc( num_sids*sizeof(DOM_SID))) == NULL) {
 		SAFE_FREE(token);
 		return NULL;
@@ -149,13 +152,15 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 	 * se_access_check depends on this.
 	 */
 
-	uid_to_sid( &psids[psid_ndx++], uid);
+	uid_to_sid( &psids[PRIMARY_USER_SID_INDEX], uid);
+	psid_ndx++;
 
 	/*
 	 * Primary group SID is second in token. Convention.
 	 */
 
-	gid_to_sid( &psids[psid_ndx++], gid);
+	gid_to_sid( &psids[PRIMARY_GROUP_SID_INDEX], gid);
+	psid_ndx++;
 
 	/* Now add the group SIDs. */
 
@@ -164,6 +169,10 @@ NT_USER_TOKEN *create_nt_token(uid_t uid, gid_t gid, int ngroups, gid_t *groups,
 			gid_to_sid( &psids[psid_ndx++], groups[i]);
 		}
 	}
+
+	/* Now add the additional SIDs from the supplimentary token. */
+	for (i = 0; i < sup_tok->num_sids; i++)
+		sid_copy( &psids[psid_ndx++], &sup_tok->user_sids[i] );
 
 	/*
 	 * Finally add the "standard" SIDs.
@@ -218,8 +227,8 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 
 	ZERO_STRUCTP(vuser);
 
-        puid = pdb_get_uid(server_info->sam_account);
-        pgid = pdb_get_gid(server_info->sam_account);
+	puid = pdb_get_uid(server_info->sam_account);
+	pgid = pdb_get_gid(server_info->sam_account);
 
 	if (!puid || !pgid) {
 		DEBUG(0,("Attempted session setup with invalid user.  No uid/gid in SAM_ACCOUNT\n"));
@@ -261,8 +270,11 @@ int register_vuid(auth_serversupplied_info *server_info, char *smb_name, BOOL gu
 	initialise_groups(vuser->user.unix_name, vuser->uid, vuser->gid);
 	get_current_groups( &vuser->n_groups, &vuser->groups);
 
+	if (server_info->ptok)
+		add_supplementary_nt_login_groups(&vuser->n_groups, &vuser->groups, &server_info->ptok);
+
 	/* Create an NT_USER_TOKEN struct for this user. */
-	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, guest);
+	vuser->nt_user_token = create_nt_token(vuser->uid, vuser->gid, vuser->n_groups, vuser->groups, guest, server_info->ptok);
 
 	DEBUG(3,("uid %d registered to name %s\n",(int)vuser->uid,vuser->user.unix_name));
 

@@ -896,7 +896,7 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
  Set the handle state.
 ****************************************************************************/
 
-static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint16 device_state)
+static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, const char *pipe_name, uint16 device_state)
 {
 	BOOL state_set = False;
 	char param[2];
@@ -940,7 +940,7 @@ static BOOL rpc_pipe_set_hnd_state(struct cli_state *cli, char *pipe_name, uint1
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *transfer)
+static BOOL valid_pipe_name(const char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *transfer)
 {
 	int pipe_idx = 0;
 
@@ -970,7 +970,7 @@ static BOOL valid_pipe_name(char *pipe_name, RPC_IFACE *abstract, RPC_IFACE *tra
  check the rpc bind acknowledge response
 ****************************************************************************/
 
-static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, char *pipe_name, RPC_IFACE *transfer)
+static BOOL check_bind_response(RPC_HDR_BA *hdr_ba, const char *pipe_name, RPC_IFACE *transfer)
 {
 	int i = 0;
 
@@ -1104,7 +1104,7 @@ static BOOL rpc_send_auth_reply(struct cli_state *cli, prs_struct *rdata, uint32
  Do an rpc bind.
 ****************************************************************************/
 
-BOOL rpc_pipe_bind(struct cli_state *cli, char *pipe_name, char *my_name)
+BOOL rpc_pipe_bind(struct cli_state *cli, const char *pipe_name, char *my_name)
 {
 	RPC_IFACE abstract;
 	RPC_IFACE transfer;
@@ -1189,16 +1189,16 @@ void cli_nt_set_ntlmssp_flgs(struct cli_state *cli, uint32 ntlmssp_flgs)
  Open a session.
  ****************************************************************************/
 
-BOOL cli_nt_session_open(struct cli_state *cli, char *pipe_name)
+BOOL cli_nt_session_open(struct cli_state *cli, const char *pipe_name)
 {
 	int fnum;
 
 	SMB_ASSERT(cli->nt_pipe_fnum == 0);
 
 	if (cli->capabilities & CAP_NT_SMBS) {
-		if ((fnum = cli_nt_create(cli, &(pipe_name[5]), DESIRED_ACCESS_PIPE)) == -1) {
+		if ((fnum = cli_nt_create(cli, &pipe_name[5], DESIRED_ACCESS_PIPE)) == -1) {
 			DEBUG(0,("cli_nt_session_open: cli_nt_create failed on pipe %s to machine %s.  Error was %s\n",
-				 &(pipe_name[5]), cli->desthost, cli_errstr(cli)));
+				 &pipe_name[5], cli->desthost, cli_errstr(cli)));
 			return False;
 		}
 

@@ -212,7 +212,7 @@ int cli_nt_delete_on_close(struct cli_state *cli, int fnum, BOOL flag)
  Used in smbtorture.
 ****************************************************************************/
 
-int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
+int cli_nt_create_full(struct cli_state *cli, const char *fname, uint32 DesiredAccess,
 		 uint32 FileAttributes, uint32 ShareAccess,
 		 uint32 CreateDisposition, uint32 CreateOptions)
 {
@@ -268,7 +268,7 @@ int cli_nt_create_full(struct cli_state *cli, char *fname, uint32 DesiredAccess,
 open a file
 ****************************************************************************/
 
-int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
+int cli_nt_create(struct cli_state *cli, const char *fname, uint32 DesiredAccess)
 {
 	return cli_nt_create_full(cli, fname, DesiredAccess, 0,
 				FILE_SHARE_READ|FILE_SHARE_WRITE, FILE_EXISTS_OPEN, 0x0);
@@ -278,7 +278,7 @@ int cli_nt_create(struct cli_state *cli, char *fname, uint32 DesiredAccess)
 open a file
 WARNING: if you open with O_WRONLY then getattrE won't work!
 ****************************************************************************/
-int cli_open(struct cli_state *cli, char *fname, int flags, int share_mode)
+int cli_open(struct cli_state *cli, const char *fname, int flags, int share_mode)
 {
 	char *p;
 	unsigned openfn=0;

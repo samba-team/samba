@@ -49,41 +49,31 @@ BOOL pwd_is_nullpwd(const struct pwd_info *pwd)
 /****************************************************************************
 compares two passwords.  hmm, not as trivial as expected.  hmm.
 ****************************************************************************/
-BOOL pwd_compare(struct pwd_info *pwd1, struct pwd_info *pwd2)
+BOOL pwd_compare(const struct pwd_info *pwd1, const struct pwd_info *pwd2)
 {
-	if (pwd1->cleartext && pwd2->cleartext)
-	{
+	if (pwd1->cleartext && pwd2->cleartext) {
 		if (strequal(pwd1->password, pwd2->password))
-		{
 			return True;
-		}
 	}
 	if (pwd1->null_pwd && pwd2->null_pwd)
-	{
 		return True;
-	}
 
 	if (!pwd1->null_pwd  && !pwd2->null_pwd &&
-	    !pwd1->cleartext && !pwd2->cleartext)
-	{
+	    !pwd1->cleartext && !pwd2->cleartext) {
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: nt#\n"));
 		dump_data(100, pwd1->smb_nt_pwd, 16);
 		dump_data(100, pwd2->smb_nt_pwd, 16);
 #endif
 		if (memcmp(pwd1->smb_nt_pwd, pwd2->smb_nt_pwd, 16) == 0)
-		{
 			return True;
-		}
 #ifdef DEBUG_PASSWORD
 		DEBUG(100,("pwd compare: lm#\n"));
 		dump_data(100, pwd1->smb_lm_pwd, 16);
 		dump_data(100, pwd2->smb_lm_pwd, 16);
 #endif
 		if (memcmp(pwd1->smb_lm_pwd, pwd2->smb_lm_pwd, 16) == 0)
-		{
 			return True;
-		}
 	}
 	return False;
 }

@@ -303,6 +303,9 @@ typedef struct sid_info
  * token->user_sids[2-num_sids] = supplementary group SIDS.
  */
 
+#define PRIMARY_USER_SID_INDEX 0
+#define PRIMARY_GROUP_SID_INDEX 1
+
 #ifndef _NT_USER_TOKEN
 typedef struct _nt_user_token {
 	size_t num_sids;

@@ -163,7 +163,7 @@ int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 			continue;
 		}
 
-		memcpy(f->buf + f->bufused, total+(char *)p, n);
+		memcpy(f->buf + f->bufused, total+(const char *)p, n);
 		f->bufused += n;
 		total += n;
 	}
@@ -173,7 +173,7 @@ int x_fwrite(const void *p, size_t size, size_t nmemb, XFILE *f)
 	if (f->buftype == X_IOLBF && f->bufused) {
 		int i;
 		for (i=size-1; i>=0; i--) {
-			if (*(i+(char *)p) == '\n') {
+			if (*(i+(const char *)p) == '\n') {
 				x_fflush(f);
 				break;
 			}

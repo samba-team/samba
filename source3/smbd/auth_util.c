@@ -4,6 +4,7 @@
    Authentication utility functions
    Copyright (C) Andrew Tridgell 1992-1998
    Copyright (C) Andrew Bartlett 2001
+   Copyright (C) Jeremy Allison 2000-2001
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,21 +30,23 @@ extern fstring remote_machine;
 extern pstring global_myname;
 
 /*******************************************************************
-Get the next challenge value - no repeats.
+ Get the next challenge value - no repeats.
 ********************************************************************/
+
 void generate_next_challenge(char *challenge)
 {
-        unsigned char buf[8];
+	unsigned char buf[8];
 
-        generate_random_buffer(buf,8,False);
+	generate_random_buffer(buf,8,False);
 	memcpy(saved_challenge, buf, 8);
 	memcpy(challenge,buf,8);
 	challenge_sent = True;
 }
 
 /*******************************************************************
-set the last challenge sent, usually from a password server
+ Set the last challenge sent, usually from a password server.
 ********************************************************************/
+
 BOOL set_challenge(unsigned char *challenge)
 {
 	memcpy(saved_challenge,challenge,8);
@@ -52,15 +55,16 @@ BOOL set_challenge(unsigned char *challenge)
 }
 
 /*******************************************************************
-get the last challenge sent
+ Get the last challenge sent.
 ********************************************************************/
+
 BOOL last_challenge(unsigned char *challenge)
 {
-	if (!challenge_sent) return(False);
+	if (!challenge_sent)
+		return(False);
 	memcpy(challenge,saved_challenge,8);
 	return(True);
 }
-
 
 /****************************************************************************
  Create a UNIX user on demand.
@@ -72,7 +76,8 @@ static int smb_create_user(const char *unix_user, const char *homedir)
 	int ret;
 
 	pstrcpy(add_script, lp_adduser_script());
-	if (! *add_script) return -1;
+	if (! *add_script)
+		return -1;
 	all_string_sub(add_script, "%u", unix_user, sizeof(pstring));
 	if (homedir)
 		all_string_sub(add_script, "%H", homedir, sizeof(pstring));
@@ -91,7 +96,8 @@ static int smb_delete_user(char *unix_user)
 	int ret;
 
 	pstrcpy(del_script, lp_deluser_script());
-	if (! *del_script) return -1;
+	if (! *del_script)
+		return -1;
 	all_string_sub(del_script, "%u", unix_user, sizeof(pstring));
 	ret = smbrun(del_script,NULL);
 	DEBUG(3,("smb_delete_user: Running the command `%s' gave %d\n",del_script,ret));
@@ -131,7 +137,7 @@ void smb_user_control(const auth_usersupplied_info *user_info, auth_serversuppli
 
 				if (home_dir && 
 				    (sys_stat(home_dir, &st) == -1) && (errno == ENOENT)) {
-					smb_create_user(user_info->internal_username.str, home_dir);
+						smb_create_user(user_info->internal_username.str, home_dir);
 				}
 			}
 		}
@@ -641,14 +647,14 @@ void free_user_info(auth_usersupplied_info **user_info)
 /***************************************************************************
  Clear out a server_info struct that has been allocated
 ***************************************************************************/
+
 void free_server_info(auth_serversupplied_info **server_info)
 {
 	if (*server_info != NULL) {
 		pdb_free_sam(&(*server_info)->sam_account);
 		
 		/* call pam_end here, unless we know we are keeping it */
-		SAFE_FREE((*server_info)->group_rids);
-
+		delete_nt_token( &(*server_info)->ptok );
 		ZERO_STRUCT(**server_info);
 	}
 	SAFE_FREE(*server_info);
@@ -657,6 +663,7 @@ void free_server_info(auth_serversupplied_info **server_info)
 /***************************************************************************
  Make a server_info struct for a guest user 
 ***************************************************************************/
+
 void make_server_info_guest(auth_serversupplied_info **server_info) 
 {
 	struct passwd *pass = sys_getpwnam(lp_guestaccount(-1));
@@ -666,3 +673,42 @@ void make_server_info_guest(auth_serversupplied_info **server_info)
 	}
 }
 
+/****************************************************************************
+ Delete a SID token.
+****************************************************************************/
+
+void delete_nt_token(NT_USER_TOKEN **pptoken)
+{
+    if (*pptoken) {
+		NT_USER_TOKEN *ptoken = *pptoken;
+        SAFE_FREE( ptoken->user_sids );
+        ZERO_STRUCTP(ptoken);
+    }
+    SAFE_FREE(*pptoken);
+}
+
+/****************************************************************************
+ Duplicate a SID token.
+****************************************************************************/
+
+NT_USER_TOKEN *dup_nt_token(NT_USER_TOKEN *ptoken)
+{
+	NT_USER_TOKEN *token;
+
+	if (!ptoken)
+		return NULL;
+
+    if ((token = (NT_USER_TOKEN *)malloc( sizeof(NT_USER_TOKEN) ) ) == NULL)
+        return NULL;
+
+    ZERO_STRUCTP(token);
+
+    if ((token->user_sids = (DOM_SID *)memdup( ptoken->user_sids, sizeof(DOM_SID) * ptoken->num_sids )) == NULL) {
+        SAFE_FREE(token);
+        return NULL;
+    }
+
+    token->num_sids = ptoken->num_sids;
+
+	return token;
+}
