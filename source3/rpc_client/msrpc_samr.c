@@ -444,19 +444,16 @@ BOOL sam_query_dominfo(const char* srv_name,
 				&sam_pol) : False;
 
 	/* connect to the domain */
-	res1 = res ? samr_open_domain( 
-	            &sam_pol, ace_perms, sid1,
+	res1 = res ? samr_open_domain( &sam_pol, ace_perms, sid1,
 	            &pol_dom) : False;
 
 	/* send a samr 0x8 command */
 	res2 = res ? samr_query_dom_info(
 	            &pol_dom, switch_value, ctr) : False;
 
-	res1 = res1 ? samr_close(
-	            &sam_pol) : False;
+	res1 = res1 ? samr_close( &sam_pol) : False;
 
-	res = res ? samr_close( 
-	            &pol_dom) : False;
+	res = res ? samr_close( &pol_dom) : False;
 
 	if (res2)
 	{
@@ -735,7 +732,8 @@ SAM Domains query.
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				DOMAIN_FN(dom_fn))
+				DOMAIN_FN(dom_fn),
+				DOMAIN_INFO_FN(dom_inf_fn))
 {
 	BOOL res = True;
 	uint32 ace_perms = 0x02000000; /* access control permissions. */
@@ -778,20 +776,22 @@ uint32 msrpc_sam_enum_domains( const char* srv_name,
 				dom_fn(domain_name);
 			}
 
-#if 0
 			if (dom_inf_fn != NULL)
 			{
-				query_domaininfo(&sam_pol,
-				                  domain_name,
-				                  dom_inf_fn);
+				uint32 switch_value = 2;
+				SAM_UNK_CTR ctr;
+				DOM_SID dom_sid;
+				/* connect to the domain */
+				if (samr_query_lookup_domain( &sam_pol,
+				                              domain_name,
+				                              &dom_sid) &&
+				    sam_query_dominfo(srv_name, &dom_sid,
+				                      switch_value, &ctr))
+				{
+					dom_inf_fn(domain_name, &dom_sid,
+					           switch_value, &ctr);
+				}
 			}
-			if (dom_mem_fn != NULL)
-			{
-				req_domainmem_info(&sam_pol,
-				                  domain_name,
-				                  dom_mem_fn);
-			}
-#endif
 		}
 	}
 

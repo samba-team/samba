@@ -42,6 +42,18 @@ static void sam_display_domain(const char *domain)
 	report(out_hnd, "Domain Name: %s\n", domain);
 }
 
+static void sam_display_dom_info(const char* domain, const DOM_SID *sid,
+				uint32 switch_value,
+				SAM_UNK_CTR *ctr)
+{
+	fstring sidstr;
+	sid_to_string(sidstr, sid);
+	report(out_hnd, "Domain Name:\t%s\tSID:\t%s\n", domain, sidstr);
+	display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, ctr);
+	display_sam_unk_ctr(out_hnd, ACTION_ENUMERATE, switch_value, ctr);
+	display_sam_unk_ctr(out_hnd, ACTION_FOOTER   , switch_value, ctr);
+}
+
 static void sam_display_alias_info(const char *domain, const DOM_SID *sid,
 				uint32 alias_rid, 
 				ALIAS_INFO_CTR *const ctr)
@@ -2055,9 +2067,10 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 	fstrcat(srv_name, info->dest_host);
 	strupper(srv_name);
 
-
 	sid_to_string(sid, &info->dom.level5_sid);
 	fstrcpy(domain, info->dom.level5_dom);
+
+	string_to_sid(&sid1, sid);
 
 	if (sid1.num_auths == 0)
 	{
@@ -2065,23 +2078,15 @@ void cmd_sam_query_dominfo(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	string_to_sid(&sid1, sid);
-
 	if (argc > 1)
 	{
 		switch_value = strtoul(argv[1], (char**)NULL, 10);
 	}
 
-	report(out_hnd, "SAM Query Domain Info: info level %d\n", switch_value);
-	report(out_hnd, "From: %s Domain: %s SID: %s\n",
-	                  info->myhostname, domain, sid);
-
 	if (sam_query_dominfo(srv_name, &sid1, switch_value, &ctr))
 	{
 		DEBUG(5,("cmd_sam_query_dominfo: succeeded\n"));
-		display_sam_unk_ctr(out_hnd, ACTION_HEADER   , switch_value, &ctr);
-		display_sam_unk_ctr(out_hnd, ACTION_ENUMERATE, switch_value, &ctr);
-		display_sam_unk_ctr(out_hnd, ACTION_FOOTER   , switch_value, &ctr);
+		sam_display_dom_info(domain, &sid1, switch_value, &ctr);
 	}
 	else
 	{
@@ -2413,7 +2418,8 @@ void cmd_sam_enum_domains(struct client_info *info, int argc, char *argv[])
 
 	msrpc_sam_enum_domains(srv_name,
 	            &sam, &num_sam_entries,
-	            sam_display_domain);
+	            request_domain_info ? NULL : sam_display_domain,
+	            request_domain_info ? sam_display_dom_info : NULL);
 
 	if (sam != NULL)
 	{

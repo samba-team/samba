@@ -2285,7 +2285,8 @@ BOOL req_groupmem_info( const POLICY_HND *pol_dom,
 uint32 msrpc_sam_enum_domains( const char* srv_name,
 				struct acct_info **sam,
 				uint32 *num_sam_entries,
-				DOMAIN_FN(dom_fn));
+				DOMAIN_FN(dom_fn),
+				DOMAIN_INFO_FN(dom_inf_fn));
 uint32 msrpc_sam_enum_groups( const char* srv_name,
 				const char* domain,
 				const DOM_SID *sid1,
