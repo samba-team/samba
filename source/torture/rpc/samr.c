@@ -2315,21 +2315,6 @@ static BOOL test_QueryDomainInfo2(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;	
 }
 
-void add_string_to_array(TALLOC_CTX *mem_ctx,
-			 const char *str, const char ***strings, int *num)
-{
-	*strings = talloc_realloc(mem_ctx, *strings,
-				  ((*num)+1) * sizeof(**strings));
-
-	if (*strings == NULL)
-		return;
-
-	(*strings)[*num] = str;
-	*num += 1;
-
-	return;
-}
-
 /* Test whether querydispinfo level 5 and enumdomgroups return the same
    set of group names. */
 static BOOL test_GroupList(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
