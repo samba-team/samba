@@ -42,16 +42,16 @@ decrypt_authenticator (krb5_context context,
     if (len < 0)
       return ASN1_PARSE_ERROR;
     return 0;
-}    
+}
 
 krb5_error_code
-krb5_rd_req(krb5_context context,
-	    krb5_auth_context *auth_context,
-	    const krb5_data *inbuf,
-	    krb5_const_principal server,
-	    krb5_keytab keytab,
-	    krb5_flags *ap_req_options,
-	    krb5_ticket **ticket)
+krb5_rd_req_with_keyblock(krb5_context context,
+			  krb5_auth_context *auth_context,
+			  const krb5_data *inbuf,
+			  krb5_const_principal server,
+			  krb5_keyblock *keyblock,
+			  krb5_flags *ap_req_options,
+			  krb5_ticket **ticket)
 {
   krb5_error_code ret;
   AP_REQ ap_req;
@@ -76,23 +76,11 @@ krb5_rd_req(krb5_context context,
   if (ap_req.ap_options.use_session_key)
     abort ();
   else {
-    krb5_keytab_entry entry;
     EncTicketPart decr_part;
     Authenticator authenticator;
 
-    if (keytab == NULL)
-      krb5_kt_default (context, &keytab);
-
-    ret = krb5_kt_get_entry(context,
-			    keytab,
-			    server,
-			    0,
-			    KEYTYPE_DES,
-			    &entry);
-    if (ret)
-      return ret;
     ret = decrypt_tkt_enc_part (context,
-				&entry.keyblock,
+				keyblock,
 				&ap_req.ticket.enc_part,
 				&decr_part);
     if (ret)
@@ -155,3 +143,38 @@ krb5_rd_req(krb5_context context,
     return 0;
   }
 }
+
+krb5_error_code
+krb5_rd_req(krb5_context context,
+	    krb5_auth_context *auth_context,
+	    const krb5_data *inbuf,
+	    krb5_const_principal server,
+	    krb5_keytab keytab,
+	    krb5_flags *ap_req_options,
+	    krb5_ticket **ticket)
+{
+    krb5_keytab_entry entry;
+    krb5_error_code ret;
+    if(keytab == NULL)
+	krb5_kt_default(context, &keytab);
+    ret = krb5_kt_get_entry(context,
+			    keytab,
+			    server,
+			    0,
+			    KEYTYPE_DES,
+			    &entry);
+    if(ret)
+	return ret;
+    
+    return krb5_rd_req_with_keyblock(context,
+				     auth_context,
+				     inbuf,
+				     server,
+				     &entry.keyblock,
+				     ap_req_options,
+				     ticket);
+}
+	    
+    
+
+
