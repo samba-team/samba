@@ -432,7 +432,8 @@ dns_srv_order(struct dns_reply *r)
     int num_srv = 0;
 
 #if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
-    char state[256], *oldstate;
+    int state[256 / sizeof(int)];
+    char *oldstate;
 #endif
 
     for(rr = r->head; rr; rr = rr->next) 
@@ -461,7 +462,7 @@ dns_srv_order(struct dns_reply *r)
     qsort(srvs, num_srv, sizeof(*srvs), compare_srv);
 
 #if defined(HAVE_INITSTATE) && defined(HAVE_SETSTATE)
-    oldstate = initstate(time(NULL), state, sizeof(state));
+    oldstate = initstate(time(NULL), (char*)state, sizeof(state));
 #endif
 
     headp = &r->head;
