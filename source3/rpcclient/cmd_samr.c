@@ -874,7 +874,10 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 						 &start_idx, info_level,
 						 &num_entries, max_entries, &ctr);
 
-		if (!NT_STATUS_IS_OK(result))
+		if (!NT_STATUS_IS_OK(result) && !NT_STATUS_EQUAL(result, STATUS_MORE_ENTRIES)) 
+			break;
+
+		if (num_entries == 0) 
 			break;
 
 		for (i = 0; i < num_entries; i++) {
