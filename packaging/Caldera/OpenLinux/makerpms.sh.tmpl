@@ -35,13 +35,10 @@ cp -af *.spec *.spec-lsb $SPECDIR
 if [ $team -ne 0 ]; then
 	cp *.spec-team $SPECDIR
 fi
-if [ -x *.patch ]; then
-	for src in *.patch; do
-	  trg=`echo $src | sed 's;xxxxxx;PVERSION;'`
-	  cp -a $src $SRCDIR/$trg
-	done
-fi
-
+for i in `ls *.patch`
+do
+	cp $i $SRCDIR/
+done
 # Start building the package
 cd $SPECDIR
 if [ $old -eq 0 ]; then
