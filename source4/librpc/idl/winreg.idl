@@ -15,60 +15,72 @@
 		unistr_noterm *name;
 	} winreg_String;
 
+	typedef struct {
+		uint16 unknown0;
+		uint16 unknown1;
+	} winreg_OpenUnknown;
+
 	/******************/
 	/* Function: 0x00 */
-	NTSTATUS winreg_OpenHKCR(
+	WERROR winreg_OpenHKCR(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x01 */
-	NTSTATUS winreg_OpenHKCU(
+	WERROR winreg_OpenHKCU(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
-
-	typedef struct {
-		uint16 unknown0;
-		uint16 unknown1;
-	} winreg_OpenHKLMUnknown;
 
 	/******************/
 	/* Function: 0x02 */
-	NTSTATUS winreg_OpenHKLM(
-		[in]      winreg_OpenHKLMUnknown *unknown,
+	WERROR winreg_OpenHKLM(
+		[in]      winreg_OpenUnknown *unknown,
 		[in]      uint32 access_required,
 		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x03 */
-	NTSTATUS winreg_OpenHKPD(
+	WERROR winreg_OpenHKPD(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x04 */
-	NTSTATUS winreg_OpenHKU(
+	WERROR winreg_OpenHKU(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x05 */
-	NTSTATUS winreg_CloseKey(
+	WERROR winreg_CloseKey(
 		[in,out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x06 */
-	NTSTATUS winreg_CreateKey(
+	WERROR winreg_CreateKey(
 	);
 
 	/******************/
 	/* Function: 0x07 */
-	NTSTATUS winreg_DeleteKey(
+	WERROR winreg_DeleteKey(
 		[in,ref] policy_handle *handle,
 		[in]	 winreg_String key
 	);
 
 	/******************/
 	/* Function: 0x08 */
-	NTSTATUS winreg_DeleteValue(
+	WERROR winreg_DeleteValue(
 		[in,ref] policy_handle *handle,
 		[in]	 winreg_String value
 	);
@@ -78,136 +90,190 @@
 		uint32 high;
 	} winreg_Time;
 
+	typedef struct {
+		uint32 unknown;
+		winreg_String key_name;
+	} winreg_EnumKeyNameRequest;
+
+	typedef struct {
+		uint32 unknown1;
+		uint32 unknown2;
+		lstring name;
+	} winreg_EnumKeyNameResponse;
+
 	/******************/
 	/* Function: 0x09 */
-	NTSTATUS winreg_EnumKey(
+	WERROR winreg_EnumKey(
+		[in,ref]    policy_handle *handle,
+		[in] uint32 key_index,
+		[in,out]    uint16 key_name_len,
+		[in,out]    uint16 unknown,
+		[in]        winreg_EnumKeyNameRequest *name,
+		[out]       winreg_EnumKeyNameResponse *name,
+		[in,out]    winreg_String *class,
+		[in,out]    winreg_Time *last_changed_time
 	);
 
 	/******************/
 	/* Function: 0x0a */
-	NTSTATUS winreg_EnumValue(
+	WERROR winreg_EnumValue(
+		[in,ref] policy_handle *handle,
+		[in] uint32 val_index,
+		[in,out,ref] winreg_String *name,
+		[in,out] uint32 *type,
+		[in,out] unistr *value,
+		[in,out] uint32 *value1,
+		[in,out] uint32 *value2
 	);
 
 	/******************/
 	/* Function: 0x0b */
-	NTSTATUS winreg_FlushKey(
+	WERROR winreg_FlushKey(
 		[in,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x0c */
-	NTSTATUS winreg_GetKeySecurity(
+	WERROR winreg_GetKeySecurity(
 	);
 
 	/******************/
 	/* Function: 0x0d */
-	NTSTATUS winreg_LoadKey(
+	WERROR winreg_LoadKey(
 	);
 
 	/******************/
 	/* Function: 0x0e */
-	NTSTATUS winreg_NotifyChangeKeyValue(
+	WERROR winreg_NotifyChangeKeyValue(
 	);
 
 	/******************/
 	/* Function: 0x0f */
-	NTSTATUS winreg_OpenKey(
+	WERROR winreg_OpenKey(
+		[in,ref] policy_handle *handle,
+		[in] winreg_String keyname,
+		[in] uint32 unknown,
+		[in] uint32 access_mask,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x10 */
-	NTSTATUS winreg_QueryInfoKey(
+	WERROR winreg_QueryInfoKey(
+		[in,ref] policy_handle *handle,
+		[in] winreg_String class,
+		[out,ref] winreg_String class,
+		[out] uint32 num_subkeys,
+		[out] uint32 max_subkeylen,
+		[out] uint32 max_subkeysize,
+		[out] uint32 num_values,
+		[out] uint32 max_valnamelen,
+		[out] uint32 max_valbufsize,
+		[out] uint32 secdescsize,
+		[out] winreg_Time last_changed_time
 	);
 
 	/******************/
 	/* Function: 0x11 */
-	NTSTATUS winreg_QueryValue(
+	WERROR winreg_QueryValue(
 	);
 
 	/******************/
 	/* Function: 0x12 */
-	NTSTATUS winreg_ReplaceKey(
+	WERROR winreg_ReplaceKey(
 	);
 
 	/******************/
 	/* Function: 0x13 */
-	NTSTATUS winreg_RestoreKey(
+	WERROR winreg_RestoreKey(
 	);
 
 	/******************/
 	/* Function: 0x14 */
-	NTSTATUS winreg_SaveKey(
+	WERROR winreg_SaveKey(
 	);
 
 	/******************/
 	/* Function: 0x15 */
-	NTSTATUS winreg_SetKeySecurity(
+	WERROR winreg_SetKeySecurity(
 	);
 
 	/******************/
 	/* Function: 0x16 */
-	NTSTATUS winreg_SetValue(
+	WERROR winreg_SetValue(
 	);
 
 	/******************/
 	/* Function: 0x17 */
-	NTSTATUS winreg_UnLoadKey(
+	WERROR winreg_UnLoadKey(
 	);
 
 	/******************/
 	/* Function: 0x18 */
-	NTSTATUS winreg_InitiateSystemShutdown(
+	WERROR winreg_InitiateSystemShutdown(
 	);
 
 	/******************/
 	/* Function: 0x19 */
-	NTSTATUS winreg_AbortSystemShutdown(
+	WERROR winreg_AbortSystemShutdown(
 	);
 
 	/******************/
 	/* Function: 0x1a */
-	NTSTATUS winreg_GetVersion(
+	WERROR winreg_GetVersion(
 		[in,ref] policy_handle *handle,
 		[out]    uint32 version
 	);
 
 	/******************/
 	/* Function: 0x1b */
-	NTSTATUS winreg_OpenHKCC(
+	WERROR winreg_OpenHKCC(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x1c */
-	NTSTATUS winreg_OpenHKDD(
+	WERROR winreg_OpenHKDD(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x1d */
-	NTSTATUS winreg_QueryMultipleValues(
+	WERROR winreg_QueryMultipleValues(
 	);
 
 	/******************/
 	/* Function: 0x1e */
-	NTSTATUS winreg_InitiateSystemShutdownEx(
+	WERROR winreg_InitiateSystemShutdownEx(
 	);
 
 	/******************/
 	/* Function: 0x1f */
-	NTSTATUS winreg_SaveKeyEx(
+	WERROR winreg_SaveKeyEx(
 	);
 
 	/******************/
 	/* Function: 0x20 */
-	NTSTATUS winreg_OpenHKPT(
+	WERROR winreg_OpenHKPT(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x21 */
-	NTSTATUS winreg_OpenHKPN(
+	WERROR winreg_OpenHKPN(
+		[in]      winreg_OpenUnknown *unknown,
+		[in]      uint32 access_required,
+		[out,ref] policy_handle *handle
 	);
 
 	/******************/
 	/* Function: 0x21 */
-	NTSTATUS winreg_QueryMultipleValues2(
+	WERROR winreg_QueryMultipleValues2(
 	);
 }

@@ -88,6 +88,31 @@ static BOOL test_FlushKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
+static BOOL test_OpenKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			 struct policy_handle *hive_handle,
+			 char *keyname, struct policy_handle *key_handle)
+{
+	NTSTATUS status;
+	struct winreg_OpenKey r;
+
+	printf("\ntesting OpenKey\n");
+
+	r.in.handle = hive_handle;
+	init_winreg_String(&r.in.keyname, keyname);
+	r.in.unknown = 0x00000000;
+	r.in.access_mask = 0x02000000;
+	r.out.handle = key_handle;
+
+	status = dcerpc_winreg_OpenKey(p, mem_ctx, &r);
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("OpenKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
 static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
 			   struct policy_handle *handle, char *key)
 {
@@ -109,12 +134,107 @@ static BOOL test_DeleteKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
 	return True;
 }
 
-static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
+static BOOL test_QueryInfoKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			      struct policy_handle *handle, char *class)
+{
+	NTSTATUS status;
+	struct winreg_QueryInfoKey r;
+
+	printf("\ntesting QueryInfoKey\n");
+
+	r.in.handle = handle;
+	init_winreg_String(&r.in.class, class);
+	
+	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &r);
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("QueryInfoKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	return True;
+}
+
+static BOOL test_EnumKey(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			 struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_EnumKey r;
+	struct winreg_EnumKeyNameRequest keyname;
+	struct winreg_String classname;
+	struct winreg_Time tm;
+
+	printf("\ntesting EnumKey\n");
+
+	r.in.handle = handle;
+	r.in.key_index = 0;
+	r.in.key_name_len = r.out.key_name_len = 0;
+	r.in.unknown = r.out.unknown = 0x0414;
+	keyname.unknown = 0x0000020a;
+	init_winreg_String(&keyname.key_name, NULL);
+	init_winreg_String(&classname, NULL);
+	r.in.name = &keyname;
+	r.in.class = &classname;
+	tm.low = tm.high = 0x7fffffff;
+	r.in.last_changed_time = &tm;
+
+	do {
+		status = dcerpc_winreg_EnumKey(p, mem_ctx, &r);
+		r.in.key_index++;
+	} while (W_ERROR_IS_OK(r.out.result));
+
+	return True;
+}
+
+static BOOL test_EnumValue(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx, 
+			   struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_QueryInfoKey qik;
+	struct winreg_EnumValue r;
+	struct winreg_String name;
+	uint32 type;
+	uint32 value1, value2;
+
+
+	printf("\ntesting EnumValue\n");
+
+	qik.in.handle = handle;
+	init_winreg_String(&qik.in.class, NULL);
+
+	status = dcerpc_winreg_QueryInfoKey(p, mem_ctx, &qik);
+
+	if (!W_ERROR_IS_OK(r.out.result)) {
+		printf("QueryInfoKey failed - %s\n", win_errstr(r.out.result));
+		return False;
+	}
+
+	r.in.handle = handle;
+	r.in.val_index = 0;
+	init_winreg_String(&name, "");
+	r.in.name = &name;
+	type = 0;
+	r.in.type = r.out.type = &type;
+	r.in.value = NULL;
+	value1 = 0;
+	value2 = 0;
+	r.in.value1 = &value1;
+	r.in.value2 = &value2;
+
+	do {
+		status = dcerpc_winreg_EnumValue(p, mem_ctx, &r);
+		r.in.val_index++;
+	} while (W_ERROR_IS_OK(r.out.result));
+
+	return True;
+}
+
+static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *handle)
 {
 	NTSTATUS status;
 	struct winreg_OpenHKLM r;
-	struct winreg_OpenHKLMUnknown unknown;
-	struct policy_handle handle;
+	struct winreg_OpenUnknown unknown;
 	BOOL ret = True;
 
 	printf("\ntesting OpenHKLM\n");
@@ -123,7 +243,7 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 	unknown.unknown1 = 0x0000;
 	r.in.unknown = &unknown;
 	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
-	r.out.handle = &handle;
+	r.out.handle = handle;
 
 	status = dcerpc_winreg_OpenHKLM(p, mem_ctx, &r);
 
@@ -132,20 +252,89 @@ static BOOL test_OpenHKLM(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx)
 		return False;
 	}
 
-	if (!test_GetVersion(p, mem_ctx, &handle)) {
-		ret = False;
-	}
+	return ret;
+}
 
-	if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
-		ret = False;
-	}
+static BOOL test_OpenHKU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			 struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_OpenHKU r;
+	struct winreg_OpenUnknown unknown;
+	BOOL ret = True;
 
-	if (!test_CloseKey(p, mem_ctx, &handle)) {
-		ret = False;
+	printf("\ntesting OpenHKU\n");
+
+	unknown.unknown0 = 0x84e0;
+	unknown.unknown1 = 0x0000;
+	r.in.unknown = &unknown;
+	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	status = dcerpc_winreg_OpenHKU(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenHKU failed - %s\n", nt_errstr(status));
+		return False;
 	}
 
 	return ret;
 }
+
+static BOOL test_OpenHKCR(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_OpenHKCR r;
+	struct winreg_OpenUnknown unknown;
+	BOOL ret = True;
+
+	printf("\ntesting OpenHKCR\n");
+
+	unknown.unknown0 = 0x84e0;
+	unknown.unknown1 = 0x0000;
+	r.in.unknown = &unknown;
+	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	status = dcerpc_winreg_OpenHKCR(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenHKCR failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
+static BOOL test_OpenHKCU(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			  struct policy_handle *handle)
+{
+	NTSTATUS status;
+	struct winreg_OpenHKCU r;
+	struct winreg_OpenUnknown unknown;
+	BOOL ret = True;
+
+	printf("\ntesting OpenHKCU\n");
+
+	unknown.unknown0 = 0x84e0;
+	unknown.unknown1 = 0x0000;
+	r.in.unknown = &unknown;
+	r.in.access_required = SEC_RIGHTS_MAXIMUM_ALLOWED;
+	r.out.handle = handle;
+
+	status = dcerpc_winreg_OpenHKCU(p, mem_ctx, &r);
+
+	if (!NT_STATUS_IS_OK(status)) {
+		printf("OpenHKCU failed - %s\n", nt_errstr(status));
+		return False;
+	}
+
+	return ret;
+}
+
+typedef BOOL (*winreg_open_fn)(struct dcerpc_pipe *p, TALLOC_CTX *mem_ctx,
+			       struct policy_handle *handle);
 
 BOOL torture_rpc_winreg(int dummy)
 {
@@ -153,6 +342,8 @@ BOOL torture_rpc_winreg(int dummy)
         struct dcerpc_pipe *p;
 	TALLOC_CTX *mem_ctx;
 	BOOL ret = True;
+	winreg_open_fn open_fns[] = { test_OpenHKLM };
+	int i;
 
 	mem_ctx = talloc_init("torture_rpc_winreg");
 
@@ -166,8 +357,32 @@ BOOL torture_rpc_winreg(int dummy)
 	
 	p->flags |= DCERPC_DEBUG_PRINT_BOTH;
 
-	if (!test_OpenHKLM(p, mem_ctx)) {
-		ret = False;
+	for (i = 0; i < ARRAY_SIZE(open_fns); i++) {
+		struct policy_handle handle;
+
+		if (!open_fns[i](p, mem_ctx, &handle))
+			ret = False;
+
+#if 0
+		    if (!test_GetVersion(p, mem_ctx, &handle)) {
+			    ret = False;
+		    }
+		    
+		    if (!test_DeleteKey(p, mem_ctx, &handle, "spottyfoot")) {
+			    ret = False;
+		    }
+#endif	    
+		    if (!test_EnumKey(p, mem_ctx, &handle)) {
+			    ret = False;
+		    }
+		    
+		    if (!test_EnumValue(p, mem_ctx, &handle)) {
+			    ret = False;
+		    }
+
+		    if (!test_CloseKey(p, mem_ctx, &handle)) {
+			    ret = False;
+		    }
 	}
 
         torture_rpc_close(p);
