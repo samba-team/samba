@@ -79,7 +79,7 @@ SamrTestPrivateFunctionsUser
 
 #define SAMR_CLOSE_HND         0x01
 #define SAMR_OPEN_DOMAIN       0x07
-#define SAMR_UNKNOWN_8         0x08
+#define SAMR_QUERY_DOMAIN_INFO 0x08
 #define SAMR_LOOKUP_IDS        0x10
 #define SAMR_LOOKUP_NAMES      0x11
 #define SAMR_UNKNOWN_3         0x03
@@ -338,16 +338,16 @@ typedef struct r_samr_unknown_3_info
 
 
 /****************************************************************************
-SAMR_Q_UNKNOWN_8 - probably a query on domain group info.
+SAMR_Q_QUERY_DOMAIN_INFO - probably a query on domain group info.
 *****************************************************************************/
 
-/* SAMR_Q_UNKNOWN_8 - */
-typedef struct q_samr_unknown_8_info
+/* SAMR_Q_QUERY_DOMAIN_INFO - */
+typedef struct q_samr_query_domain_info
 {
 	POLICY_HND domain_pol;   /* policy handle */
 	uint16 switch_value;     /* 0x0002 */
 
-} SAMR_Q_UNKNOWN_8;
+} SAMR_Q_QUERY_DOMAIN_INFO;
 
 typedef struct sam_unkown_info_2_info
 {
@@ -363,16 +363,17 @@ typedef struct sam_unkown_info_2_info
 	   pointer is referring to
 	 */
 
-	uint32 unknown_4; /* 0x0000 0099 or 0x1000 0000 */
-	uint32 unknown_5; /* 0x0000 0000 */
+	uint32 seq_num; /* some sort of incrementing sequence number? */
+	uint32 unknown_3; /* 0x0000 0000 */
 	
-	uint32 unknown_6 ; /* 0x0000 0001 */
-	uint32 unknown_7 ; /* 0x0000 0003 */
-	uint32 unknown_8 ; /* 0x0000 0001 */
-	uint32 unknown_9 ; /* 0x0000 0008 */
-	uint32 unknown_10; /* 0x0000 0003 */
+	uint32 unknown_4; /* 0x0000 0001 */
+	uint32 unknown_5; /* 0x0000 0003 */
+	uint32 unknown_6; /* 0x0000 0001 */
+	uint32 num_domain_usrs; /* number of users in domain */
+	uint32 num_domain_grps; /* number of domain groups in domain */
+	uint32 num_local_grps; /* number of local groups in domain */
 
-	uint8 padding[16]; /* 16 bytes zeros */
+	uint8 padding[12]; /* 12 bytes zeros */
 
 	UNISTR2 uni_domain; /* domain name unicode string */
 	UNISTR2 uni_server; /* server name unicode string */
@@ -391,8 +392,8 @@ typedef struct sam_unknown_ctr_info
 } SAM_UNK_CTR;
 
 
-/* SAMR_R_UNKNOWN_8 - */
-typedef struct r_samr_unknown_8_info
+/* SAMR_R_QUERY_DOMAIN_INFO - */
+typedef struct r_samr_query_domain_info
 {
 	uint32 ptr_0;
 	uint16 switch_value; /* same as in query */
@@ -401,7 +402,7 @@ typedef struct r_samr_unknown_8_info
 
 	uint32 status;         /* return status */
 
-} SAMR_R_UNKNOWN_8;
+} SAMR_R_QUERY_DOMAIN_INFO;
 
 
 /****************************************************************************

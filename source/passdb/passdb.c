@@ -27,10 +27,11 @@ extern int DEBUGLEVEL;
 
 /*
  * This is set on startup - it defines the SID for this
- * machine.
+ * machine, and therefore the SAM database for which it is
+ * responsible.
  */
 
-DOM_SID global_machine_sid;
+DOM_SID global_sam_sid;
 
 /*
  * NOTE. All these functions are abstracted into a structure
@@ -805,7 +806,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
    */
 
   fline[sizeof(fline)-1] = '\0';
-  if(!string_to_sid( &global_machine_sid, fline)) {
+  if(!string_to_sid( &global_sam_sid, fline)) {
     DEBUG(0,("unable to generate machine SID.\n"));
     return False;
   }
@@ -817,7 +818,7 @@ static BOOL read_sid_from_file(int fd, char *sid_file)
  Generate the global machine sid. Look for the MACHINE.SID file first, if
  not found then look in smb.conf and use it to create the MACHINE.SID file.
 ****************************************************************************/
-BOOL pdb_generate_machine_sid(void)
+BOOL pdb_generate_sam_sid(void)
 {
 	int fd;
 	char *p;
@@ -901,7 +902,7 @@ BOOL pdb_generate_machine_sid(void)
 	 * Ensure our new SID is valid.
 	 */
 	
-	if(!string_to_sid( &global_machine_sid, sid_string)) {
+	if(!string_to_sid( &global_sam_sid, sid_string)) {
 		DEBUG(0,("unable to generate machine SID.\n"));
 		return False;
 	} 

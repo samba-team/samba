@@ -42,7 +42,6 @@
 #include "nterr.h"
 
 extern int DEBUGLEVEL;
-extern DOM_SID global_machine_sid;
 
 /*
  * A list of the rids of well known BUILTIN and Domain users
