@@ -2110,12 +2110,67 @@ static char *automount_path(char *user_name)
 	return server_path;
 }
 
+/*******************************************************************
+ Given a pointer to a %$(NAME) expand it as an environment variable.
+ Return the number of characters by which the pointer should be advanced.
+ Based on code by Branko Cibej <branko.cibej@hermes.si>
+ When this is called p points at the '%' character.
+********************************************************************/
+
+static size_t expand_env_var(char *p)
+{
+	fstring envname;
+	char *envval;
+	char *q, *r;
+	int copylen;
+
+	if (p[1] != '$')
+		return 1;
+
+	if (p[2] != '(')
+		return 2;
+
+	/*
+	 * Look for the terminating ')'.
+	 */
+
+	if ((q = strchr(p,')')) == NULL) {
+		DEBUG(0,("expand_env_var: Unterminated environment variable [%s]\n", p));
+		return 2;
+	}
+
+	/*
+	 * Extract the name from within the %$(NAME) string.
+	 */
+
+	r = p+3;
+	copylen = MIN((q-r),(sizeof(envname)-1));
+	strncpy(envname,r,copylen);
+	envname[copylen] = '\0';
+
+	if ((envval = getenv(envname)) == NULL) {
+		DEBUG(0,("expand_env_var: Environment variable [%s] not set\n", envname));
+		return 2;
+	}
+
+	/*
+	 * Copy the full %$(NAME) into envname so it
+	 * can be replaced.
+	 */
+
+	copylen = MIN((q+1-p),(sizeof(envname)-1));
+	strncpy(envname,p,copylen);
+	envname[copylen] = '\0';
+	string_sub(p,envname,envval);
+	return 0; /* Allow the environment contents to be parsed. */
+}
 
 /*******************************************************************
-sub strings with useful parameters
-Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
-Paul Rippin <pr3245@nopc.eurostat.cec.be>
+ Substitute strings with useful parameters.
+ Rewritten by Stefaan A Eeckels <Stefaan.Eeckels@ecc.lu> and
+ Paul Rippin <pr3245@nopc.eurostat.cec.be>.
 ********************************************************************/
+
 void standard_sub_basic(char *str)
 {
 	char *s, *p;
@@ -2129,12 +2184,9 @@ void standard_sub_basic(char *str)
 		{
 			case 'G' :
 			{
-				if ((pass = Get_Pwnam(username,False))!=NULL)
-				{
+				if ((pass = Get_Pwnam(username,False))!=NULL) {
 					string_sub(p,"%G",gidtoname(pass->pw_gid));
-				}
-				else
-				{
+				} else {
 					p += 2;
 				}
 				break;
@@ -2156,46 +2208,7 @@ void standard_sub_basic(char *str)
 			case 'h' : string_sub(p,"%h", myhostname); break;
 			case 'm' : string_sub(p,"%m", remote_machine); break;
 			case 'v' : string_sub(p,"%v", VERSION); break;
-			case '$' : /* Expand environment variables */
-			{
-				/* Contributed by Branko Cibej <branko.cibej@hermes.si> */
-				fstring envname;
-				char *envval;
-				char *q, *r;
-				int copylen;
-
-				if (*(p+2) != '(')
-				{
-					p+=2;
-					break;
-				}
-				if ((q = strchr(p,')')) == NULL)
-				{
-					DEBUG(0,("standard_sub_basic: Unterminated environment \
-					variable [%s]\n", p));
-					p+=2;
-					break;
-				}
-
-				r = p+3;
-				copylen = MIN((q-r),(sizeof(envname)-1));
-				strncpy(envname,r,copylen);
-				envname[copylen] = '\0';
-
-				if ((envval = getenv(envname)) == NULL)
-				{
-					DEBUG(0,("standard_sub_basic: Environment variable [%s] not set\n",
-					envname));
-					p+=2;
-					break;
-				}
-
-				copylen = MIN((q+1-p),(sizeof(envname)-1));
-				strncpy(envname,p,copylen);
-				envname[copylen] = '\0';
-				string_sub(p,envname,envval);
-				break;
-			}
+			case '$' : p += expand_env_var(p); break; /* Expand environment variables */
 			case '\0': p++; break; /* don't run off end if last character is % */
 			default  : p+=2; break;
 		}
@@ -2205,8 +2218,9 @@ void standard_sub_basic(char *str)
 
 
 /****************************************************************************
-do some standard substitutions in a string
+ Do some standard substitutions in a string.
 ****************************************************************************/
+
 void standard_sub(connection_struct *conn,char *str)
 {
 	char *p, *s, *home;
