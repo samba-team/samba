@@ -1,3 +1,6 @@
+#ifndef PRINTING_H_
+#define PRINTING_H_
+
 /* 
    Unix SMB/Netbios implementation.
    Version 3.0
@@ -65,5 +68,9 @@ extern struct printif	cups_printif;
 #define UNIX_JOB_START PRINT_MAX_JOBID
 #define NEXT_JOBID(j) ((j+1) % PRINT_MAX_JOBID > 0 ? (j+1) % PRINT_MAX_JOBID : 1)
 
+#define MAX_CACHE_VALID_TIME 3600
+
 #define PRINT_SPOOL_PREFIX "smbprn."
 #define PRINT_DATABASE_VERSION 2
+
+#endif /* PRINTING_H_ */
