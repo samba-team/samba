@@ -45,55 +45,55 @@ static BOOL get_smbpwd_entries(SAM_USER_INFO_21 *pw_buf,
 {
 	void *vp = NULL;
 	struct smb_passwd *pwd = NULL;
- 
-        (*num_entries) = 0;
-        (*total_entries) = 0;
 
-        if (pw_buf == NULL) return False;
+	(*num_entries) = 0;
+	(*total_entries) = 0;
 
-        vp = startsmbpwent(False);
-        if (!vp)
-        {
-                DEBUG(0, ("get_smbpwd_entries: Unable to open SMB password file.\n"));
-                return False;
-        }
+	if (pw_buf == NULL) return False;
 
-        while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
-        {
-                int user_name_len = strlen(pwd->smb_name);
-                make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len);
-                make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len, 
-                user_name_len, 1);
-                pw_buf[(*num_entries)].user_rid    = pwd->smb_userid;
-                bzero( pw_buf[(*num_entries)].nt_pwd , 16);
+	vp = startsmbpwent(False);
+	if (!vp)
+	{
+		DEBUG(0, ("get_smbpwd_entries: Unable to open SMB password file.\n"));
+		return False;
+	}
 
-                /* Now check if the NT compatible password is available. */
-                if (pwd->smb_nt_passwd != NULL)
-                {
-                  memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
-                }
+	while (((pwd = getsmbpwent(vp)) != NULL) && (*num_entries) < max_num_entries)
+	{
+		int user_name_len = strlen(pwd->smb_name);
+		make_unistr2(&(pw_buf[(*num_entries)].uni_user_name), pwd->smb_name, user_name_len-1);
+		make_uni_hdr(&(pw_buf[(*num_entries)].hdr_user_name), user_name_len-1, 
+		               user_name_len-1, 1);
+		pw_buf[(*num_entries)].user_rid = pwd->smb_userid;
+		bzero( pw_buf[(*num_entries)].nt_pwd , 16);
 
-                pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
+		/* Now check if the NT compatible password is available. */
+		if (pwd->smb_nt_passwd != NULL)
+		{
+			memcpy( pw_buf[(*num_entries)].nt_pwd , pwd->smb_nt_passwd, 16);
+		}
 
-                DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
-                          (*num_entries), pwd->smb_name, pwd->smb_userid, pwd->acct_ctrl));
+		pw_buf[(*num_entries)].acb_info = (uint16)pwd->acct_ctrl;
 
-                if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
-                {
-                        DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
-                        (*num_entries)++;
-                }
-                else
-                {
-                        DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
-                }
+		DEBUG(5, ("get_smbpwd_entries: idx: %d user %s, uid %d, acb %x",
+		(*num_entries), pwd->smb_name, pwd->smb_userid, pwd->acct_ctrl));
 
-                (*total_entries)++;
-        }
+		if (acb_mask == 0 || IS_BITS_SET_SOME(pwd->acct_ctrl, acb_mask))
+		{
+			DEBUG(5,(" acb_mask %x accepts\n", acb_mask));
+			(*num_entries)++;
+		}
+		else
+		{
+			DEBUG(5,(" acb_mask %x rejects\n", acb_mask));
+		}
 
-        endsmbpwent(vp);
+		(*total_entries)++;
+	}
 
-        return (*num_entries) > 0;
+	endsmbpwent(vp);
+
+	return (*num_entries) > 0;
 }
 
 /*******************************************************************
@@ -463,33 +463,52 @@ static void samr_reply_query_dispinfo(SAMR_Q_QUERY_DISPINFO *q_u,
 
 	DEBUG(5,("samr_reply_query_dispinfo: %d\n", __LINE__));
 
+#ifndef USE_LDAP
 	become_root(True);
 
 	got_pwds = get_smbpwd_entries(pass, &total_entries, &num_entries, MAX_SAM_ENTRIES, 0);
 
 	unbecome_root(True);
+#endif
 
 	switch (q_u->switch_level)
 	{
 		case 0x1:
 		{
+		
 			/* query disp info is for users */
+			switch_level = 0x1;
+#ifdef USE_LDAP			
+			got_pwds = get_ldap_entries(pass, 
+			                            &total_entries, 
+			                            &num_entries,
+			                            MAX_SAM_ENTRIES, 
+			                            0, 
+			                            switch_level);
+#endif		      
 			make_sam_info_1(&info1, ACB_NORMAL,
 		                q_u->start_idx, num_entries, pass);
 
 			ctr.sam.info1 = &info1;
-			switch_level = 0x1;
 
 			break;
 		}
 		case 0x2:
 		{
 			/* query disp info is for servers */
+			switch_level = 0x2;
+#ifdef USE_LDAP			
+			got_pwds = get_ldap_entries(pass, 
+			                            &total_entries, 
+			                            &num_entries,
+			                            MAX_SAM_ENTRIES, 
+					            0, 
+					            switch_level);
+#endif		      
 			make_sam_info_2(&info2, ACB_WSTRUST,
 		                q_u->start_idx, num_entries, pass);
 
 			ctr.sam.info2 = &info2;
-			switch_level = 0x2;
 
 			break;
 		}
@@ -1025,8 +1044,11 @@ static void samr_reply_query_userinfo(SAMR_Q_QUERY_USERINFO *q_u,
 			case 21:
 			{
 				info = (void*)&id21;
+#ifdef USE_LDAP
+				status = ldap_get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
+#else				
 				status = get_user_info_21(&id21, rid) ? 0 : NT_STATUS_NO_SUCH_USER;
-
+#endif
 				break;
 			}
 

@@ -1212,6 +1212,11 @@ extern char *sys_errlist[];
 #define MAXCODEPAGELINES 256
 #endif
 
+#ifdef USE_LDAP
+#include "lber.h"
+#include "ldap.h"
+#endif
+
 /***** automatically generated prototypes *****/
 #include "proto.h"
 
