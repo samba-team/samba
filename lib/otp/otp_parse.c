@@ -2162,6 +2162,7 @@ parse_words(unsigned wn[],
 {
   char *w, *wend, c;
   int i;
+  int tmp;
 
   w = str;
   for (i = 0; i < 6; ++i) {
@@ -2172,11 +2173,12 @@ parse_words(unsigned wn[],
       ++wend;
     c = *wend;
     *wend = '\0';
-    wn[i] = (*convert)(w, arg);
+    tmp = (*convert)(w, arg);
     *wend = c;
     w = wend;
-    if (wn[i] < 0)
+    if (tmp < 0)
       return -1;
+    wn[i] = tmp;
   }
   return 0;
 }
