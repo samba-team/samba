@@ -319,12 +319,14 @@ BOOL chat_with_program(char *passwordprogram,char *name,char *chatsequence, BOOL
       kill(pid, SIGKILL); /* be sure to end this process */
     }
 
-    close(master);
-
     if ((wpid = sys_waitpid(pid, &wstat, 0)) < 0) {
       DEBUG(3,("The process is no longer waiting!\n\n"));
+      close(master);
       return(False);
     }
+
+    close(master);
+
     if (pid != wpid) {
       DEBUG(3,("We were waiting for the wrong process ID\n"));	
       return(False);
