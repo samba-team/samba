@@ -26,7 +26,7 @@ kinit_LDADD	= $(kauth_LDADD)
 
 kdestroy_LDADD	= $(kauth_LDADD)
 
-kuser_LDADD	= $(kauth_LDADD)
+klist_LDADD	= $(kauth_LDADD)
 
 LDADD = \
 	$(top_builddir)/lib/krb5/libkrb5.la \
