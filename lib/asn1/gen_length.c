@@ -61,7 +61,7 @@ length_type (const char *name, const Type *t, const char *variable)
             char *s;
             asprintf(&s, "(const int*)%s", name);
             if(s == NULL)
-                return ENOMEM;
+		errx (1, "out of memory");
             length_primitive ("integer", s, variable);
             free(s);
         }
