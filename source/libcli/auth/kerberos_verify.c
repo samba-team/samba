@@ -160,7 +160,7 @@ static krb5_error_code ads_keytab_verify_ticket(krb5_context context, krb5_auth_
  Try to verify a ticket using the secrets.tdb.
 ***********************************************************************************/
 
-static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
+static krb5_error_code ads_secrets_verify_ticket(krb5_context context, krb5_auth_context auth_context,
 			krb5_principal host_princ,
 			const DATA_BLOB *ticket, krb5_data *p_packet, krb5_ticket **pp_tkt,
 			krb5_keyblock *keyblock)
@@ -198,29 +198,37 @@ static BOOL ads_secrets_verify_ticket(krb5_context context, krb5_auth_context au
 	p_packet->length = ticket->length;
 	p_packet->data = (krb5_pointer)ticket->data;
 
+	ret = KRB5_BAD_ENCTYPE;
 	/* We need to setup a auth context with each possible encoding type in turn. */
 	for (i=0;enctypes[i];i++) {
-		ret = create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i]);
-		if (ret) {
+		krb5_error_code our_ret;
+		our_ret = create_kerberos_key_from_string(context, host_princ, &password, keyblock, enctypes[i]);
+		if (our_ret) {
+			ret = our_ret;
 			continue;
 		}
 
 		krb5_auth_con_setuseruserkey(context, auth_context, keyblock);
 
-		ret = krb5_rd_req(context, &auth_context, p_packet, 
+		our_ret = krb5_rd_req(context, &auth_context, p_packet, 
 					NULL,
 					NULL, NULL, pp_tkt);
-		if (!ret) {
+		if (!our_ret) {
 			DEBUG(10,("ads_secrets_verify_ticket: enc type [%u] decrypted message !\n",
 				(unsigned int)enctypes[i] ));
+			ret = our_ret;
 			break;
 		}
 
 		krb5_free_keyblock_contents(context, keyblock);
 
-		DEBUG((ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
+		DEBUG((our_ret != KRB5_BAD_ENCTYPE) ? 3 : 10,
 				("ads_secrets_verify_ticket: enc type [%u] failed to decrypt with error %s\n",
-				(unsigned int)enctypes[i], error_message(ret)));
+				(unsigned int)enctypes[i], error_message(our_ret)));
+
+		if (our_ret !=  KRB5_BAD_ENCTYPE) {
+			ret = our_ret;
+		}
 	}
 
  out:
