@@ -97,7 +97,7 @@ enabled. Red Hat Linux has built in support for quotas in PAM.
 
 %build
 cd source
-./configure --prefix=/usr --libdir=/etc --with-smbwrapper --with-automount --with-quotas
+./configure --prefix=/usr --libdir=/etc --with-lockdir=/var/lock/samba --with-privatedir=/etc --with-swatdir=/usr/share/swat --with-smbwrapper --with-automount --with-quotas
 make all smbwrapper
 
 %install

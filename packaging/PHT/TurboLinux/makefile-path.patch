@@ -1,5 +1,5 @@
---- samba-2.0.0/source/Makefile.in.orig	Tue Dec  1 22:32:20 1998
-+++ samba-2.0.0/source/Makefile.in	Wed Dec  2 17:11:33 1998
+--- samba-2.0.1/source/Makefile.in.orig	Tue Dec  1 22:32:20 1998
++++ samba-2.0.1/source/Makefile.in	Wed Dec  2 17:11:33 1998
 @@ -25,9 +25,9 @@
  BINDIR = @bindir@
  # we don't use sbindir because we want full compatibility with
@@ -10,25 +10,3 @@
 -VARDIR = @localstatedir@
 +VARDIR = /var/log/samba
  MANDIR = @mandir@
- 
- # The permissions to give the executables
-@@ -43,16 +43,16 @@
- DRIVERFILE = $(LIBDIR)/printers.def
- PASSWD_PROGRAM = /bin/passwd
- # This is where smbpasswd et al go
--PRIVATEDIR = @privatedir@
-+PRIVATEDIR = $(LIBDIR)
- 
- SMB_PASSWD_FILE = $(PRIVATEDIR)/smbpasswd
- SMB_PASSGRP_FILE = $(PRIVATEDIR)/smbpassgrp
- 
- # This is where SWAT images and help files go
--SWATDIR = @swatdir@
-+SWATDIR = /usr/share/swat
- 
- # the directory where lock files go
--LOCKDIR = $(VARDIR)/locks
-+LOCKDIR = /var/lock/samba
- 
- # The directory where code page definition files go
- CODEPAGEDIR = $(LIBDIR)/codepages
