@@ -1,3 +1,27 @@
+2005-01-08  Love Hörnquist Åstrand  <lha@it.su.se>
+
+	* lib/krb5/krb5.3: drop krb5_{checksum,enctype}_is_disabled
+
+	* lib/krb5/krb5_encrypt.3: drop krb5_enctype_is_disabled, more
+	text about krb5_enctype_valid
+
+	* lib/krb5/krb5_create_checksum.3: drop
+	krb5_checksum_is_disabled
+
+	* lib/krb5/crypto.c: drop krb5_{checksum,enctype}_isdisabled
+	
+	* lib/krb5/context.c: krb5_enctype_is_disabled is the same thing
+	as krb5_enctype_valid, so use the later since its older and the
+	api doesn't really need another entry point
+
+	* lib/krb5/rd_req.c: krb5_enctype_is_disabled is the same thing as
+	krb5_enctype_valid, so use the later since its older and the api
+	doesn't really need another entry point
+
+	* kdc/kerberos5.c: krb5_enctype_is_disabled is the same thing as
+	krb5_enctype_valid, so use the later since its older and the api
+	doesn't really need another entry point
+
 2005-01-05  Love Hörnquist Åstrand  <lha@it.su.se>
 
 	* kpasswd/kpasswdd.8: document --addresses, controls what
