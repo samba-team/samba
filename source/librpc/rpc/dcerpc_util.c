@@ -796,6 +796,7 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	struct epm_twr_t twr, *twr_r;
 	struct dcerpc_binding *epmapper_binding;
 	const struct dcerpc_interface_table *table = idl_iface_by_uuid(uuid);
+	struct cli_credentials *credentials;
 	int i;
 
 	/* First, check if there is a default endpoint specified in the IDL */
@@ -834,11 +835,13 @@ NTSTATUS dcerpc_epm_map_binding(TALLOC_CTX *mem_ctx, struct dcerpc_binding *bind
 	epmapper_binding->endpoint = NULL;
 	epmapper_binding->authservice = NULL;
 	
+	credentials = talloc_zero(mem_ctx, struct cli_credentials);
+	cli_credentials_guess(credentials);
 	status = dcerpc_pipe_connect_b(&p,
 				       epmapper_binding,
 				       DCERPC_EPMAPPER_UUID,
 				       DCERPC_EPMAPPER_VERSION,
-				       NULL, NULL, NULL, NULL);
+				       credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -903,10 +906,7 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 			  struct dcerpc_binding *binding,
 			  const char *pipe_uuid, 
 			  uint32_t pipe_version,
-			  const char *workstation,
-			  const char *domain,
-			  const char *username,
-			  const char *password)
+			  struct cli_credentials *credentials)
 {
 	NTSTATUS status;
 	p->conn->flags = binding->flags;
@@ -914,11 +914,11 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 	/* remember the binding string for possible secondary connections */
 	p->conn->binding_string = dcerpc_binding_string(p, binding);
 
-	if (username && username[0] && (binding->flags & DCERPC_SCHANNEL_ANY)) {
+	if (cli_credentials_is_anonymous(credentials) &&
+		(binding->flags & DCERPC_SCHANNEL_ANY)) {
 		status = dcerpc_bind_auth_schannel(p, pipe_uuid, pipe_version, 
-						   domain, workstation, 
-						   username, password);
-	} else if (username && username[0]) {
+						   credentials);
+	} else if (cli_credentials_is_anonymous(credentials)) {
 		uint8_t auth_type;
 		if (binding->flags & DCERPC_AUTH_SPNEGO) {
 			auth_type = DCERPC_AUTH_TYPE_SPNEGO;
@@ -929,10 +929,8 @@ NTSTATUS dcerpc_pipe_auth(struct dcerpc_pipe *p,
 		}
 
 		status = dcerpc_bind_auth_password(p, pipe_uuid, pipe_version, 
-						   workstation, 
-						   domain, username, password, 
-						   auth_type,
-						   binding->authservice);
+										   credentials, auth_type,
+						   				   binding->authservice);
 	} else {
 		status = dcerpc_bind_auth_none(p, pipe_uuid, pipe_version);
 	}
@@ -950,10 +948,7 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 					     struct dcerpc_binding *binding,
 					     const char *pipe_uuid, 
 					     uint32_t pipe_version,
-					     const char *workstation,
-					     const char *domain,
-					     const char *username,
-					     const char *password)
+						 struct cli_credentials *credentials)
 {
 	struct dcerpc_pipe *p;
 	NTSTATUS status;
@@ -983,18 +978,21 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 
 	pipe_name = binding->endpoint;
 
-	if (!username || !username[0] || 
+	if (cli_credentials_is_anonymous(credentials) || 
 	    (binding->flags & DCERPC_SCHANNEL_ANY)) {
-		status = smbcli_full_connection(p->conn, &cli, workstation,
+		status = smbcli_full_connection(p->conn, &cli, 
+						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"ipc$", NULL, 
 						"", "", NULL);
 	} else {
-		status = smbcli_full_connection(p->conn, &cli, workstation,
+		status = smbcli_full_connection(p->conn, &cli, 
+						cli_credentials_get_workstation(credentials),
 						binding->host, 
 						"ipc$", NULL,
-						username, domain,
-						password);
+						cli_credentials_get_username(credentials), 
+						cli_credentials_get_domain(credentials),
+						cli_credentials_get_password(credentials));
 	}
 	if (!NT_STATUS_IS_OK(status)) {
 		DEBUG(0,("Failed to connect to %s - %s\n", binding->host, nt_errstr(status)));
@@ -1007,10 +1005,6 @@ static NTSTATUS dcerpc_pipe_connect_ncacn_np(struct dcerpc_pipe **pp,
 		DEBUG(0,("Failed to open pipe %s - %s\n", pipe_name, nt_errstr(status)));
 		talloc_free(p);
 		return status;
-	}
-
-	if (!(binding->flags & DCERPC_AUTH_OPTIONS)) {
-		username = NULL;
 	}
 
 	(*pp) = p;
@@ -1156,17 +1150,13 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **pp,
 			       struct dcerpc_binding *binding,
 			       const char *pipe_uuid, 
 			       uint32_t pipe_version,
-			       const char *workstation,
-			       const char *domain,
-			       const char *username,
-			       const char *password)
+				   struct cli_credentials *credentials)
 {
 	NTSTATUS status = NT_STATUS_INVALID_PARAMETER;
 	
 	switch (binding->transport) {
 	case NCACN_NP:
-		status = dcerpc_pipe_connect_ncacn_np(pp, binding, pipe_uuid, pipe_version,
-						      workstation, domain, username, password);
+		status = dcerpc_pipe_connect_ncacn_np(pp, binding, pipe_uuid, pipe_version, credentials);
 		break;
 	case NCACN_IP_TCP:
 		status = dcerpc_pipe_connect_ncacn_ip_tcp(pp, binding, pipe_uuid, pipe_version);
@@ -1185,7 +1175,7 @@ NTSTATUS dcerpc_pipe_connect_b(struct dcerpc_pipe **pp,
 		return status;
 	}
 
-	status = dcerpc_pipe_auth(*pp, binding, pipe_uuid, pipe_version, workstation, domain, username, password);
+	status = dcerpc_pipe_auth(*pp, binding, pipe_uuid, pipe_version, credentials);
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(*pp);
 		*pp = NULL;
@@ -1202,10 +1192,7 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **pp,
 			     const char *binding,
 			     const char *pipe_uuid, 
 			     uint32_t pipe_version,
-			     const char *workstation,
-			     const char *domain,
-			     const char *username,
-			     const char *password)
+				 struct cli_credentials *credentials)
 {
 	struct dcerpc_binding *b;
 	NTSTATUS status;
@@ -1225,8 +1212,7 @@ NTSTATUS dcerpc_pipe_connect(struct dcerpc_pipe **pp,
 
 	DEBUG(3,("Using binding %s\n", dcerpc_binding_string(tmp_ctx, b)));
 
-	status = dcerpc_pipe_connect_b(pp, b, pipe_uuid, pipe_version, workstation, 
-				       domain, username, password);
+	status = dcerpc_pipe_connect_b(pp, b, pipe_uuid, pipe_version, credentials);
 
 	talloc_free(tmp_ctx);
 

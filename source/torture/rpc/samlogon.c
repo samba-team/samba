@@ -26,6 +26,7 @@
 #include "librpc/gen_ndr/ndr_netlogon.h"
 #include "auth/auth.h"
 #include "lib/crypto/crypto.h"
+#include "lib/cmdline/popt_common.h"
 
 #define TEST_MACHINE_NAME "samlogontest"
 #define TEST_USER_NAME "samlogontestuser"
@@ -1215,6 +1216,7 @@ BOOL torture_rpc_samlogon(void)
         NTSTATUS status;
         struct dcerpc_pipe *p;
 	struct dcerpc_binding *b;
+	struct cli_credentials credentials;
 	TALLOC_CTX *mem_ctx = talloc_init("torture_rpc_netlogon");
 	BOOL ret = True;
 	struct test_join *join_ctx;
@@ -1245,27 +1247,29 @@ BOOL torture_rpc_samlogon(void)
 		BOOL network_login;
 	} usercreds[] = {
 		{
-			lp_parm_string(-1, "torture", "userdomain"),
-			lp_parm_string(-1, "torture", "username"),
-			lp_parm_string(-1, "torture", "password"),
+			cli_credentials_get_domain(cmdline_credentials),
+			cli_credentials_get_username(cmdline_credentials),
+			cli_credentials_get_password(cmdline_credentials),
 			True
 		},
 		{
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 
-					lp_parm_string(-1, "torture", "username"), 
-					lp_parm_string(-1, "torture", "userdomain")),
-			lp_parm_string(-1, "torture", "password"),
+			cli_credentials_get_domain(cmdline_credentials),
+			cli_credentials_get_username(cmdline_credentials)
+					),
+			cli_credentials_get_password(cmdline_credentials),
 			False
 		},
 		{
 			NULL,
 			talloc_asprintf(mem_ctx, 
 					"%s@%s", 
-					lp_parm_string(-1, "torture", "username"), 
-					lp_realm()),
-			lp_parm_string(-1, "torture", "password"),
+					cli_credentials_get_username(cmdline_credentials),
+					cli_credentials_get_realm(cmdline_credentials)
+					),
+			cli_credentials_get_password(cmdline_credentials),
 			True
 		},
 #if 0
@@ -1334,13 +1338,15 @@ BOOL torture_rpc_samlogon(void)
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN | DCERPC_SCHANNEL_128;
 
+	cli_credentials_set_workstation(&credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_domain(&credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_username(&credentials, test_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(&credentials, machine_password, CRED_SPECIFIED);
+
 	status = dcerpc_pipe_connect_b(&p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       TEST_MACHINE_NAME,
-				       lp_workgroup(), 
-				       test_machine_account,
-				       machine_password);
+					   &credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		ret = False;

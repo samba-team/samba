@@ -1295,6 +1295,7 @@ BOOL torture_rpc_samsync(void)
 	struct lsa_ObjectAttribute attr;
 	struct lsa_QosInfo qos;
 	struct lsa_OpenPolicy2 r;
+	struct cli_credentials credentials;
 
 	struct samsync_state *samsync_state;
 
@@ -1418,13 +1419,15 @@ BOOL torture_rpc_samsync(void)
 	b->flags &= ~DCERPC_AUTH_OPTIONS;
 	b->flags |= DCERPC_SCHANNEL_BDC | DCERPC_SIGN;
 
+	cli_credentials_set_workstation(&credentials, TEST_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_domain(&credentials, lp_workgroup(), CRED_SPECIFIED);
+	cli_credentials_set_username(&credentials, test_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(&credentials, machine_password, CRED_SPECIFIED);
+
 	status = dcerpc_pipe_connect_b(&samsync_state->p, b, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       TEST_MACHINE_NAME,
-				       lp_workgroup(), 
-				       test_machine_account,
-				       machine_password);
+					   &credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a BDC: %s\n", nt_errstr(status));
@@ -1449,14 +1452,15 @@ BOOL torture_rpc_samsync(void)
 	b_netlogon_wksta->flags &= ~DCERPC_AUTH_OPTIONS;
 	b_netlogon_wksta->flags |= DCERPC_SCHANNEL_WORKSTATION | DCERPC_SIGN;
 
+	cli_credentials_set_workstation(&credentials, TEST_WKSTA_MACHINE_NAME, CRED_SPECIFIED);
+	cli_credentials_set_username(&credentials, test_wksta_machine_account, CRED_SPECIFIED);
+	cli_credentials_set_password(&credentials, wksta_machine_password, CRED_SPECIFIED);
+
 	status = dcerpc_pipe_connect_b(&samsync_state->p_netlogon_wksta, 
 				       b_netlogon_wksta, 
 				       DCERPC_NETLOGON_UUID,
 				       DCERPC_NETLOGON_VERSION,
-				       TEST_WKSTA_MACHINE_NAME,
-				       lp_workgroup(), 
-				       test_wksta_machine_account,
-				       wksta_machine_password);
+					   &credentials);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		printf("Failed to connect to server as a Workstation: %s\n", nt_errstr(status));

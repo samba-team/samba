@@ -22,6 +22,7 @@
 #include "includes.h"
 #include "lib/com/com.h"
 #include "librpc/gen_ndr/com_dcom.h"
+#include "lib/cmdline/popt_common.h"
 
 #define DEFAULT_TRANS 4096
 
@@ -39,7 +40,7 @@ static BOOL test_readwrite(TALLOC_CTX *mem_ctx, const char *host)
 	int i;
 
 	com_init(&ctx);
-	dcom_client_init(ctx, lp_parm_string(-1, "torture", "userdomain"), lp_parm_string(-1, "torture", "username"), lp_parm_string(-1, "torture", "password"));
+	dcom_client_init(ctx, cmdline_credentials);
 
 	GUID_from_string(COM_ISTREAM_UUID, &IID[0]);
 	GUID_from_string(COM_IUNKNOWN_UUID, &IID[1]);

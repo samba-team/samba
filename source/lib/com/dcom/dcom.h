@@ -22,9 +22,7 @@
 #define _DCOM_H 
 
 struct dcom_client_context {
-	const char *domain;
-	const char *user;
-	const char *password;
+	struct cli_credentials *credentials;
 	struct dcom_object_exporter {
 		uint64_t oxid;	
 		struct DUALSTRINGARRAY bindings;

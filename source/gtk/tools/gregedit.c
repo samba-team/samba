@@ -405,8 +405,7 @@ static void on_open_remote_activate(GtkMenuItem *menuitem, gpointer user_data)
 	}
 
 	error = reg_open_remote(&registry, 
-			gtk_rpc_binding_dialog_get_username(GTK_RPC_BINDING_DIALOG(rpcwin)), 
-			gtk_rpc_binding_dialog_get_password(GTK_RPC_BINDING_DIALOG(rpcwin)), 
+			gtk_rpc_binding_dialog_get_credentials(GTK_RPC_BINDING_DIALOG(rpcwin)), 
 			gtk_rpc_binding_dialog_get_binding_string(GTK_RPC_BINDING_DIALOG(rpcwin), mem_ctx));
 
 	if(!W_ERROR_IS_OK(error)) {

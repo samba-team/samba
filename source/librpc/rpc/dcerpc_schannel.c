@@ -295,10 +295,7 @@ static NTSTATUS dcerpc_schannel_client_start(struct gensec_security *gensec_secu
   get a schannel key using a netlogon challenge on a secondary pipe
 */
 static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
-				    const char *workstation,
-				    const char *domain,
-				    const char *username,
-				    const char *password,
+									struct cli_credentials *credentials,
 				    int chan_type,
 				    struct creds_CredentialState *creds)
 {
@@ -319,7 +316,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 		negotiate_flags = NETLOGON_NEG_AUTH2_FLAGS;
 	}
 
-	workgroup = domain;
+	workgroup = cli_credentials_get_domain(credentials);
 
 	tmp_ctx = talloc_new(NULL);
 
@@ -363,7 +360,7 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	  step 2 - request a netlogon challenge
 	*/
 	r.in.server_name = talloc_asprintf(p, "\\\\%s", dcerpc_server_name(p));
-	r.in.computer_name = workstation;
+	r.in.computer_name = cli_credentials_get_workstation(credentials);
 	r.in.credentials = &credentials1;
 	r.out.credentials = &credentials2;
 
@@ -377,16 +374,18 @@ static NTSTATUS dcerpc_schannel_key(struct dcerpc_pipe *p,
 	/*
 	  step 3 - authenticate on the netlogon pipe
 	*/
-	E_md4hash(password, mach_pwd.hash);
+	E_md4hash(cli_credentials_get_password(credentials), mach_pwd.hash);
 	creds_client_init(creds, &credentials1, &credentials2, 
-			  workstation, domain, username, 
+			  cli_credentials_get_workstation(credentials), 
+			  cli_credentials_get_domain(credentials), 
+			  cli_credentials_get_username(credentials), 
 			  &mach_pwd, &credentials3,
 			  negotiate_flags);
 
 	a.in.server_name = r.in.server_name;
-	a.in.account_name = username;
+	a.in.account_name = cli_credentials_get_username(credentials);
 	a.in.secure_channel_type = chan_type;
-	a.in.computer_name = workstation;
+	a.in.computer_name = cli_credentials_get_workstation(credentials);
 	a.in.negotiate_flags = &negotiate_flags;
 	a.out.negotiate_flags = &negotiate_flags;
 	a.in.credentials = &credentials3;
@@ -483,10 +482,7 @@ NTSTATUS dcerpc_bind_auth_schannel_withkey(struct dcerpc_pipe *p,
 
 NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 				   const char *uuid, uint_t version,
-				   const char *workstation,
-				   const char *domain,
-				   const char *username,
-				   const char *password)
+				   struct cli_credentials *credentials)
 {
 	NTSTATUS status;
 	int chan_type = 0;
@@ -504,10 +500,7 @@ NTSTATUS dcerpc_bind_auth_schannel(struct dcerpc_pipe *p,
 		chan_type = SEC_CHAN_DOMAIN;
 	}
 
-	status = dcerpc_schannel_key(p, domain, 
-				     workstation,
-				     username,
-				     password, 
+	status = dcerpc_schannel_key(p, credentials,
 				     chan_type,
 				     creds);
 
