@@ -896,6 +896,11 @@ BOOL rpc_api_pipe_req(struct cli_state *cli, uint8 op_num,
 
 	ret = rpc_api_pipe(cli, 0x0026, &outgoing_packet, rdata);
 
+	/* Also capture received data */
+	slprintf(dump_name, sizeof(dump_name) - 1, "reply_%s",
+		 cli_pipe_get_name(cli));
+	prs_dump(dump_name, op_num, rdata);
+
 	prs_mem_free(&outgoing_packet);
 
 	return ret;
