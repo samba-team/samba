@@ -77,14 +77,27 @@ AC_CACHE_CHECK(how to format man pages,ac_cv_sys_man_format,
 .Nd
 foobar
 END
-if test "$NROFF" && \
-	"$NROFF" -mandoc conftest.1 2> /dev/null | \
-	grep Jan > /dev/null 2>&1; then
-	ac_cv_sys_man_format="$NROFF -mandoc \$< > \$@"
-elif test "$GROFF" && \
-	"$GROFF" -mandoc -Tascii conftest.1 2>/dev/null | \
-	grep Jan > /dev/null 2>&1; then
-	ac_cv_sys_man_format="$GROFF -mandoc -Tascii \$< > \$@"
+
+if test "$NROFF" ; then
+	for i in "-mdoc" "-mandoc"; do
+		if "$NROFF" $i conftest.1 2> /dev/null | \
+			grep Jan > /dev/null 2>&1 ; then
+			ac_cv_sys_man_format="$NROFF $i"
+			break
+		fi
+	done
+fi
+if test "$ac_cv_sys_man_format" = "" -a "$GROFF" ; then
+	for i in "-mdoc" "-mandoc"; do
+		if "$GROFF" -Tascii $i conftest.1 2> /dev/null | \
+			grep Jan > /dev/null 2>&1 ; then
+			ac_cv_sys_man_format="$GROFF -Tascii $i"
+			break
+		fi
+	done
+fi
+if test "$ac_cv_sys_man_format"; then
+	ac_cv_sys_man_format="$ac_cv_sys_man_format \$< > \$@"
 fi
 ])
 if test "$ac_cv_sys_man_format"; then
