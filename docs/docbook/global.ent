@@ -503,5 +503,4 @@ an Active Directory environment.
 <!ENTITY Further-Resources SYSTEM "projdoc/Further-Resources.xml">
 
 <!ENTITY not.implemented "<note><para>Currently NOT implemented.</para></note>">
-<!ENTITY not "<emphasis>NOT</emphasis>">
 <!ENTITY rootprompt "<prompt>root# </prompt>">
