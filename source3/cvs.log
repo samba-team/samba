@@ -676,3 +676,82 @@ Modified Files:
 Log Message:
 preparing for release of 1.9.16alpha2
 
+
+****************************************
+Date:	Wednesday May 29, 1996 @ 14:35
+Author:	samba-bu
+
+Update of /data/cvs/samba/source
+In directory arvidsjaur:/samba/samba-bugs/samba/source
+
+Added Files:
+	cvs.log 
+Log Message:
+preparing for release of 1.9.16alpha2
+
+
+****************************************
+Date:	Wednesday May 29, 1996 @ 17:45
+Author:	tridge
+
+Update of /data/cvs/samba/docs
+In directory arvidsjaur:/var/tmp/cvs-serv20738
+
+Modified Files:
+	UNIX-SMB.txt samba.faq 
+Log Message:
+added comments about trapdoor uids
+
+
+
+
+****************************************
+Date:	Wednesday May 29, 1996 @ 17:47
+Author:	tridge
+
+Update of /data/cvs/samba/source
+In directory arvidsjaur:/var/tmp/cvs-serv20784
+
+Modified Files:
+	password.c smbencrypt.c smbpass.c smbpasswd.c 
+Log Message:
+cleanups to make thinsg compile cleanly
+
+
+
+
+
+****************************************
+Date:	Wednesday May 29, 1996 @ 17:49
+Author:	tridge
+
+Update of /data/cvs/samba/source
+In directory arvidsjaur:/var/tmp/cvs-serv20901
+
+Modified Files:
+	trans2.c 
+Log Message:
+fixed a typo
+
+
+
+
+
+
+****************************************
+Date:	Wednesday May 29, 1996 @ 17:53
+Author:	tridge
+
+Update of /data/cvs/samba/source
+In directory arvidsjaur:/var/tmp/cvs-serv21121
+
+Modified Files:
+	server.c util.c 
+Log Message:
+handle errors from receive_smb better, and print error string
+
+
+
+
+
+
