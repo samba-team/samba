@@ -150,6 +150,12 @@ int ms_fnmatch(const char *pattern, const char *string, enum protocol_types prot
 		string = ".";
 	}
 
+	if (strpbrk(pattern, "<>*?\"") == NULL) {
+		/* this is not just an optmisation - it is essential
+		   for LANMAN1 correctness */
+		return StrCaseCmp(pattern, string);
+	}
+
 	pstrcpy_wa(p, pattern);
 	pstrcpy_wa(s, string);
 
