@@ -77,7 +77,7 @@ static BOOL cli_link_internal(struct cli_state *cli, const char *oldname, const 
  Map standard UNIX permissions onto wire representations.
 ****************************************************************************/
 
-uint32  unix_perms_to_wire(mode_t perms)
+uint32 unix_perms_to_wire(mode_t perms)
 {
         unsigned int ret = 0;
 
@@ -100,6 +100,135 @@ uint32  unix_perms_to_wire(mode_t perms)
         ret |= ((perms & S_ISUID) ?  UNIX_SET_UID : 0);
 #endif
         return ret;
+}
+
+/****************************************************************************
+ Map wire permissions to standard UNIX.
+****************************************************************************/
+
+mode_t wire_perms_to_unix(uint32 perms)
+{
+        mode_t ret = (mode_t)0;
+
+        ret |= ((perms & UNIX_X_OTH) ? S_IXOTH : 0);
+        ret |= ((perms & UNIX_W_OTH) ? S_IWOTH : 0);
+        ret |= ((perms & UNIX_R_OTH) ? S_IROTH : 0);
+        ret |= ((perms & UNIX_X_GRP) ? S_IXGRP : 0);
+        ret |= ((perms & UNIX_W_GRP) ? S_IWGRP : 0);
+        ret |= ((perms & UNIX_R_GRP) ? S_IRGRP : 0);
+        ret |= ((perms & UNIX_X_USR) ? S_IXUSR : 0);
+        ret |= ((perms & UNIX_W_USR) ? S_IWUSR : 0);
+        ret |= ((perms & UNIX_R_USR) ? S_IRUSR : 0);
+#ifdef S_ISVTX
+        ret |= ((perms & UNIX_STICKY) ? S_ISVTX : 0);
+#endif
+#ifdef S_ISGID
+        ret |= ((perms & UNIX_SET_GID) ? S_ISGID : 0);
+#endif
+#ifdef S_ISUID
+        ret |= ((perms & UNIX_SET_UID) ? S_ISUID : 0);
+#endif
+        return ret;
+}
+
+/****************************************************************************
+ Return the file type from the wire filetype for UNIX extensions.
+****************************************************************************/
+                                                                                                                
+static mode_t unix_filetype_from_wire(uint32 wire_type)
+{
+	switch (wire_type) {
+		case UNIX_TYPE_FILE:
+			return S_IFREG;
+		case UNIX_TYPE_DIR:
+			return S_IFDIR;
+#ifdef S_IFLNK
+		case UNIX_TYPE_SYMLINK:
+			return S_IFLNK;
+#endif
+#ifdef S_IFCHR
+		case UNIX_TYPE_CHARDEV:
+			return S_IFCHR;
+#endif
+#ifdef S_IFBLK
+		case UNIX_TYPE_BLKDEV:
+			return S_IFBLK;
+#endif
+#ifdef S_IFIFO
+		case UNIX_TYPE_FIFO:
+			return S_IFIFO;
+#endif
+#ifdef S_IFSOCK
+		case UNIX_TYPE_SOCKET:
+			return S_IFSOCK;
+#endif
+		default:
+			return (mode_t)0;
+	}
+}
+
+/****************************************************************************
+ Stat a file (UNIX extensions).
+****************************************************************************/
+
+BOOL cli_unix_stat(struct cli_state *cli, const char *name, SMB_STRUCT_STAT *sbuf)
+{
+	unsigned int param_len = 0;
+	unsigned int data_len = 0;
+	uint16 setup = TRANSACT2_QPATHINFO;
+	char param[sizeof(pstring)+6];
+	char *rparam=NULL, *rdata=NULL;
+	char *p;
+
+	ZERO_STRUCTP(sbuf);
+
+	p = param;
+	memset(p, 0, 6);
+	SSVAL(p, 0, SMB_QUERY_FILE_UNIX_BASIC);
+	p += 6;
+	p += clistr_push(cli, p, name, sizeof(pstring)-6, STR_TERMINATE);
+	param_len = PTR_DIFF(p, param);
+
+	if (!cli_send_trans(cli, SMBtrans2,
+		NULL,                        /* name */
+		-1, 0,                       /* fid, flags */
+		&setup, 1, 0,                /* setup, length, max */
+		param, param_len, 2,         /* param, length, max */
+		NULL,  0, cli->max_xmit      /* data, length, max */
+		)) {
+			return False;
+	}
+
+	if (!cli_receive_trans(cli, SMBtrans2,
+		&rparam, &param_len,
+		&rdata, &data_len)) {
+			return False;
+	}
+
+	sbuf->st_size = IVAL2_TO_SMB_BIG_UINT(rdata,0);     /* total size, in bytes */
+	sbuf->st_blocks = IVAL2_TO_SMB_BIG_UINT(rdata,8);   /* number of blocks allocated */
+	sbuf->st_blocks /= STAT_ST_BLOCKSIZE;
+	sbuf->st_ctime = interpret_long_date(rdata + 16);    /* time of last change */
+	sbuf->st_atime = interpret_long_date(rdata + 24);    /* time of last access */
+	sbuf->st_mtime = interpret_long_date(rdata + 32);    /* time of last modification */
+	sbuf->st_uid = IVAL(rdata,40);      /* user ID of owner */
+	sbuf->st_gid = IVAL(rdata,48);      /* group ID of owner */
+	sbuf->st_mode |= unix_filetype_from_wire(IVAL(rdata, 56));
+#if defined(HAVE_MAKEDEV)
+	{
+		uint32 dev_major = IVAL(rdata,60);
+		uint32 dev_minor = IVAL(rdata,68);
+		sbuf->st_rdev = makedev(dev_major, dev_minor);
+	}
+#endif
+	sbuf->st_ino = (SMB_INO_T)IVAL2_TO_SMB_BIG_UINT(rdata,76);      /* inode */
+	sbuf->st_mode |= wire_perms_to_unix(IVAL(rdata,84));     /* protection */
+	sbuf->st_nlink = IVAL(rdata,92);    /* number of hard links */
+
+	SAFE_FREE(rdata);
+	SAFE_FREE(rparam);
+
+	return True;
 }
 
 /****************************************************************************
