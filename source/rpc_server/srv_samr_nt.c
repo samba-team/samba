@@ -2835,6 +2835,9 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	fstring grp_name;
 	uint32 rid;
 	GROUP_MAP map;
+	NTSTATUS ret;
+	SAM_ACCOUNT *sam_user;
+	BOOL check;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->alias_pol, &alias_sid)) 
@@ -2859,7 +2862,23 @@ NTSTATUS _samr_add_aliasmem(pipes_struct *p, SAMR_Q_ADD_ALIASMEM *q_u, SAMR_R_AD
 	}
 
 	sid_split_rid(&q_u->sid.sid, &rid);
-	uid=pdb_user_rid_to_uid(rid);
+	
+	ret = pdb_init_sam(&sam_user);
+	if (NT_STATUS_IS_ERR(ret))
+		return ret;
+	
+	become_root();
+	check = pdb_getsampwrid(sam_user, rid);
+	unbecome_root();
+	
+	if (check != True)
+		return NT_STATUS_NO_SUCH_USER;
+	
+	uid = pdb_get_uid(sam_user);
+	if (uid == -1)
+		return NT_STATUS_NO_SUCH_USER;
+
+	pdb_free_sam(&sam_user);
 
 	if ((pwd=getpwuid(uid)) == NULL)
 		return NT_STATUS_NO_SUCH_USER;
@@ -2963,6 +2982,10 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	struct group *grp;
 	fstring grp_name;
 	GROUP_MAP map;
+	uid_t uid;
+	NTSTATUS ret;
+	SAM_ACCOUNT *sam_user;
+	BOOL check;
 
 	/* Find the policy handle. Open a policy on it. */
 	if (!get_lsa_policy_samr_sid(p, &q_u->pol, &group_sid)) 
@@ -2979,7 +3002,24 @@ NTSTATUS _samr_add_groupmem(pipes_struct *p, SAMR_Q_ADD_GROUPMEM *q_u, SAMR_R_AD
 	if(!get_domain_group_from_sid(group_sid, &map, MAPPING_WITHOUT_PRIV))
 		return NT_STATUS_NO_SUCH_GROUP;
 
-	if ((pwd=getpwuid(pdb_user_rid_to_uid(q_u->rid))) ==NULL)
+	ret = pdb_init_sam(&sam_user);
+	if (NT_STATUS_IS_ERR(ret))
+		return ret;
+	
+	become_root();
+	check = pdb_getsampwrid(sam_user, q_u->rid);
+	unbecome_root();
+	
+	if (check != True)
+		return NT_STATUS_NO_SUCH_USER;
+	
+	uid = pdb_get_uid(sam_user);
+	if (uid == -1)
+		return NT_STATUS_NO_SUCH_USER;
+
+	pdb_free_sam(&sam_user);
+
+	if ((pwd=getpwuid(uid)) == NULL)
 		return NT_STATUS_NO_SUCH_USER;
 
 	if ((grp=getgrgid(map.gid)) == NULL)

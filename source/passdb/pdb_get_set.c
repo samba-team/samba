@@ -493,11 +493,11 @@ BOOL pdb_set_username(SAM_ACCOUNT *sampass, const char *username)
 {	
 	if (!sampass)
 		return False;
-
-	DEBUG(10, ("pdb_set_username: setting username %s, was %s\n", 
-		   username, sampass->private.username));
  
 	if (username) { 
+		DEBUG(10, ("pdb_set_username: setting username %s, was %s\n", username,
+			(sampass->private.username)?(sampass->private.username):"NULL"));
+
 		sampass->private.username = talloc_strdup(sampass->mem_ctx, username);
 
 		if (!sampass->private.username) {
@@ -521,10 +521,10 @@ BOOL pdb_set_domain(SAM_ACCOUNT *sampass, const char *domain)
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_domain: setting domain %s, was %s\n", 
-		   domain, sampass->private.domain));
- 
 	if (domain) { 
+		DEBUG(10, ("pdb_set_domain: setting domain %s, was %s\n", domain,
+			(sampass->private.domain)?(sampass->private.domain):"NULL"));
+
 		sampass->private.domain = talloc_strdup(sampass->mem_ctx, domain);
 
 		if (!sampass->private.domain) {
@@ -548,10 +548,10 @@ BOOL pdb_set_nt_username(SAM_ACCOUNT *sampass, const char *nt_username)
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_nt_username: setting nt username %s, was %s\n", 
-		   nt_username, sampass->private.nt_username));
- 
 	if (nt_username) { 
+		DEBUG(10, ("pdb_set_nt_username: setting nt username %s, was %s\n", nt_username,
+			(sampass->private.nt_username)?(sampass->private.nt_username):"NULL"));
+ 
 		sampass->private.nt_username = talloc_strdup(sampass->mem_ctx, nt_username);
 		
 		if (!sampass->private.nt_username) {
@@ -575,10 +575,10 @@ BOOL pdb_set_fullname(SAM_ACCOUNT *sampass, const char *full_name)
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_full_name: setting full name %s, was %s\n", 
-		   full_name, sampass->private.full_name));
-	
 	if (full_name) { 
+		DEBUG(10, ("pdb_set_full_name: setting full name %s, was %s\n", full_name,
+			(sampass->private.full_name)?(sampass->private.full_name):"NULL"));
+	
 		sampass->private.full_name = talloc_strdup(sampass->mem_ctx, full_name);
 
 		if (!sampass->private.full_name) {
@@ -602,10 +602,10 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_logon_script: setting logon script (store:%d) %s, was %s\n", 
-		   store, logon_script, sampass->private.logon_script));
- 
 	if (logon_script) { 
+		DEBUG(10, ("pdb_set_logon_script: setting logon script %s, was %s\n", logon_script,
+			(sampass->private.logon_script)?(sampass->private.logon_script):"NULL"));
+ 
 		sampass->private.logon_script = talloc_strdup(sampass->mem_ctx, logon_script);
 
 		if (!sampass->private.logon_script) {
@@ -617,8 +617,10 @@ BOOL pdb_set_logon_script(SAM_ACCOUNT *sampass, const char *logon_script, BOOL s
 		sampass->private.logon_script = PDB_NOT_QUITE_NULL;
 	}
 	
-	if (store)
-		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT); 
+	if (store) {
+		DEBUG(10, ("pdb_set_logon_script: setting logon script sam flag!"));
+		pdb_set_init_flag(sampass, FLAG_SAM_LOGONSCRIPT);
+	}
 
 	return True;
 }
@@ -632,10 +634,10 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 	if (!sampass)
 		return False;
 
-	DEBUG(10, ("pdb_set_profile_path: setting profile path (store:%d) %s, was %s\n", 
-		   store, profile_path, sampass->private.profile_path));
- 
 	if (profile_path) { 
+		DEBUG(10, ("pdb_set_profile_path: setting profile path %s, was %s\n", profile_path,
+			(sampass->private.profile_path)?(sampass->private.profile_path):"NULL"));
+ 
 		sampass->private.profile_path = talloc_strdup(sampass->mem_ctx, profile_path);
 		
 		if (!sampass->private.profile_path) {
@@ -647,8 +649,10 @@ BOOL pdb_set_profile_path (SAM_ACCOUNT *sampass, const char *profile_path, BOOL 
 		sampass->private.profile_path = PDB_NOT_QUITE_NULL;
 	}
 
-	if (store)
+	if (store) {
+		DEBUG(10, ("pdb_set_profile_path: setting profile path sam flag!"));
 		pdb_set_init_flag(sampass, FLAG_SAM_PROFILE);
+	}
 
 	return True;
 }
@@ -663,6 +667,9 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 		return False;
 
 	if (dir_drive) { 
+		DEBUG(10, ("pdb_set_dir_drive: setting dir drive %s, was %s\n", dir_drive,
+			(sampass->private.dir_drive)?(sampass->private.dir_drive):"NULL"));
+ 
 		sampass->private.dir_drive = talloc_strdup(sampass->mem_ctx, dir_drive);
 		
 		if (!sampass->private.dir_drive) {
@@ -674,8 +681,10 @@ BOOL pdb_set_dir_drive (SAM_ACCOUNT *sampass, const char *dir_drive, BOOL store)
 		sampass->private.dir_drive = PDB_NOT_QUITE_NULL;
 	}
 	
-	if (store)
+	if (store) {
+		DEBUG(10, ("pdb_set_dir_drive: setting dir drive sam flag!"));
 		pdb_set_init_flag(sampass, FLAG_SAM_DRIVE);
+	}
 
 	return True;
 }
@@ -690,6 +699,9 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 		return False;
 
 	if (home_dir) { 
+		DEBUG(10, ("pdb_set_homedir: setting home dir %s, was %s\n", home_dir,
+			(sampass->private.home_dir)?(sampass->private.home_dir):"NULL"));
+ 
 		sampass->private.home_dir = talloc_strdup(sampass->mem_ctx, home_dir);
 		
 		if (!sampass->private.home_dir) {
@@ -701,8 +713,10 @@ BOOL pdb_set_homedir (SAM_ACCOUNT *sampass, const char *home_dir, BOOL store)
 		sampass->private.home_dir = PDB_NOT_QUITE_NULL;
 	}
 
-	if (store)
+	if (store) {
+		DEBUG(10, ("pdb_set_homedir: setting home dir sam flag!"));
 		pdb_set_init_flag(sampass, FLAG_SAM_SMBHOME);
+	}
 
 	return True;
 }
@@ -741,6 +755,9 @@ BOOL pdb_set_workstations (SAM_ACCOUNT *sampass, const char *workstations)
 		return False;
 
 	if (workstations) { 
+		DEBUG(10, ("pdb_set_workstations: setting workstations %s, was %s\n", workstations,
+			(sampass->private.workstations)?(sampass->private.workstations):"NULL"));
+ 
 		sampass->private.workstations = talloc_strdup(sampass->mem_ctx, workstations);
 
 		if (!sampass->private.workstations) {
@@ -787,6 +804,7 @@ BOOL pdb_set_munged_dial (SAM_ACCOUNT *sampass, const char *munged_dial)
 {
 	if (!sampass)
 		return False;
+
 	if (munged_dial) { 
 		sampass->private.munged_dial = talloc_strdup(sampass->mem_ctx, munged_dial);
 		

@@ -90,6 +90,7 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	BOOL ret = True;
 	BOOL setflag;
 	gid_t gid = -1; /* This is what standard sub advanced expects if no gid is known */
+	pstring sub_buffer;
 	
 	if(sampass == NULL || buf == NULL) {
 		DEBUG(0, ("init_sam_from_buffer: NULL parameters found!\n"));
@@ -144,9 +145,8 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		 * getpwnam() is used instead of Get_Pwnam() as we do not need
 		 * to try case permutations
 		 */
-		if (!username || !(pw=getpwnam_alloc(username))) {
-			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", 
-			          username?username:"NULL"));
+		if (!username || !(pw = getpwnam_alloc(username))) {
+			DEBUG(0,("tdbsam: getpwnam_alloc(%s) return NULL.  User does not exist!\n", username?username:"NULL"));
 			ret = False;
 			goto done;
 		}
@@ -174,9 +174,11 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	if (homedir) setflag = True;
 	else {
 		setflag = False;
-		homedir = strdup(lp_logon_home());
+		pstrcpy(sub_buffer, lp_logon_home());
+		/* standard_sub_advanced() assumes pstring is passed!! */
+		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
+		homedir = strdup(sub_buffer);
 		if(!homedir) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, username, homedir);
 		DEBUG(5,("Home directory set back to %s\n", homedir));
 	}
 	pdb_set_homedir(sampass, homedir, setflag);
@@ -184,30 +186,33 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 	if (dir_drive) setflag = True;
 	else {
 		setflag = False;
-		dir_drive = strdup(lp_logon_drive());
+		pstrcpy(sub_buffer, lp_logon_drive());
+		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
+		dir_drive = strdup(sub_buffer);
 		if(!dir_drive) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, username, dir_drive);
-		DEBUG(5,("Home directory set back to %s\n", dir_drive));
+		DEBUG(5,("Drive set back to %s\n", dir_drive));
 	}
 	pdb_set_dir_drive(sampass, dir_drive, setflag);
 
 	if (logon_script) setflag = True;
 	else {
 		setflag = False;
-		logon_script = strdup(lp_logon_script());
+		pstrcpy(sub_buffer, lp_logon_script());
+		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
+		logon_script = strdup(sub_buffer);
 		if(!logon_script) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, username, logon_script);
-		DEBUG(5,("Home directory set back to %s\n", logon_script));
+		DEBUG(5,("Logon script set back to %s\n", logon_script));
 	}
 	pdb_set_logon_script(sampass, logon_script, setflag);
 
 	if (profile_path) setflag = True;
 	else {
 		setflag = False;
-		profile_path = strdup(lp_logon_path());
+		pstrcpy(sub_buffer, lp_logon_path());
+		standard_sub_advanced(-1, username, "", gid, username, sub_buffer);
+		profile_path = strdup(sub_buffer);
 		if(!profile_path) { ret = False; goto done; }
-		standard_sub_advanced(-1, username, "", gid, username, profile_path);
-		DEBUG(5,("Home directory set back to %s\n", profile_path));
+		DEBUG(5,("Profile path set back to %s\n", profile_path));
 	}
 	pdb_set_profile_path(sampass, profile_path, setflag);
 
@@ -223,8 +228,6 @@ static BOOL init_sam_from_buffer (struct tdbsam_privates *tdb_state,
 		goto done;
 	}
 
-	/*pdb_set_uid(sampass, uid);
-	pdb_set_gid(sampass, gid);*/
 	pdb_set_user_rid(sampass, user_rid);
 	pdb_set_group_rid(sampass, group_rid);
 	pdb_set_unknown_3(sampass, unknown_3);

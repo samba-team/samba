@@ -155,27 +155,28 @@ static int print_user_info (char *username, BOOL verbosity, BOOL smbpwdstyle)
 static int print_users_list (BOOL verbosity, BOOL smbpwdstyle)
 {
 	SAM_ACCOUNT *sam_pwent=NULL;
-	BOOL ret;
+	BOOL check, ret;
 	
-	pdb_init_sam(&sam_pwent);
 	errno = 0; /* testing --simo */
-	ret = pdb_setsampwent(False);
-	if (ret && errno == ENOENT) {
+	check = pdb_setsampwent(False);
+	if (check && errno == ENOENT) {
 		fprintf (stderr,"Password database not found!\n");
 		exit(1);
 	}
-	pdb_free_sam(&sam_pwent);
 
-	while ((NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)) 
-		&& (ret = pdb_getsampwent (sam_pwent)))) {
+	check = True;
+	if (!(NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent)))) return 1;
+
+	while (check && (ret = pdb_getsampwent (sam_pwent))) {
 		if (verbosity)
 			printf ("---------------\n");
 		print_sam_info (sam_pwent, verbosity, smbpwdstyle);
 		pdb_free_sam(&sam_pwent);
+		check = NT_STATUS_IS_OK(pdb_init_sam(&sam_pwent));
 	}
-	pdb_free_sam(&sam_pwent);
+	if (check) pdb_free_sam(&sam_pwent);
 	
-	pdb_endsampwent ();
+	pdb_endsampwent();
 	return 0;
 }
 
