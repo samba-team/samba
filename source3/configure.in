@@ -1569,7 +1569,7 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
         if test x"$ICONV_PATH_SPEC" = "xyes" ; then
            LIBS="$LIBS -L$ICONV_LOCATION/lib"
         fi
-        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
+dnl        AC_CACHE_CHECK([for working iconv],samba_cv_HAVE_NATIVE_ICONV,[
 	default_dos_charset=no
 	default_display_charset=no
 	default_unix_charset=no
@@ -1617,7 +1617,7 @@ dnl there might be a working iconv further down the list of LOOK_DIRS
 		samba_cv_HAVE_NATIVE_ICONV=no
 	fi
 	fi
-])
+dnl ])
 
         LIBS="$ic_save_LIBS"
         if test x"$samba_cv_HAVE_NATIVE_ICONV" = x"yes"; then
