@@ -227,11 +227,11 @@ BOOL torture_test_delete(int dummy)
 
 	/* This should succeed. */
 	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ,
-				   FILE_ATTRIBUTE_NORMAL, 
-				   NTCREATEX_SHARE_ACCESS_READ  | 
-				   NTCREATEX_SHARE_ACCESS_WRITE |
-				   NTCREATEX_SHARE_ACCESS_DELETE, 
-				   NTCREATEX_DISP_OPEN, 0, 0);
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ  | 
+				      NTCREATEX_SHARE_ACCESS_WRITE |
+				      NTCREATEX_SHARE_ACCESS_DELETE, 
+				      NTCREATEX_DISP_OPEN, 0, 0);
 	if (fnum2 == -1) {
 		printf("(%s) open  - 2 of %s failed (%s)\n", 
 		       __location__, fname, smbcli_errstr(cli1->tree));
@@ -254,9 +254,11 @@ BOOL torture_test_delete(int dummy)
 	}
 	
 	/* This should fail - no more opens once delete on close set. */
-	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, GENERIC_RIGHTS_FILE_READ,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
-				   NTCREATEX_DISP_OPEN, 0, 0);
+	fnum2 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      GENERIC_RIGHTS_FILE_READ,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_READ|NTCREATEX_SHARE_ACCESS_WRITE|NTCREATEX_SHARE_ACCESS_DELETE,
+				      NTCREATEX_DISP_OPEN, 0, 0);
 	if (fnum2 != -1) {
 		printf("(%s) open  - 3 of %s succeeded ! Should have failed.\n",
 		       __location__, fname );
@@ -461,8 +463,12 @@ BOOL torture_test_delete(int dummy)
 		printf("eighth delete on close test succeeded.\n");
 
 	/* This should fail - we need to set DELETE_ACCESS. */
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0,
+				      SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	
 	if (fnum1 != -1) {
 		printf("(%s) open of %s succeeded should have failed!\n", 
@@ -473,8 +479,12 @@ BOOL torture_test_delete(int dummy)
 
 	printf("ninth delete on close test succeeded.\n");
 
-	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
-				   FILE_ATTRIBUTE_NORMAL, NTCREATEX_SHARE_ACCESS_NONE, NTCREATEX_DISP_OVERWRITE_IF, NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
+	fnum1 = smbcli_nt_create_full(cli1->tree, fname, 0, 
+				      SA_RIGHT_FILE_READ_DATA|SA_RIGHT_FILE_WRITE_DATA|STD_RIGHT_DELETE_ACCESS,
+				      FILE_ATTRIBUTE_NORMAL, 
+				      NTCREATEX_SHARE_ACCESS_NONE, 
+				      NTCREATEX_DISP_OVERWRITE_IF, 
+				      NTCREATEX_OPTIONS_DELETE_ON_CLOSE, 0);
 	if (fnum1 == -1) {
 		printf("(%s) open of %s failed (%s)\n", 
 		       __location__, fname, smbcli_errstr(cli1->tree));
