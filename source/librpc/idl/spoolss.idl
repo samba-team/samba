@@ -10,12 +10,74 @@
 	/******************/
 	/* Function: 0x00 */
 
+	typedef struct {
+		nstring devicename;
+		uint16 specversion;
+		uint16 driverversion;
+		uint16 size;
+		uint16 driverextra;
+		uint32 fields;
+		uint16 orientation;
+		uint16 papersize;
+		uint16 paperlength;
+		uint16 paperwidth;
+		uint16 scale;
+		uint16 copies;
+		uint16 defaultsource;
+		uint16 printquality;
+		uint16 color;
+		uint16 duplex;
+		uint16 yresolution;
+		uint16 ttoption;
+		uint16 collate;
+		nstring formname;
+		uint16 logpixels;
+		uint32 bitsperpel;
+		uint32 pelswidth;
+		uint32 pelsheight;
+		uint32 displayflags;
+		uint32 displayfrequency;
+		uint32 icmmethod;
+		uint32 icmintent;
+		uint32 mediatype;
+		uint32 dithertype;
+		uint32 reserved1;
+		uint32 reserved2;
+		uint32 panningwidth;
+		uint32 panningheight;
+//		uint8  private[driverextra];
+	} spoolss_DeviceMode;
+
 	typedef [public] struct {
 		uint32 flags;
-		relstr name;
-		relstr description;
-		relstr comment;
+		[relative] nstring name;
+		[relative] nstring description;
+		[relative] nstring comment;
 	} spoolss_PrinterEnum1;
+
+	typedef [public] struct {
+		[relative] nstring servername;
+		[relative] nstring printername;
+		[relative] nstring sharename;
+		[relative] nstring portname;
+		[relative] nstring drivername;
+		[relative] nstring comment;
+		[relative] nstring location;
+		[relative] spoolss_DeviceMode *devmode;
+		[relative] nstring sepfile;
+		[relative] nstring printprocessor;
+		[relative] nstring datatype;
+		[relative] nstring parameters;
+		[relative] security_descriptor *secdesc;
+		uint32 attributes;
+		uint32 priority;
+		uint32 defaultpriority;
+		uint32 starttime;
+		uint32 untiltime;
+		uint32 status;
+		uint32 cjobs;
+		uint32 averageppm;
+	} spoolss_PrinterEnum2;
 
 	NTSTATUS spoolss_EnumPrinters(
 		[in]	     uint32 flags,
