@@ -264,7 +264,7 @@ static NTSTATUS try_samr_connects(struct cli_state *cli, TALLOC_CTX *mem_ctx,
  */
 static NTSTATUS cmd_samr_query_user(struct cli_state *cli, 
                                     TALLOC_CTX *mem_ctx,
-                                    int argc, char **argv) 
+                                    int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -373,7 +373,7 @@ static void display_group_info_ctr(GROUP_INFO_CTR *ctr)
  */
 static NTSTATUS cmd_samr_query_group(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx,
-                                     int argc, char **argv) 
+                                     int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -435,7 +435,7 @@ done:
 
 static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv) 
+                                          int argc, const char **argv) 
 {
 	POLICY_HND 		connect_pol, 
 				domain_pol, 
@@ -499,8 +499,8 @@ static NTSTATUS cmd_samr_query_usergroups(struct cli_state *cli,
 /* Query aliases a user is a member of */
 
 static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli, 
-                                          TALLOC_CTX *mem_ctx,
-                                          int argc, char **argv) 
+					   TALLOC_CTX *mem_ctx,
+					   int argc, const char **argv) 
 {
 	POLICY_HND 		connect_pol, domain_pol;
 	NTSTATUS		result = NT_STATUS_UNSUCCESSFUL;
@@ -568,7 +568,7 @@ static NTSTATUS cmd_samr_query_useraliases(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx,
-                                        int argc, char **argv) 
+                                        int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, group_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -630,7 +630,7 @@ static NTSTATUS cmd_samr_query_groupmem(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli, 
 					TALLOC_CTX *mem_ctx,
-					int argc, char **argv) 
+					int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -704,7 +704,7 @@ static NTSTATUS cmd_samr_enum_dom_users(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv) 
+                                         int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -777,7 +777,7 @@ static NTSTATUS cmd_samr_enum_dom_groups(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv) 
+                                         int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -859,7 +859,7 @@ static NTSTATUS cmd_samr_enum_als_groups(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx,
-                                        int argc, char **argv) 
+                                        int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, alias_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -933,7 +933,7 @@ static NTSTATUS cmd_samr_query_aliasmem(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli, 
                                         TALLOC_CTX *mem_ctx,
-                                        int argc, char **argv) 
+                                        int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1067,7 +1067,7 @@ static NTSTATUS cmd_samr_query_dispinfo(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx,
-                                       int argc, char **argv) 
+                                       int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1137,11 +1137,11 @@ static NTSTATUS cmd_samr_query_dominfo(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv) 
+                                         int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
-	char *acct_name;
+	const char *acct_name;
 	uint16 acb_info;
 	uint32 unknown, user_rid;
 	uint32 access_mask = MAXIMUM_ALLOWED_ACCESS;
@@ -1193,7 +1193,7 @@ static NTSTATUS cmd_samr_create_dom_user(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli, 
                                       TALLOC_CTX *mem_ctx,
-                                      int argc, char **argv) 
+                                      int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
@@ -1263,7 +1263,7 @@ static NTSTATUS cmd_samr_lookup_names(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx,
-                                     int argc, char **argv) 
+                                     int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol;
@@ -1320,7 +1320,7 @@ static NTSTATUS cmd_samr_lookup_rids(struct cli_state *cli,
 
 static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli, 
                                          TALLOC_CTX *mem_ctx,
-                                         int argc, char **argv) 
+                                         int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	POLICY_HND connect_pol, domain_pol, user_pol;
@@ -1389,7 +1389,7 @@ static NTSTATUS cmd_samr_delete_dom_user(struct cli_state *cli,
  */
 static NTSTATUS cmd_samr_query_sec_obj(struct cli_state *cli, 
                                     TALLOC_CTX *mem_ctx,
-                                    int argc, char **argv) 
+                                    int argc, const char **argv) 
 {
 	POLICY_HND connect_pol, domain_pol, user_pol, *pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -1466,7 +1466,7 @@ done:
 
 static NTSTATUS cmd_samr_get_dom_pwinfo(struct cli_state *cli, 
 					TALLOC_CTX *mem_ctx,
-					int argc, char **argv) 
+					int argc, const char **argv) 
 {
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
 	uint16 unk_0, unk_1, unk_2;

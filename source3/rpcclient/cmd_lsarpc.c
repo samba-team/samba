@@ -64,7 +64,7 @@ done:
 
 static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli, 
                                           TALLOC_CTX *mem_ctx, int argc, 
-                                          char **argv) 
+                                          const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -134,7 +134,7 @@ static NTSTATUS cmd_lsa_query_info_policy(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx, int argc, 
-                                     char **argv)
+                                     const char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -179,7 +179,7 @@ static NTSTATUS cmd_lsa_lookup_names(struct cli_state *cli,
 /* Resolve a list of SIDs to a list of names */
 
 static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
-                                    int argc, char **argv)
+                                    int argc, const char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -246,7 +246,7 @@ static NTSTATUS cmd_lsa_lookup_sids(struct cli_state *cli, TALLOC_CTX *mem_ctx,
 
 static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli, 
                                        TALLOC_CTX *mem_ctx, int argc, 
-                                       char **argv)
+                                       const char **argv)
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -301,7 +301,7 @@ static NTSTATUS cmd_lsa_enum_trust_dom(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli, 
 				       TALLOC_CTX *mem_ctx, int argc, 
-                                          char **argv) 
+				       const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -354,7 +354,7 @@ static NTSTATUS cmd_lsa_enum_privilege(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli, 
                                      TALLOC_CTX *mem_ctx, int argc, 
-                                     char **argv) 
+                                     const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -392,7 +392,7 @@ static NTSTATUS cmd_lsa_get_dispname(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli, 
 				  TALLOC_CTX *mem_ctx, int argc, 
-                                     char **argv) 
+				  const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -445,7 +445,7 @@ static NTSTATUS cmd_lsa_enum_sids(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli, 
                                            TALLOC_CTX *mem_ctx, int argc, 
-                                           char **argv) 
+                                           const char **argv) 
 {
 	POLICY_HND dom_pol;
 	POLICY_HND user_pol;
@@ -500,7 +500,7 @@ static NTSTATUS cmd_lsa_enum_privsaccounts(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_enum_acct_rights(struct cli_state *cli, 
 					 TALLOC_CTX *mem_ctx, int argc, 
-					 char **argv) 
+					 const char **argv) 
 {
 	POLICY_HND dom_pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -666,8 +666,8 @@ static NTSTATUS cmd_lsa_remove_acct_rights(struct cli_state *cli,
 /* Get a privilege value given its name */
 
 static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli, 
-                                           TALLOC_CTX *mem_ctx, int argc, 
-                                           char **argv) 
+					TALLOC_CTX *mem_ctx, int argc, 
+					const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
@@ -702,7 +702,7 @@ static NTSTATUS cmd_lsa_lookupprivvalue(struct cli_state *cli,
 
 static NTSTATUS cmd_lsa_query_secobj(struct cli_state *cli, 
 				     TALLOC_CTX *mem_ctx, int argc, 
-				     char **argv) 
+				     const char **argv) 
 {
 	POLICY_HND pol;
 	NTSTATUS result = NT_STATUS_UNSUCCESSFUL;
