@@ -1,4 +1,4 @@
-.TH SMB.CONF 5 "27 Jan 1998" "smb.conf 1.9.18p2"
+.TH SMB.CONF 5 "08 Jan 1998" "smb.conf 1.9.18"
 .SH NAME
 smb.conf \- configuration file for smbd
 .SH SYNOPSIS
@@ -3175,19 +3175,18 @@ Pathworks documentation for details.
  	set directory = yes
 
 .SS shared file entries (G)
-This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
-It specifies the number of hash bucket entries used for share file locking.
-You should never change this parameter unless you have studied the source 
-and know what you are doing.
-
-.B Default
-	shared file entries = 113
+This parameter has been removed (as of Samba 1.9.18 and above). The new
+System V shared memory code prohibits the user from allocating the
+share hash bucket size directly.
 
 .SS shared mem size (G)
 This parameter is only useful when Samba has been compiled with FAST_SHARE_MODES.
 It specifies the size of the shared memory (in bytes) to use between smbd 
 processes. You should never change this parameter unless you have studied 
-the source and know what you are doing.
+the source and know what you are doing. This parameter defaults to 1024
+multiplied by the setting of the maximum number of open files in the
+file local.h in the Samba source code. MAX_OPEN_FILES is normally set
+to 100, so this parameter defaults to 102400 bytes.
 
 .B Default
 	shared mem size = 102400
