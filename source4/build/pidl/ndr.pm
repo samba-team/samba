@@ -166,15 +166,15 @@ sub array_type($)
 sub need_wire_pointer($)
 {
 	my $e = shift;
-	my $pt;
-	
-	return 0 unless ($pt = pointer_type($e));
 
-	if ($pt ne "ref") {
-		return 1;
-	} else {
-		return 0;
+	my $n = $e->{POINTERS};
+	my $pt = pointer_type($e);
+
+	if (defined($pt) and $pt eq "ref") {
+		$n--;
 	}
+
+	return $n;
 }
 
 # determine if an element is a pure scalar. pure scalars do not
