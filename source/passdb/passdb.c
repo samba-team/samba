@@ -610,23 +610,21 @@ BOOL local_lookup_sid(DOM_SID *sid, char *name, enum SID_NAME_USE *psid_name_use
  Convert a name into a SID. Used in the lookup name rpc.
  ********************************************************************/
 
-BOOL local_lookup_name(const char *c_domain, const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
+BOOL local_lookup_name(const char *c_user, DOM_SID *psid, enum SID_NAME_USE *psid_name_use)
 {
 	extern DOM_SID global_sid_World_Domain;
 	struct passwd *pass = NULL;
 	DOM_SID local_sid;
 	fstring user;
-	fstring domain;
 	SAM_ACCOUNT *sam_account = NULL;
 
 	*psid_name_use = SID_NAME_UNKNOWN;
 
 	/*
-	 * domain and user may be quoted const strings, and map_username and
-	 * friends can modify them. Make a modifiable copy. JRA.
+	 * user may be quoted a const string, and map_username and
+	 * friends can modify it. Make a modifiable copy. JRA.
 	 */
 
-	fstrcpy(domain, c_domain);
 	fstrcpy(user, c_user);
 
 	sid_copy(&local_sid, &global_sam_sid);
