@@ -1990,6 +1990,9 @@ static NTSTATUS samr_RemoveMultipleMembersFromAlias(struct dcesrv_call_state *dc
   samr_GetDomPwInfo 
 
   this fetches the default password properties for a domain
+
+  note that w2k3 completely ignores the domain name in this call, and 
+  always returns the information for the servers primary domain
 */
 static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
 				  struct samr_GetDomPwInfo *r)
@@ -1999,10 +2002,6 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	const char * const attrs[] = {"minPwdLength", "pwdProperties", NULL };
 	void *sam_ctx;
 
-	if (r->in.name == NULL || r->in.name->name == NULL) {
-		return NT_STATUS_NO_SUCH_DOMAIN;
-	}
-
 	sam_ctx = samdb_connect();
 	if (sam_ctx == NULL) {
 		return NT_STATUS_INVALID_SYSTEM_SERVICE;
@@ -2011,7 +2010,7 @@ static NTSTATUS samr_GetDomPwInfo(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	ret = samdb_search(sam_ctx, 
 			   mem_ctx, NULL, &msgs, attrs, 
 			   "(&(name=%s)(objectclass=domain))",
-			   r->in.name->name);
+			   lp_workgroup());
 	if (ret <= 0) {
 		samdb_close(sam_ctx);
 		return NT_STATUS_NO_SUCH_DOMAIN;
