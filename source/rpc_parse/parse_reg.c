@@ -955,7 +955,7 @@ BOOL make_reg_r_info(uint32 include_keyval, REG_R_INFO * r_r,
 	if (r_r == NULL)
 		return False;
 	r_r->ptr_type = 1;
-	r_r->type = type;
+	r_r->type = *type;
 
 	/* if include_keyval is not set, don't send the key value, just
 	   the buflen data. probably used by NT5 to allocate buffer space - SK */
