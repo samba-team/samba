@@ -38,6 +38,7 @@ TDB_CONTEXT *conn_tdb_ctx(void)
 static void make_conn_key(connection_struct *conn, const char *name, TDB_DATA *pkbuf, struct connections_key *pkey)
 {
 	ZERO_STRUCTP(pkey);
+	ZERO_STRUCTP(pkbuf);
 	pkey->pid = sys_getpid();
 	pkey->cnum = conn?conn->cnum:-1;
 	fstrcpy(pkey->name, name);
