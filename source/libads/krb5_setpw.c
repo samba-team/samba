@@ -546,7 +546,6 @@ ADS_STATUS krb5_set_password(const char *kdc_host, const char *princ, const char
 
 	krb5_free_creds(context, credsp);
 	krb5_free_principal(context, creds.client);
-	krb5_free_principal(context, creds.server);
 	krb5_free_principal(context, principal);
 	krb5_free_context(context);
 
@@ -579,11 +578,11 @@ kerb_prompter(krb5_context ctx, void *data,
 	return 0;
 }
 
-ADS_STATUS krb5_chg_password(const char *kdc_host,
-				const char *principal,
-				const char *oldpw, 
-				const char *newpw, 
-				int time_offset)
+static ADS_STATUS krb5_chg_password(const char *kdc_host,
+				    const char *principal,
+				    const char *oldpw, 
+				    const char *newpw, 
+				    int time_offset)
 {
     ADS_STATUS aret;
     krb5_error_code ret;
