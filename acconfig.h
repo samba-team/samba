@@ -129,6 +129,9 @@ static /**/const char *const rcsid[] = { (char *)rcsid, "\100(#)" msg }
 /* define this if you have kerberos 4 */
 #undef KRB4
 
+/* define this if you want to use the KDC as a kaserver */
+#undef KASERVER
+
 /* define this if you have kerberos 5 */
 #undef KRB5
 
