@@ -361,12 +361,20 @@ static int access_table(int new_deny,int old_deny,int old_mode,
 check if we can open a file with a share mode
 ****************************************************************************/
 
-static int check_share_mode( share_mode_entry *share, int share_mode, 
+static BOOL check_share_mode(connection_struct *conn, share_mode_entry *share, int share_mode, 
 			     const char *fname, BOOL fcbopen, int *flags)
 {
 	int deny_mode = GET_DENY_MODE(share_mode);
 	int old_open_mode = GET_OPEN_MODE(share->share_mode);
 	int old_deny_mode = GET_DENY_MODE(share->share_mode);
+
+	/*
+	 * share modes = false means don't bother to check for
+	 * DENY mode conflict. This is a *really* bad idea :-). JRA.
+	 */
+
+	if(!lp_share_modes(SNUM(conn)))
+		return True;
 
 	/*
 	 * Don't allow any opens once the delete on close flag has been
@@ -523,7 +531,7 @@ dev = %x, inode = %.0f\n", old_shares[i].op_type, fname, (unsigned int)dev, (dou
 			/* someone else has a share lock on it, check to see 
 				if we can too */
 
-			if(check_share_mode(share_entry, share_mode, fname, fcbopen, p_flags) == False) {
+			if(check_share_mode(conn, share_entry, share_mode, fname, fcbopen, p_flags) == False) {
 				free((char *)old_shares);
 				errno = EACCES;
 				return -1;

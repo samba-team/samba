@@ -1970,6 +1970,7 @@ BOOL lp_map_hidden(int );
 BOOL lp_map_archive(int );
 BOOL lp_locking(int );
 BOOL lp_strict_locking(int );
+BOOL lp_share_modes(int );
 BOOL lp_posix_locking(int );
 BOOL lp_oplocks(int );
 BOOL lp_level2_oplocks(int );
