@@ -663,16 +663,11 @@ static void
 doit(struct sockaddr *who, int who_len)
 {
     char *host = NULL;
-    struct hostent *hp = NULL;
     int level;
     int ptynum;
     char user_name[256];
     int error;
     char host_addr[256];
-    void *addr;
-    int addr_sz;
-    const char *tmp;
-    int af;
 
     /*
      * Find an available pty to use.
@@ -697,52 +692,18 @@ doit(struct sockaddr *who, int who_len)
     }
 #endif	/* _SC_CRAY_SECURE_SYS */
 
-    af = who->sa_family;
-    switch (af) {
-    case AF_INET : {
-	struct sockaddr_in *sin = (struct sockaddr_in *)who;
-
-	addr    = &sin->sin_addr;
-	addr_sz = sizeof(sin->sin_addr);
-	break;
-    }
-#ifdef HAVE_IPV6
-    case AF_INET6 : {
-	struct sockaddr_in6 *sin6 = (struct sockaddr_in6 *)who;
-
-	addr    = &sin6->sin6_addr;
-	addr_sz = sizeof(sin6->sin6_addr);
-	break;
-    }
-#endif
-    default :
-	fatal (net, "Unknown address family\r\n");
-	break;
-    }
-
-    hp = getipnodebyaddr (addr, addr_sz, af, &error);
-
-    if (hp == NULL && registerd_host_only) {
+    error = getnameinfo (who, who_len, host_addr, sizeof(host_addr),
+			 NULL, 0, 
+			 registerd_host_only ? NI_NAMEREQD : 0);
+    if (error)
 	fatal(net, "Couldn't resolve your address into a host name.\r\n\
 Please contact your net administrator");
-    } else if (hp != NULL) {
-	host = hp->h_name;
-    }
-
-    tmp = inet_ntop(af, addr, host_addr, sizeof(host_addr));
-    if (tmp == NULL)
-	strlcpy (host_addr, "unknown address", sizeof(host_addr));
-
-    if (host == NULL)
-	host = host_addr;
 
     /*
      * We must make a copy because Kerberos is probably going
      * to also do a gethost* and overwrite the static data...
      */
-    strlcpy(remote_host_name, host, sizeof(remote_host_name));
-    if (hp != NULL)
-	freehostent (hp);
+    strlcpy(remote_host_name, host_addr, sizeof(remote_host_name));
     host = remote_host_name;
 
     /* XXX - should be k_gethostname? */
@@ -763,8 +724,8 @@ Please contact your net administrator");
      */
     if (strlen(remote_host_name) > abs(utmp_len))
 	strlcpy(remote_host_name,
-			host_addr,
-			sizeof(remote_host_name));
+		host_addr,
+		sizeof(remote_host_name));
 
 #ifdef AUTHENTICATION
     auth_encrypt_init(hostname, host, "TELNETD", 1);
