@@ -84,6 +84,12 @@ void force_check_log_size( void );
 void dbgflush( void );
 BOOL dbghdr( int level, char *file, char *func, int line );
 
+/*The following definitions come from  lib/debugparse.c  */
+
+char *dbg_token2string( dbg_Token tok );
+void dbg_test( void );
+int main( void );
+
 /*The following definitions come from  lib/fault.c  */
 
 void fault_setup(void (*fn)(void *));
@@ -161,6 +167,9 @@ int vslprintf(char *str, int n, char *format, va_list ap);
 /*The following definitions come from  lib/smbrun.c  */
 
 int smbrun(char *cmd,char *outfile,BOOL shared);
+
+/*The following definitions come from  lib/snprintf.c  */
+
 
 /*The following definitions come from  lib/system.c  */
 
