@@ -3,26 +3,31 @@
 # meta-test-case / example for comfychair.  Should demonstrate
 # different kinds of failure.
 
-import comfychair, stf
+import comfychair
 
 class NormalTest(comfychair.TestCase):
-    def runTest(self):
+    def runtest(self):
         pass
 
 class RootTest(comfychair.TestCase):
-    def setUp(self):
+    def setup(self):
         self.require_root()
             
     def runTest(self):
         pass
 
 class GoodExecTest(comfychair.TestCase):
-    def runTest(self):
-        exit, stdout = self.runCmdUnchecked("ls -l")
+    def runtest(self):
+        stdout = self.runcmd("ls -l")
 
 class BadExecTest(comfychair.TestCase):
-    def setUp(self):
-        exit, stdout = self.runCmdUnchecked("spottyfoot --slobber",
-                                            skip_on_noexec = 1)
+    def setup(self):
+        exit, stdout = self.runcmd_unchecked("spottyfoot --slobber",
+                                             skip_on_noexec = 1)
 
-comfychair.runtests([NormalTest, RootTest, GoodExecTest, BadExecTest])
+
+tests = [NormalTest, RootTest, GoodExecTest, BadExecTest]
+
+if __name__ == '__main__':
+    comfychair.main(tests)
+    
