@@ -47,7 +47,7 @@ int d_vfprintf(FILE *f, const char *format, va_list ap)
 again:
 	p2 = malloc(maxlen);
 	if (!p2) {
-		free(p);
+		SAFE_FREE(p);
 		return -1;
 	}
 	clen = convert_string(CH_UNIX, CH_DISPLAY, p, ret, p2, maxlen);
@@ -55,14 +55,14 @@ again:
 	if (clen >= maxlen) {
 		/* it didn't fit - try a larger buffer */
 		maxlen *= 2;
-		free(p2);
+		SAFE_FREE(p2);
 		goto again;
 	}
 
 	/* good, its converted OK */
-	free(p);
+	SAFE_FREE(p);
 	ret = fwrite(p2, 1, clen, f);
-	free(p2);
+	SAFE_FREE(p2);
 
 	return ret;
 }

@@ -171,7 +171,7 @@ char *get_numlist(char *p, uint32 **num, int *count)
 		tn = Realloc((*num), ((*count)+1) * sizeof(uint32));
 		if (tn == NULL)
 		{
-			if (*num) free(*num);
+			SAFE_FREE(*num);
 			return NULL;
 		}
 		else (*num) = tn;
@@ -638,7 +638,7 @@ void *Realloc(void *p,size_t size)
   void *ret=NULL;
 
   if (size == 0) {
-    if (p) free(p);
+    SAFE_FREE(p);
     DEBUG(5,("Realloc asked for 0 bytes\n"));
     return NULL;
   }
@@ -656,16 +656,14 @@ void *Realloc(void *p,size_t size)
 
 
 /****************************************************************************
-free memory, checks for NULL
+free memory, checks for NULL and set to NULL
+use directly SAFE_FREE()
+exist only because we need to pass a function pointer somewhere --SSS
 ****************************************************************************/
 void safe_free(void *p)
 {
-	if (p != NULL)
-	{
-		free(p);
-	}
+	SAFE_FREE(p);
 }
-
 
 /****************************************************************************
 get my own name and IP
@@ -1243,13 +1241,11 @@ routine to free a namearray.
 
 void free_namearray(name_compare_entry *name_array)
 {
-  if(name_array == 0)
+  if(name_array == NULL)
     return;
 
-  if(name_array->name != NULL)
-    free(name_array->name);
-
-  free((char *)name_array);
+  SAFE_FREE(name_array->name);
+  SAFE_FREE(name_array);
 }
 
 /****************************************************************************
@@ -1498,7 +1494,7 @@ zero a memory area then free it. Used to catch bugs faster
 void zero_free(void *p, size_t size)
 {
 	memset(p, 0, size);
-	free(p);
+	SAFE_FREE(p);
 }
 
 

@@ -174,7 +174,7 @@ static void* generic_list_locate (GENERIC_LIST *l, void *search,
 
 			l->length--;
 			data_ptr = item->data;
-			free(item);
+			SAFE_FREE(item);
 			return data_ptr;
 		}
 		/* increment to the nbext node in the list */
@@ -291,7 +291,7 @@ BOOL RpcHndList_del_connection(const POLICY_HND *hnd)
 
 	/* delete the information */
 	cli_connection_free(located->cli);
-	free(located);
+	SAFE_FREE(located);
 	return True;
 }
 

@@ -320,13 +320,13 @@ failed with error %s\n", strerror(errno) ));
  	}
  
  	*winbind_answered = True;
- 	safe_free(groups);
+ 	SAFE_FREE(groups);
  	return ret;
  
    err:
  
  	*winbind_answered = False;
- 	safe_free(groups);
+ 	SAFE_FREE(groups);
  	return False;
 }	      
  

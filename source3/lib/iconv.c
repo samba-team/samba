@@ -186,7 +186,7 @@ smb_iconv_t smb_iconv_open(const char *tocode, const char *fromcode)
 	return ret;
 
 failed:
-	free(ret);
+	SAFE_FREE(ret);
 	errno = EINVAL;
 	return (smb_iconv_t)-1;
 }
@@ -203,7 +203,7 @@ int smb_iconv_close (smb_iconv_t cd)
 #endif
 
 	memset(cd, 0, sizeof(*cd));
-	free(cd);
+	SAFE_FREE(cd);
 	return 0;
 }
 

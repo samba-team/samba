@@ -145,7 +145,7 @@ static int TimeZoneFaster(time_t t)
 					      sizeof(dst_table[0])*(i+1));
     if (!tdt) {
       DEBUG(0,("TimeZoneFaster: out of memory!\n"));
-      if (dst_table) free (dst_table);
+      SAFE_FREE(dst_table);
       table_size = 0;
     } else {
       dst_table = tdt;

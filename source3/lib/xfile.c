@@ -57,7 +57,7 @@ int x_setvbuf(XFILE *f, char *buf, int mode, size_t size)
 	}
 
 	/* destroy any earlier buffer */
-	if (f->buf) free(f->buf);
+	SAFE_FREE(f->buf);
 	f->buf = 0;
 	f->bufsize = 0;
 	f->next = NULL;
@@ -111,7 +111,7 @@ XFILE *x_fopen(const char *fname, int flags, mode_t mode)
 
 	ret->fd = sys_open(fname, flags, mode);
 	if (ret->fd == -1) {
-		free(ret);
+		SAFE_FREE(ret);
 		return NULL;
 	}
 
@@ -133,9 +133,9 @@ int x_fclose(XFILE *f)
 	if (f->buf) {
 		/* make sure data can't leak into a later malloc */
 		memset(f->buf, 0, f->bufsize);
-		free(f->buf);
+		SAFE_FREE(f->buf);
 	}
-	free(f);
+	SAFE_FREE(f);
 	return ret;
 }
 
@@ -191,7 +191,7 @@ int x_vfprintf(XFILE *f, const char *format, va_list ap)
 	len = vasprintf(&p, format, ap);
 	if (len <= 0) return len;
 	ret = x_fwrite(p, 1, len, f);
-	free(p);
+	SAFE_FREE(p);
 	return ret;
 }
 

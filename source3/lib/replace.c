@@ -194,7 +194,7 @@ Corrections by richard.kettlewell@kewill.com
 	}
 	endgrent();
 	ret = sys_setgroups(i,grouplst);
-	free((char *)grouplst);
+	SAFE_FREE(grouplst);
 	return ret;
 #endif /* HAVE_SETGROUPS */
 }

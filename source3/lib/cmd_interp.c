@@ -66,9 +66,9 @@ FILE *out_hnd;
 static void cmd_set_free(struct command_set *item)
 {
 	if (item != NULL)
-		safe_free(item->name);
+		SAFE_FREE(item->name);
 
-	safe_free(item);
+	SAFE_FREE(item);
 }
 
 static struct command_set *cmd_set_dup(const struct command_set *from)
@@ -432,7 +432,7 @@ static uint32 process(struct client_info *info, char *cmd_str)
 
 			if (!(ret_line = readline(pline)))
 				break;
-			safe_free(ret_line);
+			SAFE_FREE(ret_line);
 
 			/* Copy read line to samba buffer */
 

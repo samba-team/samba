@@ -192,8 +192,8 @@ hash_element *hash_insert(hash_table *table, char *value, char *key)
 		bucket = hash_elem->bucket;
 		ubi_dlRemThis(&(table->lru_chain), &(hash_elem->lru_link.lru_link));
 		ubi_dlRemThis(bucket, (ubi_dlNodePtr)hash_elem);
-		free((char*)(hash_elem->value));
-		free(hash_elem);
+		SAFE_FREE((char*)(hash_elem->value));
+		SAFE_FREE(hash_elem);
 	}  else  {
 		table->num_elements += 1;
 	}
@@ -238,10 +238,8 @@ void hash_remove(hash_table *table, hash_element *hash_elem)
 	if (hash_elem) { 
 		ubi_dlRemove(&(table->lru_chain), &(hash_elem->lru_link.lru_link));
 		ubi_dlRemove(hash_elem->bucket, (ubi_dlNodePtr) hash_elem);
-		if(hash_elem->value)
-			free((char *)(hash_elem->value));
-		if(hash_elem)
-			free((char *) hash_elem);
+		SAFE_FREE(hash_elem->value);
+		SAFE_FREE(hash_elem);
 		table->num_elements--;
 	}
 }
@@ -285,8 +283,7 @@ static BOOL enlarge_hash_table(hash_table *table)
 			table->num_elements++;
 		}
 	}
-	if(buckets)
-		free((char *) buckets);
+	SAFE_FREE(buckets);
 
 	return True;
 }
@@ -309,14 +306,11 @@ void hash_clear(hash_table *table)
 	for (i = 0; i < table->size; bucket++, i++) {
 		while (bucket->count != 0) {
 			hash_elem = (hash_element *) ubi_dlRemHead(bucket);
-			if(hash_elem->value)
-				free((char *)(hash_elem->value));
-			if(hash_elem)
-				free((char *)hash_elem);
+			SAFE_FREE(hash_elem->value);
+			SAFE_FREE(hash_elem);
 		}
 	}
 	table->size = 0;
-	if(table->buckets)
-		free((char *) table->buckets);
+	SAFE_FREE(table->buckets);
 	table->buckets = NULL;
 }
