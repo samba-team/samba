@@ -1,3 +1,43 @@
+Sat Apr 24 18:35:21 1999  Johan Danielsson  <joda@pdc.kth.se>
+
+	* kdc/config.c: pass context to krb5_config_file_free
+
+	* kuser/kinit.c: add `--fcache-version' to set cache version to
+	create
+
+	* kuser/klist.c: print cache version if verbose
+
+	* lib/krb5/transited.c (krb5_domain_x500_decode): don't abort
+
+	* lib/krb5/principal.c: abort -> krb5_abortx
+
+	* lib/krb5/mk_rep.c: abort -> krb5_abortx
+
+	* lib/krb5/config_file.c: abort -> krb5_abortx
+
+	* lib/krb5/context.c (init_context_from_config_file): init
+	fcache_version; add krb5_{get,set}_fcache_version
+
+	* lib/krb5/keytab.c: add support for reading (and writing?) old
+	version keytabs
+
+	* lib/krb5/cache.c: add krb5_cc_get_version
+
+	* lib/krb5/fcache.c: add support for reading and writing old
+	version cache files
+
+	* lib/krb5/store_mem.c (krb5_storage_from_mem): zero flags
+
+	* lib/krb5/store_emem.c (krb5_storage_emem): zero flags
+
+	* lib/krb5/store_fd.c (krb5_storage_from_fd): zero flags
+
+	* lib/krb5/store.c: add flags to change how various fields are
+	stored, used for old cache version support
+	
+	* lib/krb5/krb5.h: add support for reading and writing old version
+	cache files, and keytabs
+	
 Tue Apr 20 12:42:08 1999  Johan Danielsson  <joda@hella.pdc.kth.se>
 
 	* kpasswd/kpasswdd.c: don't try to load library by default; get
