@@ -344,7 +344,13 @@ NTSTATUS check_smbpasswd_security(const auth_usersupplied_info *user_info, auth_
 	uint8 user_sess_key[16];
 	const uint8* lm_hash;
 
-	pdb_init_sam(&sampass);
+	if (!user_info) {
+		return NT_STATUS_LOGON_FAILURE;
+	}
+
+	if (!pdb_init_sam(&sampass)) {
+		return NT_STATUS_NO_MEMORY;
+	}
 
 	/* get the account information */
 
