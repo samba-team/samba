@@ -2162,6 +2162,9 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 	if (ret != 1)
 		return NT_STATUS_INTERNAL_DB_CORRUPTION;
 
+	r->out.sids->num_sids = 0;
+	r->out.sids->sids = NULL;
+
 	el = ldb_msg_find_element(msgs[0], "member");
 
 	if (el != NULL) {
@@ -2188,10 +2191,9 @@ static NTSTATUS samr_GetMembersInAlias(struct dcesrv_call_state *dce_call, TALLO
 			if (sids[i].sid == NULL)
 				return NT_STATUS_INTERNAL_DB_CORRUPTION;
 		}
+		r->out.sids->num_sids = el->num_values;
+		r->out.sids->sids = sids;
 	}
-
-	r->out.sids->num_sids = el->num_values;
-	r->out.sids->sids = sids;
 
 	return NT_STATUS_OK;
 }
