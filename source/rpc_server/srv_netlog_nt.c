@@ -548,9 +548,7 @@ static uint32 _net_logon_any(NET_ID_INFO_CTR *ctr, char *user, char *domain, cha
 		return NT_STATUS_INVALID_INFO_CLASS;
 	} /* end switch */
 	
-	become_root();
 	nt_status = check_password(&user_info, &server_info);
-	unbecome_root();
 
 	DEBUG(5, ("_net_logon_any: exited with status %d\n", nt_status));
 
