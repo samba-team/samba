@@ -1,5 +1,11 @@
 2004-03-07  Love Hörnquist Åstrand  <lha@it.su.se>
 
+	* accept_sec_context.c (spnego_accept_sec_context): make sure the
+	length of the choice element doesn't overrun us
+	
+	* init_sec_context.c (spnego_reply): make sure the length of the
+	choice element doesn't overrun us
+	
 	* spnego.asn1: move NegotiationToken to avoid warning
 	
 	* spnego.asn1: uncomment NegotiationToken
