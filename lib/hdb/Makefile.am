@@ -21,18 +21,19 @@ LDADD = libhdb.la \
 	$(DBLIB)
 
 lib_LTLIBRARIES = libhdb.la
-libhdb_la_LDFLAGS = -version-info 4:2:1
+libhdb_la_LDFLAGS = -version-info 5:0:0
 
-libhdb_la_SOURCES = 				\
-		    keytab.c			\
-		    hdb.c			\
-		    common.c			\
-		    db.c			\
-		    db3.c			\
-		    ndbm.c			\
-		    hdb-ldap.c			\
-		    print.c			\
-		    $(BUILT_SOURCES)
+libhdb_la_SOURCES =				\
+	common.c				\
+	db.c					\
+	db3.c					\
+	hdb-ldap.c				\
+	hdb.c					\
+	keytab.c				\
+	mkey.c					\
+	ndbm.c					\
+	print.c					\
+	$(BUILT_SOURCES)
 
 INCLUDES += $(INCLUDE_openldap)
 
