@@ -96,7 +96,7 @@ get_entry(int argc, char **argv)
 	    name = NULL;
 	printf("Created by %s at %s\n",
 	       name ? name : "<unknown>",
-	       time2str(ent.created_by.time));
+	       time2rstr(ent.created_by.time));
 	free (name);
 	if (ent.modified_by) {
 	    if (ent.modified_by->principal)
@@ -105,24 +105,27 @@ get_entry(int argc, char **argv)
 		name = NULL;
 	    printf("Last modified by %s at %s\n",
 		   name ? name : "<unknown>",
-		   time2str(ent.modified_by->time));
+		   time2rstr(ent.modified_by->time));
 	    free (name);
 	}
 	if (ent.valid_start) {
-	    printf("Valid from %s\n", time2str(*ent.valid_start));
+	    printf("Valid from %s\n", time2rstr(*ent.valid_start));
 	}
 	if (ent.valid_end) {
-	    printf("Valid till %s\n", time2str(*ent.valid_end));
+	    printf("Valid till %s\n", time2rstr(*ent.valid_end));
 	}
 	if (ent.pw_end) {
-	    printf("Password expires at %s\n", time2str(*ent.pw_end));
+	    printf("Password expires at %s\n", time2rstr(*ent.pw_end));
 	}
-	printf("Kvno: %d\n", ent.kvno);
-	printf("Keys: ");
+	printf("Keys: kvno = %d", ent.kvno);
 	for(i = 0; i < ent.keys.len; i++){
-	    if(i) printf(", ");
-	    printf("type = %d, len = %d", ent.keys.val[i].key.keytype,
-		   ent.keys.val[i].key.keyvalue.length);
+	    char *str;
+	    printf(", ");
+	    if(i == 0)
+		printf("type = ");
+	    krb5_keytype_to_string(context, ent.keys.val[i].key.keytype, &str);
+	    printf("%s", str);
+	    free(str);
 	}
 	printf("\nFlags: ");
 	print_hdbflags (stdout, ent.flags);
