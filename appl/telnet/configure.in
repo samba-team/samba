@@ -211,7 +211,7 @@ AC_SUBST(OLD_ENVIRON)
 
 AC_REPLACE_FUNCS(getent herror memmove setenv strdup strerror)
 
-AC_CHECK_FUNCS(cgetent uname vfork vhangup frevoke revoke setsid)
+AC_CHECK_FUNCS(cgetent uname vfork vhangup frevoke revoke setsid setpgid)
 
 AC_CHECK_FUNCS(tgetent setupterm)
 
