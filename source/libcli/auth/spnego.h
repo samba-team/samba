@@ -33,11 +33,11 @@
 #define SPNEGO_INTEG_FLAG    0x40
 #define SPNEGO_REQ_FLAG      0x80
 
-typedef enum _spnego_negResult {
+enum spnego_negResult {
 	SPNEGO_ACCEPT_COMPLETED = 0,
 	SPNEGO_ACCEPT_INCOMPLETE = 1,
 	SPNEGO_REJECT = 2
-} negResult_t;
+};
 
 struct spnego_negTokenInit {
 	char **mechTypes;
