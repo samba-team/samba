@@ -1,3 +1,10 @@
+Sun Dec 21 09:45:18 1997  Assar Westerlund  <assar@sics.se>
+
+	* parse_time.c (print_time_table): new function
+
+	* parse_units.c (print_flags_table, print_units_table): new
+ 	functions.
+
 Thu Dec  4 02:51:46 1997  Assar Westerlund  <assar@sics.se>
 
 	* iruserok.c: moved here.

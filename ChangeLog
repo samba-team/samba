@@ -1,3 +1,41 @@
+Sun Dec 21 09:44:05 1997  Assar Westerlund  <assar@sics.se>
+
+	* kadmin/util.c (str2deltat, str2attr, get_deltat): return value
+ 	as pointer and have return value indicate success.
+	
+	(get_response): check NULL from fgets
+	
+	(edit_time, edit_attributes): new functions for reading values and
+	offering list of answers on '?'
+	
+	(edit_entry): use edit_time and edit_attributes
+
+	* kadmin/ank.c (add_new_key): test the return value of
+ 	`krb5_parse_name'
+
+	* kdc/kerberos5.c (tgs_check_authenticator): RFC1510 doesn't say
+ 	that the checksum has to be keyed, even though later drafts do.
+  	Accept unkeyed checksums to be compatible with MIT.
+
+	* appl/rsh/rshd.c (recv_krb5_auth): swap the order of the
+ 	`local_user' and the `remote_user'
+
+	* appl/rsh/rsh.c (send_krb5_auth): swap the order of the
+ 	`local_user' and the `remote_user'
+
+	* kadmin/kadmin_locl.h: add some prototypes.
+
+	* kadmin/util.c (edit_entry): return a value
+
+	* appl/afsutil/afslog.c (main): return a exit code.
+
+	* lib/krb5/get_cred.c (init_tgs_req): use krb5_keytype_to_enctypes
+
+	* lib/krb5/encrypt.c (krb5_keytype_to_enctypes): new function.
+
+	* lib/krb5/build_auth.c (krb5_build_authenticator): use
+ 	krb5_{free,copy}_keyblock instead of the _contents versions
+
 Sat Dec  6 10:09:40 1997  Johan Danielsson  <joda@emma.pdc.kth.se>
 
 	* lib/krb5/keyblock.c (krb5_free_keyblock): check for NULL
