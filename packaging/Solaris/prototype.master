@@ -8,7 +8,6 @@
 i pkginfo=./pkginfo
 i copyright=./copyright
 i request=./request
-i checkinstall
 i preremove=./preremove
 i postinstall=./postinstall
 i i.swat=./i.swat
