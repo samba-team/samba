@@ -700,6 +700,9 @@
 /* Define if you have the <fcntl.h> header file.  */
 #undef HAVE_FCNTL_H
 
+/* Define if you have the <getopt.h> header file.  */
+#undef HAVE_GETOPT_H
+
 /* Define if you have the <glob.h> header file.  */
 #undef HAVE_GLOB_H
 

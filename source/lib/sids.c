@@ -67,25 +67,12 @@ extern fstring global_myworkgroup;
 
 DOM_SID global_sid_S_1_5_32; /* local well-known domain */
 DOM_SID global_sid_S_1_1;    /* Global Domain */
-static DOM_SID global_sid_S_1_3_0;  /* Creator Owner */
-static DOM_SID global_sid_S_1_3_1;  /* Creator Group */
-static DOM_SID global_sid_S_1_3_2;  /* Creator Server Owner */
-static DOM_SID global_sid_S_1_3_3;  /* Creator Server Group */
-static DOM_SID global_sid_S_1_5;    /* NT Authority */
-static DOM_SID global_sid_S_1_5_2;  /* NETWORK */
-DOM_SID global_sid_system;   /* NT System */
 static DOM_SID global_sid_S_1_1_0;  /* everyone */
 
-static DOM_SID global_sid_S_1_5_1; /* Dialup */
-static DOM_SID global_sid_S_1_5_2; /* Network */
-static DOM_SID global_sid_S_1_5_3; /* Batch */
-static DOM_SID global_sid_S_1_5_6; /* System */
-static DOM_SID global_sid_S_1_5_7; /* not known, but NT responds! */
-static DOM_SID global_sid_S_1_5_9; /* Server Logon */
-static DOM_SID global_sid_S_1_5_11; /* Authenticated Users */
 static DOM_SID global_sid_S_1_5_18; /* System */
 
 const DOM_SID *global_sid_everyone = NULL;
+const DOM_SID *global_sid_system = NULL;   /* NT System */
 const DOM_SID *global_sid_builtin = NULL;
 
 struct sid_map
@@ -95,28 +82,37 @@ struct sid_map
 	uint32 type;
 };
 
-static const struct sid_map static_sid_name_map[] =
+struct sid_map_fill
 {
-	{ &global_sid_S_1_5_32, "BUILTIN",          SID_NAME_DOMAIN },
-	{ &global_sid_S_1_1   , "Global Domain",    SID_NAME_DOMAIN },
-	{ &global_sid_S_1_1_0 , "Everyone",         SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_3_0 , "Creator Owner",    SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_3_1 , "Creator Group",    SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_3_2 , "Creator Server Owner",    SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_3_3 , "Creator Server Group",    SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5   , "NT Authority",     SID_NAME_DOMAIN },
-	{ &global_sid_S_1_5_1   , "DIALUP",     SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_2 , "NETWORK",          SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_3 , "BATCH",          SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_6 , "SYSTEM",          SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_7 , "",          SID_NAME_USER },
-	{ &global_sid_S_1_5_9 , "SERVER LOGON",          SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_11 , "Authenticated Users",     SID_NAME_WKN_GRP },
-	{ &global_sid_S_1_5_18 , "SYSTEM",     SID_NAME_WKN_GRP },
-	{ &global_sid_system  , "SYSTEM",           SID_NAME_WKN_GRP },
-	{ &global_sam_sid     , global_sam_name,    SID_NAME_DOMAIN },
-	{ &global_member_sid  , global_myworkgroup, SID_NAME_DOMAIN },
-	{ NULL                , NULL      }
+	char *name;
+	DOM_SID *sid;
+	uint32 type;
+	const char *sid_str;
+};
+
+static const struct sid_map_fill static_sid_name_map[] =
+{
+	{ "BUILTIN",              &global_sid_S_1_5_32, SID_NAME_DOMAIN, NULL },
+	{ "Global Domain",        &global_sid_S_1_1,    SID_NAME_DOMAIN, NULL },
+	{ "Everyone",             &global_sid_S_1_1_0,  SID_NAME_WKN_GRP, NULL },
+	{ "LOCAL",                NULL,                 SID_NAME_WKN_GRP, "S-1-2-0" }, /* what is this ?? */
+	{ "Creator Owner",        NULL,                 SID_NAME_WKN_GRP, "S-1-3-0" },
+	{ "Creator Group",        NULL,                 SID_NAME_WKN_GRP, "S-1-3-1" },
+	{ "Creator Server Owner", NULL,                 SID_NAME_WKN_GRP, "S-1-3-2" },
+	{ "Creator Server Group", NULL,                 SID_NAME_WKN_GRP, "S-1-3-3" },
+	{ "NT Authority",         NULL,                 SID_NAME_DOMAIN, "S-1-5" },
+	{ "DIALUP",               NULL,                 SID_NAME_WKN_GRP, "S-1-5-1" },
+	{ "NETWORK",              NULL,                 SID_NAME_WKN_GRP, "S-1-5-2" },
+	{ "BATCH",                NULL,                 SID_NAME_WKN_GRP, "S-1-5-3" },
+	{ "Interactive",          NULL,                 SID_NAME_WKN_GRP, "S-1-5-4" }, /* right name? */
+	{ "Service",              NULL,                 SID_NAME_WKN_GRP, "S-1-5-6" }, /* right name? */
+	{ "",                     NULL,                 SID_NAME_USER, "S-1-5-7" }, /* not known, but NT responds! */
+	{ "SERVER LOGON",         NULL,                 SID_NAME_WKN_GRP, "S-1-5-9" },
+	{ "Authenticated Users",  NULL,                 SID_NAME_WKN_GRP, "S-1-5-11" },
+	{ "SYSTEM",               &global_sid_S_1_5_18, SID_NAME_WKN_GRP, NULL },
+	{ global_sam_name,        &global_sam_sid,      SID_NAME_DOMAIN, NULL },
+	{ global_myworkgroup,     &global_member_sid,   SID_NAME_DOMAIN, NULL },
+	{ NULL,                   NULL,                 0, NULL}
 };
 
 static struct sid_map **sid_name_map = NULL;
@@ -245,6 +241,39 @@ BOOL get_member_domain_sid(void)
 	return get_domain_sids(lp_workgroup(), NULL, &global_member_sid);
 }
 
+/****************************************************************************
+ generates and adds well known (and other) sids
+****************************************************************************/
+static void generate_and_add_sids(void)
+{
+	int i;
+
+	for (i = 0; static_sid_name_map[i].name != NULL; i++)
+	{
+		struct sid_map map;
+		DOM_SID sid;
+
+		map.name = static_sid_name_map[i].name;
+		map.sid = static_sid_name_map[i].sid;
+		map.type = static_sid_name_map[i].type;
+		if (static_sid_name_map[i].sid_str != NULL)
+		{
+			if (map.sid == NULL)
+				map.sid = &sid;
+			string_to_sid(map.sid,
+				      static_sid_name_map[i].sid_str);
+		}
+		else
+		{
+			if (map.sid == NULL)
+			{
+				DEBUG(1, ("static_sid_name_map: invalid entry %s\n", map.name));
+				continue;
+			}
+		}
+		add_sidmap_to_array(&num_maps, &sid_name_map, &map);
+	}
+}
 
 /****************************************************************************
  creates some useful well known sids
@@ -254,12 +283,10 @@ void generate_wellknown_sids(void)
 	string_to_sid(&global_sid_S_1_5_32, "S-1-5-32");
 	string_to_sid(&global_sid_S_1_1   , "S-1-1"   );
 	string_to_sid(&global_sid_S_1_1_0 , "S-1-1-0" );
-	string_to_sid(&global_sid_S_1_3_0 , "S-1-3-0" );
-	string_to_sid(&global_sid_S_1_5   , "S-1-5"   );
-	string_to_sid(&global_sid_S_1_5_2 , "S-1-5-2" );
-	string_to_sid(&global_sid_system  , "S-1-5-18");
+	string_to_sid(&global_sid_S_1_5_18, "S-1-5-18");
 
 	global_sid_everyone = &global_sid_S_1_1_0;
+	global_sid_system   = &global_sid_S_1_5_18;
 	global_sid_builtin  = &global_sid_S_1_5_32;
 }
 
@@ -272,11 +299,7 @@ BOOL create_sidmap_table(void)
 	char **doms = NULL;
 	uint32 num_doms = 0;
 
-	for (i = 0; static_sid_name_map[i].name != NULL; i++)
-	{
-		add_sidmap_to_array(&num_maps, &sid_name_map,
-		                    &static_sid_name_map[i]);
-	}
+	generate_and_add_sids();
 
 	enumtrustdoms(&doms, &num_doms);
 

@@ -1933,6 +1933,8 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 		return False;
 	}
 
+	dump_data_pw("decoded password buffer:\n", buf, 516);
+
 	new_pw.uni_max_len = len / 2;
 	new_pw.uni_str_len = len / 2;
 
@@ -1941,7 +1943,12 @@ static BOOL set_user_info_24(const SAM_USER_INFO_24 * id24, uint32 rid)
 		new_pw.buffer[i] = SVAL(buf, i * 2);
 	}
 
+	dump_data_pw("unicode password:\n", (char*)new_pw.buffer, len);
+
 	nt_lm_owf_genW(&new_pw, nt_hash, lm_hash);
+
+	dump_data_pw("nt#:\n", nt_hash, 16);
+	dump_data_pw("lm#:\n", lm_hash, 16);
 
 	new_pwd.smb_passwd = lm_hash;
 	new_pwd.smb_nt_passwd = nt_hash;

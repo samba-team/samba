@@ -360,7 +360,7 @@ void cmd_sam_lookup_names(struct client_info *info, int argc, char *argv[])
 		return;
 	}
 
-	while ((opt = getopt(argc, argv, "d:")) != EOF)
+	while ((opt = getopt_long(argc, argv, "d:", NULL, NULL)) != EOF)
 	{
 		switch (opt)
 		{
@@ -1056,7 +1056,7 @@ void cmd_sam_create_dom_user(struct client_info *info, int argc, char *argv[])
 		acb_info = ACB_WSTRUST;
 	}
 
-	while ((opt = getopt(argc, argv, "isj:p:w:")) != EOF)
+	while ((opt = getopt_long(argc, argv, "isj:p:w:", NULL, NULL)) != EOF)
 	{
 		switch (opt)
 		{

@@ -213,7 +213,7 @@ BOOL se_access_check(const SEC_DESC * sd, const NET_USER_INFO_3 * user,
 	}
 
 	/* check for system acl or user (discretionary) acl */
-	is_system = sid_equal(&usr_sid, &global_sid_system);
+	is_system = sid_equal(&usr_sid, global_sid_system);
 	if (is_system)
 	{
 		acl = sd->sacl;
