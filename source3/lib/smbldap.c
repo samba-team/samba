@@ -977,6 +977,7 @@ static int another_ldap_try(struct smbldap_state *ldap_state, int *rc,
 
 		*attempts += 1;
 
+		smbldap_close(ldap_state);
 		open_rc = smbldap_open(ldap_state);
 
 		if (open_rc == LDAP_SUCCESS) {
